@@ -1,8 +1,9 @@
 # Debugging pointer input — read this before touching the input path
 
-> **In flight:** [PEN-TAP-PLAN.md](PEN-TAP-PLAN.md) holds an agreed, not-yet-
-> implemented plan to move these thresholds into client space. Read it first if
-> you are here about pen taps registering as drags.
+> **Pen taps registering as drags?** That was tap quantisation, and it shipped
+> in 2026-08 — [PEN-TAP-PLAN.md](PEN-TAP-PLAN.md) is the record of the completed
+> change (`spa/src/input/tapQuantiser.ts`), not pending work. Read it for the
+> thresholds and the measurements behind them.
 
 Input bugs in the gallery are reported as "it feels wrong", and the cause is
 almost never where it feels like it is. This is the order to look, the tools
@@ -86,6 +87,35 @@ win311/IRIX, because the pen was never running that code. Tap quantisation lives
 in `input/touchGestures.createTapQuantiser()` precisely so both paths can share
 it; the stylus path drives its own instance through `input/penContact.ts`.
 
+## Where a guest RIGHT button is allowed to come from
+
+There are exactly three, and `input/penRightClick.contextMenuAction` is the pure
+decision that guards two of them. Anything else reaching the guest as button 2
+is a bug:
+
+| Gesture | Route | Result |
+|---|---|---|
+| ⊕ **Right-click badge**, then tap | `TouchControlBadge` → `recognizer.setArm` | one-shot right press/release, and it can be press-DRAG-released |
+| **S-Pen barrel** during a contact (≤ `BARREL_WINDOW_MS`, 250 ms) | native `contextmenu`, `pointerType: 'pen'` | `'convert'` — the live contact becomes a right-button HOLD, released on lift |
+| **S-Pen barrel** with the tip off the glass | native `contextmenu`, `pointerType: 'pen'`, nothing held | `'synth'` — a standalone right-click, held `rightHoldMs()` so Motif/CDE actually posts its menu |
+| **Finger long-press** | native `contextmenu`, `pointerType: 'touch'` | `'ignore'` — nothing goes to the guest |
+| Real **mouse** right-click | pointerdown(button 2); the `contextmenu` that follows is de-duped within `RIGHT_SUPPRESS_MS` | one right-click, never two |
+
+**`pointerType` is read FIRST, and this is why.** `heldContact` in that function
+is `penDownBtn.size > 0` in the caller, and a **finger contact is not in
+`penDownBtn`** — the touch recognizer owns it. So a finger long-press used to
+look identical to a hovering pen (`heldContact === false`), take the `'synth'`
+shortcut *before* the 250 ms barrel gate was consulted, and inject a right-click
+on top of the left button the recognizer was still holding — the guest saw
+buttons 1+3 at once. Reported on Android at `/os/rhapsody` and fixed 2026-08-24
+by giving the function the event's own `pointerType`. Do not re-derive the
+pointer kind from the absence of a tracked contact; the two are not the same
+question.
+
+**The arm badge is the only touch route to a right button, deliberately.** A
+gesture the OS also owns cannot be borrowed for a guest button without stealing
+it from the OS, and a long-press is the OS's.
+
 ## Four telemetry sources, cheapest first
 
 **0. `ptr` pointer telemetry — the raw event stream, PUSHED.** The UI records
@@ -100,13 +130,20 @@ ssh lab 'python3 .../pen-trace.py --session ab12cd34 --moves'
 #   132303  ctxmenu   btn=0 pt=p (187,283)  +599 ms into a live contact
 ```
 
-Three things it is built to show, each of which cost a round of fixes to learn:
-a **contextmenu's real delay** into its contact (~0 ms = an S-Pen barrel press,
-~600 ms = Android's long-press — the event's own `timeStamp` cannot tell them
-apart, because Chrome copies the originating pointerdown's stamp onto the
-synthesized event); an **ORPHAN** (motion carrying a button with no pointerdown,
-i.e. Android ate the press); and **no-lift** (a contact never released, which is
-where a stuck guest button begins).
+Four things it is built to show, each of which cost a round of fixes to learn:
+
+- **`pt=` on a contextmenu — read this before the timing.** `p` is a pen, `t` is
+  a finger, `-` is a UA that dispatched a plain MouseEvent. Chrome-Android tags
+  these events with the originating pointer's type, and a finger has no barrel
+  button, so `pt=t` on a `ctxmenu` row means the OS long-press and nothing else.
+- **A contextmenu's real delay** into its contact, once `pt` says it is a pen:
+  ~0 ms is the S-Pen barrel, ~600 ms is Android's long-press. The event's own
+  `timeStamp` cannot tell them apart, because Chrome copies the originating
+  pointerdown's stamp onto the synthesized event.
+- An **ORPHAN** — motion carrying a button with no pointerdown, i.e. Android ate
+  the press.
+- **no-lift** — a contact never released, which is where a stuck guest button
+  begins.
 
 Source: `spa/src/input/pointerRecorder.ts`, armed by default while the pen work
 is open; `?penrec=0` opts out. Its in-memory rings are still readable live with

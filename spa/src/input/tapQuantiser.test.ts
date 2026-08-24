@@ -199,7 +199,11 @@ describe('pen hover muting around a contact', () => {
 // mask=0x05 in the daemon telemetry, 2026-08-05); treat none of them as a barrel
 // and a stylus can never open IRIX's spring-loaded root menu.
 describe('contextmenu — barrel press vs Android long-press', () => {
-  const base = { heldContact: true, sinceContactMs: 0, sincePointerRightMs: Infinity };
+  // Every case here is a PEN. `pointerType` is stated explicitly because it is
+  // the first thing the decision reads: a finger takes the separate path below.
+  const base = {
+    pointerType: 'pen', heldContact: true, sinceContactMs: 0, sincePointerRightMs: Infinity,
+  };
 
   it('a contextmenu right after contact is the BARREL — convert the contact', async () => {
     const { contextMenuAction, BARREL_WINDOW_MS } = await import('./penRightClick');
@@ -242,5 +246,64 @@ describe('contextmenu — barrel press vs Android long-press', () => {
     const { contextMenuAction } = await import('./penRightClick');
     expect(contextMenuAction({ ...base, heldContact: false, sincePointerRightMs: 10 })).toBe('ignore');
     expect(contextMenuAction({ ...base, heldContact: false, sinceCtxSynthMs: 10 })).toBe('ignore');
+  });
+
+  // A UA that dispatches contextmenu as a plain MouseEvent (no pointerType) is a
+  // desktop mouse: the pen logic is what it always was, so nothing regresses on
+  // a browser that does not tag the event.
+  it('an untagged contextmenu keeps the pre-pointerType behaviour', async () => {
+    const { contextMenuAction } = await import('./penRightClick');
+    const untagged = { ...base, pointerType: undefined };
+    expect(contextMenuAction({ ...untagged, heldContact: false })).toBe('synth');
+    expect(contextMenuAction({ ...untagged, sinceContactMs: 0 })).toBe('convert');
+    expect(contextMenuAction({ ...untagged, sinceContactMs: 900 })).toBe('ignore');
+  });
+});
+
+// THE FINGER. Reported live on Android at /os/rhapsody (2026-08-23): a long tap
+// performed a secondary click in the guest. A finger has no barrel button, so
+// there is no gesture it can make that SHOULD produce one — the arm badge is
+// the only touch route to a right button, and that one never reaches this
+// function at all. What made it fire was the shape of `heldContact`: it is
+// `penDownBtn.size > 0` in the caller and a finger contact lives in the touch
+// recognizer instead, so a long-press looked identical to a hovering pen and
+// took the `synth` shortcut BEFORE the 250 ms barrel gate was consulted.
+describe('contextmenu — a finger never produces a right button', () => {
+  const finger = {
+    pointerType: 'touch', heldContact: false, sinceContactMs: 0, sincePointerRightMs: Infinity,
+  };
+
+  // The exact shape captured on the operator's device: the contextmenu arrived
+  // 593 ms into a live contact, with the contact untracked here so heldContact
+  // was false. This is the regression case — it returned 'synth' before the fix.
+  it('a long-press during an untracked finger contact is ignored', async () => {
+    const { contextMenuAction } = await import('./penRightClick');
+    expect(contextMenuAction({ ...finger, sinceContactMs: 593 })).toBe('ignore');
+  });
+
+  // Even when a pen contact happens to be tracked concurrently, a TOUCH
+  // contextmenu is still the OS gesture and must not convert that contact.
+  it('a long-press while a contact IS tracked is ignored, not converted', async () => {
+    const { contextMenuAction } = await import('./penRightClick');
+    expect(contextMenuAction({ ...finger, heldContact: true, sinceContactMs: 600 })).toBe('ignore');
+    // And not even inside the barrel window: 0 ms from a finger is still a finger.
+    expect(contextMenuAction({ ...finger, heldContact: true, sinceContactMs: 0 })).toBe('ignore');
+  });
+
+  // A fast tap that still trips the OS gesture, and a very long hold: no timing
+  // a finger can produce is a barrel press.
+  it('no finger timing is ever a barrel press', async () => {
+    const { contextMenuAction } = await import('./penRightClick');
+    for (const sinceContactMs of [0, 100, 250, 500, 593, 3000]) {
+      expect(contextMenuAction({ ...finger, sinceContactMs })).toBe('ignore');
+      expect(contextMenuAction({ ...finger, heldContact: true, sinceContactMs })).toBe('ignore');
+    }
+  });
+
+  // Same input arriving as auxclick rather than contextmenu.
+  it('a finger auxclick is ignored too', async () => {
+    const { contextMenuAction } = await import('./penRightClick');
+    expect(contextMenuAction({ ...finger, sinceContactMs: 593, sinceCtxSynthMs: Infinity }))
+      .toBe('ignore');
   });
 });

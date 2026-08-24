@@ -189,7 +189,10 @@ export function installPointerRecorder(): void {
     if (!t) return;
     // Pen and touch only for pointer events; a mouse would drown the ring and is
     // not what these bugs are about — unless the `ptrrec` switch asked for it.
-    // contextmenu/auxclick have no pointerType.
+    // contextmenu/auxclick DO carry pointerType where the UA dispatches them as
+    // PointerEvents (Chrome-Android does), and that field is what identified the
+    // finger long-press bug — see input/penRightClick. A UA that dispatches them
+    // as a plain MouseEvent leaves it empty and the row records `pt=-`.
     if (p.pointerType && p.pointerType !== 'pen' && p.pointerType !== 'touch' && !mouseToo) return;
     push({
       t,
