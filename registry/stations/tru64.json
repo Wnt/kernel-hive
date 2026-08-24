@@ -147,7 +147,7 @@
   "emulator": {
     "family": "es40",
     "version": null,
-    "source": "github.com/Wnt/es40 main — no commit pinned in the repo",
+    "source": "scripts/build-guests/emulators/build-es40.sh (github.com/Wnt/es40 main)",
     "driver": "AlphaServer ES40"
   },
   "ui": "desktop",
