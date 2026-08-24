@@ -67,9 +67,10 @@ installed (the installer will not finish here), with the account configured on
 an x86 config bed and its files carried across. See
 [`docs/lab/retronet/ICQ-STATION-w2kalpha.md`](../lab/retronet/ICQ-STATION-w2kalpha.md).
 
-Changing the device set does not invalidate the seed (it is a plain disk
+Changing the DEVICE SET does not invalidate the seed (it is a plain disk
 image, not a savestate) but DOES orphan `golden.axp` — **re-bake the
-checkpoint after any device-set change** ([Checkpoint restore](#checkpoint-restore)).
+checkpoint after any device-set change**. (Rebuilding the *emulator* is a
+different thing and does not orphan it; see the es40 note below.) ([Checkpoint restore](#checkpoint-restore)).
 Host-side config that is NOT part of the device set — the serial port numbers,
 the pcap adapter name, file paths — does not orphan it (proven 2026-08-16 by
 restoring the same checkpoint under different ports and a different veth).
@@ -180,19 +181,21 @@ pump can never hold the ports.
   `assets/w2kalpha/es40` (built 2026-08-16 20:48) is older than fork commit
   `936760c` ("ctlsock: per-guest pointer gain", which also fixed PS/2 `0xe6` Set
   Scaling 1:1 being recorded as 2:1): `strings … | grep -c ES40_POINTER_GAIN` is
-  **0** here and **2** for `assets/tru64/es40`. The measurement above shows the
-  deployed binary still lands 1:1 on this guest, so nothing is urgent — but the
-  two es40 stations run different builds.
+  **0** here and **2** for `assets/tru64/es40`, and the pointer lands 1:1 on this
+  guest either way. The two stations no longer run different builds: since
+  2026-08-24 both run one binary from the pin, built by
+  `scripts/build-guests/emulators/build-es40.sh`.
 
-  **Rebuilding to `936760c` does NOT orphan `golden.axp`** — an earlier note here
-  said it did, and that was wrong. An es40 savestate is a per-component struct
-  dump tied to struct LAYOUT, not to the binary; `936760c` touches only the
-  GUI-layer `ctlsock`, which registers no saved component. Proven 2026-08-24 by
-  restoring this station's live `golden.axp` on a clone under a `936760c` build:
-  full desktop, ICQ signed in, correct in the framebuffer. So the swap is
-  binary-only — but **re-verify the pointer** afterwards, because `936760c` also
-  changed PS/2 `0xe6` (Set Scaling 1:1) handling. A future commit that touches a
-  saved component's struct WILL orphan it, silently: es40 has no binary↔savestate
+  **Rebuilding does NOT orphan `golden.axp`** — an earlier note here said it did,
+  and that was wrong. An es40 savestate is a per-component struct dump tied to
+  struct LAYOUT, not to the binary, and every commit crossed so far touches only
+  the GUI-layer `ctlsock`, which registers no saved component. Proven in
+  production 2026-08-24: this station was swapped onto `19678ad`, the golden pair
+  re-hashed byte-identical after the swap, and it restored to the full desktop
+  with ICQ signed in as `50010`. The pointer was re-verified afterwards — eight
+  one-shot targets, 8/8 exact — because the jump also brought `936760c`'s change
+  to PS/2 `0xe6` (Set Scaling 1:1) handling. A future commit that touches a saved
+  component's struct WILL orphan it, silently: es40 has no binary↔savestate
   guard. See [`ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md).
 - Client for hand-driving: `/data/vms/sandbox/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);

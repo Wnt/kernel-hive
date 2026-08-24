@@ -328,13 +328,14 @@ The station restores an es40 savestate on every launch — see
 [Checkpoint restore](#checkpoint-restore). The bake path is the serial menu's
 save-and-exit, which is what guarantees the state and the disk cannot disagree.
 
-**This binary's HELLO banner advertises `caps=natkbd,savest`, but it does not
-implement `SAVEST`** — it answers `ERR unknownverb`. The banner literal is
-committed; the `SAVEST` handler is an *uncommitted* working-tree hunk that this
-build predates, and it is `w2kalpha`'s binary that actually carries the verb.
-Harmless, because nothing here calls it — but it is a capability claim that is
-not true, and it is tracked with the rest of the fork's provenance debt in
-[`ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md).
+`SAVEST` works here. The HELLO banner advertises `caps=natkbd,savest` and the
+verb now answers — `labctl mctl tru64 "SAVEST <path>"` writes a state file while
+the station is being served, which is the only way to checkpoint it live
+(`pumps.py` owns es40's first serial socket, so the SRM menu's save-and-exit
+never sees the keystrokes). Until 2026-08-24 the banner was **lying**: the
+literal was committed while the handler was an uncommitted working-tree hunk
+this build predated, so it answered `ERR unknownverb`. The handler is now
+`0a7af85` on the fork and this station builds from the pin.
 
 The research that selected this OS (candidates, media, licensing, risk):
 [`docs/lab/research/alpha-second-os-candidates.md`](../lab/research/alpha-second-os-candidates.md).
