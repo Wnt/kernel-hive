@@ -22,6 +22,19 @@ onboarding recipe: [`WEB-PROXY.md`](WEB-PROXY.md) (now the web **+ addressing**
 plane) and [`ICQ-STATION.md`](ICQ-STATION.md). The proxy `:3128` door stays; both
 serve the same corpus.
 
+**Which door a station uses is decided by its browser, not by preference:
+a browser that predates the `Host:` header CANNOT use the `:80` origin at all.**
+The origin serves the corpus *by* `Host`, so a request without one has nothing
+to dispatch on and is answered `400`. Measured on macos753: MacWeb 2.0 sends
+`GET /galaxy.html HTTP/1.0` with no `Host:` and gets `400` every time. This is
+plane-wide, not a macos753 quirk — Mosaic 2.x is in the same class, and the
+symptom is easily misread as "the corpus is broken" or "the station is not on
+the network" when the network is fine. **Those browsers use the `:3128` proxy
+door, which dispatches on the absolute-form request line and needs no `Host:`.**
+That is a large part of why the proxy door stays rather than being retired once
+the seamless web landed. Check the browser's HTTP version before assuming a
+station can go seamless.
+
 **Pre-DHCP guests are addressed statically, and the reservation is the ledger.**
 Three stations now join this plane without ever sending a DISCOVER, for the same
 structural reason: they predate DHCP. `chokanji` (B-right/V 4.202) has no DHCP
