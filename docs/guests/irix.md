@@ -1621,6 +1621,18 @@ changes and the tap is never created.
 
 ## Outbound networking — the guest dials out, nothing dials in (2026-08-03)
 
+> **SUPERSEDED 2026-08-24 — this chapter is the ROLLBACK, not what ships.**
+> The station now runs `IRIX_NET_MODE=retronet`: its NIC is a bridge port on
+> `vmbr-rn`, the offline retronet, where the guest is `10.99.0.24/24` with no
+> default route and reaches the gateway `10.99.0.2` — and nothing else, in
+> either direction. **There is no path to the LAN or the internet any more**,
+> so every "guest → internet" row below describes the *other* mode.
+> Everything here still applies verbatim under `IRIX_NET_MODE=sandbox`, which
+> is why it is kept: golden and mode are one combination, and rolling back to
+> the internet exhibit means this chapter plus the v9 seed.
+> See [`../lab/retronet/WEB-STATION-irix.md`](../lab/retronet/WEB-STATION-irix.md).
+
+
 The section above ends with a guest that can reach exactly one address. The user
 then asked for the rest of it, explicitly: **telnet to a remote box, ping other
 hosts, and browse HTTP sites.** All three now work, and the isolation that
