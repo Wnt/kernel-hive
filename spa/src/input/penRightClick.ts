@@ -14,6 +14,33 @@
 //      stylus, so IRIX's spring-loaded root menu — press right, DRAG onto an
 //      item, release — cannot be opened at all.
 //
+//  WHICH POINTER, FIRST — then which time. A FINGER has no barrel, so no
+//  contextmenu a finger can produce is ever a barrel press; every one of them is
+//  Android's long-press asking for a menu this app does not want. That is a
+//  cheaper question than the timing one and it is answered by the event itself:
+//  Chrome-Android dispatches `contextmenu` as a PointerEvent and its
+//  `pointerType` is the originating pointer's, captured live on the user's
+//  device (2026-08-23):
+//
+//      2278008  down     btn=1 pt=t (394,691)
+//      2278601  ctxmenu  btn=0 pt=t (393,690)   +593 ms into a live contact
+//      2279084  up       btn=0 pt=t (391,693)   held 1076 ms, 26 moves
+//
+//  `pt=t` is pointerType touch. Before that read existed this function saw only
+//  `heldContact`, which is `penDownBtn.size > 0` in the caller — and a FINGER
+//  contact never enters `penDownBtn`, because the touch recognizer owns it. So a
+//  finger long-press arrived looking exactly like a hovering pen: `heldContact`
+//  false, the `synth` shortcut below fired before the timing gate was ever
+//  consulted, and a standalone right-click went into the guest ON TOP of the
+//  left button the recognizer was still holding — the 0x05 mask above,
+//  self-inflicted. The 250 ms discriminator this module is built around was
+//  bypassed for precisely the input it most needs to reject.
+//
+//  So `pointerType` is an EXPLICIT input, not something inferred from the
+//  absence of a tracked contact. The only touch route to a right button is the
+//  ⊕ arm badge (ui/grid/StreamView/TouchControlBadge), which rides a real
+//  pointerdown/pointerup pair through the recognizer and never comes past here.
+//
 //  TIME separates them — but ONLY wall-clock time read in the handler, never the
 //  event's own timeStamp. Chrome-Android synthesizes the long-press contextmenu
 //  from the originating pointerdown and gives it that event's timeStamp, so
@@ -60,7 +87,14 @@ export type CtxAction =
 /** PURE decision for one contextmenu/auxclick. See the header for why time is
  *  the discriminator and not the event itself. */
 export function contextMenuAction(i: {
-  /** A real pointer contact is currently holding a button. */
+  /** `pointerType` of the contextmenu/auxclick event itself. `'touch'` is a
+   *  FINGER and is rejected outright — see the header. Undefined on a UA that
+   *  dispatches these as a plain MouseEvent, which is a desktop mouse; the pen
+   *  logic below is then unchanged from before this input existed. */
+  pointerType?: string;
+  /** A real PEN/MOUSE contact is currently holding a button. Finger contacts
+   *  live in the touch recognizer, not here, so this is false for them — which
+   *  is why `pointerType` has to be consulted before it. */
   heldContact: boolean;
   /** ms since that contact went down, measured on a HANDLER-READ clock
    *  (performance.now()), never from event timeStamps — see the header. */
@@ -72,6 +106,12 @@ export function contextMenuAction(i: {
 }): CtxAction {
   if (i.sincePointerRightMs < RIGHT_SUPPRESS_MS) return 'ignore';
   if ((i.sinceCtxSynthMs ?? Infinity) < RIGHT_SUPPRESS_MS) return 'ignore';
+  // A finger has no barrel button, so this can only be the OS long-press. It is
+  // rejected BEFORE the contact/timing gates, because a finger contact is not
+  // tracked here and would otherwise fall straight through to 'synth'.
+  if (i.pointerType === 'touch') return 'ignore';
+  // Nothing held: a barrel press with the pen tip off the glass. A stylus is the
+  // only pointer that reaches here without a contact of its own.
   if (!i.heldContact) return 'synth';
   // A barrel press during a contact converts it; a long-press is the OS asking
   // for a menu we do not want, and it must leave the contact strictly alone —

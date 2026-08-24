@@ -355,6 +355,10 @@ export function useStreamInput({
         touching = true;
         // S-Pen barrel button → right-click (button 2); a plain tip/finger is left.
         const right = e.button === 2 || (e.pointerType === 'pen' && (e.buttons & 2) !== 0);
+        // Same de-dup clock as the mouse/pen branch below: on a touchExhibit
+        // station a real MOUSE right-click also lands here, and its native
+        // contextmenu must not add a second right button on top of this one.
+        if (right) lastPointerRightMs = e.timeStamp;
         touch.begin(e.pointerId, g.x, g.y, e.timeStamp, e.clientX, e.clientY, right);
       } else {
         // S-Pen BARREL button → guest RIGHT-click. The barrel surfaces as the
@@ -442,12 +446,19 @@ export function useStreamInput({
       e.preventDefault();
     };
     // A native contextmenu is EITHER the S-Pen barrel or Android's long-press —
-    // input/penRightClick decides which from its timing and owns both outcomes.
+    // input/penRightClick decides which and owns both outcomes. It gets the
+    // event's OWN pointerType, because `held` below can only ever describe a
+    // pen/mouse contact (finger contacts live in the touch recognizer, so a
+    // finger long-press reads as `held === false` and used to be mistaken for a
+    // hovering pen). Chrome-Android dispatches contextmenu/auxclick as
+    // PointerEvents; a UA that dispatches a plain MouseEvent leaves this
+    // undefined, which is a desktop mouse and takes the unchanged path.
     const rightClick = (e: MouseEvent, sinceCtxSynthMs?: number) => {
       const g = lockedRef.current ? lockedPoint() : (map(e.clientX, e.clientY) ?? lastGuestRef.current);
       if (!g) return;
       const held = penDownBtn.size > 0;
       const act = contextMenuAction({
+        pointerType: (e as Partial<PointerEvent>).pointerType,
         heldContact: held,
         sinceContactMs: performance.now() - contactAtMs,
         sincePointerRightMs: e.timeStamp - lastPointerRightMs,

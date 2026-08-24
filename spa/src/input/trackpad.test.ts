@@ -86,6 +86,22 @@ describe('trackpad — absolute (local virtual cursor + sprite)', () => {
     expect(seen).toEqual([{ x: 50, y: 50 }, { x: 58, y: 50 }]);
   });
 
+  it('does NOT seed a cursor before the guest size is known, and clicks bare', () => {
+    // getResolution() is {0,0} until the first frame. Centring that produced
+    // (1,1) — a corner invented out of nothing — and the first tap forwarded it.
+    // With no bounds there is no cursor, and no cursor means no coordinates.
+    const seen: { x: number; y: number }[] = [];
+    const tp = createTrackpad({ rel: false, onCursor: (c) => seen.push({ ...c }) });
+    tp.begin(ID, 10, 10, 0);
+    expect(tp.cursor()).toBeNull();
+    expect(seen).toEqual([]);
+    expect(tp.end(ID, 60)).toEqual([{ kind: 'button', button: 0, down: true }]);
+    // …and once the resolution arrives, the next contact seeds it properly.
+    tp.setBounds({ w: 100, h: 80 });
+    tp.begin(ID, 10, 10, 100);
+    expect(tp.cursor()).toEqual({ x: 50, y: 40 });
+  });
+
   it('setCursor places the sprite where the guest pointer is (a mode switch)', () => {
     const seen: { x: number; y: number }[] = [];
     const tp = createTrackpad({ rel: false, onCursor: (c) => seen.push({ ...c }) });

@@ -34,8 +34,11 @@ import {
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
   cseq: number;
-  lastAbsX: number;
-  lastAbsY: number;
+  /** Last absolute position this client PUT ON THE WIRE, or null while none ever
+   *  was. Nullable on purpose: it is a cache of something the client said, and a
+   *  cache that has never been filled must be able to say so — see sendButtonImpl. */
+  lastAbsX: number | null;
+  lastAbsY: number | null;
   moveSent: number;
   moveRejected: number;
   moveDesiredMin: number;
@@ -99,13 +102,34 @@ export function moveWireSnapshotImpl(c: StreamClientLike): { sent: number; rejec
     };
   }
   /** Button edge, carrying the position it happens at. `x,y` default to the last
-   *  absolute position this client sent, which is where a clean tap released. */
+   *  absolute position this client sent, which is where a clean tap released.
+   *
+   *  UNLESS THERE IS NO SUCH POSITION. A RELATIVE-pointer station ships all of
+   *  its motion as type-4 RelMotion and never sends an absolute point at all, so
+   *  on those the cache is empty for the whole session — and substituting its
+   *  zero value put a literal abs (0,0) in the record. input/trackpad's
+   *  buttonEdge omits the coords for exactly this reason (the guest clicks where
+   *  its OWN cursor sits), but the omission died here: the daemon read the
+   *  fabricated corner as a real target, and its abs→rel bridge pinned the guest
+   *  cursor to the top-left on the first tap after every reload or resume
+   *  (rhapsody, 2026-08-24 — docs/lab/INPUT-DEBUGGING.md).
+   *
+   *  So an unknown position is written as a SHORT record: 3 bytes, no point and
+   *  no cseq. streamhost/src/input.rs case 2 takes its carried point only from a
+   *  record of >= 11 bytes, so a short one is a pure edge that moves nothing —
+   *  the same "no coordinates" the engine asked for, now sayable on the wire. */
 export function sendButtonImpl(c: StreamClientLike, button: number, down: boolean, x?: number, y?: number) {
+    const px = x != null ? clampU16(x) : c.lastAbsX;
+    const py = y != null ? clampU16(y) : c.lastAbsY;
+    if (px == null || py == null) {
+      const bare = new Uint8Array(3);
+      bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
+      c.writeReliableClass(ICLASS_BUTTON, bare);
+      return;
+    }
     const b = new Uint8Array(11);
     b[0] = T_BUTTON; b[1] = button & 0xff; b[2] = down ? 1 : 0;
     const dv = new DataView(b.buffer);
-    const px = x != null ? clampU16(x) : c.lastAbsX;
-    const py = y != null ? clampU16(y) : c.lastAbsY;
     dv.setUint16(3, px, true);
     dv.setUint16(5, py, true);
     dv.setUint32(7, c.nextCseq(), true);

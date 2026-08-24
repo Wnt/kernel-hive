@@ -117,17 +117,41 @@ export function useTouchGestures({
       },
     });
   }
-  if (!trackpadEngineRef.current) {
-    trackpadEngineRef.current = createTrackpad({
-      rel: pointerRel,
+  // THE ENGINE FOLLOWS THE STATION, not the first render. `rel` decides whether a
+  // button carries coordinates at all, and a memoized snapshot of it is a value
+  // that can silently go stale: build the engine one render before the station's
+  // pointer mode is known and it would spend the whole session forwarding
+  // absolute points to a guest that draws its own cursor — the corner teleport
+  // this file's applyTp exists to avoid. So the flag the engine was BUILT with is
+  // remembered and compared, and a change builds a new engine (with the old one's
+  // held button flushed, so a rebuild can never strand a press in the guest).
+  const relRef = useRef(pointerRel);
+  relRef.current = pointerRel;
+  const relBuiltRef = useRef<boolean | null>(null);
+  const trackpad = (): Trackpad => {
+    const built = trackpadEngineRef.current;
+    if (built && relBuiltRef.current === relRef.current) return built;
+    if (built?.holds()) {
+      // Coordinate-free: this release closes a press the OLD engine opened, and
+      // the guest's cursor has not moved.
+      for (const btn of pressedButtonsRef.current) controlRef.current?.sendMouseButton(btn, false);
+      pressedButtonsRef.current.clear();
+    }
+    relBuiltRef.current = relRef.current;
+    cursorRef.current = null;
+    heldRef.current = false;
+    const fresh = createTrackpad({
+      rel: relRef.current,
       onCursor: (c) => { cursorRef.current = c; },
       onHold: (h) => { heldRef.current = h; },
     });
-  }
+    trackpadEngineRef.current = fresh;
+    return fresh;
+  };
+  trackpad(); // build it now, so the first contact never pays for construction
 
   if (!controllerRef.current) {
     const rec = recognizerRef.current;
-    const tp = trackpadEngineRef.current;
     // Expand recognizer intents onto the shared control handle. Route button-0
     // through pressedButtonsRef so the component's existing teardown / blur /
     // visibility flush (releaseHeldButtons) can never leave a drag stuck down.
@@ -202,7 +226,7 @@ export function useTouchGestures({
         // and to this guard that is indistinguishable from a leak. Healing it
         // blind sent the up that tap-then-hold exists to withhold, so the drag
         // began with nothing held and only glided the cursor.
-        if (!(trackpadRef.current && tp.holds())) {
+        if (!(trackpadRef.current && trackpad().holds())) {
           for (const btn of pressedButtonsRef.current) {
             // Coordinate-free in TRACKPAD mode: a guest-px release taken from the
             // fingertip would teleport the very cursor this mode exists to keep put.
@@ -213,18 +237,18 @@ export function useTouchGestures({
         }
         if (trackpadRef.current) {
           const res = controlRef.current?.getResolution() ?? { w: 0, h: 0 };
-          tp.setBounds(res);
+          trackpad().setBounds(res);
           // Re-read the picture's scale per contact: the exhibit can change
           // resolution and the stage can be resized or rotated under us.
-          tp.setTrack(guestPerCssPx(stageRef.current, res, presentAspect));
+          trackpad().setTrack(guestPerCssPx(stageRef.current, res, presentAspect));
           // Re-read the live pinch-zoom scale per contact: zoomed in, the same
           // finger travel must cover the same distance ON GLASS, so the cursor
           // gets finer the further the visitor magnifies.
-          tp.setScale(gestureRef.current.s);
+          trackpad().setScale(gestureRef.current.s);
           // The ⊕ arm is the ONLY right-click here, and it also chooses the
           // button a tap-then-hold drags with — so armed, tap, hold and drag is
           // a real right press-drag-release.
-          applyTp(tp.begin(id, cx, cy, t, right || takeArm()));
+          applyTp(trackpad().begin(id, cx, cy, t, right || takeArm()));
         } else {
           // Direct absolute: button DOWN immediately (drawing/dragging starts on
           // contact) — right-click when the S-Pen barrel is pressed or armed.
@@ -232,32 +256,32 @@ export function useTouchGestures({
         }
       },
       move(id, x, y, t, cx, cy) {
-        if (trackpadRef.current) applyTp(tp.move(id, cx, cy));
+        if (trackpadRef.current) applyTp(trackpad().move(id, cx, cy));
         else apply(rec.move({ id, x, y, cx, cy, t }));
       },
       end(id, x, y, t, cx, cy) {
         clearRelease();
         if (!trackpadRef.current) { apply(rec.end({ id, x, y, cx, cy, t })); return; }
-        applyTp(tp.end(id, t));
+        applyTp(trackpad().end(id, t));
         // A tap leaves its button DOWN, waiting to see whether the next contact
         // inherits it. Nothing else on the glass can close it, so this timer is
         // the only thing that will — schedule it unconditionally; tapRelease()
         // is a no-op when there is nothing pending.
         releaseTimer.current = window.setTimeout(() => {
           releaseTimer.current = 0;
-          applyTp(tp.tapRelease());
+          applyTp(trackpad().tapRelease());
         }, TAP_RELEASE_MS);
       },
       takeArm,
       seedCursor(x, y) {
-        tp.setBounds(controlRef.current?.getResolution() ?? { w: 0, h: 0 });
-        tp.setCursor({ x, y });
+        trackpad().setBounds(controlRef.current?.getResolution() ?? { w: 0, h: 0 });
+        trackpad().setCursor({ x, y });
       },
       cancel() {
         clearRelease();
         // Only one engine is ever active, so cancelling both is a safe no-op on
         // the idle one (each returns [] when it holds no touch).
-        applyTp(tp.cancel());
+        applyTp(trackpad().cancel());
         apply(rec.cancel());
       },
     };

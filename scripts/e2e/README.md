@@ -34,6 +34,14 @@ the video onto a temp canvas, then `getImageData()` and sample.
 
 ## Scripts
 
+- `rel-tap-wire-probe.mjs` — what the SPA actually PUTS ON THE WIRE when a
+  finger glides then taps a **relative-pointer** station. Hooks
+  `WritableStreamDefaultWriter.prototype.write` before app code runs, so every
+  input record is read as bytes: it reports the RelMotion datagram count and
+  each button record's carried point (`null` = the 3-byte coordinate-free form,
+  which is what a rel station must send). Point it at the live origin and at a
+  `stage.sh` slot for a before/after pair. See
+  [`../../docs/lab/INPUT-DEBUGGING.md`](../../docs/lab/INPUT-DEBUGGING.md).
 - `input-smoke-freedos.mjs` — full input smoke on the freedos tile: opens
   the tile, polls the stream video until >5% non-black pixels, clicks the
   video to focus, presses `c` at the RETRO GAMES boot menu (→ FreeCom

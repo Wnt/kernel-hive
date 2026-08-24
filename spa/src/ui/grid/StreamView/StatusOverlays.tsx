@@ -8,6 +8,7 @@ import { S } from './styles';
 export function StatusOverlays({
   hint, fs, mouseCapture, escToGuest,
   showResume, pointerLocked, acquireLock,
+  playbackBlocked, onResumePlayback,
   fsError,
   showBanner, restoreReconnect, bannerState, decoderUnsupported, bannerIsDevice, bannerText,
   deviceUnderLoad, cpuCritical, lowBattery, frameStalled, decoderFailed, decoderErrShort,
@@ -20,6 +21,8 @@ export function StatusOverlays({
   showResume: boolean;
   pointerLocked: boolean;
   acquireLock: () => void;
+  playbackBlocked: boolean;
+  onResumePlayback: () => void;
   fsError: string | null;
   showBanner: boolean;
   restoreReconnect: boolean;
@@ -66,6 +69,21 @@ export function StatusOverlays({
           <span style={S.resumeBadge}>▶</span>
           <span>Click to resume control</span>
           <span style={S.resumeSub}>mouse capture paused · hold Esc to leave fullscreen</span>
+        </button>
+      )}
+
+      {/* TAP TO RESUME PLAYBACK — autoplay policy REJECTED our play() after the
+          page came back to the foreground. Without this the visitor gets a
+          permanent black rectangle on a session that is otherwise perfectly
+          healthy: the transport is up, frames are waiting, and the only thing
+          missing is the user activation a tap provides. It sits above the
+          picture and below the floating bar, and it is the ONLY thing on the
+          stage that can clear itself — so it must never be silent. */}
+      {playbackBlocked && (
+        <button type="button" style={S.resumeOverlay} onClick={onResumePlayback}>
+          <span style={S.resumeBadge}>▶</span>
+          <span>Tap to resume</span>
+          <span style={S.resumeSub}>playback paused while you were away</span>
         </button>
       )}
 

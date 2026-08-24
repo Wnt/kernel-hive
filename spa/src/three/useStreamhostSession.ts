@@ -6,7 +6,10 @@ import {
   type StreamResolution,
 } from './useStreamControl';
 import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
-import { sessionNeedsReconnect, RESUME_GRACE_MS } from './streamClient/resumePolicy';
+import { attachSessionResume } from './streamClient/sessionResume';
+import { consumeRetry, retryLimit } from './streamClient/retryBudget';
+import { isVisible } from './streamClient/resumeSignals';
+import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
 
 // ============================================================================
@@ -32,6 +35,12 @@ export interface StreamSessionOptions {
   autoJitter?: boolean;
   /** OS id, selects the guest-quirks profile in the controller. */
   osId?: string;
+  /**
+   * Read the visible <video>'s state. The session hook does not own that
+   * element, but it cannot tell "nothing is arriving" from "nothing is being
+   * consumed" without it — and those two want opposite responses.
+   */
+  sinkProbe?: () => VideoSinkProbe | null;
 }
 
 export interface StreamSessionResult {
@@ -43,6 +52,8 @@ export interface StreamSessionResult {
   beginRestoreReconnect?: () => void;
   finishRestoreReconnect?: () => void;
   expectedReconnect: 'restore' | null;
+  /** Abandon the current attempt and start a fresh ladder (visitor gesture). */
+  reconnectNow: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +76,6 @@ const KEYFRAME_WAIT_MS = 12000;                 // COLD budget for frame #1
 // cold 12 s here was the single biggest contributor to a long black area after
 // a resume: the replacement attempt sat silent for 12 s before even retrying.
 const RELIVE_KEYFRAME_WAIT_MS = 3000;
-const MAX_INITIAL_ATTEMPTS = 4;                  // total pre-live tries before poster fallback
 const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000]; // unexpected-loss retry delays
 const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000]; // host is expected to be briefly unavailable
 
@@ -108,6 +118,12 @@ export function useStreamhostSession(
   const jitterMs = options?.jitterBufferTargetMs ?? 50;
   const autoJitter = options?.autoJitter !== false;
   const osId = options?.osId;
+  // Read through a ref: the probe closure is rebuilt every render, and the
+  // session effect deliberately does not re-run on it.
+  const sinkProbeRef = useRef<(() => VideoSinkProbe | null) | undefined>(undefined);
+  sinkProbeRef.current = options?.sinkProbe;
+  const reconnectRef = useRef<() => void>(() => undefined);
+  const reconnectNow = useCallback(() => reconnectRef.current(), []);
 
   useEffect(() => {
     if (!active || !signalEndpoint) return;
@@ -295,13 +311,18 @@ export function useStreamhostSession(
       if (cancelled || retryTimer) return;
       clearTimers();
       teardownAttempt();
-      attempt++;
+      // The budget is real on BOTH ladders now (retryBudget.ts): it used to be
+      // checked only pre-paint, so a live session counted 5/4, 6/4, 7/4… forever.
+      const v = consumeRetry(attempt, liveReached);
+      attempt = v.attempt;
       // Every retry goes to TELEMETRY as well as the console: a visitor's
       // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
-      logClientEvent('connect-retry', `attempt=${attempt}/${MAX_INITIAL_ATTEMPTS} live=${liveReached} restore=${expectedRestore} why=${why}`);
-      if (!liveReached && attempt >= MAX_INITIAL_ATTEMPTS) {
-        fail('timed out negotiating tile stream (poster fallback)');
+      logClientEvent('connect-retry', `attempt=${attempt}/${v.limit} live=${liveReached} restore=${expectedRestore} why=${why}`);
+      if (v.exhausted) {
+        fail(liveReached
+          ? 'lost the connection to this tile — tap Reconnect to try again'
+          : 'timed out negotiating tile stream (poster fallback)');
         return;
       }
       // `attempt` was just incremented, so attempt 1 uses index 0. The previous
@@ -313,7 +334,7 @@ export function useStreamhostSession(
         ? 'Reconnecting to restored tile…'
         : liveReached
           ? `Reconnecting to tile… (attempt ${attempt})`
-          : `Reconnecting to tile… (${attempt + 1}/${MAX_INITIAL_ATTEMPTS})`);
+          : `Reconnecting to tile… (${attempt}/${retryLimit(false)})`);
       retryTimer = window.setTimeout(startAttempt, delay);
     };
 
@@ -408,12 +429,23 @@ export function useStreamhostSession(
 
       // Keyframe watchdog: the transport can be connected yet an idle station sends
       // no keyframe. If frame #1 never lands within the budget, retry.
-      watchdog = window.setTimeout(() => {
+      const rearm = () => {
         // A terminal capability result can arrive while signaling is in flight.
         // Keep its controller/banner mounted; reconnecting cannot add codec support.
         if (nextClient.getBannerState() === 'decoder-unsupported') return;
-        if (!attemptLive) scheduleRetry('no keyframe within budget');
-      }, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
+        if (attemptLive) return;
+        // NOTHING ARRIVING vs NOTHING CONSUMING (videoResume.ts). A paused
+        // <video> decodes nothing, so a healthy transport looks exactly like a
+        // dead one from here. Say which it is, and give the sink's own resume
+        // path a fresh budget rather than tearing down a working stream.
+        if (isPausedSink(sinkProbeRef.current?.() ?? null, isVisible())) {
+          logClientEvent('sink-stalled', `paused sink, transport healthy — not retrying ep=${signalEndpoint}`);
+          watchdog = window.setTimeout(rearm, RELIVE_KEYFRAME_WAIT_MS);
+          return;
+        }
+        scheduleRetry('no keyframe within budget');
+      };
+      watchdog = window.setTimeout(rearm, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
 
       nextClient.connect().catch((e) => {
         if (client === nextClient) scheduleRetry(`connect failed: ${(e as Error).message}`);
@@ -520,46 +552,24 @@ export function useStreamhostSession(
       else startAttempt();
     };
 
-    // ---- RESUME FAST PATH ---------------------------------------------------
-    //  Backgrounding a tab throttles the 100 ms ABR tick to ~1/min and freezes it
-    //  outright in an installed PWA, so NOTHING that normally notices a dead
-    //  session runs while away. On return the recovery used to be purely
-    //  reactive — wait for a tick, wait out the stale threshold, wait out a
-    //  backoff, then spend a cold 12 s keyframe budget — which is the long black
-    //  area the operator sees after the banner clears. Drive it from the resume
-    //  event instead: one grace window to let a session that merely slept prove
-    //  itself, then an IMMEDIATE reconnect with the backoff ladder reset.
-    let resumeTimer = 0;
-    const onResume = () => {
-      if (cancelled || resumeTimer) return;
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-      // A cold connect owns its own budget; only a proven-live session resumes.
-      if (!liveReached) return;
-      resumeTimer = window.setTimeout(() => {
-        resumeTimer = 0;
-        void (async () => {
-          if (cancelled || !liveReached) return;
-          if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-          const c = client;
-          if (!c) return;
-          const dead = await sessionNeedsReconnect(c);
-          if (cancelled || client !== c || !dead) return;
-          if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-          clearTimers();
-          teardownAttempt();
-          attempt = 0; // a resume restarts the ladder; never inherit a 6 s cap
-          setPhase('connecting');
-          setMessage('Reconnecting to tile…');
-          startAttempt(); // no backoff — the whole point is to not wait
-        })();
-      }, RESUME_GRACE_MS);
-    };
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', onResume);
-      window.addEventListener('pageshow', onResume);
-    }
-    const clearResumeTimer = () => {
-      if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = 0; }
+    // ---- RESUME FAST PATH (streamClient/sessionResume.ts) -------------------
+    const detachResume = attachSessionResume({
+      isCancelled: () => cancelled,
+      isLiveReached: () => liveReached,
+      getClient: () => client,
+      reconnect: () => {
+        setPhase('connecting');
+        setMessage('Reconnecting to tile…');
+        reconnectRef.current();
+      },
+    });
+
+    reconnectRef.current = () => {
+      if (cancelled) return;
+      clearTimers();
+      teardownAttempt();
+      attempt = 0; // a visitor gesture buys a whole fresh ladder
+      startAttempt();
     };
 
     setPhase('starting');
@@ -568,11 +578,7 @@ export function useStreamhostSession(
     else startAttempt();
 
     return () => {
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onResume);
-        window.removeEventListener('pageshow', onResume);
-      }
-      clearResumeTimer();
+      detachResume();
       cleanup();
     };
   }, [active, signalEndpoint, wantControl, jitterMs, autoJitter, osId]);
@@ -589,6 +595,6 @@ export function useStreamhostSession(
 
   return {
     phase, message, control, stream, registerPaintCanvas,
-    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect,
+    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow,
   };
 }

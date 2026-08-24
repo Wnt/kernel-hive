@@ -1,8 +1,9 @@
 # Debugging pointer input — read this before touching the input path
 
-> **In flight:** [PEN-TAP-PLAN.md](PEN-TAP-PLAN.md) holds an agreed, not-yet-
-> implemented plan to move these thresholds into client space. Read it first if
-> you are here about pen taps registering as drags.
+> **Pen taps registering as drags?** That was tap quantisation, and it shipped
+> in 2026-08 — [PEN-TAP-PLAN.md](PEN-TAP-PLAN.md) is the record of the completed
+> change (`spa/src/input/tapQuantiser.ts`), not pending work. Read it for the
+> thresholds and the measurements behind them.
 
 Input bugs in the gallery are reported as "it feels wrong", and the cause is
 almost never where it feels like it is. This is the order to look, the tools
@@ -86,6 +87,36 @@ win311/IRIX, because the pen was never running that code. Tap quantisation lives
 in `input/touchGestures.createTapQuantiser()` precisely so both paths can share
 it; the stylus path drives its own instance through `input/penContact.ts`.
 
+## Where a guest RIGHT button is allowed to come from
+
+Three gestures legitimately produce one, and `input/penRightClick.contextMenuAction`
+is the pure decision that guards two of those. Anything else reaching the guest
+as button 2 is a bug. The last two rows are the ones that must produce nothing
+extra:
+
+| Gesture | Route | Result |
+|---|---|---|
+| ⊕ **Right-click badge**, then tap | `TouchControlBadge` → `recognizer.setArm` | one-shot right press/release, and it can be press-DRAG-released |
+| **S-Pen barrel** during a contact (≤ `BARREL_WINDOW_MS`, 250 ms) | native `contextmenu`, `pointerType: 'pen'` | `'convert'` — the live contact becomes a right-button HOLD, released on lift |
+| **S-Pen barrel** with the tip off the glass | native `contextmenu`, `pointerType: 'pen'`, nothing held | `'synth'` — a standalone right-click, held `rightHoldMs()` so Motif/CDE actually posts its menu |
+| **Finger long-press** | native `contextmenu`, `pointerType: 'touch'` | `'ignore'` — nothing goes to the guest |
+| Real **mouse** right-click | pointerdown(button 2); the `contextmenu` that follows is de-duped within `RIGHT_SUPPRESS_MS` | one right-click, never two |
+
+**`pointerType` is read FIRST, and this is why.** `heldContact` in that function
+is `penDownBtn.size > 0` in the caller, and a **finger contact is not in
+`penDownBtn`** — the touch recognizer owns it. So a finger long-press used to
+look identical to a hovering pen (`heldContact === false`), take the `'synth'`
+shortcut *before* the 250 ms barrel gate was consulted, and inject a right-click
+on top of the left button the recognizer was still holding — the guest saw
+buttons 1+3 at once. Reported on Android at `/os/rhapsody` and fixed 2026-08-24
+by giving the function the event's own `pointerType`. Do not re-derive the
+pointer kind from the absence of a tracked contact; the two are not the same
+question.
+
+**The arm badge is the only touch route to a right button, deliberately.** A
+gesture the OS also owns cannot be borrowed for a guest button without stealing
+it from the OS, and a long-press is the OS's.
+
 ## Four telemetry sources, cheapest first
 
 **0. `ptr` pointer telemetry — the raw event stream, PUSHED.** The UI records
@@ -100,13 +131,20 @@ ssh lab 'python3 .../pen-trace.py --session ab12cd34 --moves'
 #   132303  ctxmenu   btn=0 pt=p (187,283)  +599 ms into a live contact
 ```
 
-Three things it is built to show, each of which cost a round of fixes to learn:
-a **contextmenu's real delay** into its contact (~0 ms = an S-Pen barrel press,
-~600 ms = Android's long-press — the event's own `timeStamp` cannot tell them
-apart, because Chrome copies the originating pointerdown's stamp onto the
-synthesized event); an **ORPHAN** (motion carrying a button with no pointerdown,
-i.e. Android ate the press); and **no-lift** (a contact never released, which is
-where a stuck guest button begins).
+Four things it is built to show, each of which cost a round of fixes to learn:
+
+- **`pt=` on a contextmenu — read this before the timing.** `p` is a pen, `t` is
+  a finger, `-` is a UA that dispatched a plain MouseEvent. Chrome-Android tags
+  these events with the originating pointer's type, and a finger has no barrel
+  button, so `pt=t` on a `ctxmenu` row means the OS long-press and nothing else.
+- **A contextmenu's real delay** into its contact, once `pt` says it is a pen:
+  ~0 ms is the S-Pen barrel, ~600 ms is Android's long-press. The event's own
+  `timeStamp` cannot tell them apart, because Chrome copies the originating
+  pointerdown's stamp onto the synthesized event.
+- An **ORPHAN** — motion carrying a button with no pointerdown, i.e. Android ate
+  the press.
+- **no-lift** — a contact never released, which is where a stuck guest button
+  begins.
 
 Source: `spa/src/input/pointerRecorder.ts`, armed by default while the pen work
 is open; `?penrec=0` opts out. Its in-memory rings are still readable live with
@@ -164,6 +202,63 @@ DOWN atMove=4064  UP 4065   DOWN 4065  UP 4067     <- cursor moving mid-click
 **3. The framebuffer.** `labctl shot <tile>` is the only thing that proves the
 guest ACTED. A click that reaches the daemon and does nothing visible is still a
 failure.
+
+## The corner teleport: `ABS->REL recv=(0,0)` with a button
+
+On a **relative-pointer station** (`PTR rel` — the daemon converts an absolute
+target into PS/2 deltas), one line in the daemon log settles an entire class of
+"the cursor jumped to the top-left corner" report. Turn it on with
+`SH_DEBUG_INPUT=1` alongside the telemetry drop-in above:
+
+```
+[input-tel BTN rhapsody] DOWN btn=0 mask=0x01 atMove=97
+[input]                  ABS->REL recv=(0,0) off=(0,0) scale=2.09 -> target=(0,0)
+[input-tel rel]          rehome pin=4280 target=(0,0)
+[input-tel BTN rhapsody] UP btn=0 mask=0x00 atMove=184
+```
+
+**Read it as: the CLIENT SENT (0,0).** The daemon did not decide to go to the
+corner — it was told to, and the `rehome pin` line is the consequence, not the
+cause. Nothing on the daemon side is implicated: the bridge honoured a target it
+was given. Two things this log rules out, both of which cost a wrong theory once:
+
+* **It is not "the tap was the first motion".** `atMove=97` says 97 move samples
+  had already been delivered. The glide worked.
+* **It is not the rel-bridge triggers.** `SH_REL_PACED`, `SH_REL_HOME_ON`,
+  `SH_REL_QUANTUM` and `SH_POINTER` were all unset — the daemon was on defaults.
+
+**Where a client-sent (0,0) comes from.** A button record carries the position
+the edge happens at (see `spa/src/three/streamClient/inputWire.ts`), and a caller
+that gives no position gets the client's last absolute one substituted. A rel
+station ships every sample as a type-4 RelMotion and **never sends an absolute
+position at all**, so that cache stays empty for the whole session — and an empty
+cache used to read as the literal corner. `input/trackpad.ts` omits a rel
+station's button coordinates on purpose; the omission was being undone one layer
+below it. The fix is that an unknown position is now written as a **3-byte button
+record** (type, button, down — no point, no `cseq`), which `input.rs` case 2
+applies no position from, because it takes a carried point only from a record of
+11 bytes or more.
+
+So the signature is worth memorising in both directions:
+
+| On the wire | Means |
+|---|---|
+| button record, 11 bytes, `x=0 y=0`, on a **rel** station | a fabricated position — the corner teleport |
+| button record, 3 bytes | "click where the guest's own cursor is" — correct on a rel station |
+| button record, 11 bytes, `x,y` = the sprite | correct on an **abs** station |
+
+It fires **once** per reload or resume, not on every tap, and that is diagnostic
+too: after the first one the daemon's `last_abs` IS (0,0), so the next button at
+(0,0) is suppressed as a no-op move and nothing further jumps.
+
+**Sniffing the client half.** The daemon log says what arrived; to see what the
+browser sent, patch `WritableStreamDefaultWriter.prototype.write` in a Playwright
+`addInitScript` before any app code runs and record every chunk. Reliable input
+records arrive length-prefixed (`u16` LE, then the self-describing record), and
+datagrams arrive raw, so one hook catches moves and buttons alike. Drive the
+gesture with `Input.dispatchTouchEvent` over CDP — and **dismiss the touch
+coachmark first** (`Got it`), or it swallows every contact and the probe reports
+a silent wire.
 
 ## When a station "freezes": is it even the input plane?
 
