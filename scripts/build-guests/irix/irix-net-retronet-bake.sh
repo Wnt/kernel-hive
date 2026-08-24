@@ -86,26 +86,72 @@ EOF
 test -f /etc/nsswitch.conf.preEGRESS || cp /etc/nsswitch.conf /etc/nsswitch.conf.preEGRESS
 sed 's/^hosts:.*/hosts:			files dns/' /etc/nsswitch.conf.preEGRESS >/etc/nsswitch.conf
 
-# ---- 4. Netscape: direct, and pointed at SGI's own web --------------------
-# NO proxy (`network.proxy.type 0`) is load-bearing and is the retronet's
-# seamless-web path: wildcard DNS resolves whatever the visitor types to
-# 10.99.0.2 and the origin serves the corpus or the museum's miss page. A proxy
-# setting here would be a second, redundant naming layer aimed at a port this
-# station has no reason to use.
+# ---- 4. Netscape: direct, quiet, and pointed at SGI's own web -------------
+# EVERY interactive account, not just root. A visitor picks a user at the
+# iconlogin chooser and opens Netscape from the Toolchest, so the account whose
+# prefs matter is THEIRS — and an account with no preferences.js gets Netscape
+# 4's FIRST-RUN flow instead of a browser: it opens
+# home.netscape.com/home/first.html ("SmartUpdate"), then su_setup.html, both of
+# which are not in the corpus and render the museum's miss page, after a long
+# wait. That is the "warning dialogs then eventually a browser" the exhibit
+# showed (observed on the live station 2026-08-24, as demos).
 #
-# The home page is www.sgi.com as the corpus holds it (12 Apr 1997) — this
-# machine's own vendor, on this machine. `browser.startup.page 1` means "open
-# the home page", where the egress golden opened a blank window because there
-# was nothing worth dialling.
-mkdir -p /.netscape
-rm -f /.netscape/lock
-cat >/.netscape/preferences.js <<'EOF'
+# What each pref is for:
+#   network.proxy.type 0     direct. The gateway's wildcard DNS does the naming;
+#                            a proxy would be a second layer aimed at a port
+#                            this station never uses.
+#   browser.startup.page 1   open the home page (0 = blank window).
+#   browser.startup.homepage www.sgi.com, as the corpus holds it.
+#   browser.startup.homepage_override false
+#                            THE load-bearing one, and not obvious: seeding a
+#                            preferences.js is NOT enough to stop Netscape 4's
+#                            first-run tour. With this pref absent it still
+#                            OVERRIDES the home page once with
+#                            home.netscape.com/home/first.html, then
+#                            su_setup.html — proven on the live station, where
+#                            a fully-seeded demos profile still landed on the
+#                            museum's miss page, and proven fixed by adding
+#                            this one line (Netscape then opens directly on
+#                            www.sgi.com, from the very first frame).
+#   security.warn_*  false   the era's modal "you are about to submit / enter /
+#                            leave a secure document" boxes. On a plane that
+#                            serves no https at all these can only ever fire
+#                            spuriously, and a modal box a visitor must dismiss
+#                            is the worst thing an exhibit can open with.
+# The `lock` is removed with them: it is a SYMLINK naming host:pid that Netscape
+# leaves behind when it does not exit cleanly, and the next launch greets the
+# visitor with "Netscape has detected a .netscape/lock file ... another user is
+# running Netscape". Nothing in the golden should carry one.
+# NOTE ON SHELL: this runs under IRIX 6.5's /bin/sh, a real Bourne shell — no
+# `$(...)` command substitution (it prints the text literally instead of running
+# it, which is how the first version of this block silently skipped its chown)
+# and no `${var%%pattern}`. So: a function with explicit arguments, and no
+# substitution anywhere.
+seed_netscape() { # $1 = account, $2 = its .netscape directory
+  test -d "$2" || mkdir -p "$2" || return 0
+  rm -f "$2/lock"
+  cat >"$2/preferences.js" <<'EOF'
 // Netscape User Preferences
 user_pref("network.proxy.type", 0);
 user_pref("browser.startup.page", 1);
 user_pref("browser.startup.homepage", "http://www.sgi.com/");
+user_pref("browser.startup.homepage_override", false);
 user_pref("browser.cache.disk_cache_size", 8192);
+user_pref("security.warn_entering_secure", false);
+user_pref("security.warn_leaving_secure", false);
+user_pref("security.warn_submit_insecure", false);
+user_pref("security.warn_viewing_mixed", false);
 EOF
+  # The profile must belong to the account that reads it: Netscape REWRITES
+  # preferences.js on exit, and a root-owned file in a visitor's home means it
+  # cannot — which is its own source of complaints.
+  chown -R "$1" "$2" || true
+}
+
+seed_netscape root /.netscape
+seed_netscape demos /usr/demos/.netscape
+seed_netscape guest /usr/people/guest/.netscape
+seed_netscape chronic /usr/people/chronic/.netscape
 
 # ---- 5. show the result --------------------------------------------------
 set +x
@@ -119,7 +165,16 @@ echo "--- resolv.conf"
 cat /etc/resolv.conf
 echo "--- nsswitch hosts"
 grep '^hosts:' /etc/nsswitch.conf
-echo "--- netscape"
+echo "--- netscape (every interactive account: path, owner)"
+ls -l /.netscape/preferences.js /usr/demos/.netscape/preferences.js \
+  /usr/people/guest/.netscape/preferences.js \
+  /usr/people/chronic/.netscape/preferences.js 2>&1
+echo "--- stale locks (must be none)"
+for f in /.netscape/lock /usr/demos/.netscape/lock \
+  /usr/people/guest/.netscape/lock /usr/people/chronic/.netscape/lock; do
+  test -h "$f" || test -f "$f" && echo "  STALE: $f"
+done
+echo "  (nothing listed above = none)"
 cat /.netscape/preferences.js
 echo "--- chkconfig"
 # IRIX 6.5's grep predates -E; egrep is the portable spelling in the GUEST.
