@@ -460,6 +460,21 @@ stronger provenance claim than the 2001b row above can make, and it removes the
 "which repack is this" doubt that the 2001b-over-2002a sourcing argument rested
 on.
 
+### Period Win9x tracing tools — sourced for the win95 ICQ root-cause pass
+
+Sourced 2026-08-24 as the period file/registry tracers for the `win95` ICQ
+2000b investigation (`docs/lab/retronet/ICQ-STATION-win95.md`). **Staged
+in-guest but ultimately not needed** — a `tcpdump` on the guest's tap settled
+the question first. Recorded anyway: these are the Win9x-capable builds, they
+are hard to find at the right vintage, and the next guest-side mystery should
+not have to rediscover that they exist or where they came from. Both are in the
+content-addressed media archive only, never committed.
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `filemon-200012.zip` (SysInternals Filemon 4.33, Win9x-capable) | `f288db5ba3021e3d26e7629944447a087ba2152d3dead3e6f5fb343a0bbb697c` *(locally measured 2026-08-24)* | 78 145 | Wayback capture (2001-07-10) of the canonical `www.sysinternals.com/files/FILEMON.ZIP` — `FILEMON.EXE` 4.33 (build date 2000-12-26) plus the Win9x driver `FILEVXD.VXD` and NT `FILEM.SYS`. Media archive `blobs/f2/f288db5b…` | **freeware, pre-Microsoft Sysinternals** (Russinovich/Cogswell; "provided as is" README, no redistribution grant). Private preservation exhibit only; never committed, never served. |
+| `regmon95-200011.zip` (SysInternals Regmon 4.32, Win9x-capable) | `60b0a8d5cce001406755b2b74e9f1bc3b770570f4bedcccb99036a48337dd275` *(locally measured 2026-08-24)* | 68 544 | Wayback capture (2001-06-05) of `www.sysinternals.com/files/regmon95.zip` (byte-identical to the era's `ntregmon.zip`) — `REGMON.EXE` 4.32 (2000-11-20) plus `REGVXD.VXD`/`REGSYS.SYS`. Media archive `blobs/60/60b0a8d5…` | **freeware, pre-Microsoft Sysinternals**, same terms. Private preservation exhibit only; never committed, never served. |
+
 ### `macos753` — retronet AIM client media (Tier D, media-only so far)
 
 Not builder-driven yet — **networking itself doesn't exist on this station
