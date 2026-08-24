@@ -12,6 +12,7 @@ import { useDevicePressure } from './StreamView/useDevicePressure';
 import { buildStreamhostRows } from './StreamView/buildStreamhostRows';
 import { S, SPIN_KEYFRAMES, FS_CSS, POWER_ON_CSS, PRESENT_CSS } from './StreamView/styles';
 import { videoStyleFor } from './StreamView/videoStyle';
+import { probeVideoSink } from '../../three/streamClient/videoResume';
 import { presentAspectFor } from './presentAspect';
 import { PosterCard } from './StreamView/PosterCard';
 import { OnScreenKeyboard } from '../keyboard/OnScreenKeyboard';
@@ -123,11 +124,13 @@ export default function StreamView({
   // Open the live stream + control half (dormant unless streamable).
   const {
     stream, phase, message, control, registerPaintCanvas,
-    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect,
+    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow,
   } = useLiveStream(
     os,
     streamable,
-    streamable ? { control: true } : undefined,
+    // sinkProbe lets the session's keyframe watchdog tell a dead transport from
+    // a <video> that simply stopped pulling — see streamClient/videoResume.ts.
+    streamable ? { control: true, sinkProbe: () => probeVideoSink(videoRef.current) } : undefined,
   );
 
   // Register the visible <canvas> as the streamhost direct-paint sink. Decoded
@@ -304,7 +307,7 @@ export default function StreamView({
   }, []);
 
   // ---- media / control-plane / audio / stats effects (#44–49) ---------------
-  const connected = useStreamSession({
+  const { connected, playbackBlocked, resumePlayback } = useStreamSession({
     videoRef, stream, control, streamable, ctl, controlRef, containerRef, setCtl, setStats,
   });
 
@@ -521,6 +524,8 @@ export default function StreamView({
           mouseCapture={mouseCapture}
           escToGuest={streamable}
           showResume={showResume}
+          playbackBlocked={playbackBlocked}
+          onResumePlayback={resumePlayback}
           pointerLocked={pointerLocked}
           acquireLock={acquireLock}
           fsError={fsError}
@@ -536,7 +541,7 @@ export default function StreamView({
           frameStalled={frameStalled}
           decoderFailed={decoderFailed}
           decoderErrShort={decoderErrShort}
-          onReconnect={acquireLock}
+          onReconnect={reconnectNow}
         />
 
         {/* TOUCH affordances — mobile + live only: the one-shot right-click badge
