@@ -15,9 +15,13 @@
 # registry/local.env, then the defaults. registry/local.env is written by the
 # gateway provisioner (stream B) and is gitignored — it is the single source of
 # the UINs and the one password:
-#   RETRONET_ICQ_HOST / _PORT / _BOT_UIN / _BOT_PASS / _PERSONA_UIN
+#   RETRONET_ICQ_HOST / _PORT / _BOT_UIN / _BOT_PASS
 # Overrides for a test rig: RN_BOT_SERVER=host:port RN_BOT_UIN=… RN_BOT_PASSWORD=…
 #   RN_BOT_PERSONAS=98980:win98se   RN_BOT_LLM_URL=http://127.0.0.1:8091
+#
+# RN_BOT_PERSONAS is otherwise DERIVED from scripts/retronet/icq/roster.json
+# (the onboarded rows) — see `seed_contacts.py personas`. Adding a station is
+# one roster row; this script is safe to re-run and never invents the list.
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")" && pwd)"
@@ -79,18 +83,46 @@ RN_BOT_PASSWORD="${RN_BOT_PASSWORD:-$(from_local_env RETRONET_ICQ_BOT_PASS)}"
 
 ICQ_HOST="$(from_local_env RETRONET_ICQ_HOST)"
 ICQ_PORT="$(from_local_env RETRONET_ICQ_PORT)"
-PERSONA_UIN="$(from_local_env RETRONET_ICQ_PERSONA_UIN)"
 RN_BOT_SERVER="${RN_BOT_SERVER:-${ICQ_HOST:-10.99.0.2}:${ICQ_PORT:-5190}}"
 RN_BOT_UIN="${RN_BOT_UIN:-$(from_local_env RETRONET_ICQ_BOT_UIN)}"
 RN_BOT_UIN="${RN_BOT_UIN:-10000}"
-# Preserve a roster that was extended on the box (e.g. an onboarding agent that
-# appended `,30000:solaris` to /etc/retronet/bot.env's RN_BOT_PERSONAS): a plain
-# `--apply` must not silently drop stations. Precedence: explicit env override,
-# then the roster already on the box, then the win98se-only default. So the
-# documented "append to bot.env, then install-bot.sh --apply" flow is idempotent.
+# The persona list is DERIVED from scripts/retronet/icq/roster.json — the same
+# single source seed_contacts.py seeds contacts from. Onboarding a station is
+# ONE roster row and nothing else; nobody hand-appends to bot.env, so there is
+# no box-side state for a re-run to drop. Only `onboarded` rows become personas:
+# a pending station has no live client to greet. RN_BOT_PERSONAS in the
+# environment still wins, for a test rig (see the header).
+# Rendering here, at install time, rather than reading the roster from bot.py at
+# runtime: the unit is a DynamicUser cage whose only inputs are its code under
+# /data/retronet/bot and this env file, and a git checkout is neither stable
+# (mid-merge) nor declared as a dependency of the service. Install time is also
+# when a bad roster can still be refused without leaving a broken bot behind.
+roster_personas() { python3 "$REPO/scripts/retronet/icq/roster_lib.py" personas; }
 existing_personas() { sed -n 's/^RN_BOT_PERSONAS=//p' /etc/retronet/bot.env 2>/dev/null | tail -1; }
-RN_BOT_PERSONAS="${RN_BOT_PERSONAS:-$(existing_personas)}"
-RN_BOT_PERSONAS="${RN_BOT_PERSONAS:-${PERSONA_UIN:-98980}:win98se}"
+if [ -z "${RN_BOT_PERSONAS:-}" ]; then
+  # No `|| true`, no fallback: a roster we cannot read must abort the install,
+  # never silently write an empty or partial list over a working one.
+  RN_BOT_PERSONAS="$(roster_personas)" || {
+    echo "install-bot.sh: cannot derive personas from $REPO/scripts/retronet/icq/roster.json" >&2
+    echo "  refusing to write a partial persona list. Fix the roster, or set RN_BOT_PERSONAS." >&2
+    exit 1
+  }
+  [ -n "$RN_BOT_PERSONAS" ] || {
+    echo "install-bot.sh: roster yielded no onboarded stations — refusing to write" >&2
+    exit 1
+  }
+fi
+# Never silent about a change: say what this run adds or drops versus the box.
+PREV_PERSONAS="$(existing_personas)"
+if [ -n "$PREV_PERSONAS" ] && [ "$PREV_PERSONAS" != "$RN_BOT_PERSONAS" ]; then
+  printf '  personas change: %s\n            -> %s\n' "$PREV_PERSONAS" "$RN_BOT_PERSONAS"
+  for p_old in ${PREV_PERSONAS//,/ }; do
+    case ",$RN_BOT_PERSONAS," in *",$p_old,"*) ;; *) printf '  DROPPED persona %s (not onboarded in roster.json)\n' "$p_old" ;; esac
+  done
+  for p_new in ${RN_BOT_PERSONAS//,/ }; do
+    case ",$PREV_PERSONAS," in *",$p_new,"*) ;; *) printf '  ADDED persona %s\n' "$p_new" ;; esac
+  done
+fi
 RN_BOT_LLM_URL="${RN_BOT_LLM_URL:-http://127.0.0.1:8091}"
 SERVER_HOST="${RN_BOT_SERVER%%:*}"
 

@@ -317,6 +317,9 @@ def load_config() -> dict:
         "uin": os.environ.get("RN_BOT_UIN", "10000"),
         "password": os.environ.get("RN_BOT_PASSWORD", ""),
         "bos_override": os.environ.get("RN_BOT_BOS_HOST") or None,
+        # RN_BOT_PERSONAS is rendered into /etc/retronet/bot.env by install-bot.sh from
+        # scripts/retronet/icq/roster.json (the onboarded rows). This bare default is a
+        # last resort for a hand-run bot, not the fleet list — see docs/lab/retronet/BOT.md.
         "personas": _env_personas(os.environ.get("RN_BOT_PERSONAS", "98980:win98se")),
         "llm_url": os.environ.get("RN_BOT_LLM_URL", "http://127.0.0.1:8091"),
         "llm_model": os.environ.get("RN_BOT_LLM_MODEL", "retronet"),

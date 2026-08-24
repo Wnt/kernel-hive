@@ -236,13 +236,15 @@ BUDDY LIST REJECTED for ['98980'] — contact requires authorization; presence w
 `/etc/retronet/llm.env` (0644) and `/etc/retronet/bot.env` (**0600** — it holds
 the password). `install-bot.sh` derives everything from stream B's contract keys
 in `registry/local.env` (gitignored, written by the gateway provisioner):
-`RETRONET_ICQ_HOST`, `_PORT`, `_BOT_UIN`, `_BOT_PASS`, `_PERSONA_UIN`.
+`RETRONET_ICQ_HOST`, `_PORT`, `_BOT_UIN`, `_BOT_PASS` — and the persona list
+from `scripts/retronet/icq/roster.json` (below). It writes the whole file every
+run and holds no box-side state, so `--apply` is safe to re-run at any time.
 
 | Key | Default | Meaning |
 |---|---|---|
 | `RN_BOT_SERVER` | `10.99.0.2:5190` | the **labhost door** (5190). Never 5191 — that door advertises `10.0.2.100` as BOS, which only a slirp guest can route |
 | `RN_BOT_UIN` | `10000` | the bot's account |
-| `RN_BOT_PERSONAS` | `98980:win98se` | comma-separated `uin:station`; adding a wave-2 station is one entry plus a `GREETINGS` row. Live set also carries `20000:win2000`, `30000:solaris`, `40000:nt4`, `64000:tru64`, `95000:win95` and `50000:beos` — the last one is a **legacy UDP-4000** persona rather than an OSCAR one, and the greeter cannot tell the difference |
+| `RN_BOT_PERSONAS` | derived from `roster.json` | comma-separated `uin:station` — **do not hand-maintain**, see *Who gets greeted* below |
 | `RN_BOT_GREET_DELAY` | `30` | seconds between sign-on and hello |
 | `RN_BOT_MAX_CHARS` | `200` | reply cap |
 | `RN_BOT_LLM_URL` | `http://127.0.0.1:8091` | any OpenAI-compatible endpoint |
@@ -251,6 +253,36 @@ in `registry/local.env` (gitignored, written by the gateway provisioner):
 | `RN_BOT_RATE_BURST` / `_WINDOW` | `8` / `60` | per-peer token bucket |
 | `RN_BOT_TYPE_CPS` / `_BASE` / `_MAX` | `14` / `1.2` / `9` | the pacer |
 | `RN_BOT_BOS_HOST` | unset | force the BOS reconnect host when the advertised one is not routable from here |
+
+### Who gets greeted
+
+The persona list is **derived from `scripts/retronet/icq/roster.json`**, the same
+single source the contact seeder reads. Every row with `"onboarded": true`
+becomes one `uin:station` persona; a pending row does not, because a station
+with no live client signed in has nothing to greet. So **onboarding a station is
+one roster row and nothing else** — flip `onboarded`, re-run
+`install-bot.sh --apply`, and the greeter watches it.
+
+```
+scripts/retronet/icq/seed_contacts.py personas   # exactly what --apply will write
+```
+
+`install-bot.sh` renders that into `bot.env` at install time rather than having
+`bot.py` read the roster at runtime: the unit is a `DynamicUser` cage whose only
+inputs are its code under `/data/retronet/bot` and this env file, and a git
+checkout is neither a declared dependency of the service nor stable mid-merge.
+Install time is also the last moment a bad roster can be refused without leaving
+a broken bot behind — a roster it cannot read **aborts the install** rather than
+writing an empty list, and any persona the run adds or drops is printed.
+
+`RN_BOT_PERSONAS` in the environment still overrides the derivation, for a test
+rig pointed at a throwaway gateway.
+
+Two things the list does not tell you. A `GREETINGS`/`STATION_BLURB` row in
+`bot.py` is still a separate edit — without one a station is greeted by the
+`_default` line rather than a station-tuned one. And `50000:beos` is a **legacy
+UDP-4000** persona rather than an OSCAR one; the greeter cannot tell the
+difference.
 
 **UINs are 10000 and 98980, not the plan's 1000 and 9898.** Mirabilis reserved
 every UIN below 10000 and the server enforces it (`ErrICQUINInvalidFormat`,
