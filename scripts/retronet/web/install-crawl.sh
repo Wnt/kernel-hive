@@ -34,9 +34,18 @@ fi
 
 echo "deploying crawl runtime -> $RUN_DIR"
 # /data/vms is root-owned; make the runtime dir and hand it to the crawl user so
-# the service (User below) can write state.json + progress.log there.
+# the services (User= in both units) can create state.json, requests.json and
+# their logs there.
+#
+# Name that user EXPLICITLY rather than taking `id -un`. This script is run both
+# as wnt and, as the docs' own one-liner does, via `pct exec 950 --` where it is
+# root -- and then `id -un` handed the runtime dir to root, leaving User=wnt able
+# to append to files that already existed but unable to create a new one. That is
+# invisible until a unit first writes a NEW file, which is exactly how
+# retronet-requests.service crash-looped on its own log the first time it ran.
+RUN_USER="${RN_CRAWL_USER:-wnt}"
 sudo mkdir -p "$RUN_DIR"
-sudo chown "$(id -un):$(id -gn)" "$RUN_DIR"
+sudo chown -R "$RUN_USER:$RUN_USER" "$RUN_DIR"
 cp "$SRC/era-press.py" "$SRC/era_fetch.py" "$SRC/era_index.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" \
   "$SRC/era_requests.py" "$SRC/era_state.py" \
   "$SRC/era-sites.json" "$SRC/era-vips.json" "$RUN_DIR/"

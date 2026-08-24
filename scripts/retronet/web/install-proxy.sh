@@ -220,7 +220,7 @@ step_verify() {
     curl -s -o /dev/null -x "$RN_PROXY_LISTEN" "http://verify-journal.invalid/probe-$$" || true
     if ctexec sh -c "grep -q 'verify-journal.invalid/probe-$$' '$jrnl' 2>/dev/null"; then
       info "PASS  miss journalled to $jrnl"
-      ctexec sh -c "sed -i '/verify-journal.invalid/d' '$jrnl' 2>/dev/null" || true
+      ctexec runuser -u rnproxy -- sed -i '/verify-journal.invalid/d' "$jrnl" || true
     else
       info "FAIL  miss NOT journalled to $jrnl — station requests will never reach the crawl"
       fail=1
