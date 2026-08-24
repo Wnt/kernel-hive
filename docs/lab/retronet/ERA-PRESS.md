@@ -396,24 +396,106 @@ writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no p
 restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
 staging *is* the shared volume, so it runs with push disabled.)
 
+### The resource sweep, and what it remembers
+
+Pages already on disk are not in the frontier, so the ordinary crawl never revisits them — and a page
+stored during a spell of failing fetches would keep its missing images forever (`www.sun.com` had 4 of
+15, `www.ibm.com` 10 of 24). The **sweep** is the pass that repairs that: it re-reads each mirrored
+page, re-discovers what it references, and fetches anything absent.
+
+It used to have no memory, and that was expensive in two different ways:
+
+- a resource archive.org **never captured** was re-requested on every pass and every restart, forever;
+- every page was re-read and re-parsed every pass, whether or not anything about it had changed.
+
+Measured on 2026-08-24, on a restart with an **unchanged** site list: **~970 requests to archive.org in
+eleven minutes, and the corpus did not grow by a single byte.**
+
+`era_sweep.Ledger` (stored beside `state.json` as `absent.json`) fixes both, with one horizon:
+
+| It remembers | Meaning | Effect |
+|---|---|---|
+| **absent resources** | archive.org had no in-ceiling capture | not re-requested for **30 days** |
+| **swept pages** | every reference walked | page skipped entirely while **unchanged** |
+
+The page skip is keyed on the page's **own mtime**, which is what keeps an incremental sweep correct: a
+page re-fetched with new markup is swept again immediately, and only an unchanged, already-walked page
+is skipped — one `stat` instead of a read, a parse and a `stat` per reference. So the first sweep is
+full and every later one is O(what is new).
+
+The two horizons are **the same constant on purpose**. When an absent resource becomes worth re-asking
+for, the page that references it must stop being skipped in the same cycle, or the retry would never
+happen. A local `_write` collision is pointedly *not* recorded as absent — that is our filesystem
+namespace bug to fix, not an archive verdict, and hiding it for a month would be the wrong trade.
+
+The ledger is a **cache, not a record**: pruned on load, saved in batches, and losing it costs one slow
+pass rather than any correctness. The sweep reports what it is worth:
+
+```
+--- SWEEP: 47175 page(s) on disk; 46980 already walked and unchanged (skipped),
+    1759 resource(s) the archive does not have (not re-asked)
+```
+
+### Installing without restarting the crawl
+
+`install-crawl.sh` deploys code and units and **does not restart a running crawl**. It used to, on the
+reasoning that this is the one command that applies an `era-sites.json` edit — right about edits, wrong
+about everything else: deploying code or adding a unit restarted it too, and a restart re-plans every
+site and re-runs the whole sweep. That is what produced the ~970 wasted requests above, and it also
+churns the search reindexer, which rebuilds whenever the corpus fingerprint moves.
+
+```sh
+install-crawl.sh              # deploy code + units; start the crawl only if it is stopped
+install-crawl.sh --restart    # apply an era-sites.json / era-vips.json edit to a running crawl
+```
+
+The requests service *is* restarted every time: its startup is cheap and it makes no archive request
+merely for starting, so picking up new code costs nothing.
+
 ### Station requests — the retronet fills its own gaps
 
 The disk scan behind `era-sites.json` can only find URLs that sit in a guest image as readable text,
 and it can never know which of them anyone actually walks to. **A miss knows**: a station asked, and
 the museum had nothing. So the loop closes:
 
-1. the proxy journals **every miss** to `<corpus>/_requests.jsonl` (`proxy.record_miss` — one
-   `open`/`write`/`close` per miss, errors swallowed, because a hint channel must never break serving);
-2. the crawl daemon folds that journal in **every 5 minutes** (`--requests-interval`), on a thread that
-   runs alongside the passes and shares the same paced fetch layer — so a page a station wanted five
-   minutes ago does not wait for a multi-hour pass to end;
-3. a URL asked for **twice, at least 15 minutes apart**, is crawled — page, or asset, plus every
-   resource it references. **More requests, higher priority**: the queue is ordered by count.
+1. the proxy journals **every miss** to `/var/spool/retronet/_requests.jsonl` (`proxy.record_miss` —
+   one `open`/`write`/`close` per miss). The spool is a **small shared volume, not the corpus**: the
+   proxy unit sets `ReadOnlyPaths` on the corpus it serves and that stays true. Errors are still
+   swallowed — a hint channel must never break serving — but the **first** failure logs one `WARN`
+   line, because this channel was dead for three days and nothing said so (see below);
+2. **`retronet-requests.service`** (CT 950) folds that journal in **every 5 minutes**
+   (`--requests-interval`), sharing the same AIMD-paced fetch layer as the crawl — so a page a station
+   wanted five minutes ago does not wait for a multi-hour crawl pass to end;
+3. a URL that clears the rule is crawled — page, or asset, plus every resource it references.
+   **More requests, higher priority**: the queue is ordered by total count.
 
-The two-and-spread rule is the noise filter. One request is a typo in the address bar, a probe, a
-broken image on a page nobody will revisit; two requests separated by a real gap is a person or a
-station coming back to the same missing thing. After a URL is serviced its count is **banked**, so it
-only returns to the queue on *new* demand — an unarchivable URL is not retried forever.
+**One rule decides eligibility, and it reads the same at every point in a URL's life:**
+
+> **Two asks, fifteen minutes apart, since the last decision.**
+
+Two asks, not one, because a single request is a typo in the address bar, a probe, or a broken image on
+a page nobody will revisit. Fifteen minutes apart, because a burst is one visit and a real gap is
+someone coming *back*. And *since the last decision* is what the per-URL **`gate`** records: every
+outcome moves it, and only asks after it count.
+
+| Outcome | What it means | `gate` moves to |
+|---|---|---|
+| `mirrored` / `already-had-it` | we have it now | `now` — two fresh asks to come back |
+| **`not-archived` / `bad-url`** | **archive.org has no in-ceiling capture** | **`now + 30 days`** |
+| `cannot-store` | *our* disk failed, not the archive | `now` |
+
+The 30-day cooldown is the part worth being precise about. "The Wayback Machine has no pre-2001 capture
+of this" does not change week to week, and every retry is a request made of someone else's
+infrastructure for a thing we already know is not there. So asks that arrive **during** the window are
+*pruned, not banked*: they raise `count` (they are real demand, and they will order the queue later) but
+they cannot shorten the window they arrived in. And when the 30 days elapse **nothing fires by itself** —
+the URL must earn the retry from scratch, with two fresh asks fifteen minutes apart on the far side of
+the gate. `cannot-store` is pointedly excluded: burying our own full disk for a month would turn a
+storage fault into thirty days of silence.
+
+Two kinds of traffic never reach the queue at all. Requests a *client* makes on a timer —
+`favicon.ico`, `wpad.dat`, `robots.txt`, IE's `.CAB` Authenticode refresh — clear the two-and-spread
+bar on their own without a person ever being involved, so `record_miss` drops them at the door.
 
 A request for a host we already crawl is fetched with **that site's** era date and ceiling, so it
 lands exactly as the site's own pages do. A request for an unknown host gets the **default** ceiling:
@@ -421,13 +503,60 @@ a station asking for a post-2000 page does not by itself justify letting the cor
 If a host should be allowed past it, that is a deliberate decision and its name goes in the VIP list.
 
 The journal is **rotated before reading**, so the proxy keeps appending to a fresh file while a batch
-is processed; state lives in `<crawl-root>/requests.json`. Watch it in the progress log:
+is processed; state lives in `<crawl-root>/requests.json` and is saved **per URL**, not per batch — a
+cooldown that lives only in memory is no cooldown. Watch it in `requests.log`:
 
 ```
 --- REQUESTS (station request): 3 URL(s) due, 47 new miss(es) journalled
     request mirrored: http://www.sgi.com/products/index.html
-    request not-archived: http://intranet.local/foo
+    request not-archived (quiet for 30d): http://intranet.local/foo
 ```
+
+#### Seeding by hand
+
+The journal is an ordinary append-only file of `{"url": …, "t": …}` lines, so demand the
+proxy could not record — a batch recovered from the access log, a page you know a station
+wants — can be replayed into it. Write the **same two-asks-fifteen-minutes-apart shape**
+the rule requires; do not invent a shortcut around it:
+
+```python
+for t in (now - 7200, now - 3600):
+    print(json.dumps({"url": "http://www.nytimes.com/images/rule1.gif", "t": t}))
+# >> /var/spool/retronet/_requests.jsonl   (on the labhost side: /data/vms/retronet-requests/)
+```
+
+The service folds it within `--requests-interval` (5 min). This is how the 30 URLs the
+fleet asked for during the three-day silence were recovered — attributed to a host by
+finding which mirrored page actually references each missing asset, rather than by
+guessing from the client IP.
+
+#### Why this is two units and not one thread
+
+The watcher used to be a thread inside `cmd_crawl`, which made its lifetime the crawl's lifetime. A
+corpus crawl is a **finite job** — it stops at the budget or when the site list is exhausted, exits 0,
+and stays stopped (`Restart=on-failure` does not restart a success). Demand-servicing is the opposite:
+it must be listening whenever a station is browsing. So the crawl runs with `--no-requests` and the
+watcher runs under its own `Restart=always` unit. `era-press.py requests` is deliberately cheap to
+start — it needs only each site's era date and ceiling, so it skips `_reconstruct`, the per-site disk
+walk that rebuilds a crawl frontier this loop never uses.
+
+#### The three-day silence, and what now prevents it
+
+Between 2026-08-21 and 2026-08-24 this entire mechanism was dead, and every symptom looked like "nobody
+asked for anything". Three independent faults, each individually silent:
+
+- the proxy unit's `ReadOnlyPaths=/data/retronet/corpus` made the journal path **read-only to the only
+  process that writes it**, and the corpus bind-mount is owned by a host uid outside CT 951's idmap, so
+  no in-CT user could have owned it anyway. `record_miss` swallowed the `OSError` on every miss;
+- the crawl — and with it the watcher thread — had exited cleanly and stayed stopped;
+- the selftest exercised the whole queue in a `tmp` directory, where writes obviously succeed, so CI was
+  green the entire time.
+
+The repairs are structural, not vigilance: the spool is a **separate writable volume**
+(`install-requests-volume.sh`, which fails loudly unless `rnproxy` can actually write it), the watcher
+has its **own always-on unit**, `record_miss` **WARNs once** on its first failure, and
+`install-proxy.sh verify` now asserts that a probe miss was **recorded**, not merely that the 404 page
+rendered. That last check is the one that would have caught all of this on day one.
 
 ### The VIP list — `era-vips.json`
 

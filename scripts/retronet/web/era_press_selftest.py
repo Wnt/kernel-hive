@@ -25,6 +25,7 @@ import era_fetch as ef
 import era_index as ei
 import era_press_core as ep
 import era_requests as er
+import era_sweep
 
 # A synthetic raw archived page (NOT scraped): the shapes era-press must handle.
 BASE = "http://www.test.example/dir/page.html"
@@ -352,10 +353,25 @@ def main():
         saved = ef.wayback_raw
         ef.wayback_raw = lambda url, ts: ("19970104102030", "image/gif", b"GIF89a-swept")
         try:
-            ec._sweep_page(st, st["home"], staging, set(), threading.Lock(), {"written": 0})
+            era_sweep.sweep_page(
+                st, st["home"], staging, set(), threading.Lock(), {"written": 0}, None, ec._mirror_resource_mt
+            )
         finally:
             ef.wayback_raw = saved
         check("sweep: the missing image lands", os.path.isfile(os.path.join(staging, host, "logo.gif")), True)
+
+        # With a ledger, the SECOND sweep of an unchanged page does not read or fetch anything: it is
+        # the skip that turns an O(whole corpus) pass into an O(what is new) one.
+        led = era_sweep.Ledger(os.path.join(staging, "absent.json"))
+        calls = []
+        era_sweep.sweep_page(
+            st, st["home"], staging, set(), threading.Lock(), {"written": 0}, led, lambda *a: calls.append(a)
+        )
+        check("sweep: a first walk marks the page swept", led.stats()["swept"], 1)
+        era_sweep.sweep_page(
+            st, st["home"], staging, set(), threading.Lock(), {"written": 0}, led, lambda *a: calls.append(a)
+        )
+        check("sweep: the second pass walks nothing", len(calls), 1)
 
     # 13. a URL namespace is not a filesystem namespace: a site can serve BOTH /a/icq and /a/icq/b.gif.
     #     The second cannot be mirrored once the first is a file -- that must be skipped, not raised,
@@ -399,9 +415,9 @@ def main():
         check("vips: 2003 capture allowed under it", ef._past_ceiling("20031225053516", st["ceiling"]), False)
         check("vips: 2003 capture refused by default", ef._past_ceiling("20031225053516"), True)
 
-    # 15. STATION REQUESTS: the proxy journals every miss; a URL asked for twice, at least 15 minutes
-    #     apart, is crawled — most-asked first. One request is noise (a typo, a probe); two spread out
-    #     is someone coming back to the same missing thing.
+    # 15. STATION REQUESTS: the proxy journals every miss; ONE rule decides eligibility at every point
+    #     in a URL's life -- two asks, fifteen minutes apart, SINCE THE LAST DECISION. One request is
+    #     noise (a typo, a probe); two spread out is someone coming back to the same missing thing.
     with tempfile.TemporaryDirectory() as tmp:
         now = int(time.time())
         with open(os.path.join(tmp, er.MISS_JOURNAL), "w") as fh:
@@ -425,14 +441,118 @@ def main():
             er.due(state),
             ["http://a.example/wanted", "http://d.example/also"],
         )
-        er.mark_served(state, "http://a.example/wanted")
+
+        # A SUCCESS closes the book on the demand that earned it: the URL is not serviced twice for the
+        # same asks, and it comes back only on two fresh ones.
+        er.mark_served(state, "http://a.example/wanted", "mirrored", now)
         check("requests: a serviced URL is not retried", "http://a.example/wanted" in er.due(state), False)
-        state["http://a.example/wanted"]["count"] += 1  # asked again after being served
-        check("requests: NEW demand re-queues it", "http://a.example/wanted" in er.due(state), True)
+        state["http://a.example/wanted"]["asks"] = [now + 60, now + 60 + er.MIN_SPREAD]
+        check("requests: two FRESH asks re-queue it", "http://a.example/wanted" in er.due(state), True)
+
+        # A NOT-ARCHIVED verdict is archive.org saying the page was never captured in our era. That
+        # answer does not change week to week, so the URL goes quiet for 30 days.
+        dead = "http://d.example/also"
+        er.mark_served(state, dead, "not-archived", now)
+        check("cooldown: a dead URL leaves the queue", dead in er.due(state), False)
+        check("cooldown: the gate is 30 days out", state[dead]["gate"] - now, er.RETRY_COOLDOWN)
+        er.save(state_p, state)  # as watch() does, per URL: a cooldown only in memory is no cooldown
+
+        # THE POINT OF THE COOLDOWN: demand during the window must not shorten it. Two asks fifteen
+        # minutes apart would qualify any other URL; here they are pruned on ingest, so they raise the
+        # priority the URL will have LATER and nothing else.
+        with open(os.path.join(tmp, er.MISS_JOURNAL), "w") as fh:
+            for when in (now + 86400, now + 86400 + er.MIN_SPREAD):
+                fh.write(json.dumps({"url": dead, "t": when}) + "\n")
+        state, _ = er.ingest(tmp, state_p)
+        check("cooldown: asks inside the window do not re-queue it", dead in er.due(state, now + 172800), False)
+        check("cooldown: but they still count toward priority", state[dead]["count"], 4)
+        check("cooldown: and they are not banked as asks", state[dead]["asks"], [])
+
+        # And when the 30 days elapse, NOTHING fires by itself. The URL must earn the retry again from
+        # scratch: one ask past the gate is not enough, two spread ones are.
+        after = now + er.RETRY_COOLDOWN + 60
+        check("cooldown: expiry alone does not retry", dead in er.due(state, after), False)
+        state[dead]["asks"] = [after]
+        check("cooldown: one fresh ask is still not enough", dead in er.due(state, after), False)
+        state[dead]["asks"] = [after, after + er.MIN_SPREAD]
+        check("cooldown: two fresh asks, spread, re-queue it", dead in er.due(state, after + 3600), True)
+
+        # cannot-store is OUR disk failing, not an archive.org verdict. Burying that for a month would
+        # turn a full corpus volume into thirty days of silence.
+        local = "http://e.example/diskfull"
+        er._record(state, local)["count"] = 2
+        er.mark_served(state, local, "cannot-store", now)
+        check("cooldown: a local failure is NOT cooled down", state[local]["gate"], now)
+
+        # The state file must carry the gate, or a restart forgets every cooldown and the first fold
+        # after it re-fetches everything archive.org already refused.
+        er.save(state_p, state)
+        check("requests: the gate survives a save/load", er._load(state_p)[dead]["gate"], state[dead]["gate"])
+
+    # 16. THE SWEEP'S MEMORY: what archive.org does not have, and which pages are already walked. The
+    #     sweep re-checks every page on disk for missing resources, and without memory it re-requested
+    #     every never-captured resource on every pass and every restart -- measured at ~970 requests in
+    #     eleven minutes, with the corpus not growing one byte.
+    with tempfile.TemporaryDirectory() as tmp:
+        now = int(time.time())
+        led = era_sweep.Ledger(os.path.join(tmp, "absent.json"))
+        gone = "http://www.nytimes.com/images/rule1.gif"
+        check("sweep: an unknown resource is not blocked", led.is_absent(gone, now), False)
+        led.mark_absent(gone, now)
+        check("sweep: an archive verdict blocks the retry", led.is_absent(gone, now), True)
+        check("sweep: still blocked 29 days later", led.is_absent(gone, now + 29 * 86400), True)
+        check("sweep: eligible again past the horizon", led.is_absent(gone, now + era_sweep.TTL + 60), False)
+
+        # A page is skipped only while it is BOTH already walked and unchanged on disk. Tying the skip
+        # to mtime is what keeps an incremental sweep correct: new markup is swept at once.
+        page = "http://www.nytimes.com/index.html"
+        check("sweep: an unswept page needs sweeping", led.needs_sweep(page, now - 100, now), True)
+        led.mark_swept(page, now)
+        check("sweep: a walked, unchanged page is skipped", led.needs_sweep(page, now - 100, now), False)
+        check("sweep: a page rewritten since is swept again", led.needs_sweep(page, now + 10, now + 20), True)
+        # The two horizons are the same on purpose: when a resource becomes worth re-asking for, the
+        # page referencing it must stop being skipped in the SAME cycle, or the retry never happens.
+        check(
+            "sweep: the skip expires with the absent horizon",
+            led.needs_sweep(page, now - 100, now + era_sweep.TTL + 60),
+            True,
+        )
+
+        # It is a cache, not a ledger of record: it survives a restart, and losing it costs one slow
+        # pass rather than correctness.
+        led.save()
+        again = era_sweep.Ledger(os.path.join(tmp, "absent.json"))
+        check("sweep: memory survives a restart", again.is_absent(gone, now), True)
+        check("sweep: swept pages survive too", again.needs_sweep(page, now - 100, now), False)
+        check("sweep: stats report both", again.stats(), {"absent": 1, "swept": 1})
+        # Anything past the horizon is dropped on load, so the file cannot grow without bound.
+        stale = era_sweep.Ledger(os.path.join(tmp, "absent.json"))
+        stale.load(now + era_sweep.TTL + 60)
+        check("sweep: stale entries are pruned on load", stale.stats(), {"absent": 0, "swept": 0})
+
+        # The seam that actually saves the requests: the resource mirror must CONSULT the ledger before
+        # it dials archive.org, and RECORD the verdict after. Testing the Ledger alone would have left
+        # the wiring -- the part that was missing for three days in the request channel -- unproven.
+        st = ec._site_state({"host": "www.t.example", "depth": 0, "max_pages": 1}, 200)
+        dialled = []
+        saved = ef.wayback_raw
+        ef.wayback_raw = lambda url, ts: dialled.append(url)  # returns None -> an archive miss
+        ec.ABSENT = era_sweep.Ledger(os.path.join(tmp, "wired.json"))
+        try:
+            res = "http://www.t.example/images/never-captured.gif"
+            ec._mirror_resource_mt(res, "19970104102030", tmp, set(), st, threading.Lock(), {"written": 0})
+            check("sweep: a first miss dials the archive once", len(dialled), 1)
+            check("sweep: and is remembered", ec.ABSENT.is_absent(res), True)
+            ec._mirror_resource_mt(res, "19970104102030", tmp, set(), st, threading.Lock(), {"written": 0})
+            check("sweep: the second attempt does NOT dial", len(dialled), 1)
+        finally:
+            ef.wayback_raw = saved
+            ec.ABSENT = None
 
     print(
         "era-press selftest: all checks OK "
-        "(raw mirror, host index, landing completeness, ceiling, frontier, seeds, sweep, vips, requests)"
+        "(raw mirror, host index, landing completeness, ceiling, frontier, seeds, sweep, vips, "
+        "requests, cooldown, sweep memory)"
     )
 
 

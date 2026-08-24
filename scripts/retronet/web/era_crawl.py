@@ -35,8 +35,17 @@ import era_index
 import era_press_core as core
 import era_requests
 import era_state
+import era_sweep
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
+# The miss-journal spool: the proxy in CT 951 writes here (mounted there as /var/spool/retronet), this
+# side reads and rotates. Small, and OUTSIDE the corpus so the proxy never needs write access to what
+# it serves. See scripts/retronet/web/install-requests-volume.sh.
+# The absent/swept ledger: what archive.org has already refused, and which pages are fully walked.
+# Set by cmd_crawl; None means "no memory", which is exactly the old behaviour.
+ABSENT: era_sweep.Ledger | None = None
+
+REQUESTS_DIR = "/data/vms/retronet-requests"
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
 VIP_DEFAULT_CEILING = "20091231"  # a VIP entry with no explicit ceiling still needs one
 VIP_FIRST_DEPTH = 3  # VIPs are crawled this deep FIRST, then out to their full depth in the normal passes
@@ -203,12 +212,20 @@ def _mirror_resource_mt(url, ts, staging, res_seen, st, lock, budget):
             st["skipped"] += 1
             st["bytes"] += os.path.getsize(dest)
         return
+    # Already asked, and the archive had nothing. Not for another 30 days: without this the sweep
+    # re-requests every never-captured resource on every pass and every restart, forever.
+    if ABSENT is not None and ABSENT.is_absent(url):
+        with lock:
+            st["misses"] += 1
+        return
     got = fetch.wayback_raw(url, ts)  # id_ at the discovered ts (paced, lockless) -- but may resolve nearer
     # Re-check the RESOLVED ts: a resource the rewritten page rewrote to the PAGE's ts (because it wasn't
     # captured then) can resolve via id_ to its real, possibly post-2000, capture -- which must NOT store.
     if not got or fetch._past_ceiling(got[0], st["ceiling"]) or len(got[2]) > core.MAX_FETCH:
         with lock:
             st["misses"] += 1  # resolved capture past the ceiling (or a miss / oversize) -> skip
+        if ABSENT is not None:
+            ABSENT.mark_absent(url)  # an ARCHIVE verdict -- do not ask again for a month
         return
     if not core._write(staging, host, rel, got[2]):
         with lock:
@@ -319,28 +336,6 @@ def _run_level(items, concurrency, worker, on_done, should_stop):
     return n
 
 
-def _sweep_page(st, url, staging, res_seen, lock, budget):
-    """Re-scan ONE page already on disk and mirror every resource it references that is missing.
-
-    Pages on disk are NOT in the frontier -- _reconstruct counts them as done -- so the ordinary crawl
-    never revisits them, and any page stored during a spell of failing fetches keeps its missing images
-    forever. www.sun.com had 4 of its 15 images and www.ibm.com 10 of 24 for exactly that reason. The
-    sweep is the pass that repairs them: a body read and a stat per reference, and a request only for a
-    resource genuinely absent."""
-    dest = core._have(staging, core.host_of(url), core.store_rel(url, True))
-    if not dest:
-        return
-    try:
-        body = Path(dest).read_bytes()
-    except OSError:
-        return
-    if not core.is_html("", body):
-        return
-    for kind, res_ts, orig in core.discover(body, url, st["date"]):
-        if kind == "res":
-            _mirror_resource_mt(orig, res_ts, staging, res_seen, st, lock, budget)
-
-
 def load_sites(sites_path, vips_path):
     """The crawl's site list: era-sites.json, plus era-vips.json merged on top.
 
@@ -410,6 +405,8 @@ def cmd_crawl(a):
     if not cfg:
         raise SystemExit(f"era-press crawl: no sites in {a.sites}")
     era_index.INDEX_DIR = os.path.join(os.path.dirname(a.state) or ".", "cdx")  # host indexes survive restarts
+    global ABSENT  # what the archive has already refused, and which pages are fully walked
+    ABSENT = era_sweep.Ledger(os.path.join(os.path.dirname(a.state) or ".", "absent.json"))
     for s in cfg:  # every crawled host earns ONE bulk CDX index; resource-only hosts take the redirect
         era_index.register_site(s["host"], s.get("date", "19970101"), s.get("ceiling"))
     states = [_reconstruct(_site_state(s, a.max_mb), a.staging) for s in cfg]
@@ -485,7 +482,7 @@ def cmd_crawl(a):
         servicer = era_requests.Servicer(states_by_host, a.staging, res_seen, lock, budget, _mirror_resource_mt)
         threading.Thread(
             target=era_requests.watch,
-            args=(a.staging, a.requests_state, a.requests_interval, stop_requests, servicer),
+            args=(a.requests_dir, a.requests_state, a.requests_interval, stop_requests, servicer),
             kwargs={"log": lambda m: _log(a.log, m), "halted": lambda: budget["stop"]},
             name="requests",
             daemon=True,
@@ -524,20 +521,31 @@ def cmd_crawl(a):
 
     if a.sweep:
         items = _interleave([[(st, u) for u in st["mirrored"]] for st in states])
-        _log(a.log, f"--- SWEEP: re-checking resources on {len(items)} page(s) already on disk")
+        known = ABSENT.stats()
+        _log(
+            a.log,
+            f"--- SWEEP: {len(items)} page(s) on disk; {known['swept']} already walked and unchanged "
+            f"(skipped), {known['absent']} resource(s) the archive does not have (not re-asked)",
+        )
 
         def sweep_worker(item):
             st, url = item
             try:
-                _sweep_page(st, url, a.staging, res_seen, lock, budget)
+                era_sweep.sweep_page(st, url, a.staging, res_seen, lock, budget, ABSENT, _mirror_resource_mt)
             except (OSError, ValueError) as e:
                 _log(a.log, f"ERROR sweep {st['host']} {url}: {e}")
             with lock:
                 budget["fetches"] += 1
 
         _run_level(items, concurrency, sweep_worker, on_done, lambda: budget["stop"])
+        ABSENT.save()  # batched during the pass; make the whole pass durable before the next one
         used = _corpus_bytes(a.staging)
-        _log(a.log, f"--- SWEEP done: corpus {used / 1e9:.2f} GB")
+        now = ABSENT.stats()
+        _log(
+            a.log,
+            f"--- SWEEP done: corpus {used / 1e9:.2f} GB; ledger now {now['swept']} swept page(s), "
+            f"{now['absent']} absent resource(s)",
+        )
 
     for level in range(maxdepth + 1):
         with lock:
@@ -551,6 +559,8 @@ def cmd_crawl(a):
             _log(a.log, f"BUDGET reached: {used / 1e9:.2f} GB -- stopping")
             break
     stop_requests.set()
+    if ABSENT is not None:
+        ABSENT.save()
     era_state.publish_sites(states, a.staging)
     used = _corpus_bytes(a.staging)
     era_state.flush_state(a.state, states, level, used)

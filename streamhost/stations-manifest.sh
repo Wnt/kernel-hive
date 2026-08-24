@@ -595,8 +595,8 @@ emit irix \
   --tile irix --udp 54122 --x11 --x11-display :40 --capture shm --pointer \
   abs --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
   "$T/irix/x11-runtime.sh" --aux-file "$T/irix/irixagent.lua" --aux-file \
-  "$T/irix/fbstat.py" --aux-file "$T/irix/tapnet.sh" --env-append-file \
-  "$T/irix/station.env.fixture"
+  "$T/irix/fbstat.py" --aux-file "$T/irix/tapnet.sh" --aux-file \
+  "$T/irix/rn-tapnet.sh" --env-append-file "$T/irix/station.env.fixture"
 
 # mpf2 (VMID 220) — MAME mpf2 (Multitech Microprofessor II, 1982) -> Applesoft BASIC. ssh 5820. Keyboard-only.
 emit mpf2 \

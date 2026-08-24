@@ -69,6 +69,35 @@ ssh lab 'pct exec 951 -- bash -c '\''PID=$(systemctl show -p MainPID --value ret
 The second was run against 2473 abort-mid-response misses: the proxy showed only
 its listener the whole time, and logged not one traceback.
 
+## The one thing it writes: the miss journal
+
+Serving is read-only, and the unit keeps it that way — `ReadOnlyPaths` covers the corpus and the
+proxy's own code. But a miss is the most useful signal this system produces (*a station asked, and the
+museum had nothing*), so every miss is appended as one JSON line to
+`/var/spool/retronet/_requests.jsonl`, which `retronet-requests.service` in CT 950 folds into the
+crawl's demand queue. See [ERA-PRESS.md](ERA-PRESS.md) §Station requests for the rule and the 30-day
+cooldown.
+
+The spool is a **separate volume, not a corner of the corpus** — that is the whole point. The corpus
+bind-mount is owned by a host uid outside CT 951's idmap, so it shows as `nobody:nogroup` and no in-CT
+user can ever own it; and the service that only serves must not be able to write what it serves. Both
+constraints stay satisfied by giving the hint channel a few kilobytes of its own, mounted `mp1`, owned
+by the *mapped* `rnproxy` uid with the crawl user's group so both sides can rotate it
+(`install-requests-volume.sh`).
+
+Failures are still swallowed — a hint channel must never break serving — but the **first** one writes a
+`WARN` to journald. Between 2026-08-21 and 2026-08-24 this journal could not be written at all and
+nothing said so; the silence, not the fault, was the expensive part.
+
+The access log carries the **`Host`** explicitly:
+
+```
+retronet-proxy 10.99.0.14 www.nytimes.com - "GET /images/rule1.gif HTTP/1.1" 404 -
+```
+
+On the `:80` origin door the request line is a bare path, so without that field a logged miss names no
+site at all and can only be attributed by guessing which corpus directory holds a neighbouring `200`.
+
 ## The service — two doors, one handler
 
 An HTTP/1.0 proxy in Python stdlib (no third-party packages — the CT could never
@@ -131,6 +160,7 @@ empty corpus is a valid corpus — everything is then a 404).
 | `/etc/retronet/proxy.env` | rendered config (`0644`; no secrets) |
 | `/data/retronet/corpus/<host>/<path>` | the corpus — W2 (era-press) writes, the proxy only reads |
 | `/data/retronet/corpus/sites.json` | the manifest — W2 writes; used here for the 404 copy |
+| `/var/spool/retronet/_requests.jsonl` | the **miss journal** — the one path this service writes; a shared volume, deliberately NOT the corpus |
 | `/etc/systemd/system/retronet-proxy.service` | the unit, enabled, `User=rnproxy` |
 
 ### Ports
@@ -155,6 +185,7 @@ before running `install-proxy.sh`.
 | `RN_PROXY_CORPUS` | `/data/retronet/corpus` | corpus root |
 | `RN_PROXY_SEARCH_HOSTS` | `search.retronet` | reserved hostname(s) routed to the search service (comma/space separated) |
 | `RN_PROXY_SEARCH_BACKEND` | `127.0.0.1:8090` | the search service — the sole outbound target |
+| `RN_PROXY_REQUESTS` | `/var/spool/retronet` | miss-journal spool dir; **blank disables** journalling |
 
 ## The synthetic sample corpus
 

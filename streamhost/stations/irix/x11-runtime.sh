@@ -100,15 +100,45 @@ CAPTURE="${IRIX_CAPTURE:-x11}"
 # (dropped 2026-08-03): Netscape connects directly and fails on https://, and
 # the golden's prefs were rewritten to match — prefs aimed at a proxy nobody
 # runs break EVERY page load, including the ones the browser could serve.
+#
+# IRIX_NET_MODE picks WHICH link `on` means, and the two are opposites:
+#
+#   sandbox   (default, the historical behaviour) — tapnet.sh's host-only /30
+#             point-to-point tap, plus the separate IRIX_NET_EGRESS decision.
+#   retronet  — rn-tapnet.sh's pure bridge port on vmbr-rn: the guest reaches
+#             the retronet gateway 10.99.0.2 (DNS + the :80 corpus origin) and
+#             nothing else, in either direction. There is no NAT and no WAN to
+#             NAT to, so joining the retronet RETIRES the internet-egress
+#             exhibit — IRIX_NET_EGRESS is IGNORED in this mode and saying
+#             otherwise would be a lie the launcher told (it refuses instead).
+#             Rollback to the internet exhibit is one line: IRIX_NET_MODE=sandbox.
 NET="${IRIX_NET:-off}"
+NET_MODE="${IRIX_NET_MODE:-sandbox}"
 NET_EGRESS="${IRIX_NET_EGRESS:-off}"
-TAP_IF="${IRIX_TAP_IF:-irixtap0}"
 TAP_HOST_CIDR="${IRIX_TAP_HOST_CIDR:-172.31.20.1/30}"
-TAP_GUEST_IP="${IRIX_TAP_GUEST_IP:-172.31.20.2}"
 # What MAME reports as the emulated NIC's MAC. IRIX programs the SEEQ's station
-# address itself from the PROM `eaddr`, so this only has to agree with that.
+# address itself from the PROM `eaddr`, so this only has to agree with that —
+# which is why irix keeps its SGI OUI on the retronet instead of taking the
+# fleet's 52:54:00:52:4e:<octet> scheme (the same exception macos753 has for
+# Apple's OUI, and the same reason: the guest, not the launcher, owns the
+# address). It is L2-distinct from every other bridged station regardless.
 TAP_MAC="${IRIX_TAP_MAC:-08:00:69:12:34:56}"
-TAPNET="${IRIX_TAPNET:-$D/tapnet.sh}"
+case "$NET_MODE" in
+  sandbox)
+    TAP_IF="${IRIX_TAP_IF:-irixtap0}"
+    TAP_GUEST_IP="${IRIX_TAP_GUEST_IP:-172.31.20.2}"
+    TAPNET="${IRIX_TAPNET:-$D/tapnet.sh}"
+    ;;
+  retronet)
+    TAP_IF="${IRIX_TAP_IF:-irixrn0}"
+    TAP_GUEST_IP="${IRIX_TAP_GUEST_IP:-10.99.0.24}"
+    TAPNET="${IRIX_TAPNET:-$D/rn-tapnet.sh}"
+    ;;
+  *)
+    echo "FATAL: IRIX_NET_MODE must be sandbox or retronet, got: $NET_MODE" >&2
+    exit 1
+    ;;
+esac
 CFGDIR="$D/cfg"
 
 # Guest audio. `off` (default, the historical behaviour) keeps `-sound none`.
@@ -238,7 +268,19 @@ net_up() {
   fi
   # Via `bash`, not exec-bit: --aux-file copies the file into the tile dir and
   # the mode it lands with is a umask away from being wrong.
-  IRIX_NET_EGRESS="$NET_EGRESS" bash "$TAPNET" up "$TAP_IF" "$TAP_HOST_CIDR" "$TAP_GUEST_IP" || return 1
+  if [ "$NET_MODE" = retronet ]; then
+    # An egress request on this link cannot be honoured — there is no uplink on
+    # vmbr-rn to masquerade out of — so refuse rather than start a station whose
+    # config says one thing and whose network does another.
+    if [ "$NET_EGRESS" = on ]; then
+      echo "FATAL: IRIX_NET_EGRESS=on is meaningless with IRIX_NET_MODE=retronet" >&2
+      echo "       (vmbr-rn has no uplink). Pick one: retronet, or sandbox+egress." >&2
+      return 1
+    fi
+    RN_TAP_IF="$TAP_IF" RN_TAP_GUEST_IP="$TAP_GUEST_IP" bash "$TAPNET" up || return 1
+  else
+    IRIX_NET_EGRESS="$NET_EGRESS" bash "$TAPNET" up "$TAP_IF" "$TAP_HOST_CIDR" "$TAP_GUEST_IP" || return 1
+  fi
   mkdir -p "$CFGDIR"
   cat >"$CFGDIR/indy_4610.cfg" <<EOF
 <?xml version="1.0"?>

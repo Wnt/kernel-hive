@@ -40,6 +40,7 @@ Config (systemd EnvironmentFile /etc/retronet/proxy.env, or the environment):
   RN_PROXY_CORPUS          corpus root                  (default /data/retronet/corpus)
   RN_PROXY_SEARCH_HOSTS    reserved hostnames -> search (default search.retronet)
   RN_PROXY_SEARCH_BACKEND  the search service host:port (default 127.0.0.1:8090)
+  RN_PROXY_REQUESTS        miss-journal spool dir       (default /var/spool/retronet; blank disables)
 
 As-built: docs/lab/retronet/WEB-PROXY.md. Stream W1 of the web plane
 (docs/lab/retronet/WEB-PLANE-PLAN.md).
@@ -66,21 +67,49 @@ DEF_ORIGIN_LISTEN = "10.99.0.2:80"
 DEF_CORPUS = "/data/retronet/corpus"
 DEF_SEARCH_HOSTS = "search.retronet"
 DEF_SEARCH_BACKEND = "127.0.0.1:8090"
-# Misses are journalled here, at the corpus root beside sites.json — the one path both containers
-# share. era-press rotates and reads it; see era_requests.py.
+# Misses are journalled into a small SPOOL DIRECTORY that both containers mount — deliberately NOT the
+# corpus, which this service must never be able to write (see the unit's ReadOnlyPaths, and WEB-PROXY.md).
+# era-press rotates and reads it; see era_requests.py.
+DEF_REQUESTS = "/var/spool/retronet"
 MISS_JOURNAL = "_requests.jsonl"
 
+# Requests a CLIENT makes on a timer, not a person coming back to something. They clear the "asked twice,
+# 15 minutes apart" bar on their own and would each buy an archive.org lookup for a file that was never
+# part of any page. Cheaper to never journal them than to cool them down afterwards.
+IGNORED_MISSES = ("/favicon.ico", "/robots.txt", "/wpad.dat", "/apple-touch-icon.png")
+IGNORED_SUFFIXES = (".cab",)  # IE's Authenticode cert refresh: /v4/IUIDENT.CAB, on a 6-hourly timer
 
-def record_miss(corpus_root: str, host: str, path: str) -> None:
+_journal_warned = False  # WARN once per process, never per miss — see record_miss
+
+
+def _journal_ignored(path: str) -> bool:
+    low = path.split("?", 1)[0].lower()
+    return low.endswith(IGNORED_SUFFIXES) or low.rsplit("/", 1)[-1] in {p.lstrip("/") for p in IGNORED_MISSES}
+
+
+def record_miss(spool_dir: str, host: str, path: str) -> None:
     """Append one miss to the journal. One open/write/close so the crawler can rotate the file out from
     under us safely (a short O_APPEND write is atomic); errors are swallowed — a hint channel must
-    never break serving."""
+    never break serving.
+
+    But swallowed is not the same as invisible. This channel was dead for three days behind a unit that
+    made its own journal path read-only, and nothing said so: every miss looked served, the queue looked
+    empty, and the only symptom was a fleet that never asked for anything. So the FIRST failure logs one
+    line and the rest stay quiet — enough to see it in journalctl, never enough to flood it."""
+    global _journal_warned
+    if not spool_dir or _journal_ignored(path):
+        return
     try:
         rec = json.dumps({"url": f"http://{host}{path}", "t": int(time.time())}, ensure_ascii=True)
-        with open(os.path.join(corpus_root, MISS_JOURNAL), "a", encoding="ascii") as fh:
+        with open(os.path.join(spool_dir, MISS_JOURNAL), "a", encoding="ascii") as fh:
             fh.write(rec + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        if not _journal_warned:
+            _journal_warned = True
+            sys.stderr.write(
+                f"retronet-proxy WARN: cannot journal misses to {spool_dir}/{MISS_JOURNAL} ({exc}). "
+                f"Station requests are NOT reaching the crawl; see docs/lab/retronet/ERA-PRESS.md.\n"
+            )
 
 
 # Content type by extension. mimetypes fills any gap; the final fallback is
@@ -152,9 +181,10 @@ class ProxyServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, addr, corpus_root, search_hosts, search_backend):
+    def __init__(self, addr, corpus_root, search_hosts, search_backend, requests_dir=DEF_REQUESTS):
         super().__init__(addr, ProxyHandler)
         self.corpus_root = os.path.realpath(corpus_root)
+        self.requests_dir = requests_dir  # spool for the miss journal; blank turns journalling off
         self.search_hosts = frozenset(h.lower() for h in search_hosts)
         # The canonical search host (first configured): where the miss-page search
         # box and redirected toolbar searches point. It resolves back here.
@@ -354,7 +384,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         otherwise it says 'this host is not on the retronet at all'. The miss is
         also RECORDED: it is the most honest signal this system produces about
         what it lacks — a station asked, and we had nothing. See `record_miss`."""
-        record_miss(self.server.corpus_root, host, path)
+        record_miss(self.server.requests_dir, host, path)
         known = os.path.isdir(os.path.join(self.server.corpus_root, host)) or (host in self.server.known_hosts())
         where = f"http://{host}{path}"
         if known:
@@ -450,7 +480,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # One tidy line to journald (systemd captures stdout/stderr). No IPs of
         # any upstream because there is no upstream.
-        sys.stderr.write(f"retronet-proxy {self.address_string()} - {fmt % args}\n")
+        #
+        # The HOST is logged explicitly. On the :80 origin door the request line is a bare path, so
+        # without this a miss reads "GET /images/rule1.gif 404" and NOTHING in the log says which site
+        # it belonged to — the difference between reading an answer off the log and reconstructing it
+        # from which corpus directory happens to contain a neighbouring 200.
+        host = self.headers.get("Host", "-") if self.headers else "-"
+        sys.stderr.write(f"retronet-proxy {self.address_string()} {host} - {fmt % args}\n")
 
 
 # --- config + main -----------------------------------------------------------
@@ -468,6 +504,7 @@ def load_config():
     corpus = os.environ.get("RN_PROXY_CORPUS", DEF_CORPUS)
     hosts = os.environ.get("RN_PROXY_SEARCH_HOSTS", DEF_SEARCH_HOSTS)
     backend = os.environ.get("RN_PROXY_SEARCH_BACKEND", DEF_SEARCH_BACKEND)
+    requests_dir = os.environ.get("RN_PROXY_REQUESTS", DEF_REQUESTS).strip()
     bind_host, bind_port = split_hostport(listen, 3128)
     # The :80 origin door is optional — a blank RN_PROXY_ORIGIN_LISTEN disables it
     # (e.g. a run where nothing may bind a privileged port).
@@ -483,11 +520,12 @@ def load_config():
         "corpus": corpus,
         "search_hosts": search_hosts,
         "search_backend": (backend_host, backend_port),
+        "requests_dir": requests_dir,
     }
 
 
 def make_server(addr, cfg):
-    return ProxyServer(addr, cfg["corpus"], cfg["search_hosts"], cfg["search_backend"])
+    return ProxyServer(addr, cfg["corpus"], cfg["search_hosts"], cfg["search_backend"], cfg["requests_dir"])
 
 
 def main():
@@ -503,7 +541,8 @@ def main():
     backend = f"{primary.search_backend[0]}:{primary.search_backend[1]}"
     doors = "  ".join(f"{s.server_address[0]}:{s.server_address[1]}" for s in servers)
     sys.stderr.write(
-        f"retronet-proxy: listening on {doors}  corpus={primary.corpus_root}  search={hosts} -> {backend}\n"
+        f"retronet-proxy: listening on {doors}  corpus={primary.corpus_root}  search={hosts} -> {backend}"
+        f"  requests={primary.requests_dir or '(off)'}\n"
     )
     # Extra door(s) in daemon threads; the primary in the main thread. Each
     # ProxyServer already threads per-connection, so this just runs two accept

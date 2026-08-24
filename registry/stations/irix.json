@@ -106,6 +106,8 @@
         "$T/irix/fbstat.py",
         "--aux-file",
         "$T/irix/tapnet.sh",
+        "--aux-file",
+        "$T/irix/rn-tapnet.sh",
         "--env-append-file",
         "$T/irix/station.env.fixture"
       ],
@@ -113,7 +115,8 @@
         "streamhost/stations/irix/irixagent.lua",
         "streamhost/stations/irix/station.env.fixture",
         "streamhost/stations/irix/fetch-assets.sh",
-        "streamhost/stations/irix/tapnet.sh"
+        "streamhost/stations/irix/tapnet.sh",
+        "streamhost/stations/irix/rn-tapnet.sh"
       ]
     },
     "bringUpOrder": 34
@@ -150,6 +153,17 @@
     ],
     "blurb": "SGI’s 1993 Indy brought real workstation Unix — 64-bit MIPS, hardware 24-bit graphics, and the gorgeous teal Indigo Magic Desktop — to a friendly blue pizza-box. IRIX 6.5 was the definitive SGI Unix, booting to the 4Dwm desktop.",
     "notes": "Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md."
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.24",
+    "addressing": "static",
+    "link": "tap irixrn0 on vmbr-rn",
+    "guard": "IRIXRN-IN",
+    "joined": "2026-08-24",
+    "doc": "docs/lab/retronet/WEB-STATION-irix.md"
   },
   "emulator": {
     "family": "MAME",
