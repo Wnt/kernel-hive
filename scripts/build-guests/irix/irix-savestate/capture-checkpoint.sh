@@ -121,7 +121,13 @@ systemctl is-active --quiet streamhost@irix.service && die "streamhost@irix is r
 
 rm -rf "$V"
 mkdir -p "$V"
-cp "$T/x11-runtime.sh" "$T/fbstat.py" "$T/tapnet.sh" "$V/"
+# BOTH network helpers, because the launcher picks one by IRIX_NET_MODE and
+# dies fail-closed on the missing file — which is exactly how the retronet join
+# found this line (2026-08-24): the bake copied a fixed list, rn-tapnet.sh was
+# not on it, and the capture aborted with "IRIX_NET=on but .../rn-tapnet.sh is
+# missing". Copy the pair, not the mode's one, so this rig does not have to know
+# which link the station is on today.
+cp "$T/x11-runtime.sh" "$T/fbstat.py" "$T/tapnet.sh" "$T/rn-tapnet.sh" "$V/"
 "$CG" check-launcher "$V/x11-runtime.sh" || exit 1
 # The launcher's Lua-rollback arm runs $D/irixagent.lua; the mamectl arm this
 # bake requires ignores it (single-injector rule: ctl socket set => no
