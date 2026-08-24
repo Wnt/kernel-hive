@@ -258,28 +258,176 @@ stage "generated-file drift" \
 # --- box state (ONLY when the box is actually reachable) ---
 # A public clone, an offline laptop and GitHub Actions have no `ssh lab`, so
 # this is probe-gated: unreachable box => SKIP with a message, never a failure.
+#
+# WHAT THIS ASKS — and the two questions it refuses to ask
 # Since 2026-08-17 the box is INSTALLED FROM A COMMIT (scripts/dev/box-deploy.sh
-# → scripts/host/box-install.sh from /data/kernel-hive), so "box behind main"
-# is the normal state between a push and its deploy and is only a WARN here.
-# What still hard-fails is the thing that used to hide inside "drift": live
-# files that differ from the commit the box checkout is at — i.e. someone
-# edited labhost by hand, or an install was left half done. That is one
-# in-process dry-run of box-install on labhost, no hashes over the wire.
-echo "== box state (deployed commit vs live files) =="
-if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; then
-  if bs="$(ssh -n -o ConnectTimeout=15 "${LAB:-lab}" '/data/kernel-hive/scripts/host/box-install.sh --repo /data/kernel-hive --json 2>/dev/null')" && [ -n "$bs" ]; then
-    changed="$(printf '%s' "$bs" | sed -n 's/.*"changed":\([0-9]*\).*/\1/p')"
-    newr="$(printf '%s' "$bs" | sed -n 's/.*"new":\([0-9]*\).*/\1/p')"
-    refused="$(printf '%s' "$bs" | sed -n 's/.*"refused":\([0-9]*\).*/\1/p')"
-    boxsha="$(printf '%s' "$bs" | sed -n 's/.*"sha":"\([0-9a-f]\{12\}\).*/\1/p')"
-    if [ "${changed:-0}" = 0 ] && [ "${newr:-0}" = 0 ] && [ "${refused:-0}" = 0 ]; then
-      echo "  ok — live files match the box checkout ($boxsha)"
-    else
-      echo "  FAIL — live files differ from the box checkout ($boxsha): changed=$changed new=$newr refused=$refused"
-      echo "         → scripts/dev/box-deploy.sh            (plan: which rows, and why)"
-      echo "         → scripts/dev/box-deploy.sh --apply    (install the checkout; hand edits are backed up)"
+# -> scripts/host/box-install.sh from /data/kernel-hive). The only live file
+# worth blocking a push over is one that NOBODY's commit accounts for: a hand
+# edit on labhost, or an install left half done.
+#
+# It is NOT "does live equal the box CHECKOUT". That has two false alarms, and a
+# six-stream wave on 2026-08-23/24 paid for both:
+#   * the checkout moves without anything being installed. `.deployed-rev` is
+#     what was actually written to the live paths; rows that changed between
+#     .deployed-rev and the checkout HEAD are simply NOT DEPLOYED YET. Reading
+#     `box-deploy.sh`'s plan used to fast-forward the checkout (fixed in the
+#     same change), so one agent's read-only inspection reddened every other
+#     agent's push. Comparing against .deployed-rev makes that impossible.
+#   * a station agent installing ITS OWN station's file, byte-correct, from its
+#     own branch is a legitimate mid-wave act. If live equals THIS working
+#     tree, the row is accounted for.
+# It is also NOT "does live equal the commit I am pushing" — that would newly
+# block the most ordinary push there is: fix, push, deploy afterwards.
+#
+# And what is left over is SCOPED: it fails the push only if the push touches
+# that row's repo-side file. Everything else is a NAMED warning. A gate must be
+# satisfiable by the person it blocks (see the header): holding a docs commit
+# hostage to macos753's live drift teaches SKIP_GATE=1 — and the remedy the old
+# message printed, `box-deploy.sh --apply`, reverts other streams' in-flight
+# live edits, so the advice itself was a trap during parallel work.
+
+boxlab="${LAB:-lab}"
+
+# label -> repo-relative path, from the ONE pair table the box itself reads.
+# Empty output (ssh gone, table unreadable) => every row stays blocking, i.e.
+# exactly the old behaviour; this can only ever remove failures, never add one.
+box_pair_map() {
+  local tmp
+  tmp="$(mktemp -d)" || return 1
+  (
+    # shellcheck disable=SC1091
+    . scripts/lib/box-sync-pairs.sh || exit 1
+    box_sync_load_pairs "$PWD" "${BOX_SYNC_BOX_ROOT:-/data/vms/streamhost}" \
+      "$boxlab" "$tmp" >/dev/null 2>&1
+    local i
+    for i in "${!BOX_SYNC_LABELS[@]}"; do
+      printf '%s\t%s\n' "${BOX_SYNC_LABELS[$i]}" "${BOX_SYNC_REPO_FILES[$i]}"
+    done
+  ) </dev/null 2>/dev/null
+  rm -rf "$tmp"
+}
+
+# box_row_line <marker> <row: kind TAB label TAB note>
+box_row_line() {
+  printf '    %s %-8s %-44s %s\n' "$1" \
+    "$(printf '%s' "$2" | cut -f1)" "$(printf '%s' "$2" | cut -f2)" \
+    "$(printf '%s' "$2" | cut -f3)"
+}
+
+echo "== box state (live labhost files vs what was installed) =="
+if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "$boxlab" true 2>/dev/null; then
+  bs_txt="$(ssh -n -o ConnectTimeout=25 "$boxlab" '
+    cat /data/vms/streamhost/.deployed-rev 2>/dev/null
+    echo "@@plan@@"
+    /data/kernel-hive/scripts/host/box-install.sh --repo /data/kernel-hive 2>/dev/null')"
+  bs_plan="$(printf '%s\n' "$bs_txt" | sed -n '/^@@plan@@$/,$p' | tail -n +2)"
+  deployed_sha="$(printf '%s\n' "$bs_txt" | sed -n 's/^sha=\([0-9a-f]\{7,\}\)$/\1/p' | head -1)"
+  if [[ "$bs_plan" == box-install:* ]]; then
+    boxsha="$(printf '%s\n' "$bs_plan" | sed -n '1s/.*@\([0-9a-f]\{7,\}\) from .*/\1/p')"
+    mapfile -t BOX_ROWS < <(printf '%s\n' "$bs_plan" |
+      awk '$1=="changed"||$1=="new"||$1=="REFUSED"{print $1"\t"$2}')
+    # Cross-check the rows against box-install's own totals. Scoping is only
+    # safe while we can NAME what drifted; counted-but-unnamed drift means the
+    # output shape moved under us, and a check that cannot read its input must
+    # say so rather than pass. (Unparseable totals read as 0, exactly as the
+    # old --json path did, so this can never invent a failure either.)
+    n_drift="$(printf '%s\n' "$bs_plan" | sed -n '/^ *same /{p;q;}' |
+      awk '{for (i = 1; i < NF; i++) if ($i == "changed" || $i == "new" || $i == "refused") s += $(i + 1)} END {print s + 0}')"
+
+    declare -A PAIRPATH=()
+    BLOCK=() WARN_ROWS=() UNDEPLOYED=""
+    if [[ "${#BOX_ROWS[@]}" -gt 0 ]]; then
+      while IFS=$'\t' read -r pl pp; do
+        [[ -n "${pl:-}" ]] && PAIRPATH["$pl"]="$pp"
+      done < <(box_pair_map)
+      # Files the checkout carries that the last INSTALL never wrote: pending
+      # deployment, not drift. Unknown shas (unfetched) => no excuse granted.
+      if [[ -n "$deployed_sha" && -n "$boxsha" && "$deployed_sha" != "$boxsha" ]] &&
+        git cat-file -e "$deployed_sha^{commit}" 2>/dev/null &&
+        git cat-file -e "$boxsha^{commit}" 2>/dev/null; then
+        UNDEPLOYED="$(git diff --name-only "$deployed_sha" "$boxsha" 2>/dev/null)"
+      fi
+    fi
+
+    for row in ${BOX_ROWS[@]+"${BOX_ROWS[@]}"}; do
+      label="${row#*$'\t'}"
+      path="${PAIRPATH[$label]:-}"
+      why=""
+      if [[ -n "$path" ]] && printf '%s\n' "$UNDEPLOYED" | grep -qFx -- "$path"; then
+        why="pending deploy (changed since .deployed-rev ${deployed_sha:0:7})"
+      elif [[ -z "$path" || "${GATE_FULL:-0}" == "1" ]]; then
+        why=""
+      elif ! printf '%s\n' "$CHANGED" | grep -qFx -- "$path"; then
+        why="not in this push ($path)"
+      fi
+      if [[ -n "$why" ]]; then
+        WARN_ROWS+=("$row"$'\t'"$why")
+      else
+        BLOCK+=("$row"$'\t'"${path:-(row absent from the pair table here)}")
+      fi
+    done
+
+    # Last accounting step: does live already carry THIS working tree's bytes?
+    # Only possible when the tree is visible to labhost (a sandbox under /data).
+    if [[ "${#BLOCK[@]}" -gt 0 && "$PWD" == /data/* ]] &&
+      ssh -n -o ConnectTimeout=8 "$boxlab" "test -e $(printf '%q' "$PWD")/.git" 2>/dev/null; then
+      qlabels="" safe=1
+      for row in "${BLOCK[@]}"; do
+        label="$(printf '%s' "$row" | cut -f2)"
+        [[ "$label" =~ ^[A-Za-z0-9._/@+-]+$ ]] || {
+          safe=0
+          break
+        }
+        qlabels+=" $(printf '%q' "$label")"
+      done
+      if [[ "$safe" == 1 ]] && mine="$(ssh -n -o ConnectTimeout=25 "$boxlab" \
+        "/data/kernel-hive/scripts/host/box-install.sh --repo $(printf '%q' "$PWD")$qlabels 2>/dev/null")" &&
+        [[ "$mine" == box-install:* ]]; then
+        mapfile -t STILL < <(printf '%s\n' "$mine" |
+          awk '$1=="changed"||$1=="new"||$1=="REFUSED"{print $2}')
+        KEEP=()
+        for row in "${BLOCK[@]}"; do
+          label="$(printf '%s' "$row" | cut -f2)"
+          if printf '%s\n' ${STILL[@]+"${STILL[@]}"} | grep -qFx -- "$label"; then
+            KEEP+=("$row")
+          else
+            WARN_ROWS+=("$(printf '%s' "$row" | cut -f1,2)"$'\t'"live already carries the bytes of this tree")
+          fi
+        done
+        BLOCK=(${KEEP[@]+"${KEEP[@]}"})
+      fi
+    fi
+
+    if [[ "${#BOX_ROWS[@]}" -eq 0 && "${n_drift:-0}" -gt 0 ]]; then
+      echo "  FAIL — box-install counts $n_drift drifted row(s) but named none."
+      echo "         Refusing to interpret that: run it yourself and read the rows."
+      echo "         → ssh lab '/data/kernel-hive/scripts/host/box-install.sh --repo /data/kernel-hive'"
       FAILED_STAGES+=("box state")
       fail=1
+    elif [[ "${#BOX_ROWS[@]}" -eq 0 ]]; then
+      echo "  ok — live files match the box checkout ($boxsha)"
+    else
+      if [[ "${#WARN_ROWS[@]}" -gt 0 ]]; then
+        echo "  warn — ${#WARN_ROWS[@]} live row(s) differ from the box checkout ($boxsha), accounted for:"
+        for row in "${WARN_ROWS[@]:0:12}"; do box_row_line warn "$row"; done
+        [[ "${#WARN_ROWS[@]}" -gt 12 ]] && echo "    … and $((${#WARN_ROWS[@]} - 12)) more"
+        echo "    not blocking. Whoever owns those rows deploys them — do NOT run"
+        echo "    box-deploy.sh --apply to clear this while other streams are live."
+      fi
+      if [[ "${#BLOCK[@]}" -gt 0 ]]; then
+        echo "  FAIL — ${#BLOCK[@]} live file(s) THIS PUSH touches match neither the box"
+        echo "         checkout ($boxsha) nor this working tree — hand-edited on labhost,"
+        echo "         or an install left half done:"
+        for row in "${BLOCK[@]:0:12}"; do box_row_line FAIL "$row"; done
+        [[ "${#BLOCK[@]}" -gt 12 ]] && echo "    … and $((${#BLOCK[@]} - 12)) more"
+        echo "         → ssh lab '/data/kernel-hive/scripts/host/box-install.sh --repo /data/kernel-hive <label>'"
+        echo "           names the row; scripts/lib/box-sync-pairs.sh gives its live path"
+        echo "         → install YOUR row from YOUR tree, or re-run the install that half ran"
+        echo "         → scripts/dev/box-deploy.sh --apply   (whole checkout; safe only when no"
+        echo "           other stream has live edits in flight — it reverts them)"
+        FAILED_STAGES+=("box state")
+        fail=1
+      fi
     fi
     if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" "$boxsha" 2>/dev/null; then
       echo "  note: after this push, deploy it: scripts/dev/box-deploy.sh --apply"
@@ -293,7 +441,7 @@ if ssh -n -o ConnectTimeout=4 -o BatchMode=yes "${LAB:-lab}" true 2>/dev/null; t
     fi
   fi
 else
-  echo "  SKIPPED: ssh ${LAB:-lab} unreachable (public clone, offline, or CI)"
+  echo "  SKIPPED: ssh $boxlab unreachable (public clone, offline, or CI)"
 fi
 
 if [[ "$fail" != "0" ]]; then

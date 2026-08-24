@@ -129,6 +129,42 @@ them gone sooner, that is
 `pct exec 951 -- journalctl --rotate && pct exec 951 -- journalctl --vacuum-time=1s`,
 and it takes the rest of the journal with it.
 
+### Restarting the server, and who comes back
+
+`systemctl restart retronet-oscar` drops **every** signed-in session — the
+listener closes and each client sees its socket die. Nothing on the gateway
+re-establishes them; each persona comes back only under its own power, and the
+three ways that happens have very different latencies:
+
+| Persona | Comes back | When |
+|---|---|---|
+| `10000` HiveBot | on its own, within seconds | `retronet-bot` is a host-side service with its own retry loop |
+| Any station whose guest is **running** | on its own | the client's auto-reconnect: seconds to ~a minute |
+| Any station whose guest is **idle-paused** | **not until a visitor wakes it** | the guest is SIGSTOPped; its emulated TCP stack cannot notice the drop, let alone retry |
+
+**The third row is the one that gets misdiagnosed.** Every station is
+`SH_IDLE_PAUSE_SECS=60`, so outside visiting hours the whole fleet is frozen.
+Restart the gateway at 03:00 and the bot is back before you finish reading the
+log while every station stays signed out — which looks exactly like a fleet of
+clients with no reconnect logic, and is nothing of the kind. Confirmed
+2026-08-24: `64000` (tru64) sat out a 03:09Z restart for 22 minutes purely
+because es40 had been SIGSTOPped since the previous afternoon, then signed back
+on **17 s** after the first `labctl reset`, unattended.
+
+Before concluding a station's client cannot reconnect, check that its guest was
+actually running:
+
+```bash
+ssh lab "p=\$(pgrep -f 'assets/<station>/es40'); awk '/^State:/{print}' /proc/\$p/status"
+ssh lab 'journalctl -u streamhost@<station> | grep "\[idle\]"'
+```
+
+`State: T (stopped)` and a `[idle] … -> guest paused` with no later resume mean
+the guest was frozen through the whole window and proves nothing about its
+client. Only `beos` has a genuine gap here — ICBM .71 has no auto-reconnect at
+all and carries `icbm-watchdog.sh` for it
+([`STATION-beos.md`](STATION-beos.md)).
+
 ### Ports
 
 | Port | Proto | Bind | Who dials it |
