@@ -8,6 +8,16 @@
 # station runs a standalone build of the kernel-hive QEMU fork installed at
 # /opt/qemu-ppc (the macos753/-m68k arrangement). Its checkpoint is baked AND
 # restored by this binary, so pve's pbs-state vmstate section never appears.
+#
+# THE FORK MUST INCLUDE THE cpu/tb_env VMSTATE PATCH (fork commit 196124d,
+# 2026-08-24). Stock QEMU never migrates the softmmu timebase (tb_offset,
+# decr_next): a checkpoint restored in a fresh process resumed with the TB
+# jumped ~30 s ahead of the guest's own records, and Mac OS 9's nanokernel
+# wedged permanently in its interrupts-off TB-repair loop (frozen clock,
+# frozen framebuffer, 100% of a core). A golden captured by a pre-patch
+# binary predates the subsection and still wedges — after any binary change
+# here, re-bake the golden cold and re-prove the restore with the guest's
+# menubar clock advancing two ticks in a fresh process.
 # Rebuild whenever the fork moves:
 #   ../configure --target-list=ppc-softmmu --enable-slirp --enable-dbus-display \
 #     --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-spice \

@@ -142,7 +142,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher IS the deployed launcher; the golden was captured 2026-08-24 by checkpoint-guard with this exact device set on the standalone /opt/qemu-ppc build (first capture, restore-proven SSIM 0.996)"
+        "reason": "tracked verbatim launcher IS the deployed launcher; the golden was re-baked cold 2026-08-24 by checkpoint-guard with this exact device set on the standalone /opt/qemu-ppc build carrying the cpu/tb_env vmstate patch (fork 196124d) — a pre-patch golden wedges on every restore"
       }
     }
   },
@@ -154,7 +154,7 @@
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "Quiet Mac OS 9.2.2 Finder desktop at 1024x768, millions of colors (Power Mac G4 mac99 under TCG): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected, Control Strip along the bottom, cursor parked dead-centre (512,384). Energy Saver sleep pinned to Never; Mouse tracking pinned to 'Very Slow' (the only non-accelerated setting, linear 0.18 px/unit) and double-click speed slowest so a click pair survives the stream; Setup Assistant quit and disarmed. Captured by checkpoint-guard 2026-08-24, restore-proven on the framebuffer (SSIM 0.996) with the guest running; pointer, click and Cmd-O keyboard chord re-proven on the framebuffer AFTER a loadvm restore."
+    "fixture": "Quiet Mac OS 9.2.2 Finder desktop at 1024x768, millions of colors (Power Mac G4 mac99 under TCG): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected, Control Strip along the bottom, cursor parked dead-centre (512,384). Energy Saver sleep pinned to Never; Mouse tracking pinned to 'Very Slow' (the only non-accelerated setting, linear 0.18 px/unit) and double-click speed slowest so a click pair survives the stream; Setup Assistant quit and disarmed. Re-baked cold 2026-08-24 on the tb_env-patched fork binary and captured by checkpoint-guard; restore-proven by the strict protocol — fresh QEMU process, the guest's own menubar clock advancing across two ticks, then pointer motion consumed on the framebuffer (SSIM alone passes on a wedged guest and proves nothing)."
   },
   "spa": {
     "archetypeId": "apple-studio",
@@ -192,7 +192,7 @@
   "emulator": {
     "family": "QEMU",
     "version": "11.0.2",
-    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll), built to /opt/qemu-ppc",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll + cpu/tb_env vmstate), built to /opt/qemu-ppc",
     "driver": "mac99"
   },
   "ui": "desktop",

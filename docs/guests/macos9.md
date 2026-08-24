@@ -1,9 +1,10 @@
 # macos9 — Mac OS 9.2.2 (Power Mac G4 "mac99")
 
 Status: **production**, slot 150 / UDP 54150, LISTED. The lab's FIRST PowerPC
-guest. Golden captured by `checkpoint-guard` 2026-08-24 (first capture,
-restore-proven on the framebuffer, SSIM 0.996), pointer/click/keyboard
-re-proven on the framebuffer after a `loadvm golden` restore.
+guest. Golden re-baked cold 2026-08-24 on the tb_env-patched fork binary and
+captured by `checkpoint-guard`; restore proven by the strict protocol (fresh
+process, the guest's own menubar clock across two ticks, pointer consumed —
+see Golden / reset for why nothing weaker counts).
 
 ## Identity and source
 
@@ -86,54 +87,49 @@ The CD is itself a live Mac OS 9.2.2 system with the full Apple installer:
 `checkpoint-guard recapture macos9` (never hand-rolled savevm/delvm). The
 launcher probes `qemu-img snapshot -l | grep -qw golden` and boots
 `-loadvm golden -S` — paused until the first visitor. Idle auto-pause 60 s.
-First-capture byte backup kept at
-`macos9-golden.qcow2.cpg-bak-20260824T173938Z` until the operator is happy
-(`checkpoint-guard prune macos9`).
 
-**`resetMode=loadvm` DOES NOT WORK ON THIS STATION.** Every restore of a
-checkpoint wedges the guest: the PC freezes at one address (repeated
-`info registers` samples identical), the framebuffer goes byte-identical, the
-guest's own menubar clock stops, and QEMU keeps burning ~100 % of a core with
-`DSISR 0x40000000` on a `DAR` a few MB ABOVE the top of the 512 MB of guest
-RAM (`0x209b75e0`, `0x20430000`, `0x20…` every time). Restoring paints the
-fixture desktop perfectly first, which is what makes it so convincing.
+**Checkpoint restore REQUIRES the fork's `cpu/tb_env` vmstate patch**
+(github.com/Wnt/qemu `kernel-hive` commit `196124d`, 2026-08-24). Stock QEMU
+never migrates the softmmu timebase state (`tb_env`: `tb_offset`,
+`decr_next`), so a checkpoint restored in a fresh process resumed with
+`tb_offset = 0` — the guest-visible TB jumped ~30 s AHEAD of the guest's own
+records (Mac OS 9's nanokernel zeroes the TB during boot, leaving
+`tb_offset ≈ -30 s`) and the nanokernel wedged permanently in its
+interrupts-off TB-repair loop. Root-caused 2026-08-24 with `-trace
+ppc_tb_store`: post-restore the guest reran `mttbl 0` / `mttbu` / `mttbl`
+~700 times a second, its target racing ahead of the TB it kept rewriting
+(target upper word 0x2 → 0x5 in 40 s), spinning at `NIP 0xf23xxx` (inside
+the nanokernel — the "Starting timeslicing" string sits in that region) with
+`MSR 0x1000` (EE=0, real mode) and the DECR wrapping unserviced. The patch
+carries `tb_offset`/`atb_offset`/`vtb_offset`/`decr_next` in a new
+`cpu/tb_env` cpu-vmstate subsection and re-arms the decrementer on load.
 
-Measured 2026-08-24, five restores, everything varied that could be varied:
+What the 2026-08-24 investigation established on the way (all measured, do
+not re-litigate):
 
-| what was varied | result |
-|---|---|
-| checkpoint captured RUNNING (checkpoint-guard) | wedges |
-| checkpoint captured STOPPED (hand-rolled test label) | wedges |
-| restore in a FRESH process (`-loadvm X -S` + `cont`) | wedges |
-| restore MID-FLIGHT into a running QEMU | wedges |
-| `-display dbus,p2p=on` vs `-display none` | wedges either way |
-| **cold boot, no checkpoint** | **healthy — 3/3 boots, 7 min+ each, input works** |
-
-**The one "successful" restore was a measurement artefact.** A `loadvm`
-issued immediately after a `savevm` in the SAME process survived 5 minutes —
-but that restores state identical to what is already live, so nothing
-actually changes. It is a no-op, not a restore. Never accept it as proof.
+- Wedges identically: captured running or stopped; restored fresh-process or
+  mid-flight; `-display dbus,p2p=on` or `-display none`; `-cpu g4` or
+  `-cpu g3` (AltiVec ruled out). Cold boot always healthy.
+- The dumped CPU state (`info registers`, incl. `SDR1`) restores
+  byte-faithful across a fresh-process `loadvm` — only the TB moves. The
+  much-noticed `DAR 0x209b75e0 / DSISR 0x40000000` "few MB above RAM top"
+  was a STALE leftover from a long-handled DSI, present in healthy dumps
+  too; `VRSAVE 0x80000000` was equally a red herring.
+- A `loadvm` issued right after `savevm` in the SAME process is a no-op
+  (state identical to what is live, `tb_env` included) and proves nothing.
+- The golden captured by a pre-patch binary predates the subsection and
+  wedges under any binary. After ANY binary change: re-bake cold, re-prove.
 
 **A restore proof MUST watch the guest's own menubar clock advance across at
-least two ticks.** `checkpoint-guard`'s framebuffer proof PASSES on a dead
-checkpoint here (it reported SSIM 0.996 and "guest running" on one that was
-already wedged), because a wedged guest still holds a perfect-looking frame
-and QEMU still reports `running`. A single good frame proves nothing.
+least two ticks (minutes), in a FRESH QEMU process, and then see the guest
+consume pointer input.** `checkpoint-guard`'s framebuffer proof PASSES on a
+dead checkpoint here (it reported SSIM 0.996 and "guest running" on one that
+was already wedged), because a wedged guest still holds a perfect-looking
+frame and QEMU still reports `running`. A single good frame proves nothing.
 
-Consequences until this is fixed: the launcher's `-loadvm golden -S` path
-produces a DEAD station on every start, `labctl reset` cannot work, and the
-checkpoint in the qcow2 is retained only as evidence. **Bring this station up
-by cold booting** (~7 min to the desktop under TCG); idle auto-pause still
-works normally, and QMP `stop`/`cont` on a cold-booted guest is proven safe —
-a 15-minute pause resumed cleanly and the guest reacted to input afterwards.
-
-The open lead is that `DAR` sitting just past the end of RAM: something
-mapped at or after the RAM top is not being carried in the vmstate — the
-mac99 VRAM / `qemu_vga.ndrv` framebuffer aperture and the PPC BAT/segment
-registers are the first places to look.
-
-**Warm reset is BROKEN too**: `system_reset` hangs the machine at the
-exception vector (NIP=0x4, LR in OpenBIOS). Never use it.
+**Warm reset is BROKEN**: `system_reset` hangs the machine at the exception
+vector (NIP=0x4, LR in OpenBIOS). Never use it — reset is `loadvm golden`,
+cold boot is a fresh QEMU process.
 
 Reading the registers: `MSR 0x00001000` is a NORMAL transient here — it
 appears repeatedly in a healthy guest inside exception handlers, as does
@@ -166,10 +162,13 @@ with **Shut Down** as the default button, `ret` confirms it.
   every step (bring-up shots under `/data/vms/sandbox/ppc-macos9/rig/shots/`).
 - usb-tablet: abs events move nothing → no absolute path exists. usb-mouse
   relative motion, click, drag (rubber-band), menu press-drag-release: PASS.
-- Post-restore: pointer motion + click (icon selection highlight) + Cmd-O
-  chord (window opened): PASS on the framebuffer after `loadvm golden`.
-  **This proof is void** — a restored checkpoint is wedged (see Golden /
-  reset); the proof completed before the freeze was visible.
+- Post-restore (tb_env-patched binary, 2026-08-24): fresh QEMU process,
+  `-loadvm` + `cont`; `info registers` byte-identical across the restore
+  (TB included, only the lwarx reservation differs); the guest's menubar
+  clock advanced across two ticks (70 s apart, twice); a 400,300-unit rel
+  move landed as a 71x53 px cursor move — exactly the 0.177 gain. PASS.
+  (The earlier pre-patch "PASS" completed before the freeze was visible and
+  was void — the strict protocol exists because of it.)
 - Reset: `loadvm golden` wiped a dirtied screen back to the fixture.
 - Browser-path (streamhost/WebRTC) input: UNVERIFIED — left for the
   operator's eyeball, like macos753.
