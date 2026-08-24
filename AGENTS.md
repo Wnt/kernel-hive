@@ -95,6 +95,19 @@ logins once and `pct start` fleet-wide once). Never
 session. Resolve processes through `/proc/<pid>/exe`, never a cmdline grep,
 which matches the shell running it.
 
+**Never retire a golden before its replacement is proven.** A checkpoint, the
+emulator binary that reads it and the device set it was captured on are ONE
+combination: the new one must be **fully captured and restore-verified** before
+anything of the old one is deleted or overwritten. Back the old golden up
+byte-for-byte first (SHA256-verified with the guest STOPPED), capture the new
+one under a different name, **prove it restores on the framebuffer**, and only
+then remove the old. `delvm golden` before its replacement `savevm` succeeds is
+the exact window that has already left a live station with **no golden at all**
+when the agent died inside it — never open it. The same rule governs a binary
+or device-set change: prove the combination on a clone, keep the old binary for
+rollback, and re-prove the restore per station rather than carrying a clone's
+result across.
+
 **Claim shared things atomically, and make the claim the proof.** Displays,
 taps, labhost IPs, iptables chains, core pairs, ports, VMIDs. Never
 check-then-create; namespace per rig; **fail loudly instead of falling back —
