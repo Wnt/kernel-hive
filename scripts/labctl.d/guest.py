@@ -462,6 +462,12 @@ def cmd_mctl(argv):
             "station.env, no 'ctl' field in tiles.json). See 'labctl exec/sh/type' "
             "for this tile's wired channels." % name
         )
+    # A SIGSTOPped emulator answers nothing on its ctl socket, so this used to
+    # be the one driving verb that could hang on a frozen guest with no
+    # explanation. ensure_running also holds the wake lease for the rest of this
+    # process, which is what keeps a SAVEST/LOADST (--timeout 60+) from being
+    # cut in half by the daemon's 60 s pause re-assert.
+    ensure_running(c, name)
     cmd = ["python3", MCTL, sock]
     if timeout is not None:
         cmd += ["--timeout", timeout]

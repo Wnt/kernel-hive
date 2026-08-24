@@ -387,11 +387,14 @@ systemctl start streamhost@solaris
   runs `-loadvm golden`, and a QEMU internal snapshot restores the *disk* as well
   as RAM, so every in-guest edit made since the last bake is gone. Do the whole
   in-guest sequence and the bake in one uninterrupted session, or script it.
-- **`SH_IDLE_PAUSE_SECS=0` disables idle auto-pause** while you work (a paused
-  guest answers nothing, and its OSCAR socket rots into a "Broken pipe" the
-  moment it wakes). It is a systemd `EnvironmentFile`, which does **not** strip
-  trailing comments — `SH_IDLE_PAUSE_SECS=0   # temp` parses as the literal
-  string `0   # temp`, fails to parse as a number, and silently falls back to the
+- **A paused guest answers nothing, and its OSCAR socket rots into a "Broken
+  pipe" the moment it wakes.** Driving the guest does not need an override —
+  `labctl` and `scripts/dev/qmp-type.py` wake it, verify it is running and hold
+  a wake lease while they drive ([`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md)).
+  For a long unattended step with nothing driving, `SH_IDLE_PAUSE_SECS=0`
+  disables idle auto-pause outright. It is a systemd `EnvironmentFile`, which
+  does **not** strip trailing comments — `SH_IDLE_PAUSE_SECS=0   # temp` parses
+  as the literal string `0   # temp`, fails to parse as a number, and silently falls back to the
   default. Put the comment on its own line. Confirm with
   `journalctl -u streamhost@solaris | grep idle` → `idle auto-pause OFF`.
   **Remove the override before you call the station done.**

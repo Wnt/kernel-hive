@@ -136,13 +136,12 @@ the default-MAC reservation `52:54:00:12:34:56=10.99.0.10`), `install-dhcp.sh
   idle-pauses when no streamhost visitor is connected (the vCPU freezes), which
   stalls the InstallShield "Unpacking Files (Red Bend)" phase at a file for
   minutes at a time. It is **not** a hang (QEMU sits at ~0 % CPU because the guest
-  is HALTed). Hold the guest awake during any long unattended step — a QMP loop
-  that `cont`s whenever `query-status` ≠ `running` — and the install finishes in
-  a couple of minutes. **That loop must NOT hold the QMP socket open**: this
-  build serves a limited number of concurrent QMP clients (the daemon already
-  holds one), so a persistent extra connection makes `labctl shot`/mouse calls
-  fail with `EAGAIN`. Use momentary connect→cont→close, or stop the loop before
-  driving the framebuffer.
+  is HALTed). Hold the guest awake for the duration of any long unattended step
+  — `scripts/lib/guest_wake.py`'s `hold_lease()` keeps the daemon from pausing
+  it under you, and the tools that drive the guest (`labctl`,
+  `scripts/dev/qmp-type.py`) take that lease themselves — and the install
+  finishes in a couple of minutes. See
+  [`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md).
 - **Shut ICQ 2000b down before installing 2001b.** The installer aborts with
   *"You must Close the ICQ Application"* while 2000b is running; there is no
   `taskkill` on Win98, so close it from its startup **Welcome** panel

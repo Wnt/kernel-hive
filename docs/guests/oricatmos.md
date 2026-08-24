@@ -234,11 +234,13 @@ visitor pressing Tab gets the Oric's key, not MAME's menu. The MPF-II's
 `scroll_lock` sandwich exists for the same reason and is not needed here,
 because this station sends no post-restore keys at all.
 
-**A station with no viewer is idle-paused, and a paused guest swallows every key.**
-`[idle] no sessions for 60s -> guest paused` in the journal is normal; `labctl`
-resumes automatically, and a bare QMP harness must send `cont` itself. Forty
-characters typed at a paused station land as nothing at all, which reads exactly
-like a broken keyboard.
+**A station with no viewer is idle-paused, and a paused guest reacts to nothing.**
+`[idle] no sessions for 60s -> guest paused` in the journal is normal. `labctl`
+and `scripts/dev/qmp-type.py` wake the guest, verify it is running and hold it
+awake while they drive; a harness of your own should use
+`scripts/lib/guest_wake.py` rather than assume. Forty characters typed at a
+paused station land as nothing at all, which reads exactly like a broken
+keyboard — see [`../lab/INPUT-DEBUGGING.md`](../lab/INPUT-DEBUGGING.md).
 
 ## Operating and verification
 

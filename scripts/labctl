@@ -80,7 +80,7 @@ _LABCTL_D_DEPLOYED = "/usr/local/lib/labctl"
 _LABCTL_D_REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "labctl.d")
 sys.path.insert(0, _LABCTL_D_DEPLOYED if os.path.isdir(_LABCTL_D_DEPLOYED) else _LABCTL_D_REPO)
 
-from common import die, load_matrix, svc_state, tile_conf  # noqa: E402
+from common import GuestPaused, die, load_matrix, svc_state, tile_conf  # noqa: E402
 from capture import capture_png_any  # noqa: E402
 from facts import print_facts, registry_entry, tile_facts  # noqa: E402
 from health import cmd_health  # noqa: E402
@@ -368,7 +368,13 @@ def main():
     fn = table.get(cmd)
     if not fn:
         die("unknown subcommand '%s'. try: %s" % (cmd, ", ".join(table)))
-    fn(rest)
+    try:
+        fn(rest)
+    except GuestPaused as exc:
+        # A frozen guest is a specific, nameable state, not an unhandled
+        # traceback and definitely not a silent success. Exit 4 so a script can
+        # tell "the guest was asleep" from "the command failed".
+        die(str(exc), 4)
 
 
 if __name__ == "__main__":

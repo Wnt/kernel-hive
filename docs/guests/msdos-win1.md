@@ -142,11 +142,13 @@ swapped in with a timestamped backup.
   ```
 - **GOTCHA — "input dead" is idle auto-pause, not a guest bug.** The shared
   streamhost daemon idle-auto-pauses the VM after ~60 s with no client
-  (`query-status` → `paused`). QMP input on a paused VM is **silently dropped** — so
-  a direct-QMP framebuffer gate must `{"execute":"cont"}` (or connect a browser
-  client) first. Keyboard + mouse are fully functional once `running:true`. This cost
-  a detour during the gate; noted so the next agent doesn't mis-diagnose it as a
-  keyboard regression.
+  (`query-status` → `paused`), and a paused VM reacts to nothing. Keyboard and
+  mouse are fully functional once it is `running:true`. `labctl` and
+  `scripts/dev/qmp-type.py` wake and verify the guest for you (and keep it awake
+  while they drive); a harness of your own should use
+  `scripts/lib/guest_wake.py`. See
+  [`../lab/INPUT-DEBUGGING.md`](../lab/INPUT-DEBUGGING.md) before mis-diagnosing
+  this as a keyboard regression.
 - **Still host-side (not the guest checkpoint):** issue #4 (splash mid-blit streaking) is
   cosmetic/streamhost-side (progressive splash paint captured mid-frame); unchanged.
   End-to-end 1:1 browser mouse depends on the daemon's merged bounded-relative

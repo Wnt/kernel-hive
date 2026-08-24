@@ -56,14 +56,153 @@
 // must never SIGSTOP an unrelated process. Both signals are idempotent, so the
 // reconciler's re-assert and the unconditional cont on connect stay free.
 //
+// INPUT IS A WAKE, AND THE WAKE IS VERIFIED (2026-08-24). A paused guest that
+// is handed an input event does not react, and every plane that could hand it
+// one used to say nothing about that: QEMU's own monitor acks `sendkey` on a
+// guest whose vCPUs are stopped, so `qmp-type.py` typed a whole line into the
+// void and then screendumped the unchanged screen as its "proof". Agents read
+// that as a wedged guest and went debugging the emulator, repeatedly, during
+// the 2026-08-23 wave. An interface that accepts what it discards manufactures
+// false evidence, which in a lab whose first rule is "the framebuffer is the
+// only proof" is worse than failing.
+//
+// The rule is now the one MAME's ctlsock already keeps: an ack means the event
+// was delivered TO A RUNNING GUEST. Three parts enforce it, and none of them
+// queues — a pointer move replayed seconds later lands at a coordinate the
+// client has long since moved on from, which is the same false evidence one
+// layer up:
+//
+//   1. `wake_for_input()` — the daemon's own input funnel (input::handle) calls
+//      it before injecting. It is an atomic load and returns instantly unless
+//      we believe we froze the guest; if we did, it CONTs and only then lets the
+//      event through. This closes the window where the `cont` in
+//      `session_started` failed on a busy QMP socket and the next ~5 s of a
+//      visitor's clicks went into a stopped guest with nothing said.
+//   2. If that wake fails, the record is dropped LOUDLY — one `[idle] INPUT
+//      DROPPED` line naming the pause state and the running total — instead of
+//      silently. The reconciler retries `cont` every tick while a session is
+//      live, so this self-heals within ~5 s.
+//   3. The WAKE LEASE (below) stops the reconciler re-freezing the guest under
+//      an out-of-band driver that is still typing.
+//
+// WAKE LEASE (SH_WAKE_LEASE, default /run/streamhost/wake/<station>.lease):
+// streamhost is not the only thing that drives a guest — labctl, qmp-type.py
+// and the install-phase tooling inject over QMP with no browser session, so
+// `sessions` is 0 and the reconciler's HEAL_EVERY re-assert (60 s) undoes their
+// `cont` mid-sequence. That race is the whole reason for the folklore agents
+// were passing around ("send `cont` and your input back-to-back on ONE
+// connection") — which shrinks the window rather than closing it. A driver now
+// touches the lease file for as long as it is driving; a lease whose mtime is
+// within LEASE_TTL both withholds the pause and resumes a guest we already
+// paused. It is mtime-based on purpose: a driver that dies leaves a lease that
+// expires on its own, so the worst case is one station running LEASE_TTL longer
+// than it had to, never a station that never pauses again.
+//
 // Config: SH_IDLE_PAUSE_SECS / --idle-pause-secs (default 60; 0 = disabled;
 // per-station override via station.env), SH_IDLE_PAUSE_PIDFILE +
 // SH_IDLE_PAUSE_PROC_MATCH (non-QEMU stations). See docs/IDLE-PAUSE.md.
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, OnceLock};
+use std::time::{Duration, Instant, SystemTime};
+
+/// How long a driver's touch of the wake-lease file keeps the guest awake.
+///
+/// Sized to outlast the reconciler's own re-assert period (HEAL_EVERY = 60 s)
+/// with margin, so a driver that refreshes its lease on any sane interval is
+/// never re-frozen mid-sequence; and short enough that a lease abandoned by a
+/// killed driver costs one station a single extra pause cycle.
+const LEASE_TTL: Duration = Duration::from_secs(90);
+
+/// DAEMON-WIDE pause belief, readable without a lock.
+///
+/// `IdlePauser.st.paused` is the authority; this mirrors it so the input funnel
+/// can ask "is the guest frozen?" on every record for the price of one relaxed
+/// load. Kept in sync by `set_paused` — never written anywhere else.
+static PAUSE_BELIEF: AtomicBool = AtomicBool::new(false);
+
+/// The process's pauser, for the free functions below. `IdlePauser::new`
+/// installs it; a station with idle-pause disabled leaves it empty and every
+/// wake becomes a no-op.
+static PAUSER: OnceLock<Arc<IdlePauser>> = OnceLock::new();
+
+/// Input records dropped because the guest was frozen and would not wake.
+static INPUT_DROPPED: AtomicU64 = AtomicU64::new(0);
+
+/// INPUT IS A WAKE. Call before injecting a record; `true` means "deliver it".
+///
+/// The fast path is one relaxed atomic load: a running guest — every guest with
+/// a live visitor, essentially always — pays nothing. Only when we believe we
+/// froze the guest does this take the pauser's lock and `cont` first, so the
+/// event lands on a RUNNING guest or not at all.
+///
+/// Returning `false` is the honest half. The record is NOT queued for later:
+/// a click replayed after the wake would land at a coordinate the client has
+/// already moved on from, and a key replayed into a guest that has since
+/// changed focus is worse than a key that never arrived. It is dropped, and
+/// said out loud — which is the entire difference from the behaviour this
+/// replaced, where the same record was dropped in silence and read as a hung
+/// guest. The reconciler retries `cont` every tick while a session is live, so
+/// the caller's next record (the client resends; a visitor clicks again) lands
+/// within ~5 s.
+pub async fn wake_for_input() -> bool {
+    if !PAUSE_BELIEF.load(Ordering::Relaxed) {
+        return true;
+    }
+    let Some(p) = PAUSER.get() else {
+        // Belief set with no pauser installed is impossible; deliver rather
+        // than invent a drop.
+        return true;
+    };
+    match p.wake("input").await {
+        Ok(()) => true,
+        Err(e) => {
+            let n = INPUT_DROPPED.fetch_add(1, Ordering::Relaxed) + 1;
+            eprintln!(
+                "[idle] INPUT DROPPED (#{n}): guest is idle-auto-paused and the wake failed ({e}). \
+                 Not queued — a replayed event is false evidence. Reconciler retries every 5s."
+            );
+            false
+        }
+    }
+}
+
+/// Where an out-of-band driver knocks to hold this station's guest awake.
+///
+/// `SH_WAKE_LEASE` overrides; the default is derived from the STATION NAME so a
+/// driver can compute it from the one identifier it always has, without reading
+/// the station directory. Must stay in step with `LEASE_DIR` in
+/// scripts/lib/guest_wake.py, which is the other end of this protocol.
+fn lease_path(station: &str) -> String {
+    std::env::var("SH_WAKE_LEASE")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| format!("/run/streamhost/wake/{station}.lease"))
+}
+
+/// Is a driver's wake lease live?
+///
+/// The lease is a file whose MTIME is the whole protocol: an out-of-band driver
+/// (labctl, qmp-type.py) touches it while it is injecting, and this reads it.
+/// Nothing is parsed, so there is no format to get wrong and no stale PID to
+/// mis-resolve; an absent file, an unreadable one or an expired one all answer
+/// "no lease", because a lease that cannot be seen must never become a station
+/// that never pauses. An mtime in the FUTURE counts as live: clock skew between
+/// a driver and the daemon should hold the guest awake, not drop it.
+fn lease_live(path: &str, ttl: Duration) -> bool {
+    let Ok(md) = std::fs::metadata(path) else {
+        return false;
+    };
+    let Ok(mtime) = md.modified() else {
+        return false;
+    };
+    match SystemTime::now().duration_since(mtime) {
+        Ok(age) => age < ttl,
+        Err(_) => true,
+    }
+}
 
 /// How this station's guest is paused and resumed. The reconciler above only ever
 /// asks for "stop" or "cont"; this is the whole of what differs between a QEMU
@@ -213,6 +352,13 @@ enum Action {
 }
 
 /// Reconciler decision:
+///   * a live WAKE LEASE counts exactly like a session (see `lease_live`): an
+///     out-of-band driver is injecting input right now, so the guest must be
+///     running and must not be re-frozen under it. This is the race the folklore
+///     ("send `cont` and your input back-to-back on ONE connection") was
+///     dodging: with sessions == 0 the heal re-assert below re-froze the guest
+///     up to 60 s into a driver's sequence, and every remaining keystroke
+///     vanished with an OK on the wire.
 ///   * sessions active + still believed paused  -> Cont (never leave a guest
 ///     paused under a live session; a resume is NEVER withheld, warmup or not).
 ///   * sessions active + OBSERVED stopped, whatever we believe -> Cont. Belief
@@ -233,26 +379,42 @@ enum Action {
 /// start, for a station whose own health machinery needs the guest RUNNING to vet
 /// it and would otherwise never get a look (irix's livewatch — see the field
 /// doc on Config::idle_pause_warmup_secs).
-fn reconcile_action(
-    sessions: usize,
-    paused: bool,
-    idle_for: Duration,
-    grace: Duration,
-    heal_due: bool,
-    warmed_up: bool,
-    observed_stopped: bool,
-) -> Action {
-    if sessions > 0 {
-        if paused || observed_stopped {
+fn reconcile_action(w: Snapshot) -> Action {
+    if w.sessions > 0 || w.wake_leased {
+        if w.paused || w.observed_stopped {
             Action::Cont
         } else {
             Action::None
         }
-    } else if warmed_up && idle_for >= grace && (!paused || heal_due) {
+    } else if w.warmed_up && w.idle_for >= w.grace && (!w.paused || w.heal_due) {
         Action::Stop
     } else {
         Action::None
     }
+}
+
+/// Everything one reconciler tick knows, named.
+///
+/// These used to be eight positional arguments, three of them booleans that all
+/// default to "no" — unreadable at the call site and, worse, unreadable in the
+/// tests, which are the actual specification of this policy.
+#[derive(Debug, Clone, Copy)]
+struct Snapshot {
+    /// Live WebTransport sessions (visitors).
+    sessions: usize,
+    /// We believe WE stopped the guest and have not resumed it.
+    paused: bool,
+    /// How long since the last session left.
+    idle_for: Duration,
+    grace: Duration,
+    /// The 60 s re-assert tick is due (heals an external `cont`).
+    heal_due: bool,
+    /// Past SH_IDLE_PAUSE_WARMUP_SECS since daemon start.
+    warmed_up: bool,
+    /// The emulator process is OBSERVED in state T (signal freezer only).
+    observed_stopped: bool,
+    /// An out-of-band driver holds a fresh wake lease.
+    wake_leased: bool,
 }
 
 struct St {
@@ -268,6 +430,9 @@ struct St {
 pub struct IdlePauser {
     freezer: Arc<Freezer>,
     grace: Duration,
+    /// Path an out-of-band driver touches to hold the guest awake (see the
+    /// WAKE LEASE section in the header).
+    lease: String,
     /// Daemon start; `warmup` is measured from here (never restarted, so a
     /// long-lived daemon is warm and stays warm).
     started: Instant,
@@ -280,17 +445,35 @@ const HEAL_EVERY: u32 = 12; // re-assert a believed pause every 12 ticks = 60 s
 
 impl IdlePauser {
     /// Returns None when disabled (grace 0). Spawns the reconciler task.
-    pub fn new(freezer: Freezer, grace_secs: u64, warmup_secs: u64) -> Option<Arc<IdlePauser>> {
+    pub fn new(
+        freezer: Freezer,
+        grace_secs: u64,
+        warmup_secs: u64,
+        station: &str,
+    ) -> Option<Arc<IdlePauser>> {
         if grace_secs == 0 {
             return None;
         }
+        let lease = lease_path(station);
+        // The lease is a door other processes knock on, so it has to exist as a
+        // path they can create. Failing to make the directory is not fatal — a
+        // station simply has no out-of-band wake lease, which is where we were
+        // before — but it is worth one line, because the symptom otherwise is a
+        // driver whose touch silently goes nowhere.
+        if let Some(dir) = std::path::Path::new(&lease).parent() {
+            if let Err(e) = std::fs::create_dir_all(dir) {
+                eprintln!("[idle] wake-lease dir {} unusable ({e})", dir.display());
+            }
+        }
         eprintln!(
-            "[streamhost] idle auto-pause ON (grace {grace_secs}s, warmup {warmup_secs}s; all platform transports; {})",
-            freezer.describe()
+            "[streamhost] idle auto-pause ON (grace {grace_secs}s, warmup {warmup_secs}s; all platform transports; {}; wake lease {lease} ttl {}s)",
+            freezer.describe(),
+            LEASE_TTL.as_secs()
         );
         let p = Arc::new(IdlePauser {
             freezer: Arc::new(freezer),
             grace: Duration::from_secs(grace_secs),
+            lease,
             started: Instant::now(),
             warmup: Duration::from_secs(warmup_secs),
             st: tokio::sync::Mutex::new(St {
@@ -300,8 +483,38 @@ impl IdlePauser {
                 heal_ticks: 0,
             }),
         });
+        // Ignore a second install: `new` is called once per process, and a test
+        // that builds two must not have the first one's wake door hijacked.
+        let _ = PAUSER.set(p.clone());
         tokio::spawn(p.clone().reconcile_loop());
         Some(p)
+    }
+
+    /// Record the pause belief in both places at once, so `guest_believed_paused`
+    /// can never disagree with the state the reconciler acts on. Every write to
+    /// `st.paused` goes through here.
+    fn set_paused(st: &mut St, paused: bool) {
+        st.paused = paused;
+        PAUSE_BELIEF.store(paused, Ordering::Relaxed);
+    }
+
+    /// Resume NOW because something wants to reach the guest, and report whether
+    /// it worked. Used by `wake_for_input`; `why` names the caller in the log.
+    ///
+    /// A guest we do not believe we paused is already the caller's to use — that
+    /// includes the case where a concurrent record won the race and resumed it,
+    /// which is why the belief is re-checked under the lock rather than trusted
+    /// from the atomic.
+    async fn wake(&self, why: &str) -> anyhow::Result<()> {
+        let mut st = self.st.lock().await;
+        if !st.paused {
+            return Ok(());
+        }
+        self.exec(Cmd::Cont).await?;
+        Self::set_paused(&mut st, false);
+        crate::rel_bridge::note_guest_resumed();
+        eprintln!("[idle] {why} arrived on a paused guest -> resumed before delivery");
+        Ok(())
     }
 
     /// Call on every accepted WebTransport session, BEFORE priming video.
@@ -317,7 +530,7 @@ impl IdlePauser {
                     eprintln!("[idle] session connected -> guest resumed");
                     crate::rel_bridge::note_guest_resumed();
                 }
-                st.paused = false;
+                Self::set_paused(&mut st, false);
             }
             // Keep paused=true: the reconciler retries cont while sessions > 0.
             Err(e) => eprintln!("[idle] resume on connect failed ({e}); reconciler will retry"),
@@ -340,10 +553,14 @@ impl IdlePauser {
             let mut st = self.st.lock().await;
             st.heal_ticks = st.heal_ticks.saturating_add(1);
             let heal_due = st.heal_ticks >= HEAL_EVERY;
-            // Only probed while a session is live and we do not already believe
-            // we paused it — the belief path already resolves to Cont, and a
-            // station with no visitor is stopped on purpose.
-            let observed_stopped = st.sessions > 0
+            // Blocking metadata read of a path in /run; cheap enough for a 5 s
+            // tick that it is not worth a spawn_blocking hop.
+            let wake_leased = lease_live(&self.lease, LEASE_TTL);
+            // Only probed while the guest is SUPPOSED to be awake (a session or
+            // a driver lease) and we do not already believe we paused it — the
+            // belief path already resolves to Cont, and a station with neither
+            // is stopped on purpose.
+            let observed_stopped = (st.sessions > 0 || wake_leased)
                 && !st.paused
                 && match &*self.freezer {
                     Freezer::Signal {
@@ -352,22 +569,23 @@ impl IdlePauser {
                     } => pid_is_stopped(pidfile, proc_match.as_deref()),
                     _ => false,
                 };
-            let act = reconcile_action(
-                st.sessions,
-                st.paused,
-                st.idle_since.elapsed(),
-                self.grace,
+            let act = reconcile_action(Snapshot {
+                sessions: st.sessions,
+                paused: st.paused,
+                idle_for: st.idle_since.elapsed(),
+                grace: self.grace,
                 heal_due,
-                self.started.elapsed() >= self.warmup,
+                warmed_up: self.started.elapsed() >= self.warmup,
                 observed_stopped,
-            );
+                wake_leased,
+            });
             match act {
                 Action::Stop => {
                     st.heal_ticks = 0;
                     let first = !st.paused;
                     match self.exec(Cmd::Stop).await {
                         Ok(()) => {
-                            st.paused = true;
+                            Self::set_paused(&mut st, true);
                             if first {
                                 eprintln!(
                                     "[idle] no sessions for {}s -> guest paused (resumes on next visit)",
@@ -380,9 +598,10 @@ impl IdlePauser {
                 }
                 Action::Cont => match self.exec(Cmd::Cont).await {
                     Ok(()) => {
-                        st.paused = false;
+                        Self::set_paused(&mut st, false);
                         crate::rel_bridge::note_guest_resumed();
-                        eprintln!("[idle] session active but guest paused -> resumed");
+                        let who = if st.sessions > 0 { "session" } else { "driver" };
+                        eprintln!("[idle] {who} active but guest paused -> resumed");
                     }
                     Err(e) => eprintln!("[idle] resume retry failed ({e}); will retry"),
                 },
@@ -465,166 +684,5 @@ fn read_result(r: &mut impl BufRead) -> anyhow::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{read_result, reconcile_action, signal_pidfile, Action};
-    use std::time::Duration;
-
-    const G: Duration = Duration::from_secs(60);
-
-    #[test]
-    fn pauses_after_grace_when_idle() {
-        assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(61), G, false, true, false),
-            Action::Stop
-        );
-    }
-
-    #[test]
-    fn no_pause_before_grace() {
-        assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(59), G, false, true, false),
-            Action::None
-        );
-    }
-
-    #[test]
-    fn never_paused_under_active_session() {
-        // Active session + stale pause belief (a cont failed): must resume.
-        assert_eq!(
-            reconcile_action(1, true, Duration::from_secs(999), G, true, true, false),
-            Action::Cont
-        );
-        // Active session, running: nothing to do, regardless of idle clock.
-        assert_eq!(
-            reconcile_action(2, false, Duration::from_secs(999), G, true, true, false),
-            Action::None
-        );
-    }
-
-    #[test]
-    fn resumes_a_guest_someone_else_stopped_under_a_live_session() {
-        // vic20, 2026-08-16: the LAUNCHER's delayed standby freeze (it covers
-        // the first grace period, which the daemon cannot) SIGSTOPped the
-        // emulator ~8 s after launch — which on a cold station is exactly when
-        // the first visitor arrives, because the visit is what starts it. We
-        // never paused it, so the belief is false; only the OBSERVATION saves
-        // the session. Without this the guest stays frozen: no frames, no keys.
-        assert_eq!(
-            reconcile_action(1, false, Duration::from_secs(1), G, false, true, true),
-            Action::Cont
-        );
-        // Warmup must not withhold a resume, same as the belief path.
-        assert_eq!(
-            reconcile_action(1, false, Duration::from_secs(1), G, false, false, true),
-            Action::Cont
-        );
-        // No session: an observed-stopped guest is stopped ON PURPOSE. Never
-        // resume it — that would undo standby and burn a core forever.
-        assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(1), G, false, true, true),
-            Action::None
-        );
-    }
-
-    #[test]
-    fn believed_pause_reasserted_only_on_heal_tick() {
-        // Already paused: no per-tick QMP chatter...
-        assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(300), G, false, true, false),
-            Action::None
-        );
-        // ...but the heal tick re-stops (self-heal after an external labctl cont).
-        assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(300), G, true, true, false),
-            Action::Stop
-        );
-    }
-
-    /// Warmup withholds the FIRST pause so a station whose own health machinery
-    /// needs the guest running (irix's livewatch, whose probe is the only thing
-    /// that clears the instant-restore budget) gets its look.
-    #[test]
-    fn warmup_withholds_the_freeze_but_never_a_resume() {
-        // Long past grace, but not warmed up: do not pause.
-        assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(999), G, false, false, false),
-            Action::None
-        );
-        // Not even the heal re-assert fires early.
-        assert_eq!(
-            reconcile_action(0, true, Duration::from_secs(999), G, true, false, false),
-            Action::None
-        );
-        // A resume is never withheld: a session under a stale pause belief
-        // must be thawed no matter where the warmup clock stands.
-        assert_eq!(
-            reconcile_action(1, true, Duration::from_secs(1), G, false, false, false),
-            Action::Cont
-        );
-        // ...and once warm, the same idle state freezes as usual.
-        assert_eq!(
-            reconcile_action(0, false, Duration::from_secs(999), G, false, true, false),
-            Action::Stop
-        );
-    }
-
-    #[test]
-    fn qmp_result_skips_events() {
-        // `stop` emits a STOP event before its return — must be skipped.
-        let mut r = std::io::Cursor::new(
-            b"{\"timestamp\": {\"seconds\": 1}, \"event\": \"STOP\"}\n{\"return\": {}}\n".to_vec(),
-        );
-        assert!(read_result(&mut r).is_ok());
-    }
-
-    /// A pidfile path in the temp dir, unique to this process and `tag`.
-    fn tmp_pidfile(tag: &str, body: &str) -> String {
-        let p = std::env::temp_dir().join(format!("sh-idle-test-{}-{tag}", std::process::id()));
-        std::fs::write(&p, body).unwrap();
-        p.to_string_lossy().into_owned()
-    }
-
-    /// SIGCONT on an already-running process is a no-op, so the happy path can
-    /// safely target the test process itself. (SIGSTOP obviously cannot.)
-    #[test]
-    fn signal_pidfile_signals_the_recorded_pid() {
-        let pf = tmp_pidfile("ok", &format!("{}\n", std::process::id()));
-        assert!(signal_pidfile(&pf, None, libc::SIGCONT).is_ok());
-        std::fs::remove_file(&pf).ok();
-    }
-
-    /// The stale-pidfile guard: right pid, wrong process. This is the case that
-    /// would otherwise SIGSTOP an unrelated process after a pid recycle.
-    #[test]
-    fn signal_pidfile_refuses_on_cmdline_mismatch() {
-        let pf = tmp_pidfile("mismatch", &format!("{}\n", std::process::id()));
-        let e = signal_pidfile(&pf, Some("no-such-emulator-xyzzy"), libc::SIGCONT).unwrap_err();
-        assert!(e.to_string().contains("stale pidfile"), "{e}");
-        std::fs::remove_file(&pf).ok();
-    }
-
-    /// Every unusable pidfile is an Err the reconciler retries on, never a
-    /// signal sent somewhere else. Empty is the live case: the launcher's
-    /// kill_pidfile truncates the file on teardown.
-    #[test]
-    fn signal_pidfile_refuses_unusable_files() {
-        for (tag, body) in [("empty", ""), ("garbage", "not-a-pid\n"), ("init", "1\n")] {
-            let pf = tmp_pidfile(tag, body);
-            assert!(
-                signal_pidfile(&pf, None, libc::SIGCONT).is_err(),
-                "pidfile body {body:?} must be refused"
-            );
-            std::fs::remove_file(&pf).ok();
-        }
-        let missing = std::env::temp_dir().join("sh-idle-test-does-not-exist");
-        assert!(signal_pidfile(&missing.to_string_lossy(), None, libc::SIGCONT).is_err());
-    }
-
-    #[test]
-    fn qmp_error_and_eof_reported() {
-        let mut r = std::io::Cursor::new(b"{\"error\": {\"class\": \"GenericError\"}}\n".to_vec());
-        assert!(read_result(&mut r).is_err());
-        let mut r = std::io::Cursor::new(Vec::new());
-        assert!(read_result(&mut r).is_err());
-    }
-}
+#[path = "idle_tests.rs"]
+mod tests;

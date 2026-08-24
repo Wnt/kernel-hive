@@ -8,6 +8,61 @@ Input bugs in the gallery are reported as "it feels wrong", and the cause is
 almost never where it feels like it is. This is the order to look, the tools
 that answer each question, and the traps that have cost real sessions.
 
+## Check this first: is the guest awake?
+
+**A paused guest accepts every input event and reacts to none of them.** It is
+the single most common cause of "input is dead" in this lab, and until
+2026-08-24 nothing anywhere said so — QEMU's monitor acks `sendkey` on stopped
+vCPUs, `input-send-event` returns `{"return": {}}`, and the screendump you take
+afterwards shows a screen that never changed. That is indistinguishable from a
+wedged guest, and it sent several 2026-08-23 investigations after the emulator
+before anyone checked `query-status`.
+
+streamhost idle-auto-pauses **every** station 60 s after its last browser
+session (`SH_IDLE_PAUSE_SECS`; only `daybreak` opts out). So any tool driving a
+station with no visitor attached is, by default, driving a frozen guest.
+
+```bash
+ssh lab 'labctl health <station>'      # "QEMU state: paused (idle-paused)"
+```
+
+### What the code now guarantees
+
+**Input is a wake, and the wake is verified.** Nothing queues an event for
+later — a click replayed seconds after it was made lands at a coordinate the
+client has long since moved on from, and that is the same false evidence one
+layer up. Instead:
+
+| Plane | Behaviour |
+|---|---|
+| Browser session (`input::handle`) | `idle::wake_for_input()` runs before every record. One relaxed atomic load on a running guest; on a paused one it `cont`s and only then injects, so the event lands on a running guest at the point it was made. |
+| Browser session, wake FAILS | The record is dropped and **said out loud**: `[idle] INPUT DROPPED (#n): guest is idle-auto-paused and the wake failed`. The reconciler retries `cont` every 5 s, so it self-heals. |
+| `labctl type/key/sh/exec/mctl/shot/reset` | `common.ensure_running()` resumes **and verifies** with `query-status` (or `/proc` state, on the SIGSTOP stations). A guest that will not wake is **exit 4** with a message naming the pause — never a silent fall-through. |
+| `scripts/dev/qmp-type.py` | Wakes + verifies before the first key, and asserts the guest is *still* running after the last one, so the screendump it prints cannot be a picture of a guest that missed half the sequence. |
+| Anything else you write | `scripts/lib/guest_wake.py` — `wake()`, `assert_running()`, `WakeLease` / `hold_lease()`. Use it. |
+
+### The folklore this replaced
+
+The workaround passed between agents during the 2026-08-23 wave was:
+
+> send `cont` and your input events back-to-back on ONE QMP connection, because
+> a separate `cont` followed by a separate call still loses the race
+
+That was a real race, and it is now **fixed rather than dodged**. The daemon
+re-asserts a believed pause every 60 s (`HEAL_EVERY`), which with zero sessions
+landed in the *middle* of a driver's sequence and swallowed everything after it.
+A driver now takes a **wake lease** — it touches
+`/run/streamhost/wake/<station>.lease` (`SH_WAKE_LEASE`) while it is driving, and
+the reconciler treats a fresh mtime exactly like a live visitor: it neither
+pauses nor re-asserts a pause under it. `labctl` takes the lease for the
+lifetime of the command; `guest_wake.WakeLease` is the context manager for
+everything else.
+
+The lease is mtime-based on purpose. A driver that dies leaves a lease that
+expires by itself (`LEASE_TTL`, 90 s), so the worst case is one station running
+90 s longer than it had to — **idle auto-pause is not weakened**, which matters:
+it is worth about 10% of a core per station, continuously.
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the

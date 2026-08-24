@@ -109,9 +109,10 @@ real sibling guests.
   `10.99.0.18:1123 -> 10.99.0.2:5190 ESTABLISHED`. Nothing else, in either
   direction.
 
-## The gotcha that eats a bring-up: idle auto-pause discards QMP input
+## The gotcha that eats a bring-up: idle auto-pause freezes the guest
 
-**This is the winxp-specific trap and it costs hours if you do not know it.**
+**Know what it looks like and it costs you nothing; mistake it for a wedge
+and it costs hours.**
 
 winxp runs with streamhost's **idle auto-pause ON** (`grace 60s`). With no
 visitor session the daemon QMP-`stop`s the guest — and **input events delivered
@@ -127,10 +128,12 @@ It reads exactly like a wedged guest. It is not. `journalctl -u streamhost@winxp
 says it plainly: `[idle] no sessions for 60s -> guest paused (resumes on next
 visit)`.
 
-**The fix that works: send `cont` and the input events back-to-back on ONE QMP
-connection**, so there is no window for the pause to land in the middle. A
-separate `cont` followed by a separate `drive.py` call still loses the race, and
-a background resume loop only narrows it.
+**The tooling handles this now.** `labctl` and `scripts/dev/qmp-type.py` resume
+the guest, *verify* with `query-status` that the vCPUs really run, and hold a
+wake lease that stops the daemon re-pausing you mid-sequence; a driver of your
+own gets the same from `scripts/lib/guest_wake.py`. Input the daemon cannot get
+a wake for is dropped **loudly**, never in silence. Full story:
+[`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md).
 
 **What you must NOT do is restart the station to clear it.** Setting
 `SH_IDLE_PAUSE_SECS=0` needs a restart, and a restart means `loadvm golden` —

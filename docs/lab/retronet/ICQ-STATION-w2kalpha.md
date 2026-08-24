@@ -302,7 +302,7 @@ A tool that connects, sends one `MOVEA`, and disconnects therefore has its move
 discarded and leaves the cursor wherever the home slam put it. Results look
 random because they depend on where the cursor started and how far the home got.
 
-Two consequences worth keeping straight:
+Three consequences worth keeping straight:
 
 - **Visitors are not affected.** The streamhost daemon holds ONE long-lived
   mamesock connection and *resends the current target continuously*, so the first
@@ -310,6 +310,11 @@ Two consequences worth keeping straight:
 - **`labctl mctl` is unusable for pointer work on this station** — one process per
   verb is one connection per verb. Use a held-open client (this stream's
   `ptr.py` pattern: connect, sleep, then send).
+- **This is a ctlsock rule, not the idle-pause one.** Holding the connection open
+  here is about the corner-home race above; a paused guest is a separate matter
+  and is handled by the tooling (`labctl`, `scripts/dev/qmp-type.py`,
+  `scripts/lib/guest_wake.py` wake, verify and hold a wake lease) — see
+  [`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md).
 
 The earlier "the believed position does not track the real one" diagnosis, and the
 `MOVEA 1126 341` → `765,350` / `258,262` measurements behind it, are explained by
