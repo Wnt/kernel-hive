@@ -160,9 +160,39 @@ rm -f -- "$BRIDGE_QMP" "$VMS_QMP" "$SERIAL"
 
 nohup "$0" --supervise >"$STACK_LOG" 2>&1 &
 printf '%s\n' "$!" >"$SUPERVISOR_PID"
-for _ in $(seq 1 160); do
-  if kill -0 "$(cat "$SUPERVISOR_PID")" 2>/dev/null &&
-    [ -S "$BRIDGE_QMP" ] && [ -S "$VMS_QMP" ]; then
+
+# WHO IS ALLOWED TO DECLARE THIS STACK DEAD.
+#
+# `supervise` above owns the real readiness detection, and every one of its
+# waits is already bounded and already explains itself on stderr: bridge QMP
+# (80 x 0.25s = 20s), bridge Xorg listening on :6000 (120 x [ConnectTimeout=3 +
+# 1s]), then OpenVMS QMP (20s). Worst case that path runs ~520s before it
+# returns 1 and the EXIT trap reaps both QEMUs.
+#
+# This outer loop is a BACKSTOP, not a detector, and it must never fire first.
+# It used to: at 160 x 0.25s it gave up after 40s, while a cold start of the
+# dual-VM stack legitimately needs longer than that. 2026-08-24 15:49:45 is the
+# recorded case -- the launcher printed "dual-VM stack did not become ready" at
+# 15:50:26, exactly 41s in, ExecStartPre exited 1, and the unit was marked
+# failed while the stack underneath was still coming up perfectly well. The
+# Restart=on-failure retry then succeeded 34s later, which is why this looked
+# like "restart reports failure but the station is healthy half a minute
+# later". It also aborted a promotion wave and rolled back three uninvolved
+# bystander stations. Note that systemd's TimeoutStartSec was NEVER reached:
+# 41s is well inside it, so raising the unit timeout alone would have fixed
+# nothing.
+#
+# So the backstop is set past the supervisor's own worst case (2400 x 0.25s =
+# 600s > ~520s) and can only be reached if the supervisor has hung in a way its
+# own bounds did not catch. That long ceiling costs nothing, because a genuine
+# failure no longer waits it out: if the supervisor exits, we say so at once and
+# let its stderr in $STACK_LOG be the explanation.
+for _ in $(seq 1 2400); do
+  if ! kill -0 "$(cat "$SUPERVISOR_PID" 2>/dev/null)" 2>/dev/null; then
+    echo "openvms DECwindows: stack supervisor exited during startup; see $STACK_LOG" >&2
+    exit 1
+  fi
+  if [ -S "$BRIDGE_QMP" ] && [ -S "$VMS_QMP" ]; then
     printf 'tile openvms stack supervisor=%s bridge-qmp=%s openvms-qmp=%s udp=54084\n' \
       "$(cat "$SUPERVISOR_PID")" "$BRIDGE_QMP" "$VMS_QMP"
     exit 0
