@@ -200,6 +200,30 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 > Observed 2026-08-10: one agent published at 02:45, a second at 02:47, and the
 > first agent's live tile disappeared from all three documents.
 >
+> **The publishing tree must be CURRENT, or the republish silently no-ops on the
+> row you came to publish.** Both subcommands render from `$REPO` — the tree the
+> script runs in, normally the shared clone — **not** from `origin/main` and not
+> from the box checkout `/data/kernel-hive`. Publish from a clone one commit
+> behind and it re-renders the OLD registry over the live documents and prints
+> `published`. Hit 2026-08-24: an agent republished immediately after its own
+> push, the shared clone had not been pulled, and the row it had just landed was
+> republished in its previous form. `git -C <tree> pull --ff-only` first, then
+> publish, then read the LIVE document back — the success line means "wrote a
+> render", not "wrote yours".
+>
+> **`publish_manifests` is the ONLY thing that updates `fleet-table.json`, and
+> nothing can see it drift.** It has no row in the box-sync pair table
+> (`lib/box-sync-pairs.sh`), so `box-deploy --status` and the pre-push gate's
+> box-state check are both blind to it: on 2026-08-24 the gate read
+> `same 300 · changed 0` while the live fleet table was hours behind `main`,
+> showing `retronet: null` for a station that had joined the retronet that day.
+> `golden-manifest.json` and `tiles.json` are pairs but **box**-authoritative, so
+> `box-deploy --apply` never pushes a repo change to those either. The rule that
+> falls out: **`box-deploy --apply` ships SOURCE rows; it does not republish the
+> rendered runtime documents.** After landing a registry change, publish them as
+> a separate step and verify against the live file, or the registry row is live
+> in the repo and stale in the gallery with nothing reporting it.
+>
 > **With parallel tile work in flight, do not run it.** Either write an additive
 > merge that inserts/replaces only your own tile's row, or leave publishing to
 > the integrator, who runs `make station-registry-generate && serve-https-spa.sh
