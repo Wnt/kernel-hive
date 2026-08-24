@@ -89,9 +89,10 @@ it; the stylus path drives its own instance through `input/penContact.ts`.
 
 ## Where a guest RIGHT button is allowed to come from
 
-There are exactly three, and `input/penRightClick.contextMenuAction` is the pure
-decision that guards two of them. Anything else reaching the guest as button 2
-is a bug:
+Three gestures legitimately produce one, and `input/penRightClick.contextMenuAction`
+is the pure decision that guards two of those. Anything else reaching the guest
+as button 2 is a bug. The last two rows are the ones that must produce nothing
+extra:
 
 | Gesture | Route | Result |
 |---|---|---|
