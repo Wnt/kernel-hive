@@ -28,6 +28,7 @@ RN_PROXY_ORIGIN_LISTEN="${RN_PROXY_ORIGIN_LISTEN:-10.99.0.2:80}"
 RN_PROXY_CORPUS="${RN_PROXY_CORPUS:-/data/retronet/corpus}"
 RN_PROXY_SEARCH_HOSTS="${RN_PROXY_SEARCH_HOSTS:-search.retronet}"
 RN_PROXY_SEARCH_BACKEND="${RN_PROXY_SEARCH_BACKEND:-127.0.0.1:8090}"
+RN_PROXY_REQUESTS="${RN_PROXY_REQUESTS:-/var/spool/retronet}"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPT_DIR="/opt/retronet-proxy"
@@ -65,7 +66,8 @@ ctsh() {
 render_env() {
   local out v
   out="$(cat "$HERE/proxy.env.tmpl")"
-  for v in RN_PROXY_LISTEN RN_PROXY_ORIGIN_LISTEN RN_PROXY_CORPUS RN_PROXY_SEARCH_HOSTS RN_PROXY_SEARCH_BACKEND; do
+  for v in RN_PROXY_LISTEN RN_PROXY_ORIGIN_LISTEN RN_PROXY_CORPUS RN_PROXY_SEARCH_HOSTS \
+    RN_PROXY_SEARCH_BACKEND RN_PROXY_REQUESTS; do
     out="${out//@$v@/${!v}}"
   done
   printf '%s\n' "$out"
@@ -104,6 +106,15 @@ install -d -o root -g root -m 0755 /data/retronet
 # unprivileged CT cannot chown a host-owned mount, so `install -d` on it fails
 # fatally. Create it only on a fresh install (no mount); leave an existing dir as-is.
 [ -d /data/retronet/corpus ] || mkdir -p /data/retronet/corpus
+# The miss-journal spool. Normally mp1, a bind-mount from the host set up by
+# install-requests-volume.sh and already owned by the mapped rnproxy uid; an
+# unprivileged CT cannot chown a host-owned mount, so only create+own it when
+# nothing is mounted (a proxy-only box still journals, just not shared).
+if mountpoint -q /var/spool/retronet 2>/dev/null; then
+  :
+else
+  install -d -o rnproxy -g rnproxy -m 0775 /var/spool/retronet
+fi
 install -o root -g root -m 0755 /tmp/rnp-proxy.py /opt/retronet-proxy/proxy.py
 install -o root -g root -m 0644 /tmp/rnp-proxy-pages.py /opt/retronet-proxy/rn_proxy_pages.py
 install -o root -g root -m 0644 /tmp/rnp-proxy.env /etc/retronet/proxy.env
@@ -195,6 +206,25 @@ step_verify() {
     fi
   else
     info "SKIP  hit test: no sample seeded (run: install-proxy.sh --apply seed)"
+  fi
+
+  # The miss JOURNAL — the check this installer did not have, and the reason a
+  # dead station-request queue went unnoticed for three days. Rendering the 404
+  # page proves nothing about whether the miss was RECORDED: the unit made its
+  # own journal path read-only and record_miss swallowed every OSError. Assert
+  # the write, not the page.
+  local jrnl="${RN_PROXY_REQUESTS%/}/_requests.jsonl"
+  if [ -z "$RN_PROXY_REQUESTS" ]; then
+    info "SKIP  miss journal: RN_PROXY_REQUESTS is blank (journalling disabled)"
+  else
+    curl -s -o /dev/null -x "$RN_PROXY_LISTEN" "http://verify-journal.invalid/probe-$$" || true
+    if ctexec sh -c "grep -q 'verify-journal.invalid/probe-$$' '$jrnl' 2>/dev/null"; then
+      info "PASS  miss journalled to $jrnl"
+      ctexec sh -c "sed -i '/verify-journal.invalid/d' '$jrnl' 2>/dev/null" || true
+    else
+      info "FAIL  miss NOT journalled to $jrnl — station requests will never reach the crawl"
+      fail=1
+    fi
   fi
 
   # Search routing: with W3 down this must be a clean period 502, not a hang.

@@ -45,6 +45,7 @@ from datetime import date
 import era_crawl
 import era_fetch as fetch
 import era_press_core as core
+import era_requests
 
 Site = namedtuple("Site", "host date depth max_pages title category blurb")
 
@@ -185,6 +186,7 @@ def main():
     # --requests-interval seconds and crawled most-asked-first. --no-requests turns the loop off.
     cr.add_argument("--no-requests", dest="requests", action="store_false", default=True)
     cr.add_argument("--requests-interval", type=int, default=era_crawl.REQUEST_INTERVAL, dest="requests_interval")
+    cr.add_argument("--requests-dir", default=era_crawl.REQUESTS_DIR, dest="requests_dir")
     cr.add_argument(
         "--requests-state",
         default=os.path.join(era_crawl.CRAWL_ROOT, "requests.json"),
@@ -195,6 +197,24 @@ def main():
     cr.add_argument("--ct", default=core.CT_DEFAULT)
     cr.add_argument("--ssh-host", default=core.SSH_DEFAULT)
     cr.set_defaults(fn=era_crawl.cmd_crawl)
+
+    # The demand channel as its own service: no passes, no budget, just the miss journal -> mirror loop.
+    # It must outlive the crawl, which exits cleanly when the site list is exhausted. See cmd_requests.
+    rq = sub.add_parser("requests", help="service station requests from the miss journal (long-running)")
+    rq.add_argument("--sites", default=os.path.join(_here, "era-sites.json"))
+    rq.add_argument("--vips", default=os.path.join(_here, "era-vips.json"))
+    rq.add_argument("--staging", default=era_crawl.SHARED_CORPUS)
+    rq.add_argument("--requests-dir", default=era_crawl.REQUESTS_DIR, dest="requests_dir")
+    rq.add_argument("--requests-interval", type=int, default=era_crawl.REQUEST_INTERVAL, dest="requests_interval")
+    rq.add_argument(
+        "--requests-state",
+        default=os.path.join(era_crawl.CRAWL_ROOT, "requests.json"),
+        dest="requests_state",
+    )
+    rq.add_argument("--max-mb", type=int, default=era_crawl.SITE_MB, dest="max_mb")
+    rq.add_argument("--min-interval", type=float, default=0.0, dest="min_interval")
+    rq.add_argument("--log", default=os.path.join(era_crawl.CRAWL_ROOT, "requests.log"))
+    rq.set_defaults(fn=era_requests.cmd_requests)
 
     ix = sub.add_parser("index", help="build every site's host capture index (the crawl's bootstrap)")
     ix.add_argument("--sites", default=os.path.join(_here, "era-sites.json"))

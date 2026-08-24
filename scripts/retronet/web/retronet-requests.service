@@ -1,0 +1,39 @@
+[Unit]
+# Installed INSIDE the dev container CT 950 by install-crawl.sh, beside
+# retronet-crawl.service. This is the DEMAND channel: it services what stations
+# actually asked for and the museum could not answer.
+#
+# WHY IT IS NOT PART OF THE CRAWL. The watcher used to be a thread inside the
+# crawl process, and the crawl is a finite job — it exits 0 at the budget or when
+# the site list is exhausted, and Restart=on-failure (correctly) does not restart
+# a success. So every miss the fleet produced after the last crawl finished landed
+# in a journal that no process was reading. Demand-servicing has to be listening
+# whenever a station is browsing, which is a different lifetime and therefore a
+# different unit. See docs/lab/retronet/ERA-PRESS.md.
+Description=retronet station requests — mirror what the fleet asked for and the corpus lacked
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ERA-PRESS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=wnt
+Group=wnt
+# Runs from the same DEPLOYED copy and venv as the crawl, so a worktree GC can
+# never pull the code out from under it. Restart=always, unlike the crawl: this
+# loop has no natural completion, and an exit is always something to recover from.
+ExecStart=/data/vms/retronet-crawl/venv/bin/python /data/vms/retronet-crawl/era-press.py requests \
+    --sites /data/vms/retronet-crawl/era-sites.json \
+    --staging /data/vms/retronet-corpus \
+    --requests-dir /data/vms/retronet-requests \
+    --requests-state /data/vms/retronet-crawl/requests.json \
+    --log /data/vms/retronet-crawl/requests.log
+Restart=always
+RestartSec=30s
+# Be a polite background citizen on the shared box — and toward archive.org, which
+# this reaches through the same AIMD-paced fetch layer the crawl uses.
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

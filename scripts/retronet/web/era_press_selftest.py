@@ -399,9 +399,9 @@ def main():
         check("vips: 2003 capture allowed under it", ef._past_ceiling("20031225053516", st["ceiling"]), False)
         check("vips: 2003 capture refused by default", ef._past_ceiling("20031225053516"), True)
 
-    # 15. STATION REQUESTS: the proxy journals every miss; a URL asked for twice, at least 15 minutes
-    #     apart, is crawled — most-asked first. One request is noise (a typo, a probe); two spread out
-    #     is someone coming back to the same missing thing.
+    # 15. STATION REQUESTS: the proxy journals every miss; ONE rule decides eligibility at every point
+    #     in a URL's life -- two asks, fifteen minutes apart, SINCE THE LAST DECISION. One request is
+    #     noise (a typo, a probe); two spread out is someone coming back to the same missing thing.
     with tempfile.TemporaryDirectory() as tmp:
         now = int(time.time())
         with open(os.path.join(tmp, er.MISS_JOURNAL), "w") as fh:
@@ -425,14 +425,58 @@ def main():
             er.due(state),
             ["http://a.example/wanted", "http://d.example/also"],
         )
-        er.mark_served(state, "http://a.example/wanted")
+
+        # A SUCCESS closes the book on the demand that earned it: the URL is not serviced twice for the
+        # same asks, and it comes back only on two fresh ones.
+        er.mark_served(state, "http://a.example/wanted", "mirrored", now)
         check("requests: a serviced URL is not retried", "http://a.example/wanted" in er.due(state), False)
-        state["http://a.example/wanted"]["count"] += 1  # asked again after being served
-        check("requests: NEW demand re-queues it", "http://a.example/wanted" in er.due(state), True)
+        state["http://a.example/wanted"]["asks"] = [now + 60, now + 60 + er.MIN_SPREAD]
+        check("requests: two FRESH asks re-queue it", "http://a.example/wanted" in er.due(state), True)
+
+        # A NOT-ARCHIVED verdict is archive.org saying the page was never captured in our era. That
+        # answer does not change week to week, so the URL goes quiet for 30 days.
+        dead = "http://d.example/also"
+        er.mark_served(state, dead, "not-archived", now)
+        check("cooldown: a dead URL leaves the queue", dead in er.due(state), False)
+        check("cooldown: the gate is 30 days out", state[dead]["gate"] - now, er.RETRY_COOLDOWN)
+        er.save(state_p, state)  # as watch() does, per URL: a cooldown only in memory is no cooldown
+
+        # THE POINT OF THE COOLDOWN: demand during the window must not shorten it. Two asks fifteen
+        # minutes apart would qualify any other URL; here they are pruned on ingest, so they raise the
+        # priority the URL will have LATER and nothing else.
+        with open(os.path.join(tmp, er.MISS_JOURNAL), "w") as fh:
+            for when in (now + 86400, now + 86400 + er.MIN_SPREAD):
+                fh.write(json.dumps({"url": dead, "t": when}) + "\n")
+        state, _ = er.ingest(tmp, state_p)
+        check("cooldown: asks inside the window do not re-queue it", dead in er.due(state, now + 172800), False)
+        check("cooldown: but they still count toward priority", state[dead]["count"], 4)
+        check("cooldown: and they are not banked as asks", state[dead]["asks"], [])
+
+        # And when the 30 days elapse, NOTHING fires by itself. The URL must earn the retry again from
+        # scratch: one ask past the gate is not enough, two spread ones are.
+        after = now + er.RETRY_COOLDOWN + 60
+        check("cooldown: expiry alone does not retry", dead in er.due(state, after), False)
+        state[dead]["asks"] = [after]
+        check("cooldown: one fresh ask is still not enough", dead in er.due(state, after), False)
+        state[dead]["asks"] = [after, after + er.MIN_SPREAD]
+        check("cooldown: two fresh asks, spread, re-queue it", dead in er.due(state, after + 3600), True)
+
+        # cannot-store is OUR disk failing, not an archive.org verdict. Burying that for a month would
+        # turn a full corpus volume into thirty days of silence.
+        local = "http://e.example/diskfull"
+        er._record(state, local)["count"] = 2
+        er.mark_served(state, local, "cannot-store", now)
+        check("cooldown: a local failure is NOT cooled down", state[local]["gate"], now)
+
+        # The state file must carry the gate, or a restart forgets every cooldown and the first fold
+        # after it re-fetches everything archive.org already refused.
+        er.save(state_p, state)
+        check("requests: the gate survives a save/load", er._load(state_p)[dead]["gate"], state[dead]["gate"])
 
     print(
         "era-press selftest: all checks OK "
-        "(raw mirror, host index, landing completeness, ceiling, frontier, seeds, sweep, vips, requests)"
+        "(raw mirror, host index, landing completeness, ceiling, frontier, seeds, sweep, vips, "
+        "requests, cooldown)"
     )
 
 

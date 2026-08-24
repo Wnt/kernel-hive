@@ -20,9 +20,15 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="${RN_CRAWL_DIR:-/data/vms/retronet-crawl}"  # deployed runtime + state + log (stable)
 CORPUS="${RN_CORPUS_VOL:-/data/vms/retronet-corpus}" # the shared corpus volume
 UNIT="retronet-crawl.service"
+REQ_UNIT="retronet-requests.service"
+SPOOL="${RN_REQ_VOL:-/data/vms/retronet-requests}" # miss-journal spool, shared with the gateway CT
 
 if [ ! -d "$CORPUS" ]; then
   echo "install-crawl: corpus volume $CORPUS is missing — run install-corpus-volume.sh on labhost first" >&2
+  exit 1
+fi
+if [ ! -d "$SPOOL" ]; then
+  echo "install-crawl: miss-journal spool $SPOOL is missing — run install-requests-volume.sh on labhost first" >&2
   exit 1
 fi
 
@@ -63,17 +69,23 @@ echo "ensuring pinned deps in the crawl venv (idempotent): ${PINS[*]}"
 echo "smoke: importing the deployed crawl modules"
 (cd "$RUN_DIR" && "$VENV/bin/python" -c 'import era_crawl' && echo "  deployed modules import OK")
 
-echo "installing $UNIT"
+echo "installing $UNIT + $REQ_UNIT"
 sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
+sudo cp "$SRC/$REQ_UNIT" "/etc/systemd/system/$REQ_UNIT"
 sudo systemctl daemon-reload
-sudo systemctl enable "$UNIT"
+sudo systemctl enable "$UNIT" "$REQ_UNIT"
 # RESTART, not `enable --now`: this script is the one command that applies an edit to era-sites.json or
 # era-vips.json, and `--now` is a no-op on an already-running daemon -- so the edit silently would not
 # take. Restarting is cheap and safe here because the crawl is resumable from the on-disk corpus: it
 # re-plans against the new list and re-fetches nothing it already has.
 sudo systemctl restart "$UNIT"
+# The demand channel has no natural completion, so it is started, not just enabled.
+# It is a SEPARATE unit precisely because the crawl above exits when it is finished.
+sudo systemctl restart "$REQ_UNIT"
 
 echo "--- status ---"
 systemctl --no-pager --lines=0 status "$UNIT" || true
+systemctl --no-pager --lines=0 status "$REQ_UNIT" || true
 echo "watch:   tail -f $RUN_DIR/progress.log"
+echo "or:      tail -f $RUN_DIR/requests.log"
 echo "or:      journalctl -u $UNIT -f"

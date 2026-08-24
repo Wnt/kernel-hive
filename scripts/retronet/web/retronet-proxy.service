@@ -47,9 +47,15 @@ RestrictSUIDSGID=true
 RestrictRealtime=true
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 LockPersonality=true
-# The proxy only ever reads: the corpus and its own code. It writes nothing to
-# disk (logs go to journald via stdout), so no path is made writable.
+# The proxy only ever READS the corpus it serves and its own code — that stays
+# true, and ReadOnlyPaths keeps it true.
 ReadOnlyPaths=/data/retronet/corpus /opt/retronet-proxy
+# The one thing it writes: the miss journal, in its own small spool directory
+# (mp1 from the host, shared with the crawl in CT 950). This lives OUTSIDE the
+# corpus precisely so the line above can stay absolute. Without it record_miss
+# fails on every miss and the station-request queue is silently dead — which is
+# exactly what happened between 2026-08-21 and 2026-08-24.
+ReadWritePaths=/var/spool/retronet
 
 # --- resource cage ------------------------------------------------------------
 Nice=5

@@ -37,6 +37,10 @@ import era_requests
 import era_state
 
 SHARED_CORPUS = "/data/vms/retronet-corpus"  # big corpus volume (CT950/labhost path); CT 951 bind-mounts at CORPUS
+# The miss-journal spool: the proxy in CT 951 writes here (mounted there as /var/spool/retronet), this
+# side reads and rotates. Small, and OUTSIDE the corpus so the proxy never needs write access to what
+# it serves. See scripts/retronet/web/install-requests-volume.sh.
+REQUESTS_DIR = "/data/vms/retronet-requests"
 CRAWL_ROOT = "/data/vms/retronet-crawl"  # crawl state + log live here (OUTSIDE the corpus; survives a worktree GC)
 VIP_DEFAULT_CEILING = "20091231"  # a VIP entry with no explicit ceiling still needs one
 VIP_FIRST_DEPTH = 3  # VIPs are crawled this deep FIRST, then out to their full depth in the normal passes
@@ -485,7 +489,7 @@ def cmd_crawl(a):
         servicer = era_requests.Servicer(states_by_host, a.staging, res_seen, lock, budget, _mirror_resource_mt)
         threading.Thread(
             target=era_requests.watch,
-            args=(a.staging, a.requests_state, a.requests_interval, stop_requests, servicer),
+            args=(a.requests_dir, a.requests_state, a.requests_interval, stop_requests, servicer),
             kwargs={"log": lambda m: _log(a.log, m), "halted": lambda: budget["stop"]},
             name="requests",
             daemon=True,
