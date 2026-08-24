@@ -11,9 +11,14 @@ RequiresMountsFor=/data/vms/streamhost/serve
 Type=simple
 # Fixed defaults mirror scripts/serve/restart-https.sh. The runtime
 # EnvironmentFile is loaded LAST so it wins; restart-https.sh writes the
-# per-restart overrides (incl. OSG_ADMIN_EVAL) there. It lives on tmpfs (/run)
-# so a power cycle always comes back with eval OFF — arbitrary in-browser JS
-# never survives a reboot.
+# per-restart overrides there.
+#
+# OSG_ADMIN_EVAL is now ON by default and is an explicit DISABLE switch (=0).
+# It used to be default-off because the enqueue endpoint was reachable from a
+# browser; it no longer is — issuing a command requires a loopback peer and the
+# operator token, and the public listener 404s the path outright. The old
+# default only meant that inspecting a live broken session started with a
+# server restart, which is the opposite of what remote debugging is for.
 Environment=WEBROOT=/data/vms/streamhost/serve/webroot
 Environment=SIGNAL_CONFIG=/data/vms/streamhost/serve/tiles.json
 Environment=CERT=/data/vms/streamhost/serve/pki/leaf.crt
@@ -21,7 +26,7 @@ Environment=KEY=/data/vms/streamhost/serve/pki/leaf.key
 Environment=SIGNAL_HOST=192.0.2.10
 Environment=BIND_IP=0.0.0.0
 Environment=PORT=8443
-Environment=OSG_ADMIN_EVAL=0
+Environment=OSG_ADMIN_EVAL=1
 Environment=RESET_SCRIPT=/data/vms/streamhost/serve/reset-tile.sh
 Environment=GOLDEN_MANIFEST=/data/vms/streamhost/serve/golden-manifest.json
 # The public gallery. PUBLIC_PORT brings up a SECOND, plaintext listener on

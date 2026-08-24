@@ -6,9 +6,10 @@
 # it falls back to the legacy detached relaunch. Idempotent; safe to re-run
 # after a webroot redeploy.
 #
-# OSG_ADMIN_EVAL=1 opts arbitrary in-browser JS ON for this restart only. Under
-# systemd it is handed over via /run/osgallery-https.env (tmpfs), so a reboot
-# always comes back with eval OFF.
+# OSG_ADMIN_EVAL is ON by default and is an explicit DISABLE switch: pass
+# OSG_ADMIN_EVAL=0 to turn arbitrary in-browser JS off for this restart. The
+# enqueue endpoint is box-side only (loopback peer + operator token, and a flat
+# 404 on the public listener), so nothing a browser can reach can issue an eval.
 set -u
 SERVE=/data/vms/streamhost/serve
 PY="$SERVE/osgallery-https-server.py"
@@ -22,8 +23,8 @@ export KEY="${KEY:-$SERVE/pki/leaf.key}"
 export SIGNAL_HOST="${SIGNAL_HOST:-${SH_HOST_IP:-192.0.2.10}}"
 export BIND_IP="${BIND_IP:-0.0.0.0}"
 export PORT="${PORT:-8443}"
-# Arbitrary browser JavaScript stays off unless the operator opts in for this restart.
-export OSG_ADMIN_EVAL="${OSG_ADMIN_EVAL:-0}"
+# Remote debugging is the point of this plane; eval is on unless turned off.
+export OSG_ADMIN_EVAL="${OSG_ADMIN_EVAL:-1}"
 # Restore-to-checkpoint endpoint authority (defaults sit beside the server).
 export RESET_SCRIPT="${RESET_SCRIPT:-$SERVE/reset-tile.sh}"
 export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
@@ -31,7 +32,8 @@ export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 if systemctl cat "$UNIT" >/dev/null 2>&1; then
   # Supervised path: hand this restart's overrides to systemd through a tmpfs
   # EnvironmentFile (the unit loads it last, so it wins), then restart. /run is
-  # wiped on boot, so OSG_ADMIN_EVAL never persists across a power cycle.
+  # wiped on boot, so a per-restart OSG_ADMIN_EVAL=0 lapses back to the unit's
+  # default rather than silently disabling eval forever.
   {
     printf 'WEBROOT=%s\n' "$WEBROOT"
     printf 'SIGNAL_CONFIG=%s\n' "$SIGNAL_CONFIG"

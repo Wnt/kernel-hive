@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
+import { initClientDebug } from './three/clientDebug';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -96,6 +97,15 @@ exposePointerRecorder();
 // (it records at the wire choke point inside streamClient), only the operator
 // plane readers to expose. Armed by default — see input/keyRecorder.ts.
 exposeKeyRecorder();
+
+// Telemetry + operator reachability for this TAB, before React mounts and
+// before any station is chosen. Deliberately first: a session that fails —
+// manifests that never load, a station that never connects, a visitor sitting
+// on a blank grid — is the session whose telemetry matters most, and it used
+// to produce nothing at all because every log call hung off a stream that had
+// already failed to start. This also starts the /clientcmd poller, so every
+// tab is reachable for debugging, not just one with a working station open.
+initClientDebug();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

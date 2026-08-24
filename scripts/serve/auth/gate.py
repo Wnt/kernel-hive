@@ -29,19 +29,39 @@ OPEN_PATHS = frozenset({"/healthz", "/login", "/link", "/favicon.ico", "/manifes
 # for the installability check without exposing any application code.
 OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/generated/")
 
-# Nothing is refused outright any more. The operator plane used to be shut on
-# this listener, which also made it unusable from a PHONE — the one place the
-# touch and stylus bugs actually live, and the one place with no console to
-# paste an operator token into. It is reachable now, admin-only.
-BLOCKED_PREFIXES: tuple[str, ...] = ()
+# Refused outright on this listener: the command ENQUEUE. Nothing a browser can
+# reach may issue a command to the server side. `clientcmd.sh` posts to
+# https://127.0.0.1:8443 on the box and is unaffected; a UI session — on a
+# phone, on the LAN, or through the edge tunnel — gets a flat 404.
+#
+# This deliberately gives up issuing commands FROM a phone, which this comment
+# used to defend. It does NOT give up debugging a phone, and that distinction is
+# the whole point: a phone session is the TARGET. It polls, receives the
+# operator's command and reports back, so touch and stylus bugs are as reachable
+# as they ever were — more so, because every authenticated session now polls
+# rather than only an admin's own tab. The only thing removed is the phone as a
+# SOURCE of commands, which is exactly what was asked for.
+BLOCKED_PREFIXES: tuple[str, ...] = ("/clientcmd/admin",)
 
-# Reachable only with an ADMIN session (or the operator token). Both directions
-# of the command plane: the poll a tab makes, and the enqueue that puts a
-# command in front of it. Arbitrary-JS `eval` needs OSG_ADMIN_EVAL=1 on top of
-# this, which is default-off and does not survive a reboot — so the dangerous
-# verb still takes a deliberate act on labhost, not just an admin cookie.
-ADMIN_PATHS = frozenset({"/clientcmd", "/clientcmd/admin"})
-ADMIN_PREFIXES = ("/clientcmd",)
+# The command plane is split BY DIRECTION, and the halves are not merely gated
+# differently — they are reachable from different places.
+#
+# The POLL (GET /clientcmd) is the read half: a tab asking "is there a command
+# for me?". ANY authenticated gallery session may poll, because remote debugging
+# has to work for every visitor, always — the session that fails is exactly the
+# one worth reaching, and it is never an operator's own tab. Polling confers no
+# authority: it READS the operator's queue, and a tab acts on a command only
+# when that command is addressed to it. So the poll is deliberately NOT listed
+# here — the gate's default for a signed-in user is "allow", which is what we
+# want.
+#
+# The ENQUEUE (POST /clientcmd/admin) is the write half, and it is in
+# BLOCKED_PREFIXES above: unreachable from any browser at all. Issuing a command
+# is a box-side act, authenticated by the operator token over loopback.
+#
+# Nothing else is admin-only on this listener, so these are now empty.
+ADMIN_PATHS: frozenset[str] = frozenset()
+ADMIN_PREFIXES: tuple[str, ...] = ()
 
 
 def is_blocked(path: str) -> bool:

@@ -8,7 +8,8 @@
 #   clientcmd.sh restore  <tile>     restore one station to its golden fixture
 #   clientcmd.sh eval <sessionId|tile|*> '<js code>'  run JS in targeted tab(s)
 #                                      ('*' deliberately targets every open tab)
-#   clientcmd.sh sessions            active sessions with last station / UA / time
+#   clientcmd.sh sessions            active sessions: state / station / UA / time
+#   clientcmd.sh audit [n]           last n issued commands (who pointed what at whom)
 #   clientcmd.sh evallog [sessionId]  reassemble the latest eval-result
 #   clientcmd.sh tail                tail -f the telemetry JSONL
 #   clientcmd.sh log <tile>          last 200 telemetry events for one station (jq)
@@ -18,7 +19,11 @@
 #   ssh lab '/data/vms/streamhost/serve/clientcmd.sh snapshot amiga'
 #   scripts/serve/clientcmd.sh verbose '*'
 #
-# Env overrides: SERVE, CLIENTCMD_TOKEN, CLIENTLOG, PORT, BASE, OSG_ADMIN_EVAL.
+# eval needs no opt-in: the enqueue endpoint is box-side only (loopback + token,
+# and 404 on the public listener), so nothing a browser can reach can issue a
+# command. Set OSG_ADMIN_EVAL=0 on the SERVER to disable eval entirely.
+#
+# Env overrides: SERVE, CLIENTCMD_TOKEN, CLIENTCMD_AUDIT, CLIENTLOG, PORT, BASE.
 set -euo pipefail
 
 SERVE=${SERVE:-/data/vms/streamhost/serve}
@@ -26,8 +31,8 @@ TOKEN_FILE=${CLIENTCMD_TOKEN:-$SERVE/pki/clientcmd.token}
 PORT=${PORT:-8443}
 BASE=${BASE:-https://127.0.0.1:$PORT}
 LOG=${CLIENTLOG:-$SERVE/clientlog.jsonl}
+AUDIT=${CLIENTCMD_AUDIT:-$SERVE/clientcmd-audit.jsonl}
 SESSION_ACTIVE_SECS=${SESSION_ACTIVE_SECS:-1800}
-OSG_ADMIN_EVAL=${OSG_ADMIN_EVAL:-0}
 
 usage() {
   grep '^#   clientcmd.sh' "$0" | sed 's/^#   //'
@@ -37,7 +42,7 @@ usage() {
 # No token file here and ssh fallback not disabled -> we are not on labhost:
 # pipe this very script over `ssh lab` with the same (safely re-quoted) args.
 if [ ! -r "$TOKEN_FILE" ] && [ "${CLIENTCMD_NO_SSH:-}" != "1" ]; then
-  exec ssh lab "CLIENTCMD_NO_SSH=1 OSG_ADMIN_EVAL=$(printf '%q' "$OSG_ADMIN_EVAL") bash -s -- $(printf '%q ' "$@")" <"$0"
+  exec ssh lab "CLIENTCMD_NO_SSH=1 bash -s -- $(printf '%q ' "$@")" <"$0"
 fi
 
 cmd=${1:-}
@@ -60,13 +65,6 @@ enqueue() {
   echo
 }
 
-require_eval_opt_in() {
-  [ "$OSG_ADMIN_EVAL" = "1" ] || {
-    echo "eval is disabled; set OSG_ADMIN_EVAL=1 explicitly on the server and this command" >&2
-    exit 1
-  }
-}
-
 case "$cmd" in
   snapshot | verbose | reload)
     tile=${1:-*}
@@ -81,7 +79,6 @@ case "$cmd" in
     echo
     ;;
   eval)
-    require_eval_opt_in
     target=${1:?usage: clientcmd.sh eval <sessionId|tile|*> '<js code>'}
     code=${2:?usage: clientcmd.sh eval <sessionId|tile|*> '<js code>'}
     if active_session_exists "$target"; then
@@ -98,7 +95,10 @@ case "$cmd" in
       echo "no client log: $LOG" >&2
       exit 1
     }
-    printf 'SESSION\tLAST_SEEN_UTC\tTILE\tUA\n'
+    # Derived entirely from clientlog.jsonl, so a session that never managed to
+    # poll — or never managed to stream at all — is still listed. STATE is the
+    # point of this view: "open" or "failed" is a session that needs help.
+    printf 'SESSION\tSTATE\tLAST_SEEN_UTC\tTILE\tUA\n'
     jq -rs --argjson cutoff "$(($(date +%s) - SESSION_ACTIVE_SECS))" '
       map(select(.sessionId))
       | sort_by(.srvTs // 0)
@@ -107,16 +107,35 @@ case "$cmd" in
           sessionId: .[0].sessionId,
           last: (last.srvTs // 0),
           tile: ([.[] | select((.tile // "") != "") | .tile] | last // ""),
-          ua: ([.[] | select((.ua // "") != "") | .ua] | last // "")
+          ua: ([.[] | select((.ua // "") != "") | .ua] | last // ""),
+          events: [.[] | .event],
         })
       | map(select(.last >= $cutoff))
+      | map(. + {state:
+            (if   (.events | index("connect-giveup"))  then "FAILED"
+             elif (.events | index("connect-stalled")) then "STALLED"
+             elif (.events | index("connect-retry"))   then "retrying"
+             elif (.events | index("connect"))         then "live"
+             elif (.events | index("station-open"))    then "opening"
+             elif (.events | index("session-start"))   then "no-station"
+             else "unknown" end)})
       | sort_by(.last) | reverse[]
-      | [.sessionId, (.last | todateiso8601), .tile, .ua]
+      | [.sessionId, .state, (.last | todateiso8601), .tile, .ua]
       | @tsv
     ' "$LOG"
     ;;
+  audit)
+    n=${1:-40}
+    [ -r "$AUDIT" ] || {
+      echo "no audit trail yet: $AUDIT" >&2
+      exit 1
+    }
+    printf 'WHEN_UTC\tISSUED_BY\tCMD\tTILE\tSESSION\tCODE\n'
+    tail -n "$n" "$AUDIT" | jq -r '
+      [(.srvTs | todateiso8601), .issuedBy, .cmd, .tile, (.sessionId // "-"),
+       ((.code // "-") | gsub("\\s+"; " ") | .[0:80])] | @tsv'
+    ;;
   evallog)
-    require_eval_opt_in
     wanted=${1:-}
     [ -r "$LOG" ] || {
       echo "no client log: $LOG" >&2

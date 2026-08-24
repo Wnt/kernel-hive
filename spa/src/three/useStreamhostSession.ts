@@ -5,7 +5,7 @@ import {
   type StreamControlHandle,
   type StreamResolution,
 } from './useStreamControl';
-import { setDebugTile, clearDebugTile } from './clientDebug';
+import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { sessionNeedsReconnect, RESUME_GRACE_MS } from './streamClient/resumePolicy';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
 
@@ -152,6 +152,9 @@ export function useStreamhostSession(
     const fail = (msg: string) => {
       if (cancelled) return;
       clearTimers();
+      // The give-up is the most important row a broken session produces, and it
+      // used to exist only in the visitor's own console. See STREAM-DEBUGGING.
+      logClientEvent('connect-giveup', `${msg} attempts=${attempt} live=${liveReached} ep=${signalEndpoint}`);
       setPhase('error');
       setMessage(msg);
     };
@@ -293,8 +296,10 @@ export function useStreamhostSession(
       clearTimers();
       teardownAttempt();
       attempt++;
-      // Log every retry (don't hide it) so slow/idle-station negotiation is diagnosable.
+      // Every retry goes to TELEMETRY as well as the console: a visitor's
+      // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
+      logClientEvent('connect-retry', `attempt=${attempt}/${MAX_INITIAL_ATTEMPTS} live=${liveReached} restore=${expectedRestore} why=${why}`);
       if (!liveReached && attempt >= MAX_INITIAL_ATTEMPTS) {
         fail('timed out negotiating tile stream (poster fallback)');
         return;

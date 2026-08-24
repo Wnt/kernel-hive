@@ -1,7 +1,23 @@
-"""Operator command plane: GET /clientcmd (polling) and POST /clientcmd/admin
-(enqueue). Token-gated (X-Admin-Token vs CLIENTCMD_TOKEN, read fresh per
-request) — see handler._require_admin for the passkey-session fallback used
-on the public listener.
+"""The client command plane, split BY DIRECTION and gated per half.
+
+GET /clientcmd (poll, the READ half) is reachable by ANY authenticated gallery
+session — see handler._require_session. Remote debugging has to work for every
+visitor, always; polling only reads the operator's queue and a tab acts on a
+command only when it is addressed to that tab.
+
+POST /clientcmd/admin (enqueue, the WRITE half) is what ISSUES a command and is
+BOX-SIDE ONLY: 404 on the public listener (auth/gate.py BLOCKED_PREFIXES) and,
+on the LAN listener, a loopback peer plus a valid X-Admin-Token — see
+handler._require_box_side. No UI session has a path to issue a command.
+
+Because of that, `eval` carries no second opt-in. The old default-off
+OSG_ADMIN_EVAL=1 guarded a browser-reachable enqueue; with no such path it
+protected nothing while making every live debugging session wait on a box-side
+ritual that does not survive a reboot. It survives as an explicit DISABLE:
+OSG_ADMIN_EVAL=0 shuts eval off.
+
+Every accepted command is written to CLIENTCMD_AUDIT (clientcmd-audit.jsonl)
+before it is queued: what, to whom, by which credential, from where, when.
 """
 
 from __future__ import annotations
@@ -13,7 +29,14 @@ import sys
 import time
 
 from clientlog import CLIENTLOG_BODY_MAX, log_lock
-from config import CLIENTCMD, CLIENTCMD_ALLOWED, CLIENTCMD_KEEP, CLIENTCMD_TOKEN, OSG_ADMIN_EVAL
+from config import (
+    CLIENTCMD,
+    CLIENTCMD_ALLOWED,
+    CLIENTCMD_AUDIT,
+    CLIENTCMD_KEEP,
+    CLIENTCMD_TOKEN,
+    OSG_ADMIN_EVAL,
+)
 from static_files import MIME
 
 
@@ -54,6 +77,22 @@ def _clientcmd_token_ok(presented) -> bool:
     return hmac.compare_digest(want, presented.strip())
 
 
+def _audit(rec: dict):
+    """Append one append-only audit row for an ISSUED command.
+
+    This is the record of who pointed what at whom. It is deliberately a
+    SEPARATE file from the telemetry sink: clientlog.jsonl is a rolling window
+    that prunes itself by age, and an audit trail that quietly deletes itself is
+    not an audit trail. It is never rotated here, and it never contains the
+    operator token — only which KIND of credential authorized the command.
+    """
+    try:
+        with open(CLIENTCMD_AUDIT, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, separators=(",", ":")) + "\n")
+    except OSError as e:
+        sys.stderr.write(f"[serve] clientcmd audit write FAILED ({e}) for {rec.get('cmd')}\n")
+
+
 def handle_poll(handler, since_qs):
     """GET /clientcmd?since=<seq> route body."""
     try:
@@ -63,14 +102,14 @@ def handle_poll(handler, since_qs):
     doc = _clientcmd_load()
     cmds = [c for c in doc["cmds"] if int(c.get("seq", 0)) > since]
     if not OSG_ADMIN_EVAL:
-        # A stale queue written during a prior opt-in must never execute
-        # after the server returns to its default-safe configuration.
+        # eval has been explicitly disabled: a queue written before that must
+        # never keep executing afterwards.
         cmds = [c for c in cmds if c.get("cmd") != "eval"]
     out = {"seq": doc["seq"], "cmds": cmds}
     return handler._send(200, json.dumps(out), MIME[".json"], cache=False)
 
 
-def handle_admin_post(handler):
+def handle_admin_post(handler, issued_by=None):
     """POST /clientcmd/admin route body: enqueue a command for polling UI tabs."""
     obj, err = handler._read_json_body(CLIENTLOG_BODY_MAX)
     if err:
@@ -88,7 +127,7 @@ def handle_admin_post(handler):
     if cmd == "eval" and not OSG_ADMIN_EVAL:
         return handler._send(
             403,
-            json.dumps({"error": "eval disabled; set OSG_ADMIN_EVAL=1 explicitly"}),
+            json.dumps({"error": "eval is disabled on this server (OSG_ADMIN_EVAL=0)"}),
             MIME[".json"],
             cache=False,
         )
@@ -109,5 +148,28 @@ def handle_admin_post(handler):
         doc["cmds"] = doc["cmds"][-CLIENTCMD_KEEP:]
         _clientcmd_save(doc)
         seq = doc["seq"]
-    sys.stderr.write(f"[serve] clientcmd enqueued seq={seq} {cmd} tile={tile}\n")
+    code = args.get("code")
+    target_session = args.get("sessionId")
+    _audit(
+        {
+            "srvTs": round(time.time(), 3),
+            "seq": seq,
+            "cmd": cmd,
+            "tile": tile[:64],
+            "sessionId": str(target_session)[:64] if target_session else None,
+            # For eval the code IS the audit record; bound it so one huge
+            # payload cannot dominate the file.
+            "code": code[:2048] if isinstance(code, str) else None,
+            "issuedBy": issued_by or "unknown",
+            # Every authenticated tab polls, so a "*" command with no sessionId
+            # reaches every open session. Worth stating plainly in the record.
+            "broadcast": tile == "*" and not target_session,
+            "peer": handler.client_address[0] if handler.client_address else "",
+            "listener": "public" if handler.public else "lan",
+        }
+    )
+    sys.stderr.write(
+        f"[serve] clientcmd enqueued seq={seq} {cmd} tile={tile} "
+        f"session={target_session or '*'} by={issued_by or 'unknown'}\n"
+    )
     return handler._send(200, json.dumps({"ok": True, "seq": seq}), MIME[".json"], cache=False)

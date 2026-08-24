@@ -26,7 +26,9 @@ one.** The server cannot see most of what the browser knows (§3).
 ## 2. Client telemetry: `clientlog.jsonl`
 
 Written by `POST /clientlog` in `scripts/serve/osgallery-https-server.py`.
-Untokened (LAN/VPN-only deployment). One JSON object per line:
+Untokened, and open to **every** session — on the public listener the visitor's
+own sign-in authorizes it, on LAN it is simply open. No operator setup is
+involved anywhere. One JSON object per line:
 
 | Field | Meaning |
 |---|---|
@@ -43,6 +45,43 @@ apart. (Measuring reconnects on `srvTs` is exactly how a 2026-08-23 session
 talked itself into "sub-5 s timing is not recoverable from this log". It is.)
 
 The one thing `srvTs` is authoritative for is **retention**, which prunes on it.
+
+### Every session logs from its first moment
+
+`session-start` is the first row of every session, written when the SPA boots —
+before a station is chosen, before signaling, before anything can fail. Its
+`detail` is a capability probe (`wt`, `vd`, `rtc`, `secure`, `sw`, `net`,
+`href`), which is usually enough on its own to explain an early failure.
+`station-open` follows when a station page opens, with the same probe.
+
+**This is the fix for the session that logged nothing.** Every telemetry call
+used to hang off the stream effect, so a tab that never started a stream — a
+manifest that did not load, a non-streamable binding, a visitor sitting on the
+grid — emitted NOTHING, for as long as they sat there. Worse, the `/clientcmd`
+poller started in the same place, so that tab could not be reached by an
+operator command either: **invisible and unreachable at the same time.** The
+poller now belongs to the tab, not to the station, and keeps running after a
+station closes.
+
+The give-up path is logged too. `connect-retry` carries each attempt and its
+reason; `connect-giveup` is written when the session falls back to the poster;
+`connect-stalled` is written when the WebTransport handshake has not settled
+after 3 s, which is what a network that silently blackholes QUIC looks like from
+the browser. All three used to exist only in the *visitor's* console — the one
+place an operator can never look.
+
+So a broken session now reads end to end:
+
+```
+session-start   {"tile":"","wt":true,"vd":true,"secure":true,...}
+station-open    {"tile":"win95",...}
+connect-retry   attempt=1/4 live=false why=connect: WebTransportError: ...
+connect-giveup  timed out negotiating tile stream (poster fallback) attempts=4
+```
+
+`clientcmd.sh sessions` derives from this file, not from who is polling, and
+prints a STATE column (`live`, `retrying`, `STALLED`, `FAILED`, `no-station`),
+so a session that never managed to stream is listed rather than absent.
 
 **Retention is a rolling window pruned by age** — `CLIENTLOG_RETENTION_SECS`
 (default 36 h), with `CLIENTLOG_MAX` (64 MiB) only as a runaway backstop. Rows

@@ -74,18 +74,31 @@ WEBRTC_BRIDGE_UPSTREAM = os.environ.get("WEBRTC_BRIDGE_UPSTREAM", "http://127.0.
 WEBRTC_ICE_SERVERS_FILE = Path(os.environ.get("WEBRTC_ICE_SERVERS_FILE", str(_HERE / "webrtc-ice-servers.json")))
 CLIENTCMD = Path(os.environ.get("CLIENTCMD", str(_HERE / "clientcmd.json")))
 CLIENTCMD_TOKEN = Path(os.environ.get("CLIENTCMD_TOKEN", str(_HERE / "pki" / "clientcmd.token")))
+# Append-only record of every command an operator ISSUED. Deliberately NOT
+# clientlog.jsonl: that file is a rolling window that prunes itself by age, and
+# an audit trail that deletes itself is not an audit trail.
+CLIENTCMD_AUDIT = Path(os.environ.get("CLIENTCMD_AUDIT", str(_HERE / "clientcmd-audit.jsonl")))
 CLIENTCMD_ALLOWED = ("snapshot", "verbose", "reload", "eval")
 CLIENTCMD_KEEP = 100  # queue trimmed to the last N commands
 
 # --- ADMIN SECURITY BOUNDARY -------------------------------------------------
-# The edge tunnel can make public visitors appear to have an RFC1918 socket
-# peer, so client_address is telemetry only and NEVER authorization. Every
-# operator/observability endpoint requires the file-backed X-Admin-Token; public
-# UI/static/signaling/WebRTC routes do not. Arbitrary-JS eval has a second,
-# default-off switch so possession of the token alone cannot enable it.
-OSG_ADMIN_EVAL = os.environ.get("OSG_ADMIN_EVAL", "0").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-    "on",
+# The edge tunnel terminates on the PUBLIC listener, which is bound to loopback,
+# so on that listener every peer looks like 127.0.0.1 and client_address is
+# telemetry only, NEVER authorization. The command ENQUEUE is refused on that
+# listener outright (auth/gate.py BLOCKED_PREFIXES) and on the LAN listener —
+# where the peer is real — requires a loopback peer AND the file-backed
+# X-Admin-Token. Issuing a command is a box-side act; no UI session has a path
+# to it.
+#
+# Because of that, arbitrary-JS eval no longer carries a second opt-in. The old
+# default-off OSG_ADMIN_EVAL=1 ritual guarded a browser-reachable enqueue; with
+# no such path it protects nothing and only defeats the purpose — it does not
+# survive a reboot, so it turned every debugging session into a box-side chore
+# at exactly the moment a live session needed inspecting. The variable survives
+# as an explicit DISABLE switch: set OSG_ADMIN_EVAL=0 to shut eval off.
+OSG_ADMIN_EVAL = os.environ.get("OSG_ADMIN_EVAL", "1").strip().lower() not in (
+    "0",
+    "false",
+    "no",
+    "off",
 )

@@ -125,3 +125,9 @@ scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
 
 # Per-station serial-exec password (box-only; never in the repo tree)
 streamhost/stations/*/serial-exec.passwd
+
+# Serve-plane RUNTIME state, written beside the scripts when a server is run
+# from a checkout (tests, a sandbox instance). Never source, never committed.
+scripts/serve/clientlog.jsonl*
+scripts/serve/clientcmd.json
+scripts/serve/clientcmd-audit.jsonl

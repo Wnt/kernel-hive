@@ -12,7 +12,14 @@
 import type { StreamClient } from '../streamClient';
 import { ByteReader } from './byteReader';
 import { fetchSignal } from './signal';
-import { logClientEvent } from '../clientDebug';
+import { logClientEvent, flushNow } from '../clientDebug';
+
+/** How long WebTransport may sit in `ready` before we record the silence as
+ *  evidence. Chrome gives up on a blackholed QUIC handshake at its own idle
+ *  timeout (~4 s measured), so this sits BELOW that: above it the row would
+ *  never be written on the very networks it exists to describe. Still well
+ *  above a healthy handshake, which completes in well under a second. */
+const CONNECT_STALL_MS = 3000;
 import {
   INPUT_CLASSES,
   KIND_VIDEO,
@@ -110,7 +117,26 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     this.sessionReadyAt = performance.now();
     void this.readDatagrams(wt);
     void this.readIncomingStreams(wt);
-    await wt.ready;
+    // CONNECT-STALL WATCHDOG. `wt.ready` REJECTS on a refused connection — but on
+    // a network that silently blackholes UDP/443 (a corporate or captive
+    // network, exactly where this was first reported) QUIC gets no answer at
+    // all and this await simply never settles: no throw, no `wt-close`, no
+    // telemetry, forever. The session then looks identical to "the visitor is
+    // just sitting there". Emit one row while it is still hanging so the
+    // silence itself becomes evidence. Purely observational — the await is
+    // untouched and the retry logic above still owns the decision to give up.
+    const stallTimer = window.setTimeout(() => {
+      logClientEvent(
+        'connect-stalled',
+        `WebTransport ready has not settled after ${CONNECT_STALL_MS}ms — QUIC may be blocked; codec=${sig.video?.codec ?? '(default)'}, wire=v${sig.wireVersion}`,
+      );
+      flushNow();
+    }, CONNECT_STALL_MS);
+    try {
+      await wt.ready;
+    } finally {
+      clearTimeout(stallTimer);
+    }
     if (this.disposed) { try { wt.close(); } catch { /* noop */ } return; }
     this.wtReady = true;
     this.sessionReadyAt = performance.now();

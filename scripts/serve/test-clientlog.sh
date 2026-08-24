@@ -44,6 +44,7 @@ WEBROOT="$TMP/webroot" SIGNAL_CONFIG="$TMP/tiles.json" \
   BIND_IP=127.0.0.1 PORT=$PORT \
   CLIENTLOG="$TMP/clientlog.jsonl" CLIENTCMD="$TMP/clientcmd.json" \
   CLIENTCMD_TOKEN="$TMP/pki/clientcmd.token" \
+  CLIENTCMD_AUDIT="$TMP/clientcmd-audit.jsonl" \
   RESET_SCRIPT="$TMP/reset-tile.sh" GOLDEN_MANIFEST="$TMP/golden-manifest.json" \
   RESET_PROOF="$TMP/reset-proof" \
   WEBRTC_BRIDGE_UPSTREAM=http://127.0.0.1:1 \
@@ -74,15 +75,20 @@ check() { # check <name> <expected> <actual>
 code() { curl -sk -o "$TMP/body" -w '%{http_code}' "$@" || true; }
 AUTH=(-H "X-Admin-Token: $TOKEN")
 
-# 1. Even a loopback/RFC1918-looking peer has no authority without the token.
-c=$(code -X POST "$BASE/clientlog" --data '{"event":"denied"}')
-check "loopback clientlog without token -> 403" 403 "$c"
+# 1. The OBSERVABILITY plane is open on this listener, by design. Telemetry and
+# the command POLL must work for every session, always — a visitor whose stream
+# failed is the one worth reaching, and they have no token. Restore is likewise
+# untokened (LAN-gated + non-destructive). What is NOT open is issuing a
+# command; that is section 6.
+c=$(code -X POST "$BASE/clientlog" --data '{"event":"untokened"}')
+check "untokened clientlog -> 200" 200 "$c"
 c=$(code "$BASE/clientcmd?since=0")
-check "loopback clientcmd poll without token -> 403" 403 "$c"
+check "untokened clientcmd poll -> 200" 200 "$c"
 c=$(code -X POST "$BASE/restore/win95")
-check "loopback restore without token -> 403" 403 "$c"
-check "denied restore did not execute" absent \
+check "untokened restore -> 200" 200 "$c"
+check "untokened restore executed" present \
   "$(if [ -e "$TMP/reset-proof" ]; then echo present; else echo absent; fi)"
+rm -f "$TMP/reset-proof" "$TMP/clientlog.jsonl"
 
 # 2. valid authenticated event -> 200 {"ok":true}, one JSONL line
 c=$(code -X POST "$BASE/clientlog" "${AUTH[@]}" -H 'Content-Type: application/json' --data \
@@ -112,15 +118,17 @@ check "bad json -> 400" 400 "$c"
 c=$(code -X POST "$BASE/clientlog" "${AUTH[@]}" -H 'Transfer-Encoding: chunked' --data '{"event":"x"}')
 check "chunked -> 411" 411 "$c"
 
-# 6. admin without / with wrong token -> 403, queue file never created
+# 6. The ENQUEUE is box-side only: a loopback peer AND the token. Without the
+# token it is a flat 404 — the path does not admit to existing — and the queue
+# file is never created.
 c=$(code -X POST "$BASE/clientcmd/admin" --data '{"cmd":"snapshot","tile":"amiga"}')
-check "admin no token -> 403" 403 "$c"
+check "enqueue no token -> 404" 404 "$c"
 c=$(code -X POST "$BASE/clientcmd/admin" -H 'X-Admin-Token: wrong' --data '{"cmd":"snapshot","tile":"amiga"}')
-check "admin bad token -> 403" 403 "$c"
+check "enqueue bad token -> 404" 404 "$c"
 check "queue untouched by denied posts" absent \
   "$(if [ -e "$TMP/clientcmd.json" ]; then echo present; else echo absent; fi)"
 
-# 7. admin with token -> 200; eval is default-off; unknown -> 400
+# 7. admin with token -> 200; eval needs NO opt-in any more; unknown -> 400
 c=$(code -X POST "$BASE/clientcmd/admin" -H "X-Admin-Token: $TOKEN" --data '{"cmd":"snapshot","tile":"amiga"}')
 check "admin enqueue snapshot -> 200" 200 "$c"
 check "enqueue reply seq=1" '{"ok": true, "seq": 1}' "$(cat "$TMP/body")"
@@ -128,9 +136,19 @@ c=$(code -X POST "$BASE/clientcmd/admin" -H "X-Admin-Token: $TOKEN" --data '{"cm
 check "admin enqueue verbose -> 200" 200 "$c"
 c=$(code -X POST "$BASE/clientcmd/admin" -H "X-Admin-Token: $TOKEN" --data \
   '{"cmd":"eval","tile":"win95","args":{"code":"return await Promise.resolve(42)","sessionId":"deadbeef"}}')
-check "admin enqueue eval default-off -> 403" 403 "$c"
-check "disabled eval did not enter queue" 2 "$(python3 -c \
+check "admin enqueue eval (no opt-in needed) -> 200" 200 "$c"
+check "eval entered queue" 3 "$(python3 -c \
   'import json,sys; print(json.load(open(sys.argv[1]))["seq"])' "$TMP/clientcmd.json")"
+check "every issued command is audited" 3 "$(wc -l <"$TMP/clientcmd-audit.jsonl")"
+check "audit names cmd + target + issuer, never the token" true \
+  "$(python3 -c '
+import json, sys
+rows = [json.loads(x) for x in open(sys.argv[1])]
+r = rows[-1]
+print(str(r["cmd"] == "eval" and r["tile"] == "win95" and r["sessionId"] == "deadbeef"
+          and r["issuedBy"].startswith("token@") and "return await" in r["code"]
+          and not any(sys.argv[2] in json.dumps(x) for x in rows)).lower())' \
+    "$TMP/clientcmd-audit.jsonl" "$TOKEN")"
 c=$(code -X POST "$BASE/clientcmd/admin" -H "X-Admin-Token: $TOKEN" --data '{"cmd":"rm -rf","tile":"*"}')
 check "unknown cmd -> 400" 400 "$c"
 
@@ -139,9 +157,13 @@ poll() {
   curl -sk "${AUTH[@]}" "$BASE/clientcmd?since=$1" | python3 -c \
     'import json,sys; d=json.load(sys.stdin); print(d["seq"], len(d["cmds"]))'
 }
-check "since=0 -> seq 2, 2 cmds" "2 2" "$(poll 0)"
-check "since=1 -> seq 2, 1 cmd" "2 1" "$(poll 1)"
-check "since=2 -> seq 2, 0 cmds" "2 0" "$(poll 2)"
+check "since=0 -> seq 3, 3 cmds" "3 3" "$(poll 0)"
+check "since=1 -> seq 3, 2 cmds" "3 2" "$(poll 1)"
+check "since=3 -> seq 3, 0 cmds" "3 0" "$(poll 3)"
+# The poll needs no token at all: that is what makes every session reachable.
+check "poll without a token sees the same queue" "3 3" \
+  "$(curl -sk "$BASE/clientcmd?since=0" | python3 -c \
+    'import json,sys; d=json.load(sys.stdin); print(d["seq"], len(d["cmds"]))')"
 
 # 9. authenticated restore reaches only the manifest-approved reset helper.
 c=$(code -X POST "$BASE/restore/win95" "${AUTH[@]}")
@@ -172,12 +194,15 @@ check "unknown tile offer -> 404" 404 "$c"
 c=$(code "$BASE/clientlog")
 check "GET /clientlog -> 404 (not SPA fallback)" 404 "$c"
 
-# 12. A separate explicit opt-in server accepts eval with the same strong token.
+# 12. OSG_ADMIN_EVAL is now an explicit DISABLE. A second server started with
+# =0 must refuse a new eval AND filter an already-queued one out of its poll,
+# while the default server (this $BASE) serves it.
 WEBROOT="$TMP/webroot" SIGNAL_CONFIG="$TMP/tiles.json" \
   CERT="$TMP/cert.pem" KEY="$TMP/key.pem" \
-  BIND_IP=127.0.0.1 PORT=$EVAL_PORT OSG_ADMIN_EVAL=1 \
+  BIND_IP=127.0.0.1 PORT=$EVAL_PORT OSG_ADMIN_EVAL=0 \
   CLIENTLOG="$TMP/clientlog.jsonl" CLIENTCMD="$TMP/clientcmd.json" \
   CLIENTCMD_TOKEN="$TMP/pki/clientcmd.token" \
+  CLIENTCMD_AUDIT="$TMP/clientcmd-audit.jsonl" \
   RESET_SCRIPT="$TMP/reset-tile.sh" GOLDEN_MANIFEST="$TMP/golden-manifest.json" \
   RESET_PROOF="$TMP/reset-proof" \
   WEBRTC_BRIDGE_UPSTREAM=http://127.0.0.1:1 \
@@ -195,18 +220,18 @@ for _ in $(seq 1 50); do
 done
 c=$(code -X POST "$EVAL_BASE/clientcmd/admin" "${AUTH[@]}" --data \
   '{"cmd":"eval","tile":"win95","args":{"code":"return 42","sessionId":"deadbeef"}}')
-check "explicit opt-in eval enqueue -> 200" 200 "$c"
-check "eval args preserved" true "$(python3 -c '
+check "eval enqueue on a DISABLED server -> 403" 403 "$c"
+check "eval args preserved on the enabled server" true "$(python3 -c '
 import json, sys
 c = json.load(open(sys.argv[1]))["cmds"][-1]
 print(str(c["cmd"] == "eval" and c["args"] == {
-    "code": "return 42", "sessionId": "deadbeef"
+    "code": "return await Promise.resolve(42)", "sessionId": "deadbeef"
 }).lower())
 ' "$TMP/clientcmd.json")"
-check "default-off server filters opt-in queue entry" "3 0" "$(poll 2)"
-got=$(curl -sk "${AUTH[@]}" "$EVAL_BASE/clientcmd?since=2" | python3 -c \
+check "enabled server serves the eval queue entry" "3 1" "$(poll 2)"
+got=$(curl -sk "$EVAL_BASE/clientcmd?since=2" | python3 -c \
   'import json,sys; d=json.load(sys.stdin); print(d["seq"], len(d["cmds"]))')
-check "opt-in server serves eval queue entry" "3 1" "$got"
+check "disabled server filters eval out of its poll" "3 0" "$got"
 
 echo
 if [ "$FAILED" -eq 0 ]; then

@@ -21,24 +21,33 @@ Serves:
                                    which does a live QMP `loadvm golden` or a
                                    cold-boot restart per golden-manifest.json.
                                    Wired to StreamView's "Restore to golden" button.
-  POST /clientlog               -> untokened LAN/VPN browser telemetry sink. Body is one
+  POST /clientlog               -> untokened browser telemetry sink, open to EVERY session
+                                   (the visitor whose stream failed is the one whose
+                                   telemetry matters most). Body is one
                                    JSON event object or an ARRAY of events; each
                                    is appended as one JSONL line (+srvTs, +ip) to
                                    CLIENTLOG (clientlog.jsonl). Retention is a
                                    ROLLING WINDOW (CLIENTLOG_RETENTION_SECS,
                                    default 36 h) pruned by age, with
                                    CLIENTLOG_MAX as a runaway size backstop.
-  GET  /clientcmd?since=<seq>   -> authenticated command polling for operator SPA tabs. Re-reads
-                                   CLIENTCMD (clientcmd.json) fresh per request
-                                   and returns only cmds with seq > since.
-  POST /clientcmd/admin         -> enqueue a command (X-Admin-Token
-                                   header checked against CLIENTCMD_TOKEN, read
-                                   fresh per request). Atomic tmp+replace write,
-                                   queue trimmed to the last 100 cmds.
-                                   The eval command runs arbitrary JavaScript in
-                                   every authenticated TARGETED browser; scope it by
-                                   tile and args.sessionId. It is rejected unless
-                                   OSG_ADMIN_EVAL=1 is set explicitly.
+  GET  /clientcmd?since=<seq>   -> command polling for ANY authenticated gallery
+                                   session (the READ half). Every visitor tab
+                                   registers and is reachable, so any session can
+                                   be debugged. Re-reads CLIENTCMD (clientcmd.json)
+                                   fresh per request, returns only cmds seq > since.
+                                   Polling reads the queue; it confers nothing.
+  POST /clientcmd/admin         -> enqueue a command (the WRITE half) — BOX-SIDE
+                                   ONLY: refused outright on the public listener
+                                   (auth/gate.py BLOCKED_PREFIXES) and, on this
+                                   one, requires a LOOPBACK peer plus a valid
+                                   X-Admin-Token (CLIENTCMD_TOKEN, read fresh per
+                                   request). No UI session can issue a command.
+                                   Atomic tmp+replace write, queue trimmed to the
+                                   last 100 cmds. Every accepted command is
+                                   appended to CLIENTCMD_AUDIT. The eval command
+                                   runs arbitrary JavaScript in the targeted
+                                   browser and needs no further opt-in — set
+                                   OSG_ADMIN_EVAL=0 to disable it.
 
 Everything is TLS-wrapped with a cert the user's Chrome trusts (the local CA
 leaf from gen-local-ca.sh). CORS is permissive so a throwaway test page on
@@ -66,7 +75,8 @@ Env (all optional except paths):
   CLIENTLOG_RETENTION_SECS rolling telemetry window in seconds   (default 129600)
   CLIENTCMD      command queue JSON path      (default <server dir>/clientcmd.json)
   CLIENTCMD_TOKEN admin token file    (default <server dir>/pki/clientcmd.token)
-  OSG_ADMIN_EVAL enable arbitrary-JS eval commands                (default 0)
+  CLIENTCMD_AUDIT issued-command audit trail (default <server dir>/clientcmd-audit.jsonl)
+  OSG_ADMIN_EVAL set to 0 to DISABLE arbitrary-JS eval commands   (default on)
 
 The route bodies live beside their config/globals in dedicated modules
 (static_files.py, webrtc.py, clientlog.py, clientcmd.py, restore.py,
@@ -76,6 +86,7 @@ them.
 """
 
 import contextlib
+import ipaddress
 import json
 import ssl
 import sys
@@ -221,10 +232,10 @@ class H(BaseHTTPRequestHandler):
             return True
         user = AUTH.user_for_token(auth_routes.session_token(self))
         if user:
-            # A few paths need more than "signed in" (the operator command poll).
-            if path.startswith(gate.ADMIN_PREFIXES) and user.get("role") != "admin":
-                self._send(404, json.dumps({"error": "not found"}), MIME[".json"], cache=False)
-                return False
+            # Signed in is enough for everything still reachable here. The one
+            # path that needed more — the command ENQUEUE — is not gated any
+            # more, it is refused outright by gate.BLOCKED_PREFIXES above, so
+            # there is no browser-reachable route to issue a command at all.
             return True
         if gate.wants_html(self.headers.get("Accept")):
             # A browser typing the hostname in should land on the login screen,
@@ -238,22 +249,76 @@ class H(BaseHTTPRequestHandler):
         self._send(401, json.dumps({"error": "sign in first"}), MIME[".json"], cache=False)
         return False
 
-    def _require_admin(self, surface: str) -> bool:
-        """Authenticate an admin request without treating its peer IP as trust."""
+    def _require_session(self, surface: str) -> bool:
+        """Authenticate the READ half of the command plane: the poll a tab makes.
+
+        Remote debugging must work for EVERY session, always — the visitor whose
+        stream is broken is exactly the one worth reaching, and they are never an
+        operator. So any authenticated gallery session may poll. The LAN listener
+        stays open exactly as it has always been (it is the lab's own network and
+        every lab script depends on it), which makes the poll behave precisely
+        like /clientlog: untokened on LAN, session-gated on the public edge.
+
+        This grants no authority: polling only READS the operator's queue, and a
+        tab acts on a command only when that command is addressed to it. Issuing
+        one remains _require_box_side's job, and that is box-side only.
+        """
+        if not self.public:
+            return True
         if clientcmd._clientcmd_token_ok(self.headers.get("X-Admin-Token")):
             return True
-        # On the public listener a passkey ADMIN session stands in for the shared
-        # token: it is per-person, revocable and phishing-resistant, where the
-        # token is one string shared by every operator tab. Only reached for the
-        # paths auth/gate.py lists as admin-reachable (the command poll); the
-        # enqueue side is refused before it ever gets here.
-        if self.public and AUTH:
-            user = AUTH.user_for_token(auth_routes.session_token(self))
-            if user and user.get("role") == "admin":
-                return True
+        if AUTH and AUTH.user_for_token(auth_routes.session_token(self)):
+            return True
+        self._send(401, json.dumps({"error": "sign in first"}), MIME[".json"], cache=False)
+        return False
+
+    def _admin_identity(self):
+        """Who authorized this enqueue, for the audit record — never a secret.
+
+        Returns a short string or None if the request is not authorized. The
+        operator token is NEVER echoed: only the fact that a valid one was
+        presented, and the loopback peer it came from.
+        """
+        if not self._peer_is_loopback():
+            return None
+        if clientcmd._clientcmd_token_ok(self.headers.get("X-Admin-Token")):
+            return f"token@{self.client_address[0] if self.client_address else 'local'}"
+        return None
+
+    def _peer_is_loopback(self) -> bool:
+        """Whether this request came from the box itself.
+
+        MUST NOT be used on the public listener, and refuses to be: that
+        listener is bound to loopback with the edge tunnel proxying into it, so
+        EVERY peer there is 127.0.0.1 and this would answer True for a visitor
+        on the other side of the world. On the LAN listener the peer is real.
+        The enqueue path is 404'd on the public listener before routing anyway
+        (gate.BLOCKED_PREFIXES); this is the belt to that braces.
+        """
+        if self.public:
+            return False
+        peer = self.client_address[0] if self.client_address else ""
+        try:
+            return ipaddress.ip_address(peer).is_loopback
+        except ValueError:
+            return False
+
+    def _require_box_side(self, surface: str) -> bool:
+        """Guard the ENQUEUE: it is a box-side act, not a browser-reachable one.
+
+        Two independent conditions, both required. The peer must be loopback —
+        so nothing a browser can reach, on any listener, can issue a command —
+        and the operator token must be presented as defence in depth. The public
+        listener never gets here at all: gate.BLOCKED_PREFIXES 404s the path
+        before routing. `clientcmd.sh` posts to https://127.0.0.1:8443, so the
+        operator's workflow is unchanged.
+        """
+        if self._admin_identity() is not None:
+            return True
         client = self.client_address[0] if self.client_address else "unknown"
-        sys.stderr.write(f"[serve] {surface} DENIED (bad/missing token, peer={client})\n")
-        self._send(403, json.dumps({"error": "bad or missing X-Admin-Token"}), MIME[".json"], cache=False)
+        reason = "non-loopback peer" if not self._peer_is_loopback() else "bad/missing token"
+        sys.stderr.write(f"[serve] {surface} DENIED ({reason}, peer={client})\n")
+        self._send(404, json.dumps({"error": "not found"}), MIME[".json"], cache=False)
         return False
 
     def do_POST(self):
@@ -282,9 +347,9 @@ class H(BaseHTTPRequestHandler):
 
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
-            if not self._require_admin("clientcmd admin"):
+            if not self._require_box_side("clientcmd enqueue"):
                 return
-            return clientcmd.handle_admin_post(self)
+            return clientcmd.handle_admin_post(self, self._admin_identity())
 
         # POST /restore/<osId> — reset ONE station to its golden fixture.
         if path.startswith("/restore/"):
@@ -313,7 +378,7 @@ class H(BaseHTTPRequestHandler):
 
         # GET /clientcmd?since=<seq> — authenticated operator-tab command polling.
         if path == "/clientcmd":
-            if not self._require_admin("clientcmd poll"):
+            if not self._require_session("clientcmd poll"):
                 return
             qs = parse_qs(urlparse(self.path).query)
             return clientcmd.handle_poll(self, qs.get("since", ["0"]))

@@ -2,18 +2,25 @@
 //  clientDebug — client telemetry batching + operator command poller.
 //  ---------------------------------------------------------------------------
 //  Shared protocol contract (serve plane implements the other side):
-//    POST /clientlog          — X-Admin-Token + JSON body: ONE event object or an ARRAY of
+//    POST /clientlog          — NO token. JSON body: ONE event object or an ARRAY of
 //                               events. Event fields: ts (ms epoch), sessionId
 //                               (8-hex per page load), station (osId or ''), ua
 //                               (only on the FIRST event of a batch), event,
 //                               detail (<=512 chars). 16KiB body cap.
-//    GET  /clientcmd?since=N  — X-Admin-Token; {"seq":N,"cmds":[...]}
-//                               with only cmds seq>since. cmd is one of
-//                               snapshot | verbose | reload | eval;
-//                               station '<osId>'|'*'. eval may also target one
-//                               sessionId through args.sessionId.
+//    GET  /clientcmd?since=N  — NO token. Any authenticated gallery session may
+//                               poll; {"seq":N,"cmds":[...]} with only cmds
+//                               seq>since. cmd is one of snapshot | verbose |
+//                               reload | eval; station '<osId>'|'*'. eval may
+//                               also target one sessionId through args.sessionId.
+//                               Only the BOX can enqueue (loopback + operator
+//                               token); no UI session has a path to issue one.
+//  EVERY session polls and every session logs — deliberately. The visitor whose
+//  stream never came up is exactly the one worth reaching, and gating the poll
+//  on an admin session made those sessions invisible and unreachable. Reaching
+//  them is safe because the issuing side is box-side only: a tab can RECEIVE a
+//  command, never send one.
 //  This module NEVER throws into the app: telemetry is best-effort diagnostics
-//  for an authenticated operator (clientlog.jsonl on labhost), not a dependency.
+//  (clientlog.jsonl on labhost), not a dependency.
 //  It is intentionally free of any streamClient import (streamClient imports
 //  US) and free of React.
 // ============================================================================
@@ -75,6 +82,7 @@ let snapshotHook: (() => unknown) | null = null;
 let pollTimer = 0;
 let lastSeq = -1; // -1 → next poll is a BASELINE sync (record seq, execute nothing)
 let pagehideHooked = false;
+let bootLogged = false;
 
 /** Verbose debug flag (toggled by the operator's `verbose` command). While on,
  *  streamClient logs every decoder-config / AU-feed anomaly to the console and
@@ -135,9 +143,11 @@ export function flushNow(_useBeacon = false): void {
     // ua rides only the first event of each batch (contract: keeps bodies small).
     try { batch[0].ua = navigator.userAgent; } catch { /* noop */ }
     const body = JSON.stringify(batch);
-    // /clientlog is not token-gated (LAN/VPN-only box), so telemetry uploads with
-    // no operator setup. If a token happens to be present (an operator tab) send it
-    // too — harmless. keepalive fetch (not sendBeacon) so it survives page teardown.
+    // /clientlog is never token-gated: on the public edge the visitor's own
+    // session cookie authorizes it, on LAN it is open. Telemetry therefore
+    // uploads with no operator setup at all, from every session. If a token
+    // happens to be present (an operator tab) send it too — harmless.
+    // keepalive fetch (not sendBeacon) so it survives page teardown.
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const adminToken = getAdminToken();
     if (adminToken) headers['X-Admin-Token'] = adminToken;
@@ -161,8 +171,41 @@ export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }
   activeTile = tile;
   snapshotHook = hooks.getSnapshot;
   tileOwner = nextTileOwner++;
+  // THE FIRST EVENT OF EVERY SESSION. Until this existed, the earliest thing a
+  // session could log was `connect` — transport SUCCESS — so a visitor whose
+  // stream never came up produced literally nothing (measured: 306 of 380
+  // sessions in clientlog.jsonl opened with `connect`, and a 25-minute failing
+  // session logged zero rows). A session that fails is the one whose telemetry
+  // matters most, so opening a station is now recorded unconditionally, before
+  // anything can go wrong, together with the capability probe that explains
+  // most early failures.
+  logClientEvent('station-open', describeEnvironment(tile));
   startPoller();
   return tileOwner;
+}
+
+/** Compact one-line environment probe: the facts that explain an early failure
+ *  before any transport exists (missing WebTransport/WebCodecs, an insecure
+ *  context, a restricted network's blocked QUIC). Kept well under the 512-char
+ *  detail cap and free of anything identifying beyond the UA we already log. */
+function describeEnvironment(tile: string | null): string {
+  const probe: Record<string, unknown> = { tile: tile ?? '', bundle: BUNDLE_MARKER };
+  try {
+    probe.wt = typeof WebTransport !== 'undefined';
+    probe.vd = typeof VideoDecoder !== 'undefined';
+    probe.rtc = typeof RTCPeerConnection !== 'undefined';
+    probe.secure = typeof isSecureContext !== 'undefined' ? isSecureContext : null;
+    probe.sw = typeof navigator !== 'undefined' && 'serviceWorker' in navigator
+      ? (navigator.serviceWorker.controller ? 'controlled' : 'registered-or-none')
+      : 'unsupported';
+    const conn = (navigator as Navigator & {
+      connection?: { effectiveType?: string; downlink?: number; rtt?: number };
+    }).connection;
+    if (conn) probe.net = { t: conn.effectiveType, dl: conn.downlink, rtt: conn.rtt };
+    probe.hidden = typeof document !== 'undefined' ? document.visibilityState : null;
+    probe.href = typeof location !== 'undefined' ? location.pathname : '';
+  } catch { /* a probe must never be why telemetry is missing */ }
+  try { return JSON.stringify(probe); } catch { return `tile=${tile ?? ''}`; }
 }
 
 /** Station closed. Pass the token setDebugTile returned: a guard on the tile NAME
@@ -179,7 +222,33 @@ export function clearDebugTile(tile?: string, owner?: DebugTileOwner): void {
   activeTile = null;
   snapshotHook = null;
   tileOwner = 0;
-  stopPoller();
+  // The poller deliberately keeps running: it belongs to the TAB, not to the
+  // station. A visitor who backed out of a broken station is exactly who an
+  // operator still wants to reach.
+}
+
+/**
+ * Start telemetry + operator reachability for the WHOLE PAGE, at app boot.
+ *
+ * This is the fix for the session that logs nothing. Everything here used to
+ * hang off setDebugTile, which runs inside the stream effect — so a tab that
+ * never started a stream (a manifest that did not load, a non-streamable
+ * binding, a visitor sitting on the grid) emitted NOTHING and, because the
+ * poller started there too, could not be reached by an operator command
+ * either. It was invisible and unreachable at the same time, for as long as
+ * the visitor sat there.
+ *
+ * Now the first row of every session is written when the app boots, before any
+ * station is chosen and before anything can fail, and the command poller runs
+ * for the lifetime of the tab. Idempotent: safe to call more than once.
+ */
+export function initClientDebug(): void {
+  if (bootLogged) return;
+  bootLogged = true;
+  try {
+    logClientEvent('session-start', describeEnvironment(null));
+    startPoller();
+  } catch { /* telemetry must never break app startup */ }
 }
 
 function startPoller() {
@@ -188,29 +257,26 @@ function startPoller() {
   void poll(); // immediate first poll (baseline sync on a fresh page)
 }
 
-function stopPoller() {
-  if (pollTimer) { window.clearInterval(pollTimer); pollTimer = 0; }
-}
-
-// Set once the server has told us this tab may not poll (no operator token and
-// no admin session). Without it a plain visitor's tab would 403 every 5 s.
+// Set only if the server tells us this tab may not poll at all — which now means
+// "not signed in", not "not an operator". Without it a signed-out tab would
+// retry every 5 s forever.
 let pollDenied = false;
 
 async function poll(): Promise<void> {
   // NEVER throw out of the poller — everything is fenced.
   try {
-    if (activeTile == null || pollDenied) return;
+    if (pollDenied) return;
     const adminToken = getAdminToken();
-    // The token is optional. On the PUBLIC origin an admin's passkey session
-    // authenticates the poll on its own, which is the only way to drive this
-    // plane from a phone: there is no console there to paste a token into, and
-    // the phone is where the touch/stylus bugs actually live.
+    // The token is optional and no longer the point: ANY authenticated gallery
+    // session may poll, so every open tab is reachable for debugging. A tab
+    // still only ACTS on a command addressed to it (station + optional
+    // sessionId), and only the operator can issue one.
     const res = await fetch(`/clientcmd?since=${lastSeq < 0 ? 0 : lastSeq}`, {
       cache: 'no-store',
       headers: adminToken ? { 'X-Admin-Token': adminToken } : {},
     });
     if (res.status === 401 || res.status === 403 || res.status === 404) {
-      pollDenied = true; // not an operator tab — stop asking
+      pollDenied = true; // not signed in — stop asking
       return;
     }
     if (!res.ok) return;

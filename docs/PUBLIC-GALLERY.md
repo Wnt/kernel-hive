@@ -43,10 +43,30 @@ others, which is why all three exist.
 
 **1. The session gate** (`scripts/serve/auth/gate.py`). The public listener is
 default-deny: only the login page, its assets and `/auth/*` are reachable
-without a session. The operator command plane (`/clientcmd*`) is refused
-outright — it can push arbitrary JavaScript into every open tab, and no amount
-of visitor authentication makes that safe to expose. A browser navigating in
-gets a 302 to `/login`; a fetch gets a 401.
+without a session. A browser navigating in gets a 302 to `/login`; a fetch gets
+a 401.
+
+The client-debug plane is split by DIRECTION, and the two halves sit on
+opposite sides of this gate:
+
+* **`GET /clientcmd`** — the poll a tab makes to ask "is there a command for
+  me?" — is reachable by **any authenticated session**. Every visitor tab
+  registers, so any session can be debugged, which is the whole point: the
+  visitor whose stream just died is the one worth reaching, and they are never
+  an operator. Polling confers nothing — it READS the operator's queue, and a
+  tab acts on a command only when that command is addressed to it.
+* **`POST /clientcmd/admin`** — the enqueue, which is what ISSUES a command
+  including arbitrary-JS `eval` — is in `BLOCKED_PREFIXES` and returns a flat
+  404 here. Issuing is a box-side act: it needs a loopback peer *and* the
+  operator token, so **no UI session has any path to command the server**,
+  whatever credential it holds. `clientcmd.sh` posts to
+  `https://127.0.0.1:8443` on the box and is unaffected.
+
+This gives up issuing commands *from* a phone. It does not give up **debugging**
+a phone, which is the thing that actually matters: a phone session is the
+TARGET — it polls, receives the command and reports back — so touch and stylus
+bugs are more reachable than before, not less, because every session now polls
+rather than only an admin's own tab.
 
 **2. The passkey** (`scripts/serve/auth/`). WebAuthn via Yubico's `fido2`, with
 discoverable credentials so signing in is one tap and no username. Sessions are

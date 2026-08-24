@@ -53,13 +53,14 @@ them.
 
 | endpoint | what |
 |----------|------|
-| `POST /clientlog` | Requires `X-Admin-Token`. Body: one JSON event object or an ARRAY of events (16 KiB cap, chunked rejected). Server adds `srvTs` + `ip`, truncates client fields, and appends rotating JSONL. |
-| `GET /clientcmd?since=<seq>` | Requires `X-Admin-Token`. Reads `clientcmd.json` fresh and returns only newer commands; filters stale `eval` commands whenever eval is off. |
-| `POST /clientcmd/admin` | Requires `X-Admin-Token`. Enqueues `snapshot`, `verbose`, or `reload`; `eval` is accepted only with `OSG_ADMIN_EVAL=1`. Queue writes are bounded and atomic. |
-| `POST /restore/<osId>` | Requires `X-Admin-Token`; executes the manifest-approved non-destructive reset only. |
+| `POST /clientlog` | **No token.** Open to every session — a visitor whose stream failed is the one whose telemetry matters. Body: one JSON event object or an ARRAY (16 KiB cap, chunked rejected). Server adds `srvTs` + `ip`, truncates client fields, appends rotating JSONL. |
+| `GET /clientcmd?since=<seq>` | **No token** — any authenticated session may poll, so every tab is reachable. Reads `clientcmd.json` fresh, returns only newer commands; filters `eval` whenever eval is disabled. |
+| `POST /clientcmd/admin` | **Box-side only**: 404 on the public listener, and on the LAN listener needs a LOOPBACK peer **and** `X-Admin-Token`. Enqueues `snapshot`, `verbose`, `reload`, `eval`. Every accepted command is appended to `clientcmd-audit.jsonl` first. Queue writes bounded and atomic. |
+| `POST /restore/<osId>` | No token (LAN-gated, non-destructive); executes the manifest-approved reset only. |
 
 Files (all under `$SERVE` = `/data/vms/streamhost/serve` on the box):
-`clientlog.jsonl` (+ `.1`), `clientcmd.json`, `pki/clientcmd.token`.
+`clientlog.jsonl` (+ `.1`), `clientcmd.json`, `clientcmd-audit.jsonl`,
+`pki/clientcmd.token`.
 
 Mint the token once (fails CLOSED — all admin/observability routes 403 until it exists):
 
@@ -87,24 +88,23 @@ ssh lab "tail -500 /data/vms/streamhost/serve/clientlog.jsonl" \
 ssh lab 'cat /data/vms/streamhost/serve/clientcmd.json' | jq .
 ```
 
-Authenticate an operator browser tab before enqueuing browser commands: in
-DevTools run `window.__kernelHiveAdminLogin()`, then enter the token in the prompt.
-The value is not part of the command history, URL, or bundle. Close the tab or run
-`window.__kernelHiveAdminLogout()` to discard it.
-
-Arbitrary-JS eval has a second gate and is **off by default**. For a bounded
-debug session, restart the server with `OSG_ADMIN_EVAL=1`, authenticate the
-operator tab, and also prefix the helper invocation:
+Commands are issued FROM THE BOX. There is nothing to authenticate in a browser
+tab and no token to paste anywhere: `clientcmd.sh` re-execs itself over
+`ssh lab` and posts to `https://127.0.0.1:8443`, which is the only place the
+enqueue endpoint answers at all.
 
 ```bash
-ssh lab 'OSG_ADMIN_EVAL=1 /data/vms/streamhost/serve/restart-https.sh'
-OSG_ADMIN_EVAL=1 scripts/serve/clientcmd.sh eval <sessionId> '<javascript>'
-OSG_ADMIN_EVAL=1 scripts/serve/clientcmd.sh evallog <sessionId>
-ssh lab '/data/vms/streamhost/serve/restart-https.sh'  # eval off again
+scripts/serve/clientcmd.sh sessions                     # who is here, and their STATE
+scripts/serve/clientcmd.sh eval <sessionId> '<javascript>'
+scripts/serve/clientcmd.sh evallog <sessionId>          # reassembled result
+scripts/serve/clientcmd.sh audit                        # what was issued, to whom, when
 ```
 
-Restart without the variable (or with `OSG_ADMIN_EVAL=0`) immediately returns to
-the default; queued eval commands are filtered while it is off.
+`eval` needs no opt-in — the enqueue is unreachable from any browser, so the old
+default-off switch protected nothing while costing a server restart at exactly
+the moment a live broken session needed inspecting. To turn eval OFF, restart
+with `OSG_ADMIN_EVAL=0`; a disabled server refuses the enqueue with 403 and
+filters already-queued eval commands out of its poll.
 
 ## SECRETS — not in the repo (carry safely, never commit)
 
@@ -170,10 +170,12 @@ SIGNAL_HOST=192.0.2.10 PORT=8443 BIND_IP=0.0.0.0 \
   python3 osgallery-https-server.py
 ```
 
-The public listener remains on `0.0.0.0`; authorization is the token, never the
-socket peer address. Set `OSG_ADMIN_EVAL=1` only for deliberate eval sessions —
-under systemd it is handed to the unit via `/run/osgallery-https.env` (tmpfs), so
-a reboot always returns to eval **off** regardless of the last restart.
+The LAN listener remains on `0.0.0.0`. For the ENQUEUE, authorization is a
+loopback peer plus the token; on the tunnel-fronted public listener the path is
+404 and the peer check refuses to answer, because every peer there looks like
+`127.0.0.1`. `OSG_ADMIN_EVAL` is now an explicit DISABLE (`=0`) — under systemd
+a per-restart value is handed to the unit via `/run/osgallery-https.env`
+(tmpfs), so a reboot returns to the unit default, which is eval **on**.
 
 ## SPA bundle
 
