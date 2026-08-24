@@ -277,7 +277,29 @@ MAME argument changes. The v9 seed is still staged beside v10.
   curated in `era-sites.json` with this station in mind; none of them are
   bookmarked in the guest yet.
 
-## The shot
+## The shot — and the containment behind it
 
-See the acceptance capture referenced from the station's own doc
-([`../../guests/irix.md`](../../guests/irix.md), §retronet).
+**The framebuffer acceptance, on the LIVE station from its production
+checkpoint** (2026-08-24): `systemctl start streamhost@irix` restores to a
+pristine iconlogin chooser; logging in as `demos` paints the 4Dwm Indigo Magic
+desktop; opening Netscape lands on **`http://www.sgi.com/` — "Welcome to SGI",
+`Document: Done.`** — with **no dialogs in any frame**, from the first painted
+one. SGI's own web, on an SGI Indy, served from the museum's offline corpus.
+
+The restore is interactive, not merely rendered — the trap this station met
+once before ([`../../guests/irix.md`](../../guests/irix.md): *"a state that
+RENDERS is not a state that WORKS"*): `labctl exec irix` answers over the serial
+agent after every restore, and the guest replies to pings itself.
+
+**Containment, re-proven from inside the guest on the live station:**
+
+| From the guest to… | Result | Lock |
+|---|---|---|
+| CT `10.99.0.2` (DNS + the `:80` corpus origin) | **reply, 0.0% loss** | intra-bridge L2 — the point |
+| any name, e.g. `hamsterdance.com` | **resolves to `10.99.0.2`** | the gateway's wildcard DNS, no proxy |
+| labhost bridge `10.99.0.1` | **100% loss** | the `IRIXRN-IN` guard chain |
+| internet `1.1.1.1` (by IP) | **Network is unreachable** | no default route (Lock 1), in the guest's own stack |
+| labhost LAN `192.0.2.10` | **Network is unreachable** | same — and `retronet-fw` behind it |
+
+`retronet-fw` runs with `bridge-nf-call-iptables=0`, so guest↔CT traffic is pure
+L2 and never touches these chains — the retronet reaching the retronet.
