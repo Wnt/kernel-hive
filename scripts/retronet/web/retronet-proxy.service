@@ -56,6 +56,11 @@ ReadOnlyPaths=/data/retronet/corpus /opt/retronet-proxy
 # fails on every miss and the station-request queue is silently dead — which is
 # exactly what happened between 2026-08-21 and 2026-08-24.
 ReadWritePaths=/var/spool/retronet
+# The journal is created 0664, not 0644: the spool is a SHARED queue. The crawl side
+# only needs the directory to rotate the file, but an operator replaying known demand
+# into it (ERA-PRESS.md §Seeding by hand) writes the file itself, and having to be root
+# to hint the museum what it is missing is a silly reason to reach for root.
+UMask=0002
 
 # --- resource cage ------------------------------------------------------------
 Nice=5

@@ -456,6 +456,24 @@ cooldown that lives only in memory is no cooldown. Watch it in `requests.log`:
     request not-archived (quiet for 30d): http://intranet.local/foo
 ```
 
+#### Seeding by hand
+
+The journal is an ordinary append-only file of `{"url": …, "t": …}` lines, so demand the
+proxy could not record — a batch recovered from the access log, a page you know a station
+wants — can be replayed into it. Write the **same two-asks-fifteen-minutes-apart shape**
+the rule requires; do not invent a shortcut around it:
+
+```python
+for t in (now - 7200, now - 3600):
+    print(json.dumps({"url": "http://www.nytimes.com/images/rule1.gif", "t": t}))
+# >> /var/spool/retronet/_requests.jsonl   (on the labhost side: /data/vms/retronet-requests/)
+```
+
+The service folds it within `--requests-interval` (5 min). This is how the 30 URLs the
+fleet asked for during the three-day silence were recovered — attributed to a host by
+finding which mirrored page actually references each missing asset, rather than by
+guessing from the client IP.
+
 #### Why this is two units and not one thread
 
 The watcher used to be a thread inside `cmd_crawl`, which made its lifetime the crawl's lifetime. A
