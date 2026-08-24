@@ -150,6 +150,25 @@ format was not reverse engineered; the supported route is the GUI.
 | Self-contained | OmniFoundation/OWF/OmniImage are **statically linked in**; the only shared libraries it needs are NeXTSTEP's own (`libFoundation_s`, `libNeXT_s`, `libsys_s`, …). Nothing else to install |
 | Plugins | gif, jpeg, png, xbm, xpm, inflate, Gopher — all inside the bundle; the JPEG and GIF ones are exercised by the acceptance page |
 
+### The browser that should have been here, and why it is not
+
+The first web browser in the world was written on a machine exactly like this
+one — Tim Berners-Lee's **WorldWideWeb**, NeXTSTEP 0.9/1.0, 1990 — and a
+NeXTcube exhibit running it would be the single most on-the-nose thing in this
+museum. It is not what ships, for two reasons that are worth stating rather than
+quietly dropping.
+
+It is a **0.x-era application**: the surviving builds target NeXTSTEP 0.9–1.0
+and do not run unmodified on 3.3, whose AppKit and Objective-C runtime moved
+under it. And it renders the web *it* knew — no inline images, no tables, no
+forms — so on a corpus of 1996–2000 pages it would show a station that looks
+broken rather than a station that looks 1990. The exhibit's job is to make the
+period web legible; OmniWeb does that and WorldWideWeb would not.
+
+The right home for the poetry is a **second, deliberately-labelled exhibit**
+(CERN's line-mode browser and the WorldWideWeb reconstruction both exist), not
+the station's only browser. Noted here so the next agent does not re-derive it.
+
 **Why 2.7b3 and not 2.5 final.** Both are on the same archive page and both
 contain the Lighthouse licence framework's string *"Your demonstration copy of
 OmniWeb has expired"* — so the beta/final distinction does **not** separate a
