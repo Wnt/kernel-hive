@@ -1,6 +1,6 @@
 # NeXTSTEP 3.3 — live streamhost station `nextstep` (VMID 237, udp 54134)
 
-**Status: LIVE, absolute pointer, PROMOTED 2026-08-10.** A captured Debian-12 kiosk runs the **Previous** emulator as a
+**Status: LIVE, absolute pointer, PROMOTED 2026-08-10. Host-native conversion is emulator-ready and not cut over — see §2b.** A captured Debian-12 kiosk runs the **Previous** emulator as a
 **NeXTcube** (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) booting **NeXTSTEP
 3.3 for m68k**, and streamhost captures the Linux framebuffer + AC97 audio like
 every other kiosk (`streamhost/docs/BRIDGE.md`). The acceptance scene —
@@ -54,6 +54,76 @@ Media provenance is recorded in `docs/lab/ASSETS-MANIFEST.md` and in the guest's
 
 The overlay is grown to 16 GB before first boot: the 6 GiB seed has only ~2.6 GiB
 free and the disk image alone is 2 GB.
+
+## 2b. Host-native conversion — the emulator side is DONE, not yet cut over
+
+**Status 2026-08-25: the Previous fork carries all three planes and they are
+framebuffer-proven on a sandbox rig; nothing about the live station has
+changed.** The bridge kiosk below still serves. What follows is what a cutover
+now needs, and what it no longer needs.
+
+Fork: `github.com/Wnt/previous`, branch `kernel-hive`, four patches — see its
+`KERNEL-HIVE-FORK.md` for the full env table and the measurements.
+
+| plane | emulator env | streamhost env |
+|---|---|---|
+| frames | `PREVIOUS_SHM_PATH=<file>` | `SH_CAPTURE=shm`, `SH_SHM_PATH=<same>`, **`SH_SHM_DAMAGE=0`** |
+| input | `PREVIOUS_CTL_SOCK=<path>` | `SH_INPUT_BACKEND=mamesock`, `SH_MAMECTL_SOCK=<same>`, `SH_MAMESOCK_KEYMAP=streamhost/stations/nextstep/nextstep.keymap` |
+| audio | `PREVIOUS_AUDIO_FIFO=<path>` | `SH_AUDIO_SOURCE=fifo`, `SH_AUDIO_FIFO=<same>` |
+
+Build: `cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1`.
+**`ENABLE_RENDERING_THREAD` is mandatory** — without it input events queue on a
+ring buffer nothing drains. Launch under `SDL_VIDEODRIVER=dummy
+SDL_AUDIODRIVER=dummy`; no X server, no window, no kiosk.
+
+**Zero streamhost code changes.** The control socket speaks `mamectl/1`
+verbatim — the same wire `mame_sock.rs` already drives the MAME ctlsock module
+with — so the existing `mamesock` backend drives Previous as-is. What the
+daemon never interprets is the `KEY` verb's (port, field) pair, so this fork
+defines it as the NeXT KMS space: port `kms` with a hex NeXT scancode, port
+`mod` with a modifier bit by name (a NeXT keyboard's modifiers are a MASK
+carried with every edge, not keycodes). `streamhost/stations/nextstep/nextstep.keymap`
+is that map, 80 rows, hand-written because Previous has no `KEYDUMP` to
+generate one from — every row was driven through the live socket and accepted.
+Leave `SH_MAMESOCK_PTR_GRID` unset: targets are stated in screen pixels.
+
+**§4's tablet is what makes the pointer exact, and it still is.** The ctlsock
+picks its route per event: with `bTabletEnabled` a `MOVEA` is one
+`tablet_pen_move()` and lands on the commanded pixel; without it the target is
+dead reckoned through the relative KMS mouse. The dead-reckoned route was
+measured on the rig and independently reproduces §4's finding — 1.00 px per
+count at one count per 20 ms, >2.3x at four counts or more — so it is exact only
+at ~50 px/s and is a bring-up tool, not a visitor's pointer. **The station's own
+disk already solves this**: the `/etc/rc.local` `kl_util` hook from §4 attaches
+the tablet before the WindowServer starts, so a host-native station inherits an
+absolute pointer with zero extra work. A fresh disk image does not — the rig's
+did not, which is why the fallback exists and why it is measured.
+
+§4's slow-press finding is now enforced in the emulator: `PREVIOUS_CTL_BTN_HOLD`
+(default 400 ms) holds an early RELEASE in the queue, so a visitor's quick click
+cannot be sampled away. This is the `MAME_CTL_KEY_EXCL` pattern.
+
+**Checkpointing.** CRIU dump/restore works with all three planes open — dump
+0.15 s, restore 0.13 s, flags `--shell-job --file-locks --manage-cgroups=ignore`,
+process SIGSTOPped and the disk reflink-paired first. Two things to know: the
+restored process comes back in its job-control stop, so **`kill -CONT` it**; and
+a dump FAILS while a client is connected to the control socket (`unix: Unix
+socket … not found`, and `--ext-unix-sk` does not rescue it). Take checkpoints
+with no client attached — `mamesock` reconnects forever with backoff, so a
+restore simply gets reconnected.
+
+**Proven on the rig, from published frames only** (`/data/vms/sandbox/prev-capture/evidence/`):
+NeXTSTEP 3.3 boots headless to the Workspace; injected keys land visibly
+(Command-f opens the Finder panel, then a typed string appears in its field,
+uppercase and punctuation included); injected absolute targets put the arrow at
+the commanded pixel with a constant offset across six scattered targets;
+the audio FIFO delivers the system beep as a coherent ~800 Hz tone; and all
+three still work after a CRIU cycle.
+
+**Still to do for a cutover** (station work, not emulator work): a launcher in
+`streamhost/stations/nextstep/`, the registry launcher-type change, a golden
+checkpoint taken from the acceptance scene, and the operator's eyeball. The
+bridge overlay stays as the rollback until they retire it.
 
 ## 3. Emulated machine and X geometry
 
