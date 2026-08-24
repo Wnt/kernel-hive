@@ -1,10 +1,11 @@
 # win95 web station — the bridge as-built
 
-**Status: LIVE.** `win95` (Windows 95 OSR2.5, 4.00.1111) is on the retronet
+**Status: LIVE.** `win95` (Windows 95 **OSR2.5**, 4.00.1111) is on the retronet
 **web plane** over a real bridged NIC on `vmbr-rn`, on **DHCP**, with the
 **warpnet pointer agent re-homed onto the bridge**. Open the station, double-click
-**The Internet** on the desktop, and the guest's own **Internet Explorer 3.01**
-renders the museum corpus — no proxy configured, no live internet reachable.
+**Internet Explorer** on the desktop, and the guest's own **Internet Explorer
+4.01** renders the museum corpus — no proxy configured, no live internet
+reachable.
 
 This is the win98se pathfinder ([`ICQ-STATION.md`](ICQ-STATION.md)) replicated on
 Windows 95 for the web plane ([`WEB-PLANE-PLAN.md`](WEB-PLANE-PLAN.md),
@@ -21,43 +22,83 @@ deferred — [`ICQ-STATION-win95.md`](ICQ-STATION-win95.md).
 | Tap | `win95rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/win95/rn-tapnet.sh up` from the launcher on every start (chain `WIN95RN-IN`, scoped to the guest IP) |
 | Guest IP | **DHCP** — the guest's TCP/IP was already set to obtain IP *and* DNS automatically, so the swap needed **no in-guest network configuration at all**. `retronet-dhcp` reserves `RN_WIN95_MAC → 10.99.0.13/24`, DNS `10.99.0.2`, **and NO router option** |
 | Seamless web | DNS = `10.99.0.2` (via DHCP) + **no proxy anywhere in IE's registry** → any URL resolves to the gateway and its `:80` origin serves the corpus by `Host` |
-| Browser | **Internet Explorer 3.01 (build 1158)**, the stock OSR2 browser already in the golden. Desktop icon **The Internet** |
+| Browser | **Internet Explorer 4.01 (4.72.2106.8)**, installed Browser Only from the OEM's own `C:\WIN95\` CAB set — the browser this OSR2.5 image was built to carry. Desktop icon **Internet Explorer** |
 | Pointer | **warpd agent `C:\WARPNET.EXE` (guest :7777) reached DIRECTLY over the bridge at `10.99.0.13:7777`** (`SH_WARPD_ADDR`) — was the slirp hostfwd `127.0.0.1:57791`. Motion absolute (`SetCursorPos`), buttons on the PS/2 device (`SH_WARPD_BUTTONS=qemu`) |
 | Exec | `C:\WARPX.EXE` (warpnet built `-DWARP_PORT=7788`) at **`10.99.0.13:7788`** (`exec_kind warpd_e`). `labctl exec win95 "<cmd>"` — this station had **no exec channel at all** before |
 
-## The browser: IE 3.01, installed nothing
+## The browser: Internet Explorer 4.01, the OEM's own
 
-The one open decision on this station was *which browser*. The answer is that the
-clean golden already has one, and it is enough.
+This is an **OSR2.5** machine — Windows 95 C, registry `VersionNumber`
+`4.00.1111` with `SubVersionNumber` `" C"` — and the browser it runs is the one
+its own OEM distribution was built to carry: **Internet Explorer 4.01**
+(`4.72.2106.8`, files dated 1997-11-18), installed **Browser Only, with no
+Windows Desktop Update**.
 
-- `C:\Program Files\Internet Explorer\IEXPLORE.EXE` is dated **1996-08-24**;
-  `HKLM\Software\Microsoft\Internet Explorer` reads `IVer`=`103`, `Build`=`1158`
-  — **IE 3.01**. Its UA is `Mozilla/2.0 (compatible; MSIE 3.01; Windows 95)`.
-- **No proxy is configured and none is needed.** `HKCU\…\Internet Settings` has
-  no `ProxyEnable`/`ProxyServer` value at all. The wildcard DNS does the work.
-- IE 3.01's shipped start page is `http://home.microsoft.com/`, and that host
-  **is in the corpus** (300 pages). So the browser's own default lands on a real
-  archived page with nothing configured — the Home button works too.
-- **Nothing was installed.** No IE 4.01, and emphatically **no IE 5.5 SP2** — the
-  earlier ICQ pass proved IE5.5 compromises the golden (multi-minute first-boot
-  finalization, a network-login prompt every boot, a modernised desktop). Winsock 2
-  and comctl32 5.80 were not needed either: IE 3.01 runs on stock Winsock 1.1.
+**The media was already on the disk; nothing was sourced.** `C:\WIN95\`, the
+OEM's Windows 95 distribution folder, holds the complete Microsoft IE 4.01 CAB
+set — `IE4SETUP.EXE`, `IE4_S1..S6.CAB`, `IE4SHL95.CAB`, `IE4DATA.CAB`,
+`IE40CIF.CAB`, `IE4MFC40.CAB`, `IE4SOUND.CAB`, plus `IEJAVA`, `JAVI386`,
+`MAILNEWS`, `IR50_32`, `MINI` and the NT-side variants — and the desktop's
+*Internet Explorer 4.0 Setup* shortcut points straight at `C:\WIN95\IE4SETUP.EXE`.
+It is a **local, offline, vendor-original full install**, not the ~450 KB online
+stub, and it needs no internet. That bundle is also the best corroboration that
+this image really is 950 C: shipping the Win95 CABs and the IE 4.01 CABs side by
+side in one OEM folder is what OSR2.5 *is*.
 
-**The one real trap, and the fix.** Out of the box the **The Internet** desktop
-icon does *not* open the browser — it opens the **Internet Connection Wizard**
-("Get Connected!"), which is a dial-up setup wizard and a dead end for a visitor.
-The wizard was completed once, choosing **Setup Options → Current** ("uses your
-current Internet settings … if you already have a connection to the Internet"),
-which is the truthful answer for a guest already on the bridge. That choice is
-baked into the golden: **the icon now launches IE straight onto the corpus.**
-This is the authentic 1996 fix — the wizard is a once-per-machine step, not
-something to route around with an extra shortcut, so the desktop keeps its
-period-correct icon set.
+**Browser Only, and the INI knob that makes it available.** The OEM's
+`IE4SETUP.INI` ships `ModeRelation=12` and `Shell_Integration=1`, so the wizard
+offers only *Standard* and *Full* and would bring the Windows Desktop Update with
+it. Setting `ModeRelation=012` and `Shell_Integration=0` makes the wizard offer
+**Browser Only Installation** ("Internet Explorer 4.0 Web browser, and multimedia
+enhancements") and drops the Windows Desktop Update page entirely. The OEM INI
+was **restored afterwards** and is byte-identical to the original again.
 
-Two installer shortcuts (`Internet Explorer 4.0 Setup`, `Internet Explorer 5.5
-SP2 Setup`) and `C:\IE55SP2\` were already on the golden before this pass and are
-left alone. A visitor who runs one changes nothing durable — the exhibit is
-`loadvm`-restored — but the operator may want them tidied some day.
+What that bought, and what it cost:
+
+- **The Win95 shell is untouched.** No Active Desktop, no web-view folders, and
+  no Quick Launch toolbar — the taskbar is still Start plus the tray, which is
+  the visible proof the Desktop Update never landed.
+- **`COMCTL32.DLL` stays at 5.80** (577,808 bytes, 1999-04-30). IE 4.01 setup did
+  **not** put 4.71 back, so no `50comupd.exe` re-apply was needed. Check it
+  before assuming otherwise.
+- IE 4.01 installs a **Channel Bar** on the desktop and leaves a resident
+  `Iexplore` process running from boot. Both are authentic 1997 furniture and are
+  left in place. The resident process is also why an open browser window will not
+  close from its own X button or Alt+F4 on this guest.
+- The install ends in a reboot it drives itself, and the long file-copy phase
+  wedges the S3/VBE display into a striped band — cosmetic, cleared with the
+  warpnet **`V`** verb.
+
+**The start page — deliberately pointed back into the corpus.** IE 4.01 setup
+repoints the home page at its own `www.microsoft.com/IE/IE401/DOWNLOAD/...`
+page, which is **not** archived, so it lands on the museum's *Not in the
+Museum's Internet* miss. It was set back to **`http://home.microsoft.com/`**,
+which **is** in the corpus (300 pages) and renders as the January 27 1998
+*Microsoft Internet Start* — headlines, Lycos search box, Dow/Nasdaq quotes, and
+a banner reading *"Internet Explorer 4.0 Is Here"*. So the browser's own **Home**
+button lands on a real archived page with nothing else configured, and the page
+happens to advertise the very browser now rendering it. The value lives in
+`HKCU\...\Internet Explorer\Main\Start Page` (`USER.DAT`), so it survives a
+cold boot.
+
+**The desktop icon.** IE 4.01 replaces the old *The Internet* icon with a plain
+**Internet Explorer** icon that launches the browser directly. The Internet
+Connection Wizard — a dial-up dead end for a visitor — is out of the path
+entirely; there is no longer a wizard to complete.
+
+**No proxy, and none needed.** `HKCU\…\Internet Settings` carries no
+`ProxyEnable`/`ProxyServer` value. The wildcard DNS at `10.99.0.2` does the work:
+any hostname resolves to the gateway and its `:80` origin serves the corpus by
+`Host`.
+
+> **Do NOT install Internet Explorer 5.5 SP2 on this station.** It makes the
+> golden unfit as an exhibit: a multi-minute first-boot finalization, a
+> **network-login prompt on every boot** (the shell and `WIN.INI load=` — hence
+> both warpnet agents — only start *after* it), and a modernised desktop. The
+> prohibition is absolute and unaffected by the IE 4.01 install. The leftover
+> *Internet Explorer 5.5 SP2 Setup* desktop shortcut and `C:\IE55SP2\` are
+> inert and are left alone; a visitor who runs one changes nothing durable,
+> because the exhibit is `loadvm`-restored.
 
 ## The warpnet pointer re-home — the win95-specific complication
 
@@ -111,22 +152,27 @@ L2 and never touches these chains.
 - **both** agents answer (`:7777` pointer, `:7788` exec), and the daemon holds an
   ESTAB connection to `10.99.0.13:7777`;
 - `labctl exec win95 "ver"` → `Windows 95. [Version 4.00.1111]`;
-- a **click sent over the bridge** lands on **The Internet**, and **IE 3.01
+- a **click sent over the bridge** lands on **Internet Explorer**, and **IE 4.01
   renders `home.microsoft.com` from the corpus**.
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (57.7 MiB, 2026-08-23 13:01) in
+- **LIVE golden:** internal snapshot **`golden`** (72 MiB, 2026-08-24 05:25) in
   `/data/vms/streamhost/stations/win95/win95-golden.qcow2`. Tap-native + DHCP +
-  the `RN_WIN95_MAC` NIC address, both warpnet agents running, the Connection Wizard
-  already completed, captured on a clean 1280×1024 frame. `labctl reset win95` =
-  `loadvm golden`.
-- **Pre-swap byte-copy backup** (QEMU stopped, SHA256-verified):
-  `/data/gallery-guests/Win95/golden-backup-rnweb-win95-20260823/win95-golden.qcow2`
-  (`4eb97bac2b36cf05fce009300915304588ee95be74ea9460c7da7cd0dbffa478`, +
-  `SHA256SUMS` in the dir). It hashes **identical** to the earlier
-  `golden-backup-retronet-win95-20260821/` copy, which confirms the live golden
-  really was the clean pre-retronet one.
+  the `RN_WIN95_MAC` NIC address, both warpnet agents running, **IE 4.01 Browser
+  Only installed with the home page pointed at `home.microsoft.com`**, and ICQ
+  2002a signed in as UIN `95000` (see [`ICQ-STATION-win95.md`](ICQ-STATION-win95.md)
+  for what that does and does not yet do), captured on a clean 1280×1024 frame.
+  `labctl reset win95` = `loadvm golden`.
+- **Byte-copy backup of that golden** (QEMU stopped, SHA256-verified):
+  `/data/gallery-guests/Win95/golden-backup-ie401-icq2002a-20260824/win95-golden.qcow2`
+  (`0c9f7c5532abaaa1c7dede54325b2ae4d54cb5c18e57b5ba43747c90a454339a`, +
+  `SHA256SUMS` in the dir).
+- **Rollback to the pre-IE-4.01 web-only golden** (QEMU stopped, SHA256-verified):
+  `/data/gallery-guests/Win95/golden-backup-preicq2001b-20260823/win95-golden.qcow2`
+  (`0d86c84431a5faba228f03c9a7af4fb83666ee22860e40190797c3a0eea440a5`). That is
+  the IE 3.01, no-ICQ image; restoring it undoes everything on this page's
+  browser section in one copy.
 - The pristine gallery image `/data/gallery-guests/Win95/win95-osr2-kvm.qcow2` is
   untouched.
 
@@ -134,7 +180,7 @@ L2 and never touches these chains.
 
 ```bash
 ssh lab 'systemctl stop streamhost@win95 &&
-  cp -a /data/gallery-guests/Win95/golden-backup-rnweb-win95-20260823/win95-golden.qcow2 \
+  cp -a /data/gallery-guests/Win95/golden-backup-preicq2001b-20260823/win95-golden.qcow2 \
         /data/vms/streamhost/stations/win95/win95-golden.qcow2 &&
   bash /data/vms/streamhost/stations/win95/rn-tapnet.sh down'
 # then revert the launcher/registry/station.env to the slirp hostfwd form

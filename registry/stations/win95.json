@@ -29,7 +29,7 @@
     "actionMap": {
       "key": "win95",
       "value": {
-        "os": "Windows 95 OSR2",
+        "os": "Windows 95 OSR2.5",
         "win": "qemu",
         "mouse": {
           "a": [
@@ -69,7 +69,7 @@
   "render": {
     "signalOrder": 1,
     "stationsManifestOrder": 14,
-    "stationsManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached DIRECTLY over the vmbr-rn bridge at 10.99.0.13:7777 (retronet\n# 2026-08-23; was the slirp hostfwd 127.0.0.1:57791 before the bridge swap).\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
+    "stationsManifestPrelude": "\n# win95 (VMID 91) — Win95 OSR2.5 (950 C, 4.00.1111), sb16, pcnet NIC; machine carries accel=kvm.\n#   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery\n#   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional\n#   -loadvm golden.\n# POINTER=warpd: usb=off => PS/2 RELATIVE-only mouse + Win9x pointer\n# acceleration make an abs->rel bridge drift. Fix (guest-agents/win9x/\n# warpnet.c): an in-guest Win32 agent SetCursorPos()s absolutely over Winsock\n# TCP :7777, reached DIRECTLY over the vmbr-rn bridge at 10.99.0.13:7777 (retronet\n# 2026-08-23; was the slirp hostfwd 127.0.0.1:57791 before the bridge swap).\n# BUTTONS ride the real QEMU PS/2 device (--warpd-buttons qemu, 2026-07-14): a\n# warpnet mouse_event click is a WINDOWS-level click that punches through a\n# fullscreen DOS box's input ownership (killed GTA/Duke/Quake with \"VESA\n# function 5h failed\"); PS/2 buttons land in whoever owns the mouse. Motion\n# stays on the agent (absolute, drift-free).\n",
     "bringUpGroup": 4,
     "bindingOrder": 4,
     "bindingPrelude": "",

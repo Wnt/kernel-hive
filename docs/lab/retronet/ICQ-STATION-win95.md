@@ -1,252 +1,226 @@
-# win95 ICQ — the client question, answered
+# win95 ICQ — signed in, rendering, one switch short of onboarded
 
-**Status: NOT ONBOARDED — one documented step away.** `win95` is on the
-retronet and has been since the web plane shipped
+**Status: NOT ONBOARDED — one setting away, and that setting is out of reach
+from the client's UI.** `win95` runs **ICQ 2002a build 3728**, signs
+**UIN `95000`** into the retronet OSCAR gateway, and draws its **server-side SSI
+roster by name**. HiveBot greets it on sign-on. What it does **not** do is
+survive a `labctl reset`: ICQ 2002a needs **Keep connection alive** to notice
+that the gateway timed its session out while the guest was paused, and ICQ
+2002a's Simple-Mode menu — the only route to that checkbox — will not open under
+this station's synthetic input. Until that is solved the station stays
+`retronet.planes = ["web"]` and its
+[roster](../../../scripts/retronet/icq/roster.json) row stays `onboarded: false`.
+
+The network half has been done since the web plane shipped
 ([`WEB-STATION-win95.md`](WEB-STATION-win95.md), the as-built for this station).
-What is still missing is **messaging**. This doc records the client question and
-its answer, because that question — *which ICQ client can even run on Windows 95
-OSR2.5?* — is what two previous passes actually died on, and it now has a
-primary-source answer plus a reproduction.
+This doc is about the client.
 
-**The short version.** ICQ **2000b** and ICQ **2001b** cannot work on this
-guest, and no amount of runtime retrofitting changes that. ICQ **2002a build
-3728** can: it installs, initialises its communication module, and **signed UIN
-`95000` into the retronet OSCAR gateway** on 2026-08-23. The one thing it still
-needs is **Internet Explorer 4.0+**, which is a documented ICQ requirement this
-station does not yet meet — and meeting it changes a decision that belongs to
-the web plane, so it is written up here as a decision, not taken unilaterally.
+## What works, and is proven on the framebuffer
 
-The shipping golden currently carries **no ICQ client** (see *Disposition*).
-
-## What the network side already gives, and it is not the problem
-
-Everything below the client is done and proven — detail in
-[`WEB-STATION-win95.md`](WEB-STATION-win95.md). Re-proven on the shipping golden
-2026-08-23:
-
-| From the guest to… | Result | Lock |
-|---|---|---|
-| CT `10.99.0.2` (OSCAR + `:80` origin) | **Reply, 0% loss** | intra-bridge L2 (the point) |
-| labhost bridge `10.99.0.1` | **Request timed out** | the `WIN95RN-IN` guard chain |
-| internet `1.1.1.1` (by IP) | **Destination host unreachable** | no default route (Lock 1) |
-| `route print` default routes | **0** | DHCP reservation withholds option 3 |
-
-The persona is live on the gateway side too: `rn-tool.py login 10.99.0.2 5190
-95000 …` → **PASS**, BOS advertises `10.99.0.2:5190`; the account is **open**
-(`user-open`), its directory nickname is `win95`, and its server-side SSI roster
-is seeded with HiveBot + the six other onboarded stations. `95000:win95` is
-already present in `RN_BOT_PERSONAS` on labhost, so HiveBot will greet it.
-
-**So every "is it the network?" hypothesis is closed.** It never was.
+- **ICQ 2002a installs and runs.** No *"failed to Initialize the Communication
+  Module"*, no missing-dependency wall.
+- **`95000` signs in.** *Existing User* → `95000` + `RETRONET_ICQ_WIN95_PASS`
+  (**Auto Save Password** on) → *"Registration Completed Successfully — Your ICQ
+  number: 95000"*, and the gateway session list goes `['10000']` →
+  `['10000','95000']`, source `10.99.0.13`.
+- **The SSI roster renders by name** — *Online: HiveBot*; *Offline: beos, nt4,
+  solaris, tru64, win2000, win98se* — pulled from the server with no client-side
+  seeding. This is the thing two earlier passes could not get onto the screen.
+- **HiveBot greets it.** `retronet.bot INFO GREETED 95000 (win95)`, e.g. *"hey!
+  you got your Windows 95 online again? :)"*, accepted by the gateway with no
+  SNAC error. (The client does not visibly surface the message — see *Open
+  ends*.)
+- **Containment is unchanged.** From inside the guest: gateway `10.99.0.2` 0%
+  loss; labhost `10.99.0.1` 100% loss; `1.1.1.1` 100% loss; `route print` shows
+  **no `0.0.0.0` default route**.
 
 ## The client question — three generations, one answer
 
-### ICQ 2000b — never reaches `connect()`
+**ICQ 2000b** never reaches `connect()` on this guest: driven to *Existing User →
+UIN → Next* it sits at "Registering User" and emits **zero** packets toward the
+gateway, unchanged by Common Controls 5.80, Winsock 2, DCOM95 or IE 5.5.
 
-Driven to *Existing User → UIN → Next*, 2000b sits at "Registering User" and
-emits **zero** packets toward the gateway. An earlier pass proved this was not
-network, config or credentials, and then installed the full win98se-equivalent
-runtime stack (Common Controls 5.80, Winsock 2, DCOM95, and finally IE 5.5 SP2)
-with the **identical** zero-packet symptom after every one. That pass also
-established the standing prohibition below.
+**ICQ 2001b build 3659 cannot run on Windows 95 at all** — the vendor says so.
+ICQ's own download page (Wayback, 2001-12-01) for exactly this build: *"ICQ for
+Windows works with Windows 98/2000/ME/NT4/XP. **Windows 95 users - please use ICQ
+2000b.**"* Reproduced here with the full prerequisite chain in place: it installs
+(107 files, once DCOM95 is present) and then dies on **every** launch with *"ICQ
+failed to Initialize the Communication Module"*. It is **not** a missing
+dependency — a PE-level audit of the installed tree against the guest's own
+system DLLs found **0 absent modules and 0 unresolved imports** across the
+transitive closure of `CoolSocket.dll` → `Xprt`/`Xpcs`/`Xptl` and of `Icq.exe` —
+and **not** a COM-registration failure. Do not retry 2001b here.
 
-> **Do NOT install Internet Explorer 5.5 SP2 on this station.** It makes the
-> golden unfit as an exhibit: a multi-minute first-boot finalization, a
-> **network-login prompt on every boot** (the shell and `WIN.INI load=` — hence
-> both warpnet agents — only start *after* it), and a modernised desktop. This
-> prohibition still stands and was respected throughout the 2026-08-23 pass.
+> **Trap.** `regsvr32 C:\PROGRA~1\ICQ\CoolSocket.dll` run from `C:\WINDOWS` fails
+> with `GetLastError 0x485` and looks like a smoking gun. It is an artefact: on
+> Win9x a DLL's dependencies are searched in the **calling process's** directory,
+> so `Xprt.dll` is invisible from there. Copy `REGSVR32.EXE` into the ICQ
+> directory and run it there — it reports *"succeeded"*.
 
-### ICQ 2001b — cannot run on Windows 95 at all
+**ICQ 2002a build 3728** is the client this station needs. ICQ restored Win95
+support in 2002a — its download page (Wayback 2002-06-15 and 2002-08-01): *"ICQ
+for Windows works with Windows **95**/98/2000/ME/NT/XP."* It is the same
+SSI/feedbag generation as 2001b, so nothing changes on the gateway side (Open
+OSCAR's `CLIENT_ICQ.md` covers "ICQ 2001 & 2002" as one).
 
-The wave's premise was that 2001b, being a different binary, might simply not
-have 2000b's bug. It is worse than that: **build 3659 dropped Windows 95
-support**, in writing, from the vendor.
+## Why the contact list draws now: Internet Explorer 4.01
 
-ICQ's own download page, Wayback capture 2001-12-01, for exactly this build:
+ICQ's own system requirements end with **"Internet Explorer 4.0 and above"**, and
+2002a's owner-drawn contact list is built on the IE4-era shell/browsing
+components. Under IE 3.01 the window came up as a correct frame with a `95000`
+title and **nothing drawn inside** — Winsock worked, drawing did not.
 
-> Download ICQ for Windows **2001b Beta v5.18 Build #3659** … **ICQ for Windows
-> works with Windows 98/2000/ME/NT4/XP. Windows 95 users - please use ICQ
-> 2000b.**
+That was never a deviation to agonise over: this guest is **Windows 95 OSR2.5**
+(950 C — registry `VersionNumber` `4.00.1111`, `SubVersionNumber` `" C"`), and
+its own OEM folder `C:\WIN95\` ships the complete IE 4.01 CAB set. **IE 4.01 is
+this machine's stock browser**; IE 3.01 was the anomaly. It is now installed
+**Browser Only, no Windows Desktop Update**, from that local media —
+[`WEB-STATION-win95.md`](WEB-STATION-win95.md#the-browser-internet-explorer-401-the-oems-own)
+has the install recipe and the `IE4SETUP.INI` knob that exposes the Browser Only
+option.
 
-Reproduced here on 2026-08-23, on a guest carrying the full prerequisite chain
-(Common Controls 5.80, Winsock 2, DCOM95 1.3 — all verified in place after a
-cold boot):
+With IE 4.01 in place the contact list paints: group headers, the ICQ 2002a
+banner, every buddy by name in the right colour, the *Add* / *Find Users* /
+*Main* / *Online* controls. **The rendering blocker is cleared.**
 
-- 2001b **installs** cleanly (107 files) once DCOM95 is present; without DCOM95
-  its installer stops at a *"DCOM Not Detected"* gate.
-- Every launch — after install, after a cold boot, and manually — dies with
-  **"ICQ failed to Initialize the Communication Module"**, then exits.
-- It is **not** a missing or unresolvable dependency. A PE-level audit of the
-  installed tree against the guest's own system DLLs found **0 absent modules
-  and 0 unresolved imports**, across the full transitive closure of
-  `CoolSocket.dll` → `Xprt`/`Xpcs`/`Xptl` and of `Icq.exe`.
-- It is **not** a COM-registration failure. The installer's "Not Complete
-  CLSIDs" list (11 entries) maps only to *peripheral* plugins (SMS, Hops,
-  RandomChat, WhitePages, …), never to the `Cool*`/`ICQCom45` comm family; and
-  registering the comm family by hand **succeeds** and changes nothing.
+## The failure mode that will eat your afternoon: a dirty ICQ database
 
-> **Trap worth keeping.** `regsvr32 C:\PROGRA~1\ICQ\CoolSocket.dll` run from
-> `C:\WINDOWS` fails with `GetLastError 0x485` (ERROR_DLL_NOT_FOUND) and looks
-> like a smoking gun. It is an artefact: on Win9x a DLL's dependencies are
-> searched in the **calling process's** directory, not the DLL's own, so
-> `Xprt.dll` is invisible from there. Copy `REGSVR32.EXE` into the ICQ directory
-> and run it from there — it reports **"succeeded"**. Do not build a diagnosis
-> on the first result.
+**ICQ 2002a hangs at startup whenever its per-UIN database was left dirty**, and
+it looks exactly like a wedged guest: a tray flower appears, no window ever does,
+`Ctrl+Alt+Del` lists **`Icq [Not responding]`**, and the gateway never sees a
+login. Every ungraceful termination of ICQ — an End Task, a `systemctl stop`
+while it runs, a hard power cycle — re-poisons it. The tell is in
+`C:\Program Files\ICQ\2002a\`: a **`95000tmp.dat` / `95000tmp.idx` pair written
+alongside `95000.dat`**, which is the compaction pass it never finished.
 
-### ICQ 2002a — works, and signed in
+**The fix is deterministic**: with the station stopped, delete the per-UIN
+database and let the client rebuild it.
 
-ICQ restored Win95 support in 2002a. Its download page, Wayback captures
-2002-06-15 and 2002-08-01:
+```bash
+ssh lab 'systemctl stop streamhost@win95'
+# qemu-nbd the disk, mount -t vfat, then:
+#   rm -f "$M/PROGRA~1/ICQ/2002a/"95000*.*
+ssh lab 'systemctl start streamhost@win95'
+```
 
-> **2002a Beta Build #3728** … **"ICQ for Windows works with Windows
-> 95/98/2000/ME/NT/XP."**
+Nothing is lost: the identity lives on the server (`95000` +
+`RETRONET_ICQ_WIN95_PASS`) and the contact list is **server-side SSI**, so the
+next start shows the registration wizard, *Existing User* → `95000` re-registers
+in seconds, and the full roster comes back down by itself. This costs about five
+minutes and is the standard recovery here.
 
-Installed on this guest 2026-08-23, over the 2001b tree, and it **cleared every
-wall the older generations hit**:
+None of this touches visitors: the exhibit is `loadvm`-restored from a golden
+captured with ICQ already running, so it never cold-starts the client.
 
-- the communication module **initialises** — no error dialog;
-- the **ICQ Registration** wizard runs, Connection Type already *Permanent
-  (LAN, Cable Modem, etc.)*;
-- *Existing User* → `95000` + `RETRONET_ICQ_WIN95_PASS` (**Auto Save Password**
-  ticked, on by default) → **"Registration Completed Successfully — Your ICQ
-  number: 95000"**;
-- the gateway session list went from `['10000']` to **`['10000', '95000']`** —
-  the persona was genuinely online against `10.99.0.2:5190`, reached via the
-  wildcard-DNS hijack of `login.icq.com` with no proxy;
-- the server-side SSI roster survived the login intact (7 buddies, checked
-  before and after), so 2002a does **not** wipe the fabric-seeded list.
+## The open blocker: Keep connection alive
 
-**That is the answer to the wave's question:** 2001b does not clear the 2000b
-blocker on win95 — it fails earlier and for a documented reason. **ICQ 2002a is
-the client this station needs**, and it is the same SSI/feedbag generation, so
-nothing changes on the gateway side (Open OSCAR's `CLIENT_ICQ.md` covers "ICQ
-2001 & 2002" as one).
+**`Keep connection alive` ships OFF and is load-bearing.** On a `loadvm golden`
+wake the restored BOS socket is stale — the gateway drops the session while the
+guest is idle-paused (**measured: `95000` disappears from the session list ~140 s
+after the vCPU freezes**) — and with keepalive off the client sits on a half-open
+zombie socket, still showing *Online*, and never reconnects. Measured on this
+station: after `labctl reset win95` the golden restores perfectly, **no password
+prompt, no error dialog**, and `95000` was still absent from the gateway
+**10 minutes later**.
 
-## What still blocks onboarding: the IE 4.0 requirement
+The switch lives in *Preferences → Connections → Server*, and **Preferences
+cannot be reached**. ICQ 2002a came up in **Simple Mode**, whose only menu is the
+`Main` button, and that menu will not open here under any input path tried:
 
-2002a runs and connects, but its **main contact-list window renders as an empty
-shell** — correct frame, title bar reading `95000`, and *nothing* drawn inside:
-no contact names, no button labels, no skin. ICQ's ordinary dialogs (Welcome
-notice, registration wizard, installer) render perfectly, so this is not the
-guest's graphics: colour depth is fine (360–466 distinct colours measured in
-richer frames, so ≥15 bpp), and it is not the roster (server-side roster is
-populated and the client authenticated).
+| Route | Result |
+|---|---|
+| warpnet `C x y` (`mouse_event`) on **Main** | no menu, and it leaves the owner-drawn panel **blank** — this is the "empty shell" earlier passes reported; it never repaints, survives `V`/CDS_RESET and a hide/show cycle, while the client stays online |
+| QEMU PS/2 button on **Main** (press+release, and held) | no menu; panel stays correctly drawn |
+| PS/2 right-click on the tray icon | no menu (left-click toggles the window, so the icon does receive clicks) |
+| Keyboard: `Alt+M`, `Alt+Space`, Tab-to-button + Space | nothing |
+| Scrolling the panel to *To Advanced Mode* (arrows, trough, wheel, drag) | the list will not scroll and the window is fixed-size and edge-glued, so the entry stays clipped |
 
-The cause is the requirement neither previous pass satisfied. ICQ's own
-"Common Questions & Answers" page, in both the 2001b-era and 2002a-era captures,
-lists the minimum system requirements as ending with:
+PS/2 buttons are otherwise fine on this guest — they open the desktop context
+menu, drive the whole ICQ registration wizard, and work IE 4.01's toolbar and
+dialogs — so this is specific to ICQ's Simple-Mode chrome, not to the input path.
 
-> **Internet Explorer 4.0 and above.**
+**Two ways out, and the choice is the operator's:**
 
-**This station has Internet Explorer 3.01 (build 1158)** — the stock OSR2
-browser, and deliberately so: `WEB-STATION-win95.md` records "Nothing was
-installed … IE 3.01 runs on stock Winsock 1.1" as the web plane's decision.
-ICQ 2002a's owner-drawn UI is built on the IE4-era shell/browsing components
-(`SHLWAPI` in particular is an IE 4.0 component; this guest's copy is the
-original 36,864-byte 1996 build, with `URLMON`/`WININET` likewise from 1996).
-Functionality that only touches Winsock works; everything that draws does not.
+1. **Find a UI route to Advanced Mode / Preferences** — e.g. a fresh profile that
+   starts in Advanced Mode, or a supported way to widen the glued window so *To
+   Advanced Mode* is clickable.
+2. **Give win95 the fleet's nudge.** `win98se`, `nt4` and `win2000` already ship
+   `*-icq-nudge.{py,service,timer}` in
+   [`scripts/retronet/`](../../../scripts/retronet/) — a labhost timer that spoofs
+   the gateway's RST so the client's dead 4-tuple aborts and it reconnects. That
+   is exactly this failure, and a `win95-icq-nudge` would be a fourth copy of a
+   proven mechanism. It was **not** added here because those files are outside
+   this stream's remit.
 
-### The decision, for the coordinator — not taken here
+## Disposition — what the box is running
 
-Finishing win95's ICQ means **installing Internet Explorer 4.01** (Browser
-Only / no Active Desktop, so the Win95 shell stays period-correct). That is a
-cheap, period-authentic step — Win95 **OSR2.5 normally ships with IE 4.01
-integrated**, so it arguably restores this image rather than modernising it —
-but it **changes a decision the web plane owns**: `WEB-STATION-win95.md`
-documents IE 3.01 as the station's browser, its 1996 UA string, and its
-home-page behaviour on the corpus. It also needs IE 4.01 media sourced (none is
-staged locally; the desktop's *Internet Explorer 4.0 Setup* shortcut is an
-online stub that cannot reach anything from the contained bridge).
-
-So the open question is: **is win95 allowed to become an IE 4.01 machine in
-order to gain ICQ?** If yes, the remaining work is small and entirely mapped:
-install IE 4.01, re-apply `50comupd.exe` (IE4 setup can put COMCTL32 4.71 back
-over 5.80), confirm the 2002a window paints, set Server Host `10.99.0.2` /
-port `5190` and **Keep connection alive = ON**, then recapture the golden with
-the client connected. If no, this station stays web-only and the roster row
-stays `onboarded: false`.
-
-## Disposition — what the box is actually running now
-
-The 2026-08-23 pass ended by **rolling the exhibit back**, on purpose: an
-exhibit carrying a client whose window does not draw is worse than one carrying
-none.
-
-- **LIVE golden: unchanged from before the pass.** The live
-  `/data/vms/streamhost/stations/win95/win95-golden.qcow2` was restored from the
-  byte-copy backup and verified **SHA256-identical**
-  (`0d86c84431a5faba228f03c9a7af4fb83666ee22860e40190797c3a0eea440a5`), snapshot
-  `golden` (ID 1, 57.7 MiB, 2026-08-23 13:01) intact. `labctl reset win95` →
-  *"restored to golden snapshot"*, exec answers, containment re-proven (table
-  above). **No ICQ client is installed on it.**
-- **Backup of that golden** (taken with QEMU stopped, SHA256-verified):
+- **LIVE golden:** internal snapshot **`golden`** (72 MiB, 2026-08-24 05:25) in
+  `/data/vms/streamhost/stations/win95/win95-golden.qcow2` — clean 1280×1024
+  desktop, IE 4.01 installed with the corpus home page, **ICQ 2002a signed in as
+  `95000` with the SSI roster drawn**. `labctl reset win95` = `loadvm golden`.
+- **Byte-copy backup** (QEMU stopped, SHA256-verified):
+  `/data/gallery-guests/Win95/golden-backup-ie401-icq2002a-20260824/win95-golden.qcow2`
+  (`0c9f7c5532abaaa1c7dede54325b2ae4d54cb5c18e57b5ba43747c90a454339a`).
+- **Rollback to the IE 3.01 / no-ICQ golden:**
   `/data/gallery-guests/Win95/golden-backup-preicq2001b-20260823/win95-golden.qcow2`
-  (+ `SHA256SUMS`).
-- **Preserved bring-up disk for the retry** —
-  `/data/gallery-guests/Win95/win95-icq2002a-wip-20260823.qcow2` (+ `.sha256`),
-  **no `golden` snapshot**. Carries Common Controls 5.80, Winsock 2, DCOM95 1.3,
-  ICQ 2001b (broken) *and* ICQ 2002a build 3728 registered against UIN `95000`
-  with the password saved. A retry should start from **this** disk, not from
-  scratch — it is ~1 h of installer time already spent. Unlike the 2021 WIP
-  disk it carries **no IE 5.5 damage**.
-- The older `win95-golden-retronet-wip-20260821.qcow2` (the IE 5.5 + 2000b
-  laboratory) is superseded by the disk above and can be deleted once the
-  operator is content.
+  (`0d86c84431a5faba228f03c9a7af4fb83666ee22860e40190797c3a0eea440a5`).
+- The station is **listed and live on the web plane only**;
+  `registry/stations/win95.json` keeps `retronet.planes = ["web"]` so nothing
+  advertises messaging while the reset behaviour is unresolved. The golden does
+  show the ICQ window, and after a reset that window says *Online* when the
+  server no longer agrees — that is the cost of keeping the working state, and it
+  disappears the moment option 1 or 2 above lands.
+- Superseded bring-up disks that can go once the operator is content:
+  `win95-icq2002a-wip-20260823.qcow2`, `win95-golden-retronet-wip-20260821.qcow2`,
+  `golden-wip-ie401-icq-20260824/`.
 
 ## Media
 
 `ICQ2002a.exe` — ICQ 2002a Beta **build 3728**, 4,078,456 bytes, sha256
 `fbda7ec34e9790fb4589f486b64273ae025d0a0e496a82fbce8acfbd78bb017e`. Sourced from
 [`archive.org/details/install_icq`](https://archive.org/details/install_icq) and
-**proven byte-identical** to the vendor original preserved by the Wayback
-Machine at `ftp.icq.com/pub/ICQ_Win95_98_NT4/ICQ2002a/icq2002a.exe` (captures
-2002-08-02 and 2002-10-24) — an unmodified original, Wise SFX, no bundler.
-Staged at `/data/vms/sandbox/icq-win95/media/ICQ2002a.exe`; **never committed**.
-Same private-preservation stance as every other row in
-[`../ASSETS-MANIFEST.md`](../ASSETS-MANIFEST.md) §ICQ.
+**proven byte-identical** to the vendor original preserved by the Wayback Machine
+at `ftp.icq.com/pub/ICQ_Win95_98_NT4/ICQ2002a/icq2002a.exe` (captures 2002-08-02
+and 2002-10-24) — unmodified, Wise SFX, no bundler. **Never committed**; same
+private-preservation stance as every other row in
+[`../ASSETS-MANIFEST.md`](../ASSETS-MANIFEST.md) §ICQ. **Internet Explorer 4.01
+was not sourced at all** — it came off the guest's own OEM `C:\WIN95\` folder.
 
-## Gotchas this pass paid for
+## Gotchas this station charges you for
 
-- **Deliver installers by injecting them into the qcow2, not through the
-  browser.** With the station stopped, `qemu-nbd` + `mount -t vfat` the golden
-  and copy the blob to `C:\`. It replaces three fragile IE *Save As* dialogs and
-  lets you hash-verify the file in place. The station must be stopped, and this
-  is only safe while the `golden` snapshot is deleted (below).
-- **A golden rebuild here is cold-boot-only.** `qemu-img snapshot -a golden`,
-  then `qemu-img snapshot -d golden` so the launcher cold-boots (it appends
-  `-loadvm golden -S` only when the snapshot exists). While no snapshot exists,
-  a `systemctl restart` is a *safe* cold boot — which is exactly why you must
-  **not** capture an interim golden mid-install: a later restart would `loadvm`
-  pre-install RAM onto a post-install disk.
-- **The station idle-pauses within seconds of every command**, silently
-  discarding input, which reads as a wedged guest. Hold it awake with a
-  momentary QMP connect→`cont`→close loop (never a held socket — the daemon
-  already holds one), and start every input batch with `cont`.
-- **`labctl key` chords do not reach this guest; QMP `send-key` with multiple
-  qcodes does.** `ctrl-esc` then `r` is the reliable way to Start ▸ Run.
-- **Long installs wedge the S3/VBE display into a striped band.** Recover over
-  the bridge with the warpnet **`V`** verb; it is cosmetic and the frame comes
-  back clean.
-- **Do not run 70 `regsvr32` calls in one batch.** `for %%f in (*.dll) do start
-  /w rs32.exe /s %%f` exhausts Win95's system resources and every subsequent
-  launch fails with *"There is not enough free memory to run this program"*
-  until reboot. It also proves nothing: ICQ 2002a's plugins were never the
-  problem (`pl.log`'s `LoadIntegralPlugins … Failed to create Add-on instance`
-  entries are **stale, from the 2001b install** — check the timestamps before
-  believing that file).
-- **`WIN.INI` carried `run=notepad.exe`**, left by an earlier bring-up pass. It
-  is invisible on the `loadvm`-restored exhibit but opens a stray Notepad on
-  every *cold* boot, so it corrupts any cold golden rebuild. It was cleared on
-  the WIP disk. **The shipping golden still has it** (the rollback restored the
-  original), so a future rebuild must clear it again: `sed -i 's/^run=notepad\.exe/run=/I'`
-  on `WINDOWS/WIN.INI` with the disk mounted.
+- **The station idle-pauses within seconds and silently discards QMP input.** It
+  reads as a wedged guest. Drive it from **one** QMP connection that re-issues
+  `cont` immediately before every event; never run two QMP clients at once (the
+  daemon already holds one) or `screendump` starts timing out.
+- **`systemctl stop streamhost@win95` is a power cut** — ExecStop kills QEMU by
+  pidfile. It leaves ScanDisk work for the next boot and re-poisons the ICQ
+  database. Shut Windows down from the Start menu first (*Close Program* →
+  *Shut Down* also works, and is the only way past a hung ICQ).
+- **ScanDisk's *Delete* and *Skip Undo* buttons are disabled** on this guest;
+  choose *Save* for lost clusters and press **`s`** at the Undo-disk page, then
+  delete the `FILE*.CHK` offline.
+- **Never launch a long-lived program through the exec channel.** The agent runs
+  `cmd /c <cmd> >C:\WNEXEC.OUT`; a child that outlives the call keeps that handle
+  and every later exec fails. Launch from the framebuffer (Start ▸ Run).
+- **Do not batch exec calls.** Nine back-to-back `copy` commands exhausted Win95's
+  system resources — *"There are not enough system resources available to run this
+  program"* — and every launch failed until reboot. Deliver files by mounting the
+  qcow2 with `qemu-nbd` while the station is stopped, not by driving the guest.
+- **`Ctrl+Alt+Del`'s Close Program dialog is modal to the whole system**, so the
+  warpnet exec and pointer agents stop answering while it is up. That is not a
+  crash.
+- **`labctl key` chords do not reach this guest**; send chords through QMP
+  `send-key` with multiple qcodes.
 
 ## Operating it
 
 ```bash
-ssh lab 'labctl exec win95 "ver"'                         # exec over the bridge (WARPX :7788)
-ssh lab 'labctl exec win95 "route print"'                 # no default route == contained
-ssh lab 'labctl reset win95'                              # loadvm golden
-ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 95000'   # server-side SSI roster
+ssh lab 'labctl exec win95 "ver"'                          # Windows 95. [Version 4.00.1111]
+ssh lab 'labctl exec win95 "route print"'                  # no default route == contained
+ssh lab 'labctl reset win95'                               # loadvm golden
+ssh lab 'printf "V\n" | nc 10.99.0.13 7788'                # un-wedge the display over the bridge
+# is the persona online? (server-side)
 ssh lab 'pct exec 951 -- python3 -c "import urllib.request,json;print([s[\"screen_name\"] for s in json.loads(urllib.request.urlopen(\"http://127.0.0.1:8080/session\").read())[\"sessions\"]])"'
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 95000'   # server-side SSI roster
+ssh lab 'journalctl -u retronet-bot -n 40 --no-pager | grep 95000'    # did HiveBot greet?
 ```

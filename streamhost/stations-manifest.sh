@@ -311,7 +311,7 @@ emit win311 \
   --launcher-file "$T/win311/qemu-streamhost.sh" --env-append-file \
   "$T/win311/station.env.fixture"
 
-# win95 (VMID 91) — Win95 OSR2, sb16, pcnet NIC; machine carries accel=kvm.
+# win95 (VMID 91) — Win95 OSR2.5 (950 C, 4.00.1111), sb16, pcnet NIC; machine carries accel=kvm.
 #   VERBATIM LAUNCHER: boots the tile-LOCAL win95-golden.qcow2 (gallery
 #   Win95/win95-osr2-kvm.qcow2 stays pristine) WITHOUT -snapshot; conditional
 #   -loadvm golden.
