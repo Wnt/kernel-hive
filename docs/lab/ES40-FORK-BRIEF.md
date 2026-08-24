@@ -66,9 +66,23 @@ risk today is not the tree; it is the *uncommitted* hunk (step 1) and the
   identical to the local HEAD. The lab's es40 work is **not** trapped on one
   disk. (The local clone has no `refs/remotes/fork/*` and no `FETCH_HEAD`, which
   makes it *look* unpushed — it is not. Check the remote, not the local refs.)
-- **The tree is dirty.** `src/gui/ctlsock.h` carries **24 uncommitted lines**
-  adding a `SAVEST <file>` verb. This is not a scratch edit: it is compiled into
-  a live station's binary. See §3.
+- **The `SAVEST` hunk is committed and published** as `0a7af85` (2026-08-24).
+  Those 24 lines in `src/gui/ctlsock.h` had been running **uncommitted** in
+  `w2kalpha`'s deployed binary — which is what made that binary reproducible
+  from nothing. It is not a scratch edit: it adds the `SAVEST <file>` verb that
+  is the only way to checkpoint a station while it is actually being served,
+  because `pumps.py` owns es40's first serial socket so the SRM menu's
+  save-and-exit never sees the keystrokes. See §3.
+- **Author history from CT950, never over `ssh lab`.** `/data/vms` is
+  bind-mounted into CT950, so `/data/vms/sandbox/ALPHA-nt/es40src` is the *same
+  files* here — `git -C …` works directly and **no rsync or second checkout is
+  involved**. CT950 has `~/.ssh/id_github`, a git identity and push rights;
+  labhost has no credential helper, no `gh` and no git identity, so a push from
+  there needs an explicit `GIT_SSH_COMMAND` and `-c user.name` — which is the
+  smell telling you that you are on the wrong machine. The remotes are HTTPS, so
+  push by SSH URL: `git push git@github.com:Wnt/es40.git HEAD:main`. **Stage
+  explicit paths, never `git add -A`** — the tree is full of untracked build
+  artefacts (`src/es40.O3`, `src/es40.baseline`, …).
 - Other copies: `/home/wnt/es40` (clean CT950 clone at `936760c`), and this
   investigation's sandbox copy. The two directories the production binaries were
   actually built in (recovered from DWARF `DW_AT_comp_dir`:
