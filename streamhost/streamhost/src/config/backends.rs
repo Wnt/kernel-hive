@@ -109,6 +109,83 @@ pub(super) fn parse_key_remap(s: &str) -> Vec<(u32, u32)> {
         .collect()
 }
 
+/// Parse `SH_X11TEST_BUTTONS`: the button route of the `x11test` input
+/// backend. `cmdfile` (default) keeps the historical MAME-Lua-agent command
+/// file; `xtest` sends paced XTEST ButtonPress/ButtonRelease instead (any SDL
+/// emulator under Xvfb, no agent required). Unknown values panic like
+/// `SH_INPUT_BACKEND` does: a typo must be visible, not a silent cmd-file
+/// fallback on a station that has no agent to read the file.
+pub(super) fn parse_x11test_buttons(s: &str) -> bool {
+    match s.trim().to_ascii_lowercase().as_str() {
+        "xtest" => true,
+        "cmdfile" | "" => false,
+        v => panic!("invalid SH_X11TEST_BUTTONS={v:?}; expected cmdfile|xtest"),
+    }
+}
+
+/// The `x11test` sink's opt-in mode block, construction-frozen. Everything
+/// defaults to the historical behavior, so the existing fleet is
+/// byte-identical with the envs unset; each knob is documented in
+/// docs/CONFIG.md. Doubling as the sink's own options type keeps the
+/// god-struct module under the size cap.
+#[derive(Clone, Copy, Debug)]
+pub struct X11TestConfig {
+    /// `SH_X11TEST_ABS` — motion as TRUE ABSOLUTE XTEST (root window plus
+    /// root coords) for an emulator that follows the host X cursor 1:1
+    /// (FS-UAE `--mouse_integration=1`). Off = relative+homing dead reckoning.
+    pub abs: bool,
+    /// `SH_X11TEST_BUTTONS=xtest` — buttons/wheel as paced XTEST edges
+    /// instead of Lua-agent cmd-file lines.
+    pub buttons_xtest: bool,
+    /// `SH_X11TEST_KEYS` — keyboard as paced XTEST edges (embedded US-layout
+    /// table, `SH_X11TEST_KEYMAP` override). Off = keys unrouted, as today.
+    pub keys: bool,
+    /// `SH_BTN_MIN_HOLD_MS` (default 60, capped 250) — XTEST-button dwell
+    /// floor, both press-to-release hold and release-to-next-press gap: an
+    /// instant browser click is stretched to three 50 Hz frames, never
+    /// dropped (an XTEST press+release ~0 ms apart is NEVER sampled).
+    pub btn_hold_ms: u64,
+    /// `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` as they apply to THIS sink:
+    /// same envs as the dbus key gate, but UNSET means 40/40 here (capped
+    /// 250) — a 50 Hz guest needs the floor, and turning it off must be an
+    /// explicit `0`, not an omission.
+    pub key_hold_ms: u64,
+    pub key_gap_ms: u64,
+}
+
+impl X11TestConfig {
+    pub(super) fn from_env() -> Self {
+        use super::parse::env_or;
+        let flag = |name: &str| {
+            matches!(
+                env_or(name, "off").to_ascii_lowercase().as_str(),
+                "on" | "1" | "true"
+            )
+        };
+        // Env PRESENCE decides the key floors: unset -> 40, explicit value
+        // (0 included) wins.
+        let key_floor = |name: &str| -> u64 {
+            std::env::var(name)
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(40)
+        };
+        Self {
+            abs: flag("SH_X11TEST_ABS"),
+            buttons_xtest: parse_x11test_buttons(&env_or("SH_X11TEST_BUTTONS", "cmdfile")),
+            keys: flag("SH_X11TEST_KEYS"),
+            // Same 250 ms cap as the key gate: a station.env typo must not be
+            // able to wedge the pointer or keyboard.
+            btn_hold_ms: env_or("SH_BTN_MIN_HOLD_MS", "60")
+                .parse()
+                .unwrap_or(60)
+                .min(250),
+            key_hold_ms: key_floor("SH_KEY_MIN_HOLD_MS").min(250),
+            key_gap_ms: key_floor("SH_KEY_MIN_GAP_MS").min(250),
+        }
+    }
+}
+
 /// Pointer semantics and transport, expressed as one unambiguous backend.
 ///
 /// `GalleryHid` is deliberately limited to the Solaris/QNX driver work. It is
@@ -231,8 +308,24 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
 mod tests {
     use super::{
         parse_audio_source, parse_input_backend, parse_key_remap, parse_silence_thresh,
-        AudioSource, InputBackend,
+        parse_x11test_buttons, AudioSource, InputBackend,
     };
+
+    #[test]
+    fn x11test_buttons_parses_both_routes() {
+        assert!(!parse_x11test_buttons("cmdfile"));
+        assert!(!parse_x11test_buttons("")); // unset -> historical route
+        assert!(parse_x11test_buttons("xtest"));
+        assert!(parse_x11test_buttons(" XTEST "));
+    }
+
+    /// A typo'd route must be loud — on an agentless station the cmd-file
+    /// fallback would be a black hole for every click.
+    #[test]
+    #[should_panic(expected = "SH_X11TEST_BUTTONS")]
+    fn x11test_buttons_rejects_garbage() {
+        parse_x11test_buttons("agent");
+    }
 
     #[test]
     fn key_remap_parses_pairs_and_survives_typos() {

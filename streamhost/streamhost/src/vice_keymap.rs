@@ -21,6 +21,14 @@ pub(crate) struct ViceKeyMap {
 }
 
 impl ViceKeyMap {
+    /// The fail-closed table: rejects every key. What a declared-but-broken
+    /// keymap degrades to, here and in the `x11test` backend.
+    pub(crate) fn empty() -> ViceKeyMap {
+        ViceKeyMap {
+            entries: Vec::new(),
+        }
+    }
+
     /// Fail CLOSED and LOUD in both directions: a missing declaration and a
     /// broken file both yield an EMPTY map that rejects every key. There is no
     /// compiled-in fallback on purpose — a keysym table silently substituted for
@@ -60,6 +68,14 @@ impl ViceKeyMap {
 
     pub(crate) fn load(path: &str) -> Result<ViceKeyMap, String> {
         let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        Self::parse(&text)
+    }
+
+    /// Parse the table from its text form. Split from `load` so the `x11test`
+    /// backend can embed the same generated file at compile time
+    /// (`x11_keys.rs`) instead of duplicating 103 rows as a second source of
+    /// truth.
+    pub(crate) fn parse(text: &str) -> Result<ViceKeyMap, String> {
         let mut entries: Vec<(u16, u32, u32)> = Vec::new();
         for (n, raw) in text.lines().enumerate() {
             let line = raw.trim();

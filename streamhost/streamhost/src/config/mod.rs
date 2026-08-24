@@ -62,7 +62,7 @@ use backends::{
     parse_audio_source, parse_capture_backend, parse_input_backend, parse_key_remap,
     parse_silence_thresh,
 };
-pub use backends::{AudioSource, CaptureBackend, InputBackend};
+pub use backends::{AudioSource, CaptureBackend, InputBackend, X11TestConfig};
 use parse::{
     clamp_idle_pause, encoder_preset_env, env_or, normalize_encoder_preset, parse_cc,
     parse_enc_nice, parse_telemetry_level,
@@ -79,13 +79,13 @@ pub struct Config {
     /// X display for `CaptureBackend::X11` (SH_X11_DISPLAY, default ":0"). e.g.
     /// ":99" for the IRIX/MAME Xvfb. Ignored for the QEMU backend.
     pub x11_display: String,
-    /// Command file the `x11test` input backend appends button/key commands to,
-    /// read by the in-emulator MAME Lua agent (SH_X11_CMD_FILE, default
-    /// /tmp/irix_cmd). MAME-SDL drops mouse buttons + keys unless the window is
-    /// pointer-captured (impossible when it fills the whole Xvfb), so buttons/
-    /// keys ride this file channel while pointer MOTION rides XTest relative
-    /// injection. See docs/history/irix-tile-issue20-handoff.md.
+    /// Command file the `x11test` backend appends button/key commands to, read
+    /// by the in-emulator MAME Lua agent (SH_X11_CMD_FILE, default /tmp/irix_cmd;
+    /// unused with SH_X11TEST_BUTTONS=xtest). MAME-SDL drops buttons/keys unless
+    /// its window is pointer-captured — docs/history/irix-tile-issue20-handoff.md.
     pub x11_cmd_file: String,
+    /// `x11test` opt-in modes — see `backends::X11TestConfig` for the knobs.
+    pub x11test: X11TestConfig,
     /// Path of the file-backed framebuffer mapping the emulator publishes for
     /// `CaptureBackend::Shm` (SH_SHM_PATH, default /tmp/irix_fb.shm). Must match
     /// the producer's `IRIX_SHM_PATH`. Ignored by every other backend.
@@ -675,6 +675,7 @@ impl Config {
             capture_backend,
             x11_display,
             x11_cmd_file,
+            x11test: X11TestConfig::from_env(),
             shm_path,
             shm_poll_ms,
             shm_damage,

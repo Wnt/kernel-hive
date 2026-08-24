@@ -576,7 +576,11 @@ impl InputRouter {
                 crate::vice_keymap::ViceKeyMap::from_env(),
             ),
             InputBackend::X11Test => {
-                match crate::x11_input::X11TestSink::new(&cfg.x11_display, &cfg.x11_cmd_file) {
+                match crate::x11_input::X11TestSink::new(
+                    &cfg.x11_display,
+                    &cfg.x11_cmd_file,
+                    cfg.x11test,
+                ) {
                     Ok(sink) => sink,
                     Err(e) => {
                         eprintln!("[input-router] x11test sink init failed: {e:#}; input disabled");
@@ -606,6 +610,14 @@ impl InputRouter {
 
     pub fn backend(&self) -> &'static str {
         self.sink.backend_name()
+    }
+
+    /// True when type=3 key records route to this router's sink instead of the
+    /// classic QEMU/dbus keyboard path (see input.rs). The matrix sinks always
+    /// do; x11test only when SH_X11TEST_KEYS armed its keyboard.
+    pub fn routes_keys(&self, cfg: &Config) -> bool {
+        matches!(self.backend(), "mamecmd" | "mamesock" | "vicesock")
+            || (self.backend() == "x11test" && cfg.x11test.keys)
     }
 
     pub fn health(&self) -> SinkHealth {

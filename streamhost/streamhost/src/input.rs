@@ -729,8 +729,8 @@ pub async fn handle(
             // name, everything else lands on the QEMU/dbus keyboard path.
             crate::input_telemetry::key_recv(
                 router
+                    .filter(|r| r.routes_keys(cfg))
                     .map(|r| r.backend())
-                    .filter(|b| matches!(*b, "mamecmd" | "mamesock" | "vicesock"))
                     .unwrap_or("dbus"),
                 code,
                 down,
@@ -746,9 +746,8 @@ pub async fn handle(
             // try_key: it is scoped to Solaris/QNX pointer drivers and has no
             // keyboard minor, so keys stay on QEMU's normal keyboard path. The
             // stock guest keyboard driver consumes this D-Bus injection.
-            if let Some(router) = router.filter(|r| {
-                r.backend() == "mamecmd" || r.backend() == "mamesock" || r.backend() == "vicesock"
-            }) {
+            // x11test joins only when SH_X11TEST_KEYS is set (routes_keys).
+            if let Some(router) = router.filter(|r| r.routes_keys(cfg)) {
                 let _ = router.try_key(code as u16, down, false);
                 return;
             }
