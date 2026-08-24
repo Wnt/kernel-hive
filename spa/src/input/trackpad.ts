@@ -192,24 +192,31 @@ export function createTrackpad(cfg: TrackpadConfig): Trackpad {
   // The abs cursor persists across gestures; seed it centred on first use so the
   // sprite has a defined home before the very first drag — and PUBLISH it, so the
   // sprite is visible from the first touch instead of only after motion.
+  //
+  // NOT UNTIL THE GUEST'S SIZE IS KNOWN, though. Centring an unknown framebuffer
+  // gave (1,1) — a fabricated corner dressed as a real position, which the first
+  // tap would then forward. There is nothing to centre in yet, so the honest
+  // answer is "no cursor", and a button with no cursor carries no coordinates at
+  // all (see buttonEdge). The next contact seeds it properly, since the hook
+  // re-reads the resolution per contact.
   const seedIfNeeded = () => {
     if (rel || cursor) return;
-    cursor = { x: (bounds.w || 2) / 2, y: (bounds.h || 2) / 2 };
+    if (bounds.w <= 0 || bounds.h <= 0) return;
+    cursor = { x: bounds.w / 2, y: bounds.h / 2 };
     synced = false; // nothing has been sent yet: the first button must carry it
     cfg.onCursor?.(cursor);
   };
 
-  const roundedCursor = (): Vec2 => ({ x: Math.round(cursor?.x ?? 0), y: Math.round(cursor?.y ?? 0) });
-
   // One edge of a button at the CURRENT cursor. Rel stations omit coords entirely —
   // the guest clicks wherever its own cursor sits, so a forwarded abs px would
-  // teleport it (the exact bug trackpad mode exists to fix).
+  // teleport it (the exact bug trackpad mode exists to fix). A coordinate-free
+  // edge survives all the way to the wire: streamClient/inputWire writes it as a
+  // short record the daemon applies no position from.
   const buttonEdge = (button: number, down: boolean): TrackpadOp => {
     if (rel) return { kind: 'button', button, down };
-    if (synced) return { kind: 'button', button, down };
+    if (synced || !cursor) return { kind: 'button', button, down };
     synced = true;
-    const c = roundedCursor();
-    return { kind: 'button', button, down, x: c.x, y: c.y };
+    return { kind: 'button', button, down, x: Math.round(cursor.x), y: Math.round(cursor.y) };
   };
 
   const buttonTap = (button: number): TrackpadOp[] =>

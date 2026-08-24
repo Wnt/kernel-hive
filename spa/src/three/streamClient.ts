@@ -139,9 +139,11 @@ export class StreamClient {
    *  client's statement of what it sent first. See the wire block in the header. */
   cseq = 0;
   /** Last absolute position this client put on the wire; a button with no point
-   *  of its own happens here. */
-  lastAbsX = 0;
-  lastAbsY = 0;
+   *  of its own happens here. NULL until one actually goes out — a rel-pointer
+   *  station never sends one, and a zero here became a corner teleport
+   *  (streamClient/inputWire sendButtonImpl). */
+  lastAbsX: number | null = null;
+  lastAbsY: number | null = null;
   lastRtt: number | null = null;
   consecutivePingTimeouts = 0;
 

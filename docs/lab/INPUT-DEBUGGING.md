@@ -203,6 +203,63 @@ DOWN atMove=4064  UP 4065   DOWN 4065  UP 4067     <- cursor moving mid-click
 guest ACTED. A click that reaches the daemon and does nothing visible is still a
 failure.
 
+## The corner teleport: `ABS->REL recv=(0,0)` with a button
+
+On a **relative-pointer station** (`PTR rel` — the daemon converts an absolute
+target into PS/2 deltas), one line in the daemon log settles an entire class of
+"the cursor jumped to the top-left corner" report. Turn it on with
+`SH_DEBUG_INPUT=1` alongside the telemetry drop-in above:
+
+```
+[input-tel BTN rhapsody] DOWN btn=0 mask=0x01 atMove=97
+[input]                  ABS->REL recv=(0,0) off=(0,0) scale=2.09 -> target=(0,0)
+[input-tel rel]          rehome pin=4280 target=(0,0)
+[input-tel BTN rhapsody] UP btn=0 mask=0x00 atMove=184
+```
+
+**Read it as: the CLIENT SENT (0,0).** The daemon did not decide to go to the
+corner — it was told to, and the `rehome pin` line is the consequence, not the
+cause. Nothing on the daemon side is implicated: the bridge honoured a target it
+was given. Two things this log rules out, both of which cost a wrong theory once:
+
+* **It is not "the tap was the first motion".** `atMove=97` says 97 move samples
+  had already been delivered. The glide worked.
+* **It is not the rel-bridge triggers.** `SH_REL_PACED`, `SH_REL_HOME_ON`,
+  `SH_REL_QUANTUM` and `SH_POINTER` were all unset — the daemon was on defaults.
+
+**Where a client-sent (0,0) comes from.** A button record carries the position
+the edge happens at (see `spa/src/three/streamClient/inputWire.ts`), and a caller
+that gives no position gets the client's last absolute one substituted. A rel
+station ships every sample as a type-4 RelMotion and **never sends an absolute
+position at all**, so that cache stays empty for the whole session — and an empty
+cache used to read as the literal corner. `input/trackpad.ts` omits a rel
+station's button coordinates on purpose; the omission was being undone one layer
+below it. The fix is that an unknown position is now written as a **3-byte button
+record** (type, button, down — no point, no `cseq`), which `input.rs` case 2
+applies no position from, because it takes a carried point only from a record of
+11 bytes or more.
+
+So the signature is worth memorising in both directions:
+
+| On the wire | Means |
+|---|---|
+| button record, 11 bytes, `x=0 y=0`, on a **rel** station | a fabricated position — the corner teleport |
+| button record, 3 bytes | "click where the guest's own cursor is" — correct on a rel station |
+| button record, 11 bytes, `x,y` = the sprite | correct on an **abs** station |
+
+It fires **once** per reload or resume, not on every tap, and that is diagnostic
+too: after the first one the daemon's `last_abs` IS (0,0), so the next button at
+(0,0) is suppressed as a no-op move and nothing further jumps.
+
+**Sniffing the client half.** The daemon log says what arrived; to see what the
+browser sent, patch `WritableStreamDefaultWriter.prototype.write` in a Playwright
+`addInitScript` before any app code runs and record every chunk. Reliable input
+records arrive length-prefixed (`u16` LE, then the self-describing record), and
+datagrams arrive raw, so one hook catches moves and buttons alike. Drive the
+gesture with `Input.dispatchTouchEvent` over CDP — and **dismiss the touch
+coachmark first** (`Got it`), or it swallows every contact and the probe reports
+a silent wire.
+
 ## When a station "freezes": is it even the input plane?
 
 Run `scripts/dev/input-wedge-repro/` FIRST. It drives keys straight into QEMU
