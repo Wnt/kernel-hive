@@ -572,6 +572,12 @@ pub async fn handle(
     if cfg.input_backend == InputBackend::Disabled && rec[0] != 3 {
         return;
     }
+    // INPUT IS A WAKE: a frozen guest accepts every injection below and reacts to
+    // none of them. Costs one atomic load unless we believe we froze it; the `cont`
+    // then completes BEFORE injection. Failure drops LOUDLY — see idle.rs.
+    if !crate::idle::wake_for_input().await {
+        return;
+    }
     match rec[0] {
         1 if rec.len() >= 5 => {
             let x = u16::from_le_bytes([rec[1], rec[2]]) as u32;

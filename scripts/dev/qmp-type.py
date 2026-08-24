@@ -11,6 +11,16 @@ Runs ON THE BOX (the QMP socket is a unix socket). One QMP connection per
 invocation, one HMP command per key — slow (about 8 keys/s) but reliable, and
 it works with the daemon attached to the same guest.
 
+IDLE AUTO-PAUSE IS HANDLED, AND VERIFIED. A station with no browser session is
+paused by streamhost after 60 s, and a paused guest ACCEPTS every sendkey and
+reacts to none of them — which is why this tool used to be able to type a whole
+line into nothing and then screendump the unchanged screen as its "proof". It
+now takes a wake lease, resumes the guest, and confirms with query-status that
+the vCPUs are running BEFORE the first key and again AFTER the last one. If the
+guest cannot be woken, or was re-frozen part-way, this exits non-zero saying so
+instead of handing you a screenshot that means nothing. See scripts/lib/
+guest_wake.py and docs/lab/INPUT-DEBUGGING.md.
+
     qmp-type.py --station hpuxvue "text to type\\n"          # \\n = Enter
     qmp-type.py --qmp /path/qmp.sock --keys ret tab f5 ctrl-c  # raw sendkey names
     qmp-type.py --station X --mouse 130 -84 --click            # move, then left click
@@ -35,6 +45,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+
+from guest_wake import GuestPaused, WakeLease, assert_running, wake  # noqa: E402
 
 STATIONS = Path("/data/vms/streamhost/stations")
 
@@ -118,6 +132,10 @@ class Qmp:
         r = self.cmd({"execute": "human-monitor-command", "arguments": {"command-line": line}})
         return r.get("return", "")
 
+    def execute(self, command: str) -> object:
+        """Argument-less QMP command -> its `return` value (guest_wake's shape)."""
+        return self.cmd({"execute": command}).get("return", {})
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -141,25 +159,39 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     q = Qmp(qmp_path)
-    if not a.shot:
-        text = (a.text or "").encode().decode("unicode_escape")
-        for ch in text:
-            q.hmp(f"sendkey {key_for(ch)}")
-            time.sleep(a.gap)
-        for k in a.keys:
-            q.hmp(f"sendkey {k}")
-            time.sleep(a.gap * 3)
-        if a.mouse:
-            q.hmp(f"mouse_move {a.mouse[0]} {a.mouse[1]}")
-            time.sleep(0.5)
-        if a.click:
-            q.hmp(f"mouse_button {a.button}")
-            time.sleep(0.15)
-            q.hmp("mouse_button 0")
-        time.sleep(a.wait)
-    ppm = out / "cur.ppm"
-    png = out / "cur.png"
-    q.hmp(f"screendump {ppm}")
+    # Hold the wake lease around EVERYTHING, the screendump included: a guest
+    # re-frozen between the last key and the shot produces a picture that is
+    # evidence for nothing. `wake` raises rather than typing into stopped vCPUs.
+    with WakeLease(name):
+        try:
+            wake(q.execute, name)
+        except GuestPaused as e:
+            raise SystemExit(f"qmp-type: {e}") from e
+        if not a.shot:
+            text = (a.text or "").encode().decode("unicode_escape")
+            for ch in text:
+                q.hmp(f"sendkey {key_for(ch)}")
+                time.sleep(a.gap)
+            for k in a.keys:
+                q.hmp(f"sendkey {k}")
+                time.sleep(a.gap * 3)
+            if a.mouse:
+                q.hmp(f"mouse_move {a.mouse[0]} {a.mouse[1]}")
+                time.sleep(0.5)
+            if a.click:
+                q.hmp(f"mouse_button {a.button}")
+                time.sleep(0.15)
+                q.hmp("mouse_button 0")
+            time.sleep(a.wait)
+            # The guest was awake for the WHOLE sequence, or the screendump
+            # below would be a picture of a guest that never saw half of it.
+            try:
+                assert_running(q.execute, name, "the key sequence")
+            except GuestPaused as e:
+                raise SystemExit(f"qmp-type: {e}") from e
+        ppm = out / "cur.ppm"
+        png = out / "cur.png"
+        q.hmp(f"screendump {ppm}")
     subprocess.run(["convert", str(ppm), str(png)], check=True)
     for p in (ppm, png):
         p.chmod(0o644)

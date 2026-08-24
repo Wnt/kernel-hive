@@ -200,10 +200,11 @@ was not sourced at all** — it came off the guest's own OEM `C:\WIN95\` folder.
 
 ## Gotchas this station charges you for
 
-- **The station idle-pauses within seconds and silently discards QMP input.** It
-  reads as a wedged guest. Drive it from **one** QMP connection that re-issues
-  `cont` immediately before every event; never run two QMP clients at once (the
-  daemon already holds one) or `screendump` starts timing out.
+- **The station idle-pauses within seconds, and a paused guest reacts to
+  nothing.** It reads as a wedged guest. `labctl` and `scripts/dev/qmp-type.py`
+  wake it, verify it is really running and hold a wake lease for the duration,
+  so this no longer needs handling by hand — see
+  [`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md).
 - **`systemctl stop streamhost@win95` is a power cut** — ExecStop kills QEMU by
   pidfile. It leaves ScanDisk work for the next boot and re-poisons the ICQ
   database. Shut Windows down from the Start menu first (*Close Program* →

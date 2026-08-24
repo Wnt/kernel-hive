@@ -188,8 +188,14 @@ async fn main() -> Result<()> {
             })
     };
     // IdlePauser::new logs the ON line (it names the mechanism it resolved).
-    let pauser = freezer
-        .and_then(|f| idle::IdlePauser::new(f, cfg.idle_pause_secs, cfg.idle_pause_warmup_secs));
+    let pauser = freezer.and_then(|f| {
+        idle::IdlePauser::new(
+            f,
+            cfg.idle_pause_secs,
+            cfg.idle_pause_warmup_secs,
+            &cfg.tile,
+        )
+    });
     if pauser.is_none() {
         eprintln!(
             "[streamhost] idle auto-pause OFF (SH_IDLE_PAUSE_SECS={}{})",

@@ -307,11 +307,10 @@ and the X/VUE startup each take minutes. Netscape's own startup is minutes of
 Two failure modes look identical to a hang and are not:
 
 - **idle auto-pause.** `SH_IDLE_PAUSE_SECS=60`: with no streamhost visitor the
-  vCPU freezes and unattended work stops dead. Hold the guest awake with a QMP
-  loop that `cont`s whenever `query-status` ≠ `running` — but **do not hold the
-  QMP socket open**; this build serves a limited number of concurrent QMP
-  clients and the daemon already holds one, so a persistent extra connection
-  makes `labctl shot` fail with `EAGAIN`. Momentary connect→cont→close.
+  vCPU freezes and unattended work stops dead. Hold the guest awake for the
+  duration with `scripts/lib/guest_wake.py`'s `hold_lease()`, which the daemon
+  honours like a live visitor; `labctl` and `scripts/dev/qmp-type.py` take that
+  lease on their own. See [`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md).
 - **`auto_parms` only runs from `/sbin/rc`.** Run by hand it refuses with
   *"may only execute from /sbin/rc during the initial transition from run level
   'S'"* — network changes need a real reboot to be exercised the way the golden
