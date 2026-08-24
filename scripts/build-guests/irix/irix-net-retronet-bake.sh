@@ -102,6 +102,17 @@ sed 's/^hosts:.*/hosts:			files dns/' /etc/nsswitch.conf.preEGRESS >/etc/nsswitc
 #                            this station never uses.
 #   browser.startup.page 1   open the home page (0 = blank window).
 #   browser.startup.homepage www.sgi.com, as the corpus holds it.
+#   browser.startup.homepage_override false
+#                            THE load-bearing one, and not obvious: seeding a
+#                            preferences.js is NOT enough to stop Netscape 4's
+#                            first-run tour. With this pref absent it still
+#                            OVERRIDES the home page once with
+#                            home.netscape.com/home/first.html, then
+#                            su_setup.html — proven on the live station, where
+#                            a fully-seeded demos profile still landed on the
+#                            museum's miss page, and proven fixed by adding
+#                            this one line (Netscape then opens directly on
+#                            www.sgi.com, from the very first frame).
 #   security.warn_*  false   the era's modal "you are about to submit / enter /
 #                            leave a secure document" boxes. On a plane that
 #                            serves no https at all these can only ever fire
@@ -124,6 +135,7 @@ seed_netscape() { # $1 = account, $2 = its .netscape directory
 user_pref("network.proxy.type", 0);
 user_pref("browser.startup.page", 1);
 user_pref("browser.startup.homepage", "http://www.sgi.com/");
+user_pref("browser.startup.homepage_override", false);
 user_pref("browser.cache.disk_cache_size", 8192);
 user_pref("security.warn_entering_secure", false);
 user_pref("security.warn_leaving_secure", false);

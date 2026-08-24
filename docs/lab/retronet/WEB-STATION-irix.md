@@ -36,7 +36,7 @@ with `-video none`, and three things follow:
 | Default route | **NONE.** Containment Lock 1, enforced by the guest's own stack: `/etc/config/static-route.options` is removed and `routed` is off, so IRIX cannot form a packet to anything off `10.99.0.0/24`. |
 | Seamless web | `/etc/resolv.conf` = `10.99.0.2` + **no Netscape proxy** → type any URL and the gateway's wildcard DNS resolves it to itself, where the `:80` origin serves the corpus or the museum's miss page |
 | Browser | Netscape Communicator **4.8a**, `network.proxy.type 0`, home page `http://www.sgi.com/`, prefs seeded for **every interactive account** ([below](#the-quiet-browser-what-a-visitor-must-not-see)) |
-| Golden | `irix65-apps-v11.chd`, md5 `2308405a14310b29f43be52027ad09c9` (v10 + the quiet-browser fix below) |
+| Golden | `irix65-apps-v12.chd`, md5 `3959e55f6e86dba39c7d71108358ca76` (v10 + the quiet-browser fix below) |
 | Exec | **unchanged and non-network**: `labctl exec irix` rides a serial pty (`irixagent.pl` on `/dev/ttyd2`). Nothing about the retronet touches it — which is also why labhost never dials this guest. |
 
 ## Containment — the guest reaches the gateway and nothing else
@@ -138,6 +138,16 @@ long wait, and never the SGI home page.
 v11 seeds every interactive account — `root`, `demos`, `guest`, `chronic` — and
 **chowns each profile to its account**, because Netscape rewrites
 `preferences.js` on exit and cannot when the file is root-owned.
+
+**And seeding prefs was still not enough.** v11 went live with a complete,
+correctly-owned `preferences.js` for `demos` and the exhibit *still* opened on
+`first.html` → `su_setup.html`. The pref that actually gates the first-run tour
+is **`browser.startup.homepage_override`**: with it absent, Netscape 4 overrides
+the configured home page exactly once, on what it considers a first run. Setting
+it `false` (v12) is what makes Netscape open directly on `www.sgi.com` — proven
+on the live station, where the same profile plus this single line took the
+browser from "two miss pages after a long wait" to the SGI home page in the
+first painted frame. That one line is the fix; the rest is hygiene around it.
 
 **2. The lock dialog.** *"Netscape has detected a `.netscape/lock` file. This
 may indicate that another user is running Netscape using your `.netscape`
