@@ -154,6 +154,10 @@
     "blurb": "SGI’s 1993 Indy brought real workstation Unix — 64-bit MIPS, hardware 24-bit graphics, and the gorgeous teal Indigo Magic Desktop — to a friendly blue pizza-box. IRIX 6.5 was the definitive SGI Unix, booting to the 4Dwm desktop.",
     "notes": "Live streamhost tile — the FIRST non-QEMU tile: an Xvfb + MAME(indy_4610) emulator captured directly by streamhost’s SH_CAPTURE=shm backend (MAME’s SGI Indy emulation kernel-panics under a KVM vCPU, so it runs on the bare-metal CPU, not a QEMU VM). archetype beige-tower-crt. See docs/history/irix-tile-issue20-handoff.md."
   },
+  "network": {
+    "status": "host-only",
+    "note": "retronet web plane: the Indy's BUILT-IN SEEQ 80C03 is a REAL bridged NIC on vmbr-rn via the persistent tap irixrn0 (MAME -networkprovider taptun, bound by the seeded machine cfg, not a command-line switch), statically addressed 10.99.0.24/24 in the guest with NO default route — so it reaches the gateway CT 10.99.0.2 and nothing else, in either direction; the bridge has no uplink. Declared because the IRIX_NET_* env this table used to derive from describes the SANDBOX link (IRIX_NET_MODE=sandbox, a host-only /30 + optional NAT egress), which is now the rollback and not what ships. docs/lab/retronet/WEB-STATION-irix.md"
+  },
   "retronet": {
     "planes": [
       "web"

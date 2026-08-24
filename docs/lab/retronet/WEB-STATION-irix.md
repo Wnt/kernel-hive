@@ -266,12 +266,25 @@ MAME argument changes. The v9 seed is still staged beside v10.
 
 ## Not done
 
-- **ICQ.** No OSCAR client is built for IRIX 6.5/MIPS. `climm` (which
-  [`solaris`](ICQ-STATION-solaris.md) uses, built from source with the on-box
-  compiler) is the obvious candidate — IRIX 6.5 ships a C compiler in the
-  golden's `/usr/bin`, so this is a build job, not a sourcing one. Until it
-  exists there is deliberately **no roster row**: the registry declares
-  `planes: ["web"]`, and `stations-registry.py` checks that in both directions.
+- **ICQ.** No OSCAR client is built for IRIX 6.5/MIPS, and the fleet's usual
+  Unix answer does not transplant here.
+
+  **Correction (2026-08-25):** an earlier version of this line said IRIX 6.5
+  ships a C compiler in the golden's `/usr/bin`, so ICQ "is a build job, not a
+  sourcing one". That was asserted, not checked, and it is **false**. Measured
+  in the guest: `which cc gcc c89 CC` finds **nothing**, `/usr/bin/cc` and
+  `/usr/bin/gcc` do not exist, and `/usr/freeware/bin` is **empty**. IRIX's
+  MIPSpro compilers were a separately licensed product and are not in this
+  image. So the `climm`-from-source recipe that
+  [`solaris`](ICQ-STATION-solaris.md) and [`tru64`](ICQ-STATION-tru64.md) used —
+  each with a native compiler already on the guest — has **no compiler to run**
+  on this station. Getting ICQ here means first getting a toolchain here (SGI
+  Freeware `gcc` tardist) or building the client elsewhere; either is a real
+  piece of work, not a follow-up line item.
+
+  Until a client exists there is deliberately **no roster row**: the registry
+  declares `planes: ["web"]`, and `stations-registry.py` checks that in both
+  directions.
 - **The corpus's SGI estate is broader than the home page.** `support.sgi.com`
   (1998), `techpubs.sgi.com` (1999) and `www.electricarc.com` are already
   curated in `era-sites.json` with this station in mind; none of them are
