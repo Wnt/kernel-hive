@@ -67,6 +67,67 @@ which is also why the version is pinned rather than tracked.
 | `/etc/ras/accounts.env` | the UINs and their passwords (`root 0600`) |
 | `/var/lib/ras/oscar.sqlite` | accounts, buddy lists, offline messages |
 | `/etc/systemd/system/retronet-oscar.service` | the unit, enabled |
+| `/etc/systemd/journald.conf.d/10-retronet-retention.conf` | journal caps — 200M, 30 days |
+
+### What it logs, and the one line it must not
+
+The pre-OSCAR **v5** login handler logs the account password **in cleartext at
+INFO**. Upstream v0.24.0 `server/icq_legacy/v5_handler.go` hands the parsed
+password straight to slog (`"password", password`, three call sites), so every
+v5 sign-in used to write:
+
+```
+level=INFO msg="V5 login attempt" svc=ICQLegacy uin=23000 password=<the real password> port=1537 …
+```
+
+Scope, stated exactly, because the first reports of this overstated it: **only
+v5**. The v4 handler logs `password_len=8` and no secret, and OSCAR proper never
+sees a cleartext password at all — it authenticates by MD5 challenge-response.
+On this gateway that made it a one-account problem: `23000` (os2warp, ICQ/2
+beta) is the only v5 client; `50000` (beos, ICBM .71) is v4.
+
+The server is a **pinned, statically linked upstream release binary**, verified
+by sha256 before every install and deliberately not forked or rebuilt, so the
+line cannot be fixed at its source without giving up that property. Its only
+logging knob is `LOG_LEVEL`, and `warn` would silence all ~2000 INFO lines
+including the session lifecycle an operator actually reads — a bad trade. So the
+secret is dropped one layer out, in the unit:
+
+```ini
+LogFilterPatterns=~password=
+```
+
+`systemd-journald` evaluates that against each message **before writing it**, so
+a matching line never reaches the journal at all — it is not written and then
+hidden. Matching the field name *with its `=`* is what keeps it surgical:
+
+| line | verdict |
+|---|---|
+| `V5 login attempt … password=<secret>` | **dropped** |
+| `V5 packet received … uin= addr= seq=` | kept — the attempt arrived |
+| `V4 login attempt … password_len=8` | kept — no `password=` in it |
+| `V5 login FAILED - invalid credentials … uin=` | kept — failures are a separate line, and carry no password |
+| `user authenticated successfully` / `V5 login successful` | kept — the outcome |
+
+So nothing operational is lost. The dropped line was redundant: its neighbours
+carry the uin, the address and the outcome, and a **failed** sign-in is logged
+on its own line that has no password field, so the filter never blinds the
+operator to one.
+
+Two things can silently undo this — an edited unit, and a systemd built without
+PCRE2, in which case the pattern is **ignored rather than rejected**.
+`provision-gateway-ct.sh verify` probes for both, plus for the absence of any
+`password=` line since the server last started.
+
+Lines written *before* this landed are still in the journal and are not worth a
+purge: the CT is unprivileged, offline and has no uplink, the passwords live in
+gitignored `registry/local.env` and protect nothing outside the museum, and
+`journalctl --vacuum` is whole-journal — it would destroy the retronet
+debugging history to remove nine lines. They expire instead, under the
+`MaxRetentionSec=30day` cap the provisioner now installs. If you ever do want
+them gone sooner, that is
+`pct exec 951 -- journalctl --rotate && pct exec 951 -- journalctl --vacuum-time=1s`,
+and it takes the rest of the journal with it.
 
 ### Ports
 

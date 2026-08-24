@@ -20,6 +20,40 @@ ExecStart=/opt/ras/open_oscar_server -config /etc/ras/settings.env
 Restart=on-failure
 RestartSec=3s
 
+# The server logs the account password IN CLEARTEXT at INFO on one pre-OSCAR
+# ICQ path: upstream v0.24.0 `server/icq_legacy/v5_handler.go` passes the parsed
+# password straight to slog ("password", password, three sites), so a V5 sign-in
+# writes `msg="V5 login attempt" ... uin=<n> password=<the real password>`.
+# ONLY V5 does this -- the V4 handler logs `password_len` instead, and OSCAR
+# proper never sees a cleartext password at all (MD5 challenge-response).
+#
+# Upstream is a PINNED, statically linked release binary that the lab
+# deliberately does not fork or rebuild, and its only logging knob is LOG_LEVEL
+# -- which at `warn` would silence every INFO line, including the session
+# lifecycle an operator actually reads. So the secret is dropped one layer out:
+# systemd-journald evaluates LogFilterPatterns= against each MESSAGE *before* it
+# writes it, so a matching line never reaches the journal at all. It is not
+# written and then hidden.
+#
+# `~` makes this a DENY pattern. The invariant is worth stating plainly: no line
+# carrying a `password=` field is ever written, whatever upstream adds later.
+# Matching on the field name with its `=` is what keeps it surgical --
+#   dropped:   `V5 login attempt ... password=<secret>`
+#   kept:      `V4 login attempt ... password_len=8`   (no `password=` in it)
+# and dropping the V5 line whole costs nothing, because it is redundant. Its
+# neighbours carry the same facts without the secret:
+#   `V5 packet received`               uin, addr, seq   -> the attempt arrived
+#   `user authenticated successfully`  uin, version     -> the outcome
+#   `V5 login successful`              uin, session_id  -> the result
+# A FAILED sign-in is not blinded either: upstream logs that on its own line,
+# `V5 login FAILED - invalid credentials`, which carries the uin and no
+# password field, so this filter never touches it.
+#
+# Requires systemd built with +PCRE2 (Debian 13's is; without it the pattern is
+# silently ignored, which is why `provision-gateway-ct.sh verify` probes for it)
+# and journald-backed output, which is this unit's default.
+LogFilterPatterns=~password=
+
 # Every listener is above 1024 (5190/5191/9898/4000/8080), so the server never
 # needs CAP_NET_BIND_SERVICE and runs as a plain unprivileged user.
 NoNewPrivileges=true

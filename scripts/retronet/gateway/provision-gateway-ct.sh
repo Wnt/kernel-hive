@@ -242,6 +242,20 @@ install -o root -g ras -m 0640 /tmp/settings.env /etc/ras/settings.env
 install -m 0644 /tmp/retronet-oscar.service /etc/systemd/system/retronet-oscar.service
 install -m 0755 /tmp/rn-tool.py /opt/ras/rn-tool.py
 rm -f /tmp/settings.env /tmp/retronet-oscar.service /tmp/rn-tool.py /tmp/.rn-step.sh
+# Bound the journal. The unit's LogFilterPatterns= stops any NEW password line
+# being written, so this is not the secret-keeping control -- it is what puts an
+# expiry date on the cleartext passwords already logged before that landed, and
+# on anything else a future upstream decides is worth an INFO line. The caps are
+# deliberately loose: a retronet debugging session routinely reads back days of
+# gateway journal, and 3.7M/week of it is nowhere near 200M.
+install -d -m 0755 /etc/systemd/journald.conf.d
+cat >/etc/systemd/journald.conf.d/10-retronet-retention.conf <<'JCONF'
+# Installed by scripts/retronet/gateway/provision-gateway-ct.sh.
+[Journal]
+SystemMaxUse=200M
+MaxRetentionSec=30day
+JCONF
+systemctl restart systemd-journald
 systemctl daemon-reload
 systemctl enable --now retronet-oscar.service
 systemctl restart retronet-oscar.service
@@ -365,6 +379,27 @@ step_verify() {
   probe "labhost -> $RN_CT_IP:$RN_TOC_PORT (TOC)" nc -z -w 3 "$RN_CT_IP" "$RN_TOC_PORT"
   probe "server unit active" ctexec systemctl is-active --quiet retronet-oscar.service
   probe "server unit enabled (starts with the CT)" ctexec systemctl is-enabled --quiet retronet-oscar.service
+  # The pre-OSCAR login path logs the account password in cleartext and the
+  # pinned upstream binary has no knob for it, so journald drops the line
+  # instead. Two things can silently undo that: an edited unit, and a systemd
+  # built without PCRE2 (the pattern is then ignored, not an error). Probe both.
+  probe "journald drops password lines (LogFilterPatterns)" \
+    ctexec /bin/sh -c \
+    "systemctl show retronet-oscar.service -p LogFilterPatterns | grep -q 'password='"
+  probe "systemd has PCRE2 (without it the pattern is silently ignored)" \
+    ctexec /bin/sh -c "systemctl --version | grep -q '+PCRE2'"
+  # Scoped to the CURRENT service run on purpose. The question is whether the
+  # running configuration leaks, not whether one ever did: lines written before
+  # the filter landed are still in the journal and expire with the retention cap
+  # above. Widen this to all of history and it stays red for 30 days for a
+  # reason nobody can act on.
+  # SC2016: the single quotes are the point -- $(…) must expand inside the CT,
+  # against the CT's own systemd, not here on labhost.
+  # shellcheck disable=SC2016
+  probe "no cleartext password logged since the server last started" \
+    ctexec /bin/sh -c \
+    'since=$(date -d "$(systemctl show retronet-oscar.service -p ActiveEnterTimestamp --value)" +%s) &&
+     ! journalctl -u retronet-oscar --no-pager -q --since "@$since" | grep -q "password="'
   probe "CT onboot=1 (starts with the box)" grep -qx 'onboot: 1' "/etc/pve/lxc/$RN_VMID.conf"
   # Presence is what the greeter runs on, and presence only reaches watchers who
   # were allowed onto the contact list. An account left with ICQ's
