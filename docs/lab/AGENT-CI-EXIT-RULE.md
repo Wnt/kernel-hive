@@ -17,7 +17,8 @@ cross-cutting gates, which every branch owes:
 - **generated-file drift** — `make station-registry-check`
 
 Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
-reachable: **box-sync drift** — `scripts/dev/verify-box-sync.sh` (see below).
+reachable: **box state** — live labhost files nobody's commit accounts for, on
+a row your push touches (see below).
 
 The gate is strict on hygiene and debt (unused
 code/deps, file growth, stale generated artifacts), pragmatic on style,
@@ -54,41 +55,73 @@ scripts/check-generated-drift.sh --regen
 python3 -m unittest discover -s scripts -p 'test_*.py'   # quality.yml, beside ruff
 ```
 
-## Box-sync drift — the one gate CI cannot run
+## Box state — the one gate CI cannot run
 
-`scripts/dev/verify-box-sync.sh` MD5-gates every documented repo↔box mirror pair
-(see the "Box-sync pairs" table in [`scripts/README.md`](../../scripts/README.md)).
-It needs `ssh lab`, which GitHub Actions does not have, so it is **deliberately
-NOT in `.github/workflows/quality.yml`** — a job that can never reach labhost
-would be permanently red, and a permanently-red job is worse than none.
+Everything above is a property of the commit. This one is a property of the
+**machine**, so GitHub Actions can never run it: it needs `ssh lab`. It lives in
+`.claude/hooks/pre-push-gate.sh`, probe-gated, and asks one question.
 
-Instead it runs from `.claude/hooks/pre-push-gate.sh`, probe-gated:
+**Is there a live labhost file that no commit accounts for?** That is a hand
+edit on the box, or an install left half done — the only box condition worth
+blocking a push over. A live file is accounted for when it matches any of:
+
+| accounted for by | meaning |
+|---|---|
+| **`.deployed-rev`** — the sha `box-install.sh` last actually wrote | the row is simply **not deployed yet**. This is the baseline, deliberately not the checkout's HEAD: moving the checkout installs nothing, so it must not be able to redden anyone's push |
+| the **box checkout** (`/data/kernel-hive` HEAD) | live equals what a deploy would write |
+| **your own working tree** | you installed your own station's file from your own branch before pushing it. Legitimate, and now silent — it used to force people to install from the box checkout at an identical commit purely to produce no drift row |
+
+Anything left over is **named**: the pair label (usually the station), its
+repo-side path, and why it was kept. And the failure is **scoped** — it fails
+your push only if your push changes that row's repo-side file. Drift on
+`macos753` is a visible WARNING to a commit that touches only `spa/` or `docs/`,
+never a block.
+
+That scoping is the same principle as the pushed-range rule above: **a gate must
+be satisfiable by the person it blocks.** On 2026-08-23/24 a six-stream wave
+proved the alternative — one station's byte-correct live install put the
+fleet-wide check at `changed 1` and would have blocked five unrelated pushes, and
+the remedy the check printed (`box-deploy.sh --apply`) is exactly what must NOT
+be run mid-wave, because it reverts other streams' in-flight live edits. An
+unfixable gate whose advice is a trap teaches `SKIP_GATE=1`, and then it protects
+nothing.
 
 | Environment | Behaviour |
 |---|---|
-| labhost reachable (`ssh lab` answers within 4 s) | Runs the check. **Any drift hard-fails the push.** |
-| labhost unreachable (public clone, offline laptop, cloud VM without the door) | Prints `skip (ssh lab unreachable)`; never fails. |
-| GitHub Actions | Never runs it at all — the workflow has no box-sync job. |
+| labhost reachable (`ssh lab` answers within 4 s) | Runs the check. Unaccounted-for drift on a row **this push touches** hard-fails; everything else is a named warning |
+| labhost unreachable (public clone, offline laptop, cloud VM without the door) | `SKIPPED`, loudly; never a failure |
+| GitHub Actions | Never runs it at all — the workflow has no box-state job |
+| box checkout too old to have `box-install.sh` | falls back to `scripts/dev/verify-box-sync.sh`, whole-tree and blocking |
 
-The check itself is placeholder-aware: pairs marked `scrub` are deployed with
-the operator's real address substituted in, so their labhost-side hash is taken
-**after** reversing the substitution, on labhost, inside the one batched SSH
-session. Without `registry/local.env` those pairs report `UNCHECKED`, which does
-not fail the gate — they never silently pass and never spuriously fail.
+"Box behind `main`" is a **note**, not a failure: between a push and its deploy
+it is the normal state.
+
+### Reading the box, and fixing a real hand edit
 
 ```sh
-scripts/dev/verify-box-sync.sh            # only rows needing attention, grouped
-scripts/dev/verify-box-sync.sh --all      # every row, including MATCH
-scripts/dev/verify-box-sync.sh --table    # TSV for scripting
+scripts/dev/box-deploy.sh --status         # deployed rev vs origin/main, one screen
+scripts/dev/box-deploy.sh                  # plan: which rows differ, and why
+scripts/dev/box-deploy.sh --apply          # sync the checkout + install every row
+scripts/dev/box-deploy.sh <LABEL> --apply  # one row (no .deployed-rev advance)
+scripts/dev/verify-box-sync.sh [--all|--table]   # the deep per-row MD5 detector
 ```
 
-Fix drift **per row**: the repo is authoritative for source; labhost is
-authoritative for generated/live artifacts (`tiles.json`, the golden manifest's
-live reset allow-list). `MISSING_ON_BOX` means "never deployed"; `MISSING_IN_REPO`
-means "stale or scratch on labhost" — delete it there rather than adopting it.
+**A plan reads; only `--apply` moves the checkout.** A bare `box-deploy.sh`
+plans against the checkout as it stands and syncs nothing. Until 2026-08-24 it
+fast-forwarded `/data/kernel-hive` first, so merely *inspecting* a deploy moved
+the shared baseline and turned every not-yet-installed file into fleet-wide
+"drift" — one agent's read-only look, everyone else's red gate, and the only
+exit was to apply. Use `--sync` if you want the checkout moved on purpose.
 
-Run them all locally in one shot with the pre-push hook
-(`.claude/hooks/pre-push-gate.sh`) — see below.
+**`--apply` is a wave-level decision.** It installs the whole checkout and
+reverts any live edit another stream has in flight, so during parallel work it
+belongs to the coordinator. To clear a row that is genuinely yours, install
+**your** row from **your** tree, or re-run the install that half ran.
+
+The check is placeholder-aware: `scrub` rows are deployed with the operator's
+real address substituted in, and are compared in canonical form on labhost
+inside the one batched session, so a placeholder is never written over a live
+address and a scrubbed row never spuriously fails.
 
 ## File-size budget
 
@@ -155,10 +188,12 @@ Known and accepted, listed so nobody rediscovers them as bugs:
 `check-generated-drift.sh` / `make station-registry-check` renders from
 `registry/` on disk (so an *uncommitted* registry edit is what gets checked —
 self-consistent, and a stale generated file is worth surfacing either way), and
-`scripts/dev/verify-box-sync.sh` hashes worktree files against labhost and
-enumerates its source/registry/launcher unions with plain `git ls-files` (so a
-brand-new untracked launcher has no mirror row yet). Both would need the pushed
-tree materialised to fix properly; neither is safe to change blind.
+the box-state check reads your **working tree** — deliberately, since "live
+already carries the bytes of this tree" is the thing it is trying to recognise —
+and enumerates its source/registry/launcher unions with plain `git ls-files`, so
+a brand-new untracked launcher has no mirror row yet. The first would need the
+pushed tree materialised to fix properly; the second is a property of the pair
+table, not of the gate.
 
 `size-exclusions.json` (repo root) is a **bidirectional** ledger — `path` →
 one-line reason. Rules:
