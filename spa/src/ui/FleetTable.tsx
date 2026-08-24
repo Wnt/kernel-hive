@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFleetTable, type FleetEntry } from '../data/fleetTable';
+import { useFleetTable, useStationUsage, type FleetEntry } from '../data/fleetTable';
 import { FLEET_COLUMNS, type Column, type ColKey } from './fleetColumns';
 import './FleetTable.css';
 
@@ -32,6 +32,10 @@ function matchesFacets(e: FleetEntry, facets: Facets): boolean {
 
 export function FleetTable() {
   const doc = useFleetTable();
+  // Interaction totals arrive separately and land on the entries here, so the
+  // 'use' column sorts and facets like any other. They are an annotation on the
+  // registry's table, never part of the generated document.
+  const stationUsage = useStationUsage();
   const [query, setQuery] = useState('');
   const [facets, setFacets] = useState<Facets>(new Map());
   // Sort chain: sorts[0] is primary, sorts[1] secondary, … Click a header to
@@ -57,10 +61,11 @@ export function FleetTable() {
   const q = query.trim().toLowerCase();
   const rows = useMemo(() => {
     if (!doc) return [];
+    const entries = doc.entries.map((e) => (stationUsage[e.id] ? { ...e, usage: stationUsage[e.id] } : e));
     const chain = sorts
       .map((s) => ({ col: FLEET_COLUMNS.find((c) => c.key === s.key), dir: s.dir }))
       .filter((s): s is { col: Column; dir: 1 | -1 } => s.col !== undefined);
-    return doc.entries
+    return entries
       .filter((e) => matchesQuery(e, q) && matchesFacets(e, facets))
       .sort((a, b) => {
         for (const { col, dir } of chain) {
@@ -70,7 +75,7 @@ export function FleetTable() {
         }
         return a.year - b.year || a.id.localeCompare(b.id);
       });
-  }, [doc, q, facets, sorts]);
+  }, [doc, stationUsage, q, facets, sorts]);
 
   if (doc === undefined) return <div className="fleet-view"><p className="fleet-status">Loading fleet table…</p></div>;
   if (doc === null) {

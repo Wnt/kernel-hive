@@ -153,6 +153,62 @@ over the browser's own cross-device (QR + Bluetooth) flow, then `/account` →
 What NOT to do: issuing a second *invite* for the same person creates a second
 account with the same name. Invites make people; links make devices.
 
+## Who has actually been in, and what they did
+
+Two questions the passkey timestamps could not answer, and now can.
+
+**"Has anyone been in lately?"** Resolving a session cookie stamps `lastSeenAt`
+on the session and its user (`auth/store.py`). Before that, the newest thing in
+the state file was an ENROLMENT — a session row written at sign-in, a credential
+row written when a passkey is used — so somebody holding a live cookie could
+browse for a month and leave no trace at all. On 2026-08-24 "have my invited
+users been in?" was answerable only by inference from a 30-day-old session row.
+The stamp is throttled to one write per five minutes per session, because it
+runs on every gated request and every write rewrites the whole account database
+with an `fsync` and a dated snapshot.
+
+**"Which machines get used, and by whom?"** `scripts/serve/usage.py` counts
+clicks and keystrokes. Two planes, and the split is in the STORAGE, not in the
+UI:
+
+| | route | who may read it | what it holds |
+|---|---|---|---|
+| aggregate | `GET /usage/stations.json` | any session (open on LAN) | per-station totals, no identities |
+| per person | `POST /auth/usage/report` | **admins only** | per-person totals + their per-station breakdown |
+
+A viewer's session therefore has no route to anybody's per-person numbers,
+including their own — a future careless render cannot leak what it never
+received. The aggregate is what the fleet table's **Use** column shows, so
+"most-used machine" is answerable without anyone's name being involved.
+
+The counts come from the BROWSER, because that is the only place they exist: the
+input plane is WebTransport straight from the tab to the station's QUIC listener,
+it never passes through this server, and the ticket that gates it carries a
+station and an expiry but no identity. So read the scoreboard as a scoreboard and
+not as an audit trail — a visitor reports their own numbers. The per-report caps
+in `usage.py` bound how far one forged report can move a total; nothing bounds a
+patient liar, and for a private gallery's scoreboard nothing needs to.
+
+What is deliberately NOT counted, because counting it would drown out what people
+actually did:
+
+* **Releases** — a press and its release are one click.
+* **Modifiers** — holding Shift is not a keystroke, and the char path synthesises
+  a Shift around every shifted character, so counting them would make a capital
+  letter worth twice a lowercase one.
+* **Software-generated input** — a type-in demo puts hundreds of key edges on the
+  wire from one click, and the win9x boot-modal dismissal types Esc and Enter on
+  every connect with nobody touching anything. Both run inside
+  `withSyntheticInput` (`spa/src/three/usageStats.ts`); the click that STARTED a
+  demo is the act, and it is counted where it happens.
+* **Pointer motion and the wheel** — a scoreboard wants deliberate acts.
+
+`usage-stats.json` is its own file beside `auth-state.json`, never inside it: the
+account database is irreplaceable and a counter written every few seconds has no
+business sharing a file with it. Deleting a person deletes their counters with
+them; their contribution to a station's total stays, because that total is the
+machine's, not theirs.
+
 ## Operating it
 
 ```bash
@@ -173,6 +229,16 @@ ssh lab '/data/vms/streamhost/serve/reset-auth.sh --restore <file>'
 # forever. reset-auth.sh refuses a populated gallery unless forced, backs up
 # either way, and prints how to undo itself.
 ssh lab '/data/vms/streamhost/serve/reset-auth.sh --force'
+
+# Who has actually used the gallery lately. lastSeenAt is stamped by USE, not
+# only by signing in, so this is the answer the passkey and session timestamps
+# could not give (everyone reads "never" until they next load a page).
+ssh lab 'jq -r ".users[] | \"\(.name) \(.role) \(.lastSeenAt // \"never\")\"" \
+  /data/vms/streamhost/serve/auth-state.json'
+
+# What everyone has clicked and typed, per machine. /admin draws the same two
+# tables — the scoreboard and the most-used machines — without the JSON.
+ssh lab 'cat /data/vms/streamhost/serve/usage-stats.json'
 
 # Outstanding device-link codes (there is at most one per account, ~60s each)
 ssh lab 'python3 -c "import json;d=json.load(open(\"/data/vms/streamhost/serve/auth-state.json\"));\
@@ -294,6 +360,10 @@ UDP relay.
   `check-stream-tickets.py` still proves the relationship holds: the daemon is
   the authority on the identity it verifies against, and a station.env edited on
   labhost does not pass through the registry's gate.
+- **The interaction counters are self-reported.** They are what a browser said it
+  sent, not what a station received — see the section above. They are also
+  browser-side state in one more sense: a visitor who blocks the request, or
+  whose tab is killed between flushes, is under-counted by up to ~20 s of play.
 - **`openvms` is flaky across restarts** (`dual-VM stack did not become ready`)
   and needs a retry — unrelated to any of this, but it will stop a fleet-wide
   promotion, so stop that station before a `--promote` and start it after.

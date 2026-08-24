@@ -33,6 +33,10 @@ PUBLIC_HOST = os.environ.get("PUBLIC_HOST", "")
 PUBLIC_ORIGIN = os.environ.get("PUBLIC_ORIGIN", f"https://{PUBLIC_HOST}" if PUBLIC_HOST else "")
 AUTH_STATE = Path(os.environ.get("AUTH_STATE", str(_HERE / "auth-state.json")))
 AUTH_UI = Path(os.environ.get("AUTH_UI", str(_HERE / "authui")))
+# Interaction counters (serve/usage.py). Its OWN file: auth-state.json is the
+# irreplaceable account database and a counter written every few seconds has no
+# business sharing it.
+USAGE_STATS = Path(os.environ.get("USAGE_STATS", str(_HERE / "usage-stats.json")))
 # Shared with every streamhost unit as SH_SESSION_KEY. Read once at startup:
 # rotating it means restarting both sides anyway.
 STREAM_KEY_FILE = Path(os.environ.get("STREAM_KEY_FILE", str(_HERE / "pki" / "stream-ticket.key")))

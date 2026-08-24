@@ -84,6 +84,12 @@ let lastSeq = -1; // -1 → next poll is a BASELINE sync (record seq, execute no
 let pagehideHooked = false;
 let bootLogged = false;
 
+/** Which station this tab currently has open, or null between stations. The
+ *  usage counters read it rather than keeping their own copy: two answers to
+ *  "which station is this?" is one answer too many, and the mount-overlap rule
+ *  that clearDebugTile encodes is subtle enough to be worth having once. */
+export function activeDebugTile(): string | null { return activeTile; }
+
 /** Verbose debug flag (toggled by the operator's `verbose` command). While on,
  *  streamClient logs every decoder-config / AU-feed anomaly to the console and
  *  telemetry batching drops to 1s. */

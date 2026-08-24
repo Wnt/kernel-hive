@@ -28,6 +28,9 @@ INVITE_TTL_SECS = 7 * 24 * 3600
 # one. It is meant to be scanned off a screen that is in front of you right now,
 # so a minute is generous — and the owner can mint another with one click.
 LINK_TTL_SECS = 60
+# How stale a session's `lastSeenAt` may get before a request rewrites it. See
+# AuthStore.session_user: the touch is on the hot path of every gated request.
+SEEN_TOUCH_SECS = 300
 # Dated copies of the state file kept beside it (see _snapshot).
 SNAPSHOT_KEEP = 14
 ROLES = ("admin", "viewer")
@@ -170,6 +173,7 @@ class AuthStore:
                 "name": name,
                 "role": role if role in ROLES else "viewer",
                 "createdAt": iso(now()),
+                "lastSeenAt": None,
             }
             self._doc["users"].append(user)
             self._write()
@@ -373,15 +377,45 @@ class AuthStore:
 
     def session_user(self, token: str) -> dict | None:
         """Resolve a cookie token to its user, or None. Expired sessions resolve
-        to None and are pruned on the next write."""
+        to None and are pruned on the next write.
+
+        Resolving also TOUCHES `lastSeenAt` on the session and on its user, which
+        is the only record that anybody used the gallery at all. Everything else
+        here is an enrolment event: a new session is written on sign-in and a
+        credential on passkey use, so a visitor holding a live cookie could
+        browse for a month and leave no trace — "has Jukka been in lately?" was
+        answerable only by inference from a 30-day-old session row (2026-08-24).
+
+        The touch is THROTTLED to one write per SEEN_TOUCH_SECS per session: this
+        runs on every gated request, and the state file is rewritten whole (with
+        an fsync and a dated snapshot) on every write. Five-minute granularity is
+        far finer than the question needs and costs one write per visitor per
+        five minutes instead of one per image fetched.
+        """
         if not token:
             return None
         wanted = _token_hash(token)
         with self._lock:
             for s in self._doc["sessions"]:
                 if s["tokenHash"] == wanted and s.get("expiresAtTs", 0) > now():
-                    return self.user(s["userId"])
+                    user = self.user(s["userId"])
+                    if user is not None:
+                        self._touch_seen(s, user["id"])
+                    return user
         return None
+
+    def _touch_seen(self, session: dict, user_id: str) -> None:
+        """Stamp lastSeenAt on a session and its user. Caller holds the lock."""
+        t = now()
+        if t - int(session.get("lastSeenTs") or 0) < SEEN_TOUCH_SECS:
+            return
+        session["lastSeenTs"] = t
+        session["lastSeenAt"] = iso(t)
+        for u in self._doc["users"]:
+            if u["id"] == user_id:
+                u["lastSeenAt"] = iso(t)
+                break
+        self._write()
 
     def drop_session(self, token: str) -> None:
         if not token:

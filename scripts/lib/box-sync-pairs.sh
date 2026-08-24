@@ -177,7 +177,8 @@ box_sync_load_pairs() {
   # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
   # row): scrub, not exact, or a push writes a placeholder over it.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
-    config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py; do
+    config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
+    usage.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo

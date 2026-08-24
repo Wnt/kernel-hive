@@ -73,11 +73,17 @@ class RateLimiter:
 
 
 class AuthService:
-    def __init__(self, state_path: Path, rp_id: str, rp_name: str, origin: str):
+    def __init__(self, state_path: Path, rp_id: str, rp_name: str, origin: str, usage=None):
         self.store = AuthStore(state_path)
         self.ceremonies = Ceremonies(rp_id, rp_name, origin)
         self.limiter = RateLimiter()
         self.origin = origin
+        # serve/usage.py's counter store, or None where nobody is counting (the
+        # auth tests). Held only so that removing a person removes their
+        # per-person counters with them — the identity and the tally of what
+        # that identity did are deleted by the same click, or the deletion is a
+        # half-truth.
+        self.usage = usage
 
     # ---- bootstrap ---------------------------------------------------------
 
@@ -390,6 +396,14 @@ class AuthService:
         ]
         return {"users": users, "invites": invites}
 
+    def scoreboard(self) -> dict:
+        """Per-person interaction counts, joined to names. ADMIN CALLERS ONLY —
+        routes.py enforces that; this method exists so the join to the user list
+        happens in one place."""
+        if self.usage is None:
+            return {"users": [], "stations": {}}
+        return self.usage.scoreboard(self.store.users())
+
     def delete_user(self, admin: dict, user_id: str) -> None:
         target = self.store.user(user_id)
         if not target:
@@ -397,6 +411,8 @@ class AuthService:
         if target["role"] == "admin" and self.store.admin_count() <= 1:
             raise AuthError("that is the last admin — promote someone else first", status=409)
         self.store.delete_user(user_id)
+        if self.usage is not None:
+            self.usage.forget_user(user_id)
 
     def set_role(self, admin: dict, user_id: str, role: str) -> None:
         target = self.store.user(user_id)
