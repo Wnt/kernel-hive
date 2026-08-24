@@ -131,3 +131,4 @@ streamhost/stations/*/serial-exec.passwd
 scripts/serve/clientlog.jsonl*
 scripts/serve/clientcmd.json
 scripts/serve/clientcmd-audit.jsonl
+scripts/serve/usage-stats.json*

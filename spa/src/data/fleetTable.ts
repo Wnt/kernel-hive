@@ -121,6 +121,20 @@ export interface FleetEntry {
   retronet: FleetRetronet | null;
   slot: number | null;
   guestDoc: string | null;
+  /** Interaction totals, merged in from /usage/stations.json at render time —
+   *  NOT part of the generated document, which is derived from the registry and
+   *  says nothing about how a machine is used. Undefined until that fetch lands
+   *  (or forever, on a deployment with no counter plane). */
+  usage?: StationUsage;
+}
+
+/** One machine's interaction totals. No identities: /usage/stations.json is the
+ *  aggregate half of the counters on purpose, and the per-person half is served
+ *  only to an admin, from /auth/usage/report. See scripts/serve/usage.py. */
+export interface StationUsage {
+  clicks: number;
+  keys: number;
+  lastAt?: string;
 }
 
 export interface FleetTableDoc {
@@ -147,6 +161,36 @@ async function fetchFleetTable(): Promise<FleetTableDoc | null> {
     console.error(`[fleet-table] no fleet table (${reason}) — publish it with 'serve-https-spa.sh manifests'`);
     return null;
   }
+}
+
+async function fetchStationUsage(): Promise<Record<string, StationUsage>> {
+  try {
+    // An absolute path, unlike the registry documents above: this one is a live
+    // server route, not a file a staged UI copies beside itself.
+    const response = await fetch('/usage/stations.json', { cache: 'no-store', credentials: 'same-origin' });
+    if (!response.ok) return {};
+    const parsed = (await response.json()) as { stations?: Record<string, StationUsage> };
+    return parsed.stations && typeof parsed.stations === 'object' ? parsed.stations : {};
+  } catch {
+    // A fleet table that renders without the popularity columns is the right
+    // failure: they are an annotation, not the table.
+    return {};
+  }
+}
+
+/** Per-station interaction totals, or an empty map while loading / unavailable. */
+export function useStationUsage(): Record<string, StationUsage> {
+  const [usage, setUsage] = useState<Record<string, StationUsage>>({});
+  useEffect(() => {
+    let alive = true;
+    void fetchStationUsage().then((loaded) => {
+      if (alive) setUsage(loaded);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return usage;
 }
 
 let tablePromise: Promise<FleetTableDoc | null> | null = null;

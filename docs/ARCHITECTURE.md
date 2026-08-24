@@ -122,7 +122,14 @@ document — the public `gallery-manifest.json`, `poster-docs.json` and `fleet-t
 the UI fetches, the serve `tiles.json` and `golden-manifest.json`, and the
 whole-registry `index.json`. Never hand-edit a generated file — edit the
 registry source and regenerate; `make station-registry-check` fails a drifted
-generated file. Current roster size:
+generated file.
+
+The `/fleet` table's **Use** column is the one thing on that page the registry
+does not answer: it is merged in at render time from `/usage/stations.json`, the
+live per-station interaction totals (see
+[`docs/PUBLIC-GALLERY.md`](PUBLIC-GALLERY.md)). It carries no identities, and the
+per-person half of those counters is served only to an admin. Current roster
+size:
 
 ```sh
 python3 scripts/stations-registry.py count

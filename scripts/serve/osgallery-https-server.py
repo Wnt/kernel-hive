@@ -76,11 +76,12 @@ Env (all optional except paths):
   CLIENTCMD      command queue JSON path      (default <server dir>/clientcmd.json)
   CLIENTCMD_TOKEN admin token file    (default <server dir>/pki/clientcmd.token)
   CLIENTCMD_AUDIT issued-command audit trail (default <server dir>/clientcmd-audit.jsonl)
+  USAGE_STATS    interaction-counter file     (default <server dir>/usage-stats.json)
   OSG_ADMIN_EVAL set to 0 to DISABLE arbitrary-JS eval commands   (default on)
 
 The route bodies live beside their config/globals in dedicated modules
 (static_files.py, webrtc.py, clientlog.py, clientcmd.py, restore.py,
-signal_route.py, config.py) — this file is the HTTP handler skeleton
+signal_route.py, usage.py, config.py) — this file is the HTTP handler skeleton
 (framing, CORS, auth gating, keep-alive) plus do_GET/do_POST dispatch to
 them.
 """
@@ -103,6 +104,7 @@ import clientlog  # noqa: E402
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
+import usage  # noqa: E402
 import webrtc  # noqa: E402
 from auth import gate  # noqa: E402  (import needs the sys.path line above)
 from auth import routes as auth_routes  # noqa: E402
@@ -121,6 +123,7 @@ from config import (  # noqa: E402
     SIGNAL_CONFIG,
     SIGNAL_HOST,
     STREAM_KEY_FILE,
+    USAGE_STATS,
     WEBROOT,
 )
 from static_files import MIME  # noqa: E402
@@ -129,6 +132,11 @@ from static_files import MIME  # noqa: E402
 # handlers reach them as module globals.
 AUTH = None
 STREAM_KEY = b""
+# Interaction counters. Unlike AUTH this exists on BOTH listeners: a station's
+# usage total is a fact about the machine, and the lab's own LAN traffic is as
+# real a use of it as a visitor's. Only the per-PERSON half needs a session, and
+# that half lives behind /auth/usage/report.
+USAGE = usage.UsageStore(USAGE_STATS)
 
 
 class H(BaseHTTPRequestHandler):
@@ -345,6 +353,17 @@ class H(BaseHTTPRequestHandler):
         if path == "/clientlog":
             return clientlog.handle_post(self)
 
+        # POST /usage — one tab's click/keystroke tally (serve/usage.py).
+        if path == "/usage":
+            # The public listener has already required a session (_public_gate);
+            # here we additionally require the report to have been sent BY the
+            # gallery, so no other site can spend a visitor's cookie inflating
+            # their score. The LAN listener has neither notion and needs neither.
+            if self.public and self.headers.get("Origin") != PUBLIC_ORIGIN:
+                return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
+            user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
+            return usage.handle_post(self, USAGE, user["id"] if user else None)
+
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
             if not self._require_box_side("clientcmd enqueue"):
@@ -383,6 +402,10 @@ class H(BaseHTTPRequestHandler):
             qs = parse_qs(urlparse(self.path).query)
             return clientcmd.handle_poll(self, qs.get("since", ["0"]))
 
+        # GET /usage/stations.json — per-station totals, no identities in it.
+        if path == "/usage/stations.json":
+            return usage.serve_stations(self, USAGE)
+
         if path == "/signal/index.json":
             return signal_route.serve_index(self)
 
@@ -417,7 +440,7 @@ def _start_public_listener():
         sys.stderr.write("[serve] FATAL: PUBLIC_PORT is set but PUBLIC_HOST is empty\n")
         sys.exit(1)
 
-    AUTH = AuthService(AUTH_STATE, rp_id=PUBLIC_HOST, rp_name="OS gallery", origin=PUBLIC_ORIGIN)
+    AUTH = AuthService(AUTH_STATE, rp_id=PUBLIC_HOST, rp_name="OS gallery", origin=PUBLIC_ORIGIN, usage=USAGE)
     token = AUTH.ensure_bootstrap()
     if token:
         # Printed once, to the server log, because it is the only way in until

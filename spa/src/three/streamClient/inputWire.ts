@@ -27,6 +27,7 @@
 //  is still owed to the guest and dropping it would lose motion.
 // ============================================================================
 import { recordWireMove } from '../../input/pointerRecorder';
+import { countClick, countKeystroke } from '../usageStats';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
@@ -119,6 +120,9 @@ export function moveWireSnapshotImpl(c: StreamClientLike): { sent: number; rejec
    *  record of >= 11 bytes, so a short one is a pure edge that moves nothing —
    *  the same "no coordinates" the engine asked for, now sayable on the wire. */
 export function sendButtonImpl(c: StreamClientLike, button: number, down: boolean, x?: number, y?: number) {
+    // The DOWN edge only: a press and its release are one click, and counting
+    // both would double every number on the scoreboard (three/usageStats).
+    if (down) countClick();
     const px = x != null ? clampU16(x) : c.lastAbsX;
     const py = y != null ? clampU16(y) : c.lastAbsY;
     if (px == null || py == null) {
@@ -137,6 +141,7 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     c.writeReliableClass(ICLASS_BUTTON, b);
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
+    if (down) countKeystroke(keycode);
     const b = new Uint8Array(4); b[0] = T_KEY; b[1] = down ? 1 : 0;
     new DataView(b.buffer).setUint16(2, keycode & 0xffff, true);
     c.writeReliableClass(ICLASS_KEY, b);

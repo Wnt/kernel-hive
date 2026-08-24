@@ -36,6 +36,7 @@ import {
 // XK keysym table + keysymFromKeyboardEvent: split out to
 // streamClient/keysym.ts (ts-src 600-line hard cap).
 import { XK, keysymFromKeyboardEvent } from './streamClient/keysym';
+import { withSyntheticInput } from './usageStats';
 export { XK };
 
 export interface StreamResolution {
@@ -351,8 +352,14 @@ export function createStreamController(
     return ks;
   };
 
+  // Software-generated typing: one act by the visitor, hundreds of key edges.
+  // Counted as the former (three/usageStats withSyntheticInput).
   const typeText = (text: string) => {
     if (disposed) return;
+    withSyntheticInput(() => typeTextNow(text));
+  };
+
+  const typeTextNow = (text: string) => {
     for (const ch of text) {
       const s = asciiToScancode(ch);
       if (!s) continue;
@@ -384,11 +391,16 @@ export function createStreamController(
     bootDismissed = true;
     window.setTimeout(() => {
       if (disposed) return;
-      // Esc dismisses the "restore settings?" prompt; Enter accepts any default OK.
-      client.sendKeyScancode(0x01, true); client.sendKeyScancode(0x01, false); // Esc
+      // Esc dismisses the "restore settings?" prompt; Enter accepts any default
+      // OK. Nobody pressed either, so neither is counted.
+      withSyntheticInput(() => {
+        client.sendKeyScancode(0x01, true); client.sendKeyScancode(0x01, false); // Esc
+      });
       window.setTimeout(() => {
         if (disposed) return;
-        client.sendKeyScancode(0x1c, true); client.sendKeyScancode(0x1c, false); // Enter
+        withSyntheticInput(() => {
+          client.sendKeyScancode(0x1c, true); client.sendKeyScancode(0x1c, false); // Enter
+        });
       }, 250);
     }, BOOT_DISMISS_DELAY_MS);
   };

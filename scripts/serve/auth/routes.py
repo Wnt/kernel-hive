@@ -195,6 +195,15 @@ def _route(handler, path: str, service, user, body: dict) -> None:
         _reply(handler, 200, service.people())
         return
 
+    # The per-PERSON scoreboard. It is admin-only by position — everything below
+    # the role check above is — and, more to the point, by ROUTE: the counters a
+    # viewer's own tab reports are folded into a per-station aggregate served
+    # openly at /usage/stations.json, and into a per-user record that leaves the
+    # box through this endpoint and no other.
+    if path == "/auth/usage/report":
+        _reply(handler, 200, service.scoreboard())
+        return
+
     if path == "/auth/invites/create":
         _reply(handler, 200, service.create_invite(user, str(body.get("name", "")), str(body.get("role", "viewer"))))
         return

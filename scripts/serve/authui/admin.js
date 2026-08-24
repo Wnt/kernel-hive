@@ -42,7 +42,11 @@ function renderUsers(users) {
   for (const u of users) {
     const keys = u.passkeys.length === 1 ? '1 passkey' : `${u.passkeys.length} passkeys`;
     const last = u.passkeys.map((k) => k.lastUsedAt).filter(Boolean).sort().pop();
-    const meta = `${keys}${last ? ` · last used ${last.replace('T', ' ').replace('Z', ' UTC')}` : ' · never used'}`;
+    // `lastSeenAt` is stamped whenever a session is USED, not only when a
+    // passkey is presented — an invite-link visitor may hold a live cookie for
+    // weeks and never touch a passkey, and used to leave no trace at all.
+    const meta = `${keys}${last ? ` · passkey last used ${when(last)}` : ' · passkey never used'}`
+      + ` · last seen ${when(u.lastSeenAt)}`;
     const info = labelled(u.name, meta);
     const tag = el('span', 'tag', u.role);
 
@@ -62,6 +66,60 @@ function renderUsers(users) {
     box.append(row(info, tag, ...(isMe ? [el('span', 'meta', 'that’s you')] : [promote, remove])));
   }
   if (!users.length) box.append(el('p', 'meta', 'Nobody yet.'));
+}
+
+// ---- the scoreboard --------------------------------------------------------
+// /auth/usage/report is admin-only on the server (auth/routes.py, below the role
+// check). Everything drawn here therefore arrives only for an admin; the page
+// hides nothing that the server was willing to send.
+
+const nf = new Intl.NumberFormat();
+
+function when(iso) {
+  return iso ? iso.replace('T', ' ').replace('Z', ' UTC') : 'never';
+}
+
+/** The one station somebody used most, for the row's second line. */
+function favourite(stations) {
+  let best = null;
+  for (const [id, s] of Object.entries(stations || {})) {
+    const total = (s.clicks || 0) + (s.keys || 0);
+    if (!best || total > best.total) best = { id, total };
+  }
+  return best;
+}
+
+function renderScoreboard(rows) {
+  const box = $('scoreboard');
+  box.replaceChildren();
+  for (const r of rows) {
+    const total = r.clicks + r.keys;
+    const fav = favourite(r.stations);
+    const meta = [
+      `${nf.format(r.clicks)} clicks · ${nf.format(r.keys)} keystrokes`,
+      fav ? `most on ${fav.id} (${nf.format(fav.total)})` : null,
+      `last seen ${when(r.lastSeenAt)}`,
+    ].filter(Boolean).join(' · ');
+    const count = el('span', 'tag', nf.format(total));
+    box.append(row(labelled(r.name, meta), count));
+  }
+  if (!rows.length) box.append(el('p', 'meta', 'Nobody yet.'));
+}
+
+function renderPopular(stations) {
+  const box = $('popular');
+  box.replaceChildren();
+  const ranked = Object.entries(stations || {})
+    .map(([id, s]) => ({ id, clicks: s.clicks || 0, keys: s.keys || 0, lastAt: s.lastAt }))
+    .sort((a, b) => (b.clicks + b.keys) - (a.clicks + a.keys))
+    .slice(0, 15);
+  for (const s of ranked) {
+    const meta = `${nf.format(s.clicks)} clicks · ${nf.format(s.keys)} keystrokes · last used ${when(s.lastAt)}`;
+    box.append(row(labelled(s.id, meta), el('span', 'tag', nf.format(s.clicks + s.keys))));
+  }
+  if (!ranked.length) {
+    box.append(el('p', 'meta', 'Nothing counted yet. The same totals, per machine, are in the fleet table’s Use column.'));
+  }
 }
 
 function renderInvites(invites) {
@@ -89,6 +147,9 @@ async function refresh() {
   const people = await api('/auth/people', {});
   renderUsers(people.users);
   renderInvites(people.invites);
+  const usage = await api('/auth/usage/report', {});
+  renderScoreboard(usage.users);
+  renderPopular(usage.stations);
 }
 
 $('invite').addEventListener('click', () =>

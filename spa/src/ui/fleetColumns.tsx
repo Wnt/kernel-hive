@@ -10,7 +10,8 @@ import type { FleetEntry } from '../data/fleetTable';
 
 export type ColKey =
   | 'name' | 'year' | 'tier' | 'emulator' | 'kiosk' | 'ui' | 'screen' | 'depth' | 'arch' | 'lineage'
-  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'exec' | 'network' | 'retronet' | 'idle' | 'golden' | 'stream';
+  | 'memory' | 'accel' | 'capture' | 'keyboard' | 'pointer' | 'exec' | 'network' | 'retronet' | 'idle' | 'golden' | 'stream'
+  | 'use';
 
 export interface Column {
   key: ColKey;
@@ -46,6 +47,20 @@ function ramBucket(e: FleetEntry): string {
   return '> 512 MB';
 }
 const listing = (e: FleetEntry) => (e.lifecycle === 'showcase' ? 'poster' : e.listed ? 'listed' : 'hidden');
+
+// ---- the popularity column -------------------------------------------------
+// Sorted on clicks + keystrokes together: "most used machine" is one question,
+// and a station driven entirely from the keyboard (every text console in the
+// lineup) would lose every time to a mouse-driven one if clicks ranked alone.
+const used = (e: FleetEntry) => (e.usage ? e.usage.clicks + e.usage.keys : 0);
+function usageBucket(e: FleetEntry): string {
+  const n = used(e);
+  if (!e.usage) return 'never used';
+  if (n === 0) return 'never used';
+  if (n < 100) return 'under 100';
+  if (n < 1000) return '100–999';
+  return '1000+';
+}
 
 export const FLEET_COLUMNS: Column[] = [
   {
@@ -231,6 +246,17 @@ export const FLEET_COLUMNS: Column[] = [
         {e.golden.snapshot && <span className="fleet-sub">{e.golden.snapshot}</span>}
       </span>
     ) : dash,
+  },
+  {
+    key: 'use', label: 'Use', title: 'Clicks + keystrokes visitors have sent this station (/usage/stations.json) · facet: how much',
+    sort: (e) => used(e),
+    facet: (e) => [usageBucket(e)],
+    render: (e) => !e.usage || used(e) === 0 ? dash : (
+      <span title={e.usage.lastAt ? `last used ${e.usage.lastAt.replace('T', ' ').replace('Z', ' UTC')}` : ''}>
+        <span className="fleet-badge fleet-badge--info">{used(e).toLocaleString()}</span>
+        <span className="fleet-sub">{`${e.usage.clicks.toLocaleString()} clicks \u00b7 ${e.usage.keys.toLocaleString()} keys`}</span>
+      </span>
+    ),
   },
   {
     key: 'stream', label: 'Stream', title: 'fps · audio (source) · facet: fps, audio/silent',
