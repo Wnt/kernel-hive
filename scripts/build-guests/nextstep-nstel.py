@@ -14,11 +14,16 @@ user `me` (no password) and let the client `su` to root, which needs none
 either. Pass --nosu to stay as `me`.
 """
 
+import os
 import socket
 import sys
 import time
 
-HOST, PORT = "127.0.0.1", 42323
+# Defaults are the kiosk's SLIRP redirect. A bring-up rig on the retronet has no
+# SLIRP and reaches the guest directly, so both are overridable from the
+# environment without changing what the installed kiosk copy does.
+HOST = os.environ.get("NSTEL_HOST", "127.0.0.1")
+PORT = int(os.environ.get("NSTEL_PORT", "42323"))
 IAC, DONT, DO, WONT, WILL, SB, SE = 255, 254, 253, 252, 251, 250, 240
 
 
