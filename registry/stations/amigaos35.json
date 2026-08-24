@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "amigaos35",
+  "era_year": 2026,
+  "stationDir": "amigaos35",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 67,
+        "prelude": "",
+        "value": {
+          "key": "amigaos35",
+          "script": "tiles/amigaos35.sh",
+          "outputDir": "Amigaos35",
+          "class": "graphical",
+          "estimated": "~30-90m",
+          "automation": "vision",
+          "produces": "TODO",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {},
+  "render": {},
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54151,
+    "slot": 151,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "guestDoc": "docs/guests/amigaos35.md",
+  "credentialsRef": "guest/amigaos35",
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#64748b",
+    "eraLabel": "TBD · amigaos35"
+  },
+  "museum": {
+    "id": "amigaos35",
+    "displayName": "amigaos35",
+    "year": 2026,
+    "lineage": "TODO",
+    "arch": "TODO",
+    "accent": "#64748b"
+  },
+  "notes": [
+    "new-os Tier 3 scaffold; reserved slot 151/UDP 54151",
+    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
+  ]
+}

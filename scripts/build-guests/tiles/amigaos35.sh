@@ -1,0 +1,26 @@
+#!/bin/bash
+# Tier 3 builder scaffold for amigaos35 — graphical/legacy bounded automation.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+LABQMP="$HERE/../../lib/labqmp.py"
+VISION_DIR="$HERE/../../install-vision"
+OS_ID="amigaos35"
+TILE_DIR="amigaos35"
+WORK="${WORK:-/data/vms/build-${OS_ID}}"
+QMP="$WORK/qmp.sock"
+PIDFILE="$WORK/qemu.pid"
+EVIDENCE="$WORK/evidence"
+
+log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
+die() {
+  log "ERROR: $*"
+  exit 1
+}
+# shellcheck disable=SC2317 # scaffold hook becomes reachable when TODO flow is filled
+qmp() { python3 "$LABQMP" "$QMP" "$@"; }
+
+log "TODO: gate media/secrets without logging values; pin the legacy device set"
+log "TODO: implement bounded framebuffer/OCR/template states under $VISION_DIR"
+log "TODO: retain failure frames, curate an idle-static fixture, and verify golden"
+die "scaffold only: fill the Tier 3 builder for $TILE_DIR"
