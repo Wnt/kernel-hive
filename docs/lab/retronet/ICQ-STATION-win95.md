@@ -139,12 +139,24 @@ PS/2 buttons are otherwise fine on this guest — they open the desktop context
 menu, drive the whole ICQ registration wizard, and work IE 4.01's toolbar and
 dialogs — so this is specific to ICQ's Simple-Mode chrome, not to the input path.
 
-**Two ways out, and the choice is the operator's:**
+**Three ways out, best first:**
 
-1. **Find a UI route to Advanced Mode / Preferences** — e.g. a fresh profile that
-   starts in Advanced Mode, or a supported way to widen the glued window so *To
-   Advanced Mode* is clickable.
-2. **Give win95 the fleet's nudge.** `win98se`, `nt4` and `win2000` already ship
+1. **Transplant the setting in the account file — the route `w2kalpha` proved.**
+   `w2kalpha` hit this identical wall (Preferences unreachable) and solved it:
+   *Keep connection alive* is not a registry value, it is the
+   **`UseFirewallSessionTimeout` record inside ICQ's per-UIN account database**,
+   and that database is **portable between installs when the install path
+   matches** ([`ICQ-STATION-w2kalpha.md`](ICQ-STATION-w2kalpha.md)). For win95
+   that file is `C:\Program Files\ICQ\2002a\95000.dat` (2001b keeps it under
+   `2001a\<UIN>.dat`). So: install ICQ 2002a on a throwaway config bed where the
+   menus do open, sign in as `95000`, tick *Keep connection alive*, shut the
+   client down cleanly, and copy `2002a\95000.*` onto this guest with the station
+   stopped. **This is the recommended next step** — it needs no UI on win95 at
+   all, and it is the same trick that took `w2kalpha` from PARTIAL to LIVE.
+2. **Find a UI route to Advanced Mode / Preferences** — a fresh profile that
+   starts in Advanced Mode, or a supported way to un-glue and widen the window so
+   the clipped *To Advanced Mode* entry becomes clickable.
+3. **Give win95 the fleet's nudge.** `win98se`, `nt4` and `win2000` already ship
    `*-icq-nudge.{py,service,timer}` in
    [`scripts/retronet/`](../../../scripts/retronet/) — a labhost timer that spoofs
    the gateway's RST so the client's dead 4-tuple aborts and it reconnects. That

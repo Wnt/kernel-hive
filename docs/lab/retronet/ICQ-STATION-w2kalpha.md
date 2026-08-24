@@ -1,140 +1,334 @@
-# w2kalpha ICQ station — x86 ICQ 2001b on the Alpha, under FX!32
+# w2kalpha ICQ station — the stock x86 client, transplanted onto the Alpha
 
-**Status: FX!32 PROVEN, station NOT yet onboarded.** `w2kalpha` (Windows 2000 RC2 build
-2128 for **Alpha AXP**, on the es40 AlphaServer ES40 emulator) runs the fleet's
-standard **x86 ICQ 2001b (build 3659)** — the *same binary* the Intel stations
-run — translated to Alpha by **FX!32 / Wx86**, Windows NT's built-in x86
-emulation layer. The web half of this station's retronet membership is
-[`w2kalpha-retronet.md`](w2kalpha-retronet.md); read the fleet recipe
-[`ICQ-STATION-win2000.md`](ICQ-STATION-win2000.md) first — this doc records only
-what is **different on the Alpha**.
+**Status: LIVE.** `w2kalpha` (Windows 2000 RC2 build 2128 for **Alpha AXP**, on
+the es40 AlphaServer ES40 emulator) carries the fleet's standard **x86 ICQ 2001b
+(build 3659)** — the *same binary* the Intel stations run — executed on Alpha by
+**FX!32 / Wx86**, Windows NT's x86 emulation layer. UIN `50010` signs in
+unattended on the saved password, reconnects silently after a `labctl reset`, and
+reaches the gateway at the **literal `10.99.0.2:5190`** with no DNS in the path.
 
-## The headline: FX!32 carries the stock x86 client
+The client was **not installed here**: it was installed on a throwaway x86
+Windows 2000 clone and moved across as a finished payload, because the installer
+itself is too slow to complete on an emulated Alpha (below). The web half of this
+station's retronet membership is [`w2kalpha-retronet.md`](w2kalpha-retronet.md);
+the fleet ICQ recipe is [`ICQ-STATION-win2000.md`](ICQ-STATION-win2000.md). This
+doc records only what is **different on the Alpha**.
 
-The interesting question for this station was whether the fleet-standard x86
-binary would run at all, or whether a native Alpha OSCAR client had to be
-sourced. **It runs.** No new media was sourced, no alternative client was
-needed, and this station joins on the exact fleet-standard client.
+## Why transplant instead of install
 
-What is actually on this install:
+Running the x86 installer under FX!32 on an emulated Alpha is **compute-bound**:
+es40 pins ~1.1 host cores while the guest disk grows kilobytes per minute — the
+cost is x86 instruction translation, not I/O. A previous session measured the
+installer's Red Bend unpack phase at roughly **70 files/hour (~2.8 MB/h)**, and
+after **7.5 h** the progress bar was around 40%, the staging dir held ~47 MB
+across ~200 files, and the real install into the program directory had **not
+started at all**. The rate is too uneven to promise a finish time.
 
-| Component | Path | Role |
-|---|---|---|
-| Wx86 emulation layer | `C:\WINNT\System32\wx86.dll`, `wx86cpu.dll` | the interpreter that executes x86 instructions |
-| FX!32 translator/optimizer | `C:\WINNT\System32\fx32opt.exe`, `fx32serv.exe`, `fx32cpu.idx`, `fx32msgs.dll` | profiles hot x86 code and caches **native Alpha** translations |
-| FX!32 service | service name **`FX!32`** | running (`net start "FX!32"` → *already been started*) |
-| x86 program tree | `C:\Program Files (x86)\` | where Windows installs x86 applications — ICQ lands here |
+The same installer on an **x86** Windows 2000 guest under KVM finishes in about
+**three minutes**. So the client is built there and moved here. **FX!32 is not
+the limit — wall clock is**; the translated client itself runs fine.
 
-`x86prog` (System Properties ▸ Advanced ▸ Performance ▸ "x86 Program
-Optimization") is the native Alpha applet that lists what FX!32 has translated.
+This is the same offline-copy pattern [`docs/guests/w2kalpha.md`](../../guests/w2kalpha.md)
+records for Winamp 2.5e, whose installer likewise will not complete on the Alpha.
 
-**Correction to a stale claim.** `docs/guests/w2kalpha.md` recorded that
-"interactive-session x86 does NOT work — telnet-session x86 does", i.e. that x86
-apps launched from the auto-logon console session fail with *"The system cannot
-find the path specified"* and therefore could never be shown on the framebuffer.
-That is **not true on this install**: launching the x86 `C:\Apps\sol.exe` from
-**Start ▸ Run** in the interactive session opened Solitaire on the framebuffer,
-and the x86 ICQ 2001b installer launched the same way ran its full wizard on the
-framebuffer. The earlier failure was some other launch path, not a property of
-FX!32 in the interactive session. This is what makes an x86 GUI ICQ client
-possible here at all.
+## The transplant, as built
 
-## Media delivery — HTTP, not TFTP
+### 1. A clean x86 baseline
 
-The NT4 recipe delivers `ICQ2001b.exe` by TFTP over the exec channel. On this
-station **do not**: TFTP's lock-step 512-byte blocks run at roughly **7
-blocks/s** across es40's pcap NIC — about **20 minutes** for the 4.3 MB
-installer, and the transfer dies with the telnet session that started it.
+The payload is built on a **throwaway clone**, never on the live `win2000`
+station. The base is a standalone byte-copy backup that predates all ICQ work:
+`/data/gallery-guests/Win2000/win2k-pro.qcow2.rollback-20260715T223643Z` — a
+Windows 2000 install with **no ICQ and no Mirabilis registry keys at all**. That
+matters: the other available backup (`golden-backup-predhcp-20260821/`) already
+has ICQ 2000b in it, and its registry would have muddied the delta below into a
+2000b→2001b diff instead of a clean-install one.
 
-The same file over **HTTP** moves at **421 KB/s — 4.11 MB in 10 seconds**, a
-~60x difference on the identical link. The bottleneck is the protocol's
-round-trip lock-step, not the emulated NIC. So:
+The clone runs under plain QEMU with **no network at all**
+(`-netdev user,restrict=on`, later dropped entirely) and never touches `vmbr-rn`.
+Nothing about the live `win2000` station is read or written.
 
-1. Serve the blob from the gateway CT (`python3 -m http.server` in a temp dir).
-2. In the guest, from the **framebuffer** (Start ▸ Run):
-   `iexplore http://10.99.0.2:<port>/ICQ2001b.exe` ▸ **Save** ▸ path `C:\ICQ2001b.exe`.
-3. Remove the CT server and `C:\ICQ2001b.exe` afterward.
+### 2. Make the installer bake the Alpha's paths
 
-Launch the installer from the **framebuffer**, never the exec channel (the
-long-lived-child trap the win2000 doc describes).
+The Alpha's x86 program tree is `C:\Program Files (x86)\ICQ`, but an x86 Windows
+2000 installs to `C:\Program Files\ICQ`. **Do not rewrite the paths afterwards.**
+354 registry values carry the install path, most of them inside `hex(1)`
+(UTF-16LE) blobs, and ICQ's own data files carry more; a textual rewrite is a
+silent-corruption machine.
 
-## The install is slow — days, not hours, and that is the blocker
+Instead, point the *source* machine's program-files root at the Alpha's path
+**before running setup**, offline, in the clone's `SOFTWARE` hive:
 
-**This is the finding that decides whether anyone should repeat this route.**
-
-Running the x86 installer under FX!32 on an emulated Alpha is **compute-bound**,
-not I/O-bound. Observed on the bring-up clone: es40 pinned at ~1.1 host cores
-while the guest disk image grew only kilobytes per minute — the cost is x86
-instruction translation, not disk. The installer's **Red Bend unpack phase** (the
-same phase the NT4 doc calls "slow — ~15 min on a QEMU VM") runs for **hours**
-here.
-
-**Measured, so the next person does not have to re-derive it.** Timed readings of
-the unpack staging dir `C:\Program Files (x86)\ICQ\temp`
-(`dir /s` over the exec channel) on the bring-up clone:
-
-| Elapsed from installer launch | Files unpacked | Bytes |
-|---|---|---|
-| ~2 h (copy phase done, unpack starting) | — | — |
-| ~5 h | 177 | 46,406,913 |
-| ~7 h | 190 | 47,438,722 |
-| ~7.5 h | 194 | 47,490,714 |
-
-That is roughly **5–6 files/hour** in the steady state, against a payload the
-progress bar put only ~40% through. **Projected completion is on the order of
-days, not hours** — and the unpack is only the staging step; the actual install
-into `C:\Program Files (x86)\ICQ` had not begun at all (that directory still
-held nothing but `temp`).
-
-So: **FX!32 is not the limit — wall clock is.** The route works and is
-architecturally correct; it is simply not affordable as a live install on this
-emulator. If this station is to run ICQ 2001b, prefer transplanting the
-**installed payload** from an x86 Windows sibling (the same offline-copy pattern
-`docs/guests/w2kalpha.md` records for Winamp 2.5e, whose installer likewise
-"will not complete on the Alpha") over running the installer here. What FX!32
-proves is that the **client binary** will execute once it is in place.
-
-**Telling "slow" from "hung":** the progress bar can sit visually still for
-40 minutes while the filename underneath it changes. Check the host side instead —
-es40's CPU jiffies (`/proc/<pid>/stat` fields 14+15) climbing at ~300/30 s per
-core means it is working:
-
-```bash
-P=$(cat <rig>/mame.pid)
-c1=$(awk '{print $14+$15}' /proc/$P/stat); sleep 30
-c2=$(awk '{print $14+$15}' /proc/$P/stat); echo $((c2-c1))   # ~300 = 1 core busy
+```
+HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ProgramFilesDir = C:\Program Files (x86)
 ```
 
-## Bring-up rig — a namespaced clone, never the live station
+Setup then offers `C:\Program Files (x86)\ICQ` as its own default and bakes that
+path into every value it writes. Verified afterwards: **354 values contain
+`C:\Program Files (x86)\ICQ` and zero contain a bare `C:\Program Files\ICQ`.**
 
-The checkpoint bake procedure in [`docs/guests/w2kalpha.md`](../../guests/w2kalpha.md)
-("Checkpoint restore") requires a clone anyway. This bring-up used one under
-`/data/vms/sandbox/icq-w2kalpha/rig/`, namespaced end to end so it can share the
-retronet bridge with the live station without colliding:
+(The installer's own destination picker is a dead end — its path field is not in
+the tab order, and its directory tree only lists the lineage of the current
+default, so a sibling folder cannot be selected by keyboard.)
 
-| Thing | Live station | Bring-up clone |
+### 3. Take the payload and the exact registry delta
+
+Hives are copied out of the clone **before** and **after** the install, and the
+difference is computed key-by-key *and* value-by-value. The delta is what gets
+transplanted — not a whole subtree, which would overwrite the Alpha's own
+native COM registrations with an x86 machine's.
+
+What ICQ 2001b actually adds:
+
+| Where | Count | What |
 |---|---|---|
-| veth pair | `w2kalpha-g` / `w2kalpha-h` | `w2ka-icq-g` / `w2ka-icq-h` |
-| guest MAC | `52:54:00:52:4e:11` | `52:54:00:52:4e:d1` (outside the reservation scheme) |
-| guest IP | reserved `10.99.0.17` | DHCP **pool** address (`10.99.0.101`) |
-| guard chain | `W2KALPHARN-IN` | `W2KAICQRN-IN`, scoped to the pool address |
-| es40 serial | 21964 / 21965 | 22014 / 22015 |
-| shm / ctlsock | station dir | rig dir |
+| `HKLM\SOFTWARE\Classes\…` | **1043 keys** | COM/ProgID/CLSID registrations, file associations (`.hpf`, `.pnq`, `.scm`, …) |
+| `HKLM\SOFTWARE\Mirabilis\ICQ\2001b Beta` | 3 keys | version marker |
+| `HKLM\…\CurrentVersion\App Paths\` | 5 keys | `ICQ.exe`, `ActiveListManager.exe`, `ActiveListServer.exe`, `ICQPatchManager.exe`, `NetDetectEdit.exe` |
+| `HKLM\…\CurrentVersion\Uninstall\ICQ` | 1 key | uninstall entry |
+| `HKLM\…\Internet Explorer\Extensions\{6224f700-…}` | 1 key | IE toolbar button |
+| `HKLM\…\CurrentVersion\Shell Extensions\Approved` | values | ICQ's shell extension |
+| `HKCU\Software\Mirabilis\ICQ\…` | **~27 keys** | `DefaultPrefs` (218 values), `Agent`, `AddressBooks` |
+| `HKCU\…\CurrentVersion\Run` | 1 value | `"Mirabilis ICQ"` — launch on startup |
 
-The clone **cold-boots** (no `golden.axp` in the rig) so its `mac=` is honoured —
-a restore would bring back the live MAC and put a duplicate on the bridge.
+**Deliberately NOT transplanted**, though the installer writes them: the bundled
+`HKCU\Software\America Online\AOD` tree (an AOL promo the exhibit does not want),
+the Outlook add-in registration, and the pure session noise a key-level diff
+picks up — `TypedURLs`, `RunMRU`, `UserAssist`, Explorer stream/cache state,
+`Cryptography\RNG` seed, `Syncmgr`, `WindowsUpdate`. A value-level diff of two
+boots of the *same* machine surfaces all of that; none of it is ICQ's.
 
-Containment was re-proved from inside the clone, the same three ways as the web
-plane:
+The program tree itself is entirely self-contained: **275 files / 16 MB, all
+under `C:\Program Files (x86)\ICQ`, with nothing under `WINNT`.** Only the
+desktop and Start-menu `.lnk` shortcuts live outside it.
 
-| From the guest to… | Result | Lock |
+### 4. Land it on the Alpha
+
+The Alpha's disk is a **plain raw image** (`assets/w2kalpha/nt.img`, NTFS in
+partition 1 at byte offset 16384), so the program tree goes in with a loopback
+mount and `cp -a` — no in-guest transfer, no installer, no unpacking:
+
+```bash
+mount -t ntfs-3g -o rw,offset=16384 <rig>/img/nt.img /mnt
+cp -a payload/ICQ "/mnt/Program Files (x86)/ICQ"
+```
+
+The **registry cannot be landed the same way** — see the first trap below. The
+`.reg` files are staged as ordinary files and imported *by Windows itself*.
+
+## Four traps, each of which cost a boot
+
+**1. Do NOT write the registry offline with `hivex`.** Merging 1054 keys into the
+`SOFTWARE` hive with `hivexregedit --merge` produced a hive Windows 2000 refuses
+to load: the guest bugchecks
+
+```
+STOP: c0000218 {Registry File Failure}
+The registry cannot load the hive (file): \SystemRoot\System32\Config\SOFTWARE
+```
+
+A *single-value* offline edit is fine (the `ProgramFilesDir` change above boots
+without complaint) — it is growth at this scale that NT 5.0 rejects. Stage the
+`.reg` file offline and let in-guest `regedit` write the hive.
+
+**2. `regedit` does nothing over the telnet exec channel.** `labctl exec` logs in
+as a *network* logon, which has no window station; `regedit.exe` is a GUI binary,
+so `regedit /s file.reg` returns **exit code 0 and silently imports nothing**
+(and `regedit /e` writes no file — which is the cheap way to detect it). The
+import must run in the **interactive auto-logon session**.
+
+**3. Drive the interactive session from the StartUp folder, not the Run box.**
+Typing into Start▸Run over the ctlsock is unreliable here: the Run combo's
+autocomplete/MRU dropdown swallows keystrokes, so `icqimp.bat` arrives as `icq`
+and the wrong thing executes. `ctltest.py` also cannot type a backslash, so a
+full path cannot be typed at all. The reliable mechanism is a `.bat` dropped
+offline into
+
+```
+C:\Documents and Settings\Kernel Hive\Start Menu\Programs\Startup\
+```
+
+which runs automatically, in the right session, as the right user, on next boot.
+Have it write a marker file and export a few keys back out so the result is
+checkable over telnet afterwards.
+
+**4. The station's interactive user is `Kernel Hive`, not `Administrator`.**
+`HKCU` state and the desktop / Start-menu shortcuts must land in that profile
+(`Documents and Settings\Kernel Hive\`), while the telnet exec channel logs in as
+`Administrator` — the two sessions have different `HKCU`. `Kernel Hive` *is* in
+`Administrators`, so it can write `HKLM`. The transplanted values happen to carry
+**no profile paths at all** (verified: zero values mention `Administrator` or
+`Documents and Settings`), so the HKCU set is profile-independent and moves
+across users unchanged.
+
+**Bonus trap, ICQ's own:** the autostart value the installer writes is
+**unquoted** —
+
+```
+"Mirabilis ICQ" = C:\Program Files (x86)\ICQ\icq.exe -minimize
+```
+
+With two spaces in the path, Windows resolves that to the **`C:\Program Files`
+folder** and opens an Explorer window at every logon instead of starting ICQ.
+Quote it:
+
+```
+"Mirabilis ICQ" = "C:\Program Files (x86)\ICQ\icq.exe" -minimize
+```
+
+## Where ICQ 2001b keeps account state (it is NOT the registry)
+
+After UIN `50010` signs in, `HKCU\Software\Mirabilis\ICQ` holds only install-level
+preferences plus an `Owners\50010` marker. The per-account state is **files,
+inside the program directory**:
+
+| Path (under `C:\Program Files (x86)\ICQ\`) | What |
+|---|---|
+| `2001a\50010.dat` / `.idx` | the account database — prefs, the saved password, **and the connection settings** |
+| `2001a\50010tmp.dat` / `.idx` | its working copy |
+| `CL\50010.fb` | the SSI / feedbag contact-list cache |
+| `UIN\50010.uin` | the registered-UIN marker (plain INI: UIN, nickname) |
+| `sec\sec.50010.ini` | privacy / security settings |
+| `DataFiles\50010`, `Plugins\Info\Info50010.*`, `Plugins\ExtContacts\50010.dat` | per-account plugin state |
+
+`2001a\50010.dat` is a **named-record store** — `strings` shows the field names
+(`HostName`, `PortNumber`, `ConnectionType`, `ResolveIP`, `ContactListOnServer`,
+…). Records are written lazily, so a setting that has never been touched has no
+record at all, and toggling it makes the name appear. That is how the keep-alive
+record was located (below).
+
+Two connection values ALSO live in the registry, under
+`HKCU\Software\Mirabilis\ICQ\DefaultPrefs`:
+
+```
+"Default Server Host" = "10.99.0.2"
+"Default Server Port" = dword:00001446      (= 5190)
+```
+
+**These are honoured.** A single-value offline `hivex` edit of the Kernel Hive
+`NTUSER.DAT` set the host, and the client's Preferences ▸ Connections ▸ Server
+tab then showed `10.99.0.2` — the registry value *is* the client's server host.
+
+## The account is PORTABLE between machines — configure it where the mouse works
+
+**This is the technique that finished the station.** ICQ 2001b's account is
+entirely the files above, so it can be carried between an Alpha guest and an x86
+guest **in both directions**, as long as the install path is identical
+(`C:\Program Files (x86)\ICQ` on both — which is exactly what §2 arranged).
+
+Proven both ways:
+
+- **Alpha → x86.** The `50010` account files plus the `HKCU\Software\Mirabilis`
+  subtree were dropped into a throwaway x86 Windows 2000 clone that already had
+  ICQ 2001b installed at the same path. ICQ started **as `50010`, with no
+  registration wizard**, and its Preferences window was titled *"Owner
+  Preferences For: w2kalpha"*.
+- **x86 → Alpha.** The settings were made there (below), ICQ was closed with
+  **Main ▸ Shut Down**, Windows was shut down cleanly, and the changed files were
+  copied back onto the Alpha's disk. The Alpha then signed in with them.
+
+The x86 clone is the **config bed**: it runs under KVM with `-device usb-tablet`,
+so absolute pointing works perfectly and the ICQ UI can simply be clicked. Use
+QMP `input-send-event` with `abs` axes (0..32767 across the screen) — `qmp-type.py
+--mouse` is a *relative* HMP `mouse_move` and a tablet guest ignores it, so the
+cursor never moves and every click lands on whatever was already under it.
+
+### `Keep connection alive` = the `UseFirewallSessionTimeout` record
+
+It has **no registry value**; it lives in `2001a\<UIN>.dat` and can only be set
+through Preferences ▸ Connections ▸ Server. It ships **OFF** and is load-bearing:
+without it a post-wake ICQ 2001b sits on a zombie socket instead of reconnecting.
+
+Located by measurement — the account files were copied out before and after
+ticking the box on the config bed:
+
+| File | Result |
+|---|---|
+| `2001a\50010.dat` / `.idx` | **CHANGED** (same size — in-place record edits) |
+| `CL\50010.fb`, `UIN\50010.uin`, `sec\sec.50010.ini` | unchanged, byte-identical |
+
+and the new strings that appeared in `50010.dat` were
+`UseFirewallSessionTimeout`, `LastSelectedPreferencesTabClsId`, `NoviceUserTime`,
+`Stats_ICQMenuClicks`, `UserCategory` — of which **`UseFirewallSessionTimeout` is
+the keep-alive flag** (it sits under the tab's Proxy/Firewall group). So the
+whole setting travels in ONE file, and `strings … | grep -c
+UseFirewallSessionTimeout` is a cheap offline check that a disk carries it.
+
+## Driving the client on the Alpha
+
+**The pointer works.** An earlier note here said it did not; that was a
+tooling artefact, not a station defect — see
+[the pointer section](#the-ctlsock-pointer-trap-hold-the-connection-open) below.
+Keyboard notes that remain useful:
+
+- **`Alt`+`Tab` first.** A window ICQ pops up does not necessarily have focus; its
+  title bar renders grey. Tab/Space then go to the *taskbar* instead of the
+  dialog. `Alt`+`Tab` turns the title bar blue, and only then does Tab reach the
+  dialog's controls. ICQ 2001b's **main panel keeps itself out of the taskbar**,
+  so once focus leaves it, `Alt`+`Tab` cannot get back to it — use the pointer.
+- **ICQ's skinned buttons show focus** once the window is active — `EXISTING
+  USER` picks up a teal border — so a screendump after each `Tab` tells you where
+  you are. From the wizard's first screen it is `Tab` ×2 → `EXISTING USER`.
+- **The one-time *IMPORTANT NOTICE*** blocks every cold boot until its *"Don't show
+  this message again"* box is ticked, and that box sits at the END of a tab order that
+  is not the visual order: `Quit Session` → `I Agree, Start ICQ` → the notice text →
+  the checkbox. From the dialog's initial focus, **`Shift`+`Tab` lands on the
+  checkbox**; `Space` ticks it, then `Tab` ×2 returns to `I Agree`. It is already
+  ticked in the golden.
+- **The shm framebuffer does not capture the mouse cursor** on a Windows guest
+  drawing a software cursor, so a screendump cannot show you where the pointer is.
+  To read the real position back, **press the left button on the desktop and
+  drag**: Explorer paints a rubber-band rectangle whose two corners are the true
+  press point and the true current point.
+- Budget minutes, not seconds, per step: the very first launch of `Icq.exe` took
+  **~10 minutes** of FX!32 translation before the window painted. It is much
+  quicker once FX!32 has cached the translation — and that cache is on the disk,
+  so it survives into the golden.
+
+### The ctlsock pointer trap: HOLD THE CONNECTION OPEN
+
+`MOVEA` on this station is **pixel-exact**, but only from a client that keeps its
+connection open. Measured on the live station at 1280×1024, rubber-band readback:
+
+| Client style | `MOVEA 200 150` then drag to `MOVEA 400 300` | Result |
 |---|---|---|
-| gateway CT `10.99.0.2` | **Reply**, 15–23 ms | intra-bridge L2 (the point) |
-| labhost bridge `10.99.0.1` | **100% loss** | the `W2KAICQRN-IN` guard chain |
-| internet `1.1.1.1` | **Destination host unreachable** | no default route (Lock 1) |
+| **one connection, held open, 8 s settle first** | band drawn from **(200,150) to (400,300)** | **exact** |
+| one-shot per verb (`labctl mctl` ×3) | **no band at all**; cursor parked at **(0,0)** | every move silently dropped |
 
-`route print` shows no `0.0.0.0` entry — the DHCP reservation withholds option 3,
-so the addressing itself keeps the no-WAN posture.
+The cause is in `ctlsock.h`: **every new connection schedules a paced corner-home**
+(`m_home_polls = max(w,h)/96 + 4` = 17 poll steps at the gui thread's ~50 Hz, so
+roughly a third of a second), and `move_abs` **returns early — dropping the
+request — while that home is still pacing, yet `handle_line` still acks `OK`.**
+A tool that connects, sends one `MOVEA`, and disconnects therefore has its move
+discarded and leaves the cursor wherever the home slam put it. Results look
+random because they depend on where the cursor started and how far the home got.
+
+Two consequences worth keeping straight:
+
+- **Visitors are not affected.** The streamhost daemon holds ONE long-lived
+  mamesock connection and *resends the current target continuously*, so the first
+  post-home move lands and tracking is correct from then on.
+- **`labctl mctl` is unusable for pointer work on this station** — one process per
+  verb is one connection per verb. Use a held-open client (this stream's
+  `ptr.py` pattern: connect, sleep, then send).
+
+The earlier "the believed position does not track the real one" diagnosis, and the
+`MOVEA 1126 341` → `765,350` / `258,262` measurements behind it, are explained by
+this drop-during-home race; they were taken with one-shot connections. Pointer
+**acceleration** was already correctly ruled out (the guest is 1:1:
+`MouseSpeed=0`, thresholds 0, sensitivity 10).
+
+**Separately, and still open:** this station's es40 binary
+(`assets/w2kalpha/es40`, built 2026-08-16 20:48) **predates fork commit
+`936760c`** ("ctlsock: per-guest pointer gain"), which its sibling es40 station
+`tru64` runs. `strings assets/w2kalpha/es40 | grep -c ES40_POINTER_GAIN` is **0**;
+for `assets/tru64/es40` it is **2**. That commit also fixed PS/2 `0xe6` (Set
+Scaling 1:1) recording scaling as 2, and its message names "the same doubling
+w2kalpha's pointer showed". The measurement above says the *current* binary
+nonetheless lands 1:1 on this guest, so there is nothing to fix urgently — but the
+two es40 stations are on different builds, which is exactly the kind of coupling
+[`the uncoupling rule`](../../GUEST-TIERS.md) exists to remove. Rebuilding
+w2kalpha's es40 **orphans `golden.axp`** and needs a cold re-bake, so it is its
+own task.
 
 ## Persona
 
@@ -142,61 +336,120 @@ so the addressing itself keeps the no-WAN posture.
 |---|---|
 | UIN | **`50010`** (NT 5.0 on Alpha), nickname `w2kalpha` |
 | Password | gitignored `registry/local.env` `RETRONET_ICQ_W2KALPHA_PASS` (**6–8 chars** — the server enforces the ICQ-era limit) |
-| Created with | `rn-tool.py user-set 50010 <pass>`, opened with `rn-tool.py user-open 50010` |
-| Server | `10.99.0.2` port `5190` |
+| Server | **literal `10.99.0.2` port `5190`** — verified, no DNS in the path |
 | Roster | **SSI / server-stored** — no client-UI seeding, no golden recapture per roster change |
 
 `rn-tool.py login 10.99.0.2 5190 50010 <pass>` completes the real OSCAR BUCP
-handshake and reports the BOS address, which is the check that the account works
-before any client is involved.
+handshake, which is the check that the account works before any client is
+involved. **HiveBot only greets UINs listed in `RN_BOT_PERSONAS`** in
+`/etc/retronet/bot.env`; `50010:w2kalpha` is present in the file, and the bot must
+be **restarted** to pick it up (check the running process, not the file:
+`tr '\0' '\n' < /proc/$(systemctl show -p MainPID --value retronet-bot)/environ | grep PERSONAS`).
 
-**HiveBot only greets UINs it was told about.** The greeter watches
-`RN_BOT_PERSONAS` in `/etc/retronet/bot.env` on labhost; a persona missing from
-that list signs in perfectly and is simply never greeted, with nothing logging an
-error. `50010:w2kalpha` has to be added there (and a `w2kalpha` row in
-`GREETINGS` in `scripts/retronet/bot/bot.py` for a station-tuned opener — absent
-that, the `_default` opener is used).
+## Acceptance — measured 2026-08-24
 
-## What is done, and what is not
+**The literal server host is VERIFIED, not inferred.** A `tcpdump` on the host end
+of the station's veth (`w2kalpha-h`) across a full cold boot and sign-in shows the
+guest send **`10.99.0.17.1029 > 10.99.0.2.5190 [S]`** with **no `login.icq.com`
+DNS query anywhere in the capture** — the only DNS at all was `web.icq.com` (the
+client's banner/welcome content). So this station does **not** ride the DNS hijack
+that first-login used to depend on; it dials the literal address from
+`Default Server Host`.
 
-**Done and durable:**
+**The `labctl reset` acceptance run** (the fleet's rule: a reset seconds after
+sign-in proves nothing, because the server session is still valid — idle out
+first):
 
-- FX!32 / Wx86 inventoried and **proven to run the stock x86 ICQ 2001b installer
-  and its GUI wizard** on the framebuffer (the headline above).
-- The stale interactive-session-x86 claim in `docs/guests/w2kalpha.md` corrected.
-- Persona **UIN `50010`** created, opened (authorization off, or presence never
-  reaches the greeter), nicknamed `w2kalpha`; a real OSCAR BUCP login verified
-  with `rn-tool.py login`.
-- `50010:w2kalpha` appended to `RN_BOT_PERSONAS` in `/etc/retronet/bot.env`
-  (backup alongside it), so the greeter will see this persona when it signs in.
-- The bring-up rig, containment re-proof, and the delivery/rate findings above.
+| Step | Evidence |
+|---|---|
+| guest idle-paused (`SH_IDLE_PAUSE_SECS=60`), then waited | `50010` **disappeared** from the gateway session list at 00:58:23Z — the server dropped the frozen client |
+| `labctl reset w2kalpha` at 00:59:18Z | session list held only `10000` immediately before |
+| reconnect | SYN at 00:59:33Z — **15 s** after the reset |
+| **fresh session** | new source ports **1031** (auth) and **1032** (BOS); the pre-reset pair was 1029/1030. `online_seconds` **16** |
+| **silent** | framebuffer at t+30 s: pristine desktop, ICQ panel titled `50010` reading **Online**, **no password prompt, no dialog** |
+| still literal-host | zero DNS packets in the reset capture |
 
-**Not done — the station is NOT onboarded.** Its roster row stays
-`onboarded: false`. The blocker is wall clock, not a technical wall: the
-installer had not finished unpacking after 7.5 h and projects to days. The next
-session should **not** simply re-run the installer and wait; pick one of:
+**Also measured:**
 
-1. **Transplant the installed payload** from an x86 Windows sibling (the
-   Winamp 2.5e pattern), then do first-run config natively here — FX!32 is
-   already proven to execute the client.
-2. Let the existing rig's installer run to completion out-of-band and resume
-   from step 3 below (the rig is isolated and harmless while it runs).
+| | |
+|---|---|
+| Telnet exec channel | works — `labctl exec w2kalpha "ver"` returns `Microsoft Windows 2000 [Version 5.00.2128]`; warm round-trips **9.7 / 11.3 / 14.6 s** (that is the telnet re-login cost on an emulated Alpha, not a regression). A **paused** guest cannot answer at all, so wake it (any reset) before an exec |
+| Desktop responsiveness | **no regression, measured**: es40 CPU over a 40 s window on the idle desktop is **111.7 % of one core with ICQ online** and **111.7 % on the pre-ICQ golden** — identical. es40 simply runs hot whatever the guest is doing, which is why idle auto-pause exists |
+| Registration wizard | does not appear — `Owners\50010` is in the golden's `NTUSER.DAT` |
 
-Remaining steps once ICQ is in place:
+**NOT yet proven, and why** — both are blocked on wave-end steps this stream is
+not allowed to run:
 
-- ICQ 2001b first-run: **Existing User** ▸ UIN `50010` ▸ password, **Save
-  password** ON. (A *fresh* install has no migrated-password prompt; that ritual
-  in the other station docs is an artefact of the 2000b→2001b upgrade.)
-- Preferences ▸ Connections ▸ **Server**: Host `10.99.0.2`, Port `5190`,
-  **Keep connection alive ON** (load-bearing for the silent post-wake reconnect),
-  Launch ICQ on startup ON.
-- Clean **Shut Down** of ICQ to flush the password to disk, relaunch, confirm a
-  silent connect.
-- Re-bake the checkpoint with the **live** MAC and stage it into the live asset
-  tree; re-verify instant restore, exec channel and desktop responsiveness.
-- Acceptance must exercise a **genuinely fresh** OSCAR session: idle until the
-  UIN disappears from the gateway's session list, *then* `labctl reset` — a reset
-  seconds after sign-on reconnects nothing, because the server session is still
-  valid. Budget extra time for the Alpha.
-- Flip this station's row in `scripts/retronet/icq/roster.json` to
-  `onboarded: true` with `client: icq2001b` only after that passes.
+- **SSI roster by name.** `rn-tool.py buddies 50010` returns **empty**: the
+  server-side cross-list is seeded once at wave end by
+  `seed_contacts.py ssi --apply`. The client's empty contact list is therefore
+  consistent with an empty *server* roster, not with a sync failure.
+- **HiveBot greeting.** The running bot's environment does not contain
+  `50010:w2kalpha` (the file does); it needs `systemctl restart retronet-bot` on
+  labhost. Note `51000` (winxp, same wave) has exactly one buddy — HiveBot —
+  which suggests the bot adds that pairing when it first greets, so the restart
+  likely clears both items at once.
+
+## Golden lineage & rollback (FULL paths)
+
+- **LIVE golden pair** (2026-08-24): `assets/w2kalpha/nt.img` +
+  `assets/w2kalpha/golden.axp` — Windows 2000 desktop at 1280×1024 with **ICQ
+  2001b connected as `50010`**, keep-alive ON, server `10.99.0.2:5190`.
+- **Rollback to the pre-ICQ station**, byte-copy, SHA256-verified **with es40
+  stopped**: `assets/w2kalpha/golden-backup-preicq-20260824/` (`nt.img`,
+  `golden.axp`, `es40.cfg`, `SHA256SUMS`). Restoring is two `cp`s over the live
+  pair and a `systemctl restart streamhost@w2kalpha`.
+- Also kept: `nt.img.preicq-20260824` (the disk as it was before the ICQ tree was
+  laid in) and `nt.img.bak-icqland-20260824` (the landed-but-not-yet-baked disk).
+
+### How this golden was baked
+
+The documented recipe ([`docs/guests/w2kalpha.md`](../../guests/w2kalpha.md)) is
+the serial menu's option 5, *save state and exit* — atomic by construction. **It
+is not reachable on a running station**: `pumps.py` owns the first connection to
+es40's serial listener and only ever reads, and es40 keeps writing to that first
+socket, so a second client to port 21964 gets no menu output and killing the pump
+does not hand the port over. Baking a *live* station therefore used the ctlsock
+instead, with the pairing enforced by hand:
+
+1. `SAVEST <work>/golden-new.axp` over `ctl.sock` (hold the connection).
+2. **`SIGSTOP` the es40 pid the instant the ack returns** — the ack means
+   `SaveState` returned, and the freeze makes further guest writes impossible.
+   (`SIGSTOP` is safe on this station since fork commit `fc82f05`.)
+3. Copy `work/img/nt.img` while it is frozen. That disk + that `.axp` are the
+   coherent pair.
+4. `SIGCONT`, `systemctl stop`, `mv` the pair into the asset tree, restart, and
+   **verify the restore on the framebuffer** — which is what caught nothing here,
+   but is the only proof the pair is coherent (an incoherent pair bugchecks
+   STOP 0x7B).
+
+**Cold bring-up gotcha: turn idle auto-pause OFF first.** A cold boot with no
+visitor gets `SIGSTOP`ped after 60 s (`[idle] no sessions for 60s -> guest
+paused`) and never finishes — the first attempt sat at *"Initializing LSI STORAGE
+#0"* for five minutes, absorbing a 137 s host freeze. Set
+`SH_IDLE_PAUSE_SECS=0` in the station's `station.env`, restart, do the bring-up,
+then put `60` back (and diff against the `.bak` to prove you did).
+
+## Operating it
+
+```bash
+ssh lab 'labctl exec w2kalpha "ver"'                    # telnet exec over the bridge
+ssh lab 'labctl exec w2kalpha "ipconfig"'               # DHCP 10.99.0.17, DNS 10.99.0.2, NO default gateway
+ssh lab 'bash /data/vms/streamhost/stations/w2kalpha/rn-tapnet.sh show'
+ssh lab 'labctl reset w2kalpha'                         # restore golden -> ICQ self-reconnects in ~15 s
+# is the persona online? (server-side)
+ssh lab 'pct exec 951 -- python3 -c "import urllib.request,json;print([s[\"screen_name\"] for s in json.loads(urllib.request.urlopen(\"http://127.0.0.1:8080/session\").read())[\"sessions\"]])"'
+# the server-side SSI roster 2001b syncs on login
+ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 50010'
+# does this disk carry the keep-alive flag? (offline, no boot needed)
+ssh lab 'strings "/mnt/Program Files (x86)/ICQ/2001a/50010.dat" | grep -c UseFirewallSessionTimeout'
+```
+
+**The clean-shutdown rule.** ICQ 2001b writes
+`HKCU\Software\Mirabilis\ICQ\Owners\<UIN>` — the marker that says "this machine
+has an account" — only when it **exits cleanly**. Kill the emulator with the
+client still running and that key is missing on the next boot, so ICQ starts into
+the **registration wizard again** as if it had never been configured, even though
+all its `50010.*` data files are still on disk. Always let ICQ exit through
+**Main ▸ Shut Down** (and Windows through a real shutdown) before stopping the
+emulator, and only then bake.

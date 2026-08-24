@@ -133,7 +133,7 @@
         "--env-append-file",
         "$T/macos753/station.env.fixture"
       ],
-      "deviceSetId": "macos753-q800-m68040-1152x870x8",
+      "deviceSetId": "macos753-q800-m68040-1152x870x8-dp83932",
       "launcher": "streamhost/stations/macos753/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/macos753/station.env.fixture",
       "binary": "/opt/qemu-m68k/bin/qemu-system-m68k",
@@ -155,12 +155,13 @@
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
         "-device scsi-hd,scsi-id=6,drive=hd0",
         "-drive file=$D/macos753-golden.qcow2,format=qcow2,cache=writeback,aio=threads,if=none,id=hd0",
+        "-nic tap,ifname=macosrn0,script=no,downscript=no,model=dp83932,mac=$RN_MACOS753_MAC",
         "-loadvm golden -S (when the checkpoint exists)",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher equals the live launcher; the checkpoint was baked with this exact guest-visible device set on the standalone /opt/qemu-m68k build"
+        "reason": "tracked verbatim launcher equals the live launcher; the golden was COLD re-baked 2026-08-23 with this exact guest-visible device set (now including the q800's built-in dp83932 SONIC) on the standalone /opt/qemu-m68k build"
       }
     }
   },
@@ -215,7 +216,18 @@
   },
   "ui": "desktop",
   "network": {
-    "status": "none",
-    "note": "no network device, deliberately (docs/guests/macos753.md)"
+    "status": "host-only",
+    "note": "retronet web plane: the q800's BUILT-IN dp83932 (SONIC) is a REAL bridged NIC on vmbr-rn via the persistent tap macosrn0 (streamhost/stations/macos753/rn-tapnet.sh, called `up` from the launcher on every start), MAC RN_MACOS753_MAC on the Apple OUI 08:00:07 which this guest forces. It is the ONLY NIC model -M q800 offers, and Mac OS 7.5.3 drives it with nothing installed - MacTCP lists Ethernet on the first cold boot. Addressed 10.99.0.23 with DNS 10.99.0.2 and Gateway Address 0.0.0.0, so NO default route - STATIC, not DHCP, because MacTCP 2.0.6 has no DHCP client at all (its choices are Manually / Server (BOOTP-RARP) / Dynamically), so the reservation exists only to keep the address unique. The config lives in the MacTCP Prep file in the System Folder, on the disk, and needs a guest restart to take effect. Behind the fail-closed MACOS753RN-IN guard chain it reaches ONLY the gateway CT 10.99.0.2, where Netscape Navigator 3.04 reads the corpus on :80 seamlessly (wildcard DNS, no proxy configured); never labhost, the LAN, the gallery or the internet. MacTCP is DORMANT until an app opens it, so the guest does not answer ping at the checkpoint - silence on the wire is the resting state, not a fault. Added 2026-08-23; the station previously had no NIC at all, so the golden was COLD re-baked (docs/lab/retronet/WEB-STATION-macos753.md)"
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.23",
+    "addressing": "static",
+    "link": "tap macosrn0 on vmbr-rn",
+    "guard": "MACOS753RN-IN",
+    "joined": "2026-08-23",
+    "doc": "docs/lab/retronet/WEB-STATION-macos753.md"
   }
 }

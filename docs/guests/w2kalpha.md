@@ -61,6 +61,12 @@ off `10.99.0.0/24`. The unique `mac=` it now carries lives in the es40 savestate
 a `mac=` change needs a **cold-boot re-bake**. See
 [`docs/lab/retronet/w2kalpha-retronet.md`](../lab/retronet/w2kalpha-retronet.md).
 
+Since 2026-08-24 the golden also carries the fleet's **x86 ICQ 2001b**, run on
+Alpha by FX!32/Wx86 and signed in as UIN `50010` — transplanted rather than
+installed (the installer will not finish here), with the account configured on
+an x86 config bed and its files carried across. See
+[`docs/lab/retronet/ICQ-STATION-w2kalpha.md`](../lab/retronet/ICQ-STATION-w2kalpha.md).
+
 Changing the device set does not invalidate the seed (it is a plain disk
 image, not a savestate) but DOES orphan `golden.axp` — **re-bake the
 checkpoint after any device-set change** ([Checkpoint restore](#checkpoint-restore)).
@@ -145,11 +151,39 @@ pump can never hold the ports.
   `desk.cpl` control-panel drive over the socket, 2026-08-11). Key fields are
   Bochs-style names (`ctlsock.h` `field_to_bxkey`): `Left Win`, `Left Ctrl`,
   `Tab`, `Enter`, `Space`, `Cursor *`, `F1`..`F12`, …
-- **Pointer: open-loop absolute, NOT yet pixel-exact** (`reset.mouse`
-  UNVERIFIED). The guest still runs default Windows pointer acceleration, so
-  injected motion overshoots (observed: MOVEA 522,141 pinned the cursor to the
-  top-left corner). The seed-polish pass (acceleration → None) is what makes
-  MOVEA land 1:1; keyboard is the reliable drive channel until then.
+- **Pointer: open-loop absolute, and pixel-exact — but ONLY from a client that
+  holds its ctlsock connection open.** Two earlier notes here were wrong. The
+  first blamed Windows pointer acceleration; it is not that (the guest is already
+  1:1 — `HKCU\Control Panel\Mouse` reads `MouseSpeed=0`, `MouseThreshold1=0`,
+  `MouseThreshold2=0`, `MouseSensitivity=10`). The second concluded "the believed
+  position does not track the real one"; that is not it either. **The cause is a
+  race in `ctlsock.h`**: every new connection schedules a paced corner-home
+  (`m_home_polls = max(w,h)/96 + 4` = 17 gui-thread polls, ~⅓ s at 50 Hz), and
+  `move_abs` **returns early — silently dropping the request — while that home is
+  pacing, while `handle_line` still acks `OK`**. A tool that connects, sends one
+  `MOVEA` and disconnects loses the move and leaves the cursor where the home slam
+  put it, so results look random. Measured 2026-08-24 on the live station at
+  1280×1024, using a left-button drag as readback (Explorer's rubber band shows
+  both true endpoints, since the shm framebuffer does not capture the software
+  cursor):
+
+  | Client style | `MOVEA 200 150` → drag → `MOVEA 400 300` |
+  |---|---|
+  | one connection held open, 8 s settle first | band drawn **(200,150)→(400,300)** — exact |
+  | one-shot per verb (`labctl mctl` ×3) | **no band**; cursor parked at `(0,0)` |
+
+  So **`labctl mctl` cannot do pointer work on this station** (one process = one
+  connection = one dropped move); use a held-open client. **Visitors are
+  unaffected** — the streamhost daemon keeps one long-lived mamesock connection
+  and resends the current target continuously, so the first post-home move lands.
+- **This station's es40 predates the pointer-gain fix its sibling has.**
+  `assets/w2kalpha/es40` (built 2026-08-16 20:48) is older than fork commit
+  `936760c` ("ctlsock: per-guest pointer gain", which also fixed PS/2 `0xe6` Set
+  Scaling 1:1 being recorded as 2:1): `strings … | grep -c ES40_POINTER_GAIN` is
+  **0** here and **2** for `assets/tru64/es40`. The measurement above shows the
+  deployed binary still lands 1:1 on this guest, so nothing is urgent — but the
+  two es40 stations run different builds. Rebuilding **orphans `golden.axp`** and
+  needs a cold re-bake, so treat it as its own task.
 - Client for hand-driving: `/data/vms/sandbox/ALPHA-nt/uibench/ctltest.py
   <ctl.sock> <script>` (`K`/`TYPE`/`MOVEA`/`DOWN1`/`SLEEP` verbs);
   screenshots via `uibench/shmread.py <fb.shm> <out.png>`. **ctltest only types
