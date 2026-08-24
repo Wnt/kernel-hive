@@ -290,6 +290,13 @@ restarted to pick it up.
 | Registration reports **authorization off** | wizard's Privacy page: *"All users may add me to their Contact List"* |
 | Server port already correct | `Default Server Port` = `dword:00001446` = **5190** |
 
+**Set but UNVERIFIED:** `Default Server Host` was changed from `login.icq.com` to the
+literal **`10.99.0.2`** by a single-value offline edit of the Kernel Hive `NTUSER.DAT`
+(the guest boots fine afterwards, so the edit is not what bugchecks NT). **No sign-in
+has yet been observed through the literal host** — both successful logins so far went
+via the DNS hijack of `login.icq.com`. Whether ICQ actually honours this `DefaultPrefs`
+value once an owner exists, rather than a copy inside the account DB, is untested.
+
 **Still owed before this station can be called onboarded:**
 
 1. **`Keep connection alive` = ON.** It is not a registry value — it lives in the
