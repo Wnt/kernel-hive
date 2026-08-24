@@ -8,7 +8,15 @@ ledger entry this split satisfies (size-exclusions.json, scripts/labctl).
 
 import json, os, re, signal, socket, subprocess, sys, time
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
+# guest_wake lives in scripts/lib/ (it is shared with qmp-type.py and any other
+# driver, not a labctl-private module), and labctl runs from TWO layouts: the
+# repo, where that is ../lib, and the box, where box-sync installs it flat
+# alongside this file in /usr/local/lib/labctl/. Search both — an installed
+# labctl that cannot import it is a labctl that cannot run at all.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+for _cand in (_HERE, os.path.join(os.path.dirname(_HERE), "lib")):
+    if _cand not in sys.path:
+        sys.path.append(_cand)
 
 from guest_wake import GuestPaused, WakeLease, hold_lease  # noqa: E402,F401
 

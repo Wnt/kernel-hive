@@ -149,6 +149,13 @@ box_sync_load_pairs() {
     box_sync_add_pair "labctl.d/${rel#scripts/labctl.d/}" "$rel" \
       "/usr/local/lib/labctl/${rel#scripts/labctl.d/}" exact repo
   done < <(git -C "$REPO" ls-files 'scripts/labctl.d/*.py' | sort)
+  # guest_wake.py is shared (labctl AND scripts/dev/qmp-type.py AND any driver
+  # of your own), so it lives in scripts/lib/ rather than labctl.d/ — which puts
+  # it outside the tree loop above. It installs FLAT beside common.py, and
+  # common.py searches its own directory for exactly this reason. Without this
+  # row an installed labctl cannot import it and every verb dies on startup.
+  box_sync_add_pair guest_wake scripts/lib/guest_wake.py \
+    /usr/local/lib/labctl/guest_wake.py exact repo
   box_sync_add_pair clone-guard scripts/lib/clone-guard.sh /usr/local/bin/clone-guard exact repo
   box_sync_add_pair kh-claim scripts/lib/kh-claim.sh /usr/local/bin/kh-claim exact repo
   box_sync_add_pair kh-session scripts/lib/kh-session.sh /usr/local/lib/kh-session.sh exact repo
