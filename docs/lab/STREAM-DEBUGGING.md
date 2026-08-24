@@ -209,8 +209,34 @@ which the operator sees as a freeze-then-recover.
 
 ### The tab came back and the picture stayed black
 The complaint is "I resume the session, a Reconnecting screen shows, it goes
-away, and the video area stays black". **Recognise it from one grep** — find the
-telemetry silence gap, then look at what the client did on the far side of it:
+away, and the video area stays black".
+
+**Ask first whether the `<video>` element is PAUSED.** Not whether the transport
+is up, not what the retry loop is doing — those are the questions that cost a
+day. A paused element decodes nothing, so a perfectly healthy stream produces a
+black rectangle, `fps0`, `dec0.0` and `rx0.0M`, and the client's own keyframe
+watchdog then blames the transport for a fault that is entirely on this side of
+the wire. The client-debug plane answers it directly, on the visitor's real tab:
+
+```bash
+scripts/serve/clientcmd.sh sessions
+scripts/serve/clientcmd.sh eval <session> \
+  'const v=document.querySelector("video");JSON.stringify({vis:document.visibilityState,
+   paused:v.paused,rs:v.readyState,w:v.videoWidth,ct:v.currentTime,err:v.error})'
+```
+
+**`paused: true` on a `visible` page, `readyState 4`, a correct `videoWidth`, no
+`error`, and `fps0` is a PAUSED SINK, not a broken stream.** That exact reading
+came off the operator's own tab on 2026-08-24 (rhapsody, Chrome 151 Android,
+installed PWA). A single `await v.play()` fixed it and the media clock jumped
+655 s straight to the live edge — the transport, decoder and encoder had been
+healthy the whole time.
+
+The rest of this section is the older, transport-side shapes. Rule out the
+paused sink before you read them.
+
+**Recognise the transport-side shapes from one grep** — find the telemetry
+silence gap, then look at what the client did on the far side of it:
 
 ```bash
 ssh lab "grep -c '\"tile\": \"\"' /data/vms/streamhost/serve/clientlog.jsonl"
@@ -227,20 +253,46 @@ outright in an installed PWA, so **nothing that normally notices a dead session
 runs while the tab is away**. Two shapes come out of that, and they need
 different fixes:
 
-| | **Mode A — no reconnect at all** | **Mode B — reconnect storm** |
-|---|---|---|
-| Signature | a burst of `T-/crf- -x-@-` banner-state `stats` lines inside ~1 s, then **nothing** | many `connect` lines, **no `wt-close` between them**, `tile` empty, a different codec each attempt |
-| Cause | the frozen 5 s stats timer flushing its backlog on wake; no code path drives a reconnect from the resume event | attempts never serialised — up to 12 WebTransports open at once; the retry timer closes whichever handle it last held |
-| Also emits | — | `connect failed: WebTransportError: close() is called while connecting` |
+| | **Mode A — no reconnect at all** | **Mode B — reconnect storm** | **Mode C — paused sink** |
+|---|---|---|---|
+| Signature | a burst of `T-/crf- -x-@-` banner-state `stats` lines inside ~1 s, then **nothing** | many `connect` lines, **no `wt-close` between them**, `tile` empty, a different codec each attempt | `connect-retry … why=no keyframe within budget` repeating on a transport that never failed; `sink-stalled` rows |
+| Cause | the frozen 5 s stats timer flushing its backlog on wake; no code path drives a reconnect from the resume event | attempts never serialised — up to 12 WebTransports open at once; the retry timer closes whichever handle it last held | Chrome-Android paused the `<video>` when the PWA was backgrounded and nothing resumed it on return |
+| Also emits | — | `connect failed: WebTransportError: close() is called while connecting` | `attempt=5/4`, `6/4`, `7/4` — a retry ladder chasing a fault that is not on the wire |
 
-The banner clears in both because the transport layer reports *something*; the
-canvas stays black because nothing is painting into it.
+The banner clears in all three because the transport layer reports *something*;
+the picture stays black because nothing is painting into it — in A and B because
+nothing is *arriving*, in C because nothing is being *consumed*. Those two want
+opposite responses, which is why the client now logs which one it is
+(`streamClient/videoResume.ts`): `sink-resumed` carries the live-edge jump,
+`sink-blocked` means autoplay policy refused and the visitor was shown a **Tap to
+resume** affordance, and `sink-stalled` means the keyframe watchdog declined to
+tear down a healthy transport because the sink was the thing that had stopped.
 
-Both are fixed client-side (see `useStreamhostSession.ts`):
+All three are fixed client-side. A and B in `useStreamhostSession.ts`:
 `visibilitychange`/`pageshow` drive an immediate reconnect after a short grace
 window instead of waiting on a watchdog; `startAttempt` tears down any attempt
 still in flight so exactly one exists; and `clearDebugTile` is guarded by an
-ownership token so a stale unmount cannot blank the tag.
+ownership token so a stale unmount cannot blank the tag. C in
+`StreamView/useStreamSession.ts`, which resumes the element on every way back to
+the foreground — `visibilitychange`, `pageshow`, the Page-Lifecycle `resume`
+event a frozen PWA thaws on, `focus`, and the element's own `pause` event — and
+resumes it **at the live edge**, so a returning visitor sees now, never eleven
+minutes of history.
+
+**Retry budgets are finite on both ladders** (`streamClient/retryBudget.ts`). A
+log line reading `attempt=5/4` was the old code: the budget was checked only
+before the first paint, so a station that had already painted retried forever,
+never terminated and never escalated. A cold connect now gets 4 attempts then
+falls back to the poster; a proven-live session gets 6 then shows a working
+**Reconnect** button. An attempt number above its own limit is a bug, not a
+reading.
+
+Reproduce and prove any of this in a real browser with
+`scripts/e2e/paused-sink-resume-probe.mjs` — it pauses the element while the
+page is hidden (where a pause is correct), returns to the foreground, and counts
+DISTINCT decoded frames. **Motion is the only proof**: `videoWidth`,
+`readyState` and a non-black percentage all pass on a paused element showing a
+stale frame.
 
 **A reconnect is judged on a different clock than a first connect.** A cold
 connect keeps the 12 s keyframe budget — an idle station legitimately takes a

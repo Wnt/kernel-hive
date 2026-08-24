@@ -24,6 +24,35 @@
 
 /** A clock this far behind the last seekable instant is history, not the exhibit. */
 export const LIVE_EDGE_MAX_LAG_S = 0.5;
+/**
+ * Cap on how long we wait for the resumed element to report its new clock.
+ *
+ * play() resolves when playback is ALLOWED, not when a frame has been
+ * presented, so reading currentTime straight after it returns the clock the
+ * element was paused at — the first version of this logged `advanced=0.00s` on
+ * every single resume, a true number that measured nothing. A fixed delay was
+ * no better (120 ms was still too early in the field). We wait for the element's
+ * own `timeupdate` instead, which is the event that means "the clock moved",
+ * and cap it so a sink that never ticks cannot hang the resume.
+ */
+const RESUME_SETTLE_CAP_MS = 1500;
+
+/** Resolve on the element's first `timeupdate`, or when the cap expires. */
+function awaitClockMoved(el: HTMLVideoElement): Promise<void> {
+  if (typeof el.addEventListener !== 'function') return Promise.resolve();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { el.removeEventListener('timeupdate', finish); } catch { /* noop */ }
+      resolve();
+    };
+    const timer = setTimeout(finish, RESUME_SETTLE_CAP_MS);
+    el.addEventListener('timeupdate', finish, { once: true });
+  });
+}
 
 /** What we can observe about the sink without touching it. */
 export interface VideoSinkProbe {
@@ -157,6 +186,7 @@ export async function resumeVideoElement(
 
   // Verify rather than trust. A MediaStream element lands on the live edge by
   // construction; a buffered one may not have honoured the pre-play seek.
+  await awaitClockMoved(el);
   let advanced = 0;
   try {
     const after = liveEdgeSeekTarget({ currentTime: el.currentTime, seekable: el.seekable });
