@@ -90,47 +90,75 @@ First-capture byte backup kept at
 `macos9-golden.qcow2.cpg-bak-20260824T173938Z` until the operator is happy
 (`checkpoint-guard prune macos9`).
 
-**THE GOLDEN CAPTURED 2026-08-24 20:39:52 IS POISONED — recapture it.**
-Restoring it paints the fixture desktop correctly and then the guest dies:
-the PC freezes solid (8/8 identical `info registers` samples at one NIP), the
-framebuffer goes byte-identical, the guest's own menubar clock stops, and
-QEMU keeps burning 100 % of a core with `DAR 0x209b75e0 / DSISR 0x40000000`
-— a data-storage fault on an address ~546 MB, past the end of the 512 MB of
-guest RAM. The same `DAR` appeared in every wedge.
+**`resetMode=loadvm` DOES NOT WORK ON THIS STATION.** Every restore of a
+checkpoint wedges the guest: the PC freezes at one address (repeated
+`info registers` samples identical), the framebuffer goes byte-identical, the
+guest's own menubar clock stops, and QEMU keeps burning ~100 % of a core with
+`DSISR 0x40000000` on a `DAR` a few MB ABOVE the top of the 512 MB of guest
+RAM (`0x209b75e0`, `0x20430000`, `0x20…` every time). Restoring paints the
+fixture desktop perfectly first, which is what makes it so convincing.
 
-Survival time depends on how the checkpoint is entered:
+Measured 2026-08-24, five restores, everything varied that could be varied:
 
-| entry path | outcome |
+| what was varied | result |
 |---|---|
-| `loadvm golden` into a running QEMU | dead immediately (2/2, frame frozen 70 s) |
-| fresh process `-loadvm golden -S` + `cont` | ~2 min of guest time, then dead |
-| cold boot, no checkpoint | healthy 7 min+, framebuffer changing throughout |
+| checkpoint captured RUNNING (checkpoint-guard) | wedges |
+| checkpoint captured STOPPED (hand-rolled test label) | wedges |
+| restore in a FRESH process (`-loadvm X -S` + `cont`) | wedges |
+| restore MID-FLIGHT into a running QEMU | wedges |
+| `-display dbus,p2p=on` vs `-display none` | wedges either way |
+| **cold boot, no checkpoint** | **healthy — 3/3 boots, 7 min+ each, input works** |
 
-**The ~2-minute window is why the bring-up proof below passed.** A pointer
-move, a click and a Cmd-O take seconds; the station still dies in the
-operator's hands minutes later. Any future restore proof for this station
-must watch the guest's own menubar clock advance across at least two ticks —
-a single good-looking frame proves nothing here.
+**The one "successful" restore was a measurement artefact.** A `loadvm`
+issued immediately after a `savevm` in the SAME process survived 5 minutes —
+but that restores state identical to what is already live, so nothing
+actually changes. It is a no-op, not a restore. Never accept it as proof.
 
-`savevm`/`loadvm` itself is NOT broken on this machine: on a sandbox copy
-cold-booted from the same disk, a mid-flight `savevm` → `loadvm` → `cont`
-ran 5 minutes with the PC moving and the framebuffer changing. So a
-recapture is expected to produce a good checkpoint. Recapture from a
-cold-booted, re-curated desktop (`checkpoint-guard recapture macos9`) —
-capturing the wedged guest would only bake the wedge in again.
+**A restore proof MUST watch the guest's own menubar clock advance across at
+least two ticks.** `checkpoint-guard`'s framebuffer proof PASSES on a dead
+checkpoint here (it reported SSIM 0.996 and "guest running" on one that was
+already wedged), because a wedged guest still holds a perfect-looking frame
+and QEMU still reports `running`. A single good frame proves nothing.
 
-**Idle auto-pause is NOT implicated.** It fired once (21:15:07, 60 s after
-the previous session) and resumed cleanly at 21:30:29; the guest reacted to
-input afterwards, changing its own screen resolution at 21:31:24. The wedge
-arrived with the restore, not with a pause.
+Consequences until this is fixed: the launcher's `-loadvm golden -S` path
+produces a DEAD station on every start, `labctl reset` cannot work, and the
+checkpoint in the qcow2 is retained only as evidence. **Bring this station up
+by cold booting** (~7 min to the desktop under TCG); idle auto-pause still
+works normally, and QMP `stop`/`cont` on a cold-booted guest is proven safe —
+a 15-minute pause resumed cleanly and the guest reacted to input afterwards.
 
-**Warm reset is also BROKEN on -M mac99**: `system_reset` hangs the machine
-at the exception vector (NIP=0x4, LR in OpenBIOS). Never use it.
+The open lead is that `DAR` sitting just past the end of RAM: something
+mapped at or after the RAM top is not being carried in the vmstate — the
+mac99 VRAM / `qemu_vga.ndrv` framebuffer aperture and the PPC BAT/segment
+registers are the first places to look.
 
-Note on reading the registers: `MSR 0x00001000` is a NORMAL transient here —
-it shows up repeatedly in a perfectly healthy guest inside exception
-handlers, as does `NIP 0x00f24030`. The wedge signature is the **stuck NIP**
-across repeated samples, not the MSR value.
+**Warm reset is BROKEN too**: `system_reset` hangs the machine at the
+exception vector (NIP=0x4, LR in OpenBIOS). Never use it.
+
+Reading the registers: `MSR 0x00001000` is a NORMAL transient here — it
+appears repeatedly in a healthy guest inside exception handlers, as does
+`NIP 0x00f24030`. The wedge signature is the **stuck NIP** across repeated
+samples plus a frozen clock, not the MSR value.
+
+## Driving the guest over QMP
+
+HMP `mouse_move` does NOT reach this guest — only explicit
+`input-send-event` `rel`/`btn`/`key` events do.
+
+**Never send a pointer delta with |value| > 127.** The USB HID report field
+is a signed byte; an out-of-range delta wedges the guest's mouse — motion and
+clicks stop being consumed entirely while **the keyboard keeps working**, so
+it looks like a half-dead guest. Recovery is one button press/release pair
+(`resync`); no reboot needed. Travel in chunks of 8 units.
+
+Pointer scale on the cold disk measures **0.177 px per delta unit**, dead
+linear (400 units → 71 px, 300 units → 53 px) — the "Very Slow" tracking
+figure, confirmed persisted in the on-disk prefs, not just in a checkpoint.
+
+Useful keys (explicit press/release pairs, never overlapping HMP `sendkey`):
+`meta_l-w` close window, `meta_l-n` NEW FOLDER (not a new window),
+`shift_l-meta_l-backspace` Empty Trash, `power` raises the shutdown dialog
+with **Shut Down** as the default button, `ret` confirms it.
 
 ## Verification record (framebuffer, 2026-08-24)
 
@@ -140,8 +168,8 @@ across repeated samples, not the MSR value.
   relative motion, click, drag (rubber-band), menu press-drag-release: PASS.
 - Post-restore: pointer motion + click (icon selection highlight) + Cmd-O
   chord (window opened): PASS on the framebuffer after `loadvm golden`.
-  **This proof is void** — it completed inside the ~2-minute window in which
-  the poisoned checkpoint still runs (see Golden / reset).
+  **This proof is void** — a restored checkpoint is wedged (see Golden /
+  reset); the proof completed before the freeze was visible.
 - Reset: `loadvm golden` wiped a dirtied screen back to the fixture.
 - Browser-path (streamhost/WebRTC) input: UNVERIFIED — left for the
   operator's eyeball, like macos753.
@@ -153,9 +181,10 @@ across repeated samples, not the MSR value.
   suspect: overlapping HMP `sendkey` releases (the playbook §5.1 async
   hold-time trap); after switching to explicit `input-send-event`
   press/release pairs it did not recur through the whole curation, bake and
-  proof sequence. It is probably the same fault as the poisoned-checkpoint
-  wedge above rather than an input bug: a `loadvm golden` reset does NOT
-  clear it, and neither does relaunching the process.
+  proof sequence. The cause is now known and it is NOT a guest bug: a
+  pointer delta with |value| > 127 overflows the USB HID report byte and
+  wedges the mouse while the keyboard keeps working. One button
+  press/release pair clears it — see "Driving the guest over QMP".
 - Menus: fine-grained (≤4-unit) relative motion is eaten while the Menu
   Manager tracks a held button; drags through menus need ≥8-unit chunks.
   Sticky menus time out after ~15 s.
