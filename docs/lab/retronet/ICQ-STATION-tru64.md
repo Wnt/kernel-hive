@@ -370,8 +370,13 @@ gate was worth patching out rather than living with a local list.
 
 **What the buddy list shows.** The "Online" tab is presence-filtered, so it
 lists the peers that are actually signed in and carries the total in the group
-header. With the rest of the fleet idle it reads `contacts-icq8-64000 (1/5)`
-with **HiveBot** under it; peers appear by name as their stations wake.
+header. The roster is nine items since the fleet-wide cross-list seed
+(**HiveBot** plus win2000, os2warp, solaris, nt4, beos, w2kalpha, winxp,
+win98se), so with the rest of the fleet idle it reads
+`contacts-icq8-64000 (1/9)` with **HiveBot** alone under it; peers appear by
+name as their stations wake. **An almost-empty Online tab is therefore the
+normal night-time picture, not a broken roster** — check the server-side list
+with `rn-tool.py buddies 64000` before concluding anything from the tab.
 
 ## Containment — re-proven from inside the guest (`10.99.0.15`), 2026-08-22
 
@@ -423,9 +428,27 @@ port, fresh sign-on, fresh SSI sync. The bot sees the new presence and greets.
 and it rendered on the framebuffer in a GTK chat window: `HiveBot logged in.` /
 `HiveBot: hi! was it you that runs the Tru64 OS? - nice hardware.` The ~36 s is
 the keepalive interval plus the 2 s first backoff, so it is bounded by design
-rather than lucky. The wake must find the guest **running** (a visitor's resume,
-or the operator watching a reset); a still-idle-paused guest stays frozen and
-Gaim cannot fire its keepalive.
+rather than lucky.
+
+**Re-measured after a gateway restart (2026-08-24), and faster.** With the
+server-side session genuinely gone — `retronet-oscar` had been restarted, so
+there was no half-open socket to match — `labctl reset tru64` at `03:31:50Z`
+produced `user signed on screenName=64000` at **`03:32:07Z`, 17 s**, entirely
+unattended. The restored golden's baked sockets are refused with `connection
+reset by peer` the instant the guest's TCP stack comes back, which skips the
+60 s keepalive wait that dominates the ~36 s figure above. Both numbers are the
+same mechanism; the 17 s is the floor and the ~36 s the ceiling.
+
+**The one precondition: the guest must be running.** The wake must find es40
+**not SIGSTOPped** (a visitor's resume, or the operator watching a reset); a
+still-idle-paused guest stays frozen and Gaim cannot fire its keepalive, notice
+the drop, or retry. This station is `SH_IDLE_PAUSE_SECS=60`, so outside
+visiting hours it is frozen essentially all the time — and **a frozen guest
+that is signed out is the expected state, not a defect.** Do not read it as a
+missing reconnect watchdog: Gaim's auto-reconnect is in this build's core
+(patch part 4 above) and is proven by the two measurements here. tru64 has
+none of the structural gap `beos` has, where ICBM .71 genuinely cannot
+reconnect and needs `icbm-watchdog.sh`.
 
 **The layout survives the reconnect** — which is the whole point of patch part
 5. Forcing a sign-off/sign-on cycle (evict the session, let the keepalive notice)
