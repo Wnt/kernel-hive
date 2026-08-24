@@ -1,14 +1,19 @@
 # AmigaOS 3.5 + AWeb II — gallery station notes
 
-Status: **bring-up in progress** (Tier 3, disabled candidate; not in the lineup).
+Status: **LIVE on the box (dark-launched)** since 2026-08-25 — streamhost@amigaos35
+active on udp/54151, golden restore + XTEST input + standby freeze all proven on
+the production rig. Hidden from the grid (`listing.state=hidden`) pending the
+operator's eyeball at `/os/amigaos35`; promote by dropping the `listing` block.
 
 **Guest:** an emulated **Commodore Amiga 4000/040** (Motorola 68040, AGA chipset,
 Kickstart 3.1 r40.068) booting **AmigaOS 3.5** (Amiga Inc / Haage & Partner, 1999)
 from an FFS hard-disk image, with the OS-bundled **AWeb II** browser as the
 retronet exhibit hook. **HOST-NATIVE** per the standing constraint: **FS-UAE
-3.1.66 runs directly on labhost** (no bridge kiosk), rendered into an Xvfb sized
-exactly to the emulator window and captured with the daemon's generic
-`SH_CAPTURE=x11` backend; input is daemon-side XTEST (no emulator patch).
+3.2.35 (pinned source build, ONE lab patch) runs directly on labhost** (no
+bridge kiosk), rendered into a pinned Xvfb :58 sized exactly to the emulator
+window and captured with the daemon's generic `SH_CAPTURE=x11` backend; input
+is the daemon's completed `x11test` backend (XTEST abs motion + paced buttons
++ keyboard, `SH_X11TEST_*`).
 
 > Distinct from the `amiga` station (A500 / Workbench 1.3 bridge kiosk) and the
 > `aros` station (x86 AROS reimplementation). This is the END of the classic
@@ -38,11 +43,20 @@ exactly to the emulator window and captured with the daemon's generic
 
 ## Emulator decision (2026-08-24 survey)
 
-FS-UAE 3.1.66 (Debian package, the same binary family the `amiga` bridge has
-run since 07/2026) — chosen for: proven in-lab, A4000/040 + AGA + KS3.1, CD via
-uaescsi, `save_states`/`load_state`, and `bsdsocket_library` host-socket
-networking for the retronet plane. Surveyed alternatives, recorded for the
-upgrade path:
+FS-UAE — chosen for: proven in-lab (the `amiga` bridge), A4000/040 + AGA +
+KS3.1, `save_states`/`load_state`, and `bsdsocket_library` host-socket
+networking for the retronet plane. Shipped as a **pinned 3.2.35 source build**
+(`scripts/build-guests/emulators/build-fsuae-native.sh`) carrying one lab
+patch, `fsuae-native.d/fsuae-mousehack-rearm.patch`: **every UAE savestate
+restore runs customreset → mousehack_reset(), zeroing the host-side
+mousehack_address, and the restored guest never re-issues the mode-5
+registration trap — so absolute mouse is dead after every restore** (proven
+identically on 3.1.66 and 3.2.35). The patch logs the address at registration
+("mousehack registered at %08x") and re-arms the two host statics after
+restore from `FS_UAE_MOUSEHACK_ADDR` — the address is PAIRED with the golden
+.uss (same boot lineage; harvest it at every re-bake, it changes per boot:
+sandbox 07804b50, production 07803d60). Surveyed alternatives, recorded for
+the upgrade path:
 
 - **Amiberry v8.3** (2026-08, WinUAE-derived): strongest core (RTG, JIT, CD32),
   but needs an shm/ctlsock patch and has SDL-headless friction (issue #1142).
@@ -60,7 +74,7 @@ upgrade path:
 
 ## Pinned machine (acceptance)
 
-- `fs-uae 3.1.66` (apt, pinned), `--amiga_model=A4000/040`, Kickstart 3.1
+- `fs-uae 3.2.35` (pinned source build, patched), `--amiga_model=A4000/040`, Kickstart 3.1
   r40.068 (A4000), 2 MB chip + 8 MB Zorro-III fast RAM, AGA.
 - Storage: `hard_drive_0` = FFS HDF (the installed system, canonical output
   `/data/gallery-guests/AmigaOS35/amigaos35-system.hdf`);

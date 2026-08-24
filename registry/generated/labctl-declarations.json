@@ -53,6 +53,23 @@
       "udp_port": 54118,
       "notes": "exec: labctl exec amiga \"<cmd>\" (ssh root@:5818, key bridge_key)"
     },
+    "amigaos35": {
+      "dir": "/data/vms/streamhost/stations/amigaos35",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "console": "x11",
+      "udp_port": 54151,
+      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/amigaos35/x11-runtime.sh."
+    },
     "amstradcpc": {
       "dir": "/data/vms/streamhost/stations/amstradcpc",
       "qmp": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",

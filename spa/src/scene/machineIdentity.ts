@@ -113,6 +113,10 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#686a6c', accentTint: '#8a5450', tintMix: 0.45,
     badge: 'DIY 5:4', spec: 'x86 • 2024', kit: 'modern',
   },
+  amigaos35: {
+    caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
+    badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
+  },
   qnx: {
     caseTint: '#4b4f50', accentTint: '#8a514b', tintMix: 0.6,
     badge: 'FANLESS DEV', spec: 'I/O • 2010', kit: 'modern',

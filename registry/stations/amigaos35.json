@@ -1,10 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "amigaos35",
-  "era_year": 2026,
-  "stationDir": "amigaos35",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "era_year": 1999,
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -13,53 +11,176 @@
         "value": {
           "key": "amigaos35",
           "script": "tiles/amigaos35.sh",
-          "outputDir": "Amigaos35",
+          "outputDir": "AmigaOS35",
           "class": "graphical",
-          "estimated": "~30-90m",
+          "estimated": "~30-60m",
           "automation": "vision",
-          "produces": "TODO",
+          "produces": "amigaos35-system.hdf + golden .uss (AmigaOS 3.5 desktop, AWeb II)",
           "flags": []
         }
       }
     ]
   },
-  "operator": {},
-  "render": {},
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/amigaos35",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54151,
+      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh \u2014 mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/amigaos35/x11-runtime.sh."
+    }
+  },
+  "render": {
+    "signalOrder": 68,
+    "stationsManifestOrder": 66,
+    "stationsManifestPrelude": "\n# amigaos35 \u2014 host-native FS-UAE 3.2.35 (A4000/040, AGA, Kickstart 3.1) -> AmigaOS 3.5 desktop with AWeb II. The first x11-capture station since irix de-bridged: stock SDL emulator under a pinned Xvfb, XTEST input.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 73,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Amiga big-box tower",
+    "goldenOrder": 66
+  },
+  "stationDir": "amigaos35",
+  "lifecycle": "production",
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-25",
+    "reason": "Dark launch: operator eyeball of the AmigaOS 3.5 desktop + AWeb II pending at /os/amigaos35; promote by dropping this block."
+  },
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54151,
-    "slot": 151,
+    "fps": 50,
+    "audio": false,
+    "touch": false,
     "pointer": {
-      "transport": "none",
-      "method": "none",
-      "absolute": false,
-      "present": false,
-      "device": "none",
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "mousehack",
       "scale": 1.0,
       "offset": [
         0,
         0
       ]
-    }
+    },
+    "slot": 151
   },
   "guestDoc": "docs/guests/amigaos35.md",
   "credentialsRef": "guest/amigaos35",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "amigaos35",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":58",
+      "SH_PORT": "54151",
+      "SH_FPS": "50",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/amigaos35/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/amigaos35/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/amigaos35/amigaos35_cmd"
+    },
+    "bringUpOrder": 73,
+    "x11": {
+      "display": ":58",
+      "geometry": "720x568x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/amigaos35/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "amigaos35",
+        "--udp",
+        "54151",
+        "--x11",
+        "--x11-display",
+        ":58",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "50",
+        "--x11-runtime-file",
+        "$T/amigaos35/x11-runtime.sh",
+        "--env-append-file",
+        "$T/amigaos35/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/amigaos35/station.env.fixture"
+      ]
+    }
+  },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
-    "accentColor": "#64748b",
-    "eraLabel": "TBD · amigaos35"
+    "transport": "streamhost",
+    "accentColor": "#CC4444",
+    "eraLabel": "1999 \u00b7 AmigaOS 3.5 (AWeb II)"
   },
   "museum": {
     "id": "amigaos35",
-    "displayName": "amigaos35",
-    "year": 2026,
-    "lineage": "TODO",
-    "arch": "TODO",
-    "accent": "#64748b"
+    "displayName": "AmigaOS 3.5",
+    "year": 1999,
+    "lineage": "Commodore Amiga / AmigaOS (Amiga Inc / Haage & Partner)",
+    "arch": "Motorola 68040 @ 25 MHz, AGA chipset (Amiga 4000)",
+    "ramMB": 10,
+    "era": "1990s",
+    "accent": "#CC4444",
+    "eraSoftware": [
+      "Workbench 3.5 with GlowIcons",
+      "AWeb II 3.3 SE",
+      "AmigaMail",
+      "the Miami TCP/IP dialer",
+      "ARexx scripting"
+    ],
+    "periodBrowser": "AWeb II 3.3 SE (bundled on the OS 3.5 CD)",
+    "iconicApps": [
+      "AWeb II",
+      "the GlowIcons Workbench",
+      "AmigaDOS Shell",
+      "MultiView"
+    ],
+    "blurb": "The classic Amiga's 1999 swan song: five years after Commodore died, a fan-driven Amiga Inc shipped one last 68k AmigaOS with GlowIcons, CD-ROM support and a bundled web suite \u2014 booting a real 68040 big-box with the AWeb II browser two clicks away.",
+    "notes": "Live streamhost tile, HOST-NATIVE from birth (never a bridge): patched FS-UAE 3.2.35 on the host under a pinned Xvfb, x11 root capture + XTEST input (the backend completed for this station). AGA chipset screen (640x512 laced, 64 colours) rather than RTG because UAE statefiles and RTG conflict \u2014 instant golden restore won. Kickstart 3.1 r40.068 + OS 3.5 CD media staged in /data/assets-staging/amigaos35 (preservation-class, never committed). Distinct from the amiga (A500/WB1.3 bridge) and aros (x86 reimplementation) tiles; archetype beige-tower-crt (ideal: an A4000 big-box tower). See docs/guests/amigaos35.md."
   },
-  "notes": [
-    "new-os Tier 3 scaffold; reserved slot 151/UDP 54151",
-    "disabled candidate: not part of streamhost, signal, reset, or SPA lineups"
-  ]
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.2.35",
+    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (upstream 3.2.35 + fsuae-native.d/fsuae-mousehack-rearm.patch)",
+    "driver": "A4000/040"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "No networking yet: FSUAE_NATIVE_NET=off (no bsdsocket, no NIC \u2014 the emulator opens no sockets). The retronet web-plane join is the planned follow-up: bsdsocket_library=1 caged in a per-station netns whose only link is the station's veth on vmbr-rn, never bare on the host stack."
+  },
+  "reset": {
+    "stationDir": "amigaos35",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "AmigaOS 3.5 Workbench desktop, 640x512 laced 64-colour AGA screen in a 720x568 window: Ram Disk + System + AWeb-II icons, no windows open. resetMode=relaunch: the launcher reflinks a fresh work HDF from disk/amigaos35-system.hdf.golden (visitor disk writes must never survive a reset \u2014 UAE statefiles reattach hardfiles by path), restores sta/'Saved State 1.uss' via --load_state=1, and re-arms the absolute mouse with FS_UAE_MOUSEHACK_ADDR (the lab patch; without it every UAE restore leaves mousehack dead \u2014 proven on 3.1.66 and 3.2.35, fixed by fsuae-mousehack-rearm.patch). Golden .uss + golden HDF + binary + device set are ONE combination. Mouse/keyboard PASS on the 2026-08-24 sandbox rig via XTEST (paced: instant press+release inside one 50 Hz frame is never sampled; 60 ms button dwell, 40/40 keys, RAmiga = Super_R proven by clearing an Amiga string gadget)."
+  }
 }
