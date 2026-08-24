@@ -16,6 +16,10 @@
 #                                    atomically swap that station to its previous binary
 #
 # Flags:
+#   --exclude TILE      hold TILE back from --promote (repeatable). A station
+#                       another stream is actively working must not be restarted
+#                       under it; promotion keeps the canary gate when anything
+#                       was held back, so the remainder can be promoted later.
 #   --wave-size N       promotion wave size (default: 4)
 #   -n, --dry-run       print the complete plan; make no changes
 #   -h, --help          show this help
@@ -59,6 +63,7 @@ CANARY_TILE=""
 PROMOTE=0
 ROLLBACK_TILE=""
 declare -a TILES=()
+declare -a EXCLUDE=()
 declare -a LIVE=()
 declare -a TARGET=()
 
@@ -95,6 +100,11 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     --promote) PROMOTE=1 ;;
+    --exclude)
+      [ "$#" -ge 2 ] || die "--exclude requires a tile"
+      EXCLUDE+=("$2")
+      shift
+      ;;
     --rollback)
       [ "$#" -ge 2 ] || die "--rollback requires a tile"
       ROLLBACK_TILE="$2"
@@ -119,6 +129,8 @@ valid_tile "$SAFE_TILE" || die "invalid SAFE_TILE: $SAFE_TILE"
 for t in "${TILES[@]}"; do valid_tile "$t" || die "invalid tile name: $t"; done
 [ -z "$CANARY_TILE" ] || valid_tile "$CANARY_TILE" || die "invalid canary tile: $CANARY_TILE"
 [ -z "$ROLLBACK_TILE" ] || valid_tile "$ROLLBACK_TILE" || die "invalid rollback tile: $ROLLBACK_TILE"
+for t in "${EXCLUDE[@]}"; do valid_tile "$t" || die "invalid excluded tile name: $t"; done
+[ "${#EXCLUDE[@]}" -eq 0 ] || [ "$PROMOTE" -eq 1 ] || die "--exclude only applies to --promote"
 
 SPECIAL=0
 [ -z "$CANARY_TILE" ] || SPECIAL=$((SPECIAL + 1))
@@ -199,6 +211,12 @@ enumerate_live() { # ACTIVE only + no '@' in an id; see docs/lab/STREAM-DEBUGGIN
     "systemctl list-units --plain --no-legend --state=active 'streamhost@*.service' 2>/dev/null | awk '{print \$1}' | sed -E 's/^streamhost@(.*)\\.service$/\\1/' | grep -v @" | sort)
   [ "${#LIVE[@]}" -gt 0 ] || die "could not enumerate live streamhost@ tiles"
   ok "live tiles: ${#LIVE[@]} (${LIVE[*]})"
+}
+
+is_excluded() {
+  local needle="$1" item
+  for item in "${EXCLUDE[@]}"; do [ "$item" != "$needle" ] || return 0; done
+  return 1
 }
 
 is_live() {
@@ -352,60 +370,10 @@ install_versioned_artifact() {
   ok "installed ${dst}"
 }
 
-service_uses_versioned() {
-  local tile="$1"
-  ssh_lab "systemctl show -p ExecStart --value 'streamhost@${tile}.service'" |
-    grep -Fq "path=${INSTALL_ROOT}/stations/${tile}/current"
-}
-
-require_versioned_service() {
-  local tile="$1"
-  [ "$DRY_RUN" -eq 1 ] && return
-  service_uses_versioned "$tile" ||
-    die "streamhost@${tile} still uses the legacy ExecStart; run migrate-to-versioned.sh under supervision"
-}
-
-switch_tile() {
-  local tile="$1" artifact="$2"
-  if [ "$DRY_RUN" -eq 1 ]; then
-    ok "DRY-RUN ${tile}: previous <- current; current -> ../../${artifact} (atomic rename)"
-    printf '%s\n' "DRY_RUN_PREVIOUS"
-    return
-  fi
-  ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; a='${INSTALL_ROOT}/${artifact}'; [ -x \"\$a\" ]; [ -L \"\$d/current\" ]; old=\$(readlink -f \"\$d/current\"); [ -x \"\$old\" ]; old_name=\$(basename \"\$old\"); ptmp=\"\$d/.previous.\$\$\"; ctmp=\"\$d/.current.\$\$\"; ln -s \"../../\$old_name\" \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\"; ln -s '../../${artifact}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; printf '%s\\n' \"\$old_name\""
-}
-
-set_tile_links() {
-  local tile="$1" current="$2" previous="$3"
-  [ "$DRY_RUN" -eq 0 ] || return 0
-  ssh_lab "set -eu; d='${INSTALL_ROOT}/stations/${tile}'; [ -x '${INSTALL_ROOT}/${current}' ]; [ -x '${INSTALL_ROOT}/${previous}' ]; ctmp=\"\$d/.current.\$\$\"; ptmp=\"\$d/.previous.\$\$\"; ln -s '../../${current}' \"\$ctmp\"; mv -Tf \"\$ctmp\" \"\$d/current\"; ln -s '../../${previous}' \"\$ptmp\"; mv -Tf \"\$ptmp\" \"\$d/previous\""
-}
-
-readiness() { # waits READINESS_SECS; openvms' dual-VM stack needs ~40s+ (30 was too short)
-  local tile="$1" out
-  if [ "$DRY_RUN" -eq 1 ]; then
-    ok "DRY-RUN would require active streamhost@${tile} and its PID's 'LISTENING ... tile=${tile}' line"
-    return
-  fi
-  if out=$(ssh_lab "set -u; t='${tile}'; for i in \$(seq 1 ${READINESS_SECS}); do active=\$(systemctl is-active \"streamhost@\$t.service\" 2>/dev/null || true); pid=\$(systemctl show -p MainPID --value \"streamhost@\$t.service\" 2>/dev/null || true); if [ \"\$active\" = active ] && [ \"\${pid:-0}\" -gt 0 ] 2>/dev/null; then line=\$(journalctl _PID=\"\$pid\" -n 120 --no-pager 2>/dev/null | grep -F 'LISTENING udp/' | grep -F \" tile=\$t \" | tail -1); if [ -n \"\$line\" ]; then printf '%s\\n' \"\$line\"; exit 0; fi; fi; sleep 1; done; exit 3"); then
-    ok "streamhost@${tile} ready: $(printf '%s' "$out" | tail -1)"
-  else
-    return 1
-  fi
-}
-
-restart_tiles() {
-  local units="" t
-  for t in "$@"; do units+=" streamhost@${t}.service"; done
-  if [ "$DRY_RUN" -eq 1 ]; then
-    ok "DRY-RUN would run: systemctl restart${units}"
-    for t in "$@"; do readiness "$t"; done
-    return
-  fi
-  ssh_lab "systemctl restart${units}" || return 1
-  for t in "$@"; do readiness "$t" || return 1; done
-}
-
+# The versioned-artifact mechanism (link moves + readiness) lives in its own
+# file; this script keeps the policy. See its header for the two invariants.
+# shellcheck disable=SC1091  # resolved at run time from SCRIPT_DIR
+. "${SCRIPT_DIR}/../lib/streamhost-artifacts.sh"
 write_canary_gate() {
   local artifact="$1" tile="$2"
   [ "$DRY_RUN" -eq 0 ] || {
@@ -476,7 +444,24 @@ promote_canary() {
   read_canary_gate
   enumerate_live
   is_live "$CANARY_TILE" || die "gated canary tile '$CANARY_TILE' is no longer live"
-  for t in "${LIVE[@]}"; do [ "$t" = "$CANARY_TILE" ] || promote_targets+=("$t"); done
+  declare -a held=()
+  for t in "${LIVE[@]}"; do
+    [ "$t" != "$CANARY_TILE" ] || continue
+    if is_excluded "$t"; then
+      held+=("$t")
+      continue
+    fi
+    promote_targets+=("$t")
+  done
+  # An --exclude name that is not live is almost always a typo, and a typo here
+  # silently promotes the very station the caller meant to protect.
+  for t in "${EXCLUDE[@]}"; do
+    is_live "$t" || warn "--exclude ${t}: not a live tile (nothing to hold back)"
+  done
+  if [ "${#held[@]}" -gt 0 ]; then
+    warn "holding back ${#held[@]} tile(s): ${held[*]}"
+    warn "these stay on their current binary; promote them separately once free"
+  fi
   [ "${#promote_targets[@]}" -gt 0 ] || die "no non-canary tiles to promote"
 
   if [ "$DRY_RUN" -eq 0 ]; then
@@ -521,7 +506,13 @@ promote_canary() {
     fi
     die "promotion stopped; earlier successful waves remain on the canary artifact"
   done
-  if [ "$DRY_RUN" -eq 0 ]; then
+  if [ "${#held[@]}" -gt 0 ]; then
+    # The gate is what --promote reads to know WHICH artifact to roll forward.
+    # Consuming it here would strand the held-back tiles with no supported way
+    # to finish them, so a partial promotion deliberately leaves it in place.
+    ok "promotion partial: ${#promote_targets[@]} promoted, ${#held[@]} held back (${held[*]})"
+    ok "canary gate KEPT so the remainder can be promoted with the same artifact"
+  elif [ "$DRY_RUN" -eq 0 ]; then
     ssh_lab "mv -Tf '${CANARY_GATE}' '${INSTALL_ROOT}/.last-promoted'"
   fi
   ok "promotion complete; each tile's previous symlink retains N-1"
