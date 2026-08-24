@@ -886,9 +886,9 @@ emit aux \
 #   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from
 #   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without
 #   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one
-#   2 GB IDE disk, Cirrus GD5446 at 800x600x16, i82557b, PS/2 mouse (dbus-rel).
-#   loadvm golden -S (the daemon resumes). DARK LAUNCH: listing=hidden until the
-#   operator eyeballs it.
+#   2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip (DEC 21143) bridged onto
+#   the retronet, PS/2 mouse (dbus-rel). loadvm golden -S (the daemon resumes);
+#   the checkpoint restores with OmniWeb 3.0 open on the corpus web.
 emit rhapsody \
   --tile rhapsody --vmid 146 --udp 54146 --pointer rel --input-backend \
   dbus-rel --cursor-scale 2.09 --cursor-off-x 0 --cursor-off-y 0 --audio off \
