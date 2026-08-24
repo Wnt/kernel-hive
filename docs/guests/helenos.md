@@ -35,7 +35,9 @@ was recaptured with the tablet present:
 - Backed up the pre-tablet checkpoint → `golden.qcow2.bak-pretablet`.
 - Cold-booted the (edited) live launcher from the ISO, let the compositor +
   Terminal scene come up, parked the cursor on the Terminal title bar via the
-  tablet (abs(9600,597)), then `delvm golden; savevm golden`.
+  tablet (abs(9600,597)), then recaptured. Any recapture of this station today is
+  `ssh lab 'checkpoint-guard recapture helenos'` — never hand-typed snapshot verbs
+  ([`../lab/checkpoint-guard.md`](../lab/checkpoint-guard.md)).
 - Verified `loadvm golden` restores cleanly (STOP/RESUME, `return ""`) — device
   set matches — and snaps the cursor back to the parked title-bar position.
 

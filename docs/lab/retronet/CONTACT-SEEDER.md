@@ -177,10 +177,13 @@ framebuffer `assert`.
 - `seed_contacts.py seed <station> --apply` is the LIVE pass and is **gated**: it
   refuses until `icq2000b-add.macro.json` is calibrated on the real wizard
   (`calibrated: true`). It runs `labctl reset` from golden, replays the macro per
-  missing UIN (each step framebuffer-verified), then recaptures the golden with a
-  safe snapshot order (`savevm golden-seeding` → `delvm golden` → `savevm golden`
-  → `delvm golden-seeding`). Calibration + the LIVE apply are deferred (need a
-  live, non-contended station).
+  missing UIN (each step framebuffer-verified), then recaptures the golden itself,
+  staging under `golden-seeding` before `delvm golden` → `savevm golden` → drop the
+  staging label. That order is safe as far as it goes, but it has **no byte-copy
+  backup and no framebuffer proof of the restore** — for a *manual* recapture a
+  human or agent uses the guard instead: `ssh lab 'checkpoint-guard recapture
+  <station>'` ([`checkpoint-guard.md`](../checkpoint-guard.md)). Calibration + the
+  LIVE apply are deferred (need a live, non-contended station).
 - **Mac AIM** (macos753, when it lands) is an **AIM** client — no ICQ directory
   lookup — so its display name is a client-local **alias**; its buddy list lives
   in `System Folder:Preferences`. Designed, deferred until media.

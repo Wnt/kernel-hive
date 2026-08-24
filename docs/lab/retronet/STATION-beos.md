@@ -400,12 +400,17 @@ by the Network preflet. `dhcp_client`, `ftpd`, `telnetd`, `ftp`, `telnet`,
 The MAC lives in the golden's device vmstate, so `loadvm` restores the **saved**
 MAC no matter what the launcher's `mac=` says. Changing it requires a cold boot:
 
-1. Back the golden up byte-for-byte with QEMU stopped, and `sha256sum -c` it.
+1. Back the golden up byte-for-byte with QEMU stopped, and `sha256sum -c` it —
+   this is the change-level rollback (the guard takes its own per-run copy too).
 2. Apply the DHCP reservation for the NEW mac on the gateway **first**
    (`install-dhcp.sh --apply`).
 3. `qemu-img snapshot -d golden` on the disk so the launcher cannot fall through
    to `-loadvm`.
-4. Boot cold with the new `mac=`, do the in-guest work, recapture.
+4. Boot cold with the new `mac=`, do the in-guest work, then recapture with
+   `ssh lab 'checkpoint-guard recapture beos'` — it handles a first capture with
+   no label present, and asserts the restored guest is **running** (a checkpoint
+   captured while stopped restores paused: perfect screenshot, dead station).
+   [`checkpoint-guard.md`](../checkpoint-guard.md).
 5. Verify **in the bridge FDB** (`bridge fdb show dev beosrn0` → the new MAC)
    **and** in the gateway's DHCP log (`… 52:54:00:52:4e:10 -> ACK 10.99.0.16`).
 

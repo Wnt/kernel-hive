@@ -108,7 +108,9 @@ back, revert the launcher/registry/`local.env` reservation, `labctl gen`,
 - **The MAC is baked by a COLD boot, not `loadvm`.** A `loadvm golden` restores
   whatever MAC the vmstate carries. To change it: revert the disk to golden
   (`qemu-img snapshot -a golden`), delete the snapshot so the launcher cold-boots,
-  boot with the new `mac=`, do the in-guest work, recapture. Verify **in-guest**
+  boot with the new `mac=`, do the in-guest work, then recapture with
+  `ssh lab 'checkpoint-guard recapture win2000'` (it handles a first capture with
+  no label present). Verify **in-guest**
   (`ipconfig /all`) **and** the bridge **FDB** (`bridge fdb show dev win2krn0`).
 - **DHCP conversion is one `netsh`, no reboot** (unlike Win98's registry `.reg`):
   `netsh interface ip set address name="Local Area Connection 2" source=dhcp` then
@@ -153,7 +155,10 @@ ssh lab 'pct exec 951 -- python3 /opt/ras/rn-tool.py buddies 20000'
 
 The coordinator fans this to the other Windows ICQ 2000b stations. Per station:
 
-1. **Back the golden up** (byte copy, SHA256) — the rollback.
+1. **Back the golden up** (byte copy, SHA256) — the rollback for the whole change.
+   (A per-run backup is not extra work: `checkpoint-guard` takes its own
+   SHA256-verified byte copy on every recapture. This one is the change-level
+   rollback you keep afterwards.)
 2. If a unique MAC / DHCP is still owed (win98se, nt4 were on the default MAC or
    static), do that **cold-bake** first (this doc's MAC + DHCP gotchas).
 3. Deliver `ICQ2001b.exe` in-guest (IE over the bridge from a temp CT server, or the
@@ -163,5 +168,12 @@ The coordinator fans this to the other Windows ICQ 2000b stations. Per station:
 5. Preferences → Connections → **Server**: Host `10.99.0.2`, Port `5190`, **Keep
    connection alive ON**. Disconnect→Reconnect; confirm it is **silent**.
 6. Confirm the **SSI roster** syncs by name (`rn-tool.py buddies <uin>`), a clean
-   frame, then **recapture the golden**. **Disable** the station's `*-icq-nudge.timer`
+   frame, then **recapture the checkpoint**:
+   `ssh lab 'checkpoint-guard recapture <station>'` — one crash-safe command that
+   backs the disk up, stages under `cpg-staging`, proves the restore on the
+   framebuffer and that the restored guest is running, then promotes to `golden`
+   ([`checkpoint-guard.md`](../checkpoint-guard.md)). Never hand-type
+   `delvm golden; savevm golden`, and never stage under `golden-new` — the
+   launcher's `grep -qw golden` probe matches that name and an interrupted run
+   leaves QEMU refusing to start. **Disable** the station's `*-icq-nudge.timer`
    (self-heal supersedes it). Update the roster's `client` to `icq2001b`.

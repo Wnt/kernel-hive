@@ -95,18 +95,25 @@ logins once and `pct start` fleet-wide once). Never
 session. Resolve processes through `/proc/<pid>/exe`, never a cmdline grep,
 which matches the shell running it.
 
-**Never retire a golden before its replacement is proven.** A checkpoint, the
-emulator binary that reads it and the device set it was captured on are ONE
-combination: the new one must be **fully captured and restore-verified** before
-anything of the old one is deleted or overwritten. Back the old golden up
-byte-for-byte first (SHA256-verified with the guest STOPPED), capture the new
-one under a different name, **prove it restores on the framebuffer**, and only
-then remove the old. `delvm golden` before its replacement `savevm` succeeds is
-the exact window that has already left a live station with **no golden at all**
-when the agent died inside it — never open it. The same rule governs a binary
-or device-set change: prove the combination on a clone, keep the old binary for
-rollback, and re-prove the restore per station rather than carrying a clone's
-result across.
+**Recapture a golden through `checkpoint-guard`; never retire one before its
+replacement is proven.** A checkpoint, the emulator binary that reads it and the
+device set it was captured on are ONE combination: the new one must be **fully
+captured and restore-verified** before anything of the old one is deleted or
+overwritten. `ssh lab 'checkpoint-guard recapture <station>'` is the whole safe
+sequence as one crash-safe operation — byte-copy backup SHA256-verified with the
+guest STOPPED, capture under a different label, **restore-proven on the
+framebuffer**, and only then the old one retired; a failed run deletes nothing
+and `checkpoint-guard resume` finishes an interrupted one
+([`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md)). Do NOT hand-roll
+it: `delvm golden` before its replacement `savevm` succeeds is the exact window
+that has already left a live station with **no golden at all** when the agent died
+inside it, and a hand-written `savevm golden-new` makes it worse — every launcher
+probes with `grep -qw golden`, which matches `golden-new`, so the station then
+refuses to start instead of cold-booting. The guard refuses the runtimes it cannot
+cover safely (es40 `.axp`, MAME `.sta`) rather than half-covering them. The same
+rule governs a binary or device-set change: prove the combination on a clone, keep
+the old binary for rollback, and re-prove the restore per station rather than
+carrying a clone's result across.
 
 **Claim shared things atomically, and make the claim the proof.** Displays,
 taps, labhost IPs, iptables chains, core pairs, ports, VMIDs. Never
@@ -156,6 +163,7 @@ separate decision — `build-deploy.sh`/`systemctl restart streamhost@<x>`/
 | Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
 | Debug ANY streaming complaint (froze, blurry, laggy, stopped, dropped quality) | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — the client already recorded it; start with `clientlog.jsonl`, not a repro |
+| Recapture a station's checkpoint (golden) | `ssh lab 'checkpoint-guard recapture <station>'` — [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |
 | Fix a station that freezes or won't connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
 | Which emulator runs a given OS, and with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — read it BEFORE spending an agent on recon |
 | Add a new OS station | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |

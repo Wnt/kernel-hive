@@ -213,9 +213,17 @@ bridge fdb show dev winxprn0 -> $RN_WINXP_MAC master vmbr-rn
   2001b connected** (UIN `51000`, Server `10.99.0.2:5190`, Keep-alive ON), the
   SSI roster synced, `retro-software.iso` back in the drive and a clean
   1920×1200 frame. `labctl reset winxp` = `loadvm golden`.
-- Captured in the safe order — `savevm golden-new` → verify → `delvm golden` →
-  `savevm golden` → `delvm golden-new` — so the old golden is never deleted
-  before the new one is proven written.
+- **Recapture through the guard:** `ssh lab 'checkpoint-guard recapture winxp'`.
+  It byte-copies the disk with the guest stopped, captures under `cpg-staging`,
+  proves the restore on the framebuffer *and* that the restored guest is running,
+  and only then promotes to `golden` — the old checkpoint is never deleted before
+  its replacement is proven. Do not type the snapshot verbs by hand, and never
+  stage under `golden-new`: the launcher's `grep -qw golden` probe matches that
+  name, so an interrupted run leaves QEMU refusing to start.
+  [`checkpoint-guard.md`](../checkpoint-guard.md).
+- The guard keeps its own SHA256-verified byte copy per run (`.cpg-bak-*`, dropped
+  by `checkpoint-guard prune winxp`). The `golden-backup-*` directories below
+  predate it and remain the hand-made rollbacks for whole changes.
 - **Full-disk byte-copy backup of the pre-ICQ golden** (QEMU stopped,
   SHA256-verified `7a2b68c9ae453ee4f672c03ae8be1df7bbdc332d5c01b115dbece03a08c3cd3b`
   on both source and copy):

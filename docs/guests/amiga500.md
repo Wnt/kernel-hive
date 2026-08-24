@@ -182,8 +182,10 @@ Workbench desktop. The pilot was fully reverted:
   (dropped the coldboot `SH_IDLE_PAUSE_SECS=0` line — kiosks c64/atarist don't set it).
 - **Checkpoint recaptured** on a clean Workbench 1.3 desktop: started fs-uae in the live kiosk X
   session (as user `bridge`, `DISPLAY=:0`), let it auto-boot Workbench, then HMP
-  `delvm golden` + `savevm golden` over the station qmp.sock (new checkpoint 814 MiB, device set
-  unchanged). Verified: cold service restart with `-loadvm golden` and `labctl reset amiga`
+  recaptured over the station qmp.sock (new checkpoint 814 MiB, device set unchanged;
+  today that recapture is `ssh lab 'checkpoint-guard recapture amiga'` — see
+  [`../lab/checkpoint-guard.md`](../lab/checkpoint-guard.md)).
+  Verified: cold service restart with `-loadvm golden` and `labctl reset amiga`
   both land on the Workbench 1.3 desktop; daemon LISTENING udp/54118, AC97→dbus audio intact.
   Prior overlay preserved at `overlay.qcow2.bak-prerecover`.
 

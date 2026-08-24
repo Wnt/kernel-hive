@@ -94,11 +94,15 @@ the vmmouse trap below.
 - Reset: `resetMode=loadvm`, snapshot `golden`, inside `chokanji.qcow2`. The disk
   runs WITHOUT `-snapshot` so `savevm golden` persists; the launcher boots straight
   into `-loadvm golden -S` (frozen at the fixture, ~0 CPU) once the tag exists.
-- Bake on the box (the launcher writes the runtime dir):
+- First bake on the box (the launcher writes the runtime dir):
   `bash streamhost/stations/chokanji/qemu-streamhost.sh` (cold boot, no tag),
-  wait for the desktop, then via QMP `stop; savevm golden; cont`; relaunch and
-  confirm it comes up `-loadvm golden -S`. (Operator policy: a restoring golden is
-  proof enough; no separate checkpoint-verify ceremony.)
+  wait for the desktop, then `ssh lab 'checkpoint-guard recapture chokanji'`;
+  relaunch and confirm it comes up `-loadvm golden -S`. (Operator policy: a
+  restoring golden is proof enough; no separate checkpoint-verify ceremony.)
+  Every later recapture of the live station is that same one command — it backs
+  the disk up, stages under `cpg-staging` and proves the restore before retiring
+  the old checkpoint
+  ([`../lab/checkpoint-guard.md`](../lab/checkpoint-guard.md)).
 - Fixture: clean idle BTRON3 desktop — the 超漢字 real-object window and the
   原紙箱：B-right/V virtual-object box open on the blue kanji-watermark wallpaper,
   hand cursor at rest.
