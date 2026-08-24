@@ -14,3 +14,7 @@
 	path = third_party/vice-kernel-hive
 	url = https://github.com/Wnt/vice.git
 	branch = kernel-hive/integrated
+[submodule "third_party/es40"]
+	path = third_party/es40
+	url = https://github.com/Wnt/es40.git
+	branch = main

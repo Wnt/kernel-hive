@@ -38,8 +38,12 @@
         {
           "name": "main",
           "what": "JIT translation cache, shm framebuffer export, mamectl/1 ctlsock input, savestate fixes",
-          "pinnedBy": ["registry/stations/w2kalpha.json", "registry/stations/tru64.json"],
-          "pinNote": "es40 is built from the fork's `main` outside this repo, so no build script pins a commit; both station registry entries name the branch in `emulator.source`."
+          "pinnedBy": [
+            "scripts/build-guests/emulators/build-es40.sh",
+            ".gitmodules",
+            "registry/stations/w2kalpha.json",
+            "registry/stations/tru64.json"
+          ]
         }
       ],
       "excludes": [
