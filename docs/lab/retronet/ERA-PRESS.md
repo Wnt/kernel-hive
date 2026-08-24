@@ -396,6 +396,62 @@ writes on CT 950 appears instantly on CT 951's read side — no `pct push`, no p
 restart. (`press`/`seed` still `pct push`; the crawl writes direct because its
 staging *is* the shared volume, so it runs with push disabled.)
 
+### The resource sweep, and what it remembers
+
+Pages already on disk are not in the frontier, so the ordinary crawl never revisits them — and a page
+stored during a spell of failing fetches would keep its missing images forever (`www.sun.com` had 4 of
+15, `www.ibm.com` 10 of 24). The **sweep** is the pass that repairs that: it re-reads each mirrored
+page, re-discovers what it references, and fetches anything absent.
+
+It used to have no memory, and that was expensive in two different ways:
+
+- a resource archive.org **never captured** was re-requested on every pass and every restart, forever;
+- every page was re-read and re-parsed every pass, whether or not anything about it had changed.
+
+Measured on 2026-08-24, on a restart with an **unchanged** site list: **~970 requests to archive.org in
+eleven minutes, and the corpus did not grow by a single byte.**
+
+`era_sweep.Ledger` (stored beside `state.json` as `absent.json`) fixes both, with one horizon:
+
+| It remembers | Meaning | Effect |
+|---|---|---|
+| **absent resources** | archive.org had no in-ceiling capture | not re-requested for **30 days** |
+| **swept pages** | every reference walked | page skipped entirely while **unchanged** |
+
+The page skip is keyed on the page's **own mtime**, which is what keeps an incremental sweep correct: a
+page re-fetched with new markup is swept again immediately, and only an unchanged, already-walked page
+is skipped — one `stat` instead of a read, a parse and a `stat` per reference. So the first sweep is
+full and every later one is O(what is new).
+
+The two horizons are **the same constant on purpose**. When an absent resource becomes worth re-asking
+for, the page that references it must stop being skipped in the same cycle, or the retry would never
+happen. A local `_write` collision is pointedly *not* recorded as absent — that is our filesystem
+namespace bug to fix, not an archive verdict, and hiding it for a month would be the wrong trade.
+
+The ledger is a **cache, not a record**: pruned on load, saved in batches, and losing it costs one slow
+pass rather than any correctness. The sweep reports what it is worth:
+
+```
+--- SWEEP: 47175 page(s) on disk; 46980 already walked and unchanged (skipped),
+    1759 resource(s) the archive does not have (not re-asked)
+```
+
+### Installing without restarting the crawl
+
+`install-crawl.sh` deploys code and units and **does not restart a running crawl**. It used to, on the
+reasoning that this is the one command that applies an `era-sites.json` edit — right about edits, wrong
+about everything else: deploying code or adding a unit restarted it too, and a restart re-plans every
+site and re-runs the whole sweep. That is what produced the ~970 wasted requests above, and it also
+churns the search reindexer, which rebuilds whenever the corpus fingerprint moves.
+
+```sh
+install-crawl.sh              # deploy code + units; start the crawl only if it is stopped
+install-crawl.sh --restart    # apply an era-sites.json / era-vips.json edit to a running crawl
+```
+
+The requests service *is* restarted every time: its startup is cheap and it makes no archive request
+merely for starting, so picking up new code costs nothing.
+
 ### Station requests — the retronet fills its own gaps
 
 The disk scan behind `era-sites.json` can only find URLs that sit in a guest image as readable text,

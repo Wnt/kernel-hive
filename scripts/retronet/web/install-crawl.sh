@@ -13,6 +13,9 @@
 #   scripts/retronet/web/install-crawl.sh
 #   ssh lab 'pct exec 950 -- bash /data/kernel-hive/scripts/retronet/web/install-crawl.sh'
 #
+# Deploys code and units; does NOT restart a running crawl (that costs a full corpus
+# re-sweep). To apply an era-sites.json / era-vips.json edit, pass --restart.
+#
 # As-built: docs/lab/retronet/ERA-PRESS.md.
 set -euo pipefail
 
@@ -47,7 +50,7 @@ RUN_USER="${RN_CRAWL_USER:-wnt}"
 sudo mkdir -p "$RUN_DIR"
 sudo chown -R "$RUN_USER:$RUN_USER" "$RUN_DIR"
 cp "$SRC/era-press.py" "$SRC/era_fetch.py" "$SRC/era_index.py" "$SRC/era_press_core.py" "$SRC/era_crawl.py" \
-  "$SRC/era_requests.py" "$SRC/era_state.py" \
+  "$SRC/era_requests.py" "$SRC/era_sweep.py" "$SRC/era_state.py" \
   "$SRC/era-sites.json" "$SRC/era-vips.json" "$RUN_DIR/"
 
 # --- fetch-layer dependency: httpx[http2] in a dedicated venv ------------------
@@ -83,13 +86,29 @@ sudo cp "$SRC/$UNIT" "/etc/systemd/system/$UNIT"
 sudo cp "$SRC/$REQ_UNIT" "/etc/systemd/system/$REQ_UNIT"
 sudo systemctl daemon-reload
 sudo systemctl enable "$UNIT" "$REQ_UNIT"
-# RESTART, not `enable --now`: this script is the one command that applies an edit to era-sites.json or
-# era-vips.json, and `--now` is a no-op on an already-running daemon -- so the edit silently would not
-# take. Restarting is cheap and safe here because the crawl is resumable from the on-disk corpus: it
-# re-plans against the new list and re-fetches nothing it already has.
-sudo systemctl restart "$UNIT"
-# The demand channel has no natural completion, so it is started, not just enabled.
-# It is a SEPARATE unit precisely because the crawl above exits when it is finished.
+# The crawl is NOT restarted as a side effect of running this script.
+#
+# It used to be, on the reasoning that this is the one command that applies an era-sites.json or
+# era-vips.json edit and `--now` is a no-op on a running daemon. The reasoning was right about edits and
+# wrong about everything else: deploying code, adding a unit, or repairing an install also restarted it,
+# and a restart is not free. A restart re-plans every site and re-runs the resource sweep across the
+# whole corpus -- measured 2026-08-24, an install with an UNCHANGED site list cost ~970 requests to
+# archive.org in eleven minutes and did not grow the corpus by a single byte. (The absent-resource
+# ledger now blunts that, but the right answer is still not to restart something nobody asked to
+# restart.) It also churns the search reindexer, which rebuilds whenever the corpus fingerprint moves.
+#
+# So: start it if it is not running, and restart it only when asked. Applying a site-list edit is now
+# an explicit `--restart`, which is the case that genuinely needs one.
+if [ "${1:-}" = "--restart" ]; then
+  echo "  --restart: applying the site list to a running crawl"
+  sudo systemctl restart "$UNIT"
+elif systemctl is-active --quiet "$UNIT"; then
+  echo "  $UNIT already running — left alone (use --restart to apply a site-list edit)"
+else
+  echo "  $UNIT not running — leaving it stopped (start it with: systemctl start $UNIT)"
+fi
+# The demand channel IS restarted every time: it has no natural completion, its startup is cheap, and
+# it makes no request to archive.org just for starting -- so picking up new code costs nothing here.
 sudo systemctl restart "$REQ_UNIT"
 
 echo "--- status ---"
