@@ -250,7 +250,7 @@
     "note": "pcnet on a tap (win95rn0) enslaved to the offline retronet bridge vmbr-rn: real L2 to the gateway CT 10.99.0.2 only. DHCP reservation 10.99.0.13, DNS = the gateway, NO router option, so there is no default route and no WAN; the per-station WIN95RN-IN guard chain drops NEW guest->labhost. IE browses the gateway's :80 corpus with no proxy configured (docs/lab/retronet/WEB-STATION-win95.md)"
   },
   "retronet": {
-    "planes": ["web"],
+    "planes": ["web", "icq"],
     "address": "10.99.0.13",
     "addressing": "dhcp",
     "link": "tap win95rn0 on vmbr-rn",
