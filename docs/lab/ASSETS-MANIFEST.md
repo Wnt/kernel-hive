@@ -427,8 +427,38 @@ server-driven:
   cleanly. Kept as a fallback if ICQ 2001b proves unreliable on any of the
   four Windows stations at bring-up time.
 
-Not yet run against the gateway or installed into any station — that is the
-station bring-up wave's job, same caveat as the `climm` rows below.
+**SHIPPED 2026-08-23/24.** ICQ 2001b is live on `win98se`, `win2000`, `nt4`,
+`winxp` (UIN 51000) and `w2kalpha` (UIN 50010, the stock x86 binary translated
+by FX!32 on the Alpha). **The one station it cannot serve is `win95`** — see
+the ICQ 2002a row below: build 3659 dropped Windows 95 support, so the "every
+Windows ICQ station" framing above holds for every station except that one.
+
+### `ICQ 2002a` — the Windows 95 exception (SHIPPED on `win95` 2026-08-24)
+
+ICQ 2001b build 3659 **cannot run on Windows 95 at all**. ICQ's own download
+page for the build states "Windows 95 users - please use ICQ 2000b", and the
+failure is reproducible: with Common Controls 5.80, Winsock 2 and DCOM95 1.3
+all verified present, 2001b installs but dies on every launch with *"failed to
+Initialize the Communication Module"* — proven not a missing dependency (PE
+audit: zero absent modules, zero unresolved imports) and not COM registration.
+Win95 support returned in **2002a**, which is otherwise the same SSI/feedbag
+generation, so `win95` runs 2002a and the rest of the Windows fleet runs 2001b.
+This is the *only* reason the fleet is not on one client, and it is a fact
+about the client, not a preference. See
+[`docs/lab/retronet/ICQ-STATION-win95.md`](retronet/ICQ-STATION-win95.md).
+
+Staged **only** in the content-addressed media archive (no
+`/data/assets-staging/` copy):
+`/data/media-archive/blobs/fb/fbda7ec34e9790fb4589f486b64273ae025d0a0e496a82fbce8acfbd78bb017e`.
+
+| file | sha256 | size | source | class / terms |
+|---|---|---|---|---|
+| `ICQ2002a.exe` (ICQ 2002a Beta build 3728, ICQ Ltd./AOL) | `fbda7ec34e9790fb4589f486b64273ae025d0a0e496a82fbce8acfbd78bb017e` *(locally measured 2026-08-23, re-verified 2026-08-24)* | 4 078 456 | [`archive.org/details/install_icq`](https://archive.org/details/install_icq) — **proven byte-identical to the vendor original** preserved by the Wayback Machine at `ftp.icq.com/pub/ICQ_Win95_98_NT4/ICQ2002a/icq2002a.exe` (captures 2002-08-02 and 2002-10-24). Unmodified Wise SFX, no bundler. | **abandonware-URL.** ICQ Ltd./AOL-copyright, long-discontinued, no redistribution grant; hosted by a preservation archive — same private-collection stance as every row in this section. Private preservation exhibit only; never committed, never publicly served. |
+
+The byte-identity against ICQ's own FTP capture is worth noting: it is a
+stronger provenance claim than the 2001b row above can make, and it removes the
+"which repack is this" doubt that the 2001b-over-2002a sourcing argument rested
+on.
 
 ### `macos753` — retronet AIM client media (Tier D, media-only so far)
 
