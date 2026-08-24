@@ -1,58 +1,84 @@
-# es40 fork: bring it in, or pin it? — decision brief
+# es40 fork: how it is pinned, built and deployed
 
-**Status: DECISION PENDING (operator).** Everything below is investigation and a
-tested patch. Nothing was deployed; no live binary and no golden was touched.
+**Status: pinned; deploy in progress.** The fork is under version control as a
+submodule with a pinned builder. This document records what the lab does with
+es40 and why; it is no longer a decision brief.
 
 Two live stations run the es40 Alpha emulator — [`w2kalpha`](../guests/w2kalpha.md)
-and [`tru64`](../guests/tru64.md) — on **two different builds**, from a source
-tree that lives outside this repo. This brief answers: where that tree is, what
-each station actually runs, whether the fork should come into the repo, what a
-rebuild really costs, and it carries a tested fix for the defect that started
-the investigation.
+and [`tru64`](../guests/tru64.md). This brief says where the source lives, how a
+binary is produced from it, what each station runs, what a rebuild really costs,
+and the defect that started the investigation.
 
 ---
 
-## 1. The recommendation, in one screen
+## 1. How it is pinned, in one screen
 
-**Do NOT vendor the es40 source tree. Add it the way this repo already adds every
+The es40 source is **not vendored**. It comes in the way this repo adds every
 other external emulator: a `third_party/` submodule on our own fork, plus a
-builder script that pins a commit and asserts it.**
+builder script that pins a commit and asserts it.
 
-Concretely, three steps, in this order:
+| | |
+|---|---|
+| fork | `github.com/Wnt/es40`, branch `main` |
+| submodule | `third_party/es40`, gitlink pinned to the builder's commit |
+| builder | [`scripts/build-guests/emulators/build-es40.sh`](../../scripts/build-guests/emulators/build-es40.sh) |
+| pin | `ES40_FORK_PIN` in that builder — **`19678ad`** |
+| declared | `registry/release-notes/sources.json`, `pinnedBy` the builder, `.gitmodules` and both station entries |
 
-1. **Commit the orphan hunk.** `src/gui/ctlsock.h` in the working checkout has a
-   24-line uncommitted `SAVEST` verb that is **compiled into w2kalpha's live
-   binary**. Until it is a commit, w2kalpha's deployed binary cannot be
-   reproduced from anything. Land it on `Wnt/es40` and push.
-2. **`third_party/es40` as a submodule** of `github.com/Wnt/es40`, pinned. The
-   fork is already published and already declared in
-   `registry/release-notes/sources.json` — it is the **only** one of the four
-   declared forks with no commit pin, and the registry entries for both stations
-   literally say `"github.com/Wnt/es40 main — no commit pinned in the repo"`.
-3. **`scripts/build-guests/emulators/build-es40.sh`**, modelled on
-   `build-vice-native.sh`: `ES40_FORK_URL`/`ES40_FORK_BRANCH` constants (the
-   shape `scripts/release_notes_pins.py` already parses), a hard
-   `git rev-parse HEAD` assertion against the pin, and a
-   `<binary>.provenance.txt` + `.sha256` epilogue in the shape of
-   `build-seabios-int16if.sh`. There is **no es40 builder in the repo today** —
-   the build is a sentence in a doc (`cd es40src/src && make -j6`).
+`scripts/release-notes.py check` now enforces this in both directions: the
+declaration must still parse to `Wnt/es40 main`, and no undeclared `Wnt/*` pin
+may appear. Until this landed, es40 was the only one of the four declared forks
+with **no** commit pin anywhere in the repo.
 
-### Why not vendor the tree
+**One build serves both stations.** The binary is byte-identical for `w2kalpha`
+and `tru64` — everything that differs between them is launcher environment
+(`ES40_TILE_NAME`, `ES40_POINTER_GAIN`, ports, disks), not compiled code. The
+builder compiles once and installs the same product to each station named on its
+command line. That is how the two were converged; see §3.
+
+**The provenance is now true, not merely present.** `configure.ac` declares
+`ES40_GIT_COMMIT` as an `AC_ARG_VAR`, so the builder passes the pin explicitly
+at configure time and then **runs the built binary and asserts the hash it
+prints is the pin**. It also always re-runs `configure`, never reusing a
+`config.h` from an earlier pin — doing exactly that is how both production
+binaries came to advertise a commit four pins out of date (§3).
+
+**Two build inputs live outside this repo and are not optional.**
+
+- **The sysroot**, `/data/vms/soltest/ALPHA-nt/root` (overridable with
+  `ES40_SYSROOT`): SDL3, libpcap and pipewire's `.pc` file, which SDL3's
+  pkg-config wants. None are installed on labhost, deliberately. Its libdir is
+  also the binary's `RUNPATH`, matching how both production binaries were linked.
+- **Each station's library mirror**, `<assets>/root/usr/lib/x86_64-linux-gnu`,
+  which its launcher puts on `LD_LIBRARY_PATH`. The builder's install gate runs
+  the new binary under exactly that path per station, so "this station can
+  actually execute this binary" is proven at build time rather than at 03:00 on
+  the gallery floor.
+
+**Installing is not deploying.** The builder backs up any binary already in
+place to `es40.bak-<UTC stamp>`, writes `es40.sha256` and `es40.provenance.txt`
+beside the new one, and **restarts nothing** — the running emulator holds the old
+inode until the station is restarted, which is a station decision.
+`systemctl restart streamhost@<x>` stops the guest.
+
+### Why the tree is not vendored
 
 | | |
 |---|---|
 | **Precedent** | The repo has **never** committed an upstream source tree. Every external emulator — MAME, VICE, QEMU, SIMH, ContrAlto2, SeaBIOS — is a pinned commit cloned at build time, optionally with a `Wnt/*` fork submodule under `third_party/`. Vendoring would be the first of its kind. |
 | **Licence** | es40 is **GPL-2.0-or-later** (`COPYING`, and every source header). This repo is **MIT**, with one documented GPL carve-out (`streamhost/`, for libx264) whose README states the trees are independent. A vendored GPL C++ tree would be a second, much larger carve-out — for no benefit the submodule does not already give. |
 | **Gates** | C/C++ has no dialect in `check-file-size.mjs`, so the sources would pass ungated — but the repo-wide **bash and python** gates (`shfmt`, `shellcheck`, `ruff`, and the 600-line bash cap) *do* scan `third_party/` (the ignore regex covers `vendor/`, not `third_party/`). A real tree there would drag es40's own autotools shell into our lint. A **gitlink does not**: `git ls-files` never descends into it. |
-| **Size / nesting** | The tree is ~460 MB as checked out, and upstream es40 itself carries a nested `third_party/asmjit` submodule. |
-| **Operator's standing decision** | Already recorded in `docs/lab/research/alpha-nt-add.md`: *"Source edits go onto the fork as commits (operator: no .patch files)."* That rules out the patch-series option for es40 specifically. |
+| **Size / nesting** | The tree is ~460 MB as checked out, and upstream es40 itself carries a nested `third_party/asmjit` submodule (which the builder checks out recursively — the JIT needs it). |
+| **Operator's standing decision** | Recorded in `docs/lab/research/alpha-nt-add.md`: *"Source edits go onto the fork as commits (operator: no .patch files)."* That rules out a patch-series for es40 specifically. |
 
-**The one thing vendoring would buy — durability if GitHub vanishes — the
-submodule buys too, because the fork is already pushed.** What is genuinely at
-risk today is not the tree; it is the *uncommitted* hunk (step 1) and the
-*unrecorded* build provenance (step 3).
-
----
+The one thing vendoring would buy — durability if GitHub vanishes — the
+submodule buys too, because the fork is pushed. The builder prefers the
+checked-out submodule as its source precisely so a build needs no network; it
+falls back to cloning the fork, loudly and only when the submodule is unreadable,
+and asserts the pin either way. (That fallback is not theoretical: the builder
+runs as root on labhost, and git's ownership check refuses a submodule gitdir
+owned by a normal user — a refusal that is deliberately **not** satisfiable from
+`-c safe.directory=` or the `GIT_CONFIG_*` environment on clone's source path.)
 
 ## 2. Where the fork lives, and under what version control
 
@@ -88,9 +114,9 @@ risk today is not the tree; it is the *uncommitted* hunk (step 1) and the
   actually built in (recovered from DWARF `DW_AT_comp_dir`:
   `/data/vms/soltest/w2krestore-wrst/es40src`, `…/tru64res-p7q/es40src`) **no
   longer exist**.
-- **Licence: GPL-2.0-or-later.** Note `src/gui/ctlsock.h` — a wholly
-  lab-authored file — carries **no licence header at all**. Worth fixing when it
-  is next touched.
+- **Licence: GPL-2.0-or-later.** `src/gui/ctlsock.h` is wholly lab-authored and
+  carried **no licence header at all** until `19678ad`, which gave it the
+  project's standard GPL-2.0-or-later header along with the fix below.
 
 ---
 
@@ -221,10 +247,10 @@ and the two-phase contract, with the `MOVEA` sent *during* the home window:
   +0.27s  EV MOVEA 7 applied 300 220
 ```
 
-The patch is 95 added lines, confined to `src/gui/ctlsock.h`. It is kept at
-`/data/vms/sandbox/es40-scope/ack-honesty.diff` and reproduced in §7 so it
-survives the sandbox. Per the standing decision it should land as a **commit on
-`Wnt/es40`**, not as a `.patch` in this repo.
+The fix is confined to `src/gui/ctlsock.h` and, per the standing decision, lives
+as a **commit on `Wnt/es40`** rather than a `.patch` in this repo:
+**`19678ad`**, which is what `ES40_FORK_PIN` points at. Read it there — the
+commit message carries the contract, the error cases and the measurements.
 
 ---
 
@@ -272,151 +298,13 @@ guard, it just loads. That is the argument for the `provenance-*.md5` guard in
   investigated — it needs the guest-side measurement `tru64` has (`xptr`) and
   `w2kalpha` lacks.
 
-## 7. The patch
+## 7. Where the code is
 
-Against `src/gui/ctlsock.h` at `936760c` + the uncommitted `SAVEST` hunk.
+The fix is `19678ad` on `github.com/Wnt/es40`, branch `main` — the commit
+`ES40_FORK_PIN` names. The diff is not reproduced here on purpose: the fork is
+where that code lives, a copy in this repo would be a second source of truth
+free to drift from the first, and the commit message already carries the
+contract, the error cases and the measurements in more detail than a diff does.
 
-```diff
---- a/src/gui/ctlsock.h
-+++ b/src/gui/ctlsock.h
-@@ -116,8 +116,39 @@
-       {
-         m_bx = 0;
-         m_by = 0;
-+        // The belief was just re-synced against the guest's own edge clamp,
-+        // so a gain residual carried from before the home describes a
-+        // position that no longer exists. Drop it with the belief.
-+        m_resid_x = 0;
-+        m_resid_y = 0;
-+        m_homed = true;
-+        m_settle_polls = kSettlePolls;
-       }
-     }
-+    else if (m_settle_polls > 0)
-+    {
-+      --m_settle_polls;  // inject nothing: let the guest drain the home packet
-+    }
-+    else if (m_pend_valid)
-+    {
-+      // Apply the MOVEA that was acked OK while the home was pacing. This
-+      // runs even if the client that sent it has already hung up — the target
-+      // belongs to the guest cursor, not to the connection that named it.
-+      // That is the whole point: a one-shot tool is gone by now.
-+      const int px = m_pend_x, py = m_pend_y;
-+      const long pseq = m_pend_seq;
-+      m_pend_valid = false;
-+      move_abs(px, py, pseq);
-+      // Completion signal, mamectl-style: OK meant ACCEPTED, this means
-+      // APPLIED. Deliberately NOT the reference module's "converged": es40's
-+      // pointer engine is open-loop and has no cursor readback, so it cannot
-+      // honestly assert the guest cursor arrived — only that the delta was
-+      // injected. Claiming convergence would trade one dishonest ack for
-+      // another.
-+      char ev[96];
-+      snprintf(ev, sizeof(ev), "EV MOVEA %ld applied %d %d\n", pseq, px, py);
-+      broadcast(ev);
-+    }
-     accept_clients();
-     for (Client& c : m_clients)
-       drain_client(c);
-@@ -158,6 +189,23 @@
-   int m_gain = 1;
-   int m_resid_x = 0, m_resid_y = 0;
- 
-+  // Quiet polls between the last corner-home injection and a latched MOVEA,
-+  // so the guest's PS/2 controller has consumed the home packet before the
-+  // move is injected. mouse_motion accumulates into ONE async delta, so a
-+  // move injected too soon MERGES with the home step and lands ~96 px short
-+  // (measured on a w2kalpha clone: MOVEA 200 150 arriving at 104,54 on some
-+  // runs and exactly on others — one poll of separation is not reliably
-+  // enough). ~80 ms at the gui thread's ~50 Hz, paid once per connection.
-+  static constexpr int kSettlePolls = 4;
-+  int m_settle_polls = 0;
-+
-+  // Absolute target accepted (acked OK) while the corner-home was still
-+  // pacing, applied by poll() once the home and its settle have finished.
-+  // Latest-wins: only the newest target is worth applying. See move_abs().
-+  bool m_pend_valid = false;
-+  int m_pend_x = 0, m_pend_y = 0;
-+  long m_pend_seq = 0;
-+
-   static const char* tile_name()
-   {
-     const char* n = getenv("ES40_TILE_NAME");
-@@ -290,6 +338,18 @@
-     (void)!write(c.fd, out, (size_t)len);
-   }
- 
-+  // Async server->client line, delivered to every attached client.
-+  // MSG_NOSIGNAL because the natural consumer of an EV is a one-shot tool
-+  // that has already hung up: a departed client must not take the emulator
-+  // down with SIGPIPE.
-+  void broadcast(const char* line)
-+  {
-+    const size_t n = strlen(line);
-+    for (Client& c : m_clients)
-+      if (c.fd >= 0)
-+        (void)!send(c.fd, line, n, MSG_NOSIGNAL);
-+  }
-+
-   void handle_line(Client& c, const std::string& line)
-   {
-     // "<seq> VERB args..."
-@@ -307,7 +367,7 @@
-       int x = 0, y = 0;
-       if (sscanf(verb + 6, "%d %d", &x, &y) == 2)
-       {
--        move_abs(clampi(x, 0, (int)m_w - 1), clampi(y, 0, (int)m_h - 1));
-+        move_abs(clampi(x, 0, (int)m_w - 1), clampi(y, 0, (int)m_h - 1), seq);
-         ack(c, seq, true);
-       }
-       else
-@@ -408,14 +468,41 @@
-   // Absolute move, open-loop against the believed position. One delta per
-   // target: the guest is configured for 1:1 pointer motion (no acceleration,
-   // baked into the golden), so the exact remaining delta lands exactly and
--  // the believed position stays true. A move issued while the corner-home is
--  // still pacing is dropped (believed is not yet valid); the streamhost
--  // resends the current target continuously, so the first post-home move
--  // lands correctly.
--  void move_abs(int tx, int ty)
-+  // the believed position stays true.
-+  //
-+  // ACK HONESTY. handle_line acks MOVEA with OK, so OK must mean ACCEPTED —
-+  // the target WILL be applied. While the corner-home is pacing the belief is
-+  // not yet valid, so the target cannot be applied NOW; it is LATCHED and
-+  // applied by poll() once the home and its settle finish. Latest-wins.
-+  //
-+  // This replaces a silent drop. The drop was invisible to a client that
-+  // holds its connection open (streamhost restates the current target
-+  // continuously, so its first post-home move landed anyway), but it
-+  // discarded EVERY move from a client that connects, sends one MOVEA and
-+  // hangs up — one process per verb is one connection per verb, and each
-+  // connection re-arms the home. Such a tool got OK for every move while the
-+  // cursor never left the corner the home slam parked it in.
-+  //
-+  // KNOWN LIMIT, not fixed here: one PS/2 packet carries a 9-bit signed
-+  // delta, so a single injection cannot express a move longer than ~255 px.
-+  // A one-shot MOVEA further than that from the current belief lands short
-+  // (measured: MOVEA 300 220 from the corner -> x=255, y=220 exact).
-+  // streamhost is unaffected because it restates the target continuously and
-+  // the cursor walks there in hops. Pacing the move here was tried and does
-+  // NOT converge open-loop: the guest's pointer response is non-linear at
-+  // these per-sample deltas, which is exactly why the reference module
-+  // (mamectl ctlsock.cpp) closes its MOVEA loop over a cursor READING. es40
-+  // has no such readback.
-+  void move_abs(int tx, int ty, long seq)
-   {
--    if (m_home_polls > 0)
-+    if (m_home_polls > 0 || m_settle_polls > 0)
-+    {
-+      m_pend_x = tx;
-+      m_pend_y = ty;
-+      m_pend_seq = seq;
-+      m_pend_valid = true;
-       return;
-+    }
-     if (m_gain <= 1)
-     {
-       inject_mouse(tx - m_bx, ty - m_by);
-```
+`git -C third_party/es40 show 19678ad` after `git submodule update --init
+third_party/es40`.
