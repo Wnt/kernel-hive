@@ -1,4 +1,39 @@
-# irix ICQ — gaim 0.64 works, and takes the emulator down
+# irix ICQ — gaim 0.64 works, and a MAME recompiler bug takes the emulator down
+
+> **ROOT CAUSE FOUND (2026-08-25). This is a MAME bug, not a network or client
+> problem.** MAME kills itself with **SIGSEGV in its own MIPS3 dynamic
+> recompiler** — captured exit status `139` (128+11), `strace` showing
+> `si_code=SEGV_MAPERR, si_addr=NULL` and **not** `SI_USER`, so nothing external
+> sent it. Backtrace from a core against the unstripped binary:
+> `mips3_device::code_compile_block` ← `execute_run` ← `device_scheduler::timeslice`,
+> faulting on `cmp (%rbx),%rax` with `rbx=0`, i.e. `seqlast == nullptr`.
+>
+> The defect is upstream MAME `src/devices/cpu/drcfe.ipp` `build_sequence`: a
+> **branch-likely at the last word of a page**, whose delay slot falls on a
+> **non-resident next page**, is handed the `END_SEQUENCE` marker — and the
+> skip-slot logic then *reclaims* that descriptor instead of appending it. The
+> marker is lost, the sequence has no end, and the walk runs off NULL. The
+> release build compiles out the `assert(seqlast != nullptr)` that would have
+> caught it.
+>
+> **The packets were only ever the stimulus.** Signing in and receiving a
+> message drive gaim through cold code the recompiler has never compiled; it
+> compiles those blocks and hits the alignment. There is no killer packet and
+> therefore no packet-level reproducer — which is why HTTP never did it (a
+> different code path, not different traffic), and why every network hypothesis
+> below came back negative.
+>
+> Three independent lines of evidence agree: the core dump above, the trigger
+> isolation (§the make-it-work pass — dies ≤4 s after the *first inbound IM*,
+> with a clean wire), and the control matrix (§the trigger bisect — signed in
+> with no IM survives 10 min; idle TCP 25 min; unsolicited inbound 6 min; audio
+> with no NIC at all 15 min).
+>
+> Sections below were written as the investigation ran and are kept because the
+> install recipe and the eliminated avenues are the reusable half. Read this box
+> first; where an older section speculates about the cause, this box supersedes
+> it.
+
 
 **Status: BLOCKED, not shipped.** The client is built, installed, configured
 and **proven to sign in**: gaim 0.64 authenticates UIN `65000` against the
