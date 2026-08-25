@@ -1,14 +1,12 @@
 import { WalkinAdminPanel } from './WalkinAdminPanel';
 import './AdminPage.css';
 
-// /admin — operator surface, SPA half (CONTRACT-LEDGER.md §7). The
+// /admin/walkin — operator surface, SPA half (CONTRACT-LEDGER.md §7). The
 // people/passkey management page (invite, promote, remove, usage scoreboard)
-// stays where it is, at the server-rendered scripts/serve/authui/admin.html —
-// this page is additive: the walk-in switch, live state, drain and purge
-// (WALKIN-BRIEF.md §5.1). Wiring the literal /admin path to this page instead
-// of (or alongside) admin.html is a server-routing decision in
-// scripts/serve/config.py, outside this lane's territory (spa/src/admin/**) —
-// see the report for what that needs.
+// stays where it is, at the server-rendered scripts/serve/authui/admin.html,
+// reached at the literal /admin (config.py's AUTH_PAGES claims that exact
+// path). This page is additive, one path down: the walk-in switch, live
+// state, drain and purge (WALKIN-BRIEF.md §5.1).
 export function AdminPage() {
   return (
     <div className="admin-page">

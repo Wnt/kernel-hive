@@ -86,11 +86,11 @@ export default function App() {
         <Route path="/about" element={<>{TopBar}<About /></>} />
 
         {/* ---------- operator: walk-in access panel (CONTRACT-LEDGER.md §7) ----------
-            Server-side, the literal path /admin is currently routed straight to the
-            static people/passkeys page (scripts/serve/config.py), so this route is
-            reachable today only via client-side navigation already inside the SPA,
-            not a fresh load of /admin — see spa/src/admin/AdminPage.tsx. */}
-        <Route path="/admin" element={<AdminPage />} />
+            /admin itself is claimed by config.py's AUTH_PAGES (exact-match lookup
+            in static_files.py) for the static people/passkeys page, which stays as
+            is. The walk-in panel lives one path down, at /admin/walkin, which falls
+            through to the SPA untouched — see spa/src/admin/AdminPage.tsx. */}
+        <Route path="/admin/walkin" element={<AdminPage />} />
 
         {/* ---------- walk-in plane: landing / own clone / exhibits (lane 4) ---------- */}
         <Route path="/walkin/*" element={<WalkinApp />} />
