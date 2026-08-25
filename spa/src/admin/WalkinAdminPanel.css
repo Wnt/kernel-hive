@@ -1,0 +1,75 @@
+/* Walk-in admin panel. Paper palette from index.css tokens — same operator
+   idiom as /fleet (FleetTable.css): dense, legible, no dark mode, nothing cute. */
+.wa-panel {
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 720px; margin: 0 auto; padding: 76px 24px 40px;
+  color: var(--ink); font-family: var(--font-ui);
+}
+.wa-status { color: var(--ink-soft); font-size: 15px; }
+.wa-status--err { color: var(--danger); }
+.wa-status--err a { color: var(--accent-ink); }
+
+.wa-card {
+  background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: var(--shadow-1); padding: 18px 20px;
+}
+.wa-card h2 { margin: 0 0 12px; font-size: 15px; letter-spacing: 0.01em; }
+.wa-card h3 { margin: 14px 0 8px; font-size: 12px; color: var(--ink-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.wa-switch { display: flex; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+.wa-switch-opt {
+  flex: 1 1 0; font: inherit; font-weight: 600; font-size: 13px; padding: 10px 8px;
+  background: var(--paper); color: var(--ink-soft); border: 0; cursor: pointer;
+  border-right: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.wa-switch-opt:last-child { border-right: 0; }
+.wa-switch-opt:hover:not(:disabled) { background: var(--tint-1); }
+.wa-switch-opt.active { background: var(--accent); color: var(--paper-raised); }
+.wa-switch-opt.blocked { color: var(--ink-muted); cursor: not-allowed; opacity: 0.6; }
+.wa-switch-opt:disabled:not(.blocked) { opacity: 0.6; cursor: default; }
+.wa-lock { font-size: 11px; }
+
+.wa-note { margin: 10px 0 0; color: var(--ink-muted); font-size: 13px; }
+.wa-note--floor { color: var(--warn); }
+.wa-result { margin: 10px 0 0; color: var(--ok); font-size: 13px; font-weight: 600; }
+
+.wa-stats { display: flex; gap: 24px; margin: 0; }
+.wa-stat dt { font-size: 12px; color: var(--ink-muted); }
+.wa-stat dd { margin: 2px 0 0; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.wa-pools { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.wa-pool {
+  display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px;
+  background: var(--paper-sunken); border-radius: 8px; font-size: 13px;
+}
+.wa-pool-os { font-family: var(--font-mono); }
+.wa-pool-free { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+.wa-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.wa-btn {
+  font: inherit; font-weight: 600; font-size: 13px; padding: 8px 14px; border-radius: 9px;
+  border: 1px solid var(--line-strong); background: var(--accent); color: var(--paper-raised); cursor: pointer;
+}
+.wa-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.wa-btn:disabled { opacity: 0.5; cursor: default; }
+.wa-btn--secondary { background: transparent; color: var(--ink); }
+.wa-btn--danger { background: var(--danger); border-color: var(--danger); }
+.wa-tag {
+  font-size: 12px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--warn); background: rgba(143, 100, 7, 0.12);
+}
+
+.wa-purge-label { font-size: 13px; color: var(--ink-soft); }
+.wa-purge-input {
+  width: 72px; font: inherit; padding: 7px 8px; border-radius: 8px;
+  border: 1px solid var(--line-strong); background: var(--paper); color: var(--ink);
+}
+.wa-purge-unit { font-size: 13px; color: var(--ink-muted); }
+
+@media (max-width: 640px) {
+  .wa-panel { padding: 92px 14px 32px; }
+  .wa-switch { flex-direction: column; }
+  .wa-switch-opt { border-right: 0; border-bottom: 1px solid var(--line); }
+  .wa-switch-opt:last-child { border-bottom: 0; }
+}

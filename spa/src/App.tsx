@@ -6,6 +6,7 @@ import StreamView from './ui/grid/StreamView';
 import ExhibitPoster from './ui/ExhibitPoster';
 import { FleetTable } from './ui/FleetTable';
 import { About } from './ui/About';
+import { AdminPage } from './admin/AdminPage';
 import { useManifest } from './data/useManifest';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
@@ -82,6 +83,13 @@ export default function App() {
 
         {/* ---------- about the project + generated weekly release notes ---------- */}
         <Route path="/about" element={<>{TopBar}<About /></>} />
+
+        {/* ---------- operator: walk-in access panel (CONTRACT-LEDGER.md §7) ----------
+            Server-side, the literal path /admin is currently routed straight to the
+            static people/passkeys page (scripts/serve/config.py), so this route is
+            reachable today only via client-side navigation already inside the SPA,
+            not a fresh load of /admin — see spa/src/admin/AdminPage.tsx. */}
+        <Route path="/admin" element={<AdminPage />} />
 
         {/* ---------- 3D museum ---------- */}
         <Route path="/museum" element={<SceneV2 />} />
