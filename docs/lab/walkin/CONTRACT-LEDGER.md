@@ -24,7 +24,7 @@ created by the ledger commit, not by a lane.
 | 3 | **handles** | `scripts/serve/auth/handles/**` (module + wordlists) | §4.3 |
 | 4 | **walk-in UI** | `spa/src/walkin/**` | §3, §7 |
 | 5 | **admin UI** | `spa/src/admin/**` | §3, §7 |
-| 6 | **network plane** | `scripts/retronet/walkin-net/**`, box-side CT 951 | §6 |
+| 6 | **network plane** | `scripts/retronet/walkin-net/**`, box-side CT 952 | §6 |
 | 7 | **`os2warp` enablement** | `registry/walkin/os2warp.json`, `streamhost/stations/os2warp/wi-tapnet.sh` | §5, §6 |
 | 8 | **`rhapsody` enablement** | `registry/walkin/rhapsody.json`, `streamhost/stations/rhapsody/wi-tapnet.sh` | §5, §6 |
 | 9 | **production pre-flight** | `docs/lab/walkin/PREFLIGHT.md`, `scripts/serve/check-stream-tickets.py` | §8 |
@@ -79,7 +79,30 @@ lives under `/auth/` because it is an admin control.
 Errors are the existing `AuthError` shape. A refused claim while closed returns
 **403** with `{"error":"walkin_closed"}`.
 
-### 3.1 Reason codes
+### 3.1 Broker interface
+
+Lane 2 calls lane 1 across this surface. Duck-typed, and frozen here so the two
+lanes cannot pick different names:
+
+```python
+live_sessions() -> int
+pools() -> list[dict]          # [{"os": str, "free": int, "size": int}]
+close_sessions(reason: str) -> int
+kill_all_clones() -> None
+refill() -> None
+set_drain(value: bool) -> None
+```
+
+Lane 2 binds it with `AUTH.walkin.bind_broker(...)`. A missing broker is
+tolerated and logged — the lanes land on their own schedules.
+
+### 3.2 Signup is two round trips
+
+WebAuthn registration cannot be one request. `/walkin/signup` routes on the body
+— attestation present means finish, absent means begin — so the frozen route
+holds, with explicit `/walkin/signup/begin` and `/walkin/signup/finish` beside it.
+
+### 3.3 Reason codes
 
 | Code | Meaning | Who emits |
 |---|---|---|
@@ -90,6 +113,13 @@ Errors are the existing `AuthError` shape. A refused claim while closed returns
 
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
+
+**Ticket revocation is gateway-side only.** A ticket already in a browser stays
+cryptographically valid until its ≤300 s expiry — streamhost's verifier is not
+ours. What actually ends a session is killing the clone, step 4 of the teardown.
+
+**`/usage/stations.json` is denied to walk-ins** (it enumerates per-station
+activity); `/usage` and `/clientlog` are allowed.
 
 ## 4. Persisted state
 
@@ -141,7 +171,7 @@ that module is on `main`, lane 2 rebases — it does not create the module.
 | systemd | `walkin.slice`, `walkin-clone@<identity>.service` | — |
 | Slot | claimed from **152–200** via `kh-claim` | — |
 | UDP port | `54000 + slot` | slot 152 → 54152 |
-| Clone MAC | generated per clone, `02:00:00:00:57:<slot-hex>` in docs | — |
+| Clone MAC | **not settable** — see §5.3 | — |
 
 Slots, taps and IPs are claimed with `kh-claim` under `$KH_SESSION`. Never
 check-then-create ([`../OPERATING-RULES.md`](../OPERATING-RULES.md) rule 7).
@@ -167,6 +197,16 @@ enablement lanes write it. Unknown keys are an error, not a silent ignore.
 }
 ```
 
+**The seed copy is a reflink, not a backing chain.** An internal `savevm`
+snapshot is per-image and does **not** inherit through a qcow2 backing file, so
+`-loadvm golden` against a backing-chain overlay cannot work — measured by lane 7.
+What does work, and what the broker must do: `cp --reflink=always` of the golden
+(853 MB in **27 ms**, 1 K of new space, internal `golden` snapshot preserved).
+The reflink must stay **within one dataset** — cross-dataset fails `EXDEV` — so
+the seed is staged inside `data/vms`, not referenced in place under
+`/data/gallery-guests`. Read `overlay.format: "qcow2"` as *a reflinked qcow2*,
+discarded on kill.
+
 **`overrides` may change paths, ports, tap names and netdev *options* only.**
 It may not add, remove or retype a device: `loadvm` matches the device set the
 golden was captured against, and the binary is bound to that same combination
@@ -174,19 +214,52 @@ golden was captured against, and the binary is bound to that same combination
 `-sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny`
 where the binary is QEMU.
 
+### 5.3 One clone per station, and why
+
+`loadvm` restores the NIC's MAC from saved device state, so **every clone of one
+station carries the same MAC** — `mac=` on the command line cannot override it,
+and the device set may not be changed to work around it. Two clones of one
+station on one bridge therefore collide: FDB flap and one DHCP identity. Port
+isolation stops them seeing each other; it does not stop the gateway seeing them
+as one host.
+
+Each golden also has a **baked network identity** — the address and lease it held
+when it was captured on `vmbr-rn` — and these guests do not re-DHCP inside a
+20-minute session.
+
+Both problems disappear together if the walk-in plane stops renumbering:
+
+- **`poolSize` is 1 for every station.** Three stations, three clones, three
+  distinct MACs and three distinct baked addresses. No collision to solve.
+- **The plane presents the numbering the goldens already expect** (§6). A clone
+  boots believing exactly what it believed when it was captured, and it is right.
+
+The cost is honest and bounded: **three concurrent walk-in visitors, one per OS.**
+Growing a pool beyond one needs a per-station walk-in golden captured on this
+plane — a second lineage per station, which is a later decision, not this wave's
+([`../OPERATING-RULES.md`](../OPERATING-RULES.md) rule 6).
+
 ## 6. The walk-in network plane
+
+**A separate gateway, not a second leg on the live one.** CT 951 serves five
+ICQ stations and the corpus web; giving it a second interface put the live
+retronet at risk for no gain, and it could not hold the numbering below anyway
+(one container cannot carry `10.99.0.2/24` twice).
 
 | Value | Frozen |
 |---|---|
-| Bridge | `vmbr-wi`, `bridge-ports none` |
-| Subnet | `10.98.0.0/24` |
-| Gateway (CT 951 `net1`) | `10.98.0.2/24` |
-| DHCP pool | `10.98.0.100` – `10.98.0.199`, short leases |
-| Services on `eth1` | proxy `3128`, DNS `53`, `:80` origin, `search.retronet` |
-| **Not** on `eth1` | OSCAR `5190` — that is the station-to-station relay |
-| No transit | `net.ipv4.ip_forward=0` in CT 951 **and** an nft `FORWARD` drop between `eth0`/`eth1` |
+| Bridge | `vmbr-wi`, `bridge-ports none`, **no address on labhost** — the host is not even reachable on this segment |
+| Gateway | **CT 952 `walkin-gw`**, single-homed on `vmbr-wi`, from CT 951's own reproducible provisioner |
+| Numbering | `10.99.0.0/24`, gateway `10.99.0.2/24` — deliberately the same as retronet, on a different L2 with no route between them, so each clone's baked identity is correct (§5.3) |
+| Addressing | **No DHCP.** Each clone keeps the address its golden was captured with |
+| Corpus | the existing corpus mounted **read-only** |
+| Services | proxy `3128`, DNS `53`, `:80` origin, `search.retronet` |
+| **Not** served | OSCAR `5190` — that is the station-to-station relay |
+| No transit | CT 952 has one leg and no route to `vmbr-rn`, labhost or the internet. Nothing to forward |
 | No clone↔clone | `bridge link set dev <tap> isolated on` on every walk-in tap; the gateway port stays un-isolated |
 | Guard chain | `WI<STATION>-IN`, fail-closed, modelled on `WIN311RN-IN` |
+
+The live retronet gateway CT 951 is **not modified at all**.
 
 `streamhost/stations/win311/rn-tapnet.sh` (landed 2026-08-25) is the reference
 implementation to model a `wi-tapnet.sh` on. Each station gets its **own**
