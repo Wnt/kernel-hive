@@ -260,3 +260,102 @@ moot until the blocker above is fixed.
   `RN_BOT_PERSONAS` was re-rendered while the roster row was flipped and now
   lists `65000:irix`; with the row back to `onboarded: false`, re-running
   `scripts/retronet/bot/install-bot.sh --apply` drops it again.
+
+## Routing around it — what the make-it-work pass established (2026-08-25)
+
+A second agent attacked the blocker from the outcome side while the crash was
+being instrumented and bisected: *change the client's shape, the network path or
+the session's demands until the station holds an OSCAR session*. The root cause
+(next section up in whatever order these land: **SIGSEGV in MAME's MIPS3
+dynamic recompiler**, `drcfe.ipp build_sequence`, a branch-likely at a page
+boundary whose delay slot is non-resident) was found by the instrumentation
+agent mid-way through this pass, and it explains every result below. They are
+recorded because they eliminate the cheap avenues **with evidence**, and because
+the reproduction recipe is the independent-validation procedure for the
+rebuilt binary.
+
+### What the trigger is, from the outcome side
+
+| Run | Config | Result |
+|---|---|---|
+| baseline | v13 as baked (`sound_options 24655`, perl plugin, `report_idle 1`) | sign-in OK; **SEGV 3 s after the greeter's IM** (bot `GREETED` 07:38:17, MAME gone 07:38:20) — matches the live station's 3/3 |
+| quiet gaimrc | `sound_options 1024` (BEEP method only, zero event bits — the one value that stops `gaimrc.c:979` forcing the libao path back on), plugins block emptied (no `perl.so`), `report_idle 0` | sign-in OK; **session HELD 14 minutes** — two ESTABLISHED conns, keepalives on the wire, Buddy List signed in on the framebuffer (`Orphans (1/22)`, HiveBot online) — then **SEGV ≤4 s after the first inbound IM** (persona-sim `->65000` 08:11:17, MAME gone 08:11:21) |
+
+So, measured twice plus the baseline: **presence, SSI roster download, sign-on
+traffic and a long-lived idle session are all survivable; the first inbound IM
+kills the emulator within ~4 s.** The 14-minute hold under the quiet config is
+not the config's merit — no IM happened to be delivered during it (see the
+confounder below). One rig run also died **9 s after keystrokes into a
+mid-boot guest with zero OSCAR traffic**, which looked anomalous until the root
+cause landed: any path into cold guest code can reach the DRC fault; the IM is
+just the reliable one, because a visitor sign-in drives gaim's message path
+through code the recompiler has never seen.
+
+### Avenues eliminated (do not retry these)
+
+- **gaim's perl plugin** — removed, crash unchanged. Not it.
+- **The sound path** (libao/esound/audiofile, the RECV/LOGIN event sounds, the
+  `gaim_setup` 10 s login-mute window) — all sound disabled at the config
+  level that prevents `ao_initialize()` entirely; crash unchanged. Not it.
+- **Idle reporting** (`report_idle 0`) — crash unchanged. Not it.
+- **Session volume/lifetime** — 14 min idle OSCAR session with keepalives held
+  fine. It is not "the session wears something out".
+- **The wire itself** — full-capture tcpdump on the tap across the death: the
+  157-byte IM FLAP is delivered, the guest ACKs every segment cleanly, and
+  **no packet crosses the tap in the 1–4 s between the last ACK and the SEGV**.
+  In the baseline run the last packet preceded death by 29 s. The kill is
+  post-receive, in-guest processing — consistent with the DRC diagnosis and
+  ruling out frame-size/MTU/broadcast theories without running them.
+- (Untested and now moot per root cause: MTU changes, a /30 + userspace TCP
+  forwarder off the bridge, licq. licq would merely hit different code
+  alignment — luck, not a fix.)
+
+### The reproduction rig, kept for validating the fixed binary
+
+`wt.sh` stack + `irix-serial-rig.sh` clone of the **immutable staged v13**,
+with four corrections over the naive loop, each paid for:
+
+1. **Detach the tap from `vmbr-rn` for the whole boot** (`ip link set <tap>
+   nomaster`), re-enslave only after re-addressing. The seed announces
+   **10.99.0.24 — the LIVE exhibit's address — during boot**; a bridged clone
+   mid-boot is an address conflict with the running station.
+2. **Gate the login on the chooser actually being painted.** "Agent answered"
+   is multiuser, not the chooser; the Lua agent's `emu=` clock in
+   `cmd.agent.log` reaches ~110 emu-s at chooser paint. Typing before that
+   goes into the textport (and once coincided with a death).
+3. **Re-apply guest config every boot** — the rig recopies `disk.chd` from the
+   golden on each `boot`, so in-guest edits do not survive a cycle.
+4. **The rig's `stop` does not reap the x11-capture Xvfb**, and a dead
+   display's abstract socket blocks the next boot with "Xvfb :N did not come
+   up". Kill it by `/proc/<pid>/cmdline` match on the exact `:N` and remove
+   `/tmp/.XN-lock`.
+
+Login is `xdotool` into the MAME SDL window on the rig Xvfb (click the Login
+name field, type `demos`, Return); IM on demand via
+`scripts/retronet/bot/persona-sim.py --buddy 65000 --say …` with the spare
+persona UIN. Death watch is a 2 s `kill -0` loop on `mame.pid`; with the fixed
+binary, acceptance is this exact sequence holding **20 min past an inbound IM**
+with the message rendered in a conversation window on the framebuffer.
+
+### Two confounders that will bite the next multi-rig session
+
+- **Concurrent rigs share UIN 65000.** The gateway accepted two simultaneous
+  sessions and the greeter delivered to only one of them — the baseline run's
+  bot `GREETED` line did not correspond to a packet on *this* rig's tap (a
+  sibling rig held the other session; the bot also logged `arrival while
+  already online — duplicate`). A "no crash" run means nothing until the pcap
+  proves an IM reached *your* clone.
+- **Every irix clone shares the PROM MAC `08:00:69:12:34:56`** with the live
+  station, so the bridge FDB flaps between ports and unicast to that MAC is
+  delivered to whichever port spoke last. Survivable for TCP, but it makes
+  cross-rig evidence ambiguous — prefer one bridged irix clone at a time.
+
+### Verdict for shipping
+
+There is **no configuration worth shipping around this bug**. The only
+config-level survivor is "no inbound IM ever" (presence-only roster row with
+the greeter disabled for irix) — and an exhibit whose emulator dies the moment
+anyone messages it is not a shipping state, it is a trap with a countdown. The
+fix is the recompiler patch + rebuilt binary (which orphans every savestate —
+rebake via `irix-savestate/bake-golden.sh` after promotion), validated with the
+rig above.
