@@ -1,11 +1,11 @@
 ---
 title: NeXTSTEP 3.3 — the operating system that outlived its computer
-subtitle: 1995 · NeXTSTEP 3.3 (NeXTcube)
+subtitle: 1995 · NeXTSTEP 3.3 (NeXTstation Color)
 hero: /posters/nextstep/desktop.webp
 images:
   - src: /posters/nextstep/desktop.webp
-    alt: The grey NeXTSTEP Workspace with the Workspace menu at the top left, a File Viewer window and the Dock down the right-hand edge
-    caption: The Workspace as the machine brings it up for itself. The column of icons on the right is the Dock — this is where it was invented.
+    alt: The colour NeXTSTEP Workspace with the OmniWeb menu at the top left, the File Viewer open on the home directory, an OmniWeb window showing NeXT's HotNews press page, and the Dock down the right-hand edge
+    caption: OmniWeb holding NeXT's own HotNews page, fetched live over the museum's period network — a web browser on the operating system the web browser was invented on. The column of icons down the right is the Dock; that was invented here too.
 ---
 ## Origins
 
@@ -27,11 +27,11 @@ Along the way the Dock, the column of application icons down the right-hand edge
 
 ## What you're looking at
 
-A NeXTcube: 68040, 64 MB of memory, and the MegaPixel display's 1120x832 greyscale, resting on the Workspace exactly as an untouched login leaves it. Nothing here has been arranged for the exhibit.
+A colour NeXTstation: a 68040 at 25 MHz, 32 MB of memory, and the MegaPixel display's 1120x832. The machine is on the museum's period network, and OmniWeb — a browser written for this operating system — is open on NeXT's own HotNews press page as the company served it in 1996, WebObjects headlines and all.
 
-Top left is the Workspace menu — NeXTSTEP menus are not a bar across the top of the screen, they are floating panels you can tear off and leave wherever you like. The window is the File Viewer, showing the home directory of the user the machine logs in as; the horizontal column browser inside it is another NeXT idea that survives in the Finder to this day. Down the right-hand edge is the Dock, with the recycler at the bottom.
+Top left is the main menu — OmniWeb's, since it is the active application. NeXTSTEP menus are not a bar across the top of the screen, they are floating panels you can tear off and leave wherever you like. The window is the File Viewer, showing the home directory of the user the machine logs in as; the horizontal column browser inside it is another NeXT idea that survives in the Finder to this day. Down the right-hand edge is the Dock, with the recycler at the bottom.
 
-The greyscale is not a limitation of the exhibit. The original cube's display was two bits deep — black, white and two greys — and the entire interface was designed around that constraint, which is a large part of why it still looks calm.
+The colour is period-correct for this machine — the NeXTstation Color drove exactly this 1120x832 — but the interface was designed first for the original cube's two-bit greyscale display: black, white and two greys. That constraint is a large part of why it still looks calm, even in colour.
 
 ## Legacy
 
