@@ -365,6 +365,24 @@ export type WalkinAdminStatus = {
 };
 ```
 
+## 7.1 Two things a visitor can trip
+
+**The reset button races the idle-pauser.** Measured by lane 7: a `reset` on a
+station whose daemon has just idle-paused it fails with
+`Could not load snapshot 'golden' … Invalid argument`. Not damage, and not the
+emulator — it is the race `scripts/lib/guest_wake.py` exists for. Redone inside
+a `WakeLease` it succeeded first try. The broker's reset path **must hold the
+wake lease** (or retry), or a stranger is told "reset failed" on a perfectly
+healthy station.
+
+**A seed can show a stranger a lab failure.** The `os2warp` golden boots with
+its ICQ client already running, which on this plane immediately raises
+*"ICQ server not accepting your login"* — correct behaviour (CT 952 withholds
+OSCAR) but a broken-looking first frame. The same image carries the station's
+retronet ICQ identity, which the brief's own per-seed checklist says must not
+be in a walk-in seed. Open decision, recorded in
+[`../WALKIN-BRIEF.md`](../WALKIN-BRIEF.md) §3.
+
 ## 8. Production pre-flight (lane 9)
 
 The wave ends **deployed on the production URL at Invited only**, so enabling is

@@ -116,6 +116,17 @@ image (exec-channel *public* keys are fine, anything private is not), no
 retronet credentials or `RETRONET_ICQ_*` material, scene shows something a
 stranger can use in 10 seconds.
 
+**The `os2warp` seed fails that checklist today** and the decision is open. Its
+golden boots with the ICQ client running, so a walk-in's first frame carries
+*"ICQ server not accepting your login"* — correct (the walk-in plane withholds
+OSCAR by design) but it reads as broken — and the image carries the station's
+retronet ICQ identity for a stranger to rummage through. The credential is inert
+off the retronet, which a walk-in clone cannot reach, so this is a hygiene and
+first-impression problem rather than an exposure. Three ways out: accept it,
+suppress the client in a walk-in seed, or recapture a walk-in golden without it
+(a second lineage per station, rule 6). `win311` and `rhapsody` need the same
+audit before they go on duty.
+
 ## 4. Session lifecycle and quotas
 
 Defaults to tune, not measurements. **Bench each guest's resumed cost before
