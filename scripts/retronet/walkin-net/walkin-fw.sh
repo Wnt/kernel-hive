@@ -97,13 +97,27 @@ fw_up() {
   iptables -A "$FWD" -i "$BR" -o "$BR" -j RETURN
   iptables -A "$FWD" -i "$BR" -j DROP
   iptables -A "$FWD" -o "$BR" -j DROP
-  # INPUT — labhost receives nothing from this segment.
+  # The per-clone cell bridges (wibr<slot>, wi-clonecell.sh) get the same
+  # backstop by wildcard. The intra-bridge RETURN keeps guest<->cell-NAT
+  # traffic alive if br_netfilter ever loads — same dormant protection as
+  # above; each cell's own namespace carries the fail-closed rules that
+  # actually scope that traffic. Root-namespace labhost never forwards for a
+  # cell: the cell's NAT lives inside its namespace, so these drops cost
+  # nothing and catch a routing mistake before it becomes a leak.
+  iptables -A "$FWD" -i wibr+ -o wibr+ -j RETURN
+  iptables -A "$FWD" -i wibr+ -j DROP
+  iptables -A "$FWD" -o wibr+ -j DROP
+  # INPUT — labhost receives nothing from this segment, cells included.
   iptables -A "$IN" -i "$BR" -j DROP
+  iptables -A "$IN" -i wibr+ -j DROP
 
   if has6; then
     ip6tables -A "$FWD" -i "$BR" -j DROP
     ip6tables -A "$FWD" -o "$BR" -j DROP
+    ip6tables -A "$FWD" -i wibr+ -j DROP
+    ip6tables -A "$FWD" -o wibr+ -j DROP
     ip6tables -A "$IN" -i "$BR" -j DROP
+    ip6tables -A "$IN" -i wibr+ -j DROP
   fi
 
   for ipt in iptables $(has6 && echo ip6tables); do
@@ -124,7 +138,10 @@ fw_verify() {
   s="$(iptables -S 2>/dev/null)" || return 1
   grep -qx -- "-A $FWD -i $BR -j DROP" <<<"$s" || return 1
   grep -qx -- "-A $FWD -o $BR -j DROP" <<<"$s" || return 1
+  grep -qx -- "-A $FWD -i wibr+ -j DROP" <<<"$s" || return 1
+  grep -qx -- "-A $FWD -o wibr+ -j DROP" <<<"$s" || return 1
   grep -qx -- "-A $IN -i $BR -j DROP" <<<"$s" || return 1
+  grep -qx -- "-A $IN -i wibr+ -j DROP" <<<"$s" || return 1
   grep -qx -- "-A FORWARD -j $FWD" <<<"$s" || return 1
   grep -qx -- "-A INPUT -j $IN" <<<"$s" || return 1
   # labhost must own no address here: an address would make it a participant,
