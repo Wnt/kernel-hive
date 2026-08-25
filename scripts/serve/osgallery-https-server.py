@@ -15,6 +15,12 @@ Serves:
   POST /webrtc/<tile>/offer     -> platform non-trickle SDP proxy; every tile in
                                    SIGNAL_CONFIG is routed to one generic bridge.
   GET /signal/index.json        -> list of configured tiles + their udpPort
+  GET/POST /walkin/*            -> the walk-in plane (walkin_plane.py): the public
+                                   pool state, passkey signup, and ONE private
+                                   clone per visitor. Absent — every route 404s
+                                   into the SPA fallback — unless WALKIN_REGISTRY
+                                   names a directory. Who may reach it is the
+                                   /admin switch's answer, floored by WALKIN_OPEN.
   GET /healthz                  -> "ok"
   POST /restore/<osId>          -> reset ONE tile to its golden fixture (no token —
                                    LAN-gated + non-destructive): runs reset-tile.sh <osId>,
@@ -78,6 +84,11 @@ Env (all optional except paths):
   CLIENTCMD_AUDIT issued-command audit trail (default <server dir>/clientcmd-audit.jsonl)
   USAGE_STATS    interaction-counter file     (default <server dir>/usage-stats.json)
   OSG_ADMIN_EVAL set to 0 to DISABLE arbitrary-JS eval commands   (default on)
+  WALKIN_REGISTRY registry/walkin dir     (default /data/kernel-hive/registry/walkin)
+  WALKIN_REPO    repo root the launcher paths resolve against (default /data/kernel-hive)
+  WALKIN_TICK_SECS pool watchdog interval in seconds               (default 15)
+  WALKIN_OPEN    walk-in env FLOOR; unset/0 = closed whatever the switch says
+  WALKIN_ARP_PRIME the plane's ARP-priming helper, a `{ip}` command template
 
 The route bodies live beside their config/globals in dedicated modules
 (static_files.py, webrtc.py, clientlog.py, clientcmd.py, restore.py,
@@ -105,6 +116,7 @@ import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
 import usage  # noqa: E402
+import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
 from auth import gate  # noqa: E402  (import needs the sys.path line above)
 from auth import routes as auth_routes  # noqa: E402
@@ -239,22 +251,25 @@ class H(BaseHTTPRequestHandler):
         if gate.is_open(path):
             return True
         user = AUTH.user_for_token(auth_routes.session_token(self))
-        if user:
-            # Signed in is enough for everything still reachable here. The one
-            # path that needed more — the command ENQUEUE — is not gated any
-            # more, it is refused outright by gate.BLOCKED_PREFIXES above, so
-            # there is no browser-reachable route to issue a command at all.
+        # Signed in is enough for an INVITED session — that is what gate.allows
+        # returns for every role but one, and the invited plane is unchanged. A
+        # walk-in is the exception: an anonymous stranger's fence is an
+        # allowlist whose one interactive surface is their OWN clone, so the
+        # gate is told which clone that is.
+        if user and gate.allows(path, user, walkin_plane.own_signal(user)):
             return True
         if gate.wants_html(self.headers.get("Accept")):
-            # A browser typing the hostname in should land on the login screen,
-            # not on a bare 401 it cannot act on.
+            # A browser typing the hostname in should land on a page it can act
+            # on, not a bare 401 — and for a walk-in that page is the walk-in
+            # landing, never the invited plane's login screen.
             self.send_response(302)
-            self.send_header("Location", "/login")
+            self.send_header("Location", gate.landing_for(user))
             self.send_header("Content-Length", "0")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return False
-        self._send(401, json.dumps({"error": "sign in first"}), MIME[".json"], cache=False)
+        code, message = (403, "not yours") if user else (401, "sign in first")
+        self._send(code, json.dumps({"error": message}), MIME[".json"], cache=False)
         return False
 
     def _require_session(self, surface: str) -> bool:
@@ -342,6 +357,8 @@ class H(BaseHTTPRequestHandler):
                 return
             if not self._public_gate(path):
                 return
+            if walkin_plane.dispatch(self, path, "POST", AUTH, PUBLIC_ORIGIN):
+                return
 
         # Platform WebRTC signaling: every known station routes to the ONE
         # generic bridge by station id (see webrtc.handle_offer).
@@ -388,6 +405,8 @@ class H(BaseHTTPRequestHandler):
             if auth_routes.dispatch(self, path, "GET", AUTH, PUBLIC_ORIGIN):
                 return
             if not self._public_gate(path):
+                return
+            if walkin_plane.dispatch(self, path, "GET", AUTH, PUBLIC_ORIGIN):
                 return
             if path in ("/login", "/admin", "/account", "/link") or path.startswith("/ui/"):
                 return static_files.serve_auth_ui(self, path)
@@ -472,6 +491,7 @@ def main():
         sys.stderr.write(f"[serve] FATAL: no index.html under WEBROOT={WEBROOT}\n")
         sys.exit(1)
     _start_public_listener()
+    walkin_plane.start(AUTH)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(certfile=CERT, keyfile=KEY)
     httpd = ThreadingHTTPServer((BIND_IP, PORT), H)

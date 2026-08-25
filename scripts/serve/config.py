@@ -48,6 +48,22 @@ AUTH_PAGES = {
     "/link": "link.html",
 }
 
+# --- the walk-in plane (docs/lab/walkin/CONTRACT-LEDGER.md) ------------------
+# Adding an OS to the pool is DATA: the broker reads registry/walkin/*.json out
+# of the box's repo checkout, and the launcher paths inside those files are
+# relative to its root. Point WALKIN_REGISTRY at a directory that does not
+# exist and the pool is simply absent — the server, the LAN gallery and the
+# invited plane all behave exactly as they did before the plane was built. The
+# switch itself is auth's (walkin.access, default closed) and the env FLOOR is
+# WALKIN_OPEN; neither is read here.
+WALKIN_REGISTRY = Path(os.environ.get("WALKIN_REGISTRY", "/data/kernel-hive/registry/walkin"))
+WALKIN_REPO = Path(os.environ.get("WALKIN_REPO", "/data/kernel-hive"))
+# The watchdog interval. Nothing else calls Broker.tick(), and it is what
+# expires a session on its TTL, reaps an idle one and keeps the pool warm — so
+# this is not a tuning knob, it is the resolution of every deadline the ledger
+# promises a visitor.
+WALKIN_TICK_SECS = int(os.environ.get("WALKIN_TICK_SECS", "15") or 15)
+
 # --- POST /restore/<osId> : reset-to-golden button endpoint ------------------
 # The single authority (reset-tile.sh + golden-manifest.json) shared with the
 # Playwright input suite's reset-before-run. Defaults sit beside this server so a
