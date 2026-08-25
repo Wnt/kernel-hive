@@ -19,7 +19,35 @@ from __future__ import annotations
 # <link rel="manifest"> and the icon reads carry no session cookie); behind the
 # gated tunnel they would 401 and Chrome would never offer "Install". None of it
 # is private — the app's name, its caching worker, and the museum's mark.
-OPEN_PATHS = frozenset({"/healthz", "/login", "/link", "/favicon.ico", "/manifest.webmanifest", "/sw.js"})
+# The two walk-in routes ledger §3 marks `public` are open here because they
+# have to be: a stranger with no account polls `/walkin/state` to learn whether
+# the plane is open at all, and `/walkin/signup` is how they get an account in
+# the first place. Neither leaks anything — the state doc is a switch position
+# and a free/size count, and signup is refused unless the switch is at Open.
+# The rest of `/walkin/*` (claim, release, reset, manifest) needs a session and
+# is deliberately NOT here (PREFLIGHT.md B4).
+#
+# NOT open, and it is a deliberate open decision rather than an oversight:
+# `/walkin` itself, the landing PAGE. A signed-out browser asking for it is
+# redirected to /login like any other page, so the sign-up flow is unreachable
+# to a stranger until somebody adds "/walkin" to this set. That is the same
+# decision as whether the gallery links it at all, and it is the operator's;
+# at Invited — where the wave ships — it changes nothing, because signup is
+# 403 there anyway.
+OPEN_PATHS = frozenset(
+    {
+        "/healthz",
+        "/login",
+        "/link",
+        "/favicon.ico",
+        "/manifest.webmanifest",
+        "/sw.js",
+        "/walkin/state",
+        "/walkin/signup",
+        "/walkin/signup/begin",
+        "/walkin/signup/finish",
+    }
+)
 # /ui/ is the sign-in and people-management page bundle. It is open in full,
 # including admin.js: that file describes an API surface which is documented in
 # the repo anyway, and every call it makes is authorized server-side. Keeping
