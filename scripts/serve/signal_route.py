@@ -14,14 +14,48 @@ from config import PUBLIC_HOST, SIGNAL_CONFIG, SIGNAL_HOST
 from static_files import MIME
 from webrtc import ice_servers
 
+# The walk-in pool, bound by the server at startup (contract ledger §3.1). A
+# clone is not in tiles.json — it exists for twenty minutes — so its signaling
+# row comes from the broker instead, in tiles.json's own shape. Both stay None
+# on a box with no walk-in plane, and every path below degrades to what it did
+# before the plane existed.
+BROKER = None
+WALKIN_TICKETS = None
+
+
+def bind_walkin(broker, tickets=None) -> None:
+    """Wire the pool broker (and its ticket registry) into the signaling path."""
+    global BROKER, WALKIN_TICKETS
+    BROKER = broker
+    WALKIN_TICKETS = tickets
+
+
+def _pool_rows() -> dict:
+    """`{identity: {udpPort, hashFile}}` for the live pool members, or `{}`."""
+    if BROKER is None:
+        return {}
+    try:
+        return BROKER.signal_entries()
+    except Exception as e:  # noqa: BLE001 — the fleet's own signaling must survive it
+        sys.stderr.write(f"[serve] walk-in pool rows unavailable: {e}\n")
+        return {}
+
 
 def load_tiles():
-    """Read the tiles config fresh each request so edits need no restart."""
+    """Read the tiles config fresh each request so edits need no restart.
+
+    The walk-in pool is merged on top: a clone answers `/signal/<clone>.json`
+    exactly the way a station answers its own, which is what lets one stream
+    client serve both. Pool identities are `walkin-<os>-<n>` (ledger §5.1) and
+    cannot collide with a registry id, which the station registry forbids.
+    """
     try:
-        return json.loads(SIGNAL_CONFIG.read_text())
+        tiles = json.loads(SIGNAL_CONFIG.read_text())
     except Exception as e:
         sys.stderr.write(f"[serve] tiles config unreadable: {e}\n")
-        return {}
+        tiles = {}
+    tiles.update(_pool_rows())
+    return tiles
 
 
 def serve_index(handler):
@@ -34,6 +68,14 @@ def serve_tile(handler, tile, stream_key):
     tiles = load_tiles()
     info = tiles.get(tile)
     if not info:
+        # A reaped clone is GONE, not unknown, and the difference is the whole
+        # point: the client that lost its transport re-fetches this document
+        # first, and a bare 404 here is exactly the "connection lost" lie the
+        # §3.3 reason codes exist to prevent. 410 carries the honest answer —
+        # the clock, the idle window, or the switch.
+        ended = BROKER.session_end_for_clone(tile) if BROKER is not None else None
+        if ended:
+            return handler._send(410, json.dumps({**ended, "tile": tile}), MIME[".json"], cache=False)
         return handler._send(404, json.dumps({"error": "unknown tile", "tile": tile}), MIME[".json"], cache=False)
     hashfile = info.get("hashFile")
     try:
@@ -70,7 +112,15 @@ def serve_tile(handler, tile, stream_key):
     # Reaching this endpoint is itself the authorization — open on the
     # LAN, session-gated on the public listener.
     if stream_key:
-        body["path"] = tickets.mint(stream_key, ticket_tile)
+        # A walk-in clone's ticket is minted through the registry that can
+        # REVOKE it: dropping the switch to Closed must make a ticket already in
+        # a browser useless before the clones die, or a disconnected client
+        # re-handshakes into the machine it was just removed from (brief §5.1).
+        # A station's ticket stays stateless, as it has always been.
+        if WALKIN_TICKETS is not None and tile in _pool_rows():
+            body["path"] = WALKIN_TICKETS.mint(stream_key, ticket_tile)
+        else:
+            body["path"] = tickets.mint(stream_key, ticket_tile)
     if handler.public:
         # Same station, same cert: WebTransport pins the certificate by
         # HASH, so the hostname it is reached under is not part of
