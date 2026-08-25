@@ -30,13 +30,8 @@ RestartSec=3s
 # broadcast reply to 255.255.255.255:68 uses SO_BROADCAST, a socket option set
 # in code — no extra capability.) Works in the unprivileged CT for the same
 # reason retronet-dns/-proxy do.
-# CAP_NET_RAW is what SO_BINDTODEVICE needs: RN_DHCP_BIND_DEVICE pins this
-# scope to the retronet leg so it stops answering the walk-in leg's broadcasts
-# (docs/lab/walkin/NETWORK-PLANE.md). Without the capability the setsockopt
-# raises and the unit fails to start — deliberately, since an unpinned scope on
-# a dual-homed gateway hands out addresses from the wrong subnet.
-AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 # --- sandbox (mirrors retronet-dns.service) ----------------------------------
 # NO UPSTREAM: it never opens an outbound connection — it only answers DISCOVER/

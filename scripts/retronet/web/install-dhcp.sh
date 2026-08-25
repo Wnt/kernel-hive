@@ -24,9 +24,6 @@ set -euo pipefail
 
 RN_VMID="${RN_VMID:-951}"
 RN_DHCP_LISTEN="${RN_DHCP_LISTEN:-0.0.0.0:67}"
-# The retronet leg. Must match the interface the ExecStartPre broadcast route
-# is added to; see dhcp.env.tmpl for why an unpinned scope is a bug here.
-RN_DHCP_BIND_DEVICE="${RN_DHCP_BIND_DEVICE:-eth0}"
 RN_DHCP_SERVER_ID="${RN_DHCP_SERVER_ID:-10.99.0.2}"
 RN_DHCP_SUBNET_MASK="${RN_DHCP_SUBNET_MASK:-255.255.255.0}"
 RN_DHCP_DNS="${RN_DHCP_DNS:-10.99.0.2}"
@@ -90,7 +87,7 @@ ctsh() {
 render_env() {
   local out v
   out="$(cat "$HERE/dhcp.env.tmpl")"
-  for v in RN_DHCP_LISTEN RN_DHCP_BIND_DEVICE RN_DHCP_SERVER_ID RN_DHCP_SUBNET_MASK RN_DHCP_DNS \
+  for v in RN_DHCP_LISTEN RN_DHCP_SERVER_ID RN_DHCP_SUBNET_MASK RN_DHCP_DNS \
     RN_DHCP_DOMAIN RN_DHCP_POOL RN_DHCP_LEASE RN_DHCP_RESERVATIONS; do
     out="${out//@$v@/${!v}}"
   done
