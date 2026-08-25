@@ -108,6 +108,17 @@ MAC5="${NEXTSTEP_MAC5:-25}"
 # 400 ms default makes a visitor unable to open anything from the File Viewer.
 # 200 ms is the measured middle: single clicks land, double clicks open.
 BTN_HOLD="${PREVIOUS_CTL_BTN_HOLD:-200}"
+# The SAME floor, for keys, and for a harder reason: the KMS is a serial device
+# behind a one-report register, so two edges applied in one drain pass overrun it
+# and NeXTSTEP discards the pair (kms.c). A phone's soft keyboard stamps a press
+# and its release with the SAME millisecond and the daemon's writer does not wait
+# for acks, so both land together — measured on the live station, that is one
+# character in ten. The daemon's own SH_KEY_MIN_* gate runs on the QEMU/dbus path
+# only (mame_sock.rs), so the floors live at the injector; read them from the
+# station's SH_KEY_MIN_* if it states them, so labctl and the SPA keep speaking
+# one set of numbers, and default to the daemon's own 40/40.
+KEY_HOLD="${PREVIOUS_CTL_KEY_HOLD:-${SH_KEY_MIN_HOLD_MS:-40}}"
+KEY_GAP="${PREVIOUS_CTL_KEY_GAP:-${SH_KEY_MIN_GAP_MS:-40}}"
 # Set by the launch path: 1 when this launch restored the golden, 0 on a cold
 # boot. arm_standby reads it.
 LAUNCHED_RESTORE=0
@@ -429,6 +440,8 @@ do_cold() {
     PREVIOUS_CTL_SOCK="$CTL" \
     PREVIOUS_AUDIO_FIFO="$AFIFO" \
     PREVIOUS_CTL_BTN_HOLD="$BTN_HOLD" \
+    PREVIOUS_CTL_KEY_HOLD="$KEY_HOLD" \
+    PREVIOUS_CTL_KEY_GAP="$KEY_GAP" \
     nohup "${pre[@]}" \
     setpriv --reuid="$RUNAS" --regid="$RUNAS" --clear-groups \
     --inh-caps=+net_raw,+net_admin --ambient-caps=+net_raw,+net_admin \
@@ -528,4 +541,4 @@ else
 fi
 wait_planes || true
 arm_standby
-msg "up: pid=$(cat "$PIDFILE" 2>/dev/null) shm=$SHM ctl=$CTL audio=$AFIFO net=$NET/$RN_NS reset=criu:$STATE"
+msg "up: pid=$(cat "$PIDFILE" 2>/dev/null) shm=$SHM ctl=$CTL audio=$AFIFO net=$NET/$RN_NS reset=criu:$STATE key=$KEY_HOLD/$KEY_GAP btn=$BTN_HOLD"

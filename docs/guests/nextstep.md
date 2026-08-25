@@ -11,7 +11,7 @@ a **CRIU restore** of a checkpoint of the emulator process.
 
 | | |
 |---|---|
-| Emulator | `github.com/Wnt/previous`, branch `kernel-hive` at **635883a** (Previous SVN r1847 = 4.4 + the museum's seven patches), built `-DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1` |
+| Emulator | `github.com/Wnt/previous`, branch `kernel-hive` at **7133f1b** (Previous SVN r1847 = 4.4 + the museum's eight patches), built `-DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1` |
 | Launcher | [`streamhost/stations/nextstep/x11-runtime.sh`](../../streamhost/stations/nextstep/x11-runtime.sh) — the name is the daemon's fixed contract for `SH_STATION_RUNTIME=x11`; there is no X here |
 | Scene builder | [`scripts/build-guests/nextstep/nextstep-scene.py`](../../scripts/build-guests/nextstep/nextstep-scene.py) |
 | Golden | [`scripts/build-guests/nextstep/nextstep-bake-golden.sh`](../../scripts/build-guests/nextstep/nextstep-bake-golden.sh) |
@@ -83,7 +83,7 @@ The colour framebuffer is 16 bpp big-endian RGBX 4-4-4-4 — 4096 colours, every
 channel value a multiple of 17. The captured desktop uses 602 of them; the root
 is `#555577`, NeXTSTEP's blue-grey, not the mono `#555555`.
 
-## 4. Pointer: absolute, through the machine's own tablet
+## 4. Input: an absolute pointer, and a keyboard that must be paced
 
 Previous emulates a SummaGraphics MM 1201 digitiser on the NeXT's **SCC serial
 port B** (`src/tablet.c`), and NeXTSTEP 3.3 ships the matching driver on the disk
@@ -130,9 +130,60 @@ the fork's own 400 ms default leaves a visitor unable to open anything from the
 File Viewer. **The station runs 200 ms**: measured, single clicks land and a
 double click opens OmniWeb.
 
-### The two-packet bug this campaign found and fixed
+### Keyboard: the NeXT KMS space, and the dwell floors it needs
 
-**`kms_mouse_button()` sends one KMS report per button, so setting the pair —
+The browser's XT set 1 scancodes are mapped by
+[`nextstep.keymap`](../../streamhost/stations/nextstep/nextstep.keymap) onto two
+ports the fork defines — `kms` with a NeXT scancode, `mod` with a modifier bit by
+name — because a NeXT keyboard is not a matrix: it is a serial device whose
+modifiers ride as a MASK with every edge. A scancode with no row is REJECTED, not
+guessed, which is why Caps Lock, the function keys and the navigation cluster are
+deliberately absent.
+
+**Every key edge is one KMS report, and the KMS holds exactly one.**
+`kms_km_receive()` writes each report into `kms.kmdata` and raises `KM_OVERRUN`
+if the guest has not read the previous one; NeXTSTEP's driver then discards the
+pair. Two edges applied in the same `CtlSock_Drain()` pass are microseconds
+apart, so the first is always lost.
+
+That is not a theoretical window, because **a browser is not a keyboard**. A
+phone's soft keyboard stamps the press and the release with the SAME
+millisecond — the live station's own `serve/clientlog.jsonl`, 2026-08-25:
+`d,23855755,1787632819332,2d;u,23855755,1787632819332,2d` — and the daemon's
+`mamesock` writer drains its send queue without waiting for acks, so both edges
+reach one drain pass. The operator's report was **about one keystroke in ten**,
+with the pointer perfect throughout; that asymmetry is the same one the mouse
+bug had, and for the same reason.
+
+Measured on a rig, typing `the quick brown fox` (19 characters) as pipelined
+edges, one dwell varied at a time:
+
+| hold | landed | | gap | landed |
+|---|---|---|---|---|
+| 0 ms | 0/19 | | 0 ms | 1/19 |
+| 1 ms | 5/19 | | 2 ms | lossy |
+| 3 ms | 14/19 | | 5 ms | 18/19 |
+| 5 ms | 19/19, but 8 ms 17/19 | | 8 ms | 19/19 |
+| 12 ms and up | 19/19 | | 12 ms and up | 19/19 |
+
+Both dwells are real — it is one serial channel, so a release-then-next-press
+adjacency overruns exactly like a press-then-release one — and the 5 ms/8 ms
+non-monotonicity is the 200 Hz drain jittering across the tick boundary.
+
+So the floors live at the injector, the way `MAME_CTL_KEY_EXCL` does for the
+matrix guests: `PREVIOUS_CTL_KEY_HOLD` holds a release until its OWN press has
+been down long enough, and `PREVIOUS_CTL_KEY_GAP` spaces consecutive keyboard
+reports. Only the queue HEAD is ever examined, so arrival order is never broken
+and modifiers stay LEVELS — a deferred key edge carries exactly the mask that was
+in force when it arrived. **The station runs 40/40**, three times the measured
+floor and the same numbers as the daemon's `SH_KEY_MIN_*` gate, which does NOT
+run on this backend (`mame_sock.rs`); `station.env` states them as
+`SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` and the launcher reads them from there.
+A visitor who really holds a key pays nothing.
+
+### The one-report controller, twice
+
+**`kms_mouse_button()` sent one KMS report per button, so setting the pair —
 which is what any injector with a button mask does — put two reports into the
 controller back to back, the second landed before the guest had read the first,
 `kms_km_receive()` raised `KM_OVERRUN`, and NeXTSTEP's mouse driver discarded
@@ -140,9 +191,15 @@ both.** The symptom is precise and misleading: motion through the very same path
 works perfectly (one report per move), the control socket acks every verb, and
 the guest simply never sees a button. A held left button produced no highlight,
 no menu track and no rubber band. The fork now has `kms_mouse_buttons()`, which
-reports both buttons in the single byte pair a real NeXT mouse uses. Nothing in
-the museum had ever clicked through this socket before, which is why four
-proven planes still hid it.
+reports both buttons in the single byte pair a real NeXT mouse uses.
+
+The keyboard defect above is the SAME controller telling the same lie a second
+time, three hours later, to a different plane — and both were hidden by planes
+that pass their own smoke test. The lesson to carry to the next KMS-adjacent
+change: **anything that can put two reports into this controller in one drain
+pass is broken until it is measured with a pipelined sender at zero spacing.**
+Acking clients hide it perfectly: a rig that waits for each ack serialises the
+edges itself, and typing at "0 ms" then lands 26 of 26 characters.
 
 ## 5. Reset: a CRIU restore, not a reboot
 
@@ -335,6 +392,15 @@ and a re-emit.
   the emulator got more expensive, but the encoder now has real chroma. Worth
   one look at the station's bitrate.
 - **Guest-input latency has not been re-measured** on the host-native path.
+- **The keyboard floors are an injector workaround, not a model of the wire.**
+  The honest fix is in `kms.c`: a real KMS is a serial link whose reports are
+  physically spaced, so the emulator could QUEUE reports and release the next
+  only when the guest has cleared `KM_RECEIVED` — which would need no magic
+  numbers and would cover the mouse too. That is a `cycInt`-scheduled change
+  inside the emulated device and it was not the right thing to land against a
+  live exhibit on the day the bug was reported. 40/40 costs a real typist
+  nothing; a station that ever wants faster machine-driven typing should do the
+  queue instead of lowering the floor.
 - **`ss` cannot see a connected peer on the control socket from outside its
   netns**, so the bake script's "no client" check reports 0 endpoints and is
   informational only. The real guard is procedure: disconnect before baking.

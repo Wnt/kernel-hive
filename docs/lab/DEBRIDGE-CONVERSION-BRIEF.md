@@ -19,6 +19,20 @@ fields exempt by name), which is the serialized delivery every station's
 pacing was bisected under and what `typeDemoProgram` /
 `validate_demo_pacing` already assume. A new conversion must set it.
 
+**A non-matrix guest needs the same pacing for a different reason** (2026-08-25,
+`nextstep`, the first host-native conversion whose emulator is not MAME). A NeXT
+keyboard is a SERIAL device behind a one-report register, not a scanned matrix,
+so `MAME_CTL_KEY_EXCL`'s question — "are two keys down at once?" — is not the one
+that matters; what matters is that two reports must never reach the controller in
+one drain pass, which is what a soft keyboard's same-millisecond press/release
+plus an unacked-pipelining writer delivers. The floors are the same shape
+(`PREVIOUS_CTL_KEY_HOLD`/`_GAP`, defaulting to the daemon's own 40/40) and the
+measurement is the same discipline, with one trap this campaign had not written
+down: **an acking test client paces the edges for you**. A rig that waits for
+each verb's ack typed 26 of 26 characters at "0 ms" spacing while the live
+station was losing nine in ten. Repro with a PIPELINED sender at zero spacing —
+`scripts/dev/key-replay.py` is that sender — or the bug hides.
+
 Rollback per station is one move each way: `ROLLBACK.md` in the station dir,
 `qemu-streamhost.sh.debridged-bak` + `overlay.qcow2.debridged-bak`, and the
 daemon pool's `previous` symlink. The cutover procedure is
