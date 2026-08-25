@@ -90,9 +90,9 @@ function eraYear(exhibit: WalkinExhibit): number {
 
 const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
 
-async function fetchDocument(path: string): Promise<unknown | null> {
+async function fetchDocument(path: string, base = ''): Promise<unknown | null> {
   try {
-    const response = await fetch(`${RUNTIME_BASE}${path}`, { cache: 'no-cache' });
+    const response = await fetch(`${base}${path}`, { cache: 'no-cache' });
     if (!response.ok) return null;
     return (await response.json()) as unknown;
   } catch {
@@ -110,8 +110,11 @@ async function fetchDocument(path: string): Promise<unknown | null> {
  * field a walk-in is not allowed to see.
  */
 export async function loadWalkinExhibits(): Promise<WalkinExhibit[]> {
-  const walkin = await fetchDocument('walkin/manifest.json');
+  // The projection is served by the walk-in plane at the origin root; the
+  // gallery manifest is a per-staging-slot runtime document, so it keeps the
+  // bundle's base.
+  const walkin = await fetchDocument('/walkin/manifest.json');
   if (walkin) return parseWalkinManifest(walkin);
-  const gallery = await fetchDocument('gallery-manifest.json');
+  const gallery = await fetchDocument('gallery-manifest.json', RUNTIME_BASE);
   return gallery ? parseWalkinManifest(gallery) : [];
 }

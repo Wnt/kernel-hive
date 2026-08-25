@@ -18,7 +18,8 @@
 
 import { WalkinApiError } from './api';
 
-const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+// Origin-absolute for the same reason api.ts is: one auth service, at the
+// origin root, whatever base this bundle was built with.
 
 export interface WalkinAccount {
   handle: string;
@@ -46,7 +47,7 @@ export function supportsPasskeys(): boolean {
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${RUNTIME_BASE}${path.replace(/^\//, '')}`, {
+  const response = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -127,7 +128,7 @@ export async function walkinSignup(): Promise<WalkinAccount> {
 /** Who the browser is signed in as, if anyone (the existing /auth/state). */
 export async function currentAccount(): Promise<WalkinAccount | null> {
   try {
-    const response = await fetch(`${RUNTIME_BASE}auth/state`, { credentials: 'same-origin', cache: 'no-store' });
+    const response = await fetch('/auth/state', { credentials: 'same-origin', cache: 'no-store' });
     if (!response.ok) return null;
     const data = (await response.json()) as { authenticated?: boolean; user?: { name?: string; role?: string } };
     if (!data.authenticated || !data.user) return null;

@@ -87,9 +87,12 @@
 .walkin-pool--none { color: var(--warn); }
 
 /* ---- the play surface ---- */
-.walkin-play { position: absolute; inset: 0; background: #05060a; }
+/* The bar and the picture are stacked, never overlaid: an overlaid bar ate the
+   top of the guest's screen (Program Manager's title bar sat underneath it in
+   the first live smoke), and a visitor cannot drag a window they cannot see. */
+.walkin-play { position: absolute; inset: 0; display: flex; flex-direction: column; background: #05060a; }
 .walkin-play-chrome {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 60;
+  position: relative; z-index: 60; flex: 0 0 auto;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
   backdrop-filter: blur(6px);
@@ -99,7 +102,7 @@
 .walkin-clock--low { color: var(--warn); }
 .walkin-play-chrome .walkin-btn { min-height: 34px; padding: 8px 14px; font-size: 13px; }
 .walkin-play-chrome-spacer { margin-left: auto; }
-.walkin-play-stage { position: absolute; inset: 0; }
+.walkin-play-stage { position: relative; flex: 1 1 auto; min-height: 0; }
 
 /* ---- the exhibits hall ---- */
 .walkin-exhibits { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }

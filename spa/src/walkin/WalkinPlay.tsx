@@ -153,7 +153,17 @@ export default function WalkinPlay() {
           </button>
         </div>
         <div className="walkin-play-stage">
-          <StreamView os={cloneBinding(os, phase.claim)} onExit={() => navigate('/walkin')} />
+          {/* KEYED BY CLONE. Reset hands back a DIFFERENT machine, and a
+              station view that is merely re-rendered with a new endpoint would
+              keep showing the old clone's last frame — which is exactly what
+              the live smoke saw, and it is indistinguishable from a working
+              reset because both clones restore the same golden. A new clone is
+              a new mount. */}
+          <StreamView
+            key={phase.claim.clone}
+            os={cloneBinding(os, phase.claim)}
+            onExit={() => navigate('/walkin')}
+          />
         </div>
       </div>
     );

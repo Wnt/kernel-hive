@@ -11,10 +11,12 @@ import { walkinFixture } from './fixture';
 // answers a 404/network miss: the instant a real route exists it wins, with no
 // flag to remember to turn off.
 
-// '/' for the live gallery, '/staging/<session>/' for a staged UI. Same
-// defensive read as data/galleryManifest.ts — the registry checks import SPA
-// modules under plain node, where import.meta.env does not exist.
-const RUNTIME_BASE: string = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+// Walk-in routes are ORIGIN-ABSOLUTE, deliberately — unlike the gallery's
+// runtime documents, which are rendered per staging slot and therefore
+// base-relative. There is exactly one broker, at the origin root: a staged UI
+// under /staging/<name>/ that asked for /staging/<name>/walkin/state would get
+// the SPA shell, fall through to the fixture, and look green while never
+// touching the real plane. Same origin, one broker, one truth.
 
 /** An error carrying the server's own wording, plus the body `error` code. */
 export class WalkinApiError extends Error {
@@ -34,7 +36,7 @@ export function isClosedError(error: unknown): boolean {
 }
 
 function url(path: string): string {
-  return `${RUNTIME_BASE}${path.replace(/^\//, '')}`;
+  return path;
 }
 
 /** A route the SPA's history fallback answered instead of the broker. Signalled
@@ -85,6 +87,10 @@ async function withFixture<T>(path: string, live: () => Promise<T>, stub: () => 
 }
 
 export function fetchWalkinState(): Promise<WalkinState> {
+  // `?walkin=closed|invited|queued` is a PREVIEW override: it shows the state
+  // a real backend produces rarely, without waiting for the operator to flip a
+  // switch on a live plane. It only ever affects this tab's rendering.
+  if (walkinFixture.forced()) return Promise.resolve(walkinFixture.state());
   return withFixture('/walkin/state', () => call<WalkinState>('/walkin/state'), () => walkinFixture.state());
 }
 

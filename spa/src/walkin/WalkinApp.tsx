@@ -1,4 +1,4 @@
-import { Route, Routes, NavLink } from 'react-router-dom';
+import { Navigate, Route, Routes, NavLink } from 'react-router-dom';
 import WalkinLanding from './WalkinLanding';
 import WalkinPlay from './WalkinPlay';
 import WalkinExhibits from './WalkinExhibits';
@@ -35,11 +35,16 @@ function Chrome({ children }: { children: React.ReactNode }) {
 }
 
 export default function WalkinApp() {
+  // Mounted at the ROUTER ROOT by main.tsx (not nested under a gallery
+  // route), so these paths are the full walk-in paths. A staged bundle’s
+  // basename is stripped before matching, so /staging/<name>/walkin matches
+  // /walkin here exactly as production does.
   return (
     <Routes>
-      <Route path="/" element={<Chrome><WalkinLanding /></Chrome>} />
-      <Route path="exhibits" element={<Chrome><WalkinExhibits /></Chrome>} />
-      <Route path="play/:os" element={<div className="walkin-root"><WalkinPlay /></div>} />
+      <Route path="/walkin" element={<Chrome><WalkinLanding /></Chrome>} />
+      <Route path="/walkin/exhibits" element={<Chrome><WalkinExhibits /></Chrome>} />
+      <Route path="/walkin/play/:os" element={<div className="walkin-root"><WalkinPlay /></div>} />
+      <Route path="*" element={<Navigate to="/walkin" replace />} />
     </Routes>
   );
 }

@@ -66,4 +66,9 @@ function release(clone: string): void {
   if (pool) pool.free = Math.min(pool.size, pool.free + 1);
 }
 
-export const walkinFixture = { state, claim, reset, release };
+/** Is a preview state forced on this tab by `?walkin=…`? */
+function forced(): boolean {
+  return query() !== '';
+}
+
+export const walkinFixture = { state, claim, reset, release, forced };
