@@ -11,7 +11,8 @@
 #
 # Steps, each runnable on its own:
 #   bridge    vmbr-wi — bridge-ports none, NO ADDRESS ON LABHOST — plus
-#             walkin-fw and the wi-isolate helper lanes 7/8/10 call.
+#             walkin-fw plus the two helpers other lanes call: wi-isolate
+#             (per-tap, lanes 7/8/10) and wi-warm-arp (per-clone, the broker).
 #   ct        CT 952 `walkin-gw`: unprivileged Debian, SINGLE-HOMED on vmbr-wi
 #             at 10.99.0.2/24, no default route, corpus mounted READ-ONLY.
 #   services  the retronet web plane's own installers, pointed at CT 952: the
@@ -49,7 +50,13 @@ WI_TEMPLATE="${WI_TEMPLATE:-local:vztmpl/debian-13-standard_13.6-1_amd64.tar.zst
 WI_STORAGE="${WI_STORAGE:-data}"
 WI_DISK_GB="${WI_DISK_GB:-8}"
 WI_CORES="${WI_CORES:-2}"
-WI_MEM_MB="${WI_MEM_MB:-1024}"
+# 2048, matching CT 951. The search service builds its inverted index in memory
+# over the whole corpus (~500 MB peak), and install-search.sh runs a second
+# `search.py index` alongside the running service as its verify step. At 1024 the
+# two together are OOM-killed, and the symptom is not an error but a service that
+# reports `active` while refusing every connection — which the proxy renders to a
+# visitor as "Search Is Offline".
+WI_MEM_MB="${WI_MEM_MB:-2048}"
 WI_CORPUS_SRC="${WI_CORPUS_SRC:-/data/vms/retronet-corpus}"
 WI_CORPUS="${WI_CORPUS:-/data/retronet/corpus}"
 
@@ -76,11 +83,12 @@ ctexec() { pct exec "$WI_VMID" -- "$@"; }
 step_bridge() {
   say "bridge $WI_BRIDGE (no uplink, NO address on labhost)"
   if [ "$APPLY" = 0 ]; then
-    info "PLAN: write $IFACE_FILE; install /usr/local/sbin/{walkin-fw,wi-isolate}; ifup $WI_BRIDGE"
+    info "PLAN: write $IFACE_FILE; install /usr/local/sbin/{walkin-fw,wi-isolate,wi-warm-arp}; ifup $WI_BRIDGE"
     return
   fi
   install -m 0755 "$HERE/walkin-fw.sh" /usr/local/sbin/walkin-fw
   install -m 0755 "$HERE/wi-isolate.sh" /usr/local/sbin/wi-isolate
+  install -m 0755 "$HERE/wi-warm-arp.sh" /usr/local/sbin/wi-warm-arp
 
   # `inet manual`, not `inet static`: labhost is not a participant on this
   # segment. It holds no address, so there is nothing for a clone to dial and
@@ -156,7 +164,11 @@ step_ct() {
   # ro=1 on the corpus. The walk-in gateway SERVES the museum's corpus and must
   # never be able to change it — the crawl that fills it lives on the retronet
   # side, and an anonymous visitor's gateway has no business writing there.
+  # `pct set` reconciles an EXISTING container too, so memory belongs here and
+  # not only on the create path: the first build of this CT was created at 1024
+  # and the fix had to be applied twice.
   pct set "$WI_VMID" \
+    --memory "$WI_MEM_MB" --swap 512 \
     --net0 "name=eth0,bridge=$WI_BRIDGE,ip=$WI_CT_IP/$WI_PREFIX,ip6=manual,firewall=0" \
     --mp0 "$WI_CORPUS_SRC,mp=$WI_CORPUS,ro=1,backup=0" \
     --features nesting=1 \
@@ -174,6 +186,15 @@ step_ct() {
   info "up: $(ctexec hostname) $(ctexec hostname -I)"
   ctexec ip route show default | grep -q . && die "CT $WI_VMID HAS a default route — that is the no-WAN guarantee gone"
   info "no default route (the primary no-WAN guarantee)"
+
+  # sshd binds 0.0.0.0 in the stock template, and on this plane 0.0.0.0 includes
+  # the segment the clones are on. Nobody reaches this container over the network
+  # anyway — labhost is not on vmbr-wi, so `pct exec` is the only door — which
+  # makes an sshd here pure attack surface offered to anonymous visitors.
+  ctexec systemctl disable --now ssh.service >/dev/null 2>&1 || true
+  ctexec systemctl mask ssh.socket >/dev/null 2>&1 || true
+  ctexec sh -c 'ss -lnt | grep -q ":22 "' && die "sshd is still listening in CT $WI_VMID"
+  info "sshd disabled (nothing reaches this CT over the network; pct exec is the door)"
 }
 
 # --- 3. services -------------------------------------------------------------

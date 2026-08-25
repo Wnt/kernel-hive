@@ -219,14 +219,21 @@ class Handler(BaseHTTPRequestHandler):
 def serve(cfg: Config) -> None:
     global STATE
     STATE = State(cfg)
-    n = STATE.reindex()
-    sys.stderr.write(f"retronet-search: indexed {n} document(s) from {cfg.corpus}\n")
 
     def _on_hup(_signum: int, _frame: object) -> None:
         # Rebuild off the signal thread so the handler returns immediately.
         threading.Thread(target=_hup_reindex, daemon=True).start()
 
+    # The handler goes in BEFORE the first index build, not after. Over the real
+    # corpus that build takes about a minute, and the default action for SIGHUP
+    # is to TERMINATE — so a reindex arriving in that window killed the service
+    # outright, leaving it dead with a cheerful "Deactivated successfully". It is
+    # not a hypothetical: the reindex timer fires every 15 minutes, and a fresh
+    # install reindexes as its last step, which is how CT 952 (the walk-in
+    # gateway) found this on its very first provision.
     signal.signal(signal.SIGHUP, _on_hup)
+    n = STATE.reindex()
+    sys.stderr.write(f"retronet-search: indexed {n} document(s) from {cfg.corpus}\n")
     httpd = ThreadingHTTPServer((cfg.host, cfg.port), Handler)
     sys.stderr.write(f"retronet-search: listening on {cfg.host}:{cfg.port}\n")
     try:
@@ -237,10 +244,24 @@ def serve(cfg: Config) -> None:
         httpd.server_close()
 
 
+# A HUP that lands while a build is already running is dropped rather than
+# queued: the second build would scan the same corpus and finish with the same
+# answer, at the cost of doubling a minute of CPU on a box that is also running
+# the fleet.
+_HUP_BUILDING = threading.Lock()
+
+
 def _hup_reindex() -> None:
-    if STATE is not None:
+    if STATE is None:
+        return
+    if not _HUP_BUILDING.acquire(blocking=False):
+        sys.stderr.write("retronet-search: reindex already running, SIGHUP ignored\n")
+        return
+    try:
         n = STATE.reindex()
         sys.stderr.write(f"retronet-search: reindexed on SIGHUP, {n} document(s)\n")
+    finally:
+        _HUP_BUILDING.release()
 
 
 # --- CLI --------------------------------------------------------------------
