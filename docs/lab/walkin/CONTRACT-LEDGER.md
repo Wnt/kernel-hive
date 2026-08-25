@@ -404,6 +404,25 @@ retronet ICQ identity, which the brief's own per-seed checklist says must not
 be in a walk-in seed. Open decision, recorded in
 [`../WALKIN-BRIEF.md`](../WALKIN-BRIEF.md) §3.
 
+**A warm pool member must stay PAUSED, and a session must end on its TTL.**
+Measured 2026-08-26 while proving the multi-clone plane, by running nine clones
+RESUMED and unattended for hours — far outside the production envelope — and
+watching them decay in station-specific ways:
+
+- **win311 loses its baked DHCP lease.** The golden's lease is real and has a
+  real expiry; hours into a resumed-idle soak, DHCP.386 drops to a full-screen
+  blue "lost the lease" text prompt and the network is gone. A paused member's
+  clock does not run, and a ≤30-minute session never gets there.
+- **rhapsody decays faster and less predictably**: PS/2 input goes first
+  (sometimes it never arms after the restore at all — the wedge is
+  NONDETERMINISTIC, reproduced repeatedly under load with the same golden and
+  binary, and entirely network-independent), the userspace follows, and the
+  guest's IP stack can go quiet within tens of minutes. A clone that restores
+  bad should be respawned, not debugged: the broker's respawn IS the fix, and
+  `wi-clonecell prime`'s hard failure is the detector that catches the network
+  half before a visitor does. The input half has no host-side detector yet —
+  open item.
+
 ## 8. Production pre-flight (lane 9)
 
 The wave ends **deployed on the production URL at Invited only**, so enabling is
