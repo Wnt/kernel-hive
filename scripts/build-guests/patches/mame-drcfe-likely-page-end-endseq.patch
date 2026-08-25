@@ -1,0 +1,101 @@
+Stop the DRC frontend dropping END_SEQUENCE with a reclaimed skip-slot desc.
+
+THE CRASH THIS FIXES. gaim 0.64 signing in to the retronet OSCAR gateway
+killed MAME with SIGSEGV 20-40 s after the session established, 3/3,
+while 83 MB of HTTP through the same emulated SEEQ never faulted once
+(docs/lab/retronet/ICQ-STATION-irix.md). Wrapper + strace + core on a rig
+clone: SEGV_MAPERR at NULL in mips3_device::code_compile_block -- the
+"find the last instruction in this sequence" walk found no desc carrying
+END_SEQUENCE, walked off the NULL end of the live list, and the
+assert(seqlast != nullptr) above the deref is compiled out in release.
+
+THE DEFECT (upstream, src/devices/cpu/drcfe.ipp build_sequence). When a
+branch-LIKELY sits at the last word of a mapped page and its delay slot
+lands on a page that is not TLB-resident at describe time, the delay-slot
+instruction's array desc is both (a) the segment's last instruction -- so
+build_sequence gives IT the END_SEQUENCE marker -- and (b) in the branch's
+skip slot -- so the skip-slot logic reclaims it instead of appending it,
+and the end marker is dropped with it. Read out of the diagnosis core:
+BGEZALL (0x0413ff68) at guest pc 0x5fecbffc, delay desc at 0x5fecc000
+with COMPILER_PAGE_FAULT|END_SEQUENCE, live-list tail = the branch, no
+END anywhere in its sequence. Needs all three at once -- branch-likely at
+page end, next page non-resident, block compiled cold -- which is why only
+gaim's never-before-executed OSCAR/conversation code ever lined it up.
+
+THE FIX, two halves:
+  1. build_sequence: before reclaiming a skipped desc, propagate its
+     end_sequence()/redispatch()/return_to_start() to the last APPENDED
+     desc (the branch itself). The live list can then never end
+     unterminated. This is the root fix and is generic drcfe -- any DRC
+     CPU with skip slots (MIPS3 branch-likely) is exposed, not just sgi.
+  2. mips3drc code_compile_block: if the END walk still comes up empty,
+     recover to the sequence's tail desc and say so via
+     osd_printf_error, instead of dereferencing null. Defence in depth:
+     it turns any OTHER latent frontend path of the same shape from a
+     fleet-visible crash into one log line.
+
+Same change, same bytes, lands as commit 25c6b0bb2b5 on the mame-irix
+submodule's `irix` branch; keep the two in parity (see
+irix-mame-stack.sh's header for why a drifted copy is worse than none).
+
+diff --git a/src/devices/cpu/drcfe.ipp b/src/devices/cpu/drcfe.ipp
+index ce6cf04efba..d9063e115e9 100644
+--- a/src/devices/cpu/drcfe.ipp
++++ b/src/devices/cpu/drcfe.ipp
+@@ -325,7 +325,29 @@ void drc_frontend_base<Desc>::build_sequence(int start, int end, bool redispatch
+ 			if (skipsleft == 0)
+ 				m_desc_live_list.append(*curdesc);
+ 			else
++			{
++				// a skipped desc can be the one carrying the sequence's end marker: a
++				// branch-likely at the last word of a page whose delay slot sits on a
++				// non-resident page makes its (page-faulting) skip-slot desc the
++				// segment's last instruction, and reclaiming it here would drop
++				// END_SEQUENCE with it, leaving the live list's final sequence
++				// unterminated - the recompilers' END_SEQUENCE walks then run off the
++				// NULL end of the list.  Hand the marker to the last appended desc
++				// (the branch itself) before dropping the skipped one.
++				if (curdesc->end_sequence())
++				{
++					Desc *const lastdesc = m_desc_live_list.last();
++					if (lastdesc != nullptr)
++					{
++						lastdesc->set_end_sequence();
++						if (curdesc->redispatch())
++							lastdesc->set_redispatch();
++						if (curdesc->return_to_start())
++							lastdesc->set_return_to_start();
++					}
++				}
+ 				m_desc_allocator.reclaim(*curdesc);
++			}
+ 
+ 			// if the current instruction starts skipping, reset our skip count
+ 			// otherwise, just decrement
+diff --git a/src/devices/cpu/mips/mips3drc.cpp b/src/devices/cpu/mips/mips3drc.cpp
+index ca0bc82199d..eff242e0ea4 100644
+--- a/src/devices/cpu/mips/mips3drc.cpp
++++ b/src/devices/cpu/mips/mips3drc.cpp
+@@ -330,9 +330,22 @@ void mips3_device::code_compile_block(uint8_t mode, offs_t pc)
+ 					block.append_comment("-------------------------");                     // comment
+ 
+ 				/* determine the last instruction in this sequence */
++				const opcode_desc *seqtail = seqhead;
+ 				for (seqlast = seqhead; seqlast != nullptr; seqlast = seqlast->next())
++				{
++					seqtail = seqlast;
+ 					if (seqlast->end_sequence())
+ 						break;
++				}
++				if (seqlast == nullptr)
++				{
++					/* an unterminated tail should no longer be possible (drcfe.ipp's
++					   build_sequence now propagates END_SEQUENCE past the skip-slot
++					   reclaim), but a null here was a hard crash in release builds:
++					   recover by treating the final description as the sequence end */
++					osd_printf_error("code_compile_block: sequence at %08X has no END_SEQUENCE; using tail %08X\n", seqhead->pc, seqtail->pc);
++					seqlast = seqtail;
++				}
+ 				assert(seqlast != nullptr);
+ 
+ 				/* if we don't have a hash for this mode/pc, or if we are overriding all, add one */
