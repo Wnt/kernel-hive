@@ -9,6 +9,8 @@ public listener (see osgallery-https-server.py). Layout:
     service.py   the policy — who gets in, who may invite, who may not be deleted
     routes.py    the /auth/* HTTP surface
     tickets.py   short-lived stream tickets for streamhost's media-plane gate
+    walkin.py    the walk-in role, self-registration and the access switch
+    handles/     the <adj>-<pioneer> handle generator and its wordlists
 """
 
 from .service import AuthError, AuthService

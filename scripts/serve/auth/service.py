@@ -84,6 +84,14 @@ class AuthService:
         # that identity did are deleted by the same click, or the deletion is a
         # half-truth.
         self.usage = usage
+        # The walk-in plane's auth half (walkin.py). Imported here rather than
+        # at module scope because it imports back for AuthError and the shared
+        # helpers; the switch is a satellite of this service, not a peer.
+        from .tickets import WalkinTickets
+        from .walkin import WalkinService
+
+        self.walkin_tickets = WalkinTickets()
+        self.walkin = WalkinService(self.store, self.ceremonies, tickets=self.walkin_tickets)
 
     # ---- bootstrap ---------------------------------------------------------
 
@@ -114,6 +122,7 @@ class AuthService:
             "authenticated": bool(user),
             "user": {"id": user["id"], "name": user["name"], "role": user["role"]} if user else None,
             "needsBootstrap": self.store.bootstrap_pending() and not self.store.users(),
+            "walkin": self.walkin.public_state(),
         }
 
     def user_for_token(self, token: str) -> dict | None:
@@ -297,6 +306,9 @@ class AuthService:
             # The credential outlived its user: treat as revoked, and clean up.
             self.store.delete_credential(cred_id)
             raise AuthError("that passkey was not accepted", status=403)
+        # A walk-in holding a valid passkey still does not get in while the
+        # switch is below Open: closing it gates sign-in, not only signup.
+        self.walkin.require_signin(user)
         self.store.touch_credential(cred_id)
         return user, self.store.new_session(user["id"], ip, user_agent)
 
@@ -415,6 +427,11 @@ class AuthService:
             self.usage.forget_user(user_id)
 
     def set_role(self, admin: dict, user_id: str, role: str) -> None:
+        # `walkin` is a role you arrive with, never one an admin hands out:
+        # self-registration is the only way in, and it mints the handle and the
+        # account index row that the walk-in surface reads.
+        if role == "walkin":
+            raise AuthError("walk-in is not a role that can be assigned")
         target = self.store.user(user_id)
         if not target:
             raise AuthError("no such user", status=404)

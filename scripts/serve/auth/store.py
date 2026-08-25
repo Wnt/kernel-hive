@@ -13,12 +13,14 @@ passkey public keys are, by definition, public.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import secrets
 import shutil
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 SESSION_TTL_SECS = 30 * 24 * 3600
@@ -33,7 +35,13 @@ LINK_TTL_SECS = 60
 SEEN_TOUCH_SECS = 300
 # Dated copies of the state file kept beside it (see _snapshot).
 SNAPSHOT_KEEP = 14
-ROLES = ("admin", "viewer")
+# `walkin` is a self-registered account (docs/lab/WALKIN-BRIEF.md §5). It is a
+# role like any other here — the fencing that makes it different lives in
+# gate.py, not in what the store will persist.
+ROLES = ("admin", "viewer", "walkin")
+# The walk-in switch and its account index, persisted so that a service
+# restart cannot silently re-open the plane (walkin.py owns the semantics).
+WALKIN_DEFAULTS: dict = {"access": "closed", "drain": False, "accounts": {}, "audit": []}
 
 
 def now() -> int:
@@ -74,6 +82,7 @@ class AuthStore:
         for key in ("users", "credentials", "invites", "links", "sessions"):
             doc.setdefault(key, [])
         doc.setdefault("bootstrap", None)
+        _migrate_walkin(doc)
         return doc
 
     def _snapshot(self) -> None:
@@ -415,6 +424,11 @@ class AuthStore:
             if u["id"] == user_id:
                 u["lastSeenAt"] = iso(t)
                 break
+        # The walk-in account index carries its own lastSeenAt because the idle
+        # purge reads that index, not the user list.
+        account = self._doc["walkin"]["accounts"].get(user_id)
+        if account is not None:
+            account["lastSeenAt"] = iso(t)
         self._write()
 
     def drop_session(self, token: str) -> None:
@@ -430,6 +444,27 @@ class AuthStore:
             self._doc["sessions"] = [s for s in self._doc["sessions"] if s["userId"] != user_id]
             self._write()
 
+    # ---- generic access for satellite modules ------------------------------
+
+    def snapshot(self) -> dict:
+        """A deep copy of the whole document, taken under the lock."""
+        with self._lock:
+            return copy.deepcopy(self._doc)
+
+    @contextmanager
+    def mutate(self):
+        """Yield the live document under the lock, persisting on a clean exit.
+
+        walkin.py builds the whole walk-in surface — the switch, the account
+        index, handle allocation — on top of this rather than growing a second
+        state file. Handle allocation in particular MUST happen inside this
+        lock: check-then-create is how two visitors end up as `bold-turing`
+        (OPERATING-RULES rule 7).
+        """
+        with self._lock:
+            yield self._doc
+            self._write()
+
     def _prune(self) -> None:
         """Drop expired sessions, invites and device links. Caller holds the lock."""
         t = now()
@@ -440,3 +475,23 @@ class AuthStore:
         # in the admin list for something that can no longer let anyone in.
         self._doc["invites"] = [i for i in self._doc["invites"] if i.get("expiresAtTs", 0) > t]
         self._doc["links"] = [link for link in self._doc["links"] if link.get("expiresAtTs", 0) > t]
+
+
+def _migrate_walkin(doc: dict) -> None:
+    """Add the walk-in keys to a document that predates them, in place.
+
+    Tolerant on purpose: the live auth-state.json is the account database and
+    must never be rewritten from scratch, so a missing key gains its default and
+    a key of the wrong TYPE is replaced rather than crashing the service on
+    start. Nothing is written here — the defaults reach the file on the first
+    ordinary write, which is what "migrated in place" means.
+    """
+    block = doc.get("walkin")
+    if not isinstance(block, dict):
+        block = {}
+    for key, default in WALKIN_DEFAULTS.items():
+        value = block.get(key)
+        if type(value) is not type(default):
+            value = copy.deepcopy(default)
+        block[key] = value
+    doc["walkin"] = block
