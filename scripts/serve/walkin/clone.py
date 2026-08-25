@@ -188,6 +188,17 @@ class Clone:
         script = STATIONS_ROOT / self.spec.station / Path(self.spec.tapnet).name
         if not script.exists():
             raise CloneError(f"{script} is not on the box — the walk-in tap script has not been deployed")
+        if verb == "up" and Path(f"/sys/class/net/{self.plan.tap}").exists():
+            # "It exists" is not "it is mine" (rule 7). Tap names are global on
+            # the box, and the scripts' up is idempotent enough to RE-HOME an
+            # existing tap — measured 2026-08-26: a dev broker whose empty root
+            # made it pick index 1 stole the LIVE pool's wi-os2warp-1 onto its
+            # own cell bridge, and the reap then deleted it out from under the
+            # live guest. Refuse, and let the index cycle move on.
+            raise CloneError(
+                f"{self.identity}: tap {self.plan.tap} already exists — another clone "
+                "(possibly another broker's) owns it; refusing to adopt it"
+            )
         # `WI_TAP_IF` is what the landed wi-tapnet.sh scripts read; the rest are
         # context a future one may want. The GUEST_IP is deliberately NOT passed:
         # the script owns the address (it scopes its guard chain to it), and the
