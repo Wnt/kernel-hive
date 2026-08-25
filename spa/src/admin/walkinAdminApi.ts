@@ -4,7 +4,7 @@
 // A separate copy because the authui pages are plain JS with no build step
 // linking them to this bundle (see the note in app.css) — this one is typed.
 
-import type { WalkinAccess, WalkinAdminStatus } from './walkinAdminTypes';
+import type { WalkinAccess, WalkinAdminStatus } from '../data/walkinTypes';
 
 const ACCESS_VALUES = new Set(['closed', 'invited', 'open']);
 function isAccess(v: unknown): v is WalkinAccess {

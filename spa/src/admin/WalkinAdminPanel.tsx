@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { WalkinAccess } from './walkinAdminTypes';
+import type { WalkinAccess } from '../data/walkinTypes';
 import { accessRank, useWalkinAdmin } from './useWalkinAdmin';
 import './WalkinAdminPanel.css';
 

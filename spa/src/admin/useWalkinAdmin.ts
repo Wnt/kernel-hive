@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { WalkinAccess, WalkinAdminStatus } from './walkinAdminTypes';
+import type { WalkinAccess, WalkinAdminStatus } from '../data/walkinTypes';
 import { WalkinAdminError, fetchWalkinStatus, purgeWalkinAccounts, setWalkinAccess, setWalkinDrain } from './walkinAdminApi';
 
 // Position rank so the panel can tell "reachable" from "blocked by the env
