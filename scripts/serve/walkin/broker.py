@@ -76,11 +76,12 @@ class Member:
 class Broker:
     """One instance per serving process. Thread-safe; `tick` is the watchdog."""
 
-    def __init__(self, registry_dir, repo_root, now=time.time, spawn: bool = True, factory=None):
+    def __init__(self, registry_dir, repo_root, now=time.time, spawn: bool = True, factory=None, daemon: bool = True):
         self.registry_dir = Path(registry_dir)
         self.repo_root = Path(repo_root)
         self._now = now
         self._spawn = spawn  # False in tests: build the plan, run no processes
+        self._daemon = daemon  # False when only the guest half is under test
         # The one seam in this file. Everything above the factory is pool policy
         # — who gets a machine, for how long, and what happens when they stop
         # typing — and it is testable without a hypervisor precisely because
@@ -93,7 +94,58 @@ class Broker:
         self._next_index: dict[str, int] = {}
         self.specs: dict[str, spec_mod.StationSpec] = {}
         self.access = "closed"
+        # Whether the pool is supposed to be warm at all. `kill_all_clones`
+        # clears it and `refill` sets it, so the watchdog cannot quietly
+        # repopulate a pool an admin has just emptied — which would undo the
+        # kill switch on a timer, silently, about a second later.
+        self.warm = False
+        self.drain = False
         self.reload_specs()
+
+    # -- the surface lane 2 calls (contract ledger §3.1) -------------------
+    #
+    # Frozen names, duck-typed, bound with `AUTH.walkin.bind_broker(...)`. The
+    # switch itself lives in `auth/walkin.py`: it persists the position, refuses
+    # inflow FIRST and only then calls down here. So this side owns no policy
+    # about who may reach the plane — it owns clones, and does exactly what it
+    # is told, in the order it is told.
+
+    def live_sessions(self) -> int:
+        with self._lock:
+            return self._active_count()
+
+    def close_sessions(self, reason: str = CLOSE_REASON_CLOSED) -> int:
+        """End every live session with `reason`. Leaves the warm pool alone.
+
+        Separate from `kill_all_clones` because the teardown order matters and
+        is lane 2's to sequence: tickets are revoked between these two calls, so
+        a client disconnected here cannot re-handshake into a clone that is
+        still standing when it is killed a moment later.
+        """
+        with self._lock:
+            live = [m for m in self._members.values() if m.session]
+            for member in live:
+                self._end(member, reason)
+            return len(live)
+
+    def kill_all_clones(self) -> None:
+        """Empty the pool, and keep it empty until someone calls `refill`."""
+        with self._lock:
+            self.warm = False
+            for member in list(self._members.values()):
+                self._end(member, "")
+
+    def refill(self) -> None:
+        """Top every enabled pool up to its size, and keep it that way."""
+        with self._lock:
+            self.warm = True
+        self._refill()
+
+    def set_drain(self, value: bool) -> None:
+        """The softer sibling of the kill switch: refuse new claims, let the
+        sessions in flight finish. Tears nothing down."""
+        with self._lock:
+            self.drain = bool(value)
 
     # -- configuration ---------------------------------------------------
 
@@ -111,9 +163,11 @@ class Broker:
         with self._lock:
             self.access = access
             if access == "closed":
-                return self.close_all(CLOSE_REASON_CLOSED)
-            self.refill()
-            return 0
+                closed = self.close_sessions(CLOSE_REASON_CLOSED)
+                self.kill_all_clones()
+                return closed
+        self.refill()
+        return 0
 
     # -- the pool --------------------------------------------------------
 
@@ -164,14 +218,15 @@ class Broker:
                 # started and, worse, has been executing guest code nobody is
                 # watching. Loud, not "probably fine".
                 raise BrokerError(f"{built.identity} came up {status!r}, expected paused (-loadvm golden -S)")
-            clone_mod.spawn_daemon(built)
+            if self._daemon:
+                clone_mod.spawn_daemon(built)
         return Member(clone=built, born_at=self._now())
 
-    def refill(self) -> list:
-        """Top every enabled pool up to its size. Returns what it built."""
+    def _refill(self) -> list:
+        """`refill`, but returning what it built — the watchdog reports it."""
         made = []
         with self._lock:
-            if self.access == "closed":
+            if not self.warm or self.access == "closed":
                 return made
             for station, spec in sorted(self.specs.items()):
                 if not spec.enabled:
@@ -189,6 +244,8 @@ class Broker:
         with self._lock:
             if self.access == "closed":
                 raise BrokerError("walkin_closed")
+            if self.drain:
+                raise BrokerError("the walk-in plane is draining for maintenance; try again shortly")
             spec = self.specs.get(station)
             if not spec or not spec.enabled:
                 raise BrokerError(f"no walk-in pool for {station!r}")
@@ -224,7 +281,7 @@ class Broker:
             if not member or not member.session or member.session.user_id != user_id:
                 raise BrokerError(f"{identity} is not yours")
             self._end(member, reason)
-        self.refill()
+        self._refill()
         return {"ok": True}
 
     def reset(self, user_id: str, identity: str) -> dict:
@@ -240,7 +297,7 @@ class Broker:
                 raise BrokerError(f"{identity} is not yours")
             station = member.clone.spec.station
             self._end(member, "")
-        self.refill()
+        self._refill()
         return self.claim(user_id, station)
 
     def note_input(self, identity: str) -> None:
@@ -267,16 +324,12 @@ class Broker:
             return entry[0] if entry else ""
 
     def close_all(self, reason: str = CLOSE_REASON_CLOSED) -> int:
-        """Disconnect every live walk-in session and empty the pool.
-
-        The internal call lane 2 uses when access drops to Closed. Inflow is
-        already refused by then; this is the disconnect-and-reap half.
-        """
-        with self._lock:
-            live = sum(1 for m in self._members.values() if m.session)
-            for member in list(self._members.values()):
-                self._end(member, reason)
-            return live
+        """`close_sessions` + `kill_all_clones` in one call, for the smoke check
+        and the CLI. Lane 2 uses the two halves, in that order, with the ticket
+        revocation between them."""
+        closed = self.close_sessions(reason)
+        self.kill_all_clones()
+        return closed
 
     # -- the watchdog ----------------------------------------------------
 
@@ -300,7 +353,7 @@ class Broker:
                     self._end(member, "")
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
         orphans = self.reap_orphans()
-        built = self.refill()
+        built = self._refill()
         return {"ended": ended, "died": died, "orphans": orphans, "built": built}
 
     def reap_orphans(self) -> list:

@@ -13,6 +13,28 @@ of a forbidden override before that. Neither is optional, and neither is a
 formality: `derive.py` calls the check on its own output, so code added here
 cannot route around it.
 
+## Three things that will surprise you
+
+1. **The broker never executes a station launcher — it reads one.**
+   `qemu-streamhost.sh` hardcodes `D=/data/vms/streamhost/stations/<station>`
+   and opens with an unconditional `kill "$(cat $D/qemu.pid)"`. Running it for a
+   clone takes the LIVE station down (measured on `rhapsody` during this wave;
+   it is also the incident [`clone-guard`](../../../docs/lab/clone-guard.md)
+   exists for). `launcher.py` parses the text and `derive.py` rewrites the argv;
+   neither module may ever gain a `subprocess` import, and a test enforces that.
+2. **A clone's disk is a reflink COPY of the seed, not a backing overlay.** An
+   internal `savevm` snapshot is per-image and does not inherit through a qcow2
+   backing chain, so `-loadvm golden` against an overlay fails with *"Snapshot
+   'golden' does not exist in one or more devices"*. `cp --reflink=always` keeps
+   the snapshot table and costs milliseconds — but only **within one dataset**:
+   on labhost `/data/gallery-guests` and `/data/vms` are separate ZFS datasets,
+   so a seed referenced in place under `/data/gallery-guests` fails `EXDEV`. The
+   seed must be staged inside `/data/vms`. `--auto` is deliberately not used: it
+   would degrade to a silent 853 MB copy on every refill.
+3. **The MAC is not per-clone, and that is why `poolSize` is 1.** `loadvm`
+   restores the NIC address from saved device state, so `mac=` on the command
+   line cannot override it (ledger §5.3).
+
 ## Tests
 
 ```

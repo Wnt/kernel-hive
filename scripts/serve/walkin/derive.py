@@ -16,12 +16,14 @@ Then `-loadvm golden -S` (instant-ready, paused) and, where the binary is QEMU,
 the sandbox flags from brief §6.2. Then `deviceset.assert_same_device_set`, which
 is allowed to veto everything above.
 
-The MAC deserves a note. The golden's vmstate carries the MAC it was baked with,
-and `loadvm` restores it: the `mac=` on the command line only has to be
-CONSISTENT, not authoritative. A per-clone MAC is still worth setting, because
-two pool members on one bridge with one MAC is a debugging afternoon nobody
-should have to spend — and `deviceset.py` allows it precisely because the guest
-cannot tell.
+The MAC is deliberately NOT rewritten, and that is the whole reason the pool is
+one clone per station. `loadvm` restores the NIC's MAC from saved device state,
+so a per-clone `mac=` on the command line is a lie the guest never hears: every
+clone of one station comes up as the address its golden was captured with.
+Setting it anyway would leave the command line disagreeing with the vmstate — the
+exact mismatch that reads as "the network is broken" three hours later. Ledger
+§5.3 has the consequence: `poolSize` is 1, and growing it needs a walk-in golden
+captured on this plane, not a command-line flag.
 """
 
 from __future__ import annotations
@@ -130,8 +132,14 @@ def station_runtime_dir(base: launcher.Launcher) -> str:
 def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> list:
     argv = list(base.argv)
     station_prefix = station_runtime_dir(base)
+    binary = spec.binary or argv[0]
+    if spec.binary and not Path(spec.binary).exists():
+        raise launcher.LauncherError(
+            f"{spec.station}: overrides.binary {spec.binary} is not on this box. Refusing to fall back to stock "
+            "QEMU — the golden was captured against that binary and rule 6 binds the two together."
+        )
     seed = spec.seed_disk
-    out = [argv[0]]
+    out = [binary]
     i = 1
     while i < len(argv):
         flag = argv[i]
@@ -145,10 +153,6 @@ def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> 
             value = value.replace(seed, str(plan.overlay))
         elif flag == "-netdev" and value is not None:
             value = _netdev_value(argv[i + 1], plan, spec)
-        elif flag == "-device" and value is not None and "mac=" in value:
-            head, opts = deviceset.parse_opts(value)
-            opts["mac"] = plan.mac
-            value = ",".join([head] + [f"{k}={v}" for k, v in opts.items()])
         out.append(flag)
         if value is not None:
             out.append(value)
@@ -161,5 +165,5 @@ def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> 
     if spec.sandbox and "qemu-system-" in out[0] and "-sandbox" not in out:
         out += ["-sandbox", SANDBOX_ARG]
 
-    deviceset.assert_same_device_set(base.argv, out)
+    deviceset.assert_same_device_set(base.argv, out, expect_binary=binary)
     return out

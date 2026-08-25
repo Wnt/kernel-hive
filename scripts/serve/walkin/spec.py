@@ -26,7 +26,7 @@ REGISTRY_DIR = Path("registry/walkin")
 _TOP_KEYS = {"station", "enabled", "poolSize", "seed", "overlay", "launcher", "overrides", "sandbox"}
 _SEED_KEYS = {"disk", "readOnly"}
 _OVERLAY_KEYS = {"format", "discardOnKill"}
-_OVERRIDE_KEYS = {"netdev", "tapnet"}
+_OVERRIDE_KEYS = {"netdev", "tapnet", "binary"}
 _NETDEV_KEYS = {"type", "bridge", "ifnamePattern"}
 
 # A netdev backend is a HOST-side attachment, not a guest device: the guest keeps
@@ -61,6 +61,11 @@ class StationSpec:
     sandbox: bool
     netdev: NetdevOverride = field(default_factory=NetdevOverride)
     tapnet: str = ""
+    # An absolute path pinning the emulator the golden was captured against —
+    # rhapsody's i8259 fork, win311's patched SeaBIOS host. Rule 6 binds the
+    # checkpoint to the binary, so this is not a preference: a clone that falls
+    # back to stock pve-qemu is a clone whose guest loses every IDE interrupt.
+    binary: str = ""
     source: str = "<memory>"
 
 
@@ -79,7 +84,7 @@ def _reject_unknown(obj: dict, allowed: set, where: str) -> None:
         raise SpecError(f"{where}: unknown key(s) {extra} — the schema is contract-ledger §5.2, not a suggestion")
 
 
-def _check_overrides(over: dict, where: str) -> tuple[NetdevOverride, str]:
+def _check_overrides(over: dict, where: str) -> tuple:
     _reject_unknown(over, _OVERRIDE_KEYS, f"{where}.overrides")
     net = over.get("netdev", {})
     if not isinstance(net, dict):
@@ -94,9 +99,14 @@ def _check_overrides(over: dict, where: str) -> tuple[NetdevOverride, str]:
     tapnet = over.get("tapnet", "")
     if not isinstance(tapnet, str):
         raise SpecError(f"{where}.overrides.tapnet must be a path string")
+    binary = over.get("binary", "")
+    if not isinstance(binary, str):
+        raise SpecError(f"{where}.overrides.binary must be an absolute path to an emulator")
+    if binary and not binary.startswith("/"):
+        raise SpecError(f"{where}.overrides.binary {binary!r} must be absolute — a PATH lookup is not a pin")
     if ntype == "tap" and not tapnet:
         raise SpecError(f"{where}: a tap netdev needs an overrides.tapnet script to own the tap and its guard chain")
-    return NetdevOverride(type=ntype, bridge=str(net.get("bridge", "")), ifname_pattern=pattern), tapnet
+    return NetdevOverride(type=ntype, bridge=str(net.get("bridge", "")), ifname_pattern=pattern), tapnet, binary
 
 
 def parse_spec(doc: dict, where: str = "<memory>") -> StationSpec:
@@ -114,7 +124,7 @@ def parse_spec(doc: dict, where: str = "<memory>") -> StationSpec:
         raise SpecError(f"{where}.seed.readOnly cannot be false — a walk-in never writes the golden disk")
     overlay = _need(doc, "overlay", dict, where)
     _reject_unknown(overlay, _OVERLAY_KEYS, f"{where}.overlay")
-    netdev, tapnet = _check_overrides(_need(doc, "overrides", dict, where), where)
+    netdev, tapnet, binary = _check_overrides(_need(doc, "overrides", dict, where), where)
     return StationSpec(
         station=station,
         enabled=bool(doc.get("enabled", False)),
@@ -127,6 +137,7 @@ def parse_spec(doc: dict, where: str = "<memory>") -> StationSpec:
         sandbox=bool(doc.get("sandbox", True)),
         netdev=netdev,
         tapnet=tapnet,
+        binary=binary,
         source=where,
     )
 

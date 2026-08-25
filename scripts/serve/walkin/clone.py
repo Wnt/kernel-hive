@@ -94,24 +94,39 @@ class Clone:
         self._tapnet("up")
 
     def _make_overlay(self) -> None:
+        """The clone's writable disk: a COPY of the seed, not a backing overlay.
+
+        This is the one place the obvious design does not work, and it is worth
+        the paragraph. A pool member boots `-loadvm golden`, and a qcow2's
+        snapshots live in the image's OWN snapshot table — a `qemu-img create -b
+        seed` overlay inherits the seed's data and none of its snapshots, so QEMU
+        answers `Snapshot 'golden' does not exist in one or more devices` and the
+        clone never starts. Measured on the box against the os2warp seed, not
+        assumed.
+
+        So the disk is copied with `cp --reflink=ALWAYS`: on a reflink-capable
+        filesystem this IS copy-on-write — 853 MB in tens of milliseconds for a
+        kilobyte of new space, snapshot table included. `always`, not `auto`, on
+        purpose: `auto` degrades silently to a full 853 MB copy, and a pool that
+        refills on a timer would spend minutes and gigabytes doing it without a
+        word. A reflink across datasets fails `EXDEV`, so the seed must be staged
+        inside the same dataset as the clone root (ledger §5.2).
+
+        The seed itself is never opened for writing by anything here.
+        """
         seed = Path(self.spec.seed_disk)
         if not seed.exists():
             raise CloneError(f"seed disk {seed} is missing — a pool member has nothing to be a copy of")
         if self.plan.overlay.exists():
             self.plan.overlay.unlink()
-        _run(
-            [
-                "qemu-img",
-                "create",
-                "-f",
-                self.spec.overlay_format,
-                "-b",
-                str(seed),
-                "-F",
-                "qcow2",
-                str(self.plan.overlay),
-            ]  # fmt: skip
-        )
+        proc = _run(["cp", "--reflink=always", str(seed), str(self.plan.overlay)], check=False)
+        if proc.returncode != 0:
+            raise CloneError(
+                f"reflink copy of {seed} -> {self.plan.overlay} failed: "
+                f"{(proc.stderr or proc.stdout).strip()[:200]} — stage the seed in the same dataset as "
+                f"{naming.WALKIN_ROOT} (a cross-dataset reflink is EXDEV, and a full copy per clone is not a pool)"
+            )
+        self.plan.overlay.chmod(0o600)
 
     def _tapnet(self, verb: str) -> None:
         if self.spec.netdev.type != "tap" or not self.spec.tapnet:

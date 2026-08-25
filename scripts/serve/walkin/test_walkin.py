@@ -65,6 +65,32 @@ class SpecTests(unittest.TestCase):
             spec_mod.parse_spec(doc, "test")
 
 
+class NeverRunsALauncherTests(unittest.TestCase):
+    """The broker DERIVES a clone command line; it never executes a launcher.
+
+    A station launcher hardcodes its own `D=`, its own tap and an unconditional
+    `kill "$(cat $D/qemu.pid)"` preamble. Running one for a clone attaches to the
+    LIVE station directory and takes the live guest down — measured on rhapsody
+    during this wave, and the same shape clone-guard exists for. So the guard is
+    structural: the two modules that read a launcher have no way to run one.
+    """
+
+    def test_the_parsing_modules_cannot_shell_out(self):
+        for module in ("launcher.py", "derive.py"):
+            source = (Path(__file__).parent / module).read_text()
+            for forbidden in ("import subprocess", "os.system", "os.popen", "check_output"):
+                self.assertNotIn(forbidden, source, f"{module} must never execute a station launcher")
+
+    def test_the_kill_preamble_never_reaches_the_command_line(self):
+        text = (
+            "D=/data/vms/streamhost/stations/os2warp\n"
+            '[ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")"\n'
+            "qemu-system-x86_64 -m 256 -pidfile $D/qemu.pid\n"
+        )
+        parsed = launcher.parse("live", text=text)
+        self.assertNotIn("kill", " ".join(parsed.argv))
+
+
 class NamingTests(unittest.TestCase):
     def test_slot_range_is_the_ledger_range(self):
         self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (152, 200))
@@ -81,6 +107,34 @@ class NamingTests(unittest.TestCase):
     def test_tap_name_respects_the_kernel_limit(self):
         with self.assertRaises(naming.NameError_):
             naming.tap_name("os2warp", 3, "wi-averylongname-%d")
+
+
+class BinaryPinTests(unittest.TestCase):
+    def test_binary_must_be_absolute(self):
+        doc = {**SPEC_DOC, "overrides": {**SPEC_DOC["overrides"], "binary": "qemu-system-i386"}}
+        with self.assertRaises(spec_mod.SpecError):
+            spec_mod.parse_spec(doc, "test")
+
+    def test_a_missing_pinned_binary_is_refused_rather_than_swapped(self):
+        spec = a_spec(overrides={**SPEC_DOC["overrides"], "binary": "/opt/qemu-nowhere/bin/qemu-system-i386"})
+        base = derive.read_launcher(spec, REPO)
+        plan = derive.plan_for(spec, 1, 152)
+        with self.assertRaises(launcher.LauncherError):
+            derive.derive_argv(base, plan, spec)
+
+    def test_an_unpinned_binary_may_not_move(self):
+        with self.assertRaises(deviceset.DeviceSetError):
+            deviceset.assert_same_device_set(
+                ["qemu-system-x86_64", "-m", "16"], ["/opt/qemu-fork/bin/qemu-system-x86_64", "-m", "16"]
+            )
+
+    def test_a_pinned_binary_is_allowed_exactly_once(self):
+        pinned = "/opt/qemu-rhapsody/bin/qemu-system-i386"
+        deviceset.assert_same_device_set(["qemu-system-i386", "-m", "64"], [pinned, "-m", "64"], expect_binary=pinned)
+        with self.assertRaises(deviceset.DeviceSetError):
+            deviceset.assert_same_device_set(
+                ["qemu-system-i386", "-m", "64"], ["qemu-system-i386", "-m", "64"], expect_binary=pinned
+            )
 
 
 class LauncherTests(unittest.TestCase):
@@ -195,6 +249,12 @@ class DeriveTests(unittest.TestCase):
 
     def test_sandbox_flags_are_added(self):
         self.assertIn(derive.SANDBOX_ARG, self.argv)
+
+    def test_the_mac_is_left_alone(self):
+        # Ledger §5.3: loadvm restores the NIC address from saved device state,
+        # so a per-clone mac= would only make the command line disagree with the
+        # vmstate. The pool is one clone per station instead.
+        self.assertIn("pcnet,netdev=n0,mac=02:00:00:00:00:13", self.argv)
 
     def test_the_device_set_is_untouched(self):
         self.assertEqual(deviceset.signature(self.base.argv), deviceset.signature(self.argv))
@@ -343,6 +403,35 @@ class BrokerTests(unittest.TestCase):
         victim = self.made[0]
         victim._alive = False
         self.assertIn(victim.identity, self.broker.tick()["died"])
+
+    def test_the_frozen_interface_lane_2_calls_exists(self):
+        for name in ("live_sessions", "pools", "close_sessions", "kill_all_clones", "refill", "set_drain"):
+            self.assertTrue(callable(getattr(self.broker, name, None)), name)
+
+    def test_close_sessions_leaves_the_warm_pool_standing(self):
+        self.broker.claim("u1", "os2warp")
+        self.assertEqual(self.broker.close_sessions("WALKIN_CLOSED"), 1)
+        self.assertEqual(self.broker.live_sessions(), 0)
+        # One member is gone with its session; the other is still warm, because
+        # emptying the pool is a separate call that lane 2 makes AFTER revoking
+        # the tickets.
+        self.assertEqual(self.broker.state()["pools"][0]["free"], 1)
+
+    def test_kill_all_clones_stays_empty_under_the_watchdog(self):
+        self.broker.kill_all_clones()
+        self.broker.tick()
+        self.assertEqual(self.broker.state()["pools"][0]["free"], 0)
+        self.broker.refill()
+        self.assertEqual(self.broker.state()["pools"][0]["free"], 2)
+
+    def test_drain_refuses_new_claims_without_ending_the_old_ones(self):
+        first = self.broker.claim("u1", "os2warp")["clone"]
+        self.broker.set_drain(True)
+        with self.assertRaises(broker_mod.BrokerError):
+            self.broker.claim("u2", "os2warp")
+        self.assertEqual(self.broker.live_sessions(), 1)
+        self.broker.set_drain(False)
+        self.assertNotEqual(self.broker.claim("u2", "os2warp")["clone"], first)
 
     def test_signal_entries_describe_the_pool(self):
         entries = self.broker.signal_entries()

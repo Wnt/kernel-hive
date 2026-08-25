@@ -119,15 +119,19 @@ def _compare_device(flag: str, base: str, derived: str) -> None:
             )
 
 
-def assert_same_device_set(base_argv: list, derived_argv: list) -> None:
+def assert_same_device_set(base_argv: list, derived_argv: list, expect_binary: str = "") -> None:
     """Raise unless `derived_argv` is `base_argv` with only allowed changes.
 
     Called on EVERY spawn, not just when an override file changes: the check is
     cheap and the failure it prevents costs a golden.
     """
-    if base_argv[0] != derived_argv[0]:
+    # `expect_binary` is the station file's `overrides.binary` — the DECLARED
+    # emulator for this golden, which may differ from the bare name the launcher
+    # happens to resolve off PATH. Nothing else may move it.
+    wanted = expect_binary or base_argv[0]
+    if derived_argv[0] != wanted:
         raise DeviceSetError(
-            f"emulator binary changed {base_argv[0]!r} -> {derived_argv[0]!r}; "
+            f"emulator binary changed {wanted!r} -> {derived_argv[0]!r}; "
             "the golden is bound to the binary it was captured against (rule 6)"
         )
     base = _pairs(base_argv)

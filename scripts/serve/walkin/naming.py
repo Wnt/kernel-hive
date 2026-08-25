@@ -10,6 +10,7 @@ each separately is what makes "it is mine" one fact rather than four.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -22,7 +23,11 @@ UDP_PORT_BASE = 54000
 # Clones never run in the production VMID range; clone-guard refuses < 900.
 VMID_BASE = 9000
 
-WALKIN_ROOT = Path("/data/vms/walkin")
+# Overridable so a development stack can put its clones inside its own sandbox
+# (rule 4: never experiment beside the live fleet). Production leaves it alone;
+# clone-guard is pointed at whatever this says, so the guard and the broker can
+# never disagree about which tree is the clone tree.
+WALKIN_ROOT = Path(os.environ.get("WALKIN_ROOT", "/data/vms/walkin"))
 SLICE = "walkin.slice"
 
 _STATION_RE = re.compile(r"^[a-z][a-z0-9]{1,15}$")
@@ -78,7 +83,14 @@ def vmid(slot: int) -> int:
 
 
 def clone_mac(slot: int) -> str:
-    """Locally-administered, per-clone. `57` is the walk-in plane's octet."""
+    """The per-clone MAC the ledger reserves — and DOES NOT SET.
+
+    Kept because the scheme is documented and a future per-plane golden will
+    want it. It is not applied to any `mac=`: `loadvm` restores the NIC address
+    from saved device state, so a clone is whatever its golden was baked as
+    (ledger §5.3). Anything that starts calling this to build a command line is
+    about to create a machine whose command line disagrees with its own vmstate.
+    """
     return f"02:00:00:00:57:{check_slot(slot):02x}"
 
 
