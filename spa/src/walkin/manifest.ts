@@ -159,10 +159,13 @@ async function fetchDocument(path: string, base = ''): Promise<unknown | null> {
  * field a walk-in is not allowed to see.
  */
 export async function loadWalkinExhibits(): Promise<WalkinExhibit[]> {
-  // The projection is served by the walk-in plane at the origin root; the
-  // gallery manifest is a per-staging-slot runtime document, so it keeps the
-  // bundle's base.
-  const walkin = await fetchDocument('/walkin/manifest.json');
+  // The projection is served by the walk-in plane at the ORIGIN ROOT, so only
+  // a bundle that IS the origin root can be behind it — a /staging/<slot>/
+  // build never is, and asking anyway bought a guaranteed 404 in every
+  // reviewer's console, which is exactly the noise route.ts exists to keep out
+  // of this plane. The gallery manifest is a per-staging-slot runtime
+  // document, so it keeps the bundle's base.
+  const walkin = RUNTIME_BASE === '/' ? await fetchDocument('/walkin/manifest.json') : null;
   if (walkin) return parseWalkinManifest(walkin);
   const gallery = await fetchDocument('gallery-manifest.json', RUNTIME_BASE);
   return gallery ? parseWalkinManifest(gallery) : [];
