@@ -77,3 +77,127 @@ def wants_html(accept_header: str | None) -> bool:
     401. A browser navigating to the gallery should land on the login screen;
     the SPA's own fetches should get a status code they can act on."""
     return "text/html" in (accept_header or "")
+
+
+# ---- the walk-in role ------------------------------------------------------
+#
+# A walk-in is an anonymous stranger with an account (WALKIN-BRIEF.md §5), so
+# their fence is an ALLOWLIST and its default is deny — the opposite way round
+# from the signed-in gate above, where "authenticated is enough". A route added
+# to the server is invisible to walk-ins until it is named here.
+
+# Exact paths a walk-in may reach beyond the open set. `/account` is theirs:
+# managing their own passkeys is not an operator power.
+WALKIN_PATHS = frozenset(
+    {
+        "/",
+        "/index.html",
+        "/account",
+        "/walkin",
+        "/walkin/state",
+        "/walkin/signup",
+        "/walkin/claim",
+        "/walkin/release",
+        "/walkin/reset",
+        "/walkin/manifest.json",
+        "/walkin/exhibits",
+        # The curatorial prose. A static document with no live field in it.
+        "/poster-docs.json",
+        # Telemetry in, aggregate counter out. Debugging a broken stream has to
+        # work for the visitor whose stream is broken (STREAM-DEBUGGING.md), and
+        # a walk-in is exactly the session nobody can reach any other way.
+        "/clientlog",
+        "/usage",
+    }
+)
+# Prefixes: the SPA bundle, the museum's own art, and the poster heroes —
+# captured stills already published to the webroot.
+WALKIN_PREFIXES = ("/assets/", "/posters/", "/walkin/play/", "/fonts/")
+
+# The exhibition fields, named to KEEP (brief §5.3). Built as an allowlist so a
+# field added to the registry later is invisible to walk-ins until somebody
+# deliberately exposes it. `id` is here as the join key the SPA needs to reach
+# the poster and hero for a row; it is already public in the poster index.
+WALKIN_MANIFEST_FIELDS = (
+    "id",
+    "displayName",
+    "year",
+    "era",
+    "eraLabel",
+    "lineage",
+    "arch",
+    "notes",
+    "blurb",
+    "eraSoftware",
+    "iconicApps",
+    "periodBrowser",
+    "accent",
+)
+
+
+def walkin_allows(path: str, own_signal: str | None = None) -> bool:
+    """Whether a `walkin` session may reach `path`.
+
+    `own_signal` is the signaling path of the visitor's OWN clone, minted by
+    their claim. It is the only interactive surface a walk-in ever gets: every
+    other station's signaling — and the fleet index that would enumerate them —
+    is refused here rather than filtered downstream.
+    """
+    if is_blocked(path):
+        return False
+    if own_signal and path == own_signal:
+        return True
+    if own_signal and path.startswith(_webrtc_prefix(own_signal)):
+        return True
+    if path.startswith("/signal/") or path.startswith("/webrtc/"):
+        return False
+    if is_open(path):
+        return True
+    return path in WALKIN_PATHS or path.startswith(WALKIN_PREFIXES)
+
+
+def _webrtc_prefix(own_signal: str) -> str:
+    """`/signal/walkin-os2warp-3.json` -> `/webrtc/walkin-os2warp-3/`."""
+    clone = own_signal[len("/signal/") : -len(".json")]
+    return f"/webrtc/{clone}/"
+
+
+def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
+    """The role fence. Non-walk-in sessions keep the behaviour they had:
+    signed in is enough for everything this listener still serves."""
+    if user and user.get("role") == "walkin":
+        return walkin_allows(path, own_signal)
+    return not is_blocked(path)
+
+
+def landing_for(user: dict | None) -> str:
+    """Where to send a browser that was refused an HTML page. A walk-in belongs
+    on the walk-in landing page, not on the invited plane's login screen."""
+    return "/walkin" if user and user.get("role") == "walkin" else "/login"
+
+
+def walkin_manifest(entries: list[dict], own: dict | None = None) -> dict:
+    """Project the gallery manifest down to what a walk-in may see.
+
+    Two rules, both from brief §5.3. The fields are named to KEEP, never
+    deleted to hide. And `signalEndpoint`/`transport` — the interactive
+    surface — survive for exactly one row: the station the visitor holds a
+    clone of, carrying the CLONE's endpoint, not the museum station's.
+
+    `own` is `{"station": …, "clone": …, "signalEndpoint": …, "transport": …}`
+    or None for a visitor who has not claimed anything yet.
+    """
+    playable = (own or {}).get("station")
+    rows = []
+    for entry in entries:
+        # Dark-launched exhibits are not public yet, walk-ins included.
+        if entry.get("listed") is False:
+            continue
+        row = {key: entry[key] for key in WALKIN_MANIFEST_FIELDS if key in entry}
+        if playable and entry.get("id") == playable:
+            row["signalEndpoint"] = own["signalEndpoint"]
+            row["transport"] = own.get("transport", "streamhost")
+            row["clone"] = own.get("clone", "")
+            row["playable"] = True
+        rows.append(row)
+    return {"_projection": "walk-in allowlist; exhibition fields only", "entries": rows}

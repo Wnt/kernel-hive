@@ -84,6 +84,13 @@ def dispatch(handler, path: str, method: str, service, origin: str) -> bool:
         _reply(handler, 200, service.public_state(user))
         return True
 
+    if path == "/auth/walkin/status" and method == "GET":
+        if not user or user["role"] != "admin":
+            _reply(handler, 403, {"error": "admins only"})
+        else:
+            _reply(handler, 200, service.walkin.status())
+        return True
+
     if method != "POST":
         _reply(handler, 405, {"error": "method not allowed"})
         return True
@@ -223,8 +230,84 @@ def _route(handler, path: str, service, user, body: dict) -> None:
         _reply(handler, 200, {"ok": True})
         return
 
+    # ---- the walk-in switch (ledger §3) ------------------------------------
+    #
+    # Under /auth/ rather than /walkin/ because it is an operator control, and
+    # so it inherits this file's two cross-cutting rules unchanged: the Origin
+    # check above, and the admin role check a few lines up.
+
+    if path == "/auth/walkin/access":
+        _reply(handler, 200, service.walkin.set_access(user, str(body.get("access", ""))))
+        return
+
+    if path == "/auth/walkin/drain":
+        _reply(handler, 200, service.walkin.set_drain(user, bool(body.get("drain", True))))
+        return
+
+    if path == "/auth/walkin/purge":
+        _reply(handler, 200, service.walkin.purge(int(body.get("olderThanDays") or 90)))
+        return
+
     _reply(handler, 404, {"error": "no such endpoint"})
 
 
 def _public_user(user: dict) -> dict:
     return {"id": user["id"], "name": user["name"], "role": user["role"]}
+
+
+# ---- the walk-in surface ---------------------------------------------------
+
+
+def dispatch_walkin(handler, path: str, method: str, service, origin: str, own=None) -> bool:
+    """Handle the two /walkin/* routes that are auth's, not the broker's.
+
+    Returns False for anything else, so the serving plane chains this in front
+    of the broker's own dispatcher: `dispatch_walkin(...) or broker.dispatch(...)`.
+    Signup and the manifest projection live here because both are decisions
+    about WHO may see WHAT, which is this package's job; the pool is not.
+    """
+    if path not in ("/walkin/signup", "/walkin/signup/begin", "/walkin/signup/finish", "/walkin/manifest.json"):
+        return False
+    user = service.user_for_token(session_token(handler))
+
+    if path == "/walkin/manifest.json":
+        if method != "GET":
+            _reply(handler, 405, {"error": "method not allowed"})
+            return True
+        try:
+            service.walkin.require_reachable(user)
+            _reply(handler, 200, service.walkin.manifest(own))
+        except AuthError as exc:
+            _reply(handler, exc.status, {"error": str(exc)})
+        return True
+
+    if method != "POST":
+        _reply(handler, 405, {"error": "method not allowed"})
+        return True
+    if handler.headers.get("Origin") != origin:
+        _reply(handler, 403, {"error": "bad origin"})
+        return True
+    body, err = handler.read_json_body(BODY_CAP)
+    if err and path.endswith("/finish"):
+        _reply(handler, err[0], {"error": err[1]})
+        return True
+    body = body or {}
+    ip = _client_ip(handler)
+    ua = handler.headers.get("User-Agent") or ""
+    try:
+        # The ledger names ONE signup route carrying "a WebAuthn attestation".
+        # WebAuthn cannot be one round trip — the challenge has to come from the
+        # server first — so /walkin/signup routes on the body: an attestation
+        # finishes the ceremony, its absence begins one. The explicit
+        # /begin + /finish pair is the same thing spelled out.
+        if path != "/walkin/signup/finish" and not body.get("credential"):
+            cid, options = service.walkin.begin_signup(ip)
+            _reply(handler, 200, {"ceremonyId": cid, "publicKey": options})
+        else:
+            new_user, token, handle = service.walkin.finish_signup(
+                str(body.get("ceremonyId", "")), body.get("credential") or {}, ip, ua
+            )
+            _reply(handler, 200, {"handle": handle, "role": new_user["role"]}, cookie=token)
+    except AuthError as exc:
+        _reply(handler, exc.status, {"error": str(exc)})
+    return True
