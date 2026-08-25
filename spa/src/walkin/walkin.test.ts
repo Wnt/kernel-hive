@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseWalkinReason, walkinReasonCopy, WALKIN_CLOSED_COPY } from './reasons';
 import { accessAllows, clockText, resolveEndReason } from './sessionEnd';
 import { parseExhibit, parseWalkinManifest } from './manifest';
+import { isWalkinPath } from './route';
 import type { WalkinAdminStatus, WalkinClaim, WalkinQueued, WalkinState } from '../data/walkinTypes';
 
 // Pure-logic cover for the walk-in lane: the reason-code copy (a visitor must
@@ -106,5 +107,24 @@ describe('shared walk-in types', () => {
     const queued: WalkinQueued = { queued: true, position: 2 };
     const status: WalkinAdminStatus = { access: 'invited', envFloor: 'open', sessions: 3, pools: state.pools, accounts: 41 };
     expect([state.pools[0].free, claim.ttlSeconds, queued.position, status.accounts]).toEqual([2, 1200, 2, 41]);
+  });
+});
+
+describe('isWalkinPath', () => {
+  it('claims the walk-in surfaces and nothing else', () => {
+    expect(isWalkinPath('/walkin')).toBe(true);
+    expect(isWalkinPath('/walkin/exhibits')).toBe(true);
+    expect(isWalkinPath('/walkin/play/win311')).toBe(true);
+    expect(isWalkinPath('/')).toBe(false);
+    expect(isWalkinPath('/os/win311')).toBe(false);
+    // Not a walk-in route just because the word appears further in (the admin
+    // panel at /admin/walkin is the gallery app's, and must boot the gallery).
+    expect(isWalkinPath('/admin/walkin')).toBe(false);
+    expect(isWalkinPath('/walkins')).toBe(false);
+  });
+
+  it('honours a staged bundle base', () => {
+    expect(isWalkinPath('/staging/walkin-spa/walkin', '/staging/walkin-spa/')).toBe(true);
+    expect(isWalkinPath('/staging/walkin-spa/', '/staging/walkin-spa/')).toBe(false);
   });
 });

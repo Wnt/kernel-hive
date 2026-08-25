@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import WalkinApp from './walkin/WalkinApp';
+import { isWalkinPath } from './walkin/route';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { initClientDebug } from './three/clientDebug';
@@ -105,7 +107,11 @@ exposeKeyRecorder();
 // to produce nothing at all because every log call hung off a stream that had
 // already failed to start. This also starts the /clientcmd poller, so every
 // tab is reachable for debugging, not just one with a working station open.
-initClientDebug();
+// …but NOT for a walk-in visitor: the operator poller and the telemetry sink
+// are gallery surfaces that answer 401 to an anonymous session, and a walk-in
+// has no operator to be reached by. See walkin/route.ts.
+const WALKIN = isWalkinPath(window.location.pathname, import.meta.env.BASE_URL);
+if (!WALKIN) initClientDebug();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -117,7 +123,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           preview of anything that routes was really testing live. BASE_URL is
           '/' for a normal build, leaving production behaviour unchanged. */}
       <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <App />
+        {/* A walk-in route boots the walk-in app DIRECTLY, never the gallery
+            app: App mounts the fleet manifest + boot-index loaders, which are
+            gated routes an anonymous visitor only gets 401s from. */}
+        {WALKIN ? <WalkinApp /> : <App />}
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>,

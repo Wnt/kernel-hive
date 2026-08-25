@@ -7,7 +7,6 @@ import ExhibitPoster from './ui/ExhibitPoster';
 import { FleetTable } from './ui/FleetTable';
 import { About } from './ui/About';
 import { AdminPage } from './admin/AdminPage';
-import WalkinApp from './walkin/WalkinApp';
 import { useManifest } from './data/useManifest';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
@@ -91,9 +90,6 @@ export default function App() {
             is. The walk-in panel lives one path down, at /admin/walkin, which falls
             through to the SPA untouched — see spa/src/admin/AdminPage.tsx. */}
         <Route path="/admin/walkin" element={<AdminPage />} />
-
-        {/* ---------- walk-in plane: landing / own clone / exhibits (lane 4) ---------- */}
-        <Route path="/walkin/*" element={<WalkinApp />} />
 
         {/* ---------- 3D museum ---------- */}
         <Route path="/museum" element={<SceneV2 />} />
