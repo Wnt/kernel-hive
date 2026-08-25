@@ -287,6 +287,11 @@ box_sync_load_pairs() {
   # over the RTL8029 NDIS3 driver). Same box-authored mirror pair as win98se's
   # above. See docs/lab/retronet/WEB-STATION-win311.md.
   box_sync_add_pair win311-rn-tapnet streamhost/stations/win311/rn-tapnet.sh "$BOX_ROOT/stations/win311/rn-tapnet.sh" exact repo
+  # The walk-in taps. A NEW file in an existing station dir ships nowhere until
+  # named here — how the plane reached production without them, gallery and all.
+  for _wi in os2warp rhapsody win311; do
+    box_sync_add_pair "$_wi-wi-tapnet" "streamhost/stations/$_wi/wi-tapnet.sh" "$BOX_ROOT/stations/$_wi/wi-tapnet.sh" exact repo
+  done
   # tru64's retronet veth lifecycle helper + its es40 launcher. Same box-authored
   # mirror pair as win98se/solaris above; tru64 has no qemu-streamhost.sh, so the
   # generic launcher sweep below does not pick its runtime up. Without these the

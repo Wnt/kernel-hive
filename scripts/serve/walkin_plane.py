@@ -71,7 +71,19 @@ def start(auth):
     BROKER.access = auth.walkin.access()
     BROKER.set_drain(auth.walkin.draining())
     if BROKER.access != "closed":
-        BROKER.refill()
+        # Warming is best-effort and MUST NOT be fatal. A clone that cannot be
+        # built — an undeployed tap script, a missing seed, a full slot range —
+        # is a walk-in outage; an exception here is a MUSEUM outage, because
+        # this runs inside the process that serves the whole gallery. On
+        # 2026-08-25 an undeployed wi-tapnet.sh took the gallery down exactly
+        # this way, three lines below a docstring promising it could not.
+        try:
+            BROKER.refill()
+        except Exception as exc:  # noqa: BLE001 — reported, never fatal
+            sys.stderr.write(
+                f"[serve] walk-in: pool did not warm ({type(exc).__name__}: {exc}) — "
+                "the plane is up and empty; the watchdog will retry\n"
+            )
     threading.Thread(target=_watchdog, daemon=True, name="walkin-watchdog").start()
     sys.stderr.write(
         f"[serve] walk-in plane: access={BROKER.access} floor={auth.walkin.env_floor} "
