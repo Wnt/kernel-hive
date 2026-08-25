@@ -1,0 +1,27 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/walkin-net/provision-walkin-net.sh. Re-asserts the walk-in
+# containment on every boot: the no-transit sysctl and the nft table that keeps
+# a walk-in clone off the retronet and out of OSCAR. See
+# docs/lab/walkin/NETWORK-PLANE.md.
+#
+# It runs BEFORE the walk-in services it protects (walkin-dhcp/-dns/-proxy pull
+# it in with Requires=), so there is no window in which eth1 answers with the
+# ruleset unloaded.
+Description=walk-in containment — no transit eth0<->eth1, web-only on eth1
+Documentation=file:///data/kernel-hive/docs/lab/walkin/NETWORK-PLANE.md
+DefaultDependencies=no
+After=sysinit.target
+Before=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Idempotent: `nft -f` on a file whose first statement deletes its own table
+# leaves exactly one copy of it however many times this runs.
+ExecStart=/sbin/nft -f /etc/nftables.d/walkin-net.nft
+ExecStart=/sbin/sysctl -q -w net.ipv4.ip_forward=0
+ExecStop=/bin/sh -c '/sbin/nft delete table inet walkin 2>/dev/null || true'
+
+[Install]
+WantedBy=multi-user.target

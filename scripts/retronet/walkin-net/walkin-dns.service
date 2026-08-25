@@ -1,0 +1,43 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/walkin-net/provision-walkin-net.sh. The walk-in leg's
+# wildcard resolver: same program as retronet-dns.service, bound to 10.98.0.2
+# and answering every A with 10.98.0.2. See docs/lab/walkin/NETWORK-PLANE.md.
+Description=walk-in wildcard DNS — every A answers with the walk-in gateway
+Documentation=file:///data/kernel-hive/docs/lab/walkin/NETWORK-PLANE.md
+After=network-online.target walkin-net.service
+Wants=network-online.target
+Requires=walkin-net.service
+
+[Service]
+Type=simple
+User=rndns
+Group=rndns
+EnvironmentFile=/etc/retronet/walkin-dns.env
+ExecStart=/usr/bin/python3 /opt/retronet-dns/dns.py serve
+Restart=on-failure
+RestartSec=3s
+
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+ReadOnlyPaths=/opt/retronet-dns
+
+Nice=5
+MemoryMax=96M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

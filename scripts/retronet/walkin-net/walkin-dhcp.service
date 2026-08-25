@@ -1,0 +1,55 @@
+[Unit]
+# Installed INSIDE the gateway CT (951) by
+# scripts/retronet/walkin-net/provision-walkin-net.sh. The SECOND DHCP scope:
+# same program as retronet-dhcp.service, pinned to the walk-in leg (eth1) with
+# its own short-lease pool. See docs/lab/walkin/NETWORK-PLANE.md.
+Description=walk-in DHCP — short-lease pool on eth1, no default gateway
+Documentation=file:///data/kernel-hive/docs/lab/walkin/NETWORK-PLANE.md
+After=network-online.target walkin-net.service
+Wants=network-online.target
+# The containment ruleset must be loaded before anything answers on eth1.
+Requires=walkin-net.service
+
+[Service]
+Type=simple
+User=rndhcp
+Group=rndhcp
+EnvironmentFile=/etc/retronet/walkin-dhcp.env
+# The reply to an address-less client is a limited broadcast (255.255.255.255:68).
+# The CT has no default route, so give the walk-in leg its own broadcast route.
+# `append`, not `replace`: the retronet scope owns the eth0 one and a replace
+# would take it away — two host routes for the same prefix on different devices
+# coexist, and the device-scoped lookup a SO_BINDTODEVICE socket does picks the
+# right one. Tolerant of already existing (the `-`), privileged (the `+`).
+ExecStartPre=+-/sbin/ip route append 255.255.255.255/32 dev eth1
+ExecStart=/usr/bin/python3 /opt/retronet-dhcp/dhcp.py serve
+Restart=on-failure
+RestartSec=3s
+
+# udp/67 is privileged. SO_BINDTODEVICE, which pins this scope to eth1, needs
+# CAP_NET_RAW — without it the socket falls back to the whole box and the two
+# scopes start answering each other's clients.
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW
+
+# --- sandbox (mirrors retronet-dhcp.service) ---------------------------------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+ReadOnlyPaths=/opt/retronet-dhcp
+
+Nice=5
+MemoryMax=96M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target
