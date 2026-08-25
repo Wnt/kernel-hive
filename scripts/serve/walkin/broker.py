@@ -433,6 +433,7 @@ class Broker:
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
         orphans = self.reap_orphans()
+        taps = self.reap_orphan_taps()
         # A claim registry that is unreachable must not stop the watchdog doing
         # the two things that actually keep the pool honest.
         try:
@@ -441,7 +442,7 @@ class Broker:
             sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
             strays = []
         built = self._refill()
-        return {"ended": ended, "died": died, "orphans": orphans, "strays": strays, "built": built}
+        return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "strays": strays, "built": built}
 
     def reap_orphans(self) -> list:
         """Clone roots on disk that this broker does not own — kill and discard.
@@ -469,6 +470,43 @@ class Broker:
             clone_mod.reap_orphan(entry)
             found.append(entry.name)
         return found
+
+    def reap_orphan_taps(self) -> list:
+        """Walk-in taps on the box that no clone stands behind.
+
+        A tap outlives its clone if the build failed after bringing it up, and
+        an orphaned tap is not merely untidy: its name carries the clone's pool
+        index (`wi-os2warp-2`), so the next clone allotted that index cannot be
+        created — `ip link add` fails, the build fails, the watchdog tries the
+        next index and fails again. Fifteen of these accumulated on the live
+        plane in one afternoon and would have failed the next fifteen os2warp
+        builds in a row.
+
+        Scanned from `/sys/class/net` rather than from any record we keep,
+        because the leaked ones are by definition the ones nothing recorded.
+        """
+        known = set()
+        with self._lock:
+            for member in self._members.values():
+                known.add(member.clone.plan.tap)
+        try:
+            for entry in naming.WALKIN_ROOT.iterdir():
+                if entry.is_dir():
+                    known.add(clone_mod.read_manifest(entry).get("tap", ""))
+        except OSError:
+            pass
+        reaped = []
+        for tap in clone_mod.live_taps():
+            if tap in known:
+                continue
+            station = clone_mod.TAP_RE.match(tap).group("station")
+            if clone_mod.tapnet_down(station, tap):
+                reaped.append(tap)
+            else:
+                sys.stderr.write(
+                    f"[walkin] orphan tap {tap} would not go down; the next clone at that index will fail\n"
+                )
+        return reaped
 
     def release_stray_claims(self) -> list:
         """Give back slot and port claims that no clone stands behind.

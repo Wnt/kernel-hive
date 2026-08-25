@@ -507,6 +507,35 @@ def read_manifest(root: Path) -> dict:
         return {}
 
 
+TAP_RE = re.compile(r"^wi-(?P<station>[a-z][a-z0-9]{1,15})-(?P<index>\d+)$")
+
+
+def tapnet_down(station: str, tap: str, bridge: str = "") -> bool:
+    """Take one walk-in tap down through the station's own script.
+
+    The script, not `ip link del`, because the tap is only half of what a `up`
+    created: the other half is the fail-closed guard chain scoped to that
+    interface, and deleting the link alone leaves the chain behind. Falls back to
+    removing the link only if the script is not on the box, which is better than
+    leaving a tap that will collide with the next clone of the same index.
+    """
+    script = STATIONS_ROOT / station / "wi-tapnet.sh"
+    env = {**os.environ, "WI_TAP_IF": tap, "WI_TAP_BRIDGE": bridge or "vmbr-wi"}
+    if script.exists():
+        _run(["bash", str(script), "down"], env=env, check=False)
+    if Path(f"/sys/class/net/{tap}").exists():
+        _run(["ip", "link", "del", tap], check=False)
+    return not Path(f"/sys/class/net/{tap}").exists()
+
+
+def live_taps() -> list:
+    """Every walk-in tap currently on the box, by name."""
+    try:
+        return sorted(p.name for p in Path("/sys/class/net").iterdir() if TAP_RE.match(p.name))
+    except OSError:
+        return []
+
+
 def reap_orphan(root: Path) -> dict:
     """Destroy a clone this process does not own. Returns what it removed.
 
@@ -522,6 +551,14 @@ def reap_orphan(root: Path) -> dict:
     for unit in (info.get("unit"), f"walkin-daemon@{info.get('identity', '')}.service"):
         if unit and "@." not in unit:
             _run(["systemctl", "stop", unit], check=False)
+    # The tap is part of the clone, and until 2026-08-25 the teardown paths did
+    # not say so: a build that failed after `tapnet up` left its interface on
+    # vmbr-wi for good. Fifteen of them accumulated on the live plane during one
+    # afternoon's rebuild storm, and because a tap name carries the clone's pool
+    # index, the next clone at that index cannot be created at all.
+    tap = info.get("tap", "")
+    if tap and TAP_RE.match(tap):
+        tapnet_down(TAP_RE.match(tap).group("station"), tap, info.get("bridge", ""))
     if naming.WALKIN_ROOT in root.parents:
         shutil.rmtree(root, ignore_errors=True)
     slot = info.get("slot")

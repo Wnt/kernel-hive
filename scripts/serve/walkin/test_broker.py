@@ -14,6 +14,7 @@ The derivation half — schema, launcher parsing, the device-set refusal — is
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
@@ -226,6 +227,50 @@ class BrokerTests(unittest.TestCase):
         for name, row in entries.items():
             self.assertTrue(name.startswith("walkin-os2warp-"))
             self.assertGreaterEqual(row["udpPort"], 54152)
+
+
+class OrphanTapTests(unittest.TestCase):
+    """An orphaned tap fails the next clone at that pool index, not just tidiness."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self._real_root = naming.WALKIN_ROOT
+        naming.WALKIN_ROOT = Path(self.tmp.name)
+        self.addCleanup(self._restore)
+        self.broker = broker_mod.Broker(REPO / "does-not-exist", REPO, spawn=False)
+        self.downed = []
+
+    def _restore(self):
+        naming.WALKIN_ROOT = self._real_root
+
+    def _patch(self, taps):
+        from . import clone as clone_mod
+
+        real_live, real_down = clone_mod.live_taps, clone_mod.tapnet_down
+        clone_mod.live_taps = lambda: taps
+        clone_mod.tapnet_down = lambda station, tap, bridge="": (self.downed.append((station, tap)), True)[1]
+        self.addCleanup(lambda: setattr(clone_mod, "live_taps", real_live))
+        self.addCleanup(lambda: setattr(clone_mod, "tapnet_down", real_down))
+
+    def test_a_tap_with_no_clone_behind_it_is_taken_down(self):
+        self._patch(["wi-os2warp-2", "wi-os2warp-3"])
+        self.assertEqual(self.broker.reap_orphan_taps(), ["wi-os2warp-2", "wi-os2warp-3"])
+        self.assertEqual(self.downed, [("os2warp", "wi-os2warp-2"), ("os2warp", "wi-os2warp-3")])
+
+    def test_a_tap_recorded_in_a_clone_crumb_is_left_alone(self):
+        root = naming.WALKIN_ROOT / "walkin-os2warp-1"
+        root.mkdir()
+        (root / "clone.json").write_text(json.dumps({"identity": "walkin-os2warp-1", "tap": "wi-os2warp-1"}))
+        self._patch(["wi-os2warp-1", "wi-os2warp-2"])
+        self.assertEqual(self.broker.reap_orphan_taps(), ["wi-os2warp-2"])
+
+    def test_a_tap_name_recognises_only_the_walk_in_shape(self):
+        from . import clone as clone_mod
+
+        self.assertTrue(clone_mod.TAP_RE.match("wi-os2warp-16"))
+        for other in ("os2rn0", "win311rn0", "veth952i0", "wi-", "vmbr-wi"):
+            self.assertIsNone(clone_mod.TAP_RE.match(other), other)
 
 
 class StrayClaimTests(unittest.TestCase):
