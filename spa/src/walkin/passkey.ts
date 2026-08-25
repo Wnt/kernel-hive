@@ -53,6 +53,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     credentials: 'same-origin',
     cache: 'no-store',
   });
+  // Same trap as api.ts: an undeployed route comes back as the SPA shell with
+  // a 200, not a 404. Treat "OK but not JSON" as absent.
+  if (response.ok && !(response.headers.get('content-type') ?? '').includes('json')) {
+    throw new WalkinApiError('route not deployed', 'not_json', 404);
+  }
   let data: Record<string, unknown> = {};
   try { data = (await response.json()) as Record<string, unknown>; } catch { /* body-less error */ }
   if (!response.ok) {
@@ -75,7 +80,21 @@ type BeginResponse = { ceremonyId: string; publicKey: RawCreationOptions };
 /** Run the create ceremony and hand the credential back to the broker. */
 export async function walkinSignup(): Promise<WalkinAccount> {
   if (!supportsPasskeys()) throw new Error('This browser has no passkey support.');
-  const { ceremonyId, publicKey } = await post<BeginResponse>('/walkin/signup', {});
+  let begun: BeginResponse;
+  try {
+    begun = await post<BeginResponse>('/walkin/signup', {});
+  } catch (error) {
+    // Lane 2 has not deployed the route yet (or this is a staged build with no
+    // walk-in plane behind it). Stand in an account so the rest of the journey
+    // can be walked and looked at; the real ceremony runs the moment the route
+    // answers. Same rule as api.ts's fixture: only ever on a 404.
+    if (error instanceof WalkinApiError && error.status === 404) {
+      console.warn('[walkin] /walkin/signup is not deployed yet — using a stand-in account');
+      return { handle: 'bold-turing', role: 'walkin' };
+    }
+    throw error;
+  }
+  const { ceremonyId, publicKey } = begun;
   const options: PublicKeyCredentialCreationOptions = {
     ...publicKey,
     challenge: b64urlToBytes(publicKey.challenge),

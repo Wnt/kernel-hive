@@ -37,6 +37,10 @@ function url(path: string): string {
   return `${RUNTIME_BASE}${path.replace(/^\//, '')}`;
 }
 
+/** A route the SPA's history fallback answered instead of the broker. Signalled
+ *  with a 404 so it takes the same "not built yet" path as a real 404. */
+const NOT_JSON = new WalkinApiError('route not deployed', 'not_json', 404);
+
 /** One JSON call. GET when `body` is omitted, POST otherwise. */
 async function call<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(url(path), {
@@ -46,8 +50,16 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
     credentials: 'same-origin',
     cache: 'no-store',
   });
+  // A missing walk-in route does NOT 404 on this origin: the SPA server's
+  // history fallback hands back index.html with a 200, which json() then
+  // chokes on. Without this check the UI sits on "checking…" forever instead
+  // of falling through to the fixture — which is exactly what the first staged
+  // build did. So an OK response that is not JSON means the route is not there.
+  const kind = response.headers.get('content-type') ?? '';
+  if (response.ok && !kind.includes('json')) throw NOT_JSON;
   let data: Record<string, unknown> = {};
   try { data = (await response.json()) as Record<string, unknown>; } catch { /* a body-less error is still an error */ }
+  if (response.ok && !data) throw NOT_JSON;
   if (!response.ok) {
     const code = typeof data.error === 'string' ? data.error : `http_${response.status}`;
     throw new WalkinApiError(code.replace(/_/g, ' '), code, response.status);
