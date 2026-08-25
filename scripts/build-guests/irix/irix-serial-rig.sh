@@ -189,6 +189,16 @@ cmd_boot() {
   mkdir -p "$D/nvram"
   cp -f "$AGENT_SRC" "$D/irixagent.lua"
   cp -r "$ASSETS/nvram/." "$D/nvram/"
+  if [ -n "${IRIX_RIG_RTC_MAC:-}" ]; then
+    python3 - "$D/nvram/indy_4610/rtc" "$IRIX_RIG_RTC_MAC" <<'PY'
+import sys
+p, mac = sys.argv[1], sys.argv[2]
+b = bytearray(open(p, "rb").read())
+b[0x13A:0x140] = bytes(int(x, 16) for x in mac.split(":"))
+open(p, "wb").write(b)
+PY
+    log "patched PROM eaddr to $IRIX_RIG_RTC_MAC (rtc+0x13A)"
+  fi
   if [ "$CAPTURE" != shm ]; then
     rm -f -- "$XSOCK"
     setsid Xvfb "$DISP" -screen 0 1280x1024x24 -nolisten tcp </dev/null >"$D/xvfb.log" 2>&1 &
