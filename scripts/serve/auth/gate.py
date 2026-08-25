@@ -47,6 +47,12 @@ OPEN_PATHS = frozenset(
         # one ever reaches signup. The page shows the closed notice when the
         # switch is not Open, so this is safe at every switch position.
         "/walkin",
+        # The exhibits view. It was gated while the projection it reads was
+        # gated too; both /walkin/manifest.json and /poster-docs.json are public
+        # now, so the page has nothing left to protect and a stranger browsing
+        # the museum's placards is the point. /walkin/play/<os> stays gated —
+        # that one needs an account and a clone.
+        "/walkin/exhibits",
         # The projection (brief 5.3) and the curatorial prose it pairs with.
         # Both are exhibition data by construction — the projection is an
         # allowlist, and a signed-out caller owns no clone, so it carries no
