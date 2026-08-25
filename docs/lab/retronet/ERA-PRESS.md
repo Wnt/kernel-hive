@@ -363,6 +363,45 @@ in `era-press.py` and re-run `seed`. Handy flags: `--no-push` stages locally
 without touching the CT (inspect the tree first); `--only <host>` restricts
 `seed` to one site; `--staging DIR` relocates the local tree.
 
+### When the name a station types was never captured — mirror hosts
+
+The host a period browser will type is not always the host the archive holds. A
+site can be archived under a **mirror hostname**, with the name everyone used
+missing from the archive entirely for that era.
+
+`next.com` is the worked example. The earliest capture of `http://www.next.com/`
+is **1997-04-12**; nothing on that host exists before 1997 at all. The 1996 NeXT
+site *is* archived — 502 URLs captured on **1996-11-12** — but under
+**`ftp.next.com`**, NeXT's public document mirror, whose pages are the same tree
+(their own absolute links point back at `www.next.com`).
+
+So the recipe for a station that wants `www.next.com` at a 1996 capture is:
+
+```bash
+# 1. mirror the host the archive actually has, at its era date
+python3 scripts/retronet/web/era-press.py press ftp.next.com --date 19961112 \
+    --depth 1 --max-pages 14 --staging /data/vms/retronet-corpus --no-push
+# 2. serve the same bytes under the name the browser types
+cp -rn /data/vms/retronet-corpus/ftp.next.com/. /data/vms/retronet-corpus/www.next.com/
+# 3. give the typed name its own sites.json entry (era-press only wrote the mirror host's)
+```
+
+**Copy, never symlink.** `proxy.corpus_path` resolves the target with `realpath`
+and rejects anything outside `corpus/<host>/` — a symlink into a sibling host
+dir is a jail escape and is answered as a miss.
+
+The bytes are unchanged, so this stays a mirror and not a rewrite; the only
+liberty taken is the directory the capture is filed under, and both hosts stay in
+`sites.json` so the provenance is visible in the directory.
+
+**A miss can be permanent, and that is the answer.** The 1996 NeXT home page is
+one image map, `/Images/NeXTHomePage.jpg` — and that file was **never captured**
+at any date within the ceiling (the only capture on record is a 1999 `404`). The
+page therefore renders as its text nav with one broken image, in 1996 exactly as
+in the museum. Do not go hunting a later or a re-encoded substitute: era-press
+never chases a missing resource, and the section pages one hop down (`/HotNews/`,
+`/BuyNow/`, `/OpenStep/`, …) do have all of theirs.
+
 ## The big corpus — the resumable, breadth-first ~5 GB crawl
 
 The starter set is four sites; the production corpus targets **~5 GB**, built by
