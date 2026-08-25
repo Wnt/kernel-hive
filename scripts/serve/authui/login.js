@@ -179,6 +179,19 @@ if (!supported()) {
   }
 }
 
+// The walk-in offer. /walkin/state is public (a stranger is signed out by
+// definition), so this asks and reveals the button only when the switch is
+// Open. Any failure leaves the offer hidden: a museum that is not taking
+// walk-ins should say nothing rather than promise a door that is shut.
+fetch('/walkin/state', { headers: { accept: 'application/json' } })
+  .then((r) => (r.ok ? r.json() : null))
+  .then((state) => {
+    if (state && state.access === 'open') $('walkin-panel').classList.remove('hidden');
+  })
+  .catch(() => {});
+
+$('walkin').addEventListener('click', () => { location.href = '/walkin'; });
+
 const arrived = linkCode();
 if (arrived) {
   // Prefill the field as well as acting on it: if entering fails (a revoked or

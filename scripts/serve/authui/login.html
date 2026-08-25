@@ -46,6 +46,15 @@
     <button id="redeem" class="secondary">Redeem invite</button>
   </div>
 
+  <!-- Shown only when the walk-in switch is Open. A stranger arrives here
+       because / redirects a signed-out browser to /login, so this is the only
+       place the museum can offer them a way in that needs no invite. -->
+  <div class="panel hidden" id="walkin-panel">
+    <div class="rule">or</div>
+    <p class="sub">No invite? Three machines are open to anyone — no email, no account name.</p>
+    <button id="walkin" class="secondary">Come in as a walk-in visitor</button>
+  </div>
+
   <div class="panel hidden" id="signed-in">
     <p id="who" class="sub"></p>
     <button id="enter">Enter the gallery</button>

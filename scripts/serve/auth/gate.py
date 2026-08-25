@@ -57,10 +57,14 @@ OPEN_PATHS = frozenset(
 # including admin.js: that file describes an API surface which is documented in
 # the repo anyway, and every call it makes is authorized server-side. Keeping
 # the rule "the login UI is open" simple beats a per-asset list that will drift.
-# /assets/generated/ holds only the generated art + application icons (never the
-# SPA bundle, which stays under /assets/), so opening it publishes the PWA icons
-# for the installability check without exposing any application code.
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/generated/")
+# /assets/ is the SPA bundle, and it is open because the walk-in landing page IS
+# the SPA: a stranger arrives signed out, so refusing the bundle serves them the
+# HTML shell with a 401 script and stylesheet — a white page, which is exactly
+# what shipped on 2026-08-25. What this publishes is application code, already
+# served to every signed-in visitor and readable in a public repo; it publishes
+# no data, because every route the bundle CALLS is still gated (the full-fleet
+# manifest, the fleet table, station signaling, /admin, /clientcmd*).
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to
