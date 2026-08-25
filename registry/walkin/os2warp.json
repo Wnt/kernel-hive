@@ -1,7 +1,7 @@
 {
   "station": "os2warp",
   "enabled": true,
-  "poolSize": 1,
+  "poolSize": 3,
   "seed": {
     "disk": "/data/vms/walkin/seeds/os2warp-golden.qcow2",
     "readOnly": true

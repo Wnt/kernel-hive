@@ -1,7 +1,7 @@
 {
   "station": "win311",
   "enabled": true,
-  "poolSize": 1,
+  "poolSize": 3,
   "seed": {
     "disks": [
       "/data/vms/walkin/seeds/win311/win311-golden.qcow2",
