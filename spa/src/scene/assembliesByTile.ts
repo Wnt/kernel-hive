@@ -452,5 +452,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerD', monitor: 'crtE',
     keyboard: 'keyboardG', mouse: 'paramMouseF',
   },
+  // amigaos35: Amiga 4000 (1992 hardware, 1999 OS) — the classic line's big-box
+  // tower under a multisync CRT. towerC/crtC beige-tower silhouette; its Amiga
+  // red accent (machineIdentity) separates it from the PC-clone towers.
+  amigaos35: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 

@@ -287,6 +287,9 @@ box_sync_load_pairs() {
   # generic launcher sweep below does not pick its runtime up. Without these the
   # box copies silently drift from the repo. See ICQ-STATION-tru64.md.
   box_sync_add_pair tru64-rn-tapnet streamhost/stations/tru64/rn-tapnet.sh "$BOX_ROOT/stations/tru64/rn-tapnet.sh" exact repo
+  # amigaos35's retronet link is a NETNS cage (FS-UAE bsdsocket has no tap
+  # backend) — same launcher-called-helper class as the rn-tapnet.sh files.
+  box_sync_add_pair amigaos35-rn-netns streamhost/stations/amigaos35/rn-netns.sh "$BOX_ROOT/stations/amigaos35/rn-netns.sh" exact repo
   box_sync_add_pair tru64-x11-runtime streamhost/stations/tru64/x11-runtime.sh "$BOX_ROOT/stations/tru64/x11-runtime.sh" exact repo
   # w2kalpha's retronet veth lifecycle helper + its es40 launcher. Box-authored
   # mirror pairs like the rn-tapnet helpers above: the generic launcher sweep

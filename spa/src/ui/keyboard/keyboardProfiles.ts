@@ -366,7 +366,7 @@ export const OS_FAMILY: Record<string, Family> = {
   armeval: 'armeval',
   apple2: 'appleii',
   atarist: 'atarist',
-  amiga: 'amiga', aros: 'amiga',
+  amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga',
   // The ZX Spectrum needs a profile of its own and could not borrow one: its
   // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
   // shifts do different jobs from a PC's.

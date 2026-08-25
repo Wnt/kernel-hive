@@ -12,6 +12,9 @@ const POSTER_INDEX = {
   "amiga": {
     "hero": "/posters/amiga/desktop.webp"
   },
+  "amigaos35": {
+    "hero": "/posters/amigaos35/desktop.webp"
+  },
   "amstradcpc": {
     "hero": "/posters/amstradcpc/desktop.webp"
   },
