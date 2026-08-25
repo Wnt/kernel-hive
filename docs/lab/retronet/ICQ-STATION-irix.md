@@ -45,12 +45,82 @@ in the ICQ case is a long-lived OSCAR session: keepalives, presence SNACs, an
 SSI roster download and an inbound IM. Something in that pattern reaches the
 `indy_4610` SEEQ 80C03 / `taptun` path and ends the process.
 
-**Next step for whoever picks this up:** run gaim against the gateway with the
-station under `strace`/a core-enabling ulimit and capture the tap with
-`tcpdump -i irixrn0` on the host, so the last frames before the exit are on
-record. The staged v13 golden reproduces it in ~4 minutes from a cold start,
-which makes this a cheap bisect: it is the fastest reproduction in the station's
-history, unlike most of what `irix-closed-register.md` documents.
+That next step was taken, twice over: the parallel instrumentation run caught
+the exit itself (a SIGSEGV inside MAME's MIPS3 recompiler — its report has the
+backtrace), and the trigger bisect below cleared every traffic pattern the
+session contains. The v13 golden reproduces in ~5 minutes from a cold start —
+the fastest reproduction in the station's history, unlike most of what
+`irix-closed-register.md` documents.
+
+## The trigger bisect: no traffic class kills it (rn-irix-dbg2)
+
+Run on a rig clone — tap `irixdbg2`, guest re-addressed to `10.99.0.27`, PROM
+`eaddr` patched to `08:00:69:12:34:d2` — so every result below is independent of
+the production launcher, the production tap and the exhibit's address. The exit
+**reproduces on a bare rig**: v13, gaim sign-in, MAME gone. That alone clears
+the streamhost daemon, the idle-pause machinery and everything else that only
+the live station has.
+
+The reproduced death, frame-accurate (tcpdump on the clone's own tap):
+
+```
+07:37:12  BOS connection ESTABLISHED (auth conn 1 s earlier)
+07:37:15-30  SSI roster download, presence — all quiet after
+07:37:42.27  the greeter bot's inbound IM (FLAP written byte-wise:
+             1,1,2,2,150-byte TCP segments); guest ACKs every one
+07:37:44.29  last frame ever — gaim still rendering (X11 traffic)
+07:37:44-46  MAME gone
+```
+
+Death is **~2 s after the first inbound IM**, and the guest's stack ACKed the
+IM fine — whatever died, died *after* delivery, in the guest's handling of it.
+The +30 s from session establishment is not a protocol timeout: it is
+`RN_BOT_GREET_DELAY=30`, the greeter's own schedule.
+
+Then every network pattern the OSCAR session contains was replayed in
+isolation, **without gaim**, and none of them kill:
+
+| # | test (v13 clone unless noted) | pattern | verdict |
+|---|---|---|---|
+| T0 | gaim sign-in, greeting arrives | full OSCAR session | **DEAD** +2 s after the inbound IM (+32 s after establishment) |
+| T1 | perl socket → labhost:7070 | long-lived idle TCP, 1 byte/30 s, guest-initiated | alive 25+ min |
+| T3 | labhost pushes 1-byte writes into a guest-held connection | **unsolicited inbound runt frames** (55 B on the wire, the greeter's exact byte-wise FLAP shape) | alive 6+ min |
+| T5 | perl socket → gateway:5190, hold+read | real OSCAR port, server hello, then idle | alive 5+ min |
+| T2 | `playaiff` on a clone with **no network device** | guest audio → emulated HAL2 under `-sound none` | alive 15+ min (the writer blocks — audio never drains — but nothing dies) |
+| T6 | gaim sign-in, sounds disabled, **no greeting arrived** (bot skipped this sign-on) | signed-in session: keepalives + zero-length ACK pairs, 10 min | alive 10+ min |
+
+So: not idle long-lived TCP, not unsolicited inbound, not runt/short frames,
+not the OSCAR port, not audio, and not a signed-in session as such. The only
+thing that has ever killed MAME is **gaim executing its first-inbound-IM path**
+(conversation window; a large, cold, never-before-executed pile of code) — and
+T6, where the IM never came, is the signed-in control that survived.
+
+That is exactly the shape of the root cause the parallel instrumentation run
+pinned: **MAME SIGSEGVs in its own MIPS3 dynamic recompiler**
+(`drcfe.ipp build_sequence`: a branch-likely at the last word of a page whose
+delay slot faults on a non-resident page loses its END_SEQUENCE marker). The
+packets were only ever the stimulus that drove gaim through cold code for the
+DRC to compile; there is no killer packet, which is why the web plane — hot,
+already-compiled paths — ran for hours on the same NIC, tap and bridge.
+
+**Minimal reproducer, honestly stated:** there is no packet- or socket-level
+reproducer, because no traffic pattern is the trigger. The smallest reliable
+kill remains: boot v13, launch gaim (auto-login), let the greeter's IM arrive —
+dead in ~5 min from cold boot, ~30 s from sign-on. Any change that makes gaim
+execute fresh code paths at the fatal page alignment could substitute; nothing
+cheaper than "receive the first IM" was found.
+
+Three traps for whoever rigs this station next: (1) every clone inherits the
+PROM `eaddr` `08:00:69:12:34:56` from the shared nvram — on `vmbr-rn` that is
+an L2 collision with the LIVE exhibit; patch the clone's copy of `rtc` (the MAC
+sits at offset 0x13A) and pass the same value as `IRIX_RIG_TAP_MAC`, and IRIX
+boots and uses it, no checksum complaint. (2) Do not boot a v13/v12 clone while
+its tap is already enslaved to the bridge: the guest configures the baked
+**10.99.0.24 — the live exhibit's address** — before you can re-address it;
+boot with the tap unenslaved (or absent), `ifconfig ec0 inet 10.99.0.27`, only
+then `rn-tapnet.sh up`. (3) `ss` on labhost cannot see guest↔CT flows — they
+are pure L2 through the bridge; the clone's own tcpdump is the only honest
+view of the OSCAR session.
 
 ## What DOES work (all of it verified)
 
