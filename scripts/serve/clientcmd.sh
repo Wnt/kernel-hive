@@ -8,6 +8,10 @@
 #   clientcmd.sh restore  <tile>     restore one station to its golden fixture
 #   clientcmd.sh eval <sessionId|tile|*> '<js code>'  run JS in targeted tab(s)
 #                                      ('*' deliberately targets every open tab)
+#                                      code runs inside an async function body:
+#                                      END WITH a top-level `return <value>` or
+#                                      the delivered result is "[Undefined]"
+#                                      (await OK; objects serialized safely)
 #   clientcmd.sh sessions            active sessions: state / station / UA / time
 #   clientcmd.sh audit [n]           last n issued commands (who pointed what at whom)
 #   clientcmd.sh evallog [sessionId]  reassemble the latest eval-result

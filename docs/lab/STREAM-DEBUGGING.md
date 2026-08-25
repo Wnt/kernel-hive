@@ -221,9 +221,20 @@ the wire. The client-debug plane answers it directly, on the visitor's real tab:
 ```bash
 scripts/serve/clientcmd.sh sessions
 scripts/serve/clientcmd.sh eval <session> \
-  'const v=document.querySelector("video");JSON.stringify({vis:document.visibilityState,
-   paused:v.paused,rs:v.readyState,w:v.videoWidth,ct:v.currentTime,err:v.error})'
+  'const v=document.querySelector("video");return {vis:document.visibilityState,
+   paused:v.paused,rs:v.readyState,w:v.videoWidth,ct:v.currentTime,err:v.error}'
+scripts/serve/clientcmd.sh evallog <session>   # reassembles the result
 ```
+
+**The eval code runs inside an async function body** (`clientDebug.ts` wraps it
+in `(async () => { <code> })()`), so it MUST end with an explicit top-level
+`return <value>` — a bare trailing expression, or an IIFE as the last
+statement, evaluates fine and then delivers `"[Undefined]"`, which reads like
+a broken tab when it is only a missing `return`. `await` is available; objects
+are serialized safely, no need to `JSON.stringify` yourself. The result comes
+back through telemetry — read it with `evallog`, and remember delivery needs
+the tab to be foreground and its network alive (Mode D below is the shape
+where a `live`-listed session never answers).
 
 **`paused: true` on a `visible` page, `readyState 4`, a correct `videoWidth`, no
 `error`, and `fps0` is a PAUSED SINK, not a broken stream.** That exact reading
@@ -250,8 +261,8 @@ gone, so is the guarantee that the canvas is wired to the transport that opened.
 
 Backgrounding a tab throttles the client's 100 ms tick to ~1/min and freezes it
 outright in an installed PWA, so **nothing that normally notices a dead session
-runs while the tab is away**. Two shapes come out of that, and they need
-different fixes:
+runs while the tab is away**. Several shapes come out of that, and they need
+different fixes (A–C below are fixed; D is open):
 
 | | **Mode A — no reconnect at all** | **Mode B — reconnect storm** | **Mode C — paused sink** |
 |---|---|---|---|
@@ -278,6 +289,40 @@ the foreground — `visibilitychange`, `pageshow`, the Page-Lifecycle `resume`
 event a frozen PWA thaws on, `focus`, and the element's own `pause` event — and
 resumes it **at the live edge**, so a returning visitor sees now, never eleven
 minutes of history.
+
+**Mode D — the page is healthy but its whole network plane is dead** (OPEN;
+2026-08-25, the operator's own installed PWA, Chrome 151 Android, win98se).
+Seen after an app switch long enough to freeze the PWA and idle-pause the
+guest. On thaw everything above WORKED: the sink resumed, signaling was
+fetched, the daemon accepted a fresh WT session, resumed the guest and primed
+a keyframe — and then not one video byte reached the decoder. Every later
+attempt failed too, the live ladder burnt its 6 attempts and correctly parked
+on `phase error` ("lost the connection to this tile — tap Reconnect"). The
+page stayed fully interactive the whole time — the StageMenu opened and
+rendered the right banner; a screenshot of that menu is what disproved the
+renderer-hang theory this shape invites. The stage behind the banner was
+BLACK, not the last frame: the canvas backing had been discarded during the
+freeze. Marks that name this shape:
+
+- **telemetry goes silent while the page lives on.** `flushNow()` slices the
+  batch out of `pending` BEFORE the POST, so a failed flush drops its events —
+  a network-outage window is invisible in `clientlog.jsonl` by construction.
+  The last rows are ordinary `stats`; no giveup, no `wt-close`, nothing.
+- `clientcmd.sh sessions` keeps answering `live` for 30 min
+  (`SESSION_ACTIVE_SECS`) and queued evals never execute — the command
+  poller's fetches are failing with everything else. An eval that does not
+  come back from a session marked `live` is this shape until proven otherwise.
+- the daemon side records a ghost: SESSION_ACCEPTED → guest resumed → encoder
+  reconfigured → SESSION_ENDED ~45 s later, zero consumption in between.
+
+Whether the outage was the phone's network path (VPN/5G rebind after doze) or
+Chrome wedging the page's network context on thaw is not distinguishable from
+the box; a Reload built a session that connected instantly, so nothing durable
+was broken. What this shape still wants, none of it built yet: an error-phase
+recovery probe (after ladder exhaustion, re-probe signaling every ~20 s and
+restart the ladder on success — the visitor should never have to find the
+button), the poster instead of black behind the banner, and re-queueing
+telemetry batches on failed POST so the outage prints its own shape in the log.
 
 **Retry budgets are finite on both ladders** (`streamClient/retryBudget.ts`). A
 log line reading `attempt=5/4` was the old code: the budget was checked only
