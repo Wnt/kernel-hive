@@ -28,6 +28,10 @@ export OSG_ADMIN_EVAL="${OSG_ADMIN_EVAL:-1}"
 # Restore-to-checkpoint endpoint authority (defaults sit beside the server).
 export RESET_SCRIPT="${RESET_SCRIPT:-$SERVE/reset-tile.sh}"
 export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
+# Walk-in env floor (ledger §4.2): only lowers the /admin switch, never raises
+# it. `1` imposes no ceiling; unset/0 would floor it closed and defeat the
+# admin toggle.
+export WALKIN_OPEN="${WALKIN_OPEN:-1}"
 
 if systemctl cat "$UNIT" >/dev/null 2>&1; then
   # Supervised path: hand this restart's overrides to systemd through a tmpfs
@@ -45,6 +49,7 @@ if systemctl cat "$UNIT" >/dev/null 2>&1; then
     printf 'OSG_ADMIN_EVAL=%s\n' "$OSG_ADMIN_EVAL"
     printf 'RESET_SCRIPT=%s\n' "$RESET_SCRIPT"
     printf 'GOLDEN_MANIFEST=%s\n' "$GOLDEN_MANIFEST"
+    printf 'WALKIN_OPEN=%s\n' "$WALKIN_OPEN"
   } >"$RUN_ENV"
   systemctl restart "$UNIT"
   sleep 1

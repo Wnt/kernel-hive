@@ -39,6 +39,11 @@ Environment=PUBLIC_BIND=127.0.0.1
 Environment=PUBLIC_HOST=gallery.example.com
 Environment=AUTH_STATE=/data/vms/streamhost/serve/auth-state.json
 Environment=STREAM_KEY_FILE=/data/vms/streamhost/serve/pki/stream-ticket.key
+# The walk-in plane's env floor (ledger §4.2): it can only LOWER the /admin
+# switch, never raise it. `1` imposes no ceiling — the switch (walkin.access,
+# default closed) is what actually gates access. Unset/0 would floor it
+# closed and make the admin toggle decorative.
+Environment=WALKIN_OPEN=1
 EnvironmentFile=-/run/osgallery-https.env
 # The project's own virtualenv, NOT /usr/bin/python3: the WebAuthn library is
 # pinned by scripts/serve/requirements.txt and installed by sync-venv.sh, so the
