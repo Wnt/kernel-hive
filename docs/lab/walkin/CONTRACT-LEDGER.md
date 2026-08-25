@@ -206,13 +206,16 @@ enablement lanes write it. Unknown keys are an error, not a silent ignore.
   "enabled": true,
   "poolSize": 2,
   "seed":       { "disk": "…/os2warp-golden.qcow2", "readOnly": true },
+  "//seed":     "or `disks: [ … ]` — win311 restores two goldens together",
   "overlay":    { "format": "qcow2", "discardOnKill": true },
   "launcher":   "streamhost/stations/os2warp/qemu-streamhost.sh",
   "binary":     "/opt/qemu-rhapsody/bin/qemu-system-i386",
   "overrides":  {
     "netdev": { "type": "tap", "bridge": "vmbr-wi", "ifnamePattern": "wi-os2warp-%d" },
-    "tapnet": "streamhost/stations/os2warp/wi-tapnet.sh"
+    "tapnet": "streamhost/stations/os2warp/wi-tapnet.sh",
+    "chardev": { "ser0": "<clone>/serial.sock" }
   },
+  "invariants": ["-bios …/bios-256k-int16if.bin", "-device ne2k_pci,netdev=n0"],
   "sandbox": true
 }
 ```
@@ -226,6 +229,20 @@ The reflink must stay **within one dataset** — cross-dataset fails `EXDEV` —
 the seed is staged inside `data/vms`, not referenced in place under
 `/data/gallery-guests`. Read `overlay.format: "qcow2"` as *a reflinked qcow2*,
 discarded on kill.
+
+Three keys are optional and station-shaped:
+
+- **`seed.disks[]`** instead of `seed.disk`, for a station whose golden spans
+  more than one image — win311 restores `win311-golden` and `games-golden`
+  together, and one `disk` cannot say that.
+- **`overrides.chardev`** re-roots a chardev's **backend path** per clone (the
+  COM1 socket the in-guest warpd agents speak over). The device comes from the
+  machine type; only the backend moves, so the device set is untouched.
+- **`invariants[]`** — literal argv fragments the derived command line must
+  still contain. The broker **asserts** them rather than trusting review, which
+  is how a station declares the thing that must survive derivation: win311's
+  patched `-bios` is the case in point, since a clone that loses it wedges after
+  ~61 key edges instead of surviving hundreds.
 
 `binary` is optional and pins the emulator a station's golden was captured
 against (rhapsody's fork). Declared so it is machine-checkable rather than
