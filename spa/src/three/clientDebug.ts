@@ -26,6 +26,7 @@
 // ============================================================================
 
 import { getAdminToken } from './adminAuth';
+import { isWalkinPath } from '../walkin/route';
 
 const FLUSH_MS = 5000;          // normal batching cadence
 const VERBOSE_FLUSH_MS = 1000;  // verbose mode lowers batching latency
@@ -98,6 +99,11 @@ export function isVerboseDebug(): boolean { return verbose; }
 // ---- event intake -----------------------------------------------------------
 /** Queue one telemetry event (batched; flushed every 5s / 1s verbose). Never throws. */
 export function logClientEvent(event: string, detail: string): void {
+  // A walk-in visitor cannot POST /clientlog — the route is gated and they are
+  // signed out or hold the `walkin` role. Queueing anyway means a 401 every 5s
+  // for as long as they stream, re-queued each time, forever. Telemetry from a
+  // stranger's session is not worth a retry storm in their console.
+  if (typeof window !== 'undefined' && isWalkinPath(window.location.pathname)) return;
   try {
     const d = detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL - 1)}…` : detail;
     pending.push({ ts: Date.now(), sessionId, tile: activeTile ?? '', event, detail: d });
