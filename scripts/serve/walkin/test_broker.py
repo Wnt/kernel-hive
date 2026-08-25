@@ -244,14 +244,19 @@ class OrphanTapTests(unittest.TestCase):
     def _restore(self):
         naming.WALKIN_ROOT = self._real_root
 
-    def _patch(self, taps):
-        from . import clone as clone_mod
+    def _patch(self, taps, cells=()):
+        from . import cell as cell_mod
 
-        real_live, real_down = clone_mod.live_taps, clone_mod.tapnet_down  # noqa: F841
-        clone_mod.live_taps = lambda: taps
-        clone_mod.tapnet_down = lambda station, tap, bridge="": (self.downed.append((station, tap)), True)[1]
-        self.addCleanup(lambda: setattr(clone_mod, "live_taps", real_live))
-        self.addCleanup(lambda: setattr(clone_mod, "tapnet_down", real_down))
+        real_live, real_down = cell_mod.live_taps, cell_mod.tapnet_down  # noqa: F841
+        real_cells, real_cell_down = cell_mod.live_cells, cell_mod.cell_down  # noqa: F841
+        cell_mod.live_taps = lambda: taps
+        cell_mod.tapnet_down = lambda station, tap, bridge="": (self.downed.append((station, tap)), True)[1]
+        cell_mod.live_cells = lambda: list(cells)
+        cell_mod.cell_down = lambda slot: (self.downed.append(("cell", slot)), True)[1]
+        self.addCleanup(lambda: setattr(cell_mod, "live_taps", real_live))
+        self.addCleanup(lambda: setattr(cell_mod, "tapnet_down", real_down))
+        self.addCleanup(lambda: setattr(cell_mod, "live_cells", real_cells))
+        self.addCleanup(lambda: setattr(cell_mod, "cell_down", real_cell_down))
 
     def test_a_tap_with_no_clone_behind_it_is_taken_down(self):
         self._patch(["wi-os2warp-2", "wi-os2warp-3"])
@@ -266,11 +271,25 @@ class OrphanTapTests(unittest.TestCase):
         self.assertEqual(self.broker.reap_orphan_taps(), ["wi-os2warp-2"])
 
     def test_a_tap_name_recognises_only_the_walk_in_shape(self):
-        from . import clone as clone_mod
+        from . import cell as cell_mod
 
-        self.assertTrue(clone_mod.TAP_RE.match("wi-os2warp-16"))
+        self.assertTrue(cell_mod.TAP_RE.match("wi-os2warp-16"))
         for other in ("os2rn0", "win311rn0", "veth952i0", "wi-", "vmbr-wi"):
-            self.assertIsNone(clone_mod.TAP_RE.match(other), other)
+            self.assertIsNone(cell_mod.TAP_RE.match(other), other)
+
+    def test_a_cell_with_no_clone_behind_it_is_taken_down(self):
+        # A leaked cell blocks its SLOT the way a leaked tap blocks its pool
+        # index: `ip link add wibr<slot>` fails and the watchdog re-fails.
+        self._patch([], cells=[171, 172])
+        self.assertEqual(self.broker.reap_orphan_cells(), [171, 172])
+        self.assertEqual(self.downed, [("cell", 171), ("cell", 172)])
+
+    def test_a_cell_recorded_in_a_clone_crumb_is_left_alone(self):
+        root = naming.WALKIN_ROOT / "walkin-os2warp-1"
+        root.mkdir()
+        (root / "clone.json").write_text(json.dumps({"identity": "walkin-os2warp-1", "slot": 171}))
+        self._patch([], cells=[171, 172])
+        self.assertEqual(self.broker.reap_orphan_cells(), [172])
 
 
 class StrayClaimTests(unittest.TestCase):

@@ -16,14 +16,15 @@ Then `-loadvm golden -S` (instant-ready, paused) and, where the binary is QEMU,
 the sandbox flags from brief §6.2. Then `deviceset.assert_same_device_set`, which
 is allowed to veto everything above.
 
-The MAC is deliberately NOT rewritten, and that is the whole reason the pool is
-one clone per station. `loadvm` restores the NIC's MAC from saved device state,
-so a per-clone `mac=` on the command line is a lie the guest never hears: every
-clone of one station comes up as the address its golden was captured with.
-Setting it anyway would leave the command line disagreeing with the vmstate — the
-exact mismatch that reads as "the network is broken" three hours later. Ledger
-§5.3 has the consequence: `poolSize` is 1, and growing it needs a walk-in golden
-captured on this plane, not a command-line flag.
+The MAC is deliberately NOT rewritten. `loadvm` restores the NIC's MAC from
+saved device state, so a per-clone `mac=` on the command line is a lie the guest
+never hears: every clone of one station comes up as the address its golden was
+captured with. Setting it anyway would leave the command line disagreeing with
+the vmstate — the exact mismatch that reads as "the network is broken" three
+hours later. Concurrency is solved one layer down instead: each clone's tap
+joins its OWN bridge (`wi-clonecell`, ledger §6), so identical MACs never share
+an FDB, and the cell's NAT gives the gateway a unique peer per clone. The
+command line stays in perfect agreement with the vmstate.
 """
 
 from __future__ import annotations

@@ -434,6 +434,7 @@ class Broker:
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
         orphans = self.reap_orphans()
         taps = self.reap_orphan_taps()
+        cells = self.reap_orphan_cells()
         # A claim registry that is unreachable must not stop the watchdog doing
         # the two things that actually keep the pool honest.
         try:
@@ -442,7 +443,8 @@ class Broker:
             sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
             strays = []
         built = self._refill()
-        return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "strays": strays, "built": built}
+        return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "cells": cells,
+                "strays": strays, "built": built}  # fmt: skip
 
     def reap_orphans(self) -> list:
         """Clone roots on disk that this broker does not own — kill and discard."""
@@ -455,6 +457,12 @@ class Broker:
         with self._lock:
             known = {m.clone.plan.tap for m in self._members.values()}
         return reaper.reap_orphan_taps(known)
+
+    def reap_orphan_cells(self) -> list:
+        """Walk-in L2 cells on the box that no clone stands behind."""
+        with self._lock:
+            known = {m.clone.plan.slot for m in self._members.values()}
+        return reaper.reap_orphan_cells(known)
 
     def release_stray_claims(self) -> list:
         """Give back slot and port claims that no clone stands behind."""

@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import sys
 
-from . import claims, naming
+from . import cell, claims, naming
 from . import clone as clone_mod
 
 
@@ -77,14 +77,44 @@ def reap_orphan_taps(known: set) -> list:
     except OSError:
         pass
     reaped = []
-    for tap in clone_mod.live_taps():
+    for tap in cell.live_taps():
         if tap in known:
             continue
-        station = clone_mod.TAP_RE.match(tap).group("station")
-        if clone_mod.tapnet_down(station, tap):
+        station = cell.TAP_RE.match(tap).group("station")
+        if cell.tapnet_down(station, tap):
             reaped.append(tap)
         else:
             sys.stderr.write(f"[walkin] orphan tap {tap} would not go down; the next clone at that index will fail\n")
+    return reaped
+
+
+def reap_orphan_cells(known_slots: set) -> list:
+    """Walk-in L2 cells (`wibr<slot>`, wi-clonecell) that no clone stands behind.
+
+    Same shape and same stakes as an orphan tap: a cell outlives its clone when
+    a build fails between `cell up` and the crumb landing, and because a cell is
+    keyed by SLOT, a leaked one makes the next claim of that slot unbuildable —
+    `ip link add wibr<slot>` fails and the watchdog re-fails every tick.
+    """
+    known_slots = set(known_slots)
+    try:
+        for entry in naming.WALKIN_ROOT.iterdir():
+            if entry.is_dir():
+                slot = clone_mod.read_manifest(entry).get("slot")
+                if isinstance(slot, int):
+                    known_slots.add(slot)
+    except OSError:
+        pass
+    reaped = []
+    for slot in cell.live_cells():
+        if slot in known_slots:
+            continue
+        if cell.cell_down(slot):
+            reaped.append(slot)
+        else:
+            sys.stderr.write(
+                f"[walkin] orphan cell wibr{slot} would not go down; the next claim of slot {slot} will fail\n"
+            )
     return reaped
 
 
