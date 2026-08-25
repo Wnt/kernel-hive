@@ -360,6 +360,23 @@ the whole visitor path. The **first** move of a fresh session can land short —
 the session's wake and the sink's resync preamble share that moment — and every
 move after it is exact.
 
+**Typing, 2026-08-25 (the keyboard fix, §4).**
+`tests/e2e-live/nextstep-key-probe.mjs` drives real `page.keyboard` input at the
+live gallery into OmniWeb's editable URL field, and the guest's own framebuffer
+is read for the answer:
+
+```
+delay 0 ms    "the quick brown fox"        19/19 characters (19 chars in 131 ms)
+delay 120 ms  "The Quick Brown Fox 12+34"  25/25, capitals and the shifted + exact
+```
+
+The 0 ms case is the one that matters: Playwright stamps the press and the
+release in the same tick, which is what a phone's soft keyboard does and what
+was losing nine keystrokes in ten. Note the probe's own trap, written into the
+file: the grey strip at guest y=227 is OmniWeb's READ-ONLY location display and
+swallows every keystroke silently — the editable field is the white one at
+y=149, and aiming at the wrong one reads exactly like a broken keyboard.
+
 The gallery's own reset button was exercised the same day:
 `POST /restore/nextstep` → `systemctl restart streamhost@nextstep` →
 `nextstep: restored state=golden` in 3 s, 13 s end to end including the unit's
@@ -410,6 +427,33 @@ and a re-emit.
   runs with the unit STOPPED (the procedure is in the bake script's header).
   Making the server accept a second client, or preempt the first, would make the
   station reachable the way `labctl` reaches a MAME station; nobody has.
+- **A DOUBLE CLICK through the deployed client did not register** (2026-08-25,
+  found while re-verifying the buttons after the keyboard fix). Two independent
+  tests through real `page.mouse`: `dblclick` on `Chess.app` in the File Viewer
+  SELECTED it and never launched it, and `dblclick` on a word in a text field
+  placed a caret and never selected the word. A SINGLE click is exact in the
+  same runs. This is NOT the keyboard change — its gates are guarded on the
+  `KEY`/`MOD` verbs, so a button-only stream takes a bit-identical path — and
+  the 200 ms `PREVIOUS_CTL_BTN_HOLD` claim in §4 was measured through the
+  control socket, never through a browser. Two candidate mechanisms, neither
+  eliminated: (a) the injector applies the first release and the second press in
+  ONE drain pass, so the intermediate release is never a distinct report on the
+  wire and the guest sees one long press — the same shape as the keyboard bug,
+  one plane over; or (b) the SPA coalesces the two browser clicks before they
+  reach the daemon. Deciding between them is one `SH_MAMESOCK_TRACE=on` run.
+  **Any button-timing experiment costs a golden re-bake**, because
+  `PREVIOUS_CTL_BTN_HOLD` is read at `CtlSock_Init` and a restore brings back
+  the environment the checkpoint was baked with.
+- **A synthetic ROLLOVER burst can leave the guest believing Shift is down.**
+  `key-replay.py --type ... --cps 12 --hold-ms 200` (hold longer than the
+  inter-key period, so three keys are down at once — something a NeXT keyboard's
+  one-key-at-a-time reporting never sees) left the next line typed entirely in
+  capitals; it cleared itself on the next real modifier edge. Every character
+  was correct, so this is a modifier-LEVEL desync in the guest, not a lost key,
+  and no browser produces the input that causes it. The cheap hardening, if it
+  ever bites: make `CTL_RELEASE` send `kms_keyup(0, NEXTKEY_NONE)`
+  unconditionally instead of only when the injector itself thinks a modifier is
+  held, so every reconnect resynchronises the guest's belief.
 - Only `nTabletType = 2` (SummaGraphics MM 1201) was ever tried.
 
 ---
