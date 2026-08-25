@@ -22,6 +22,21 @@ export const MAX_COLD_ATTEMPTS = 4;
 /** Painted at least once: a longer ladder, but still a finite one. */
 export const MAX_RELIVE_ATTEMPTS = 6;
 
+// ---- attempt pacing (moved here from useStreamhostSession so the budgets and
+//      the delays they meter live in one file) --------------------------------
+/** COLD budget for frame #1 — an idle station legitimately takes a while. */
+export const KEYFRAME_WAIT_MS = 12000;
+/** Once a station has painted it is proven warm, and the daemon forces an IDR
+ *  on subscribe on top of priming its freshest cached key — so a RECONNECT that
+ *  has not painted within this budget is broken, not slow. Spending the cold
+ *  12 s here was the single biggest contributor to a long black area after a
+ *  resume: the replacement attempt sat silent for 12 s before even retrying. */
+export const RELIVE_KEYFRAME_WAIT_MS = 3000;
+/** Unexpected-loss retry delays; attempt 1 uses index 0. */
+export const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000];
+/** Restore delays: the host is EXPECTED to be briefly unavailable. */
+export const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000];
+
 export interface RetryVerdict {
   /** The attempt number to act on and to LOG — never above `limit`. */
   attempt: number;

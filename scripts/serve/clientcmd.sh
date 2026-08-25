@@ -2,9 +2,9 @@
 # clientcmd.sh — operator wrapper for the UI client-observability plane
 # (/clientcmd + /clientlog on osgallery-https-server.py).
 #
-#   clientcmd.sh snapshot <tile|*>   enqueue: tab(s) POST a full metrics snapshot
-#   clientcmd.sh verbose  <tile|*>   enqueue: toggle verbose client debugging
-#   clientcmd.sh reload   <tile|*>   enqueue: location.reload() the tab(s)
+#   clientcmd.sh snapshot <sessionId|tile|*>  enqueue: tab(s) POST a metrics snapshot
+#   clientcmd.sh verbose  <sessionId|tile|*>  enqueue: toggle verbose client debugging
+#   clientcmd.sh reload   <sessionId|tile|*>  enqueue: location.reload() the tab(s)
 #   clientcmd.sh restore  <tile>     restore one station to its golden fixture
 #   clientcmd.sh eval <sessionId|tile|*> '<js code>'  run JS in targeted tab(s)
 #                                      ('*' deliberately targets every open tab)
@@ -71,9 +71,16 @@ enqueue() {
 
 case "$cmd" in
   snapshot | verbose | reload)
-    tile=${1:-*}
+    target=${1:-*}
     # jq builds the JSON so a weird station value can never break out of the body.
-    body=$(jq -nc --arg cmd "$cmd" --arg tile "$tile" '{cmd:$cmd,tile:$tile,args:{}}')
+    # A sessionId pins the command to ONE tab (same resolution rule as eval);
+    # a tile fans out to every tab currently showing it, '*' to every tab.
+    if active_session_exists "$target"; then
+      body=$(jq -nc --arg cmd "$cmd" --arg sessionId "$target" \
+        '{cmd:$cmd,tile:"*",args:{sessionId:$sessionId}}')
+    else
+      body=$(jq -nc --arg cmd "$cmd" --arg tile "$target" '{cmd:$cmd,tile:$tile,args:{}}')
+    fi
     enqueue "$body"
     ;;
   restore)

@@ -7,7 +7,10 @@ import {
 } from './useStreamControl';
 import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { attachSessionResume } from './streamClient/sessionResume';
-import { consumeRetry, retryLimit } from './streamClient/retryBudget';
+import {
+  consumeRetry, retryLimit,
+  KEYFRAME_WAIT_MS, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
+} from './streamClient/retryBudget';
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
@@ -69,15 +72,7 @@ export interface StreamSessionResult {
 //    - keep retrying after a live session drops or stops producing frames. The
 //      already-painted canvas remains in place until the replacement session's
 //      first frame arrives, avoiding a flash back to the poster during a reboot.
-const KEYFRAME_WAIT_MS = 12000;                 // COLD budget for frame #1
-// Once a station has painted once it is proven warm, and the daemon forces an
-// IDR on subscribe on top of priming its freshest cached key — so a RECONNECT
-// that has not painted within this budget is broken, not slow. Spending the
-// cold 12 s here was the single biggest contributor to a long black area after
-// a resume: the replacement attempt sat silent for 12 s before even retrying.
-const RELIVE_KEYFRAME_WAIT_MS = 3000;
-const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000]; // unexpected-loss retry delays
-const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000]; // host is expected to be briefly unavailable
+//  Budgets AND pacing constants live in streamClient/retryBudget.ts.
 
 export function useStreamhostSession(
   signalEndpoint: string,
@@ -142,6 +137,7 @@ export function useStreamhostSession(
     // Retry bookkeeping.
     let liveReached = false; // at least one attempt has painted successfully
     let attemptLive = false; // the CURRENT attempt has painted successfully
+    let parkedError = false; // fail() parked us; error recovery may re-arm
     let attempt = 0;
     let watchdog = 0;        // per-attempt keyframe-wait timer
     let retryTimer = 0;      // backoff timer between attempts
@@ -171,6 +167,7 @@ export function useStreamhostSession(
       // The give-up is the most important row a broken session produces, and it
       // used to exist only in the visitor's own console. See STREAM-DEBUGGING.
       logClientEvent('connect-giveup', `${msg} attempts=${attempt} live=${liveReached} ep=${signalEndpoint}`);
+      parkedError = true; // the recovery probe (sessionResume.ts) may un-park us
       setPhase('error');
       setMessage(msg);
     };
@@ -352,6 +349,7 @@ export function useStreamhostSession(
       // every call site.
       if (client || controller || fallback) teardownAttempt();
       attemptLive = false;
+      parkedError = false;
 
       const nextClient = new StreamClient({
         signalEndpoint,
@@ -556,6 +554,8 @@ export function useStreamhostSession(
     const detachResume = attachSessionResume({
       isCancelled: () => cancelled,
       isLiveReached: () => liveReached,
+      isParked: () => parkedError,
+      signalEndpoint,
       getClient: () => client,
       reconnect: () => {
         setPhase('connecting');

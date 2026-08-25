@@ -115,6 +115,10 @@ function ensurePagehideFlush() {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') flushNow(true);
     });
+    // The network came back: deliver whatever a failed-flush outage re-queued,
+    // and poll for commands NOW — an operator is likely mid-debug of exactly
+    // that outage (STREAM-DEBUGGING.md, Mode D).
+    window.addEventListener('online', () => { flushNow(); void poll(); });
   } catch { /* noop */ }
 }
 
@@ -129,12 +133,26 @@ function restartFlushTimer() {
   ensureFlushTimer();
 }
 
+/** A failed POST puts its batch BACK (front, order preserved) instead of
+ *  dropping it — dropping is what made the 2026-08-25 network outage invisible
+ *  in clientlog.jsonl (Mode D). Bounded by MAX_PENDING dropping OLDEST, so the
+ *  freshest evidence survives a long outage; retries ride the 5 s interval
+ *  timer only (never a tight drain loop). */
+let flushInFlight = false;
+function requeueBatch(batch: ClientLogEvent[]): void {
+  pending = batch.concat(pending);
+  if (pending.length > MAX_PENDING) pending.splice(0, pending.length - MAX_PENDING);
+}
+
 /** Flush the pending batch now. Authenticated keepalive fetch survives page
  *  teardown (sendBeacon cannot carry X-Admin-Token). The batch is capped under
- *  the 16KiB body limit; any overflow stays queued for the next flush. */
-export function flushNow(_useBeacon = false): void {
+ *  the 16KiB body limit; any overflow stays queued for the next flush. `force`
+ *  (the pagehide/hidden path) bypasses the single-flight guard so the tail is
+ *  never held back by an in-flight request during teardown. */
+export function flushNow(force = false): void {
   try {
     if (!pending.length) return;
+    if (flushInFlight && !force) return; // one at a time; the interval retries
     // Greedily take events while staying under the body cap.
     let take = 0;
     let chars = 2; // []
@@ -157,13 +175,20 @@ export function flushNow(_useBeacon = false): void {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const adminToken = getAdminToken();
     if (adminToken) headers['X-Admin-Token'] = adminToken;
+    flushInFlight = true;
     void fetch('/clientlog', {
       method: 'POST',
       keepalive: true,
       headers,
       body,
-    }).catch(() => { /* box offline — telemetry is best-effort */ });
-    if (pending.length) window.setTimeout(() => flushNow(_useBeacon), 250); // drain overflow
+    }).then((res) => {
+      flushInFlight = false;
+      if (!res.ok) { requeueBatch(batch); return; }
+      if (pending.length) window.setTimeout(() => flushNow(), 250); // drain overflow
+    }).catch(() => {
+      flushInFlight = false;
+      requeueBatch(batch); // box unreachable — keep the evidence, retry on the interval
+    });
   } catch { /* never throw */ }
 }
 
