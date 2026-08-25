@@ -160,7 +160,8 @@
   },
   "retronet": {
     "planes": [
-      "web"
+      "web",
+      "icq"
     ],
     "address": "10.99.0.24",
     "addressing": "static",

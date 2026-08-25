@@ -91,7 +91,7 @@
       "uin": "65000",
       "nick": "irix",
       "client": "unix-oscar",
-      "onboarded": false
+      "onboarded": true
     }
   ]
 }
