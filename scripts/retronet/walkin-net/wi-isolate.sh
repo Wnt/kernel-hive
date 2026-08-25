@@ -86,11 +86,15 @@ do_gateway() {
   echo "wi-isolate: gateway port $port is un-isolated (correct)"
 }
 
+# iproute2 OMITS the `isolated` key when the flag is off, so an absent key and
+# `false` mean the same thing here — and a port that reads `off` when it should
+# be `on` is the whole failure mode this plane guards against, so print it
+# plainly rather than as a missing field.
 do_show() {
   local p iso
   echo "bridge $BRIDGE:"
   for p in $(ls "/sys/class/net/$BRIDGE/brif" 2>/dev/null || true); do
-    iso="$(bridge -j -d link show dev "$p" 2>/dev/null | jq -r '.[0].isolated // "missing"')"
+    if is_isolated "$p"; then iso="on"; else iso="off"; fi
     printf '  %-16s isolated=%s\n' "$p" "$iso"
   done
 }

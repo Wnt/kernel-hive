@@ -6,49 +6,55 @@
 # bridge's post-up/post-down in /etc/network/interfaces.d/vmbr-wi, so it is
 # re-asserted on every boot and on every `ifup vmbr-wi`.
 #
-# THE GOAL, in one line: a walk-in clone reaches the corpus web on the gateway
-# CT and NOTHING else — not the fleet, not labhost, not the internet, not
-# another clone.
+# THE GOAL, in one line: a walk-in clone reaches the corpus web on the walk-in
+# gateway (CT 952) and NOTHING else — not the fleet, not labhost, not the
+# internet, not another clone.
 #
-# This script owns two of the four locks. The other two live elsewhere and this
-# file does not substitute for either:
+# The plane's primary defences are topological, and this file is the backstop
+# for each of them:
 #
-#   Lock 1  TOPOLOGY   vmbr-wi has `bridge-ports none` — no uplink, ever.
-#   Lock 2  ADDRESSING the walk-in DHCP scope sends NO router option (option 3),
-#                      so a clone has no default route at all.
-#   Lock 3  THIS FILE  FORWARD: nothing routes through labhost off vmbr-wi, in
-#                      either direction. labhost runs ip_forward=1 with a
-#                      FORWARD policy of ACCEPT (the irix/tru64 host-only veths
-#                      need it), so without this the only thing between a clone
-#                      and the LAN is the absence of a NAT rule.
-#                      INPUT: labhost's own services. Unlike the retronet's
-#                      RETRONET-IN, which keeps the bridge address reachable,
-#                      the walk-in plane keeps NOTHING: a clone may talk to
-#                      labhost only as the ESTABLISHED reply side of a
-#                      connection labhost opened. Every NEW flow a clone starts
-#                      toward any labhost address is dropped.
-#   Lock 4  L2         `bridge link set dev <tap> isolated on` on every clone
-#                      tap (see wi-isolate.sh). A Linux bridge switches between
-#                      its own ports, and bridge-nf-call-iptables is 0 on this
-#                      box, so clone<->clone traffic never reaches these chains.
-#                      Port isolation is the ONLY thing that stops it.
+#   Lock 1  NO UPLINK      vmbr-wi is `bridge-ports none`. There is no physical
+#                          port to leak onto, ever.
+#   Lock 2  NO HOST L3     labhost holds NO ADDRESS on vmbr-wi. It is not a
+#                          participant on this segment, so there is nothing for
+#                          a clone to route through and nothing to dial.
+#   Lock 3  NO SECOND LEG  the gateway CT 952 is single-homed on vmbr-wi with no
+#                          default route. It cannot forward because it has
+#                          nowhere to forward to.
+#   Lock 4  L2 ISOLATION   `bridge link set dev <tap> isolated on` per clone tap
+#                          (wi-isolate.sh). A Linux bridge switches between its
+#                          own ports and bridge-nf-call-iptables is 0 on this
+#                          box, so clone<->clone traffic never reaches any
+#                          netfilter hook. Port isolation is the only thing that
+#                          stops it.
 #
-# WHY LABHOST KEEPS AN ADDRESS ON THE BRIDGE AT ALL. 10.98.0.1/24 exists so
-# labhost can dial a clone (an exec/probe channel, the same shape the retronet
-# uses at 10.99.0.1). The INPUT chain below makes that one-way: labhost may
-# open a connection to a clone; a clone may never open one to labhost.
+# WHAT THIS FILE ADDS ON TOP, and why an addressless bridge is not already
+# enough:
 #
-# usage: walkin-fw up|down|status [bridge]      (default bridge: vmbr-wi)
+#   ARP.     The walk-in plane presents 10.99.0.0/24 — the SAME numbering as the
+#            retronet, deliberately, so each clone's baked identity is correct
+#            (contract ledger §5.3). labhost holds 10.99.0.1/24 on vmbr-rn, and
+#            with the default arp_ignore=0 the kernel will answer an ARP request
+#            for ANY local address arriving on ANY interface — including one
+#            with no address of its own. A clone ARPing for 10.99.0.1 could
+#            therefore learn labhost's MAC on vmbr-wi and start sending it
+#            packets. `arp_ignore=8` on vmbr-wi refuses to answer for any local
+#            address, and the INPUT drop below catches anything that gets past
+#            it anyway.
+#   FORWARD. labhost runs ip_forward=1 with a FORWARD policy of ACCEPT (the irix
+#            and tru64 host-only veths need it). Nothing routes off or onto this
+#            bridge.
+#   INPUT.   Everything a clone sends to labhost is dropped, unconditionally.
+#            There is no ESTABLISHED allowance and no bridge-address exemption:
+#            unlike the retronet, labhost is not a participant here and has no
+#            business receiving a packet from a walk-in clone at all.
+#
+# usage: walkin-fw up|down|verify|status [bridge]      (default bridge: vmbr-wi)
 set -euo pipefail
 
 FWD="WALKIN-FWD"
 IN="WALKIN-IN"
 BR="${2:-${WI_BRIDGE:-vmbr-wi}}"
-# The gateway CT's address on this bridge. Clone<->gateway is pure L2 on a box
-# with bridge-nf-call-iptables=0, so these two RETURNs are dormant today; they
-# exist so that loading br_netfilter (which drags bridged frames into FORWARD)
-# cannot silently take the corpus web away from every clone.
-GW="${WI_GATEWAY_IP:-10.98.0.2}"
 
 has6() { command -v ip6tables >/dev/null 2>&1; }
 
@@ -57,7 +63,24 @@ ensure_jump() {
   "$ipt" -C "$builtin" -j "$chain" 2>/dev/null || "$ipt" -I "$builtin" 1 -j "$chain"
 }
 
+# Interface-level hardening. Best-effort by design: a kernel without one of
+# these knobs must not stop the firewall from being installed, since the
+# firewall is the lock that actually matters.
+harden_iface() {
+  # 8 = never answer an ARP request for a local address on this interface.
+  sysctl -qw "net.ipv4.conf.$BR.arp_ignore=8" 2>/dev/null || true
+  # 2 = never advertise a source address that is not on this interface.
+  sysctl -qw "net.ipv4.conf.$BR.arp_announce=2" 2>/dev/null || true
+  # Strict reverse-path: 10.99.0.0/24 exists on two unconnected bridges, so a
+  # packet arriving on the wrong one is a bug worth dropping in the kernel.
+  sysctl -qw "net.ipv4.conf.$BR.rp_filter=1" 2>/dev/null || true
+  # Nothing on this plane is configured for IPv6, and an addressless bridge
+  # would otherwise still carry link-local traffic to labhost.
+  sysctl -qw "net.ipv6.conf.$BR.disable_ipv6=1" 2>/dev/null || true
+}
+
 fw_up() {
+  harden_iface
   for ipt in iptables $(has6 && echo ip6tables); do
     for chain in "$FWD" "$IN"; do
       "$ipt" -N "$chain" 2>/dev/null || true
@@ -65,18 +88,18 @@ fw_up() {
     done
   done
 
-  # FORWARD — nothing routes off this bridge, and nothing routes onto it.
-  iptables -A "$FWD" -i "$BR" -o "$BR" -d "$GW" -j RETURN
-  iptables -A "$FWD" -i "$BR" -o "$BR" -s "$GW" -j RETURN
+  # FORWARD — nothing routes off this bridge, and nothing routes onto it. The
+  # intra-bridge RETURN is dormant on this box (bridge-nf-call-iptables=0 means
+  # bridged frames never reach FORWARD at all); it exists so that loading
+  # br_netfilter, which drags them in, cannot silently take the corpus web away
+  # from every clone. It does NOT weaken clone<->clone: that is stopped at L2,
+  # one layer below anything written here.
+  iptables -A "$FWD" -i "$BR" -o "$BR" -j RETURN
   iptables -A "$FWD" -i "$BR" -j DROP
   iptables -A "$FWD" -o "$BR" -j DROP
-  # INPUT — replies only. No allowance for the bridge address: a clone has no
-  # business dialling labhost, including the gallery, sshd or any 0.0.0.0
-  # listener reachable through 10.98.0.1.
-  iptables -A "$IN" -i "$BR" -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+  # INPUT — labhost receives nothing from this segment.
   iptables -A "$IN" -i "$BR" -j DROP
 
-  # IPv6 keeps nothing at all: nothing on this plane is configured for IPv6.
   if has6; then
     ip6tables -A "$FWD" -i "$BR" -j DROP
     ip6tables -A "$FWD" -o "$BR" -j DROP
@@ -94,17 +117,20 @@ fw_up() {
   }
 }
 
-# Read the containment back out of the kernel. install-then-assume is how a
-# lost xtables race becomes an open plane that every message calls "up".
+# Read the containment back out of the kernel. install-then-assume is how a lost
+# xtables race becomes an open plane that every message calls "up".
 fw_verify() {
   local s
   s="$(iptables -S 2>/dev/null)" || return 1
   grep -qx -- "-A $FWD -i $BR -j DROP" <<<"$s" || return 1
   grep -qx -- "-A $FWD -o $BR -j DROP" <<<"$s" || return 1
-  grep -qx -- "-A $IN -i $BR -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN" <<<"$s" || return 1
   grep -qx -- "-A $IN -i $BR -j DROP" <<<"$s" || return 1
   grep -qx -- "-A FORWARD -j $FWD" <<<"$s" || return 1
   grep -qx -- "-A INPUT -j $IN" <<<"$s" || return 1
+  # labhost must own no address here: an address would make it a participant,
+  # and on a plane that reuses the retronet's numbering it would also be a
+  # second route to 10.99.0.0/24.
+  [ -z "$(ip -4 -o addr show "$BR" 2>/dev/null)" ] || return 1
 }
 
 fw_down() {
@@ -119,6 +145,12 @@ fw_down() {
 }
 
 fw_status() {
+  echo "== $BR =="
+  ip -br addr show "$BR" 2>/dev/null || echo "(absent)"
+  local k
+  for k in arp_ignore arp_announce rp_filter; do
+    printf '  %-13s %s\n' "$k" "$(cat "/proc/sys/net/ipv4/conf/$BR/$k" 2>/dev/null || echo '?')"
+  done
   for chain in FORWARD "$FWD" INPUT "$IN"; do
     echo "== iptables $chain =="
     iptables -S "$chain" 2>/dev/null || echo "(absent)"
@@ -128,7 +160,7 @@ fw_status() {
 case "${1:-status}" in
   up) fw_up ;;
   down) fw_down ;;
-  verify) fw_verify && echo "walkin-fw: $BR contained" ;;
+  verify) fw_verify && echo "walkin-fw: $BR contained (no host address, FORWARD closed, INPUT dropped)" ;;
   status) fw_status ;;
   *)
     echo "usage: walkin-fw up|down|verify|status [bridge]" >&2
