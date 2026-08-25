@@ -266,25 +266,23 @@ MAME argument changes. The v9 seed is still staged beside v10.
 
 ## Not done
 
-- **ICQ.** No OSCAR client is built for IRIX 6.5/MIPS, and the fleet's usual
-  Unix answer does not transplant here.
+- **ICQ — ATTEMPTED, BLOCKED, written up in
+  [`ICQ-STATION-irix.md`](ICQ-STATION-irix.md).** A client exists and works:
+  **gaim 0.64** from SGI Freeware signs UIN `65000` into the gateway, downloads
+  the server-side SSI roster **unpatched** (which tru64's Gaim 0.59.9 cannot),
+  and the greeter bot messages it. But **~30 s after the OSCAR session
+  establishes, MAME exits** — reproducibly, three runs out of three, with no
+  error in its log and flat RSS. The station therefore stays on the web-plane
+  golden v12; the ICQ golden v13 is staged and immutable beside it, and the
+  registry keeps `planes: ["web"]` with the roster row `onboarded: false`.
 
   **Correction (2026-08-25):** an earlier version of this line said IRIX 6.5
   ships a C compiler in the golden's `/usr/bin`, so ICQ "is a build job, not a
-  sourcing one". That was asserted, not checked, and it is **false**. Measured
-  in the guest: `which cc gcc c89 CC` finds **nothing**, `/usr/bin/cc` and
-  `/usr/bin/gcc` do not exist, and `/usr/freeware/bin` is **empty**. IRIX's
-  MIPSpro compilers were a separately licensed product and are not in this
-  image. So the `climm`-from-source recipe that
-  [`solaris`](ICQ-STATION-solaris.md) and [`tru64`](ICQ-STATION-tru64.md) used —
-  each with a native compiler already on the guest — has **no compiler to run**
-  on this station. Getting ICQ here means first getting a toolchain here (SGI
-  Freeware `gcc` tardist) or building the client elsewhere; either is a real
-  piece of work, not a follow-up line item.
+  sourcing one". That was asserted, not checked, and it is **false** — there is
+  no `cc`/`gcc`, no `as`/`ld`/`ar`, no `stdio.h`, no `crt1.o`, and
+  `/usr/freeware/bin` was empty. That is exactly why the client had to arrive
+  prebuilt.
 
-  Until a client exists there is deliberately **no roster row**: the registry
-  declares `planes: ["web"]`, and `stations-registry.py` checks that in both
-  directions.
 - **The corpus's SGI estate is broader than the home page.** `support.sgi.com`
   (1998), `techpubs.sgi.com` (1999) and `www.electricarc.com` are already
   curated in `era-sites.json` with this station in mind; none of them are
