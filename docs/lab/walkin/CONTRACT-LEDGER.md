@@ -102,6 +102,15 @@ WebAuthn registration cannot be one request. `/walkin/signup` routes on the body
 — attestation present means finish, absent means begin — so the frozen route
 holds, with explicit `/walkin/signup/begin` and `/walkin/signup/finish` beside it.
 
+```
+POST /walkin/signup  {}                          -> {"ceremonyId": …, "publicKey": …}
+POST /walkin/signup  {ceremonyId, credential}    -> {"handle": …, "role": "walkin"}  + session cookie
+```
+
+The handle offered to the authenticator during *begin* is a **candidate**. The
+authoritative allocation happens under the store lock at *finish*, so two
+simultaneous signups cannot both become `bold-turing`.
+
 ### 3.3 Reason codes
 
 | Code | Meaning | Who emits |
@@ -113,6 +122,16 @@ holds, with explicit `/walkin/signup/begin` and `/walkin/signup/finish` beside i
 
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
+
+**How a reason code reaches the client.** The broker sends it on the signaling
+channel as the session ends, and also as the transport close reason:
+
+```json
+{"type": "session-end", "reason": "WALKIN_CLOSED"}
+```
+
+The SPA prefers the broker's code over anything it inferred itself, so a visitor
+is never told "connection lost" when the honest answer is the clock.
 
 **Ticket revocation is gateway-side only.** A ticket already in a browser stays
 cryptographically valid until its ≤300 s expiry — streamhost's verifier is not
