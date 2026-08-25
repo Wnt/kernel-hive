@@ -1,0 +1,44 @@
+{
+  "station": "win311",
+  "enabled": true,
+  "poolSize": 3,
+  "seed": {
+    "disks": [
+      "/data/vms/streamhost/stations/win311/win311-golden.qcow2",
+      "/data/vms/streamhost/stations/win311/games-golden.qcow2"
+    ],
+    "readOnly": true,
+    "snapshot": "golden"
+  },
+  "overlay": {
+    "format": "qcow2",
+    "discardOnKill": true
+  },
+  "launcher": "streamhost/stations/win311/qemu-streamhost.sh",
+  "overrides": {
+    "netdev": {
+      "type": "tap",
+      "id": "n0",
+      "bridge": "vmbr-wi",
+      "ifnamePattern": "wi-win311-%d"
+    },
+    "chardev": {
+      "id": "ser0",
+      "pathPattern": "{stateDir}/serial.sock"
+    },
+    "tapnet": "streamhost/stations/win311/wi-tapnet.sh"
+  },
+  "sandbox": true,
+  "invariants": [
+    "-bios /data/vms/streamhost/firmware/bios-256k-int16if.bin",
+    "-device ne2k_pci,netdev=n0",
+    "-chardev socket,id=ser0",
+    "-serial chardev:ser0",
+    "-device sb16,audiodev=snd0",
+    "-machine pc-i440fx-11.0",
+    "-cpu pentium",
+    "-accel tcg",
+    "-vga std",
+    "-m 64"
+  ]
+}
