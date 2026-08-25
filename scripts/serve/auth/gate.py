@@ -42,6 +42,11 @@ OPEN_PATHS = frozenset(
         "/favicon.ico",
         "/manifest.webmanifest",
         "/sw.js",
+        # The landing page itself. A stranger arrives signed out BY DEFINITION,
+        # so gating it redirects the entire walk-in audience to /login and no
+        # one ever reaches signup. The page shows the closed notice when the
+        # switch is not Open, so this is safe at every switch position.
+        "/walkin",
         "/walkin/state",
         "/walkin/signup",
         "/walkin/signup/begin",
