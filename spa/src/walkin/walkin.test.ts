@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseWalkinReason, walkinReasonCopy, WALKIN_CLOSED_COPY } from './reasons';
 import { accessAllows, clockText, resolveEndReason } from './sessionEnd';
-import { parseExhibit, parseWalkinManifest } from './manifest';
+import { exhibitVm, parseExhibit, parseWalkinManifest } from './manifest';
 import { isWalkinPath } from './route';
 import type { WalkinAdminStatus, WalkinClaim, WalkinQueued, WalkinState } from '../data/walkinTypes';
 
@@ -68,6 +68,7 @@ describe('exhibition manifest projection', () => {
     id: 'os2warp', displayName: 'OS/2 Warp 4', year: 1996, era: '1990s',
     eraLabel: '1996 · OS/2 Warp 4', lineage: 'IBM', arch: 'x86', accent: '#1e5aa8',
     blurb: 'IBM takes on Windows', eraSoftware: ['Netscape'], iconicApps: ['VoiceType'],
+    periodBrowser: 'WebExplorer', ramMB: 64, ramKB: 65536,
     // Fields a walk-in may NOT see (§5.3) — present here on purpose.
     signalEndpoint: '/signal/os2warp.json', transport: 'streamhost', endpoint: 'x',
   };
@@ -89,6 +90,25 @@ describe('exhibition manifest projection', () => {
       ],
     });
     expect(parsed.map((e) => e.id)).toEqual(['os2warp', 'winxp']);
+  });
+
+  it('carries the memory the placard prints, in whichever unit the row uses', () => {
+    expect(parseExhibit(row)?.ramMB).toBe(64);
+    expect(parseExhibit({ ...row, ramMB: undefined, ramKB: 64 })?.ramKB).toBe(64);
+    expect(parseExhibit({ ...row, ramMB: 'lots' })?.ramMB).toBeUndefined();
+  });
+
+  it('builds the placard vm out of allowlisted fields only', () => {
+    const vm = exhibitVm(parseExhibit(row)!);
+    // The nine fields ExhibitPoster actually reads.
+    expect([vm.accent, vm.arch, vm.lineage, vm.periodBrowser, vm.year]).toEqual([
+      '#1e5aa8', 'x86', 'IBM', 'WebExplorer', 1996,
+    ]);
+    expect([vm.ramMB, vm.ramKB]).toEqual([64, 65536]);
+    expect([vm.eraSoftware, vm.iconicApps]).toEqual([['Netscape'], ['VoiceType']]);
+    // …and never a live surface, whatever the row claimed.
+    expect(vm.signalEndpoint).toBeNull();
+    expect(vm.transport).toBe('showcase');
   });
 
   it('ignores rows that are not exhibits', () => {

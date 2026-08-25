@@ -8,6 +8,8 @@
 // `signalEndpoint` is ignored here on purpose: the visitor's one live surface
 // arrives from the CLAIM (§3), never from a manifest row.
 
+import type { EnrichedVM } from '../types';
+
 /** One exhibit as a walk-in may see it. Read-only placard data. */
 export interface WalkinExhibit {
   id: string;
@@ -17,6 +19,8 @@ export interface WalkinExhibit {
   eraLabel: string;
   lineage: string;
   arch: string;
+  ramMB?: number;
+  ramKB?: number;
   accent: string;
   blurb: string;
   notes?: string;
@@ -28,7 +32,8 @@ export interface WalkinExhibit {
 /** The exhibition fields §5.3 allows a walk-in to see, and nothing else. */
 const ALLOWED = [
   'id', 'displayName', 'year', 'era', 'eraLabel', 'lineage', 'arch',
-  'accent', 'blurb', 'notes', 'eraSoftware', 'iconicApps', 'periodBrowser',
+  'ramMB', 'ramKB', 'accent', 'blurb', 'notes', 'eraSoftware', 'iconicApps',
+  'periodBrowser',
 ] as const;
 
 function strings(value: unknown): string[] {
@@ -37,6 +42,10 @@ function strings(value: unknown): string[] {
 
 function text(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+function count(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 /** Project one raw row onto the allowlist. Null when it is not an exhibit row. */
@@ -59,12 +68,52 @@ export function parseExhibit(value: unknown): WalkinExhibit | null {
     eraLabel: text(kept.eraLabel),
     lineage: text(kept.lineage),
     arch: text(kept.arch),
+    ramMB: count(kept.ramMB),
+    ramKB: count(kept.ramKB),
     accent: text(kept.accent, '#9c4f35'),
     blurb: text(kept.blurb),
     notes: typeof kept.notes === 'string' ? kept.notes : undefined,
     eraSoftware: strings(kept.eraSoftware),
     iconicApps: strings(kept.iconicApps),
     periodBrowser: typeof kept.periodBrowser === 'string' ? kept.periodBrowser : undefined,
+  };
+}
+
+/**
+ * The `vm` prop `ExhibitPoster` wants, built from a walk-in row.
+ *
+ * The placard reads exactly nine fields off `vm` — `accent`, `arch`,
+ * `eraSoftware`, `iconicApps`, `lineage`, `periodBrowser`, `ramKB`, `ramMB`,
+ * `year` — and every one of them is an exhibition fact the allowlist above
+ * carries. The remaining `EnrichedVM` members are the gallery's RUNTIME
+ * binding (3D archetype, transport, hall ordering), which the walk-in
+ * projection deliberately does not carry and the placard never reads; they are
+ * filled with the honest "nothing to connect to" values rather than invented
+ * per row.
+ */
+export function exhibitVm(exhibit: WalkinExhibit): EnrichedVM {
+  return {
+    id: exhibit.id,
+    displayName: exhibit.displayName,
+    year: exhibit.year,
+    era_year: eraYear(exhibit),
+    lineage: exhibit.lineage,
+    arch: exhibit.arch,
+    ramMB: exhibit.ramMB,
+    ramKB: exhibit.ramKB,
+    notes: exhibit.notes,
+    accent: exhibit.accent,
+    era: exhibit.era,
+    eraLabel: exhibit.eraLabel,
+    eraSoftware: exhibit.eraSoftware,
+    iconicApps: exhibit.iconicApps,
+    periodBrowser: exhibit.periodBrowser ?? '',
+    blurb: exhibit.blurb,
+    order: 0,
+    // Placard-only: no live surface, and no desk in the 3D hall.
+    transport: 'showcase',
+    archetypeId: 'mono-terminal',
+    signalEndpoint: null,
   };
 }
 

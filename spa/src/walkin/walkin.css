@@ -125,9 +125,15 @@
   background: var(--tint-1); border: 1px solid var(--line);
 }
 .walkin-tag--playable { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
-.walkin-placard { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
-.walkin-placard summary { cursor: pointer; color: var(--accent-ink); font-size: 12.5px; }
-.walkin-placard p { margin: 8px 0 0; line-height: 1.55; }
+/* Opens the gallery's own ExhibitPoster overlay — the full placard, not a
+   summary written for walk-ins. */
+.walkin-placard-open {
+  align-self: flex-start; margin-top: 8px; padding: 0;
+  border: 0; background: none; cursor: pointer;
+  color: var(--accent-ink); font: 12.5px/1.2 var(--font-ui); text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.walkin-placard-open:hover { color: var(--ink); }
 
 .walkin-section-head { display: flex; align-items: baseline; gap: 12px; margin: 34px 0 14px; }
 .walkin-section-head h2 { margin: 0; font: 700 clamp(18px, 2.6vw, 22px)/1.2 Georgia, serif; }

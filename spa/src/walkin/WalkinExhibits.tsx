@@ -1,45 +1,37 @@
 import { useEffect, useState } from 'react';
-import { loadWalkinExhibits, type WalkinExhibit } from './manifest';
+import { exhibitVm, loadWalkinExhibits, type WalkinExhibit } from './manifest';
 import { WALKIN_OS_IDS } from './fixture';
 import { posterFor } from '../data/posterIndex';
-import { usePosterDoc } from '../data/posterDocs';
-import type { PosterBlock, PosterInlineRun } from '../types';
+import ExhibitPoster from '../ui/ExhibitPoster';
 
 // /walkin/exhibits — the rest of the museum, to read about.
 //
 // The point of this page (WALKIN-BRIEF §7): the visitor arrives for Windows
 // 3.11 and leaves knowing the lab has sixty other machines in it. So every
-// listed exhibit is here with its hero shot and its curator's note — and each
-// one that is NOT playable says so as a printed line on the placard, never as a
-// button that looks pressable and then refuses. A broken button teaches the
-// visitor the site is broken; a label teaches them the museum is bigger than
-// the three machines they came for.
+// listed exhibit is here with its hero shot — and each one that is NOT playable
+// says so as a printed line on the placard, never as a button that looks
+// pressable and then refuses. A broken button teaches the visitor the site is
+// broken; a label teaches them the museum is bigger than the three machines
+// they came for.
+//
+// The placard itself is the GALLERY's placard: `ExhibitPoster`, the same
+// component the invited gallery and the operator open, opened the same way —
+// as an overlay from a grid of cards. A walk-in reads the full curatorial
+// prose, the hero, the Origins carousel and the era facts, not a thinner
+// summary written for them. Nothing extra is exposed by that: `ExhibitPoster`
+// reads nine fields off `vm`, all of them exhibition facts the §5.3 allowlist
+// already carries (`manifest.ts`, `exhibitVm`), and its prose and imagery come
+// from `/poster-docs.json` and `/posters/`, which are public.
 
-function plain(runs: PosterInlineRun[]): string {
-  return runs
-    .map((run) => (run.kind === 'text' ? run.text : plain(run.children)))
-    .join('');
-}
-
-function firstParagraph(blocks: PosterBlock[] | undefined): string {
-  const block = blocks?.find((entry) => entry.kind === 'paragraph');
-  return block && block.kind === 'paragraph' ? plain(block.runs) : '';
-}
-
-/** The exhibit's own placard prose, fetched from /poster-docs.json on demand. */
-function Placard({ osId }: { osId: string }) {
-  const doc = usePosterDoc(osId);
-  if (!doc) return <p className="walkin-placard">Fetching the placard…</p>;
-  return (
-    <>
-      {doc.subtitle && <p><em>{doc.subtitle}</em></p>}
-      <p>{firstParagraph(doc.blocks) || 'The full placard for this exhibit is still being written.'}</p>
-    </>
-  );
-}
-
-function ExhibitCard({ exhibit, playable }: { exhibit: WalkinExhibit; playable: boolean }) {
-  const [open, setOpen] = useState(false);
+function ExhibitCard({
+  exhibit,
+  playable,
+  onOpen,
+}: {
+  exhibit: WalkinExhibit;
+  playable: boolean;
+  onOpen: () => void;
+}) {
   const hero = posterFor(exhibit.id)?.hero;
   return (
     <article className="walkin-exhibit" style={{ ['--card-accent' as string]: exhibit.accent }}>
@@ -53,10 +45,9 @@ function ExhibitCard({ exhibit, playable }: { exhibit: WalkinExhibit; playable: 
         <span className={`walkin-tag${playable ? ' walkin-tag--playable' : ''}`}>
           {playable ? 'You can play this one' : 'On display — not playable'}
         </span>
-        <details className="walkin-placard" onToggle={(event) => setOpen(event.currentTarget.open)}>
-          <summary>Read the placard</summary>
-          {open && <Placard osId={exhibit.id} />}
-        </details>
+        <button type="button" className="walkin-placard-open" onClick={onOpen}>
+          Read the placard
+        </button>
       </div>
     </article>
   );
@@ -64,6 +55,7 @@ function ExhibitCard({ exhibit, playable }: { exhibit: WalkinExhibit; playable: 
 
 export default function WalkinExhibits() {
   const [exhibits, setExhibits] = useState<WalkinExhibit[] | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,6 +64,7 @@ export default function WalkinExhibits() {
   }, []);
 
   const playable = new Set<string>(WALKIN_OS_IDS);
+  const open = exhibits?.find((entry) => entry.id === openId) ?? null;
 
   return (
     <>
@@ -95,9 +88,18 @@ export default function WalkinExhibits() {
 
       <div className="walkin-exhibits">
         {(exhibits ?? []).map((exhibit) => (
-          <ExhibitCard key={exhibit.id} exhibit={exhibit} playable={playable.has(exhibit.id)} />
+          <ExhibitCard
+            key={exhibit.id}
+            exhibit={exhibit}
+            playable={playable.has(exhibit.id)}
+            onOpen={() => setOpenId(exhibit.id)}
+          />
         ))}
       </div>
+
+      {open && (
+        <ExhibitPoster osId={open.id} vm={exhibitVm(open)} onClose={() => setOpenId(null)} />
+      )}
     </>
   );
 }
