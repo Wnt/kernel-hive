@@ -35,7 +35,11 @@ export KH_SESSION="${KH_SESSION:-walkin-broker}"
 export WALKIN_OPEN="${WALKIN_OPEN:-1}"
 # The plane's ARP-priming helper (ledger §6), a command template the broker
 # fills `{ip}` into. Installed by scripts/retronet/walkin-net/provision-walkin-net.sh.
-export WALKIN_ARP_PRIME="${WALKIN_ARP_PRIME:-/usr/local/sbin/wi-warm-arp {ip} --wait 20}"
+# NOTE the two steps: a literal `{ip}` inside a ${VAR:-default} is mis-parsed by
+# the shell's brace matching and arrives as `{ip --wait 20}`, which the broker
+# then rejects with KeyError('ip --wait 20').
+_arp_default='/usr/local/sbin/wi-warm-arp {ip} --wait 20'
+export WALKIN_ARP_PRIME="${WALKIN_ARP_PRIME:-$_arp_default}"
 
 if systemctl cat "$UNIT" >/dev/null 2>&1; then
   # Supervised path: hand this restart's overrides to systemd through a tmpfs
