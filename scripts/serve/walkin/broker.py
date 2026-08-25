@@ -17,8 +17,15 @@ Ends, and their reason codes (ledger §3.1):
     idle     3 minutes with no input     WALKIN_IDLE
     closed   access dropped to Closed    WALKIN_CLOSED
 
-The reason is recorded per user, not per clone, because by the time the client
-asks "why did my session end" the clone it was attached to no longer exists.
+The reason is recorded per user AND per clone identity, because a dropped client
+can come back asking either way: the play surface polls `/walkin/state` with its
+session cookie, while a reconnect attempt asks `/signal/<clone>.json` for a
+machine that no longer exists. Both roads answer the ledger §3.3 message —
+
+    {"type": "session-end", "reason": "WALKIN_TTL"}
+
+— rather than a bare 404, so the visitor is told their twenty minutes are up
+instead of "connection lost". Lane 4 prefers this code over anything it inferred.
 """
 
 from __future__ import annotations
@@ -41,6 +48,12 @@ CLOSE_REASON_TTL = "WALKIN_TTL"
 CLOSE_REASON_IDLE = "WALKIN_IDLE"
 CLOSE_REASON_CLOSED = "WALKIN_CLOSED"
 CLOSE_MEMORY = 15 * 60  # how long a closed session's reason stays answerable
+SESSION_END_TYPE = "session-end"  # ledger §3.3
+
+
+def session_end_message(reason: str) -> dict:
+    """The ledger §3.3 wire shape. One function so every road emits it alike."""
+    return {"type": SESSION_END_TYPE, "reason": reason}
 
 
 class BrokerError(RuntimeError):
@@ -91,6 +104,7 @@ class Broker:
         self._members: dict[str, Member] = {}
         self._queue: list = []  # [(user_id, station, since)]
         self._closes: dict[str, tuple] = {}  # user_id -> (code, at)
+        self._ended: dict[str, tuple] = {}  # clone identity -> (code, at)
         self._next_index: dict[str, int] = {}
         self.specs: dict[str, spec_mod.StationSpec] = {}
         self.access = "closed"
@@ -323,6 +337,22 @@ class Broker:
             entry = self._closes.get(user_id)
             return entry[0] if entry else ""
 
+    def session_end(self, user_id: str) -> dict | None:
+        """The §3.3 message for this visitor's last session, or None."""
+        reason = self.close_reason(user_id)
+        return session_end_message(reason) if reason else None
+
+    def session_end_for_clone(self, identity: str) -> dict | None:
+        """The §3.3 message for a clone that has been reaped, or None.
+
+        The seam behind `/signal/<clone>.json`: a client that lost its transport
+        retries the signaling document first, and a 404 there is exactly the
+        "connection lost" lie this code exists to prevent.
+        """
+        with self._lock:
+            entry = self._ended.get(identity)
+            return session_end_message(entry[0]) if entry else None
+
     def close_all(self, reason: str = CLOSE_REASON_CLOSED) -> int:
         """`close_sessions` + `kill_all_clones` in one call, for the smoke check
         and the CLI. Lane 2 uses the two halves, in that order, with the ticket
@@ -352,6 +382,7 @@ class Broker:
                     died.append(member.identity)
                     self._end(member, "")
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
+            self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
         orphans = self.reap_orphans()
         built = self._refill()
         return {"ended": ended, "died": died, "orphans": orphans, "built": built}
@@ -413,6 +444,7 @@ class Broker:
         session = member.session
         if session and reason:
             self._closes[session.user_id] = (reason, self._now())
+            self._ended[member.identity] = (reason, self._now())
         member.session = None
         self._members.pop(member.identity, None)
         # A clone that will not die is the watchdog's problem, not the caller's:

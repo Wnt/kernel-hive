@@ -53,4 +53,6 @@ pass rather than taken from another lane's territory:
 | Seam | What is needed |
 |---|---|
 | `scripts/serve/signal_route.py` | merge `broker.signal_entries()` into `load_tiles()` so `/signal/walkin-<os>-<n>.json` answers for a pool member the way it does for a station |
+| `scripts/serve/signal_route.py` (reaped clone) | answer `/signal/<clone>.json` with `broker.session_end_for_clone(...)` (410) instead of a bare 404, so a reconnect learns why rather than reading "connection lost" |
+| `streamhost/` transport | the §3.3 message as the WebTransport **close reason**. Not this lane's territory and not written: lane 4 already accepts the code by any road, and `/walkin/state` is the road that works today |
 | `scripts/serve/auth/` (lane 2) | call `walkin.routes.dispatch(...)` after the role check, and `broker.set_access(...)` when the admin switch moves — which returns the number of sessions it disconnected |

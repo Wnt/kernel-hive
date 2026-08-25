@@ -48,9 +48,13 @@ def dispatch(handler, path: str, method: str, broker, user, access: str) -> bool
     if path == "/walkin/state" and method == "GET":
         doc = broker.state()
         if user:
-            reason = broker.close_reason(user_id(user))
-            if reason:
-                doc["closeReason"] = reason
+            ended = broker.session_end(user_id(user))
+            if ended:
+                # Two spellings of one fact, because lane 4 scans whatever it is
+                # handed for the frozen code words: `sessionEnd` is the ledger
+                # §3.3 message, `closeReason` the bare code beside it.
+                doc["sessionEnd"] = ended
+                doc["closeReason"] = ended["reason"]
         _reply(handler, 200, doc)
         return True
 

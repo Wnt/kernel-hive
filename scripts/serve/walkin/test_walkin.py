@@ -433,6 +433,21 @@ class BrokerTests(unittest.TestCase):
         self.broker.set_drain(False)
         self.assertNotEqual(self.broker.claim("u2", "os2warp")["clone"], first)
 
+    def test_session_end_carries_the_ledger_message(self):
+        clone = self.broker.claim("u1", "os2warp")["clone"]
+        self.clock[0] += broker_mod.TTL_SECONDS + 1
+        self.broker.tick()
+        self.assertEqual(self.broker.session_end("u1"), {"type": "session-end", "reason": "WALKIN_TTL"})
+        # And the same fact by clone identity, for the reconnect that asks the
+        # signaling document for a machine that no longer exists.
+        self.assertEqual(self.broker.session_end_for_clone(clone), {"type": "session-end", "reason": "WALKIN_TTL"})
+
+    def test_a_visitor_who_simply_left_gets_no_reason(self):
+        clone = self.broker.claim("u1", "os2warp")["clone"]
+        self.broker.release("u1", clone)
+        self.assertIsNone(self.broker.session_end("u1"))
+        self.assertIsNone(self.broker.session_end_for_clone(clone))
+
     def test_signal_entries_describe_the_pool(self):
         entries = self.broker.signal_entries()
         self.assertEqual(len(entries), 2)
