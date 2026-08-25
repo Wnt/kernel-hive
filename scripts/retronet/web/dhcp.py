@@ -24,6 +24,7 @@ route off its /24 anyway.
 
 Config (systemd EnvironmentFile /etc/retronet/dhcp.env, or the environment):
   RN_DHCP_LISTEN        bind host:port           (default 0.0.0.0:67)
+  RN_DHCP_BIND_DEVICE   pin the socket to one leg (default empty = every leg)
   RN_DHCP_SERVER_ID     this server's address    (default 10.99.0.2)
   RN_DHCP_SUBNET_MASK   handed to clients        (default 255.255.255.0)
   RN_DHCP_DNS           DNS server(s), csv/space (default 10.99.0.2)
@@ -49,6 +50,15 @@ import time
 
 # --- defaults (every one overridable from /etc/retronet/dhcp.env) ------------
 DEF_LISTEN = "0.0.0.0:67"
+# Empty = today's behaviour, the whole box. Set it and the socket is pinned to
+# one interface with SO_BINDTODEVICE, which is what lets TWO scopes run side by
+# side (the retronet's on eth0, the walk-in plane's on eth1 — see
+# docs/lab/walkin/NETWORK-PLANE.md). Pinning is not a nicety there: a DHCP
+# DISCOVER is a limited broadcast, and the kernel delivers a broadcast to EVERY
+# matching socket, not just the best-matching one. An unpinned scope therefore
+# answers the other leg's clients too, handing out addresses from the wrong
+# subnet and burning its own pool one clone at a time.
+DEF_BIND_DEVICE = ""
 DEF_SERVER_ID = "10.99.0.2"
 DEF_MASK = "255.255.255.0"
 DEF_DNS = "10.99.0.2"
@@ -235,6 +245,13 @@ class DHCPServer(socketserver.UDPServer):
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        dev = self.cfg.get("bind_device", "")
+        if dev:
+            # Needs CAP_NET_RAW. Fail LOUDLY rather than silently serving the
+            # whole box: a scope that is meant to be pinned and is not will
+            # answer the other leg's clients, which is a subtle, intermittent
+            # wrong-subnet lease rather than an outage anyone notices.
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, dev.encode() + b"\0")
         super().server_bind()
 
 
@@ -292,6 +309,7 @@ def load_config() -> dict:
     dns = [d for d in re.split(r"[,\s]+", os.environ.get("RN_DHCP_DNS", DEF_DNS).strip()) if d]
     return {
         "addr": (host or "0.0.0.0", int(port or 67)),
+        "bind_device": os.environ.get("RN_DHCP_BIND_DEVICE", DEF_BIND_DEVICE).strip(),
         "server_id": os.environ.get("RN_DHCP_SERVER_ID", DEF_SERVER_ID).strip(),
         "mask": os.environ.get("RN_DHCP_SUBNET_MASK", DEF_MASK).strip(),
         "dns": dns,
@@ -306,9 +324,11 @@ def serve(cfg: dict) -> int:
     leases = Leases(cfg["reservations"], cfg["pool"][0], cfg["pool"][1])
     server = DHCPServer(cfg["addr"], cfg, leases)
     resv = ", ".join(f"{m}->{ip}" for m, ip in cfg["reservations"].items()) or "(none)"
+    dev = cfg.get("bind_device", "")
     sys.stderr.write(
-        f"retronet-dhcp: listening on {cfg['addr'][0]}:{cfg['addr'][1]}  pool={cfg['pool'][0]}-{cfg['pool'][1]}  "
-        f"dns={','.join(cfg['dns'])}  NO-router  reservations: {resv}\n"
+        f"retronet-dhcp: listening on {cfg['addr'][0]}:{cfg['addr'][1]}"
+        f"{' dev=' + dev if dev else ' dev=(any)'}  pool={cfg['pool'][0]}-{cfg['pool'][1]}  "
+        f"dns={','.join(cfg['dns'])}  lease={cfg['lease']}s  NO-router  reservations: {resv}\n"
     )
     try:
         server.serve_forever()
