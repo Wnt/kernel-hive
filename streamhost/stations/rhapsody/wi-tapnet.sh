@@ -1,5 +1,5 @@
 #!/bin/bash
-# wi-tapnet.sh — the rhapsody station's WALK-IN link: one per-clone tap on the
+# wi-tapnet.sh — the rhapsody station's WALK-IN link: the clone's tap on the
 # walk-in bridge vmbr-wi.
 #
 # Self-contained, per the standing rule against coupling sibling stations
@@ -8,40 +8,48 @@
 # SIBLING of this station's streamhost/stations/rhapsody/rn-tapnet.sh — not a
 # flag on it. The live station keeps rhaprn0 on vmbr-rn; nothing here touches it.
 #
-# Contract: docs/lab/walkin/CONTRACT-LEDGER.md §5.1 (tap name wi-<os>-<n>) and
-# §6 (bridge vmbr-wi, 10.98.0.0/24, gateway CT 951 eth1 10.98.0.2, per-tap
-# port isolation, fail-closed WI<STATION>-IN chain).
+# Contract: docs/lab/walkin/CONTRACT-LEDGER.md §5.1 (tap name wi-<os>-<n>), §5.4
+# (one clone per station) and §6 (bridge vmbr-wi, gateway CT 952 at 10.99.0.2,
+# no DHCP, per-tap port isolation, fail-closed WI<STATION>-IN chain).
+#
+# THE PLANE DOES NOT RENUMBER. vmbr-wi carries 10.99.0.0/24 with its gateway at
+# 10.99.0.2 — deliberately the SAME numbering as the retronet, on a different L2
+# with no route between them (ledger §6). That is what makes rhapsody work here
+# unchanged: Rhapsody 5.1 DR2 ships NO DHCP client at all (only the BOOTP-era
+# bpwhoami), so its address is STATIC in /etc/iftab and in the checkpoint's
+# vmstate — 10.99.0.22/24, DNS 10.99.0.2, ROUTER=-NO- so no default route at
+# all. A clone therefore arrives believing exactly what it believed when it was
+# captured, and on this plane it is RIGHT. No walk-in golden, no second lineage,
+# no recapture (AGENTS.md rule 6). WI_TAP_GUEST_IP defaults to that address
+# because that is the address the guest genuinely uses.
+#
+# ONE CLONE PER STATION (§5.4): loadvm restores the NIC MAC from saved device
+# state and mac= cannot override it, so two rhapsody clones would share a MAC
+# and collide. registry/walkin/rhapsody.json pins poolSize 1, which is why the
+# default tap name below is the only one this station normally uses.
 #
 # WHAT A WALK-IN CLONE IS ALLOWED TO SEE: the corpus web on the walk-in gateway,
-# and nothing else — not the fleet on 10.99.0.0/24, not labhost, not another
-# clone. Four independent locks, no single point of failure:
+# and nothing else — not the fleet, not labhost, not another clone. Four
+# independent locks, no single point of failure:
 #
 #   1. TOPOLOGY. vmbr-wi has `bridge-ports none` and no uplink, and is a
 #      DIFFERENT bridge from vmbr-rn. A clone is never on the retronet's L2 nor
-#      on the LAN's. This lock alone already answers "does it reach the fleet".
-#   2. NO TRANSIT. CT 951 is the only thing dual-homed across the two bridges
-#      and it does not forward (net.ipv4.ip_forward=0 plus an nft FORWARD drop
-#      between eth0/eth1). Owned by the walk-in network plane, not by this file.
+#      on the LAN's. The identical numbering on the two planes is cosmetic: they
+#      share no segment and no route, so a clone dialling 10.99.0.2 reaches the
+#      walk-in gateway and can never reach the retronet's.
+#   2. NO TRANSIT. The walk-in gateway CT 952 is SINGLE-HOMED on vmbr-wi and has
+#      no route to vmbr-rn, labhost or the internet — there is nothing for it to
+#      forward. The live retronet gateway CT 951 is not modified at all.
 #   3. PORT ISOLATION. `bridge link set dev <tap> isolated on` below. Isolated
 #      ports may only talk to non-isolated ports, so clone->clone is dropped by
 #      the kernel bridge itself; the gateway's veth is the only un-isolated port.
 #      No rule to get wrong, and it is READ BACK in verify_rules().
-#   4. FILTER. The fail-closed WIRHAPSODY-IN chain below, scoped to the clone's
-#      source address, lets the guest reach labhost ONLY as the ESTABLISHED
-#      reply side of a labhost-initiated flow. Every NEW flow toward labhost is
-#      DROPPED.
-#
-# GUEST ADDRESSING — the rhapsody-specific catch. Rhapsody 5.1 DR2 ships NO
-# DHCP client at all (only the BOOTP-era bpwhoami), so the walk-in plane's DHCP
-# scope on 10.98.0.0/24 cannot configure it. Its address is STATIC, baked into
-# the checkpoint's vmstate and /etc/iftab as 10.99.0.22 with DNS 10.99.0.2 and
-# ROUTER=-NO- (no default route at all). A clone therefore ARRIVES on vmbr-wi
-# still sourcing 10.99.0.22, an address that means nothing on this bridge — so
-# WI_TAP_GUEST_IP defaults to it, which is what the guard must actually match
-# today, and the corpus will not answer until the walk-in SEED is re-baked with
-# a 10.98.0.x address (a golden recapture: AGENTS.md rule 6, a separate
-# decision, deliberately NOT taken here). The containment is unaffected either
-# way — locks 1-3 do not depend on the guest's address.
+#   4. FILTER. The fail-closed WIRHAPSODY-IN chain below. labhost holds NO
+#      address on vmbr-wi (§6), so the host is not even meant to be reachable on
+#      this segment — this lock is the belt to that braces: should an address
+#      ever appear on the bridge, the clone may still talk to labhost ONLY as
+#      the ESTABLISHED reply side of a labhost-initiated flow, and every NEW
+#      flow it starts toward labhost is DROPPED.
 #
 # Nothing else rides this netdev: rhapsody's `labctl exec` is a root getty on
 # the COM1 unix-socket serial chardev and its pointer is PS/2 through the
@@ -60,9 +68,8 @@ set -u
 # Per-clone tap, ledger §5.1 form wi-<os>-<n> (<=15 chars, kernel limit).
 IF="${WI_TAP_IF:-wi-rhapsody-1}"
 BRIDGE="${WI_TAP_BRIDGE:-vmbr-wi}"
-# The address the clone actually sources from. See GUEST ADDRESSING above: DR2
-# has no DHCP client, so this is the static address baked into the golden until
-# a walk-in seed is re-baked on 10.98.0.0/24.
+# The address the clone actually sources from: the static address baked into
+# the golden, which the walk-in plane's numbering deliberately keeps valid.
 GUEST_IP="${WI_TAP_GUEST_IP:-10.99.0.22}"
 IN_CHAIN="WIRHAPSODY-IN"
 # Seconds to wait for the xtables lock. Not optional: a lost race brings the tap
@@ -140,7 +147,8 @@ do_up() {
     ip link set dev "$IF" master "$BRIDGE" || die "could not enslave $IF to $BRIDGE"
   fi
   # No L3 address on the tap: it is a pure bridge port, and the walk-in gateway
-  # lives in CT 951, not on labhost. IPv6 off on the port for good measure.
+  # lives in CT 952, not on labhost — which holds no address on vmbr-wi at all.
+  # IPv6 off on the port for good measure.
   sysctl -qw "net.ipv6.conf.$IF.disable_ipv6=1" 2>/dev/null || true
   install_isolation
   ip link set dev "$IF" up
