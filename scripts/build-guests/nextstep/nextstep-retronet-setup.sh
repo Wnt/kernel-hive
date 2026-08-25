@@ -37,6 +37,13 @@
 #    "sendto: Network is unreachable" forever — which reads exactly like a
 #    routing failure on a station whose routing is the thing under test.
 #
+# 4. `harden` and `tablet-hook` change the SHIPPING guest, not the bring-up rig.
+#    The trimmed inetd.conf and the rc.local kern-server hook must both be on
+#    the disk BEFORE the golden checkpoint is baked: a checkpoint is a running
+#    machine, so an untrimmed inetd inside it keeps every listener for the life
+#    of the station, and a missing rc.local hook makes the absolute pointer a
+#    property of the checkpoint alone rather than of the disk.
+#
 # 3. `defaults` MUST NOT run under `su`. The NeXTSTEP defaults database is
 #    per-effective-user, so a `dwrite` from a telnet session that has su'd to
 #    root writes ROOT's defaults and the console user `me` never sees them —
@@ -118,6 +125,46 @@ step_defaults() {
     "dread OmniWeb ShowHomePage"
 }
 
+step_harden() {
+  say "harden: trim /etc/inetd.conf to telnet only (see note 4)"
+  # Stock NeXTSTEP 3.3 exposes ftp, shell, login, exec, finger, tftp, comsat,
+  # talk/ntalk, the echo/discard/chargen/daytime/time pairs, the remote window
+  # server NSWSd and six RPC services -- all behind a passwordless `me` and a
+  # passwordless `root`, on a bridge fourteen other guests share. telnet is the
+  # only one the museum uses (it is the station's exec channel), so everything
+  # else goes. This is irix's `chkconfig esp/sysevent off`, one OS older.
+  asroot "test -f /etc/inetd.conf.prehardening || cp /etc/inetd.conf /etc/inetd.conf.prehardening" \
+    "grep '^telnet' /etc/inetd.conf.prehardening > /etc/inetd.conf" \
+    "grep -v '^#' /etc/inetd.conf" \
+    "sync"
+  # inetd re-reads its config on SIGHUP; a full boot would do it too, but the
+  # bake is a checkpoint of a RUNNING machine, so the running inetd must be the
+  # trimmed one or the golden carries every listener anyway. There is no
+  # /etc/inetd.pid on NeXTSTEP 3.3 -- the pid comes out of ps.
+  asroot "kill -HUP \`ps -ax | grep '[i]netd' | awk '{print \$1}'\`" \
+    "netstat -a | grep LISTEN"
+  # NOTE what this does NOT close: `printer` (lpd) and `smtp` (sendmail) are
+  # started from /etc/rc, not inetd, so they survive the trim. They are left on
+  # deliberately -- both are 1994 daemons on an invited-museum bridge, the same
+  # trade every station here makes, and turning them off means editing /etc/rc
+  # rather than one config file. If they ever have to go, that is the place.
+}
+
+step_tablet_hook() {
+  say "tablet-hook: load the SummaGraphics kernel server from /etc/rc.local"
+  # docs/guests/nextstep.md section 4: loading the server IS attaching it, and a
+  # load during /etc/rc -- before the WindowServer starts -- makes login's own
+  # device init probe the tablet, so every COLD boot comes up with an absolute
+  # pointer and no input at all. `-l` loads a server a clean shutdown persisted
+  # into kern_loader's conf; `-a` adds AND loads it when it did not. Never edit
+  # /etc/kern_loader.conf by hand: kern_loader owns and rewrites that file.
+  asroot "grep kl_util /etc/rc.local" \
+    "grep -q kl_util /etc/rc.local || echo kl_util -l tablet >> /etc/rc.local" \
+    "grep -q 'kl_util -a' /etc/rc.local || echo kl_util -a /usr/lib/kern_loader/Tablet/tablet_reloc >> /etc/rc.local" \
+    "cat /etc/rc.local" \
+    "sync"
+}
+
 step_verify() {
   say "verify: from inside the guest"
   asroot "hostname" \
@@ -132,6 +179,8 @@ step_verify() {
 
 case "${1:-}" in
   netinfo) step_netinfo ;;
+  harden) step_harden ;;
+  tablet-hook) step_tablet_hook ;;
   net) step_net ;;
   browser) step_browser ;;
   defaults) step_defaults ;;
@@ -140,6 +189,7 @@ case "${1:-}" in
     step_netinfo
     step_browser
     step_defaults
+    step_harden
     step_net
     ;;
   *)

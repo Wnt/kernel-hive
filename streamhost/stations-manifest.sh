@@ -731,10 +731,12 @@ emit sinclairql \
   "$T/sinclairql/sinclairql.keymap" --env-append-file \
   "$T/sinclairql/station.env.fixture"
 emit nextstep \
-  --tile nextstep --vmid 237 --udp 54134 --pointer abs --input-backend \
-  dbus-abs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
-  --fps 60 --launcher-file "$T/nextstep/qemu-streamhost.sh" \
-  --env-append-file "$T/nextstep/station.env.fixture"
+  --tile nextstep --udp 54134 --x11 --x11-display :47 --capture shm \
+  --pointer abs --input-backend mamesock --audio on --fps 60 \
+  --x11-runtime-file "$T/nextstep/x11-runtime.sh" --aux-file \
+  "$T/nextstep/nextstep.keymap" --aux-file "$T/nextstep/ctl.py" --aux-file \
+  "$T/nextstep/rn-tapnet.sh" --env-append-file \
+  "$T/nextstep/station.env.fixture"
 emit armeval \
   --tile armeval --udp 54135 --x11 --x11-display :44 --capture shm --pointer \
   none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \

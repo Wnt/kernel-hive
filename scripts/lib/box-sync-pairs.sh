@@ -305,6 +305,13 @@ box_sync_load_pairs() {
   # without which the guest silently drops every TCP segment labhost sends it. See
   # docs/lab/retronet/WEB-STATION-nextstep.md.
   box_sync_add_pair nextstep-rn-tapnet streamhost/stations/nextstep/rn-tapnet.sh "$BOX_ROOT/stations/nextstep/rn-tapnet.sh" exact repo
+  # …and the station's own launcher and control-socket client. The launcher rides
+  # the emit as --x11-runtime-file and ctl.py as an --aux-file, but an aux file
+  # only lands on a RE-EMIT, and both of these are on the reset path: a fix to
+  # either has to reach the box on a plain box-deploy, the way tru64's and
+  # w2kalpha's do.
+  box_sync_add_pair nextstep-x11-runtime streamhost/stations/nextstep/x11-runtime.sh "$BOX_ROOT/stations/nextstep/x11-runtime.sh" exact repo
+  box_sync_add_pair nextstep-ctl streamhost/stations/nextstep/ctl.py "$BOX_ROOT/stations/nextstep/ctl.py" exact repo
   # tru64's CDE Xsession.d ICQ fixture. This box copy is the REFERENCE copy; the
   # live one is baked onto the guest's own disk at
   # /etc/dt/config/Xsession.d/9999.icq-fixture and only runs on a cold boot.

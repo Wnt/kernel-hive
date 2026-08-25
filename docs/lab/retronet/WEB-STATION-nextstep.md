@@ -1,6 +1,6 @@
 # nextstep on the retronet — the web plane, and the first station in a netns
 
-**Status: PROVEN on a bring-up rig, not yet in the golden and not deployed.**
+**Status: LIVE since 2026-08-25 — in the golden, on the station, cut over.**
 `nextstep` — NeXTSTEP 3.3 for m68k on an emulated NeXTcube, in **Previous** —
 reaches the retronet bridge `vmbr-rn` at **10.99.0.25**, statically addressed,
 browsing the museum's corpus with **OmniWeb 2.7b3** through the gateway's `:80`
@@ -371,34 +371,42 @@ Disk lineage: a reflink copy of the pristine `NS33.dd`, md5
 `b0bd761c09a09d02291bc7f98d3125bd`, with exactly the steps above applied and
 nothing else.
 
-## Not done
+## Closed by the host-native cutover (2026-08-25)
 
-- **Nothing was done to the live station and no golden was baked.** The live
-  `nextstep` is still the Debian-kiosk shape; this is the host-native
-  replacement's network and browser half. Integration owns the bake.
-- **The Dock icon** (above) — needs the tablet driver, then a drag.
-- **`/NextAdmin/InstallTablet.app` has not been run** on this disk. The live
-  kiosk golden carries it; the host-native golden must too, both for the
-  visitor's absolute pointer and to make `MOVEA` exact for every future agent.
-- **`/etc/inetd.conf` is stock**: ftp, telnet, shell, login, exec, finger, tftp,
-  comsat, talk, ntalk and the echo/discard/chargen/daytime/time pairs, all with
-  passwordless accounts behind them. Trim to telnet before shipping, the way
-  irix's Apaches were `chkconfig`-off'd.
-- **`www.next.com` is not in the corpus.** The corpus holds a `www.next.com/`
-  directory with exactly one stray JPEG in it and no `sites.json` entry, so the
-  obvious home page for this station does not exist yet. `http://www.apple.com/`
-  (1 May 1998) is the stand-in and is a defensible one — Apple had owned NeXT
-  for a year by then and that page is NeXTSTEP's own descendant shipping. **An
-  era-press run for `www.next.com` at a ≤1996 capture is the request**, and the
-  station's own miss on it is already in the gateway's demand journal.
+Everything the bring-up left open is now done on the LIVE station; the detail
+lives in [`../../guests/nextstep.md`](../../guests/nextstep.md).
+
+- **The golden is baked and the station is cut over.** Reset is a CRIU restore,
+  ~3 s, framebuffer md5-identical, with the veth dumped as `--external` and the
+  pcap socket closed for the freeze (criu cannot dump an `AF_PACKET` fd).
+- **The Dock icon is done.** With the tablet driver attached, OmniWeb was
+  dragged into the Dock by hand — a paced absolute drag over the control
+  socket — and `~/.NeXT/apps3_0.wmd` kept it across a cold boot. The packed
+  token stream still has not been reverse engineered and did not need to be.
+- **`/NextAdmin/InstallTablet.app` has been run**, and the golden carries the
+  driver ATTACHED AND STREAMING. It has to: loading the kernel server from
+  `/etc/rc.local` is necessary and not sufficient, so a cold boot still comes up
+  dead reckoned.
+- **`/etc/inetd.conf` is trimmed to telnet only.** `printer` (lpd) and `smtp`
+  (sendmail) start from `/etc/rc`, not inetd, and survive the trim by decision.
+- **`www.next.com` (1996-11-12) is in the corpus** and is NOT the home page:
+  NeXT's own page of that date is a single image map whose hero JPEG was never
+  archived, and it renders empty in OmniWeb. `http://www.apple.com/` (8 May
+  1998) renders in full and stays. The NeXT pages one hop down do have their
+  images and are reachable by typing.
+
+## Still not done
 - **The `RETRONET_DHCP_RESERVATIONS` ledger is missing irix's `10.99.0.24`.**
   This wave added `00:00:0f:52:4e:19=10.99.0.25`; the row before it is
   `…=10.99.0.23`. That is exactly the one-directional drift
   [`WEB-PROXY.md`](WEB-PROXY.md) warns about — an address in a committed
   registry block that the box-side uniqueness ledger cannot see. irix's owner
   should add it.
-- **CRIU was not exercised.** The network *shape* is the proven veth one, but no
-  dump/restore cycle was run against this station, and `--external
-  veth[nextrn1]:nextrn0` plus the `up`-after-restore hook are inference from
-  irix, not measurement here. Note also that a client connected to
-  `PREVIOUS_CTL_SOCK` blocks a criu dump — disconnect before checkpointing.
+- **CRIU is now exercised, and the inference from irix was incomplete.**
+  `--external veth[nextrn1]:nextrn0` and the `up`-after-restore hook are both
+  required and both now measured — but so are two things irix never needed: the
+  libpcap `AF_PACKET` socket has to be CLOSED across the freeze (criu answers
+  `Can't get 1:16 opt: Operation not supported` on it and aborts), and the shm
+  publisher has to be told to republish one whole frame afterwards or the reader
+  streams the pre-reset picture forever. Both are fork verbs now — `NETDOWN`/
+  `NETUP` and `FBSYNC` — and the launcher sends them on every restore.

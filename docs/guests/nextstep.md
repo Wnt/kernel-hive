@@ -1,410 +1,321 @@
-# NeXTSTEP 3.3 — live streamhost station `nextstep` (VMID 237, udp 54134)
+# NeXTSTEP 3.3 — live streamhost station `nextstep` (udp 54134)
 
-**Status: LIVE, absolute pointer, PROMOTED 2026-08-10. Host-native conversion is emulator-ready and not cut over — see §2b.** A captured Debian-12 kiosk runs the **Previous** emulator as a
-**NeXTcube** (Motorola 68040, 25 MHz, 64 MB, ROM Rev 2.5 v66) booting **NeXTSTEP
-3.3 for m68k**, and streamhost captures the Linux framebuffer + AC97 audio like
-every other kiosk (`streamhost/docs/BRIDGE.md`). The acceptance scene —
-the grey NeXTSTEP Workspace with the right-hand Dock — is reached on an
-untouched cold boot with zero input and is framebuffer-verified in
-`/data/vms/streamhost/stations/nextstep/evidence/`.
-
-Builder: `scripts/build-guests/tiles/nextstep.sh` (fully automated, `--force`,
-idempotent). Runtime sources: `streamhost/stations/nextstep/`. Patch:
-`scripts/build-guests/patches/previous-wmless-window-borders.patch`. Kiosk helper:
-`scripts/build-guests/stages/nextstep-kiosk-frame.sh` == guest
-`/usr/local/bin/nextstep-kiosk-frame.sh`.
-
----
-
-## 1. Why this is a NeXTcube and not an Intel PC
-
-The historical section below records, in full, that **NeXTSTEP 3.3 for Intel
-cannot be installed or run on a modern QEMU**. That finding still stands and was
-not re-tested. What changed is the gallery's architecture: every recent exhibit
-is a *kiosk*, so the kiosk can run any emulator, and the QEMU driver wall
-simply stopped being the constraint.
-
-Two routes were costed before anything was built:
-
-| Route | Machine | Cost | Verdict |
-|---|---|---|---|
-| **(a) Previous + m68k NeXTSTEP** | the real NeXTcube | emulator builds in ~9 min; the disk image is **pre-installed**, so no 1994 installer to drive | **chosen** |
-| (b) QEMU 0.9.0 built in the overlay + Intel install | a PC clone | build an ancient QEMU, then sit through an interactive install, then discover whether the result boots | rejected |
-
-Route (a) also wins on media: the NeXT ROMs ship **inside the Previous source
-tree** (`src/Rev_2.5_v66.BIN`), byte-identical to the ones in the archive.org
-bundle, so only the disk image has to be fetched. And it is the better exhibit —
-a matte-black cube with a MegaPixel display is the machine Tim Berners-Lee wrote
-the first web browser on; an Intel clone running the same OS is not.
-
-## 2. What is built, and where
-
-Nothing in the frozen bridge seed is touched. Everything goes into the station's
-own overlay:
-
-| Component | Version / pin | Note |
-|---|---|---|
-| SDL3 | 3.4.14, from source | Previous 4.4 needs SDL3 ≥ 3.2; Debian 12 has SDL2 only. `libxtst-dev` is required or cmake aborts with *Couldn't find dependency package for XTEST*. |
-| Previous | SourceForge SVN **trunk r1847** = release **4.4** (2026-07-06) | built with `-DENABLE_RENDERING_THREAD=1` — see trap 4 |
-| NeXT ROM | `Rev_2.5_v66.BIN`, sha256 `1b753890b67095b73e104c939ddf62eca9e7d0aedde5108e3893b0ed9d8000a4` | from the Previous source tree; 68040 non-turbo cube/station ROM |
-| NeXTSTEP disk | `NS33_2GB.dd`, sha256 `6381423b066c33c24c9c9ec519086708b9cf3b2f11882fed5319cfb6a3422f1b` | 2 GB sparse (≈232 MB on disk), pre-installed NeXTSTEP 3.3 for m68k |
-
-Media provenance is recorded in `docs/lab/ASSETS-MANIFEST.md` and in the guest's
-`/opt/bridge/media/nextstep/PROVENANCE`. **The bits are never committed.**
-
-The overlay is grown to 16 GB before first boot: the 6 GiB seed has only ~2.6 GiB
-free and the disk image alone is 2 GB.
-
-## 2b. Host-native conversion — the emulator side is DONE, not yet cut over
-
-**Status 2026-08-25: the Previous fork carries all three planes and they are
-framebuffer-proven on a sandbox rig; nothing about the live station has
-changed.** The bridge kiosk below still serves. What follows is what a cutover
-now needs, and what it no longer needs.
-
-Fork: `github.com/Wnt/previous`, branch `kernel-hive`, four patches — see its
-`KERNEL-HIVE-FORK.md` for the full env table and the measurements.
-
-| plane | emulator env | streamhost env |
-|---|---|---|
-| frames | `PREVIOUS_SHM_PATH=<file>` | `SH_CAPTURE=shm`, `SH_SHM_PATH=<same>`, **`SH_SHM_DAMAGE=0`** |
-| input | `PREVIOUS_CTL_SOCK=<path>` | `SH_INPUT_BACKEND=mamesock`, `SH_MAMECTL_SOCK=<same>`, `SH_MAMESOCK_KEYMAP=streamhost/stations/nextstep/nextstep.keymap` |
-| audio | `PREVIOUS_AUDIO_FIFO=<path>` | `SH_AUDIO_SOURCE=fifo`, `SH_AUDIO_FIFO=<same>` |
-
-Build: `cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1`.
-**`ENABLE_RENDERING_THREAD` is mandatory** — without it input events queue on a
-ring buffer nothing drains. Launch under `SDL_VIDEODRIVER=dummy
-SDL_AUDIODRIVER=dummy`; no X server, no window, no kiosk.
-
-**Zero streamhost code changes.** The control socket speaks `mamectl/1`
-verbatim — the same wire `mame_sock.rs` already drives the MAME ctlsock module
-with — so the existing `mamesock` backend drives Previous as-is. What the
-daemon never interprets is the `KEY` verb's (port, field) pair, so this fork
-defines it as the NeXT KMS space: port `kms` with a hex NeXT scancode, port
-`mod` with a modifier bit by name (a NeXT keyboard's modifiers are a MASK
-carried with every edge, not keycodes). `streamhost/stations/nextstep/nextstep.keymap`
-is that map, 80 rows, hand-written because Previous has no `KEYDUMP` to
-generate one from — every row was driven through the live socket and accepted.
-Leave `SH_MAMESOCK_PTR_GRID` unset: targets are stated in screen pixels.
-
-**§4's tablet is what makes the pointer exact, and it still is.** The ctlsock
-picks its route per event: with `bTabletEnabled` a `MOVEA` is one
-`tablet_pen_move()` and lands on the commanded pixel; without it the target is
-dead reckoned through the relative KMS mouse. The dead-reckoned route was
-measured on the rig and independently reproduces §4's finding — 1.00 px per
-count at one count per 20 ms, >2.3x at four counts or more — so it is exact only
-at ~50 px/s and is a bring-up tool, not a visitor's pointer. **The station's own
-disk already solves this**: the `/etc/rc.local` `kl_util` hook from §4 attaches
-the tablet before the WindowServer starts, so a host-native station inherits an
-absolute pointer with zero extra work. A fresh disk image does not — the rig's
-did not, which is why the fallback exists and why it is measured.
-
-§4's slow-press finding is now enforced in the emulator: `PREVIOUS_CTL_BTN_HOLD`
-(default 400 ms) holds an early RELEASE in the queue, so a visitor's quick click
-cannot be sampled away. This is the `MAME_CTL_KEY_EXCL` pattern.
-
-**Checkpointing.** CRIU dump/restore works with all three planes open — dump
-0.15 s, restore 0.13 s, flags `--shell-job --file-locks --manage-cgroups=ignore`,
-process SIGSTOPped and the disk reflink-paired first. Two things to know: the
-restored process comes back in its job-control stop, so **`kill -CONT` it**; and
-a dump FAILS while a client is connected to the control socket (`unix: Unix
-socket … not found`, and `--ext-unix-sk` does not rescue it). Take checkpoints
-with no client attached — `mamesock` reconnects forever with backoff, so a
-restore simply gets reconnected.
-
-**Proven on the rig, from published frames only** (`/data/vms/sandbox/prev-capture/evidence/`):
-NeXTSTEP 3.3 boots headless to the Workspace; injected keys land visibly
-(Command-f opens the Finder panel, then a typed string appears in its field,
-uppercase and punctuation included); injected absolute targets put the arrow at
-the commanded pixel with a constant offset across six scattered targets;
-the audio FIFO delivers the system beep as a coherent ~800 Hz tone; and all
-three still work after a CRIU cycle.
-
-**Still to do for a cutover** (station work, not emulator work): a launcher in
-`streamhost/stations/nextstep/`, the registry launcher-type change, a golden
-checkpoint taken from the acceptance scene, and the operator's eyeball. The
-bridge overlay stays as the rollback until they retire it.
-
-## 3. Emulated machine and X geometry
-
-```
-Previous 4.4, ~/.config/previous/previous.cfg (written by the builder)
-  nMachineType = 1        NEXT_CUBE040 — NeXTcube, 68040 @ 25 MHz, non-Turbo
-  bColor = FALSE          MegaPixel 1120x832, 2-bit greyscale
-  Memory 16+16+16+16      64 MB
-  nSCSI = 1               NCR53C90A;  nBootDevice = 1 (SCSI)
-  szRom040FileName        Rev_2.5_v66.BIN
-  bEthernetConnected      TRUE, SLIRP (stops NeXTSTEP waiting on a netinfo server)
-  bShowStatusbar/Titlebar FALSE;  bFullScreen = FALSE (windowed on a bare X root)
-```
-
-The kiosk adds a **custom 1120x832 X mode** with `xrandr --newmode` — no stock
-mode is that size — and makes the root exactly that. This is deliberate:
-
-- the picture is pixel-exact, with no resampling of a 1-bit-crisp Display
-  PostScript UI;
-- the host pointer and the NeXT arrow clamp at the *same* edges, which is what a
-  relative pointer needs to stay in registration.
-
-## 4. Pointer: absolute, through the machine's own tablet
-
-Previous emulates more than a mouse. `src/tablet.c` simulates a SummaGraphics
-MM 961/MM 1201 digitiser (and the WACOM SD series) on the NeXT **SCC serial port
-B**, and `src/gui-sdl/sdlevent.c` feeds it the host's **absolute** window
-coordinates whenever `[Tablet] nTabletType` is non-zero *and* the guest driver
-has enabled the tablet; only otherwise does it fall back to the relative
-`kms_mouse_move()`. NeXTSTEP 3.3 ships the matching driver on the disk the station
-already uses — `/NextAdmin/InstallTablet.app`, setuid root, 21 Oct 1994 — which
-writes a kernel-server relocatable to `/usr/lib/kern_loader/Tablet/`, loads it,
-creates `/dev/tableta`+`/dev/tabletb`, probes `/dev/ttyb` and attaches. Nothing
-is compiled: this checkpoint carries no m68k toolchain at all.
-
-So the station ships:
-
-- `nTabletType = 2` in `previous.cfg` (SummaGraphics MM 1201);
-- `-usb -device usb-tablet`, `SH_INPUT_BACKEND=dbus-abs`, UI `pointerRel`
-  absent, `stream.pointer.method = qemu-usb-tablet`;
-- `-machine …,vmport=off` still pinned — it used to protect the relative path,
-  and it now keeps QEMU's implicit VMware mouse from being a *second* absolute
-  pointer competing with the tablet;
-- an X root of **exactly 1120x832 at +0+0**. That is now load-bearing: the whole
-  chain is a straight 1:1 map from the X root to the NeXT screen, so any other
-  root size silently scales every visitor's click.
-
-**Measured, on the LIVE production station, 2026-08-10, against the checkpoint restored
-into a fresh QEMU process:** 24 of 24 acceptance targets (corners inset 8 px,
-edge midpoints, centre, and 15 scattered points) landed at **0 px** error, one
-commanded move each, located by an exact glyph match on the framebuffer.
-
-Those 24 drive the kiosk's X pointer directly, which skips the one leg a visitor
-actually uses, so the `usb-tablet` itself was probed separately: 8 QMP
-`input-send-event` absolute moves — the same events streamhost synthesises from
-a browser pointer — travelled QEMU `usb-tablet` → Xorg → SDL3 → Previous
-`tablet.c` → the NeXTSTEP driver and landed **within 1 px**, the 1 px being the
-0..32767 quantisation of the probe's own axis value, not the station's.
-
-**Buttons need a SLOW press/release.** `xdotool click 1` (≈12 ms down-to-up) is
-sampled away somewhere on the tablet path and does nothing at all — a menu item
-highlights and never fires, a title-bar drag does not move the window. An
-explicit `mousedown 1 / sleep 0.4 / mouseup 1` works every time. This cost a
-confusing half hour: the click looks delivered, the framebuffer says otherwise.
-
-**The cold-boot asymmetry is CLOSED (2026-08-11).** The driver is a kernel
-server, and Previous's own README warns it must be reinstalled after every
-*boot* — which was true only because nothing loaded it at boot. The reloc's own
-kern_loader load commands (`Loaded Server/Load Commands` section, read straight
-out of the Mach-O) end in `CALL tablet_attach 0`: **loading the server IS
-attaching** — tablet_attach swaps the kernel's low-memory pointer vectors
-(0x2c0–0x2e8) from the KMS mouse routines to the tablet routines, and when that
-happens during `/etc/rc`, *before* the WindowServer starts, login's own device
-init runs the serial probe and the pointer comes up absolute with zero input.
-So the disk now carries two lines at the end of `/etc/rc.local`:
-
-```
-kl_util -l tablet
-kl_util -a /usr/lib/kern_loader/Tablet/tablet_reloc
-```
-
-(`-l` when a clean shutdown persisted the server into kern_loader's conf, `-a`
-adds AND loads when it did not. Do not append to `/etc/kern_loader.conf` by
-hand — kern_loader owns that file and rewrites it.) `loadvm golden` keeps
-working exactly as before; the checkpoint since 2026-08-11 carries the hook on its
-disk. `nextstep-tablet-install.py` writes the hook, probes a booted disk and
-skips the GUI dance when the boot already came up absolute — the GUI install
-is only needed ONCE per fresh disk image, to make InstallTablet.app write
-tablet_reloc and the /dev nodes in the first place.
-
-Two behaviors this changes: a guest reboot inside the exhibit now re-attaches
-the tablet at the end of its boot (the old trap — Previous keeping
-`bTabletEnabled` across a guest reboot with no driver on the other side —
-closes itself once rc runs, though the pointer is dead *during* the boot); and
-mid-session `kl_util -l tablet` on a machine whose WindowServer is already up
-swaps the vectors but probes nothing — the pointer freezes until reboot or
-`kl_util -u tablet`. Loading the server is only useful at rc time.
-
-**How the install is driven, since it cannot be scripted from a shell.**
-NeXTSTEP refuses a DPS connection to a telnet session (`DPS client library
-error: Could not form connection, host local host`), so `InstallTablet` cannot be
-launched from `nstel.py`. The working sequence, all framebuffer-verified:
-symlink the app into `/me` **before the cold boot** so the File Viewer lists it
-without a rescan, **type-select** `Install` in the viewer and press RETURN to
-open it, then put the still-relative pointer on the panel's Install button and
-click once. From that click on the pointer is absolute and the rest (quit,
-unlink, Update Viewers, pixel-diff back to the scene) is exact.
-
-**The Install button is drawn with the default-button ⏎ glyph, and RETURN still
-does not press it** — the panel is not the key window, and nothing reachable
-from the keyboard makes it key. That was tested, not assumed; the framebuffer is
-unchanged after RETURN. The pointer really is the only way in.
-
-**Moving that pre-driver pointer: fixed 1 px steps, no proportional term.** The
-promotion attempt before this one built a converging closed loop with damped,
-capped steps; it converged on a clone and overshot the button by ~56 px on the
-station, four variants deep. The reason is that NeXTSTEP accelerates a *single*
-event superlinearly (a 24 px step measured ~2.3x) and the curve keys off event
-timing as well as size, so a step size calibrated on one machine's timing is a
-different step on another's. A **1 px** step is the one input the curve cannot
-amplify: measured on the live station, 100 consecutive 1 px events moved the arrow
-exactly 100 px, gain 1.000 on both axes. `goto()` in the installer now walks
-|error| single-pixel steps, re-reads the framebuffer, and repeats — it put the
-pointer on the button from 634 px away in **one round, dead centre**. Two
-caveats worth knowing: a long burst loses roughly a pixel every few hundred, and
-a leftover 2-3 px correction on its own does not register at all, so the walker
-stops when a round makes no progress and the caller accepts ≤ 4 px.
-
-**Historical, kept because it explains the old wiring:** before the tablet the
-station ran `--pointer rel` with no usb-tablet, and the NeXT KMS mouse register's
-*signed 6-bit* delta capped a single event at 63 px, so a fast flick under-moved.
-That limit is no longer on the visitor's path — the tablet reports a position,
-not a delta — but it still applies to anything driving the guest before the
-driver is attached.
-
-## 5. Key pacing: not applicable
-
-This is a GUI exhibit, not a type-in exhibit. The NeXT keyboard is a serial
-device polled by the KMS controller, not a matrix sampled once per emulated
-frame, so playbook §5.1's `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` are not set
-and the station does not need the pacing canary build.
-
-## 6. The five traps, in the order they bit
-
-1. **`panic: (Cpu 0) Root device is physically write protected.`** NeXTSTEP
-   boots, finds the disk and dies on its first write. The kiosk runs as
-   `bridge`, and a root-owned 0644 image opens read-only — the same trap the
-   pdp11 station hit with its MSCP pack. `chown bridge:bridge NS33_2GB.dd`.
-2. **`SDL screen scale: 0.971`.** Previous asks SDL for the window border
-   thickness and, when SDL cannot answer, assumes a decorated desktop (50 px top
-   and bottom, 25 px each side) and shrinks the emulated screen to fit. There is
-   no window manager here, so it always assumed them and resampled 1120x832 down
-   to 1088x808. Fixed by
-   `scripts/build-guests/patches/previous-wmless-window-borders.patch`.
-3. **No input at all.** With no window manager nobody ever calls
-   `XSetInputFocus`, so the X input focus stays `None` and SDL3 hands Previous no
-   key events; and because the pointer is already inside the window when it is
-   mapped, no `EnterNotify` is generated either, so SDL never acquires a mouse
-   focus and drops motion too. The symptom is a perfectly live NeXTSTEP that
-   ignores every keystroke and never moves its cursor, with nothing in any log.
-   `nextstep-kiosk-frame.sh` focuses the window and walks the pointer out and
-   back in. It also re-anchors the window at +0+0 (SDL3 centres it at +16+12 on
-   a same-sized root, clipping the Dock) and **re-resolves the window id every
-   pass**, because Previous destroys and re-creates its window on a mode change.
-4. **Input reaching Previous but not the machine.** Previous 4.4 built with
-   `ENABLE_RENDERING_THREAD=0` — the default everywhere except macOS — pushes
-   guest key/mouse events onto an internal ring buffer, and on this build
-   nothing drained it: at `nTextLogLevel = 5` a clean single keystroke produced
-   no `[Keymap]` line at all, while Previous's own F12 menu (handled before the
-   queue) opened normally. Rebuilt with `-DENABLE_RENDERING_THREAD=1`, where the
-   same events go straight to `Keymap_KeyDown`/`Keymap_MouseMove`, the NeXT
-   cursor moved on the next attempt. **The station must be built with that flag**;
-   the builder asserts it in the cmake output.
-5. **135% of CPU in four llvmpipe threads.** `SDL_RENDER_DRIVER=software` was
-   already set and the renderer really was `software` (SDL3 confirms it under
-   `SDL_LOGGING=render=verbose`), but SDL3 still *presented* through an
-   accelerated window surface — llvmpipe, on a GPU-less labhost. Measured before
-   and after `SDL_FRAMEBUFFER_ACCELERATION=0`:
-
-   | | llvmpipe threads | `previous` RSS | keystroke → screen |
-   |---|---|---|---|
-   | accelerated surface | 4, ~135% CPU | 375 MB | 5.7 s, once 33 s |
-   | `SDL_FRAMEBUFFER_ACCELERATION=0` | none | 106 MB | 0.58 s (poll-loop floor) |
-
-## 7. Resources, measured
+**Status: LIVE, HOST-NATIVE since 2026-08-25.** The captured Debian kiosk is
+gone. The museum's fork of the **Previous** emulator runs directly on labhost as
+an unprivileged account under SDL's dummy video and audio drivers — no X server,
+no window, no guest Linux — as a **colour NeXTstation** (Motorola 68040 at
+25 MHz, 32 MB, ROM Rev 2.5 v66) booting **NeXTSTEP 3.3 for m68k**. It publishes
+its own three planes to the streamhost daemon, it is on the museum's retronet at
+`10.99.0.25` browsing the period corpus with **OmniWeb 2.7b3**, and its reset is
+a **CRIU restore** of a checkpoint of the emulator process.
 
 | | |
 |---|---|
-| QEMU | `-m 1536 -smp 4 -cpu host`, `pc-i440fx-11.0,vmport=off` |
-| guest `MemAvailable` at the Workspace | 957 MB of 1462 MB |
-| `previous` RSS in the guest | 247 MB |
-| host QEMU RSS | 1.06 GB |
-| checkpoint VM_SIZE | 647 MiB |
+| Emulator | `github.com/Wnt/previous`, branch `kernel-hive` at **635883a** (Previous SVN r1847 = 4.4 + the museum's seven patches), built `-DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1` |
+| Launcher | [`streamhost/stations/nextstep/x11-runtime.sh`](../../streamhost/stations/nextstep/x11-runtime.sh) — the name is the daemon's fixed contract for `SH_STATION_RUNTIME=x11`; there is no X here |
+| Scene builder | [`scripts/build-guests/nextstep/nextstep-scene.py`](../../scripts/build-guests/nextstep/nextstep-scene.py) |
+| Golden | [`scripts/build-guests/nextstep/nextstep-bake-golden.sh`](../../scripts/build-guests/nextstep/nextstep-bake-golden.sh) |
+| Retronet | [`docs/lab/retronet/WEB-STATION-nextstep.md`](../lab/retronet/WEB-STATION-nextstep.md) |
+| Colour machine | [`docs/lab/research/nextstep-color-machine.md`](../lab/research/nextstep-color-machine.md) |
 
-`-smp 4` is not decoration: Previous runs the 68040, the DSP, a SLIRP thread and
-its own present loop, and at `-smp 2` the emulator ran at roughly half real
-speed (`[Hardclock] Expected: 8245 us, actual: 15407 us`) and its input queue
-visibly backed up.
+## 1. Why this is a NeXT and not an Intel PC
 
-## 8. Checkpoint scene and reset
+`NeXTSTEP 3.3 for Intel` cannot be installed or run on a modern QEMU — the
+historical section at the end of this file records that in full, and it still
+stands. Previous emulates the real machine instead, the disk image is
+pre-installed so there is no 1994 installer to drive, and the NeXT ROMs ship
+inside the Previous source tree. It is also the better exhibit: a matte-black
+NeXT is the machine Tim Berners-Lee wrote the first web browser on.
 
-`SH_RESET_MODE=loadvm`, checkpoint `golden`: the grey Workspace, the Workspace
-menu at the top left, the File Viewer NeXTSTEP opens for itself at login, and the
-Dock down the right-hand edge. Nothing is curated — this is where the machine
-stops on its own — but the checkpoint is **not** taken on an untouched boot any
-more: it is taken after §4's tablet-driver install. (Since 2026-08-11 the disk
-itself re-attaches the driver on every boot via the rc.local hook, so the
-checkpoint's job is back to being just the resume state, not the sole
-carrier of the driver.) The install automation ends by pixel-diffing the
-desktop back onto the frame it started from, and refuses to continue if too
-much differs. Restore is verified by framebuffer in the same run.
+## 2. The three planes
 
-Evidence in `/data/vms/streamhost/stations/nextstep/evidence/`:
-`coldboot-desktop.png` (the state that was captured), `golden-baked.png`,
-`golden-restored.png` (after `loadvm golden`), `live-streaming.png` (with
-`streamhost@nextstep` running).
+Zero streamhost code was written for this station. The fork's control socket
+speaks `mamectl/1` **verbatim** — the same wire the daemon's `mamesock` sink
+already drives MAME's ctlsock module with — so integration is env only.
 
-**First boot of a fresh overlay is not zero-input**: NeXTSTEP 3.3 runs its
-one-time Welcome panel (language + keyboard) the very first time this disk image
-boots. The builder answers it with two RETURNs (English / USA defaults) and then
-waits on the Workspace predicate. Every boot after that — and every visitor —
-lands on the Workspace with no input at all.
+| plane | emulator env | streamhost env |
+|---|---|---|
+| frames | `PREVIOUS_SHM_PATH` | `SH_CAPTURE=shm`, `SH_SHM_PATH`, **`SH_SHM_DAMAGE=0`** |
+| input | `PREVIOUS_CTL_SOCK` | `SH_INPUT_BACKEND=mamesock`, `SH_MAMECTL_SOCK`, `SH_MAMESOCK_KEYMAP` |
+| audio | `PREVIOUS_AUDIO_FIFO` | `SH_AUDIO_SOURCE=fifo`, `SH_AUDIO_FIFO` |
 
-## 9. Open items — stated honestly
+Each repaint is diffed against a private shadow and only the changed region is
+copied, with a REAL dirty rect in the header — which is why the daemon must not
+re-derive one (`SH_SHM_DAMAGE=0`). Measured on an idle Workspace: 10,200
+repaints, 646 published, 27 MB copied.
 
-- **PROMOTED 2026-08-10.** The checkpoint was recaptured on the station itself from a COLD
-  boot under the final device set (`-usb -device usb-tablet`), with the driver
-  installed before `savevm golden`; `SH_INPUT_BACKEND=dbus-abs`,
-  `pointer_mode: abs` in the labctl matrix, `pointer/mouse: abs/PASS` in the
-  golden manifest, and `pointerRel` gone from the gallery manifest's row.
-- **The UI's embedded FALLBACK manifest still marks this station `pointerRel`.**
-  The runtime `/gallery-manifest.json` (which the UI prefers, and which was
-  merged additively) does not, so the shipped path is correct; the compiled-in
-  copy inside `assets/index-*.js` is stale and only takes over if that fetch
-  fails. It clears itself on the next UI build from merged `main` — the bundle
-  was deliberately NOT rebuilt here, because the deployed one carries sibling
-  stations that this branch does not have and a rebuild would delete them.
-- `labctl gen` was **not** run: it fails closed on live station dirs (`alto`,
-  `indyr4400`) that have no declaration in the deployed file yet. The nextstep
-  row was merged into `/data/vms/streamhost/stations.json` additively instead, and
-  `labctl ls` shows `abs`. Regenerating the whole matrix is a merge-time step.
-- The **cold-boot pointer asymmetry** in §4 is CLOSED (2026-08-11): the disk
-  carries an rc.local hook that loads the tablet server during /etc/rc, and a
-  cold boot comes up absolute on its own (proven on a sandbox clone: commanded
-  (100,100) → arrow at exactly (100,100) after a plain boot, no GUI driven).
-  The live checkpoint was recaptured the same day with the hook on its disk.
-- **Idle auto-pause is ON since 2026-08-11** (`SH_IDLE_PAUSE_SECS=60`, the
-  fleet's QMP arm). The original opt-out feared QMP-pausing the kiosk "out
-  from under" the frame watcher, but the watcher runs INSIDE the guest — stop
-  pauses watcher and window together. The unwatched station was 138% of a core.
-- Only `nTabletType = 2` (SummaGraphics MM 1201) was tried. The WACOM types
-  report a finer coordinate range and might behave differently at the edges;
-  there was no reason to look.
-- Guest-input latency was measured only through Previous's own F12 menu
-  (0.58 s, at the floor of a screendump poll loop) and only while labhost was
-  carrying a load average of 20-45 from concurrent build agents. It should be
-  re-measured on a quiesced box.
-- `SDL_RENDER_DRIVER=software` alone did not avoid llvmpipe; why SDL3 still
-  chose an accelerated window surface was not chased past the workaround.
+What the daemon never interprets is the `KEY` verb's (port, field) pair, so the
+fork defines it as the NeXT KMS space: port `kms` with a hex NeXT scancode, port
+`mod` with a modifier by name — a NeXT keyboard's modifiers are a MASK carried
+with every edge, not keycodes. `streamhost/stations/nextstep/nextstep.keymap` is
+that map, 80 rows, every one driven through the live socket. Leave
+`SH_MAMESOCK_PTR_GRID` unset: this server states targets in screen pixels.
 
-## 10. Operator notes
+**The emulator runs as an unprivileged account (`nsexhibit`), and that is a
+requirement, not hygiene.** SDL3's dummy video driver still opens
+`/dev/input/event*` and `/dev/input/mouse0` for its evdev input source, and
+**criu cannot dump a character-device fd** — `Can't dump file 4 of that type
+[20660] (chr 13:65)`, and `--external dev[…]` does not rescue an already-open
+one. Those nodes are `root:input 0660`, so an account outside the `input` group
+never opens them and the checkpoint becomes possible. The launcher creates the
+account on first run. It is the same shape as MAME's `/dev/snd/seq` +
+`-midiprovider none`.
 
-- `labctl exec nextstep "<cmd>"` reaches the **Debian kiosk**, not NeXTSTEP.
-  For NeXTSTEP itself there *is* now a captured-output channel: Previous
-  publishes a fixed SLIRP redirect from the kiosk's `127.0.0.1:42323` to the
-  NeXT's telnet port, and `/usr/local/bin/nstel.py` (source
-  `scripts/build-guests/nextstep-nstel.py`) drives it. Log in as `me` — NeXTSTEP
-  refuses `root` on a pseudo-terminal — and the client `su`s for you; neither
-  needs a password.
+## 3. The machine: a COLOUR NeXTstation
+
+`nMachineType = 2`, `bColor = TRUE`, `bTurbo = FALSE`, `bNBIC = FALSE`, memory
+banks `8/8/8/8` = 32 MB, the **same** stock `Rev_2.5_v66.BIN`. The **same,
+unmodified disk image** boots colour with no in-guest change of any kind:
+NeXTSTEP 3.3 probes the framebuffer at boot and the WindowServer comes up on the
+colour one by itself. The display stays **1120x832** — `NeXT_SCRN_W/H` are
+`const`, and colour only changes which blit fills the same-sized texture — so
+the geometry and the 1:1 pointer map are untouched.
+
+Colour is free: 148.5% of a core against mono's 146.3%, and boot is if anything
+a hair faster. Turbo buys nothing and costs ~11% CPU, needs a second ROM, and
+changes the keyboard-controller revision and the ADB configuration under a
+proven input path. `bNBIC` and the 8 MB bank quantum are FORCED by Previous on
+`NEXT_STATION`; the launcher writes the corrected values so the file on disk is
+the truth. Full measurement:
+[`docs/lab/research/nextstep-color-machine.md`](../lab/research/nextstep-color-machine.md).
+
+The colour framebuffer is 16 bpp big-endian RGBX 4-4-4-4 — 4096 colours, every
+channel value a multiple of 17. The captured desktop uses 602 of them; the root
+is `#555577`, NeXTSTEP's blue-grey, not the mono `#555555`.
+
+## 4. Pointer: absolute, through the machine's own tablet
+
+Previous emulates a SummaGraphics MM 1201 digitiser on the NeXT's **SCC serial
+port B** (`src/tablet.c`), and NeXTSTEP 3.3 ships the matching driver on the disk
+(`/NextAdmin/InstallTablet.app`, setuid root, 21 Oct 1994). With the driver
+attached AND STREAMING, a `MOVEA` is one `tablet_pen_move()` and the cursor lands
+on the commanded pixel at any speed.
+
+**Measured on the colour machine, 2026-08-25:** 6 of 6 commanded absolute
+targets landed at **0 px**, and 4 of 4 again after a CRIU restore.
+
+**What the golden carries, and what a cold boot does not.** The disk carries an
+`/etc/rc.local` hook (`kl_util -l tablet` + `kl_util -a …/tablet_reloc`) that
+LOADS the kernel server on every boot, and loading it swaps the kernel's
+low-memory pointer vectors. That is necessary and **not sufficient**: nothing on
+a plain boot puts the digitiser into SummaGraphics **stream mode**, which is the
+edge that sets `bTabletEnabled` in the emulator. Measured on this machine, three
+ways — a cold boot with the server Loaded, a mid-session unload/reload, and
+`PREVIOUS_CTL_PTR=tablet` forcing the route — the pointer stays dead reckoned
+until `InstallTablet.app`'s **Install** button is actually pressed. (Forcing the
+route is worse than useless: the guest ignores a stream it never asked for and
+the cursor stops moving at all.)
+
+So the STREAMING tablet lives in the checkpoint, in both halves of it — the
+guest's driver state in emulated memory and `bTabletEnabled` in the emulator
+process — and the checkpoint is what every visitor and every reset gets. **A
+cold boot is a degraded exhibit** and the launcher says so out loud. This is the
+one place where the previous (kiosk) revision of this document was optimistic:
+it recorded the cold-boot asymmetry as CLOSED on the strength of the rc.local
+hook, and on the colour slab it is not.
+
+**Before the tablet, the pointer walks in ONE PIXEL steps.** NeXTSTEP
+accelerates a single event superlinearly (a 24 px step measures ~2.3x) and the
+curve keys off event timing as well as size, so no calibrated step survives a
+differently-loaded box. A 1 px step is the one input the curve cannot amplify:
+gain 1.000, and `nextstep-scene.py`'s `walk()` puts the pointer on the Install
+button from 726 px away in one round.
+
+**Buttons carry a minimum hold, and it is a CEILING as well as a floor.** A
+~12 ms press is sampled away entirely — a menu item highlights and never fires.
+The fork's `PREVIOUS_CTL_BTN_HOLD` holds an early RELEASE in the queue so a
+visitor's quick click cannot be lost. But two presses cost `2 x hold`, and
+NeXTSTEP stops scoring them as a double click somewhere near half a second, so
+the fork's own 400 ms default leaves a visitor unable to open anything from the
+File Viewer. **The station runs 200 ms**: measured, single clicks land and a
+double click opens OmniWeb.
+
+### The two-packet bug this campaign found and fixed
+
+**`kms_mouse_button()` sends one KMS report per button, so setting the pair —
+which is what any injector with a button mask does — put two reports into the
+controller back to back, the second landed before the guest had read the first,
+`kms_km_receive()` raised `KM_OVERRUN`, and NeXTSTEP's mouse driver discarded
+both.** The symptom is precise and misleading: motion through the very same path
+works perfectly (one report per move), the control socket acks every verb, and
+the guest simply never sees a button. A held left button produced no highlight,
+no menu track and no rubber band. The fork now has `kms_mouse_buttons()`, which
+reports both buttons in the single byte pair a real NeXT mouse uses. Nothing in
+the museum had ever clicked through this socket before, which is why four
+proven planes still hid it.
+
+## 5. Reset: a CRIU restore, not a reboot
+
+`SH_RESET_MODE=relaunch` → `systemctl restart streamhost@nextstep` → the unit's
+`ExecStartPre` re-runs the launcher, and for this station a launch is a **CRIU
+restore** of the golden against the disk image reflinked inside the very freeze
+window the memory image was written in.
+
+| | measured |
+|---|---|
+| bake freeze | 1.24 – 1.27 s |
+| restore, kill to serving | **2.8 – 3.0 s** (cold boot: ~135 s) |
+| image | 68–71 MB apparent, 14 MB on disk, + a reflinked 2 GB disk |
+| framebuffer after restore | **md5-identical to the bake**, proven from a drifted live picture |
+| pointer after restore | 0 px on every commanded target |
+
+There is no `loadvm` here — Previous has no savestate — and NeXTSTEP's root is
+UFS, so a hard-killed one is not to be trusted. The restore IS the reset. A cold
+boot is the bounded fallback: after **two** restore launches that never got a
+verb acknowledged, the next launch cold-boots, loudly. A restore that gets its
+post-restore verb acked clears the counter — a mamectl verb is acknowledged by
+the EMULATION thread after it is applied, so an OK means the restored 68k is
+running its queue, not merely that a process exists.
+
+### Four things that pass a smoke test while being broken
+
+1. **criu cannot dump libpcap's `AF_PACKET` socket.** `getsockopt(SOL_SOCKET,
+   SO_PASSCRED)` on it answers EOPNOTSUPP and the whole dump aborts
+   (`sockets.c:628 Can't get 1:16 opt`). Reproduced on a bare Python process
+   holding nothing else. The fork therefore has `NETDOWN`/`NETUP` control verbs
+   that close and reopen the HOST side of the emulated NIC with the guest's own
+   NIC state — which lives in emulated memory — untouched; the bake says
+   `NETDOWN`, and the launcher says `NETUP` after every restore.
+2. **The veth must be dumped as EXTERNAL.** Without
+   `--external veth[nextrn1]:nextrn0` the restore dies on `net.c:1469 Unknown
+   peer net namespace`. With it, criu deletes and re-creates the pair at restore
+   — new ifindex, host end BARE — which is exactly why `rn-tapnet.sh up` is the
+   post-restore hook as well as the first-time setup, and why the launcher
+   deletes the pair before calling criu.
+3. **The framebuffer mapping and the diff shadow drift apart.** criu never
+   copies the shm file (same inode, same address) but it DOES carry the
+   publisher's private shadow. So a restored emulator believes the reader is
+   already showing the baked frame, publishes nothing, and **the reader keeps
+   streaming the pre-kill picture forever** — under a live guest whose cursor
+   still moves, with a valid header and a healthy everything. Measured: a
+   restore from a drifted live page returned the drifted page. The fork's
+   `FBSYNC` verb republishes one whole frame and the launcher sends it after
+   every restore, unconditionally. This is the shm cousin of the
+   delete-and-re-create-`fb.shm` trap in
+   [`irix-criu/README.md`](../../scripts/build-guests/irix/irix-criu/README.md).
+4. **A connected client blocks the dump.** A dump succeeds with the control
+   socket merely LISTENING and fails while a client is CONNECTED (`unix: Unix
+   socket … not found`; `--ext-unix-sk` does not rescue it). Every driver must
+   disconnect before a bake; `mamesock` reconnects forever with backoff, so the
+   daemon costs nothing.
+
+Also: **the golden is not portable between paths.** The image records the
+absolute path of every open file — the disk, the log, the binary — and the
+network namespace by name, so a golden baked on a bring-up rig cannot be copied
+onto the station. Bake it where it will run.
+
+**Provenance is a triple.** `state/golden/provenance.md5` carries the emulator
+binary's md5 and the launcher refuses a restore that does not match, because a
+rebuild orphans every image: golden + binary + device set are ONE combination.
+A mismatched (memory, disk) pair is invisible to criu, to the guest and to
+`fsck` — the machine serves stale data behind a healthy desktop — so safety is
+construction (paired naming, reflinked inside the freeze), never detection.
+
+## 6. The scene, and how it is built
+
+The acceptance scene is the colour Workspace on its blue-grey root, the File
+Viewer open on the home directory, **OmniWeb 2.7b3 in the Dock** and its window
+open on the 8 May 1998 `www.apple.com` from the retronet corpus, fetched over the
+guest's own veth. `nextstep-scene.py` builds it headless, using only the shm
+framebuffer and the control socket:
+
+1. probe whether the boot is already absolute (it is, after a restore);
+2. symlink `/NextAdmin/InstallTablet.app` into `/me` over telnet, refresh the
+   File Viewer with **Command-u (View → Update Viewers)**, type-select
+   `Install`, RETURN;
+3. walk the 1 px pointer onto the panel's Install button and click it;
+4. prove the absolute map, quit with Command-q, drop the symlink, Command-u;
+5. type-select `omni`, RETURN, wait for the page, miniaturise the bookmarks
+   window OmniWeb opens at every launch.
+
+Three things in that list are load-bearing and were each found the hard way:
+
+- **Command-u, not a double click.** The Workspace does not re-read a directory
+  because its contents changed. Double-clicking the `me` row in the browser
+  column does re-open it — but the injector's button-hold floor stretches a
+  double click far enough that NeXTSTEP intermittently scores it as two singles,
+  which SELECTS the row without re-opening it and leaves the type-select
+  silently one edit behind. That failure is indistinguishable from a keyboard
+  that is not working. Command-u needs no pointer at all, which is the whole
+  point before the tablet exists. (Double-clicking the identical-looking house
+  on the SHELF never re-opens anything; it only selects.)
+- **RETURN does not press the Install button**, even though it is drawn with the
+  default-button glyph. Tested, not assumed: the framebuffer is unchanged. The
+  pointer really is the only way in.
+- **OmniWeb's FIRST load after a launch stalls**, reliably: the window settles
+  blank with the status line still reading `SGMLToRTF: Running`, while the
+  corpus answers 200 to the same request throughout. Pressing **Home** fetches
+  it correctly, sometimes on the second press. The scene builder retries.
+
+## 7. Standby
+
+`SH_IDLE_PAUSE_SECS=60` with `SH_IDLE_PAUSE_PIDFILE` and
+`SH_IDLE_PAUSE_PROC_MATCH=assets/nextstep/previous`. **Without the pidfile the
+daemon cannot pause a non-QEMU station at all** — `idle.rs` never infers a
+signalling freezer — and an unwatched Previous burns 150% of a core for nobody.
+Measured: SIGSTOP → `/proc/<pid>/stat` state `T`, **0 jiffies over 5 s**;
+SIGCONT → `R`, 771 jiffies over 5 s. The launcher also freezes the guest a few
+seconds after launch, covering the daemon's own start-up grace.
+
+## 8. Operator notes
+
+- **`labctl exec nextstep` has no channel here.** The NeXT's own exec is telnet,
+  `me` (no password) then `su` (no password), driven by
+  `scripts/build-guests/nextstep-nstel.py`:
 
   ```bash
-  ssh lab 'labctl exec nextstep "python3 /usr/local/bin/nstel.py me \"uname -a\""'
+  ssh lab 'NSTEL_HOST=10.99.0.25 NSTEL_PORT=23 \
+    python3 /data/kernel-hive/scripts/build-guests/nextstep-nstel.py me "hostname"'
   ```
 
-  It is a shell, not a window server: GUI apps launched through it die with
-  `DPS client library error: Could not form connection`.
-- NeXTSTEP logs in automatically as the user `me`. There is no password prompt
-  in the scene.
-- The kiosk writes `/tmp/nextstep-launch.log` (X mode) and
-  `/tmp/nextstep-frame.log` (focus + window anchoring); Previous's own stderr is
-  `/tmp/previous.err`.
+  Root's shell is `csh`: every command is one line and `2>&1` is a syntax error
+  there. `ping` takes no `-c` — it is `ping host [datasize] [npackets]`. GUI apps
+  cannot be launched from it (`DPS client library error: Could not form
+  connection`): a telnet login is not in the console session's window-server
+  namespace.
+- NeXTSTEP logs in automatically as `me`. There is no password prompt in the
+  scene.
+- `/etc/inetd.conf` is trimmed to **telnet only** (the stock file exposes ftp,
+  shell, login, exec, finger, tftp, comsat, talk/ntalk, the
+  echo/discard/chargen/daytime/time pairs, the remote window server and six RPC
+  services, all behind passwordless accounts). `printer` (lpd) and `smtp`
+  (sendmail) are started from `/etc/rc`, not inetd, and survive the trim; they
+  are left on deliberately, the same trade every station on this bridge makes.
+- Rebuilding the emulator orphans the golden. Re-bake: cold-boot the station
+  (`x11-runtime.sh --cold`), run `nextstep-scene.py`, then
+  `nextstep-bake-golden.sh bake`.
+
+## 9. Rollback
+
+The kiosk is shelved, not deleted: `qemu-streamhost.sh.debridged-bak` and
+`overlay.qcow2.debridged-bak` in the station directory, plus `ROLLBACK.md`. See
+`docs/lab/DEBRIDGE-ROLLBACK.md` for the three-move restore; the repo side is a
+`git revert` of the conversion commit followed by `make station-registry-generate`
+and a re-emit.
+
+## 10. Open items — stated honestly
+
+- **A cold boot has a relative pointer** (§4). The fix belongs in the guest —
+  something that puts the tablet into stream mode from `/etc/rc` without the GUI
+  — and nobody has found it. The reloc's own load commands end in
+  `CALL tablet_attach`, which swaps the vectors but sends no SummaGraphics
+  command; the mode selection `InstallTablet.app` makes is not visibly persisted
+  anywhere on the disk.
+- **The corpus has `www.next.com` (1996-11-12) and the station does not use it.**
+  NeXT's own home page of that date is a single image map whose hero JPEG was
+  never archived, so it renders as an empty page in OmniWeb — checked on the
+  framebuffer. `http://www.apple.com/` (8 May 1998) renders in full and is the
+  home page; the NeXT pages one hop down (`/HotNews/` and friends) do have all
+  their images and are reachable by typing.
+- **Stream cost after the colour swap is unmeasured.** The exhibit went from a
+  4-grey framebuffer to a 602-colour one over the same 1120x832; nothing about
+  the emulator got more expensive, but the encoder now has real chroma. Worth
+  one look at the station's bitrate.
+- **Guest-input latency has not been re-measured** on the host-native path.
+- **`ss` cannot see a connected peer on the control socket from outside its
+  netns**, so the bake script's "no client" check reports 0 endpoints and is
+  informational only. The real guard is procedure: disconnect before baking.
+- Only `nTabletType = 2` (SummaGraphics MM 1201) was ever tried.
 
 ---
 

@@ -582,20 +582,20 @@
     },
     "nextstep": {
       "dir": "/data/vms/streamhost/stations/nextstep",
-      "qmp": "/data/vms/streamhost/stations/nextstep/qmp.sock",
+      "qmp": null,
       "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5837,
-      "exec_port": 5837,
+      "ssh_port": null,
+      "exec_port": null,
       "exec_host": null,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
       "exec_shell": null,
-      "console": "fb",
+      "console": "x11",
       "udp_port": 54134,
-      "notes": "exec: labctl exec nextstep \"<cmd>\" (ssh root@:5837, key bridge_key) reaches the DEBIAN KIOSK, not NeXTSTEP; the NeXT side has no exec channel"
+      "notes": "HOST-NATIVE since 2026-08-25: the museum's fork of Previous runs on the host as an unprivileged account under SDL's dummy video/audio drivers -- no captured Debian, no QEMU, no QMP, no X server, no window. Frames IFB1 shm, input mamectl/1, audio FIFO. `labctl exec` has no channel here: the NeXT's own exec is telnet to the guest on the retronet, driven by scripts/build-guests/nextstep-nstel.py with NSTEL_HOST=10.99.0.25 NSTEL_PORT=23 (log in as `me`, which su's for you; both are passwordless). Reset is a CRIU restore of the golden, ~3 s; see docs/guests/nextstep.md."
     },
     "ninefront": {
       "dir": "/data/vms/streamhost/stations/ninefront",

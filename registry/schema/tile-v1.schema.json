@@ -105,7 +105,8 @@
                 "warpd-agent",
                 "mame-ioport",
                 "x11-xtest",
-                "simh-light-pen"
+                "simh-light-pen",
+                "previous-tablet"
               ]
             },
             "absolute": {

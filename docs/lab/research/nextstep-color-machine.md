@@ -1,6 +1,7 @@
 # NeXTSTEP 3.3 on a COLOR NeXT machine (Previous, headless)
 
-**Status:** PROVEN in sandbox `/data/vms/sandbox/prev-color/` — a colour NeXTSTEP 3.3
+**Status:** ADOPTED — the live `nextstep` station has run this configuration since
+2026-08-25. Originally proven in sandbox `/data/vms/sandbox/prev-color/` — a colour NeXTSTEP 3.3
 Workspace, 1120x832, reached with **zero input**, captured from the IFB1 shm export.
 Nothing in this doc has been applied to the live `nextstep` station.
 
@@ -154,6 +155,12 @@ constraint, Turbo is the proven way to 128 MB.
 
 ## 6. Risks and open items
 
+- **Pointer re-proven on colour, 2026-08-25, and the expectation held**: 6 of 6
+  commanded absolute targets landed at 0 px on the colour slab, and 4 of 4 again
+  after a CRIU restore. What did NOT hold is the assumption that the disk's
+  `/etc/rc.local` hook makes a cold boot absolute — loading the kernel server is
+  necessary and not sufficient, and only `InstallTablet.app` puts the digitiser
+  into stream mode. See `docs/guests/nextstep.md` §4. Original note:
 - **Pointer not re-proven on colour.** `src/tablet.c` (the SummaGraphics digitiser
   on SCC serial port B) contains **no** `nMachineType` / `bColor` / `bTurbo`
   branch, and the only Turbo-conditional code anywhere near the input path is
@@ -165,6 +172,8 @@ constraint, Turbo is the proven way to 128 MB.
   do. **The station rebuild must re-run `nextstep-tablet-install.py` and re-prove
   the 1:1 map on the colour machine before the golden is baked.** Expected to pass;
   not yet evidence.
+- **The golden was recaptured** as a CRIU checkpoint of the emulator process on
+  the live station, paired with its disk. Original note:
 - **The golden must be recaptured.** Machine type, colour flag and memory banks are
   all part of the checkpoint's device set — golden + binary + device set are one
   combination. A colour station is a **new** golden, not a cfg edit against the

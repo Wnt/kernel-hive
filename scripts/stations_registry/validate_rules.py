@@ -8,6 +8,12 @@ from typing import Any
 
 from .constants import REGISTRY, REPO, TILES
 from .loading import RegistryError, fixture_path, is_x11_runtime, load
+from .pointer_rules import (
+    LEGACY_POINTER_BACKEND,
+    POINTER_LEDGER_EXCEPTION,
+    POINTER_METHODS,
+    POINTER_MODE_BY_BACKEND,
+)
 from .validate_emulator import validate_emulator, validate_ui
 from .validate_facts import validate_facts
 from .validate_retronet import validate_retronet
@@ -103,60 +109,6 @@ def validate_demo_pacing(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 f"({drain} ms/char = SH_KEY_MIN_HOLD_MS + SH_KEY_MIN_GAP_MS); the typist "
                 f"would out-run the guest and lose characters",
             )
-
-
-# stream.pointer.method -> (the SH_INPUT_BACKEND values that can deliver it,
-# device-ledger tokens the station MUST carry, tokens it must NOT carry). The
-# backend column mirrors InputBackend in streamhost/streamhost/src/config/
-# backends.rs; the ledger columns are what the launcher/emitArgs must show.
-POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = {
-    # "none" admits mamesock and vicesock as well as disabled: a de-bridged
-    # keyboard-only station has NO pointer, but its KEYS ride that backend --
-    # the MAME module acks pointer verbs as silent no-ops (btns=0 axes=0), and
-    # the vicesock sink rejects them outright (there is no pointer verb).
-    "none": (
-        {"disabled", "mamesock", "vicesock"},
-        (),
-        ("usb-tablet", "vmmouse", "gallery-hid-pci"),
-    ),
-    "qemu-usb-tablet": ({"dbus-abs"}, ("usb-tablet",), ()),
-    "qemu-vmmouse": ({"dbus-abs"}, ("vmmouse", "vmport=on"), ("usb-tablet",)),
-    "qemu-ps2-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
-    # The m68k q800's mouse is ADB. Same daemon backend as the PS/2 relative
-    # stations and the same abs->rel bridge, but it is NOT a PS/2 mouse and the
-    # ledger must not claim it is: the machine has no PS/2 controller, no USB
-    # bus to hang a tablet off, and no absolute pointer path of any kind.
-    "qemu-adb-relative": ({"dbus-rel"}, (), ("usb-tablet",)),
-    # mac99 via=pmu has BUILT-IN USB kbd+mouse and Mac OS 9 has no usb-tablet
-    # driver; the launcher must add neither a tablet nor a second usb-mouse.
-    "qemu-usb-hid-relative": ({"dbus-rel"}, (), ("usb-tablet", "-device usb-mouse")),
-    "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
-    "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
-    "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),
-    "x11-xtest": ({"x11test"}, (), ()),
-    "simh-light-pen": ({"dbus-abs"}, ("usb-tablet",), ()),
-}
-# `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
-# warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
-# the UI's transport choice both key on it, so it must agree with `absolute`.
-POINTER_MODE_BY_BACKEND = {
-    "disabled": "none",
-    "dbus-rel": "rel",
-    "warpd": "warpd",
-    "dbus-abs": "abs",
-    "gallery-hid": "abs",
-    "x11test": "abs",
-    "mamecmd": "abs",
-    "mamesock": "abs",
-    # Keyboard-only by construction: InputBackend::pointer_mode() reports
-    # "none" for ViceSock, and the sink has no pointer verb at all.
-    "vicesock": "none",
-}
-LEGACY_POINTER_BACKEND = {"abs": "dbus-abs", "rel": "dbus-rel", "warpd": "warpd", "none": "disabled"}
-# serenityos gets QEMU's absolute VMware aux mouse from the q35 default
-# `vmport=auto`, so its device ledger names neither `vmmouse` nor `vmport=on`
-# (verified live: dbus SetAbsPosition lands 1:1, a relative delta is ignored).
-POINTER_LEDGER_EXCEPTION = "pointer-vmmouse-implicit"
 
 
 def device_ledger(row: dict[str, Any]) -> str:
