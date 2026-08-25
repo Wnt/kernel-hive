@@ -92,14 +92,38 @@ the upgrade path:
   `bsdsocket_library=1` in a per-station netns holding the veth/MAC/IP on
   `vmbr-rn` — see `docs/lab/retronet/WEB-STATION-amigaos35.md` when it lands).
 
-## Ready scene / golden
+## Ready scene / golden (as shipped 2026-08-25)
 
-- Ready state: AmigaOS 3.5 Workbench desktop (GlowIcons, NewIcons-era look),
-  idle, no requesters, AWeb II discoverable one obvious double-click away.
-- Reset mode: `relaunch` (non-QEMU); restore via FS-UAE `load_state` from the
-  golden statefile if restore proves reliable on this device set, else
-  deterministic cold boot (~30 s to desktop under 68040 emulation).
+- Ready state: AmigaOS 3.5 Workbench desktop (GlowIcons), idle, no
+  requesters; `AWeb-II` on the desktop one double-click away, its saved home
+  page `http://www.amiga.de/` (retronet corpus).
+- Reset mode: `relaunch` with `FSUAE_NATIVE_CHECKPOINT=0` — a DETERMINISTIC
+  COLD BOOT (~85 s) of a fresh work HDF reflinked from
+  `disk/amigaos35-system.hdf.golden`. **UAE savestates were tried and
+  rejected**: a state restored with `bsdsocket_library=1` gurus
+  nondeterministically (a state saved with AWeb running crashes on first use,
+  Error 8000 0006; even idle-desktop states sometimes crash at restore) and
+  the pre-crash flush can corrupt the work disk; a restored mousehack also
+  consumes packets one event late even re-armed. The standby SIGSTOP keeps
+  visits instant; only a reset pays the boot. The mousehack re-arm patch
+  stays in the pinned build for any future statefile revisit.
+- **Bake rule:** capture the golden by SIGSTOPping an idle session and
+  copying the work HDF over the master, then set the FFS root `bm_flag` back
+  to `0xffffffff` and refresh the root checksum — FFS sets the flag only on
+  flush/unmount, and OS 3.5's validator FAILS on a dirty xdftool-built volume
+  ("Block 1146049281 out of range" = the DOS\1 dostype read as a block
+  number) instead of healing. Root block 524288 for this 512 MiB / 32-sector
+  geometry; flag at offset bs-200, checksum longword 5, whole-block sum ≡ 0.
 - The proof gate is the captured framebuffer through streamhost, never logs.
+
+## Retronet (web plane) — LIVE 2026-08-25
+
+Joined via a **netns cage** (FS-UAE has no tap/pcap backend; its bsdsocket
+host sockets are opened inside netns `rn-amigaos35` whose only link is veth
+`amiga35-h/-g` on `vmbr-rn`; static 10.99.0.26, no default route, guard chain
+`AMIGAOS35RN-IN`). AWeb II browses the corpus seamlessly (`Host:`-header, no
+proxy). Full recipe, containment proofs, bake trap and rollback:
+[`docs/lab/retronet/WEB-STATION-amigaos35.md`](../lab/retronet/WEB-STATION-amigaos35.md).
 
 ## Daemon work this station needs (contained, no emulator patch)
 

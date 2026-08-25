@@ -135,8 +135,18 @@ if [ "${FSUAE_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/Saved State 1.uss"
 fi
 
 NET_ARGS=()
+NSWRAP=()
 if [ "${FSUAE_NATIVE_NET:-off}" = bsdsocket ]; then
+  # Retronet cage: bsdsocket host sockets are only ever opened INSIDE the
+  # station netns (veth on vmbr-rn, no default route, guard chain) — never on
+  # labhost's own stack. rn-netns.sh is idempotent and re-verifies its own
+  # containment rules on every launch.
+  bash "$BASE/rn-netns.sh" up || {
+    echo "fsuae-native[$TILE]: rn-netns.sh up failed — refusing to start networked" >&2
+    exit 1
+  }
   NET_ARGS+=(--bsdsocket_library=1)
+  NSWRAP=(ip netns exec "${RN_NS:-rn-amigaos35}")
 fi
 
 export DISPLAY="$DISP"
@@ -145,7 +155,7 @@ export SDL_VIDEODRIVER=x11
 export ALSOFT_DRIVERS=null # audio plane is a follow-up; null device, no spam
 W="${GEOM%x*}" H="${GEOM#*x}"
 
-nohup "$BIN" \
+nohup ${NSWRAP[@]+"${NSWRAP[@]}"} "$BIN" \
   --amiga_model=A4000/040 \
   --kickstart_file="$KICK" \
   --chip_memory=2048 --zorro_iii_memory=8192 \

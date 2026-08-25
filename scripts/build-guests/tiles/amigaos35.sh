@@ -23,11 +23,12 @@
 # coordinates were stable across repeated runs at 720x568; a divergence is a
 # STOP, not a retry storm.
 #
-# Output pair (they are ONE combination with the emulator binary):
-#   $OUT/amigaos35-system.hdf      the installed system disk (golden master)
-#   $OUT/golden.uss + $OUT/MOUSEHACK_ADDR  the curated statefile + the
-#     re-arm address harvested from the "mousehack registered" log line
-#     (FS_UAE_MOUSEHACK_ADDR — without it every restore has a dead mouse).
+# Output (ONE combination with the emulator binary):
+#   $OUT/amigaos35-system.hdf — the installed system disk (golden master).
+#   No statefile: the station cold-boot resets (FSUAE_NATIVE_CHECKPOINT=0;
+#   UAE savestates + bsdsocket are structurally unsafe — see the guest doc).
+#   After any golden capture, set the FFS root bm_flag valid + refresh the
+#   root checksum (the OS 3.5 validator fails on a dirty xdftool volume).
 #
 # The 2026-08-24 bring-up ran these stages by hand in
 # /data/vms/sandbox/amigaos35/build (kept as evidence); this script encodes
@@ -109,5 +110,5 @@ log "assemble stage done."
 log "install + curate stages are click-scripted and OPERATOR-PACED; the exact"
 log "proven sequence (coordinates, waits, evidence frames) is in"
 log "docs/guests/amigaos35.md §build and the 2026-08-24 sandbox evidence dir."
-log "Outputs expected by the station: $OUT/amigaos35-system.hdf,"
-log "$OUT/golden.uss, $OUT/MOUSEHACK_ADDR (see station.env.fixture)."
+log "Output expected by the station: $OUT/amigaos35-system.hdf (golden"
+log "master; cold-boot reset — no statefile)."

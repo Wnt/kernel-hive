@@ -15,7 +15,7 @@
           "class": "graphical",
           "estimated": "~30-60m",
           "automation": "vision",
-          "produces": "amigaos35-system.hdf + golden .uss (AmigaOS 3.5 desktop, AWeb II)",
+          "produces": "amigaos35-system.hdf golden master (AmigaOS 3.5 desktop, AWeb II; cold-boot reset)",
           "flags": []
         }
       }
@@ -170,8 +170,8 @@
   },
   "ui": "desktop",
   "network": {
-    "status": "none",
-    "note": "No networking yet: FSUAE_NATIVE_NET=off (no bsdsocket, no NIC \u2014 the emulator opens no sockets). The retronet web-plane join is the planned follow-up: bsdsocket_library=1 caged in a per-station netns whose only link is the station's veth on vmbr-rn, never bare on the host stack."
+    "status": "host-only",
+    "note": "Retronet web plane via a NETNS CAGE: FS-UAE has no tap/pcap backend, so its bsdsocket_library host sockets are opened inside netns rn-amigaos35, whose only interface is the guest end of veth amiga35-h/amiga35-g; the host end is enslaved to vmbr-rn (no uplink). Static 10.99.0.26 (reservation kept in RETRONET_DHCP_RESERVATIONS), MAC per the fleet scheme in gitignored local.env (RN_AMIGAOS35_MAC), no default route in the netns, fail-closed AMIGAOS35RN-IN chain above RETRONET-IN. Containment proven from inside the cage: gateway 10.99.0.2 serves DNS+HTTP, 10.99.0.1 drops 100%, 1.1.1.1 unroutable at the stack. rn-netns.sh up runs from the launcher on every start and re-verifies its own rules. See docs/lab/retronet/WEB-STATION-amigaos35.md."
   },
   "reset": {
     "stationDir": "amigaos35",
@@ -181,6 +181,17 @@
     "snapshot": null,
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "AmigaOS 3.5 Workbench desktop, 640x512 laced 64-colour AGA screen in a 720x568 window: Ram Disk + System + AWeb-II icons, no windows open. resetMode=relaunch: the launcher reflinks a fresh work HDF from disk/amigaos35-system.hdf.golden (visitor disk writes must never survive a reset \u2014 UAE statefiles reattach hardfiles by path), restores sta/'Saved State 1.uss' via --load_state=1, and re-arms the absolute mouse with FS_UAE_MOUSEHACK_ADDR (the lab patch; without it every UAE restore leaves mousehack dead \u2014 proven on 3.1.66 and 3.2.35, fixed by fsuae-mousehack-rearm.patch). Golden .uss + golden HDF + binary + device set are ONE combination. Mouse/keyboard PASS on the 2026-08-24 sandbox rig via XTEST (paced: instant press+release inside one 50 Hz frame is never sampled; 60 ms button dwell, 40/40 keys, RAmiga = Super_R proven by clearing an Amiga string gadget)."
+    "fixture": "AmigaOS 3.5 Workbench desktop, 640x512 laced 64-colour AGA screen in a 720x568 window: Ram Disk + System + AWeb-II icons, no windows open; AWeb's saved home page is http://www.amiga.de/ (retronet corpus). resetMode=relaunch with FSUAE_NATIVE_CHECKPOINT=0: reset is a DETERMINISTIC COLD BOOT (~85 s to the desktop) of a fresh work HDF reflinked from disk/amigaos35-system.hdf.golden. UAE savestates were tried and rejected for this station: a state restored with bsdsocket_library enabled gurus nondeterministically and its pre-crash flush can corrupt the work disk, and a restored mousehack consumes packets one event late (the fsuae-mousehack-rearm.patch stays in the pinned build for any future revisit). The standby freeze keeps visits instant; only a reset pays the boot. BAKE RULE: the golden HDF is captured from a SIGSTOPped idle session and its FFS root bm_flag must then be set valid (0xffffffff, checksum refreshed) \u2014 FFS sets the flag only on flush/unmount, and OS 3.5's validator fails loudly ('Block 1146049281 (DOS\\\\1) out of range') on a dirty xdftool-built volume instead of healing. Mouse/keyboard PASS on the production rig 2026-08-25 (cold boot; XTEST paced, RAmiga=Super_R)."
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.26",
+    "addressing": "static",
+    "link": "veth amiga35-h on vmbr-rn",
+    "guard": "AMIGAOS35RN-IN",
+    "joined": "2026-08-25",
+    "doc": "docs/lab/retronet/WEB-STATION-amigaos35.md"
   }
 }
