@@ -53,6 +53,19 @@ cannot route around it.
    away, so without the delete the first clone primes and every clone after a
    reset does not. Measured, both times, at the framebuffer.
 
+## The claim rule, which is not the one you expect
+
+`kh-claim take` is a mutex **between** sessions and **idempotent within** one:
+re-taking a claim your own session already holds prints `already yours` and
+exits **0**. The broker is a single `KH_SESSION`, so every clone it builds
+shares it — and read as success, that handed slot 152 to all three production
+clones at once, each believing it owned UDP 54152.
+
+So slot and port takes go through `claims.take(..., exclusive=True)`, which
+refuses anything kh-claim did not say it *took*. Do not "simplify" that back to
+an exit-code check. `test_claims.py` runs the real script, because a mock of
+`kh-claim` would have agreed with the broken version.
+
 ## Tests
 
 ```
