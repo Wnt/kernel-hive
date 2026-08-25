@@ -44,6 +44,15 @@ Environment=STREAM_KEY_FILE=/data/vms/streamhost/serve/pki/stream-ticket.key
 # default closed) is what actually gates access. Unset/0 would floor it
 # closed and make the admin toggle decorative.
 Environment=WALKIN_OPEN=1
+# The walk-in plane's ARP-priming helper (ledger §6), installed by
+# scripts/retronet/walkin-net/provision-walkin-net.sh. The broker fills `{ip}`
+# in and runs it while the clone is still unclaimed; exit 0 means the gateway
+# got an ICMP reply, so the visitor's FIRST page load will work. Without it the
+# broker falls back to its own inline `pct exec` template, which is the shape
+# of the helper rather than the helper — the real one also drops the gateway's
+# stale neighbour entry before EVERY attempt, which is what makes a clone
+# primed after a reset and not only the first one.
+Environment=WALKIN_ARP_PRIME=/usr/local/sbin/wi-warm-arp {ip} --wait 20
 EnvironmentFile=-/run/osgallery-https.env
 # The project's own virtualenv, NOT /usr/bin/python3: the WebAuthn library is
 # pinned by scripts/serve/requirements.txt and installed by sync-venv.sh, so the

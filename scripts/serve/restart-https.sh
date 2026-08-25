@@ -32,6 +32,9 @@ export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 # it. `1` imposes no ceiling; unset/0 would floor it closed and defeat the
 # admin toggle.
 export WALKIN_OPEN="${WALKIN_OPEN:-1}"
+# The plane's ARP-priming helper (ledger §6), a command template the broker
+# fills `{ip}` into. Installed by scripts/retronet/walkin-net/provision-walkin-net.sh.
+export WALKIN_ARP_PRIME="${WALKIN_ARP_PRIME:-/usr/local/sbin/wi-warm-arp {ip} --wait 20}"
 
 if systemctl cat "$UNIT" >/dev/null 2>&1; then
   # Supervised path: hand this restart's overrides to systemd through a tmpfs
@@ -50,6 +53,7 @@ if systemctl cat "$UNIT" >/dev/null 2>&1; then
     printf 'RESET_SCRIPT=%s\n' "$RESET_SCRIPT"
     printf 'GOLDEN_MANIFEST=%s\n' "$GOLDEN_MANIFEST"
     printf 'WALKIN_OPEN=%s\n' "$WALKIN_OPEN"
+    printf 'WALKIN_ARP_PRIME=%s\n' "$WALKIN_ARP_PRIME"
   } >"$RUN_ENV"
   systemctl restart "$UNIT"
   sleep 1

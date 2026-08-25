@@ -128,6 +128,15 @@ deploy() {
     done"
   # ship the serving plane and operator helper
   $SSH "cat > $SRV_PY" <"$REPO/scripts/serve/osgallery-https-server.py"
+  # The route modules the server IMPORTS, shipped from the same tree as the
+  # server itself. box-deploy carries them too (they are tracked pairs), but a
+  # deploy that ships a new server against an older signal_route.py/config.py
+  # fails at IMPORT — and a serving unit that will not start takes the LAN
+  # gallery down with the public one. That is the B1 failure shape from
+  # docs/lab/walkin/PREFLIGHT.md, one level along: ship them together.
+  for _mod in config.py signal_route.py walkin_plane.py; do
+    $SSH "cat > $SERVE_DIR/$_mod" <"$REPO/scripts/serve/$_mod"
+  done
   $SSH "cat > $CLIENTCMD_SH && chmod +x $CLIENTCMD_SH" <"$REPO/scripts/serve/clientcmd.sh"
   $SSH "cat > $CA_SH && chmod +x $CA_SH" <"$REPO/scripts/serve/gen-local-ca.sh"
   # The server shells out to this for POST /restore/<osId>, so it has to travel
