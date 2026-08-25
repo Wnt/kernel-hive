@@ -8,6 +8,26 @@
 # resetMode=loadvm  (see GOLDEN.md). Disks are standalone qcow2 (no backing dep).
 set -e
 D=/data/vms/streamhost/stations/win311
+B="$(dirname "$0")"
+# NETWORK: on the retronet. Same ne2k_pci (RTL8029) NIC the golden always had —
+# only the backend went user(slirp) -> tap on the retronet bridge vmbr-rn, plus
+# a per-station mac=. The guest runs MS TCP/IP-32 over the RTL8029 NDIS3 driver
+# and DHCPs 10.99.0.27 from the gateway CT 10.99.0.2 (reservation withholds the
+# router option, so it has NO default route). rn-tapnet.sh is called `up` below
+# on every launch and owns the tap + the fail-closed WIN311RN-IN guard chain.
+# Nothing else rides this netdev — the warpd pointer agent is on COM1. See
+# docs/lab/retronet/WEB-STATION-win311.md.
+bash "$B/rn-tapnet.sh" up
+# Per-station retronet MAC (fleet scheme 52:54:00:52:4e:xx). The golden's
+# vmstate carries the MAC, so this only matters on a COLD (re-)bake; loadvm
+# golden uses the baked MAC regardless, but this mac= must MATCH it. Only the
+# one line is read, never the whole (secret-bearing) file.
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_WIN311_MAC="02:00:00:00:00:1b" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_WIN311_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
+  [ -n "$_m" ] && RN_WIN311_MAC="$_m"
+fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
@@ -39,7 +59,7 @@ nohup qemu-system-i386 \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   \
-  -drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -nic user,ipv6=off,model=ne2k_pci \
+  -drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -netdev tap,id=n0,ifname=win311rn0,script=no,downscript=no -device ne2k_pci,netdev=n0,mac="$RN_WIN311_MAC" \
   -chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off \
   -serial chardev:ser0 \
   -qmp unix:$D/qmp.sock,server=on,wait=off \

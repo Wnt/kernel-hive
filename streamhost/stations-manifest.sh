@@ -305,6 +305,11 @@ emit winxp \
 # LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain
 # batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with
 # SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).
+# RETRONET (2026-08-25): ne2k_pci backend user->tap win311rn0 on vmbr-rn, unique
+# MAC from local.env RN_WIN311_MAC (placeholder 02:00:00:00:00:1b committed),
+# DHCP 10.99.0.27 from CT 951, fail-closed WIN311RN-IN via rn-tapnet.sh. Golden
+# re-baked cold on the patched INT16h SeaBIOS with the lease + Netscape 4.08
+# homepage baked in. See docs/lab/retronet/WEB-STATION-win311.md.
 emit win311 \
   --tile win311 --vmid 90 --udp 54090 --pointer warpd --warpd-addr \
   unix:/data/vms/streamhost/stations/win311/serial.sock --warpd-buttons qemu \

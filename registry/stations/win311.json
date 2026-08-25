@@ -66,7 +66,7 @@
   "render": {
     "signalOrder": 5,
     "stationsManifestOrder": 13,
-    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E — Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) — Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n",
+    "stationsManifestPrelude": "\n# ---------------------------------------------------------------------------\n# GROUP E \u2014 Win9x / DOS / OS/2: PS/2-only (usb=off), Sound Blaster 16 (only\n#           inbox codec that works), acpi=off/kernel-irqchip=off, legacy\n#           -cpu pentium*. rel/warpd pointer. ALL VERBATIM (golden fixtures).\n# ---------------------------------------------------------------------------\n\n# win311 (VMID 90) \u2014 Windows 3.11, sb16, two golden qcow2 disks (tile-local,\n#   NO -snapshot; savevm/loadvm 'golden' persists). VERBATIM LAUNCHER with the\n#   COM1 serial chardev (serial.sock) for the in-guest agent.\n# POINTER=warpd (hybrid): usb=off => PS/2 RELATIVE-only mouse, and the Win3.x\n# DOS mouse driver applies acceleration so an abs->rel bridge desyncs. Fix\n# (guest-agents/win311/agent.c): an in-guest Win16 agent OpenComm(\"COM1\")s and\n# SetCursorPos()es the cursor absolutely from the warpd M/P/R/B protocol over\n# COM1. SH_WARPD_BUTTONS=qemu keeps MOTION on the agent but routes BUTTONS\n# through the real QEMU PS/2 device for true window-manager semantics. The COM1\n# device comes from machine 'pc'; -serial chardev:ser0 only redirects its\n# BACKEND so the guest device set is UNCHANGED and loadvm golden still matches.\n# LAG+DRAG FIX (baked 2026-07-08): AGENT.EXE coalesces moves per COM1 drain\n# batch; the two-channel race is closed by SH_WARPD_BUTTON_DELAY_MS=80 with\n# SH_WARPD_PACE_MS=8 write pacing (empirical floor 50; 80 = 0 races observed).\n# RETRONET (2026-08-25): ne2k_pci backend user->tap win311rn0 on vmbr-rn, unique\n# MAC from local.env RN_WIN311_MAC (placeholder 02:00:00:00:00:1b committed),\n# DHCP 10.99.0.27 from CT 951, fail-closed WIN311RN-IN via rn-tapnet.sh. Golden\n# re-baked cold on the patched INT16h SeaBIOS with the lease + Netscape 4.08\n# homepage baked in. See docs/lab/retronet/WEB-STATION-win311.md.\n",
     "bringUpGroup": 4,
     "bindingOrder": 3,
     "bindingPrelude": "",
@@ -169,7 +169,7 @@
         "-vga std",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-        "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -nic user,ipv6=off,model=ne2k_pci",
+        "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -netdev tap,id=n0,ifname=win311rn0,script=no,downscript=no -device ne2k_pci,netdev=n0,mac=\"$RN_WIN311_MAC\"",
         "-chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off",
         "-serial chardev:ser0",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
@@ -193,7 +193,7 @@
           "-vga std",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-          "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -nic user,ipv6=off,model=ne2k_pci",
+          "-drive file=$D/win311-golden.qcow2,format=qcow2,if=ide -drive file=$D/games-golden.qcow2,format=qcow2,if=ide,index=1 -netdev tap,id=n0,ifname=win311rn0,script=no,downscript=no -device ne2k_pci,netdev=n0,mac=\"$RN_WIN311_MAC\"",
           "-chardev socket,id=ser0,path=$D/serial.sock,server=on,wait=off",
           "-serial chardev:ser0",
           "-qmp unix:$D/qmp.sock,server=on,wait=off",
@@ -211,7 +211,7 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#7fb0d6",
-    "eraLabel": "1993 · Windows 3.11"
+    "eraLabel": "1993 \u00b7 Windows 3.11"
   },
   "museum": {
     "id": "win311",
@@ -228,13 +228,13 @@
       "Write",
       "Paintbrush"
     ],
-    "periodBrowser": "Mosaic / early Netscape",
+    "periodBrowser": "Netscape Navigator 4.08 (16-bit)",
     "iconicApps": [
       "Solitaire",
       "Minesweeper",
       "Reversi"
     ],
-    "blurb": "Windows for Workgroups — the tiled Program Manager era, riding on top of DOS."
+    "blurb": "Windows for Workgroups \u2014 the tiled Program Manager era, riding on top of DOS."
   },
   "emulator": {
     "family": "QEMU",
@@ -251,5 +251,20 @@
     "mouse": "SKIP",
     "keyboard": "SKIP",
     "fixture": "Windows 3.11 Program Manager at 1024x768x8 (vbesvga.drv on -vga std); software cursor captured in the scanout; root has no keyboard-echo field."
+  },
+  "network": {
+    "status": "host-only",
+    "note": "ne2k_pci (RTL8029) on a persistent tap (win311rn0) enslaved to the OFFLINE retronet bridge vmbr-rn (streamhost/stations/win311/rn-tapnet.sh), behind the fail-closed WIN311RN-IN guard chain. MS TCP/IP-32 over the RTL8029 NDIS3 driver leases 10.99.0.27 by DHCP from the gateway CT 10.99.0.2, which supplies DNS but deliberately withholds the router option - the guest has NO default route and reaches only the gateway: never labhost, the LAN or the internet. Netscape Navigator 4.08 (16-bit) browses the retronet web corpus off the gateway's :80 origin with no proxy, via wildcard DNS. docs/lab/retronet/WEB-STATION-win311.md"
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.27",
+    "addressing": "dhcp",
+    "link": "tap win311rn0 on vmbr-rn",
+    "guard": "WIN311RN-IN",
+    "joined": "2026-08-25",
+    "doc": "docs/lab/retronet/WEB-STATION-win311.md"
   }
 }

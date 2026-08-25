@@ -282,6 +282,11 @@ box_sync_load_pairs() {
   # solaris' retronet bridge-tap lifecycle helper (Tier C, climm/OSCAR), the same
   # box-authored mirror pair as win98se's above. See ICQ-STATION-solaris.md.
   box_sync_add_pair solaris-rn-tapnet streamhost/stations/solaris/rn-tapnet.sh "$BOX_ROOT/stations/solaris/rn-tapnet.sh" exact repo
+  # win311's retronet bridge-tap lifecycle helper (web plane: Netscape 4.08
+  # 16-bit on the corpus, guest 10.99.0.27 by DHCP reservation — MS TCP/IP-32
+  # over the RTL8029 NDIS3 driver). Same box-authored mirror pair as win98se's
+  # above. See docs/lab/retronet/WEB-STATION-win311.md.
+  box_sync_add_pair win311-rn-tapnet streamhost/stations/win311/rn-tapnet.sh "$BOX_ROOT/stations/win311/rn-tapnet.sh" exact repo
   # tru64's retronet veth lifecycle helper + its es40 launcher. Same box-authored
   # mirror pair as win98se/solaris above; tru64 has no qemu-streamhost.sh, so the
   # generic launcher sweep below does not pick its runtime up. Without these the
