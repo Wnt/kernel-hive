@@ -352,6 +352,26 @@ class Broker:
         reason = self.close_reason(user_id)
         return session_end_message(reason) if reason else None
 
+    def own_of(self, user_id: str) -> dict | None:
+        """The clone this visitor holds — `station`, `clone`, `signalEndpoint`.
+
+        The serving plane asks this on every gated request a walk-in makes. A
+        walk-in's ONE interactive surface is their own clone's signaling
+        document (`auth/gate.py::walkin_allows`), and the fence can only allow
+        it if it is told which one that is; the same shape is what the manifest
+        projection marks playable. Read-only, so it is safe on the hot path.
+        """
+        with self._lock:
+            session = self._session_of(user_id)
+            if not session:
+                return None
+            return {
+                "station": session.station,
+                "clone": session.identity,
+                "signalEndpoint": f"/signal/{session.identity}.json",
+                "transport": "streamhost",
+            }
+
     def session_end_for_clone(self, identity: str) -> dict | None:
         """The §3.3 message for a clone that has been reaped, or None.
 
