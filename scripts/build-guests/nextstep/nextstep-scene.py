@@ -25,11 +25,15 @@ Usage:  nextstep-scene.py [--shm P] [--ctl P] [--evidence DIR]
 import argparse
 import os
 import subprocess
+import sys
 import time
 
 import numpy as np
 
 W, H = 1120, 832
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "lib"))
+from guest_wake import WakeLease  # noqa: E402
+
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 NSTEL = os.path.join(REPO, "scripts", "build-guests", "nextstep-nstel.py")
 
@@ -535,8 +539,53 @@ def main():
     ap.add_argument("--telnet-host", default="10.99.0.25")
     ap.add_argument("--telnet-port", type=int, default=23)
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--pidfile", default="/data/vms/streamhost/stations/nextstep/mame.pid")
+    ap.add_argument(
+        "--station",
+        default="nextstep",
+        help="hold this station's wake lease for the whole run; '' to skip. Without it the "
+        "daemon's idle pauser SIGSTOPs the guest 60 s in and the scene stops half-built, "
+        "with no error anywhere -- the framebuffer simply stops changing.",
+    )
     a = ap.parse_args()
+    if a.station:
+        with WakeLease(a.station):
+            return build(a)
+    return build(a)
 
+
+def wait_awake(pidfile, timeout=180):
+    """Block until the emulator is not SIGSTOPped.
+
+    The daemon's idle pauser freezes an unwatched station after 60 s, and the
+    launcher freezes it a few seconds after every launch, so a driver that
+    connects to the control socket the moment it is asked to will time out on
+    the HELLO banner: the ctlsock thread is stopped with everything else, the
+    socket is there, and nothing ever answers. The wake lease this runs under
+    releases the guest, but only on the daemon's own 5 s reconcile tick.
+    """
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        try:
+            with open(pidfile) as fh:
+                pid = int(fh.read().strip())
+            with open(f"/proc/{pid}/stat") as fh:
+                state = fh.read().rsplit(") ", 1)[1].split(" ", 1)[0]
+        except (OSError, ValueError, IndexError):
+            time.sleep(2)
+            continue
+        if state != "T":
+            if time.time() - t0 > 2:
+                log(f"guest awake after {time.time() - t0:.0f}s")
+            return True
+        time.sleep(2)
+    log("WARNING: the guest is still SIGSTOPped; is the wake lease reaching the daemon?")
+    return False
+
+
+def build(a):
+    if a.pidfile:
+        wait_awake(a.pidfile)
     r = Rig(a.shm, a.ctl, a.evidence, (a.telnet_host, a.telnet_port))
     if not r.wait_workspace():
         r.png("scene-FAIL-noworkspace.png")

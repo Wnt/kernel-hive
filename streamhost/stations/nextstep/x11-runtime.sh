@@ -108,6 +108,9 @@ MAC5="${NEXTSTEP_MAC5:-25}"
 # 400 ms default makes a visitor unable to open anything from the File Viewer.
 # 200 ms is the measured middle: single clicks land, double clicks open.
 BTN_HOLD="${PREVIOUS_CTL_BTN_HOLD:-200}"
+# Set by the launch path: 1 when this launch restored the golden, 0 on a cold
+# boot. arm_standby reads it.
+LAUNCHED_RESTORE=0
 STANDBY_DELAY_S="${NEXTSTEP_STANDBY_DELAY_S:-8}"
 
 msg() { echo "nextstep: $*"; }
@@ -459,6 +462,12 @@ wait_planes() {
 # unconditional cont (streamhost idle.rs) wakes it.
 arm_standby() {
   [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] || return 0
+  # Only after a RESTORE. A restore lands on the finished scene, so freezing it
+  # 8 s later is exactly the QEMU fleet's `-loadvm golden -S`. A COLD boot is
+  # 135 s of NeXTSTEP booting, and freezing that at 8 s means the fallback guest
+  # makes no progress at all until someone visits — turning a slow exhibit into
+  # a black one. (The daemon's own 60 s idle pause still applies to both.)
+  [ "$LAUNCHED_RESTORE" = 1 ] || return 0
   [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ] || return 0
   (
     sleep "$STANDBY_DELAY_S"
@@ -513,7 +522,7 @@ net_up
 chown "$RUNAS" "$AFIFO" 2>/dev/null || true
 
 if restore_eligible && do_restore; then
-  :
+  LAUNCHED_RESTORE=1
 else
   do_cold || die "cold boot failed"
 fi

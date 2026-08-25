@@ -11,8 +11,25 @@
 #   nextstep-bake-golden.sh prove    [tag]   kill + restore + measure + verify
 #   nextstep-bake-golden.sh kill             stop the emulator by pidfile
 #
-# Run it on labhost, against a station whose guest is ALREADY on the acceptance
-# scene (scripts/build-guests/nextstep/nextstep-scene.py puts it there).
+# Run it on labhost, WITH THE UNIT STOPPED, against a guest the launcher started
+# by hand. The emulator's control socket serves ONE client at a time, and while
+# `streamhost@nextstep` is up the daemon's mamesock sink is that client: a second
+# connection simply waits in the backlog and every tool times out on the HELLO
+# banner it never receives. So the whole bake is done with the daemon out of the
+# way, and the unit is started again afterwards -- ExecStartPre finds a live
+# pidfile and a live framebuffer and leaves the guest alone.
+#
+#   systemctl stop streamhost@nextstep
+#   # station.env is a systemd EnvironmentFile, not a shell script:
+#   # SH_FIXTURE_DESC is unquoted prose with parentheses in it and `.` chokes.
+#   set -a
+#   eval "$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' /data/vms/streamhost/stations/nextstep/station.env |
+#           grep -v '^SH_FIXTURE_DESC=')"
+#   set +a
+#   bash /data/vms/streamhost/stations/nextstep/x11-runtime.sh --cold   # ~135 s
+#   python3 .../nextstep-scene.py --pidfile ''                          # no lease needed
+#   bash .../nextstep-bake-golden.sh bake
+#   systemctl start streamhost@nextstep
 #
 # INVARIANTS, each one measured and each one silent when broken:
 #
