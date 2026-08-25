@@ -21,7 +21,7 @@ npm run test:input                     # per-tile input regression — ON THE BO
 
 | Script | What it answers |
 |---|---|
-| `nextstep-abs-probe.mjs` | Does the **nextstep** exhibit's absolute pointer survive the real client path — browser -> WebTransport -> streamhost -> QEMU `usb-tablet` -> Xorg -> SDL -> Previous's tablet -> the NeXTSTEP tabletdriver? Drives real `page.mouse` moves to guest pixels, plus a click and a drag, and prints the schedule for a framebuffer poller on the box to check. `node nextstep-abs-probe.mjs 8,8 560,416` |
+| `nextstep-abs-probe.mjs` | Does the **nextstep** exhibit's absolute pointer survive the real client path — browser -> WebTransport -> streamhost -> `mamesock` -> Previous's mamectl/1 socket -> its tablet -> the NeXTSTEP tabletdriver? (Host-native since 2026-08-25: no QEMU, no QMP, no X.) Drives real `page.mouse` moves to guest pixels, plus a click and a drag, and prints the schedule for a framebuffer poller on the box to check. `node nextstep-abs-probe.mjs 8,8 560,416` |
 | `pen-doubletap-probe.mjs` | Does a **stylus** double-tap survive the whole chain — client quantisation, wire, daemon, guest? Drives synthetic `pointerType: 'pen'` events through the DEPLOYED bundle in a touch-emulated context. Pair it with `SH_INPUT_TELEMETRY=1` on the tile and `labctl shot` (see [docs/lab/INPUT-DEBUGGING.md](../../docs/lab/INPUT-DEBUGGING.md)). `node pen-doubletap-probe.mjs "Windows 3.11" 218 178` |
 
 ## Suite families (all under `e2e/`)

@@ -285,7 +285,30 @@ seconds after launch, covering the daemon's own start-up grace.
   (`x11-runtime.sh --cold`), run `nextstep-scene.py`, then
   `nextstep-bake-golden.sh bake`.
 
-## 9. Rollback
+## 9. Proven through the deployed client
+
+`tests/e2e-live/nextstep-abs-probe.mjs` drives real `page.mouse` input at the
+live gallery — browser → WebTransport → streamhost → `mamesock` → the emulator's
+control socket → its tablet → NeXTSTEP — while a poller reads the NeXT arrow out
+of the shm framebuffer. Measured 2026-08-25:
+
+```
+move guest 1000,700   ->  arrow (1000, 700)
+move guest 300,200    ->  arrow (300, 200)
+drag (button held) to 450,500  ->  arrow (450, 500)
+```
+
+The drag is the interesting one: it is the two-packet KMS fix (§4) travelling
+the whole visitor path. The **first** move of a fresh session can land short —
+the session's wake and the sink's resync preamble share that moment — and every
+move after it is exact.
+
+The gallery's own reset button was exercised the same day:
+`POST /restore/nextstep` → `systemctl restart streamhost@nextstep` →
+`nextstep: restored state=golden` in 3 s, 13 s end to end including the unit's
+own stop grace, and the scene came back exactly (`evidence/live-after-ui-reset.png`).
+
+## 10. Rollback
 
 The kiosk is shelved, not deleted: `qemu-streamhost.sh.debridged-bak` and
 `overlay.qcow2.debridged-bak` in the station directory, plus `ROLLBACK.md`. See
@@ -293,7 +316,7 @@ The kiosk is shelved, not deleted: `qemu-streamhost.sh.debridged-bak` and
 `git revert` of the conversion commit followed by `make station-registry-generate`
 and a re-emit.
 
-## 10. Open items — stated honestly
+## 11. Open items — stated honestly
 
 - **A cold boot has a relative pointer** (§4). The fix belongs in the guest —
   something that puts the tablet into stream mode from `/etc/rc` without the GUI
@@ -315,6 +338,12 @@ and a re-emit.
 - **`ss` cannot see a connected peer on the control socket from outside its
   netns**, so the bake script's "no client" check reports 0 endpoints and is
   informational only. The real guard is procedure: disconnect before baking.
+- **The control socket serves ONE client at a time.** While the daemon is up its
+  `mamesock` sink is that client, and any tool that connects simply waits in the
+  backlog and times out on a HELLO banner nobody sends. Every bake therefore
+  runs with the unit STOPPED (the procedure is in the bake script's header).
+  Making the server accept a second client, or preempt the first, would make the
+  station reachable the way `labctl` reaches a MAME station; nobody has.
 - Only `nTabletType = 2` (SummaGraphics MM 1201) was ever tried.
 
 ---

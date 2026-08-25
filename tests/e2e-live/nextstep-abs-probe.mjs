@@ -1,8 +1,10 @@
 // Diagnostic: drive the nextstep exhibit's ABSOLUTE pointer through the whole
-// deployed client — browser -> WebTransport -> streamhost -> QEMU usb-tablet ->
-// Xorg -> SDL -> Previous tablet.c -> the NeXTSTEP tabletdriver — and print the
-// schedule it drove, so a framebuffer poller on the box can say where the NeXT
-// arrow actually was.
+// deployed client — browser -> WebTransport -> streamhost -> the mamesock sink
+// -> Previous's mamectl/1 control socket -> tablet.c -> the NeXTSTEP tablet
+// driver — and print the schedule it drove, so a framebuffer poller on the box
+// can say where the NeXT arrow actually was. (Before 2026-08-25 the middle of
+// that chain was a QEMU usb-tablet, an Xorg and an SDL window in a captured
+// Debian kiosk; the station is host-native now and has none of them.)
 //
 //   node nextstep-abs-probe.mjs 8,8 1111,823 560,416      # guest pixels
 //
@@ -11,10 +13,19 @@
 // `pointerRel` gone from the manifest there is no pointer lock: client
 // coordinates map straight onto the 1120x832 guest screen.
 //
-// Pair it with, ON THE BOX, a poller that locates the NeXT arrow glyph in a QMP
-// screendump once a second and prints `epoch_ms x y`; every dwell window must
-// contain the commanded target and nothing else. `labctl shot nextstep` is the
-// cheap one-shot version of the same check.
+// Pair it with, ON THE BOX, a poller that locates the NeXT arrow glyph and
+// prints `epoch_ms x y`; every dwell window must contain the commanded target
+// and nothing else. There is no QMP here any more — read the guest straight out
+// of the shm framebuffer:
+//
+//   python3 -c "import sys; sys.path.insert(0, '<repo>/scripts/build-guests/nextstep');
+//   import nextstep_rig as R; ..."   # R.Fb(...).rgb() + R.Rig.locate
+//
+// Measured 2026-08-25 through the deployed SPA: commanded 1000,700 -> arrow
+// (1000,700); 300,200 -> (300,200); a button-held drag to 450,500 -> (450,500).
+// The FIRST move of a fresh session can land short of its target (the session's
+// wake and the sink's resync preamble share that moment); every move after it
+// is exact.
 import { chromium } from '@playwright/test';
 
 const URL_BASE = process.env.GALLERY_URL || 'https://192.0.2.10:8443';
