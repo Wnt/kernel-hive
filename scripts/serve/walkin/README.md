@@ -34,12 +34,26 @@ cannot route around it.
 3. **The MAC is not per-clone, and that is why `poolSize` is 1.** `loadvm`
    restores the NIC address from saved device state, so `mac=` on the command
    line cannot override it (ledger §5.3).
+4. **A clone is ARP-primed before it is claimable.** Not renumbering the plane
+   costs one thing: the golden carries a warm ARP cache from its retronet
+   capture, so it believes `10.99.0.2` lives at CT 951's MAC, which is not on
+   `vmbr-wi`. Its first outbound flow is 100% lost until the real gateway ARPs
+   it. `clone.prime_network()` runs the plane's helper while the member is still
+   paused, so the visitor never waits for it. The helper is named by
+   `WALKIN_ARP_PRIME` (a command template taking `{ip}`, `{tap}`, `{identity}`);
+   the clone's address is read from the station's own `wi-tapnet.sh`, which is
+   where it is asserted, rather than restated in the broker.
 
 ## Tests
 
 ```
-cd scripts && python3 -m unittest serve.walkin.test_walkin
+cd scripts && python3 -m unittest serve.walkin.test_walkin serve.walkin.test_broker
 ```
+
+`test_walkin.py` is the derivation half — schema, launcher parsing, the
+device-set refusal. `test_broker.py` is the pool half. Both include a test that
+every landed `registry/walkin/*.json` parses, which is the check that catches a
+station file declaring a schema key the broker has not met yet.
 
 The repo-wide `python3 -m unittest discover -s scripts -p 'test_*.py'` only
 reaches top-level `scripts/test_*.py`, the same way `serve/auth` is run on its

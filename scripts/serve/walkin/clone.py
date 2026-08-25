@@ -26,6 +26,7 @@ and re-list it" path. Reuse is respawn.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -41,6 +42,11 @@ STATIONS_ROOT = Path(os.environ.get("WALKIN_STATIONS_ROOT", "/data/vms/streamhos
 
 # brief §4: the museum's stations must not feel the walk-in plane. These are the
 # defaults the slice imposes per clone; the slice itself carries the global cap.
+# The plane's ARP-priming helper (ledger §6), as a command template. `{ip}`,
+# `{tap}` and `{identity}` are filled in. Lane 6 owns the helper itself — it
+# lives with the plane's tooling rather than being copied into three station
+# scripts — so the broker only knows how to CALL it, and is told which by this.
+ARP_PRIME_CMD = os.environ.get("WALKIN_ARP_PRIME", "")
 CPU_QUOTA = os.environ.get("WALKIN_CPU_QUOTA", "100%")
 MEMORY_MAX = os.environ.get("WALKIN_MEMORY_MAX", "1G")
 TASKS_MAX = os.environ.get("WALKIN_TASKS_MAX", "96")
@@ -77,6 +83,7 @@ class Clone:
     slot_claim: claims.SlotClaim
     unit: str = ""
     daemon_unit: str = ""
+    primed: bool = False
     extras: dict = field(default_factory=dict)
 
     @property
@@ -94,39 +101,45 @@ class Clone:
         self._tapnet("up")
 
     def _make_overlay(self) -> None:
-        """The clone's writable disk: a COPY of the seed, not a backing overlay.
+        """The clone's writable disks: COPIES of the seeds, not backing overlays.
 
         This is the one place the obvious design does not work, and it is worth
         the paragraph. A pool member boots `-loadvm golden`, and a qcow2's
         snapshots live in the image's OWN snapshot table — a `qemu-img create -b
         seed` overlay inherits the seed's data and none of its snapshots, so QEMU
         answers `Snapshot 'golden' does not exist in one or more devices` and the
-        clone never starts. Measured on the box against the os2warp seed, not
-        assumed.
+        clone never starts. Measured on the box against the os2warp seed, and
+        independently by lanes 7, 8 and 10.
 
-        So the disk is copied with `cp --reflink=ALWAYS`: on a reflink-capable
-        filesystem this IS copy-on-write — 853 MB in tens of milliseconds for a
-        kilobyte of new space, snapshot table included. `always`, not `auto`, on
-        purpose: `auto` degrades silently to a full 853 MB copy, and a pool that
-        refills on a timer would spend minutes and gigabytes doing it without a
-        word. A reflink across datasets fails `EXDEV`, so the seed must be staged
-        inside the same dataset as the clone root (ledger §5.2).
+        So each disk is copied with `cp --reflink=ALWAYS`: on a reflink-capable
+        filesystem this IS copy-on-write — hundreds of megabytes in tens of
+        milliseconds for a kilobyte of new space, snapshot table included.
+        `always`, not `auto`, on purpose: `auto` degrades silently to a full
+        copy, and a pool that refills on a timer would spend minutes and
+        gigabytes doing it without a word. A reflink across datasets fails
+        `EXDEV`, so the seeds must be staged inside the same dataset as the clone
+        root (ledger §5.2).
 
-        The seed itself is never opened for writing by anything here.
+        EVERY seed is copied, because `loadvm` needs the snapshot present in
+        every attached image: win311 restores `win311-golden` and `games-golden`
+        together, and half a restore is not a restore.
+
+        The seeds themselves are never opened for writing by anything here.
         """
-        seed = Path(self.spec.seed_disk)
-        if not seed.exists():
-            raise CloneError(f"seed disk {seed} is missing — a pool member has nothing to be a copy of")
-        if self.plan.overlay.exists():
-            self.plan.overlay.unlink()
-        proc = _run(["cp", "--reflink=always", str(seed), str(self.plan.overlay)], check=False)
-        if proc.returncode != 0:
-            raise CloneError(
-                f"reflink copy of {seed} -> {self.plan.overlay} failed: "
-                f"{(proc.stderr or proc.stdout).strip()[:200]} — stage the seed in the same dataset as "
-                f"{naming.WALKIN_ROOT} (a cross-dataset reflink is EXDEV, and a full copy per clone is not a pool)"
-            )
-        self.plan.overlay.chmod(0o600)
+        for seed_path, target in zip(self.spec.seed_disks, self.plan.disks):
+            seed = Path(seed_path)
+            if not seed.exists():
+                raise CloneError(f"seed disk {seed} is missing — a pool member has nothing to be a copy of")
+            if target.exists():
+                target.unlink()
+            proc = _run(["cp", "--reflink=always", str(seed), str(target)], check=False)
+            if proc.returncode != 0:
+                raise CloneError(
+                    f"reflink copy of {seed} -> {target} failed: "
+                    f"{(proc.stderr or proc.stdout).strip()[:200]} — stage the seed in the same dataset as "
+                    f"{naming.WALKIN_ROOT} (a cross-dataset reflink is EXDEV, and a full copy per clone is not a pool)"
+                )
+            target.chmod(0o600)
 
     def _tapnet(self, verb: str) -> None:
         if self.spec.netdev.type != "tap" or not self.spec.tapnet:
@@ -203,6 +216,59 @@ class Clone:
             return False
         # Resolve through /proc/<pid>/exe, never a cmdline grep (rule 5).
         return "qemu-system" in exe.name or exe.name == Path(self.argv[0]).name
+
+    # -- the network plane -----------------------------------------------
+
+    def guest_ip(self) -> str:
+        """The address this golden was captured with, read from the station's
+        own `wi-tapnet.sh` rather than restated here.
+
+        The tap script is where the address is ASSERTED — it scopes the guard
+        chain to it — so a second copy in the broker is a second thing to get
+        wrong. `WALKIN_GUEST_IP_<STATION>` overrides for a bring-up.
+        """
+        override = os.environ.get(f"WALKIN_GUEST_IP_{self.spec.station.upper()}", "")
+        if override:
+            return override
+        if not self.spec.tapnet:
+            return ""
+        script = STATIONS_ROOT / self.spec.station / Path(self.spec.tapnet).name
+        try:
+            text = script.read_text()
+        except OSError:
+            return ""
+        found = re.search(r"WI_TAP_GUEST_IP:-([0-9][0-9.]+)", text)
+        return found.group(1) if found else ""
+
+    def prime_network(self) -> bool:
+        """Repair the clone's ARP cache before any visitor touches it.
+
+        Not renumbering the walk-in plane has exactly one cost, measured by lane
+        8 on the real bridge: a golden carries a WARM ARP CACHE from its
+        retronet capture, so it believes `10.99.0.2` lives at CT 951's MAC —
+        which does not exist on `vmbr-wi`. The clone's FIRST outbound flow is
+        100% lost until it hears the real gateway's ARP, after which it works
+        permanently. Left alone, every walk-in visitor's first page load dies.
+
+        The repair is one ping FROM the gateway TO the clone. It happens here,
+        while the member is still paused and unclaimed, so it costs the visitor
+        nothing — the warm pool pays for it in advance.
+
+        Returns whether the clone is primed. A pool member that could not be
+        primed is still returned rather than discarded: a first dead page load
+        is a worse experience than a working one, but it is a far better one
+        than no machine at all, and the caller logs the difference.
+        """
+        if self.spec.netdev.type != "tap":
+            return True  # nothing to prime: no bridge, no stale neighbour
+        ip = self.guest_ip()
+        if not ARP_PRIME_CMD or not ip:
+            self.primed = False
+            return False
+        command = ARP_PRIME_CMD.format(ip=ip, tap=self.plan.tap, identity=self.identity)
+        proc = _run(["bash", "-lc", command], check=False)
+        self.primed = proc.returncode == 0
+        return self.primed
 
     # -- teardown --------------------------------------------------------
 

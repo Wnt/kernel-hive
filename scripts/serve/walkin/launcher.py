@@ -39,7 +39,7 @@ from pathlib import Path
 
 _ASSIGN = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*?)\s*(?:#.*)?$")
 _HAS_SUBST = re.compile(r"\$\(|`")
-_QEMU_START = re.compile(r"^\s*(?:nohup\s+)?(?P<bin>[^\s|;&]*qemu-system-[\w.-]+)\b")
+_COMMAND_WORD = re.compile(r'^\s*(?:nohup\s+)?(?P<word>"[^"]+"|[^\s|;&]+)')
 _TAPNET = re.compile(r"(?:bash|sh)\s+(?P<path>\"?[^\"'\s]*tapnet[\w.-]*\.sh\"?)\s+(?P<verb>up|down)\b")
 _UNRESOLVED = re.compile(r"\$\{?[A-Za-z_0-9@*#?]")
 _REDIRECT = re.compile(r"^(?:\d?[<>]|&$|\d>&\d)")
@@ -95,14 +95,43 @@ def _collect_variables(lines: list, presets: dict, where: str) -> dict:
     return seen
 
 
-def _qemu_block(lines: list, where: str) -> tuple:
-    starts = [i for i, line in enumerate(lines) if _QEMU_START.match(line)]
+def _command_binary(line: str, variables: dict) -> str:
+    """The emulator this line invokes, or "" if it does not invoke one.
+
+    Two shapes have to be told apart, and getting it wrong is quiet rather than
+    loud. rhapsody's launcher both ASSIGNS its fork —
+
+        QEMU=/opt/qemu-rhapsody/bin/qemu-system-i386
+
+    — and INVOKES it a line later as a nohup on "$QEMU". Matching on "the line
+    mentions qemu-system" picks the assignment, whose continuation is nothing at
+    all, and hands back a one-token command line that looks like a parse rather
+    than a failure. So: assignments are excluded by the caller, and the command
+    WORD is what is expanded and tested — a `$QEMU` that resolves to an emulator
+    counts, and `qemu-img snapshot -l` does not.
+    """
+    match = _COMMAND_WORD.match(line)
+    if not match:
+        return ""
+    word = match.group("word").strip("\"'")
+    try:
+        expanded = _expand(word, variables, "<probe>")
+    except LauncherError:
+        return ""
+    return expanded if "qemu-system" in Path(expanded).name else ""
+
+
+def _qemu_block(lines: list, variables: dict, where: str) -> tuple:
+    starts = [
+        (i, found)
+        for i, line in enumerate(lines)
+        if not _ASSIGN.match(line) and (found := _command_binary(line, variables))
+    ]
     if not starts:
         raise LauncherError(f"{where}: no qemu-system-* invocation found — this launcher is not QEMU-shaped")
     if len(starts) > 1:
         raise LauncherError(f"{where}: {len(starts)} qemu-system-* invocations; the derivation needs exactly one")
-    idx = starts[0]
-    binary = _QEMU_START.match(lines[idx]).group("bin")
+    idx, binary = starts[0]
     chunk = []
     while idx < len(lines):
         line = lines[idx].rstrip()
@@ -120,13 +149,13 @@ def parse(path, presets: dict | None = None, text: str | None = None) -> Launche
     lines = [ln for ln in body.splitlines() if not ln.lstrip().startswith("#")]
     variables = _collect_variables(lines, dict(presets or {}), where)
 
-    binary, command = _qemu_block(lines, where)
+    binary, command = _qemu_block(lines, variables, where)
     command = re.sub(r"^\s*nohup\s+", "", command)
     expanded = _expand(command, variables, where)
     if _UNRESOLVED.search(expanded):
         raise LauncherError(f"{where}: unresolved shell expansion in the qemu command line: {expanded[:200]!r}")
     argv = [tok for tok in shlex.split(expanded) if not _REDIRECT.match(tok)]
-    if not argv or "qemu-system-" not in argv[0]:
+    if not argv or "qemu-system" not in Path(argv[0]).name:
         raise LauncherError(f"{where}: could not tokenize the qemu command line")
 
     tapnet = ""

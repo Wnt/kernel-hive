@@ -37,6 +37,10 @@ from .spec import StationSpec
 SANDBOX_ARG = "on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny"
 
 
+class InvariantError(ValueError):
+    """A derived command line that lost something the station said must survive."""
+
+
 @dataclass(frozen=True)
 class ClonePlan:
     """Everything one pool member needs, resolved before anything is created."""
@@ -46,12 +50,18 @@ class ClonePlan:
     index: int
     slot: int
     root: Path
-    overlay: Path
+    # One per `-drive` the launcher carries, in argv order. A golden can span
+    # several images and `loadvm` needs its snapshot in every one of them.
+    disks: tuple
     tap: str
     mac: str
     udp_port: int
     vmid: int
     tapnet: str
+
+    @property
+    def overlay(self) -> Path:
+        return self.disks[0]
 
     @property
     def qmp_socket(self) -> Path:
@@ -75,13 +85,32 @@ def plan_for(spec: StationSpec, index: int, slot: int) -> ClonePlan:
         index=index,
         slot=naming.check_slot(slot),
         root=root,
-        overlay=root / f"overlay.{spec.overlay_format}",
+        disks=clone_disks(spec, root),
         tap=naming.tap_name(spec.station, index, spec.netdev.ifname_pattern),
         mac=naming.clone_mac(slot),
         udp_port=naming.udp_port(slot),
         vmid=naming.vmid(slot),
         tapnet=spec.tapnet,
     )
+
+
+def clone_disks(spec: StationSpec, root: Path) -> tuple:
+    """Where each seed lands inside the clone, keeping the seed's own basename.
+
+    The name is kept so a clone directory says what it holds — `win311-golden`
+    and `games-golden`, not `overlay` and `overlay-2`. A collision between two
+    seeds that share a basename is disambiguated by position rather than
+    silently overwritten, because the second copy would otherwise clobber the
+    first and the guest would restore against one disk twice.
+    """
+    out, seen = [], set()
+    for position, seed in enumerate(spec.seed_disks):
+        name = Path(seed).name
+        if name in seen:
+            name = f"{position}-{name}"
+        seen.add(name)
+        out.append(root / name)
+    return tuple(out)
 
 
 def read_launcher(spec: StationSpec, repo_root: Path) -> launcher.Launcher:
@@ -94,12 +123,17 @@ def read_launcher(spec: StationSpec, repo_root: Path) -> launcher.Launcher:
     """
     path = Path(repo_root) / spec.launcher
     station_dir = path.parent
-    return launcher.parse(path, presets={"B": str(station_dir), "LOADVM": "-loadvm golden -S"})
+    return launcher.parse(path, presets={"B": str(station_dir), "LOADVM": f"-loadvm {spec.seed_snapshot} -S"})
 
 
 def _netdev_value(base: str, plan: ClonePlan, spec: StationSpec) -> str:
     _, opts = deviceset.parse_opts(base)
     ident = opts.get("id", "n0")
+    if spec.netdev.id and spec.netdev.id != ident:
+        raise deviceset.DeviceSetError(
+            f"{spec.station}: overrides.netdev.id is {spec.netdev.id!r} but the launcher's netdev is {ident!r}. "
+            "The id binds the NIC to its backend in the vmstate; it is an assertion here, never a rename."
+        )
     kind = spec.netdev.type
     if kind == "none":
         # A backend that goes nowhere: the guest keeps its NIC, the host offers
@@ -133,13 +167,30 @@ def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> 
     argv = list(base.argv)
     station_prefix = station_runtime_dir(base)
     binary = spec.binary or argv[0]
-    if spec.binary and not Path(spec.binary).exists():
+    if spec.binary and "/" not in spec.binary and spec.binary != argv[0]:
+        # A bare name is not a pin — it is a PATH lookup — so the only honest
+        # meaning it can carry is "the launcher already runs this". win311
+        # declares `qemu-system-i386` and that is what its launcher runs. A bare
+        # name that DISAGREES would silently substitute an emulator the golden
+        # was never captured against, which is the failure rule 6 exists for.
+        raise InvariantError(
+            f"{spec.station}: binary is declared as {spec.binary!r} but the launcher runs {argv[0]!r}. "
+            "Use an absolute path to pin a different emulator; a bare name can only assert the one in use."
+        )
+    if spec.binary and "/" in spec.binary and not Path(spec.binary).exists():
         raise launcher.LauncherError(
             f"{spec.station}: overrides.binary {spec.binary} is not on this box. Refusing to fall back to stock "
             "QEMU — the golden was captured against that binary and rule 6 binds the two together."
         )
-    seed = spec.seed_disk
+    drives = [tok for j, tok in enumerate(argv) if j and argv[j - 1] == "-drive"]
+    if len(drives) != len(plan.disks):
+        raise InvariantError(
+            f"{spec.station}: the launcher carries {len(drives)} -drive flag(s) but the station file declares "
+            f"{len(plan.disks)} seed disk(s). `loadvm` needs the snapshot in every image, so these must match "
+            "one for one, in order."
+        )
     out = [binary]
+    drive_index = 0
     i = 1
     while i < len(argv):
         flag = argv[i]
@@ -149,10 +200,15 @@ def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> 
             value = value.replace(station_prefix, str(plan.root).rstrip("/"))
         if flag == "-name":
             value = f"streamhost-{plan.identity}"
-        elif flag == "-drive" and value is not None and seed in argv[i + 1]:
-            value = value.replace(seed, str(plan.overlay))
+        elif flag == "-drive" and value is not None:
+            _, opts = deviceset.parse_opts(value)
+            opts["file"] = str(plan.disks[drive_index])
+            drive_index += 1
+            value = ",".join(f"{k}={v}" for k, v in opts.items())
         elif flag == "-netdev" and value is not None:
             value = _netdev_value(argv[i + 1], plan, spec)
+        elif flag == "-chardev" and value is not None and spec.chardev:
+            value = _chardev_value(value, plan, spec)
         out.append(flag)
         if value is not None:
             out.append(value)
@@ -166,4 +222,41 @@ def derive_argv(base: launcher.Launcher, plan: ClonePlan, spec: StationSpec) -> 
         out += ["-sandbox", SANDBOX_ARG]
 
     deviceset.assert_same_device_set(base.argv, out, expect_binary=binary)
+    assert_invariants(spec, out)
     return out
+
+
+def _chardev_value(value: str, plan: ClonePlan, spec: StationSpec) -> str:
+    """Re-root one chardev's BACKEND path. The device does not move.
+
+    `-chardev socket,id=ser0,path=…` is the host end of the COM1 pipe the
+    in-guest warpd agents speak over; the serial device itself comes from the
+    machine type. So this changes a path and nothing else, and
+    `assert_same_device_set` sees no change at all — `path` is one of the
+    options a chardev is allowed to move (paths, ports, tap names), which is
+    exactly the legitimate case the ledger names.
+    """
+    head, opts = deviceset.parse_opts(value)
+    template = spec.chardev.get(opts.get("id", ""))
+    if not template:
+        return value
+    opts["path"] = template.replace("<clone>", str(plan.root)).replace("{stateDir}", str(plan.root))
+    return ",".join([head] + [f"{k}={v}" for k, v in opts.items()])
+
+
+def assert_invariants(spec: StationSpec, argv: list) -> None:
+    """Every fragment the station said must survive, still in the command line.
+
+    A station declaring its own invariants is better than a reviewer noticing:
+    win311's patched `-bios …/bios-256k-int16if.bin` carries the SeaBIOS INT16h
+    fix, and a clone that quietly loses it wedges after ~61 key edges instead of
+    surviving hundreds — a failure that looks like a streaming bug, three
+    minutes into somebody's session.
+    """
+    joined = " ".join(argv)
+    missing = [fragment for fragment in spec.invariants if fragment not in joined]
+    if missing:
+        raise InvariantError(
+            f"{spec.station}: the derived command line lost {missing!r}. "
+            "The station declared it as an invariant, so this is a derivation bug, not a stale declaration."
+        )

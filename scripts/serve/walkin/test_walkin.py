@@ -13,10 +13,10 @@ keep passing after the station's launcher changed underneath it.
 
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
-from . import broker as broker_mod
 from . import derive, deviceset, launcher, naming
 from . import spec as spec_mod
 
@@ -27,7 +27,7 @@ SPEC_DOC = {
     "station": "os2warp",
     "enabled": True,
     "poolSize": 2,
-    "seed": {"disk": "/data/gallery-guests/OS2Warp/os2.qcow2", "readOnly": True},
+    "seed": {"disk": "/data/vms/walkin/seeds/os2warp-golden.qcow2", "readOnly": True},
     "overlay": {"format": "qcow2", "discardOnKill": True},
     "launcher": OS2WARP_LAUNCHER,
     "overrides": {"netdev": {"type": "tap", "bridge": "vmbr-wi", "ifnamePattern": "wi-os2warp-%d"}, "tapnet": "x.sh"},
@@ -91,6 +91,55 @@ class NeverRunsALauncherTests(unittest.TestCase):
         self.assertNotIn("kill", " ".join(parsed.argv))
 
 
+class LandedStationFileTests(unittest.TestCase):
+    """Every `registry/walkin/*.json` on main must parse. This is the check that
+    would have caught win311 landing three schema keys the broker had not met."""
+
+    def test_every_landed_station_file_parses(self):
+        files = sorted((REPO / "registry" / "walkin").glob("*.json"))
+        self.assertTrue(files, "no walk-in station files found")
+        for path in files:
+            with self.subTest(station=path.stem):
+                loaded = spec_mod.load_spec(path)
+                self.assertEqual(loaded.station, path.stem)
+                self.assertTrue(loaded.seed_disks)
+
+
+class SchemaExtensionTests(unittest.TestCase):
+    def test_disk_and_disks_are_mutually_exclusive(self):
+        for seed in ({"readOnly": True}, {"disk": "/a.qcow2", "disks": ["/b.qcow2"], "readOnly": True}):
+            with self.assertRaises(spec_mod.SpecError):
+                spec_mod.parse_spec({**SPEC_DOC, "seed": seed}, "test")
+
+    def test_disks_keeps_its_order(self):
+        seed = {"disks": ["/seeds/win311-golden.qcow2", "/seeds/games-golden.qcow2"], "readOnly": True}
+        parsed = spec_mod.parse_spec({**SPEC_DOC, "seed": seed}, "test")
+        self.assertEqual(parsed.seed_disks, ("/seeds/win311-golden.qcow2", "/seeds/games-golden.qcow2"))
+        self.assertEqual(parsed.seed_disk, "/seeds/win311-golden.qcow2")
+
+    def test_both_chardev_spellings_mean_the_same_thing(self):
+        ledger = {**SPEC_DOC["overrides"], "chardev": {"ser0": "<clone>/serial.sock"}}
+        station = {**SPEC_DOC["overrides"], "chardev": {"id": "ser0", "pathPattern": "{stateDir}/serial.sock"}}
+        first = spec_mod.parse_spec({**SPEC_DOC, "overrides": ledger}, "test").chardev
+        second = spec_mod.parse_spec({**SPEC_DOC, "overrides": station}, "test").chardev
+        self.assertEqual(set(first), set(second), "both spellings name the same chardev")
+
+    def test_binary_may_be_declared_at_either_level_but_not_twice_differently(self):
+        top = spec_mod.parse_spec({**SPEC_DOC, "binary": "/opt/q/bin/qemu-system-i386"}, "test")
+        self.assertEqual(top.binary, "/opt/q/bin/qemu-system-i386")
+        doc = {
+            **SPEC_DOC,
+            "binary": "/opt/a/qemu-system-i386",
+            "overrides": {**SPEC_DOC["overrides"], "binary": "/opt/b/qemu-system-i386"},
+        }
+        with self.assertRaises(spec_mod.SpecError):
+            spec_mod.parse_spec(doc, "test")
+
+    def test_invariants_must_be_strings(self):
+        with self.assertRaises(spec_mod.SpecError):
+            spec_mod.parse_spec({**SPEC_DOC, "invariants": [{"bios": "x"}]}, "test")
+
+
 class NamingTests(unittest.TestCase):
     def test_slot_range_is_the_ledger_range(self):
         self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (152, 200))
@@ -110,10 +159,16 @@ class NamingTests(unittest.TestCase):
 
 
 class BinaryPinTests(unittest.TestCase):
-    def test_binary_must_be_absolute(self):
-        doc = {**SPEC_DOC, "overrides": {**SPEC_DOC["overrides"], "binary": "qemu-system-i386"}}
-        with self.assertRaises(spec_mod.SpecError):
-            spec_mod.parse_spec(doc, "test")
+    def test_a_bare_name_asserts_the_launcher_s_own_binary(self):
+        spec = a_spec(binary="qemu-system-x86_64")  # what os2warp's launcher runs
+        base = derive.read_launcher(spec, REPO)
+        derive.derive_argv(base, derive.plan_for(spec, 1, 152), spec)
+
+    def test_a_bare_name_that_disagrees_is_refused_rather_than_substituted(self):
+        spec = a_spec(binary="qemu-system-i386")
+        base = derive.read_launcher(spec, REPO)
+        with self.assertRaises(derive.InvariantError):
+            derive.derive_argv(base, derive.plan_for(spec, 1, 152), spec)
 
     def test_a_missing_pinned_binary_is_refused_rather_than_swapped(self):
         spec = a_spec(overrides={**SPEC_DOC["overrides"], "binary": "/opt/qemu-nowhere/bin/qemu-system-i386"})
@@ -160,6 +215,29 @@ class LauncherTests(unittest.TestCase):
         text = "qemu-system-x86_64 -m 16\nqemu-system-x86_64 -m 32\n"
         with self.assertRaises(launcher.LauncherError):
             launcher.parse("two", text=text)
+
+    def test_an_assignment_is_not_an_invocation(self):
+        """rhapsody's shape: the fork is assigned on one line and invoked, via
+        the variable, on another. Matching the assignment yields a one-token
+        command line that LOOKS parsed — the quietest possible wrong answer."""
+        text = (
+            "QEMU=/opt/qemu-rhapsody/bin/qemu-system-i386\n"
+            "D=/live/rhapsody\n"
+            'nohup "$QEMU" \\\n'
+            "  -m 64 -drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 \\\n"
+            "  -pidfile $D/qemu.pid\n"
+        )
+        parsed = launcher.parse("rhap", text=text)
+        self.assertEqual(parsed.argv[0], "/opt/qemu-rhapsody/bin/qemu-system-i386")
+        self.assertIn("-drive", parsed.argv)
+
+    def test_qemu_img_is_not_an_invocation(self):
+        text = (
+            "DISK=/live/d.qcow2\n"
+            'qemu-img snapshot -l "$DISK" | grep -qw golden\n'
+            "qemu-system-x86_64 -m 16 -drive file=$DISK,format=qcow2,if=ide\n"
+        )
+        self.assertEqual(launcher.parse("img", text=text).argv[0], "qemu-system-x86_64")
 
     def test_no_qemu_at_all_is_refused(self):
         with self.assertRaises(launcher.LauncherError):
@@ -209,6 +287,25 @@ class DeviceSetTests(unittest.TestCase):
         with self.assertRaises(deviceset.DeviceSetError):
             deviceset.assert_same_device_set(self.BASE, self.derived((10, "e1000,netdev=n0,mac=02:00:00:00:00:13")))
 
+    def test_a_serial_backend_path_may_move(self):
+        # rhapsody's shape: the warpd socket is given straight to -serial rather
+        # than through -chardev. The port is the machine type's; the path is not.
+        base = ["qemu-system-i386", "-serial", "unix:/live/serial.sock,server=on,wait=off"]
+        moved = ["qemu-system-i386", "-serial", "unix:/clone/serial.sock,server=on,wait=off"]
+        deviceset.assert_same_device_set(base, moved)
+        self.assertEqual(deviceset.signature(base), deviceset.signature(moved))
+
+    def test_a_serial_backend_may_not_be_retyped_or_reoptioned(self):
+        base = ["qemu-system-i386", "-serial", "unix:/live/serial.sock,server=on,wait=off"]
+        for bad in ("tcp:127.0.0.1:9,server=on,wait=off", "unix:/clone/serial.sock,server=off,wait=off"):
+            with self.assertRaises(deviceset.DeviceSetError):
+                deviceset.assert_same_device_set(base, ["qemu-system-i386", "-serial", bad])
+
+    def test_a_serial_chardev_id_is_still_the_device_set(self):
+        base = ["qemu-system-i386", "-serial", "chardev:ser0"]
+        with self.assertRaises(deviceset.DeviceSetError):
+            deviceset.assert_same_device_set(base, ["qemu-system-i386", "-serial", "chardev:ser1"])
+
     def test_machine_shape_may_not_change(self):
         with self.assertRaises(deviceset.DeviceSetError):
             deviceset.assert_same_device_set(self.BASE, self.derived((2, "512")))
@@ -238,10 +335,11 @@ class DeriveTests(unittest.TestCase):
         self.assertIn("/data/vms/walkin/walkin-os2warp-1/qemu.pid", self.argv)
         self.assertIn("path=/data/vms/walkin/walkin-os2warp-1/serial.sock", joined)
 
-    def test_the_seed_is_replaced_by_the_overlay(self):
+    def test_the_seed_is_replaced_by_the_clone_s_own_copy(self):
         joined = " ".join(self.argv)
-        self.assertNotIn(self.spec.seed_disk, joined)
-        self.assertIn("overlay.qcow2", joined)
+        self.assertNotIn(f"file={self.spec.seed_disk}", joined)
+        self.assertIn(f"file={self.plan.disks[0]}", joined)
+        self.assertEqual(self.plan.disks[0].parent, self.plan.root)
 
     def test_it_is_instant_ready_and_paused(self):
         self.assertIn("-loadvm", self.argv)
@@ -274,186 +372,57 @@ class DeriveTests(unittest.TestCase):
             deviceset.assert_same_device_set(base.argv, base.argv + ["-device", "usb-tablet"])
 
 
-class FakeClone:
-    """A pool member with no hypervisor behind it."""
+class Win311DerivationTests(unittest.TestCase):
+    """The three new schema keys, against the real win311 launcher and file."""
 
-    def __init__(self, spec, index):
-        self.spec = spec
-        self.plan = derive.plan_for(spec, index, naming.SLOT_MIN + index - 1)
-        self.destroyed = False
-        self._alive = True
-
-    @property
-    def identity(self):
-        return self.plan.identity
-
-    def destroy(self):
-        self.destroyed = True
-        self._alive = False
-
-    def alive(self):
-        return self._alive
-
-    def resume(self):
-        pass
-
-
-class BrokerTests(unittest.TestCase):
     def setUp(self):
-        self.clock = [1000.0]
-        self.made = []
+        path = REPO / "registry" / "walkin" / "win311.json"
+        if not path.exists():
+            self.skipTest("win311 has not landed yet")
+        self.spec = spec_mod.load_spec(path)
+        self.base = derive.read_launcher(self.spec, REPO)
+        self.plan = derive.plan_for(self.spec, 1, 152)
+        self.argv = derive.derive_argv(self.base, self.plan, self.spec)
 
-        def factory(spec, index):
-            made = FakeClone(spec, index)
-            self.made.append(made)
-            return made
+    def test_both_goldens_land_in_the_clone_under_their_own_names(self):
+        names = [disk.name for disk in self.plan.disks]
+        self.assertEqual(names, ["win311-golden.qcow2", "games-golden.qcow2"])
+        joined = " ".join(self.argv)
+        for disk in self.plan.disks:
+            self.assertIn(f"file={disk}", joined)
 
-        self.broker = broker_mod.Broker(
-            REPO / "does-not-exist", REPO, now=lambda: self.clock[0], spawn=False, factory=factory
-        )
-        self.broker.specs = {"os2warp": a_spec()}
-        self.broker.set_access("open")
+    def test_the_second_drive_keeps_its_index(self):
+        # index=1 is part of the device set; only file= moved.
+        self.assertIn("index=1", " ".join(self.argv))
 
-    def test_pool_is_warm(self):
-        self.assertEqual(self.broker.state()["pools"], [{"os": "os2warp", "free": 2, "size": 2}])
+    def test_the_chardev_backend_moves_and_the_device_set_does_not(self):
+        self.assertIn(f"path={self.plan.root}/serial.sock", " ".join(self.argv))
+        deviceset.assert_same_device_set(self.base.argv, self.argv, expect_binary=self.argv[0])
+        self.assertEqual(deviceset.signature(self.base.argv), deviceset.signature(self.argv))
 
-    def test_claim_takes_a_member_out_of_the_pool(self):
-        got = self.broker.claim("u1", "os2warp")
-        self.assertTrue(got["clone"].startswith("walkin-os2warp-"))
-        self.assertEqual(got["signalEndpoint"], f"/signal/{got['clone']}.json")
-        self.assertEqual(got["ttlSeconds"], broker_mod.TTL_SECONDS)
-        self.assertEqual(self.broker.state()["pools"][0]["free"], 1)
+    def test_the_declared_invariants_survive(self):
+        derive.assert_invariants(self.spec, self.argv)
+        self.assertIn("-bios", self.argv)
 
-    def test_a_clone_is_never_handed_to_a_second_visitor(self):
-        first = self.broker.claim("u1", "os2warp")["clone"]
-        self.broker.release("u1", first)
-        seen = {first}
-        for user in ("u2", "u3", "u4"):
-            got = self.broker.claim(user, "os2warp")["clone"]
-            self.assertNotIn(got, seen)
-            seen.add(got)
-            self.broker.release(user, got)
-        self.assertTrue(all(c.destroyed for c in self.made if c.identity in seen))
+    def test_a_lost_invariant_is_named(self):
+        stripped = [tok for tok in self.argv if "bios-256k-int16if.bin" not in tok and tok != "-bios"]
+        with self.assertRaises(derive.InvariantError) as caught:
+            derive.assert_invariants(self.spec, stripped)
+        self.assertIn("bios-256k-int16if.bin", str(caught.exception))
 
-    def test_release_refuses_someone_elses_clone(self):
-        mine = self.broker.claim("u1", "os2warp")["clone"]
-        with self.assertRaises(broker_mod.BrokerError):
-            self.broker.release("u2", mine)
+    def test_a_seed_count_that_disagrees_with_the_launcher_is_refused(self):
+        doc = json.loads((REPO / "registry" / "walkin" / "win311.json").read_text())
+        doc["seed"] = {"disks": [doc["seed"]["disks"][0]], "readOnly": True}
+        one_disk = spec_mod.parse_spec(doc, "test")
+        with self.assertRaises(derive.InvariantError):
+            derive.derive_argv(self.base, derive.plan_for(one_disk, 1, 152), one_disk)
 
-    def test_ttl_ends_the_session_with_its_reason_code(self):
-        self.broker.claim("u1", "os2warp")
-        self.clock[0] += broker_mod.TTL_SECONDS + 1
-        report = self.broker.tick()
-        self.assertEqual([code for _, code in report["ended"]], [broker_mod.CLOSE_REASON_TTL])
-        self.assertEqual(self.broker.close_reason("u1"), "WALKIN_TTL")
-
-    def test_idle_ends_the_session_early(self):
-        clone = self.broker.claim("u1", "os2warp")["clone"]
-        self.clock[0] += broker_mod.IDLE_SECONDS - 1
-        self.broker.note_input(clone)
-        self.clock[0] += broker_mod.IDLE_SECONDS - 1
-        self.assertEqual(self.broker.tick()["ended"], [])
-        self.clock[0] += 2
-        self.assertEqual(self.broker.close_reason("u1"), "")
-        self.broker.tick()
-        self.assertEqual(self.broker.close_reason("u1"), "WALKIN_IDLE")
-
-    def test_closing_disconnects_everyone_and_empties_the_pool(self):
-        self.broker.claim("u1", "os2warp")
-        disconnected = self.broker.set_access("closed")
-        self.assertEqual(disconnected, 1)
-        self.assertEqual(self.broker.state()["pools"], [{"os": "os2warp", "free": 0, "size": 2}])
-        self.assertEqual(self.broker.close_reason("u1"), "WALKIN_CLOSED")
-        self.assertTrue(all(c.destroyed for c in self.made))
-
-    def test_claim_while_closed_is_refused(self):
-        self.broker.set_access("closed")
-        with self.assertRaises(broker_mod.BrokerError) as caught:
-            self.broker.claim("u9", "os2warp")
-        self.assertEqual(str(caught.exception), "walkin_closed")
-
-    def test_reopening_refills_the_pool(self):
-        self.broker.set_access("closed")
-        self.broker.set_access("invited")
-        self.assertEqual(self.broker.state()["pools"][0]["free"], 2)
-
-    def test_a_queued_visitor_gets_a_position(self):
-        self.broker.claim("u1", "os2warp")
-        self.broker.claim("u2", "os2warp")
-        queued = self.broker.claim("u3", "os2warp")
-        self.assertEqual(queued, {"queued": True, "position": 1})
-
-    def test_one_session_per_account(self):
-        self.broker.claim("u1", "os2warp")
-        with self.assertRaises(broker_mod.BrokerError):
-            self.broker.claim("u1", "os2warp")
-
-    def test_reset_gives_a_different_machine(self):
-        first = self.broker.claim("u1", "os2warp")["clone"]
-        second = self.broker.reset("u1", first)["clone"]
-        self.assertNotEqual(first, second)
-
-    def test_extension_is_refused_while_someone_waits(self):
-        first = self.broker.claim("u1", "os2warp")["clone"]
-        self.broker.claim("u2", "os2warp")
-        self.broker.claim("u3", "os2warp")  # queues
-        self.assertEqual(self.broker.extend("u1", first), broker_mod.TTL_SECONDS)
-
-    def test_a_dead_pool_member_is_reaped(self):
-        victim = self.made[0]
-        victim._alive = False
-        self.assertIn(victim.identity, self.broker.tick()["died"])
-
-    def test_the_frozen_interface_lane_2_calls_exists(self):
-        for name in ("live_sessions", "pools", "close_sessions", "kill_all_clones", "refill", "set_drain"):
-            self.assertTrue(callable(getattr(self.broker, name, None)), name)
-
-    def test_close_sessions_leaves_the_warm_pool_standing(self):
-        self.broker.claim("u1", "os2warp")
-        self.assertEqual(self.broker.close_sessions("WALKIN_CLOSED"), 1)
-        self.assertEqual(self.broker.live_sessions(), 0)
-        # One member is gone with its session; the other is still warm, because
-        # emptying the pool is a separate call that lane 2 makes AFTER revoking
-        # the tickets.
-        self.assertEqual(self.broker.state()["pools"][0]["free"], 1)
-
-    def test_kill_all_clones_stays_empty_under_the_watchdog(self):
-        self.broker.kill_all_clones()
-        self.broker.tick()
-        self.assertEqual(self.broker.state()["pools"][0]["free"], 0)
-        self.broker.refill()
-        self.assertEqual(self.broker.state()["pools"][0]["free"], 2)
-
-    def test_drain_refuses_new_claims_without_ending_the_old_ones(self):
-        first = self.broker.claim("u1", "os2warp")["clone"]
-        self.broker.set_drain(True)
-        with self.assertRaises(broker_mod.BrokerError):
-            self.broker.claim("u2", "os2warp")
-        self.assertEqual(self.broker.live_sessions(), 1)
-        self.broker.set_drain(False)
-        self.assertNotEqual(self.broker.claim("u2", "os2warp")["clone"], first)
-
-    def test_session_end_carries_the_ledger_message(self):
-        clone = self.broker.claim("u1", "os2warp")["clone"]
-        self.clock[0] += broker_mod.TTL_SECONDS + 1
-        self.broker.tick()
-        self.assertEqual(self.broker.session_end("u1"), {"type": "session-end", "reason": "WALKIN_TTL"})
-        # And the same fact by clone identity, for the reconnect that asks the
-        # signaling document for a machine that no longer exists.
-        self.assertEqual(self.broker.session_end_for_clone(clone), {"type": "session-end", "reason": "WALKIN_TTL"})
-
-    def test_a_visitor_who_simply_left_gets_no_reason(self):
-        clone = self.broker.claim("u1", "os2warp")["clone"]
-        self.broker.release("u1", clone)
-        self.assertIsNone(self.broker.session_end("u1"))
-        self.assertIsNone(self.broker.session_end_for_clone(clone))
-
-    def test_signal_entries_describe_the_pool(self):
-        entries = self.broker.signal_entries()
-        self.assertEqual(len(entries), 2)
-        for name, row in entries.items():
-            self.assertTrue(name.startswith("walkin-os2warp-"))
-            self.assertGreaterEqual(row["udpPort"], 54152)
+    def test_netdev_id_is_an_assertion_not_a_rename(self):
+        doc = json.loads((REPO / "registry" / "walkin" / "win311.json").read_text())
+        doc["overrides"]["netdev"]["id"] = "n7"
+        renamed = spec_mod.parse_spec(doc, "test")
+        with self.assertRaises(deviceset.DeviceSetError):
+            derive.derive_argv(self.base, derive.plan_for(renamed, 1, 152), renamed)
 
 
 if __name__ == "__main__":

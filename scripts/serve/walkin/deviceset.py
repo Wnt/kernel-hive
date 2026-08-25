@@ -37,8 +37,14 @@ from __future__ import annotations
 DEVICE_FLAGS = ("-device", "-drive", "-netdev", "-chardev")
 MACHINE_FLAGS = (
     "-machine", "-cpu", "-smp", "-m", "-accel", "-bios", "-vga", "-global",
-    "-display", "-audiodev", "-rtc", "-boot", "-serial", "-k", "-rom", "-object",
+    "-display", "-audiodev", "-rtc", "-boot", "-k", "-rom", "-object",
 )  # fmt: skip
+# `-serial` names a BACKEND, not a device: the port comes from the machine type,
+# and `unix:/…/serial.sock` is a host path exactly like a chardev's. rhapsody
+# writes its warpd socket this way instead of through `-chardev`, and treating
+# the whole token as device-shaping refused a clone over a path — a legitimate
+# case, so it gets its own comparison rather than an exemption.
+BACKEND_FLAGS = ("-serial",)
 BOOKKEEPING_FLAGS = ("-name", "-pidfile", "-qmp", "-monitor", "-D")
 ADDABLE_FLAGS = ("-sandbox", "-loadvm", "-S")
 
@@ -81,6 +87,24 @@ def parse_opts(value: str) -> tuple:
         key, _, val = part.partition("=")
         opts[key] = val
     return head, opts
+
+
+def _compare_backend(flag: str, base: str, derived: str) -> None:
+    """Backend scheme and options must match; the path or endpoint may move.
+
+    `chardev:<id>` is the exception inside the exception — there the payload is
+    a device id, not a path, and it is part of the device set.
+    """
+    base_parts, new_parts = (base or "").split(","), (derived or "").split(",")
+    base_head, new_head = base_parts[0], new_parts[0]
+    base_scheme = base_head.split(":", 1)[0]
+    new_scheme = new_head.split(":", 1)[0]
+    if base_scheme != new_scheme:
+        raise DeviceSetError(f"{flag}: backend retyped {base_scheme!r} -> {new_scheme!r}")
+    if base_scheme == "chardev" and base_head != new_head:
+        raise DeviceSetError(f"{flag}: {base_head!r} -> {new_head!r}; that is a chardev id, not a path")
+    if base_parts[1:] != new_parts[1:]:
+        raise DeviceSetError(f"{flag}: backend options changed {base_parts[1:]} -> {new_parts[1:]}")
 
 
 def _compare_device(flag: str, base: str, derived: str) -> None:
@@ -150,6 +174,8 @@ def assert_same_device_set(base_argv: list, derived_argv: list, expect_binary: s
     for (flag, base_val), (_, new_val) in zip(base_kept, derived):
         if flag in DEVICE_FLAGS:
             _compare_device(flag, base_val or "", new_val or "")
+        elif flag in BACKEND_FLAGS:
+            _compare_backend(flag, base_val or "", new_val or "")
         elif flag in MACHINE_FLAGS:
             if base_val != new_val:
                 raise DeviceSetError(f"{flag}: {base_val!r} -> {new_val!r}; this flag shapes what the guest sees")
@@ -171,6 +197,11 @@ def signature(argv: list) -> tuple:
             head, opts = parse_opts(value or "")
             keep = {k: v for k, v in opts.items() if k not in _MUTABLE.get(flag, set())}
             out.append((flag, head, tuple(sorted(keep.items()))))
+        elif flag in BACKEND_FLAGS:
+            parts = (value or "").split(",")
+            scheme = parts[0].split(":", 1)[0]
+            head = parts[0] if scheme == "chardev" else scheme
+            out.append((flag, head, tuple(parts[1:])))
         elif flag in MACHINE_FLAGS:
             out.append((flag, value, ()))
     return tuple(out)

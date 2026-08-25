@@ -31,6 +31,7 @@ instead of "connection lost". Lane 4 prefers this code over anything it inferred
 from __future__ import annotations
 
 import contextlib
+import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -232,6 +233,15 @@ class Broker:
                 # started and, worse, has been executing guest code nobody is
                 # watching. Loud, not "probably fine".
                 raise BrokerError(f"{built.identity} came up {status!r}, expected paused (-loadvm golden -S)")
+            # Ledger §6: repair the golden's stale ARP entry for the gateway
+            # while the member is still PAUSED and unclaimed. Doing it here,
+            # rather than on claim, is why it costs the visitor nothing — and
+            # why a warm pool is worth having beyond the resume latency.
+            if not built.prime_network():
+                sys.stderr.write(
+                    f"[walkin] {built.identity}: network not primed — the visitor's first page load "
+                    "will fail until the gateway ARPs it (ledger §6)\n"
+                )
             if self._daemon:
                 clone_mod.spawn_daemon(built)
         return Member(clone=built, born_at=self._now())
@@ -395,12 +405,19 @@ class Broker:
         so an unreaped orphan is a pool that quietly shrinks.
         """
         root = naming.WALKIN_ROOT
-        if not root.exists():
-            return []
         with self._lock:
             known = set(self._members)
+        try:
+            entries = sorted(root.iterdir())
+        except OSError as exc:
+            # Not there yet (nothing has been built), or not ours to read. Either
+            # way the watchdog must keep running: a reaper that dies on a
+            # permission error stops reaping the clones it CAN see.
+            if root.exists():
+                sys.stderr.write(f"[walkin] cannot scan {root} for orphans: {exc}\n")
+            return []
         found = []
-        for entry in sorted(root.iterdir()):
+        for entry in entries:
             if not entry.is_dir() or entry.name in known or not entry.name.startswith("walkin-"):
                 continue
             clone_mod.reap_orphan(entry)
