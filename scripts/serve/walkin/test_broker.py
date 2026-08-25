@@ -14,12 +14,13 @@ The derivation half — schema, launcher parsing, the device-set refusal — is
 
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
 
 from . import broker as broker_mod
-from . import derive, naming
+from . import claims, derive, naming
 from .test_walkin import REPO, a_spec
 
 
@@ -52,6 +53,11 @@ class BrokerTests(unittest.TestCase):
         # Point the clone tree at a temp dir: a unit test has no business
         # reading, let alone reaping, the production walk-in root.
         self._tmp = tempfile.TemporaryDirectory()
+        self._claims = tempfile.TemporaryDirectory()
+        self.addCleanup(self._claims.cleanup)
+        self._saved = {k: os.environ.get(k) for k in ("KH_CLAIMS_ROOT", "KH_SESSION")}
+        os.environ.update(KH_CLAIMS_ROOT=self._claims.name, KH_SESSION="test-broker")
+        self.addCleanup(self._restore_env)
         self._real_root = naming.WALKIN_ROOT
         naming.WALKIN_ROOT = Path(self._tmp.name)
         self.addCleanup(self._restore_root)
@@ -68,6 +74,13 @@ class BrokerTests(unittest.TestCase):
         )
         self.broker.specs = {"os2warp": a_spec()}
         self.broker.set_access("open")
+
+    def _restore_env(self):
+        for key, value in self._saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
     def _restore_root(self):
         naming.WALKIN_ROOT = self._real_root
@@ -213,6 +226,61 @@ class BrokerTests(unittest.TestCase):
         for name, row in entries.items():
             self.assertTrue(name.startswith("walkin-os2warp-"))
             self.assertGreaterEqual(row["udpPort"], 54152)
+
+
+class StrayClaimTests(unittest.TestCase):
+    """A restarted broker must hand back its own previous incarnation's claims.
+
+    `/run` survives a service restart, so those claims come back under the same
+    session name with no clone behind them. Under the exclusive-take rule they
+    are refusals, and kh-claim's own staleness rule would only clear them after
+    twelve hours — a pool wedged at "no free slot" against an idle range.
+    """
+
+    def setUp(self):
+        kh = Path(__file__).resolve().parents[2] / "lib" / "kh-claim.sh"
+        if not kh.exists():
+            self.skipTest("kh-claim.sh is not in this tree")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.claims_root = tempfile.TemporaryDirectory()
+        self.addCleanup(self.claims_root.cleanup)
+        self._env = {k: os.environ.get(k) for k in ("KH_CLAIMS_ROOT", "KH_SESSION", "KH_CLAIM_BIN")}
+        self.addCleanup(self._restore)
+        os.environ.update(KH_CLAIMS_ROOT=self.claims_root.name, KH_SESSION="test-broker", KH_CLAIM_BIN=str(kh))
+        self._real_root = naming.WALKIN_ROOT
+        naming.WALKIN_ROOT = Path(self.tmp.name)
+        self.addCleanup(self._restore_root)
+        self.broker = broker_mod.Broker(REPO / "does-not-exist", REPO, spawn=False)
+
+    def _restore(self):
+        for key, value in self._env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def _restore_root(self):
+        naming.WALKIN_ROOT = self._real_root
+
+    def test_a_claim_with_no_clone_behind_it_is_handed_back(self):
+        claims.claim_slot("walkin-os2warp-1")
+        released = self.broker.release_stray_claims()
+        self.assertEqual(sorted(released), ["port/54152", "walkin-slot/152"])
+        self.assertEqual(claims.mine(claims.SLOT_CLASS), [])
+
+    def test_a_claim_whose_clone_is_still_on_disk_is_left_alone(self):
+        claims.claim_slot("walkin-os2warp-1")
+        (naming.WALKIN_ROOT / "walkin-os2warp-1").mkdir()
+        self.assertEqual(self.broker.release_stray_claims(), [])
+        self.assertEqual(len(claims.mine(claims.SLOT_CLASS)), 1)
+
+    def test_another_tool_s_claims_are_never_touched(self):
+        claims.take("port", "8091", "someone else's server")
+        claims.take("sandbox", "somebody", "a rig")
+        self.assertEqual(self.broker.release_stray_claims(), [])
+        self.assertEqual(len(claims.mine("sandbox")), 1)
+        self.assertEqual(len(claims.mine("port")), 1)
 
 
 if __name__ == "__main__":

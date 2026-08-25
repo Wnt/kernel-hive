@@ -25,6 +25,7 @@ and re-list it" path. Reuse is respawn.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
@@ -383,6 +384,7 @@ def build(spec: StationSpec, index: int, repo_root: Path, preferred_slot: int | 
     """
     ident = naming.identity(spec.station, index)
     slot_claim = claims.claim_slot(ident, preferred_slot)
+    clone = None
     try:
         plan = derive.plan_for(spec, index, slot_claim.slot)
         base = derive.read_launcher(spec, repo_root)
@@ -392,7 +394,16 @@ def build(spec: StationSpec, index: int, repo_root: Path, preferred_slot: int | 
         write_manifest(clone)
         return clone
     except Exception:
-        slot_claim.release()
+        # A build that fails half-way has to give back EVERYTHING it took, not
+        # just the slot: a tap that stayed up and a directory that stayed on disk
+        # are what turn one bad build into a watchdog rebuilding and re-failing
+        # every tick. `destroy` is written to tolerate a half-built clone, and it
+        # releases the claims itself.
+        if clone is not None:
+            with contextlib.suppress(Exception):
+                clone.destroy()
+        else:
+            slot_claim.release()
         raise
 
 
@@ -451,12 +462,18 @@ MANIFEST = "clone.json"
 
 
 def write_manifest(clone: Clone) -> None:
-    """A crumb in the clone root naming its slot, unit and pidfile.
+    """A crumb in the clone root naming everything a reap needs.
 
-    Without it an ORPHAN — a clone whose broker died — is un-reapable: the
-    directory says which station it came from but not which slot claim to
-    release, and a leaked slot is 1/49th of the pool gone until someone
-    notices. Written at prepare time, before anything is running.
+    Without it an ORPHAN — a clone whose broker died or was restarted — is
+    un-reapable: the directory says which station it came from but not which
+    claims to release, and a leaked slot is 1/49th of the pool gone until
+    someone notices. Written at prepare time, before anything is running.
+
+    Slot, port, tap and IP are all recorded even though port and IP are
+    derivable, because the reader of a crumb is by definition a process that did
+    not build the clone — a later broker, or an operator with a wedged pool at
+    two in the morning — and making it re-derive a value we already knew is how
+    a crumb ends up not answering the one question it was written for.
     """
     import json
 
@@ -468,7 +485,10 @@ def write_manifest(clone: Clone) -> None:
                 "index": clone.plan.index,
                 "slot": clone.plan.slot,
                 "udpPort": clone.plan.udp_port,
+                "port": clone.plan.udp_port,
                 "tap": clone.plan.tap,
+                "ip": clone.guest_ip(),
+                "bridge": clone.spec.netdev.bridge,
                 "unit": naming.unit_name(clone.identity),
                 "createdAt": __import__("time").time(),
             },
@@ -505,7 +525,11 @@ def reap_orphan(root: Path) -> dict:
     if naming.WALKIN_ROOT in root.parents:
         shutil.rmtree(root, ignore_errors=True)
     slot = info.get("slot")
+    port = info.get("port") or info.get("udpPort")
     if isinstance(slot, int):
-        _run([claims.kh_claim_bin(), "release", claims.SLOT_CLASS, str(slot), "--force"], check=False)
-        _run([claims.kh_claim_bin(), "release", claims.PORT_CLASS, str(naming.udp_port(slot)), "--force"], check=False)
+        claims.release(claims.SLOT_CLASS, slot, force=True)
+        if not isinstance(port, int):
+            port = naming.udp_port(slot)
+    if isinstance(port, int):
+        claims.release(claims.PORT_CLASS, port, force=True)
     return info

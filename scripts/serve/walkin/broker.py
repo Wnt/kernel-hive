@@ -31,6 +31,7 @@ instead of "connection lost". Lane 4 prefers this code over anything it inferred
 from __future__ import annotations
 
 import contextlib
+import os
 import sys
 import threading
 import time
@@ -116,6 +117,24 @@ class Broker:
         self.warm = False
         self.drain = False
         self.reload_specs()
+        if not os.environ.get("KH_SESSION"):
+            # Said once, here, rather than discovered as a refused claim on the
+            # first visitor: without it every take fails and the pool never warms.
+            sys.stderr.write(
+                "[walkin] KH_SESSION is unset — every slot claim will be refused and no clone can be built. "
+                "The serving unit must set it (rule 7).\n"
+            )
+        # A restarted serving process inherits BOTH halves of its previous
+        # incarnation: clone directories with live QEMUs behind them, and the
+        # /run claims those clones took. Neither is ours any more — a clone is
+        # never handed to a second visitor, and that includes the visitor who was
+        # on it before the restart. Reap first, then hand back whatever the reap
+        # did not account for, so the first refill starts from a clean range
+        # rather than allocating around the wreckage.
+        with contextlib.suppress(Exception):
+            self.reap_orphans()
+        with contextlib.suppress(Exception):
+            self.release_stray_claims()
 
     # -- the surface lane 2 calls (contract ledger §3.1) -------------------
     #
@@ -414,8 +433,15 @@ class Broker:
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
         orphans = self.reap_orphans()
+        # A claim registry that is unreachable must not stop the watchdog doing
+        # the two things that actually keep the pool honest.
+        try:
+            strays = self.release_stray_claims()
+        except Exception as exc:
+            sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
+            strays = []
         built = self._refill()
-        return {"ended": ended, "died": died, "orphans": orphans, "built": built}
+        return {"ended": ended, "died": died, "orphans": orphans, "strays": strays, "built": built}
 
     def reap_orphans(self) -> list:
         """Clone roots on disk that this broker does not own — kill and discard.
@@ -443,6 +469,43 @@ class Broker:
             clone_mod.reap_orphan(entry)
             found.append(entry.name)
         return found
+
+    def release_stray_claims(self) -> list:
+        """Give back slot and port claims that no clone stands behind.
+
+        The claim registry lives in `/run`, which survives a service restart —
+        so a restarted broker inherits its own previous incarnation's claims,
+        under its own session name, with no clone attached to any of them. Under
+        the exclusive-take rule those claims are now REFUSALS: nothing can be
+        built on them, and the pool wedges at "no free slot" against a range that
+        is almost entirely idle. kh-claim's own staleness rule would clear them
+        eventually — after twelve hours, because they carry no pid — which is not
+        a recovery, it is an outage with a timer on it.
+
+        A claim is a stray when its purpose names a clone identity that is
+        neither a live pool member nor a directory on disk. Both halves matter:
+        `_members` alone would reap a clone another thread is mid-build, and the
+        directory alone would miss one whose crumb has not landed yet.
+        """
+        with self._lock:
+            known = set(self._members)
+        try:
+            on_disk = {p.name for p in naming.WALKIN_ROOT.iterdir() if p.is_dir()}
+        except OSError:
+            on_disk = set()
+        released = []
+        for row in claims.mine():
+            klass, name = row.get("class", ""), row.get("name", "")
+            if klass not in (claims.SLOT_CLASS, claims.PORT_CLASS):
+                continue
+            identity = row.get("purpose", "").replace("walkin clone ", "").strip()
+            if not identity.startswith("walkin-"):
+                continue  # not ours to judge: some other tool's port claim
+            if identity in known or identity in on_disk:
+                continue
+            claims.release(klass, name)
+            released.append(f"{klass}/{name}")
+        return released
 
     def signal_entries(self) -> dict:
         """`{identity: {udpPort, hashFile}}` — the pool's rows for the signaling
