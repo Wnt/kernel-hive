@@ -190,6 +190,9 @@ that module is on `main`, lane 2 rebases — it does not create the module.
 | systemd | `walkin.slice`, `walkin-clone@<identity>.service` | — |
 | Slot | claimed from **152–200** via `kh-claim` | — |
 | UDP port | `54000 + slot` | slot 152 → 54152 |
+| Cell bridge | `wibr<slot>` — the clone's own L2 domain (§5.4, §6) | `wibr152` |
+| Cell netns | `wicell<slot>` — the cell's NAT namespace | `wicell152` |
+| Cell peer | `10.99.0.<slot-100>` — what the gateway sees (§6) | slot 152 → `10.99.0.52` |
 | Clone MAC | **not settable** — see §5.4 | — |
 
 Slots, taps and IPs are claimed with `kh-claim` under `$KH_SESSION`. Never
@@ -204,7 +207,7 @@ enablement lanes write it. Unknown keys are an error, not a silent ignore.
 {
   "station": "os2warp",
   "enabled": true,
-  "poolSize": 2,
+  "poolSize": 3,
   "seed":       { "disk": "…/os2warp-golden.qcow2", "readOnly": true },
   "//seed":     "or `disks: [ … ]` — win311 restores two goldens together",
   "overlay":    { "format": "qcow2", "discardOnKill": true },
@@ -271,30 +274,43 @@ script, the broker must refuse to spawn from it rather than try. Fail loudly —
 "it exists" is not "it is safe to run" ([`../OPERATING-RULES.md`](../OPERATING-RULES.md)
 rule 7's spirit, and rule 4: never experiment on a live station).
 
-### 5.4 One clone per station, and why
+### 5.4 A pool of identical machines, and the cell that carries it
 
 `loadvm` restores the NIC's MAC from saved device state, so **every clone of one
 station carries the same MAC** — `mac=` on the command line cannot override it,
-and the device set may not be changed to work around it. Two clones of one
-station on one bridge therefore collide: FDB flap and one DHCP identity. Port
-isolation stops them seeing each other; it does not stop the gateway seeing them
-as one host.
+and the device set may not be changed to work around it (rule 6). Each golden
+also has a **baked network identity** — the address and lease it held when it
+was captured on `vmbr-rn` — and these guests do not re-DHCP inside a session.
+So every clone of one station is identical on the wire: same MAC, same IP.
+Measured on a stand-in plane: two clones on one bridge, and the FDB entry for
+the shared MAC moved to whichever transmitted last.
 
-Each golden also has a **baked network identity** — the address and lease it held
-when it was captured on `vmbr-rn` — and these guests do not re-DHCP inside a
-20-minute session.
+This section used to conclude `poolSize: 1` from that. The conclusion is
+replaced; the facts stand, and the design leans on them:
 
-Both problems disappear together if the walk-in plane stops renumbering:
+- **Identical machines never share a bridge.** Each clone's tap joins its own
+  L2 cell — bridge `wibr<slot>` — so one FDB never sees two claimants. The
+  guest is untouched: it restores, believes it is `10.99.0.19`, and inside its
+  cell it is right.
+- **A NAT namespace joins each cell to `vmbr-wi`** (`wicell<slot>`, helper
+  `wi-clonecell`, §6). On the way out the guest's baked source address is
+  SNATed to a unique per-slot peer (`10.99.0.<slot-100>`), so the gateway sees
+  three distinct hosts where three guests each see themselves as the one
+  captured machine. CT 952 is not modified at all — no alias, no route, no
+  config: it simply serves three more peers on its own `/24`.
+- **The MAC is still not rewritten anywhere.** Not on the command line (the
+  vmstate would disagree, §5.2's derivation asserts it), and not in the saved
+  state — vmstate surgery couples the pool to QEMU's snapshot format and was
+  rejected outright; worse, it would not even work, because these guests'
+  drivers composed their frames' source MAC into guest RAM at capture time.
+  The wire identity is accepted as a fact of the golden and contained by
+  topology instead.
 
-- **`poolSize` is 1 for every station.** Three stations, three clones, three
-  distinct MACs and three distinct baked addresses. No collision to solve.
-- **The plane presents the numbering the goldens already expect** (§6). A clone
-  boots believing exactly what it believed when it was captured, and it is right.
-
-The cost is honest and bounded: **three concurrent walk-in visitors, one per OS.**
-Growing a pool beyond one needs a per-station walk-in golden captured on this
-plane — a second lineage per station, which is a later decision, not this wave's
-([`../OPERATING-RULES.md`](../OPERATING-RULES.md) rule 6).
+`poolSize` is therefore a real knob, **3 per station** as shipped (schema cap
+8). The remaining ceiling is honest and bounded: CPU (three resumed TCG guests
+per station), the 49-slot claim range, and the visitor-facing
+`ACTIVE_SESSION_CAP` — not the network. Growing a pool still never needs a
+per-station walk-in golden, and no golden was recaptured for any of this.
 
 ## 6. The walk-in network plane
 
@@ -308,24 +324,29 @@ retronet at risk for no gain, and it could not hold the numbering below anyway
 | Bridge | `vmbr-wi`, `bridge-ports none`, **no address on labhost** — the host is not even reachable on this segment |
 | Gateway | **CT 952 `walkin-gw`**, single-homed on `vmbr-wi`, from CT 951's own reproducible provisioner |
 | Numbering | `10.99.0.0/24`, gateway `10.99.0.2/24` — deliberately the same as retronet, on a different L2 with no route between them, so each clone's baked identity is correct (§5.4) |
-| Addressing | **No DHCP.** Each clone keeps the address its golden was captured with |
+| Addressing | **No DHCP.** Each clone keeps the address its golden was captured with — every clone of a station holds the SAME one, which is why cells exist |
+| Cells | one per clone: bridge `wibr<slot>` + NAT netns `wicell<slot>` (`wi-clonecell`), joining `vmbr-wi` as peer `10.99.0.<slot-100>` — **.52–.100 reserved** for cell peers |
 | Corpus | the existing corpus mounted **read-only** |
 | Services | proxy `3128`, DNS `53`, `:80` origin, `search.retronet` |
 | **Not** served | OSCAR `5190` — that is the station-to-station relay |
 | No transit | CT 952 has one leg and no route to `vmbr-rn`, labhost or the internet. Nothing to forward |
-| No clone↔clone | `bridge link set dev <tap> isolated on` on every walk-in tap; the gateway port stays un-isolated |
+| No clone↔clone | separate L2 cells per clone; each cell's outer veth is `isolated on` on `vmbr-wi` (the gateway port stays un-isolated); each cell's namespace FORWARDs to `10.99.0.2` only, fail-closed |
 | Guard chain | `WI<STATION>-IN`, fail-closed, modelled on `WIN311RN-IN` |
 
 The live retronet gateway CT 951 is **not modified at all**.
 
 **Prime the ARP cache after the tap comes up.** Not renumbering has one cost,
 measured by lane 8 on the real plane: a golden carries a **warm ARP cache from
-its retronet capture**, so `10.99.0.2` resolves to CT 951's MAC — which does not
-exist on `vmbr-wi`. The clone's *first* outbound flow fails, and a visitor sees
-one dead page load at the start of the session. Receiving the gateway's ARP
-repairs it permanently, so the fix is for **CT 952 to ping the clone's address
-once after its tap is up**, before the visitor is handed the clone. The plane
-provides the helper; the broker calls it. This hits every station, not one.
+its retronet capture**, so `10.99.0.2` resolves to CT 951's MAC — which exists
+on no walk-in segment. The clone's *first* outbound flow fails until it hears
+the gateway's ARP, which repairs the entry permanently. Inside a cell the
+gateway's own ARP cannot reach the guest (the NAT namespace terminates L2), so
+**the cell speaks first**: `wi-clonecell prime` broadcasts the gateway's ARP
+from the cell's inner leg, takes the guest's ARP reply as proof the repair
+landed, and pins the guest's MAC in the namespace in the same motion. The
+plane provides the helper; the broker calls it, with the guest resumed under a
+wake lease. This hits every station, not one. (`wi-warm-arp`, the flat-plane
+ancestor that had CT 952 ping the clone, remains for the plane's own tooling.)
 
 `streamhost/stations/win311/rn-tapnet.sh` (landed 2026-08-25) is the reference
 implementation to model a `wi-tapnet.sh` on. Each station gets its **own**

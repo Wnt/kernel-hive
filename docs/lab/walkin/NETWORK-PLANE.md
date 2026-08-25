@@ -24,23 +24,42 @@ correctly and did nothing.
 ## The shape
 
 ```
-                          vmbr-wi   (bridge-ports none, NO ADDRESS on labhost)
-                             │
-      ┌──────────────────────┼───────────────┬───────────────┐
-      │                      │               │               │
-  veth952i0              wi-os2warp-1    wi-win311-1     wi-rhapsody-1
-  (un-isolated)          isolated on     isolated on     isolated on
-      │                      │               │               │
-  ┌───┴────────┐        ┌────┴───┐      ┌────┴───┐      ┌────┴───┐
-  │  CT 952    │        │ clone  │      │ clone  │      │ clone  │
-  │ walkin-gw  │        │10.99.0.│      │10.99.0.│      │10.99.0.│
-  │ 10.99.0.2  │        │  .19   │      │  .27   │      │  .22   │
-  └────────────┘        └────────┘      └────────┘      └────────┘
-   DNS 53 · proxy 3128 · origin 80 · search.retronet
-   no OSCAR · no sshd · no default route · corpus read-only
+                     vmbr-wi   (bridge-ports none, NO ADDRESS on labhost)
+                        │
+      ┌─────────────────┼──────────────────┬─────────  … one per clone, 9 total
+      │                 │                  │
+  veth952i0         wiv152o (isolated) wiv153o (isolated)
+      │                 │                  │
+  ┌───┴────────┐   ┌────┴─────────┐   ┌────┴─────────┐
+  │  CT 952    │   │ wicell152    │   │ wicell153    │    NAT netns: SNAT the
+  │ walkin-gw  │   │ peer .52     │   │ peer .53     │    baked guest address
+  │ 10.99.0.2  │   │ FWD → .2 only│   │ FWD → .2 only│    to 10.99.0.<slot-100>
+  └────────────┘   └────┬─────────┘   └────┬─────────┘
+   DNS 53 · 3128        │ wiv152i          │ wiv153i
+   origin 80 · search   │                  │
+   no OSCAR · no sshd   wibr152 (cell)     wibr153 (cell)     one bridge per
+   corpus read-only     │                  │                  clone: identical
+                        wi-os2warp-1       wi-os2warp-2       MACs never share
+                        │                  │                  an FDB
+                   ┌────┴───┐         ┌────┴───┐
+                   │ clone  │         │ clone  │   every os2warp clone believes
+                   │ .19    │         │ .19    │   it is 10.99.0.19 — and in
+                   └────────┘         └────────┘   its own cell, it is right
 ```
 
-Nothing else is on this segment. labhost is not on it.
+Nothing else is on this segment. labhost is not on it (it holds no address on
+`vmbr-wi` or on any cell bridge; the cells' NAT lives inside their namespaces,
+never in labhost's own routing).
+
+**Why cells exist.** `loadvm` restores the NIC's MAC from saved device state,
+so every clone of one station is identical on the wire — same MAC, and the
+same baked IP its golden held on `vmbr-rn`. On one shared bridge three such
+machines collide: the FDB entry for the shared MAC follows whichever
+transmitted last, and the gateway sees one host claiming to be three. Each
+clone therefore gets its own L2 domain (`wibr<slot>`), and a NAT namespace
+(`wicell<slot>`) joins it to `vmbr-wi` as a unique peer. The guest is a
+pristine restore — no reconfiguration, no agent, no recaptured golden — and
+CT 952 is not modified at all: it simply serves more peers on its own `/24`.
 
 ## Why it looks like the retronet
 
@@ -51,7 +70,7 @@ Every golden carries the network identity it was captured with, and these guests
 do not re-DHCP inside a 20-minute session: os2warp believes it holds
 `10.99.0.19`, win311 `10.99.0.27`, rhapsody `10.99.0.22`. Renumbering the
 walk-in plane to a fresh block would have meant three broken network stacks or
-three recaptured goldens ([ledger §5.3](CONTRACT-LEDGER.md#53-one-clone-per-station-and-why)).
+three recaptured goldens ([ledger §5.4](CONTRACT-LEDGER.md#54-a-pool-of-identical-machines-and-the-cell-that-carries-it)).
 Presenting the numbering they already expect means each clone boots believing
 exactly what it believed when it was captured, and is right.
 
@@ -79,7 +98,7 @@ only honestly be checked from a port of `vmbr-wi` — which is what
 | Services | `retronet-dns`, `retronet-proxy` (`:3128` + `:80` origin), `retronet-search` — the retronet's own programs, installed by the retronet's own installers with `RN_VMID=952` |
 | Not served | OSCAR `5190`/`5191`/`9898`/`4000`, **and sshd** — see below |
 | Miss journal | **off** (`RN_PROXY_REQUESTS=` blank) |
-| Helpers | `/usr/local/sbin/wi-isolate` (per tap), `/usr/local/sbin/wi-warm-arp` (per clone) |
+| Helpers | `/usr/local/sbin/wi-isolate` (per port of `vmbr-wi`), `/usr/local/sbin/wi-clonecell` (per clone: cell + NAT + prime), `/usr/local/sbin/wi-warm-arp` (flat-plane ancestor, kept for the plane's own tooling) |
 
 The gateway runs the **same programs** as CT 951, not a fork of them: a second
 container, installed by the same installers, pointed at a different VMID. There
@@ -122,7 +141,7 @@ lane 7's os2warp clone dialled `10.99.0.2` with its ICQ client, reached CT 952,
 and was told *"ICQ server not accepting your login"* — the same client signs in
 fine against CT 951.
 
-## The four locks
+## The five locks
 
 Each is independent. None of them is the only thing standing between a visitor
 and the museum's LAN.
@@ -132,17 +151,20 @@ and the museum's LAN.
 | 1 | **No uplink** | `bridge-ports none` | There is no physical port to leak onto |
 | 2 | **No host L3** | `iface vmbr-wi inet manual` | labhost is not a participant: nothing to dial, nothing to route through, no second route to `10.99.0.0/24` |
 | 3 | **No second leg** | CT 952 single-homed, no default route | The gateway cannot forward, because it has nowhere to forward to |
-| 4 | **Port isolation** | `bridge link set dev <tap> isolated on` | Clone ↔ clone. A Linux bridge switches between its own ports, and `bridge-nf-call-iptables` is `0` on this box, so this traffic reaches **no** netfilter hook — isolation is the only thing that stops it |
+| 4 | **Port isolation** | `bridge link set … isolated on` on every cell's outer veth (`wiv<slot>o`) | Cell ↔ cell on `vmbr-wi`. A Linux bridge switches between its own ports, and `bridge-nf-call-iptables` is `0` on this box, so this traffic reaches **no** netfilter hook — isolation is the only thing that stops it |
+| 5 | **Cell fail-closed NAT** | `wicell<slot>`: `FORWARD` policy DROP, guest→`10.99.0.2` only; `INPUT` DROP | The first rule-based lock a clone's packets meet: even a spoofed destination is dropped one hop from the guest, before `vmbr-wi` ever carries it |
 
 `walkin-fw` adds the backstops:
 
-- **`FORWARD`** — `-i vmbr-wi -j DROP` and `-o vmbr-wi -j DROP`. labhost runs
+- **`FORWARD`** — `-i vmbr-wi -j DROP` and `-o vmbr-wi -j DROP`, plus the same
+  by wildcard for every cell bridge (`-i wibr+`, `-o wibr+`). labhost runs
   `ip_forward=1` with a `FORWARD` policy of `ACCEPT` (the irix and tru64
   host-only veths need it), so without this the only thing between a clone and
   the WAN is the absence of a NAT rule.
-- **`INPUT`** — `-i vmbr-wi -j DROP`, unconditional. No `ESTABLISHED` allowance
+- **`INPUT`** — `-i vmbr-wi -j DROP` and `-i wibr+ -j DROP`, unconditional. No `ESTABLISHED` allowance
   and no bridge-address exemption, unlike the retronet's `RETRONET-IN`.
-- **`arp_ignore=8`** on the bridge. This one is not obvious: with the default
+- **`arp_ignore=8`** on the bridge — and `wi-clonecell` sets the same knobs on
+  every cell bridge it creates. This one is not obvious: with the default
   `arp_ignore=0` the kernel answers an ARP request for **any** local address
   arriving on **any** interface, including one with no address of its own. A
   clone ARPing for `10.99.0.1` — labhost's *retronet* address, which its golden
@@ -152,7 +174,7 @@ and the museum's LAN.
 Every rule is read back out of the kernel before `walkin-fw` reports success: a
 lost `xtables` race is how an open plane comes to be described as "up".
 
-## The two helpers other lanes call
+## The helpers other lanes call
 
 Both are installed on labhost by the `bridge` step and are self-contained.
 
@@ -181,7 +203,38 @@ The gateway's own port must stay **un-isolated**: two isolated ports cannot
 talk, so an isolated `veth952i0` would take the corpus web away from every clone
 at once with no rule anywhere to blame.
 
-### `wi-warm-arp` — per clone, called by the broker (lane 1)
+### `wi-clonecell` — per clone, called by the broker
+
+```bash
+/usr/local/sbin/wi-clonecell up     <slot> <guest-ip>   # cell bridge + NAT netns; prints wibr<slot>
+/usr/local/sbin/wi-clonecell prime  <slot> <guest-ip> [--wait SECS]
+/usr/local/sbin/wi-clonecell down   <slot>              # idempotent
+/usr/local/sbin/wi-clonecell verify <slot>              # every lock, read back
+/usr/local/sbin/wi-clonecell ls
+```
+
+One call builds everything a clone's identical wire identity needs: the cell
+bridge `wibr<slot>` (hardened like `vmbr-wi`), the NAT namespace `wicell<slot>`
+with its two veth legs, the `wi-isolate`d outer port on `vmbr-wi`, the SNAT to
+peer `10.99.0.<slot-100>`, and the fail-closed FORWARD/INPUT rules. The broker
+runs `up` before the station's `wi-tapnet.sh` (whose `WI_TAP_BRIDGE` is then
+the cell bridge) and `down` after it; a leaked cell blocks its slot the way a
+leaked tap blocks its pool index, so the broker's watchdog sweeps orphan cells
+too. Inside the cell the namespace answers ARP for exactly one address — the
+gateway — via a pneigh entry: every other address fails exactly as it fails on
+the flat plane.
+
+**`prime` is the cell's version of the warm-ARP repair.** The golden's stale
+belief that `10.99.0.2` lives at CT 951's MAC can no longer be repaired by CT
+952 pinging (the namespace terminates L2 between gateway and guest), so the
+cell speaks the gateway's ARP itself, from its inner leg. The guest's ARP
+**reply** — addressed to the very MAC it just merged — is the proof the repair
+landed, and `prime` pins the guest's MAC (learned from that reply) into the
+namespace so the return path never depends on the guest answering an
+addressless probe. The guest must be **running** to answer; the broker resumes
+it under a wake lease first, and `prime` fails loudly otherwise.
+
+### `wi-warm-arp` — the flat-plane ancestor, kept for the plane's own tooling
 
 ```bash
 /usr/local/sbin/wi-warm-arp <clone-ip> [--wait SECS] [--vmid 952]
@@ -189,6 +242,11 @@ at once with no rule anywhere to blame.
 #           gateway is now correct and its first page load will work
 #   exit 1  no reply within --wait; do NOT hand the clone to a visitor
 ```
+
+Production clones live in cells and are primed by `wi-clonecell prime`;
+`wi-warm-arp` still primes anything attached to `vmbr-wi` **directly** — the
+containment harness's throwaway namespaces, a bring-up rig on the flat bridge —
+and its two measured lessons carry over unchanged:
 
 **This is the one real cost of not renumbering, and it hits every station.** A
 golden restores with a warm ARP cache from its retronet capture, so the guest
@@ -220,10 +278,21 @@ running, because a silent pass here is a dead browser later.
 
 ## Containment proofs
 
-`prove-containment.sh` stands up two throwaway network namespaces on isolated
-walk-in taps, addresses them statically the way a golden restores, primes one
-with `wi-warm-arp`, and then **tries** everything a clone must not be able to do.
-It inspects no rules. Run 2026-08-25: **31 passed, 0 failed.**
+Two harnesses, and both **try** things rather than inspecting rules.
+
+`prove-containment.sh` proves the flat plane the cells stand on: two throwaway
+network namespaces on isolated walk-in taps, addressed statically the way a
+golden restores, one primed with `wi-warm-arp`, then everything a clone must
+not be able to do, attempted. Run 2026-08-25: **31 passed, 0 failed.**
+
+`prove-cell-containment.sh` proves the layer `wi-clonecell` adds — with the
+constraint mimicked exactly: two cells whose guests carry the **same MAC and
+the same IP**, both primed down the real path from a seeded stale ARP entry,
+both fetching the corpus **concurrently** while the gateway neighbours two
+distinct peers, and neither able to reach the other (including through the
+cells' NAT peers — the new attack surface), the fleet, labhost or the
+internet. It uses proof slots 198/199 from the top of the range and the proof
+address `10.99.0.239`, all clear of real clones, and tears down after itself.
 
 It is safe to run while real clones are on the plane — the two proof addresses
 (`10.99.0.240`, `.241`) are outside every station's baked address — and it tears
@@ -283,9 +352,9 @@ MAC** would be the interesting failure — it would mean `arp_ignore` had regres
     refusing connections. CT 952 is 2048 MB, matching CT 951, and
     `provision-walkin-net.sh` reconciles memory on an existing container, not
     only on create.
-- **`walkin-fw` and the helpers live in `/usr/local/sbin`, outside
+- **`walkin-fw`, `wi-isolate`, `wi-warm-arp` and `wi-clonecell` live in `/usr/local/sbin`, outside
   `/data/kernel-hive`.** `box-deploy` does not update them; the provisioner's
-  `bridge` step does. After changing any of the three, re-run:
+  `bridge` step does. After changing any of them, re-run:
   `ssh lab '…/provision-walkin-net.sh --apply bridge'`.
 - **A portless bridge reads `DOWN`.** `ip -br addr show vmbr-wi` shows `DOWN`
   until a tap is attached, because the operational state follows carrier. The
@@ -296,7 +365,8 @@ MAC** would be the interesting failure — it would mean `arp_ignore` had regres
 ```bash
 ssh lab 'pct stop 952 && pct destroy 952'
 ssh lab '/usr/local/sbin/walkin-fw down vmbr-wi && ifdown vmbr-wi'
-ssh lab 'rm -f /etc/network/interfaces.d/vmbr-wi /usr/local/sbin/{walkin-fw,wi-isolate,wi-warm-arp}'
+ssh lab 'for s in $(/usr/local/sbin/wi-clonecell ls | awk "{print \$3}"); do /usr/local/sbin/wi-clonecell down "$s"; done'
+ssh lab 'rm -f /etc/network/interfaces.d/vmbr-wi /usr/local/sbin/{walkin-fw,wi-isolate,wi-warm-arp,wi-clonecell}'
 ```
 
 The retronet is untouched by all of it.
