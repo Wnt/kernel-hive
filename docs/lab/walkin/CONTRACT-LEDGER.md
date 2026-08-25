@@ -318,6 +318,15 @@ retronet at risk for no gain, and it could not hold the numbering below anyway
 
 The live retronet gateway CT 951 is **not modified at all**.
 
+**Prime the ARP cache after the tap comes up.** Not renumbering has one cost,
+measured by lane 8 on the real plane: a golden carries a **warm ARP cache from
+its retronet capture**, so `10.99.0.2` resolves to CT 951's MAC — which does not
+exist on `vmbr-wi`. The clone's *first* outbound flow fails, and a visitor sees
+one dead page load at the start of the session. Receiving the gateway's ARP
+repairs it permanently, so the fix is for **CT 952 to ping the clone's address
+once after its tap is up**, before the visitor is handed the clone. The plane
+provides the helper; the broker calls it. This hits every station, not one.
+
 `streamhost/stations/win311/rn-tapnet.sh` (landed 2026-08-25) is the reference
 implementation to model a `wi-tapnet.sh` on. Each station gets its **own**
 script — no shared fragment, no generalising a sibling's.
