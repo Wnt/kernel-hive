@@ -32,6 +32,27 @@ coordinator must assign or make them.
 | B3 | `walkin` missing from the state-file default list | `scripts/serve/auth/store.py:73-77` | `KeyError` on the live `auth-state.json`, on the hot path of every gated request |
 | B4 | `/walkin/state` + `/walkin/signup` are public but the gate is default-deny | `scripts/serve/auth/gate.py:22,30` | A signed-out visitor cannot reach the sign-up route at all |
 
+**All four are CLOSED as of 2026-08-25** — B1 and B2 by the lanes, B3 by lane 2's
+`_migrate_walkin`, B4 by the integration pass (the four public walk-in routes are
+in `OPEN_PATHS`). Two things the integration pass added to this list, because the
+same shape of hole was one level along:
+
+* **`scripts/serve/walkin_plane.py`** is the code that joins the plane up (the
+  pool's lifetime, the `tick()` watchdog, the two-half dispatch, and whose clone
+  is whose). It is a **new deployed serve module**, so it has a `box-sync` pair
+  *and* it is shipped by `serve-https-spa.sh` beside the server — together with
+  `config.py` and `signal_route.py`, which the server imports and that door did
+  not previously carry. A deploy that ships a new server against older route
+  modules fails at IMPORT, and a serving unit that will not start takes the LAN
+  gallery down with the public one.
+* **`/walkin` itself — the landing PAGE — is deliberately NOT open.** A
+  signed-out browser asking for it is redirected to `/login` like any other
+  page, so a stranger cannot reach the sign-up flow until `"/walkin"` is added
+  to `gate.OPEN_PATHS` (one name, one line, reversible). At **Invited** — where
+  this wave ships — it changes nothing, because signup is 403 there anyway. It
+  is the same decision as whether the gallery links `/walkin` at all, and it is
+  the operator's to make.
+
 **B1.** Two one-line additions. In `scripts/lib/box-sync-pairs.sh` the serve
 tree loop globs only two directories:
 
@@ -201,6 +222,25 @@ reads `N MATCH, k DARKLAUNCH, 0 need attention`; `restart-https.sh` prints
 `https server up on :8443 via systemd`; `curl -sk https://127.0.0.1:8443/walkin/state`
 on the box returns `{"access":"invited",…}` rather than HTML (HTML means the
 route does not exist and the SPA index fallback answered — go back to B1).
+
+**The network plane is a prerequisite of step 4, not of step 1.** The serving
+unit now names lane 6's helper —
+`Environment=WALKIN_ARP_PRIME=/usr/local/sbin/wi-warm-arp {ip} --wait 20` — and
+the broker runs it while a clone is still unclaimed. It exists only after
+`scripts/retronet/walkin-net/provision-walkin-net.sh` has run, so before the
+restart:
+
+```sh
+ssh lab 'test -x /usr/local/sbin/wi-warm-arp && pct status 952'
+```
+
+**Good looks like:** the helper is executable and CT 952 is `status: running`.
+If it is missing the broker silently falls back to its own inline `pct exec`
+template — the *shape* of the helper, without the neighbour-entry delete that
+makes a clone prime after a reset and not only the first time (ledger §6). That
+is a dead first page load for the second visitor, which is worse than the first.
+The switch may stay at Closed with the plane unprovisioned; it must not be moved
+off Closed.
 
 **If step 4 is skipped:** the unit keeps running the old module objects. The
 signalling documents (`tiles.json`, `gallery-manifest.json`) are re-read fresh
@@ -375,6 +415,15 @@ ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py --relay-rang
 Any tile whose `udpPort` falls outside is reported as a failure. Pass the range
 from `registry/registry-v1.json` `ports.publicRelayLow/High`; it is deliberately
 not defaulted.
+
+**The pool does not appear in `tiles.json`, and cannot.** A clone lives for
+twenty minutes and its signaling row comes from the broker in memory
+(`Broker.signal_entries()`, merged into `signal_route.load_tiles()` per
+request), so `check-stream-tickets.py` — which reads `tiles.json` — will keep
+printing *"no walk-in clones in tiles.json"* even with a live pool. That is
+correct, not a fault. The live view of the pool is
+`curl -sk https://127.0.0.1:8443/signal/index.json` on the box, which now
+includes every pool member, and each clone's own `/signal/<clone>.json`.
 
 **Note this file travels on both doors** — it is a named row in
 `box-sync-pairs.sh` *and* in `serve-https-spa.sh`'s name list — and it needs no

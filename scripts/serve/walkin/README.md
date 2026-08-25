@@ -70,12 +70,16 @@ own — so run the line above as well.
 
 ## Integration seams outside this package
 
-Two, both one line, both deliberately left for the coordinator's integration
-pass rather than taken from another lane's territory:
+**Wired 2026-08-25** by the integration pass, in `scripts/serve/walkin_plane.py`
+(the pool's lifetime, the watchdog that calls `tick()`, and the two-half
+dispatch) and `scripts/serve/signal_route.py`. `scripts/serve/test_walkin_wiring.py`
+drives them over real HTTP. What each seam was, and where it now lives:
 
-| Seam | What is needed |
+| Seam | Where it landed |
 |---|---|
-| `scripts/serve/signal_route.py` | merge `broker.signal_entries()` into `load_tiles()` so `/signal/walkin-<os>-<n>.json` answers for a pool member the way it does for a station |
-| `scripts/serve/signal_route.py` (reaped clone) | answer `/signal/<clone>.json` with `broker.session_end_for_clone(...)` (410) instead of a bare 404, so a reconnect learns why rather than reading "connection lost" |
+| `scripts/serve/signal_route.py` | `load_tiles()` merges `broker.signal_entries()`, so `/signal/walkin-<os>-<n>.json` answers for a pool member the way it does for a station |
+| `scripts/serve/signal_route.py` (reaped clone) | `/signal/<clone>.json` answers **410** with `broker.session_end_for_clone(...)` instead of a bare 404, so a reconnect learns why rather than reading "connection lost" |
+| who owns which clone | `Broker.own_of(user_id)` — the serving plane's gate needs it to allow a walk-in their OWN signaling document and nothing else |
+| `walkin.routes.dispatch` claims all of `/walkin/` | the call site routes the four API paths only: `/walkin`, `/walkin/play/<os>` and `/walkin/exhibits` are CLIENT-side routes that must reach the SPA index |
 | `streamhost/` transport | the §3.3 message as the WebTransport **close reason**. Not this lane's territory and not written: lane 4 already accepts the code by any road, and `/walkin/state` is the road that works today |
-| `scripts/serve/auth/` (lane 2) | call `walkin.routes.dispatch(...)` after the role check, and `broker.set_access(...)` when the admin switch moves — which returns the number of sessions it disconnected |
+| `scripts/serve/auth/` (lane 2) | wired: `AUTH.walkin.bind_broker(...)` at startup, and the serving plane chains `auth_routes.dispatch_walkin(...)` in front of `walkin.routes.dispatch(...)` |
