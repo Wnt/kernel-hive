@@ -79,6 +79,14 @@ IRIX_MAME_STACK=(
   # entries) — adding or dropping this patch changes the savestate signature
   # and orphans the golden: rebake via scripts/coldboot/irix-record-boot.sh.
   "mame-ctlsock.patch|.|all"
+  # DRC frontend END_SEQUENCE drop (the gaim/OSCAR SIGSEGV,
+  # docs/lab/retronet/ICQ-STATION-irix.md): a branch-likely at the last word
+  # of a page with its delay slot on a non-resident page had its END marker
+  # reclaimed with the skip-slot desc, and the MIPS3 recompiler walked off the
+  # NULL end of the live list. Touches only drcfe.ipp + mips3drc.cpp, which no
+  # other patch in this stack touches, so it applies anywhere; kept after
+  # ctlsock to mirror the submodule commit order. Changes NO savestate items.
+  "mame-drcfe-likely-page-end-endseq.patch|.|all"
 )
 
 # irix_mame_apply <tree-dir> <patch-dir>

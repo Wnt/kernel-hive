@@ -394,3 +394,63 @@ anyone messages it is not a shipping state, it is a trap with a countdown. The
 fix is the recompiler patch + rebuilt binary (which orphans every savestate —
 rebake via `irix-savestate/bake-golden.sh` after promotion), validated with the
 rig above.
+
+## The fix, built and proven (rn-irix-dbg1, 2026-08-25)
+
+**The recompiler patch exists, is staged, and survives everything that killed
+the unpatched binary.** Two halves, one patch:
+`scripts/build-guests/patches/mame-drcfe-likely-page-end-endseq.patch`
+(appended to `irix-mame-stack.sh`; the identical change is commit
+`25c6b0bb2b5` on the `mame-irix` submodule's `irix` branch — kept in byte
+parity, superproject gitlink deliberately NOT bumped until that commit is
+pushed to `Wnt/mame`):
+
+1. **Root fix** — `drcfe.ipp` `build_sequence`: before the skip-slot reclaim,
+   a desc carrying `end_sequence()` hands the marker (plus
+   `redispatch()`/`return_to_start()`) to `m_desc_live_list.last()`, so a
+   reclaimed branch-likely delay slot can never take the sequence's END with it.
+2. **Defence in depth** — `mips3drc.cpp` `code_compile_block`: if the END walk
+   still comes up empty, recover to the sequence's tail desc with one
+   `osd_printf_error` line instead of dereferencing null. Carried because it is
+   four lines and converts any other latent frontend path of the same shape
+   from a fleet-visible crash into a log line.
+
+**Build** (reproducer): `scripts/build-guests/emulators/build-mame-irix.sh
+<workdir>` from this branch's checkout. Two labhost frictions, both now known:
+a root shell building from a uid-1000 worktree needs `HOME` pointed at a
+gitconfig with `safe.directory=*` (env `GIT_CONFIG_*` is ignored for that key),
+and the submodule local-clone needs `--no-hardlinks` pre-seeded because
+`/data/kernel-hive` and `/data/vms` are different datasets.
+
+**Staged binary — NOT promoted:** `/data/vms/sandbox/rn-irix-dbg1/stage/sgi`,
+md5 `b0d7a0a8697c5382c287097f8799c28a`, self-identifies as
+`0.288 (mame0288-910-g25c6b0bb2b5)`. The live `assets/irix/mame/sgi`
+(`3fb2095671c489e865ea40cdaaa89bda`) is untouched; the station stays on v12.
+
+**The acceptance run** (v13 golden, rig clone `proof1`, staged binary, tap
+`irixdbg1` kept OFF the bridge until the guest was re-addressed, PROM `eaddr`
+patched to `08:00:69:12:34:d1` via `nvram/indy_4610/rtc` offset 0x13A — the
+rig now takes `IRIX_RIG_RTC_MAC` for exactly this):
+
+| bar | unpatched | patched (this run) |
+|---|---|---|
+| first inbound IM | **dead ≤2–4 s** (3/3 + dbg2 + dbg3) | 271-byte message FLAP 09:02:42 → **alive** |
+| session hold | n/a (dead) | **25.4 min** signed in, then held further through the extra-IM round |
+| inbound IMs survived | 0 | **≥8**: 4+ greeter-bot replies rendered in the conversation window + 4 direct `persona-sim --buddy 65000` IMs (second convo tab opened and rendered) |
+| liveness at end | — | serial exec answers; guest `netstat` shows both `10.99.0.29:1034/1035 ↔ 10.99.0.2:5190` ESTABLISHED; `ctlsock` heartbeats advancing (emulated t 199 s → 1562 s) |
+| ordinary bar | — | boots to the chooser; **Netscape 4.8 renders the corpus Yahoo! front page** through the retronet on the same still-running instance |
+
+Evidence in `/data/vms/sandbox/rn-irix-dbg1/dbg/`: `soak.log`, `proof1.pcap`,
+`soak-signon.png`, `soak-end.png`, `persona-sim.log`, `proof-prep.log`.
+
+**One correction to the rig lore:** `10.99.0.26` is NOT free — it is the
+amigaos35 station's registered retronet address (its netns holds it and
+answers ARP even when the guest is down; `registry/stations/amigaos35.json`).
+This run moved to `10.99.0.29` on discovering the collision. Check
+`registry/stations/*.json` retronet addresses, not just `kh-claim ls`, before
+picking a rig IP.
+
+**Promotion cost, restated:** shipping the rebuilt `sgi` orphans every
+existing savestate (checkpoint + binary + device set are ONE combination), so
+promotion requires `ssh lab 'checkpoint-guard recapture irix'` afterwards — an
+operator decision, deliberately not taken here.
