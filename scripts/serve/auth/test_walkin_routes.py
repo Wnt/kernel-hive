@@ -63,6 +63,8 @@ ENTRY = {
     "eraLabel": "1996 · desktop wars",
     "lineage": "OS/2",
     "arch": "x86",
+    "ramMB": 64,
+    "ramKB": 65536,
     "accent": "#2255aa",
     "notes": "Merlin, with speech.",
     "blurb": "IBM's last desktop stand.",

@@ -171,6 +171,11 @@ WALKIN_MANIFEST_FIELDS = (
     "eraLabel",
     "lineage",
     "arch",
+    # The placard's era-facts table (spa/src/ui/ExhibitPoster.tsx) prints RAM,
+    # and an 8-bit machine's memory only reads correctly in KB. Both are
+    # exhibition facts already public in the gallery manifest.
+    "ramMB",
+    "ramKB",
     "notes",
     "blurb",
     "eraSoftware",
