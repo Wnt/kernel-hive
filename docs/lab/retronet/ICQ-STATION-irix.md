@@ -1,52 +1,44 @@
-# irix ICQ — gaim 0.64 works, and a MAME recompiler bug takes the emulator down
+# irix ICQ — LIVE, once a MAME recompiler bug was fixed
 
-> **ROOT CAUSE FOUND (2026-08-25). This is a MAME bug, not a network or client
-> problem.** MAME kills itself with **SIGSEGV in its own MIPS3 dynamic
-> recompiler** — captured exit status `139` (128+11), `strace` showing
-> `si_code=SEGV_MAPERR, si_addr=NULL` and **not** `SI_USER`, so nothing external
-> sent it. Backtrace from a core against the unstripped binary:
+> **STATUS: LIVE (2026-08-25).** `irix` is on the retronet **ICQ** plane as UIN
+> `65000` with **gaim 0.64**, alongside its web plane. Getting here needed a
+> **fix to MAME itself**, not to the client or the network.
+>
+> **The bug.** MAME killed itself with **SIGSEGV in its own MIPS3 dynamic
+> recompiler** — exit status `139`, `si_code=SEGV_MAPERR si_addr=NULL`, **not**
+> `SI_USER`, so nothing external sent it. Core backtrace:
 > `mips3_device::code_compile_block` ← `execute_run` ← `device_scheduler::timeslice`,
-> faulting on `cmp (%rbx),%rax` with `rbx=0`, i.e. `seqlast == nullptr`.
+> faulting `cmp (%rbx),%rax` with `rbx=0` (`seqlast == nullptr`). Upstream defect
+> in `src/devices/cpu/drcfe.ipp` `build_sequence`: a **branch-likely at the last
+> word of a page**, delay slot on a **non-resident next page**, is handed the
+> `END_SEQUENCE` marker and then *reclaimed* by the skip-slot logic instead of
+> appended — the marker is lost, the sequence has no end, the walk runs off NULL.
+> The release build compiles out the `assert` that would have caught it.
 >
-> The defect is upstream MAME `src/devices/cpu/drcfe.ipp` `build_sequence`: a
-> **branch-likely at the last word of a page**, whose delay slot falls on a
-> **non-resident next page**, is handed the `END_SEQUENCE` marker — and the
-> skip-slot logic then *reclaims* that descriptor instead of appending it. The
-> marker is lost, the sequence has no end, and the walk runs off NULL. The
-> release build compiles out the `assert(seqlast != nullptr)` that would have
-> caught it.
+> **The packets were only ever the stimulus.** Receiving the first IM drives
+> gaim through cold code the recompiler has never compiled. There is no killer
+> packet — which is why HTTP never did it, and why every network hypothesis came
+> back negative (§the trigger bisect).
 >
-> **The packets were only ever the stimulus.** Signing in and receiving a
-> message drive gaim through cold code the recompiler has never compiled; it
-> compiles those blocks and hits the alignment. There is no killer packet and
-> therefore no packet-level reproducer — which is why HTTP never did it (a
-> different code path, not different traffic), and why every network hypothesis
-> below came back negative.
+> **The fix:** `scripts/build-guests/patches/mame-drcfe-likely-page-end-endseq.patch`
+> — propagate a skipped desc's `end_sequence()` to the last appended desc before
+> reclaiming it (root fix, generic `drcfe`: any DRC CPU with skip slots was
+> exposed), plus a null-tolerant recovery in `mips3drc.cpp` as defence in depth.
+> Binary md5 `b0d7a0a8697c5382c287097f8799c28a`; pre-fix binary kept as
+> `assets/irix/mame/sgi.pre-drcfix-20260825`.
 >
-> Three independent lines of evidence agree: the core dump above, the trigger
-> isolation (§the make-it-work pass — dies ≤4 s after the *first inbound IM*,
-> with a clean wire), and the control matrix (§the trigger bisect — signed in
-> with no IM survives 10 min; idle TCP 25 min; unsolicited inbound 6 min; audio
-> with no NIC at all 15 min).
+> **Proven on the LIVE station**, restored from its production checkpoint: log
+> in as `demos`, gaim auto-starts and signs in, **five IMs delivered from
+> win98se all render in the conversation window**, and the session held
+> **22.4 minutes** with MAME alive and both OSCAR connections ESTABLISHED at the
+> end. Every unpatched run died within 2–4 s of the first IM.
+>
+> **A MAME rebuild orphans every savestate**, so the checkpoint was recaptured
+> against the patched binary. Rolling the binary back means rolling the golden
+> back to v12 as well.
 >
 > Sections below were written as the investigation ran and are kept because the
-> install recipe and the eliminated avenues are the reusable half. Read this box
-> first; where an older section speculates about the cause, this box supersedes
-> it.
-
-
-**Status: BLOCKED, not shipped.** The client is built, installed, configured
-and **proven to sign in**: gaim 0.64 authenticates UIN `65000` against the
-gateway, downloads the server-side SSI roster, and the greeter bot messages it.
-And then, **~30 seconds after the OSCAR session establishes, MAME exits** —
-reproducibly, three runs out of three. The station therefore stays on the
-web-plane golden **v12**; the ICQ golden **v13** is staged and immutable beside
-it, and `retronet.planes` stays `["web"]` with the roster row `onboarded:
-false`.
-
-Parents: [`WEB-STATION-irix.md`](WEB-STATION-irix.md) (the web plane, live),
-[`ICQ-ONBOARDING-PLAN.md`](ICQ-ONBOARDING-PLAN.md), [`GATEWAY.md`](GATEWAY.md),
-[`BOT.md`](BOT.md).
+> install recipe and the eliminated avenues are the reusable half.
 
 ## The blocker, precisely
 

@@ -266,15 +266,11 @@ MAME argument changes. The v9 seed is still staged beside v10.
 
 ## Not done
 
-- **ICQ — ATTEMPTED, BLOCKED, written up in
-  [`ICQ-STATION-irix.md`](ICQ-STATION-irix.md).** A client exists and works:
-  **gaim 0.64** from SGI Freeware signs UIN `65000` into the gateway, downloads
-  the server-side SSI roster **unpatched** (which tru64's Gaim 0.59.9 cannot),
-  and the greeter bot messages it. But **~30 s after the OSCAR session
-  establishes, MAME exits** — reproducibly, three runs out of three, with no
-  error in its log and flat RSS. The station therefore stays on the web-plane
-  golden v12; the ICQ golden v13 is staged and immutable beside it, and the
-  registry keeps `planes: ["web"]` with the roster row `onboarded: false`.
+- **ICQ — now LIVE**, see [`ICQ-STATION-irix.md`](ICQ-STATION-irix.md). The
+  station carries **gaim 0.64** (SGI Freeware, prebuilt — this guest has no
+  compiler) as UIN `65000`. It needed a **fix to MAME itself**: a MIPS3
+  recompiler SIGSEGV compiling gaim's first-inbound-IM code path, fixed by
+  `scripts/build-guests/patches/mame-drcfe-likely-page-end-endseq.patch`.
 
   **Correction (2026-08-25):** an earlier version of this line said IRIX 6.5
   ships a C compiler in the golden's `/usr/bin`, so ICQ "is a build job, not a

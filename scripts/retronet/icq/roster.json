@@ -90,8 +90,8 @@
       "station": "irix",
       "uin": "65000",
       "nick": "irix",
-      "client": "unix-oscar",
-      "onboarded": false
+      "client": "gaim064",
+      "onboarded": true
     }
   ]
 }

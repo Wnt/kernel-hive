@@ -160,14 +160,15 @@
   },
   "retronet": {
     "planes": [
-      "web"
+      "web",
+      "icq"
     ],
     "address": "10.99.0.24",
     "addressing": "static",
     "link": "tap irixrn0 on vmbr-rn",
     "guard": "IRIXRN-IN",
     "joined": "2026-08-24",
-    "doc": "docs/lab/retronet/WEB-STATION-irix.md"
+    "doc": "docs/lab/retronet/ICQ-STATION-irix.md"
   },
   "emulator": {
     "family": "MAME",
