@@ -6,6 +6,28 @@
 
 import type { WalkinAccess, WalkinAdminStatus } from './walkinAdminTypes';
 
+const ACCESS_VALUES = new Set(['closed', 'invited', 'open']);
+function isAccess(v: unknown): v is WalkinAccess {
+  return typeof v === 'string' && ACCESS_VALUES.has(v);
+}
+
+// The dev/staging server answers an unimplemented route with the SPA shell
+// (200, text/html) rather than a 404 — plausible until lane 2's routes land.
+// Validate the shape rather than trusting `response.ok`, so a stray HTML page
+// surfaces as "could not load walk-in status", never a crash three renders
+// downstream from an all-undefined status object.
+function isWalkinAdminStatus(v: unknown): v is WalkinAdminStatus {
+  if (typeof v !== 'object' || v === null) return false;
+  const s = v as Record<string, unknown>;
+  return (
+    isAccess(s.access)
+    && isAccess(s.envFloor)
+    && typeof s.sessions === 'number'
+    && typeof s.accounts === 'number'
+    && Array.isArray(s.pools)
+  );
+}
+
 export class WalkinAdminError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -38,8 +60,12 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   return data as T;
 }
 
-export function fetchWalkinStatus(): Promise<WalkinAdminStatus> {
-  return call<WalkinAdminStatus>('/auth/walkin/status');
+export async function fetchWalkinStatus(): Promise<WalkinAdminStatus> {
+  const data = await call<unknown>('/auth/walkin/status');
+  if (!isWalkinAdminStatus(data)) {
+    throw new Error('/auth/walkin/status did not return the expected shape — route not deployed yet?');
+  }
+  return data;
 }
 
 export function setWalkinAccess(access: WalkinAccess): Promise<{ access: WalkinAccess; disconnected: number }> {
