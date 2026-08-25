@@ -246,6 +246,12 @@ class OrphanTapTests(unittest.TestCase):
 
     def _patch(self, taps, cells=()):
         from . import cell as cell_mod
+        from . import claims as claims_mod
+
+        # The sweeps consult the box-wide claim registry; none exists here.
+        real_everyone = claims_mod.everyone
+        claims_mod.everyone = lambda klass="": []
+        self.addCleanup(lambda: setattr(claims_mod, "everyone", real_everyone))
 
         real_live, real_down = cell_mod.live_taps, cell_mod.tapnet_down  # noqa: F841
         real_cells, real_cell_down = cell_mod.live_cells, cell_mod.cell_down  # noqa: F841

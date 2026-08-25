@@ -23,6 +23,7 @@ no record of ours mentions.
 
 from __future__ import annotations
 
+import re
 import sys
 
 from . import cell, claims, naming
@@ -76,6 +77,13 @@ def reap_orphan_taps(known: set) -> list:
                 known.add(clone_mod.read_manifest(entry).get("tap", ""))
     except OSError:
         pass
+    try:
+        known |= _claimed_taps()
+    except Exception as exc:
+        # No registry means no way to tell mine from another broker's. Skip
+        # the sweep this tick: a leaked tap can wait, a stolen one cannot.
+        sys.stderr.write(f"[walkin] cannot read the claim registry ({exc}); skipping the tap sweep\n")
+        return []
     reaped = []
     for tap in cell.live_taps():
         if tap in known:
@@ -86,6 +94,42 @@ def reap_orphan_taps(known: set) -> list:
         else:
             sys.stderr.write(f"[walkin] orphan tap {tap} would not go down; the next clone at that index will fail\n")
     return reaped
+
+
+def _claimed_taps() -> set:
+    """Tap names standing behind ANY walk-in claim in the registry, any session.
+
+    Two brokers share one box (the serving unit, and every dev stack rule 3
+    hands out), and interface names are global. A sweep that knows only its own
+    members treats the other broker's taps as orphans and deletes them out
+    from under running guests — measured 2026-08-26, nine taps inside one
+    tick. The claim registry is the one box-wide record of ownership (rule 7),
+    so a claimed identity's tap is KNOWN here whoever owns it. Raises when the
+    registry cannot be read; the caller then skips the sweep for this tick —
+    a leaked tap can wait, a stolen one cannot.
+    """
+    out = set()
+    for row in claims.everyone(claims.SLOT_CLASS):
+        identity = claims.purpose_identity(row.get("purpose", ""))
+        found = re.match(r"^walkin-(?P<station>[a-z][a-z0-9]{1,15})-(?P<index>\d+)$", identity)
+        if found:
+            # Both shapes a station may declare: the default wi-<os>-<n> and
+            # any per-station ifnamePattern are index-suffixed; guarding the
+            # default covers the production plane, and a dev plane that
+            # renames its taps is invisible to this sweep anyway.
+            out.add(f"wi-{found.group('station')}-{found.group('index')}")
+    return out
+
+
+def _claimed_slots() -> set:
+    """Slots standing behind ANY walk-in claim — same reasoning as taps."""
+    out = set()
+    for row in claims.everyone(claims.SLOT_CLASS):
+        try:
+            out.add(int(row.get("name", "")))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 def reap_orphan_cells(known_slots: set) -> list:
@@ -105,6 +149,11 @@ def reap_orphan_cells(known_slots: set) -> list:
                     known_slots.add(slot)
     except OSError:
         pass
+    try:
+        known_slots |= _claimed_slots()
+    except Exception as exc:
+        sys.stderr.write(f"[walkin] cannot read the claim registry ({exc}); skipping the cell sweep\n")
+        return []
     reaped = []
     for slot in cell.live_cells():
         if slot in known_slots:

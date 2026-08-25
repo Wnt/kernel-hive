@@ -128,6 +128,22 @@ def mine(klass: str = "") -> list:
     return [row for row in rows if not klass or row.get("class") == klass]
 
 
+def everyone(klass: str = "") -> list:
+    """Every claim in the registry, EVERY session — the box-wide truth.
+
+    The reapers read this, not `mine()`: a tap or cell sweep that knows only
+    its own members will destroy another broker's kernel objects. Measured
+    2026-08-26: the production watchdog reaped a dev broker's nine taps within
+    one 15-second tick of their creation, because to it they were orphans.
+    """
+    proc = _run(["ls", "--json"])
+    try:
+        rows = json.loads(proc.stdout or "[]")
+    except ValueError:
+        return []
+    return [row for row in rows if not klass or row.get("class") == klass]
+
+
 def release(klass: str, name: str, force: bool = False) -> None:
     _run(["release", klass, str(name), *(["--force"] if force else [])])
 
