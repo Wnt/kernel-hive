@@ -20,12 +20,16 @@ class TestWordlists(unittest.TestCase):
             self.assertLessEqual(len(word), 5, word)
             self.assertTrue(word.isalpha() and word.islower(), word)
 
-    def test_pioneers_are_short_titlecase_and_unique(self):
+    def test_pioneers_are_short_capitalised_and_unique(self):
+        # Capitalised, not `.capitalize()`: real surnames carry internal
+        # capitals (LeCun, and McCarthy or DiVincenzo if either is ever added),
+        # and the generated handle is lowercased anyway. Asserting the strict
+        # titlecase form would force a misspelling of a living person's name.
         self.assertEqual(len(PIONEERS), len(set(PIONEERS)))
         for word in PIONEERS:
             self.assertLessEqual(len(word), 7, word)
             self.assertTrue(word.isalpha(), word)
-            self.assertEqual(word, word.capitalize(), word)
+            self.assertTrue(word[:1].isupper(), word)
 
     def test_wordlists_are_roughly_the_aimed_size(self):
         # The ledger aims ~64 x ~96; hand curation is allowed to land short of
