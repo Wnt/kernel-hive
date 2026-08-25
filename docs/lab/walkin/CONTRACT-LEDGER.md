@@ -199,9 +199,15 @@ script — no shared fragment, no generalising a sibling's.
 | `/walkin` | 4 | Landing: three cards + pool status, or the closed notice |
 | `/walkin/play/<os>` | 4 | The station view for the visitor's own clone |
 | `/walkin/exhibits` | 4 | The listed fleet's notes + heroes, marked not playable |
-| `/admin` → walk-in panel | 5 | Three-position switch, live session count, accounts, purge |
+| `/admin/walkin` | 5 | Three-position switch, live session count, accounts, purge |
 
 Closed-state copy: **"Walk-in access is currently closed."**
+
+**`/admin` is not available.** `config.py`'s `AUTH_PAGES` maps the literal path
+`/admin` to the static `admin.html` (people + passkeys) before the SPA loads.
+The lookup is exact (`AUTH_PAGES.get(path)`), so the walk-in panel lives at
+**`/admin/walkin`**, which falls through to the SPA untouched. Do not repoint
+`AUTH_PAGES` — the static admin page is a working surface.
 
 **Shared types.** Lane 4 creates `spa/src/data/walkinTypes.ts` in its first
 commit, verbatim from this block. Lane 5 imports it and never edits it. It is
