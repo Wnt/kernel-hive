@@ -57,6 +57,38 @@
 # with bridge-nf-call-iptables=0, so it never touches these chains — the walk-in
 # reaching the corpus is the point.
 #
+# MEASURED ON THIS PLANE, 2026-08-25 (lane 10 smoke, stand-in gateway on a
+# namespaced test bridge because vmbr-wi did not exist yet). TWO FINDINGS THAT
+# BLOCK A win311 POOL, and neither is fixed by anything in this script:
+#
+#   A. THE BAKED DHCP LEASE STRANDS THE CLONE. The golden was re-baked cold with
+#      a LIVE lease for 10.99.0.27/24 and no default route. `loadvm golden`
+#      restores that lease, so a clone wakes up believing it is 10.99.0.27 and
+#      does NOT re-DHCP — it has a valid lease and its T1 has not fired. On
+#      10.98.0.0/24 it is therefore off-subnet with no gateway: measured, it
+#      ARPs for 10.99.0.2 on the walk-in bridge (4 requests, 0 replies — good
+#      containment evidence, the retronet is simply not there) and cannot even
+#      answer a ping from 10.98.0.2, because the reply has nowhere to go.
+#      `ipconfig /renew_all` through the Run box put NOTHING on the wire.
+#      Proven by re-homing the stand-in gateway onto 10.99.0.2/24: the clone
+#      then answered 4/4 pings and Netscape 4.08 rendered the corpus origin to
+#      "Document: Done" over this tap. So the guest and this script are fine;
+#      the SUBNET is the mismatch. Fixes, coordinator's call: re-bake the golden
+#      with the lease released (which costs a cold bake and rule 6 care), or
+#      give win311's walk-in segment the addressing the golden holds.
+#
+#   B. EVERY CLONE PRESENTS THE SAME MAC. The ne2k MAC lives in the vmstate, so
+#      `mac=` on the command line cannot change it — all pool members come up as
+#      the golden's MAC. Measured with two clones on one bridge: the FDB entry
+#      moved from wi-win311-1 to wi-win311-2 the moment the second one
+#      transmitted, so the gateway's replies follow whichever clone spoke last.
+#      Port isolation stops clone<->clone but does nothing about this, because
+#      the collision is on the GATEWAY's port. A shared L2 segment cannot host
+#      more than one win311 clone. The fix is a segment per clone (a VLAN per
+#      port on vmbr-wi with the gateway tagged, or a bridge per clone), which
+#      also dissolves finding A — and it is the network plane's to build, not
+#      this script's.
+#
 # Idempotent, and called `up` from the clone's launch on EVERY spawn, so a
 # respawn re-asserts both the isolation flag and the guard chain.
 #
