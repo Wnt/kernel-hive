@@ -1,12 +1,22 @@
 {
   "station": "os2warp",
   "enabled": true,
-  "poolSize": 2,
-  "seed": { "disk": "/data/gallery-guests/OS2Warp/os2.qcow2", "readOnly": true },
-  "overlay": { "format": "qcow2", "discardOnKill": true },
+  "poolSize": 1,
+  "seed": {
+    "disk": "/data/vms/walkin/seeds/os2warp-golden.qcow2",
+    "readOnly": true
+  },
+  "overlay": {
+    "format": "qcow2",
+    "discardOnKill": true
+  },
   "launcher": "streamhost/stations/os2warp/qemu-streamhost.sh",
   "overrides": {
-    "netdev": { "type": "tap", "bridge": "vmbr-wi", "ifnamePattern": "wi-os2warp-%d" },
+    "netdev": {
+      "type": "tap",
+      "bridge": "vmbr-wi",
+      "ifnamePattern": "wi-os2warp-%d"
+    },
     "tapnet": "streamhost/stations/os2warp/wi-tapnet.sh"
   },
   "sandbox": true
