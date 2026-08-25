@@ -1,0 +1,140 @@
+/* ============================================================================
+   WALK-IN — the anonymous visitor's surfaces (/walkin, /walkin/play/<os>,
+   /walkin/exhibits).
+
+   Same museum, not a second product: every colour here is a token from
+   index.css (MUSEUM DAYLIGHT), the type is the gallery's, and a card is the
+   same printed label on a light wall the grid already uses. What is new is only
+   the walk-in's own furniture — the pool meter, the session clock, the reason
+   cards. Mobile first: one column under 720px, tap targets ≥44px.
+   ============================================================================ */
+
+.walkin-root {
+  position: absolute; inset: 0; overflow-y: auto; background: var(--paper);
+  color: var(--ink); font-family: var(--font-ui);
+  -webkit-overflow-scrolling: touch;
+}
+.walkin-page { max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px; }
+
+.walkin-bar {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 26px;
+}
+.walkin-bar h1 { margin: 0; font: 800 clamp(21px, 3.4vw, 28px)/1.1 var(--font-ui); letter-spacing: -0.02em; }
+.walkin-bar-tag { color: var(--ink-muted); font-size: 13px; }
+.walkin-bar-links { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.walkin-bar-links a {
+  color: var(--ink-soft); text-decoration: none; font-size: 13px;
+  padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--paper-raised);
+}
+.walkin-bar-links a:hover, .walkin-bar-links a.active { color: var(--accent-ink); border-color: var(--accent-line); }
+.walkin-who { font-family: var(--font-mono); font-size: 12px; color: var(--accent-ink); }
+
+.walkin-lede { margin: 0 0 22px; max-width: 60ch; color: var(--ink-soft); font-size: 15px; line-height: 1.6; }
+
+/* ---- notices: closed, queued, ended. A notice is a printed sign, not an
+   error dialog — the visitor did nothing wrong. ---- */
+.walkin-notice {
+  margin: 0 0 26px; padding: 22px 24px; border: 1px solid var(--line-strong);
+  border-left: 6px solid var(--accent); border-radius: 4px;
+  background: var(--paper-raised); box-shadow: var(--shadow-1);
+}
+.walkin-notice h2 { margin: 0 0 8px; font: 700 clamp(18px, 2.6vw, 22px)/1.2 Georgia, serif; }
+.walkin-notice p { margin: 0; color: var(--ink-soft); font-size: 14.5px; line-height: 1.55; max-width: 62ch; }
+.walkin-notice-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+.walkin-notice--ok { border-left-color: var(--ok); }
+.walkin-notice--warn { border-left-color: var(--warn); }
+
+/* ---- buttons ---- */
+.walkin-btn {
+  appearance: none; cursor: pointer; font: 600 14px/1 var(--font-ui);
+  min-height: 44px; padding: 12px 18px; border-radius: 10px;
+  border: 1px solid var(--accent-line); color: var(--paper-raised);
+  background: var(--accent-ink);
+}
+.walkin-btn:hover { background: var(--accent); }
+.walkin-btn:disabled { opacity: 0.5; cursor: default; }
+.walkin-btn--quiet { color: var(--ink-soft); background: var(--paper-raised); border-color: var(--line); }
+.walkin-btn--quiet:hover { color: var(--accent-ink); background: var(--tint-1); }
+
+/* ---- the three playable cards ---- */
+.walkin-cards {
+  display: grid; gap: 18px; margin: 0 0 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.walkin-card {
+  --accent: var(--card-accent, #9c4f35);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--paper-raised); box-shadow: var(--shadow-1);
+}
+.walkin-card-hero {
+  aspect-ratio: 4 / 3; width: 100%; object-fit: cover; background: #05060a;
+  border-bottom: 1px solid var(--line);
+}
+.walkin-card-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 18px; }
+.walkin-card-name { font: 700 17px/1.2 var(--font-ui); }
+.walkin-card-meta { font: 12px/1.4 var(--font-mono); color: var(--ink-muted); letter-spacing: 0.04em; }
+.walkin-card-blurb { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; }
+.walkin-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+/* Pool meter — "2 of 3 free" with the free slots drawn as pips. */
+.walkin-pool { display: flex; align-items: center; gap: 7px; font: 12px/1 var(--font-mono); color: var(--ink-muted); }
+.walkin-pips { display: flex; gap: 3px; }
+.walkin-pip { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line-strong); }
+.walkin-pip--free { background: var(--ok); border-color: var(--ok); }
+.walkin-pool--none { color: var(--warn); }
+
+/* ---- the play surface ---- */
+.walkin-play { position: absolute; inset: 0; background: #05060a; }
+.walkin-play-chrome {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 60;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+}
+.walkin-play-name { font: 700 14px/1 var(--font-ui); }
+.walkin-clock { font: 12px/1 var(--font-mono); color: var(--ink-muted); }
+.walkin-clock--low { color: var(--warn); }
+.walkin-play-chrome .walkin-btn { min-height: 34px; padding: 8px 14px; font-size: 13px; }
+.walkin-play-chrome-spacer { margin-left: auto; }
+.walkin-play-stage { position: absolute; inset: 0; }
+
+/* ---- the exhibits hall ---- */
+.walkin-exhibits { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.walkin-exhibit {
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--paper-raised);
+  box-shadow: var(--shadow-1);
+}
+.walkin-exhibit-hero { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; background: #05060a; border-bottom: 1px solid var(--line); }
+.walkin-exhibit-body { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px; }
+.walkin-exhibit-name { font: 700 15px/1.2 var(--font-ui); }
+.walkin-exhibit-meta { font: 11px/1.3 var(--font-mono); color: var(--ink-muted); letter-spacing: 0.05em; }
+.walkin-exhibit-blurb { margin: 0; color: var(--ink-soft); font: 13px/1.5 Georgia, serif; }
+/* NOT a disabled button: an exhibit you cannot play is a labelled placard, so
+   nothing on the card looks pressable and then refuses. */
+.walkin-tag {
+  align-self: flex-start; margin-top: 4px;
+  font: 10.5px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 6px; color: var(--ink-muted);
+  background: var(--tint-1); border: 1px solid var(--line);
+}
+.walkin-tag--playable { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.walkin-placard { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+.walkin-placard summary { cursor: pointer; color: var(--accent-ink); font-size: 12.5px; }
+.walkin-placard p { margin: 8px 0 0; line-height: 1.55; }
+
+.walkin-section-head { display: flex; align-items: baseline; gap: 12px; margin: 34px 0 14px; }
+.walkin-section-head h2 { margin: 0; font: 700 clamp(18px, 2.6vw, 22px)/1.2 Georgia, serif; }
+.walkin-section-head span { color: var(--ink-muted); font: 12px/1 var(--font-mono); }
+.walkin-foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--ink-muted); font-size: 12.5px; }
+.walkin-foot a { color: var(--ink-muted); }
+
+@media (max-width: 720px) {
+  .walkin-page { padding: 18px 14px 48px; }
+  .walkin-cards { grid-template-columns: 1fr; }
+  .walkin-exhibits { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .walkin-bar-links { margin-left: 0; width: 100%; }
+}
