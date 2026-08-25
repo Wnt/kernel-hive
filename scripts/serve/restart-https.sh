@@ -31,7 +31,7 @@ export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 # Walk-in env floor (ledger §4.2): only lowers the /admin switch, never raises
 # it. `1` imposes no ceiling; unset/0 would floor it closed and defeat the
 # admin toggle.
-export KH_SESSION="${KH_SESSION:-walkin-broker}"
+export KH_SESSION="${KH_SESSION:-osgallery-walkin}"
 export WALKIN_OPEN="${WALKIN_OPEN:-1}"
 # The plane's ARP-priming helper (ledger §6), a command template the broker
 # fills `{ip}` into. Installed by scripts/retronet/walkin-net/provision-walkin-net.sh.

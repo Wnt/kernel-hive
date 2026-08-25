@@ -46,7 +46,10 @@ Environment=STREAM_KEY_FILE=/data/vms/streamhost/serve/pki/stream-ticket.key
 # kh-claim REFUSES to allocate without a session name, and the broker's slot
 # loop reads every refusal as "that slot is taken" — so an unset KH_SESSION
 # exhausts 152-200 and reports a full pool on an empty claim class.
-Environment=KH_SESSION=walkin-broker
+# NOT `walkin-broker`: that is what `wt.sh new walkin-broker` names a dev
+# sandbox of this lane, and two things answering to one session name means
+# each side's `kh-claim ls --mine` lists the other's live claims.
+Environment=KH_SESSION=osgallery-walkin
 Environment=WALKIN_OPEN=1
 # The walk-in plane's ARP-priming helper (ledger §6), installed by
 # scripts/retronet/walkin-net/provision-walkin-net.sh. The broker fills `{ip}`
