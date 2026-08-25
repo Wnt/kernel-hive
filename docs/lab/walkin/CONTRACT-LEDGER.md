@@ -171,7 +171,7 @@ that module is on `main`, lane 2 rebases — it does not create the module.
 | systemd | `walkin.slice`, `walkin-clone@<identity>.service` | — |
 | Slot | claimed from **152–200** via `kh-claim` | — |
 | UDP port | `54000 + slot` | slot 152 → 54152 |
-| Clone MAC | **not settable** — see §5.3 | — |
+| Clone MAC | **not settable** — see §5.4 | — |
 
 Slots, taps and IPs are claimed with `kh-claim` under `$KH_SESSION`. Never
 check-then-create ([`../OPERATING-RULES.md`](../OPERATING-RULES.md) rule 7).
@@ -189,6 +189,7 @@ enablement lanes write it. Unknown keys are an error, not a silent ignore.
   "seed":       { "disk": "…/os2warp-golden.qcow2", "readOnly": true },
   "overlay":    { "format": "qcow2", "discardOnKill": true },
   "launcher":   "streamhost/stations/os2warp/qemu-streamhost.sh",
+  "binary":     "/opt/qemu-rhapsody/bin/qemu-system-i386",
   "overrides":  {
     "netdev": { "type": "tap", "bridge": "vmbr-wi", "ifnamePattern": "wi-os2warp-%d" },
     "tapnet": "streamhost/stations/os2warp/wi-tapnet.sh"
@@ -207,6 +208,11 @@ the seed is staged inside `data/vms`, not referenced in place under
 `/data/gallery-guests`. Read `overlay.format: "qcow2"` as *a reflinked qcow2*,
 discarded on kill.
 
+`binary` is optional and pins the emulator a station's golden was captured
+against (rhapsody's fork). Declared so it is machine-checkable rather than
+implicit in a shell file, and so a substitution fails loudly instead of falling
+back to stock pve-qemu.
+
 **`overrides` may change paths, ports, tap names and netdev *options* only.**
 It may not add, remove or retype a device: `loadvm` matches the device set the
 golden was captured against, and the binary is bound to that same combination
@@ -214,7 +220,22 @@ golden was captured against, and the binary is bound to that same combination
 `-sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,resourcecontrol=deny`
 where the binary is QEMU.
 
-### 5.3 One clone per station, and why
+### 5.3 A station launcher must never be invoked as-is
+
+**A naive `launcher` invocation kills the live station.** Measured by lane 8:
+`streamhost/stations/rhapsody/qemu-streamhost.sh` hardcodes
+`D=/data/vms/streamhost/stations/rhapsody`, its own `ifname`, its own
+`rn-tapnet.sh` call — and **unconditionally kills `$D/qemu.pid`**. A broker that
+runs it for a clone attaches to the live station directory and takes down the
+live QEMU. The other stations' launchers share the shape.
+
+So the broker **derives** a clone command line; it does not execute a station
+launcher. Until a launcher is env-overridable for `D`, tap name and tapnet
+script, the broker must refuse to spawn from it rather than try. Fail loudly —
+"it exists" is not "it is safe to run" ([`../OPERATING-RULES.md`](../OPERATING-RULES.md)
+rule 7's spirit, and rule 4: never experiment on a live station).
+
+### 5.4 One clone per station, and why
 
 `loadvm` restores the NIC's MAC from saved device state, so **every clone of one
 station carries the same MAC** — `mac=` on the command line cannot override it,
@@ -250,7 +271,7 @@ retronet at risk for no gain, and it could not hold the numbering below anyway
 |---|---|
 | Bridge | `vmbr-wi`, `bridge-ports none`, **no address on labhost** — the host is not even reachable on this segment |
 | Gateway | **CT 952 `walkin-gw`**, single-homed on `vmbr-wi`, from CT 951's own reproducible provisioner |
-| Numbering | `10.99.0.0/24`, gateway `10.99.0.2/24` — deliberately the same as retronet, on a different L2 with no route between them, so each clone's baked identity is correct (§5.3) |
+| Numbering | `10.99.0.0/24`, gateway `10.99.0.2/24` — deliberately the same as retronet, on a different L2 with no route between them, so each clone's baked identity is correct (§5.4) |
 | Addressing | **No DHCP.** Each clone keeps the address its golden was captured with |
 | Corpus | the existing corpus mounted **read-only** |
 | Services | proxy `3128`, DNS `53`, `:80` origin, `search.retronet` |
