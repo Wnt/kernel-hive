@@ -199,7 +199,7 @@ box_sync_load_pairs() {
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
     box_sync_add_pair "serve/${rel#scripts/serve/}" "$rel" "$BOX_ROOT/serve/${rel#scripts/serve/}" exact repo
-  done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' | sort)
+  done < <(git -C "$REPO" ls-files 'scripts/serve/auth/*' 'scripts/serve/authui/*' 'scripts/serve/walkin/*' | sort)
   # The manifest the UI fetches at runtime to build the grid. It had no pair,
   # which meant a deployed manifest could differ from the generated one and
   # nothing would say so — and on 2026-08-10 exactly that was done on purpose,

@@ -135,14 +135,15 @@ deploy() {
   # out of deploy meant a fix in the repo silently never reached labhost.
   $SSH "cat > $RESET_SH && chmod +x $RESET_SH" <"$REPO/scripts/serve/reset-tile.sh"
   # The public gallery's plane: the auth package the server imports, the
-  # sign-in/people pages it serves, and the lockfile + venv builder its unit
-  # runs as ExecStartPre. These travel WITH the server for the same reason
-  # reset-tile.sh does — the server fails to import half a deploy.
+  # sign-in/people pages it serves, the walk-in broker package, and the
+  # lockfile + venv builder its unit runs as ExecStartPre. These travel WITH
+  # the server for the same reason reset-tile.sh does — the server fails to
+  # import half a deploy.
   # Replaced wholesale, not merged: a module dropped from the repo must not
   # linger on labhost, where the package would happily keep importing it.
   msg "shipping the auth plane"
-  tar czf - -C "$REPO/scripts/serve" --exclude __pycache__ auth authui |
-    $SSH "set -e; rm -rf $SERVE_DIR/auth $SERVE_DIR/authui; tar xzf - -C $SERVE_DIR"
+  tar czf - -C "$REPO/scripts/serve" --exclude __pycache__ auth authui walkin |
+    $SSH "set -e; rm -rf $SERVE_DIR/auth $SERVE_DIR/authui $SERVE_DIR/walkin; tar xzf - -C $SERVE_DIR"
   $SSH "cat > $SERVE_DIR/requirements.txt" <"$REPO/scripts/serve/requirements.txt"
   $SSH "cat > $SERVE_DIR/requirements.in" <"$REPO/scripts/serve/requirements.in"
   $SSH "cat > $SERVE_DIR/sync-venv.sh && chmod +x $SERVE_DIR/sync-venv.sh" <"$REPO/scripts/serve/sync-venv.sh"
