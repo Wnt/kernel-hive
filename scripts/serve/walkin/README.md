@@ -44,6 +44,15 @@ cannot route around it.
    the clone's address is read from the station's own `wi-tapnet.sh`, which is
    where it is asserted, rather than restated in the broker.
 
+   Two halves of this are load-bearing and were each wrong once:
+   the guest must be **running** to hear the ARP (a `-S` pool member processes
+   no frames, so priming resumes it under a wake lease and restores the pause),
+   and the gateway's **neighbour entry must be deleted first**. Because every
+   clone of a station carries its golden's MAC, a respawn moves that MAC to a
+   new bridge port; CT 952's stale entry keeps unicasting to the port that went
+   away, so without the delete the first clone primes and every clone after a
+   reset does not. Measured, both times, at the framebuffer.
+
 ## Tests
 
 ```

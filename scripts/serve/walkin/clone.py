@@ -29,10 +29,11 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import claims, derive, naming
+from . import claims, derive, naming, wake
 from .qmp import QMP
 from .spec import StationSpec
 
@@ -43,10 +44,24 @@ STATIONS_ROOT = Path(os.environ.get("WALKIN_STATIONS_ROOT", "/data/vms/streamhos
 # brief §4: the museum's stations must not feel the walk-in plane. These are the
 # defaults the slice imposes per clone; the slice itself carries the global cap.
 # The plane's ARP-priming helper (ledger §6), as a command template. `{ip}`,
-# `{tap}` and `{identity}` are filled in. Lane 6 owns the helper itself — it
-# lives with the plane's tooling rather than being copied into three station
-# scripts — so the broker only knows how to CALL it, and is told which by this.
-ARP_PRIME_CMD = os.environ.get("WALKIN_ARP_PRIME", "")
+# `{tap}` and `{identity}` are filled in. Lane 6 owns the real helper — it lives
+# with the plane's tooling rather than being copied into three station scripts —
+# and `WALKIN_ARP_PRIME` points at it; this default is what the broker does
+# until then, and it is the shape the helper needs.
+#
+# The `ip neigh del` is NOT optional, and it is the half that is easy to leave
+# out. Every clone of a station carries its golden's MAC (§5.3), so a RESPAWN
+# moves that MAC to a new bridge port. CT 952 still holds a STALE neighbour
+# entry from the previous clone and keeps unicasting to the port that went away,
+# so the ping never reaches the new tap and the prime silently fails — measured
+# here: without the delete, the first clone primed and every clone after a reset
+# did not, and its visitor got the dead first page load this whole mechanism
+# exists to prevent. Deleting the entry forces a broadcast ARP, which reaches
+# the new port and re-teaches the bridge in the same breath.
+ARP_PRIME_CMD = os.environ.get(
+    "WALKIN_ARP_PRIME",
+    'pct exec 952 -- sh -c "ip neigh del {ip} dev eth0 2>/dev/null; ping -c1 -W2 {ip}" >/dev/null 2>&1',
+)
 CPU_QUOTA = os.environ.get("WALKIN_CPU_QUOTA", "100%")
 MEMORY_MAX = os.environ.get("WALKIN_MEMORY_MAX", "1G")
 TASKS_MAX = os.environ.get("WALKIN_TASKS_MAX", "96")
@@ -54,6 +69,11 @@ TASKS_MAX = os.environ.get("WALKIN_TASKS_MAX", "96")
 
 class CloneError(RuntimeError):
     """A clone that could not be built, or one we refuse to touch."""
+
+
+def _is_running(conn) -> bool:
+    status = conn.execute("query-status")
+    return bool(isinstance(status, dict) and status.get("running"))
 
 
 def _guard_env() -> dict:
@@ -147,9 +167,18 @@ class Clone:
         script = STATIONS_ROOT / self.spec.station / Path(self.spec.tapnet).name
         if not script.exists():
             raise CloneError(f"{script} is not on the box — the walk-in tap script has not been deployed")
+        # `WI_TAP_IF` is what the landed wi-tapnet.sh scripts read; the rest are
+        # context a future one may want. The GUEST_IP is deliberately NOT passed:
+        # the script owns the address (it scopes its guard chain to it), and the
+        # broker reads it back out rather than dictating it.
         _run(
             ["bash", str(script), verb],
-            env={**os.environ, "WI_TAP": self.plan.tap, "WI_IDENTITY": self.identity, "WI_MAC": self.plan.mac},
+            env={
+                **os.environ,
+                "WI_TAP_IF": self.plan.tap,
+                "WI_TAP_BRIDGE": self.spec.netdev.bridge or "vmbr-wi",
+                "WI_IDENTITY": self.identity,
+            },
             check=(verb == "up"),
         )
 
@@ -188,8 +217,18 @@ class Clone:
         raise CloneError(f"{self.identity}: QMP never answered ({last or 'no socket'}) — see {self.plan.logfile}")
 
     def resume(self) -> None:
-        with self.qmp() as conn:
-            conn.resume()
+        """Un-pause under a wake lease, and PROVE the vCPUs moved.
+
+        A pool member has its own streamhost attached and no visitor, so the
+        daemon believes it should be paused and re-asserts that on a reconciler.
+        A bare `cont` here is undone underneath us and the visitor connects to a
+        frozen machine — with an OK on the wire and nothing in the log. The
+        lease holds the daemon off; `wake` verifies with query-status rather
+        than trusting the ack (`docs/lab/walkin/CONTRACT-LEDGER.md` §7.1).
+        """
+        with wake.lease(self.identity), self.qmp() as conn:
+            wake.wake(conn.execute, self.identity)
+            wake.assert_running(conn.execute, self.identity, "the claim's resume")
 
     def pause(self) -> None:
         with self.qmp() as conn:
@@ -240,46 +279,77 @@ class Clone:
         found = re.search(r"WI_TAP_GUEST_IP:-([0-9][0-9.]+)", text)
         return found.group(1) if found else ""
 
-    def prime_network(self) -> bool:
+    def prime_network(self, attempts: int = 5, settle: float = 2.0) -> bool:
         """Repair the clone's ARP cache before any visitor touches it.
 
         Not renumbering the walk-in plane has exactly one cost, measured by lane
-        8 on the real bridge: a golden carries a WARM ARP CACHE from its
-        retronet capture, so it believes `10.99.0.2` lives at CT 951's MAC —
-        which does not exist on `vmbr-wi`. The clone's FIRST outbound flow is
-        100% lost until it hears the real gateway's ARP, after which it works
-        permanently. Left alone, every walk-in visitor's first page load dies.
+        8 on the real bridge: a golden carries a WARM ARP CACHE from its retronet
+        capture, so it believes `10.99.0.2` lives at CT 951's MAC — which does
+        not exist on `vmbr-wi`. The clone's FIRST outbound flow is 100% lost
+        until it hears the real gateway's ARP, after which it works permanently.
+        Left alone, every walk-in visitor's first page load dies.
 
-        The repair is one ping FROM the gateway TO the clone. It happens here,
-        while the member is still paused and unclaimed, so it costs the visitor
-        nothing — the warm pool pays for it in advance.
+        The repair is one ping FROM the gateway TO the clone. Two things follow
+        that are easy to get wrong:
 
-        Returns whether the clone is primed. A pool member that could not be
-        primed is still returned rather than discarded: a first dead page load
-        is a worse experience than a working one, but it is a far better one
-        than no machine at all, and the caller logs the difference.
+        * **The guest must be RUNNING to hear it.** A pool member sits
+          `-loadvm golden -S`, and a stopped vCPU processes no frames at all —
+          the first version of this ran the ping against a paused guest and
+          reported failure for a plane that was working. So it resumes under a
+          wake lease, primes, and restores the pause it found.
+        * **The ping's exit code IS the proof.** A reply means the L2 path
+          works and the clone has now seen the gateway's ARP. Nothing else here
+          needs checking, and a screendump would prove less.
+
+        It happens while the member is unclaimed, so the visitor never waits for
+        it — that is the warm pool paying in advance. A member that cannot be
+        primed is still returned: a dead first page load is worse than a working
+        one and far better than no machine at all, and the caller logs it.
         """
         if self.spec.netdev.type != "tap":
-            return True  # nothing to prime: no bridge, no stale neighbour
+            return True  # no bridge, no stale neighbour to repair
         ip = self.guest_ip()
         if not ARP_PRIME_CMD or not ip:
             self.primed = False
             return False
         command = ARP_PRIME_CMD.format(ip=ip, tap=self.plan.tap, identity=self.identity)
-        proc = _run(["bash", "-lc", command], check=False)
-        self.primed = proc.returncode == 0
+        with wake.lease(self.identity), self.qmp() as conn:
+            was_stopped = not _is_running(conn)
+            try:
+                wake.wake(conn.execute, self.identity)
+                time.sleep(settle)  # the guest's stack has to see the link first
+                for _ in range(attempts):
+                    if _run(["bash", "-lc", command], check=False).returncode == 0:
+                        self.primed = True
+                        break
+                    time.sleep(1.0)
+            finally:
+                if was_stopped:
+                    conn.pause()
         return self.primed
 
     # -- teardown --------------------------------------------------------
 
     def kill(self) -> None:
-        if self.plan.pidfile.exists():
-            guard("kill-pidfile", str(self.plan.pidfile), check=False)
-        if self.unit:
-            _run(["systemctl", "stop", self.unit], check=False)
-        if self.daemon_unit:
-            _run(["systemctl", "stop", self.daemon_unit], check=False)
-        self._tapnet("down")
+        """Stop the guest and its daemon, by pidfile, under a wake lease.
+
+        The lease matters here because a RESET is this path followed straight by
+        a fresh build, and the visitor pressed a button to get it. Lane 7 met the
+        un-leased version of this race as
+        `Could not load snapshot 'golden' on 'ide0-hd0': Invalid argument` on a
+        healthy station whose daemon had paused it seconds earlier — three
+        attempts to reproduce it on a sandbox clone failed, and one attempt
+        inside a lease succeeded (ledger §7.1). Offered to a stranger, that is a
+        Reset button that says "failed" for no reason the visitor can act on.
+        """
+        with wake.lease(self.identity):
+            if self.plan.pidfile.exists():
+                guard("kill-pidfile", str(self.plan.pidfile), check=False)
+            if self.unit:
+                _run(["systemctl", "stop", self.unit], check=False)
+            if self.daemon_unit:
+                _run(["systemctl", "stop", self.daemon_unit], check=False)
+            self._tapnet("down")
 
     def discard(self) -> None:
         """Destroy the overlay by destroying the whole clone root.

@@ -17,7 +17,7 @@ import json
 import unittest
 from pathlib import Path
 
-from . import derive, deviceset, launcher, naming
+from . import derive, deviceset, launcher, naming, wake
 from . import spec as spec_mod
 
 REPO = Path(__file__).resolve().parents[3]
@@ -63,6 +63,45 @@ class SpecTests(unittest.TestCase):
         doc = {**SPEC_DOC, "overrides": {"netdev": {"type": "tap", "ifnamePattern": "wi-os2"}, "tapnet": "x.sh"}}
         with self.assertRaises(spec_mod.SpecError):
             spec_mod.parse_spec(doc, "test")
+
+
+class WakeLeaseTests(unittest.TestCase):
+    """A resume that is not verified is a resume that did not happen."""
+
+    def setUp(self):
+        self.calls = []
+
+    def _execute(self, running_after: int):
+        def execute(command, **_):
+            self.calls.append(command)
+            if command == "query-status":
+                return {"running": len([c for c in self.calls if c == "cont"]) >= running_after}
+            return {}
+
+        return execute
+
+    def test_a_running_guest_costs_one_query(self):
+        wake.wake(self._execute(0), "walkin-os2warp-1")
+        self.assertEqual(self.calls, ["query-status"])
+
+    def test_a_paused_guest_is_conted_and_then_proved(self):
+        wake.wake(self._execute(1), "walkin-os2warp-1", timeout=2)
+        self.assertIn("cont", self.calls)
+        self.assertEqual(self.calls[-1], "query-status")
+
+    def test_a_guest_that_never_resumes_raises_rather_than_returning(self):
+        # GuestPaused is a RuntimeError, and so is the fallback path's — this
+        # passes whether or not guest_wake resolved on this host.
+        with self.assertRaises(RuntimeError):
+            wake.wake(self._execute(99), "walkin-os2warp-1", timeout=0.3)
+
+    def test_assert_running_refuses_a_re_frozen_guest(self):
+        with self.assertRaises(RuntimeError):
+            wake.assert_running(lambda command, **_: {"running": False}, "walkin-os2warp-1")
+
+    def test_a_lease_is_always_a_context_manager(self):
+        with wake.lease("walkin-os2warp-1"):
+            pass
 
 
 class NeverRunsALauncherTests(unittest.TestCase):
