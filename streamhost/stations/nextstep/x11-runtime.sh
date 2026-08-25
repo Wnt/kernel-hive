@@ -102,12 +102,22 @@ MAC4="${NEXTSTEP_MAC4:-78}"
 MAC5="${NEXTSTEP_MAC5:-25}"
 
 # Injector pacing. PREVIOUS_CTL_BTN_HOLD is a FLOOR on how long a button stays
-# down, because a ~12 ms press on this hardware is sampled away entirely. It is
-# also a CEILING on double-click: two presses cost 2*hold, and NeXTSTEP stops
-# calling them a double click somewhere near half a second, so the fork's own
-# 400 ms default makes a visitor unable to open anything from the File Viewer.
-# 200 ms is the measured middle: single clicks land, double clicks open.
+# down, because a ~12 ms press on this hardware is sampled away entirely.
+# PREVIOUS_CTL_BTN_GAP is the floor BETWEEN button reports, and it is the one
+# that makes a double click possible: a button edge is a packet on a serial
+# device, and two applied in one CtlSock_Drain() pass are microseconds apart, so
+# the second destroys the first before a byte of it goes out. The hold GUARANTEED
+# that pairing — the first click's release waits out the hold at the queue head
+# and the second press is then the very next entry in the same pass — which is
+# why a double click through the browser selected an icon and never opened it,
+# while single clicks were exact. Proven on the live wire, 2026-08-25:
+# `ack 17 rtt_us=200856` (the release, held) and `ack 19 rtt_us=199852` (the
+# second press) are the same instant.
+# The two floors add press to press, and NeXTSTEP's own double-click threshold
+# is between 440 and 450 ms (swept against the guest's verdict on a rig), so
+# 200 + 40 = 240 ms keeps 200 ms of margin. Raising either eats it directly.
 BTN_HOLD="${PREVIOUS_CTL_BTN_HOLD:-200}"
+BTN_GAP="${PREVIOUS_CTL_BTN_GAP:-40}"
 # The SAME floor, for keys, and for a harder reason: the KMS is a serial device
 # behind a one-report register, so two edges applied in one drain pass overrun it
 # and NeXTSTEP discards the pair (kms.c). A phone's soft keyboard stamps a press
@@ -440,6 +450,7 @@ do_cold() {
     PREVIOUS_CTL_SOCK="$CTL" \
     PREVIOUS_AUDIO_FIFO="$AFIFO" \
     PREVIOUS_CTL_BTN_HOLD="$BTN_HOLD" \
+    PREVIOUS_CTL_BTN_GAP="$BTN_GAP" \
     PREVIOUS_CTL_KEY_HOLD="$KEY_HOLD" \
     PREVIOUS_CTL_KEY_GAP="$KEY_GAP" \
     nohup "${pre[@]}" \
@@ -541,4 +552,4 @@ else
 fi
 wait_planes || true
 arm_standby
-msg "up: pid=$(cat "$PIDFILE" 2>/dev/null) shm=$SHM ctl=$CTL audio=$AFIFO net=$NET/$RN_NS reset=criu:$STATE key=$KEY_HOLD/$KEY_GAP btn=$BTN_HOLD"
+msg "up: pid=$(cat "$PIDFILE" 2>/dev/null) shm=$SHM ctl=$CTL audio=$AFIFO net=$NET/$RN_NS reset=criu:$STATE key=$KEY_HOLD/$KEY_GAP btn=$BTN_HOLD/$BTN_GAP"

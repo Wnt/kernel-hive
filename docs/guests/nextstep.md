@@ -11,7 +11,7 @@ a **CRIU restore** of a checkpoint of the emulator process.
 
 | | |
 |---|---|
-| Emulator | `github.com/Wnt/previous`, branch `kernel-hive` at **7133f1b** (Previous SVN r1847 = 4.4 + the museum's eight patches), built `-DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1` |
+| Emulator | `github.com/Wnt/previous`, branch `kernel-hive` at **ad73344** (Previous SVN r1847 = 4.4 + the museum's nine patches), built `-DCMAKE_BUILD_TYPE=Release -DENABLE_RENDERING_THREAD=1` |
 | Launcher | [`streamhost/stations/nextstep/x11-runtime.sh`](../../streamhost/stations/nextstep/x11-runtime.sh) — the name is the daemon's fixed contract for `SH_STATION_RUNTIME=x11`; there is no X here |
 | Scene builder | [`scripts/build-guests/nextstep/nextstep-scene.py`](../../scripts/build-guests/nextstep/nextstep-scene.py) |
 | Golden | [`scripts/build-guests/nextstep/nextstep-bake-golden.sh`](../../scripts/build-guests/nextstep/nextstep-bake-golden.sh) |
@@ -124,11 +124,52 @@ button from 726 px away in one round.
 **Buttons carry a minimum hold, and it is a CEILING as well as a floor.** A
 ~12 ms press is sampled away entirely — a menu item highlights and never fires.
 The fork's `PREVIOUS_CTL_BTN_HOLD` holds an early RELEASE in the queue so a
-visitor's quick click cannot be lost. But two presses cost `2 x hold`, and
-NeXTSTEP stops scoring them as a double click somewhere near half a second, so
-the fork's own 400 ms default leaves a visitor unable to open anything from the
-File Viewer. **The station runs 200 ms**: measured, single clicks land and a
-double click opens OmniWeb.
+visitor's quick click cannot be lost. But two presses cost `hold + gap`, and
+NeXTSTEP stops scoring them as a double click above **440 ms** — swept on a rig
+against the guest's own verdict, 240/260/320/380/440 ms press-to-press all score
+DOUBLE and 450 ms and up all score two singles. The fork's own 400 ms hold
+default therefore leaves a visitor unable to open anything from the File Viewer.
+**The station runs 200 + 40 ms**: single clicks land, double clicks open, and
+200 ms of margin is left under the guest's threshold.
+
+### The lost release that made every double click a single
+
+**A button edge is a REPORT on a serial device, and the hold alone guaranteed
+that two of them landed in one drain pass.** This is the third instance of the
+one-report-register family this campaign has found — after `kms_mouse_button()`
+below and the keyboard's in §5.1 — and it is the one that survived longest,
+because every test that ever exercised it used an ACKING control-socket client,
+which cannot put two edges in one pass and therefore cannot see it.
+
+The shape: the first click's release waits out `PREVIOUS_CTL_BTN_HOLD` at the
+queue head; when it finally applies, the drain loop takes the very next entry —
+the SECOND PRESS — in the same pass. On the tablet route `summa_pen_button()`
+ends in `tablet_send_data(5)`, which only assigns `tablet.count` and schedules
+`EVENT_TABLET_IO`; two calls in one pass are microseconds apart with no emulated
+cycles between them, so the second rewrites the buffer before one byte of the
+first has gone out. `tablet.flags` is a level, so the release is not truncated —
+it is **never transmitted**. The guest sees one long press: a select, never an
+open; a caret, never a selected word.
+
+Proven three ways on 2026-08-25:
+
+* **On the live wire**, with `SH_MAMESOCK_TRACE=on` and a real `page.mouse`
+  double click through the deployed client: the daemon received four separate
+  button events (`rx seq=10 btn=1`, `11 btn=0`, `12 btn=1`, `13 btn=0`) and sent
+  all four verbs, so nothing coalesced anywhere in the SPA or the daemon — and
+  `ack 17 rtt_us=200856` (the first release, held) and `ack 19 rtt_us=199852`
+  (the second press) are the same instant, one microsecond apart.
+* **On a rig**, with the pre-fix binary: a pipelined `DOWN1 UP1 DOWN1 UP1`
+  SELECTED `OmniWeb.app` and never launched it, while an acking client launched
+  it from the same pixel.
+* **On the same rig with the fix**: the pipelined pair launches OmniWeb and
+  selects a word in a text field, single click and click-drag are unchanged, and
+  pipelined typing still lands 19/19 at 0 ms.
+
+The fix is `PREVIOUS_CTL_BTN_GAP` (40 ms, fork commit `ad73344`): a button edge
+waits at the queue head until that long after the last input report of ANY kind.
+It shares the keyboard's clock because without the tablet it is literally the
+same one-report register.
 
 ### Keyboard: the NeXT KMS space, and the dwell floors it needs
 
@@ -181,7 +222,7 @@ run on this backend (`mame_sock.rs`); `station.env` states them as
 `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS` and the launcher reads them from there.
 A visitor who really holds a key pays nothing.
 
-### The one-report controller, twice
+### The one-report controller, three times
 
 **`kms_mouse_button()` sent one KMS report per button, so setting the pair —
 which is what any injector with a button mask does — put two reports into the
@@ -194,12 +235,17 @@ no menu track and no rubber band. The fork now has `kms_mouse_buttons()`, which
 reports both buttons in the single byte pair a real NeXT mouse uses.
 
 The keyboard defect above is the SAME controller telling the same lie a second
-time, three hours later, to a different plane — and both were hidden by planes
-that pass their own smoke test. The lesson to carry to the next KMS-adjacent
-change: **anything that can put two reports into this controller in one drain
-pass is broken until it is measured with a pipelined sender at zero spacing.**
-Acking clients hide it perfectly: a rig that waits for each ack serialises the
-edges itself, and typing at "0 ms" then lands 26 of 26 characters.
+time, three hours later, to a different plane. The lost double-click release
+(§4) is the third, five hours after that, and it is not even the same device —
+the SummaGraphics tablet on SCC port B has its own one-packet engine
+(`tablet_send_data()`), and it fails identically. All three were hidden by
+planes that pass their own smoke test. The lesson to carry to the next change
+anywhere near this injector: **anything that can put two reports into ANY of the
+guest's serial input devices in one drain pass is broken until it is measured
+with a pipelined sender at zero spacing.** Acking clients hide it perfectly: a
+rig that waits for each ack serialises the edges itself, and typing at "0 ms"
+then lands 26 of 26 characters while the live station loses nine in ten — and a
+double click launches an app on the rig while the exhibit only selects.
 
 ## 5. Reset: a CRIU restore, not a reboot
 
@@ -289,13 +335,19 @@ Three things in that list are load-bearing and were each found the hard way:
 
 - **Command-u, not a double click.** The Workspace does not re-read a directory
   because its contents changed. Double-clicking the `me` row in the browser
-  column does re-open it — but the injector's button-hold floor stretches a
-  double click far enough that NeXTSTEP intermittently scores it as two singles,
-  which SELECTS the row without re-opening it and leaves the type-select
+  column does re-open it — but the scene builder runs before the tablet exists,
+  so its pointer is dead reckoned, and a double click it aims by dead reckoning
+  that lands one row off SELECTS something instead, leaving the type-select
   silently one edit behind. That failure is indistinguishable from a keyboard
   that is not working. Command-u needs no pointer at all, which is the whole
   point before the tablet exists. (Double-clicking the identical-looking house
   on the SHELF never re-opens anything; it only selects.)
+
+  Until `PREVIOUS_CTL_BTN_GAP` landed there was a second reason, and it was the
+  real one: the injector destroyed the first click's release, so a double click
+  through this socket was *never* scored as one unless the sender waited for
+  each ack (§4). The scene builder's own `Rig.click()` is an acking client, which
+  is exactly why it never noticed.
 - **RETURN does not press the Install button**, even though it is drawn with the
   default-button glyph. Tested, not assumed: the framebuffer is unchanged. The
   pointer really is the only way in.
@@ -427,33 +479,34 @@ and a re-emit.
   runs with the unit STOPPED (the procedure is in the bake script's header).
   Making the server accept a second client, or preempt the first, would make the
   station reachable the way `labctl` reaches a MAME station; nobody has.
-- **A DOUBLE CLICK through the deployed client did not register** (2026-08-25,
-  found while re-verifying the buttons after the keyboard fix). Two independent
-  tests through real `page.mouse`: `dblclick` on `Chess.app` in the File Viewer
-  SELECTED it and never launched it, and `dblclick` on a word in a text field
-  placed a caret and never selected the word. A SINGLE click is exact in the
-  same runs. This is NOT the keyboard change — its gates are guarded on the
-  `KEY`/`MOD` verbs, so a button-only stream takes a bit-identical path — and
-  the 200 ms `PREVIOUS_CTL_BTN_HOLD` claim in §4 was measured through the
-  control socket, never through a browser. Two candidate mechanisms, neither
-  eliminated: (a) the injector applies the first release and the second press in
-  ONE drain pass, so the intermediate release is never a distinct report on the
-  wire and the guest sees one long press — the same shape as the keyboard bug,
-  one plane over; or (b) the SPA coalesces the two browser clicks before they
-  reach the daemon. Deciding between them is one `SH_MAMESOCK_TRACE=on` run.
-  **Any button-timing experiment costs a golden re-bake**, because
-  `PREVIOUS_CTL_BTN_HOLD` is read at `CtlSock_Init` and a restore brings back
-  the environment the checkpoint was baked with.
+- **The button floors are the same injector workaround as the keyboard's.** The
+  `kms.c` queue described above would cover them too — and so would the tablet's
+  own `EVENT_TABLET_IO` chain, which already knows when a packet has finished
+  shifting out and could simply refuse a new one until it has. Either would
+  replace `PREVIOUS_CTL_BTN_HOLD`/`_GAP` with something that needs no numbers.
+  Nobody has; the numbers work and they are measured.
+- **`PREVIOUS_CTL_BTN_HOLD` and `_GAP` are read at `CtlSock_Init`**, so a restore
+  brings back the environment the checkpoint was baked with and **every
+  button-timing change costs a golden re-bake**. Diagnose on a rig first; the
+  rig's cold boot has no tablet, but both routes have the same one-report
+  failure, so the mechanism reproduces and only the exact device differs.
 - **A synthetic ROLLOVER burst can leave the guest believing Shift is down.**
   `key-replay.py --type ... --cps 12 --hold-ms 200` (hold longer than the
   inter-key period, so three keys are down at once — something a NeXT keyboard's
   one-key-at-a-time reporting never sees) left the next line typed entirely in
   capitals; it cleared itself on the next real modifier edge. Every character
   was correct, so this is a modifier-LEVEL desync in the guest, not a lost key,
-  and no browser produces the input that causes it. The cheap hardening, if it
-  ever bites: make `CTL_RELEASE` send `kms_keyup(0, NEXTKEY_NONE)`
+  and no browser produces the input that causes it. **The cheap hardening is now
+  in** (fork `ad73344`): `CTL_RELEASE` sends `kms_keyup(0, NEXTKEY_NONE)`
   unconditionally instead of only when the injector itself thinks a modifier is
-  held, so every reconnect resynchronises the guest's belief.
+  held, so every reconnect resynchronises the guest's belief — and it queues the
+  two button releases as separate entries so the floors pace all three reports
+  apart instead of stacking them into one apply. The desync itself has not been
+  re-provoked to confirm the hardening clears it; nothing a browser sends
+  produces it, so it is not worth a live experiment.
+  (`key-replay.py`'s own shift windows overlap above ~5 cps at hold 60 ms, which
+  makes a run of capitals come out `AND` -> `And`. That is the synthesizer, not
+  the guest: at `--cps 4 --hold-ms 40` every capital lands.)
 - Only `nTabletType = 2` (SummaGraphics MM 1201) was ever tried.
 
 ---
