@@ -47,6 +47,12 @@ OPEN_PATHS = frozenset(
         # one ever reaches signup. The page shows the closed notice when the
         # switch is not Open, so this is safe at every switch position.
         "/walkin",
+        # The projection (brief 5.3) and the curatorial prose it pairs with.
+        # Both are exhibition data by construction — the projection is an
+        # allowlist, and a signed-out caller owns no clone, so it carries no
+        # signalEndpoint at all.
+        "/walkin/manifest.json",
+        "/poster-docs.json",
         "/walkin/state",
         "/walkin/signup",
         "/walkin/signup/begin",
@@ -64,7 +70,9 @@ OPEN_PATHS = frozenset(
 # served to every signed-in visitor and readable in a public repo; it publishes
 # no data, because every route the bundle CALLS is still gated (the full-fleet
 # manifest, the fleet table, station signaling, /admin, /clientcmd*).
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/")
+# /posters/ holds the captured exhibit stills. The walk-in landing page and its
+# exhibits view are built from them, and they are published art, not data.
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to
