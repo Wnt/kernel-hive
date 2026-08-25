@@ -429,6 +429,40 @@ file: the grey strip at guest y=227 is OmniWeb's READ-ONLY location display and
 swallows every keystroke silently — the editable field is the white one at
 y=149, and aiming at the wrong one reads exactly like a broken keyboard.
 
+**Double click, 2026-08-25 (the button gap, §4).**
+`tests/e2e-live/nextstep-dbl-probe.mjs` drives real `page.mouse.dblclick` the
+same way. Every line below is a framebuffer shot, not a log:
+
+```
+dblclick guest 403,70   File Viewer "Demos"  -> the folder OPENS (a column of
+                                                twelve .app icons appears)
+dblclick guest 386,330  "Chess.app"          -> Chess LAUNCHES; its board window
+                                                is on screen 20 s later
+dblclick guest 224,226  the location display -> the word "www" is SELECTED
+click    guest 300,226  the same field       -> caret only, selection cleared
+```
+
+and the wire underneath, with `SH_MAMESOCK_TRACE=on`, is the whole story of the
+bug and the fix in four ack latencies. Before (`PREVIOUS_CTL_BTN_GAP` absent):
+
+```
+ack 17 rtt_us=200856   UP1   the first release, held out its 200 ms
+ack 19 rtt_us=199852   DOWN1 the second press — the SAME instant
+```
+
+After (gap 40 ms):
+
+```
+ack 60 rtt_us=201954   UP1     the first release
+ack 62 rtt_us=241707   DOWN1   39.8 ms later — a different drain pass
+ack 64 rtt_us=441145   UP1     the second release
+```
+
+Press to press is 238.6 ms, against a guest threshold measured at 440–450 ms.
+The same session re-ran the motion, drag and typing probes above unchanged:
+`1000,700` and `300,200` exact, the held drag exact to `450,500`, 19/19 at 0 ms
+and 23/23 with capitals and a shifted `+` at 120 ms.
+
 The gallery's own reset button was exercised the same day:
 `POST /restore/nextstep` → `systemctl restart streamhost@nextstep` →
 `nextstep: restored state=golden` in 3 s, 13 s end to end including the unit's

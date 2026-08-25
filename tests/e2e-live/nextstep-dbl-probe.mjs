@@ -8,6 +8,7 @@
 //   node nextstep-dbl-probe.mjs single 224,226        # one click, then dwell
 //   node nextstep-dbl-probe.mjs dbl 224,226           # page.mouse.dblclick
 //   node nextstep-dbl-probe.mjs dbl 224,226 403,70    # several, in order
+//   node nextstep-dbl-probe.mjs mix s:224,226 d:224,226   # per-target prefix
 //
 // The framebuffer is the only proof: pair it with a shot on the box between
 // steps (tools/fbshm.py against the station's fb.shm). The dwell is generous
@@ -23,7 +24,14 @@ import { chromium } from '@playwright/test';
 const URL_BASE = process.env.GALLERY_URL || 'https://192.0.2.10:8443';
 const DWELL = Number(process.env.PROBE_DWELL_MS ?? 6000);
 const mode = process.argv[2] || 'dbl';
-const targets = process.argv.slice(3).map((a) => a.split(',').map(Number));
+// A target may carry its own `s:` (single) or `d:` (double) prefix, which is
+// what an acceptance run wants: a single click to focus and select, then a
+// double click on the SAME pixel, so the two verdicts are read off one scene.
+const targets = process.argv.slice(3).map((a) => {
+  const m = /^([sd]):(.*)$/.exec(a);
+  const [x, y] = (m ? m[2] : a).split(',').map(Number);
+  return { x, y, how: m ? (m[1] === 'd' ? 'dbl' : 'single') : mode };
+});
 if (!targets.length) throw new Error('give at least one guest x,y target');
 
 const browser = await chromium.launch({ headless: true, args: ['--ignore-certificate-errors'] });
@@ -60,12 +68,12 @@ console.log(`surface ${res.w}x${res.h} scale ${scale.toFixed(4)} origin ${ox.toF
 // A move first, and a settle: the injector holds a button edge behind an
 // unconverged pointer, and the FIRST move of a fresh session can land short
 // (the session's wake and the sink's resync preamble share that moment).
-for (const [gx, gy] of targets) {
+for (const { x: gx, y: gy, how } of targets) {
   const [cx, cy] = toClient(gx, gy);
   await page.mouse.move(cx, cy, { steps: 8 });
   console.log(`${Date.now()} move guest ${gx},${gy}`);
   await page.waitForTimeout(1500);
-  if (mode === 'dbl') {
+  if (how === 'dbl') {
     await page.mouse.dblclick(cx, cy);
     console.log(`${Date.now()} DBLCLICK guest ${gx},${gy}`);
   } else {

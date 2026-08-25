@@ -159,7 +159,11 @@ def open_browser(r):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--shm", default="/data/vms/streamhost/stations/nextstep/run/fb.shm")
+    # $BASE/fb.shm, NOT $BASE/run/fb.shm: the launcher creates the mapping in the
+    # station dir (where the emit puts SH_SHM_PATH and where the rest of the
+    # fleet keeps it) and hands it over by owner; only the control socket, which
+    # the emulator must bind itself, lives in the writable run dir.
+    ap.add_argument("--shm", default="/data/vms/streamhost/stations/nextstep/fb.shm")
     ap.add_argument("--ctl", default="/data/vms/streamhost/stations/nextstep/run/ctl.sock")
     ap.add_argument("--evidence", default="/data/vms/streamhost/stations/nextstep/evidence")
     ap.add_argument("--telnet-host", default="10.99.0.25")
