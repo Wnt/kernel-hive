@@ -1,0 +1,24 @@
+{
+  "station": "rhapsody",
+  "enabled": true,
+  "poolSize": 2,
+  "seed": {
+    "disk": "/data/vms/walkin/seeds/rhapsody-golden.qcow2",
+    "readOnly": true
+  },
+  "overlay": {
+    "format": "qcow2",
+    "discardOnKill": true
+  },
+  "launcher": "streamhost/stations/rhapsody/qemu-streamhost.sh",
+  "overrides": {
+    "binary": "/opt/qemu-rhapsody/bin/qemu-system-i386",
+    "netdev": {
+      "type": "tap",
+      "bridge": "vmbr-wi",
+      "ifnamePattern": "wi-rhapsody-%d"
+    },
+    "tapnet": "streamhost/stations/rhapsody/wi-tapnet.sh"
+  },
+  "sandbox": true
+}
