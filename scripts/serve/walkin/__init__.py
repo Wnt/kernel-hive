@@ -12,6 +12,7 @@ sentence true under an anonymous stranger.
     claims.py     kh-claim: "it exists" is not "it is mine" (rule 7)
     clone.py      spawn / resume / kill-through-clone-guard / discard overlay
     broker.py     the pool, the sessions, the TTL+idle watchdog
+    reaper.py     giving back what no clone stands behind: dirs, taps, claims
     routes.py     the server side of /walkin/state|claim|release|reset
 
 Lane 2 owns who is allowed to call these; this package owns what happens when

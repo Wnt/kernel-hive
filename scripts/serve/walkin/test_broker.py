@@ -247,7 +247,7 @@ class OrphanTapTests(unittest.TestCase):
     def _patch(self, taps):
         from . import clone as clone_mod
 
-        real_live, real_down = clone_mod.live_taps, clone_mod.tapnet_down
+        real_live, real_down = clone_mod.live_taps, clone_mod.tapnet_down  # noqa: F841
         clone_mod.live_taps = lambda: taps
         clone_mod.tapnet_down = lambda station, tap, bridge="": (self.downed.append((station, tap)), True)[1]
         self.addCleanup(lambda: setattr(clone_mod, "live_taps", real_live))
@@ -319,6 +319,21 @@ class StrayClaimTests(unittest.TestCase):
         (naming.WALKIN_ROOT / "walkin-os2warp-1").mkdir()
         self.assertEqual(self.broker.release_stray_claims(), [])
         self.assertEqual(len(claims.mine(claims.SLOT_CLASS)), 1)
+
+    def test_another_broker_s_clone_tree_is_never_touched(self):
+        """A dev sandbox and production can share a session name.
+
+        Then each one's `ls --mine` lists the other's claims, and an identity
+        this broker has never heard of is NOT a stray — it belongs to a clone
+        tree somewhere else, quite possibly with a visitor on it.
+        """
+        claims.take(claims.SLOT_CLASS, 160, "walkin clone walkin-os2warp-9 @ /data/vms/walkin", exclusive=True)
+        self.assertEqual(self.broker.release_stray_claims(), [])
+        self.assertEqual(len(claims.mine(claims.SLOT_CLASS)), 1)
+
+    def test_a_legacy_claim_with_no_root_is_still_reclaimable(self):
+        claims.take(claims.SLOT_CLASS, 161, "walkin clone walkin-os2warp-9", exclusive=True)
+        self.assertEqual(self.broker.release_stray_claims(), ["walkin-slot/161"])
 
     def test_another_tool_s_claims_are_never_touched(self):
         claims.take("port", "8091", "someone else's server")

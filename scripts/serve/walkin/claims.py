@@ -132,6 +132,30 @@ def release(klass: str, name: str, force: bool = False) -> None:
     _run(["release", klass, str(name), *(["--force"] if force else [])])
 
 
+def claim_purpose(identity: str) -> str:
+    """`walkin clone <identity> @ <clone root>`.
+
+    The root is in there because the SESSION NAME is not unique: a dev sandbox
+    and the production serving unit can both run as `walkin-broker`, and then
+    each one's `kh-claim ls --mine` lists the other's claims. Without the root a
+    reconciler on one side would see the other side's claim for an identity it
+    has never heard of, decide it was a stray, and release a slot out from under
+    a running clone. The root is the thing that actually differs.
+    """
+    return f"walkin clone {identity} @ {naming.WALKIN_ROOT}"
+
+
+def purpose_root(purpose: str) -> str:
+    """The clone root a claim's purpose names, or "" for one that names none."""
+    _, sep, root = (purpose or "").partition(" @ ")
+    return root.strip() if sep else ""
+
+
+def purpose_identity(purpose: str) -> str:
+    head = (purpose or "").partition(" @ ")[0]
+    return head.replace("walkin clone ", "").strip()
+
+
 @dataclass(frozen=True)
 class SlotClaim:
     slot: int
@@ -153,11 +177,11 @@ def claim_slot(identity: str, preferred: int | None = None) -> SlotClaim:
     reasons = set()
     for slot in candidates:
         naming.check_slot(slot)
-        got, why = try_take(SLOT_CLASS, slot, f"walkin clone {identity}", exclusive=True)
+        got, why = try_take(SLOT_CLASS, slot, claim_purpose(identity), exclusive=True)
         if not got:
             reasons.add(why)
             continue
-        port, why = try_take(PORT_CLASS, naming.udp_port(slot), f"walkin clone {identity}", exclusive=True)
+        port, why = try_take(PORT_CLASS, naming.udp_port(slot), claim_purpose(identity), exclusive=True)
         if not port:
             got.release()
             reasons.add(why)

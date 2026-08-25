@@ -38,7 +38,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import claims, naming
+from . import claims, reaper
 from . import clone as clone_mod
 from . import spec as spec_mod
 
@@ -445,105 +445,22 @@ class Broker:
         return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "strays": strays, "built": built}
 
     def reap_orphans(self) -> list:
-        """Clone roots on disk that this broker does not own — kill and discard.
-
-        These are what a crashed or restarted serving process leaves behind. The
-        pool cannot refill past its ceiling while their slots are still claimed,
-        so an unreaped orphan is a pool that quietly shrinks.
-        """
-        root = naming.WALKIN_ROOT
+        """Clone roots on disk that this broker does not own — kill and discard."""
         with self._lock:
             known = set(self._members)
-        try:
-            entries = sorted(root.iterdir())
-        except OSError as exc:
-            # Not there yet (nothing has been built), or not ours to read. Either
-            # way the watchdog must keep running: a reaper that dies on a
-            # permission error stops reaping the clones it CAN see.
-            if root.exists():
-                sys.stderr.write(f"[walkin] cannot scan {root} for orphans: {exc}\n")
-            return []
-        found = []
-        for entry in entries:
-            if not entry.is_dir() or entry.name in known or not entry.name.startswith("walkin-"):
-                continue
-            clone_mod.reap_orphan(entry)
-            found.append(entry.name)
-        return found
+        return reaper.reap_orphan_dirs(known)
 
     def reap_orphan_taps(self) -> list:
-        """Walk-in taps on the box that no clone stands behind.
-
-        A tap outlives its clone if the build failed after bringing it up, and
-        an orphaned tap is not merely untidy: its name carries the clone's pool
-        index (`wi-os2warp-2`), so the next clone allotted that index cannot be
-        created — `ip link add` fails, the build fails, the watchdog tries the
-        next index and fails again. Fifteen of these accumulated on the live
-        plane in one afternoon and would have failed the next fifteen os2warp
-        builds in a row.
-
-        Scanned from `/sys/class/net` rather than from any record we keep,
-        because the leaked ones are by definition the ones nothing recorded.
-        """
-        known = set()
+        """Walk-in taps on the box that no clone stands behind."""
         with self._lock:
-            for member in self._members.values():
-                known.add(member.clone.plan.tap)
-        try:
-            for entry in naming.WALKIN_ROOT.iterdir():
-                if entry.is_dir():
-                    known.add(clone_mod.read_manifest(entry).get("tap", ""))
-        except OSError:
-            pass
-        reaped = []
-        for tap in clone_mod.live_taps():
-            if tap in known:
-                continue
-            station = clone_mod.TAP_RE.match(tap).group("station")
-            if clone_mod.tapnet_down(station, tap):
-                reaped.append(tap)
-            else:
-                sys.stderr.write(
-                    f"[walkin] orphan tap {tap} would not go down; the next clone at that index will fail\n"
-                )
-        return reaped
+            known = {m.clone.plan.tap for m in self._members.values()}
+        return reaper.reap_orphan_taps(known)
 
     def release_stray_claims(self) -> list:
-        """Give back slot and port claims that no clone stands behind.
-
-        The claim registry lives in `/run`, which survives a service restart —
-        so a restarted broker inherits its own previous incarnation's claims,
-        under its own session name, with no clone attached to any of them. Under
-        the exclusive-take rule those claims are now REFUSALS: nothing can be
-        built on them, and the pool wedges at "no free slot" against a range that
-        is almost entirely idle. kh-claim's own staleness rule would clear them
-        eventually — after twelve hours, because they carry no pid — which is not
-        a recovery, it is an outage with a timer on it.
-
-        A claim is a stray when its purpose names a clone identity that is
-        neither a live pool member nor a directory on disk. Both halves matter:
-        `_members` alone would reap a clone another thread is mid-build, and the
-        directory alone would miss one whose crumb has not landed yet.
-        """
+        """Give back slot and port claims that no clone stands behind."""
         with self._lock:
             known = set(self._members)
-        try:
-            on_disk = {p.name for p in naming.WALKIN_ROOT.iterdir() if p.is_dir()}
-        except OSError:
-            on_disk = set()
-        released = []
-        for row in claims.mine():
-            klass, name = row.get("class", ""), row.get("name", "")
-            if klass not in (claims.SLOT_CLASS, claims.PORT_CLASS):
-                continue
-            identity = row.get("purpose", "").replace("walkin clone ", "").strip()
-            if not identity.startswith("walkin-"):
-                continue  # not ours to judge: some other tool's port claim
-            if identity in known or identity in on_disk:
-                continue
-            claims.release(klass, name)
-            released.append(f"{klass}/{name}")
-        return released
+        return reaper.release_stray_claims(known)
 
     def signal_entries(self) -> dict:
         """`{identity: {udpPort, hashFile}}` — the pool's rows for the signaling
