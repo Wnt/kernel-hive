@@ -34,6 +34,33 @@ gate will report the drift — which is the intended loud signal, not a fault.
 retained deliberately; delete a `*.debridged-bak` only when the operator has
 accepted that station for good.
 
+## nextstep — same three moves, one extra step, and one thing that is gone
+
+Converted 2026-08-25 and it keeps the same two shelved files
+(`qemu-streamhost.sh.debridged-bak`, `overlay.qcow2.debridged-bak`), so steps 1
+and 2 above are identical. Two differences:
+
+- **Step 3 does not apply.** No daemon canary was needed: `nextstep` already ran
+  the same artifact `irix` and the de-bridged MAME stations do, and `previous`
+  in its pool still names what it named before the conversion. Leave both
+  symlinks alone.
+- **Tear the retronet link down.** `bash
+  /data/vms/streamhost/stations/nextstep/rn-tapnet.sh down` removes the veth
+  pair, the private netns and the `NEXTSTEPRN-IN` guard chain. The kiosk had no
+  network of its own and will not clean this up.
+
+What rolling back gives up, stated plainly: the kiosk is a MONO NeXTcube with no
+network and no browser, and its reset is `loadvm golden` on a snapshot from
+2026-08-11. The colour machine, the retronet join, OmniWeb and the 3 s CRIU
+reset all belong to the host-native shape. The repo side is a `git revert` of
+the conversion commit as above, plus `stream.pointer.method` going back to
+`qemu-usb-tablet`.
+
+The host-native assets under `/data/vms/streamhost/assets/nextstep` (the
+emulator binary, the ROM, the cold-boot disk and the CRIU golden, 252 MB with
+the disk reflinked) can stay: nothing reads them once the unit is on the kiosk
+launcher, and re-converting without them means a fresh install.
+
 ## atarist
 
 Still a hatari bridge kiosk and NOT converted. Its apps live in a host
