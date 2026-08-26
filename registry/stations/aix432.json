@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "id": "aix432",
+  "era_year": 1999,
+  "stationDir": "aix432",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": [
+      {
+        "order": 68,
+        "prelude": "",
+        "value": {
+          "key": "aix432",
+          "script": "tiles/aix432.sh",
+          "outputDir": "Aix432",
+          "class": "licensed",
+          "estimated": "~4-6h",
+          "automation": "supplied",
+          "produces": "aix433-full.qcow2 (AIX 4.3.3 + X11/CDE + Ultimedia Services + Netscape 4.08 + Quake 1.07, native on the emulated GXT130P) + golden; builds its own qemu-system-ppc into /opt/qemu-ppc-s3 first",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "display": {
+    "width": 1024,
+    "height": 768,
+    "bitsPerPixel": 8,
+    "colors": 256
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/aix432",
+      "qmp": null,
+      "pointer_mode": null,
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": null,
+      "udp_port": 54201,
+      "notes": "DECLARED, NOT DEPLOYED — aix432 is still a candidate, so nothing here is emitted into registry/generated/labctl-declarations.json (that document carries streamhost rows only) and no station directory exists on the box yet. When the station is promoted the declaration becomes: dir as above, qmp = the station-local qmp.sock, console fb, udp_port 54201, and an exec kind only once a captured-output channel is actually proven — the guest has a serial console on the 40p super-I/O port, which is the obvious candidate, and no network exec path at all (the NIC is on the retronet web plane with no route off it)."
+    }
+  },
+  "render": {
+    "signalOrder": 69,
+    "stationsManifestOrder": 67,
+    "bindingOrder": 74,
+    "bindingPrelude": "",
+    "goldenOrder": 67,
+    "bringUpGroup": 8,
+    "actionMapOrder": 40,
+    "stationsManifestPrelude": "\n# aix432 (slot 201) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is\n#   generated from it. Promotion needs the golden and a relay-reachable port.\n"
+  },
+  "stream": {
+    "transport": "showcase",
+    "udpPort": 54201,
+    "slot": 201,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "guestDoc": "docs/guests/aix432.md",
+  "credentialsRef": "guest/aix432",
+  "runtime": {
+    "bringUpOrder": 74,
+    "qemu": {
+      "mode": "verbatim",
+      "binary": "/opt/qemu-ppc-s3/bin/qemu-system-ppc",
+      "machine": "40p",
+      "accel": "tcg",
+      "cpu": "604",
+      "memoryMB": 192,
+      "smp": 1,
+      "vga": "mga",
+      "deviceSetSummary": [
+        "/opt/qemu-ppc-s3/bin/qemu-system-ppc (kernel-hive fork, branch aix432-s3)",
+        "-M 40p,audiodev=snd0 -accel tcg -m 192 (the machine reports 128 MiB whatever is passed; -m 512 is refused outright)",
+        "-bios $ROMS/rs6k40p.BIN (the GENUINE IBM 7020-40P boot ROM; PREP_TB_FREQ=15000000 in the environment, and the POST settimeofday call must be skipped)",
+        "-vga mga (the Matrox MGA model added on this branch; AIX claims it as the GXT130P, mg21)",
+        "-drive file=$D/aix433-golden.qcow2,format=qcow2,if=scsi,bus=0,unit=0 (LSI 53c810 at PCI_DEVFN(1,0) — the machine has NO IDE)",
+        "-global cs4231a.dma=6 (AIX's CS4231 driver fixes play DMA at 6; QEMU defaults to 3. iobase 0x830 / IRQ 10 already match)",
+        "-netdev tap,id=n0,ifname=aixrn0,script=no,downscript=no -device <NIC>,netdev=n0,mac=$RN_AIX432_MAC (retronet bridge vmbr-rn)",
+        "-serial unix:$D/serial.sock,server=on,wait=off",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "unwritten",
+        "reason": "There is NO tracked launcher yet: streamhost/stations/aix432/ does not exist, so runtime.qemu.launcher, envFixture, emitArgs and auxFiles are deliberately absent rather than pointing at files nobody has written. deviceSetSummary above is the PINNED INTENT the golden must be baked against, transcribed from scripts/build-guests/tiles/aix432.sh and docs/lab/research/candidate-aix.md; the NIC model is the one open device-set question. A checkpoint, its binary and its device set are one combination, so the launcher has to exist before the golden is trusted."
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "aix432",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "INTENDED, NOT YET BAKED — a logged-in CDE session on AIX 4.3.3 at 1024x768x8 (RS/6000 7020 40P under TCG), front panel and dtwm frames drawn by AIX's own GXT130P DDX through the emulated Matrox, with Netscape Communicator 4.08 on a corpus page from the retronet gateway. mouse/keyboard stay UNVERIFIED until the framebuffer proves them: the MGA model has no hardware cursor yet, so the pointer is INVISIBLE even where it moves, which is a floor-blocking defect and not a cosmetic one."
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "showcase",
+    "accentColor": "#2f6ea8",
+    "eraLabel": "1999 · IBM RS/6000 — AIX 4.3.3 / CDE"
+  },
+  "museum": {
+    "id": "aix432",
+    "displayName": "IBM RS/6000 — AIX 4.3.3",
+    "year": 1999,
+    "lineage": "IBM AIX (System V Unix)",
+    "arch": "PowerPC 601 (PReP, 32-bit)",
+    "ramMB": 128,
+    "era": "1990s",
+    "accent": "#2f6ea8",
+    "eraSoftware": [
+      "CDE 1.0 (dtlogin, dtwm, dtfile, dtterm)",
+      "Motif 2.1 / X11R6",
+      "SMIT",
+      "aixterm",
+      "Ultimedia Services 2.2.1",
+      "Netscape Communicator 4.08",
+      "Quake 1.07 for AIX (IBM's own build)"
+    ],
+    "periodBrowser": "Netscape Communicator 4.08 for AIX",
+    "iconicApps": [
+      "the CDE front panel",
+      "SMIT",
+      "aixterm",
+      "Netscape Communicator",
+      "Quake"
+    ],
+    "blurb": "IBM's own Unix on IBM's own PowerPC workstation: AIX 4.3.3 booting to a full CDE desktop on an RS/6000, the machine that carried IBM's Unix business from the 1990s into the POWER era — and the desktop every other workstation vendor eventually standardised on.",
+    "notes": "Candidate, not on the floor. The real 7020-40P shipped a PowerPC 601; QEMU has no 601 model, so the exhibit runs a 604 — which is precisely why the genuine IBM boot ROM asserts 'time went negative' on its 601 clock path and needs PREP_TB_FREQ=15000000 plus a skipped POST settimeofday to boot at all. Graphics are a Matrox MGA device model written for this station and claimed by AIX as the GXT130P: the first natively graphical AIX under emulation we know of, against a Virtual OS Museum that reaches CDE only over XDMCP. It is AIX 4.3.3 and not the originally scoped 4.3.2 because 4.3.2's installer kernel stops driving the emulated LSI 53c810 after one retry cycle — measured, see docs/lab/research/candidate-aix.md."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ aix432-s3 (11.0.2 + Poussineau's S3 Trio port + a new hw/display/mga.c + Tarasenko's lsi/raven AIX fixes + a PS/2 set-3 ACK fix), built to /opt/qemu-ppc-s3",
+    "driver": "40p"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "host-only",
+    "note": "retronet web plane only. The guest's NIC is bridged onto vmbr-rn through the persistent tap aixrn0 and addressed inside the guest with no default route, so it reaches the retronet gateway CT and nothing else, in either direction; the bridge has no uplink. Declared rather than derived because no launcher exists yet for the device ledger to be read from. docs/lab/retronet/STATION-aix432.md"
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.28",
+    "addressing": "static",
+    "link": "tap aixrn0 on vmbr-rn",
+    "doc": "docs/lab/retronet/STATION-aix432.md"
+  },
+  "notes": [
+    "Tier 1 host-native station; slot 201 / UDP 54201 claimed via kh-claim, retronet 10.99.0.28 / tap aixrn0 claimed with it.",
+    "DISABLED CANDIDATE: not in the streamhost, signal, bring-up, golden, action-map or SPA lineups. Three things gate promotion — (1) a restore-proven golden baked against a TRACKED launcher, (2) streamhost/stations/aix432/ actually existing so runtime.qemu.launcher/envFixture/emitArgs can be filled, (3) a public-relay-reachable UDP port: 54201 is OUTSIDE ports.publicRelayLow..High (54080-54200) in registry/registry-v1.json, so promoting it as-is would fail validation and the exhibit would stream on the LAN while being unreachable through the edge.",
+    "Slot 201 was chosen because slots 152-200 are reserved for the walk-in clone pool (docs/lab/WALKIN-BRIEF.md); the scaffolder's allocator does not know about that reservation and would have handed out 152.",
+    "Known not to work, and not to be claimed anywhere visitor-facing: CorelDRAW 3.5 (needs an AIX 3.2-era libX11.a(shr.o) that 4.3 does not ship), Abuse's window (runs, stays black), and the MGA hardware cursor (unimplemented — the pointer is invisible)."
+  ]
+}

@@ -137,6 +137,7 @@ MANIFEST=(
   "rhapsody       |tiles/rhapsody.sh                                     |Rhapsody          |installed |~1-2h   |partial  |rhapsody-golden.qcow2 (Rhapsody 5.1 DR2 x86 on a 2 GB IDE disk, /opt/qemu-rhapsody) + golden"
   "chokanji       |tiles/chokanji.sh                                     |Chokanji          |retro     |~2-5m   |full     |chokanji.qcow2"
   "amigaos35      |tiles/amigaos35.sh                                    |AmigaOS35         |graphical |~30-60m |vision   |amigaos35-system.hdf golden master (AmigaOS 3.5 desktop, AWeb II; cold-boot reset)"
+  "aix432         |tiles/aix432.sh                                       |Aix432            |licensed  |~4-6h   |supplied |aix433-full.qcow2 (AIX 4.3.3 + X11/CDE + Ultimedia Services + Netscape 4.08 + Quake 1.07, native on the emulated GXT130P) + golden; builds its own qemu-system-ppc into /opt/qemu-ppc-s3 first"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
