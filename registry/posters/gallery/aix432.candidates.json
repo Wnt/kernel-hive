@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "aix432",
+  "images": [
+    {
+      "commonsFile": "File:Ibm 7248 front.jpg",
+      "alt": "An IBM RS/6000 43P (type 7248) desktop workstation photographed from the front, a low beige box with a floppy drive and CD-ROM",
+      "caption": "An IBM RS/6000 43P, type 7248. This is not the 7020 40P the exhibit emulates but its close sibling: both are PReP machines, the PowerPC Reference Platform desktops IBM built around commodity PCI and ISA parts rather than the Micro Channel of the larger RS/6000 line. No photograph of a 7020 appears to be freely licensed anywhere, so the family resemblance stands in for it.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Ibm 7248 marking.jpg",
+      "alt": "Close-up of the IBM model badge on the 7248 chassis identifying it as an RS/6000",
+      "caption": "The badge that names the machine. IBM sold the RS/6000 line from 1990 as its Unix workstation and server family, and the desktop PReP models at the bottom of that range were the ones an engineer actually had under the desk.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Ibm 7248 pcb.jpg",
+      "alt": "The 7248's system board, showing PCI and ISA expansion slots, memory sockets and the PowerPC processor area",
+      "caption": "Inside a PReP machine: PCI and ISA slots, ordinary memory sockets, and a PowerPC processor. This is the architecture the exhibit reproduces in software — the same PCI bus, the same ISA bridge, the same SCSI controller — and the reason a machine of this family can be emulated at all.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Ibm 7248 back.jpg",
+      "alt": "Rear connector panel of the IBM 7248 with keyboard, mouse, serial, parallel, SCSI, Ethernet and graphics connectors",
+      "caption": "The rear panel. Keyboard and mouse, two serial ports, SCSI, Ethernet and a graphics connector — the exact set of devices the emulated 40P presents to AIX, down to the Crystal audio codec this exhibit drives for sound.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Ibm 7248 bootscr.jpg",
+      "alt": "The IBM RS/6000 firmware boot screen on the 7248, showing the PowerPC logo and initialisation icons",
+      "caption": "Real RS/6000 firmware, on real hardware. The exhibit boots this same IBM firmware rather than an open-source substitute, because only the genuine ROM builds the PReP residual data that AIX's graphics subsystem requires — without it the desktop never starts.",
+      "role": "photo"
+    }
+  ]
+}

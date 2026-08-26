@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**204 images across 46 exhibits.** 102 of them are share-alike
+**209 images across 47 exhibits.** 102 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -20,6 +20,16 @@ None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
 License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-SA 2.0 (23), Public domain (21), CC BY 3.0 (20), CC0 (20), CC BY 4.0 (11), CC BY-SA 2.5 (6).
+
+## aix432
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-ibm-7248-front.webp` | okqubit.net | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Ibm_7248_front.jpg) |
+| `02-ibm-7248-marking.webp` | okqubit.net | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Ibm_7248_marking.jpg) |
+| `03-ibm-7248-pcb.webp` | okqubit.net | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Ibm_7248_pcb.jpg) |
+| `04-ibm-7248-back.webp` | okqubit.net | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Ibm_7248_back.jpg) |
+| `05-ibm-7248-bootscr.webp` | okqubit.net | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Ibm_7248_bootscr.jpg) |
 
 ## alto
 
