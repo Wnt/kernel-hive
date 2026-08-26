@@ -23,10 +23,12 @@
 # no recapture (AGENTS.md rule 6). WI_TAP_GUEST_IP defaults to that address
 # because that is the address the guest genuinely uses.
 #
-# ONE CLONE PER STATION (§5.4): loadvm restores the NIC MAC from saved device
-# state and mac= cannot override it, so two rhapsody clones would share a MAC
-# and collide. registry/walkin/rhapsody.json pins poolSize 1, which is why the
-# default tap name below is the only one this station normally uses.
+# A POOL OF IDENTICAL MACHINES (§5.4): loadvm restores the NIC MAC from saved
+# device state and mac= cannot override it, so every rhapsody clone shares one
+# MAC and one baked address — which is why clones never share a bridge. The
+# broker builds each clone its own L2 cell (`wibr<slot>`, wi-clonecell, §6) and
+# passes it as WI_TAP_BRIDGE; the cell's NAT joins it to vmbr-wi as a unique
+# peer, and this script only ever sees one clone per bridge.
 #
 # WHAT A WALK-IN CLONE IS ALLOWED TO SEE: the corpus web on the walk-in gateway,
 # and nothing else — not the fleet, not labhost, not another clone. Four
@@ -124,8 +126,21 @@ remove_rules() {
   iptables -w "$IPT_WAIT" -X "$IN_CHAIN" 2>/dev/null || true
 }
 
+# The bridge is per-clone: the broker builds a cell (`wibr<slot>`,
+# wi-clonecell) and the tap joins THAT, so identical restored MACs never share
+# an FDB (ledger §6). `vmbr-wi` stays accepted for the plane's own tooling; any
+# other name — above all vmbr-rn — is refused before a link is touched.
+assert_bridge() {
+  case "$BRIDGE" in
+    vmbr-wi) : ;;
+    wibr1[5-9][0-9] | wibr200) : ;;
+    *) die "refusing bridge '$BRIDGE': a walk-in tap joins its clone's cell (wibr<slot>) or vmbr-wi, nothing else" ;;
+  esac
+}
+
 do_up() {
   [ "$(id -u)" = 0 ] || die "must run as root"
+  assert_bridge
   case "$IF" in
     *[!a-zA-Z0-9_-]* | '') die "invalid interface name: $IF" ;;
   esac

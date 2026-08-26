@@ -196,6 +196,23 @@ class NamingTests(unittest.TestCase):
         with self.assertRaises(naming.NameError_):
             naming.tap_name("os2warp", 3, "wi-averylongname-%d")
 
+    def test_the_cell_names_stay_within_the_kernel_limit(self):
+        # Every clone's own L2 domain (ledger §6): bridge, namespace, peer.
+        self.assertEqual(naming.cell_bridge(152), "wibr152")
+        self.assertEqual(naming.cell_netns(200), "wicell200")
+        self.assertLessEqual(len(naming.cell_bridge(200)), naming.IFNAME_MAX)
+        with self.assertRaises(naming.NameError_):
+            naming.cell_bridge(151)
+
+    def test_the_peer_range_is_clear_of_every_reserved_address(self):
+        # Slots 152-200 -> 10.99.0.52-.100, and none of those may collide with
+        # the gateway (.2), a baked station address (.19/.22/.27) or the
+        # containment-proof addresses (.240/.241).
+        peers = {naming.cell_peer_ip(s) for s in range(naming.SLOT_MIN, naming.SLOT_MAX + 1)}
+        self.assertEqual(len(peers), 49)
+        reserved = {f"10.99.0.{n}" for n in (1, 2, 19, 22, 24, 25, 27, 240, 241)}
+        self.assertFalse(peers & reserved)
+
 
 class BinaryPinTests(unittest.TestCase):
     def test_a_bare_name_asserts_the_launcher_s_own_binary(self):
@@ -388,9 +405,10 @@ class DeriveTests(unittest.TestCase):
         self.assertIn(derive.SANDBOX_ARG, self.argv)
 
     def test_the_mac_is_left_alone(self):
-        # Ledger §5.3: loadvm restores the NIC address from saved device state,
+        # Ledger §5.4: loadvm restores the NIC address from saved device state,
         # so a per-clone mac= would only make the command line disagree with the
-        # vmstate. The pool is one clone per station instead.
+        # vmstate. Concurrency lives one layer down, in the per-clone L2 cell
+        # (wi-clonecell) — never in the command line.
         self.assertIn("pcnet,netdev=n0,mac=02:00:00:00:00:13", self.argv)
 
     def test_the_device_set_is_untouched(self):

@@ -11,8 +11,9 @@
 #
 # Steps, each runnable on its own:
 #   bridge    vmbr-wi — bridge-ports none, NO ADDRESS ON LABHOST — plus
-#             walkin-fw plus the two helpers other lanes call: wi-isolate
-#             (per-tap, lanes 7/8/10) and wi-warm-arp (per-clone, the broker).
+#             walkin-fw plus the helpers other lanes call: wi-isolate
+#             (per-tap), wi-warm-arp (per-clone, flat-plane) and wi-clonecell
+#             (per-clone L2 cell + NAT, the broker's multi-clone path).
 #   ct        CT 952 `walkin-gw`: unprivileged Debian, SINGLE-HOMED on vmbr-wi
 #             at 10.99.0.2/24, no default route, corpus mounted READ-ONLY.
 #   services  the retronet web plane's own installers, pointed at CT 952: the
@@ -83,12 +84,13 @@ ctexec() { pct exec "$WI_VMID" -- "$@"; }
 step_bridge() {
   say "bridge $WI_BRIDGE (no uplink, NO address on labhost)"
   if [ "$APPLY" = 0 ]; then
-    info "PLAN: write $IFACE_FILE; install /usr/local/sbin/{walkin-fw,wi-isolate,wi-warm-arp}; ifup $WI_BRIDGE"
+    info "PLAN: write $IFACE_FILE; install /usr/local/sbin/{walkin-fw,wi-isolate,wi-warm-arp,wi-clonecell}; ifup $WI_BRIDGE"
     return
   fi
   install -m 0755 "$HERE/walkin-fw.sh" /usr/local/sbin/walkin-fw
   install -m 0755 "$HERE/wi-isolate.sh" /usr/local/sbin/wi-isolate
   install -m 0755 "$HERE/wi-warm-arp.sh" /usr/local/sbin/wi-warm-arp
+  install -m 0755 "$HERE/wi-clonecell.sh" /usr/local/sbin/wi-clonecell
 
   # `inet manual`, not `inet static`: labhost is not a participant on this
   # segment. It holds no address, so there is nothing for a clone to dial and

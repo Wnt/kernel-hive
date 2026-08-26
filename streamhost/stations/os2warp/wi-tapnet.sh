@@ -60,10 +60,12 @@
 # this tap, which is why the walk-in netdev override is device-set-safe — the
 # -device pcnet is UNCHANGED and only the backend moves (OPERATING-RULES rule 6).
 #
-# ONE CLONE, and therefore one tap, at a time: `loadvm` restores pcnet's MAC from
-# saved device state, so two clones of this station would be one host as far as
-# the bridge is concerned. Ledger §5.4 settles that by fixing poolSize at 1, so
-# wi-os2warp-<n> is a naming convention, not a concurrency plan.
+# A POOL OF IDENTICAL MACHINES: `loadvm` restores pcnet's MAC from saved
+# device state, so every clone of this station is identical on the wire — same
+# MAC, same baked 10.99.0.19. They may therefore never share a bridge. The
+# broker builds each clone its own L2 cell (`wibr<slot>`, wi-clonecell, ledger
+# §6) and passes it as WI_TAP_BRIDGE; the cell's NAT namespace is what joins it
+# to vmbr-wi as a unique peer. This script only ever sees one clone per bridge.
 #
 #   WI_TAP_IF=wi-os2warp-1 wi-tapnet.sh up     create + enslave + isolate + guard
 #   WI_TAP_IF=wi-os2warp-1 wi-tapnet.sh down   remove guard + delete the tap
@@ -88,6 +90,18 @@ msg() { echo "wi-tapnet: $*"; }
 die() {
   echo "wi-tapnet: $*" >&2
   exit 1
+}
+
+# The bridge is per-clone: the broker builds a cell (`wibr<slot>`,
+# wi-clonecell) and the tap joins THAT, so identical restored MACs never share
+# an FDB (ledger §6). `vmbr-wi` stays accepted for the plane's own tooling; any
+# other name — above all vmbr-rn — is refused before a link is touched.
+assert_bridge() {
+  case "$BRIDGE" in
+    vmbr-wi) : ;;
+    wibr1[5-9][0-9] | wibr200) : ;;
+    *) die "refusing bridge '$BRIDGE': a walk-in tap joins its clone's cell (wibr<slot>) or vmbr-wi, nothing else" ;;
+  esac
 }
 
 # The one name this script may never operate on: the LIVE station's persistent
@@ -153,6 +167,7 @@ remove_rules() {
 do_up() {
   [ "$(id -u)" = 0 ] || die "must run as root"
   assert_walkin_if
+  assert_bridge
   ip link show "$BRIDGE" >/dev/null 2>&1 || die "bridge $BRIDGE is absent (the walk-in network plane provisions it)"
   # The tap exists before QEMU starts and is opened by
   # -netdev tap,ifname=$IF,script=no,downscript=no. Unlike the retronet tap it

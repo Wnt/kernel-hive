@@ -45,22 +45,37 @@ API = ("/walkin/state", "/walkin/claim", "/walkin/release", "/walkin/reset")
 
 
 def start(auth):
-    """Bring the pool up and wire it to the two planes that need it.
+    """Wire the pool to the two planes that need it — WITHOUT doing any of its
+    slow work on this thread.
 
-    Failure here is NOT fatal, unlike the public listener's: a bad registry file
-    must not stop the museum from serving. It is loud, and the plane is absent.
+    Everything expensive happens in the watchdog: constructing the Broker reaps
+    the clones a previous incarnation left behind (nine QEMUs and their network
+    cells), and warming builds nine TCG restores. `main()` binds the LAN listener
+    only AFTER this returns, so anything slow here is the WHOLE MUSEUM refusing
+    connections on :8443 — which is what happened on 2026-08-26 when poolSize
+    went from 1 to 3 and a few seconds of reaping became minutes.
+
+    Failure is NOT fatal either way: a bad registry must not stop the museum
+    from serving. It is loud, and the plane is absent.
     """
-    global BROKER
     if auth is None:
         return None  # no public listener, no visitors, no pool
     if not WALKIN_REGISTRY.is_dir():
         sys.stderr.write(f"[serve] walk-in: no registry at {WALKIN_REGISTRY} — pool disabled\n")
         return None
+    threading.Thread(target=_bring_up, args=(auth,), daemon=True, name="walkin-watchdog").start()
+    sys.stderr.write(f"[serve] walk-in plane: bringing up in the background, registry={WALKIN_REGISTRY}\n")
+    return None
+
+
+def _bring_up(auth):
+    """Construct, wire, warm, then tick forever. Off the startup path."""
+    global BROKER
     try:
         BROKER = Broker(WALKIN_REGISTRY, WALKIN_REPO)
     except Exception as exc:  # noqa: BLE001 — reported, never fatal
         sys.stderr.write(f"[serve] walk-in: broker NOT started ({type(exc).__name__}: {exc})\n")
-        return None
+        return
     auth.walkin.bind_broker(BROKER)
     signal_route.bind_walkin(BROKER, auth.walkin_tickets)
     # The switch survives a restart (it is in auth-state.json); the pool does
@@ -70,30 +85,30 @@ def start(auth):
     # prevent.
     BROKER.access = auth.walkin.access()
     BROKER.set_drain(auth.walkin.draining())
-    if BROKER.access != "closed":
-        # Warming is best-effort and MUST NOT be fatal. A clone that cannot be
-        # built — an undeployed tap script, a missing seed, a full slot range —
-        # is a walk-in outage; an exception here is a MUSEUM outage, because
-        # this runs inside the process that serves the whole gallery. On
-        # 2026-08-25 an undeployed wi-tapnet.sh took the gallery down exactly
-        # this way, three lines below a docstring promising it could not.
+    sys.stderr.write(
+        f"[serve] walk-in plane: access={BROKER.access} floor={auth.walkin.env_floor} "
+        f"pools={BROKER.pools()} registry={WALKIN_REGISTRY}\n"
+    )
+    _watchdog()
+
+
+def _watchdog():
+    """Expire, reap, refill — forever. Nothing else calls tick(), and nothing
+    else warms the pool: the call below is the cold start.
+
+    `refill()` returns as soon as the intent is recorded and warms on its own
+    thread, so this loop starts ticking — expiring, reaping — while the pool is
+    still filling. `tick()`'s own refill finds the build already in progress and
+    does not queue behind it.
+    """
+    if BROKER is not None and BROKER.access != "closed":
         try:
             BROKER.refill()
         except Exception as exc:  # noqa: BLE001 — reported, never fatal
             sys.stderr.write(
                 f"[serve] walk-in: pool did not warm ({type(exc).__name__}: {exc}) — "
-                "the plane is up and empty; the watchdog will retry\n"
+                "the plane is up and empty; the next tick retries\n"
             )
-    threading.Thread(target=_watchdog, daemon=True, name="walkin-watchdog").start()
-    sys.stderr.write(
-        f"[serve] walk-in plane: access={BROKER.access} floor={auth.walkin.env_floor} "
-        f"pools={BROKER.pools()} registry={WALKIN_REGISTRY}\n"
-    )
-    return BROKER
-
-
-def _watchdog():
-    """Expire, reap, refill — forever. Nothing else calls tick()."""
     while True:
         time.sleep(WALKIN_TICK_SECS)
         try:

@@ -94,6 +94,34 @@ def clone_mac(slot: int) -> str:
     return f"02:00:00:00:57:{check_slot(slot):02x}"
 
 
+def cell_bridge(slot: int) -> str:
+    """`wibr<slot>` — the clone's own L2 domain (ledger §6).
+
+    Identical restored machines can never share a bridge: `loadvm` gives every
+    clone of one station the same MAC, and one FDB entry cannot point at three
+    ports. So each clone's tap is enslaved to its own bridge, and wi-clonecell's
+    NAT namespace joins that cell to `vmbr-wi` as a unique peer.
+    """
+    return f"wibr{check_slot(slot)}"
+
+
+def cell_netns(slot: int) -> str:
+    """`wicell<slot>` — the cell's NAT namespace on labhost."""
+    return f"wicell{check_slot(slot)}"
+
+
+def cell_peer_ip(slot: int) -> str:
+    """The address the GATEWAY sees for this clone: 10.99.0.<slot-100>.
+
+    Slots 152-200 map onto .52-.100, a range reserved in ledger §6 — clear of
+    the gateway (.2), every baked station address, and the containment-proof
+    addresses (.240/.241). The guest never sees this number: inside the cell it
+    still holds the address its golden was captured with, and the cell's SNAT
+    is what makes both facts true at once.
+    """
+    return f"10.99.0.{check_slot(slot) - 100}"
+
+
 def clone_root(ident: str) -> Path:
     return WALKIN_ROOT / ident
 

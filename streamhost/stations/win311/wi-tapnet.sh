@@ -28,15 +28,17 @@
 #      DIFFERENT stations cannot see each other at L2 at all — a kernel-enforced
 #      private VLAN, no rules to get wrong. The gateway's port is the only
 #      un-isolated port on the bridge, and this script never touches it.
-#   3. ONE CLONE, NOT A POOL. poolSize is 1 for win311 and every other walk-in
-#      station (ledger §5.4): the ne2k MAC lives in the vmstate, `mac=` cannot
-#      override it, and the device set may not be changed to work around it, so
-#      two win311 clones on one segment would present one MAC and one address.
-#      Measured 2026-08-25 on a stand-in plane: with two clones up, the bridge
-#      FDB entry for 52:54:… moved to whichever clone transmitted last. `down`
-#      below is still written to survive a sibling, because a containment script
-#      that assumes it is alone is one policy change away from unhooking a live
-#      guard.
+#   3. A POOL OF IDENTICAL MACHINES, ONE PER BRIDGE. The ne2k MAC lives in the
+#      vmstate, `mac=` cannot override it, and the device set may not be changed
+#      to work around it, so every win311 clone presents one MAC and one baked
+#      address. Measured 2026-08-25 on a stand-in plane: with two clones on one
+#      bridge, the FDB entry for the shared MAC moved to whichever transmitted
+#      last. So clones never share a bridge: the broker builds each one its own
+#      L2 cell (`wibr<slot>`, wi-clonecell, ledger §6), passes it as
+#      WI_TAP_BRIDGE, and the cell's NAT joins vmbr-wi as a unique peer. `down`
+#      is still written to survive a sibling on the same bridge, because a
+#      containment script that assumes it is alone is one policy change away
+#      from unhooking a live guard.
 #
 # WHAT IS THE SAME, deliberately: the guest is still Windows for Workgroups 3.11
 # running Microsoft TCP/IP-32 (MSTCP32) over the RTL8029 NDIS3 driver (PCIND$),
@@ -150,8 +152,8 @@ verify_rules() {
   grep -qx -- "-A $IN_CHAIN -j DROP" <<<"$s" || return 1
 }
 
-# poolSize is 1 (ledger §5.4), so in practice there is never a sibling. This is
-# kept anyway: the chain is per-STATION, and a containment script that assumes
+# With poolSize 3 the siblings are real now — three cells, one shared chain.
+# The chain is per-STATION, and a containment script that assumes
 # it is alone is one policy change away from unhooking a live guard. Only the
 # last win311 tap to leave removes it.
 peers_remain() {
@@ -181,8 +183,21 @@ verify_isolated() {
   bridge -d link show dev "$IF" 2>/dev/null | grep -q "isolated on"
 }
 
+# The bridge is per-clone: the broker builds a cell (`wibr<slot>`,
+# wi-clonecell) and the tap joins THAT, so identical restored MACs never share
+# an FDB (ledger §6). `vmbr-wi` stays accepted for the plane's own tooling; any
+# other name — above all vmbr-rn — is refused before a link is touched.
+assert_bridge() {
+  case "$BRIDGE" in
+    vmbr-wi) : ;;
+    wibr1[5-9][0-9] | wibr200) : ;;
+    *) die "refusing bridge '$BRIDGE': a walk-in tap joins its clone's cell (wibr<slot>) or vmbr-wi, nothing else" ;;
+  esac
+}
+
 do_up() {
   [ "$(id -u)" = 0 ] || die "must run as root"
+  assert_bridge
   case "$IF" in
     wi-win311-[0-9] | wi-win311-[0-9][0-9]) : ;;
     *) die "refusing tap name '$IF': walk-in win311 taps are wi-win311-<n> (ledger §5.1)" ;;

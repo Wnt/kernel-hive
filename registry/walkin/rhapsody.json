@@ -1,7 +1,7 @@
 {
   "station": "rhapsody",
   "enabled": true,
-  "poolSize": 1,
+  "poolSize": 3,
   "seed": {
     "disk": "/data/vms/walkin/seeds/rhapsody-golden.qcow2",
     "readOnly": true

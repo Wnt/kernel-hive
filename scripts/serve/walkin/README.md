@@ -31,18 +31,27 @@ cannot route around it.
    so a seed referenced in place under `/data/gallery-guests` fails `EXDEV`. The
    seed must be staged inside `/data/vms`. `--auto` is deliberately not used: it
    would degrade to a silent 853 MB copy on every refill.
-3. **The MAC is not per-clone, and that is why `poolSize` is 1.** `loadvm`
-   restores the NIC address from saved device state, so `mac=` on the command
-   line cannot override it (ledger §5.3).
+3. **The MAC is not per-clone, and that is why every clone gets its own L2
+   cell.** `loadvm` restores the NIC address from saved device state, so `mac=`
+   on the command line cannot override it (ledger §5.4): every clone of one
+   station is identical on the wire. The broker therefore builds each clone a
+   private bridge + NAT namespace (`wi-clonecell up <slot> <ip>`) before the
+   tap comes up, and the tap joins the cell, never `vmbr-wi` directly. The
+   cell SNATs the guest's baked address to a unique per-slot peer
+   (`10.99.0.<slot-100>`), which is what lets `poolSize` exceed 1 without
+   touching the golden, the gateway or the guest.
 4. **A clone is ARP-primed before it is claimable.** Not renumbering the plane
    costs one thing: the golden carries a warm ARP cache from its retronet
-   capture, so it believes `10.99.0.2` lives at CT 951's MAC, which is not on
-   `vmbr-wi`. Its first outbound flow is 100% lost until the real gateway ARPs
-   it. `clone.prime_network()` runs the plane's helper while the member is still
-   paused, so the visitor never waits for it. The helper is named by
-   `WALKIN_ARP_PRIME` (a command template taking `{ip}`, `{tap}`, `{identity}`);
-   the clone's address is read from the station's own `wi-tapnet.sh`, which is
-   where it is asserted, rather than restated in the broker.
+   capture, so it believes `10.99.0.2` lives at CT 951's MAC, which exists on
+   no walk-in segment. Its first outbound flow is 100% lost until it hears the
+   gateway's ARP. Inside a cell that ARP is spoken by the cell itself
+   (`wi-clonecell prime`, ledger §6); `clone.prime_network()` runs it while
+   the member is resumed under a wake lease and still unclaimed, so the
+   visitor never waits for it. The helper is named by `WALKIN_ARP_PRIME` (a
+   command template taking `{ip}`, `{tap}`, `{identity}`, `{slot}`,
+   `{clonecell}`); the clone's address is read from the station's own
+   `wi-tapnet.sh`, which is where it is asserted, rather than restated in the
+   broker.
 
    Two halves of this are load-bearing and were each wrong once:
    the guest must be **running** to hear the ARP (a `-S` pool member processes

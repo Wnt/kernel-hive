@@ -11,7 +11,8 @@ box session matches the session's own ssh (rule 5).
 Order matters, and it is the order the brief gives:
 
     prepare  claim slot -> mkdir root -> overlay backed by the READ-ONLY seed
-             -> tap up through the station's own wi-tapnet.sh
+             -> the clone's own L2 cell up (wi-clonecell, ledger §6) -> tap up
+             through the station's own wi-tapnet.sh, onto the CELL bridge
     spawn    QEMU under walkin.slice, -loadvm golden -S: instant-ready, PAUSED
     resume   the claim is what un-pauses it; a pool member costs ~nothing until
              somebody is actually there
@@ -34,7 +35,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import claims, derive, naming, wake
+from . import cell, claims, derive, naming, wake
 from .qmp import QMP
 from .spec import StationSpec
 
@@ -45,24 +46,24 @@ STATIONS_ROOT = Path(os.environ.get("WALKIN_STATIONS_ROOT", "/data/vms/streamhos
 # brief §4: the museum's stations must not feel the walk-in plane. These are the
 # defaults the slice imposes per clone; the slice itself carries the global cap.
 # The plane's ARP-priming helper (ledger §6), as a command template. `{ip}`,
-# `{tap}` and `{identity}` are filled in. Lane 6 owns the real helper — it lives
-# with the plane's tooling rather than being copied into three station scripts —
-# and `WALKIN_ARP_PRIME` points at it; this default is what the broker does
-# until then, and it is the shape the helper needs.
+# `{tap}`, `{identity}`, `{slot}` and `{clonecell}` are filled in. The helper
+# lives with the plane's tooling (`wi-clonecell prime`) rather than being copied
+# into three station scripts; `WALKIN_ARP_PRIME` overrides it for a bring-up.
 #
-# The `ip neigh del` is NOT optional, and it is the half that is easy to leave
-# out. Every clone of a station carries its golden's MAC (§5.3), so a RESPAWN
-# moves that MAC to a new bridge port. CT 952 still holds a STALE neighbour
-# entry from the previous clone and keeps unicasting to the port that went away,
-# so the ping never reaches the new tap and the prime silently fails — measured
-# here: without the delete, the first clone primed and every clone after a reset
-# did not, and its visitor got the dead first page load this whole mechanism
-# exists to prevent. Deleting the entry forces a broadcast ARP, which reaches
-# the new port and re-teaches the bridge in the same breath.
+# A golden restores with a WARM ARP CACHE from its retronet capture — it
+# believes 10.99.0.2 lives at CT 951's MAC, which exists on no walk-in segment —
+# so the guest's first outbound flow is 100% lost until something speaks first.
+# On the flat plane that something was CT 952 (wi-warm-arp); inside a cell the
+# gateway's ARP cannot reach the guest (the NAT namespace terminates L2), so
+# `wi-clonecell prime` broadcasts the gateway's ARP from the cell's own inner
+# leg, proves the repair with the guest's reply, and pins the guest's MAC in
+# the namespace in the same breath.
 ARP_PRIME_CMD = os.environ.get(
     "WALKIN_ARP_PRIME",
-    'pct exec 952 -- sh -c "ip neigh del {ip} dev eth0 2>/dev/null; ping -c1 -W2 {ip}" >/dev/null 2>&1',
+    "{clonecell} prime {slot} {ip} --wait 4 >/dev/null 2>&1",
 )
+# The per-clone L2 cell (ledger §6) lives in `cell.py`: own bridge, NAT
+# namespace, unique peer on vmbr-wi — what lets identical machines share a plane.
 CPU_QUOTA = os.environ.get("WALKIN_CPU_QUOTA", "100%")
 MEMORY_MAX = os.environ.get("WALKIN_MEMORY_MAX", "1G")
 TASKS_MAX = os.environ.get("WALKIN_TASKS_MAX", "96")
@@ -119,6 +120,7 @@ class Clone:
         root.mkdir(parents=True, exist_ok=True)
         root.chmod(0o750)
         self._make_overlay()
+        self._cell("up")
         self._tapnet("up")
 
     def _make_overlay(self) -> None:
@@ -162,12 +164,41 @@ class Clone:
                 )
             target.chmod(0o600)
 
+    def _cell(self, verb: str) -> None:
+        """The clone's own L2 cell: `wibr<slot>` + the NAT namespace (ledger §6).
+
+        Built BEFORE the tap (the tap script enslaves onto the cell's bridge)
+        and torn down AFTER it. `wi-clonecell` is the plane's helper — shared,
+        like wi-isolate, because a cell is a property of the plane's topology,
+        not of any station — and it verifies its own locks before reporting up.
+        """
+        if self.spec.netdev.type != "tap":
+            return
+        ip = self.guest_ip()
+        if verb == "up":
+            if not ip:
+                raise CloneError(f"{self.identity}: no guest address readable — cannot build its cell")
+            _run([cell.CLONECELL, "up", str(self.plan.slot), ip])
+        else:
+            _run([cell.CLONECELL, "down", str(self.plan.slot)], check=False)
+
     def _tapnet(self, verb: str) -> None:
         if self.spec.netdev.type != "tap" or not self.spec.tapnet:
             return
         script = STATIONS_ROOT / self.spec.station / Path(self.spec.tapnet).name
         if not script.exists():
             raise CloneError(f"{script} is not on the box — the walk-in tap script has not been deployed")
+        if verb == "up" and Path(f"/sys/class/net/{self.plan.tap}").exists():
+            # "It exists" is not "it is mine" (rule 7). Tap names are global on
+            # the box, and the scripts' up is idempotent enough to RE-HOME an
+            # existing tap — measured 2026-08-26: a dev broker whose empty root
+            # made it pick index 1 stole the LIVE pool's wi-os2warp-1 onto its
+            # own cell bridge, and the reap then deleted it out from under the
+            # live guest. Refuse, and let the index cycle move on.
+            raise CloneError(
+                f"{self.identity}: tap {self.plan.tap} already exists — another clone "
+                "(possibly another broker's) owns it; refusing to adopt it"
+            )
         # `WI_TAP_IF` is what the landed wi-tapnet.sh scripts read; the rest are
         # context a future one may want. The GUEST_IP is deliberately NOT passed:
         # the script owns the address (it scopes its guard chain to it), and the
@@ -177,7 +208,9 @@ class Clone:
             env={
                 **os.environ,
                 "WI_TAP_IF": self.plan.tap,
-                "WI_TAP_BRIDGE": self.spec.netdev.bridge or "vmbr-wi",
+                # The tap joins the clone's own cell, never vmbr-wi directly:
+                # identical restored MACs may not share an FDB (ledger §6).
+                "WI_TAP_BRIDGE": naming.cell_bridge(self.plan.slot),
                 "WI_IDENTITY": self.identity,
             },
             check=(verb == "up"),
@@ -313,7 +346,9 @@ class Clone:
         if not ARP_PRIME_CMD or not ip:
             self.primed = False
             return False
-        command = ARP_PRIME_CMD.format(ip=ip, tap=self.plan.tap, identity=self.identity)
+        command = ARP_PRIME_CMD.format(
+            ip=ip, tap=self.plan.tap, identity=self.identity, slot=self.plan.slot, clonecell=cell.CLONECELL
+        )
         with wake.lease(self.identity), self.qmp() as conn:
             was_stopped = not _is_running(conn)
             try:
@@ -351,6 +386,7 @@ class Clone:
             if self.daemon_unit:
                 _run(["systemctl", "stop", self.daemon_unit], check=False)
             self._tapnet("down")
+            self._cell("down")
 
     def discard(self) -> None:
         """Destroy the overlay by destroying the whole clone root.
@@ -489,6 +525,8 @@ def write_manifest(clone: Clone) -> None:
                 "tap": clone.plan.tap,
                 "ip": clone.guest_ip(),
                 "bridge": clone.spec.netdev.bridge,
+                "cellBridge": naming.cell_bridge(clone.plan.slot),
+                "peer": naming.cell_peer_ip(clone.plan.slot),
                 "unit": naming.unit_name(clone.identity),
                 "createdAt": __import__("time").time(),
             },
@@ -505,35 +543,6 @@ def read_manifest(root: Path) -> dict:
         return json.loads((Path(root) / MANIFEST).read_text())
     except (OSError, ValueError):
         return {}
-
-
-TAP_RE = re.compile(r"^wi-(?P<station>[a-z][a-z0-9]{1,15})-(?P<index>\d+)$")
-
-
-def tapnet_down(station: str, tap: str, bridge: str = "") -> bool:
-    """Take one walk-in tap down through the station's own script.
-
-    The script, not `ip link del`, because the tap is only half of what a `up`
-    created: the other half is the fail-closed guard chain scoped to that
-    interface, and deleting the link alone leaves the chain behind. Falls back to
-    removing the link only if the script is not on the box, which is better than
-    leaving a tap that will collide with the next clone of the same index.
-    """
-    script = STATIONS_ROOT / station / "wi-tapnet.sh"
-    env = {**os.environ, "WI_TAP_IF": tap, "WI_TAP_BRIDGE": bridge or "vmbr-wi"}
-    if script.exists():
-        _run(["bash", str(script), "down"], env=env, check=False)
-    if Path(f"/sys/class/net/{tap}").exists():
-        _run(["ip", "link", "del", tap], check=False)
-    return not Path(f"/sys/class/net/{tap}").exists()
-
-
-def live_taps() -> list:
-    """Every walk-in tap currently on the box, by name."""
-    try:
-        return sorted(p.name for p in Path("/sys/class/net").iterdir() if TAP_RE.match(p.name))
-    except OSError:
-        return []
 
 
 def reap_orphan(root: Path) -> dict:
@@ -557,8 +566,13 @@ def reap_orphan(root: Path) -> dict:
     # afternoon's rebuild storm, and because a tap name carries the clone's pool
     # index, the next clone at that index cannot be created at all.
     tap = info.get("tap", "")
-    if tap and TAP_RE.match(tap):
-        tapnet_down(TAP_RE.match(tap).group("station"), tap, info.get("bridge", ""))
+    if tap and cell.TAP_RE.match(tap):
+        cell.tapnet_down(cell.TAP_RE.match(tap).group("station"), tap, info.get("bridge", ""))
+    # The cell is keyed by SLOT, and a leaked one blocks the next claim of that
+    # slot the same way a leaked tap blocks its pool index.
+    slot_hint = info.get("slot")
+    if isinstance(slot_hint, int):
+        _run([cell.CLONECELL, "down", str(slot_hint)], check=False)
     if naming.WALKIN_ROOT in root.parents:
         shutil.rmtree(root, ignore_errors=True)
     slot = info.get("slot")
