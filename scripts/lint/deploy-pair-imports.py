@@ -68,6 +68,16 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PAIRS = REPO / "scripts/lib/box-sync-pairs.sh"
+# The table is a FAMILY: box-sync-pairs.sh hit its 600-line hard cap, so the
+# per-station network-link rows were split into box-sync-pairs-retronet.sh.
+# Read every sibling, or a split silently blinds this check.
+PAIRS_FAMILY = sorted((REPO / "scripts/lib").glob("box-sync-pairs*.sh"))
+
+
+def pairs_text() -> str:
+    return "\n".join(f.read_text(encoding="utf-8") for f in PAIRS_FAMILY)
+
+
 LIB = REPO / "scripts/lib"
 LIB_REL = "scripts/lib"
 
@@ -168,7 +178,7 @@ def main() -> int:
     if not PAIRS.exists():
         print(f"deploy-pair-imports: {PAIRS.relative_to(REPO)} is missing", file=sys.stderr)
         return 2
-    paired = paired_repo_paths(PAIRS.read_text(encoding="utf-8"))
+    paired = paired_repo_paths(pairs_text())
     missing_anchors = [a for a in ANCHORS if a not in paired]
     if missing_anchors:
         print(

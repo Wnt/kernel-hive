@@ -198,18 +198,20 @@ class NamingTests(unittest.TestCase):
 
     def test_the_cell_names_stay_within_the_kernel_limit(self):
         # Every clone's own L2 domain (ledger §6): bridge, namespace, peer.
-        self.assertEqual(naming.cell_bridge(152), "wibr152")
-        self.assertEqual(naming.cell_netns(200), "wicell200")
-        self.assertLessEqual(len(naming.cell_bridge(200)), naming.IFNAME_MAX)
+        self.assertEqual(naming.cell_bridge(naming.SLOT_MIN), f"wibr{naming.SLOT_MIN}")
+        self.assertEqual(naming.cell_netns(naming.SLOT_MAX), f"wicell{naming.SLOT_MAX}")
+        self.assertLessEqual(len(naming.cell_bridge(naming.SLOT_MAX)), naming.IFNAME_MAX)
         with self.assertRaises(naming.NameError_):
-            naming.cell_bridge(151)
+            naming.cell_bridge(naming.SLOT_MIN - 1)
 
     def test_the_peer_range_is_clear_of_every_reserved_address(self):
-        # Slots 152-200 -> 10.99.0.52-.100, and none of those may collide with
-        # the gateway (.2), a baked station address (.19/.22/.27) or the
-        # containment-proof addresses (.240/.241).
+        # Each reserved slot maps to its own peer address, and none of those may
+        # collide with the gateway (.2), a baked station address (.19/.22/.27)
+        # or the containment-proof addresses (.240/.241). Bounds come from the
+        # constants, not literals: the reservation gets re-cut when the station
+        # fleet needs slots back, and a literal here silently rots.
         peers = {naming.cell_peer_ip(s) for s in range(naming.SLOT_MIN, naming.SLOT_MAX + 1)}
-        self.assertEqual(len(peers), 49)
+        self.assertEqual(len(peers), naming.SLOT_MAX - naming.SLOT_MIN + 1)
         reserved = {f"10.99.0.{n}" for n in (1, 2, 19, 22, 24, 25, 27, 240, 241)}
         self.assertFalse(peers & reserved)
 

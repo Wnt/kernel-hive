@@ -279,6 +279,7 @@ export const OS_FAMILY: Record<string, Family> = {
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
   hpuxvue: 'suncde', // HP VUE — the Motif desktop CDE was built from; the CDE chord set (F1 Help, edit chords) is VUE's too
+  aix432: 'suncde', // AIX 4.3.3 runs CDE itself — the same Motif chord set VUE gave it
   sunos414: 'generic', // OpenWindows/OPEN LOOK, not CDE — cut/copy/paste are the Sun
   //                     L-group keys, so the suncde Ctrl-chords would be wrong here
   aux: 'classicmac', // A/UX runs the Finder as its shell — Command chords, as macos753

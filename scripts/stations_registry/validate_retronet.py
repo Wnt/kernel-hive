@@ -13,6 +13,9 @@ RETRONET_PLANES = ("web", "icq")
 RETRONET_KEYS = ("planes", "address", "addressing", "link", "guard", "joined", "doc")
 RETRONET_GATEWAY = "10.99.0.2"
 BOX_SYNC_PAIRS = REPO / "scripts/lib/box-sync-pairs.sh"
+# A FAMILY since box-sync-pairs.sh hit its hard cap and the per-station
+# network-link rows moved to box-sync-pairs-retronet.sh — read them all.
+BOX_SYNC_PAIRS_FAMILY = sorted((REPO / "scripts/lib").glob("box-sync-pairs*.sh"))
 
 
 def _tapnet_pairs() -> tuple[set[str], str]:
@@ -20,7 +23,7 @@ def _tapnet_pairs() -> tuple[set[str], str]:
     rel = str(BOX_SYNC_PAIRS.relative_to(REPO))
     if not BOX_SYNC_PAIRS.exists():
         return set(), rel
-    text = BOX_SYNC_PAIRS.read_text(encoding="utf-8")
+    text = "\n".join(f.read_text(encoding="utf-8") for f in BOX_SYNC_PAIRS_FAMILY)
     return set(re.findall(r"^\s*box_sync_add_pair\s+([a-z0-9_]+)-rn-tapnet\b", text, re.M)), rel
 
 

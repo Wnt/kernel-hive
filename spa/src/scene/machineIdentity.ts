@@ -371,6 +371,14 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'HP 9000 / 778 VISUALIZE B160L', spec: 'PA-7300LC 160MHz • HP-UX 10.20 • 1996',
     kit: 'workstation',
   },
+  // aix432: IBM RS/6000 40P — IBM's warm beige with the AIX blue the registry
+  // carries as this station's accent; the badge names the machine type because
+  // "RS/6000" alone spans everything from this desktop to a rack.
+  aix432: {
+    caseTint: '#cfc9bb', accentTint: '#2f6ea8', tintMix: 0.32,
+    badge: 'IBM RS/6000 40P (7020)', spec: 'PowerPC 601 66MHz • AIX 4.3.3 • 1994',
+    kit: 'workstation',
+  },
   // newsos: Sony NEWS — off-white Sony case with the muted violet NEWS-OS
   // accent this station carries in the registry; "SONY NEWS" badge.
   newsos: {

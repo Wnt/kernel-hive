@@ -459,5 +459,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // aix432: the RS/6000 40P is a low, wide beige desktop box, not a pedestal —
+  // a PReP machine assembled from PC parts, and it looked it. Beige CRT above,
+  // keyboard and mouse on the PS/2 ports the emulated machine actually has.
+  aix432: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtE',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
 } as const satisfies Record<string, Assembly>;
 
