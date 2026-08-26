@@ -30,7 +30,7 @@ arbitrary. Do not re-expand this file; put the detail there.
    + sandbox + build + staging slot + claim). Fix problems in your own stack, never
    as a workaround in someone else's. The shared clone holds no uncommitted edits,
    ever — a hook refuses writes there. Operator's "use shared clone" lifts it
-   (`touch .claude/shared-clone-ok`); "back to sandboxes" removes it.
+   (`touch .claude/shared-clone-ok`); "back to sandboxes" and `/clear` remove it.
 4. **Never experiment on a live station.** Clone under `/data/vms/sandbox/`, keep
    the SAME device set (`loadvm golden` requires it), namespace every dir, VMID,
    socket and port.

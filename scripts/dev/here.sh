@@ -34,7 +34,7 @@ case "$REPO" in
   "$SANDBOX"/*) ;;
   *)
     if [ -e "$REPO/.claude/shared-clone-ok" ]; then
-      echo "note      SHARED-CLONE EDITS ALLOWED (.claude/shared-clone-ok, operator said 'use shared clone'; 'back to sandboxes' removes it)"
+      echo "note      SHARED-CLONE EDITS ALLOWED (.claude/shared-clone-ok, operator said 'use shared clone'; 'back to sandboxes' or /clear removes it)"
     elif [ "$(git -C "$REPO" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ]; then
       echo "note      shared clone is land-only — for work: scripts/dev/wt.sh new <name>  (operator: 'use shared clone' lifts this)"
     fi

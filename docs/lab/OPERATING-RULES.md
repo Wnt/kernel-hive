@@ -61,6 +61,15 @@ The operator's phrase **"use shared clone"** lifts that for this clone —
 `touch .claude/shared-clone-ok` and work in place; **"back to sandboxes"** removes
 it. `here.sh` shows the flag while it is set.
 
+**`/clear` also removes it** (`.claude/hooks/shared-clone-flag-sessionstart.sh`,
+a SessionStart hook on `source=clear`, which announces the removal). The grant is
+spoken to a conversation, so it does not outlive one: clearing the context ends
+it. It survives `--continue`, a fork, a compaction and an ordinary relaunch —
+only an explicit clear revokes. Before this hook the flag was a file and nothing
+else, so a grant given on 2026-08-20 was still lifting the guard six days later
+in sessions that had never heard the phrase. Note the revocation is per CLONE,
+not per session: a background job editing in place is stopped too.
+
 Land from the sandbox: commit, `git push origin <name>`, then either the
 orchestrator merges, or you do `git fetch origin && git merge --ff-only origin/main`
 (or a `--no-ff` merge) in the sandbox and `git push origin HEAD:main`, then

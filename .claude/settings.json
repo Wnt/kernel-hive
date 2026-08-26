@@ -19,6 +19,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/shared-clone-flag-sessionstart.sh"
+          }
+        ]
+      }
     ]
   }
 }
