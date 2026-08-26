@@ -35,12 +35,13 @@ import os
 import sys
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from . import claims, reaper
 from . import clone as clone_mod
 from . import spec as spec_mod
+from .warm import BrokerError, Member, Warming
 
 TTL_SECONDS = 20 * 60
 IDLE_SECONDS = 3 * 60
@@ -58,10 +59,6 @@ def session_end_message(reason: str) -> dict:
     return {"type": SESSION_END_TYPE, "reason": reason}
 
 
-class BrokerError(RuntimeError):
-    """A claim, release or reset the broker refuses."""
-
-
 @dataclass
 class Session:
     identity: str
@@ -75,21 +72,25 @@ class Session:
         return max(0, int(self.expires_at - now))
 
 
-@dataclass
-class Member:
-    """A pool member: a built clone plus whether somebody has it."""
+class Broker(Warming):
+    """One instance per serving process. Thread-safe; `tick` is the watchdog.
 
-    clone: clone_mod.Clone
-    session: Session | None = None
-    born_at: float = field(default_factory=time.time)
+    **The lock discipline, which is load-bearing.** Everything a request handler
+    reads — `pools`, `state`, `live_sessions`, `own_of`, `signal_entries` — takes
+    `self._lock`, so nothing that takes MINUTES may hold it. Building a clone is
+    a TCG restore of roughly two minutes; killing one is a handful of
+    subprocesses. Both therefore happen with the lock released:
 
-    @property
-    def identity(self) -> str:
-        return self.clone.identity
+        reserve (locked)  ->  build (unlocked)   ->  publish (locked)
+        retire  (locked)  ->  destroy (unlocked)
 
-
-class Broker:
-    """One instance per serving process. Thread-safe; `tick` is the watchdog."""
+    What the lock still protects is the thing it is actually for: no two builds
+    may pick the same pool index, and no clone may be handed to a second
+    visitor. Indexes are RESERVED under the lock before the build starts, and
+    `_build_lock` — which no read path touches — keeps the builds themselves
+    one at a time. `kh-claim` arbitrates between SESSIONS; the broker is one
+    session, so within it the reservation is the arbitration.
+    """
 
     def __init__(self, registry_dir, repo_root, now=time.time, spawn: bool = True, factory=None, daemon: bool = True):
         self.registry_dir = Path(registry_dir)
@@ -102,8 +103,23 @@ class Broker:
         # typing — and it is testable without a hypervisor precisely because
         # making the machine is somebody else's function.
         self.factory = factory or (lambda spec, index: clone_mod.build(spec, index, self.repo_root))
+        # Two locks, because they guard two things that move at wildly
+        # different speeds. `_lock` guards the pool's BOOKKEEPING and is held
+        # for microseconds; every request handler needs it. `_build_lock`
+        # serialises the MAKING of a clone, which is a TCG restore of minutes,
+        # and no read path ever touches it. Holding the first while doing the
+        # second's work is what made `/walkin/state` time out at poolSize 3.
         self._lock = threading.RLock()
+        self._build_lock = threading.Lock()
         self._members: dict[str, Member] = {}
+        # Clones that exist but are not pool members — not yet, or not any
+        # more. Both are still OURS, and the reapers must not read them as
+        # leftovers: a reservation holds an index and a slot claim before its
+        # directory exists, and a retiring clone still has a tap, a claim and a
+        # directory for as long as `destroy` runs (outside the lock).
+        self._building: dict[str, tuple] = {}  # identity -> (station, index)
+        self._retiring: dict[str, object] = {}  # identity -> clone
+        self._refill_wanted = False
         self._queue: list = []  # [(user_id, station, since)]
         self._closes: dict[str, tuple] = {}  # user_id -> (code, at)
         self._ended: dict[str, tuple] = {}  # clone identity -> (code, at)
@@ -158,22 +174,27 @@ class Broker:
         """
         with self._lock:
             live = [m for m in self._members.values() if m.session]
-            for member in live:
-                self._end(member, reason)
-            return len(live)
+            retired = [self._end(member, reason) for member in live]
+        self._destroy(retired)
+        return len(live)
 
     def kill_all_clones(self) -> None:
         """Empty the pool, and keep it empty until someone calls `refill`."""
         with self._lock:
             self.warm = False
-            for member in list(self._members.values()):
-                self._end(member, "")
+            retired = [self._end(m, "") for m in list(self._members.values())]
+        self._destroy(retired)
 
     def refill(self) -> None:
-        """Top every enabled pool up to its size, and keep it that way."""
+        """Top every enabled pool up to its size, and keep it that way.
+
+        Returns as soon as the intent is recorded. The building is a TCG
+        restore per member — minutes, at poolSize 3 — and every caller of this
+        is an admin request or the watchdog, neither of which may sit on it.
+        """
         with self._lock:
             self.warm = True
-        self._refill()
+        self._kick_refill()
 
     def set_drain(self, value: bool) -> None:
         """The softer sibling of the kill switch: refuse new claims, let the
@@ -184,8 +205,11 @@ class Broker:
     # -- configuration ---------------------------------------------------
 
     def reload_specs(self) -> None:
+        # Read the registry first, publish second: a directory of JSON is not
+        # free, and `pools()` is on the visitor's poll path.
+        loaded = spec_mod.load_all(self.registry_dir) if self.registry_dir.exists() else {}
         with self._lock:
-            self.specs = spec_mod.load_all(self.registry_dir) if self.registry_dir.exists() else {}
+            self.specs = loaded
 
     def set_access(self, access: str) -> int:
         """Lane 2 moves the switch; the broker does what the position means.
@@ -196,10 +220,10 @@ class Broker:
         """
         with self._lock:
             self.access = access
-            if access == "closed":
-                closed = self.close_sessions(CLOSE_REASON_CLOSED)
-                self.kill_all_clones()
-                return closed
+        if access == "closed":
+            closed = self.close_sessions(CLOSE_REASON_CLOSED)
+            self.kill_all_clones()
+            return closed
         self.refill()
         return 0
 
@@ -221,65 +245,6 @@ class Broker:
             if self.access == "closed":
                 doc["notice"] = "Walk-in access is currently closed."
             return doc
-
-    def _next_member_index(self, station: str) -> int:
-        """A pool index that has not been used recently, not just one that is free.
-
-        Identities cycle 1..99 rather than always reclaiming the lowest gap, so
-        `walkin-os2warp-1` does not mean three different machines in one
-        afternoon of telemetry — and so a client holding a stale endpoint for a
-        clone that was reaped gets a 404 instead of somebody else's session. The
-        cycle is bounded because the index also builds the tap name, which the
-        kernel caps at 15 characters.
-        """
-        used = {m.clone.plan.index for m in self._members.values() if m.clone.spec.station == station}
-        last = self._next_index.get(station, 0)
-        for step in range(1, 100):
-            index = (last + step - 1) % 99 + 1
-            if index not in used:
-                self._next_index[station] = index
-                return index
-        raise BrokerError(f"{station}: no free pool index — 99 members is not a pool, it is a leak")
-
-    def _build(self, spec: spec_mod.StationSpec) -> Member:
-        index = self._next_member_index(spec.station)
-        built = self.factory(spec, index)
-        if self._spawn:
-            built.spawn()
-            status = built.wait_ready()
-            if status not in ("paused", "prelaunch", "inmigrate"):
-                # A pool member that is already RUNNING has burned CPU since it
-                # started and, worse, has been executing guest code nobody is
-                # watching. Loud, not "probably fine".
-                raise BrokerError(f"{built.identity} came up {status!r}, expected paused (-loadvm golden -S)")
-            # Ledger §6: repair the golden's stale ARP entry for the gateway
-            # while the member is still PAUSED and unclaimed. Doing it here,
-            # rather than on claim, is why it costs the visitor nothing — and
-            # why a warm pool is worth having beyond the resume latency.
-            if not built.prime_network():
-                sys.stderr.write(
-                    f"[walkin] {built.identity}: network not primed — the visitor's first page load "
-                    "will fail until the gateway ARPs it (ledger §6)\n"
-                )
-            if self._daemon:
-                clone_mod.spawn_daemon(built)
-        return Member(clone=built, born_at=self._now())
-
-    def _refill(self) -> list:
-        """`refill`, but returning what it built — the watchdog reports it."""
-        made = []
-        with self._lock:
-            if not self.warm or self.access == "closed":
-                return made
-            for station, spec in sorted(self.specs.items()):
-                if not spec.enabled:
-                    continue
-                have = sum(1 for m in self._members.values() if m.clone.spec.station == station)
-                for _ in range(max(0, spec.pool_size - have)):
-                    member = self._build(spec)
-                    self._members[member.identity] = member
-                    made.append(member.identity)
-        return made
 
     # -- the lifecycle ---------------------------------------------------
 
@@ -310,21 +275,41 @@ class Broker:
                 last_input_at=now,
             )
             self._dequeue(user_id)
-            if self._spawn:
-                free.clone.resume()
-            return {
-                "clone": free.identity,
-                "signalEndpoint": f"/signal/{free.identity}.json",
-                "ttlSeconds": TTL_SECONDS,
-            }
+            clone, identity = free.clone, free.identity
+        # Outside the lock: a resume is a wake lease plus QMP round trips plus a
+        # verify, and it holds up every other visitor's `/walkin/state` if it is
+        # done in here. The member is already marked as this visitor's, so
+        # nobody else can be handed it while it wakes.
+        if self._spawn:
+            try:
+                clone.resume()
+            except Exception as exc:
+                self._abandon(identity, user_id)
+                raise BrokerError(f"{identity} would not resume: {exc}") from exc
+        return {
+            "clone": identity,
+            "signalEndpoint": f"/signal/{identity}.json",
+            "ttlSeconds": TTL_SECONDS,
+        }
+
+    def _abandon(self, identity: str, user_id: str) -> None:
+        """A clone that was handed out and then failed to wake. It is not the
+        visitor's and it is not the pool's — a used clone is never re-listed."""
+        with self._lock:
+            member = self._members.get(identity)
+            retired = self._end(member, "") if member and member.session and member.session.user_id == user_id else None
+        if retired is not None:
+            self._destroy([retired])
+        self._kick_refill()
 
     def release(self, user_id: str, identity: str, reason: str = "") -> dict:
         with self._lock:
             member = self._members.get(identity)
             if not member or not member.session or member.session.user_id != user_id:
                 raise BrokerError(f"{identity} is not yours")
-            self._end(member, reason)
-        self._refill()
+            retired = self._end(member, reason)
+        self._destroy([retired])
+        self._kick_refill()
         return {"ok": True}
 
     def reset(self, user_id: str, identity: str) -> dict:
@@ -339,8 +324,9 @@ class Broker:
             if not member or not member.session or member.session.user_id != user_id:
                 raise BrokerError(f"{identity} is not yours")
             station = member.clone.spec.station
-            self._end(member, "")
-        self._refill()
+            retired = self._end(member, "")
+        self._destroy([retired])
+        self._kick_refill()
         return self.claim(user_id, station)
 
     def note_input(self, identity: str) -> None:
@@ -415,23 +401,24 @@ class Broker:
     def tick(self) -> dict:
         """Expire, reap, refill. Idempotent; safe to call on a short timer."""
         now = self._now()
-        ended, died = [], []
+        ended, died, retired = [], [], []
         with self._lock:
             for member in list(self._members.values()):
                 session = member.session
                 if session and now >= session.expires_at:
                     ended.append((member.identity, CLOSE_REASON_TTL))
-                    self._end(member, CLOSE_REASON_TTL)
+                    retired.append(self._end(member, CLOSE_REASON_TTL))
                 elif session and now - session.last_input_at >= IDLE_SECONDS:
                     ended.append((member.identity, CLOSE_REASON_IDLE))
-                    self._end(member, CLOSE_REASON_IDLE)
+                    retired.append(self._end(member, CLOSE_REASON_IDLE))
                 elif not member.clone.alive():
                     # A pool member whose QEMU died is not a pool member. It is a
                     # directory and a claim, and both have to go back.
                     died.append(member.identity)
-                    self._end(member, "")
+                    retired.append(self._end(member, ""))
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
+        self._destroy(retired)
         orphans = self.reap_orphans()
         taps = self.reap_orphan_taps()
         cells = self.reap_orphan_cells()
@@ -448,27 +435,25 @@ class Broker:
 
     def reap_orphans(self) -> list:
         """Clone roots on disk that this broker does not own — kill and discard."""
-        with self._lock:
-            known = set(self._members)
-        return reaper.reap_orphan_dirs(known)
+        return reaper.reap_orphan_dirs(self._known_identities())
 
     def reap_orphan_taps(self) -> list:
         """Walk-in taps on the box that no clone stands behind."""
         with self._lock:
             known = {m.clone.plan.tap for m in self._members.values()}
+            known |= {c.plan.tap for c in self._retiring.values()}
         return reaper.reap_orphan_taps(known)
 
     def reap_orphan_cells(self) -> list:
         """Walk-in L2 cells on the box that no clone stands behind."""
         with self._lock:
             known = {m.clone.plan.slot for m in self._members.values()}
+            known |= {c.plan.slot for c in self._retiring.values()}
         return reaper.reap_orphan_cells(known)
 
     def release_stray_claims(self) -> list:
         """Give back slot and port claims that no clone stands behind."""
-        with self._lock:
-            known = set(self._members)
-        return reaper.release_stray_claims(known)
+        return reaper.release_stray_claims(self._known_identities())
 
     def signal_entries(self) -> dict:
         """`{identity: {udpPort, hashFile}}` — the pool's rows for the signaling
@@ -484,6 +469,20 @@ class Broker:
             }
 
     # -- internals -------------------------------------------------------
+
+    def _known_identities(self) -> set:
+        """Every clone this broker answers for — members, reservations AND the
+        ones it is currently destroying.
+
+        A reservation claims its slot before it has a directory, and a retiring
+        clone keeps its directory until `destroy` finishes; both now happen
+        outside the lock and therefore alongside a tick. A reaper told only
+        about `_members` would release the slot out from under a clone that is
+        mid-restore — which is precisely the failure the sweeps exist to fix,
+        pointed the wrong way.
+        """
+        with self._lock:
+            return set(self._members) | set(self._building) | set(self._retiring)
 
     def _active_count(self) -> int:
         return sum(1 for m in self._members.values() if m.session)
@@ -503,18 +502,22 @@ class Broker:
     def _dequeue(self, user_id: str) -> None:
         self._queue = [entry for entry in self._queue if entry[0] != user_id]
 
-    def _end(self, member: Member, reason: str) -> None:
+    def _end(self, member: Member, reason: str):
+        """Take a member out of the pool and hand its clone back to be destroyed.
+
+        **Called with the lock held; returns without destroying anything.** The
+        destruction is a kill, a tap down, a cell down and an `rm -rf` — seconds
+        of subprocess work each, and every request handler needs this lock. The
+        caller passes what it collects to `_destroy` once it is out.
+        """
         session = member.session
         if session and reason:
             self._closes[session.user_id] = (reason, self._now())
             self._ended[member.identity] = (reason, self._now())
         member.session = None
         self._members.pop(member.identity, None)
-        # A clone that will not die is the watchdog's problem, not the caller's:
-        # the session is over either way, and reap_orphans comes back for the
-        # remains.
-        with contextlib.suppress(Exception):
-            member.clone.destroy()
+        self._retiring[member.identity] = member.clone
+        return member.clone
 
 
 def slot_claims_held() -> list:

@@ -94,7 +94,13 @@ def _bring_up(auth):
 
 def _watchdog():
     """Expire, reap, refill — forever. Nothing else calls tick(), and nothing
-    else warms the pool: the first pass below is the cold start."""
+    else warms the pool: the call below is the cold start.
+
+    `refill()` returns as soon as the intent is recorded and warms on its own
+    thread, so this loop starts ticking — expiring, reaping — while the pool is
+    still filling. `tick()`'s own refill finds the build already in progress and
+    does not queue behind it.
+    """
     if BROKER is not None and BROKER.access != "closed":
         try:
             BROKER.refill()

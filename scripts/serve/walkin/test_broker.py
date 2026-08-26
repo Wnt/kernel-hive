@@ -17,6 +17,8 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -366,6 +368,109 @@ class StrayClaimTests(unittest.TestCase):
         self.assertEqual(self.broker.release_stray_claims(), [])
         self.assertEqual(len(claims.mine("sandbox")), 1)
         self.assertEqual(len(claims.mine("port")), 1)
+
+
+class WarmingBlocksNothingTests(unittest.TestCase):
+    """A pool that is FILLING must not stop the landing page answering.
+
+    Measured on the live plane at poolSize 3: `refill()` built nine clones
+    serially while holding the broker's lock, each one a TCG restore of about
+    two minutes, and `/walkin/state` — which needs the same lock for `pools()` —
+    timed out for twenty minutes after every restart. The visitor sat on
+    "Checking what is free…" the whole time.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._claims = tempfile.TemporaryDirectory()
+        self.addCleanup(self._claims.cleanup)
+        self._saved = {k: os.environ.get(k) for k in ("KH_CLAIMS_ROOT", "KH_SESSION")}
+        os.environ.update(KH_CLAIMS_ROOT=self._claims.name, KH_SESSION="test-warming")
+        self.addCleanup(self._restore)
+        self._real_root = naming.WALKIN_ROOT
+        naming.WALKIN_ROOT = Path(self._tmp.name)
+
+    def _restore(self):
+        naming.WALKIN_ROOT = self._real_root
+        self._tmp.cleanup()
+        for key, value in self._saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def _broker(self, factory):
+        pool = broker_mod.Broker(REPO / "does-not-exist", REPO, spawn=False, factory=factory)
+        pool.specs = {"os2warp": a_spec()}
+        pool.access = "open"
+        return pool
+
+    def test_the_read_paths_answer_while_a_clone_is_being_built(self):
+        gate, started = threading.Event(), threading.Event()
+
+        def slow(spec, index):
+            started.set()
+            self.assertTrue(gate.wait(20), "the test never released the build")
+            return FakeClone(spec, index)
+
+        pool = self._broker(slow)
+        builder = threading.Thread(target=pool.refill, daemon=True)
+        builder.start()
+        self.addCleanup(gate.set)
+        self.assertTrue(started.wait(10), "the build never started")
+        for _ in range(20):
+            began = time.monotonic()
+            pool.state()
+            pool.live_sessions()
+            pool.own_of("nobody")
+            pool.signal_entries()
+            waited = time.monotonic() - began
+            self.assertLess(waited, 0.5, f"a read path waited {waited:.2f}s on the build")
+        gate.set()
+        builder.join(20)
+        self.assertEqual(pool.state()["pools"], [{"os": "os2warp", "free": 2, "size": 2}])
+
+    def test_a_second_refill_does_not_queue_behind_the_first(self):
+        gate, started = threading.Event(), threading.Event()
+
+        def slow(spec, index):
+            started.set()
+            self.assertTrue(gate.wait(20), "the test never released the build")
+            return FakeClone(spec, index)
+
+        pool = self._broker(slow)
+        builder = threading.Thread(target=pool.refill, daemon=True)
+        builder.start()
+        self.addCleanup(gate.set)
+        self.assertTrue(started.wait(10), "the build never started")
+        began = time.monotonic()
+        pool.refill()  # a release, an admin reopening the switch — anything
+        self.assertLess(time.monotonic() - began, 0.5, "a second refill queued behind a restore")
+        gate.set()
+        builder.join(20)
+
+    def test_concurrent_refills_never_hand_out_the_same_pool_index(self):
+        made = []
+        guard = threading.Lock()
+
+        def slow(spec, index):
+            time.sleep(0.02)  # a build is never instant; give the race room
+            clone = FakeClone(spec, index)
+            with guard:
+                made.append(clone.identity)
+            return clone
+
+        pool = self._broker(slow)
+        threads = [threading.Thread(target=pool.refill) for _ in range(6)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(20)
+        self.assertEqual(len(made), len(set(made)), f"an index was built twice: {made}")
+        # And exactly the pool size, not one per racing caller: the deficit
+        # counts what is already in flight.
+        self.assertEqual(len(made), 2)
+        self.assertEqual(pool.state()["pools"], [{"os": "os2warp", "free": 2, "size": 2}])
 
 
 if __name__ == "__main__":
