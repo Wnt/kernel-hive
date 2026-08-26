@@ -312,6 +312,45 @@ per station), the 49-slot claim range, and the visitor-facing
 `ACTIVE_SESSION_CAP` — not the network. Growing a pool still never needs a
 per-station walk-in golden, and no golden was recaptured for any of this.
 
+### 5.5 The pool's lock is never held over a clone's life
+
+`pools()`, `state()`, `own_of()`, `live_sessions()` and `signal_entries()` all
+take the broker's one lock, and a visitor's landing page polls `/walkin/state`
+every 15 s. So **nothing that takes minutes may hold that lock** — and both ends
+of a pool member's life do:
+
+| work | measured |
+|---|---|
+| build one clone (TCG restore of the golden) | ~10 s warm cache, up to ~2 min 10 s cold |
+| destroy one (`clone-guard` kill, tap down, cell down, `rm -rf`) | seconds |
+
+At `poolSize` 1 the whole warm was one member and it hid. At 3 it is nine, and
+`refill()` built all nine serially under the lock: `/walkin/state` timed out for
+the length of the warm, after every restart and after every reap, so the landing
+page said "Checking what is free…" and never stopped. Same lesson as the two
+startup-thread fixes above it, one layer in.
+
+The shape, in `scripts/serve/walkin/warm.py`:
+
+```
+reserve (locked)  ->  build (unlocked)    ->  publish (locked)
+retire  (locked)  ->  destroy (unlocked)
+```
+
+What the lock still protects is what it is for. **Two builds must never pick the
+same pool index** — the index names the tap (§5.1) and interface names are
+box-wide — so the index is RESERVED under the lock before the build starts, and
+a reservation counts toward the pool's size exactly as a member does.
+`_build_lock`, which no read path touches, keeps builds one at a time.
+`kh-claim` arbitrates between SESSIONS; the broker is one session, so within it
+the reservation is the arbitration.
+
+Two consequences the reapers must respect: a reservation holds a slot claim
+before its directory exists, and a retiring clone keeps its tap, cell and
+directory until `destroy` returns. Both now run alongside a tick, so
+`_known_identities()` — members **plus** reservations **plus** retirements — is
+what the sweeps are told, not `_members`.
+
 ## 6. The walk-in network plane
 
 **A separate gateway, not a second leg on the live one.** CT 951 serves five
