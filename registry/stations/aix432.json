@@ -3,8 +3,8 @@
   "id": "aix432",
   "era_year": 1999,
   "stationDir": "aix432",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "lifecycle": "production",
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -57,18 +57,19 @@
     "stationsManifestPrelude": "\n# aix432 (slot 171) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is\n#   generated from it. Promotion needs the golden and a relay-reachable port.\n"
   },
   "stream": {
-    "transport": "showcase",
+    "transport": "streamhost",
     "udpPort": 54171,
     "slot": 171,
     "fps": 30,
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "none",
-      "method": "none",
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
       "absolute": false,
-      "present": false,
-      "device": "none",
+      "present": true,
+      "device": "i8042-ps2-mouse",
       "scale": 1.0,
       "offset": [
         0,
@@ -101,8 +102,8 @@
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid"
       ],
       "launcherParity": {
-        "status": "unwritten",
-        "reason": "There is NO tracked launcher yet: streamhost/stations/aix432/ does not exist, so runtime.qemu.launcher, envFixture, emitArgs and auxFiles are deliberately absent rather than pointing at files nobody has written. deviceSetSummary above is the PINNED INTENT the golden must be baked against, transcribed from scripts/build-guests/tiles/aix432.sh and docs/lab/research/candidate-aix.md; the NIC model is the one open device-set question. A checkpoint, its binary and its device set are one combination, so the launcher has to exist before the golden is trusted."
+        "status": "byte-identical",
+        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set against binary c55199da, branch aix432-s3 @ 1f9df8efdf"
       },
       "deviceSetId": "aix432-40p-ppc604-1024x768x8-mga-pcnet",
       "launcher": "streamhost/stations/aix432/qemu-streamhost.sh",
@@ -132,24 +133,38 @@
         "$T/aix432/qemu-streamhost.sh",
         "--env-append-file",
         "$T/aix432/station.env.fixture"
-      ]
+      ],
+      "binarySha256": "c55199daf4a6e8ebaa71f3889d2189c6c085f46cdffa7880e16d629b2209db22"
+    },
+    "stationEnv": {
+      "SH_STATION": "aix432",
+      "SH_QMP": "/data/vms/streamhost/stations/aix432/qmp.sock",
+      "SH_PORT": "54171",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/aix432/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/aix432/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
     }
   },
   "reset": {
     "stationDir": "aix432",
-    "pointer": "none",
+    "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "INTENDED, NOT YET BAKED — a logged-in CDE session on AIX 4.3.3 at 1024x768x8 (RS/6000 7020 40P under TCG), front panel and dtwm frames drawn by AIX's own GXT130P DDX through the emulated Matrox, with Netscape Communicator 4.08 on a corpus page from the retronet gateway. mouse/keyboard stay UNVERIFIED until the framebuffer proves them: the MGA model has no hardware cursor yet, so the pointer is INVISIBLE even where it moves, which is a floor-blocking defect and not a cosmetic one."
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "A logged-in CDE session on AIX 4.3.3 at 1024x768x8 (RS/6000 7020 40P under TCG), front panel and dtwm frames drawn by AIX's own GXT130P DDX through the emulated Matrox, with Netscape Communicator 4.08 on the retronet corpus web. Baked 2026-08-26 from a cold boot to a fresh dtlogin login -- NOT a resumed session, because a golden captured through a held pointer grab restores with clicks swallowed. Restore is proven through the production launcher: no firmware POST, no skipfix, clicks actuate."
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "showcase",
     "accentColor": "#2f6ea8",
-    "eraLabel": "1999 · IBM RS/6000 — AIX 4.3.3 / CDE"
+    "eraLabel": "1999 · IBM RS/6000 — AIX 4.3.3 / CDE",
+    "pointerRel": true
   },
   "museum": {
     "id": "aix432",

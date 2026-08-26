@@ -2,6 +2,23 @@
   "_generated_by": "scripts/stations-registry.py",
   "_schema": "declared tile capabilities; labctl gen adds observed state",
   "tiles": {
+    "aix432": {
+      "dir": "/data/vms/streamhost/stations/aix432",
+      "qmp": null,
+      "pointer_mode": null,
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "console": null,
+      "udp_port": 54171,
+      "notes": "DECLARED, NOT DEPLOYED — aix432 is still a candidate, so nothing here is emitted into registry/generated/labctl-declarations.json (that document carries streamhost rows only) and no station directory exists on the box yet. When the station is promoted the declaration becomes: dir as above, qmp = the station-local qmp.sock, console fb, udp_port 54171, and an exec kind only once a captured-output channel is actually proven — the guest has a serial console on the 40p super-I/O port, which is the obvious candidate, and no network exec path at all (the NIC is on the retronet web plane with no route off it)."
+    },
     "alpine": {
       "dir": "/data/vms/streamhost/stations/alpine",
       "qmp": "/data/vms/streamhost/stations/alpine/qmp.sock",
