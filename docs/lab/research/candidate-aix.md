@@ -272,22 +272,64 @@ Screendump-verified running on the emulated card:
 | **Netscape Communicator 4.08** | fully rendered — toolbar icons, logos, text |
 | **Quake 1.07** | **renders and plays its demo loop** — textured geometry, weapon model, HUD |
 | Abuse | loads and runs; its `aix_sdrv` sound daemon holds `/dev/paud0`, but the window stays black |
-| CorelDRAW 3.5 | **will not load** — see below |
+| CorelDRAW 3.5 | **loads and runs**, then dies at `X_StoreColors` — see below |
 
 Quake tints the whole screen olive: it installs its own colormap on the 8-bit
 PseudoColor visual, which is period-correct colormap flashing, not a defect. It
 needs `LIBPATH=/usr/lpp/som/lib:/usr/lib` because it links `som.dll` and
 `UMSobj.dll`.
 
-**CorelDRAW is blocked on a library that AIX 4.3 does not ship.** Its bundled
-`libwix_sh.a` imports from `libX11.a(shr.o)` — the AIX **3.2**-era member — and
-every libX11 on 4.3.3 (`/usr/lib`, and the R4/R5 compat trees from
-`X11.compat.lib.X11R3/R4/R5`) contains only `shr4.o`/`shr4net.o`. Presenting
-`shr4.o` under the name `shr.o` in a private archive gets further but then fails
-on `Symbol readv (number 345) is not exported`, because the 3.2 libX11
-re-exported the socket helpers and the R6 one does not. Synthesising a shim
-needs a C compiler, and AIX's is a separately licensed product that is not
-installed. Recorded as a dead end rather than re-derived later.
+**CorelDRAW was never blocked on a missing library — it was a LIBPATH problem.**
+An earlier pass read the `0509-150 Dependent module libwix_sh.a could not be
+loaded` / `0509-026 A file or directory in the path name does not exist` triple
+as a missing AIX 3.2-era `libX11.a(shr.o)`, and went down a renaming path that
+ended at `Symbol readv (number 345) is not exported`. That whole chain was an
+artefact. `libwix_sh.a` sits in the application's own directory, which is not on
+the default library search path, so the loader simply never found it. Set:
+
+```sh
+export CORELHOME=/apps/corel3.5/corel
+export LIBPATH=/apps/corel3.5/corel/aix_rs6000:/usr/lib:/lib
+```
+
+and `./coreldraw` loads clean — no `0509-*` at all, no `shr.o` anywhere in it.
+(List `/usr/lib:/lib` explicitly: `LIBPATH` REPLACES the default search path, and
+`$LIBPATH` is empty here, so the bare `:$LIBPATH` idiom would strand `libX11`.)
+
+**The real blocker is the colormap.** The app now runs to the X protocol and
+exits on:
+
+```
+X Error of failed request:  BadAccess (attempt to access private resource denied)
+  Major opcode of failed request:  89 (X_StoreColors)
+  Serial number of failed request:  738
+```
+
+It writes colormap cells it does not own. Measured, so the next pass does not
+re-derive it:
+
+* **Not colormap pressure.** Identical failing serial (738) with Netscape
+  running, with Netscape killed, and with `dtfile` killed too — three different
+  client populations, byte-identical failure point.
+* **Not the MGA device model.** Quake performs successful colormap animation on
+  the same emulated adapter (that is what the olive tint IS). A `BadAccess` on
+  `X_StoreColors` is the X server's own decision about colormap class and
+  ownership; it is not something the emulated hardware returns.
+* **`wix.ini` `[ColourMap]` is a red herring.** The section documents exactly this
+  choice (`Generic=default` vs `private`, note the British spelling), but setting
+  `Generic=private` changes nothing — and neither `coreldraw` nor `libwix_sh.a`
+  contains the string `colourmap`, so nothing appears to read that section.
+* **`noColormap`** in `libwix_sh.a` is an Xt error-database key
+  (`XtAppErrorMsg`, "Cannot allocate colormap entry"), not a settable option.
+  The option table is only `-background -bordercolor -borderwidth -config
+  -display -font -foreground -geometry -iconic -name -port -reverse
+  -selectionTimeout -synchronous -title -xnllanguage -xrm`.
+
+**Still open:** whether CDE's own palette occupancy makes the app's
+`XAllocColorCells` fail (a failed alloc followed by an unchecked `XStoreColors`
+would produce exactly this, and would also keep the serial constant). Testing it
+needs a bare X session with a nearly empty default colormap — which means a
+sandbox clone, not the live station.
 
 **Audio is proven at the device level.** `paud0` now configures itself from the
 real firmware's residual data — no `odmadd`/`mkdev` dance — and Abuse's own
