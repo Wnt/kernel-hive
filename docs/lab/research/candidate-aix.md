@@ -175,9 +175,43 @@ subsystem, and the failure touches **zero MGA registers**:
   `get_io_packets`, confirmed by disassembly).
 
 **QEMU has no PReP residual-data code at all** — that structure is built inside
-Artyom's Open Firmware ROM, for which there is no source. So reaching X means
-firmware work, not device work, and is out of reach by this route. The exhibit
-that *is* reachable today is AIX's native LFT console on the MGA.
+Artyom's Open Firmware ROM, for which there is no source.
+
+### 4.3 X *does* start once the gate is bypassed
+
+Patching a single instruction in the guest's `/usr/lib/drivers/rcm_load`
+(forcing the gxme-open check to succeed with a NULL device pointer) proves the
+residual-data dependency lives **only** in the config method's device
+detection, not in the kernext itself. With that patch:
+
+- `mkdev -l rcm0` → `rcm0 Available` (previously stuck `Defined`)
+- `aixgsc` registers — as a dynamically added **syscall gateway**, so
+  `dump -Tv /unix | grep aixgsc` still reports 0; the proof it is live is that
+  the DDX, which imports exactly that one symbol, now loads instead of dying
+- AIX's X server sets **1024×768×8 on the MGA** and paints the X root, and
+  CDE's `dtlogin` reaches the same state. Independently verified: the captured
+  framebuffer goes from 640×480 to 1024×768 filled with the root colour.
+
+**Client windows still do not render.** `xinit` reports `ioctl: Device busy`,
+X spins ~44% CPU, and across an entire X + CDE session the MGA logs **exactly
+two register accesses, both mode switches, and zero drawing traffic**. AIX's
+GXT130P DDX routes all client rendering through `aixgsc` → the RCM/**gxme**
+graphics-DMA subsystem; with gxme stubbed to a NULL device the root fill still
+reaches the linear framebuffer through BAR0, but accelerated client blits go
+into the stub and vanish.
+
+The conclusion that matters: **that DMA engine does not need writing — AIX
+already ships it.** It is inert only because `gxme0` never configured against a
+real device, which is the residual-data gate again. So the route to a rendering
+desktop is authentic residual data, i.e. **the genuine IBM firmware**
+(`rs6k40p.BIN`, archive.org `rs6k40pROM`), which runs under QEMU and paints its
+real PowerPC splash on the S3 but currently stalls before boot — ~50% CPU, no
+serial. Suspects: the blank `isa-m48t59` NVRAM (real SMS wants a valid layout
+and checksum to resolve its console/boot config) or the 8042 keyboard
+self-test handshake.
+
+The exhibit reachable **today**, with no patching, is AIX's native LFT console
+on the MGA.
 
 This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
 the same wall:
