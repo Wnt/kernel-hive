@@ -949,8 +949,8 @@ emit amigaos35 \
 #   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE
 #   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/
 #   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.
-#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is
-#   generated from it. Promotion needs the golden and a relay-reachable port.
+#   Promoted to a listed production station on 2026-08-26, against the golden
+#   baked that day and slot 171 / UDP 54171 inside the public relay range.
 emit aix432 \
   --tile aix432 --vmid 171 --udp 54171 --pointer rel --input-backend \
   dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \

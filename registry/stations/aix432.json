@@ -54,7 +54,7 @@
     "goldenOrder": 67,
     "bringUpGroup": 8,
     "actionMapOrder": 40,
-    "stationsManifestPrelude": "\n# aix432 (slot 171) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is\n#   generated from it. Promotion needs the golden and a relay-reachable port.\n"
+    "stationsManifestPrelude": "\n# aix432 (slot 171) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   Promoted to a listed production station on 2026-08-26, against the golden\n#   baked that day and slot 171 / UDP 54171 inside the public relay range.\n"
   },
   "stream": {
     "transport": "streamhost",
@@ -161,7 +161,7 @@
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
-    "transport": "showcase",
+    "transport": "streamhost",
     "accentColor": "#2f6ea8",
     "eraLabel": "1999 · IBM RS/6000 — AIX 4.3.3 / CDE",
     "pointerRel": true
@@ -193,7 +193,7 @@
       "Quake"
     ],
     "blurb": "IBM's own Unix on IBM's own PowerPC workstation: AIX 4.3.3 booting to a full CDE desktop on an RS/6000, the machine that carried IBM's Unix business from the 1990s into the POWER era — and the desktop every other workstation vendor eventually standardised on.",
-    "notes": "Candidate, not on the floor. The real 7020-40P shipped a PowerPC 601; QEMU has no 601 model, so the exhibit runs a 604 — which is precisely why the genuine IBM boot ROM asserts 'time went negative' on its 601 clock path and needs PREP_TB_FREQ=15000000 plus a skipped POST settimeofday to boot at all. Graphics are a Matrox MGA device model written for this station and claimed by AIX as the GXT130P: the first natively graphical AIX under emulation we know of, against a Virtual OS Museum that reaches CDE only over XDMCP. It is AIX 4.3.3 and not the originally scoped 4.3.2 because 4.3.2's installer kernel stops driving the emulated LSI 53c810 after one retry cycle — measured, see docs/lab/research/candidate-aix.md."
+    "notes": "The real 7020-40P shipped a PowerPC 601; QEMU has no 601 model, so the exhibit runs a 604 — which is precisely why the genuine IBM boot ROM asserts 'time went negative' on its 601 clock path and needs PREP_TB_FREQ=15000000 plus a skipped POST settimeofday to boot at all. Graphics are a Matrox MGA device model written for this station and claimed by AIX as the GXT130P: the first natively graphical AIX under emulation we know of, against a Virtual OS Museum that reaches CDE only over XDMCP. It is AIX 4.3.3 and not the originally scoped 4.3.2 because 4.3.2's installer kernel stops driving the emulated LSI 53c810 after one retry cycle — measured, see docs/lab/research/candidate-aix.md."
   },
   "emulator": {
     "family": "QEMU",
