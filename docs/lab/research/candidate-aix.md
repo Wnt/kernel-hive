@@ -126,11 +126,58 @@ filesets that grep as "trio"/"S3" are false positives (`devices.isa.IBM0010` is
 an Ethernet adapter, `devices.isa_sio.PNP0E00` is the PCMCIA bus).
 
 So the ported S3 card gives **Open Firmware** a console — genuinely useful, and
-proven — but AIX itself can never bind to it. A native graphical AIX requires
-writing a QEMU device model for one of the adapters above. Matrox Millennium II
-is the tractable candidate: it is the only one with real public documentation
-(Linux `matroxfb`, and Matrox published MGA programming specs in the 1990s).
-That work is in progress on branch `aix432-s3`.
+proven — but AIX itself can never bind to it.
+
+### 4.1 The Matrox model: AIX paints its own console
+
+A QEMU device model for the **Matrox MGA** behind the GXT130P was written for
+this station (`hw/display/mga.c` on branch `aix432-s3`, selected with
+`-vga mga`), and it works:
+
+```
+mg20  Available  04-02  GXT130P Graphics Adapter
+```
+
+AIX claims the card and **renders its native LFT console into the emulated
+framebuffer** — the `AIX Version 4 … login:` banner, drawn by AIX's own font
+engine, no serial console and no remote X. That is the first native graphical
+AIX under emulation we know of.
+
+Two findings from that work worth keeping:
+
+- **The ODM keys on vendor+device only.** `PdDv devid = 0x2b102005` is just the
+  byte-swapped `102b:0520`; the model advertises subsystem `102b:ff03` and
+  matched anyway. No IBM subvendor and no particular BAR layout is needed. Note
+  a PCI adapter lands in ODM class `adapter/pci`, so it appears in
+  `lsdev -Cc adapter`, **not** `lsdev -C -c graphics` (that class holds the
+  logical lft/rcm/gxme stack).
+- **A genuine QEMU bug was blocking `/dev/lft0` entirely.** AIX's `kbddd`
+  selects PS/2 scancode set 3 and programs per-key make/break with `0xFC`
+  followed by a *list* of key numbers. QEMU ACKed only the first and RESENT the
+  rest, so the keyboard watchdog failed, `lftKiInit` failed (errpt LFTDD/KBDDD)
+  and every `/dev/lft0` open failed. Fixed in `hw/input/ps2.c` by continuing to
+  ACK key ids until the next command byte.
+
+### 4.2 Why X still does not start — and it is not the display
+
+The X server is blocked one layer *below* the adapter, in AIX's graphics kernel
+subsystem, and the failure touches **zero MGA registers**:
+
+- The shared GXT120P/130P GAI module `/usr/lpp/gai/pci2b101a05/loadddx` imports
+  exactly **one** kernel symbol and does no direct MMIO: `dump -Tv loadddx`
+  shows a single `/unix` import, **`aixgsc`** — the graphics syscall gateway.
+- `dump -Tv /unix | grep aixgsc` → **absent**.
+- `aixgsc` is exported only when the **RCM** kernel extension initialises, and
+  after `mkdev -l rcm0` no rcm/ccm graphics kernext appears in `genkex`;
+  `rcm0` and `gxme0` stay `Defined`.
+- `gxme0` (Graphics Data Transfer Assist) fails inside `cfggxme_rspc`, which
+  enumerates **PReP residual-data** device packets (`get_resid_dev` /
+  `get_io_packets`, confirmed by disassembly).
+
+**QEMU has no PReP residual-data code at all** — that structure is built inside
+Artyom's Open Firmware ROM, for which there is no source. So reaching X means
+firmware work, not device work, and is out of reach by this route. The exhibit
+that *is* reachable today is AIX's native LFT console on the MGA.
 
 This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
 the same wall:
