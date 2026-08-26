@@ -103,7 +103,36 @@
       "launcherParity": {
         "status": "unwritten",
         "reason": "There is NO tracked launcher yet: streamhost/stations/aix432/ does not exist, so runtime.qemu.launcher, envFixture, emitArgs and auxFiles are deliberately absent rather than pointing at files nobody has written. deviceSetSummary above is the PINNED INTENT the golden must be baked against, transcribed from scripts/build-guests/tiles/aix432.sh and docs/lab/research/candidate-aix.md; the NIC model is the one open device-set question. A checkpoint, its binary and its device set are one combination, so the launcher has to exist before the golden is trusted."
-      }
+      },
+      "deviceSetId": "aix432-40p-ppc604-1024x768x8-mga-pcnet",
+      "launcher": "streamhost/stations/aix432/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/aix432/station.env.fixture",
+      "emitArgs": [
+        "--tile",
+        "aix432",
+        "--vmid",
+        "171",
+        "--udp",
+        "54171",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/aix432/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/aix432/station.env.fixture"
+      ]
     }
   },
   "reset": {

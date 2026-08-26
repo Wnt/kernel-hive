@@ -297,6 +297,15 @@ box_sync_load_pairs() {
   # generic launcher sweep below does not pick its runtime up. Without these the
   # box copies silently drift from the repo. See ICQ-STATION-tru64.md.
   box_sync_add_pair tru64-rn-tapnet streamhost/stations/tru64/rn-tapnet.sh "$BOX_ROOT/stations/tru64/rn-tapnet.sh" exact repo
+  # aix432's retronet bridge-tap lifecycle helper (web plane: Netscape 4.08 on
+  # the corpus, guest 10.99.0.28 statically addressed in-guest). Same
+  # box-authored mirror pair as win98se's above. Its skipfix helper rides along:
+  # the launcher arms it against -gdb to step over the IBM firmware's POST
+  # settimeofday, which otherwise halts the machine at 888-102-700-0A5 — needed
+  # on a COLD boot only, since `loadvm golden` never re-runs POST.
+  # See docs/lab/retronet/STATION-aix432.md.
+  box_sync_add_pair aix432-rn-tapnet streamhost/stations/aix432/rn-tapnet.sh "$BOX_ROOT/stations/aix432/rn-tapnet.sh" exact repo
+  box_sync_add_pair aix432-skipfix streamhost/stations/aix432/skipfix.py "$BOX_ROOT/stations/aix432/skipfix.py" exact repo
   # amigaos35's retronet link is a NETNS cage (FS-UAE bsdsocket has no tap
   # backend) — same launcher-called-helper class as the rn-tapnet.sh files.
   box_sync_add_pair amigaos35-rn-netns streamhost/stations/amigaos35/rn-netns.sh "$BOX_ROOT/stations/amigaos35/rn-netns.sh" exact repo
