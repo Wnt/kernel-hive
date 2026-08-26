@@ -4,10 +4,11 @@
 Tier 1, direct framebuffer capture, firmware ROM required. The station id is
 `aix432`.
 
-**Status (2026-08-26): emulator proven, base OS installing.** The QEMU work is
-done and verified against the framebuffer; the base install runs. What is *not*
-yet proven is the piece the whole exhibit rests on — whether AIX's own X server
-will drive the emulated S3 (see §4).
+**Status (2026-08-26): OS and applications built; blocked on a display adapter.**
+AIX 4.3.3 is installed with X11/CDE, Ultimedia Services, Quake, Abuse and
+CorelDRAW 3.5, and AIX's own audio driver binds to the emulated CS4231. The one
+thing missing is a graphics adapter AIX can drive — see §4, which is the whole
+ballgame and is **not** solvable by installing something.
 
 ## 1. Why this station is not "AIX 4.3.2", as originally scoped
 
@@ -100,15 +101,39 @@ the same binary.
 - The 40p firmware is **Artyom Tarasenko's Open Firmware build**, not OpenBIOS.
   `q40pofw-serial.rom` and `q40pofw-vga.rom` (the graphical variant).
 
-## 4. The open risk: AIX's X server on an emulated S3
+## 4. The blocker: AIX supports no adapter that QEMU emulates
 
-A framebuffer that Open Firmware can paint is **not** proof that AIX can. AIX
-4.3 drives graphics through adapter-specific filesets, and the only emulated
-card is an S3 Trio. The bet is IBM's **GXT130P** support software (a 2D S3-based
-PCI adapter for the RS/6000, driver disc sourced in §5) binding to it.
+A framebuffer Open Firmware can paint is **not** proof AIX can paint it. AIX 4.3
+drives graphics only through adapter-specific filesets, and the GXT130P is
+**not** S3-based as first assumed — AIX fileset names are byte-swapped
+vendor+device, so `devices.pci.2b102005` decodes as **0x102B:0x0520 = Matrox
+Millennium II**.
 
-If that bet fails, the exhibit has no native desktop, because the alternative —
-what the Virtual OS Museum does — is not one:
+Enumerating every graphics fileset on both media sets gives the complete list of
+adapters AIX 4.3 can drive:
+
+| fileset | adapter | chip |
+|---|---|---|
+| `devices.pci.2b102005` | GXT130P | Matrox Millennium II (0x102B:0x0520) |
+| `devices.pci.2b101a05` | GXT120P | Matrox Mystique (0x102B:0x051A) |
+| `devices.pci.0e100091` | H10/S15 | Weitek P9100 (0x100E:0x9100) |
+| `devices.pci.1410****` | GXT135P/150P/250P/300P/500P/800P/2000P/2200P/3000P/4000P/4500P/6000P/6500P | IBM proprietary (vendor 0x1014) |
+| `devices.mca.*` / `devices.buc.*` | Gt3/Gt4, GXT800M, GXT1000, GXT100/150/150L/155L | MCA / on-board |
+
+**QEMU emulates none of them.** There is no `devices.pci.3353*` fileset, i.e. no
+S3 driver of any kind, and nothing for Bochs VGA or Cirrus either. The two
+filesets that grep as "trio"/"S3" are false positives (`devices.isa.IBM0010` is
+an Ethernet adapter, `devices.isa_sio.PNP0E00` is the PCMCIA bus).
+
+So the ported S3 card gives **Open Firmware** a console — genuinely useful, and
+proven — but AIX itself can never bind to it. A native graphical AIX requires
+writing a QEMU device model for one of the adapters above. Matrox Millennium II
+is the tractable candidate: it is the only one with real public documentation
+(Linux `matroxfb`, and Matrox published MGA programming specs in the 1990s).
+That work is in progress on branch `aix432-s3`.
+
+This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
+the same wall:
 
 > **VOM's "graphical AIX" is not graphical.** Their AIX 4.3.3 runs
 > `-bios q40pofw-serial.rom -vga none -nographic`; the CDE screenshot in their
@@ -141,7 +166,66 @@ The games are the one clean-licence item: IBM published them itself, Quake
 "distributed by IBM with permission from id Software", shareware `pak0.pak`
 included.
 
-## 6. Sources
+## 6. What is built, and the audio result
+
+Disk images under `/data/vms/sandbox/aix432/base/`:
+
+- `aix433-base.qcow2` — bare AIX 4.3.3, boots to `Console login:`
+- `aix433-x11-ums-games.qcow2` — plus X11/CDE, Ultimedia Services, Quake, Abuse
+- `aix433-full.qcow2` — plus CorelDRAW 3.5
+
+Installed on top of the base: **X11 R6 + Motif 2.1 + CDE** (38 filesets),
+**Ultimedia Services** (`UMS.objects` 2.2.1.2, `UMS.samples`) from the 4.3.2
+Bonus Pack, plus the SOM runtime it drags in. Applications: **Quake 1.07** in
+`/apps/quake`, **CorelDRAW 3.5** in `/apps/corel3.5` (the whole suite —
+`coreldraw`, `corelchart`, `corelpaint`, `corelshow`, `coreltrace`,
+`corelmosaic`), **Abuse** in `/usr/lpp/abuse`. A 1 GB `/apps` JFS was created and
+`/usr` grown, because the default BOS install leaves `/usr` with ~25 MB free.
+
+All three applications are X11 clients, so all three are gated on §4:
+
+| binary | links against |
+|---|---|
+| `quake.sw` | `libX11.a`, `libXext.a`, **`UMSobj.dll`**, `som.dll` |
+| `xabuse` | X11, ships its own `aix_sdrv` sound driver |
+| `coreldraw` | `libX11.a` + its bundled `libwix_sh.a` (WiX toolkit, not Motif) |
+
+**Audio works at the driver level, and the resource match is exact.** AIX's
+`devices.isa_sio.IBM000E` is *"AIX Ultimedia Services RISC PC Audio Device
+(CS4231)"*, ODM prefix `paud`, and its predefined attributes are:
+
+```
+bus_io_addr    0x830      bus_intr_level 10
+play_dma_level 6          cap_dma_level  7
+```
+
+QEMU's 40p instantiates a `cs4231a` at **iobase 0x830, IRQ 10** — exactly those
+values. Install the fileset, and `paud0` goes **Available** with `/dev/paud0`
+live. QEMU defaults that codec to DMA 3, so the launcher must pass
+`-global cs4231a.dma=6` to match what AIX expects; `-M 40p,audiodev=<id>` binds
+the backend.
+
+Two caveats, both measured:
+
+- **`paud0` does not survive a reboot.** QEMU's `cs4231a` is a plain ISA device,
+  not ISA-PnP, so it is absent from the firmware PnP data `cfgmgr` rebuilds the
+  ISA device list from, and `define_rspc` refuses `mkdev` outright
+  ("the specified connection is not valid"). The device has to be re-created
+  each boot by adding a `CuDv` stanza with `connwhere = "IBM000E"` via `odmadd`
+  and then `mkdev -l paud0` — fine from a boot script, and the honest long-term
+  fix is teaching QEMU's `cs4231a` to answer ISA PnP as `IBM000E`.
+- **UMS's own `audio_play` cannot instantiate its file object** ("Error code=9")
+  for `.WAV` or `.snd`, with or without `SOMIR` pointing at
+  `/usr/lpp/UMS/etc/UMS.ir`. Since Quake links `UMSobj.dll` directly and Abuse
+  ships its own `aix_sdrv`, the applications are the real audio test, not this
+  tool.
+
+**There is no boot chime.** With QEMU capturing all codec output
+(`-audiodev wav,...`), a full firmware boot produces no capture file at all —
+Artyom's Open Firmware never drives the CS4231. An `isa-pcspk` does exist in the
+machine (from the super-I/O, not `prep.c`), but nothing sounds it during POST.
+
+## 7. Sources
 
 - Artyom Tarasenko, *AIX/PReP under QEMU How-To* and the `40p-*-aix-boots`
   branches — <https://github.com/artyom-tarasenko/qemu>
