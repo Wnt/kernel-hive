@@ -14,6 +14,8 @@ from datetime import date
 from pathlib import Path
 
 from poster_registry import PosterError, load_posters
+from serve.walkin.naming import SLOT_MAX as WALKIN_SLOT_MAX
+from serve.walkin.naming import SLOT_MIN as WALKIN_SLOT_MIN
 
 from .constants import GENERATED_SHELL, LABCTL_KEYS, NEW_TILE_SLOT_FLOOR, POSTERS, REGISTRY, REPO, TEMPLATES, TILES
 from .loading import RegistryError, load
@@ -29,6 +31,33 @@ from .render import (
     template,
 )
 from .validate_rules import validate
+
+
+def slot_refusal(globals_doc: dict, value: int) -> str | None:
+    """Why slot `value` cannot host a production station, or None if it can.
+
+    `--slot auto` used to know only which slots were already taken, so it walked
+    straight into the walk-in clone pool's reservation and then past the edge's
+    relay window. Both were invisible until promotion failed, which is why this
+    refuses at scaffold time for an explicit --slot too.
+    """
+    if WALKIN_SLOT_MIN <= value <= WALKIN_SLOT_MAX:
+        return (
+            f"slots {WALKIN_SLOT_MIN}-{WALKIN_SLOT_MAX} are reserved for the walk-in "
+            "clone pool (scripts/serve/walkin/naming.py)"
+        )
+    ports = globals_doc["ports"]
+    relay_low = ports.get("publicRelayLow")
+    relay_high = ports.get("publicRelayHigh")
+    if relay_low is not None and relay_high is not None:
+        port = ports["productionBase"] + value
+        if not relay_low <= port <= relay_high:
+            return (
+                f"UDP {port} is outside the public relay window {relay_low}-{relay_high} "
+                "(ports.publicRelay* in registry/registry-v1.json), so the station would "
+                "stream on the LAN while being unreachable through the edge"
+            )
+    return None
 
 
 def generated() -> OrderedDict[str, bytes]:
@@ -226,8 +255,28 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
 
     used_slots = {row.get("stream", {}).get("slot") for row in rows}
     used_slots.discard(None)
+    ports = globals_doc["ports"]
+    relay_low = ports.get("publicRelayLow")
+    relay_high = ports.get("publicRelayHigh")
+
     if slot_arg == "auto":
-        slot = next(value for value in range(NEW_TILE_SLOT_FLOOR, 11536) if value not in used_slots)
+        slot = next(
+            (
+                value
+                for value in range(NEW_TILE_SLOT_FLOOR, 11536)
+                if value not in used_slots and slot_refusal(globals_doc, value) is None
+            ),
+            None,
+        )
+        if slot is None:
+            raise RegistryError(
+                f"--slot auto found nothing usable at or above {NEW_TILE_SLOT_FLOOR}: every "
+                f"candidate is taken, inside the walk-in reservation "
+                f"{WALKIN_SLOT_MIN}-{WALKIN_SLOT_MAX}, or outside the relay window "
+                f"{relay_low}-{relay_high}. Re-cut the reservation or widen the relay window "
+                "(edge nftables, the wg0.conf comment, docs/PUBLIC-GALLERY.md and "
+                "publicRelayHigh move together), then retry."
+            )
     else:
         try:
             slot = int(slot_arg)
@@ -238,6 +287,9 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
         if slot in used_slots:
             owner = next(row["id"] for row in rows if row.get("stream", {}).get("slot") == slot)
             raise RegistryError(f"slot {slot} is already reserved by {owner}")
+        refusal = slot_refusal(globals_doc, slot)
+        if refusal:
+            raise RegistryError(f"slot {slot}: {refusal}")
     udp_port = globals_doc["ports"]["productionBase"] + slot
     if any(row.get("stream", {}).get("udpPort") == udp_port for row in rows):
         raise RegistryError(f"UDP port {udp_port} is already in use")
