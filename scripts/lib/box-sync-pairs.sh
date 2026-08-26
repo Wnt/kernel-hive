@@ -263,6 +263,7 @@ box_sync_load_pairs() {
   box_sync_add_pair sailfish-seriald streamhost/stations/sailfishos/seriald.py "$BOX_ROOT/stations/sailfishos/seriald.py" exact repo
   # Per-station network-link helper pairs live in their own file — this one hit
   # the 600-line hard cap. See box-sync-pairs-retronet.sh.
+  # shellcheck source=scripts/lib/box-sync-pairs-retronet.sh
   . "$(dirname "${BASH_SOURCE[0]}")/box-sync-pairs-retronet.sh"
   box_sync_add_retronet_pairs
   # nextstep's retronet VETH lifecycle helper. Box-authored mirror pair like the
