@@ -32,10 +32,19 @@
 # 5. AUDIO NEEDS -global cs4231a.dma=6. AIX's CS4231 driver has play DMA fixed
 #    at 6 and QEMU's cs4231a defaults to 3. iobase 0x830 / IRQ 10 already match.
 #
-# AND THE ONE THAT IS NOT SOLVED: AIX 4.3 has a driver for no display adapter
-# QEMU emulates (see candidate-aix.md §4). The S3 gives the FIRMWARE a console;
-# AIX itself cannot bind to it, so X does not start. A QEMU model for the
-# Matrox Millennium II behind IBM's GXT130P is the work in flight.
+# 6. THE DISPLAY IS NOT THE S3, AND THE FIRMWARE IS NOT OPTIONAL. AIX 4.3 has
+#    a driver for no display adapter upstream QEMU emulates; the S3 gives the
+#    FIRMWARE a console and AIX can never bind to it. What AIX does bind to is
+#    hw/display/mga.c on this branch -- a Matrox model it claims as the GXT130P
+#    (mg21). But the graphics stack only configures under the GENUINE IBM ROM
+#    (rs6k40p.BIN), whose authentic PReP residual data brings up gxme0/rcm0/
+#    lft0/paud0; under the Open Firmware builds those stay Defined and X never
+#    starts. That ROM needs PREP_TB_FREQ=15000000 and the POST settimeofday
+#    call skipped (601 clock path on a 604) or it asserts "time went negative".
+#    With it: CDE, Netscape Communicator 4.08 and Quake 1.07 all render.
+#    STILL OPEN: the MGA hardware cursor (the pointer is invisible), CorelDRAW
+#    3.5 (wants an AIX 3.2-era libX11 member -- a recorded dead end), and
+#    Abuse's window (runs, stays black). See candidate-aix.md SS4.4-4.5.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"

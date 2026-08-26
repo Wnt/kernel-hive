@@ -54,4 +54,16 @@ LABCTL_KEYS = (
     "udp_port",
     "notes",
 )
+# The floor `stations-registry.py new --slot auto` allocates from. It knows
+# nothing about two later constraints, and both bite the NEXT station added:
+#   * slots 152-200 are RESERVED for the walk-in clone pool
+#     (docs/lab/WALKIN-BRIEF.md), while production stations end at 151 -- so
+#     `auto` hands out 152, which belongs to the pool;
+#   * the first slot past that reservation, 201, is OUTSIDE the edge's relay
+#     DNAT window (ports.publicRelayLow..High = 54080-54200 in
+#     registry/registry-v1.json), so a production entry there fails validation
+#     and would stream on the LAN while being unreachable through the edge.
+# aix432 is the first station to sit in that gap. Pass --slot explicitly, and
+# widen the relay window (edge nftables, the wg0.conf comment,
+# docs/PUBLIC-GALLERY.md and publicRelayHigh together) before promoting one.
 NEW_TILE_SLOT_FLOOR = 81

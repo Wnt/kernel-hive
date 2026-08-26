@@ -350,6 +350,13 @@ The decisions this plan rests on, in one place:
 5. Same-origin walk-in surface; separate origin only if abuse forces it (§5).
 6. Slots **152–200** reserved for the pool in `registry-v1.json` — production
    stations now run to 151, and the relay DNAT window ends at 54200.
+   **Consequence, already met once:** the next station added has to skip the
+   reservation and land on **201**, which is *past* the DNAT window — `aix432`
+   is the first one there, and it cannot be promoted to production until the
+   window is widened (edge nftables, the `wg0.conf` comment,
+   [`PUBLIC-GALLERY.md`](../PUBLIC-GALLERY.md) and `ports.publicRelayHigh`
+   together) or the pool reservation is re-cut. The scaffolder's `--slot auto`
+   knows about neither and would hand out 152.
 7. Registration friction at launch: rate limits only. Walk-in accounts purged
    after 90 days idle.
 8. Visibility: the whole listed fleet's exhibition notes, no interactive state;

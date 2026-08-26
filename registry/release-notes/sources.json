@@ -67,12 +67,17 @@
     },
     {
       "repo": "Wnt/qemu",
-      "what": "QEMU patches for the foreign-architecture stations (Rhapsody i8259 cascade, Mac OS 7.5.3 m68k) and the host's fast-poll build",
+      "what": "QEMU patches for the foreign-architecture stations (Rhapsody i8259 cascade, Mac OS 7.5.3 m68k, AIX 4.3.3 on an RS/6000 40p) and the host's fast-poll build",
       "branches": [
         {
           "name": "kernel-hive",
           "what": "the branch the Rhapsody and Mac OS 7.5.3 builders clone",
           "pinnedBy": ["scripts/build-guests/tiles/rhapsody.sh", ".gitmodules"]
+        },
+        {
+          "name": "aix432-s3",
+          "what": "the graphical PReP/PowerPC stack the aix432 station is built on: Hervé Poussineau's unmerged S3 Trio card forward-ported to 11.0.2 (a console for the firmware), a NEW hw/display/mga.c — the Matrox behind IBM's GXT130P, the only adapter AIX 4.3 can bind to — Artyom Tarasenko's lsi53c810/raven AIX fixes, a PS/2 scancode-set-3 ACK fix that unblocks every /dev/lft0 open, and the PREP_TB_FREQ override the genuine IBM 40p boot ROM needs to get past its 601 clock path",
+          "pinnedBy": ["scripts/build-guests/tiles/aix432.sh", "registry/stations/aix432.json"]
         }
       ],
       "excludes": []
