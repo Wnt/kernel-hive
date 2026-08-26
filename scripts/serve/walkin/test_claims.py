@@ -88,11 +88,11 @@ class SlotClaimTests(unittest.TestCase):
     def test_the_pool_ceiling_is_reported_rather_than_wrapped(self):
         held = []
         self.addCleanup(lambda: [h.release() for h in held])
-        for n in range(152, 201):
+        for n in range(152, 171):
             held.append(claims.claim_slot(f"walkin-os2warp-{n}"))
         with self.assertRaises(claims.ClaimError) as caught:
             claims.claim_slot("walkin-os2warp-one-too-many")
-        self.assertIn("152-200", str(caught.exception))
+        self.assertIn("152-170", str(caught.exception))
 
     def test_a_missing_session_is_refused_rather_than_defaulted(self):
         os.environ.pop("KH_SESSION")
@@ -103,7 +103,7 @@ class SlotClaimTests(unittest.TestCase):
         """The message that cost an afternoon in production.
 
         With KH_SESSION unset every take failed for that one reason, and the
-        loop announced "no free slot in 152-200" against an EMPTY claim class —
+        loop announced "no free slot in 152-170" against an EMPTY claim class —
         pointing at pool exhaustion when the fault was one missing environment
         variable in the serving unit.
         """

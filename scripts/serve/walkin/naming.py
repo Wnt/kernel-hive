@@ -17,7 +17,7 @@ from pathlib import Path
 # Ledger §5.1 / brief §9 decision 6. Production stations end at 151; the edge
 # relay DNAT window ends at 54200, which is what caps the range at 200.
 SLOT_MIN = 152
-SLOT_MAX = 200
+SLOT_MAX = 170
 UDP_PORT_BASE = 54000
 
 # Clones never run in the production VMID range; clone-guard refuses < 900.

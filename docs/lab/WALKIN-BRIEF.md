@@ -57,7 +57,7 @@ walk-in browser ── same edge, same three gates ──► gateway (role: walk
      return its signaling path ── UI connects as on any station
      ▼
  pool clone: station launcher VERBATIM + overrides (own overlay, own
-     slot 152-200, own sockets, own tap on vmbr-wi) — resumed on connect
+     slot 152-170, own sockets, own tap on vmbr-wi) — resumed on connect
      ▼
  session ends / TTL / idle → clone-guard kill → overlay discarded →
      fresh clone captured back into the warm pool
@@ -348,15 +348,16 @@ The decisions this plan rests on, in one place:
 4. Network: dedicated `vmbr-wi` plane, gateway-only reachability, isolated
    bridge ports, **web services only — no OSCAR** (§6.1).
 5. Same-origin walk-in surface; separate origin only if abuse forces it (§5).
-6. Slots **152–200** reserved for the pool in `registry-v1.json` — production
-   stations now run to 151, and the relay DNAT window ends at 54200.
-   **Consequence, already met once:** the next station added has to skip the
-   reservation and land on **201**, which is *past* the DNAT window — `aix432`
-   is the first one there, and it cannot be promoted to production until the
-   window is widened (edge nftables, the `wg0.conf` comment,
-   [`PUBLIC-GALLERY.md`](../PUBLIC-GALLERY.md) and `ports.publicRelayHigh`
-   together) or the pool reservation is re-cut. The scaffolder's `--slot auto`
-   knows about neither and would hand out 152.
+6. Slots **152–170** reserved for the pool in `registry-v1.json` — the relay
+   DNAT window ends at 54200, and the pool only ever ran 9 clones in
+   152–160. **Already met once:** the station fleet ran out of relay-window
+   slots before the reservation's top was ever touched, so the next station
+   added (`aix432`) had to skip the reservation and land on **201**, which is
+   *past* the DNAT window and blocked promotion. Resolved by re-cutting the
+   reservation down to 152–170 and giving 171–200 back to the fleet — nothing
+   was running above slot 160, so nothing moved. The scaffolder's `--slot
+   auto` knows about neither the pool nor the DNAT window and would hand out
+   the next free slot regardless.
 7. Registration friction at launch: rate limits only. Walk-in accounts purged
    after 90 days idle.
 8. Visibility: the whole listed fleet's exhibition notes, no interactive state;

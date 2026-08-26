@@ -181,7 +181,7 @@ class SchemaExtensionTests(unittest.TestCase):
 
 class NamingTests(unittest.TestCase):
     def test_slot_range_is_the_ledger_range(self):
-        self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (152, 200))
+        self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (152, 170))
         with self.assertRaises(naming.NameError_):
             naming.check_slot(151)
         with self.assertRaises(naming.NameError_):

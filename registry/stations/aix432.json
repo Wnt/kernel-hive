@@ -42,8 +42,8 @@
       "exec_user": null,
       "exec_key": null,
       "console": null,
-      "udp_port": 54201,
-      "notes": "DECLARED, NOT DEPLOYED — aix432 is still a candidate, so nothing here is emitted into registry/generated/labctl-declarations.json (that document carries streamhost rows only) and no station directory exists on the box yet. When the station is promoted the declaration becomes: dir as above, qmp = the station-local qmp.sock, console fb, udp_port 54201, and an exec kind only once a captured-output channel is actually proven — the guest has a serial console on the 40p super-I/O port, which is the obvious candidate, and no network exec path at all (the NIC is on the retronet web plane with no route off it)."
+      "udp_port": 54171,
+      "notes": "DECLARED, NOT DEPLOYED — aix432 is still a candidate, so nothing here is emitted into registry/generated/labctl-declarations.json (that document carries streamhost rows only) and no station directory exists on the box yet. When the station is promoted the declaration becomes: dir as above, qmp = the station-local qmp.sock, console fb, udp_port 54171, and an exec kind only once a captured-output channel is actually proven — the guest has a serial console on the 40p super-I/O port, which is the obvious candidate, and no network exec path at all (the NIC is on the retronet web plane with no route off it)."
     }
   },
   "render": {
@@ -54,12 +54,12 @@
     "goldenOrder": 67,
     "bringUpGroup": 8,
     "actionMapOrder": 40,
-    "stationsManifestPrelude": "\n# aix432 (slot 201) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is\n#   generated from it. Promotion needs the golden and a relay-reachable port.\n"
+    "stationsManifestPrelude": "\n# aix432 (slot 171) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):\n#   qemu-system-ppc from the kernel-hive QEMU fork branch aix432-s3, installed\n#   to /opt/qemu-ppc-s3 (pve-qemu ships no ppc target that can do this). TCG\n#   only. The display is a Matrox MGA model written FOR this station and\n#   claimed by AIX as the IBM GXT130P (mg21); the machine boots the GENUINE\n#   IBM 40p boot ROM, whose PReP residual data is what brings up gxme0/rcm0/\n#   lft0/paud0 at all. CDE renders natively at 1024x768x8 — no remote X.\n#   NOT YET REGISTERED HERE: the entry is a candidate, so no emit stanza is\n#   generated from it. Promotion needs the golden and a relay-reachable port.\n"
   },
   "stream": {
     "transport": "showcase",
-    "udpPort": 54201,
-    "slot": 201,
+    "udpPort": 54171,
+    "slot": 171,
     "fps": 30,
     "audio": false,
     "touch": false,
@@ -172,9 +172,9 @@
     "doc": "docs/lab/retronet/STATION-aix432.md"
   },
   "notes": [
-    "Tier 1 host-native station; slot 201 / UDP 54201 claimed via kh-claim, retronet 10.99.0.28 / tap aixrn0 claimed with it.",
-    "DISABLED CANDIDATE: not in the streamhost, signal, bring-up, golden, action-map or SPA lineups. Three things gate promotion — (1) a restore-proven golden baked against a TRACKED launcher, (2) streamhost/stations/aix432/ actually existing so runtime.qemu.launcher/envFixture/emitArgs can be filled, (3) a public-relay-reachable UDP port: 54201 is OUTSIDE ports.publicRelayLow..High (54080-54200) in registry/registry-v1.json, so promoting it as-is would fail validation and the exhibit would stream on the LAN while being unreachable through the edge.",
-    "Slot 201 was chosen because slots 152-200 are reserved for the walk-in clone pool (docs/lab/WALKIN-BRIEF.md); the scaffolder's allocator does not know about that reservation and would have handed out 152.",
+    "Tier 1 host-native station; slot 171 / UDP 54171 claimed via kh-claim, retronet 10.99.0.28 / tap aixrn0 claimed with it.",
+    "DISABLED CANDIDATE: not in the streamhost, signal, bring-up, golden, action-map or SPA lineups. Two things gate promotion — (1) a restore-proven golden baked against a TRACKED launcher, (2) streamhost/stations/aix432/ actually existing so runtime.qemu.launcher/envFixture/emitArgs can be filled. Slot 171 / UDP 54171 is INSIDE ports.publicRelayLow..High (54080-54200) in registry/registry-v1.json, so the relay port is no longer a gate — the station is still not promotable on the two reasons above.",
+    "Slot 171 was chosen after the walk-in clone pool's reservation was re-cut from 152-200 down to 152-170 (docs/lab/WALKIN-BRIEF.md) — the pool only ever used 152-160, and the station fleet had run out of relay-window slots, so the top of the reservation was given back. The scaffolder's allocator does not know about the walk-in reservation and would have handed out 152.",
     "Known not to work, and not to be claimed anywhere visitor-facing: CorelDRAW 3.5 (needs an AIX 3.2-era libX11.a(shr.o) that 4.3 does not ship), Abuse's window (runs, stays black), and the MGA hardware cursor (unimplemented — the pointer is invisible)."
   ]
 }
