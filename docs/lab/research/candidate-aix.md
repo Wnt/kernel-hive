@@ -4,11 +4,14 @@
 Tier 1, direct framebuffer capture, firmware ROM required. The station id is
 `aix432`.
 
-**Status (2026-08-26): OS and applications built; blocked on a display adapter.**
-AIX 4.3.3 is installed with X11/CDE, Ultimedia Services, Quake, Abuse and
-CorelDRAW 3.5, and AIX's own audio driver binds to the emulated CS4231. The one
-thing missing is a graphics adapter AIX can drive — see §4, which is the whole
-ballgame and is **not** solvable by installing something.
+**Status (2026-08-26): CDE renders natively; device-model fidelity is what
+remains.** AIX 4.3.3 is installed with X11/CDE, Ultimedia Services, Netscape,
+Quake, Abuse and CorelDRAW 3.5. A QEMU model for the Matrox behind IBM's
+GXT130P was written for this station, and under the **genuine IBM 40p boot ROM**
+AIX brings up `gxme0`, `rcm0`, `mg21`, `lft0` and `paud0` from authentic PReP
+residual data with **no guest patching** — CDE's dtlogin and a live dtwm session
+paint on the emulated card. Text, icons and blits are still missing because the
+model implements only solid fill (§4.5).
 
 ## 1. Why this station is not "AIX 4.3.2", as originally scoped
 
@@ -210,8 +213,53 @@ serial. Suspects: the blank `isa-m48t59` NVRAM (real SMS wants a valid layout
 and checksum to resolve its console/boot config) or the 8042 keyboard
 self-test handshake.
 
-The exhibit reachable **today**, with no patching, is AIX's native LFT console
-on the MGA.
+### 4.4 The real IBM ROM boots — and that is what fixes rendering
+
+The genuine firmware (`rs6k40p.BIN`) was **not** stalling on NVRAM or the 8042;
+both were traced and behave. It was **panicking**: an infinite LED-flash loop at
+0x358c0 displaying the classic RS/6000 crash code **888-102-700-0A5** on an
+operator panel QEMU does not have — hence a frozen splash, zero serial output
+and ~50% CPU (timebase delay spins).
+
+The assert is *"time went negative"*. During POST the firmware calls
+settimeofday; its **604 fallback path** stores the clock offset at 0x3600 as
+**negated packed {sec,nsec}**, while get-time adds that value to the timebase
+**as ticks**. The real 7020-40P shipped a **601**, whose RTCU/RTCL count
+{sec,nsec} natively, and modern QEMU has no 601 model. The firmware also assumes
+a **15 MHz** timebase (66.67 ns/tick constants) where QEMU offers 100 MHz.
+
+Two changes make it boot, in about five minutes:
+
+- `PREP_TB_FREQ=15000000` — a new environment override; the default is untouched
+  so other rigs are unaffected.
+- skipping the single POST `settimeofday` call (`bl` at 0x74da8), currently via
+  a small GDB-RSP helper. **This should become a QEMU-side option** rather than a
+  gdbstub babysitter; seeding NVRAM with a valid date/config is an untested
+  alternative.
+
+With the real ROM in place, its authentic residual data brings up
+**`gxme0` (Graphics Data Transfer Assist), `rcm0`, `mg21` and `lft0`** — with
+`rcm_load` `cmp`-verified pristine, i.e. the §4.3 guest patch is no longer
+needed — and **`paud0` as well**, which also removes the audio re-define chore
+in §6. Reproduced across two boots.
+
+One more bug fell here: X spun at 82% CPU polling MGA `FIFOSTATUS` through a
+**little-endian** aperture (reading 0x40020000, fifocount mask 0x7F → 0 forever).
+The GXT130P presents the G200 registers **big-endian**; BAR1/BAR2 were flipped
+to match.
+
+**Result: CDE renders.** The dtgreet login panel draws with the full-colour AIX
+diamond, and after login a live session paints dtwm window frames, the backdrop
+and the front panel — against the previous state of exactly two register
+accesses and zero drawing traffic.
+
+### 4.5 What is left
+
+The model executes only the **TRAP solid-fill** primitive, so text, icons and
+general blits come out black. **BITBLT** (screen-to-screen copy), **ILOAD**
+(host-to-screen transfer, which is how glyphs and icons arrive) and mono
+expansion are the next step. That is pure device-model work and is now cleanly
+exercisable, because the whole AIX acceleration path above it is live.
 
 This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
 the same wall:
