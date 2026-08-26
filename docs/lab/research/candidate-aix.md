@@ -4,14 +4,14 @@
 Tier 1, direct framebuffer capture, firmware ROM required. The station id is
 `aix432`.
 
-**Status (2026-08-26): CDE renders natively; device-model fidelity is what
-remains.** AIX 4.3.3 is installed with X11/CDE, Ultimedia Services, Netscape,
-Quake, Abuse and CorelDRAW 3.5. A QEMU model for the Matrox behind IBM's
-GXT130P was written for this station, and under the **genuine IBM 40p boot ROM**
-AIX brings up `gxme0`, `rcm0`, `mg21`, `lft0` and `paud0` from authentic PReP
-residual data with **no guest patching** — CDE's dtlogin and a live dtwm session
-paint on the emulated card. Text, icons and blits are still missing because the
-model implements only solid fill (§4.5).
+**Status (2026-08-26): CDE, Netscape and Quake render natively.** AIX 4.3.3 is
+installed with X11/CDE, Ultimedia Services, Netscape, Quake, Abuse and
+CorelDRAW 3.5. A QEMU model for the Matrox behind IBM's GXT130P was written for
+this station, and under the **genuine IBM 40p boot ROM** AIX brings up `gxme0`,
+`rcm0`, `mg21`, `lft0` and `paud0` from authentic PReP residual data with **no
+guest patching**. A full CDE desktop, Netscape Communicator 4.08 and Quake 1.07
+all draw on the emulated card (§4.5). Outstanding: the hardware cursor, and
+CorelDRAW, which needs an AIX 3.2-era library AIX 4.3 does not ship.
 
 ## 1. Why this station is not "AIX 4.3.2", as originally scoped
 
@@ -253,13 +253,52 @@ diamond, and after login a live session paints dtwm window frames, the backdrop
 and the front panel — against the previous state of exactly two register
 accesses and zero drawing traffic.
 
-### 4.5 What is left
+### 4.5 The 2D engine, and what the applications do
 
-The model executes only the **TRAP solid-fill** primitive, so text, icons and
-general blits come out black. **BITBLT** (screen-to-screen copy), **ILOAD**
-(host-to-screen transfer, which is how glyphs and icons arrive) and mono
-expansion are the next step. That is pure device-model work and is now cleanly
-exercisable, because the whole AIX acceleration path above it is live.
+`hw/display/mga.c` now implements the drawing path the GXT130P DDX actually
+uses: **ILOAD** (mono BMONOWF/BMONOLEF colour-expansion with transparency, plus
+BFCOL pixel upload, fed through BAR2/pseudo-DMA — this is how every glyph and
+icon arrives), **BITBLT** (overlap-safe, SGN/AR3/AR5), **LINE/AUTOLINE**, TRAP
+with rop and planemask, and per-op clipping from CXLEFT/CXRIGHT + YTOP/YBOT.
+DWGCTL opcode bits were read off the driver's own disassembly: solid=11,
+arzero=12, sgnzero=13, shftzero=14.
+
+Screendump-verified running on the emulated card:
+
+| application | result |
+|---|---|
+| CDE (dtgreet, dtwm, dtsession, dtfile) | full desktop — text, icons, menus, front panel |
+| `aixterm`, `xclock` | live prompt; clean draw/erase |
+| **Netscape Communicator 4.08** | fully rendered — toolbar icons, logos, text |
+| **Quake 1.07** | **renders and plays its demo loop** — textured geometry, weapon model, HUD |
+| Abuse | loads and runs; its `aix_sdrv` sound daemon holds `/dev/paud0`, but the window stays black |
+| CorelDRAW 3.5 | **will not load** — see below |
+
+Quake tints the whole screen olive: it installs its own colormap on the 8-bit
+PseudoColor visual, which is period-correct colormap flashing, not a defect. It
+needs `LIBPATH=/usr/lpp/som/lib:/usr/lib` because it links `som.dll` and
+`UMSobj.dll`.
+
+**CorelDRAW is blocked on a library that AIX 4.3 does not ship.** Its bundled
+`libwix_sh.a` imports from `libX11.a(shr.o)` — the AIX **3.2**-era member — and
+every libX11 on 4.3.3 (`/usr/lib`, and the R4/R5 compat trees from
+`X11.compat.lib.X11R3/R4/R5`) contains only `shr4.o`/`shr4net.o`. Presenting
+`shr4.o` under the name `shr.o` in a private archive gets further but then fails
+on `Symbol readv (number 345) is not exported`, because the 3.2 libX11
+re-exported the socket helpers and the R6 one does not. Synthesising a shim
+needs a C compiler, and AIX's is a separately licensed product that is not
+installed. Recorded as a dead end rather than re-derived later.
+
+**Audio is proven at the device level.** `paud0` now configures itself from the
+real firmware's residual data — no `odmadd`/`mkdev` dance — and Abuse's own
+`aix_sdrv` daemon holds `/dev/paud0` open with real CPU time against it.
+Capturing the waveform (`-audiodev wav,id=snd0,path=…`) has not been done, since
+it costs a full reboot.
+
+Remaining device-model gaps, all cosmetic or small: the **hardware cursor**
+(XCURCTRL mode 3 — the pointer is invisible), strict `CXRIGHT==0` clip semantics
+(stale spokes when a window maps), ILOAD BFCOL implemented for 8bpp only, and
+TRAP pattern fills drawn solid.
 
 This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
 the same wall:
