@@ -37,13 +37,16 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_port": 23,
+      "exec_kind": "telnet_unix_e",
+      "exec_user": "root",
       "exec_key": null,
+      "exec_host": "10.99.0.28",
+      "exec_shell": "sh",
+      "exec_subshell": true,
       "console": "fb",
       "udp_port": 54171,
-      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
+      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. Exec is telnet_unix_e: AIX's own telnetd on the retronet tap at 10.99.0.28:23, dialled from labhost only -- the AIXRN-IN containment chain still blocks every guest-originated packet, so the guest gained no reach. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
     }
   },
   "render": {

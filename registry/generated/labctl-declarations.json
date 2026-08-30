@@ -9,15 +9,16 @@
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
-      "exec_port": null,
-      "exec_host": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_port": 23,
+      "exec_host": "10.99.0.28",
+      "exec_kind": "telnet_unix_e",
+      "exec_user": "root",
       "exec_key": null,
-      "exec_shell": null,
+      "exec_shell": "sh",
+      "exec_subshell": true,
       "console": "fb",
       "udp_port": 54171,
-      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
+      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. Exec is telnet_unix_e: AIX's own telnetd on the retronet tap at 10.99.0.28:23, dialled from labhost only -- the AIXRN-IN containment chain still blocks every guest-originated packet, so the guest gained no reach. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
     },
     "alpine": {
       "dir": "/data/vms/streamhost/stations/alpine",
@@ -32,6 +33,7 @@
       "exec_user": "root",
       "exec_key": "/root/.ssh/gallery_guest_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54081,
       "notes": "exec: labctl exec alpine \"<cmd>\" (ssh root@:5881, key gallery_guest_key)"
@@ -49,6 +51,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54137,
       "notes": "exec: labctl exec alto \"<cmd>\" (ssh root@:5843, key bridge_key) reaches the Debian KIOSK, not the Alto -- the emulated machine has no shell and no network. Drive the Alto itself with labctl type/key (it is paced at 66/66 ms, two Alto fields) or with the tile's own alto-drive.py, which leads modifiers by a gap and can measure ink in a rect."
@@ -66,6 +69,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54118,
       "notes": "exec: labctl exec amiga \"<cmd>\" (ssh root@:5818, key bridge_key)"
@@ -83,6 +87,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54151,
       "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/amigaos35/x11-runtime.sh."
@@ -100,6 +105,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54119,
       "notes": "exec: labctl exec amstradcpc \"<cmd>\" (ssh root@:5819, key bridge_key)"
@@ -117,6 +123,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54101,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -134,6 +141,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54117,
       "notes": "exec: labctl exec apple2 \"<cmd>\" (ssh root@:5817, key bridge_key)"
@@ -151,6 +159,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54135,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/armeval/sta."
@@ -168,6 +177,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54110,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -185,6 +195,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54116,
       "notes": "exec: labctl exec atarist \"<cmd>\" (ssh root@:5816, key bridge_key)"
@@ -202,6 +213,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54145,
       "notes": "No exec channel yet: A/UX runs no getty on the serial line (-serial unix:$D/serial.sock is wired for it). Framebuffer + adb_pointer.py against a CLONE; the CommandShell in the checkpoint scene is the keyboard proof."
@@ -219,6 +231,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54129,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/bbcmicro/sta."
@@ -236,6 +249,7 @@
       "exec_user": "baron",
       "exec_key": null,
       "exec_shell": "sh",
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54143,
       "notes": "RETRONET BRIDGE (2026-08-22): n0 is a tap on vmbr-rn (NOT slirp); the guest is a DHCP client on the reserved 10.99.0.16/24 with NO default route (rn-tapnet.sh + the fail-closed guard chain BEOSRN-IN, which aborts the launch if it does not verify). PS/2 RELATIVE pointer (pointerRel) -- R5 has no absolute tablet, and it applies its own acceleration, so scripted pointer work must be closed-loop (slam to 0,0, step, screendump, correct). exec = telnet_unix_e: labctl exec beos over BeOS R5's OWN telnetd at 10.99.0.16:23 over the bridge (no hostfwd, no agent in the guest, no port forward), user baron, password from the station dir's telnet-exec.passwd which the launcher writes from registry/local.env; client /root/sunexec.py with SUN_RC=$? because R5's login shell is bash. R5's ftpd is on :21 the same way for file transfer. KDL/kernel debug still lands on serial.log. See docs/lab/retronet/STATION-beos.md."
@@ -253,6 +267,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54087,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c128/sta/golden.vsf. Publishes the VDC (80-column) canvas, not the VICII: x128 has two canvases and VICE_NATIVE_SHM_CHIP=VDC is what picks it. The CP/M disk is attached to drive 8 by the launcher's restore command block; the visitor boots it by typing BOOT."
@@ -270,6 +285,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54114,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/c64/sta/golden.vsf. KEYBOARD-ONLY: the bridged station's COMM 1351 mouse is NOT wired on this path — vice_sock.rs and vicectl both lack a pointer verb — so drive GEOS with labctl type/key and read it with labctl shot."
@@ -287,6 +303,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54111,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/cbm2/sta/golden.vsf."
@@ -304,6 +321,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54109,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/cbm8032/sta/golden.vsf."
@@ -321,6 +339,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54149,
       "notes": "BTRON3 / B-right/V (超漢字), Ken Sakamura's TRON. Verbatim launcher. Relative PS/2 mouse — machine pc-i440fx-11.0,vmport=off removes the vmmouse the ex-VMware disk would otherwise bind, so injected motion reaches the guest. No exec channel. On the retronet web plane since 2026-08-23: rtl8139 on the persistent tap chokanjirn0 (vmbr-rn), statically addressed in-guest at 10.99.0.21 because BTRON3 has no DHCP client. resetMode=loadvm (golden inside chokanji.qcow2, COLD re-baked 2026-08-23 when the NIC changed the device set). See docs/guests/chokanji.md."
@@ -338,6 +357,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54139,
       "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
@@ -355,6 +375,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54126,
       "notes": "exec: labctl exec decos \"<cmd>\" (ssh root@:5829, key bridge_key) — lands in the Debian kiosk, not in the PDP-11. The simulator's console is the xterm; drive it with labctl type/key and read it with labctl shot."
@@ -372,6 +393,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54130,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/dragon32/sta."
@@ -389,6 +411,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54095,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -406,6 +429,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54125,
       "notes": "exec: labctl exec gt40 \"<cmd>\" (ssh root@:5828, key bridge_key) reaches the Debian KIOSK, not the PDP-11 — the simulated machine has no shell. Light-pen exhibit: labctl type/key do nothing here; drive it with tiles/gt40/pen-drive.py (QMP abs move + button 1)."
@@ -423,6 +447,7 @@
       "exec_user": "user",
       "exec_key": "/root/.ssh/gallery_guest_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54107,
       "notes": "exec: labctl exec haiku \"<cmd>\" (ssh user@:5807, key gallery_guest_key)"
@@ -440,6 +465,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54099,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -457,6 +483,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54144,
       "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE."
@@ -474,6 +501,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54136,
       "notes": "exec: labctl exec indyr4400 \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the emulated SGI Indy. The Indy itself is driven only through the framebuffer + PS/2. Pointer is RELATIVE: Iris grabs the pointer on the first left click inside its window and feeds the emulated Indy PS/2 deltas; Right-Ctrl releases the grab."
@@ -491,6 +519,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54122,
       "notes": "x11 runtime (MAME indy_4610, -video none + shm capture); no QMP; input = streamhost mamesock -> mamectl OSD module unix socket ctl.sock (pointer + keys; rollback SH_INPUT_BACKEND=mamecmd + module file tail, deep rollback IRIX_CTL=off = Lua agent); exec = serial_e — irixser/2 over MAME -ioc2:rs232a pty to irixagent.pl baked into the golden, host client /root/irixexec.py, no port; reset = relaunch"
@@ -508,6 +537,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54132,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/kc854/sta."
@@ -525,6 +555,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54097,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -542,6 +573,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54142,
       "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
@@ -559,6 +591,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54150,
       "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
@@ -576,6 +609,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54124,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/mpf2/sta."
@@ -593,6 +627,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54113,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -610,6 +645,7 @@
       "exec_user": "root",
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54148,
       "notes": "HOST-NATIVE: MAME 0.289 nws3260 runs on the host, no QEMU/QMP. Frames drawshm->shm, keys ctlsock + newsos.keymap, pointer ctlsock MOVEA (open-loop, X server -a 1 -t 1 so 1 count = 1 px). Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (driver has no save state) power-cycles: Automatic Boot DIP + /fastboot -> sxdm login in ~90 s. Disk = a writable raw image (persists across relaunches; reset=relaunch is a power-cycle, fsck -p repairs any unclean stop). EXEC (exec_kind serialcsh_e): MAME carries -serial0 pty, the guest runs a getty on /dev/tty00, and newsosexec.py opens that pty DIRECTLY out of MAME's fd table (irix-style, no pump) under serial.lock, logs in as passwordless root, `exec /bin/sh` (guest login shell is csh, no ksh) with an explicit PATH, and returns sentinel-framed stdout + the guest's exit code. DARK LAUNCH: listing=hidden until the operator eyeballs it."
@@ -627,6 +663,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54134,
       "notes": "HOST-NATIVE since 2026-08-25: the museum's fork of Previous runs on the host as an unprivileged account under SDL's dummy video/audio drivers -- no captured Debian, no QEMU, no QMP, no X server, no window. Frames IFB1 shm, input mamectl/1, audio FIFO. `labctl exec` has no channel here: the NeXT's own exec is telnet to the guest on the retronet, driven by scripts/build-guests/nextstep-nstel.py with NSTEL_HOST=10.99.0.25 NSTEL_PORT=23 (log in as `me`, which su's for you; both are passwordless). Reset is a CRIU restore of the golden, ~3 s; see docs/guests/nextstep.md."
@@ -644,6 +681,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54096,
       "notes": "warpd agent on host port 57793 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -661,6 +699,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54083,
       "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
@@ -678,6 +717,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54089,
       "notes": "exec: labctl exec nt4 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.12:7788 (n0 is a tap on vmbr-rn, NOT slirp -- no hostfwd). It is RUNNING inside the golden and restarts from the All Users StartUp folder on a cold boot. Also true absolute vmmouse pointer. See docs/lab/retronet/ICQ-STATION-NT4.md."
@@ -695,6 +735,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54084,
       "notes": "dual-VM DECwindows bridge; qmp is the captured Xorg bridge; reset_mode=restart cold-replays fresh X connections"
@@ -712,6 +753,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54131,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/oricatmos/sta."
@@ -729,6 +771,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -746,6 +789,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54115,
       "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
@@ -763,6 +807,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54088,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/pet2001/sta/golden.vsf."
@@ -780,6 +825,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54086,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/plus4/sta/golden.vsf."
@@ -797,6 +843,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54103,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -814,6 +861,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54112,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -831,6 +879,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 4433,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -848,6 +897,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54120,
       "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only"
@@ -865,6 +915,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54121,
       "notes": "air-gapped guest: no NIC and no exec/SSH channel; framebuffer/QMP only"
@@ -882,6 +933,7 @@
       "exec_user": "root",
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54146,
       "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
@@ -899,6 +951,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54104,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -916,6 +969,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54102,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -933,6 +987,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54133,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/sinclairql/sta."
@@ -950,6 +1005,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54100,
       "notes": "RETRONET BRIDGE: net0 is a tap on vmbr-rn (NOT slirp); guest is on DHCP -- the reserved 10.99.0.14/24, NO default route (the lease withholds option 3) (rn-tapnet.sh + fail-closed guard chain SOLRN-IN). gallery-hid-pci is the live pointer device (native GalleryHidSink); the in-guest warpd agent (guest :7777) is reached DIRECTLY over the bridge at 10.99.0.14:7777 for rollback and its 'E' exec verb (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host, no hostfwd). exec: labctl exec solaris \"<cmd>\". Pidgin 2.10.4 (GTK2 desktop OSCAR client, SUNWgnome-im-client) auto-signs-in as UIN 30000 to the gateway 10.99.0.2:5190 from /.purple/accounts.xml and renders the server-side SSI roster in its Buddy List. See docs/lab/retronet/ICQ-STATION-solaris.md"
@@ -967,6 +1023,7 @@
       "exec_user": "root",
       "exec_key": "/data/vms/bridge/bridge_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54138,
       "notes": "exec: labctl exec star \"<cmd>\" (ssh root@:5840, key bridge_key) — reaches the Debian kiosk, NOT the Star. Drive the Star itself with the guest's own /usr/local/bin/stardrv (key/shift/rel/click, all with the dwell Darkstar needs) or through the framebuffer; the Level-V verbs are plain PC keys here (NEXT=Home, OPEN=F7, PROPS=F8), not Daybreak's Ctrl+letter layer."
@@ -984,6 +1041,7 @@
       "exec_user": "root",
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54147,
       "notes": "OpenWindows 3 desktop as the unprivileged guest, restored via loadvm golden. Mouse and keyboard both work (keyboard needs SetInput: select click-to-focus, baked in the golden's ~/.Xdefaults; with followmouse keys only land while the pointer is over the window). exec = telnet_unix_e: labctl exec sunos414 over in.telnetd at 127.0.0.1:5947 (launcher re-adds the SLIRP hostfwd each start; client /root/sunexec.py)."
@@ -1001,6 +1059,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54105,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/templeos/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -1018,6 +1077,7 @@
       "exec_user": "tc",
       "exec_key": "/root/.ssh/gallery_guest_key",
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54082,
       "notes": "exec: labctl exec tinycore \"<cmd>\" (ssh tc@:5882, key gallery_guest_key)"
@@ -1035,6 +1095,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54098,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -1052,6 +1113,7 @@
       "exec_user": "root",
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54141,
       "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — SRM-boots the disk directly, no ARC autoboot. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim; ser1 doubles as the EXEC channel — exec_kind serialcon_e: the guest runs a getty on /dev/tty01 and the tile's pumps.py lends that line one client at a time over serial-exec.sock in the tile dir, so `labctl exec tru64 <cmd>` returns captured stdout and the guest's exit code with no network device in the machine. Pointer is ABSOLUTE and pixel-exact: the launcher sets ES40_POINTER_GAIN=2 because this guest moves 2 px per injected PS/2 count (odd targets land 1 px short), and the checkpoint carries X acceleration 1/1 threshold 0. Screen is 1280x1024 via -screen on the X server line in /etc/dt/config/Xservers. reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
@@ -1069,6 +1131,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54085,
       "notes": "HOST-NATIVE (de-bridged): VICE runs on the host, headless, no QEMU/QMP, no guest OS, no X, no exec channel. Frames VICE_SHM_PATH->shm (the same IFB1 wire format drawshm uses), keys vicectl + the shared us-layout keysym table, audio -sounddev wav -> FIFO. Launcher stations/vice-native/x11-runtime.sh; reset=relaunch restores the checkpoint in /data/vms/streamhost/stations/vic20/sta/golden.vsf."
@@ -1086,6 +1149,7 @@
       "exec_user": "Administrator",
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54140,
       "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture); no QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock (keyboard verified; pointer open-loop abs, guest accel not yet 1:1 — golden-polish pass pending); exec = telnet_e: labctl exec w2kalpha runs a captured command over the guest W2K Telnet Server (blank Administrator, NTLM off) reached at 10.99.0.17:23 over the OFFLINE retronet bridge vmbr-rn that rn-tapnet.sh (called from x11-runtime.sh) enslaves the guest's veth w2kalpha-h onto; the guest is on DHCP (reserved 10.99.0.17/24, DNS 10.99.0.2, NO default route — containment) baked into the golden, its dec21143 (pcap backend) at pci0.4 in es40.cfg carries a unique per-station MAC (scrubbed placeholder 02:00:00:00:00:11; real value RN_W2KALPHA_MAC in registry/local.env, per the fleet scheme in WEB-PROXY.md), and the fail-closed W2KALPHARN-IN guard chain drops every NEW flow the guest starts toward labhost; seamless corpus web on the gateway :80, no proxy; reset = relaunch restoring the golden CHECKPOINT: the launcher reflink-copies the golden nt.img and hands es40 the golden.axp savestate baked from that same image (ES40_RESTORE), pristine desktop ~3 s after exec (~15 s end to end through the unit); rollback = remove assets/w2kalpha/golden.axp and it cold-boots"
@@ -1103,6 +1167,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54123,
       "notes": "qemu-guest-agent is live on the virtio-serial channel at qga.sock (wga.py); labctl has no qga exec_kind yet, so use 'labctl sh' (blind) or the socket directly"
@@ -1120,6 +1185,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54093,
       "notes": "exec: labctl exec win2000 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.11:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the Startup folder on a cold boot. NT cmd.exe captures stdout only (agent redirects >C:\\WNEXEC.OUT). See docs/lab/retronet/ICQ-STATION-win2000.md, ICQ-STATION.md, EXEC-CHANNEL.md"
@@ -1137,6 +1203,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54090,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/win311/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -1154,6 +1221,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54091,
       "notes": "RETRONET web plane (2026-08-23): n0 is a tap on vmbr-rn, guest 10.99.0.13/24 by DHCP reservation (DNS = the gateway, NO router option => no default route), sharing L2 with the retronet gateway CT 10.99.0.2. pointer: warpd agent C:\\WARPNET.EXE (guest :7777) reached DIRECTLY over the bridge at 10.99.0.13:7777 (was slirp hostfwd 127.0.0.1:57791); fire-and-forget absolute motion, PS/2 buttons. exec: labctl exec win95 \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The exec agent is C:\\WARPX.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), a SECOND warpnet build on 0.0.0.0:7788 because the :7777 pointer agent's serial accept loop is monopolised by the daemon's persistent pointer connection. Both agents autostart from WIN.INI load= on a cold boot and are RUNNING inside the golden. See docs/lab/retronet/WEB-STATION-win95.md."
@@ -1171,6 +1239,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54092,
       "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.10:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/ICQ-STATION.md, EXEC-CHANNEL.md"
@@ -1188,6 +1257,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "fb",
       "udp_port": 54094,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
@@ -1205,6 +1275,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54128,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/zx81/sta."
@@ -1222,6 +1293,7 @@
       "exec_user": null,
       "exec_key": null,
       "exec_shell": null,
+      "exec_subshell": null,
       "console": "x11",
       "udp_port": 54127,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/zxspectrum/sta."

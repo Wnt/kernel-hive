@@ -294,6 +294,10 @@ def cmd_exec(argv):
         #     bridge IP and exec_port is a plain :23 (no hostfwd, no slirp);
         #     bash, so the exit code is $?; and its telnetd DOES want a
         #     password.
+        #   aix432   — like beos (tap on vmbr-rn at 10.99.0.28:23, ksh so the
+        #     exit code is $?, password from the station dir) plus
+        #     exec_subshell: AIX's ksh IS the login shell, so a bare `exit N`
+        #     would end the session and surface as a channel fault.
         # The password is read from the STATION DIR (<dir>/telnet-exec.passwd,
         # written by the launcher from the gitignored registry/local.env), never
         # from the committed registry — same rule as serial_getty's
@@ -303,6 +307,8 @@ def cmd_exec(argv):
         env = {**os.environ, "SUN_USER": user}
         if c.get("exec_shell") == "sh":
             env["SUN_RC"] = "$?"
+        if c.get("exec_subshell"):
+            env["SUN_SUBSHELL"] = "1"
         pw = os.environ.get("LABCTL_TELNET_PASSWORD")
         if pw is None:
             pwfile = os.path.join(c["dir"], "telnet-exec.passwd")

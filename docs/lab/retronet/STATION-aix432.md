@@ -33,7 +33,7 @@ UNIX workstation whose browser is **the same Netscape 4 generation**; read its
 | Seamless web | `/etc/resolv.conf` = `10.99.0.2` + **no Netscape proxy** → any URL resolves to the gateway, whose `:80` origin serves the corpus by `Host` | to be seeded |
 | Browser | **Netscape Communicator 4.08** (`Netscape.communicator-us.rte`, 4.3.2 Bonus Pack), rendering proven on the emulated card — see [`../research/candidate-aix.md`](../research/candidate-aix.md) §4.5 | the *rendering* is proven; **nothing about it over the bridge is** |
 | NIC model | **OPEN — the one real unknown.** See below | must be settled before the golden is baked |
-| Exec | **none.** No network exec path exists or is planned: the guest has no route off the bridge, and labhost must never dial it. The 40p's super-I/O serial port is the candidate channel | not wired |
+| Exec | `labctl exec aix432 "<cmd>"` → **AIX's own telnetd at `10.99.0.28:23`, straight over the tap**. `exec_kind: telnet_unix_e` (the existing kind, shared with sunos414 and beos), host client `/root/sunexec.py`. No agent in the guest, no hostfwd, no new protocol. The earlier "labhost must never dial it" was a misread of the containment design: `AIXRN-IN` filters the GUEST's outbound packets and returns `ESTABLISHED,RELATED`, so a host-initiated dial was always allowed and the guest still reaches nothing. [`docs/guests/aix432.md` §The exec channel](../../guests/aix432.md#the-exec-channel) | LIVE |
 | Audio | `paud0` (emulated Crystal CS4231) configures itself from the real firmware's residual data and is held open by real applications, but the stream carries **no audio** (`stream.audio: false`) until a capture proves it | guest-side proven, stream-side not |
 
 ## The NIC is not chosen yet, and that gates the golden

@@ -50,6 +50,11 @@ LABCTL_KEYS = (
     # code is $?, absent means csh's $status (sunos414's default). Getting it
     # wrong is invisible: output is correct and the exit code is always -1.
     "exec_shell",
+    # exec_subshell: telnet_unix_e only -- wrap the command in `( ... )` so a
+    # bare `exit N` returns N instead of ending the login shell and surfacing
+    # as a channel fault. Opt-in per station; sunos414 and beos are proven
+    # without it, aix432 (ksh IS the login shell) needs it.
+    "exec_subshell",
     "console",
     "udp_port",
     "notes",

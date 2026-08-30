@@ -192,6 +192,8 @@ def main():
             "exec_kind": "ssh | warpd_e | serial_e | null — how 'labctl exec' reaches this tile",
             "exec_shell": "sh — the guest login shell spells the exit code $? (telnet_unix_e); "
             "absent/null means csh's $status, which is the sunos414 default",
+            "exec_subshell": "true — run the command in a ( ) subshell (telnet_unix_e), so a bare "
+            "`exit N` returns N instead of ending the login shell; absent/null = off",
             "ctl": "mamectl/1 unix socket of the MAME ctlsock module (SH_MAMECTL_SOCK); "
             "labctl mctl/type/sh/reset route over it — field absent when the tile has none",
             "exec_user": "ssh login user for exec_kind=ssh, else null",

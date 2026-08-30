@@ -32,11 +32,21 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
    `c64`/`atarist`/`apple2`/`amiga`. `irix` is declared (`exec_kind`
    `serial_e`) but needs MAME running, so with the station stopped it says so and
    exits 125. `w2kalpha` (`telnet_e`) runs it over the guest's Telnet Server on
-   a host-only veth; `tru64` (`serialcon_e`) has NO network device at all and
+   a host-only veth; `sunos414`, `beos` and `aix432` (`telnet_unix_e`) run it
+   over an in-guest UNIX telnetd — sunos414 through a SLIRP hostfwd, the other
+   two straight across their own retronet tap (`10.99.0.16:23`,
+   `10.99.0.28:23`); `tru64` (`serialcon_e`) has NO network device at all and
    runs it over the emulated com2 — a getty on `/dev/tty01`, lent one client at
    a time by the station's `pumps.py` over `serial-exec.sock` in the station
    dir, so the address is the DIRECTORY and survives relaunches. Other stations
    exit 2 with alternatives.
+
+   **A `telnet_unix_e` station on the retronet bridge did not become reachable
+   *from* the guest.** The exec channel is `host -> guest`; the station's
+   containment chain filters the guest's own OUTBOUND packets and returns
+   `ESTABLISHED,RELATED`, which is exactly what carries the replies. "The guest
+   has no route off the bridge" is not a reason a station cannot have an exec
+   channel — aix432 carried that sentence in its guest doc for four days.
 
    The `serialcon_e` client (`streamhost/guest-agents/tru64/tru64exec.py`) logs
    in fresh per call, pins `ksh` (root's login shell is Tru64's legacy Bourne

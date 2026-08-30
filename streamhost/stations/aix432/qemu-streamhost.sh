@@ -139,6 +139,22 @@ if [ -r "$RN_LOCAL_ENV" ]; then
   _m="$(sed -n 's/^RN_AIX432_MAC=//p' "$RN_LOCAL_ENV" | head -1)"
   [ -n "$_m" ] && RN_AIX432_MAC="$_m"
 fi
+# EXEC-CHANNEL PASSWORD. `labctl exec aix432` logs into AIX's own telnetd as
+# $exec_user over the retronet tap (exec_kind telnet_unix_e, the beos shape),
+# and the password must NOT live in the committed registry, so the launcher
+# republishes it from the gitignored local.env into the station dir on every
+# start -- same rule and shape as beos' telnet-exec.passwd and rhapsody's
+# serial-exec.passwd. Written 0600; labctl reads it, nothing else does.
+# Absent key -> no file -> labctl falls back to an empty password and the login
+# fails loudly, which is the correct fail-closed behaviour.
+_ap="$(sed -n 's/^[[:space:]]*RN_AIX432_EXEC_PASS=//p' "$RN_LOCAL_ENV" 2>/dev/null | tail -1 | tr -d '\042\047')"
+if [ -n "$_ap" ]; then
+  (
+    umask 077
+    printf '%s\n' "$_ap" >"$D/telnet-exec.passwd"
+  )
+fi
+unset _ap
 # streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into flags

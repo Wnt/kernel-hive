@@ -15,9 +15,10 @@ markers (immune to prompt echo / csh-vs-sh), prints the command's stdout+stderr
 as plain text and exits with the guest's exit code. Model: nextstep/nstel.py.
 
 This is the shared client for the `telnet_unix_e` exec kind, not a sunos414
-private: `beos` (BeOS R5, over the retronet bridge at 10.99.0.16:23) is the
-second station on it. Two env knobs carry the differences, and BOTH default to
-sunos414's behaviour so that station is untouched:
+private: `beos` (BeOS R5, over the retronet bridge at 10.99.0.16:23) and
+`aix432` (AIX 4.3.3, over the retronet bridge at 10.99.0.28:23) are the second
+and third stations on it. Three env knobs carry the differences, and ALL THREE
+default to sunos414's behaviour so that station is untouched:
 
   SUN_PASS  password to answer the guest's `Password:` prompt with.
             Default "" — a fresh suninstall root has none. beos' telnetd does
@@ -27,6 +28,13 @@ sunos414's behaviour so that station is untouched:
             `$status` — sunos414's login shell is csh. beos' login shell is
             bash, which spells it `$?`, and a csh-ism there silently reports
             rc -1 on every command while the output looks perfect.
+  SUN_SUBSHELL  run the command in a `( … )` subshell when set to a non-empty
+            value. Default off. Without it a command that ends in a bare
+            `exit N` kills the LOGIN shell instead of returning N, the socket
+            closes mid-marker, and the caller gets a channel-failure traceback
+            with rc 1 — a real exit code turned into a fake channel fault. This
+            is the same trap tru64exec.py documents and solves the same way;
+            it is opt-in only because sunos414 and beos are proven without it.
 """
 import os
 import socket
@@ -40,6 +48,11 @@ IAC, DONT, DO, WONT, WILL, SB, SE = (bytes([c]) for c in (255, 254, 253, 252, 25
 # sh/bash (beos) disagree, and getting it wrong costs nothing visible: the
 # output is right and the exit code is silently always -1.
 RC_EXPR = os.environ.get("SUN_RC", "$status")
+
+# Run the command inside `( … )` so a bare `exit N` returns N instead of ending
+# the login session. Valid in sh, ksh and csh alike, but opt-in: the two
+# stations that predate it are proven on the unwrapped form.
+SUBSHELL = bool(os.environ.get("SUN_SUBSHELL"))
 
 
 class Telnet:
@@ -133,7 +146,8 @@ class Telnet:
         s_mark = "_SUNX_S_" + m + "_"
         e_mark = "_SUNX_E_" + m + "_"
         self.buf = b""
-        self.send("echo " + s_mark + "; " + cmd + "; echo " + e_mark + "=" + RC_EXPR)
+        body = "( " + cmd + " )" if SUBSHELL else cmd
+        self.send("echo " + s_mark + "; " + body + "; echo " + e_mark + "=" + RC_EXPR)
         out = self.read_until((e_mark + "=").encode(), deadline)
         rc = -1
         tail = self.read_until(b"\n", 10)
