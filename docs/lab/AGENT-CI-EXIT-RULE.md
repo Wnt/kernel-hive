@@ -21,7 +21,10 @@ cross-cutting gates, which every branch owes:
   `python3 scripts/stations-registry.py drift`, a report you can run any time
   and which gates nothing. A push gate may only test properties of the commit
   being pushed — see docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2 for the day that
-  rule cost, and scripts/stations_registry/drift.py for the code.
+  rule cost, and scripts/stations_registry/drift.py for the code. The same
+  applies to `python3 scripts/lint/published-form-drift.py` (does the published
+  QEMU fork still match `streamhost/qemu-patches/`?): a report you run on
+  demand, never a gate — CONTINUOUS-DEPLOY-PROPOSAL.md §2.5.
 
 Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
 reachable: **box state** — live labhost files nobody's commit accounts for, on

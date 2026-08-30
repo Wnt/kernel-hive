@@ -42,7 +42,24 @@ keep in sync by hand:
    repo and commit the bumped gitlink.
 
 Never edit the fork's checked-out tree directly and call that the source of
-truth — the patch files are. `scripts/provision/build-pve-qemu-fastpoll.sh`
+truth — the patch files are.
+
+**Two representations of one artifact drift, and this pair drifts INVISIBLY.**
+On 2026-08-30 one agent pushed the fork from the series and a second regenerated
+a patch and found the fork had moved underneath. `git apply` of a file-creating
+patch fails only once the file exists, so there was no symptom at all until a
+build attempt. Before you regenerate a patch, push the fork, or trust a recorded
+`forkCommit`, run the check that answers it without building:
+
+```sh
+python3 scripts/lint/published-form-drift.py          # ls-remote + reverse-apply
+python3 scripts/lint/published-form-drift.py --offline # skip the network leg
+```
+
+It is a REPORT and must never be wired into the push gate — see
+docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2.5 for why, and for the standing rule
+that a recorded pointer at a mutable branch (`qemuBuild.forkCommit`, the
+submodule gitlink) goes stale in silence. `scripts/provision/build-pve-qemu-fastpoll.sh`
 builds the patch trio (fast-poll, sphinx, gallery-hid) from the submodule
 when it's initialized (the patches already land as commits there, via
 `git format-patch`) and falls back to the loose `.patch` files in this

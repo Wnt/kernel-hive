@@ -33,6 +33,14 @@ kills.
 | I.9 | (Fixed 2026-08-24) a dry-run plan used to sync the checkout, moving everyone's drift baseline | read path that writes |
 | I.10 | Rule-9 acceptance (framebuffer cursor match, click repaint) is manual and human-brokered per cutover | no machine-runnable acceptance |
 | I.11 | `STAT` reported healthy while the drawn cursor was 1–2 px off | self-reported health without framebuffer evidence |
+| I.12 | The QEMU fork was pushed from `qemu-patches/*.patch` by one agent; a second regenerated a patch and found the fork had moved underneath. `qemuBuild.forkCommit` still named the pre-push commit. **No symptom until a build attempt** | repo holds the *recipe*, somewhere else holds the *result* |
+
+I.12 is the day's third two-sources-of-truth failure — after registry
+declarations vs the live box (I.2/I.5) and rendered manifests vs the registry
+(I.7) — and it has a feature the other two lack: **it is invisible until someone
+tries to build.** `git apply` of a file-creating patch fails only once the file
+exists, so a fork that has moved under the series shows nothing at all, while
+the other two at least render a diff a human can look at. §2.5 answers it.
 
 Common shape: **the unit of deployment is the whole box, but the unit of work is
 one station.** Everything below re-cuts the system along station lines and moves
@@ -350,6 +358,73 @@ incentive pointing straight at `SKIP_GATE=1`. Under this design the same event
 is one line of reconciler state on one station
 (`rhapsody: failed(acceptance — session negotiation)`), and nobody else's push
 notices.
+
+---
+
+## 2.5 Recipe here, result somewhere else (I.12)
+
+**The general class.** Some artifacts live in this repo as a *recipe* while the
+thing people consume is a *result* produced from it and published elsewhere. The
+QEMU fork is the live instance: `streamhost/qemu-patches/*.patch` is the declared
+source of truth, `github.com/Wnt/qemu@kernel-hive` is the published, consumable
+form. Nothing forces them equal, and on 2026-08-30 they stopped being equal —
+one agent pushed the fork from the series, another regenerated a patch and found
+the fork had moved underneath.
+
+**Why this one is worse than I.2 and I.7.** Both of those drift *visibly*: the
+registry-vs-live case and the manifest-vs-registry case each render a diff a
+human or a check can look at. This one renders nothing. `git apply` of a
+file-creating patch fails only when the file already exists, so a fork that has
+moved under the series has **no symptom until someone tries to build** — and a
+build attempt is the most expensive possible detector. Everything between the
+divergence and the next build is a period in which the repo confidently says two
+contradictory things and nothing anywhere disagrees.
+
+**The requirement, stated generally:** wherever the repo holds a recipe and
+something else holds the result, there must be a **cheap, on-demand check that
+answers "does the published form still match the source form?" without a build
+attempt** — reporting drift as drift. Expect the class to recur; state it once
+here rather than per artifact.
+
+**Landed (stage 1): `scripts/lint/published-form-drift.py`**, in the same stage
+and for the same reason as §2.1 — this is live divergence, so it is a reconciler
+concern reported as drift and **never a push gate**. Wiring it into the pre-push
+hook would recreate exactly the wedge §2 removes: whether an external published
+artifact currently matches is a property of the world at this instant, shared by
+every session, and unsatisfiable by the author of an unrelated change. Two legs,
+neither of which builds anything:
+
+1. **Pointer freshness** — one `git ls-remote` (no clone, ~1 s): has the published
+   branch moved since anything in the repo recorded a commit on it? The two kinds
+   of recorded pointer are judged differently, because a check that cries wolf
+   gets ignored: the `third_party/qemu-kernel-hive` **gitlink is a pin** and must
+   *equal* the branch head, while a station's `qemuBuild.forkCommit` is the
+   **base** its patches were verified against and must merely be an *ancestor* —
+   so a difference there is reported `UNVERIFIED`, not drift.
+2. **Containment** — `git apply --reverse --check` of each declared patch against
+   the published tree. Reverse-apply succeeds only if every post-image hunk is
+   present verbatim, which is precisely "the published form carries this patch,
+   byte for byte" — proven with no forward apply, no base commit and no build.
+   Needs a fork clone; without one it **SKIPs loudly** and names the command.
+
+**A recorded pointer to a mutable ref goes stale in silence.** That is the second
+half of I.12 and it generalizes past this artifact: `qemuBuild.forkCommit` still
+named the pre-push commit and nothing noticed, because nothing was watching a
+value that only an external branch could invalidate. Any reference to an external
+mutable ref needs either **verification at use** or **content addressing**, so
+that staleness is *detectable* rather than assumed. The object store of §5 is the
+content-addressed answer for goldens and binaries; the fork pointers are the
+outstanding case, and the freshness leg is the interim verification-at-use.
+
+**Failing loudly at the build is a mitigation, not a fix — and the distinction
+matters.** The station build script was made fork-aware the same day: where the
+clone already has the file it compares, and fails loudly on real divergence
+rather than skipping or re-applying. That converted a silent wrong-build into a
+stop, and its author's own summary — *"safe, not resolved"* — is exactly right.
+It removes the silence; it does not remove the second source of truth. Only
+generating one representation from the other, or content-addressing the pointer,
+removes the class. Until then the check above is how we see the drift, and the
+loud build failure is how we survive it.
 
 ---
 
@@ -780,6 +855,11 @@ if nothing else ever ships.
    `origin/main` into a private ref and measures from
    `merge-base(current main, tip)` (§2.1a), so a rebased or merged branch is
    no longer billed for another wave's lint.
+   Also landed here — same class, same plumbing (§2.5):
+   `scripts/lint/published-form-drift.py` answers "does the published form still
+   match the recipe?" with one `git ls-remote` plus a reverse-apply, and no build
+   attempt. It already reports real drift: the fork branch sits at a commit that
+   neither the submodule gitlink nor `rhapsody.qemuBuild.forkCommit` names.
    Deliberately **not** done here: the box-state stage is already per-row
    scoped (a row is blocking only when the push touches that row's repo-side
    file, and only when live matches neither the box checkout nor this tree),
@@ -950,6 +1030,7 @@ Once the corresponding stage lands:
 | `scripts/lib/checkpoint-guard.sh` | `publish` step → store + outbox ref |
 | `.claude/hooks/pre-push-gate.sh` | commit-properties only; range measured from the merge-base with a freshly fetched `main` |
 | `scripts/stations_registry/drift.py` | the live labctl comparison, out of the push path (stage 1, landed) |
+| `scripts/lint/published-form-drift.py` | recipe-vs-published-form drift for the QEMU fork, answered without a build (§2.5, stage 1, landed) |
 | `scripts/serve-https-spa.sh` | lose `publish_manifests` (loop-owned); `deploy` keeps N asset generations |
 | reconciler config | deny-list of live state-of-record paths (`auth-state.json` + rotations, `darklaunch.d/`) — never written, never GC'd |
 | `scripts/dev/here.sh` | show loop heartbeat + per-unit states |
