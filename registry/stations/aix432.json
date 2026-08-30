@@ -105,7 +105,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set. The binary moved to d3cb39aa (branch aix432-s3 @ 6a33dda0, the closed-loop pointer) WITHOUT a re-bake, and does not need one: the engine adds no migration state and the ptrctl chardev is not a device, so the device set and the vmstate signature are unchanged -- restore-proven under this binary on the ptrloop rig. INSTALL ORDER MATTERS: the binary must be in place BEFORE this launcher, because `-global mga.ptrctl=ptr0` on the previous binary is an unknown property and QEMU refuses to start."
+        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set. The binary moved to 2747f4cb (branch aix432-s3 @ 00e02203, the closed-loop pointer) WITHOUT a re-bake, and does not need one: the engine adds no migration state and the ptrctl chardev is not a device, so the device set and the vmstate signature are unchanged -- restore-proven under this binary on the ptrloop rig. INSTALL ORDER MATTERS: the binary must be in place BEFORE this launcher, because `-global mga.ptrctl=ptr0` on the previous binary is an unknown property and QEMU refuses to start."
       },
       "deviceSetId": "aix432-40p-ppc604-1024x768x8-mga-pcnet",
       "launcher": "streamhost/stations/aix432/qemu-streamhost.sh",
@@ -136,7 +136,7 @@
         "--env-append-file",
         "$T/aix432/station.env.fixture"
       ],
-      "binarySha256": "d3cb39aa4cf2a982523aba04dab2f76ef7519b3b0424cf4c8f5f36a045a773af"
+      "binarySha256": "2747f4cbb24a500bd0aa5b14a93d8d8a2fe59d72a869cf21dc86f07009219f18"
     },
     "stationEnv": {
       "SH_STATION": "aix432",

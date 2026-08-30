@@ -313,6 +313,49 @@ worth keeping in mind: a synthetic pen is not a real one. It reproduced the
 transport behaviour faithfully but not the exact wobble/timing distribution of a
 hand-held stylus, so a green probe is necessary, not sufficient.
 
+## Finding the pointer in a frame, without a human looking at it
+
+`scripts/dev/cursor-locate.py` turns a framebuffer capture into pointer
+coordinates. Rule 9 says the framebuffer is the only proof a guest reacted, and
+that rule is expensive the moment a check needs more than a handful of frames —
+so this makes "where is the cursor" a command rather than an eyeball.
+
+```bash
+python3 scripts/dev/cursor-locate.py learn a.ppm b.ppm      # two frames, cursor moved
+python3 scripts/dev/cursor-locate.py find  frame.ppm        # -> "x y glyph-id"
+python3 scripts/dev/cursor-locate.py track *.ppm            # -> CSV
+python3 scripts/dev/cursor-locate.py check frame.ppm 512 384 --tol 1
+```
+
+**It is an EXACT matcher, not a correlation matcher, and that is deliberate.** A
+guest cursor is a hard-edged sprite with a 1-bit mask, blitted at integer
+coordinates with no scaling or antialiasing, so every opaque pixel either equals
+the template or this is not the sprite. The payoff is that it cannot report a
+confident wrong answer: it says one position, or `NOTFOUND`, or `AMBIGUOUS`.
+Evidence that quietly guesses is worse than none. It also needs only numpy and
+PIL, which every box here already has, where OpenCV is not installed anywhere.
+
+The corollary is that it must be pointed at **screendumps** (QMP `screendump`,
+PPM), never at the H.264 stream — the encoder's ringing breaks the exact match
+and it will honestly tell you it found nothing.
+
+Two things to know before trusting a result:
+
+- **It reports the sprite ORIGIN, not the pointer.** The guest draws the sprite
+  at `pointer − hotspot`, and the hotspot is per-glyph software state no picture
+  contains. Pass `--hotspot X,Y` when you know it (on `aix432` the engine
+  reports it in `STAT`).
+- **Learning assumes only the cursor moved**, which a real desktop rarely
+  honours — the first attempt here drowned in 16385 changed pixels because
+  Netscape repainted between frames. It says which cluster defeated it, and
+  `--at X,Y` learns from a box at a position the caller already knows, which is
+  the normal path on a busy exhibit.
+
+Validated on `aix432`, the one station with an independent oracle: against the
+Matrox hardware-cursor registers it located the sprite **pixel-exact (±0) in
+every frame**, having never seen the registers — and returned `NOTFOUND` rather
+than a wrong answer on a frame carrying a glyph it had not been taught.
+
 ## What the guest end does to your timing
 
 Some stations cannot be driven naively:
