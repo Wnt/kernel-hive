@@ -9,6 +9,7 @@ that introduced it.
 import os
 import sys
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -100,6 +101,66 @@ class Refuses(unittest.TestCase):
 
     def test_degenerate_watch_rect(self):
         self.one({**GOOD, "watchRect": [10, 10, 0, 5]}, "positive width")
+
+
+class CursorBankTraps(unittest.TestCase):
+    """Each of these has cost a real run: encode them, do not re-learn them."""
+
+    def setUp(self):
+        import json
+        import tempfile
+
+        self._tmp = tempfile.TemporaryDirectory()
+        # The shape of tests/cursor-banks/rhapsody.json: a MIXED bank, whose
+        # largest glyph is 14x16.
+        bank = {
+            "e63fa3be82bc": {"w": 11, "h": 16},
+            "98f480249409": {"w": 11, "h": 16},
+            "c10b0ab605bc": {"w": 13, "h": 13},
+            "3759b1ce8de5": {"w": 14, "h": 16},
+        }
+        self.bank = Path(self._tmp.name) / "bank.json"
+        self.bank.write_text(json.dumps(bank))
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def spec(self, **over):
+        base = {
+            **GOOD,
+            "probePoint": [400, 300],
+            "guestSize": [1024, 768],
+            "cursorBank": str(self.bank),
+            "cursorBankBoundTo": "golden 2026-08-23, 1024x768 RGB:555/16",
+        }
+        base.update(over)
+        return base
+
+    def test_a_bank_needs_its_binding_written_down(self):
+        spec = self.spec()
+        del spec["cursorBankBoundTo"]
+        errors = check(spec)
+        self.assertTrue(any("cursorBankBoundTo" in e for e in errors), errors)
+
+    def test_the_largest_glyph_sets_the_edge_margin(self):
+        """1024-14 = 1010, 768-16 = 752 for this bank."""
+        self.assertEqual(check(self.spec(probePoint=[1010, 752])), [])
+        errors = check(self.spec(probePoint=[1011, 752]))
+        self.assertTrue(any("leaves no room" in e for e in errors), errors)
+
+    def test_a_point_too_low_is_caught_too(self):
+        errors = check(self.spec(probePoint=[400, 760]))
+        self.assertTrue(any("y <= 752" in e for e in errors), errors)
+
+    def test_a_bank_that_has_not_landed_yet_is_not_an_error(self):
+        """Banks may live on an unmerged branch; a missing one is INCONCLUSIVE."""
+        self.assertEqual(check(self.spec(cursorBank="tests/cursor-banks/nothere.json")), [])
+
+    def test_binding_without_a_bank_is_a_mistake(self):
+        spec = self.spec()
+        del spec["cursorBank"]
+        errors = check(spec)
+        self.assertTrue(any("without acceptance.cursorBank" in e for e in errors), errors)
 
 
 if __name__ == "__main__":

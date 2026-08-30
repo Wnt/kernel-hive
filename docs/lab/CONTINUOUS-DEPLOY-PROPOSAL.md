@@ -954,10 +954,27 @@ if nothing else ever ships.
    guest-side evidence that input arrives; it does not yet prove the pointer
    landed on the exact pixel. That is stage 4 work and it is listed here so
    nobody reads a green run as more than it is.
-3. **Reconciler v0 — read-only** (days): `kh-reconciler` service with its own
-   clone, computing closures and printing per-unit drift
-   (`status|plan`). Replaces "what does the box run?" forensics; agents stop
-   needing to read root-owned stamps. No writes; trivially removable.
+3. **Reconciler v0 — read-only** (days) — **DONE, branch `cd-build`.**
+   `scripts/host/kh-reconciler` with `units | plan | status | denylist | rows`.
+   No service is installed and no clone is created: stage 3 is a CLI, and its
+   read-only-ness is proven by a test that runs every subcommand under an audit
+   hook asserting zero writes — the 2026-08-24 dry-run-that-mutated incident is
+   why a read path earns a test rather than a promise.
+   The state-of-record deny-list is **structural**: `build_units()` runs every
+   candidate member through `refuse_if_protected()`, which RAISES. A widened
+   glob that swallowed `serve/` fails loudly instead of quietly deleting an
+   account store, and `kh-reconciler denylist` reports the whole repo clean.
+   **`rows` is the finding of this stage.** Cross-checking the live pair table
+   against the first decomposition left **107 of 349 deployed rows claimed by no
+   unit** — each of them deployed, and each of them a row the loop would have
+   converged *never*. They were per-station files living outside the station
+   directory (guest agents, systemd drop-ins, retronet and coldboot helpers
+   named after their station), the daemon tree, and the registry sources behind
+   the rendered manifests. The decomposition now claims all 349, and the last
+   straggler needed the station id matched as a filename **suffix**
+   (`seriald-sailfishos.service`), not just a prefix. Stage 4 must not write
+   anything while that list is non-empty, so it is a command rather than a
+   comment.
 4. **Transactional per-station apply** (the core, ~a week): closure
    store + `releases/` + `current` symlink + journal + rollback +
    acceptance, exposed as `kh-reconciler apply <station>` — still
@@ -1095,8 +1112,9 @@ Once the corresponding stage lands:
 
 | add | role |
 |---|---|
-| `scripts/host/kh-reconciler` (+ `kh-reconciler.service`) | the loop: status/plan/apply/journal |
-| `scripts/host/kh-closure` | commit → per-unit closure hash + manifest |
+| `scripts/host/kh-reconciler` (+ `kh_reconciler/`) | the loop: units/plan/status/denylist/rows (stage 3, landed read-only); apply/journal in stage 4 |
+| `scripts/host/kh_reconciler/closure.py` | commit → per-unit closure hash (absence-sensitive; reads git objects, never the worktree) |
+| `scripts/host/kh_reconciler/denylist.py` | state of record, enforced by raising rather than remembered |
 | `scripts/host/kh-store` | object store: add/gc/verify/materialize |
 | `scripts/dev/station-accept.sh` | rule 9 as a command (stage 2, landed). **Not `scripts/host/`**: the acceptance boundary starts in a browser, and the browser lives on CT950 |
 | `scripts/e2e/station-accept-probe.mjs` | the browser leg: session churn, one abandoned, motion in a named rect |

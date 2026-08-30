@@ -28,12 +28,16 @@ Two rules here are not obvious and are load-bearing:
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
+from .constants import REPO
 from .validate_schema import fail
 
 ALLOWED = {
     "watchRect",
+    "cursorBankBoundTo",
     "probePoint",
     "guestSize",
     "controlStation",
@@ -113,6 +117,8 @@ def validate_acceptance(rows: list[dict[str, Any]], errors: list[str]) -> None:
 
         _validate_sampling(row, spec, errors)
 
+        _validate_cursor_bank(row, spec, errors)
+
         if "probePoint" in spec:
             if not _ints(spec.get("probePoint"), 2):
                 fail(errors, row, "acceptance.probePoint must be [x, y] in guest pixels")
@@ -144,4 +150,67 @@ def _validate_sampling(row: dict[str, Any], spec: dict[str, Any], errors: list[s
             row,
             f"acceptance.sampleIntervalMs {interval} must sit between sampleFloorMs {floor} "
             f"and sampleCeilingMs {ceiling}",
+        )
+
+
+def _bank_max_sprite(path: Path) -> tuple[int, int] | None:
+    """The largest glyph in a bank, or None if it cannot be read."""
+    try:
+        bank = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    sizes = [(t.get("w", 0), t.get("h", 0)) for t in bank.values() if isinstance(t, dict)]
+    return (max(w for w, _ in sizes), max(h for _, h in sizes)) if sizes else None
+
+
+def _validate_cursor_bank(row: dict[str, Any], spec: dict[str, Any], errors: list[str]) -> None:
+    """The cursor bank's traps, encoded where the next author will hit them.
+
+    A bank is an EXACT pixel match, so it is valid only for the golden, colour
+    depth and resolution it was learned on. That makes it a FIFTH member of the
+    "golden + binary + device set are ONE combination" rule (AGENTS.md rule 6):
+    a re-bake, a depth change or a resolution change silently invalidates it,
+    and the symptom is a NOTFOUND that reads as "the pointer is not there".
+    `cursorBankBoundTo` is required alongside a bank so that binding is written
+    down and reviewable rather than remembered.
+
+    The edge rule below has already cost real runs: the matcher rejects any
+    placement falling outside the frame, so a probe point too close to an edge
+    produces an EXPECTED NotFound that looks exactly like a failure.
+    """
+    bank_rel = spec.get("cursorBank")
+    if not bank_rel:
+        if spec.get("cursorBankBoundTo"):
+            fail(errors, row, "acceptance.cursorBankBoundTo without acceptance.cursorBank")
+        return
+    if not spec.get("cursorBankBoundTo"):
+        fail(
+            errors,
+            row,
+            "acceptance.cursorBank needs acceptance.cursorBankBoundTo naming the golden, colour "
+            "depth and resolution it was learned on. An exact-match bank is a FIFTH member of the "
+            "golden+binary+device-set combination: a re-bake or a depth change invalidates it, and "
+            "the symptom is a NOTFOUND that reads as 'the pointer is not there'",
+        )
+    bank = REPO / bank_rel
+    if not bank.exists():
+        # Not an error: the bank may live on an unmerged branch, and a spec is
+        # allowed to be written before the bank lands. station-accept.sh reports
+        # a missing bank as INCONCLUSIVE, never as a failure.
+        return
+    largest = _bank_max_sprite(bank)
+    point = spec.get("probePoint")
+    size = spec.get("guestSize")
+    if not (largest and _ints(point, 2) and _ints(size, 2)):
+        return
+    max_x = size[0] - largest[0]
+    max_y = size[1] - largest[1]
+    if point[0] > max_x or point[1] > max_y:
+        fail(
+            errors,
+            row,
+            f"acceptance.probePoint {point} leaves no room for the bank's largest glyph "
+            f"({largest[0]}x{largest[1]}) inside {size[0]}x{size[1]}: keep x <= {max_x}, "
+            f"y <= {max_y}. A sprite clipped by the frame cannot be exact-matched, so the matcher "
+            "returns an EXPECTED NotFound that looks exactly like a real failure",
         )
