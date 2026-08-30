@@ -266,10 +266,11 @@
         "patches": [
           "streamhost/qemu-patches/0001-dbus-display-fast-poll.patch",
           "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch",
+          "streamhost/qemu-patches/0009-kh-ramabs-mac-lowmem-profile.patch",
           "streamhost/qemu-patches/0010-kh-ramabs-point32le-layout.patch"
         ],
         "configure": "--target-list=x86_64-softmmu --enable-slirp --enable-dbus-display --disable-opengl --disable-werror --disable-tools",
-        "note": "0001 is NOT optional on a standalone build: on the host package the fast-poll patch arrives as pve quilt slot 0047, and a build without it silently drops this tile back to the stock 30 ms display scan. BeOS R5 was booted cold to its full desktop on this build during bring-up, so R5 does not depend on anything the pve patches add. binarySha256 is deliberately ABSENT until a binary is actually installed at the prefix -- recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured."
+        "note": "0001 is NOT optional on a standalone build: on the host package the fast-poll patch arrives as pve quilt slot 0047, and a build without it silently drops this tile back to the stock 30 ms display scan. BeOS R5 was booted cold to its full desktop on this build during bring-up, so R5 does not depend on anything the pve patches add. 0009 is macos753's layout-table restructure and 0010 extends it, so the two are ordered and not interchangeable; all four verified to apply in order and to compile under -Werror. binarySha256 is deliberately ABSENT until a binary is actually installed at the prefix -- recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured."
       }
     },
     "bringUpOrder": 66

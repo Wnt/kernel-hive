@@ -182,10 +182,21 @@ commanded    sensor (STAT)          framebuffer   verdict
 1000,760     verified=yes 1000,760  NOTFOUND           <- sprite clipped at the corner
 0,400        verified=yes 0,400     NOTFOUND           <- sprite clipped at x=0
 
-DOWN1/UP1 at 36,34 -> 11934 px repainted, bbox x 6-194 y 25-102
+DOWN1/UP1 at 36,34 -> 11958 px repainted, bbox x 6-194 y 25-107
   (the Terminal menu opened -- a real repaint, not a cursor blit)
-STAT: addr=0x38f1ae4 layout=point32le verified=yes nudge=1/1px probefail=0
+STAT: addr=0x38f1ae4 layout=point32le verified=yes nudge=1/1px
+      converged=9 gaveup=0 paused=0 refused=1 probefail=0
 ```
+
+**Run twice, agreeing to the pixel.** The table above is the shipped stack
+(`0007` + `0009` + `0010`). An earlier run on `0007` + a standalone `point32le`
+— before `0009` restructured the accessors into offset-taking primitives —
+produced the identical eight rows. Two independent builds of the mechanism
+landing on the same pixel at every target is what makes this a proof rather
+than a measurement of one binary.
+
+The `refused=1` is the first `MOVEA` after connect, refused while the device
+verifies its address — see the warm-up note below.
 
 Six targets pixel-exact with all three observers agreeing, including a screen
 edge and three window-frame positions. The two `NOTFOUND` rows are the matcher
@@ -237,7 +248,9 @@ station and the package rebuild does not.
 ## 6. What is left
 
 1. Build `/opt/qemu-beos` — QEMU 11.0.2 with qemu-patches `0001` + `0007` +
-   `0010`. `0001` is not optional: on the host package fast-poll arrives as pve
+   `0009` + `0010` (verified to apply cleanly in that order and to compile
+   under `-Werror`; `0009` is macos753's layout-table restructure, which
+   `0010` extends rather than replaces). `0001` is not optional: on the host package fast-poll arrives as pve
    quilt slot `0047`, and a build without it drops this tile back to the stock
    30 ms display scan.
 2. Cold re-bake the golden on that binary, same device set. The fixture is

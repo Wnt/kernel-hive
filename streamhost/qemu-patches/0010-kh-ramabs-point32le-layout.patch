@@ -1,12 +1,19 @@
 kh-ramabs: a point32le layout, for guests that keep the pointer as two int32
 
 BeOS R5's app_server keeps its pointer coordinate as two little-endian
-int32 fields, where Rhapsody DR2 keeps a Point{int16 x, int16 y}.  The
-device's read and write accessors are the only two places that know a wire
-format, so a second layout is one branch in each plus the realize-time
-string parse; nothing else in kh-ramabs changes and no VMStateDescription
-is added, so `-device kh-ramabs` still leaves a station's device set and
-its golden checkpoint untouched.
+int32, where Rhapsody DR2 keeps a Point{int16 x, int16 y} and classic Mac
+OS keeps a big-endian Point with VERTICAL first.  Width is the third
+independent axis of the layout table 0009 introduced, so this is one branch
+in each of the two offset-taking accessors plus the realize-time string
+parse -- the accessors are the only two places that know a wire format.
+
+The point buffer widens from 4 to 8 bytes and the transfer length becomes
+kh_pt_bytes() rather than sizeof(b), so a 4-byte layout still reads and
+writes exactly 4 bytes and the Mac profile's multi-offset writes are
+unaffected.
+
+No VMStateDescription is added, so `-device kh-ramabs` still leaves a
+station's device set and its golden checkpoint untouched.
 
 Derived and proven on beos: see docs/lab/BEOS-ABSOLUTE-POINTER.md.
 
@@ -16,85 +23,72 @@ Index: b/hw/misc/kh-ramabs.c
 ===================================================================
 --- a/hw/misc/kh-ramabs.c
 +++ b/hw/misc/kh-ramabs.c
-@@ -113,6 +113,7 @@
- /* Layouts: how the guest stores its pointer coordinate. */
+@@ -130,6 +130,7 @@
  typedef enum {
-     KH_LAYOUT_POINT16LE = 0,   /* struct { int16_t x; int16_t y; } little-end */
-+    KH_LAYOUT_POINT32LE,       /* struct { int32_t x; int32_t y; } little-end */
+     KH_LAYOUT_POINT16LE = 0,   /* int16 x, int16 y -- little-endian          */
+     KH_LAYOUT_MACPOINT16BE,    /* int16 v, int16 h -- BIG-endian, V FIRST    */
++    KH_LAYOUT_POINT32LE,       /* int32 x, int32 y -- little-endian          */
  } KhLayout;
  
- struct KhRamAbsState {
-@@ -121,7 +122,7 @@
-     /* --- properties --------------------------------------------------- */
-     CharFrontend chr;
-     uint64_t addr;             /* guest-physical address of the coordinate  */
--    char *layout;              /* "point16le"                               */
-+    char *layout;              /* "point16le" | "point32le"                 */
-     uint32_t width, height;    /* surface bounds, for the sanity check      */
-     int32_t nudge_units;       /* units injected to publish one write       */
-     int32_t nudge_px;          /* pixels that many units are expected to move */
-@@ -167,9 +168,15 @@
+ /* How the guest is made to ACT on a coordinate we wrote. */
+@@ -209,12 +210,21 @@
+ /* ------------------------------------------------------------------ */
+ /* guest memory                                                        */
  
- static bool kh_read_point(KhRamAbsState *s, int *x, int *y)
++/* A point is 4 bytes everywhere except point32le, where it is 8. */
++static size_t kh_pt_bytes(KhRamAbsState *s)
++{
++    return s->layout_id == KH_LAYOUT_POINT32LE ? 8 : 4;
++}
++
+ static void kh_rd_pt(KhRamAbsState *s, hwaddr off, int *x, int *y)
  {
 -    uint8_t b[4];
 +    uint8_t b[8];
  
--    cpu_physical_memory_read(s->addr, b, sizeof(b));
+-    cpu_physical_memory_read(s->addr + off, b, sizeof(b));
+-    if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
++    cpu_physical_memory_read(s->addr + off, b, kh_pt_bytes(s));
 +    if (s->layout_id == KH_LAYOUT_POINT32LE) {
-+        cpu_physical_memory_read(s->addr, b, 8);
 +        *x = (int32_t)ldl_le_p(b);
 +        *y = (int32_t)ldl_le_p(b + 4);
-+        return true;
-+    }
-+    cpu_physical_memory_read(s->addr, b, 4);
-     *x = (int16_t)lduw_le_p(b);
-     *y = (int16_t)lduw_le_p(b + 2);
-     return true;
-@@ -184,12 +191,18 @@
-  */
- static bool kh_write_point(KhRamAbsState *s, int x, int y)
++    } else if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
+         *y = (int16_t)lduw_be_p(b);          /* VERTICAL FIRST, big-endian */
+         *x = (int16_t)lduw_be_p(b + 2);
+     } else {
+@@ -225,16 +235,19 @@
+ 
+ static void kh_wr_pt(KhRamAbsState *s, hwaddr off, int x, int y)
  {
 -    uint8_t b[4];
 +    uint8_t b[8];
-     int rx, ry;
  
--    stw_le_p(b, (uint16_t)(int16_t)x);
--    stw_le_p(b + 2, (uint16_t)(int16_t)y);
--    cpu_physical_memory_write(s->addr, b, sizeof(b));
+-    if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
 +    if (s->layout_id == KH_LAYOUT_POINT32LE) {
 +        stl_le_p(b, (uint32_t)(int32_t)x);
 +        stl_le_p(b + 4, (uint32_t)(int32_t)y);
-+        cpu_physical_memory_write(s->addr, b, 8);
-+    } else {
-+        stw_le_p(b, (uint16_t)(int16_t)x);
-+        stw_le_p(b + 2, (uint16_t)(int16_t)y);
-+        cpu_physical_memory_write(s->addr, b, 4);
-+    }
- 
-     kh_read_point(s, &rx, &ry);
-     return rx == x && ry == y;
-@@ -630,8 +643,13 @@
-                    "guest's own pointer coordinate>");
-         return;
++    } else if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
+         stw_be_p(b, (uint16_t)(int16_t)y);
+         stw_be_p(b + 2, (uint16_t)(int16_t)x);
+     } else {
+         stw_le_p(b, (uint16_t)(int16_t)x);
+         stw_le_p(b + 2, (uint16_t)(int16_t)y);
      }
--    if (strcmp(s->layout, "point16le") != 0) {
--        error_setg(errp, "kh-ramabs: unknown layout=%s (have: point16le)",
-+    if (strcmp(s->layout, "point16le") == 0) {
-+        s->layout_id = KH_LAYOUT_POINT16LE;
+-    cpu_physical_memory_write(s->addr + off, b, sizeof(b));
++    cpu_physical_memory_write(s->addr + off, b, kh_pt_bytes(s));
+ }
+ 
+ /*
+@@ -836,9 +849,11 @@
+         s->layout_id = KH_LAYOUT_POINT16LE;
+     } else if (strcmp(s->layout, "macpoint16be") == 0) {
+         s->layout_id = KH_LAYOUT_MACPOINT16BE;
 +    } else if (strcmp(s->layout, "point32le") == 0) {
 +        s->layout_id = KH_LAYOUT_POINT32LE;
-+    } else {
-+        error_setg(errp,
-+                   "kh-ramabs: unknown layout=%s (have: point16le, point32le)",
-                    s->layout);
+     } else {
+         error_setg(errp, "kh-ramabs: unknown layout=%s "
+-                   "(have: point16le, macpoint16be)", s->layout);
++                   "(have: point16le, macpoint16be, point32le)", s->layout);
          return;
      }
-@@ -639,7 +657,6 @@
-         error_setg(errp, "kh-ramabs: nudge-units and nudge-px must be non-zero");
-         return;
-     }
--    s->layout_id = KH_LAYOUT_POINT16LE;
-     s->timer = timer_new_ms(QEMU_CLOCK_REALTIME, kh_tick, s);
- 
-     qemu_chr_fe_set_handlers(&s->chr, kh_can_receive, kh_receive,
+     if (strcmp(s->publish, "nudge") == 0) {
