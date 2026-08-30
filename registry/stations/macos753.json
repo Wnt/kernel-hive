@@ -35,13 +35,13 @@
         "kbd_note": "Command-Shift-1 ejects; the Finder is the only shell, so key proof is a menu or a dialog, never a prompt",
         "audio_trigger": "beep",
         "validated": false,
-        "note": "ABSOLUTE pointer: kh-ramabs writes MTemp/RawMouse in Mac OS low memory and publishes with CrsrNew := CrsrCouple, so the commanded pixel is the landed pixel and the guest's tracking curve is bypassed. No exec channel - System 7 has no shell at all."
+        "note": "relative ADB pointer: cursor_scale 2.7778 (guest gain 0.36). No exec channel — System 7 has no shell at all"
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/macos753",
       "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
-      "pointer_mode": "abs",
+      "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54142,
-      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. The pointer is ABSOLUTE via `-device kh-ramabs` writing Mac OS's own low-memory globals; `labctl abs x y` lands on the commanded pixel. Drive a CLONE with scripts/install-vision/adb_pointer.py, never this dir."
+      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
     }
   },
   "render": {
@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 59,
     "actionMapOrder": 31,
-    "stationsManifestPrelude": "\n# macos753 (slot 142) \u2014 the fleet's FIRST foreign-architecture QEMU station:\n#   qemu-system-m68k -M q800 (Motorola 68040), Mac OS 7.5.3. Built from the\n#   kernel-hive QEMU fork and installed to /opt/qemu-m68k, NOT from pve-qemu \u2014\n#   the fleet package ships no m68k target, and a checkpoint baked and loaded by\n#   the same standalone binary never needs pve's pbs-state vmstate section.\n#   TCG only (no KVM for m68k), so idle auto-pause carries its cost.\n#   RELATIVE ADB pointer \u2014 no absolute path exists on this machine, and the\n#   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.\n#   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.\n",
+    "stationsManifestPrelude": "\n# macos753 (slot 142) — the fleet's FIRST foreign-architecture QEMU station:\n#   qemu-system-m68k -M q800 (Motorola 68040), Mac OS 7.5.3. Built from the\n#   kernel-hive QEMU fork and installed to /opt/qemu-m68k, NOT from pve-qemu —\n#   the fleet package ships no m68k target, and a checkpoint baked and loaded by\n#   the same standalone binary never needs pve's pbs-state vmstate section.\n#   TCG only (no KVM for m68k), so idle auto-pause carries its cost.\n#   RELATIVE ADB pointer — no absolute path exists on this machine, and the\n#   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.\n#   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -71,13 +71,13 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "abs",
-      "backend": "ramabs",
-      "method": "qemu-guestram-abswrite",
-      "absolute": true,
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-adb-relative",
+      "absolute": false,
       "present": true,
       "device": "adb-mouse",
-      "scale": 1.0,
+      "scale": 2.7778,
       "offset": [
         0,
         0
@@ -115,11 +115,11 @@
         "--udp",
         "54142",
         "--pointer",
-        "abs",
+        "rel",
         "--input-backend",
-        "ramabs",
+        "dbus-rel",
         "--cursor-scale",
-        "1.0",
+        "2.7778",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -151,8 +151,6 @@
         "-bios /data/vms/streamhost/assets/macos753/800.ROM",
         "-g 1152x870x8",
         "-display dbus,p2p=on,audiodev=snd0",
-        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off",
-        "-device kh-ramabs,chardev=ptr0,addr=0x828,layout=macpoint16be,publish=crsrnew,width=1152,height=870",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
         "-device scsi-hd,scsi-id=6,drive=hd0",
@@ -177,7 +175,7 @@
   },
   "reset": {
     "stationDir": "macos753",
-    "pointer": "abs",
+    "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
@@ -189,8 +187,8 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#8c8a85",
-    "eraLabel": "1996 \u00b7 Mac OS 7.5.3 \u2014 Quadra 800",
-    "pointerRel": false
+    "eraLabel": "1996 · Mac OS 7.5.3 — Quadra 800",
+    "pointerRel": true
   },
   "museum": {
     "id": "macos753",
@@ -215,7 +213,7 @@
       "Calculator",
       "Jigsaw Puzzle"
     ],
-    "blurb": "The Macintosh at its most familiar \u2014 grey desktop, one menu bar, a Trash in the corner \u2014 running on the 68040 Quadra that closed out the pre-PowerPC era.",
+    "blurb": "The Macintosh at its most familiar — grey desktop, one menu bar, a Trash in the corner — running on the 68040 Quadra that closed out the pre-PowerPC era.",
     "notes": "The only station in the lineup emulating a 68000-family machine. Everything here is drawn by an OS with no protected memory and no command line at all."
   },
   "emulator": {
