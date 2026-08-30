@@ -34,6 +34,18 @@ the video onto a temp canvas, then `getImageData()` and sample.
 
 ## Scripts
 
+- `walkin-shape-probe.mjs` / `walkin-scope-probe.mjs` — the merged grid renders
+  the right museum for the right visitor. Take a staged bundle's URL and use its
+  `?role=` preview lever (staged/dev builds only — `spa/src/data/session.ts`):
+  an invited session must keep all 31 cards, the four nav links and `/os/<id>`
+  card targets; a walk-in must get their three machines, a scope switch, no
+  fleet-table link, and `/walkin/play/<os>` targets. The scope probe then widens
+  to the whole museum and clicks a placard, which must open the exhibit poster
+  IN PLACE rather than navigating. Both assert an empty console and, crucially,
+  that neither grid is stuck on "Loading the collection…" — the regression they
+  exist for. Run from `~/e2e` (see the node_modules note above):
+  `node walkin-shape-probe.mjs https://<lab>:8443/staging/<slot>/`
+
 - `rel-tap-wire-probe.mjs` — what the SPA actually PUTS ON THE WIRE when a
   finger glides then taps a **relative-pointer** station. Hooks
   `WritableStreamDefaultWriter.prototype.write` before app code runs, so every
