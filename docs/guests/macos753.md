@@ -279,6 +279,32 @@ target.** It is only ever a claim about a number in RAM. That is exactly why the
 proof below carries a third observer that looks at pixels, and why it would have
 caught the BeOS failure on this station too.
 
+> **SCOPE OF THIS PROOF — read before trusting it.** Everything below drove
+> `ramabs/1` INTO THE QEMU DEVICE DIRECTLY, over the chardev socket, with a
+> purpose-built client. `streamhost` was never running. So this validates the
+> MECHANISM and the DEVICE, and the daemon sink (`ram_abs.rs`) sat entirely
+> outside the boundary — it was never exercised once, at any target, in either
+> run. That is a boundary gap, not a sampling gap: no amount of repetition here
+> could reach the untested component.
+>
+> It is not hypothetical. rhapsody's cutover failed on the live station in
+> exactly that gap: the pointer mechanism worked and read back the commanded
+> target, but every browser session after the first timed out negotiating —
+> per-session sink state that is never released at teardown. The mechanism was
+> the well-tested part; the only untested component was the only one that broke.
+>
+> **This station is therefore NOT yet proven end to end.** The bar for its
+> cutover is a harness that drives the real SPA through the daemon in a browser
+> session, run repeatedly, with at least one session abandoned mid-stream.
+> Build it from `scripts/e2e/idle-wake-browser-probe.mjs` and
+> `scripts/e2e/paused-sink-resume-probe.mjs` rather than by extending the socket
+> client below — they already drive the real SPA from CT950, and they already
+> encode the half of this lesson that generalises: `videoWidth`, `readyState`
+> and a non-black percentage ALL PASS on a stream that has stopped, so the only
+> honest signal is MOTION (hash decoded frames, count distinct ones). That is
+> the same shape as the failure here — a component reporting healthy while doing
+> nothing — one layer up.
+
 Proven on the framebuffer twice, at the same targets: once with the writes made
 through the QEMU gdb stub (proving the mechanism) and once with every target
 commanded over `ramabs/1` into the real device (proving the thing that ships).
