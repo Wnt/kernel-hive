@@ -63,7 +63,19 @@ one station.** Everything below re-cuts the system along station lines and moves
 
 - one per station (61) — binary + launcher + daemon + env fixture + registry
   declaration + golden ref, as ONE closure;
-- one `serve` unit — SPA bundle, HTTPS server files, rendered manifests;
+- one `serve-code` unit — SPA bundle, HTTPS server + serve-side Python,
+  PKI scripts. Dirty only when the *commit* changes. Its closure keeps the
+  last N asset generations alongside the current one: a PWA client
+  mid-session holds `index-<hash>.js`, and a flip that deletes old hashed
+  assets 404s every lazily-fetched chunk (`sw.js` is network-first, so the
+  risk is vanished assets, not a stale worker — and a wholesale webroot swap
+  is exactly how the `boot/` tree was once lost for a week);
+- one `serve-manifests` unit — the rendered runtime documents, a pure
+  function of *applied station state*, applied as cheap atomic per-file
+  writes. Split from `serve-code` deliberately: if manifests were members of
+  one serve closure, every station cutover would dirty it — 61 serve flips
+  per wave, each republishing an unchanged SPA bundle and each paying the
+  serve unit's (strictest, §9) disruption class;
 - one `host-tools` unit — guards, labctl, host scripts (today's non-station
   pair rows).
 
@@ -75,6 +87,34 @@ acceptance result). Converged ⇔ hashes equal. The single global
 `.deployed-rev` is retired; agents never need to read root-owned live files —
 they ask `kh-reconciler status`, which runs on the box and reports over the
 same door.
+
+**A third category: live state of record — owned by neither git nor the
+loop.** The document so far has two kinds of bytes: desired state (a function
+of the commit) and derived artifacts (loop-rendered). There is a third, and
+the serve units sit directly on top of its most dangerous instance:
+`/data/vms/streamhost/serve/auth-state.json` (root 0600) holds every account,
+every passkey credential, every walk-in handle, the walk-in access switch and
+the drain flag — *inside* the directory the serve units are defined over, a
+few lines from where today's `deploy` does `rm -rf` on sibling trees.
+`darklaunch.d/` overlays belong to the same category. Members of this
+category are **never closure members, never materialized, never rolled back,
+never GC'd**: the reconciler carries an explicit deny-list of
+state-of-record paths and structurally refuses to write, replace or remove
+under them, turning today's folk rule ("never `rm auth-state.json`", plus
+the guarded `reset-auth.sh`) into a property of the only daemon that writes.
+This deserves at least the seriousness the golden store gets (§5), for a
+stronger reason: a golden can be recaptured; **a passkey cannot be
+regenerated, and a walk-in handle IS the account.**
+
+**And a named second exception to "desired state is a function of the
+commit": the walk-in access switch.** `access: closed|invited|open` and
+`drain` live in that same file, with the `WALKIN_OPEN` env floor able only
+to lower them. They are operator runtime state, out of scope for
+convergence, **permanently** — because the failure mode of a future
+reconciler deciding the switch is registry-derived is the worst one
+available: a `git push` opening the walk-in plane to the internet. The
+scrub map was exception one; this is exception two; the list is closed and
+additions to it are a design change, not a config change.
 
 Why GitOps-on-one-box is not cargo cult: the observed failures are all
 convergence failures (N writers, one target, order-sensitive installs). The
@@ -202,15 +242,28 @@ notices.
   session** — the I.7 near-miss became a real one today, in slow motion: the
   runtime manifests were rendered with `pointerRel=false` for three stations
   from a registry that was *correct at render time*; the cutover then failed
-  and rolled back, and only a later re-render from the box (verified against
-  the published document, not assumed) put `pointerRel=true` back. Had nobody
-  re-checked, the SPA would have served the wrong pointer mode for three
-  stations running a relative pointer — two-sources-disagreeing in its most
+  and rolled back, and what put `pointerRel=true` back was
+  `serve-https-spa.sh manifests` run from a rebased **session checkout** —
+  i.e. another instance of the very mechanism stage 6 deletes. The fix for a
+  bad session-published render was a second session-published render that
+  happened to be correct: **luck, not a safeguard.** Had nobody re-run it,
+  the SPA would have served the wrong pointer mode for three stations
+  running a relative pointer — two-sources-disagreeing in its most
   visitor-facing form, produced by a render that was right when made and
-  wrong ten minutes later. A manifest rendered at moment T and published to a
-  shared location is stale the instant anything upstream moves; the only
+  wrong ten minutes later. A manifest rendered at moment T and published to
+  a shared location is stale the instant anything upstream moves; the only
   correct renderer is the convergence loop itself, rendering from the
   *applied* state as part of each reconcile (§10 stage 6).
+- **Stronger still: prefer read-time derivation over render-and-publish at
+  all.** The walk-in plane already proves the pattern on this box:
+  `/walkin/manifest.json` is not a published artifact — `gate.
+  walkin_manifest()` computes the projection per request from the gallery
+  manifest plus the caller's own claim, so it *cannot go stale and cannot
+  leak a field the allowlist does not name*. That is structurally stronger
+  against I.7 than any amount of loop discipline. Publish an artifact only
+  where read-time derivation is too expensive; the obvious candidate to
+  move is `fleet-table.json` — 187 KB derived from the same registry, and
+  the one document that actually carried today's stale rows.
 
 ---
 
@@ -330,6 +383,17 @@ combination check.
 ---
 
 ## 6. Automated acceptance (I.10, I.11 — rule 9 as code)
+
+**Serve-unit acceptance already exists — reuse it.**
+`scripts/e2e/walkin-shape-probe.mjs` and `scripts/e2e/live-gallery-check.mjs`
+(on `main` as of `9e09844a`) drive real Chromium against the deployed origin
+and assert that both visitor classes render correctly, including that neither
+is stuck on "Loading the collection…". They are the serve units' acceptance
+gate as they stand. Take their calibration too: **assert "it rendered", never
+a count** — the first live run of that check failed on "only 31 cards", which
+was the era fold working as designed (31 folded, 68 expanded), not a
+regression. An acceptance that asserts a total flaps whenever the lineup or a
+fold default changes, and a flapping gate is how gates get bypassed.
 
 **The boundary is the point — prove the thing you ship, through the path it
 ships on.** The rhapsody post-mortem's sharpest finding is not the session
@@ -503,12 +567,26 @@ as the arbiter — the atomic operation is the *push*:
 
 The reconciler classifies every closure diff (§4.2) and schedules:
 
-- **manifest/config only** → apply any time;
+- **manifest/config only** → apply any time — with one carve-out: nothing
+  under the serve units is "apply any time" by default (see the serve class
+  below);
 - **restart-required** → wait until the station is idle-paused (the
   idle-pause reconciler already knows) or has had no viewer for N minutes
   (streamhost viewer telemetry); take the station claim; during the restart
   the signaling plane serves a `restarting` state so the SPA tile shows an
   honest "exhibit resetting" card instead of a dead stream;
+- **serve-restart** → its own class, with the *strictest* window of all. A
+  station restart blinks one exhibit; a serving-plane restart drops **every
+  active stream fleet-wide simultaneously**, and for a walk-in visitor it
+  destroys the clone they had claimed along with whatever they were doing in
+  it — they are anonymous and the claim is TTL'd, so there is no coming back
+  to it. The serve unit converges only when the box is drained or in a
+  maintenance window, never opportunistically. And the inverse footgun is
+  named too: **shipping serve-side Python without a restart is a silent
+  no-op** — the new code lands, the running process never loads it, nothing
+  reports it. The reconciler therefore treats a serve-code change as
+  restart-required *by definition* and reports `pending(awaiting serve
+  window)` rather than stamping a file-copy as applied;
 - **recapture-required** → never automatic; surfaces as `pending(needs
   recapture)` for a session/operator to run;
 - **deferral cap**: a cutover deferred > 24 h (a station someone is *always*
@@ -558,12 +636,16 @@ if nothing else ever ships.
    per-station cutover itself cheap); a station not yet migrated keeps the
    old path, and the pair table shrinks as units migrate.
 5. **Close the loop for opt-in units**: `rollout: auto` on a canary handful +
-   the `serve` and `host-tools` units (docs/scripts auto-deploy is pure win).
-   Watch for a week.
-6. **Manifests to the loop** (I.7): rendered by the reconciler from the
-   applied commit; `publish_manifests` deleted from `serve-https-spa.sh`;
-   dark-launch overlays become declarative merge inputs with owning claims,
-   so a render cannot clobber one.
+   the `serve-code`, `serve-manifests` and `host-tools` units (docs/scripts
+   auto-deploy is pure win, and the serve surfaces are the right first
+   canaries: a mistake there costs a page reload, not an exhibit — per the
+   walk-in reviewer's endorsement). Watch for a week.
+6. **Manifests to the loop** (I.7): the `serve-manifests` unit rendered by
+   the reconciler from applied station state; `publish_manifests` deleted
+   from `serve-https-spa.sh`; dark-launch overlays live in the
+   state-of-record category (§1) with owning claims, so a render cannot
+   clobber one. Where read-time derivation is affordable, prefer it to
+   publishing at all (§3) — `fleet-table.json` first.
 7. **Builds to the loop** (I.6): `--locked`, store-keyed outputs; delete the
    `build/` mirror and harvest markers.
 8. **Golden store + refs** (§5): `kh-store`, checkpoint-guard `publish`,
@@ -676,7 +758,8 @@ Once the corresponding stage lands:
 | `scripts/stations_registry/cli.py` | drop `compare_live_labctl` from `check`; add `drift`; add closure/golden-combination validation |
 | `scripts/lib/checkpoint-guard.sh` | `publish` step → store + outbox ref |
 | `.claude/hooks/pre-push-gate.sh` | commit-properties only |
-| `scripts/serve-https-spa.sh` | lose `publish_manifests` (loop-owned) |
+| `scripts/serve-https-spa.sh` | lose `publish_manifests` (loop-owned); `deploy` keeps N asset generations |
+| reconciler config | deny-list of live state-of-record paths (`auth-state.json` + rotations, `darklaunch.d/`) — never written, never GC'd |
 | `scripts/dev/here.sh` | show loop heartbeat + per-unit states |
 
 | delete (staged, §11) | `box-deploy.sh --apply` path, `box-sync-push.sh`, global `.deployed-rev`, `build/` mirror + `.last-harvest`, `SKIP_GATE=1` |
