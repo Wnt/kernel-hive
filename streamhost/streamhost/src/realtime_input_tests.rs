@@ -228,6 +228,7 @@ fn routes_buttons_invariant_every_pointer_sink_takes_its_edges() {
         InputBackend::ViceSock,
         InputBackend::MgaCtl,
         InputBackend::ArtistCtl,
+        InputBackend::RamAbs,
     ] {
         let routed = !matches!(
             backend,
@@ -262,6 +263,7 @@ fn warpd_hybrid_buttons_are_the_one_deliberate_exception() {
         "mamesock",
         "mgactl",
         "artistctl",
+        "ramabs",
     ] {
         assert_eq!(
             backend_routes_buttons(b, true),

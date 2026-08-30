@@ -160,7 +160,7 @@ framebuffer's **hardware cursor**, which means the guest continuously publishes
 its own idea of the pointer position into the Artist `CURSOR_POS` / `CURSOR_CTRL`
 registers. That is a sensor, so the control loop closes *inside QEMU*: the engine
 in `hw/display/artist.c` (patch
-`streamhost/qemu-patches/0007-artist-closed-loop-pointer.patch`) reads the
+`streamhost/qemu-patches/0008-artist-closed-loop-pointer.patch`) reads the
 guest's own position back, takes the error against the daemon's absolute target,
 and injects one bounded step of relative counts per window until it converges.
 

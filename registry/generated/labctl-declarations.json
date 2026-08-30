@@ -923,7 +923,7 @@
     "rhapsody": {
       "dir": "/data/vms/streamhost/stations/rhapsody",
       "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -936,7 +936,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
+      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock: the commanded pixel is written into the guest's own pointer coordinate and published with one small PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. loadvm golden."
     },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",

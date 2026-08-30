@@ -60,11 +60,22 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # device model reads the guest's own pointer position back out of the
     # CURSOR_POS/CURSOR_CTRL registers and converges on it: the Artist cursor
     # registers are the loop's sensor, and `absolute: true` is earned by
-    # measurement (framebuffer-verified at 6 targets, --tol 1), not by a
+    # measurement (framebuffer-verified at 7 targets, --tol 1), not by a
     # device. The ledger must show the control chardev the engine serves:
     # without `artist.ptrctl` the loop is not armed and the daemon has nothing
     # to talk to.
     "qemu-artist-closedloop": ({"artistctl"}, ("artist.ptrctl",), ("usb-tablet",)),
+    # rhapsody: an absolute pointer with NO absolute device and NO control loop.
+    # Rhapsody DR2 keeps its own pointer coordinate in a known guest-RAM
+    # structure, so the commanded coordinate is simply WRITTEN there and one
+    # small relative event is injected to make the window server republish it.
+    # The hotspot never enters the path, and the display adapter is not involved
+    # at all -- which is why this station's device set and golden are unchanged.
+    # `absolute: true` is earned by reading the guest's own coordinate back after
+    # every write; the control object refuses to write at all until it has
+    # verified its address, so the ledger must show the `kh-ramabs` control
+    # object. Without it the daemon has nothing to talk to.
+    "qemu-guestram-abswrite": ({"ramabs"}, ("kh-ramabs",), ("usb-tablet",)),
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
@@ -80,6 +91,7 @@ POINTER_MODE_BY_BACKEND = {
     "mamesock": "abs",
     "mgactl": "abs",
     "artistctl": "abs",
+    "ramabs": "abs",
     # Keyboard-only by construction: InputBackend::pointer_mode() reports
     # "none" for ViceSock, and the sink has no pointer verb at all.
     "vicesock": "none",

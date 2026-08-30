@@ -91,7 +91,7 @@
           "required": ["transport", "method", "absolute", "present", "device", "scale", "offset"],
           "properties": {
             "transport": { "enum": ["abs", "rel", "warpd", "none"] },
-            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock", "vicesock", "mgactl", "artistctl"] },
+            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock", "vicesock", "mgactl", "artistctl", "ramabs"] },
             "method": {
               "description": "The mechanism that puts the pointer where the visitor pointed. Finer wire detail is carried by existing siblings, not by extra enum values: `backend` separates mamecmd from mamesock, `agentAddress` separates a warpd agent on a hostfwd TCP port from one on a serial chardev. See registry/README.md for one sentence and an example tile per value.",
               "enum": [
@@ -108,7 +108,8 @@
                 "simh-light-pen",
                 "previous-tablet",
                 "qemu-mga-closedloop",
-                "qemu-artist-closedloop"
+                "qemu-artist-closedloop",
+                "qemu-guestram-abswrite"
               ]
             },
             "absolute": {
