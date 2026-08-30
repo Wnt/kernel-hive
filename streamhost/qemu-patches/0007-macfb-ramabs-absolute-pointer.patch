@@ -1,0 +1,783 @@
+From cdc2da10b13e9ac334f4bdbf009761ef657fbf81 Mon Sep 17 00:00:00 2001
+From: Jonni Madekivi <wnt@reaktor.fi>
+Date: Sun, 30 Aug 2026 17:25:42 +0000
+Subject: [PATCH] macfb: absolute pointer over classic Mac OS low-memory
+ globals (ramabs/1)
+
+The kernel-hive fleet reaches a 1:1 absolute pointer on emulated machines by
+CLOSING A LOOP: read the guest's pointer position out of a display adapter's
+hardware-cursor registers, inject relative counts, converge. The Quadra 800 has
+no hardware cursor -- classic Mac OS composites the cursor into the framebuffer
+in software -- so that recipe has no sensor on this machine.
+
+It does not need one. Mac OS keeps its pointer state in low-memory globals at
+fixed, documented addresses, identity-mapped to guest-physical RAM on q800, so
+the device model can read AND write the guest's own idea of where the pointer
+is. This engine therefore does not converge on a target: it STATES the target
+using the OS's own documented cursor-warp idiom, then VERIFIES by reading back
+what the OS did with it.
+
+The consequence worth recording is that the HOTSPOT LEAVES THE CONTROL PATH.
+`Mouse` ($0830) holds the POINTER; QuickDraw subtracts the current cursor's
+hotspot only when it blits the sprite. A loop whose sensor is a sprite origin
+must measure the hotspot or it builds a magnet that drags the pointer at a
+stationary target. Here there is nothing to measure -- we write pointer
+coordinates and read pointer coordinates -- and the hotspot is read from
+$0884 for telemetry only, so an external framebuffer check knows where to
+expect the sprite.
+
+The one trap, measured rather than assumed: DO NOT ALSO WRITE `Mouse`. The
+cursor VBL task computes `Mouse := (RawMouse & MouseMask) + MouseOffset` and
+repaints only when that differs from the `Mouse` it already had. Pre-writing
+`Mouse` makes its own change detector say "nothing moved" -- it clears CrsrNew
+and draws nothing, while every global reads back exactly correct and the
+pointer sits still. `Mouse` is the task's OUTPUT and this engine's sensor.
+
+Two rules are inherited from the hardware-cursor stations. A quiescent sensor
+is not a converged sensor: a RAM read always succeeds and always looks
+plausible, with no "cursor enabled" bit to even partially cover you, so a MOVEA
+is confirmed only when `Mouse` READS BACK EQUAL to what was written. And values
+are sanity-bounded where they are READ, not where they are used: `CrsrPin` must
+be a sane rect that agrees with the framebuffer geometry before any position is
+trusted, a position must lie inside it, a hotspot must lie inside 16x16. A
+failed bound refuses the write rather than guessing, and STAT answers "valid=0"
+rather than quoting a number the engine never observed.
+
+The verify timer is QEMU_CLOCK_VIRTUAL, which does not tick while the guest is
+stopped -- and the station that uses this starts `-loadvm golden -S` under TCG.
+A read-back wait against a stopped runstate would never complete and would loop
+the daemon forever on its own resync preamble, so a MOVEA issued while paused
+writes guest RAM (durable; the VBL task consumes it on resume), acks, and drops
+the verification, counting it as paused= with valid=0.
+
+No vmstate field is added, so an existing checkpoint still restores against a
+binary carrying this patch. Armed only by `-global nubus-macfb.ptrctl=<chardev>`
+(the property is on both the nubus and sysbus variants; `-M q800` instantiates
+the nubus one). Buttons ride the emulated ADB mouse as button-only edges so the
+driver keeps ownership of MBState/MBTicks and double-click timing; only the
+POSITION bypasses ADB.
+
+Wire protocol `ramabs/1`, shared with the rhapsody station's guest-RAM engine:
+HELLO, <seq> MOVEA x y, DOWN<n>/UP<n>, SYNC, STAT; everything guest-specific
+lives here rather than in the protocol or the daemon.
+---
+ hw/display/macfb-ptr.c         | 558 +++++++++++++++++++++++++++++++++
+ hw/display/macfb.c             |  18 ++
+ hw/display/meson.build         |   2 +-
+ include/hw/display/macfb-ptr.h |  52 +++
+ include/hw/display/macfb.h     |   8 +
+ 5 files changed, 637 insertions(+), 1 deletion(-)
+ create mode 100644 hw/display/macfb-ptr.c
+ create mode 100644 include/hw/display/macfb-ptr.h
+
+diff --git a/hw/display/macfb-ptr.c b/hw/display/macfb-ptr.c
+new file mode 100644
+index 0000000..e3adf20
+--- /dev/null
++++ b/hw/display/macfb-ptr.c
+@@ -0,0 +1,558 @@
++/*
++ * Absolute pointer engine for classic Mac OS guests on macfb (Quadra 800).
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2 or later.
++ * See the COPYING file in the top-level directory.
++ *
++ * -------------------------------------------------------------------------
++ * WHY THIS IS NOT A CLOSED LOOP
++ * -------------------------------------------------------------------------
++ * The other stations in this fleet reach a 1:1 absolute pointer by CLOSING A
++ * LOOP: they read the guest's pointer position out of a display adapter's
++ * hardware-cursor registers, and inject relative counts until the reading
++ * converges on the target. The Quadra 800 has no hardware cursor at all --
++ * classic Mac OS composites the cursor into the framebuffer in software -- so
++ * that recipe has no sensor here.
++ *
++ * It does not need one. Mac OS keeps its pointer state in LOW-MEMORY GLOBALS
++ * at fixed, documented addresses, and an emulator can both read and write them
++ * directly. So this engine does not converge on a target: it STATES the target,
++ * using the OS's own documented cursor-warp idiom, and then VERIFIES by reading
++ * back what the OS did with it.
++ *
++ * The consequence worth understanding is that the HOTSPOT LEAVES THE CONTROL
++ * PATH ENTIRELY. `Mouse` holds the POINTER position; QuickDraw subtracts the
++ * current cursor's hotspot only when it blits the sprite. A loop whose sensor
++ * is a sprite origin must measure the hotspot or it builds a magnet that drags
++ * the pointer at a stationary target. Here there is nothing to measure: we
++ * write pointer coordinates and read pointer coordinates back. The hotspot is
++ * read from guest RAM for telemetry only, so that a framebuffer check outside
++ * the emulator knows where to expect the sprite.
++ *
++ * -------------------------------------------------------------------------
++ * THE WARP IDIOM, AND THE ONE TRAP IN IT
++ * -------------------------------------------------------------------------
++ *      MTemp    := pt          (the ADB driver's accumulator)
++ *      RawMouse := pt          (the post-pin position the VBL task consumes)
++ *      CrsrNew  := CrsrCouple  (publish barrier, LAST; a no-op if decoupled)
++ *
++ * DO NOT ALSO WRITE `Mouse`. This was measured, not assumed: the cursor VBL
++ * task computes `Mouse := (RawMouse & MouseMask) + MouseOffset` and only
++ * repaints when that differs from the `Mouse` it already had. Pre-writing
++ * `Mouse` to the target makes its own change detector say "nothing moved" -- it
++ * clears CrsrNew and draws nothing, and the pointer silently stays put while
++ * every global reads correct. `Mouse` is the task's OUTPUT, and it is this
++ * engine's read-back SENSOR. Writing your sensor is how you blind yourself.
++ *
++ * -------------------------------------------------------------------------
++ * TWO RULES INHERITED FROM THE HARDWARE-CURSOR STATIONS
++ * -------------------------------------------------------------------------
++ * 1. A QUIESCENT SENSOR IS NOT A CONVERGED SENSOR. A RAM read always succeeds
++ *    and always looks plausible -- it has no "cursor enabled" bit to even
++ *    partially cover you, and a low-memory global holds its last value whether
++ *    the guest is running, wedged, or stopped. So stillness is never taken as
++ *    success: a MOVEA is confirmed only when `Mouse` READS BACK EQUAL to the
++ *    target we wrote. If it never does, we say so rather than assuming.
++ * 2. SANITY-BOUND THE VALUE WHERE IT IS READ, not where it is used. Every
++ *    position must lie inside `CrsrPin`, and `CrsrPin` must itself agree with
++ *    the framebuffer geometry before it is trusted at all; a hotspot must lie
++ *    inside the 16x16 cursor. A rejected read makes STAT report `valid=0` --
++ *    an engine that reports a confident impossible value is one whose telemetry
++ *    is worthless.
++ */
++
++#include "qemu/osdep.h"
++#include "qemu/timer.h"
++#include "qemu/error-report.h"
++#include "chardev/char-fe.h"
++#include "system/runstate.h"
++#include "exec/cpu-common.h"
++#include "ui/console.h"
++#include "ui/input.h"
++#include "hw/display/macfb.h"
++
++/*
++ * Low-memory globals (Inside Macintosh; SysEqu.a). q800 RAM starts at guest
++ * physical 0 and Mac OS 7.5.3 with 32-bit addressing leaves low memory
++ * identity-mapped, so these ARE the physical addresses.
++ */
++#define LM_MTEMP       0x0828  /* Point: driver's interrupt-level accumulator */
++#define LM_RAWMOUSE    0x082C  /* Point: post-pin position the VBL task reads */
++#define LM_MOUSE       0x0830  /* Point: the VBL task's OUTPUT -- our sensor   */
++#define LM_CRSRPIN     0x0834  /* Rect: t,l,b,r -- the screen bounds           */
++#define LM_THECRSR     0x0844  /* Cursor: 32B data, 32B mask, then hotSpot     */
++#define LM_THECRSR_HOT (LM_THECRSR + 64)
++#define LM_CRSRVIS     0x08CC
++#define LM_CRSRBUSY    0x08CD
++#define LM_CRSRNEW     0x08CE
++#define LM_CRSRCOUPLE  0x08CF
++#define LM_MBSTATE     0x0172
++
++/* A Mac cursor is 16x16, so a hotspot outside that is not a hotspot. */
++#define CURSOR_SIDE 16
++/* No screen this machine can drive is larger than this; a pin beyond it is junk. */
++#define PIN_LIMIT 4096
++
++/* Read-back poll cadence and give-up bound, in VIRTUAL time (guest progress). */
++#define VERIFY_POLL_NS   (2 * 1000 * 1000)
++#define VERIFY_BUDGET_NS (250 * 1000 * 1000)
++
++typedef struct MacfbPtrCmd {
++    uint64_t seq;
++    char *line;
++} MacfbPtrCmd;
++
++/* ---------------------------------------------------------------- guest RAM */
++
++/*
++ * Mac `Point` is TWO SIGNED BIG-ENDIAN 16-BIT WORDS, VERTICAL FIRST. m68k is
++ * big-endian and so is the layout, so every access here is explicit rather
++ * than a host-order struct cast -- an endianness slip is the classic way to
++ * build a pointer that looks almost right.
++ */
++static bool lm_read_point(hwaddr addr, int *x, int *y)
++{
++    uint8_t b[4];
++
++    cpu_physical_memory_read(addr, b, sizeof(b));
++    *y = (int16_t)((b[0] << 8) | b[1]);
++    *x = (int16_t)((b[2] << 8) | b[3]);
++    return true;
++}
++
++static void lm_write_point(hwaddr addr, int x, int y)
++{
++    uint8_t b[4];
++
++    b[0] = ((uint16_t)(int16_t)y >> 8) & 0xff;
++    b[1] = (uint16_t)(int16_t)y & 0xff;
++    b[2] = ((uint16_t)(int16_t)x >> 8) & 0xff;
++    b[3] = (uint16_t)(int16_t)x & 0xff;
++    cpu_physical_memory_write(addr, b, sizeof(b));
++}
++
++static uint8_t lm_read_u8(hwaddr addr)
++{
++    uint8_t v;
++
++    cpu_physical_memory_read(addr, &v, 1);
++    return v;
++}
++
++static void lm_write_u8(hwaddr addr, uint8_t v)
++{
++    cpu_physical_memory_write(addr, &v, 1);
++}
++
++/*
++ * CrsrPin is the guest's own statement of the screen bounds. It is the bound
++ * every other read is checked against, so it is checked hardest: it must be a
++ * sane rect AND it must agree with the framebuffer geometry we are actually
++ * driving. Disagreement means the guest has not initialised its cursor system
++ * yet (or is not the guest we think), and nothing downstream is trustworthy.
++ */
++static bool ptr_read_pin(MacfbPtr *p, int *l, int *t, int *r, int *b)
++{
++    uint8_t buf[8];
++    int top, left, bottom, right;
++
++    cpu_physical_memory_read(LM_CRSRPIN, buf, sizeof(buf));
++    top    = (int16_t)((buf[0] << 8) | buf[1]);
++    left   = (int16_t)((buf[2] << 8) | buf[3]);
++    bottom = (int16_t)((buf[4] << 8) | buf[5]);
++    right  = (int16_t)((buf[6] << 8) | buf[7]);
++
++    if (left < 0 || top < 0 || right <= left || bottom <= top ||
++        right > PIN_LIMIT || bottom > PIN_LIMIT) {
++        return false;
++    }
++    if (right - left != (int)p->fb->width || bottom - top != (int)p->fb->height) {
++        return false;
++    }
++    *l = left;
++    *t = top;
++    *r = right;
++    *b = bottom;
++    return true;
++}
++
++static bool ptr_read_hotspot(int *hx, int *hy)
++{
++    int x, y;
++
++    lm_read_point(LM_THECRSR_HOT, &x, &y);
++    if (x < 0 || y < 0 || x >= CURSOR_SIDE || y >= CURSOR_SIDE) {
++        return false;
++    }
++    *hx = x;
++    *hy = y;
++    return true;
++}
++
++/* The sensor. Bounded at the READ: a position outside CrsrPin is not a reading. */
++static bool ptr_read_mouse(MacfbPtr *p, int *x, int *y)
++{
++    int l, t, r, b, mx, my;
++
++    if (!ptr_read_pin(p, &l, &t, &r, &b)) {
++        return false;
++    }
++    lm_read_point(LM_MOUSE, &mx, &my);
++    if (mx < l || mx >= r || my < t || my >= b) {
++        return false;
++    }
++    *x = mx;
++    *y = my;
++    return true;
++}
++
++/* ------------------------------------------------------------------ replies */
++
++G_GNUC_PRINTF(2, 3)
++static void ptr_reply(MacfbPtr *p, const char *fmt, ...)
++{
++    va_list ap;
++    char *s;
++
++    va_start(ap, fmt);
++    s = g_strdup_vprintf(fmt, ap);
++    va_end(ap);
++    qemu_chr_fe_write_all(&p->chr, (const uint8_t *)s, strlen(s));
++    if (p->trace) {
++        info_report("ramabs: tx %s", g_strchomp(s));
++    }
++    g_free(s);
++}
++
++static void ptr_ok(MacfbPtr *p, uint64_t seq)
++{
++    ptr_reply(p, "%" PRIu64 " OK\n", seq);
++}
++
++static void ptr_err(MacfbPtr *p, uint64_t seq, const char *why)
++{
++    ptr_reply(p, "%" PRIu64 " ERR %s\n", seq, why);
++}
++
++/* ------------------------------------------------------------------- MOVEA */
++
++static void ptr_pump(MacfbPtr *p);
++
++static void ptr_finish_verify(MacfbPtr *p, bool verified)
++{
++    uint64_t seq = p->verify_seq;
++
++    p->verify_active = false;
++    timer_del(p->verify_timer);
++    if (verified) {
++        p->n_verified++;
++        p->last_x = p->verify_x;
++        p->last_y = p->verify_y;
++        p->last_valid = true;
++    } else {
++        p->n_unverified++;
++        /*
++         * The write was issued and is almost certainly correct, but we did not
++         * SEE it take. Ack the command -- refusing would only make the daemon
++         * tear the connection down and retry into the same condition -- but
++         * drop the confident position, so STAT says `valid=0` and nothing
++         * downstream can quote a number this engine did not observe.
++         */
++        p->last_valid = false;
++    }
++    ptr_ok(p, seq);
++    ptr_pump(p);
++}
++
++static void ptr_verify_tick(void *opaque)
++{
++    MacfbPtr *p = opaque;
++    int x, y;
++
++    if (!p->verify_active) {
++        return;
++    }
++    if (ptr_read_mouse(p, &x, &y) && x == p->verify_x && y == p->verify_y) {
++        if (p->trace) {
++            info_report("ramabs: verified %d,%d", x, y);
++        }
++        ptr_finish_verify(p, true);
++        return;
++    }
++    if (qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) >= p->verify_deadline_ns) {
++        if (p->trace) {
++            info_report("ramabs: UNVERIFIED target %d,%d (read %d,%d valid=%d)",
++                        p->verify_x, p->verify_y, x, y,
++                        ptr_read_mouse(p, &x, &y));
++        }
++        ptr_finish_verify(p, false);
++        return;
++    }
++    timer_mod(p->verify_timer,
++              qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + VERIFY_POLL_NS);
++}
++
++static void ptr_do_movea(MacfbPtr *p, uint64_t seq, int x, int y)
++{
++    int l, t, r, b;
++    uint8_t couple;
++
++    p->n_movea++;
++
++    if (!ptr_read_pin(p, &l, &t, &r, &b)) {
++        p->n_rejected++;
++        p->last_valid = false;
++        ptr_err(p, seq, "nopin");
++        return;
++    }
++
++    /*
++     * Clamp OURSELVES. CrsrPin is enforced by the ADB driver interrupt as it
++     * updates MTemp; it is not applied to a RawMouse written from outside, so
++     * an out-of-bounds write would be drawn wrong rather than pinned.
++     */
++    x = MAX(l, MIN(r - 1, x));
++    y = MAX(t, MIN(b - 1, y));
++
++    couple = lm_read_u8(LM_CRSRCOUPLE);
++    lm_write_point(LM_MTEMP, x, y);
++    lm_write_point(LM_RAWMOUSE, x, y);
++    /* NOT LM_MOUSE -- see the header comment. It is the sensor, not an input. */
++    lm_write_u8(LM_CRSRNEW, couple);
++
++    if (p->trace) {
++        info_report("ramabs: MOVEA %d,%d couple=%u", x, y, couple);
++    }
++
++    /*
++     * PAUSED GUEST: the engine's clock is QEMU_CLOCK_VIRTUAL and does not tick
++     * while the guest is stopped, and this station starts `-loadvm golden -S`
++     * under TCG -- so a read-back wait here would never complete and the daemon
++     * would loop forever on "ack timeout; reconnecting" against its own resync
++     * preamble. The write itself is already durable in guest RAM and the VBL
++     * task will consume it on resume, so ACK AND DROP THE VERIFICATION, and be
++     * honest in STAT that this position was never observed.
++     */
++    if (!runstate_is_running()) {
++        p->n_paused++;
++        p->last_valid = false;
++        ptr_ok(p, seq);
++        return;
++    }
++
++    p->verify_active = true;
++    p->verify_seq = seq;
++    p->verify_x = x;
++    p->verify_y = y;
++    p->verify_deadline_ns =
++        qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + VERIFY_BUDGET_NS;
++    timer_mod(p->verify_timer,
++              qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + VERIFY_POLL_NS);
++}
++
++/* ------------------------------------------------------------------ buttons */
++
++/*
++ * Buttons ride the emulated ADB mouse as button-only edges: the driver must
++ * keep ownership of MBState/MBTicks or Button(), double-click timing and the
++ * Event Manager's own bookkeeping break. Only the POSITION bypasses ADB.
++ */
++static void ptr_do_button(MacfbPtr *p, uint64_t seq, InputButton btn, bool down)
++{
++    p->n_btn++;
++    qemu_input_queue_btn(NULL, btn, down);
++    qemu_input_event_sync();
++    if (p->trace) {
++        info_report("ramabs: btn %d %s", btn, down ? "down" : "up");
++    }
++    ptr_ok(p, seq);
++}
++
++/* --------------------------------------------------------------------- STAT */
++
++static void ptr_do_stat(MacfbPtr *p, uint64_t seq)
++{
++    int x = 0, y = 0, hx = 0, hy = 0, l = 0, t = 0, r = 0, b = 0;
++    bool mouse_ok = ptr_read_mouse(p, &x, &y);
++    bool hot_ok = ptr_read_hotspot(&hx, &hy);
++    bool pin_ok = ptr_read_pin(p, &l, &t, &r, &b);
++
++    ptr_reply(p,
++              "%" PRIu64 " OK reading=%d,%d valid=%d confident=%d "
++              "hot=%d,%d hotvalid=%d pin=%d,%d,%d,%d pinvalid=%d "
++              "crsrvis=%u crsrstate=%u mbstate=%u running=%d "
++              "movea=%" PRIu64 " verified=%" PRIu64 " unverified=%" PRIu64
++              " superseded=%" PRIu64 " rejected=%" PRIu64 " paused=%" PRIu64
++              " btn=%" PRIu64 "\n",
++              seq, x, y, mouse_ok, p->last_valid,
++              hx, hy, hot_ok, l, t, r, b, pin_ok,
++              lm_read_u8(LM_CRSRVIS), lm_read_u8(LM_CRSRBUSY),
++              lm_read_u8(LM_MBSTATE), runstate_is_running(),
++              p->n_movea, p->n_verified, p->n_unverified,
++              p->n_superseded, p->n_rejected, p->n_paused, p->n_btn);
++}
++
++/* ------------------------------------------------------------ command pump */
++
++static void ptr_cmd_free(MacfbPtrCmd *c)
++{
++    g_free(c->line);
++    g_free(c);
++}
++
++static void ptr_exec(MacfbPtr *p, uint64_t seq, const char *verb)
++{
++    int x, y;
++
++    if (sscanf(verb, "MOVEA %d %d", &x, &y) == 2) {
++        ptr_do_movea(p, seq, x, y);
++    } else if (!strcmp(verb, "DOWN1")) {
++        ptr_do_button(p, seq, INPUT_BUTTON_LEFT, true);
++    } else if (!strcmp(verb, "UP1")) {
++        ptr_do_button(p, seq, INPUT_BUTTON_LEFT, false);
++    } else if (!strcmp(verb, "DOWN2") || !strcmp(verb, "UP2") ||
++               !strcmp(verb, "DOWN3") || !strcmp(verb, "UP3")) {
++        /*
++         * The Mac has one mouse button. These are accepted and acked because
++         * the daemon's resync preamble releases all three on every reconnect;
++         * erroring on them would turn a healthy reconnect into a loop.
++         */
++        ptr_ok(p, seq);
++    } else if (!strcmp(verb, "SYNC")) {
++        ptr_ok(p, seq);
++    } else if (!strcmp(verb, "STAT")) {
++        ptr_do_stat(p, seq);
++    } else {
++        ptr_err(p, seq, "badverb");
++    }
++}
++
++/* Execute queued commands in order, stopping at one that must wait. */
++static void ptr_pump(MacfbPtr *p)
++{
++    while (!p->verify_active) {
++        MacfbPtrCmd *c = g_queue_pop_head(p->pending);
++
++        if (!c) {
++            return;
++        }
++        ptr_exec(p, c->seq, c->line);
++        ptr_cmd_free(c);
++    }
++}
++
++static void ptr_line(MacfbPtr *p, char *line)
++{
++    MacfbPtrCmd *c;
++    uint64_t seq;
++    char *end;
++
++    g_strchomp(line);
++    if (!*line) {
++        return;
++    }
++    if (p->trace) {
++        info_report("ramabs: rx %s", line);
++    }
++    seq = g_ascii_strtoull(line, &end, 10);
++    if (end == line || *end != ' ') {
++        ptr_reply(p, "0 ERR noseq\n");
++        return;
++    }
++    c = g_new0(MacfbPtrCmd, 1);
++    c->seq = seq;
++    c->line = g_strdup(end + 1);
++    g_queue_push_tail(p->pending, c);
++    ptr_pump(p);
++}
++
++/* ------------------------------------------------------------------ chardev */
++
++static int ptr_can_read(void *opaque)
++{
++    MacfbPtr *p = opaque;
++
++    return sizeof(p->inbuf) - p->inlen;
++}
++
++static void ptr_read(void *opaque, const uint8_t *buf, int size)
++{
++    MacfbPtr *p = opaque;
++    int i;
++
++    for (i = 0; i < size; i++) {
++        if (buf[i] == '\n') {
++            if (p->overlong) {
++                /* Refuse the fragment rather than execute half a command. */
++                p->overlong = false;
++                ptr_reply(p, "0 ERR overlong\n");
++            } else {
++                p->inbuf[p->inlen] = '\0';
++                ptr_line(p, p->inbuf);
++            }
++            p->inlen = 0;
++            continue;
++        }
++        if (p->inlen + 1 >= sizeof(p->inbuf)) {
++            p->overlong = true;
++            continue;
++        }
++        p->inbuf[p->inlen++] = buf[i];
++    }
++}
++
++static void ptr_reset_connection(MacfbPtr *p)
++{
++    MacfbPtrCmd *c;
++
++    while ((c = g_queue_pop_head(p->pending))) {
++        ptr_cmd_free(c);
++    }
++    p->verify_active = false;
++    timer_del(p->verify_timer);
++    p->inlen = 0;
++    p->overlong = false;
++    p->last_valid = false;
++}
++
++static void ptr_event(void *opaque, QEMUChrEvent event)
++{
++    MacfbPtr *p = opaque;
++
++    switch (event) {
++    case CHR_EVENT_OPENED:
++        ptr_reset_connection(p);
++        ptr_reply(p, "HELLO ramabs/1 caps=movea,btn,sync,stat surf=%ux%u\n",
++                  p->fb->width, p->fb->height);
++        break;
++    case CHR_EVENT_CLOSED:
++        ptr_reset_connection(p);
++        break;
++    default:
++        break;
++    }
++}
++
++void macfb_ptr_realize(MacfbPtr *p, struct MacfbState *fb)
++{
++    if (!qemu_chr_fe_backend_connected(&p->chr)) {
++        return;
++    }
++    p->fb = fb;
++    p->pending = g_queue_new();
++    p->verify_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, ptr_verify_tick, p);
++    qemu_chr_fe_set_handlers(&p->chr, ptr_can_read, ptr_read, ptr_event,
++                             NULL, p, NULL, true);
++}
++
++void macfb_ptr_unrealize(MacfbPtr *p)
++{
++    if (!p->pending) {
++        return;
++    }
++    ptr_reset_connection(p);
++    timer_free(p->verify_timer);
++    p->verify_timer = NULL;
++    g_queue_free(p->pending);
++    p->pending = NULL;
++}
+diff --git a/hw/display/macfb.c b/hw/display/macfb.c
+index b8115c2..07aba85 100644
+--- a/hw/display/macfb.c
++++ b/hw/display/macfb.c
+@@ -19,6 +19,7 @@
+ #include "hw/display/macfb.h"
+ #include "qapi/error.h"
+ #include "hw/core/qdev-properties.h"
++#include "hw/core/qdev-properties-system.h"
+ #include "migration/vmstate.h"
+ #include "trace.h"
+ 
+@@ -689,6 +690,14 @@ static bool macfb_common_realize(DeviceState *dev, MacfbState *s, Error **errp)
+ 
+     s->vbl_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL, macfb_vbl_timer, s);
+     macfb_update_mode(s);
++
++    /*
++     * Absolute pointer control socket, armed only when a chardev is bound with
++     * `-global sysbus-macfb.ptrctl=<id>`. It adds no guest-visible device and
++     * no vmstate field (see macfb-ptr.c), so an existing checkpoint still
++     * restores against this binary.
++     */
++    macfb_ptr_realize(&s->ptr, s);
+     return true;
+ }
+ 
+@@ -762,6 +771,8 @@ static void macfb_nubus_reset(DeviceState *d)
+ }
+ 
+ static const Property macfb_sysbus_properties[] = {
++    DEFINE_PROP_CHR("ptrctl", MacfbSysBusState, macfb.ptr.chr),
++    DEFINE_PROP_BOOL("ptr-trace", MacfbSysBusState, macfb.ptr.trace, false),
+     DEFINE_PROP_UINT32("width", MacfbSysBusState, macfb.width, 640),
+     DEFINE_PROP_UINT32("height", MacfbSysBusState, macfb.height, 480),
+     DEFINE_PROP_UINT8("depth", MacfbSysBusState, macfb.depth, 8),
+@@ -780,6 +791,13 @@ static const VMStateDescription vmstate_macfb_sysbus = {
+ };
+ 
+ static const Property macfb_nubus_properties[] = {
++    /*
++     * `-M q800` instantiates the NUBUS variant, so this is the one the
++     * macos753 station actually binds -- `-global nubus-macfb.ptrctl=ptr0`.
++     * The sysbus variant carries the same pair so any macfb machine can use it.
++     */
++    DEFINE_PROP_CHR("ptrctl", MacfbNubusState, macfb.ptr.chr),
++    DEFINE_PROP_BOOL("ptr-trace", MacfbNubusState, macfb.ptr.trace, false),
+     DEFINE_PROP_UINT32("width", MacfbNubusState, macfb.width, 640),
+     DEFINE_PROP_UINT32("height", MacfbNubusState, macfb.height, 480),
+     DEFINE_PROP_UINT8("depth", MacfbNubusState, macfb.depth, 8),
+diff --git a/hw/display/meson.build b/hw/display/meson.build
+index e730c28..b5f53eb 100644
+--- a/hw/display/meson.build
++++ b/hw/display/meson.build
+@@ -30,7 +30,7 @@ system_ss.add(when: 'CONFIG_RASPI', if_true: files('bcm2835_fb.c'))
+ system_ss.add(when: 'CONFIG_SM501', if_true: files('sm501.c'))
+ system_ss.add(when: 'CONFIG_TCX', if_true: files('tcx.c'))
+ system_ss.add(when: 'CONFIG_CG3', if_true: files('cg3.c'))
+-system_ss.add(when: 'CONFIG_MACFB', if_true: files('macfb.c'))
++system_ss.add(when: 'CONFIG_MACFB', if_true: files('macfb.c', 'macfb-ptr.c'))
+ system_ss.add(when: 'CONFIG_NEXTCUBE', if_true: files('next-fb.c'))
+ 
+ system_ss.add(when: 'CONFIG_VGA', if_true: files('vga.c'))
+diff --git a/include/hw/display/macfb-ptr.h b/include/hw/display/macfb-ptr.h
+new file mode 100644
+index 0000000..5b3757e
+--- /dev/null
++++ b/include/hw/display/macfb-ptr.h
+@@ -0,0 +1,52 @@
++/*
++ * Absolute pointer engine for classic Mac OS guests (macfb / Quadra 800).
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2 or later.
++ * See the COPYING file in the top-level directory.
++ */
++
++#ifndef MACFB_PTR_H
++#define MACFB_PTR_H
++
++#include "chardev/char-fe.h"
++#include "qemu/timer.h"
++
++struct MacfbState;
++
++/*
++ * State for the `ramabs/1` control socket. NONE OF THIS IS MIGRATED: every
++ * field is either derived from guest RAM on demand or belongs to the live
++ * connection, so the vmstate signature -- and therefore the station's baked
++ * checkpoint -- is untouched by this engine. Do not add it to vmstate_macfb.
++ */
++typedef struct MacfbPtr {
++    CharFrontend chr;
++    struct MacfbState *fb;
++    bool trace;
++
++    /* Line assembly for the command stream. */
++    char inbuf[512];
++    unsigned inlen;
++    bool overlong;
++
++    /* Commands are executed strictly in order; MOVEA blocks on read-back. */
++    GQueue *pending;
++
++    /* The one MOVEA awaiting read-back confirmation, if any. */
++    bool verify_active;
++    uint64_t verify_seq;
++    int verify_x, verify_y;
++    int64_t verify_deadline_ns;
++    QEMUTimer *verify_timer;
++
++    /* Telemetry -- what STAT reports, and the basis for "I do not know". */
++    uint64_t n_movea, n_verified, n_unverified, n_superseded;
++    uint64_t n_rejected, n_paused, n_btn;
++    int last_x, last_y;
++    bool last_valid;
++} MacfbPtr;
++
++void macfb_ptr_realize(MacfbPtr *p, struct MacfbState *fb);
++void macfb_ptr_unrealize(MacfbPtr *p);
++
++#endif
+diff --git a/include/hw/display/macfb.h b/include/hw/display/macfb.h
+index cb7aac7..4db7617 100644
+--- a/include/hw/display/macfb.h
++++ b/include/hw/display/macfb.h
+@@ -19,6 +19,7 @@
+ #include "hw/core/sysbus.h"
+ #include "ui/console.h"
+ #include "qemu/timer.h"
++#include "hw/display/macfb-ptr.h"
+ 
+ typedef enum  {
+     MACFB_DISPLAY_APPLE_21_COLOR = 0,
+@@ -70,6 +71,13 @@ typedef struct MacfbState {
+ 
+     QEMUTimer *vbl_timer;
+     qemu_irq irq;
++
++    /*
++     * Absolute-pointer control socket (`-global sysbus-macfb.ptrctl=<chardev>`).
++     * Host-side wiring only: it adds no guest-visible device and no vmstate
++     * field, so `loadvm` of an existing checkpoint still binds.
++     */
++    MacfbPtr ptr;
+ } MacfbState;
+ 
+ #define TYPE_MACFB "sysbus-macfb"
