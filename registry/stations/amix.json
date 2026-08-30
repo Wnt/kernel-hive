@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "amix",
+  "era_year": 1992,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 69,
+        "prelude": "",
+        "value": {
+          "key": "amix",
+          "script": "tiles/amix.sh",
+          "outputDir": "AmigaUNIX",
+          "class": "graphical",
+          "estimated": "~4h",
+          "automation": "vision",
+          "produces": "amix-system.hdf golden master (AMIX 2.1 OPEN LOOK desktop; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/amix",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54172,
+      "notes": "HOST-NATIVE: FS-UAE 3.2.35 (its OWN copy at assets/amix/fsuae-native, built with FSUAE_STATION=amix) runs an Amiga 3000 (68030+MMU, Kickstart 2.04 r37.175) on the host inside a pinned Xvfb sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST. No QEMU/QMP, no exec channel. POINTER IS OPEN: the daemon injects absolute XTEST motion (the x11test contract), but the GUEST tracks it relatively and with acceleration — the UAE mousehack that gives amigaos35 a 1:1 pointer is an AmigaOS trap, and AMIX drives the Amiga mouse hardware itself. Measured on the sandbox rig: host (160,120)->guest ~(82,92), host (480,380)->guest ~(331,345), history-dependent. The tile stays hidden until this is closed (an x11test-rel daemon backend, or FS-UAE grab-mode calibration). Reset=relaunch: cold boot (~2 min) of a fresh work HDF copied from disk/amix-system.hdf.golden; no statefile. Launcher stations/amix/x11-runtime.sh."
+    }
+  },
+  "render": {
+    "signalOrder": 70,
+    "stationsManifestOrder": 68,
+    "stationsManifestPrelude": "\n# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop. Monochrome 640x512: AMIX's Amiga-chipset X server is depth 1, and colour needs an A2410 board FS-UAE cannot drive.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 75,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Amiga 3000 desktop box",
+    "goldenOrder": 68
+  },
+  "stationDir": "amix",
+  "lifecycle": "production",
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-30",
+    "reason": "Dark launch: the pointer is not 1:1 yet (docs/guests/amix.md), and the operator's call is open on monochrome-vs-A2410 colour. Promote by dropping this block once both are closed."
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54172,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "amiga-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 172
+  },
+  "guestDoc": "docs/guests/amix.md",
+  "credentialsRef": "guest/amix",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "amix",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":72",
+      "SH_PORT": "54172",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/amix/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/amix/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/amix/amix_cmd"
+    },
+    "bringUpOrder": 75,
+    "x11": {
+      "display": ":72",
+      "geometry": "640x512x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/amix/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "amix",
+        "--udp",
+        "54172",
+        "--x11",
+        "--x11-display",
+        ":72",
+        "--capture",
+        "x11",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/amix/x11-runtime.sh",
+        "--env-append-file",
+        "$T/amix/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/amix/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7A8B99",
+    "eraLabel": "1992 · Amiga UNIX (AMIX) 2.1"
+  },
+  "museum": {
+    "id": "amix",
+    "displayName": "Amiga UNIX (AMIX)",
+    "year": 1992,
+    "lineage": "Commodore Amiga / UNIX System V Release 4 (AT&T, ported by Commodore)",
+    "arch": "Motorola 68030 @ 25 MHz + 68882 FPU, MMU (Amiga 3000)",
+    "ramMB": 16,
+    "era": "1990s",
+    "accent": "#7A8B99",
+    "eraSoftware": [
+      "OPEN LOOK Window Manager (olwm)",
+      "the OPEN LOOK File Manager and Calculator",
+      "X11R4",
+      "GNU Emacs",
+      "the SVR4 sysadm utility"
+    ],
+    "periodBrowser": "none — 1992 predates the web reaching Unix desktops; AMIX shipped uucp, cnews and an SVR4 TCP/IP stack instead",
+    "iconicApps": [
+      "olwm",
+      "the OPEN LOOK Calculator",
+      "xterm",
+      "GNU Emacs"
+    ],
+    "blurb": "Commodore shipped a real AT&T System V Release 4 for the Amiga 3000 — and put OPEN LOOK on it, not Motif. Almost nobody bought an A3000UX, so almost nobody has seen this running: a Sun-styled Unix desktop booting off a 68030 that was supposed to be selling Workbench.",
+    "notes": "Live streamhost tile, HOST-NATIVE from birth: FS-UAE 3.2.35 on the host under a pinned Xvfb, x11 root capture + XTEST input, with its own copy of the binary (rule 6). Installed from real media — the AMIX 2.1 boot/root floppies and the 29-segment installation tape (amigaunix.com) restored through UAE's SCSI tape emulation onto a 2 GB RDB disk, exactly as a real A3000UX did it. The desktop is MONOCHROME 640x512 because AMIX's Amiga-chipset X server is depth 1; colour needs an A2410 (or Resolver/1600GX) board, and FS-UAE 3.2.35 compiles the A2410 code but never calls it. Distinct from amiga (A500/WB1.3), amigaos35 (A4000/OS 3.5) and aros. See docs/guests/amix.md."
+  },
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.2.35",
+    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (FSUAE_STATION=amix; upstream 3.2.35 + fsuae-native.d/fsuae-mousehack-rearm.patch)",
+    "driver": "A3000"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "host-only",
+    "note": "No networking. AMIX ships an SVR4 TCP/IP stack and FS-UAE emulates the A2065 Ethernet card the A3000UX used, so a retronet web-plane join is a real follow-up; it is deliberately out of scope for the first landing, and the install declined the hosts-file step."
+  },
+  "reset": {
+    "stationDir": "amix",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "OPEN — guest tracks XTEST motion RELATIVELY and with acceleration, not 1:1; see docs/guests/amix.md \"The pointer is not 1:1\". Keyboard is unaffected.",
+    "keyboard": "PASS",
+    "fixture": "AMIX 2.1 OPEN LOOK desktop on a 640x512 monochrome screen: an xterm titled 'Amiga UNIX 2.1' showing 'UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k' over a root shell, the OPEN LOOK Calculator, and xclock. Started from /etc/inittab (entry 'xw', run level 2) via xinit /etc/kh-xsession, so the desktop is up without a login. resetMode=relaunch with no statefile: reset is a COLD BOOT (~2 min to the desktop) of a fresh work HDF copied from disk/amix-system.hdf.golden. BAKE RULE: halt the guest with /sbin/shutdown -y -g0 -i0 before copying the golden — UFS has no host-repairable dirty flag, and a golden taken from a killed emulator makes every visitor's boot run a full fsck (~4 min instead of ~2). Keyboard PASS on the sandbox rig 2026-08-30 (XTEST). Mouse OPEN: motion reaches the guest but is relative and accelerated."
+  }
+}

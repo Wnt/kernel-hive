@@ -92,6 +92,24 @@
       "udp_port": 54151,
       "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/amigaos35/x11-runtime.sh."
     },
+    "amix": {
+      "dir": "/data/vms/streamhost/stations/amix",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54172,
+      "notes": "HOST-NATIVE: FS-UAE 3.2.35 (its OWN copy at assets/amix/fsuae-native, built with FSUAE_STATION=amix) runs an Amiga 3000 (68030+MMU, Kickstart 2.04 r37.175) on the host inside a pinned Xvfb sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST. No QEMU/QMP, no exec channel. POINTER IS OPEN: the daemon injects absolute XTEST motion (the x11test contract), but the GUEST tracks it relatively and with acceleration — the UAE mousehack that gives amigaos35 a 1:1 pointer is an AmigaOS trap, and AMIX drives the Amiga mouse hardware itself. Measured on the sandbox rig: host (160,120)->guest ~(82,92), host (480,380)->guest ~(331,345), history-dependent. The tile stays hidden until this is closed (an x11test-rel daemon backend, or FS-UAE grab-mode calibration). Reset=relaunch: cold boot (~2 min) of a fresh work HDF copied from disk/amix-system.hdf.golden; no statefile. Launcher stations/amix/x11-runtime.sh."
+    },
     "amstradcpc": {
       "dir": "/data/vms/streamhost/stations/amstradcpc",
       "qmp": "/data/vms/streamhost/stations/amstradcpc/qmp.sock",

@@ -466,5 +466,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // amix: the Amiga 3000 is a low desktop box, not a tower — the machine
+  // Commodore sold as the A3000UX workstation, with a mono monitor above it
+  // (Amiga UNIX's chipset X server is one bit deep).
+  amix: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 

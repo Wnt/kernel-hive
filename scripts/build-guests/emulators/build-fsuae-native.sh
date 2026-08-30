@@ -1,5 +1,6 @@
 #!/bin/bash
-# build-fsuae-native.sh — pinned FS-UAE for the host-native amigaos35 station.
+# build-fsuae-native.sh — pinned FS-UAE for the host-native FS-UAE stations
+# (amigaos35 by default; FSUAE_STATION=amix for the Amiga UNIX station).
 #
 # Fetches the upstream 3.2.35 release tarball (sha256-verified), applies the
 # lab's mousehack re-arm patch (fsuae-native.d/fsuae-mousehack-rearm.patch —
@@ -8,14 +9,19 @@
 # tree. The golden statefile + this binary + the device set are ONE
 # combination: rebuilding to a different FS-UAE version orphans the golden.
 #
-# Usage: build-fsuae-native.sh [--no-install]
+# Usage: [FSUAE_STATION=<station>] build-fsuae-native.sh [--no-install]
 set -euo pipefail
 
 VER=3.2.35
 SHA256=f3d3cb8d3df34b0b0125c45a5a3e187ff71050be5dc8455cc4505c0380269117
 URL="https://github.com/FrodeSolheim/fs-uae/releases/download/v${VER}/fs-uae-${VER}.tar.xz"
 ASSETS_ROOT="${FSUAE_ASSETS_ROOT:-/data/vms/streamhost/assets}"
-PREFIX="$ASSETS_ROOT/amigaos35/fsuae-native"
+# Which station's asset tree gets this binary. Each station keeps its OWN copy:
+# golden + binary + device set are ONE combination (AGENTS.md rule 6), so two
+# stations sharing one binary means a rebuild for one orphans the other's
+# golden. Defaults to amigaos35, the station this script was written for.
+FSUAE_STATION="${FSUAE_STATION:-amigaos35}"
+PREFIX="$ASSETS_ROOT/$FSUAE_STATION/fsuae-native"
 WORK="${WORK:-/data/vms/sandbox/BUILD-fsuae}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCH="$HERE/fsuae-native.d/fsuae-mousehack-rearm.patch"

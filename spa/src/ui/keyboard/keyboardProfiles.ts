@@ -368,6 +368,9 @@ export const OS_FAMILY: Record<string, Family> = {
   apple2: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga',
+  // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
+  // (the profile already carries Ctrl, which the Unix shell needs).
+  amix: 'amiga',
   // The ZX Spectrum needs a profile of its own and could not borrow one: its
   // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
   // shifts do different jobs from a PC's.
