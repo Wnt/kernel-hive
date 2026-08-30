@@ -1,6 +1,9 @@
 # Continuous deploy — push-to-main converges the box
 
-**Status: PROPOSAL. Nothing here is built. No deployment behaviour changed.**
+**Status: APPROVED, being built.** Stage 1 (§10.1) is implemented on branch
+`cd-build`; stage 2 onwards is still design. One approved change against the
+original draft: the loop is **push-triggered, not polled** — §1.1 supersedes
+the polling this document first proposed.
 
 The operator's ask, verbatim intent: *push to main ⇒ the live system converges,
 automatically, safely, with many concurrent independent sessions and no
@@ -42,14 +45,17 @@ one station.** Everything below re-cuts the system along station lines and moves
 ```
                  git push origin main  (any session, any time, no clearance)
                           │
-                          ▼
+                          ▼   GitHub-side trigger (§1.1): a repo webhook, plus a
+                          │   post-CI Actions ping — a signed HINT, never a
+                          ▼   command. Slow timer and `poke` are the backstops.
    ┌──────────────────────────────────────────────────────────────┐
    │  labhost: kh-reconciler  (one root systemd service,          │
    │  its own private clone /data/kh-reconciler/repo — the shared │
    │  /data/kernel-hive is no longer a deploy source)             │
    │                                                              │
-   │  loop (poll origin/main, ~30 s):                             │
-   │    1. fetch; if HEAD moved: build closures                   │
+   │  on wakeup (webhook / Actions ping / slow timer / `poke`) —  │
+   │  never on a sha the wakeup supplied:                         │
+   │    1. fetch origin/main ITSELF; if HEAD moved: build closures│
    │    2. for each RELEASE UNIT: desired closure hash vs         │
    │       applied stamp                                          │
    │    3. unit dirty & not leased & disruption window open       │
@@ -121,11 +127,146 @@ convergence failures (N writers, one target, order-sensitive installs). The
 minimal machine that makes "push = deploy" literally true is a loop that owns
 the writes, so sessions stop writing to live paths at all and the whole class
 of "who else is mid-flight?" questions disappears. What we do **not** import:
-no Kubernetes, no container images, no controller hierarchy, no webhook
-infrastructure (a 30 s poll on a LAN box is free and has no inbound surface on
-a public-gallery host). The implementation is one Python daemon + content-
+no Kubernetes, no container images, no controller hierarchy. (This draft also
+declined a webhook, on the grounds that a 30 s poll is free and adds no inbound
+surface. The operator overruled that: polling is not the mechanism — a push must
+converge the box now. §1.1 replaces it, and it does carry the inbound surface
+this paragraph was right to be wary of, which is precisely why that endpoint is
+a hint receiver and nothing else.) The implementation is one Python daemon + content-
 addressed directories + symlink flips + systemd + the existing `kh-claim` —
 every primitive already exists in this lab.
+
+---
+
+## 1.1 The trigger — push-driven, not polled
+
+**Operator ruling: a push must converge the box immediately; polling is not the
+mechanism.** This supersedes the ~30 s poll of the first draft.
+
+### Why the trigger has to be GitHub-side
+
+Pushes reach `main` from three places: the `osgallery-dev` host (most of them),
+remote Claude cloud sessions, and the operator's workstation. A client-side
+`post-push` hook covers exactly the machine it is installed on and — worse —
+fails *silently* on the other two: a trigger with a per-machine install step is
+a trigger that is off for whoever set their environment up last, and its being
+off looks exactly like nothing having been pushed. GitHub sees all three
+identically, because all three end at the same `refs/heads/main` update. So the
+trigger lives where a push is a push.
+
+### Two mechanisms, each with a distinct job
+
+Both are used, and they are not redundant — they answer different questions.
+
+| | **Repo webhook** | **Actions workflow on push to `main`** |
+|---|---|---|
+| role | **the trigger** | **audit trail + delivery backstop** |
+| latency | ~1 s from the push | after CI, minutes |
+| cost | none | Actions minutes |
+| fires | on the ref update, always | on the ref update, once scheduled |
+| buys us | immediate convergence | a visible per-commit record that a deploy was requested, and a second hint if the first delivery was dropped |
+
+The webhook is the mechanism. The Actions job exists because **a missed webhook
+delivery is missed silently** — the endpoint restarting during a deploy of
+itself is the ordinary case, not the exotic one — and because "a deploy was
+requested for `<sha>` at `<time>`" is exactly the forensic record the
+2026-08-30 wave did not have. It is scheduled *after* the quality jobs, so its
+ping also carries "CI was green for this commit"; the reconciler journals that
+and does **not** gate on it. A red CI run still converges: the box's own
+acceptance gate (§6) is what decides safety, and making GitHub CI load-bearing
+for exhibit availability would import a new outage source for no safety gain.
+
+Both call the **same endpoint** with the **same signature scheme**, so there is
+exactly one verification path to reason about.
+
+### The endpoint
+
+`POST https://kernelhive.madekivi.fi/kh/deploy-hint`, served by the existing
+HTTPS plane. Its complete job is *validate, then bump a timestamp*. It runs no
+git operation, spawns no process, reads no repository, and holds no privilege
+that could deploy anything. The reconciler (root) watches the wakeup file with
+inotify; the endpoint (unprivileged, public) can only touch it. That split is
+the security design: **the internet-facing half cannot deploy, and the half
+that can deploy is not internet-facing.**
+
+Checks in order, cheapest and most-rejecting first — nothing does work before
+the signature verifies:
+
+1. method, path, and a `Content-Length` cap; an over-cap body is rejected
+   outright (the Actions ping is tiny and covers the rare over-cap push
+   payload);
+2. rate limit — a token bucket, counted *before* the HMAC, so signature
+   verification cannot itself become the flood;
+3. `X-Hub-Signature-256`: HMAC-SHA256 over the **raw body**, compared with
+   `hmac.compare_digest`. Two keys are configured, one per mechanism, and **the
+   source is identified by which key verified, never by a field in the
+   payload** — so "which trigger fired", the very signal §1.1's observability
+   rests on, cannot be forged by whoever can reach the URL. Failure → `401`,
+   no detail, and no key material in any log;
+4. replay: `X-GitHub-Delivery` in a bounded, TTL'd seen-set; the Actions ping
+   additionally carries a timestamp checked against a short window. A replay is
+   *also* harmless by construction (below) — the dedupe is defence in depth,
+   not the load-bearing part;
+5. ref filter: `refs/heads/main` only. The `ref` field is parsed **solely in
+   order to drop** everything else; an unparseable body is dropped, never
+   guessed at;
+6. bump the wakeup file's mtime, append one bounded journal line, return `202`.
+
+### The trigger is a HINT, never an instruction
+
+This is the invariant that makes a public endpoint acceptable at all:
+
+> **The endpoint cannot express *what* to deploy. It can only say "look
+> again".**
+
+On wakeup the reconciler fetches `origin/main` in its own clone and converges to
+whatever it finds — the same thing it would have done on the slow timer. It
+never takes a sha, a ref, a station name or a path from the payload. Where a
+payload sha is present it is used **for the journal only**, and only after
+`git merge-base --is-ancestor <hint-sha> <fetched origin/main>` confirms it is
+in the history actually fetched; a hint sha that is not an ancestor is recorded
+as an anomaly and changes nothing about what is deployed. The worst a forged,
+replayed or hostile signed request can therefore achieve is **one extra fetch of
+`origin/main`**, and the rate limiter bounds even that.
+
+**Authorisation is write access to the repo, and nothing else.** Anyone who can
+push to `main` can cause a deploy, because the push *is* the deploy request.
+No per-user auth, no allowlist, no identity plumbed to the box — both mechanisms
+give exactly this for free, and a second authorisation layer here would be one
+more list to maintain and to get wrong. What the box authenticates is *"this
+came from GitHub, for this repo"*, not *"who pushed"*; git already records who
+pushed, and the reconciler journals the commit it converged to.
+
+### The slow periodic reconcile stays — as a liveness backstop
+
+Not as the mechanism. Deliveries do get missed: an endpoint restart, a network
+blip, a GitHub incident. Without a floor, a missed delivery means the box
+quietly stops converging *with nothing reporting it* — the exact shape of every
+indicator in §0 that was true and meant nothing. So `kh-reconciler` also wakes
+on a long interval (default 30 min), and:
+
+- every convergence records **what triggered it**: `webhook` / `actions` /
+  `timer` / `manual`;
+- `kh-reconciler status`, `here.sh` and `/fleet` show the last convergence, its
+  trigger, and **the age of the last webhook-sourced one**;
+- so **"we have been running on the backstop" is a visible state.** Convergences
+  arriving only as `timer` or `actions` while commits are landing means the
+  webhook is broken, and it says so — instead of looking healthy at a coarser
+  latency, which is how a dead trigger would otherwise hide for weeks.
+
+Manual trigger for operators and agents: `ssh lab 'kh-reconciler poke'`, and
+`kh-reconciler apply <station> --now` for the impatient single-unit case. Both
+go through the same wakeup path, so the manual case is not a second code path.
+
+### Public-repo hygiene (rule 1)
+
+The workflow file is world-readable. It may contain the gallery domain
+`kernelhive.madekivi.fi` — the one domain committed on purpose — the public
+endpoint path, and `${{ secrets.… }}` references. It must contain no internal
+hostname, no IP, no labhost path, no station identity and no secret value. The
+webhook secret lives in the repo's webhook configuration, the Actions key in
+repo secrets; the box keeps its copies outside the repo, beside the other
+gitignored local values.
 
 ---
 
@@ -630,15 +771,24 @@ pinned without blocking anyone's push.
 Build order is by pain-per-effort; stages 1–2 are worth doing this week even
 if nothing else ever ships.
 
-1. **Un-wedge the gate** (hours): split the welded drift stage (§2.1) —
-   keep byte-parity blocking, remove `compare_live_labctl` from `check` and
-   keep it callable as `stations-registry.py drift` (advisory, like
-   `facts-live`). Fix range computation to merge-base-with-current-main
-   (§2.1a). Scope the remaining box-state check to WARNING-only for
-   non-main branches. Deletes the `SKIP_GATE=1` trap. Reversible: one
-   revert. **This — not the reconciler — is the first thing to build**: it
-   alone unblocks concurrent independent sessions and is a precondition
-   for everything else here.
+1. **Un-wedge the gate** (hours) — **DONE, branch `cd-build`.** The welded
+   drift stage is split (§2.1): byte-parity stays blocking and unchanged;
+   `compare_live_labctl` is out of `check` and lives in
+   `scripts/stations_registry/drift.py` as `stations-registry.py drift`,
+   shaped like `facts-live` (absent live roster → loud SKIP, exit 0; only a
+   readable box that disagrees exits 1). Range computation now fetches
+   `origin/main` into a private ref and measures from
+   `merge-base(current main, tip)` (§2.1a), so a rebased or merged branch is
+   no longer billed for another wave's lint.
+   Deliberately **not** done here: the box-state stage is already per-row
+   scoped (a row is blocking only when the push touches that row's repo-side
+   file, and only when live matches neither the box checkout nor this tree),
+   so there was nothing left for a branch-name rule to add; and `SKIP_GATE=1`
+   stays until stage 5 removes the last check it exists to skip — deleting the
+   escape hatch while an unsatisfiable check remains is how the hatch gets
+   re-invented in a shell alias. **This — not the reconciler — was the first
+   thing to build**: it alone unblocks concurrent independent sessions and is
+   a precondition for everything else here.
 2. **`station-accept.sh`** (a day): rule 9 as a command. Immediately useful
    to every human cutover; becomes the loop's gate later. No behaviour
    change anywhere.
@@ -654,7 +804,10 @@ if nothing else ever ships.
    the `current/` layout in waves (the recapture-is-cheap ruling makes the
    per-station cutover itself cheap); a station not yet migrated keeps the
    old path, and the pair table shrinks as units migrate.
-5. **Close the loop for opt-in units**: `rollout: auto` on a canary handful +
+5. **The push trigger + close the loop for opt-in units** (§1.1): the
+   `/kh/deploy-hint` endpoint, the repo webhook, the post-CI Actions ping, the
+   30 min backstop tick and `kh-reconciler poke` — with the trigger of every
+   convergence recorded and surfaced. Then `rollout: auto` on a canary handful +
    the `serve-code`, `serve-manifests` and `host-tools` units (docs/scripts
    auto-deploy is pure win, and the serve surfaces are the right first
    canaries: a mistake there costs a page reload, not an exhibit — per the
@@ -686,7 +839,10 @@ stands on, and it pays off before any automation exists.
 
 Once the corresponding stage lands:
 
-- `compare_live_labctl` in the push path, and `SKIP_GATE=1` (stage 1).
+- `compare_live_labctl` in the push path (stage 1, done — it is now
+  `stations-registry.py drift`). `SKIP_GATE=1` waits for stage 5: the
+  escape hatch may only be removed once nothing unsatisfiable is left for it
+  to skip, or it comes back as a shell alias nobody can see.
 - The pre-push box-state ssh probe entirely (stage 5) — drift is the loop's
   report.
 - `box-deploy.sh --apply` global sync + install; `box-sync-push.sh`; the
@@ -736,7 +892,20 @@ Once the corresponding stage lands:
   loop-heartbeat line; a stale heartbeat is loud. Manual fallback is
   `kh-reconciler apply` run by hand — the transactional path works without
   the loop.
-- **Poll-based loop races a multi-commit story.** Two pushes seconds apart:
+- **The trigger dies quietly and the box looks fine.** A push-driven system
+  fails in a way a polled one cannot: deliveries stop, the backstop keeps
+  converging every 30 min, and everything *looks* healthy at a coarser
+  latency for as long as nobody times a deploy with a stopwatch. This is the
+  §0 pattern — a true indicator that means nothing — so it is answered the way
+  §0 says: the trigger of every convergence is recorded and the age of the
+  last **webhook-sourced** one is on the status surface (§1.1). Running on
+  the backstop is a visible state, not an invisible one.
+- **A public inbound endpoint on the gallery host.** Mitigated structurally
+  rather than by hardening: the endpoint holds no privilege that can deploy —
+  its only side effect is one file's mtime — and it cannot name what to
+  deploy, so a full compromise of it buys an attacker a rate-limited extra
+  `git fetch` (§1.1). The half that can deploy has no listening socket.
+- **Trigger-driven loop races a multi-commit story.** Two pushes seconds apart:
   the loop always converges to *latest* HEAD per unit — intermediate states
   may never be materialized. This is correct (desired state is a point, not
   a path) but must be documented, because today's habits assume each push is
@@ -750,7 +919,8 @@ Once the corresponding stage lands:
 - **Disk**: the object store, dominated by goldens — ~120–250 GB steady-state
   (§5), on a pool with 451 GB free. Closures and binaries are noise (hardlinks
   + tens of MB per commit actually deployed).
-- **CPU**: idle loop ≈ zero (a fetch + hash compare every 30 s); one niced
+- **CPU**: idle loop ≈ zero (it sleeps on an inotify wakeup, and fetches +
+  hash-compares once per push plus once per 30 min backstop tick); one niced
   `--locked` release build per streamhost-touching push; acceptance ≈ two
   screendumps + one sprite match per cutover. All bounded by the
   one-cutover-at-a-time budget so the gallery never pays for a deploy.
@@ -767,6 +937,8 @@ Once the corresponding stage lands:
 | `scripts/host/kh-closure` | commit → per-unit closure hash + manifest |
 | `scripts/host/kh-store` | object store: add/gc/verify/materialize |
 | `scripts/host/station-accept.sh` | rule 9 as a command |
+| `scripts/serve/deploy_hint.py` | the public hint endpoint: verify, bump a timestamp, nothing else (§1.1) |
+| `.github/workflows/deploy-hint.yml` | post-CI Actions ping to the same endpoint (§1.1) |
 | `scripts/dev/kh-alloc` | git-arbited durable allocations |
 | `registry/goldens/<station>.json` | golden refs (committed) |
 | `registry/allocations.json`, `qemu-patches/series` | durable namespaces |
@@ -776,7 +948,8 @@ Once the corresponding stage lands:
 |---|---|
 | `scripts/stations_registry/cli.py` | drop `compare_live_labctl` from `check`; add `drift`; add closure/golden-combination validation |
 | `scripts/lib/checkpoint-guard.sh` | `publish` step → store + outbox ref |
-| `.claude/hooks/pre-push-gate.sh` | commit-properties only |
+| `.claude/hooks/pre-push-gate.sh` | commit-properties only; range measured from the merge-base with a freshly fetched `main` |
+| `scripts/stations_registry/drift.py` | the live labctl comparison, out of the push path (stage 1, landed) |
 | `scripts/serve-https-spa.sh` | lose `publish_manifests` (loop-owned); `deploy` keeps N asset generations |
 | reconciler config | deny-list of live state-of-record paths (`auth-state.json` + rotations, `darklaunch.d/`) — never written, never GC'd |
 | `scripts/dev/here.sh` | show loop heartbeat + per-unit states |

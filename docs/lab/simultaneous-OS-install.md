@@ -70,10 +70,14 @@ Two sessions collide on exactly the things AGENTS.md lists. This pair hit:
   land renumbers (validate tells you exactly which). Same for the
   hand-maintained SPA lists (`assembliesByTile.ts`, `machineIdentity.ts`) —
   append at the end, in lineup order.
-- `make station-registry-check` compares against the box's LIVE labctl roster:
-  it is red for you while the other session's station dir exists on the box
-  and its row is not in your tree, and red for them until your dir exists.
-  Merge main + `labctl gen` on the box; do not "fix" the check.
+- `make station-registry-check` **no longer** compares against the box's live
+  labctl roster (it used to, and during a two-station bring-up it was red for
+  you while the other session's station dir existed on the box and its row was
+  not in your tree, and red for them until your dir existed — a gate neither
+  of you could satisfy). That comparison is now
+  `python3 scripts/stations-registry.py drift`: a report, run when you want it,
+  that blocks nobody's push. Merge main + `labctl gen` on the box when you want
+  it quiet; never "fix" a declaration to match live.
 - Generated files conflict on every merge (`stations-manifest.sh`,
   `build-all.sh`, `archetypeRegistry.ts`, `posterIndex.ts`): take either side
   and `make station-registry-generate`; never hand-merge them.
