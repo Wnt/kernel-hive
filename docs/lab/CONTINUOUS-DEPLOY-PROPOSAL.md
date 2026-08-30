@@ -975,14 +975,34 @@ if nothing else ever ships.
    (`seriald-sailfishos.service`), not just a prefix. Stage 4 must not write
    anything while that list is non-empty, so it is a command rather than a
    comment.
-4. **Transactional per-station apply** (the core, ~a week): closure
-   store + `releases/` + `current` symlink + journal + rollback +
-   acceptance, exposed as `kh-reconciler apply <station>` — still
-   *session-initiated*. This alone ends I.1/I.3/I.4 even before any
-   automation: sessions stop hand-ordering installs. Migrate stations onto
-   the `current/` layout in waves (the recapture-is-cheap ruling makes the
-   per-station cutover itself cheap); a station not yet migrated keeps the
-   old path, and the pair table shrinks as units migrate.
+4. **Transactional per-station apply** (the core) — **MECHANISM DONE, branch
+   `cd-build`; NOT installed and NOT armed.** `kh_reconciler/store.py`
+   (content-addressed objects, hardlinked into releases, refuse-by-default GC)
+   and `kh_reconciler/apply.py` (materialize beside → one `rename(2)` of a
+   symlink → stamp → journal → rollback), exposed as
+   `kh-reconciler apply|rollback|journal --unit U --root R`.
+   **Three refusals, in code rather than in anyone's memory:** a root anywhere
+   under the live serving tree is refused with *no override flag* (a flag would
+   be found and used by someone who had not read the paragraph explaining it);
+   a member that is live state of record raises; and `apply` refuses outright
+   unless every deployed row is claimed by a unit — the stage 3 precondition,
+   enforced rather than remembered, because an unreadable precondition is not a
+   satisfied one either.
+   **Adoption is not a cutover**, a distinction the first real run forced. With
+   no previous closure nothing is being *changed* for the guest — members are
+   placed under `current/` for the first time, which is this stage's migration
+   step. Classifying an adoption by its full member list made every station with
+   a launcher `recapture-required` forever, so no station could ever be migrated
+   onto the layout that makes cutovers safe. Conflating the two made the
+   mechanism unable to bootstrap itself.
+   Proven end-to-end in a sandbox: adopt → cutover (`restart-required` from 12
+   changed members) → rollback → journal, plus 26 tests. The sharpest is
+   **rollback completeness**: reverting a backend without also restoring its
+   cursor scale would leave a station streaming with a silently wrong pointer
+   gain and nothing failing, and the test asserts the *whole* set comes back.
+   Still to come before this may run against the fleet: acceptance wired into
+   the flip (stage 2's `station-accept.sh` as the gate), the disruption windows
+   of §9, and the migration of real stations onto the layout.
 5. **The push trigger + close the loop for opt-in units** (§1.1): the
    `/kh/deploy-hint` endpoint, the repo webhook, the post-CI Actions ping, the
    30 min backstop tick and `kh-reconciler poke` — with the trigger of every
@@ -1115,6 +1135,8 @@ Once the corresponding stage lands:
 | `scripts/host/kh-reconciler` (+ `kh_reconciler/`) | the loop: units/plan/status/denylist/rows (stage 3, landed read-only); apply/journal in stage 4 |
 | `scripts/host/kh_reconciler/closure.py` | commit → per-unit closure hash (absence-sensitive; reads git objects, never the worktree) |
 | `scripts/host/kh_reconciler/denylist.py` | state of record, enforced by raising rather than remembered |
+| `scripts/host/kh_reconciler/store.py` | content-addressed objects + the live-root refusal (no override flag) |
+| `scripts/host/kh_reconciler/apply.py` | materialize → one symlink flip → stamp → journal → complete rollback |
 | `scripts/host/kh-store` | object store: add/gc/verify/materialize |
 | `scripts/dev/station-accept.sh` | rule 9 as a command (stage 2, landed). **Not `scripts/host/`**: the acceptance boundary starts in a browser, and the browser lives on CT950 |
 | `scripts/e2e/station-accept-probe.mjs` | the browser leg: session churn, one abandoned, motion in a named rect |
