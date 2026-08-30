@@ -251,6 +251,34 @@ back, because a write to unbacked guest memory is silently discarded and the
 daemon restates the same position before every button edge, so a vanished write
 to an already-correct pointer would otherwise read back equal and look verified.
 
+### Why the `nudge-units` trap cannot reach this station
+
+`kh-ramabs`'s other profiles publish by injecting a small relative event, and
+pre-compensate the write for it: the guest is first made to hold a
+**deliberately wrong** value, and the injected nudge has to carry it the rest of
+the way. If `nudge-units` is wrong for that guest, the last *draw* can happen at
+an intermediate value while the coordinate still converges — so the **read-back
+agrees and `STAT` looks healthy while the sprite is 1–2 px off**. BeOS measured
+exactly that at rhapsody's `nudge-units=2` (`reissued=24`), and it went away at
+`nudge-units=1`.
+
+**This station is structurally immune, and the reason is worth stating precisely
+because it is not "because it is a Mac".** `publish=crsrnew` writes the *exact*
+target and injects no motion at all, so no intermediate value is ever written
+and there is no guest-side scaling to get wrong; `nudge-units`/`nudge-px` are
+not merely unused on this path but **unreachable** (the branch returns before
+the nudge code, and `realize` only validates them for `publish=nudge`). The
+immunity comes from **having no pre-compensation** — any future profile that
+reintroduces pre-compensation reintroduces the failure, whatever guest it is on.
+
+Consistent with that, `reissued` is **0** on every run here, against BeOS's 24.
+
+But do not read that as "the read-back was sufficient". The general lesson holds
+everywhere: **a converged read-back does not prove the drawn sprite is at the
+target.** It is only ever a claim about a number in RAM. That is exactly why the
+proof below carries a third observer that looks at pixels, and why it would have
+caught the BeOS failure on this station too.
+
 Proven on the framebuffer twice, at the same targets: once with the writes made
 through the QEMU gdb stub (proving the mechanism) and once with every target
 commanded over `ramabs/1` into the real device (proving the thing that ships).
