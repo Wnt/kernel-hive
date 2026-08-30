@@ -401,6 +401,27 @@ exact-match, `frame-compare.py`, streamhost `STAT`):
    load-bearing;
 7. hold a `WakeLease` for the whole run (existing tool; never hand-rolled).
 
+**The acceptance signal is inter-frame change, never stream-surface
+properties.** There is prior art on this box for driving the shipping path
+from CT950 — `scripts/e2e/idle-wake-browser-probe.mjs` and
+`scripts/e2e/paused-sink-resume-probe.mjs` drive the real SPA in a real
+browser, and they already encode the rule this section needs: `videoWidth`,
+`readyState` and non-black-percentage **all pass on a stream that has
+stopped** — a paused element showing a stale frame satisfies every one of
+them. Motion is the only honest signal. A gate built on stream-surface
+properties would happily certify a *frozen* stream — precisely the state
+rhapsody's second session would have presented. This is now the *third*
+independent instance of the same class, at a third layer: STAT healthy while
+the drawn cursor sat 1–2 px off (I.11); input-router counters frozen at the
+first session's totals while 40 sessions failed to negotiate (§2); and a
+video element that is sized, ready and non-black while showing a stopped
+stream. Three indicators that are true and mean nothing. So the probe treats
+`videoWidth`/`readyState`/non-black as necessary-but-insufficient
+*preconditions*, and the evidence is successive-frame comparison: the
+commanded interaction must produce pixel change in the expected place, in
+bounded time. `station-accept.sh`'s browser-side leg starts from those two
+existing probes, not a new harness — they already traverse the §6 boundary.
+
 **The gate must bound its own observation rate.** Observation perturbs the
 thing observed: screendumping a station every second is *itself* enough to
 stop a session negotiating — identified during today's wave at the cost of two
@@ -409,7 +430,13 @@ manufacture the exact failure it tests for, then "correctly" roll back a
 healthy deploy. So the sampling interval is an explicit, per-station
 `acceptance:` parameter with a documented failure mode on both sides — too
 sparse misses the defect, too dense *becomes* the defect — and it defaults
-sparse. It is a tuning parameter, not a free measurement.
+sparse. It is a tuning parameter, not a free measurement — and note the two
+bounds are in tension by construction: the motion requirement above sets a
+*floor* (enough samples to detect inter-frame change from the commanded
+interaction) while the perturbation hazard sets a *ceiling* (dense sampling
+can stop the very negotiation under test). The document deliberately does not
+pick a number; it requires that both bounds exist, per station, and that the
+spec name them.
 
 **Every acceptance pass runs a simultaneous control station.** Because the
 gate can in principle cause what it detects, `failed(reason)` is only
