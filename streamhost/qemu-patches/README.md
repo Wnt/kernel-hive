@@ -1,3 +1,30 @@
+# Patch numbers are ALLOCATED, not taken
+
+Claim your number from the table below before you write a patch. Do **not** take
+"the next free one" by listing the directory — that is check-then-create, and it
+has already failed once: during the 2026-08-30 absolute-pointer wave `rhapsody`
+and `hpuxvue` independently wrote `0007`, and one of them had to be renumbered
+after the fact along with every reference to it (README, guest doc, and the
+`launcherParity` reason in the station registry). "It is free" is not "it is
+mine" — the same rule as AGENTS.md rule 7, applied to a filename.
+
+| # | patch | station / purpose |
+|---|---|---|
+| 0001 | `dbus-display-fast-poll` | fleet-wide display capture |
+| 0002 | `sphinx-serial-doc-build` | build fix |
+| 0003 | `gallery-hid-device` | `gallery-hid` pointer/keyboard |
+| 0004 | `cirrus-blt-rop1-fill` | Cirrus fix |
+| 0005 | `cirrus-isa-vmstate-descend-substruct` | Cirrus fix |
+| 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
+| 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
+| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
+| 0009 | *(allocated)* | `macos753` |
+| 0010 | *(allocated)* | `beos` |
+
+Next free: **0011**. Add your row in the same commit that adds the patch, so the
+number and the claim land together rather than the claim living in someone's
+chat scrollback.
+
 ## Patch vs. fork — which one to edit
 
 The `.patch` files in this directory are **the maintained source**. The
