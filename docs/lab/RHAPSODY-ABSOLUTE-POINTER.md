@@ -225,6 +225,76 @@ Two things the shipped run showed that the rig could not:
   the daemon does not stall on it, and the browser streams targets continuously,
   so the next one lands. Expect exactly one such refusal per connection.
 
+## What the first proof could not see, and the two defects that hid there
+
+**The rule-9 sweep above proved the mechanism, not the shipped path.** It
+commanded every target over `ramabs/1` with its own socket client and
+**`streamhost` was not running** — so `ram_abs.rs`, the daemon sink that
+actually ships, sat entirely outside the proof boundary, and so did every
+session boundary. Both proof runs used ONE session. That is invisible by
+construction: the parts under test were the well-tested parts.
+
+Re-proved at the shipping boundary — real daemon, real browser sessions over
+WebTransport, sequential, one killed mid-stream with no clean close — two real
+defects appeared immediately, neither of which any number of socket-client
+repetitions could have found.
+
+**1. Publishes accumulated in flight.** `kh_movea` issued on every target. The
+daemon streams targets at pointer rates, and each nudge-publish injects a
+relative event the guest consumes on its own schedule — so a second publish
+issued before the first was consumed left BOTH deltas to land on top of the most
+recent write, the read-back then disagreed and issued more. It ran away:
+`gave up publishing 560,330 after 6 tries (guest holds 560,302)`, the first time
+a browser drove it instead of one target at a time. Fixed by allowing **one
+publish in flight**: a newer target supersedes an unconfirmed one (latest wins),
+and `kh_tick` issues it once the wire is clear — and holds any deferred button
+edge until the pointer is at the NEWEST target, not merely at some target.
+
+**2. Verification could resolve against a stopped guest.** Stations launch
+`-loadvm golden -S` and idle-auto-pause, so a stopped guest is a resting state,
+not a corner. `kh_issue`'s paused branch writes the coordinate (correctly — it
+is durable across the resume), but the tick would then read that write straight
+back and call it convergence, and during the probe it would call it a **VERIFIED
+address** — the same quiescence hole the read-back closes everywhere else, let
+back in through the one path where the guest cannot act. Fixed by resolving
+nothing while `!runstate_is_running()`: wait, without spending a try.
+
+Neither defect was the reason the live cutover was rolled back. That was
+[`STREAM-DEBUGGING.md`](STREAM-DEBUGGING.md) — an observation script holding the
+station's QMP socket, which stalls the idle pauser and stops every session after
+the first from negotiating, on **any** backend including `dbus-rel`, which builds
+no sink at all. The live isolation compared this station *with* that observer
+against a control *without* it.
+
+## The standard this leaves behind
+
+- **A pointer proof must cross the boundary that ships.** Browser → daemon →
+  sink → device → guest, multiple sequential sessions, at least one abandoned
+  mid-stream. A socket client cannot see a session-lifetime defect at any
+  repetition count.
+- **Liveness is motion.** `videoWidth`, `readyState` and non-black percentage
+  all pass on a stream that has stopped. Require media still arriving in a later
+  window AND the guest's own coordinate landing where it was commanded.
+- **Observe sparsely and never hold the monitor.** Connect, read four bytes,
+  close. A 1 Hz screendump poller manufactures the failure it is testing for.
+
+Re-proof on the shipped path, five sequential browser sessions, the third
+SIGKILLed mid-stream with no WebTransport close:
+
+```
+session 1  target 300,300  negotiated, AU still flowing in window 2  guest coordinate 300,300
+session 2  target 700,500  negotiated, AU still flowing              guest coordinate 700,500
+session 3  target 150,620  ABANDONED mid-stream (SIGKILL)            guest coordinate 150,620
+session 4  target 900,200  negotiated, AU still flowing              guest coordinate 900,200
+session 5  target 500,400  negotiated, AU still flowing              guest coordinate 500,400
+device: VERIFIED once, 0 give-ups, 0 re-issues, dropped=0 overflow=0 backend-down=0
+```
+
+and the framebuffer, sampled sparsely around one browser-driven move:
+`226 pixels changed`, `cursor-locate check: OK cursor=900,200 want=900,200
+err=+0,+0` at `--tol 1`, hotspot `(1,1)` — the same arrow hotspot measured
+throughout.
+
 ## Two traps worth keeping
 
 - **`cursor-locate.py` rejects any placement that falls outside the frame**, so

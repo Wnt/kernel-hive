@@ -424,3 +424,53 @@ report it.
   then restarts it mid-boot, compounding the failure.
 - A station is per-station canaried: `--canary <tile>`, verify, then `--promote`.
   `--rollback <tile>` swaps back atomically.
+
+## An observer holding QMP stops sessions negotiating (2026-08-30)
+
+**If a station streams for the first visitor and then every later session times
+out negotiating, check what else is talking to its QMP socket before you touch
+the station.** This cost a cutover a rollback and very nearly condemned an
+innocent component.
+
+QEMU's QMP chardev serves **one monitor at a time**. Anything that connects and
+holds it — an observation script, a screendump poller, an interactive session
+somebody left open — makes every *other* QMP client wait. `idle.rs::qmp_execute`
+gives up after 2 s (that timeout exists precisely "so a busy socket ... fails
+fast instead of wedging the pauser") and returns `EAGAIN`, which surfaces as:
+
+```
+[idle] resume on connect failed (Resource temporarily unavailable (os error 11)); reconciler will retry
+```
+
+The damage is not the failed resume. `IdlePauser::session_started()` holds the
+pauser's `st` mutex **across** that 2 s blocking call, and `handle_session`
+awaits `session_started()` **before** any priming or keyframe work. So sessions
+queue behind it: the first one through is fine, everything after it blows the
+SPA's negotiation timeout. The symptom is `SESSION_ACCEPTED` with nothing after
+it, and input-router counters **frozen at exactly the first session's totals** —
+which reads exactly like a sink holding a claim, and is not.
+
+Reproduced deliberately on a sandbox clone, driving real browser sessions
+through a real daemon, with a second QMP client screendumping at 1 Hz:
+
+| backend | QMP holder | result |
+|---|---|---|
+| `ramabs` | none | 5/5 sessions negotiate, counters advance |
+| `ramabs` | 1 Hz | session 1 OK (degraded), sessions 2-4 time out |
+| `dbus-rel` | none | 3/3 negotiate |
+| `dbus-rel` | 1 Hz | sessions 1-2 OK (degraded), 3-4 time out |
+
+`dbus-rel` builds **no InputRouter at all**, so no sink exists on that row: the
+variable that decides the outcome is the observer, not the backend.
+
+**Two rules follow.**
+
+1. **Never diagnose a streaming complaint with an observer attached**, and never
+   compare a suspect configuration measured *with* an observer against a control
+   measured *without* one. That is the mistake that pointed a whole wave at the
+   wrong component. Sample sparsely, and connect/read/close rather than holding
+   the monitor open.
+2. **This is a fleet-wide fragility, not a station's bug.** One well-behaved QMP
+   client can stall every new session on any of the 61 stations. Recorded here
+   deliberately un-fixed: it belongs to `idle.rs` and deserves its own change
+   with its own proof, not a rider on a station cutover.
