@@ -41,16 +41,16 @@
         },
         "kbd": "",
         "kbd_reset": "Escape",
-        "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys — unverified via UI",
+        "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys \u2014 unverified via UI",
         "audio_trigger": null,
         "validated": false,
-        "note": "PS/2 relative pointer (dbus-rel), Mouse-Speed pref at slowest = dead-linear 0.478 px/unit -> cursor_scale 2.09; the daemon caps each PS/2 send at one packet (SH_REL_MAX_STEP) so a fast drag can't desync the guest. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade)."
+        "note": "ABSOLUTE pointer with no absolute device and no control loop: the kh-ramabs control object writes the commanded pixel into the guest's own pointer coordinate (guest-physical 0x0050fdac, Point{int16 x, int16 y}) and injects one 2-unit PS/2 nudge so the window server republishes it, then reads the coordinate back and re-issues on the ~5% of nudges that publish 0 px. The address is derived against ONE golden; the object verifies it at connect and refuses to write at all if it cannot. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade + kh-ramabs)."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/rhapsody",
       "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
+      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock: the commanded pixel is written into the guest's own pointer coordinate and published with one small PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. loadvm golden."
     }
   },
   "render": {
@@ -70,7 +70,7 @@
     "goldenOrder": 63,
     "actionMapOrder": 37,
     "bringUpGroup": 0,
-    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip (DEC 21143) bridged onto\n#   the retronet, PS/2 mouse (dbus-rel). loadvm golden -S (the daemon resumes);\n#   the checkpoint restores with OmniWeb 3.0 open on the corpus web.\n",
+    "stationsManifestPrelude": "\n# rhapsody (slot 146) \u2014 Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,\n#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip\n#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the\n#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the\n#   corpus web.\n#   POINTER: absolute with no absolute device and no control loop \u2014 `-device\n#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate\n#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is\n#   never in the path and the device set is unchanged (no golden recapture). The\n#   address is bound to the golden; kh-ramabs verifies it at connect and refuses\n#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007\n#   INSTALLED BEFORE this launcher.\n",
     "bindingPrelude": "",
     "bindingComment": "NeXTSTEP -> Rhapsody -> Mac OS X lineage"
   },
@@ -81,13 +81,13 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "ps2",
-      "scale": 2.09,
+      "scale": 1.0,
       "offset": [
         0,
         0
@@ -101,14 +101,14 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#7a8fb0",
-    "eraLabel": "1998 · Rhapsody DR2 — Apple/NeXT",
-    "pointerRel": true
+    "eraLabel": "1998 \u00b7 Rhapsody DR2 \u2014 Apple/NeXT",
+    "pointerRel": false
   },
   "museum": {
     "id": "rhapsody",
     "displayName": "Rhapsody DR2",
     "year": 1998,
-    "lineage": "Apple Rhapsody (NeXTSTEP/Mach → Mac OS X Server 1.0)",
+    "lineage": "Apple Rhapsody (NeXTSTEP/Mach \u2192 Mac OS X Server 1.0)",
     "arch": "i386",
     "ramMB": 64,
     "era": "1990s",
@@ -126,7 +126,7 @@
       "Terminal",
       "TextEdit"
     ],
-    "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
+    "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought \u2014 the 1998 developer release where Mac OS X begins.",
     "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster."
   },
   "emulator": {
@@ -138,7 +138,8 @@
   "notes": [
     "slot 146/UDP 54146 reserved by stations-registry.py new (2026-08-18)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py",
-    "labctl exec via serial getty on COM1 (serial_getty); credentials in gitignored serial-exec.passwd"
+    "labctl exec via serial getty on COM1 (serial_getty); credentials in gitignored serial-exec.passwd",
+    "absolute pointer 2026-08-30: guest-RAM absolute write (kh-ramabs), no adapter change and no golden recapture; the guest-physical address is bound to the golden - see runtime.qemu.pointerRamAddress"
   ],
   "runtime": {
     "stationEnv": {
@@ -167,11 +168,11 @@
         "--udp",
         "54146",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "ramabs",
         "--cursor-scale",
-        "2.09",
+        "1.0",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -207,24 +208,42 @@
         "-netdev tap,id=n0,ifname=rhaprn0,script=no,downscript=no -device tulip,netdev=n0,mac=\"$RN_RHAPSODY_MAC\"",
         "-serial file:$D/serial.log",
         "$LOADVM",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off",
+        "-device kh-ramabs,chardev=ptr0,addr=0x0050fdac,layout=point16le,width=1024,height=768,nudge-units=2,nudge-px=1",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
         "-pidfile $D/qemu.pid"
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the deployed launcher. Joined the retronet web plane 2026-08-23: the netdev went user(slirp) -> tap rhaprn0 on vmbr-rn and the NIC went i82557b -> tulip (DEC 21143), because Apple's Intel82557 driver programs the chip in flexible mode and QEMU's eepro100 model never delivers a received frame (Ipkts stuck at 0). Both the -device change and mac= bind only on a COLD boot, so the golden was re-baked cold on this device set 2026-08-23 with OmniWeb 3.0 installed; docs/lab/retronet/WEB-STATION-rhapsody.md"
+        "reason": "tracked verbatim launcher is the deployed launcher. Joined the retronet web plane 2026-08-23: the netdev went user(slirp) -> tap rhaprn0 on vmbr-rn and the NIC went i82557b -> tulip (DEC 21143), because Apple's Intel82557 driver programs the chip in flexible mode and QEMU's eepro100 model never delivers a received frame (Ipkts stuck at 0). Both the -device change and mac= bind only on a COLD boot, so the golden was re-baked cold on this device set 2026-08-23 with OmniWeb 3.0 installed; docs/lab/retronet/WEB-STATION-rhapsody.md Absolute pointer landed 2026-08-30: a `-chardev socket` plus `-device kh-ramabs` writing the guest's own pointer coordinate. kh-ramabs registers NO VMStateDescription and touches no emulated hardware, so it adds no section to the migration stream and the golden baked 2026-08-23 still restores on this device set - the pointer change needs NO recapture. It does need the station binary rebuilt with streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch, and the BINARY MUST BE INSTALLED BEFORE THE LAUNCHER (`-device kh-ramabs` is an unknown device on an older binary and QEMU refuses to start)."
+      },
+      "pointerRamAddress": {
+        "addr": "0x0050fdac",
+        "layout": "point16le",
+        "derivedAgainstGolden": "2026-08-23 cold re-bake (retronet tulip device set)",
+        "note": "Guest-physical address of Rhapsody DR2's own pointer coordinate, the input the kh-ramabs control object writes. UNLIKE an architectural low-memory global this is valid only for the golden it was derived against: `loadvm golden` restores RAM verbatim, so the address is fixed for the life of THAT checkpoint and no longer. RE-BAKING THE GOLDEN REQUIRES RE-DERIVING IT (recipe: docs/guests/rhapsody.md, the four-position pmemsave bias search - about an hour). A second, DERIVED copy at 0x00eae020 tracks it but is not an input; writing that one alone does nothing. kh-ramabs verifies the address at connect and refuses every write if verification fails, so a stale address degrades the station to its relative path rather than corrupting guest memory."
+      },
+      "qemuBuild": {
+        "forkUrl": "github.com/Wnt/qemu",
+        "forkBranch": "kernel-hive",
+        "forkCommit": "196124da521a52372b2ce8c420b4e068f2a22d2c",
+        "patches": [
+          "streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch",
+          "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
+        ],
+        "note": "Both patches verified to apply cleanly to that fork commit, in that order, and the applied tree is byte-identical to the source the branch's sandbox binary was built from. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The branch's own build (/data/vms/sandbox/rhapsody-abs/qemu/prefix/bin/qemu-system-i386) hashes to a5c74522adc48194f3a59d449af408ee211433005da6e4909effaab87740a79c; QEMU builds are not bit-reproducible, so re-record from the installed file rather than reusing that."
       }
     }
   },
   "reset": {
     "stationDir": "rhapsody",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "Rhapsody 5.1 DR2 with OmniWeb 3.0 open on the 1996 Space Jam corpus page (retronet gateway :80 origin, no proxy) at 1024x768 RGB:555/16 (Cirrus GD5446) — the guest home window carrying the OmniWeb.app icon behind it, bookmarks panel at the left edge, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
+    "fixture": "Rhapsody 5.1 DR2 with OmniWeb 3.0 open on the 1996 Space Jam corpus page (retronet gateway :80 origin, no proxy) at 1024x768 RGB:555/16 (Cirrus GD5446) \u2014 the guest home window carrying the OmniWeb.app icon behind it, bookmarks panel at the left edge, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
   },
   "migrationExceptions": [],
   "network": {

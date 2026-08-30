@@ -824,20 +824,23 @@ emit tru64 \
 #   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.
 #   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.
 emit macos753 \
-  --tile macos753 --vmid 142 --udp 54142 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 2.7778 --cursor-off-x 0 --cursor-off-y 0 --audio \
-  on --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
+  --tile macos753 --vmid 142 --udp 54142 --pointer abs --input-backend \
+  ramabs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
+  --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
   --env-append-file "$T/macos753/station.env.fixture"
 
 # hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):
 #   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa
 #   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer
 #   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).
-#   RELATIVE LASI PS/2 pointer (dbus-rel). LISTED on the public floor:
-#   reset=loadvm golden, idle auto-pause after SH_IDLE_PAUSE_SECS=60.
+#   CLOSED-LOOP 1:1 pointer (artistctl over artistptr/1): the wire is still the
+#   LASI PS/2 mouse, but the engine in hw/display/artist.c reads the guest's own
+#   position back from the Artist hardware-cursor registers and converges on it.
+#   LISTED on the public floor: reset=loadvm golden, idle auto-pause after
+#   SH_IDLE_PAUSE_SECS=60.
 emit hpuxvue \
-  --tile hpuxvue --vmid 144 --udp 54144 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  --tile hpuxvue --vmid 144 --udp 54144 --pointer abs --input-backend \
+  artistctl --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
   --fps 30 --launcher-file "$T/hpuxvue/qemu-streamhost.sh" --env-append-file \
   "$T/hpuxvue/station.env.fixture"
 
@@ -851,10 +854,17 @@ emit hpuxvue \
 #   VERBATIM launcher with conditional -loadvm golden. Two fixes live INSIDE the
 #   volume: config_manager/isa removed (PnP BIOS call page-faults input_server
 #   under SeaBIOS) and multiprocessor_support disabled (PCI IRQs via the PIC).
+#   POINTER: absolute with no absolute device, no hardware cursor and no
+#   control loop - `-device kh-ramabs` writes the commanded pixel into
+#   app_server's OWN pointer coordinate (two int32, layout point32le) and
+#   publishes it with one 1-unit PS/2 nudge, so the hotspot is never in the
+#   path and the device set is unchanged. Station binary /opt/qemu-beos
+#   (qemu-patches 0001+0007+0010), INSTALLED BEFORE this launcher.
 emit beos \
-  --tile beos --vmid 143 --udp 54143 --pointer rel --abs-pace-ms 30 --audio \
-  off --fps 30 --launcher-file "$T/beos/qemu-streamhost.sh" \
-  --env-append-file "$T/beos/station.env.fixture"
+  --tile beos --vmid 143 --udp 54143 --pointer abs --input-backend ramabs \
+  --abs-pace-ms 30 --audio off --fps 30 --launcher-file \
+  "$T/beos/qemu-streamhost.sh" --env-append-file \
+  "$T/beos/station.env.fixture"
 
 # newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780
 #   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock
@@ -894,13 +904,21 @@ emit aux \
 # rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):
 #   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from
 #   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without
-#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one
-#   2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip (DEC 21143) bridged onto
-#   the retronet, PS/2 mouse (dbus-rel). loadvm golden -S (the daemon resumes);
-#   the checkpoint restores with OmniWeb 3.0 open on the corpus web.
+#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,
+#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip
+#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the
+#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the
+#   corpus web.
+#   POINTER: absolute with no absolute device and no control loop — `-device
+#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate
+#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is
+#   never in the path and the device set is unchanged (no golden recapture). The
+#   address is bound to the golden; kh-ramabs verifies it at connect and refuses
+#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007
+#   INSTALLED BEFORE this launcher.
 emit rhapsody \
-  --tile rhapsody --vmid 146 --udp 54146 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 2.09 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  --tile rhapsody --vmid 146 --udp 54146 --pointer abs --input-backend \
+  ramabs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
   --fps 30 --launcher-file "$T/rhapsody/qemu-streamhost.sh" \
   --env-append-file "$T/rhapsody/station.env.fixture"
 

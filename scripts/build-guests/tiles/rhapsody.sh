@@ -48,6 +48,11 @@ QEMU="$QEMU_PREFIX/bin/qemu-system-i386"
 FORK_URL="${FORK_URL:-https://github.com/Wnt/qemu.git}"
 FORK_BRANCH="${FORK_BRANCH:-kernel-hive}"
 PATCH="$REPO/streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch"
+# 0007 adds `-device kh-ramabs`, the station's absolute pointer: it writes the
+# commanded pixel into Rhapsody's OWN pointer coordinate in guest RAM and
+# publishes it with one small PS/2 nudge. It holds no vmstate and models no
+# hardware, so it does not change the device set and the golden still restores.
+PATCH_PTR="$REPO/streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
 QMPTYPE="$REPO/scripts/dev/qmp-type.py"
 QMPHMP="$REPO/scripts/qmp_hmp.py"
 PHASES="${PHASES:-qemu media install output}"
@@ -80,15 +85,17 @@ cleanup() {
 trap cleanup EXIT
 
 phase_qemu() {
-  if [ -x "$QEMU" ] && strings "$QEMU" | grep -q KH_I8259_LENIENT_CASCADE; then
-    log "qemu already at $QEMU (lenient-cascade switch present)"
+  if [ -x "$QEMU" ] && strings "$QEMU" | grep -q KH_I8259_LENIENT_CASCADE &&
+    strings "$QEMU" | grep -q kh-ramabs; then
+    log "qemu already at $QEMU (lenient-cascade switch and kh-ramabs present)"
     return 0
   fi
-  log "building qemu-system-i386 from $FORK_URL@$FORK_BRANCH + $(basename "$PATCH")"
+  log "building qemu-system-i386 from $FORK_URL@$FORK_BRANCH + $(basename "$PATCH") + $(basename "$PATCH_PTR")"
   local src="$WORK/qemu-src"
   mkdir -p "$WORK"
   [ -d "$src" ] || git clone -q --branch "$FORK_BRANCH" --depth 1 "$FORK_URL" "$src"
   (cd "$src" && git apply --check "$PATCH" && git apply "$PATCH") || die "0006 patch does not apply to the fork"
+  (cd "$src" && git apply --check "$PATCH_PTR" && git apply "$PATCH_PTR") || die "0007 patch does not apply to the fork"
   mkdir -p "$src/build"
   (cd "$src/build" && ../configure \
     --target-list=i386-softmmu --enable-slirp --enable-dbus-display --enable-kvm \
@@ -100,6 +107,7 @@ phase_qemu() {
   (cd "$src/build" && nice -n 15 ninja >"$WORK/ninja.log" 2>&1 && ninja install >>"$WORK/ninja.log" 2>&1) || die "build failed; see $WORK/ninja.log"
   strings "$QEMU" | grep -q KH_I8259_LENIENT_CASCADE || die "built binary lacks the lenient-cascade switch"
   strings "$QEMU" | grep -q SH_DBUS_UPDATE_MS || die "built binary lacks the fork's fast-poll patch"
+  strings "$QEMU" | grep -q kh-ramabs || die "built binary lacks the kh-ramabs absolute pointer"
   log "built and verified $QEMU"
 }
 
