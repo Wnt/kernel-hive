@@ -2,7 +2,7 @@ Index: b/hw/misc/kh-ramabs.c
 ===================================================================
 --- /dev/null
 +++ b/hw/misc/kh-ramabs.c
-@@ -0,0 +1,660 @@
+@@ -0,0 +1,711 @@
 +/*
 + * kh-ramabs — absolute pointer by writing the guest's OWN pointer coordinate.
 + *
@@ -94,10 +94,12 @@ Index: b/hw/misc/kh-ramabs.c
 +
 +#include "qemu/osdep.h"
 +#include "chardev/char-fe.h"
++#include "exec/cpu-common.h"
 +#include "hw/core/qdev-properties.h"
 +#include "hw/core/qdev-properties-system.h"
 +#include "migration/vmstate.h"
 +#include "qapi/error.h"
++#include "qemu/bswap.h"
 +#include "qemu/error-report.h"
 +#include "qemu/module.h"
 +#include "qemu/timer.h"
@@ -178,13 +180,24 @@ Index: b/hw/misc/kh-ramabs.c
 +    return true;
 +}
 +
-+static void kh_write_point(KhRamAbsState *s, int x, int y)
++/*
++ * Write, then READ IT STRAIGHT BACK. A write to unbacked guest-physical memory
++ * is silently discarded, and that failure is invisible from anywhere else: the
++ * verification probe below would then read the guest's real (unchanged) pointer,
++ * find it exactly where it wanted it, and declare the address good. Proving the
++ * write landed is the half of verification that a probe cannot supply.
++ */
++static bool kh_write_point(KhRamAbsState *s, int x, int y)
 +{
 +    uint8_t b[4];
++    int rx, ry;
 +
 +    stw_le_p(b, (uint16_t)(int16_t)x);
 +    stw_le_p(b + 2, (uint16_t)(int16_t)y);
 +    cpu_physical_memory_write(s->addr, b, sizeof(b));
++
++    kh_read_point(s, &rx, &ry);
++    return rx == x && ry == y;
 +}
 +
 +static bool kh_onscreen(KhRamAbsState *s, int x, int y)
@@ -205,7 +218,8 @@ Index: b/hw/misc/kh-ramabs.c
 +/* ------------------------------------------------------------------ */
 +/* wire                                                                */
 +
-+static void kh_send(KhRamAbsState *s, const char *fmt, ...)
++static void G_GNUC_PRINTF(2, 3) kh_send(KhRamAbsState *s,
++                                       const char *fmt, ...)
 +{
 +    char buf[TX_MAX];
 +    va_list ap;
@@ -245,6 +259,27 @@ Index: b/hw/misc/kh-ramabs.c
 +    timer_mod(s->timer, qemu_clock_get_ms(QEMU_CLOCK_REALTIME) + s->settle_ms);
 +}
 +
++/* A write that did not land means the address is not writable guest RAM.
++ * There is nothing to retry and nothing safe to assume, so stop writing. */
++static void kh_write_failed(KhRamAbsState *s)
++{
++    s->verified = false;
++    s->probing = false;
++    s->have_target = false;
++    s->pos_known = false;
++    s->stat_probe_fail++;
++    error_report("kh-ramabs: a write to 0x%" PRIx64 " did not read back - that "
++                 "address is not writable guest RAM. Refusing every write; the "
++                 "station must fall back to its relative path.", s->addr);
++    /* Having failed closed, inject nothing further: refuse the deferred edge
++     * rather than releasing it at a position we can no longer vouch for. The
++     * client still gets its ack, so nothing stalls waiting on us. */
++    if (s->have_btn) {
++        s->have_btn = false;
++        kh_err(s, s->btn_seq, "unverified-address");
++    }
++}
++
 +/*
 + * One complete absolute write: pre-compensate for the nudge, write, publish.
 + * Each call stands alone — nothing is carried over from the previous attempt
@@ -258,9 +293,14 @@ Index: b/hw/misc/kh-ramabs.c
 +        /*
 +         * The guest cannot consume a publish while it is stopped. Do not spin
 +         * against a stopped runstate — write the coordinate so a resume shows
-+         * the right place, and re-arm; the read-back will confirm later.
++         * the right place, and re-arm; the read-back will confirm later. (There
++         * is no engine window here and nothing runs on QEMU_CLOCK_VIRTUAL, so a
++         * paused guest costs a wait, never a wedge.)
 +         */
-+        kh_write_point(s, s->tgt_x, s->tgt_y);
++        if (!kh_write_point(s, s->tgt_x, s->tgt_y)) {
++            kh_write_failed(s);
++            return;
++        }
 +        s->want_x = s->tgt_x;
 +        s->want_y = s->tgt_y;
 +        kh_arm(s);
@@ -270,7 +310,10 @@ Index: b/hw/misc/kh-ramabs.c
 +    dx = -kh_dir(s->tgt_x, s->width) * s->nudge_px;
 +    dy = -kh_dir(s->tgt_y, s->height) * s->nudge_px;
 +
-+    kh_write_point(s, s->tgt_x - dx, s->tgt_y - dy);
++    if (!kh_write_point(s, s->tgt_x - dx, s->tgt_y - dy)) {
++        kh_write_failed(s);
++        return;
++    }
 +    s->want_x = s->tgt_x;
 +    s->want_y = s->tgt_y;
 +
@@ -391,8 +434,14 @@ Index: b/hw/misc/kh-ramabs.c
 +                     s->addr, x, y, s->width, s->height);
 +        return;
 +    }
-+    /* Probe by re-stating where the guest already is: a publish that does not
-+     * move the visitor's pointer, but does prove the write path works. */
++    /*
++     * Probe by re-stating where the guest already is. The visitor's pointer does
++     * not move, but this is NOT a no-op and it cannot pass from a standing
++     * start: kh_issue writes a DELIBERATELY WRONG value (the target minus the
++     * nudge) and proves the write landed by reading it back, and the guest then
++     * has to turn that wrong value into the right one by acting on the injected
++     * event. Quiescence therefore fails the probe rather than passing it.
++     */
 +    s->probing = true;
 +    s->tgt_x = x;
 +    s->tgt_y = y;
@@ -495,12 +544,12 @@ Index: b/hw/misc/kh-ramabs.c
 +    if (s->trace) {
 +        info_report("kh-ramabs: rx %s", line);
 +    }
-+    n = sscanf(line, "%" SCNu64 " %31s", &seq, verb);
-+    if (n != 2) {
++    n = sscanf(line, "%" SCNu64 " %31s %d %d", &seq, verb, &x, &y);
++    if (n < 2) {
 +        return;
 +    }
 +    if (!strcmp(verb, "MOVEA")) {
-+        if (sscanf(line, "%*" SCNu64 " %*s %d %d", &x, &y) == 2) {
++        if (n == 4) {
 +            kh_movea(s, seq, x, y);
 +        } else {
 +            kh_err(s, seq, "bad-movea");
@@ -554,6 +603,8 @@ Index: b/hw/misc/kh-ramabs.c
 +        s->rx_len = 0;
 +        s->have_target = false;
 +        s->have_btn = false;
++        /* Nothing is known until this connection's own probe says so. */
++        s->pos_known = false;
 +        kh_hello(s);
 +        break;
 +    case CHR_EVENT_CLOSED:

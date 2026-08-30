@@ -222,6 +222,16 @@
         "layout": "point16le",
         "derivedAgainstGolden": "2026-08-23 cold re-bake (retronet tulip device set)",
         "note": "Guest-physical address of Rhapsody DR2's own pointer coordinate, the input the kh-ramabs control object writes. UNLIKE an architectural low-memory global this is valid only for the golden it was derived against: `loadvm golden` restores RAM verbatim, so the address is fixed for the life of THAT checkpoint and no longer. RE-BAKING THE GOLDEN REQUIRES RE-DERIVING IT (recipe: docs/guests/rhapsody.md, the four-position pmemsave bias search - about an hour). A second, DERIVED copy at 0x00eae020 tracks it but is not an input; writing that one alone does nothing. kh-ramabs verifies the address at connect and refuses every write if verification fails, so a stale address degrades the station to its relative path rather than corrupting guest memory."
+      },
+      "qemuBuild": {
+        "forkUrl": "github.com/Wnt/qemu",
+        "forkBranch": "kernel-hive",
+        "forkCommit": "196124da521a52372b2ce8c420b4e068f2a22d2c",
+        "patches": [
+          "streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch",
+          "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
+        ],
+        "note": "Both patches verified to apply cleanly to that fork commit, in that order, and the applied tree is byte-identical to the source the branch's sandbox binary was built from. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The branch's own build (/data/vms/sandbox/rhapsody-abs/qemu/prefix/bin/qemu-system-i386) hashes to a5c74522adc48194f3a59d449af408ee211433005da6e4909effaab87740a79c; QEMU builds are not bit-reproducible, so re-record from the installed file rather than reusing that."
       }
     }
   },
