@@ -66,14 +66,19 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # or merged with, a main this clone last saw an hour ago has a merge-base one
 # hour of other people's work too early.
 #
-# The fetch goes to a PRIVATE ref. Updating origin/main behind the user's back
-# during a push hook would move a ref other tooling reads; refs/kh-gate/main is
-# ours, forced, and disposable. Fetch failure is not fatal: fall back to
-# origin/main and say so. GATE_NO_FETCH=1 skips it (offline, or a hot loop).
+# The fetch goes to a PRIVATE ref, and it fetches BY URL rather than by remote
+# name. That is not fussiness: `git fetch origin <refspec>` still performs an
+# "opportunistic update" of refs/remotes/origin/*, so naming the remote would
+# silently advance your origin/main as a side effect of running a gate —
+# a read path that writes, which is the exact shape of the incident that made
+# a dry-run plan move everyone's drift baseline. Measured, not assumed: by name
+# origin/main moves, by URL it does not. refs/kh-gate/main is ours, forced and
+# disposable. Fetch failure is not fatal: fall back to origin/main and say so.
+# GATE_NO_FETCH=1 skips it (offline, or a hot loop).
 gate_main=""
 if git rev-parse --verify --quiet origin/main >/dev/null; then gate_main="origin/main"; fi
 if [[ "${GATE_NO_FETCH:-0}" != "1" ]] && have timeout; then
-  if timeout 25 git fetch --quiet --no-tags origin \
+  if timeout 25 git fetch --quiet --no-tags "$(git config remote.origin.url)" \
     "+refs/heads/main:refs/kh-gate/main" >/dev/null 2>&1; then
     gate_main="refs/kh-gate/main"
   elif [[ -n "$gate_main" ]]; then

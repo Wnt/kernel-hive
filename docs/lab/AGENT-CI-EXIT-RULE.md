@@ -189,11 +189,18 @@ not from wherever the branch was cut.** `git diff A..B` diffs the two
 has moved since lands in "your range" and your push is billed for lint on
 somebody else's commits. On 2026-08-30 that demanded `cargo clippy` from a
 rebased branch that touched no Rust at all. The hook therefore fetches
-`refs/heads/main` into a private ref (`refs/kh-gate/main` — it never moves your
-`origin/main`) and takes `merge-base(that, tip)`, preferring the ref's own
-remote sha when that is both known and a genuine ancestor, which keeps a re-push
-narrow. A failed fetch falls back to the local `origin/main` **and says so**;
-`GATE_NO_FETCH=1` skips the fetch deliberately.
+`refs/heads/main` into a private ref (`refs/kh-gate/main`) and takes
+`merge-base(that, tip)`, preferring the ref's own remote sha when that is both
+known and a genuine ancestor, which keeps a re-push narrow. A failed fetch falls
+back to the local `origin/main` **and says so**; `GATE_NO_FETCH=1` skips the
+fetch deliberately.
+
+It fetches **by URL, not by remote name.** `git fetch origin <refspec>` also
+performs an *opportunistic update* of `refs/remotes/origin/*`, so naming the
+remote would make running the gate silently advance your `origin/main` — a read
+path that writes, the same shape as the dry-run plan that used to move everyone's
+drift baseline. Measured both ways rather than assumed: by name `origin/main`
+moves, by URL it does not.
 
 **Every skip is loud.** In particular the Rust stage: `streamhost/.cargo/config.toml`
 pins `target-dir` to `/data/vms/streamhost/build/target`, labhost's shared
