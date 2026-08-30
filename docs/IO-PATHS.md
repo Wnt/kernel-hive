@@ -32,7 +32,7 @@ requires `usb-tablet` in the launcher, `qemu-ps2-relative` forbids it,
 
 Backend census across the 59 production stations: **dbus-abs 27, disabled 17,
 dbus-rel 8, warpd 5, gallery-hid 1, mamesock 3** (`irix`, `w2kalpha`, `tru64`),
-**mgactl 1** (`aix432`), **artistctl 1** (`hpuxvue`), **ramabs 1** (`rhapsody`).
+**mgactl 1** (`aix432`), **artistctl 1** (`hpuxvue`), **ramabs 1** (`rhapsody`, `macos753`).
 
 | Path | Used by | Abs/rel | Mechanism | Trade-off |
 |---|---|---|---|---|
@@ -49,6 +49,7 @@ dbus-rel 8, warpd 5, gallery-hid 1, mamesock 3** (`irix`, `w2kalpha`, `tru64`),
 | **mgactl** (closed loop) | `aix432` | abs | absolute `MOVEA x y` over a chardev QEMU itself serves; `hw/display/mga.c` reads the guest's own pointer out of the Matrox DAC's CURPOSX/Y hardware-cursor registers each 16 ms window and converges | The only closed loop inside QEMU. Same control law as `irix`; costs a device model that can read its own cursor, and a hotspot that only a screen clamp can name |
 | **artistctl** (closed loop) | `hpuxvue` | abs | absolute `MOVEA x y` over a chardev QEMU serves; `hw/display/artist.c` reads the guest's own pointer back through the device model's OWN `artist_get_cursor_pos()` — HP-UX's X server drives the Artist hardware cursor — and converges each 16 ms window | Same control law as `aix432`/`irix`, plus two rules TCG forces: a bounded in-flight gate, and settling before declaring convergence. Cheapest port of its wave — the accessor, the calibration and the registers' vmstate entries all already existed upstream, so no adapter swap, no migration change and **no golden re-bake**. Costs: read through the accessor, never your own decode of `CURSOR_POS` — a private decode is uniformly 8 px wrong while agreeing exactly with the framebuffer (see [lab/HPUXVUE-CURSOR-REGISTER-POINTER.md](lab/HPUXVUE-CURSOR-REGISTER-POINTER.md)) |
 | **ramabs** (absolute write, NOT a loop) | `rhapsody` | abs | absolute `MOVEA x y` over a chardev QEMU serves; `hw/misc/kh-ramabs.c` WRITES the commanded pixel into the guest's OWN pointer coordinate in guest RAM (Rhapsody DR2: `Point{int16 x,y}` at `0x0050fdac`) and injects one 2-unit PS/2 nudge, because the window server repaints on an event and not on a memory write | No control law, no gain and **no hotspot in the path** — the hotspot stays a property of the drawn sprite. No adapter change, so the device set and golden are untouched. Costs: the address is bound to ONE golden, so the device verifies it at connect and refuses every write if it cannot |
+| **ramabs** (absolute write, NOT a loop) | `macos753` | abs | the same `kh-ramabs`, in its `layout=macpoint16be publish=crsrnew` profile: classic Mac OS has no hardware cursor at all (it composites the cursor in software), but it keeps its pointer in LOW-MEMORY GLOBALS, so the device writes `MTemp`/`RawMouse` at `$0828`/`$082C` and publishes with `CrsrNew := CrsrCouple` — the OS's own documented warp idiom, the same path its ADB driver's interrupt uses | The only station whose WRITE TARGET and READ-BACK SENSOR are different addresses: the guest's cursor VBL task computes `Mouse` from `RawMouse`, so the read-back asks whether the GUEST ACTED, not whether the store stuck (that is checked separately, at the write). A wedged guest cannot fake it. Unlike `rhapsody`'s, the address is ARCHITECTURAL, not bound to one golden, so a re-bake does not invalidate it. Costs: `Mouse` must NEVER be written — it is the VBL task's own change detector, and writing it silently stops the cursor while every global reads back correct (see [guests/macos753.md](guests/macos753.md)) |
 | **mamesock** (open loop) | `tru64`, `w2kalpha` | abs | same verb into es40's ctlsock, but there is no cursor readback: the emulator corner-homes once, then believes its own arithmetic. Exactness therefore depends on the guest moving **1 px per injected count** — flat X acceleration, and `ES40_POINTER_GAIN` where it does not (Tru64 moves 2 px/count) | No patched cursor readback needed, but any guest-side acceleration or gain silently doubles every move; measure before declaring `reset.mouse` PASS |
 | **simh-light-pen** | `gt40` | abs | ordinary dbus-abs through a usb-tablet; SIMH's VT11 vector display reads the position as the GT40's light pen | The method label is the only record of the light-pen semantics |
 | **disabled** | 17 kiosks — `armeval bbcmicro c128 cbm2 cbm8032 decos dragon32 kc854 mpf2 oricatmos pdp11 pet2001 plus4 sinclairql vic20 zx81 zxspectrum` | none | every non-type-3 record is dropped before any sink | Cannot strand a button or drift a cursor — **unpointable by design**, not broken |
@@ -74,7 +75,7 @@ flowchart LR
   H --> MS[mamesock MOVEA with acks and cursor readback]
   H --> MG[mgactl MOVEA into the QEMU MGA cursor loop]
   H --> AR[artistctl MOVEA into the QEMU Artist cursor loop]
-  H --> RA[ramabs MOVEA written into the guest's own pointer coordinate]
+  H --> RA[ramabs MOVEA written into the guest's own pointer coordinate\nrhapsody: one coordinate + a nudge · macos753: Mac low-memory globals + CrsrNew]
   H --> X[disabled dropped before any sink]
 ```
 
