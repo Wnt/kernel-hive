@@ -146,8 +146,10 @@ QEMU fork (11.0.2 + fast-poll) into **`/opt/qemu-rhapsody`**, like
   **1 unit → 0.478 px** in both axes (`SH_CURSOR_SCALE=2.09`); the guest's
   PS/2 driver decodes garbage (sign flips, jumps to the far corner) when
   moves are pushed faster than it drains the i8042 queue — pace moves
-  (~150 ms apart in the rig helper; the daemon's own pacing is fine) and keep
-  single deltas ≤ ~100 units. In NeXT lists, Return = default button (Add),
+  (~150 ms apart in the rig helper) and keep single deltas ≤ ~100 units. None of
+  this constrains the SHIPPED pointer any more, which injects a single 2-unit
+  nudge and never a walk; it still constrains any rig that drives the guest by
+  relative motion. In NeXT lists, Return = default button (Add),
   but inside a table Return moves the selection — click OK with the pointer.
 
 ## Build and device set
@@ -186,6 +188,75 @@ delivery path and the desktop traps (a symlinked `.app` launches as "damaged";
 autolaunched apps start hidden; the Dock is not scriptable):
 [`../lab/retronet/WEB-BROWSER-rhapsody.md`](../lab/retronet/WEB-BROWSER-rhapsody.md).
 
+## The pointer is an absolute write, not a loop and not a device
+
+Rhapsody DR2 keeps **its own** pointer coordinate in guest RAM, as a
+`Point{int16 x, int16 y}` at guest-physical **`0x0050fdac`**. So the browser's
+absolute pixel is not dead-reckoned and not converged on — it is **written
+there**, and published with one small relative event.
+
+`-device kh-ramabs` (`streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch`)
+serves the station's `ptr.sock`; the daemon's `ramabs` backend is the wire to it.
+Per `MOVEA x y`:
+
+1. pre-compensate for the publish nudge and write the coordinate;
+2. inject **one 2-unit relative PS/2 event** — a write alone repaints nothing,
+   because the window server redraws the cursor on an *event*;
+3. **read the coordinate back**, and re-issue the whole absolute write if the
+   publish did not land.
+
+**There is no hotspot in this path.** The hotspot is real and per-glyph — `(1,1)`
+for the arrow, `(3,3)` for the Bookmarks-window glyph, `(6,1)` over the OmniWeb
+page — but it belongs to the *drawn sprite*, and nothing here needs to know it.
+That is the whole reason this route was chosen over a hardware-cursor closed
+loop: measuring the hotspot is the hardest part of every closed-loop station, and
+a guessed one behaves as a magnet rather than a small error.
+
+**Step 3 is not optional.** DR2's PS/2 driver scales by ~0.478 px/unit through a
+fractional accumulator, so a 2-unit nudge is 1 px on 38 of 40 measured trials and
+**0 px on the other 2**. The read-back catches those. It is a re-issued absolute
+write, not a loop step: no gain, and each attempt is complete in itself.
+
+**The address is bound to the golden, and the device fails closed.**
+`0x0050fdac` is not architectural — it is fixed only because `loadvm golden`
+restores RAM verbatim, so it is valid for the life of *that* checkpoint.
+`kh-ramabs` therefore verifies it at connect (the value must be a plausible
+on-screen point, and a probe publish must land) and **refuses every write** if it
+cannot, so a stale address degrades the station to its relative path instead of
+corrupting guest memory. `STAT` reports `pos=unknown` in that state.
+**Re-baking the golden means re-deriving the address** — four `pmemsave` dumps at
+four framebuffer-verified positions and a search for the address whose
+`value − observed` bias is constant; about an hour, written up in
+[`../lab/RHAPSODY-ABSOLUTE-POINTER.md`](../lab/RHAPSODY-ABSOLUTE-POINTER.md).
+A second, derived copy at `0x00eae020` tracks the coordinate but is **not** an
+input; writing it alone does nothing.
+
+**No golden recapture was needed.** `kh-ramabs` registers no
+`VMStateDescription` and models no hardware, so it adds no section to the
+migration stream; the device set and `deviceSetId` are unchanged.
+
+**Install order is binding**: QEMU binary before the launcher (`-device
+kh-ramabs` is an unknown device on an older binary and QEMU refuses to start),
+streamhost binary before the env fixture. **Rollback is two lines**: drop the
+`-device kh-ramabs` line and set `SH_INPUT_BACKEND=dbus-rel` with
+`SH_CURSOR_SCALE=2.09`.
+
+**Why not a native absolute device**, since this is NeXT lineage: the `nextstep`
+station won with a real SummaGraphics tablet on the **NeXT's own SCC serial
+port**, which is m68k-hardware specific. DR2 for Intel has no USB stack (so
+`usb-tablet` binds nothing), no VMware tools (so `vmmouse` is out), and
+Configure.app offers only PS/2 / bus / serial mice. There is no absolute device
+on this machine to find — do not re-run that search.
+
+**Proof (rule 9)**, on a sandbox clone, three observers at every target
+(commanded / the guest's own coordinate / `cursor-locate.py` on a QMP
+screendump): six targets — both screen edges, two window frames, the OmniWeb page
+and the desktop — all `err=+0,+0` at `--tol 1`; the true corner `(1023,767)`
+exact on the sensor (the sprite is clipped there, so no exact glyph match is
+possible); and a click at a commanded pixel that raised a buried window and
+switched the active application, 265 062 pixels repainted.
+
+
 ## Golden, input, and rollback
 
 - `golden` baked 2026-08-18 on the station itself
@@ -193,21 +264,8 @@ autolaunched apps start hidden; the Dock is not scriptable):
   snapshot, 52.5 MiB vmstate) from a cold boot on the production launcher's
   device set: the desktop after autologin, nothing curated. `loadvm golden -S`
   restores the identical frame; `SH_RESET_MODE=loadvm`, `SH_IDLE_PAUSE_SECS=60`.
-- Pointer: **absolute-feeling** — the browser sends absolute coordinates and
-  the daemon dead-reckons them to the exact guest pixel via its abs→rel bridge
-  (`SH_INPUT_BACKEND=dbus-rel`, home-pin seed + `SH_CURSOR_SCALE=2.09`).
-  Rhapsody DR2 has **no hardware absolute path** (no usb-tablet driver), so
-  this is the only "absolute" available and is the same route every other rel
-  station uses. The guest's Mouse-Speed pref is set to its **slowest** notch =
-  dead-linear **0.478 px/unit** (measured; the default acceleration curve is
-  non-linear and unusable for dead reckoning). The DR2 PS/2 driver takes only
-  the FIRST packet of a chained relative move and desyncs above ~30 units/send
-  at any pace, so the daemon caps each send with **`SH_REL_MAX_STEP=24`**
-  (`SH_REL_STEP_PACE_MS=16`) — a new per-station daemon knob (default 256 =
-  byte-identical for every other rel station). Verified accurate and in-phase:
-  homing then a 45-chunk walk lands the cursor at the commanded pixel (aimed
-  512,384 → 515,390). Click/drag/wheel feel is still **for the operator to
-  eyeball** through the browser.
+- Pointer: **truly absolute**, by writing the guest's own coordinate — see
+  "The pointer is an absolute write" above. `SH_INPUT_BACKEND=ramabs`.
 - Credentials reference only (never values): `guest/rhapsody`
 - Rollback: `systemctl stop streamhost@rhapsody`; the station's single disk is
   the whole state — replace it with the pristine copy above (or rebuild with
@@ -230,8 +288,10 @@ autolaunched apps start hidden; the Dock is not scriptable):
   runs one command per session between sentinels, and returns the guest's exit
   code. Verified: `labctl exec rhapsody "uname -sr"` etc., exit codes and
   quoting propagate, five back-to-back calls clean.
-- **Absolute pointer**: see the pointer bullet above — abs→rel dead reckoning
-  with the new `SH_REL_MAX_STEP` daemon cap.
+- **Absolute pointer**: see "The pointer is an absolute write" above. (The
+  abs→rel dead-reckoning bridge this station shipped with — `dbus-rel`,
+  `SH_CURSOR_SCALE=2.09`, `SH_REL_MAX_STEP=24` — is now the ROLLBACK path, not
+  the shipped one.)
 
 ## Open
 

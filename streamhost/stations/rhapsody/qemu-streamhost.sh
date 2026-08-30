@@ -20,12 +20,25 @@
 #     Display Adapter (2MB)" driver — configured for 800x600 RGB:555/16 @60),
 #     DEC 21143 "Tulip" PCI (-device tulip) on the retronet (see NETWORK
 #     below), PS/2 mouse
-#     (relative, dead-reckoned to absolute by the daemon's abs->rel bridge,
-#     SH_INPUT_BACKEND=dbus-rel; the guest's Mouse Speed pref is at its slowest
-#     = dead-linear 0.478 px/unit; QEMU splits one big RelMotion into many PS/2
-#     packets of which the guest takes only the first, so SH_REL_MAX_STEP caps
-#     each send at one packet), COM1 = serial.sock (getty on tty00 -> `labctl
-#     exec`, kind serial_getty), COM2 = serial.log.
+#     COM1 = serial.sock (getty on tty00 -> `labctl exec`, kind serial_getty),
+#     COM2 = serial.log.
+#   * POINTER: ABSOLUTE, with no absolute device and no control loop. Rhapsody
+#     keeps its OWN pointer coordinate as a Point{int16 x, int16 y} at
+#     guest-physical 0x0050fdac, so `-device kh-ramabs` writes the commanded
+#     pixel there and injects one 2-unit relative PS/2 nudge to make the window
+#     server republish it (a write alone repaints nothing). The hotspot is never
+#     in the path. kh-ramabs holds no vmstate and touches no emulated hardware,
+#     so this did NOT change the device set and the golden did NOT need a
+#     recapture -- but the ADDRESS IS BOUND TO THE GOLDEN (loadvm restores RAM
+#     verbatim), so a re-bake means re-deriving it; see
+#     registry/stations/rhapsody.json runtime.qemu.pointerRamAddress. The device
+#     verifies the address at connect and REFUSES EVERY WRITE if it cannot, so a
+#     stale address degrades to the relative path instead of corrupting memory.
+#     SINGLE INJECTOR (binding): while ptr.sock is connected nothing else --
+#     no abs->rel bridge, no QMP input-send-event, no labctl pointer helper --
+#     may push motion or a button edge at this mouse.
+#     Rollback is two lines: drop the -device kh-ramabs line and set
+#     SH_INPUT_BACKEND=dbus-rel (with SH_CURSOR_SCALE=2.09) in the fixture.
 #   * NETWORK: on the retronet, over a tap on the bridge vmbr-rn. The NIC is
 #     DEC 21143 "Tulip" (-device tulip), driven by DR2's bundled "DEC Generic
 #     21X4X" driver. This REPLACED the install-time Intel EtherExpress PRO/100B
@@ -66,7 +79,7 @@ if [ -r "$RN_LOCAL_ENV" ]; then
 fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "$D/qmp.sock" "$D/qemu.pid"
+rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/ptr.sock"
 LOADVM=""
 qemu-img snapshot -l "$D/rhapsody-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
@@ -84,6 +97,8 @@ nohup "$QEMU" \
   -serial unix:$D/serial.sock,server=on,wait=off \
   -serial file:$D/serial.log \
   $LOADVM \
+  -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
+  -device kh-ramabs,chardev=ptr0,addr=0x0050fdac,layout=point16le,width=1024,height=768,nudge-units=2,nudge-px=1,trace=${PTR_TRACE:-off} \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
   >"$D/qemu.log" 2>&1 &

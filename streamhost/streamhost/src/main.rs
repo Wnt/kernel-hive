@@ -26,6 +26,7 @@ mod mame_sock;
 mod mga_ctl;
 mod ptr_grid;
 mod ptr_reckon;
+mod ram_abs;
 mod realtime_input;
 mod rel_bridge;
 mod session_ticket;

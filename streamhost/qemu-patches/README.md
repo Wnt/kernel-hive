@@ -28,6 +28,32 @@ in-repo tooling (`g2g_*.py`, `harness/`, `tools/`, `build-standalone.sh`,
 `golden-bake-*.py`, `launch-*.sh`) stay development-only and are not part of
 the fork.
 
+## `0007-kh-ramabs-guest-ram-absolute-pointer.patch` — absolute pointer, no adapter
+
+`hw/misc/kh-ramabs.c` (plus one unconditional line in `hw/misc/meson.build`): a
+bus-less, user-creatable `-device kh-ramabs` that gives a guest an ABSOLUTE
+pointer without an absolute input device, without a hardware cursor and without
+a control loop — by writing the commanded pixel into the **guest's own** pointer
+coordinate in guest RAM and injecting one small relative event to make the guest
+republish it. The hotspot never enters the path, which is what every closed-loop
+station spends its hardest work on.
+
+It models no hardware and registers **no `VMStateDescription`**, so it adds no
+section to the migration stream: adding it does not change a station's device set
+and does not invalidate a golden checkpoint.
+
+It **fails closed**. The guest-physical address is per-guest and, for a station
+whose golden is a RAM snapshot, per-golden — so the device verifies it at connect
+(the value must be a plausible on-screen point, and a probe publish must land)
+and refuses every write otherwise, leaving the station to fall back to its
+relative path rather than scribbling on guest memory.
+
+First station: `rhapsody` (Rhapsody 5.1 DR2 for Intel, `Point{int16 x, int16 y}`
+at `0x0050fdac`). Applied by `scripts/build-guests/tiles/rhapsody.sh` on top of
+`0006` into `/opt/qemu-rhapsody`; **not** part of the pve-qemu quilt series.
+Rationale, the four-`pmemsave` recipe for deriving an address, and the rule-9
+proof: [`docs/lab/RHAPSODY-ABSOLUTE-POINTER.md`](../../docs/lab/RHAPSODY-ABSOLUTE-POINTER.md).
+
 ## `seabios/` — firmware patches (not QEMU, not on the fork)
 
 `seabios/0001-kbd-check-keystroke-returns-with-interrupts-enabled.patch` is a

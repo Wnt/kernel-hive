@@ -240,6 +240,18 @@ pub enum InputBackend {
     /// Single-injector rule: nothing else may push motion or button edges at
     /// that guest's PS/2 mouse while the socket is connected.
     MgaCtl,
+    /// Native `ramabs/1` route: the wire to a QEMU-side control object that
+    /// performs an ABSOLUTE WRITE of the commanded coordinate into the guest
+    /// OS's own pointer structure in guest RAM, then publishes it. NOT a
+    /// closed loop — no gain, no convergence, no hotspot in the path; the
+    /// control object verifies its address at connect and fails closed, and
+    /// everything guest-specific lives on the QEMU side, never here. Pointer
+    /// only: keys stay on the station's working QEMU/dbus path. Never
+    /// inferred — only set explicitly via `SH_INPUT_BACKEND=ramabs` (socket
+    /// `SH_RAMABS_SOCK`). Single-injector rule: nothing else may push motion
+    /// or button edges at that guest's pointer while the socket is connected.
+    /// First station: `rhapsody` (Rhapsody 5.1 DR2 for Intel).
+    RamAbs,
 }
 
 impl InputBackend {
@@ -255,6 +267,7 @@ impl InputBackend {
             Self::MameSock => "mamesock",
             Self::ViceSock => "vicesock",
             Self::MgaCtl => "mgactl",
+            Self::RamAbs => "ramabs",
         }
     }
 
@@ -276,7 +289,8 @@ impl InputBackend {
             | Self::X11Test
             | Self::MameCmd
             | Self::MameSock
-            | Self::MgaCtl => "abs",
+            | Self::MgaCtl
+            | Self::RamAbs => "abs",
         }
     }
 }
@@ -309,12 +323,13 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
         Some(v) if v.eq_ignore_ascii_case("mamesock") => InputBackend::MameSock,
         Some(v) if v.eq_ignore_ascii_case("vicesock") => InputBackend::ViceSock,
         Some(v) if v.eq_ignore_ascii_case("mgactl") => InputBackend::MgaCtl,
+        Some(v) if v.eq_ignore_ascii_case("ramabs") => InputBackend::RamAbs,
         Some(v) if v.eq_ignore_ascii_case("dbus") && legacy_pointer.is_dbus() => legacy_pointer,
         Some(v) if v.eq_ignore_ascii_case("dbus") => panic!(
             "invalid legacy input combination SH_POINTER=warpd + SH_INPUT_BACKEND=dbus; use SH_INPUT_BACKEND=dbus-abs|dbus-rel|warpd|gallery-hid"
         ),
         Some(v) => panic!(
-            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock|mgactl (legacy dbus also accepted with SH_POINTER=abs|rel)"
+            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock|mgactl|ramabs (legacy dbus also accepted with SH_POINTER=abs|rel)"
         ),
         None => legacy_pointer,
     }
@@ -413,7 +428,20 @@ mod tests {
             parse_input_backend("abs", Some("vicesock")),
             InputBackend::ViceSock
         );
+        assert_eq!(
+            parse_input_backend("abs", Some("mgactl")),
+            InputBackend::MgaCtl
+        );
+        assert_eq!(
+            parse_input_backend("abs", Some("ramabs")),
+            InputBackend::RamAbs
+        );
+        assert_eq!(
+            parse_input_backend("abs", Some("RAMABS")),
+            InputBackend::RamAbs
+        );
         assert_eq!(InputBackend::ViceSock.pointer_mode(), "none");
+        assert_eq!(InputBackend::RamAbs.pointer_mode(), "abs");
     }
 
     /// The rejection must name every accepted value, or an operator debugging a
@@ -429,6 +457,13 @@ mod tests {
     #[test]
     #[should_panic(expected = "vicesock")]
     fn unknown_backend_error_lists_vicesock() {
+        parse_input_backend("abs", Some("garbage"));
+    }
+
+    /// ...ramabs included.
+    #[test]
+    #[should_panic(expected = "ramabs")]
+    fn unknown_backend_error_lists_ramabs() {
         parse_input_backend("abs", Some("garbage"));
     }
 
