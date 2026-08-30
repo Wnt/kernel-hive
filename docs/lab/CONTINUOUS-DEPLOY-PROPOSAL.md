@@ -331,6 +331,37 @@ combination check.
 
 ## 6. Automated acceptance (I.10, I.11 — rule 9 as code)
 
+**The boundary is the point — prove the thing you ship, through the path it
+ships on.** The rhapsody post-mortem's sharpest finding is not the session
+leak; it is *where the proof boundary sat*. The wave's sandbox harnesses spoke
+the control protocol to QEMU's chardev directly, with their own client and
+with `streamhost` **not running in the rig**. 8/8 and 6/6 targets, three
+observers, two runs, framebuffer-exact — all validating the mechanism and the
+device, while the component that actually shipped (the daemon's sink) sat
+outside the proof boundary entirely. The only untested component was the only
+one that broke, and no amount of repetition or session churn could have
+reached it — the harness could not touch it at any repetition count. This is a
+*boundary* gap, not a sampling gap.
+
+Nor is it a discipline failure a better checklist fixes: five independent,
+rigorous agents each drew the boundary one component short of what ships, and
+a coordinator reviewing all five did not notice. That is what happens whenever
+the **author of a change also chooses the boundary of its proof.** It is the
+case for `station-accept.sh` existing at all: an acceptance gate that runs the
+same way for every station, at the real boundary, is structurally immune to
+author-drawn boundaries — and once the reconciler is the one running it,
+"proven" stops being a claim an author makes about their own work and becomes
+a property the system observes.
+
+**The acceptance boundary is therefore defined, fixed and non-negotiable:
+browser client → SPA/signaling → streamhost daemon → input sink → device →
+guest → framebuffer.** Evidence that does not traverse this whole path is a
+component test — valuable during development, *never* acceptance — and the
+gate refuses to certify a station on it. Concretely, the probe client speaks
+the same WebTransport protocol a visitor's browser speaks, to the same daemon
+process the station will run; it never talks to the chardev, the ctl socket or
+the device directly.
+
 New: `scripts/host/station-accept.sh <station>` (callable by humans today,
 by the reconciler in stage 4). Per-station spec in the registry
 (`acceptance:` stanza): reference cursor sprite, a safe probe rectangle, the
@@ -360,8 +391,10 @@ exact-match, `frame-compare.py`, streamhost `STAT`):
    Every sandbox proof in that wave (7–14 targets, three observers, two runs,
    framebuffer-exact) used ONE session, so the method certified the exact
    defect by construction. A single-session acceptance run is not an
-   acceptance run. The churn must be *sequential and sparse*, not a hammer —
-   see the observation-rate bound below;
+   acceptance run. Churn is a corollary of the boundary rule — "prove the
+   thing you ship, through the path it ships on" is the lesson; "run it more
+   than once" follows from it. The churn must be *sequential and sparse*, not
+   a hammer — see the observation-rate bound below;
 6. `STAT` counters sane *as corroboration only* — telemetry may support a
    pass, never substitute for the framebuffer (I.11); frozen-counter
    comparison across the churn of step 5 is the one place counters are
