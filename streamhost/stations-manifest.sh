@@ -952,9 +952,9 @@ emit amigaos35 \
 #   Promoted to a listed production station on 2026-08-26, against the golden
 #   baked that day and slot 171 / UDP 54171 inside the public relay range.
 emit aix432 \
-  --tile aix432 --vmid 171 --udp 54171 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
-  --fps 30 --launcher-file "$T/aix432/qemu-streamhost.sh" --env-append-file \
+  --tile aix432 --vmid 171 --udp 54171 --pointer abs --input-backend mgactl \
+  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off --fps 30 \
+  --launcher-file "$T/aix432/qemu-streamhost.sh" --env-append-file \
   "$T/aix432/station.env.fixture"
 
 # ---------------------------------------------------------------------------

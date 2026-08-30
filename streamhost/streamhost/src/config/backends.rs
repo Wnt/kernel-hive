@@ -229,6 +229,17 @@ pub enum InputBackend {
     /// Single-injector rule: the station must then NOT be driven through VICE's
     /// binary monitor.
     ViceSock,
+    /// Native `mgaptr/1` route for `aix432`: the fleet's second CLOSED-LOOP
+    /// pointer, and the first one inside QEMU. AIX's GXT130P X server drives
+    /// the emulated Matrox HARDWARE cursor, so the guest writes the pointer
+    /// position into the DAC's CURPOSX/Y registers and the device model reads
+    /// them back — the loop converges on the measurement instead of reckoning
+    /// deltas against a belief the way `DbusRel` must. Pointer only: keys stay
+    /// on this station's working QEMU/dbus path. Never inferred — only set
+    /// explicitly via `SH_INPUT_BACKEND=mgactl` (socket `SH_MGACTL_SOCK`).
+    /// Single-injector rule: nothing else may push motion or button edges at
+    /// that guest's PS/2 mouse while the socket is connected.
+    MgaCtl,
 }
 
 impl InputBackend {
@@ -243,6 +254,7 @@ impl InputBackend {
             Self::MameCmd => "mamecmd",
             Self::MameSock => "mamesock",
             Self::ViceSock => "vicesock",
+            Self::MgaCtl => "mgactl",
         }
     }
 
@@ -259,9 +271,12 @@ impl InputBackend {
             Self::Disabled | Self::ViceSock => "none",
             Self::DbusRel => "rel",
             Self::Warpd => "warpd",
-            Self::DbusAbs | Self::GalleryHid | Self::X11Test | Self::MameCmd | Self::MameSock => {
-                "abs"
-            }
+            Self::DbusAbs
+            | Self::GalleryHid
+            | Self::X11Test
+            | Self::MameCmd
+            | Self::MameSock
+            | Self::MgaCtl => "abs",
         }
     }
 }
@@ -293,12 +308,13 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
         Some(v) if v.eq_ignore_ascii_case("mamecmd") => InputBackend::MameCmd,
         Some(v) if v.eq_ignore_ascii_case("mamesock") => InputBackend::MameSock,
         Some(v) if v.eq_ignore_ascii_case("vicesock") => InputBackend::ViceSock,
+        Some(v) if v.eq_ignore_ascii_case("mgactl") => InputBackend::MgaCtl,
         Some(v) if v.eq_ignore_ascii_case("dbus") && legacy_pointer.is_dbus() => legacy_pointer,
         Some(v) if v.eq_ignore_ascii_case("dbus") => panic!(
             "invalid legacy input combination SH_POINTER=warpd + SH_INPUT_BACKEND=dbus; use SH_INPUT_BACKEND=dbus-abs|dbus-rel|warpd|gallery-hid"
         ),
         Some(v) => panic!(
-            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock (legacy dbus also accepted with SH_POINTER=abs|rel)"
+            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock|mgactl (legacy dbus also accepted with SH_POINTER=abs|rel)"
         ),
         None => legacy_pointer,
     }

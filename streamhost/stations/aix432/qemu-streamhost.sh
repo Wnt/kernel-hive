@@ -48,6 +48,28 @@
 # framebuffer stays "Guest has not initialized the display (yet)" until AIX's
 # own LFT driver lights the Matrox. That is expected, not a fault.
 #
+# THE POINTER IS A CLOSED LOOP, and the chardev below is what closes it. The
+# 40p has a PS/2 mouse and no absolute device of any kind, so this station used
+# to reckon absolute coordinates by dead reckoning (SH_INPUT_BACKEND=dbus-rel)
+# -- pin the cursor into a corner once, then push deltas from a belief that
+# guest acceleration, an edge clamp or an X warp silently invalidates. It does
+# not have to. AIX's GXT130P X server drives the emulated Matrox HARDWARE
+# cursor, so the guest writes its own pointer position into the DAC's CURPOSX/Y
+# registers and hw/display/mga.c reads them back: the engine there converges on
+# the MEASUREMENT, exactly as irix's MOVEA engine converges on the Newport VC2
+# registers inside MAME (docs/IO-PATHS.md). `-global mga.ptrctl=ptr0` hands the
+# device the control socket the daemon speaks mgaptr/1 over; drop it and the
+# device behaves exactly as it did before the engine existed -- no timer, no
+# handlers, no injection -- which is also the rollback (pair it with
+# SH_INPUT_BACKEND=dbus-rel in station.env.fixture, and nothing else changes).
+#
+# SINGLE INJECTOR (BINDING). While that socket is connected the engine owns
+# this guest's pointer. Nothing else may push motion or button edges at the
+# mouse -- not the dbus-rel bridge, not `input-send-event` over QMP, not a
+# labctl pointer helper -- or the two injectors fight over the guest's PS/2
+# accumulator and neither knows where the cursor is. Keys are unaffected: they
+# still ride the ordinary QEMU/dbus keyboard path.
+#
 # NO BOOTABLE MEDIA IN THE CD DRIVE, EVER. The CD is nicdrv.iso, a 660 KB
 # NON-bootable ISO holding the two ethernet filesets. Attaching the real AIX
 # 4.3.3 Volume 1 install disc here instead makes the machine boot THAT and trap
@@ -83,7 +105,7 @@ QEMU=/opt/qemu-ppc-s3/bin/qemu-system-ppc
 DISK=$D/aix432-golden.qcow2
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock" "$D/gdb.sock"
+rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock" "$D/gdb.sock" "$D/ptr.sock"
 LOADVM=""
 if qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden; then
   LOADVM="-loadvm golden -S"
@@ -117,6 +139,8 @@ nohup env PREP_TB_FREQ=15000000 "$QEMU" \
   -drive file=$DISK,format=qcow2,if=scsi,bus=0,unit=0,cache=writeback,aio=threads \
   -drive file=$A/nicdrv.iso,format=raw,if=scsi,bus=0,unit=2,media=cdrom,readonly=on \
   -vga mga \
+  -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
+  -global mga.ptrctl=ptr0 \
   -netdev tap,id=n0,ifname=aixrn0,script=no,downscript=no \
   -device pcnet,netdev=n0,mac="$RN_AIX432_MAC",romfile= \
   -display dbus,p2p=on \

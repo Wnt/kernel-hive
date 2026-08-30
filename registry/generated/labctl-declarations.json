@@ -5,7 +5,7 @@
     "aix432": {
       "dir": "/data/vms/streamhost/stations/aix432",
       "qmp": "/data/vms/streamhost/stations/aix432/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -17,7 +17,7 @@
       "exec_shell": null,
       "console": "fb",
       "udp_port": 54171,
-      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P, and the pointer is PS/2 relative (no tablet on a 40p), so the daemon reckons absolute coordinates itself. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
+      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
     },
     "alpine": {
       "dir": "/data/vms/streamhost/stations/alpine",

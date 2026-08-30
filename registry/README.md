@@ -290,6 +290,7 @@ tile author all actually ask:
 | `qemu-usb-tablet` | QEMU `-device usb-tablet` reports absolute HID coordinates and the guest's own USB HID driver consumes them — the ordinary x86 case | `winxp` |
 | `qemu-vmmouse` | QEMU's VMware-backdoor absolute aux mouse on the i8042, consumed by a VMware mouse driver inside the guest; no USB involved | `nt4` (explicit `vmport=on`), `serenityos` (implicit q35 default) |
 | `qemu-ps2-relative` | no absolute path exists: paced, bounded relative deltas into the emulated PS/2 mouse | `nextstep`, `qnx` |
+| `qemu-mga-closedloop` | still relative on the wire — but the guest drives the emulated Matrox HARDWARE cursor, so QEMU reads its pointer back out of the DAC's CURPOSX/Y registers and a loop inside `hw/display/mga.c` converges on the commanded pixel. `absolute: true` is earned by measurement, not by a device | `aix432` |
 | `gallery-hid` | a bespoke `gallery-hid-pci` device in the locally patched QEMU plus its matching in-guest driver, taking absolute coordinates natively | `solaris` |
 | `warpd-agent` | an in-guest agent warps the guest's own cursor to the requested coordinate | `win95` |
 | `mame-ioport` | streamhost writes the EMULATOR's input ports, never the guest: closed-loop `MOVEA` targets to MAME's in-emulator control module | `irix` |

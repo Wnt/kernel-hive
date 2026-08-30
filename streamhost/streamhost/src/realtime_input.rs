@@ -575,6 +575,9 @@ impl InputRouter {
                 cfg.vicectl_sock.clone(),
                 crate::vice_keymap::ViceKeyMap::from_env(),
             ),
+            InputBackend::MgaCtl => {
+                crate::mga_ctl::MgaCtlSink::new(crate::mga_ctl::socket_from_env(&cfg.tile))
+            }
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(
                     &cfg.x11_display,

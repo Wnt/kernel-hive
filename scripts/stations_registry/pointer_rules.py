@@ -44,6 +44,15 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # on the commanded pixel. There is no QEMU here at all -- no usb-tablet, no
     # PS/2, no ADB -- so the device ledger must name none of them.
     "previous-tablet": ({"mamesock"}, (), ("usb-tablet",)),
+    # aix432: the fleet's second CLOSED-LOOP pointer and the first inside QEMU.
+    # The 40p has a PS/2 mouse and no absolute device at all, so on the WIRE
+    # this is still relative -- but AIX's X server drives the emulated Matrox
+    # HARDWARE cursor, so the device model reads the guest's own pointer
+    # position back out of the DAC's CURPOSX/Y registers and converges on it.
+    # `absolute: true` is therefore earned by measurement, not by a device. The
+    # ledger must show the control chardev the engine serves: without
+    # `mga.ptrctl` the loop is not armed and the daemon has nothing to talk to.
+    "qemu-mga-closedloop": ({"mgactl"}, ("mga.ptrctl",), ("usb-tablet",)),
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
@@ -57,6 +66,7 @@ POINTER_MODE_BY_BACKEND = {
     "x11test": "abs",
     "mamecmd": "abs",
     "mamesock": "abs",
+    "mgactl": "abs",
     # Keyboard-only by construction: InputBackend::pointer_mode() reports
     # "none" for ViceSock, and the sink has no pointer verb at all.
     "vicesock": "none",

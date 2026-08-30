@@ -33,7 +33,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/aix432",
       "qmp": "/data/vms/streamhost/stations/aix432/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -43,7 +43,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54171,
-      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P, and the pointer is PS/2 relative (no tablet on a 40p), so the daemon reckons absolute coordinates itself. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
+      "notes": "Framebuffer console only: AIX's LFT draws through the emulated Matrox GXT130P. The pointer is PS/2 relative on the wire (no tablet on a 40p) but ABSOLUTE to the daemon: AIX drives the Matrox HARDWARE cursor, so QEMU reads the guest's own pointer position back out of the DAC CURPOSX/Y registers and a closed loop inside hw/display/mga.c converges on the commanded pixel -- labctl 'abs x y' lands 1:1 and nothing dead-reckons. Keys still ride the QEMU/dbus path. No exec channel. Reset restores the in-qcow2 'golden' snapshot, which skips the genuine IBM firmware's POST entirely -- a cold boot walks that POST and takes 15-25 minutes."
     }
   },
   "render": {
@@ -64,10 +64,10 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "mgactl",
+      "method": "qemu-mga-closedloop",
+      "absolute": true,
       "present": true,
       "device": "i8042-ps2-mouse",
       "scale": 1.0,
@@ -95,6 +95,7 @@
         "-M 40p,audiodev=snd0 -accel tcg -m 192 (the machine reports 128 MiB whatever is passed; -m 512 is refused outright)",
         "-bios $ROMS/rs6k40p.BIN (the GENUINE IBM 7020-40P boot ROM; PREP_TB_FREQ=15000000 in the environment, and the POST settimeofday call must be skipped)",
         "-vga mga (the Matrox MGA model added on this branch; AIX claims it as the GXT130P, mg21)",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off -global mga.ptrctl=ptr0 (the closed-loop pointer engine's control socket; the daemon speaks mgaptr/1 over it)",
         "-drive file=$D/aix433-golden.qcow2,format=qcow2,if=scsi,bus=0,unit=0 (LSI 53c810 at PCI_DEVFN(1,0) — the machine has NO IDE)",
         "-global cs4231a.dma=6 (AIX's CS4231 driver fixes play DMA at 6; QEMU defaults to 3. iobase 0x830 / IRQ 10 already match)",
         "-netdev tap,id=n0,ifname=aixrn0,script=no,downscript=no -device <NIC>,netdev=n0,mac=$RN_AIX432_MAC (retronet bridge vmbr-rn)",
@@ -103,7 +104,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set against binary c55199da, branch aix432-s3 @ 1f9df8efdf"
+        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set. The binary moved to 5d9d8a0b (branch aix432-s3 @ 8b40203e, the closed-loop pointer) WITHOUT a re-bake, and does not need one: the engine adds no migration state and the ptrctl chardev is not a device, so the device set and the vmstate signature are unchanged -- restore-proven under this binary on the ptrloop rig. INSTALL ORDER MATTERS: the binary must be in place BEFORE this launcher, because `-global mga.ptrctl=ptr0` on the previous binary is an unknown property and QEMU refuses to start."
       },
       "deviceSetId": "aix432-40p-ppc604-1024x768x8-mga-pcnet",
       "launcher": "streamhost/stations/aix432/qemu-streamhost.sh",
@@ -116,9 +117,9 @@
         "--udp",
         "54171",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "mgactl",
         "--cursor-scale",
         "1.0",
         "--cursor-off-x",
@@ -134,7 +135,7 @@
         "--env-append-file",
         "$T/aix432/station.env.fixture"
       ],
-      "binarySha256": "c55199daf4a6e8ebaa71f3889d2189c6c085f46cdffa7880e16d629b2209db22"
+      "binarySha256": "5d9d8a0b5bb1115d31631781051b9dd36e1b7a2a62f5350270a47615ee2c0cc3"
     },
     "stationEnv": {
       "SH_STATION": "aix432",
@@ -151,7 +152,7 @@
   },
   "reset": {
     "stationDir": "aix432",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
@@ -164,7 +165,7 @@
     "transport": "streamhost",
     "accentColor": "#2f6ea8",
     "eraLabel": "1999 · IBM RS/6000 — AIX 4.3.3 / CDE",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "aix432",
@@ -198,7 +199,7 @@
   "emulator": {
     "family": "QEMU",
     "version": "11.0.2",
-    "source": "github.com/Wnt/qemu @ aix432-s3 (11.0.2 + Poussineau's S3 Trio port + a new hw/display/mga.c + Tarasenko's lsi/raven AIX fixes + a PS/2 set-3 ACK fix), built to /opt/qemu-ppc-s3",
+    "source": "github.com/Wnt/qemu @ aix432-s3 (11.0.2 + Poussineau's S3 Trio port + a new hw/display/mga.c, including its closed-loop 1:1 pointer engine + Tarasenko's lsi/raven AIX fixes + a PS/2 set-3 ACK fix), built to /opt/qemu-ppc-s3",
     "driver": "40p"
   },
   "ui": "desktop",
@@ -219,6 +220,7 @@
     "Tier 1 host-native station; slot 171 / UDP 54171 claimed via kh-claim, retronet 10.99.0.28 / tap aixrn0 claimed with it.",
     "DISABLED CANDIDATE: not in the streamhost, signal, bring-up, golden, action-map or SPA lineups. Two things gate promotion — (1) a restore-proven golden baked against a TRACKED launcher, (2) streamhost/stations/aix432/ actually existing so runtime.qemu.launcher/envFixture/emitArgs can be filled. Slot 171 / UDP 54171 is INSIDE ports.publicRelayLow..High (54080-54200) in registry/registry-v1.json, so the relay port is no longer a gate — the station is still not promotable on the two reasons above.",
     "Slot 171 was chosen after the walk-in clone pool's reservation was re-cut from 152-200 down to 152-170 (docs/lab/WALKIN-BRIEF.md) — the pool only ever used 152-160, and the station fleet had run out of relay-window slots, so the top of the reservation was given back. The scaffolder's allocator does not know about the walk-in reservation and would have handed out 152.",
-    "Known not to work, and not to be claimed anywhere visitor-facing: CorelDRAW 3.5 (LOADS and runs once LIBPATH carries its own directory; now dies at X_StoreColors BadAccess — see docs/guests/aix432.md), Abuse's window (runs, stays black), and the MGA hardware cursor (unimplemented — the pointer is invisible)."
+    "Known not to work, and not to be claimed anywhere visitor-facing: CorelDRAW 3.5 (LOADS and runs once LIBPATH carries its own directory; now dies at X_StoreColors BadAccess — see docs/guests/aix432.md) and Abuse's window (runs, stays black).",
+    "The pointer is a CLOSED LOOP — the fleet's second after irix, and the first one inside QEMU. AIX's GXT130P DDX drives the Matrox hardware cursor, so hw/display/mga.c reads the guest's own pointer position out of the DAC CURPOSX/Y registers and converges on the target instead of reckoning deltas against a belief. The engine adds NO migration state, so the golden is unaffected; `-global mga.ptrctl=ptr0` arms it, and dropping that flag restores the previous dbus-rel behaviour exactly."
   ]
 }

@@ -10,8 +10,12 @@ CorelDRAW 3.5. A QEMU model for the Matrox behind IBM's GXT130P was written for
 this station, and under the **genuine IBM 40p boot ROM** AIX brings up `gxme0`,
 `rcm0`, `mg21`, `lft0` and `paud0` from authentic PReP residual data with **no
 guest patching**. A full CDE desktop, Netscape Communicator 4.08 and Quake 1.07
-all draw on the emulated card (§4.5). Outstanding: the hardware cursor, and
-CorelDRAW, which needs an AIX 3.2-era library AIX 4.3 does not ship.
+all draw on the emulated card (§4.5). The hardware cursor is implemented, and
+it is what makes the pointer a **closed loop** rather than a dead-reckoned one
+— the guest writes its own pointer position into the DAC and the model reads it
+back; see [`guests/aix432.md`](../../guests/aix432.md#the-pointer-is-a-closed-loop).
+Outstanding: CorelDRAW, which needs an AIX 3.2-era library AIX 4.3 does not
+ship.
 
 ## 1. Why this station is not "AIX 4.3.2", as originally scoped
 
@@ -337,10 +341,18 @@ real firmware's residual data — no `odmadd`/`mkdev` dance — and Abuse's own
 Capturing the waveform (`-audiodev wav,id=snd0,path=…`) has not been done, since
 it costs a full reboot.
 
-Remaining device-model gaps, all cosmetic or small: the **hardware cursor**
-(XCURCTRL mode 3 — the pointer is invisible), strict `CXRIGHT==0` clip semantics
-(stale spokes when a window maps), ILOAD BFCOL implemented for 8bpp only, and
-TRAP pattern fills drawn solid.
+Remaining device-model gaps, all cosmetic or small: strict `CXRIGHT==0` clip
+semantics (stale spokes when a window maps), ILOAD BFCOL implemented for 8bpp
+only, and TRAP pattern fills drawn solid.
+
+The hardware cursor is implemented (DAC1064 style, 64x64x2bpp at
+`XCURADD<<10`). Two things about it are worth carrying forward because both
+look like something else: the 8 bytes of each plane row are **byte-reversed in
+VRAM** (the DDX uploads the sprite with 64-bit stores, which land byte-swapped
+in the little-endian aperture — read the wrong way round it still renders and
+still tracks, ~48 px to the right of the real pointer), and the position bias
+is **64, not the 57 the screen clamp appears to measure** — the 7 is the
+X_cursor's own centre hotspot.
 
 This is also **why** the Virtual OS Museum resorted to XDMCP — not laziness, but
 the same wall:
