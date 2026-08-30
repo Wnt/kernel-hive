@@ -474,12 +474,15 @@ browser, and they already encode the rule this section needs: `videoWidth`,
 stopped** — a paused element showing a stale frame satisfies every one of
 them. Motion is the only honest signal. A gate built on stream-surface
 properties would happily certify a *frozen* stream — precisely the state
-rhapsody's second session would have presented. This is now the *third*
-independent instance of the same class, at a third layer: STAT healthy while
+rhapsody's second session would have presented. This is one of *four*
+independent instances of the same class today, each at a different layer: STAT healthy while
 the drawn cursor sat 1–2 px off (I.11); input-router counters frozen at the
 first session's totals while 40 sessions failed to negotiate (§2); and a
 video element that is sized, ready and non-black while showing a stopped
-stream. Three indicators that are true and mean nothing. So the probe treats
+stream; and an *empty log* from an observer that was silently holding the
+very resource under contention (below). Four indicators, at four layers, each
+true and each meaning nothing — and the second and fourth are both cases a
+same-pass control station catches immediately. So the probe treats
 `videoWidth`/`readyState`/non-black as necessary-but-insufficient
 *preconditions*, and the evidence is successive-frame comparison: the
 commanded interaction must produce pixel change in the expected place, in
@@ -501,6 +504,22 @@ interaction) while the perturbation hazard sets a *ceiling* (dense sampling
 can stop the very negotiation under test). The document deliberately does not
 pick a number; it requires that both bounds exist, per station, and that the
 spec name them.
+
+**The harness must not hold an exclusive resource it does not need — and its
+silence is not evidence of non-interference.** From the same wave: an
+observer patched to `connect → qmp_capabilities → sleep(DELAY)` produced an
+*empty* output file, which was read as "hadn't started capturing yet" — while
+it was in fact holding QEMU's single-client QMP monitor for the whole delay
+window. The emptiest-looking part of the run was the most interfering; the
+empty log did not merely fail to warn, it actively reassured, and the input
+sink was condemned on a comparison where the observer ran on one side and not
+the other. Two rules follow. (1) The gate acquires exclusive resources (QMP is
+the obvious one on this box) **per sample and releases immediately**, never
+for the duration of a run — holding a single-client monitor across a station's
+session lifecycle is indistinguishable, from the station's side, from the
+station being broken. (2) "Our observation did not cause this failure" must be
+a **positive** check — the same-pass control station above is what provides
+it — never an inference from a quiet log.
 
 **Every acceptance pass runs a simultaneous control station.** Because the
 gate can in principle cause what it detects, `failed(reason)` is only
