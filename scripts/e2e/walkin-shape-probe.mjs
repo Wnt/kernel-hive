@@ -40,6 +40,9 @@ console.log('CONSOLE_ERRORS', JSON.stringify(errors.slice(0, 8)));
 await browser.close();
 
 const fail = [];
+// NOT a total: the grid FOLDS, so only the eras open on a first visit render
+// cards. Expanding every era is what yields the announced count — see
+// walkin-fold-check in the README. Assert "the gallery rendered", not a total.
 if (invited.stuck || invited.cards === 0) fail.push('invited grid empty');
 if (walkin.stuck) fail.push('walk-in grid stuck on loading');
 if (walkin.cards === 0) fail.push('walk-in grid has no cards');
