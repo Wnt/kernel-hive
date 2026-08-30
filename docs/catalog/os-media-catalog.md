@@ -134,6 +134,10 @@ shared base `/data/vms/bridge/bridge-base.qcow2` already ships VICE `x64sc` +
 Synthesized from the family `topPicks` + `feasibility`/`effort`/`museumValue`.
 MV = museum value (1–5).
 
+For the **90s graphical-desktop** slice specifically — the five candidates that
+leave the Unix-workstation and Windows axes the lineup already covers densely —
+see [`candidates-90s-desktops.md`](candidates-90s-desktops.md).
+
 ### Wave 1 — Native-QEMU-x86 easy wins (no bridge, works-known, small effort, cleanest licensing)
 
 Ship these first; they reuse existing tile recipes and fill glaring gaps.

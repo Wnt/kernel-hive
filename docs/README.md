@@ -99,6 +99,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | Doc | What it is |
 |---|---|
 | [catalog/os-media-catalog.md](catalog/os-media-catalog.md) | Verified install-media + boot-recipe catalog (69 OS entries, licensing posture, difficulty scoring, ranked build order). |
+| [catalog/candidates-90s-desktops.md](catalog/candidates-90s-desktops.md) | Five candidate 90s graphical desktops that would bring something different (PC/GEOS, Magic Cap, FM Towns, AMIX, UnixWare/SCO), from the 2026-08-30 VOM survey. |
 | [catalog/software-catalog.md](catalog/software-catalog.md) | In-guest era software/games roster per guest. |
 
 System-level architecture docs are crate-local: streamhost's design docs live in
