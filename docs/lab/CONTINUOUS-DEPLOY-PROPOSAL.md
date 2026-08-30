@@ -198,6 +198,19 @@ notices.
   checkpoint-guard-style.
 - **Read paths never write** (I.9 codified): `kh-reconciler status|plan` are
   pure reads of the stamps and the store.
+- **Derived artifacts are rendered by the loop, never published by a
+  session** — the I.7 near-miss became a real one today, in slow motion: the
+  runtime manifests were rendered with `pointerRel=false` for three stations
+  from a registry that was *correct at render time*; the cutover then failed
+  and rolled back, and only a later re-render from the box (verified against
+  the published document, not assumed) put `pointerRel=true` back. Had nobody
+  re-checked, the SPA would have served the wrong pointer mode for three
+  stations running a relative pointer — two-sources-disagreeing in its most
+  visitor-facing form, produced by a render that was right when made and
+  wrong ten minutes later. A manifest rendered at moment T and published to a
+  shared location is stale the instant anything upstream moves; the only
+  correct renderer is the convergence loop itself, rendering from the
+  *applied* state as part of each reconcile (§10 stage 6).
 
 ---
 
@@ -347,15 +360,38 @@ exact-match, `frame-compare.py`, streamhost `STAT`):
    Every sandbox proof in that wave (7–14 targets, three observers, two runs,
    framebuffer-exact) used ONE session, so the method certified the exact
    defect by construction. A single-session acceptance run is not an
-   acceptance run;
+   acceptance run. The churn must be *sequential and sparse*, not a hammer —
+   see the observation-rate bound below;
 6. `STAT` counters sane *as corroboration only* — telemetry may support a
    pass, never substitute for the framebuffer (I.11); frozen-counter
    comparison across the churn of step 5 is the one place counters are
    load-bearing;
 7. hold a `WakeLease` for the whole run (existing tool; never hand-rolled).
 
-On failure the reconciler rolls back (§4.4) and marks `degraded` with the
-failing screendumps attached to the journal — evidence, not logs.
+**The gate must bound its own observation rate.** Observation perturbs the
+thing observed: screendumping a station every second is *itself* enough to
+stop a session negotiating — identified during today's wave at the cost of two
+failed runs. An acceptance check that samples the framebuffer aggressively can
+manufacture the exact failure it tests for, then "correctly" roll back a
+healthy deploy. So the sampling interval is an explicit, per-station
+`acceptance:` parameter with a documented failure mode on both sides — too
+sparse misses the defect, too dense *becomes* the defect — and it defaults
+sparse. It is a tuning parameter, not a free measurement.
+
+**Every acceptance pass runs a simultaneous control station.** Because the
+gate can in principle cause what it detects, `failed(reason)` is only
+trustworthy enough to auto-rollback on if a station fault can be separated
+from a box-wide or harness-induced one. The pattern already exists: the deploy
+agent's probe takes a `PROBE_OS` so an untouched station runs the same checks
+alongside, and that control is precisely what turned "rhapsody is broken" into
+"the ramabs sink is broken". Rule: candidate fails + control passes →
+rollback, `failed(evidence)`; candidate fails + control fails → NO rollback,
+`held(harness/box suspect)` and escalate — rolling back a healthy release on a
+harness fault is rollback flapping, which is worse than no gate.
+
+On failure the reconciler rolls back (§4.4) and marks `failed` with the
+failing screendumps and the control's results attached to the journal —
+evidence, not logs.
 
 **What stays human:** scene curation before a recapture (what the visitor
 should see); aesthetic judgement ("the exhibit looks right"); first bring-up
