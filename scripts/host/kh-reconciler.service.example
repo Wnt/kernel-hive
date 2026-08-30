@@ -1,0 +1,36 @@
+# kh-reconciler.service — THE UNIT THAT WOULD ARM THE LOOP. NOT INSTALLED.
+#
+# Deliberately named .example and deliberately NOT a box-sync pair row, so that
+# `box-install.sh` cannot deploy it and nothing enables it by accident.
+# Installing this is the operator's decision, not an implementation detail:
+# it is the moment the fleet starts converging with no human in the loop.
+#
+# Before anyone installs it, three things from stage 4/5 are still owed:
+#   * acceptance wired into the flip (scripts/dev/station-accept.sh as the gate);
+#   * the disruption windows of docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md 9 —
+#     restarts are exhibits blinking at visitors;
+#   * real stations migrated onto the releases/current layout.
+# And `kh-reconciler watch` has no continuous mode: it refuses anything but
+# --once, so this unit as written would converge once and exit. That is on
+# purpose. Arming means adding the loop, and adding the loop is the decision.
+#
+# To install (NOT NOW):
+#   cp kh-reconciler.service.example /etc/systemd/system/kh-reconciler.service
+#   systemctl daemon-reload && systemctl enable --now kh-reconciler.timer
+
+[Unit]
+Description=kernel-hive convergence reconciler (push-triggered, timer-backstopped)
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Its OWN private clone. The shared /data/kernel-hive is not a deploy source:
+# a shared mutable checkout is how "what is deployed?" stopped having an answer.
+Environment=KH_RECONCILER_REPO=/data/kh-reconciler/repo
+ExecStart=/usr/local/bin/kh-reconciler watch --once \
+          --repo ${KH_RECONCILER_REPO} --root /data/vms/streamhost
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

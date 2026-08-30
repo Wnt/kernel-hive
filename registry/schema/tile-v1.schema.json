@@ -659,6 +659,13 @@
           "type": "string"
         }
       }
+    },
+    "rollout": {
+      "enum": [
+        "auto",
+        "hold"
+      ],
+      "description": "The only promotion knob (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md 9). `hold` pins a station under investigation without blocking anybody's push. Default is HOLD while the loop is unarmed; `auto` additionally requires an acceptance stanza, because auto-converging a station the gate cannot judge is the unattended deploy this design exists to make safe."
     }
   }
 }

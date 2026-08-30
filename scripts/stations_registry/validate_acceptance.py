@@ -214,3 +214,34 @@ def _validate_cursor_bank(row: dict[str, Any], spec: dict[str, Any], errors: lis
             f"y <= {max_y}. A sprite clipped by the frame cannot be exact-matched, so the matcher "
             "returns an EXPECTED NotFound that looks exactly like a real failure",
         )
+
+
+ROLLOUT_VALUES = ("auto", "hold")
+
+
+def validate_rollout(rows: list[dict[str, Any]], errors: list[str]) -> None:
+    """`rollout: auto | hold` — the ONLY promotion knob (docs 9).
+
+    `hold` replaces today's implicit "the fleet is not auto-promoted": a station
+    under investigation can be pinned without blocking anybody's push, which is
+    the whole point of moving live state out of the push gate in stage 1.
+
+    The DEFAULT IS HOLD while stage 5 is unarmed. The proposal flips it to auto
+    once acceptance and the disruption windows exist; until they do, opt-in is
+    the honest setting — a unit nobody opted in must be visibly not converged,
+    never quietly converged.
+    """
+    for row in rows:
+        value = row.get("rollout")
+        if value is None:
+            continue
+        if value not in ROLLOUT_VALUES:
+            fail(errors, row, f"rollout must be one of {ROLLOUT_VALUES}, not {value!r}")
+        elif value == "auto" and not isinstance(row.get("acceptance"), dict):
+            fail(
+                errors,
+                row,
+                "rollout: auto without an acceptance stanza. Auto-converging a station the "
+                "acceptance gate cannot judge is exactly the unattended deploy this design "
+                "exists to make safe — opt in to auto only once the station can be proven",
+            )

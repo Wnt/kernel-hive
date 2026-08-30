@@ -14,7 +14,7 @@ from .pointer_rules import (
     POINTER_METHODS,
     POINTER_MODE_BY_BACKEND,
 )
-from .validate_acceptance import validate_acceptance
+from .validate_acceptance import validate_acceptance, validate_rollout
 from .validate_emulator import validate_emulator, validate_ui
 from .validate_facts import validate_facts
 from .validate_retronet import validate_retronet
@@ -334,6 +334,7 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_fleet_encoder(globals_doc, errors)
     validate_retronet(rows, errors)
     validate_acceptance(rows, errors)
+    validate_rollout(rows, errors)
     validate_facts(rows, errors)
     ids: dict[str, str] = {}
     unique: dict[str, dict[Any, str]] = {

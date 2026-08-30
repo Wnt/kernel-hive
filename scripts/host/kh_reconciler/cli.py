@@ -34,7 +34,14 @@ from pathlib import Path
 from .apply import UnitRoot, classify, flip, materialize, resume_needed, rollback
 from .closure import closure_hash, unit_closures
 from .denylist import NEVER_DERIVED, PROTECTED, ProtectedPathError, is_protected
-from .store import LiveRootRefused, ObjectStore
+from .loop import (
+    backstop_report,
+    classify_wake,
+    hint_is_trustworthy,
+    journal_row,
+    selectable_units,
+)
+from .store import LiveRootRefused, ObjectStore, refuse_live_root
 from .units import build_units, station_ids, unclaimed_live_rows
 
 # Written by the loop in stage 5; absent until then, and its absence is a
@@ -288,6 +295,94 @@ def cmd_journal(unit: str, root: Path) -> int:
     return 0
 
 
+def _git_rc(*args, cwd=None, check_rc=False):
+    out = subprocess.run(["git", *args], cwd=str(cwd) if cwd else None, capture_output=True, text=True)
+    return out.returncode == 0 if check_rc else out.stdout
+
+
+def loop_journal(root: Path) -> Path:
+    return Path(root) / ".kh-reconciler" / "journal.jsonl"
+
+
+def cmd_poke(root: Path) -> int:
+    """The manual trigger, through the SAME wakeup path as the webhook.
+
+    Deliberately not a second code path: an override that bypasses the normal
+    route is an override whose behaviour nobody has tested.
+    """
+    wakeup = Path(root) / ".kh-reconciler" / "wakeup"
+    wakeup.parent.mkdir(parents=True, exist_ok=True)
+    wakeup.write_text(json.dumps({"source": "manual", "ts": time.time(), "hint": None}) + "\n")
+    print(f"  poked {wakeup}")
+    return 0
+
+
+def cmd_watch(repo: Path, root: Path, once: bool) -> int:
+    """One convergence pass. There is NO daemonize path here on purpose.
+
+    Installing a loop that converges the fleet with no human in it is the
+    operator's decision, so this stage ships the mechanism and stops. `--once`
+    against a sandbox root is how it is exercised; nothing enables a timer,
+    nothing writes a unit file into systemd, and the live-root refusal still
+    applies underneath.
+    """
+    if not once:
+        print(
+            "kh-reconciler: watch requires --once. This stage builds the loop but does not "
+            "arm it: a continuously running converger is a separate authorisation.",
+            file=sys.stderr,
+        )
+        return 2
+    require_rows_clean(repo)
+    refuse_live_root(root)
+    journal = loop_journal(root)
+    rows = []
+    if journal.exists():
+        rows = [json.loads(x) for x in journal.read_text().splitlines() if x.strip()]
+    last_ts = float(rows[-1]["ts"]) if rows else 0.0
+    wakeup = Path(root) / ".kh-reconciler" / "wakeup"
+    trigger, hint = classify_wake(wakeup, last_ts, time.time())
+
+    # The loop fetches for ITSELF. The hint never selects what is deployed.
+    head = git("rev-parse", "HEAD", cwd=repo).strip()
+    trusted, note = hint_is_trustworthy(_git_rc, repo, (hint or {}).get("hint"), head)
+
+    units = _units(repo)
+    rollout = station_rollout(repo)
+    auto, held = selectable_units(units, rollout)
+    print(f"== converge (trigger: {trigger}) ==")
+    print(f"  origin/main as we fetched it: {head[:12]}")
+    print(f"  hint: {note}")
+    if not trusted:
+        print("  the hint is not corroborated; converging to what we fetched, as always")
+    print(f"  rollout auto: {len(auto)} unit(s); held: {len(held)}")
+    for unit in auto:
+        print(f"    would converge {unit}")
+    if not auto:
+        print("    nothing is opted in — default is HOLD while this stage is unarmed,")
+        print("    so a unit nobody opted in is visibly not converged, never quietly converged.")
+    journal.parent.mkdir(parents=True, exist_ok=True)
+    with journal.open("a") as fh:
+        fh.write(json.dumps(journal_row(trigger, head, hint, note, auto)) + "\n")
+    print()
+    for line in backstop_report([*rows, journal_row(trigger, head, hint, note, auto)], time.time()):
+        print(f"  {line}")
+    return 0
+
+
+def station_rollout(repo: Path) -> dict[str, str]:
+    """unit -> rollout mode, read from each station's declaration."""
+    modes = {}
+    for path in sorted((repo / "registry" / "stations").glob("*.json")):
+        try:
+            row = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if row.get("rollout"):
+            modes[f"station:{row.get('id', path.stem)}"] = row["rollout"]
+    return modes
+
+
 def cmd_denylist(repo: Path) -> int:
     print("== live state of record — never a closure member, never rolled back, never GC'd ==")
     for pattern in PROTECTED:
@@ -315,9 +410,21 @@ def main(argv=None) -> int:
     ap.add_argument("--root", help="sandbox root for apply/rollback/journal (never a live path)")
     ap.add_argument("--unit", help="unit for apply/rollback/journal")
     ap.add_argument("-n", "--dry-run", action="store_true")
+    ap.add_argument("--once", action="store_true", help="watch: a single pass (the only mode)")
     ap.add_argument(
         "command",
-        choices=("units", "plan", "status", "denylist", "rows", "apply", "rollback", "journal"),
+        choices=(
+            "units",
+            "plan",
+            "status",
+            "denylist",
+            "rows",
+            "apply",
+            "rollback",
+            "journal",
+            "watch",
+            "poke",
+        ),
         nargs="?",
         default="status",
     )
@@ -332,6 +439,13 @@ def main(argv=None) -> int:
             return cmd_denylist(repo)
         if ns.command == "rows":
             return cmd_rows(repo)
+        if ns.command in ("watch", "poke"):
+            if not ns.root:
+                print("kh-reconciler: --root is required", file=sys.stderr)
+                return 2
+            if ns.command == "poke":
+                return cmd_poke(Path(ns.root))
+            return cmd_watch(repo, Path(ns.root), ns.once)
         if ns.command in ("apply", "rollback", "journal"):
             if not (ns.root and ns.unit):
                 print("kh-reconciler: --root and --unit are required", file=sys.stderr)

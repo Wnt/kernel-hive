@@ -1003,10 +1003,28 @@ if nothing else ever ships.
    Still to come before this may run against the fleet: acceptance wired into
    the flip (stage 2's `station-accept.sh` as the gate), the disruption windows
    of §9, and the migration of real stations onto the layout.
-5. **The push trigger + close the loop for opt-in units** (§1.1): the
-   `/kh/deploy-hint` endpoint, the repo webhook, the post-CI Actions ping, the
-   30 min backstop tick and `kh-reconciler poke` — with the trigger of every
-   convergence recorded and surfaced. Then `rollout: auto` on a canary handful +
+5. **The push trigger + close the loop for opt-in units** (§1.1) —
+   **MECHANISM DONE, branch `cd-build`; NOT INSTALLED AND NOT ARMED.** Built and
+   tested: `scripts/serve/deploy_hint.py` (constant-time signature, rate limit
+   *before* the HMAC, delivery dedupe, `refs/heads/main` only, one-file side
+   effect), `kh_reconciler/loop.py` (trigger classification, hint corroboration,
+   backstop reporting), `kh-reconciler watch --once | poke`, the
+   `rollout: auto | hold` knob, and the Actions workflow. Deliberately left
+   unbuilt because building it would be half-arming: **the route is not wired**
+   (`deploy_hint.handle_post` is dispatched from nowhere, so it cannot go live
+   on the next serve deploy) and **there is no continuous mode** — `watch`
+   refuses anything but `--once`. The arming order is
+   [`docs/lab/CD-STAGE5-ARMING.md`](CD-STAGE5-ARMING.md), and every step in it
+   is an operator decision.
+   Two properties worth naming. **`rollout` defaults to `hold`, and `auto` is
+   validated to require an `acceptance` stanza** — auto-converging a station the
+   gate cannot judge is precisely the unattended deploy this design exists to
+   make safe, and since no station has a stanza yet, no station can be opted in
+   today. **A delivery id is remembered only when the hint is ACCEPTED**: GitHub
+   redelivers a failed delivery under the same id, so recording one we dropped
+   would turn its own retry into a silent no-op, leaving the box un-converged
+   with both sides believing they had done their part. That bug was found by a
+   test, not by review. Then `rollout: auto` on a canary handful +
    the `serve-code`, `serve-manifests` and `host-tools` units (docs/scripts
    auto-deploy is pure win, and the serve surfaces are the right first
    canaries: a mistake there costs a page reload, not an exhibit — per the
