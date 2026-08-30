@@ -239,7 +239,7 @@
     "beos": {
       "dir": "/data/vms/streamhost/stations/beos",
       "qmp": "/data/vms/streamhost/stations/beos/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -252,7 +252,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54143,
-      "notes": "RETRONET BRIDGE (2026-08-22): n0 is a tap on vmbr-rn (NOT slirp); the guest is a DHCP client on the reserved 10.99.0.16/24 with NO default route (rn-tapnet.sh + the fail-closed guard chain BEOSRN-IN, which aborts the launch if it does not verify). PS/2 RELATIVE pointer (pointerRel) -- R5 has no absolute tablet, and it applies its own acceleration, so scripted pointer work must be closed-loop (slam to 0,0, step, screendump, correct). exec = telnet_unix_e: labctl exec beos over BeOS R5's OWN telnetd at 10.99.0.16:23 over the bridge (no hostfwd, no agent in the guest, no port forward), user baron, password from the station dir's telnet-exec.passwd which the launcher writes from registry/local.env; client /root/sunexec.py with SUN_RC=$? because R5's login shell is bash. R5's ftpd is on :21 the same way for file transfer. KDL/kernel debug still lands on serial.log. See docs/lab/retronet/STATION-beos.md."
+      "notes": "RETRONET BRIDGE (2026-08-22): n0 is a tap on vmbr-rn (NOT slirp); the guest is a DHCP client on the reserved 10.99.0.16/24 with NO default route (rn-tapnet.sh + the fail-closed guard chain BEOSRN-IN, which aborts the launch if it does not verify). ABSOLUTE pointer via the kh-ramabs control object on <dir>/ptr.sock: the commanded pixel is written into app_server's own coordinate and published with one 1-unit PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. The address is bound to the golden and passed by KH_RAMABS_ADDR; unset it and the station falls back to the relative pointer. exec = telnet_unix_e: labctl exec beos over BeOS R5's OWN telnetd at 10.99.0.16:23 over the bridge (no hostfwd, no agent in the guest, no port forward), user baron, password from the station dir's telnet-exec.passwd which the launcher writes from registry/local.env; client /root/sunexec.py with SUN_RC=$? because R5's login shell is bash. R5's ftpd is on :21 the same way for file transfer. KDL/kernel debug still lands on serial.log. See docs/lab/retronet/STATION-beos.md."
     },
     "c128": {
       "dir": "/data/vms/streamhost/stations/c128",

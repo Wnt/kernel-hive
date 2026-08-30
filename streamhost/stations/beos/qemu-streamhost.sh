@@ -95,10 +95,44 @@ if [ -n "$_bp" ]; then
   )
 fi
 unset _bp
-# streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
+# streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms. On the
+# host package this is pve quilt slot 0047; on this station's own build it is
+# qemu-patch 0001, which the build MUST carry or the tile silently falls back
+# to the stock 30 ms scan.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
+
+# ---------------------------------------------------------------- pointer ----
+# ABSOLUTE pointer with no absolute device, no hardware cursor and no control
+# loop: `-device kh-ramabs` writes the commanded pixel into BeOS R5's OWN
+# pointer coordinate in guest RAM (two little-endian int32, layout point32le)
+# and injects one 1-unit PS/2 nudge so app_server republishes it. The hotspot
+# (measured (1,0) on R5's arrow) never enters the path.
+#
+# THE ADDRESS IS BOUND TO THE GOLDEN. `loadvm golden` restores RAM verbatim, so
+# the guest-physical address is fixed for the life of THAT checkpoint and no
+# longer; re-baking the golden REQUIRES re-deriving it (recipe:
+# docs/lab/BEOS-ABSOLUTE-POINTER.md, about twenty minutes).
+#
+# FAIL CLOSED, TWICE. If KH_RAMABS_ADDR is unset the device is not added at all
+# and the station keeps its relative pointer -- which is how this launcher is
+# safe to deploy BEFORE the golden that names an address exists. And when it IS
+# set, kh-ramabs still verifies the address at connect (the value must be a
+# plausible on-screen point, and a probe publish must land) and refuses every
+# write otherwise rather than scribbling on guest memory.
+#
+# SINGLE INJECTOR (BINDING): while $D/ptr.sock is connected this device owns the
+# guest pointer. No rel bridge, no QMP input-send-event, no labctl pointer
+# helper may push motion or button edges at the same mouse.
+PTR_ARGS=()
+if [ -n "${KH_RAMABS_ADDR:-}" ]; then
+  rm -f "$D/ptr.sock"
+  PTR_ARGS=(
+    -chardev "socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off"
+    -device "kh-ramabs,chardev=ptr0,addr=$KH_RAMABS_ADDR,layout=point32le,width=1024,height=768,nudge-units=1,nudge-px=1,settle-ms=${KH_RAMABS_SETTLE_MS:-150}"
+  )
+fi
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
-nohup qemu-system-x86_64 \
+nohup "${BEOS_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-beos \
   -accel tcg -m 512 -smp 1 \
   -machine pc-i440fx-11.0 -cpu pentium3 \
@@ -109,6 +143,7 @@ nohup qemu-system-x86_64 \
   -netdev tap,id=n0,ifname=beosrn0,script=no,downscript=no -device rtl8139,netdev=n0,mac="$RN_BEOS_MAC" \
   -serial file:$D/serial.log \
   $LOADVM \
+  "${PTR_ARGS[@]}" \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
   >"$D/qemu.log" 2>&1 &

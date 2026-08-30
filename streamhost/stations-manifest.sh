@@ -854,10 +854,17 @@ emit hpuxvue \
 #   VERBATIM launcher with conditional -loadvm golden. Two fixes live INSIDE the
 #   volume: config_manager/isa removed (PnP BIOS call page-faults input_server
 #   under SeaBIOS) and multiprocessor_support disabled (PCI IRQs via the PIC).
+#   POINTER: absolute with no absolute device, no hardware cursor and no
+#   control loop - `-device kh-ramabs` writes the commanded pixel into
+#   app_server's OWN pointer coordinate (two int32, layout point32le) and
+#   publishes it with one 1-unit PS/2 nudge, so the hotspot is never in the
+#   path and the device set is unchanged. Station binary /opt/qemu-beos
+#   (qemu-patches 0001+0007+0010), INSTALLED BEFORE this launcher.
 emit beos \
-  --tile beos --vmid 143 --udp 54143 --pointer rel --abs-pace-ms 30 --audio \
-  off --fps 30 --launcher-file "$T/beos/qemu-streamhost.sh" \
-  --env-append-file "$T/beos/station.env.fixture"
+  --tile beos --vmid 143 --udp 54143 --pointer abs --input-backend ramabs \
+  --abs-pace-ms 30 --audio off --fps 30 --launcher-file \
+  "$T/beos/qemu-streamhost.sh" --env-append-file \
+  "$T/beos/station.env.fixture"
 
 # newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780
 #   mono LCD) in HOST-NATIVE MAME 0.289 (news_r3k.cpp; drawshm frames, ctlsock

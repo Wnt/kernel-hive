@@ -19,7 +19,7 @@ mine" — the same rule as AGENTS.md rule 7, applied to a filename.
 | 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
 | 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
 | 0009 | *(allocated)* | `macos753` |
-| 0010 | *(allocated)* | `beos` |
+| 0010 | `kh-ramabs-point32le-layout` | `beos` — a second `kh-ramabs` layout (two int32) |
 
 Next free: **0011**. Add your row in the same commit that adds the patch, so the
 number and the claim land together rather than the claim living in someone's
