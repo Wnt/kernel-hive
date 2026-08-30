@@ -4,6 +4,38 @@ Every week, newest first.
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 
+<a id="week-4"></a>
+
+## Week 4 · The doors open to everyone · 2026-08-23 09:00 – 2026-08-30 09:00
+
+### New stations
+
+Three machines joined the floor, and one of them needed its graphics card built from scratch first. [AIX](https://kernelhive.madekivi.fi/os/aix432) is IBM's own Unix on IBM's own *PowerPC* workstation, and it refused to paint a desktop until the museum wrote that workstation's *Matrox* card into the emulator itself. The reward is a full **CDE** desktop, **Netscape Communicator**, and **Quake** running its demo loop on a *1999* RS/6000. [Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) is the last classic Mac OS — one menu bar, no protected memory, the Finder as the whole machine — and the first *PowerPC* Macintosh here. [超漢字](https://kernelhive.madekivi.fi/os/chokanji) is the strangest arrival yet: Ken Sakamura's **BTRON** desktop, where every file is a 'real object', heir to the system Japan once planned for all its schools. That makes 72 machines, 68 of them open to visitors.
+
+### Major features
+
+<u>You no longer need an invitation to use the museum.</u> Anyone can sign up and be handed a machine of their own — [Windows 3.11](https://kernelhive.madekivi.fi/os/win311), [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) or [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) — a private copy that is yours for the visit. Install something, break something, close the tab: the next visitor still gets a pristine one. The museum's private 1990s internet grew as well. Five more machines signed on to **ICQ**, taking the chat network to eleven: [Windows XP](https://kernelhive.madekivi.fi/os/winxp), [Windows 95](https://kernelhive.madekivi.fi/os/win95), OS/2 Warp on a client from before the protocol changed, [Windows 2000 on *Alpha*](https://kernelhive.madekivi.fi/os/w2kalpha) — running the ordinary *x86* client through the Alpha's own translator — and an [SGI Indy](https://kernelhive.madekivi.fi/os/irix), whose sign-in kept crashing the emulator until the fault was traced into its instruction translator and fixed. More machines browse the archived 1998 web too, each with the browser it would really have had: **Mosaic** on [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue), **WebExplorer** on OS/2, **OmniWeb** on Rhapsody.
+
+### Quality improvements
+
+[Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) used to wake up confused, because the emulator had never saved the machine's own clock; it now comes back exactly where you left it. [NeXTSTEP](https://kernelhive.madekivi.fi/os/nextstep) moved to a colour *NeXTstation*, and its double click works from a phone at last. [Windows 95](https://kernelhive.madekivi.fi/os/win95) drops off the chat network when it sits idle, and now dials back in by itself, with nothing to prod. The two *Alpha* machines share one build of their emulator, with a fix for mouse moves it had been quietly throwing away. And the museum keeps a written account of each week now, on its own About page — which is where you are reading this.
+
+### Also this week
+
+- [AIX](https://kernelhive.madekivi.fi/os/aix432) brings **CDE**, the desktop nearly every Unix vendor settled on, running on the line that carried IBM's Unix into the POWER era
+- [超漢字](https://kernelhive.madekivi.fi/os/chokanji) files its documents in a 原紙箱, a 'master-paper box', around a kanji set built for scholarship rather than office work
+- Period sites now arrive as their most complete snapshot rather than their closest-dated one, so a 1997 page shows up with its pictures instead of grey boxes
+- [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) reaches the archive in **Netscape 4.08** — a *1993* desktop on a 1998 web
+- [Windows XP](https://kernelhive.madekivi.fi/os/winxp) reads the same pages in **Internet Explorer 8**, five years of browser history apart
+- **Mosaic** could not read the archive's own search page until it was rebuilt in markup from Mosaic's own decade
+- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) joined the period web this week, on emulated *68040* hardware
+- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) got **OmniWeb 3.0**, the NeXT-lineage browser, sitting on the desktop where you can find it
+- [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) chats through **ICQ/2 1.503i**, the OS/2 native build, speaking an older protocol nobody else here uses
+- The gallery installs onto a phone's home screen like an app, and its collection page pulls to refresh
+- The [SGI Indy](https://kernelhive.madekivi.fi/os/irix)'s browser stopped nagging on every launch: the setting that silences it is not the one you would guess
+
+*35,124 lines of code.*
+
 <a id="week-3"></a>
 
 ## Week 3 · The museum gets its own internet · 2026-08-16 09:00 – 2026-08-23 09:00
