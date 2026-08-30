@@ -347,6 +347,16 @@ and the framebuffer, sampled sparsely around one browser-driven move:
 err=+0,+0` at `--tol 1`, hotspot `(1,1)` — the same arrow hotspot measured
 throughout.
 
+## The glyph bank
+
+`tests/cursor-banks/rhapsody.json` — four templates, hotspots `(1,1)` arrow,
+`(3,3)` Bookmarks frame, `(6,1)` OmniWeb content, `(1,1)` a second arrow learned
+over a different background. **Reuse it rather than learning a new one**: with a
+known template set a `NOTFOUND` is evidence, and with a freshly learned one it is
+a question about the templates. Bound to the golden re-baked 2026-08-23 at
+1024x768 RGB:555/16 — a re-bake invalidates it. Usage, extension and how to read
+`AMBIGUOUS`/`NOTFOUND`: `tests/cursor-banks/README.md`.
+
 ## Two traps worth keeping
 
 - **`cursor-locate.py` rejects any placement that falls outside the frame**, so
