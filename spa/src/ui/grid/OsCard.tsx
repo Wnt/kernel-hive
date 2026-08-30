@@ -113,9 +113,12 @@ export function OsCard({ vm, walkin, search, pool, cardRef, onKeyDown, onOpenPla
       // The href is a real, reachable page rather than "#": middle-click and
       // "open in new tab" then land somewhere true, while a plain click keeps
       // the placard in place without losing the visitor's scroll position.
+      // It carries the bundle's BASE_URL by hand because this is a raw <a> —
+      // react-router applies the basename to <Link>, not to an href, and
+      // without it a staged preview's cards point at the PRODUCTION site.
       <a
         {...shared}
-        href={`/walkin/exhibits#${vm.id}`}
+        href={`${import.meta.env.BASE_URL}walkin/exhibits#${vm.id}`}
         onClick={(e) => { e.preventDefault(); onOpenPlacard?.(vm.id); }}
       >
         <CardBody vm={vm} />
