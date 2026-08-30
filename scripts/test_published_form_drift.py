@@ -39,7 +39,9 @@ class PublishedCarriesThePatch(unittest.TestCase):
             (d / name).write_text(body)
         _git("add", "-A", cwd=d)
         _git("commit", "-qm", "published", cwd=d)
-        return d
+        gitdir = pfd._real_git_dir(d)
+        self.assertIsNotNone(gitdir, "a plain clone must resolve to a git dir")
+        return gitdir
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -71,6 +73,43 @@ class PublishedCarriesThePatch(unittest.TestCase):
     def test_missing_file_is_detected(self):
         fork = self._fork_with({"README": "nothing here\n"})
         self.assertFalse(pfd._published_carries(fork, "HEAD", self.patch))
+
+
+class SeriesIsCumulative(unittest.TestCase):
+    """A patch series is applied in order, so it must be JUDGED in order.
+
+    Regression: judging each patch against the bare base reported beos's 0009
+    and 0010 as diverged, because both edit a file that only exists once 0007
+    has been applied. That is a question the build never asks.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tree = Path(self._tmp.name)
+        (self.tree / "keep.c").write_text("orig\n")
+        # A creates the file; B edits what A created.
+        self.a = self.tree.parent / "a.patch"
+        self.a.write_text("--- /dev/null\n+++ b/new.c\n@@ -0,0 +1,1 @@\n+first\n")
+        self.b = self.tree.parent / "b.patch"
+        self.b.write_text("--- a/new.c\n+++ b/new.c\n@@ -1,1 +1,1 @@\n-first\n+second\n")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+        for f in (self.a, self.b):
+            f.unlink(missing_ok=True)
+
+    def test_dependent_patch_fails_against_the_bare_base(self):
+        """The false positive this fix removes — proven to be a false positive."""
+        self.assertEqual(pfd._patch_state(self.tree, self.b), "diverged")
+
+    def test_dependent_patch_applies_once_its_predecessor_is_applied(self):
+        self.assertEqual(pfd._patch_state(self.tree, self.a), "applies")
+        pfd._apply(self.tree, self.a)
+        self.assertEqual(pfd._patch_state(self.tree, self.b), "applies")
+
+    def test_an_applied_patch_then_reads_as_carried(self):
+        pfd._apply(self.tree, self.a)
+        self.assertEqual(pfd._patch_state(self.tree, self.a), "carried")
 
 
 class ItIsAReportNotAGate(unittest.TestCase):

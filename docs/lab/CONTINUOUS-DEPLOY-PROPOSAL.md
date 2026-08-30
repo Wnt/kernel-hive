@@ -407,6 +407,27 @@ neither of which builds anything:
    byte for byte" — proven with no forward apply, no base commit and no build.
    Needs a fork clone; without one it **SKIPs loudly** and names the command.
 
+**Known state as of 2026-08-30, recorded so nobody re-derives it.** The check
+reports real drift today — the published branch is ahead of the submodule
+gitlink. Reconciling those pointers belongs to the deploy stream, inside a fork
+reconciliation currently blocked on a device fix; the report's job is to name
+them, not to fix them. On where it can decide: the **CT950 checkout has the
+submodule initialised, so the containment leg decides there**; the box checkout
+does not (it holds an unpacked tree with no `.git`), and a `wt.sh` worktree
+inherits the box clone as its superproject, so a worktree needs `--fork`.
+
+**A probe can answer confidently for a reason unrelated to the question.** Worth
+recording next to the four false-health indicators of §6, because it is the same
+family one layer down: `git rev-parse --is-inside-work-tree` returns **true**
+inside the box's unpacked copy — a directory with no `.git` at all — because it
+sits inside the *superproject's* work tree, and `--git-dir` is fooled the same
+way, confidently naming the superproject's git dir. Either probe used as "is
+this a real repository?" is wrong on the box **in the direction that looks
+fine**. The discriminators that actually answer it are the presence of `.git`
+and the leading `-` in `git submodule status`. That is now a fifth measured
+instance of the pattern: a true signal, produced by a mechanism unrelated to the
+thing being tested, that reassures instead of warning.
+
 **A recorded pointer to a mutable ref goes stale in silence.** That is the second
 half of I.12 and it generalizes past this artifact: `qemuBuild.forkCommit` still
 named the pre-push commit and nothing noticed, because nothing was watching a
