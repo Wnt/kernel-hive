@@ -773,6 +773,46 @@ On failure the reconciler rolls back (§4.4) and marks `failed` with the
 failing screendumps and the control's results attached to the journal —
 evidence, not logs.
 
+**Assert the MECHANISM, not just the outcome — and never adjudicate between
+two checks that disagree.** Added 2026-08-30 from a third incident the same
+night, which is the sharpest argument in this section. A device bug stranded a
+button edge against a stopped guest; the purpose-built acceptance test for the
+fix went **PASS** on a fix that was necessary but not sufficient. A second test,
+which pinned the *shape* of the failure — an edge with no following motion, and
+whether a later motion released it — **disagreed**. Trusting the disagreement
+over the pass found two further defects behind the same symptom, one of which
+would have reached visitors: a coordinate written while the guest was stopped
+was never published, so on resume the value matched our own write and the tick
+declared convergence while the guest had never repainted. Measured at the
+shipping boundary as a session settling at 298,280 for a commanded 300,300.
+Three rules follow, all cheap, none needing new infrastructure:
+
+1. **A pass must assert the properties that make the reaction repeatable**, not
+   only that the symptom is absent: input actually accepted, nothing dropped or
+   overflowed, no give-ups, nothing left in flight. These come from counters the
+   run already collects. This does **not** contradict "counters are not
+   evidence" — the reconciling rule is that **telemetry may only ever SUBTRACT
+   confidence, never add it.** A healthy counter can never turn a FAIL into a
+   PASS (that is the substitution this section forbids, and frozen counters were
+   one of the four true-and-meaningless indicators); a sick counter *can* turn a
+   PASS into a FAIL, because it names a mechanism fault the pixels happened not
+   to show this time.
+2. **A read-back that matches our own write is not evidence the guest acted.**
+   That is the same trap in a new place and it has now been measured twice. Every
+   acceptance clause must be satisfiable only by guest-side change: pixels that
+   moved, in a place we named, after something we commanded.
+3. **Where two checks disagree, the gate fails and names both results.** It does
+   not adjudicate, and it never silently prefers the passing one — a gate that
+   does reproduces the exact bug it exists to catch. `DISAGREE` is red.
+
+**And a missing template is INCONCLUSIVE, never a failure.** In that same run a
+`NOTFOUND` from the cursor matcher turned out to be a template bank that did not
+cover the station's glyph set — a harness gap, not a device fault. Per-station
+template provisioning is therefore an explicit precondition of the pointer leg,
+and its absence reports as inconclusive. Rolling a healthy station back for a
+missing template is precisely the flapping §12 forbids, and a harness gap must
+never be able to roll anything back.
+
 **What stays human:** scene curation before a recapture (what the visitor
 should see); aesthetic judgement ("the exhibit looks right"); first bring-up
 of a new station (no reference sprites exist yet); licensing; and the
@@ -890,9 +930,30 @@ if nothing else ever ships.
    re-invented in a shell alias. **This — not the reconciler — was the first
    thing to build**: it alone unblocks concurrent independent sessions and is
    a precondition for everything else here.
-2. **`station-accept.sh`** (a day): rule 9 as a command. Immediately useful
-   to every human cutover; becomes the loop's gate later. No behaviour
-   change anywhere.
+2. **`station-accept.sh`** (a day) — **DONE, branch `cd-build`.** Rule 9 as a
+   command: `scripts/dev/station-accept.sh` (orchestrator, same-pass control,
+   decision matrix), `scripts/e2e/station-accept-probe.mjs` (the browser leg —
+   sequential sessions, one SIGKILLed mid-stream, motion in a named rectangle,
+   commanded click), `scripts/dev/station_accept_verdict.py` (the verdict, a
+   pure function, 20 tests) and the registry `acceptance:` stanza with
+   `validate_acceptance.py` (14 tests). No behaviour change anywhere: it starts
+   nothing, stops nothing, holds no exclusive resource, and refuses a station
+   with no spec rather than inventing one.
+   **Not in `scripts/host/` as §14 first said.** The acceptance boundary begins
+   in a browser, and the browser (with Playwright and a headed Chrome on a real
+   display) lives on CT950, not on labhost. It sits beside `tile-accept.sh`,
+   which is the same shape — workstation-side, driving the box through the one
+   door. The reconciler will invoke it over that door in stage 4 rather than
+   in-process.
+   **What is NOT implemented, said out loud rather than left to look done:** the
+   cursor-sprite-at-commanded-position leg. `cursorBank` is wired as a
+   precondition and a missing bank correctly reports INCONCLUSIVE, but the
+   sprite match itself needs a per-sample QMP screendump and a learned bank per
+   station, and no bank exists for any station yet. Today the pointer leg proves
+   *commanded click produced a repaint in the watched rectangle*, which is
+   guest-side evidence that input arrives; it does not yet prove the pointer
+   landed on the exact pixel. That is stage 4 work and it is listed here so
+   nobody reads a green run as more than it is.
 3. **Reconciler v0 — read-only** (days): `kh-reconciler` service with its own
    clone, computing closures and printing per-unit drift
    (`status|plan`). Replaces "what does the box run?" forensics; agents stop
@@ -1037,7 +1098,10 @@ Once the corresponding stage lands:
 | `scripts/host/kh-reconciler` (+ `kh-reconciler.service`) | the loop: status/plan/apply/journal |
 | `scripts/host/kh-closure` | commit → per-unit closure hash + manifest |
 | `scripts/host/kh-store` | object store: add/gc/verify/materialize |
-| `scripts/host/station-accept.sh` | rule 9 as a command |
+| `scripts/dev/station-accept.sh` | rule 9 as a command (stage 2, landed). **Not `scripts/host/`**: the acceptance boundary starts in a browser, and the browser lives on CT950 |
+| `scripts/e2e/station-accept-probe.mjs` | the browser leg: session churn, one abandoned, motion in a named rect |
+| `scripts/dev/station_accept_verdict.py` | PASS / FAIL / DISAGREE / INCONCLUSIVE, as a tested pure function |
+| `scripts/stations_registry/validate_acceptance.py` | the `acceptance:` stanza's rules, enforced at commit time |
 | `scripts/serve/deploy_hint.py` | the public hint endpoint: verify, bump a timestamp, nothing else (§1.1) |
 | `.github/workflows/deploy-hint.yml` | post-CI Actions ping to the same endpoint (§1.1) |
 | `scripts/dev/kh-alloc` | git-arbited durable allocations |
