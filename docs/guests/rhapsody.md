@@ -233,7 +233,15 @@ input; writing it alone does nothing.
 
 **No golden recapture was needed.** `kh-ramabs` registers no
 `VMStateDescription` and models no hardware, so it adds no section to the
-migration stream; the device set and `deviceSetId` are unchanged.
+migration stream; the device set and `deviceSetId` are unchanged. Demonstrated,
+not argued: the sandbox clone restored `loadvm golden` with the device present,
+and the device's connect-time probe then logged `address 0x50fdac VERIFIED
+(probe landed at 122,0)` — `122,0` being the golden's own baked pointer position.
+
+**The first `MOVEA` of a connection is refused**, by design: it arrives while
+the connect-time probe is still in flight, and an unverified address is never
+written. `ERR` is a liveness ack on this wire, so nothing stalls, and the next
+target lands. `STAT` shows it as `refused=1`.
 
 **Install order is binding**: QEMU binary before the launcher (`-device
 kh-ramabs` is an unknown device on an older binary and QEMU refuses to start),
@@ -248,7 +256,10 @@ port**, which is m68k-hardware specific. DR2 for Intel has no USB stack (so
 Configure.app offers only PS/2 / bus / serial mice. There is no absolute device
 on this machine to find — do not re-run that search.
 
-**Proof (rule 9)**, on a sandbox clone, three observers at every target
+**Proof (rule 9)**, on a sandbox clone, run twice — once through QEMU's gdbstub
+while establishing feasibility, and again with every target commanded over the
+`ramabs/1` socket into the real `-device kh-ramabs`. The two runs are identical
+to the pixel. Three observers at every target
 (commanded / the guest's own coordinate / `cursor-locate.py` on a QMP
 screendump): six targets — both screen edges, two window frames, the OmniWeb page
 and the desktop — all `err=+0,+0` at `--tol 1`; the true corner `(1023,767)`

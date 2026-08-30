@@ -199,6 +199,32 @@ separated targets *including both screen edges*, and the three other glyphs each
 report their own stable value. That is the measurement that would have been the
 hard part of a closed loop, obtained here for free and needed by nothing.
 
+**The sweep above was then re-run through the shipped path** — every target
+commanded over the `ramabs/1` socket into the real `-device kh-ramabs`, rather
+than through the gdbstub scaffolding the feasibility work used. The two runs are
+**identical**: the same sensor value at every target, the same sprite origins,
+the same four glyph ids, the same per-glyph hotspots, `err=+0,+0` at all six,
+the true corner exact, and a click repaint of the same **265 062** pixels over
+the same bounding box. That agreement is worth recording: the scaffolding and
+the shipped device are doing the same thing, so the feasibility numbers were not
+an artifact of the rig. (This wave produced the opposite case elsewhere —
+`hpuxvue` had an internally consistent sensor that was uniformly 8 px wrong.)
+
+Two things the shipped run showed that the rig could not:
+
+- `loadvm golden` restored **with `-device kh-ramabs` present**, which is the
+  direct evidence that this device changes neither the device set nor the
+  migration stream — the claim the "no recapture" decision rests on.
+- The device's own verification ran and logged
+  `kh-ramabs: address 0x50fdac VERIFIED (probe landed at 122,0)` — `122,0` being
+  the golden's own baked pointer position, at the top screen edge.
+- Final `STAT`: `verified=yes pos=80,127 refused=1 reissued=0 probefail=0`. The
+  one refusal is the **first** `MOVEA`, which arrived while the connect-time
+  probe was still in flight and was correctly refused rather than served on an
+  unverified address. That is not a fault: `ERR` is a liveness ack on this wire,
+  the daemon does not stall on it, and the browser streams targets continuously,
+  so the next one lands. Expect exactly one such refusal per connection.
+
 ## Two traps worth keeping
 
 - **`cursor-locate.py` rejects any placement that falls outside the frame**, so
