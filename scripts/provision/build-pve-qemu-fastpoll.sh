@@ -66,6 +66,34 @@ log() { printf '[fastpoll-deb] %s\n' "$*"; }
 
 mkdir -p "$WORK"
 
+# HOW THIS TEST MUST BE WRITTEN, and a trap if you "improve" it.
+#
+# `[ -e "$QEMU_SUBMODULE/.git" ]` is deliberate. Do NOT replace it with
+# `git -C "$QEMU_SUBMODULE" rev-parse --is-inside-work-tree`, which looks like
+# the more idiomatic check and is WRONG here: that command returns TRUE inside
+# an UNINITIALISED submodule path, because the directory sits inside the
+# SUPERPROJECT's work tree. It answers "am I somewhere inside a git repo",
+# not "is this path its own repo", so it cannot tell an initialised submodule
+# from a plain unpacked directory. Measured 2026-08-30 on labhost's
+# /data/kernel-hive, where that path holds 107 entries, no .git at all, and
+# `--is-inside-work-tree` still said true. `git submodule status` is the other
+# honest answer: a leading '-' means uninitialised.
+#
+# INVARIANT ON labhost (deliberate, not an oversight):
+#   * /data/kernel-hive (the box checkout) has this submodule UNINITIALISED,
+#     so this script takes the `else` branch and builds from the committed
+#     loose .patch files. THAT IS THE INTENDED PATH ON THE BOX. The patch
+#     files are the maintained source (see qemu-patches/README.md); the
+#     submodule is the published form.
+#   * box-deploy does NOT carry third_party/qemu-kernel-hive, so the unpacked
+#     tree there is STALE against the superproject's gitlink and nothing will
+#     ever update it. That staleness is expected and harmless PRECISELY
+#     BECAUSE the box builds from the patches, not from that tree -- so if you
+#     ever make the box build from the submodule, this invariant dies with it
+#     and the stale tree becomes a real bug.
+#   * CT950's /home/wnt/kernel-hive DOES have it initialised, which is where
+#     `git submodule update --remote` and gitlink bumps are done (history is
+#     authored there, never over `ssh lab`).
 if [ -e "$QEMU_SUBMODULE/.git" ]; then
   log "regenerating the patch trio from the published qemu-kernel-hive submodule (kernel-hive branch)"
   git -C "$QEMU_SUBMODULE" fetch -q origin kernel-hive 2>/dev/null || true

@@ -42,7 +42,29 @@ keep in sync by hand:
    repo and commit the bumped gitlink.
 
 Never edit the fork's checked-out tree directly and call that the source of
-truth — the patch files are. `scripts/provision/build-pve-qemu-fastpoll.sh`
+truth — the patch files are.
+
+**Where the submodule is and is not initialised** — this differs by checkout and
+the difference is load-bearing:
+
+| checkout | `third_party/qemu-kernel-hive` |
+|---|---|
+| CT950 `/home/wnt/kernel-hive` | **initialised** — do `git submodule update --remote` and gitlink bumps here (git history is authored on CT950, never over `ssh lab`) |
+| labhost `/data/kernel-hive` | **not initialised** — a plain unpacked tree, no `.git` |
+
+So on the box, `build-pve-qemu-fastpoll.sh` takes its fallback branch and builds
+from the committed loose `.patch` files. **That is the intended path there**, and
+it is why the box's unpacked copy being stale against the superproject's gitlink
+is harmless: `box-deploy` does not carry that path and nothing updates it, but
+nothing on the box reads it either. If you ever make the box build from the
+submodule, that stops being true and the stale tree becomes a real bug.
+
+**Do not test for it with `git rev-parse --is-inside-work-tree`.** It returns
+**true** inside an *uninitialised* submodule path, because the directory sits
+inside the superproject's work tree — it answers "am I inside some repo", not "is
+this path its own repo". Measured 2026-08-30 on `/data/kernel-hive`: 107 entries,
+no `.git`, and `--is-inside-work-tree` still said true. Test `[ -e <path>/.git ]`,
+or read `git submodule status` (a leading `-` means uninitialised). `scripts/provision/build-pve-qemu-fastpoll.sh`
 builds the patch trio (fast-poll, sphinx, gallery-hid) from the submodule
 when it's initialized (the patches already land as commits there, via
 `git format-patch`) and falls back to the loose `.patch` files in this
