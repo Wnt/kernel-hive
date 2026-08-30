@@ -2,7 +2,7 @@ Index: b/hw/misc/kh-ramabs.c
 ===================================================================
 --- /dev/null
 +++ b/hw/misc/kh-ramabs.c
-@@ -0,0 +1,1000 @@
+@@ -0,0 +1,1057 @@
 +/*
 + * kh-ramabs — absolute pointer by writing the guest's OWN pointer coordinate.
 + *
@@ -190,6 +190,18 @@ Index: b/hw/misc/kh-ramabs.c
 +     * this was driven by a real browser session instead of one target at a time.
 +     */
 +    bool issued;
++    /*
++     * This target has actually been PUBLISHED, not merely written. While the
++     * guest is stopped kh_issue writes the coordinate and stops there -- no
++     * nudge can be consumed and no cursor task runs -- so on resume the value
++     * matches what we wrote and the tick would call that convergence without
++     * the guest ever having repainted or reprocessed. Anything the guest had
++     * queued before the stop then lands AFTER we declared success, with nothing
++     * left watching: measured at the shipping boundary as a first session
++     * settling at 298,280 for a commanded 300,300. So a written-but-unpublished
++     * target is re-published once the guest runs, and the read-back corrects it.
++     */
++    bool published;
 +    KhPublish publish_id;
 +
 +    /* --- connection state (never migrated) ---------------------------- */
@@ -442,6 +454,7 @@ Index: b/hw/misc/kh-ramabs.c
 +         * durable, so ack-and-drop the edge WITH THE REASON instead of letting
 +         * the daemon's ack deadline expire and tear the connection down.
 +         */
++        s->published = false;
 +        s->stat_paused++;
 +        kh_release_btn(s, "paused=1");
 +        kh_arm(s);
@@ -469,6 +482,7 @@ Index: b/hw/misc/kh-ramabs.c
 +        s->want_y = s->tgt_y;
 +        cpu_physical_memory_read(s->addr + MAC_OFF_CRSRCOUPLE, &couple, 1);
 +        cpu_physical_memory_write(s->addr + MAC_OFF_CRSRNEW, &couple, 1);
++        s->published = true;
 +        if (s->trace) {
 +            info_report("kh-ramabs: issue target=%d,%d publish=crsrnew "
 +                        "couple=%u try=%d", s->tgt_x, s->tgt_y, couple,
@@ -494,6 +508,7 @@ Index: b/hw/misc/kh-ramabs.c
 +                         (dy / s->nudge_px) * s->nudge_units);
 +    qemu_input_event_sync();
 +    s->issued = true;
++    s->published = true;
 +
 +    if (s->trace) {
 +        info_report("kh-ramabs: issue target=%d,%d wrote=%d,%d nudge=%d,%d try=%d",
@@ -580,17 +595,40 @@ Index: b/hw/misc/kh-ramabs.c
 +    int x, y;
 +
 +    /*
-+     * A STOPPED GUEST CAN NEITHER PUBLISH NOR BE OBSERVED, so resolve nothing
-+     * against one. kh_issue's paused branch has already written the coordinate
-+     * and it is durable across the resume; if we ALSO resolved here we would
-+     * read back our own write with the guest asleep and call that convergence
-+     * -- and during verification we would call it a VERIFIED address, which is
-+     * precisely the quiescence hole the read-back closes everywhere else.
-+     * Stations launch `-loadvm golden -S` and idle-auto-pause, so a stopped
-+     * guest is a resting state, not an exception: just wait, without spending
-+     * a try.
++     * A STOPPED GUEST CAN NEITHER PUBLISH NOR BE OBSERVED, so RESOLVE nothing
++     * against one: reading back our own write with the guest asleep is not
++     * convergence, and during verification it would be a VERIFIED address --
++     * the quiescence hole the read-back closes everywhere else, let in through
++     * the one path where the guest cannot act. Stations launch
++     * `-loadvm golden -S` and idle-auto-pause, so a stopped guest is a resting
++     * state, not an exception.
++     *
++     * BUT "do not resolve" IS NOT "do nothing", and conflating the two stranded
++     * every deferred button edge here: an edge waits behind a target, and while
++     * stopped this tick was the only thing that could still reach it, so a
++     * click issued against a stopped guest never acked and the daemon's ack
++     * deadline eventually tore the connection down. Ack-and-drop is scoped to
++     * "the guest cannot possibly apply this", and a stopped guest is exactly
++     * that case -- so the edge is released here WITH ITS REASON. Acking a verb
++     * the guest cannot possibly apply is required; acking one we merely failed
++     * to land would be a lie. The two are different, and only the second is
++     * forbidden.
 +     */
 +    if (!runstate_is_running()) {
++        /*
++         * Nothing can be in flight across a stop: the guest consumes no
++         * injected event while stopped, and kh_issue's paused branch rewrites
++         * the coordinate outright. Clearing this is not cosmetic -- a stuck
++         * `issued` makes kh_movea skip kh_issue entirely, which also skips the
++         * kh_arm inside it, so the timer stops and NOTHING is left that could
++         * release a deferred edge. That is the actual mechanism behind the
++         * stranded click; the missing release was only its symptom.
++         */
++        s->issued = false;
++        if (s->have_btn) {
++            s->stat_paused++;
++            kh_release_btn(s, "paused=1");
++        }
 +        kh_arm(s);
 +        return;
 +    }
@@ -600,6 +638,16 @@ Index: b/hw/misc/kh-ramabs.c
 +        return;
 +    }
 +    if (!s->have_target) {
++        return;
++    }
++    /*
++     * Written while stopped, never published. The guest is running now, so
++     * publish it for real rather than reading back our own write and calling
++     * that arrival.
++     */
++    if (!s->published) {
++        s->publish_tries = 0;
++        kh_issue(s);
 +        return;
 +    }
 +
@@ -750,9 +798,18 @@ Index: b/hw/misc/kh-ramabs.c
 +    s->tgt_y = y;
 +    s->tgt_seq = seq;
 +    s->have_target = true;
++    s->published = false;
 +    if (!s->issued) {
 +        s->publish_tries = 0;
 +        kh_issue(s);
++    } else {
++        /*
++         * A publish is in flight, so this target waits -- but it must not wait
++         * on nothing. kh_arm is otherwise only reached through kh_issue, so
++         * skipping the issue would also skip the arm and leave a target with no
++         * tick pending to resolve it.
++         */
++        kh_arm(s);
 +    }
 +    kh_ok(s, seq);            /* acks on ACCEPT, never on arrival */
 +}

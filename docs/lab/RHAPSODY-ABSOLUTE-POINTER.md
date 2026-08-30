@@ -266,6 +266,56 @@ the first from negotiating, on **any** backend including `dbus-rel`, which build
 no sink at all. The live isolation compared this station *with* that observer
 against a control *without* it.
 
+## The paused seam: three defects behind one symptom
+
+The reported regression was narrow — *a button edge issued while the guest is
+stopped never acks* — and it was mine: a `kh_tick` runstate guard that conflated
+**"do not resolve"** with **"do nothing"**. Ack-and-drop is scoped to "the guest
+cannot possibly apply this", and a stopped guest is exactly that case, so a
+deferred edge must still be released (with its `paused=1` reason) even though
+verification must not resolve. Acking a verb the guest cannot possibly apply is
+required; acking one you merely failed to land is a lie.
+
+Releasing the edge in the stopped branch was necessary and **not sufficient**.
+The acceptance test passed on that alone, and the build was still broken:
+
+- **The stranded edge was a symptom.** `issued` survived a stop. `kh_movea`
+  skips `kh_issue` while a publish is in flight — and `kh_arm` is only reached
+  *through* `kh_issue`, so a stuck `issued` stopped the timer entirely and left
+  nothing that could release anything. A stopped guest consumes no injected
+  event, so nothing can be in flight across a stop: it is now cleared there, and
+  `kh_movea` arms unconditionally so a target never waits on nothing.
+- **A coordinate written while stopped was never published.** The paused branch
+  writes and stops there; on resume the value matched what we wrote and the tick
+  called that convergence — with the guest never having repainted, and anything
+  it had queued before the stop landing *after* we declared success with nothing
+  watching. Measured at the shipping boundary as a first session settling at
+  **298,280 for a commanded 300,300**. A written-but-unpublished target is now
+  re-published once the guest runs.
+
+**Two lessons, and the second is the one that nearly shipped.** A test that
+watches only the press passes a build whose release still hangs — `UP1` is the
+half that leaves a button stuck down. And a test that asserts the *symptom* is
+gone passes a build whose *mechanism* is still broken: `btn-paused.py` said PASS
+while `btn-gap.py`, which pins the shape rather than the outcome, said the edge
+was still stranded. The disagreement was the finding. Where they disagree,
+believe the one that measures the mechanism.
+
+Two of the three defects were only reachable through a stop/resume cycle, which
+is a station's **resting** state — `-loadvm golden -S` plus idle-auto-pause — and
+not a corner case at all.
+
+### Harness trap that produced a false negative
+
+A socket timeout raised inside a buffered `readline()` leaves the reader's
+buffer unreliable, and it **does not raise again — it goes quiet**, so a verb
+that did ack reads as "never acked" and the tool's fault reads as the device's.
+Use timed reads with `select`/raw `recv` and assemble lines yourself; never
+`makefile()` on a socket carrying a timeout. Note the bias: this failure mode
+can only manufacture a false HANG, never a false ACK — so a PASS from such a
+harness is still trustworthy, which is why the `btn-paused.py` PASS was
+believable and still wrong for a different reason.
+
 ## The standard this leaves behind
 
 - **A pointer proof must cross the boundary that ships.** Browser → daemon →
@@ -275,6 +325,8 @@ against a control *without* it.
 - **Liveness is motion.** `videoWidth`, `readyState` and non-black percentage
   all pass on a stream that has stopped. Require media still arriving in a later
   window AND the guest's own coordinate landing where it was commanded.
+- **Prove the mechanism, not the symptom.** A check that asserts the reported
+  outcome is gone will pass a build whose cause is untouched.
 - **Observe sparsely and never hold the monitor.** Connect, read four bytes,
   close. A 1 Hz screendump poller manufactures the failure it is testing for.
 
