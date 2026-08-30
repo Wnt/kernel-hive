@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { loadGalleryManifest } from './galleryManifest';
 import { useMuseum } from '../state/store';
+import { useSession } from './SessionContext';
+import { exhibitVm, loadWalkinExhibits } from '../walkin/manifest';
+import { walkinShape } from '../walkin/route';
 import type { RuntimeVMManifestEntry, VMManifestEntry } from '../types';
 
 // Boot-video index (BOOT-VIDEO-REPLAY-SPEC §4): a static WEBROOT/boot/index.json
@@ -64,14 +67,33 @@ export function storedLineup(
 // best-effort overlay.
 export function useManifest() {
   const setVMs = useMuseum((s) => s.setVMs);
+  const { role } = useSession();
+  // The signed-out stranger on /walkin has no role yet and must not fire the
+  // gallery's gated fetches either — see walkin/route.ts.
+  const walkin = walkinShape(role, window.location.pathname, import.meta.env.BASE_URL);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // A walk-in reads the SAME store through a different door. Their lineup
+      // is `/walkin/manifest.json` — the server-side allowlist projection of
+      // the very same fleet (gate.py `walkin_manifest`) — and the two gallery
+      // overlays are skipped outright rather than fetched and refused:
+      // `/gallery-manifest.json` and `/boot/index.json` are both gated, and
+      // asking anyway is what used to leave the grid empty with a 401 in the
+      // console. Placard rows keep `transport: 'showcase'` and so must NOT go
+      // through `storedLineup`, which drops showcase entries — for a walk-in a
+      // placard is the point of the row, not a poster with no station behind it.
+      if (walkin) {
+        const exhibits = await loadWalkinExhibits();
+        if (cancelled) return;
+        setVMs(exhibits.map(exhibitVm));
+        return;
+      }
       const [manifest, boot] = await Promise.all([loadGalleryManifest(), fetchBootIndex()]);
       if (cancelled) return;
       setVMs(storedLineup(manifest).map((vm) => withBoot(vm, boot)));
     })();
     return () => { cancelled = true; };
-  }, [setVMs]);
+  }, [setVMs, walkin]);
 }

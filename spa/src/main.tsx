@@ -2,11 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import WalkinApp from './walkin/WalkinApp';
-import { isWalkinPath } from './walkin/route';
+import { loadSession, type Session } from './data/session';
+import { isWalkinPath, walkinShape } from './walkin/route';
+import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
-import { initClientDebug } from './three/clientDebug';
+import { initClientDebug, setTelemetryAllowed } from './three/clientDebug';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -107,30 +108,55 @@ exposeKeyRecorder();
 // to produce nothing at all because every log call hung off a stream that had
 // already failed to start. This also starts the /clientcmd poller, so every
 // tab is reachable for debugging, not just one with a working station open.
-// …but NOT for a walk-in visitor: the operator poller and the telemetry sink
-// are gallery surfaces that answer 401 to an anonymous session, and a walk-in
-// has no operator to be reached by. See walkin/route.ts.
-const WALKIN = isWalkinPath(window.location.pathname, import.meta.env.BASE_URL);
-if (!WALKIN) initClientDebug();
+// …but NOT for a walk-in visitor: the operator poller is a gallery surface a
+// walk-in is fenced out of, and a walk-in has no operator to be reached by.
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      {/* The router base must agree with the VITE base the bundle was built
-          with. Without this a stage.sh preview served under /staging/<name>/
-          treats its own path as an unknown route and redirects to '/', which
-          silently loads the PRODUCTION bundle instead — so every staged
-          preview of anything that routes was really testing live. BASE_URL is
-          '/' for a normal build, leaving production behaviour unchanged. */}
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        {/* A walk-in route boots the walk-in app DIRECTLY, never the gallery
-            app: App mounts the fleet manifest + boot-index loaders, which are
-            gated routes an anonymous visitor only gets 401s from. */}
-        {WALKIN ? <WalkinApp /> : <App />}
-      </BrowserRouter>
-    </ErrorBoundary>
-  </React.StrictMode>,
-);
+// The session is resolved BEFORE the first render, and the whole app hangs off
+// the answer. Waiting costs one cheap same-origin request; not waiting is what
+// the old path-based split cost instead — a walk-in at `/` booting the gallery
+// and firing a fleet manifest fetch their own gate refuses. Nothing renders
+// against an unknown role, so no view has to carry a "role not known yet" case.
+function mount(session: Session) {
+  // Two different questions, and conflating them is what the old path test did.
+  //
+  // TELEMETRY (/clientlog) is allowed to any SESSION, walk-in accounts included
+  // — gate.py puts it in WALKIN_PATHS so a stranger's broken stream is still
+  // debuggable. It is also open on the ungated LAN listener and on a staging
+  // preview, where the role reads `anon` because there is no auth plane to ask;
+  // silencing those would take telemetry away from the two places the lab
+  // actually debugs from. The ONE caller that must stay quiet is the signed-out
+  // stranger on the /walkin signup door: they have no session, so every flush
+  // would 401 every 5s and be re-queued forever.
+  const signedOutAtTheDoor = session.role === 'anon'
+    && isWalkinPath(window.location.pathname, import.meta.env.BASE_URL);
+  setTelemetryAllowed(!signedOutAtTheDoor);
+  if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {
+    initClientDebug();
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        {/* The router base must agree with the VITE base the bundle was built
+            with. Without this a stage.sh preview served under /staging/<name>/
+            treats its own path as an unknown route and redirects to '/', which
+            silently loads the PRODUCTION bundle instead — so every staged
+            preview of anything that routes was really testing live. BASE_URL is
+            '/' for a normal build, leaving production behaviour unchanged. */}
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <SessionProvider value={session}>
+            {/* ONE app for both visitor classes. App reads the role and
+                renders the lineup, the navigation and the card targets the
+                session is allowed to have — see App.tsx. */}
+            <App />
+          </SessionProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </React.StrictMode>,
+  );
+}
+
+void loadSession().then(mount);
 
 // Register the PWA service worker (public/sw.js) so the gallery is installable
 // as a standalone app. Only in a production build, and never from a /staging/

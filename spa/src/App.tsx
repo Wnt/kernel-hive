@@ -8,6 +8,11 @@ import { FleetTable } from './ui/FleetTable';
 import { About } from './ui/About';
 import { AdminPage } from './admin/AdminPage';
 import { useManifest } from './data/useManifest';
+import { useSession } from './data/SessionContext';
+import WalkinLanding from './walkin/WalkinLanding';
+import WalkinPlay from './walkin/WalkinPlay';
+import WalkinExhibits from './walkin/WalkinExhibits';
+import { WalkinChrome } from './walkin/WalkinChrome';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
 import { MUSEUM_NAME, MUSEUM_TAGLINES } from './config';
@@ -17,6 +22,9 @@ if (import.meta.env.DEV) (window as any).__museum = useMuseum;
 
 export default function App() {
   useManifest();
+
+  const { role } = useSession();
+  const walkin = role === 'walkin';
 
   const vms = useMuseum((s) => s.vms);
 
@@ -56,11 +64,27 @@ export default function App() {
         </span>
       </div>
       <div className="appbar-actions">
+        {/* The navigation is the role fence made visible. A walk-in is refused
+            /museum, /fleet and /about at the gate (gate.py WALKIN_PATHS), and a
+            link that 302s the visitor back to where they started teaches them
+            the site is broken. So they get the two surfaces they DO have —
+            which the grid's own scope switch already spans — and the operator
+            keeps the four they have always had. Nothing here grants access;
+            the gate does that, whatever this renders. */}
         <div className="seg appbar-seg">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>Grid</NavLink>
-          <NavLink to="/museum" className={({ isActive }) => (isActive ? 'active' : '')}>3D Museum (early access)</NavLink>
-          <NavLink to="/fleet" className={({ isActive }) => (isActive ? 'active' : '')}>Fleet table</NavLink>
-          <NavLink to="/about" className={({ isActive }) => (isActive ? 'active' : '')}>About</NavLink>
+          <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+            {walkin ? 'Machines' : 'Grid'}
+          </NavLink>
+          {!walkin && (
+            <>
+              <NavLink to="/museum" className={({ isActive }) => (isActive ? 'active' : '')}>3D Museum (early access)</NavLink>
+              <NavLink to="/fleet" className={({ isActive }) => (isActive ? 'active' : '')}>Fleet table</NavLink>
+              <NavLink to="/about" className={({ isActive }) => (isActive ? 'active' : '')}>About</NavLink>
+            </>
+          )}
+          {walkin && (
+            <NavLink to="/walkin/exhibits" className={({ isActive }) => (isActive ? 'active' : '')}>Exhibits</NavLink>
+          )}
         </div>
       </div>
     </header>
@@ -70,12 +94,23 @@ export default function App() {
     <div className="app-root" ref={appRootRef}>
       <Routes>
         {/* ---------- DEFAULT: 2D grid ---------- */}
-        <Route path="/" element={<>{TopBar}<GridView /></>} />
+        <Route
+          path="/"
+          element={<>{TopBar}<GridView onOpenPlacard={openPoster} /></>}
+        />
 
         {/* ---------- Full-viewport live stream of one station (deep-linkable) ---------- */}
+        {/* A walk-in never streams a museum STATION — their live surface is
+            their own clone at /walkin/play/<os>, and /signal/<station>.json is
+            refused to them at the gate. Sending them to their own grid beats
+            mounting a stream that can only fail to connect. */}
         <Route
           path="/os/:osId"
-          element={<OsStreamRoute onOpenPoster={openPoster} posterOpen={posterId !== null} />}
+          element={
+            walkin
+              ? <Navigate to="/" replace />
+              : <OsStreamRoute onOpenPoster={openPoster} posterOpen={posterId !== null} />
+          }
         />
 
         {/* ---------- operator fleet table: tier / emulator / kiosk / I/O paths per station ---------- */}
@@ -94,6 +129,36 @@ export default function App() {
         {/* ---------- 3D museum ---------- */}
         <Route path="/museum" element={<SceneV2 />} />
         <Route path="/museum2" element={<MuseumRedirect />} />
+
+        {/* ---------- the walk-in surfaces, in the SAME router ----------
+            They used to be a second app booted by main.tsx from the path
+            alone, which is what left a signed-up walk-in stranded on the root
+            URL. One router, one grid, one placard; the role decides what is in
+            them.
+
+            `/walkin` is the DOOR, and it means two different things by role.
+            A stranger with no account gets the landing page — what they are
+            being offered, live pool counts, and one tap to make a passkey. A
+            visitor who already HAS a walk-in account has walked through it
+            already, so they are sent to the museum proper, where their own
+            machines are the grid's default scope.
+
+            `/walkin/exhibits` is kept — it is a published path and the walk-in
+            landing links to it — but for an ACCOUNT it is now just the grid at
+            its wider scope, not a separate listing to maintain. */}
+        <Route
+          path="/walkin"
+          element={walkin ? <Navigate to="/" replace /> : <WalkinChrome><WalkinLanding /></WalkinChrome>}
+        />
+        <Route
+          path="/walkin/exhibits"
+          element={
+            walkin
+              ? <>{TopBar}<GridView initialScope="all" onOpenPlacard={openPoster} /></>
+              : <WalkinChrome><WalkinExhibits /></WalkinChrome>
+          }
+        />
+        <Route path="/walkin/play/:os" element={<div className="walkin-root"><WalkinPlay /></div>} />
 
         {/* ---------- unknown path → grid ---------- */}
         <Route path="*" element={<Navigate to="/" replace />} />
