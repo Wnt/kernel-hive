@@ -35,13 +35,13 @@
         "kbd_note": "Command-Shift-1 ejects; the Finder is the only shell, so key proof is a menu or a dialog, never a prompt",
         "audio_trigger": "beep",
         "validated": false,
-        "note": "relative ADB pointer: cursor_scale 2.7778 (guest gain 0.36). No exec channel — System 7 has no shell at all"
+        "note": "absolute pointer by direct write into Mac OS's own low-memory globals (ramabs/1); the ADB mouse carries button edges only. No exec channel — System 7 has no shell at all"
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/macos753",
       "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 59,
     "actionMapOrder": 31,
-    "stationsManifestPrelude": "\n# macos753 (slot 142) — the fleet's FIRST foreign-architecture QEMU station:\n#   qemu-system-m68k -M q800 (Motorola 68040), Mac OS 7.5.3. Built from the\n#   kernel-hive QEMU fork and installed to /opt/qemu-m68k, NOT from pve-qemu —\n#   the fleet package ships no m68k target, and a checkpoint baked and loaded by\n#   the same standalone binary never needs pve's pbs-state vmstate section.\n#   TCG only (no KVM for m68k), so idle auto-pause carries its cost.\n#   RELATIVE ADB pointer — no absolute path exists on this machine, and the\n#   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.\n#   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.\n",
+    "stationsManifestPrelude": "\n# macos753 (slot 142) — the fleet's FIRST foreign-architecture QEMU station:\n#   qemu-system-m68k -M q800 (Motorola 68040), Mac OS 7.5.3. Built from the\n#   kernel-hive QEMU fork and installed to /opt/qemu-m68k, NOT from pve-qemu —\n#   the fleet package ships no m68k target, and a checkpoint baked and loaded by\n#   the same standalone binary never needs pve's pbs-state vmstate section.\n#   TCG only (no KVM for m68k), so idle auto-pause carries its cost.\n#   ABSOLUTE pointer WITHOUT an absolute device: the machine has no tablet and\n#   no hardware cursor, but Mac OS keeps its pointer in LOW MEMORY, so the\n#   engine behind -global nubus-macfb.ptrctl= writes MTemp/RawMouse and lets\n#   the OS's own cursor VBL task move it (ramabs/1, SH_INPUT_BACKEND=ramabs).\n#   The ADB mouse still carries the button edges.\n#   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -71,13 +71,28 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-adb-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "adb-mouse",
-      "scale": 2.7778,
+      "guestState": {
+        "layout": "Mac OS `Point`: two SIGNED BIG-ENDIAN int16, VERTICAL first then horizontal (v,h) \u2014 the opposite of the (x,y) order every other station uses, and the reason this layout cannot be shared with the other qemu-guestram-abswrite station.",
+        "addresses": {
+          "MTemp": "0x0828 (Point, the target the engine writes first)",
+          "RawMouse": "0x082C (Point, written to the same value as MTemp)",
+          "Mouse": "0x0830 (Point) \u2014 READ-BACK SENSOR AND OUTPUT OF THE CURSOR VBL TASK. The engine MUST NOT write it: pre-writing Mouse defeats the task's change detector and the cursor silently does not move.",
+          "CrsrNew": "0x08CE (int8, publish barrier: set to CrsrCouple LAST)",
+          "CrsrCouple": "0x08CF (int8, read for the value CrsrNew is set to)",
+          "CrsrPin": "0x0834 (Rect, the pointer's clamp \u2014 reads exactly l=0,t=0,r=1152,b=870 on this golden)",
+          "TheCrsr+64": "0x0884 (Point, the live hotspot \u2014 read at run time, never measured; reads h=1,v=1 for the arrow)"
+        },
+        "readBack": "Mouse (0x0830) == the commanded target; a MOVEA acks when that comparison holds.",
+        "derivedAgainstGolden": "snapshot `golden` in macos753-golden.qcow2 + pram-golden.qcow2 dated 2026-08-24 01:01:30 (VM_CLOCK 0000:02:03.500), device set macos753-q800-m68040-1152x870x8-dp83932, COLD re-baked 2026-08-23/24 for the SONIC NIC. Addresses probed 2026-08-30 by QMP `pmemsave` against a sandbox clone restored from that checkpoint. They are Mac OS low-memory globals and are fixed by the OS, not by the image \u2014 but the verification above was done on THIS golden, and a re-bake onto a different system version must re-prove it.",
+        "notes": "Absolute WRITE, not a closed loop: nothing converges and no hotspot enters the control path, because Mouse holds the POINTER rather than a sprite origin. The ADB mouse remains in the machine and carries button edges only."
+      },
+      "scale": 1.0,
       "offset": [
         0,
         0
@@ -115,11 +130,11 @@
         "--udp",
         "54142",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "ramabs",
         "--cursor-scale",
-        "2.7778",
+        "1.0",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -150,6 +165,7 @@
         "-M q800,audiodev=snd0 -cpu m68040",
         "-bios /data/vms/streamhost/assets/macos753/800.ROM",
         "-g 1152x870x8",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off -global nubus-macfb.ptrctl=ptr0 -global nubus-macfb.ptr-trace=${PTR_TRACE:-off} (the absolute-pointer engine's control socket; the daemon speaks ramabs/1 over it, and the trace is off unless the station environment arms it. HOST-SIDE WIRING ONLY: a chardev is not a device and -global sets a property on the macfb -M q800 already instantiates, so the guest-visible device set is unchanged. The type is nubus-macfb (TYPE_NUBUS_MACFB, hw/m68k/q800.c) -- a -global naming a type that was never instantiated is silently ignored by QEMU)",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
@@ -161,13 +177,13 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher equals the live launcher; the golden was COLD re-baked 2026-08-23 with this exact guest-visible device set (now including the q800's built-in dp83932 SONIC) on the standalone /opt/qemu-m68k build"
+        "reason": "tracked verbatim launcher equals the live launcher; the golden was COLD re-baked 2026-08-23/24 with this exact guest-visible device set (now including the q800's built-in dp83932 SONIC) on the standalone /opt/qemu-m68k build -- snapshot `golden` in macos753-golden.qcow2 / pram-golden.qcow2, dated 2026-08-24 01:01:30, VM_CLOCK 0000:02:03.500. NO GOLDEN RE-BAKE FOR THE ABSOLUTE POINTER, and this is the record of why so it is not re-derived: `-chardev socket,id=ptr0,...` plus `-global nubus-macfb.ptrctl=ptr0` are HOST-SIDE WIRING ONLY -- a chardev is not a guest device, and the -global sets a property on the macfb the q800 machine already instantiates, so no device is added, removed or re-ordered. The GUEST-VISIBLE device set is byte-for-byte the one the golden was baked against and `loadvm golden` still binds; the engine also registers no migration state (VERIFIED against the built patch, streamhost/qemu-patches/0007-macfb-ramabs-absolute-pointer.patch: it writes the guest's own low-memory globals and holds nothing across a save), so the vmstate signature is unchanged. INSTALL ORDER IS BINDING IN BOTH DIRECTIONS: the QEMU binary must be in place BEFORE this launcher (`ptrctl` is an unknown PROPERTY on the older binary's nubus-macfb and QEMU refuses to start outright -- note the opposite case is silent: a -global naming a type that does not exist is ignored, so a typo'd TYPE gives a chardev with frontend-open:false, no HELLO, and a pointer that simply never moves), and the streamhost binary BEFORE the env fixture (SH_INPUT_BACKEND=ramabs panics an older daemon at startup)."
       }
     }
   },
   "reset": {
     "stationDir": "macos753",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
@@ -180,7 +196,7 @@
     "transport": "streamhost",
     "accentColor": "#8c8a85",
     "eraLabel": "1996 · Mac OS 7.5.3 — Quadra 800",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "macos753",

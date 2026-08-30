@@ -563,7 +563,7 @@
     "macos753": {
       "dir": "/data/vms/streamhost/stations/macos753",
       "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,

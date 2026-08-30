@@ -56,11 +56,48 @@
 # ("Initializing audio stream failed"), so `audiodev=snd0` on -M is required
 # even though the audio itself rides the dbus display.
 #
-# POINTER: ADB relative. There is no absolute pointer path on this machine at
-# all — no USB bus, no tablet — so the daemon runs SH_INPUT_BACKEND=dbus-rel and
-# converts absolute client coordinates into deltas. The guest moves 0.36 px per
-# delta unit (Mouse control panel at "Very Slow", the only non-accelerated
-# setting), hence SH_CURSOR_SCALE=2.7778 in the emitted station.env.
+# POINTER: ABSOLUTE, without an absolute device and without a hardware cursor.
+# This machine has no USB bus, no tablet and no vmmouse, and classic Mac OS
+# composites the cursor sprite in SOFTWARE — so there is no cursor register to
+# close a loop over the way aix432 does over the Matrox DAC. What there IS is
+# Mac OS's own pointer state in LOW MEMORY, and the emulator can write it. The
+# `-chardev`/`-global nubus-macfb.ptrctl=` pair below arms an engine in the
+# fork's macfb model that speaks `ramabs/1` over that socket: on MOVEA it
+# writes the target into MTemp ($0828) and RawMouse ($082C) as Mac Points (two
+# signed BIG-ENDIAN int16, VERTICAL first) and then sets CrsrNew ($08CE) :=
+# CrsrCouple ($08CF) as the publish barrier; Mac OS's own cursor VBL task moves
+# the pointer and states where it landed in Mouse ($0830), which the engine
+# reads back and acks against. It must NEVER write Mouse itself — that global
+# is the VBL task's OUTPUT and pre-writing it defeats the task's change
+# detector, after which the cursor silently does not move. The ADB mouse stays
+# in the machine and carries the BUTTON edges only.
+#
+# THE TYPE NAME IS `nubus-macfb`, and getting it wrong FAILS SILENTLY. `-M q800`
+# instantiates TYPE_NUBUS_MACFB ("nubus-macfb") — see the fork's hw/m68k/q800.c
+# — not TYPE_MACFB ("sysbus-macfb"). QEMU does not warn about a -global naming a
+# type that was never instantiated: it simply does nothing, the chardev stays
+# `frontend-open: false`, no HELLO is ever sent, and the only symptom is a
+# pointer that never moves.
+#
+# NO GOLDEN RE-BAKE. A chardev is not a guest device and the -global sets a
+# property on the macfb the q800 machine already instantiates, so the
+# GUEST-VISIBLE device set is unchanged and `loadvm golden` still binds; the
+# engine registers no migration state either.
+#
+# INSTALL ORDER IS BINDING IN BOTH DIRECTIONS: the /opt/qemu-m68k BINARY must be
+# installed BEFORE this launcher (`-global nubus-macfb.ptrctl=` is an unknown
+# property on the previous binary and QEMU refuses to start outright), and the
+# STREAMHOST binary before the station.env fixture (SH_INPUT_BACKEND=ramabs
+# panics an older daemon at startup).
+#
+# SINGLE INJECTOR (BINDING): while that socket is connected the engine owns the
+# guest pointer. No rel bridge, no QMP input-send-event, no adb_pointer.py
+# helper against THIS station dir.
+#
+# Rollback is two lines: drop the -chardev/-global pair here and set
+# SH_INPUT_BACKEND=dbus-rel in the fixture, which still carries the relative
+# path's SH_CURSOR_SCALE=2.7778 (guest gain 0.36 px per delta unit at the
+# checkpoint's "Very Slow" mouse tracking) for exactly that reason.
 #
 # CHECKPOINT MODE (resetMode=loadvm, see GOLDEN.md):
 #   * Boots the persistent station-LOCAL qcow2 pair (NO -snapshot) so QMP
@@ -91,7 +128,9 @@ if [ -r "$RN_LOCAL_ENV" ]; then
 fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "$D/qmp.sock" "$D/qemu.pid"
+# ptr.sock too: QEMU serves it (server=on) and a stale file from a killed
+# process makes the bind fail, which takes the whole launch down under set -e.
+rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/ptr.sock"
 LOADVM=""
 qemu-img snapshot -l "$D/macos753-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms. The patch
@@ -105,6 +144,9 @@ nohup /opt/qemu-m68k/bin/qemu-system-m68k \
   -M q800,audiodev=snd0 -cpu m68040 \
   -bios /data/vms/streamhost/assets/macos753/800.ROM \
   -g 1152x870x8 \
+  -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
+  -global nubus-macfb.ptrctl=ptr0 \
+  -global nubus-macfb.ptr-trace=${PTR_TRACE:-off} \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
   -drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd \

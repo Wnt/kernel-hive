@@ -53,6 +53,18 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # ledger must show the control chardev the engine serves: without
     # `mga.ptrctl` the loop is not armed and the daemon has nothing to talk to.
     "qemu-mga-closedloop": ({"mgactl"}, ("mga.ptrctl",), ("usb-tablet",)),
+    # macos753: an ABSOLUTE WRITE into the guest OS's own pointer state, and
+    # deliberately NOT called a closed loop -- there is nothing to converge on.
+    # The Quadra 800 has no hardware cursor (classic Mac OS composites the
+    # sprite in software) and no absolute input device of any kind, but Mac OS
+    # keeps the pointer in LOW MEMORY: the engine writes MTemp ($0828) and
+    # RawMouse ($082C) and publishes with CrsrNew ($08CE) := CrsrCouple ($08CF),
+    # and the OS's own cursor VBL task moves the pointer and states where it
+    # landed in Mouse ($0830) -- the read-back sensor. So `absolute: true` is
+    # earned by the guest's own globals; the ADB mouse carries button edges
+    # only. The ledger must show the control chardev the engine serves: without
+    # `nubus-macfb.ptrctl` nothing is armed and the daemon has nothing to talk to.
+    "qemu-guestram-abswrite": ({"ramabs"}, ("nubus-macfb.ptrctl",), ("usb-tablet",)),
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
@@ -67,6 +79,7 @@ POINTER_MODE_BY_BACKEND = {
     "mamecmd": "abs",
     "mamesock": "abs",
     "mgactl": "abs",
+    "ramabs": "abs",
     # Keyboard-only by construction: InputBackend::pointer_mode() reports
     # "none" for ViceSock, and the sink has no pointer verb at all.
     "vicesock": "none",

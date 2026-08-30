@@ -560,7 +560,7 @@ pub struct InputRouter {
 pub(crate) fn backend_routes_buttons(backend: &str, warpd_buttons_qemu: bool) -> bool {
     matches!(
         backend,
-        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl"
+        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "ramabs"
     ) || (backend == "warpd" && !warpd_buttons_qemu)
 }
 
@@ -584,9 +584,9 @@ impl InputRouter {
                 cfg.vicectl_sock.clone(),
                 crate::vice_keymap::ViceKeyMap::from_env(),
             ),
-            InputBackend::MgaCtl => {
-                crate::mga_ctl::MgaCtlSink::new(crate::mga_ctl::socket_from_env(&cfg.tile))
-            }
+            // One sink, two engines: the dialect (ptr_ctl.rs) is the difference.
+            InputBackend::MgaCtl => crate::ptr_ctl::sink(&crate::ptr_ctl::MGAPTR, &cfg.tile),
+            InputBackend::RamAbs => crate::ptr_ctl::sink(&crate::ptr_ctl::RAMABS, &cfg.tile),
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(
                     &cfg.x11_display,

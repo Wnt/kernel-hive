@@ -91,7 +91,7 @@
           "required": ["transport", "method", "absolute", "present", "device", "scale", "offset"],
           "properties": {
             "transport": { "enum": ["abs", "rel", "warpd", "none"] },
-            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock", "vicesock", "mgactl"] },
+            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock", "vicesock", "mgactl", "ramabs"] },
             "method": {
               "description": "The mechanism that puts the pointer where the visitor pointed. Finer wire detail is carried by existing siblings, not by extra enum values: `backend` separates mamecmd from mamesock, `agentAddress` separates a warpd agent on a hostfwd TCP port from one on a serial chardev. See registry/README.md for one sentence and an example tile per value.",
               "enum": [
@@ -107,7 +107,8 @@
                 "x11-xtest",
                 "simh-light-pen",
                 "previous-tablet",
-                "qemu-mga-closedloop"
+                "qemu-mga-closedloop",
+                "qemu-guestram-abswrite"
               ]
             },
             "absolute": {
@@ -119,6 +120,17 @@
               "description": "Any pointer input at all reaches the guest. false is the keyboard-only exhibit (SH_INPUT_BACKEND=disabled) and the showcase poster."
             },
             "device": { "type": "string" },
+            "guestState": {
+              "type": "object",
+              "description": "ONLY for method `qemu-guestram-abswrite`: where in the GUEST'S OWN memory the engine writes the pointer, how that struct is laid out, and which golden the addresses were derived against. Deliberately PER STATION and deliberately here rather than in the daemon or the wire protocol: the two stations on this method disagree on the field order and the endianness of the very same concept, so nothing about it can be shared. The golden identity is recorded because the addresses are only valid against the image they were probed on -- a re-bake that moves them is a machine-visible coupling, not a comment someone has to remember.",
+              "properties": {
+                "layout": { "type": "string" },
+                "addresses": { "type": "object", "additionalProperties": { "type": "string" } },
+                "readBack": { "type": "string" },
+                "derivedAgainstGolden": { "type": "string" },
+                "notes": { "type": "string" }
+              }
+            },
             "scale": { "type": "number" },
             "offset": { "type": "array", "items": { "type": "integer" } }
           }

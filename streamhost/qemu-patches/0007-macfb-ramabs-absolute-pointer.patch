@@ -1,4 +1,4 @@
-From cdc2da10b13e9ac334f4bdbf009761ef657fbf81 Mon Sep 17 00:00:00 2001
+From b50da964abf4922178fc29c490311f8fd7014683 Mon Sep 17 00:00:00 2001
 From: Jonni Madekivi <wnt@reaktor.fi>
 Date: Sun, 30 Aug 2026 17:25:42 +0000
 Subject: [PATCH] macfb: absolute pointer over classic Mac OS low-memory
@@ -61,21 +61,21 @@ Wire protocol `ramabs/1`, shared with the rhapsody station's guest-RAM engine:
 HELLO, <seq> MOVEA x y, DOWN<n>/UP<n>, SYNC, STAT; everything guest-specific
 lives here rather than in the protocol or the daemon.
 ---
- hw/display/macfb-ptr.c         | 558 +++++++++++++++++++++++++++++++++
- hw/display/macfb.c             |  18 ++
+ hw/display/macfb-ptr.c         | 591 +++++++++++++++++++++++++++++++++
+ hw/display/macfb.c             |  20 ++
  hw/display/meson.build         |   2 +-
- include/hw/display/macfb-ptr.h |  52 +++
+ include/hw/display/macfb-ptr.h |  54 +++
  include/hw/display/macfb.h     |   8 +
- 5 files changed, 637 insertions(+), 1 deletion(-)
+ 5 files changed, 674 insertions(+), 1 deletion(-)
  create mode 100644 hw/display/macfb-ptr.c
  create mode 100644 include/hw/display/macfb-ptr.h
 
 diff --git a/hw/display/macfb-ptr.c b/hw/display/macfb-ptr.c
 new file mode 100644
-index 0000000..e3adf20
+index 0000000..80ecd67
 --- /dev/null
 +++ b/hw/display/macfb-ptr.c
-@@ -0,0 +1,558 @@
+@@ -0,0 +1,591 @@
 +/*
 + * Absolute pointer engine for classic Mac OS guests on macfb (Quadra 800).
 + *
@@ -166,6 +166,15 @@ index 0000000..e3adf20
 +#define LM_CRSRCOUPLE  0x08CF
 +#define LM_MBSTATE     0x0172
 +
++/*
++ * The globals above are OFFSETS from `ptr-ram-base`, which is 0 on q800 because
++ * its RAM starts at guest-physical 0 and Mac OS leaves low memory identity-
++ * mapped. Making it a property rather than a hard 0 does two things: it states
++ * that assumption where a reader can see it, and it makes the fail-closed paths
++ * TESTABLE -- pointing the base at unbacked memory is the only way to exercise
++ * from outside what a silently-discarded write looks like from in here.
++ */
++
 +/* A Mac cursor is 16x16, so a hotspot outside that is not a hotspot. */
 +#define CURSOR_SIDE 16
 +/* No screen this machine can drive is larger than this; a pin beyond it is junk. */
@@ -188,17 +197,17 @@ index 0000000..e3adf20
 + * than a host-order struct cast -- an endianness slip is the classic way to
 + * build a pointer that looks almost right.
 + */
-+static bool lm_read_point(hwaddr addr, int *x, int *y)
++static bool lm_read_point(MacfbPtr *p, hwaddr off, int *x, int *y)
 +{
 +    uint8_t b[4];
 +
-+    cpu_physical_memory_read(addr, b, sizeof(b));
++    cpu_physical_memory_read(p->ram_base + off, b, sizeof(b));
 +    *y = (int16_t)((b[0] << 8) | b[1]);
 +    *x = (int16_t)((b[2] << 8) | b[3]);
 +    return true;
 +}
 +
-+static void lm_write_point(hwaddr addr, int x, int y)
++static void lm_write_point(MacfbPtr *p, hwaddr off, int x, int y)
 +{
 +    uint8_t b[4];
 +
@@ -206,20 +215,20 @@ index 0000000..e3adf20
 +    b[1] = (uint16_t)(int16_t)y & 0xff;
 +    b[2] = ((uint16_t)(int16_t)x >> 8) & 0xff;
 +    b[3] = (uint16_t)(int16_t)x & 0xff;
-+    cpu_physical_memory_write(addr, b, sizeof(b));
++    cpu_physical_memory_write(p->ram_base + off, b, sizeof(b));
 +}
 +
-+static uint8_t lm_read_u8(hwaddr addr)
++static uint8_t lm_read_u8(MacfbPtr *p, hwaddr off)
 +{
 +    uint8_t v;
 +
-+    cpu_physical_memory_read(addr, &v, 1);
++    cpu_physical_memory_read(p->ram_base + off, &v, 1);
 +    return v;
 +}
 +
-+static void lm_write_u8(hwaddr addr, uint8_t v)
++static void lm_write_u8(MacfbPtr *p, hwaddr off, uint8_t v)
 +{
-+    cpu_physical_memory_write(addr, &v, 1);
++    cpu_physical_memory_write(p->ram_base + off, &v, 1);
 +}
 +
 +/*
@@ -234,7 +243,7 @@ index 0000000..e3adf20
 +    uint8_t buf[8];
 +    int top, left, bottom, right;
 +
-+    cpu_physical_memory_read(LM_CRSRPIN, buf, sizeof(buf));
++    cpu_physical_memory_read(p->ram_base + LM_CRSRPIN, buf, sizeof(buf));
 +    top    = (int16_t)((buf[0] << 8) | buf[1]);
 +    left   = (int16_t)((buf[2] << 8) | buf[3]);
 +    bottom = (int16_t)((buf[4] << 8) | buf[5]);
@@ -254,11 +263,11 @@ index 0000000..e3adf20
 +    return true;
 +}
 +
-+static bool ptr_read_hotspot(int *hx, int *hy)
++static bool ptr_read_hotspot(MacfbPtr *p, int *hx, int *hy)
 +{
 +    int x, y;
 +
-+    lm_read_point(LM_THECRSR_HOT, &x, &y);
++    lm_read_point(p, LM_THECRSR_HOT, &x, &y);
 +    if (x < 0 || y < 0 || x >= CURSOR_SIDE || y >= CURSOR_SIDE) {
 +        return false;
 +    }
@@ -275,7 +284,7 @@ index 0000000..e3adf20
 +    if (!ptr_read_pin(p, &l, &t, &r, &b)) {
 +        return false;
 +    }
-+    lm_read_point(LM_MOUSE, &mx, &my);
++    lm_read_point(p, LM_MOUSE, &mx, &my);
 +    if (mx < l || mx >= r || my < t || my >= b) {
 +        return false;
 +    }
@@ -372,7 +381,7 @@ index 0000000..e3adf20
 +
 +static void ptr_do_movea(MacfbPtr *p, uint64_t seq, int x, int y)
 +{
-+    int l, t, r, b;
++    int l, t, r, b, back_x, back_y;
 +    uint8_t couple;
 +
 +    p->n_movea++;
@@ -392,11 +401,35 @@ index 0000000..e3adf20
 +    x = MAX(l, MIN(r - 1, x));
 +    y = MAX(t, MIN(b - 1, y));
 +
-+    couple = lm_read_u8(LM_CRSRCOUPLE);
-+    lm_write_point(LM_MTEMP, x, y);
-+    lm_write_point(LM_RAWMOUSE, x, y);
++    couple = lm_read_u8(p, LM_CRSRCOUPLE);
++    lm_write_point(p, LM_MTEMP, x, y);
++    lm_write_point(p, LM_RAWMOUSE, x, y);
 +    /* NOT LM_MOUSE -- see the header comment. It is the sensor, not an input. */
-+    lm_write_u8(LM_CRSRNEW, couple);
++    lm_write_u8(p, LM_CRSRNEW, couple);
++
++    /*
++     * READ THE STORE BACK IMMEDIATELY. A write to unbacked guest-physical
++     * memory is SILENTLY DISCARDED -- no fault, no error -- and the read-back
++     * of `Mouse` below cannot catch that on its own: the daemon restates the
++     * same position before every button edge, so a vanished write to a pointer
++     * ALREADY at the target would read back equal and be declared verified
++     * while nothing had been written at all. Confirming the store itself is
++     * the half of verification the guest cannot supply.
++     */
++    lm_read_point(p, LM_MTEMP, &back_x, &back_y);
++    if (back_x != x || back_y != y) {
++        p->n_rejected++;
++        p->last_valid = false;
++        ptr_err(p, seq, "nowrite");
++        return;
++    }
++    lm_read_point(p, LM_RAWMOUSE, &back_x, &back_y);
++    if (back_x != x || back_y != y) {
++        p->n_rejected++;
++        p->last_valid = false;
++        ptr_err(p, seq, "nowrite");
++        return;
++    }
 +
 +    if (p->trace) {
 +        info_report("ramabs: MOVEA %d,%d couple=%u", x, y, couple);
@@ -452,7 +485,7 @@ index 0000000..e3adf20
 +{
 +    int x = 0, y = 0, hx = 0, hy = 0, l = 0, t = 0, r = 0, b = 0;
 +    bool mouse_ok = ptr_read_mouse(p, &x, &y);
-+    bool hot_ok = ptr_read_hotspot(&hx, &hy);
++    bool hot_ok = ptr_read_hotspot(p, &hx, &hy);
 +    bool pin_ok = ptr_read_pin(p, &l, &t, &r, &b);
 +
 +    ptr_reply(p,
@@ -460,14 +493,14 @@ index 0000000..e3adf20
 +              "hot=%d,%d hotvalid=%d pin=%d,%d,%d,%d pinvalid=%d "
 +              "crsrvis=%u crsrstate=%u mbstate=%u running=%d "
 +              "movea=%" PRIu64 " verified=%" PRIu64 " unverified=%" PRIu64
-+              " superseded=%" PRIu64 " rejected=%" PRIu64 " paused=%" PRIu64
++              " rejected=%" PRIu64 " paused=%" PRIu64
 +              " btn=%" PRIu64 "\n",
 +              seq, x, y, mouse_ok, p->last_valid,
 +              hx, hy, hot_ok, l, t, r, b, pin_ok,
-+              lm_read_u8(LM_CRSRVIS), lm_read_u8(LM_CRSRBUSY),
-+              lm_read_u8(LM_MBSTATE), runstate_is_running(),
++              lm_read_u8(p, LM_CRSRVIS), lm_read_u8(p, LM_CRSRBUSY),
++              lm_read_u8(p, LM_MBSTATE), runstate_is_running(),
 +              p->n_movea, p->n_verified, p->n_unverified,
-+              p->n_superseded, p->n_rejected, p->n_paused, p->n_btn);
++              p->n_rejected, p->n_paused, p->n_btn);
 +}
 +
 +/* ------------------------------------------------------------ command pump */
@@ -635,7 +668,7 @@ index 0000000..e3adf20
 +    p->pending = NULL;
 +}
 diff --git a/hw/display/macfb.c b/hw/display/macfb.c
-index b8115c2..07aba85 100644
+index b8115c2..d7b94f3 100644
 --- a/hw/display/macfb.c
 +++ b/hw/display/macfb.c
 @@ -19,6 +19,7 @@
@@ -661,16 +694,17 @@ index b8115c2..07aba85 100644
      return true;
  }
  
-@@ -762,6 +771,8 @@ static void macfb_nubus_reset(DeviceState *d)
+@@ -762,6 +771,9 @@ static void macfb_nubus_reset(DeviceState *d)
  }
  
  static const Property macfb_sysbus_properties[] = {
 +    DEFINE_PROP_CHR("ptrctl", MacfbSysBusState, macfb.ptr.chr),
 +    DEFINE_PROP_BOOL("ptr-trace", MacfbSysBusState, macfb.ptr.trace, false),
++    DEFINE_PROP_UINT64("ptr-ram-base", MacfbSysBusState, macfb.ptr.ram_base, 0),
      DEFINE_PROP_UINT32("width", MacfbSysBusState, macfb.width, 640),
      DEFINE_PROP_UINT32("height", MacfbSysBusState, macfb.height, 480),
      DEFINE_PROP_UINT8("depth", MacfbSysBusState, macfb.depth, 8),
-@@ -780,6 +791,13 @@ static const VMStateDescription vmstate_macfb_sysbus = {
+@@ -780,6 +792,14 @@ static const VMStateDescription vmstate_macfb_sysbus = {
  };
  
  static const Property macfb_nubus_properties[] = {
@@ -681,6 +715,7 @@ index b8115c2..07aba85 100644
 +     */
 +    DEFINE_PROP_CHR("ptrctl", MacfbNubusState, macfb.ptr.chr),
 +    DEFINE_PROP_BOOL("ptr-trace", MacfbNubusState, macfb.ptr.trace, false),
++    DEFINE_PROP_UINT64("ptr-ram-base", MacfbNubusState, macfb.ptr.ram_base, 0),
      DEFINE_PROP_UINT32("width", MacfbNubusState, macfb.width, 640),
      DEFINE_PROP_UINT32("height", MacfbNubusState, macfb.height, 480),
      DEFINE_PROP_UINT8("depth", MacfbNubusState, macfb.depth, 8),
@@ -699,10 +734,10 @@ index e730c28..b5f53eb 100644
  system_ss.add(when: 'CONFIG_VGA', if_true: files('vga.c'))
 diff --git a/include/hw/display/macfb-ptr.h b/include/hw/display/macfb-ptr.h
 new file mode 100644
-index 0000000..5b3757e
+index 0000000..1e85d6b
 --- /dev/null
 +++ b/include/hw/display/macfb-ptr.h
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,54 @@
 +/*
 + * Absolute pointer engine for classic Mac OS guests (macfb / Quadra 800).
 + *
@@ -728,6 +763,8 @@ index 0000000..5b3757e
 +    CharFrontend chr;
 +    struct MacfbState *fb;
 +    bool trace;
++    /* Guest-physical base of low memory; 0 on q800. See macfb-ptr.c. */
++    uint64_t ram_base;
 +
 +    /* Line assembly for the command stream. */
 +    char inbuf[512];
@@ -745,7 +782,7 @@ index 0000000..5b3757e
 +    QEMUTimer *verify_timer;
 +
 +    /* Telemetry -- what STAT reports, and the basis for "I do not know". */
-+    uint64_t n_movea, n_verified, n_unverified, n_superseded;
++    uint64_t n_movea, n_verified, n_unverified;
 +    uint64_t n_rejected, n_paused, n_btn;
 +    int last_x, last_y;
 +    bool last_valid;

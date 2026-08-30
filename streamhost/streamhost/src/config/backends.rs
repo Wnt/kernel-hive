@@ -240,6 +240,21 @@ pub enum InputBackend {
     /// Single-injector rule: nothing else may push motion or button edges at
     /// that guest's PS/2 mouse while the socket is connected.
     MgaCtl,
+    /// Native `ramabs/1` route for `macos753`: an ABSOLUTE WRITE, not a loop.
+    /// The Quadra 800 has no hardware cursor to close a loop over — classic Mac
+    /// OS composites the sprite in software — but it keeps the pointer in LOW
+    /// MEMORY, so the engine in the fork's `nubus-macfb` display model writes the target
+    /// into `MTemp`/`RawMouse` and publishes it with `CrsrNew := CrsrCouple`,
+    /// and Mac OS's own cursor VBL task moves the pointer and states where it
+    /// landed in `Mouse` — which is the read-back sensor the MOVEA acks
+    /// against. `absolute: true` is therefore earned by the guest's own
+    /// globals, not by an absolute input device (the mouse is still ADB, and
+    /// carries the button edges only). Pointer only: keys stay on this
+    /// station's working QEMU/dbus path. Never inferred — only set explicitly
+    /// via `SH_INPUT_BACKEND=ramabs` (socket `SH_RAMABS_SOCK`).
+    /// Single-injector rule: nothing else may push motion or button edges at
+    /// that guest while the socket is connected.
+    RamAbs,
 }
 
 impl InputBackend {
@@ -255,6 +270,7 @@ impl InputBackend {
             Self::MameSock => "mamesock",
             Self::ViceSock => "vicesock",
             Self::MgaCtl => "mgactl",
+            Self::RamAbs => "ramabs",
         }
     }
 
@@ -276,7 +292,8 @@ impl InputBackend {
             | Self::X11Test
             | Self::MameCmd
             | Self::MameSock
-            | Self::MgaCtl => "abs",
+            | Self::MgaCtl
+            | Self::RamAbs => "abs",
         }
     }
 }
@@ -309,12 +326,13 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
         Some(v) if v.eq_ignore_ascii_case("mamesock") => InputBackend::MameSock,
         Some(v) if v.eq_ignore_ascii_case("vicesock") => InputBackend::ViceSock,
         Some(v) if v.eq_ignore_ascii_case("mgactl") => InputBackend::MgaCtl,
+        Some(v) if v.eq_ignore_ascii_case("ramabs") => InputBackend::RamAbs,
         Some(v) if v.eq_ignore_ascii_case("dbus") && legacy_pointer.is_dbus() => legacy_pointer,
         Some(v) if v.eq_ignore_ascii_case("dbus") => panic!(
             "invalid legacy input combination SH_POINTER=warpd + SH_INPUT_BACKEND=dbus; use SH_INPUT_BACKEND=dbus-abs|dbus-rel|warpd|gallery-hid"
         ),
         Some(v) => panic!(
-            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock|mgactl (legacy dbus also accepted with SH_POINTER=abs|rel)"
+            "invalid SH_INPUT_BACKEND={v:?}; expected disabled|dbus-abs|dbus-rel|warpd|gallery-hid|x11test|mamecmd|mamesock|vicesock|mgactl|ramabs (legacy dbus also accepted with SH_POINTER=abs|rel)"
         ),
         None => legacy_pointer,
     }

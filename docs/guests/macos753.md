@@ -162,7 +162,143 @@ the whole point** — a classic Mac application *is* its resource fork, so a pla
 `.zip` of one is useless. The proof it worked is the file appearing in the Finder
 with its real icon.
 
-## Pointer
+## Pointer — an absolute WRITE into Mac OS's own globals
+
+`SH_INPUT_BACKEND=ramabs`, `SH_RAMABS_SOCK=<dir>/ptr.sock`, and the launcher's
+
+```
+-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off
+-global nubus-macfb.ptrctl=ptr0
+```
+
+plus `-global nubus-macfb.ptr-trace=${PTR_TRACE:-off}` for the engine-side trace.
+
+**The type name is `nubus-macfb`, and getting it wrong fails silently.** `-M
+q800` instantiates `TYPE_NUBUS_MACFB` (`hw/m68k/q800.c`), not `TYPE_MACFB`
+(`"sysbus-macfb"`). QEMU does not warn about a `-global` naming a type it never
+instantiated — it just does nothing, the chardev stays `frontend-open: false`,
+no HELLO is ever sent, and the only symptom is a pointer that never moves. The
+opposite mistake is loud: `ptrctl` on a binary that predates the engine is an
+unknown *property* and QEMU refuses to start. The engine itself is
+`streamhost/qemu-patches/0007-macfb-ramabs-absolute-pointer.patch`, and its
+banner is exactly `HELLO ramabs/1 caps=movea,btn,sync,stat surf=1152x870`.
+
+**This is not a closed loop, and calling it one would mislead every future
+reader.** `aix432` and `irix` converge on a HARDWARE CURSOR register. The
+Quadra 800 has no hardware cursor at all: classic Mac OS composites the sprite
+in software, so there is nothing to read. What there *is* is Mac OS's own
+pointer state in LOW MEMORY, and the emulator can both read and write it. So
+the engine states the answer instead of hunting for it.
+
+### The mechanism, exactly
+
+Per `MOVEA x y` the engine:
+
+1. writes the target into **`MTemp` ($0828)** and **`RawMouse` ($082C)**;
+2. sets **`CrsrNew` ($08CE) := `CrsrCouple` ($08CF)** — the publish barrier;
+3. Mac OS's own cursor VBL task notices, moves the pointer, and states where it
+   landed in **`Mouse` ($0830)**;
+4. the MOVEA acks when `Mouse` reads back **== the target**.
+
+Both `Point`s are **two signed BIG-ENDIAN int16, VERTICAL first, then
+horizontal** — `(v,h)`, the opposite order from the `(x,y)` the rest of the
+fleet speaks. Get that backwards and the cursor moves to the transposed point,
+which looks like a scaling bug and is not one.
+
+### THE TRAP: never write `Mouse` ($0830)
+
+This is the single most important line on this page. `Mouse` is the cursor VBL
+task's **OUTPUT**, and it is the task's own change detector: it moves the
+pointer when `RawMouse` differs from `Mouse`. Pre-write `Mouse` to the target
+"to help", and the task sees no change, does nothing, and **the cursor silently
+does not move** — no error, no log, no partial motion. Proven empirically
+against a sandbox clone restored from the golden. `Mouse` is a sensor. Write
+`MTemp` and `RawMouse`; read `Mouse`.
+
+### Why the aix432 "magnet" cannot happen here
+
+`Mouse` holds the **POINTER**, not a sprite origin, so the hotspot never enters
+the control path — there is no `reading = pointer - hotspot` to get wrong, and
+therefore no guessed-hotspot magnet (`docs/guests/aix432.md`). The hotspot is
+still available when something needs it: it is read **live** from `TheCrsr`+64
+= **$0884** (reads `h=1,v=1` for the arrow), never measured by a screen clamp.
+
+Two more measured facts from the same probe session (2026-08-30, QMP
+`pmemsave` against a sandbox clone restored from the golden):
+
+- **`CrsrPin` ($0834)** reads exactly `l=0, t=0, r=1152, b=870` — the clamp
+  matches the surface, so no target inside the surface is out of reach.
+- sprite origin == `Mouse` − hotspot, confirmed against
+  `scripts/dev/cursor-locate.py` on QMP screendumps at several targets.
+
+The addresses, the layout and **which golden they were derived against** are
+recorded machine-visibly in `registry/stations/macos753.json` under
+`stream.pointer.guestState`, because they are per-station: the other station on
+this method (`rhapsody`) uses a `Point{int16 x, int16 y}` — the opposite field
+order — which is exactly why none of this lives in the daemon or the wire.
+
+### What stays on the ADB mouse
+
+Buttons. The emulated ADB mouse remains in the machine and carries `DOWN1`/`UP1`
+as **button-only edges** (no motion). `DOWN2/UP2/DOWN3/UP3` are accepted and
+acked as no-ops — the Mac has one button, and the daemon's reconnect resync
+preamble always sends all three releases.
+
+**Single injector (BINDING).** While the socket is connected the engine owns the
+guest pointer: no `rel_bridge`, no QMP `input-send-event`, no
+`adb_pointer.py` against the LIVE station dir.
+
+### No golden re-bake
+
+A `-chardev` is not a guest device, and the `-global` sets a property on the
+`macfb` the `q800` machine already instantiates. The **guest-visible device set
+is unchanged**, so `loadvm golden` still binds, and the engine registers no
+migration state. Install order is binding in both directions: QEMU binary
+before the launcher (`-global nubus-macfb.ptrctl=` is an unknown property on an
+older binary and QEMU refuses to start), streamhost binary before the env
+fixture (`SH_INPUT_BACKEND=ramabs` panics an older daemon at startup).
+
+### Proven on the framebuffer (rule 9)
+
+Bring-up evidence, 2026-08-30, on a sandbox clone restored from the golden:
+**14 targets, three independent observers each** — what the daemon commanded,
+what the guest's own `Mouse` global read back, and what
+`scripts/dev/cursor-locate.py` found in a QMP screendump — **all 14 agreeing
+exactly**, including four screen edges and five window-frame targets (the
+glyph-swap territory that produced the aix432 magnet). Plus: a double-click that
+opened the Macintosh HD window (85 255 pixels repainted), clamping proven in
+both directions (`5000,5000` → `1151,869`, `-400,-400` → `0,0`), and 5 s at rest
+with **zero** additional MOVEAs and **zero** re-aims.
+
+### Two live-fleet inaccuracies found while doing this, recorded not fixed
+
+**1. `SH_REL_HOME_TO=599,500` in the fixture is WRONG.** The golden's actual
+baked cursor position is **(15,15)** — read 2026-08-30 from the restored
+vmstate via QMP `pmemsave` of the `Mouse` global at `$0830` **before `cont`**.
+The 599,500 value was measured 2026-08-18 as "dead-centre of the desktop"; the
+golden was then **COLD re-baked 2026-08-23/24** for the SONIC NIC and the
+constant was never re-measured. It is deliberately **left wrong**: under
+`ramabs` nothing reads it, and retiring the relative scaffolding
+(`SH_CURSOR_SCALE`, `SH_REL_HOME_ON`, `SH_REL_HOME_TO`, and the checkpoint's
+"Very Slow" mouse tracking) is a separate, later commit so that rolling back one
+change cannot strand the other. **If `dbus-rel` is ever rolled back to, fix this
+first** — a re-home to 599,500 seeds the bridge's model ~585 px away from the
+guest's real cursor.
+
+**2. `cursor-locate.py learn` needs `--at` on this station.** A plain two-frame
+`learn` drowns in the Mac desktop's 50% dither: it yields a degenerate template
+that matches everywhere, and `find` reports AMBIGUOUS at *thousands* of
+positions. The working invocation pins the origin and the box:
+
+```bash
+scripts/dev/cursor-locate.py learn a.ppm b.ppm --at X,Y --size 16
+```
+
+### The relative path this replaced (kept for rollback)
+
+Rollback is two lines: drop the `-chardev`/`-global` pair from the launcher and
+set `SH_INPUT_BACKEND=dbus-rel` in the fixture. Everything below still applies
+under it, and the fixture still carries the constants.
 
 `SH_INPUT_BACKEND=dbus-rel`, `SH_CURSOR_SCALE=2.7778`.
 

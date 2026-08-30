@@ -377,17 +377,44 @@ Two things to know before trusting a result:
 - **It reports the sprite ORIGIN, not the pointer.** The guest draws the sprite
   at `pointer − hotspot`, and the hotspot is per-glyph software state no picture
   contains. Pass `--hotspot X,Y` when you know it (on `aix432` the engine
-  reports it in `STAT`).
+  reports it in `STAT`; on `macos753` it is read live from the guest's own
+  `TheCrsr`+64 = $0884, and is `h=1,v=1` for the arrow).
 - **Learning assumes only the cursor moved**, which a real desktop rarely
   honours — the first attempt here drowned in 16385 changed pixels because
   Netscape repainted between frames. It says which cluster defeated it, and
   `--at X,Y` learns from a box at a position the caller already knows, which is
   the normal path on a busy exhibit.
 
+  A DITHERED desktop defeats it a second way, and more quietly: on `macos753`
+  the Mac's 50% grey desktop pattern makes a plain two-frame `learn` produce a
+  DEGENERATE template — one that matches *everywhere*, so `find` answers
+  `AMBIGUOUS` at thousands of positions rather than failing outright. The
+  working path there is to pin both the origin and the box:
+  `learn a.ppm b.ppm --at X,Y --size 16`.
+
 Validated on `aix432`, the one station with an independent oracle: against the
 Matrox hardware-cursor registers it located the sprite **pixel-exact (±0) in
 every frame**, having never seen the registers — and returned `NOTFOUND` rather
 than a wrong answer on a frame carrying a glyph it had not been taught.
+
+### When the pointer is placed by writing GUEST RAM (`ramabs`)
+
+`macos753` has no hardware cursor and no absolute device: its engine writes Mac
+OS's own low-memory pointer globals directly (`docs/IO-PATHS.md`, the **ramabs
+(absolute write)** row). Two consequences for debugging:
+
+- There is no convergence, no gain and no hotspot in the control path, so the
+  aix432 questions ("is it converging? is the hotspot measured?") have no
+  meaning here. A pointer that is off by a constant is an ADDRESS or LAYOUT
+  problem, not a tuning problem — and a *transposed* pointer means somebody
+  read the Mac `Point` as `(h,v)`: it is **big-endian, VERTICAL first**.
+- A cursor that does not move AT ALL while the daemon's acks look healthy is the
+  known trap: something wrote `Mouse` ($0830). That global is the cursor VBL
+  task's output and its change detector, so pre-writing it makes the task decide
+  nothing changed. Write `MTemp`/`RawMouse`; only ever READ `Mouse`.
+
+Daemon-side wire trace is `SH_RAMABS_TRACE=on` (ingress, every verb, every ack
+with its RTT, to journald), the same shape as `SH_MGACTL_TRACE`.
 
 ## What the guest end does to your timing
 

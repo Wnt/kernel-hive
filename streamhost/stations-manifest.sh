@@ -820,13 +820,16 @@ emit tru64 \
 #   the fleet package ships no m68k target, and a checkpoint baked and loaded by
 #   the same standalone binary never needs pve's pbs-state vmstate section.
 #   TCG only (no KVM for m68k), so idle auto-pause carries its cost.
-#   RELATIVE ADB pointer — no absolute path exists on this machine, and the
-#   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.
+#   ABSOLUTE pointer WITHOUT an absolute device: the machine has no tablet and
+#   no hardware cursor, but Mac OS keeps its pointer in LOW MEMORY, so the
+#   engine behind -global nubus-macfb.ptrctl= writes MTemp/RawMouse and lets
+#   the OS's own cursor VBL task move it (ramabs/1, SH_INPUT_BACKEND=ramabs).
+#   The ADB mouse still carries the button edges.
 #   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.
 emit macos753 \
-  --tile macos753 --vmid 142 --udp 54142 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 2.7778 --cursor-off-x 0 --cursor-off-y 0 --audio \
-  on --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
+  --tile macos753 --vmid 142 --udp 54142 --pointer abs --input-backend \
+  ramabs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
+  --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
   --env-append-file "$T/macos753/station.env.fixture"
 
 # hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):

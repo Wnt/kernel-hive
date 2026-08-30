@@ -1,23 +1,32 @@
-//! `mgaptr/1` pointer sink: the client half of the aix432 closed loop.
+//! `mgaptr/1` / `ramabs/1` pointer sinks: the client half of the QEMU engines
+//! that place the guest pointer at an ABSOLUTE target.
 //!
-//! Every other relative-pointer station in the fleet reckons absolute
-//! coordinates by DEAD RECKONING — pin the guest cursor into a corner once,
-//! then push deltas from where the daemon *believes* it is (`rel_bridge`).
-//! The belief is wrong the moment the guest accelerates, clamps at a screen
-//! edge or warps the pointer, and only the visitor shoving the cursor into a
-//! corner ever re-syncs the two.
+//! Every dead-reckoning station in the fleet (`rel_bridge`) pins the guest
+//! cursor into a corner once and then pushes deltas from where the daemon
+//! *believes* it is — a belief that is wrong the moment the guest accelerates,
+//! clamps at a screen edge or warps the pointer. The stations here do not have
+//! to believe anything: the emulator can reach the GUEST'S OWN idea of the
+//! pointer position, so the daemon states a target and the engine lands on it.
 //!
-//! `aix432` does not have to believe anything. AIX's GXT130P X server drives
-//! the emulated Matrox HARDWARE cursor, so the guest writes the pointer
-//! position into the DAC's CURPOSX/CURPOSY registers on every move — and the
-//! device model reads them. The closed loop therefore lives INSIDE QEMU, at
-//! the emulator's own rate and with direct register access, exactly as `irix`
-//! runs its MOVEA engine inside MAME over the Newport VC2's cursor registers
-//! (`docs/IO-PATHS.md`, the `mamesock (closed loop)` row). This module is only
-//! the wire to it.
+//! Two engine CLASSES, one wire shape, one state machine — see `PtrDialect`:
 //!
-//! Wire contract (`hw/display/mga.c`, "Closed-loop 1:1 pointer"), a deliberate
-//! subset of `mamectl/1` so the two closed-loop stations read the same way:
+//! * **`mgaptr/1`** (`aix432`, backend `mgactl`) — a CLOSED LOOP over a
+//!   HARDWARE CURSOR. AIX's GXT130P X server drives the emulated Matrox cursor,
+//!   so the guest writes the pointer into the DAC's CURPOSX/CURPOSY registers
+//!   and the model reads them back and converges, exactly as `irix` runs its
+//!   MOVEA engine inside MAME over the Newport VC2 (`docs/IO-PATHS.md`).
+//! * **`ramabs/1`** (backend `ramabs`; `macos753` first, `rhapsody` next) — an
+//!   ABSOLUTE WRITE into GUEST RAM, and not a loop at all. These guests have no
+//!   hardware cursor to close one over (the OS composites the sprite in
+//!   software), but they keep the pointer in memory where the emulator can
+//!   write it, and the OS's own cursor task picks the new value up. NOTHING
+//!   ABOUT THAT GUEST BELONGS HERE: address, struct layout (field order AND
+//!   endianness differ between the two stations), publish step and read-back
+//!   probe all live in the QEMU-side control object, recorded per station in
+//!   the registry. This module only carries targets and edges.
+//!
+//! Wire contract, a deliberate subset of `mamectl/1` so every station in this
+//! family reads the same way (only the dialect token differs):
 //!
 //! ```text
 //!   <- HELLO mgaptr/1 caps=movea,btn,sync,stat surf=1024x768
@@ -31,16 +40,18 @@
 //! would stall the whole stream. Button edges ack when they apply, which is
 //! after the target they were restated behind has landed — that deferral is
 //! the engine's, and it is what makes a click land where the visitor aimed it.
+//! An engine with fewer buttons than the wire has (the Mac's ADB mouse has
+//! exactly one) still ACKS DOWN2/UP2/DOWN3/UP3 as no-ops: the resync preamble
+//! below always sends them.
 //!
-//! **Pointer only.** Keys are NOT routed here (`InputRouter::routes_keys`):
-//! this guest has a working QEMU/dbus keyboard path and there is no reason to
-//! move it. Wheel deltas emit nothing — the guest has a 3-button PS/2 mouse.
+//! **Pointer only.** Keys are NOT routed here (`InputRouter::routes_keys`): both
+//! guests have a working QEMU/dbus keyboard path. Wheel deltas emit nothing.
 //!
 //! **Single injector (BINDING).** While this socket is connected the engine
 //! owns the guest's pointer completely. Nothing else — no `dbus-rel` bridge,
 //! no `input-send-event` over QMP, no `labctl` pointer helper — may push
 //! motion or button edges at that mouse, or the two injectors will fight over
-//! the guest's PS/2 accumulator and neither will know where the cursor is.
+//! the guest's input state and neither will know where the cursor is.
 //!
 //! Shape is `MameSockSink`'s, proven: browser receive paths only `try_lock`
 //! and offer; connect/HELLO/write/ack-read/reconnect all live in one
@@ -74,27 +85,71 @@ const HEALTH_DOWN: u8 = 2;
 const ACK_BASE: Duration = Duration::from_secs(5);
 const ACK_PER_PACED: Duration = Duration::from_millis(200);
 
-/// `SH_MGACTL_TRACE=on|1`: per-event wire tracing — ingress, every tx line and
-/// every ack with its RTT. journald supplies the timestamps.
-static TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-
-fn trace_on() -> bool {
-    *TRACE.get_or_init(|| {
-        std::env::var("SH_MGACTL_TRACE")
-            .map(|v| v == "on" || v == "1")
-            .unwrap_or(false)
-    })
+/// One station's wire dialect — the ONLY thing that differs between the two
+/// engines this module speaks to.
+///
+/// The machinery below (latest-wins coalescing, the bounded ordered queue,
+/// restate-before-edge, HELLO verification, ack liveness with reconnect, the
+/// resync preamble) was written for `mgaptr/1` first. When a completely
+/// different engine needed the same sink, the difference turned out to be FOUR
+/// STRINGS — so the four strings are the parameter, and there is exactly one
+/// copy of the state machine to fix when the next bug in it is found.
+pub struct PtrDialect {
+    /// Banner prefix the engine must send, INCLUDING its trailing space. A
+    /// peer that cannot say it is not this engine, and a silent fallback would
+    /// leave the pointer dead with no explanation.
+    pub hello: &'static str,
+    /// `InputBackend::as_str()` value: the log prefix and the telemetry tag.
+    pub tag: &'static str,
+    /// Env var naming the control socket QEMU serves for this station.
+    pub sock_env: &'static str,
+    /// Env var arming per-event wire tracing.
+    pub trace_env: &'static str,
 }
 
-/// `SH_MGACTL_SOCK`, defaulting to the station directory's `ptr.sock` — the
+/// `aix432`: the closed loop over the Matrox DAC's hardware-cursor registers.
+pub static MGAPTR: PtrDialect = PtrDialect {
+    hello: "HELLO mgaptr/1 ",
+    tag: "mgactl",
+    sock_env: "SH_MGACTL_SOCK",
+    trace_env: "SH_MGACTL_TRACE",
+};
+
+/// `macos753`: the direct absolute write into Mac OS's low-memory pointer
+/// globals. Same wire, no loop — the guest has no hardware cursor to close one
+/// over, and none is needed because the OS's own `Mouse` global reads the
+/// result back.
+pub static RAMABS: PtrDialect = PtrDialect {
+    hello: "HELLO ramabs/1 ",
+    tag: "ramabs",
+    sock_env: "SH_RAMABS_SOCK",
+    trace_env: "SH_RAMABS_TRACE",
+};
+
+/// `<dialect>.sock_env`, defaulting to the station directory's `ptr.sock` — the
 /// path QEMU's own `-chardev socket,...` serves for this station.
 ///
 /// Read here rather than carried on `Config`: `config/mod.rs` is at its hard
 /// file-size budget, and a sink owning its own knob is the same shape as
 /// `PtrGrid::from_env` and `KeyMap::from_env` next door.
-pub fn socket_from_env(tile: &str) -> String {
-    std::env::var("SH_MGACTL_SOCK")
+pub fn socket_from_env(dialect: &PtrDialect, tile: &str) -> String {
+    std::env::var(dialect.sock_env)
         .unwrap_or_else(|_| format!("/data/vms/streamhost/stations/{tile}/ptr.sock"))
+}
+
+/// The sink for `dialect` on this station, socket path resolved from the
+/// environment. `InputBackend` -> sink is one line per engine at the call site.
+pub fn sink(dialect: &'static PtrDialect, tile: &str) -> Arc<PtrCtlSink> {
+    PtrCtlSink::new(dialect, socket_from_env(dialect, tile))
+}
+
+/// `<dialect>.trace_env=on|1`: per-event wire tracing — ingress, every tx line
+/// and every ack with its RTT. Read once at construction (the two sinks are
+/// armed independently); journald supplies the timestamps.
+fn trace_from_env(dialect: &PtrDialect) -> bool {
+    std::env::var(dialect.trace_env)
+        .map(|v| v == "on" || v == "1")
+        .unwrap_or(false)
 }
 
 #[derive(Default)]
@@ -175,6 +230,9 @@ struct Pending {
 }
 
 struct Shared {
+    dialect: &'static PtrDialect,
+    /// `dialect.trace_env`, sampled once at construction.
+    trace: bool,
     pending: Mutex<Pending>,
     notify: Notify,
     health: AtomicU8,
@@ -182,14 +240,17 @@ struct Shared {
     closed: AtomicBool,
 }
 
-pub struct MgaCtlSink {
+/// The sink itself. One state machine; `dialect` picks the engine it talks to.
+pub struct PtrCtlSink {
     shared: Arc<Shared>,
 }
 
-impl MgaCtlSink {
-    pub fn new(path: String) -> Arc<Self> {
-        eprintln!("[input-router] mgactl sink socket={path}");
+impl PtrCtlSink {
+    pub fn new(dialect: &'static PtrDialect, path: String) -> Arc<Self> {
+        eprintln!("[input-router] {} sink socket={path}", dialect.tag);
         let shared = Arc::new(Shared {
+            dialect,
+            trace: trace_from_env(dialect),
             pending: Mutex::new(Pending {
                 latest_move: None,
                 ordered: VecDeque::with_capacity(ORDERED_CAPACITY),
@@ -203,7 +264,7 @@ impl MgaCtlSink {
             counters: Counters::default(),
             closed: AtomicBool::new(false),
         });
-        tokio::spawn(mgactl_task(path, shared.clone()));
+        tokio::spawn(ptrctl_task(path, shared.clone()));
         let log_shared = shared.clone();
         tokio::spawn(async move {
             let mut tick = tokio::time::interval(Duration::from_secs(10));
@@ -212,7 +273,11 @@ impl MgaCtlSink {
                 if log_shared.closed.load(Ordering::Relaxed) {
                     break;
                 }
-                eprintln!("[input-router] mgactl {}", log_shared.counters.line());
+                eprintln!(
+                    "[input-router] {} {}",
+                    log_shared.dialect.tag,
+                    log_shared.counters.line()
+                );
             }
         });
         Arc::new(Self { shared })
@@ -243,7 +308,7 @@ impl MgaCtlSink {
     }
 }
 
-impl RealtimeInputSink for MgaCtlSink {
+impl RealtimeInputSink for PtrCtlSink {
     fn try_pointer_abs(&self, event: PointerAbs) -> Result<AcceptedSeq, Reject> {
         // An ORDERED event (a button edge) waits for the queue; a move does
         // not. A dropped move is replaced by the next one; a dropped edge is a
@@ -255,10 +320,17 @@ impl RealtimeInputSink for MgaCtlSink {
         };
         let tx = event.x.min(event.width.saturating_sub(1));
         let ty = event.y.min(event.height.saturating_sub(1));
-        if trace_on() {
+        if self.shared.trace {
             eprintln!(
-                "[mgactl-trace] rx seq={} raw={},{} clamped={},{} btn={} ordered={}",
-                event.seq, event.x, event.y, tx, ty, event.buttons, event.ordered
+                "[{}-trace] rx seq={} raw={},{} clamped={},{} btn={} ordered={}",
+                self.shared.dialect.tag,
+                event.seq,
+                event.x,
+                event.y,
+                tx,
+                ty,
+                event.buttons,
+                event.ordered
             );
         }
         p.cur_x = tx;
@@ -320,11 +392,11 @@ impl RealtimeInputSink for MgaCtlSink {
     }
 
     fn backend_name(&self) -> &'static str {
-        "mgactl"
+        self.shared.dialect.tag
     }
 }
 
-impl Drop for MgaCtlSink {
+impl Drop for PtrCtlSink {
     fn drop(&mut self) {
         self.shared.closed.store(true, Ordering::Release);
         self.shared.notify.notify_waiters();
@@ -348,7 +420,7 @@ fn ack_deadline(outstanding: &VecDeque<Sent>) -> Option<Instant> {
 
 /// Route one engine line. OK/ERR acks retire their outstanding entry; anything
 /// else (an unsolicited notice) is not an ack and is ignored.
-fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
+fn on_reply(shared: &Shared, line: &str, outstanding: &mut VecDeque<Sent>) {
     let mut tok = line.splitn(3, ' ');
     let (Some(seq), Some(kind)) = (tok.next(), tok.next()) else {
         return;
@@ -360,19 +432,20 @@ fn on_reply(line: &str, outstanding: &mut VecDeque<Sent>) {
     if let Some(i) = outstanding.iter().position(|s| s.seq == seq) {
         let sent = outstanding.remove(i).unwrap();
         let rtt_us = sent.at.elapsed().as_micros() as u64;
-        if trace_on() {
-            eprintln!("[mgactl-trace] ack {seq} rtt_us={rtt_us}");
+        if shared.trace {
+            eprintln!("[{}-trace] ack {seq} rtt_us={rtt_us}", shared.dialect.tag);
         }
-        crate::input_telemetry::record_inject("mgactl", 1, rtt_us, None);
+        crate::input_telemetry::record_inject(shared.dialect.tag, 1, rtt_us, None);
     }
     // An ERR is an ack for liveness (the engine processed the verb) but the
     // verb did not apply; surface it, it should never happen on this wire.
     if kind == "ERR" {
-        eprintln!("[mgactl] engine replied {line}");
+        eprintln!("[{}] engine replied {line}", shared.dialect.tag);
     }
 }
 
 async fn send_cmd(
+    shared: &Shared,
     wr: &mut OwnedWriteHalf,
     seq: &mut u64,
     cmd: Cmd,
@@ -381,8 +454,8 @@ async fn send_cmd(
     *seq += 1;
     wr.write_all(format!("{} {}\n", *seq, cmd.line).as_bytes())
         .await?;
-    if trace_on() {
-        eprintln!("[mgactl-trace] tx {} {}", *seq, cmd.line);
+    if shared.trace {
+        eprintln!("[{}-trace] tx {} {}", shared.dialect.tag, *seq, cmd.line);
     }
     outstanding.push_back(Sent {
         seq: *seq,
@@ -395,10 +468,13 @@ async fn send_cmd(
 type EngineLines = Lines<BufReader<OwnedReadHalf>>;
 
 /// Connect and verify the engine's banner. The HELLO must arrive within 1 s and
-/// parse as `mgaptr/1`, else the peer is not a compatible closed-loop engine —
-/// which on this station means the QEMU binary predates it, and a silent
-/// fallback would leave the pointer dead with no explanation.
-async fn connect_mgaptr(path: &str) -> std::io::Result<(EngineLines, OwnedWriteHalf)> {
+/// start with `dialect.hello`, else the peer is not a compatible engine — which
+/// on both stations means the QEMU binary predates it, and a silent fallback
+/// would leave the pointer dead with no explanation.
+async fn connect_engine(
+    dialect: &PtrDialect,
+    path: &str,
+) -> std::io::Result<(EngineLines, OwnedWriteHalf)> {
     let stream = tokio::time::timeout(Duration::from_secs(1), UnixStream::connect(path))
         .await
         .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "connect timeout"))??;
@@ -410,7 +486,7 @@ async fn connect_mgaptr(path: &str) -> std::io::Result<(EngineLines, OwnedWriteH
         .ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "EOF before HELLO")
         })?;
-    if !hello.starts_with("HELLO mgaptr/1 ") {
+    if !hello.starts_with(dialect.hello) {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             format!("incompatible banner: {hello:?}"),
@@ -419,19 +495,22 @@ async fn connect_mgaptr(path: &str) -> std::io::Result<(EngineLines, OwnedWriteH
     Ok((lines, wr))
 }
 
-async fn mgactl_task(path: String, shared: Arc<Shared>) {
+async fn ptrctl_task(path: String, shared: Arc<Shared>) {
     let mut backoff_ms = 50u64;
     let mut seq = 0u64;
     while !shared.closed.load(Ordering::Acquire) {
         shared.health.store(HEALTH_STARTING, Ordering::Release);
-        match connect_mgaptr(&path).await {
+        match connect_engine(shared.dialect, &path).await {
             Ok((mut lines, mut wr)) => {
-                eprintln!("[mgactl] connected, HELLO verified {path}");
+                eprintln!("[{}] connected, HELLO verified {path}", shared.dialect.tag);
                 backoff_ms = 50;
                 run_connection(&shared, &mut lines, &mut wr, &mut seq).await;
             }
             Err(e) => {
-                eprintln!("[mgactl] connect/HELLO {path} failed: {e}; retry {backoff_ms}ms");
+                eprintln!(
+                    "[{}] connect/HELLO {path} failed: {e}; retry {backoff_ms}ms",
+                    shared.dialect.tag
+                );
             }
         }
         // Down between connections; drop both queues — unacked motion is never
@@ -482,8 +561,11 @@ async fn run_connection(
     ];
     edge_cmds(0, buttons, &mut preamble);
     for cmd in preamble {
-        if let Err(e) = send_cmd(wr, seq, cmd, &mut outstanding).await {
-            eprintln!("[mgactl] resync write failed: {e}; reconnecting");
+        if let Err(e) = send_cmd(shared, wr, seq, cmd, &mut outstanding).await {
+            eprintln!(
+                "[{}] resync write failed: {e}; reconnecting",
+                shared.dialect.tag
+            );
             return;
         }
     }
@@ -500,8 +582,8 @@ async fn run_connection(
                     .or_else(|| p.latest_move.take().map(|(x, y)| Cmd::movea(x, y)))
             };
             let Some(cmd) = next else { break };
-            if let Err(e) = send_cmd(wr, seq, cmd, &mut outstanding).await {
-                eprintln!("[mgactl] write failed: {e}; reconnecting");
+            if let Err(e) = send_cmd(shared, wr, seq, cmd, &mut outstanding).await {
+                eprintln!("[{}] write failed: {e}; reconnecting", shared.dialect.tag);
                 return;
             }
         }
@@ -512,20 +594,21 @@ async fn run_connection(
         tokio::select! {
             _ = shared.notify.notified() => {}
             line = lines.next_line() => match line {
-                Ok(Some(line)) => on_reply(&line, &mut outstanding),
+                Ok(Some(line)) => on_reply(shared, &line, &mut outstanding),
                 Ok(None) => {
-                    eprintln!("[mgactl] engine closed the socket; reconnecting");
+                    eprintln!("[{}] engine closed the socket; reconnecting", shared.dialect.tag);
                     return;
                 }
                 Err(e) => {
-                    eprintln!("[mgactl] read failed: {e}; reconnecting");
+                    eprintln!("[{}] read failed: {e}; reconnecting", shared.dialect.tag);
                     return;
                 }
             },
             _ = tokio::time::sleep_until(deadline.unwrap_or_else(Instant::now)),
                     if deadline.is_some() => {
                 eprintln!(
-                    "[mgactl] ack timeout ({} outstanding); reconnecting",
+                    "[{}] ack timeout ({} outstanding); reconnecting",
+                    shared.dialect.tag,
                     outstanding.len()
                 );
                 return;
@@ -540,9 +623,10 @@ mod tests {
     use tokio::net::UnixListener;
 
     const HELLO: &[u8] = b"HELLO mgaptr/1 caps=movea,btn,sync,stat surf=1024x768\n";
+    const HELLO_RAMABS: &[u8] = b"HELLO ramabs/1 caps=movea,btn,sync,stat surf=1152x870\n";
 
     fn bind(tag: &str) -> (std::path::PathBuf, UnixListener) {
-        let dir = std::env::temp_dir().join(format!("mgactl-{tag}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ptrctl-{tag}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let sock = dir.join("ptr.sock");
         let _ = std::fs::remove_file(&sock);
@@ -564,7 +648,7 @@ mod tests {
         }
     }
 
-    async fn wait_healthy(sink: &MgaCtlSink) {
+    async fn wait_healthy(sink: &PtrCtlSink) {
         for _ in 0..200 {
             if sink.health() == SinkHealth::Healthy {
                 return;
@@ -600,7 +684,7 @@ mod tests {
     #[tokio::test]
     async fn restates_the_target_before_every_edge() {
         let (path, listener) = bind("restate");
-        let sink = MgaCtlSink::new(path.to_string_lossy().into_owned());
+        let sink = PtrCtlSink::new(&MGAPTR, path.to_string_lossy().into_owned());
 
         let (stream, _) = listener.accept().await.unwrap();
         let (rd, mut wr) = stream.into_split();
@@ -634,7 +718,7 @@ mod tests {
     #[tokio::test]
     async fn moves_coalesce_latest_wins() {
         let (path, listener) = bind("coalesce");
-        let sink = MgaCtlSink::new(path.to_string_lossy().into_owned());
+        let sink = PtrCtlSink::new(&MGAPTR, path.to_string_lossy().into_owned());
 
         let (stream, _) = listener.accept().await.unwrap();
         let (rd, mut wr) = stream.into_split();
@@ -658,13 +742,57 @@ mod tests {
     #[tokio::test]
     async fn a_wrong_banner_is_refused() {
         let (path, listener) = bind("banner");
-        let sink = MgaCtlSink::new(path.to_string_lossy().into_owned());
+        let sink = PtrCtlSink::new(&MGAPTR, path.to_string_lossy().into_owned());
 
         let (stream, _) = listener.accept().await.unwrap();
         let (_rd, mut wr) = stream.into_split();
         wr.write_all(b"HELLO mamectl/1 something\n").await.unwrap();
         // The connection is dropped rather than used: an engine that cannot
         // speak mgaptr/1 must not be mistaken for one that can.
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        assert_ne!(sink.health(), SinkHealth::Healthy);
+    }
+
+    /// The dialect is the ONLY difference between the two stations, so pin it
+    /// from both sides: a `ramabs` sink must accept that engine's banner and
+    /// name itself `ramabs` in the logs and the injection telemetry...
+    #[tokio::test]
+    async fn the_ramabs_dialect_speaks_its_own_banner() {
+        let (path, listener) = bind("ramabs");
+        let sink = PtrCtlSink::new(&RAMABS, path.to_string_lossy().into_owned());
+        assert_eq!(sink.backend_name(), "ramabs");
+
+        let (stream, _) = listener.accept().await.unwrap();
+        let (rd, mut wr) = stream.into_split();
+        let mut rd = BufReader::new(rd).lines();
+        wr.write_all(HELLO_RAMABS).await.unwrap();
+        wait_healthy(&sink).await;
+
+        // The preamble states DOWN2/UP2/DOWN3/UP3 at every engine, so an
+        // engine with fewer buttons (macos753's ADB mouse has exactly one)
+        // MUST ack them as no-ops rather than ERR.
+        assert_eq!(
+            drain(&mut rd, &mut wr, 4).await,
+            vec!["UP1", "UP2", "UP3", "MOVEA 0 0"]
+        );
+        sink.try_pointer_abs(ev(1, 600, 400, 0b001)).unwrap();
+        assert_eq!(
+            drain(&mut rd, &mut wr, 2).await,
+            vec!["MOVEA 600 400", "DOWN1"]
+        );
+    }
+
+    /// ...and must REFUSE the other station's engine. The two sockets are
+    /// per-station files, but a mis-pointed `SH_RAMABS_SOCK` (or a QEMU binary
+    /// predating the macfb engine) must fail loudly rather than half-work.
+    #[tokio::test]
+    async fn a_ramabs_sink_refuses_the_mga_banner() {
+        let (path, listener) = bind("ramabs-wrong");
+        let sink = PtrCtlSink::new(&RAMABS, path.to_string_lossy().into_owned());
+
+        let (stream, _) = listener.accept().await.unwrap();
+        let (_rd, mut wr) = stream.into_split();
+        wr.write_all(HELLO).await.unwrap();
         tokio::time::sleep(Duration::from_millis(100)).await;
         assert_ne!(sink.health(), SinkHealth::Healthy);
     }
