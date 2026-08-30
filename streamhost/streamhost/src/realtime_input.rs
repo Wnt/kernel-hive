@@ -555,6 +555,15 @@ pub struct InputRouter {
     state: Mutex<RouterState>,
 }
 
+/// The routed-button set, by backend NAME so it is testable without a sink.
+/// See `InputRouter::routes_buttons` for why this list is an invariant.
+pub(crate) fn backend_routes_buttons(backend: &str, warpd_buttons_qemu: bool) -> bool {
+    matches!(
+        backend,
+        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl"
+    ) || (backend == "warpd" && !warpd_buttons_qemu)
+}
+
 impl InputRouter {
     pub fn from_config(cfg: &Config) -> Option<Arc<Self>> {
         let sink: Arc<dyn RealtimeInputSink> = match cfg.input_backend {
@@ -621,6 +630,32 @@ impl InputRouter {
     pub fn routes_keys(&self, cfg: &Config) -> bool {
         matches!(self.backend(), "mamecmd" | "mamesock" | "vicesock")
             || (self.backend() == "x11test" && cfg.x11test.keys)
+    }
+
+    /// True when a type=2 button EDGE routes to this sink — position and edge
+    /// as one ordered event — instead of firing immediately down the classic
+    /// QEMU/dbus PS/2 path (see input.rs).
+    ///
+    /// THIS LIST IS AN INVARIANT, NOT A PREFERENCE. Motion already routes to
+    /// whatever sink exists (`apply_move_abs` takes the router unconditionally),
+    /// so a sink that is missing HERE gets its moves through the queue and its
+    /// clicks around it — two injectors racing over one guest pointer. The
+    /// symptom does not look like a routing bug: the cursor tracks perfectly
+    /// and only clicks misbehave, because the press fires while the sink is
+    /// still walking the cursor to the point the click was aimed at. The guest
+    /// then sees press-at-A, motion, release-at-B — a DRAG. Links tolerate it;
+    /// an HTML form field never takes keyboard focus from it, which reaches the
+    /// operator as "the keyboard stopped working in the browser".
+    ///
+    /// mgactl (aix432) shipped missing from it and cost an afternoon, so
+    /// `routes_buttons_invariant` in the tests below now pins it: every sink
+    /// that can carry an ordered button edge must be listed.
+    ///
+    /// warpd is the ONE deliberate exception: with SH_WARPD_BUTTONS=qemu its
+    /// motion rides the agent channel while buttons ride PS/2 on purpose, and
+    /// input.rs holds the edge back by SH_WARPD_BUTTON_DELAY_MS instead.
+    pub fn routes_buttons(&self, cfg: &Config) -> bool {
+        backend_routes_buttons(self.backend(), cfg.warpd_buttons_qemu)
     }
 
     pub fn health(&self) -> SinkHealth {

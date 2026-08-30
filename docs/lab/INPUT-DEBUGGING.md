@@ -87,6 +87,39 @@ win311/IRIX, because the pen was never running that code. Tap quantisation lives
 in `input/touchGestures.createTapQuantiser()` precisely so both paths can share
 it; the stylus path drives its own instance through `input/penContact.ts`.
 
+## "The pointer is perfect but clicks are wrong" — check the button allowlist
+
+A sink can route MOTION and not route BUTTONS, and the symptom looks like
+anything except that. `apply_move_abs` hands motion to whatever router exists,
+unconditionally; the type=2 button branch only routes to a sink named in
+`InputRouter::routes_buttons`. A backend missing from that list therefore gets
+its moves through the sink's ordered queue and its clicks around it, straight
+down the classic D-Bus PS/2 path — **two injectors on one guest pointer**.
+
+The press then fires immediately, while the sink is still walking the cursor to
+the point the click was aimed at (`ptr-move-step` at a time, one engine window
+each). The guest sees **press-at-A, motion, release-at-B: a drag.** Links and
+toolbar buttons tolerate that often enough to look healthy; an HTML form field
+never takes keyboard focus from it.
+
+**So it is reported as a keyboard bug.** aix432, 2026-08-30: "Netscape suddenly
+stopped reacting to keyboard input, terminal text entry still works". Nothing
+was wrong with the key path — QMP `sendkey` proved F10, Esc, Tab and Alt-F all
+reached Netscape, and text typed straight into the Find dialog fine. What no
+click could do any more was give a form field focus.
+
+**The one-line check**, before anything else, on a station whose sink traces:
+
+```sh
+ssh lab 'journalctl -u streamhost@<station> --since "-1h" \
+  | grep "\-trace\] tx" | sed "s/.*tx [0-9]* //" | awk "{print \$1}" | sort | uniq -c'
+```
+
+Motion verbs and no button verbs, while `[input] class stream tag=2
+(mouse-button)` appears in the same log, is this bug and nothing else.
+`routes_buttons_invariant_every_pointer_sink_takes_its_edges` now fails the
+build for the next sink that forgets.
+
 ## Where a guest RIGHT button is allowed to come from
 
 Three gestures legitimately produce one, and `input/penRightClick.contextMenuAction`

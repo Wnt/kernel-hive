@@ -664,13 +664,10 @@ pub async fn handle(
                 }
                 _ => None,
             };
-            if let Some(router) = router.filter(|r| {
-                r.backend() == "gallery-hid"
-                    || r.backend() == "x11test"
-                    || r.backend() == "mamecmd"
-                    || r.backend() == "mamesock"
-                    || (r.backend() == "warpd" && !cfg.warpd_buttons_qemu)
-            }) {
+            // Which sinks take the edge themselves is the router's own fact,
+            // beside routes_keys -- a list that lived here was a list nothing
+            // could test, and mgactl shipped missing from it.
+            if let Some(router) = router.filter(|r| r.routes_buttons(cfg)) {
                 // Position and edge in ONE router acquisition and ONE ordered
                 // event. A rejected edge is LOUD: it is a click the visitor did
                 // not get, and it stayed invisible for as long as it did only

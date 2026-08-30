@@ -202,3 +202,71 @@ fn a_carried_position_and_its_edge_are_one_event() {
     let st = router.state.lock().unwrap();
     assert_eq!((st.x, st.y, st.buttons), (300, 400, 1));
 }
+
+/// EVERY routed sink that has a pointer must take its BUTTON edges too.
+///
+/// This is the regression that produced the test. `mgactl` landed routing
+/// motion but not clicks, and the failure mode hides itself: `apply_move_abs`
+/// hands motion to whatever router exists, so the cursor tracks perfectly and
+/// only the click is wrong — the press fires down the D-Bus PS/2 path while the
+/// sink is still walking the cursor to the point the click was aimed at, and
+/// the guest sees press-at-A / motion / release-at-B, a drag. On aix432 that
+/// let links work while HTML form fields never took keyboard focus, and it was
+/// reported as "the keyboard stopped working in Netscape".
+///
+/// So: enumerate the backends rather than trusting a hand-kept list. Anything
+/// that produces a router (`from_config` returns None for the D-Bus ones) and
+/// declares a pointer (`pointer_mode() != "none"`) must route buttons.
+#[test]
+fn routes_buttons_invariant_every_pointer_sink_takes_its_edges() {
+    for backend in [
+        InputBackend::Warpd,
+        InputBackend::GalleryHid,
+        InputBackend::X11Test,
+        InputBackend::MameCmd,
+        InputBackend::MameSock,
+        InputBackend::ViceSock,
+        InputBackend::MgaCtl,
+    ] {
+        let routed = !matches!(
+            backend,
+            InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel
+        );
+        let has_pointer = backend.pointer_mode() != "none";
+        if !(routed && has_pointer) {
+            continue; // vicesock is keyboard-only: no pointer verb at all.
+        }
+        assert!(
+            backend_routes_buttons(backend.as_str(), false),
+            "backend {:?} routes motion to its sink but NOT button edges -- its \
+             clicks would fire around the queue while the sink is still moving \
+             the cursor. Add it to backend_routes_buttons.",
+            backend.as_str()
+        );
+    }
+}
+
+/// warpd is the one deliberate exception, and only under SH_WARPD_BUTTONS=qemu:
+/// there the split is on purpose and input.rs holds the edge back by
+/// SH_WARPD_BUTTON_DELAY_MS instead.
+#[test]
+fn warpd_hybrid_buttons_are_the_one_deliberate_exception() {
+    assert!(backend_routes_buttons("warpd", false));
+    assert!(!backend_routes_buttons("warpd", true));
+    // The exception is warpd's alone: no other sink changes with the knob.
+    for b in ["gallery-hid", "x11test", "mamecmd", "mamesock", "mgactl"] {
+        assert_eq!(
+            backend_routes_buttons(b, true),
+            backend_routes_buttons(b, false),
+            "{b} must not depend on the warpd hybrid-buttons knob"
+        );
+    }
+}
+
+/// The classic D-Bus pointer paths have no sink and must never be listed.
+#[test]
+fn dbus_pointer_paths_are_not_routed() {
+    assert!(!backend_routes_buttons("dbus-abs", false));
+    assert!(!backend_routes_buttons("dbus-rel", false));
+    assert!(!backend_routes_buttons("disabled", false));
+}
