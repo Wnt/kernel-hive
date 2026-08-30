@@ -473,7 +473,7 @@
     "hpuxvue": {
       "dir": "/data/vms/streamhost/stations/hpuxvue",
       "qmp": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,

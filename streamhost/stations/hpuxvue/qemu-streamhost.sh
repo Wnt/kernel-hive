@@ -37,9 +37,27 @@
 # on the tap. Do NOT renumber n0, and recapture the golden after ANY netdev
 # change here.
 #
-# POINTER: LASI PS/2, relative only (no USB on this machine, no tablet), so
-# the daemon runs SH_INPUT_BACKEND=dbus-rel. SH_CURSOR_SCALE is 1.0 until
-# measured against the installed desktop (see station.env.fixture).
+# POINTER: a CLOSED LOOP over the Artist hardware cursor.
+# The B160L still has no absolute pointer device — LASI PS/2, relative only, no
+# USB, no tablet — so on the wire this is relative motion. But HP-UX 10.20's X
+# server drives the Artist framebuffer's HARDWARE cursor, which means the guest
+# continuously publishes its own idea of the pointer position into the Artist
+# CURSOR_POS/CURSOR_CTRL registers. The engine in hw/display/artist.c reads that
+# back through artist_get_cursor_pos() and converges on the daemon's absolute
+# target, so `absolute: true` on this station is EARNED BY MEASUREMENT.
+#   -chardev socket + -global artist.ptrctl=  arms the loop and serves the
+#   `artistptr/1` dialect the daemon's artistctl sink speaks (SH_ARTISTCTL_SOCK).
+# SINGLE INJECTOR (binding): while that socket is connected the engine OWNS the
+# guest pointer. No rel bridge, no QMP input-send-event, no labctl pointer
+# helper may run at the same time — two injectors and the loop reads motion it
+# did not cause.
+# INSTALL ORDER IS BINDING: the QEMU binary must land BEFORE this launcher.
+# `-global artist.ptrctl=` is an unknown property on an older build and QEMU
+# refuses to start. Likewise the streamhost binary before the env fixture:
+# SH_INPUT_BACKEND=artistctl panics an older daemon at startup.
+# ROLLBACK IS TWO LINES: drop the two -global/-chardev lines below and set
+# SH_INPUT_BACKEND=dbus-rel in station.env.fixture. The device set is otherwise
+# untouched, so the golden keeps restoring either way.
 #
 # THREE LAUNCH SHAPES, decided by what exists in $D:
 #   1. golden snapshot in the disk  -> -loadvm golden -S (the exhibit; frozen
@@ -58,7 +76,7 @@ QEMU=/opt/qemu-hppa/bin/qemu-system-hppa
 DISK=$D/hpuxvue-golden.qcow2
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock"
+rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/serial.sock" "$D/ptr.sock"
 [ -f "$DISK" ] || qemu-img create -f qcow2 "$DISK" 4000M >/dev/null
 BOOT="-boot d"
 LOADVM=""
@@ -100,6 +118,10 @@ nohup "$QEMU" \
   -drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso,format=raw,readonly=on \
   -netdev tap,id=n0,ifname=hpuxrn0,script=no,downscript=no -device tulip,netdev=n0,mac="$RN_HPUXVUE_MAC" \
   -serial unix:$D/serial.sock,server=on,wait=off \
+  -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
+  -global artist.ptrctl=ptr0 \
+  -global artist.ptr-trace=${PTR_TRACE:-off} \
+  -global artist.ptr-trace-pos=${PTR_TRACE_POS:-off} \
   $BOOT $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
@@ -108,4 +130,4 @@ for i in $(seq 1 40); do
   [ -S "$D/qmp.sock" ] && [ -f "$D/qemu.pid" ] && break
   sleep 0.5
 done
-echo "station hpuxvue qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54144 boot='$BOOT' loadvm='${LOADVM:-<none>}'"
+echo "station hpuxvue qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54144 ptr=$D/ptr.sock boot='$BOOT' loadvm='${LOADVM:-<none>}'"

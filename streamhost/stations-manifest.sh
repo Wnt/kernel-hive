@@ -833,11 +833,14 @@ emit macos753 \
 #   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa
 #   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer
 #   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).
-#   RELATIVE LASI PS/2 pointer (dbus-rel). LISTED on the public floor:
-#   reset=loadvm golden, idle auto-pause after SH_IDLE_PAUSE_SECS=60.
+#   CLOSED-LOOP 1:1 pointer (artistctl over artistptr/1): the wire is still the
+#   LASI PS/2 mouse, but the engine in hw/display/artist.c reads the guest's own
+#   position back from the Artist hardware-cursor registers and converges on it.
+#   LISTED on the public floor: reset=loadvm golden, idle auto-pause after
+#   SH_IDLE_PAUSE_SECS=60.
 emit hpuxvue \
-  --tile hpuxvue --vmid 144 --udp 54144 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  --tile hpuxvue --vmid 144 --udp 54144 --pointer abs --input-backend \
+  artistctl --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
   --fps 30 --launcher-file "$T/hpuxvue/qemu-streamhost.sh" --env-append-file \
   "$T/hpuxvue/station.env.fixture"
 

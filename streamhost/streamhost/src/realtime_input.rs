@@ -14,7 +14,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use tokio::sync::Notify;
 
+use crate::artist_ctl::ArtistCtlSink;
 use crate::config::{Config, InputBackend};
+use crate::{artist_ctl, mame_input, mame_sock, mga_ctl, ptr_grid, vice_keymap, vice_sock};
 
 const RECORD_BYTES: usize = 16;
 const ORDERED_CAPACITY: usize = 64;
@@ -560,7 +562,7 @@ pub struct InputRouter {
 pub(crate) fn backend_routes_buttons(backend: &str, warpd_buttons_qemu: bool) -> bool {
     matches!(
         backend,
-        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl"
+        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "artistctl"
     ) || (backend == "warpd" && !warpd_buttons_qemu)
 }
 
@@ -570,23 +572,22 @@ impl InputRouter {
             InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel => return None,
             InputBackend::Warpd => WarpdSink::new(cfg),
             InputBackend::GalleryHid => GalleryHidSink::new(cfg.ghid_socket.clone()),
-            InputBackend::MameCmd => crate::mame_input::MameCmdSink::new(
+            InputBackend::MameCmd => mame_input::MameCmdSink::new(
                 &cfg.x11_cmd_file,
                 cfg.mamecmd_abs,
-                crate::mame_input::KeyMap::from_env(),
+                mame_input::KeyMap::from_env(),
             ),
-            InputBackend::MameSock => crate::mame_sock::MameSockSink::new(
+            InputBackend::MameSock => mame_sock::MameSockSink::new(
                 cfg.mamectl_sock.clone(),
-                crate::ptr_grid::PtrGrid::from_env(),
-                crate::mame_input::KeyMap::from_env(),
+                ptr_grid::PtrGrid::from_env(),
+                mame_input::KeyMap::from_env(),
             ),
-            InputBackend::ViceSock => crate::vice_sock::ViceSockSink::new(
+            InputBackend::ViceSock => vice_sock::ViceSockSink::new(
                 cfg.vicectl_sock.clone(),
-                crate::vice_keymap::ViceKeyMap::from_env(),
+                vice_keymap::ViceKeyMap::from_env(),
             ),
-            InputBackend::MgaCtl => {
-                crate::mga_ctl::MgaCtlSink::new(crate::mga_ctl::socket_from_env(&cfg.tile))
-            }
+            InputBackend::MgaCtl => mga_ctl::MgaCtlSink::new(mga_ctl::socket_from_env(&cfg.tile)),
+            InputBackend::ArtistCtl => ArtistCtlSink::new(artist_ctl::socket_from_env(&cfg.tile)),
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(
                     &cfg.x11_display,

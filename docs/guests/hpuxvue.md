@@ -131,8 +131,8 @@ The station is on the retronet **web** plane. Full as-built:
   `/stand/system` never ran — optional future tidy-up, keep a copy first).
 - Catalog gotchas checked: there is NO `/etc/nsswitch.*` on 10.20 (that fix is
   11.x); LVM growth stays `lvextend`+`extendfs` (756 MB spare in vg00).
-- Pointer: `SH_CURSOR_SCALE=1.0`, click/drag/wheel and keyboard modifiers left
-  to the operator's browser eyeball (`reset.mouse` = UNVERIFIED on purpose).
+- Pointer: a **closed loop over the Artist hardware cursor** since 2026-08-30.
+  See "The pointer is a closed loop" below.
 - Exec channel: none over the network, but there **is** a working serial
   console now. QEMU's `-serial` is the guest's *second* RS-232C port
   (`ioscan -fnC tty`: `8/0/63`→`tty0p0`, `8/16/4`→**`tty1p0`**), and
@@ -149,3 +149,119 @@ The station is on the retronet **web** plane. Full as-built:
 - Credentials reference only: `guest/hpuxvue`.
 - Rollback: `systemctl stop streamhost@hpuxvue`; the install disk is a single
   station-local qcow2 — delete it and the launcher re-creates an empty one.
+
+
+## The pointer is a closed loop (2026-08-30)
+
+The B160L has no absolute pointer device — LASI PS/2, relative only, no USB, no
+tablet — so this station spent its first fortnight on the daemon's dead-reckoning
+`dbus-rel` bridge. It no longer does. HP-UX 10.20's X server drives the Artist
+framebuffer's **hardware cursor**, which means the guest continuously publishes
+its own idea of the pointer position into the Artist `CURSOR_POS` / `CURSOR_CTRL`
+registers. That is a sensor, so the control loop closes *inside QEMU*: the engine
+in `hw/display/artist.c` (patch
+`streamhost/qemu-patches/0007-artist-closed-loop-pointer.patch`) reads the
+guest's own position back, takes the error against the daemon's absolute target,
+and injects one bounded step of relative counts per window until it converges.
+
+`absolute: true` on this station is therefore **earned by measurement**, not
+provided by a device. The daemon states targets over the `artistptr/1` dialect on
+`ptr.sock` and reckons nothing.
+
+Why this station was the cheapest of its wave: `artist_get_cursor_pos()` already
+did the register→pixel decode in upstream QEMU, the back-porch term it depends on
+is forced to a constant by `artist.c` itself, `cursor_pos`/`cursor_cntrl` were
+already in `vmstate_artist`, and hppa B160L has exactly one graphics path. So
+there was **no adapter swap, no new migration state and no golden re-bake** — the
+2026-08-24 golden still restores unchanged.
+
+**Measured facts** (sandbox clone, never the live station):
+
+| thing | value | how |
+|---|---|---|
+| hotspot, VUE arrow | `(2,1)` | top-left **and** bottom-right screen clamps, agreeing exactly, both with proof-of-motion |
+| gain | ~1.9 px per injected count | see the `xset` note below; only a step sizer |
+| convergence | 8–15 windows, 0 give-ups | `STAT` counters at 7 targets |
+| accuracy | 7/7 targets at `--tol 1` | three independent observers, below |
+
+### Read the position through `artist_get_cursor_pos()`, never the raw registers
+
+`CURSOR_CTRL`'s low nibbles (`(&0xf0)>>4`, `&0x0f`) are an **offset** that the
+accessor subtracts to reach the drawn sprite origin. They are *not* a hotspot.
+A loop closed on a private decode of `CURSOR_POS` lands every target a constant
+8 px to the left — and the raw register and the framebuffer still agree with each
+other **exactly**, `err +0,+0`, at every target. This is worth internalising
+beyond this station: *two observers agreeing is not proof*. Only the **commanded
+target** is the third observer that separates "self-consistent" from "correct",
+which is why every proof run here reports all three.
+
+### `xset m 1 1` is NOT in effect on the current golden — a live-fleet caveat
+
+The old open-loop configuration carried `SH_CURSOR_SCALE=1.0`, justified by
+`/.vue/sessionetc` running `xset m 1 1` at session start (measured 2026-08-18:
+50 units → 50 px). **Measured again 2026-08-30 on the 2026-08-24 re-baked golden:
+50 units → ~96 px, i.e. ~1.9x — X's default acceleration is back and the `xset`
+that the 1.0 depended on is not taking effect on this login path.** The re-bake
+silently invalidated the open-loop assumption, so the station shipped a pointer
+that overshot by ~2x on every dead-reckoned move.
+
+The closed loop makes this irrelevant — gain only sizes the engine's steps, and
+accuracy comes from the register readback, so a wrong gain costs convergence
+windows and never accuracy. It is recorded here because it is a **live-fleet
+inaccuracy that predates and is independent of this work**: any station still on
+`dbus-rel` whose scale was calibrated before a golden re-bake may have the same
+problem, and a re-bake is not currently required to re-measure it.
+
+### Traps this port had to solve (none transfer from aix432 or irix)
+
+- **"Pinned" must be verified, not inferred.** Under TCG the guest consumes PS/2
+  packets on its own schedule, so three windows can elapse with motion still
+  queued and a naive homing step concludes on a mid-flight reading — recording an
+  impossible hotspot and reporting it as exact. Homing requires proof of
+  **motion** *and* proof of **place** (within one sprite of the corner, the only
+  place it can be if pinned), and every path that records a hotspot bounds it to
+  the sprite. It reports `hot_exact=0` over `STAT` when it cannot establish the
+  value rather than asserting a default.
+- **A reconnecting session usually finds the pointer already parked in the
+  corner**, where stillness is indistinguishable from a wedge. Homing therefore
+  kicks *outward* first so the subsequent stillness means something.
+- **Bounded in-flight gate.** Never issue a step while the previous one is
+  unconsumed, bounded at 6 windows or a screen clamp wedges the loop forever.
+  Without it: give-ups and 9–35 px misses.
+- **Settle before declaring convergence.** A target can look reached while counts
+  are still queued; those counts then carry the pointer past it, usually into a
+  clamp it cannot return from.
+
+### Idle-pause is the common path here, not an edge case
+
+The engine's window timer is `QEMU_CLOCK_VIRTUAL`, so it does not tick while the
+guest is stopped — and this station starts `-loadvm golden -S` **and**
+idle-auto-pauses after `SH_IDLE_PAUSE_SECS=60`. A returning visitor therefore
+always meets a paused guest. `MOVEA` acks on *accept* rather than on convergence
+precisely so a pause cannot stall the daemon's ack pipeline. Verified: `STAT`
+answers while paused (reporting `running=0`), `MOVEA` acks in 40 ms while paused,
+and the loop converges on the commanded target after `cont` with zero give-ups
+and exact framebuffer agreement.
+
+### Proof (rule 9)
+
+Seven targets — desktop background, both screen edges, a File Manager icon, the
+Mosaic title bar, a front-panel button and the Toolboxes frame — commanded
+through the engine, each checked by three independent observers (commanded
+target; the engine's own `STAT` sensor plus measured hotspot;
+`scripts/dev/cursor-locate.py` on a QMP screendump, which sees only pixels).
+**7/7 within `--tol 1`, zero give-ups, `hot_exact=1`.** Plus a click at the VUE
+front panel that switched workspace One→Two and repainted 88.4% of the screen,
+and the same again after a pause/resume cycle.
+
+### Debugging
+
+Arm the three traces together and turn them off after: `SH_ARTISTCTL_TRACE`
+(daemon wire), `PTR_TRACE` and `PTR_TRACE_POS` (engine windows and readings, via
+the launcher's `-global artist.ptr-trace*`). `STAT` over `ptr.sock` reports
+reading, hotspot and whether it was *measured*, home state, target, gain, queue
+depth, re-aims, give-ups and the guest runstate.
+
+**Single injector (binding).** While the control socket is connected the engine
+owns the guest pointer: no rel bridge, no QMP `input-send-event`, no `labctl`
+pointer helper. Two injectors and the loop reads motion it did not cause.

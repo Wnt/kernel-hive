@@ -227,6 +227,7 @@ fn routes_buttons_invariant_every_pointer_sink_takes_its_edges() {
         InputBackend::MameSock,
         InputBackend::ViceSock,
         InputBackend::MgaCtl,
+        InputBackend::ArtistCtl,
     ] {
         let routed = !matches!(
             backend,
@@ -254,7 +255,14 @@ fn warpd_hybrid_buttons_are_the_one_deliberate_exception() {
     assert!(backend_routes_buttons("warpd", false));
     assert!(!backend_routes_buttons("warpd", true));
     // The exception is warpd's alone: no other sink changes with the knob.
-    for b in ["gallery-hid", "x11test", "mamecmd", "mamesock", "mgactl"] {
+    for b in [
+        "gallery-hid",
+        "x11test",
+        "mamecmd",
+        "mamesock",
+        "mgactl",
+        "artistctl",
+    ] {
         assert_eq!(
             backend_routes_buttons(b, true),
             backend_routes_buttons(b, false),
