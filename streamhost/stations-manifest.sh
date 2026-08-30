@@ -824,9 +824,9 @@ emit tru64 \
 #   guest moves 0.36 px per delta unit, hence SH_CURSOR_SCALE=2.7778.
 #   PRAM is a qcow2, not raw: a raw if=mtd drive makes savevm refuse outright.
 emit macos753 \
-  --tile macos753 --vmid 142 --udp 54142 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 2.7778 --cursor-off-x 0 --cursor-off-y 0 --audio \
-  on --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
+  --tile macos753 --vmid 142 --udp 54142 --pointer abs --input-backend \
+  ramabs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
+  --fps 30 --launcher-file "$T/macos753/qemu-streamhost.sh" \
   --env-append-file "$T/macos753/station.env.fixture"
 
 # hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):

@@ -56,11 +56,45 @@
 # ("Initializing audio stream failed"), so `audiodev=snd0` on -M is required
 # even though the audio itself rides the dbus display.
 #
-# POINTER: ADB relative. There is no absolute pointer path on this machine at
-# all — no USB bus, no tablet — so the daemon runs SH_INPUT_BACKEND=dbus-rel and
-# converts absolute client coordinates into deltas. The guest moves 0.36 px per
-# delta unit (Mouse control panel at "Very Slow", the only non-accelerated
-# setting), hence SH_CURSOR_SCALE=2.7778 in the emitted station.env.
+# POINTER: ABSOLUTE, by writing Mac OS's own pointer globals. This machine has
+# no absolute pointer device of any kind — no USB bus, no tablet — and its
+# on-board video has no hardware cursor either, because classic Mac OS draws the
+# cursor in SOFTWARE. So neither of the fleet's two earlier recipes applies: not
+# an absolute device, and not a closed loop over a hardware-cursor register.
+#
+# It does not need either. Mac OS keeps its pointer state in LOW-MEMORY GLOBALS
+# at fixed, documented addresses, identity-mapped to guest-physical RAM on q800
+# (the machine's RAM starts at 0). `-device kh-ramabs` (streamhost/qemu-patches,
+# 0007 + the macos753 profile in 0009) writes the commanded coordinate into
+# MTemp/RawMouse at $0828/$082C and publishes it by setting CrsrNew := CrsrCouple
+# — the same idiom the ADB driver's own interrupt uses, so this cooperates with
+# the OS rather than racing it. The cursor VBL task then computes `Mouse` and
+# repaints.
+#
+# THE HOTSPOT IS NOT IN THE PATH. `Mouse` holds the POINTER; QuickDraw subtracts
+# the current cursor's hotspot only when it blits the sprite. So there is no
+# hotspot to measure and no "magnet" failure mode to guard against.
+#
+# VERIFICATION IS ASYMMETRIC, and that is the point: the addresses written
+# (MTemp, RawMouse) are NOT the address read back (`Mouse`). `Mouse` is computed
+# by the guest's own VBL task, so the read-back does not ask "did my store
+# stick" — that is checked separately, at the write — it asks WHETHER THE GUEST
+# ACTED, by exact equality. A wedged guest cannot fake it. That property depends
+# on never writing `Mouse`; see docs/guests/macos753.md before changing the
+# write set.
+#
+# NO GOLDEN RE-BAKE. kh-ramabs is a bus-less device with no VMStateDescription
+# and no guest-visible hardware, so the device set the golden was baked against
+# is unchanged and `loadvm golden` still binds.
+#
+# INSTALL ORDER IS BINDING IN BOTH DIRECTIONS: the QEMU binary must be in place
+# BEFORE this launcher (`-device kh-ramabs` on the older binary is an unknown
+# device and QEMU refuses to start), and the streamhost binary BEFORE the env
+# fixture (SH_INPUT_BACKEND=ramabs panics an older daemon at startup).
+#
+# Rollback is two lines: drop the -chardev/-device pair and set
+# SH_INPUT_BACKEND=dbus-rel (SH_CURSOR_SCALE=2.7778 is still in the fixture and
+# becomes live again).
 #
 # CHECKPOINT MODE (resetMode=loadvm, see GOLDEN.md):
 #   * Boots the persistent station-LOCAL qcow2 pair (NO -snapshot) so QMP
@@ -91,7 +125,7 @@ if [ -r "$RN_LOCAL_ENV" ]; then
 fi
 [ -f "$D/qemu.pid" ] && kill "$(cat "$D/qemu.pid")" 2>/dev/null || true
 sleep 0.3
-rm -f "$D/qmp.sock" "$D/qemu.pid"
+rm -f "$D/qmp.sock" "$D/qemu.pid" "$D/ptr.sock"
 LOADVM=""
 qemu-img snapshot -l "$D/macos753-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll: dbus poll every SH_DBUS_UPDATE_MS ms. The patch
@@ -106,6 +140,8 @@ nohup /opt/qemu-m68k/bin/qemu-system-m68k \
   -bios /data/vms/streamhost/assets/macos753/800.ROM \
   -g 1152x870x8 \
   -display dbus,p2p=on,audiodev=snd0 \
+  -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
+  -device kh-ramabs,chardev=ptr0,addr=0x828,layout=macpoint16be,publish=crsrnew,width=1152,height=870,trace=${PTR_TRACE:-off} \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
   -drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd \
   -device scsi-hd,scsi-id=6,drive=hd0 \

@@ -18,7 +18,7 @@ mine" — the same rule as AGENTS.md rule 7, applied to a filename.
 | 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
 | 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
 | 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
-| 0009 | *(allocated)* | `macos753` |
+| 0009 | `kh-ramabs-mac-lowmem-profile` | `macos753` — classic Mac OS low-memory profile for `kh-ramabs` (0007) |
 | 0010 | *(allocated)* | `beos` |
 
 Next free: **0011**. Add your row in the same commit that adds the patch, so the
