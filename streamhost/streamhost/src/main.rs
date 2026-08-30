@@ -39,6 +39,7 @@ mod warpd;
 mod webrtc_bridge;
 mod x11_input;
 mod x11_keys;
+mod x11_warp;
 
 use std::sync::Arc;
 

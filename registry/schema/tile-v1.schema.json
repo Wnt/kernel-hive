@@ -211,7 +211,8 @@
                 "vicesock",
                 "mgactl",
                 "artistctl",
-                "ramabs"
+                "ramabs",
+                "x11warp"
               ]
             },
             "method": {
@@ -231,7 +232,8 @@
                 "previous-tablet",
                 "qemu-mga-closedloop",
                 "qemu-artist-closedloop",
-                "qemu-guestram-abswrite"
+                "qemu-guestram-abswrite",
+                "x11-warp-absolute"
               ]
             },
             "absolute": {

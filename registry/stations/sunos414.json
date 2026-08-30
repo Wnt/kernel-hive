@@ -29,19 +29,19 @@
       "value": {
         "os": "SunOS 4.1.4 (SPARCstation 5, sun4m)",
         "win": "qemu",
-        "mouse": "openwindows-desktop",
+        "mouse": "openwindows-desktop (absolute: XWarpPointer into the guest X server)",
         "kbd": "term:cmdtool / shelltool",
         "kbd_reset": "Escape",
         "kbd_note": "click a window (SELECT focus) then type — keyboard reaches X regardless of pointer position. Framebuffer-proven (whoami -> guest). Also drivable via labctl exec sunos414.",
         "audio_trigger": null,
         "validated": false,
-        "note": "relative Sun serial mouse, cursor_scale 1.0 (operator eyeball pending). Non-priv guest autologs into OpenWindows via console getty->login->~/.login->gallery-session; xnews must own the console tty (TT=console) or input is dead, and ~/.Xdefaults sets SetInput: select (click-to-focus) so keyboard reaches X with the pointer anywhere. Foreign-arch TCG station on /opt/qemu-sparc. exec = telnet_unix_e over in-guest telnetd."
+        "note": "ABSOLUTE pointer through the guest's own X server: xnews runs -noauth on TCP :6000, published by a loopback-only SLIRP forward (127.0.0.1:6047 -> 10.0.2.15:6000), and the daemon warps with XWarpPointer and reads back with XQueryPointer. No XTEST on this server, so buttons and keys still ride the QEMU D-Bus PS/2 path and the sink CONFIRMS each warp before an edge is allowed through. The pointer needs the guest's X server up: at the console or a login prompt the sink reports BackendDown and the move is DROPPED -- there is no fallback, apply_move_abs returns as soon as a router exists, so the pointer stops until X is back. relative Sun serial mouse, cursor_scale 1.0 (operator eyeball pending). Non-priv guest autologs into OpenWindows via console getty->login->~/.login->gallery-session; xnews must own the console tty (TT=console) or input is dead, and ~/.Xdefaults sets SetInput: select (click-to-focus) so keyboard reaches X with the pointer anywhere. Foreign-arch TCG station on /opt/qemu-sparc. exec = telnet_unix_e over in-guest telnetd."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/sunos414",
       "qmp": "/data/vms/streamhost/stations/sunos414/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -71,12 +71,12 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "x11warp",
+      "method": "x11-warp-absolute",
+      "absolute": true,
       "present": true,
-      "device": "sun-serial-mouse",
+      "device": "guest X server (motion) + sun-serial-mouse (buttons)",
       "scale": 1.0,
       "offset": [
         0,
@@ -92,7 +92,7 @@
     "transport": "streamhost",
     "accentColor": "#7c3aed",
     "eraLabel": "1994 · SunOS 4.1.4 — OpenWindows",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "sunos414",
@@ -129,7 +129,8 @@
   "notes": [
     "listed 2026-08-18: OpenWindows desktop as unprivileged guest, loadvm golden, mouse + keyboard working",
     "keyboard-in-X fix: SetInput: select (click-to-focus) in guest ~/.Xdefaults + openwin owns console tty; under the default followmouse the keyboard only reached a window under the pointer, reading as dead. Diagnosed by two competing agents (guest-config vs QEMU-escc); escc ruled out, guest-config won.",
-    "slot 147/UDP 54147; exec telnet_unix_e on 5947; media is a BIN converted to 2048-byte sunos414.iso"
+    "slot 147/UDP 54147; exec telnet_unix_e on 5947; media is a BIN converted to 2048-byte sunos414.iso",
+    "2026-08-30 pointer made ABSOLUTE via the guest X server (x11warp), no device-set change and no golden recapture. cg3 has no hardware cursor at all (hw/display/cg3.c: Bt458 palette + five FBC scratch registers), and TCX was measured and rejected -- SunOS DOES attach it, but the session is input-dead under QEMU and the guest never writes the THC cursor registers. Also measured on the way: the emulated Sun mouse's Y axis is INVERTED relative to QEMU rel input and OpenWindows ships acceleration 2/1 threshold 15, so the old dbus-rel pointer was neither 1:1 nor sign-aligned."
   ],
   "runtime": {
     "stationEnv": {
@@ -159,9 +160,9 @@
         "--udp",
         "54147",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "x11warp",
         "--cursor-scale",
         "1.0",
         "--cursor-off-x",
@@ -200,13 +201,13 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "install phase: tracked verbatim launcher IS the deployed launcher; the device set is pinned now so the eventual checkpoint is baked with it"
+        "reason": "tracked verbatim launcher IS the deployed launcher. It carries the x11warp channel: the loopback hostfwd 127.0.0.1:6047 -> 10.0.2.15:6000 and a CHECK (not a configure step) that the golden already holds the X access state -- the /etc/hosts peer entry and `xhost +10.0.2.2` are baked into the checkpoint, restore-proven in the sandbox before anything retires. The check verifies from the host with a bare X11 handshake so it never logs into the guest and never dirties the cmdtool console the visitor sees; it repairs at runtime ONLY for a deployed-launcher/stale-golden window, and shouts when it does. CAVEAT: this pointer works only while the guest's X server is running -- unlike a register or RAM sensor it is dead at the console, during boot and after X restarts, and there is NO fallback there (the move is dropped and counted; STAT states it as on-backend-down=motion-stops). Adding a relative fallback is FORBIDDEN: it is a second motion path and would silently invalidate the sink's VerifiedWarp discharge -- see docs/guests/sunos414.md 'Do NOT add a relative fallback here'. The launcher's check also drops a marker when it repairs at runtime, which the daemon reports as golden-state=REPAIRED-AT-RUNTIME so the checkpoint debt is queryable, not just logged. Device set is UNCHANGED (cg3, same drives, same NIC): a SLIRP forward is host-side state, so the golden moves only to carry the X access state, not the device set."
       }
     }
   },
   "reset": {
     "stationDir": "sunos414",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",

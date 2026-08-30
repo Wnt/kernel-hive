@@ -34,6 +34,36 @@ static BTN: AtomicU8 = AtomicU8::new(0);
 /// EXACTLY within the move stream ("button went down at move N, up at move M").
 static MOVE_SEQ: AtomicU64 = AtomicU64::new(0);
 
+/// Button edges by the PATH that carried them — NOT gated on
+/// SH_INPUT_TELEMETRY, because these exist to contradict a healthy-looking
+/// sink line: the mgactl incident logged plausible counters every 10 s for 85
+/// minutes while ZERO edges reached the sink, and no number could say so.
+/// Named for what is OBSERVED at the count site: `sink-accepted` is the
+/// router sink ACCEPTING the ordered offer (not the guest applying it);
+/// `dbus-sent` is the edge being written to the QEMU/dbus PS/2 path (which
+/// has no ack at all). Reported on the router's 10 s `[input-router] edges`
+/// line (realtime_input.rs).
+static EDGE_SINK_ACCEPTED: AtomicU64 = AtomicU64::new(0);
+static EDGE_DBUS_SENT: AtomicU64 = AtomicU64::new(0);
+
+/// Count one button edge: `to_sink` = accepted by the routed sink as one
+/// ordered position+edge event; else = sent down the classic D-Bus PS/2 path.
+pub fn record_edge(to_sink: bool) {
+    if to_sink {
+        EDGE_SINK_ACCEPTED.fetch_add(1, Ordering::Relaxed);
+    } else {
+        EDGE_DBUS_SENT.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+pub fn edge_path_line() -> String {
+    format!(
+        "sink-accepted={} dbus-sent={}",
+        EDGE_SINK_ACCEPTED.load(Ordering::Relaxed),
+        EDGE_DBUS_SENT.load(Ordering::Relaxed)
+    )
+}
+
 /// True once SH_INPUT_TELEMETRY >= 1. Cheap hot-path guard (one relaxed load).
 #[inline]
 pub fn enabled() -> bool {

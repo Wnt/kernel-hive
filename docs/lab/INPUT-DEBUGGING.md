@@ -120,6 +120,75 @@ Motion verbs and no button verbs, while `[input] class stream tag=2
 `routes_buttons_invariant_every_pointer_sink_takes_its_edges` now fails the
 build for the next sink that forgets.
 
+### A confirmed position is not a held one — the general property
+
+Routing the edge to the sink is one way to make a click atomic with its
+position. It is not the only one, and the fleet now has a second: `sunos414`'s
+`x11warp` sink CANNOT inject an edge at all (its X server has no XTEST), so it
+warps, reads the position back with `XQueryPointer`, and only then lets the edge
+go down the D-Bus PS/2 path.
+
+**A readback on its own does not buy atomicity.** Between the confirming query
+and the moment the edge lands, nothing holds the pointer: a concurrent
+`apply_move_abs` can be applied in that window, and the confirmation was true
+when taken and false when the edge arrived — a click at the wrong place through
+a check that passed. Retrying the confirmation does not help; retrying a stale
+truth just re-confirms it faster. What the retry covers is a warp that has not
+landed **yet**, which is a different failure.
+
+So the question to ask of any two-channel pointer is not "did you verify?" but
+**"what excludes a concurrent motion apply for the duration of confirm ->
+inject?"** On `sunos414` there is a real answer: under `x11warp` the worker ARMS
+on a confirmed readback and stops draining its move slot entirely until
+`input.rs` signals `edge_done()` after the injection returns (bounded at 600 ms,
+counted and logged if it expires). Moves keep arriving and keep updating browser
+truth; they are simply not APPLIED. A sink that verifies without HOLDING has
+documentation, not a guarantee.
+
+**But be precise about what that rests on, because it is not enforced.** The
+hold excludes a second motion only because motion reaches this guest through
+exactly one path. Today that is true for a checkable reason —
+`apply_move_abs` returns immediately after `router.try_move(...)` whenever a
+router exists, so a routed station never reaches the D-Bus injection at all (on
+`sunos414` that also means there is NO relative fallback: a `BackendDown` move is
+dropped and counted, and the pointer stops until the guest's X server is back).
+What is *not* true is that anything checks this. **Nothing in the code asserts
+"no other component may move this guest's pointer."** The single-injector rule is
+a convention enforced by launcher discipline and review, and every one of these
+would break the exclusion silently, with the armed window still dutifully armed:
+
+- a second sink, or a resume/reconnect path that re-homes the pointer by its own
+  route rather than through the sink's queue;
+- a `labctl` pointer helper, a QMP `input-send-event` / `mouse_move`, or an
+  install-phase driver aimed at a live station;
+- a future fallback that reroutes motion to D-Bus when the primary sink is down
+  — the most likely one, because it looks like an improvement.
+
+The failure mode is the worst kind: nothing errors, the confirmation still
+passes, and the click simply lands somewhere else, occasionally. **If you add a
+motion path to a station whose sink declares `VerifiedWarp`, the declaration
+becomes false and no test will tell you** — the discharge table records a claim,
+not a proof (see its own comment).
+
+**Which is why the obvious repair is forbidden.** `sunos414` has no fallback: when
+its X server is down the move is dropped and the pointer stops until X returns
+(`on-backend-down=motion-stops` in its STAT, stated so nobody has to infer it
+from a rising `backend-down` counter). Adding "reroute motion to D-Bus while the
+sink is down" is the single most likely way anyone breaks the exclusion, because
+it reads as an improvement. Weigh the two failures: **a pointer that visibly
+stops is diagnosable in seconds; a click that occasionally lands in the wrong
+place on a station reporting itself healthy is the failure this machinery exists
+to prevent.** The worse-looking behaviour is the safer one. A safe version would
+have to engage only when the sink is down AND no edge is armed, with an explicit
+handoff rather than two live movers — a deliberate design, not a patch.
+
+And be precise about what a success means. An ack can report ACCEPTANCE or
+APPLICATION and they are not the same claim: on the mgactl wire `MOVEA` acks in
+~100-200 us (accepted) while `DOWN1`/`UP1` acked at 5637 us and 35559 us,
+because an edge acks when it **applies**. A sink that hands its edge to a
+channel it does not own can only witness the handoff. Its telemetry must say so
+rather than let a reader assume the stronger claim.
+
 ## Where a guest RIGHT button is allowed to come from
 
 Three gestures legitimately produce one, and `input/penRightClick.contextMenuAction`
@@ -408,6 +477,18 @@ Some stations cannot be driven naively:
   absolute pointer — that is *why* it runs an agent. Verified by screenshot:
   the framebuffer is byte-identical after `cdrv.py … abs x y`. Do not use QMP to
   "check" pointer behaviour on those stations.
+- **QEMU's Sun mouse (sunos414) keeps a dx/dy ACCUMULATOR that drains only 127
+  per sync**, so a big relative injection bleeds 127 px into *every* later event
+  — including a button-only one, which walks the pointer mid-click through any
+  check that already passed. Zero-valued relative events are dropped by QEMU and
+  do NOT drain it; a residue needs real +/-1 events, one sync each. It never
+  arises while the station runs `x11warp` (that sink sends no relative motion at
+  all), only on the fallback path. Measured evidence and the exact numbers are
+  in [`../guests/sunos414.md`](../guests/sunos414.md#the-sun-mouse-accumulator-a-127-pixel-trap-on-the-fallback-path).
+- **That guest's Y axis is INVERTED** relative to QEMU relative input — a
+  positive `dy` moves the guest pointer UP — and OpenWindows ships pointer
+  acceleration `2/1` threshold `15`. Anything that reckons deltas on sunos414 is
+  neither 1:1 nor sign-aligned unless it accounts for both.
 
 ## Thresholds, and what they are sized against
 

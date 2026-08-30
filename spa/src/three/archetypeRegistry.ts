@@ -188,7 +188,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: false },
   beos:        { osId: 'beos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3466a0', eraLabel: '2000 · BeOS R5 Professional', pointerRel: true }, // BeOS<->Haiku pairing
   newsos:      { osId: 'newsos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#7a6f9b', eraLabel: '1991 · NEWS-OS 4.1R — Sony NWS-3260', pointerRel: false },
-  sunos414:    { osId: 'sunos414', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#7c3aed', eraLabel: '1994 · SunOS 4.1.4 — OpenWindows', pointerRel: true },
+  sunos414:    { osId: 'sunos414', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#7c3aed', eraLabel: '1994 · SunOS 4.1.4 — OpenWindows', pointerRel: false },
   aux:         { osId: 'aux', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6b7f8e', eraLabel: '1993 · A/UX 3.0.1 — Quadra 800', pointerRel: true },
   rhapsody:    { osId: 'rhapsody', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7a8fb0', eraLabel: '1998 · Rhapsody DR2 — Apple/NeXT', pointerRel: false }, // NeXTSTEP -> Rhapsody -> Mac OS X lineage
   chokanji:    { osId: 'chokanji', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6fb0', eraLabel: '2002 · 超漢字 / BTRON3', pointerRel: true },

@@ -348,6 +348,7 @@ pub async fn rel_motion_bounded(cap: &Capture, dx: i32, dy: i32) {
 }
 
 pub async fn button(cap: &Capture, btn: u32, down: bool) {
+    crate::input_telemetry::record_edge(false);
     let Some(conn) = cap.main_conn.as_ref() else {
         return;
     };
@@ -665,21 +666,23 @@ pub async fn handle(
                 _ => None,
             };
             // Which sinks take the edge themselves is the router's own fact,
-            // beside routes_keys -- a list that lived here was a list nothing
-            // could test, and mgactl shipped missing from it.
+            // beside routes_keys, declared per sink in edge_discharge -- a
+            // list that lived here was untestable, and mgactl shipped missing.
             if let Some(router) = router.filter(|r| r.routes_buttons(cfg)) {
                 // Position and edge in ONE router acquisition and ONE ordered
-                // event. A rejected edge is LOUD: it is a click the visitor did
-                // not get, and it stayed invisible for as long as it did only
-                // because this call discarded its result.
-                if let Err(e) = router.try_button_at(btn as u8, down, at) {
-                    eprintln!(
+                // event. A rejected edge is LOUD: a click the visitor did not
+                // get, invisible before only because the result was discarded.
+                match router.try_button_at(btn as u8, down, at) {
+                    Ok(_) => crate::input_telemetry::record_edge(true),
+                    Err(e) => eprintln!(
                         "[input] button edge REJECTED btn={btn} down={down} backend={} err={e:?}",
                         router.backend()
-                    );
+                    ),
                 }
             } else {
-                if let Some((x, y, _, _)) = at {
+                if cfg.input_backend == InputBackend::X11Warp {
+                    crate::x11_warp::ordered_warp_then_hold(router, btn as u8, down, at).await;
+                } else if let Some((x, y, _, _)) = at {
                     apply_move_abs(cap, cfg, mouse, router, x, y).await;
                 }
                 // Paced bridge: the walk to the carried point (or a walk already
@@ -711,6 +714,7 @@ pub async fn handle(
                     }
                 }
                 button(cap, btn, down).await;
+                crate::x11_warp::edge_done();
             }
         }
         3 if rec.len() >= 4 => {

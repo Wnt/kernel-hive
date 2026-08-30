@@ -878,8 +878,8 @@ emit newsos \
 #   public floor: reset=loadvm golden, idle auto-pause after
 #   SH_IDLE_PAUSE_SECS=60.
 emit sunos414 \
-  --tile sunos414 --vmid 147 --udp 54147 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
+  --tile sunos414 --vmid 147 --udp 54147 --pointer abs --input-backend \
+  x11warp --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
   --fps 30 --launcher-file "$T/sunos414/qemu-streamhost.sh" \
   --env-append-file "$T/sunos414/station.env.fixture"
 
