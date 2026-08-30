@@ -63,6 +63,17 @@
 # handlers, no injection -- which is also the rollback (pair it with
 # SH_INPUT_BACKEND=dbus-rel in station.env.fixture, and nothing else changes).
 #
+# POINTER TELEMETRY, off by default and armable without editing this file.
+# PTR_TRACE=on logs one line per engine window to $D/qemu.log -- every step with
+# its reading, error, counts and in-flight balance, every convergence, give-up
+# and oscillation accept, every hotspot change with the glyph signature that
+# caused it, and every at-rest re-aim. PTR_TRACE_POS=on additionally logs the
+# guest's OWN writes to the cursor position registers, which is the only way to
+# tell a hotspot compensation apart from motion. Both come from the station
+# environment, so `systemctl edit streamhost@aix432` (or a line in station.env)
+# arms them for one session; PTR_TRACE_POS is ~4 lines per pointer move at
+# ~100 Hz, so turn it off again when the capture is done.
+#
 # SINGLE INJECTOR (BINDING). While that socket is connected the engine owns
 # this guest's pointer. Nothing else may push motion or button edges at the
 # mouse -- not the dbus-rel bridge, not `input-send-event` over QMP, not a
@@ -141,6 +152,8 @@ nohup env PREP_TB_FREQ=15000000 "$QEMU" \
   -vga mga \
   -chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off \
   -global mga.ptrctl=ptr0 \
+  -global mga.ptr-trace=${PTR_TRACE:-off} \
+  -global mga.ptr-trace-pos=${PTR_TRACE_POS:-off} \
   -netdev tap,id=n0,ifname=aixrn0,script=no,downscript=no \
   -device pcnet,netdev=n0,mac="$RN_AIX432_MAC",romfile= \
   -display dbus,p2p=on \

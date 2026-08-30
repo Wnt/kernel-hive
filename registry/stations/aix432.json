@@ -96,6 +96,7 @@
         "-bios $ROMS/rs6k40p.BIN (the GENUINE IBM 7020-40P boot ROM; PREP_TB_FREQ=15000000 in the environment, and the POST settimeofday call must be skipped)",
         "-vga mga (the Matrox MGA model added on this branch; AIX claims it as the GXT130P, mg21)",
         "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off -global mga.ptrctl=ptr0 (the closed-loop pointer engine's control socket; the daemon speaks mgaptr/1 over it)",
+        "-global mga.ptr-trace=${PTR_TRACE:-off} -global mga.ptr-trace-pos=${PTR_TRACE_POS:-off} (pointer telemetry, off unless the station environment arms it)",
         "-drive file=$D/aix433-golden.qcow2,format=qcow2,if=scsi,bus=0,unit=0 (LSI 53c810 at PCI_DEVFN(1,0) — the machine has NO IDE)",
         "-global cs4231a.dma=6 (AIX's CS4231 driver fixes play DMA at 6; QEMU defaults to 3. iobase 0x830 / IRQ 10 already match)",
         "-netdev tap,id=n0,ifname=aixrn0,script=no,downscript=no -device <NIC>,netdev=n0,mac=$RN_AIX432_MAC (retronet bridge vmbr-rn)",
@@ -104,7 +105,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set. The binary moved to 5d9d8a0b (branch aix432-s3 @ 8b40203e, the closed-loop pointer) WITHOUT a re-bake, and does not need one: the engine adds no migration state and the ptrctl chardev is not a device, so the device set and the vmstate signature are unchanged -- restore-proven under this binary on the ptrloop rig. INSTALL ORDER MATTERS: the binary must be in place BEFORE this launcher, because `-global mga.ptrctl=ptr0` on the previous binary is an unknown property and QEMU refuses to start."
+        "reason": "the tracked launcher IS the deployed launcher (box-sync mirror pairs carry its rn-tapnet.sh and skipfix.py helpers); the golden was baked 2026-08-26 with this exact device set. The binary moved to d3cb39aa (branch aix432-s3 @ 6a33dda0, the closed-loop pointer) WITHOUT a re-bake, and does not need one: the engine adds no migration state and the ptrctl chardev is not a device, so the device set and the vmstate signature are unchanged -- restore-proven under this binary on the ptrloop rig. INSTALL ORDER MATTERS: the binary must be in place BEFORE this launcher, because `-global mga.ptrctl=ptr0` on the previous binary is an unknown property and QEMU refuses to start."
       },
       "deviceSetId": "aix432-40p-ppc604-1024x768x8-mga-pcnet",
       "launcher": "streamhost/stations/aix432/qemu-streamhost.sh",
@@ -135,7 +136,7 @@
         "--env-append-file",
         "$T/aix432/station.env.fixture"
       ],
-      "binarySha256": "5d9d8a0b5bb1115d31631781051b9dd36e1b7a2a62f5350270a47615ee2c0cc3"
+      "binarySha256": "d3cb39aa4cf2a982523aba04dab2f76ef7519b3b0424cf4c8f5f36a045a773af"
     },
     "stationEnv": {
       "SH_STATION": "aix432",
