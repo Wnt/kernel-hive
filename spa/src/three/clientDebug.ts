@@ -26,7 +26,6 @@
 // ============================================================================
 
 import { getAdminToken } from './adminAuth';
-import { isWalkinPath } from '../walkin/route';
 
 const FLUSH_MS = 5000;          // normal batching cadence
 const VERBOSE_FLUSH_MS = 1000;  // verbose mode lowers batching latency
@@ -97,13 +96,31 @@ export function activeDebugTile(): string | null { return activeTile; }
 export function isVerboseDebug(): boolean { return verbose; }
 
 // ---- event intake -----------------------------------------------------------
+
+// Set once from main.tsx, where the session is already known. Defaults to
+// FALSE so nothing queues before the role has been resolved; a caller that
+// never opts in never sends, which is the safe direction for a sink that
+// answers 401 to a session that has none.
+let telemetryAllowed = false;
+
+/** Enable the /clientlog sink for this document. See `logClientEvent`. */
+export function setTelemetryAllowed(allowed: boolean): void {
+  telemetryAllowed = allowed;
+}
 /** Queue one telemetry event (batched; flushed every 5s / 1s verbose). Never throws. */
 export function logClientEvent(event: string, detail: string): void {
-  // A walk-in visitor cannot POST /clientlog — the route is gated and they are
-  // signed out or hold the `walkin` role. Queueing anyway means a 401 every 5s
-  // for as long as they stream, re-queued each time, forever. Telemetry from a
-  // stranger's session is not worth a retry storm in their console.
-  if (typeof window !== 'undefined' && isWalkinPath(window.location.pathname)) return;
+  // Who may POST /clientlog, per gate.py: any session, walk-in accounts
+  // INCLUDED — `/clientlog` is in `WALKIN_PATHS` on purpose, because debugging a
+  // broken stream has to work for the visitor whose stream is broken, and a
+  // walk-in is exactly the session nobody can reach any other way
+  // (STREAM-DEBUGGING.md). What must not queue is a SIGNED-OUT caller: the
+  // stranger standing on the /walkin signup door has no session yet, so every
+  // flush would 401 every 5s and be re-queued, forever.
+  //
+  // This used to be a path test, which got both halves wrong once a walk-in
+  // could be anywhere: it dropped a walk-in's stream telemetry on
+  // /walkin/play/<os> — the one place it is worth having — and kept it on `/`.
+  if (!telemetryAllowed) return;
   try {
     const d = detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL - 1)}…` : detail;
     pending.push({ ts: Date.now(), sessionId, tile: activeTile ?? '', event, detail: d });

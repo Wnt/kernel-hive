@@ -251,6 +251,60 @@ back, because a write to unbacked guest memory is silently discarded and the
 daemon restates the same position before every button edge, so a vanished write
 to an already-correct pointer would otherwise read back equal and look verified.
 
+### Why the `nudge-units` trap cannot reach this station
+
+`kh-ramabs`'s other profiles publish by injecting a small relative event, and
+pre-compensate the write for it: the guest is first made to hold a
+**deliberately wrong** value, and the injected nudge has to carry it the rest of
+the way. If `nudge-units` is wrong for that guest, the last *draw* can happen at
+an intermediate value while the coordinate still converges — so the **read-back
+agrees and `STAT` looks healthy while the sprite is 1–2 px off**. BeOS measured
+exactly that at rhapsody's `nudge-units=2` (`reissued=24`), and it went away at
+`nudge-units=1`.
+
+**This station is structurally immune, and the reason is worth stating precisely
+because it is not "because it is a Mac".** `publish=crsrnew` writes the *exact*
+target and injects no motion at all, so no intermediate value is ever written
+and there is no guest-side scaling to get wrong; `nudge-units`/`nudge-px` are
+not merely unused on this path but **unreachable** (the branch returns before
+the nudge code, and `realize` only validates them for `publish=nudge`). The
+immunity comes from **having no pre-compensation** — any future profile that
+reintroduces pre-compensation reintroduces the failure, whatever guest it is on.
+
+Consistent with that, `reissued` is **0** on every run here, against BeOS's 24.
+
+But do not read that as "the read-back was sufficient". The general lesson holds
+everywhere: **a converged read-back does not prove the drawn sprite is at the
+target.** It is only ever a claim about a number in RAM. That is exactly why the
+proof below carries a third observer that looks at pixels, and why it would have
+caught the BeOS failure on this station too.
+
+> **SCOPE OF THIS PROOF — read before trusting it.** Everything below drove
+> `ramabs/1` INTO THE QEMU DEVICE DIRECTLY, over the chardev socket, with a
+> purpose-built client. `streamhost` was never running. So this validates the
+> MECHANISM and the DEVICE, and the daemon sink (`ram_abs.rs`) sat entirely
+> outside the boundary — it was never exercised once, at any target, in either
+> run. That is a boundary gap, not a sampling gap: no amount of repetition here
+> could reach the untested component.
+>
+> It is not hypothetical. rhapsody's cutover failed on the live station in
+> exactly that gap: the pointer mechanism worked and read back the commanded
+> target, but every browser session after the first timed out negotiating —
+> per-session sink state that is never released at teardown. The mechanism was
+> the well-tested part; the only untested component was the only one that broke.
+>
+> **This station is therefore NOT yet proven end to end.** The bar for its
+> cutover is a harness that drives the real SPA through the daemon in a browser
+> session, run repeatedly, with at least one session abandoned mid-stream.
+> Build it from `scripts/e2e/idle-wake-browser-probe.mjs` and
+> `scripts/e2e/paused-sink-resume-probe.mjs` rather than by extending the socket
+> client below — they already drive the real SPA from CT950, and they already
+> encode the half of this lesson that generalises: `videoWidth`, `readyState`
+> and a non-black percentage ALL PASS on a stream that has stopped, so the only
+> honest signal is MOTION (hash decoded frames, count distinct ones). That is
+> the same shape as the failure here — a component reporting healthy while doing
+> nothing — one layer up.
+
 Proven on the framebuffer twice, at the same targets: once with the writes made
 through the QEMU gdb stub (proving the mechanism) and once with every target
 commanded over `ramabs/1` into the real device (proving the thing that ships).

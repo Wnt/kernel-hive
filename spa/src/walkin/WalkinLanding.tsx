@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { WalkinPool, WalkinState } from '../data/walkinTypes';
-import { fetchWalkinState } from './api';
+import type { WalkinPool } from '../data/walkinTypes';
+import { poolFor, useWalkinPools } from './usePools';
 import { WALKIN_OS_IDS } from './fixture';
 import { accessAllows } from './sessionEnd';
 import { WALKIN_CLOSED_COPY } from './reasons';
@@ -38,10 +38,6 @@ const CARDS: Record<string, { name: string; meta: string; blurb: string; accent:
   },
 };
 
-function poolFor(state: WalkinState | null, os: string): WalkinPool | undefined {
-  return state?.pools.find((pool) => pool.os === os);
-}
-
 /** "2 of 3 free", with the free slots also drawn as pips. */
 function PoolMeter({ pool }: { pool: WalkinPool | undefined }) {
   if (!pool) return <span className="walkin-pool">checking…</span>;
@@ -60,25 +56,12 @@ function PoolMeter({ pool }: { pool: WalkinPool | undefined }) {
 
 export default function WalkinLanding() {
   const navigate = useNavigate();
-  const [state, setState] = useState<WalkinState | null>(null);
+  // The same live poll the grid runs (usePools.ts) — one timer, one period,
+  // one place to change either.
+  const { state, error: poolError } = useWalkinPools();
   const [error, setError] = useState<string | null>(null);
   const [account, setAccount] = useState<WalkinAccount | null>(null);
   const [busy, setBusy] = useState(false);
-
-  // Pool status is live, not a page-load snapshot: a visitor deciding between
-  // three machines should see one free up while they read.
-  useEffect(() => {
-    let alive = true;
-    const tick = () => {
-      fetchWalkinState().then(
-        (next) => { if (alive) { setState(next); setError(null); } },
-        (reason: unknown) => { if (alive) setError(reason instanceof Error ? reason.message : 'walk-in status unavailable'); },
-      );
-    };
-    tick();
-    const timer = setInterval(tick, 15_000);
-    return () => { alive = false; clearInterval(timer); };
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -143,10 +126,10 @@ export default function WalkinLanding() {
         </section>
       )}
 
-      {error && (
+      {(error ?? poolError) && (
         <section className="walkin-notice walkin-notice--warn" aria-live="polite">
           <h2>That did not work.</h2>
-          <p>{error}</p>
+          <p>{error ?? poolError}</p>
         </section>
       )}
 

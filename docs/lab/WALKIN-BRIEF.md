@@ -300,17 +300,37 @@ existing Playwright suite (`tests/e2e-live`) must stay green untouched throughou
 
 ## 7. What the visitor sees
 
-Landing page: three cards — Windows 3.11, OS/2 Warp 4, Rhapsody DR2 — with live
-pool status ("2 of 3 free"), one-tap passkey signup, claim → the normal station
-view. Reset button = discard my clone, give me a fresh one (visitor-facing
-**reset**, mechanism: respawn).
+**The door, at `/walkin`.** A stranger with no account gets the landing page:
+three cards — Windows 3.11, OS/2 Warp 4, Rhapsody DR2 — with live pool status
+("2 of 3 free") and one-tap passkey signup. It is the one surface with no role
+behind it, so it is the one surface that is still chosen by PATH.
 
-Below the three, **the rest of the museum to read about**: the listed fleet as
-hero shots and exhibition notes ([§5.3](#53-what-a-walk-in-can-see)), each
-plainly marked as not playable rather than as a broken button. The walk-in
-arrives for Windows 3.11 and leaves knowing the lab has sixty other machines in
-it. A short about/credits page and an abuse contact. No museum hall, no fleet
-table in v1.
+**The museum, once they have an account.** A walk-in is then a visitor like any
+other: the same grid, the same placards, the same app bar as the invited plane —
+narrowed by role, not replaced by a second app. Their grid defaults to the
+machines they can actually drive, and a scope switch ("The whole museum") opens
+the listed fleet as hero shots and exhibition notes
+([§5.3](#53-what-a-walk-in-can-see)). A card they may drive goes to their own
+clone at `/walkin/play/<os>` and carries the pool meter; every other card is
+plainly a placard — a printed line, never a broken button. The walk-in arrives
+for Windows 3.11 and leaves knowing the lab has sixty other machines in it.
+Reset button = discard my clone, give me a fresh one (visitor-facing **reset**,
+mechanism: respawn). No museum hall, no fleet table.
+
+**Why one app and not two.** The first cut booted a separate walk-in app off the
+path, which broke for the one visitor it was built for: the gate allows a
+walk-in `/` (`WALKIN_PATHS`), so a signed-up walk-in who typed the bare hostname
+— or launched the installed PWA, whose `start_url` is `/` — loaded the shell,
+booted the GALLERY, and had its first fetch (`/gallery-manifest.json`) refused.
+The page sat on "Loading the collection…" for ever. The role is the question the
+app was always trying to ask, so it now asks it directly: `GET /auth/state`
+before the first render (`spa/src/data/session.ts`), and one router from there.
+
+The fence did not move. Every document a walk-in's grid reads —
+`/walkin/manifest.json`, `/posters/`, `/poster-docs.json` — was already open to
+them; `/gallery-manifest.json`, `/fleet-table.json` and every
+`/signal/<station>.json` are still refused. The UI shows a walk-in only doors
+they can walk through; `gate.py` is what makes that true.
 
 ## 8. Phases
 

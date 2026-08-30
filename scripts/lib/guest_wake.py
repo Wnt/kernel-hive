@@ -70,7 +70,23 @@ class GuestPaused(RuntimeError):
 
 
 def lease_path(station: str) -> str:
-    """Where this station's wake lease lives. ``SH_WAKE_LEASE`` overrides."""
+    """Where this station's wake lease lives. ``SH_WAKE_LEASE`` overrides.
+
+    The override is deliberately station-AGNOSTIC — it names one file, not a
+    directory — so it is safe only in a single-guest process (a rig, a test, a
+    one-station tool). NEVER set it in the environment of a process that
+    handles more than one guest: the walk-in serving process holds a pool of
+    clones, and one `SH_WAKE_LEASE` in its environment would collapse every
+    clone's lease onto a single path. Two clones would then share one lease,
+    each one's refresh would look like the other's, and the daemon-side match
+    (which resolves the same way from ``SH_STATION``) would silently stop
+    corresponding to the guest being woken. Nothing would error; the leases
+    would just stop meaning what their holders think they mean.
+
+    Not set anywhere today, and it must stay that way for the serving process.
+    If a multi-guest caller ever needs to relocate leases, give it a lease DIR
+    and keep the per-station basename.
+    """
     override = os.environ.get("SH_WAKE_LEASE")
     if override:
         return override

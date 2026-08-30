@@ -150,6 +150,18 @@ deploy() {
   # import half a deploy.
   # Replaced wholesale, not merged: a module dropped from the repo must not
   # linger on labhost, where the package would happily keep importing it.
+  #
+  # THE THREE NAMES IN THIS rm -rf ARE CODE DIRECTORIES, AND THE LIST MUST NOT
+  # GROW TOWARDS ITS SIBLINGS. `$SERVE_DIR` also holds `auth-state.json` — every
+  # account, every passkey credential, every walk-in handle, and the walk-in
+  # access switch — plus its dated rotations. It is state of record, not a
+  # deploy artifact: a golden can be recaptured, but a passkey cannot be
+  # regenerated and a walk-in handle IS the account. Nothing in this script may
+  # delete, materialize or overwrite it, and anything that treats $SERVE_DIR as
+  # a replaceable tree (a future content-addressed release layout, say) has to
+  # enumerate what in it is NOT part of the deploy first — or the swap is a
+  # delete. Same for `darklaunch.d/`. See docs/PUBLIC-GALLERY.md and the guarded
+  # reset-auth.sh, which exists because the reflex it prevents is `rm` here.
   msg "shipping the auth plane"
   tar czf - -C "$REPO/scripts/serve" --exclude __pycache__ auth authui walkin |
     $SSH "set -e; rm -rf $SERVE_DIR/auth $SERVE_DIR/authui $SERVE_DIR/walkin; tar xzf - -C $SERVE_DIR"

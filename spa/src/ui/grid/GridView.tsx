@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useMuseum } from '../../state/store';
-import { bindingFromManifest } from '../../three/archetypeRegistry';
 import type { EnrichedVM } from '../../types';
-import { posterFor } from '../../data/posterIndex';
 import { matchesQuery, parseQuery, stationTerms } from './stationSearch';
 import { usePullToRefresh } from './usePullToRefresh';
 import { usePwaInstall } from './usePwaInstall';
+import { useIsWalkin } from '../../data/SessionContext';
+import { visibleLineup, type WalkinScope } from './lineup';
+import { OsCard } from './OsCard';
+import { poolFor, useWalkinPools } from '../../walkin/usePools';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
@@ -20,6 +22,16 @@ import { usePwaInstall } from './usePwaInstall';
 //  clean CSS placeholders — no live streams open here; only the OS the user
 //  opens streams (StreamView), never the whole fleet at once. Clicking /
 //  Enter / Space on a card opens that OS full-viewport.
+//
+//  ONE grid serves both visitor classes. For a walk-in the store is filled from
+//  the walk-in projection instead of the fleet manifest (useManifest.ts), and
+//  this component changes three things and nothing else: the default SCOPE is
+//  the machines they can actually drive, a scope switch reveals the rest of the
+//  museum as read-only placards, and a card points at `/walkin/play/<os>` or —
+//  for an exhibit nobody may drive — opens the placard rather than a stream.
+//  A button that looks pressable and then refuses teaches the visitor the site
+//  is broken; a placard teaches them the museum is bigger than what they came
+//  for (WALKIN-BRIEF §7).
 //
 //  Era sections FOLD. Only the two decades the collection is thickest in open
 //  on a first visit; after that the viewer's own choices are remembered. The
@@ -94,13 +106,28 @@ function writeFoldState(state: FoldState): void {
 // load (including a direct /os/:osId deep-link) still starts at the top.
 let savedScrollTop: number | null = null;
 
-export default function GridView() {
+export interface GridViewProps {
+  /** Walk-in only: open the read-only placard for an exhibit nobody may drive. */
+  onOpenPlacard?: (osId: string) => void;
+  /** Walk-in only: force the scope (the `/walkin/exhibits` route enters at `all`). */
+  initialScope?: WalkinScope;
+}
+
+export default function GridView({ onOpenPlacard, initialScope = 'playable' }: GridViewProps = {}) {
   const vms = useMuseum((s) => s.listedVms);
   const gridRef = useRef<HTMLDivElement>(null);
   // Preserve query parameters across navigation into a station.
   const { search } = useLocation();
 
-  const streamable = vms;
+  const walkin = useIsWalkin();
+  const [scope, setScope] = useState<WalkinScope>(initialScope);
+  // Only a walk-in has pools, so only a walk-in starts the poll.
+  const { state: poolState } = useWalkinPools(walkin);
+
+  // The scope switch is the walk-in's only lineup control, and it narrows —
+  // it never widens past what the projection already carries, because the
+  // projection IS the fence (lineup.ts). An invited session has no scope.
+  const streamable = useMemo(() => visibleLineup(vms, walkin, scope), [vms, walkin, scope]);
 
   // Touch pull-to-refresh. A standalone/installed PWA has no browser chrome and
   // so no native pull-to-refresh; the grid supplies its own on its scroll box. A
@@ -285,6 +312,35 @@ export default function GridView() {
         </span>
       </div>
       <div className="grid-view-inner">
+        {/* The walk-in scope switch. "Machines you can play" is the default
+            because it is what the visitor came for; "The whole museum" is the
+            option to read every listed exhibit's placard (WALKIN-BRIEF §7) —
+            the same collection an invited visitor sees, minus the interactive
+            surface. An invited session has no switch: their grid is already
+            the whole museum, and drawing a dead control would only ask them to
+            wonder what the other half is. */}
+        {walkin && (
+          <div className="seg grid-scope" role="tablist" aria-label="How much of the collection to show">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scope === 'playable'}
+              className={scope === 'playable' ? 'active' : ''}
+              onClick={() => setScope('playable')}
+            >
+              Machines you can play
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scope === 'all'}
+              className={scope === 'all' ? 'active' : ''}
+              onClick={() => setScope('all')}
+            >
+              The whole museum
+            </button>
+          </div>
+        )}
         <div className="grid-filter">
           <input
             ref={filterRef}
@@ -338,68 +394,19 @@ export default function GridView() {
 
               <div className="card-grid" id={panelId} role="list" hidden={!open}>
                 {open && g.items.map((v) => {
-                running += 1;
-                const idx = running;
-                const b = bindingFromManifest(v);
-                const accent = v.accent;
-                const hero = posterFor(v.id)?.hero;
-                return (
-                  <Link
-                    key={v.id}
-                    role="listitem"
-                    ref={(el) => { cardRefs.current[idx] = el; }}
-                    to={{ pathname: `/os/${v.id}`, search }}
-                    className="os-card"
-                    style={{ ['--accent' as string]: accent }}
-                    onKeyDown={(e) => onGridKeyDown(e, idx)}
-                    aria-label={`${v.displayName}, ${v.year}. ${v.blurb ?? ''} Open live.`}
-                  >
-                    <span className="os-poster" aria-hidden="true">
-                      <span className="os-poster-screen">
-                        {hero ? (
-                          <img
-                            className="os-poster-shot"
-                            src={hero}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : (
-                          <>
-                            <span className="os-poster-name">{v.displayName}</span>
-                            <span className="os-poster-year">{v.year}</span>
-                          </>
-                        )}
-                      </span>
-                      {b.bootVideo && (
-                        <span className="os-badge os-badge--bootvid" title="Boot capture available">▶ Boot</span>
-                      )}
-                      {b.hardwareInput && (
-                        <span className="os-badge os-badge--hwinput" title="Native guest hardware input enabled">HW input</span>
-                      )}
-                      {/* A graphical exhibit whose pointer is relative only. Not a
-                          fault — the machine never had an absolute pointer, or we
-                          have not built one for it yet — so it warns rather than
-                          errors, and it sits below the HW-input slot because a station
-                          can never have both. */}
-                      {b.relativePointerOnly && (
-                        <span
-                          className="os-badge os-badge--relptr"
-                          title="Relative pointer only: the cursor moves by deltas, so it cannot track your finger 1:1"
-                        >
-                          Rel. pointer
-                        </span>
-                      )}
-                    </span>
-                    <span className="os-card-body">
-                      <span className="os-card-name">{v.displayName}</span>
-                      <span className="os-card-meta">{v.lineage}</span>
-                      <span className="os-card-chips">
-                        <span className="os-chip">{v.year}</span>
-                        <span className="os-chip">{v.arch}</span>
-                      </span>
-                    </span>
-                    </Link>
+                  running += 1;
+                  const idx = running;
+                  return (
+                    <OsCard
+                      key={v.id}
+                      vm={v}
+                      walkin={walkin}
+                      search={search}
+                      pool={poolFor(poolState, v.id)}
+                      cardRef={(el) => { cardRefs.current[idx] = el; }}
+                      onKeyDown={(e) => onGridKeyDown(e, idx)}
+                      onOpenPlacard={onOpenPlacard}
+                    />
                   );
                 })}
               </div>

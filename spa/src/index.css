@@ -322,6 +322,23 @@ canvas { display: block; touch-action: none; }
 }
 .os-card:active { transform: translateY(-1px); }
 
+/* ---- the walk-in grid ----
+   A card's FOOT is where a walk-in learns what the card is for: the machines
+   they can drive carry the play affordance and the live pool meter, and every
+   other exhibit says, in words rather than a button that would refuse them,
+   that it is here to be read about. The placard card is deliberately quieter
+   than a playable one — same collection, different offer. */
+.os-card-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 0 13px 12px; flex-wrap: wrap;
+}
+.os-card--placard { box-shadow: none; background: var(--paper); }
+.os-card--placard:hover { transform: translateY(-2px); box-shadow: var(--shadow-1); }
+
+/* The scope switch sits above the filter and only a walk-in ever sees it. */
+.grid-scope { margin: 0 0 10px; }
+
+
 /* Poster: the machine's bezel, tinted by the OS accent, framing a dark screen. */
 .os-poster {
   position: relative; display: block; aspect-ratio: 4 / 3;
