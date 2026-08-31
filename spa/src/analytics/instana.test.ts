@@ -60,18 +60,22 @@ describe('configureInstana', () => {
     expect(calls).toContainEqual(['meta', 'kh.sessionId', 'sess1']);
   });
 
-  // The other half of the class label: analytics/intent.ts's own store gets it
-  // via sink.ts's `class` field on every batch, but Instana never sees that
-  // store — it only sees what this file hands it. Without this call an
-  // operator running scripts/visitor-sim against the public gallery would see
-  // simulated visitors in Instana with no way to tell them apart from real
-  // ones, which is the exact thing that plane's `class` dimension exists to
-  // prevent (see intent.ts's header).
-  it('carries the analytics/intent class label as kh.client.class, for the SAME probe-vs-human split this ships to our own store', () => {
+  // `kh.client.class` and `kh.bundle` used to be set from here. Both moved to
+  // spa/index.html's inline bootstrap — WALK-IN-DOOR ATTRIBUTION GAP: a
+  // signed-out visitor at the /walkin door never reaches this function at all
+  // (main.tsx's `signedOutAtTheDoor` gate skips calling it, correctly — a
+  // session-less visitor's telemetry flushes would 401 forever), but
+  // index.html's bootstrap runs unconditionally and already beacons for
+  // exactly that visitor. See index.html's own "WALK-IN-DOOR ATTRIBUTION GAP"
+  // comment and index.html.bootstrap.test.ts for the coverage those two keys
+  // get now that they no longer come from here.
+  it('does NOT set kh.client.class or kh.bundle — those moved to index.html\'s bootstrap so a signed-out walk-in visitor is still labelled', () => {
     const { calls } = installIneum();
     (globalThis as { window: { __khClientClass?: string } }).window.__khClientClass = 'probe';
     configureInstana('sess1');
-    expect(calls).toContainEqual(['meta', 'kh.client.class', 'probe']);
+    const metaKeys = calls.filter((c) => c[0] === 'meta').map((c) => c[1]);
+    expect(metaKeys).not.toContain('kh.client.class');
+    expect(metaKeys).not.toContain('kh.bundle');
   });
 
   // Pins the call SHAPE, not just the value: `ineum('meta', ...)` takes ONE
@@ -79,19 +83,21 @@ describe('configureInstana', () => {
   // version called `ineum('meta', { 'kh.sessionId': ..., 'kh.bundle': ... })`,
   // which Instana's agent cannot parse (it stringifies the object as its own
   // key, producing `{'[object Object]': 'undefined'}` on the wire — verified
-  // against real production beacons). This must not silently regress.
+  // against real production beacons). This must not silently regress. (Only
+  // `kh.sessionId` is set from this file now — see the test above for where
+  // `kh.bundle`/`kh.client.class` moved; index.html.bootstrap.test.ts pins the
+  // same call shape for those two.)
   it('calls ineum(meta, key, value) once per entry — never an object argument', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
     const metaCalls = calls.filter((c) => c[0] === 'meta');
-    expect(metaCalls.length).toBeGreaterThanOrEqual(3);
+    expect(metaCalls.length).toBeGreaterThanOrEqual(1);
     for (const call of metaCalls) {
       expect(call).toHaveLength(3);
       expect(typeof call[1]).toBe('string');
       expect(typeof call[2]).toBe('string');
     }
     expect(metaCalls).toContainEqual(['meta', 'kh.sessionId', 'sess1']);
-    expect(metaCalls.map((c) => c[1])).toContain('kh.bundle');
   });
 
   it('passes the secrets patterns through unchanged', () => {
