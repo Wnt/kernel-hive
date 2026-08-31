@@ -39,4 +39,15 @@ export interface StreamSessionResult {
   expectedReconnect: 'restore' | null;
   /** Abandon the current attempt and start a fresh ladder (visitor gesture). */
   reconnectNow: () => void;
+  /**
+   * A TRUSTED human input edge was directed at this guest.
+   *
+   * The session hook cannot witness this itself — the events land on the view's
+   * own elements, which it does not own, exactly like `sinkProbe` above. Only
+   * the FIRST edge changes anything (`station.open.toFirstInputMs`), so this is
+   * cheap to over-call and must never be called for SYNTHETIC input: a type-in
+   * demo puts hundreds of edges on the wire from one click, and crediting those
+   * would report every scripted station as instantly discoverable.
+   */
+  noteInput: () => void;
 }

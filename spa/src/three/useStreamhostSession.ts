@@ -14,7 +14,7 @@ import {
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
-import { connectTelemetry } from './connectTelemetry';
+import { sessionTelemetry } from './sessionTelemetry';
 import type { LivePhase, StreamSessionOptions, StreamSessionResult } from './streamSessionTypes';
 
 export type { StreamSessionOptions, StreamSessionResult };
@@ -92,6 +92,10 @@ export function useStreamhostSession(
   sinkProbeRef.current = options?.sinkProbe;
   const reconnectRef = useRef<() => void>(() => undefined);
   const reconnectNow = useCallback(() => reconnectRef.current(), []);
+  // Through a ref, like `sinkProbe`: the session effect does not re-run on a
+  // view re-render, and a stale closure would stop witnessing input silently.
+  const noteInputRef = useRef<() => void>(() => undefined);
+  const noteInput = useCallback(() => noteInputRef.current(), []);
 
   useEffect(() => {
     if (!active || !signalEndpoint) return;
@@ -133,7 +137,11 @@ export function useStreamhostSession(
     // retries are the mechanism, and counting them would report a station that
     // connected on the fourth try as three failures and a success. See
     // three/connectTelemetry.ts for what each call below means.
-    const tel = connectTelemetry();
+    // Three flows behind one handle (three/sessionTelemetry.ts). getKeyframeMs
+    // is read fresh: encoder params arrive on KIND_PARAMS after transport-ready.
+    const tel = sessionTelemetry({
+      getKeyframeMs: () => client?.getMetrics().enc?.keyframeMs ?? null,
+    });
 
     const clearTimers = () => {
       if (watchdog) { clearTimeout(watchdog); watchdog = 0; }
@@ -172,6 +180,7 @@ export function useStreamhostSession(
 
     const onVideoFrame = (frame: VideoFrame) => {
       if (cancelled) { try { frame.close(); } catch { /* noop */ } return; }
+      tel.painted(); // EVERY frame — the paint side freezes are derived from
       const w = frame.displayWidth, h = frame.displayHeight;
 
       // ---- DIRECT-CANVAS PAINT PATH (2D grid) --------------------------------
@@ -266,7 +275,7 @@ export function useStreamhostSession(
 
     const cleanup = () => {
       cancelled = true;
-      tel.abandoned();
+      tel.detach();
       clearTimers();
       // Token-guarded: an outgoing mount must never wipe the tag a NEW mount of
       // the same station has already claimed (that is what leaves `tile` empty
@@ -298,6 +307,7 @@ export function useStreamhostSession(
       // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       logClientEvent('connect-retry', `attempt=${attempt}/${v.limit} live=${liveReached} restore=${expectedRestore} why=${why}`);
+      tel.retry();
       if (v.exhausted) {
         fail(liveReached
           ? 'lost the connection to this tile — tap Reconnect to try again'
@@ -541,11 +551,14 @@ export function useStreamhostSession(
       signalEndpoint,
       getClient: () => client,
       reconnect: () => {
+        tel.resumeReconnect(); // this return costs a full rebuild
         setPhase('connecting');
         setMessage('Reconnecting to tile…');
         reconnectRef.current();
       },
     });
+
+    noteInputRef.current = () => { if (!cancelled) tel.input(); };
 
     reconnectRef.current = () => {
       if (cancelled) return;
@@ -578,6 +591,6 @@ export function useStreamhostSession(
 
   return {
     phase, message, control, stream, registerPaintCanvas,
-    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow,
+    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
   };
 }
