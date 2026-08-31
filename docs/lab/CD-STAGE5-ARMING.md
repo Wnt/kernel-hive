@@ -1,10 +1,21 @@
 # Arming the continuous-deploy loop — the checklist the operator owns
 
-**Nothing in this document has been done.** Stage 5 built the mechanism and
-stopped here on purpose. Every step below is an operator decision, because
-together they are the moment the fleet starts converging with no human in the
-loop. An agent must not perform any of them without being asked for that
-specifically — "implement the proposal" is not that authorisation.
+**STATUS 2026-08-31: the TRIGGER IS ARMED. The LOOP IS NOT INSTALLED.**
+This file opened with "nothing in this document has been done" for as long as
+that was true, and updating it the moment it stopped being true is the point —
+a checklist that still says nothing has happened, after it has, is the §2.7
+hazard of the design document in its own operating instructions.
+
+Done, on the operator's authorisation: steps 1–7 below. A signed hint now lands
+within a second of a push to `main` and is journalled with honest provenance.
+**Not done, and a separate decision that must not be inferred from the above:
+step 8** — installing the service and timer. Nothing converges today: there is
+no loop, `rollout` defaults to `hold`, and no station carries the acceptance
+stanza that `rollout: auto` requires.
+
+Every step below remains an operator decision. An agent must not perform one
+without being asked for that specifically — "implement the proposal" is not
+that authorisation, and neither is "the trigger is armed".
 
 The design is `docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md`; §1.1 is the trigger.
 
@@ -12,11 +23,11 @@ The design is `docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md`; §1.1 is the trigger.
 
 | Built and tested | State |
 |---|---|
-| `scripts/serve/deploy_hint.py` — signature, rate limit, replay, ref filter, wakeup | present, **not routed** |
+| `scripts/serve/deploy_hint.py` — signature, rate limit, replay, ref filter, wakeup | **routed and live**; answers 503 with no key |
 | `scripts/host/kh_reconciler/loop.py` — trigger classification, hint checking, backstop reporting | present, `watch --once` only |
 | `kh-reconciler poke` | present, sandbox roots only |
-| `registry` `rollout: auto \| hold` + validation | present, **no station sets it** |
-| `.github/workflows/deploy-hint.yml` | present, **skips without a secret** |
+| `registry` `rollout: auto \| hold` + validation | present, **no station sets it** (so nothing can be converged) |
+| `.github/workflows/deploy-hint.yml` | **armed**; two triggers — an unconditional `push` ping (delivery backstop) and a `workflow_run` ping carrying the Quality gate's conclusion as journalled data |
 | `scripts/host/kh-reconciler.service.example` / `.timer.example` | present, **not installed, not a sync pair** |
 
 Left unbuilt because it is only meaningful once installed, and building it
