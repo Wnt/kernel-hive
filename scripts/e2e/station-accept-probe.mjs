@@ -34,9 +34,17 @@
 // its sampling interval is bounded per station for exactly that reason.
 //
 // The abandoned session is SIGKILLed, not closed. A `page.close()` still runs
-// an orderly teardown, which is the path that WORKED; what broke was the path
-// where a visitor's laptop lid closes and the QUIC connection dies with no
-// close frame. So that session gets its own browser process and we kill it.
+// an orderly teardown, which is the path that already works; the untested path
+// is a visitor's laptop lid closing, with QUIC dying and no close frame. So
+// that session gets its own browser process and we kill it.
+//
+// STATUS: PRECAUTION, NOT AN EVIDENCED REQUIREMENT. Its original warrant was a
+// per-session leak at teardown, and that cause was disproved (see the verdict
+// module). It has caught nothing so far. It stays because an ungraceful
+// disconnect is real visitor behaviour rather than a hypothesis, and it is
+// cheap. If you find the refuted rationale later, that is not a reason to drop
+// this: it was never justified by that rationale, so disproving it takes
+// nothing away.
 //
 // usage:
 //   node station-accept-probe.mjs --station <id> [options]

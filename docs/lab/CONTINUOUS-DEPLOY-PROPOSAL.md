@@ -891,15 +891,35 @@ exact-match, `frame-compare.py`, streamhost `STAT`):
    hammer — see the observation-rate bound below.
    **What the corrected cause does and does not justify, stated plainly so the
    requirement is not quietly propped up by evidence that no longer supports
-   it.** *Sequential* churn is confirmed and strengthened: a daemon-wide stall
-   in session start-up is invisible to one session by construction, and shows up
-   in the second. The **abandoned** session is a different matter — its original
-   warrant was the leak-at-teardown story, and that story is gone. It stays in
-   the spec because a client vanishing without an orderly close is a real and
-   cheap thing to test, and because the orderly path is the one that already
-   worked; but it is now a **precaution, not an evidenced requirement**, and
-   anyone who finds it costly should know it is defending a class rather than a
-   measured defect;
+   it.**
+
+   *Sequential* churn is confirmed on its own merits: a daemon-wide stall in
+   session start-up is invisible to one session by construction and appears in
+   the second. Note the distinction that makes this true, because conflating the
+   two is what nearly got the rule discarded: **churn would have DETECTED that
+   symptom; it could not have DIAGNOSED it.** Diagnosis took the same-pass
+   control, which is what separated "the station is broken" from "the instrument
+   is breaking it". A gate owes detection; diagnosis is a separate job done by a
+   separate mechanism, and a rule is not unevidenced merely because it would not
+   have finished the investigation on its own.
+
+   The **abandoned** session is a weaker claim and must be read as one. Its
+   original warrant was the leak-at-teardown story, and that story is gone; as
+   far as anyone has traced, it has never caught a defect in this wave. It stays
+   for a *prospective* reason: **an ungraceful disconnect is real visitor
+   behaviour, not a hypothesis.** A lid closing, QUIC dying with no close frame,
+   is what actually happens in a gallery, and it exercises a path an orderly
+   close does not — and the orderly path is the one that already worked. So it
+   is a **precaution, not an evidenced requirement**, and it is labelled that way
+   deliberately.
+
+   **The reason for the label, which matters more than the label:** someone who
+   finds the refuted rationale in six months must not read the refutation as a
+   reason to drop the check. It was never justified by that rationale, so
+   disproving it takes nothing away. A cheap check defending a real class should
+   survive the death of a bad argument for it — and the way to make sure it does
+   is to write the honest argument down now, while the difference is fresh,
+   rather than leave a strong-sounding one that will not hold;
 6. `STAT` counters sane *as corroboration only* — telemetry may support a
    pass, never substitute for the framebuffer (I.11); frozen-counter
    comparison across the churn of step 5 is the one place counters are

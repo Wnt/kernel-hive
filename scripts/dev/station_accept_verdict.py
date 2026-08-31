@@ -28,9 +28,18 @@ weaker one:
    at all failed identically with the holder running.
    Two consequences for this file. Sequential churn is CONFIRMED — a daemon-wide
    stall in session start-up is invisible to one session and shows up in the
-   second. And this failure is exactly the one an over-eager harness can CAUSE,
-   which is why a FAIL here is only actionable against the station when the
-   same-pass control passed; station-accept.sh, not this module, applies that.
+   second. Churn would have DETECTED that symptom; it could not have DIAGNOSED
+   it, which took the same-pass control. A gate owes detection; diagnosis is a
+   separate mechanism, and conflating the two nearly got this rule discarded.
+   And this failure is exactly the one an over-eager harness can CAUSE, which is
+   why a FAIL here is only actionable against the station when the same-pass
+   control passed; station-accept.sh, not this module, applies that.
+
+   The ABANDONED session is a weaker claim: its warrant was the disproved leak,
+   it has caught nothing, and it stays as a PRECAUTION because an ungraceful
+   disconnect is real visitor behaviour rather than a hypothesis. Finding the
+   refuted rationale later is not a reason to drop it — it was never justified
+   by that rationale.
 
 2. That session must show MOTION IN THE WATCHED RECTANGLE — more than one
    distinct rect signature across the samples. Not `videoWidth`, not
