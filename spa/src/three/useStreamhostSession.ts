@@ -346,6 +346,7 @@ export function useStreamhostSession(
 
       const nextClient = new StreamClient({
         signalEndpoint,
+        osId,
         onVideoFrame: (frame) => {
           // A decoder callback can already be queued when its transport reports
           // loss. Never let that old frame cancel the replacement attempt.

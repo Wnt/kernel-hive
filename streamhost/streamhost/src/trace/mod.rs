@@ -323,6 +323,19 @@ fn render(
     // is not an answer.
     o.push_str(",\"a\":{\"kh.station\":");
     push_str_json(&mut o, station());
+    // ...and its SERVICE, stamped here rather than trusted to arrive from a
+    // caller, for the same reason `scripts/serve/tracing.py`'s `_buffer_span`
+    // stamps `kernel-hive-serve` on every Python span: one place, no way to
+    // forget. Until this existed no daemon span carried `kh.service` at all,
+    // so `traces_otlp.export()`'s fallback (`svc = attrs.get("kh.service") or
+    // service`, `service` defaulting to `"kernel-hive-spa"`) silently filed
+    // every daemon span — `input.dispatch`, `guest.frame.next`,
+    // `transport.frame.next`, `streamhost.session` — under the BROWSER's
+    // service name. That is not a vendor-mapping quirk to work around; it is
+    // this module mislabelling a different process as the browser, which is
+    // the false claim `docs/lab/TRACE-CONTEXT.md` §8 forbids in a span's
+    // causal shape and this is the same rule applied to a span's identity.
+    o.push_str(",\"kh.service\":\"kernel-hive-daemon\"");
     for (k, v) in attrs.iter().take(ATTR_MAX) {
         o.push(',');
         push_str_json(&mut o, k);

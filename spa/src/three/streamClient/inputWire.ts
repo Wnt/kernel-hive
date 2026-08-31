@@ -37,6 +37,10 @@ import { maybeSampleEdge, traceSuffix, withSuffix, keyClass } from './inputTrace
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
   cseq: number;
+  /** The station this edge belongs to, or null when the caller gave none
+   *  (`StreamClient.stationId`, from `cfg.osId`). Carried into a sampled
+   *  edge's meta only — never into the wire record. */
+  stationId: string | null;
   /** Last absolute position this client PUT ON THE WIRE, or null while none ever
    *  was. Nullable on purpose: it is a cache of something the client said, and a
    *  cache that has never been filled must be able to say so — see sendButtonImpl. */
@@ -137,7 +141,10 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     // the browser's decision, made once per qualifying edge (key or click —
     // never a pointer-move sample). `span` is null on the other N-1 edges and
     // costs nothing beyond the counter check inside `maybeSampleEdge`.
-    const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'click' });
+    const span = maybeSampleEdge('input.edge', {
+      'kh.input.class': 'click',
+      'kh.station': c.stationId ?? 'unknown',
+    });
     if (px == null || py == null) {
       const bare = new Uint8Array(3);
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
@@ -166,6 +173,7 @@ export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: 
     const span = maybeSampleEdge('input.edge', {
       'kh.input.class': 'key',
       'kh.key.class': keyClass(keycode),
+      'kh.station': c.stationId ?? 'unknown',
     });
     c.writeReliableClass(ICLASS_KEY, span ? withSuffix(b, 4, traceSuffix(span)) : b);
     span?.end('ok');

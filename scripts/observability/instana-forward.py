@@ -55,6 +55,35 @@ points of these traces; once those are deployed the browser spans hang beneath
 them and Instana models the whole journey. Until then, expect a service with no
 calls and do not read it as a broken exporter.
 
+A SECOND, RELATED FAMILY: the sampled `input.edge` traces (docs/lab/
+TRACE-CONTEXT.md §3.2) have no serving-plane span in them at all — they never
+touch an HTTP request, only browser->daemon WebTransport — so the fix above
+does not reach them. Verified separately, 2026-08-31, against the SAME API:
+every `input.edge` trace (`Client` root, `Internal` children) came back
+`service: "Unspecified"` in `analyze/traces`, while every `serve.*` trace
+(which HAS a `Server`-kind entry span) came back correctly labelled
+`kernel-hive-serve`. The daemon's `input.dispatch` span — the receiving side of
+the browser's `Client`-kind `input.edge` — was `Internal` when it should always
+have been `Server`: it IS the request/response boundary, the same client/server
+RPC pairing this repo already uses for `http.client.request` / `serve.signal`.
+Fixed in `streamhost/src/trace_session.rs`; requires the daemon binary to be
+rebuilt and rolled out to take effect (this forwarder cannot do that, and
+re-running it against old data will keep showing `Unspecified` for
+`input.edge` until a station with the new binary produces fresh spans).
+
+ALSO FIXED THE SAME DAY: daemon spans (`input.dispatch`, `guest.frame.next`,
+`transport.frame.next`, `streamhost.session`, ...) carried NO `kh.service`
+attribute at all — only `scripts/serve/tracing.py`'s Python spans stamped one.
+`traces_otlp.export()`'s fallback (`svc = attrs.get("kh.service") or
+"kernel-hive-spa"`) therefore filed every daemon span under the BROWSER's
+service name, which is a mislabel independent of the entry-span problem above
+— confirmed by exporting a real `input.edge` trace and reading its
+`resource.attributes["service.name"]` before this fix: `"kernel-hive-spa"` for
+all four spans, daemon-origin ones included. `streamhost/src/trace/mod.rs`'s
+`render()` now stamps `kh.service: "kernel-hive-daemon"` on every span it
+writes, the same "one place, no way to forget" pattern `tracing.py` already
+uses for the Python plane. Also requires a daemon rebuild + rollout.
+
 THE AGENT KEY CANNOT BE FETCHED FROM THE API — checked, 2026-08-31, so nobody
 re-derives it. A personal API token authenticates fine against
 `/api/instana/health`, `/api/instana/version`, `/api/settings/api-tokens` and

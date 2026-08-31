@@ -244,6 +244,48 @@ class OtlpTest(unittest.TestCase):
         self.assertEqual(int(s["startTimeUnixNano"]), 1_700_000_000_000 * 1_000_000)
         self.assertEqual(int(s["endTimeUnixNano"]) - int(s["startTimeUnixNano"]), 250 * 1_000_000)
 
+    def test_a_span_with_kh_service_gets_its_own_resource_not_the_default(self):
+        """The daemon (`streamhost/src/trace/mod.rs`'s `render()`) stamps
+        `kh.service: "kernel-hive-daemon"` on every span it emits, the same
+        pattern `scripts/serve/tracing.py` uses for `kernel-hive-serve`. Before
+        that daemon-side fix landed, a daemon span with no `kh.service`
+        attribute fell through to this function's default `service` argument
+        (`"kernel-hive-spa"`) and was silently filed under the BROWSER's
+        service — verified live against Instana 2026-08-31: an `input.edge`
+        trace's daemon-origin spans (`input.dispatch`, `guest.frame.next`,
+        `transport.frame.next`) all carried `service.name: kernel-hive-spa`.
+        This locks the grouping half of that fix in place: a span that DOES
+        carry `kh.service` gets its OWN resource, under its own name, never
+        merged into the caller's default."""
+        tmp = tempfile.TemporaryDirectory()
+        try:
+            store = traces.TraceStore(Path(tmp.name) / "traces.db")
+            store.record(
+                batch(
+                    [
+                        span(S1, name="input.edge", kind="client"),
+                        span(
+                            S2,
+                            parent=S1,
+                            name="input.dispatch",
+                            kind="internal",
+                            a={"kh.service": "kernel-hive-daemon", "kh.station": "solaris"},
+                        ),
+                    ]
+                )
+            )
+            doc = traces_otlp.export([store.trace(T1)])
+            by_service = {}
+            for rs in doc["resourceSpans"]:
+                keys = {a["key"]: a["value"]["stringValue"] for a in rs["resource"]["attributes"]}
+                names = {s["name"] for s in rs["scopeSpans"][0]["spans"]}
+                by_service[keys["service.name"]] = names
+            self.assertEqual(by_service.get("kernel-hive-spa"), {"input.edge"})
+            self.assertEqual(by_service.get("kernel-hive-daemon"), {"input.dispatch"})
+        finally:
+            store.close()
+            tmp.cleanup()
+
     def test_kind_and_status_are_the_protobuf_enums(self):
         by_name = {s["name"]: s for s in self.spans()}
         self.assertEqual(by_name["station.connect"]["kind"], 1)  # INTERNAL

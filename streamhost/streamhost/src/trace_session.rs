@@ -202,7 +202,25 @@ impl SessionTrace {
         key_class: Option<&'static str>,
         f: F,
     ) {
-        let mut span = Span::child("input.dispatch", Kind::Internal, ctx);
+        // Kind::Server, not Internal — this IS the daemon's receiving side of
+        // the browser's `input.edge` CLIENT span (`three/streamClient/
+        // inputTrace.ts`'s `startTrace(name, attrs, 'client')`), the same RPC
+        // client/server pairing this codebase already uses for
+        // `http.client.request` / `serve.signal`. Verified live 2026-08-31
+        // (`scripts/observability/instana-forward.py --once` + the analyze/
+        // traces API): every `serve.*` trace, which HAS a Server-kind entry
+        // span, carries a real `service.name`; every `input.edge` trace,
+        // whose only spans were Client (the browser root) and Internal (this
+        // span and its children), came back service `"Unspecified"` — Instana
+        // derives a trace's owning service from its ENTRY span, and a trace
+        // with no Server-kind span anywhere in it has no entry. Internal
+        // understated what this span actually is: it does not merely happen
+        // during the session, it is the request/response boundary itself, so
+        // marking it Server is a correction, not a vendor accommodation — the
+        // same "do not relabel a UI span as a server span" rule this repo
+        // already states cuts the other way here, since this span already
+        // was the server side of a real client/server exchange.
+        let mut span = Span::child("input.dispatch", Kind::Server, ctx);
         span.attr("kh.input.class", input_class);
         if let Some(kc) = key_class {
             span.attr("kh.key.class", kc);
