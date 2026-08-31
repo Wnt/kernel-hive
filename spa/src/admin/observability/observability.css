@@ -2,6 +2,19 @@
    TraceList.css, flame.css) — they were written independently and re-theming
    them from here would make one stream's edit break another's layout. */
 
+/* html/body/#root are overflow:hidden (index.css, for the grid + 3D museum's
+   full-viewport canvases), so this view owns its own scroll container:
+   .obs-page-scroll is the (only) scroller, .obs-page is the centred content
+   block. Previously .obs-page alone carried padding + max-width with NO
+   scroll container at all, so most of the page (funnels/metrics/errors, or
+   even the traces tab at a short viewport) was simply unreachable — see
+   About.tsx/.about-view for the same split, used for the same reason. */
+.obs-page-scroll {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  background: var(--paper);
+}
+
 .obs-page { padding: 18px 22px 48px; max-width: 1400px; margin: 0 auto; }
 .obs-head h1 { margin: 0 0 4px; font-size: 22px; }
 .obs-sub { margin: 0 0 14px; color: var(--ink-2, #667); max-width: 68ch; font-size: 13px; }
