@@ -313,7 +313,24 @@ hpuxvue's only rollback on record is still the 2026-08-24 one):
    set to pointer (focus-follows-mouse), so no frame click is needed at all.
    Cheapest for the visitor; costs a checkpoint.
 2. Fix the resize-border hold in the engine, which the standing finding wants
-   anyway and which would also restore drag-on-frame.
+   anyway and which would also restore drag-on-frame. **Attempted 2026-08-31 and
+   NOT deployed** — the premise did not survive measurement (the engine holds the
+   title bar perfectly: one reading over 17 s, `giveups=0`, and the sprite does
+   not even change there), and the obvious fix made things worse (a 425 px miss).
+   The measurements and what a working fix must do are in
+   [`../lab/HPUXVUE-CURSOR-REGISTER-POINTER.md`](../lab/HPUXVUE-CURSOR-REGISTER-POINTER.md).
+
+**And a caution about the click itself.** Some harness runs lose the title-bar
+click 0/5 or 0/6 with the engine demonstrably innocent — `aiming=0`,
+`giveups=0`, the reading on target, and the trace showing `edge btn1 DOWN/UP
+applied` for the very click that had no effect. Other runs, including an
+interleaved control, land 6/6 on the title bar and 6/6 in the client area. The
+variable is NOT: click position (a five-point y-sweep failed together), approach
+direction (five start points failed together), startup vs mid-session restore,
+a stale held button (a leading bare `UP1` does not help), hotspot drift (there is
+none), or an idle gap (20 s still lands 4/4). It is unexplained. Measure a rate
+over repeated trials before believing any single click result on this station —
+one anecdote either way will mislead you.
 
 Do not file this as a keyboard regression again. The check that settles it in
 one step is the title-bar colour at (300,15): pink means Mosaic still owns the
