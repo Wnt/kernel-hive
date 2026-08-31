@@ -35,13 +35,13 @@
         "kbd_note": "Command-Shift-1 ejects; the Finder is the only shell, so key proof is a menu or a dialog, never a prompt",
         "audio_trigger": "beep",
         "validated": false,
-        "note": "relative ADB pointer: cursor_scale 2.7778 (guest gain 0.36). No exec channel — System 7 has no shell at all"
+        "note": "ABSOLUTE pointer: kh-ramabs writes MTemp/RawMouse in Mac OS low memory and publishes with CrsrNew := CrsrCouple, so the commanded pixel is the landed pixel and the guest's tracking curve is bypassed. No exec channel - System 7 has no shell at all."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/macos753",
       "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54142,
-      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
+      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. The pointer is ABSOLUTE via `-device kh-ramabs` writing Mac OS's own low-memory globals; `labctl abs x y` lands on the commanded pixel. Drive a CLONE with scripts/install-vision/adb_pointer.py, never this dir."
     }
   },
   "render": {
@@ -71,13 +71,13 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-adb-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "adb-mouse",
-      "scale": 2.7778,
+      "scale": 1.0,
       "offset": [
         0,
         0
@@ -115,11 +115,11 @@
         "--udp",
         "54142",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "ramabs",
         "--cursor-scale",
-        "2.7778",
+        "1.0",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -151,6 +151,8 @@
         "-bios /data/vms/streamhost/assets/macos753/800.ROM",
         "-g 1152x870x8",
         "-display dbus,p2p=on,audiodev=snd0",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off",
+        "-device kh-ramabs,chardev=ptr0,addr=0x828,layout=macpoint16be,publish=crsrnew,width=1152,height=870",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=$D/pram-golden.qcow2,format=qcow2,if=mtd",
         "-device scsi-hd,scsi-id=6,drive=hd0",
@@ -161,13 +163,31 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher equals the live launcher; the golden was COLD re-baked 2026-08-23 with this exact guest-visible device set (now including the q800's built-in dp83932 SONIC) on the standalone /opt/qemu-m68k build"
+        "reason": "tracked verbatim launcher equals the live launcher; the golden was COLD re-baked 2026-08-23/24 with this exact guest-visible device set (including the q800's built-in dp83932 SONIC) on the standalone /opt/qemu-m68k build - snapshot `golden` in macos753-golden.qcow2 / pram-golden.qcow2, dated 2026-08-24 01:01:30, VM_CLOCK 0000:02:03.500 (note this machine keeps its vmstate in the PRAM qcow2, so the pair is what carries the checkpoint). NO GOLDEN RE-BAKE FOR THE ABSOLUTE POINTER, and this is the record of why so it is not re-derived: `-device kh-ramabs` is a BUS-LESS device with no VMStateDescription and no guest-visible hardware - it exposes no MMIO, no bus presence and no IRQ, and contributes no section to the migration stream - and the -chardev beside it is host-side wiring. The GUEST-VISIBLE device set is byte-for-byte the one the golden was baked against and `loadvm golden` still binds. INSTALL ORDER IS BINDING IN BOTH DIRECTIONS: the QEMU binary must be in place BEFORE this launcher (`-device kh-ramabs` is an unknown device on the older binary and QEMU refuses to start outright), and the streamhost binary BEFORE the env fixture (SH_INPUT_BACKEND=ramabs panics an older daemon at startup). binarySha256 is deliberately unset: no rebuilt binary has been installed to /opt/qemu-m68k, and recording a sha for something nobody ran would be a claim this branch cannot support."
+      },
+      "pointerRamAddress": {
+        "addr": "0x00000828",
+        "layout": "macpoint16be",
+        "publish": "crsrnew",
+        "durability": "architectural",
+        "derivedAgainstGolden": "not derived against a golden - see durability",
+        "note": "Guest-physical address of MTemp, the first of classic Mac OS's pointer low-memory globals; the control object derives RawMouse (+0x04), Mouse (+0x08), CrsrPin (+0x0C), the current cursor's hotSpot (+0x5C), CrsrNew (+0xA6) and CrsrCouple (+0xA7) from it at fixed documented offsets. DURABILITY IS THE IMPORTANT DIFFERENCE FROM rhapsody's pointerRamAddress, and the two must not be assumed alike because they share a field name and a method: rhapsody's address was FOUND BY SEARCHING ONE CHECKPOINT'S RAM and dies with a re-bake, so re-baking its golden means re-deriving it. This one is ARCHITECTURAL - low memory is at guest-physical 0 on q800 and Mac OS 7.5.3 leaves it identity-mapped, and these offsets are fixed by the OS (Inside Macintosh / SysEqu.a), not by any particular RAM image. A re-bake does NOT invalidate it, and nothing here needs re-deriving. WRITE SET IS LOAD-BEARING: MTemp and RawMouse are written; `Mouse` is NEVER written, because it is both the read-back sensor and the cursor VBL task's own change detector - writing it makes the task conclude nothing moved, so it clears CrsrNew and draws nothing while every global reads back correct. kh-ramabs verifies the address at connect by writing and publishing a position the guest is NOT at and requiring `Mouse` to arrive there, and refuses every write if that fails."
+      },
+      "qemuBuild": {
+        "prefix": "/opt/qemu-m68k",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
+        "patches": [
+          "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
+        ],
+        "configure": "--target-list=m68k-softmmu --enable-slirp --enable-dbus-display --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-spice --disable-opengl --disable-werror --disable-tools --prefix=/opt/qemu-m68k",
+        "binarySha256": "7bac9cceff0374651a67f89037cf48f80aa3573be259a3e5a44c547cc7f97711",
+        "note": "Built from fork c5449c80 (merged 0007) with NO 0006 -- that patch is rhapsody's x86 i8259 fix and does not apply to m68k. binarySha256 read from the INSTALLED file at /opt/qemu-m68k/bin/qemu-system-m68k, not from a build log. Restore-proven on the live station: loadvm golden succeeded under this binary WITH -device kh-ramabs attached, running inode equal to the on-disk inode. Previous binary kept as <path>.pre-abs-bak (c2e90aae...), which does NOT know kh-ramabs -- the launcher arms the device unconditionally, so binary and launcher must be rolled back together or not at all."
       }
     }
   },
   "reset": {
     "stationDir": "macos753",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
@@ -180,7 +200,7 @@
     "transport": "streamhost",
     "accentColor": "#8c8a85",
     "eraLabel": "1996 · Mac OS 7.5.3 — Quadra 800",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "macos753",

@@ -41,7 +41,7 @@
         },
         "kbd": "",
         "kbd_reset": "Escape",
-        "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys \u2014 unverified via UI",
+        "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys — unverified via UI",
         "audio_trigger": null,
         "validated": false,
         "note": "ABSOLUTE pointer with no absolute device and no control loop: the kh-ramabs control object writes the commanded pixel into the guest's own pointer coordinate (guest-physical 0x0050fdac, Point{int16 x, int16 y}) and injects one 2-unit PS/2 nudge so the window server republishes it, then reads the coordinate back and re-issues on the ~5% of nudges that publish 0 px. The address is derived against ONE golden; the object verifies it at connect and refuses to write at all if it cannot. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade + kh-ramabs)."
@@ -70,7 +70,7 @@
     "goldenOrder": 63,
     "actionMapOrder": 37,
     "bringUpGroup": 0,
-    "stationsManifestPrelude": "\n# rhapsody (slot 146) \u2014 Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,\n#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip\n#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the\n#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the\n#   corpus web.\n#   POINTER: absolute with no absolute device and no control loop \u2014 `-device\n#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate\n#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is\n#   never in the path and the device set is unchanged (no golden recapture). The\n#   address is bound to the golden; kh-ramabs verifies it at connect and refuses\n#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007\n#   INSTALLED BEFORE this launcher.\n",
+    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,\n#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip\n#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the\n#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the\n#   corpus web.\n#   POINTER: absolute with no absolute device and no control loop — `-device\n#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate\n#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is\n#   never in the path and the device set is unchanged (no golden recapture). The\n#   address is bound to the golden; kh-ramabs verifies it at connect and refuses\n#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007\n#   INSTALLED BEFORE this launcher.\n",
     "bindingPrelude": "",
     "bindingComment": "NeXTSTEP -> Rhapsody -> Mac OS X lineage"
   },
@@ -101,14 +101,14 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#7a8fb0",
-    "eraLabel": "1998 \u00b7 Rhapsody DR2 \u2014 Apple/NeXT",
+    "eraLabel": "1998 · Rhapsody DR2 — Apple/NeXT",
     "pointerRel": false
   },
   "museum": {
     "id": "rhapsody",
     "displayName": "Rhapsody DR2",
     "year": 1998,
-    "lineage": "Apple Rhapsody (NeXTSTEP/Mach \u2192 Mac OS X Server 1.0)",
+    "lineage": "Apple Rhapsody (NeXTSTEP/Mach → Mac OS X Server 1.0)",
     "arch": "i386",
     "ramMB": 64,
     "era": "1990s",
@@ -126,7 +126,7 @@
       "Terminal",
       "TextEdit"
     ],
-    "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought \u2014 the 1998 developer release where Mac OS X begins.",
+    "blurb": "Apple's Mac OS 8 face grafted onto the NeXT operating system it had just bought — the 1998 developer release where Mac OS X begins.",
     "notes": "Intel build under TCG on a station-specific QEMU (/opt/qemu-rhapsody, i8259 lenient-cascade patch). Sits between the nextstep station and the macos poster."
   },
   "emulator": {
@@ -226,12 +226,13 @@
       "qemuBuild": {
         "forkUrl": "github.com/Wnt/qemu",
         "forkBranch": "kernel-hive",
-        "forkCommit": "196124da521a52372b2ce8c420b4e068f2a22d2c",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
         "patches": [
           "streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch",
           "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
         ],
-        "note": "Both patches verified to apply cleanly to that fork commit, in that order, and the applied tree is byte-identical to the source the branch's sandbox binary was built from. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The branch's own build (/data/vms/sandbox/rhapsody-abs/qemu/prefix/bin/qemu-system-i386) hashes to a5c74522adc48194f3a59d449af408ee211433005da6e4909effaab87740a79c; QEMU builds are not bit-reproducible, so re-record from the installed file rather than reusing that."
+        "note": "Both patches verified to apply cleanly to that fork commit, in that order. forkCommit was 196124da... until 2026-08-30; it moved twice that day (196124da -> 623f1dcb -> c5449c80) and this value was READ BACK FROM THE FORK after the last push rather than predicted from what was pushed. The fork guarantees TREE EQUALITY with the patch series, not a commit per patch. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The binary currently at /opt/qemu-rhapsody was built from the SUPERSEDED pre-fix 0007 and must be rebuilt before any cutover.",
+        "binarySha256": "754e762d1e61494b2d5a488b81396e3fb67eb2c790f18d74bb9b87f0bde2bd19"
       }
     }
   },
@@ -243,7 +244,7 @@
     "snapshot": "golden",
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "Rhapsody 5.1 DR2 with OmniWeb 3.0 open on the 1996 Space Jam corpus page (retronet gateway :80 origin, no proxy) at 1024x768 RGB:555/16 (Cirrus GD5446) \u2014 the guest home window carrying the OmniWeb.app icon behind it, bookmarks panel at the left edge, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
+    "fixture": "Rhapsody 5.1 DR2 with OmniWeb 3.0 open on the 1996 Space Jam corpus page (retronet gateway :80 origin, no proxy) at 1024x768 RGB:555/16 (Cirrus GD5446) — the guest home window carrying the OmniWeb.app icon behind it, bookmarks panel at the left edge, disk/home/Applications icons on the right, Trash bottom right. loadvm golden -S, the daemon resumes."
   },
   "migrationExceptions": [],
   "network": {

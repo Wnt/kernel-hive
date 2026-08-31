@@ -112,6 +112,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
+import deploy_hint  # noqa: E402
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
@@ -149,6 +150,35 @@ STREAM_KEY = b""
 # real a use of it as a visitor's. Only the per-PERSON half needs a session, and
 # that half lives behind /auth/usage/report.
 USAGE = usage.UsageStore(USAGE_STATS)
+
+
+# The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
+# side effect is bumping one file's mtime; it runs no git operation, spawns no
+# process, and CANNOT say what to deploy. The reconciler fetches origin/main
+# itself and converges to what IT finds.
+#
+# UNARMED UNLESS BOTH SECRETS ARE PRESENT ON THE BOX. Keys are read from
+# root-only files outside the repo — never from anything the repo carries, and
+# never from an env var that could reach a log. With no key the receiver answers
+# 503 to everything, which is the correct default for a public deploy trigger:
+# the closed state is the one you get by doing nothing.
+def _deploy_secret(name: str) -> bytes:
+    path = Path(f"/etc/kh/{name}")
+    try:
+        if path.stat().st_mode & 0o077:
+            return b""  # group/other-readable: refuse rather than trust it
+        return path.read_bytes().strip()
+    except OSError:
+        return b""
+
+
+DEPLOY_HINT = deploy_hint.HintReceiver(
+    keys={
+        "webhook": _deploy_secret("deploy-webhook-secret"),
+        "actions": _deploy_secret("deploy-actions-secret"),
+    },
+    wakeup=Path("/data/vms/streamhost/.kh-reconciler/wakeup"),
+)
 
 
 class H(BaseHTTPRequestHandler):
@@ -351,6 +381,18 @@ class H(BaseHTTPRequestHandler):
         # unread body would be parsed as the NEXT request. Close after every
         # POST; only the GET-heavy static/thumbnail traffic needs persistence.
         self.close_connection = True
+
+        # POST /kh/deploy-hint — the deploy trigger (§1.1). MUST be dispatched
+        # BEFORE `_public_gate`: authorisation here is write access to the REPO,
+        # proved by the HMAC over the raw body, not a visitor session. GitHub
+        # has no cookie, so behind the gate every delivery is 401 — which is
+        # exactly what happened on the first real ping, while the LAN listener
+        # (where `self.public` is false and the gate never runs) answered 202
+        # and made the route look correct. The comment on the misplaced version
+        # already claimed "outside the public gate"; the code did not do it.
+        # Verify this route on the PUBLIC listener or you have tested nothing.
+        if path == "/kh/deploy-hint":
+            return deploy_hint.handle_post(self, DEPLOY_HINT)
 
         if self.public:
             if auth_routes.dispatch(self, path, "POST", AUTH, PUBLIC_ORIGIN):

@@ -155,7 +155,7 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher IS the deployed launcher; the golden checkpoint was baked 2026-08-18 with this exact device set (CD attached, same ISO) on the standalone /opt/qemu-hppa build"
+        "reason": "tracked verbatim launcher IS the deployed launcher; the golden checkpoint (re-baked 2026-08-24) was captured with this exact device set (CD attached, same ISO) on the standalone /opt/qemu-hppa build. The closed-loop pointer was then ARMED without a re-bake, and does not need one: the engine in hw/display/artist.c adds no migration state (cursor_pos/cursor_cntrl were already in vmstate_artist) and the ptrctl chardev is a backend, not a vmstate section, so the device set is unchanged for loadvm purposes and the 2026-08-24 golden still restores -- RESTORE-PROVEN under this binary with the loop armed, on the sandbox ptrloop rig. binarySha256 is the build this branch's 0008-artist-closed-loop-pointer.patch produces (kernel-hive + that patch); it is NOT yet what /opt/qemu-hppa holds, because this branch is not deployed. INSTALL ORDER MATTERS: the QEMU binary must be in place BEFORE this launcher, because -global artist.ptrctl=ptr0 on the previous binary is an unknown property and QEMU refuses to start; likewise the streamhost binary before the env fixture (SH_INPUT_BACKEND=artistctl panics an older daemon)."
       }
     }
   },
@@ -215,7 +215,9 @@
     "note": "retronet web plane: the tulip is a REAL bridged NIC on vmbr-rn via the persistent tap hpuxrn0 (streamhost/stations/hpuxvue/rn-tapnet.sh), MAC RN_HPUXVUE_MAC, HP-UX driver btlan3 as lan0. Addressed 10.99.0.20/24 with DNS 10.99.0.2 and NO default gateway — static, not DHCP, because the June-1996 dhcpclient cannot enumerate the btlan3 PPA (docs/lab/retronet/WEB-STATION-hpuxvue.md). Contained by the fail-closed HPUXRN-IN chain: reaches the gateway CT only, never labhost, the LAN or the internet."
   },
   "retronet": {
-    "planes": ["web"],
+    "planes": [
+      "web"
+    ],
     "address": "10.99.0.20",
     "addressing": "static",
     "link": "tap hpuxrn0 on vmbr-rn",

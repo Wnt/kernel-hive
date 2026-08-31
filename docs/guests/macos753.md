@@ -19,7 +19,7 @@ by other means. This one runs `qemu-system-m68k -M q800`.
 | Machine | `q800` (Macintosh Quadra 800), `-cpu m68040`, 128 MB |
 | Acceleration | **TCG only.** There is no KVM path for m68k. |
 | Display | `macfb` at **1152x870x8** (the Apple 21-inch mode) |
-| Pointer | ADB relative — no absolute path exists on this machine |
+| Pointer | **Absolute** — `kh-ramabs` writes Mac OS's own low-memory pointer globals (no absolute *device* exists on this machine, and no hardware cursor either) |
 | Keyboard | ADB. Command reaches the guest as `meta_l` → ADB `0x37`. |
 | Audio | Apple Sound Chip (`asc`) over `-audiodev dbus` |
 | Disk | 1900 MB qcow2, single HFS partition, ~29.5 MB used |
@@ -162,7 +162,205 @@ the whole point** — a classic Mac application *is* its resource fork, so a pla
 `.zip` of one is useless. The proof it worked is the file appearing in the Finder
 with its real icon.
 
-## Pointer
+## Pointer — absolute, by writing Mac OS's own globals
+
+This station reaches a true 1:1 absolute pointer with **no absolute device and
+no control loop**, and the reasoning is worth following because it is a third
+mechanism, not a variant of the other two.
+
+The Quadra 800 has no USB and no tablet, so there is no absolute input device.
+Its on-board video has no hardware cursor either — **classic Mac OS composites
+the cursor into the framebuffer in software** — so the fleet's other trick, a
+closed loop that reads the pointer back out of a display adapter's cursor
+registers, has no sensor here. Both known recipes fail.
+
+Neither is needed. Mac OS keeps its pointer state in **low-memory globals** at
+fixed documented addresses, identity-mapped to guest-physical RAM on q800 (RAM
+starts at 0), so the emulator can read *and write* the guest's own idea of where
+the pointer is. `-device kh-ramabs,layout=macpoint16be,publish=crsrnew`
+(`streamhost/qemu-patches/0009-…`, a profile on rhapsody's `0007` device) does:
+
+| global | address | role |
+|---|---|---|
+| `MTemp` | `$0828` | the ADB driver's interrupt-level accumulator — **written** |
+| `RawMouse` | `$082C` | what the cursor VBL task consumes — **written** |
+| `Mouse` | `$0830` | the VBL task's **output** — **read back, never written** |
+| `CrsrPin` | `$0834` | the guest's own screen bounds (reads `0,0,1152,870`) |
+| hotSpot | `$0884` | `TheCrsr`+64; the current cursor's hotspot (`1,1` for the arrow) |
+| `CrsrNew` | `$08CE` | "a new position is pending" — the publish barrier |
+| `CrsrCouple` | `$08CF` | "the cursor tracks the mouse" |
+
+A Mac `Point` is **two signed 16-bit words, big-endian, VERTICAL FIRST**
+(`{short v; short h;}`). Transposing it gives a pointer that tracks plausibly
+and lands wrong.
+
+### The trap: never write `Mouse`
+
+The warp idiom is `MTemp := pt; RawMouse := pt; CrsrNew := CrsrCouple`. It is
+tempting to write `Mouse` too, "so the Event Manager sees it immediately".
+**Doing so silently stops the cursor moving.** Measured here, not theorised.
+
+The cursor VBL task computes `Mouse := (RawMouse & MouseMask) + MouseOffset` and
+repaints **only when that differs from the `Mouse` it already had**. Pre-writing
+`Mouse` to the target makes its own change detector conclude nothing moved: it
+clears `CrsrNew` and draws nothing — while every global reads back exactly
+correct. "The write works and nothing happens" is the most misleading symptom
+available, and it cost a debugging cycle.
+
+### Why that trap and the verification strength are the same fact
+
+Because `Mouse` is the task's *output*, it is also the **read-back sensor**, and
+that makes this station's verification stronger than any other in the fleet:
+
+> **The address written and the address read are different.** Every other
+> station verifies against something it wrote itself, or something the hardware
+> echoes. Here the guest's own VBL task has to compute `Mouse` from `RawMouse`
+> and store it. So the read-back does not ask *"did my store stick"* — that is
+> checked separately and immediately at the write — it asks **"did the guest
+> act on it"**, by exact equality rather than an expected delta. A wedged or
+> dead guest cannot fake that.
+
+That property depends entirely on never writing `Mouse`. Anyone "simplifying"
+the write set to include it destroys the verification and the movement together.
+The trap and the strength are one fact seen from two sides.
+
+### The hotspot is not in the control path
+
+`Mouse` holds the **pointer**; QuickDraw subtracts the current cursor's hotspot
+only when it blits the sprite. So there is no hotspot to measure and no "magnet"
+failure mode — the thing that dominates the hardware-cursor ports simply does
+not arise. The hotspot is read live from `$0884` for telemetry, so a framebuffer
+check outside the emulator knows where to expect the sprite.
+
+### Fail-closed
+
+`kh-ramabs` refuses every write until it has verified the address at connect, by
+**writing and publishing a position the guest is not at** (2 px inward from the
+nearer edge) and requiring `Mouse` to arrive there. Re-stating the current
+position would be a genuine no-op that a quiescent guest would pass — the exact
+false positive the probe exists to prevent.
+
+That the probe really is not a no-op is **shown, not asserted**: three
+successive connections to the same running guest walked the pointer
+**15 → 17 → 19 → 21**, two pixels per connect, each step being that
+connection's probe moving the cursor and reading it back. A quiescent guest
+would have left it at 15 and the probe would have failed, which is the whole
+point. (`Mouse` reads `15,15` at the golden — see the `SH_REL_HOME_TO` note
+below.) Every write is also read straight
+back, because a write to unbacked guest memory is silently discarded and the
+daemon restates the same position before every button edge, so a vanished write
+to an already-correct pointer would otherwise read back equal and look verified.
+
+### Why the `nudge-units` trap cannot reach this station
+
+`kh-ramabs`'s other profiles publish by injecting a small relative event, and
+pre-compensate the write for it: the guest is first made to hold a
+**deliberately wrong** value, and the injected nudge has to carry it the rest of
+the way. If `nudge-units` is wrong for that guest, the last *draw* can happen at
+an intermediate value while the coordinate still converges — so the **read-back
+agrees and `STAT` looks healthy while the sprite is 1–2 px off**. BeOS measured
+exactly that at rhapsody's `nudge-units=2` (`reissued=24`), and it went away at
+`nudge-units=1`.
+
+**This station is structurally immune, and the reason is worth stating precisely
+because it is not "because it is a Mac".** `publish=crsrnew` writes the *exact*
+target and injects no motion at all, so no intermediate value is ever written
+and there is no guest-side scaling to get wrong; `nudge-units`/`nudge-px` are
+not merely unused on this path but **unreachable** (the branch returns before
+the nudge code, and `realize` only validates them for `publish=nudge`). The
+immunity comes from **having no pre-compensation** — any future profile that
+reintroduces pre-compensation reintroduces the failure, whatever guest it is on.
+
+Consistent with that, `reissued` is **0** on every run here, against BeOS's 24.
+
+But do not read that as "the read-back was sufficient". The general lesson holds
+everywhere: **a converged read-back does not prove the drawn sprite is at the
+target.** It is only ever a claim about a number in RAM. That is exactly why the
+proof below carries a third observer that looks at pixels, and why it would have
+caught the BeOS failure on this station too.
+
+> **SCOPE OF THIS PROOF — read before trusting it.** Everything below drove
+> `ramabs/1` INTO THE QEMU DEVICE DIRECTLY, over the chardev socket, with a
+> purpose-built client. `streamhost` was never running. So this validates the
+> MECHANISM and the DEVICE, and the daemon sink (`ram_abs.rs`) sat entirely
+> outside the boundary — it was never exercised once, at any target, in either
+> run. That is a boundary gap, not a sampling gap: no amount of repetition here
+> could reach the untested component.
+>
+> The gap is real but **unillustrated**, and the distinction matters. This
+> paragraph used to cite rhapsody's cutover as an instance of it — every browser
+> session after the first timing out, attributed to per-session sink state never
+> released at teardown. **That diagnosis was wrong and is withdrawn.**
+>
+> A four-run control matrix found the cause was daemon-wide **QMP contention
+> created by the OBSERVATION HARNESS**: `observe.py` held QEMU's QMP monitor for
+> its whole run, QEMU serves one monitor at a time, so the idle pauser's `cont`
+> hit its 2 s timeout and returned `EAGAIN` — and `IdlePauser::session_started()`
+> holds the `st` mutex ACROSS that blocking call, while `handle_session` awaits
+> it before any keyframe work. `dbus-rel`, which builds no `InputRouter` at all,
+> fails identically with the holder running.
+>
+> There was never any per-session sink state to leak, and this is provable from
+> the code rather than from a run: `RealtimeInputSink` has no session lifecycle
+> hook, and `InputRouter` is built ONCE PER STATION in `transport::serve`,
+> outside the accept loop. aix432 has run the same sink shape at 46 accepted /
+> 46 ended over three days, and `ram_abs.rs` is byte-identical to `mga_ctl.rs`
+> apart from names.
+>
+> So the boundary below remains a true statement about THIS station's evidence —
+> `streamhost` genuinely never ran — but nothing has yet been observed failing
+> inside it, and it must not be argued for with someone else's incident.
+>
+> **This station is therefore NOT yet proven end to end.** The bar for its
+> cutover is a harness that drives the real SPA through the daemon in a browser
+> session, run repeatedly, with at least one session abandoned mid-stream.
+> Build it from `scripts/e2e/idle-wake-browser-probe.mjs` and
+> `scripts/e2e/paused-sink-resume-probe.mjs` rather than by extending the socket
+> client below — they already drive the real SPA from CT950, and they already
+> encode the half of this lesson that generalises: `videoWidth`, `readyState`
+> and a non-black percentage ALL PASS on a stream that has stopped, so the only
+> honest signal is MOTION (hash decoded frames, count distinct ones).
+>
+> And note what the corrected rhapsody diagnosis actually was: **an observation
+> harness that starved the thing it was watching.** A measuring tool is part of
+> the system under test. On this station that has now been the answer three
+> times — a buffered `readline` that went silent after a timeout, a template
+> learned from a stale frame, and a glyph whose own template framed another —
+> more often than any device fault.
+
+Proven on the framebuffer twice, at the same targets: once with the writes made
+through the QEMU gdb stub (proving the mechanism) and once with every target
+commanded over `ramabs/1` into the real device (proving the thing that ships).
+**8/8 targets agree to the pixel between the two runs and with
+`cursor-locate.py`**, including all four screen edges; plus a double-click
+commanded over the device that opened the Macintosh HD window (85391 pixels
+repainted). `converged=8 gaveup=0 refused=0 probefail=0`.
+
+### Two live-fleet notes
+
+`SH_CURSOR_SCALE=2.7778`, `SH_REL_HOME_ON/TO` and the checkpoint's "Very Slow"
+mouse-tracking setting are now **inert** — writing the position bypasses the
+tracking curve entirely — but are deliberately retained as the rollback target
+until a separate commit retires them, so that rolling back one does not strand
+the other.
+
+**`SH_REL_HOME_TO=599,500` is wrong**, and this is recorded rather than fixed.
+The golden's actual baked cursor position is **(15,15)**, read from the restored
+vmstate (`Mouse` at `$0830`) *before* `cont`. The 599,500 was measured
+2026-08-18; the golden was cold re-baked 2026-08-23/24 for the SONIC NIC and the
+constant was never re-measured. It is inert under `ramabs` but wrong today on
+the relative path.
+
+### Tooling gotcha
+
+`scripts/dev/cursor-locate.py`'s plain two-frame `learn` **drowns on this
+desktop**: the 50% grey dither yields a degenerate template that matches at
+thousands of positions (`AMBIGUOUS`). Use `learn A.ppm B.ppm --at X,Y --size 16`
+with a position you already know. It reports the sprite ORIGIN, so it is
+honestly `NOTFOUND` when the sprite is clipped at a screen corner — verify those
+against the RAM read-back instead.
+
+## Pointer — the relative path (rollback, and the install-time harness)
 
 `SH_INPUT_BACKEND=dbus-rel`, `SH_CURSOR_SCALE=2.7778`.
 

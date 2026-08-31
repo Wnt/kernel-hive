@@ -22,19 +22,44 @@
     "render"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-    "era_year": { "type": "integer", "minimum": 1970 },
-    "stationDir": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
-    "lifecycle": { "enum": ["production", "experiment", "showcase", "candidate"] },
-    "enabled": { "type": "boolean" },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "era_year": {
+      "type": "integer",
+      "minimum": 1970
+    },
+    "stationDir": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "lifecycle": {
+      "enum": [
+        "production",
+        "experiment",
+        "showcase",
+        "candidate"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
     "listing": {
       "type": "object",
       "description": "SOFT HIDE — whether this exhibit is announced in the gallery's listings. Absent means listed, so every entry without this block behaves exactly as before. `hidden` keeps the tile a full lineup entry in every other respect (it still ships in gallery-manifest.json, still streams, still keeps its scene bindings and poster) and only removes it from the grid, the 3D hall and their counts. It is DISCOVERABILITY, NOT ACCESS CONTROL: /os/<id> still resolves and streams, so anyone with the URL gets in. To retire an exhibit from the lineup, use `enabled: false` instead.",
-      "required": ["state"],
+      "required": [
+        "state"
+      ],
       "properties": {
         "state": {
-          "enum": ["listed", "hidden"],
+          "enum": [
+            "listed",
+            "hidden"
+          ],
           "description": "There is deliberately no separate `dark` state: a never-announced dark launch and a temporarily-withdrawn exhibit render identically everywhere, so the difference lives in `reason` (prose a human reads) rather than in an enum value no consumer could branch on."
         },
         "reason": {
@@ -50,48 +75,145 @@
       },
       "additionalProperties": false
     },
-    "aliases": { "type": "object" },
+    "aliases": {
+      "type": "object"
+    },
     "display": {
       "type": "object",
-      "required": ["width", "height", "bitsPerPixel", "colors"],
+      "required": [
+        "width",
+        "height",
+        "bitsPerPixel",
+        "colors"
+      ],
       "properties": {
-        "width": { "type": "integer", "minimum": 1 },
-        "height": { "type": "integer", "minimum": 1 },
-        "bitsPerPixel": { "type": "integer", "minimum": 1 },
-        "colors": { "type": "integer", "minimum": 2 }
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bitsPerPixel": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "colors": {
+          "type": "integer",
+          "minimum": 2
+        }
       }
     },
-    "build": { "type": "object", "required": ["rows"] },
+    "build": {
+      "type": "object",
+      "required": [
+        "rows"
+      ]
+    },
     "museum": {
       "type": "object",
-      "required": ["id", "displayName", "year", "lineage", "arch", "accent"],
+      "required": [
+        "id",
+        "displayName",
+        "year",
+        "lineage",
+        "arch",
+        "accent"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "displayName": { "type": "string" },
-        "year": { "type": "integer" },
-        "lineage": { "type": "string" },
-        "arch": { "type": "string" },
-        "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "year": {
+          "type": "integer"
+        },
+        "lineage": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        }
       }
     },
     "stream": {
       "type": "object",
-      "required": ["transport"],
+      "required": [
+        "transport"
+      ],
       "properties": {
-        "transport": { "enum": ["streamhost", "showcase"] },
-        "udpPort": { "type": "integer", "minimum": 1 },
-        "slot": { "type": "integer", "minimum": 0 },
-        "experimentSlot": { "type": "integer", "minimum": 0 },
-        "fps": { "type": "integer", "minimum": 1 },
-        "audio": { "type": "boolean" },
-        "touch": { "type": "boolean" },
+        "transport": {
+          "enum": [
+            "streamhost",
+            "showcase"
+          ]
+        },
+        "udpPort": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "slot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "experimentSlot": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "audio": {
+          "type": "boolean"
+        },
+        "touch": {
+          "type": "boolean"
+        },
         "pointer": {
           "type": "object",
           "description": "How a visitor's pointer reaches this guest. `transport`/`backend` name the DAEMON's delivery route (streamhost SH_POINTER / SH_INPUT_BACKEND); `method`/`absolute`/`present` name what the GUEST actually gets, and are cross-checked against the route, the device ledger and operator.labctl.pointer_mode by validate_pointer_method() in scripts/stations-registry.py.",
-          "required": ["transport", "method", "absolute", "present", "device", "scale", "offset"],
+          "required": [
+            "transport",
+            "method",
+            "absolute",
+            "present",
+            "device",
+            "scale",
+            "offset"
+          ],
           "properties": {
-            "transport": { "enum": ["abs", "rel", "warpd", "none"] },
-            "backend": { "enum": ["disabled", "dbus-abs", "dbus-rel", "warpd", "gallery-hid", "x11test", "mamecmd", "mamesock", "vicesock", "mgactl", "ramabs"] },
+            "transport": {
+              "enum": [
+                "abs",
+                "rel",
+                "warpd",
+                "none"
+              ]
+            },
+            "backend": {
+              "enum": [
+                "disabled",
+                "dbus-abs",
+                "dbus-rel",
+                "warpd",
+                "gallery-hid",
+                "x11test",
+                "mamecmd",
+                "mamesock",
+                "vicesock",
+                "mgactl",
+                "artistctl",
+                "ramabs"
+              ]
+            },
             "method": {
               "description": "The mechanism that puts the pointer where the visitor pointed. Finer wire detail is carried by existing siblings, not by extra enum values: `backend` separates mamecmd from mamesock, `agentAddress` separates a warpd agent on a hostfwd TCP port from one on a serial chardev. See registry/README.md for one sentence and an example tile per value.",
               "enum": [
@@ -99,8 +221,8 @@
                 "qemu-usb-tablet",
                 "qemu-vmmouse",
                 "qemu-ps2-relative",
-                                "qemu-adb-relative",
-                                "qemu-usb-hid-relative",
+                "qemu-adb-relative",
+                "qemu-usb-hid-relative",
                 "gallery-hid",
                 "warpd-agent",
                 "mame-ioport",
@@ -108,6 +230,7 @@
                 "simh-light-pen",
                 "previous-tablet",
                 "qemu-mga-closedloop",
+                "qemu-artist-closedloop",
                 "qemu-guestram-abswrite"
               ]
             },
@@ -119,9 +242,18 @@
               "type": "boolean",
               "description": "Any pointer input at all reaches the guest. false is the keyboard-only exhibit (SH_INPUT_BACKEND=disabled) and the showcase poster."
             },
-            "device": { "type": "string" },
-            "scale": { "type": "number" },
-            "offset": { "type": "array", "items": { "type": "integer" } }
+            "device": {
+              "type": "string"
+            },
+            "scale": {
+              "type": "number"
+            },
+            "offset": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
           }
         }
       }
@@ -131,33 +263,78 @@
       "properties": {
         "qemu": {
           "type": "object",
-          "required": ["mode", "deviceSetSummary"],
+          "required": [
+            "mode",
+            "deviceSetSummary"
+          ],
           "properties": {
-            "mode": { "enum": ["generic", "verbatim", "pve"] },
-            "launcher": { "type": "string" },
+            "mode": {
+              "enum": [
+                "generic",
+                "verbatim",
+                "pve"
+              ]
+            },
+            "launcher": {
+              "type": "string"
+            },
             "deviceSetSummary": {
               "type": "array",
-              "items": { "type": "string" }
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
         "pve": {
           "type": "object",
-          "required": ["vmid"],
+          "required": [
+            "vmid"
+          ],
           "properties": {
-            "vmid": { "type": "integer", "minimum": 1 }
+            "vmid": {
+              "type": "integer",
+              "minimum": 1
+            }
           }
         },
         "x11": {
           "type": "object",
-          "required": ["display", "geometry", "launcher", "resetMode"],
+          "required": [
+            "display",
+            "geometry",
+            "launcher",
+            "resetMode"
+          ],
           "properties": {
-            "display": { "type": "string", "pattern": "^:[0-9]+$" },
-            "geometry": { "type": "string" },
-            "launcher": { "type": "string" },
-            "resetMode": { "enum": ["relaunch", "criu"] },
-            "capture": { "enum": ["x11", "shm"] },
-            "emitArgs": { "type": "array", "items": { "type": "string" } }
+            "display": {
+              "type": "string",
+              "pattern": "^:[0-9]+$"
+            },
+            "geometry": {
+              "type": "string"
+            },
+            "launcher": {
+              "type": "string"
+            },
+            "resetMode": {
+              "enum": [
+                "relaunch",
+                "criu"
+              ]
+            },
+            "capture": {
+              "enum": [
+                "x11",
+                "shm"
+              ]
+            },
+            "emitArgs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -166,17 +343,29 @@
           "if": {
             "properties": {
               "qemu": {
-                "properties": { "mode": { "const": "pve" } },
-                "required": ["mode"]
+                "properties": {
+                  "mode": {
+                    "const": "pve"
+                  }
+                },
+                "required": [
+                  "mode"
+                ]
               }
             },
-            "required": ["qemu"]
+            "required": [
+              "qemu"
+            ]
           },
           "then": {
-            "required": ["pve"],
+            "required": [
+              "pve"
+            ],
             "properties": {
               "qemu": {
-                "properties": { "launcher": false }
+                "properties": {
+                  "launcher": false
+                }
               }
             }
           }
@@ -186,26 +375,62 @@
     "reset": {
       "type": "object",
       "properties": {
-        "resetMode": { "enum": ["loadvm", "restart", "pve-rollback", "relaunch", "criu"] },
-        "postRestoreKeys": { "type": "array", "items": { "type": "string" } }
+        "resetMode": {
+          "enum": [
+            "loadvm",
+            "restart",
+            "pve-rollback",
+            "relaunch",
+            "criu"
+          ]
+        },
+        "postRestoreKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
-    "operator": { "type": "object" },
+    "operator": {
+      "type": "object"
+    },
     "spa": {
       "type": "object",
-      "required": ["archetypeId", "transport", "accentColor", "eraLabel"]
+      "required": [
+        "archetypeId",
+        "transport",
+        "accentColor",
+        "eraLabel"
+      ]
     },
     "emulator": {
       "type": "object",
       "description": "WHICH emulator produces this station's pixels, declared once here because nothing else in the repo records it machine-readably (QEMU/MAME/VICE/… versions live in build-script pins and prose). For a Tier-2 bridge station this is the emulator INSIDE the kiosk, not the QEMU that hosts the kiosk (that is runtime.qemu.binary). Required for every production entry; rendered into fleet-table.json for the SPA's /fleet view.",
-      "required": ["family", "version", "source"],
+      "required": [
+        "family",
+        "version",
+        "source"
+      ],
       "properties": {
-        "family": { "type": "string", "minLength": 1, "description": "Product name: QEMU, MAME, VICE, Hatari, Open SIMH, es40, … `none` for a poster with no runtime." },
+        "family": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Product name: QEMU, MAME, VICE, Hatari, Open SIMH, es40, … `none` for a poster with no runtime."
+        },
         "version": {
           "description": "String or null (the schema evaluator has no type unions; validate_rules.validate_emulator enforces it). Release or pin the box actually runs (\"0.289\", \"11.0.2\", a short commit). null = not recorded anywhere in the repo yet — the table shows the gap instead of a guess."
         },
-        "source": { "type": "string", "minLength": 1, "description": "Where the pin lives / how the binary was built (script path, package, fork)." },
-        "driver": { "type": "string", "minLength": 1, "description": "The emulated machine inside the emulator, where the family alone is ambiguous (MAME driver, VICE binary, QEMU -M)." }
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Where the pin lives / how the binary was built (script path, package, fork)."
+        },
+        "driver": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The emulated machine inside the emulator, where the family alone is ambiguous (MAME driver, VICE binary, QEMU -M)."
+        }
       },
       "additionalProperties": false
     },
@@ -216,10 +441,14 @@
         "charMap": {
           "type": "object",
           "description": "Guest character -> the host character whose keystroke produces it.",
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "letterCase": {
-          "enum": ["upper-only"],
+          "enum": [
+            "upper-only"
+          ],
           "description": "upper-only: the machine has no lower case and its shifted letter row is symbols, so letters must be sent unshifted."
         }
       },
@@ -228,11 +457,27 @@
     "demoProgram": {
       "type": "object",
       "description": "Optional type-in listing the SPA can type into this guest (stage menu → 'Type in a demo program').",
-      "required": ["label", "lines", "runCommand"],
+      "required": [
+        "label",
+        "lines",
+        "runCommand"
+      ],
       "properties": {
-        "label": { "type": "string", "minLength": 1 },
-        "lines": { "type": "array", "minItems": 1, "items": { "type": "string" } },
-        "runCommand": { "type": "string", "minLength": 1 },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "runCommand": {
+          "type": "string",
+          "minLength": 1
+        },
         "perCharMs": {
           "type": "integer",
           "minimum": 1,
@@ -242,46 +487,199 @@
       "additionalProperties": false
     },
     "ui": {
-      "enum": ["desktop", "text-console", "home-computer", "mobile", "other"],
+      "enum": [
+        "desktop",
+        "text-console",
+        "home-computer",
+        "mobile",
+        "other"
+      ],
       "description": "What kind of interface the exhibited scene IS, so the fleet table can answer 'graphical desktop or not' (nothing else records it: reset.mouse is a test status and the fixture prose is not parseable). desktop = windowing GUI (incl. GEOS/GEM/Workbench on 8-bit/16-bit machines); text-console = an OS shell or login on a text screen; home-computer = an 8-bit power-on BASIC/monitor screen; mobile = phone UI; other = anything else (gt40 vector-display game). Required for production entries."
     },
     "network": {
       "type": "object",
       "description": "OPTIONAL hand-declared truth about the GUEST's networking, for the cases the QEMU device ledger cannot answer (fleet_table.py derives NIC/backend/hostfwd from runtime.qemu for everything else): a NIC the guest never configured, a pcap/veth path outside QEMU, two VMs talking to each other, or 'none, deliberately'. Only declare it when the ledger would mislead; a declared block overrides the derived status in fleet-table.json and is labelled as declared.",
-      "required": ["status", "note"],
+      "required": [
+        "status",
+        "note"
+      ],
       "properties": {
         "status": {
-          "enum": ["internet", "host-only", "isolated", "nic-only", "none"],
+          "enum": [
+            "internet",
+            "host-only",
+            "isolated",
+            "nic-only",
+            "none"
+          ],
           "description": "internet: guest reaches out (NAT/SLIRP or masquerade). host-only: guest and host talk, no egress. isolated: link up, nothing reachable (e.g. SLIRP restrict=on). nic-only: a NIC exists but the guest has no IP configured. none: no network device at all."
         },
-        "note": { "type": "string", "minLength": 1, "description": "The mechanism and where it is documented." }
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The mechanism and where it is documented."
+        }
       },
       "additionalProperties": false
     },
     "retronet": {
       "type": "object",
-      "description": "OPTIONAL hand-declared membership of the OFFLINE retronet bridge vmbr-rn (docs/lab/RETRONET-BRIEF.md). Present iff the guest's NIC is enslaved to that bridge; absent means 'not on the retronet'. It declares only the BRIDGE facts \u2014 the ICQ persona (uin/nick/client/onboarded) stays single-sourced in scripts/retronet/icq/roster.json and is merged in by fleet_table.py, never duplicated here. Cross-validated by stations-registry.py: addresses are unique and inside 10.99.0.0/24, the icq plane and the roster must agree in BOTH directions, and doc must exist.",
-      "required": ["planes", "link", "doc"],
+      "description": "OPTIONAL hand-declared membership of the OFFLINE retronet bridge vmbr-rn (docs/lab/RETRONET-BRIEF.md). Present iff the guest's NIC is enslaved to that bridge; absent means 'not on the retronet'. It declares only the BRIDGE facts — the ICQ persona (uin/nick/client/onboarded) stays single-sourced in scripts/retronet/icq/roster.json and is merged in by fleet_table.py, never duplicated here. Cross-validated by stations-registry.py: addresses are unique and inside 10.99.0.0/24, the icq plane and the roster must agree in BOTH directions, and doc must exist.",
+      "required": [
+        "planes",
+        "link",
+        "doc"
+      ],
       "properties": {
         "planes": {
           "type": "array",
           "minItems": 1,
-          "items": { "enum": ["web", "icq"] },
+          "items": {
+            "enum": [
+              "web",
+              "icq"
+            ]
+          },
           "description": "Which retronet planes this guest participates in. web = a period browser reads the corpus web off the gateway's :80 origin. icq = an OSCAR client signs into the gateway's :5190 ICQ service; declaring it REQUIRES a roster row in scripts/retronet/icq/roster.json (and every onboarded roster row requires this plane)."
         },
-        "address": { "type": "string", "pattern": "^10\\.99\\.0\\.(?:[3-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-4])$", "description": "The guest's address on the bridge. Unique across the fleet; 10.99.0.2 is the gateway CT and 10.99.0.1 the labhost side, so neither is assignable. Omit if not recorded." },
-        "addressing": { "enum": ["dhcp", "static"], "description": "How the guest gets that address: a retronet-dhcp reservation, or hand-configured in the guest. Omit if not recorded." },
-        "link": { "type": "string", "minLength": 1, "description": "The HOST-side link into the bridge, e.g. 'tap winxprn0 on vmbr-rn' or 'veth tru64-h/tru64-g (pcap) on vmbr-rn'." },
-        "guard": { "type": "string", "pattern": "^[A-Z0-9-]+$", "description": "The per-station fail-closed iptables INPUT chain that contains the guest, e.g. WINXPRN-IN. Omit if not recorded." },
-        "joined": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "description": "The date the station joined the bridge. Omit if not recorded." },
-        "doc": { "type": "string", "minLength": 1, "description": "Repo-relative path of the station's primary retronet doc. Must exist." }
+        "address": {
+          "type": "string",
+          "pattern": "^10\\.99\\.0\\.(?:[3-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-4])$",
+          "description": "The guest's address on the bridge. Unique across the fleet; 10.99.0.2 is the gateway CT and 10.99.0.1 the labhost side, so neither is assignable. Omit if not recorded."
+        },
+        "addressing": {
+          "enum": [
+            "dhcp",
+            "static"
+          ],
+          "description": "How the guest gets that address: a retronet-dhcp reservation, or hand-configured in the guest. Omit if not recorded."
+        },
+        "link": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The HOST-side link into the bridge, e.g. 'tap winxprn0 on vmbr-rn' or 'veth tru64-h/tru64-g (pcap) on vmbr-rn'."
+        },
+        "guard": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]+$",
+          "description": "The per-station fail-closed iptables INPUT chain that contains the guest, e.g. WINXPRN-IN. Omit if not recorded."
+        },
+        "joined": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "The date the station joined the bridge. Omit if not recorded."
+        },
+        "doc": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repo-relative path of the station's primary retronet doc. Must exist."
+        }
       },
       "additionalProperties": false
     },
-    "credentialsRef": { "type": "string", "pattern": "^guest/[a-z0-9-]+$" },
-    "guestDoc": { "type": "string" },
-    "migrationExceptions": { "type": "array", "items": { "type": "string" } },
-    "notes": { "type": "array", "items": { "type": "string" } },
-    "render": { "type": "object" }
+    "credentialsRef": {
+      "type": "string",
+      "pattern": "^guest/[a-z0-9-]+$"
+    },
+    "guestDoc": {
+      "type": "string"
+    },
+    "migrationExceptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "render": {
+      "type": "object"
+    },
+    "acceptance": {
+      "type": "object",
+      "description": "Per-station acceptance spec for scripts/dev/station-accept.sh (rule 9 as a command; docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md 6). Optional: most stations have no spec yet, and authoring one is per-station work done at a natural recapture. But a stanza that exists must be COMPLETE - the gate refuses to invent a watched rectangle, a control station or a sampling interval, so validate_acceptance.py enforces the whole shape at commit time rather than letting it surface as a refusal mid-cutover.",
+      "properties": {
+        "watchRect": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "[x, y, w, h] in guest pixels: the place motion is watched. Acceptance is change HERE, not anywhere."
+        },
+        "probePoint": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "[x, y] in guest pixels to move the pointer to and click. Needs guestSize."
+        },
+        "guestSize": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "[w, h] of the guest framebuffer. The video letterboxes, so a guest pixel cannot be mapped to the element without it."
+        },
+        "controlStation": {
+          "type": "string",
+          "description": "A DIFFERENT station, with its own acceptance stanza, probed in the same pass. Without it a station fault cannot be told from a harness fault."
+        },
+        "sessions": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "abandonAt": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Which session is SIGKILLed mid-stream. Must not be the last, or nothing runs after the churn."
+        },
+        "sampleIntervalMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sampleFloorMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Below this, observation itself can stop a session negotiating - dense sampling BECOMES the defect."
+        },
+        "sampleCeilingMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Above this, the commanded change can complete between samples and be missed."
+        },
+        "cursorBank": {
+          "type": "string",
+          "description": "cursor-locate.py template bank for this station's glyphs. Missing bank = INCONCLUSIVE, never a failure: a NOTFOUND from the matcher is a harness gap, not a device fault."
+        },
+        "note": {
+          "type": "string"
+        },
+        "rateHz": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pointer-stream rate for the burst leg (0 disables). A publish runaway is silent at settled point-to-point rates and loud under a real stream — 'gave up publishing … after 6 tries' appeared the first time a browser drove it instead of one target at a time. Needs guestSize."
+        },
+        "rateMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How long to sustain rateHz."
+        },
+        "requireResumeSeam": {
+          "type": "boolean",
+          "description": "Default true. The first measured session must follow a restart or an idle-pause: a coordinate written while the guest is stopped and never published reads back as our own write on resume, and a warm guest never crosses that seam. The gate VERIFIES the seam rather than forcing it — pausing a live station to manufacture the condition under test is the shape of harness that caused the rhapsody misattribution."
+        }
+      }
+    },
+    "rollout": {
+      "enum": [
+        "auto",
+        "hold"
+      ],
+      "description": "The only promotion knob (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md 9). `hold` pins a station under investigation without blocking anybody's push. Default is HOLD while the loop is unarmed; `auto` additionally requires an acceptance stanza, because auto-converging a station the gate cannot judge is the unattended deploy this design exists to make safe."
+    }
   }
 }

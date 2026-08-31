@@ -147,14 +147,28 @@ qemu-system-x86_64 -accel tcg -M pc-i440fx-11.0 -cpu pentium3 \
   R5's own `rtl8139` driver carries the same page with **zero** errors. Switching
   the model is a device-set change and needed a cold re-bake, which the retronet
   MAC change required anyway.
-- Pointer: **PS/2, relative**. R5 predates broad USB HID/absolute-pointer
-  support in its driver stack (unlike Haiku, which has a full USB stack and
-  uses `usb-tablet`). BeOS applies its own mouse acceleration on top of the
-  relative PS/2 stream; `usb-tablet` (absolute) is **not supported** by R5 and
-  was not attempted as the pointer path.
+- Pointer: **absolute, by writing the guest's own coordinate** (since
+  2026-08-30; was PS/2 relative). R5 predates broad USB HID/absolute-pointer
+  support — `usb-tablet` is not supported — and it has no hardware cursor to
+  close a loop over, because it drives `-vga std` as its "unsupported card"
+  stub driver and none of its real accelerated drivers claims anything QEMU
+  emulates. But `app_server` keeps its own pointer coordinate in RAM as two
+  little-endian `int32`, so `-device kh-ramabs` writes the commanded pixel
+  there and injects one 1-unit PS/2 nudge to make `app_server` republish it.
+  No control law, no gain, and the hotspot (`(1,0)` on R5's arrow, measured)
+  never enters the path. The guest-physical address is bound to the golden and
+  is re-derived after every re-bake; the device verifies it at connect and
+  refuses every write otherwise, so a stale address degrades the station to its
+  relative path rather than corrupting guest memory.
+  Full derivation, the disproof of both adapter routes, and the framebuffer
+  proof: [`docs/lab/BEOS-ABSOLUTE-POINTER.md`](../lab/BEOS-ABSOLUTE-POINTER.md).
 - Audio: none (see Open items — both R5-supported QEMU codecs stall the guest).
-- Pointer path: `--pointer rel` with the UI's `pointerRel: true` (browser
-  pointer-lock, the qnx pattern) — raw PS/2 deltas, BeOS's own acceleration.
+- Pointer path: `--pointer abs --input-backend ramabs`, UI `pointerRel: false`.
+  Station binary `/opt/qemu-beos` (qemu-patches 0001 + 0007 + 0010) — beos moved
+  off the host `pve-qemu-kvm` package so the pointer would not require rebuilding
+  the package every other guest on this box runs. That move costs ONE cold golden
+  re-bake, because the 2026-08-23 golden carries pve-qemu's `pbs-state` vmstate
+  section and a standalone binary refuses it.
 
 ## Settings applied on the volume
 

@@ -1,7 +1,7 @@
 .PHONY: station-registry-generate station-registry-check station-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
 	deploy-pair-imports-check \
-	poster-gallery-fetch poster-gallery-verify devwatch \
+	poster-gallery-fetch poster-gallery-verify devwatch drift-report \
 	release-notes release-notes-check release-notes-brief
 
 station-registry-generate:
@@ -66,6 +66,15 @@ release-notes-brief:
 # target AGENTS.md already puts in every agent's gate list.
 deploy-pair-imports-check:
 	python3 scripts/lint/deploy-pair-imports.py
+
+# Drift REPORTS. Deliberately not part of quality-gate or the pre-push hook:
+# each asks whether live/published state agrees with the repo, which is a
+# property of the world at this instant and not of the commit being pushed.
+# Wiring either into a push gate recreates the wedge CONTINUOUS-DEPLOY-PROPOSAL
+# .md §2 removes. Run them when you want to know; they block nobody.
+drift-report:
+	-python3 scripts/stations-registry.py drift
+	-python3 scripts/lint/published-form-drift.py
 
 # Cross-cutting quality gates (see docs/lab/AGENT-CI-EXIT-RULE.md).
 check-file-size:

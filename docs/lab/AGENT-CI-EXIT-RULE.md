@@ -14,7 +14,17 @@ You only owe the gate for the languages your branch **touches**, plus the two
 cross-cutting gates, which every branch owes:
 
 - **file-size budget** — `node scripts/check-file-size.mjs --strict`
-- **generated-file drift** — `make station-registry-check`
+- **generated-file drift** — `make station-registry-check`. Byte parity between
+  each generated artifact and what its registry source produces right now, and
+  nothing else. It deliberately asks **no question about the live box**: the
+  live labctl comparison that used to be welded into this stage is
+  `python3 scripts/stations-registry.py drift`, a report you can run any time
+  and which gates nothing. A push gate may only test properties of the commit
+  being pushed — see docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2 for the day that
+  rule cost, and scripts/stations_registry/drift.py for the code. The same
+  applies to `python3 scripts/lint/published-form-drift.py` (does the published
+  QEMU fork still match `streamhost/qemu-patches/`?): a report you run on
+  demand, never a gate — CONTINUOUS-DEPLOY-PROPOSAL.md §2.5.
 
 Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
 reachable: **box state** — live labhost files nobody's commit accounts for, on
@@ -168,11 +178,29 @@ staged 621-line script → `--committed` exits 1).
 ### The pre-push hook runs only what you owe
 
 `.claude/hooks/pre-push-gate.sh` derives the pushed range from git's own ref
-list (`<remote_sha>..<local_sha>`; by hand it falls back to `@{push}..HEAD`,
-`@{upstream}..HEAD`, `origin/main..HEAD`, then `HEAD`) and runs a language stage
-only when that language changed in it — the same "you owe the gate only for the
-language(s) your branch touches" rule stated above. The two cross-cutting gates
-always run. `GATE_FULL=1` forces the full-tree, every-language run.
+list and runs a language stage only when that language changed in it — the same
+"you owe the gate only for the language(s) your branch touches" rule stated
+above. The two cross-cutting gates always run. `GATE_FULL=1` forces the
+full-tree, every-language run.
+
+**The range is measured from the merge-base with a freshly fetched `main`,
+not from wherever the branch was cut.** `git diff A..B` diffs the two
+*endpoints*, so if `A` is a `main` this clone has not fetched, every file `main`
+has moved since lands in "your range" and your push is billed for lint on
+somebody else's commits. On 2026-08-30 that demanded `cargo clippy` from a
+rebased branch that touched no Rust at all. The hook therefore fetches
+`refs/heads/main` into a private ref (`refs/kh-gate/main`) and takes
+`merge-base(that, tip)`, preferring the ref's own remote sha when that is both
+known and a genuine ancestor, which keeps a re-push narrow. A failed fetch falls
+back to the local `origin/main` **and says so**; `GATE_NO_FETCH=1` skips the
+fetch deliberately.
+
+It fetches **by URL, not by remote name.** `git fetch origin <refspec>` also
+performs an *opportunistic update* of `refs/remotes/origin/*`, so naming the
+remote would make running the gate silently advance your `origin/main` — a read
+path that writes, the same shape as the dry-run plan that used to move everyone's
+drift baseline. Measured both ways rather than assumed: by name `origin/main`
+moves, by URL it does not.
 
 **Every skip is loud.** In particular the Rust stage: `streamhost/.cargo/config.toml`
 pins `target-dir` to `/data/vms/streamhost/build/target`, labhost's shared

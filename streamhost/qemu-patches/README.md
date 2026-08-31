@@ -1,3 +1,51 @@
+# Patch numbers are ALLOCATED, not taken
+
+Claim your number from the table below before you write a patch. Do **not** take
+"the next free one" by listing the directory — that is check-then-create, and it
+has already failed once: during the 2026-08-30 absolute-pointer wave `rhapsody`
+and `hpuxvue` independently wrote `0007`, and one of them had to be renumbered
+after the fact along with every reference to it (README, guest doc, and the
+`launcherParity` reason in the station registry). "It is free" is not "it is
+mine" — the same rule as AGENTS.md rule 7, applied to a filename.
+
+| # | patch | station / purpose |
+|---|---|---|
+| 0001 | `dbus-display-fast-poll` | fleet-wide display capture |
+| 0002 | `sphinx-serial-doc-build` | build fix |
+| 0003 | `gallery-hid-device` | `gallery-hid` pointer/keyboard |
+| 0004 | `cirrus-blt-rop1-fill` | Cirrus fix |
+| 0005 | `cirrus-isa-vmstate-descend-substruct` | Cirrus fix |
+| 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
+| 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
+| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
+| ~~0009~~ | ~~`kh-ramabs-mac-lowmem-profile`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
+| ~~0010~~ | ~~`kh-ramabs-point32le-layout`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
+
+Retired numbers are **not** reissued: `0009` and `0010` stay struck through so a
+reference to them in an old report or registry field still resolves.
+
+## Two categories of patch, and which one you are writing
+
+The one-patch-per-station model above was already fiction by `0009`, which
+restructured accessors `0007` shared, and untenable by the time a cross-cutting
+fix had to touch all three profiles at once. Splitting that fix back into three
+"independent" patches would have produced three artifacts that are not
+independently applicable — worse than naming what the thing actually is:
+
+* **`kh-ramabs` (`0007`) is ONE shared device patch** carrying per-guest
+  *layouts* (`point16le`, `macpoint16be`, `point32le`) and *publish modes*
+  (`crsrnew`). Adding a guest to it is not a new patch.
+* **`0008` (artist) is a genuinely independent per-station patch** — a different
+  file (`hw/display/artist.c`), a different device, no shared state.
+
+**The rule for the next station:** a new *guest profile* extends the shared
+patch and takes **no** number; a new *device* takes the next number. If you are
+adding a `layout=` or a `publish=` value, you are in the first case.
+
+Next free: **0011**. Add your row in the same commit that adds the patch, so the
+number and the claim land together rather than the claim living in someone's
+chat scrollback.
+
 ## Patch vs. fork — which one to edit
 
 The `.patch` files in this directory are **the maintained source**. The
@@ -9,13 +57,62 @@ keep in sync by hand:
 
 1. Edit the patch here (or its source under `gallery-hid/` for `0003`; see
    that directory's "Regenerating the quilt patch").
-2. Apply the regenerated patch to a checkout of the fork and update the
-   corresponding commit on its `kernel-hive` branch, then push.
+2. Apply the regenerated patch to a checkout of the fork and bring its
+   `kernel-hive` branch to that state, then push.
+
+**What the fork guarantees is TREE EQUALITY, not commit shape.** Its HEAD tree
+matches what applying the series in order produces. Its commits do **not** map
+one-to-one onto the patch files, and after a merge round they cannot: when
+`0009` and `0010` were merged into `0007` on 2026-08-30 the branch already
+carried them as separate commits, and the correction landed as a further commit
+rather than a force-push. **Published history is not rewritten** — the branch
+shows the journey. Consumers need the tree; nothing consumes the commit
+boundaries. A drift check on this fork must therefore compare **trees**, not
+commit counts or subjects.
 3. Run `git submodule update --remote third_party/qemu-kernel-hive` in this
    repo and commit the bumped gitlink.
 
 Never edit the fork's checked-out tree directly and call that the source of
-truth — the patch files are. `scripts/provision/build-pve-qemu-fastpoll.sh`
+truth — the patch files are.
+
+**Two representations of one artifact drift, and this pair drifts INVISIBLY.**
+On 2026-08-30 one agent pushed the fork from the series and a second regenerated
+a patch and found the fork had moved underneath. `git apply` of a file-creating
+patch fails only once the file exists, so there was no symptom at all until a
+build attempt. Before you regenerate a patch, push the fork, or trust a recorded
+`forkCommit`, run the check that answers it without building:
+
+```sh
+python3 scripts/lint/published-form-drift.py          # ls-remote + reverse-apply
+python3 scripts/lint/published-form-drift.py --offline # skip the network leg
+```
+
+It is a REPORT and must never be wired into the push gate — see
+docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2.5 for why, and for the standing rule
+that a recorded pointer at a mutable branch (`qemuBuild.forkCommit`, the
+submodule gitlink) goes stale in silence.
+
+**Where the submodule is and is not initialised** — this differs by checkout and
+the difference is load-bearing:
+
+| checkout | `third_party/qemu-kernel-hive` |
+|---|---|
+| CT950 `/home/wnt/kernel-hive` | **initialised** — do `git submodule update --remote` and gitlink bumps here (git history is authored on CT950, never over `ssh lab`) |
+| labhost `/data/kernel-hive` | **not initialised** — a plain unpacked tree, no `.git` |
+
+So on the box, `build-pve-qemu-fastpoll.sh` takes its fallback branch and builds
+from the committed loose `.patch` files. **That is the intended path there**, and
+it is why the box's unpacked copy being stale against the superproject's gitlink
+is harmless: `box-deploy` does not carry that path and nothing updates it, but
+nothing on the box reads it either. If you ever make the box build from the
+submodule, that stops being true and the stale tree becomes a real bug.
+
+**Do not test for it with `git rev-parse --is-inside-work-tree`.** It returns
+**true** inside an *uninitialised* submodule path, because the directory sits
+inside the superproject's work tree — it answers "am I inside some repo", not "is
+this path its own repo". Measured 2026-08-30 on `/data/kernel-hive`: 107 entries,
+no `.git`, and `--is-inside-work-tree` still said true. Test `[ -e <path>/.git ]`,
+or read `git submodule status` (a leading `-` means uninitialised). `scripts/provision/build-pve-qemu-fastpoll.sh`
 builds the patch trio (fast-poll, sphinx, gallery-hid) from the submodule
 when it's initialized (the patches already land as commits there, via
 `git format-patch`) and falls back to the loose `.patch` files in this
@@ -222,3 +319,104 @@ launchers keep the knob.
 
 Full run scripts live on the box under `/data/vms/sandbox/freedos-fastpoll/`
 (`launch-qemu.sh`, `launch-streamhost.sh`, `measure.sh` cadence, `g2g-run.sh`).
+
+---
+
+# `0008-artist-closed-loop-pointer.patch` — hpuxvue's 1:1 absolute pointer
+
+Against the `kernel-hive` branch of `github.com/Wnt/qemu` (11.0.2), touching
+only `hw/display/artist.c`. It is built into `/opt/qemu-hppa` for the `hpuxvue`
+station and is inert on every other station, because the engine arms only when
+the `ptrctl` chardev property is set.
+
+**What it does.** The HP 9000/778 B160L has no absolute pointer path at all —
+LASI PS/2, relative only, no USB, no tablet. But HP-UX 10.20's X server drives
+the Artist framebuffer's *hardware* cursor, so the guest continuously publishes
+its own idea of the pointer position into `CURSOR_POS`/`CURSOR_CTRL`. That is a
+sensor, so the control loop closes inside QEMU: read the guest's position, take
+the error against the daemon's absolute target, inject one bounded step of
+relative counts, repeat. `absolute: true` on this station is earned by
+measurement, not provided by a device. Same idea as `mga.c` on aix432 and
+`ctlsock.cpp` on irix; see `docs/lab/INPUT-DEBUGGING.md`.
+
+**Read the position through `artist_get_cursor_pos()`, never from the raw
+registers.** `CURSOR_CTRL`'s low nibbles are an offset the accessor subtracts to
+reach the drawn sprite origin; they are *not* a hotspot. A loop closed on a
+private decode of `CURSOR_POS` lands every target a constant 8 px left — and the
+raw register and the framebuffer still agree with each other exactly, err
+`+0,+0`, at every target. Two observers agreeing is not proof. Only the
+commanded target is the third observer that separates *self-consistent* from
+*correct*.
+
+**Nothing is added to `vmstate_artist`.** Every engine field is re-derived from
+registers the guest owns or from the live socket, so the migration format is
+untouched and the station's golden checkpoint keeps restoring. Arming the loop
+needs **no golden re-bake**. Do not migrate any of it.
+
+**Three guest-specific things this port had to solve**, none of which transfer
+from aix432 or irix:
+
+- *Hotspot.* Measured, never guessed, by driving the pointer into the top-left
+  clamp where the pointer is known to be `(0,0)`, so the sprite origin is the
+  negated hotspot. Measured `(2,1)` for the VUE arrow, agreeing at both the
+  top-left and bottom-right clamps. Other glyphs are derived at the swap by the
+  continuity rule (`d(origin) == -d(hotspot)` while the pointer is at rest) and
+  cached by a signature over the sprite planes.
+- *"Pinned" is verified, not inferred.* Under TCG the guest consumes PS/2
+  packets on its own schedule, so three windows can pass with motion still
+  queued and a naive homing step concludes on a mid-flight reading. Homing here
+  requires proof of **motion** (the reading changed at least once — with a kick
+  outward first, since a reconnecting session usually finds the pointer already
+  parked in the corner) *and* proof of **place** (the reading is within one
+  sprite of the corner, which is the only place it can be if pinned), and every
+  path that records a hotspot bounds it to the sprite. When it cannot establish
+  the value it reports `hot_exact=0` over `STAT` rather than asserting one.
+- *Bounded in-flight gate + settle-before-converged.* Never issue a step while
+  the previous one is unconsumed (bounded at 6 windows, or a screen clamp wedges
+  the loop forever), and do not declare a target reached while counts are still
+  queued — those counts carry the pointer past it, usually into a clamp it
+  cannot return from. Without the gate: give-ups and 9–35 px misses. With it:
+  7/7 targets at `--tol 1`, zero give-ups.
+
+**Device properties** (all optional, defaults shown): `ptrctl` (chardev; absent
+= engine never arms), `ptr-window-ms` 16, `ptr-deadband` 1, `ptr-move-step` 48,
+`ptr-tries` 90, `ptr-btn-gap-ms` 24, `ptr-gain-x100` 190, `ptr-trace`,
+`ptr-trace-pos`.
+
+**Wire dialect `artistptr/1`**, served on the chardev, spoken by the daemon's
+`artistctl` sink (`streamhost/streamhost/src/artist_ctl.rs`):
+
+```
+<- HELLO artistptr/1 caps=movea,btn,sync,stat surf=1280x1024
+-> <seq> MOVEA <x> <y>        <- <seq> OK   (acks on target-ACCEPT)
+-> <seq> DOWN1|UP1|DOWN2|...  <- <seq> OK   (acks when the edge APPLIES)
+-> <seq> SYNC | STAT          <- <seq> OK [k=v ...]
+```
+
+`MOVEA` acking on *accept* rather than on convergence is load-bearing on this
+station: `hpuxvue` starts `-loadvm golden -S` **and** idle-auto-pauses after
+60 s, and the engine's window timer is `QEMU_CLOCK_VIRTUAL`, so it does not tick
+while the guest is stopped. A returning visitor is therefore the common path,
+not an edge case. Verified: `STAT` answers while paused (reporting
+`running=0`), `MOVEA` acks in 40 ms while paused, and the loop converges on the
+commanded target after `cont` with zero give-ups.
+
+**Build** (the recipe in `streamhost/stations/hpuxvue/qemu-streamhost.sh`):
+
+```
+git clone -b kernel-hive https://github.com/Wnt/qemu && cd qemu
+git am ../0008-artist-closed-loop-pointer.patch
+mkdir build && cd build
+../configure --target-list=hppa-softmmu --enable-slirp --enable-dbus-display \
+  --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-spice \
+  --disable-opengl --disable-werror --disable-tools --prefix=/opt/qemu-hppa
+ninja && ninja install
+```
+
+**Install order is binding**: the QEMU binary lands *before* the launcher
+(`-global artist.ptrctl=` is an unknown property on an older build and QEMU
+refuses to start), and the streamhost binary lands *before* the env fixture
+(`SH_INPUT_BACKEND=artistctl` panics an older daemon at startup). **Rollback is
+two lines**: drop the `-chardev`/`-global artist.ptrctl=` pair from the launcher
+and set `SH_INPUT_BACKEND=dbus-rel`. The device set is otherwise unchanged, so
+the golden restores either way.

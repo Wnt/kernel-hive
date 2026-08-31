@@ -142,38 +142,39 @@ external inputs and the ordered full-box runbook chain.
 <!-- release-notes:start -->
 ## Release notes
 
-### Week 3 · The museum gets its own internet · 2026-08-16 09:00 – 2026-08-23 09:00
+### Week 4 · The doors open to everyone · 2026-08-23 09:00 – 2026-08-30 09:00
 
 #### New stations
 
-Seven machines joined the floor, each installed from original media the museum tracked down itself. [NEWS-OS](https://kernelhive.madekivi.fi/os/newsos) is Sony's own Unix, running on a *1991* *MIPS* laptop. [A/UX](https://kernelhive.madekivi.fi/os/aux) is Apple's strangest hybrid: a Unix root prompt living inside the Macintosh Finder. [SunOS](https://kernelhive.madekivi.fi/os/sunos414) brings up **OPEN LOOK** and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) answers with **HP VUE** — two rival visions of what a *1990s* Unix workstation should look like. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) is the missing link between NeXT and Mac OS X, the NeXT system wearing a Mac face. [BeOS](https://kernelhive.madekivi.fi/os/beos) is the fast, doomed upstart of the late nineties. And [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) runs on emulated *68040* hardware. [Tru64 UNIX](https://kernelhive.madekivi.fi/os/tru64), which arrived last week, got past the licensing wall that kept it shut, so the museum now stands at 68 machines, 65 of them open to visitors.
+Three machines joined the floor, and one of them needed its graphics card built from scratch first. [AIX](https://kernelhive.madekivi.fi/os/aix432) is IBM's own Unix on IBM's own *PowerPC* workstation, and it refused to paint a desktop until the museum wrote that workstation's *Matrox* card into the emulator itself. The reward is a full **CDE** desktop, **Netscape Communicator**, and **Quake** running its demo loop on a *1999* RS/6000. [Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) is the last classic Mac OS — one menu bar, no protected memory, the Finder as the whole machine — and the first *PowerPC* Macintosh here. [超漢字](https://kernelhive.madekivi.fi/os/chokanji) is the strangest arrival yet: Ken Sakamura's **BTRON** desktop, where every file is a 'real object', heir to the system Japan once planned for all its schools. That makes 72 machines, 68 of them open to visitors.
 
 #### Major features
 
-The museum now has <u>a private 1990s internet with no way out</u>. Sign into **ICQ** on [Windows 98 SE](https://kernelhive.madekivi.fi/os/win98se) and you can message someone at a [Solaris](https://kernelhive.madekivi.fi/os/solaris) workstation — or at [Windows 2000](https://kernelhive.madekivi.fi/os/win2000), [NT 4](https://kernelhive.madekivi.fi/os/nt4), the [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha*, or [BeOS](https://kernelhive.madekivi.fi/os/beos). All six carry each other in their contact lists, and a chatbot named HiveBot says hello about thirty seconds after one wakes up. Open **Internet Explorer 5** on that same Windows 98 and you land on 1998 web pages exactly as they were: real archived captures, nothing later than the end of 2000, so period sites work the way they did then, or break the way they did then. There is a period search engine over them too, with **AltaVista**-styled results and a **Yahoo!**-styled directory. BeOS browses the same pages in **NetPositive**. Nothing on that network can reach today's internet.
+<u>You no longer need an invitation to use the museum.</u> Anyone can sign up and be handed a machine of their own — [Windows 3.11](https://kernelhive.madekivi.fi/os/win311), [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) or [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) — a private copy that is yours for the visit. Install something, break something, close the tab: the next visitor still gets a pristine one. The museum's private 1990s internet grew as well. Five more machines signed on to **ICQ**, taking the chat network to eleven: [Windows XP](https://kernelhive.madekivi.fi/os/winxp), [Windows 95](https://kernelhive.madekivi.fi/os/win95), OS/2 Warp on a client from before the protocol changed, [Windows 2000 on *Alpha*](https://kernelhive.madekivi.fi/os/w2kalpha) — running the ordinary *x86* client through the Alpha's own translator — and an [SGI Indy](https://kernelhive.madekivi.fi/os/irix), whose sign-in kept crashing the emulator until the fault was traced into its instruction translator and fixed. More machines browse the archived 1998 web too, each with the browser it would really have had: **Mosaic** on [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue), **WebExplorer** on OS/2, **OmniWeb** on Rhapsody.
 
 #### Quality improvements
 
-Machines that used to make you wait mostly don't any more. The [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha* puts its **CDE** desktop on screen in about six seconds instead of a seven-to-ten-minute boot; [Windows 2000 on *Alpha*](https://kernelhive.madekivi.fi/os/w2kalpha) comes back complete in three seconds instead of eighty; [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) returns in a third of a second, pixel for pixel where you left it. Typing got honest: [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) no longer freezes after a few dozen keystrokes, the [VIC-20](https://kernelhive.madekivi.fi/os/vic20) stopped quietly swallowing letters, and [NEWS-OS](https://kernelhive.madekivi.fi/os/newsos) no longer scrambles a fast-typed line. Dragging on the Apple machines holds all the way to where you let go, and the Commodore machines stopped clicking through the speakers on every reset. Every machine's write-up is now checked against primary sources and linked to its relatives on the floor.
+[Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) used to wake up confused, because the emulator had never saved the machine's own clock; it now comes back exactly where you left it. [NeXTSTEP](https://kernelhive.madekivi.fi/os/nextstep) moved to a colour *NeXTstation*, and its double click works from a phone at last. [Windows 95](https://kernelhive.madekivi.fi/os/win95) drops off the chat network when it sits idle, and now dials back in by itself, with nothing to prod. The two *Alpha* machines share one build of their emulator, with a fix for mouse moves it had been quietly throwing away. And the museum keeps a written account of each week now, on its own About page — which is where you are reading this.
 
 #### Also this week
 
-- Ask twice for a page the archive is missing and the museum goes and mirrors it, so its 1990s web grows from what visitors actually try to visit
-- The Unix machines chat in a real window now: **Pidgin** on [Solaris](https://kernelhive.madekivi.fi/os/solaris), **Gaim** on the [Tru64](https://kernelhive.madekivi.fi/os/tru64) *Alpha*, in place of a terminal client
-- [BeOS](https://kernelhive.madekivi.fi/os/beos) signs on through an older, pre-OSCAR door than anything else on the network — the only machine here that still speaks it
-- The collection opens as a folding index by decade, and the filter above it understands the shorthand people actually type
-- [Sony's NEWS portable](https://kernelhive.madekivi.fi/os/newsos) folds a 1120x780 monochrome LCD over its *R3000*: the line was Japan's answer to Sun, sold to its universities
-- [Apple's Unix](https://kernelhive.madekivi.fi/os/aux) arrived with **QuickTime**, man pages and a shelf of Unix games — fortune, wump — sitting under the Finder
-- **HP VUE** is the desktop **CDE** was built from, so [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) now stands beside the CDE machines as their ancestor
-- [SunOS](https://kernelhive.madekivi.fi/os/sunos414) is placed deliberately next to the CDE Solaris machine: same vendor, same *SPARC*, the rival desktop that lost
-- Photographs of the real hardware sit beside the write-ups now — the BeBox, a Quadra 800, an HP 9000 B180L
-- The picture stops dropping to a soft, low-detail mode for no reason: the stream had been reading its own keyframes as a slow connection
-- The space bar on the [Sinclair QL](https://kernelhive.madekivi.fi/os/sinclairql) typed nothing at all. It types now, and a burst-typed line keeps its order
+- [AIX](https://kernelhive.madekivi.fi/os/aix432) brings **CDE**, the desktop nearly every Unix vendor settled on, running on the line that carried IBM's Unix into the POWER era
+- [超漢字](https://kernelhive.madekivi.fi/os/chokanji) files its documents in a 原紙箱, a 'master-paper box', around a kanji set built for scholarship rather than office work
+- Period sites now arrive as their most complete snapshot rather than their closest-dated one, so a 1997 page shows up with its pictures instead of grey boxes
+- [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) reaches the archive in **Netscape 4.08** — a *1993* desktop on a 1998 web
+- [Windows XP](https://kernelhive.madekivi.fi/os/winxp) reads the same pages in **Internet Explorer 8**, five years of browser history apart
+- **Mosaic** could not read the archive's own search page until it was rebuilt in markup from Mosaic's own decade
+- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) joined the period web this week, on emulated *68040* hardware
+- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) got **OmniWeb 3.0**, the NeXT-lineage browser, sitting on the desktop where you can find it
+- [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) chats through **ICQ/2 1.503i**, the OS/2 native build, speaking an older protocol nobody else here uses
+- The gallery installs onto a phone's home screen like an app, and its collection page pulls to refresh
+- The [SGI Indy](https://kernelhive.madekivi.fi/os/irix)'s browser stopped nagging on every launch: the setting that silences it is not the one you would guess
 
-*35,569 lines of code.*
+*35,124 lines of code.*
 
 ### Earlier weeks
 
+- [Week 3 · The museum gets its own internet](docs/RELEASE-NOTES.md#week-3) · 2026-08-16 09:00 – 2026-08-23 09:00
 - [Week 2 · Twenty-two machines in one week](docs/RELEASE-NOTES.md#week-2) · 2026-08-09 09:00 – 2026-08-16 09:00
 - [Week 1 · The museum opens its source](docs/RELEASE-NOTES.md#week-1) · 2026-08-07 14:37 – 2026-08-09 09:00
 - [Week 0 · The month the museum was built](docs/RELEASE-NOTES.md#week-0) · 2026-07-07 21:39 – 2026-08-07 14:37

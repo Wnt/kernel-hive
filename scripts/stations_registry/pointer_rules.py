@@ -53,6 +53,18 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # ledger must show the control chardev the engine serves: without
     # `mga.ptrctl` the loop is not armed and the daemon has nothing to talk to.
     "qemu-mga-closedloop": ({"mgactl"}, ("mga.ptrctl",), ("usb-tablet",)),
+    # hpuxvue: the aix432 loop ported to the hppa B160L. The machine has ONE
+    # graphics path -- the built-in Artist framebuffer -- and a LASI PS/2 mouse
+    # with no absolute device at all, so on the WIRE this is still relative.
+    # But HP-UX 10.20's X server drives the Artist HARDWARE cursor, so the
+    # device model reads the guest's own pointer position back out of the
+    # CURSOR_POS/CURSOR_CTRL registers and converges on it: the Artist cursor
+    # registers are the loop's sensor, and `absolute: true` is earned by
+    # measurement (framebuffer-verified at 7 targets, --tol 1), not by a
+    # device. The ledger must show the control chardev the engine serves:
+    # without `artist.ptrctl` the loop is not armed and the daemon has nothing
+    # to talk to.
+    "qemu-artist-closedloop": ({"artistctl"}, ("artist.ptrctl",), ("usb-tablet",)),
     # rhapsody: an absolute pointer with NO absolute device and NO control loop.
     # Rhapsody DR2 keeps its own pointer coordinate in a known guest-RAM
     # structure, so the commanded coordinate is simply WRITTEN there and one
@@ -78,6 +90,7 @@ POINTER_MODE_BY_BACKEND = {
     "mamecmd": "abs",
     "mamesock": "abs",
     "mgactl": "abs",
+    "artistctl": "abs",
     "ramabs": "abs",
     # Keyboard-only by construction: InputBackend::pointer_mode() reports
     # "none" for ViceSock, and the sink has no pointer verb at all.

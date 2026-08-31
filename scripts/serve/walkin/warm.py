@@ -124,6 +124,28 @@ class Warming:
             # while the member is still PAUSED and unclaimed. Doing it here,
             # rather than on claim, is why it costs the visitor nothing — and
             # why a warm pool is worth having beyond the resume latency.
+            #
+            # INVARIANT: prime_network() MUST complete BEFORE spawn_daemon().
+            # These two lines are not merely ordered for latency; the order is
+            # what keeps the walk-in plane clear of a fleet-wide QMP hazard.
+            # QEMU's QMP chardev serves ONE monitor at a time, and a client that
+            # holds it across a timed-out call stalls every other client — on
+            # the station plane that is observed to stall new sessions. prime is
+            # this clone's only LONG QMP hold (it resumes, pings up to
+            # `attempts` times with `settle` between, and restores the pause —
+            # tens of seconds). Running it here, while no daemon exists yet,
+            # means the hold can overlap nothing. Move it after spawn_daemon()
+            # and it lands on top of the daemon's startup and its first idle
+            # reconciler ticks, which run on 2 s timeouts against this same
+            # socket. Do not reorder without moving the hold off QMP entirely.
+            #
+            # The plane's OTHER protection is equally undocumented and equally
+            # load-bearing: nothing can address a clone's QMP socket by name,
+            # because `labctl` resolves stations through stations.json and a
+            # clone is in no station map (WALKIN-BRIEF §5.1 — a clone is not a
+            # registry station). An operator or health tool that learns to
+            # address clones directly reintroduces the second monitor this
+            # ordering is protecting against.
             if not built.prime_network():
                 sys.stderr.write(
                     f"[walkin] {built.identity}: network not primed — the visitor's first page load "

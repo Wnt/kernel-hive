@@ -1,0 +1,57 @@
+# Post-CI deploy hint — the AUDIT TRAIL and the delivery backstop, not the trigger.
+#
+# The repo webhook is the trigger (~1s). This job exists because a missed
+# webhook delivery is missed SILENTLY — the endpoint restarting during a deploy
+# of itself is the ordinary case, not the exotic one — and because "a deploy was
+# requested for <sha> at <time>" is exactly the forensic record that was missing
+# on 2026-08-30. See docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md 1.1.
+#
+# UNARMED UNTIL A SECRET EXISTS. With no KH_DEPLOY_HMAC configured this job
+# skips loudly instead of failing: a red X on every push to main is how a
+# workflow gets ignored, and an ignored workflow protects nothing.
+#
+# THE REPO IS PUBLIC AND THIS FILE IS WORLD-READABLE. It may name the gallery
+# domain (the one domain committed on purpose) and the public endpoint path.
+# It must never carry an internal hostname, an IP, a labhost path, a station
+# identity, or any secret value. AGENTS.md rule 1 still binds here.
+#
+# What it sends is a HINT. It cannot say what to deploy: the reconciler fetches
+# origin/main itself and converges to what IT finds, and the sha below is used
+# for the journal only, after being proved an ancestor of that fetch.
+name: deploy-hint
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  hint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send the hint
+        env:
+          SECRET: ${{ secrets.KH_DEPLOY_HMAC }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SECRET:-}" ]; then
+            echo "::notice::KH_DEPLOY_HMAC is not configured — the hint endpoint is unarmed."
+            echo "Skipping. This is the expected state until the operator arms it."
+            exit 0
+          fi
+          body=$(printf '{"ref":"refs/heads/main","after":"%s","ts":%s}' "$SHA" "$(date +%s)")
+          sig=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$SECRET" -r | cut -d' ' -f1)
+          code=$(curl -sS -o /dev/stderr -w '%{http_code}' \
+            -X POST 'https://kernelhive.madekivi.fi/kh/deploy-hint' \
+            -H 'Content-Type: application/json' \
+            -H "X-GitHub-Event: push" \
+            -H "X-GitHub-Delivery: actions-${{ github.run_id }}-${{ github.run_attempt }}" \
+            -H "X-Hub-Signature-256: sha256=${sig}" \
+            --data "$body" --max-time 20) || true
+          echo "endpoint replied ${code}"
+          # A hint is advisory: the backstop tick converges anyway. Failing this
+          # job would turn a transient network blip into a red main.
+          case "$code" in 202|200|204) ;; *) echo "::warning::hint not accepted (${code})";; esac

@@ -101,7 +101,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3466a0",
-    "eraLabel": "2000 \u00b7 BeOS R5 Professional",
+    "eraLabel": "2000 · BeOS R5 Professional",
     "pointerRel": true
   },
   "museum": {
@@ -127,8 +127,8 @@
       "NetPositive",
       "SoundPlay"
     ],
-    "blurb": "Be Inc.'s BeOS R5 (2000) \u2014 the multithreaded media OS behind Haiku's yellow tabs, running as it shipped.",
-    "notes": "Live streamhost tile. BeOS R5 Professional 5.0.3 installed from the archive.org Pro CD onto an MBR BFS partition; TCG-only (KVM #GP). Archetype: beige-tower-crt; a BeBox would be the ideal model but R5 x86 shipped on commodity PCs. On the retronet since 2026-08-23: rtl8139 on vmbr-rn, DHCP 10.99.0.16, browsing the museum corpus in NetPositive, and signed in to the museum's own ICQ gateway as UIN 50000 with ICBM .71 (the BeCQ successor, 2001) over the pre-OSCAR UDP-4000 door \u2014 the only station on the fleet that uses it; HiveBot greets a visitor about half a minute after the client signs on. See docs/lab/retronet/STATION-beos.md."
+    "blurb": "Be Inc.'s BeOS R5 (2000) — the multithreaded media OS behind Haiku's yellow tabs, running as it shipped.",
+    "notes": "Live streamhost tile. BeOS R5 Professional 5.0.3 installed from the archive.org Pro CD onto an MBR BFS partition; TCG-only (KVM #GP). Archetype: beige-tower-crt; a BeBox would be the ideal model but R5 x86 shipped on commodity PCs. On the retronet since 2026-08-23: rtl8139 on vmbr-rn, DHCP 10.99.0.16, browsing the museum corpus in NetPositive, and signed in to the museum's own ICQ gateway as UIN 50000 with ICBM .71 (the BeCQ successor, 2001) over the pre-OSCAR UDP-4000 door — the only station on the fleet that uses it; HiveBot greets a visitor about half a minute after the client signs on. See docs/lab/retronet/STATION-beos.md."
   },
   "emulator": {
     "family": "QEMU",
@@ -137,7 +137,10 @@
   },
   "ui": "desktop",
   "retronet": {
-    "planes": ["web", "icq"],
+    "planes": [
+      "web",
+      "icq"
+    ],
     "address": "10.99.0.16",
     "addressing": "dhcp",
     "link": "tap beosrn0 on vmbr-rn",
@@ -149,7 +152,8 @@
     "slot 143/UDP 54143 reserved by stations-registry.py new (2026-08-17)",
     "dark-launched during bring-up via scripts/dev/darklaunch-station.py from sandbox beos-r5",
     "retronet bridge swap + NetPositive + telnet exec channel 2026-08-23 (rn-beos-net); NIC ne2k_pci -> rtl8139 in the same pass, see docs/lab/retronet/STATION-beos.md",
-    "ICQ client shipped 2026-08-23 (rn-beos-icbm): ICBM .71 (BeCQ) on the gateway's pre-OSCAR UDP-4000 door as UIN 50000, kept signed on by icbm-watchdog.sh; golden re-baked. See docs/lab/retronet/STATION-beos.md"
+    "ICQ client shipped 2026-08-23 (rn-beos-icbm): ICBM .71 (BeCQ) on the gateway's pre-OSCAR UDP-4000 door as UIN 50000, kept signed on by icbm-watchdog.sh; golden re-baked. See docs/lab/retronet/STATION-beos.md",
+    "absolute pointer 2026-08-30 (beos-abs-ram): guest-RAM absolute write via kh-ramabs, no adapter change and no device-set change; needs ONE cold golden re-bake because the old golden carries pve-qemu's pbs-state section. ati-vga and the Matrox mga model were both evaluated and rejected - docs/lab/BEOS-ABSOLUTE-POINTER.md"
   ],
   "runtime": {
     "stationEnv": {
@@ -212,6 +216,8 @@
         "-netdev tap,id=n0,ifname=beosrn0,script=no,downscript=no -device rtl8139,netdev=n0,mac=02:00:00:00:00:10 (placeholder; the real unique per-station MAC is box-local in registry/local.env RN_BEOS_MAC and baked into the golden vmstate)",
         "-serial file:$D/serial.log",
         "$LOADVM",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off   (only when KH_RAMABS_ADDR is set)",
+        "-device kh-ramabs,chardev=ptr0,addr=$KH_RAMABS_ADDR,layout=point32le,width=1024,height=768,nudge-units=1,nudge-px=1   (only when KH_RAMABS_ADDR is set)",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
         "-pidfile $D/qemu.pid"
       ],
@@ -235,13 +241,32 @@
           "-netdev tap,id=n0,ifname=beosrn0,script=no,downscript=no -device rtl8139,netdev=n0,mac=02:00:00:00:00:10 (placeholder; the real unique per-station MAC is box-local in registry/local.env RN_BEOS_MAC and baked into the golden vmstate)",
           "-serial file:$D/serial.log",
           "$LOADVM",
+          "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off   (only when KH_RAMABS_ADDR is set)",
+          "-device kh-ramabs,chardev=ptr0,addr=$KH_RAMABS_ADDR,layout=point32le,width=1024,height=768,nudge-units=1,nudge-px=1   (only when KH_RAMABS_ADDR is set)",
           "-qmp unix:$D/qmp.sock,server=on,wait=off",
           "-pidfile $D/qemu.pid"
         ]
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the deployed launcher; golden cold-baked 2026-08-23 with this device set (retronet tap + unique MAC + rtl8139)"
+        "reason": "tracked verbatim launcher is the deployed launcher. Absolute pointer landed 2026-08-30: a `-chardev socket` plus `-device kh-ramabs` writing app_server's own pointer coordinate. kh-ramabs registers NO VMStateDescription and touches no emulated hardware, so it adds no section to the migration stream and does not change the device set -- PROVEN on a sandbox rig, where `-loadvm` succeeded with the device attached. What DOES force a golden re-bake is the BINARY: the 2026-08-23 golden was baked under the host pve-qemu-kvm package and carries a Proxmox-only `pbs-state` vmstate section, so a standalone build refuses it with `Unknown section or instance 'pbs-state' 0` (measured). Moving beos onto its own /opt/qemu-beos build therefore needs ONE cold re-bake, after which the station stops depending on the shared host package entirely. INSTALL ORDER IS BINDING: binary before launcher (`-device kh-ramabs` is an unknown device on an older binary and QEMU refuses to start), and the launcher is safe to deploy first only because it omits the device when KH_RAMABS_ADDR is unset."
+      },
+      "pointerRamAddress": {
+        "addr": null,
+        "layout": "point32le",
+        "derivedAgainstGolden": null,
+        "status": "PENDING the cold re-bake under /opt/qemu-beos; deliberately null rather than a stale value",
+        "note": "Guest-physical address of BeOS R5 app_server's own pointer coordinate -- the input the kh-ramabs control object writes, as two little-endian int32. It is valid ONLY for the golden it was derived against: `loadvm golden` restores RAM verbatim, so the address is fixed for the life of THAT checkpoint and no longer, and a re-bake moves it. Two addresses were derived and proven during bring-up (0x038f1ae4 on one cold boot of the pristine volume, a different one on the restored 2026-08-23 golden) which is exactly why none of them is recorded here as production truth. RE-DERIVE IT after every re-bake with the four-sample pmemsave bias search in docs/lab/BEOS-ABSOLUTE-POINTER.md (about twenty minutes, mechanical). Beware the four DERIVED copies that track the pointer perfectly and are not inputs -- only a write test separates them. kh-ramabs verifies the address at connect and refuses every write if verification fails, so a stale address degrades this station to its relative path rather than corrupting guest memory."
+      },
+      "qemuBuild": {
+        "prefix": "/opt/qemu-beos",
+        "base": "QEMU 11.0.2 (the same version as the host pve-qemu-kvm 11.0.2-1, so machine type pc-i440fx-11.0 is unchanged)",
+        "patches": [
+          "streamhost/qemu-patches/0001-dbus-display-fast-poll.patch",
+          "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
+        ],
+        "configure": "--target-list=x86_64-softmmu --enable-slirp --enable-dbus-display --disable-opengl --disable-werror --disable-tools",
+        "note": "0001 is NOT optional on a standalone build: on the host package the fast-poll patch arrives as pve quilt slot 0047, and a build without it silently drops this tile back to the stock 30 ms display scan. BeOS R5 was booted cold to its full desktop on this build during bring-up, so R5 does not depend on anything the pve patches add. PATCH SET CHANGED 2026-08-30: this used to list 0009 and 0010 as well; both were RETIRED and merged into 0007, which is now ONE shared kh-ramabs device patch carrying every guest layout including this station's point32le. 0007 alone now supplies what 0007+0009+0010 did. binarySha256 is deliberately ABSENT until a binary is actually installed at the prefix -- recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured."
       }
     },
     "bringUpOrder": 66

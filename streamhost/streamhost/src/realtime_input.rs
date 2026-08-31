@@ -15,6 +15,7 @@ use tokio::net::UnixStream;
 use tokio::sync::Notify;
 
 use crate::config::{Config, InputBackend};
+use crate::{mame_input, mame_sock, ptr_grid, vice_keymap, vice_sock};
 
 const RECORD_BYTES: usize = 16;
 const ORDERED_CAPACITY: usize = 64;
@@ -111,7 +112,7 @@ pub struct InputRouter {
 pub(crate) fn backend_routes_buttons(backend: &str, warpd_buttons_qemu: bool) -> bool {
     matches!(
         backend,
-        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "ramabs"
+        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "artistctl" | "ramabs"
     ) || (backend == "warpd" && !warpd_buttons_qemu)
 }
 
@@ -121,22 +122,25 @@ impl InputRouter {
             InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel => return None,
             InputBackend::Warpd => WarpdSink::new(cfg),
             InputBackend::GalleryHid => GalleryHidSink::new(cfg.ghid_socket.clone()),
-            InputBackend::MameCmd => crate::mame_input::MameCmdSink::new(
+            InputBackend::MameCmd => mame_input::MameCmdSink::new(
                 &cfg.x11_cmd_file,
                 cfg.mamecmd_abs,
-                crate::mame_input::KeyMap::from_env(),
+                mame_input::KeyMap::from_env(),
             ),
-            InputBackend::MameSock => crate::mame_sock::MameSockSink::new(
+            InputBackend::MameSock => mame_sock::MameSockSink::new(
                 cfg.mamectl_sock.clone(),
-                crate::ptr_grid::PtrGrid::from_env(),
-                crate::mame_input::KeyMap::from_env(),
+                ptr_grid::PtrGrid::from_env(),
+                mame_input::KeyMap::from_env(),
             ),
-            InputBackend::ViceSock => crate::vice_sock::ViceSockSink::new(
+            InputBackend::ViceSock => vice_sock::ViceSockSink::new(
                 cfg.vicectl_sock.clone(),
-                crate::vice_keymap::ViceKeyMap::from_env(),
+                vice_keymap::ViceKeyMap::from_env(),
             ),
             InputBackend::MgaCtl => {
                 crate::mga_ctl::MgaCtlSink::new(crate::mga_ctl::socket_from_env(&cfg.tile))
+            }
+            InputBackend::ArtistCtl => {
+                crate::artist_ctl::ArtistCtlSink::new(crate::artist_ctl::socket_from_env(&cfg.tile))
             }
             InputBackend::RamAbs => {
                 crate::ram_abs::RamAbsSink::new(crate::ram_abs::socket_from_env(&cfg.tile))
