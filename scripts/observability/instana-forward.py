@@ -56,6 +56,7 @@ import argparse
 import json
 import os
 import re
+import socket
 import sqlite3
 import sys
 import time
@@ -105,6 +106,13 @@ class Config:
         # Which client classes to forward. Defaulting to everything is right for
         # a COMPARISON — the point is to see the same population in both UIs —
         # but it is stated rather than assumed, and `human` alone is one edit.
+        # Instana REQUIRES a host identity: the backend wants a `host.id`,
+        # `faas.id` or `device.id` resource attribute, or the `x-instana-host`
+        # header, and uses it to link OpenTelemetry entities to a host. Without
+        # one, data is refused or lands orphaned — which would have looked like
+        # a broken exporter rather than a missing field. Defaults to the box's
+        # own hostname; override for a deployment where that is not stable.
+        self.host_id = env.get("INSTANA_HOST_ID") or socket.gethostname()
         self.classes = tuple(
             c.strip() for c in (env.get("INSTANA_CLASSES") or "human,probe,unknown").split(",") if c.strip()
         )
@@ -140,9 +148,10 @@ class Config:
         return out
 
     def headers(self) -> dict:
+        common = {"Content-Type": "application/json", "x-instana-host": self.host_id}
         if self.auth_mode == "api-token":
-            return {"Authorization": f"apiToken {self.token}", "Content-Type": "application/json"}
-        return {"x-instana-key": self.token, "Content-Type": "application/json"}
+            return {"Authorization": f"apiToken {self.token}", **common}
+        return {"x-instana-key": self.token, **common}
 
 
 def load_env() -> dict:
@@ -239,7 +248,7 @@ def forward_traces(cfg: Config, dry_run: bool, verbose: bool) -> int:
     if not batch:
         print("traces: nothing new")
         return 0
-    doc = traces_otlp.export(batch)
+    doc = traces_otlp.export(batch, host_id=cfg.host_id)
     spans = sum(len(t.get("spans", [])) for t in batch)
     if verbose or dry_run:
         print(json.dumps(doc, indent=2)[:4000])
@@ -362,6 +371,7 @@ def main() -> int:
         f"({len(cfg.token)} chars) from {cfg.token_file}"
     )
     print(f"classes   {', '.join(cfg.classes)}")
+    print(f"host.id   {cfg.host_id}")
     if problems:
         print("\nNOT READY:")
         for p in problems:

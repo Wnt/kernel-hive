@@ -105,7 +105,7 @@ def span_to_otlp(s: dict) -> dict:
     return out
 
 
-def export(traces: list[dict], service: str = "kernel-hive-spa") -> dict:
+def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | None = None) -> dict:
     """Full OTLP/JSON `resourceSpans`, grouped by SESSION.
 
     Grouping by session rather than emitting one Resource per trace is the
@@ -128,6 +128,12 @@ def export(traces: list[dict], service: str = "kernel-hive-spa") -> dict:
                         {
                             "service.name": service,
                             "session.id": session,
+                            # Instana links OpenTelemetry entities to a host by
+                            # `host.id` and refuses or orphans data without one
+                            # (or the x-instana-host header). Harmless to any
+                            # other consumer: it is a standard semantic
+                            # convention attribute.
+                            **({"host.id": host_id} if host_id else {}),
                             "telemetry.sdk.name": "kernel-hive",
                             "telemetry.sdk.language": "webjs",
                         }
