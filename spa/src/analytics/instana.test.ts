@@ -9,6 +9,8 @@ import {
   configureInstana,
   configureInstanaIdentity,
   IGNORE_URL_PATTERNS,
+  INSTANA_IGNORE_URL_PATTERNS,
+  KH_TELEMETRY_PATHS,
   SECRET_PATTERNS,
 } from './instana';
 import type { Session } from '../data/session';
@@ -75,26 +77,76 @@ describe('configureInstana', () => {
     expect(metaCalls.map((c) => c[1])).toContain('kh.bundle');
   });
 
-  it('passes the secrets and ignoreUrls patterns through unchanged', () => {
+  it('passes the secrets patterns through unchanged', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
     expect(calls).toContainEqual(['secrets', SECRET_PATTERNS]);
-    expect(calls).toContainEqual(['ignoreUrls', IGNORE_URL_PATTERNS]);
+  });
+
+  it('does NOT set ignoreUrls — it moved to index.html\'s bootstrap so a pre-boot request is filtered too (see instana.ts\'s INSTANA_IGNORE_URL_PATTERNS comment)', () => {
+    const { calls } = installIneum();
+    configureInstana('sess1');
+    expect(calls.map((c) => c[0])).not.toContain('ignoreUrls');
   });
 });
 
-describe('secrets / ignoreUrls patterns', () => {
+describe('secrets patterns', () => {
   it('secrets catches traceparent and ticket-shaped parameter names', () => {
     expect(SECRET_PATTERNS.some((re) => re.test('traceparent'))).toBe(true);
     expect(SECRET_PATTERNS.some((re) => re.test('ticket'))).toBe(true);
     expect(SECRET_PATTERNS.some((re) => re.test('unrelated'))).toBe(false);
   });
+});
 
-  it('ignoreUrls excludes every one of our own telemetry routes', () => {
-    for (const path of ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd']) {
+describe('ignoreUrls patterns — the reuse-trap regression', () => {
+  // THE EXACT ASSERTION WHOSE ABSENCE LET THE BUG SHIP: the original single
+  // list was anchored `^\/`, which can only ever match a bare pathname, and
+  // every existing test (like the old "excludes every one of our own
+  // telemetry routes" case) tested it exclusively against pathnames — so the
+  // suite stayed green while `ineum('ignoreUrls', ...)` silently matched
+  // nothing in production. This block pins BOTH shapes against BOTH kinds of
+  // input, on purpose.
+  const REALISTIC_ORIGIN = 'https://kernelhive.madekivi.fi';
+
+  it('INSTANA_IGNORE_URL_PATTERNS matches a realistic full URL for every telemetry endpoint', () => {
+    for (const path of KH_TELEMETRY_PATHS) {
+      const full = `${REALISTIC_ORIGIN}${path}${path === '/clientcmd' ? '?since=64' : ''}`;
+      expect(INSTANA_IGNORE_URL_PATTERNS.some((re) => re.test(full))).toBe(true);
+    }
+  });
+
+  it('INSTANA_IGNORE_URL_PATTERNS does NOT match a bare pathname (the shape khFetch uses, not Instana)', () => {
+    for (const path of KH_TELEMETRY_PATHS) {
+      expect(INSTANA_IGNORE_URL_PATTERNS.some((re) => re.test(path))).toBe(false);
+    }
+  });
+
+  it('IGNORE_URL_PATTERNS (khFetch\'s form) still matches a bare pathname', () => {
+    for (const path of KH_TELEMETRY_PATHS) {
       expect(IGNORE_URL_PATTERNS.some((re) => re.test(path))).toBe(true);
     }
-    expect(IGNORE_URL_PATTERNS.some((re) => re.test('/signal/beos.json'))).toBe(false);
+  });
+
+  it('IGNORE_URL_PATTERNS does NOT match a full URL — it is anchored for khFetch\'s url.pathname input, not a full string', () => {
+    for (const path of KH_TELEMETRY_PATHS) {
+      expect(IGNORE_URL_PATTERNS.some((re) => re.test(`${REALISTIC_ORIGIN}${path}`))).toBe(false);
+    }
+  });
+
+  it('neither form matches a real app route', () => {
+    for (const real of ['/auth/state', '/gallery-manifest.json', '/boot/index.json', '/signal/solaris.json']) {
+      expect(IGNORE_URL_PATTERNS.some((re) => re.test(real))).toBe(false);
+      expect(INSTANA_IGNORE_URL_PATTERNS.some((re) => re.test(`${REALISTIC_ORIGIN}${real}`))).toBe(false);
+    }
+  });
+
+  it('both matcher forms are derived from the same endpoint set, so adding one endpoint covers both', () => {
+    expect(IGNORE_URL_PATTERNS).toHaveLength(KH_TELEMETRY_PATHS.length);
+    expect(INSTANA_IGNORE_URL_PATTERNS).toHaveLength(KH_TELEMETRY_PATHS.length);
+    for (const path of KH_TELEMETRY_PATHS) {
+      expect(IGNORE_URL_PATTERNS.some((re) => re.test(path))).toBe(true);
+      expect(INSTANA_IGNORE_URL_PATTERNS.some((re) => re.test(`${REALISTIC_ORIGIN}${path}`))).toBe(true);
+    }
   });
 });
 

@@ -146,6 +146,34 @@
         ineum('enableW3CHeaders', true);
         var sid = window.__kernelHiveErrorSessionId || 'unknown';
         ineum('user', sid);
+        // Our own telemetry endpoints, excluded from Instana's OWN
+        // page-load/ajax beaconing (not to be confused with
+        // analytics/khFetch.ts's separate exclusion of the SAME endpoints
+        // from our own client spans). Set here rather than from
+        // analytics/instana.ts's configureInstana(), which runs after React
+        // mounts and would leave any pre-boot request unfiltered — this
+        // module can't import that one; it has to run before any bundle
+        // evaluates. `ineum('ignoreUrls', ...)` matches against the FULL URL
+        // string Instana's wrapped fetch/XHR sees
+        // (`https://host/clientcmd?since=64`), never a bare pathname, which
+        // is exactly the distinction that shipped broken before this fix —
+        // see analytics/instana.ts's `KH_TELEMETRY_PATHS` comment for the
+        // whole story. TELEMETRY_PATHS below is a duplicated copy of that
+        // same list, the same "keep two lists in sync by hand across the
+        // HTML/TS boundary" trade the ROUTES table just below already makes;
+        // keep both in sync.
+        try {
+          var TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'];
+          var ignorePatterns = [];
+          for (var p = 0; p < TELEMETRY_PATHS.length; p++) {
+            var escaped = TELEMETRY_PATHS[p].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            ignorePatterns.push(new RegExp('^https?://[^/]+' + escaped + '\\b'));
+          }
+          ineum('ignoreUrls', ignorePatterns);
+        } catch (e4) {
+          // ignoreUrls is noise-reduction, not correctness — the beacon still
+          // goes out (just noisier) rather than not at all.
+        }
         // DEFECT 4 (initial page name only — see analytics/navigation.ts for
         // every subsequent transition). Minimal duplicate of that module's
         // ROUTES table: pattern segments, ':name' = param. Keep in sync by
