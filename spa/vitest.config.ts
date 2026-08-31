@@ -25,6 +25,7 @@ export default defineConfig({
       // keep/test/delete decision instead of a popularity list.
       reporter: ['text', 'html', 'json'],
       include: [
+        'src/admin/observability/reportMath.ts',
         'src/admin/observability/traceFilters.ts',
         'src/analytics/catalogue/fleet.ts',
         'src/analytics/catalogue/index.ts',

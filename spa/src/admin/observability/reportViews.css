@@ -1,0 +1,87 @@
+/* Styles shared by the four aggregate dashboards (ReachTable, FunnelView,
+   MetricsView, ErrorsView). One stylesheet rather than four because the whole
+   point of the set is that the numbers read as ONE report — a probe count, a
+   funnel step and a bucket edge styled three different ways invite three
+   different levels of trust in data of exactly equal quality.
+
+   The palette is index.css's; nothing here introduces a colour. `--danger` is
+   reserved for a FAULT (an error group, a fail reason) and is deliberately NOT
+   used for a zero: a feature nobody opened is a finding, not a failure, and
+   painting it red is how a working exhibit gets deleted in a hurry. */
+
+.obs-section { max-width: 1100px; margin: 0 auto; padding: 20px 24px 40px; }
+.obs-section > h2 { margin: 0 0 2px; font-size: 17px; letter-spacing: -0.01em; }
+.obs-lede { margin: 0 0 14px; max-width: 68ch; color: var(--ink-muted); font-size: 12.5px; line-height: 1.5; }
+
+/* The window/class banner. Prominent by requirement, not by decoration: every
+   number under it is only true of THIS window and THIS client class, and the
+   lab's own browser probes are a class that would otherwise read as visitors. */
+.obs-window {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline;
+  margin: 0 0 12px; padding: 8px 12px;
+  background: var(--paper-sunken); border: 1px solid var(--line); border-radius: 6px;
+  font-size: 12.5px; color: var(--ink-soft);
+}
+.obs-window b { font-weight: 600; color: var(--ink); }
+.obs-window .obs-class-probe { color: var(--warn); }
+.obs-nodata {
+  margin: 0 0 14px; padding: 10px 12px; border-radius: 6px;
+  border: 1px solid var(--line-strong); background: var(--paper-raised);
+  font-size: 12.5px; color: var(--ink-soft); line-height: 1.5;
+}
+
+.obs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.obs-table th {
+  text-align: left; font-weight: 600; color: var(--ink-muted);
+  padding: 6px 8px; border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+}
+.obs-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.obs-table td.obs-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.obs-id { font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+.obs-what { color: var(--ink-soft); max-width: 44ch; }
+.obs-owner { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+
+/* A zero that MEANS something, and a zero that means nothing, must not look
+   alike — see reportMath.ts's DataState. */
+.obs-zero { color: var(--ink-muted); }
+.obs-never { color: var(--accent-ink); font-weight: 600; }
+.obs-unknown { color: var(--ink-muted); font-style: italic; }
+.obs-row-never { background: var(--accent-wash); }
+
+.obs-tally { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+.obs-note { margin: 12px 0 0; max-width: 72ch; font-size: 12px; color: var(--ink-muted); line-height: 1.55; }
+
+/* auto-vs-act pairs. Rendered as a sentence, not a ratio column: the point only
+   lands when "called 388" and "used 0" are in the same line of prose. */
+.obs-pair { display: block; padding: 8px 8px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.obs-pair .obs-arrow { color: var(--ink-muted); padding: 0 6px; }
+.obs-pct { font-variant-numeric: tabular-nums; font-weight: 600; }
+.obs-pct-cold { color: var(--accent-ink); }
+
+/* Funnels: a plain div bar. No charting library — see the note in package.json's
+   dependency list; a bar whose width is a percentage does not need one. */
+.obs-funnel { margin: 0 0 22px; }
+.obs-funnel h3 { margin: 0 0 2px; font-size: 13.5px; font-family: var(--font-mono); }
+.obs-step { display: grid; grid-template-columns: 13ch 1fr 22ch; gap: 10px; align-items: center; padding: 3px 0; }
+.obs-step-name { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.obs-bar { height: 14px; background: var(--paper-sunken); border-radius: 3px; overflow: hidden; }
+.obs-bar > span { display: block; height: 100%; background: var(--accent-line); }
+.obs-step-counts { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.obs-lost { color: var(--danger); }
+.obs-fails { margin: 6px 0 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-soft); }
+.obs-fails li { padding: 2px 0; }
+.obs-fails code { font-family: var(--font-mono); color: var(--danger); }
+
+.obs-badge {
+  display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+  background: var(--paper-sunken); color: var(--ink-muted); border: 1px solid var(--line);
+}
+
+.obs-fp {
+  font-family: var(--font-mono); font-size: 11.5px;
+  background: none; border: 1px solid var(--line); border-radius: 3px;
+  padding: 1px 5px; color: var(--accent-ink); cursor: pointer;
+}
+.obs-fp[disabled] { cursor: default; color: var(--ink-muted); }
+.obs-msg { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft); word-break: break-word; }
