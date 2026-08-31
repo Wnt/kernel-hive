@@ -3,6 +3,7 @@
   "entry": [
     "index.html",
     "src/analytics/coverage.ts",
+    "src/admin/observability/types.ts",
     "src/admin/observability/ReachTable.tsx",
     "src/admin/observability/FunnelView.tsx",
     "src/admin/observability/MetricsView.tsx",
