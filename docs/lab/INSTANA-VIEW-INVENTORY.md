@@ -1,0 +1,330 @@
+# Instana view inventory — what each view would need from us
+
+**The question this answers is NOT "which Instana views should we rebuild".**
+That judgement is premature, and this document exists because it is. The
+operator put it plainly: *Instana has tons of views and we don't yet populate
+the data in there in a way that I could tell which views are going to be useful
+for us in long term.*
+
+So this is the INPUT to that judgement. For each view: what it consumes, whether
+we feed it today, and what feeding it would cost. A view nobody can see data in
+cannot be judged; a view that is structurally impossible here should stop taking
+up room in the decision.
+
+Read [`docs/ANALYTICS.md` §8.2](../ANALYTICS.md) first for WHY Instana is here at
+all — a **benchmark, not a dependency, and a temporary one**. Nothing below is an
+argument for keeping it.
+
+**The clock.** The Instana UI reported on 2026-08-31 that this tenant is a trial
+expiring in 14 days. Every EMPTY row is a view the operator can only evaluate if
+data lands inside that window, which is why §6 orders the fixable rows by cost
+rather than by how interesting they sound.
+
+**This is a living document.** Rewrite rows as things land; never append a dated
+annex that contradicts the table. Live-tenant observations carry their date
+because trial data ages out from under them — the classification is the durable
+part, the hit counts are not.
+
+## 1. How each row is classified
+
+| | Means |
+|---|---|
+| **POPULATED** | We already feed it. The operator can judge its usefulness today, in the UI, with no work first. |
+| **EMPTY, FIXABLE** | The view would work for this lab; our data is missing or mislabelled. The actionable rows — each states what is missing and roughly what supplying it costs. |
+| **N/A** | Cannot apply to a single-box museum gallery. Say so and stop; ruling these out shrinks the surface, which is itself the point. |
+| **POPULATED BUT UNINFORMATIVE** | We feed it and it still tells us nothing. **The highest-value rows here** — views we never need to rebuild in `/admin/observability`, where the work is already done and the answer is "don't". |
+
+## 2. What actually reaches Instana — four paths, not one
+
+`docs/ANALYTICS.md` §8.1 calls `instana-forward.py` "one controlled thing that
+decides to leave the box". True of the *box*, and not the whole picture of what
+this repo sends IBM. Knowing which path a view depends on is most of knowing
+what fixing it costs:
+
+| # | Path | Carries | Runs |
+|---|---|---|---|
+| 1 | **Browser EUM agent** → IBM SaaS, direct from each visitor's tab | page loads, page transitions, HTTP calls, resource loads, JS errors, sessions, identity, geo/browser/OS | continuously, every visit |
+| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table | **by hand only**, never on a timer |
+| 3 | **`scripts/serve-https-spa.sh`** → Instana Web REST API, from the deploy machine | built SPA **source maps** (`PUT …/sourcemap-upload/…`), and republishing the pinned EUM agent JS self-hosted | every SPA deploy |
+| 4 | **IBM's host agent on labhost** → SaaS, IBM's own binary | host, process, LXC and agent infrastructure data | continuously, and **not this repo's to switch off** |
+
+Path 2 surprises twice: it is manual, so **any view it feeds is stale by
+default**, and it forwards metrics as well as spans — so `analytics.db` is not
+purely local, contrary to how §8's "third telemetry plane" framing reads at a
+glance. Path 3 is not mentioned in §8.1/§8.2 at all.
+
+**Never sent:** `probes.json` (the Rust feature-reach counters),
+`clientlog.jsonl`, `usage-stats.json`, and every log line this system produces.
+There is no OTLP `/v1/logs` exporter, syslog forwarder or journald shipper in the
+tree; journald keeps logs on the box.
+
+**Filtered on purpose, in the tab only.** The browser agent ignores our own
+telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
+`/usage`, `/clientcmd`) so Instana never reports a beacon about a beacon. The
+Python plane still opens `server` spans for `/clientcmd` and `/clientlog` and
+path 2 forwards them: on 2026-08-31 they were the **largest single family of
+traces in the tenant** (74 + 8 of a 200-trace sample). Circular monitoring is
+closed in the browser and open on the server.
+
+## 3. Three facts that decide most of the table
+
+1. **Instana only builds a trace from an ENTRY span.** IBM's own definition —
+   the first span of a service, the Dapper "server span"
+   (`0279-tracing-in-instana.md:192-193`). Established here by experiment, not
+   inference (commit `2bb51d06`): `internal`-kind spans ingest with a 200,
+   register a service, and produce no trace and no endpoint. A trace with no
+   `Server` span has no owning service and lands under **`Unspecified`**.
+2. **Services and endpoints are auto-discovered from calls, never declared**
+   (`0251-monitoring-applications.md:490-491`), each endpoint typed
+   automatically as BATCH / SHELL / DATABASE / HTTP / MESSAGING / RPC
+   (`0251:639`). We declare nothing; what Instana shows is what our span names
+   happen to make.
+3. **Geo works because we do not proxy visitors** — it is derived from the
+   visitor IP against MaxMind (`0250-monitoring-websites.md:236-240`).
+
+## 4. The inventory
+
+Counts are **24-hour windows read 2026-08-31 ~22:05 UTC** unless stated. Read
+§7 before quoting any of them: a 7-day window returns *fewer* rows than a
+1-hour one.
+
+### 4.1 Website Monitoring — the richest surface we have
+
+Beacon types are page loads, HTTP requests, resources and JavaScript errors
+(`0250:175-177`); the API's own 400 body gives the full enum as `PAGELOAD,
+RESOURCELOAD, HTTPREQUEST, ERROR, CUSTOM, PAGE_CHANGE`.
+
+| View | Us | Class | Cost to fix |
+|---|---|---|---|
+| Page loads | 15 PAGELOAD/24 h | **POPULATED** | — |
+| ↳ page NAME on page loads | **blank or `*` on 14 of 15**; only one carried `/os/:osId` | **EMPTY, FIXABLE** | small — the bootstrap's `ineum('page', …)` is losing the race with the page-load beacon |
+| ↳ join keys on page loads | **`meta: {}` on all 15.** `kh.sessionId`/`kh.bundle` are set in stage 2, after the beacon has gone | **EMPTY, FIXABLE** | small, same change: move the two `meta` calls into `index.html`'s inline bootstrap. Without them a page-load beacon cannot be joined to our own store |
+| Page transitions | 14 PAGE_CHANGE/24 h with route patterns (`/os/:osId`, `/`) and **full meta** (`kh.sessionId`, `kh.bundle`, `kh.page.transitionMs`, `kh.route.param.osId`) | **POPULATED** | — |
+| HTTP calls | **4001 HTTPREQUEST/24 h**, full meta on all sampled | **POPULATED** | — |
+| ↳ backend correlation | `backendTraceId` on **200 of 200** sampled HTTP calls and 7 of 15 page loads, from the `<meta name="traceparent">` tag (`TRACE-CONTEXT.md` §4) | **POPULATED** | — |
+| Resource loads | 61 RESOURCELOAD/24 h | **POPULATED** | — |
+| Sessions | `trackSessions`; a `localStorage` id (`0250:472-477`); `sessionId` on every beacon sampled | **POPULATED** | — |
+| Users / Impacted Users | real account id **and display name** on 10 of 14 page transitions and 200 of 200 HTTP calls — never on a page load | **POPULATED** | small: the page-load gap is the bootstrap race above |
+| JS errors | **0 ERROR/24 h**, though `wrapEventHandlers` and `wrapTimers` are both ON — deliberately, because a WebGL/RAF/pointer app throws where `window.onerror` never looks | **EMPTY** — and we cannot tell "nothing threw" from "nothing arrives" | ~zero: provoke one error on staging and look |
+| ↳ unminified stacks | source maps uploaded every deploy (path 3) | **POPULATED BUT UNEXERCISED** — with 0 error beacons the upload has never been read | — |
+| Custom events | **0 CUSTOM/24 h.** `inputTrace.ts` does call `ineum('reportEvent','kh.input.sampled', …)`, in commit `4d031882` — **not deployed**; the served bundle contains zero occurrences of `reportEvent` | **EMPTY, FIXABLE** | one SPA rebuild + deploy of already-written code |
+| Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24` | **POPULATED BUT UNINFORMATIVE** — §5 | — |
+| Human vs. our own probe fleet | **6 of 15 page loads were `HeadlessChrome`** — this lab's own browser probes, counted as visitors | **POPULATED BUT WRONG** — our plane separates this with its client-class dimension (`ANALYTICS.md` §9); Instana structurally cannot | medium, and no clean vendor answer: a `meta` flag plus manual Analyze filtering, which still does not fix Smart Alerts or Impacted Users |
+
+**A budget worth knowing before loading this surface up:** 128 beacons/10 s,
+4096/10 min, 8096/page, XHR-fetch 32/10 s per tab. That budget is why circular
+monitoring is filtered rather than tolerated.
+
+### 4.2 Application Monitoring
+
+| View | Us | Class | Cost to fix |
+|---|---|---|---|
+| Services | exactly 3: `kernel-hive-spa` (openTelemetry), `kernel-hive-serve` (openTelemetry + pythonRuntimePlatform), and one literally named **`Unspecified`** | **POPULATED, and a third of it is wrong** | see the next row |
+| ↳ the `Unspecified` third | **96 `input.edge` traces in 24 h, all `Unspecified`**, carrying 145 calls. Both fixes are **in source and not in the running binary**: `trace/mod.rs:338` stamps `kh.service: kernel-hive-daemon`, `trace_session.rs:223` makes `input.dispatch` `Kind::Server`. Our own store proves the fleet predates them — every stored `input.dispatch` is still `internal` and no span anywhere carries `kh.service: kernel-hive-daemon` | **EMPTY, FIXABLE — the top row here** | the expensive one: `cargo build --release`, canary, risk-ordered `fleet_rollout.py` promotion, then `trace-ship.py` and `instana-forward.py` by hand. Converts a whole third of the traces from an unattributable bucket into a named service |
+| Traces / trace view | 200 traces/24 h: `input.edge` 96, `serve.clientcmd` 74, `serve.page` 8, `serve.clientlog` 8, `serve.kh.deploy-hint` 7, `serve.signal` 3, `serve.walkin.state` 3, `serve.restore` 1 | **POPULATED** | — |
+| **Endpoints** | **13 endpoints exist** — `serve.clientcmd`, `serve.analytics`, `input.edge`, `http.client.request` … one per span name, confirmed by grouping calls on `endpoint.name` | **POPULATED — but named after our span names, not HTTP routes** | small-to-medium if route-level endpoints are wanted: give entry spans an `http.route`. Judge whether span names are good enough FIRST — they may be better than routes here |
+| Calls / latency per service | `kernel-hive-serve` 43→99 calls/h at 1.3 ms mean; `Unspecified` 145 calls at 2.6-4.2 ms; **`kernel-hive-spa` 6 calls** | **POPULATED** | — |
+| Service map / dependencies | three services, one of them `Unspecified`; no database, no queue, no third-party call, no second host | **POPULATED BUT UNINFORMATIVE** — §5 | — |
+| Analyze / Unbounded Analytics | `analyze/traces` and `analyze/call-groups` both return real rows; grouping works on `service.name`, `endpoint.name`, `call.name` | **POPULATED** | — |
+| Application Perspectives | only the default "All Services" exists | **EMPTY, FIXABLE** | minutes of operator UI — a mutating tenant change, deliberately not done by this read-only pass |
+| Metric histograms from `analytics.db` | forwarded by path 2 with our own bucket ladder — whose counters carry only a **day** bucket | **POPULATED BUT UNINFORMATIVE** — any Instana series over them is one point per day, strictly less than `reach-report.py` already shows. Nobody has yet found where they surface in the UI, and it does not matter much | — |
+
+### 4.3 Infrastructure — populated by IBM's agent, not by us
+
+| View | Us (read 2026-08-31) | Class |
+|---|---|---|
+| Hosts | exactly 1 host node — labhost itself — with its Instana agent beside it | **POPULATED** |
+| Processes | 27 process entities | **POPULATED** |
+| Containers (LXC) | 4 (`950`, `951`, `952`, `210`) | **POPULATED** |
+| Topology / Dynamic Graph | 49 nodes across 9 plugin kinds | **POPULATED** |
+| Host ↔ trace correlation | the agent supplies `host.id` itself on path 2's agent leg | **POPULATED** |
+| **eBPF / native profiling of the Rust daemon** | not enabled. Instana profiles native processes with `INSTANA_PROFILING=1` at process start, kernel ≥5.10 and glibc ≥2.26 (`0258-profile-processes.md:257-278`) | **EMPTY, FIXABLE — the most interesting row in the document.** This is the **one place a vendor could tell us something about `streamhost` we did not tell it first**; everything else Instana knows about the daemon, we sent it. It bears directly on the open keyboard-lag investigation. **Cost: one systemd drop-in and a restart on ONE canary station**, plus checking the two floors. Do not fleet-wide it to find out |
+| Docker / container dashboards | no Docker on the box | **N/A** |
+| vSphere | that sensor monitors VMware; this is Proxmox | **N/A** |
+| A sensor for the thing this lab is about | **there is no Instana sensor for QEMU or any emulator**, and the guests are deliberately not traced from inside (`TRACE-CONTEXT.md` §6) | **N/A — permanently.** Emulator-internal visibility was never something a vendor could shortcut; it is `streamhost`'s own span plane's job and always will be |
+
+### 4.4 Synthetics — N/A here, and blocked anyway
+
+A synthetic test runs from a **PoP** — an agent deployed somewhere that registers
+itself as a location (`0257-synthetic-monitoring.md:99-101`) — to test
+availability "in the absence of real user traffic" (`0257:35-36`).
+
+- `GET /api/synthetics/settings/locations` → `200 []`: no PoP exists.
+- `GET /api/synthetics/settings/tests` → **403**: this trial does not entitle
+  Synthetics. An access failure, not a measured zero.
+
+**Class: N/A for this tenant.** An uptime check against the public gallery
+domain is the one genuinely applicable use, and the tenant will not let us try.
+
+### 4.5 Events, Alerting, SLO
+
+| View | Us | Class | Cost |
+|---|---|---|---|
+| Events feed | **81 events in 7 days**, all `entityType: INFRASTRUCTURE`: `online` 51, `offline` 19, `Change detected` 5, `System load too high` 3, `Abnormal termination` 3 — an honest reflection of a lab whose stations are routinely stopped, paused and rolled | **POPULATED** | — |
+| Application / website events | zero of either kind | **EMPTY, FIXABLE** | tenant configuration only, no instrumentation |
+| Smart Alerts | none configured; would derive entirely from planes already ingested | **EMPTY, FIXABLE (config only)** | minutes — but see the next two rows before spending them |
+| ↳ their value here | 15 page loads a day, 6 of them our own probes. IBM's own rule: no beacon for 3 h closes any active alert (`0250:1153-1154`) — which describes this gallery most nights | **would be UNINFORMATIVE if filled** | — |
+| SLOs | `GET /api/settings/slo` → `{"items":[],"totalHits":0}`. SLOs bind to entity types that already exist — applications, websites, infrastructure (`0262:97,132-133`) | **EMPTY, FIXABLE (config only)** | minutes; a website-Apdex SLO needs only beacons we already send |
+| Adaptive thresholds | require **≥14 days of continuous history** before the forecast is trusted (`0266:38-40`) | **N/A for this tenant** — the trial expires in 14 days, so this view cannot be evaluated in the window that exists, whatever we feed it | don't spend the window trying |
+
+### 4.6 Log management — nothing to see, on purpose
+
+Instana collects logs via tracers, container sensors or OpenTelemetry, the last
+needing explicit configuration (`0248-logging.md:16-26`).
+
+We ship no logs anywhere. No log-query endpoint we tried answered
+(`/api/logs/analyze/entries`, `/api/logs`, `/api/logs-monitoring/analyze/entries`,
+`/api/logs/entries` — all 404), so the zero is established from the repo side,
+not the API side.
+
+**Class: EMPTY.** Fixable by enabling log collection in the labhost agent — a
+box-level operator action, not a repo change. Worth doing only to evaluate
+log↔trace correlation, a real Instana strength this lab has never tested.
+
+### 4.7 The N/A block — most of the product
+
+Ruling these out is the cheapest value here: it is the bulk of Instana's surface
+area, and none of it needs a decision.
+
+| Surface | Why not |
+|---|---|
+| Kubernetes, OpenShift, Cloud Foundry/Tanzu | no orchestrator; one Proxmox box with LXC and QEMU |
+| Serverless — Lambda, Azure Functions, Cloud Run | nothing runs off-box |
+| AWS / Azure / GCP / Alibaba sensors (~150 doc sections) | no cloud account is monitored |
+| Managed databases, message queues, Kafka, JMS | none exist; the stores are SQLite files on the box |
+| Mobile app monitoring | needs an iOS/Android agent as an app dependency (`0249:20-22`); this is a web SPA |
+| Business processes, Business metrics, Business view dashboards | no business transactions |
+| GenAI / LLM observability, AI gateway | nothing here calls a model at runtime |
+| IBM Concert / Turbonomic / Kubecost / DBmarlin | no such products |
+| Prometheus, JMX, Java/.NET trace SDKs | no JVM, no CLR, no Prometheus |
+| Custom dashboards | not a data need — a UI over the rows above; anything POPULATED can be dashboarded today |
+
+## 5. Populated and still uninformative — the rows we never rebuild
+
+- **Geo, city, country, connection type.** Every beacon resolves to the same
+  single city — this gallery is one household and its invited guests, so a world
+  map is decoration. `/admin/observability` should not grow one.
+- **Browser/OS breakdown.** Two entries, one of which is our own headless probe
+  fleet.
+- **The service map.** Three nodes, one of them `Unspecified`, and it becomes a
+  clean graph of three after the daemon row lands. Its whole value is dependency
+  discovery in a system too large to hold in one head; this system is 61 copies
+  of one binary behind one serving plane. Enjoy it for five minutes; never
+  rebuild it.
+- **Impacted Users and Smart-Alert baselines.** At ~15 page loads a day, 40 % of
+  them synthetic, every statistical feature is measuring noise.
+
+The pattern: Instana's population-scale features need a population. This lab has
+a handful of humans and a fleet of 61 machines, and its interesting variance is
+per-station, not per-visitor. That is a real finding about **which half of a
+commercial APM is worth copying** — the trace and flame-graph half, not the RUM
+aggregate half.
+
+## 6. The EMPTY-FIXABLE queue, cheapest first
+
+1. **Deploy the SPA.** Ships the custom-event call (`reportEvent`) that is
+   committed and unshipped, and — with the small bootstrap change below — the
+   page name and join keys on page-load beacons. **Cost: one rebuild + deploy.**
+2. **Move page name, `kh.sessionId` and `kh.bundle` into the inline bootstrap.**
+   Today 14 of 15 page loads are unnamed and unjoinable. **Cost: a small SPA
+   change**, riding the same deploy.
+3. **Provoke one JavaScript error on staging.** **Cost: ~zero**, and until an
+   ERROR beacon exists we cannot tell an empty view from a broken pipe — nor has
+   the source-map upload we run on every deploy ever been read.
+4. **Turn on eBPF profiling for `streamhost` on ONE canary station.** **Cost: a
+   systemd drop-in and a restart**, plus checking kernel ≥5.10 / glibc ≥2.26.
+   The only row where a vendor can tell us something we did not tell it first.
+5. **Rebuild and roll the daemon** so `input.edge` stops being `Unspecified`.
+   **Cost: build + canary + a risk-ordered fleet promotion + two hand-run
+   scripts** — the most expensive row, and the one that finally puts the
+   input→pixel flame graph in front of a commercial APM.
+6. Then, if the trial still has days: one Application Perspective and one SLO
+   (operator UI, minutes each).
+
+## 7. Traps found while measuring
+
+- **`analyze/*` `totalHits` is NOT comparable across window sizes.** Measured
+  within one minute on 2026-08-31: `windowSize` 1 h → 95 traces, 24 h → 270,
+  **7 d → 48**. A longer window returning fewer rows means this number answers
+  "is there data" and never "how much". A ~14-day window returns zero outright.
+  Read 24 h, and never quote a multi-day count as a volume.
+- **The same applies to beacons.** A 7-day query reported PAGE_CHANGE 0 while
+  the 24-hour query reported 14. An "empty" view read over a long window may
+  simply be the wrong question — this is how somebody concludes the whole
+  integration is broken.
+- **`endpoint: null` in `analyze/traces` does not mean "no endpoints".** It is
+  an unfilled response field; grouping `analyze/call-groups` on `endpoint.name`
+  returns 13 real endpoints for the same data. Two hours can go into "fixing"
+  an endpoint model that was never broken.
+- **`scripts/serve/pki/` is gitignored and per-checkout**, so a fresh `wt.sh
+  new` sandbox has **no Instana token**. Read it from the shared clone at
+  `/home/wnt/kernel-hive/scripts/serve/pki/instana.token`; the credential is not
+  missing.
+
+## 8. Two things in this repo that these measurements contradict
+
+Landed here rather than left in a transcript, since a caveat stated only in chat
+is assumed away:
+
+- **The browser↔daemon trace join HAS now been exercised.**
+  `docs/lab/TRACE-CONTEXT.md` §3.1 and `docs/ANALYTICS.md` §8.1 both still say no
+  visit has ever used it. On 2026-08-31 the store holds 8 `streamhost.session`
+  spans, **3 of them with `kh.trace.joined = 1`**. The hop works; those two
+  sections are stale and should be corrected by whoever next edits them.
+- **`instana-forward.py`'s docstring says the browser service reports
+  `calls.sum = 0` forever.** It no longer does — `kernel-hive-spa` shows 6 calls
+  in the sampled window. The mechanism it describes (only entry spans build
+  traces) still holds; the specific consequence has moved on.
+
+## 9. How to re-measure this (read-only)
+
+```bash
+TOKEN=$(cat /home/wnt/kernel-hive/scripts/serve/pki/instana.token)
+BASE=$(grep '^INSTANA_API_BASE=' registry/local.env | cut -d= -f2- | tr -d '"')
+NOW=$(($(date +%s)*1000))
+
+# traces — which services and span names exist, 24 h
+curl -s -X POST "$BASE/api/application-monitoring/analyze/traces" \
+  -H "authorization: apiToken $TOKEN" -H 'content-type: application/json' \
+  -d "{\"timeFrame\":{\"windowSize\":86400000,\"to\":$NOW}}"
+
+# calls grouped by service / endpoint / call name (granularity is SECONDS,
+# and windowSize must be at least twice it)
+curl -s -X POST "$BASE/api/application-monitoring/analyze/call-groups" \
+  -H "authorization: apiToken $TOKEN" -H 'content-type: application/json' \
+  -d "{\"timeFrame\":{\"windowSize\":86400000,\"to\":$NOW},
+       \"group\":{\"groupbyTag\":\"endpoint.name\"},
+       \"metrics\":[{\"metric\":\"calls\",\"aggregation\":\"SUM\",\"granularity\":3600}]}"
+
+# beacons — one call per type: PAGELOAD RESOURCELOAD HTTPREQUEST ERROR CUSTOM PAGE_CHANGE
+curl -s -X POST "$BASE/api/website-monitoring/analyze/beacons" \
+  -H "authorization: apiToken $TOKEN" -H 'content-type: application/json' \
+  -d "{\"timeFrame\":{\"windowSize\":86400000,\"to\":$NOW},\"type\":\"PAGELOAD\"}"
+
+# infrastructure, events, SLOs
+curl -s -H "authorization: apiToken $TOKEN" "$BASE/api/infrastructure-monitoring/topology"
+curl -s -H "authorization: apiToken $TOKEN" "$BASE/api/events?from=$((NOW-604800000))&to=$NOW"
+curl -s -H "authorization: apiToken $TOKEN" "$BASE/api/settings/slo"
+```
+
+**Mutating calls are out of bounds** unless the operator asks: creating a
+website, a perspective, an SLO or a synthetic test changes the tenant. This
+inventory is a reading exercise.
+
+## 10. Tally, as of 2026-08-31
+
+| Class | Rows | Where |
+|---|---|---|
+| POPULATED | 20 | §4.1 (9), §4.2 (6), §4.3 (5) |
+| EMPTY, FIXABLE | 9 | §4.1 (3), §4.2 (2), §4.3 (1), §4.5 (3) |
+| POPULATED BUT UNINFORMATIVE | 5 | geo, browser/OS, the service map, the unexercised source maps, the forwarded metric histograms |
+| N/A | 14 | Synthetics, adaptive thresholds, the emulator sensor gap, Docker, vSphere, and §4.7's ten surfaces |
+| EMPTY, nothing to fix yet | 2 | ERROR beacons (until one is provoked), log collection |
+
+The shape of that tally is the finding. Instana's RUM and infrastructure halves
+are well fed and mostly tell us what we already know. Its application half is
+genuinely populated too — services, endpoints, calls and latency all exist —
+with one real hole: a third of our traces are unattributed because a committed
+fix has not been rolled. And the single capability worth the most is the one we
+have not tried at all: eBPF profiling of the daemon, which is the only place in
+this whole surface where the vendor knows something we did not hand it.
