@@ -43,6 +43,21 @@ ssh lab 'checkpoint-guard prune    <station>'    # drop the backup once you are 
 `recapture` captures the station's **current live state** as the new checkpoint. Curate
 the scene first — the guest is captured as it stands.
 
+**Curating the scene is not only the picture.** What the guard proves is that the
+checkpoint RESTORES: the framebuffer moves off a reference and comes back to it. It
+cannot prove the restored exhibit is USABLE, and the two came apart on `aix432`,
+2026-08-31. That recapture passed every gate here, and it baked a Netscape whose HTML
+content area no longer takes keyboard focus: a visitor could click a form field, see
+the caret blink, and type into a void. The screenshot was perfect. The interaction
+state that made it useless is in the vmstate, so it came back on every restore, and a
+month of input-plane debugging could not have touched it.
+
+So for any station whose exhibit is an APPLICATION a visitor drives, add one manual
+step the guard cannot do for you, AFTER the run: restore the new checkpoint into a
+sandbox clone (`clone-guard`-linted launcher, same device set) and drive the thing the
+visitor drives — click the field, type, read the characters back out of a screendump.
+If that is not done, "restore-proven" means only that the pixels come back.
+
 Knobs, all env: `CPG_LABEL` (default `golden`), `CPG_STAGING_LABEL` (default
 `cpg-staging`), `CPG_DIRTY_TEXT`, `CPG_SSIM_MIN` (default `0.999`), `CPG_IDLE_SECONDS`,
 `CPG_SETTLE`, `CPG_STATIONS_ROOT` (point it at a sandbox to exercise the guard on a
