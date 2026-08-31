@@ -35,6 +35,7 @@ kills.
 | I.11 | `STAT` reported healthy while the drawn cursor was 1–2 px off | self-reported health without framebuffer evidence |
 | I.12 | The QEMU fork was pushed from `qemu-patches/*.patch` by one agent; a second regenerated a patch and found the fork had moved underneath. `qemuBuild.forkCommit` still named the pre-push commit. **No symptom until a build attempt** | repo holds the *recipe*, somewhere else holds the *result* |
 | I.13 | 42 serve-side files deployed 2026-08-30 21:42 to a process running since 2026-08-26 03:10 — the whole auth and walk-in plane, never loaded, on a publicly-open surface. Found only because arming the trigger required costing a restart | **no check exists** for the gap between *deployed* and *loaded* |
+| I.14 | A sibling-import check excluded the one directory that needed it, and its docstring explained why the case could not arise; a route sat behind the visitor gate under a comment asserting it was in front. Two files, two authors, one night | **prose asserting an invariant the code does not have** — it pre-empts the check |
 
 I.12 is the day's third two-sources-of-truth failure — after registry
 declarations vs the live box (I.2/I.5) and rendered manifests vs the registry
@@ -187,6 +188,29 @@ for exhibit availability would import a new outage source for no safety gain.
 
 Both call the **same endpoint** with the **same signature scheme**, so there is
 exactly one verification path to reason about.
+
+**GAP, OPEN AS OF 2026-08-31: the Actions ping is NOT scheduled after CI.**
+`.github/workflows/deploy-hint.yml` triggers on `push` with no ordering against
+the quality workflows, so in practice it races the webhook by a few seconds
+rather than following a green build — measured at 4–6 seconds behind on every
+real push so far. The table above says this ping "doubles as *CI was green for
+this commit*"; **as written it carries no such assurance.** The audit-trail half
+of its job is therefore weaker than this section documents: it records that a
+deploy was requested, not that the commit was healthy when it was.
+
+Fixing it is a real change rather than a one-line addition: `needs:` orders jobs
+*within* one workflow, so cross-workflow ordering requires a `workflow_run`
+trigger on the quality workflow's completion, which also changes what the ping
+means when CI is skipped or cancelled. It was deliberately not folded into the
+arming work, because "arm the trigger" does not authorise changing what the
+trigger asserts.
+
+**Until it is fixed, nothing may treat that ping as a quality signal.** The
+danger is specific and future-facing: a later change wiring convergence to
+"converge only on an Actions-sourced hint, because CI passed" would be trusting
+something that never checked. The reconciler's own acceptance gate (§6) is what
+decides safety, and that is deliberate — see the paragraph above on why GitHub
+CI is not made load-bearing for exhibit availability.
 
 ### The endpoint
 
@@ -532,6 +556,64 @@ auth-plane code on a live public surface. Those two actions have nothing to do
 with each other except that one requires the other, and a process that treats
 "restart the serve unit" as an implementation detail of "turn on the webhook"
 would have performed the second while intending only the first.
+
+---
+
+## 2.7 Prose asserting an invariant the code does not have (I.14)
+
+**A distinct hazard, and worse than an absent comment.** Everything else in this
+document is a signal that is *true about the wrong question* — a green
+`is-active`, a frozen counter, a fractional mtime. This one is different: it is a
+statement that is simply false, written by an author who believed it, sitting
+where a reader will accept it instead of checking. **It pre-empts the check. A
+reader who was about to verify stops, having been told why they need not.**
+
+**Two instances on 2026-08-31, in two files, by two different authors.**
+
+1. `deploy-pair-imports.py` excluded same-directory siblings from its import
+   check and said why: *"a sibling in the importer's own directory (which the
+   pair loops already carry as a tree)"*. True of `scripts/labctl.d/`,
+   `scripts/serve/auth/`, `authui/` and `walkin/`. **False of top-level
+   `scripts/serve/`**, which is a static name list — the one directory the
+   sentence did not enumerate, and the one where a new module beside a deployed
+   one gets no pair row. `deploy_hint.py` landed exactly there.
+2. The `/kh/deploy-hint` route carried the comment *"deliberately OUTSIDE the
+   public gate"* while being dispatched **after** `_public_gate`. Every GitHub
+   delivery was 401 and the trigger could never have fired. The comment stated
+   the requirement correctly and the code did the opposite; nothing compared
+   them.
+
+Note what these have in common beyond being wrong: **both comments were correct
+as statements of intent.** Neither author misunderstood the requirement. The
+sibling exclusion was right about the directories in mind; the route comment was
+right about where the route belonged. What failed is that an intent written in
+prose and an intent expressed in code drift independently, and only one of them
+runs.
+
+**The generalisation: a comment that explains why a case is impossible is a
+claim, and claims about invariants belong in tests.** Prose that merely
+*describes* behaviour is fine and this document is full of it. What rots is an
+ENUMERATION — "this holds for A, B and C", "these directories are covered", "this
+runs before that" — because code later moves into a D the list never knew about,
+and the list has no way to notice. The more carefully the impossibility is
+argued, the more effective it is at stopping the next reader from looking.
+
+**So the shape of the fix matters as much as the fix.** Both were repaired by
+making the claim executable rather than by rewriting the sentence:
+
+- the sibling case now fires on a **positive contradiction** — *this paired file
+  imports that file, and that file has no pair* — so a directory genuinely
+  covered by a tree loop stays silent **without the check needing to know which
+  loops exist**. The enumeration that rotted is gone, not corrected;
+- the route's placement is asserted by exercising it on the listener that
+  matters, and the comment now says *"verify this route on the PUBLIC listener
+  or you have tested nothing"* — an instruction to check, where the old one was
+  a reason not to.
+
+A blanket rule ("every file must have a pair", "no comment may claim an
+invariant") would have been silenced within a week, which is the failure mode
+`deploy-pair-imports.py`'s own docstring already warns about. The test is the
+place for a claim precisely because a test cannot be believed without running.
 
 ---
 
