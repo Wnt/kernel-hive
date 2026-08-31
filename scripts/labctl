@@ -131,7 +131,7 @@ def cmd_ls(argv):
                 c.get("warpd_port") or "-",
                 c.get("ssh_port") or "-",
                 c.get("exec_port")
-                or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e", "serial_getty") else "-"),
+                or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e", "serial_getty", "serial_shell") else "-"),
                 c.get("console", "?"),
                 g,
                 svc_state(name),

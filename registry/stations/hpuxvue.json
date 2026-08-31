@@ -46,12 +46,12 @@
       "warpd_addr": null,
       "ssh_port": null,
       "exec_port": null,
-      "exec_kind": null,
-      "exec_user": null,
+      "exec_kind": "serial_shell",
+      "exec_user": "root",
       "exec_key": null,
       "console": "fb",
       "udp_port": 54144,
-      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE. POINTER ACCURACY: WITHIN 1 px, NOT EXACT. The Artist engine is a closed loop with ptr-deadband=1 and converges on abs(err) <= deadband on BOTH axes, so it is SPECIFIED to stop within one pixel -- `labctl abs x y` lands at x+/-1, y+/-1, converged and held. This is weaker than rhapsody's and macos753's exact landing: those use kh-ramabs, which has no deadband at all and tests literal equality, so 0 px is the correct strictness there and 1 px would hide a missed publish. Do not carry this tolerance to a ramabs station, and do not set ptr-deadband=0 to make a test pass -- the deadband is what stops the hunting that leaves window-border hotspots unmeasurable."
+      "notes": "exec = serial_shell: the golden bakes a LIVE root session on the guest's serial line (-sh on tty1p0, PS1 KHPROMPT>, reached on serial.sock in the station dir) -- there is NO getty to log in to, and Mosaic (a window of the exhibit scene) is a CHILD of that shell, so the client must never end the session. Client scripts/labctl.d/hpuxvueexec.py, no port, no password. MEASURED LIMIT: shell builtins are reliable (120/120 echo, 20/20 append+readback, 10/10 forking subshells) but running an EXTERNAL binary wedges the session about half the time, permanently -- the tty still echoes, nothing executes, and no getty respawns because init's respawn slot is held by the shell that is still there. exec reports a wedge as exit 125; the heal is `labctl reset hpuxvue` (loadvm golden), which also resets the visitor's scene, so it is the operator's call. A wedge does NOT stall the guest: the closed-loop pointer still converges exactly. See docs/guests/hpuxvue.md. POINTER ACCURACY: WITHIN 1 px, NOT EXACT. The Artist engine is a closed loop with ptr-deadband=1 and converges on abs(err) <= deadband on BOTH axes, so it is SPECIFIED to stop within one pixel -- `labctl abs x y` lands at x+/-1, y+/-1, converged and held. This is weaker than rhapsody's and macos753's exact landing: those use kh-ramabs, which has no deadband at all and tests literal equality, so 0 px is the correct strictness there and 1 px would hide a missed publish. Do not carry this tolerance to a ramabs station, and do not set ptr-deadband=0 to make a test pass -- the deadband is what stops the hunting that leaves window-border hotspots unmeasurable."
     }
   },
   "render": {
