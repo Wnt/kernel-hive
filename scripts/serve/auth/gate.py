@@ -102,7 +102,17 @@ OPEN_PATHS = frozenset(
 # manifest, the fleet table, station signaling, /admin, /clientcmd*).
 # /posters/ holds the captured exhibit stills. The walk-in landing page and its
 # exhibits view are built from them, and they are published art, not data.
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/")
+# /vendor/ holds the self-hosted third-party static agent (Instana EUM),
+# mirrored byte-for-byte from IBM's CDN by serve-https-spa.sh's
+# publish_instana_agent() at deploy time. spa/index.html loads it BEFORE any
+# auth decision — the earliest possible <script> in <head>, ahead of React —
+# because the whole point is a page-load beacon for the visit that is
+# happening right now, signed in or not. Gated behind a 401 it cannot get:
+# the browser never even reaches the app to authenticate, so no telemetry is
+# ever produced. It is a public, unmodified third-party script (nothing of
+# ours, nothing secret) that is already downloadable straight from IBM, so
+# publishing it here leaks nothing that gating it would have protected.
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to
@@ -205,6 +215,11 @@ WALKIN_PATHS = frozenset(
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —
 # captured stills already published to the webroot.
+# /vendor/ is deliberately NOT listed again here: walkin_allows() checks
+# is_open() first, and /vendor/ joined OPEN_PREFIXES above, so a walk-in
+# already reaches it before this allowlist is even consulted. A stranger's
+# tab needs the telemetry agent exactly as much as an invited one does — a
+# walk-in session is not exempt from the outage this fixes.
 WALKIN_PREFIXES = ("/assets/", "/posters/", "/walkin/play/", "/fonts/")
 
 # The exhibition fields, named to KEEP (brief §5.3). Built as an allowlist so a
