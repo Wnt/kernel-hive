@@ -67,23 +67,30 @@ run per wave and all three must pass before the next wave starts.
    invariant `scripts/lib/streamhost-artifacts.sh` states for `build-deploy.sh`.
 2. **Settle** (`--settle`, default 45 s), so a guest that is going to fall over
    has time to.
-3. **A real screendump per station.** Pulled through labctl's own capture
-   dispatcher, so a QMP tile, an x11-capture tile and an shm tile each get the
-   backend they actually use, and required to decode and to be at least
-   `--min-nonblack` percent non-black (default 0.5 %) — or, for a station the
-   registry declares `ui: text-console`, merely non-blank (see below).
+3. **A real screendump per station, before AND after.** Pulled through
+   labctl's own capture dispatcher, so a QMP tile, an x11-capture tile and an
+   shm tile each get the backend they actually use. The wave captures every
+   station's frame once **before** restarting it (its own baseline) and once
+   **after** the settle, and the after-frame must decode and clear the floor
+   `effective_floor()` computes from that station's own before-frame (see
+   below) — or, when no usable before-frame exists, `--min-nonblack` (default
+   0.5 %) as a fallback, tightened to a mere non-blank check for a station the
+   registry declares `ui: text-console`.
 
 Tier 3 is the one that means anything. Tiers 1 and 2 are logs and clocks.
 
-`--no-frame-gate` drops tier 3 to readiness only. It prints a warning in the
-plan when it is set, because a rollout gated on logs alone is the failure mode
-this tool exists to prevent.
+`--no-frame-gate` drops tier 3 to readiness only (and skips the before-capture
+too, since nothing will read it). It prints a warning in the plan when it is
+set, because a rollout gated on logs alone is the failure mode this tool
+exists to prevent.
 
 **The capture passes `resume=False`.** `labctl shot` passes `resume=True`, which
 issues `cont` on a paused guest — a rollout must never thaw a guest somebody
-parked, and a frozen guest's last frame *is* its current screen.
+parked, and a frozen guest's last frame *is* its current screen. Both the
+before- and after-capture honour this; the before-capture in particular reads
+whatever the station happens to be showing right now, not a freshly woken one.
 
-### The frame gate's floor, and why one number could not carry it
+### The frame gate's floor: relative to the station's own baseline, not one number
 
 Measured read-only across every capture backend on 2026-08-31 — QMP, x11spike,
 shm, es40 and SIMH all returned a decodable frame:
@@ -97,31 +104,89 @@ shm, es40 and SIMH all returned a decodable frame:
 | `nextstep` | Previous | 1120×832 | 96.0 % |
 | `irix`, `aix432`, `helenos`, `alto`, `zxspectrum`, `amigaos35`, `w2kalpha` | mixed | — | 97–99.8 % |
 
-`gt40` is the floor of that sample: a vector display draws almost nothing. The
-0.5 % default sits deliberately below it, and a dead station reads ~0 %.
+`gt40` is the floor of that sample: a vector display draws almost nothing. A
+flat 0.5 % default sits deliberately below it, and a dead station reads ~0 %.
 
-**That sample was not the fleet, and the first real rollout found the gap.**
-Wave 2 halted on `alpine` at **0.372 %** — a perfectly healthy Alpine login
-prompt, white text on a black 1920×1200 console. Nothing was wrong with the
-station: at that resolution a shell prompt simply *is* almost black, and the
-sample above happened to contain no dark text console.
+**That sample was not the fleet, and two real rollouts found the gap twice.**
+Wave 2 of the first run halted on `alpine` at **0.372 %** — a perfectly
+healthy Alpine login prompt, white text on a black 1920×1200 console. The
+first fix classified the gate's floor by the registry's `ui` field: a declared
+`text-console` only had to clear a much lower `CONSOLE_FLOOR` (0.05 %).
 
-Averaging the two shapes into one number cannot work — any floor low enough for
-a console is too low to catch a broken desktop. So the floor is per-station and
-read from the registry, which already declares the distinction:
+That held for exactly one more rollout. It then halted on `mpf2` at
+**0.286 %** — the MPF-II trainer board's boot screen, a title, a prompt and a
+cursor on black — and `mpf2` is registered `ui: home-computer`, the *same*
+class as `c64` (61.8 % non-black above) and `zxspectrum` (~99 %). No `ui`
+class predicts brightness; a home-computer exhibit can be a bright desktop clone
+or a dim trainer board, and the registry has no field that says which.
 
-| `ui` | stations | floor | what the gate is asking |
-|---|---|---|---|
-| `text-console` | 5 (`alpine`, `alto`, `decos`, `freedos`, `pdp11`) | `CONSOLE_FLOOR` = 0.05 % | is there a frame here at all |
-| everything else | 62 | `--min-nonblack` (0.5 %) | did this screen come back |
+**A healthy screen's brightness is a property of the station, not its class.**
+So the gate stopped asking "how bright should a healthy frame of this kind
+be" and started asking the only question that is actually true for every
+station: **did this one come back to what it was?** `effective_floor()`
+(`scripts/dev/fleet_rollout_policy.py`) computes the after-frame's floor as
+half of that same station's own frame captured just before its wave restarted
+it (`RELATIVE_FLOOR_RATIO = 0.5`) — loose enough that ordinary frame-to-frame
+noise (a blinking cursor, one more line of boot text, a trainer board's
+changing digit) never trips it, tight enough that a guest coming back fully
+black (0 %) or producing no frame at all still fails outright, since nothing
+is ever half of a positive number and still zero.
 
-`min_nonblack_for()` only ever *lowers* the floor, so an operator who passes a
-stricter-than-console `--min-nonblack` for a specific run still gets it. A
-declared console that returns 0 % still fails, which is the case that matters:
-a dead station is blank, not dim. If a new mostly-dark exhibit lands under the
-desktop floor, fix its registry `ui` or lower `--min-nonblack` for that run —
-never drop the gate. The failure message always prints the measured value and
-the floor it was held to, so the number to use is in the output.
+The class floor (`min_nonblack_for()`, keyed on `ui: text-console`) is not
+gone — it is the fallback for the station that has no usable before-frame to
+be relative to: the before-capture itself failed, or (a `--resume` run) it
+predates this check. A missing before-frame must never make a station
+un-gateable, only less precisely gated, so `effective_floor()` falls back to
+`min_nonblack_for(entry, --min-nonblack)` alone in that case. A before-frame
+that itself read a flat 0 % is treated the same as "missing" — it is
+indistinguishable from a bad capture and would let a still-dead after-frame
+pass by "matching its own baseline".
+
+Both floors — class and relative — only ever *lower* what `--min-nonblack`
+was passed as, never raise it: an operator's explicit floor is a ceiling
+neither computation can exceed. A dead station is blank, not dim, so a
+station that comes back black still fails regardless of how dim it was
+before. The failure message prints the measured value, the floor it was held
+to, and the before-restart reading when there was one, so the numbers to use
+are in the output. If a new station's brightness swings by more than half
+between two ordinary frames (rare — nothing observed does), lower
+`--min-nonblack` for that run rather than dropping the gate.
+
+### The settle interval races the daemon's own idle-pause
+
+The daemon idle-auto-pauses an unwatched exhibit ~60 s after it starts
+("paused is not parked", below) — and the frame gate captures its after-frame
+at readiness + `--settle` (default 45 s), close enough to that boundary that a
+slow wave can land the capture right as the guest is going idle. For a
+QMP-backed station this is harmless: the guest freezes, and its last frame is
+still its current screen. For a **shm-capture** station (host-native MAME,
+e.g. `mpf2`, `zxspectrum`) it used to be a hard failure: the emulator is
+SIGSTOPped by pidfile, which can freeze it mid-write to its shm framebuffer —
+the wire format is a seqlock (`scripts/shmshot.py`), and a sequence frozen ODD
+stays odd *forever* once there is no live writer left to flip it back.
+`shmshot.py`'s own untorn-read wait is built to wait out a *moving* writer;
+against one that is confirmed (via `/proc`, not guessed) never going to move
+again, that wait is not just unneeded, it is unsatisfiable, and fails
+**deterministically** — every retry, every time. That is what halted a
+67-station rollout on `mpf2` and, separately, on `zxspectrum`: not a flaky
+read, a race between the settle window and the idle-pause.
+
+`scripts/host/fleet-rollout-probe.sh` now detects this specific case: a shm
+tile independently proven SIGSTOPped (via `proc_stopped()`, a kernel fact) is
+read once with no seqlock wait (`read_frozen_shm_frame`) — the mmap cannot
+change under a frozen process, so a second read now would return
+byte-identical content to the first, and there is nothing left to wait for.
+This never resumes anything; it duplicates `shmshot.py`'s header parsing
+rather than adding a relaxed-read mode to the shared file, since that file is
+also `labctl shot`/`assert`'s and loosening its read discipline for every
+caller is a decision bigger than this tool.
+
+The race itself is not eliminated, only its shm-side failure mode: a wave
+whose settle interval reliably straddles the 60 s idle-pause boundary is still
+worth shortening. `--settle 20` (well under 60 s) captures every station
+comfortably before idle-pause has a chance to land, at the cost of a shorter
+"is this guest going to fall over" window for a station that does not use shm
+capture.
 
 ## What gets skipped, and why each
 
@@ -205,7 +270,9 @@ json`, ~21k lines, ~4 s per station) and **took over ten minutes without
 finishing**. The same facts come out of `query-status` (0.16 s for all 49 QMP
 tiles) plus a bounded 400-line journal tail (0.065 s per station): the whole
 fleet snapshot takes **4 seconds**, and a three-station framebuffer grab takes
-0.7 s.
+0.7 s. The before/after floor doubles the framebuffer grabs per wave (one
+before the restart, one after the settle) — still under a second per wave at
+that rate, well inside the noise of the 45 s settle it sits next to.
 
 A default rollout is 67 stations in 18 waves; at ~90 s per wave that is roughly
 25–30 minutes of supervised time.

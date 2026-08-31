@@ -286,6 +286,55 @@ class FrameFloorTest(unittest.TestCase):
         self.assertGreater(floor, 0.0)
 
 
+class BeforeAfterFloorTest(unittest.TestCase):
+    """mpf2 (`home-computer`, same class as c64 at 61.8% and zxspectrum at
+    ~99%) halted a rollout at 0.286% non-black, proving no ui class predicts
+    brightness the way alpine (`text-console`) proved one flat percentage
+    could not. The honest gate asks whether a station came back to what it
+    was, not whether it cleared a fixed number."""
+
+    def test_a_station_stays_healthy_at_its_own_dim_baseline(self):
+        before = {"ok": True, "nonblack_pct": 0.286}
+        floor = ROLLOUT.effective_floor({"ui": "home-computer"}, before, 0.5)
+        self.assertLess(floor, 0.286)
+
+    def test_a_station_that_comes_back_black_fails_its_own_baseline(self):
+        before = {"ok": True, "nonblack_pct": 0.286}
+        floor = ROLLOUT.effective_floor({"ui": "home-computer"}, before, 0.5)
+        self.assertGreater(floor, 0.0)
+
+    def test_the_relative_floor_is_half_the_before_reading(self):
+        before = {"ok": True, "nonblack_pct": 40.0}
+        self.assertAlmostEqual(ROLLOUT.relative_floor(before), 20.0)
+
+    def test_a_missing_before_frame_falls_back_to_the_class_floor(self):
+        self.assertEqual(ROLLOUT.effective_floor({"ui": "text-console"}, None, 0.5), ROLLOUT.CONSOLE_FLOOR)
+
+    def test_a_failed_before_capture_falls_back_to_the_class_floor(self):
+        before = {"ok": False, "error": "no framebuffer"}
+        self.assertIsNone(ROLLOUT.relative_floor(before))
+        self.assertEqual(ROLLOUT.effective_floor({}, before, 0.5), 0.5)
+
+    def test_a_before_frame_that_read_flat_zero_is_not_trusted_as_a_baseline(self):
+        # A 0% before-frame is itself indistinguishable from a bad read, and
+        # would let a still-0% after-frame pass by "matching its baseline".
+        before = {"ok": True, "nonblack_pct": 0.0}
+        self.assertIsNone(ROLLOUT.relative_floor(before))
+        self.assertEqual(ROLLOUT.effective_floor({}, before, 0.5), 0.5)
+
+    def test_the_relative_floor_never_raises_above_an_explicit_operator_floor(self):
+        before = {"ok": True, "nonblack_pct": 96.0}  # a bright desktop before restart
+        floor = ROLLOUT.effective_floor({"ui": "desktop"}, before, 0.2)
+        self.assertLessEqual(floor, 0.2)
+
+    def test_the_class_floor_and_relative_floor_combine_by_taking_the_lower(self):
+        # A dim text-console with an even dimmer before-frame: the relative
+        # floor (below CONSOLE_FLOOR) wins over the class floor.
+        before = {"ok": True, "nonblack_pct": 0.02}
+        floor = ROLLOUT.effective_floor({"ui": "text-console"}, before, 0.5)
+        self.assertLess(floor, ROLLOUT.CONSOLE_FLOOR)
+
+
 class CanaryOrderTest(unittest.TestCase):
     def test_the_gated_canary_leads_the_order_even_when_it_is_not_the_safe_tile(self):
         entries = {"beos": station("beos"), "alto": station("alto"), "c64": station("c64")}
