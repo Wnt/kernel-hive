@@ -176,9 +176,17 @@ box_sync_load_pairs() {
   # gen-local-ca.sh deploys with the operator's real hostname substituted in
   # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
   # row): scrub, not exact, or a push writes a placeholder over it.
+  # deploy_hint.py added 2026-08-31 AND THE OMISSION WAS CAUGHT ONE COMMAND
+  # BEFORE IT SHIPPED: this list is static, and osgallery-https-server.py IMPORTS
+  # deploy_hint at module scope. Deploying the importer without the imported file
+  # does not drift — it stops the serving plane from starting at all, which is a
+  # worse failure than the one the tree loop below was introduced to prevent.
+  # Every new top-level serve module must be added here, and the fact that it
+  # must be is the weakness: see the tree loop for auth/authui/walkin and the
+  # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
     config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
-    usage.py walkin_plane.py; do
+    usage.py walkin_plane.py deploy_hint.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
