@@ -6,14 +6,25 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { configureTracer, __resetTracer } from '../../analytics/trace';
 import {
   SAMPLE_N, SUFFIX_LEN, maybeSampleEdge, traceSuffix, withSuffix, keyClass,
-  __resetSampleCounter,
+  __resetSampleCounter, BACKEND_TRACE_ID_RE,
 } from './inputTrace';
 
 beforeEach(() => {
   __resetTracer();
   configureTracer({ enabled: true, emit: () => {} });
   __resetSampleCounter();
+  delete (globalThis as { window?: unknown }).window;
 });
+
+/** Same pattern `analytics/instana.test.ts` uses: this suite runs under the
+ *  `node` vitest environment (no real DOM), so `window` itself has to be
+ *  installed on `globalThis`, not merely mutated. */
+function installIneum(): { calls: unknown[][] } {
+  const calls: unknown[][] = [];
+  const fn = (...args: unknown[]) => { calls.push(args); };
+  (globalThis as { window?: unknown }).window = { ineum: fn };
+  return { calls };
+}
 
 describe('maybeSampleEdge', () => {
   it('samples exactly 1 edge in SAMPLE_N, never zero and never two in a row', () => {
@@ -36,6 +47,57 @@ describe('maybeSampleEdge', () => {
       }
     }
     expect(hits).toBe(3);
+  });
+});
+
+describe('the EUM↔backend join (Instana reportEvent)', () => {
+  it('reports backendTraceId as EXACTLY 32 hex chars — the vendor silently drops anything else', () => {
+    const { calls } = installIneum();
+    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
+    const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'key', 'kh.station': 'nextstep' });
+    expect(span).not.toBeNull();
+
+    const reportCalls = calls.filter(([name]) => name === 'reportEvent');
+    expect(reportCalls.length).toBe(1);
+    const [, eventName, opts] = reportCalls[0] as [string, string, {
+      backendTraceId: string;
+      meta: Record<string, string>;
+    }];
+    expect(eventName).toBe('kh.input.sampled');
+    // The load-bearing assertion: exactly 32 hex, matching the vendor's own
+    // accepted shape — a test that only checked "reportEvent was called"
+    // would pass even if this were shortened, reformatted, or upper-cased,
+    // and the beacon field would then be silently dropped in production.
+    expect(opts.backendTraceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(opts.backendTraceId).toHaveLength(32);
+    expect(BACKEND_TRACE_ID_RE.test(opts.backendTraceId)).toBe(true);
+    expect(opts.backendTraceId).toBe(span!.traceId);
+    // Meta is forwarded, and never carries a key's identity — only the
+    // caller-declared coarse attrs.
+    expect(opts.meta['kh.input.class']).toBe('key');
+    expect(opts.meta['kh.station']).toBe('nextstep');
+  });
+
+  it('is a no-op with no window.ineum: our own tracing is unaffected', () => {
+    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
+    // Must not throw, and must still return a real sampled span.
+    const span = maybeSampleEdge('input.edge', {});
+    expect(span).not.toBeNull();
+    expect(span!.traceId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('sends nothing on an unsampled edge, and nothing when tracing is disabled', () => {
+    const { calls } = installIneum();
+    // Unsampled edges: no span, so no reportEvent either.
+    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
+    expect(calls.filter(([name]) => name === 'reportEvent')).toHaveLength(0);
+
+    // Tracing disabled entirely: even a "sampled" edge mints a NOOP span
+    // (empty traceId), which must never be reported.
+    configureTracer({ enabled: false, emit: () => {} });
+    const span = maybeSampleEdge('input.edge', {});
+    expect(span!.traceId).toBe('');
+    expect(calls.filter(([name]) => name === 'reportEvent')).toHaveLength(0);
   });
 });
 

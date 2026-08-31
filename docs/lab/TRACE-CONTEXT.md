@@ -163,6 +163,22 @@ actually pending — one relaxed atomic load costs the 60 fps encoder relay
 nothing on every other frame, the same `AtomicBool` discipline §5's sibling
 rule already uses for `mark_first_au` / `mark_first_input`.
 
+**`input.dispatch` is `Kind::Server`, not `Internal`** — this is the daemon's
+receiving side of the browser's `input.edge` **`Kind::Client`** span, the same
+RPC pairing this codebase already uses for `http.client.request` /
+`serve.signal`. Verified live 2026-08-31 against Instana's own `analyze/traces` API
+(`scripts/observability/instana-forward.py`): every `serve.*` trace, which has a
+`Server`-kind entry span, arrived with a real `service.name`; every
+`input.edge` trace — Client root, Internal children throughout, no `Server`
+span anywhere — arrived labelled service `"Unspecified"`. Instana derives a
+trace's owning service from its entry span, and a trace with no `Server` span
+has none. Marking `input.dispatch` Internal understated what it already is:
+not merely something that happens during the session, but the request/response
+boundary itself, so `Server` is a correction of an existing span, not a
+vendor-pleasing relabel — the same "never call a UI span a server span" rule
+this file states elsewhere cuts the other way here, because this span already
+was the server side of a real client/server exchange.
+
 ## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
 
 Everything in §2 assumes the browser already HAS a trace id to send. Something

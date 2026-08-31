@@ -116,6 +116,10 @@ export type {
 
 export class StreamClient {
   cfg: StreamClientConfig;
+  /** `cfg.osId`, or null when the caller gave none. Read-only mirror so
+   *  `StreamClientLike` (inputWire.ts) does not need the whole config shape
+   *  just to tag a sampled `input.edge`'s station. */
+  stationId: string | null = null;
   wt: WebTransport | null = null;
   dgWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
   // Per-type reliable input: one client-opened unidirectional stream per input
@@ -331,6 +335,7 @@ export class StreamClient {
 
   constructor(cfg: StreamClientConfig) {
     this.cfg = cfg;
+    this.stationId = cfg.osId ?? null;
     // onError mirrors the original inline `this.stats.lastError = …` writes.
     this.audioPlayer = new AudioPlayer((msg) => { this.stats.lastError = msg; });
     // Feature detection, deliberately not a browser/UA check. This also catches
