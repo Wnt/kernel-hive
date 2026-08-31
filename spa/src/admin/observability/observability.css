@@ -1,0 +1,35 @@
+/* The shell's own chrome only. Each view ships its own styles (reportViews.css,
+   TraceList.css, flame.css) — they were written independently and re-theming
+   them from here would make one stream's edit break another's layout. */
+
+.obs-page { padding: 18px 22px 48px; max-width: 1400px; margin: 0 auto; }
+.obs-head h1 { margin: 0 0 4px; font-size: 22px; }
+.obs-sub { margin: 0 0 14px; color: var(--ink-2, #667); max-width: 68ch; font-size: 13px; }
+
+.obs-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line, #ddd); }
+.obs-tab {
+  appearance: none; border: 1px solid transparent; border-bottom: none;
+  background: transparent; padding: 7px 14px; font: inherit; font-size: 13px;
+  cursor: pointer; border-radius: 8px 8px 0 0; color: var(--ink-2, #667);
+  margin-bottom: -1px;
+}
+.obs-tab:hover { background: var(--tint-1, #f2f2f4); }
+.obs-tab--on {
+  background: var(--paper-raised, #fff); border-color: var(--line, #ddd);
+  color: var(--ink, #223); font-weight: 600;
+}
+.obs-tab:focus-visible { outline: 2px solid var(--accent, #36c); outline-offset: -2px; }
+
+.obs-controls {
+  display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  padding: 12px 0 4px; font-size: 13px;
+}
+.obs-controls label { display: flex; gap: 6px; align-items: center; color: var(--ink-2, #667); }
+.obs-controls select { font: inherit; padding: 3px 6px; }
+.obs-hint { color: var(--ink-3, #889); font-style: italic; }
+
+.obs-notice {
+  margin: 12px 0; padding: 9px 12px; font-size: 13px;
+  background: var(--tint-1, #f2f2f4); border-left: 3px solid var(--accent, #36c);
+  border-radius: 0 6px 6px 0;
+}

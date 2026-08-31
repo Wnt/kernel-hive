@@ -24,9 +24,9 @@ export type ClientClass = 'human' | 'probe' | 'unknown' | 'server';
  *  common case, and is NOT the same as success. */
 export type SpanStatus = 'unset' | 'ok' | 'error';
 
-export type SpanKind = 'internal' | 'client' | 'server' | 'producer' | 'consumer';
+type SpanKind = 'internal' | 'client' | 'server' | 'producer' | 'consumer';
 
-export type AttrValue = string | number | boolean;
+type AttrValue = string | number | boolean;
 
 /** One OTel span event. `exception` is the one that matters most: it is how an
  *  error is attached to the span it happened inside. */

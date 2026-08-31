@@ -97,7 +97,7 @@ function isReport(v: unknown): v is AnalyticsReport {
   );
 }
 
-export class ReportError extends Error {}
+class ReportError extends Error {}
 
 /**
  * Fetch one window of one class.
