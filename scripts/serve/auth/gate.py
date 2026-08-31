@@ -190,6 +190,10 @@ WALKIN_PATHS = frozenset(
         # built for strangers look unused. It carries no identity to leak
         # (serve/analytics.py stores none) and the report it feeds is read-only.
         "/analytics",
+        # Span INGEST only. Reading a trace back needs an admin session and a
+        # different route entirely (/auth/traces/*), so a walk-in can report the
+        # journey that just failed them and can see nothing.
+        "/traces",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —

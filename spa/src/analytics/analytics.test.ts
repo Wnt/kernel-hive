@@ -8,8 +8,9 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { gradeFor, witnessHumanEdge, withoutHumanCredit, __resetIntent } from './intent';
 import { beginFlow, currentFlow, __resetFlows } from './flows';
-import { fingerprint } from './errors';
+import { fingerprint, reportError, installErrorCapture } from './errors';
 import { configureSink, __pendingBatch, __resetSink } from './sink';
+import { __bufferedSpans, __resetTracer, configureTracer, popActive, pushActive, startTrace } from './trace';
 import { PROBES, FLOWS } from './catalogue';
 import { reach } from './index';
 
@@ -17,6 +18,8 @@ beforeEach(() => {
   __resetIntent();
   __resetFlows();
   __resetSink();
+  __resetTracer();
+  configureTracer({ enabled: true, emit: () => {} });
   configureSink({ sessionId: 'test', allowed: true, clientClass: () => 'human' });
 });
 
@@ -134,7 +137,9 @@ describe('flows', () => {
   it('exposes the open flow so an error can be blamed on it', () => {
     const f = beginFlow('station.connect');
     f.step('transport');
-    expect(currentFlow()).toEqual({ flow: 'station.connect', step: 'transport' });
+    // Field-wise, not toEqual: an OpenFlow also carries its trace spans now,
+    // and pinning the whole object would make every future field a test edit.
+    expect(currentFlow()).toMatchObject({ flow: 'station.connect', step: 'transport' });
     f.ok();
     expect(currentFlow()).toBeNull();
   });
@@ -157,6 +162,66 @@ describe('error fingerprinting', () => {
 
   it('mixes the source in, so a numeric-only message is still distinguishable', () => {
     expect(fingerprint('500', 'window')).not.toBe(fingerprint('500', 'promise'));
+  });
+});
+
+describe('reporting an error', () => {
+  it('queues one grouped row carrying the fingerprint it returns', () => {
+    const fp = reportError({ message: 'decoder gave up', source: 'window' });
+    const [row] = __pendingBatch().errors;
+    expect(row.fp).toBe(fp);
+    expect(row.message).toBe('decoder gave up');
+    expect(row.source).toBe('window');
+  });
+
+  it('blames the flow that was open, and the step it stood on', () => {
+    const f = beginFlow('station.connect');
+    f.step('transport');
+    reportError({ message: 'boom', source: 'promise' });
+    const [row] = __pendingBatch().errors;
+    expect(row.flow).toBe('station.connect');
+    expect(row.step).toBe('transport');
+    f.ok();
+  });
+
+  it('still records an error that belongs to no flow', () => {
+    // "Faults nobody's flow owns" is a finding in itself — a crash on the
+    // landing page has no flow and must not vanish for lack of one.
+    reportError({ message: 'boom', source: 'window' });
+    const [row] = __pendingBatch().errors;
+    expect(row.flow).toBeUndefined();
+  });
+
+  it('attaches an OTel exception event to the span that was running', () => {
+    // This is what turns "this fingerprint happened 40 times" into "open one
+    // and see the journey it happened inside".
+    const span = startTrace('station.connect');
+    pushActive(span);
+    const fp = reportError({ message: 'transport closed', source: 'promise' });
+    popActive(span);
+    span.end('error');
+    const [wire] = __bufferedSpans();
+    expect(wire.e?.[0].n).toBe('exception');
+    expect(wire.e?.[0].a).toMatchObject({
+      'exception.type': 'promise',
+      'exception.message': 'transport closed',
+      'kh.fingerprint': fp,
+    });
+    expect(wire.a!['error.type']).toBe('promise');
+  });
+
+  it('truncates a long message rather than storing a log line', () => {
+    reportError({ message: 'x'.repeat(5000), source: 'window' });
+    expect(__pendingBatch().errors[0].message.length).toBeLessThanOrEqual(200);
+  });
+
+  it('never throws, even when there is no span and no flow and no sink', () => {
+    __resetSink();
+    expect(() => reportError({ message: 'boom', source: 'window' })).not.toThrow();
+  });
+
+  it('installErrorCapture is idempotent and safe without a window', () => {
+    expect(() => { installErrorCapture(); installErrorCapture(); }).not.toThrow();
   });
 });
 

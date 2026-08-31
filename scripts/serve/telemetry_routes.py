@@ -29,6 +29,7 @@ from urllib.parse import parse_qs, urlparse
 
 import linecov
 import probes
+import traces
 from static_files import MIME
 
 import analytics
@@ -59,6 +60,20 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
             if _bad_origin(handler, public_origin):
                 return True
             linecov.handle_post(handler, stores["coverage"])
+            return True
+
+        # POST /traces — one tab's OTel spans. Open like the others: a visitor
+        # must be able to report a trace of the journey that just broke without
+        # holding the admin session needed to READ one back.
+        if path == "/traces":
+            if _bad_origin(handler, public_origin):
+                return True
+            obj, err = handler._read_json_body(traces.BODY_MAX)
+            if err:
+                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+                return True
+            n = stores["traces"].record(obj) if isinstance(obj, dict) else 0
+            handler._send(200, json.dumps({"ok": True, "spans": n}), MIME[".json"], cache=False)
             return True
         return False
 

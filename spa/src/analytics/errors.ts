@@ -28,6 +28,7 @@
 
 import { currentFlow } from './flows';
 import { queueError } from './sink';
+import { currentSpan } from './trace';
 
 /** How much of a message survives into the durable aggregate. Enough to
  *  recognise the fault, not enough to be a log. */
@@ -71,6 +72,20 @@ export function reportError(input: {
 }): string {
   const fp = fingerprint(input.message, input.source, input.stack ?? '');
   try {
+    // Also onto the open span, as an OTel `exception` event. That is what turns
+    // "this fingerprint happened 40 times" into "open one of them and see the
+    // journey it happened inside", which is the entire point of the trace lane.
+    // The fingerprint travels with it, so the grouped count and the individual
+    // trace are joinable in both directions.
+    const span = currentSpan();
+    if (span) {
+      span.event('exception', {
+        'exception.type': input.source,
+        'exception.message': String(input.message ?? '').slice(0, MESSAGE_MAX),
+        'kh.fingerprint': fp,
+      });
+      span.attr('error.type', input.source);
+    }
     const flow = currentFlow();
     queueError({
       fp,

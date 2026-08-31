@@ -27,6 +27,7 @@ import { PROBES, type ProbeId } from './catalogue';
 import { clientClass, gradeFor, installIntentWitness, type Intent } from './intent';
 import { configureSink, queueProbe } from './sink';
 import { installErrorCapture } from './errors';
+import { configureTracer, type WireSpan } from './trace';
 
 // Only what CALL SITES use. `fingerprint`, `witnessHumanEdge` and the flush are
 // exported by their own modules for the tests and the operator plane;
@@ -80,6 +81,45 @@ export function initAnalytics(opts: { sessionId: string; allowed: boolean }): vo
   try {
     installIntentWitness();
     configureSink({ sessionId: opts.sessionId, allowed: opts.allowed, clientClass });
+    configureTracer({ enabled: opts.allowed, emit: (spans) => postSpans(opts.sessionId, spans) });
     if (opts.allowed) installErrorCapture();
   } catch { /* a gallery that loads beats a gallery that measures */ }
+}
+
+/**
+ * Ship one batch of spans. Its own endpoint, not `/analytics`, because the two
+ * differ in every way that matters operationally: spans are kilobytes where
+ * counters are integers, they expire in days where counters last two years, and
+ * they are admin-only to READ where the aggregates are open. One route serving
+ * both would have to take the strictest of each, and the counters would lose
+ * their openness to a constraint that is not theirs.
+ *
+ * The RESOURCE goes on the envelope rather than on every span — it is identical
+ * for all of them, and OTLP itself groups spans under one Resource for exactly
+ * this reason (serve/traces.py re-expands it on export).
+ */
+function postSpans(sessionId: string, spans: WireSpan[]): void {
+  try {
+    if (!spans.length) return;
+    const body = JSON.stringify({
+      resource: {
+        'service.name': 'kernel-hive-spa',
+        'session.id': sessionId,
+        'kh.class': clientClass(),
+      },
+      spans,
+    });
+    void fetch('/traces', {
+      method: 'POST',
+      keepalive: true,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      // No fold-back on failure, unlike the counters. A dropped counter is a
+      // number that reads slightly low forever; a dropped span is one trace
+      // missing from a window that expires in days anyway, and re-queueing
+      // kilobytes of spans through a flaky link is how a tab's memory grows
+      // until the visitor notices the thing that was supposed to be invisible.
+    }).catch(() => {});
+  } catch { /* never throw */ }
 }

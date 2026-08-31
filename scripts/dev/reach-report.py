@@ -429,7 +429,7 @@ def main() -> int:
     observed_metrics = report.get("metrics", {})
     if metrics:
         print("\n=== METRICS — how long, and how much effort ===\n")
-        print(f"  {'metric':34} {'n':>6}  {'p50':>9} {'p75':>9} {'p95':>9}   what a high value means")
+        print(f"  {'metric':34} {'n':>6}  {'p50':>9} {'p75':>9} {'p95':>9}   the decision this number is for")
         print(f"  {'-' * 34} {'-' * 6}  {'-' * 9} {'-' * 9} {'-' * 9}   {'-' * 30}")
         for mid in sorted(metrics):
             spec = metrics[mid]
@@ -459,7 +459,14 @@ def main() -> int:
             print(f"  {fid}: {spec.get('what', '')}")
             for step in spec.get("steps", sorted(steps)):
                 s = steps.get(step, {})
-                print(f"    {step:22} entered {s.get('enter', 0):>6}  ok {s.get('ok', 0):>6}")
+                # `fail` on a DECLARED step, not just on a reason token. A
+                # `fail()` with no reason is recorded under the step the flow
+                # was standing on (analytics/flows.ts), which is a declared
+                # name — so printing fails only for undeclared keys made every
+                # reasonless failure invisible here while it sat in the data.
+                failed = s.get("fail", 0)
+                line = f"    {step:22} entered {s.get('enter', 0):>6}  ok {s.get('ok', 0):>6}"
+                print(line + (f"  failed here {failed:>6}" if failed else ""))
             extra = {k: v for k, v in steps.items() if k not in spec.get("steps", [])}
             for name, s in sorted(extra.items()):
                 if s.get("fail"):
