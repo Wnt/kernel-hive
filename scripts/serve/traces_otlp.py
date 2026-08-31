@@ -114,10 +114,17 @@ def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | 
     also keeps the export small: the resource attributes are written once per
     session instead of once per trace.
     """
-    by_session: dict[str, list] = {}
+    # Grouped by (session, SERVICE): one store holds spans from the browser and
+    # from the serving plane, and a Resource is "the entity producing
+    # telemetry". Labelling a Python request handler `kernel-hive-spa` with
+    # `telemetry.sdk.language: webjs` was not merely untidy — it merges two
+    # services into one node on any service map built from this export, and
+    # tells a consumer the wrong language for half the spans.
+    by_key: dict[tuple, list] = {}
     for t in traces:
         for s in t.get("spans", []):
-            by_session.setdefault(t.get("sessionId", "unknown"), []).append(
+            svc = (s.get("attributes") or {}).get("kh.service") or service
+            by_key.setdefault((t.get("sessionId", "unknown"), svc), []).append(
                 span_to_otlp({**s, "traceId": t["traceId"]})
             )
     return {
@@ -126,7 +133,7 @@ def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | 
                 "resource": {
                     "attributes": _attrs(
                         {
-                            "service.name": service,
+                            "service.name": svc,
                             "session.id": session,
                             # Instana links OpenTelemetry entities to a host by
                             # `host.id` and refuses or orphans data without one
@@ -135,13 +142,14 @@ def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | 
                             # convention attribute.
                             **({"host.id": host_id} if host_id else {}),
                             "telemetry.sdk.name": "kernel-hive",
-                            "telemetry.sdk.language": "webjs",
+                            # The language of the thing that PRODUCED the span.
+                            "telemetry.sdk.language": ("python" if svc.endswith("-serve") else "webjs"),
                         }
                     )
                 },
                 "scopeSpans": [{"scope": {"name": "kernel-hive-spa"}, "spans": spans}],
             }
-            for session, spans in sorted(by_session.items())
+            for (session, svc), spans in sorted(by_key.items())
         ]
     }
 

@@ -81,6 +81,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md) |
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** |
 | Know whether a feature is used, or where a flow breaks | [`docs/ANALYTICS.md`](docs/ANALYTICS.md); `scripts/dev/reach-report.py` |
+| Drill into ONE session's journey, or read a flame graph | `/admin/observability` (admin-only); [`docs/lab/TRACE-CONTEXT.md`](docs/lab/TRACE-CONTEXT.md) for how a trace crosses processes |
 | Measure performance | [`docs/lab/MEASUREMENT-METHODOLOGY.md`](docs/lab/MEASUREMENT-METHODOLOGY.md) |
 | Get a cloud agent onto labhost | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
 | Find anything else | [`docs/README.md`](docs/README.md) |
