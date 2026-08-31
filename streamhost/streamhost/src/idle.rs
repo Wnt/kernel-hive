@@ -147,6 +147,16 @@ static INPUT_DROPPED: AtomicU64 = AtomicU64::new(0);
 /// guest. The reconciler retries `cont` every tick while a session is live, so
 /// the caller's next record (the client resends; a visitor clicks again) lands
 /// within ~5 s.
+/// Does the daemon believe it froze the guest right now?
+///
+/// One relaxed load of the same mirror `wake_for_input` reads. Exists for the
+/// `guest.resume` span (`trace_session.rs`): a resume on a running guest is
+/// idempotent and fast, so without this the span would fire on every session
+/// and mean nothing. Read BEFORE `session_started`, which clears the belief.
+pub fn guest_believed_paused() -> bool {
+    PAUSE_BELIEF.load(Ordering::Relaxed)
+}
+
 pub async fn wake_for_input() -> bool {
     if !PAUSE_BELIEF.load(Ordering::Relaxed) {
         return true;

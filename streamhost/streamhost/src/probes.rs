@@ -299,6 +299,10 @@ pub fn spawn(tile: &str) {
             _ = int.recv() => libc::SIGINT,
         };
         let _ = dump(&path, &tile, start.elapsed().as_secs());
+        // The SPAN plane's final flush rides THIS handler rather than installing
+        // a second one. Two handlers would race the re-raise below, and the
+        // exit disposition is load-bearing (see above) — one owner, one exit.
+        crate::trace::flush_now(&tile);
         // SAFETY: restoring SIG_DFL and re-raising is the documented way to die
         // exactly as we would have without a handler installed.
         unsafe {

@@ -52,6 +52,33 @@ the serving plane for `/signal/<station>.json`, and that request already carries
 and hands the id to the daemon alongside the ticket. The daemon's spans are
 children of that root.
 
+### 3.1 The spelling, so the two ends cannot disagree
+
+The signalling document's `path` field already carries the daemon's session
+ticket (`/wt/<exp>.<nonce>.<sig>`), and `session_ticket.rs` has always split
+that path on `?` before verifying — a query string is explicitly not part of
+the ticket. So the id rides there, spelled exactly like the header:
+
+```
+path = /wt/<exp>.<nonce>.<sig>?traceparent=00-<32 hex>-<16 hex>-01
+```
+
+The HMAC covers `v1|<tile>|<exp>|<nonce>` and not the query, so appending this
+neither invalidates a ticket nor lets a tampered query forge one — the worst a
+tamperer achieves is attaching their own session to a trace id they picked,
+which is a telemetry lie and not an authorisation one. The reverse is the rule
+that matters and it holds: **the ticket carries the trace id, the trace never
+carries the ticket** (§7).
+
+**Status: the daemon end is built and the serving end is not.**
+`streamhost/streamhost/src/trace/context.rs` parses this on every incoming
+WebTransport session and joins the browser's trace when it is present; today it
+never is, because `signal_route.py` does not yet append it, so every daemon
+session span is a ROOT and says so in `kh.trace.joined=false`. Appending it is
+one line beside the two `body["path"] = ... .mint(...)` calls. Nothing has to be
+coordinated: the daemon already tolerates its absence, its presence, and its
+malformation.
+
 The consequence worth stating: a station opened WITHOUT a fresh signalling fetch
 — a reconnect that reuses a cached document — continues the previous trace or
 starts a fresh one, and does not silently attach to an unrelated visit. When in
@@ -95,11 +122,20 @@ station.connect                                  (browser, root)
 │  └─ serve.signal                     server    (python: mints the id below)
 │     └─ serve.ticket.mint             internal
 ├─ streamhost.session                  server    (rust: joined by ticket id)
-│  ├─ guest.resume                     internal  (emulator: loadvm)
+│  ├─ guest.resume                     internal  (emulator: cont / SIGCONT)
 │  ├─ capture.first_frame              internal
+│  ├─ encode.first_key                 internal
+│  ├─ transport.first_frame            internal
 │  └─ input.first_edge                 internal
 └─ station.open.toFirstFrameMs         internal  (browser, the metric's twin)
 ```
+
+The daemon emits one more trace that has no browser in it at all, because a
+station boots with nobody watching — a root `streamhost.start` with
+`guest.launch`, `guest.attach` and `guest.first_frame` under it (§5, and
+`streamhost/streamhost/src/trace_guest.rs`). It is deliberately NOT attached to
+a visitor's trace: inventing that parent would be the false causal claim §7
+forbids.
 
 Four processes, one trace id, one flame graph. The browser's own
 `station.open.toFirstFrameMs` span sits beside the daemon's `guest.resume`, and

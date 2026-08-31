@@ -252,8 +252,20 @@ async fn handle_session(
         req.forbidden().await;
         return Ok(());
     }
+    // The browser's trace id rides the session path's query string — the input
+    // plane has no headers to carry it (contract §3). Parsed BEFORE accept so
+    // the session span starts where the session does; `None` means this becomes
+    // a ROOT rather than a fabricated child (contract §7). The ticket half of
+    // the path is never read here and never reaches a span.
+    let trace_parent = crate::trace::context::from_wt_path(req.path());
     let conn = Arc::new(req.accept().await?);
     crate::probes::probe!(TRANSPORT_WT_SESSION);
+    let (strace, mut session_span) = crate::trace_session::begin(
+        trace_parent,
+        "webtransport",
+        cfg.capture_backend.as_str(),
+        cfg.input_backend.as_str(),
+    );
     eprintln!(
         "[transport] SESSION_ACCEPTED addr={}",
         conn.remote_address()
@@ -265,7 +277,20 @@ async fn handle_session(
     // idle-pause grace clock once the last session is gone.
     let _pause_guard = match &pauser {
         Some(p) => {
-            p.session_started().await;
+            // `guest.resume` — the emulator span that answers "was it slow
+            // because the machine was asleep". The belief is read BEFORE the
+            // resume, which clears it.
+            crate::trace_session::guest_resume(
+                strace.ctx(),
+                crate::idle::guest_believed_paused(),
+                if cfg.capture_backend.is_qemu() {
+                    "qmp"
+                } else {
+                    "signal"
+                },
+                p.session_started(),
+            )
+            .await;
             Some(crate::idle::SessionGuard::new(p.clone()))
         }
         None => None,
@@ -364,6 +389,7 @@ async fn handle_session(
         let abr = abr.clone();
         let move_tx = move_tx.clone();
         let skip_count = skip_count.clone();
+        let strace = strace.clone();
         tokio::spawn(async move {
             while let Ok(dg) = conn.receive_datagram().await {
                 let p = dg.payload();
@@ -380,9 +406,11 @@ async fn handle_session(
                     }
                 } else if let (Some(tx), true) = (&move_tx, p[0] == 1 || p[0] == 4) {
                     // Move -> coalescer (never blocks). Instant only when tel on.
+                    strace.mark_first_input("datagram");
                     let at = crate::input_telemetry::enabled().then(Instant::now);
                     let _ = tx.send((p.to_vec(), at));
                 } else {
+                    strace.mark_first_input("datagram");
                     input::handle(&cap, &cfg, &mouse, input_router.as_ref(), &p).await;
                 }
             }
@@ -400,14 +428,16 @@ async fn handle_session(
         let cfg = cfg.clone();
         let mouse = mouse.clone();
         let input_router = input_router.clone();
+        let strace = strace.clone();
         tokio::spawn(async move {
             while let Ok((_send, recv)) = conn.accept_bi().await {
                 let cap = cap.clone();
                 let cfg = cfg.clone();
                 let mouse = mouse.clone();
                 let input_router = input_router.clone();
+                let st = strace.clone();
                 tokio::spawn(async move {
-                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), false)
+                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), false, &st)
                         .await;
                 });
             }
@@ -431,14 +461,17 @@ async fn handle_session(
         let cfg = cfg.clone();
         let mouse = mouse.clone();
         let input_router = input_router.clone();
+        let strace = strace.clone();
         tokio::spawn(async move {
             while let Ok(recv) = conn.accept_uni().await {
                 let cap = cap.clone();
                 let cfg = cfg.clone();
                 let mouse = mouse.clone();
                 let input_router = input_router.clone();
+                let st = strace.clone();
                 tokio::spawn(async move {
-                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), true).await;
+                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), true, &st)
+                        .await;
                 });
             }
         });
@@ -556,6 +589,8 @@ async fn handle_session(
     }
     // B1: frame_id of the last AU relayed to THIS session, the `sent` half of
     // the sent-acked backlog estimate (see transport/backlog.rs).
+    // Set only on a daemon-internal fault; a client that simply left is not one.
+    let mut fault: Option<&'static str> = None;
     let mut last_sent_id: u32 = 0;
     if let Some(k) = primed {
         let r = send_au(&conn, &k).await;
@@ -663,6 +698,9 @@ async fn handle_session(
                         au.data.len()
                     );
                 }
+                // One-shot marks: an AtomicBool swap per AU, never a span per
+                // frame (trace/mod.rs states the rule and why).
+                strace.mark_first_au(au.frame_id, au.is_key);
                 let r = send_au(&conn, &au).await;
                 if vt {
                     eprintln!("[vtrace] sent frame_id={} ok={}", au.frame_id, r.is_ok());
@@ -671,6 +709,7 @@ async fn handle_session(
                     break;
                 }
                 tx_bytes.fetch_add((10 + au.data.len()) as u64, Ordering::Relaxed);
+                strace.mark_first_send(au.data.len());
                 last_sent_id = au.frame_id;
             }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
@@ -684,11 +723,22 @@ async fn handle_session(
                 }
                 continue;
             }
-            Err(_) => break,
+            Err(_) => {
+                // The encoder's broadcast SENDER is gone: a daemon-internal
+                // fault, unlike the send failure above, which is just a visitor
+                // closing the tab. Only the former makes the session a red span.
+                fault = Some("encoder stream closed");
+                break;
+            }
         }
     }
     abr.unregister(sess_id);
     eprintln!("[transport] SESSION_ENDED");
+    match fault {
+        Some(f) => session_span.error(f),
+        None => session_span.ok(),
+    };
+    session_span.end();
     Ok(())
 }
 
