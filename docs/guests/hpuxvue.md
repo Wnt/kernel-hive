@@ -335,3 +335,47 @@ one anecdote either way will mislead you.
 Do not file this as a keyboard regression again. The check that settles it in
 one step is the title-bar colour at (300,15): pink means Mosaic still owns the
 keyboard and your keys are going there.
+
+
+## BLOCKED: the focus-policy re-bake cannot be executed, and why that matters
+
+Attempted 2026-08-31, authorised, **not done**. The plan was to set vuewm's
+`keyboardFocusPolicy` to `pointer` (focus-follows-mouse) so no frame click is
+needed to hand the visitor the keyboard, then recapture. It is blocked on the
+setting, not on the recapture: there is no working route to change vuewm's
+configuration inside this guest.
+
+Routes tried, all dead ends:
+
+| route | outcome |
+|---|---|
+| serial getty (`tty1p0`) | a shell WAS alive (`echo` returned `KHTEST_1019`), then stopped executing mid-session; input still echoes, no prompt, and **no getty respawn** |
+| VUE Style Manager (front panel) | the Window button accepts the click and turns to an hourglass — then nothing renders, watched for **7+ minutes** |
+| Toolboxes -> General | the cell selects (37565 px) but never opens, single or double click |
+| File Manager `File` / `Actions` menus | **do not post**, even press-and-HOLD (Motif menus post on press) |
+| Mosaic URL field | unresponsive, **0/5** clicks |
+| retronet exec | this station has no exec channel (documented) |
+| offline edit of the disk image | HP-UX HFS/VxFS is not mountable on the Linux host |
+
+**The finding that outgrew the task.** Those rows are not six unrelated
+annoyances. With a positive control on BOTH sides in the same session — a File
+Manager icon click measuring **1363 px before and 1359 px after** — the two menu
+presses in between measured **107 px** (the label highlight only) and **0 px**.
+So the instrument was working throughout and *the menus genuinely do not post*.
+
+Everything that fails needs an X **pointer grab** (menus post under a grab,
+drawer/toolbox panels open under one, and a window-manager frame click takes
+one). Everything that works — selecting an icon in a client area — needs no
+grab. That is a coherent hypothesis and it is bigger than a focus policy: it
+would also explain why the title-bar click is intermittent while client-area
+clicks are 6/6. It is UNPROVEN; what is proven is the pattern above.
+
+**Do not re-attempt the focus-policy re-bake before settling that.** If grabs are
+broken, focus-follows-mouse removes the need for the one gesture that needs a
+grab, so it may still be the right fix — but it cannot be *applied* until
+something inside the guest can run a command.
+
+**The cheapest unblock** is the one the retronet write-up already names as "a
+small, separate piece of work": wire `labctl exec` to the serial getty. That
+gives a command channel that does not depend on the GUI, and every route above
+failed for want of exactly that.
