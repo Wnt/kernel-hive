@@ -37,6 +37,7 @@ import {
 // streamClient/keysym.ts (ts-src 600-line hard cap).
 import { XK, keysymFromKeyboardEvent } from './streamClient/keysym';
 import { withSyntheticInput } from './usageStats';
+import { reach } from '../analytics';
 export { XK };
 
 export interface StreamResolution {
@@ -173,6 +174,16 @@ export function createStreamController(
   // AltGr-composing modifier keys (Right-Alt / Windows' synthetic Left-Ctrl) we
   // swallowed on keydown — their keyup must be swallowed too.
   const suppressedMods = new Set<string>();
+  // Physical e.code -> the scancode sendCharEvent actually PUT ON THE WIRE for
+  // its keydown, for keys forwarded as a real (non-tap) make. A key's release
+  // must send exactly that scancode back, never one re-resolved from e.key: the
+  // character path resolves from KeyboardEvent.key, which is the LAYOUT+MODIFIER
+  // RESOLVED glyph, and can already have changed by the time the keyup arrives —
+  // Shift releasing in the same tick as the symbol's own keyup (session
+  // 6a888f3d/clientlog.jsonl: Shift+/ on a Finnish layout resolved '?' on
+  // keydown and '=' on keyup) used to send a release for the WRONG key, leaving
+  // the real one stuck down in the guest forever. See docs/lab/INPUT-DEBUGGING.md.
+  const charScancodes = new Map<string, number>();
   let lastClipboard = '';
   let disposed = false;
   let bootDismissed = false;
@@ -229,8 +240,15 @@ export function createStreamController(
 
   const rawScancode = (code: number, down: boolean) => {
     // `code` is a set1 scancode (0xE0xx for extended keys) — sent verbatim.
-    if (down) downScancodes.add(code);
-    else downScancodes.delete(code);
+    if (down) {
+      downScancodes.add(code);
+    } else if (!downScancodes.delete(code)) {
+      // A release for a scancode we never recorded as pressed. This is the
+      // exact signature of a stuck-key bug (see charScancodes above) — count it
+      // so "keys sometimes stick" is a number, not something someone has to
+      // eyeball out of clientlog.jsonl.
+      reach('station.key.orphanedRelease', 'auto');
+    }
     client.sendKeyScancode(code, down);
   };
 
@@ -257,12 +275,23 @@ export function createStreamController(
     down: boolean,
     altGr: boolean,
   ): boolean => {
-    const s = asciiToScancode(e.key);
-    if (!s) return false; // non-ASCII (ä/ö/å, dead-key composites): fall back to .code
     const code = e.code ?? e.key;
 
-    // keyup of a key that was forwarded as a real make/break (matching-shift path).
-    if (!down) { rawScancode(s.code, false); return true; }
+    // keyup of a key that was forwarded as a real make/break (matching-shift
+    // path): sendKeyEvent's charScancodes check (above it in the file) already
+    // handles the normal case by releasing the PRESS-TIME scancode from the
+    // physical code before we ever get here. This branch is only the fallback
+    // for a keyup that reaches sendCharEvent with no recorded press (e.g. the
+    // keydown never came through this path) — resolve from e.key as before.
+    if (!down) {
+      const s = asciiToScancode(e.key);
+      if (!s) return false;
+      rawScancode(s.code, false);
+      return true;
+    }
+
+    const s = asciiToScancode(e.key);
+    if (!s) return false; // non-ASCII (ä/ö/å, dead-key composites): fall back to .code
 
     // AltGr layer (FI | \ @ $ { } …): the browser also delivers the raw Ctrl+Alt
     // that composes AltGr; release any leaked ones so the US guest sees a clean
@@ -277,6 +306,9 @@ export function createStreamController(
     if (needShift === guestShiftDown() && !altGr) {
       // Shift already correct, nothing to strip → forward a real make/break so
       // key-HOLD still works (letters/digits/gaming/space and matching symbols).
+      // Record the scancode against the PHYSICAL code so its keyup releases
+      // exactly this scancode, never one re-derived from e.key later.
+      charScancodes.set(code, s.code);
       rawScancode(s.code, true);
       return true;
     }
@@ -304,6 +336,20 @@ export function createStreamController(
     const code = e.code ?? e.key;
     // Swallow the keyup half of a tap emitted on keydown by sendCharEvent.
     if (!down && tappedCodes.has(code)) { tappedCodes.delete(code); return ks; }
+
+    // Release of a key sendCharEvent forwarded as a real make/break: send the
+    // SAME scancode the press did, from the physical code — checked here, ahead
+    // of the single-char/modifier gating below, because a keyup's e.key can
+    // already have changed to something that gate would route differently (or
+    // reject outright) by the time it arrives. See charScancodes above.
+    if (!down) {
+      const heldSc = charScancodes.get(code);
+      if (heldSc != null) {
+        charScancodes.delete(code);
+        rawScancode(heldSc, false);
+        return ks;
+      }
+    }
 
     const mod = (name: string) =>
       typeof e.getModifierState === 'function' && e.getModifierState(name);
@@ -373,6 +419,10 @@ export function createStreamController(
   const releaseAllKeys = () => {
     for (const sc of downScancodes) client.sendKeyScancode(sc, false);
     downScancodes.clear();
+    // charScancodes values are a subset of downScancodes — clear it alongside,
+    // same lifetime, or a stale physical-code entry would outlive the guest
+    // key it once named and mis-map the NEXT press of that physical key.
+    charScancodes.clear();
   };
 
   const sendTouch = (phase: TouchPhase, x: number, y: number) => {
@@ -408,7 +458,7 @@ export function createStreamController(
   const setConnected = (open: boolean) => {
     if (state.channelOpen === open) return;
     state.channelOpen = open;
-    if (!open) downScancodes.clear();
+    if (!open) { downScancodes.clear(); charScancodes.clear(); }
     emit();
   };
 
@@ -534,6 +584,12 @@ export function createStreamController(
     dispose: () => {
       if (disposed) return;
       disposed = true;
+      // A session ending with keys still recorded down means at least one
+      // physical key never got its release forwarded — the same class of bug
+      // as station.key.orphanedRelease, seen from the other end. releaseAllKeys
+      // right below still cleans it up guest-side; this just counts that it
+      // was necessary.
+      if (downScancodes.size) reach('station.key.stuckAtSessionEnd', 'auto');
       try { releaseAllKeys(); } catch { /* transport gone */ }
       clearInterval(statsTimer);
       listeners.clear();

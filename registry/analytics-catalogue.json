@@ -95,6 +95,22 @@
         "act"
       ]
     },
+    "station.key.orphanedRelease": {
+      "area": "station",
+      "owner": "src/three/useStreamControl.ts",
+      "what": "a keyup arrived for a scancode we never recorded as pressed",
+      "grades": [
+        "auto"
+      ]
+    },
+    "station.key.stuckAtSessionEnd": {
+      "area": "station",
+      "owner": "src/three/useStreamControl.ts",
+      "what": "a station session ended with one or more scancodes still recorded down, which releaseAllKeys then had to force-release",
+      "grades": [
+        "auto"
+      ]
+    },
     "station.key.used": {
       "area": "station",
       "owner": "src/three/streamClient/inputWire.ts",
