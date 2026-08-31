@@ -14,6 +14,7 @@ import threading
 import time
 
 from config import CLIENTLOG, CLIENTLOG_BODY_MAX, CLIENTLOG_MAX, CLIENTLOG_RETENTION_SECS
+from probes import hit
 from static_files import MIME
 
 # One lock guards clientlog append/rotate AND clientcmd read-modify-write:
@@ -103,12 +104,17 @@ def _clientlog_append(records):
                 cutoff = time.time() - CLIENTLOG_RETENTION_SECS
                 dropped = _clientlog_prune_by_age(CLIENTLOG, cutoff)
                 if dropped:
+                    hit("clientlog.prune.age")
                     sys.stderr.write(
                         f"[serve] clientlog pruned {dropped} rows older than {CLIENTLOG_RETENTION_SECS}s\n"
                     )
                 # Still oversized after pruning => the window itself is too big
                 # for the disk budget; fall back to the generational rotate.
+                # DECLARED AS A PAIR with the prune above: this branch can only
+                # be reached after one, so its zero is only readable against the
+                # count of prunes that happened at all.
                 if CLIENTLOG.stat().st_size > CLIENTLOG_MAX:
+                    hit("clientlog.rotate.generational")
                     os.replace(CLIENTLOG, CLIENTLOG.with_name(CLIENTLOG.name + ".1"))
         except OSError as e:
             sys.stderr.write(f"[serve] clientlog rotate failed: {e}\n")

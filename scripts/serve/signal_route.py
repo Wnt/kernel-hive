@@ -11,6 +11,7 @@ from pathlib import Path
 
 from auth import tickets
 from config import PUBLIC_HOST, SIGNAL_CONFIG, SIGNAL_HOST
+from probes import hit
 from static_files import MIME
 from webrtc import ice_servers
 
@@ -104,6 +105,13 @@ def serve_tile(handler, tile, stream_key):
     try:
         signal_doc = json.loads(Path(hashfile).with_name("signaling.json").read_text())
         ticket_tile = signal_doc.get("tile") or tile
+        if ticket_tile != tile:
+            # The fallback is doing real work RIGHT NOW: this document's key and
+            # the daemon's own name disagree, and every ticket for this station
+            # is being signed over the daemon's. That is correct behaviour and it
+            # is also a latent four-hour outage the registry is supposed to make
+            # impossible, so a non-zero here is a station to go and look at.
+            hit("signal.ticket.identityDiffers")
     except Exception:
         pass
     # The stream ticket is minted for EVERY caller, LAN included: a station

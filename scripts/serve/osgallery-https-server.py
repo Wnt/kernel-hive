@@ -113,6 +113,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
 import deploy_hint  # noqa: E402
+import probes  # noqa: E402  (server-side feature reach; folds into ANALYTICS)
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
@@ -159,6 +160,12 @@ USAGE = usage.UsageStore(USAGE_STATS)
 # takes no identity on either, so there is no per-person half to fence off.
 ANALYTICS = analytics.AnalyticsStore(ANALYTICS_DB)
 ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
+# The serving plane's OWN branch counters, into the SAME store under class
+# `server`. Until this line runs `probes.hit()` folds into memory and writes
+# nothing, which is what every unit test and every import of these modules
+# outside the server gets. `record_server` is the only door into that class and
+# no route reaches it, so a browser cannot forge a branch count.
+probes.bind(ANALYTICS)
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -490,6 +497,10 @@ class H(BaseHTTPRequestHandler):
         # No identities in it (see serve/analytics.py), so it needs no more of a
         # gate than /usage/stations.json does.
         if path == "/analytics/report.json":
+            # Fold the server's own pending counts in first: they are throttled
+            # to a flush a minute on the request path, and a report that omitted
+            # the last minute would read as a branch that had gone quiet.
+            probes.flush()
             return analytics.serve_report(self, ANALYTICS, parse_qs(urlparse(self.path).query))
 
         if path == "/signal/index.json":
