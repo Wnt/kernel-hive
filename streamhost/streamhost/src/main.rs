@@ -25,6 +25,7 @@ mod key_quirks;
 mod mame_input;
 mod mame_sock;
 mod mga_ctl;
+mod probes;
 mod ptr_grid;
 mod ptr_reckon;
 mod ram_abs;
@@ -77,6 +78,9 @@ async fn main() -> Result<()> {
     // Diagnostic pointer-input telemetry (SH_INPUT_TELEMETRY; default off).
     // Installs the process-global singleton + (level >= 1) the 1 s summary task.
     input_telemetry::init(cfg.input_telemetry, &cfg.tile);
+    // Feature-reach probes (docs/ANALYTICS.md §7): periodic + shutdown dump of
+    // the declared catalogue to {station}/probes.json.
+    probes::spawn(&cfg.tile);
 
     let cap = match cfg.capture_backend {
         config::CaptureBackend::Qemu => capture::connect(&cfg.qmp_sock).await?,

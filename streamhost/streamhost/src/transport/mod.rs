@@ -253,6 +253,7 @@ async fn handle_session(
         return Ok(());
     }
     let conn = Arc::new(req.accept().await?);
+    crate::probes::probe!(TRANSPORT_WT_SESSION);
     eprintln!(
         "[transport] SESSION_ACCEPTED addr={}",
         conn.remote_address()

@@ -435,6 +435,8 @@ impl RealtimeInputSink for X11WarpSink {
             return Err(Reject::BackendDown);
         }
 
+        crate::probes::probe!(INPUT_ABS_X11_WARP);
+
         if !event.ordered {
             if p.latest_move.replace((tx, ty)).is_some() {
                 self.shared
