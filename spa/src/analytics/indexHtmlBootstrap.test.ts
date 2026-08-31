@@ -19,23 +19,21 @@
 // pair kept in sync by hand — this test is what would catch them drifting.
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-import vm from 'node:vm';
+// The HTML comes in through Vite's own `?raw` import rather than node:fs, and
+// the script runs in a `with (window)` Function rather than node:vm: this
+// package's tsconfig declares `types: ["vite/client"]` and deliberately carries
+// NO node types, because the app itself is browser-only. A test is not a reason
+// to widen that surface for the whole package.
 import { clientClass, __resetIntent } from './intent';
 
-const INDEX_HTML_PATH = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../index.html',
-);
+import indexHtmlRaw from '../../index.html?raw';
 
 /** Pull the ONE <script> block that sets up the `ineum` stub — the Instana
  *  bootstrap this whole file is about. Fails loudly (not silently matching
  *  nothing) if that script is ever renamed or split, so a future refactor
  *  breaks this test instead of leaving it passing against nothing. */
 function extractBootstrapScript(): string {
-  const html = readFileSync(INDEX_HTML_PATH, 'utf8');
+  const html = indexHtmlRaw;
   // index.html has several inline <script> blocks; match each one
   // separately (non-greedy per tag) rather than one big non-greedy pattern —
   // the latter backtracks across unrelated `</script><script>` boundaries
@@ -97,8 +95,12 @@ function runBootstrap(opts: RunOptions = {}): unknown[][] {
   };
   if (opts.declaredClass !== undefined) sandbox.__khClientClass = opts.declaredClass;
   sandbox.window = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(source, sandbox);
+  // `with (window)` reproduces exactly what the vm context gave us and what a
+  // real browser does: a bare `ineum(...)` resolves against the same object the
+  // stub assigned `window.ineum` on. Function bodies are non-strict, so `with`
+  // is legal here; it is the point of the test, not an oversight.
+  const run = new Function('window', `with (window) { ${source} }`);
+  run(sandbox);
 
   const ineum = sandbox.ineum as { q: IArguments[] } | undefined;
   if (!ineum) return [];
