@@ -142,3 +142,7 @@ scripts/serve/usage-stats.json*
 
 # scripts/dev/fleet_rollout.py resume journals — local run state, never shared
 .fleet-rollout/
+
+# scripts/visitor-sim run manifests — local accounting of what a run touched
+# (walk-in handles created, resets fired), never source, never shared.
+scripts/visitor-sim/visitor-sim-runs/

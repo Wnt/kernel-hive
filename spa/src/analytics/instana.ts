@@ -19,6 +19,7 @@
 // ============================================================================
 
 import { BUNDLE_MARKER } from '../three/clientDebug';
+import { clientClass } from './intent';
 import type { Session } from '../data/session';
 
 /** The subset of the `ineum` call signature this module actually uses. */
@@ -232,6 +233,16 @@ export function configureInstana(sessionId: string): void {
   // strings only).
   ineum('meta', 'kh.sessionId', sessionId);
   ineum('meta', 'kh.bundle', String(BUNDLE_MARKER));
+  // `class` is the SAME dimension analytics/intent.ts stamps on every row this
+  // tab sends to our own store (`human` | `probe` | `unknown`) — declared by
+  // `window.__khClientClass` when a caller sets it (scripts/visitor-sim, and
+  // the CT950 e2e fleet, do this before the bundle boots), falling back to
+  // `navigator.webdriver === true`. Sending it here too is what lets an
+  // operator filter simulated traffic out of Instana itself rather than only
+  // out of kernel-hive's own analytics.db — Instana has no idea this lab runs
+  // a probe fleet, and without this every simulated visitor would beacon in
+  // looking exactly like a human one.
+  ineum('meta', 'kh.client.class', clientClass());
   // NOT `ineum('user', sessionId)` here — that is now set in spa/index.html's
   // inline bootstrap, before this module even loads, for the reason stated
   // at this function's own header: the page-load beacon needs it and this

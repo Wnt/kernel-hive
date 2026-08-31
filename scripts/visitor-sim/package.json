@@ -1,0 +1,13 @@
+{
+  "name": "kernel-hive-visitor-sim",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Simulated-visitor traffic generator for the public kernel-hive gallery — real browsers, marked as probe traffic, for exercising Instana/analytics with realistic journeys.",
+  "scripts": {
+    "start": "node visitor-sim.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}
