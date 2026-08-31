@@ -121,6 +121,17 @@ rollback against the tool instead of taking it on trust:
   re-record one. Belt and braces behind that: a restore loop that copied zero
   disks refuses to delete the journal or claim a rollback.
 
+**Sweep result, 2026-08-31.** Of the five stations holding a guard journal,
+`aix432` and `sunos414` both had `"backups": []`; `hpuxvue`, `macos9` and `win95`
+each had their row. `aix432`'s is now registered. **`sunos414`'s is deliberately
+NOT**: its journal is stamped 08:09 and its lone `cpg-bak-20260831T073623Z` has a
+10:36 mtime, while the live `golden` was captured at 11:08 — so that file cannot
+be shown to be the copy the current checkpoint replaced, and registering it would
+manufacture exactly the false confidence this section is about. It belongs to the
+`sunos414-abs` stream, whose own recapture is still pending. With the fixed guard
+that station's rollback refuses loudly and names the file, which is the correct
+state for an unproven backup.
+
 **The journal is line-oriented.** `_cpg_journal_backup_rows` reads the array with
 a `sed`, so each row must sit whole on ONE line exactly as `cpg_journal_write`
 prints it. Pretty-printed JSON parses fine as JSON and reads as **zero rows** —
