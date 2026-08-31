@@ -130,8 +130,8 @@ old pointer but are NOT live registry stations — stale directories, not a miss
 
 ## 6. Sandboxes
 
-`fleet-roll-fix` and `gate-baseline` hold this session's work; both branches are
-merged to `main`, so `scripts/dev/wt.sh rm <name>` will release them. The
+`fleet-roll-fix` and `gate-baseline` held this session's work; both are merged
+to `main` and both sandboxes were RELEASED at the end of it. The
 previous session's `otel-prop`, `otel-python`, `otel-rust` and `fleet-roll` are
 also merged and releasable — note that `otel-rust` does NOT contain a built
 binary despite the previous handover saying so; its `target/` is empty.
