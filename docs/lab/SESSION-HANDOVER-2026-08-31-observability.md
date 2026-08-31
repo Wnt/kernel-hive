@@ -20,7 +20,8 @@ ended** (§7). This is what is true, what is in flight, and what will bite.
 | OTel traces (browser) | live |
 | OTel traces (Python serving plane) | **live as of `6e11f26e`** |
 | Observability UI `/admin/observability` | live, admin-only |
-| Rust `streamhost` probes | **deployed as SOURCE and INERT** — the binary has never been rebuilt |
+| Rust `streamhost` probes + spans | merged, **INERT** — the binary has never been rebuilt or rolled |
+| Fleet rollout tool | merged, **never run** — this is the next task |
 | Instana forwarding | works, run by hand, **not on a timer** |
 
 Deployed rev at handover: `main@6e11f26e` plus the serve-plane deploy after it.
@@ -108,20 +109,14 @@ lie in the data.
 
 ## 5. What is NOT built
 
-- **Rust/`streamhost` OTel spans** — an agent was mid-flight (§7).
-- **The Rust counter probes have never run.** They are deployed as source; the
-  binary was never rebuilt. Until it is, every Rust probe reads zero and that
-  zero means nothing.
-- **Trace id does not reach the daemon.** The contract (`TRACE-CONTEXT.md` §3)
-  says it rides the signalling exchange because the input plane is raw
-  WebTransport with no headers. The serving plane records
-  `kh.session.traceId`; nothing carries it onward yet. The Python agent
-  deliberately left the ticket format alone because it is the Rust half.
-- **The browser does not send `traceparent` on the `/signal/*` fetch** — only on
-  the two telemetry POSTs. That is the hop that would join browser and server
-  traces, and it is a small, high-value piece of work.
-- Emulator spans (guest start / `loadvm` / first frame) — part of the Rust task.
-- Instana forwarding on a timer. It is run by hand on purpose.
+- **Nothing in the Rust plane has ever executed.** The counter probes and now
+  the daemon/emulator spans are all merged and none has run, because the binary
+  has never been rebuilt. Every Rust probe and every daemon span reads zero, and
+  that zero means nothing. Fixing this is §7 and §10.
+- **Instana forwarding on a timer.** Run by hand on purpose; the forwarder is
+  the only thing in this repo that sends data to a third party.
+- **The line-coverage lane is not armed.** It needs the instrumented bundle
+  served deliberately for a window; see `docs/ANALYTICS.md`.
 
 ## 6. Traps that cost this session time
 
@@ -145,19 +140,48 @@ lie in the data.
 - **React StrictMode invokes `setState` updaters twice.** Never call `reach()` /
   `recordMetric()` inside one.
 
-## 7. IN FLIGHT — two agents were running at handover
+## 7. The three parallel streams all LANDED — and what is left
 
-Their branches may or may not exist. **Check `git branch -r` first.**
+All merged to `main`. Nothing is in flight.
 
-| Agent | Branch | Task |
-|---|---|---|
-| Rust + emulator OTel | `otel-rust` (from `origin/otel-context`) | spans in `streamhost`, guest lifecycle spans, build on the box. Told **not** to deploy or restart. |
-| Fleet rollout tooling | `fleet-roll` (from `origin/main`) | staggered restart tool, waves of 3–5, framebuffer health gate, skip claimed/paused stations, `--dry-run` only. Told **not** to run a rollout. |
+| Stream | State |
+|---|---|
+| Python serving-plane spans | merged, **deployed**, emitting |
+| Rust daemon + emulator spans | merged, **NOT deployed** — needs a binary build + rollout |
+| Fleet rollout tool | merged, **never run** |
+
+### The rollout is the next real task, and it is supervised
+
+`scripts/dev/fleet_rollout.py`. Plan-only by default; nothing moves without
+`--apply`. Sequence: build the release binary on the box (`scripts/dev/labrun`,
+**not** in a sandbox — see §6), canary the one safe tile, then risk-ordered
+waves gated on a real screendump.
 
 The operator's instruction, verbatim: *"it's OK to restart all the stations, but
-do avoid restarting them all at once."* The rollout is **supervised, not
-delegated** — 61 live stations with a fresh binary. Sequence: land `otel-rust` →
-build on the box → canary one station → staggered waves.
+do avoid restarting them all at once."*
+
+Two things the tool found that are worth knowing before you read its output:
+
+- **Paused is not parked.** 36 of 71 live stations are paused at any moment —
+  the daemon idle-auto-pauses an unwatched exhibit after ~60 s. Skipping paused
+  would skip half the fleet, so paused stations ARE rolled; `--skip-paused` is
+  opt-in.
+- **Walk-in clones are not their stations.** `walkin-<os>-<n>` is an ephemeral
+  daemon identity, and live walk-in port claims were parking `os2warp` and
+  `win311` out of every rollout by name collision until clone identities were
+  masked out of claim matching.
+
+One judgement call left for the operator: the default DEFERS a station with a
+visitor connected (`--include-busy` overrides). The dry run caught a live
+visitor on `irix`.
+
+### The trace now joins across all three processes
+
+`signal_route.py` appends `?traceparent=…` to the ticket path (TRACE-CONTEXT
+§3.1), which was the one hop left open. Browser → serving plane → daemon is one
+trace id. **This is deployed for the serving plane but the daemon half only
+takes effect once the new binary ships**, so until the rollout every daemon
+session span is still a root reading `kh.trace.joined=false`.
 
 ## 8. Known-red, and not ours
 
@@ -178,7 +202,12 @@ commits are not on `origin/main`, which is the behaviour you want.
 
 ## 10. If you do one thing next
 
-Send `traceparent` on the `/signal/*` fetch and re-run the Instana forward. It
-is a few lines, it joins the browser and server traces into one, and it is the
-most likely reason Instana still shows a service with no calls — a `server`-kind
-root with real children is the shape its model wants.
+**Build the Rust binary and run the rollout.** Everything else is landed and the
+Rust plane is the one part of this system that has never executed — every Rust
+probe and every daemon span reads zero today, and in a design whose whole point
+is that a zero means "unused", that is the most misleading state in the tree.
+
+After that, re-run the Instana forward and see whether traces finally appear:
+the daemon and serving plane both emit `server`-kind entry spans with real
+children, which is the shape §4 says Instana's model wants and which nothing has
+yet been able to test.
