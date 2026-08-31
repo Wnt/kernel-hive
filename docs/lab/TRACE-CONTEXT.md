@@ -35,7 +35,8 @@ can break the thing it measures is not telemetry, it is a fault injector.
 | serving plane → browser (page load) | `<meta name="traceparent">` in `index.html` | the FIRST hop of a visit, before any JS has run — see §4 |
 | browser → serving plane | `traceparent` request header | **automatic, on every same-origin request** — `spa/src/analytics/khFetch.ts` patches `window.fetch` once at boot, so this is no longer a per-call-site opt-in. See §4a |
 | serving plane → its own spans | in-process | child of the inbound span |
-| browser → daemon (input plane) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
+| browser → daemon (input plane, session join) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
+| browser → daemon (input plane, per-edge) | inside the input RECORD itself, on a SAMPLED edge only | no headers here either, and no per-request exchange to piggyback on the way the ticket does — see §3.2 |
 | daemon → its own spans | in-process | child of the session's root |
 | daemon → emulator | **not propagated** | see §6 |
 
@@ -92,6 +93,75 @@ The consequence worth stating: a station opened WITHOUT a fresh signalling fetch
 starts a fresh one, and does not silently attach to an unrelated visit. When in
 doubt, start a new trace. A wrong parent is worse than no parent, because it
 draws a causal claim that is false.
+
+### 3.2 The per-edge hop: SAMPLED input records carry their own context
+
+§3.1 gets a browser's TRACE joined to a session once, at connect. It does not
+get any single click or keystroke onto that trace, because the daemon
+deliberately emits no span per input edge (§5's "no span per frame" sibling
+rule) — a per-edge trace would either need one more span the daemon cannot
+afford at 60 fps of input, or it would need to invent one, which §8 forbids.
+
+Added 2026-08-31: for an end-to-end input→pixel flame graph (the shape the
+open keyboard-lag investigation — a suspected pacing-queue floor in the
+emulator ctl module — actually needs), the browser SAMPLES roughly 1 key or
+click edge in `SAMPLE_N` (default 10; `three/streamClient/inputTrace.ts` is
+the knob) and mints that edge its OWN trace, root span `input.edge`. Its
+context — a 1-byte marker, a 128-bit trace id, a 64-bit span id, 25 bytes,
+**no flags byte**: presence on the wire already means sampled — is appended
+after the record's normal fixed fields, on that ONE record only:
+
+```
+[ ...the record, exactly as always... ][ 0xC5 | trace-id (16 BE) | span-id (8 BE) ]
+```
+
+**Compatibility is by construction, not by version negotiation.** Every match
+arm in `streamhost/streamhost/src/input.rs` already reads a record's fixed
+fields off the FRONT and tolerates trailing bytes it does not recognise (it
+guards on `rec.len() >= N`, never `== N`) — this predates the sampling feature
+and was not added for it. `streamhost/streamhost/src/input_trace.rs` exploits
+exactly that:
+
+- **old browser → new daemon.** A pre-sampling browser sends a record at its
+  historic exact length. `input_trace::strip` finds no length that matches
+  `base + 25` for that record type, returns the bytes untouched and reports no
+  context. Byte-for-byte today's behaviour.
+- **new browser → old daemon.** A sampled record is 25 bytes longer. The old
+  daemon never heard of this module; `input::handle`'s match arms read their
+  fixed fields off the front exactly as always and ignore the tail. The click
+  or keystroke still lands — untraced, not dropped.
+
+Both directions are asserted in `input_trace_tests.rs`, not merely argued for.
+
+**What travels, and what does not.** The qemu keycode a key record carries was
+ALWAYS on the wire — the guest cannot be typed at otherwise — and this feature
+adds nothing to it. What the daemon and the browser each independently compute
+from that keycode, LOCALLY, for their own span attributes, is a coarse bucket —
+`kh.key.class` ∈ {printable, modifier, navigation, enter, function} — never
+transmitted as such and never invertible back to which key it was;
+`kh.input.class` ∈ {key, click} names the wire record type. Neither process
+ever puts the character or the keycode itself in a span attribute. This is the
+same content rule §8 has always stated, applied to a new pair of processes.
+
+**The daemon's half of the chain**, parented on the browser's `input.edge`
+context via `Ctx::child`, exactly like every other hop in this document:
+
+```
+input.edge                    (browser, root — the sampled decision)
+└─ input.dispatch             (daemon: record accepted → guest write returned)
+   ├─ guest.frame.next        (daemon: the EFFECT — next frame produced)
+   └─ transport.frame.next    (daemon: that frame reaching the wire)
+```
+
+`input.dispatch` is one span covering both "the sink accepted it" and "the
+guest write completed" rather than two, because `input.rs` sits AT its
+800-line Rust file-size hard cap (`docs/lab/AGENT-CI-EXIT-RULE.md`) and cannot
+grow a second boundary inside it without a split this change did not need to
+force.
+`guest.frame.next` / `transport.frame.next` fire only when a sampled edge is
+actually pending — one relaxed atomic load costs the 60 fps encoder relay
+nothing on every other frame, the same `AtomicBool` discipline §5's sibling
+rule already uses for `mark_first_au` / `mark_first_input`.
 
 ## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
 
@@ -241,7 +311,7 @@ orders. Findings, in full in `khFetch.ts`'s own header:
   this section exists to stop having). A best-effort win that degrades to "no
   join, never a broken request" was judged the better trade.
 
-## 5. Sampling is all-or-nothing, and the browser decides
+## 5. Sampling is all-or-nothing PER TRACE, and the browser decides
 
 The `01` flag is set by the tab and every layer honours it. A layer that
 sampled independently would produce traces with holes in them, and a hole in a
@@ -249,6 +319,17 @@ flame graph is indistinguishable from a gap in the work.
 
 At this scale everything is sampled. The flag exists so that turning sampling
 down later is a one-line change in one place rather than four.
+
+**§3.2's per-input tracing samples WHICH TRACES EXIST, not spans within one.**
+Every trace this document otherwise describes — a station connect, a daemon
+boot — is minted whole and every layer honours its `01` flag exactly as this
+section says. §3.2 sits one level up: the browser decides, once per input
+edge and before any trace exists for it, whether THIS edge gets a trace at
+all (`SAMPLE_N`, default 10). The edges that lose that coin flip are not
+partially-traced — nothing is minted, nothing is sent, nothing downstream
+ever hears about them. The rule that "sampling is the browser's decision" is
+identical in both places; only the unit being sampled — a whole visit's trace
+vs. one input edge's trace — differs.
 
 ## 6. The emulator is deliberately NOT traced from inside
 
@@ -301,6 +382,23 @@ Four processes, one trace id, one flame graph. The browser's own
 the question "was it slow because the guest was asleep" stops being a
 correlation exercise.
 
+**A sampled input edge (§3.2) is its OWN small trace, not more branches under
+`station.connect`.** Roughly 1 key or click edge in `SAMPLE_N` produces:
+
+```
+input.edge                    (browser, root)
+└─ input.dispatch             (daemon)
+   ├─ guest.frame.next        (daemon)
+   └─ transport.frame.next    (daemon)
+```
+
+This is deliberately a second family of traces alongside the one above, the
+same way a page load answers a different question from a keystroke
+— a session's connect trace and its visitor's individual keystrokes answer
+different questions on different timescales, and folding thousands of input
+edges under one connect span would make that trace impossible to read rather
+than more complete.
+
 **The §4 page-load span IS a root above this one, now.** `serve.page` is
 minted when `index.html` is served, before any of the above exists;
 `station.connect` used to be minted independently and unrelated the moment the
@@ -321,5 +419,12 @@ merely drawn that way.
 - **Never put a secret in a span.** The ticket carries the trace id; the trace
   never carries the ticket. Same rule as `traces.py`: no stacktraces, no typed
   text, no credential handles.
+- **Never put a key's identity or any typed text in a span.** §3.2's addition:
+  a key class is a coarse bucket, never the key. Absolute, with no exception
+  for a "safe-looking" key.
 - **A layer that cannot trace still works.** Every hop degrades to "no parent",
   never to "no service".
+- **An old browser and an old daemon must both keep working against a new
+  counterpart.** §3.2: the fleet rolls in canaried waves and the SPA deploys
+  independently of it, so a version skew between browser and daemon is the
+  NORMAL state, not an edge case — never the exception.

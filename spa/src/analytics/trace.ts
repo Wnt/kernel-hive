@@ -12,11 +12,29 @@
 //    * they have a SHORT retention (days, not years) while the counters keep
 //      their two years, so the durable record is still the anonymous one;
 //    * the content rules do NOT relax. No typed text, no lengths that could
-//      identify content, no credential handles, no per-keystroke series. A
-//      span is a name, a duration and a bounded set of attributes.
+//      identify content, no credential handles. A span is a name, a duration
+//      and a bounded set of attributes.
 //
 //  Read that as: the plane now knows WHICH SESSION did something for a couple
 //  of weeks, and still never knows what was typed into it.
+//
+//  A SECOND, DELIBERATE narrowing on 2026-08-31: `three/streamClient/
+//  inputTrace.ts` now collects a SAMPLED per-input timing series — 1 key or
+//  click edge in `SAMPLE_N` (default 10) becomes a real `input.edge` span,
+//  chained through the daemon (`streamhost/src/input_trace.rs`) to the guest
+//  write and the frame it produced. This is the operator's call, made with
+//  eyes open, not erosion: it exists because the open keyboard-lag
+//  investigation (a suspected pacing-queue floor in the emulator ctl module)
+//  needed an end-to-end input->pixel flame graph and nothing short of
+//  per-edge tracing draws one. What still
+//  never leaves the tab is unchanged and absolute: no typed text, no key
+//  IDENTITY. `kh.key.class` is a coarse bucket (printable/modifier/
+//  navigation/enter/function) computed from the wire scancode the daemon was
+//  already going to receive to work at all — two unrelated keys in the same
+//  bucket produce the identical string, and nothing in the span can be
+//  inverted back to which key was pressed. The other N-1 edges in ten cost
+//  nothing beyond a counter increment: no id is minted, no span opens, no
+//  wire byte changes (docs/lab/TRACE-CONTEXT.md's in-record hop).
 //
 //  THIS IS OPENTELEMETRY DATA, not a private format that resembles it. The
 //  span model below is OTel's: 128-bit trace ids and 64-bit span ids in

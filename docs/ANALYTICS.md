@@ -367,14 +367,30 @@ per-episode and declares no probe on either side of that pair.
 
 This is a stranger typing, sometimes their own name, into a form and into a
 guest. **Nothing about the content leaves the tab.** Not the text; not its
-length; not a per-keystroke timing series; not a handle, a credential id or a
-clone identity; not which of the three machines a given visitor took. Characters
-are counted only as the *denominator* of a percentage that is bucketed into
-deciles before it is queued, so the count itself never travels and cannot be
-recovered from what does. `scripts/serve/analytics.py` stores no identity by
-construction, and the walk-in door is the last place that sentence should
-acquire an exception. The rule the call sites are written to: **if a change here
-would need one more field to make a number better, that is the signal to stop.**
+length; not a handle, a credential id or a clone identity; not which of the
+three machines a given visitor took. Characters are counted only as the
+*denominator* of a percentage that is bucketed into deciles before it is
+queued, so the count itself never travels and cannot be recovered from what
+does. `scripts/serve/analytics.py` stores no identity by construction, and the
+walk-in door is the last place that sentence should acquire an exception. The
+rule the call sites are written to: **if a change here would need one more
+field to make a number better, that is the signal to stop.**
+
+**The FORM half of that sentence (name entry, the walk-in flow this section is
+about) is unchanged: still zero per-keystroke telemetry of any kind.** The
+GUEST half changed, deliberately, on 2026-08-31: `three/streamClient/
+inputTrace.ts` now samples 1 key or click edge in `SAMPLE_N` (default 10) into
+a real timing span, chained across the browser, the daemon and the frame the
+guest produced (§8.1, `docs/lab/TRACE-CONTEXT.md`) — an end-to-end input->pixel
+flame graph the keyboard-lag investigation needed and no aggregate could draw.
+This is a widening of what §8.1 already collects about the daemon side of a
+visit, not a widening of THIS section's guarantee: the content rule above still
+holds without exception — no typed text, no key identity, ever, on either
+side of the wire. What travels is a coarse class (`kh.key.class`:
+printable/modifier/navigation/enter/function, `kh.input.class`: key/click) and
+a duration, on the ~1-in-10 edges, and nothing else about the keystroke is
+knowable from it — the same discipline as the rest of this section, applied
+to a session id's cousin instead of to a count.
 
 ### 5.4 The station and stream flows: opening one, coming back to one, watching one freeze
 
@@ -865,11 +881,39 @@ load and nothing else.
 | `transport.first_frame` | internal | when a byte of video reached the wire — the daemon's twin of the browser's `station.open.toFirstFrameMs` |
 | `input.first_edge` | internal | when the visitor's first click or key reached the guest, and on which input class |
 | `transport.webrtc_fallback` | server | the fallback transport being TAKEN — a second egress and a sidecar process, for a browser with no `VideoDecoder` |
+| `input.edge` | client (browser) | one SAMPLED input's own start: the event handler firing to the record leaving the tab |
+| `input.dispatch` | internal | that record reaching the daemon's sink and the guest write it caused, as one span (`input.rs` has no headroom left to split it further — see the trap below) |
+| `guest.frame.next` | internal | the EFFECT: how long from that injection to the next frame this session's capture/encode pipeline produced |
+| `transport.frame.next` | internal | the same edge's frame reaching the wire — splits capture/encode cost from egress cost, same idea as `capture.first_frame` vs `transport.first_frame` |
 
 The four session stages are all measured from the session's own start, so they
 read side by side: `capture.first_frame` short and `transport.first_frame` long
 is egress; `guest.resume` dominating both is a guest that was idle-paused, and
 no other layer can say that.
+
+**Sampled per-input tracing (added 2026-08-31) is a SEPARATE, PARENTED trace per
+edge, not more children under `streamhost.session`.** The browser decides —
+`three/streamClient/inputTrace.ts` — mints a fresh trace for roughly 1 key or
+click edge in `SAMPLE_N` (default 10; the knob is that one exported constant,
+changed and redeployed like any other SPA constant) and appends its 25-byte
+context (a marker byte, a 128-bit trace id, a 64-bit span id — no flags byte,
+since presence on the wire already means sampled) to that ONE record. The other
+N-1 edges cost one counter increment and nothing else: no id minted, no span
+opened, no wire byte added. The input plane is raw WebTransport records with no
+headers (§3 of the trace contract), so this is the only place left to carry the
+context, and `streamhost/streamhost/src/input_trace.rs` is where the daemon
+recognises it — never invents one, exactly like every other hop in the
+contract. Old browser against new daemon and new browser against old daemon
+both keep working: the suffix's length is checked against every base length
+either record shape has ever shipped, so an old daemon reads its fixed fields
+off the FRONT exactly as before and ignores an unrecognised tail, and a new
+daemon facing an old browser's exact-length record simply finds no suffix.
+Measured cost of the unsampled path (`input_trace.rs`'s own test): **~6 ns per
+record**, the same league as §8's probe hits. `guest.frame.next` and
+`transport.frame.next` are parented on `input.dispatch`, not on the browser's
+root directly, so a flame graph reads input -> dispatch -> effect as one chain;
+they fire only when a sampled edge is actually pending (one relaxed atomic load
+per frame otherwise — the encoder relay's existing budget, unchanged).
 
 **Collection is a spool directory, not a POST.** Each file in
 `<station>/traces/` is byte-for-byte the body `POST /traces` accepts, written
