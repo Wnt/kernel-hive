@@ -16,6 +16,53 @@ scripts/dev/fleet_rollout.py --resume --apply
 Plan-only is the default. There is no flag that restarts anything without
 `--apply` on the command line.
 
+## Running a rollout, end to end
+
+This is the sequence that took the fleet from "the tool has never been run"
+to "rolled twice, cleanly" on 2026-08-31. Skip a step and the mistakes below
+are the ones that happen.
+
+1. **Land and push the code.** Then `scripts/dev/box-deploy.sh --apply`
+   **before** building or rolling any binary — never after, even when your
+   change looks Rust-only. Ordering here is not arbitrary: on
+   2026-08-31 a `signal_route.py` fix (it appends `?traceparent=` to the
+   signaling URL) had to be live on the box *before* a daemon binary that
+   reads that query parameter (`trace/context.rs`) went out, or the new
+   binary would go looking for something the still-old server was not
+   sending yet. See docs/lab/TRACE-CONTEXT.md §8: an old daemon must keep
+   working against a new server and vice versa, so this ordering is not a
+   one-time fix — the SPA, the Python serving plane and the streamhost binary
+   all deploy on separate schedules, permanently.
+2. **`scripts/dev/build-deploy.sh --canary <safe tile>`** — mirrors your
+   checkout's `streamhost/` source to the box and builds it there, then
+   switches exactly one station. This is the way to build the daemon
+   regardless of which checkout you run it from: CT950 itself has no working
+   Rust toolchain for this crate, so `cargo build` in a local `wt.sh`
+   sandbox is not an option — the box's warm `target/` is.
+3. **Framebuffer-verify the canary by hand** before promoting anything else.
+   The canary gate (`.canary-ready`) records that build-deploy.sh's own
+   readiness check passed; it does not prove the exhibit looks right, only
+   that its daemon came up. Look at the frame yourself.
+4. **`scripts/dev/fleet_rollout.py --mode promote`, no `--apply`, every
+   time**, even on a rollout you have run before. Read the full skip list
+   before moving — see "What gets skipped, and why each" below — and
+   understand every entry, not just the count.
+5. **`--apply`.**
+6. **Verify by census, not by trusting the run's own journal.** The state
+   file says what the tool *believes* happened; what matters is what the box
+   actually has live. Read each rolled station's own pointer back:
+   `ssh lab 'readlink -f /usr/local/lib/streamhost/stations/<tile>/current'`
+   for a sample, or loop it (`ssh -n`, never nested `ssh lab`, per AGENTS.md
+   rule 2) over every station the plan claimed and count how many resolve to
+   the artifact you expected.
+7. **Report what was skipped and why**, and treat finishing those as a
+   separate, deliberate act — not a leftover to sweep up in the same
+   session. See "What gets skipped, and why each" below for which skips are
+   normal and which mean something is actually stuck.
+
+`--mode restart` (no binary movement — a launcher, `station.env` or
+configuration roll) follows the same shape minus steps 1–3.
+
 ## What it is not
 
 `scripts/dev/build-deploy.sh --canary <station>` followed by `--promote` already
@@ -152,6 +199,46 @@ are in the output. If a new station's brightness swings by more than half
 between two ordinary frames (rare — nothing observed does), lower
 `--min-nonblack` for that run rather than dropping the gate.
 
+### A halt is usually the gate being wrong — but never assume it
+
+The two `text-console`/floor stories above (`alpine`, `mpf2`) both had the
+same shape: a real, healthy screen tripped a bad floor, and overriding the
+gate to let the wave through was correct. That pattern is real and it
+repeats — but it is a pattern about symptoms, not a license to skip the
+check. On the same rollout day, `c128` failed with the identical symptom
+(a near-black frame, gate says unhealthy) on the strength of that exact
+analogy — and this time the override was **wrong**: `c128`'s VICE guest was
+genuinely dead. Two identical-looking failures had opposite causes.
+
+**The discipline this earns:** before overriding a gate failure, look at the
+actual frame yourself and confirm the station is showing something a visitor
+would recognize as that exhibit — every time, even the tenth time this
+session, even when the last five overrides were all correct. A `nonblack_pct`
+number below a floor tells you the frame is dark. It does not tell you why.
+
+`c128` was also a reminder of why AGENTS.md rule 9 exists in the first
+place: its unit was `active`, its daemon had logged a clean `LISTENING` line
+from the current MainPID, and it was still serving nothing. The guest
+process had died, and the daemon does not relaunch a dead guest on its own —
+it retries a resume against the now-nonexistent pid forever
+(`[idle] resume retry failed (pid … No such file or directory)`,
+`streamhost/streamhost/src/idle.rs`). Tiers 1 and 2 of the gate (readiness,
+settle) were green throughout. Only the framebuffer showed the station was
+dead. `systemctl restart` fixed it.
+
+**Reproduce a gate failure with the gate's own probe, not a different
+tool.** `labctl shot` captures with `resume=True`, which thaws a paused
+guest; the rollout gate always captures with `resume=False` (above). Using
+`labctl shot` to "double-check" a gate failure answers a different question
+than the one the gate asked, and it cost real time on 2026-08-31: comparing
+the two tools' readings produced a confident, wrong diagnosis ("transient
+torn read") that stood until a controlled re-test with the gate's own
+capture path. To reproduce a failure the way the gate saw it, run:
+
+```
+scripts/dev/labrun scripts/host/fleet-rollout-probe.sh frames <tile>
+```
+
 ### The settle interval races the daemon's own idle-pause
 
 The daemon idle-auto-pauses an unwatched exhibit ~60 s after it starts
@@ -260,9 +347,29 @@ Every wave writes `.fleet-rollout/<tag>.json` (gitignored): the plan, per-statio
 status, and the skip reasons. `--resume` reloads it, **re-probes the box**, and
 re-classifies the stations that have not run yet — a station claimed, stopped or
 opened by a visitor since the rollout stopped is dropped from the remainder
-rather than trusted from the journal. Original wave boundaries are kept.
+rather than trusted from the journal. Original wave boundaries are kept. A
+station marked `FAILED` (as against `DONE`) is not "done" for this purpose —
+it stays pending and is retried on the next `--resume --apply`.
 
-## Cost
+Resuming is safe to lean on, including a resume that only ends up touching a
+single wave: the fresh re-probe means a station that became claimed, busy or
+stopped in the meantime is correctly re-skipped rather than restarted anyway.
+
+**In `--mode promote`, a resumed promote-wave for a station already sitting
+on the target artifact is a no-op at the pointer-move layer** —
+`build-deploy.sh --promote` skips anything already on the gated artifact
+(`promote_canary`'s `tile_on_artifact` check) — but that station still runs
+the full settle-and-frame gate for its wave. If the gate then fails on it,
+that is the gate failing to see a healthy station (see "verify with the
+gate's own probe" above), not a promotion that silently broke something.
+
+## Cost, and the rough shape of a run
+
+For planning: at default settings (`--wave-size 4`, `--settle 45`) a full
+fleet is on the order of 18 waves — one canary station, then the rest in
+fours — each wave taking roughly a couple of minutes including its settle
+and per-station frame captures. A full-fleet rollout is well under an hour
+of supervised time; see the measured 25–30 minutes below.
 
 The box-side probe is why this is cheap enough to run per wave. `labctl health
 --json` fleet-wide reads each tile's whole boot journal (`journalctl -b -o

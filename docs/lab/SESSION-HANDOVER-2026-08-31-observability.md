@@ -84,31 +84,15 @@ old pointer but are NOT live registry stations — stale directories, not a miss
 
 ## 4. Traps, all found by running it
 
-- **`build-deploy.sh --promote` will never promote the canary tile** — it
-  promotes everything EXCEPT it. Wave 1 is the canary by construction, so the
-  rollout deadlocked on its own first wave the first time it ran. Fixed:
-  a canary-only wave is health-gated, not promoted.
-- **A fixed non-black percentage cannot gate this fleet.** `alpine` (0.372%, a
-  healthy login prompt) and `mpf2` (0.286%, a healthy MPF-II boot screen) each
-  halted a rollout. No `ui` class predicts brightness either — `mpf2` shares its
-  class with `c64` (61.8%) and `zxspectrum` (99%). The gate now compares a
-  station against **its own before-frame**; see FLEET-ROLLOUT.md.
-- **A paused shm guest cannot be captured by the normal path, ever.** A
-  SIGSTOPped writer can freeze mid-update, leaving the seqlock odd with nothing
-  left to flip it even, so `shmshot`'s untorn-read wait is *unsatisfiable* and
-  fails 100% of the time — it is not flakiness, and a retry is not the fix. The
-  rollout probe now reads a frozen buffer directly when `/proc` proves there is
-  no live writer. **`labctl shot` and `labctl assert` still fail this way** —
-  converging them on the same read is an open decision (§5).
-  Do not "verify" this class of failure with `labctl shot`: it captures with
-  `resume=True` and thaws the guest, so it answers a different question than the
-  gate does. That mistake cost this session a wrong diagnosis.
-- **The daemon retries a resume against a DEAD pid forever.** `c128`'s VICE
-  guest failed to come up after a restart, and the daemon sat in
-  `[idle] resume retry failed (pid … No such file or directory)` indefinitely
-  rather than relaunching. A `systemctl restart` fixed it. A station can
-  therefore sit dead with an `active` unit and a healthy `LISTENING` line —
-  which is precisely why rule 9 says the framebuffer is the only proof.
+Every rollout-mechanics trap this session hit — the canary-only wave
+deadlock, the fixed non-black floor failing on `alpine` and `mpf2`, the
+paused-shm seqlock, `c128`'s dead-pid resume-retry loop, and the
+`labctl shot` vs. the gate's own probe misdiagnosis — is now the operating
+practice in
+[`FLEET-ROLLOUT.md`](FLEET-ROLLOUT.md#running-a-rollout-end-to-end) and its
+"health gate is the framebuffer" section, not restated here: read those
+before the next rollout, not this handover.
+
 - **SQLite's double-quote fallback** still applies: single quotes for string
   literals, always.
 
