@@ -93,6 +93,53 @@ clone).
 7. **It holds streamhost's wake lease** for the run, so the idle-pause reconciler
    cannot re-freeze the guest in the middle of a capture.
 
+### The rollback is only as real as the journal's `backups` array
+
+`cpg_rollback` restores from the rows recorded in `.checkpoint-guard.json`, and
+**nothing else on disk tells it anything.** A `.cpg-bak-<stamp>` file sitting
+next to the station's qcow2 is not a rollback target until a row names it, with
+its `sha256`.
+
+Two things follow, both found on `aix432` on 2026-08-31 by checking a reported
+rollback against the tool instead of taking it on trust:
+
+- **A resumed run used to ERASE the rows.** `cpg_journal_write` re-renders the
+  whole journal from the in-memory `CPG_BACKUPS`, and `cpg_resume` never runs
+  `cpg_backup` — so each of the four journal writes a resume performs replaced a
+  populated array with `[]`. The backup FILE was fine; the only record of where
+  it was, and what it should hash to, was gone. `cpg_resume` now calls
+  `cpg_journal_load_backups` before its first write, and
+  `scripts/test_checkpoint_guard_rollback.py` fails if that ordering is ever
+  undone.
+- **Zero rows is now a REFUSAL.** Every loop in `cpg_rollback` is a `while read`
+  over those rows, so with none of them it verified nothing and printed *"Every
+  recorded backup verified, so the rollback is available"*; under
+  `CPG_ROLLBACK_CONFIRM=1` it restored nothing, deleted the journal, logged
+  *"ROLLED BACK to the pre-recapture disks"* — **and exited 0.** A false success
+  on the incident path ends an investigation instead of starting one. It now
+  refuses, names the `*.cpg-bak-*` files still on disk, and says how to
+  re-record one. Belt and braces behind that: a restore loop that copied zero
+  disks refuses to delete the journal or claim a rollback.
+
+**Sweep result, 2026-08-31.** Of the five stations holding a guard journal,
+`aix432` and `sunos414` both had `"backups": []`; `hpuxvue`, `macos9` and `win95`
+each had their row. `aix432`'s is now registered. **`sunos414`'s is deliberately
+NOT**: its journal is stamped 08:09 and its lone `cpg-bak-20260831T073623Z` has a
+10:36 mtime, while the live `golden` was captured at 11:08 — so that file cannot
+be shown to be the copy the current checkpoint replaced, and registering it would
+manufacture exactly the false confidence this section is about. It belongs to the
+`sunos414-abs` stream, whose own recapture is still pending. With the fixed guard
+that station's rollback refuses loudly and names the file, which is the correct
+state for an unproven backup.
+
+**The journal is line-oriented.** `_cpg_journal_backup_rows` reads the array with
+a `sed`, so each row must sit whole on ONE line exactly as `cpg_journal_write`
+prints it. Pretty-printed JSON parses fine as JSON and reads as **zero rows** —
+which is the silent-empty state above. If you ever hand-record a row, match the
+writer's format and then prove it by running `checkpoint-guard rollback <station>`
+WITHOUT `CPG_ROLLBACK_CONFIRM`: that verifies every recorded sha256 against the
+file and then refuses, touching nothing.
+
 ### Which disk it backs up, and how it knows
 
 It asks the running QEMU (`query-block`), not the launcher. Most stations build the disk
