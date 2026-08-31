@@ -108,7 +108,13 @@ def _delta(counters: dict | None, key: str) -> int | None:
 
 
 def verdict(
-    run: dict, returncode: int = 0, counters: dict | None = None, templates: str = "unknown"
+    run: dict,
+    returncode: int = 0,
+    counters: dict | None = None,
+    templates: str = "unknown",
+    gave_up: int = 0,
+    from_rest: str = "unknown",
+    require_seam: bool = False,
 ) -> tuple[str, str]:
     """(PASS|FAIL|DISAGREE|NORUN, reason).
 
@@ -126,6 +132,18 @@ def verdict(
             "this station has no cursor template bank, so the pointer leg cannot be judged — "
             "a NOTFOUND from the matcher is a harness gap, and rolling a healthy station back "
             "for one is exactly the flapping this gate must not do",
+        )
+    # THE RESUME SEAM, checked before anything else is judged. A warm guest
+    # cannot exhibit the class the 298,280 miss belonged to, so a pass from a
+    # warm run would be a pass about a question that was never asked.
+    if require_seam and from_rest != "yes":
+        return (
+            "NORUN",
+            "the first measured session did not cross the RESUME SEAM (station was "
+            f"{'warm' if from_rest == 'no' else 'in an unknown state'}). A coordinate written "
+            "while the guest is stopped and never published reads back as our own write on "
+            "resume — a warm run cannot see that, so this certifies nothing about it. Run "
+            "after a restart, or once the station has idle-paused",
         )
     sessions = run.get("sessions") or []
     if not any(s.get("abandoned") for s in sessions):
@@ -165,11 +183,38 @@ def verdict(
             "live and INPUT is not arriving, which is the half that broke on rhapsody",
         )
 
-    return _mechanism(clicked, repainted, moving, counters)
+    return _mechanism(clicked, repainted, moving, counters, gave_up, run)
 
 
-def _mechanism(clicked: list, repainted: bool | None, moving: list, counters: dict | None) -> tuple[str, str]:
+def _mechanism(
+    clicked: list,
+    repainted: bool | None,
+    moving: list,
+    counters: dict | None,
+    gave_up: int = 0,
+    run: dict | None = None,
+) -> tuple[str, str]:
     """Outcome is good. Is the MECHANISM behind it sound and repeatable?"""
+    # RATE. A publish runaway is silent at settled point-to-point rates and loud
+    # once a real pointer stream drives it: "gave up publishing 560,330 after 6
+    # tries (guest holds 560,302)", which the fix's own source records as having
+    # appeared "the first time this was driven by a real browser session instead
+    # of one target at a time".
+    if gave_up:
+        return (
+            "FAIL",
+            f"{gave_up} `gave up publishing` event(s) during the run — the write path could "
+            "not converge under a real pointer stream. This is invisible to a rig that sends "
+            "one target and waits, which is why the burst exists; a station that passes "
+            "settled commands and fails here ships a runaway to the first visitor who drags",
+        )
+    bursts = [s for s in moving if s.get("rate")] if run else []
+    if run and run.get("rateHz") and not bursts:
+        return (
+            "NORUN",
+            "a pointer rate was specified but no session recorded a burst — the rate leg did "
+            "not run, and a pass without it is a pass about settled commands only",
+        )
     faults = {k: _delta(counters, k) for k in COUNTER_FAULTS}
     broke = {k: v for k, v in faults.items() if v}
     if broke:
@@ -190,6 +235,9 @@ def _mechanism(clicked: list, repainted: bool | None, moving: list, counters: di
             "the last time a gate preferred the passing check it hid two further defects",
         )
     detail = "with a commanded repaint" if clicked else "motion only (no probe point declared)"
+    if bursts:
+        hz = max(b["rate"].get("hz", 0) for b in bursts)
+        detail += f"; sustained ~{hz} pointer command(s)/s with no give-ups"
     if accepted is None:
         detail += "; input-router counters unavailable, so the mechanism is UNASSERTED"
     else:
@@ -204,12 +252,15 @@ def main() -> int:
     rc = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     counters = json.loads(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else None
     templates = sys.argv[4] if len(sys.argv) > 4 else "unknown"
+    gave_up = int(sys.argv[5]) if len(sys.argv) > 5 and sys.argv[5].isdigit() else 0
+    from_rest = sys.argv[6] if len(sys.argv) > 6 else "unknown"
+    require_seam = len(sys.argv) > 7 and sys.argv[7] == "1"
     try:
         run = json.loads(Path(sys.argv[1]).read_text())
     except (OSError, ValueError) as exc:
         print(f"NORUN could not read the probe output: {exc}")
         return 0
-    state, why = verdict(run, rc, counters, templates)
+    state, why = verdict(run, rc, counters, templates, gave_up, from_rest, require_seam)
     print(f"{state} — {why}")
     return 0
 

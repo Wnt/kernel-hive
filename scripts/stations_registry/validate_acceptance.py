@@ -37,6 +37,9 @@ from .validate_schema import fail
 
 ALLOWED = {
     "watchRect",
+    "rateHz",
+    "rateMs",
+    "requireResumeSeam",
     "cursorBankBoundTo",
     "probePoint",
     "guestSize",
@@ -117,6 +120,7 @@ def validate_acceptance(rows: list[dict[str, Any]], errors: list[str]) -> None:
 
         _validate_sampling(row, spec, errors)
 
+        _validate_rate(row, spec, errors)
         _validate_cursor_bank(row, spec, errors)
 
         if "probePoint" in spec:
@@ -245,3 +249,31 @@ def validate_rollout(rows: list[dict[str, Any]], errors: list[str]) -> None:
                 "acceptance gate cannot judge is exactly the unattended deploy this design "
                 "exists to make safe — opt in to auto only once the station can be proven",
             )
+
+
+def _validate_rate(row: dict[str, Any], spec: dict[str, Any], errors: list[str]) -> None:
+    """The rate leg and the resume seam — the two legs that this wave's defects
+    were actually caught by, and that a station author would naturally omit.
+
+    A settled point-to-point command and a warm guest both make a proof cleaner,
+    which is exactly why the gate rather than the author owns these. Of the three
+    things that caught a real defect in the 2026-08-30/31 wave — real input
+    rates, the resume seam, and a same-pass control — a gate carrying only the
+    control would pass a build shipping two of the three defects that shipped.
+    """
+    hz = spec.get("rateHz")
+    if hz is not None and (not isinstance(hz, int) or hz < 0):
+        fail(errors, row, "acceptance.rateHz must be a non-negative integer (0 disables the burst)")
+    ms = spec.get("rateMs")
+    if ms is not None and (not isinstance(ms, int) or ms <= 0):
+        fail(errors, row, "acceptance.rateMs must be a positive integer")
+    if hz and not spec.get("guestSize"):
+        fail(
+            errors,
+            row,
+            "acceptance.rateHz needs acceptance.guestSize: the burst maps guest pixels into "
+            "the letterboxed video, and cannot be aimed without it",
+        )
+    seam = spec.get("requireResumeSeam")
+    if seam is not None and not isinstance(seam, bool):
+        fail(errors, row, "acceptance.requireResumeSeam must be true or false")

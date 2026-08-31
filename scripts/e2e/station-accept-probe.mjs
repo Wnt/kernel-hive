@@ -56,6 +56,8 @@
 //   --samples N         samples per motion window (default 6)
 //   --guest WxH         guest framebuffer size, for pointer mapping
 //   --point x,y         guest-pixel point to move the pointer to and click
+//   --rate-hz N         pointer-stream rate for the burst leg (0 = off)
+//   --rate-ms N         how long to sustain that rate
 //   --wait-ms N         how long to wait for a live stream (default 60000)
 //   --base URL          origin (default https://$LAB_HOST:8443)
 //   --path PREFIX       bundle prefix, e.g. /staging/<slot>/ (default /)
@@ -85,6 +87,8 @@ const BASE = arg('base', `https://${process.env.LAB_HOST || '192.0.2.10'}:8443`)
 const PATH_PREFIX = arg('path', '/');
 const GUEST = (arg('guest', '') || '').split('x').map(Number);
 const POINT = (arg('point', '') || '').split(',').map(Number);
+const RATE_HZ = num('rate-hz', 0);
+const RATE_MS = num('rate-ms', 3000);
 
 const log = (m) => process.stderr.write(`${m}\n`);
 const die = (m) => {
@@ -215,6 +219,52 @@ async function pointerTo(page, gx, gy) {
   return { screen: [Math.round(x), Math.round(y)], guest: [gx, gy] };
 }
 
+// RATE IS A DEFECT CLASS OF ITS OWN, and it is the one a station author will
+// naturally not test — a settled point-to-point command makes a cleaner proof,
+// which is exactly why the gate rather than the author must own this.
+//
+// The kh-ramabs runaway is the evidence, from the fix's own source: issuing a
+// second target before the first is consumed leaves BOTH deltas to land on top
+// of the last write, the read-back disagrees and issues more, and it runs away.
+// The patch says what that costs: "invisible to a rig that sends one target and
+// waits: it first appeared as `gave up publishing 560,330 after 6 tries (guest
+// holds 560,302)` the first time this was driven by a real browser session
+// instead of one target at a time."
+//
+// So this drives a genuine pointer STREAM across the safe rectangle — a drag,
+// not a sequence of settled clicks — and the orchestrator then reads the
+// station's log for give-ups across the same window. `mouse.move` with `steps`
+// emits intermediate moves at the browser's own cadence, which is the same
+// shape a visitor's trackpad produces.
+async function rateBurst(page, box, guest, rect) {
+  if (!(RATE_HZ > 0) || guest.length !== 2 || !box) return null;
+  const scale = Math.min(box.width / guest[0], box.height / guest[1]);
+  const cw = guest[0] * scale;
+  const ch = guest[1] * scale;
+  const toScreen = (gx, gy) => [
+    box.x + (box.width - cw) / 2 + gx * scale,
+    box.y + (box.height - ch) / 2 + gy * scale,
+  ];
+  // Stay inside the watched rectangle: the burst must be able to produce the
+  // motion the gate is already watching for, not wander off it.
+  const [x0, y0, w, h] = rect;
+  const legs = 6;
+  const perLeg = Math.max(2, Math.round((RATE_HZ * (RATE_MS / 1000)) / legs));
+  const t0 = Date.now();
+  let commands = 0;
+  for (let i = 0; i < legs && Date.now() - t0 < RATE_MS; i++) {
+    const gx = x0 + (i % 2 === 0 ? w * 0.85 : w * 0.15);
+    const gy = y0 + (h * (0.2 + 0.6 * (i / legs)));
+    const [sx, sy] = toScreen(gx, gy);
+    await page.mouse.move(sx, sy, { steps: perLeg });
+    commands += perLeg;
+  }
+  const ms = Date.now() - t0;
+  const hz = Math.round((1000 * commands) / Math.max(1, ms));
+  log(`  rate burst: ${commands} pointer command(s) in ${ms}ms (~${hz}/s, target ${RATE_HZ}/s)`);
+  return { commands, ms, hz, targetHz: RATE_HZ };
+}
+
 async function runSession(index, abandon) {
   const logs = [];
   const browser = await launch();
@@ -243,6 +293,12 @@ async function runSession(index, abandon) {
   const idle = await motion(page, `s${index}-idle`);
   let pointer = null;
   let repaint = null;
+  let rate = null;
+  if (RATE_HZ > 0 && GUEST.length === 2) {
+    const box = await page.locator('video').last().boundingBox();
+    rate = await rateBurst(page, box, GUEST, RECT);
+    await page.waitForTimeout(SAMPLE_MS);
+  }
   if (POINT.length === 2 && GUEST.length === 2) {
     pointer = await pointerTo(page, POINT[0], POINT[1]);
     await page.waitForTimeout(SAMPLE_MS);
@@ -265,7 +321,17 @@ async function runSession(index, abandon) {
   await page.screenshot({ path: `${OUT}/${tag}-final.png` }).catch(() => {});
   await page.close().catch(() => {});
   await browser.close().catch(() => {});
-  return { index, abandoned: false, negotiated: true, firstFrameMs, idle, pointer, repaint, logs: logs.slice(-8) };
+  return {
+    index,
+    abandoned: false,
+    negotiated: true,
+    firstFrameMs,
+    idle,
+    pointer,
+    repaint,
+    rate,
+    logs: logs.slice(-8),
+  };
 }
 
 (async () => {
@@ -282,6 +348,7 @@ async function runSession(index, abandon) {
       url,
       rect: RECT,
       sampleMs: SAMPLE_MS,
+      rateHz: RATE_HZ,
       samples: SAMPLES,
       abandonedAt: ABANDON_AT,
       sessions,

@@ -173,5 +173,59 @@ class MissingTemplatesAreInconclusive(unittest.TestCase):
         self.assertEqual(state, "NORUN")
 
 
+class RateIsItsOwnDefectClass(unittest.TestCase):
+    """A publish runaway is silent at settled rates and loud under a stream.
+
+    From the fix's own source: it "first appeared as `gave up publishing
+    560,330 after 6 tries (guest holds 560,302)` the first time this was driven
+    by a real browser session instead of one target at a time."
+    """
+
+    def test_a_give_up_fails_an_otherwise_perfect_run(self):
+        state, why = verdict(run([good(1), ABANDONED, good(3)]), 0, CLEAN, gave_up=1)
+        self.assertEqual(state, "FAIL")
+        self.assertIn("gave up publishing", why)
+        self.assertIn("one target and waits", why)
+
+    def test_no_give_ups_passes_and_reports_the_sustained_rate(self):
+        s3 = {**good(3), "rate": {"hz": 118, "commands": 350, "ms": 2960}}
+        r = {**run([good(1), ABANDONED, s3]), "rateHz": 120}
+        state, why = verdict(r, 0, CLEAN)
+        self.assertEqual(state, "PASS", why)
+        self.assertIn("~118 pointer command(s)/s", why)
+
+    def test_a_declared_rate_that_never_ran_is_inconclusive(self):
+        """A pass without the burst is a pass about settled commands only."""
+        r = {**run([good(1), ABANDONED, good(3)]), "rateHz": 120}
+        state, why = verdict(r, 0, CLEAN)
+        self.assertEqual(state, "NORUN")
+        self.assertIn("rate leg did not run", why)
+
+
+class TheResumeSeam(unittest.TestCase):
+    """The 298,280 miss appeared on the FIRST session after a restart."""
+
+    def test_a_warm_station_cannot_certify_the_seam(self):
+        state, why = verdict(run([good(1), ABANDONED, good(3)]), 0, CLEAN, from_rest="no", require_seam=True)
+        self.assertEqual(state, "NORUN")
+        self.assertIn("RESUME SEAM", why)
+        self.assertIn("warm", why)
+
+    def test_an_unknown_rest_state_is_also_not_a_pass(self):
+        state, _ = verdict(run([good(1), ABANDONED, good(3)]), 0, CLEAN, from_rest="unknown", require_seam=True)
+        self.assertEqual(state, "NORUN")
+
+    def test_from_rest_proceeds_normally(self):
+        state, why = verdict(run([good(1), ABANDONED, good(3)]), 0, CLEAN, from_rest="yes", require_seam=True)
+        self.assertEqual(state, "PASS", why)
+
+    def test_the_seam_is_checked_BEFORE_anything_else_is_judged(self):
+        """A warm run must not report a station fault it could not have seen."""
+        broken = run([good(1), ABANDONED, good(3, distinct=1)])
+        state, why = verdict(broken, 0, CLEAN, from_rest="no", require_seam=True)
+        self.assertEqual(state, "NORUN")
+        self.assertIn("RESUME SEAM", why)
+
+
 if __name__ == "__main__":
     unittest.main()
