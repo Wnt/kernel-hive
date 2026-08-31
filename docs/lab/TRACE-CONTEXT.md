@@ -32,11 +32,12 @@ can break the thing it measures is not telemetry, it is a fault injector.
 
 | Hop | Carrier | Notes |
 |---|---|---|
+| serving plane → browser (page load) | `<meta name="traceparent">` in `index.html` | the FIRST hop of a visit, before any JS has run — see §4 |
 | browser → serving plane | `traceparent` request header | on `/signal/*`, `/traces`, `/analytics`, `/usage`, `/walkin/*` |
 | serving plane → its own spans | in-process | child of the inbound span |
 | browser → daemon (input plane) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
 | daemon → its own spans | in-process | child of the session's root |
-| daemon → emulator | **not propagated** | see §5 |
+| daemon → emulator | **not propagated** | see §6 |
 
 ## 3. The daemon hop is the awkward one, and why
 
@@ -68,7 +69,7 @@ neither invalidates a ticket nor lets a tampered query forge one — the worst a
 tamperer achieves is attaching their own session to a trace id they picked,
 which is a telemetry lie and not an authorisation one. The reverse is the rule
 that matters and it holds: **the ticket carries the trace id, the trace never
-carries the ticket** (§7).
+carries the ticket** (§8).
 
 **Status: both ends are deployed; no visit has yet exercised the hop.**
 `streamhost/streamhost/src/trace/context.rs` parses this on every incoming
@@ -92,7 +93,62 @@ starts a fresh one, and does not silently attach to an unrelated visit. When in
 doubt, start a new trace. A wrong parent is worse than no parent, because it
 draws a causal claim that is false.
 
-## 4. Sampling is all-or-nothing, and the browser decides
+## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
+
+Everything in §2 assumes the browser already HAS a trace id to send. Something
+has to mint the first one, for the very first request of a visit — the
+document GET itself, before a byte of JavaScript has run and before there is
+any tab to send a header from. That request is answered by `serve_static()` in
+`scripts/serve/static_files.py`, and it is where the trace begins.
+
+Serving `index.html`, the server mints (or joins, per §1) a real span the same
+way every other traced route does, and splices
+
+```html
+<meta name="traceparent" content="00-<32 hex trace-id>-<16 hex span-id>-01">
+```
+
+into `<head>` — into the **bytes on the wire only**. `spa/index.html` on disk
+is never touched, so a build or a deploy can never bake a stale id into the
+artifact: the tag does not exist until a request asks for the page, and a new
+one is minted on every such request. Staging (`/staging/<session>/`) is served
+by the same function and gets its own tag from its own request, the same way.
+
+**Who reads it, and why.** Not this repo's own `spa/src/analytics/trace.ts` —
+that mints its own ids independently, for the browser's own journey through
+§2, and does not read this tag. This tag exists for **Instana's
+website-monitoring agent**, embedded separately in the SPA, whose whole job is
+to correlate a RUM page load with the backend trace that served the page. The
+tag name, the `document.querySelector('meta[name="traceparent"]')` selector
+and the exact `00-<32 hex>-<16 hex>-<2 hex>` shape it requires are asserted
+nowhere IBM or Instana publishes — established 2026-08-31 by reading the
+vendor's own minified agent bundle, which looks for exactly that selector and
+silently ignores anything else (a malformed or differently-shaped tag is
+simply invisible to it, never an error). That provenance matters: a future
+reader "fixing" this tag's shape to match Instana's docs will get it wrong,
+because the docs never state it — this file, and the agent's own source, are
+the only record.
+
+**The id is real, not a prop.** The span behind the tag is opened and ended in
+`static_files.py` and flows through the same buffered flush (`tracing.py`)
+into the **same store** as every other span in this document — so a page load
+an operator finds in Instana by this id is the identical span they can also
+find in `/admin/observability`, not a parallel identity invented only to look
+plausible in a tag.
+
+**Deliberately narrow.** This is a targeted, named exception to "static asset
+serving is not traced" (`tracing_http.py`'s allowlist — left unchanged by
+this): only the ONE response that is the start of a visit,
+`index.html` itself, gets a span and a rewritten body. Every other static
+file, and every SPA client-side route change that never re-fetches the
+document, stays untouched and unspanned.
+
+**Fail safe, same rule as §1.** If tracing is unbound, an inbound header is
+malformed, or anything at all raises, `index.html` is served byte-for-byte
+unchanged and no tag appears. A telemetry feature must never be able to break
+the gallery's front door — see §8.
+
+## 5. Sampling is all-or-nothing, and the browser decides
 
 The `01` flag is set by the tab and every layer honours it. A layer that
 sampled independently would produce traces with holes in them, and a hole in a
@@ -101,7 +157,7 @@ flame graph is indistinguishable from a gap in the work.
 At this scale everything is sampled. The flag exists so that turning sampling
 down later is a one-line change in one place rather than four.
 
-## 5. The emulator is deliberately NOT traced from inside
+## 6. The emulator is deliberately NOT traced from inside
 
 No span is emitted from inside a guest. Three reasons, in order:
 
@@ -121,7 +177,7 @@ start, `loadvm` restore, first painted frame, first input reaching the guest.
 That is the emulator layer as a visitor experiences it, and it is measured from
 the only place that can honestly measure it.
 
-## 6. What a complete trace looks like
+## 7. What a complete trace looks like
 
 ```
 station.connect                                  (browser, root)
@@ -139,9 +195,9 @@ station.connect                                  (browser, root)
 
 The daemon emits one more trace that has no browser in it at all, because a
 station boots with nobody watching — a root `streamhost.start` with
-`guest.launch`, `guest.attach` and `guest.first_frame` under it (§5, and
+`guest.launch`, `guest.attach` and `guest.first_frame` under it (§6, and
 `streamhost/streamhost/src/trace_guest.rs`). It is deliberately NOT attached to
-a visitor's trace: inventing that parent would be the false causal claim §7
+a visitor's trace: inventing that parent would be the false causal claim §8
 forbids.
 
 Four processes, one trace id, one flame graph. The browser's own
@@ -149,11 +205,22 @@ Four processes, one trace id, one flame graph. The browser's own
 the question "was it slow because the guest was asleep" stops being a
 correlation exercise.
 
-## 7. Rules that are not negotiable
+**The §4 page-load span is its own, separate trace, not a root above this
+one.** `serve.page` is minted when `index.html` is served, before any of the
+above exists; `station.connect` is minted later, independently, by
+`spa/src/analytics/trace.ts` when the app boots — the two are not currently
+joined, so a visit today produces this trace AND a one-span Instana trace
+rooted at `serve.page`, not one bigger tree. Joining them (having the SPA read
+its own meta tag and reuse the id) is a natural next step and not yet done;
+this document states what is built, not what would be tidy.
+
+## 8. Rules that are not negotiable
 
 - **Never fail a request because of a header.** §1.
 - **Never invent a parent.** An unknown or malformed context starts a new trace.
-- **Never propagate into a guest.** §5.
+- **Never let the meta-tag injection break the page.** §4: any failure serves
+  `index.html` unchanged, byte-for-byte.
+- **Never propagate into a guest.** §6.
 - **Never put a secret in a span.** The ticket carries the trace id; the trace
   never carries the ticket. Same rule as `traces.py`: no stacktraces, no typed
   text, no credential handles.
