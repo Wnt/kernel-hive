@@ -262,3 +262,143 @@ Traps worth knowing, each of which was hit while writing this:
 | `scripts/dev/reach-report.py` | the joined report |
 | `registry/analytics-catalogue.json` | generated; byte-parity gated |
 | `scripts/test_analytics.py`, `spa/src/analytics/analytics.test.ts` | 19 + 23 tests |
+
+---
+
+## 11. The walk-in door and the touch keyboard
+
+Three flows in one area, because they are one question asked three times: **how
+much work is this software to use for somebody with nobody to ask?** The walk-in
+plane is where a stranger meets the gallery cold, and the on-screen keyboard is
+where they meet a machine from 1993 through a phone. Both were built on
+judgement and neither has ever been measured.
+
+| Flow | Steps | The half the funnel answers for free |
+|---|---|---|
+| `walkin.register` | landing → passkey → account → machine | how many strangers who arrive end up at a machine |
+| `walkin.play` | claim → held → driven | how many claims become a machine somebody actually drives |
+| `keyboard.compose` | shown → firstKey → text | how often the keyboard comes up and nothing is typed |
+
+### These are behavioural proxies, and the doc says so where the numbers are
+
+The ask behind this wave was *"which stages take the most cognitive capacity"*.
+Hesitation, retries, corrections and layer switches are the closest a tab can
+honestly get to that, and they are **not measurements of cognition**. They
+observe what a visitor's hands did. A long hesitation is evidence that the page
+does not say what to do next; it is equally consistent with somebody who put the
+phone down, which is why the clock counts **visible time only** (§ metrics) and
+why every `what:` in `catalogue/walkin.ts` finishes with a decision about the
+*interface* — "reorder this layout", "rewrite this lede" — and never with a
+sentence about the person. A metric that overclaims gets a wrong decision made
+from it, and these are the metrics most likely to be quoted out of the table.
+
+### Refusal is not abandonment, and it gets its own counter
+
+The operator can close the walk-in plane. A stranger who arrives then is shown a
+frozen sentence instead of three machines (`walkin/reasons.ts`), and **no
+`walkin.register` flow is opened for them at all** — `walkin.register.refused`
+counts them instead. Had they entered the funnel, the drop-off at `landing`
+would read as a landing page nobody understands and somebody would go and
+rewrite copy to fix an operator switch. Two more fences get the same treatment
+for the same reason: a browser with no WebAuthn fails the flow as `nopasskey`,
+and a claim refused because access closed mid-session fails `walkin.play` as
+`closed`. Only genuine drop-off is left to be read as drop-off.
+
+A visitor who **already has an account opens no flow either**. They are not
+registering, and a population that legitimately skips three of the four steps
+does not make the funnel bigger — it makes it wrong.
+
+### Per stage, not per journey
+
+`walkin.register` reports four stage clocks, not one total. A total says the
+door is slow and gives nobody anything to do; split it says which stage to work
+on and — just as usefully — which stage is not ours: `passkeyMs` is mostly the
+platform's own sheet, and no copy change on this side moves it.
+`hesitationMs` and `landingMs` are deliberately both measured on the landing
+stage and are different quantities: hesitation ends at the visitor's first touch
+of anything, dwell ends when they leave. Read together they separate *"could not
+tell what to do"* from *"read all three cards carefully"*, and the second is the
+page working.
+
+`exhibitPickMs` is recorded **only on the path where the stage exists**. There
+are two ways through this door — make a passkey and then choose a machine, or
+press *Play it* and get the passkey on the way — and on the second the machine
+was chosen before the account, so there is no picking stage. Recording a zero
+would invent one, and the invention would be most of the distribution.
+
+### The queue split is the whole poolSize argument
+
+Every walk-in station keeps a warm pool of three clones and there has never been
+any evidence for or against that number. Two facts are needed and neither is the
+other: **how often** a visitor meets a full pool (the `walkin.play.claimInstant`
+/ `claimQueued` probe pair) and **how long** the ones who do end up waiting
+(`walkin.play.queueMs`). 30% queued for four seconds is a healthy pool; 2%
+queued for four minutes is not; either number alone cannot tell you which you
+have. `queueMs` is recorded only for visitors who were actually told to wait —
+an instant claim is not a zero-length queue, it is the absence of one, and the
+instants are numerous and all sub-second, so folding them in would make an
+exhausted pool and a healthy one produce the same picture.
+
+`walkin.play.toPlayableMs` ends at the visitor's **first deliberate input on the
+clone**, not at a painted frame. The frame is already
+`station.open.toFirstFrameMs`, and a clone that paints perfectly and is never
+touched is one the pool spent for nothing. A **reset** is explicitly not a
+`claimRetry`: it is the visitor asking for a fresh machine and getting one, and
+counting a working feature as friction is how a good feature gets "fixed".
+
+### The keyboard question is a budget question
+
+`keyboardProfiles.data.exotic.ts` is 400+ lines of per-machine key layout
+maintained by hand. `keyboard.osk.used` says the keyboard is pressed; it cannot
+say whether the layout it presents is any good. `toFirstKeyMs`,
+`correctionsPct` and `layerSwitches` can — and their conclusion is about the
+*layout data*, since on a layout this lab wrote itself a high correction rate is
+a key in the wrong place, not a visitor who cannot type.
+
+Three limits are stated rather than hidden. **`correctionsPct` is null, not
+zero, when nothing was committed**: corrections over an empty denominator is not
+a small percentage, it is not a percentage. **A rate over 100 is allowed
+through** to the `inf` bucket — clearing a field the guest already had text in is
+real, and clamping would merge it with the merely-terrible episodes. **A held
+Backspace is one press and several deletions**, so both halves undercount a held
+key; reaching into the repeat timer to fix that would put an instrumentation
+requirement inside the send path, and the rate is read as a comparison between
+layouts rather than as an absolute.
+
+`layerSwitches` observes **navigation cost, not confusion**. Switching to `?123`
+for a digit is a correct use of the layer split and it still cost a round trip.
+Shift is deliberately excluded: shift is how you type a capital and cycling to
+caps lock is two deliberate presses, so counting either as hunting would report
+ordinary typing as a defect.
+
+All three are scoped to the **mobile sheet**. The desktop inline footer has no
+layers, is always on screen so nothing ever "appears", and its free-text field is
+driven by a physical keyboard through a keydown proxy — measuring it alongside
+would glue two unlike populations into one distribution and call the result a
+number. `keyboard.osk.used` still covers both and is unchanged, so the
+`osk.used : station.key.used` ratio — how much of the gallery's typing goes
+through the touch keyboard at all — is untouched: everything added here is
+per-episode and declares no probe on either side of that pair.
+
+### The privacy line, which is tighter here than anywhere else in this plane
+
+This is a stranger typing, sometimes their own name, into a form and into a
+guest. **Nothing about the content leaves the tab.** Not the text; not its
+length; not a per-keystroke timing series; not a handle, a credential id or a
+clone identity; not which of the three machines a given visitor took. Characters
+are counted only as the *denominator* of a percentage that is bucketed into
+deciles before it is queued, so the count itself never travels and cannot be
+recovered from what does. `scripts/serve/analytics.py` stores no identity by
+construction, and the walk-in door is the last place that sentence should
+acquire an exception. The rule the call sites are written to: **if a change here
+would need one more field to make a number better, that is the signal to stop.**
+
+### Files
+
+| Path | What |
+|---|---|
+| `spa/src/analytics/catalogue/walkin.ts` | the declarations, with the privacy line and the proxy caveat at the top |
+| `spa/src/walkin/registerTelemetry.ts` | the door: funnel, four stage clocks, the retry count, the refusal probe |
+| `spa/src/walkin/playTelemetry.ts` | the claim: funnel, the queue/instant split, `toPlayableMs`, retries |
+| `spa/src/ui/keyboard/composeTelemetry.ts` | the keyboard: funnel, first-key clock, the correction rate, layer switches |
+| `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | 38 tests, one per rule above that could otherwise silently invert |

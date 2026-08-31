@@ -110,9 +110,42 @@
       "grades": [
         "auto"
       ]
+    },
+    "walkin.play.claimInstant": {
+      "area": "walkin",
+      "owner": "src/walkin/playTelemetry.ts",
+      "what": "a claim was answered with a clone immediately — the pool had a free machine for this visitor",
+      "grades": [
+        "auto"
+      ]
+    },
+    "walkin.play.claimQueued": {
+      "area": "walkin",
+      "owner": "src/walkin/playTelemetry.ts",
+      "what": "a claim was answered with a queue position — every clone of that station was taken at that moment",
+      "grades": [
+        "auto"
+      ]
+    },
+    "walkin.register.refused": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a stranger reached the walk-in door while access was closed and was shown the closed sentence",
+      "grades": [
+        "show"
+      ]
     }
   },
   "flows": {
+    "keyboard.compose": {
+      "area": "keyboard",
+      "what": "typing something at a guest with the on-screen keyboard sheet",
+      "steps": [
+        "shown",
+        "firstKey",
+        "text"
+      ]
+    },
     "station.connect": {
       "area": "station",
       "what": "opening a station and getting a first frame out of it",
@@ -120,6 +153,25 @@
         "open",
         "transport",
         "firstFrame"
+      ]
+    },
+    "walkin.play": {
+      "area": "walkin",
+      "what": "claiming a private clone and getting a machine the visitor actually drives",
+      "steps": [
+        "claim",
+        "held",
+        "driven"
+      ]
+    },
+    "walkin.register": {
+      "area": "walkin",
+      "what": "a stranger with no account getting one and reaching a machine to play",
+      "steps": [
+        "landing",
+        "passkey",
+        "account",
+        "machine"
       ]
     }
   },
@@ -136,11 +188,77 @@
       "what": "a high value means the columns people want are far from the ones they land on",
       "scale": "count"
     },
+    "keyboard.compose.correctionsPct": {
+      "area": "keyboard",
+      "owner": "src/ui/keyboard/composeTelemetry.ts",
+      "what": "a high value means this machine's hand-written key layout puts keys where people do not expect them, so the profile data is wrong and worth fixing before adding another",
+      "scale": "pct"
+    },
+    "keyboard.compose.layerSwitches": {
+      "area": "keyboard",
+      "owner": "src/ui/keyboard/composeTelemetry.ts",
+      "what": "a high value means the characters people need are spread across layers, so the split is costing more round trips than it saves screen space",
+      "scale": "count"
+    },
+    "keyboard.compose.toFirstKeyMs": {
+      "area": "keyboard",
+      "owner": "src/ui/keyboard/composeTelemetry.ts",
+      "what": "a high value means the keyboard comes up and the key people came for is not findable at a glance, so the layout needs reordering rather than more keys",
+      "scale": "ms"
+    },
     "station.open.toFirstFrameMs": {
       "area": "station",
       "owner": "src/three/connectTelemetry.ts",
       "what": "a high value means visitors stare at a spinner between choosing a machine and seeing it",
       "scale": "ms"
+    },
+    "walkin.play.claimRetries": {
+      "area": "walkin",
+      "owner": "src/walkin/playTelemetry.ts",
+      "what": "a high value means one press of Play does not get a machine, so the queue card is doing work the pool should be doing",
+      "scale": "count"
+    },
+    "walkin.play.queueMs": {
+      "area": "walkin",
+      "owner": "src/walkin/playTelemetry.ts",
+      "what": "a high value means visitors who meet a full pool wait long enough to give up, which is the argument for raising poolSize past 3",
+      "scale": "ms"
+    },
+    "walkin.play.toPlayableMs": {
+      "area": "walkin",
+      "owner": "src/walkin/playTelemetry.ts",
+      "what": "a high value means the gap between being handed a clone and being able to use it is where walk-ins are lost, so the resume path is worth more than the claim path",
+      "scale": "ms"
+    },
+    "walkin.register.exhibitPickMs": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a high value means a visitor who already has an account still cannot choose between the three cards, so the cards are not telling the machines apart",
+      "scale": "ms"
+    },
+    "walkin.register.hesitationMs": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a high value means the walk-in page does not tell an arriving stranger what to do — rewrite the lede and the call to action before optimising anything downstream",
+      "scale": "ms"
+    },
+    "walkin.register.landingMs": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a high value means the landing page is where registrations stall, so shortening it beats speeding up anything after it",
+      "scale": "ms"
+    },
+    "walkin.register.passkeyMs": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a high value means the platform passkey ceremony is where the door spends its time, so the fix is preparing the visitor for it rather than changing our copy",
+      "scale": "ms"
+    },
+    "walkin.register.passkeyRetries": {
+      "area": "walkin",
+      "owner": "src/walkin/registerTelemetry.ts",
+      "what": "a high value means passkey enrolment is failing for platform reasons visitors cannot fix, so the door needs a diagnosable failure path rather than better wording",
+      "scale": "count"
     }
   }
 }

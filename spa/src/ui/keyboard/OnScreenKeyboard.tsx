@@ -28,6 +28,7 @@ import { hapticTap } from './haptics';
 import { DANGER_ARM_MS, LONGPRESS_MS, PROXY_SENTINEL } from './oskConstants';
 import { OSK_CSS } from './oskStyles';
 import { reach } from '../../analytics';
+import { composeTelemetry, type ComposeTelemetry } from './composeTelemetry';
 
 /** 3-state visual Shift: off → base glyphs, once → shifted (auto-reverts after
  *  the next glyph), caps → shifted (sticky). Indexes qwertyLayout base/shifted. */
@@ -103,6 +104,22 @@ export function OnScreenKeyboard({
     if (lpRef.current) clearTimeout(lpRef.current.timer);
   }, []);
 
+  // ---- the compose episode (composeTelemetry.ts) -----------------------------
+  // Created in an EFFECT, never during render and never inside a setState
+  // updater: StrictMode invokes both twice and a flow opened there enters its
+  // funnel twice. Sheet only — the inline footer has no layers, never
+  // "appears", and its free-text field is a physical keyboard.
+  const composeRef = useRef<ComposeTelemetry | null>(null);
+  useEffect(() => {
+    if (variant !== 'sheet') return;
+    const episode = composeTelemetry();
+    composeRef.current = episode;
+    return () => {
+      episode.ended();
+      if (composeRef.current === episode) composeRef.current = null;
+    };
+  }, [variant]);
+
   // One-shot Shift reverts after the next glyph/typing key; caps + off are sticky.
   const consumeShiftOnce = () => setShift((s) => (s === 'once' ? 'off' : s));
   const cycleShift = () => setShift((s) => (s === 'off' ? 'once' : s === 'once' ? 'caps' : 'off'));
@@ -117,6 +134,7 @@ export function OnScreenKeyboard({
     // That is the number that decides whether the exotic layout data
     // (keyboardProfiles.data.exotic) is worth maintaining per machine.
     reach('keyboard.osk.used', 'act');
+    composeRef.current?.key(def);
     if (def.repeat) {
       sender.startRepeat(def);
       // Mirror the engine's cross-key disarm: a repeat press clears armed state.
@@ -152,6 +170,9 @@ export function OnScreenKeyboard({
     const el = abcRef.current;
     if (!el) return;
     const { backspaces, text } = diffProxyValue(el.value);
+    // COUNTS ONLY. `text` itself never leaves this function — the two numbers
+    // are the halves of a bucketed percentage and nothing else (composeTelemetry).
+    composeRef.current?.freeText(backspaces, text.length);
     const h = handleRef.current;
     let sent = false;
     if (h) {
@@ -370,7 +391,12 @@ export function OnScreenKeyboard({
         {variant === 'sheet' && (
           <LayerTabs
             layer={layer}
-            onLayer={setLayer}
+            onLayer={(next) => {
+              // Outside the updater on purpose: an updater runs twice under
+              // StrictMode and every switch would count double.
+              if (next !== layer) composeRef.current?.layerSwitch();
+              setLayer(next);
+            }}
             abcOpen={abcOpen}
             onToggleAbc={() => setAbcOpen((v) => !v)}
             onClose={onRequestClose}
