@@ -152,6 +152,84 @@ message. The full stack, the href and the IP stay on the clientlog lane, which
 prunes itself; this lane is durable, and a durable aggregate must not be where a
 visitor's browsing history lives forever.
 
+### 5.1 Three journeys: the fleet table, the WebGL hall, the posters
+
+Three surfaces of the gallery had no account of themselves at all. Each gets a
+flow (where the journey dies) and a small set of metrics (what it cost to get
+that far). The declarations are in `spa/src/analytics/catalogue/fleet.ts`; the
+episode logic is in one module per journey, next to the surface it measures.
+
+| Flow | Steps | The decision it is for |
+|---|---|---|
+| `fleet.find` | `open` → `narrow` → `chooseStation` | A table nobody ever leaves BY OPENING A MACHINE is a table that answers no question. The drop-off between `open` and `chooseStation` is the whole verdict on the fleet view. |
+| `hall.navigate` | `enter` → `approach` → `open` | The hall is the most expensive thing in the UI. If the flow rarely completes, it is scenery, and that is a budget decision somebody should get to make on evidence. |
+| `poster.read` | `open` → `scrolled` → `reachedEnd` | ~450 kB of curatorial prose exists and nothing has ever reported whether a word of it is read. |
+
+| Metric | Scale | A high value means… |
+|---|---|---|
+| `fleet.find.toFirstActionMs` | ms | People land on the table and cannot tell what to do with it — the controls do not suggest the first move. |
+| `fleet.find.actionsToStation` | count | It takes many sorts and filters to isolate one machine — the default order and the column set are wrong for the questions people ask. |
+| `hall.navigate.toFirstStationMs` | ms | The hall is wandered rather than used to reach a machine. |
+| `hall.navigate.stationsApproached` | count | Visitors stand in front of machine after machine without opening any — the placards are not telling people what they are looking at. |
+| `poster.read.dwellMs` | ms | (Read LOW.) A low value means posters are opened and dismissed unread. |
+| `poster.read.scrollDepthPct` | pct | (Read low.) People stop part way down — the essays are longer than the audience they are written for. |
+| `poster.read.scrollReversals` | count | People scroll back up mid-poster — a passage they had to read twice, and the first place to look when rewriting. |
+
+The four fleet metrics — these two and the existing `hScrollScreens` /
+`hScrollReversals` pair — share ONE episode, opened when the table mounts and
+settled when it unmounts. That is deliberate and load-bearing: the diagnosis is
+in the pairing. Many actions with LITTLE sideways scrolling is a visitor who
+could see the columns and still could not express the question; many actions
+with a LOT of it is a visitor who spent the visit hunting for where the answer
+lives. Those are different repairs, and only two numbers about the same episode
+can tell them apart. Move one boundary and the pair stops being comparable.
+
+**`hall.entered` is the ratio worth having.** It is paired with
+`boot.index.fetch`, which every visit fetches once, so the report divides them
+into "of the visits that loaded the gallery, how many entered the 3D hall".
+That pairing is not a convenience: the hall genuinely consumes that document —
+`entriesForHall` carries `bootVideo` through and `ScreenPlane` decodes those
+loops onto the CRTs. What it is NOT is a head-to-head against the 2D grid,
+which is not separately instrumented; read it as a floor on how much of the
+audience the hall ever reaches.
+
+**What "approached" is, exactly.** Not a proximity model invented for the
+metric — it is the scene's OWN focus state (`spa/src/scene/screenTiers.ts`): the
+nearest visible screen to the centre of the view, inside the focus window, held
+there for the full `SCREEN_FOCUS_DWELL_MS` dwell. Three things make that the
+honest choice rather than the convenient one. It is already load-bearing (the
+same edge decides whether to spend a live WebTransport texture on that screen).
+It is the UI's own gate for opening a machine (clicking a screen that is *not*
+focused walks the camera over instead of opening it, so "approached but not
+opened" is literally "they were in the one state from which opening was
+possible, and did not"). And the dwell is what keeps it from counting the
+corridor — desks swept past during a rail move never become the active focus.
+Its limit, stated beside it: it is a CAMERA fact, not an attention fact. It says
+a machine was centred in the view for a second and a half. It does not say
+anybody looked at it, read its placard, or considered it.
+
+### 5.2 These are behavioural proxies, not measurements of cognition
+
+The question behind §5.1 was which stages take the most effort. Hesitation
+before a first action, steps to a goal, backtracking, re-reading oscillation —
+every one of those is a **proxy**, and the word matters more here than anywhere
+else on this plane, because these are the numbers most likely to be quoted in a
+sentence they cannot support.
+
+What they observe is what a pointer and a scroll container did. A reversal is a
+scroll direction change; it is produced identically by a reader checking a date,
+a trackpad that overshot, and a reader defeated by a sentence. A long
+`toFirstActionMs` is produced identically by a confused visitor and one who
+answered the phone in a tab that was still visible. None of them measures
+attention, difficulty or cognitive load, and none of them ever will.
+
+What they are good for is comparison and ranking: this poster against that one,
+this month against last, the fleet table before a column change against after.
+That is enough to decide what to fix, which is all that was ever asked of them.
+Describing them as a measure of cognitive effort would put a confident word on
+evidence that cannot carry it, and this repo's rule is that a measurement's
+limits travel beside it.
+
 ## 6. The coverage cross — "test coverage style info"
 
 `scripts/dev/reach-report.py` joins the catalogue, production reach and the
@@ -251,9 +329,13 @@ Traps worth knowing, each of which was hit while writing this:
 
 | Path | What |
 |---|---|
-| `spa/src/analytics/catalogue.ts` | the declaration — the report's denominator |
+| `spa/src/analytics/catalogue/` | the declaration — the report's denominator, one file per area so parallel instrumentation streams share no editing surface |
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
+| `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |
+| `spa/src/ui/fleetFindEpisode.ts` | the `fleet.find` episode |
+| `spa/src/scene/hallEngagement.ts` | the `hall.navigate` episode, and what "approached" means |
+| `spa/src/ui/posterReadEpisode.ts` | the `poster.read` episode and the reversal counter |
 | `spa/src/analytics/errors.ts` | fingerprinting and grouping |
 | `spa/src/analytics/sink.ts` | batching transport (counts, not events) |
 | `spa/src/analytics/index.ts` | `reach` / `beginFlow` / `reportError` / `initAnalytics` |
