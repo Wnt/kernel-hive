@@ -23,6 +23,7 @@ mod input;
 mod input_telemetry;
 mod input_trace;
 mod key_quirks;
+mod key_state;
 mod mame_input;
 mod mame_sock;
 mod mga_ctl;

@@ -156,6 +156,17 @@ probes! {
         "key_quirks.rs",
         "the SH_LEGACY_KBD pre-1986 quirk sent a BARE keypad cursor code instead of the enhanced form",
     ),
+    // A client whose tab crashed (or whose transport just closed) never sends
+    // the keyups it owes. This counts every key the daemon force-released at
+    // SESSION TEARDOWN because the browser never did — a recurrence of the
+    // 2026-08 solaris stuck-`/` bug becomes a number here instead of an
+    // anecdote. Zero fleet-wide is the daemon saying no session has ever left
+    // a key down; a nonzero count on one station names which one to look at.
+    KEY_FORCE_RELEASE_TEARDOWN => (
+        "key.forceRelease.teardown",
+        "key_state.rs",
+        "a session ended (including abnormally) with a key still held, and the daemon released it",
+    ),
 
     // ---- ABR ---------------------------------------------------------------
     // Split up/down deliberately. A station that only ever goes DOWN is stuck

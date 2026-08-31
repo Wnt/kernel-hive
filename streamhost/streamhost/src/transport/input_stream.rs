@@ -12,6 +12,20 @@ use crate::input;
 use crate::input_trace;
 use crate::trace_session::SessionTrace;
 
+/// The per-session bundle every reliable-input reader needs. Cloning one
+/// value instead of five separately (cap/cfg/mouse/keys/router) is why this
+/// exists: the legacy bidi and per-type uni acceptors below each spawn one
+/// reader task per accepted stream, so that quintet used to appear four
+/// times over in `transport::serve`'s session fan-out.
+#[derive(Clone)]
+pub(super) struct SessionInputCtx {
+    pub(super) cap: Capture,
+    pub(super) cfg: Arc<Config>,
+    pub(super) mouse: input::SharedMouse,
+    pub(super) keys: crate::key_state::SharedKeys,
+    pub(super) input_router: Option<Arc<crate::realtime_input::InputRouter>>,
+}
+
 // CLIENT->SERVER per-type reliable-input CLASS tags: the first byte of each
 // client-opened unidirectional reliable input stream (per-type QUIC input streams,
 // HOL avoidance). These live in the client-opened-uni-stream tag namespace and are
@@ -42,13 +56,18 @@ fn input_class_name(tag: u8) -> &'static str {
 /// class — dispatch stays identical to the single-stream path.
 pub(super) async fn drain_input_stream(
     mut recv: wtransport::RecvStream,
-    cap: &Capture,
-    cfg: &Config,
-    mouse: &input::SharedMouse,
-    input_router: Option<&Arc<crate::realtime_input::InputRouter>>,
+    ctx: &SessionInputCtx,
     has_tag: bool,
     strace: &Arc<SessionTrace>,
 ) {
+    let SessionInputCtx {
+        cap,
+        cfg,
+        mouse,
+        keys,
+        input_router,
+    } = ctx;
+    let input_router = input_router.as_ref();
     let mut buf: Vec<u8> = Vec::new();
     let mut tmp = [0u8; 4096];
     let mut tag_pending = has_tag;
@@ -91,12 +110,49 @@ pub(super) async fn drain_input_stream(
                         .then(|| input_trace::key_class(u16::from_le_bytes([body[2], body[3]])));
                     strace
                         .dispatch_sampled_input(ctx, input_class, key_class, async {
-                            input::handle(cap, cfg, mouse, input_router, body).await;
+                            input::handle(cap, cfg, mouse, keys, input_router, body).await;
                         })
                         .await;
                 }
-                None => input::handle(cap, cfg, mouse, input_router, body).await,
+                None => input::handle(cap, cfg, mouse, keys, input_router, body).await,
             }
         }
     }
+}
+
+/// Spawn the LEGACY single-bidi acceptor: one reader task per client-opened
+/// bidi stream, `has_tag=false` (no leading class byte on this framing).
+/// Kept running unconditionally so an old UI still drives input; a client
+/// that only opens per-type uni streams simply never opens a bidi, so this
+/// loop idles harmlessly.
+pub(super) fn spawn_bi_readers(
+    conn: Arc<wtransport::Connection>,
+    ctx: SessionInputCtx,
+    strace: Arc<SessionTrace>,
+) {
+    tokio::spawn(async move {
+        while let Ok((_send, recv)) = conn.accept_bi().await {
+            let ctx = ctx.clone();
+            let st = strace.clone();
+            tokio::spawn(async move { drain_input_stream(recv, &ctx, false, &st).await });
+        }
+    });
+}
+
+/// Spawn the PER-TYPE (HOL-avoidance) acceptor: one reader task per
+/// client-opened unidirectional class stream, `has_tag=true` (the first
+/// byte is the ICLASS_* tag). Always on — the shipped UI opens these
+/// unconditionally.
+pub(super) fn spawn_uni_readers(
+    conn: Arc<wtransport::Connection>,
+    ctx: SessionInputCtx,
+    strace: Arc<SessionTrace>,
+) {
+    tokio::spawn(async move {
+        while let Ok(recv) = conn.accept_uni().await {
+            let ctx = ctx.clone();
+            let st = strace.clone();
+            tokio::spawn(async move { drain_input_stream(recv, &ctx, true, &st).await });
+        }
+    });
 }
