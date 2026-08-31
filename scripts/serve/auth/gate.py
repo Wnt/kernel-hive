@@ -10,6 +10,23 @@ here, so adding a route to the server cannot silently publish it.
 
 from __future__ import annotations
 
+# Server-side feature reach (serve/probes.py). Two names for one module: the
+# serving process puts `scripts/serve` on sys.path, the unit-test runner works
+# from `scripts/`. probes.py aliases itself into both so the counters cannot
+# split. A missing module must not stop the fence from working, so the last
+# resort is a no-op — the call-site gate, not the import, is what proves the
+# probe is wired.
+try:
+    from probes import hit
+except ImportError:  # pragma: no cover - import shape only
+    try:
+        from serve.probes import hit
+    except ImportError:
+
+        def hit(_probe: str) -> None:
+            """No probes module in this deployment; the fence still works."""
+
+
 # Reachable with no session: the login page and the auth API itself, plus the
 # health probe the deploy scripts poll. Everything else needs a session.
 # /link is open because a device arrives there with nothing but a code — it
@@ -116,7 +133,15 @@ ADMIN_PREFIXES: tuple[str, ...] = ()
 
 
 def is_blocked(path: str) -> bool:
-    return path.startswith(BLOCKED_PREFIXES)
+    # Probed HERE rather than at the three call sites, because this predicate is
+    # the whole rule and a caller that forgot to probe would be indistinguishable
+    # from a refusal that never happens. The counter costs nothing on the common
+    # answer: it is inside the `if`, so an ordinary request pays one `startswith`
+    # exactly as it always did.
+    if path.startswith(BLOCKED_PREFIXES):
+        hit("auth.gate.blocked")
+        return True
+    return False
 
 
 def is_open(path: str) -> bool:
@@ -205,11 +230,19 @@ def walkin_allows(path: str, own_signal: str | None = None) -> bool:
     other station's signaling — and the fleet index that would enumerate them —
     is refused here rather than filtered downstream.
     """
+    hit("auth.gate.walkin")
     if is_blocked(path):
         return False
+    # The two branches below are the ONLY interactive surface a walk-in is ever
+    # granted, so they are what separates "a stranger reached the landing page"
+    # from "a stranger reached a machine". Probed as one fact, not two: the
+    # signaling document and the webrtc offer under it are one visitor doing one
+    # thing, and counting them apart would read as twice the reach.
     if own_signal and path == own_signal:
+        hit("auth.gate.walkinOwn")
         return True
     if own_signal and path.startswith(_webrtc_prefix(own_signal)):
+        hit("auth.gate.walkinOwn")
         return True
     if path.startswith("/signal/") or path.startswith("/webrtc/"):
         return False
@@ -229,6 +262,12 @@ def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
     signed in is enough for everything this listener still serves."""
     if user and user.get("role") == "walkin":
         return walkin_allows(path, own_signal)
+    # Reached only for a GATED path on the PUBLIC listener — `is_open` has
+    # already short-circuited the login page, the bundle and the posters, and
+    # the LAN listener never enters the gate at all. So this is not a request
+    # counter: it is "the invited plane was used", against which the walk-in
+    # counts above are readable.
+    hit("auth.gate.invited")
     return not is_blocked(path)
 
 

@@ -1,8 +1,9 @@
 # Analytics — which code earns its keep, and where flows die
 
-**Status: phase 1 shipped, not yet deployed.** The client plane, the sink, the
-catalogue gate and the report tool are in the tree and green. Nothing is on the
-box until `box-deploy.sh --apply` runs and the https service is restarted; §7
+**Status: phase 1 and the serve-plane probes shipped, not yet deployed.** The
+client plane, the sink, the catalogue gate, the report tool and the Python
+serving plane's own branch probes (§7) are in the tree and green. Nothing is on the
+box until `box-deploy.sh --apply` runs and the https service is restarted; §8
 lists what is deliberately still open.
 
 Everything is inside kernel-hive. No external service, no third-party script, no
@@ -36,6 +37,10 @@ and they fail in three different ways if you fuse them into one hit counter.
  reach('fleet.usage.shown','show') ├─ POST /analytics ─► analytics.db ─► reach-report.py
  beginFlow('station.connect')      │  (counters, 20 s   (SQLite, per-day  (joins the catalogue
  reportError({...})                ┘   batches)          aggregate)        + vitest coverage)
+                                          ▲
+                     hit('walkin.reap.idle') │ serve/probes.py, folded in
+                     hit('auth.gate.walkin') ┘ memory, flushed once a minute
+                                               (class='server' — §7)
 ```
 
 Four files carry the whole client side: `spa/src/analytics/{intent,flows,metrics,errors}.ts`,
@@ -276,7 +281,122 @@ Two ways to fill that column, in increasing cost:
    should be opt-in and off by default, and the probe catalogue answers the
    feature-level question at a fraction of the cost. Phase 2.
 
-## 8. What is NOT built yet
+## 8. The Python serving plane — branches, not routes
+
+**Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
+are in the five files that own them; the counts fold into the same
+`analytics.db` under a new `class`.
+
+**It is deliberately not a route counter.** journald and the access log already
+say how much traffic `/signal/<tile>.json` gets, and a fourth place to read that
+number would be worse than none. The question no log answers is what happens
+*inside* a route: of the refusals, fallbacks and reap reasons the serving plane
+carries, which have ever been taken? Every one of those is a branch somebody
+would otherwise keep working forever on the strength of a comment, and every
+interesting answer is a row reading **zero**.
+
+So the same two halves as the client plane, for the same reason. `PROBES` in
+`probes.py` is the denominator; `make analytics-catalogue-check` — still the one
+command — fails if a declared id has no literal `hit()` in the file it names as
+`owner`. Without that gate a zero means either "this branch is dead" or "I
+declared a probe and never called it", and the second kind is what gets working
+code deleted.
+
+### The twelve, and what a zero would settle
+
+| Probe | A zero would mean |
+|---|---|
+| `auth.gate.invited` | the invited plane's fence never ran — every public request was open, or there were none |
+| `auth.gate.walkin` | no stranger with an account has ever made a gated request |
+| `auth.gate.walkinOwn` | walk-ins browse and never reach a **machine**; the plane is reachable and not used (declared `consumes` the row above, so the report gives the fraction) |
+| `auth.gate.blocked` | nothing browser-reachable has ever asked for the command enqueue — the block is theoretical, and any other number is worth the access log |
+| `walkin.claim.queued` | the queue-and-position machinery has never once been needed on a pool of three |
+| `walkin.claim.resumeFailed` | the `_abandon` path — the thing that keeps "a used clone is never re-listed" true under a failure — has never been exercised |
+| `walkin.reap.ttl` | nobody has ever held a clone for twenty minutes |
+| `walkin.reap.idle` | the 3-minute window never wins; the TTL always gets there first, and the idle timer is not doing what it was added to do |
+| `walkin.reap.died` | no pool member's QEMU has died under the watchdog. Non-zero is a fleet-health fact nothing else on the box reports |
+| `clientlog.prune.age` | the clientlog has never reached its size backstop |
+| `clientlog.rotate.generational` | **the suspected-dead one.** Reachable only when a prune has already run *and* left the file oversized. Declared `consumes: clientlog.prune.age`, because its zero alone cannot separate "unreachable" from "the log never got big" |
+| `signal.ticket.identityDiffers` | no station's own `signaling.json` disagrees with the key its document is fetched under. Non-zero means one does **right now**, and the fallback is the only thing hiding it — this exact divergence locked `solaris` and `aros` out for four hours on 2026-08-05 |
+
+### `class='server'`, not a second table
+
+`CLASSES` gains a fourth value rather than the store gaining a fifth table, and
+the argument is that **nothing about the row differs**. A server probe is a name
+and a count in a day bucket, which is the `probe` table exactly; it wants the
+same two-year retention, so it wants the same `prune`; and the report tool wants
+the same LEFT JOIN. A second table would duplicate the schema, the prune and the
+read path to add no column, and would give the box a second thing to remember to
+back up.
+
+What actually needs separating is the **population**, and `class` is the
+dimension that already exists for precisely that job — it is there because the
+lab's own browser probes would otherwise be the majority of "human" traffic. A
+server branch count summed with a client feature count would be a worse version
+of the same mistake, and the existing default (`human` only) already prevents it
+with no new code.
+
+Two consequences worth knowing:
+
+- **Grade is `auto` on every server row, and that is honest rather than a
+  placeholder.** The ladder grades whether a *human* asked for something; on
+  this side nobody did. A branch was taken because a request arrived or a
+  watchdog ticked, which is the definition of `auto`.
+- **`CLASSES` had to be split in two.** `record()` reads its class out of a body
+  a browser posted, so the moment `server` joined that tuple a client could
+  forge branch counts for code it never ran — and forged evidence that a dead
+  refusal is alive gets code *kept*, which is the harder error to notice.
+  `CLIENT_CLASSES` is what the POST route validates against; the server class is
+  reachable only through `record_server()`, which no route calls. A test asserts
+  the hole is shut.
+
+### Zero risk to the request path
+
+Three properties, and the third is the one that took thought:
+
+1. **`hit()` never raises.** It is called from inside `except` handlers, from
+   the walk-in watchdog and from the fence in front of every gated request. The
+   body is wrapped and `test_probes.py` attacks it with a store that raises on
+   every call, a store that is absent, and six kinds of junk id.
+2. **`hit()` never writes.** It folds into a dict. The dict is bounded by the
+   **catalogue**, not by traffic — an undeclared id is dropped, so twelve keys is
+   the whole memory cost however many requests arrive.
+3. **The flush is lazy and re-arms *before* the write.** No thread, no timer:
+   the first `hit()` after `FLUSH_SECS` folds the accumulated counts in, so the
+   cost amortises to one small commit a minute under any load and a quiet box
+   does nothing at all. Re-arming the throttle before attempting the write is
+   what stops a store that has gone bad from turning every subsequent request
+   into another attempt — the failure is counted, never logged per occurrence
+   and never retried per request.
+
+**Measured cost** (labhost, Python 3.12, best of five 300 000-call runs; the box
+is shared, so the spread across runs was roughly 1.4–2.5 µs):
+
+- `hit()` on a **declared** id: **~1.4 µs**, of which the lock and the
+  `time.monotonic()` throttle check are almost all of it.
+- `hit()` on an undeclared id: ~0.26 µs (the membership test, then return).
+- One flush: ~0.3 ms, at most once a minute.
+
+The gate path takes at most two hits per gated request, so the ceiling is under
+3 µs against a request that costs milliseconds in TLS alone. Nothing on the LAN
+listener's static-asset path is probed at all.
+
+### Deliberately not probed
+
+- **LAN-anonymous traffic.** It is the highest-frequency path in the server, its
+  volume is exactly what the access log already reports, and "the LAN gate is
+  open" is a constant, not an observation.
+- **`restore.py`'s refusals and `/signal`'s 410.** Both are good candidates and
+  both were left for a later commit; twelve is what could be read and verified
+  branch by branch in one pass, and a probe declared without reading the branch
+  is how the catalogue starts lying.
+- **`static_files.py`'s "era-browser bare Content-Type" path.** It does not
+  exist. Every entry in `MIME` carries `charset=utf-8` unconditionally, so the
+  Mosaic trap recorded elsewhere is not handled in this file, and declaring a
+  probe for it would have manufactured a permanent zero for a branch that was
+  never there.
+
+## 9. What is NOT built yet
 
 Named so nobody re-derives them as gaps:
 
@@ -285,9 +405,6 @@ Named so nobody re-derives them as gaps:
   per-station file. Feature-level only — line coverage in a latency-critical
   daemon is not worth an instrumented production binary. `cargo llvm-cov` covers
   the "tested" axis today.
-- **Python serve-plane probes.** The route table is small enough that journald
-  answers most of it; worth doing when a route's *purpose* rather than its
-  volume is in question.
 - **A UI for the report.** It is a CLI and a JSON endpoint. An `/admin` view is
   a straightforward next step, and consistent with the operator's standing
   preference for eyeballing over automation, it should not be built before
@@ -295,7 +412,7 @@ Named so nobody re-derives them as gaps:
 - **Deployment.** `box-deploy.sh --apply` plus an https restart; `analytics.db`
   is created on first start beside the server.
 
-## 9. Adding a probe
+## 10. Adding a probe
 
 Two steps, in **one commit**, and the gate enforces it:
 
@@ -304,6 +421,13 @@ Two steps, in **one commit**, and the gate enforces it:
    *"this fired, therefore we know that…"*), `grades`, optional `consumes`.
 2. Call `reach('<id>', '<grade>')` in that file. `make analytics-catalogue`
    re-renders `registry/analytics-catalogue.json`.
+
+On the **server** side the shape is the same and the file is different: declare
+in `PROBES` in `scripts/serve/probes.py` (`area`, `owner` — repo-relative this
+time, `what`, optional `consumes`; there are no grades, because nobody asked)
+and call `hit('<id>')` in that owner. The generator runs `probes.py` to read the
+declaration rather than parsing it, so there is never a second reader that can
+disagree with Python's.
 
 `make analytics-catalogue-check` (part of `quality-gate`) fails if a declared
 probe has no call site in its owner file. **That gate is the load-bearing
@@ -322,8 +446,18 @@ Traps worth knowing, each of which was hit while writing this:
   per *session*, not per one-second tick, so its ratio against
   `stream.overlay.shown` reads "sessions that paid" over "sessions that looked"
   rather than being a function of how long a tab stayed open.
+- **A server probe belongs inside the branch, not at the call site.**
+  `auth.gate.blocked` is counted inside `is_blocked()` itself: put it at the
+  three callers instead and a caller that forgot becomes indistinguishable from
+  a refusal that never happens, which is the one zero the catalogue cannot
+  explain.
+- **Two module names, one module.** The serving process imports
+  `scripts/serve/probes.py` as `probes`; the unit-test runner reaches it as
+  `serve.probes`. Left alone those are two module objects with two counter
+  dicts, silently halving every fold, so `probes.py` aliases itself into both
+  names in `sys.modules` on import.
 
-## 10. Privacy and honesty
+## 11. Privacy and honesty
 
 - **No identities at all, by construction.** Unlike `usage.py` this plane has no
   per-person half: no user id is accepted, none is stored, and there is no
@@ -337,7 +471,7 @@ Traps worth knowing, each of which was hit while writing this:
 - **`never reached` is not `unreachable`.** It means no tab reported it in the
   window. Read the window before the verdict.
 
-## 11. Files
+## 12. Files
 
 | Path | What |
 |---|---|
@@ -351,7 +485,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/analytics/sink.ts` | batching transport (counts, not events) |
 | `spa/src/analytics/index.ts` | `reach` / `beginFlow` / `reportError` / `initAnalytics` |
 | `scripts/serve/analytics.py` | `POST /analytics`, `GET /analytics/report.json`, the SQLite aggregate |
-| `scripts/analytics/catalogue.mjs` | renders the registry document; **gates the call sites** |
+| `scripts/serve/probes.py` | the SERVER catalogue, the in-memory fold, and `hit()` |
+| `scripts/analytics/catalogue.mjs` | renders the registry document for BOTH planes; **gates the call sites** |
 | `scripts/dev/reach-report.py` | the joined report |
 | `registry/analytics-catalogue.json` | generated; byte-parity gated |
-| `scripts/test_analytics.py`, `spa/src/analytics/analytics.test.ts` | 19 + 23 tests |
+| `scripts/test_analytics.py`, `scripts/test_probes.py`, `spa/src/analytics/analytics.test.ts` | 19 + 19 + 23 tests |

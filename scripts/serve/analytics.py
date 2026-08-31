@@ -47,7 +47,18 @@ ID_RE = re.compile(r"^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*){0,4}$")
 FP_RE = re.compile(r"^[0-9a-f]{8}$")
 GRADES = ("auto", "show", "act")
 OUTCOMES = ("enter", "ok", "fail")
-CLASSES = ("human", "probe", "unknown")
+#: Populations that must never be summed together. `server` is not a kind of
+#: client: it is the SERVING PLANE's own branch counters (serve/probes.py),
+#: folded into this same table because the columns and the retention rule are
+#: identical and a second store would mean a second prune, a second report and a
+#: second thing to remember. What keeps them apart is this column, which is the
+#: dimension that already exists for exactly that job.
+CLASSES = ("human", "probe", "unknown", "server")
+#: What a CLIENT may claim to be. `server` is deliberately absent: `record()`
+#: reads the class out of a body a browser posted, so a client that could name
+#: itself `server` could forge branch counts for code it never ran. The server
+#: class is reachable only through `record_server()`, which no route calls.
+CLIENT_CLASSES = ("human", "probe", "unknown")
 SOURCES = ("window", "promise", "react", "fetch", "stream")
 # Bucket names as spa/src/analytics/catalogue/types.ts writes them: a ladder
 # EDGE rendered as text, or the overflow. Validated as a shape rather than
@@ -133,7 +144,7 @@ class AnalyticsStore:
         probes that did not change, and refusing the whole report would lose
         them to make a point about the one that did.
         """
-        klass = _one_of(batch.get("class"), CLASSES) or "unknown"
+        klass = _one_of(batch.get("class"), CLIENT_CLASSES) or "unknown"
         day = _day()
         taken = 0
         with self._lock:
@@ -228,6 +239,39 @@ class AnalyticsStore:
                 (day, fp, flow, step, source, klass, n, message),
             )
             taken += 1
+        return taken
+
+    def record_server(self, counts: dict) -> int:
+        """Fold the serving plane's OWN branch counters in. Returns rows taken.
+
+        Separate from `record()` on purpose, and the separation is a security
+        boundary rather than a convenience: `record()` takes its class from a
+        body a browser posted, so if `server` were reachable from there a client
+        could manufacture evidence that a dead refusal branch is alive. Nothing
+        routed calls this; `serve/probes.py` does, from inside the process.
+
+        Grade is `auto` for every row, and that is honest rather than a
+        placeholder: the intent ladder grades whether a HUMAN asked for
+        something, and on this side nobody did. A branch was taken because a
+        request arrived or a watchdog ticked, which is the definition of `auto`.
+        """
+        day = _day()
+        taken = 0
+        with self._lock:
+            cur = self._db.cursor()
+            for probe, n in (counts or {}).items():
+                pid = _ident(probe)
+                count = _count(n)
+                if not pid or not count:
+                    continue
+                cur.execute(
+                    "INSERT INTO probe(day,probe,grade,class,n) VALUES(?,?,'auto','server',?) "
+                    "ON CONFLICT(day,probe,grade,class) DO UPDATE SET n=n+excluded.n",
+                    (day, pid, count),
+                )
+                taken += 1
+            if taken:
+                self._db.commit()
         return taken
 
     # ---- reading -----------------------------------------------------------

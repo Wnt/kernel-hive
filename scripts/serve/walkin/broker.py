@@ -43,6 +43,20 @@ from . import clone as clone_mod
 from . import spec as spec_mod
 from .warm import BrokerError, Member, Warming
 
+# Server-side feature reach (serve/probes.py). Two module names for one module —
+# see the identical block in auth/gate.py. A watchdog that dies stops reaping, so
+# the import degrades to a no-op rather than to a traceback.
+try:
+    from probes import hit
+except ImportError:  # pragma: no cover - import shape only
+    try:
+        from serve.probes import hit
+    except ImportError:
+
+        def hit(_probe: str) -> None:
+            """No probes module in this deployment; the pool still runs."""
+
+
 TTL_SECONDS = 20 * 60
 IDLE_SECONDS = 3 * 60
 EXTENSION_SECONDS = 10 * 60
@@ -260,10 +274,16 @@ class Broker(Warming):
             existing = self._session_of(user_id)
             if existing:
                 raise BrokerError(f"you already have {existing.identity} — release it first")
+            # Both exits below are the same finding — "somebody wanted a machine
+            # and had to wait" — and the queue is the same machinery either way,
+            # so they are one probe. A pool of three on a private museum may
+            # never reach either, and that is the answer worth having.
             if self._active_count() >= ACTIVE_SESSION_CAP:
+                hit("walkin.claim.queued")
                 return self._enqueue(user_id, station)
             free = next((m for m in self._members.values() if m.clone.spec.station == station and not m.session), None)
             if not free:
+                hit("walkin.claim.queued")
                 return self._enqueue(user_id, station)
             now = self._now()
             free.session = Session(
@@ -284,6 +304,7 @@ class Broker(Warming):
             try:
                 clone.resume()
             except Exception as exc:
+                hit("walkin.claim.resumeFailed")
                 self._abandon(identity, user_id)
                 raise BrokerError(f"{identity} would not resume: {exc}") from exc
         return {
@@ -406,12 +427,18 @@ class Broker(Warming):
             for member in list(self._members.values()):
                 session = member.session
                 if session and now >= session.expires_at:
+                    hit("walkin.reap.ttl")
                     ended.append((member.identity, CLOSE_REASON_TTL))
                     retired.append(self._end(member, CLOSE_REASON_TTL))
                 elif session and now - session.last_input_at >= IDLE_SECONDS:
+                    # The idle window is three minutes and the TTL is twenty, so
+                    # the idle reap should be the COMMON one; if it is not, the
+                    # 3-minute window is not doing what it was added to do.
+                    hit("walkin.reap.idle")
                     ended.append((member.identity, CLOSE_REASON_IDLE))
                     retired.append(self._end(member, CLOSE_REASON_IDLE))
                 elif not member.clone.alive():
+                    hit("walkin.reap.died")
                     # A pool member whose QEMU died is not a pool member. It is a
                     # directory and a claim, and both have to go back.
                     died.append(member.identity)

@@ -148,11 +148,63 @@ def row(text: str, width: int) -> str:
     return text if len(text) <= width else text[: width - 1] + "…"
 
 
+def server_reach(catalogue: dict, report: dict, as_json: bool) -> int:
+    """The Python serving plane's own branch reach (docs/ANALYTICS.md §7).
+
+    A separate table rather than more rows in the one above, for the same reason
+    the store keys everything by class: these are not features a visitor uses,
+    they are BRANCHES the server took, and summing the two would make a refusal
+    that never fires look like a feature nobody clicked. There is no coverage
+    column — the quadrants cross production reach with the SPA's vitest data,
+    and no Python equivalent is wired into this report.
+    """
+    probes = catalogue.get("serverProbes", {})
+    observed = report.get("probes", {})
+    rows = [
+        {
+            "probe": pid,
+            "area": spec["area"],
+            "owner": spec["owner"],
+            "what": spec["what"],
+            "n": sum(observed.get(pid, {}).values()),
+            "consumes": spec.get("consumes"),
+        }
+        for pid, spec in sorted(probes.items())
+    ]
+    if as_json:
+        print(json.dumps({"window": report.get("window"), "serverRows": rows}, indent=2))
+        return 0
+    w = report.get("window", {})
+    print(f"\n=== SERVER BRANCH REACH — last {w.get('days', '?')} days ===\n")
+    print(f"  {'probe':34}  {'taken':>8}  owner")
+    print(f"  {'-' * 34}  {'-' * 8}  {'-' * 34}")
+    for r in rows:
+        print(f"  {row(r['probe'], 34):34}  {r['n']:>8}  {row(r['owner'], 34)}")
+    cold = [r for r in rows if not r["n"]]
+    if cold:
+        print(f"\n  {len(cold)} of {len(rows)} branches were never taken in this window. Each is either dead")
+        print("  code or a refusal that has never been needed, and `what` in the catalogue says which")
+        print("  question a zero answers. `never taken` is not `unreachable` — read the window first.")
+    pairs = [r for r in rows if r["consumes"]]
+    if pairs:
+        print("\n=== PRECONDITION VS BRANCH — is the fallback reachable at all? ===\n")
+        for r in pairs:
+            src = next((x for x in rows if x["probe"] == r["consumes"]), None)
+            outer = src["n"] if src else 0
+            pct = f"{100.0 * r['n'] / outer:.1f}%" if outer else "n/a"
+            print(
+                f"  {row(r['consumes'], 30):30} taken {outer:>7}   ->  "
+                f"{row(r['probe'], 30):30} taken {r['n']:>7}  ({pct})"
+            )
+    print()
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default="https://127.0.0.1:8443", help="gallery listener (default: the LAN one)")
     ap.add_argument("--days", type=int, default=30, help="window, in days (default 30)")
-    ap.add_argument("--class", dest="klass", default="human", choices=("human", "probe", "unknown"))
+    ap.add_argument("--class", dest="klass", default="human", choices=("human", "probe", "unknown", "server"))
     ap.add_argument("--report", type=Path, help="read an already-fetched report.json instead of the box")
     ap.add_argument("--json", action="store_true", help="emit the joined table as JSON")
     args = ap.parse_args()
@@ -164,6 +216,9 @@ def main() -> int:
     report = load_json(args.report) if args.report else fetch_report(args.url, args.days, args.klass)
     if report is None:
         return 1
+
+    if args.klass == "server":
+        return server_reach(catalogue, report, args.json)
 
     probes = catalogue.get("probes", {})
     observed = report.get("probes", {})
