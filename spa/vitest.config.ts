@@ -26,6 +26,7 @@ export default defineConfig({
       reporter: ['text', 'html', 'json'],
       include: [
         'src/analytics/catalogue.ts',
+        'src/analytics/coverage.ts',
         'src/analytics/errors.ts',
         'src/analytics/flows.ts',
         'src/analytics/index.ts',

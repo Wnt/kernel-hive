@@ -113,6 +113,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
 import deploy_hint  # noqa: E402
+import linecov  # noqa: E402  (production line coverage; NOT named `coverage`, see the module)
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
@@ -159,6 +160,14 @@ USAGE = usage.UsageStore(USAGE_STATS)
 # takes no identity on either, so there is no per-person half to fence off.
 ANALYTICS = analytics.AnalyticsStore(ANALYTICS_DB)
 ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
+# Production LINE coverage, fed only by the opt-in instrumented bundle
+# (docs/ANALYTICS.md §6). Its own database beside the counters, not a table in
+# them: the rows are kilobytes rather than integers, they expire with the build
+# that produced them rather than lasting two years, and its body cap has to be
+# sixteen times the counter plane's — see serve/coverage.py. Unarmed, this is an
+# empty file and nothing ever posts to it.
+COVERAGE = linecov.CoverageStore(ANALYTICS_DB.parent / "coverage.db")
+COVERAGE.prune()
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -442,6 +451,15 @@ class H(BaseHTTPRequestHandler):
                 return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
             return analytics.handle_post(self, ANALYTICS)
 
+        # POST /coverage — one instrumented tab's line map, once, at pagehide.
+        # Same origin rule as /analytics, and the same absence of any identity;
+        # a normal gallery bundle never posts here because it does not carry the
+        # collector at all.
+        if path == "/coverage":
+            if self.public and self.headers.get("Origin") != PUBLIC_ORIGIN:
+                return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
+            return linecov.handle_post(self, COVERAGE)
+
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
             if not self._require_box_side("clientcmd enqueue"):
@@ -491,6 +509,10 @@ class H(BaseHTTPRequestHandler):
         # gate than /usage/stations.json does.
         if path == "/analytics/report.json":
             return analytics.serve_report(self, ANALYTICS, parse_qs(urlparse(self.path).query))
+
+        # GET /coverage/report.json — production line coverage, per file.
+        if path == "/coverage/report.json":
+            return linecov.serve_report(self, COVERAGE, parse_qs(urlparse(self.path).query))
 
         if path == "/signal/index.json":
             return signal_route.serve_index(self)
