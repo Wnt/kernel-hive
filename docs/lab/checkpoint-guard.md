@@ -58,6 +58,14 @@ sandbox clone (`clone-guard`-linted launcher, same device set) and drive the thi
 visitor drives — click the field, type, read the characters back out of a screendump.
 If that is not done, "restore-proven" means only that the pixels come back.
 
+`aix432` closed that loop on 2026-08-31: the repaired scene was captured, the
+acceptance clone was booted from the NEW checkpoint, and typing into the page's
+form field was read out of a screendump before the run was called done. That
+station also needs a `CPG_DIRTY_CMD` (its registry notes carry the exact one):
+with a freshly started browser and no window yet clicked, `CPG_DIRTY_TEXT` and
+the `tab`/`esc` fallback both change **0 px** and the guard refuses — correctly,
+and without deleting anything.
+
 Knobs, all env: `CPG_LABEL` (default `golden`), `CPG_STAGING_LABEL` (default
 `cpg-staging`), `CPG_DIRTY_TEXT`, `CPG_SSIM_MIN` (default `0.999`), `CPG_IDLE_SECONDS`,
 `CPG_SETTLE`, `CPG_STATIONS_ROOT` (point it at a sandbox to exercise the guard on a
