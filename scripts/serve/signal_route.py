@@ -184,7 +184,7 @@ def serve_tile(handler, tile, stream_key):
             # BROWSER will see in its signalling document and the id the DAEMON
             # will stamp on its session, so recording it here is what lets one
             # visit be one trace across three processes.
-            body["path"] += "?" + tracecontext.format(mintspan.trace_id, mintspan.span_id)
+            body["path"] += "?traceparent=" + tracecontext.format(mintspan.trace_id, mintspan.span_id)
             mintspan.attr("kh.session.traceId", mintspan.trace_id)
     if handler.public:
         # Same station, same cert: WebTransport pins the certificate by
