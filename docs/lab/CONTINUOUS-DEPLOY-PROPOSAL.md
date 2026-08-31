@@ -175,42 +175,54 @@ Both are used, and they are not redundant — they answer different questions.
 | cost | none | Actions minutes |
 | fires | on the ref update, always | on the ref update, once scheduled |
 | buys us | immediate convergence | a visible per-commit record that a deploy was requested, and a second hint if the first delivery was dropped |
+| fires | on the ref update, unconditionally — **never gated on CI** | plus a second, separate ping when the Quality gate concludes |
 
 The webhook is the mechanism. The Actions job exists because **a missed webhook
 delivery is missed silently** — the endpoint restarting during a deploy of
 itself is the ordinary case, not the exotic one — and because "a deploy was
 requested for `<sha>` at `<time>`" is exactly the forensic record the
-2026-08-30 wave did not have. It is scheduled *after* the quality jobs, so its
-ping also carries "CI was green for this commit"; the reconciler journals that
-and does **not** gate on it. A red CI run still converges: the box's own
-acceptance gate (§6) is what decides safety, and making GitHub CI load-bearing
-for exhibit availability would import a new outage source for no safety gain.
+2026-08-30 wave did not have. **The design previously claimed this ping "doubles as *CI was green for this
+commit*". It did not, and as written it could not** — corrected 2026-08-31, and
+the correction is more interesting than the bug. The push ping fires
+immediately, ungated; there was never a moment at which CI had concluded.
+Worse, the fix that first suggested itself — gate the ping on CI — would have
+*damaged* the ping's more valuable job: a commit whose CI is cancelled, skipped
+or failing is exactly when the box must still converge, because the box's own
+acceptance gate (§6) is what decides safety and making GitHub CI load-bearing
+for exhibit availability imports an outage source for no safety gain. The
+overclaim was therefore inconsistent with this document's own reasoning two
+paragraphs later.
+
+And "CI was green" is not a thing one `workflow_run` can say here: the repo runs
+**five** independent CI workflows (Lint, Quality gate, Rust, SPA, Tile registry).
+A dependency on any one of them asserts that one workflow's conclusion, not
+CI's.
+
+So both halves were fixed rather than either alone. The **push** ping stays
+unconditional and carries no CI claim — it is the delivery backstop. A
+**second, separate** `workflow_run` ping fires when the **Quality gate**
+concludes and carries that conclusion, named precisely, as journalled **data**.
+Nothing on the box acts on it.
+
+That conclusion is allowed to travel in the signed *body*, unlike the trigger
+source which must come from *which key verified*. The distinction is not
+arbitrary: the source underpins the backstop-health signal of this section and
+must not be assertable by anyone who can reach the URL, whereas a CI conclusion
+is not that signal and anyone holding the Actions key can push to `main`
+regardless.
+
+**The standing warning stands, and now has something to attach to:** nothing may
+treat that conclusion as a gate. A ping asserting a quality signal it never
+checked would be worse than no ping, because someone will eventually wire
+convergence to trust it — which is precisely the failure this correction exists
+to prevent, one layer up.
 
 Both call the **same endpoint** with the **same signature scheme**, so there is
 exactly one verification path to reason about.
 
-**GAP, OPEN AS OF 2026-08-31: the Actions ping is NOT scheduled after CI.**
-`.github/workflows/deploy-hint.yml` triggers on `push` with no ordering against
-the quality workflows, so in practice it races the webhook by a few seconds
-rather than following a green build — measured at 4–6 seconds behind on every
-real push so far. The table above says this ping "doubles as *CI was green for
-this commit*"; **as written it carries no such assurance.** The audit-trail half
-of its job is therefore weaker than this section documents: it records that a
-deploy was requested, not that the commit was healthy when it was.
-
-Fixing it is a real change rather than a one-line addition: `needs:` orders jobs
-*within* one workflow, so cross-workflow ordering requires a `workflow_run`
-trigger on the quality workflow's completion, which also changes what the ping
-means when CI is skipped or cancelled. It was deliberately not folded into the
-arming work, because "arm the trigger" does not authorise changing what the
-trigger asserts.
-
-**Until it is fixed, nothing may treat that ping as a quality signal.** The
-danger is specific and future-facing: a later change wiring convergence to
-"converge only on an Actions-sourced hint, because CI passed" would be trusting
-something that never checked. The reconciler's own acceptance gate (§6) is what
-decides safety, and that is deliberate — see the paragraph above on why GitHub
-CI is not made load-bearing for exhibit availability.
+**CLOSED 2026-08-31.** This section previously recorded the gap above as open.
+It is closed by the two-trigger split, and by saying precisely what each ping
+carries rather than what it was hoped to carry.
 
 ### The endpoint
 

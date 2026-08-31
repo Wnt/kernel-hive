@@ -333,5 +333,50 @@ class ProvenanceSurvivesTheNextHint(Base):
         self.assertEqual(len(self.journal()), JOURNAL_MAX)
 
 
+class CiConclusionIsDataNotAuthorisation(Base):
+    """The Quality gate's conclusion rides in the signed body and is journalled.
+
+    It is NOT "CI was green": this repo has five CI workflows and the ping
+    depends on one. And nothing on the box acts on it — a ping that asserted a
+    quality signal while never having looked would be worse than no ping,
+    because someone would eventually wire convergence to trust it.
+    """
+
+    def journal(self):
+        p = self.wakeup.parent / "hints.jsonl"
+        return [json.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
+
+    def test_a_ci_block_is_recorded(self):
+        raw = body({**PUSH_MAIN, "ts": time.time(), "ci": {"workflow": "Quality gate", "conclusion": "success"}})
+        v = self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "c1"})
+        self.assertTrue(v.accepted, v)
+        self.assertEqual(self.journal()[-1]["ci"]["conclusion"], "success")
+
+    def test_a_FAILED_conclusion_is_still_accepted(self):
+        """Gating the ping on CI would break its backstop job: a commit whose CI
+        failed or was cancelled is exactly when the box must still converge."""
+        raw = body({**PUSH_MAIN, "ts": time.time(), "ci": {"conclusion": "failure"}})
+        v = self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "c2"})
+        self.assertTrue(v.accepted)
+        self.assertEqual(self.journal()[-1]["ci"]["conclusion"], "failure")
+
+    def test_the_ci_block_cannot_change_the_trigger_source(self):
+        raw = body({**PUSH_MAIN, "ts": time.time(), "ci": {"source": "webhook"}, "source": "webhook"})
+        self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "c3"})
+        self.assertEqual(self.journal()[-1]["source"], "actions")
+
+    def test_a_hostile_ci_block_is_bounded(self):
+        raw = body({**PUSH_MAIN, "ts": time.time(), "ci": {f"k{i}": "x" * 500 for i in range(50)}})
+        self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "c4"})
+        ci = self.journal()[-1]["ci"]
+        self.assertLessEqual(len(ci), 4)
+        self.assertTrue(all(len(v) <= 64 for v in ci.values()))
+
+    def test_a_non_dict_ci_is_ignored(self):
+        raw = body({**PUSH_MAIN, "ts": time.time(), "ci": "green"})
+        self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "c5"})
+        self.assertNotIn("ci", self.journal()[-1])
+
+
 if __name__ == "__main__":
     unittest.main()

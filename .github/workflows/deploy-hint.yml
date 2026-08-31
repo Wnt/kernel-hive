@@ -20,9 +20,27 @@
 # for the journal only, after being proved an ancestor of that fetch.
 name: deploy-hint
 
+# TWO TRIGGERS, AND THEY CARRY DIFFERENT THINGS. Conflating them is what the
+# design got wrong: it claimed one ping did both jobs, and it cannot.
+#
+#   push          — fires immediately and UNCONDITIONALLY. This is the delivery
+#                   backstop for a dropped webhook, and it must never be gated
+#                   on CI: a commit whose CI is cancelled or skipped is exactly
+#                   when you still want the box to converge, and the box's own
+#                   acceptance gate is what decides safety.
+#   workflow_run  — fires when the Quality gate concludes, and reports that
+#                   conclusion as DATA. It is not "CI was green": this repo has
+#                   five separate CI workflows (Lint, Quality gate, Rust, SPA,
+#                   Tile registry) and this depends on exactly one of them, so
+#                   it says precisely that and no more.
+#
+# Nothing on the box gates on either. See CONTINUOUS-DEPLOY-PROPOSAL.md 1.1.
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["Quality gate"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -30,11 +48,19 @@ permissions:
 jobs:
   hint:
     runs-on: ubuntu-latest
+    # workflow_run fires for every branch whose head ran the gate; only main
+    # may trigger, exactly as the endpoint's own ref filter requires.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.workflow_run.head_branch == 'main'
     steps:
       - name: Send the hint
         env:
           SECRET: ${{ secrets.KH_DEPLOY_HMAC }}
-          SHA: ${{ github.sha }}
+          SHA: ${{ github.event_name == 'push' && github.sha || github.event.workflow_run.head_sha }}
+          KIND: ${{ github.event_name }}
+          GATE: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
         run: |
           set -euo pipefail
           if [ -z "${SECRET:-}" ]; then
@@ -42,7 +68,16 @@ jobs:
             echo "Skipping. This is the expected state until the operator arms it."
             exit 0
           fi
-          body=$(printf '{"ref":"refs/heads/main","after":"%s","ts":%s}' "$SHA" "$(date +%s)")
+          if [ "$KIND" = "workflow_run" ]; then
+            # The conclusion rides as DATA in a signed body. It is journalled and
+            # nothing acts on it; the trigger SOURCE still comes from which key
+            # verified, because that is the signal the backstop-health story
+            # rests on and it must not be assertable by a caller.
+            body=$(printf '{"ref":"refs/heads/main","after":"%s","ts":%s,"ci":{"workflow":"%s","conclusion":"%s"}}' \
+              "$SHA" "$(date +%s)" "$GATE" "$CONCLUSION")
+          else
+            body=$(printf '{"ref":"refs/heads/main","after":"%s","ts":%s}' "$SHA" "$(date +%s)")
+          fi
           sig=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$SECRET" -r | cut -d' ' -f1)
           code=$(curl -sS -o /dev/stderr -w '%{http_code}' \
             -X POST 'https://kernelhive.madekivi.fi/kh/deploy-hint' \

@@ -197,6 +197,13 @@ class HintReceiver:
             return Verdict(204, f"ignoring ref {ref!r}", source=source)
         # The sha is a HINT for the journal. It never selects what is deployed.
         hint = body.get("after") if isinstance(body.get("after"), str) else None
+        # A CI conclusion, when the sender chose to include one. DATA, journalled
+        # and never acted on. It is allowed to come from the signed BODY — unlike
+        # the trigger source, which must come from the key — because the source
+        # underpins the backstop-health signal and must not be assertable by
+        # anyone who can reach the URL, whereas a CI conclusion is not that
+        # signal and anyone holding this key can push to main anyway.
+        ci = body.get("ci") if isinstance(body.get("ci"), dict) else None
         # ONLY an accepted delivery is remembered. GitHub redelivers a failed
         # delivery under the SAME id, so recording one we did not act on would
         # turn its own retry into a silent no-op — the endpoint would refuse the
@@ -205,10 +212,10 @@ class HintReceiver:
         if delivery:
             self._remember(delivery)
         self._bump(source, hint)
-        self._journal(source, hint)
+        self._journal(source, hint, ci)
         return Verdict(202, "wakeup enqueued", source=source, hint_sha=hint)
 
-    def _journal(self, source: str, hint: str | None) -> None:
+    def _journal(self, source: str, hint: str | None, ci: dict | None = None) -> None:
         """Append one bounded line. §1.1 step 6 always specified this and the
         first implementation only did the bump — which quietly defeated the
         thing the whole backstop story rests on.
@@ -231,7 +238,12 @@ class HintReceiver:
             rows = journal.read_text().splitlines() if journal.exists() else []
         except OSError:
             rows = []
-        rows.append(json.dumps({"source": source, "ts": self.now(), "hint": hint}))
+        row = {"source": source, "ts": self.now(), "hint": hint}
+        if ci:
+            # Bounded and stringified: this is somebody else's field, journalled
+            # for forensics, and it must not be able to grow the file arbitrarily.
+            row["ci"] = {k: str(v)[:64] for k, v in list(ci.items())[:4]}
+        rows.append(json.dumps(row))
         tmp = journal.with_suffix(".tmp")
         tmp.write_text("\n".join(rows[-JOURNAL_MAX:]) + "\n")
         os.replace(tmp, journal)
