@@ -473,7 +473,7 @@
     "hpuxvue": {
       "dir": "/data/vms/streamhost/stations/hpuxvue",
       "qmp": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -486,7 +486,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54144,
-      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE."
+      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE. POINTER ACCURACY: WITHIN 1 px, NOT EXACT. The Artist engine is a closed loop with ptr-deadband=1 and converges on abs(err) <= deadband on BOTH axes, so it is SPECIFIED to stop within one pixel -- `labctl abs x y` lands at x+/-1, y+/-1, converged and held. This is weaker than rhapsody's and macos753's exact landing: those use kh-ramabs, which has no deadband at all and tests literal equality, so 0 px is the correct strictness there and 1 px would hide a missed publish. Do not carry this tolerance to a ramabs station, and do not set ptr-deadband=0 to make a test pass -- the deadband is what stops the hunting that leaves window-border hotspots unmeasurable."
     },
     "indyr4400": {
       "dir": "/data/vms/streamhost/stations/indyr4400",
