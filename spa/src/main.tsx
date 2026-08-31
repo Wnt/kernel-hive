@@ -1,3 +1,18 @@
+// FIRST, before anything else in this module runs: patch window.fetch so
+// every same-origin request this app makes — 22 of the 24 call sites that
+// exist today carried no trace context before this landed — automatically
+// propagates `traceparent`, and join the page-load trace the server named in
+// <meta name="traceparent"> (docs/lab/TRACE-CONTEXT.md §4/§7) before the
+// first flow (station.connect, typically) opens and would otherwise mint an
+// unrelated id. See analytics/khFetch.ts's header for why this install point
+// — as early in OUR OWN bundle as we control — is a deliberate best-effort
+// rather than a hard guarantee against Instana's separately-loaded agent.
+import { installKhFetchPropagation } from './analytics/khFetch';
+import { joinPageLoadTraceFromMeta } from './analytics/trace';
+
+installKhFetchPropagation();
+joinPageLoadTraceFromMeta();
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

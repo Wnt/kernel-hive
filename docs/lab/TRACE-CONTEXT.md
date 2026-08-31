@@ -33,7 +33,7 @@ can break the thing it measures is not telemetry, it is a fault injector.
 | Hop | Carrier | Notes |
 |---|---|---|
 | serving plane → browser (page load) | `<meta name="traceparent">` in `index.html` | the FIRST hop of a visit, before any JS has run — see §4 |
-| browser → serving plane | `traceparent` request header | on `/signal/*`, `/traces`, `/analytics`, `/usage`, `/walkin/*` |
+| browser → serving plane | `traceparent` request header | **automatic, on every same-origin request** — `spa/src/analytics/khFetch.ts` patches `window.fetch` once at boot, so this is no longer a per-call-site opt-in. See §4a |
 | serving plane → its own spans | in-process | child of the inbound span |
 | browser → daemon (input plane) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
 | daemon → its own spans | in-process | child of the session's root |
@@ -114,20 +114,23 @@ artifact: the tag does not exist until a request asks for the page, and a new
 one is minted on every such request. Staging (`/staging/<session>/`) is served
 by the same function and gets its own tag from its own request, the same way.
 
-**Who reads it, and why.** Not this repo's own `spa/src/analytics/trace.ts` —
-that mints its own ids independently, for the browser's own journey through
-§2, and does not read this tag. This tag exists for **Instana's
-website-monitoring agent**, embedded separately in the SPA, whose whole job is
-to correlate a RUM page load with the backend trace that served the page. The
-tag name, the `document.querySelector('meta[name="traceparent"]')` selector
-and the exact `00-<32 hex>-<16 hex>-<2 hex>` shape it requires are asserted
-nowhere IBM or Instana publishes — established 2026-08-31 by reading the
-vendor's own minified agent bundle, which looks for exactly that selector and
-silently ignores anything else (a malformed or differently-shaped tag is
-simply invisible to it, never an error). That provenance matters: a future
+**Who reads it, and why.** Two readers now, independently, off the SAME tag.
+It was built for **Instana's website-monitoring agent**, embedded separately
+in the SPA, whose whole job is to correlate a RUM page load with the backend
+trace that served the page — via `document.querySelector('meta[name=
+"traceparent"]')` and the exact `00-<32 hex>-<16 hex>-<2 hex>` shape, asserted
+nowhere IBM or Instana publishes, established 2026-08-31 by reading the
+vendor's own minified agent bundle (it silently ignores anything that is not
+exactly that shape — never an error). That provenance still matters: a future
 reader "fixing" this tag's shape to match Instana's docs will get it wrong,
 because the docs never state it — this file, and the agent's own source, are
 the only record.
+
+As of the same day, `spa/src/analytics/trace.ts` reads it too —
+`joinPageLoadTraceFromMeta()`, called once at boot from `main.tsx` — and uses
+it to seed the FIRST trace this tab opens (§4a). This closes the gap §7 used
+to describe: a visit no longer produces two disconnected trees, one rooted at
+`serve.page` and one at the browser's own first flow.
 
 **The id is real, not a prop.** The span behind the tag is opened and ended in
 `static_files.py` and flows through the same buffered flush (`tracing.py`)
@@ -147,6 +150,96 @@ document, stays untouched and unspanned.
 malformed, or anything at all raises, `index.html` is served byte-for-byte
 unchanged and no tag appears. A telemetry feature must never be able to break
 the gallery's front door — see §8.
+
+## 4a. The browser hop is automatic, not opt-in — and the page-load join
+
+Until 2026-08-31, `traceHeaders()` in `trace.ts` existed but almost nothing
+called it: of 24 `fetch()` call sites in `spa/src`, only two did — both our own
+telemetry posts (`analytics/index.ts`, `analytics/sink.ts`). Every user-facing
+API call — the manifest, signalling, restore, walk-in auth, the fleet table —
+carried no trace context. That was not 22 bugs, it was one: propagation was
+opt-in per call site, which is exactly the shape that rots the moment nobody
+is watching it.
+
+**The fix is `spa/src/analytics/khFetch.ts`: a single, global `window.fetch`
+patch, installed once**, at the very top of `main.tsx`, before any other
+import in that module runs. It is a monkey-patch and not a `khFetch()` helper
+call sites must remember to use — that alternative was rejected on the
+evidence above, since a wrapper only helps the call sites that adopt it, which
+is the same failure mode restated. For every same-origin request the app
+makes (checked by `URL.origin`, never leaked to a third-party host) it:
+
+- adds `traceparent`, from the current active span if one is open, a fresh
+  trace otherwise — unless the caller already set one, which is respected,
+  not overwritten;
+- opens a **client span** — name, method, `url.pathname` (never the query
+  string — the same rule `errors.ts`'s fingerprint and this file's own §8
+  state), status code and duration — UNLESS the path is one of this repo's own
+  telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
+  `/usage`, `/clientcmd`), reusing `instana.ts`'s `IGNORE_URL_PATTERNS`
+  rather than a second list that could drift from it. A span about sending a
+  span is the feedback loop the per-tab beacon budget exists to prevent — the
+  header still goes out to those endpoints (it always did, by hand), only the
+  client-side span is skipped;
+- respects the same `enabled`/`allowed` gates as everything else in this
+  plane (`configureTracer`, the `allowed` answer `main.tsx` computes) — spans
+  fall out for free, since `makeSpan()` already no-ops when the tracer is
+  off;
+- never breaks the request. Every enhancement is wrapped in its own
+  `try`/`catch` and falls back to the unmodified original `fetch` — this
+  patch sits in front of every network call the app makes, so a bug in it is
+  not a missing metric, it is a broken gallery.
+
+**The page-load join.** `trace.ts` also exposes `joinPageLoadTraceFromMeta()`,
+called once from `main.tsx` alongside the fetch patch, before the first flow
+opens. It reads the §4 `<meta name="traceparent">` tag and seeds the id so
+that the FIRST trace this tab opens (`startTrace()`, typically the
+`station.connect` flow) **continues** `serve.page`'s trace instead of minting
+an unrelated one — consumed exactly once, so a second, later flow in the same
+tab (a retry, a second station) still gets its own fresh trace rather than a
+stale parent from page load. Missing or malformed content on the tag (no
+server injection, a stale cached document, tracing unbound) leaves the seed
+unset and the first trace mints its own id exactly as it always did — the
+same "malformed → new trace, never refuse the work" rule as §1.
+
+**The Instana collision, measured rather than assumed.** Both this patch and
+Instana's own agent (`enableW3CHeaders: true`) want to own the outbound
+`traceparent` header. Reasoning from Instana's minified source alone is
+exactly the trap §4 already avoided once by testing instead of reading docs —
+so this was run, not read: the real agent
+(`registry/local.env`'s pinned `INSTANA_EUM_SCRIPT_URL`) loaded into a
+scripted harness with a capturing `fetch` underneath it, in both install
+orders. Findings, in full in `khFetch.ts`'s own header:
+
+- Instana's fetch patch uses `Headers.append` for every header it adds,
+  `traceparent` included — written to coexist with an existing value, not to
+  overwrite it.
+- A monkey-patch chain is **last-installed-outermost**: whichever patch is
+  installed more recently wraps the other and runs first, calling inward to
+  whichever installed earlier — which sits closer to the real network call
+  and therefore gets the last word.
+- **When this patch installs before Instana's agent has loaded** (the common
+  case — this module is the first import `main.tsx` evaluates; Instana's
+  agent is a separately fetched, non-parser-inserted `<script>` and is
+  therefore genuinely async regardless of its own `defer` attribute, per
+  `index.html`'s comment on that tag), this patch ends up INNER. Instana's
+  outer wrapper appends its headers first; this patch's `Headers.set(...)`
+  then runs and OVERWRITES whatever Instana put there. Verified: the wire
+  header is our clean single value, Instana's `X-INSTANA-*`/`tracestate`
+  headers sit untouched beside it.
+- **When the order is reversed** — Instana's agent finishes loading and
+  patches first — this patch becomes OUTER, sets the header first, and
+  Instana's inner `.append` turns it into `"<ours>, 00-...-03"`: two
+  comma-joined values in one header, which is not a valid single
+  `traceparent`. Both `tracecontext.py` and Instana's own backend then treat
+  it as malformed and start a fresh trace for that one call — the request
+  itself is never broken either way, only that one call's join is lost.
+- No hard guarantee against the reversed order is attempted (an inline
+  `<script>` ahead of Instana's own bootstrap in `index.html` would win
+  unconditionally, at the cost of re-implementing trace-id minting outside
+  this module in raw inline JS — a second implementation of exactly the kind
+  this section exists to stop having). A best-effort win that degrades to "no
+  join, never a broken request" was judged the better trade.
 
 ## 5. Sampling is all-or-nothing, and the browser decides
 
@@ -180,17 +273,20 @@ the only place that can honestly measure it.
 ## 7. What a complete trace looks like
 
 ```
-station.connect                                  (browser, root)
-├─ signal.fetch                        client    (browser)
-│  └─ serve.signal                     server    (python: mints the id below)
-│     └─ serve.ticket.mint             internal
-├─ streamhost.session                  server    (rust: joined by ticket id)
-│  ├─ guest.resume                     internal  (emulator: cont / SIGCONT)
-│  ├─ capture.first_frame              internal
-│  ├─ encode.first_key                 internal
-│  ├─ transport.first_frame            internal
-│  └─ input.first_edge                 internal
-└─ station.open.toFirstFrameMs         internal  (browser, the metric's twin)
+serve.page                                       (python, root — §4/§4a: named
+│                                                  in the <meta> tag the page
+│                                                  was served with)
+└─ station.connect                                (browser — §4a's join)
+   ├─ HTTP GET /signal/<station>.json    client   (browser — khFetch.ts, automatic)
+   │  └─ serve.signal                    server   (python: mints the id below)
+   │     └─ serve.ticket.mint            internal
+   ├─ streamhost.session                 server   (rust: joined by ticket id)
+   │  ├─ guest.resume                    internal (emulator: cont / SIGCONT)
+   │  ├─ capture.first_frame             internal
+   │  ├─ encode.first_key                internal
+   │  ├─ transport.first_frame           internal
+   │  └─ input.first_edge                internal
+   └─ station.open.toFirstFrameMs        internal (browser, the metric's twin)
 ```
 
 The daemon emits one more trace that has no browser in it at all, because a
@@ -205,14 +301,15 @@ Four processes, one trace id, one flame graph. The browser's own
 the question "was it slow because the guest was asleep" stops being a
 correlation exercise.
 
-**The §4 page-load span is its own, separate trace, not a root above this
-one.** `serve.page` is minted when `index.html` is served, before any of the
-above exists; `station.connect` is minted later, independently, by
-`spa/src/analytics/trace.ts` when the app boots — the two are not currently
-joined, so a visit today produces this trace AND a one-span Instana trace
-rooted at `serve.page`, not one bigger tree. Joining them (having the SPA read
-its own meta tag and reuse the id) is a natural next step and not yet done;
-this document states what is built, not what would be tidy.
+**The §4 page-load span IS a root above this one, now.** `serve.page` is
+minted when `index.html` is served, before any of the above exists;
+`station.connect` used to be minted independently and unrelated the moment the
+app booted, producing two disconnected trees for one visit — this trace, and a
+one-span Instana trace rooted at `serve.page`. §4a's page-load join closes
+that: `joinPageLoadTraceFromMeta()` seeds `station.connect` (or whichever flow
+opens first) to continue `serve.page`'s trace id, with `serve.page`'s span as
+its parent, so the tree above is now genuinely rooted at the page load, not
+merely drawn that way.
 
 ## 8. Rules that are not negotiable
 

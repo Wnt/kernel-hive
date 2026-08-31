@@ -1184,6 +1184,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/analytics/catalogue/` | the declaration — the report's denominator, one file per area so parallel instrumentation streams share no editing surface |
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
+| `spa/src/analytics/trace.ts` | the span/id model, `traceHeaders()`, and the page-load join (`joinPageLoadTraceFromMeta`) — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
+| `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |
 | `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |
 | `spa/src/ui/fleetFindEpisode.ts` | the `fleet.find` episode |

@@ -334,8 +334,67 @@ export function childOfActive(name: string, attrs?: Attrs, kind?: SpanKind): Spa
   return parent ? parent.child(name, attrs, kind) : startTrace(name, attrs, kind);
 }
 
-/** Begin a new trace. The returned span is its root; end it to close the trace. */
+/**
+ * The page-load join (docs/lab/TRACE-CONTEXT.md §4/§7): the server names a
+ * real `serve.page` span in `<meta name="traceparent">` when it serves
+ * index.html, minted before any JS on the page has run. Until this module
+ * reads it, the FIRST trace this tab opens (typically `station.connect`) has
+ * no relation to that span — two disconnected trees for one visit, which is
+ * exactly the thing tracing exists to stop doing. Consumed exactly ONCE: only
+ * the very first `startTrace()` call this page makes should continue
+ * `serve.page` — a second, unrelated flow opened later in the same tab (a
+ * retry, a second station) is a fresh attempt and deserves a fresh trace, not
+ * a stale parent from page load.
+ */
+let pageLoadSeed: { traceId: string; spanId: string } | null = null;
+
+const TRACEPARENT_RE = /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/i;
+
+/** Parse a `traceparent` value per §1; null for anything that is not exactly
+ *  that shape. Exported so the meta-tag reader and tests share one parser
+ *  rather than two regexes drifting apart. */
+export function parseTraceparent(value: string | null | undefined): { traceId: string; spanId: string } | null {
+  if (!value) return null;
+  const m = TRACEPARENT_RE.exec(value.trim());
+  if (!m) return null;
+  return { traceId: m[1].toLowerCase(), spanId: m[2].toLowerCase() };
+}
+
+/** Seed the page-load join directly from a `traceparent` value. Exported for
+ *  tests; `joinPageLoadTraceFromMeta` is what boot code actually calls. A
+ *  malformed or missing value clears the seed — the same "malformed → start a
+ *  new trace, never refuse the work" rule as everywhere else in this file. */
+export function seedPageLoadTrace(traceparent: string | null | undefined): void {
+  pageLoadSeed = parseTraceparent(traceparent);
+}
+
+/**
+ * Read `<meta name="traceparent">` and seed the page-load join, if present.
+ * Called once from main.tsx, early — before the first flow opens. Safe with
+ * no DOM (tests, SSR-shaped tooling) and safe with no tag at all (a build
+ * with tracing unbound, a dev server that never went through
+ * `static_files.py`, a stale cached document): both leave the seed unset and
+ * the first trace mints its own id exactly as it always has.
+ */
+export function joinPageLoadTraceFromMeta(): void {
+  try {
+    if (typeof document === 'undefined') return;
+    const el = document.querySelector('meta[name="traceparent"]');
+    seedPageLoadTrace(el?.getAttribute('content'));
+  } catch {
+    pageLoadSeed = null;
+  }
+}
+
+/** Begin a new trace. The returned span is its root; end it to close the
+ *  trace. Continues the page-load join (above) exactly once, if one is
+ *  waiting; every call after that mints a fresh, unrelated trace id. */
 export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
+  if (pageLoadSeed) {
+    const seed = pageLoadSeed;
+    pageLoadSeed = null;
+    return makeSpan(seed.traceId, seed.spanId, name, attrs, kind);
+  }
   return makeSpan(newTraceId(), null, name, attrs, kind);
 }
 
@@ -391,6 +450,7 @@ export function __resetTracer(): void {
   hiddenSince = null;
   hookInstalled = false;
   emit = () => {};
+  pageLoadSeed = null;
 }
 
 /** Test seam: what is buffered but not yet sent. */
