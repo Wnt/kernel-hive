@@ -280,6 +280,28 @@ _cpg_journal_backup_rows() {
     "$ST_JOURNAL"
 }
 
+# Load the journal's recorded backup rows back into CPG_BACKUPS.
+#
+# cpg_journal_write RE-RENDERS the whole journal from CPG_BACKUPS every time it
+# is called, so any path that writes the journal without having run cpg_backup
+# in the SAME process silently replaces a populated "backups" array with []. That
+# is not a missing carry-over, it is an ERASURE of the only record of where the
+# rollback copy is -- and the loss is invisible until an incident, because the
+# backup FILE is still sitting on disk next to the disk it came from.
+#
+# Measured on aix432, 2026-08-31: a `recapture` wrote the row correctly, the run
+# refused at the dirty step, and the `resume` that finished it wrote the journal
+# four more times (promoting, promoted, cleanup, done) and left "backups": [].
+cpg_journal_load_backups() {
+  CPG_BACKUPS=""
+  [ -f "$ST_JOURNAL" ] || return 0
+  local line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    CPG_BACKUPS="${CPG_BACKUPS}${line}"$'\n'
+  done < <(_cpg_journal_backup_rows)
+}
+
 # ---- step 1: byte-copy backup, SHA256-verified with the guest STOPPED -----------
 cpg_backup() {
   local ts d bak h1 h2
@@ -429,6 +451,11 @@ cpg_resume() {
   fi
   trap '_cpg_lease_release' EXIT
   _cpg_lease_hold
+  # Inherit the backup rows the recapture recorded: every cpg_journal_write below
+  # re-renders the journal from CPG_BACKUPS, and this process has not run
+  # cpg_backup. Without this a resumed run finishes with "backups": [] and the
+  # rollback it advertises does not exist.
+  cpg_journal_load_backups
   if _cpg_have_label "$CPG_LABEL" && ! _cpg_have_label "$CPG_STAGING_LABEL"; then
     _cpg_log "'$CPG_LABEL' is present and the staging label is gone: the promote had completed"
     cpg_finish
@@ -454,7 +481,20 @@ cpg_rollback() {
     _cpg_err "no journal at $ST_JOURNAL — nothing to roll back"
     return 4
   fi
-  local disk bak sha now
+  local disk bak sha now rows=0 restored=0
+  rows="$(_cpg_journal_backup_rows | grep -c . || true)"
+  # ZERO ROWS IS A REFUSAL, NOT AN EMPTY SUCCESS.
+  #
+  # Every loop below is `while read` over those rows, so with none of them this
+  # function used to verify nothing and then say "Every recorded backup verified,
+  # so the rollback is available" -- and under CPG_ROLLBACK_CONFIRM=1 it restored
+  # nothing, deleted the journal, and logged "ROLLED BACK to the pre-recapture
+  # disks." A false success on the incident path is worse than no rollback: it
+  # ends the investigation. Fail loudly instead (AGENTS.md rule 7).
+  if [ "$rows" -eq 0 ]; then
+    _cpg_err "the journal at $ST_JOURNAL records NO backups (\"backups\": []), so there is nothing to roll back TO and this cannot restore anything. It is REFUSING rather than reporting a rollback it did not perform. The backup FILES may still be on disk -- look for ${ST_DIR}/*.cpg-bak-* and 'checkpoint-guard status $STATION' -- and if one is the copy you want, re-record it in the journal's \"backups\" array (disk, backup, sha256 of the backup file) before running this again, or restore it by hand with the station STOPPED. A journal can reach this state through a resumed run recorded by a guard older than 2026-08-31; see docs/lab/checkpoint-guard.md."
+    return 4
+  fi
   while IFS='|' read -r disk bak sha; do
     [ -n "$disk" ] || continue
     if [ ! -f "$bak" ]; then
@@ -470,7 +510,7 @@ cpg_rollback() {
   done < <(_cpg_journal_backup_rows)
 
   if [ "${CPG_ROLLBACK_CONFIRM:-0}" != "1" ]; then
-    _cpg_err "rollback replaces LIVE disks and needs the guest DOWN. Stop the station (systemctl stop streamhost@$STATION), then re-run with CPG_ROLLBACK_CONFIRM=1. Every recorded backup verified, so the rollback is available."
+    _cpg_err "rollback replaces LIVE disks and needs the guest DOWN. Stop the station (systemctl stop streamhost@$STATION), then re-run with CPG_ROLLBACK_CONFIRM=1. All $rows recorded backup(s) verified against their sha256, so the rollback is available."
     return 4
   fi
   if [ -f "$ST_PID" ] && kill -0 "$(cat "$ST_PID")" 2>/dev/null; then
@@ -487,9 +527,16 @@ cpg_rollback() {
       return 4
     fi
     _cpg_log "restored and verified: $disk"
+    restored=$((restored + 1))
   done < <(_cpg_journal_backup_rows)
+  # Belt and braces behind the zero-row refusal: never delete the journal, and
+  # never claim a rollback, on the strength of a loop that copied nothing.
+  if [ "$restored" -eq 0 ]; then
+    _cpg_err "restored 0 disks despite $rows recorded backup(s) — REFUSING to delete the journal or report a rollback. Nothing has been changed."
+    return 4
+  fi
   rm -f "$ST_JOURNAL"
-  _cpg_log "ROLLED BACK to the pre-recapture disks. Start the station and confirm on the framebuffer."
+  _cpg_log "ROLLED BACK $restored disk(s) to the pre-recapture copies. Start the station and confirm on the framebuffer."
 }
 
 cpg_status() {
