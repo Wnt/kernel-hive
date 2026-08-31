@@ -248,7 +248,11 @@ class ShapeTest(Base):
         self.assertEqual(by_name["serve.signal.load"]["parentId"], by_name["serve.signal"]["spanId"])
         self.assertEqual(by_name["serve.ticket.mint"]["parentId"], by_name["serve.signal.load"]["spanId"])
         self.assertEqual(by_name["serve.ticket.mint"]["kind"], "internal")
-        self.assertEqual(by_name["serve.ticket.mint"]["attributes"], {"kh.ticket.kind": "station"})
+        # Subset, not equality: every span this module emits also carries
+        # `kh.service`, so that the OTLP export can tell a Python handler from
+        # browser JavaScript instead of labelling both `kernel-hive-spa`.
+        self.assertEqual(by_name["serve.ticket.mint"]["attributes"].get("kh.ticket.kind"), "station")
+        self.assertEqual(by_name["serve.ticket.mint"]["attributes"].get("kh.service"), tracing.SERVICE_NAME)
 
 
 # ---------------------------------------------------------------------------

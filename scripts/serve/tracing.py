@@ -279,8 +279,19 @@ def bind(store) -> None:
         _next_flush = time.monotonic() + FLUSH_SECS
 
 
+#: Which service produced a span, stamped on every one this module emits.
+#: The store holds spans from the browser AND from here, and until this existed
+#: the OTLP export labelled every one of them `kernel-hive-spa` with
+#: `telemetry.sdk.language: webjs` — telling any consumer that a Python HTTP
+#: handler was browser JavaScript. Wrong on its face, and it flattens two
+#: services into one node on every service map that reads the export.
+SERVICE_NAME = "kernel-hive-serve"
+
+
 def _buffer_span(wire: dict) -> None:
     global _dropped, _buffer, _next_flush
+    # Stamped here rather than at every call site: one place, no way to forget.
+    wire.setdefault("a", {})["kh.service"] = SERVICE_NAME
     due = None
     with _lock:
         if len(_buffer) >= MAX_BUFFERED:
