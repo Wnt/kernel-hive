@@ -318,6 +318,13 @@ def main() -> int:
         prod_report = None
     elif args.prod:
         prod_report = load_json(args.prod)
+    elif args.report:
+        # `--report <file>` is the OFFLINE path — an aggregate fetched earlier,
+        # or one carried off the box by hand. Reaching for the live coverage
+        # endpoint anyway made the supported offline run print a connection
+        # error it could do nothing about, which teaches a reader to ignore the
+        # tool's errors. Pair `--report` with `--prod <file>` for the line axis.
+        prod_report = None
     else:
         prod_report = fetch_json(args.url, "/coverage/report.json", args.days, args.klass)
 
