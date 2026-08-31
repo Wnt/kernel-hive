@@ -132,3 +132,6 @@ scripts/serve/clientlog.jsonl*
 scripts/serve/clientcmd.json
 scripts/serve/clientcmd-audit.jsonl
 scripts/serve/usage-stats.json*
+
+# scripts/dev/fleet_rollout.py resume journals — local run state, never shared
+.fleet-rollout/
