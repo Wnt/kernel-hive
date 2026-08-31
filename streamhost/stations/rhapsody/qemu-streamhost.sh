@@ -38,7 +38,11 @@
 #     no abs->rel bridge, no QMP input-send-event, no labctl pointer helper --
 #     may push motion or a button edge at this mouse.
 #     Rollback is two lines: drop the -device kh-ramabs line and set
-#     SH_INPUT_BACKEND=dbus-rel (with SH_CURSOR_SCALE=2.09) in the fixture.
+#     SH_INPUT_BACKEND=dbus-rel (with SH_CURSOR_SCALE=2.09) in the fixture. It
+#     is two lines ONLY because the fixture still carries SH_REL_MAX_STEP=24 and
+#     SH_REL_STEP_PACE_MS=16, which are dead under ramabs and REQUIRED the
+#     instant dbus-rel comes back -- without them a visitor's fast drag desyncs
+#     this guest's PS/2 driver silently. Do not remove them as unused.
 #   * NETWORK: on the retronet, over a tap on the bridge vmbr-rn. The NIC is
 #     DEC 21143 "Tulip" (-device tulip), driven by DR2's bundled "DEC Generic
 #     21X4X" driver. This REPLACED the install-time Intel EtherExpress PRO/100B

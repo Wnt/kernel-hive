@@ -165,7 +165,21 @@ start), and the **streamhost binary before the env fixture**
 (`SH_INPUT_BACKEND=ramabs` is unknown to an older daemon).
 
 **Rollback is two lines**: drop the `-device kh-ramabs` line from the launcher
-and set `SH_INPUT_BACKEND=dbus-rel` with `SH_CURSOR_SCALE=2.09` in the fixture.
+and set `SH_INPUT_BACKEND=dbus-rel` with `SH_CURSOR_SCALE=2.09` in the fixture —
+and it is two lines *only because* the fixture also still carries
+`SH_REL_MAX_STEP=24` / `SH_REL_STEP_PACE_MS=16`. Those are dead weight under
+`ramabs` and load-bearing the instant `dbus-rel` returns: DR2's PS/2 driver takes
+only the first packet of a chained relative move and desyncs above ~30 units/send
+at any pace. They went missing from the original absolute fixture and were
+restored 2026-08-31; a rollback in that window would have recovered onto a
+pointer that desyncs on a fast drag, with nothing failing and nothing logged.
+
+**A value that is dormant under the shipped configuration and load-bearing on
+the recovery path is more dangerous than one that is simply wrong**, because it
+fires when someone is already dealing with a problem, under pressure, in a file
+they did not write — and because "unused" is exactly what it looks like to
+anyone tidying. Every such value in this station's fixture now says what it is
+*for*, not just what it is.
 
 **No golden recapture.** `kh-ramabs` registers no `VMStateDescription` and models
 no hardware, so it adds no section to the migration stream; the device set and
