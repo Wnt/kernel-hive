@@ -111,6 +111,39 @@ def quadrant(reached: bool, cov: float | None, excluded: bool) -> str:
     return "PAYING TWICE" if cov > 0 else "DEAD"
 
 
+def percentile(buckets: dict[str, int], p: float) -> tuple[str, int]:
+    """The bucket EDGE at percentile `p`, and the total sample count.
+
+    Returned as an edge, and printed as "<= edge", because that is the entire
+    truth the data holds: the tab bucketed the value before sending it
+    (spa/src/analytics/metrics.ts), deliberately, so that a durable years-long
+    aggregate never becomes a behavioural trace of one visitor's session. A
+    tool that interpolated inside a bucket to print `p95 = 2847 ms` would be
+    inventing three digits nobody measured — and would be believed.
+    """
+    total = sum(buckets.values())
+    if not total:
+        return ("-", 0)
+    # `inf` sorts last; every other bucket is its numeric edge.
+    edges = sorted(buckets, key=lambda b: float("inf") if b == "inf" else int(b))
+    want = total * p
+    seen = 0
+    for edge in edges:
+        seen += buckets[edge]
+        if seen >= want:
+            return (edge, total)
+    return (edges[-1], total)
+
+
+def fmt_edge(edge: str, scale: str) -> str:
+    if edge in ("-", "inf"):
+        return "over max" if edge == "inf" else "-"
+    if scale == "ms":
+        n = int(edge)
+        return f"{n / 1000:.1f}s" if n >= 1000 else f"{n}ms"
+    return f"{edge}%" if scale == "pct" else edge
+
+
 def row(text: str, width: int) -> str:
     return text if len(text) <= width else text[: width - 1] + "…"
 
@@ -202,6 +235,32 @@ def main() -> int:
             print(
                 f"  {row(r['consumes'], 26):26} called {calls:>7}   ->  "
                 f"{row(r['probe'], 26):26} used {used:>7}  ({pct})"
+            )
+
+    metrics = catalogue.get("metrics", {})
+    observed_metrics = report.get("metrics", {})
+    if metrics:
+        print("\n=== METRICS — how long, and how much effort ===\n")
+        print(f"  {'metric':34} {'n':>6}  {'p50':>9} {'p75':>9} {'p95':>9}   what a high value means")
+        print(f"  {'-' * 34} {'-' * 6}  {'-' * 9} {'-' * 9} {'-' * 9}   {'-' * 30}")
+        for mid in sorted(metrics):
+            spec = metrics[mid]
+            buckets = observed_metrics.get(mid, {})
+            p50, total = percentile(buckets, 0.50)
+            p75, _ = percentile(buckets, 0.75)
+            p95, _ = percentile(buckets, 0.95)
+            scale = spec["scale"]
+            cells = "  ".join(f"{('<= ' + fmt_edge(e, scale)) if e != '-' else '-':>9}" for e in (p50, p75, p95))
+            print(f"  {row(mid, 34):34} {total:>6}  {cells}   {row(spec['what'], 40)}")
+        silent = [m for m in metrics if not observed_metrics.get(m)]
+        if silent:
+            # A metric with no samples is the same ambiguous zero a probe with
+            # no hits would be, except the gate has already ruled out "never
+            # called". So it is a real statement: nobody reached this path in
+            # the window.
+            print(
+                f"\n  {len(silent)} metric(s) recorded nothing in this window: {', '.join(sorted(silent)[:6])}"
+                + (" …" if len(silent) > 6 else "")
             )
 
     flows = report.get("flows", {})

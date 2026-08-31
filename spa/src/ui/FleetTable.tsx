@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFleetTable, useStationUsage, type FleetEntry } from '../data/fleetTable';
 import { FLEET_COLUMNS, type Column, type ColKey } from './fleetColumns';
-import { reach } from '../analytics';
+import { accumulator, reach } from '../analytics';
 import './FleetTable.css';
 
 // Operator-facing fleet table: every lineup entry, one row, with the facts the
@@ -56,6 +56,45 @@ export function FleetTable() {
   const [sorts, setSorts] = useState<Array<{ key: ColKey; dir: 1 | -1 }>>([]);
   const [open, setOpen] = useState<{ key: ColKey; x: number; y: number } | null>(null);
   const popRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ---- how much sideways hunting this table costs ---------------------------
+  // `.fleet-table` is `width: max-content`, so on any realistic viewport the
+  // columns people want are off-screen and finding one means scrolling to it.
+  // Two numbers, committed once per visit rather than per scroll event:
+  // DISTANCE in screen widths (device-divided-out, so a phone and the operator's
+  // monitor are comparable), and REVERSALS — direction changes, which is what
+  // overshooting or losing your place actually looks like. Distance alone
+  // cannot tell a confident sweep from a hunt; together they can.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = accumulator('fleet.find.hScrollScreens');
+    const reversals = accumulator('fleet.find.hScrollReversals');
+    let last = el.scrollLeft;
+    let dir = 0;
+    const onScroll = () => {
+      const delta = el.scrollLeft - last;
+      if (delta === 0) return;
+      last = el.scrollLeft;
+      // Normalise by the viewport, not the content: "two screens of scrolling"
+      // is the sentence the answer wants to be in.
+      const width = el.clientWidth || 1;
+      distance.add(Math.abs(delta) / width);
+      const next = delta > 0 ? 1 : -1;
+      if (dir !== 0 && next !== dir) reversals.add(1);
+      dir = next;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      // Commit on unmount, including the zero: a visitor who found what they
+      // wanted without scrolling at all is the outcome the table is FOR, and
+      // dropping those samples would leave a distribution of only the failures.
+      distance.commit();
+      reversals.commit();
+    };
+  }, []);
 
   // close the facet popover on outside click / Escape
   useEffect(() => {
@@ -176,7 +215,7 @@ export function FleetTable() {
         )}
         <span className="fleet-summary">{rows.length} / {doc.entries.length} stations</span>
       </div>
-      <div className="fleet-scroll">
+      <div className="fleet-scroll" ref={scrollRef}>
         <table className="fleet-table">
           <thead>
             <tr>

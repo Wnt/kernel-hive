@@ -3,6 +3,8 @@
 //  ---------------------------------------------------------------------------
 //    reach('fleet.usage.shown', 'show')   this feature was used, this deliberately
 //    beginFlow('station.connect')         this attempt started; report its steps
+//    startTiming('station.open.toFirstFrameMs')   this took a while; how long
+//    recordMetric('fleet.find.hScrollPx', px)     this cost effort; how much
 //    reportError({ message, source })     this fault happened, blame the open flow
 //
 //  Everything else — batching, grading, classification, fingerprinting — is
@@ -31,6 +33,12 @@ import { installErrorCapture } from './errors';
 // re-exporting them here would make this barrel a list of everything that
 // exists rather than a description of the API.
 export { beginFlow } from './flows';
+// `recordMetric` is deliberately NOT re-exported here yet: knip fails the build
+// on an export nothing imports, and a barrel that lists everything that exists
+// stops describing an API. Add it to this line in the same commit as the first
+// call site that needs it (metrics.ts exports it either way).
+export { startTiming, accumulator } from './metrics';
+export type { Timing } from './metrics';
 export { reportError } from './errors';
 export { withoutHumanCredit } from './intent';
 

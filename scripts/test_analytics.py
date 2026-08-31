@@ -175,6 +175,117 @@ class AnalyticsStoreTest(unittest.TestCase):
         self.assertIn("fleet.old", self.store.report(days=100000)["probes"])
 
 
+class MetricsTest(unittest.TestCase):
+    """The metric lane. The tab buckets before sending (see
+    spa/src/analytics/metrics.ts), so this end validates a bucket NAME and
+    cannot re-derive it — which is the right way round, and is why these tests
+    care so much about what an unrecognised name does."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.store = analytics.AnalyticsStore(Path(self.tmp.name) / "analytics.db")
+
+    def tearDown(self):
+        self.store.close()
+        self.tmp.cleanup()
+
+    def batch(self, **kw):
+        body = {"class": "human"}
+        body.update(kw)
+        return self.store.record(body)
+
+    def test_buckets_accumulate_into_a_distribution(self):
+        self.batch(
+            metrics=[
+                {"id": "station.open.toFirstFrameMs", "bucket": "800", "n": 12},
+                {"id": "station.open.toFirstFrameMs", "bucket": "1600", "n": 5},
+                {"id": "station.open.toFirstFrameMs", "bucket": "inf", "n": 1},
+            ]
+        )
+        self.batch(metrics=[{"id": "station.open.toFirstFrameMs", "bucket": "800", "n": 3}])
+        got = self.store.report(days=1)["metrics"]["station.open.toFirstFrameMs"]
+        self.assertEqual(got, {"800": 15, "1600": 5, "inf": 1})
+
+    def test_the_overflow_bucket_is_accepted(self):
+        # `inf` is how the client says "off the top of the ladder". Refusing it
+        # would silently delete exactly the slow samples worth acting on.
+        self.batch(metrics=[{"id": "fleet.find.hScrollScreens", "bucket": "inf", "n": 1}])
+        self.assertEqual(self.store.report(days=1)["metrics"]["fleet.find.hScrollScreens"], {"inf": 1})
+
+    def test_an_unknown_bucket_name_is_refused(self):
+        for bad in ("p95", "-1", "1.5", "800ms", "", "x" * 40):
+            self.assertEqual(
+                self.batch(metrics=[{"id": "station.open.toFirstFrameMs", "bucket": bad, "n": 1}]),
+                0,
+                f"bucket {bad!r} should not have been stored",
+            )
+
+    def test_a_bucket_edge_the_server_has_never_seen_is_still_accepted(self):
+        # Buckets are validated by SHAPE, not against a copy of the client's
+        # ladder: a ladder step added in the SPA must be able to start landing
+        # without a server deploy, and old rows must keep meaning what they meant.
+        self.batch(metrics=[{"id": "station.open.toFirstFrameMs", "bucket": "12345", "n": 1}])
+        self.assertIn("12345", self.store.report(days=1)["metrics"]["station.open.toFirstFrameMs"])
+
+    def test_metrics_are_partitioned_by_class_like_everything_else(self):
+        self.store.record(
+            {"class": "probe", "metrics": [{"id": "station.open.toFirstFrameMs", "bucket": "50", "n": 9}]}
+        )
+        self.assertEqual(self.store.report(days=1, klass="human")["metrics"], {})
+        self.assertEqual(self.store.report(days=1, klass="probe")["metrics"]["station.open.toFirstFrameMs"], {"50": 9})
+
+    def test_metric_rows_are_bounded_and_junk_is_dropped(self):
+        rows = [{"id": f"fleet.m{i}", "bucket": "50", "n": 1} for i in range(analytics.MAX_ROWS + 20)]
+        self.assertEqual(self.batch(metrics=rows), analytics.MAX_ROWS)
+        self.assertEqual(self.batch(metrics="not a list"), 0)
+        self.assertEqual(self.batch(metrics=[{"id": "Bad.Id", "bucket": "50", "n": 1}]), 0)
+
+    def test_prune_covers_the_metric_table(self):
+        self.store._db.execute("INSERT INTO metric VALUES('2020-01-01','fleet.old','50','human',5)")
+        self.store._db.commit()
+        self.assertEqual(self.store.prune(keep_days=30), 1)
+
+    def test_no_identity_column_on_the_metric_table_either(self):
+        cols = {r[1] for r in self.store._db.execute("PRAGMA table_info(metric)")}
+        self.assertEqual(cols & {"user", "userId", "sessionId", "ip"}, set())
+
+
+class ReachReportTest(unittest.TestCase):
+    """The percentile reader. It reports a bucket EDGE, never an interpolated
+    value: the data cannot support three significant figures and a tool that
+    printed them would be believed."""
+
+    def setUp(self):
+        import importlib.util
+
+        root = Path(__file__).resolve().parents[1]
+        spec = importlib.util.spec_from_file_location("rr", root / "scripts" / "dev" / "reach-report.py")
+        self.rr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.rr)
+
+    def test_percentile_picks_the_bucket_the_sample_lands_in(self):
+        buckets = {"50": 10, "100": 10, "200": 80}
+        self.assertEqual(self.rr.percentile(buckets, 0.50), ("200", 100))
+        self.assertEqual(self.rr.percentile(buckets, 0.10), ("50", 100))
+        self.assertEqual(self.rr.percentile(buckets, 0.95), ("200", 100))
+
+    def test_inf_sorts_last_so_the_tail_is_the_tail(self):
+        # Sorted as text, "inf" would land between "100" and "50" and a p95
+        # would read as FASTER than a p50. That is the bug this asserts against.
+        buckets = {"inf": 5, "50": 95}
+        self.assertEqual(self.rr.percentile(buckets, 0.50), ("50", 100))
+        self.assertEqual(self.rr.percentile(buckets, 0.99), ("inf", 100))
+
+    def test_an_empty_distribution_says_so_rather_than_guessing(self):
+        self.assertEqual(self.rr.percentile({}, 0.5), ("-", 0))
+
+    def test_edges_are_formatted_in_the_unit_a_reader_thinks_in(self):
+        self.assertEqual(self.rr.fmt_edge("800", "ms"), "800ms")
+        self.assertEqual(self.rr.fmt_edge("3200", "ms"), "3.2s")
+        self.assertEqual(self.rr.fmt_edge("90", "pct"), "90%")
+        self.assertEqual(self.rr.fmt_edge("inf", "ms"), "over max")
+
+
 class CatalogueContractTest(unittest.TestCase):
     """The server validates ids by SHAPE; the catalogue is the thing that
     actually exists. If every declared id did not pass the server's own regex,
@@ -187,6 +298,8 @@ class CatalogueContractTest(unittest.TestCase):
         doc = json.loads((root / "registry" / "analytics-catalogue.json").read_text())
         for pid in doc["probes"]:
             self.assertIsNotNone(analytics._ident(pid), f"{pid} would be dropped at intake")
+        for mid in doc["metrics"]:
+            self.assertIsNotNone(analytics._ident(mid), f"{mid} would be dropped at intake")
         for fid, flow in doc["flows"].items():
             self.assertIsNotNone(analytics._ident(fid), f"{fid} would be dropped at intake")
             for step in flow["steps"]:

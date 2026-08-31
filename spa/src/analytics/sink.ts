@@ -38,6 +38,8 @@ const MAX_COUNT = 100_000;
 export interface ProbeRow { id: string; grade: string; n: number }
 /** One flow observation. `outcome` is enter | ok | fail. */
 export interface FlowRow { flow: string; step: string; outcome: string; n: number }
+/** One metric bucket and how many samples landed in it this batch. */
+export interface MetricRow { id: string; bucket: string; n: number }
 /** One distinct error, with the count of how often it recurred this batch. */
 export interface ErrorRow {
   fp: string;
@@ -51,11 +53,12 @@ export interface ErrorRow {
 interface Batch {
   probes: Map<string, ProbeRow>;
   flows: Map<string, FlowRow>;
+  metrics: Map<string, MetricRow>;
   errors: Map<string, ErrorRow>;
 }
 
 function emptyBatch(): Batch {
-  return { probes: new Map(), flows: new Map(), errors: new Map() };
+  return { probes: new Map(), flows: new Map(), metrics: new Map(), errors: new Map() };
 }
 
 let pending = emptyBatch();
@@ -103,6 +106,11 @@ export function queueFlow(flow: string, step: string, outcome: string): void {
   bump(pending.flows, `${flow} ${step} ${outcome}`, () => ({ flow, step, outcome, n: 1 }));
 }
 
+export function queueMetric(id: string, bucket: string): void {
+  if (!allowed) return;
+  bump(pending.metrics, `${id} ${bucket}`, () => ({ id, bucket, n: 1 }));
+}
+
 export function queueError(row: Omit<ErrorRow, 'n'>): void {
   if (!allowed) return;
   bump(pending.errors, row.fp, () => ({ ...row, n: 1 }));
@@ -137,6 +145,7 @@ function flushAnalytics(): void {
       class: classOf(),
       probes: [...batch.probes.values()],
       flows: [...batch.flows.values()],
+      metrics: [...batch.metrics.values()],
       errors: [...batch.errors.values()],
     });
     void fetch('/analytics', {
@@ -153,6 +162,7 @@ function flushAnalytics(): void {
 function foldBack(batch: Batch): void {
   for (const [k, v] of batch.probes) mergeRow(pending.probes, k, v);
   for (const [k, v] of batch.flows) mergeRow(pending.flows, k, v);
+  for (const [k, v] of batch.metrics) mergeRow(pending.metrics, k, v);
   for (const [k, v] of batch.errors) mergeRow(pending.errors, k, v);
 }
 
@@ -168,10 +178,13 @@ function mergeRow<T extends { n: number }>(map: Map<string, T>, key: string, row
 }
 
 /** Test seam: what is counted but not yet sent. */
-export function __pendingBatch(): { probes: ProbeRow[]; flows: FlowRow[]; errors: ErrorRow[] } {
+export function __pendingBatch(): {
+  probes: ProbeRow[]; flows: FlowRow[]; metrics: MetricRow[]; errors: ErrorRow[];
+} {
   return {
     probes: [...pending.probes.values()],
     flows: [...pending.flows.values()],
+    metrics: [...pending.metrics.values()],
     errors: [...pending.errors.values()],
   };
 }

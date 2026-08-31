@@ -49,6 +49,13 @@ GRADES = ("auto", "show", "act")
 OUTCOMES = ("enter", "ok", "fail")
 CLASSES = ("human", "probe", "unknown")
 SOURCES = ("window", "promise", "react", "fetch", "stream")
+# Bucket names as spa/src/analytics/catalogue/types.ts writes them: a ladder
+# EDGE rendered as text, or the overflow. Validated as a shape rather than
+# against a copy of the ladder — a ladder step added on the client must be able
+# to start landing without a server deploy, and an old row must keep meaning
+# what it meant. That is the whole reason buckets are named by edge and not by
+# index (types.ts LADDERS).
+BUCKET_RE = re.compile(r"^(inf|[0-9]{1,9})$")
 
 #: Per-batch caps. A tab flushes every ~20 s and folds repeats into counters, so
 #: an honest batch is a handful of rows; these bound a forged one.
@@ -71,6 +78,10 @@ CREATE TABLE IF NOT EXISTS flow (
   day TEXT NOT NULL, flow TEXT NOT NULL, step TEXT NOT NULL,
   outcome TEXT NOT NULL, class TEXT NOT NULL, n INTEGER NOT NULL,
   PRIMARY KEY (day, flow, step, outcome, class)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS metric (
+  day TEXT NOT NULL, metric TEXT NOT NULL, bucket TEXT NOT NULL,
+  class TEXT NOT NULL, n INTEGER NOT NULL,
+  PRIMARY KEY (day, metric, bucket, class)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS error (
   day TEXT NOT NULL, fp TEXT NOT NULL, flow TEXT NOT NULL, step TEXT NOT NULL,
   source TEXT NOT NULL, class TEXT NOT NULL, n INTEGER NOT NULL,
@@ -129,6 +140,7 @@ class AnalyticsStore:
             cur = self._db.cursor()
             taken += self._fold_probes(cur, day, klass, batch.get("probes"))
             taken += self._fold_flows(cur, day, klass, batch.get("flows"))
+            taken += self._fold_metrics(cur, day, klass, batch.get("metrics"))
             taken += self._fold_errors(cur, day, klass, batch.get("errors"))
             if taken:
                 cur.execute(
@@ -168,6 +180,30 @@ class AnalyticsStore:
                 "INSERT INTO flow(day,flow,step,outcome,class,n) VALUES(?,?,?,?,?,?) "
                 "ON CONFLICT(day,flow,step,outcome,class) DO UPDATE SET n=n+excluded.n",
                 (day, flow, step, outcome, klass, n),
+            )
+            taken += 1
+        return taken
+
+    def _fold_metrics(self, cur, day: str, klass: str, rows) -> int:
+        """Fold one batch of metric buckets in.
+
+        The server never sees a raw sample — bucketing happens in the tab
+        (spa/src/analytics/metrics.ts) so a behavioural timing trace never
+        reaches a store that is kept for years. This end therefore validates a
+        bucket NAME and cannot re-derive it; that is the trade, and it is the
+        right way round.
+        """
+        taken = 0
+        for row in _rows(rows):
+            metric = _ident(row.get("id"))
+            bucket = row.get("bucket")
+            n = _count(row.get("n"))
+            if not metric or not isinstance(bucket, str) or not BUCKET_RE.match(bucket) or not n:
+                continue
+            cur.execute(
+                "INSERT INTO metric(day,metric,bucket,class,n) VALUES(?,?,?,?,?) "
+                "ON CONFLICT(day,metric,bucket,class) DO UPDATE SET n=n+excluded.n",
+                (day, metric, bucket, klass, n),
             )
             taken += 1
         return taken
@@ -226,12 +262,19 @@ class AnalyticsStore:
                     (since, klass),
                 )
             ]
+            metrics: dict[str, dict[str, int]] = {}
+            for metric, bucket, n in cur.execute(
+                "SELECT metric,bucket,SUM(n) FROM metric WHERE day>=? AND class=? GROUP BY metric,bucket",
+                (since, klass),
+            ):
+                metrics.setdefault(metric, {})[bucket] = n
             last = cur.execute("SELECT value FROM meta WHERE key='lastAt'").fetchone()
         return {
             "window": {"days": days, "since": since, "class": klass},
             "lastAt": last[0] if last else None,
             "probes": probes,
             "flows": flows,
+            "metrics": metrics,
             "errors": errors,
         }
 
@@ -241,7 +284,7 @@ class AnalyticsStore:
         with self._lock:
             cur = self._db.cursor()
             removed = 0
-            for table in ("probe", "flow", "error"):
+            for table in ("probe", "flow", "metric", "error"):
                 cur.execute(f"DELETE FROM {table} WHERE day<?", (cutoff,))  # noqa: S608 - fixed names
                 removed += cur.rowcount
             self._db.commit()

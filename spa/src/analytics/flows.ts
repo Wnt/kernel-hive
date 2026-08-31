@@ -22,10 +22,18 @@
 //  the funnel a funnel — counts that only ever decrease down the list — rather
 //  than a bag of counters that can read 210 firstFrames against 40 transports.
 //
-//  A FLOW IS NOT A SPAN. Nothing here measures time. Latency already has three
-//  better sources in this repo (the Ctrl+N overlay, clientlog's 5-second stats
-//  line, the daemon's own journal) and duplicating it badly here would produce
-//  a fourth number that disagrees with all of them.
+//  A FLOW IS NOT A SPAN — it counts attempts, it does not time them. Journey
+//  timing lives in metrics.ts, deliberately as its own lane: a flow's job is to
+//  say WHERE an attempt died, and fusing a duration into it would mean every
+//  step boundary had to be both a funnel edge and a clock edge, which is how
+//  you end up unable to change one without moving the other. A call site that
+//  wants both opens a flow and a timing, and they are independent.
+//
+//  What still does NOT belong on either: stream latency. The Ctrl+N overlay,
+//  clientlog's 5-second stats line and the daemon's journal already measure
+//  encode/transport/decode, and a fourth number here would only disagree with
+//  all three. The boundary is: if the daemon could answer it, this plane does
+//  not ask it.
 // ============================================================================
 
 import { FLOWS, type FlowId, type FlowStep } from './catalogue';

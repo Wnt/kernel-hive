@@ -14,7 +14,7 @@ import {
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
-import { beginFlow } from '../analytics';
+import { connectTelemetry } from './connectTelemetry';
 import type { LivePhase, StreamSessionOptions, StreamSessionResult } from './streamSessionTypes';
 
 export type { StreamSessionOptions, StreamSessionResult };
@@ -129,10 +129,11 @@ export function useStreamhostSession(
       getSnapshot: () => fallback?.getSnapshot() ?? client?.getMetrics() ?? null,
     });
 
-    // One flow per connect ATTEMPT-SEQUENCE, not per retry: the retries are the
-    // mechanism, and a funnel that counted them would report a station that
-    // eventually connected on the fourth try as three failures and a success.
-    const connectFlow = beginFlow('station.connect');
+    // One telemetry object per connect ATTEMPT-SEQUENCE, not per retry: the
+    // retries are the mechanism, and counting them would report a station that
+    // connected on the fourth try as three failures and a success. See
+    // three/connectTelemetry.ts for what each call below means.
+    const tel = connectTelemetry();
 
     const clearTimers = () => {
       if (watchdog) { clearTimeout(watchdog); watchdog = 0; }
@@ -145,11 +146,7 @@ export function useStreamhostSession(
       // The give-up is the most important row a broken session produces, and it
       // used to exist only in the visitor's own console. See STREAM-DEBUGGING.
       logClientEvent('connect-giveup', `${msg} attempts=${attempt} live=${liveReached} ep=${signalEndpoint}`);
-      // The give-up, not each retry — see beginFlow above. `liveReached` picks
-      // the reason apart: a session that HAD a picture and lost it is a
-      // different defect from one that never got one, and the funnel would
-      // otherwise merge them.
-      connectFlow.fail(liveReached ? 'lost' : 'nolive');
+      tel.gaveUp(liveReached);
       parkedError = true; // the recovery probe (sessionResume.ts) may un-park us
       setPhase('error');
       setMessage(msg);
@@ -167,12 +164,7 @@ export function useStreamhostSession(
       }
       clearTimers();
       resolution.w = w; resolution.h = h;
-      // The only step that proves a VISITOR saw the machine. Everything before
-      // it is the gallery talking to itself, which is exactly why the funnel
-      // ends here and not at `setPhase('live')` — the phase went live once on a
-      // session that stayed a spinner (see the captureStream note below).
-      connectFlow.step('firstFrame');
-      connectFlow.ok();
+      tel.firstFrame();
       setPhase('live');
       setMessage('LIVE');
       controller?.notifyConnected();
@@ -274,11 +266,7 @@ export function useStreamhostSession(
 
     const cleanup = () => {
       cancelled = true;
-      // Leave the flow stack even when the attempt neither succeeded nor gave
-      // up — a visitor who navigated away mid-connect. Not a `fail`: the
-      // abandonment is already the funnel's drop-off, and an unclosed flow
-      // silently stops attributing later errors once the stack fills.
-      connectFlow.close();
+      tel.abandoned();
       clearTimers();
       // Token-guarded: an outgoing mount must never wipe the tag a NEW mount of
       // the same station has already claimed (that is what leaves `tile` empty
@@ -320,7 +308,7 @@ export function useStreamhostSession(
       // indexing accidentally made every first retry wait 1.5 s instead of 600 ms.
       const delays = expectedRestore ? RESTORE_BACKOFF_MS : RETRY_BACKOFF_MS;
       const delay = delays[Math.min(attempt - 1, delays.length - 1)];
-      connectFlow.step('transport');
+      tel.transport();
       setPhase('connecting');
       setMessage(expectedRestore
         ? 'Reconnecting to restored tile…'

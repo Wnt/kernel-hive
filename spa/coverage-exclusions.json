@@ -50,8 +50,16 @@
       "reason": "DOM/window debug-telemetry hooks (clientlog/clientcmd wiring), not pure logic"
     },
     {
+      "file": "src/three/connectTelemetry.ts",
+      "reason": "thin adapter over the analytics flow/timing handles for one React effect; its logic is which handle is called when, which is asserted where those handles are tested (src/analytics/*.test.ts)"
+    },
+    {
       "file": "src/three/streamClient.ts",
       "reason": "god-file (item 13): WebTransport/WebCodecs/DOM-heavy transport client, out of unit-test scope"
+    },
+    {
+      "file": "src/three/streamSessionTypes.ts",
+      "reason": "type-only module lifted out of useStreamhostSession.ts for the file-size cap, no runtime logic to exercise"
     },
     {
       "file": "src/three/useLiveStream.ts",

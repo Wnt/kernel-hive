@@ -25,11 +25,16 @@ export default defineConfig({
       // keep/test/delete decision instead of a popularity list.
       reporter: ['text', 'html', 'json'],
       include: [
-        'src/analytics/catalogue.ts',
+        'src/analytics/catalogue/fleet.ts',
+        'src/analytics/catalogue/index.ts',
+        'src/analytics/catalogue/station.ts',
+        'src/analytics/catalogue/types.ts',
+        'src/analytics/catalogue/walkin.ts',
         'src/analytics/errors.ts',
         'src/analytics/flows.ts',
         'src/analytics/index.ts',
         'src/analytics/intent.ts',
+        'src/analytics/metrics.ts',
         'src/data/galleryManifest.ts',
         'src/input/moveSamples.ts',
         'src/scene/progressiveLoading.ts',
