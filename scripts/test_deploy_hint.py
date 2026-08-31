@@ -230,11 +230,12 @@ class ItCannotSayWhatToDeploy(Base):
         self.assertEqual(v.hint_sha, "a" * 40)
         self.assertEqual(sorted(v.__slots__), ["code", "hint_sha", "reason", "source"])
 
-    def test_the_side_effect_is_exactly_one_file(self):
-        before = sorted(p.name for p in self.wakeup.parent.iterdir())
+    def test_the_side_effect_is_exactly_two_inert_files(self):
+        """The wakeup the reconciler watches, and the provenance journal.
+        Nothing else: no process, no git operation, no repository read."""
         self.post(PUSH_MAIN)
         after = sorted(p.name for p in self.wakeup.parent.iterdir())
-        self.assertEqual(after, [*before, "wakeup"])
+        self.assertEqual(after, ["hints.jsonl", "wakeup"])
 
     def test_the_wakeup_records_the_verified_source_not_a_claimed_one(self):
         self.post({**PUSH_MAIN, "source": "webhook"}, secret=ACTIONS) if False else None
@@ -294,6 +295,42 @@ class HeadersMayNotSurviveTheHop(Base):
     def test_two_different_pushes_are_not_confused_for_replays(self):
         self.assertTrue(self.bare(PUSH_MAIN).accepted)
         self.assertTrue(self.bare({"ref": "refs/heads/main", "after": "c" * 40}).accepted)
+
+
+class ProvenanceSurvivesTheNextHint(Base):
+    """The wakeup is last-write-wins and the Actions ping always follows the
+    webhook, so the wakeup's source is systematically overwritten to `actions`.
+    Read from the wakeup alone, a healthy webhook looks exactly like a dead one.
+    The journal is where provenance actually lives."""
+
+    def journal(self):
+        import json as j
+
+        p = self.wakeup.parent / "hints.jsonl"
+        return [j.loads(x) for x in p.read_text().splitlines() if x.strip()] if p.exists() else []
+
+    def test_both_triggers_are_recorded_not_just_the_last(self):
+        self.post(PUSH_MAIN, delivery="w1")
+        raw = body({**PUSH_MAIN, "ts": time.time()})
+        self.rx.verify(raw, {"X-Hub-Signature-256": sign(ACTIONS, raw), "X-GitHub-Delivery": "a1"})
+        sources = [r["source"] for r in self.journal()]
+        self.assertEqual(sources, ["webhook", "actions"])
+        # ...while the wakeup alone shows only the later one:
+        self.assertEqual(json.loads(self.wakeup.read_text())["source"], "actions")
+
+    def test_a_rejected_hint_is_not_journalled(self):
+        self.rx.verify(body(PUSH_MAIN), {"X-GitHub-Event": "push"})  # unsigned
+        self.assertEqual(self.journal(), [])
+
+    def test_the_journal_is_bounded(self):
+        """A bucket big enough to reach the cap — the default one correctly
+        throttles at 30, which is the rate limiter working, not a journal bug."""
+        from deploy_hint import JOURNAL_MAX, TokenBucket
+
+        self.rx.bucket = TokenBucket(capacity=JOURNAL_MAX + 50, refill=0)
+        for i in range(JOURNAL_MAX + 20):
+            self.post({"ref": "refs/heads/main", "after": f"{i:040d}"}, delivery=f"d{i}")
+        self.assertEqual(len(self.journal()), JOURNAL_MAX)
 
 
 if __name__ == "__main__":

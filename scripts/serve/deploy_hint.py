@@ -49,6 +49,7 @@ DEDUPE_TTL_S = 3600
 RATE_CAPACITY = 30
 RATE_REFILL_PER_S = 0.5
 WANTED_REF = "refs/heads/main"
+JOURNAL_MAX = 500
 
 
 def _infer_event(raw: bytes) -> str:
@@ -204,7 +205,36 @@ class HintReceiver:
         if delivery:
             self._remember(delivery)
         self._bump(source, hint)
+        self._journal(source, hint)
         return Verdict(202, "wakeup enqueued", source=source, hint_sha=hint)
+
+    def _journal(self, source: str, hint: str | None) -> None:
+        """Append one bounded line. §1.1 step 6 always specified this and the
+        first implementation only did the bump — which quietly defeated the
+        thing the whole backstop story rests on.
+
+        The wakeup file is LAST-WRITE-WINS, and the Actions ping always follows
+        the webhook, so the wakeup's `source` is systematically overwritten to
+        `actions`. Measured on the very first real push: the webhook delivered
+        and was accepted (GitHub logged 202), and four seconds later the Actions
+        ping overwrote the provenance. Read from the wakeup alone, a perfectly
+        healthy webhook is indistinguishable from a dead one — which is exactly
+        the invisible-failure the operator asked to be able to see.
+
+        So provenance lives HERE, where every hint is recorded and none
+        overwrites another.
+        """
+        if self.wakeup is None:
+            return
+        journal = self.wakeup.parent / "hints.jsonl"
+        try:
+            rows = journal.read_text().splitlines() if journal.exists() else []
+        except OSError:
+            rows = []
+        rows.append(json.dumps({"source": source, "ts": self.now(), "hint": hint}))
+        tmp = journal.with_suffix(".tmp")
+        tmp.write_text("\n".join(rows[-JOURNAL_MAX:]) + "\n")
+        os.replace(tmp, journal)
 
     def _bump(self, source: str, hint: str | None) -> None:
         """The entire side effect: rewrite ONE small file.
