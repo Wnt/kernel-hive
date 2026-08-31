@@ -39,6 +39,20 @@ changes the exact bytes of an *unchanged* glyph and breaks every match. A 16-bit
 direct-colour station has no such exposure. Say the palette out loud in
 `cursorBankBoundTo` where it applies.
 
+**Do not look for a `VMSTATE_*` field to decide whether a palette is inside the
+checkpoint.** `macfb` happens to carry its `color_palette` as a
+`VMStateDescription` member, but that is one implementation, not the rule.
+Artist keeps its LUT in the CMAP *vram buffer*, which `artist_create_buffer`
+allocates with `memory_region_init_ram` — and a RAM block is migrated by
+`savevm` like any other, so it is every bit as much inside the golden. The
+general statement is the one to carry:
+
+> A palette's absence from the device's `VMStateDescription` is not evidence
+> that it is outside the checkpoint.
+
+Trace where the display actually reads its colours from, and then ask whether
+that memory is migrated — not whether it appears in a vmstate field list.
+
 ## A glyph an exact matcher cannot safely carry
 
 A template is matched by requiring every OPAQUE pixel to equal the frame. That
