@@ -80,24 +80,86 @@ export const SECRET_PATTERNS: RegExp[] = [/traceparent/i, /ticket/i];
 // (`/analytics`, `/coverage`, `/traces`) and
 // scripts/serve/osgallery-https-server.py (`/clientlog`, `/usage`,
 // `/clientcmd`) rather than assumed from the brief.
-export const IGNORE_URL_PATTERNS: RegExp[] = [
-  /^\/traces\b/,
-  /^\/analytics\b/,
-  /^\/coverage\b/,
-  /^\/clientlog\b/,
-  /^\/usage\b/,
-  /^\/clientcmd\b/,
-];
+//
+// ONE LIST OF NAMES, TWO MATCHER SHAPES — the bug this section exists to fix.
+// `khFetch.ts`'s `isExcludedPath` tests a pattern against `url.pathname`, a
+// bare path with no origin (`/clientcmd`). `ineum('ignoreUrls', ...)` tests
+// against the FULL URL string Instana's wrapped fetch/XHR sees
+// (`https://kernelhive.madekivi.fi/clientcmd?since=64`). A pattern anchored
+// `^\/` satisfies the first and can NEVER match the second — `^` binds to
+// the start of the string, and a full URL starts with a scheme, not a
+// slash — so reusing ONE such list for both consumers silently disabled
+// Instana's filter. Measured live: in one 15-minute Instana beacon window,
+// 77 `/clientcmd`, 76 `/clientlog`, 20 `/usage`, 20 `/analytics` and 5
+// `/traces` calls, every one carrying the current bundle's `kh.bundle` meta —
+// not stale tabs, the filter was simply never matching.
+//
+// The fix keeps the reuse instinct (a second hand-maintained list of
+// patterns is exactly what would drift, as this list already had) but fixes
+// what gets reused: `KH_TELEMETRY_PATHS` is the ONE list of ENDPOINT NAMES,
+// and both matcher shapes below are MECHANICALLY DERIVED from it, so adding
+// an endpoint here is the only place it has to be added for either consumer
+// to see it. The two exports are named and shaped for their one legal
+// consumer each — `IGNORE_URL_PATTERNS` for `khFetch.ts`'s pathname test,
+// `INSTANA_IGNORE_URL_PATTERNS` for a full URL — so passing one where the
+// other belongs reads wrong at the call site rather than merely misbehaving.
+export const KH_TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'] as const;
+
+/** Escape a literal path for embedding in a RegExp source string. None of
+ *  the paths above contain regex metacharacters today, but a future
+ *  endpoint might, and a silently-broken pattern is worse than a verbose one. */
+function escapeForRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** PATH form — anchored at the start of a bare pathname (`/clientcmd`, no
+ *  origin, no query). The ONLY form `khFetch.ts`'s `isExcludedPath` may test
+ *  a `url.pathname` against; this is the shape the original single list
+ *  already had, unchanged in behaviour. */
+export const IGNORE_URL_PATTERNS: RegExp[] = KH_TELEMETRY_PATHS.map(
+  (path) => new RegExp(`^${escapeForRegExp(path)}\\b`),
+);
+
+/**
+ * FULL-URL form — anchored at the start of a complete URL
+ * (`https://kernelhive.madekivi.fi/clientcmd?since=64`). The ONLY form
+ * `ineum('ignoreUrls', ...)` can ever match against — Instana's agent tests
+ * the full URL string, never a bare pathname.
+ *
+ * NOT called from this module's `configureInstana` below. It has to reach
+ * `ineum` from spa/index.html's inline bootstrap instead, alongside
+ * `key`/`reportingUrl`/`trackSessions`/`enableW3CHeaders` — the same "before
+ * the page-load beacon fires" reason defect 2/3 already moved those there:
+ * Instana's wrapped fetch/XHR can beacon a request made before React (and
+ * this module) ever evaluates, and an unfiltered pre-boot request is exactly
+ * the class of noise this whole mechanism exists to suppress. index.html
+ * cannot import this module — it is a plain inline script that must run
+ * before any bundle evaluates — so it re-derives the same full-URL shape
+ * from its own duplicated copy of `KH_TELEMETRY_PATHS`, the same "keep two
+ * lists in sync by hand across the HTML/TS boundary" trade that file's
+ * ROUTES table already makes for `page`. This export still exists, and is
+ * still exercised by this file's tests: what matters is the MATCHING LOGIC
+ * being correct, which the duplicate copy shares by construction (identical
+ * derivation, copy-pasted) — not the export being called at runtime from
+ * here. Testing that logic here is the fix for the second defect: the
+ * absence of exactly this assertion (full URL, not pathname) is what let
+ * the original list ship broken.
+ */
+export const INSTANA_IGNORE_URL_PATTERNS: RegExp[] = KH_TELEMETRY_PATHS.map(
+  (path) => new RegExp(`^https?://[^/]+${escapeForRegExp(path)}\\b`),
+);
 
 /**
  * Everything that does not depend on WHO the visitor is, MINUS what defect
  * 2/3 moved into spa/index.html's inline bootstrap (`trackSessions`,
- * `enableW3CHeaders`, the initial pseudonymous `user` id, and the initial
- * `page` name) because it has to be set before the page-load beacon fires —
- * see that file's comment. Call this ONCE, as early as the session id
- * exists, gated by the SAME `allowed` answer `initAnalytics` uses
- * (main.tsx) — an unconfigured build or a signed-out stranger at the
- * walk-in door must get none of this.
+ * `enableW3CHeaders`, the initial pseudonymous `user` id, the initial `page`
+ * name, and — per this file's `INSTANA_IGNORE_URL_PATTERNS` comment —
+ * `ignoreUrls`) because it has to be set before the page-load beacon fires,
+ * or before Instana's wrapped fetch/XHR can see a pre-boot request — see
+ * that file's comment. Call this ONCE, as early as the session id exists,
+ * gated by the SAME `allowed` answer `initAnalytics` uses (main.tsx) — an
+ * unconfigured build or a signed-out stranger at the walk-in door must get
+ * none of this.
  */
 export function configureInstana(sessionId: string): void {
   // autoPageDetection: EXPLICITLY OFF, not left to either of the docs'
@@ -143,7 +205,10 @@ export function configureInstana(sessionId: string): void {
   ineum('wrapEventHandlers', true);
   ineum('wrapTimers', true);
   ineum('secrets', SECRET_PATTERNS);
-  ineum('ignoreUrls', IGNORE_URL_PATTERNS);
+  // NOT `ineum('ignoreUrls', ...)` here — see `INSTANA_IGNORE_URL_PATTERNS`'s
+  // own comment above. It has to be set from spa/index.html's inline
+  // bootstrap, before this call ever runs, so a request made before React
+  // boots is filtered too.
   // THE JOIN — the point of the whole exercise. `kh.sessionId` is the same
   // value clientDebug.ts stamps on every /clientlog event and
   // analytics/trace.ts stamps as `session.id` on every OTel span this tab
