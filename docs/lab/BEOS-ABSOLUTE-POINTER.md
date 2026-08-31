@@ -217,7 +217,15 @@ final STAT: addr=0x3a5fae4 layout=point32le verified=yes pos=512,384
 ```
 
 **7/7 targets pixel-exact on all three observers**, across two different glyphs
-and both window chrome and page content. `refused=2` is the first `MOVEA` of
+and both window chrome and page content — *with the shipped two-glyph bank.*
+Be precise about the order these happened in, because it is the point: the sweep
+RUN reported `NOTFOUND` at the three hand targets, because at that moment the
+bank held only the arrow. Those three NOTFOUNDs are what revealed the hand
+existed at all. The table above is the same seven frames re-read after the hand
+was learned from them, and `tests/cursor-banks/beos.json` finds all seven at
+exactly these positions (15 frames, 15 found, 0 AMBIGUOUS, 0 NOTFOUND). The raw
+run artifact still records the three NOTFOUNDs and is not wrong; it is a
+measurement taken with an incomplete bank. `refused=2` is the first `MOVEA` of
 each of two connections, refused while the device verifies — send a warm-up
 target before any sweep or the first row of your table will show the previous
 position and read as a failure.
@@ -387,6 +395,26 @@ the old golden to find out.
 Note this only sets the INITIAL scene. A live re-sign-on still pops a greeting
 over the exhibit in front of a visitor. Whether that is charm or defect is an
 operator call, not a bring-up one.
+
+### A wt.sh sandbox cannot push without repointing its ssh key
+
+**Worked around here, not fixed — a wt.sh bug is filed.** A fresh
+`scripts/dev/wt.sh new` worktree inherits `core.sshCommand` from the shared repo
+config, which names the key by its *host* path
+(`/data/subvol-950-disk-0/home/wnt/.ssh/id_github`). That path does not exist
+inside CT950, so every fetch and push from the sandbox fails on an unreadable
+identity file. `wt.sh`'s `own_box_git()` already detects this and exports
+`GIT_SSH_COMMAND=ssh`, but that is an environment variable in **wt.sh's own
+process**: it covers the git commands wt.sh runs and not the worktree it hands
+you.
+
+Repointing `core.sshCommand` at `/home/wnt/.ssh/id_github` in the worktree
+unblocks it. That is a local workaround and **not** the fix: worktrees share the
+main repo's config, and the box checkout's host path is *correct* for root over
+ssh, so overwriting it repo-wide would break the box. A real fix needs
+`extensions.worktreeConfig` and `git config --worktree`, which is a change to
+shared tooling and deserves its own review rather than riding along with a
+station cutover.
 
 ### Rollback
 
