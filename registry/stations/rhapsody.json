@@ -224,12 +224,12 @@
       "qemuBuild": {
         "forkUrl": "github.com/Wnt/qemu",
         "forkBranch": "kernel-hive",
-        "forkCommit": "196124da521a52372b2ce8c420b4e068f2a22d2c",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
         "patches": [
           "streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch",
           "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
         ],
-        "note": "Both patches verified to apply cleanly to that fork commit, in that order, and the applied tree is byte-identical to the source the branch's sandbox binary was built from. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The branch's own build (/data/vms/sandbox/rhapsody-abs/qemu/prefix/bin/qemu-system-i386) hashes to a5c74522adc48194f3a59d449af408ee211433005da6e4909effaab87740a79c; QEMU builds are not bit-reproducible, so re-record from the installed file rather than reusing that."
+        "note": "Both patches verified to apply cleanly to that fork commit, in that order. forkCommit was 196124da... until 2026-08-30; it moved twice that day (196124da -> 623f1dcb -> c5449c80) and this value was READ BACK FROM THE FORK after the last push rather than predicted from what was pushed. The fork guarantees TREE EQUALITY with the patch series, not a commit per patch. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The binary currently at /opt/qemu-rhapsody was built from the SUPERSEDED pre-fix 0007 and must be rebuilt before any cutover."
       }
     }
   },

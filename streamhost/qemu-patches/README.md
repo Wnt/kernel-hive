@@ -18,8 +18,29 @@ mine" — the same rule as AGENTS.md rule 7, applied to a filename.
 | 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
 | 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
 | 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
-| 0009 | `kh-ramabs-mac-lowmem-profile` | `macos753` — classic Mac OS low-memory profile for `kh-ramabs` (0007) |
-| 0010 | `kh-ramabs-point32le-layout` | `beos` — a second `kh-ramabs` layout (two int32) |
+| ~~0009~~ | ~~`kh-ramabs-mac-lowmem-profile`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
+| ~~0010~~ | ~~`kh-ramabs-point32le-layout`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
+
+Retired numbers are **not** reissued: `0009` and `0010` stay struck through so a
+reference to them in an old report or registry field still resolves.
+
+## Two categories of patch, and which one you are writing
+
+The one-patch-per-station model above was already fiction by `0009`, which
+restructured accessors `0007` shared, and untenable by the time a cross-cutting
+fix had to touch all three profiles at once. Splitting that fix back into three
+"independent" patches would have produced three artifacts that are not
+independently applicable — worse than naming what the thing actually is:
+
+* **`kh-ramabs` (`0007`) is ONE shared device patch** carrying per-guest
+  *layouts* (`point16le`, `macpoint16be`, `point32le`) and *publish modes*
+  (`crsrnew`). Adding a guest to it is not a new patch.
+* **`0008` (artist) is a genuinely independent per-station patch** — a different
+  file (`hw/display/artist.c`), a different device, no shared state.
+
+**The rule for the next station:** a new *guest profile* extends the shared
+patch and takes **no** number; a new *device* takes the next number. If you are
+adding a `layout=` or a `publish=` value, you are in the first case.
 
 Next free: **0011**. Add your row in the same commit that adds the patch, so the
 number and the claim land together rather than the claim living in someone's
@@ -36,8 +57,18 @@ keep in sync by hand:
 
 1. Edit the patch here (or its source under `gallery-hid/` for `0003`; see
    that directory's "Regenerating the quilt patch").
-2. Apply the regenerated patch to a checkout of the fork and update the
-   corresponding commit on its `kernel-hive` branch, then push.
+2. Apply the regenerated patch to a checkout of the fork and bring its
+   `kernel-hive` branch to that state, then push.
+
+**What the fork guarantees is TREE EQUALITY, not commit shape.** Its HEAD tree
+matches what applying the series in order produces. Its commits do **not** map
+one-to-one onto the patch files, and after a merge round they cannot: when
+`0009` and `0010` were merged into `0007` on 2026-08-30 the branch already
+carried them as separate commits, and the correction landed as a further commit
+rather than a force-push. **Published history is not rewritten** — the branch
+shows the journey. Consumers need the tree; nothing consumes the commit
+boundaries. A drift check on this fork must therefore compare **trees**, not
+commit counts or subjects.
 3. Run `git submodule update --remote third_party/qemu-kernel-hive` in this
    repo and commit the bumped gitlink.
 
@@ -59,7 +90,29 @@ python3 scripts/lint/published-form-drift.py --offline # skip the network leg
 It is a REPORT and must never be wired into the push gate — see
 docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2.5 for why, and for the standing rule
 that a recorded pointer at a mutable branch (`qemuBuild.forkCommit`, the
-submodule gitlink) goes stale in silence. `scripts/provision/build-pve-qemu-fastpoll.sh`
+submodule gitlink) goes stale in silence.
+
+**Where the submodule is and is not initialised** — this differs by checkout and
+the difference is load-bearing:
+
+| checkout | `third_party/qemu-kernel-hive` |
+|---|---|
+| CT950 `/home/wnt/kernel-hive` | **initialised** — do `git submodule update --remote` and gitlink bumps here (git history is authored on CT950, never over `ssh lab`) |
+| labhost `/data/kernel-hive` | **not initialised** — a plain unpacked tree, no `.git` |
+
+So on the box, `build-pve-qemu-fastpoll.sh` takes its fallback branch and builds
+from the committed loose `.patch` files. **That is the intended path there**, and
+it is why the box's unpacked copy being stale against the superproject's gitlink
+is harmless: `box-deploy` does not carry that path and nothing updates it, but
+nothing on the box reads it either. If you ever make the box build from the
+submodule, that stops being true and the stale tree becomes a real bug.
+
+**Do not test for it with `git rev-parse --is-inside-work-tree`.** It returns
+**true** inside an *uninitialised* submodule path, because the directory sits
+inside the superproject's work tree — it answers "am I inside some repo", not "is
+this path its own repo". Measured 2026-08-30 on `/data/kernel-hive`: 107 entries,
+no `.git`, and `--is-inside-work-tree` still said true. Test `[ -e <path>/.git ]`,
+or read `git submodule status` (a leading `-` means uninitialised). `scripts/provision/build-pve-qemu-fastpoll.sh`
 builds the patch trio (fast-poll, sphinx, gallery-hid) from the submodule
 when it's initialized (the patches already land as commits there, via
 `git format-patch`) and falls back to the loose `.patch` files in this
