@@ -70,14 +70,21 @@ which is a telemetry lie and not an authorisation one. The reverse is the rule
 that matters and it holds: **the ticket carries the trace id, the trace never
 carries the ticket** (§7).
 
-**Status: the daemon end is built and the serving end is not.**
+**Status: both ends are deployed; no visit has yet exercised the hop.**
 `streamhost/streamhost/src/trace/context.rs` parses this on every incoming
-WebTransport session and joins the browser's trace when it is present; today it
-never is, because `signal_route.py` does not yet append it, so every daemon
-session span is a ROOT and says so in `kh.trace.joined=false`. Appending it is
-one line beside the two `body["path"] = ... .mint(...)` calls. Nothing has to be
-coordinated: the daemon already tolerates its absence, its presence, and its
-malformation.
+WebTransport session and joins the browser's trace when it is present, and
+`signal_route.py` now appends it — both live as of 2026-08-31, the daemon by
+the fleet rollout that put the new binary on every station. The join is
+therefore untested by traffic rather than unbuilt: `kh.trace.joined` rides
+`streamhost.session`, which is only emitted when a visitor actually connects,
+so every daemon span recorded so far is a boot-time ROOT with no such attribute
+at all. Watch the first real visit to a rolled station for the answer.
+
+One trap this cost a session already: the query parameter must be spelled
+`?traceparent=00-<traceid>-…`, with the KEY. An earlier version appended the
+value alone (`?00-<traceid>-…`), which parses as a nameless pair and is skipped
+by the scan in `context.rs`, so the hop silently never joined while both halves
+looked correct in review.
 
 The consequence worth stating: a station opened WITHOUT a fresh signalling fetch
 — a reconnect that reuses a cached document — continues the previous trace or

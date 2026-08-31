@@ -1,12 +1,16 @@
 # Analytics — which code earns its keep, and where flows die
 
 **Status: phase 1 shipped, plus all three phase-2 planes — Rust probes, Python
-serve-plane probes and the line-coverage lane. Nothing is deployed.** The client
-plane, the sink, the metrics lane, the catalogue gate, the report tool, the
-`streamhost` probes (§8) and the serving plane's own branch probes (§9) are in
-the tree and green. Nothing is on the
-box until `box-deploy.sh --apply` runs and the https service is restarted; §10
-lists what is deliberately still open.
+serve-plane probes and the line-coverage lane — in the tree and green.** The
+client plane, the sink, the metrics lane, the catalogue gate, the report tool,
+the `streamhost` probes (§8) and the serving plane's own branch probes (§9) are
+built. The SPA and Python halves ship the way any other change here does —
+`box-deploy.sh --apply` plus an https restart; §10 lists what is deliberately
+still open. **The Rust half ships differently, and started shipping on
+2026-08-31**: the rebuilt `streamhost` binary was canaried on `helenos` and is
+being promoted across the fleet in risk-ordered waves by
+`scripts/dev/fleet_rollout.py --mode promote` — see §8 for what that binary now
+really does on a station that has it.
 
 Everything is inside kernel-hive. No external service, no third-party script, no
 account anywhere. That is not only a privacy preference here — the gallery's
@@ -813,9 +817,16 @@ binary, at no cost to the fleet.
 naming the file that will hold the call site, one `probe!(NAME)` in that file,
 in one commit. `cargo test --workspace` fails otherwise.
 
-**Not deployed.** A dumped `probes.json` is a file on the box and nothing reads
-it yet; wiring it into `reach-report.py` alongside the SPA catalogue is the next
-step, and belongs with the §10 deployment item rather than ahead of it.
+**Deployed; not yet read.** The binary that owns this catalogue was rebuilt and
+shipped for the first time on 2026-08-31 — canaried on `helenos`, then promoted
+across the fleet in risk-ordered waves by `scripts/dev/fleet_rollout.py --mode
+promote`. A station running the new binary really dumps
+`/data/vms/streamhost/stations/<id>/probes.json` every 60 s and on shutdown now,
+read directly off a live station. What is still true is the reading half:
+`scripts/dev/reach-report.py` does not open `probes.json` and has no code path
+that does. Wiring it in alongside the SPA catalogue, so a probe's fleet-wide
+count sits next to its browser-side sibling, is the remaining step — the
+deployment half it used to wait on is done.
 
 ## 8.1 The Rust plane, second half — `streamhost` SPANS
 
@@ -868,8 +879,9 @@ HTTP client, in order: a station that cannot reach the collector must keep
 streaming, and a `rename(2)` has no failure mode that can reach the encoder,
 while a POST has several; this binary has no HTTP client and the collector is
 HTTPS, so posting means adding a TLS stack to a daemon that deliberately carries
-none; and the file being the request body means the shipper is `curl -d @file`
-and nothing is needed server-side.
+none; and the file being the request body means the shipper needs nothing
+server-side beyond reading a file and making the request — which is exactly
+what `scripts/observability/trace-ship.py` (below) turned out to be.
 
 **Cost, measured rather than asserted** (`span_cost_is_small`, 20 000 spans
 back-to-back on the lab build box):
@@ -895,14 +907,19 @@ have made every dumped zero ambiguous. A span allocates, formats and writes
 files, so the branch pays for itself — and a disabled station publishes no spool
 directory at all, which reads as "off" rather than as "nothing happened".
 
-**Joining the browser's trace: built on this side, not yet on the other.** The
-input plane is raw WebTransport with no headers, so the id rides the session
-path's query string beside the ticket ([TRACE-CONTEXT §3.1](lab/TRACE-CONTEXT.md)).
-The daemon parses it on every session and degrades to a ROOT span when it is
-absent, malformed, or from a future version — never to a fabricated parent, and
-never to a refused session. `signal_route.py` does not append it yet, so today
-every daemon span carries `kh.trace.joined=false`, which is a fact in the data
-rather than something to infer from a missing edge.
+**Joining the browser's trace: both ends are now live, and no trace has used
+them yet.** The input plane is raw WebTransport with no headers, so the id rides
+the session path's query string beside the ticket
+([TRACE-CONTEXT §3.1](lab/TRACE-CONTEXT.md)). The daemon parses it on every
+session and degrades to a ROOT span when it is absent, malformed, or from a
+future version — never to a fabricated parent, and never to a refused session.
+`signal_route.py` appends it and is deployed; the daemon that reads it shipped
+on 2026-08-31. What has not happened is a VISIT: `kh.trace.joined` is an
+attribute of `streamhost.session`, which exists only once a real visitor
+connects, so the 100 daemon spans in the store are all boot-time roots
+(`streamhost.start` and its three children) and carry the attribute not as
+`false` but not at all. The first visitor to a rolled station is what will
+prove the hop, and nothing else can.
 
 **Traps hit while building it:**
 
@@ -924,8 +941,20 @@ rather than something to infer from a missing edge.
   Putting the station id there would fill a column meaning "one tab" with a
   machine name.
 
-**Not deployed.** The spool is written and nothing ships it yet; that is the
-rollout stream's item, alongside §10's deployment entry.
+**Shipped, by hand, not on a timer.** `scripts/observability/trace-ship.py` is
+the carrier the paragraph above predicted: it reads each finished batch file in
+a station's spool, `POST`s it verbatim to `/traces`, and deletes it only on a
+200. It is run ON the box, via `scripts/dev/labrun`, because the spool is
+root-owned by the daemon and the tool needs to delete what it ships as root; run
+from CT950 instead with `--apply --keep` and it can still ship, just never
+clean up after itself. It is invoked by hand, the same as
+`instana-forward.py`, on purpose: the spool is bounded
+(`SH_TRACE_SPOOL_MAX`, oldest dropped) so nothing overflows while nobody ships,
+and a daemon span is a one-off per session or per daemon start rather than a
+stream with a rate that would justify a timer. Re-running it is always safe —
+`scripts/serve/traces.py` inserts spans `ON CONFLICT(trace_id,span_id) DO
+NOTHING`, so a batch shipped twice, or left in place after a failed POST and
+retried on the next run, is stored once.
 
 ## 9. The Python serving plane — branches, not routes
 
@@ -1050,8 +1079,15 @@ Named so nobody re-derives them as gaps:
   a straightforward next step, and consistent with the operator's standing
   preference for eyeballing over automation, it should not be built before
   somebody has actually wanted it twice.
-- **Deployment.** `box-deploy.sh --apply` plus an https restart; `analytics.db`
-  and `coverage.db` are created on first start beside the server.
+- **Deployment of the SPA and Python planes.** `box-deploy.sh --apply` plus an
+  https restart; `analytics.db` and `coverage.db` are created on first start
+  beside the server. The Rust plane does not wait on this — it ships as part of
+  the `streamhost` binary itself, via `scripts/dev/fleet_rollout.py`, and that
+  rollout is what made §8 and §8.1 true on the box (started 2026-08-31).
+- **`reach-report.py` reading the Rust probes.** The catalogue table in §1 has
+  three axes and the report only ever crosses two of them (SPA feature reach
+  against SPA line coverage); `probes.json`'s fleet-wide counts are not in it.
+  Wiring that in, next to the SPA catalogue, is unstarted.
 - **Serving the instrumented bundle.** The lane is built and tested; nothing
   automates PUTTING it in front of visitors and back again. That is deliberate
   — it is the operator-armed decision above, and a script that swaps the live
