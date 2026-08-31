@@ -846,8 +846,13 @@ emit hpuxvue \
 
 # beos (VMID 143) - BeOS R5 Professional 5.0.3, the original behind haiku.
 #   TCG (R5 #GPs under KVM: unhandled MSRs), pentium3, 1 CPU, 512 MB, IDE
-#   qcow2 on an MBR partition, std VGA at the vesa-settings 1024x768x16, PS/2
-#   relative pointer via the daemon's abs->rel path. RETRONET: rtl8139 on a tap
+#   qcow2 on an MBR partition, std VGA at the vesa-settings 1024x768x16.
+#   ABSOLUTE pointer since 2026-08-31: -device kh-ramabs writes app_server's own
+#   pointer coordinate in guest RAM (point32le) and publishes it with one 1-unit
+#   PS/2 nudge -- no adapter change, no device-set change. Runs its OWN build at
+#   /opt/qemu-beos rather than the host package, because the golden had to be
+#   cold re-baked anyway (the old one carried pve's pbs-state section).
+#   RETRONET: rtl8139 on a tap
 #   on vmbr-rn (DHCP-reserved 10.99.0.16, no default route, guard chain
 #   BEOSRN-IN); ne2k_pci was the NIC until 2026-08-23 and had to go -- R5's
 #   etherpci driver storms 'bad next packet' and dies under a real page load.
@@ -855,8 +860,8 @@ emit hpuxvue \
 #   volume: config_manager/isa removed (PnP BIOS call page-faults input_server
 #   under SeaBIOS) and multiprocessor_support disabled (PCI IRQs via the PIC).
 emit beos \
-  --tile beos --vmid 143 --udp 54143 --pointer rel --abs-pace-ms 30 --audio \
-  off --fps 30 --launcher-file "$T/beos/qemu-streamhost.sh" \
+  --tile beos --vmid 143 --udp 54143 --pointer abs --input-backend ramabs \
+  --audio off --fps 30 --launcher-file "$T/beos/qemu-streamhost.sh" \
   --env-append-file "$T/beos/station.env.fixture"
 
 # newsos (slot 148) — Sony NEWS-OS 4.1R on an NWS-3260 (MIPS R3000, 1120x780

@@ -271,3 +271,81 @@ picking it costs nothing.
 Do not ship both. Two templates of the same glyph turn **35 of 83** frames into
 AMBIGUOUS — harmless by the rule above (every hit is at the same position) but
 noise that hides the ambiguities that would matter.
+
+## `beos.json`
+
+BeOS R5 Professional 5.0.3, **1024x768x16** on std VGA (the VESA "stub" driver),
+learned on the golden **cold re-baked 2026-08-31 12:12:00** (`VM_CLOCK
+0000:26:11.140`, tag `golden` in `beos-bake.qcow2`) — the scene with the Terminal
+from `UserBootscript`, NetPositive on the Space Jam corpus page, and ICBM signed
+on as UIN 50000. 16-bit **direct** colour, so the indexed-colour palette hazard
+above does not apply to this station.
+
+`cursorBankBoundTo` string for the acceptance block:
+
+> `golden 2026-08-31T12:12:00 (VM_CLOCK 0000:26:11.140, beos-bake.qcow2); 1024x768x16 std VGA, direct colour`
+
+| template | size | hotspot | where it appears |
+|---|---|---|---|
+| `84ea88255a10` | 15x14 | `(1,0)` | the arrow — desktop, Deskbar, Terminal, NetPositive page body and window chrome |
+| `fba3029b04c8` | 15x14 | `(1,0)` | the hand — NetPositive's **menu bar** and its **image-map links** on the corpus page |
+
+**Both hotspots are `(1,0)` and both are measured**, as `commanded - located
+origin` at every target of the `kh-ramabs` sweep. That is an unusually clean
+measurement for this fleet and the reason is structural, not luck: this station
+writes the coordinate, so there is no control loop, no gain and no deadband, and
+`commanded` is exact rather than "converged to within the deadband". Compare
+`hpuxvue`, where the same subtraction folds the loop's residual into the answer
+and had to be taken with the deadband forced to 0.
+
+Validation over **15** frames captured on this golden (the 7-target sweep, the 6
+bake-window frames, the scene reference and a restored frame): **15 found, 0
+AMBIGUOUS, 0 NOTFOUND.**
+
+### Four bounding boxes of one glyph, and how they nearly shipped
+
+The first attempt learned *four* templates that looked like four glyphs — at the
+park position, over the corpus page's image-map links, over its body and over
+the URL field — sized `15x14`, `15x13`, `14x14` and `13x13`. Tested **one at a
+time** against all six frames, every one of them found the cursor at the same
+place in 6/6. They were the same arrow: `learn` captures only the pixels that
+CHANGED, so a different background exposes a different subset and yields a
+different bounding box. The three extras were **clipped sub-templates** of the
+full `15x14` — the hazard documented above — and shipping them together turned
+**every single frame** AMBIGUOUS. The `13x13` was the worst: 92 opaque pixels,
+matching repeatedly straight down `x=6` against the NetPositive window's left
+border, the same shape as `macos753`'s excluded I-beam.
+
+**The tell is the origin, not the size.** A clipped sub-template reports an
+origin shifted by exactly the columns it is missing. That is how the hand was
+caught too: learned over the light menu bar it came out `14x14` and reported
+`origin == commanded`, i.e. hotspot `(0,0)`; learned over the dark corpus page
+it came out `15x14` and reported `(1,0)`, agreeing with the arrow. The `14x14`
+was missing its left column. **When two templates of one glyph disagree about
+the hotspot by exactly their width difference, the narrower one is clipped** —
+do not average them and do not pick the one that looks tidier.
+
+### On which background to learn
+
+The intuition that a light background is safer is **backwards here**, and it is
+worth saying because it is the opposite of the `hpuxvue` note above. Over the
+grey menu bar the hand's white fill barely differs from the background, so
+`learn` captured 132 pixels in 3 colours and missed a column. Over the dark,
+*textured* starfield of the corpus page it captured 134 pixels in **14 distinct
+colours** — because the background varies pixel to pixel, far more of the sprite
+differs from it. **A busy background is a better teacher than a flat one**, as
+long as nothing on it moves between the two frames.
+
+### The corpus page DOES produce a link glyph
+
+An earlier pass concluded it did not, on the evidence that four targets chosen
+for glyph variety all yielded the arrow. That conclusion was wrong and the
+evidence was bad: those targets were positioned by *relative* aiming under R5's
+mouse acceleration, so none of them landed where it was aimed, and all four
+missed the image-map hotspots. Once `kh-ramabs` could command an exact pixel,
+the hand appeared immediately at `400,120` — over `JAM CENTRAL` on the image
+map — and at `512,384`.
+
+The lesson generalises past this bank: **a negative result gathered with an
+actuator that cannot hit what it aims at is not a negative result.** It was only
+safe to enumerate this station's glyphs *after* the absolute pointer worked.

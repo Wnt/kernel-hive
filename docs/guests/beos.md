@@ -147,28 +147,41 @@ qemu-system-x86_64 -accel tcg -M pc-i440fx-11.0 -cpu pentium3 \
   R5's own `rtl8139` driver carries the same page with **zero** errors. Switching
   the model is a device-set change and needed a cold re-bake, which the retronet
   MAC change required anyway.
-- Pointer: **absolute, by writing the guest's own coordinate** (since
-  2026-08-30; was PS/2 relative). R5 predates broad USB HID/absolute-pointer
+- Pointer: **absolute, by writing the guest's own coordinate** (LIVE since
+  2026-08-31; was PS/2 relative). R5 predates broad USB HID/absolute-pointer
   support — `usb-tablet` is not supported — and it has no hardware cursor to
   close a loop over, because it drives `-vga std` as its "unsupported card"
   stub driver and none of its real accelerated drivers claims anything QEMU
   emulates. But `app_server` keeps its own pointer coordinate in RAM as two
   little-endian `int32`, so `-device kh-ramabs` writes the commanded pixel
   there and injects one 1-unit PS/2 nudge to make `app_server` republish it.
-  No control law, no gain, and the hotspot (`(1,0)` on R5's arrow, measured)
-  never enters the path. The guest-physical address is bound to the golden and
+  No control law, no gain, and the hotspot (`(1,0)` — measured on BOTH the arrow
+  and R5's hand cursor, at every target of the acceptance sweep) never enters
+  the path. The guest-physical address is bound to the golden and
   is re-derived after every re-bake; the device verifies it at connect and
   refuses every write otherwise, so a stale address degrades the station to its
-  relative path rather than corrupting guest memory.
+  relative path rather than corrupting guest memory. The current value is
+  `0x03a5fae4`, derived against the 2026-08-31 12:12:00 bake. **The search alone
+  cannot pick it**: that bake produced four addresses in the same bias family
+  that all track the pointer perfectly, and only kh-ramabs' own connect-time
+  write test separated them.
   Full derivation, the disproof of both adapter routes, and the framebuffer
   proof: [`docs/lab/BEOS-ABSOLUTE-POINTER.md`](../lab/BEOS-ABSOLUTE-POINTER.md).
 - Audio: none (see Open items — both R5-supported QEMU codecs stall the guest).
 - Pointer path: `--pointer abs --input-backend ramabs`, UI `pointerRel: false`.
-  Station binary `/opt/qemu-beos` (qemu-patches 0001 + 0007 + 0010) — beos moved
-  off the host `pve-qemu-kvm` package so the pointer would not require rebuilding
-  the package every other guest on this box runs. That move costs ONE cold golden
-  re-bake, because the 2026-08-23 golden carries pve-qemu's `pbs-state` vmstate
-  section and a standalone binary refuses it.
+  `SH_POINTER=rel` was **retired in the same commit** — it was the legacy
+  relative knob, and leaving it beside `SH_INPUT_BACKEND=ramabs` would be two
+  sources of truth for one property with the older one still live.
+  Station binary `/opt/qemu-beos`, built from fork `c5449c80` with **nothing
+  applied on top** (that tip already carries fast-poll and the shared
+  `kh-ramabs` device as commits; the layout patch once numbered `0010` is
+  retired into `0007`). beos moved off the host `pve-qemu-kvm` package so the
+  pointer would not require rebuilding the package every other guest on this box
+  runs. That move cost ONE cold golden re-bake, done 2026-08-31, because the
+  2026-08-23 golden carries pve-qemu's `pbs-state` vmstate section and a
+  standalone binary refuses it — **and the new golden is equally unreadable by
+  the host binary, so `BEOS_QEMU` and the golden roll back together or not at
+  all.**
 
 ## Settings applied on the volume
 

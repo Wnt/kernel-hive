@@ -1,31 +1,38 @@
 # beos — an absolute pointer by writing BeOS R5's own coordinate
 
-**Status: mechanism proven on a sandbox rig 2026-08-30 (branch `beos-abs-ram`).
-Not deployed.** The one step left is a cold golden re-bake under the station's
-own QEMU build, which is what binds the guest-physical address the mechanism
-needs. Until that exists the launcher adds no device and `beos` keeps the
-relative pointer it has always had — the change is inert by construction.
+**Status: LIVE since 2026-08-31.** The station runs its own QEMU build at
+`/opt/qemu-beos` (fork `c5449c80`), a golden cold re-baked under that binary,
+and `SH_INPUT_BACKEND=ramabs` against `KH_RAMABS_ADDR=0x03a5fae4`.
 
-This document is three things: the disproof of the two adapter routes (so nobody
+This document is four things: the disproof of the two adapter routes (so nobody
 spends a week rediscovering it), the recipe for deriving the address (which is
 **load-bearing infrastructure**, because it must be re-run after every re-bake),
-and the proof.
+the proof, and the record of what the cutover cost.
 
+**BINARY AND GOLDEN ARE ONE UNIT HERE.** The pre-cutover golden was baked under
+the host `pve-qemu-kvm` package and carries a Proxmox-only `pbs-state` vmstate
+section that a standalone build refuses; the post-cutover golden cannot be
+restored by the host binary either. Neither half is independently revertible, so
+`BEOS_QEMU` and the golden file move together in both directions. See §5.
 ## 1. What beos ended up with
 
 BeOS R5 has no absolute pointing device its driver stack supports and no
 hardware cursor a device model can read. What it *does* have is its own pointer
 coordinate in RAM. `app_server` keeps it as **two little-endian `int32`**, x then
-y. So `-device kh-ramabs` (qemu-patch `0007`, plus the `point32le` layout this
-station added as `0010`) writes the commanded pixel straight into it and injects
+y. So `-device kh-ramabs` — qemu-patch `0007`, the ONE shared device patch,
+whose `point32le` layout is this station's contribution (it was briefly numbered
+`0010`; that number is **retired and merged into `0007`**, and adding a guest
+profile to `kh-ramabs` takes no patch number at all) — writes the commanded
+pixel straight into it and injects
 **one 1-unit relative PS/2 nudge** to make `app_server` republish it — a write
 alone repaints nothing, because a window server redraws on an event, not on a
 memory change.
 
 There is no control law, no gain, and no convergence criterion. **The hotspot
 never enters the path.** It is still a real property of the drawn sprite —
-R5's arrow draws at `pointer - (1,0)`, measured across five independent
-positions — but nothing in the mechanism needs to know it, so the "magnet"
+R5's arrow draws at `pointer - (1,0)`, and so does its hand cursor, measured at
+every target of the §4 sweep — but nothing in the mechanism needs to know it, so
+the "magnet"
 failure mode that the closed-loop stations spend their hardest work guarding
 against is impossible here rather than merely guarded.
 
@@ -157,66 +164,119 @@ mechanical. It needs no patched binary and no C.
    wedged guest would show as a pointer that stops rather than as a probe that
    quietly passes.
 
-**A probe-only HMP `pmemwrite` was used for step 5 and is deliberately not
-shipped.** A generic guest-physical memory write at the monitor is not a
-capability to land, even guarded. Re-add it to a sandbox build for the twenty
-minutes you need it: ~30 lines in `hw/core/machine-hmp-cmds.c` calling
-`cpu_physical_memory_write`, plus an entry in `hmp-commands.hx`.
+**You do not need an HMP `pmemwrite` for step 5, and should not build one.**
+The 2026-08-30 bring-up added a probe-only monitor command for this and
+deliberately did not ship it. It turns out to be unnecessary: **`kh-ramabs`'
+own connect-time verification IS the write test, and a stricter one.** It
+writes a DELIBERATELY WRONG value (the target minus the nudge's own delta),
+reads it straight back to prove the write LANDED AT ALL — a write to unbacked
+guest-physical memory is silently discarded, and a probe alone would then read
+the guest's real unchanged pointer, find it exactly where it wanted it, and
+declare a bad address good — and only then injects the nudge and requires **the
+guest** to turn that wrong value into the right one. A derived copy fails by
+construction: the write lands in the copy, but the guest's real pointer is
+elsewhere, so after the nudge the guest republishes its own value over the top
+and the read-back disagrees. Quiescence fails it too, rather than passing it.
+
+So the procedure is: run the shipping device against each candidate, one per
+QEMU start, and read `STAT`. On the 2026-08-31 bake this separated four
+identically-tracking addresses on the first attempt:
+
+| address | verified | device's own words |
+|---|---|---|
+| `0x02a8ff44` | no | `probe wanted 69,747, guest holds 77,740` |
+| `0x02a904e8` | no | `probe wanted 69,747, guest holds 77,740` |
+| **`0x03a5fae4`** | **yes** | `VERIFIED (probe landed at 69,747)` |
+| `0x03a5faec` | no | `probe wanted 69,747, guest holds 77,740` |
+
+**If more than one verifies, stop and escalate — that is not a tie to break by
+preference.**
 
 ## 4. The proof (rule 9)
 
-Run through the real `kh-ramabs` device on a sandbox rig, `-loadvm` of a
-checkpoint the address was derived against. Three observers at every target:
-what was **commanded**, what the **device read back** (`STAT`), and where
-`cursor-locate.py` finds the sprite in a QMP screendump. Expected sprite origin
-is `commanded - (1,0)`, and the match is **exact**, not `--tol 1`.
+Run through the real `kh-ramabs` device on a sandbox rig, `-loadvm` of the
+golden the address was derived against. **Three observers at every target**:
+what was **commanded**, what the **device read back** (`STAT pos=`), and where
+`cursor-locate.py` finds the sprite in a QMP screendump. The match is **exact**,
+not `--tol 1` — there is no control loop and no deadband here, so a pixel of
+slop would mean something is wrong rather than something is converging.
 
 ```
-commanded    sensor (STAT)          framebuffer   verdict
-200,600      verified=yes 200,600   199 600       OK
-800,300      verified=yes 800,300   799 300       OK
-400,0        verified=yes 400,0     399 0         OK   <- top screen edge
-300,34       verified=yes 300,34    299 34        OK   <- Terminal title bar
-588,240      verified=yes 588,240   587 240       OK   <- Terminal right frame
-60,430       verified=yes 60,430    59 430        OK   <- Terminal bottom frame
-1000,760     verified=yes 1000,760  NOTFOUND           <- sprite clipped at the corner
-0,400        verified=yes 0,400     NOTFOUND           <- sprite clipped at x=0
+commanded  where                     sensor     framebuffer  hotspot
+200,600    open desktop              200,600    199,600      (1,0)
+800,300    over the corpus page      800,300    799,300      (1,0)
+400,120    image-map link (hand)     400,120    399,120      (1,0)
+300,34     NetPositive menu (hand)   300,34     299,34       (1,0)
+60,430     Terminal window           60,430     59,430       (1,0)
+950,700    bare desktop, right       950,700    949,700      (1,0)
+512,384    screen centre (hand)      512,384    511,384      (1,0)
 
-DOWN1/UP1 at 36,34 -> 11958 px repainted, bbox x 6-194 y 25-107
-  (the Terminal menu opened -- a real repaint, not a cursor blit)
-STAT: addr=0x38f1ae4 layout=point32le verified=yes nudge=1/1px
-      converged=9 gaveup=0 paused=0 refused=1 probefail=0
+final STAT: addr=0x3a5fae4 layout=point32le verified=yes pos=512,384
+            nudge=1/1px refused=2 reissued=4 probefail=0 converged=8
+            gaveup=0 paused=0
 ```
 
-**Run twice, agreeing to the pixel.** The table above is the shipped stack
-(`0007` + `0009` + `0010`). An earlier run on `0007` + a standalone `point32le`
-— before `0009` restructured the accessors into offset-taking primitives —
-produced the identical eight rows. Two independent builds of the mechanism
-landing on the same pixel at every target is what makes this a proof rather
-than a measurement of one binary.
+**7/7 targets pixel-exact on all three observers**, across two different glyphs
+and both window chrome and page content. `refused=2` is the first `MOVEA` of
+each of two connections, refused while the device verifies — send a warm-up
+target before any sweep or the first row of your table will show the previous
+position and read as a failure.
 
-The `refused=1` is the first `MOVEA` after connect, refused while the device
-verifies its address — see the warm-up note below.
+### The hotspot is `(1,0)`, measured twice and never guessed
 
-Six targets pixel-exact with all three observers agreeing, including a screen
-edge and three window-frame positions. The two `NOTFOUND` rows are the matcher
-being **honest** where the sprite is clipped off-screen, and the sensor still
-reports the commanded pixel there — which is the case a framebuffer alone cannot
-adjudicate.
+Two independent derivations agree, and neither assumes the other:
+
+- the RAM **bias search** returns a `(1,0)` family. Because sprite ORIGINS are
+  what is fed to it, `value - origin` being constant means that constant *is*
+  the hotspot — so the search measures it rather than requiring it. That matters:
+  assuming a hotspot in order to find an address and then "confirming" the
+  hotspot from that address would be circular.
+- the sweep above gives `commanded - located origin` at every target.
+
+**Take it only from the write-test-confirmed address.** The derived copies track
+the pointer perfectly and each yields its own constant offset; the same search
+also returned `(-1,-2)` and `(14,13)` families, which are a *draw rectangle*
+rather than a position (a rect corner goes negative at a screen edge, which is
+how you know). A decoy's constant is not a hotspot.
+
+### The restore proof, and the one thing it cannot see
+
+Three `loadvm` cycles driven by **sourcing the guard's own**
+`scripts/lib/checkpoint-guard-proof.sh` — `cpg_reference()` and
+`cpg_prove_label()`, so `_cpg_same()` is the definition of "came back" and there
+is no second SSIM implementation to disagree with it. Cycles 1 and 2 on one QEMU
+process, **cycle 3 on a fresh one**, because a warm restore can pass where the
+visitor path fails and the visitor path always starts with a new process.
+
+```
+cycle 1  process A  SSIM 1.0 (byte-identical)  cursor origin 68,747 == reference
+cycle 2  process A  SSIM 1.0 (byte-identical)  cursor origin 68,747 == reference
+cycle 3  process B  SSIM 1.0 (byte-identical)  cursor origin 68,747 == reference
+```
+
+**The cursor assertion is not decoration.** `_cpg_same` accepts SSIM >= 0.999,
+and `checkpoint-guard-proof.sh` says in its own comment that a cursor move
+scores `0.999756` — i.e. *"unchanged"*. So the guard's whole-frame comparison is
+**blind to where the pointer is**, and on this station that blind spot sits
+exactly on the property being cut over: `kh-ramabs`' connect probe RE-STATES
+wherever the golden left the pointer, so a checkpoint that restored it
+inconsistently would make verification behave differently run to run — and it
+would present as an address problem rather than a checkpoint one. Assert the
+sprite origin alongside the SSIM.
+
+Also worth carrying to the next station: **typing dirties this guest.** BeOS is
+not click-to-focus and the golden's Terminal holds the caret, so
+`cpg_prove_label`'s typed `CPG_DIRTY_TEXT` moved the framebuffer below the SSIM
+bar on all three cycles — no `CPG_DIRTY_CMD` and no telnet fallback needed.
 
 ### The calibration that mattered
 
 `nudge-units` is guest-specific and getting it wrong is visible but subtle.
 At rhapsody's `nudge-units=2` the targets landed 1-2 px off with `reissued=24`
 across six targets; at **`nudge-units=1, nudge-px=1`** — R5's PS/2 path is 1 px
-per unit at nudge speed — every target landed exactly, `reissued=7`. Symptom of
-a wrong nudge: the read-back converges (so `STAT` looks healthy) while the drawn
-cursor sits a pixel or two away, because the last *draw* happened at an
-intermediate value.
-
-Also: **the first `MOVEA` after connect is refused** while the device runs its
-verification, so send a warm-up target before any proof sweep or the first row
-of your table will show the previous position and read as a failure.
+per unit at nudge speed — every target lands exactly. Symptom of a wrong nudge:
+the read-back converges (so `STAT` looks healthy) while the drawn cursor sits a
+pixel or two away, because the last *draw* happened at an intermediate value.
 
 ## 5. `pbs-state` — a fleet-wide constraint on build strategy
 
@@ -245,26 +305,82 @@ other projects'), or spend one cold re-bake and move beos onto its own build.
 **We chose the re-bake**, because a per-station binary has a blast radius of one
 station and the package rebuild does not.
 
-## 6. What is left
+## 6. What the cutover cost, and what it left behind
 
-1. Build `/opt/qemu-beos` — QEMU 11.0.2 with qemu-patches `0001` + `0007` +
-   `0009` + `0010` (verified to apply cleanly in that order and to compile
-   under `-Werror`; `0009` is macos753's layout-table restructure, which
-   `0010` extends rather than replaces). `0001` is not optional: on the host package fast-poll arrives as pve
-   quilt slot `0047`, and a build without it drops this tile back to the stock
-   30 ms display scan.
-2. Cold re-bake the golden on that binary, same device set. The fixture is
-   reproducible from cold by design — `UserBootscript` opens the Terminal and
-   NetPositive and the ICQ client, which is exactly why the 2026-08-23 MAC/NIC
-   re-bake was repeatable — so this is a mechanical bake, not a hand-arranged
-   scene. **Rule 6: do not retire the old golden until the new one is
-   restore-proven, and here that proof is stronger than usual because it is a
-   restore under a different binary.**
-3. Re-derive the address against the new golden (§3), put it in
-   `runtime.qemu.pointerRamAddress` and in `KH_RAMABS_ADDR`.
-4. Deploy in order: **binary, then launcher, then streamhost, then the env
-   fixture.** The launcher is safe to deploy ahead of the address because it
-   omits the device entirely when `KH_RAMABS_ADDR` is unset.
+All four steps that used to be listed here are done:
 
-Rollback is two lines: unset `KH_RAMABS_ADDR` and put `SH_INPUT_BACKEND` back to
-`dbus-rel`.
+1. `/opt/qemu-beos` built from fork `c5449c80`, `--target-list=x86_64-softmmu`,
+   **with nothing applied on top** — that tip already carries fast-poll (`0001`)
+   and the shared `kh-ramabs` device (`0007`, including this station's
+   `point32le`) as commits, so applying the patch files as well would only have
+   been a chance to misapply them. `binarySha256`
+   `90baceeb55935aa28c0f7637cb5218cda41bd24413ea870d2637c43415708669`, read from
+   the installed file. Fast-poll is **not optional**: on the host package it
+   arrives as pve quilt slot `0047`, and a build without it silently drops this
+   tile to the stock 30 ms display scan.
+2. Golden cold re-baked 2026-08-31 12:12:00 (`VM_CLOCK 0000:26:11.140`) with the
+   retronet live, restore-proven under the new binary (§4).
+3. Address re-derived against that bake: `0x03a5fae4`.
+4. Deployed binary -> launcher -> streamhost -> env fixture.
+
+### The bake needs the network, and therefore needs the station down
+
+Not obvious until you try it, and it is the expensive part of any future
+re-bake. The fixture is only correct with DNS, the corpus and ICQ live; that
+needs a tap on `vmbr-rn`; the guest's address comes from a DHCP reservation
+keyed on `RN_BEOS_MAC`; **and that MAC is in the golden's device vmstate**, so
+you cannot bake under a substitute MAC to dodge the clash. Two `rtl8139`s with
+one MAC on one bridge collapse to a single FDB entry. So exactly one beos may be
+on `vmbr-rn`, and during a cold bake it has to be the rig: **the live station
+must be stopped for the duration.** The 2026-08-31 window was 34 minutes.
+
+That same fact is why everything *downstream* of the bake is free: an unenslaved
+tap with an unchanged `-device` is safe beside the live station, because bridge
+membership is a pure backend property and is not in the vmstate. The address
+derivation, the cursor bank and the whole restore proof ran on a bridgeless tap
+with the exhibit back in service.
+
+### ICBM loses the boot race, and the watchdog does not catch it
+
+Found during the bake and **not fixed here**. On the cold boot ICBM started
+before R5's resolver was ready and sat at `Could not locate server` — the same
+race `UserBootscript` already guards for NetPositive by polling until a *name*
+resolves, and which nothing guards for ICBM. The watchdog does not recover it:
+`icbm-watchdog.sh`'s `offline()` returns "not offline" when there is no
+`LoginSuccessful` line at all, which is exactly the never-logged-in case. It
+covers a **dropped** session and not a **never-started** one, so the client
+stays offline indefinitely. Killing the team let the watchdog relaunch it into a
+working resolver, after which it signed on and HiveBot greeted it.
+
+The fix is not to invert that line: "no `LoginSuccessful` yet" is genuinely
+ambiguous between "still logging in" and "never will", so it needs a
+first-login deadline rather than a flipped return.
+
+### The greeting window is a function of elapsed time, not of the scene
+
+HiveBot greets every sign-on about 30 s later, and the message window lands over
+the corpus page — over the exhibit. So there is no single "what a cold boot
+produces": bake early and it is absent, bake late and it is there. The incumbent
+golden settles it, and the incumbent has no message window, so the 2026-08-31
+bake closed it before `savevm`. That is reproduction rather than curation, but
+it is the one hand-arrangement in an otherwise script-reproduced fixture, and
+`SH_FIXTURE_DESC` now records it so the next re-bake does not have to restore
+the old golden to find out.
+
+Note this only sets the INITIAL scene. A live re-sign-on still pops a greeting
+over the exhibit in front of a visitor. Whether that is charm or defect is an
+operator call, not a bring-up one.
+
+### Rollback
+
+Two lines, and they move **together** (§5): `BEOS_QEMU=/usr/bin/qemu-system-x86_64`
+plus restoring `beos-golden.qcow2` from
+`beos-golden.qcow2.cpg-bak-20260831T083703Z`
+(sha256 `12300e30486c5c2f792d0fe60e5a075718e19de23bc95b391e3cf5ce25109660`).
+Unsetting `KH_RAMABS_ADDR` alone drops the device and returns the relative
+pointer, but leaves the new golden in place, which the host binary cannot read.
+
+**This rollback has been run, not merely argued.** On 2026-08-31 that backup was
+restored under `/usr/bin/qemu-system-x86_64` on an isolated tap and came back to
+the fixture scene. Every other station in the wave has a rollback path that is
+only reasoned about; this one has been exercised.
