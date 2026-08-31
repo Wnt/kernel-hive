@@ -41,9 +41,8 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use crate::capture::{Capture, CONSOLE, I_KBD, I_MOUSE};
+use crate::capture::{Capture, CONSOLE, I_MOUSE};
 use crate::config::{Config, InputBackend};
-use crate::key_quirks::{key_gate, key_qnum, remap_key};
 
 pub const I_MTOUCH: &str = "org.qemu.Display1.MultiTouch";
 
@@ -358,50 +357,6 @@ pub async fn button(cap: &Capture, btn: u32, down: bool) {
         .await;
 }
 
-async fn send_key(conn: &zbus::Connection, code: u32, qnum: u32, down: bool) {
-    let m = if down { "Press" } else { "Release" };
-    if let Err(e) = conn
-        .call_method(None::<&str>, CONSOLE, Some(I_KBD), m, &(qnum,))
-        .await
-    {
-        eprintln!("[input] key {m} code=0x{code:x} qnum=0x{qnum:x} ERR: {e}");
-    }
-    crate::input_telemetry::key_sent(code, down);
-}
-
-pub async fn key(cap: &Capture, code: u32, down: bool, cfg: &Config) {
-    let Some(conn) = cap.main_conn.as_ref() else {
-        return;
-    };
-    let qnum = key_qnum(code, cfg.legacy_kbd);
-    if cfg.key_min_hold_ms == 0 && cfg.key_min_gap_ms == 0 {
-        send_key(conn, code, qnum, down).await;
-        return;
-    }
-    // Both knobs share ONE gate, so a whole pasted line is paced in arrival
-    // order: press -> (hold) -> release -> (gap) -> next press. Events queue
-    // behind the mutex when the client types faster than the pacing allows;
-    // nothing is reordered and nothing is dropped.
-    let min_hold = std::time::Duration::from_millis(cfg.key_min_hold_ms);
-    let min_gap = std::time::Duration::from_millis(cfg.key_min_gap_ms);
-    let mut gate = key_gate().lock().await;
-    if down {
-        let wait = gate.press_delay(std::time::Instant::now(), min_gap);
-        if !wait.is_zero() {
-            tokio::time::sleep(wait).await;
-        }
-        send_key(conn, code, qnum, true).await;
-        gate.on_press(qnum, std::time::Instant::now());
-    } else {
-        let wait = gate.release_delay(qnum, std::time::Instant::now(), min_hold);
-        if !wait.is_zero() {
-            tokio::time::sleep(wait).await;
-        }
-        send_key(conn, code, qnum, false).await;
-        gate.on_release(std::time::Instant::now());
-    }
-}
-
 /// One wheel notch: press then release the wheel-up (3) or wheel-down (4) button.
 pub async fn wheel(cap: &Capture, dy: i32) {
     if dy == 0 {
@@ -564,6 +519,7 @@ pub async fn handle(
     cap: &Capture,
     cfg: &Config,
     mouse: &SharedMouse,
+    keys: &crate::key_state::SharedKeys,
     router: Option<&std::sync::Arc<crate::realtime_input::InputRouter>>,
     rec: &[u8],
 ) {
@@ -717,42 +673,14 @@ pub async fn handle(
                 crate::x11_warp::edge_done();
             }
         }
+        // Routing, pacing, per-session held-state and the eventual teardown
+        // release all live together in key_state.rs now — see its module doc
+        // for why (input.rs is at its file-size cap, and a key record's
+        // whole lifecycle is one coherent seam).
         3 if rec.len() >= 4 => {
             let down = rec[1] != 0;
-            // The per-station remap rewrites the WIRE code first, so every backend
-            // below (and key_qnum's legacy-kbd quirk) sees the key the emulated
-            // hardware actually has.
-            let code = remap_key(u16::from_le_bytes([rec[2], rec[3]]) as u32, &cfg.key_remap);
-            // Keyboard-lag evidence chain, first daemon-side link: when this
-            // edge ARRIVED, on the wall clock CTLTRACE and the sink tx/ack
-            // lines share (SH_INPUT_TELEMETRY >= 1, else free). The backend
-            // named is where the edge is ROUTED below: the matrix sinks by
-            // name, everything else lands on the QEMU/dbus keyboard path.
-            crate::input_telemetry::key_recv(
-                router
-                    .filter(|r| r.routes_keys(cfg))
-                    .map(|r| r.backend())
-                    .unwrap_or("dbus"),
-                code,
-                down,
-            );
-            // mamecmd/mamesock (the IRIX station) have no D-Bus connection at all —
-            // Capture.main_conn is None for every non-QEMU backend, which is
-            // exactly why browser keys had never reached that guest. Route it to
-            // the key matrix instead (the Lua agent's command file, or the same
-            // KEY verbs over the ctlsock control socket); every other backend
-            // keeps the classic path byte for byte.
-            //
-            // gallery-hid is NOT routed here even though its sink implements
-            // try_key: it is scoped to Solaris/QNX pointer drivers and has no
-            // keyboard minor, so keys stay on QEMU's normal keyboard path. The
-            // stock guest keyboard driver consumes this D-Bus injection.
-            // x11test joins only when SH_X11TEST_KEYS is set (routes_keys).
-            if let Some(router) = router.filter(|r| r.routes_keys(cfg)) {
-                let _ = router.try_key(code as u16, down, false);
-                return;
-            }
-            key(cap, code, down, cfg).await;
+            let raw_code = u16::from_le_bytes([rec[2], rec[3]]);
+            crate::key_state::handle_key(cap, cfg, router, keys, raw_code, down).await;
         }
         // type=4 DIRECT relative (pointer-lock movementX/Y): NO homing/corner-pin.
         // The UI pointer-lock sends small per-event deltas that reach the guest
