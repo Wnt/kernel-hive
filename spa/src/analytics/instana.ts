@@ -149,9 +149,11 @@ export function configureInstana(sessionId: string): void {
   // analytics/trace.ts stamps as `session.id` on every OTel span this tab
   // sends to /traces, so an operator holding an Instana beacon can look up
   // this key and pull the matching kernel-hive trace from
-  // /admin/observability, and vice versa. `kh.bundle` is the closest thing
-  // this build has to a commit id (three/clientDebug.ts's BUNDLE_MARKER,
-  // already used to stamp WHICH client build produced a debug snapshot).
+  // /admin/observability, and vice versa. `kh.bundle` is the actual git
+  // commit this build was made from (three/clientDebug.ts's BUNDLE_MARKER —
+  // `<branch>@<short-sha>`, baked in by vite.config.ts, the same shape
+  // box-deploy.sh --status prints — also used to stamp WHICH client build
+  // produced a debug snapshot).
   //
   // ONE CALL PER KEY. The documented signature is `ineum('meta', key,
   // value)` — a single string key and a single string value, not an object.

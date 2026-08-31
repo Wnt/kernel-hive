@@ -37,10 +37,16 @@ const SNAP_CHUNK = 480;         // snapshot JSON is chunked to respect MAX_DETAI
 const EVAL_RESULT_MAX = 16 * 1024; // cap reassembled eval-result telemetry
 
 /** Bundle marker so a snapshot proves WHICH client build is running. Exported
- *  for analytics/instana.ts too: it is the closest thing this bundle has to a
- *  build/commit id, and stamping it into `ineum('meta', …)` is what lets a
- *  Instana beacon and one of our own traces be told apart by build. */
-export const BUNDLE_MARKER = 'spa-webrtc-phase1-20260716';
+ *  for analytics/instana.ts too: it is the ACTUAL git commit this build was
+ *  made from — `<branch>@<short-sha>`, the SAME shape `box-install.sh` stamps
+ *  into `.deployed-rev` and `box-deploy.sh --status` prints — baked in by
+ *  vite.config.ts's `computeBuildId()` (see there for short-vs-full/override)
+ *  and exposed as `import.meta.env.VITE_KH_BUILD_ID`. Reconciles an Instana
+ *  beacon, a clientlog.jsonl/trace row, and `box-deploy.sh --status` by one
+ *  id. Falls back to the honest placeholder below (no lookalike value) with
+ *  no git, no vite.config.ts `define` (vitest), or an unconfigured build. */
+export const BUNDLE_MARKER =
+  (import.meta.env as { VITE_KH_BUILD_ID?: string }).VITE_KH_BUILD_ID || 'unknown-build';
 
 interface ClientLogEvent {
   ts: number;

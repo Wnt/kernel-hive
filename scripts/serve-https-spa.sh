@@ -118,6 +118,11 @@ deploy() {
     msg "         (cd spa && npm run build)"
     exit 1
   fi
+  # Upload this build's source maps to Instana BEFORE the maps are stripped
+  # from what actually ships (immediately below). If this is a no-op
+  # (unconfigured) or fails, it never blocks the rest of the deploy — see the
+  # function for why.
+  publish_instana_sourcemaps
   msg "deploying dist + server to $HOST:$SERVE_DIR"
   $SSH "mkdir -p $WEBROOT $HOST_PKI"
   # Timestamped safety tar of the current webroot before replacing UI entries;
@@ -129,7 +134,14 @@ deploy() {
         else echo '[serve-https] webroot empty, nothing to back up'; fi"
   # Extract to a staging dir, then replace only top-level entries shipped by
   # dist/. Unrelated webroot content (notably boot/) remains untouched.
-  tar czf - -C "$DIST" . | $SSH "set -e; \
+  # --exclude='*.map': maps are UPLOAD-ONLY (publish_instana_sourcemaps,
+  # just above) — vite.config.ts's `sourcemap: 'hidden'` already keeps the
+  # shipped JS from referencing them, this is the second guard that keeps
+  # them off the public webroot entirely. See publish_instana_sourcemaps for
+  # why (gallery is passkey-gated, so Instana's automatic public retrieval
+  # cannot work anyway, and there is no reason to double visitors' JS payload
+  # for files nothing on the live site ever asks for).
+  tar czf - -C "$DIST" --exclude='*.map' . | $SSH "set -e; \
     stage=\$(mktemp -d '$SERVE_DIR/.spa-deploy.XXXXXX'); \
     trap 'rm -rf \"\$stage\"' EXIT; \
     tar xzf - -C \"\$stage\"; \
@@ -221,6 +233,95 @@ publish_instana_agent() {
     # uptime), but this line must be impossible to miss in the deploy log.
     msg "WARNING: failed to fetch the Instana EUM agent — /vendor/instana-eum.min.js was NOT updated." >&2
     msg "         Instana EUM will be broken (404) until this is retried: '$0 all' or rerun deploy." >&2
+  fi
+}
+
+# Upload this build's JS source maps to Instana, so its stack-trace
+# translation (docs/lab/… — see the offline Instana docs' "JavaScript stack
+# trace translation" section) can turn a beacon's minified frame back into a
+# real file/line. Runs from THIS machine (no $SSH — dist/ already exists
+# locally after build()); never touches the box.
+#
+# WHY UPLOAD RATHER THAN LET INSTANA FETCH THE MAP ITSELF: Instana's default
+# mechanism is to GET the JS file, read its `sourceMappingURL` comment, and
+# GET the map — but vite.config.ts's `sourcemap: 'hidden'` deliberately never
+# writes that comment, and deploy() never publishes the .map at all (see its
+# `--exclude='*.map'`). Both exist for the SAME reason: the gallery is
+# passkey-gated (docs/PUBLIC-GALLERY.md), so an unauthenticated crawl — which
+# is all Instana's SaaS can do — gets 401 for the JS file itself, so automatic
+# retrieval could never have worked here regardless. Rather than serve maps
+# publicly on the chance a differently-configured future visitor could fetch
+# one, this uploads them straight to Instana's private per-website store
+# (Instana's own documented answer for exactly this case: "Automatic
+# JavaScript source maps retrieval does not work for customers who monitor
+# private websites... Instana provides a way to upload... source-mapping
+# files for private websites").
+#
+# THE PAIRING KEY IS THE JS FILE'S URL, NOT A VERSION. Instana's Web REST API
+# associates one uploaded map with the exact URL a stack-trace frame will
+# name (`-F 'url=...'`), not with any release/version string — there is no
+# separate "release" identifier in this mechanism. Vite's content hash in
+# each asset's filename (index-<hash>.js) already makes that URL unique per
+# build, which is exactly the property this pairing needs.
+#
+# CREDENTIALS: the PERSONAL API TOKEN (INSTANA_API_TOKEN_FILE), never the
+# agent key — this is a Web REST (config) call, not ingest. Read from the
+# gitignored file path only; never printed, never baked into any built file.
+#
+# INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID names an Instana "File Upload
+# Configuration" — a per-website bucket the source maps upload API needs. IBM's
+# docs only ever show it created BY HAND in the UI (website's Configuration
+# tab -> JS Stack Trace Translation -> File Download Configurations -> Add
+# Configuration); this file's own comment right above INSTANA_WEBSITE_KEY
+# already used the equivalent config REST endpoint once (creating the website
+# itself), and the same POST shape works to create this too — see
+# registry/local.env.example for the one-time command.
+publish_instana_sourcemaps() {
+  if [ -z "${INSTANA_API_BASE:-}" ] || [ -z "${INSTANA_WEBSITE_KEY:-}" ] ||
+    [ -z "${INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID:-}" ] || [ -z "${INSTANA_API_TOKEN_FILE:-}" ]; then
+    msg "Instana source-map upload not fully configured (need INSTANA_API_BASE, INSTANA_WEBSITE_KEY,"
+    msg "INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID, INSTANA_API_TOKEN_FILE) — skipping upload, maps stay unpublished only"
+    return 0
+  fi
+  local token_file="$REPO/$INSTANA_API_TOKEN_FILE"
+  [ -f "$token_file" ] || {
+    msg "WARNING: INSTANA_API_TOKEN_FILE=$INSTANA_API_TOKEN_FILE not found — skipping source-map upload" >&2
+    return 0
+  }
+  [ -z "${SH_GALLERY_HOST:-}" ] && {
+    msg "WARNING: SH_GALLERY_HOST unset — cannot form the public asset URLs maps must be keyed to; skipping upload" >&2
+    return 0
+  }
+  local token maps_found=0 failed=0
+  token="$(cat "$token_file")"
+  for map in "$DIST"/assets/*.js.map; do
+    [ -f "$map" ] || continue
+    maps_found=$((maps_found + 1))
+    local js_name js_url resp http_code
+    js_name="$(basename "$map" .map)"
+    js_url="https://$SH_GALLERY_HOST/assets/$js_name"
+    resp="$(curl -sS -L -X PUT \
+      -o /dev/null -w '%{http_code}' \
+      "$INSTANA_API_BASE/api/website-monitoring/config/$INSTANA_WEBSITE_KEY/sourcemap-upload/$INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID/form" \
+      -H "authorization: apiToken $token" \
+      -F "url=$js_url" \
+      -F "sourceMap=@$map" || echo '000')"
+    http_code="$resp"
+    if [ "$http_code" = "200" ]; then
+      msg "uploaded source map for $js_url"
+    else
+      failed=$((failed + 1))
+      msg "WARNING: source-map upload for $js_url failed (HTTP $http_code)" >&2
+    fi
+  done
+  if [ "$maps_found" = 0 ]; then
+    msg "WARNING: no .map files in $DIST/assets — was the build made with sourcemaps enabled (vite.config.ts)?" >&2
+  elif [ "$failed" -gt 0 ]; then
+    # LOUD, not silent, same standard as publish_instana_agent: the deploy
+    # continues (Instana keeps translating against the PREVIOUS build's maps,
+    # a fine fallback — stale-but-present beats none), but this must be
+    # impossible to miss.
+    msg "WARNING: $failed of $maps_found source-map upload(s) failed — Instana stack traces for this build may show minified frames." >&2
   fi
 }
 
