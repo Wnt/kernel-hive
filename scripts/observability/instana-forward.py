@@ -22,6 +22,22 @@ property worth re-stating at the boundary rather than assumed. `--dry-run`
 exists so the exact bytes can be read before any of them are sent, and it is the
 recommended first run.
 
+THE AGENT KEY CANNOT BE FETCHED FROM THE API — checked, 2026-08-31, so nobody
+re-derives it. A personal API token authenticates fine against
+`/api/instana/health`, `/api/instana/version`, `/api/settings/api-tokens` and
+the event-specification endpoints, but every plausible agent-key path 404s
+(`/api/instana/agentKeys`, `/api/settings/agent/keys`, `/api/settings/agentKeys`,
+`/api/settings/agents/keys`, `/api/instana/settings/agentKeys`, and the
+lower-cased variants); the tenant exposes no OpenAPI document to enumerate from
+either. IBM's own community answer agrees: there is no REST call for the
+download/agent key. It is a UI-only value — Instana → Settings → Agents — and
+must be pasted into INSTANA_TOKEN_FILE by hand, once.
+
+That is why INSTANA_AUTH_MODE exists at all: `api-token` is genuinely useful for
+reading configuration out of Instana, and genuinely useless for ingesting spans
+into it, and the two failure modes look identical from the outside (a 401) until
+somebody has read this paragraph.
+
 OFF UNLESS CONFIGURED. No endpoint in registry/local.env means this does
 nothing, loudly. It is never wired into a timer or the serving plane by this
 commit; forwarding is a thing somebody runs, or arms deliberately.
@@ -39,6 +55,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -195,7 +212,14 @@ def post(cfg: Config, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
         with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 - https enforced above
             return True, f"{resp.status} {resp.reason}"
     except urllib.error.HTTPError as e:
-        detail = e.read(400).decode("utf-8", "replace")
+        detail = e.read(2000).decode("utf-8", "replace")
+        # Acceptors answer errors with an HTML page. Printing 400 characters of
+        # markup buries the one line that matters under a <table>.
+        if "<html" in detail.lower():
+            text = re.sub(r"<[^>]+>", " ", detail)
+            detail = " ".join(text.split())[:160] or f"HTML error page ({e.code})"
+        else:
+            detail = detail[:300]
         hint = ""
         if e.code in (401, 403):
             hint = (
@@ -347,8 +371,23 @@ def main() -> int:
         if not (args.dry_run and len([p for p in problems if "ENDPOINT" not in p]) == 0):
             return 2
     if args.check:
-        print("\nconfiguration OK")
-        return 0
+        # A check that only reads local config is not a check. Everything above
+        # was true of a credential Instana rejects — the wrong TYPE of token is
+        # locally indistinguishable from the right one, and only the acceptor
+        # can settle it. So ask it, with a well-formed but EMPTY document: this
+        # proves the endpoint and the key without sending one span of telemetry.
+        ok, detail = post(cfg, "/v1/traces", {"resourceSpans": []}, dry_run=False)
+        print(f"\nlive check -> {detail}")
+        if ok:
+            print("configuration OK — endpoint reachable and the key was accepted")
+            return 0
+        print(
+            "configuration NOT usable. The endpoint answered, so this is the credential.\n"
+            "  Instana's OTLP acceptor takes the AGENT KEY, which is UI-only:\n"
+            "  Instana -> More -> Agents -> Install Agents (the key shown there).\n"
+            f"  Put it in {cfg.token_file} and re-run."
+        )
+        return 1
 
     rc = 0
     while True:
