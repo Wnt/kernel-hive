@@ -194,13 +194,20 @@ against the old golden it logs `STALE GOLDEN`, repairs, and logs
 ### Recapturing this station's checkpoint
 
 The two config steps must be applied, and the console cleared, in **one** telnet
-session — `login` writes its `ROOT LOGIN` line before your command runs, so
-clearing last leaves the console clean:
+session — and the clear needs a **delay in front of it**:
 
 ```sh
-labctl exec sunos414 "grep slirphost /etc/hosts > /dev/null || echo 10.0.2.2 slirphost >> /etc/hosts ; env DISPLAY=:0 /usr/openwin/bin/xhost +10.0.2.2 > /dev/null ; env TERM=sun /usr/ucb/clear > /dev/console"
+labctl exec sunos414 "grep slirphost /etc/hosts > /dev/null || echo 10.0.2.2 slirphost >> /etc/hosts ; env DISPLAY=:0 /usr/openwin/bin/xhost +10.0.2.2 > /dev/null ; sleep 4 ; env TERM=sun /usr/ucb/clear > /dev/console"
 ssh lab "CPG_DIRTY_CMD='labctl exec sunos414 \"echo checkpoint-guard-dirty > /dev/console\"' checkpoint-guard recapture sunos414"
 ```
+
+**The `sleep` is load-bearing, and being last in the command list is not
+enough.** `login` announces `ROOT LOGIN ttyp1 FROM slirphost` through
+**syslogd**, which writes to `/dev/console` asynchronously. Without the delay the
+clear runs first and the announcement lands *after* it — measured on the live
+station: a console cleared this way came back a moment later showing exactly that
+one line. Let syslog flush, then clear. Logout adds nothing, so the console then
+stays empty.
 
 **`CPG_DIRTY_CMD` is not optional on this station.** The guard proves a restore
 by dirtying the framebuffer and requiring it back; its default way of doing that
