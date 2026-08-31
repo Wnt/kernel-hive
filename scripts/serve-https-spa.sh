@@ -134,14 +134,19 @@ deploy() {
         else echo '[serve-https] webroot empty, nothing to back up'; fi"
   # Extract to a staging dir, then replace only top-level entries shipped by
   # dist/. Unrelated webroot content (notably boot/) remains untouched.
-  # --exclude='*.map': maps are UPLOAD-ONLY (publish_instana_sourcemaps,
-  # just above) — vite.config.ts's `sourcemap: 'hidden'` already keeps the
-  # shipped JS from referencing them, this is the second guard that keeps
-  # them off the public webroot entirely. See publish_instana_sourcemaps for
-  # why (gallery is passkey-gated, so Instana's automatic public retrieval
-  # cannot work anyway, and there is no reason to double visitors' JS payload
-  # for files nothing on the live site ever asks for).
-  tar czf - -C "$DIST" --exclude='*.map' . | $SSH "set -e; \
+  #
+  # .map files ARE shipped here (no --exclude). vite.config.ts's
+  # `sourcemap: true` writes a `//# sourceMappingURL=` comment into the
+  # shipped JS, and it needs a map to actually resolve at that URL. This is
+  # deliberate, not an oversight: the built bundle already serves
+  # unauthenticated (only the app shell at '/' is passkey-gated — verified:
+  # `/assets/index-*.js` returns 200 with no session, `/` returns 401 — see
+  # docs/PUBLIC-GALLERY.md), and the source is the openly-public kernel-hive
+  # GitHub repo, so a map reveals nothing the repo doesn't already. A browser
+  # only fetches a .map when its devtools is open, so this costs an ordinary
+  # visitor nothing. The Instana upload just above is KEPT alongside this,
+  # not replaced by it — see publish_instana_sourcemaps for why both exist.
+  tar czf - -C "$DIST" . | $SSH "set -e; \
     stage=\$(mktemp -d '$SERVE_DIR/.spa-deploy.XXXXXX'); \
     trap 'rm -rf \"\$stage\"' EXIT; \
     tar xzf - -C \"\$stage\"; \
@@ -242,20 +247,21 @@ publish_instana_agent() {
 # real file/line. Runs from THIS machine (no $SSH — dist/ already exists
 # locally after build()); never touches the box.
 #
-# WHY UPLOAD RATHER THAN LET INSTANA FETCH THE MAP ITSELF: Instana's default
-# mechanism is to GET the JS file, read its `sourceMappingURL` comment, and
-# GET the map — but vite.config.ts's `sourcemap: 'hidden'` deliberately never
-# writes that comment, and deploy() never publishes the .map at all (see its
-# `--exclude='*.map'`). Both exist for the SAME reason: the gallery is
-# passkey-gated (docs/PUBLIC-GALLERY.md), so an unauthenticated crawl — which
-# is all Instana's SaaS can do — gets 401 for the JS file itself, so automatic
-# retrieval could never have worked here regardless. Rather than serve maps
-# publicly on the chance a differently-configured future visitor could fetch
-# one, this uploads them straight to Instana's private per-website store
-# (Instana's own documented answer for exactly this case: "Automatic
-# JavaScript source maps retrieval does not work for customers who monitor
-# private websites... Instana provides a way to upload... source-mapping
-# files for private websites").
+# WHY UPLOAD AS WELL AS SERVE THE MAP PUBLICLY: since vite.config.ts's
+# `sourcemap: true` and deploy()'s dropped --exclude, the map IS now public —
+# `sourceMappingURL` points at it and a browser can fetch it (only the app
+# shell at '/' is passkey-gated; `/assets/*` is unauthenticated — see
+# docs/PUBLIC-GALLERY.md). That serves a human with devtools open, which is
+# the case this upload does NOT cover: Instana's own automatic retrieval
+# (GET the JS, read `sourceMappingURL`, GET the map) depends on its crawler
+# actually reaching us and on timing relative to the next deploy, and IBM's
+# own docs describe upload as the reliable path for a private website even
+# when the asset itself is reachable ("Automatic JavaScript source maps
+# retrieval does not work for customers who monitor private websites...
+# Instana provides a way to upload... source-mapping files for private
+# websites"). So this pushes the map straight to Instana's private
+# per-website store, deterministically, on every deploy — a second delivery
+# path for a second consumer, not a duplicate of the public one above.
 #
 # THE PAIRING KEY IS THE JS FILE'S URL, NOT A VERSION. Instana's Web REST API
 # associates one uploaded map with the exact URL a stack-trace frame will
