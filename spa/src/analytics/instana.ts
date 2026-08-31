@@ -90,26 +90,51 @@ export const IGNORE_URL_PATTERNS: RegExp[] = [
 ];
 
 /**
- * Everything that does not depend on WHO the visitor is, plus the
- * pseudonymous identity every beacon must carry from the first moment
- * Instana is configured. Call this ONCE, as early as the session id exists,
- * gated by the SAME `allowed` answer `initAnalytics` uses (main.tsx) — an
- * unconfigured build or a signed-out stranger at the walk-in door must get
- * none of this.
+ * Everything that does not depend on WHO the visitor is, MINUS what defect
+ * 2/3 moved into spa/index.html's inline bootstrap (`trackSessions`,
+ * `enableW3CHeaders`, the initial pseudonymous `user` id, and the initial
+ * `page` name) because it has to be set before the page-load beacon fires —
+ * see that file's comment. Call this ONCE, as early as the session id
+ * exists, gated by the SAME `allowed` answer `initAnalytics` uses
+ * (main.tsx) — an unconfigured build or a signed-out stranger at the
+ * walk-in door must get none of this.
  */
 export function configureInstana(sessionId: string): void {
-  ineum('trackSessions');
-  // autoPageDetection: the Instana docs contradict themselves on the default
-  // (one page says SPAs get it automatically, another says it is off unless
-  // asked for), so it is set explicitly rather than trusted to either claim.
-  // This app has real client-side routes (BrowserRouter in main.tsx) with no
-  // full navigation between them — without this, every route after the first
-  // load is invisible to Instana.
-  ineum('autoPageDetection', true);
-  // Required for backend correlation: without it the agent never attaches its
-  // own W3C trace-context header to outgoing requests, and an Instana trace
-  // can never be linked to a backend span at all.
-  ineum('enableW3CHeaders', true);
+  // autoPageDetection: EXPLICITLY OFF, not left to either of the docs'
+  // self-contradictory defaults. analytics/navigation.ts now drives every
+  // route transition itself (a single router-level observer feeding BOTH
+  // this vendor and our own plane — see that file's header for the whole
+  // design) and calls `ineum('page', ...)` on each one. Leaving
+  // autoPageDetection on at the same time would give Instana two mechanisms
+  // naming the same transition — its own URL-change heuristic and our
+  // explicit call — which structurally cannot agree on timing or on name
+  // (ours is a route PATTERN; autoPageDetection's own default is closer to
+  // the raw path/title) and would double the page-transition beacon count
+  // for no gain. Explicit-and-ours was chosen over explicit-and-Instana's
+  // specifically because our router already knows the pattern/param split
+  // this whole integration wants (§ the cardinality rule in navigation.ts),
+  // and because the operator wants OUR plane to work with Instana absent
+  // entirely — an app that only knows how to name a page through a
+  // third-party agent's internals is not that.
+  //
+  // THE COST, STATED RATHER THAN HIDDEN: Instana's docs (inconsistent
+  // elsewhere, as already noted) describe recent agent versions timing a
+  // page transition automatically under autoPageDetection — a number this
+  // integration cannot ask the agent for once autoPageDetection is off. That
+  // number is not lost: navigation.ts measures its own transition duration
+  // (route commit to next paint, a double-`requestAnimationFrame` — the
+  // same "two frames" heuristic browsers use elsewhere to mean "painted")
+  // and records it durably in OUR OWN plane (`app.page.transitionMs`, and as
+  // the `app.page` span's own duration — visible in /admin/observability
+  // with Instana absent). What we can pass back to Instana is limited to
+  // documented, ALREADY-VERIFIED call shapes (this file's own `meta` fix is
+  // exactly what defect 1 exists to get right) — navigation.ts forwards it
+  // as `ineum('meta', 'kh.page.transitionMs', ...)` rather than inventing an
+  // unverified custom-event call this environment has no way to test against
+  // the real agent (the vendor bundle on labhost is not world-readable, and
+  // IBM's own docs page 403'd a fetch attempt while writing this). Best
+  // effort, stated as such.
+  ineum('autoPageDetection', false);
   // Both default OFF. They patch addEventListener/setTimeout/setInterval so
   // an exception thrown from inside a DOM handler or a timer callback is
   // still caught and reported. Without them Instana only sees errors that
@@ -127,19 +152,26 @@ export function configureInstana(sessionId: string): void {
   // /admin/observability, and vice versa. `kh.bundle` is the closest thing
   // this build has to a commit id (three/clientDebug.ts's BUNDLE_MARKER,
   // already used to stamp WHICH client build produced a debug snapshot).
-  ineum('meta', { 'kh.sessionId': sessionId, 'kh.bundle': BUNDLE_MARKER });
-  // Pseudonymous identity, set FIRST and unconditionally — this is the ONLY
-  // identity a signed-out or anonymous visitor ever gets, and it is also
-  // what covers the gap before a real account is known: `loadSession()` in
-  // main.tsx is an async fetch, and the browser's automatic page-load beacon
-  // can fire before that fetch resolves (this is a 3D gallery with real asset
-  // weight; the auth round trip does not get to assume it wins the race).
-  // Instana does not retroactively correct a beacon already sent — a call
-  // made later only affects what goes out AFTER it runs — so setting SOME
-  // identity here, synchronously, is what keeps that early beacon from
-  // going out with no identity at all. See configureInstanaIdentity for the
-  // update once (if) a real account is known.
-  ineum('user', sessionId);
+  //
+  // ONE CALL PER KEY. The documented signature is `ineum('meta', key,
+  // value)` — a single string key and a single string value, not an object.
+  // A previous version of this line called `ineum('meta', { ... })`, which
+  // Instana's agent stringifies as its own object key (`'[object Object]':
+  // 'undefined'` is exactly what that beacon carried in production) — the
+  // join key this whole integration exists for was never actually sent.
+  // Verified live: a page-load beacon queried from Instana's API carried
+  // that literal malformed meta. So: one `ineum('meta', k, v)` call per
+  // entry, both arguments coerced to string (Instana's own signature takes
+  // strings only).
+  ineum('meta', 'kh.sessionId', sessionId);
+  ineum('meta', 'kh.bundle', String(BUNDLE_MARKER));
+  // NOT `ineum('user', sessionId)` here — that is now set in spa/index.html's
+  // inline bootstrap, before this module even loads, for the reason stated
+  // at this function's own header: the page-load beacon needs it and this
+  // call runs after that beacon has already gone out. Calling it again here
+  // would be harmless (same value) but is deliberately omitted so the split
+  // stays legible: this file is what CAN wait, index.html is what cannot.
+  // See configureInstanaIdentity for the upgrade once a real account exists.
 }
 
 /**

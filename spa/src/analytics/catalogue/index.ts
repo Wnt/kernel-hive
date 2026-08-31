@@ -50,6 +50,7 @@
 //  silently detaches a probe from its call site.
 // ============================================================================
 
+import { APP_METRICS, APP_PROBES } from './app.ts';
 import { FLEET_FLOWS, FLEET_METRICS, FLEET_PROBES } from './fleet.ts';
 import { STATION_FLOWS, STATION_METRICS, STATION_PROBES } from './station.ts';
 import { WALKIN_FLOWS, WALKIN_METRICS, WALKIN_PROBES } from './walkin.ts';
@@ -60,6 +61,7 @@ import { WALKIN_FLOWS, WALKIN_METRICS, WALKIN_PROBES } from './walkin.ts';
 export { bucketFor } from './types.ts';
 
 export const PROBES = {
+  ...APP_PROBES,
   ...FLEET_PROBES,
   ...STATION_PROBES,
   ...WALKIN_PROBES,
@@ -79,6 +81,7 @@ export type FlowId = keyof typeof FLOWS;
 export type FlowStep<F extends FlowId> = (typeof FLOWS)[F]['steps'][number];
 
 export const METRICS = {
+  ...APP_METRICS,
   ...FLEET_METRICS,
   ...STATION_METRICS,
   ...WALKIN_METRICS,

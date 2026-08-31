@@ -37,13 +37,76 @@
         }
       })();
     </script>
-    <!-- Instana EUM (Instana/IBM) bootstrap — earliest possible config, so
-         page-load timing instrumentation covers the whole navigation, not just
-         whatever survives until main.tsx evaluates. The rest of the config
-         (sessions, secrets, ignoreUrls, the trace-correlation `meta`…) is set
-         later from spa/src/analytics/instana.ts, once a session id exists;
-         only `reportingUrl` and `key` have to be THIS early, because they are
-         what the agent script itself needs the instant it loads.
+    <!-- The tab's pseudonymous session id, minted ONCE, as early as possible,
+         and stashed on window so every later reader (the Instana bootstrap
+         right below, the boot-time client-error reporter further down, and
+         analytics/three/clientDebug.ts's makeSessionId() once the module
+         graph evaluates) uses the SAME value rather than each minting its
+         own. Used to live inside the error-reporter script further down,
+         generated only when THAT script ran — too late for Instana, whose
+         bootstrap needs it before the agent script below evaluates. Moved
+         here, unconditionally (independent of whether Instana is
+         configured), so both readers agree. -->
+    <script>
+      (function () {
+        try {
+          var bytes = new Uint8Array(4);
+          crypto.getRandomValues(bytes);
+          window.__kernelHiveErrorSessionId = Array.from(bytes, function (b) {
+            return b.toString(16).padStart(2, '0');
+          }).join('');
+        } catch (e1) {
+          try {
+            window.__kernelHiveErrorSessionId = Math.floor(Math.random() * 0xffffffff)
+              .toString(16).padStart(8, '0');
+          } catch (e2) {
+            window.__kernelHiveErrorSessionId = 'unknown';
+          }
+        }
+      })();
+    </script>
+    <!-- Instana EUM (Instana/IBM) bootstrap — earliest possible config.
+         DEFECT 2/3 FIX (docs/lab/TRACE-CONTEXT.md and a real Instana beacon
+         API query both confirm this): Instana sends the page-load beacon
+         ~1s after `onLoad`, and "data already transmitted cannot be
+         retroactively updated" — so anything that must be ON that beacon
+         (sessionId, userId, the W3C trace-context header that backfills
+         backendTraceId) has to be configured before React ever boots, not
+         from main.tsx/instana.ts's configureInstana(), which runs after
+         mount. Queried live: a page-load beacon showed empty sessionId,
+         userId and backendTraceId while an HTTP-request beacon from the SAME
+         session carried all three — proof the config below WAS arriving too
+         late for the FIRST beacon of every visit, even though every later
+         beacon (and every unit test, which never exercises page-load
+         timing) looked correct.
+
+         So: trackSessions, enableW3CHeaders (needed for backendTraceId —
+         it is what makes the agent attach the `<meta name="traceparent">`
+         tag `static_files.py` already injects, see TRACE-CONTEXT.md §4) and
+         the pseudonymous identity move HERE, beside `key`/`reportingUrl`,
+         which already had to be this early for the same reason (the agent
+         script itself needs them the instant it loads). Also set here for
+         the SAME reason: an initial `page` name (defect 4) — without it the
+         very page-load beacon this block exists to fix would carry
+         `page: ""` regardless, since autoPageDetection is explicitly OFF
+         (see analytics/navigation.ts's header for why: driving transitions
+         ourselves and leaving auto-detection on would double-count and
+         disagree on naming). The pattern matcher below is a minimal,
+         deliberately duplicated copy of analytics/navigation.ts's ROUTES
+         table — it has to run here, in plain JS, before any module
+         evaluates; keep the two lists in sync by hand, the same trade the
+         session-id generator above already makes.
+
+         Everything that CAN wait for a session id and a resolved account —
+         autoPageDetection, secrets, ignoreUrls, wrapEventHandlers/wrapTimers,
+         the `meta` join key, the real account identity, and `page` for every
+         SUBSEQUENT transition — stays in spa/src/analytics/instana.ts,
+         called once from main.tsx's mount(). That module's configureInstana()
+         no longer sets trackSessions/enableW3CHeaders/the initial user id:
+         doing so again here would just be a harmless duplicate call, but the
+         split is kept explicit so it stays obvious which config is early
+         because it MUST be, and which is late because it CAN wait for
+         identity docs/lab/TRACE-CONTEXT.md §4a's Instana collision applies.
 
          VITE_INSTANA_WEBSITE_KEY / VITE_INSTANA_EUM_REPORTING_URL are read from
          registry/local.env at build time and substituted here by Vite's own
@@ -75,6 +138,40 @@
         n.q=[],n.v=2,n.l=Date.now());})(window,"InstanaEumObject","ineum");
         ineum('reportingUrl', reportingUrl);
         ineum('key', key);
+        // Required this early so the page-load beacon itself carries them —
+        // see the block comment above. `enableW3CHeaders` is also what makes
+        // the agent's own init read `<meta name="traceparent">` (it runs
+        // before this app's JS), which is DEFECT 3.
+        ineum('trackSessions');
+        ineum('enableW3CHeaders', true);
+        var sid = window.__kernelHiveErrorSessionId || 'unknown';
+        ineum('user', sid);
+        // DEFECT 4 (initial page name only — see analytics/navigation.ts for
+        // every subsequent transition). Minimal duplicate of that module's
+        // ROUTES table: pattern segments, ':name' = param. Keep in sync by
+        // hand.
+        try {
+          var ROUTES = [
+            '/', '/os/:osId', '/fleet', '/about', '/admin/walkin',
+            '/admin/observability', '/museum', '/museum2', '/walkin',
+            '/walkin/exhibits', '/walkin/play/:os',
+          ];
+          var segs = (location.pathname || '/').split('/').filter(Boolean);
+          var pattern = '*';
+          for (var i = 0; i < ROUTES.length; i++) {
+            var pSegs = ROUTES[i].split('/').filter(Boolean);
+            if (pSegs.length !== segs.length) continue;
+            var ok = true;
+            for (var j = 0; j < pSegs.length; j++) {
+              if (pSegs[j].charAt(0) !== ':' && pSegs[j] !== segs[j]) { ok = false; break; }
+            }
+            if (ok) { pattern = ROUTES[i]; break; }
+          }
+          ineum('page', pattern);
+        } catch (e3) {
+          // A page name is a nicety, not a requirement — the beacon still
+          // goes out unnamed rather than not at all.
+        }
         // Self-hosted: the agent's own minified JS is never committed to this
         // public repo. scripts/serve-https-spa.sh's deploy() fetches the pinned
         // build from VITE_INSTANA_EUM_SCRIPT_URL and publishes it to the
@@ -121,18 +218,10 @@
               return '';
             }
           };
-          let sessionId = '';
-          try {
-            const bytes = new Uint8Array(4);
-            crypto.getRandomValues(bytes);
-            sessionId = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-          } catch {
-            try {
-              sessionId = Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0');
-            } catch {
-              sessionId = 'unknown';
-            }
-          }
+          // Minted once, in the very first inline script in <head> — see that
+          // script's comment for why it moved (Instana's bootstrap needs the
+          // SAME id before this script even runs).
+          const sessionId = window.__kernelHiveErrorSessionId || 'unknown';
           const report = (input) => {
             try {
               if (sent >= 10) return;

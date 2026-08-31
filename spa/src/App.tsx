@@ -17,12 +17,16 @@ import { WalkinChrome } from './walkin/WalkinChrome';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
 import { MUSEUM_NAME, MUSEUM_TAGLINES } from './config';
+import { useNavigationTelemetry } from './analytics/navigation';
 
 // Dev-only: expose the store so headless verification can read hover/select state.
 if (import.meta.env.DEV) (window as any).__museum = useMuseum;
 
 export default function App() {
   useManifest();
+  // One router-level navigation observer, feeding both our own plane and
+  // Instana off the SAME event — see analytics/navigation.ts's header.
+  useNavigationTelemetry();
 
   const { role } = useSession();
   const walkin = role === 'walkin';

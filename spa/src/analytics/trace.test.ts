@@ -219,12 +219,54 @@ describe('the page-load join (docs/lab/TRACE-CONTEXT.md §4/§7)', () => {
     expect(__bufferedSpans()[0].p).toBe('2222222222222222');
   });
 
-  it('is consumed exactly once — the SECOND trace this page opens is unrelated', () => {
+  // DEFECT (the "ALSO" issue): a one-shot seed consumed by whichever
+  // `startTrace()` fires first raced an incidental early fetch (khFetch's
+  // implicit `childOfActive()` fallback, e.g. `/auth/state`) against the
+  // visit's actual main flow (`station.connect`) for the ONE trace that got
+  // to continue `serve.page` — live evidence: `serve.page` traces containing
+  // `serve.auth.walkin.status`, `station.connect` traces as unrelated
+  // singletons. Fixed: the seed is a page-scoped root BOTH callers hang off
+  // as siblings, bounded by a window/count rather than consumed once.
+  it('a SECOND trace opened soon after the first ALSO continues the page load, as a sibling — not a race one caller wins', () => {
     seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
-    const first = startTrace('station.connect');
-    const second = startTrace('station.connect');
-    expect(second.traceId).not.toBe(first.traceId);
-    expect(second.traceId).toMatch(/^[0-9a-f]{32}$/);
+    const early = startTrace('serve.auth.walkin.status'); // an incidental boot fetch
+    const main = startTrace('station.connect'); // the visit's actual main flow
+    expect(early.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+    expect(main.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+    expect(early.spanId).not.toBe(main.spanId); // distinct sibling spans
+    early.end('ok');
+    main.end('ok');
+    const spans = __bufferedSpans();
+    expect(spans).toHaveLength(2);
+    for (const s of spans) expect(s.p).toBe('2222222222222222');
+  });
+
+  it('stops joining once the join count bound is passed, minting a fresh unrelated trace', () => {
+    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+    const traceId = '11111111111111111111111111111111'.slice(0, 32);
+    let last = startTrace('boot.burst');
+    for (let i = 0; i < 40; i += 1) {
+      last = startTrace('boot.burst');
+    }
+    // Well past PAGE_LOAD_JOIN_MAX (32): the bound must have kicked in.
+    expect(last.traceId).not.toBe(traceId);
+    expect(last.traceId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('stops joining once the time window has passed, minting a fresh unrelated trace', () => {
+    const realNow = Date.now;
+    try {
+      let t = 1_000_000;
+      Date.now = () => t;
+      seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+      const early = startTrace('station.connect');
+      expect(early.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+      t += 20_000; // past the 15s join window
+      const late = startTrace('station.connect');
+      expect(late.traceId).not.toBe(early.traceId);
+    } finally {
+      Date.now = realNow;
+    }
   });
 
   it('a missing or malformed seed leaves the first trace exactly as before', () => {
