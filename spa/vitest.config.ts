@@ -38,6 +38,7 @@ export default defineConfig({
         'src/analytics/metrics.ts',
         'src/data/galleryManifest.ts',
         'src/input/moveSamples.ts',
+        'src/scene/hallEngagement.ts',
         'src/scene/progressiveLoading.ts',
         'src/three/annexb.ts',
         'src/three/guestQuirks.ts',
@@ -45,8 +46,10 @@ export default defineConfig({
         'src/three/streamClient/format.ts',
         'src/three/streamClient/scoring.ts',
         'src/three/streamSignal.ts',
+        'src/ui/fleetFindEpisode.ts',
         'src/ui/grid/letterbox.ts',
         'src/ui/grid/thumbVtt.ts',
+        'src/ui/posterReadEpisode.ts',
       ],
       thresholds: {
         perFile: true,

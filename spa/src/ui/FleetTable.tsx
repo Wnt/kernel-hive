@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFleetTable, useStationUsage, type FleetEntry } from '../data/fleetTable';
 import { FLEET_COLUMNS, type Column, type ColKey } from './fleetColumns';
 import { accumulator, reach } from '../analytics';
+import { beginFleetFindEpisode, type FleetFindEpisode } from './fleetFindEpisode';
 import './FleetTable.css';
 
 // Operator-facing fleet table: every lineup entry, one row, with the facts the
@@ -57,6 +58,21 @@ export function FleetTable() {
   const [open, setOpen] = useState<{ key: ColKey; x: number; y: number } | null>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // The `fleet.find` episode: open -> narrow -> chooseStation, plus the
+  // hesitation and steps-to-goal numbers. Held in a ref rather than state
+  // because nothing renders from it, and opened in an effect rather than at
+  // render time so StrictMode's double render cannot open two flows. Its
+  // boundaries are deliberately the same mount/unmount pair as the scroll
+  // accumulators below — see fleetFindEpisode.ts.
+  const findRef = useRef<FleetFindEpisode | null>(null);
+  useEffect(() => {
+    const episode = beginFleetFindEpisode();
+    findRef.current = episode;
+    return () => {
+      findRef.current = null;
+      episode.end();
+    };
+  }, []);
 
   // ---- how much sideways hunting this table costs ---------------------------
   // `.fleet-table` is `width: max-content`, so on any realistic viewport the
@@ -138,6 +154,7 @@ export function FleetTable() {
 
   const onSort = (key: ColKey, additive: boolean) => {
     reach('fleet.sorted', 'act');
+    findRef.current?.narrowed();
     // Sorting BY the usage column is the strongest evidence /usage/stations.json
     // earns the request it costs on every visit — somebody did not merely see
     // the numbers, they asked a question of them.
@@ -156,6 +173,7 @@ export function FleetTable() {
   const sortRank = (key: ColKey) => sorts.findIndex((s) => s.key === key);
   const toggleValue = (key: ColKey, value: string) => {
     reach('fleet.faceted', 'act');
+    findRef.current?.narrowed();
     return applyFacet(key, value);
   };
   const applyFacet = (key: ColKey, value: string) => setFacets((prev) => {
@@ -190,7 +208,13 @@ export function FleetTable() {
           placeholder="Free text: e.g. mame, kiosk, tcg, warpd…"
           value={query}
           onChange={(ev) => {
-            if (!query && ev.target.value) reach('fleet.searched', 'act');
+            // The empty -> non-empty transition only. Per keystroke this would
+            // be the most-used feature in the gallery by twenty times, and the
+            // action count would be measuring typing speed.
+            if (!query && ev.target.value) {
+              reach('fleet.searched', 'act');
+              findRef.current?.narrowed();
+            }
             setQuery(ev.target.value);
           }}
           aria-label="Filter stations"
@@ -257,7 +281,15 @@ export function FleetTable() {
               })}
             </tr>
           </thead>
-          <tbody>
+          {/* Delegated, so the station link stays fleetColumns' business and this
+              file does not have to thread a callback through every column
+              renderer. Capture phase, so the click is witnessed before
+              react-router navigates the table away. */}
+          <tbody
+            onClickCapture={(ev) => {
+              if ((ev.target as HTMLElement).closest('a.fleet-name')) findRef.current?.choseStation();
+            }}
+          >
             {rows.map((e) => (
               <tr key={e.id} className={e.listed ? '' : 'fleet-row--unlisted'}>
                 {FLEET_COLUMNS.map((c) => <td key={c.key} className={`fleet-col-${c.key}`}>{c.render(e)}</td>)}

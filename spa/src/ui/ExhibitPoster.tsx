@@ -10,6 +10,7 @@ import type {
 import './ExhibitPoster.css';
 import PosterGalleryCarousel from './PosterGalleryCarousel';
 import { gallerySlotIndex } from './posterGallerySection';
+import { beginPosterReadEpisode } from './posterReadEpisode';
 
 function renderRuns(runs: PosterInlineRun[], keyPrefix: string): ReactNode {
   return runs.map((run, index) => {
@@ -115,6 +116,10 @@ export default function ExhibitPoster({
   const posterReady = poster !== undefined;
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // `.exhibit-poster-backdrop` is the scroll container, not `.exhibit-poster`
+  // (which is `overflow: hidden` — see ExhibitPoster.css, where the sticky
+  // close button depends on the same fact).
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // The doc arrives async; focus management only applies once the panel exists.
@@ -158,6 +163,28 @@ export default function ExhibitPoster({
     };
   }, [onClose, posterReady]);
 
+  // ---- is any of this prose read? ------------------------------------------
+  // One episode per opened poster: visible dwell, deepest scroll depth, and the
+  // number of times the reader turned back. Keyed on `posterReady` because the
+  // doc arrives async and there is nothing to scroll until it has — the same
+  // reason the focus effect above waits for it. See posterReadEpisode.ts for
+  // what these observe and, more importantly, what they do not claim.
+  useEffect(() => {
+    if (!posterReady) return;
+    const el = scrollRef.current;
+    const episode = beginPosterReadEpisode();
+    const onScroll = () => {
+      if (!el) return;
+      episode.scrolled(el.scrollTop, el.clientHeight, el.scrollHeight);
+    };
+    el?.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el?.removeEventListener('scroll', onScroll);
+      // Settled on EVERY teardown path, including the poster dismissed unread.
+      episode.end();
+    };
+  }, [posterReady]);
+
   if (!poster) return null;
   const heroImage = poster.hero
     ? poster.images.find((image) => image.src === poster.hero) ?? {
@@ -174,6 +201,7 @@ export default function ExhibitPoster({
 
   return createPortal((
     <div
+      ref={scrollRef}
       className="exhibit-poster-backdrop"
       style={style}
       onMouseDown={(event) => {
