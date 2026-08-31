@@ -87,6 +87,20 @@ outside the frame, so a clipped sprite becomes a *sub-template* that then
 matches the full glyph everywhere and turns every later `find` into
 `AMBIGUOUS`. Learn only where the sprite is whole.
 
+**How to TELL a template is clipped, without knowing it should be.** Clipping
+is not only caused by a screen edge — a background that hides part of the sprite
+does the same thing, since `learn` captures only the pixels that CHANGED. The
+reliable tell is the reported ORIGIN, not the size:
+
+> When two templates of the same glyph disagree about the hotspot by exactly
+> their width (or height) difference, **the narrower one is clipped.**
+
+A clipped sub-template re-finds perfectly in the frame it was learned from and
+reports an origin shifted by exactly the columns it is missing, so a per-frame
+verify passes it. Learn a glyph over two different backgrounds, compare the two
+templates' implied hotspots, and keep the one with the larger extent. Do not
+average them, and do not pick the one that looks tidier.
+
 ## Reading the answers
 
 - `AMBIGUOUS` where every hit is at the **same** coordinates is harmless — two
@@ -272,6 +286,23 @@ Do not ship both. Two templates of the same glyph turn **35 of 83** frames into
 AMBIGUOUS — harmless by the rule above (every hit is at the same position) but
 noise that hides the ambiguities that would matter.
 
+### Flat vs busy backgrounds — two measured results that disagree
+
+The `hpuxvue` finding above says learn the arrow over a *light list area* rather
+than a dark content area, because the light one exposed both the outline and the
+interior. `beos` measured the opposite for its hand cursor: over a **flat grey**
+menu bar `learn` captured 132 pixels in 3 colours and **missed a column**, while
+over the **dark, textured** starfield of a web page it captured 134 pixels in
+**14 distinct colours** and came out whole.
+
+Both are real measurements, and the resolution is that neither *lightness* nor
+*darkness* is the variable — **contrast against the sprite is**, and a background
+that varies pixel to pixel differs from more of the sprite than any flat one can.
+So: **prefer a busy background to a flat one**, provided nothing on it moves
+between the two frames, and check the result with the hotspot tell above rather
+than trusting either rule. Do not follow whichever of these two notes you read
+first.
+
 ## `beos.json`
 
 BeOS R5 Professional 5.0.3, **1024x768x16** on std VGA (the VESA "stub" driver),
@@ -327,14 +358,10 @@ do not average them and do not pick the one that looks tidier.
 
 ### On which background to learn
 
-The intuition that a light background is safer is **backwards here**, and it is
-worth saying because it is the opposite of the `hpuxvue` note above. Over the
-grey menu bar the hand's white fill barely differs from the background, so
-`learn` captured 132 pixels in 3 colours and missed a column. Over the dark,
-*textured* starfield of the corpus page it captured 134 pixels in **14 distinct
-colours** — because the background varies pixel to pixel, far more of the sprite
-differs from it. **A busy background is a better teacher than a flat one**, as
-long as nothing on it moves between the two frames.
+The measurement is in **"Flat vs busy backgrounds"** under `hpuxvue.json` above,
+because it directly contradicts the note there and the two belong together: the
+hand came out `14x14` in 3 colours and missing a column over the flat grey menu
+bar, and `15x14` in 14 colours and whole over the dark textured starfield.
 
 ### The corpus page DOES produce a link glyph
 

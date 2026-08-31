@@ -169,7 +169,7 @@
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/beos/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_AUDIO_BITRATE": "96000",
-      "SH_FIXTURE_DESC": "BeOS R5 1024x768x16 desktop: Deskbar top-right; Terminal and NetPositive on the museum corpus page http://spacejam.com/ (both opened by UserBootscript); ICBM .71 signed on as UIN 50000, roster window showing Online/Available and NO message window; pointer parked at 68,749 on bare desktop, clear of the page. The absent message window is deliberate: HiveBot greets every sign-on about 30s later, so a cold boot produces one or not purely as a function of elapsed time, and this is the scene the incumbent golden shipped."
+      "SH_FIXTURE_DESC": "BeOS R5 1024x768x16 desktop: Deskbar top-right; Terminal and NetPositive on the museum corpus page http://spacejam.com/ (both opened by UserBootscript); ICBM .71 signed on as UIN 50000, roster window showing Online/Available and NO message window; pointer parked at 69,747 on bare desktop, clear of the page (sprite origin 68,747 plus the (1,0) hotspot). That pointer value is OPERATIONALLY LOAD-BEARING, not decoration: kh-ramabs' connect probe re-states where the guest already is, so 69,747 is what the device reports VERIFIED at on every future connection, and a reader who expects some other number will misread a healthy probe as a fault. The absent message window is deliberate: HiveBot greets every sign-on about 30s later, so a cold boot produces one or not purely as a function of elapsed time, and this is the scene the incumbent golden shipped."
     },
     "vmidLabel": 143,
     "qemu": {

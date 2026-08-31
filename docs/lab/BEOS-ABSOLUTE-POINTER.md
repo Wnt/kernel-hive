@@ -222,6 +222,23 @@ each of two connections, refused while the device verifies — send a warm-up
 target before any sweep or the first row of your table will show the previous
 position and read as a failure.
 
+**`reissued=4` is expected here, and the expected value differs per station** —
+record it rather than normalising the three against each other. beos publishes
+with `nudge-units=1/nudge-px=1`, so it has the same read-back-and-re-issue
+behaviour as `rhapsody` (which showed `try=1` twice in 33 issues). `macos753`
+shows **zero**, because `crsrnew` is a flag write with no injected event and
+therefore no nudge race at all. Three stations, three different healthy values
+for one counter.
+
+**The golden's baked pointer is `69,747`** (sprite origin `68,747` plus the
+`(1,0)` hotspot), and that number is operationally load-bearing rather than
+trivia: the connect probe re-states where the guest already is, so `69,747` is
+what the device reports `VERIFIED` at on every future connection. An earlier
+draft of this work recorded `68,749`, measured during the bake window with the
+relative actuator — the same actuator §4 shows cannot hit what it aims at. That
+figure is **superseded**; it was not a position, for the same reason the
+"no link glyph" result was not a negative.
+
 ### The hotspot is `(1,0)`, measured twice and never guessed
 
 Two independent derivations agree, and neither assumes the other:
