@@ -246,6 +246,30 @@ class WaveTest(unittest.TestCase):
             ROLLOUT.make_waves(["a", "b"], 0)
 
 
+class PromotableTest(unittest.TestCase):
+    """build-deploy.sh --promote moves every tile EXCEPT the canary, so a wave
+    holding only the canary has nothing for it to do — and handing it that wave
+    anyway is what halted the first real rollout at wave 1."""
+
+    def test_the_canary_only_wave_has_nothing_to_promote(self):
+        self.assertEqual(ROLLOUT.promotable(["helenos"], "helenos"), [])
+
+    def test_a_mixed_wave_keeps_everything_but_the_canary(self):
+        self.assertEqual(ROLLOUT.promotable(["helenos", "alto", "c64"], "helenos"), ["alto", "c64"])
+
+    def test_a_wave_without_the_canary_is_untouched(self):
+        self.assertEqual(ROLLOUT.promotable(["alto", "c64"], "helenos"), ["alto", "c64"])
+
+    def test_the_canary_is_whoever_the_gate_names_not_the_safe_tile(self):
+        self.assertEqual(ROLLOUT.promotable(["beos", "helenos"], "beos"), ["helenos"])
+
+
+class CanaryOrderTest(unittest.TestCase):
+    def test_the_gated_canary_leads_the_order_even_when_it_is_not_the_safe_tile(self):
+        entries = {"beos": station("beos"), "alto": station("alto"), "c64": station("c64")}
+        self.assertEqual(ROLLOUT.order_stations(entries, safe_tile="beos")[0], "beos")
+
+
 class ResumeTest(unittest.TestCase):
     def test_finished_stations_are_dropped_and_emptied_waves_disappear(self):
         waves = [["a"], ["b", "c"], ["d", "e"]]
