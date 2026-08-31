@@ -12,12 +12,28 @@ being promoted across the fleet in risk-ordered waves by
 `scripts/dev/fleet_rollout.py --mode promote` — see §8 for what that binary now
 really does on a station that has it.
 
-Everything is inside kernel-hive. No external service, no third-party script, no
-account anywhere. That is not only a privacy preference here — the gallery's
-public edge is a loopback-bound listener behind a forwarder, the LAN listener
-uses the lab's own CA, and stations are reached over WebTransport straight from
-the tab. There is no point in the request path where a hosted analytics SDK
-would see anything useful without being handed it deliberately.
+This plane — everything described below, client and server, Rust and Python —
+is entirely inside kernel-hive: no external service, no third-party script, no
+account anywhere in it. That is not only a privacy preference here — the
+gallery's public edge is a loopback-bound listener behind a forwarder, the LAN
+listener uses the lab's own CA, and stations are reached over WebTransport
+straight from the tab. There is no point in this plane's own request path
+where a hosted analytics SDK would see anything useful without being handed it
+deliberately.
+
+That used to be true of the whole gallery; it no longer is. Since 2026-08-31
+an Instana JavaScript agent runs in every visitor's browser and beacons to
+IBM's SaaS, a separate Instana host agent runs on labhost, and a signed-in
+visitor's real account id and name are sent to it in cleartext — an
+operator-armed, operator-known exception, not a leak (§8.2 has the detail and
+the off switches). It exists as a **benchmark, not a dependency**: the
+operator wants the richest data a mature commercial APM can show, in order to
+find the gaps in this plane and close them, and has said plainly that the
+integration is **temporary** — meant to come off once this plane's own
+`/admin/observability` carries the views Instana currently supplies alone.
+Every capability this plane gains for that reason has to work with Instana
+entirely absent; §8.2 is where that principle is argued in full, against the
+real decisions it already produced.
 
 ---
 
@@ -1022,6 +1038,92 @@ sending it there would be a credential attached to a request that ignores it.
 Full detail, including the empirical checks, is in the script's own
 docstring.
 
+## 8.2 Instana: a benchmark, not a dependency — and a temporary one
+
+**The rule.** Every capability this plane has must work correctly with
+Instana entirely absent. Instana is there so this lab can see what a mature
+commercial APM shows a visitor's journey, decide what of that is worth
+replicating in kernel-hive's own store, and then build it here — never so
+kernel-hive can lean on IBM's SaaS for something it does not do itself. The
+operator has said so three times over in different words across one session,
+and the decisions below are what following it actually looked like, not a
+restatement of intent.
+
+**Never bend our data model to please the vendor.** `input.dispatch` is
+`Kind::Server` (`docs/lab/TRACE-CONTEXT.md` §3.1) because it genuinely IS the
+daemon's receiving side of the browser's client-kind `input.edge` span — the
+same RPC pairing `serve.signal` already uses — and marking it `Internal`
+understated what it already was. That it also happens to be the reason
+Instana's `analyze/traces` API can now attach a `service.name` to an
+`input.edge` trace instead of labelling it `"Unspecified"` is a welcome side
+effect of a correction, not the justification for it. Contrast the idea it
+sits next to and rejects: relabelling a **browser**-kind span as `server`
+purely so Instana would stitch a trace together was turned down in an earlier
+session for exactly the opposite reason — it would put a lie in the data. Same
+question both times ("what kind is this span"), same vendor watching, opposite
+answer, because only one of the two spans actually changed kind.
+
+**Capability parity is the goal, not admiration.** Where Instana's auto
+instrumentation does something this plane's own code did not — it patches
+`fetch`/`XHR` globally and propagates `traceparent` to every same-origin call
+without a call site remembering to ask — the fix was to build that in
+kernel-hive's own plane (`spa/src/analytics/khFetch.ts`, landed 2026-08-31,
+whose own header calls out the race it had to resolve against Instana's
+patch), not to depend on Instana supplying it. The alternative — leave
+propagation opt-in and let Instana's agent quietly cover the gap — would have
+meant that pulling Instana back out returned the plane to 2 of 24 `fetch`
+call sites carrying trace context, and that the gap analysis this whole
+integration exists to run would have been flattered: linked traces admired in
+Instana that kernel-hive's own plane structurally could not have produced on
+its own. Every capability gained this way is exactly the thing that has to be
+true **before** Instana can be switched off, not merely nice to also have
+while it is present.
+
+**Where the vendor cannot help, the gap is permanent and this lab's alone.**
+There is no Instana sensor for QEMU or any other emulator (§6 of
+`docs/lab/TRACE-CONTEXT.md`: "the emulator is deliberately not traced from
+inside"), so emulator-internal visibility — was the guest actually awake,
+where did a frame stall inside the capture pipeline — was never something a
+vendor integration could shortcut. It is a poor thing to prototype in Instana
+and exactly the thing `streamhost`'s own span plane (§8.1) exists to build.
+
+**Removable, checked against the code rather than assumed.** The operator's
+stated intent is to drop the dependency once this plane's own tooling has the
+views it needs — no removal date and no checklist of views is fixed here,
+because the operator has not named the bar and this doc will not invent one.
+What can be stated is how clean the off switch actually is, verified against
+the three places Instana touches this repo, not asserted:
+
+- **The browser agent is inert without configuration, and cleanly so.**
+  `spa/index.html`'s inline bootstrap reads `VITE_INSTANA_WEBSITE_KEY` /
+  `VITE_INSTANA_EUM_REPORTING_URL` (Vite substitutes these from
+  `registry/local.env`'s gitignored `INSTANA_WEBSITE_KEY` /
+  `INSTANA_EUM_REPORTING_URL` at build time) and returns before doing
+  anything — no `ineum` stub, no script tag, no request to any Instana host —
+  the instant either value is unset or still the raw placeholder text. Blanking
+  `INSTANA_WEBSITE_KEY` in `registry/local.env` and rebuilding/redeploying the
+  SPA is the whole off switch for the browser half; nothing else references
+  the key.
+- **`instana-forward.py` is already the minimum-commitment shape.** It is run
+  by hand, never on a timer (§8.1), and has its own `--dry-run` and its one
+  credential; not running it again is itself "off" for anything this repo
+  ships to Instana.
+- **The labhost host agent is NOT this repo's to switch off.** Unlike the two
+  above, `systemctl status instana-agent` is a separate IBM-supplied install
+  on labhost, started independently of anything in this repo (§8.1) — removing
+  it is a box-level operator action (stop and uninstall the package), not a
+  `registry/local.env` edit or a redeploy. Anyone reading "removable" as "one
+  repo change" would be wrong about this third of it.
+
+So two of the three legs come off with a config edit and a rebuild; the third
+is a genuinely separate install that needs its own teardown on labhost
+whenever the operator decides to do it.
+
+One fact worth recording rather than planning around: the Instana UI reported,
+as read on 2026-08-31, that this tenant is a trial expiring in 14 days. That
+may force the exit before this plane's own views are ready, independent of
+whatever order the operator would otherwise have chosen.
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
@@ -1254,6 +1356,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
 | `scripts/observability/trace-ship.py` | ships daemon spool batches to the box's own `/traces` route |
 | `scripts/observability/instana-forward.py`, `scripts/observability/instana_destination.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice, the narrow loopback-http exception |
+| `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
+| `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2) |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
 | `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
 | `spa/src/analytics/*.test.ts`, `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | the client side; one test per rule that could otherwise silently invert |
