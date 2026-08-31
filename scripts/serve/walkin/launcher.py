@@ -60,14 +60,29 @@ class Launcher:
     tapnet: str = ""  # resolved path of the station's own tap script, if any
 
 
+_VAR = re.compile(r"\$(?:\{(?P<braced>[A-Za-z_]\w*)(?:(?P<op>:?-)(?P<default>[^}]*))?\}|(?P<name>[A-Za-z_]\w*))")
+
+
 def _expand(text: str, variables: dict, where: str) -> str:
     def sub(match: re.Match) -> str:
         name = match.group("name") or match.group("braced")
+        op = match.group("op")
+        if op is not None:
+            # `${NAME:-default}` / `${NAME-default}` — a bash default-value
+            # expansion, not an unresolved reference. `:-` also falls back on an
+            # EMPTY value, not just an unset one; `-` falls back only when unset.
+            # None of the launchers this reads use the default for anything the
+            # derivation cares about (debug trace toggles), so the default is
+            # taken as a literal — it is never itself expanded.
+            value = variables.get(name)
+            if value is None or (op == ":-" and value == ""):
+                return match.group("default")
+            return str(value)
         if name not in variables:
             raise LauncherError(f"{where}: launcher uses ${name}, which nothing defines and no preset supplies")
         return str(variables[name])
 
-    return re.sub(r"\$(?:\{(?P<braced>[A-Za-z_]\w*)\}|(?P<name>[A-Za-z_]\w*))", sub, text)
+    return _VAR.sub(sub, text)
 
 
 def _collect_variables(lines: list, presets: dict, where: str) -> dict:

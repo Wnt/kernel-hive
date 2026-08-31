@@ -289,6 +289,42 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(parsed.argv[0], "/opt/qemu-rhapsody/bin/qemu-system-i386")
         self.assertIn("-drive", parsed.argv)
 
+    def test_default_value_expansion_is_not_unresolved(self):
+        """`${NAME:-default}` is a resolved bash default, not a leftover `$`.
+
+        Several launchers (rhapsody, aix432, hpuxvue, macos753) pass a debug
+        trace toggle this way — e.g. `trace=${PTR_TRACE:-off}` on `-device
+        kh-ramabs`. Nothing presets PTR_TRACE, so this must fall back to the
+        literal default rather than being flagged as an unresolved expansion.
+        """
+        text = "qemu-system-x86_64 -m 16 -device kh-ramabs,trace=${PTR_TRACE:-off}\n"
+        parsed = launcher.parse("trace", text=text)
+        self.assertIn("-device", parsed.argv)
+        self.assertIn("kh-ramabs,trace=off", parsed.argv)
+
+    def test_default_value_expansion_prefers_a_preset(self):
+        text = "qemu-system-x86_64 -m 16 -device kh-ramabs,trace=${PTR_TRACE:-off}\n"
+        parsed = launcher.parse("trace", presets={"PTR_TRACE": "on"}, text=text)
+        self.assertIn("kh-ramabs,trace=on", parsed.argv)
+
+    def test_reads_rhapsodys_own_command_line(self):
+        """Regression: every rhapsody clone build failed with `LauncherError:
+        unresolved shell expansion` because `trace=${PTR_TRACE:-off}` was not
+        recognized as a resolved default. This parses the REAL launcher, not a
+        fixture reproducing its shape, so a future edit cannot drift past it
+        the way the assignment-vs-invocation fixture above would not have
+        caught this one."""
+        parsed = launcher.parse(
+            REPO / "streamhost/stations/rhapsody/qemu-streamhost.sh",
+            presets={"B": str(REPO / "streamhost/stations/rhapsody"), "LOADVM": "-loadvm golden -S"},
+        )
+        self.assertEqual(parsed.binary, "/opt/qemu-rhapsody/bin/qemu-system-i386")
+        self.assertIn(
+            "kh-ramabs,chardev=ptr0,addr=0x0050fdac,layout=point16le,width=1024,height=768,"
+            "nudge-units=2,nudge-px=1,trace=off",
+            parsed.argv,
+        )
+
     def test_qemu_img_is_not_an_invocation(self):
         text = (
             "DISK=/live/d.qcow2\n"
