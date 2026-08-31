@@ -17,7 +17,7 @@ mine" — the same rule as AGENTS.md rule 7, applied to a filename.
 | 0005 | `cirrus-isa-vmstate-descend-substruct` | Cirrus fix |
 | 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
 | 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
-| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
+| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor (published as `Wnt/qemu` 12305f6; the restore re-arm is part of the patch, the resize-border attempt is deliberately NOT — see `docs/lab/HPUXVUE-CURSOR-REGISTER-POINTER.md`) |
 | ~~0009~~ | ~~`kh-ramabs-mac-lowmem-profile`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
 | ~~0010~~ | ~~`kh-ramabs-point32le-layout`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
 
