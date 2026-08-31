@@ -42,6 +42,8 @@ _HAS_SUBST = re.compile(r"\$\(|`")
 _COMMAND_WORD = re.compile(r'^\s*(?:nohup\s+)?(?P<word>"[^"]+"|[^\s|;&]+)')
 _TAPNET = re.compile(r"(?:bash|sh)\s+(?P<path>\"?[^\"'\s]*tapnet[\w.-]*\.sh\"?)\s+(?P<verb>up|down)\b")
 _UNRESOLVED = re.compile(r"\$\{?[A-Za-z_0-9@*#?]")
+# The whole reference at an _UNRESOLVED match, for naming it in the error.
+_TOKEN = re.compile(r"\$\{[^}]*\}|\$[A-Za-z_]\w*|\$.")
 _REDIRECT = re.compile(r"^(?:\d?[<>]|&$|\d>&\d)")
 
 
@@ -167,8 +169,18 @@ def parse(path, presets: dict | None = None, text: str | None = None) -> Launche
     binary, command = _qemu_block(lines, variables, where)
     command = re.sub(r"^\s*nohup\s+", "", command)
     expanded = _expand(command, variables, where)
-    if _UNRESOLVED.search(expanded):
-        raise LauncherError(f"{where}: unresolved shell expansion in the qemu command line: {expanded[:200]!r}")
+    unresolved = _UNRESOLVED.search(expanded)
+    if unresolved:
+        # Name the offending token and show it in context, rather than a blind
+        # prefix of the command line — on a long invocation the culprit is
+        # routinely well past character 200, so a truncated-from-the-start
+        # message shows everything EXCEPT the thing that needs fixing (measured
+        # on rhapsody's `trace=${PTR_TRACE:-off}`, which sits near the end).
+        token_match = _TOKEN.match(expanded, unresolved.start())
+        token = token_match.group(0) if token_match else expanded[unresolved.start() : unresolved.start() + 20]
+        ctx_start = max(0, unresolved.start() - 30)
+        context = expanded[ctx_start : unresolved.start() + len(token) + 30]
+        raise LauncherError(f"{where}: unresolved shell expansion {token!r} in the qemu command line, near {context!r}")
     argv = [tok for tok in shlex.split(expanded) if not _REDIRECT.match(tok)]
     if not argv or "qemu-system" not in Path(argv[0]).name:
         raise LauncherError(f"{where}: could not tokenize the qemu command line")

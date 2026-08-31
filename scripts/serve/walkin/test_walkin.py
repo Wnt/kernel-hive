@@ -269,6 +269,23 @@ class LauncherTests(unittest.TestCase):
         with self.assertRaises(launcher.LauncherError):
             launcher.parse("mem", text="qemu-system-x86_64 -m $MYSTERY\n")
 
+    def test_unresolvable_variable_names_itself_in_the_message(self):
+        """The plain `$NAME`/`${NAME}` path already named the token (`_expand`
+        raises directly). This is the OTHER path: a shape `_expand` does not
+        recognize as a substitution at all (`${VAR#pattern}`, `$1`, `$@`, ...)
+        falls through to it unexpanded and is caught by the `_UNRESOLVED`
+        sweep. That message used to be `expanded[:200]` — a blind prefix of
+        the whole command line, which on a long invocation shows everything
+        BUT the offending token (measured on rhapsody's `trace=${PTR_TRACE:-off}`
+        before that shape was recognized: the message truncated well before
+        reaching it, which is why the first fix took two rounds to confirm).
+        Now it must name the exact token, wherever it sits."""
+        padding = " ".join(f"-opt{i} val{i}" for i in range(40))
+        text = f"qemu-system-x86_64 {padding} -device foo,trace=${{WEIRD#prefix}},bar=1\n"
+        with self.assertRaises(launcher.LauncherError) as ctx:
+            launcher.parse("t", text=text)
+        self.assertIn("${WEIRD#prefix}", str(ctx.exception))
+
     def test_two_invocations_are_refused(self):
         text = "qemu-system-x86_64 -m 16\nqemu-system-x86_64 -m 32\n"
         with self.assertRaises(launcher.LauncherError):
