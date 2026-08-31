@@ -13,6 +13,7 @@ import {
   KH_TELEMETRY_PATHS,
   SECRET_PATTERNS,
 } from './instana';
+import { __resetIntent } from './intent';
 import type { Session } from '../data/session';
 
 type Call = [string, ...unknown[]];
@@ -26,6 +27,7 @@ function installIneum(): { calls: Call[] } {
 
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
+  __resetIntent();
 });
 
 describe('configureInstana', () => {
@@ -57,6 +59,20 @@ describe('configureInstana', () => {
     expect(calls).toContainEqual(['meta', 'kh.sessionId', 'sess1']);
   });
 
+  // The other half of the class label: analytics/intent.ts's own store gets it
+  // via sink.ts's `class` field on every batch, but Instana never sees that
+  // store — it only sees what this file hands it. Without this call an
+  // operator running scripts/visitor-sim against the public gallery would see
+  // simulated visitors in Instana with no way to tell them apart from real
+  // ones, which is the exact thing that plane's `class` dimension exists to
+  // prevent (see intent.ts's header).
+  it('carries the analytics/intent class label as kh.client.class, for the SAME probe-vs-human split this ships to our own store', () => {
+    const { calls } = installIneum();
+    (globalThis as { window: { __khClientClass?: string } }).window.__khClientClass = 'probe';
+    configureInstana('sess1');
+    expect(calls).toContainEqual(['meta', 'kh.client.class', 'probe']);
+  });
+
   // Pins the call SHAPE, not just the value: `ineum('meta', ...)` takes ONE
   // key and ONE value per call, both strings — never an object. A previous
   // version called `ineum('meta', { 'kh.sessionId': ..., 'kh.bundle': ... })`,
@@ -67,7 +83,7 @@ describe('configureInstana', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
     const metaCalls = calls.filter((c) => c[0] === 'meta');
-    expect(metaCalls.length).toBeGreaterThanOrEqual(2);
+    expect(metaCalls.length).toBeGreaterThanOrEqual(3);
     for (const call of metaCalls) {
       expect(call).toHaveLength(3);
       expect(typeof call[1]).toBe('string');
