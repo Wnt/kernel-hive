@@ -79,8 +79,21 @@ build() {
     msg "ERROR: npm not on PATH (needed to build the SPA)"
     exit 1
   }
+  # Instana EUM (spa/index.html's bootstrap + spa/src/analytics/instana.ts) is
+  # configured entirely through build-time env: Vite only exposes/substitutes
+  # VITE_-prefixed vars (see VITE_BASE above), so the INSTANA_* keys
+  # local-env.sh already loaded from registry/local.env are re-exported under
+  # their VITE_ names here, right before the one place that invokes `vite
+  # build`. Unset on a fresh clone / CI / a contributor's build — that is not
+  # an error, it is the documented no-key fallback (index.html: no ineum stub,
+  # no script tag, nothing sent).
   msg "building SPA (npm run build) in $SPA_WEB"
-  (cd "$SPA_WEB" && npm run build)
+  (
+    cd "$SPA_WEB"
+    export VITE_INSTANA_WEBSITE_KEY="${INSTANA_WEBSITE_KEY:-}"
+    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:-}"
+    npm run build
+  )
   [ -f "$DIST/index.html" ] || {
     msg "ERROR: build produced no dist/index.html"
     exit 1
@@ -176,7 +189,39 @@ deploy() {
   $SSH "cat > $SERVE_DIR/key-trace.py" <"$REPO/scripts/serve/key-trace.py"
   publish_manifests
   publish_boot
+  publish_instana_agent
   msg "deployed."
+}
+
+# Fetch the pinned Instana EUM agent from INSTANA_EUM_SCRIPT_URL and publish it
+# self-hosted at $WEBROOT/vendor/instana-eum.min.js — spa/index.html's
+# bootstrap loads it from that path, never from IBM's CDN directly, and it is
+# NEVER committed to this public repo (gitignored on the box the same way
+# scripts/serve/pki/ is; see .gitignore). Every existing published document in
+# this script (tiles.json, gallery-manifest.json, …) is rendered FROM the
+# repo, so this is the one exception — it is fetched from a third party at
+# deploy time instead — and it must not be allowed to fail SILENTLY: an
+# operator who thinks Instana is live but is actually serving a 404 for
+# /vendor/instana-eum.min.js would only find out from a support ticket.
+publish_instana_agent() {
+  if [ -z "${INSTANA_EUM_SCRIPT_URL:-}" ]; then
+    msg "INSTANA_EUM_SCRIPT_URL unset — Instana EUM not configured, skipping vendor fetch"
+    return 0
+  fi
+  msg "fetching Instana EUM agent from $INSTANA_EUM_SCRIPT_URL -> $WEBROOT/vendor/instana-eum.min.js"
+  if $SSH "set -e; mkdir -p '$WEBROOT/vendor'; tmp=\$(mktemp '$WEBROOT/vendor/.instana-eum.min.js.XXXXXX'); \
+      curl -fsSL --max-time 30 '$INSTANA_EUM_SCRIPT_URL' -o \"\$tmp\" && \
+      test -s \"\$tmp\" && \
+      mv \"\$tmp\" '$WEBROOT/vendor/instana-eum.min.js'"; then
+    msg "published Instana EUM agent"
+  else
+    # LOUD, not silent: the deploy continues (a stale-but-present agent file
+    # from a prior deploy is a fine fallback, and refusing the whole deploy
+    # over a third-party fetch would hold the rest of the UI hostage to IBM's
+    # uptime), but this line must be impossible to miss in the deploy log.
+    msg "WARNING: failed to fetch the Instana EUM agent — /vendor/instana-eum.min.js was NOT updated." >&2
+    msg "         Instana EUM will be broken (404) until this is retried: '$0 all' or rerun deploy." >&2
+  fi
 }
 
 # Republish the boot-replay assets (/boot/<id>/boot.mp4 … + /boot/index.json).

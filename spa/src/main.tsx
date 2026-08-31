@@ -9,6 +9,7 @@ import { exposePointerRecorder, installPointerRecorder } from './input/pointerRe
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
 import { initAnalytics, reportError } from './analytics';
+import { configureInstana, configureInstanaIdentity } from './analytics/instana';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -148,6 +149,18 @@ function mount(session: Session) {
     sessionId: clientSessionId(),
     allowed: !signedOutAtTheDoor,
   });
+  // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
+  // `allowed` gate as the plane above — a build with no website key configured
+  // makes every call inside a no-op regardless, but a signed-out stranger at
+  // the walk-in door must never be handed to Instana just because their build
+  // happens to be configured. configureInstana sets the pseudonymous identity;
+  // configureInstanaIdentity immediately upgrades it to the real account when
+  // one exists (see that function's header for why both calls are needed and
+  // why nothing here calls `ineum('terminateSession')`).
+  if (!signedOutAtTheDoor) {
+    configureInstana(clientSessionId());
+    configureInstanaIdentity(session);
+  }
   if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {
     initClientDebug();
   }

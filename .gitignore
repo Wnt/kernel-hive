@@ -120,6 +120,13 @@ scripts/build-guests/assets/freedos/cosmo.zip
 scripts/build-guests/assets/freedos/jill.zip
 scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
 
+# Instana EUM agent — fetched from INSTANA_EUM_SCRIPT_URL and self-hosted at
+# deploy time (scripts/serve-https-spa.sh publish_instana_agent), never
+# committed. This pattern covers a local dev-serving copy too, should one ever
+# be added under spa/public/; the live copy lives only on the box's webroot,
+# outside the repo tree entirely.
+**/vendor/instana-eum.min.js
+
 # per-worker session identity written by scripts/dev/wt.sh
 .kh-session
 

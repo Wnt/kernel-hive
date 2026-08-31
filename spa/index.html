@@ -37,6 +37,55 @@
         }
       })();
     </script>
+    <!-- Instana EUM (Instana/IBM) bootstrap — earliest possible config, so
+         page-load timing instrumentation covers the whole navigation, not just
+         whatever survives until main.tsx evaluates. The rest of the config
+         (sessions, secrets, ignoreUrls, the trace-correlation `meta`…) is set
+         later from spa/src/analytics/instana.ts, once a session id exists;
+         only `reportingUrl` and `key` have to be THIS early, because they are
+         what the agent script itself needs the instant it loads.
+
+         VITE_INSTANA_WEBSITE_KEY / VITE_INSTANA_EUM_REPORTING_URL are read from
+         registry/local.env at build time and substituted here by Vite's own
+         index.html env-placeholder replacement (percent-delimited VITE_ names;
+         see scripts/serve-https-spa.sh build()).
+         See docs/PUBLIC-GALLERY.md-adjacent analytics docs and instana.ts for
+         why this is opt-in and operator-decided.
+
+         UNCONFIGURED CHECKOUT, EXPLICITLY: a fresh public clone, a
+         contributor's build, or CI has no registry/local.env, so the env var
+         is unset. Verified against a real `npm run build`: with the var
+         unset, Vite leaves the RAW PLACEHOLDER TEXT (percent, the var name,
+         percent) sitting in the emitted HTML rather than substituting an
+         empty string — so the guard below checks for a LEADING percent
+         character, not merely a falsy value, and that check is deliberately
+         duplicated (never trust one). (This paragraph spells the token out in
+         words rather than writing it literally, on purpose — written as a
+         literal percent-delimited placeholder, this very comment would itself
+         become substitution text the moment the build IS configured, putting
+         the real key value in a comment instead of only in the script below.)
+         Either way: no ineum stub, no script tag, no request to any Instana
+         host, no beacon — the page must render exactly as it does today. -->
+    <script>
+      (function () {
+        var key = "%VITE_INSTANA_WEBSITE_KEY%";
+        var reportingUrl = "%VITE_INSTANA_EUM_REPORTING_URL%";
+        if (!key || key.charAt(0) === '%' || !reportingUrl || reportingUrl.charAt(0) === '%') return;
+        (function(s,t,a,n){s[t]||(s[t]=a,n=s[a]=function(){n.q.push(arguments)},
+        n.q=[],n.v=2,n.l=Date.now());})(window,"InstanaEumObject","ineum");
+        ineum('reportingUrl', reportingUrl);
+        ineum('key', key);
+        // Self-hosted: the agent's own minified JS is never committed to this
+        // public repo. scripts/serve-https-spa.sh's deploy() fetches the pinned
+        // build from VITE_INSTANA_EUM_SCRIPT_URL and publishes it to the
+        // webroot at deploy time (gitignored on disk, same as pki/).
+        var agent = document.createElement('script');
+        agent.defer = true;
+        agent.crossOrigin = 'anonymous';
+        agent.src = '/vendor/instana-eum.min.js';
+        document.head.appendChild(agent);
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
