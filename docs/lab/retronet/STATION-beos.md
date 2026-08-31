@@ -416,6 +416,36 @@ MAC no matter what the launcher's `mac=` says. Changing it requires a cold boot:
 
 Both verifications passed here.
 
+### What forces a re-bake here, and what does not
+
+The launcher's own comment reads as a contradiction if taken in isolation, and it
+misled a later agent into the right plan for the wrong reason. It says the netdev
+backend went `user` -> `tap`, that this is **"invisible to savevm/loadvm"**, and
+then that **"the pre-swap slirp golden does NOT loadvm on the tap"**. Both are
+true, and the resolution is the sentence at the top of this section rather than
+anything about the backend:
+
+| change | forces a cold re-bake? | why |
+|---|---|---|
+| netdev backend `user` -> `tap` | **no** | genuinely invisible to `savevm`/`loadvm`; it is a host-side plumbing property and nothing about it is captured |
+| **MAC** | **YES** | it lives in the golden's **device vmstate**, so `loadvm` restores the *saved* MAC whatever the launcher's `mac=` says |
+| `-device` model, e.g. `ne2k_pci` -> `rtl8139` | **YES** | `loadvm` is only valid against the device set it was baked with |
+
+The pre-swap slirp golden therefore fails to restore usefully on the tap because
+it carries a **different MAC in its vmstate**, not because the backend changed.
+The `rtl8139` swap would have forced a re-bake on its own, but it **cost nothing
+extra** because the MAC change had already forced one — which is why the two land
+in the same bake and are easy to mistake for one cause.
+
+**Why the distinction is worth keeping straight.** Believing the *backend* is what
+`savevm` captures leads directly to concluding that a substitute MAC would be safe
+for a bake — the one thing that cannot work, since the MAC is precisely what is
+baked. And believing the *NIC model* was the sole blocker leads to the opposite
+error: assuming an unenslaved, bridgeless tap is unsafe for `loadvm` when it is
+perfectly safe, because bridge membership is pure backend. A rig on a bridgeless
+tap with an **unchanged** `-device` and the **same** MAC restores the golden
+correctly and can sit beside the live station.
+
 ## Golden lineage & rollback (FULL paths)
 
 - **LIVE golden:** internal snapshot **`golden`** in
