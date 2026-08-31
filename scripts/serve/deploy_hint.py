@@ -51,6 +51,19 @@ RATE_REFILL_PER_S = 0.5
 WANTED_REF = "refs/heads/main"
 
 
+def _infer_event(raw: bytes) -> str:
+    """Event name from the payload shape, used only when the header is missing."""
+    try:
+        body = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return ""
+    if not isinstance(body, dict):
+        return ""
+    if "zen" in body or "hook_id" in body:
+        return "ping"
+    return "push" if "ref" in body else ""
+
+
 class Verdict:
     __slots__ = ("code", "source", "reason", "hint_sha")
 
@@ -142,12 +155,28 @@ class HintReceiver:
             # No detail, ever: a caller must not learn WHY it failed, and no
             # key material may reach a log.
             return Verdict(401, "bad signature")
-        event = get("X-GitHub-Event")
+        # THE EVENT HEADER MAY NOT SURVIVE THE HOP, AND THE DESIGN NEVER SAID IT
+        # HAD TO. Measured 2026-08-31 on the first real delivery: the public edge
+        # forwards `X-Hub-Signature-256` but drops `X-GitHub-*`, so every webhook
+        # arrived as event "" and was answered 204 "ignoring event" — signature
+        # verified, trigger silently dead. Identical requests scored 202 on the
+        # LAN listener and 204 through the relay.
+        #
+        # Authorisation here is the HMAC over the BODY; the event header was only
+        # ever a cheap pre-filter. So when it is absent, infer the event from the
+        # payload shape — AFTER the signature has already passed, never before.
+        # A ping payload carries `zen`/`hook_id` and no `ref`; a push carries
+        # `ref`. Nothing about what gets deployed is decided here either way.
+        event = get("X-GitHub-Event") or _infer_event(raw)
         if event == "ping":
             return Verdict(200, "ping acknowledged", source=source)
         if event != "push":
             return Verdict(204, f"ignoring event {event!r}", source=source)
-        delivery = get("X-GitHub-Delivery")
+        # Same hop problem: without X-GitHub-Delivery the dedupe would be off
+        # entirely. A digest of the raw body is a sound substitute — GitHub's
+        # push payloads differ per push (the sha alone guarantees it), so this
+        # rejects a genuine replay while never colliding two real deliveries.
+        delivery = get("X-GitHub-Delivery") or "body:" + hashlib.sha256(raw).hexdigest()[:32]
         if delivery and delivery in self._seen_ids:
             return Verdict(200, "duplicate delivery ignored", source=source)
         try:

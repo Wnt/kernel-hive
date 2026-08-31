@@ -252,5 +252,49 @@ class ItCannotSayWhatToDeploy(Base):
         self.assertEqual(row["hint"], "a" * 40)
 
 
+class HeadersMayNotSurviveTheHop(Base):
+    """Measured on the first real delivery: the public edge forwards
+    X-Hub-Signature-256 but drops X-GitHub-*. Identical requests scored 202 on
+    the LAN listener and 204 through the relay — signature verified, trigger
+    silently dead. The HMAC over the body is the authorisation; the headers were
+    only ever a pre-filter."""
+
+    def bare(self, obj, secret=WEBHOOK):
+        raw = body(obj)
+        return self.rx.verify(raw, {"X-Hub-Signature-256": sign(secret, raw)})
+
+    def test_a_push_with_NO_event_header_is_still_a_push(self):
+        v = self.bare(PUSH_MAIN)
+        self.assertTrue(v.accepted, v)
+        self.assertTrue(self.wakeup.exists())
+
+    def test_a_ping_with_no_event_header_is_still_a_ping(self):
+        v = self.bare({"zen": "Design for failure.", "hook_id": 1})
+        self.assertEqual(v.code, 200)
+        self.assertFalse(self.wakeup.exists())
+
+    def test_a_non_main_ref_is_still_ignored_without_the_header(self):
+        self.assertEqual(self.bare({"ref": "refs/heads/other"}).code, 204)
+        self.assertFalse(self.wakeup.exists())
+
+    def test_inference_happens_AFTER_the_signature_never_before(self):
+        raw = body(PUSH_MAIN)
+        v = self.rx.verify(raw, {"X-Hub-Signature-256": sign(b"wrong", raw)})
+        self.assertEqual(v.code, 401)
+        self.assertFalse(self.wakeup.exists())
+
+    def test_an_unrecognisable_signed_payload_is_ignored_not_guessed(self):
+        self.assertEqual(self.bare({"something": "else"}).code, 204)
+
+    def test_replay_still_rejected_without_a_delivery_id(self):
+        """The body digest substitutes for X-GitHub-Delivery."""
+        self.assertTrue(self.bare(PUSH_MAIN).accepted)
+        self.assertEqual(self.bare(PUSH_MAIN).code, 200)
+
+    def test_two_different_pushes_are_not_confused_for_replays(self):
+        self.assertTrue(self.bare(PUSH_MAIN).accepted)
+        self.assertTrue(self.bare({"ref": "refs/heads/main", "after": "c" * 40}).accepted)
+
+
 if __name__ == "__main__":
     unittest.main()
