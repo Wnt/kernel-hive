@@ -68,7 +68,7 @@ the numbers.
 | `--storage-state <file>` | An invited (viewer/admin) Playwright storage-state file — see "Credentialed mode". | none |
 | `--seed <n>` | Seed the RNG, for a reproducible run. | random |
 | `--headed` | Watch it happen instead of running headless. | headless |
-| `--out-dir <dir>` | Where the run manifest lands. | `./visitor-sim-runs` |
+| `--out-dir <dir>` | Where the run manifest lands. An explicit path is honoured exactly as given, relative to your CWD. | `scripts/visitor-sim/visitor-sim-runs` (anchored to the tool's own directory, not your CWD — see below) |
 | `--dry-run` | Print the plan, touch nothing. | — |
 
 ## The journeys (what `--mix` names)

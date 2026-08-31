@@ -4,6 +4,23 @@
 // tool can talk its way past: visitor-sim.mjs reads config.concurrency and
 // config.visitors straight from here and nowhere else recomputes them.
 //
+// DEFAULT_OUT_DIR is anchored to THIS FILE's own directory, not the caller's
+// CWD. docs/lab/VISITOR-SIM.md and this file's own --help both show the tool
+// invoked as `node scripts/visitor-sim/visitor-sim.mjs …` from the repo root
+// — the natural way to run it — which used to make the bare relative default
+// ('./visitor-sim-runs') land in the git root. Only
+// scripts/visitor-sim/visitor-sim-runs/ is gitignored, so that produced an
+// UNIGNORED, untracked directory in the shared clone (AGENTS.md rule 3: the
+// shared clone holds no uncommitted edits, ever). Anchoring to import.meta.url
+// makes the default land in the same place regardless of invocation CWD. An
+// explicitly passed --out-dir is untouched by this and stays relative to the
+// CWD, as a user typing a path expects.
+
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const DEFAULT_OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'visitor-sim-runs');
+
 // WHY THESE NUMBERS. labhost runs ~71 emulated guests already (one physical
 // box, docs/PUBLIC-GALLERY.md's "one relay hop... a firewall hole to one
 // host's ports"). This traffic reaches it through a loopback-bound public
@@ -111,8 +128,12 @@ JOURNEYS (what --mix names)
 
 OTHER
   --headed        Run headed instead of headless (debugging).
-  --out-dir <dir> Where run manifests and screenshots land. Default
-                  ./visitor-sim-runs (relative to CWD).
+  --out-dir <dir> Where run manifests and screenshots land. Default is
+                  scripts/visitor-sim/visitor-sim-runs — anchored to this
+                  tool's own directory, not wherever you ran it from, so it
+                  always lands in the already-gitignored spot. Pass a path
+                  explicitly and it is honoured exactly as given, relative to
+                  your current working directory.
   --seed <n>      Seed the RNG for reproducible runs.
   --help          This.
 `;
@@ -252,7 +273,7 @@ export function parseArgs(argv) {
     storageState: args.get('storage-state') ?? null,
     dryRun: !!args.get('dry-run'),
     headed: !!args.get('headed'),
-    outDir: args.get('out-dir') ?? './visitor-sim-runs',
+    outDir: args.get('out-dir') ?? DEFAULT_OUT_DIR,
     seed: args.has('seed') ? Number(args.get('seed')) : null,
   };
 }
