@@ -264,6 +264,28 @@ class PromotableTest(unittest.TestCase):
         self.assertEqual(ROLLOUT.promotable(["beos", "helenos"], "beos"), ["helenos"])
 
 
+class FrameFloorTest(unittest.TestCase):
+    """A healthy `alpine` login prompt is ~0.4% non-black and failed the flat
+    0.5% floor, halting the rollout at wave 2 on a station that was fine."""
+
+    def test_a_text_console_only_has_to_prove_it_is_not_blank(self):
+        self.assertEqual(ROLLOUT.min_nonblack_for({"ui": "text-console"}, 0.5), ROLLOUT.CONSOLE_FLOOR)
+
+    def test_a_desktop_keeps_the_strict_floor(self):
+        self.assertEqual(ROLLOUT.min_nonblack_for({"ui": "desktop"}, 0.5), 0.5)
+
+    def test_an_unknown_station_keeps_the_strict_floor(self):
+        self.assertEqual(ROLLOUT.min_nonblack_for({}, 0.5), 0.5)
+
+    def test_the_console_floor_never_raises_a_lower_operator_floor(self):
+        self.assertEqual(ROLLOUT.min_nonblack_for({"ui": "text-console"}, 0.01), 0.01)
+
+    def test_alpines_real_frame_would_now_pass_and_a_black_one_still_fails(self):
+        floor = ROLLOUT.min_nonblack_for({"ui": "text-console"}, 0.5)
+        self.assertLess(floor, 0.372)
+        self.assertGreater(floor, 0.0)
+
+
 class CanaryOrderTest(unittest.TestCase):
     def test_the_gated_canary_leads_the_order_even_when_it_is_not_the_safe_tile(self):
         entries = {"beos": station("beos"), "alto": station("alto"), "c64": station("c64")}

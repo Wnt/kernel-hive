@@ -44,6 +44,16 @@ settle and framebuffer gate to that wave. `--mode restart` (the default) is a
 plain staggered `systemctl restart`, for a launcher, `station.env` or
 configuration roll where no binary moves.
 
+**Wave 1 is the canary, and in promote mode it moves no pointer.**
+`build-deploy.sh --promote` promotes every live tile *except* the canary — that
+station was already switched by `--canary` and is what the gate certifies — so
+handing it a wave containing only the canary makes it die with "no non-canary
+tiles to promote". Wave 1 is exactly that wave, which deadlocked the tool's
+first real run. It now health-gates the canary (settle + framebuffer, because
+the binary really did move under it) and skips the promote call. The canary is
+read from `/usr/local/lib/streamhost/.canary-ready`, not assumed to be
+`SAFE_TILE`, since the gate names whoever was canaried last.
+
 ## The health gate is the framebuffer
 
 AGENTS.md rule 9: the framebuffer is the only proof a guest reacted. Three tiers
@@ -60,7 +70,8 @@ run per wave and all three must pass before the next wave starts.
 3. **A real screendump per station.** Pulled through labctl's own capture
    dispatcher, so a QMP tile, an x11-capture tile and an shm tile each get the
    backend they actually use, and required to decode and to be at least
-   `--min-nonblack` percent non-black (default 0.5 %).
+   `--min-nonblack` percent non-black (default 0.5 %) — or, for a station the
+   registry declares `ui: text-console`, merely non-blank (see below).
 
 Tier 3 is the one that means anything. Tiers 1 and 2 are logs and clocks.
 
@@ -72,7 +83,7 @@ this tool exists to prevent.
 issues `cont` on a paused guest — a rollout must never thaw a guest somebody
 parked, and a frozen guest's last frame *is* its current screen.
 
-### Where the 0.5 % floor comes from
+### The frame gate's floor, and why one number could not carry it
 
 Measured read-only across every capture backend on 2026-08-31 — QMP, x11spike,
 shm, es40 and SIMH all returned a decodable frame:
@@ -86,11 +97,31 @@ shm, es40 and SIMH all returned a decodable frame:
 | `nextstep` | Previous | 1120×832 | 96.0 % |
 | `irix`, `aix432`, `helenos`, `alto`, `zxspectrum`, `amigaos35`, `w2kalpha` | mixed | — | 97–99.8 % |
 
-`gt40` is the floor: a vector display draws almost nothing. The 0.5 % default
-sits deliberately below it, and a dead station reads ~0 %. If a new
-mostly-dark exhibit ever lands under it, lower `--min-nonblack` for that run
-rather than dropping the gate — the failure message always prints the measured
-value, so the number to use is in the output.
+`gt40` is the floor of that sample: a vector display draws almost nothing. The
+0.5 % default sits deliberately below it, and a dead station reads ~0 %.
+
+**That sample was not the fleet, and the first real rollout found the gap.**
+Wave 2 halted on `alpine` at **0.372 %** — a perfectly healthy Alpine login
+prompt, white text on a black 1920×1200 console. Nothing was wrong with the
+station: at that resolution a shell prompt simply *is* almost black, and the
+sample above happened to contain no dark text console.
+
+Averaging the two shapes into one number cannot work — any floor low enough for
+a console is too low to catch a broken desktop. So the floor is per-station and
+read from the registry, which already declares the distinction:
+
+| `ui` | stations | floor | what the gate is asking |
+|---|---|---|---|
+| `text-console` | 5 (`alpine`, `alto`, `decos`, `freedos`, `pdp11`) | `CONSOLE_FLOOR` = 0.05 % | is there a frame here at all |
+| everything else | 62 | `--min-nonblack` (0.5 %) | did this screen come back |
+
+`min_nonblack_for()` only ever *lowers* the floor, so an operator who passes a
+stricter-than-console `--min-nonblack` for a specific run still gets it. A
+declared console that returns 0 % still fails, which is the case that matters:
+a dead station is blank, not dim. If a new mostly-dark exhibit lands under the
+desktop floor, fix its registry `ui` or lower `--min-nonblack` for that run —
+never drop the gate. The failure message always prints the measured value and
+the floor it was held to, so the number to use is in the output.
 
 ## What gets skipped, and why each
 

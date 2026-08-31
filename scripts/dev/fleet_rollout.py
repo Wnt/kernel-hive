@@ -72,6 +72,8 @@ SAFE_TILE = os.environ.get("SAFE_TILE", "helenos")
 
 # build-deploy.sh's verified-canary gate: "<artifact> <tile>" on one line.
 CANARY_GATE = "/usr/local/lib/streamhost/.canary-ready"
+# A `ui: text-console` station only has to prove its frame is not BLANK.
+CONSOLE_FLOOR = 0.05
 
 BOLD, RED, GRN, YLW, DIM, OFF = "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[2m", "\033[0m"
 
@@ -234,18 +236,20 @@ def make_waves(stations, wave_size, canary_first=True):
     return head + [list(stations[i : i + wave_size]) for i in range(0, len(stations), wave_size)]
 
 
+def min_nonblack_for(entry, default):
+    """The non-black floor THIS station's screen can honestly clear: a healthy
+    console is white text on black, ~0.4% at 1920x1200, and halted the first
+    rollout. FLEET-ROLLOUT.md, "the frame gate's floor"."""
+    return min(default, CONSOLE_FLOOR) if entry.get("ui") == "text-console" else default
+
+
 def promotable(wave, canary_tile):
     """The stations in this wave whose pointer `build-deploy.sh --promote` can move.
 
     THE CANARY TILE IS NOT PROMOTABLE, AND THAT IS THE CONTRACT, NOT A BUG.
-    `--canary <tile>` already moved that station onto the gated artifact;
-    `--promote` walks *the rest of* the fleet onto it and dies with "no
-    non-canary tiles to promote" when a wave holds nothing else. Wave 1 IS the
-    canary by construction, so a promote-mode rollout handed that wave to
-    build-deploy.sh could never get past it — which is what happened the first
-    time this tool was ever run. The wave still earns its settle and its
-    framebuffer gate (rule 9); what it does not need is a pointer move that
-    already happened.
+    `--promote` walks *the rest of* the fleet onto the gated artifact and dies
+    on a wave holding nothing else — and wave 1 IS the canary. That wave still
+    earns its settle and its frame gate (rule 9); it needs no pointer move.
     """
     return [s for s in wave if s != canary_tile]
 
@@ -281,12 +285,10 @@ def probe(*args, timeout=300):
 
 
 def read_canary_tile():
-    """The tile named by build-deploy.sh's own verified-canary gate.
-
-    Read rather than assumed: the gate is `<artifact> <tile>` and the tile is
-    whoever was last canaried, which is not necessarily SAFE_TILE — this box had
-    `beos` sitting in the gate from another stream's canary. Falling back to
-    SAFE_TILE keeps a plan-only run working on a box with no gate at all.
+    """The tile named by build-deploy.sh's own verified-canary gate. Read, not
+    assumed: the gate is `<artifact> <tile>`, and the tile is whoever
+    was last canaried — not necessarily SAFE_TILE. Falling back to SAFE_TILE
+    keeps a plan-only run working on a box with no gate at all.
     """
     r = ssh_lab(f"sed -n '1p' '{CANARY_GATE}' 2>/dev/null || true")
     parts = (r.stdout or "").split()
@@ -338,16 +340,17 @@ def await_readiness(wave, timeout_s):
     return waiting
 
 
-def frame_gate(wave, min_nonblack):
+def frame_gate(wave, min_nonblack, entries):
     """Tier 3: the only proof a guest actually came back."""
     bad = []
     for row in probe("frames", *wave):
         station = row["tile"]
+        floor = min_nonblack_for(entries.get(station) or {}, min_nonblack)
         if not row.get("ok"):
             fail("{}: no framebuffer ({})".format(station, row.get("error")))
             bad.append(station)
-        elif row["nonblack_pct"] < min_nonblack:
-            fail(f"{station}: framebuffer is black ({row['nonblack_pct']:.3f}% non-black, need {min_nonblack:.3f}%)")
+        elif row["nonblack_pct"] < floor:
+            fail(f"{station}: framebuffer is black ({row['nonblack_pct']:.3f}% non-black, need {floor:.3f}%)")
             bad.append(station)
         else:
             ok(f"{station}: {row['width']}x{row['height']}, {row['nonblack_pct']:.1f}% non-black")
@@ -569,7 +572,7 @@ def main(argv=None):
             if not bad and not args.no_frame_gate:
                 print(f"    settling {args.settle}s ...")
                 time.sleep(args.settle)
-                bad = frame_gate(wave, args.min_nonblack)
+                bad = frame_gate(wave, args.min_nonblack, entries)
         for station in wave:
             doc["status"][station] = "FAILED" if station in bad else "DONE"
         save_state(path, doc)
