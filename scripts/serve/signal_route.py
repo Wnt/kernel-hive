@@ -20,9 +20,10 @@ from static_files import MIME
 # fails the build if a paired file imports an unpaired module, so "deployed
 # without it" is not a state this plane can reach.
 try:
+    import tracecontext
     import tracing
 except ImportError:  # pragma: no cover - import shape only
-    from serve import tracing
+    from serve import tracecontext, tracing
 from webrtc import ice_servers
 
 # The walk-in pool, bound by the server at startup (contract ledger §3.1). A
@@ -172,6 +173,19 @@ def serve_tile(handler, tile, stream_key):
             else:
                 mintspan.attr("kh.ticket.kind", "station")
                 body["path"] = tickets.mint(stream_key, ticket_tile)
+            # The daemon's half of the trace (docs/lab/TRACE-CONTEXT.md §3.1).
+            # The input plane is raw WebTransport with no headers, so the id
+            # rides the ticket's query string — which the HMAC does not cover
+            # and `session_ticket.rs::verify` has always split off before
+            # verifying, so appending it neither invalidates a ticket nor lets
+            # a tampered query forge one.
+            #
+            # This is the span the whole trace hangs from: it is the id the
+            # BROWSER will see in its signalling document and the id the DAEMON
+            # will stamp on its session, so recording it here is what lets one
+            # visit be one trace across three processes.
+            body["path"] += "?" + tracecontext.format(mintspan.trace_id, mintspan.span_id)
+            mintspan.attr("kh.session.traceId", mintspan.trace_id)
     if handler.public:
         # Same station, same cert: WebTransport pins the certificate by
         # HASH, so the hostname it is reached under is not part of

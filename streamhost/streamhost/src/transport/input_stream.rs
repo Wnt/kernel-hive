@@ -9,6 +9,7 @@ use std::sync::Arc;
 use crate::capture::Capture;
 use crate::config::Config;
 use crate::input;
+use crate::trace_session::SessionTrace;
 
 // CLIENT->SERVER per-type reliable-input CLASS tags: the first byte of each
 // client-opened unidirectional reliable input stream (per-type QUIC input streams,
@@ -45,16 +46,20 @@ pub(super) async fn drain_input_stream(
     mouse: &input::SharedMouse,
     input_router: Option<&Arc<crate::realtime_input::InputRouter>>,
     has_tag: bool,
+    strace: &Arc<SessionTrace>,
 ) {
     let mut buf: Vec<u8> = Vec::new();
     let mut tmp = [0u8; 4096];
     let mut tag_pending = has_tag;
+    // Named for the span; the legacy single-bidi framing has no tag to name.
+    let mut class: &'static str = if has_tag { "unknown" } else { "reliable" };
     while let Ok(Some(n)) = recv.read(&mut tmp).await {
         buf.extend_from_slice(&tmp[..n]);
         // Consume the leading class tag exactly once (per-type streams only).
         if tag_pending && !buf.is_empty() {
             let tag = buf.remove(0);
             tag_pending = false;
+            class = input_class_name(tag);
             eprintln!("[input] class stream tag={tag} ({})", input_class_name(tag));
         }
         loop {
@@ -67,6 +72,10 @@ pub(super) async fn drain_input_stream(
             }
             let rec: Vec<u8> = buf[2..2 + len].to_vec();
             buf.drain(..2 + len);
+            // `input.first_edge`: one AtomicBool swap per record after the
+            // first. The CLASS is named; the record's bytes never are — no
+            // keycode, no coordinate reaches a span (contract §7).
+            strace.mark_first_input(class);
             input::handle(cap, cfg, mouse, input_router, &rec).await;
         }
     }

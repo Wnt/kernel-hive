@@ -817,6 +817,116 @@ in one commit. `cargo test --workspace` fails otherwise.
 it yet; wiring it into `reach-report.py` alongside the SPA catalogue is the next
 step, and belongs with the §10 deployment item rather than ahead of it.
 
+## 8.1 The Rust plane, second half — `streamhost` SPANS
+
+**Built.** `streamhost/streamhost/src/trace/` is the emitter,
+`trace_session.rs` and `trace_guest.rs` are the call sites, and each station
+spools batch files into `/data/vms/streamhost/stations/<id>/traces/`. The
+contract every layer implements is [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md).
+
+**Why a second plane on the same box.** §8's probes answer "has this code ever
+run" and cannot answer "why was that slow": a count has no start, no end and no
+parent. A visitor who waits four seconds for a station to appear is asking about
+an interval, and the interval that explains it usually belongs to a different
+process than the one they are looking at. Spans make one visit one flame graph
+across four processes, which is the only shape in which "was it slow because the
+guest was asleep" is a lookup rather than a timestamp-correlation exercise.
+
+**The two planes do not overlap and both stay.** Per-frame and per-record data
+belongs in counters; spans mark transitions and one-offs. **There is no span per
+frame and no span per input edge** — at 60 fps that would be 3600 spans a minute
+per station and 219 600 across the fleet. Every mark is a one-shot
+`AtomicBool::swap`, so the encoder relay and the datagram loop pay one relaxed
+load and nothing else.
+
+**The spans, and the decision each informs:**
+
+| span | kind | the question it settles |
+|---|---|---|
+| `streamhost.start` | internal | the daemon's own boot, and the root of the startup trace no visitor is present for |
+| `guest.launch` | internal | how long the emulator process had been alive before the daemon could see it. On the `-loadvm golden -S` stations that window IS the checkpoint restore |
+| `guest.attach` | client | the QMP getfd/add_client handshake plus dbus-display registration — the daemon's own cost of getting a picture |
+| `guest.first_frame` | internal | when a framebuffer with real geometry first existed. AGENTS.md rule 9 in span form |
+| `streamhost.session` | server | one visitor's session: how long, on which transport, and whether the daemon's half joined the browser's trace (`kh.trace.joined`) |
+| `guest.resume` | internal | **was it slow because the machine was asleep.** `kh.guest.was_paused` is the daemon's belief read BEFORE the resume — without it every session would show a resume and none would mean anything |
+| `capture.first_frame` | internal | how long after the session opened the guest produced a frame this daemon could see |
+| `encode.first_key` | internal | how much of that wait was the forced IDR the join gate needs, rather than the guest |
+| `transport.first_frame` | internal | when a byte of video reached the wire — the daemon's twin of the browser's `station.open.toFirstFrameMs` |
+| `input.first_edge` | internal | when the visitor's first click or key reached the guest, and on which input class |
+| `transport.webrtc_fallback` | server | the fallback transport being TAKEN — a second egress and a sidecar process, for a browser with no `VideoDecoder` |
+
+The four session stages are all measured from the session's own start, so they
+read side by side: `capture.first_frame` short and `transport.first_frame` long
+is egress; `guest.resume` dominating both is a guest that was idle-paused, and
+no other layer can say that.
+
+**Collection is a spool directory, not a POST.** Each file in
+`<station>/traces/` is byte-for-byte the body `POST /traces` accepts, written
+tmp+rename like `probes.json` and `signaling.json`, capped at
+`SH_TRACE_SPOOL_MAX` files with the oldest dropped. Three reasons it is not an
+HTTP client, in order: a station that cannot reach the collector must keep
+streaming, and a `rename(2)` has no failure mode that can reach the encoder,
+while a POST has several; this binary has no HTTP client and the collector is
+HTTPS, so posting means adding a TLS stack to a daemon that deliberately carries
+none; and the file being the request body means the shipper is `curl -d @file`
+and nothing is needed server-side.
+
+**Cost, measured rather than asserted** (`span_cost_is_small`, 20 000 spans
+back-to-back on the lab build box):
+
+| profile | disabled | enabled (1 attribute) |
+|---|---|---|
+| `--release` (opt-level 2 — what ships) | **50-70 ns** | **3.2 us** |
+| default `cargo test` (debug) | 214 ns | 9.3 us |
+
+A session emits at most seven spans, so a visitor costs about 22 us of daemon
+time. Rendering is hand-written rather than `serde_json::Value` because the
+`Value` version measured 8.3 us per span against 0.6 us for the same bytes; the
+schema is eleven fixed keys and building a `BTreeMap` to walk it again was
+paying fourteen times over for nothing. **Not measured, and stated rather than
+glossed:** the flush (a string join plus one `rename`, once every 30 s on its own
+task), the CONTENDED buffer lock (no per-frame span exists, so that regime does
+not), and the sub-breakdown of the 3.2 us — attempted, and the shared build box
+was too noisy to attribute it honestly.
+
+**There IS an off switch (`SH_TRACE=off`), unlike the probes.** A probe hit is a
+`fetch_add`, so a branch to skip it would have cost more than it saved and would
+have made every dumped zero ambiguous. A span allocates, formats and writes
+files, so the branch pays for itself — and a disabled station publishes no spool
+directory at all, which reads as "off" rather than as "nothing happened".
+
+**Joining the browser's trace: built on this side, not yet on the other.** The
+input plane is raw WebTransport with no headers, so the id rides the session
+path's query string beside the ticket ([TRACE-CONTEXT §3.1](lab/TRACE-CONTEXT.md)).
+The daemon parses it on every session and degrades to a ROOT span when it is
+absent, malformed, or from a future version — never to a fabricated parent, and
+never to a refused session. `signal_route.py` does not append it yet, so today
+every daemon span carries `kh.trace.joined=false`, which is a fact in the data
+rather than something to infer from a missing edge.
+
+**Traps hit while building it:**
+
+- **A span that is its own parent looks perfectly well-formed.** Folding "my id"
+  and "my parent's id" into one context object made every span point at itself,
+  which renders as a trace with no root and no edges and passes every shape
+  check. `a_child_span_points_at_its_parent_not_at_itself` exists for it.
+- **The shutdown flush is not a second signal handler.** `probes::spawn` already
+  owns SIGTERM/SIGINT and the exit disposition `streamhost@.service`'s
+  `Restart=on-failure` depends on; a second handler would race the re-raise and
+  sometimes lose the last batch. It calls `trace::flush_now` instead — one
+  owner, one exit.
+- **`transport/mod.rs` had 78 lines of headroom** under the 800-line Rust cap and
+  `input.rs`/`config/mod.rs` had none, so the state machine lives in
+  `trace_session.rs` and every call site is one line. Same constraint that shaped
+  §8's probes, same answer, and no `size-exclusions.json` entry (rule 10).
+- **`resource.session.id` is `"unknown"`, deliberately.** That field is the TAB's
+  analytics session and a daemon batch spans every visitor in the flush window.
+  Putting the station id there would fill a column meaning "one tab" with a
+  machine name.
+
+**Not deployed.** The spool is written and nothing ships it yet; that is the
+rollout stream's item, alongside §10's deployment entry.
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
@@ -1034,6 +1144,10 @@ Traps worth knowing, each of which was hit while writing this:
 | `scripts/test_analytics.py`, `scripts/test_probes.py`, `scripts/test_linecov.py` | the Python side of all three planes |
 | `streamhost/streamhost/src/probes.rs` | the Rust declaration, the `probe!()` macro and the per-station dump |
 | `streamhost/streamhost/src/probes_tests.rs` | the Rust drift gate + the measured per-hit cost; runs under `cargo test --workspace` |
+| `streamhost/streamhost/src/trace/` | the daemon's span emitter: `context.rs` (W3C parse + id mint), `mod.rs` (the span model, the buffer, the flush), `spool.rs` (the batch files), `tests.rs` (the shape gate + the measured cost) |
+| `streamhost/streamhost/src/trace_session.rs` | the per-session spans and the one-shot marks |
+| `streamhost/streamhost/src/trace_guest.rs` | the guest-lifecycle spans, measured from outside the guest |
+| `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
 | `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
 | `spa/src/analytics/*.test.ts`, `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | the client side; one test per rule that could otherwise silently invert |
