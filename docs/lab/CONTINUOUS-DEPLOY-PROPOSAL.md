@@ -34,6 +34,7 @@ kills.
 | I.10 | Rule-9 acceptance (framebuffer cursor match, click repaint) is manual and human-brokered per cutover | no machine-runnable acceptance |
 | I.11 | `STAT` reported healthy while the drawn cursor was 1–2 px off | self-reported health without framebuffer evidence |
 | I.12 | The QEMU fork was pushed from `qemu-patches/*.patch` by one agent; a second regenerated a patch and found the fork had moved underneath. `qemuBuild.forkCommit` still named the pre-push commit. **No symptom until a build attempt** | repo holds the *recipe*, somewhere else holds the *result* |
+| I.13 | 42 serve-side files deployed 2026-08-30 21:42 to a process running since 2026-08-26 03:10 — the whole auth and walk-in plane, never loaded, on a publicly-open surface. Found only because arming the trigger required costing a restart | **no check exists** for the gap between *deployed* and *loaded* |
 
 I.12 is the day's third two-sources-of-truth failure — after registry
 declarations vs the live box (I.2/I.5) and rendered manifests vs the registry
@@ -446,6 +447,69 @@ It removes the silence; it does not remove the second source of truth. Only
 generating one representation from the other, or content-addressing the pointer,
 removes the class. Until then the check above is how we see the drift, and the
 loud build failure is how we survive it.
+
+---
+
+## 2.6 Deployed is not loaded (I.13)
+
+**The drift class with no check at all.** §2.1 moved a live-state comparison out
+of the push path; §2.5 added one for a published artifact. This one is different
+in kind: it is not that a check was in the wrong place, or that a check was
+wrong. **No check exists**, in any plane, for the gap between *the bytes are on
+the box* and *the running process is executing them*.
+
+**The instance, measured 2026-08-31 while preparing to arm the trigger.** The
+`osgallery-https` process had been running since **2026-08-26 03:10**. Forty-two
+serve-side `.py` files had been written to `/data/vms/streamhost/serve/` on
+**2026-08-30 21:42**, at commit `0cb355b0` — the entire auth plane (`service.py`,
+`store.py`, `passkeys.py`, `routes.py`, `tickets.py`) and the entire walk-in
+plane (`broker.py`, `cell.py`, `claims.py`, `clone.py`). Five days of code,
+deployed and never loaded, on a plane whose walk-in access switch reads `open`,
+with thirteen walk-in clones running and an `auth-state.json` written that
+morning.
+
+**Every existing signal was green, and each was truthfully answering a different
+question.** `box-install.sh` correctly reported the files installed — they were.
+`.deployed-rev` correctly named `0cb355b0` — that is what was deployed. The
+pre-push gate's box-state stage correctly said live matches the box checkout —
+it does. `systemctl is-active` correctly said `active` — it is. Not one of them
+is wrong. The question none of them asks is whether the process serving requests
+right now was started *after* the bytes it is supposed to be running. That is the
+same shape as every other finding in this document — a true indicator that means
+nothing — raised from the level of a probe to the level of a whole plane.
+
+The design already names the *cause* in §9 ("shipping serve-side Python without
+a restart is a silent no-op — the new code lands, the running process never
+loads it, nothing reports it") and answers it for FUTURE deploys by treating a
+serve-code change as restart-required by definition. What §9 does not do is
+detect the condition that already exists. A reconciler that only prevents new
+instances of a fault, while the box is presently deep inside one, is reporting
+on a world it has not looked at.
+
+**So `loaded-drift` is a reported class, per serve-side unit:** compare the
+running process's start time against the mtimes of the unit's materialized
+members, and report `applied-but-not-loaded(<n> files, oldest <age>)`. It is
+cheap — one `ps` and one `find` — and it belongs in `kh-reconciler status` and
+in `here.sh` beside the loop heartbeat, because the operator-facing question
+"is the box running what we think it is?" currently has no honest answer.
+
+**Two notes on how this was found, because the method generalizes.**
+
+First, **nobody was looking for it.** It surfaced because arming the trigger
+required knowing what a serve restart would cost, and answering that meant
+inventorying what a restart would load. The unclaimed-rows finding of stage 3
+came the same way: `rows` exists because a reconciler must know it owns every
+deployed file *before* it may write, and asking that question found 107 files
+nobody owned. **A design whose preconditions force an inventory is doing work
+before it ever runs** — which is an argument for stating preconditions as
+executable refusals rather than as prose, since prose is never made to answer.
+
+Second, it is an argument against arming anything on a schedule. The restart
+that would have armed the endpoint was, unexamined, also a swap of five days of
+auth-plane code on a live public surface. Those two actions have nothing to do
+with each other except that one requires the other, and a process that treats
+"restart the serve unit" as an implementation detail of "turn on the webhook"
+would have performed the second while intending only the first.
 
 ---
 
@@ -1168,6 +1232,7 @@ Once the corresponding stage lands:
 | `scripts/host/kh_reconciler/denylist.py` | state of record, enforced by raising rather than remembered |
 | `scripts/host/kh_reconciler/store.py` | content-addressed objects + the live-root refusal (no override flag) |
 | `scripts/host/kh_reconciler/apply.py` | materialize → one symlink flip → stamp → journal → complete rollback |
+| `kh-reconciler status` | add the `loaded-drift` class (§2.6): process start time vs member mtimes, per serve-side unit |
 | `scripts/host/kh-store` | object store: add/gc/verify/materialize |
 | `scripts/dev/station-accept.sh` | rule 9 as a command (stage 2, landed). **Not `scripts/host/`**: the acceptance boundary starts in a browser, and the browser lives on CT950 |
 | `scripts/e2e/station-accept-probe.mjs` | the browser leg: session churn, one abandoned, motion in a named rect |

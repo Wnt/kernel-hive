@@ -115,6 +115,7 @@ range_base() {
 # --- read git's ref list, derive the pushed ranges and whether we owe the gate -
 zero="0000000000000000000000000000000000000000"
 gate_needed="${GATE_ALL:-0}"
+examined=0
 ranges=()
 while read -r _local_ref local_sha _remote_ref remote_sha; do
   [[ -z "${local_sha:-}" ]] && continue
@@ -131,6 +132,7 @@ while read -r _local_ref local_sha _remote_ref remote_sha; do
   fi
   while IFS= read -r c; do
     [[ -z "$c" ]] && continue
+    examined=$((${examined:-0} + 1))
     if git show -s --format='%B' "$c" | grep -qiE 'Claude-Session:|Co-Authored-By: .*Claude'; then
       gate_needed=1
       break
@@ -152,10 +154,45 @@ if [[ "${#ranges[@]}" -eq 0 ]]; then
   base=$(range_base HEAD "$hand_remote")
   if [[ -n "$base" ]]; then ranges+=("$base..HEAD"); else ranges+=('HEAD'); fi
   echo "pre-push-gate: no ref list on stdin; using ${ranges[*]}"
+  # ...and SCAN THAT RANGE, exactly as the stdin path does. Without this the
+  # fallback never set gate_needed, so it skipped and then blamed the commits
+  # for it — printing "no Claude-session commits in this push" having examined
+  # no commits at all. A message that is true-sounding and wrong about its own
+  # reason is the failure class this gate exists to prevent, and it converts an
+  # unexamined push into a reassuring line in a log.
+  if [[ "$base" == "" ]]; then
+    hand_revs=$(git rev-list --max-count=200 HEAD 2>/dev/null)
+  else
+    hand_revs=$(git rev-list "$base..HEAD" 2>/dev/null)
+  fi
+  hand_n=0
+  while IFS= read -r c; do
+    [[ -z "$c" ]] && continue
+    hand_n=$((hand_n + 1))
+    if git show -s --format='%B' "$c" | grep -qiE 'Claude-Session:|Co-Authored-By: .*Claude'; then
+      gate_needed=1
+      break
+    fi
+  done <<<"$hand_revs"
+  examined="$hand_n"
 fi
 
 if [[ "$gate_needed" != "1" && "${GATE_FULL:-0}" != "1" ]]; then
-  echo "pre-push-gate: no Claude-session commits in this push; skipping (GATE_ALL=1 to force)"
+  # Say what actually happened. "No Claude-session commits" is only honest when
+  # commits were READ; if the range could not be determined, the skip is an
+  # admission of ignorance and must read as one.
+  # ZERO EXAMINED IS NOT "NONE MATCHED". The range may be empty (nothing new to
+  # push), or unresolvable, or rev-list may have failed — in every one of those
+  # cases the gate learned nothing, and saying "no Claude-session commits" would
+  # be asserting a fact about commits it never read.
+  if [[ "${examined:-0}" -eq 0 ]]; then
+    echo "pre-push-gate: examined NO commits in ${ranges[*]-<no range>} — the range is empty or"
+    echo "               could not be resolved, so nothing was checked. This is not a green gate;"
+    echo "               it is the gate saying it had nothing to look at. GATE_ALL=1 to force."
+  else
+    echo "pre-push-gate: examined ${examined:-0} commit(s) in ${ranges[*]-<none>} — none carry the"
+    echo "               Claude-session trailer; skipping (GATE_ALL=1 to force)"
+  fi
   exit 0
 fi
 
