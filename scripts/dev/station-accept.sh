@@ -179,6 +179,9 @@ print(f"sample={spec.get('sampleIntervalMs', 1000)}")
 print(f"floor={spec.get('sampleFloorMs', 0)}")
 print(f"ceiling={spec.get('sampleCeilingMs', 0)}")
 print(f"bank={spec.get('cursorBank', '')}")
+print(f"ratehz={spec.get('rateHz', 0)}")
+print(f"ratems={spec.get('rateMs', 3000)}")
+print(f"seam={'1' if spec.get('requireResumeSeam', True) else '0'}")
 PYEOF
 }
 SPEC="$(read_spec "$STATION")"
@@ -202,6 +205,9 @@ GUEST="$(spec_get guest)"
 FLOOR="$(spec_get floor)"
 CEILING="$(spec_get ceiling)"
 BANK="$(spec_get bank)"
+RATE_HZ="$(spec_get ratehz)"
+RATE_MS="$(spec_get ratems)"
+REQUIRE_SEAM="$(spec_get seam)"
 [ -n "$RECT" ] || die "acceptance.watchRect is missing for '$STATION'"
 [ -n "$CONTROL" ] || die "acceptance.controlStation is missing for '$STATION' — every pass
        runs a simultaneous control, because this gate can cause what it detects."
@@ -287,17 +293,83 @@ if [ -n "$BANK" ]; then
   fi
 fi
 
+# THE RESUME SEAM. The 298,280 miss appeared on the FIRST session after a
+# restart: a coordinate written while the guest was stopped was never published,
+# so on resume the value matched our own write and a tick declared convergence
+# while the guest had never repainted. A gate that measures a warm, already-
+# running guest never crosses that seam and cannot see it — and a station author
+# will naturally measure a warm guest, because it makes a cleaner proof.
+#
+# This gate does not FORCE the seam: pausing a live station to manufacture one is
+# a station touch, and a harness that reaches in to create the condition it tests
+# is the shape of thing that caused the rhapsody misattribution. It REQUIRES and
+# VERIFIES it instead. The natural moment is right after a unit restart, which is
+# exactly when a cutover runs acceptance; a returning visitor's first click is
+# the same seam, which makes it the most visitor-representative moment there is.
+#
+# `labctl health` reads query-status: one QMP acquire, released immediately.
+seam_state() {
+  [ "$DRY" = 1 ] && {
+    printf '  [would] read labctl health %s for the resume seam\n' "$1"
+    return 0
+  }
+  ssh -n -o ConnectTimeout=20 "$LAB" "labctl health $(printf '%q' "$1") --json 2>/dev/null" 2>/dev/null
+}
+
+FROM_REST="unknown"
+if [ "$DRY" = 0 ]; then
+  health="$(seam_state "$STATION")"
+  # AT REST means there is something to RESUME FROM, which is not the same as
+  # being idle. A guest that is `running` with zero sessions has nothing stopped
+  # to come back from, so its next session crosses no seam — counting that as
+  # rest would make this check green about a question it never asked, which is
+  # the exact class it exists to catch. Rest is: the pauser has stopped it
+  # (`paused`, or `x11 (paused)` which `paused` already reflects), or it has
+  # never been continued since launch (`prelaunch`, i.e. QEMU started with -S).
+  FROM_REST="$(printf '%s' "$health" | python3 -c '
+import json, sys
+try:
+    h = json.load(sys.stdin)
+except Exception:
+    print("unknown"); raise SystemExit
+at_rest = bool(h.get("paused")) or h.get("qemu_status") in ("prelaunch", "paused", "suspended")
+print("yes" if at_rest else "no")
+' 2>/dev/null || echo unknown)"
+  case "$FROM_REST" in
+    yes) ok "station is at rest — the first measured session crosses the resume seam" ;;
+    no)
+      if [ "$REQUIRE_SEAM" = "1" ]; then
+        skip "station is already WARM (running, with sessions): the first measured"
+        skip "  session will NOT cross the resume seam, so this run cannot see the"
+        skip "  class the 298,280 miss belonged to. Run it after a restart, or when"
+        skip "  the station has idle-paused. Reporting INCONCLUSIVE rather than a pass."
+      else
+        skip "station is warm; resume seam not exercised (requireResumeSeam is off)"
+      fi
+      ;;
+    *) skip "could not read the station's rest state — the seam is UNVERIFIED" ;;
+  esac
+fi
+
 mkdir -p "$EVIDENCE"
 C_BEFORE="$(counters "$STATION")"
+RUN_SINCE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # --- the browser leg, candidate and control IN THE SAME PASS ----------------
 if [ ! -f "$PROBE" ]; then die "missing $PROBE" 3; fi
-# probe_args <station> <rect> <point> <guest>
+# probe_args <station> <rect> <point> <guest> <rate-hz> <rate-ms>
+#
+# EVERY per-station value is passed in, none read from the candidate's globals.
+# The control inheriting the candidate's watchRect was caught earlier by reading
+# a --dry-run; the control inheriting the candidate's RATE was caught the same
+# way, one leg later. A control driven by settings that are not its own is not a
+# control, and this signature is now the thing that makes that hard to write.
 probe_args() {
   printf '%s' "--station $1 --sessions $SESSIONS --abandon-at $ABANDON --rect $2 --sample-ms $SAMPLE_MS"
   [ -n "${3:-}" ] && printf ' --point %s' "$3"
   [ -n "${4:-}" ] && printf ' --guest %s' "$4"
   [ -n "$BASE" ] && printf ' --base %s' "$BASE"
+  [ "${5:-0}" != "0" ] && [ -n "${5:-}" ] && printf ' --rate-hz %s --rate-ms %s' "$5" "${6:-3000}"
 }
 # THE CONTROL USES ITS OWN SPEC, NOT THE CANDIDATE'S. Caught by reading a
 # --dry-run: the control was inheriting the candidate's watchRect, so it would
@@ -318,14 +390,16 @@ ctrl_get() { printf '%s\n' "$CTRL_SPEC" | sed -n "s/^$1=//p" | head -1; }
 CTRL_RECT="$(ctrl_get rect)"
 CTRL_POINT="$(ctrl_get point)"
 CTRL_GUEST="$(ctrl_get guest)"
+CTRL_RATE_HZ="$(ctrl_get ratehz)"
+CTRL_RATE_MS="$(ctrl_get ratems)"
 [ -n "$CTRL_RECT" ] || die "control station '$CONTROL' declares no acceptance.watchRect"
 
 CAND_JSON="$EVIDENCE/$STATION.json"
 CTRL_JSON="$EVIDENCE/$CONTROL.control.json"
 
 if [ "$DRY" = 1 ]; then
-  printf '  [would] node %s %s > %s   (candidate)\n' "$PROBE" "$(probe_args "$STATION" "$RECT" "$POINT" "$GUEST")" "$CAND_JSON"
-  printf '  [would] node %s %s > %s   (control, same pass)\n' "$PROBE" "$(probe_args "$CONTROL" "$CTRL_RECT" "$CTRL_POINT" "$CTRL_GUEST")" "$CTRL_JSON"
+  printf '  [would] node %s %s > %s   (candidate)\n' "$PROBE" "$(probe_args "$STATION" "$RECT" "$POINT" "$GUEST" "$RATE_HZ" "$RATE_MS")" "$CAND_JSON"
+  printf '  [would] node %s %s > %s   (control, same pass)\n' "$PROBE" "$(probe_args "$CONTROL" "$CTRL_RECT" "$CTRL_POINT" "$CTRL_GUEST" "$CTRL_RATE_HZ" "$CTRL_RATE_MS")" "$CTRL_JSON"
   printf '  [would] compare, then apply the rollback decision matrix\n'
   exit 0
 fi
@@ -333,28 +407,37 @@ command -v node >/dev/null 2>&1 || die "node not found — the browser leg canno
 
 say "-- driving $SESSIONS session(s) against candidate and control simultaneously --"
 # shellcheck disable=SC2046 # probe_args is a deliberately word-split argv line
-node "$PROBE" $(probe_args "$STATION" "$RECT" "$POINT" "$GUEST") >"$CAND_JSON" &
+node "$PROBE" $(probe_args "$STATION" "$RECT" "$POINT" "$GUEST" "$RATE_HZ" "$RATE_MS") >"$CAND_JSON" &
 cand_pid=$!
 # shellcheck disable=SC2046
-node "$PROBE" $(probe_args "$CONTROL" "$CTRL_RECT" "$CTRL_POINT" "$CTRL_GUEST") >"$CTRL_JSON" &
+node "$PROBE" $(probe_args "$CONTROL" "$CTRL_RECT" "$CTRL_POINT" "$CTRL_GUEST" "$CTRL_RATE_HZ" "$CTRL_RATE_MS") >"$CTRL_JSON" &
 ctrl_pid=$!
 wait "$cand_pid"
 cand_rc=$?
 wait "$ctrl_pid"
 ctrl_rc=$?
 C_AFTER="$(counters "$STATION")"
+# GIVE-UPS ACROSS THE RATE BURST. The runaway announces itself loudly once the
+# rate is there and is silent without it, so this is only meaningful because the
+# burst above exists: "kh-ramabs: gave up publishing 560,330 after 6 tries".
+GAVE_UP="$(ssh -n -o ConnectTimeout=25 "$LAB" \
+  "journalctl -u streamhost@$(printf '%q' "$STATION") --since $(printf '%q' "$RUN_SINCE") --no-pager 2>/dev/null |
+     grep -ci 'gave up publishing'" 2>/dev/null || echo 0)"
+GAVE_UP="${GAVE_UP:-0}"
 
 C_JSON="{\"before\": $(counters_json "$C_BEFORE"), \"after\": $(counters_json "$C_AFTER")}"
-verdict() { # verdict <json> <rc> [counters] [templates] -> STATE — reason
-  python3 scripts/dev/station_accept_verdict.py "$1" "$2" "${3:-}" "${4:-unknown}"
+verdict() { # verdict <json> <rc> [counters] [templates] [gaveup] [fromrest] [requireseam]
+  python3 scripts/dev/station_accept_verdict.py \
+    "$1" "$2" "${3:-}" "${4:-unknown}" "${5:-0}" "${6:-unknown}" "${7:-0}"
 }
-CAND="$(verdict "$CAND_JSON" "$cand_rc" "$C_JSON" "$TEMPLATES")"
+CAND="$(verdict "$CAND_JSON" "$cand_rc" "$C_JSON" "$TEMPLATES" "$GAVE_UP" "$FROM_REST" "$REQUIRE_SEAM")"
 CTRL="$(verdict "$CTRL_JSON" "$ctrl_rc")"
 say ""
 say "  candidate $STATION: $CAND"
 say "  control   $CONTROL: $CTRL"
 say "  [input-router] before: ${C_BEFORE:-<none>}"
 say "  [input-router] after : ${C_AFTER:-<none>}  (corroboration only, never the gate)"
+say "  give-ups in window   : ${GAVE_UP}   ·   resume seam crossed: ${FROM_REST}"
 
 case "${CAND%% *}/${CTRL%% *}" in
   DISAGREE/*)

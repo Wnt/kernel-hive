@@ -950,6 +950,49 @@ commanded interaction must produce pixel change in the expected place, in
 bounded time. `station-accept.sh`'s browser-side leg starts from those two
 existing probes, not a new harness — they already traverse the §6 boundary.
 
+**Two legs that this wave's defects were ACTUALLY caught by, and that an author
+would naturally omit.** Audited 2026-08-31 against what each defect in the
+2026-08-30/31 wave was found by: **real input rates**, **the resume seam**, and
+**a same-pass control**. Everything else — including session churn — has yet to
+catch one. A gate carrying only the control would today pass a build shipping
+two of the three defects that actually shipped, which is not a hypothetical gap
+but a measurement against this wave's own history.
+
+*Rate.* The commanded interaction must include a burst at real pointer-stream
+rates, not only settled point-to-point targets, with give-ups and re-issues
+required to stay at zero across it. The kh-ramabs publish runaway is the
+evidence, and the fix's own source states the cost of not having this: issuing a
+second target before the first is consumed leaves both deltas to land on the
+last write, the read-back disagrees and issues more, and it runs away —
+*"invisible to a rig that sends one target and waits: it first appeared as `gave
+up publishing 560,330 after 6 tries (guest holds 560,302)` the first time this
+was driven by a real browser session instead of one target at a time."*
+
+*The resume seam.* The **first** measured target must follow a restart or a
+resume from the station's resting state. The 298,280 miss appeared on the first
+session after a restart: a coordinate written while the guest was stopped was
+never published, so on resume the value matched our own write and a tick
+declared convergence while the guest had never repainted. A gate that measures a
+warm, already-running guest never crosses that seam. Three of these stations
+launch `-S` and idle-pause, so a returning visitor's first click *is* the seam —
+which makes it the most visitor-representative moment available, not merely the
+most revealing.
+
+**The gate VERIFIES the seam; it does not manufacture one.** Pausing a live
+station to create the condition under test is precisely the shape of harness
+that caused the rhapsody misattribution, so a warm station yields
+`INCONCLUSIVE` — never a pass, and never a station fault it could not have seen.
+Note also that "idle" is not "at rest": a guest that is *running* with zero
+sessions has nothing to resume from, and counting that as rest would make the
+check green about a question it never asked.
+
+**Why the gate rather than the author owns both.** A settled command and a warm
+guest each make a proof *cleaner*, so an author optimising for a clean proof
+will remove exactly the two conditions under which these defects appear. That is
+the same structure as the §6 boundary rule: not a discipline failure, but a
+predictable consequence of the author choosing the conditions of their own
+proof.
+
 **The gate must bound its own observation rate.** Observation perturbs the
 thing observed: screendumping a station every second is *itself* enough to
 stop a session negotiating — identified during today's wave at the cost of two

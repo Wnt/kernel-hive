@@ -657,6 +657,20 @@
         },
         "note": {
           "type": "string"
+        },
+        "rateHz": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pointer-stream rate for the burst leg (0 disables). A publish runaway is silent at settled point-to-point rates and loud under a real stream — 'gave up publishing … after 6 tries' appeared the first time a browser drove it instead of one target at a time. Needs guestSize."
+        },
+        "rateMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How long to sustain rateHz."
+        },
+        "requireResumeSeam": {
+          "type": "boolean",
+          "description": "Default true. The first measured session must follow a restart or an idle-pause: a coordinate written while the guest is stopped and never published reads back as our own write on resume, and a warm guest never crosses that seam. The gate VERIFIES the seam rather than forcing it — pausing a live station to manufacture the condition under test is the shape of harness that caused the rhapsody misattribution."
         }
       }
     },
