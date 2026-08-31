@@ -178,6 +178,49 @@ is the price of not clamping the pointer into the corner in front of the visitor
 on every Restore. Do not read those first samples as a tracking fault; re-run,
 or compare points 3-5.
 
+## A resize-border fix that did NOT work, and the measurements that killed it
+
+Attempted 2026-08-31 against the standing finding *"the engine cannot hold the
+pointer on resize borders"*. **Not deployed.** Written down because the negative
+is worth more than the attempt, and because the obvious design is the one that
+fails.
+
+**First, the premise did not survive measurement.** Parked on the File Manager's
+title bar the engine holds perfectly: one distinct reading over 17 s, `hot=2,1
+exact=1`, `aiming=0`, `giveups=0`, `reaims` flat. `cursor-locate.py` reports the
+SAME sprite id there as on the desktop, so no glyph swaps at that spot and the
+magnet mechanism is not active. Whatever makes a title-bar click go missing, it
+is not the engine failing to hold position.
+
+**The hazard is real elsewhere, though, and now quantified.** Sweeping the
+desktop finds **four** distinct cursor sprites (arrow, and three others over the
+window frame, a page area and a bottom-right corner) and the engine uses the
+ARROW's `hot=2,1` for all of them, because continuity at rest can only name a
+glyph that swaps while the loop is idle, and a frame swaps it while the loop is
+driving through. Measured cost at the resize corner: commanded (674,738),
+landed (650,716) — a 24 px miss.
+
+**The attempt** was aix432's answer ported: learn a glyph's hotspot AT THE
+CURSOR_POS/CURSOR_CTRL WRITE, where a sprite change forces a compensating write
+with no motion to subtract, plus a rule that a mid-flight swap may never drive a
+correction (adopt a known hotspot and carry on, else end the aim).
+
+**Why it failed, in one number: `glyphs=0`.** The write-time learner never fired
+— not on a sweep, not on a 4 px walk across the frame, not on a 1 px crawl with
+one-second pauses. Its guard requires the engine to be idle with nothing in
+flight at the moment of the write, and a glyph swap happens precisely when the
+loop is driving through the frame. So every swap stayed unnamed, so the
+"end the aim" branch fired on every crossing (`glyphstops` climbing), and a move
+that crossed regions stopped short again and again: commanded (700,200), landed
+(275,193) — a **425 px** miss. That is far worse than the magnet it replaced.
+
+**What a working fix has to do.** Name the glyph without requiring an idle loop:
+account for the counts injected since the previous cursor write so the motion can
+be subtracted from the origin delta, rather than demanding there be no motion.
+Until a glyph can be named while the loop is driving, do NOT add the
+"end the aim on an unnamed swap" rule on its own — unnamed is the common case,
+and the rule then converts a small oscillation into a large miss.
+
 **The general rule for the next port:** any engine timer on `QEMU_CLOCK_VIRTUAL`
 needs a restore hook. A sibling that uses `QEMU_CLOCK_REALTIME` (`kh-ramabs`,
 patch `0007`) is not exposed to this, and the two are worth telling apart before
