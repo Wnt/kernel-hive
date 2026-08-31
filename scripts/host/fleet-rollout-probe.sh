@@ -221,6 +221,13 @@ def read_frozen_shm_frame(name, conf, out_png):
     and does not care whether it is even or odd, because nothing will ever
     finish or start a write again until the process is SIGCONT'd, and this
     gate does not do that.
+
+    WHAT THIS FRAME IS NOT: a guarantee of a clean one. A writer stopped
+    mid-update leaves the buffer TORN, and this returns that tear as-is. That
+    is acceptable here and only here, because the question this gate asks is
+    "did a picture come back", not "is every pixel current" -- a torn frame
+    still proves the guest painted. Do not reuse this reader anywhere the
+    answer has to be pixel-accurate.
     """
     import mmap
     import struct
