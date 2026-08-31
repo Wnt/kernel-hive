@@ -3,10 +3,20 @@
 **Read this before touching anything under `spa/src/analytics/`,
 `scripts/serve/tra*`, `scripts/observability/`, or `docs/ANALYTICS.md`.**
 
-One session built the analytics plane, then an APM plane on top of it, then
-started extending OpenTelemetry into the other three layers. Roughly half of the
-last part is unfinished and **two agents were still running when the session
-ended** (§7). This is what is true, what is in flight, and what will bite.
+One session built the analytics plane, an APM plane on top of it, and extended
+OpenTelemetry across the browser, the Python serving plane and the Rust daemon.
+Everything is merged to `main`. This is what is true, what is not yet running,
+and what will bite.
+
+**Start here, in this order:**
+
+1. §7 and §10 — the Rust plane has never executed, and rolling it is the task.
+2. §1's deploy-state note — `main` is one commit ahead of the box, deliberately.
+3. §6 — the traps. Two of them cost this session an hour each.
+4. §8 — a red test that is not ours and IS reporting a real defect.
+
+The work was paused at the operator's request with the docs finished; nothing
+is half-applied and no agents are running.
 
 ---
 
@@ -24,8 +34,26 @@ ended** (§7). This is what is true, what is in flight, and what will bite.
 | Fleet rollout tool | merged, **never run** — this is the next task |
 | Instana forwarding | works, run by hand, **not on a timer** |
 
-Deployed rev at handover: `main@6e11f26e` plus the serve-plane deploy after it.
-`box-deploy.sh --status` is the authority.
+### Deploy state at handover — there is a one-commit gap, on purpose
+
+Box is at **`main@0931a6ca`**; `main` is one commit ahead at **`95b4997b`**.
+`box-deploy.sh --status` is the authority, not this paragraph.
+
+That one commit is a fix to `signal_route.py`: it appended the trace context as
+`?00-<traceid>-…` instead of `?traceparent=00-<traceid>-…`, so the daemon —
+which looks for a query parameter *named* `traceparent`
+(`trace/context.rs::QUERY_KEY`) — would never have found it. **The deployed
+serving plane emits the malformed form right now.**
+
+It is harmless as things stand and must be deployed before the Rust rollout:
+the running daemon binary predates the trace work and never reads the query at
+all, and `session_ticket.rs::verify` has always split the path on `?` before
+verifying, so nothing today is affected. It would matter the moment the new
+binary ships — which is exactly the next task (§7, §10).
+
+Found by reading the signalling document the running server actually produced,
+rather than the code that produces it. Worth repeating as a method: this class
+of bug survives every gate in the repo.
 
 Data lives in three SQLite stores beside the server:
 `analytics.db` (counters, 730-day retention), `traces.db` (spans, **14 days**,
@@ -196,9 +224,16 @@ repo), so a sandbox run looks green and the shared clone does not.
 
 ## 9. Sandboxes held at handover
 
-`otel-prop` (this branch), plus whatever `otel-rust` and `fleet-roll` hold.
-Release with `scripts/dev/wt.sh rm <name>` once merged — the guard refuses while
-commits are not on `origin/main`, which is the behaviour you want.
+`otel-prop`, `otel-python`, `otel-rust`, `fleet-roll`. All four branches are
+merged to `main`, so `scripts/dev/wt.sh rm <name>` will now release them; the
+guard refuses while commits are not on `origin/main`, which is the behaviour you
+want and is why they were not released earlier.
+
+`otel-rust` holds a **built release binary** — worth keeping until the rollout
+runs, since it saves a rebuild.
+
+No agents are running. No station was restarted, no golden touched, no binary
+deployed by this session.
 
 ## 10. If you do one thing next
 
