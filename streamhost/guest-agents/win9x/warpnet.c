@@ -287,13 +287,77 @@ static int is_move(const char *s) {
  * preceded it), then runs itself; at the end of each recv chunk we apply whatever
  * final M is still pending. Net: a chunk of 50 M's snaps once to the final point,
  * while any interleaved P/R/B/C still fire in the right order at the right spot. */
-static void serve(SOCKET c) {
+/* Options every accepted client socket gets. SO_KEEPALIVE is defence in depth
+ * for the half-open peer described above: Win95's default keepalive is ~2 h, far
+ * too slow to rescue a visitor, but it does stop an orphan surviving forever if
+ * the daemon never reconnects. The listener takeover below is the real fix. */
+static void setup_client(SOCKET c) {
+    int one = 1;
+    setsockopt(c, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(one));
+    setsockopt(c, SOL_SOCKET, SO_KEEPALIVE, (char*)&one, sizeof(one));
+}
+
+/* LISTENER TAKEOVER -- why serve() watches the listening socket too.
+ *
+ * This loop used to be strictly serial: accept() one client, recv() from it
+ * until the peer closed, then accept() the next. That is a permanent pointer
+ * outage waiting to happen, and on 2026-08-31 it happened on the live win95
+ * station.
+ *
+ * The daemon (warpd.rs) reconnects on ANY write error -- a routine event. It
+ * closes its socket and dials again. But the guest's Winsock never learns the
+ * old peer is gone: no FIN or RST is delivered across the retronet tap when the
+ * host end vanishes mid-flight, so recv() on the dead socket blocks forever.
+ * Meanwhile the guest's TCP stack completes the daemon's NEW connection into
+ * the listen backlog, where nothing ever accepts it. Every `M x y` the daemon
+ * writes is absorbed by the receive buffer and read by nobody.
+ *
+ * The visible symptom is pointer MOTION dying alone: buttons and keys ride the
+ * QEMU PS/2 path (SH_WARPD_BUTTONS=qemu) and the QMP keyboard, so they keep
+ * working perfectly and the station looks half-alive. `netstat -an` in the guest
+ * shows TWO ESTABLISHED sockets on :7777 while the host has only one -- that
+ * asymmetry is the fingerprint.
+ *
+ * The fix: select() on the listener as well as the current client. The daemon is
+ * the only client and holds at most one connection at a time (it drops the old
+ * TcpStream before dialling), so a NEW inbound connection is proof that the
+ * current peer is dead. Hand over -- close the old socket, serve the new one.
+ * Last writer wins, and a wedge heals on the next reconnect instead of lasting
+ * until someone reboots the guest. */
+static void serve(SOCKET ls, SOCKET c) {
     char line[1200]; int ll = 0;        /* long enough for a real 'E' command line */
     char pend[256]; int havePend = 0;   /* latest deferred move, if any */
     char rb[512];
     for (;;) {
-        int n = recv(c, rb, sizeof(rb), 0);
+        fd_set rfd;
+        struct timeval tv;
+        int sel, n;
+        FD_ZERO(&rfd);
+        FD_SET(c, &rfd);
+        FD_SET(ls, &rfd);
+        tv.tv_sec = 30; tv.tv_usec = 0;
+        sel = select(0, &rfd, NULL, NULL, &tv);
+        if (sel == SOCKET_ERROR) break;
+        if (sel == 0) continue;              /* idle window: nothing pending */
+        if (FD_ISSET(ls, &rfd)) {
+            SOCKET nc = accept(ls, NULL, NULL);
+            if (nc != INVALID_SOCKET) {
+                /* Flush anything the dying connection had deferred, then hand
+                 * the session over. Line and move state belong to the old peer
+                 * and must not leak into the new one. */
+                if (havePend) { handle(pend); havePend = 0; }
+                closesocket(c);
+                c = nc;
+                setup_client(c);
+                ll = 0;
+                logline("client taken over");
+                continue;
+            }
+        }
+        if (!FD_ISSET(c, &rfd)) continue;
+        n = recv(c, rb, sizeof(rb), 0);
         if (n <= 0) break;
+        {
         int i;
         for (i = 0; i < n; i++) {
             char ch = rb[i];
@@ -322,6 +386,7 @@ static void serve(SOCKET c) {
             } else if (ll < (int)sizeof(line) - 1) {
                 line[ll++] = ch;
             } else ll = 0;
+        }
         }
         /* end of this recv chunk: collapse all its queued moves to the final one */
         if (havePend) { handle(pend); havePend = 0; }
@@ -352,9 +417,9 @@ int WINAPI WinMain(HINSTANCE hI, HINSTANCE hP, LPSTR cmd, int show) {
         for (;;) {
             SOCKET c = accept(ls, NULL, NULL);
             if (c == INVALID_SOCKET) break;   /* recreate listener */
-            int nd = 1; setsockopt(c, IPPROTO_TCP, TCP_NODELAY, (char*)&nd, sizeof(nd));
+            setup_client(c);
             logline("client connected");
-            serve(c);
+            serve(ls, c);
             logline("client gone");
         }
         closesocket(ls);

@@ -27,6 +27,30 @@ i686-w64-mingw32-gcc -O2 -s -mwindows -Wl,--no-insert-timestamp -o warpnet.exe w
 byte-identical. Winsock 1.1 only, so the same binary runs on base Win95 and 98SE
 (98SE ships Winsock2, a superset).
 
+## Listener takeover — one client at a time, and the newest wins
+
+`serve()` watches the LISTENING socket alongside the current client. A new
+inbound connection is taken as proof that the current peer is dead: the agent
+closes the old socket and serves the new one.
+
+This is not a nicety. Before 2026-08-31 the loop was strictly serial
+(`accept` → `recv` until close → `accept`), and that is a **permanent pointer
+outage**: the daemon reconnects on any write error, but when the host end
+disappears mid-flight across the retronet tap no FIN or RST reaches the guest,
+so Winsock keeps the dead socket ESTABLISHED, the agent blocks in `recv()` on it
+forever, and the daemon's new connection sits unaccepted in the backlog with
+every `M x y` read by nobody. Motion dies **alone** — buttons are on the QEMU
+PS/2 device and keys are on QMP — so the station still types while the cursor
+never moves. Diagnose it by comparing `ss -tanp | grep :7777` on the host with
+`netstat -an` in the guest: a guest ESTAB with no host counterpart is the orphan.
+
+Consequence to respect: hand-dialling `:7777` on a live station now **evicts the
+daemon** rather than queueing behind it. Use the `:7788` exec build instead.
+
+The agent lives in the golden's RAM image, so a new build ships as an offline
+inject + **cold** boot + `checkpoint-guard recapture <station>` — a `loadvm`
+would restore the old agent out of pre-inject RAM.
+
 ## Deployed wiring (live tiles)
 
 | tile    | pointer | transport                            | station.env                                           |
