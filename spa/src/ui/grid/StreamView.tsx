@@ -13,6 +13,7 @@ import { buildStreamhostRows } from './StreamView/buildStreamhostRows';
 import { S, SPIN_KEYFRAMES, FS_CSS, POWER_ON_CSS, PRESENT_CSS } from './StreamView/styles';
 import { videoStyleFor } from './StreamView/videoStyle';
 import { probeVideoSink } from '../../three/streamClient/videoResume';
+import { stationAttrs } from '../../analytics/stationAttrs';
 import { presentAspectFor } from './presentAspect';
 import { PosterCard } from './StreamView/PosterCard';
 import { OnScreenKeyboard } from '../keyboard/OnScreenKeyboard';
@@ -122,6 +123,14 @@ export default function StreamView({
   const present = presentAspectFor(os.osId);
   const presentFill = !!present;
 
+  // STATION-TYPE grouping dimensions (analytics/stationAttrs.ts) — the same
+  // three attrs on every span/metric this station's telemetry opens, so a
+  // report can group "how long does a QEMU desktop take to reconnect" without
+  // averaging across the whole fleet's station ids.
+  const osStationAttrs = stationAttrs({
+    osId: os.osId, emulatorFamily: os.emulatorFamily, uiKind: os.uiKind, resetMode: os.resetMode,
+  });
+
   // Open the live stream + control half (dormant unless streamable).
   const {
     stream, phase, message, control, registerPaintCanvas,
@@ -131,7 +140,9 @@ export default function StreamView({
     streamable,
     // sinkProbe lets the session's keyframe watchdog tell a dead transport from
     // a <video> that simply stopped pulling — see streamClient/videoResume.ts.
-    streamable ? { control: true, sinkProbe: () => probeVideoSink(videoRef.current) } : undefined,
+    streamable
+      ? { control: true, sinkProbe: () => probeVideoSink(videoRef.current), stationAttrs: osStationAttrs }
+      : undefined,
   );
 
   // Register the visible <canvas> as the streamhost direct-paint sink. Decoded
@@ -343,6 +354,7 @@ export default function StreamView({
   const { restoreToGolden } = useRestoreFlow({
     osId: os.osId, restoreState, setRestoreState,
     beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
+    phase, stationAttrs: osStationAttrs,
   });
 
   // ---- TYPE-IN DEMO PROGRAM (registry-declared stations only) -----------------

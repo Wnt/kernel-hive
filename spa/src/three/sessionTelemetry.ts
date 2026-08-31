@@ -25,12 +25,22 @@ import { connectTelemetry } from './connectTelemetry';
 import { recoverTelemetry, RECOVER_POLL_MS } from './recoverTelemetry';
 import { resumeTelemetry } from './resumeTelemetry';
 import { attachResumeSignals, isVisible } from './streamClient/resumeSignals';
+import type { Attrs } from '../analytics/trace';
 
 export interface SessionTelemetryDeps {
   /** The station's advertised keyframe heartbeat, read fresh each poll: it
    *  arrives on KIND_PARAMS after the transport is up, so it is null for the
    *  first moments of every session and must not be cached at construction. */
   getKeyframeMs(): number | null;
+  /** Station-type grouping dimensions (analytics/stationAttrs.ts), stamped on
+   *  every span/timing the three flows below open — so "how long do QEMU
+   *  desktops take to reconnect" is one query, not a per-station-id average. */
+  stationAttrs?: Attrs;
+  /** Which CLIENT transport this session negotiated — webtransport, or the
+   *  rare webrtc-fallback a WebCodecs-less browser takes. Not a station fact
+   *  (it is decided by feature detection, not by the registry), so it is
+   *  merged onto `stationAttrs` here rather than carried in it. */
+  clientTransport?: string;
 }
 
 /** One station session's whole analytics surface. Every method is safe to call
@@ -61,9 +71,12 @@ export interface SessionTelemetry {
 }
 
 export function sessionTelemetry(deps: SessionTelemetryDeps): SessionTelemetry {
-  const connect = connectTelemetry();
-  const resume = resumeTelemetry();
-  const recover = recoverTelemetry();
+  const attrs: Attrs = deps.clientTransport
+    ? { ...deps.stationAttrs, 'kh.client.transport': deps.clientTransport }
+    : (deps.stationAttrs ?? {});
+  const connect = connectTelemetry(attrs);
+  const resume = resumeTelemetry(attrs);
+  const recover = recoverTelemetry(undefined, attrs);
 
   // The freeze detector needs a clock of its own: a stall is precisely the
   // absence of the paint events everything else here is driven by, so without

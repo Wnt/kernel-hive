@@ -45,6 +45,7 @@
 
 import { beginFlow, startTiming, type Timing } from '../analytics';
 import type { FlowHandle } from '../analytics/flows';
+import type { Attrs } from '../analytics/trace';
 
 /** Telemetry for one station session's foreground/background cycles. */
 export interface ResumeTelemetry {
@@ -71,7 +72,7 @@ export interface ResumeTelemetry {
   end(): void;
 }
 
-export function resumeTelemetry(): ResumeTelemetry {
+export function resumeTelemetry(stationAttrs?: Attrs): ResumeTelemetry {
   let awayMs: Timing | null = null;
   let flow: FlowHandle | null = null;
   // BOTH outcome clocks run from the same instant, and exactly one is stopped.
@@ -101,7 +102,7 @@ export function resumeTelemetry(): ResumeTelemetry {
   return {
     hidden() {
       if (ended || awayMs) return;
-      awayMs = startTiming('session.resume.awayMs');
+      awayMs = startTiming('session.resume.awayMs', stationAttrs);
     },
     woke() {
       if (ended) return;
@@ -114,8 +115,9 @@ export function resumeTelemetry(): ResumeTelemetry {
       away.stop();
       if (flow) return; // already resuming; the extra hint is harmless
       flow = beginFlow('session.resume');
-      toLive = startTiming('session.resume.toLiveMs');
-      toLiveReconnect = startTiming('session.resume.reconnectToLiveMs');
+      if (stationAttrs) flow.tag(stationAttrs);
+      toLive = startTiming('session.resume.toLiveMs', stationAttrs);
+      toLiveReconnect = startTiming('session.resume.reconnectToLiveMs', stationAttrs);
     },
     reconnecting() {
       if (ended || !flow) return;

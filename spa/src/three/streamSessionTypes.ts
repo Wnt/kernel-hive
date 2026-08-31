@@ -6,6 +6,7 @@
 
 import type { VideoSinkProbe } from './streamClient/videoResume';
 import type { StreamControlHandle } from './useStreamControl';
+import type { Attrs } from '../analytics/trace';
 
 
 
@@ -26,6 +27,14 @@ export interface StreamSessionOptions {
    * consumed" without it — and those two want opposite responses.
    */
   sinkProbe?: () => VideoSinkProbe | null;
+  /** Station-type grouping dimensions (analytics/stationAttrs.ts), stamped on
+   *  every span/timing this session's telemetry opens — connect, resume and
+   *  recover flows alike (sessionTelemetry.ts). The caller (useLiveStream /
+   *  StreamView) resolves these from the manifest row; this hook merges in
+   *  the one dimension it alone knows: which CLIENT transport this session
+   *  actually negotiated (`kh.client.transport`: webtransport vs the rare
+   *  webrtc-fallback a WebCodecs-less browser takes). */
+  stationAttrs?: Attrs;
 }
 
 export interface StreamSessionResult {

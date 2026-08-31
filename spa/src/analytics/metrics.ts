@@ -43,7 +43,7 @@
 
 import { METRICS, bucketFor, type MetricId } from './catalogue';
 import { queueMetric } from './sink';
-import { childOfActive, popActive, pushActive, type Span } from './trace';
+import { childOfActive, popActive, pushActive, type Attrs, type Span } from './trace';
 
 /** Values above this are refused outright rather than bucketed into `inf`.
  *  An hour of visible wait is not a slow connect, it is a bug in a call site
@@ -124,8 +124,15 @@ function ensureHooked(): void {
   } catch { /* no hook: durations then include hidden time, which we cannot fix */ }
 }
 
-/** Begin measuring `id`. Always returns a handle; never throws. */
-export function startTiming(id: MetricId): Timing {
+/**
+ * Begin measuring `id`. Always returns a handle; never throws.
+ *
+ * `attrs` land on the timing's OWN span (typically `stationAttrs(...)`) — not
+ * only on the flow it nests under, for the same reason `beginFlow` repeats
+ * them on every step: a consumer reading this span in isolation must not have
+ * to walk up to a parent to learn which station type it belongs to.
+ */
+export function startTiming(id: MetricId, attrs?: Attrs): Timing {
   try {
     const spec = METRICS[id] as { scale: string; countsHiddenTime?: boolean } | undefined;
     if (!spec || spec.scale !== 'ms') return NOOP_TIMING;
@@ -133,7 +140,7 @@ export function startTiming(id: MetricId): Timing {
     ensureHooked();
     // Attaches to whatever flow is open, so a station-open timing lands inside
     // the station.connect trace rather than orphaned beside it.
-    const span = childOfActive(id, { 'kh.metric': id });
+    const span = childOfActive(id, { 'kh.metric': id, ...attrs });
     pushActive(span);
     const live: Live = {
       id,

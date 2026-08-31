@@ -27,6 +27,7 @@
 
 import { beginFlow, startTiming, type Timing } from '../analytics';
 import type { FlowHandle } from '../analytics/flows';
+import type { Attrs } from '../analytics/trace';
 import { StallWatch } from './stallWatch';
 
 /** Telemetry for one station session's freezes. Safe to call in any order. */
@@ -71,7 +72,7 @@ export const RECOVER_POLL_MS = 500;
  *   metrics lane's own clock, which is deliberately not something a call site
  *   can influence.
  */
-export function recoverTelemetry(now: () => number = clock): RecoverTelemetry {
+export function recoverTelemetry(now: () => number = clock, stationAttrs?: Attrs): RecoverTelemetry {
   const watch = new StallWatch();
   // The two halves of one episode. Exactly one of them settles per freeze.
   let stallMs: Timing | null = null;
@@ -84,8 +85,9 @@ export function recoverTelemetry(now: () => number = clock): RecoverTelemetry {
     // One flow per FREEZE, not per session: the question is how many freezes
     // came back, and a session-long flow could only ever answer it once.
     flow = beginFlow('stream.recover');
-    stallMs = startTiming('stream.recover.stallMs');
-    abandonMs = startTiming('stream.recover.abandonedAfterMs');
+    if (stationAttrs) flow.tag(stationAttrs);
+    stallMs = startTiming('stream.recover.stallMs', stationAttrs);
+    abandonMs = startTiming('stream.recover.abandonedAfterMs', stationAttrs);
   };
 
   /** Settle the pair: record `keep`, drop the other. Never records both, and
