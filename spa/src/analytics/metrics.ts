@@ -43,6 +43,7 @@
 
 import { METRICS, bucketFor, type MetricId } from './catalogue';
 import { queueMetric } from './sink';
+import { childOfActive, popActive, pushActive, type Span } from './trace';
 
 /** Values above this are refused outright rather than bucketed into `inf`.
  *  An hour of visible wait is not a slow connect, it is a bug in a call site
@@ -70,6 +71,10 @@ const MAX_RUNNING = 64;
 
 interface Live {
   id: MetricId;
+  /** The span this timing also is. A duration worth aggregating is a duration
+   *  worth seeing in a flame graph, and measuring it twice would be two chances
+   *  to disagree. */
+  span: Span;
   /** Visible milliseconds banked before the current visible span. */
   banked: number;
   /** `performance.now()` when the current visible span began, or null while
@@ -126,8 +131,13 @@ export function startTiming(id: MetricId): Timing {
     if (!spec || spec.scale !== 'ms') return NOOP_TIMING;
     if (running.size >= MAX_RUNNING) return NOOP_TIMING;
     ensureHooked();
+    // Attaches to whatever flow is open, so a station-open timing lands inside
+    // the station.connect trace rather than orphaned beside it.
+    const span = childOfActive(id, { 'kh.metric': id });
+    pushActive(span);
     const live: Live = {
       id,
+      span,
       banked: 0,
       since: visible() ? now() : null,
       wallStart: now(),
@@ -145,12 +155,20 @@ export function startTiming(id: MetricId): Timing {
             ? now() - live.wallStart
             : live.banked + (live.since === null ? 0 : now() - live.since);
           recordMetric(id, elapsed);
+          popActive(live.span);
+          // The bucketed value rides along as an attribute so a trace UI can
+          // show the same number the aggregate will, without joining stores.
+          live.span.end('ok', { 'kh.metric.ms': Math.round(elapsed) });
         } catch { /* instrumentation never throws into the app */ }
       },
       abandon() {
         try {
           done = true;
           running.delete(live);
+          popActive(live.span);
+          // No metric sample and no opinion on the span: an abandoned timing is
+          // not a fast one and not a failed one (see the Timing docblock).
+          live.span.end('unset', { 'kh.abandoned': true });
         } catch { /* noop */ }
       },
     };

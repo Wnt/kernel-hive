@@ -7,7 +7,7 @@ import { isWalkinPath, walkinShape } from './walkin/route';
 import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
-import { initClientDebug, setTelemetryAllowed } from './three/clientDebug';
+import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
 import { initAnalytics, reportError } from './analytics';
 import './index.css';
 
@@ -143,7 +143,9 @@ function mount(session: Session) {
   // A walk-in signed IN is deliberately included — the walk-in plane is a whole
   // surface built for strangers, and leaving it out would make it look unused.
   initAnalytics({
-    sessionId: window.__kernelHiveErrorSessionId || 'unknown',
+    // clientDebug's id, not a second one: /clientlog stamps this same value on
+    // every raw event, so a trace and the event tail behind it join on it.
+    sessionId: clientSessionId(),
     allowed: !signedOutAtTheDoor,
   });
   if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {

@@ -134,7 +134,9 @@ describe('flows', () => {
   it('exposes the open flow so an error can be blamed on it', () => {
     const f = beginFlow('station.connect');
     f.step('transport');
-    expect(currentFlow()).toEqual({ flow: 'station.connect', step: 'transport' });
+    // Field-wise, not toEqual: an OpenFlow also carries its trace spans now,
+    // and pinning the whole object would make every future field a test edit.
+    expect(currentFlow()).toMatchObject({ flow: 'station.connect', step: 'transport' });
     f.ok();
     expect(currentFlow()).toBeNull();
   });

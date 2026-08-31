@@ -22,6 +22,17 @@
 //  the funnel a funnel — counts that only ever decrease down the list — rather
 //  than a bag of counters that can read 210 firstFrames against 40 transports.
 //
+//  A FLOW IS ALSO A TRACE. Every flow opens an OTel trace whose root span is
+//  the flow and whose children are its steps, so the same call that feeds the
+//  funnel feeds the drilldown — nobody has to instrument twice, and the two can
+//  never disagree about what happened. The funnel is what you read to see WHERE
+//  attempts die; the trace is what you open to see WHY one of them did.
+//
+//  The counter half still stands on its own: it is bucketed, anonymous and kept
+//  for two years, while traces carry a session id and expire in days. Losing
+//  the traces to retention must not lose the funnel, which is why they are two
+//  lanes and not one.
+//
 //  A FLOW IS NOT A SPAN — it counts attempts, it does not time them. Journey
 //  timing lives in metrics.ts, deliberately as its own lane: a flow's job is to
 //  say WHERE an attempt died, and fusing a duration into it would mean every
@@ -38,11 +49,15 @@
 
 import { FLOWS, type FlowId, type FlowStep } from './catalogue';
 import { queueFlow } from './sink';
+import { popActive, pushActive, startTrace, type Span } from './trace';
 
 /** The innermost open flow, for error attribution. */
 export interface OpenFlow {
   readonly flow: FlowId;
   step: string;
+  /** The flow's root span, and the span for the step it is standing on. */
+  readonly root: Span;
+  stepSpan: Span | null;
 }
 
 /** A live flow attempt. Finish it exactly once — later calls are ignored, so a
@@ -80,7 +95,13 @@ export function beginFlow(flow: FlowId): FlowHandle {
   try {
     const spec = FLOWS[flow];
     if (!spec || stack.length >= MAX_OPEN) return NOOP;
-    const open: OpenFlow = { flow, step: spec.steps[0] };
+    // `kh.flow` rather than a bare name: the semantic conventions have no term
+    // for "a named journey through a UI", so it is namespaced to say plainly
+    // that it is ours and will not collide with a convention added later.
+    const root = startTrace(flow, { 'kh.flow': flow });
+    pushActive(root);
+    const open: OpenFlow = { flow, step: spec.steps[0], root, stepSpan: null };
+    open.stepSpan = root.child(`${flow}.${open.step}`, { 'kh.step': open.step });
     stack.push(open);
     queueFlow(flow, open.step, 'enter');
     let done = false;
@@ -89,6 +110,16 @@ export function beginFlow(flow: FlowId): FlowHandle {
       done = true;
       const at = stack.lastIndexOf(open);
       if (at >= 0) stack.splice(at, 1);
+      open.stepSpan?.end(outcome === 'fail' ? 'error' : 'ok');
+      open.stepSpan = null;
+      popActive(open.root);
+      // The reason token lands as `error.type`, which is the OTel attribute a
+      // trace UI groups failures by — so "why did connects fail this week"
+      // is one facet, not a string search.
+      open.root.end(
+        outcome === 'fail' ? 'error' : 'ok',
+        outcome === 'fail' && reason ? { 'error.type': reason } : undefined,
+      );
       queueFlow(flow, outcome === 'fail' ? (reason || open.step) : open.step, outcome);
     };
     return {
@@ -102,7 +133,11 @@ export function beginFlow(flow: FlowId): FlowHandle {
           // position: the catalogue is the funnel's shape, not the call site.
           if (to < 0) return queueFlow(flow, next, 'enter');
           if (to <= from) return;
+          // One span per step, closed as the next opens: that is what makes the
+          // flame graph show where the time in a journey actually went.
+          open.stepSpan?.end('ok');
           open.step = next;
+          open.stepSpan = open.root.child(`${flow}.${next}`, { 'kh.step': next });
           queueFlow(flow, next, 'enter');
         } catch { /* never throw out of instrumentation */ }
       },
@@ -114,6 +149,13 @@ export function beginFlow(flow: FlowId): FlowHandle {
           done = true;
           const at = stack.lastIndexOf(open);
           if (at >= 0) stack.splice(at, 1);
+          // Abandoned, not failed: the span closes `unset` so it is neither
+          // green nor red in a trace list. Reporting it as an error would make
+          // every visitor who navigated away look like a fault.
+          open.stepSpan?.end('unset');
+          open.stepSpan = null;
+          popActive(open.root);
+          open.root.end('unset', { 'kh.abandoned': true });
         } catch { /* noop */ }
       },
     };

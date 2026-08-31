@@ -118,7 +118,8 @@ import probes  # noqa: E402  (server-side feature reach; folds into ANALYTICS)
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
-import telemetry_routes  # noqa: E402  (the /analytics + /coverage route group)
+import telemetry_routes  # noqa: E402  (the /analytics + /coverage + /traces group)
+import traces  # noqa: E402  (correlated per-session spans; admin-only to read)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
@@ -141,6 +142,8 @@ from config import (  # noqa: E402
     SIGNAL_CONFIG,
     SIGNAL_HOST,
     STREAM_KEY_FILE,
+    TRACE_RETENTION_DAYS,
+    TRACES_DB,
     USAGE_STATS,
     WEBROOT,
 )
@@ -178,7 +181,13 @@ COVERAGE = linecov.CoverageStore(ANALYTICS_DB.parent / "coverage.db")
 COVERAGE.prune()
 # The stores the analytics route group reaches, passed rather than imported so
 # the dispatcher stays a pure function of what it is given.
-TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE}
+# The correlated trace lane. Reads are admin-only and live under /auth/traces/*
+# (auth/routes.py); only the INGEST is open here, exactly like /analytics — a
+# tab has to be able to report what it did without holding an admin session.
+TRACES = traces.TraceStore(TRACES_DB)
+TRACES.prune(TRACE_RETENTION_DAYS)
+auth_routes.bind_traces(TRACES)
+TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE, "traces": TRACES}
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire

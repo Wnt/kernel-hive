@@ -24,6 +24,7 @@
 // ============================================================================
 
 import type { ClientClass } from './intent';
+import { flushSpans } from './trace';
 
 /** Flush cadence. A session of a few minutes is a handful of requests. */
 const FLUSH_MS = 20_000;
@@ -136,7 +137,14 @@ function ensureTimer(): void {
  *  which `keepalive` already guarantees for the case that matters. */
 function flushAnalytics(): void {
   try {
-    if (!allowed || !rows) return;
+    if (!allowed) return;
+    // Spans first, and unconditionally: they have their own buffer and their
+    // own endpoint, and a batch with no COUNTERS in it can still be carrying a
+    // whole trace. Gating them behind `rows` would have silently dropped the
+    // traces of the quietest sessions — which, for a drilldown tool, are
+    // exactly the ones somebody is hunting for.
+    flushSpans();
+    if (!rows) return;
     const batch = pending;
     pending = emptyBatch();
     rows = 0;

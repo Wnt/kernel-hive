@@ -68,6 +68,14 @@ function makeSessionId(): string {
 }
 const sessionId = makeSessionId();
 
+/** THE session id for this tab. Exported so the analytics/trace plane stamps
+ *  the same value /clientlog does — one id, two stores, so a trace and the raw
+ *  event tail behind it are joinable. main.tsx used to read a
+ *  `window.__kernelHiveErrorSessionId` that nothing ever assigned, so every
+ *  batch was labelled the literal string 'unknown'; harmless while the server
+ *  discarded it, useless the moment anything wanted to correlate. */
+export function clientSessionId(): string { return sessionId; }
+
 // ---- module state -----------------------------------------------------------
 let pending: ClientLogEvent[] = [];
 let flushTimer = 0;

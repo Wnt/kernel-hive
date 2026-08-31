@@ -18,9 +18,26 @@ Two cross-cutting rules live here rather than in each handler:
 from __future__ import annotations
 
 import json
+import time
 from http.cookies import SimpleCookie
 
 from .service import AuthError
+
+# The trace store, bound by the server at startup (see `bind_traces`). Held as a
+# module global rather than threaded through `dispatch(...)`, which is the shape
+# `probes.bind` already established here: the alternative was a fifth positional
+# argument on a signature two other route families also call.
+_TRACES = None
+
+
+def bind_traces(store) -> None:
+    """Give the admin routes their trace store. Until this is called the trace
+    endpoints answer 503 rather than 404 — the distinction matters, because a
+    404 would read as "this build has no tracing" when the truth is "the store
+    failed to open"."""
+    global _TRACES
+    _TRACES = store
+
 
 COOKIE_NAME = "osg_session"
 BODY_CAP = 64 * 1024
@@ -211,6 +228,18 @@ def _route(handler, path: str, service, user, body: dict) -> None:
         _reply(handler, 200, service.scoreboard())
         return
 
+    # ---- traces (docs/ANALYTICS.md) ---------------------------------------
+    # Admin-only BY POSITION, below the role check above, and that is the whole
+    # access control on the correlated lane. Unlike the aggregates — which carry
+    # no identity and are served openly — a trace says which session did what,
+    # so it leaves the box through these routes and no other.
+    if path.startswith("/auth/traces/"):
+        if _TRACES is None:
+            _reply(handler, 503, {"error": "trace store unavailable"})
+            return
+        _trace_route(handler, path[len("/auth/traces/") :], body)
+        return
+
     if path == "/auth/invites/create":
         _reply(handler, 200, service.create_invite(user, str(body.get("name", "")), str(body.get("role", "viewer"))))
         return
@@ -249,6 +278,54 @@ def _route(handler, path: str, service, user, body: dict) -> None:
         return
 
     _reply(handler, 404, {"error": "no such endpoint"})
+
+
+def _trace_route(handler, leaf: str, body: dict) -> None:
+    """The four trace reads. `body` carries the query for both verbs so a long
+    filter set does not have to survive a URL."""
+    import traces_otlp
+
+    if leaf == "search":
+        _reply(handler, 200, _TRACES.search(**_search_filters(body)))
+        return
+    if leaf == "trace":
+        got = _TRACES.trace(str(body.get("id", "")))
+        _reply(handler, 200, got) if got else _reply(handler, 404, {"error": "no such trace"})
+        return
+    if leaf == "facets":
+        since = _int(body.get("sinceMs")) or int((time.time() - 7 * 86400) * 1000)
+        _reply(handler, 200, _TRACES.facets(since))
+        return
+    if leaf == "otlp":
+        # The export boundary. Runs the SAME search the UI runs and renders the
+        # matches as OTLP/JSON, so what you hand another system is exactly the
+        # set you were looking at — not a separate query that might disagree.
+        found = _TRACES.search(**{**_search_filters(body), "limit": 200})
+        full = [t for t in (_TRACES.trace(r["traceId"]) for r in found["traces"]) if t]
+        _reply(handler, 200, traces_otlp.export(full))
+        return
+    _reply(handler, 404, {"error": "not found"})
+
+
+def _int(v):
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def _search_filters(body: dict) -> dict:
+    """Whitelist the filters. A query object straight from a browser reaching a
+    SQL builder is how a filter becomes an injection, even an admin-only one."""
+    return {
+        "session": str(body["session"])[:64] if body.get("session") else None,
+        "name": str(body["name"])[:80] if body.get("name") else None,
+        "klass": body["class"] if body.get("class") in ("human", "probe", "unknown") else None,
+        "status": body["status"] if body.get("status") in ("unset", "ok", "error") else None,
+        "errors_only": bool(body.get("errorsOnly")),
+        "since_ms": _int(body.get("sinceMs")),
+        "until_ms": _int(body.get("untilMs")),
+        "min_dur_ms": _int(body.get("minDurMs")),
+        "limit": _int(body.get("limit")),
+        "offset": _int(body.get("offset")),
+    }
 
 
 def _public_user(user: dict) -> dict:
