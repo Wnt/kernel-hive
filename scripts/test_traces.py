@@ -125,6 +125,24 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.record({"spans": "nope"}), 0)
         self.assertEqual(self.store.record(batch([None, 3, "x"])), 0)
 
+    def test_a_batch_that_knows_the_session_upgrades_one_that_did_not(self):
+        # The serving plane (serve/tracing.py) contributes spans to the SAME
+        # trace as the tab and never learns the tab's session id — `traceparent`
+        # carries a trace, not an identity — so its batches land as `unknown`,
+        # and they land FIRST because a server span ends in milliseconds while a
+        # tab flushes every twenty seconds. Without the upgrade the server would
+        # win the race and every browser trace would list as session `unknown`.
+        self.store.record({"resource": {}, "spans": [span(S1, name="serve.signal")]})
+        self.assertEqual(self.store.search()["traces"][0]["sessionId"], "unknown")
+        self.store.record(batch([span(S2, parent=S1)], session="sess-real", klass="human"))
+        row = self.store.search()["traces"][0]
+        self.assertEqual((row["sessionId"], row["class"]), ("sess-real", "human"))
+
+    def test_a_later_unknown_batch_never_erases_a_known_session(self):
+        self.store.record(batch([span(S1)], session="sess-real"))
+        self.store.record({"resource": {}, "spans": [span(S2, parent=S1, name="serve.signal")]})
+        self.assertEqual(self.store.search()["traces"][0]["sessionId"], "sess-real")
+
     def test_an_unknown_session_is_labelled_not_dropped(self):
         self.store.record({"resource": {}, "spans": [span(S1)]})
         self.assertEqual(self.store.search()["traces"][0]["sessionId"], "unknown")

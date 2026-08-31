@@ -265,7 +265,19 @@ class TraceStore:
             "span_count,error_count,status,day) VALUES(?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(trace_id) DO UPDATE SET root_name=excluded.root_name,"
             "started_ms=excluded.started_ms,ended_ms=excluded.ended_ms,dur_ms=excluded.dur_ms,"
-            "span_count=excluded.span_count,error_count=excluded.error_count,status=excluded.status",
+            "span_count=excluded.span_count,error_count=excluded.error_count,status=excluded.status,"
+            # A batch that KNOWS the session names it; one that does not never
+            # erases one. The serving plane (serve/tracing.py) emits spans into
+            # traces the browser also contributes to, and it never learns the
+            # tab's session id — `traceparent` carries a trace, not an identity.
+            # Its batches therefore land as `unknown`, and they usually land
+            # FIRST, because a server span ends in milliseconds while a tab
+            # flushes every twenty seconds. Without this the server would win
+            # the race and every browser trace would list as session `unknown`,
+            # which is the one column the trace list is filtered by.
+            "session_id=CASE WHEN excluded.session_id='unknown' THEN trace.session_id "
+            "ELSE excluded.session_id END,"
+            "class=CASE WHEN excluded.class='unknown' THEN trace.class ELSE excluded.class END",
             (
                 trace_id,
                 session,
