@@ -899,8 +899,11 @@ load and nothing else.
 | `transport.webrtc_fallback` | server | the fallback transport being TAKEN — a second egress and a sidecar process, for a browser with no `VideoDecoder` |
 | `input.edge` | client (browser) | one SAMPLED input's own start: the event handler firing to the record leaving the tab |
 | `input.dispatch` | internal | that record reaching the daemon's sink and the guest write it caused, as one span (`input.rs` has no headroom left to split it further — see the trap below) |
-| `guest.frame.next` | internal | the EFFECT: how long from that injection to the next frame this session's capture/encode pipeline produced |
+| `guest.frame.next` | internal | the EFFECT: how long from that injection to the next frame this session's capture/encode pipeline produced. Carries `kh.encode.latency_us` (`Au::encode_us`, `worker.rs`'s snapshot->AU-ready number, formerly journal-text only) |
 | `transport.frame.next` | internal | the same edge's frame reaching the wire — splits capture/encode cost from egress cost, same idea as `capture.first_frame` vs `transport.first_frame` |
+| `client.frame.receive` *(browser)* | internal | the AU's bytes arriving off the wire to being handed to `VideoDecoder.decode()` |
+| `client.frame.decode` *(browser)* | internal | the WebCodecs decode itself, per-frame, for THIS sampled frame — not the ABR aggregate `decodeMs` already reports |
+| `client.frame.paint` *(browser)* | internal | the paint sink's own synchronous cost (`drawImage`, the direct-canvas path) — closes the trace at the pixel |
 
 The four session stages are all measured from the session's own start, so they
 read side by side: `capture.first_frame` short and `transport.first_frame` long
@@ -931,6 +934,63 @@ root directly, so a flame graph reads input -> dispatch -> effect as one chain;
 they fire only when a sampled edge is actually pending (one relaxed atomic load
 per frame otherwise — the encoder relay's existing budget, unchanged).
 
+**The return leg (added 2026-08-31) closes the trace at the pixel.** Until
+this, "input->pixel" was really input->frame-SENT: the daemon's own transport
+send, never the bytes arriving, decoding or painting. The browser cannot know
+which `frame_id` answered its own sampled edge on its own — WebCodecs only
+ever hands back the frame's OWN capture timestamp, never "this was the effect
+of edge X" — so the daemon tells it: `transport/mod.rs`'s egress loop, right
+after `effect_sent` names the answering `frame_id`, spawns a tiny out-of-band
+wire message (`transport/egress.rs::spawn_frame_mark`, KIND_PARAMS subtype 3 —
+the SAME additive extension point subtypes 1/2 already use for encoder-params
+and HUD stats, not a new mechanism) carrying `frame_id` plus the trace/span ids
+to answer with. Sent roughly once per `SAMPLE_N` input edges, never per frame,
+and spawned rather than awaited so a slow or lost mark can never hold up the
+video AU it describes.
+
+The browser (`three/streamClient/frameTrace.ts`) matches that mark against its
+OWN receive/decode/paint timestamps for the SAME `frame_id`, by explicit id,
+never by assuming "the next frame I painted is the answer" — the mark and the
+AU it names travel on two independent uni-streams the network is free to
+reorder against each other, and ordering-based correlation fails precisely
+under the load and loss where this measurement matters. Two small bounded
+FIFOs (capacity 64, matching the daemon's own "one pending edge" scale, not a
+working set) hold whichever side arrives first; a mark or a frame that never
+finds its match simply ages out — the daemon's half of the trace still stands
+alone. `client.frame.receive` / `client.frame.decode` / `client.frame.paint`
+are emitted only once both halves are in, as siblings of `guest.frame.next` /
+`transport.frame.next` under the same `input.dispatch`:
+
+```
+input.edge                    (browser, root — the sampled decision)
+└─ input.dispatch             (daemon)
+   ├─ guest.frame.next        (daemon — kh.encode.latency_us)
+   ├─ transport.frame.next    (daemon)
+   ├─ client.frame.receive    (browser)
+   ├─ client.frame.decode     (browser)
+   └─ client.frame.paint      (browser)
+```
+
+**Grouping dimensions.** A second stream landed station-type grouping
+(`kh.station.emulatorFamily` / `kh.station.ui` / `kh.station.resetMode`,
+`spa/src/analytics/stationAttrs.ts`, 2026-08-31) on the FLOWS plane
+(`analytics/flows.ts`'s `beginFlow`/`tag`) partway through this work — this
+return leg reuses its `kh.station.id` key on `client.frame.*` (the SAME id
+`StreamClient.stationId` already carries, threaded through the return-path
+mark into `frameTrace.ts`'s emitted spans) so a query joins the same way
+across both planes. The other three dimensions were deliberately NOT threaded
+this deep: `stationAttrs()` needs a resolved manifest row
+(`emulatorFamily`/`uiKind`/`resetMode`), which lives a layer above the decode
+pipeline (`useStreamhostSession`) and is not currently passed into
+`StreamClient`'s config — wiring that through was judged out of scope for a
+change about closing the return leg, not about threading a new field through
+the client's constructor. Nothing on the Rust side carries any of the four:
+`Config` has no registry read for emulator family, ui kind or reset mode, so
+every daemon span (`guest.frame.next`, `transport.frame.next`, and everything
+in the table above) still relies on its unconditional `kh.station` (bare, the
+pre-existing key `trace/mod.rs::render` stamps on every span) as the join key
+back to the registry for that grouping, exactly as before this change.
+
 **Collection is a spool directory, not a POST.** Each file in
 `<station>/traces/` is byte-for-byte the body `POST /traces` accepts, written
 tmp+rename like `probes.json` and `signaling.json`, capped at
@@ -944,12 +1004,21 @@ server-side beyond reading a file and making the request — which is exactly
 what `scripts/observability/trace-ship.py` (below) turned out to be.
 
 **Cost, measured rather than asserted** (`span_cost_is_small`, 20 000 spans
-back-to-back on the lab build box):
+back-to-back on the lab build box; re-measured 2026-08-31 alongside the return
+leg above, box variance is real and the numbers move run to run):
 
 | profile | disabled | enabled (1 attribute) |
 |---|---|---|
-| `--release` (opt-level 2 — what ships) | **50-70 ns** | **3.2 us** |
+| `--release` (opt-level 2 — what ships) | **50-70 ns** (76 ns latest run) | **3.2 us** (3.43 us latest run) |
 | default `cargo test` (debug) | 214 ns | 9.3 us |
+
+The return leg adds no new per-frame cost: `spawn_frame_mark` only ever runs
+when `effect_sent` already returned `Some` — the same "sampled edge with a
+pending effect" gate `guest.frame.next`/`transport.frame.next` already pay
+for — so its real cost (one QUIC uni-stream open/write/finish) is bounded by
+the input side's own `SAMPLE_N`, never by frame rate, and is spawned off the
+egress hot path so it cannot add latency to the video AU it describes even
+when it IS sampled.
 
 A session emits at most seven spans, so a visitor costs about 22 us of daemon
 time. Rendering is hand-written rather than `serde_json::Value` because the

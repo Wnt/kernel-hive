@@ -7,12 +7,14 @@
 use anyhow::Result;
 
 use crate::encode::PublishedParams;
+use crate::trace::Ctx;
 
 const KIND_VIDEO: u8 = 1;
 const KIND_AUDIO: u8 = 2;
 // SERVER->CLIENT encoder-params / server-stats push (SECTION 3.2). Subtype byte
 // selects the payload: 1 = encoder-params (on tier change / at connect),
-// 2 = server-stats for the HUD (1 Hz per session).
+// 2 = server-stats for the HUD (1 Hz per session), 3 = sampled-input
+// frame-trace mark (return-path tracing, see `spawn_frame_mark` below).
 const KIND_PARAMS: u8 = 3;
 
 pub(super) async fn send_au(conn: &wtransport::Connection, au: &crate::encode::Au) -> Result<()> {
@@ -141,4 +143,60 @@ pub(super) async fn send_params_stats(
     stream.write_all(&buf).await?;
     stream.finish().await?;
     Ok(())
+}
+
+/// KIND_PARAMS subtype 3 — sampled-input frame-trace mark (the return-path
+/// extension, `docs/lab/TRACE-CONTEXT.md` §3.2/§8.1; `trace_session.rs`'s
+/// "RETURN LEG" doc comment). Sent ONLY for the one AU that answers a
+/// sampled input edge — `effect_sent` returns `Some` at most once per
+/// pending edge, so this stream opens roughly once per `SAMPLE_N` input
+/// edges, never per frame.
+///
+/// 30 bytes: KIND(1) + subtype(1) + frame_id (u32 LE, matching every other
+/// frame_id field on this wire) + trace-id (16 BE) + span-id (8 BE). The
+/// trace/span halves are BIG-endian, matching `input_trace.rs`'s own suffix
+/// encoding rather than this file's LE convention for numeric fields — both
+/// exist so a byte range can be read straight into the hex string a
+/// `traceparent` already uses, which is worth more than one file being
+/// internally uniform.
+///
+/// WHY A SEPARATE STREAM AND NOT A LONGER VIDEO-AU HEADER. The AU header
+/// (`send_au` above) is followed immediately by an arbitrary-length Annex-B
+/// payload with no length prefix — the uni-stream's own close IS the
+/// end-of-payload marker. Inserting a variable-length suffix between a fixed
+/// header and that payload would need a NEW length field on every AU, which
+/// is not additive (an old client reading the old fixed offsets would decode
+/// the marker bytes as bitstream and could corrupt or crash that one frame's
+/// decode). KIND_PARAMS is additive on purpose: an old client's `handleStream`
+/// routes on the KIND byte and its `handleParamsStream` drains an unrecognised
+/// SUBTYPE (`else { await br.readToEnd(); }`, `videoDecode.ts`) — this is the
+/// same extensibility point subtypes 1 and 2 already use for encoder-params
+/// and HUD stats, not a new mechanism.
+///
+/// WHY SPAWNED rather than awaited inline in the egress loop: this stream is
+/// allowed to be slow or to fail without slowing or failing the video AU it
+/// describes — the mark is a bonus fact about a frame that is already on its
+/// way, never a gate on sending it. `conn` is owned (cloned by the caller)
+/// so the task outlives the call that spawned it.
+pub(super) fn spawn_frame_mark(
+    conn: std::sync::Arc<wtransport::Connection>,
+    ctx: Ctx,
+    frame_id: u32,
+) {
+    tokio::spawn(async move {
+        let mut buf = Vec::with_capacity(30);
+        buf.push(KIND_PARAMS);
+        buf.push(3u8); // subtype
+        buf.extend_from_slice(&frame_id.to_le_bytes());
+        buf.extend_from_slice(&ctx.trace.to_be_bytes());
+        buf.extend_from_slice(&ctx.span.to_be_bytes());
+        let Ok(pending) = conn.open_uni().await else {
+            return;
+        };
+        let Ok(mut stream) = pending.await else {
+            return;
+        };
+        let _ = stream.write_all(&buf).await;
+        let _ = stream.finish().await;
+    });
 }

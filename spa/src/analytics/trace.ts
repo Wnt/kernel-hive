@@ -456,6 +456,50 @@ export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
   return makeSpan(newTraceId(), null, name, attrs, kind);
 }
 
+/**
+ * A span whose start and duration are ALREADY KNOWN, rather than measured
+ * live — the browser twin of the daemon's `trace::emit_at`
+ * (`streamhost/src/trace/mod.rs`). `Span`/`makeSpan` above assume "opened
+ * now, ended later"; that does not fit the return-path frame spans
+ * (`three/streamClient/frameTrace.ts`), which are only knowable in
+ * hindsight — the daemon's frame-trace mark naming which `frame_id`
+ * answered a sampled input can arrive well after this tab already received,
+ * decoded and painted that frame (`docs/lab/TRACE-CONTEXT.md` §3.2/§8.1),
+ * and by the time the two sides meet the event itself is over.
+ *
+ * `startAtMs`/`durMs` are `performance.now()`-domain readings a caller
+ * already took (the SAME clock `now()` below reads) — never a wall clock —
+ * so this converts to the wall-clock `st` the wire format wants the same
+ * way `makeSpan`'s `wall0` does.
+ */
+export function emitSpan(
+  traceId: string,
+  parentSpanId: string,
+  name: string,
+  startAtMs: number,
+  durMs: number,
+  attrs?: Attrs,
+  status: SpanStatus = 'ok',
+): void {
+  try {
+    if (!enabled || buffered.length >= MAX_BUFFERED) return;
+    const wallStart = Date.now() - (now() - startAtMs);
+    const own = clean(attrs);
+    buffered.push({
+      t: traceId,
+      s: newSpanId(),
+      p: parentSpanId,
+      n: name.slice(0, 80),
+      kd: 'internal',
+      st: wallStart,
+      d: Math.max(0, Math.round(durMs)),
+      h: 0,
+      k: status,
+      ...(own ? { a: own } : {}),
+    });
+  } catch { /* instrumentation never throws into the app */ }
+}
+
 /** Everything buffered, handed over and cleared. */
 function drainSpans(): WireSpan[] {
   const out = buffered;
