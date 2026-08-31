@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -34,6 +35,7 @@ from pathlib import Path
 from .apply import UnitRoot, classify, flip, materialize, resume_needed, rollback
 from .closure import closure_hash, unit_closures
 from .denylist import NEVER_DERIVED, PROTECTED, ProtectedPathError, is_protected
+from .loaded import drift_for, parse_probe, render
 from .loop import (
     backstop_report,
     classify_wake,
@@ -383,6 +385,42 @@ def station_rollout(repo: Path) -> dict[str, str]:
     return modes
 
 
+# Serve-side interpreted trees whose "deployed" and "loaded" can diverge.
+LOADED_TARGETS = (("serve-code", "osgallery-https", "/data/vms/streamhost/serve"),)
+
+
+def cmd_loaded() -> int:
+    """Report the gap between what is deployed and what the process is running."""
+    import time
+
+    from .loaded import PROBE
+
+    lab = os.environ.get("LAB", "lab")
+    print("== loaded-drift: is the running process executing the bytes on disk? ==")
+    probe = subprocess.run(
+        ["ssh", "-n", "-o", "ConnectTimeout=8", "-o", "BatchMode=yes", lab, "true"],
+        capture_output=True,
+    )
+    if probe.returncode != 0:
+        print(f"  SKIPPED: ssh {lab} unreachable (public clone, offline, or CI)")
+        return 0
+    bad = 0
+    for unit, service, tree in LOADED_TARGETS:
+        out = subprocess.run(
+            ["ssh", "-n", "-o", "ConnectTimeout=25", lab, PROBE.format(unit=service, tree=tree)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        start, files = parse_probe(out.stdout)
+        drift = drift_for(unit, start, files)
+        for line in render(drift, time.time()):
+            print(line)
+        if not drift.clean:
+            bad = 1
+    return bad
+
+
 def cmd_denylist(repo: Path) -> int:
     print("== live state of record — never a closure member, never rolled back, never GC'd ==")
     for pattern in PROTECTED:
@@ -424,6 +462,7 @@ def main(argv=None) -> int:
             "journal",
             "watch",
             "poke",
+            "loaded",
         ),
         nargs="?",
         default="status",
@@ -439,6 +478,8 @@ def main(argv=None) -> int:
             return cmd_denylist(repo)
         if ns.command == "rows":
             return cmd_rows(repo)
+        if ns.command == "loaded":
+            return cmd_loaded()
         if ns.command in ("watch", "poke"):
             if not ns.root:
                 print("kh-reconciler: --root is required", file=sys.stderr)

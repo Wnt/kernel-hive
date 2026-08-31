@@ -493,6 +493,28 @@ cheap — one `ps` and one `find` — and it belongs in `kh-reconciler status` a
 in `here.sh` beside the loop heartbeat, because the operator-facing question
 "is the box running what we think it is?" currently has no honest answer.
 
+**Two things the first real use of this check taught, both about ROLLBACK.**
+
+*The last thing deployed is not the last thing that ran, and only one of them is
+a rollback target.* Restoring the previously-DEPLOYED serve tree would have
+restored code that had also never been loaded — rolling back to something
+unproven. The only tree with five days of production evidence behind it was the
+one deployed a minute before the process started, and identifying it required
+reading the deploy history against the process start time, which is the same
+comparison this check performs. **A `loaded-drift` report is therefore also how
+you find your rollback target**, and a plane that cannot say which commit it is
+running cannot say what to go back to.
+
+*And the backup you assume exists may not cover the plane you are touching.*
+`box-install.sh` saves the previous bytes of every row it writes into
+`.deploys/<ts>-<sha>/backup/`. The auth and walk-in planes do not arrive that
+way: `serve-https-spa.sh deploy` ships them wholesale with `rm -rf` plus a tar
+extract and leaves **no backup at all** — the newest `.deploys` copy of
+`serve/auth` was six days older than the deploy in question. The recovery path
+for those planes is git and nothing else. Anything that treats `$SERVE_DIR` as a
+replaceable tree has to enumerate what in it is not part of the deploy *and*
+what of it is not recoverable afterwards.
+
 **Two notes on how this was found, because the method generalizes.**
 
 First, **nobody was looking for it.** It surfaced because arming the trigger
