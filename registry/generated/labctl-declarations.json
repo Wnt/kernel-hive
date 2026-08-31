@@ -563,7 +563,7 @@
     "macos753": {
       "dir": "/data/vms/streamhost/stations/macos753",
       "qmp": "/data/vms/streamhost/stations/macos753/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -576,7 +576,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54142,
-      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console — the framebuffer is the only observation surface. Drive it with scripts/install-vision/adb_pointer.py against a CLONE, never this dir."
+      "notes": "no exec channel: System 7.5.3 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. The pointer is ABSOLUTE via `-device kh-ramabs` writing Mac OS's own low-memory globals; `labctl abs x y` lands on the commanded pixel. Drive a CLONE with scripts/install-vision/adb_pointer.py, never this dir."
     },
     "macos9": {
       "dir": "/data/vms/streamhost/stations/macos9",
