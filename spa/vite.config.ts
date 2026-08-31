@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { coveragePlugins } from './vite-plugins/coverage';
 
 // `npm run dev` has no box behind it, so nothing would answer the app's fetches
 // for the runtime documents (Vite's history fallback hands back index.html) and
@@ -48,7 +49,11 @@ const BASE = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({
   base: BASE,
-  plugins: [react(), registryDocuments()],
+  // `coveragePlugins()` is [] unless VITE_KH_COVERAGE holds its exact arming
+  // string, and an empty spread is not a no-op plugin: it leaves the plugin
+  // list, the module graph and the output BYTE-IDENTICAL. That is the whole
+  // contract of the instrumented lane — see vite-plugins/coverage.ts.
+  plugins: [react(), registryDocuments(), ...coveragePlugins()],
   server: {
     host: '127.0.0.1',
     port: 5173,

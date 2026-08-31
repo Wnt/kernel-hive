@@ -438,6 +438,7 @@ impl Abr {
                 } else {
                     "rtt"
                 };
+                crate::probes::probe!(ABR_TIER_DOWN);
                 eprintln!(
                     "[abr] DOWN why={why} loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
                 );
@@ -453,6 +454,7 @@ impl Abr {
                 .map(|t| now.duration_since(t) >= UP_HOLD)
                 .unwrap_or(false);
             if sustained && cur > 0 && can_change_up {
+                crate::probes::probe!(ABR_TIER_UP);
                 eprintln!(
                     "[abr] UP loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
                 );

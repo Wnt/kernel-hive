@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import type { StreamStats } from '../../../three/useStreamControl';
 import { S } from './styles';
+import { reach } from '../../../analytics';
 
 function DebugRow({ k, v }: { k: string; v: string }) {
   return (
@@ -24,6 +26,11 @@ export function DebugOverlay({
   resStr: string;
   codecStr: string;
 }) {
+  // The consumer half of stream.stats.polled. The component only exists while
+  // the overlay is open (StreamView renders it behind `debug &&`), so mounting
+  // IS the observation — and `reach` still downgrades it to `auto` by itself if
+  // the tab is hidden, which is the case a mount alone cannot tell apart.
+  useEffect(() => { reach('stream.overlay.shown', 'show'); }, []);
   return (
     <div style={S.debug}>
       <div style={S.debugTitle}>{displayName} · {transport}</div>

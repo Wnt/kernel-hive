@@ -113,9 +113,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
 import deploy_hint  # noqa: E402
+import linecov  # noqa: E402  (its STORE is built here; the routes live in telemetry_routes)
+import probes  # noqa: E402  (server-side feature reach; folds into ANALYTICS)
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
+import telemetry_routes  # noqa: E402  (the /analytics + /coverage route group)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
@@ -123,6 +126,8 @@ from auth import gate  # noqa: E402  (import needs the sys.path line above)
 from auth import routes as auth_routes  # noqa: E402
 from auth.service import AuthService  # noqa: E402
 from config import (  # noqa: E402
+    ANALYTICS_DB,
+    ANALYTICS_RETENTION_DAYS,
     AUTH_STATE,
     BIND_IP,
     CERT,
@@ -141,6 +146,8 @@ from config import (  # noqa: E402
 )
 from static_files import MIME  # noqa: E402
 
+import analytics  # noqa: E402
+
 # Both filled in by main() when the public listener is enabled; the request
 # handlers reach them as module globals.
 AUTH = None
@@ -150,6 +157,28 @@ STREAM_KEY = b""
 # real a use of it as a visitor's. Only the per-PERSON half needs a session, and
 # that half lives behind /auth/usage/report.
 USAGE = usage.UsageStore(USAGE_STATS)
+# Feature reach, flow funnels and grouped errors. On BOTH listeners for the same
+# reason as USAGE, and with one difference that is the point of the plane: it
+# takes no identity on either, so there is no per-person half to fence off.
+ANALYTICS = analytics.AnalyticsStore(ANALYTICS_DB)
+ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
+# The serving plane's OWN branch counters, into the SAME store under class
+# `server`. Until this line runs `probes.hit()` folds into memory and writes
+# nothing, which is what every unit test and every import of these modules
+# outside the server gets. `record_server` is the only door into that class and
+# no route reaches it, so a browser cannot forge a branch count.
+probes.bind(ANALYTICS)
+# Production LINE coverage, fed only by the opt-in instrumented bundle
+# (docs/ANALYTICS.md §6). Its own database beside the counters, not a table in
+# them: the rows are kilobytes rather than integers, they expire with the build
+# that produced them rather than lasting two years, and its body cap has to be
+# sixteen times the counter plane's — see serve/coverage.py. Unarmed, this is an
+# empty file and nothing ever posts to it.
+COVERAGE = linecov.CoverageStore(ANALYTICS_DB.parent / "coverage.db")
+COVERAGE.prune()
+# The stores the analytics route group reaches, passed rather than imported so
+# the dispatcher stays a pure function of what it is given.
+TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE}
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -423,6 +452,10 @@ class H(BaseHTTPRequestHandler):
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
 
+        # The analytics plane's routes, as a group (serve/telemetry_routes.py).
+        if telemetry_routes.dispatch(self, path, "POST", TELEMETRY, PUBLIC_ORIGIN):
+            return
+
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
             if not self._require_box_side("clientcmd enqueue"):
@@ -466,6 +499,9 @@ class H(BaseHTTPRequestHandler):
         # GET /usage/stations.json — per-station totals, no identities in it.
         if path == "/usage/stations.json":
             return usage.serve_stations(self, USAGE)
+
+        if telemetry_routes.dispatch(self, path, "GET", TELEMETRY, PUBLIC_ORIGIN):
+            return
 
         if path == "/signal/index.json":
             return signal_route.serve_index(self)

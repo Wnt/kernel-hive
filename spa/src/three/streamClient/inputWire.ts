@@ -28,6 +28,7 @@
 // ============================================================================
 import { recordWireMove } from '../../input/pointerRecorder';
 import { countClick, countKeystroke } from '../usageStats';
+import { reach } from '../../analytics';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
@@ -123,6 +124,12 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     // The DOWN edge only: a press and its release are one click, and counting
     // both would double every number on the scoreboard (three/usageStats).
     if (down) countClick();
+    // Same edge, a different question. countClick asks "how much is this
+    // MACHINE used" (the exhibit-popularity scoreboard); this asks "does the
+    // pointer path get used at all". Graded `act`, so an edge with no trusted
+    // human input behind it — a type-in demo, the win9x boot-modal dismissal —
+    // is dropped rather than counted (analytics/intent withoutHumanCredit).
+    if (down) reach('station.pointer.used', 'act');
     const px = x != null ? clampU16(x) : c.lastAbsX;
     const py = y != null ? clampU16(y) : c.lastAbsY;
     if (px == null || py == null) {
@@ -142,6 +149,7 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
     if (down) countKeystroke(keycode);
+    if (down) reach('station.key.used', 'act');
     const b = new Uint8Array(4); b[0] = T_KEY; b[1] = down ? 1 : 0;
     new DataView(b.buffer).setUint16(2, keycode & 0xffff, true);
     c.writeReliableClass(ICLASS_KEY, b);

@@ -5,6 +5,7 @@ import { useSession } from './SessionContext';
 import { exhibitVm, loadWalkinExhibits } from '../walkin/manifest';
 import { walkinShape } from '../walkin/route';
 import type { RuntimeVMManifestEntry, VMManifestEntry } from '../types';
+import { reach } from '../analytics';
 
 // Boot-video index (BOOT-VIDEO-REPLAY-SPEC §4): a static WEBROOT/boot/index.json
 // keyed by osId. Fetched best-effort and merged additively onto the catalog so
@@ -12,6 +13,10 @@ import type { RuntimeVMManifestEntry, VMManifestEntry } from '../types';
 type BootIndexEntry = NonNullable<VMManifestEntry['bootVideo']>;
 async function fetchBootIndex(): Promise<Record<string, BootIndexEntry>> {
   try {
+    // Fetched on every manifest load for every visitor; the videos it indexes
+    // only ever play on a station that has one. boot.video.played is the
+    // consumer, and the gap between the two is the question.
+    reach('boot.index.fetch', 'auto');
     const r = await fetch('/boot/index.json', { cache: 'no-cache' });
     if (!r.ok) return {};
     const raw = (await r.json()) as Record<string, Record<string, unknown>>;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseThumbVtt, thumbAt, type Thumb } from '../thumbVtt';
 import { S } from './styles';
+import { reach } from '../../../analytics';
 
 // ---------------------------------------------------------------------------
 //  BootVideoOverlay — the BOOT-VIDEO REPLAY experience (flag-gated on bootVideo).
@@ -97,10 +98,14 @@ export function BootVideoOverlay({
     const v = vref.current;
     if (!v) return;
     v.muted = false;
-    void v.play().then(() => setMuted(false)).catch(() => {
+    // The consumer of boot.index.fetch, reported where playback actually
+    // STARTS rather than where the overlay mounts: a video that never plays
+    // (autoplay refused outright, a missing file) is precisely the case that
+    // must not be counted as the index having earned its request.
+    void v.play().then(() => { reach('boot.video.played', 'show'); setMuted(false); }).catch(() => {
       v.muted = true;
       setMuted(true);
-      void v.play().catch(() => {});
+      void v.play().then(() => reach('boot.video.played', 'show')).catch(() => {});
     });
   }, []);
   useEffect(() => { if (vref.current) vref.current.playbackRate = rate; }, [rate]);

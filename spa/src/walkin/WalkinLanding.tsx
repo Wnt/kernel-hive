@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { WalkinPool } from '../data/walkinTypes';
 import { poolFor, useWalkinPools } from './usePools';
@@ -7,6 +7,7 @@ import { accessAllows } from './sessionEnd';
 import { WALKIN_CLOSED_COPY } from './reasons';
 import { currentAccount, supportsPasskeys, walkinSignup, type WalkinAccount } from './passkey';
 import { posterFor } from '../data/posterIndex';
+import { registerRefused, registerTelemetry, type RegisterTelemetry } from './registerTelemetry';
 
 // /walkin — the landing page. Three machines you can actually play, their live
 // pool status, and one tap to get an account.
@@ -62,49 +63,108 @@ export default function WalkinLanding() {
   const [error, setError] = useState<string | null>(null);
   const [account, setAccount] = useState<WalkinAccount | null>(null);
   const [busy, setBusy] = useState(false);
+  // `account === null` means BOTH "nobody" and "not asked yet", and the two are
+  // opposite answers to "is this visitor registering". So the resolution is
+  // tracked separately rather than inferred from the null.
+  const [whoKnown, setWhoKnown] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    void currentAccount().then((who) => { if (alive) setAccount(who); });
+    void currentAccount().then((who) => { if (alive) { setAccount(who); setWhoKnown(true); } });
     return () => { alive = false; };
+  }, []);
+
+  // ---- the registration attempt (registerTelemetry.ts) ----------------------
+  // Held in a ref and created LAZILY from effects and event handlers — never
+  // during render and never inside a setState updater, both of which StrictMode
+  // invokes twice, which would enter the funnel twice and double every count.
+  const telRef = useRef<RegisterTelemetry | null>(null);
+  const startedRef = useRef(false);
+  useEffect(() => () => {
+    telRef.current?.abandoned();
+    telRef.current = null;
+    // Reset the once-guard too: StrictMode mounts, tears down and re-mounts,
+    // and a guard that survived that would leave the second (real) mount with
+    // no attempt open at all.
+    startedRef.current = false;
+  }, []);
+
+  /** The passkey ceremony, with its stage clock and its retry count around it.
+   *  One helper because BOTH buttons run it — "Create my passkey" and the
+   *  one-tap "Play it" — and a second copy is how one of them silently stops
+   *  being counted. */
+  const enrol = useCallback(async (): Promise<WalkinAccount | null> => {
+    const tel = telRef.current;
+    tel?.passkeyStarted();
+    try {
+      const who = await walkinSignup();
+      setAccount(who);
+      tel?.accountReady();
+      return who;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'signup failed';
+      setError(message.includes('NotAllowed') ? 'Passkey creation was cancelled.' : message);
+      // Deliberately NOT a flow failure. The visitor can press the button
+      // again, and most do; the retry is counted by the next passkeyStarted().
+      // Failing the flow here would close an attempt that is still running.
+      return null;
+    }
   }, []);
 
   const signUp = useCallback(async () => {
     setBusy(true);
     setError(null);
     try {
-      setAccount(await walkinSignup());
-    } catch (reason) {
-      const message = reason instanceof Error ? reason.message : 'signup failed';
-      setError(message.includes('NotAllowed') ? 'Passkey creation was cancelled.' : message);
+      await enrol();
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [enrol]);
 
   const play = useCallback(
     async (os: string) => {
+      // The choice happened HERE, so the picking stage ends here — but the
+      // funnel's `machine` step does not, because on this path the account does
+      // not exist yet and the funnel has one order (catalogue/walkin.ts).
+      telRef.current?.chose();
       // A walk-in needs an account before a clone can belong to anyone. One tap
       // covers both: create the passkey, then go straight to the machine.
       if (!account) {
         setBusy(true);
         try {
-          setAccount(await walkinSignup());
-        } catch (reason) {
-          const message = reason instanceof Error ? reason.message : 'signup failed';
-          setError(message.includes('NotAllowed') ? 'Passkey creation was cancelled.' : message);
-          return;
+          if (!(await enrol())) return;
         } finally {
           setBusy(false);
         }
       }
+      telRef.current?.reachedMachine();
       navigate(`/walkin/play/${os}`);
     },
-    [account, navigate],
+    [account, enrol, navigate],
   );
 
   const access = state?.access;
   const open = access !== undefined && accessAllows(access, account?.role ?? 'walkin');
+
+  // Open the attempt exactly once, and only once BOTH answers are in — whether
+  // the door is open, and whether this visitor already has an account. Three
+  // populations, three different things to do, and merging any two of them is
+  // how this funnel would start lying:
+  //   closed door      → count the REFUSAL, open no flow (a fence is not a loss)
+  //   already has one  → open nothing (they are not registering)
+  //   no passkey at all → open the flow and fail it with its own reason, so a
+  //                       browser that cannot participate is not read as a
+  //                       stranger who read the page and walked away
+  useEffect(() => {
+    if (access === undefined || !whoKnown || startedRef.current) return;
+    startedRef.current = true;
+    if (!open) { registerRefused(); return; }
+    if (account) return;
+    const tel = registerTelemetry();
+    telRef.current = tel;
+    if (!supportsPasskeys()) { tel.unsupported(); return; }
+    tel.landed();
+  }, [access, open, whoKnown, account]);
 
   return (
     <>

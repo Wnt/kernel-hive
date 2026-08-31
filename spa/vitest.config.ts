@@ -20,10 +20,25 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      // 'json' is what scripts/dev/reach-report.py reads to put a cov% beside
+      // each probe's owner file — the axis that turns feature reach into a
+      // keep/test/delete decision instead of a popularity list.
+      reporter: ['text', 'html', 'json'],
       include: [
+        'src/analytics/catalogue/fleet.ts',
+        'src/analytics/catalogue/index.ts',
+        'src/analytics/catalogue/station.ts',
+        'src/analytics/catalogue/types.ts',
+        'src/analytics/catalogue/walkin.ts',
+        'src/analytics/coverage.ts',
+        'src/analytics/errors.ts',
+        'src/analytics/flows.ts',
+        'src/analytics/index.ts',
+        'src/analytics/intent.ts',
+        'src/analytics/metrics.ts',
         'src/data/galleryManifest.ts',
         'src/input/moveSamples.ts',
+        'src/scene/hallEngagement.ts',
         'src/scene/progressiveLoading.ts',
         'src/three/annexb.ts',
         'src/three/guestQuirks.ts',
@@ -31,8 +46,10 @@ export default defineConfig({
         'src/three/streamClient/format.ts',
         'src/three/streamClient/scoring.ts',
         'src/three/streamSignal.ts',
+        'src/ui/fleetFindEpisode.ts',
         'src/ui/grid/letterbox.ts',
         'src/ui/grid/thumbVtt.ts',
+        'src/ui/posterReadEpisode.ts',
       ],
       thresholds: {
         perFile: true,
