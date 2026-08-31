@@ -382,6 +382,18 @@ class H(BaseHTTPRequestHandler):
         # POST; only the GET-heavy static/thumbnail traffic needs persistence.
         self.close_connection = True
 
+        # POST /kh/deploy-hint — the deploy trigger (§1.1). MUST be dispatched
+        # BEFORE `_public_gate`: authorisation here is write access to the REPO,
+        # proved by the HMAC over the raw body, not a visitor session. GitHub
+        # has no cookie, so behind the gate every delivery is 401 — which is
+        # exactly what happened on the first real ping, while the LAN listener
+        # (where `self.public` is false and the gate never runs) answered 202
+        # and made the route look correct. The comment on the misplaced version
+        # already claimed "outside the public gate"; the code did not do it.
+        # Verify this route on the PUBLIC listener or you have tested nothing.
+        if path == "/kh/deploy-hint":
+            return deploy_hint.handle_post(self, DEPLOY_HINT)
+
         if self.public:
             if auth_routes.dispatch(self, path, "POST", AUTH, PUBLIC_ORIGIN):
                 return
@@ -410,14 +422,6 @@ class H(BaseHTTPRequestHandler):
                 return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
-
-        # POST /kh/deploy-hint — the deploy trigger (§1.1). Verifies a GitHub
-        # signature and bumps one file's mtime. It cannot name what to deploy,
-        # so a forged or replayed request costs one extra fetch of origin/main
-        # and nothing else. Deliberately OUTSIDE the public gate: authorisation
-        # is write access to the repo, proved by the HMAC, not a visitor session.
-        if path == "/kh/deploy-hint":
-            return deploy_hint.handle_post(self, DEPLOY_HINT)
 
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
