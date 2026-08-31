@@ -29,6 +29,24 @@
 # which issues `cont` on a paused guest. A rollout must not thaw a guest that
 # somebody parked, and a frozen guest's last frame IS its current screen, so the
 # gate reads the framebuffer without touching the run state.
+#
+# THE ONE CASE resume=False CANNOT SERVE AS-IS: a shm-capture tile (host-native
+# MAME, e.g. mpf2, zxspectrum) idle-auto-paused between readiness and the settle
+# sleep. Its emulator is SIGSTOPped by pidfile (see common.py pause_pidfile /
+# proc_stopped), which can freeze it mid-write to the shm framebuffer -- the
+# wire format is a seqlock (scripts/shmshot.py), and a sequence stopped ODD
+# stays odd FOREVER once there is no live writer left to flip it back. shmshot's
+# strict untorn-read exists to wait out a MOVING writer; against a writer that
+# is confirmed (via /proc, not guessed) never going to move again, that wait is
+# not just unneeded, it is unsatisfiable, and fails deterministically -- this is
+# what halted the rollout on mpf2 and zxspectrum, not a flaky read. So a shm
+# tile independently proven SIGSTOPped is read once, with no seqlock wait
+# (read_frozen_shm_frame below): the mmap cannot change under a frozen process,
+# so a second read now would return byte-identical content to the first. This
+# still never resumes anything -- it duplicates shmshot's own header parsing
+# rather than adding a relaxed-read mode to it, deliberately: that file is
+# shared with `labctl shot`/`assert`, and loosening its READ discipline for
+# every caller is a decision for the operator, not this tool.
 # =============================================================================
 set -euo pipefail
 
@@ -53,7 +71,7 @@ exec python3 - "$MODE" "$@" <<'PY'
 import json, os, subprocess, sys
 
 sys.path.insert(0, "/usr/local/lib/labctl")
-from common import is_x11_tile, load_matrix, pause_pidfile, proc_stopped  # noqa: E402
+from common import is_shm_tile, is_x11_tile, load_matrix, pause_pidfile, proc_stopped, shm_path  # noqa: E402
 from capture import capture_png_any  # noqa: E402
 
 # Luminance at or below this counts as black. Same convention as
@@ -192,11 +210,72 @@ def cmd_state(only):
     sys.stdout.write("\n")
 
 
+def read_frozen_shm_frame(name, conf, out_png):
+    """Read a shm framebuffer that /proc has already proven has no live writer,
+    and save it straight to a PNG. See the "ONE CASE" note at the top of this
+    file for why shmshot.py's own untorn-read wait cannot serve this case.
+
+    The header format is scripts/shmshot.py's (kept in sync by hand -- both
+    read the same wire format MAME's Newport device publishes) MINUS the
+    seqlock wait: this reads the sequence once, for the width/height it needs,
+    and does not care whether it is even or odd, because nothing will ever
+    finish or start a write again until the process is SIGCONT'd, and this
+    gate does not do that.
+
+    WHAT THIS FRAME IS NOT: a guarantee of a clean one. A writer stopped
+    mid-update leaves the buffer TORN, and this returns that tear as-is. That
+    is acceptable here and only here, because the question this gate asks is
+    "did a picture come back", not "is every pixel current" -- a torn frame
+    still proves the guest painted. Do not reuse this reader anywhere the
+    answer has to be pixel-accurate.
+    """
+    import mmap
+    import struct
+
+    from PIL import Image
+
+    HEADER, MAGIC = 64, 0x31424649  # 'IFB1'
+    path = shm_path(conf, name)
+    with open(path, "rb") as fh:
+        size = os.fstat(fh.fileno()).st_size
+        if size < HEADER:
+            raise RuntimeError("%s is %d bytes, shorter than the %d-byte header" % (path, size, HEADER))
+        mm = mmap.mmap(fh.fileno(), 0, prot=mmap.PROT_READ)
+    try:
+        magic, _version, w, h, stride, bpp = struct.unpack_from("<IIIIII", mm, 0)
+        if magic != MAGIC or bpp != 32 or not (0 < w <= 16384 and 0 < h <= 16384) or stride < w * 4:
+            raise RuntimeError("frozen shm frame at %s has an unreadable header" % path)
+        need = HEADER + stride * h
+        if size < need:
+            raise RuntimeError("%s is %d bytes, needs %d for a %dx%d frame" % (path, size, need, w, h))
+        pixels = mm[HEADER:need]  # no seqlock wait -- see the docstring above
+    finally:
+        mm.close()
+    row_bytes = w * 4
+    if stride != row_bytes:
+        packed = bytearray(row_bytes * h)
+        for y in range(h):
+            src = y * stride
+            packed[y * row_bytes : (y + 1) * row_bytes] = pixels[src : src + row_bytes]
+        pixels = bytes(packed)
+    # XRGB8888, B/G/R/X in memory on x86 -- same mapping as shmshot.to_rgb.
+    rgb = bytearray(w * h * 3)
+    rgb[0::3], rgb[1::3], rgb[2::3] = pixels[2::4], pixels[1::4], pixels[0::4]
+    Image.frombytes("RGB", (w, h), bytes(rgb)).save(out_png)
+
+
 def frame(name, conf):
     row = {"tile": name, "ok": False, "error": None, "width": None, "height": None, "nonblack_pct": None}
     png = "/tmp/.kh-fleet-roll-%s-%d.png" % (name, os.getpid())
     try:
-        capture_png_any(name, conf, png, resume=False)
+        stopped = False
+        if is_shm_tile(conf, name):
+            pidfile = pause_pidfile(conf, name)
+            _pid, stopped = proc_stopped(pidfile) if pidfile else (None, False)
+        if stopped:
+            read_frozen_shm_frame(name, conf, png)
+        else:
+            capture_png_any(name, conf, png, resume=False)
         from PIL import Image
 
         with Image.open(png) as image:

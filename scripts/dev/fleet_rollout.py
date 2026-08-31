@@ -33,6 +33,18 @@ and a wave must clear all three before the next one starts:
 
 Tier 3 is the one that means anything. Tiers 1 and 2 are logs and clocks.
 
+THE FLOOR IS RELATIVE, NOT FLAT. mpf2 (0.286% non-black, `ui: home-computer`,
+same class as c64 at 61.8%) proved a class-based floor cannot work either, the
+way alpine (0.372%, `text-console`) proved one flat percentage could not: no
+class predicts a station's brightness, only the station itself does. So each
+wave captures a BEFORE frame per station just ahead of its restart, and the
+AFTER frame only has to clear half of it (fleet_rollout_policy.effective_floor)
+— enough to catch a guest that comes back fully black or stops producing
+frames, loose enough not to fire on a station that legitimately looks almost
+black. `--min-nonblack` still works as the operator's explicit ceiling: no
+computed floor, relative or class-based, is ever allowed to demand more than
+that. See docs/lab/FLEET-ROLLOUT.md, "the frame gate's floor".
+
 WHAT IS SKIPPED, AND WHY EACH:
   * a unit that is not `active` — stopping a station is how the fleet is parked
     on purpose, so a stopped or failed unit is left exactly as it is;
@@ -53,7 +65,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -63,17 +74,40 @@ REPO = Path(__file__).resolve().parents[2]
 PROBE = REPO / "scripts" / "host" / "fleet-rollout-probe.sh"
 LABRUN = REPO / "scripts" / "dev" / "labrun"
 BUILD_DEPLOY = REPO / "scripts" / "dev" / "build-deploy.sh"
-REGISTRY = REPO / "registry" / "stations"
 LAB = os.environ.get("LAB", "lab")
 
-# build-deploy.sh's own choice of the station a mistake is cheapest on. Honoured
-# here so both tools agree on which exhibit is the canary.
-SAFE_TILE = os.environ.get("SAFE_TILE", "helenos")
+# fleet_rollout_policy.py is the pure half of this tool (registry, wave order,
+# claim/skip rules, the frame-gate floor math) — split out because this file
+# sits at the 600-line hard cap in scripts/check-file-size.mjs --strict, with
+# no room left to grow. Importable from either layout: run directly (sys.path[0]
+# is already this directory) or loaded by path from scripts/test_fleet_rollout.py
+# (which is not), so the directory is added explicitly rather than assumed.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# CONSOLE_FLOOR, REGISTRY, claim_owner, claim_token_match, min_nonblack_for and
+# relative_floor are not called directly below — classify()/effective_floor()
+# call them internally — but they stay imported here on purpose:
+# scripts/test_fleet_rollout.py loads THIS file (not the policy module) and
+# pins every one of them down as ROLLOUT.<name>.
+from fleet_rollout_policy import (  # noqa: E402,F401
+    CONSOLE_FLOOR,
+    REGISTRY,
+    SAFE_TILE,
+    claim_owner,
+    claim_token_match,
+    classify,
+    effective_floor,
+    load_registry,
+    make_waves,
+    min_nonblack_for,
+    order_stations,
+    pending_after_resume,
+    promotable,
+    relative_floor,
+    risk_score,
+)
 
 # build-deploy.sh's verified-canary gate: "<artifact> <tile>" on one line.
 CANARY_GATE = "/usr/local/lib/streamhost/.canary-ready"
-# A `ui: text-console` station only has to prove its frame is not BLANK.
-CONSOLE_FLOOR = 0.05
 
 BOLD, RED, GRN, YLW, DIM, OFF = "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[2m", "\033[0m"
 
@@ -99,171 +133,10 @@ def die(msg):
     sys.exit(1)
 
 
-# --------------------------------------------------------------------------
-# Pure policy. Everything below this line up to `# ---- box side ----` is a
-# function of plain data, which is what scripts/test_fleet_rollout.py pins down
-# before any of it is allowed near a machine.
-# --------------------------------------------------------------------------
-
-
-def load_registry(path=REGISTRY):
-    """id -> registry entry, for every enabled streamhost station."""
-    entries = {}
-    for f in sorted(Path(path).glob("*.json")):
-        entry = json.loads(f.read_text())
-        if not entry.get("enabled", True):
-            continue
-        if (entry.get("stream") or {}).get("transport") != "streamhost":
-            continue
-        entries[entry["id"]] = entry
-    return entries
-
-
-def risk_score(entry):
-    """How expensive it is to break this station. Lower rolls first.
-
-    Every term is read from the registry the fleet already maintains; none of it
-    is a new hand-kept list that would rot. The argument for each:
-
-      reset mode      how the exhibit comes back. `loadvm` restores a golden in
-                      seconds; `relaunch` cold-starts the emulator; `restart`
-                      walks a full boot (aix432's firmware POST alone is 15-25
-                      minutes). Recoverability is the whole point of going first.
-      bespoke binary  a station running a forked emulator out of /opt has a
-                      binary + golden + device set that are ONE combination
-                      (rule 6). Those are the hardest things on the box to put
-                      back, so they go last.
-      retronet        a second network plane to re-establish on restart.
-      desktop UI      the flagship exhibits a visitor comes for, as against a
-                      home computer or a text console.
-      bespoke pointer a closed-loop or warp pointer backend is per-station work
-                      that a bad binary can silently break.
-    """
-    runtime = (entry.get("runtime") or {}).get("qemu") or {}
-    score = {"loadvm": 0, "relaunch": 2, "restart": 4}.get((entry.get("reset") or {}).get("resetMode"), 4)
-    source = ((entry.get("emulator") or {}).get("source") or "").lower()
-    if str(runtime.get("binary") or "").startswith("/opt/") or "fork" in source or "github.com/wnt" in source:
-        score += 3
-    if entry.get("retronet"):
-        score += 2
-    if entry.get("ui") == "desktop":
-        score += 2
-    backend = ((entry.get("stream") or {}).get("pointer") or {}).get("backend") or ""
-    if backend not in ("", "dbus", "qmp", "none", "warpd"):
-        score += 1
-    return score
-
-
-def order_stations(entries, safe_tile=SAFE_TILE):
-    """Cheapest-mistake-first order. Deterministic: score, then name."""
-    return sorted(entries, key=lambda i: (-1, "") if i == safe_tile else (risk_score(entries[i]), i))
-
-
-def claim_token_match(station, claim, udp_port=None):
-    """Does this claim plausibly cover this station?
-
-    Deliberately generous, because the two errors are not symmetric: skipping a
-    station nobody was working on costs one deferred restart, while restarting a
-    station somebody parked costs their work. A claim matches when it is the
-    station's own UDP slot, or when the station id appears as a whole token in
-    the claim's name, session or purpose.
-
-    Walk-in clone identities are the one thing masked out first. A pool clone is
-    `walkin-<os>-<n>` (docs/lab/walkin/CONTRACT-LEDGER.md 5.1) and is an
-    EPHEMERAL DAEMON IDENTITY, not the registry station whose name it borrows —
-    the pool holding `walkin-os2warp-1` says nothing about os2warp. Without this
-    mask the six live walk-in port claims skipped os2warp and win311 from every
-    rollout, which is a station parked by a name collision and nothing else.
-    """
-    if claim.get("class") == "port" and udp_port and str(claim.get("name")) == str(udp_port):
-        return True
-    haystack = " ".join(str(claim.get(k) or "") for k in ("name", "session", "purpose")).lower()
-    haystack = re.sub(r"walkin-[a-z0-9]+-\d+", " ", haystack)
-    return re.search(rf"(?<![a-z0-9]){re.escape(station)}(?![a-z0-9])", haystack) is not None
-
-
-def claim_owner(station, entry, claims):
-    """The session holding this station, or None. Only live/held claims count —
-    a stale or dead claim is the registry's own record that nobody is there."""
-    udp_port = (entry.get("stream") or {}).get("udpPort")
-    for claim in claims:
-        if claim.get("state") not in ("held", "live"):
-            continue
-        if claim_token_match(station, claim, udp_port):
-            return claim.get("session") or "?"
-    return None
-
-
-def classify(entries, order, tiles_state, claims, excludes=(), only=(), skip_paused=False, skip_busy=True):
-    """Split the ordered station list into (targets, [(station, reason)])."""
-    targets, skipped = [], []
-    for station in order:
-        entry = entries[station]
-        state = tiles_state.get(station) or {}
-        if only and station not in only:
-            skipped.append((station, "not in --only"))
-        elif station in excludes:
-            skipped.append((station, "--exclude"))
-        elif state.get("unit_active") != "active":
-            unit = state.get("unit_active") or "absent"
-            skipped.append((station, f"unit is {unit}, not active (parked on purpose)"))
-        else:
-            owner = claim_owner(station, entry, claims)
-            if owner:
-                skipped.append((station, f"kh-claim held by session '{owner}'"))
-            elif skip_busy and state.get("busy"):
-                skipped.append((station, "a visitor is connected (--include-busy to restart anyway)"))
-            elif skip_paused and state.get("paused"):
-                skipped.append((station, "guest paused (--skip-paused was given)"))
-            else:
-                targets.append(station)
-    return targets, skipped
-
-
-def make_waves(stations, wave_size, canary_first=True):
-    """Split into waves. Wave 1 is ONE station when canary_first is set.
-
-    A full first wave of four means a bad binary takes four exhibits down before
-    anything notices. One station first is the same discipline build-deploy.sh
-    already applies with --canary, and it costs one extra settle interval.
-    """
-    if wave_size < 1:
-        raise ValueError("wave size must be >= 1")
-    stations = list(stations)
-    head = []
-    if canary_first and len(stations) > 1:
-        head, stations = [stations[:1]], stations[1:]
-    return head + [list(stations[i : i + wave_size]) for i in range(0, len(stations), wave_size)]
-
-
-def min_nonblack_for(entry, default):
-    """The non-black floor THIS station's screen can honestly clear: a healthy
-    console is white text on black, ~0.4% at 1920x1200, and halted the first
-    rollout. FLEET-ROLLOUT.md, "the frame gate's floor"."""
-    return min(default, CONSOLE_FLOOR) if entry.get("ui") == "text-console" else default
-
-
-def promotable(wave, canary_tile):
-    """The stations in this wave whose pointer `build-deploy.sh --promote` can move.
-
-    THE CANARY TILE IS NOT PROMOTABLE, AND THAT IS THE CONTRACT, NOT A BUG.
-    `--promote` walks *the rest of* the fleet onto the gated artifact and dies
-    on a wave holding nothing else — and wave 1 IS the canary. That wave still
-    earns its settle and its frame gate (rule 9); it needs no pointer move.
-    """
-    return [s for s in wave if s != canary_tile]
-
-
-def pending_after_resume(waves, done):
-    """The waves still to run, with already-done stations dropped from each."""
-    finished = set(done)
-    out = []
-    for wave in waves:
-        rest = [s for s in wave if s not in finished]
-        if rest:
-            out.append(rest)
-    return out
-
+# The pure policy that used to live here — registry loading, wave order,
+# claim/skip rules, both non-black floors — is scripts/dev/fleet_rollout_policy.py
+# now (imported above). scripts/test_fleet_rollout.py pins it down before any
+# of it is allowed near a machine.
 
 # ---- box side ------------------------------------------------------------
 
@@ -340,17 +213,49 @@ def await_readiness(wave, timeout_s):
     return waiting
 
 
-def frame_gate(wave, min_nonblack, entries):
-    """Tier 3: the only proof a guest actually came back."""
+def capture_frames(wave):
+    """One screendump per station via the probe's own capture dispatcher.
+
+    fleet-rollout-probe.sh handles the one known transient itself: a station
+    idle-auto-paused between readiness and the settle sleep, whose shm
+    framebuffer read fails deterministically (not flakily — see the probe
+    script) against the normal untorn-read path. There is nothing left for
+    this side to retry; a failure that reaches here is a real one.
+    """
+    return probe("frames", *wave)
+
+
+def before_frames(wave, no_frame_gate):
+    """Grab each station's OWN frame just ahead of restarting it, for the
+    relative floor in frame_gate(). Best-effort: a station this fails for
+    simply falls back to the class-based floor (fleet_rollout_policy.
+    effective_floor), so a bad before-capture never makes a station
+    un-gateable — only less precisely gated. Skipped entirely with
+    --no-frame-gate, since nothing will read it."""
+    if no_frame_gate:
+        return {}
+    return {row["tile"]: row for row in capture_frames(wave)}
+
+
+def frame_gate(wave, min_nonblack, entries, before):
+    """Tier 3: the only proof a guest actually came back.
+
+    `before` is this same wave's own pre-restart frames (before_frames()),
+    keyed by station. effective_floor() uses it to ask "did this station come
+    back to what it was" instead of "is it above one flat percentage" — see
+    fleet_rollout_policy.effective_floor for why a flat number cannot work.
+    """
     bad = []
-    for row in probe("frames", *wave):
+    for row in capture_frames(wave):
         station = row["tile"]
-        floor = min_nonblack_for(entries.get(station) or {}, min_nonblack)
+        floor = effective_floor(entries.get(station) or {}, before.get(station), min_nonblack)
         if not row.get("ok"):
             fail("{}: no framebuffer ({})".format(station, row.get("error")))
             bad.append(station)
         elif row["nonblack_pct"] < floor:
-            fail(f"{station}: framebuffer is black ({row['nonblack_pct']:.3f}% non-black, need {floor:.3f}%)")
+            was = before.get(station, {})
+            was_txt = f", was {was['nonblack_pct']:.3f}% before restart" if was.get("ok") else ""
+            fail(f"{station}: framebuffer is black ({row['nonblack_pct']:.3f}% non-black, need {floor:.3f}%{was_txt})")
             bad.append(station)
         else:
             ok(f"{station}: {row['width']}x{row['height']}, {row['nonblack_pct']:.1f}% non-black")
@@ -541,6 +446,8 @@ def main(argv=None):
             print(f"    {station:<14} {reason}")
 
     step("each wave will run")
+    if not args.no_frame_gate:
+        print("    a screendump per station, BEFORE it restarts (best-effort — the wave's own baseline)")
     if args.mode == "promote":
         print("    scripts/dev/build-deploy.sh --promote --wave-size <n> --exclude <every other live station>")
         print(f"    {DIM}(not the canary wave: {canary_tile} runs the gated artifact already — health-gated only){OFF}")
@@ -551,7 +458,10 @@ def main(argv=None):
     if args.no_frame_gate:
         print(f"    then: {YLW}NO FRAMEBUFFER GATE (--no-frame-gate): readiness is the only health signal{OFF}")
     else:
-        print(f"    then: a screendump per station, required to decode and be >= {args.min_nonblack:.2f}% non-black")
+        print(
+            f"    then: a screendump per station, required to decode and clear HALF its own before-frame "
+            f"(floor >= {args.min_nonblack:.2f}% when there is no usable before-frame)"
+        )
 
     if not args.apply:
         step("PLAN ONLY — nothing was restarted")
@@ -562,6 +472,7 @@ def main(argv=None):
     step("applying")
     for n, wave in enumerate(waves, 1):
         print(f"\n  {BOLD}wave {n}/{len(waves)}: {' '.join(wave)}{OFF}")
+        before = before_frames(wave, args.no_frame_gate)
         started = restart_wave(wave) if args.mode == "restart" else promote_wave(wave, live, canary_tile)
         bad = list(wave) if not started else []
         if started:
@@ -572,7 +483,7 @@ def main(argv=None):
             if not bad and not args.no_frame_gate:
                 print(f"    settling {args.settle}s ...")
                 time.sleep(args.settle)
-                bad = frame_gate(wave, args.min_nonblack, entries)
+                bad = frame_gate(wave, args.min_nonblack, entries, before)
         for station in wave:
             doc["status"][station] = "FAILED" if station in bad else "DONE"
         save_state(path, doc)
