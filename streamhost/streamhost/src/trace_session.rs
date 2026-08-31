@@ -31,6 +31,24 @@
 //! read side by side in one flame graph: `capture.first_frame` shorter than
 //! `transport.first_frame` is egress; `guest.resume` dominating both is a guest
 //! that was idle-paused, and no other layer can say that.
+//!
+//! THE RETURN LEG (added 2026-08-31, `docs/lab/TRACE-CONTEXT.md` §3.2/§8.1).
+//! `guest.frame.next` / `transport.frame.next` are the daemon's half of what a
+//! sampled input caused; they do not say whether the visitor ever SAW it. The
+//! browser cannot know which `frame_id` answered its own edge — that fact only
+//! exists here, in `PendingEffect` — so `effect_sent` hands its `Ctx` back to
+//! `transport/mod.rs`, which mints a tiny out-of-band WIRE message (KIND_PARAMS
+//! subtype 3, `transport/egress.rs::spawn_frame_mark`) naming `frame_id` and
+//! the trace/span to answer with. The browser
+//! (`three/streamClient/frameTrace.ts`) matches that id against its OWN local
+//! receive/decode/paint timestamps for the same `frame_id` — by EXPLICIT id,
+//! never by "the next frame I happened to paint" — and closes the loop with
+//! `client.frame.receive` / `client.frame.decode` / `client.frame.paint`,
+//! siblings of `guest.frame.next` / `transport.frame.next` under the same
+//! `input.dispatch`. `kh.encode.latency_us` on `guest.frame.next` (from
+//! `Au::encode_us`) is the fourth stage the return leg's own span tree does not
+//! need a dedicated span for — it was `worker.rs`'s journal-only "snap->AU"
+//! number, now riding the AU into a span attribute instead.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -251,7 +269,14 @@ impl SessionTrace {
     /// is typing or clicking right now. PEEKS rather than takes: `effect_sent`
     /// below is what actually closes the window, so a burst of AUs between
     /// capture and this edge's own transport send does not re-open it.
-    pub fn effect_encoded(&self, frame_id: u32, is_key: bool) {
+    ///
+    /// `encode_us` is `Au::encode_us` — the snapshot->AU-ready latency
+    /// `worker.rs` used to leave only in a journal `[encode] enc latency`
+    /// line. Attached HERE rather than as its own span: this fires once per
+    /// sampled edge already (never per frame — `trace/mod.rs`'s cost rule),
+    /// so promoting the number costs one more attribute on a span that was
+    /// going to exist anyway, not a fourth span this pair never needed.
+    pub fn effect_encoded(&self, frame_id: u32, is_key: bool, encode_us: u32) {
         if !self.effect_pending.load(Ordering::Relaxed) {
             return;
         }
@@ -269,6 +294,7 @@ impl SessionTrace {
                 &[
                     ("kh.frame.id", Val::I(frame_id as i64)),
                     ("kh.frame.key", Val::B(is_key)),
+                    ("kh.encode.latency_us", Val::I(encode_us as i64)),
                 ],
             ),
             "ok",
@@ -279,24 +305,37 @@ impl SessionTrace {
     /// spans, not one, so a flame graph can show whether a slow effect was
     /// encode/capture-bound or transport-bound, mirroring the session-level
     /// `capture.first_frame` / `transport.first_frame` split above.
-    pub fn effect_sent(&self, bytes: usize) {
+    ///
+    /// Returns the closed effect's `Ctx` when this call actually consumed a
+    /// pending edge — the caller (`transport/mod.rs`'s egress loop) uses it to
+    /// tell the CLIENT which trace/span this frame_id answers (the KIND_PARAMS
+    /// subtype-3 frame-trace mark, `transport/egress.rs::spawn_frame_mark`),
+    /// closing the loop this module's doc comment describes as daemon-only.
+    /// `None` on every unsampled frame (the load above still returns before
+    /// the lock), so the 9-in-10 default case pays nothing more than before.
+    pub fn effect_sent(&self, frame_id: u32, bytes: usize) -> Option<Ctx> {
         if !self.effect_pending.load(Ordering::Relaxed) {
-            return;
+            return None;
         }
         let taken = self.effect.lock().unwrap_or_else(|e| e.into_inner()).take();
         self.effect_pending.store(false, Ordering::Relaxed);
-        let Some(pe) = taken else {
-            return;
-        };
+        let pe = taken?;
         trace::emit_at(
             "transport.frame.next",
             Kind::Internal,
             pe.ctx,
             pe.injected_ms,
             pe.injected.elapsed().as_millis() as u64,
-            &effect_attrs(&pe, &[("kh.frame.bytes", Val::I(bytes as i64))]),
+            &effect_attrs(
+                &pe,
+                &[
+                    ("kh.frame.id", Val::I(frame_id as i64)),
+                    ("kh.frame.bytes", Val::I(bytes as i64)),
+                ],
+            ),
             "ok",
         );
+        Some(pe.ctx)
     }
 }
 

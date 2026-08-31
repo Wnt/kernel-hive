@@ -685,7 +685,7 @@ async fn handle_session(
                 strace.mark_first_au(au.frame_id, au.is_key);
                 // Sampled-input EFFECT, half 1 of 2: one relaxed load unless a
                 // sampled edge is pending (input_trace.rs / trace_session.rs).
-                strace.effect_encoded(au.frame_id, au.is_key);
+                strace.effect_encoded(au.frame_id, au.is_key, au.encode_us);
                 let r = send_au(&conn, &au).await;
                 if vt {
                     eprintln!("[vtrace] sent frame_id={} ok={}", au.frame_id, r.is_ok());
@@ -695,8 +695,15 @@ async fn handle_session(
                 }
                 tx_bytes.fetch_add((10 + au.data.len()) as u64, Ordering::Relaxed);
                 strace.mark_first_send(au.data.len());
-                // Half 2 of 2: closes the window `effect_encoded` peeked at.
-                strace.effect_sent(au.data.len());
+                // Half 2 of 2: closes the window `effect_encoded` peeked at. A
+                // `Some` means THIS au answered a sampled edge — tell the
+                // client which frame_id it was so it can close the return leg
+                // (RETURN LEG doc, trace_session.rs header). Spawned: the mark
+                // is its own tiny uni-stream and must never make the next
+                // video AU wait on it.
+                if let Some(effect_ctx) = strace.effect_sent(au.frame_id, au.data.len()) {
+                    egress::spawn_frame_mark(conn.clone(), effect_ctx, au.frame_id);
+                }
                 last_sent_id = au.frame_id;
             }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {

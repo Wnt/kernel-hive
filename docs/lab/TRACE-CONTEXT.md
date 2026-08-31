@@ -179,6 +179,88 @@ vendor-pleasing relabel — the same "never call a UI span a server span" rule
 this file states elsewhere cuts the other way here, because this span already
 was the server side of a real client/server exchange.
 
+### 3.3 The return leg: closing the trace at the pixel
+
+§3.2 gets the trace as far as the daemon's own transport send. Until
+2026-08-31 that was the whole picture, and it made "input->pixel" a
+misnomer — the number it produced was really input->frame-SENT, never the
+bytes arriving in the tab, decoding, or reaching glass.
+
+**The problem the browser cannot solve alone.** `guest.frame.next` /
+`transport.frame.next` exist because the DAEMON knows which `frame_id`
+answered a given sampled edge (`trace_session.rs`'s `PendingEffect`). The
+browser has no such knowledge of its own: WebCodecs hands the decode output
+callback the frame's own capture timestamp, never "this was caused by the
+input you sent 40 ms ago". So the daemon has to say so, explicitly — the same
+principle §3.2 already applies to the request/dispatch boundary, extended one
+hop further downstream.
+
+**The mechanism: a wire mark, not stream ordering.** Three options were on the
+table: extend the video AU header itself, carry the association on an
+existing channel, or infer it from frame arrival order. The AU header was
+rejected first — it is followed immediately by an arbitrary-length Annex-B
+payload with no length prefix (the uni-stream's own close IS the
+end-of-payload marker), so a variable-length insertion between header and
+payload is not additive: an OLD client reading the old fixed offsets would
+decode the marker bytes as bitstream, corrupting or crashing that one frame's
+decode. Ordering was rejected on the brief this work started from and for the
+reason stated there: "the next frame painted" is an approximation that fails
+precisely under load, drops and reordering — exactly when this measurement is
+worth taking. That leaves the existing SERVER->CLIENT `KIND_PARAMS` channel
+(`transport/egress.rs`), already used for encoder-params (subtype 1) and HUD
+stats (subtype 2) and already proven additive: an old client's
+`handleParamsStream` drains an unrecognised subtype
+(`else { await br.readToEnd(); }`, `videoDecode.ts`) rather than
+misinterpreting it. Subtype 3 carries `frame_id` (u32 LE) + trace-id (16 BE) +
+span-id (8 BE) — 28 bytes, sent on its OWN uni-stream, spawned rather than
+awaited so a slow or lost mark can never hold up the video AU it names. It is
+minted once per sampled edge that actually produced and sent a frame — the
+exact gate `effect_sent` already applies, not a new one.
+
+**Matched by id, not by which arrived first.** The mark and the AU it names
+travel on two independent uni-streams the network is free to reorder against
+each other. `three/streamClient/frameTrace.ts` keeps two small bounded FIFOs
+(capacity 64 — headroom for reordering and jitter, not a working set: a mark
+normally names a `frame_id` within a handful of the ones already tracked) —
+recent per-frame receive/decode/paint timestamps, and marks that arrived
+before their frame — and matches strictly on `frame_id`, whichever side
+completes second. A mark or a frame that never finds its match simply ages
+out of its FIFO: the daemon's half of the trace still stands on its own, and
+nothing downstream ever treats "no client spans" as an error.
+
+**The resulting chain**, `client.frame.*` siblings of the daemon's own effect
+spans under the same `input.dispatch`:
+
+```
+input.edge                    (browser, root — the sampled decision)
+└─ input.dispatch             (daemon: record accepted → guest write returned)
+   ├─ guest.frame.next        (daemon: the EFFECT — next frame produced;
+   │                            kh.encode.latency_us, promoted from a
+   │                            journal-only `worker.rs` line)
+   ├─ transport.frame.next    (daemon: that frame reaching the wire)
+   ├─ client.frame.receive    (browser: AU bytes -> handed to the decoder)
+   ├─ client.frame.decode     (browser: the WebCodecs decode itself)
+   └─ client.frame.paint      (browser: the paint sink's own synchronous cost)
+```
+
+**Compatibility, both directions, is the same additive-channel argument §3.2
+already made for the input suffix, applied to a channel that already proves
+it:**
+
+- **old client, new daemon.** The daemon sends the subtype-3 mark; the old
+  client's `handleParamsStream` does not recognise subtype 3 and drains it
+  (`else { readToEnd() }`). No decode is touched, no error, no visible effect
+  — the session behaves exactly as it did before this change existed.
+- **new client, old daemon.** The old daemon never calls `spawn_frame_mark` —
+  it does not exist in that binary — so no subtype-3 stream ever opens. The
+  new client's `frameTrace.ts` FIFOs simply never receive a mark and age out
+  every entry; `client.frame.*` spans are never emitted, and nothing else
+  about playback changes.
+
+Neither direction needs a version check: it is the same "additive tail /
+additive subtype, unconditionally ignorable" shape every other KIND_PARAMS
+extension in this file already relies on, not a new compatibility mechanism.
+
 ## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
 
 Everything in §2 assumes the browser already HAS a trace id to send. Something
@@ -405,8 +487,16 @@ correlation exercise.
 input.edge                    (browser, root)
 └─ input.dispatch             (daemon)
    ├─ guest.frame.next        (daemon)
-   └─ transport.frame.next    (daemon)
+   ├─ transport.frame.next    (daemon)
+   ├─ client.frame.receive    (browser — §3.3's return leg)
+   ├─ client.frame.decode     (browser)
+   └─ client.frame.paint      (browser)
 ```
+
+The last three exist only when the daemon's return-path mark and this tab's
+own receive/decode/paint for the same `frame_id` both actually happen (§3.3)
+— a dropped or never-marked frame simply leaves the daemon's three spans
+standing alone, which is not an error, just an incomplete return leg.
 
 This is deliberately a second family of traces alongside the one above, the
 same way a page load answers a different question from a keystroke
