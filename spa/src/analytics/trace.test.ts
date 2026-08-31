@@ -6,7 +6,8 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
   __bufferedSpans, __resetTracer, childOfActive, configureTracer, currentSpan,
-  flushSpans, newSpanId, newTraceId, popActive, pushActive, startTrace,
+  flushSpans, joinPageLoadTraceFromMeta, newSpanId, newTraceId, parseTraceparent,
+  popActive, pushActive, seedPageLoadTrace, startTrace,
 } from './trace';
 
 let sent: unknown[][] = [];
@@ -188,5 +189,74 @@ describe('the gate and the buffer', () => {
   it('flushing an empty buffer sends nothing', () => {
     flushSpans();
     expect(sent).toEqual([]);
+  });
+});
+
+describe('the page-load join (docs/lab/TRACE-CONTEXT.md §4/§7)', () => {
+  it('parses a well-formed traceparent', () => {
+    expect(parseTraceparent('00-11111111111111111111111111111111-2222222222222222-01')).toEqual({
+      traceId: '11111111111111111111111111111111'.slice(0, 32),
+      spanId: '2222222222222222',
+    });
+  });
+
+  it('rejects anything not exactly that shape', () => {
+    expect(parseTraceparent(null)).toBeNull();
+    expect(parseTraceparent(undefined)).toBeNull();
+    expect(parseTraceparent('')).toBeNull();
+    expect(parseTraceparent('not-a-traceparent')).toBeNull();
+    expect(parseTraceparent('01-11111111111111111111111111111111-2222222222222222-01')).toBeNull(); // wrong version
+    expect(parseTraceparent('00-1111-2222222222222222-01')).toBeNull(); // trace id too short
+    expect(parseTraceparent('00-11111111111111111111111111111111,2222222222222222,01')).toBeNull();
+  });
+
+  it('the FIRST trace opened continues a seeded traceparent', () => {
+    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+    const root = startTrace('station.connect');
+    expect(root.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+    expect(root.spanId).not.toBe('2222222222222222'); // a fresh child span id, not the server's own
+    root.end('ok');
+    expect(__bufferedSpans()[0].p).toBe('2222222222222222');
+  });
+
+  it('is consumed exactly once — the SECOND trace this page opens is unrelated', () => {
+    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+    const first = startTrace('station.connect');
+    const second = startTrace('station.connect');
+    expect(second.traceId).not.toBe(first.traceId);
+    expect(second.traceId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('a missing or malformed seed leaves the first trace exactly as before', () => {
+    seedPageLoadTrace(null);
+    const root = startTrace('station.connect');
+    expect(root.traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(__bufferedSpans()).toEqual([]); // not ended yet, just proving no throw
+
+    seedPageLoadTrace('garbage');
+    const other = startTrace('station.connect');
+    expect(other.traceId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('joinPageLoadTraceFromMeta reads the tag when present', () => {
+    (globalThis as { document?: unknown }).document = {
+      querySelector: (sel: string) =>
+        sel === 'meta[name="traceparent"]'
+          ? { getAttribute: () => '00-11111111111111111111111111111111-2222222222222222-01' }
+          : null,
+    };
+    joinPageLoadTraceFromMeta();
+    const root = startTrace('station.connect');
+    expect(root.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+  });
+
+  it('joinPageLoadTraceFromMeta is a graceful no-op with no tag, and with no document at all', () => {
+    (globalThis as { document?: unknown }).document = { querySelector: () => null };
+    expect(() => joinPageLoadTraceFromMeta()).not.toThrow();
+    const root = startTrace('station.connect');
+    expect(root.traceId).toMatch(/^[0-9a-f]{32}$/);
+
+    delete (globalThis as { document?: unknown }).document;
+    expect(() => joinPageLoadTraceFromMeta()).not.toThrow();
   });
 });
