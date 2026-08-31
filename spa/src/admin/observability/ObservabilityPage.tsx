@@ -32,6 +32,7 @@ import { MetricsView } from './MetricsView';
 import { ErrorsView } from './ErrorsView';
 import { fetchTrace, isForbidden, isUnavailable } from './traceApi';
 import { CLIENT_CLASSES, fetchReport, loadCatalogue } from './reportApi';
+import { AdminNav } from '../AdminNav';
 import './observability.css';
 
 type View = 'traces' | 'reach' | 'funnels' | 'metrics' | 'errors';
@@ -118,81 +119,84 @@ export function ObservabilityPage() {
   }, [show]);
 
   return (
-    <main className="obs-page">
-      <header className="obs-head">
-        <h1>Observability</h1>
-        <p className="obs-sub">
-          Everything this gallery records about itself. The aggregates say <em>whether</em> and{' '}
-          <em>how often</em>; the traces say <em>why</em>, for one journey at a time.
-        </p>
-        <nav className="obs-tabs" aria-label="Observability views">
-          {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              className={`obs-tab${view === v.id ? ' obs-tab--on' : ''}`}
-              aria-current={view === v.id ? 'page' : undefined}
-              title={v.blurb}
-              onClick={() => show(v.id)}
-            >
-              {v.label}
-            </button>
-          ))}
-        </nav>
-      </header>
+    <div className="obs-page-scroll">
+      <AdminNav />
+      <main className="obs-page">
+        <header className="obs-head">
+          <h1>Observability</h1>
+          <p className="obs-sub">
+            Everything this gallery records about itself. The aggregates say <em>whether</em> and{' '}
+            <em>how often</em>; the traces say <em>why</em>, for one journey at a time.
+          </p>
+          <nav className="obs-tabs" aria-label="Observability views">
+            {VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                className={`obs-tab${view === v.id ? ' obs-tab--on' : ''}`}
+                aria-current={view === v.id ? 'page' : undefined}
+                title={v.blurb}
+                onClick={() => show(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </nav>
+        </header>
 
-      {needsReport && (
-        <div className="obs-controls">
-          <label>
-            Window
-            <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-              <option value={1}>last 24 hours</option>
-              <option value={7}>last 7 days</option>
-              <option value={30}>last 30 days</option>
-              <option value={365}>last year</option>
-            </select>
-          </label>
-          <label>
-            Reported by
-            <select value={klass} onChange={(e) => setKlass(e.target.value as ClientClass)}>
-              {CLIENT_CLASSES.map((c) => (
-                <option key={c} value={c}>
-                  {c === 'probe' ? 'probe (this lab’s own automation)' : c}
-                </option>
-              ))}
-            </select>
-          </label>
-          {/* Said out loud rather than left to the dropdown: a window with no
-              visits is the single easiest way to misread this whole page. */}
-          <span className="obs-hint">
-            A zero here means “nobody reached it in this window” — never “unreachable”.
-          </span>
-        </div>
-      )}
+        {needsReport && (
+          <div className="obs-controls">
+            <label>
+              Window
+              <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+                <option value={1}>last 24 hours</option>
+                <option value={7}>last 7 days</option>
+                <option value={30}>last 30 days</option>
+                <option value={365}>last year</option>
+              </select>
+            </label>
+            <label>
+              Reported by
+              <select value={klass} onChange={(e) => setKlass(e.target.value as ClientClass)}>
+                {CLIENT_CLASSES.map((c) => (
+                  <option key={c} value={c}>
+                    {c === 'probe' ? 'probe (this lab’s own automation)' : c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {/* Said out loud rather than left to the dropdown: a window with no
+                visits is the single easiest way to misread this whole page. */}
+            <span className="obs-hint">
+              A zero here means “nobody reached it in this window” — never “unreachable”.
+            </span>
+          </div>
+        )}
 
-      {view === 'traces' && (
-        <>
-          {traceError && <p className="obs-notice">{traceError}</p>}
-          <TraceList onOpenTrace={openTrace} />
-          {trace && (
-            <TraceDetail
-              trace={trace}
-              onSelectSession={(sessionId) => {
-                setTraceError(`Filter the list by session ${sessionId} to see its other journeys.`);
-              }}
-            />
-          )}
-        </>
-      )}
+        {view === 'traces' && (
+          <>
+            {traceError && <p className="obs-notice">{traceError}</p>}
+            <TraceList onOpenTrace={openTrace} />
+            {trace && (
+              <TraceDetail
+                trace={trace}
+                onSelectSession={(sessionId) => {
+                  setTraceError(`Filter the list by session ${sessionId} to see its other journeys.`);
+                }}
+              />
+            )}
+          </>
+        )}
 
-      {needsReport && reportError && <p className="obs-notice">{reportError}</p>}
-      {needsReport && !report && !reportError && <p className="obs-notice">Loading the report…</p>}
-      {report && view === 'reach' && <ReachTable report={report} catalogue={catalogue} />}
-      {report && view === 'funnels' && <FunnelView report={report} catalogue={catalogue} />}
-      {report && view === 'metrics' && <MetricsView report={report} catalogue={catalogue} />}
-      {report && view === 'errors' && (
-        <ErrorsView report={report} onSelectFingerprint={traceThisFault} />
-      )}
-    </main>
+        {needsReport && reportError && <p className="obs-notice">{reportError}</p>}
+        {needsReport && !report && !reportError && <p className="obs-notice">Loading the report…</p>}
+        {report && view === 'reach' && <ReachTable report={report} catalogue={catalogue} />}
+        {report && view === 'funnels' && <FunnelView report={report} catalogue={catalogue} />}
+        {report && view === 'metrics' && <MetricsView report={report} catalogue={catalogue} />}
+        {report && view === 'errors' && (
+          <ErrorsView report={report} onSelectFingerprint={traceThisFault} />
+        )}
+      </main>
+    </div>
   );
 }
