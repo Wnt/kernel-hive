@@ -47,6 +47,10 @@ CPG_LABEL="${CPG_LABEL:-golden}"
 # state takes the station down instead of merely cold-booting it.
 CPG_STAGING_LABEL="${CPG_STAGING_LABEL:-cpg-staging}"
 CPG_DIRTY_TEXT="${CPG_DIRTY_TEXT:-checkpoint-guard-dirty}"
+# Command that moves THIS guest's framebuffer when typing cannot reach it; run
+# only after the keystrokes fail. docs/lab/checkpoint-guard.md, "When typing
+# cannot dirty the guest".
+CPG_DIRTY_CMD="${CPG_DIRTY_CMD:-}"
 CPG_SETTLE="${CPG_SETTLE:-2}"
 CPG_IDLE_SECONDS="${CPG_IDLE_SECONDS:-3}"
 CPG_SSIM_MIN="${CPG_SSIM_MIN:-0.999}"
@@ -94,20 +98,24 @@ _cpg_have_label() {
 }
 _cpg_status() { _cpg_qmp status 2>/dev/null | tr -d '"' | tail -1; }
 
-# ---- framebuffer comparison ----------------------------------------------------
-# Byte-identical first, then SSIM >= CPG_SSIM_MIN — the same two-step and threshold
-# checkpoint-verify.sh uses. A pure byte compare refuses on every text-mode station with
-# a blinking cursor, and a guard that refuses on healthy stations gets loosened.
-_cpg_same() {
-  cmp -s "$1" "$2" && return 0
-  local ssim
-  ssim="$(ffmpeg -hide_banner -nostats -i "$1" -i "$2" \
-    -lavfi '[0:v]format=gray[x];[1:v]format=gray[y];[x][y]ssim' \
-    -f null - 2>&1 | sed -n 's/.*All:\([0-9.]*\).*/\1/p' | tail -1)"
-  [ -n "$ssim" ] || ssim=0
-  CPG_LAST_SSIM="$ssim"
-  python3 -c "import sys; sys.exit(0 if float('$ssim') >= float('$CPG_SSIM_MIN') else 1)"
+# The framebuffer proof (rule 9) lives in a sibling; same discovery as labqmp.py,
+# so the guard behaves identically run from the repo or from /usr/local/bin.
+_cpg_source_proof() {
+  local here candidate
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  for candidate in "$here/checkpoint-guard-proof.sh" \
+    /usr/local/lib/checkpoint-guard-proof.sh \
+    /data/kernel-hive/scripts/lib/checkpoint-guard-proof.sh; do
+    if [ -f "$candidate" ]; then
+      # shellcheck source=/dev/null
+      . "$candidate"
+      return 0
+    fi
+  done
+  _cpg_err "checkpoint-guard-proof.sh not found — REFUSING: without it there is no framebuffer proof, and a guard that cannot prove a restore must not delete a checkpoint."
+  exit 2
 }
+_cpg_source_proof
 
 # ---- wake lease ----------------------------------------------------------------
 # streamhost re-asserts a believed idle pause every 60 s; without the lease that lands
@@ -299,65 +307,6 @@ cpg_backup() {
     _cpg_log "backup verified with the guest stopped: sha256=$h1"
     CPG_BACKUPS="${CPG_BACKUPS}${d}|${bak}|${h1}"$'\n'
   done <<<"$ST_DISKS"
-  return 0
-}
-
-# ---- the framebuffer proof -----------------------------------------------------
-# cpg_reference <ref.ppm> — a reference the restore can be compared against AT ALL. Two
-# shots CPG_IDLE_SECONDS apart must agree: against a moving framebuffer (a clock, a
-# spinner) "restored != reference" would mean nothing.
-cpg_reference() {
-  local ref="$1" second="$1.b"
-  _cpg_qmp shot "$ref" >/dev/null || {
-    _cpg_err "could not screendump the reference framebuffer"
-    return 7
-  }
-  sleep "$CPG_IDLE_SECONDS"
-  _cpg_qmp shot "$second" >/dev/null
-  if ! _cpg_same "$ref" "$second"; then
-    rm -f "$second"
-    _cpg_err "this station's idle framebuffer is not stable (two shots ${CPG_IDLE_SECONDS}s apart differ, SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN), so no comparison could prove a restore. Park the scene (hide the clock, settle the animation) and re-run. Nothing has been captured or deleted."
-    return 7
-  fi
-  rm -f "$second"
-  _cpg_log "reference framebuffer captured and idle-deterministic"
-}
-
-# cpg_prove_label <label> <ref.ppm> <dirty.ppm> <restored.ppm>
-# Dirty the guest so the framebuffer demonstrably moves, load the label, and require
-# the framebuffer back at the reference AND the guest RUNNING. Logs are not proof.
-cpg_prove_label() {
-  local label="$1" ref="$2" dirty="$3" restored="$4" st
-  _cpg_qmp type "$CPG_DIRTY_TEXT" >/dev/null 2>&1
-  sleep 1
-  _cpg_qmp shot "$dirty" >/dev/null
-  if _cpg_same "$ref" "$dirty"; then
-    _cpg_qmp key tab sleep 0.3 key esc >/dev/null 2>&1
-    sleep 1
-    _cpg_qmp shot "$dirty" >/dev/null
-  fi
-  if _cpg_same "$ref" "$dirty"; then
-    _cpg_err "the guest's framebuffer did not move, so a matching 'restored' shot would prove NOTHING. Set CPG_DIRTY_TEXT to something this guest reacts to. Nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_log "framebuffer moved off the reference — the restore proof can now mean something"
-
-  if ! _cpg_qmp loadvm "$label" >/dev/null; then
-    _cpg_err "loadvm $label FAILED — the checkpoint does not restore. Nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  sleep "$CPG_SETTLE"
-  st="$(_cpg_status)"
-  if [ "$st" != "running" ]; then
-    _cpg_err "loadvm $label restored a guest whose status is '$st', not running. A checkpoint captured while stopped restores PAUSED: the screenshot looks perfect and the station is dead to every visitor. Treating '$label' as UNPROVEN; nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_qmp shot "$restored" >/dev/null
-  if ! _cpg_same "$ref" "$restored"; then
-    _cpg_err "loadvm $label restored a framebuffer that does NOT match the reference (SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN; $restored vs $ref). Treating '$label' as UNPROVEN; nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_log "PROVEN on the framebuffer: loadvm $label returns to the reference (SSIM ${CPG_LAST_SSIM:-1.0}), guest running"
   return 0
 }
 

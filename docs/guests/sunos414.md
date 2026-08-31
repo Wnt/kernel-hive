@@ -199,8 +199,26 @@ clearing last leaves the console clean:
 
 ```sh
 labctl exec sunos414 "grep slirphost /etc/hosts > /dev/null || echo 10.0.2.2 slirphost >> /etc/hosts ; env DISPLAY=:0 /usr/openwin/bin/xhost +10.0.2.2 > /dev/null ; env TERM=sun /usr/ucb/clear > /dev/console"
-ssh lab 'checkpoint-guard recapture sunos414'
+ssh lab "CPG_DIRTY_CMD='labctl exec sunos414 \"echo checkpoint-guard-dirty > /dev/console\"' checkpoint-guard recapture sunos414"
 ```
+
+**`CPG_DIRTY_CMD` is not optional on this station.** The guard proves a restore
+by dirtying the framebuffer and requiring it back; its default way of doing that
+is to type, and **typing reaches nothing here**. Measured on the live station
+with the wake lease held and the guest confirmed `running`: typing
+`checkpoint-guard-dirty` changed **0 pixels**, because `SetInput: select` means
+no window has keyboard focus in the restored scene. Writing to `/dev/console`
+changes ~1900 px (SSIM 0.984 against a 0.999 bar) and is discarded by the
+`loadvm` that follows. See
+[`../lab/checkpoint-guard.md`](../lab/checkpoint-guard.md#when-typing-cannot-dirty-the-guest).
+
+If a previous attempt already refused at the proof, the run is parked in state
+`captured` and a second `recapture` will refuse on top of it — finish it with
+`checkpoint-guard resume sunos414`, same `CPG_DIRTY_CMD`.
+
+Note the mouse is NOT a substitute: QMP pointer motion does reach this guest
+(1017 px on a large move), but moving the cursor alone scores SSIM 0.999756,
+which the guard reads as *unchanged*.
 
 Measured on a sandbox clone: the resulting checkpoint's **first frame** differs
 from the old one by 1105 px **inside the cmdtool console pane and 0 px

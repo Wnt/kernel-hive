@@ -163,6 +163,10 @@ box_sync_load_pairs() {
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair checkpoint-guard scripts/lib/checkpoint-guard.sh \
     /usr/local/bin/checkpoint-guard exact repo
+  # The guard SOURCES its framebuffer-proof half; deploy them together or the
+  # guard refuses to run at all (it will not delete a checkpoint it cannot prove).
+  box_sync_add_pair checkpoint-guard-proof scripts/lib/checkpoint-guard-proof.sh \
+    /usr/local/lib/checkpoint-guard-proof.sh exact repo
   # checkpoint-guard drives QMP through labqmp, so labqmp has to reach the box too:
   # the guard runs on labhost (the station qmp.sock files are root-only there).
   box_sync_add_pair labqmp scripts/lib/labqmp.py /usr/local/lib/labqmp.py exact repo

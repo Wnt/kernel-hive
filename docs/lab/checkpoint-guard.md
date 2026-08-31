@@ -102,6 +102,59 @@ The guard matches snapshot tags **exactly** (awk on the tag column) rather than 
 believe the promote had finished, delete the staging label, and leave the station with
 no checkpoint at all — precisely the outcome the tool exists to prevent.
 
+## When typing cannot dirty the guest
+
+The restore proof needs the framebuffer to **move** before the `loadvm`, or a
+matching "restored" shot proves nothing. The guard's default way of moving it is
+to type `CPG_DIRTY_TEXT` and, failing that, `tab`/`esc`.
+
+**Typing needs KEYBOARD FOCUS, and focus is a property of the guest AND of the
+scene** — not something the guard can assume. `sunos414` is the case that proved
+it: OpenWindows runs with `OpenWindows.SetInput: select` (click-to-focus), so a
+restored golden in which no window has ever been clicked swallows every
+keystroke. Measured on the live station, with the wake lease held and the guest
+confirmed `running`: typing `checkpoint-guard-dirty` changed **0 pixels**.
+
+That is not a fault to work around. It is a fact about the guest, so the station
+supplies the action that moves *its* framebuffer:
+
+```sh
+CPG_DIRTY_CMD='labctl exec sunos414 "echo checkpoint-guard-dirty > /dev/console"'   ssh lab 'checkpoint-guard recapture sunos414'
+```
+
+`CPG_DIRTY_CMD` runs only after the keystroke attempts have failed, and whatever
+it does is discarded by the `loadvm` that immediately follows — so it is free to
+be loud. If it is set and the framebuffer *still* does not move, the guard
+refuses exactly as before: the hook adds a way to succeed, never a way to skip
+the proof.
+
+### Why there is no built-in mouse wiggle
+
+The obvious general fallback — jiggle the pointer, every graphical guest has a
+cursor — was measured and rejected. `_cpg_same` accepts **SSIM >= 0.999** as
+"unchanged", and on `sunos414` moving the cursor alone scores **0.999756**: the
+guard would judge the wiggled frame identical and refuse anyway. A large pointer
+excursion scored 0.998128 only because it dragged 8-bit colormap focus across
+window boundaries and repainted ~1000 px, which is luck, not mechanism. A
+built-in wiggle would therefore be a placebo that passes on some stations and
+silently fails on others. Writing to a console scores **0.984**, comfortably
+clear of the bar.
+
+The general lesson for anyone choosing a dirty action: **the bar is not "some
+pixels changed", it is SSIM below `CPG_SSIM_MIN`.** A few hundred changed pixels
+in a 1024x768 frame does not clear it.
+
+### An interrupted run needs `resume`, not `recapture`
+
+If a previous attempt refused at the proof, the journal is left in state
+`captured` with the staging snapshot on disk — correct, and `golden` is
+untouched. A second `recapture` will refuse to start on top of it. Finish it
+with the hook supplied:
+
+```sh
+CPG_DIRTY_CMD='...' ssh lab 'checkpoint-guard resume sunos414'
+```
+
 ## The residual window, stated honestly
 
 QEMU has no snapshot rename. Making the new state answer to the label `golden` is
