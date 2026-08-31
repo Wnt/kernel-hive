@@ -5,12 +5,12 @@
     "src/admin/observability/types.ts",
     "src/admin/observability/TraceList.tsx",
     "src/analytics/coverage.ts",
-    "src/admin/observability/types.ts",
     "src/admin/observability/ReachTable.tsx",
     "src/admin/observability/FunnelView.tsx",
     "src/admin/observability/MetricsView.tsx",
     "src/admin/observability/ErrorsView.tsx",
     "src/admin/observability/reportApi.ts",
+    "src/admin/observability/TraceDetail.tsx",
     "vite-plugins/coverage.ts"
   ],
   "project": [
