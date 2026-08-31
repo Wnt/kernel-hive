@@ -57,6 +57,13 @@ except ImportError:  # pragma: no cover - import shape only
             """No probes module in this deployment; the pool still runs."""
 
 
+# Spans (serve/tracing.py); see the note on the same import in signal_route.py.
+try:
+    import tracing
+except ImportError:  # pragma: no cover - import shape only
+    from serve import tracing
+
+
 TTL_SECONDS = 20 * 60
 IDLE_SECONDS = 3 * 60
 EXTENSION_SECONDS = 10 * 60
@@ -263,6 +270,20 @@ class Broker(Warming):
     # -- the lifecycle ---------------------------------------------------
 
     def claim(self, user_id: str, station: str) -> dict:
+        """Traced wrapper around `_claim`: THE OUTCOME is the finding — got a
+        machine, joined a queue, or refused — and each answers a different
+        question about the pool's size. The user id is never recorded (a
+        walk-in is an anonymous stranger); the clone identity is, and
+        `walkin-<os>-<n>` names no one."""
+        with tracing.child("walkin.claim", {"kh.station": station}) as span:
+            out = self._claim(user_id, station)
+            if out.get("queued"):
+                span.end("ok", {"kh.walkin.outcome": "queued", "kh.walkin.queuePosition": out.get("position") or 0})
+            else:
+                span.end("ok", {"kh.walkin.outcome": "granted", "kh.clone": out.get("clone") or ""})
+            return out
+
+    def _claim(self, user_id: str, station: str) -> dict:
         with self._lock:
             if self.access == "closed":
                 raise BrokerError("walkin_closed")
@@ -302,7 +323,12 @@ class Broker(Warming):
         # nobody else can be handed it while it wakes.
         if self._spawn:
             try:
-                clone.resume()
+                # THE SLOWEST THING THIS SERVER DOES, and the one a visitor is
+                # actually staring at: a wake lease, QMP round trips and a
+                # verify against a paused clone. Its own span so "the walk-in
+                # felt slow" resolves to the resume or to everything else.
+                with tracing.child("walkin.clone.resume", {"kh.clone": identity}):
+                    clone.resume()
             except Exception as exc:
                 hit("walkin.claim.resumeFailed")
                 self._abandon(identity, user_id)
@@ -445,18 +471,34 @@ class Broker(Warming):
                     retired.append(self._end(member, ""))
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
-        self._destroy(retired)
-        orphans = self.reap_orphans()
-        taps = self.reap_orphan_taps()
-        cells = self.reap_orphan_cells()
-        # A claim registry that is unreachable must not stop the watchdog doing
-        # the two things that actually keep the pool honest.
-        try:
-            strays = self.release_stray_claims()
-        except Exception as exc:
-            sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
-            strays = []
-        built = self._refill()
+        # A reap has NO REQUEST BEHIND IT (own timer thread), so it is a root
+        # of its own — and only when something ENDED: a tick that found nothing
+        # is not a journey, and a span every 15 s forever would be the loudest
+        # thing in the store. The reasons go on the span because the probe
+        # counters say how often and cannot say how long the destroy took.
+        span = tracing.NOOP
+        if ended or died:
+            span = tracing.start_trace(
+                "walkin.reap",
+                {
+                    "kh.walkin.ended": len(ended),
+                    "kh.walkin.died": len(died),
+                    "kh.walkin.reasons": ",".join(sorted({r for _, r in ended if r})) or "none",
+                },
+            )
+        with span:
+            self._destroy(retired)
+            orphans = self.reap_orphans()
+            taps = self.reap_orphan_taps()
+            cells = self.reap_orphan_cells()
+            # A claim registry that is unreachable must not stop the watchdog
+            # doing the two things that actually keep the pool honest.
+            try:
+                strays = self.release_stray_claims()
+            except Exception as exc:
+                sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
+                strays = []
+            built = self._refill()
         return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "cells": cells,
                 "strays": strays, "built": built}  # fmt: skip
 

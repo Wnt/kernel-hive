@@ -354,6 +354,33 @@ export function flushSpans(): void {
   } catch { /* never throw */ }
 }
 
+/**
+ * The `traceparent` header for an outbound request, so the serving plane can
+ * make its span a child of ours (docs/lab/TRACE-CONTEXT.md).
+ *
+ * Takes the CURRENT span when there is one and mints a fresh trace when there
+ * is not — a fetch that happens outside any journey is still worth being able
+ * to follow, and returning nothing would have made those requests invisible on
+ * the server side rather than merely parentless.
+ */
+function traceparent(): string {
+  const span = currentSpan();
+  if (span && span.traceId && span.spanId) {
+    return `00-${span.traceId}-${span.spanId}-01`;
+  }
+  return `00-${newTraceId()}-${newSpanId()}-01`;
+}
+
+/** Headers to merge into a same-origin fetch. Never throws: a request that
+ *  cannot be traced must still be a request. */
+export function traceHeaders(): Record<string, string> {
+  try {
+    return { traceparent: traceparent() };
+  } catch {
+    return {};
+  }
+}
+
 /** Test seam. */
 export function __resetTracer(): void {
   activeSpans.length = 0;

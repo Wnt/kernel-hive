@@ -22,6 +22,22 @@ property worth re-stating at the boundary rather than assumed. `--dry-run`
 exists so the exact bytes can be read before any of them are sent, and it is the
 recommended first run.
 
+INSTANA ONLY BUILDS A TRACE FROM AN ENTRY SPAN — confirmed empirically on
+2026-08-31, and it is the difference between "ingested" and "visible". Spans of
+OTel kind `internal` are accepted (200, and the service `kernel-hive-spa`
+appears under technology `openTelemetry`) and then produce NO trace, NO endpoint
+and `calls.sum = 0`. A single hand-sent span of kind SERVER surfaced in
+`/api/application-monitoring/analyze/traces` immediately. The browser plane is
+internal-kind throughout, so on its own it registers a service and nothing else.
+
+The fix is not to relabel browser spans — a UI span is not a server span and
+saying so to every OTel consumer to satisfy one of them is how a vendor
+accommodation becomes a lie in the data. It is that the SERVING PLANE emits
+`server`-kind spans (serve.signal, serve.request), which are the honest entry
+points of these traces; once those are deployed the browser spans hang beneath
+them and Instana models the whole journey. Until then, expect a service with no
+calls and do not read it as a broken exporter.
+
 THE AGENT KEY CANNOT BE FETCHED FROM THE API — checked, 2026-08-31, so nobody
 re-derives it. A personal API token authenticates fine against
 `/api/instana/health`, `/api/instana/version`, `/api/settings/api-tokens` and

@@ -24,7 +24,7 @@
 // ============================================================================
 
 import type { ClientClass } from './intent';
-import { flushSpans } from './trace';
+import { flushSpans, traceHeaders } from './trace';
 
 /** Flush cadence. A session of a few minutes is a handful of requests. */
 const FLUSH_MS = 20_000;
@@ -160,7 +160,7 @@ function flushAnalytics(): void {
       method: 'POST',
       keepalive: true,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...traceHeaders() },
       body,
     }).catch(() => { foldBack(batch); });
   } catch { /* analytics must never break the app it measures */ }
