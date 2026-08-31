@@ -32,24 +32,47 @@ describe('configureInstana', () => {
     expect(() => configureInstanaIdentity({ role: 'admin', name: 'wnt', id: 'u1' })).not.toThrow();
   });
 
-  it('configures sessions, explicit page detection, W3C headers and both wrappers', () => {
+  it('explicitly disables autoPageDetection (navigation.ts drives page transitions) and enables both error wrappers', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
-    const names = calls.map((c) => c[0]);
-    expect(names).toContain('trackSessions');
-    expect(calls).toContainEqual(['autoPageDetection', true]);
-    expect(calls).toContainEqual(['enableW3CHeaders', true]);
+    expect(calls).toContainEqual(['autoPageDetection', false]);
     expect(calls).toContainEqual(['wrapEventHandlers', true]);
     expect(calls).toContainEqual(['wrapTimers', true]);
   });
 
-  it('sets the pseudonymous user id and the kernel-hive session id as meta', () => {
+  it('does NOT set trackSessions, enableW3CHeaders or the initial user id — those moved to index.html\'s bootstrap for the page-load beacon (defect 2/3)', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
-    expect(calls).toContainEqual(['user', 'sess1']);
-    const meta = calls.find((c) => c[0] === 'meta');
-    expect(meta).toBeTruthy();
-    expect((meta as Call)[1]).toMatchObject({ 'kh.sessionId': 'sess1' });
+    const names = calls.map((c) => c[0]);
+    expect(names).not.toContain('trackSessions');
+    expect(names).not.toContain('enableW3CHeaders');
+    expect(calls).not.toContainEqual(['user', 'sess1']);
+  });
+
+  it('sets the kernel-hive session id as meta', () => {
+    const { calls } = installIneum();
+    configureInstana('sess1');
+    expect(calls).toContainEqual(['meta', 'kh.sessionId', 'sess1']);
+  });
+
+  // Pins the call SHAPE, not just the value: `ineum('meta', ...)` takes ONE
+  // key and ONE value per call, both strings — never an object. A previous
+  // version called `ineum('meta', { 'kh.sessionId': ..., 'kh.bundle': ... })`,
+  // which Instana's agent cannot parse (it stringifies the object as its own
+  // key, producing `{'[object Object]': 'undefined'}` on the wire — verified
+  // against real production beacons). This must not silently regress.
+  it('calls ineum(meta, key, value) once per entry — never an object argument', () => {
+    const { calls } = installIneum();
+    configureInstana('sess1');
+    const metaCalls = calls.filter((c) => c[0] === 'meta');
+    expect(metaCalls.length).toBeGreaterThanOrEqual(2);
+    for (const call of metaCalls) {
+      expect(call).toHaveLength(3);
+      expect(typeof call[1]).toBe('string');
+      expect(typeof call[2]).toBe('string');
+    }
+    expect(metaCalls).toContainEqual(['meta', 'kh.sessionId', 'sess1']);
+    expect(metaCalls.map((c) => c[1])).toContain('kh.bundle');
   });
 
   it('passes the secrets and ignoreUrls patterns through unchanged', () => {
@@ -111,30 +134,28 @@ describe('configureInstanaIdentity', () => {
 });
 
 describe('full flow: anonymous vs signed-in, both carrying the kernel-hive session id', () => {
-  it('signed-out visitor ends up on the pseudonymous id, with meta present', () => {
+  // The pseudonymous `ineum('user', sessionId)` call itself now happens in
+  // spa/index.html's inline bootstrap, before this module even loads (defect
+  // 2/3) — not exercised by these unit tests, which have no HTML bootstrap to
+  // run. What remains this module's job: never re-set the pseudonymous id,
+  // and set the REAL identity only once one exists.
+  it('signed-out visitor: configureInstana sends no user call, configureInstanaIdentity sends none either, meta is still present', () => {
     const { calls } = installIneum();
     const session: Session = { role: 'anon', name: '', id: '' };
     configureInstana('tabsess');
     configureInstanaIdentity(session);
     const userCalls = calls.filter((c) => c[0] === 'user');
-    expect(userCalls).toEqual([['user', 'tabsess']]);
-    const meta = calls.find((c) => c[0] === 'meta') as Call;
-    expect(meta[1]).toMatchObject({ 'kh.sessionId': 'tabsess' });
+    expect(userCalls).toEqual([]);
+    expect(calls).toContainEqual(['meta', 'kh.sessionId', 'tabsess']);
   });
 
-  it('signed-in visitor ends up on the real account id, with meta still present', () => {
+  it('signed-in visitor ends up on the real account id via the identity update, with meta still present', () => {
     const { calls } = installIneum();
     const session: Session = { role: 'viewer', name: 'operator', id: 'acct-42' };
     configureInstana('tabsess');
     configureInstanaIdentity(session);
     const userCalls = calls.filter((c) => c[0] === 'user');
-    // Pseudonymous first (configureInstana), then the real identity — never
-    // the other order, and never skipped.
-    expect(userCalls).toEqual([
-      ['user', 'tabsess'],
-      ['user', 'acct-42', 'operator'],
-    ]);
-    const meta = calls.find((c) => c[0] === 'meta') as Call;
-    expect(meta[1]).toMatchObject({ 'kh.sessionId': 'tabsess' });
+    expect(userCalls).toEqual([['user', 'acct-42', 'operator']]);
+    expect(calls).toContainEqual(['meta', 'kh.sessionId', 'tabsess']);
   });
 });

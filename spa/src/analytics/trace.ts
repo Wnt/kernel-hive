@@ -356,15 +356,50 @@ export function childOfActive(name: string, attrs?: Attrs, kind?: SpanKind): Spa
  * The page-load join (docs/lab/TRACE-CONTEXT.md §4/§7): the server names a
  * real `serve.page` span in `<meta name="traceparent">` when it serves
  * index.html, minted before any JS on the page has run. Until this module
- * reads it, the FIRST trace this tab opens (typically `station.connect`) has
- * no relation to that span — two disconnected trees for one visit, which is
- * exactly the thing tracing exists to stop doing. Consumed exactly ONCE: only
- * the very first `startTrace()` call this page makes should continue
- * `serve.page` — a second, unrelated flow opened later in the same tab (a
- * retry, a second station) is a fresh attempt and deserves a fresh trace, not
- * a stale parent from page load.
+ * reads it, every trace this tab opens has no relation to that span — a
+ * disconnected forest for one visit, which is exactly the thing tracing
+ * exists to stop doing.
+ *
+ * NOT a one-shot seed consumed by whichever `startTrace()` fires first. That
+ * was the original design and it shipped a real bug: `khFetch.ts`'s implicit
+ * `childOfActive()` fallback ALSO calls `startTrace()` for any fetch with no
+ * active parent — the manifest fetch, `/auth/state`, the signalling
+ * document — and in real traffic one of those routinely wins the race
+ * against the visit's actual main flow. Evidence, from the live store: a
+ * `serve.page` trace containing `serve.auth.walkin.status` (an incidental
+ * boot-time fetch that happened to go first) while `station.connect` — the
+ * flow this join was built for — showed up as an unrelated 4-span singleton,
+ * because by the time `beginFlow('station.connect')` called `startTrace()`
+ * the one-shot seed was already gone.
+ *
+ * THE FIX: the seed is a page-scoped ROOT that MULTIPLE early callers hang
+ * off as siblings — the incidental fetch AND `station.connect` both become
+ * children of `serve.page`, whichever happens to run first — rather than a
+ * prize exactly one of them can claim. Bounded two ways, so a station opened
+ * long after boot does not retroactively attach to a stale page load and a
+ * runaway caller cannot grow the trace unbounded:
+ *   - a short WALL-CLOCK WINDOW from the moment the tag is read (this is a
+ *     bound on the visit's OWN boot burst, not a latency measurement, so
+ *     `Date.now()` — not `performance.now()` — is the right clock here);
+ *   - a hard cap on how many traces may join in that window.
+ * Once either bound is passed, `startTrace()` goes back to minting a fresh,
+ * unrelated trace id exactly as it always did for a "second, later flow in
+ * the same tab" (a retry, a second station opened minutes later).
  */
-let pageLoadSeed: { traceId: string; spanId: string } | null = null;
+let pageLoadSeed: { traceId: string; spanId: string; deadline: number } | null = null;
+let pageLoadJoins = 0;
+
+/** How long after the tag is read a new trace may still join `serve.page`.
+ *  Generous enough to cover the whole boot burst (manifest + auth/state +
+ *  the first station's signalling fetch + `station.connect` itself, all of
+ *  which can legitimately take a few seconds on a cold cache) without
+ *  reaching into an unrelated later visit to the same tab. */
+const PAGE_LOAD_JOIN_WINDOW_MS = 15_000;
+/** Hard ceiling on how many traces may join one page load, independent of
+ *  the time window — the same "bounded, so a leak costs memory once and then
+ *  stops" discipline as `MAX_OPEN`/`MAX_ACTIVE` elsewhere in this file. Well
+ *  above any honest boot burst. */
+const PAGE_LOAD_JOIN_MAX = 32;
 
 const TRACEPARENT_RE = /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/i;
 
@@ -383,7 +418,9 @@ export function parseTraceparent(value: string | null | undefined): { traceId: s
  *  malformed or missing value clears the seed — the same "malformed → start a
  *  new trace, never refuse the work" rule as everywhere else in this file. */
 export function seedPageLoadTrace(traceparent: string | null | undefined): void {
-  pageLoadSeed = parseTraceparent(traceparent);
+  const parsed = parseTraceparent(traceparent);
+  pageLoadSeed = parsed ? { ...parsed, deadline: Date.now() + PAGE_LOAD_JOIN_WINDOW_MS } : null;
+  pageLoadJoins = 0;
 }
 
 /**
@@ -392,7 +429,7 @@ export function seedPageLoadTrace(traceparent: string | null | undefined): void 
  * no DOM (tests, SSR-shaped tooling) and safe with no tag at all (a build
  * with tracing unbound, a dev server that never went through
  * `static_files.py`, a stale cached document): both leave the seed unset and
- * the first trace mints its own id exactly as it always has.
+ * every trace mints its own id exactly as it always has.
  */
 export function joinPageLoadTraceFromMeta(): void {
   try {
@@ -405,13 +442,16 @@ export function joinPageLoadTraceFromMeta(): void {
 }
 
 /** Begin a new trace. The returned span is its root; end it to close the
- *  trace. Continues the page-load join (above) exactly once, if one is
- *  waiting; every call after that mints a fresh, unrelated trace id. */
+ *  trace. While a page-load join is live (see above), EVERY trace opened
+ *  within its window and count bound continues `serve.page` as a sibling —
+ *  not just the first one — so the visit's incidental early fetches and its
+ *  actual main flow (`station.connect`) both land under the same root
+ *  instead of racing for it. Once the window or the count bound passes,
+ *  this mints a fresh, unrelated trace id exactly as before. */
 export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
-  if (pageLoadSeed) {
-    const seed = pageLoadSeed;
-    pageLoadSeed = null;
-    return makeSpan(seed.traceId, seed.spanId, name, attrs, kind);
+  if (pageLoadSeed && pageLoadJoins < PAGE_LOAD_JOIN_MAX && Date.now() <= pageLoadSeed.deadline) {
+    pageLoadJoins += 1;
+    return makeSpan(pageLoadSeed.traceId, pageLoadSeed.spanId, name, attrs, kind);
   }
   return makeSpan(newTraceId(), null, name, attrs, kind);
 }
@@ -469,6 +509,7 @@ export function __resetTracer(): void {
   hookInstalled = false;
   emit = () => {};
   pageLoadSeed = null;
+  pageLoadJoins = 0;
 }
 
 /** Test seam: what is buffered but not yet sent. */

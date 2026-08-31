@@ -181,7 +181,20 @@ function tracedFetch(
 
   let span: ReturnType<typeof childOfActive> | null;
   try {
-    span = childOfActive(`HTTP ${method}`, { 'http.request.method': method, 'url.path': path }, 'client');
+    // DEFECT 5 FIX. This used to be named `` `HTTP ${method}` `` — e.g.
+    // "HTTP GET" — which is exactly what every unit test in this file still
+    // asserts happily, because nothing here talks to the SERVER's ingest
+    // validator. `scripts/serve/traces.py`'s NAME_RE is
+    // `^[A-Za-z][A-Za-z0-9._-]{0,79}$` — no space, ever — so the store
+    // silently `continue`s past every span this patch ever produced: the
+    // header propagates (verified — `serve.auth.walkin.status` shows up
+    // inside a `serve.page` trace), the request completes, the span is built
+    // and buffered and POSTed, and the server drops it with no error back to
+    // the tab. 30 minutes of live traffic, 791 API calls, zero client spans
+    // in the store — this is why. Fixed name, method as an attribute
+    // (already carried in `http.request.method` below) rather than in the
+    // name, so the name satisfies NAME_RE regardless of verb.
+    span = childOfActive('http.client.request', { 'http.request.method': method, 'url.path': path }, 'client');
   } catch {
     span = null;
   }

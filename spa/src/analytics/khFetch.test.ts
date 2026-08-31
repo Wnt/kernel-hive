@@ -72,7 +72,7 @@ describe('installKhFetchPropagation', () => {
     await win.fetch(`${ORIGIN}/restore/beos`, { method: 'POST' });
     const spans = __bufferedSpans();
     expect(spans).toHaveLength(1);
-    expect(spans[0].n).toBe('HTTP POST');
+    expect(spans[0].n).toBe('http.client.request');
     expect(spans[0].kd).toBe('client');
     expect(spans[0].a).toMatchObject({ 'url.path': '/restore/beos', 'http.request.method': 'POST' });
     expect(spans[0].a).toMatchObject({ 'http.response.status_code': 200 });
@@ -86,7 +86,7 @@ describe('installKhFetchPropagation', () => {
     // /analytics is an excluded path (see below) so use a non-excluded one instead:
     await win.fetch(`${ORIGIN}/fleet-table.json?x=1`);
     const spans = __bufferedSpans();
-    const span = spans.find((s) => s.n === 'HTTP GET' && s.a?.['url.path'] === '/fleet-table.json');
+    const span = spans.find((s) => s.n === 'http.client.request' && s.a?.['url.path'] === '/fleet-table.json');
     expect(span).toBeTruthy();
     expect(JSON.stringify(span)).not.toContain('secret');
     expect(JSON.stringify(span)).not.toContain('x=1');
@@ -131,5 +131,29 @@ describe('installKhFetchPropagation', () => {
     const [span] = __bufferedSpans();
     expect(span.t).toBe('33333333333333333333333333333333');
     expect(span.p).toBe('4444444444444444');
+  });
+
+  // DEFECT 5 REGRESSION. The server's ingest validator (scripts/serve/
+  // traces.py) silently DROPS any span whose name does not match
+  // `^[A-Za-z][A-Za-z0-9._-]{0,79}$` — no space, ever. Every other test in
+  // this file only proves the tab's OWN buffer got a span; none of them
+  // would have caught a span the server refuses, because there was no
+  // server in the loop, and that gap is exactly how the old `` `HTTP
+  // ${method}` `` name (e.g. "HTTP GET") shipped, passed every one of THOSE
+  // tests, and then produced zero client spans in 30 minutes of live
+  // traffic. Pin the server's own rule here so this class of bug — valid
+  // JSON, valid client-side buffer, silently rejected on ingest — cannot
+  // recur unnoticed.
+  it('every span name satisfies the server ingest validator (no spaces, ever)', async () => {
+    const SERVER_NAME_RE = /^[A-Za-z][A-Za-z0-9._-]{0,79}$/;
+    installKhFetchPropagation();
+    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
+    await win.fetch(`${ORIGIN}/restore/beos`, { method: 'POST' });
+    await win.fetch(`${ORIGIN}/signal/beos.json`);
+    const spans = __bufferedSpans();
+    expect(spans.length).toBeGreaterThan(0);
+    for (const span of spans) {
+      expect(span.n).toMatch(SERVER_NAME_RE);
+    }
   });
 });
