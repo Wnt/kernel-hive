@@ -114,15 +114,22 @@ export default defineConfig({
   oxc: { target: 'es2022' },
   build: {
     target: 'es2022',
-    // 'hidden': emit a .map file per asset (for Instana's JS-stack-trace
-    // translation, uploaded by scripts/serve-https-spa.sh's
-    // publish_instana_sourcemaps) WITHOUT writing a `//# sourceMappingURL=`
-    // comment into the shipped JS. A browser only ever fetches a source map
-    // it was told about, so 'hidden' means the map is never served to a
-    // visitor's devtools even though the file sits in dist/ —
-    // serve-https-spa.sh's deploy() additionally excludes *.map from what
-    // reaches the public webroot, so this is belt-and-braces, not the only
-    // guard. See that script for why maps are upload-only, not served.
-    sourcemap: 'hidden',
+    // true: emit a .map file per asset AND write a `//# sourceMappingURL=`
+    // comment into the shipped JS, so both consumers work:
+    //  - a human with devtools open on the public gallery can resolve a
+    //    minified frame back to real source, same as any other public site;
+    //  - Instana's stack-trace translation still gets its own copy via
+    //    scripts/serve-https-spa.sh's publish_instana_sourcemaps, uploaded
+    //    straight to Instana's private store rather than relying on its
+    //    crawler to fetch the map from us.
+    // The maps are public on purpose: the built bundle already ships
+    // unauthenticated (only the app shell at '/' is passkey-gated — see
+    // docs/PUBLIC-GALLERY.md and serve-https-spa.sh's deploy()), and the
+    // source itself is the openly-public kernel-hive GitHub repo, so a map
+    // reveals nothing the repo doesn't already. A .map is fetched only when
+    // a visitor's devtools is open, so it costs nothing for an ordinary
+    // visit. See serve-https-spa.sh's deploy() and publish_instana_sourcemaps
+    // for the full reasoning and why BOTH delivery paths are kept.
+    sourcemap: true,
   },
 });
