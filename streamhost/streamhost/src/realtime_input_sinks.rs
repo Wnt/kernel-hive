@@ -431,6 +431,7 @@ impl RealtimeInputSink for WarpdSink {
             crate::input_telemetry::record_router_drop("warpd");
             Reject::Busy
         })?;
+        crate::probes::probe!(INPUT_ABS_WARPD);
         let changed = *previous ^ event.buttons;
         if changed == 0 && event.wheel_v == 0 {
             self.client.send(format!("M {} {}\n", event.x, event.y));

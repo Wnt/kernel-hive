@@ -94,6 +94,10 @@ async fn relay(
                     key_enc.request_keyframe();
                     eprintln!("[webrtc-bridge] keyframe requested by RTCP PLI/FIR");
                 } else if command[0] == b'S' {
+                    // A lease start is a REAL viewer on the fallback, not the
+                    // bridge merely being reachable: the feed connects on every
+                    // station boot whether or not anyone ever uses WebRTC.
+                    crate::probes::probe!(TRANSPORT_WEBRTC_SESSION);
                     if let Some(p) = &pauser {
                         p.session_started().await;
                     }
