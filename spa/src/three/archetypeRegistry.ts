@@ -185,7 +185,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   w2kalpha:    { osId: 'w2kalpha', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#862633', eraLabel: '1999 · Windows 2000 RC2 — Alpha AXP' },
   tru64:       { osId: 'tru64', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6a9b', eraLabel: '2003 · Tru64 UNIX 5.1B — Alpha' },
   macos753:    { osId: 'macos753', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8c8a85', eraLabel: '1996 · Mac OS 7.5.3 — Quadra 800', pointerRel: false },
-  hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: true },
+  hpuxvue:     { osId: 'hpuxvue', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#5b7c99', eraLabel: '1996 · HP-UX 10.20 — HP VUE', pointerRel: false },
   beos:        { osId: 'beos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3466a0', eraLabel: '2000 · BeOS R5 Professional', pointerRel: true }, // BeOS<->Haiku pairing
   newsos:      { osId: 'newsos', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#7a6f9b', eraLabel: '1991 · NEWS-OS 4.1R — Sony NWS-3260', pointerRel: false },
   sunos414:    { osId: 'sunos414', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#7c3aed', eraLabel: '1994 · SunOS 4.1.4 — OpenWindows', pointerRel: true },

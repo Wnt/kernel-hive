@@ -35,13 +35,13 @@
         "kbd_note": "hpterm from File Manager Directory>Terminal (Ctrl+T); VUE front panel is the mouse proof",
         "audio_trigger": null,
         "validated": false,
-        "note": "relative LASI PS/2 pointer, cursor_scale 1.0 (xset m 1 1 baked into the session). Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753. No network exec channel, but a serial console getty on tty1p0 gives a root shell on serve/serial.sock (docs/lab/retronet/WEB-STATION-hpuxvue.md)."
+        "note": "closed-loop 1:1 absolute pointer (artistctl / qemu-artist-closedloop): the Artist hardware-cursor registers are the sensor, SH_CURSOR_SCALE is inert. Foreign-arch TCG station on /opt/qemu-hppa (kernel-hive fork), like macos753. No network exec channel, but a serial console getty on tty1p0 gives a root shell on serve/serial.sock (docs/lab/retronet/WEB-STATION-hpuxvue.md)."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/hpuxvue",
       "qmp": "/data/vms/streamhost/stations/hpuxvue/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -51,7 +51,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54144,
-      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE."
+      "notes": "No exec channel yet: /dev/tty0p0 exists in the guest and QEMU exposes it on serial.sock in the station dir; wire a getty (inittab) + a serialcon-style client to get labctl exec. Until then drive it via QMP sendkey/mouse_move against a CLONE. POINTER ACCURACY: WITHIN 1 px, NOT EXACT. The Artist engine is a closed loop with ptr-deadband=1 and converges on abs(err) <= deadband on BOTH axes, so it is SPECIFIED to stop within one pixel -- `labctl abs x y` lands at x+/-1, y+/-1, converged and held. This is weaker than rhapsody's and macos753's exact landing: those use kh-ramabs, which has no deadband at all and tests literal equality, so 0 px is the correct strictness there and 1 px would hide a missed publish. Do not carry this tolerance to a ramabs station, and do not set ptr-deadband=0 to make a test pass -- the deadband is what stops the hunting that leaves window-border hotspots unmeasurable."
     }
   },
   "render": {
@@ -61,7 +61,7 @@
     "bringUpGroup": 7,
     "signalOrder": 60,
     "actionMapOrder": 32,
-    "stationsManifestPrelude": "\n# hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):\n#   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa\n#   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer\n#   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).\n#   RELATIVE LASI PS/2 pointer (dbus-rel). LISTED on the public floor:\n#   reset=loadvm golden, idle auto-pause after SH_IDLE_PAUSE_SECS=60.\n",
+    "stationsManifestPrelude": "\n# hpuxvue (slot 144) — HP-UX 10.20 / HP VUE on a PA-RISC HP 9000/778 (B160L):\n#   qemu-system-hppa from the kernel-hive QEMU fork, installed to /opt/qemu-hppa\n#   (pve-qemu ships no hppa target). TCG only, no KVM. Artist framebuffer\n#   scanout at 1280x1024 (HARD ceiling: higher crashes / dtwm pointer dead zone).\n#   CLOSED-LOOP 1:1 pointer (artistctl over artistptr/1): the wire is still the\n#   LASI PS/2 mouse, but the engine in hw/display/artist.c reads the guest's own\n#   position back from the Artist hardware-cursor registers and converges on it.\n#   LISTED on the public floor: reset=loadvm golden, idle auto-pause after\n#   SH_IDLE_PAUSE_SECS=60.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -71,10 +71,10 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "artistctl",
+      "method": "qemu-artist-closedloop",
+      "absolute": true,
       "present": true,
       "device": "lasi-ps2-mouse",
       "scale": 1.0,
@@ -114,9 +114,9 @@
         "--udp",
         "54144",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "artistctl",
         "--cursor-scale",
         "1.0",
         "--cursor-off-x",
@@ -147,6 +147,7 @@
         "-name streamhost-hpuxvue",
         "-M B160L -accel tcg,thread=multi -smp 1 -m 512 -d nochain",
         "-display dbus,p2p=on",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off -global artist.ptrctl=ptr0 (the closed-loop pointer engine's control socket in hw/display/artist.c; the daemon speaks artistptr/1 over it)",
         "-drive if=scsi,bus=0,index=6,file=$D/hpuxvue-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
         "-drive if=scsi,bus=0,index=2,media=cdrom,file=$A/disc1.iso (always attached; -boot d only in the install shape)",
         "-netdev tap,id=n0,ifname=hpuxrn0,script=no,downscript=no -device tulip,netdev=n0,mac=$RN_HPUXVUE_MAC (retronet bridge vmbr-rn)",
@@ -156,12 +157,22 @@
       "launcherParity": {
         "status": "byte-identical",
         "reason": "tracked verbatim launcher IS the deployed launcher; the golden checkpoint (re-baked 2026-08-24) was captured with this exact device set (CD attached, same ISO) on the standalone /opt/qemu-hppa build. The closed-loop pointer was then ARMED without a re-bake, and does not need one: the engine in hw/display/artist.c adds no migration state (cursor_pos/cursor_cntrl were already in vmstate_artist) and the ptrctl chardev is a backend, not a vmstate section, so the device set is unchanged for loadvm purposes and the 2026-08-24 golden still restores -- RESTORE-PROVEN under this binary with the loop armed, on the sandbox ptrloop rig. binarySha256 is the build this branch's 0008-artist-closed-loop-pointer.patch produces (kernel-hive + that patch); it is NOT yet what /opt/qemu-hppa holds, because this branch is not deployed. INSTALL ORDER MATTERS: the QEMU binary must be in place BEFORE this launcher, because -global artist.ptrctl=ptr0 on the previous binary is an unknown property and QEMU refuses to start; likewise the streamhost binary before the env fixture (SH_INPUT_BACKEND=artistctl panics an older daemon)."
+      },
+      "qemuBuild": {
+        "prefix": "/opt/qemu-hppa",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
+        "patches": [
+          "streamhost/qemu-patches/0008-artist-closed-loop-pointer.patch"
+        ],
+        "configure": "--target-list=hppa-softmmu --enable-slirp --enable-dbus-display --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-spice --disable-opengl --disable-werror --disable-tools --prefix=/opt/qemu-hppa",
+        "binarySha256": "e86d5e775287ede2ac649cf405407269107af36432b3428ed5055202e5f34388",
+        "note": "Built from fork c5449c80 with 0008 only -- 0006 is rhapsody's x86 i8259 fix and does not apply to hppa. binarySha256 read from the INSTALLED file, not a build log. RESTORE-PROVEN on the live station: loadvm golden succeeded under this binary with -global artist.ptrctl=ptr0 accepted on a real machine start, running inode equal to the on-disk inode. That start is also the only available validation of the ptrctl property: an argument-only probe cannot distinguish a valid property from an invalid one, because QEMU's chardev check runs first. Previous binary kept as <path>.pre-abs-bak (76ef7ce9...), which has ZERO ptrctl strings -- the launcher passes -global artist.ptrctl unconditionally, so binary and launcher roll back together or not at all."
       }
     }
   },
   "reset": {
     "stationDir": "hpuxvue",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
@@ -174,7 +185,7 @@
     "transport": "streamhost",
     "accentColor": "#5b7c99",
     "eraLabel": "1996 · HP-UX 10.20 — HP VUE",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "hpuxvue",
