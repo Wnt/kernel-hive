@@ -9,6 +9,7 @@ use std::sync::Arc;
 use crate::capture::Capture;
 use crate::config::Config;
 use crate::input;
+use crate::input_trace;
 use crate::trace_session::SessionTrace;
 
 // CLIENT->SERVER per-type reliable-input CLASS tags: the first byte of each
@@ -76,7 +77,26 @@ pub(super) async fn drain_input_stream(
             // first. The CLASS is named; the record's bytes never are — no
             // keycode, no coordinate reaches a span (contract §7).
             strace.mark_first_input(class);
-            input::handle(cap, cfg, mouse, input_router, &rec).await;
+            // SAMPLED per-input tracing (docs/lab/TRACE-CONTEXT.md, the
+            // in-datagram-record hop): `strip` is cheap on the 9-in-10
+            // unsampled edges (input_trace.rs measures it) — one match on
+            // rec[0] and a couple of length compares, no allocation. Only a
+            // record the BROWSER chose to sample carries a suffix at all;
+            // this daemon never decides to sample on its own (contract §5).
+            let (body, ctx) = input_trace::strip(&rec);
+            match ctx {
+                Some(ctx) => {
+                    let input_class = input_trace::input_class(body[0]);
+                    let key_class = (body[0] == 3)
+                        .then(|| input_trace::key_class(u16::from_le_bytes([body[2], body[3]])));
+                    strace
+                        .dispatch_sampled_input(ctx, input_class, key_class, async {
+                            input::handle(cap, cfg, mouse, input_router, body).await;
+                        })
+                        .await;
+                }
+                None => input::handle(cap, cfg, mouse, input_router, body).await,
+            }
         }
     }
 }

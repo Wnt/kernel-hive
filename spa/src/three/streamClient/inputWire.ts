@@ -32,6 +32,7 @@ import { reach } from '../../analytics';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
+import { maybeSampleEdge, traceSuffix, withSuffix, keyClass } from './inputTrace';
 
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
@@ -132,10 +133,16 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     if (down) reach('station.pointer.used', 'act');
     const px = x != null ? clampU16(x) : c.lastAbsX;
     const py = y != null ? clampU16(y) : c.lastAbsY;
+    // SAMPLED per-input tracing (docs/lab/TRACE-CONTEXT.md, inputTrace.ts):
+    // the browser's decision, made once per qualifying edge (key or click —
+    // never a pointer-move sample). `span` is null on the other N-1 edges and
+    // costs nothing beyond the counter check inside `maybeSampleEdge`.
+    const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'click' });
     if (px == null || py == null) {
       const bare = new Uint8Array(3);
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
-      c.writeReliableClass(ICLASS_BUTTON, bare);
+      c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(bare, 3, traceSuffix(span)) : bare);
+      span?.end('ok');
       return;
     }
     const b = new Uint8Array(11);
@@ -145,14 +152,23 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     dv.setUint16(5, py, true);
     dv.setUint32(7, c.nextCseq(), true);
     c.lastAbsX = px; c.lastAbsY = py;
-    c.writeReliableClass(ICLASS_BUTTON, b);
+    c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(b, 11, traceSuffix(span)) : b);
+    span?.end('ok');
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
     if (down) countKeystroke(keycode);
     if (down) reach('station.key.used', 'act');
     const b = new Uint8Array(4); b[0] = T_KEY; b[1] = down ? 1 : 0;
     new DataView(b.buffer).setUint16(2, keycode & 0xffff, true);
-    c.writeReliableClass(ICLASS_KEY, b);
+    // See sendButtonImpl above for the sampling contract. `kh.key.class` is a
+    // BUCKET computed from the same scancode already on the wire (never the
+    // key itself, never typed text — see inputTrace.ts's header).
+    const span = maybeSampleEdge('input.edge', {
+      'kh.input.class': 'key',
+      'kh.key.class': keyClass(keycode),
+    });
+    c.writeReliableClass(ICLASS_KEY, span ? withSuffix(b, 4, traceSuffix(span)) : b);
+    span?.end('ok');
   }
 export function sendWheelImpl(c: StreamClientLike, dx: number, dy: number) {
     const b = new Uint8Array(5); b[0] = T_WHEEL;

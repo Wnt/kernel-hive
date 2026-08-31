@@ -21,6 +21,7 @@ mod encode;
 mod idle;
 mod input;
 mod input_telemetry;
+mod input_trace;
 mod key_quirks;
 mod mame_input;
 mod mame_sock;

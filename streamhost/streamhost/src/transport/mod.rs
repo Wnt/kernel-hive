@@ -701,6 +701,9 @@ async fn handle_session(
                 // One-shot marks: an AtomicBool swap per AU, never a span per
                 // frame (trace/mod.rs states the rule and why).
                 strace.mark_first_au(au.frame_id, au.is_key);
+                // Sampled-input EFFECT, half 1 of 2: one relaxed load unless a
+                // sampled edge is pending (input_trace.rs / trace_session.rs).
+                strace.effect_encoded(au.frame_id, au.is_key);
                 let r = send_au(&conn, &au).await;
                 if vt {
                     eprintln!("[vtrace] sent frame_id={} ok={}", au.frame_id, r.is_ok());
@@ -710,6 +713,8 @@ async fn handle_session(
                 }
                 tx_bytes.fetch_add((10 + au.data.len()) as u64, Ordering::Relaxed);
                 strace.mark_first_send(au.data.len());
+                // Half 2 of 2: closes the window `effect_encoded` peeked at.
+                strace.effect_sent(au.data.len());
                 last_sent_id = au.frame_id;
             }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {

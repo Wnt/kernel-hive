@@ -33,10 +33,30 @@
 //! that was idle-paused, and no other layer can say that.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use crate::trace::{self, Ctx, Kind, Span, Val};
+
+/// A SAMPLED input edge awaiting the effect it caused: the next frame the
+/// guest produces after it was injected. Set by `note_sampled_input` (the
+/// per-type reliable-input drain, once per ~1-in-N edge — see
+/// `input_trace.rs`) and consumed by the encoder relay the next time it sees
+/// an access unit (`effect_encoded` / `effect_sent` in `transport/mod.rs`).
+/// `Copy`: cloning it out of the mutex is cheaper than holding the lock across
+/// the span emission below.
+#[derive(Clone, Copy)]
+struct PendingEffect {
+    /// Parent for the effect spans: NOT the browser's own root, but the
+    /// daemon's `input.dispatch` span for this edge, so the chain in a flame
+    /// graph reads input -> dispatch -> effect rather than three siblings
+    /// under the browser root.
+    ctx: Ctx,
+    injected: Instant,
+    injected_ms: u64,
+    input_class: &'static str,
+    key_class: Option<&'static str>,
+}
 
 /// A live session's tracing state. Cheap to clone (it is held behind an `Arc`
 /// by every task in the session) and inert when the plane is off.
@@ -49,6 +69,12 @@ pub struct SessionTrace {
     first_key: AtomicBool,
     first_send: AtomicBool,
     first_input: AtomicBool,
+    /// Relaxed-load gate so the 60 fps encoder relay pays one atomic read per
+    /// frame when nothing is pending — the same shape as `once()` below, and
+    /// necessary for the SAME reason: at 60 fps anything more on that path is
+    /// a frame budget this daemon does not have to spend.
+    effect_pending: AtomicBool,
+    effect: Mutex<Option<PendingEffect>>,
 }
 
 /// Open a session's root span.
@@ -83,6 +109,8 @@ pub fn begin(
         first_key: AtomicBool::new(false),
         first_send: AtomicBool::new(false),
         first_input: AtomicBool::new(false),
+        effect_pending: AtomicBool::new(false),
+        effect: Mutex::new(None),
     });
     (st, span)
 }
@@ -157,6 +185,114 @@ impl SessionTrace {
             );
         }
     }
+
+    /// Open the daemon-side span for a SAMPLED input edge — the browser
+    /// carried a context in the record (`input_trace.rs`), so this is a real
+    /// child, not a root. Covers "the sink accepted the record" through "the
+    /// guest write returned": `input.rs` cannot be instrumented internally
+    /// without breaching its own file-size hard cap (it sits AT 800 lines, see
+    /// this file's header), so the boundary this daemon can afford is the
+    /// whole `input::handle` call, named for what happens either side of it.
+    /// Ends the span and, if it emitted, arms the pending effect so the NEXT
+    /// frame this session produces can be tied back to this edge.
+    pub async fn dispatch_sampled_input<F: std::future::Future<Output = ()>>(
+        &self,
+        ctx: Ctx,
+        input_class: &'static str,
+        key_class: Option<&'static str>,
+        f: F,
+    ) {
+        let mut span = Span::child("input.dispatch", Kind::Internal, ctx);
+        span.attr("kh.input.class", input_class);
+        if let Some(kc) = key_class {
+            span.attr("kh.key.class", kc);
+        }
+        let effect_ctx = span.ctx();
+        f.await;
+        span.ok();
+        let injected = Instant::now();
+        let injected_ms = trace::now_unix_ms();
+        span.end();
+        if !self.on {
+            return;
+        }
+        *self.effect.lock().unwrap_or_else(|e| e.into_inner()) = Some(PendingEffect {
+            ctx: effect_ctx,
+            injected,
+            injected_ms,
+            input_class,
+            key_class,
+        });
+        self.effect_pending.store(true, Ordering::Relaxed);
+    }
+
+    /// Called from the encoder relay for every access unit (`transport/mod.rs`,
+    /// beside `mark_first_au`): the guest produced a frame — was it the EFFECT
+    /// of a pending sampled input? One relaxed load when nothing is pending,
+    /// which is every frame at the default N=10 sample rate unless a visitor
+    /// is typing or clicking right now. PEEKS rather than takes: `effect_sent`
+    /// below is what actually closes the window, so a burst of AUs between
+    /// capture and this edge's own transport send does not re-open it.
+    pub fn effect_encoded(&self, frame_id: u32, is_key: bool) {
+        if !self.effect_pending.load(Ordering::Relaxed) {
+            return;
+        }
+        let Some(pe) = *self.effect.lock().unwrap_or_else(|e| e.into_inner()) else {
+            return;
+        };
+        trace::emit_at(
+            "guest.frame.next",
+            Kind::Internal,
+            pe.ctx,
+            pe.injected_ms,
+            pe.injected.elapsed().as_millis() as u64,
+            &effect_attrs(
+                &pe,
+                &[
+                    ("kh.frame.id", Val::I(frame_id as i64)),
+                    ("kh.frame.key", Val::B(is_key)),
+                ],
+            ),
+            "ok",
+        );
+    }
+
+    /// The same edge's frame reaching the wire — closes the window. Two
+    /// spans, not one, so a flame graph can show whether a slow effect was
+    /// encode/capture-bound or transport-bound, mirroring the session-level
+    /// `capture.first_frame` / `transport.first_frame` split above.
+    pub fn effect_sent(&self, bytes: usize) {
+        if !self.effect_pending.load(Ordering::Relaxed) {
+            return;
+        }
+        let taken = self.effect.lock().unwrap_or_else(|e| e.into_inner()).take();
+        self.effect_pending.store(false, Ordering::Relaxed);
+        let Some(pe) = taken else {
+            return;
+        };
+        trace::emit_at(
+            "transport.frame.next",
+            Kind::Internal,
+            pe.ctx,
+            pe.injected_ms,
+            pe.injected.elapsed().as_millis() as u64,
+            &effect_attrs(&pe, &[("kh.frame.bytes", Val::I(bytes as i64))]),
+            "ok",
+        );
+    }
+}
+
+/// `kh.input.class` (+ `kh.key.class` when this was a key) beside whatever the
+/// caller already has, so both effect spans carry the same "what caused this"
+/// attributes without duplicating the plumbing.
+fn effect_attrs(pe: &PendingEffect, extra: &[(&'static str, Val)]) -> Vec<(&'static str, Val)> {
+    let mut attrs: Vec<(&'static str, Val)> =
+        vec![("kh.input.class", Val::S(pe.input_class.into()))];
+    if let Some(kc) = pe.key_class {
+        attrs.push(("kh.key.class", Val::S(kc.into())));
+    }
+    attrs.extend(extra.iter().cloned());
+    attrs
 }
 
 /// `guest.resume` — the emulator span that matters most.
