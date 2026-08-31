@@ -67,6 +67,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Whose rig/claim is this | `ssh lab 'labctl who'` |
 | Preview a UI/registry change before it is live | `scripts/dev/stage.sh` → `/staging/<session>/` |
 | Deploy a pushed commit / see what the box runs | `scripts/dev/box-deploy.sh` (plan) / `--apply` / `--status` |
+| Restart the fleet without taking the gallery down | [`docs/lab/FLEET-ROLLOUT.md`](docs/lab/FLEET-ROLLOUT.md) — `scripts/dev/fleet_rollout.py` (plan) / `--apply` |
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 | Understand how any of this works | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — tiers, I/O paths, costs |
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md); start with `labctl facts <tile>` |
