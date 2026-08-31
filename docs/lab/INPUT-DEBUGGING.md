@@ -120,6 +120,46 @@ Motion verbs and no button verbs, while `[input] class stream tag=2
 `routes_buttons_invariant_every_pointer_sink_takes_its_edges` now fails the
 build for the next sink that forgets.
 
+## The button verbs ARE there and the keyboard is still "broken" — suspect the CHECKPOINT
+
+The section above ends "and nothing else". That was too strong, and aix432 cost
+a second afternoon proving it: on 2026-08-31 the same station produced the same
+operator sentence — "keyboard entry into Netscape is broken after a golden
+restore" — with the button verbs present, acked, and reaching the guest. The
+wire was clean. What was wrong was baked into the golden.
+
+**The discriminator ladder**, cheapest first, and it is short:
+
+1. **Type into a chrome widget** — a URL bar, a menu, a modal dialog. If the
+   characters appear, the keys reach the app and the whole input plane is
+   exonerated in one step.
+2. **Click the CONTENT area, then press the app's menu key** (F10 in Netscape 4).
+   No menu means the keys are no longer reaching the app AT ALL, and the thing
+   that stopped them was the click — not the key path, not the sink, not the
+   scancode set.
+3. **Restore the PREVIOUS checkpoint into a sandbox clone and repeat.**
+   `checkpoint-guard` keeps a verified byte copy of every checkpoint it replaces
+   (`<disk>.cpg-bak-<stamp>`), which makes this a five-minute experiment: same
+   launcher, same device set, same binaries, one variable. If the old checkpoint
+   works, a RECAPTURE is the regression and no code change can fix it.
+
+**Why a click can destroy keyboard focus and a picture cannot show it.** The
+pointer converged, the click landed at the right pixel — the page's own submit
+button visibly depressed while the edge was held — and the app still stopped
+taking keys. Keyboard focus is X-server and toolkit state, not pixels; a
+screenshot of a restored guest can look perfect and be unusable. That is the
+same lesson `sunos414` taught from the other side (`SetInput: select` swallowed
+every keystroke on a golden in which no window had ever been clicked), and it is
+why [`checkpoint-guard`](checkpoint-guard.md)'s restore proof — "the framebuffer
+moved and came back" — is not an acceptance test for an exhibit.
+
+**Never conclude "typing works" from a chrome widget.** The 2026-08-30
+investigation typed `khtest` into Netscape's Find dialog, saw it land, and
+declared the key path innocent. It was innocent. The exhibit was still broken,
+because the thing a visitor types into is a form field in the PAGE, and that is
+a different widget under a different focus owner. Prove the widget the operator
+named.
+
 ### A confirmed position is not a held one — the general property
 
 Routing the edge to the sink is one way to make a click atomic with its
