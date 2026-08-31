@@ -277,3 +277,32 @@ export function configureInstanaIdentity(session: Session): void {
   // is omitted rather than padded with an empty string.
   ineum('user', session.id, session.name || undefined);
 }
+
+/**
+ * Tag the CURRENT station onto Instana's session meta — the browser-beacon
+ * half of the "groupable per station type" ask (analytics/stationAttrs.ts).
+ *
+ * WHY META AND NOT A PER-CALL TAG. Instana's ajax/XHR auto-instrumentation
+ * (what actually beacons the golden-reset POST, the wakeup signalling fetch,
+ * etc — this app's OWN spans go to `/traces`, never to Instana) has no
+ * documented way to attach a custom attribute to one specific request.
+ * `meta` is SESSION-scoped and travels on every beacon sent after it is set,
+ * which is exactly the shape wanted here: call this when a station opens (or
+ * changes), and every ajax beacon for THAT visit — including a restore click
+ * — carries the currently-open station's type until the next call updates it
+ * or the tab closes.
+ *
+ * SAME KEYS AS `stationAttrs()`, minus `kh.station.id` — Instana's own
+ * `meta` already has a per-visit identity via `kh.sessionId`; repeating the
+ * station id here would not change what a query can group by (both are
+ * still per-request meta, and `kh.station.id` is already redundant with
+ * whichever station the visitor is looking at when Instana's own Websites
+ * view shows the beacon). Each dimension is its own `ineum('meta', k, v)`
+ * call — the shape `instana.test.ts` pins, never an object.
+ */
+export function tagInstanaStation(attrs: { [key: string]: string | number | boolean }): void {
+  for (const key of ['kh.station.emulatorFamily', 'kh.station.ui', 'kh.station.resetMode']) {
+    const value = attrs[key];
+    if (value !== undefined) ineum('meta', key, String(value));
+  }
+}

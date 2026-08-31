@@ -16,6 +16,7 @@ import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
 import { sessionTelemetry } from './sessionTelemetry';
 import type { LivePhase, StreamSessionOptions, StreamSessionResult } from './streamSessionTypes';
+import type { Attrs } from '../analytics/trace';
 
 export type { StreamSessionOptions, StreamSessionResult };
 
@@ -30,7 +31,6 @@ export type { StreamSessionOptions, StreamSessionResult };
 //  Near-zero buffering by design: we render on decode output (no jitter buffer),
 //  and captureStream is damage-gated by canvas writes — idle stations cost ~nothing.
 // ============================================================================
-
 
 // ---------------------------------------------------------------------------
 //  Negotiation + session resilience
@@ -90,6 +90,9 @@ export function useStreamhostSession(
   // session effect deliberately does not re-run on it.
   const sinkProbeRef = useRef<(() => VideoSinkProbe | null) | undefined>(undefined);
   sinkProbeRef.current = options?.sinkProbe;
+  // Same reason as `sinkProbe`: a fresh object every render must not re-run it.
+  const stationAttrsRef = useRef<Attrs | undefined>(undefined);
+  stationAttrsRef.current = options?.stationAttrs;
   const reconnectRef = useRef<() => void>(() => undefined);
   const reconnectNow = useCallback(() => reconnectRef.current(), []);
   // Through a ref, like `sinkProbe`: the session effect does not re-run on a
@@ -133,14 +136,11 @@ export function useStreamhostSession(
       getSnapshot: () => fallback?.getSnapshot() ?? client?.getMetrics() ?? null,
     });
 
-    // One telemetry object per connect ATTEMPT-SEQUENCE, not per retry: the
-    // retries are the mechanism, and counting them would report a station that
-    // connected on the fourth try as three failures and a success. See
-    // three/connectTelemetry.ts for what each call below means.
-    // Three flows behind one handle (three/sessionTelemetry.ts). getKeyframeMs
-    // is read fresh: encoder params arrive on KIND_PARAMS after transport-ready.
+    // One telemetry object per ATTEMPT-SEQUENCE, not per retry (connectTelemetry.ts).
     const tel = sessionTelemetry({
       getKeyframeMs: () => client?.getMetrics().enc?.keyframeMs ?? null,
+      stationAttrs: stationAttrsRef.current,
+      clientTransport: typeof VideoDecoder === 'undefined' ? 'webrtc-fallback' : 'webtransport',
     });
 
     const clearTimers = () => {
@@ -443,11 +443,12 @@ export function useStreamhostSession(
       });
     };
 
-    // WebCodecs-less fallback. Every streamhost station gets this platform path;
-    // the client selects it solely by feature detection. WebCodecs-capable
-    // browsers never execute this branch and stay on WebTransport unchanged.
+    // WebCodecs-less fallback (feature-detected). `tel` used to go UNCALLED
+    // here, leaving the connect funnel/cost blind for this path;
+    // `stream.recover` stays unwired (needs per-frame paint).
     const startWebRtcFallback = async () => {
       if (cancelled) return;
+      tel.transport();
       setPhase('connecting');
       setMessage('Connecting via browser video fallback…');
       const next = new WebRtcFallbackClient({
@@ -484,6 +485,7 @@ export function useStreamhostSession(
               restoreEndpointSettled = false;
               setExpectedReconnect(null);
             }
+            tel.firstFrame();
             setPhase('live');
             setMessage('LIVE · WebRTC fallback');
           } else if (state === 'reconnecting') {
@@ -493,6 +495,7 @@ export function useStreamhostSession(
             setPhase('connecting');
             setMessage('WebRTC video stalled — recovering…');
           } else if (state === 'failed') {
+            tel.gaveUp(liveReached);
             setPhase('error');
             setMessage(`WebRTC fallback failed: ${error || 'connection failed'}`);
           } else {

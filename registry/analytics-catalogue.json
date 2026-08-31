@@ -224,6 +224,15 @@
         "firstFrame"
       ]
     },
+    "station.restore": {
+      "area": "station",
+      "what": "clicking Restore to golden, and getting a picture back",
+      "steps": [
+        "click",
+        "reset",
+        "restored"
+      ]
+    },
     "stream.recover": {
       "area": "stream",
       "what": "a picture that stopped moving, and whether it started again before the visitor left",
@@ -367,6 +376,12 @@
       "area": "station",
       "owner": "src/three/connectTelemetry.ts",
       "what": "a high value means visitors hesitate to touch this machine once it works — it needs a clearer invitation, not a faster stream",
+      "scale": "ms"
+    },
+    "station.restore.toRestoredMs": {
+      "area": "station",
+      "owner": "src/ui/grid/StreamView/useRestoreFlow.ts",
+      "what": "a high value means the golden-reset button feels broken even when the host reset instantly — the reconnect after it, not the reset itself, is where the wait is",
       "scale": "ms"
     },
     "stream.recover.abandonedAfterMs": {

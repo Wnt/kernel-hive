@@ -49,7 +49,7 @@
 
 import { FLOWS, type FlowId, type FlowStep } from './catalogue';
 import { queueFlow } from './sink';
-import { popActive, pushActive, startTrace, type Span } from './trace';
+import { popActive, pushActive, startTrace, type Attrs, type Span } from './trace';
 
 /** The innermost open flow, for error attribution. */
 export interface OpenFlow {
@@ -77,31 +77,54 @@ export interface FlowHandle {
    *  abandonment as a fault. Not calling it at all is the real bug — the open
    *  stack is bounded, so a leak silently stops attributing errors. */
   close(): void;
+  /**
+   * Attach `attrs` to every span this flow opens from now on — the root, the
+   * CURRENT step span, and every step span opened after this call. For
+   * grouping dimensions (analytics/stationAttrs.ts) a caller does not yet
+   * have at `beginFlow()` time, or does not want baked into the call site's
+   * literal text — `scripts/analytics/catalogue.mjs`'s flow gate greps for
+   * the EXACT text `beginFlow('<id>')`, so a call site that always passes a
+   * second argument there would read as an undeclared flow. `tag()` is the
+   * escape hatch: open bare, tag once the station is known.
+   */
+  tag(attrs: Attrs): void;
 }
 
 /** Open flows, innermost last. Bounded so a leaking call site cannot grow it. */
 const stack: OpenFlow[] = [];
 const MAX_OPEN = 8;
 
-const NOOP: FlowHandle = { step() {}, ok() {}, fail() {}, close() {} };
+const NOOP: FlowHandle = { step() {}, ok() {}, fail() {}, close() {}, tag() {} };
 
 /** The flow an error should be blamed on, if any. */
 export function currentFlow(): OpenFlow | null {
   return stack.length ? stack[stack.length - 1] : null;
 }
 
-/** Begin one attempt at `flow`. Always returns a handle; never throws. */
-export function beginFlow(flow: FlowId): FlowHandle {
+/**
+ * Begin one attempt at `flow`. Always returns a handle; never throws.
+ *
+ * `attrs` are merged onto the flow's root span AND every step span it opens —
+ * not just the root — because a consumer that reads spans individually
+ * (Instana's Unbounded Analytics, `/admin/observability`'s own span list)
+ * must not have to walk up to a parent to learn what STATION a span belongs
+ * to. Typically `stationAttrs(...)` (analytics/stationAttrs.ts): station id
+ * plus the low-cardinality type dimensions a report groups by.
+ */
+export function beginFlow(flow: FlowId, attrs?: Attrs): FlowHandle {
   try {
     const spec = FLOWS[flow];
     if (!spec || stack.length >= MAX_OPEN) return NOOP;
+    // Mutable so `tag()` can grow it after the fact; every span opened from
+    // here on (including ones already open) picks up whatever is in it.
+    const tagAttrs: Attrs = { ...attrs };
     // `kh.flow` rather than a bare name: the semantic conventions have no term
     // for "a named journey through a UI", so it is namespaced to say plainly
     // that it is ours and will not collide with a convention added later.
-    const root = startTrace(flow, { 'kh.flow': flow });
+    const root = startTrace(flow, { 'kh.flow': flow, ...tagAttrs });
     pushActive(root);
     const open: OpenFlow = { flow, step: spec.steps[0], root, stepSpan: null };
-    open.stepSpan = root.child(`${flow}.${open.step}`, { 'kh.step': open.step });
+    open.stepSpan = root.child(`${flow}.${open.step}`, { 'kh.step': open.step, ...tagAttrs });
     stack.push(open);
     queueFlow(flow, open.step, 'enter');
     let done = false;
@@ -137,7 +160,7 @@ export function beginFlow(flow: FlowId): FlowHandle {
           // flame graph show where the time in a journey actually went.
           open.stepSpan?.end('ok');
           open.step = next;
-          open.stepSpan = open.root.child(`${flow}.${next}`, { 'kh.step': next });
+          open.stepSpan = open.root.child(`${flow}.${next}`, { 'kh.step': next, ...tagAttrs });
           queueFlow(flow, next, 'enter');
         } catch { /* never throw out of instrumentation */ }
       },
@@ -156,6 +179,16 @@ export function beginFlow(flow: FlowId): FlowHandle {
           open.stepSpan = null;
           popActive(open.root);
           open.root.end('unset', { 'kh.abandoned': true });
+        } catch { /* noop */ }
+      },
+      tag(newAttrs: Attrs) {
+        try {
+          if (done) return;
+          Object.assign(tagAttrs, newAttrs);
+          for (const [k, v] of Object.entries(newAttrs)) {
+            open.root.attr(k, v);
+            open.stepSpan?.attr(k, v);
+          }
         } catch { /* noop */ }
       },
     };

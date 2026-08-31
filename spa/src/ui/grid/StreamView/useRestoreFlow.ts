@@ -3,7 +3,11 @@
    stable params, which defeats the rule's static ref/setState stability inference
    (the original in-component code passed the rule clean). rules-of-hooks (the
    correctness rule) stays enforced. */
-import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { beginFlow, startTiming, type Timing } from '../../../analytics';
+import type { FlowHandle } from '../../../analytics/flows';
+import type { Attrs } from '../../../analytics/trace';
+import type { LivePhase } from '../../../three/streamSessionTypes';
 
 type RestoreState = 'idle' | 'busy' | 'ok' | 'err';
 
@@ -14,9 +18,23 @@ type RestoreState = 'idle' | 'busy' | 'ok' | 'err';
 //  and non-destructive, so the exhibit's "Restore to golden snapshot" button
 //  works for any visitor. No confirmation prompt: the action is cheap, obvious
 //  from its label, and undone by using the exhibit again.
+//
+//  TELEMETRY (`station.restore` / `station.restore.toRestoredMs`,
+//  catalogue/station.ts). This was the one gap in an otherwise end-to-end
+//  golden-reset story: the SERVER already times its own reset
+//  (`serve.restore`/`.reset`), but nothing measured what the VISITOR
+//  experiences — click to picture back. The fetch resolving is the host
+//  ACCEPTING the reset, not the machine being usable again, so the clock does
+//  not stop there: it stops on the reconnected session's first painted frame,
+//  which arrives asynchronously through `phase` going `'live'` after
+//  `beginRestoreReconnect` set it `'connecting'` (useStreamhostSession's
+//  `expectedRestore` flag — the same signal `station.connect`'s own funnel
+//  uses for "the visitor can see the machine again", not a second definition
+//  of done).
 export function useRestoreFlow({
   osId, restoreState, setRestoreState,
   beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
+  phase, stationAttrs,
 }: {
   osId: string;
   restoreState: RestoreState;
@@ -24,10 +42,39 @@ export function useRestoreFlow({
   beginRestoreReconnect?: () => void;
   finishRestoreReconnect?: () => void;
   restoreTimer: RefObject<number>;
+  phase: LivePhase;
+  stationAttrs?: Attrs;
 }): { restoreToGolden: () => void } {
+  // One attempt's telemetry, open from the click until the reconnected
+  // session paints (or the attempt is abandoned/torn down). Bounded to one
+  // in flight — a second click while `busy` is a no-op below, same as before.
+  const pending = useRef<{ flow: FlowHandle; ms: Timing } | null>(null);
+
+  const settle = useCallback((outcome: 'ok' | 'fail' | 'close', reason?: string) => {
+    const p = pending.current;
+    if (!p) return;
+    pending.current = null;
+    if (outcome === 'ok') {
+      p.flow.step('restored');
+      p.flow.ok();
+      p.ms.stop();
+    } else if (outcome === 'fail') {
+      p.flow.fail(reason);
+      p.ms.abandon();
+    } else {
+      // Torn down rather than finished (station switched away, unmount) — the
+      // funnel already shows this as a drop-off; see flows.ts's own rule.
+      p.flow.close();
+      p.ms.abandon();
+    }
+  }, []);
+
   const restoreToGolden = useCallback(() => {
     if (restoreState === 'busy') return;
     setRestoreState('busy');
+    const flow = beginFlow('station.restore');
+    if (stationAttrs) flow.tag(stationAttrs);
+    pending.current = { flow, ms: startTiming('station.restore.toRestoredMs', stationAttrs) };
     beginRestoreReconnect?.();
     fetch(`/restore/${encodeURIComponent(osId)}`, {
       method: 'POST',
@@ -36,10 +83,12 @@ export function useRestoreFlow({
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         setRestoreState('ok');
+        pending.current?.flow.step('reset');
       })
       .catch((e) => {
         console.warn('[StreamView] restore failed:', e);
         setRestoreState('err');
+        settle('fail', 'resetFailed');
       })
       .finally(() => {
         // Success means the checkpoint is ready; failure means the old live guest is
@@ -49,8 +98,24 @@ export function useRestoreFlow({
         if (restoreTimer.current) clearTimeout(restoreTimer.current);
         restoreTimer.current = window.setTimeout(() => setRestoreState('idle'), 4500);
       });
-  }, [osId, restoreState, beginRestoreReconnect, finishRestoreReconnect]);
-  useEffect(() => () => { if (restoreTimer.current) clearTimeout(restoreTimer.current); }, []);
+  }, [osId, restoreState, beginRestoreReconnect, finishRestoreReconnect, settle, stationAttrs]);
+
+  // Completion: the reconnected session's first painted frame, not the fetch.
+  // A `phase` transition to `'live'` while nothing is pending is an ordinary
+  // connect/resume and must not be mistaken for a restore completing. A
+  // reconnect that gives up (`phase === 'error'`, the session's own retry
+  // ladder exhausted) settles the pair rather than leaking it — the funnel
+  // then shows exactly where a restore stopped, the same as `station.connect`.
+  useEffect(() => {
+    if (!pending.current) return;
+    if (phase === 'live') settle('ok');
+    else if (phase === 'error') settle('fail', 'reconnectFailed');
+  }, [phase, settle]);
+
+  useEffect(() => () => {
+    if (restoreTimer.current) clearTimeout(restoreTimer.current);
+    settle('close');
+  }, []);
 
   return { restoreToGolden };
 }

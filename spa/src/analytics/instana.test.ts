@@ -12,6 +12,7 @@ import {
   INSTANA_IGNORE_URL_PATTERNS,
   KH_TELEMETRY_PATHS,
   SECRET_PATTERNS,
+  tagInstanaStation,
 } from './instana';
 import type { Session } from '../data/session';
 
@@ -87,6 +88,41 @@ describe('configureInstana', () => {
     const { calls } = installIneum();
     configureInstana('sess1');
     expect(calls.map((c) => c[0])).not.toContain('ignoreUrls');
+  });
+});
+
+describe('tagInstanaStation — the station-type grouping dimensions for Instana', () => {
+  it('is a silent no-op with no window.ineum', () => {
+    expect(() => tagInstanaStation({ 'kh.station.emulatorFamily': 'QEMU' })).not.toThrow();
+  });
+
+  it('calls ineum(meta, key, value) once per known dimension — the same pinned shape as configureInstana', () => {
+    const { calls } = installIneum();
+    tagInstanaStation({
+      'kh.station.id': 'beos',
+      'kh.station.emulatorFamily': 'QEMU',
+      'kh.station.ui': 'desktop',
+      'kh.station.resetMode': 'loadvm',
+    });
+    const metaCalls = calls.filter((c) => c[0] === 'meta');
+    for (const call of metaCalls) {
+      expect(call).toHaveLength(3);
+      expect(typeof call[1]).toBe('string');
+      expect(typeof call[2]).toBe('string');
+    }
+    expect(metaCalls).toContainEqual(['meta', 'kh.station.emulatorFamily', 'QEMU']);
+    expect(metaCalls).toContainEqual(['meta', 'kh.station.ui', 'desktop']);
+    expect(metaCalls).toContainEqual(['meta', 'kh.station.resetMode', 'loadvm']);
+    // `kh.station.id` deliberately does NOT reach Instana meta — see the
+    // function's own header for why (kh.sessionId already correlates a visit).
+    expect(metaCalls.map((c) => c[1])).not.toContain('kh.station.id');
+  });
+
+  it('omits a dimension the caller did not have, rather than sending an empty string', () => {
+    const { calls } = installIneum();
+    tagInstanaStation({ 'kh.station.emulatorFamily': 'MAME' });
+    const metaCalls = calls.filter((c) => c[0] === 'meta');
+    expect(metaCalls).toEqual([['meta', 'kh.station.emulatorFamily', 'MAME']]);
   });
 });
 

@@ -114,6 +114,21 @@ export const STATION_FLOWS = {
     what: 'a picture that stopped moving, and whether it started again before the visitor left',
     steps: ['frozen', 'reconnecting', 'moving'],
   },
+  // GOLDEN RESET, end to end from the visitor's own click — previously
+  // instrumented only on the SERVER side (`serve.restore`/`.reset`,
+  // docs/ANALYTICS.md §5.4's sibling table). `useRestoreFlow.ts` used to
+  // report the busy/ok/err UI state and nothing else: the fetch resolving is
+  // the host ACCEPTING the reset, not the visitor having their machine back,
+  // so `click`→`reset` alone would have measured the wrong half of the wait.
+  // `restored` is the reconnected session's own first painted frame — the
+  // SAME signal `station.connect`'s funnel uses for "the visitor can see the
+  // machine again" — reached via `useStreamhostSession`'s `expectedRestore`
+  // flag, not a second definition of "done".
+  'station.restore': {
+    area: 'station',
+    what: 'clicking Restore to golden, and getting a picture back',
+    steps: ['click', 'reset', 'restored'],
+  },
 } as const satisfies Record<string, FlowSpec>;
 
 export const STATION_METRICS = {
@@ -218,6 +233,19 @@ export const STATION_METRICS = {
     area: 'stream',
     owner: 'src/three/recoverTelemetry.ts',
     what: 'a low value means visitors abandon a frozen station quickly, so recovery must beat that budget or be replaced by an honest message — and the COUNT of these is how many visits the fleet is losing to freezes',
+    scale: 'ms',
+  },
+  // THE VISITOR'S OWN DEFINITION OF "RESTORED": click to reconnected first
+  // frame, not click to the POST resolving. The server-side pair
+  // (`serve.restore`/`.reset`) already times the host's OWN work; this is the
+  // number that answers what the operator actually asked — how long a visitor
+  // waits for "Restore to golden" to give them a machine back — and it is
+  // strictly longer than the server's own number by design, since it also
+  // contains the reconnect + first keyframe the server cannot see.
+  'station.restore.toRestoredMs': {
+    area: 'station',
+    owner: 'src/ui/grid/StreamView/useRestoreFlow.ts',
+    what: 'a high value means the golden-reset button feels broken even when the host reset instantly — the reconnect after it, not the reset itself, is where the wait is',
     scale: 'ms',
   },
 } as const satisfies Record<string, MetricSpec>;

@@ -143,6 +143,20 @@ describe('flows', () => {
     f.ok();
     expect(currentFlow()).toBeNull();
   });
+
+  it('tag() lands station attrs on the root, the CURRENT step span, and every later step', () => {
+    const f = beginFlow('station.connect');
+    f.step('transport'); // ends 'open' BEFORE tag() — it never carries the tag
+    f.tag({ 'kh.station.id': 'beos', 'kh.station.emulatorFamily': 'QEMU' });
+    f.step('firstFrame'); // ends 'transport' (tagged) and opens 'firstFrame' (tagged at birth)
+    f.ok(); // ends 'firstFrame' and the root — both were open when tag() ran
+    const byName = Object.fromEntries(__bufferedSpans().map((s) => [s.n, s]));
+    expect(byName['station.connect.open']?.a?.['kh.station.id']).toBeUndefined();
+    for (const name of ['station.connect', 'station.connect.transport', 'station.connect.firstFrame']) {
+      expect(byName[name]?.a?.['kh.station.id']).toBe('beos');
+      expect(byName[name]?.a?.['kh.station.emulatorFamily']).toBe('QEMU');
+    }
+  });
 });
 
 describe('error fingerprinting', () => {
