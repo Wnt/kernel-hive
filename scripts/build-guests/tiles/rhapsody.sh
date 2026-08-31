@@ -95,7 +95,18 @@ phase_qemu() {
   mkdir -p "$WORK"
   [ -d "$src" ] || git clone -q --branch "$FORK_BRANCH" --depth 1 "$FORK_URL" "$src"
   (cd "$src" && git apply --check "$PATCH" && git apply "$PATCH") || die "0006 patch does not apply to the fork"
-  (cd "$src" && git apply --check "$PATCH_PTR" && git apply "$PATCH_PTR") || die "0007 patch does not apply to the fork"
+  # 0007 is a FILE-CREATING patch, and the published fork now also carries
+  # hw/misc/kh-ramabs.c as a commit of its own (the device is shared with other
+  # stations). So a clone may already have the file: applying the patch on top
+  # would fail, and skipping it silently would build something other than what
+  # this repo says. Compare instead, and fail loudly on a real divergence.
+  if [ -f "$src/hw/misc/kh-ramabs.c" ]; then
+    (cd "$src" && git apply --check --reverse "$PATCH_PTR" >/dev/null 2>&1) &&
+      log "0007 already present in the fork and identical - not re-applying" ||
+      die "the fork's hw/misc/kh-ramabs.c DIFFERS from $(basename "$PATCH_PTR"). The patch file is the maintained source (streamhost/qemu-patches/README.md); reconcile them before building, do not pick one silently."
+  else
+    (cd "$src" && git apply --check "$PATCH_PTR" && git apply "$PATCH_PTR") || die "0007 patch does not apply to the fork"
+  fi
   mkdir -p "$src/build"
   (cd "$src/build" && ../configure \
     --target-list=i386-softmmu --enable-slirp --enable-dbus-display --enable-kvm \
