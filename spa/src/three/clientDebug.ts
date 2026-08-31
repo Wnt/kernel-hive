@@ -57,7 +57,25 @@ interface ClientCmd {
 }
 
 // ---- session id: 8 hex chars per page load ---------------------------------
+/**
+ * The tab's session id — ADOPTED from the pre-React bootstrap when there is one.
+ *
+ * `spa/index.html` runs a tiny inline error reporter before any of this loads,
+ * so that a crash during boot is still reported, and it mints its own id into
+ * `window.__kernelHiveErrorSessionId`. Minting a second one here meant one tab
+ * had TWO identities: early errors and late errors landed in /clientlog under
+ * different ids, and nothing could tell they came from the same visit. That
+ * cost nothing while the ids were only ever printed — and became load-bearing
+ * the moment traces wanted to join a span to the raw event tail behind it.
+ *
+ * So the bootstrap's id wins when present, and this generator is the fallback
+ * for the case that has no bootstrap at all: the unit tests.
+ */
 function makeSessionId(): string {
+  try {
+    const early = (window as { __kernelHiveErrorSessionId?: string }).__kernelHiveErrorSessionId;
+    if (early && early !== 'unknown') return early;
+  } catch { /* no window (tests) — fall through and mint one */ }
   try {
     const b = new Uint8Array(4);
     crypto.getRandomValues(b);
@@ -70,10 +88,8 @@ const sessionId = makeSessionId();
 
 /** THE session id for this tab. Exported so the analytics/trace plane stamps
  *  the same value /clientlog does — one id, two stores, so a trace and the raw
- *  event tail behind it are joinable. main.tsx used to read a
- *  `window.__kernelHiveErrorSessionId` that nothing ever assigned, so every
- *  batch was labelled the literal string 'unknown'; harmless while the server
- *  discarded it, useless the moment anything wanted to correlate. */
+ *  event tail behind it are joinable — and the same value the pre-React
+ *  bootstrap in index.html already stamped on any boot-time error. */
 export function clientSessionId(): string { return sessionId; }
 
 // ---- module state -----------------------------------------------------------
