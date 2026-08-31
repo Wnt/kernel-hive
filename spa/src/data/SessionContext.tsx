@@ -7,7 +7,7 @@ import type { Session } from './session';
 // render where the role is still unknown — which is the exact bug class this
 // whole change exists to remove.
 
-const SessionContext = createContext<Session>({ role: 'anon', name: '' });
+const SessionContext = createContext<Session>({ role: 'anon', name: '', id: '' });
 
 export const SessionProvider = SessionContext.Provider;
 

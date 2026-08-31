@@ -24,6 +24,19 @@
 //  the /clientlog lane, which is a short rolling window that prunes itself by
 //  age. This lane is a DURABLE aggregate, and a durable aggregate must not be
 //  the place a visitor's browsing history accidentally lives forever.
+//
+//  THIS RULE IS SCOPED TO OUR OWN TWO PLANES, NOT THE WHOLE BROWSER ANYMORE.
+//  Since analytics/instana.ts, a THIRD plane exists: Instana EUM, an
+//  operator-decided integration that ships error reports straight to a third
+//  party (IBM). Its `wrapEventHandlers`/`wrapTimers` config catches errors
+//  neither of our own planes see, and unlike this file, Instana's own default
+//  behaviour DOES capture the full stack and the page URL — there is no
+//  "never the stack" rule over there, and no code in this repo suppresses it.
+//  So the honest statement of what leaves the browser, as a SYSTEM, is now:
+//  our own two planes still uphold "never the stack, never the URL, and never
+//  durably" exactly as before; Instana does not, by design, and that gap is
+//  the accepted cost of a deliberate operator decision, not something this
+//  file's grouping logic can or should paper over.
 // ============================================================================
 
 import { currentFlow } from './flows';

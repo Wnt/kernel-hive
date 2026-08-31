@@ -36,8 +36,11 @@ const MAX_BATCH_CHARS = 14000;  // stay under the server's 16KiB body cap
 const SNAP_CHUNK = 480;         // snapshot JSON is chunked to respect MAX_DETAIL
 const EVAL_RESULT_MAX = 16 * 1024; // cap reassembled eval-result telemetry
 
-/** Bundle marker so a snapshot proves WHICH client build is running. */
-const BUNDLE_MARKER = 'spa-webrtc-phase1-20260716';
+/** Bundle marker so a snapshot proves WHICH client build is running. Exported
+ *  for analytics/instana.ts too: it is the closest thing this bundle has to a
+ *  build/commit id, and stamping it into `ineum('meta', …)` is what lets a
+ *  Instana beacon and one of our own traces be told apart by build. */
+export const BUNDLE_MARKER = 'spa-webrtc-phase1-20260716';
 
 interface ClientLogEvent {
   ts: number;
