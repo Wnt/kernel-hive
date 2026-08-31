@@ -266,34 +266,55 @@ depth, re-aims, give-ups and the guest runstate.
 owns the guest pointer: no rel bridge, no QMP `input-send-event`, no `labctl`
 pointer helper. Two injectors and the loop reads motion it did not cause.
 
-## OPEN: the keyboard does not reach this guest, and it is NOT the pointer bug
+## The keyboard is NOT broken: it is a FOCUS trap in the baked scene
 
-Separate fault, found while verifying the 2026-08-31 restore-re-arm fix. Do not
-fold it into that one: the pointer regression is closed and verified, this is not.
+Opened 2026-08-31 while verifying the restore-re-arm fix, and CLOSED the same
+day. The earlier heading here said "the keyboard does not reach this guest" and
+called it a second independent fault. **That was wrong, and this is the
+correction.** There is one real fault (the pointer freeze, fixed) and one
+usability trap that imitates a second one.
 
-**What is proven.** Through the real SPA, on the live station, in one session:
-clicks reach the guest and it reacts (1359 changed pixels — a File Manager icon
-selects; a title-bar click raises and focuses the Mosaic window). Keys, sent
-into that same focused window, change **nothing** — and they change nothing via
-**either** path: the browser/daemon D-Bus `Keyboard.Press` route *and* a direct
-QMP `input-send-event` qcode press/release. Several targets were tried (Motif
-menu bar, File Manager icon selection with arrow keys, Mosaic's URL text field).
+**What the trap is.** The golden bakes **Mosaic** as the focused window — VUE
+paints the focused title bar pink and the rest cyan, and Mosaic's is pink in the
+checkpoint. This VUE session moves keyboard focus only on a **title-bar/frame**
+click, not on a client-area click. So a visitor clicks a File Manager icon (it
+visibly selects — the click is working), types, and sees nothing: the keys are
+going to Mosaic, which does nothing visible with bare letters or arrows. It
+reads exactly like a dead keyboard.
 
-**The probe is not the problem.** The same probe against the win311 control
-types `khive` into Notepad and measures 171 changed pixels, and the caret click
-before it measures 30. So a zero on hpuxvue is a statement about hpuxvue.
+**Proof that the keyboard is fine** (clone, this station's own golden, same
+device set):
 
-**What contradicts a simple "the golden carries a dead keyboard" story.** On an
-isolated clone restoring this station's *same* golden with the same device set,
-QEMU-level key injection DID work: 94 changed pixels for typed letters and 976
-for arrow keys moving the File Manager selection. So the checkpoint alone does
-not explain it. Differences still unexcluded between clone and live: the clone
-ran `-display none` where the live station runs `-display dbus,p2p=on`, and the
-live guest has accumulated session state the clone had not.
+- click the File Manager's TITLE BAR -> 61731 changed pixels, and the title bars
+  swap: Mosaic pink -> cyan (sampled at (300,15): `[253,130,130]` -> `[122,202,197]`).
+  Focus has moved.
+- arrow keys immediately after -> **976 changed pixels**, the icon selection
+  moves. The keyboard works.
+- the same arrow keys BEFORE the title-bar click -> 0 pixels.
 
-**Where to start.** Arm `SH_INPUT_TELEMETRY` (via the registry fixture, never by
-hand-editing the generated `station.env`) and read the `key_recv` lines to
-settle whether keys reach the daemon at all; that one bit splits the search in
-half. Note the sibling finding on `aix432`, whose keyboard regression was traced
-to its checkpoint rather than to code — worth checking, not assuming, since the
-clone result above points away from the checkpoint here.
+**And the keys were never the problem end-to-end.** With `SH_INPUT_TELEMETRY=1`
+armed, a browser typing `khive` produced matching `[key-tel dbus] recv` **and**
+`sent` pairs for `0x25 0x23 0x17 0x2f 0x12` — correct XT set1 codes, delivered
+to QEMU within ~3 ms. Browser -> daemon -> D-Bus is healthy. (Telemetry is off
+again; it is diagnostic only and logs every visitor keystroke to journald.)
+
+**What is still open, and it is the PRE-EXISTING one.** Through the real SPA the
+title-bar click does **not** land on the live station — Mosaic stays pink — while
+the identical click lands on the clone. The title bar abuts the window frame,
+which is the region named by the standing finding *"hpuxvue: engine cannot hold
+the pointer on resize borders"*. So today a visitor cannot perform the one
+gesture that would give them the keyboard. Client-area clicks land normally
+(1359 px, an icon selects), so this is specific to the frame region.
+
+**Two ways out, neither taken here** (a recapture needs the operator's word, and
+hpuxvue's only rollback on record is still the 2026-08-24 one):
+
+1. Re-bake the golden with the File Manager focused, or with dtwm's focus policy
+   set to pointer (focus-follows-mouse), so no frame click is needed at all.
+   Cheapest for the visitor; costs a checkpoint.
+2. Fix the resize-border hold in the engine, which the standing finding wants
+   anyway and which would also restore drag-on-frame.
+
+Do not file this as a keyboard regression again. The check that settles it in
+one step is the title-bar colour at (300,15): pink means Mosaic still owns the
+keyboard and your keys are going there.
