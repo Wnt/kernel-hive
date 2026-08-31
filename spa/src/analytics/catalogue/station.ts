@@ -26,6 +26,24 @@ export const STATION_PROBES = {
     what: 'a key went down on a live guest',
     grades: ['act'],
   },
+  // ---- the stuck-key class of bug ------------------------------------------
+  // Invisible until someone eyeballs clientlog.jsonl (session 6a888f3d: one
+  // unbalanced scancode out of 880 key edges). These two turn it into a number:
+  // a release for a scancode we never recorded pressed, and a session that
+  // ended with scancodes still recorded down. Either is evidence a physical
+  // key's make/break pair was broken up client-side.
+  'station.key.orphanedRelease': {
+    area: 'station',
+    owner: 'src/three/useStreamControl.ts',
+    what: 'a keyup arrived for a scancode we never recorded as pressed',
+    grades: ['auto'],
+  },
+  'station.key.stuckAtSessionEnd': {
+    area: 'station',
+    owner: 'src/three/useStreamControl.ts',
+    what: 'a station session ended with one or more scancodes still recorded down, which releaseAllKeys then had to force-release',
+    grades: ['auto'],
+  },
   // ---- the diagnostic overlay ---------------------------------------------
   // The second auto-vs-act pair, and the more expensive one: the stats poll
   // runs once a SECOND for the whole life of every station session, feeding an
