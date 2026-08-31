@@ -70,6 +70,9 @@ LAB = os.environ.get("LAB", "lab")
 # here so both tools agree on which exhibit is the canary.
 SAFE_TILE = os.environ.get("SAFE_TILE", "helenos")
 
+# build-deploy.sh's verified-canary gate: "<artifact> <tile>" on one line.
+CANARY_GATE = "/usr/local/lib/streamhost/.canary-ready"
+
 BOLD, RED, GRN, YLW, DIM, OFF = "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[2m", "\033[0m"
 
 
@@ -231,6 +234,22 @@ def make_waves(stations, wave_size, canary_first=True):
     return head + [list(stations[i : i + wave_size]) for i in range(0, len(stations), wave_size)]
 
 
+def promotable(wave, canary_tile):
+    """The stations in this wave whose pointer `build-deploy.sh --promote` can move.
+
+    THE CANARY TILE IS NOT PROMOTABLE, AND THAT IS THE CONTRACT, NOT A BUG.
+    `--canary <tile>` already moved that station onto the gated artifact;
+    `--promote` walks *the rest of* the fleet onto it and dies with "no
+    non-canary tiles to promote" when a wave holds nothing else. Wave 1 IS the
+    canary by construction, so a promote-mode rollout handed that wave to
+    build-deploy.sh could never get past it — which is what happened the first
+    time this tool was ever run. The wave still earns its settle and its
+    framebuffer gate (rule 9); what it does not need is a pointer move that
+    already happened.
+    """
+    return [s for s in wave if s != canary_tile]
+
+
 def pending_after_resume(waves, done):
     """The waves still to run, with already-done stations dropped from each."""
     finished = set(done)
@@ -261,6 +280,19 @@ def probe(*args, timeout=300):
         die(f"probe returned no JSON: {r.stdout[:300]}")
 
 
+def read_canary_tile():
+    """The tile named by build-deploy.sh's own verified-canary gate.
+
+    Read rather than assumed: the gate is `<artifact> <tile>` and the tile is
+    whoever was last canaried, which is not necessarily SAFE_TILE — this box had
+    `beos` sitting in the gate from another stream's canary. Falling back to
+    SAFE_TILE keeps a plan-only run working on a box with no gate at all.
+    """
+    r = ssh_lab(f"sed -n '1p' '{CANARY_GATE}' 2>/dev/null || true")
+    parts = (r.stdout or "").split()
+    return parts[1] if len(parts) >= 2 else SAFE_TILE
+
+
 def restart_wave(wave):
     units = " ".join(f"streamhost@{s}.service" for s in wave)
     r = ssh_lab(f"systemctl restart {units}")
@@ -270,7 +302,7 @@ def restart_wave(wave):
     return True
 
 
-def promote_wave(wave, live):
+def promote_wave(wave, live, canary_tile):
     """Move the binary for exactly this wave, through build-deploy.sh --promote.
 
     --exclude is build-deploy.sh's own supported way to hold stations back, and
@@ -278,7 +310,11 @@ def promote_wave(wave, live):
     one-wave-wide exclusion list reuses its atomic pointer moves and its
     per-wave restore instead of reimplementing them here.
     """
-    argv = [str(BUILD_DEPLOY), "--promote", "--wave-size", str(len(wave))]
+    movable = promotable(wave, canary_tile)
+    if not movable:
+        ok(f"{canary_tile}: already on the gated artifact as build-deploy.sh's canary — health-gating only")
+        return True
+    argv = [str(BUILD_DEPLOY), "--promote", "--wave-size", str(len(movable))]
     for station in live:
         if station not in wave:
             argv += ["--exclude", station]
@@ -409,11 +445,11 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
-def build_plan(args):
+def build_plan(args, canary_tile):
     entries = load_registry()
     snapshot = probe("state")
     tiles_state, claims = snapshot["tiles"], snapshot["claims"]
-    order = order_stations(entries)
+    order = order_stations(entries, safe_tile=canary_tile)
     targets, skipped = classify(
         entries,
         order,
@@ -432,6 +468,9 @@ def main(argv=None):
     if args.wave_size < 1:
         die("--wave-size must be >= 1")
     path = state_path(args)
+    # In promote mode the fleet moves onto ONE gated artifact, and which station
+    # already carries it is a fact on the box, not a default in this file.
+    canary_tile = read_canary_tile() if args.mode == "promote" else SAFE_TILE
 
     if args.resume:
         if not path.exists():
@@ -464,7 +503,7 @@ def main(argv=None):
         if fresh_skips:
             warn(f"{len(fresh_skips)} station(s) became untouchable since the rollout stopped")
     else:
-        entries, tiles_state, targets, skipped = build_plan(args)
+        entries, tiles_state, targets, skipped = build_plan(args, canary_tile)
         still = None
         doc = {
             "tag": args.tag,
@@ -488,7 +527,7 @@ def main(argv=None):
         f"of {args.wave_size}, {args.settle}s settle between waves"
     )
     for n, wave in enumerate(waves, 1):
-        detail = [f"{s}({risk_score(entries[s])}{',SAFE' if s == SAFE_TILE else ''})" for s in wave]
+        detail = [f"{s}({risk_score(entries[s])}{',SAFE' if s == canary_tile else ''})" for s in wave]
         print(f"    wave {n:<3} {' '.join(detail)}")
     print(f"    {DIM}(the number is the station's risk score; SAFE is build-deploy.sh's own canary tile.{OFF}")
     print(f"    {DIM} wave 1 is a single station on purpose — --no-canary-first turns that off){OFF}")
@@ -501,6 +540,7 @@ def main(argv=None):
     step("each wave will run")
     if args.mode == "promote":
         print("    scripts/dev/build-deploy.sh --promote --wave-size <n> --exclude <every other live station>")
+        print(f"    {DIM}(not the canary wave: {canary_tile} runs the gated artifact already — health-gated only){OFF}")
     else:
         print(f"    ssh {LAB} 'systemctl restart streamhost@<a>.service streamhost@<b>.service ...'")
     print("    then: readiness (unit active + the daemon's own LISTENING line from its new MainPID)")
@@ -519,7 +559,7 @@ def main(argv=None):
     step("applying")
     for n, wave in enumerate(waves, 1):
         print(f"\n  {BOLD}wave {n}/{len(waves)}: {' '.join(wave)}{OFF}")
-        started = restart_wave(wave) if args.mode == "restart" else promote_wave(wave, live)
+        started = restart_wave(wave) if args.mode == "restart" else promote_wave(wave, live, canary_tile)
         bad = list(wave) if not started else []
         if started:
             not_ready = await_readiness(wave, args.readiness_timeout)
