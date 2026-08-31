@@ -956,6 +956,28 @@ stream with a rate that would justify a timer. Re-running it is always safe —
 NOTHING`, so a batch shipped twice, or left in place after a failed POST and
 retried on the next run, is stored once.
 
+**`instana-forward.py` is one controlled thing that decides to leave the box,
+not one URL any more.** Since 2026-08-31 labhost also runs an Instana HOST
+AGENT (`systemctl status instana-agent`), a separate IBM-supplied process that
+collects its own infrastructure/process data and maintains its own connection
+out to the SaaS tenant (`ingress-blue-saas.instana.io:443`) independently of
+anything in this repo — so "the forwarder is the only thing that talks to
+Instana" stopped being literally true the day that agent was installed. What
+is still true, and is the part of the old claim worth keeping: this script
+remains the only thing **this repo** hands data to Instana through, and it
+still has one credential, one `--dry-run`, one off switch. It now has a choice
+of two local doors rather than one hardcoded URL — `--via-agent` POSTs OTLP to
+the host agent's loopback receiver (`127.0.0.1:4318`), `--via-saas` POSTs
+straight to the SaaS tenant as before, and with neither flag it auto-detects,
+preferring the agent when its port answers because that keeps the network hop
+on the box and gets host correlation for free (the agent supplies `host.id`
+itself; the direct SaaS leg still needs this script to stamp one). The
+`x-instana-key` ingest credential is sent on the SaaS leg only — confirmed
+empirically that the local agent's receiver does not check it at all, so
+sending it there would be a credential attached to a request that ignores it.
+Full detail, including the empirical checks, is in the script's own
+docstring.
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
@@ -1184,6 +1206,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `streamhost/streamhost/src/trace_session.rs` | the per-session spans and the one-shot marks |
 | `streamhost/streamhost/src/trace_guest.rs` | the guest-lifecycle spans, measured from outside the guest |
 | `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
+| `scripts/observability/trace-ship.py` | ships daemon spool batches to the box's own `/traces` route |
+| `scripts/observability/instana-forward.py`, `scripts/observability/instana_destination.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice, the narrow loopback-http exception |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
 | `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
 | `spa/src/analytics/*.test.ts`, `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | the client side; one test per rule that could otherwise silently invert |

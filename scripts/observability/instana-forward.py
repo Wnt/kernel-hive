@@ -6,13 +6,30 @@ against a commercial one on the same traces.
     scripts/observability/instana-forward.py --dry-run    # show exactly what WOULD leave
     scripts/observability/instana-forward.py --once
     scripts/observability/instana-forward.py --follow --interval 60
+    scripts/observability/instana-forward.py --via-agent   # force the local Instana host agent
+    scripts/observability/instana-forward.py --via-saas    # force direct-to-SaaS
 
-ONE EGRESS POINT, ON PURPOSE. Every component could have been given an exporter
-and its own credential; this reads the stores instead and is the only thing on
-the box that talks to Instana. That is worth saying because it is the whole
-security argument: one place to scrub, one credential to rotate, one switch to
-turn the whole thing off, and one place to look when somebody asks what left the
-building. N exporters would be N of each.
+TWO DESTINATIONS, ONE CODEBASE, ON PURPOSE. Since 2026-08-31 labhost also runs
+an Instana HOST AGENT (`systemctl status instana-agent`), which exposes its own
+OTLP receivers on `127.0.0.1:4317` (gRPC) and `127.0.0.1:4318` (HTTP) —
+LOOPBACK ONLY. That is a second, and now-preferred, path to the same Instana
+tenant: this still reads the stores and is still the only thing on the box that
+talks to Instana over the network (the agent's SaaS leg is IBM's own binary,
+not ours), so "one egress point" survives as "one thing that decides to leave
+the box, with a choice of two local doors" rather than as a literal singular
+URL — see docs/ANALYTICS.md §8.1 for the current topology. One place to
+scrub, one credential to rotate (still only needed for the SaaS door), one
+switch to turn each path off, and one place to look when somebody asks what
+left the building.
+
+WHICH DESTINATION, AND WHY THE AGENT IS PREFERRED. `--via-agent` / `--via-saas`
+force a destination; with neither given this AUTO-DETECTS by probing whether
+the agent's loopback port answers a TCP connect. The agent wins when reachable:
+it adds host correlation for free (IBM's OTLP receiver attaches host identity
+itself — see "host.id" below), and it keeps the egress hop on the box instead
+of over the internet to a third party. Direct-to-SaaS remains a legitimate,
+fully supported fallback for a box with no agent installed, or to compare the
+two paths deliberately.
 
 THIS SENDS DATA TO A THIRD PARTY. Nothing else in this repo does. The stores it
 reads are already scrubbed at intake — `traces.py` refuses `exception.stacktrace`
@@ -49,6 +66,18 @@ either. IBM's own community answer agrees: there is no REST call for the
 download/agent key. It is a UI-only value — Instana → Settings → Agents — and
 must be pasted into INSTANA_TOKEN_FILE by hand, once.
 
+THE LOCAL AGENT DOES NOT WANT THE KEY EITHER — checked, 2026-08-31, by curling
+its OTLP/HTTP receiver directly on the box: an empty `{"resourceSpans":[]}`
+POST to `http://127.0.0.1:4318/v1/traces` returns 200 with no `x-instana-key`
+header at all, and returns the same 200 when a deliberately bogus one is
+attached. The agent authenticates the box to Instana once, itself, over the
+connection the agent.log shows as `Connected using HTTP/2 to
+ingress-blue-saas.instana.io:443`; nothing an OTLP client sends it is checked
+against a tenant credential. So the agent leg of `post()` omits the header
+entirely — sending it would not be wrong exactly, but it would be a credential
+attached to a request that never inspects it, which is worse than pointless
+because it invites the next reader to believe the agent needs one.
+
 That is why INSTANA_AUTH_MODE exists at all: `api-token` is genuinely useful for
 reading configuration out of Instana, and genuinely useless for ingesting spans
 into it, and the two failure modes look identical from the outside (a 401) until
@@ -83,9 +112,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "serve"))
+sys.path.insert(0, str(HERE))
 
 import traces  # noqa: E402
 import traces_otlp  # noqa: E402
+from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
 
 DEFAULT_TRACES_DB = Path("/data/vms/streamhost/serve/traces.db")
 DEFAULT_ANALYTICS_DB = Path("/data/vms/streamhost/serve/analytics.db")
@@ -98,6 +129,11 @@ DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
 #: fortnight of history would.
 BATCH = 100
 
+#: Destination selection (agent-vs-SaaS, the loopback http exception, the
+#: DEFAULT_AGENT_ENDPOINT/Destination types) lives in instana_destination.py —
+#: split out so it is unit-testable without a trace store, a socket, or a real
+#: Instana tenant. See scripts/test_instana_destination.py.
+
 
 class Config:
     """Everything this needs, and a clear account of what is missing.
@@ -109,6 +145,10 @@ class Config:
 
     def __init__(self, env: dict):
         self.endpoint = (env.get("INSTANA_ENDPOINT") or "").rstrip("/")
+        # The local host agent's OTLP receiver. Has a real default (see
+        # DEFAULT_AGENT_ENDPOINT) because, unlike the SaaS endpoint, it is not
+        # tenant-specific — only whether anything is listening there varies.
+        self.agent_endpoint = (env.get("INSTANA_OTLP_AGENT_ENDPOINT") or DEFAULT_AGENT_ENDPOINT).rstrip("/")
         # `agent-key` is Instana's DATA INGESTION credential and is what an OTLP
         # acceptor expects. `api-token` is the REST/config credential and CANNOT
         # ingest spans — a distinction worth failing loudly on, because sending
@@ -140,7 +180,12 @@ class Config:
         except OSError:
             return ""
 
-    def problems(self) -> list[str]:
+    def saas_problems(self) -> list[str]:
+        """Problems that only matter if the SaaS leg is (or might be) used.
+        Kept separate from `agent_problems` so choosing the agent destination
+        does not fail `--check`/`--once` over a missing SaaS token nobody
+        needs for that run.
+        """
         out = []
         if not self.endpoint:
             out.append(
@@ -148,26 +193,51 @@ class Config:
                 "host: it is per-tenant and per-region (an OTLP acceptor, e.g. "
                 "https://serverless-<region>.instana.io). Nothing can be guessed here."
             )
-        elif not self.endpoint.startswith("https://"):
-            # Refused rather than warned: this is a credential plus behavioural
-            # data, and downgrading that to cleartext is not a choice a config
-            # typo should be able to make.
-            out.append(f"INSTANA_ENDPOINT must be https:// (got {self.endpoint.split(':')[0]}://)")
+        else:
+            problem = scheme_problem(self.endpoint, "INSTANA_ENDPOINT")
+            if problem:
+                out.append(problem)
         if self.auth_mode not in ("agent-key", "api-token"):
             out.append(f"INSTANA_AUTH_MODE must be agent-key or api-token (got {self.auth_mode!r})")
         if not self.token_file.exists():
             out.append(f"token file {self.token_file} does not exist")
         elif not self.token:
             out.append(f"token file {self.token_file} is empty")
+        return out
+
+    def agent_problems(self) -> list[str]:
+        """Problems with the agent leg. Deliberately does NOT include
+        reachability — an unreachable agent is "not installed here", handled
+        by `choose_destination` falling back to SaaS, not a config error. A
+        bad scheme IS a config error regardless of reachability: refusing it
+        must not depend on whether anything happens to be listening.
+        """
+        problem = scheme_problem(self.agent_endpoint, "INSTANA_OTLP_AGENT_ENDPOINT")
+        return [problem] if problem else []
+
+    def common_problems(self) -> list[str]:
+        """Problems that apply no matter which leg is used."""
+        out = []
         if not self.traces_db.exists():
             out.append(f"no trace store at {self.traces_db} — has the plane been deployed?")
         return out
 
-    def headers(self) -> dict:
-        common = {"Content-Type": "application/json", "x-instana-host": self.host_id}
-        if self.auth_mode == "api-token":
-            return {"Authorization": f"apiToken {self.token}", **common}
-        return {"x-instana-key": self.token, **common}
+    def headers(self, dest: Destination) -> dict:
+        """Headers for ONE destination. Deliberately not a fixed dict: the two
+        doors want different things, and building one dict for both is how a
+        credential ends up on a request that never inspects it (the agent, see
+        the module docstring) or a request meant for the agent silently loses
+        the header the SaaS acceptor requires.
+        """
+        h = {"Content-Type": "application/json"}
+        if dest.stamp_host_id:
+            h["x-instana-host"] = self.host_id
+        if dest.send_key:
+            if self.auth_mode == "api-token":
+                h["Authorization"] = f"apiToken {self.token}"
+            else:
+                h["x-instana-key"] = self.token
+        return h
 
 
 def load_env() -> dict:
@@ -227,13 +297,16 @@ def pending_traces(cfg: Config, after_ms: int, limit: int) -> list[dict]:
         store.close()
 
 
-def post(cfg: Config, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
-    url = f"{cfg.endpoint}{path}"
+def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
+    url = f"{dest.endpoint}{path}"
     body = json.dumps(doc, separators=(",", ":")).encode()
     if dry_run:
-        return True, f"DRY RUN: would POST {len(body)} bytes to {url}"
-    req = urllib.request.Request(url, data=body, headers=cfg.headers(), method="POST")
+        return True, f"DRY RUN [{dest.name}]: would POST {len(body)} bytes to {url}"
+    req = urllib.request.Request(url, data=body, headers=cfg.headers(dest), method="POST")
     try:
+        # scheme_problem() enforces https, with the one narrow, explicit
+        # exception of plain http to a loopback host (the agent leg); a
+        # non-loopback http endpoint never reaches this line.
         with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 - https enforced above
             return True, f"{resp.status} {resp.reason}"
     except urllib.error.HTTPError as e:
@@ -257,19 +330,24 @@ def post(cfg: Config, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
         return False, f"unreachable: {e}"
 
 
-def forward_traces(cfg: Config, dry_run: bool, verbose: bool) -> int:
+def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool) -> int:
     state = read_state(cfg.state)
     after = int(state.get("lastTraceStartedMs") or 0)
     batch = pending_traces(cfg, after, BATCH)
     if not batch:
-        print("traces: nothing new")
+        print(f"traces [{dest.name}]: nothing new")
         return 0
-    doc = traces_otlp.export(batch, host_id=cfg.host_id)
+    # host.id: stamped by US only on the SaaS leg, which has no other way to
+    # learn the host. The agent leg supplies host identity itself (IBM's
+    # docs: sending to the local agent means host.id is not needed, and
+    # sending it anyway to the direct SaaS backend IS needed) — passing
+    # host_id=None here is that difference made explicit, not an omission.
+    doc = traces_otlp.export(batch, host_id=cfg.host_id if dest.stamp_host_id else None)
     spans = sum(len(t.get("spans", [])) for t in batch)
     if verbose or dry_run:
         print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, "/v1/traces", doc, dry_run)
-    print(f"traces: {len(batch)} trace(s), {spans} span(s) -> {detail}")
+    ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
+    print(f"traces [{dest.name}]: {len(batch)} trace(s), {spans} span(s) -> {detail}")
     if ok and not dry_run:
         state["lastTraceStartedMs"] = max(t["startedMs"] for t in batch)
         write_state(cfg.state, state)
@@ -350,17 +428,17 @@ def metric_histograms(cfg: Config, since_day: str) -> dict:
     )
 
 
-def forward_metrics(cfg: Config, dry_run: bool, verbose: bool, days: int) -> int:
+def forward_metrics(cfg: Config, dest: Destination, dry_run: bool, verbose: bool, days: int) -> int:
     since = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
     doc = metric_histograms(cfg, since)
     if not doc:
-        print("metrics: nothing to send")
+        print(f"metrics [{dest.name}]: nothing to send")
         return 0
     n = sum(len(m["histogram"]["dataPoints"]) for m in doc["resourceMetrics"][0]["scopeMetrics"][0]["metrics"])
     if verbose or dry_run:
         print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, "/v1/metrics", doc, dry_run)
-    print(f"metrics: {n} data point(s) -> {detail}")
+    ok, detail = post(cfg, dest, "/v1/metrics", doc, dry_run)
+    print(f"metrics [{dest.name}]: {n} data point(s) -> {detail}")
     return 0 if ok else 1
 
 
@@ -375,44 +453,66 @@ def main() -> int:
     ap.add_argument("--no-metrics", action="store_true")
     ap.add_argument("--no-traces", action="store_true")
     ap.add_argument("-v", "--verbose", action="store_true", help="print the OTLP document")
+    ap.add_argument("--via-agent", action="store_true", help="force the local Instana host agent (127.0.0.1)")
+    ap.add_argument("--via-saas", action="store_true", help="force direct-to-SaaS (INSTANA_ENDPOINT)")
     args = ap.parse_args()
 
     cfg = Config(load_env())
-    problems = cfg.problems()
+    dest, dest_problems = choose_destination(cfg.agent_endpoint, cfg.endpoint, args.via_agent, args.via_saas)
     # The token is never printed, in any mode. Its presence and length are the
     # most that is ever said about it.
-    print(f"endpoint  {cfg.endpoint or '(unset)'}")
+    print(f"destination  {dest.name} -> {dest.endpoint}")
+    print(f"saas endpoint  {cfg.endpoint or '(unset)'}")
+    print(f"agent endpoint {cfg.agent_endpoint}")
     print(
         f"auth      {cfg.auth_mode}, token {'present' if cfg.token else 'MISSING'} "
         f"({len(cfg.token)} chars) from {cfg.token_file}"
+        + ("  [not sent — the agent leg does not use it, see module docstring]" if not dest.send_key else "")
     )
     print(f"classes   {', '.join(cfg.classes)}")
-    print(f"host.id   {cfg.host_id}")
+    print(
+        f"host.id   {cfg.host_id}"
+        + ("  [stamped by us]" if dest.stamp_host_id else "  [supplied by the agent, not stamped]")
+    )
+
+    # Problems are scoped to the leg actually chosen, plus whichever leg's
+    # config is invalid regardless of choice (a bad agent scheme is refused
+    # even while running via SaaS) and whatever applies no matter what.
+    problems = list(dest_problems) + cfg.common_problems() + cfg.agent_problems()
+    if dest.name == "saas":
+        problems += cfg.saas_problems()
     if problems:
         print("\nNOT READY:")
         for p in problems:
             print(f"  - {p}")
-        # A dry run is still useful without an endpoint: it shows the operator
-        # exactly what the payload would be before they go and find a URL.
+        # A dry run is still useful without a live/configured destination: it
+        # shows the operator exactly what the payload would be before they go
+        # and arrange one. Only non-ENDPOINT problems (missing trace store, a
+        # scheme refusal, a bad/missing token) still block a dry run, same
+        # filter as before this destination split.
         if not (args.dry_run and len([p for p in problems if "ENDPOINT" not in p]) == 0):
             return 2
+
     if args.check:
         # A check that only reads local config is not a check. Everything above
         # was true of a credential Instana rejects — the wrong TYPE of token is
         # locally indistinguishable from the right one, and only the acceptor
         # can settle it. So ask it, with a well-formed but EMPTY document: this
-        # proves the endpoint and the key without sending one span of telemetry.
-        ok, detail = post(cfg, "/v1/traces", {"resourceSpans": []}, dry_run=False)
-        print(f"\nlive check -> {detail}")
+        # proves the endpoint (and, on the SaaS leg, the key) without sending
+        # one span of telemetry.
+        ok, detail = post(cfg, dest, "/v1/traces", {"resourceSpans": []}, dry_run=False)
+        print(f"\nlive check [{dest.name}] -> {detail}")
         if ok:
-            print("configuration OK — endpoint reachable and the key was accepted")
+            reason = "endpoint reachable and the key was accepted" if dest.send_key else "agent endpoint reachable"
+            print(f"configuration OK — {reason}")
             return 0
-        # Only 401/403 is a credential answer. An empty `resourceSpans` is a
-        # legal OTLP document that Instana's acceptor nonetheless 500s on, and
-        # reading that as "bad key" sent somebody hunting for a second key they
-        # already had. Auth happens before payload handling, so ANY other status
-        # means the credential was accepted and the complaint is about the body.
-        if "HTTP 401" in detail or "HTTP 403" in detail:
+        if dest.name == "saas" and ("HTTP 401" in detail or "HTTP 403" in detail):
+            # Only 401/403 is a credential answer. An empty `resourceSpans` is
+            # a legal OTLP document that Instana's acceptor nonetheless 500s
+            # on, and reading that as "bad key" sent somebody hunting for a
+            # second key they already had. Auth happens before payload
+            # handling, so ANY other status means the credential was accepted
+            # and the complaint is about the body.
             print(
                 "configuration NOT usable — this is the CREDENTIAL.\n"
                 "  Instana's OTLP acceptor takes the AGENT KEY, which is UI-only:\n"
@@ -421,18 +521,18 @@ def main() -> int:
             )
             return 1
         print(
-            "credential ACCEPTED and the endpoint is reachable — the refusal above is\n"
-            "  about the empty probe document, not the key. This check deliberately\n"
-            "  sends no spans; use --dry-run to inspect a real batch, then --once."
+            f"[{dest.name}] endpoint reachable — the refusal above is about the empty probe\n"
+            "  document, not credentials. This check deliberately sends no spans; use\n"
+            "  --dry-run to inspect a real batch, then --once."
         )
         return 0
 
     rc = 0
     while True:
         if not args.no_traces:
-            rc |= forward_traces(cfg, args.dry_run, args.verbose)
+            rc |= forward_traces(cfg, dest, args.dry_run, args.verbose)
         if not args.no_metrics:
-            rc |= forward_metrics(cfg, args.dry_run, args.verbose, args.metric_days)
+            rc |= forward_metrics(cfg, dest, args.dry_run, args.verbose, args.metric_days)
         if not args.follow:
             return rc
         time.sleep(max(10, args.interval))
