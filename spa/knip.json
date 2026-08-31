@@ -1,7 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["index.html"],
-  "project": ["src/**/*.{ts,tsx}"],
+  "entry": [
+    "index.html",
+    "src/analytics/coverage.ts",
+    "vite-plugins/coverage.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}"
+  ],
   "ignoreDependencies": [
     "@gltf-transform/core",
     "@gltf-transform/extensions",

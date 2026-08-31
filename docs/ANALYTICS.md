@@ -1,9 +1,10 @@
 # Analytics — which code earns its keep, and where flows die
 
-**Status: phase 1 shipped, plus the Rust and Python probe planes; nothing is
-deployed.** The client plane, the sink, the metrics lane, the catalogue gate,
-the report tool, the `streamhost` probes (§8) and the serving plane's own branch
-probes (§9) are in the tree and green. Nothing is on the
+**Status: phase 1 shipped, plus all three phase-2 planes — Rust probes, Python
+serve-plane probes and the line-coverage lane. Nothing is deployed.** The client
+plane, the sink, the metrics lane, the catalogue gate, the report tool, the
+`streamhost` probes (§8) and the serving plane's own branch probes (§9) are in
+the tree and green. Nothing is on the
 box until `box-deploy.sh --apply` runs and the https service is restarted; §10
 lists what is deliberately still open.
 
@@ -248,39 +249,134 @@ evidence *for*. A metric that overclaims gets a wrong decision made from it, and
 these are durable enough to be quoted back years later.
 
 
-## 7. The coverage cross — "test coverage style info"
+## 7. The coverage cross — three axes, and why they are three
 
-`scripts/dev/reach-report.py` joins the catalogue, production reach and the
-SPA's vitest coverage:
+`scripts/dev/reach-report.py` crosses three facts that are routinely confused
+for one:
+
+| Axis | Source | Denominator | Blind spot |
+|---|---|---|---|
+| **covered by unit tests** | `spa/coverage/coverage-final.json` (vitest) | the modules in `vitest.config.ts`'s `coverage.include` | deliberately narrow — pure-logic modules only |
+| **reached in production** | the probe counters (`analytics.db`) | `catalogue.ts`, written by hand | only ever sees code somebody thought to declare |
+| **executed in production** | line coverage (`coverage.db`, this section) | the compiler's — every instrumented statement | needs the opt-in instrumented bundle to have been served |
+
+The report keeps them in adjacent columns and never adds them together. A file
+can be 90% unit-covered and have run no line in front of a visitor since the
+bundle was built; one number for both is how that file keeps its budget.
+
+### The quadrants, now per FILE
+
+The grid used to be per PROBE, and every probe in this repo landed in a "no unit
+scope" row because all thirteen live in DOM-heavy modules that vitest does not
+measure. With the line axis it is per file, over the whole `src/` tree rather
+than the thirteen declared points:
 
 ```
-                | reached in production | never reached
- ---------------+-----------------------+---------------------------------
- covered by     | HEALTHY               | PAYING TWICE — tests maintained
- unit tests     |                       | for something nobody uses
- ---------------+-----------------------+---------------------------------
- not covered    | EXPOSED — used, and   | DEAD — the cheapest deletion in
-                | nothing catches a     | the repo, and the first place to
-                | regression            | look for one
+                | executed in production | never executed
+ ---------------+------------------------+---------------------------------
+ covered by     | HEALTHY                | PAYING TWICE — tests maintained
+ unit tests     |                        | for something nobody uses
+ ---------------+------------------------+---------------------------------
+ not covered    | EXPOSED — used, and    | DEAD — the cheapest deletion in
+                | nothing catches a      | the repo, and the first place to
+                | regression             | look for one
 ```
 
-**The first run already produced a finding:** all 13 probes live in files
-outside vitest's `coverage.include`, so every one lands in a "no unit scope"
-row. That is a true statement about this repo — the unit-test scope is
-deliberately narrow (pure-logic modules only; `spa/coverage-exclusions.json`
-carries the written reason per module) — and the report says it out loud rather
-than printing a column of em-dashes.
+Two states are NOT in the grid and are printed as themselves, because folding
+either into `DEAD` is how working code gets deleted:
 
-Two ways to fill that column, in increasing cost:
+- **`no line data`** — the instrumented build had no statement map for this
+  file at all (not instrumented, or renamed since). Not the same as "never
+  executed".
+- **`(no unit scope)`** — the file is outside vitest's `include` and
+  `coverage-exclusions.json` says why. A documented decision, not a gap.
 
-1. **Widen `coverage.include`** as DOM-testable modules get a render harness.
-   Free, incremental, and the direction the SPA is already going.
-2. **A line-level production coverage lane** (`vite-plugin-istanbul` on a second
-   bundle, `window.__coverage__` POSTed on pagehide, merged with
-   `istanbul-lib-coverage`). This gives genuine per-line production reach, at the
-   cost of shipping an instrumented bundle. **Deliberately not built yet**: it
-   should be opt-in and off by default, and the probe catalogue answers the
-   feature-level question at a fraction of the cost. Phase 2.
+A first real run (one probe-class session that loaded the grid and clicked
+about) placed 183 files: **8,177 instrumented lines, 2,025 executed (25%)**,
+with **47 modules at exactly zero** — `src/admin/AdminPage.tsx`,
+`src/three/streamClient/*`, `src/scene/ExhibitInfoCard.tsx` and the rest of the
+stream path, which that session never opened. Read that as the report intends:
+`never executed` is a fact about the window and the sessions in it, not a
+verdict, and one session is not a window.
+
+### How it works
+
+```
+ instrumented tab                      server                     operator
+ ────────────────                      ──────                     ────────
+ window.__coverage__  ── reduce ──►  POST /coverage ─► coverage.db ─► reach-report.py
+   (2.3 MB of counts)   in the tab     (22 KB, once,    (per build,     (third column,
+                        to line SETS    at pagehide)     day-bucketed)   + per-file table)
+```
+
+- **The bundle is a second artefact and off by default.** `npm run
+  build:coverage` arms it; `npm run build` is byte-identical to what ships
+  today, verified by rebuilding and comparing all 447 output files' SHA-256
+  after this lane landed.
+- **The arming value is a string, not a flag.** `VITE_KH_COVERAGE` must equal
+  `instrument-this-build` exactly. `1`, `true` and every other value build the
+  normal bundle — a leftover `export` or a CI matrix cell must not be able to
+  ship an instrumented gallery, and an accidentally instrumented gallery is a
+  silent regression nobody would go looking for.
+- **The default bundle does not contain the collector at all.**
+  `src/analytics/coverage.ts` has exactly one importer and it is the build
+  plugin, which injects it into `main.tsx` only when armed. A runtime `if` would
+  still ship the module, and "byte-identical" would quietly become "identical
+  apart from the bit I added".
+- **Counts are thrown away in the tab.** What travels is two run-length LINE
+  SETS per file — instrumented, and the executed subset. Sets union losslessly
+  across sessions, which is the whole merge; and how many times a branch ran is
+  a behavioural trace a durable aggregate has no business keeping.
+- **Its own store, `coverage.db`.** Argued in `scripts/serve/linecov.py`: the
+  rows are kilobytes not integers, they expire with their build (120 days) where
+  the counters last two years, and the body cap has to be 1 MiB where the
+  counter plane's 64 KiB is a security property. Sharing would loosen the
+  counter cap sixteenfold to admit something that is not a counter.
+- **Never unioned across builds.** Line numbers move on the next commit. Every
+  map is keyed by a build id and the report answers for one build.
+
+### What it costs, measured
+
+| | default bundle | instrumented |
+|---|---|---|
+| `index-*.js` | 1,652,106 B | 3,972,943 B (**+140%**) |
+| gzipped (`gzip -c`) | 473,008 B | 930,308 B (**+97%**) |
+| build time | 2.6 s | 18.6 s |
+| per-session upload | none | **22,156 B** (5,908 B gzipped), once, at `pagehide` |
+| `window.__coverage__` if sent raw | — | 2,331,560 B (the reduction is 99.0%) |
+
+Runtime overhead is a counter increment per statement — unmeasurable against
+this SPA's three.js frame cost, but the +2.3 MB of parse and the counter arrays
+are not free on a first load, and the gallery's own first-paint budget is the
+reason this is not the default.
+
+### Sampling policy: operator-armed, and that is the recommendation
+
+There is no client-side sampling fraction, on purpose. The three candidates and
+why one wins:
+
+1. **All sessions of the instrumented bundle** — the recommended default, and
+   what is implemented. Coverage is a UNION, so it converges: the tenth session
+   adds almost nothing, and a fraction would only make it converge more slowly
+   for no saving that matters (22 KB per session on a private gallery).
+2. **A fraction of sessions.** Buys nothing here. The payload is already small
+   and the merge is idempotent; the only thing a fraction changes is how long
+   you must wait before a zero means anything, which is precisely the number the
+   report is most easily misread on.
+3. **Operator-armed, which is the real gate** — and it is the BUILD, not a
+   runtime dice roll. The instrumented bundle is served deliberately, for a
+   window, when somebody wants to answer a deletion question; then the normal
+   bundle goes back. That keeps the cost inside a decision somebody made, rather
+   than as a permanent tax on every visitor, and it is why the arming lives in
+   the build flag and not in a config the box could drift into.
+
+So: **armed by the operator per investigation, every session sampled while
+armed, 120-day retention, and the normal bundle the rest of the time.**
+
+The cheaper axis has not gone away: widening `coverage.include` as DOM-testable
+modules get a render harness is still free and still the direction the SPA is
+going. This lane answers the question the catalogue cannot — code nobody
+declared — and it is not a replacement for either of the other two axes.
 
 ## 8. The Rust plane — `streamhost` feature-reach probes
 
@@ -519,7 +615,14 @@ Named so nobody re-derives them as gaps:
   preference for eyeballing over automation, it should not be built before
   somebody has actually wanted it twice.
 - **Deployment.** `box-deploy.sh --apply` plus an https restart; `analytics.db`
-  is created on first start beside the server.
+  and `coverage.db` are created on first start beside the server.
+- **Serving the instrumented bundle.** The lane is built and tested; nothing
+  automates PUTTING it in front of visitors and back again. That is deliberate
+  — it is the operator-armed decision above, and a script that swaps the live
+  gallery's bundle is a script nobody dares run. Stage it
+  (`scripts/dev/stage.sh`) or deploy it by hand for the window you want.
+- **A line-level UI.** Same answer as the report's: the CLI prints the file
+  table; nobody has wanted an annotated source view twice yet.
 
 ## 11. Adding a probe
 
@@ -592,6 +695,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |
 | `spa/src/analytics/errors.ts` | fingerprinting and grouping |
 | `spa/src/analytics/sink.ts` | batching transport (counts, not events) |
+| `spa/src/analytics/coverage.ts` | production LINE coverage collector; in the instrumented bundle only |
+| `spa/vite-plugins/coverage.ts` | the arming flag, the istanbul transform, the collector injection |
 | `spa/src/analytics/index.ts` | `reach` / `beginFlow` / `reportError` / `initAnalytics` |
 | `scripts/serve/analytics.py` | `POST /analytics`, `GET /analytics/report.json`, the SQLite aggregate |
 | `scripts/serve/probes.py` | the SERVER catalogue, the in-memory fold, and `hit()` |
@@ -601,3 +706,6 @@ Traps worth knowing, each of which was hit while writing this:
 | `scripts/test_analytics.py`, `scripts/test_probes.py`, `spa/src/analytics/analytics.test.ts`, `spa/src/analytics/metrics.test.ts` | 31 + 19 + 23 + 17 tests |
 | `streamhost/streamhost/src/probes.rs` | the Rust declaration, the `probe!()` macro and the per-station dump |
 | `streamhost/streamhost/src/probes_tests.rs` | the Rust drift gate + the measured per-hit cost; runs under `cargo test --workspace` |
+| `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
+| `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
+| `scripts/test_linecov.py`, `spa/src/analytics/coverage.test.ts` | 11 + 9 tests |

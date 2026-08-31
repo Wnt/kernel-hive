@@ -113,10 +113,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
 import deploy_hint  # noqa: E402
+import linecov  # noqa: E402  (its STORE is built here; the routes live in telemetry_routes)
 import probes  # noqa: E402  (server-side feature reach; folds into ANALYTICS)
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
+import telemetry_routes  # noqa: E402  (the /analytics + /coverage route group)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
@@ -166,6 +168,17 @@ ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
 # outside the server gets. `record_server` is the only door into that class and
 # no route reaches it, so a browser cannot forge a branch count.
 probes.bind(ANALYTICS)
+# Production LINE coverage, fed only by the opt-in instrumented bundle
+# (docs/ANALYTICS.md §6). Its own database beside the counters, not a table in
+# them: the rows are kilobytes rather than integers, they expire with the build
+# that produced them rather than lasting two years, and its body cap has to be
+# sixteen times the counter plane's — see serve/coverage.py. Unarmed, this is an
+# empty file and nothing ever posts to it.
+COVERAGE = linecov.CoverageStore(ANALYTICS_DB.parent / "coverage.db")
+COVERAGE.prune()
+# The stores the analytics route group reaches, passed rather than imported so
+# the dispatcher stays a pure function of what it is given.
+TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE}
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -439,15 +452,9 @@ class H(BaseHTTPRequestHandler):
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
 
-        # POST /analytics — one tab's feature-reach / flow / error counters.
-        if path == "/analytics":
-            # Same origin check as /usage on the public listener, and for the
-            # same reason: no other site gets to spend a visitor's cookie
-            # writing into a table the lab makes decisions from. No user id is
-            # read here on EITHER listener — this plane stores none.
-            if self.public and self.headers.get("Origin") != PUBLIC_ORIGIN:
-                return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
-            return analytics.handle_post(self, ANALYTICS)
+        # The analytics plane's routes, as a group (serve/telemetry_routes.py).
+        if telemetry_routes.dispatch(self, path, "POST", TELEMETRY, PUBLIC_ORIGIN):
+            return
 
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
@@ -493,15 +500,8 @@ class H(BaseHTTPRequestHandler):
         if path == "/usage/stations.json":
             return usage.serve_stations(self, USAGE)
 
-        # GET /analytics/report.json — feature reach, funnels and top errors.
-        # No identities in it (see serve/analytics.py), so it needs no more of a
-        # gate than /usage/stations.json does.
-        if path == "/analytics/report.json":
-            # Fold the server's own pending counts in first: they are throttled
-            # to a flush a minute on the request path, and a report that omitted
-            # the last minute would read as a branch that had gone quiet.
-            probes.flush()
-            return analytics.serve_report(self, ANALYTICS, parse_qs(urlparse(self.path).query))
+        if telemetry_routes.dispatch(self, path, "GET", TELEMETRY, PUBLIC_ORIGIN):
+            return
 
         if path == "/signal/index.json":
             return signal_route.serve_index(self)

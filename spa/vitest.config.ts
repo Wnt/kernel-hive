@@ -30,6 +30,7 @@ export default defineConfig({
         'src/analytics/catalogue/station.ts',
         'src/analytics/catalogue/types.ts',
         'src/analytics/catalogue/walkin.ts',
+        'src/analytics/coverage.ts',
         'src/analytics/errors.ts',
         'src/analytics/flows.ts',
         'src/analytics/index.ts',
