@@ -46,11 +46,22 @@ class LoadedDrift:
 def drift_for(unit: str, process_start: float, files: dict[str, float]) -> LoadedDrift:
     """Pure core: which files were written after the process began?
 
-    Strictly `>`: a file written in the same second the process started is not
-    evidence of anything, and a check that manufactures findings from clock
-    granularity is a check people learn to ignore.
+    COMPARED AT WHOLE-SECOND GRANULARITY, and that is not a rounding nicety —
+    it is the difference between a useful check and one people learn to ignore.
+    The two clocks have different precision: `find -printf %T@` reports a
+    FRACTIONAL mtime, while a process start read from `/proc/<pid>` is a whole
+    second. Install a file and restart within the same second — which is exactly
+    the normal deploy sequence — and the fractional mtime is arithmetically
+    greater than the truncated start, so the file reads as never loaded when it
+    demonstrably is.
+
+    Measured 2026-08-31: `deploy_hint.py` at 1788152288.4 against a process
+    start of 1788152288, reported APPLIED-BUT-NOT-LOADED while the running
+    process was provably executing that very file. A true-looking number
+    produced by a unit mismatch unrelated to the question — the same shape as
+    every other false signal this design was written from.
     """
-    stale = sorted(((p, m) for p, m in files.items() if m > process_start), key=lambda x: x[1])
+    stale = sorted(((p, m) for p, m in files.items() if int(m) > int(process_start)), key=lambda x: x[1])
     return LoadedDrift(unit=unit, process_start=process_start, stale=stale, scanned=len(files))
 
 

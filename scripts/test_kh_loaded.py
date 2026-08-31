@@ -29,6 +29,15 @@ class TheGap(unittest.TestCase):
         """A check that manufactures findings from clock granularity gets ignored."""
         self.assertTrue(drift_for("u", 1000.0, {"a.py": 1000.0}).clean)
 
+    def test_FRACTIONAL_mtime_against_a_whole_second_process_start(self):
+        """The real false positive, 2026-08-31: `find -printf %T@` is
+        fractional, /proc/<pid> is whole seconds, and install-then-restart
+        inside one second is the NORMAL deploy sequence."""
+        self.assertTrue(drift_for("u", 1788152288.0, {"a.py": 1788152288.4231}).clean)
+
+    def test_but_a_genuinely_later_second_is_still_caught(self):
+        self.assertFalse(drift_for("u", 1788152288.0, {"a.py": 1788152289.0}).clean)
+
     def test_the_oldest_stale_write_drives_the_reported_age(self):
         d = drift_for("u", 100.0, {"a.py": 500.0, "b.py": 200.0})
         self.assertEqual(d.oldest_stale, 200.0)
