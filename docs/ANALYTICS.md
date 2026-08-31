@@ -138,9 +138,129 @@ it was standing on**.
 - **`close()` is not `fail()`.** A visitor navigating away mid-connect leaves
   the flow through `close()` — it reports nothing, because the abandonment is
   the drop-off and reporting it as a failure would double-count it as a fault.
-- **Nothing here measures time.** Latency already has three better sources (the
-  Ctrl+N overlay, clientlog's 5-second stats line, the daemon's journal); a
-  fourth number that disagrees with all of them is worse than none.
+- **A flow does not measure time** — it counts attempts. Journey timing is its
+  own lane (`metrics.ts`), and the two are deliberately not fused: a flow's
+  steps are funnel edges, and making them clock edges too would mean neither
+  could be changed without moving the other. What still belongs on neither is
+  STREAM latency — the Ctrl+N overlay, clientlog's 5-second stats line and the
+  daemon's journal already measure encode/transport/decode, and a fourth number
+  that disagrees with all three is worse than none.
+
+### The station and stream flows — opening one, coming back to one, watching one freeze
+
+Three of the flows are about a single machine, and they exist as three rather
+than one because the code behind them shares almost nothing.
+
+**`station.connect`** is arriving: click a machine, wait, see a desktop. It ends
+at the first PAINTED FRAME rather than at `phase === 'live'`, because the phase
+has gone live on a session that stayed a spinner — the phase is the gallery's
+opinion, the frame is the visitor's. Beyond the wait itself it now carries two
+numbers the funnel could not state. `station.open.attemptCount` says what the
+connect COST as opposed to whether it worked: the funnel already reports that a
+station connected, and this reports that it took four goes to do it, which is a
+station one bad week from falling back to its poster. It counts ATTEMPTS, not
+retries, because the `count` ladder's smallest bucket is 1 and as retries a
+clean connect and a one-retry connect would both land in it — the commonest case
+in the gallery, unreadable. It is committed only on a painted frame; committing
+on a give-up would deposit the full ladder length into every failure and quietly
+turn the metric into a restatement of the failure rate.
+`station.open.toFirstInputMs` is the other half, and it is not a performance
+number at all: measured from the first frame to the first TRUSTED input edge, it
+is how long somebody looks at a machine that already works before daring to use
+it. A high value on one station and not another is a **discoverability**
+problem — same stream, same latency, and visitors can tell what to do with one
+exhibit and not the other — answered by a caption or a coachmark, never by the
+pipeline. It is necessarily conditioned on the visitor touching at all, since
+you cannot time an event that never happens; the proportion who never touch is a
+different question that `station.pointer.used` and `station.key.used` already
+answer, and reading this distribution as though it covered everyone is the one
+way to misuse it.
+
+**There is no cold-vs-warm split on the connect, and the absence is a finding.**
+A station that was idle-paused and had to be resumed is a genuinely different
+wait from one already streaming, and merging them does make the p95 partly a
+statement about how often the fleet is asleep. The browser simply cannot tell:
+the signaling document carries host, port, cert hash and encoder params and no
+run state at all, so an idle-paused station's response is byte-identical to a
+running one's. The bit **exists** — `was_paused` in `streamhost/src/idle.rs`,
+`Freezer::session_started` — but it is computed after the transport is already
+accepted and goes only to the journal, so it could not reach the signaling fetch
+even in principle. Nothing else is an honest proxy: `coldBoot` in the registry
+is station metadata ("this machine has no vmstate to resume into"), constant on
+every connect; retry counts are dominated by network, cert rotation and decoder
+fallback. Under this document's own boundary rule — *if the daemon could answer
+it, this plane does not ask it* — the split is the **daemon's to publish**, not
+the tab's to guess, and the minimal honest fix is one additive `KIND_PARAMS`
+subtype pushed at session start. Until that exists the split stays unmeasured
+and is said to be unmeasured, which is the difference between a gap and a lie.
+(Note also that cold/warm is already spoken for in that subtree:
+`MAX_COLD_ATTEMPTS` and `markWarm()` mean "has this client painted yet".)
+
+**`session.resume`** is coming BACK, which is not the same code as arriving.
+The resume path is `resumeSignals` (four different events, because in an
+installed PWA a return from another app is not one event), `resumePolicy` (is
+the session dead, or merely quiet?), `sessionResume` (the grace window and the
+parked-error recovery probe) and `videoResume` (the paused `<video>` that pulls
+nothing and makes a healthy transport look broken). Every one of those exists
+because of a field failure and none of them is visible in today's numbers: a
+resume that takes eight seconds and one that takes eighty milliseconds are the
+same single `station.connect` entry, or no entry at all. Its outcome is **two**
+metrics rather than one, because a resume ends in one of two different
+engineering problems — the session was still there and the picture only had to
+start pulling again, or it was gone and the whole transport had to be rebuilt.
+Fused, the distribution is bimodal, its p95 describes only how often the
+expensive case happens, and no action follows. Split into
+`session.resume.toLiveMs` and `session.resume.reconnectToLiveMs` — disjoint by
+construction, so one resume is one sample in exactly one of them — the pair says
+plainly whether the fix is "keep sessions alive longer while backgrounded" or
+"make the rebuild faster".
+
+`session.resume.awayMs` is **the one legitimate `countsHiddenTime` in the whole
+catalogue**, and it must not spread. Every other duration stops its clock while
+the tab is hidden because it describes a person's PATIENCE and hidden time is
+not patience; this one describes their ABSENCE, so visible time would return
+zero on every sample — a tautology, not a distribution. It earns the exception
+by driving a decision nothing else can reach: the daemon pauses an idle guest
+after a grace window and holds a wake lease for 90 s, and how long visitors are
+actually away is what says whether either window is set anywhere near right.
+
+**`stream.recover`** is a stall from the visitor's point of view, and it is the
+most delicate flow in the catalogue because the stream is already measured three
+ways. So the boundary is enforced literally: this flow measures **no** loss, RTT,
+tier or bitrate, a rule with a test behind it rather than only a comment. What
+is left is the part no encoder can see — how long a person sat looking at a
+picture that had stopped moving, and whether they gave up — and it is derived
+from the PAINT side, frames that reached the glass, never from the encoder's
+account of what it sent, because the failure worth catching is exactly the one
+where those two disagree. `stream.recover.abandonedAfterMs` is the most valuable
+number in this group: it is the only place in the system that records a visitor
+**giving up**. Everything else measures how long something took for the people
+who stayed. It and `stream.recover.stallMs` are disjoint — a freeze ends either
+because the picture moved or because the visitor stopped looking — so one freeze
+is one sample, and the two populations can be read against each other.
+
+Two traps sit under that, and a fixed freeze threshold walks into both. A static
+desktop paints only on the keyframe heartbeat (~2.5 s), and several exhibits run
+at a couple of frames per second **by design**, so "no new frame for two
+seconds" is the normal, healthy behaviour of a large part of the fleet — a fixed
+threshold would report those stations as permanently stalled and the metric's
+largest signal would be a property of the exhibit rather than a fault. The
+threshold is therefore derived from the station's OWN advertised heartbeat, in
+the same shape `abr.ts` already uses for its staleness window, so this number and
+the client's existing watchdog move together instead of drifting apart. It sits
+deliberately BELOW the reconnect staleness window: the visitor perceives the
+freeze well before the client decides the session is dead, and the gap between
+those two moments is precisely how long somebody is asked to look at a frozen
+machine before the software does anything about it.
+
+The subtler trap is that a gap is not automatically a freeze. On an idle station
+showing a motionless desktop a missed heartbeat is **not perceptible** — the
+picture looks identical whether frames are arriving or not — so counting it
+would be measuring something nobody experienced. A gap only counts when the
+picture was MOVING (painting faster than the heartbeat alone would deliver, so
+its stopping is visible) or the visitor was ASKING it to move (a trusted input
+edge after the last paint, so they are waiting on a reaction). Neither is
+knowable from the wire, which is exactly why the rule lives in the tab.
 
 Errors are **fingerprinted and counted**, not logged. `/clientlog` keeps the
 stack and the component stack so one session can be read; this keeps the count,

@@ -23,6 +23,7 @@ import { StageMenu } from './StreamView/StageMenu';
 import { StatusOverlays } from './StreamView/StatusOverlays';
 import { useStreamSession } from './StreamView/useStreamSession';
 import { useStreamInput } from './StreamView/useStreamInput';
+import { useFirstInput } from './StreamView/useFirstInput';
 import { usePinchZoom } from './StreamView/usePinchZoom';
 import { useTouchControl } from './StreamView/useTouchControl';
 import { TouchOverlays } from './StreamView/TouchOverlays';
@@ -124,7 +125,7 @@ export default function StreamView({
   // Open the live stream + control half (dormant unless streamable).
   const {
     stream, phase, message, control, registerPaintCanvas,
-    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow,
+    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
   } = useLiveStream(
     os,
     streamable,
@@ -319,6 +320,8 @@ export default function StreamView({
     controlRef, fsRef, lockedRef, vcursorRef, lastGuestRef, pressedButtonsRef,
     videoRef, canvasRef, trackpadRef: touch.trackpadRef, stageRef,
   });
+  // ---- TIME TO TOUCH (analytics) — the first trusted edge on a live machine -
+  useFirstInput({ live, stageRef, noteInput });
   // ---- LOCAL pinch-zoom / pan view transform (no guest input but the wheel) -
   usePinchZoom({
     streamable, live, directCanvas, setZoom,

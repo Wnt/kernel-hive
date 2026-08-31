@@ -113,6 +113,15 @@
     }
   },
   "flows": {
+    "session.resume": {
+      "area": "stream",
+      "what": "a backgrounded tab or installed PWA coming back to a moving picture",
+      "steps": [
+        "wake",
+        "transport",
+        "firstFrame"
+      ]
+    },
     "station.connect": {
       "area": "station",
       "what": "opening a station and getting a first frame out of it",
@@ -120,6 +129,15 @@
         "open",
         "transport",
         "firstFrame"
+      ]
+    },
+    "stream.recover": {
+      "area": "stream",
+      "what": "a picture that stopped moving, and whether it started again before the visitor left",
+      "steps": [
+        "frozen",
+        "reconnecting",
+        "moving"
       ]
     }
   },
@@ -136,10 +154,53 @@
       "what": "a high value means the columns people want are far from the ones they land on",
       "scale": "count"
     },
+    "session.resume.awayMs": {
+      "area": "stream",
+      "owner": "src/three/resumeTelemetry.ts",
+      "what": "a high value means visitors leave for longer than the idle-pause grace and wake lease assume, so those windows are tuned for a visit pattern that does not happen",
+      "scale": "ms",
+      "countsHiddenTime": true
+    },
+    "session.resume.reconnectToLiveMs": {
+      "area": "stream",
+      "owner": "src/three/resumeTelemetry.ts",
+      "what": "a high value means rebuilding a dead session on resume is slow, so the fix is to keep sessions alive across a background rather than to reconnect faster",
+      "scale": "ms"
+    },
+    "session.resume.toLiveMs": {
+      "area": "stream",
+      "owner": "src/three/resumeTelemetry.ts",
+      "what": "a high value means a session that survived being backgrounded still takes too long to start pulling again — the fix is in videoResume, not the transport",
+      "scale": "ms"
+    },
+    "station.open.attemptCount": {
+      "area": "station",
+      "owner": "src/three/connectTelemetry.ts",
+      "what": "a high value means this station only connects by retrying, so its ladder is absorbing a fault nobody has been told about",
+      "scale": "count"
+    },
     "station.open.toFirstFrameMs": {
       "area": "station",
       "owner": "src/three/connectTelemetry.ts",
       "what": "a high value means visitors stare at a spinner between choosing a machine and seeing it",
+      "scale": "ms"
+    },
+    "station.open.toFirstInputMs": {
+      "area": "station",
+      "owner": "src/three/connectTelemetry.ts",
+      "what": "a high value means visitors hesitate to touch this machine once it works — it needs a clearer invitation, not a faster stream",
+      "scale": "ms"
+    },
+    "stream.recover.abandonedAfterMs": {
+      "area": "stream",
+      "owner": "src/three/recoverTelemetry.ts",
+      "what": "a low value means visitors abandon a frozen station quickly, so recovery must beat that budget or be replaced by an honest message — and the COUNT of these is how many visits the fleet is losing to freezes",
+      "scale": "ms"
+    },
+    "stream.recover.stallMs": {
+      "area": "stream",
+      "owner": "src/three/recoverTelemetry.ts",
+      "what": "a high value means visitors sit through long visible freezes before the picture returns, so the recovery ladder is too slow to hide the fault it is recovering from",
       "scale": "ms"
     }
   }
