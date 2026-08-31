@@ -7,6 +7,7 @@ import { claimWalkin, fetchWalkinState, isClosedError, isQueued, releaseWalkin, 
 import { accessAllows, clockText, resolveEndReason } from './sessionEnd';
 import { walkinReasonCopy, type WalkinReason } from './reasons';
 import { currentAccount } from './passkey';
+import { playTelemetry, type PlayTelemetry } from './playTelemetry';
 
 // /walkin/play/<os> — the visitor's own clone, in the normal station view.
 //
@@ -51,25 +52,45 @@ export default function WalkinPlay() {
   const lastInputRef = useRef(Date.now());
   const roleRef = useRef('walkin');
 
+  // ---- the claim attempt (playTelemetry.ts) ---------------------------------
+  // Created in an effect, never during render and never in a setState updater:
+  // StrictMode runs both twice and the funnel would count every attempt twice.
+  const telRef = useRef<PlayTelemetry | null>(null);
+  useEffect(() => {
+    const attempt = playTelemetry();
+    telRef.current = attempt;
+    return () => {
+      attempt.ended();
+      if (telRef.current === attempt) telRef.current = null;
+    };
+  }, []);
+
   const take = useCallback(
     async (again: boolean) => {
       setPhase({ kind: 'claiming' });
+      // `again` is a RESET — the visitor asking for a fresh machine and getting
+      // one. That is the feature working, so it is explicitly not a retry.
+      telRef.current?.claiming({ reset: again });
       try {
         const held = claimRef.current;
         const result = again && held ? await resetWalkin(held.clone) : await claimWalkin(os);
         if (isQueued(result)) {
+          telRef.current?.queued();
           setPhase({ kind: 'queued', position: result.position });
           return;
         }
+        telRef.current?.held();
         claimRef.current = result;
         lastInputRef.current = Date.now();
         setSecondsLeft(result.ttlSeconds);
         setPhase({ kind: 'playing', claim: result });
       } catch (reason) {
         if (isClosedError(reason)) {
+          telRef.current?.refused();
           setPhase({ kind: 'ended', reason: 'WALKIN_CLOSED' });
           return;
         }
+        telRef.current?.failed();
         setPhase({
           kind: 'ended',
           reason: null,
@@ -132,14 +153,23 @@ export default function WalkinPlay() {
 
   const noteInput = useCallback(() => { lastInputRef.current = Date.now(); }, []);
 
+  /** A DELIBERATE input on the clone — a press or a key, not a mouse crossing
+   *  the page. This, not a painted frame, is the end of `toPlayableMs`: the
+   *  frame is already measured by the station plane, and a clone that paints
+   *  perfectly and is never touched is one the pool spent for nothing. */
+  const noteDeliberateInput = useCallback(() => {
+    lastInputRef.current = Date.now();
+    telRef.current?.drove();
+  }, []);
+
   if (phase.kind === 'playing') {
     const low = secondsLeft <= 120;
     return (
       <div
         className="walkin-play"
-        onPointerDown={noteInput}
+        onPointerDown={noteDeliberateInput}
         onPointerMove={noteInput}
-        onKeyDown={noteInput}
+        onKeyDown={noteDeliberateInput}
       >
         <div className="walkin-play-chrome">
           <span className="walkin-play-name">Your {os}</span>
