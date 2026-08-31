@@ -38,8 +38,10 @@ and they fail in three different ways if you fuse them into one hit counter.
  reportError({...})                ┘   batches)          aggregate)        + vitest coverage)
 ```
 
-Three files carry the whole client side: `spa/src/analytics/{intent,flows,errors}.ts`,
-with `catalogue.ts` as the declaration and `sink.ts` as the transport.
+Four files carry the whole client side: `spa/src/analytics/{intent,flows,metrics,errors}.ts`,
+with `catalogue/` as the declaration (one file per area, so parallel
+instrumentation streams share no editing surface) and `sink.ts` as the
+transport.
 
 ### This is the THIRD telemetry plane, on purpose
 
@@ -138,9 +140,9 @@ it was standing on**.
 - **`close()` is not `fail()`.** A visitor navigating away mid-connect leaves
   the flow through `close()` — it reports nothing, because the abandonment is
   the drop-off and reporting it as a failure would double-count it as a fault.
-- **Nothing here measures time.** Latency already has three better sources (the
-  Ctrl+N overlay, clientlog's 5-second stats line, the daemon's journal); a
-  fourth number that disagrees with all of them is worse than none.
+- **A flow counts attempts; it does not time them.** Journey timing is its own
+  lane (§6) so that a step boundary is a funnel edge only. Fuse them and every
+  step has to be both, and neither can be changed without moving the other.
 
 Errors are **fingerprinted and counted**, not logged. `/clientlog` keeps the
 stack and the component stack so one session can be read; this keeps the count,
@@ -152,7 +154,95 @@ message. The full stack, the href and the IP stay on the clientlog lane, which
 prunes itself; this lane is durable, and a durable aggregate must not be where a
 visitor's browsing history lives forever.
 
-## 6. The coverage cross — "test coverage style info"
+## 6. Metrics — how long it took, and how much effort it cost
+
+A probe says a path ran. A flow says how far an attempt got and where it died.
+Neither answers *"was it any good"*, which is most of what anyone wants to know
+about a user flow — so timings and effort counts are a third kind of
+declaration, gated exactly like the other two.
+
+**This reverses something this document used to say**: that nothing in this
+plane measures time, because latency already has three better sources. That
+reasoning was sound and about the wrong thing. The Ctrl+N overlay, clientlog's
+stats line and the daemon's journal all measure the **stream** — encode,
+transport, decode. None of them measures the **visitor**. "How long from
+choosing a machine to seeing its desktop" is not derivable from any of them: it
+starts before the stream exists and ends when a human's eyes are satisfied. The
+boundary is now explicit, and it is the rule for adding any metric:
+
+> If the daemon could answer it, this plane does not ask it.
+
+### Buckets, not samples
+
+A value becomes a bucket **in the tab**; only the bucket travels. In order of
+importance: a raw timing series is a behavioural trace of one person's session
+and this store is a durable years-long aggregate, which is the wrong place for
+one to live; p95 needs a distribution and a mean hides exactly the sessions
+worth fixing; and a bucketed metric costs one counter per bucket per day
+however many samples land in it.
+
+The cost is stated rather than hidden — the report prints `p95 <= 3.2s`, never a
+precise number the data cannot support. Buckets are named by their **edge**,
+never by index, so inserting a ladder step cannot silently re-point history: an
+old row keeps meaning what it meant and a changed ladder shows up as new bucket
+names beside the old ones.
+
+### The clock stops when nobody is looking
+
+A duration accumulates **visible time only**. A connect that took four minutes
+because the tab was backgrounded for three of them is not a four-minute wait,
+and a handful of those is enough to move a p95 into fiction. `countsHiddenTime`
+exists for the one quantity that genuinely is about absence — how long a PWA
+session was away before it came back — and the gate refuses it on any non-`ms`
+metric. Timings use `performance.now()`, never the wall clock: an NTP step or a
+laptop suspend mid-timing produces a negative or hour-long duration, and both
+survive bucketing to poison the distribution.
+
+### The three shapes, and the traps
+
+| Call | For |
+|---|---|
+| `startTiming(id)` | a duration. `stop()` records; `abandon()` records **nothing** |
+| `recordMetric(id, v)` | a value the call site computed itself |
+| `accumulator(id)` | an effort total: `add()` as you go, `commit()` once per episode |
+
+- **`abandon()` is not a zero.** A torn-down React effect must record nothing —
+  a zero is a real, very fast sample, and inventing one per abandonment drags
+  every p50 to the floor. A genuinely zero-effort *episode* is the opposite: it
+  is committed, because a visitor who found what they wanted without scrolling
+  at all is the outcome the feature is for.
+- **One episode is one sample.** Reported per event, an effort metric is a
+  distribution of ones that says nothing.
+- **Report a pair at the same granularity.** `stream.stats.polled` fires once
+  per session, not per one-second tick, so its ratio against
+  `stream.overlay.shown` reads "sessions that paid" over "sessions that looked"
+  rather than being a function of how long a tab stayed open.
+- **Units live in the id.** The gate requires an `ms` metric to end in `Ms` and
+  a `pct` metric in `Pct`. A durable column reading `hScroll 4200` is a number
+  two readers will interpret differently, and it will outlive both.
+
+### Device-independent units
+
+`fleet.find.hScrollScreens` counts **screen widths**, not pixels. The same hunt
+for a column reads as 400 px on a phone and 4000 on the operator's monitor, and
+a number you cannot compare across the devices that produced it cannot be acted
+on. It is also already the unit the answer wants to be in: *"two screens of
+sideways scrolling to reach the codec column"*. Distance alone cannot tell a
+confident sweep from a hunt, so `fleet.find.hScrollReversals` counts direction
+changes beside it — high distance with no reversals is a layout that is merely
+wide; high reversals is a layout nobody can hold in their head.
+
+### Effort proxies are proxies
+
+Several metrics here — hesitation before a first interaction, backtracking,
+correction rates, scroll oscillation, steps-to-goal — are **behavioural proxies
+for effort**. They are not measurements of cognition and are not described as
+such anywhere in this system. Each one states what it observes and what it is
+evidence *for*. A metric that overclaims gets a wrong decision made from it, and
+these are durable enough to be quoted back years later.
+
+
+## 7. The coverage cross — "test coverage style info"
 
 `scripts/dev/reach-report.py` joins the catalogue, production reach and the
 SPA's vitest coverage:
@@ -186,7 +276,7 @@ Two ways to fill that column, in increasing cost:
    should be opt-in and off by default, and the probe catalogue answers the
    feature-level question at a fraction of the cost. Phase 2.
 
-## 7. What is NOT built yet
+## 8. What is NOT built yet
 
 Named so nobody re-derives them as gaps:
 
@@ -205,7 +295,7 @@ Named so nobody re-derives them as gaps:
 - **Deployment.** `box-deploy.sh --apply` plus an https restart; `analytics.db`
   is created on first start beside the server.
 
-## 8. Adding a probe
+## 9. Adding a probe
 
 Two steps, in **one commit**, and the gate enforces it:
 
@@ -233,7 +323,7 @@ Traps worth knowing, each of which was hit while writing this:
   `stream.overlay.shown` reads "sessions that paid" over "sessions that looked"
   rather than being a function of how long a tab stayed open.
 
-## 9. Privacy and honesty
+## 10. Privacy and honesty
 
 - **No identities at all, by construction.** Unlike `usage.py` this plane has no
   per-person half: no user id is accepted, none is stored, and there is no
@@ -247,13 +337,16 @@ Traps worth knowing, each of which was hit while writing this:
 - **`never reached` is not `unreachable`.** It means no tab reported it in the
   window. Read the window before the verdict.
 
-## 10. Files
+## 11. Files
 
 | Path | What |
 |---|---|
-| `spa/src/analytics/catalogue.ts` | the declaration — the report's denominator |
+| `spa/src/analytics/catalogue/index.ts` | the declaration — the report's denominator |
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
+| `spa/src/analytics/metrics.ts` | timings, effort accumulators, the visible-time clock |
+| `spa/src/analytics/catalogue/` | the declarations, one file per area |
+| `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |
 | `spa/src/analytics/errors.ts` | fingerprinting and grouping |
 | `spa/src/analytics/sink.ts` | batching transport (counts, not events) |
 | `spa/src/analytics/index.ts` | `reach` / `beginFlow` / `reportError` / `initAnalytics` |
