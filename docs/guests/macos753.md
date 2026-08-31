@@ -287,11 +287,29 @@ caught the BeOS failure on this station too.
 > run. That is a boundary gap, not a sampling gap: no amount of repetition here
 > could reach the untested component.
 >
-> It is not hypothetical. rhapsody's cutover failed on the live station in
-> exactly that gap: the pointer mechanism worked and read back the commanded
-> target, but every browser session after the first timed out negotiating —
-> per-session sink state that is never released at teardown. The mechanism was
-> the well-tested part; the only untested component was the only one that broke.
+> The gap is real but **unillustrated**, and the distinction matters. This
+> paragraph used to cite rhapsody's cutover as an instance of it — every browser
+> session after the first timing out, attributed to per-session sink state never
+> released at teardown. **That diagnosis was wrong and is withdrawn.**
+>
+> A four-run control matrix found the cause was daemon-wide **QMP contention
+> created by the OBSERVATION HARNESS**: `observe.py` held QEMU's QMP monitor for
+> its whole run, QEMU serves one monitor at a time, so the idle pauser's `cont`
+> hit its 2 s timeout and returned `EAGAIN` — and `IdlePauser::session_started()`
+> holds the `st` mutex ACROSS that blocking call, while `handle_session` awaits
+> it before any keyframe work. `dbus-rel`, which builds no `InputRouter` at all,
+> fails identically with the holder running.
+>
+> There was never any per-session sink state to leak, and this is provable from
+> the code rather than from a run: `RealtimeInputSink` has no session lifecycle
+> hook, and `InputRouter` is built ONCE PER STATION in `transport::serve`,
+> outside the accept loop. aix432 has run the same sink shape at 46 accepted /
+> 46 ended over three days, and `ram_abs.rs` is byte-identical to `mga_ctl.rs`
+> apart from names.
+>
+> So the boundary below remains a true statement about THIS station's evidence —
+> `streamhost` genuinely never ran — but nothing has yet been observed failing
+> inside it, and it must not be argued for with someone else's incident.
 >
 > **This station is therefore NOT yet proven end to end.** The bar for its
 > cutover is a harness that drives the real SPA through the daemon in a browser
@@ -301,9 +319,14 @@ caught the BeOS failure on this station too.
 > client below — they already drive the real SPA from CT950, and they already
 > encode the half of this lesson that generalises: `videoWidth`, `readyState`
 > and a non-black percentage ALL PASS on a stream that has stopped, so the only
-> honest signal is MOTION (hash decoded frames, count distinct ones). That is
-> the same shape as the failure here — a component reporting healthy while doing
-> nothing — one layer up.
+> honest signal is MOTION (hash decoded frames, count distinct ones).
+>
+> And note what the corrected rhapsody diagnosis actually was: **an observation
+> harness that starved the thing it was watching.** A measuring tool is part of
+> the system under test. On this station that has now been the answer three
+> times — a buffered `readline` that went silent after a timeout, a template
+> learned from a stale frame, and a glyph whose own template framed another —
+> more often than any device fault.
 
 Proven on the framebuffer twice, at the same targets: once with the writes made
 through the QEMU gdb stub (proving the mechanism) and once with every target
