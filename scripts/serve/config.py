@@ -44,6 +44,15 @@ USAGE_STATS = Path(os.environ.get("USAGE_STATS", str(_HERE / "usage-stats.json")
 # by every tab; a whole-document rewrite per batch is what the other two can
 # afford and this cannot.
 ANALYTICS_DB = Path(os.environ.get("ANALYTICS_DB", str(_HERE / "analytics.db")))
+# Correlated per-session TRACES (serve/traces.py). Its own database, not a
+# table beside the counters, because everything about it differs: rows are
+# kilobytes not integers, retention is days not years, and reads are admin-only
+# where the aggregates are open. One store would have to take the strictest of
+# each and the counters would lose their openness to a rule that is not theirs.
+TRACES_DB = Path(os.environ.get("TRACES_DB", str(_HERE / "traces.db")))
+# Days of spans kept. Short on purpose — see docs/ANALYTICS.md on what the trace
+# lane costs in exchange for drilldown.
+TRACE_RETENTION_DAYS = int(os.environ.get("TRACE_RETENTION_DAYS", "14"))
 # Days of per-day detail kept (serve/analytics.py prunes on startup).
 ANALYTICS_RETENTION_DAYS = int(os.environ.get("ANALYTICS_RETENTION_DAYS", "730"))
 
