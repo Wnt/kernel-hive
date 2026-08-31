@@ -3,6 +3,8 @@
   "entry": [
     "index.html",
     "src/analytics/coverage.ts",
+    "src/admin/observability/types.ts",
+    "src/admin/observability/TraceDetail.tsx",
     "vite-plugins/coverage.ts"
   ],
   "project": [
