@@ -27,6 +27,13 @@ except ImportError:  # pragma: no cover - import shape only
             """No probes module in this deployment; the fence still works."""
 
 
+# Spans (serve/tracing.py); see the note on the same import in signal_route.py.
+try:
+    import tracing
+except ImportError:  # pragma: no cover - import shape only
+    from serve import tracing
+
+
 # Reachable with no session: the login page and the auth API itself, plus the
 # health probe the deploy scripts poll. Everything else needs a session.
 # /link is open because a device arrives there with nothing but a code — it
@@ -264,15 +271,30 @@ def _webrtc_prefix(own_signal: str) -> str:
 def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
     """The role fence. Non-walk-in sessions keep the behaviour they had:
     signed in is enough for everything this listener still serves."""
+    # ATTRIBUTES ON THE REQUEST SPAN, NOT A CHILD SPAN OF THEIR OWN. This
+    # decision is a dict lookup and a `startswith`; a span for it would be a
+    # zero-millisecond row in every public flame graph, adding a bar and no
+    # information. What is worth having is WHICH branch answered, on the span
+    # that is already there — a 403 in a trace is otherwise indistinguishable
+    # from a 403 in the access log. The ROLE is recorded and the user is NOT:
+    # a role is a policy fact, an id is an identity, and traces.py refuses
+    # `enduser.id` at intake for exactly this reason.
+    span = tracing.current()
+    role = (user or {}).get("role") or "anonymous"
+    span.attr("kh.auth.role", role)
     if user and user.get("role") == "walkin":
-        return walkin_allows(path, own_signal)
+        allowed = walkin_allows(path, own_signal)
+        span.attr("kh.auth.decision", "allow" if allowed else "deny")
+        return allowed
     # Reached only for a GATED path on the PUBLIC listener — `is_open` has
     # already short-circuited the login page, the bundle and the posters, and
     # the LAN listener never enters the gate at all. So this is not a request
     # counter: it is "the invited plane was used", against which the walk-in
     # counts above are readable.
     hit("auth.gate.invited")
-    return not is_blocked(path)
+    allowed = not is_blocked(path)
+    span.attr("kh.auth.decision", "allow" if allowed else "deny")
+    return allowed
 
 
 def landing_for(user: dict | None) -> str:

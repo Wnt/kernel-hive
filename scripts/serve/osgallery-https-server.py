@@ -120,6 +120,7 @@ import signal_route  # noqa: E402
 import static_files  # noqa: E402
 import telemetry_routes  # noqa: E402  (the /analytics + /coverage + /traces group)
 import traces  # noqa: E402  (correlated per-session spans; admin-only to read)
+import tracing_http  # noqa: E402  (request spans into TRACES; docs/lab/TRACE-CONTEXT.md)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
@@ -530,6 +531,9 @@ class PublicH(H):
     """The edge-facing handler: same routes, no implicit trust. See auth/gate.py."""
 
     public = True
+
+
+tracing_http.install(H, TRACES)  # one visit one trace; static is NOT traced (tracing_http.route_of)
 
 
 def _start_public_listener():
