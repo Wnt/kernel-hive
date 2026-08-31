@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFleetTable, useStationUsage, type FleetEntry } from '../data/fleetTable';
 import { FLEET_COLUMNS, type Column, type ColKey } from './fleetColumns';
+import { reach } from '../analytics';
 import './FleetTable.css';
 
 // Operator-facing fleet table: every lineup entry, one row, with the facts the
@@ -36,6 +37,16 @@ export function FleetTable() {
   // 'use' column sorts and facets like any other. They are an annotation on the
   // registry's table, never part of the generated document.
   const stationUsage = useStationUsage();
+  // The consumer half of fleet.usage.fetch. Reported when the annotation
+  // actually carries numbers, not when the fetch returns: an empty map means
+  // the columns rendered as blanks, and a blank column is not a use of the
+  // endpoint. `reach` downgrades this to `auto` on its own if the tab is
+  // hidden, so a background tab pre-rendering the table does not count as
+  // having shown anybody anything.
+  const usageRows = Object.keys(stationUsage).length;
+  useEffect(() => {
+    if (usageRows > 0) reach('fleet.usage.shown', 'show');
+  }, [usageRows]);
   const [query, setQuery] = useState('');
   const [facets, setFacets] = useState<Facets>(new Map());
   // Sort chain: sorts[0] is primary, sorts[1] secondary, … Click a header to
@@ -86,7 +97,15 @@ export function FleetTable() {
     );
   }
 
-  const onSort = (key: ColKey, additive: boolean) => setSorts((prev) => {
+  const onSort = (key: ColKey, additive: boolean) => {
+    reach('fleet.sorted', 'act');
+    // Sorting BY the usage column is the strongest evidence /usage/stations.json
+    // earns the request it costs on every visit — somebody did not merely see
+    // the numbers, they asked a question of them.
+    if (key === 'use') reach('fleet.usage.sorted', 'act');
+    return applySort(key, additive);
+  };
+  const applySort = (key: ColKey, additive: boolean) => setSorts((prev) => {
     const at = prev.findIndex((s) => s.key === key);
     if (additive) {
       if (at >= 0) return prev.map((s, i) => (i === at ? { key, dir: s.dir === 1 ? -1 : 1 } : s));
@@ -96,7 +115,11 @@ export function FleetTable() {
     return [{ key, dir: 1 }, ...prev.filter((s) => s.key !== key)];
   });
   const sortRank = (key: ColKey) => sorts.findIndex((s) => s.key === key);
-  const toggleValue = (key: ColKey, value: string) => setFacets((prev) => {
+  const toggleValue = (key: ColKey, value: string) => {
+    reach('fleet.faceted', 'act');
+    return applyFacet(key, value);
+  };
+  const applyFacet = (key: ColKey, value: string) => setFacets((prev) => {
     const next = new Map(prev);
     const set = new Set(next.get(key) ?? []);
     if (set.has(value)) set.delete(value); else set.add(value);
@@ -127,7 +150,10 @@ export function FleetTable() {
           className="fleet-search"
           placeholder="Free text: e.g. mame, kiosk, tcg, warpd…"
           value={query}
-          onChange={(ev) => setQuery(ev.target.value)}
+          onChange={(ev) => {
+            if (!query && ev.target.value) reach('fleet.searched', 'act');
+            setQuery(ev.target.value);
+          }}
           aria-label="Filter stations"
         />
         {activeCount > 0 && (

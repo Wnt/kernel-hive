@@ -123,6 +123,8 @@ from auth import gate  # noqa: E402  (import needs the sys.path line above)
 from auth import routes as auth_routes  # noqa: E402
 from auth.service import AuthService  # noqa: E402
 from config import (  # noqa: E402
+    ANALYTICS_DB,
+    ANALYTICS_RETENTION_DAYS,
     AUTH_STATE,
     BIND_IP,
     CERT,
@@ -141,6 +143,8 @@ from config import (  # noqa: E402
 )
 from static_files import MIME  # noqa: E402
 
+import analytics  # noqa: E402
+
 # Both filled in by main() when the public listener is enabled; the request
 # handlers reach them as module globals.
 AUTH = None
@@ -150,6 +154,11 @@ STREAM_KEY = b""
 # real a use of it as a visitor's. Only the per-PERSON half needs a session, and
 # that half lives behind /auth/usage/report.
 USAGE = usage.UsageStore(USAGE_STATS)
+# Feature reach, flow funnels and grouped errors. On BOTH listeners for the same
+# reason as USAGE, and with one difference that is the point of the plane: it
+# takes no identity on either, so there is no per-person half to fence off.
+ANALYTICS = analytics.AnalyticsStore(ANALYTICS_DB)
+ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -423,6 +432,16 @@ class H(BaseHTTPRequestHandler):
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
 
+        # POST /analytics — one tab's feature-reach / flow / error counters.
+        if path == "/analytics":
+            # Same origin check as /usage on the public listener, and for the
+            # same reason: no other site gets to spend a visitor's cookie
+            # writing into a table the lab makes decisions from. No user id is
+            # read here on EITHER listener — this plane stores none.
+            if self.public and self.headers.get("Origin") != PUBLIC_ORIGIN:
+                return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
+            return analytics.handle_post(self, ANALYTICS)
+
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
             if not self._require_box_side("clientcmd enqueue"):
@@ -466,6 +485,12 @@ class H(BaseHTTPRequestHandler):
         # GET /usage/stations.json — per-station totals, no identities in it.
         if path == "/usage/stations.json":
             return usage.serve_stations(self, USAGE)
+
+        # GET /analytics/report.json — feature reach, funnels and top errors.
+        # No identities in it (see serve/analytics.py), so it needs no more of a
+        # gate than /usage/stations.json does.
+        if path == "/analytics/report.json":
+            return analytics.serve_report(self, ANALYTICS, parse_qs(urlparse(self.path).query))
 
         if path == "/signal/index.json":
             return signal_route.serve_index(self)

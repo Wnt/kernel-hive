@@ -11,6 +11,18 @@ lists the external inputs, and points into the authoritative runbooks in order.
 `docs/gallery-credentials.md` (guest login table) is **gitignored on purpose**
 and exists only on private working copies — keep it that way.
 
+## ANALYTICS.md — feature reach, flow funnels, error rates
+
+[ANALYTICS.md](ANALYTICS.md) — **the third telemetry plane**: which parts of the
+code earn their keep, where user flows die, and how many errors each flow
+produces. Built entirely inside kernel-hive (no external service). Carries the
+intent ladder that separates "this endpoint is called on every page load" from
+"somebody actually used the answer", the client-class dimension that keeps this
+lab's own browser-probe fleet out of the human totals, the catalogue gate that
+makes a zero mean "unused" rather than "uninstrumented", and the coverage cross
+(`scripts/dev/reach-report.py`) that puts production reach beside unit-test
+coverage. Read §8 before adding a probe — it lists the double-count traps.
+
 ## lab/ — labhost and its platform
 
 | Doc | What it is |

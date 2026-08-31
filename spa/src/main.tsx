@@ -8,6 +8,7 @@ import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { initClientDebug, setTelemetryAllowed } from './three/clientDebug';
+import { initAnalytics, reportError } from './analytics';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -52,6 +53,12 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
         source: 'react',
         componentStack: info.componentStack || '',
       };
+      // BOTH lanes, deliberately. /clientlog keeps the stack and the component
+      // stack so one broken session can be read; this keeps the fingerprinted
+      // COUNT so a fault that happens four hundred times is one row that says
+      // so. The fingerprint is printed into neither by accident — it is how an
+      // operator gets from the top row of the report back to a real stack.
+      reportError({ message: input.message, source: 'react', stack: input.stack });
       if (window.__kernelHiveReportError) {
         window.__kernelHiveReportError(input);
       } else {
@@ -130,6 +137,15 @@ function mount(session: Session) {
   const signedOutAtTheDoor = session.role === 'anon'
     && isWalkinPath(window.location.pathname, import.meta.env.BASE_URL);
   setTelemetryAllowed(!signedOutAtTheDoor);
+  // The feature-reach plane rides the SAME answer, not a second policy: it is
+  // the identical question (may this tab talk to the box at all), and two
+  // separate gates would drift the first time one of them was tightened.
+  // A walk-in signed IN is deliberately included — the walk-in plane is a whole
+  // surface built for strangers, and leaving it out would make it look unused.
+  initAnalytics({
+    sessionId: window.__kernelHiveErrorSessionId || 'unknown',
+    allowed: !signedOutAtTheDoor,
+  });
   if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {
     initClientDebug();
   }

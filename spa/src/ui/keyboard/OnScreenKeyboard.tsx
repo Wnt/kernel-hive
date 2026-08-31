@@ -27,6 +27,7 @@ import { diffProxyValue } from './freeTextDiff';
 import { hapticTap } from './haptics';
 import { DANGER_ARM_MS, LONGPRESS_MS, PROXY_SENTINEL } from './oskConstants';
 import { OSK_CSS } from './oskStyles';
+import { reach } from '../../analytics';
 
 /** 3-state visual Shift: off → base glyphs, once → shifted (auto-reverts after
  *  the next glyph), caps → shifted (sticky). Indexes qwertyLayout base/shifted. */
@@ -110,6 +111,12 @@ export function OnScreenKeyboard({
   const pressDef = (def: KeyDef) => {
     const sender = senderRef.current;
     if (!sender) return;
+    // Distinct from station.key.used on purpose: both fire for one on-screen
+    // press, and the difference between the two totals is how much of the
+    // gallery's typing goes through the touch keyboard rather than a real one.
+    // That is the number that decides whether the exotic layout data
+    // (keyboardProfiles.data.exotic) is worth maintaining per machine.
+    reach('keyboard.osk.used', 'act');
     if (def.repeat) {
       sender.startRepeat(def);
       // Mirror the engine's cross-key disarm: a repeat press clears armed state.

@@ -37,6 +37,16 @@ AUTH_UI = Path(os.environ.get("AUTH_UI", str(_HERE / "authui")))
 # irreplaceable account database and a counter written every few seconds has no
 # business sharing it.
 USAGE_STATS = Path(os.environ.get("USAGE_STATS", str(_HERE / "usage-stats.json")))
+# Feature-reach / flow / error counters (serve/analytics.py). A THIRD file for a
+# third question: clientlog.jsonl is a rolling window pruned by age, usage-stats
+# is per-STATION popularity, and this is per-FEATURE reach that has to outlive
+# both. SQLite rather than JSON because it is read by day-range and appended to
+# by every tab; a whole-document rewrite per batch is what the other two can
+# afford and this cannot.
+ANALYTICS_DB = Path(os.environ.get("ANALYTICS_DB", str(_HERE / "analytics.db")))
+# Days of per-day detail kept (serve/analytics.py prunes on startup).
+ANALYTICS_RETENTION_DAYS = int(os.environ.get("ANALYTICS_RETENTION_DAYS", "730"))
+
 # Shared with every streamhost unit as SH_SESSION_KEY. Read once at startup:
 # rotating it means restarting both sides anyway.
 STREAM_KEY_FILE = Path(os.environ.get("STREAM_KEY_FILE", str(_HERE / "pki" / "stream-ticket.key")))

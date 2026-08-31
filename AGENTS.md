@@ -80,6 +80,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md) |
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** |
+| Know whether a feature is used, or where a flow breaks | [`docs/ANALYTICS.md`](docs/ANALYTICS.md); `scripts/dev/reach-report.py` |
 | Measure performance | [`docs/lab/MEASUREMENT-METHODOLOGY.md`](docs/lab/MEASUREMENT-METHODOLOGY.md) |
 | Get a cloud agent onto labhost | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
 | Find anything else | [`docs/README.md`](docs/README.md) |

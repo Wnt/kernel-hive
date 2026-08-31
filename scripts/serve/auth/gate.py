@@ -159,6 +159,12 @@ WALKIN_PATHS = frozenset(
         # a walk-in is exactly the session nobody can reach any other way.
         "/clientlog",
         "/usage",
+        # Feature-reach counters. A walk-in exercises a DIFFERENT set of the UI
+        # than an invited visitor does — the whole walk-in plane, and none of
+        # the fleet table — so leaving them out would make exactly the surface
+        # built for strangers look unused. It carries no identity to leak
+        # (serve/analytics.py stores none) and the report it feeds is read-only.
+        "/analytics",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —

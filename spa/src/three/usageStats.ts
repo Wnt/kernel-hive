@@ -23,6 +23,7 @@
 // ============================================================================
 
 import { activeDebugTile } from './clientDebug';
+import { withoutHumanCredit } from '../analytics';
 
 /** Flush cadence. Long enough that a busy session is a handful of requests, short
  *  enough that a tab closed by force loses only a few seconds of counting. */
@@ -94,7 +95,13 @@ export function countKeystroke(scancode: number): void {
 export function withSyntheticInput<T>(fn: () => T): T {
   synthetic += 1;
   try {
-    return fn();
+    // ONE bracket, both planes. The analytics plane grades an act by whether a
+    // trusted human edge happened recently, and software input produces no such
+    // edge — but it does run inside handlers that just saw one (the click that
+    // started the demo), so without this it would inherit that click's credit
+    // for every key it sends. Two brackets that had to be remembered separately
+    // would have drifted the first time one caller was added.
+    return withoutHumanCredit(fn);
   } finally {
     synthetic -= 1;
   }

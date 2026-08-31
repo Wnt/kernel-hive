@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { reach } from '../analytics';
 
 // Runtime fleet table. /fleet-table.json is rendered from registry/stations/*.json
 // (+ registry/bridge-suites.json) by stations-registry.py and published to the
@@ -167,6 +168,10 @@ async function fetchStationUsage(): Promise<Record<string, StationUsage>> {
   try {
     // An absolute path, unlike the registry documents above: this one is a live
     // server route, not a file a staged UI copies beside itself.
+    // The producer half of the auto-vs-act pair: this runs on every visit to
+    // /fleet whether or not anybody looks at the two columns it feeds. Its
+    // consumers are fleet.usage.shown / fleet.usage.sorted in FleetTable.tsx.
+    reach('fleet.usage.fetch', 'auto');
     const response = await fetch('/usage/stations.json', { cache: 'no-store', credentials: 'same-origin' });
     if (!response.ok) return {};
     const parsed = (await response.json()) as { stations?: Record<string, StationUsage> };

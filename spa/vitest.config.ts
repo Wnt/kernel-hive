@@ -20,8 +20,16 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      // 'json' is what scripts/dev/reach-report.py reads to put a cov% beside
+      // each probe's owner file — the axis that turns feature reach into a
+      // keep/test/delete decision instead of a popularity list.
+      reporter: ['text', 'html', 'json'],
       include: [
+        'src/analytics/catalogue.ts',
+        'src/analytics/errors.ts',
+        'src/analytics/flows.ts',
+        'src/analytics/index.ts',
+        'src/analytics/intent.ts',
         'src/data/galleryManifest.ts',
         'src/input/moveSamples.ts',
         'src/scene/progressiveLoading.ts',
