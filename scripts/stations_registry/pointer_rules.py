@@ -88,3 +88,19 @@ LEGACY_POINTER_BACKEND = {"abs": "dbus-abs", "rel": "dbus-rel", "warpd": "warpd"
 # `vmport=auto`, so its device ledger names neither `vmmouse` nor `vmport=on`
 # (verified live: dbus SetAbsPosition lands 1:1, a relative delta is ignored).
 POINTER_LEDGER_EXCEPTION = "pointer-vmmouse-implicit"
+
+# Backends that construct NO InputRouter, mirroring the single seam that decides
+# it: `InputRouter::from_config` in streamhost/streamhost/src/realtime_input.rs,
+# whose first match arm is
+#     InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel => return None
+# Everything else builds a sink and therefore routes.
+#
+# DELIBERATELY A NEGATIVE SET, so it fails CLOSED: a backend added tomorrow is
+# treated as routed on the day it is added rather than the day someone remembers
+# to extend a positive list. Only add a name here after checking that arm.
+NON_ROUTED_BACKENDS = {"disabled", "dbus-abs", "dbus-rel"}
+
+
+def constructs_router(backend: str | None) -> bool:
+    """Does this backend build an InputRouter? Absent backend -> no."""
+    return bool(backend) and backend not in NON_ROUTED_BACKENDS

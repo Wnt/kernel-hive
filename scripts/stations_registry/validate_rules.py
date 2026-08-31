@@ -13,6 +13,7 @@ from .pointer_rules import (
     POINTER_LEDGER_EXCEPTION,
     POINTER_METHODS,
     POINTER_MODE_BY_BACKEND,
+    constructs_router,
 )
 from .validate_emulator import validate_emulator, validate_ui
 from .validate_facts import validate_facts
@@ -430,6 +431,30 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             and "spa-pointer-rel" not in row.get("migrationExceptions", [])
         ):
             fail(errors, row, "relative pointer lacks SPA pointerRel or spa-pointer-rel migration exception")
+        # A ROUTED backend must not advertise a relative SPA pointer.
+        #
+        # Keyed on whether the backend CONSTRUCTS AN INPUT ROUTER, not on
+        # transport: `nt351` is transport "abs" on backend "dbus-rel", and
+        # several stations are transport "abs" with no backend at all. Those
+        # build no router, so the type=4 record below is their ONLY injector
+        # rather than a second one, and forbidding the flag there would be wrong.
+        #
+        # Absent is fine; only an explicit true is a violation.
+        if constructs_router(ptr.get("backend")) and row.get("spa", {}).get("pointerRel") is True:
+            fail(
+                errors,
+                row,
+                f"routed backend '{ptr.get('backend')}' with spa.pointerRel true: the SPA only "
+                "emits the type=4 DIRECT relative record when pointerRel is true, and type=4 is "
+                "the ONE pointer record input.rs routes to nobody -- type 1/2/3/5 all consult the "
+                "router, type=4 goes straight to D-Bus Mouse.RelMotion. So this combination lets "
+                "the browser inject relative motion down the PS/2 path while the routed sink still "
+                "believes it owns the guest pointer: two injectors, neither aware of the other. It "
+                "surfaces as intermittent pointer misbehaviour UNDER POINTER LOCK ONLY, which is "
+                "about the hardest symptom on this box to trace back to its cause. Set "
+                "spa.pointerRel false (or drop it) unless you have first made type=4 consult the "
+                "router in input.rs",
+            )
         if ptr["transport"] == "warpd" and "agentAddress" not in ptr:
             fail(errors, row, "warpd pointer missing agentAddress")
         x11 = is_x11_runtime(row)

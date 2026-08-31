@@ -181,6 +181,33 @@ they did not write — and because "unused" is exactly what it looks like to
 anyone tidying. Every such value in this station's fixture now says what it is
 *for*, not just what it is.
 
+What made this survivable was luck about **which rollback happened when**. The
+rollback that was actually taken came after the *failed* cutover, returning the
+pointer to a path it had never left. Had it come after the *successful* one, the
+station would have recovered onto a subtly broken pointer while everyone
+believed it had returned to a known-good state — which is the condition under
+which people stop trusting the station rather than the change.
+
+### The fence that was built instead of a fix
+
+The same trace found that the type=4 DIRECT relative record is the ONE pointer
+record `input.rs` routes to nobody: types 1/2/3/5 all consult the router, type=4
+goes straight to D-Bus `Mouse.RelMotion`. On a routed backend that is a
+single-injector violation waiting for a client to send one — and the only thing
+holding it shut is `spa.pointerRel` being false, which nothing enforced.
+
+`validate_rules.py` now enforces it: **a backend that constructs an
+`InputRouter` may not advertise `spa.pointerRel: true`.** Keyed on the backend,
+not the transport — `nt351` is transport `abs` on backend `dbus-rel`, and several
+stations are transport `abs` with no backend at all; those build no router, so
+type=4 is their ONLY injector and the flag is legitimate. The routed set is
+derived as a NEGATIVE of `from_config`'s own first match arm
+(`Disabled | DbusAbs | DbusRel => return None`), so it fails closed: a sink added
+tomorrow counts as routed the day it is added, not the day someone remembers.
+
+The router consultation on the type=4 arm is the proper fix and is deliberately
+NOT done here — shared input routing is the last thing to change mid-wave.
+
 **No golden recapture.** `kh-ramabs` registers no `VMStateDescription` and models
 no hardware, so it adds no section to the migration stream; the device set and
 `deviceSetId` are unchanged and the golden baked 2026-08-23 still restores.
