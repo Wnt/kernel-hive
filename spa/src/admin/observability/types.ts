@@ -11,8 +11,14 @@
 // ============================================================================
 
 /** Who produced the telemetry. `probe` is this lab's own browser automation,
- *  which would otherwise dominate every number (docs/ANALYTICS.md §4). */
-export type ClientClass = 'human' | 'probe' | 'unknown';
+ *  which would otherwise dominate every number (docs/ANALYTICS.md §4).
+ *
+ *  `server` is the serving plane's own branch probes. A trace never has it —
+ *  only a browser produces spans — but `/analytics/report.json?class=server` is
+ *  real and `reach-report.py --class server` uses it, so a UI reading that
+ *  document needs the class to exist in the type. A view that cannot render it
+ *  should decline it explicitly rather than be unable to name it. */
+export type ClientClass = 'human' | 'probe' | 'unknown' | 'server';
 
 /** OTel status. `unset` is a span that ended without an opinion — which is the
  *  common case, and is NOT the same as success. */
