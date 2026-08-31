@@ -21,10 +21,17 @@
 // SESSION CHURN IS MANDATORY, INCLUDING ONE ABANDONED SESSION.
 // The rhapsody cutover failed with a perfect pointer mechanism: the guest's own
 // coordinate read back exactly the commanded target, and every session after
-// the first timed out negotiating (40 SESSION_ACCEPTED, zero completed) because
-// per-session sink state was never released at teardown. Every sandbox proof in
-// that wave used ONE session, so the method certified the exact defect by
-// construction. A single-session acceptance run is not an acceptance run.
+// the first timed out negotiating (40 SESSION_ACCEPTED, zero completed). Every
+// sandbox proof in that wave used ONE session, so the method certified the exact
+// defect by construction. A single-session acceptance run is not an acceptance
+// run.
+//
+// The cause was daemon-wide QMP contention from the OBSERVATION HARNESS, not a
+// per-session leak (corrected 2026-08-31 from a four-run control matrix; there
+// is no per-session sink state to leak). So sequential churn is confirmed — a
+// daemon-wide stall is invisible to one session — while this probe must be
+// careful not to become the same defect: it holds no exclusive resource, and
+// its sampling interval is bounded per station for exactly that reason.
 //
 // The abandoned session is SIGKILLed, not closed. A `page.close()` still runs
 // an orderly teardown, which is the path that WORKED; what broke was the path

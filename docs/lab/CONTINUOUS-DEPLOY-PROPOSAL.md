@@ -368,9 +368,33 @@ declarations. rhapsody's cutover was attempted and **failed on the live
 station**: the pointer mechanism itself worked (the guest's own coordinate
 read back exactly the commanded target), but every browser session after the
 first timed out negotiating — 40 `SESSION_ACCEPTED`, zero completed
-negotiations, input-router counters frozen at the first session's totals;
-per-session sink state was never released at teardown. The station was rolled
-back and is healthy. The gate then only went green because **three stations'
+negotiations, input-router counters frozen at the first session's totals. The
+station was rolled back and is healthy.
+
+**CORRECTED 2026-08-31, and the correction matters more than the original
+claim.** This document previously attributed that failure to *per-session sink
+state never released at teardown*. **That cause did not happen.** A four-run
+control matrix established the real one: **daemon-wide QMP contention caused by
+the observation harness.** The observer held QEMU's monitor for its whole run;
+QEMU serves one monitor at a time; the idle pauser's `cont` hit its 2 s timeout
+and returned `EAGAIN`; `IdlePauser::session_started()` holds the `st` mutex
+*across* that blocking call, and `handle_session` awaits it before any keyframe
+work — so sessions queued and blew the SPA's negotiation timeout. `dbus-rel`,
+which builds **no `InputRouter` at all**, fails identically with the holder
+running. The original isolation compared the new backend *with* the observer
+against the old one *without* it.
+
+The old explanation was also impossible from the code side, independently
+shown: `RealtimeInputSink` has **no session lifecycle hook**, and `InputRouter`
+is built once per station in `transport::serve`, **outside the accept loop** —
+there is no per-session sink state that could leak.
+
+So the sharpest incident in this document is not a station that broke. **It is
+an instrument that broke the station it was measuring, and a comparison that
+ran the instrument on only one side.** That is a stronger warrant for §6 than
+the original reading, not a weaker one — see the rule there about never holding
+an exclusive resource, and the same-pass control that is what finally told the
+two apart. The gate then only went green because **three stations'
 declarations were reverted to `rel`** — the declared state retreated to match
 live, because live could not be advanced to match it.
 
@@ -856,14 +880,26 @@ exact-match, `frame-compare.py`, streamhost `STAT`):
    failure: the pointer mechanism was perfect, the guest coordinate read back
    exactly the commanded target — and every session after the first timed out
    negotiating (40 `SESSION_ACCEPTED`, zero completed negotiations, counters
-   frozen), because per-session sink state was never released at teardown.
-   Every sandbox proof in that wave (7–14 targets, three observers, two runs,
-   framebuffer-exact) used ONE session, so the method certified the exact
-   defect by construction. A single-session acceptance run is not an
-   acceptance run. Churn is a corollary of the boundary rule — "prove the
-   thing you ship, through the path it ships on" is the lesson; "run it more
-   than once" follows from it. The churn must be *sequential and sparse*, not
-   a hammer — see the observation-rate bound below;
+   frozen). The cause was **daemon-wide QMP contention from the observation
+   harness serializing session start-up**, not a per-session leak (§2, corrected
+   2026-08-31). Every sandbox proof in that wave (7–14 targets, three observers,
+   two runs, framebuffer-exact) used ONE session, so the method certified the
+   exact defect by construction. A single-session acceptance run is not an
+   acceptance run. Churn is a corollary of the boundary rule — "prove the thing
+   you ship, through the path it ships on" is the lesson; "run it more than
+   once" follows from it. The churn must be *sequential and sparse*, not a
+   hammer — see the observation-rate bound below.
+   **What the corrected cause does and does not justify, stated plainly so the
+   requirement is not quietly propped up by evidence that no longer supports
+   it.** *Sequential* churn is confirmed and strengthened: a daemon-wide stall
+   in session start-up is invisible to one session by construction, and shows up
+   in the second. The **abandoned** session is a different matter — its original
+   warrant was the leak-at-teardown story, and that story is gone. It stays in
+   the spec because a client vanishing without an orderly close is a real and
+   cheap thing to test, and because the orderly path is the one that already
+   worked; but it is now a **precaution, not an evidenced requirement**, and
+   anyone who finds it costly should know it is defending a class rather than a
+   measured defect;
 6. `STAT` counters sane *as corroboration only* — telemetry may support a
    pass, never substitute for the framebuffer (I.11); frozen-counter
    comparison across the churn of step 5 is the one place counters are
@@ -938,6 +974,17 @@ condemned a correct fix. The rule is general and cheap: an instrument that
 accumulates must be read at the boundary of the thing being measured, not at the
 end of the run, and a tool built to detect a false signal is not exempt from
 producing one.
+
+**And the strongest case for both of the rules above is that they were written
+from an incident where the observer WAS the defect.** rhapsody's regression —
+40 accepted sessions, zero completed negotiations — was caused by the
+measurement harness holding QEMU's single-client monitor, not by anything the
+cutover shipped (§2). A backend that builds no input router at all failed the
+same way with the holder running. It took a four-run control matrix to
+establish that, and what distinguished "the station is broken" from "the
+instrument is breaking it" was running an untouched station through the same
+pass at the same time. A gate without that control would have read the evidence
+exactly as the wave first read it, and condemned a healthy release.
 
 **Every acceptance pass runs a simultaneous control station.** Because the
 gate can in principle cause what it detects, `failed(reason)` is only

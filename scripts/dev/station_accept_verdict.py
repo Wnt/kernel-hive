@@ -16,11 +16,21 @@ is how a gate becomes untrustworthy:
 WHAT COUNTS AS A PASS — and why each clause is here rather than the obvious
 weaker one:
 
-1. A session AFTER the abandoned one must have NEGOTIATED. This is the whole
-   point of the churn. rhapsody's cutover had a perfect pointer mechanism and
-   40 SESSION_ACCEPTED with zero completed negotiations, because per-session
-   sink state was never released at teardown. Every sandbox proof in that wave
-   used ONE session and so could not have seen it at any repetition count.
+1. A LATER session must have NEGOTIATED. This is the whole point of the churn.
+   rhapsody's cutover had a perfect pointer mechanism and 40 SESSION_ACCEPTED
+   with zero completed negotiations; every sandbox proof in that wave used ONE
+   session and so could not have seen it at any repetition count.
+   The cause was **daemon-wide QMP contention from the observation harness**,
+   established by a four-run control matrix and corrected here 2026-08-31 — not
+   a per-session leak, which was impossible anyway: RealtimeInputSink has no
+   session lifecycle hook and InputRouter is built once per station in
+   transport::serve, outside the accept loop. A backend building no InputRouter
+   at all failed identically with the holder running.
+   Two consequences for this file. Sequential churn is CONFIRMED — a daemon-wide
+   stall in session start-up is invisible to one session and shows up in the
+   second. And this failure is exactly the one an over-eager harness can CAUSE,
+   which is why a FAIL here is only actionable against the station when the
+   same-pass control passed; station-accept.sh, not this module, applies that.
 
 2. That session must show MOTION IN THE WATCHED RECTANGLE — more than one
    distinct rect signature across the samples. Not `videoWidth`, not
@@ -124,7 +134,10 @@ def verdict(
         return (
             "FAIL",
             f"none of the {len(after)} session(s) after the abandoned one negotiated — "
-            "the shape of per-session state never released at teardown",
+            "sessions are being serialized or stalled somewhere daemon-wide. CHECK THE "
+            "CONTROL BEFORE BLAMING THE STATION: this is the exact shape an observer "
+            "holding QEMU's single-client QMP monitor produces, and it is what actually "
+            "caused rhapsody's 40-accepted/0-completed regression",
         )
     moving = [s for s in negotiated if (s.get("idle") or {}).get("distinctRect", 0) > 1]
     if not moving:
