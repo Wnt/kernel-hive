@@ -894,13 +894,21 @@ emit aux \
 # rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):
 #   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from
 #   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without
-#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one
-#   2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip (DEC 21143) bridged onto
-#   the retronet, PS/2 mouse (dbus-rel). loadvm golden -S (the daemon resumes);
-#   the checkpoint restores with OmniWeb 3.0 open on the corpus web.
+#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,
+#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip
+#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the
+#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the
+#   corpus web.
+#   POINTER: absolute with no absolute device and no control loop — `-device
+#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate
+#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is
+#   never in the path and the device set is unchanged (no golden recapture). The
+#   address is bound to the golden; kh-ramabs verifies it at connect and refuses
+#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007
+#   INSTALLED BEFORE this launcher.
 emit rhapsody \
-  --tile rhapsody --vmid 146 --udp 54146 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 2.09 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  --tile rhapsody --vmid 146 --udp 54146 --pointer abs --input-backend \
+  ramabs --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
   --fps 30 --launcher-file "$T/rhapsody/qemu-streamhost.sh" \
   --env-append-file "$T/rhapsody/station.env.fixture"
 
