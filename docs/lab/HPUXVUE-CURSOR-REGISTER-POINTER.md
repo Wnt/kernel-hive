@@ -166,6 +166,18 @@ Keep the measured hotspot: it is a property of the cursor *glyph*, which a
 restore of this station's own checkpoint does not change, and re-homing would
 clamp the pointer into the corner in front of the visitor on every Restore.
 
+**One measured cost of keeping the hotspot.** The glyph is stable across a
+restore of the same checkpoint, but not across the *visitor's* session: if they
+left the pointer over a widget with a different cursor (Mosaic's, say) and then
+pressed Restore, the surviving hotspot belongs to the old glyph. Live
+`cursor-track.mjs` showed exactly that — the first two targets after such a
+restore read 14 px against this station's own 2-4 px baseline, then points 3-5
+came back to 2-4 px as `artist_ptr_track_glyph()` re-learned the hotspot at
+rest. It is a bounded transient of one or two targets that self-corrects, and it
+is the price of not clamping the pointer into the corner in front of the visitor
+on every Restore. Do not read those first samples as a tracking fault; re-run,
+or compare points 3-5.
+
 **The general rule for the next port:** any engine timer on `QEMU_CLOCK_VIRTUAL`
 needs a restore hook. A sibling that uses `QEMU_CLOCK_REALTIME` (`kh-ramabs`,
 patch `0007`) is not exposed to this, and the two are worth telling apart before

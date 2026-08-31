@@ -265,3 +265,35 @@ depth, re-aims, give-ups and the guest runstate.
 **Single injector (binding).** While the control socket is connected the engine
 owns the guest pointer: no rel bridge, no QMP `input-send-event`, no `labctl`
 pointer helper. Two injectors and the loop reads motion it did not cause.
+
+## OPEN: the keyboard does not reach this guest, and it is NOT the pointer bug
+
+Separate fault, found while verifying the 2026-08-31 restore-re-arm fix. Do not
+fold it into that one: the pointer regression is closed and verified, this is not.
+
+**What is proven.** Through the real SPA, on the live station, in one session:
+clicks reach the guest and it reacts (1359 changed pixels — a File Manager icon
+selects; a title-bar click raises and focuses the Mosaic window). Keys, sent
+into that same focused window, change **nothing** — and they change nothing via
+**either** path: the browser/daemon D-Bus `Keyboard.Press` route *and* a direct
+QMP `input-send-event` qcode press/release. Several targets were tried (Motif
+menu bar, File Manager icon selection with arrow keys, Mosaic's URL text field).
+
+**The probe is not the problem.** The same probe against the win311 control
+types `khive` into Notepad and measures 171 changed pixels, and the caret click
+before it measures 30. So a zero on hpuxvue is a statement about hpuxvue.
+
+**What contradicts a simple "the golden carries a dead keyboard" story.** On an
+isolated clone restoring this station's *same* golden with the same device set,
+QEMU-level key injection DID work: 94 changed pixels for typed letters and 976
+for arrow keys moving the File Manager selection. So the checkpoint alone does
+not explain it. Differences still unexcluded between clone and live: the clone
+ran `-display none` where the live station runs `-display dbus,p2p=on`, and the
+live guest has accumulated session state the clone had not.
+
+**Where to start.** Arm `SH_INPUT_TELEMETRY` (via the registry fixture, never by
+hand-editing the generated `station.env`) and read the `key_recv` lines to
+settle whether keys reach the daemon at all; that one bit splits the search in
+half. Note the sibling finding on `aix432`, whose keyboard regression was traced
+to its checkpoint rather than to code — worth checking, not assuming, since the
+clone result above points away from the checkpoint here.
