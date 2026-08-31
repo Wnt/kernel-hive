@@ -36,6 +36,7 @@ kills.
 | I.12 | The QEMU fork was pushed from `qemu-patches/*.patch` by one agent; a second regenerated a patch and found the fork had moved underneath. `qemuBuild.forkCommit` still named the pre-push commit. **No symptom until a build attempt** | repo holds the *recipe*, somewhere else holds the *result* |
 | I.13 | 42 serve-side files deployed 2026-08-30 21:42 to a process running since 2026-08-26 03:10 — the whole auth and walk-in plane, never loaded, on a publicly-open surface. Found only because arming the trigger required costing a restart | **no check exists** for the gap between *deployed* and *loaded* |
 | I.14 | A sibling-import check excluded the one directory that needed it, and its docstring explained why the case could not arise; a route sat behind the visitor gate under a comment asserting it was in front. Two files, two authors, one night | **prose asserting an invariant the code does not have** — it pre-empts the check |
+| I.15 | `main`'s Rust job went red on code unchanged since 2026-08-07, because clippy `1.98.0` added a lint. No commit introduced it; the correctly-scoped push gate could not have caught it and was right not to try | a check whose answer depends on the **commit × environment**, not the commit |
 
 I.12 is the day's third two-sources-of-truth failure — after registry
 declarations vs the live box (I.2/I.5) and rendered manifests vs the registry
@@ -650,6 +651,67 @@ A blanket rule ("every file must have a pair", "no comment may claim an
 invariant") would have been silenced within a week, which is the failure mode
 `deploy-pair-imports.py`'s own docstring already warns about. The test is the
 place for a claim precisely because a test cannot be believed without running.
+
+---
+
+## 2.8 Commit × environment: the family, and where its members belong (I.15)
+
+**Stage 1's rule is that a push gate may test only properties of the commit.**
+Three sections of this document are instances of getting that wrong in
+different places, and it is worth naming the family rather than continuing to
+meet its members one at a time:
+
+| § | the check | the thing it actually depended on |
+|---|---|---|
+| §2 | registry declarations vs the live labctl roster | the **box**, right now |
+| §2.5 | the patch series vs the published fork | an **external branch**, right now |
+| §2.6 | deployed bytes vs the running process | a **process's start time**, right now |
+| §2.8 | `cargo clippy -D warnings` | the **toolchain**, right now |
+
+Each looks like a property of the commit and is not. Each is *green or red for
+reasons no commit changed*. And each, wired into a push gate, blocks people who
+cannot fix it.
+
+**The newest member, measured 2026-08-31.** `main`'s Rust job went red on
+`streamhost/src/audio.rs` — `chunks_exact_to_as_chunks`, a lint that arrived
+with clippy in `rust-1.98.0`. The offending lines have not changed since
+2026-08-07; the file was last touched 2026-08-11. **No commit introduced it.**
+A toolchain moved under three-week-old code, and every branch in flight
+inherited a red `main` without anyone having done anything.
+
+**The pre-push gate said "Rust lint == not owed" throughout, and it was right.**
+Every push in that window contained no Rust, so the gate correctly declined to
+run a stage the range did not owe. That is the range-scoping of §2.1 working,
+not a miss — and the distinction matters, because the tempting "fix" is to make
+the gate run every stage on every push, which would recreate exactly the
+unsatisfiable gate stage 1 removed. **A gate that cannot catch this is not
+defective; it is correctly scoped.** "Does this compile under today's clippy" is
+a property of the commit **×** the toolchain, and the gate only has the commit.
+
+**So the boundary is a stated edge rather than a gap**, and it tells you where
+*not* to look:
+
+- **A push gate** answers questions the commit alone can answer. If a check
+  needs the box, the network, a published artifact, a running process or a
+  toolchain, it does not belong there — it will one day be red for a reason its
+  victim cannot fix, and that is how `SKIP_GATE=1` gets taught.
+- **CI and the reporting surfaces** are where environment-dependent checks
+  belong: re-running is cheap, redness is a report about the world *now* rather
+  than a verdict on one author, and nobody's unrelated push is held hostage. CI
+  caught this one immediately, which is the system working.
+- **When you meet a red `main`, check whether the environment moved before you
+  hunt the commit.** The bisect instinct is wrong here by construction: there is
+  no first bad commit to find.
+
+**And there is a third option worth knowing: pin the environment and it becomes
+a commit property again.** A `rust-toolchain.toml` would make the compiler
+version part of the tree, converting "red because clippy moved" into "red
+because someone bumped the pin" — a real commit, attributable, reviewable, and
+legitimately gateable. That is a genuine design choice with a genuine cost
+(pinned toolchains rot, and someone must own the bump), and it is named here
+rather than recommended, because the same trade applies to the golden refs of
+§5: content-addressing an environment is how you make it testable, and how you
+take on the job of updating it.
 
 ---
 
