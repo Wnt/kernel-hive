@@ -363,7 +363,7 @@ export function flushSpans(): void {
  * to follow, and returning nothing would have made those requests invisible on
  * the server side rather than merely parentless.
  */
-export function traceparent(): string {
+function traceparent(): string {
   const span = currentSpan();
   if (span && span.traceId && span.spanId) {
     return `00-${span.traceId}-${span.spanId}-01`;

@@ -27,7 +27,7 @@ import { PROBES, type ProbeId } from './catalogue';
 import { clientClass, gradeFor, installIntentWitness, type Intent } from './intent';
 import { configureSink, queueProbe } from './sink';
 import { installErrorCapture } from './errors';
-import { configureTracer, type WireSpan } from './trace';
+import { configureTracer, traceHeaders, type WireSpan } from './trace';
 
 // Only what CALL SITES use. `fingerprint`, `witnessHumanEdge` and the flush are
 // exported by their own modules for the tests and the operator plane;
@@ -113,7 +113,7 @@ function postSpans(sessionId: string, spans: WireSpan[]): void {
       method: 'POST',
       keepalive: true,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...traceHeaders() },
       body,
       // No fold-back on failure, unlike the counters. A dropped counter is a
       // number that reads slightly low forever; a dropped span is one trace
