@@ -125,12 +125,51 @@ never run. Verified on `hpuxvue`: HELLO in 2 ms and `STAT` answering while the
 guest has never executed an instruction, `MOVEA` acked in 40 ms while paused, and
 convergence with zero give-ups after `cont`.
 
-## Keep it out of vmstate
+## Keep it out of vmstate — and re-arm on restore, which is not the same thing
 
 Every engine field must be re-derivable from registers the guest owns or from the
 live socket. Then the migration format is untouched, arming the loop needs no
 golden re-bake, and rollback is two lines (drop the `-chardev`/`-global` pair,
 set `SH_INPUT_BACKEND=dbus-rel`).
+
+**"Not in vmstate" is necessary and not sufficient, and the gap is the clock.**
+The window timer runs on `QEMU_CLOCK_VIRTUAL` (above), and re-arms itself to
+`virtual_now + window_ms` from inside its own callback. A `loadvm` *rewinds*
+`QEMU_CLOCK_VIRTUAL` to the snapshot's value — on a station started
+`-loadvm golden -S`, that is earlier than the live clock by the whole elapsed
+session. The pending expiry therefore lands that same elapsed session **in the
+future** of the restored clock, and the window never runs again. The engine is
+not in a bad state; it is simply never called.
+
+Nothing else heals it. `MOVEA` is acked from the receive path, so the daemon
+keeps getting `OK`s and its ack watchdog stays quiet on move-only traffic; the
+reconnect that watchdog eventually forces re-runs `CHR_EVENT_OPENED`, which
+resets engine state but **does not re-arm the timer**. And because the timer is
+also what applies queued button edges, the visitor loses clicks as well as
+motion — and a visitor who cannot click cannot move keyboard focus, so the
+report that reaches the operator is *"the keyboard stopped working"*. One
+stalled timer, all three symptoms; `STAT` shows the signature, `aiming=1` with
+`giveups=0` (it is not giving up, it never gets a window).
+
+Measured on a clone with the live device set: a 60 s session before the restore
+froze the pointer for 63 s, then it thawed and converged normally. A real
+visitor's session freezes it for as long as they had been there, which is why
+this reads as "dead", not "slow".
+
+So register a `qemu_add_vm_change_state_handler` and re-arm the timer whenever
+the machine re-enters `running` — that covers `loadvm` + `cont` (the Restore
+button, `scripts/serve/reset-tile.sh`) and is a harmless re-arm on an ordinary
+idle-auto-pause resume. Drop the reckoning that described the pre-restore guest
+at the same moment (in-flight counts, the last reading, the try/oscillation
+counters, and `ptr_edge_gap_until` — a deadline denominated in the old clock).
+Keep the measured hotspot: it is a property of the cursor *glyph*, which a
+restore of this station's own checkpoint does not change, and re-homing would
+clamp the pointer into the corner in front of the visitor on every Restore.
+
+**The general rule for the next port:** any engine timer on `QEMU_CLOCK_VIRTUAL`
+needs a restore hook. A sibling that uses `QEMU_CLOCK_REALTIME` (`kh-ramabs`,
+patch `0007`) is not exposed to this, and the two are worth telling apart before
+you copy either.
 
 ## Single injector (binding)
 
