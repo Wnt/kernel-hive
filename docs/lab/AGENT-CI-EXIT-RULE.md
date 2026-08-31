@@ -133,6 +133,56 @@ real address substituted in, and are compared in canonical form on labhost
 inside the one batched session, so a placeholder is never written over a live
 address and a scrubbed row never spuriously fails.
 
+## Red `main` that no commit caused — check the environment before the commit
+
+**When `main` goes red, find out whether the ENVIRONMENT moved before you go
+looking for the commit that broke it.** The bisect instinct is wrong here by
+construction: there may be no first bad commit to find, and you can burn an
+afternoon proving that the hard way.
+
+Measured 2026-08-31: the Rust job went red on
+`streamhost/src/audio.rs` — `chunks_exact_to_as_chunks`, a lint that arrived
+with clippy in `rust-1.98.0`. The offending lines had not changed since
+2026-08-07 and the file was last touched 2026-08-11. **No commit introduced
+it.** A toolchain moved under three-week-old code and every branch in flight
+inherited a red `main`.
+
+Check, in this order, before blaming a commit:
+
+1. **Did the toolchain move?** Compare the failing job's reported compiler /
+   linter version against a previously-green run of the same job. A lint name
+   in the error that you have never seen before is the tell.
+2. **Did something outside the repo move?** A published artifact, an upstream
+   branch, a base image, a dependency resolved unpinned.
+3. **Only then** look for a commit — and if you do bisect, expect to find that
+   every commit fails, which is itself the answer.
+
+### Why the pre-push gate did not catch it, and why that is correct
+
+It said `Rust lint == not owed` throughout, because those pushes contained no
+Rust. **That is the range-scoping working, not a miss.** "Does this compile
+under today's clippy" is a property of the commit **× the toolchain**, and the
+gate only has the commit.
+
+So do not "fix" this by making the gate run every stage on every push. That
+recreates exactly the unsatisfiable gate that had to be removed: a check nobody
+can satisfy is a check that teaches `SKIP_GATE=1`, and then it protects
+nothing. **A gate that cannot catch this is not defective; it is correctly
+scoped.**
+
+The rule that follows, and it is the general form:
+
+> **A push gate answers what the commit alone can answer. Checks whose answer
+> depends on the box, the network, a published artifact, a running process or a
+> toolchain belong where re-running is cheap and redness is a report about the
+> world *now* — CI and the drift reports — never where they hold an unrelated
+> author's push hostage.**
+
+`docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md` §2.8 has the full family (live box,
+published fork, deployed-vs-loaded, toolchain) and the option of pinning the
+environment to make it a commit property again — with its cost, which is that
+somebody then owns the bump.
+
 ## File-size budget
 
 `scripts/check-file-size.mjs` enforces per-dialect line-count caps. Soft cap = a
