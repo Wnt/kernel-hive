@@ -391,13 +391,25 @@ def main() -> int:
         if ok:
             print("configuration OK — endpoint reachable and the key was accepted")
             return 0
+        # Only 401/403 is a credential answer. An empty `resourceSpans` is a
+        # legal OTLP document that Instana's acceptor nonetheless 500s on, and
+        # reading that as "bad key" sent somebody hunting for a second key they
+        # already had. Auth happens before payload handling, so ANY other status
+        # means the credential was accepted and the complaint is about the body.
+        if "HTTP 401" in detail or "HTTP 403" in detail:
+            print(
+                "configuration NOT usable — this is the CREDENTIAL.\n"
+                "  Instana's OTLP acceptor takes the AGENT KEY, which is UI-only:\n"
+                "  Instana -> More -> Agents -> Install Agents.\n"
+                f"  Put it in {cfg.token_file} and re-run."
+            )
+            return 1
         print(
-            "configuration NOT usable. The endpoint answered, so this is the credential.\n"
-            "  Instana's OTLP acceptor takes the AGENT KEY, which is UI-only:\n"
-            "  Instana -> More -> Agents -> Install Agents (the key shown there).\n"
-            f"  Put it in {cfg.token_file} and re-run."
+            "credential ACCEPTED and the endpoint is reachable — the refusal above is\n"
+            "  about the empty probe document, not the key. This check deliberately\n"
+            "  sends no spans; use --dry-run to inspect a real batch, then --once."
         )
-        return 1
+        return 0
 
     rc = 0
     while True:
