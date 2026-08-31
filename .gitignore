@@ -144,5 +144,11 @@ scripts/serve/usage-stats.json*
 .fleet-rollout/
 
 # scripts/visitor-sim run manifests — local accounting of what a run touched
-# (walk-in handles created, resets fired), never source, never shared.
+# (walk-in handles created, resets fired), never source, never shared. The
+# default --out-dir is anchored to the tool's own directory (lib/cli.mjs), so
+# it always lands here — but an explicit `--out-dir visitor-sim-runs` typed
+# while sitting at the repo root (the same name shown in --help/the docs)
+# would still land at the git root, so that one specific, narrow case is
+# covered too, belt-and-braces, without ignoring anything else there.
 scripts/visitor-sim/visitor-sim-runs/
+/visitor-sim-runs/
