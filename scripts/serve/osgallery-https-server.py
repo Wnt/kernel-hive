@@ -112,6 +112,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
+import deploy_hint  # noqa: E402
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
@@ -149,6 +150,35 @@ STREAM_KEY = b""
 # real a use of it as a visitor's. Only the per-PERSON half needs a session, and
 # that half lives behind /auth/usage/report.
 USAGE = usage.UsageStore(USAGE_STATS)
+
+
+# The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
+# side effect is bumping one file's mtime; it runs no git operation, spawns no
+# process, and CANNOT say what to deploy. The reconciler fetches origin/main
+# itself and converges to what IT finds.
+#
+# UNARMED UNLESS BOTH SECRETS ARE PRESENT ON THE BOX. Keys are read from
+# root-only files outside the repo — never from anything the repo carries, and
+# never from an env var that could reach a log. With no key the receiver answers
+# 503 to everything, which is the correct default for a public deploy trigger:
+# the closed state is the one you get by doing nothing.
+def _deploy_secret(name: str) -> bytes:
+    path = Path(f"/etc/kh/{name}")
+    try:
+        if path.stat().st_mode & 0o077:
+            return b""  # group/other-readable: refuse rather than trust it
+        return path.read_bytes().strip()
+    except OSError:
+        return b""
+
+
+DEPLOY_HINT = deploy_hint.HintReceiver(
+    keys={
+        "webhook": _deploy_secret("deploy-webhook-secret"),
+        "actions": _deploy_secret("deploy-actions-secret"),
+    },
+    wakeup=Path("/data/vms/streamhost/.kh-reconciler/wakeup"),
+)
 
 
 class H(BaseHTTPRequestHandler):
@@ -380,6 +410,14 @@ class H(BaseHTTPRequestHandler):
                 return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
+
+        # POST /kh/deploy-hint — the deploy trigger (§1.1). Verifies a GitHub
+        # signature and bumps one file's mtime. It cannot name what to deploy,
+        # so a forged or replayed request costs one extra fetch of origin/main
+        # and nothing else. Deliberately OUTSIDE the public gate: authorisation
+        # is write access to the repo, proved by the HMAC, not a visitor session.
+        if path == "/kh/deploy-hint":
+            return deploy_hint.handle_post(self, DEPLOY_HINT)
 
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":

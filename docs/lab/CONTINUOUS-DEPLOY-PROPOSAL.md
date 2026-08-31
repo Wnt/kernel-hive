@@ -758,6 +758,19 @@ station being broken. (2) "Our observation did not cause this failure" must be
 a **positive** check — the same-pass control station above is what provides
 it — never an inference from a quiet log.
 
+**An instrument that observes across two calls attributes the second call's
+behaviour to the first, unless the snapshot is taken between them.** Added
+2026-08-31, and the sharpest instance yet of this section's own subject: the
+audit hook written to PROVE the push gate never reads live box state produced a
+false signal itself. It was installed once and left running across both the gate
+call and the drift-report call, so it counted the *report's* legitimate read and
+attributed it to the gate — reporting "1 roster open by the gate" when the true
+figure was zero. The measurement was wrong in the direction that would have
+condemned a correct fix. The rule is general and cheap: an instrument that
+accumulates must be read at the boundary of the thing being measured, not at the
+end of the run, and a tool built to detect a false signal is not exempt from
+producing one.
+
 **Every acceptance pass runs a simultaneous control station.** Because the
 gate can in principle cause what it detects, `failed(reason)` is only
 trustworthy enough to auto-rollback on if a station fault can be separated
