@@ -12,6 +12,7 @@ from __future__ import annotations
 import sqlite3
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -205,6 +206,61 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(self.store.search()["total"], 0)
         left = self.store._db.execute("SELECT count(*) FROM span WHERE trace_id=?", (T1,)).fetchone()
         self.assertEqual(left[0], 0, "spans outlived their trace summary")
+
+
+class OrphanReportTest(unittest.TestCase):
+    """`orphans()` — the regression detector for the no-orphan invariant
+    (docs/lab/TRACE-CONTEXT.md §8). Its whole reason to exist is that a span
+    naming a parent nobody stored looks perfect from every other angle: the
+    request succeeded, the span is well formed, and only the JOIN is missing.
+    An operator had to hand-write this query to discover a 42.9% rate."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.store = traces.TraceStore(Path(self.tmp.name) / "traces.db")
+        self.now = int(time.time() * 1000)
+        self.old = self.now - 6 * 3600 * 1000  # inside the window, outside the settle gap
+
+    def tearDown(self):
+        self.store.close()
+        self.tmp.cleanup()
+
+    def test_a_parent_that_was_stored_is_not_an_orphan(self):
+        self.store.record(batch([span(S1, start=self.old), span(S2, parent=S1, start=self.old)]))
+        rep = self.store.orphans(self.old - 1000)
+        self.assertEqual(rep["withParent"], 1)
+        self.assertEqual(rep["orphaned"], 0)
+        self.assertEqual(rep["rate"], 0.0)
+
+    def test_a_parent_that_was_never_stored_is_counted_and_named(self):
+        self.store.record(batch([span(S2, parent=S3, name="serve.clientcmd", start=self.old)]))
+        rep = self.store.orphans(self.old - 1000)
+        self.assertEqual(rep["orphaned"], 1)
+        self.assertEqual(rep["rate"], 1.0)
+        self.assertEqual(rep["byName"], [{"name": "serve.clientcmd", "n": 1}])
+
+    def test_a_still_open_parent_at_the_recent_edge_is_not_counted(self):
+        # A flow the visitor has not finished yet is a TRANSIENT orphan: the
+        # root lands the moment it ends. Counting it would make the number a
+        # measure of how busy the box is, not of whether the contract holds.
+        self.store.record(batch([span(S2, parent=S3, name="serve.signal", start=self.now)]))
+        self.assertEqual(self.store.orphans(self.now - 3600_000)["orphaned"], 0)
+
+    def test_a_read_only_store_reports_without_touching_the_file(self):
+        # The report must never migrate the file the serving plane is writing.
+        self.store.record(batch([span(S2, parent=S3, start=self.old)]))
+        self.store.close()
+        path = Path(self.tmp.name) / "traces.db"
+        before = path.stat().st_mtime_ns
+        ro = traces.TraceStore(path, read_only=True)
+        try:
+            self.assertEqual(ro.orphans(self.old - 1000)["orphaned"], 1)
+            with self.assertRaises(sqlite3.OperationalError):
+                ro.record(batch([span(S1, start=self.old)]))
+        finally:
+            ro.close()
+        self.assertEqual(path.stat().st_mtime_ns, before)
+        self.store = traces.TraceStore(path)  # so tearDown has something to close
 
 
 class OtlpTest(unittest.TestCase):

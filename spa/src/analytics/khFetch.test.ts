@@ -113,7 +113,7 @@ describe('installKhFetchPropagation', () => {
     expect(JSON.stringify(span)).not.toContain('x=1');
   });
 
-  it('excludes our own telemetry endpoints from span creation, but still propagates the header', async () => {
+  it('excludes our own telemetry endpoints from span creation AND from the header', async () => {
     installKhFetchPropagation();
     const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
     for (const path of ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd']) {
@@ -121,8 +121,8 @@ describe('installKhFetchPropagation', () => {
     }
     expect(__bufferedSpans()).toHaveLength(0);
     for (const call of calls) {
-      const headers = call.init?.headers as Headers;
-      expect(headers.get('traceparent')).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
+      const headers = call.init?.headers as Headers | undefined;
+      expect(headers?.get('traceparent') ?? null).toBeNull();
     }
   });
 
@@ -135,7 +135,7 @@ describe('installKhFetchPropagation', () => {
   });
 
   it('a throwing telemetry path never breaks the underlying request', async () => {
-    vi.spyOn(traceModule, 'traceHeaders').mockImplementation(() => { throw new Error('boom'); });
+    vi.spyOn(traceModule, 'traceparentOf').mockImplementation(() => { throw new Error('boom'); });
     vi.spyOn(traceModule, 'childOfActive').mockImplementation(() => { throw new Error('boom too'); });
     installKhFetchPropagation();
     const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
@@ -208,20 +208,67 @@ describe('installKhFetchPropagation', () => {
     expect(sentParentId()).not.toBe(root.spanId);
   });
 
-  it('an excluded telemetry path still propagates from the active span', async () => {
+  // ==========================================================================
+  // THE NO-ORPHAN INVARIANT (docs/lab/TRACE-CONTEXT.md §8): a `traceparent`
+  // this tab emits names a span this tab created and will record, or there is
+  // no `traceparent`. Measured 2026-09-01 on the live store: 42.9% of the
+  // spans that declared a parent named one that was never stored, and both of
+  // the producers below are why.
+  // ==========================================================================
+
+  it('an excluded telemetry path emits NO traceparent, even inside an open flow', async () => {
+    // The old contract propagated from the ambient span here. On a path we
+    // have DECIDED not to open a span for, that names an id that will only
+    // ever exist if some unrelated span happens to be recorded — and on
+    // `/clientcmd`, polled every 5 s from a flow root that outlives the poll,
+    // it produced 1,590 permanently rootless `serve.clientcmd` spans in six
+    // hours. No span, no header.
     const root = startTrace('station.connect');
     pushActive(root);
     try {
       installKhFetchPropagation();
       const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
-      await win.fetch(`${ORIGIN}/traces`, { method: 'POST' });
+      await win.fetch(`${ORIGIN}/clientcmd?since=0`);
     } finally {
       popActive(root);
       root.end('ok');
     }
     expect(__bufferedSpans().filter((s) => s.n === 'http.client.request')).toHaveLength(0);
-    expect(sentTraceId()).toBe(root.traceId);
-    expect(sentParentId()).toBe(root.spanId);
+    const headers = calls[0].init?.headers as Headers | undefined;
+    expect(headers?.get('traceparent') ?? null).toBeNull();
+  });
+
+  it('never emits a traceparent naming a span that was never recorded', async () => {
+    // The general form, and the one an excluded-path assertion alone misses:
+    // whatever the outgoing header names must appear in the buffer. Before
+    // the fix this failed two ways at once — a telemetry path borrowed the
+    // ambient id, and a NOOP client span (tracer off, or `MAX_OPEN`
+    // exhausted) fell back to a freshly MINTED id owned by nothing at all.
+    installKhFetchPropagation();
+    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
+    for (const path of ['/restore/beos', '/clientcmd?since=0', '/signal/beos.json', '/analytics']) {
+      await win.fetch(`${ORIGIN}${path}`, { method: 'POST' });
+    }
+    const recorded = new Set(__bufferedSpans().map((s) => s.s));
+    for (const call of calls) {
+      const sent = (call.init?.headers as Headers | undefined)?.get('traceparent');
+      if (sent === null || sent === undefined) continue;
+      expect(recorded.has(sent.split('-')[2])).toBe(true);
+    }
+  });
+
+  it('with the tracer OFF, a traced path emits no traceparent rather than a minted one', async () => {
+    // `MAX_OPEN` exhaustion reaches this same branch in production: the client
+    // span comes back NOOP and there is nothing legitimate to name. One live
+    // tab in that state pointed 6,678 polls at a single id that was never
+    // written.
+    configureTracer({ enabled: false, emit: () => {} });
+    installKhFetchPropagation();
+    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
+    await win.fetch(`${ORIGIN}/restore/beos`);
+    expect(__bufferedSpans()).toHaveLength(0);
+    const headers = calls[0].init?.headers as Headers | undefined;
+    expect(headers?.get('traceparent') ?? null).toBeNull();
   });
 
   // ==========================================================================

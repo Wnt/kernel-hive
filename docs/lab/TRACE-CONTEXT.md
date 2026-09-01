@@ -343,8 +343,9 @@ the gallery's front door — see §8.
 
 ## 4a. The browser hop is automatic, not opt-in — and the page-load join
 
-Until 2026-08-31, `traceHeaders()` in `trace.ts` existed but almost nothing
-called it: of 24 `fetch()` call sites in `spa/src`, only two did — both our own
+Until 2026-08-31, `traceHeaders()` in `trace.ts` (since removed — §4c) existed
+but almost nothing called it: of 24 `fetch()` call sites in `spa/src`, only two
+did — both our own
 telemetry posts (`analytics/index.ts`, `analytics/sink.ts`). Every user-facing
 API call — the manifest, signalling, restore, walk-in auth, the fleet table —
 carried no trace context. That was not 22 bugs, it was one: propagation was
@@ -362,18 +363,18 @@ makes (checked by `URL.origin`, never leaked to a third-party host) it:
 - opens a **client span** FIRST, and adds `traceparent` naming **that
   span** — so the serving plane's entry span is the client span's CHILD and
   the RPC edge exists. Unless the caller already set the header, which is
-  respected, not overwritten. On a path with no span of its own (the
-  telemetry endpoints below) the header still goes out, from the current
-  active span, or a fresh trace when there is none;
+  respected, not overwritten. **On a path with no span of its own, or when
+  the span comes back NOOP, NO HEADER GOES OUT AT ALL** — see §4c, which is
+  the whole of the no-orphan invariant;
 - names that client span `http.client.request` and records method,
   `url.pathname` (never the query string — the same rule `errors.ts`'s fingerprint and this file's own §8
   state), status code and duration — UNLESS the path is one of this repo's own
   telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
   `/usage`, `/clientcmd`), reusing `instana.ts`'s `IGNORE_URL_PATTERNS`
   rather than a second list that could drift from it. A span about sending a
-  span is the feedback loop the per-tab beacon budget exists to prevent — the
-  header still goes out to those endpoints (it always did, by hand), only the
-  client-side span is skipped;
+  span is the feedback loop the per-tab beacon budget exists to prevent. **No
+  span means no header either** (§4c): those requests go out bare and the
+  serving plane roots its own trace;
 - reads the response's return leg (§4b) back onto the client span as
   `kh.backend.trace_id`;
 - respects the same `enabled`/`allowed` gates as everything else in this
@@ -388,11 +389,14 @@ makes (checked by `URL.origin`, never leaked to a third-party host) it:
 **The page-load join.** `trace.ts` also exposes `joinPageLoadTraceFromMeta()`,
 called once from `main.tsx` alongside the fetch patch, before the first flow
 opens. It reads the §4 `<meta name="traceparent">` tag and seeds the id so
-that the FIRST trace this tab opens (`startTrace()`, typically the
-`station.connect` flow) **continues** `serve.page`'s trace instead of minting
-an unrelated one — consumed exactly once, so a second, later flow in the same
-tab (a retry, a second station) still gets its own fresh trace rather than a
-stale parent from page load. Missing or malformed content on the tag (no
+that every trace this tab opens **inside a short window** (`startTrace()` —
+the incidental boot fetches AND the `station.connect` flow, as siblings)
+**continues** `serve.page`'s trace instead of minting an unrelated one. It is
+not a one-shot prize the first caller claims: it was, and in real traffic an
+incidental boot-time fetch routinely won the race against the visit's actual
+main flow. Bounded by a wall-clock window and a join count, so a station
+opened minutes later still gets its own fresh trace rather than a stale parent
+from page load. Missing or malformed content on the tag (no
 server injection, a stale cached document, tracing unbound) leaves the seed
 unset and the first trace mints its own id exactly as it always did — the
 same "malformed → new trace, never refuse the work" rule as §1.
@@ -456,6 +460,80 @@ scope on, and pushing the client span would silently re-parent every span
 opened by unrelated code while the request is in flight. `trace.ts` exports
 `traceparentOf(span)` for exactly this — naming a specific span rather than
 guessing at the current one — and carries the same note.
+
+That fix left the ambient lookup in place as a FALLBACK, which kept half the
+bug alive for another day: `traceHeaders()` still existed and was still what a
+call with no span of its own used. §4c is what removed it, and both functions
+with it. **`traceparentOf(span)` is now the only producer in the tab.**
+
+## 4c. THE NO-ORPHAN INVARIANT: never name a span you will not record
+
+> **A `traceparent` this tab emits names a span this tab has created and will
+> record. Otherwise there is no `traceparent`.**
+
+This is §8's "never invent a parent" seen from the SENDER's side, and it was
+broken for as long as browser propagation has existed. Measured on the live
+store on 2026-09-01, over six hours: **2,839 of 6,620 spans that declared a
+parent — 42.9% — named a parent that was not anywhere in the store.** In
+Instana every one of those renders as *"The root call of the trace is missing
+or has not yet arrived in the processing pipeline"*, and nothing else shows
+it: each span is well formed, each request succeeded, only the join is gone.
+
+Three producers, all in the browser, all now removed:
+
+1. **A minted id, on a path we had already decided not to trace.** `trace.ts`
+   had a private `traceparent()` that, with no active span, returned
+   `00-<new trace id>-<new span id>-01`. Nothing ever created that span.
+   `traceHeaders()` handed it to every telemetry POST, and four of those six
+   endpoints (`/analytics`, `/clientcmd`, `/clientlog`, `/usage`) ARE in the
+   serving plane's route allowlist, so each one recorded an entry span under a
+   parent that would never exist. 565 distinct such ids in the window.
+2. **The ambient fallback.** `khFetch.ts` fell back to `currentSpan()`
+   whenever its own client span was absent — an excluded telemetry path (by
+   design) or a NOOP span (`MAX_OPEN` exhausted, tracer off). That named a
+   flow ROOT, which is only written when the flow ENDS. One tab held
+   `station.connect` open for seven hours and pointed 6,678 polls at an id
+   the store never saw. Twelve such ids accounted for 2,274 of the 2,839.
+3. **A root that never left the tab.** A span is buffered at `end()` and
+   uploaded on the next flush. A visit shorter than the sink's 20 s interval,
+   or a tab closed in a way `pagehide`/`visibilitychange` did not catch, lost
+   the client span while the server span it had already parented survived.
+
+The fixes, in the order the data implicates them:
+
+- **`traceparentOf(span)` is the only producer of an outbound `traceparent`.**
+  `traceparent()` and `traceHeaders()` are gone. A request with no span of its
+  own goes out bare and the serving plane roots its own trace.
+- **The excluded telemetry paths send no header.** The alternative considered
+  was sending the sampled flag OFF, which `tracing_http.begin()` turns into a
+  NOOP span — that suppresses the SERVER span too, and its latency and status
+  are the only record those routes have. Keeping a clean one-span
+  `serve.clientcmd` root beats deleting the evidence to tidy a parent id.
+- **A root span flushes as soon as it ends**, debounced 250 ms so a burst
+  leaves as one batch. Deliberately NOT a shorter interval: the sink's tick is
+  a poll and costs a request whether or not anything happened, so a 1 s
+  interval would be 60 requests a minute from every open tab across the whole
+  wall. Root-end flushing is demand-driven — an idle tab costs nothing, a
+  finished journey costs exactly one request.
+- **`pagehide` abandons every open flow**, ending its root (`unset`, with
+  `kh.abandoned`) so the root is recorded before the tab goes. Deliberately
+  NOT on `visibilitychange`: hidden is not over, and ending a live flow when a
+  visitor switches tab would swallow the `ok()` that follows and depress the
+  connect success rate for every tab-switcher.
+
+**The server side is unchanged, and that is deliberate.** It cannot know
+whether a parent will ever be recorded, and §8's other rule — honour the
+caller's context, never second-guess it — still holds. The invariant is the
+sender's to keep.
+
+**How a regression is caught.** `TraceStore.orphans()` counts stored spans
+whose `parent_id` is in no span row, ignoring the last hour so a flow that is
+merely still open is not miscounted as broken.
+`scripts/observability/trace-orphans.py` prints it (`--max-rate` exits
+non-zero over budget, so it can gate), and
+`scripts/visitor-sim/beacon-probe.mjs` checks the same invariant on the real
+wire from one credentialed page load: no `traceparent` on a telemetry path,
+and every outbound parent id resolving in the store.
 
 ## 4b. The return leg: `traceresponse` is ours, `Server-Timing` is the bridge
 
@@ -639,7 +717,8 @@ merely drawn that way.
   written inside a `try` at one choke point, and an untraced route emits
   nothing at all.
 - **A propagated header names the span that made the call**, never the
-  ambient one. §4a.
+  ambient one — and never a span that will not be recorded. When there is no
+  such span there is NO HEADER. §4a, §4c.
 - **Never propagate into a guest.** §6.
 - **Never put a secret in a span.** The ticket carries the trace id; the trace
   never carries the ticket. Same rule as `traces.py`: no stacktraces, no typed
