@@ -25,8 +25,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "serve"))
 
+# The env var below is what `config.py` reads at import; the directory this
+# module SERVES from is set on `static_files.WEBROOT` in `Base.setUp`, because
+# `WEBROOT` is process-wide and another test module importing `config` first
+# would otherwise hand these tests somebody else's index.html.
 _WEBROOT_TMP = tempfile.TemporaryDirectory()
-WEBROOT = Path(_WEBROOT_TMP.name)
+WEBROOT = Path(_WEBROOT_TMP.name).resolve()
 
 INDEX_HTML = (
     b'<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n'
@@ -59,6 +63,11 @@ class FakeHandler:
 
     public = False
 
+    #: Where `tracing_http.set_response_trace` stashes the return-leg headers.
+    #: On a real handler `tracing_http.instrument` supplies this default and
+    #: clears it per response; here it stands in for that.
+    _kh_trace_response = None
+
     def __init__(self, headers=None):
         self.headers = headers or {}
         self.command = "GET"
@@ -73,11 +82,14 @@ class FakeHandler:
 
 class Base(unittest.TestCase):
     def setUp(self):
+        self._webroot = static_files.WEBROOT
+        static_files.WEBROOT = WEBROOT
         tracing.reset_for_tests()
         self.tmp = tempfile.TemporaryDirectory()
         self.store = traces.TraceStore(Path(self.tmp.name) / "traces.db")
 
     def tearDown(self):
+        static_files.WEBROOT = self._webroot
         tracing.reset_for_tests()
         self.store.close()
         self.tmp.cleanup()
@@ -144,17 +156,22 @@ class TracingOnTest(Base):
     def test_the_document_carries_the_same_span_in_its_response_headers(self):
         """The tag is for a vendor agent reading the DOM; the headers are for
         every other reader, ours included. Two channels, ONE span — if they
-        could disagree, a reader would have no way to tell which one lied."""
+        could disagree, a reader would have no way to tell which one lied.
+
+        The headers are HANDED to `tracing_http` rather than returned in this
+        reply's `extra` dict, and `end_headers` writes them: one writer, so a
+        response cannot carry two disagreeing pairs. That used not to be true —
+        scripts/test_serve_return_leg.py has the bug it cost."""
         h = self._get("/")
-        extra = h.replied[4] or {}
         tag = TAG_RE.search(h.replied[1]).group(1).decode("ascii")
-        self.assertEqual(extra["traceresponse"], tag)
+        self.assertNotIn("traceresponse", h.replied[4] or {})
+        self.assertEqual(h._kh_trace_response["traceresponse"], tag)
         trace_id = tag.split("-")[1]
-        self.assertEqual(extra["Server-Timing"], f"intid;desc={trace_id}")
+        self.assertEqual(h._kh_trace_response["Server-Timing"], f"intid;desc={trace_id}")
 
     def test_the_response_headers_name_a_recorded_span(self):
         h = self._get("/")
-        trace_id = (h.replied[4] or {})["Server-Timing"].split("=", 1)[1]
+        trace_id = h._kh_trace_response["Server-Timing"].split("=", 1)[1]
         tracing.flush()
         self.assertIsNotNone(self.store.trace(trace_id))
 
@@ -162,6 +179,7 @@ class TracingOnTest(Base):
         h = self._get("/assets/app-abcdef01.js")
         self.assertNotIn("traceresponse", h.replied[4] or {})
         self.assertNotIn("Server-Timing", h.replied[4] or {})
+        self.assertFalse(getattr(h, "_kh_trace_response", None))
 
     def test_repeated_requests_mint_distinct_spans(self):
         first = TAG_RE.search(self._get("/").replied[1]).group(1)
@@ -186,6 +204,7 @@ class TracingOffTest(Base):
         h = FakeHandler()
         static_files.serve_static(h, "/")
         self.assertNotIn("traceresponse", h.replied[4] or {})
+        self.assertFalse(getattr(h, "_kh_trace_response", None))
 
     def test_a_non_index_asset_is_never_modified(self):
         h = FakeHandler()
@@ -209,6 +228,7 @@ class FailSafeTest(Base):
             static_files.serve_static(h, "/")
             self.assertEqual(h.replied[1], INDEX_HTML)
             self.assertNotIn("traceresponse", h.replied[4] or {})
+            self.assertFalse(getattr(h, "_kh_trace_response", None))
         finally:
             static_files._traceparent_meta = original
 

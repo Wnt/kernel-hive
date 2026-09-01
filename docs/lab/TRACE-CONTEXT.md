@@ -314,6 +314,21 @@ for any reader that never touches the DOM — the tag is the vendor's channel,
 the headers are everyone's. Two channels, one span: they are emitted together
 or not at all, so they can never disagree about whether a span exists.
 
+**ONE REQUEST, ONE SPAN — the tag names the request's span when there is one.**
+`_traceparent_meta` calls `tracing.current()` first and mints a `serve.page`
+root only when the request has none. That is not a refinement; it is the fix
+for a real fault, live 2026-09-01. An allowlisted route can reach this code:
+`auth_routes.dispatch` in `osgallery-https-server.py` runs only when
+`self.public`, so on the **ungated LAN listener** `/auth/state`, `/auth/me`,
+`/auth/walkin/status`, `/walkin/state` and `/kh/deploy-hint` are answered by
+the SPA fallback — index.html. Minting a second root there gave one HTTP
+request two server spans in two unrelated traces, two `traceresponse` headers
+on the wire, and (when the browser had sent a `traceparent`) one client span
+parenting both a `serve.page` and a `serve.auth.state` — a document navigation
+and an in-page fetch that never happened. The public listener was never
+affected: it answers those paths from the auth plane and never reaches
+index.html. `scripts/test_serve_return_leg.py` pins all of it.
+
 **Deliberately narrow.** This is a targeted, named exception to "static asset
 serving is not traced" (`tracing_http.py`'s allowlist — left unchanged by
 this): only the ONE response that is the start of a visit,
@@ -481,8 +496,13 @@ has a backend trace id it also mirrors it to Instana explicitly
 error, which is indistinguishable from never having tried.
 
 **Written at one choke point, so no reply shape can miss it or be broken by
-it.** `tracing_http.py` wraps `end_headers`, which every reply the stdlib can
-produce passes through: 200, 304, 206, 416, HEAD (headers only, by definition),
+it — and there is exactly one writer.** `tracing_http.set_response_trace()` is
+the only way to name a response's span, and the `end_headers` wrapper is the
+only thing that puts these two headers on a response; no route may add them to
+its own reply. It was two writers for one day: `static_files.py` also merged
+its own copy into the index.html reply's `extra` dict, which is how a single
+LAN response came to carry two pairs (§4). `tracing_http.py` wraps
+`end_headers`, which every reply the stdlib can produce passes through: 200, 304, 206, 416, HEAD (headers only, by definition),
 an error page, and the long-lived streaming replies whose headers are written
 once at the top. The values are stashed when the request span is opened and
 cleared when they are written, so a keep-alive connection cannot leak one
