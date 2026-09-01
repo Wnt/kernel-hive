@@ -8,7 +8,7 @@ import {
 import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { attachSessionResume } from './streamClient/sessionResume';
 import {
-  consumeRetry, retryLimit,
+  consumeRetry, retryLimit, RETRY_REASON_NO_KEYFRAME,
   KEYFRAME_WAIT_MS, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
 } from './streamClient/retryBudget';
 import { isVisible } from './streamClient/resumeSignals';
@@ -307,7 +307,7 @@ export function useStreamhostSession(
       // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       logClientEvent('connect-retry', `attempt=${attempt}/${v.limit} live=${liveReached} restore=${expectedRestore} why=${why}`);
-      tel.retry();
+      tel.retry({ attempt, limit: v.limit, reason: why, live: liveReached, restore: expectedRestore, exhausted: v.exhausted });
       if (v.exhausted) {
         fail(liveReached
           ? 'lost the connection to this tile — tap Reconnect to try again'
@@ -431,11 +431,11 @@ export function useStreamhostSession(
         // dead one from here. Say which it is, and give the sink's own resume
         // path a fresh budget rather than tearing down a working stream.
         if (isPausedSink(sinkProbeRef.current?.() ?? null, isVisible())) {
-          logClientEvent('sink-stalled', `paused sink, transport healthy — not retrying ep=${signalEndpoint}`);
+          tel.sinkPaused(signalEndpoint, isVisible());
           watchdog = window.setTimeout(rearm, RELIVE_KEYFRAME_WAIT_MS);
           return;
         }
-        scheduleRetry('no keyframe within budget');
+        scheduleRetry(RETRY_REASON_NO_KEYFRAME);
       };
       watchdog = window.setTimeout(rearm, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
 

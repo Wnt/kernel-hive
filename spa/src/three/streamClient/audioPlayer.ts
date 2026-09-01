@@ -9,6 +9,7 @@
 // ============================================================================
 
 import type { ByteReader } from './byteReader';
+import { noteAudioBlocked, noteAudioStart } from './analyticsEvents';
 
 export class AudioPlayer {
   private audioDecoder: AudioDecoder | null = null;
@@ -16,6 +17,23 @@ export class AudioPlayer {
   private audioGain: GainNode | null = null;
   private audioEnabled = false;
   private playHead = 0;
+  /** Session start, for `stream.audio.toFirstSampleMs`. The question that
+   *  metric answers is the VISITOR's — how long after opening a machine does
+   *  it make a sound — so it is measured from the moment this session's audio
+   *  path exists, not from the first Opus packet (which would measure only the
+   *  decoder, and would return zero on every sample). */
+  private readonly createdAt = AudioPlayer.now();
+  /** One-shots: the first sample heard, and the first sample that could not
+   *  be. Independent, because a session blocked by autoplay policy and later
+   *  unblocked by a gesture must report BOTH — reporting only the first would
+   *  make every recovered session look permanently silent. */
+  private reportedStart = false;
+  private reportedBlocked = false;
+
+  private static now(): number {
+    try { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
+    catch { return Date.now(); }
+  }
 
   /** onError mirrors the original `this.stats.lastError = …` assignments. */
   constructor(private readonly onError: (msg: string) => void) {}
@@ -89,6 +107,19 @@ export class AudioPlayer {
       if (this.playHead < now + 0.02) this.playHead = now + 0.02; // small anti-underrun lead
       src.start(this.playHead);
       this.playHead += buffer.duration;
+      // The only proof this exhibit has audible sound. A configured decoder
+      // and a scheduled buffer prove neither: a suspended context accepts both
+      // and plays nothing, which is why the state is checked here rather than
+      // at setup, and why the two one-shots below are independent.
+      if (ctx.state === 'running') {
+        if (!this.reportedStart) {
+          this.reportedStart = true;
+          noteAudioStart(AudioPlayer.now() - this.createdAt, data.sampleRate, ctx.state);
+        }
+      } else if (!this.reportedBlocked) {
+        this.reportedBlocked = true;
+        noteAudioBlocked(ctx.state, 'context-not-running');
+      }
     } catch (e) {
       this.onError(`aplay: ${String(e)}`);
     } finally {
@@ -100,7 +131,14 @@ export class AudioPlayer {
     this.audioEnabled = on;
     if (this.audioGain) this.audioGain.gain.value = on ? 1 : 0;
     if (on && this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume().catch(() => { /* needs a gesture */ });
+      // A rejected resume is the autoplay policy saying no, and until now it
+      // was swallowed here with a comment — the visitor watched a silent
+      // machine and nothing outside their tab could ever know.
+      this.audioCtx.resume().catch((e) => {
+        if (this.reportedBlocked) return;
+        this.reportedBlocked = true;
+        noteAudioBlocked('suspended', e instanceof Error ? e.name : String(e));
+      });
     }
   }
   isEnabled(): boolean { return this.audioEnabled; }

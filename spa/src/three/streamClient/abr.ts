@@ -21,6 +21,7 @@ import {
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
 } from './constants';
 import { latchSoftwareDecode } from './softwareDecodeLatch';
+import { noteDecoderRebuild, noteStallLatched } from './analyticsEvents';
 
 /** Rolling window the REPORTED loss percentage is measured over (ms). */
 const LOSS_WINDOW_MS = 3000;
@@ -163,6 +164,16 @@ export function tickStatsImpl(this: StreamClient): void {
     !!this.wt && !this.disposed && decodeRef > 0
     && (now - decodeRef > FRAME_STALL_MS);
   if (stalledNow && !this.frameStalled) {
+    // THE LATCH EDGE ONLY. A stall that lasts a minute is one event, not six
+    // hundred ticks of one — the analytics plane counts episodes, and a level
+    // reported per tick would make the count a function of how long the tab
+    // stayed open rather than of how often stations freeze.
+    noteStallLatched({
+      thresholdMs: FRAME_STALL_MS,
+      sinceLastPaintMs: now - decodeRef,
+      hadDecodeError: !!this.lastDecodeError,
+      stationId: this.stationId,
+    });
     logClientEvent(
       'stall',
       `frame watchdog latched (> ${FRAME_STALL_MS}ms no decoded frame)${this.lastDecodeError ? `; last decoder error: ${this.lastDecodeError}` : ''}`,
@@ -197,6 +208,7 @@ export function tickStatsImpl(this: StreamClient): void {
     latchSoftwareDecode();
     this.hwFellBack = true;
     this.hwDecodeOk = false;
+    noteDecoderRebuild(this.stallRebuildsWithoutOutput, MAX_SILENT_STALL_REBUILDS, this.stationId);
     logClientEvent('stall', `decoder rebuild ${this.stallRebuildsWithoutOutput}/${MAX_SILENT_STALL_REBUILDS} (silent stall: AUs arriving, no output) — demoting to software decode`);
     try { this.videoDecoder?.close(); } catch { /* noop */ }
     this.videoDecoder = null;

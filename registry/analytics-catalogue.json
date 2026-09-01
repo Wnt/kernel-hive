@@ -127,6 +127,62 @@
         "act"
       ]
     },
+    "stream.audio.blocked": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the AudioContext refused to resume (autoplay policy or a dead context), so this visitor is watching a silent machine and nothing told us",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.audio.start": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the first Opus sample actually reached the speakers on this session — the only proof a station has audible sound",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.decode.error": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a WebCodecs configure/decode call failed — previously caught, console-logged and therefore invisible to installErrorCapture and to reportError",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.decode.rebuild": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a silently wedged decoder (AUs arriving, no output, no error callback) was torn down and rebuilt",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.decode.softwareLatched": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "this page gave up on the hardware decoder for the rest of its life — a visitor now paying CPU for every frame, and until now leaving no trace at all",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.keyframe.gap": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a frame_id gap armed the decode gate, so the picture is frozen on the last clean frame until the next key AU heals the reference chain",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.keyframe.timeout": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the transport was up and the first-frame budget expired without a keyframe, so the ladder spent an attempt on a station that answered but did not paint",
+      "grades": [
+        "auto"
+      ]
+    },
     "stream.overlay.shown": {
       "area": "stream",
       "owner": "src/ui/grid/StreamView/DebugOverlay.tsx",
@@ -136,10 +192,66 @@
       ],
       "consumes": "stream.stats.polled"
     },
+    "stream.quality.switch": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the server moved a live viewer to a different encoder tier/CRF — the event the 5-second stats sample structurally could not report",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.resume.decision": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the resume policy judged a backgrounded session live or dead, and on what evidence — the branch that decides whether a return costs a rebuild",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.sink.paused": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the <video> sink is paused on a visible page, so nothing is CONSUMING a healthy stream — the fault videoResume.ts exists for, previously clientlog-only",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.stall.detected": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the client frame watchdog latched — no decoded frame for well past the station heartbeat while the transport still looked healthy",
+      "grades": [
+        "auto"
+      ]
+    },
     "stream.stats.polled": {
       "area": "stream",
       "owner": "src/ui/grid/StreamView/useStreamSession.ts",
       "what": "a station session started polling live stream stats for the debug overlay",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.transport.closed": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the WebTransport session ended, and whether it was a clean server-side close, a QUIC error or a connect that never opened",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.transport.exhausted": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the retry budget ran out: this session is over and the visitor is looking at a poster or an error, the terminal outcome retryBudget.ts had no way to report",
+      "grades": [
+        "auto"
+      ]
+    },
+    "stream.transport.retry": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "the connect ladder spent one attempt, with the reason it spent it — reported per retry, unlike the attempt COUNT which only exists for sessions that eventually painted",
       "grades": [
         "auto"
       ]
@@ -384,6 +496,36 @@
       "what": "a high value means the golden-reset button feels broken even when the host reset instantly — the reconnect after it, not the reset itself, is where the wait is",
       "scale": "ms"
     },
+    "stream.audio.toFirstSampleMs": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means sound arrives long after the picture, so a visitor has already decided the exhibit is silent before it speaks",
+      "scale": "ms"
+    },
+    "stream.decode.errorRun": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means decode failures are arriving consecutively with no output between them, which is a dead decoder rather than a bad frame",
+      "scale": "count"
+    },
+    "stream.keyframe.gapFrames": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means whole runs of frames are missing at once, so the link is dropping bursts rather than the occasional packet",
+      "scale": "count"
+    },
+    "stream.keyframe.waitMs": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means visitors wait out the full first-frame budget on stations that connect but do not paint, so the budget is being spent rather than used",
+      "scale": "ms"
+    },
+    "stream.quality.sinceLastSwitchMs": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a LOW value means the encoder is thrashing between tiers rather than settling — the flap signature, which a switch count alone cannot separate from honest adaptation",
+      "scale": "ms"
+    },
     "stream.recover.abandonedAfterMs": {
       "area": "stream",
       "owner": "src/three/recoverTelemetry.ts",
@@ -395,6 +537,24 @@
       "owner": "src/three/recoverTelemetry.ts",
       "what": "a high value means visitors sit through long visible freezes before the picture returns, so the recovery ladder is too slow to hide the fault it is recovering from",
       "scale": "ms"
+    },
+    "stream.resume.probeMs": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means the liveness probe that gates every resume is itself slow, so the black area after coming back is partly this decision rather than the rebuild it triggers",
+      "scale": "ms"
+    },
+    "stream.stall.sinceLastPaintMs": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means the watchdog only notices long after the picture stopped, so the client-side threshold is set above what a visitor will sit through",
+      "scale": "ms"
+    },
+    "stream.transport.retryAttempt": {
+      "area": "stream",
+      "owner": "src/analytics/streamEvents.ts",
+      "what": "a high value means retries are landing deep in the budget rather than succeeding on the first re-try, so the backoff ladder is absorbing a fault instead of riding out a blip",
+      "scale": "count"
     },
     "walkin.play.claimRetries": {
       "area": "walkin",

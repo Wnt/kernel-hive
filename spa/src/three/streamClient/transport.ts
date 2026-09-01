@@ -13,6 +13,7 @@ import type { StreamClient } from '../streamClient';
 import { ByteReader } from './byteReader';
 import { fetchSignal } from './signal';
 import { logClientEvent, flushNow } from '../clientDebug';
+import { noteTransportClosed } from './analyticsEvents';
 
 /** How long WebTransport may sit in `ready` before we record the silence as
  *  evidence. Chrome gives up on a blackholed QUIC handshake at its own idle
@@ -181,12 +182,17 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     // `this.wt === wt` guards a session we already replaced ourselves (poisoned-
     // session rebuild) from reporting its own teardown as a drop.
     void wt.closed
-      .then(() => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'server-finished'; logClientEvent('wt-close', 'clean close (server-finished)'); this.setState(false, 'session closed'); } })
-      .catch((e) => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'transport-down'; logClientEvent('wt-close', `transport error: ${String(e)}`); this.setState(false, `closed: ${String(e)}`); } });
+      .then(() => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'server-finished'; noteTransportClosed('server-finished', this.stationId); logClientEvent('wt-close', 'clean close (server-finished)'); this.setState(false, 'session closed'); } })
+      .catch((e) => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'transport-down'; noteTransportClosed('transport-down', this.stationId); logClientEvent('wt-close', `transport error: ${String(e)}`); this.setState(false, `closed: ${String(e)}`); } });
   } catch (e) {
     this.wtReady = false;
     this.stats.lastError = `connect: ${String(e)}`;
     this.exitReason = 'transport-down';
+    // The THIRD term a WebTransport session can end on, and the one with no
+    // session to close: connect() threw before `ready` ever settled. Named
+    // apart from 'transport-down' because they are different faults — one is a
+    // link that died, the other is a link that never opened.
+    noteTransportClosed('connect-failed', this.stationId);
     logClientEvent('wt-close', `connect failed: ${String(e)}`);
     this.setState(false, this.stats.lastError);
   }
