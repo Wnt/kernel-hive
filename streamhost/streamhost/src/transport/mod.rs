@@ -222,7 +222,16 @@ pub async fn serve(
                     let key_reap_tx = key_reap_tx.clone();
                     tokio::spawn(async move {
                         if let Err(e) = handle_session(incoming, cfg, cap, enc, audio, abr, pauser, input_router, mouse, key_reap_tx).await {
-                            eprintln!("[transport] session error: {e:?}");
+                            // No ctx: the session's own context died with it,
+                            // and inventing one here would manufacture a
+                            // correlation that joins to nothing. The record is
+                            // still searchable by station and severity, which
+                            // is what "which station is failing sessions" needs.
+                            crate::sh_log!(
+                                crate::trace::Level::Error,
+                                None,
+                                "[transport] session error: {e:?}"
+                            );
                         }
                     });
                 }

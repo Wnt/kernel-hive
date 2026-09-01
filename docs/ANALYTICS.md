@@ -1638,6 +1638,132 @@ one household and one city.
 **It is temporary.** It exists only because Instana does, and it is listed in
 §8.2's off switch as its own leg for exactly that reason.
 
+## 8.5 The LOG plane — the third pillar, and the only one that carries a stack
+
+Until 2026-09-01 this lab had traces and metrics on two planes and **logs on
+neither**. Instana's Logs pillar was empty; the serving plane's stdout went to a
+flat file with no timestamps; the daemon's 747 000 lines a day went to journald
+and nowhere else; and the one queryable record of anything — `clientlog.jsonl` —
+was a rolling JSONL file with no severity and no way to relate a line to the
+span it happened inside.
+
+**The value is not shipping log files somewhere. It is a log record joined to a
+trace.** Every record carries `trace_id`/`span_id` where a span was in scope, so
+a slow `guest.attach` and what the daemon printed during it are one query apart
+— in our own store and in Instana, which takes the same two fields "without any
+alterations" ([`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md)).
+
+### The model
+
+`scripts/serve/logs_schema.py`, one table, `logs.db` beside `traces.db`:
+
+| Column | Why it exists |
+|---|---|
+| `seq` | `INTEGER PRIMARY KEY AUTOINCREMENT` — the forwarder's watermark. AUTOINCREMENT, not a plain rowid, so a delete can never hand the same number out twice; a duplicate watermark is silent data loss and the trace store had to be migrated to fix exactly that. |
+| `ts_ms` / `observed_ms` | The producer's clock and ours. Both, always: a store with one timestamp cannot tell a slow carrier from a slow event, which is the question a stall investigation opens with. |
+| `severity` / `sev_num` | OTel text and SeverityNumber. Text is what a human filters on; the number makes "at least WARN" a range query, and is what Instana falls back to. |
+| `service` / `instance` | `kernel-hive-spa` \| `-serve` \| `-daemon`, and the station, tab or box within it. Together they are the OTLP resource identity. |
+| `trace_id` / `span_id` | The join. Nullable, because some records genuinely have no span in scope (a boot line, a timer tick) and inventing an id that joins to nothing is worse than admitting there is none. |
+| `body`, `attrs`, `session_id`, `build`, `day` | The message, structured attributes (a stack included), and the three facts every triage query groups by. |
+
+The trace store's `BANNED_ATTRS` do **not** apply here. A stack is the most
+useful thing a log record can carry, and refusing it is precisely what kept
+`clientlog.jsonl` alive as a parallel store. Stacks land as
+`exception.stacktrace`, which is the attribute name Instana documents support
+for.
+
+### What each producer emits
+
+- **Serving plane** — `scripts/serve/logsink.py`. Every line goes to stderr
+  (and therefore to the file) **always**; the store is additive, so a failure
+  of the new path costs queryability and never the line. `tracing.current()` is
+  read at write time, so a line emitted inside a request span carries that
+  span's ids. `logsink.install_logging()` routes the stdlib root logger in as
+  well. Two file traps are closed on the way past: every line now carries an
+  ISO-8601 UTC timestamp, and `logsink.boot_banner()` writes one `=== BOOT`
+  delimiter per process start — the append-mode log had neither, and output
+  written before a fix read exactly like output written after it.
+  **The per-request access line is deliberately NOT stored** (`LOG_ACCESS=1`
+  folds it in at DEBUG): it is ~184 000 lines a day and every one is already a
+  richer span next door.
+- **Station daemon** — `streamhost/src/trace/logs.rs`, `sh_log!`. Same carrier
+  as the span spool: a file per batch under
+  `/data/vms/streamhost/stations/<station>/logs/`, tmp+rename, shipped by the
+  same `trace-ship.py` timer. `eprintln!` still happens for every line, so
+  journald keeps the firehose. The floor is **WARN** (`SH_LOG_LEVEL` raises it)
+  — see the cost table below for why. `Span::error()` also emits a correlated
+  ERROR record automatically, so every failed daemon span has a working pivot
+  with no call site able to forget.
+- **Browser** — `spa/src/analytics/logSink.ts`. The trace ids are stamped at
+  QUEUE time, not at flush time: by the time a batch leaves, the span that
+  caused the event has ended, and resolving it late would correlate every
+  record to whatever happened to be open last — a wrong answer that looks like a
+  right one. `reportError` feeds it too, so window errors, unhandled rejections
+  and React boundary errors arrive with their stacks.
+
+Ingest is `POST /logs`, open like `/traces`. Reads are admin-only under
+`/auth/logs/{search,trace,facets,otlp}` (`scripts/serve/logs_read.py`), leaf for
+leaf with the trace lane. `/auth/logs/trace` is the pivot.
+
+### Retention, and what it costs on this box
+
+Measured 2026-09-01 on the live box, over a two-minute window and a 24-hour
+journal:
+
+| Producer | Raw today | Into the store | Note |
+|---|---|---|---|
+| Serving plane | 12.1 MB/day (`https-server.log`) | **~0.5 MB/day** | The access line stays in the file; only real log lines are stored. |
+| Browser | 13.9 MB/day (`clientlog.jsonl`), ~36k records/day | **~16 MB/day** | The bulk. Includes the `stats`/`ptr` firehose at DEBUG. |
+| Station daemon | 62.5 MB/day, 747k lines across 71 units | **~3 MB/day** | WARN and above only; journald keeps the rest. |
+
+**≈20 MB/day, ≈140 MB at 7 days, ≈210 MB with indexes.** That is the real
+constraint here — one box, one disk — and it is what picks the number:
+
+- **7 days**, half the trace store's 14. A log row costs roughly ten times a
+  trace row at this traffic, and 7 days is also Instana's own default log
+  retention, so both stores answer a question for the same window.
+- A runaway backstop at 4M rows, ~5× the honest window, so a producer fault
+  drops the oldest records instead of the disk.
+- `LOG_RETENTION_DAYS` overrides it. Raising the daemon to `SH_LOG_LEVEL=info`
+  on one station under investigation is the intended way to pay for detail, and
+  it is per-station.
+
+Setting the daemon's floor to INFO fleet-wide would be ~90 MB/day and ~630 MB
+retained, to duplicate what journald already holds — which is why WARN is the
+default rather than a preference.
+
+### The gate on retiring `clientlog.jsonl`
+
+`/clientlog` is being replaced, not kept alongside. It writes in parallel for
+one deploy so that a defect in the new path cannot lose the only record of what
+happened; removal is a separate, later change. **It may not be removed until all
+three of these are true:**
+
+1. `spa/index.html`'s inline bootstrap error reporter posts to `/logs`. It runs
+   before any module evaluates, so it cannot import the sink or read a span —
+   it needs its own inline record shape, and doing that in the same change as
+   everything else is how one big change becomes two outages.
+2. `spa/src/main.tsx`'s React-boundary fallback POST (the branch taken when
+   `window.__kernelHiveReportError` is absent) posts to `/logs`. The primary
+   path already does, through `reportError`.
+3. The `correlated` facet on a normal traffic day is not near zero — i.e. the
+   lane is actually joining, not just storing. `/auth/logs/facets` reports it,
+   and it is on every forwarder run line.
+
+`docs/lab/STREAM-DEBUGGING.md` §1.1 already points operators at the new surface
+and names what is not covered yet; that list and this one are the same list.
+
+### The Instana leg
+
+`scripts/observability/instana_logs.py` posts OTLP/JSON to `/v1/logs` after the
+traces leg (so the call a record correlates to has already landed), under its
+own `lastLogSeq` watermark, through the same `instana_batch.drain()` loop and
+the same measured 4 MiB budget. What Instana does with it — and the four things
+its docs are silent about, two of which are exactly what a batcher would want —
+is quoted in [`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md).
+
+---
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites

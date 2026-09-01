@@ -29,6 +29,7 @@ from urllib.parse import parse_qs, urlparse
 
 import eum_proxy
 import linecov
+import logs
 import probes
 import traces
 from static_files import MIME
@@ -86,6 +87,23 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
                 return True
             n = stores["traces"].record(obj) if isinstance(obj, dict) else 0
             handler._send(200, json.dumps({"ok": True, "spans": n}), MIME[".json"], cache=False)
+            return True
+
+        # POST /logs — severity-bearing records from any of the three
+        # producers: this plane's own sink, a station daemon's spool (shipped
+        # by trace-ship.py), and the browser. Open for exactly the reason
+        # /traces is: a tab has to be able to report the error that just broke
+        # its visit without holding the admin session needed to READ one back.
+        # Reads live behind /auth/logs/* (serve/logs_read.py).
+        if path == "/logs":
+            if _bad_origin(handler, public_origin):
+                return True
+            obj, err = handler._read_json_body(logs.BODY_MAX)
+            if err:
+                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+                return True
+            n = stores["logs"].record(obj) if isinstance(obj, dict) else 0
+            handler._send(200, json.dumps({"ok": True, "logs": n}), MIME[".json"], cache=False)
             return True
         return False
 

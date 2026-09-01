@@ -27,6 +27,7 @@
 //  US) and free of React.
 // ============================================================================
 
+import { configureLogSink, logRecord } from '../analytics/logSink';
 import { getAdminToken } from './adminAuth';
 // The bundle id every lane that names a build reads — the /traces resource
 // envelope, this file's /clientlog batches, its snapshots. Not re-derived here.
@@ -134,6 +135,7 @@ let telemetryAllowed = false;
 /** Enable the /clientlog sink for this document. See `logClientEvent`. */
 export function setTelemetryAllowed(allowed: boolean): void {
   telemetryAllowed = allowed;
+  configureLogSink({ allowed, sessionId }); // one switch for both lanes
 }
 /** Queue one telemetry event (batched; flushed every 5s / 1s verbose). Never throws. */
 export function logClientEvent(event: string, detail: string): void {
@@ -151,6 +153,8 @@ export function logClientEvent(event: string, detail: string): void {
   if (!telemetryAllowed) return;
   try {
     const d = detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL - 1)}…` : detail;
+    logRecord(event, d, activeTile ?? ''); // the lane that replaces this one
+
     pending.push({ ts: Date.now(), sessionId, tile: activeTile ?? '', event, detail: d });
     if (pending.length > MAX_PENDING) pending.splice(0, pending.length - MAX_PENDING);
     ensureFlushTimer();

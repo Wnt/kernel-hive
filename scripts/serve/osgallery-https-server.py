@@ -113,13 +113,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
 import deploy_hint  # noqa: E402
-import linecov  # noqa: E402  (its STORE is built here; the routes live in telemetry_routes)
-import probes  # noqa: E402  (server-side feature reach; folds into ANALYTICS)
+import logsink  # noqa: E402
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
-import telemetry_routes  # noqa: E402  (the /analytics + /coverage + /traces group)
-import traces  # noqa: E402  (correlated per-session spans; admin-only to read)
+import telemetry_routes  # noqa: E402
+import telemetry_stores  # noqa: E402  (the /analytics + /coverage + /traces group)
 import tracing_http  # noqa: E402  (request spans into TRACES; docs/lab/TRACE-CONTEXT.md)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
@@ -128,8 +127,6 @@ from auth import gate  # noqa: E402  (import needs the sys.path line above)
 from auth import routes as auth_routes  # noqa: E402
 from auth.service import AuthService  # noqa: E402
 from config import (  # noqa: E402
-    ANALYTICS_DB,
-    ANALYTICS_RETENTION_DAYS,
     AUTH_STATE,
     BIND_IP,
     CERT,
@@ -143,52 +140,19 @@ from config import (  # noqa: E402
     SIGNAL_CONFIG,
     SIGNAL_HOST,
     STREAM_KEY_FILE,
-    TRACE_RETENTION_DAYS,
-    TRACES_DB,
-    USAGE_STATS,
     WEBROOT,
 )
 from static_files import MIME  # noqa: E402
-
-import analytics  # noqa: E402
 
 # Both filled in by main() when the public listener is enabled; the request
 # handlers reach them as module globals.
 AUTH = None
 STREAM_KEY = b""
-# Interaction counters. Unlike AUTH this exists on BOTH listeners: a station's
-# usage total is a fact about the machine, and the lab's own LAN traffic is as
-# real a use of it as a visitor's. Only the per-PERSON half needs a session, and
-# that half lives behind /auth/usage/report.
-USAGE = usage.UsageStore(USAGE_STATS)
-# Feature reach, flow funnels and grouped errors. On BOTH listeners for the same
-# reason as USAGE, and with one difference that is the point of the plane: it
-# takes no identity on either, so there is no per-person half to fence off.
-ANALYTICS = analytics.AnalyticsStore(ANALYTICS_DB)
-ANALYTICS.prune(ANALYTICS_RETENTION_DAYS)
-# The serving plane's OWN branch counters, into the SAME store under class
-# `server`. Until this line runs `probes.hit()` folds into memory and writes
-# nothing, which is what every unit test and every import of these modules
-# outside the server gets. `record_server` is the only door into that class and
-# no route reaches it, so a browser cannot forge a branch count.
-probes.bind(ANALYTICS)
-# Production LINE coverage, fed only by the opt-in instrumented bundle
-# (docs/ANALYTICS.md §6). Its own database beside the counters, not a table in
-# them: the rows are kilobytes rather than integers, they expire with the build
-# that produced them rather than lasting two years, and its body cap has to be
-# sixteen times the counter plane's — see serve/coverage.py. Unarmed, this is an
-# empty file and nothing ever posts to it.
-COVERAGE = linecov.CoverageStore(ANALYTICS_DB.parent / "coverage.db")
-COVERAGE.prune()
-# The stores the analytics route group reaches, passed rather than imported so
-# the dispatcher stays a pure function of what it is given.
-# The correlated trace lane. Reads are admin-only and live under /auth/traces/*
-# (auth/routes.py); only the INGEST is open here, exactly like /analytics — a
-# tab has to be able to report what it did without holding an admin session.
-TRACES = traces.TraceStore(TRACES_DB)
-TRACES.prune(TRACE_RETENTION_DAYS)
-auth_routes.bind_traces(TRACES)
-TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE, "traces": TRACES}
+# The four telemetry stores and the sink that writes to one of them, built as a
+# group by serve/telemetry_stores.py — the same seam, and for the same reason,
+# as the route group in telemetry_routes.py: this file sits on the 600-line hard
+# cap and a fourth pillar did not fit.
+USAGE, ANALYTICS, COVERAGE, TRACES, LOGS, TELEMETRY = telemetry_stores.build(SIGNAL_HOST or "labhost")
 
 
 # The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
@@ -524,7 +488,9 @@ class H(BaseHTTPRequestHandler):
         return static_files.serve_static(self, path)
 
     def log_message(self, fmt, *args):
-        sys.stderr.write(f"[serve] {self.address_string()} - {fmt % args}\n")
+        # Through the sink: it stamps the timestamp this file has never had, and
+        # decides (not by default) whether to store it — see logsink.access.
+        logsink.access(self.address_string(), fmt % args)
 
 
 class PublicH(H):
@@ -587,9 +553,11 @@ def main():
     ctx.load_cert_chain(certfile=CERT, keyfile=KEY)
     httpd = ThreadingHTTPServer((BIND_IP, PORT), H)
     httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
-    sys.stderr.write(
-        f"[serve] https://{SIGNAL_HOST}:{PORT}/  webroot={WEBROOT}  "
-        f"signal={SIGNAL_CONFIG}  admin_eval={'ON' if OSG_ADMIN_EVAL else 'off'}\n"
+    # The per-boot delimiter this append-mode log file has never had; the trap
+    # it closes is written up in serve/logsink.py.
+    logsink.boot_banner(
+        f"https://{SIGNAL_HOST}:{PORT}/  webroot={WEBROOT}  "
+        f"signal={SIGNAL_CONFIG}  admin_eval={'ON' if OSG_ADMIN_EVAL else 'off'}"
     )
     with contextlib.suppress(KeyboardInterrupt):
         httpd.serve_forever()
