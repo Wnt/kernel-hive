@@ -131,7 +131,8 @@ unverified), i.e. a new pinned emulator build, not a config change.
 - Ready state: the OPEN LOOK desktop, up **without a login**, holding an xterm
   titled `Amiga UNIX 2.1` that opens with
   `UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k` over a root shell,
-  the OPEN LOOK Calculator, and `xclock`.
+  `xcalc` — stock X11, but wearing OPEN LOOK's rounded buttons rather than the
+  square Athena ones it has elsewhere in the gallery — and `xclock`.
 - It is started from `/etc/inittab` (entry `xw`, run level 2, `respawn`):
   `xinit /etc/kh-xsession -- /usr/bin/X11/X`. `/etc/kh-xsession` runs the three
   clients and `exec olwm`; `/etc/kh-shell` prints `uname -a` and `exec /bin/sh`.
