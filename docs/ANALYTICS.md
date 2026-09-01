@@ -1762,6 +1762,19 @@ the same measured 4 MiB budget. What Instana does with it — and the four thing
 its docs are silent about, two of which are exactly what a batcher would want —
 is quoted in [`docs/lab/research/instana-logs.md`](lab/research/instana-logs.md).
 
+**This tenant refuses log ingress and the forwarder cannot tell.** Measured on
+the first batch this box ever sent: the local agent answered **200 OK**, and
+250 ms later logged the backend's answer — `402 Payment Required`, "The current
+TU doesn't allow this endpoint because it needs to be paid for". It is the only
+402 in that agent log's history, and the Logging API reports `totalHits: 0` for
+the tenant over 24 hours. On SaaS, OpenTelemetry logs need a logging add-on
+(`0275-logging.md`); traces and metrics are entitled and unaffected. The
+refusal is on the agent-to-backend hop, which an OTLP exporter never sees, so
+**an OK from this leg means the agent took the batch, not that Instana kept
+it** — do not read the run line as proof the pillar is populated. The code side
+is done; buying the add-on is the only thing that changes the outcome, and the
+pivot is answered by our own store meanwhile.
+
 ---
 
 ## 9. The Python serving plane — branches, not routes

@@ -26,6 +26,31 @@ WHAT INSTANA DOES WITH WHAT THIS SENDS, quoted rather than assumed
   * Retention: "All the collected logs are kept for 7 days." —
     0321-policies.md:89. Our own store keeps 7 for the same reason.
 
+THIS TENANT REFUSES LOG INGRESS, AND THE 200 BELOW DOES NOT KNOW IT. Measured
+2026-09-01, the first time this leg ever ran against the live agent: the agent
+answered `POST /v1/logs` with **200 OK**, and 250 ms later its own log recorded
+what the BACKEND said when it forwarded the batch on —
+
+    | WARN | Backend | Payment required (402) for Backend
+    | ingress-blue-saas.instana.io:443 and key '*** (redacted)' ...
+    | HTTP/1.1 402 Payment Required
+    | The current TU doesn't allow this endpoint because it needs to be paid for.
+
+It is the only 402 in that log's entire history, at the exact minute of the
+first log batch this box has ever sent, and the Logging API confirms the
+outcome: `getLogs/v1` answers 200 with `totalHits: 0` for the tenant over 24
+hours. It matches what the docs say to expect — on SaaS, "OpenTelemetry logs"
+require a **logging add-on** (`0275-logging.md`), while on-premises deployments
+include log ingestion in the standard licence.
+
+So: **an OK from this leg means the agent took the batch, NOT that Instana
+retained it.** The 402 happens on the agent-to-backend hop, which the forwarder
+cannot see, and nothing here can or should paper over that — a leg that guessed
+at retention would be worse than one that reports what it was actually told.
+The correlated-count on every run line is the number to watch when the add-on
+is bought; our own store answers the same join in the meantime, and is where
+the acceptance test for this feature actually lives.
+
 DOCS SILENT on: a per-request body cap for the acceptor, any rate limit or 429
 behaviour, and the accepted methods and partial-success semantics of `/v1/logs`
 (the path appears only as diagram label text; there is no prose endpoint spec

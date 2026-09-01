@@ -143,9 +143,36 @@ size-shaped refusal.
 while "Your standard Instana license includes log ingestion for on-premises
 deployments."
 
-So: if this tenant has no logging add-on, the `/v1/logs` leg may be accepted and
-retained for nothing, or refused. That is a tenant question, not a code
-question, and the leg reports its status per run either way.
+**Measured on this tenant, 2026-09-01: it is refused, and the forwarder cannot
+tell.** The first `/v1/logs` batch this box ever sent got **200 OK** from the
+local agent, and 250 ms later the agent logged what the backend told it:
+
+```
+2026-09-01T21:11:13.963 | WARN | Backend | Payment required (402) for Backend
+  ingress-blue-saas.instana.io:443 and key '*** (redacted)' ...
+HTTP/1.1 402 Payment Required
+... The current TU doesn't allow this endpoint because it needs to be paid for.
+```
+
+It is the **only 402 in that log's entire history**, at the exact minute of the
+first log batch. The Logging API agrees: `POST /api/logging/logs/getLogs/v1`
+answers 200 with `"totalHits": 0` for the whole tenant over 24 hours, filtered
+and unfiltered alike. A second run two minutes later produced no new 402 —
+the agent records the refusal once and drops locally after that.
+
+Two consequences worth carrying:
+
+1. **A 200 from the forwarder is not proof of retention.** The refusal is on
+   the agent-to-backend hop, which the exporter never sees. Nothing in our code
+   can detect it; the agent log is the only place it surfaces. `instana_logs.py`
+   says so in its own docstring rather than leaving the OK to be misread.
+2. **Traces and metrics are unaffected** — those endpoints are entitled on this
+   TU and keep working. This is a per-endpoint entitlement, not a broken key.
+
+Buying the logging add-on is the only thing that changes it; the code side is
+complete and the correlated-count on every run line is the number to watch when
+it is. Until then the pivot is answered by our own store, which is where the
+acceptance test lives anyway.
 
 Our own store keeps **7 days**, matching the default above, so both stores
 answer a question for the same window. Instana also meters log volume on
