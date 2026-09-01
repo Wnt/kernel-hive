@@ -132,6 +132,11 @@ ROWS=(
   "opt-file|templeos|TempleOS ISO|$GALLERY_ROOT/TempleOS/TempleOS.ISO|sha256:5d0fc944e5d89c155c0fc17c148646715bc1db6fa5750c0b913772cfec19ba26|freely-fetchable-pinned"
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
+  # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
+  # so the only supply is volunteer mirrors (nomadlogic / NTNU / Clarkson). This hash was
+  # measured locally AND matches the checksum from the now-deleted release page.
+  "opt-file|ravynos|ravynOS 0.6.1 amd64 live ISO (BSD; UEFI-only)|$ASSET_STAGING/ravynos/ravynOS_0.6.1_amd64.iso|sha256:e7a2b90e8d87c073857bce6f65ec5023542ec76d4f694b55f49af981c4ff9516|freely-fetchable-pinned"
   # ZX81 ROM, second revision. NOT covered by the 1986 Amstrad permission --
   # Amstrad bought the Spectrum and QL rights only; Nine Stations Networks Ltd wrote
   # and still holds the ZX80/ZX81 ROM copyright. Preservation source, private.

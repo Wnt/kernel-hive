@@ -150,6 +150,9 @@ const POSTER_INDEX = {
   "qnx": {
     "hero": "/posters/qnx/desktop.webp"
   },
+  "ravynos": {
+    "hero": "/posters/ravynos/desktop.webp"
+  },
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
   },
