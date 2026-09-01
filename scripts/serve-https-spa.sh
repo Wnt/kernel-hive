@@ -101,11 +101,90 @@ build() {
   msg "built -> $DIST"
 }
 
+# ---------------------------------------------------------------------------
+# THE SILENT-TELEMETRY TRAP, and the guard that closes it.
+#
+# `build()` above is the ONLY place that exports VITE_INSTANA_* into `vite
+# build`. A bare `npm run build` in spa/ — which every quality-gate run, every
+# `npm test && npm run build`, and every contributor without registry/local.env
+# does — leaves the percent-delimited placeholders unsubstituted, and
+# spa/index.html's bootstrap then takes its documented no-key path: no ineum
+# stub, no vendor script tag, ZERO telemetry.
+#
+# `deploy()` does NOT rebuild. It publishes whatever dist/ happens to be there.
+# So "run the gate, then deploy" silently ships a bundle with Instana entirely
+# disabled — which happened on 2026-09-01 and cost a full debugging cycle
+# chasing missing beacons that were never sent.
+#
+# The keyless build stays legal: a contributor with no local.env must still be
+# able to build and deploy their own gallery. What must never happen is a
+# keyless dist being published by a machine that HAS the key — that is always
+# an accident, and the fix is always the same one command. So the guard asks
+# both questions, not one.
+dist_placeholder_names() {
+  # The VITE_ placeholder names still unsubstituted in the built index.html,
+  # one per line. Built with a character class rather than a literal so this
+  # very script never becomes substitution text (spa/index.html's own comments
+  # take the same precaution, for the same reason).
+  #
+  # The `|| true` is load-bearing under `set -euo pipefail`: grep exits 1 when
+  # it matches NOTHING, which is the GOOD case here, and an unguarded failure
+  # inside `$(...)` on the right of an assignment kills the script — silently,
+  # with no output at all, right before the deploy it was meant to guard.
+  # Measured, not imagined: that is exactly how the first cut of this function
+  # behaved on a correctly-built dist.
+  { grep -o "%VITE[_A-Z0-9]*%" "$DIST/index.html" 2>/dev/null || true; } | sort -u
+}
+
+check_dist_is_publishable() {
+  local placeholders newer
+  placeholders="$(dist_placeholder_names)"
+
+  if [ -n "$placeholders" ] && [ -n "${INSTANA_WEBSITE_KEY:-}" ]; then
+    msg "ERROR: refusing to deploy — this dist was built WITHOUT the Instana key,"
+    msg "       but this machine HAS one (registry/local.env). Publishing it would"
+    msg "       silently disable ALL browser telemetry on the live gallery."
+    msg "       Unsubstituted placeholders in $DIST/index.html:"
+    while IFS= read -r ph; do printf '         %s\n' "$ph" >&2; done <<<"$placeholders"
+    msg "       A bare 'npm run build' in spa/ does this — only '$0 build'"
+    msg "       exports the VITE_INSTANA_* vars. Rebuild and retry:"
+    msg "         $0 build && $0 deploy"
+    exit 1
+  fi
+
+  if [ -n "$placeholders" ]; then
+    # No key configured: the documented no-key fallback. Legal, but never silent.
+    msg "NOTE: keyless build (no INSTANA_WEBSITE_KEY in registry/local.env)."
+    msg "      The deployed SPA will send no Instana beacons — this is the"
+    msg "      documented fallback, not a fault. Unsubstituted: $(echo "$placeholders" | tr '\n' ' ')"
+  fi
+
+  # Staleness: a dist older than the sources it was built from is the same
+  # class of mistake wearing different clothes (deploying yesterday's bundle
+  # and reading today's behaviour into it). Scoped to what vite actually
+  # consumes, so an unrelated docs edit never blocks a deploy.
+  newer="$(find "$SPA_WEB/src" "$SPA_WEB/index.html" "$SPA_WEB/package.json" \
+    "$SPA_WEB/vite.config.ts" -newer "$DIST/index.html" -print -quit 2>/dev/null || true)"
+  if [ -n "$newer" ]; then
+    if [ -n "${ALLOW_STALE_DIST:-}" ]; then
+      msg "WARNING: $DIST is older than the SPA sources (e.g. $newer)."
+      msg "         Deploying anyway — ALLOW_STALE_DIST is set."
+    else
+      msg "ERROR: refusing to deploy — $DIST is older than the SPA sources."
+      msg "       Newer than the build: $newer"
+      msg "       Rebuild first:  $0 build"
+      msg "       To publish an intentionally older bundle: ALLOW_STALE_DIST=1 $0 deploy"
+      exit 1
+    fi
+  fi
+}
+
 deploy() {
   [ -f "$DIST/index.html" ] || {
     msg "ERROR: no built dist; run '$0 build' first"
     exit 1
   }
+  check_dist_is_publishable
   # scripts/dev/stage.sh builds a preview into this SAME dist/ with
   # vite base=/staging/<name>/, so a deploy that follows a stage ships a bundle
   # whose asset paths AND router basename point at the staging path — the live

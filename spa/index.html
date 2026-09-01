@@ -80,9 +80,10 @@
          beacon (and every unit test, which never exercises page-load
          timing) looked correct.
 
-         So: trackSessions, enableW3CHeaders (needed for backendTraceId —
-         it is what makes the agent attach the `<meta name="traceparent">`
-         tag `static_files.py` already injects, see TRACE-CONTEXT.md §4) and
+         So: trackSessions, enableW3CHeaders (set to FALSE — see the long
+         note on the call itself for what it actually decides; it has to be
+         set before the agent initialises either way, because init is where
+         the backendTraceId is chosen once and for all) and
          the pseudonymous identity move HERE, beside `key`/`reportingUrl`,
          which already had to be this early for the same reason (the agent
          script itself needs them the instant it loads). Also set here for
@@ -156,11 +157,52 @@
         ineum('reportingUrl', reportingUrl);
         ineum('key', key);
         // Required this early so the page-load beacon itself carries them —
-        // see the block comment above. `enableW3CHeaders` is also what makes
-        // the agent's own init read `<meta name="traceparent">` (it runs
-        // before this app's JS), which is DEFECT 3.
+        // see the block comment above. Both are read once, by the agent's own
+        // init, which runs before any of this app's JS.
         ineum('trackSessions');
-        ineum('enableW3CHeaders', true);
+        // enableW3CHeaders OFF, DELIBERATELY, and not a default we forgot to
+        // set: this one flag decides whether the PAGE-LOAD beacon can be
+        // resolved to a backend trace at all, and `true` makes it impossible.
+        // Read from the pinned agent's own bytes (v1.8.1, the self-hosted
+        // /vendor/instana-eum.min.js below), because Instana's docs state the
+        // opposite in one section and contradict themselves in another — see
+        // docs/lab/INSTANA-VIEW-INVENTORY.md §7 for both quotes and the
+        // measured beacons. The agent's init does, in this exact order:
+        //
+        //     backendTraceId = <whatever ineum('traceId', ...) set>
+        //                      || <Server-Timing 'intid' on the navigation entry>
+        //     if (enableW3CHeaders && <meta name="traceparent"> parses)
+        //         backendTraceId = the meta's PARENT-ID   // 16 hex, the SPAN
+        //
+        // That last line is the whole problem. Our traces are keyed by the
+        // 32-hex TRACE id (`SELECT COUNT(*) FROM span WHERE length(trace_id)=16`
+        // is 0, and always will be), so with the flag on every page-load
+        // beacon carries a 16-hex span id that resolves to nothing, forever.
+        // With it off the fallback wins and the beacon carries the trace id
+        // out of `Server-Timing: intid;desc=<trace-id>` — the header
+        // scripts/serve/tracing_http.py already emits on the very response
+        // that served this document.
+        //
+        // XHR CORRELATION DOES NOT DEPEND ON THIS FLAG, which is the thing the
+        // docs make you fear. An xhr beacon's backendTraceId comes from the
+        // RESOURCE-timing entry's `Server-Timing: intid` (the agent's `Gb`),
+        // on a code path that never reads this flag. Verified both ways with
+        // scripts/visitor-sim/beacon-probe.mjs.
+        //
+        // It also removes a collision we documented but could not previously
+        // avoid: with the flag on, the agent APPENDS its own synthetic
+        // `traceparent: 00-0000000000000000<id>-<id>-03` to our outbound
+        // fetches, which — depending on monkey-patch install order — can turn
+        // khFetch's real header into two comma-joined values that neither our
+        // parser nor Instana's accepts (see analytics/khFetch.ts, "THE INSTANA
+        // COLLISION"). Off, the agent adds only its X-INSTANA-* headers, which
+        // our server ignores, and khFetch owns `traceparent` outright.
+        //
+        // The `false` is written out rather than omitted so that deleting this
+        // line is a visible act. Nothing else on our side changes: we keep
+        // emitting the meta tag, `traceresponse` and `Server-Timing` exactly as
+        // before, and our own plane reads none of the vendor's headers.
+        ineum('enableW3CHeaders', false);
         var sid = window.__kernelHiveErrorSessionId || 'unknown';
         ineum('user', sid);
         // Our own telemetry endpoints, excluded from Instana's OWN
