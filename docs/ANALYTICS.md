@@ -1716,8 +1716,38 @@ limits** — 128 beacons/10 s, 4096/10 min, 8096/page-load; page changes 32/10 s
 and are indifferent to how many distinct names exist across the site; naming
 per-station does not change how many beacons a tab sends.
 
-So: **docs silent on page-name cardinality**, and the empirical check is the
-one that counts — see the verification note below.
+So: **docs silent on page-name cardinality**. The empirical check on this
+tenant (2026-09-01, `analyze/beacon-groups` grouped by `beacon.page.name`, 7-day
+window) returned **6 distinct PAGELOAD page names and 5 PAGE_CHANGE ones, with
+no "Others"-style collapse bucket among them.** That is honest but weak
+evidence: the site has never had 63 page names, so the observation shows no
+collapse *at the sizes reached*, it does not disprove one at 63. What makes that
+acceptable is the syntactic bound above — the dimension cannot grow past the
+registry plus the handful of static routes without a code change — and the fact
+that the failure mode, if it ever happened, would be visible in the same query
+and reversible in one commit.
+
+#### Querying the roll-up: the filter syntax that silently returns nothing
+
+Verified against the live tenant on 2026-09-01, because "the aggregate is still
+queryable" is a claim that had to be tested rather than asserted. `beacon.meta`
+is a `KEY_VALUE_PAIR` tag, and the two API shapes are **not** symmetric:
+
+| purpose | shape | result |
+|---|---|---|
+| **filter** to one pattern | `{name: 'beacon.meta', operator: 'EQUALS', value: 'kh.route.pattern=/os/:osId'}` | works — `key=value` in one string |
+| **group** by pattern | `{groupbyTag: 'beacon.meta', groupbyTagSecondLevelKey: 'kh.route.pattern'}` | works — one row per pattern |
+| filter, the shape that reads natural | `{name: 'beacon.meta', operator: 'EQUALS', value: '/os/:osId', tagSecondLevelKey: 'kh.route.pattern'}` | **HTTP 200, zero rows** |
+
+The third form is the trap: it is accepted, it is the obvious mirror of the
+grouping form, and it matches nothing. `beacon.meta.<key>` as a filter or group
+name is rejected outright (HTTP 400, "Invalid or unknown tag filter name"),
+which is the better failure of the two. Anyone reading a zero out of a meta
+filter should check the shape before concluding the meta is not there.
+
+Both roll-up forms were confirmed to return the expected rows after this change:
+filtering PAGELOAD on `kh.route.pattern=/os/:osId` returned the per-station page
+names underneath it, and grouping on the meta returned one row per pattern.
 
 ### Where the page name is decided (all of it)
 
