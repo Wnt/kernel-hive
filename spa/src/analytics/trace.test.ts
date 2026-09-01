@@ -6,9 +6,9 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
   __bufferedSpans, __resetTracer, childOfActive, configureTracer, currentSpan,
-  flushSpans, joinPageLoadTraceFromMeta, newSpanId, newTraceId, parseTraceparent,
-  popActive, pushActive, seedPageLoadTrace, startTrace,
+  flushSpans, newSpanId, newTraceId, popActive, pushActive, startTrace,
 } from './trace';
+import { joinPageLoadTraceFromMeta, parseTraceparent, seedPageLoadTrace } from './pageLoadJoin';
 
 let sent: unknown[][] = [];
 

@@ -1885,7 +1885,8 @@ real wire from one credentialed page load, which is where to look next.
 | `spa/src/analytics/catalogue/` | the declaration — the report's denominator, one file per area so parallel instrumentation streams share no editing surface |
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
-| `spa/src/analytics/trace.ts` | the span/id model, `traceparentOf()` (the ONLY producer of an outbound `traceparent` — TRACE-CONTEXT.md §4c), the root-end flush, and the page-load join (`joinPageLoadTraceFromMeta`) — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
+| `spa/src/analytics/trace.ts` | the span/id model, `traceparentOf()` (the ONLY producer of an outbound `traceparent` — TRACE-CONTEXT.md §4c) and the trace-entry flush — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
+| `spa/src/analytics/pageLoadJoin.ts` | the `<meta name="traceparent">` seed every early trace hangs off; split from `trace.ts` so a trace ENTRY being distinct from a trace ROOT is stated where it is decided |
 | `scripts/observability/trace-orphans.py` | the orphaned-parent rate — the one number that shows a broken trace JOIN, since every individual span still looks perfect (§12a) |
 | `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |

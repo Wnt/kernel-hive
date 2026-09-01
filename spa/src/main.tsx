@@ -8,7 +8,7 @@
 // — as early in OUR OWN bundle as we control — is a deliberate best-effort
 // rather than a hard guarantee against Instana's separately-loaded agent.
 import { installKhFetchPropagation } from './analytics/khFetch';
-import { joinPageLoadTraceFromMeta } from './analytics/trace';
+import { joinPageLoadTraceFromMeta } from './analytics/pageLoadJoin';
 
 installKhFetchPropagation();
 joinPageLoadTraceFromMeta();
