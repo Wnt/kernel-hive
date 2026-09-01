@@ -7,6 +7,10 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { bucketFor } from './catalogue';
 import { recordMetric, startTiming, accumulator, __resetMetrics } from './metrics';
 import { configureSink, __pendingBatch, __resetSink } from './sink';
+import {
+  childOfActive, configureTracer, popActive, pushActive, startTrace,
+  __bufferedSpans, __resetTracer,
+} from './trace';
 
 /** A `document` stand-in — the tests run under plain Node (vitest.config.ts),
  *  so the visibility machinery has nothing to listen to unless we supply it. */
@@ -169,5 +173,101 @@ describe('effort accumulators', () => {
     acc.add(2);
     acc.commit();
     expect(__pendingBatch().metrics).toEqual([{ id: A_COUNT, bucket: '2', n: 1 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 2026-09-01: a measurement is not a span.
+//
+// These guard the three defects a captured operator trace (fc4a9d74…, win311)
+// exhibited: a metric parenting a real HTTP call, a metric drawn as 1.573 s of
+// work, and one synthetic span per measurement. They also guard the thing that
+// must NOT change while those are fixed — every number still being captured on
+// both planes.
+// ---------------------------------------------------------------------------
+describe('a timing is a point, not a shape', () => {
+  beforeEach(() => {
+    __resetTracer();
+    configureTracer({ enabled: true, emit: () => {} });
+  });
+  afterEach(() => { __resetTracer(); });
+
+  it('never becomes the parent of real work', () => {
+    // Exactly the shape of the captured trace: a flow is open, a timing runs
+    // inside it, and a real call is made while the clock ticks.
+    const flow = startTrace('station.connect');
+    pushActive(flow);
+    const t = startTiming(A_MS);
+    const call = childOfActive('http.client.request', undefined, 'client');
+    call.end('ok');
+    t.stop();
+    popActive(flow);
+    flow.end('ok');
+
+    const spans = __bufferedSpans();
+    const http = spans.find((s) => s.n === 'http.client.request')!;
+    // The parent is the FLOW, not the measurement. Before this change the
+    // timing had been pushed active and the fetch attached to it.
+    expect(http.p).toBe(flow.spanId);
+    expect(spans.some((s) => s.n === A_MS)).toBe(false);
+  });
+
+  it("emits the measurement as an event on the span it happened inside", () => {
+    const flow = startTrace('station.connect');
+    pushActive(flow);
+    startTiming(A_MS, { 'kh.station': 'win311' }).stop();
+    popActive(flow);
+    flow.end('ok');
+
+    const root = __bufferedSpans().find((s) => s.n === 'station.connect')!;
+    const ev = root.e!.find((e) => e.n === A_MS)!;
+    expect(ev).toBeTruthy();
+    expect(typeof ev.a!['kh.metric.ms']).toBe('number');
+    // Repeated on the event, so it reads without walking up to the parent.
+    expect(ev.a!['kh.station']).toBe('win311');
+  });
+
+  it('no span in the trace has a measurement for its duration', () => {
+    const flow = startTrace('station.connect');
+    pushActive(flow);
+    const t = startTiming(A_MS);
+    t.stop();
+    popActive(flow);
+    flow.end('ok');
+    // Nothing named for a metric exists at all, so nothing can be misread as
+    // elapsed work; the value lives on an event instead.
+    for (const s of __bufferedSpans()) expect(s.a?.['kh.metric']).toBeUndefined();
+  });
+
+  it('falls back to a ZERO-duration marker when no span is open around it', () => {
+    // A poster dwell or a post-connect hesitation has no enclosing span. The
+    // number must still reach the trace plane — but as a point, not a shape.
+    startTiming(A_MS).stop();
+    const marker = __bufferedSpans().find((s) => s.n === A_MS)!;
+    expect(marker).toBeTruthy();
+    expect(marker.d).toBe(0);
+    expect(marker.a!['kh.metric.ms']).toBeGreaterThanOrEqual(0);
+  });
+
+  it('still records the bucketed counter on every stop — nothing is lost', () => {
+    const flow = startTrace('station.connect');
+    pushActive(flow);
+    startTiming(A_MS).stop();
+    popActive(flow);
+    flow.end('ok');
+    // The durable two-year answer is unchanged by the representation change.
+    expect(__pendingBatch().metrics.some((m) => m.id === A_MS)).toBe(true);
+  });
+
+  it('an abandoned timing reports nothing at all, on either plane', () => {
+    const flow = startTrace('station.connect');
+    pushActive(flow);
+    startTiming(A_MS).abandon();
+    popActive(flow);
+    flow.end('ok');
+
+    const root = __bufferedSpans().find((s) => s.n === 'station.connect')!;
+    expect(root.e ?? []).toEqual([]);
+    expect(__pendingBatch().metrics.some((m) => m.id === A_MS)).toBe(false);
   });
 });
