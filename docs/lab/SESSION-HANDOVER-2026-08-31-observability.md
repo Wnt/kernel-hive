@@ -23,10 +23,10 @@ decisions are yours (§5).
 | Server-side branch probes (Python) | live |
 | OTel traces (browser, Python) | live |
 | **Rust `streamhost` probes + spans** | **LIVE on 66 stations — first execution ever** |
-| **Daemon span → store carrier** | **`scripts/observability/trace-ship.py`, run by hand on the box** |
+| **Daemon span → store carrier** | `scripts/observability/trace-ship.py` — hand-run as of this handover; **on `kh-trace-ship.timer` since 2026-09-01** (INSTANA-VIEW-INVENTORY.md §2.1) |
 | Observability UI `/admin/observability` | live, admin-only |
 | Line coverage lane | built, NOT armed |
-| Instana forwarding | works, by hand, not on a timer; visibility still unproven (§3) |
+| Instana forwarding | works; hand-run as of this handover, **on `kh-instana-forward.timer` since 2026-09-01**, when its watermark was also found to be dropping every trace's browser half (INSTANA-VIEW-INVENTORY.md §2). Visibility still unproven (§3) |
 
 Binary now on the fleet: `streamhost-3546b768762d1262bfc92a45a9df49cad681ca9e`.
 Box deploy state is whatever `scripts/dev/box-deploy.sh --status` says; it was

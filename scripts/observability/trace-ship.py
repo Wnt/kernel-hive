@@ -26,11 +26,19 @@ hole where the daemon should be. This is that carrier, and it is the whole of
 it: read a file, POST it verbatim to `/traces`, delete it when the store says
 it took it.
 
-WHY IT IS RUN BY HAND, like `instana-forward.py` and unlike a timer. The spool
-is bounded (`SH_TRACE_SPOOL_MAX`, oldest dropped), so nothing fills up while
-nobody ships, and a daemon span is a one-off per session or per daemon start
-rather than a stream — there is no rate that demands automation. Arming it on a
-schedule is a decision with an owner; this file does not make it.
+IT IS RUN ON A TIMER SINCE 2026-09-01, and the argument this docstring used to
+make for hand-running it was answered by what hand-running actually cost. The
+reasoning was sound about the SPOOL — it is bounded (`SH_TRACE_SPOOL_MAX`,
+oldest dropped), so nothing fills up while nobody ships — and wrong about the
+STORE: an unshipped batch is a daemon span missing from `/admin/observability`
+and from everything downstream of it, so "nothing fills up" was never the same
+claim as "nothing is lost". `kh-trace-ship.{service,timer}` beside this file
+runs `--apply` every two minutes; systemd owns the single-flight guarantee (a
+oneshot unit cannot overlap itself, and a tick during a run is dropped rather
+than queued). It keeps no watermark to lose across a restart — the spool
+directory IS the state, and a batch is deleted only after the store says it
+took it. Installing the unit does not start it; enabling it is an operator
+decision, spelled out in docs/lab/INSTANA-VIEW-INVENTORY.md §2.
 
 ONLY COMPLETE FILES ARE EVER READ. The daemon publishes with tmp+rename, so a
 name matching `*.json` in the spool is finished by construction and a partial

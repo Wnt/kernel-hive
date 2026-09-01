@@ -6,6 +6,7 @@ against a commercial one on the same traces.
     scripts/observability/instana-forward.py --dry-run    # show exactly what WOULD leave
     scripts/observability/instana-forward.py --once
     scripts/observability/instana-forward.py --follow --interval 60
+    scripts/observability/instana-forward.py --scheduled  # what the timer runs
     scripts/observability/instana-forward.py --via-agent   # force the local Instana host agent
     scripts/observability/instana-forward.py --via-saas    # force direct-to-SaaS
 
@@ -113,8 +114,22 @@ into it, and the two failure modes look identical from the outside (a 401) until
 somebody has read this paragraph.
 
 OFF UNLESS CONFIGURED. No endpoint in registry/local.env means this does
-nothing, loudly. It is never wired into a timer or the serving plane by this
-commit; forwarding is a thing somebody runs, or arms deliberately.
+nothing, loudly. That is still true when a timer is what runs it: `--scheduled`
+turns "nothing is configured here" into a logged no-op and exit 0, because a
+box with no Instana tenant must not accumulate a failed unit every five
+minutes, while every OTHER failure still exits non-zero and shows up red.
+
+RUN ON A TIMER SINCE 2026-09-01, and that changed a fact this file used to
+state. It was hand-run for its whole life, so every Instana view fed by it was
+stale by default — a measurement doc was written from a tenant nobody had
+forwarded to in days. `scripts/observability/kh-instana-forward.{service,timer}`
+is the schedule; systemd gives the single-flight guarantee (a oneshot unit
+cannot overlap itself, and a timer that fires while the last run is still going
+is skipped, not queued), the watermark survives restarts because it is a file
+under /data, and each run prints its watermark and backlog so staleness is
+visible in `journalctl -u kh-instana-forward`. Arming it is an operator
+decision, spelled out in docs/lab/INSTANA-VIEW-INVENTORY.md §2 — landing this
+file does not start anything.
 
 WHAT IT SENDS. Traces as OTLP/JSON (`traces_otlp.py` — the same export the admin
 UI offers, so what Instana sees and what the operator sees cannot disagree) and
@@ -131,7 +146,6 @@ import json
 import os
 import re
 import socket
-import sqlite3
 import sys
 import time
 import urllib.error
@@ -143,9 +157,10 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "serve"))
 sys.path.insert(0, str(HERE))
 
-import traces  # noqa: E402
 import traces_otlp  # noqa: E402
+from instana_backlog import pending_traces, read_state, resume_seq, write_state  # noqa: E402
 from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
+from instana_metrics import metric_histograms  # noqa: E402
 
 DEFAULT_TRACES_DB = Path("/data/vms/streamhost/serve/traces.db")
 DEFAULT_ANALYTICS_DB = Path("/data/vms/streamhost/serve/analytics.db")
@@ -158,10 +173,14 @@ DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
 #: fortnight of history would.
 BATCH = 100
 
-#: Destination selection (agent-vs-SaaS, the loopback http exception, the
-#: DEFAULT_AGENT_ENDPOINT/Destination types) lives in instana_destination.py —
-#: split out so it is unit-testable without a trace store, a socket, or a real
-#: Instana tenant. See scripts/test_instana_destination.py.
+#: THREE THINGS LIVE BESIDE THIS FILE, not in it, each split out so it is
+#: unit-testable without a socket or a real Instana tenant — and, latterly,
+#: because this file reached its line budget:
+#:   instana_destination.py  agent-vs-SaaS choice, the loopback http exception
+#:   instana_backlog.py      the watermark: WHICH traces have not been sent
+#:   instana_metrics.py      analytics.db counters rendered as OTLP histograms
+#: The one with a correctness argument in it is instana_backlog.py; read
+#: `pending_traces()` there before touching anything about ordering.
 
 
 class Config:
@@ -291,41 +310,6 @@ def load_env() -> dict:
     return env
 
 
-def read_state(path: Path) -> dict:
-    try:
-        return json.loads(path.read_text())
-    except (OSError, ValueError):
-        return {}
-
-
-def write_state(path: Path, state: dict) -> None:
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state, indent=2))
-        tmp.replace(path)
-    except OSError as e:
-        sys.stderr.write(f"instana-forward: cannot persist watermark ({e}) — next run may resend\n")
-
-
-def pending_traces(cfg: Config, after_ms: int, limit: int) -> list[dict]:
-    """Finished traces newer than the watermark, oldest first.
-
-    Ordered OLDEST first, unlike the UI: a forwarder is catching up, and
-    advancing the watermark past a trace it has not sent is how a gap appears
-    that nothing will ever go back for.
-    """
-    store = traces.TraceStore(cfg.traces_db)
-    try:
-        rows = []
-        for klass in cfg.classes:
-            rows += store.search(klass=klass, since_ms=after_ms + 1, limit=limit)["traces"]
-        rows.sort(key=lambda r: r["startedMs"])
-        return [t for t in (store.trace(r["traceId"]) for r in rows[:limit]) if t]
-    finally:
-        store.close()
-
-
 def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
     url = f"{dest.endpoint}{path}"
     body = json.dumps(doc, separators=(",", ":")).encode()
@@ -361,10 +345,17 @@ def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) ->
 
 def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool) -> int:
     state = read_state(cfg.state)
-    after = int(state.get("lastTraceStartedMs") or 0)
-    batch = pending_traces(cfg, after, BATCH)
+    after = resume_seq(cfg, state)
+    batch, high_seq = pending_traces(cfg, after, BATCH)
     if not batch:
-        print(f"traces [{dest.name}]: nothing new")
+        # Say enough that STALENESS is visible in the journal. A timer whose
+        # only output is "nothing new" cannot be told apart from a timer that
+        # has been failing to see anything for a week.
+        age = ""
+        last = state.get("lastForwardedMs")
+        if last:
+            age = f", last forwarded {int((time.time() * 1000 - last) / 1000)}s ago"
+        print(f"traces [{dest.name}]: nothing new (watermark seq {after}{age})")
         return 0
     # host.id: stamped by US only on the SaaS leg, which has no other way to
     # learn the host. The agent leg supplies host identity itself (IBM's
@@ -376,85 +367,16 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
     if verbose or dry_run:
         print(json.dumps(doc, indent=2)[:4000])
     ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
-    print(f"traces [{dest.name}]: {len(batch)} trace(s), {spans} span(s) -> {detail}")
+    print(f"traces [{dest.name}]: {len(batch)} trace(s), {spans} span(s), seq {after}->{high_seq} -> {detail}")
     if ok and not dry_run:
+        state["lastIngestSeq"] = high_seq
+        # Kept for a human reading the state file, and no longer read back as a
+        # watermark by anything but the one-time legacy conversion in
+        # resume_seq(). Writing it as the watermark is the bug.
         state["lastTraceStartedMs"] = max(t["startedMs"] for t in batch)
+        state["lastForwardedMs"] = int(time.time() * 1000)
         write_state(cfg.state, state)
     return 0 if ok else 1
-
-
-def metric_histograms(cfg: Config, since_day: str) -> dict:
-    """Our bucketed metrics as OTLP histograms.
-
-    The bucket BOUNDARIES are our ladder, unchanged. Re-bucketing to something
-    prettier would make Instana's histogram disagree with our own report, and
-    the entire reason this exists is to compare the two on identical data.
-
-    A caveat worth carrying: the counters have no per-sample timestamps, only a
-    day bucket. So each day's histogram is emitted with that day's end as its
-    time, which is honest at day resolution and would be a lie at any finer one.
-    """
-    db = sqlite3.connect(f"file:{cfg.analytics_db}?mode=ro", uri=True)
-    try:
-        rows = db.execute(
-            "SELECT day,metric,bucket,class,SUM(n) FROM metric WHERE day>=? AND class IN "
-            f"({','.join('?' * len(cfg.classes))}) GROUP BY day,metric,bucket,class",
-            (since_day, *cfg.classes),
-        ).fetchall()
-    finally:
-        db.close()
-
-    by_key: dict[tuple, dict] = {}
-    for day, metric, bucket, klass, n in rows:
-        by_key.setdefault((day, metric, klass), {})[bucket] = n
-
-    points = []
-    for (day, metric, klass), buckets in sorted(by_key.items()):
-        edges = sorted((b for b in buckets if b != "inf"), key=int)
-        counts = [buckets.get(e, 0) for e in edges] + [buckets.get("inf", 0)]
-        total = sum(counts)
-        end_ns = str(int(time.mktime(time.strptime(day, "%Y-%m-%d")) + 86400) * 1_000_000_000)
-        points.append(
-            {
-                "metric": metric,
-                "point": {
-                    "startTimeUnixNano": str(int(time.mktime(time.strptime(day, "%Y-%m-%d"))) * 1_000_000_000),
-                    "timeUnixNano": end_ns,
-                    "count": str(total),
-                    "explicitBounds": [float(e) for e in edges],
-                    "bucketCounts": [str(c) for c in counts],
-                    "attributes": traces_otlp._attrs({"kh.class": klass}),
-                },
-            }
-        )
-
-    grouped: dict[str, list] = {}
-    for p in points:
-        grouped.setdefault(p["metric"], []).append(p["point"])
-    return (
-        {
-            "resourceMetrics": [
-                {
-                    "resource": {"attributes": traces_otlp._attrs({"service.name": "kernel-hive-spa"})},
-                    "scopeMetrics": [
-                        {
-                            "scope": {"name": "kernel-hive"},
-                            "metrics": [
-                                {
-                                    "name": name,
-                                    "unit": "ms" if name.endswith("Ms") else ("%" if name.endswith("Pct") else "1"),
-                                    "histogram": {"aggregationTemporality": 2, "dataPoints": pts},
-                                }
-                                for name, pts in sorted(grouped.items())
-                            ],
-                        }
-                    ],
-                }
-            ]
-        }
-        if grouped
-        else {}
-    )
 
 
 def forward_metrics(cfg: Config, dest: Destination, dry_run: bool, verbose: bool, days: int) -> int:
@@ -484,7 +406,14 @@ def main() -> int:
     ap.add_argument("-v", "--verbose", action="store_true", help="print the OTLP document")
     ap.add_argument("--via-agent", action="store_true", help="force the local Instana host agent (127.0.0.1)")
     ap.add_argument("--via-saas", action="store_true", help="force direct-to-SaaS (INSTANA_ENDPOINT)")
+    ap.add_argument(
+        "--scheduled",
+        action="store_true",
+        help="timer mode: one pass, and an UNCONFIGURED box is a logged no-op rather than a failure",
+    )
     args = ap.parse_args()
+    if args.scheduled:
+        args.once = True
 
     cfg = Config(load_env())
     dest, dest_problems = choose_destination(cfg.agent_endpoint, cfg.endpoint, args.via_agent, args.via_saas)
@@ -514,6 +443,12 @@ def main() -> int:
         print("\nNOT READY:")
         for p in problems:
             print(f"  - {p}")
+        if args.scheduled:
+            # A timer on a box with no tenant configured is not a fault to
+            # alert on; it is this feature being off. Say so once per run and
+            # leave the unit green — every other failure below still reddens it.
+            print("scheduled run: nothing configured here, doing nothing (this is not an error)")
+            return 0
         # A dry run is still useful without a live/configured destination: it
         # shows the operator exactly what the payload would be before they go
         # and arrange one. Only non-ENDPOINT problems (missing trace store, a

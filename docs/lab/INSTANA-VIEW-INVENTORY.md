@@ -21,9 +21,22 @@ data lands inside that window, which is why §6 orders the fixable rows by cost
 rather than by how interesting they sound.
 
 **This is a living document.** Rewrite rows as things land; never append a dated
-annex that contradicts the table. Live-tenant observations carry their date
-because trial data ages out from under them — the classification is the durable
-part, the hit counts are not.
+annex that contradicts the table.
+
+**Every number below is a POINT-IN-TIME OBSERVATION, not a standing fact.**
+Unless a row says otherwise it was read from the live tenant on **2026-08-31
+~22:05 UTC, against the fleet as deployed at `main@4d031882`**, and it may
+already be wrong — the durable part of a row is its CLASSIFICATION, the count
+is evidence for that classification on one day. Two things move these numbers
+without anybody editing this file: the trial window ages data out from under
+them, and until 2026-09-01 the only path that fed half of them was run by hand
+(§2), so a "0 in 24 h" could as easily mean "nobody forwarded" as "nothing
+happened. That exact confusion has already been read back as current fact once:
+the Custom-events row's "0 CUSTOM/24 h, the served bundle contains zero
+occurrences of `reportEvent`" was true of the bundle deployed on 2026-08-31 and
+was contradicted by a later run that observed **16 CUSTOM beacons**, once the
+SPA carrying that call had been deployed. **Re-read before quoting; do not cite
+a count in a measurement doc without repeating the measurement.**
 
 ## 1. How each row is classified
 
@@ -44,14 +57,55 @@ what fixing it costs:
 | # | Path | Carries | Runs |
 |---|---|---|---|
 | 1 | **Browser EUM agent** → IBM SaaS, direct from each visitor's tab | page loads, page transitions, HTTP calls, resource loads, JS errors, sessions, identity, geo/browser/OS | continuously, every visit |
-| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table | **by hand only**, never on a timer |
+| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table | `kh-instana-forward.timer`, every 5 min, **once the operator enables it** (§2.1) |
+| 2b | **`trace-ship.py`** → the box's own `/traces` | the daemon's spooled spans, out of `stations/<id>/traces/` and into `traces.db`, so path 2 has anything to forward | `kh-trace-ship.timer`, every 2 min, same enable step |
 | 3 | **`scripts/serve-https-spa.sh`** → Instana Web REST API, from the deploy machine | built SPA **source maps** (`PUT …/sourcemap-upload/…`), and republishing the pinned EUM agent JS self-hosted | every SPA deploy |
 | 4 | **IBM's host agent on labhost** → SaaS, IBM's own binary | host, process, LXC and agent infrastructure data | continuously, and **not this repo's to switch off** |
 
-Path 2 surprises twice: it is manual, so **any view it feeds is stale by
-default**, and it forwards metrics as well as spans — so `analytics.db` is not
-purely local, contrary to how §8's "third telemetry plane" framing reads at a
-glance. Path 3 is not mentioned in §8.1/§8.2 at all.
+Path 2 forwards metrics as well as spans, so `analytics.db` is not purely local,
+contrary to how §8's "third telemetry plane" framing reads at a glance. Path 3
+is not mentioned in §8.1/§8.2 at all.
+
+**Path 2 was manual until 2026-09-01, and that is the health warning on every
+count in this document.** Any view it feeds was stale by default — including
+while the observations in §4 were being taken. It carried a second, quieter
+fault: the watermark was the highest `started_ms` it had shipped, so a trace
+whose browser half flushed after a run (up to a `sink.ts` 20 s interval later,
+carrying an EARLIER start time) was never selected again, and those spans were
+lost for good. That is a direct cause of orphaned calls with no parent in the
+tenant, and it means **span and call counts read before 2026-09-01 are floors,
+not measurements.** Both are fixed: the watermark is now the store's ingest
+sequence (`traces.py`'s `ingest_seq`), and the two carriers run on timers.
+
+### 2.1 Arming the two timers — the operator's step
+
+Landing the code does not start anything (AGENTS.md rule 11). `box-deploy.sh
+--apply` installs the four unit files; enabling them is a deliberate act,
+because path 2 is the one thing in this repo that sends data to a third party.
+
+```sh
+scripts/dev/box-deploy.sh --apply                       # installs the units + daemon-reload
+ssh lab 'systemctl restart osgallery-https'             # picks up traces.py's ingest_seq column
+ssh lab 'systemctl enable --now kh-trace-ship.timer kh-instana-forward.timer'
+ssh lab 'systemctl list-timers kh-*'                    # next/last fire times
+ssh lab 'journalctl -u kh-instana-forward -n 40 --no-pager'   # watermark + backlog per run
+```
+
+The restart is a **separate decision and not a precondition** — the serving
+plane is long-running, so between the deploy and a restart the old code keeps
+writing trace rows with no ingest sequence, and rather than leave that as a
+caveat somebody has to remember, `TraceStore` sweeps any unsequenced row to the
+head of the order every time the store is opened (which the forwarder does on
+every run). The restart just stops that healing being needed. A first run is
+worth doing by hand — `--dry-run` shows the exact bytes, `--once` sends them —
+before the timer is armed.
+
+Turning it back off: `ssh lab 'systemctl disable --now kh-instana-forward.timer
+kh-trace-ship.timer'`. Clearing `INSTANA_ENDPOINT` in `registry/local.env` also
+works for the egress half alone — `--scheduled` treats an unconfigured box as a
+logged no-op with exit 0, so an unarmed feature never presents as a failing
+unit. Nothing needs restarting for either change; the timers are independent of
+the serving plane.
 
 **Never sent:** `probes.json` (the Rust feature-reach counters),
 `clientlog.jsonl`, `usage-stats.json`, and every log line this system produces.
@@ -84,9 +138,11 @@ closed in the browser and open on the server.
 
 ## 4. The inventory
 
-Counts are **24-hour windows read 2026-08-31 ~22:05 UTC** unless stated. Read
-§7 before quoting any of them: a 7-day window returns *fewer* rows than a
-1-hour one.
+Counts are **24-hour windows read 2026-08-31 ~22:05 UTC**, fleet at
+`main@4d031882`, unless a row states otherwise. They are observations of that
+moment and several are known to have moved since — read the point-in-time
+warning in §1's preamble and §7's window caveat (a 7-day window returns *fewer*
+rows than a 1-hour one) before quoting any of them anywhere.
 
 ### 4.1 Website Monitoring — the richest surface we have
 
@@ -107,7 +163,7 @@ RESOURCELOAD, HTTPREQUEST, ERROR, CUSTOM, PAGE_CHANGE`.
 | Users / Impacted Users | real account id **and display name** on 10 of 14 page transitions and 200 of 200 HTTP calls — never on a page load | **POPULATED** | small: the page-load gap is the bootstrap race above |
 | JS errors | **0 ERROR/24 h**, though `wrapEventHandlers` and `wrapTimers` are both ON — deliberately, because a WebGL/RAF/pointer app throws where `window.onerror` never looks | **EMPTY** — and we cannot tell "nothing threw" from "nothing arrives" | ~zero: provoke one error on staging and look |
 | ↳ unminified stacks | source maps uploaded every deploy (path 3) | **POPULATED BUT UNEXERCISED** — with 0 error beacons the upload has never been read | — |
-| Custom events | **0 CUSTOM/24 h.** `inputTrace.ts` does call `ineum('reportEvent','kh.input.sampled', …)`, in commit `4d031882` — **not deployed**; the served bundle contains zero occurrences of `reportEvent` | **EMPTY, FIXABLE** | one SPA rebuild + deploy of already-written code |
+| Custom events | **POPULATED since the SPA carrying it was deployed.** 0 CUSTOM/24 h on 2026-08-31 because `inputTrace.ts`'s `ineum('reportEvent','kh.input.sampled', …)` (commit `4d031882`) was written but not yet in the served bundle; a later run observed **16 CUSTOM beacons**. The 2026-08-31 reading and its "the served bundle contains zero occurrences of `reportEvent`" are both **superseded** — kept here only because that pair of figures was quoted as current fact after it stopped being true | **POPULATED** | — (done: the deploy) |
 | Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24` | **POPULATED BUT UNINFORMATIVE** — §5 | — |
 | Human vs. our own probe fleet | **6 of 15 page loads were `HeadlessChrome`** — this lab's own browser probes, counted as visitors | **POPULATED BUT WRONG** — our plane separates this with its client-class dimension (`ANALYTICS.md` §9); Instana structurally cannot | medium, and no clean vendor answer: a `meta` flag plus manual Analyze filtering, which still does not fix Smart Alerts or Impacted Users |
 
@@ -222,9 +278,9 @@ aggregate half.
 
 ## 6. The EMPTY-FIXABLE queue, cheapest first
 
-1. **Deploy the SPA.** Ships the custom-event call (`reportEvent`) that is
-   committed and unshipped, and — with the small bootstrap change below — the
-   page name and join keys on page-load beacons. **Cost: one rebuild + deploy.**
+1. ~~**Deploy the SPA.**~~ **DONE.** The custom-event call (`reportEvent`) is
+   shipped and CUSTOM beacons now arrive (§4.1). The bootstrap change in row 2
+   still wants a deploy of its own.
 2. **Move page name, `kh.sessionId` and `kh.bundle` into the inline bootstrap.**
    Today 14 of 15 page loads are unnamed and unjoinable. **Cost: a small SPA
    change**, riding the same deploy.
@@ -235,9 +291,11 @@ aggregate half.
    systemd drop-in and a restart**, plus checking kernel ≥5.10 / glibc ≥2.26.
    The only row where a vendor can tell us something we did not tell it first.
 5. **Rebuild and roll the daemon** so `input.edge` stops being `Unspecified`.
-   **Cost: build + canary + a risk-ordered fleet promotion + two hand-run
-   scripts** — the most expensive row, and the one that finally puts the
-   input→pixel flame graph in front of a commercial APM.
+   **Cost: build + canary + a risk-ordered fleet promotion** — the most
+   expensive row, and the one that finally puts the input→pixel flame graph in
+   front of a commercial APM. It used to end in "and then two hand-run
+   scripts"; since 2026-09-01 the two carriers are on timers (§2.1), so the
+   fresh spans reach the tenant on their own within ~7 minutes of the rollout.
 6. Then, if the trial still has days: one Application Perspective and one SLO
    (operator UI, minutes each).
 
@@ -311,12 +369,16 @@ curl -s -H "authorization: apiToken $TOKEN" "$BASE/api/settings/slo"
 website, a perspective, an SLO or a synthetic test changes the tenant. This
 inventory is a reading exercise.
 
-## 10. Tally, as of 2026-08-31
+## 10. Tally
+
+Classifications, current; the counts they were derived from are the 2026-08-31
+point-in-time readings (§1). One row has moved since that date: Custom events,
+from EMPTY, FIXABLE to POPULATED, once the SPA carrying `reportEvent` shipped.
 
 | Class | Rows | Where |
 |---|---|---|
-| POPULATED | 20 | §4.1 (9), §4.2 (6), §4.3 (5) |
-| EMPTY, FIXABLE | 9 | §4.1 (3), §4.2 (2), §4.3 (1), §4.5 (3) |
+| POPULATED | 21 | §4.1 (10), §4.2 (6), §4.3 (5) |
+| EMPTY, FIXABLE | 8 | §4.1 (2), §4.2 (2), §4.3 (1), §4.5 (3) |
 | POPULATED BUT UNINFORMATIVE | 5 | geo, browser/OS, the service map, the unexercised source maps, the forwarded metric histograms |
 | N/A | 14 | Synthetics, adaptive thresholds, the emulator sensor gap, Docker, vSphere, and §4.7's ten surfaces |
 | EMPTY, nothing to fix yet | 2 | ERROR beacons (until one is provoked), log collection |

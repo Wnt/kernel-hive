@@ -1070,17 +1070,21 @@ prove the hop, and nothing else can.
   Putting the station id there would fill a column meaning "one tab" with a
   machine name.
 
-**Shipped, by hand, not on a timer.** `scripts/observability/trace-ship.py` is
-the carrier the paragraph above predicted: it reads each finished batch file in
-a station's spool, `POST`s it verbatim to `/traces`, and deletes it only on a
-200. It is run ON the box, via `scripts/dev/labrun`, because the spool is
-root-owned by the daemon and the tool needs to delete what it ships as root; run
-from CT950 instead with `--apply --keep` and it can still ship, just never
-clean up after itself. It is invoked by hand, the same as
-`instana-forward.py`, on purpose: the spool is bounded
-(`SH_TRACE_SPOOL_MAX`, oldest dropped) so nothing overflows while nobody ships,
-and a daemon span is a one-off per session or per daemon start rather than a
-stream with a rate that would justify a timer. Re-running it is always safe —
+**Shipped by `kh-trace-ship.timer`, every two minutes.**
+`scripts/observability/trace-ship.py` is the carrier the paragraph above
+predicted: it reads each finished batch file in a station's spool, `POST`s it
+verbatim to `/traces`, and deletes it only on a 200. It runs ON the box, as
+root, because the spool is root-owned by the daemon and the tool needs to delete
+what it ships; run from CT950 instead with `--apply --keep` and it can still
+ship, just never clean up after itself.
+
+It was hand-run until 2026-09-01, on an argument about the spool being bounded
+(`SH_TRACE_SPOOL_MAX`, oldest dropped) so nothing overflows while nobody ships.
+That was true of the spool and false of the store: an unshipped batch is a
+daemon span missing from `/admin/observability` and from everything downstream,
+so "nothing overflows" was never "nothing is lost". The unit and timer live
+beside the script and are installed by `box-deploy.sh`; **enabling them is a
+separate operator action** (§8.1). Re-running is always safe —
 `scripts/serve/traces.py` inserts spans `ON CONFLICT(trace_id,span_id) DO
 NOTHING`, so a batch shipped twice, or left in place after a failed POST and
 retried on the next run, is stored once.
@@ -1106,6 +1110,31 @@ empirically that the local agent's receiver does not check it at all, so
 sending it there would be a credential attached to a request that ignores it.
 Full detail, including the empirical checks, is in the script's own
 docstring.
+
+**It runs on a timer, and its watermark is INGEST ORDER, not trace start
+time.** Both facts date from 2026-09-01 and both were bugs before it. Hand-
+running meant every view it feeds was stale by default, which is how a
+measurement doc came to be written from a tenant nobody had forwarded to in
+days — `kh-instana-forward.timer` now runs `--scheduled` every five minutes,
+and the run logs its watermark and backlog so staleness is visible in
+`journalctl -u kh-instana-forward` instead of being invisible by construction.
+The watermark bug was worse, because it lost data silently: the forwarder
+selected traces by `started_ms` and advanced past the highest one it shipped,
+while a trace's browser half arrives up to a `sink.ts` flush interval LATER
+carrying an EARLIER start time (§8's own resummarise comment says the server
+half usually wins that race). Anything that landed after a run had passed its
+trace was never selected again by any future run, which is precisely what a
+call with no parent looks like from inside Instana. The store now stamps each
+trace with an `ingest_seq` that moves every time a span lands in it, so a late
+arrival pulls its whole trace back in front of the watermark; a 90-second quiet
+window on top holds a trace until it stops changing, which keeps duplicate
+sends rare without ever being the thing correctness rests on. See the
+`pending_traces()` docstring for why the alternatives lost and what re-sending
+means on IBM's side.
+
+**Neither timer is armed by landing this.** `box-deploy.sh --apply` installs the
+units; the operator enables them — the commands are in
+`docs/lab/INSTANA-VIEW-INVENTORY.md` §2.
 
 ## 8.2 Instana: a benchmark, not a dependency — and a temporary one
 
@@ -1173,9 +1202,11 @@ the three places Instana touches this repo, not asserted:
   `INSTANA_WEBSITE_KEY` in `registry/local.env` and rebuilding/redeploying the
   SPA is the whole off switch for the browser half; nothing else references
   the key.
-- **`instana-forward.py` is already the minimum-commitment shape.** It is run
-  by hand, never on a timer (§8.1), and has its own `--dry-run` and its one
-  credential; not running it again is itself "off" for anything this repo
+- **`instana-forward.py` is already the minimum-commitment shape.** It has its
+  own `--dry-run` and its one credential, and since 2026-09-01 one timer
+  (`kh-instana-forward.timer`, §8.1). `systemctl disable --now
+  kh-instana-forward.timer` — or simply clearing `INSTANA_ENDPOINT`, which makes
+  every scheduled run a logged no-op — is itself "off" for anything this repo
   ships to Instana.
 - **The labhost host agent is NOT this repo's to switch off.** Unlike the two
   above, `systemctl status instana-agent` is a separate IBM-supplied install
@@ -1424,7 +1455,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `streamhost/streamhost/src/trace_guest.rs` | the guest-lifecycle spans, measured from outside the guest |
 | `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
 | `scripts/observability/trace-ship.py` | ships daemon spool batches to the box's own `/traces` route |
-| `scripts/observability/instana-forward.py`, `scripts/observability/instana_destination.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice, the narrow loopback-http exception |
+| `scripts/observability/instana-forward.py`, `instana_destination.py`, `instana_backlog.py`, `instana_metrics.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice and the narrow loopback-http exception; the ingest-sequence watermark and quiet window that decide WHICH traces are still owed; the histogram projection |
+| `scripts/observability/kh-instana-forward.{service,timer}`, `kh-trace-ship.{service,timer}` | the schedules for the two carriers. Installed by `box-deploy.sh --apply`, enabled by the operator |
 | `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
 | `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2) |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |

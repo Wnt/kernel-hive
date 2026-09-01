@@ -253,6 +253,17 @@ box_sync_load_pairs() {
   # unit (what actually runs + auto-starts on boot), like the streamhost/amiga units.
   box_sync_add_pair osgallery-https-unit scripts/serve/osgallery-https.service /etc/systemd/system/osgallery-https.service scrub repo daemon-reload
   box_sync_add_pair vm-idle-watch scripts/vm-idle-watch.sh "$BOX_ROOT/serve/vm-idle-watch.sh" exact repo
+  # The observability carriers, on timers since 2026-09-01. Both were hand-run
+  # for their whole lives, so every Instana view they feed was stale by default.
+  # Only the UNITS are paired: both scripts import from the checkout
+  # (scripts/serve/traces.py, registry/local.env), so the units run them out of
+  # /data/kernel-hive rather than from a copy that could not resolve its own
+  # imports. Landing these installs the units; ENABLING them is the operator's
+  # decision — docs/lab/INSTANA-VIEW-INVENTORY.md §2.
+  box_sync_add_pair kh-instana-forward-unit scripts/observability/kh-instana-forward.service /etc/systemd/system/kh-instana-forward.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-forward-timer scripts/observability/kh-instana-forward.timer /etc/systemd/system/kh-instana-forward.timer exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-unit scripts/observability/kh-trace-ship.service /etc/systemd/system/kh-trace-ship.service exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-timer scripts/observability/kh-trace-ship.timer /etc/systemd/system/kh-trace-ship.timer exact repo daemon-reload
   box_sync_add_pair solaris-cdrv streamhost/guest-agents/solaris/cdrv.py /root/cdrv.py exact repo
   box_sync_add_pair solaris-gexec streamhost/guest-agents/solaris/gexec.py /root/gexec.py exact repo
   box_sync_add_pair irix-irixexec streamhost/guest-agents/irix/irixexec.py /root/irixexec.py exact repo

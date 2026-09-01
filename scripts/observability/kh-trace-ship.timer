@@ -1,0 +1,16 @@
+[Unit]
+Description=kernel-hive: periodic daemon span spool ship (every 2 min)
+Documentation=file:///data/kernel-hive/docs/ANALYTICS.md
+
+[Timer]
+# Faster than the forwarder so daemon spans are usually in the store before the
+# forward that would carry them, which keeps a trace's daemon half in the SAME
+# send as its browser and server halves. Correctness does not depend on winning
+# that race — the forwarder's ingest watermark re-selects a trace a late batch
+# touches — this only reduces how often it is split across two sends.
+OnBootSec=90s
+OnUnitActiveSec=2min
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target
