@@ -1507,15 +1507,23 @@ a background worker, not the request thread**, so an unreachable Instana costs
 one thread and some telemetry rather than a slow gallery. The route answers 200
 for *queued*, never for *delivered*.
 
-**The trade-off, stated rather than buried.** Instana derives geography from
-the beacon's source IP and browser/OS from its `User-Agent` — neither is in the
-beacon body — so a proxy that forwarded only bytes would collapse both onto the
-box. The docs name the supported fix (`X-Forwarded-For`, or `X-REALER-IP`), and
-we send it, taking the RIGHTMOST entry so a client cannot assert its own
-location. Two honest caveats: IBM states that proxy setups are unsupported even
-while documenting the header, and this lab's geo data was already classed
-POPULATED BUT UNINFORMATIVE (one household, one city). The capability is
-preserved on principle, not because the map was telling us anything.
+**The trade-off, and the part of it that was NOT avoidable.** Instana derives
+geography from the beacon's source IP and browser/OS from its `User-Agent` —
+neither is in the beacon body. Browser/OS survives, because we forward the
+visitor's own `User-Agent` (verified live: `browser=HeadlessChrome os=Linux`).
+**Geography does not.** The documented escape (`X-Forwarded-For`, or
+`X-REALER-IP`) is implemented and IBM honours it — proved by a run that
+forwarded `127.0.0.1` and came back geolocated to `127.0.0.0` — but the real
+client IP never reaches this process: labhost's Caddy is the last hop that
+writes the header and it sees only the tunnel's loopback peer, so every request
+arrives as `X-Forwarded-For: 127.0.0.1`. (Same reason
+`auth/routes._client_ip` has been rate-limiting on a constant.) So the proxy
+refuses to assert a non-routable address and geo falls back to the box's egress
+IP: populated, and wrong for the first genuinely remote visitor. **The fix is
+one commit in the edge repo, not here.** Full evidence and the exact change:
+[`INSTANA-VIEW-INVENTORY.md` §2.3](lab/INSTANA-VIEW-INVENTORY.md). Kept in
+proportion by §4.1's own reading: geo was already POPULATED BUT UNINFORMATIVE,
+one household and one city.
 
 **It is temporary.** It exists only because Instana does, and it is listed in
 §8.2's off switch as its own leg for exactly that reason.

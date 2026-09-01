@@ -24,9 +24,12 @@ import io
 import os
 import sys
 import tempfile
+import threading
 import unittest
 import urllib.request
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from urllib.error import HTTPError
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "scripts" / "serve"))
@@ -182,8 +185,8 @@ class TheClientIpAssertion(EumProxyTestCase):
         self.assertEqual(self.enqueued[0][3], "203.0.113.7")
 
     def test_the_socket_peer_answers_on_the_lan_listener(self):
-        self.post(public=False, headers={"X-Forwarded-For": None}, peer="192.0.2.55")
-        self.assertEqual(self.enqueued[0][3], "192.0.2.55")
+        self.post(public=False, headers={"X-Forwarded-For": None}, peer="198.51.100.55")
+        self.assertEqual(self.enqueued[0][3], "198.51.100.55")
 
     def test_an_unparseable_address_asserts_nothing_rather_than_guessing(self):
         for value in ("not-an-ip", "203.0.113.7:8080", "<script>", ""):
@@ -191,7 +194,20 @@ class TheClientIpAssertion(EumProxyTestCase):
             self.post(headers={"X-Forwarded-For": f"198.51.100.1, {value}"})
             self.assertEqual(self.enqueued[0][3], "" if value else "198.51.100.1", value)
 
-    def test_ipv6_survives(self):
+    def test_a_non_global_address_asserts_nothing(self):
+        """THE MEASURED CASE. The live edge hands this process
+        `X-Forwarded-For: 127.0.0.1` for every visitor — the real peer is lost
+        one hop earlier — and a beacon sent with it came back from Instana
+        geolocated to `127.0.0.0` with country, city and coordinates EMPTY.
+        Asserting nothing at least lets the box's egress address resolve."""
+        for value in ("127.0.0.1", "10.1.2.3", "192.168.1.10", "169.254.1.1", "100.64.0.1", "::1", "fd00::1"):
+            self.enqueued.clear()
+            self.post(headers={"X-Forwarded-For": value})
+            self.assertEqual(self.enqueued[0][3], "", value)
+
+    def test_a_routable_ipv6_survives(self):
+        # 2001:db8::/32 is RFC3849 documentation space — a placeholder, which
+        # is the only shape of address this public repo may carry.
         self.post(headers={"X-Forwarded-For": "2001:db8::1"})
         self.assertEqual(self.enqueued[0][3], "2001:db8::1")
 
@@ -205,6 +221,66 @@ class HeaderForgeryIsImpossible(EumProxyTestCase):
     def test_the_user_agent_is_length_capped(self):
         self.post(headers={"User-Agent": "A" * (eum_proxy.UA_MAX * 4)})
         self.assertLessEqual(len(self.enqueued[0][2]), eum_proxy.UA_MAX)
+
+
+class TheUpstreamCall(unittest.TestCase):
+    """Driven against a REAL local server, because both properties under test
+    are properties of `urllib`'s handler chain rather than of our code, and a
+    chain assembled slightly wrong fails in a way no assertion about its
+    contents would have caught — the live log said `KeyError` where it should
+    have said the status IBM sent."""
+
+    @classmethod
+    def setUpClass(cls):
+        class H(BaseHTTPRequestHandler):
+            def do_POST(self):
+                if self.path == "/redirect":
+                    self.send_response(302)
+                    self.send_header("Location", "http://example.invalid/elsewhere")
+                else:
+                    self.send_response(503)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+
+        cls.srv = HTTPServer(("127.0.0.1", 0), H)
+        cls.base = f"http://127.0.0.1:{cls.srv.server_port}"
+        threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.srv.shutdown()
+
+    def _open(self, path):
+        req = urllib.request.Request(
+            self.base + path, data=b"ty\tpl\n", headers={"Content-Type": "text/plain"}, method="POST"
+        )
+        return eum_proxy._OPENER.open(req, timeout=5)
+
+    def test_a_non_2xx_surfaces_as_an_HTTPError_not_a_KeyError(self):
+        with self.assertRaises(HTTPError) as caught:
+            self._open("/anything")
+        self.assertEqual(caught.exception.code, 503)
+
+    def test_a_redirect_is_not_followed(self):
+        """One legal destination means "follow the Location header" must not
+        be a behaviour this code has at all."""
+        with self.assertRaises(HTTPError) as caught:
+            self._open("/redirect")
+        self.assertEqual(caught.exception.code, 302)
+
+    def test_the_worker_swallows_an_upstream_failure(self):
+        """`_forward` is the whole body of a daemon thread: if it can raise,
+        one bad beacon ends beacon delivery for the life of the process."""
+        before = eum_proxy._fail_count
+        eum_proxy._upstream = self.base + "/anything"
+        try:
+            eum_proxy._forward(b"ty\tpl\n", "text/plain", "probe", "")
+        finally:
+            eum_proxy._upstream = None
+        self.assertGreater(eum_proxy._fail_count, before)
 
 
 class TheDestinationIsFixed(unittest.TestCase):

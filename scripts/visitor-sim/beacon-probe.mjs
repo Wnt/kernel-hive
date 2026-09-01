@@ -112,13 +112,23 @@ function readLocalEnv() {
   return env;
 }
 
-/** Poll the tenant for a PAGELOAD beacon carrying `sessionId` as kh.sessionId.
+/** Poll the tenant for the PAGELOAD beacon carrying `backendTraceId`.
+ *
+ *  KEYED ON backendTraceId, NOT ON kh.sessionId, and the difference is the
+ *  whole reliability of this check. `kh.sessionId` is set by
+ *  analytics/instana.ts's configureInstana(), which runs after React mounts —
+ *  by which time the page-load beacon has already gone, so a PAGELOAD's meta
+ *  carries `kh.bundle`/`kh.client.class` and NOT the session id
+ *  (INSTANA-VIEW-INVENTORY.md §4.1 measured exactly this). Looking one up by
+ *  session id reports every delivered beacon as missing. The backend trace id
+ *  comes off the <meta name="traceparent"> of THIS load, is unique to it, and
+ *  is on the beacon by the time it leaves the tab.
  *
  *  Returns `{checked: false, why}` when the credentials are not present —
  *  never a silent pass. A beacon is not queryable the instant it is accepted
- *  (our own worker forwards it asynchronously, and Instana's ingest is not
- *  instantaneous either), so this polls rather than asking once. */
-async function instanaSawSession(sessionId, waitMs) {
+ *  (our worker forwards it asynchronously and IBM's ingest is not instant
+ *  either), so this polls rather than asking once. */
+async function instanaSawPageLoad(backendTraceId, waitMs) {
   const env = readLocalEnv();
   const base = (env.INSTANA_API_BASE || '').replace(/\/+$/, '');
   const tokenFile = env.INSTANA_API_TOKEN_FILE || '';
@@ -151,8 +161,11 @@ async function instanaSawSession(sessionId, waitMs) {
         lastError = `HTTP ${res.status}`;
       } else {
         const doc = await res.json();
-        const items = Array.isArray(doc.items) ? doc.items : [];
-        const hit = items.find((it) => (it?.meta ?? {})['kh.sessionId'] === sessionId);
+        // Each row is `{beacon: {...}}` — the beacon fields are NOT at the top
+        // level, and reading `it.meta` instead of `it.beacon.meta` reports a
+        // delivered beacon as missing. Verified against a live response.
+        const items = (Array.isArray(doc.items) ? doc.items : []).map((it) => it?.beacon ?? it);
+        const hit = items.find((it) => it?.backendTraceId === backendTraceId);
         if (hit) return { checked: true, found: true, beacon: hit, sampled: items.length };
         lastError = `not among ${items.length} PAGELOAD beacon(s) yet`;
       }
@@ -170,7 +183,11 @@ function parseArgs(argv) {
     const a = argv[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    if (key === 'help' || key === 'insecure') args.set(key, true);
+    // BOOLEAN FLAGS MUST BE LISTED HERE. Anything absent is treated as
+    // taking a value, so it silently swallows the NEXT argument — which is
+    // exactly how `--instana-check --instana-wait 240000` ran with the
+    // default wait and no error, the first time this was used in anger.
+    if (['help', 'insecure', 'instana-check', 'allow-direct'].includes(key)) args.set(key, true);
     else {
       i += 1;
       args.set(key, argv[i]);
@@ -432,21 +449,28 @@ async function main() {
   // The only end-to-end proof. Everything above proves the browser reached US.
   if (args.has('instana-check')) {
     const waitMs = Number(args.get('instana-wait') ?? 180000);
-    if (!sessionId) {
-      console.log('\ninstana            UNCHECKED — no kh.sessionId on the page to look up');
+    const key = beacons.find((b) => b.ty === 'pl' && b.bt)?.bt ?? injected?.traceId ?? null;
+    if (!key) {
+      console.log('\ninstana            UNCHECKED — this load produced no page-load beacon to look up');
     } else {
-      console.log(`\ninstana            polling for kh.sessionId=${sessionId} (up to ${Math.round(waitMs / 1000)}s)…`);
-      const seen = await instanaSawSession(sessionId, waitMs);
+      console.log(`\ninstana            polling for backendTraceId=${key} (up to ${Math.round(waitMs / 1000)}s)…`);
+      const seen = await instanaSawPageLoad(key, waitMs);
       report.instana = seen;
       if (!seen.checked) {
         console.log(`  UNCHECKED — ${seen.why}`);
       } else if (seen.found) {
+        const b = seen.beacon;
         console.log(`  FOUND in the tenant (${seen.sampled} PAGELOAD beacon(s) sampled)`);
         console.log('  -> the beacon travelled browser -> our origin -> the box -> Instana.');
+        // The geography facets, printed rather than assumed: they are the one
+        // thing proxying can silently cost (INSTANA-VIEW-INVENTORY.md §2.2).
+        console.log(`  userIp=${b.userIp || '(none)'} country=${b.countryCode || '(none)'} city=${b.city || '(none)'}`);
+        console.log(`  browser=${b.browserName || '(none)'} os=${b.osName || '(none)'}`);
       } else {
         console.log(`  NOT FOUND — ${seen.why}`);
         console.log('  The proxy accepted the beacon and the forward did not arrive. Check');
-        console.log("  journalctl -u osgallery-https for '[serve] EUM proxy upstream failure'.");
+        console.log("  /data/vms/streamhost/serve/https-server.log for 'EUM proxy upstream");
+        console.log("  failure' — the unit logs to that file, NOT to journald.");
         failures += 1;
       }
     }

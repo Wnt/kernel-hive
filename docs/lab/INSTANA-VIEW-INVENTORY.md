@@ -121,36 +121,69 @@ counting and logging every drop. A dead vendor costs one thread and some
 telemetry, never a slow gallery. Our 200 therefore means **queued**, not
 delivered — which is exactly why `beacon-probe.mjs --instana-check` exists.
 
-**The geography trade-off, and what actually happened to it.** Instana derives
-Country/Subdivision and the Geography map from the beacon request's SOURCE IP;
-the beacon body carries no IP at all ("The JavaScript agent does not have
-access to IP addresses", `0250:1729`). A naive proxy therefore collapses every
-visitor onto the box's egress IP. **The docs are not silent on the fix**:
-`0250:1614-1622` says of proxying the SaaS endpoints, "Make sure that Instana
-servers are aware of the user IPs. Send an X-FORWARDED-FOR header … with the
-user's IP. Alternatively … `X-REALER-IP` (not `X-REAL-IP`)", and
-`0025:2446-2456` states flatly that "The EUM acceptor in the backend relies on
-the `x-forwarded-for` header in incoming requests to determine the client's IP
-address." IBM says in the same breath that proxy setups are unsupported, so
-this is a documented mechanism with no support contract behind it — the right
-shape for something explicitly temporary. We send both headers, plus the
-visitor's own `User-Agent`, which the acceptor reads for the browser/OS/device
-facets the same way it reads the IP for geography; forwarding one without the
-other would have traded a collapsed dimension for a collapsed dimension.
+### 2.3 The geography trade-off — the mechanism works, the input does not
+
+**GEOGRAPHY IS A REAL, CURRENT LOSS. It is stated first because it is the one
+thing the proxy costs.** Instana derives Country/Subdivision and the Geography
+map from the beacon request's SOURCE IP; the beacon body carries no IP at all
+("The JavaScript agent does not have access to IP addresses", `0250:1729`).
+Before the proxy the browser connected to IBM directly and IBM read the real
+address. Now IBM reads the box's egress address, so **every beacon is
+geolocated to labhost, not to the visitor**.
+
+**The documented fix is implemented and IBM honours it.** `0250:1614-1622`, on
+proxying the SaaS endpoints: "Make sure that Instana servers are aware of the
+user IPs. Send an X-FORWARDED-FOR header … with the user's IP. Alternatively …
+`X-REALER-IP` (not `X-REAL-IP`)". `0025:2446-2456`: "The EUM acceptor in the
+backend relies on the `x-forwarded-for` header in incoming requests to
+determine the client's IP address." `eum_proxy.py` sends both, and that the
+acceptor reads them was **proved, not assumed**: an early run forwarded
+`X-Forwarded-For: 127.0.0.1` and the beacon came back from the tenant
+geolocated to `127.0.0.0`, with country, city and coordinates empty. The header
+plumbing is correct.
+
+**What is broken is one hop upstream of us, and it is not in this repo.**
+Measured on the live public listener, 2026-09-01: EVERY request arrives
+carrying `X-Forwarded-For: 127.0.0.1`. The edge terminates TLS on a VPS and
+tunnels to labhost, and labhost's own Caddy — the last hop, the one that writes
+the header — sees only the tunnel's loopback peer. The visitor's real address
+therefore never reaches the serving plane at all, and has not for as long as
+that topology has existed. A side finding worth its own line:
+**`auth/routes._client_ip` has been rate-limiting on a constant `127.0.0.1`**
+for the same reason.
+
+So `_visitor_ip` refuses to assert loopback, RFC1918, CGNAT, link-local or ULA
+addresses — an address we cannot vouch for produces no assertion rather than a
+false one — and the connection speaks instead. **Measured after that change:
+`userIp=88.192.35.0 country=FI city=Turku`**, which is the box's household, and
+identical to what §4.1 recorded before the proxy existed *because this lab's
+visitors have so far all been on that connection*. The facets are populated and
+will silently be wrong for the first genuinely remote visitor.
+
+**The fix is one commit in another repo.** The edge (Wnt/forwarder) must set
+`X-Forwarded-For` from the real peer while it is still known, and labhost's
+Caddy must append rather than overwrite. The moment a routable address appears
+in that header, `_visitor_ip` forwards it and geography comes back with no
+change on this side.
+
+**Browser/OS did NOT collapse**, because the same class of problem has a
+different answer: Instana reads those from the request `User-Agent`, which we
+forward verbatim from the visitor's own request. Proved in the same run:
+`browser=HeadlessChrome os=Linux`. Forwarding the IP without the UA would have
+traded one collapsed dimension for another.
 
 **Which `X-Forwarded-For` entry, and why it is not the one the auth plane
 picks.** `auth/routes._client_ip` takes the LEFTMOST entry, correctly, for a
 rate-limit key and a log line. That is the wrong entry to assert to a third
 party: a client may send its own `X-Forwarded-For` and our edge appends, so the
 leftmost is attacker-chosen and would let any visitor place themselves anywhere
-on the map. The proxy takes the RIGHTMOST — the hop our own edge added — and
-refuses anything that does not parse as an IP address.
+on the map. The proxy takes the RIGHTMOST — the hop our own edge added.
 
 **Worth keeping in proportion.** §5 already classed geo as POPULATED BUT
 UNINFORMATIVE: every beacon resolved to one city, because this gallery is one
-household and its invited guests. So the capability being protected here is
-small; it is protected anyway because losing a working thing silently is the
-failure this repo keeps writing rules about.
+household and its invited guests. The capability lost is therefore small, and
+it is written down at this length anyway because losing a working thing
+silently is the failure this repo keeps writing rules about.
 
 **It is temporary and deletable.** It exists only because the Instana
 integration does. When Instana goes, `eum_proxy.py`, its route row, its gate
@@ -231,11 +264,11 @@ closed in the browser and open on the server.
    happen to make.
 3. **Geo is derived from the visitor IP against MaxMind**
    (`0250-monitoring-websites.md:236-240`) — never from anything in the beacon
-   body. Since 2026-09-01 we DO proxy the beacon (§2.2), so it survives only
-   because the proxy forwards `X-Forwarded-For`/`X-REALER-IP`, which the docs
-   name as the supported way to preserve it (`0250:1614-1622`,
-   `0025:2446-2456`). Delete that header and every visitor collapses onto the
-   box's egress IP.
+   body. Since 2026-09-01 we proxy the beacon (§2.2), and **geo now reports the
+   BOX's location, not the visitor's**: the documented `X-Forwarded-For` escape
+   is implemented and honoured by IBM, but the real client IP never reaches the
+   serving plane, because labhost's Caddy writes `127.0.0.1` into that header.
+   The whole finding, with the evidence and the one-hop fix, is §2.3.
 
 ## 4. The inventory
 
@@ -265,7 +298,7 @@ RESOURCELOAD, HTTPREQUEST, ERROR, CUSTOM, PAGE_CHANGE`.
 | JS errors | **0 ERROR/24 h**, though `wrapEventHandlers` and `wrapTimers` are both ON — deliberately, because a WebGL/RAF/pointer app throws where `window.onerror` never looks | **EMPTY** — and we cannot tell "nothing threw" from "nothing arrives" | ~zero: provoke one error on staging and look |
 | ↳ unminified stacks | source maps uploaded every deploy (path 3) | **POPULATED BUT UNEXERCISED** — with 0 error beacons the upload has never been read | — |
 | Custom events | **POPULATED since the SPA carrying it was deployed.** 0 CUSTOM/24 h on 2026-08-31 because `inputTrace.ts`'s `ineum('reportEvent','kh.input.sampled', …)` (commit `4d031882`) was written but not yet in the served bundle; a later run observed **16 CUSTOM beacons**. The 2026-08-31 reading and its "the served bundle contains zero occurrences of `reportEvent`" are both **superseded** — kept here only because that pair of figures was quoted as current fact after it stopped being true | **POPULATED** | — (done: the deploy) |
-| Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24`. Since the beacon proxy (§2.2) both dimensions depend on headers WE forward — `X-Forwarded-For`/`X-REALER-IP` for geo, `User-Agent` for browser/OS — rather than on the connection Instana used to terminate | **POPULATED BUT UNINFORMATIVE** — §5 | — |
+| Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24`. Since the beacon proxy, browser/OS comes from the `User-Agent` we forward (verified intact) and **geo is the box's location, not the visitor's** — the client IP never reaches us to forward (§2.3) | **POPULATED BUT UNINFORMATIVE**, and geo is now also **WRONG for any remote visitor** — §2.3, §5 | one commit in the edge repo (§2.3) |
 | Human vs. our own probe fleet | **6 of 15 page loads were `HeadlessChrome`** — this lab's own browser probes, counted as visitors | **POPULATED BUT WRONG** — our plane separates this with its client-class dimension (`ANALYTICS.md` §9); Instana structurally cannot | medium, and no clean vendor answer: a `meta` flag plus manual Analyze filtering, which still does not fix Smart Alerts or Impacted Users |
 
 **A budget worth knowing before loading this surface up:** 128 beacons/10 s,
@@ -361,9 +394,9 @@ area, and none of it needs a decision.
 - **Geo, city, country, connection type.** Every beacon resolves to the same
   single city — this gallery is one household and its invited guests, so a world
   map is decoration. `/admin/observability` should not grow one. (Since the
-  beacon proxy, geo survives only via a forwarded `X-Forwarded-For` — §2.2. The
-  capability is preserved on principle; this row is why nobody should spend
-  much on it.)
+  beacon proxy it is the BOX's city, not the visitor's — §2.3. It reads the
+  same today only because every visitor so far has been on the box's own
+  connection. This row is why nobody should spend much on fixing it.)
 - **Browser/OS breakdown.** Two entries, one of which is our own headless probe
   fleet.
 - **The service map.** Three nodes, one of them `Unspecified`, and it becomes a

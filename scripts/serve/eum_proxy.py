@@ -128,8 +128,12 @@ consequences, stated:
     here — the queue is already the right shape for it.
 
 FAILURE IS QUIET FOR THE VISITOR AND LOUD FOR US. The browser is told 200
-whatever happens; every upstream failure goes to stderr (journald), rate
-limited so a dead endpoint writes a line a minute instead of one per beacon.
+whatever happens; every upstream failure goes to stderr, rate limited so a
+dead endpoint writes a line a minute instead of one per beacon. NOTE where
+that lands: the unit sends stdout and stderr to
+`/data/vms/streamhost/serve/https-server.log`, NOT to journald, so
+`journalctl -u osgallery-https` shows the restart and nothing else. Grep the
+log file for `EUM proxy`.
 
 ---------------------------------------------------------------------------
 THE GEOGRAPHY TRADE-OFF, AND WHY X-FORWARDED-FOR IS HERE
@@ -175,6 +179,15 @@ before it goes anywhere near a header.
 Nothing else about the visitor is asserted upstream. No cookie, no Referer,
 no Accept-Language, no session token — the beacon body already carries the
 identity the operator chose to send (spa/src/analytics/instana.ts).
+
+WHAT THE MECHANISM ACTUALLY BOUGHT, MEASURED: nothing yet, and `_visitor_ip`
+below is where that is written down rather than glossed. The header plumbing
+is correct and IBM honours it — a beacon sent with `X-Forwarded-For:
+127.0.0.1` came back geolocated to `127.0.0.0`, which is proof the acceptor
+read our header — but the address reaching this process is `127.0.0.1` for
+every visitor, because the edge loses the real peer one hop before us.
+Geography is therefore a real, current loss, described in full at
+`_visitor_ip` and in docs/lab/INSTANA-VIEW-INVENTORY.md §2.2.
 """
 
 from __future__ import annotations
@@ -230,6 +243,20 @@ LOG_EVERY_SECS = 60.0
 #: broken client cannot make us send an unbounded header.
 UA_MAX = 512
 
+#: Address ranges that are never a visitor and are never asserted upstream.
+#: Written out rather than using `ipaddress.is_global`, which ALSO excludes the
+#: RFC5737/RFC3849 documentation ranges — the only addresses this public repo
+#: is allowed to contain (AGENTS.md rule 1), and therefore the only ones its
+#: tests can exercise this function with. A predicate that refused its own test
+#: data would be untestable in the one repo that has to test it.
+_UNROUTABLE = (
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),  # CGNAT
+    ipaddress.ip_network("fc00::/7"),  # unique local
+)
+
 _lock = threading.Lock()
 _queue: queue.Queue | None = None
 _worker: threading.Thread | None = None
@@ -243,11 +270,21 @@ _last_log = 0.0
 #: An opener with NO redirect handler: `urlopen`'s default one would chase a
 #: Location header, which is exactly the behaviour a fixed-destination
 #: forwarder must not have. A 3xx therefore surfaces as an HTTPError.
+#:
+#: `HTTPDefaultErrorHandler` IS required and its absence is not theoretical.
+#: `HTTPErrorProcessor` turns every non-2xx into a call to `parent.error()`,
+#: which indexes `handle_error['http']` DIRECTLY — with no default handler
+#: registered that raises `KeyError: 'http'` instead of the `HTTPError` this
+#: module's `except` clauses are written for. Measured, not reasoned about:
+#: the live log carried `EUM proxy upstream failure (KeyError)` for exactly
+#: that reason, which reported a real upstream refusal under a name that
+#: pointed at our own code instead of at the status IBM sent.
 _OPENER = urllib.request.OpenerDirector()
 for _h in (
     urllib.request.HTTPHandler(),
     urllib.request.HTTPSHandler(),
     urllib.request.HTTPErrorProcessor(),
+    urllib.request.HTTPDefaultErrorHandler(),
 ):
     _OPENER.add_handler(_h)
 
@@ -290,8 +327,40 @@ def _visitor_ip(handler) -> str:
     """The visitor's own IP, or "" when it cannot be established.
 
     RIGHTMOST X-Forwarded-For entry, not leftmost — see the module docstring.
-    Anything that does not parse as an IP address is discarded rather than
-    forwarded, so a header we cannot vouch for produces no assertion at all.
+    Two things are discarded rather than forwarded, both on the principle that
+    an address we cannot vouch for must produce NO assertion instead of a false
+    one:
+
+      * anything that does not parse as an IP address at all, and
+      * any address from `_UNROUTABLE` below — loopback, RFC1918, CGNAT,
+        link-local, ULA, unspecified. None is ever a visitor's real address,
+        none tells Instana's GeoLite2 lookup anything it can use, and
+        asserting an internal address to a third party is the wrong default
+        even when it is harmless.
+
+    THE SECOND RULE IS NOT HYPOTHETICAL, and it is the finding this function
+    exists to record. Measured on the live public listener 2026-09-01: every
+    request arrives carrying `X-Forwarded-For: 127.0.0.1`. The edge terminates
+    TLS on a VPS, tunnels to labhost, and labhost's own Caddy — the last hop,
+    the one that writes the header — sees only the tunnel's loopback peer. So
+    the visitor's real address does not reach this process at all, and has not
+    for as long as that topology has existed (`auth/routes._client_ip` has been
+    rate-limiting on a constant `127.0.0.1` for the same reason).
+
+    What that costs, stated plainly: geography is NOT preserved through the
+    proxy today, and cannot be from inside this repo. Before the proxy the
+    browser connected to Instana directly and IBM read the real source address
+    (`88.192.35.0/24`, Turku, FI on every beacon in the 24 h before the
+    cutover); now IBM reads the box's egress address instead. Asserting the
+    `127.0.0.1` we DO have was measured and is strictly worse — it left
+    country, city and coordinates EMPTY, where the egress address at least
+    resolves. So we assert nothing and let the connection speak.
+
+    THE FIX IS ONE HOP AWAY AND NOT IN THIS TREE: the edge (Wnt/forwarder) must
+    set `X-Forwarded-For` from the real peer where it is still known, and
+    labhost's Caddy must append rather than overwrite. The moment a real
+    address appears in that header this function starts forwarding it and
+    geography comes back with no change here.
     """
     fwd = handler.headers.get("X-Forwarded-For") or ""
     candidates = [p.strip() for p in fwd.split(",") if p.strip()]
@@ -302,9 +371,14 @@ def _visitor_ip(handler) -> str:
     else:
         return ""
     try:
-        return str(ipaddress.ip_address(candidate))
+        parsed = ipaddress.ip_address(candidate)
     except ValueError:
         return ""
+    if parsed.is_loopback or parsed.is_link_local or parsed.is_unspecified or parsed.is_multicast:
+        return ""
+    if any(parsed in net for net in _UNROUTABLE):
+        return ""
+    return str(parsed)
 
 
 def _content_type(handler) -> str | None:
