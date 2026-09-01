@@ -9,7 +9,8 @@
 #
 #   1. The machine is an Amiga 3000 (68030 + MMU + 68882) with Kickstart 2.04
 #      r37.175, not an A4000/040 — AMIX needs the 030 MMU.
-#   2. The pointer is ABSOLUTE THROUGH THE GUEST'S OWN X SERVER. amigaos35
+#   2. The pointer is ABSOLUTE THROUGH THE GUEST'S OWN X SERVER (the board's
+#      X -tiga server, on the same TCP :6000 the redirect targets). amigaos35
 #      gets its 1:1 pointer from the UAE mousehack, an AmigaOS-level trap;
 #      AMIX drives the Amiga mouse hardware itself, so host motion (abs or
 #      rel XTEST) arrives as accelerated relative deltas and is never 1:1.
@@ -32,7 +33,7 @@
 #   SH_X11WARP_DISPLAY    127.0.0.1:N — the guest X server's loopback redirect
 #   FSUAE_NATIVE_BIN      assets/amix/fsuae-native/bin/fs-uae
 #   FSUAE_NATIVE_KICK     Kickstart 2.04 r37.175 (A3000) path
-#   FSUAE_NATIVE_GEOM     WxH of window AND X screen (640x512)
+#   FSUAE_NATIVE_GEOM     WxH of window AND X screen (1024x768: the A2410 board)
 #   FSUAE_NATIVE_STANDBY_DELAY_S  settle before the standby freeze
 #   SH_IDLE_PAUSE_PIDFILE/_SECS   the daemon's freezer; also arms standby
 # =============================================================================
@@ -42,7 +43,7 @@ TILE="${SH_STATION:?SH_STATION not set — run under streamhost@<tile>}"
 BASE="/data/vms/streamhost/stations/$TILE"
 BIN="${FSUAE_NATIVE_BIN:?FSUAE_NATIVE_BIN not set in station.env}"
 KICK="${FSUAE_NATIVE_KICK:?FSUAE_NATIVE_KICK not set}"
-GEOM="${FSUAE_NATIVE_GEOM:-640x512}"
+GEOM="${FSUAE_NATIVE_GEOM:-1024x768}"
 DISP="${SH_X11_DISPLAY:?SH_X11_DISPLAY not set}"
 WARP="${SH_X11WARP_DISPLAY:?SH_X11WARP_DISPLAY not set (127.0.0.1:N, the guest X redirect)}"
 X_PORT=$((6000 + ${WARP##*:}))
@@ -143,13 +144,14 @@ export SDL_VIDEODRIVER=x11
 export ALSOFT_DRIVERS=null # audio plane is off for this station; null device
 W="${GEOM%x*}" H="${GEOM#*x}"
 
-# stretch=1 (FSE_STRETCH_FILL_SCREEN) — without it FS-UAE letterboxes the
-# 640x512 Amiga screen inside its own window and the capture carries bars.
-# zoom=640x512 pins the crop to the standard PAL hires-laced rectangle
-# (74,36,640,512), which IS the AMIX X root: FS-UAE's non-legacy default is
-# the fixed 692x540 mode, which scales the root by 0.925/0.948 and shifts it
-# by (24,13) in the capture -- the readback was exact while the capture was
-# not 1:1 (docs/lab/INPUT-DEBUGGING.md). The pointer maps 1:1 only with this.
+# COLOUR: the A2410 (TIGA) board, which the guest's `X -tiga` drives at
+# 1024x768 PseudoColor. In RTG mode FS-UAE shows the board surface 1:1 in a
+# window of the same size (no zoom modes apply, no stretch) -- the sweep in
+# docs/guests/amix.md measured the capture identity-mapped at this geometry.
+# No --stretch: the board surface is already window-sized. zoom=640x512 only
+# governs the chipset console the visitor sees during the ~90 s boot (the
+# default 692x540 crop would draw it scaled; the pinned crop is the console's
+# own rectangle) -- it has no effect once the board owns the display.
 nohup "$BIN" \
   --amiga_model=A3000 \
   --kickstart_file="$KICK" \
@@ -158,7 +160,7 @@ nohup "$BIN" \
   --hard_drive_0_type=rdb \
   --hard_drive_0_controller=scsi6 \
   --fullscreen=0 --window_width="$W" --window_height="$H" \
-  --stretch=1 \
+  --uae_gfxcard_type=A2410 --uae_gfxcard_size=2 \
   --zoom=640x512 \
   --automatic_input_grab=0 --initial_input_grab=0 \
   --floppy_drive_volume=0 \

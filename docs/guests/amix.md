@@ -5,7 +5,7 @@ were open at the first landing are now closed: the **pointer is absolute and
 1:1** (2026-09-01, `x11warp` into the guest's own X server — see "The pointer"),
 and **colour is proven on the pinned binary** (2026-09-01, the A2410 driven by
 `X -tiga` at 1024x768x8 — see "Colour"). Both were baked into SEPARATE goldens
-by parallel work; the shipping golden must carry BOTH and is being unified.
+by parallel work; the unified golden (below) carries BOTH.
 Registry entry landed `listing.state=hidden`; not yet deployed.
 
 **Guest:** an emulated **Amiga 3000** (Motorola 68030 + MMU + 68882, 16 MB,
@@ -171,7 +171,9 @@ Two goldens exist, one combination each with the same binary and device set:
 | golden | X server | screen | where |
 |---|---|---|---|
 | `amix-system.hdf.golden` (2026-08-30) | `X` on the Amiga chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — what the registry ships today |
-| `amix-system.hdf.golden-color-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix-color/golden/` — baked from a copy of the mono golden; **promotion pending** |
+| `amix-system.hdf.golden-color-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix-color/golden/` — baked from a copy of the mono golden; colour only, no pointer network |
+| `amix-system.hdf.golden-20260901-x11warp` | `X` on the chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — mono plus the pointer network (hosts, aen0, xhost) |
+| **`amix-system.hdf.golden-unified-20260901`** | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `0da364ed…` — **the one to ship**: the colour golden plus the pointer network, `xhost +slirphost` in both `/etc/kh-xsession` and `/etc/kh-xsession.mono`; halted per the bake rule |
 
 - Ready state (both): the OPEN LOOK desktop, up **without a login**, holding an
   xterm titled `Amiga UNIX 2.1` that opens with
@@ -292,58 +294,81 @@ about two minutes of cold boot, and never at the console. The launcher's
 peer: the hosts/xhost state is missing → re-bake) or `TIMED OUT`; the daemon's
 sink reports `BackendDown` independently and drops motion, counted.
 
-### Evidence (sandbox rig, 2026-09-01)
+### Evidence — shipping binary, unified colour golden, 1024×768 (2026-09-01)
 
-Guest booted from the re-baked golden on the patched binary; every target
-warped through 127.0.0.1:6078, read back with `XQueryPointer`, and the sprite
-located in the captured Xvfb frame with `scripts/dev/cursor-locate.py`.
+Binary `assets/amix/fsuae-native/bin/fs-uae` sha256 `38c54495…`, built from
+the merged source; guest `X -tiga` on the A2410 (the board's X server listens
+on the same TCP `:6000` the redirect targets). Every target warped through the
+loopback redirect, read back with `XQueryPointer`, and the frame captured from
+the 1024×768 Xvfb.
 
-**Readback:** `XQueryPointer` returned exactly the warp target at all 16
-points — the four corners `(0,0) (639,0) (0,511) (639,511)`, the centre,
-`(160,120)` and `(480,380)` (the two points the relative pointer had missed
-by 60–150 px), and `(1,1) (20,20) (100,400) (330,266) (600,50) (610,480)
-(638,510) (5,300) (634,300)`.
+**Readback:** exactly the target at all 16 points — corners `(0,0) (1023,0)
+(0,767) (1023,767)`, centre `(512,384)`, and `(1,1) (20,20) (160,120)
+(480,380) (100,400) (600,50) (330,266) (1000,740) (1022,766) (5,500)
+(1018,300)`.
 
-**Framebuffer:** in every frame where the sprite is not clipped by the
-screen edge, the olwm arrow's bounding box starts at exactly
-`(target−1, target−1)` — the X arrow's one-pixel outline around a hotspot at
-its tip — and the I-beam over the xterm is centred on the target:
+**Framebuffer:** the colour arrow's bounding box starts at `(target, target+1)`
+in every root-area frame (its first opaque row is one below the hotspot), the
+clipped corner remnants sit exactly in the corners, and the I-beam over the
+xterm is centred on the target:
 
 | target | readback | sprite bbox origin | glyph |
 |---|---|---|---|
-| (320,256) | (320,256) | (319,255) | arrow, tip on target |
-| (480,380) | (480,380) | (479,379) | arrow |
-| (100,400) | (100,400) | (99,399) | arrow |
-| (330,266) | (330,266) | (329,265) | arrow |
-| (610,480) | (610,480) | (609,479) | arrow |
-| (5,300) | (5,300) | (4,299) | arrow |
-| (634,300) | (634,300) | (633,299) | arrow, clipped right |
-| (638,510) | (638,510) | (637,509) | arrow, clipped |
-| (639,511) | (639,511) | (638,510) | 2×2 remnant in the corner |
-| (160,120) | (160,120) | (157,113) 7×14 | I-beam centred on (160,120) |
-| (0,0) (1,1) (20,20) (600,50) | exact | — | tip on target, verified by eye (`montage3.png`) |
+| (600,50) | (600,50) | (600,51) 16×15 | arrow, hotspot on target |
+| (1000,740) | (1000,740) | (1000,741) | arrow |
+| (5,500) | (5,500) | (5,501) | arrow |
+| (20,20) | (20,20) | (20,21) | arrow (montage) |
+| (1018,300) | (1018,300) | (1018,300) 6×10 | arrow, clipped right |
+| (1023,0) / (0,767) / (1023,767) / (1022,766) | exact | (1023,0) / (0,767) / (1023,767) / (1022,766) | corner remnants |
+| (160,120) | (160,120) | (157,114) 7×13 | I-beam centred on (160,120) |
+| (330,266) | (330,266) | stem at x=330, y 260–271 | I-beam centred on (330,266) |
 
-**Residual error: 0 px.** Frames, `sweep.csv`, the montage and the raw-X
-probe (`xwarp.py`) are retained in `/data/vms/sandbox/amix-cursor/rig/`.
+**Residual error: 0 px.** xterm hides its pointer after keystrokes until real
+motion, so four interior targets show no sprite at all — the readback and the
+two I-beam frames stand for them. **Buttons:** a warp to xcalc's `7` key at
+`(701,236)` plus an XTEST click (held 300 ms) put `7` on the calculator's
+display. **Keys:** with the pointer warped into the xterm (`*pointerFocus:
+true`), `echo ok-KEYS` printed `ok-KEYS`. Frames, `sweep.csv`, `montage.png`
+and the raw-X probe are retained in `/data/vms/sandbox/amix-cursor/rig3/`
+(the earlier mono proof, identical in method and also 0 px, in `rig/` and
+`rig2/`).
 
-### The capture must be 1:1 too — `zoom = 640x512`
+### The capture must be 1:1 too
 
-The first sweep had every readback exact and the sprite still off by up to
-45 px at the far edge. FS-UAE's non-legacy *default* zoom is the fixed
-`692x540` mode (crop `48,22,692,540`), so the 640×512 X root was drawn at
-0.925/0.948 scale, offset `(24,13)` in the capture — and the visitor clicks
-in capture space. The launcher pins `--zoom=640x512` (crop `74,36,640,512`,
-measured with a one-off diagnostic build that logs the DIW limits: AMIX's X
-server programs exactly `74 36 640 514`), which is the identity mapping the
-table above was measured under. `stream.pointer.scale=1.0 / offset=[0,0]` is
-therefore true, not decorative.
+On the mono chipset screen the first sweep had every readback exact and the
+sprite still off by up to 45 px at the far edge: FS-UAE's non-legacy *default*
+zoom is the fixed `692x540` mode, so the 640×512 root was drawn at 0.925/0.948
+scale, offset `(24,13)` — and the visitor clicks in capture space. **In RTG
+mode (the A2410) no zoom mode applies and the board surface is shown 1:1 in a
+window of its own size**, which the sweep above measured; `--stretch` is
+dropped for the same reason. `--zoom=640x512` stays only for the chipset
+console the visitor sees during boot (its own rectangle, `74 36 640 512`,
+measured with a one-off diagnostic build). `stream.pointer.scale=1.0 /
+offset=[0,0]` is therefore true, not decorative.
 
-**One anomaly to watch (1 boot in 4):** one boot of the re-baked golden had
-the guest X server answering queries while the chipset display showed the
-console VTs (`cons`/`con5`/`con7 login:`) instead of the desktop, i.e. X did
-not own the visible VT. The launcher's handshake check passes in that state.
-It did not recur across three further boots; if a visitor ever sees a login
-banner with a working pointer, this is it — reset the station.
+### Boot behaviour, and the console-VT anomaly
+
+The unified golden, cold-booted **8 times in a row** from a fresh copy on the
+shipping binary: the board's X server answered the redirect at 45, 52, 51, 53,
+52, 51, 52, 52 s after launch, and a frame 40 s later showed the colour desktop
+(steel-blue root at two probe points) **8/8 times**. During the first ~50 s the
+visitor sees the chipset console text by design — that is "still booting", not
+the anomaly below.
+
+**The console-VT anomaly (mono goldens only, so far).** On the mono x11warp
+golden, 1 boot in 4 had the chipset X server answering queries while the
+display showed the console VTs (`cons`/`con5`/`con7 login:`) instead of the
+desktop — X did not own the visible VT; the launcher's handshake check passes
+in that state. It did not recur in 5 further mono boots on the shipping binary
+(6/6 clean including the sweep boot) nor in any of the 8 colour boots, where
+the board owns the display and the chipset VTs are irrelevant to what the
+visitor sees. Rate observed: mono 1/10 overall, colour 0/8. If a visitor ever
+sees a login banner with a working pointer on the colour exhibit, this is it —
+reset the station, and raise the count here.
+
+**Hero image:** `/data/vms/sandbox/amix-cursor/rig3/hero-1024x768.png`, a
+clean 1024×768 capture of the finished colour desktop (pointer parked in the
+bottom-right corner).
 
 ### Driving this guest by hand (what the bring-up taught)
 
