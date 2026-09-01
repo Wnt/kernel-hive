@@ -16,6 +16,7 @@ import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { formatStatsLine } from './telemetry';
+import { dueForVitals } from './vitals';
 import { sampleVitals } from './vitalsSample';
 import {
   T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
@@ -240,6 +241,16 @@ export function tickStatsImpl(this: StreamClient): void {
   // ---- banner state machine (Section 2.6) ----
   this.updateBanner(now);
 
+  // ---- continuous vitals sample -> the time-series lane ----
+  // ITS OWN CLOCK, faster than the log line below (1 s against 5 s), because
+  // the two answer different questions. The log line is prose for a human
+  // reading clientlog.jsonl after a session died; this is a series something
+  // can plot and threshold, and at 5 s an ABR downshift and the recovery from
+  // it can both fall between two samples. Both survive: every existing
+  // stream-debugging runbook greps for the log line, and removing it to
+  // celebrate the new lane would break those on the day it is least proven.
+  if (dueForVitals(now)) sampleVitals(this, now, decodeQueue);
+
   // ---- periodic telemetry sample -> server-side rolling log ----
   // The overlay's diagnostics live ONLY in the browser, so a session that dies
   // takes its evidence with it: the 2026-08-17 win311 mid-game drop left no
@@ -249,13 +260,6 @@ export function tickStatsImpl(this: StreamClient): void {
   if (now - this.lastStatsLogAt >= STATS_LOG_MS) {
     this.lastStatsLogAt = now;
     const enc = this.encParams;
-    // THE SAME TICK, TWICE, ON PURPOSE. `sampleVitals` sends these numbers AS
-    // NUMBERS to the time-series lane (streamClient/vitals.ts); the log line
-    // below renders them as prose for a human reading clientlog.jsonl. Neither
-    // replaces the other yet: the log line is what every existing
-    // stream-debugging runbook greps for, and removing it to celebrate the new
-    // lane would break those on the day the new lane is least proven.
-    sampleVitals(this, now, decodeQueue);
     logClientEvent('stats', formatStatsLine(this.telemetry.snapshot(now), {
       tier: enc?.tier ?? null,
       crf: enc?.crf ?? null,

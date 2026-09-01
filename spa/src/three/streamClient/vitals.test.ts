@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { beginVitals, endVitals, flushVitals, recordVitals, skewMs } from './vitals';
+import { beginVitals, dueForVitals, endVitals, flushVitals, recordVitals, skewMs } from './vitals';
 
 describe('skewMs — the u32 capture-clock wrap', () => {
   it('is a plain difference away from the wrap', () => {
@@ -29,6 +29,32 @@ describe('the vitals sink', () => {
     }));
   });
   afterEach(() => { endVitals(); vi.unstubAllGlobals(); });
+
+  it('samples at 1 Hz, on its own clock and not the ABR tick or the log line', () => {
+    beginVitals('macos753', 'b1');
+    // The ABR tick runs at ~100 ms. Only one in ten may take a sample, or the
+    // series would carry ten identical daemon-side rows a second.
+    expect(dueForVitals(1000)).toBe(true);
+    expect(dueForVitals(1100)).toBe(false);
+    expect(dueForVitals(1900)).toBe(false);
+    expect(dueForVitals(2000)).toBe(true);
+    // And 1 s is genuinely finer than the 5 s log line: four samples land
+    // inside one of its intervals, which is what makes a downshift and the
+    // recovery from it two visible points rather than none.
+    expect([2500, 3000, 4000, 5000, 6000].filter((t) => dueForVitals(t))).toEqual([3000, 4000, 5000, 6000]);
+  });
+
+  it('starts a new station sampling immediately rather than a second late', () => {
+    beginVitals('a', 'b1');
+    expect(dueForVitals(50_000)).toBe(true);
+    beginVitals('b', 'b1');
+    expect(dueForVitals(50_001)).toBe(true);
+  });
+
+  it('is due for nothing before a producer is named', () => {
+    endVitals();
+    expect(dueForVitals(999_999)).toBe(false);
+  });
 
   it('sends nothing until a producer is named', async () => {
     recordVitals({ fps: 30 });

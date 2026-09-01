@@ -35,21 +35,39 @@ interface Envelope {
   build: string;
 }
 
-/** How often the queue is drained to the server. NOT the sample interval —
- *  samples are taken every 5 s by `abr.ts` and 12 of them ride one POST.
- *  Twenty seconds matches the analytics sink's cadence, which is the interval
- *  this codebase has already decided a background POST may cost a visitor. */
+/**
+ * THE SAMPLE INTERVAL — one second, and it is chosen from what makes the
+ * SIGNAL good, not from a capacity budget.
+ *
+ * The events this series has to make visible are short. A freeze latches after
+ * 250 ms without decoded output; an ABR downshift and its recovery both happen
+ * inside the controller's own 3-second rolling window; an audio underrun is
+ * instantaneous. At the 5 s cadence the log line uses, a downshift and the
+ * recovery from it can BOTH fall between two samples and the series shows a
+ * flat line through a visible fault. At 1 s every ABR window contains three
+ * samples and no freeze episode can hide entirely between two.
+ *
+ * ONE SECOND IS ALSO THE NATURAL FLOOR, which is why it is not faster. Four of
+ * the vitals in every row are the DAEMON's own view, and `transport/mod.rs`
+ * emits those at exactly 1 Hz. Sampling faster would repeat half of each row
+ * verbatim — more rows, no more information.
+ */
+const SAMPLE_MS = 1_000;
+/** How often the queue is drained to the server. NOT the sample interval:
+ *  20 samples ride one POST. Twenty seconds matches the analytics sink's
+ *  cadence, which is the interval this codebase has already decided a
+ *  background POST may cost a visitor. */
 const FLUSH_MS = 20_000;
-/** Queue ceiling. At 5 s a sample that is ~13 minutes of a backgrounded tab,
- *  far beyond what any flush gap can legitimately accumulate; past it the
- *  OLDEST are dropped, because in a stream fault the newest samples are the
- *  ones that describe the fault. */
-const MAX_PENDING = 160;
+/** Queue ceiling. At 1 s that is ~10 minutes of a backgrounded tab, far beyond
+ *  what any flush gap can legitimately accumulate; past it the OLDEST are
+ *  dropped, because in a stream fault the newest samples describe the fault. */
+const MAX_PENDING = 600;
 /** Server-side body cap is 512 KiB (`vitals.BODY_MAX`); stop well under it. */
 const MAX_BATCH_CHARS = 200_000;
 
 let pending: Array<{ t: number; v: VitalSample }> = [];
 let envelope: Envelope | null = null;
+let lastSampleAt = 0;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let hooked = false;
 
@@ -77,10 +95,26 @@ export function skewMs(audioTsUs: number, videoTsUs: number): number {
  */
 export function beginVitals(station: string, build: string): void {
   envelope = { station: station || 'unknown', sessionId: clientSessionId(), build: build || 'unknown' };
+  lastSampleAt = 0;
 }
 
-/** Queue one sample. Cheap and unconditional; the caller is already on a
- *  5-second tick and must not be given a reason to think about cost. */
+/**
+ * Is a sample due? The cadence lives HERE and not in `abr.ts` because it is a
+ * property of the vitals lane, not of the ABR tick that happens to drive it —
+ * the tick runs at ~100 ms and its own log line at 5 s, and neither of those
+ * numbers should move because this one does. The sink is single-session by
+ * construction (one `envelope`), so one module-level clock is the right shape;
+ * `beginVitals` resets it so a new station starts sampling immediately.
+ */
+export function dueForVitals(now: number): boolean {
+  if (!envelope || now - lastSampleAt < SAMPLE_MS) return false;
+  lastSampleAt = now;
+  return true;
+}
+
+/** Queue one sample. Cheap and unconditional; the caller has already been told
+ *  by `dueForVitals` that one is owed, and must not be given a second reason
+ *  to think about cost. */
 export function recordVitals(v: VitalSample): void {
   if (!envelope) return;
   try {

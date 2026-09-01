@@ -5,7 +5,8 @@ Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
 [Timer]
 # TEN SECONDS, and it is chosen against the BACKEND, not against our sampler.
 # Instana ingest-stamps metrics, so the tick period IS the effective resolution
-# in the tenant; and Instana's own floor for an infrastructure metric is 10 s
+# in the tenant -- our own store samples five times faster and keeps all of it;
+# and Instana's own floor for an infrastructure metric is 10 s
 # (custom dashboards, 0261:178-181; the Saturation SLO blueprint samples at the
 # same, 0262:415-424). Faster buys resolution the backend will not display;
 # slower throws away resolution we have already paid to collect.

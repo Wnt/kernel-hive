@@ -20,16 +20,25 @@ bad has to be able to say so without holding an admin session, and that is the
 tab whose numbers matter most. READS ARE ADMIN-ONLY (`/auth/vitals/*`,
 `vitals_read.py`): a sample names a station and a session.
 
-RETENTION IS 3 DAYS (`RETENTION_DAYS`), the shortest window in the plane, and
-the reason is arithmetic rather than taste. See `docs/ANALYTICS.md` for the
-measured cost per day; the short version is that sub-minute data is the only
-signal here whose volume scales with WALL-CLOCK TIME rather than with visitor
-actions, so it is the only one that can run away while nobody is visiting.
-Three days covers "what happened over the weekend" and stops there. There is
-NO DOWNSAMPLING and that is deliberate: a rollup is a second schema, a second
-prune and a second thing to be wrong, and at the measured volume the full-
-resolution window is small enough that buying a rollup with that complexity
-would be paying for a problem we do not have.
+RETENTION IS 30 DAYS (`RETENTION_DAYS`), the LONGEST window in the plane, and
+that is deliberate rather than careless. The instinct with sub-minute data is
+to keep a tight window because it is dense — but density is a reason to size
+the DISK, not to throw the data away, and this box has ~166 GB free against a
+measured worst case of a few hundred MB for the whole window (the arithmetic is
+in `docs/ANALYTICS.md` §8.6). A month means "has this station always been like
+this, or did it change?" is answerable, which is the question a one-visitor
+gallery actually asks; three days would have answered only "is it bad now",
+which the live read already answers for free.
+
+The RUNAWAY BACKSTOP below is what handles the case retention used to: a
+producer stuck in a flush loop is a fault, and a fault gets a ceiling. A
+budget is not the same thing as a ceiling and should not be spelt as one.
+
+There is NO DOWNSAMPLING. A rollup is a second schema, a second prune and a
+second thing to be wrong; at this volume the full-resolution window is small
+enough that buying one would be paying for a problem we do not have. If the
+gallery ever has real traffic, the honest first move is a bigger disk and the
+second is a rollup — in that order.
 """
 
 from __future__ import annotations
@@ -46,16 +55,21 @@ from vitals_schema import COLUMNS
 
 IDENT_RE = re.compile(r"^[A-Za-z0-9._@/+-]{1,64}$")
 
-#: Samples one batch may carry. A client sampling every 5 s and flushing on a
-#: 60 s timer offers 12; a pagehide flush after a long backgrounded stretch
-#: offers more. 512 is far above either and still bounds a runaway producer.
-MAX_SAMPLES_PER_BATCH = 512
+#: Samples one batch may carry. A client sampling at 1 Hz and flushing on a 20 s
+#: timer offers 20; a pagehide flush after a backgrounded stretch offers up to
+#: its whole 600-deep queue. 1024 clears that with room and still bounds a
+#: runaway producer.
+MAX_SAMPLES_PER_BATCH = 1024
 BODY_MAX = 512 * 1024
-RETENTION_DAYS = 3
-#: Runaway backstop, checked on prune. 71 stations sampling every 5 s for three
-#: days would be 3.7 M rows; this sits above that, so it only fires on a fault
-#: (a client stuck in a flush loop) and never on legitimate saturation.
-MAX_ROWS = 5_000_000
+RETENTION_DAYS = 30
+#: Runaway backstop, checked on prune. NOT a capacity budget — a ceiling on a
+#: FAULT. Legitimate saturation (every one of the 71 stations streaming
+#: continuously for the whole 30-day window at 1 Hz) would be 184 M rows and is
+#: not a thing that can happen in a gallery with one visitor; a client stuck in
+#: a flush loop can produce arbitrarily many in an afternoon, and that is what
+#: this stops. Set well above any plausible real load precisely so that hitting
+#: it is diagnostic rather than routine.
+MAX_ROWS = 20_000_000
 #: How long a shipped batch's id is remembered so a re-ship stores nothing.
 #: Same mechanism, same reason, as `logs.BATCH_MEMORY_DAYS`.
 BATCH_MEMORY_DAYS = 1

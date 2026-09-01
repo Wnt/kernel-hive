@@ -1958,9 +1958,9 @@ Every video and transport number below had been computed once every five
 seconds since the ABR controller was written — and rendered into a
 140-character string that went to `clientlog.jsonl`. `formatStatsLine()` is
 prose: nothing could plot it, alert on it, or compare two stations on it.
-`spa/src/three/streamClient/vitalsSample.ts` takes **the same tick** and emits
-the numbers as numbers. It adds no measurement to the hot path; it stops
-throwing away the ones already there.
+`spa/src/three/streamClient/vitalsSample.ts` takes **the same tick** — on its
+own faster clock, see below — and emits the numbers as numbers. It adds no
+measurement to the hot path; it stops throwing away the ones already there.
 
 ### The inventory — what is measured, and what is not
 
@@ -2037,28 +2037,64 @@ reshape a live table, and SCHEMA may never carry an index over a migrated
 column. `scripts/test_vitals_plane.py` pins it by building a store missing four
 catalogue columns and requiring that today's code opens it.
 
-### Retention, and what it costs on this box — measured
+### The sample interval — chosen from the signal, not from a budget
 
-**511 bytes/row**, worst case, every one of the 33 columns populated.
+**One second.** The interval is set by what the series has to make *visible*,
+and the events in question are short: a freeze latches after **250 ms** without
+decoded output, an ABR downshift and the recovery from it both happen inside the
+controller's own **3-second** rolling window, and an audio underrun is
+instantaneous. At the 5 s cadence the existing log line uses, a downshift *and*
+its recovery can both fall between two samples and the series draws a flat line
+straight through a fault the visitor saw. At 1 s every ABR window contains three
+samples and no freeze episode can hide entirely between two.
 
-| load | rows/day | MB/day | at 3-day retention |
+It is **not faster than 1 s**, and the reason is information rather than cost:
+four of the vitals in every row are the daemon's own view, and
+`transport/mod.rs` emits those at exactly **1 Hz**. Sampling faster would repeat
+half of each row verbatim.
+
+Vitals flow for **any station with a live session**. There is no sampling,
+throttling or admission layer on top of that, deliberately — the sessions most
+worth having are the bad ones, and every such layer drops them first.
+
+### What it costs — recorded as a fact, not used as a constraint
+
+**511 bytes/row**, measured, worst case with every one of the 33 columns
+populated. This gallery has one visitor; none of the numbers below is a budget
+anything is sized against, and they are written down for whoever needs them the
+day that changes.
+
+| load | rows/day | MB/day | at 30-day retention |
 |---|---|---|---|
-| measured peak (4 concurrent streams, 24 h) | 69,120 | **35 MB** | 106 MB |
-| headroom (10 concurrent, 24 h) | 172,800 | 88 MB | 265 MB |
-| hypothetical saturation (all 71, 24 h) | 1,226,880 | 627 MB | 1.9 GB |
+| realistic (one visitor, ~1 h/day) | 3,600 | **1.8 MB** | 0.06 GB |
+| the measured peak (4 concurrent, 24 h) | 345,600 | 177 MB | 5.3 GB |
+| hypothetical saturation (all 71, 24 h) | 6,134,400 | 3.1 GB | 94 GB |
 
-`/data` has ~166 GB free, so even the impossible row is affordable. The
-*realistic* figure is far below all three: vitals flow only for a station with
-a **live session**, and the measured busiest day in `clientlog.jsonl` was 2,262
-samples — about **1.2 MB**.
+`/data` has ~166 GB free. The realistic row is the one that describes this box:
+the measured busiest day in `clientlog.jsonl` was 2,262 five-second samples,
+which at 1 Hz is a couple of megabytes.
 
-**Three days**, the shortest window in the plane, and the reason is structural
-rather than frugal: this is the only signal here whose volume scales with
-**wall-clock time** rather than with visitor actions, so it is the only one that
-can run away while nobody is visiting. "What happened over the weekend" fits.
-**There is no downsampling**, deliberately — a rollup is a second schema, a
-second prune and a second thing to be wrong, and at this volume it would be
-paying for a problem we do not have.
+**Cardinality** is the one limit that is *not* ours to waive, because it is the
+vendor's. A series is (metric × station × session), and `session` is the only
+unbounded term — which is exactly why it rides as a **data-point attribute** and
+never in the resource. In the resource each session id would mint a new
+OpenTelemetry *entity*, and entities are what an infrastructure backend keeps
+forever. One live stream is 33 series; all 71 at once would be 2,343.
+
+**Retention is 30 days — the longest window in the plane, not the shortest.**
+The instinct with dense data is to keep a tight window, but density is a reason
+to size the disk, not to throw the data away. A month makes *"has this station
+always been like this, or did it change?"* answerable, which is the question
+this gallery actually asks; three days would have answered only *"is it bad
+now"*, which the `live` read already answers for free. The runaway backstop
+(`MAX_ROWS`) is what handles the case a tight retention used to: a producer
+stuck in a flush loop is a **fault**, and a fault gets a ceiling — set well
+above any plausible real load so that hitting it is diagnostic rather than
+routine.
+
+**There is no downsampling.** A rollup is a second schema, a second prune and a
+second thing to be wrong. If the gallery ever gets real traffic the honest first
+move is a bigger disk and the second is a rollup, in that order.
 
 ### The read surface
 
@@ -2095,6 +2131,12 @@ Not a degraded chart — a wrong one, and one that would look perfect in
 custom dashboard have "10 second resolution" (`0261`), and the Saturation SLO
 blueprint samples at 10 s (`0262`). Faster buys resolution the backend will not
 display; slower throws away resolution already collected.
+
+Note the **asymmetry, and that it is deliberate**: our store samples at 1 Hz,
+Instana gets one point per 10 s tick. That is not a resolution we traded away to
+save anything — it is the finest thing an ingest-stamped backend can represent,
+and it is Instana's own documented floor. The good signal lives in our store;
+Instana gets what Instana can display.
 
 A run ships **one point per (station, session, metric)** — the newest sample —
 because "this is the value now" is the most a run can truthfully say when the

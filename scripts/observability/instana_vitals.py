@@ -73,16 +73,31 @@ them. Calling that "loss" would be a category error, but calling the watermark a
 no-loss guarantee would be a lie, so it is called what it is:
 `lastVitalsSeenSeq`, not `lastVitalsSeq`.
 
-VOLUME, MEASURED. The live `clientlog.jsonl` holds 10,818 five-second `stats`
-samples over 14 days; the busiest day was 2,262 and PEAK CONCURRENCY was FOUR
-sessions in any one minute. So the realistic steady state is 0-4 streams. A run
-at 10 s ships one point per metric per live stream: 33 metrics x 4 streams = 132
-data points, about 40 KiB of OTLP/JSON — three orders of magnitude under the
-measured 5 MiB agent wall, which is why this leg reuses `instana_batch`'s
-planner unchanged rather than needing its own. Over a day that is 8,640 runs x
-132 points = 1.14 M points; against Instana's documented limits this is a
-rounding error, and against a hypothetical 71-station saturation it is 2.3 K
-points a run, still one request.
+VOLUME — RECORDED AS A FACT, NOT USED AS A CONSTRAINT. The gallery has one
+visitor, so nothing here is sized against a capacity budget; the number is
+written down for whoever needs it the day that changes. Measured from the live
+`clientlog.jsonl`: 10,818 stats samples over 14 days, busiest day 2,262, peak
+concurrency FOUR sessions in any one minute. A 10 s run ships one point per
+metric per live stream — 33 metrics x 4 streams = 132 data points, about 40 KiB
+of OTLP/JSON, three orders of magnitude under the measured 5 MiB agent wall,
+which is why this leg reuses `instana_batch`'s planner unchanged. Over a day
+that is 8,640 runs x 132 = 1.14 M points; at a hypothetical 71-station
+saturation it is 2.3 K points a run, still one request.
+
+THE ONE LIMIT THAT IS NOT OURS TO WAIVE IS CARDINALITY, because it is the
+vendor's. A series is (metric x station x session), and `session` is the only
+unbounded term. It rides as a DATA-POINT attribute and never in the resource,
+so it costs a dimension on a point and not a new OpenTelemetry ENTITY —
+entities are what an infrastructure backend keeps forever. That containment is
+enforced in `vitals_otlp.py` and pinned by a test; it is a correctness property
+of the export, not a budget, and relaxing it would be the one way this lane
+could do damage on the far side.
+
+NOTE THE ASYMMETRY, and that it is deliberate. Our store samples at 1 Hz;
+Instana gets one point per 10 s tick. That is not a downgrade we chose to save
+anything — it is the finest thing an ingest-stamped backend can represent, and
+it is exactly Instana's own documented floor. The good signal lives in our
+store; Instana gets what Instana can display.
 """
 
 from __future__ import annotations
@@ -101,9 +116,11 @@ from instana_batch import drain, log_requests_for
 #: two cannot drift. See the cadence argument in the module docstring.
 VITALS_INTERVAL_S = 10
 
-#: How far back a LATEST_ONLY run looks for "the current value". Three sample
-#: intervals plus the tick, so a client that missed a flush is still current
-#: rather than dropping off a dashboard for one tick and reappearing.
+#: How far back a LATEST_ONLY run looks for "the current value". Generous
+#: against the 20 s client flush interval, so a stream whose batch is in flight
+#: — or whose tab was briefly backgrounded — stays on the dashboard rather than
+#: blinking out for a tick and reappearing. A blinking entity reads as an
+#: outage; a slightly stale one reads as what it is.
 LIVE_WINDOW_MS = 120_000
 
 #: Samples read per page in backfill mode. The store's own `series()` ceiling.
