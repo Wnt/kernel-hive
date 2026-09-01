@@ -278,6 +278,35 @@ writing an empty list, and any persona the run adds or drops is printed.
 `RN_BOT_PERSONAS` in the environment still overrides the derivation, for a test
 rig pointed at a throwaway gateway.
 
+### Two greeter instances, partitioned by `greeter`
+
+Since 2026-09-01 there are **two** instances of this same `bot.py`, and the
+roster's `greeter` field decides which one watches a station:
+
+| instance | signs in as | unit / env | watches |
+|---|---|---|---|
+| `icq` (default) | ICQ UIN **`10000`**, HiveBot | `retronet-bot.service`, `/etc/retronet/bot.env` | every onboarded row without `greeter: "aim"` |
+| `aim` | AIM screen name **`hivebot`** | `retronet-bot-aim.service`, `/etc/retronet/bot-aim.env` | the `greeter: "aim"` rows (today: `win311`) |
+
+```bash
+install-bot.sh --apply                  # the ICQ instance
+install-bot.sh --instance aim --apply   # the AIM instance
+```
+
+The second instance is not a nicety. **win311 runs an AIM client, and AIM
+refuses an all-numeric screen name** — it will not list, message, or even
+*reply to* a UIN. Greeted by `10000`, that station could receive a hello and
+never answer it. `hivebot` is a name its client accepts, so the conversation
+goes both ways. See
+[`ICQ-STATION-win311.md`](ICQ-STATION-win311.md) for the measurements and for
+`retronet-aim-bridge`, which carries the same idea to station-to-station traffic.
+
+The partition matters in both directions: a station must appear in exactly one
+instance's persona list, or it is greeted twice. That is why `personas_value()`
+takes a greeter and why `roster_lib.persona_id()` returns the AIM screen name —
+never the numeric proxy UIN — for an AIM station: a greeter that addressed the
+proxy would be talking to the bridge instead of the machine.
+
 Two things the list does not tell you. A `GREETINGS`/`STATION_BLURB` row in
 `bot.py` is still a separate edit — without one a station is greeted by the
 `_default` line rather than a station-tuned one. And `50000:beos` is a **legacy
