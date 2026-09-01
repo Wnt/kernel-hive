@@ -24,7 +24,7 @@
 // ============================================================================
 
 import type { ClientClass } from './intent';
-import { flushSpans, traceHeaders } from './trace';
+import { flushSpans } from './trace';
 
 /** Flush cadence. A session of a few minutes is a handful of requests. */
 const FLUSH_MS = 20_000;
@@ -160,7 +160,11 @@ function flushAnalytics(): void {
       method: 'POST',
       keepalive: true,
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', ...traceHeaders() },
+      // NO `traceparent`. `/analytics` is an excluded telemetry path: it opens
+      // no client span, so there is no span for a header to name, and naming
+      // the ambient one instead is exactly what left `serve.analytics` rootless
+      // (khFetch.ts's `outboundTraceparent`). The server roots its own trace.
+      headers: { 'Content-Type': 'application/json' },
       body,
     }).catch(() => { foldBack(batch); });
   } catch { /* analytics must never break the app it measures */ }

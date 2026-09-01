@@ -1772,6 +1772,47 @@ Traps worth knowing, each of which was hit while writing this:
 - **`never reached` is not `unreachable`.** It means no tab reported it in the
   window. Read the window before the verdict.
 
+## 12a. Is the trace plane telling the truth? The orphaned-parent rate
+
+A trace can be broken in a way that no other number shows. Every span is well
+formed, every request it describes succeeded, the latency is right — and the
+`parent_id` names a span that is not in the store, so the trace has no root.
+Instana renders that as *"The root call of the trace is missing or has not yet
+arrived in the processing pipeline"*, and there is nothing to see in the access
+log, the span list, or any latency chart.
+
+It went unmeasured until an operator wrote the query by hand on 2026-09-01 and
+found **42.9%** of a six-hour window in that state. The causes and the fix are
+[`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4c; this is how the next
+regression gets noticed instead of discovered.
+
+```sh
+scripts/observability/trace-orphans.py                  # last 6 h, live store
+scripts/observability/trace-orphans.py --hours 24 --json
+scripts/observability/trace-orphans.py --max-rate 0.02  # exit 1 above 2%
+```
+
+```
+window    last 6 h, ignoring the last 1 h
+spans     5492 declaring a parent
+ORPHANED  0  (0.0%)
+```
+
+It opens the store **read-only** (`TraceStore(path, read_only=True)`): a report
+must never run a migration against the file the serving plane is writing.
+
+**Read the settle gap before the number.** Spans newer than `--settle-hours`
+(default 1) are excluded, because a parent that is merely still OPEN — a flow
+the visitor has not finished — is a transient orphan that resolves the moment
+its root span ends. Counting those would make the figure a measure of how busy
+the box is rather than of whether the contract holds.
+
+**A non-zero rate is a SENDER bug, always.** The serving plane honours whatever
+context it is handed and cannot know whether a parent will be recorded; the
+rule "never name a span you will not record" belongs to whoever emitted the
+header. `scripts/visitor-sim/beacon-probe.mjs` checks the same invariant on the
+real wire from one credentialed page load, which is where to look next.
+
 ## 13. Files
 
 | Path | What |
@@ -1779,7 +1820,8 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/analytics/catalogue/` | the declaration — the report's denominator, one file per area so parallel instrumentation streams share no editing surface |
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
-| `spa/src/analytics/trace.ts` | the span/id model, `traceHeaders()`, and the page-load join (`joinPageLoadTraceFromMeta`) — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
+| `spa/src/analytics/trace.ts` | the span/id model, `traceparentOf()` (the ONLY producer of an outbound `traceparent` — TRACE-CONTEXT.md §4c), the root-end flush, and the page-load join (`joinPageLoadTraceFromMeta`) — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
+| `scripts/observability/trace-orphans.py` | the orphaned-parent rate — the one number that shows a broken trace JOIN, since every individual span still looks perfect (§12a) |
 | `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |
 | `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |

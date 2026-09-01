@@ -155,6 +155,83 @@ class ContextTest(Base):
 
 
 # ---------------------------------------------------------------------------
+# the telemetry paths, and the contract that stopped them being orphan factories
+# ---------------------------------------------------------------------------
+
+
+class TelemetryPathTest(Base):
+    """What this layer must do with (and without) an inbound header on the
+    paths the tab treats as telemetry.
+
+    THE CONTRACT, chosen 2026-09-01 and pinned here. The browser no longer
+    sends `traceparent` on `/traces`, `/analytics`, `/coverage`, `/clientlog`,
+    `/usage` or `/clientcmd`: it opens no client span for them (a span about
+    sending a span is the feedback loop the beacon budget exists to prevent),
+    so there is no span a header could honestly name, and naming the ambient
+    one instead is what left 1,590 `serve.clientcmd` entry spans permanently
+    rootless in a single six-hour window.
+
+    The server side of that decision is what these tests fix in place:
+
+      * the four telemetry paths the allowlist DOES trace keep their span, and
+        with no inbound parent it is a clean ROOT. The alternative considered
+        was sending `-00` from the tab, which `begin()` turns into NOOP (see
+        `ContextTest`) — that would have suppressed the span entirely and
+        thrown away the only latency and status record those routes have,
+        which is a worse trade than the bug;
+      * the telemetry INGEST (`/traces`, `/coverage`) stays untraced no matter
+        what a caller puts on the wire — a stray header may not conjure a span
+        on a route the allowlist refuses;
+      * an inbound parent is still HONOURED where one arrives. This layer
+        never second-guesses a caller (contract §1/§8); "do not name a span
+        you will not record" is a rule about the SENDER, and
+        `TraceStore.orphans()` is how a sender that breaks it is caught.
+    """
+
+    TRACED = ("/clientcmd", "/analytics", "/clientlog", "/usage")
+    INGEST = ("/traces", "/coverage")
+
+    def test_a_traced_telemetry_path_with_no_parent_is_a_clean_root(self):
+        for path in self.TRACED:
+            with self.subTest(path=path):
+                tracing.reset_for_tests()
+                tracing.bind(self.store)
+                h = FakeHandler(path=path)
+                self.assertEqual(h.do_GET(), "answered")
+                tracing.flush()
+        rows = self.store.search()["traces"]
+        self.assertEqual(len(rows), len(self.TRACED))
+        for row in rows:
+            doc = self.store.trace(row["traceId"])
+            self.assertEqual(len(doc["spans"]), 1)
+            self.assertIsNone(doc["spans"][0]["parentId"])
+
+    def test_the_telemetry_ingest_is_untraced_however_it_is_called(self):
+        for path in self.INGEST:
+            with self.subTest(path=path):
+                self.assertIsNone(tracing_http.route_of(path))
+                h = FakeHandler(path=path, headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+                self.assertEqual(h.do_GET(), "answered")
+        tracing.flush()
+        self.assertEqual(self.store.search()["total"], 0)
+
+    def test_an_untraced_route_emits_no_return_leg_headers(self):
+        h = FakeHandler(path="/traces", headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        names = [k.lower() for k, _ in h.sent_headers]
+        self.assertNotIn("traceresponse", names)
+        self.assertNotIn("server-timing", names)
+
+    def test_an_inbound_parent_on_a_telemetry_path_is_still_honoured(self):
+        # The sender owns the invariant; this layer owns "never invent one".
+        h = FakeHandler(path="/clientcmd", headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        doc = self.stored(TRACE)
+        self.assertIsNotNone(doc)
+        self.assertEqual(doc["spans"][0]["parentId"], SPAN)
+
+
+# ---------------------------------------------------------------------------
 # routing — the allowlist, and what it deliberately excludes
 # ---------------------------------------------------------------------------
 

@@ -49,7 +49,7 @@
 
 import { FLOWS, type FlowId, type FlowStep } from './catalogue';
 import { queueFlow } from './sink';
-import { popActive, pushActive, startTrace, type Attrs, type Span } from './trace';
+import { flushSpans, popActive, pushActive, startTrace, type Attrs, type Span } from './trace';
 
 /** The innermost open flow, for error attribution. */
 export interface OpenFlow {
@@ -58,6 +58,9 @@ export interface OpenFlow {
   /** The flow's root span, and the span for the step it is standing on. */
   readonly root: Span;
   stepSpan: Span | null;
+  /** This flow's own `close()`, so the tab can abandon it on the way out —
+   *  see `abandonOpenFlows`. Set by `beginFlow` the moment the handle exists. */
+  abandon?: () => void;
 }
 
 /** A live flow attempt. Finish it exactly once — later calls are ignored, so a
@@ -94,6 +97,60 @@ export interface FlowHandle {
 const stack: OpenFlow[] = [];
 const MAX_OPEN = 8;
 
+let lifecycleHooked = false;
+
+/**
+ * Abandon every still-open flow, then flush.
+ *
+ * A ROOT SPAN IS ONLY BUFFERED WHEN IT ENDS, so a flow that is still open has
+ * nothing to flush no matter how often the sink ticks — and a station left
+ * open is a flow that stays open for as long as the visitor watches it. That
+ * is not a hypothetical: one live tab held `station.connect` open for seven
+ * hours, and every span opened under it that DID end (each
+ * `http.client.request`, each server entry span that had been handed its id)
+ * reached the store naming a parent the store had never seen. Instana renders
+ * that as "the root call of the trace is missing", forever, because the root
+ * genuinely never arrived.
+ *
+ * `close()` rather than `fail()`: the visitor navigating away is already
+ * visible as the funnel's drop-off, and reporting it as a fault would make
+ * every abandonment look like a defect. The span lands `unset` with
+ * `kh.abandoned`, which is exactly what happened.
+ *
+ * This flushes ITSELF rather than relying on the counter sink's own
+ * `pagehide` hook: listener order between two modules is not something either
+ * can guarantee, and if the sink's handler ran first these roots would end
+ * after the last flush and never leave.
+ */
+function abandonOpenFlows(): void {
+  try {
+    for (const open of [...stack]) {
+      try {
+        open.abandon?.();
+      } catch { /* one stuck flow must not strand the others */ }
+    }
+    flushSpans();
+  } catch { /* never throw out of instrumentation */ }
+}
+
+function installLifecycleHook(): void {
+  if (lifecycleHooked || typeof window === 'undefined') return;
+  lifecycleHooked = true;
+  try {
+    // `pagehide` ONLY, and deliberately not `visibilitychange` — which is the
+    // one place this module must NOT copy sink.ts. Hidden is not over: a
+    // visitor who switches tab for five seconds mid-connect comes back, and
+    // abandoning the flow there would swallow the `ok()` that follows (a
+    // finished flow ignores later calls, by design) and quietly depress the
+    // connect success rate for every tab-switcher. Flushing a COUNTER early
+    // costs nothing; ending a live flow early falsifies it. The cost of the
+    // narrower hook is iOS Safari, which can skip `pagehide` — those flows
+    // stay open exactly as they do today, which is still strictly better than
+    // reporting a live journey as abandoned.
+    window.addEventListener('pagehide', abandonOpenFlows);
+  } catch { /* no lifecycle hooks: the flow simply stays open, as before */ }
+}
+
 const NOOP: FlowHandle = { step() {}, ok() {}, fail() {}, close() {}, tag() {} };
 
 /** The flow an error should be blamed on, if any. */
@@ -123,6 +180,7 @@ export function beginFlow(flow: FlowId, attrs?: Attrs): FlowHandle {
     // that it is ours and will not collide with a convention added later.
     const root = startTrace(flow, { 'kh.flow': flow, ...tagAttrs });
     pushActive(root);
+    installLifecycleHook();
     const open: OpenFlow = { flow, step: spec.steps[0], root, stepSpan: null };
     open.stepSpan = root.child(`${flow}.${open.step}`, { 'kh.step': open.step, ...tagAttrs });
     stack.push(open);
@@ -145,7 +203,7 @@ export function beginFlow(flow: FlowId, attrs?: Attrs): FlowHandle {
       );
       queueFlow(flow, outcome === 'fail' ? (reason || open.step) : open.step, outcome);
     };
-    return {
+    const handle: FlowHandle = {
       step(next: string) {
         try {
           if (done) return;
@@ -192,6 +250,8 @@ export function beginFlow(flow: FlowId, attrs?: Attrs): FlowHandle {
         } catch { /* noop */ }
       },
     };
+    open.abandon = handle.close;
+    return handle;
   } catch {
     return NOOP;
   }
@@ -200,4 +260,5 @@ export function beginFlow(flow: FlowId, attrs?: Attrs): FlowHandle {
 /** Test seam: drop every open flow. */
 export function __resetFlows(): void {
   stack.length = 0;
+  lifecycleHooked = false;
 }

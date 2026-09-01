@@ -65,12 +65,17 @@
 //  `instana.ts`'s `IGNORE_URL_PATTERNS` rather than declaring a second list —
 //  that module's own header explains why a second list drifts from the
 //  first, and the paths are the same paths (/traces, /analytics, /coverage,
-//  /clientlog, /usage, /clientcmd) regardless of which plane is asking. The
-//  header (propagation) still goes out to those endpoints — two of them
-//  already set it by hand (index.ts, sink.ts) precisely so the SERVER's trace
-//  of a `/traces` POST joins the browser trace that produced it; only the
-//  CLIENT-SIDE span is skipped, because a span about sending a span is the
-//  feedback loop both plane budgets (128 beacons/10s) exist to prevent.
+//  /clientlog, /usage, /clientcmd) regardless of which plane is asking. A span
+//  about sending a span is the feedback loop both plane budgets (128
+//  beacons/10s) exist to prevent.
+//
+//  AND NO HEADER EITHER, as of 2026-09-01. Those paths used to propagate from
+//  the ambient span anyway, which named a parent we had already decided not to
+//  record — the serving plane traces four of the six — and left every
+//  `serve.clientcmd`/`serve.clientlog`/`serve.analytics`/`serve.usage` entry
+//  span permanently rootless. No span, no header, and the server roots its own
+//  trace: see `outboundTraceparent` for the whole argument, including why the
+//  server span is kept rather than suppressed with an unsampled flag.
 //
 //  NEVER BREAKS THE REQUEST. Every enhancement — the header, the span — is
 //  computed inside its own try/catch and falls back to calling the ORIGINAL
@@ -120,7 +125,7 @@
 // ============================================================================
 
 import { IGNORE_URL_PATTERNS, reportBackendTrace } from './instana';
-import { childOfActive, traceHeaders, traceparentOf, type Span } from './trace';
+import { childOfActive, traceparentOf, type Span } from './trace';
 
 let installed = false;
 
@@ -226,22 +231,37 @@ function recordBackendTrace(span: Span, res: Response, path: string): void {
   reportBackendTrace('kh.http.backend', backend, { 'url.path': path });
 }
 
-/** The header value to send, and the ONE rule about where it comes from.
+/** The header value to send, and the ONE rule about where it comes from:
+ *  IT NAMES THE SPAN WE JUST OPENED, OR THERE IS NO HEADER.
  *
- *  It must name the span we just opened, so the server's entry span becomes
- *  that span's CHILD — the RPC edge. `traceHeaders()` cannot answer this: it
- *  reads `currentSpan()`, which is never the client span (`childOfActive()`
- *  does not push, deliberately — `trace.ts`'s `traceparentOf` says why), so
- *  inside an open flow it named the FLOW ROOT (making the server span a
- *  SIBLING of `http.client.request`, edge missing) and outside one it minted a
- *  fresh trace id belonging to no span at all (client span and server span in
- *  two unrelated traces). It is still the right answer for a request with no
- *  span of its own — the telemetry-path exclusions below — which is exactly
- *  the split this function encodes. */
+ *  Nothing else will do, and both alternatives have now been tried and
+ *  measured on the live store. `traceHeaders()` — read `currentSpan()` — was
+ *  the original, and it named the FLOW ROOT inside a flow (the server span
+ *  came out a SIBLING of `http.client.request`, the RPC edge simply absent)
+ *  and minted a fresh trace id owned by no span outside one. It was fixed for
+ *  the span-bearing case in 64769b75 and left as a FALLBACK here, which kept
+ *  the second half of the bug alive in two places:
+ *
+ *    * an EXCLUDED TELEMETRY PATH opens no span deliberately (a span about
+ *      sending a span is the feedback loop the beacon budget exists to
+ *      prevent), and the fallback still propagated for it — so
+ *      `serve.clientcmd` was parented on an id we had already decided never
+ *      to record;
+ *    * a NON-EXCLUDED path whose span came back NOOP — `MAX_OPEN` exhausted,
+ *      or the tracer off for a signed-out tab — fell through to the same
+ *      fallback, which is how one seven-hour tab pointed 6,678 polls at a
+ *      single flow-root id that was never written.
+ *
+ *  So the fallback is gone. `null` means the request goes out with no
+ *  `traceparent` and the serving plane cleanly ROOTS ITS OWN TRACE — a
+ *  one-span `serve.clientcmd` trace that is complete and readable, instead of
+ *  a child of a parent that will never arrive. The server span is deliberately
+ *  NOT suppressed (which sending `-00` would do, via `tracing_http.begin`'s
+ *  unsampled-parent NOOP): its latency and status are the only record that
+ *  route has, and losing them to fix a parent id would be a worse trade than
+ *  the bug. */
 function outboundTraceparent(span: Span | null): string | null {
-  const own = traceparentOf(span);
-  if (own) return own;
-  return traceHeaders().traceparent ?? null;
+  return traceparentOf(span);
 }
 
 function tracedFetch(

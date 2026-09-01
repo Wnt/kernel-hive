@@ -308,6 +308,11 @@ function makeSpan(
           ...(Object.keys(own).length ? { a: own } : {}),
           ...(events.length ? { e: events } : {}),
         });
+        // A ROOT that just ended is a COMPLETE trace, and one nobody has
+        // uploaded is the second orphan class whole: the server span naming
+        // it is already stored, so until this joins it there the trace reads
+        // as rootless. `scheduleRootFlush` says why not a shorter interval.
+        if (parentId === null) scheduleRootFlush();
       } catch { /* instrumentation never throws into the app */ }
     },
   };
@@ -516,45 +521,62 @@ export function flushSpans(): void {
 }
 
 /**
- * The `traceparent` header for an outbound request, so the serving plane can
- * make its span a child of ours (docs/lab/TRACE-CONTEXT.md).
+ * Send the buffer SOON, coalescing every root that ends in the same burst.
  *
- * Takes the CURRENT span when there is one and mints a fresh trace when there
- * is not — a fetch that happens outside any journey is still worth being able
- * to follow, and returning nothing would have made those requests invisible on
- * the server side rather than merely parentless.
+ * WHY NOT SIMPLY A SHORTER INTERVAL. The sink's 20 s tick is a POLL: it costs
+ * a request per tab per tick whether or not anything happened, so a 1 s worst
+ * case would cost 60 requests a minute from every open tab — across a
+ * 71-station wall and a gallery of visitors, thousands of mostly-empty POSTs
+ * an hour, to shorten a window that only matters at the few instants a trace
+ * actually completes. This is demand-driven instead: an idle tab makes NO
+ * extra request, and one that finished a journey makes exactly one, when the
+ * trace became complete. A root ends a handful of times per visit (one
+ * `station.connect`, a `poster.read`, a sampled `input.edge`), not once per
+ * poll, so the volume is bounded by what the visitor DID, not by how long they
+ * stayed — and the debounce keeps a burst of roots finishing together (the
+ * boot burst, ten sampled edges in fast typing) one batch.
  */
-function traceparent(): string {
-  return traceparentOf(currentSpan()) ?? `00-${newTraceId()}-${newSpanId()}-01`;
+const ROOT_FLUSH_DEBOUNCE_MS = 250;
+let rootFlushTimer = 0;
+
+function scheduleRootFlush(): void {
+  try {
+    if (typeof window === 'undefined' || rootFlushTimer) return;
+    rootFlushTimer = window.setTimeout(() => {
+      rootFlushTimer = 0;
+      flushSpans();
+    }, ROOT_FLUSH_DEBOUNCE_MS);
+  } catch { rootFlushTimer = 0; /* the sink's interval is still the backstop */ }
 }
 
 /**
  * The `traceparent` header naming ONE SPECIFIC span, or null when that span
- * has no ids (a NOOP span — the tracer is off).
+ * has no ids (a NOOP span — the tracer is off, or `MAX_OPEN` is exhausted).
  *
- * Why this is exported and `traceparent()` is not: a caller that has just
- * OPENED the span it is about to describe must name THAT span, not whatever
- * `currentSpan()` happens to be. `childOfActive()` deliberately does not
- * `pushActive()` — a client span lives across an `await`, and this stack is a
- * synchronous LIFO with no async context, so pushing one would silently
- * re-parent every span opened by unrelated code while the request is in
- * flight. `khFetch.ts` therefore builds its header from its own span with
- * this, rather than the active-span model being bent to make an implicit
- * lookup come out right.
+ * THIS IS THE ONLY PRODUCER OF AN OUTBOUND `traceparent` IN THE TAB, which is
+ * the whole of the no-orphan invariant (docs/lab/TRACE-CONTEXT.md §8): a
+ * header names a span this tab created and will record, or there is no header.
+ *
+ * Two producers lived here until 2026-09-01 and both broke that rule. A
+ * private `traceparent()` MINTED `00-<new trace>-<new span>-01` whenever
+ * there was no active span, and `traceHeaders()` handed that to every
+ * telemetry POST — an id belonging to no span, by construction, on routes the
+ * serving plane DOES trace: 565 such ids in six live hours, each a one-span
+ * trace Instana renders as "the root call of the trace is missing". The
+ * second was `khFetch.ts`'s ambient fallback, naming `currentSpan()` when the
+ * call's own span came back NOOP, which pointed thousands of polls at a flow
+ * root still open — 2,274 of that window's 2,839 orphans, under twelve ids.
+ *
+ * Why this takes a span rather than looking one up: a caller that has just
+ * OPENED the span it describes must name THAT span, not whatever
+ * `currentSpan()` is. `childOfActive()` deliberately does not `pushActive()` —
+ * a client span lives across an `await` and this stack is a synchronous LIFO
+ * with no async context, so pushing one would re-parent every span unrelated
+ * code opens while the request is in flight.
  */
 export function traceparentOf(span: Span | null): string | null {
   if (!span || !span.traceId || !span.spanId) return null;
   return `00-${span.traceId}-${span.spanId}-01`;
-}
-
-/** Headers to merge into a same-origin fetch. Never throws: a request that
- *  cannot be traced must still be a request. */
-export function traceHeaders(): Record<string, string> {
-  try {
-    return { traceparent: traceparent() };
-  } catch {
-    return {};
-  }
 }
 
 /** Test seam. */
@@ -567,6 +589,8 @@ export function __resetTracer(): void {
   hiddenSince = null;
   hookInstalled = false;
   emit = () => {};
+  if (rootFlushTimer && typeof window !== 'undefined') window.clearTimeout(rootFlushTimer);
+  rootFlushTimer = 0;
   pageLoadSeed = null;
   pageLoadJoins = 0;
 }

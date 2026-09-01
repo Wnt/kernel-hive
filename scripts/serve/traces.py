@@ -173,9 +173,18 @@ def _clean_events(raw) -> list:
 class TraceStore:
     """Spans and their trace summaries. Safe from any thread."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, read_only: bool = False):
+        """`read_only` is for a REPORT, and it is not a nicety: opening the
+        live store the normal way runs `executescript(SCHEMA)` and two
+        migrations against the file the serving plane is writing, which is a
+        lot of trust to place in a script whose whole job is to print a
+        number. A read-only reader takes none of it, and cannot be the reason
+        a deploy has to be rolled back."""
         self.path = Path(path)
         self._lock = threading.RLock()
+        if read_only:
+            self._db = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, check_same_thread=False)
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(str(self.path), check_same_thread=False)
         self._db.execute("PRAGMA journal_mode=WAL")
@@ -557,6 +566,49 @@ class TraceStore:
                 # running something the box no longer serves.
                 "builds": group("build"),
             }
+
+    def orphans(self, since_ms: int, settle_ms: int = 3_600_000) -> dict:
+        """How many stored spans name a parent that is not in the store.
+
+        THE REGRESSION THIS EXISTS TO MAKE VISIBLE. A span whose `parent_id`
+        names nothing renders in Instana as "the root call of the trace is
+        missing or has not yet arrived", and there is no other way to notice:
+        every individual span looks perfect, the request it describes
+        succeeded, and only the JOIN is broken. It went unmeasured until
+        2026-09-01, when a hand-written query found 42.9% of the six-hour
+        window in that state. Both producers were in the browser (the tab
+        emitting a `traceparent` naming a span it had already decided not to
+        record, and a root span that never left because its flow never ended);
+        both are fixed in `spa/src/analytics/`, and this is what proves they
+        stay fixed.
+
+        `settle_ms` excludes the RECENT edge on purpose. A parent that is
+        merely still open — a flow the visitor has not finished — is a
+        transient orphan that resolves the moment the root ends, so counting
+        it would make the number a measure of how busy the box is right now
+        rather than of whether the contract holds. An hour is far longer than
+        any honest journey and far shorter than the retention window.
+        """
+        with self._lock:
+            cur = self._db.cursor()
+            rows = cur.execute(
+                "SELECT s.name,count(*) FROM span s "
+                "WHERE s.started_ms>=? AND s.started_ms<=? AND s.parent_id IS NOT NULL "
+                "AND NOT EXISTS (SELECT 1 FROM span p WHERE p.span_id=s.parent_id) "
+                "GROUP BY s.name ORDER BY count(*) DESC",
+                (since_ms, int(time.time() * 1000) - settle_ms),
+            ).fetchall()
+            total = cur.execute(
+                "SELECT count(*) FROM span WHERE started_ms>=? AND started_ms<=? AND parent_id IS NOT NULL",
+                (since_ms, int(time.time() * 1000) - settle_ms),
+            ).fetchone()[0]
+        orphaned = sum(n for _, n in rows)
+        return {
+            "withParent": total,
+            "orphaned": orphaned,
+            "rate": (orphaned / total) if total else 0.0,
+            "byName": [{"name": n, "n": c} for n, c in rows],
+        }
 
     def prune(self, keep_days: int = RETENTION_DAYS) -> int:
         """Drop whole traces older than the window. Never half a trace: a trace

@@ -135,14 +135,42 @@ async function openTraceStore(file) {
   } catch {
     return null;
   }
-  const stmt = db.prepare('SELECT span_id, name, kind FROM span WHERE trace_id = ?');
-  return (traceId) => {
-    try {
-      return stmt.all(traceId);
-    } catch {
-      return null;
-    }
+  const byTrace = db.prepare('SELECT span_id, name, kind FROM span WHERE trace_id = ?');
+  const bySpan = db.prepare('SELECT trace_id, name, kind FROM span WHERE span_id = ?');
+  return {
+    trace: (traceId) => {
+      try {
+        return byTrace.all(traceId);
+      } catch {
+        return null;
+      }
+    },
+    // The no-orphan invariant's acceptance query (docs/lab/TRACE-CONTEXT.md
+    // §8): whatever this tab put in an outbound `traceparent` has to be a
+    // span the store actually holds. Before 2026-09-01 it routinely was not.
+    span: (spanId) => {
+      try {
+        return bySpan.all(spanId);
+      } catch {
+        return null;
+      }
+    },
   };
+}
+
+//: Paths this app deliberately opens no client span for — the one list, kept
+//: in step with spa/src/analytics/instana.ts's KH_TELEMETRY_PATHS. No span
+//: means no span for a header to name, so an outbound `traceparent` on one of
+//: these is by definition an id nothing will record.
+const TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'];
+
+function isTelemetryPath(url) {
+  try {
+    const { pathname } = new URL(url);
+    return TELEMETRY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`));
+  } catch {
+    return false;
+  }
 }
 
 async function main() {
@@ -265,8 +293,9 @@ async function main() {
   for (const b of beacons) counts[b.ty ?? '?'] = (counts[b.ty ?? '?'] ?? 0) + 1;
   console.log(`  by type         ${JSON.stringify(counts)}`);
 
-  const resolve = await openTraceStore(tracesDb);
-  if (!resolve) console.log(`  trace store     UNCHECKED (${tracesDb || 'disabled'})`);
+  const store = await openTraceStore(tracesDb);
+  const resolve = store ? store.trace : null;
+  if (!store) console.log(`  trace store     UNCHECKED (${tracesDb || 'disabled'})`);
 
   const shape = (bt) => {
     if (!injected) return '(no meta traceparent to compare against)';
@@ -304,6 +333,42 @@ async function main() {
     failures += corrupted.length;
   } else if (outbound.length) {
     console.log('  all single-valued — this app owns the header');
+  }
+
+  // ---- the no-orphan invariant, on the real wire --------------------------
+  // Two questions, and neither can be answered from inside the tab: does a
+  // telemetry path still carry a header it has no span for, and does every
+  // header this page DID send name a span the store actually received?
+  // Measured 2026-09-01, before the fix: 42.9% of the spans in a six-hour
+  // window declared a parent that had never been stored.
+  const onTelemetry = outbound.filter((o) => isTelemetryPath(o.url));
+  console.log(`\nno-orphan invariant (TRACE-CONTEXT.md §8)`);
+  if (onTelemetry.length) {
+    console.log(`  FAULT: ${onTelemetry.length} traceparent(s) on an excluded telemetry path:`);
+    for (const o of onTelemetry) console.log(`    ${o.url}  ${o.traceparent}`);
+    failures += onTelemetry.length;
+  } else {
+    console.log('  no traceparent on any excluded telemetry path');
+  }
+  if (!store) {
+    console.log('  parents        UNCHECKED (no trace store)');
+  } else {
+    // A span is buffered when it ENDS and uploaded on the next flush, so give
+    // the tab's own eager root-end flush time to land before asking.
+    const dangling = [];
+    for (const o of outbound) {
+      const parsed = parseTraceparent(o.traceparent.split(',')[0].trim());
+      if (!parsed) continue;
+      const rows = store.span(parsed.spanId);
+      if (rows && rows.length === 0) dangling.push({ ...o, spanId: parsed.spanId });
+    }
+    if (dangling.length) {
+      console.log(`  FAULT: ${dangling.length} traceparent(s) name a span the store never received:`);
+      for (const o of dangling) console.log(`    ${o.spanId}  ${o.url}`);
+      failures += dangling.length;
+    } else {
+      console.log(`  every outbound parent id resolves in the store (${outbound.length} checked)`);
+    }
   }
 
   if (failures > 0) {
