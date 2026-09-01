@@ -48,6 +48,15 @@
 #   * intel-hda is real here: the guest attaches it as pcm0 (play/rec). The 0.6.1
 #     desktop itself emits no sounds, but the hardware and driver are present.
 #   * virtio-rng because upstream's own VM script ships one.
+#   * THE ORDER OF THE -device FLAGS IS LOAD-BEARING, not cosmetic. QEMU assigns
+#     PCI slots in declaration order, and `loadvm` matches saved sections by PCI
+#     address. The xhci block therefore comes BEFORE intel-hda here because that
+#     is the order scripts/build-guests/tiles/ravynos.sh bakes the golden in.
+#     Swapping the two moves the controller to a different slot and the restore
+#     dies with
+#       Unknown section or instance '0000:00:02.0/xhci' 0
+#     which reads like a corrupt checkpoint and is really a reordered launcher.
+#     If you change this list, change the builder to match and RE-BAKE.
 #   * restrict=on isolates the guest. An exhibit nobody can supervise must not be
 #     able to phone home, and ravynOS needs no network to reach its desktop.
 set -e
@@ -74,10 +83,10 @@ nohup qemu-system-x86_64 \
   -vga std \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
-  -device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0 \
   -device qemu-xhci,id=xhci \
   -device usb-kbd,bus=xhci.0 \
   -device usb-tablet,bus=xhci.0 \
+  -device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0 \
   -object rng-random,id=rng0,filename=/dev/urandom \
   -device virtio-rng-pci,rng=rng0 \
   -netdev user,id=n0,restrict=on -device virtio-net-pci,netdev=n0,id=net0 \

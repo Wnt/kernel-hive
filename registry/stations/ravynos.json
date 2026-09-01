@@ -202,8 +202,8 @@
         "-vga std",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
-        "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
         "-device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0",
+        "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
         "-object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0",
         "-netdev user,id=n0,restrict=on -device virtio-net-pci,netdev=n0,id=net0",
         "-boot menu=off,strict=on",
@@ -231,8 +231,8 @@
           "-vga std",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
-          "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
           "-device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0",
+          "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
           "-object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0",
           "-netdev user,id=n0,restrict=on -device virtio-net-pci,netdev=n0,id=net0",
           "-boot menu=off,strict=on",
@@ -242,7 +242,7 @@
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "The tracked launcher is the device-set ledger and is deployed verbatim; the registry summary is transcribed from it."
+        "reason": "The tracked launcher is the device-set ledger and is deployed verbatim; the registry summary is transcribed from it, INCLUDING -device order, which is load-bearing: QEMU assigns PCI slots in declaration order and loadvm matches saved sections by PCI address."
       }
     },
     "bringUpOrder": 75
