@@ -426,6 +426,15 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'POWER MAC G4', spec: 'PowerPC G4 • MAC OS 9.2.2 • 2001',
     kit: 'workstation',
   },
+  // ravynos: an ordinary 2025 PC in modern aluminium-grey, with the slate accent
+  // the registry carries. The badge names the hardware rather than the OS on
+  // purpose — the desktop imitates a Mac, the machine underneath does not, and
+  // the placard's whole subject is the gap between the two. Low-ish tintMix:
+  // the identity of a minimal modern case is its uniform finish, not a stripe.
+  ravynos: {
+    caseTint: '#c6c8ca', accentTint: '#64748b', tintMix: 0.3,
+    badge: 'x86-64 PC', spec: 'x86-64 • ravynOS 0.6.1 • 2025', kit: 'modern',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

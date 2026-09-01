@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "id": "ravynos",
+  "era_year": 2025,
+  "stationDir": "ravynos",
+  "lifecycle": "production",
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 69,
+        "prelude": "\n# ---- ravynOS ----\n# ravynos: pinned live ISO -> logged-in desktop -> golden. No install: the\n#   0.6.1 disk installer completes but the installed system stalls at\n#   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --\n#   the project deleted every FreeBSD-era release from GitHub and SourceForge.\n",
+        "value": {
+          "key": "ravynos",
+          "script": "tiles/ravynos.sh",
+          "outputDir": "RavynOS",
+          "class": "fast",
+          "estimated": "~10-20m",
+          "automation": "full",
+          "produces": "ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "ravynos",
+      "value": {
+        "os": "ravynOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            300,
+            300
+          ],
+          "b": [
+            900,
+            500
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "Do NOT send Cmd-Shift-Q: it quits WindowServer and 0.6.x ships no Filer to restart it, leaving a console until the next reset.",
+        "audio_trigger": "tone",
+        "note": "UEFI live-ISO guest: q35 + OVMF pflash pair, carrier disk declared first so savevm keeps the vmstate out of the variable store."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/ravynos",
+      "qmp": "/data/vms/streamhost/stations/ravynos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54173,
+      "notes": "No exec channel: the 0.6.1 live image runs no sshd. Drive it through the framebuffer (labctl shot / pointer + keys)."
+    }
+  },
+  "render": {
+    "signalOrder": 70,
+    "stationsManifestOrder": 68,
+    "stationsManifestPrelude": "\n# ravynos (VMID 173) \u2014 ravynOS 0.6.1 \"Hyperpop Hyena\", the LAST\n#   FreeBSD-based ravynOS. VERBATIM launcher; its header is the device-set\n#   ledger and explains the three things that look wrong but are not: the\n#   guest boots a READ-ONLY live ISO, so an otherwise unused carrier qcow2\n#   is declared FIRST to hold the vmstate (savevm picks its device by\n#   -drive order, and the pflash pair would otherwise swallow the RAM\n#   image); the OVMF variable store is qcow2 and WRITABLE (read-only hangs\n#   OVMF before display init, raw makes savevm refuse); and input is USB,\n#   not PS/2 or virtio, because upstream says those lag.\n#   Cold boot stops at the LoginWindow \u2014 the golden is the exhibit.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 75,
+    "bindingPrelude": "",
+    "goldenOrder": 68,
+    "actionMapOrder": 41,
+    "bindingComment": "ideal: any 2020s PC \u2014 the point is that it is not a Mac"
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54173,
+    "slot": 173,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "method": "qemu-usb-tablet",
+      "absolute": true,
+      "present": true,
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "guestDoc": "docs/guests/ravynos.md",
+  "credentialsRef": "guest/ravynos",
+  "spa": {
+    "archetypeId": "apple-studio",
+    "transport": "streamhost",
+    "accentColor": "#64748b",
+    "eraLabel": "2025 \u00b7 ravynOS 0.6.1"
+  },
+  "museum": {
+    "id": "ravynos",
+    "displayName": "ravynOS",
+    "year": 2025,
+    "lineage": "airyx \u2192 ravynOS (FreeBSD 15 + a clean-room Cocoa stack)",
+    "arch": "x86_64",
+    "ramMB": 4096,
+    "era": "2020s",
+    "accent": "#64748b",
+    "eraSoftware": [
+      "WindowServer",
+      "SystemUIServer",
+      "Dock.app",
+      "Terminal.app 0.9.2"
+    ],
+    "iconicApps": [
+      "Terminal.app"
+    ],
+    "blurb": "A pre-alpha BSD wearing a Mac's clothes: global menu bar, Dock and Command-key shortcuts over FreeBSD 15. Four days after this build shipped, its makers threw the FreeBSD kernel away and deleted every release of this line \u2014 so 0.6.1 is the last ravynOS of its kind.",
+    "notes": "Live-ISO station: the guest boots the read-only 0.6.1 ISO and the golden holds the logged-in desktop. Cold boot stops at the LoginWindow and waits for a human, so the golden is what makes it an exhibit. No exec channel \u2014 the live image runs no sshd.",
+    "periodBrowser": "none \u2014 0.6.x ships no browser at all; the clean-room Cocoa stack is nowhere near far enough along to host one"
+  },
+  "notes": [
+    "Live-ISO exhibit: 0.6.1's disk installer completes but the installed system stalls at 'pid 1 comm launchd: nosys 689' before rc and never reaches a desktop. Refuted the entropy hypothesis (virtio-rng changes nothing). See docs/guests/ravynos.md.",
+    "Media is mirror-only. The project deleted every FreeBSD-era release from GitHub and SourceForge on/after 2025-10-29; the SHA-256 recorded in docs/lab/ASSETS-MANIFEST.md is the acceptance gate."
+  ],
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "ravynos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "ravynOS 0.6.1 \"Hyperpop Hyena\" live desktop at 1280x800, logged in as liveuser: global menu bar with the raven glyph and clock, the Zakim-bridge wallpaper drawn by Dock.app, and the Dock (Terminal, Install, Trash). No windows open. The menu-bar clock ticks, so this station has no idle-deterministic frame; compare captures at a fixed machine instant (stop; loadvm golden; stop; screendump; cont)."
+  },
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "ravynos",
+      "SH_QMP": "/data/vms/streamhost/stations/ravynos/qmp.sock",
+      "SH_PORT": "54173",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/ravynos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/ravynos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 173,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "ravynos",
+        "--vmid",
+        "173",
+        "--udp",
+        "54173",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/ravynos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/ravynos/station.env.fixture"
+      ],
+      "deviceSetId": "ravynos-current",
+      "launcher": "streamhost/stations/ravynos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/ravynos/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-q35-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 4096,
+      "smp": 4,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-ravynos",
+        "-enable-kvm -m 4096 -smp cores=4,sockets=1",
+        "-machine pc-q35-11.0 -cpu host",
+        "-drive file=/data/vms/streamhost/stations/ravynos/ravynos-golden.qcow2,if=none,id=hd0,format=qcow2,cache=writeback",
+        "-drive if=pflash,unit=0,format=raw,readonly=on,file=/usr/share/pve-edk2-firmware/OVMF_CODE_4M.fd",
+        "-drive if=pflash,unit=1,format=qcow2,file=/data/vms/streamhost/stations/ravynos/OVMF_VARS.qcow2",
+        "-device ide-hd,drive=hd0,bus=ide.0,bootindex=2",
+        "-drive file=/data/isos/ravynOS_0.6.1_amd64.iso,media=cdrom,if=none,id=cd0,readonly=on",
+        "-device ide-cd,drive=cd0,bus=ide.1,bootindex=1",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0",
+        "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
+        "-object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0",
+        "-netdev user,id=n0,restrict=on -device virtio-net-pci,netdev=n0,id=net0",
+        "-boot menu=off,strict=on",
+        "-qmp unix:/data/vms/streamhost/stations/ravynos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/ravynos/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-q35-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 4096,
+        "smp": 4,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-ravynos",
+          "-enable-kvm -m 4096 -smp cores=4,sockets=1",
+          "-machine pc-q35-11.0 -cpu host",
+          "-drive file=/data/vms/streamhost/stations/ravynos/ravynos-golden.qcow2,if=none,id=hd0,format=qcow2,cache=writeback",
+          "-drive if=pflash,unit=0,format=raw,readonly=on,file=/usr/share/pve-edk2-firmware/OVMF_CODE_4M.fd",
+          "-drive if=pflash,unit=1,format=qcow2,file=/data/vms/streamhost/stations/ravynos/OVMF_VARS.qcow2",
+          "-device ide-hd,drive=hd0,bus=ide.0,bootindex=2",
+          "-drive file=/data/isos/ravynOS_0.6.1_amd64.iso,media=cdrom,if=none,id=cd0,readonly=on",
+          "-device ide-cd,drive=cd0,bus=ide.1,bootindex=1",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+          "-device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0 -device usb-tablet,bus=xhci.0",
+          "-device intel-hda,id=hda -device hda-duplex,bus=hda.0,audiodev=snd0",
+          "-object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0",
+          "-netdev user,id=n0,restrict=on -device virtio-net-pci,netdev=n0,id=net0",
+          "-boot menu=off,strict=on",
+          "-qmp unix:/data/vms/streamhost/stations/ravynos/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/ravynos/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "The tracked launcher is the device-set ledger and is deployed verbatim; the registry summary is transcribed from it, INCLUDING -device order, which is load-bearing: QEMU assigns PCI slots in declaration order and loadvm matches saved sections by PCI address."
+      }
+    },
+    "bringUpOrder": 75
+  }
+}

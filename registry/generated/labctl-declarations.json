@@ -884,6 +884,24 @@
       "udp_port": 54112,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "ravynos": {
+      "dir": "/data/vms/streamhost/stations/ravynos",
+      "qmp": "/data/vms/streamhost/stations/ravynos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54173,
+      "notes": "No exec channel: the 0.6.1 live image runs no sshd. Drive it through the framebuffer (labctl shot / pointer + keys)."
+    },
     "reactos": {
       "dir": "/data/vms/streamhost/stations/reactos",
       "qmp": "/data/vms/streamhost/stations/reactos/qmp.sock",

@@ -139,6 +139,13 @@ MANIFEST=(
   "amigaos35      |tiles/amigaos35.sh                                    |AmigaOS35         |graphical |~30-60m |vision   |amigaos35-system.hdf golden master (AmigaOS 3.5 desktop, AWeb II; cold-boot reset)"
   "aix432         |tiles/aix432.sh                                       |Aix432            |licensed  |~4-6h   |supplied |aix433-full.qcow2 (AIX 4.3.3 + X11/CDE + Ultimedia Services + Netscape 4.08 + Quake 1.07, native on the emulated GXT130P) + golden; builds its own qemu-system-ppc into /opt/qemu-ppc-s3 first"
   "amix           |tiles/amix.sh                                         |AmigaUNIX         |graphical |~4h     |vision   |amix-system.hdf golden master (AMIX 2.1 OPEN LOOK desktop; cold-boot reset)"
+
+# ---- ravynOS ----
+# ravynos: pinned live ISO -> logged-in desktop -> golden. No install: the
+#   0.6.1 disk installer completes but the installed system stalls at
+#   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --
+#   the project deleted every FreeBSD-era release from GitHub and SourceForge.
+  "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

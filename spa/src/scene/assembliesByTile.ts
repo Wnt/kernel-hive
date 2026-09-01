@@ -466,9 +466,25 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // ravynos: the newest station in the hall, and the only one whose silhouette
+  // is an argument. ravynOS is FreeBSD on a commodity 2025 x86-64 PC that has
+  // been dressed as a Mac — so the parts are deliberately mixed. modernD is the
+  // plain minimal modern tower (its only other user, serenityos, sits under
+  // lcdB, so modernD|lcdC is this station's alone), lcdC the big flat panel
+  // that reads as a modern desktop display, and keyboardG the compact board the
+  // Apple-family stations (macos, macos9) carry — the one borrowed part, for
+  // the machine whose whole point is borrowed clothes. The mouse is the
+  // ordinary modern paramMouseE and NOT the one-button paramMouseF that marks
+  // the real Apple hardware here: this is a PC, and the exhibit says so.
+  ravynos: {
+    kind: 'towerSetup', body: 'modernD', monitor: 'lcdC',
+    keyboard: 'keyboardG', mouse: 'paramMouseE',
+  },
   // amix: the Amiga 3000 is a low desktop box, not a tower — the machine
-  // Commodore sold as the A3000UX workstation, with a mono monitor above it
-  // (Amiga UNIX's chipset X server is one bit deep).
+  // Commodore sold as the A3000UX workstation. Same pizzaBoxD shell as
+  // amigaos35's sibling A-series entries, under the ordinary crtC: this one
+  // drives an A2410 board at 1024x768 in colour, so it is NOT the mono
+  // setup its chipset X server would imply.
   amix: {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',

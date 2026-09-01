@@ -287,6 +287,15 @@ export const OS_FAMILY: Record<string, Family> = {
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
+  // ravynOS 0.6.1. Command chords are the project's stated design goal, but the
+  // classicmac family would be wrong here on both counts: its rows are Finder
+  // verbs (⌘O open, ⌘N new folder, ⌘. cancel) and the 0.6.x build ships no file
+  // manager and no browser, so they would be buttons with nothing to act on;
+  // and the one Command chord that certainly works, ⌘⇧Q, quits the WindowServer
+  // and takes the desktop away with no Filer left to restart it. What a visitor
+  // can actually use is Terminal.app over a FreeBSD 15 userland with zsh, which
+  // is what the generic Unix rows are for. Revisit if the Filer ever ships.
+  ravynos: 'generic',
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile

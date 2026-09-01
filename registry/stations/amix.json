@@ -39,14 +39,14 @@
     }
   },
   "render": {
-    "signalOrder": 70,
-    "stationsManifestOrder": 68,
+    "signalOrder": 71,
+    "stationsManifestOrder": 69,
     "stationsManifestPrelude": "\n# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop, in COLOUR on an A2410 (1024x768, 8-bit PseudoColor, selected by starting AMIX's X server with -tiga). The chipset X server is depth 1, so monochrome 640x512 is the fallback and is one flag away (/etc/kh-xsession.mono in the guest). Absolute 1:1 pointer via x11warp into the guest's own X server over a loopback-bound slirp redirect.\n",
     "bringUpGroup": 8,
-    "bindingOrder": 75,
+    "bindingOrder": 76,
     "bindingPrelude": "",
     "bindingComment": "ideal: Amiga 3000 desktop box",
-    "goldenOrder": 68
+    "goldenOrder": 69
   },
   "stationDir": "amix",
   "lifecycle": "production",
@@ -95,7 +95,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/amix/amix_cmd"
     },
-    "bringUpOrder": 75,
+    "bringUpOrder": 76,
     "x11": {
       "display": ":72",
       "geometry": "1024x768x24",

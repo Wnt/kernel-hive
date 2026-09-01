@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (73 of the 75
+//    - transport   : how its LIVE framebuffer texture is obtained (74 of the 76
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 73 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 74 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -201,6 +201,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   macos9:      { osId: 'macos9', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#9a9ad1', eraLabel: '2001 · Mac OS 9.2.2 — Power Mac G4', pointerRel: true },
   amigaos35:   { osId: 'amigaos35', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC4444', eraLabel: '1999 · AmigaOS 3.5 (AWeb II)' }, // ideal: Amiga big-box tower
   aix432:      { osId: 'aix432', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6ea8', eraLabel: '1999 · IBM RS/6000 — AIX 4.3.3 / CDE', pointerRel: false },
+  ravynos:     { osId: 'ravynos', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#64748b', eraLabel: '2025 · ravynOS 0.6.1' }, // ideal: any 2020s PC — the point is that it is not a Mac
   amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
 };
 
