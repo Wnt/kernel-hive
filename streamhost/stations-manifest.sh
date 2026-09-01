@@ -973,7 +973,7 @@ emit aix432 \
   --launcher-file "$T/aix432/qemu-streamhost.sh" --env-append-file \
   "$T/aix432/station.env.fixture"
 
-# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop. Monochrome 640x512: AMIX's Amiga-chipset X server is depth 1, and colour needs an A2410 board FS-UAE cannot drive.
+# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop. Ships monochrome 640x512 today (AMIX's Amiga-chipset X server is depth 1); colour OPEN LOOK on the A2410 (1024x768, 8-bit) is proven on this same binary and its golden awaits promotion (docs/guests/amix.md).
 emit amix \
   --tile amix --udp 54172 --x11 --x11-display :72 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \

@@ -1,9 +1,12 @@
 # Amiga UNIX (AMIX) 2.1 — gallery station notes
 
-Status: **BUILT AND PROVEN ON THE SANDBOX RIG** (2026-08-30; pointer made
-absolute 2026-09-01), registry entry landed `listing.state=hidden`. Not yet
-deployed: the golden lives in the `amix` sandbox, and the monochrome-vs-colour
-call is open — see "Open" at the bottom.
+Status: **BUILT AND PROVEN ON THE SANDBOX RIG** (2026-08-30). Two things that
+were open at the first landing are now closed: the **pointer is absolute and
+1:1** (2026-09-01, `x11warp` into the guest's own X server — see "The pointer"),
+and **colour is proven on the pinned binary** (2026-09-01, the A2410 driven by
+`X -tiga` at 1024x768x8 — see "Colour"). Both were baked into SEPARATE goldens
+by parallel work; the shipping golden must carry BOTH and is being unified.
+Registry entry landed `listing.state=hidden`; not yet deployed.
 
 **Guest:** an emulated **Amiga 3000** (Motorola 68030 + MMU + 68882, 16 MB,
 Kickstart 2.04 r37.175) booting **Amiga UNIX 2.1** — Commodore's licensed
@@ -94,62 +97,134 @@ Answers that shaped this install: keyboard `usa`, **`ufs`** root (the default is
 `s5`), 0 MB for AmigaDOS / 2015 MB root / 30 MB swap on a 2 GB disk, package set
 **(2) "Everything on the tape"** (296.7 MB — it is the set that guarantees
 `Xcore`/`Xbasic`/`olcore`), no passwords on any account, timezone EET, nodename
-`amix`, and **Color X Administration → 1) A2410** (see below). The tape restore
+`amix`, and **Color X Administration → 1) A2410** (it configures the kernel's
+`tiga` driver — the X server still needs `-tiga`, see below). The tape restore
 runs about **two hours** under emulation; `mkfs` on the 2 GB UFS root is another
 20 minutes before it.
 
-## The A2410 dead end — why this exhibit is monochrome
+## Colour: the A2410 works in the pinned build — the exhibit was monochrome by one flag
 
-AMIX's X server for the Amiga's own chipset is **640×512, depth 1, StaticGray** —
-measured with `xdpyinfo`. The server accepts a `-z <planes>` argument but ignores
-it on this display. That is not a misconfiguration: on Amiga UNIX, **colour X
-means a colour graphics board**, and the installer's own "Color X Administration"
-menu offers exactly three — **A2410** (Commodore), Resolver (Digital Micronics),
-1600GX (Ameristar) — plus "no color card".
+**Verdict (2026-09-01, framebuffer-proven):** the FS-UAE 3.2.35 binary this
+station already ships **drives the A2410**. AMIX's X server comes up on it at
+**1024×768, depth 8 PseudoColor (256 colours)**, and the colour OPEN LOOK
+desktop renders — see the acceptance capture in the `amix-color` sandbox
+(`/data/vms/sandbox/amix-color/rig/r4c.png`: SteelBlue workspace, grey OPEN LOOK
+frames with a blue focus header, the Calculator and xclock in colour;
+`xdpyinfo` on that display, read back from the guest disk: `dimensions:
+1024x768`, `depths (1): 8`, `class: PseudoColor`, `size of colormap: 256`).
+No new emulator, no backport, no patch.
 
-The A2410 is the one FS-UAE appears to offer (`uae_gfxcard_type = A2410`), and
-the board does autoconfig: the log shows `Card 1: Z2 0x00e90000 64K IO A2410`.
-**It does not work.** In FS-UAE 3.2.35 the TMS34010 core `src/mame/a2410.cpp` is
-compiled in — its symbols are in the binary, which is what makes this look
-supported — but **nothing anywhere in the tree calls a single `a2410_*`
-function**; `gfxboard.cpp` has no A2410 reference at all, and `expansion.cpp`
-only supplies the card's autoconfig *name*. Run the guest's `X2410` server and it
-paints onto the Amiga chipset screen instead; `A2410 ACTIVE` never appears in the
-log. `A2410` is not a documented `uae_gfxcard_type` value either.
+The previous verdict ("compiled in, never called") was wrong, and it is worth
+recording *how* it went wrong so nobody repeats it:
 
-**The lesson, and it is the point of AGENTS.md rule 9:** the symbol table said
-"supported" and the framebuffer said otherwise. Only the framebuffer was right.
+1. **The grep was lying.** `src/gfxboard.cpp` is ISO-8859 text (the board table
+   spells "Ingenieurbüro Helfrich" in Latin-1). The agent shell's `grep` is
+   **ugrep with `-I`**, which silently treats that file as *binary* and reports
+   **no matches at all** — for any pattern. Run `/bin/grep -a` (or `awk`) and
+   the dispatch is right there: `gfxboard.cpp:359/491/501/1739/1766` branch on
+   `GFXBOARD_A2410` into `tms_toggle` / `tms_hsync_handler` /
+   `tms_vsync_handler` / `tms_free` / `tms_reset`, and `expansion.cpp:2238`
+   installs `tms_init` as the card's autoconfig init. The A2410 functions are
+   named `tms_*`, not `a2410_*`, which is why the symbol-name grep found
+   "nothing calls a2410_*" — literally true, and meaningless.
+2. **Nobody had asked the X server for the board.** `/usr/X/bin/X` and
+   `/usr/X/bin/X2410` are **byte-identical** (same size, same checksum on the
+   tape, `cmp` clean): one server that drives the Amiga chipset by default and
+   the A2410 only when started with **`-tiga`** (the amigaunix.com wiki's
+   `olinit -- -tiga`; `-tm 3` selects 800×600 instead of 1024×768). The
+   installer's "Color X Administration → A2410" step configures the kernel
+   (`/dev/tiga0` + the `tiga` driver, `PRODUCT 0x04060000` = Lowell 1030/0,
+   exactly what `tms_init` autoconfigs), but the inittab line this station
+   wrote ran `X` with no `-tiga`, so it painted on the chipset — and then the
+   log's missing `A2410 ACTIVE` line was read as "the emulator cannot", when it
+   meant "the guest never tried".
 
-So the shipped exhibit is the monochrome chipset desktop — which is also what
-almost every real A3000UX owner saw, since the A2410 was a rare, expensive
-option. Getting the colour OPEN LOOK desktop needs an emulator that actually
-drives an A2410 (a newer FS-UAE or a WinUAE-derived core such as Amiberry, both
-unverified), i.e. a new pinned emulator build, not a config change.
+So the chain that had to hold, and does: kernel sees the board (autoconfig
+`Card 1: Z2 0x00e90000 64K IO A2410`; guest `tiopen` → `autocon(0x04060000)`)
+→ `X -tiga` downloads `tigagm.coff` into the TMS34010 (log: `TMS34010
+started`, `A2410 0*0 -> 1024*768`, `A2410 ACTIVE=1`) → the RTG path FS-UAE
+already has for `uaegfx` shows the board's 8-bit CLUT surface
+(`RTG conversion: Depth=4 … P96RGBF=1`) → clients draw in colour.
+
+What it costs: the TMS34010 core runs per scanline, so the emulator sits at
+**~155–170 % of a core with the board active versus ~120–128 % chipset-only**
+(measured side by side on labhost, `top`, both stations idle at the desktop).
+The standby `SIGSTOP` still applies, so only a live visit pays it. The board's
+hardware cursor is a stub in FS-UAE (`-- stub -- setupcursor`) — irrelevant
+here, the X server draws its own.
+
+What the mono build got right: monochrome 640×512 *is* what almost every
+A3000UX owner saw, since the A2410 was a rare option. The colour golden keeps
+the mono session alongside as `/etc/kh-xsession.mono`; switching back is the
+inittab `-tiga` flag and that file.
+
+**Lesson, rewritten:** the previous section blamed the symbol table for lying.
+It did not; the *tool* lied (ugrep's binary heuristic) and the *test* was wrong
+(no `-tiga`). Rule 9 still stands — the framebuffer decided it both times — but
+"the framebuffer says no" only closes a question when the guest was actually
+asked to draw. Use `/bin/grep -a` on emulator sources; they are not UTF-8.
 
 ## Ready scene / golden
 
-- Ready state: the OPEN LOOK desktop, up **without a login**, holding an xterm
-  titled `Amiga UNIX 2.1` that opens with
+Two goldens exist, one combination each with the same binary and device set:
+
+| golden | X server | screen | where |
+|---|---|---|---|
+| `amix-system.hdf.golden` (2026-08-30) | `X` on the Amiga chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — what the registry ships today |
+| `amix-system.hdf.golden-color-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix-color/golden/` — baked from a copy of the mono golden; **promotion pending** |
+
+- Ready state (both): the OPEN LOOK desktop, up **without a login**, holding an
+  xterm titled `Amiga UNIX 2.1` that opens with
   `UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k` over a root shell,
   `xcalc` — stock X11, but wearing OPEN LOOK's rounded buttons rather than the
   square Athena ones it has elsewhere in the gallery — and `xclock`.
-- It is started from `/etc/inittab` (entry `xw`, run level 2, `respawn`):
-  `xinit /etc/kh-xsession -- /usr/bin/X11/X`. `/etc/kh-xsession` runs the three
+- Started from `/etc/inittab` (entry `xw`, run level 2, `respawn`):
+  `xinit /etc/kh-xsession -- /usr/bin/X11/X` (mono) or
+  `... -- /usr/bin/X11/X -tiga` (colour). `/etc/kh-xsession` runs the three
   clients and `exec olwm`; `/etc/kh-shell` prints `uname -a` and `exec /bin/sh`.
-- `stretch = 1` (`FSE_STRETCH_FILL_SCREEN`) — without it FS-UAE letterboxes the
-  640×512 screen inside its own 640×512 window and the capture carries bars —
-  **and `zoom = 640x512`**, without which the default `692x540` crop scales
-  the X root by 0.925/0.948 and the pointer is not 1:1 in the capture (see
-  the pointer section).
-- Reset mode: `relaunch`, **no statefile** — a cold boot (~2 min to the desktop)
-  of a fresh work HDF copied from `disk/amix-system.hdf.golden`. The standby
-  SIGSTOP keeps visits instant; only a reset pays the boot.
+- The colour session additionally does `xrdb -merge /etc/kh-xres`
+  (`*windowFrameColor: gray82`, `*inputWindowHeader: SteelBlue4`,
+  `*pointerFocus: true`) and `xsetroot -solid SteelBlue`; the clients carry
+  their own colours (`xclock -bg LightYellow -hd black -hl red`,
+  `xcalc -bg gray85`, xterm black on white at `+40+120`, 80x24, so the pointer's
+  initial position -- screen centre -- is inside it and it has keyboard focus
+  from the first frame). The mono session is kept as `/etc/kh-xsession.mono`,
+  which is what makes monochrome a one-line revert rather than a rebuild.
+- **Shipping colour changes three things outside the guest:**
+  1. `streamhost/stations/amix/x11-runtime.sh` passes `--gfxcard_type=A2410
+     --gfxcard_size=2` and **drops `--stretch=1`** (the board surface is
+     already window-sized; stretching would only matter during the boot
+     console);
+  2. `runtime.x11.geometry` / `FSUAE_NATIVE_GEOM` become **`1024x768`** (or
+     `800x600` with `-tm 3` on the X line, if the tile wants a smaller stream);
+  3. `disk/amix-system.hdf.golden` is replaced by the colour golden (keep the
+     mono one alongside, dated -- never retire a golden before its replacement
+     is proven on the live station, rule 6).
+  During the boot the visitor sees the Amiga console text, then FS-UAE switches
+  the window to the board surface the moment `X -tiga` programs the mode.
+- On the MONO build only: `stretch = 1` (`FSE_STRETCH_FILL_SCREEN`) -- without
+  it FS-UAE letterboxes the 640x512 screen inside its own 640x512 window and the
+  capture carries bars -- **and `zoom = 640x512`**, without which the default
+  `692x540` crop scales the X root by 0.925/0.948 and the pointer is not 1:1 in
+  the capture even though `XQueryPointer` agrees exactly (see the pointer
+  section: the readback is not sufficient proof on its own).
+- Reset mode: `relaunch`, **no statefile** -- a cold boot of a fresh work HDF
+  copied from the golden (~2 min to the mono desktop; the colour golden, booted
+  unattended from a fresh copy on 2026-09-01, had the board active at 60 s and
+  the full desktop by 90 s). The standby SIGSTOP keeps visits instant; only a
+  reset pays the boot.
 - **BAKE RULE: halt the guest with `/sbin/shutdown -y -g0 -i0` before copying the
   golden.** UFS carries no dirty flag the host can repair, so a golden captured
   from a killed emulator makes *every* visitor's boot run a full fsck — about
   4 minutes instead of 2. Note `/usr/ucb/shutdown` is a different, BSD-flavoured
   command that rejects `-y -g0 -i0`; use the absolute path.
 - The proof gate is the captured framebuffer through streamhost, never logs.
+- Driving the guest from the rig with `xdotool`: the OPEN LOOK xterm only takes
+  keyboard focus from a click on its **header**, and a `click` that presses and
+  releases within a millisecond is lost — use `mousedown; sleep 0.2; mouseup`.
+  While `X -tiga` runs, **it owns the keyboard**; the chipset X's windows keep
+  their focus but receive nothing until the board server exits. AMIX's
+  ALT-F<n> console-group switch does not work from under X.
 
 ## The pointer is absolute, through the guest's own X server
 
@@ -284,9 +359,14 @@ banner with a working pointer, this is it — reset the station.
 
 ## Open
 
-1. **Monochrome or colour** — operator's call. Monochrome is authentic and ships
-   today; colour costs a new pinned emulator build with working A2410 emulation
-   and is unverified.
+1. **Unify the two goldens.** The pointer work and the colour work each baked
+   their own golden from the same 2026-08-30 base: the pointer golden carries
+   the guest network config the `x11warp` loop needs (`/etc/inet/hosts`,
+   `xhost +slirphost`), the colour golden carries the `-tiga` session. The
+   shipping golden must carry both, and the pointer must then be re-proven
+   against the BOARD's X server at 1024x768 -- `XWarpPointer` is absolute
+   within whichever X server owns the screen, so this is expected to hold, but
+   expected is not measured.
 2. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
    2.1c/2.1p2a; this install is stock 2.1 (`0800430`).
 3. **Retronet.** The A2065 is now up on slirp for the pointer only
