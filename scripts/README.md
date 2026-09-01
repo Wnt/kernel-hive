@@ -182,6 +182,20 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 | `shmshot.py` | Screendump a `SH_CAPTURE=shm` tile by reading the seqlocked framebuffer its emulator publishes (no QMP, no X server) -> PPM. Fails loudly where the old x11 path returned a valid all-black image | box (**sync pair**) |
 | `serve-https-spa.sh` | One-shot HTTPS serving-plane bring-up: build SPA (`spa/`), deploy without replacing unrelated webroot content, mint local-CA cert, start HTTPS server. **`manifests` is NOT concurrency-safe — see below.** | workstation → box |
 
+> **NEVER `serve-https-spa.sh deploy` after a bare `npm run build`.** Only the
+> script's own `build` subcommand exports `VITE_INSTANA_*` into `vite build`; a
+> bare `npm run build` in `spa/` — which every quality-gate run does — emits a
+> `dist/` whose Instana key is an unsubstituted placeholder, and
+> `spa/index.html`'s bootstrap then takes its no-key path: **zero browser
+> telemetry**. `deploy` does not rebuild, so "gate, then deploy" used to ship
+> that keyless bundle over the live gallery in silence (2026-09-01, a full
+> debugging cycle). `deploy` now **refuses** a placeholder-carrying or
+> source-stale `dist/` — see `check_dist_is_publishable`, and
+> `docs/lab/INSTANA-VIEW-INVENTORY.md` §7b for the whole trap. The correct
+> incantation is always `serve-https-spa.sh build && serve-https-spa.sh deploy`.
+> (A checkout with no `registry/local.env` still builds and deploys keyless, on
+> purpose — it just says so out loud.)
+>
 > **It is not only the `manifests` subcommand — `deploy` publishes implicitly.**
 > `deploy` calls `publish_manifests` as part of its normal run, and it *also*
 > replaces the live SPA **bundle** with the publishing worktree's build, so a

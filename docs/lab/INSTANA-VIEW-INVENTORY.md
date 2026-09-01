@@ -319,6 +319,120 @@ aggregate half.
   `/home/wnt/kernel-hive/scripts/serve/pki/instana.token`; the credential is not
   missing.
 
+## 7a. `backendTraceId` — how a beacon joins a backend trace, from the agent's own bytes
+
+This is the mechanism every RUM↔trace row in §4 depends on, and **the vendor's
+documentation of it is wrong twice over**, so the authority here is the pinned
+agent build, read out of the self-hosted
+`/data/vms/streamhost/serve/webroot/vendor/instana-eum.min.js` (v1.8.1), and
+beacons captured off the wire with `scripts/visitor-sim/beacon-probe.mjs`.
+
+The two contradicting doc passages, both in `0250-monitoring-websites.md`:
+
+> (a) "If `enableW3CHeaders` is enabled … First, extract the **tracestate**
+> value from the current page's metadata traceparent and use it. If you cannot
+> retrieve tracestate, a 16-character long string … is generated."
+>
+> (b) "the Instana website monitoring script … parses the traceparent and
+> extracts the **parent-id** as backendTraceId."
+
+Neither is a usable spec. What the agent actually does, at init, in this order:
+
+```
+backendTraceId = <whatever ineum('traceId', …) set>
+              || <the 'intid' Server-Timing entry on the NAVIGATION timing entry>
+if (enableW3CHeaders && <meta name="traceparent"> parses)
+    backendTraceId = the meta's PARENT-ID          // 16 hex — the SPAN id
+```
+
+Three consequences worth more than either doc passage:
+
+1. **`tracestate` is never read.** The whole shipped bundle contains exactly one
+   occurrence of the string, inside the function that *writes* request headers.
+   Passage (a) is fiction for this build: injecting a
+   `<meta name="tracestate" content="in=…">`, or sending a `tracestate` response
+   header, changes nothing at all. Do not spend a day on it, as was nearly spent.
+2. **`ineum('traceId', …)` is not "ignored when W3C headers are on"** — it *is*
+   honoured, and then unconditionally overwritten two lines later by the meta
+   tag. Same outcome, different reason, and the difference matters if you are
+   trying to reason about a future agent build.
+3. **Passage (b) is right, and that is the bug.** Our traces are keyed by the
+   32-hex TRACE id — `SELECT COUNT(*) FROM span WHERE length(trace_id)=16`
+   returns 0, and structurally always will — so a page-load beacon carrying a
+   16-hex span id resolves to nothing, forever. Measured before the fix:
+   `ty pl` with `bt=7a0c8fb357f0a61f`, against a page whose meta traceparent was
+   `00-cefd3b7a93434c60151ea2ee6c2ad496-7a0c8fb357f0a61f-01`. Zero rows.
+
+**The fix is `ineum('enableW3CHeaders', false)`** in spa/index.html's bootstrap,
+which lets the `Server-Timing: intid;desc=<32-hex trace id>` fallback win — a
+header `scripts/serve/tracing_http.py` already emits on the very response that
+served the document. After: `ty pl` carries
+`bt=38ab72035bb1f7894e6ecb7ba49020a5`, the meta's trace id, resolving to that
+page load's own `serve.page` span.
+
+**XHR correlation does not depend on that flag**, which is the thing the docs
+make you fear changing. An `xhr` beacon's `bt` comes from the RESOURCE timing
+entry's `Server-Timing: intid`, on a code path that never consults it — verified
+unchanged across the flip in the same captures. The flag governs only whether
+the agent *also* appends `traceparent`/`tracestate` to outbound requests, which
+for us was pure harm: those appends collided with `khFetch`'s own real
+`traceparent` (see that module's "THE INSTANA COLLISION"). A beacon whose `bt`
+is absent entirely — `gallery-manifest.json`, `boot/index.json` — is correct, not
+a fault: those routes are outside the tracing allowlist, so there is no server
+span and no `Server-Timing` to read.
+
+**Nothing on our side was added for the vendor.** The meta tag, `traceresponse`
+and `Server-Timing` are all pre-existing parts of our own trace-context plane
+(`docs/lab/TRACE-CONTEXT.md` §4, §8). The fix removed a vendor flag; it did not
+introduce a dependency on vendor behaviour.
+
+### Re-measuring this
+
+`scripts/visitor-sim/beacon-probe.mjs` drives one real credentialed page load,
+captures every beacon POST to the vendor's reporting host, and resolves each
+`bt` against `traces.db` itself. It exits non-zero when a page-load beacon
+carries no `bt`, when any `bt` resolves to nothing, or when an outbound
+`traceparent` arrives comma-joined. Run it after ANY change to the traceparent
+meta injection, the `Server-Timing` header, the `ineum(...)` bootstrap, or the
+pinned agent version:
+
+```sh
+cd scripts/visitor-sim && node beacon-probe.mjs          # public gallery
+node beacon-probe.mjs --url https://<SH_HOST_IP>:8443 --insecure   # the LAN origin
+```
+
+It needs a credentialed session (the gallery answers 401 to an anonymous `/`);
+`docs/lab/VISITOR-SIM.md` covers making one.
+
+## 7b. The trap that silently ships ZERO telemetry
+
+**A bare `npm run build` in `spa/` produces a bundle with Instana entirely
+disabled, and `serve-https-spa.sh deploy` does not rebuild.** Only
+`serve-https-spa.sh build` exports `VITE_INSTANA_WEBSITE_KEY` /
+`VITE_INSTANA_EUM_REPORTING_URL` (from `registry/local.env`) around its `vite
+build`. Without them Vite leaves the raw placeholders in the emitted HTML and
+`spa/index.html`'s bootstrap takes its documented no-key path: no `ineum` stub,
+no vendor script tag, no beacon at all.
+
+So the sequence **"run the quality gate, then deploy"** — and the gate runs
+`npm run build` — publishes a keyless bundle over a keyed deployment, with no
+error anywhere. That happened on 2026-09-01 and cost a full debugging cycle
+chasing beacons that were never sent, while every server-side header was
+provably correct.
+
+`deploy` now refuses this (`check_dist_is_publishable` in
+`scripts/serve-https-spa.sh`), on two independent questions:
+
+| Condition | Behaviour |
+|---|---|
+| `dist/index.html` still holds a `%VITE_…%` placeholder **and** `INSTANA_WEBSITE_KEY` is set here | **refuses**, naming the placeholders and the one command that fixes it |
+| placeholders present, **no** key configured | deploys, with a loud NOTE. The keyless build is a documented, legitimate fallback for a contributor without `registry/local.env` — it just may never be published *silently* by a machine that has the key |
+| `dist/` older than `spa/src`, `index.html`, `package.json` or `vite.config.ts` | **refuses**; `ALLOW_STALE_DIST=1` overrides for a deliberate rollback |
+
+**The correct incantation remains `serve-https-spa.sh build && serve-https-spa.sh
+deploy`.** If you ran `npm run build` for any reason — a gate, a type check, a
+test — you must rebuild through the script before deploying.
+
 ## 8. Two things in this repo that these measurements contradict
 
 Landed here rather than left in a transcript, since a caveat stated only in chat

@@ -79,8 +79,8 @@
 //  every network call the app makes, so a bug in it is not a missing metric,
 //  it is a broken gallery.
 //
-//  THE INSTANA COLLISION, MEASURED NOT GUESSED. Both this patch and Instana's
-//  agent (instana.ts, `enableW3CHeaders: true`) want to own the outbound
+//  THE INSTANA COLLISION, MEASURED NOT GUESSED — AND NOW DESIGNED OUT.
+//  This patch and Instana's agent both used to want the outbound
 //  `traceparent` header, and reasoning from Instana's minified source alone
 //  is exactly the trap TRACE-CONTEXT.md §4 already fell into once ("asserted
 //  nowhere IBM or Instana publishes"). So this was run, not read: the real
@@ -95,35 +95,28 @@
 //      MORE RECENTLY wraps the other and executes FIRST, calling inward
 //      toward whichever patched EARLIER, which sits closer to the real
 //      network call and therefore has the LAST WORD.
-//    * So: if THIS patch installs before Instana's agent has loaded (the
-//      common case — this module is imported synchronously at the top of
-//      main.tsx; Instana's agent is a separately-fetched, non-parser-inserted
-//      `<script>` and therefore genuinely async per the HTML spec, `defer`
-//      notwithstanding, per spa/index.html's own comment on that tag), THIS
-//      patch ends up innermost. Instana's outer wrapper appends its headers
-//      first; this patch then runs `Headers.set('traceparent', ours)`
-//      afterward and OVERWRITES whatever Instana put there — verified: the
-//      wire header is our clean single value, Instana's X-INSTANA-*/
-//      tracestate headers are untouched beside it.
-//    * If the order is reversed — Instana's agent finishes loading and
-//      patches first — this patch becomes OUTER, sets the header first, and
-//      Instana's INNER `.append` then turns it into
-//      `"<ours>, 00-...-03"` — two comma-joined values in one header. That is
-//      not a valid single `traceparent` (§1), so both this box's parser
-//      (`scripts/serve/tracecontext.py`) and Instana's own backend treat it
-//      as malformed and start a fresh trace for that one call — exactly the
-//      "malformed → new trace, never refuse the work" rule TRACE-CONTEXT.md
-//      §1 already states. The request itself is never broken either way.
-//    * So the two orders differ only in whether ONE call's join survives, not
-//      in whether anything breaks. This module is installed as the very
-//      first import evaluated by main.tsx specifically to bias toward the
-//      winning order, but does not chase a hard guarantee (e.g. an inline
-//      `<script>` ahead of Instana's own bootstrap in index.html) — that
-//      would mean re-implementing trace-id minting and span buffering
-//      outside this module in raw HTML-inline JS, a second implementation of
-//      exactly the kind this module exists to stop having. A best-effort win
-//      that degrades to "no join, still no breakage" was judged the better
-//      trade.
+//    * So the outcome depended on a LOAD RACE. This patch innermost (the
+//      common case): our `Headers.set` runs last and wins, one clean value.
+//      Reversed: Instana's inner `.append` turns our header into
+//      `"<ours>, 00-...-03"`, two comma-joined values that are not a valid
+//      single `traceparent` (§1), so this box's parser
+//      (`scripts/serve/tracecontext.py`) and Instana's backend both treat it
+//      as malformed and start a fresh trace for that ONE call. The request is
+//      never broken either way; only the join is lost, and only sometimes.
+//
+//  The race is gone as of the `enableW3CHeaders: false` change in
+//  spa/index.html (read that call's own note for why the flag had to move):
+//  the agent's header injector only emits `traceparent`/`tracestate` when
+//  that flag is on. With it off it adds its `X-INSTANA-*` headers and nothing
+//  else, our server ignores those, and THIS MODULE OWNS `traceparent`
+//  OUTRIGHT — in both install orders, with no race left to bias against.
+//  The finding above is kept because it is the evidence, and because it is
+//  what to re-measure if anyone ever turns the flag back on.
+//
+//  Nothing about the RETURN leg changed: `Server-Timing: intid` is still what
+//  Instana's own agent reads off the response to correlate an xhr beacon, on
+//  a code path that never consults `enableW3CHeaders`. Verified on the wire
+//  with scripts/visitor-sim/beacon-probe.mjs, before and after the flip.
 // ============================================================================
 
 import { IGNORE_URL_PATTERNS, reportBackendTrace } from './instana';

@@ -399,3 +399,46 @@ walk-in clone), so it is unaffected by that warm-up window.
   resulting session as a Playwright storage-state — nothing existing needed
   an unattended, non-interactive way into an invited session before this
   tool's `station` journey did.
+
+## beacon-probe — the diagnostic beside the traffic generator
+
+`scripts/visitor-sim/beacon-probe.mjs` shares this package's Playwright install
+and its cached invite session, but it is the opposite kind of tool: visitor-sim
+*makes* traffic, beacon-probe *reads one page load in full detail*.
+
+It drives a single credentialed page load, captures every beacon the Instana EUM
+agent POSTs to the vendor's reporting host, decodes the tab-separated wire format,
+and then answers the question no document can:
+
+- does the `ty pl` (page-load) beacon carry a `backendTraceId`, and does that id
+  **exist** in `traces.db`?
+- do the `ty xhr` beacons still resolve too — i.e. did a change to the page-load
+  path regress the in-page correlation that already worked?
+- does our outbound `traceparent` reach the wire as one clean value, or has a
+  second writer comma-joined it (`spa/src/analytics/khFetch.ts`)?
+
+It resolves ids against the store itself (`/data/vms/streamhost/serve/traces.db`,
+bind-mounted, read-only) and exits non-zero on a failure, so it can be used as an
+acceptance check rather than something to eyeball.
+
+```sh
+cd scripts/visitor-sim
+node beacon-probe.mjs                                   # public gallery
+node beacon-probe.mjs --url https://<SH_HOST_IP>:8443 --insecure   # LAN origin
+node beacon-probe.mjs --json /tmp/capture.json          # keep the raw beacons
+node beacon-probe.mjs --traces-db ''                    # off-box: capture only
+```
+
+**Run it after any change to** the `<meta name="traceparent">` injection
+(`scripts/serve/static_files.py`), the `traceresponse` / `Server-Timing` headers
+(`scripts/serve/tracing_http.py`), the `ineum(...)` bootstrap in
+`spa/index.html`, or the pinned EUM agent version. The correctness argument for
+all of those is a beacon on the wire and nothing else —
+`docs/lab/INSTANA-VIEW-INVENTORY.md` §7a records what that measurement found and
+why the vendor's own documentation could not be used.
+
+Two things that will otherwise read as faults and are not: a beacon for a route
+outside the tracing allowlist (`gallery-manifest.json`, `boot/index.json`) has
+**no** `bt`, correctly — there is no server span to point at; and an anonymous
+run captures the *login page's* beacons, because the gallery answers 401 to an
+unauthenticated `/`. Always pass a session.
