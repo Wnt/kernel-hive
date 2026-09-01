@@ -846,8 +846,26 @@ serve.page                                       (python, root — §4/§4a: nam
    │  ├─ encode.first_key                internal
    │  ├─ transport.first_frame           internal
    │  └─ input.first_edge                internal
-   └─ station.open.toFirstFrameMs        internal (browser, the metric's twin)
+   └─ (no browser metric span — see below)
 ```
+
+**Since 2026-09-01 there is no `station.open.toFirstFrameMs` span here**, and
+traces captured before that date are not comparable with later ones on this
+point. It used to sit at the bottom of that tree as "the metric's twin", and it
+was worse than redundant: it was pushed onto the active-span stack, so the
+signaling fetch made during the connect became its CHILD — a captured operator
+trace (`fc4a9d74…`, win311) shows `http.client.request` -> `serve.signal`
+parented by a clock. A measurement cannot cause an HTTP call, and its wall
+duration is not work. The number is now an OTel **span event** on
+`station.connect`, timestamped at the moment the frame was painted, carrying
+`kh.metric.ms`. See docs/ANALYTICS.md §6, "A measurement is not a span".
+
+The practical consequence for reading a tree: **the browser's connect timing is
+no longer a row you can eyeball beside `guest.resume`** — select the
+`station.connect` span in `/admin/observability` and read its events pane. What
+you gain is that `station.connect`'s children are now only real work, so the
+question "was it slow because the guest was asleep" is answered by comparing
+spans that all actually happened.
 
 The daemon emits one more trace that has no browser in it at all, because a
 station boots with nobody watching — a root `streamhost.start` with
@@ -856,10 +874,11 @@ station boots with nobody watching — a root `streamhost.start` with
 a visitor's trace: inventing that parent would be the false causal claim §8
 forbids.
 
-Four processes, one trace id, one flame graph. The browser's own
-`station.open.toFirstFrameMs` span sits beside the daemon's `guest.resume`, and
-the question "was it slow because the guest was asleep" stops being a
-correlation exercise.
+Four processes, one trace id, one flame graph. The browser's time-to-first-frame
+is a span event on `station.connect` (above), the daemon's `guest.resume` is a
+real span under `streamhost.session`, and the question "was it slow because the
+guest was asleep" stops being a correlation exercise — while staying a comparison
+between a measurement and a piece of work, rather than pretending both are work.
 
 **A sampled input edge (§3.2) is its OWN small trace, not more branches under
 `station.connect`.** Roughly 1 key or click edge in `SAMPLE_N` produces:
