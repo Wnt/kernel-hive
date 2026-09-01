@@ -416,7 +416,7 @@ What one live trace's resource attributes looked like before and after
 | `service.version` **before** | `main@95ee4750` | *absent* | *absent* |
 | `service.version` **after** | `main@95ee4750` | `95ee4750adb3…` | `45388f8620…` |
 | `service.instance.id` **after** | the tab's session id | the box | **the station** (`win311`) |
-| `host.name` **after** | `pve-nvme` | `pve-nvme` | `pve-nvme` |
+| `host.name` **after** | `labhost` | `labhost` | `labhost` |
 
 The language table is now data (`scripts/serve/otlp_resource.py`), and a service
 nobody has declared reports **no** language rather than being guessed into one.
