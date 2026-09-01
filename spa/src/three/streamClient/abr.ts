@@ -16,6 +16,8 @@ import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { formatStatsLine } from './telemetry';
+import { dueForVitals } from './vitals';
+import { sampleVitals } from './vitalsSample';
 import {
   T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
@@ -238,6 +240,16 @@ export function tickStatsImpl(this: StreamClient): void {
 
   // ---- banner state machine (Section 2.6) ----
   this.updateBanner(now);
+
+  // ---- continuous vitals sample -> the time-series lane ----
+  // ITS OWN CLOCK, faster than the log line below (1 s against 5 s), because
+  // the two answer different questions. The log line is prose for a human
+  // reading clientlog.jsonl after a session died; this is a series something
+  // can plot and threshold, and at 5 s an ABR downshift and the recovery from
+  // it can both fall between two samples. Both survive: every existing
+  // stream-debugging runbook greps for the log line, and removing it to
+  // celebrate the new lane would break those on the day it is least proven.
+  if (dueForVitals(now)) sampleVitals(this, now, decodeQueue);
 
   // ---- periodic telemetry sample -> server-side rolling log ----
   // The overlay's diagnostics live ONLY in the browser, so a session that dies

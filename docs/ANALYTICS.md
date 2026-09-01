@@ -2100,6 +2100,288 @@ pivot is answered by our own store meanwhile.
 
 ---
 
+## 8.6 The VITALS plane — the fourth pillar, and the only continuous one
+
+**Shipped 2026-09-01.** Traces answer "what happened in this call". Logs answer
+"what did a producer say while it ran". Neither can answer *"was the picture 30
+fps and 2 Mbit/s for the last ten minutes, and did the audio ever run dry"* —
+because a stream is **continuous**. There is no call to time, and per-frame
+spans would be thousands a second. That question needs a **time series**, and
+this is it: `scripts/serve/vitals.py`, `vitals.db`, `POST /vitals` in,
+`/auth/vitals/*` out.
+
+### Why there are TWO metric lanes, and which question goes to which
+
+This is the distinction most likely to be lost, so it is stated first.
+
+| | `instana_metrics.py` → `analytics.db` | `instana_vitals.py` → `vitals.db` |
+|---|---|---|
+| shape | bucketed counters | timestamped samples |
+| resolution | **one day** | **5 seconds** |
+| forwarded | with the 5-minute trace timer | its own **10-second** timer |
+| answers | "how many restores yesterday, and how slow" | "is win311 streaming cleanly *right now*" |
+
+The day lane is not a coarse version of the vitals lane and must not be
+"improved" into one: **its counters carry no per-sample timestamp at all**, only
+a day bucket, and its own docstring says emitting them at any finer resolution
+would be a lie. There is no finer data underneath it. The vitals lane is a
+genuinely new shape beside it.
+
+### The single biggest win, and it was already being computed
+
+Every video and transport number below had been computed once every five
+seconds since the ABR controller was written — and rendered into a
+140-character string that went to `clientlog.jsonl`. `formatStatsLine()` is
+prose: nothing could plot it, alert on it, or compare two stations on it.
+`spa/src/three/streamClient/vitalsSample.ts` takes **the same tick** — on its
+own faster clock, see below — and emits the numbers as numbers. It adds no
+measurement to the hot path; it stops throwing away the ones already there.
+
+### The inventory — what is measured, and what is not
+
+Thirty-three vitals, catalogued once in `scripts/serve/vitals_schema.py`
+(`CATALOGUE`), which is the single source for the store column, the OTLP metric
+name, its unit and its instrument kind.
+
+- **Video** — decode fps, **paint fps** (kept separately: frames can decode and
+  never reach the screen), received kbps against the encoder's peak cap, decode
+  latency, decode-queue depth, loss %, window loss %, tier/crf/w/h/fps-cap, and
+  the cumulative counters: frames dropped, freezes, decode errors, session
+  rebuilds, key AUs.
+- **Transport** — RTT, its floor, its excess over that floor, its window peak,
+  and the breach-tick count. All from the application-level ping already on
+  `input.wire` and from frame_id gaps.
+- **The daemon's own view, relayed free** — `send_kbps`, server-side QUIC path
+  RTT, skipped frames and the ABR overall score. These ride KIND_PARAMS subtype
+  2, which `transport/mod.rs` has sent at 1 Hz per session all along and which
+  only the ABR skip-credit and the Ctrl+N overlay ever read. **This is why the
+  first cut of this lane needed no daemon change and no fleet rollout.**
+  Server-measured send rate beside client-measured receive rate is the pair
+  that settles "is it the network or the box" without a repro.
+- **Audio** — context running, **play-head lead**, underruns, packet-sequence
+  gaps, frames scheduled. Before this, audio continuity was **unfalsifiable**:
+  `audioPlayer.ts` reported the first sample heard and the first sample blocked
+  and nothing ever again, so a session that fell silent thirty seconds in
+  looked exactly like one that played for an hour. Each counter is read off a
+  value the player already had — the underrun counter is one increment inside
+  the existing anti-underrun clamp, which *is* the moment the visitor heard a
+  gap.
+- **A/V sync — measurable, and here is why.** The Opus packet header's `ts_us`
+  is, in `audioPlayer.ts`'s own words, the "server µs epoch (shared with the
+  video capture ts)", and the AU header's `ts` is the same stamp. Both media
+  carry a capture time off **one clock**, so their skew through our pipeline is
+  a subtraction — not a clock-sync problem. Two imprecisions are stated rather
+  than buried: the video operand is the last *decoded* frame, not the last
+  *composited* one (up to one frame interval, ~33 ms), and the audio operand is
+  the last packet *scheduled*, so `audio_lead_ms` is subtracted to bring both
+  to what the visitor is experiencing now. **±40 ms is inside that noise; 500 ms
+  is real.** The u32 µs counter wraps every 71.6 minutes and the difference is
+  read as signed 32-bit, which is right for any true skew under ±35.8 minutes.
+
+  **What the first live run actually showed, and what it does not prove.** On
+  win311 the skew read −309 ms early and drifted to −7,510 ms, while
+  `audio_frames` stayed pinned at 26,880 and `audio_lead_ms` at 0 — i.e. the
+  audio pipeline delivered one buffer and stopped, and the vital tracked video
+  walking away from a frozen audio clock. That is the metric behaving exactly
+  as designed on a **stalled** stream, and it is a useful confirmation that
+  both operands are live and on one epoch. It is **not** a calibration: the
+  sim runs muted, so the absolute zero of this vital has never been checked
+  against a known-good synchronised stream. Until it has been, read `av_skew_ms`
+  as a **trend** — a number that walks away from where it started means audio
+  and video have decoupled — and not yet as an absolute millisecond offset.
+
+**What is NOT observable, checked rather than assumed** — this is listed in
+`vitals_schema.py` too, so nobody rediscovers an absence:
+
+- WebTransport byte/packet counters, estimated send rate, smoothed/min RTT,
+  datagram loss. **`WebTransport.prototype.getStats` is undefined** in the
+  Chrome this gallery serves (measured, Chrome 150).
+- QUIC congestion window and lost-packet count daemon-side: the wire field
+  exists and is hardcoded 0 — wtransport 0.7 exposes only `rtt()`.
+- x264 QP: the wire byte exists and is hardcoded `0xFF` "unknown".
+- **Encode latency and capture rate — the one real gap.** Both *are* measured
+  on the box (a 120-frame window in `encode/worker.rs` prints p50/p95/max and
+  fps) and both go to **journald as text and nowhere else**. Closing it needs a
+  daemon change plus a fleet rollout, so it is named as follow-up rather than
+  half-built; the columns are deliberately absent, because an always-NULL
+  column reads as "measured, and it was nothing".
+- Audio packet *loss* as distinct from *gaps*: a client cannot tell a lost
+  packet from server-side silence, and does not claim to.
+
+### The store — wide, not tall, and what that costs
+
+The obvious shape for a metric store is `(ts, name, value)`. It was rejected on
+two grounds. **One sample is one observation** — every number is measured at
+the same instant by the same tick, so "what was the fps when the RTT peaked" is
+a column comparison on one row rather than a self-join. And **size**: measured,
+a wide row is **511 bytes** with its indexes; the same sample tall is 33 rows
+each repeating a timestamp, a station, a session and a metric name.
+
+The cost of wide is that adding a vital is a **migration**, not an insert. That
+is what `vitals_schema.migrate()` is for, and it inherits verbatim the rule that
+crash-looped this plane on 2026-09-01: `CREATE TABLE IF NOT EXISTS` does not
+reshape a live table, and SCHEMA may never carry an index over a migrated
+column. `scripts/test_vitals_plane.py` pins it by building a store missing four
+catalogue columns and requiring that today's code opens it.
+
+### The sample interval — chosen from the signal, not from a budget
+
+**One second.** The interval is set by what the series has to make *visible*,
+and the events in question are short: a freeze latches after **250 ms** without
+decoded output, an ABR downshift and the recovery from it both happen inside the
+controller's own **3-second** rolling window, and an audio underrun is
+instantaneous. At the 5 s cadence the existing log line uses, a downshift *and*
+its recovery can both fall between two samples and the series draws a flat line
+straight through a fault the visitor saw. At 1 s every ABR window contains three
+samples and no freeze episode can hide entirely between two.
+
+It is **not faster than 1 s**, and the reason is information rather than cost:
+four of the vitals in every row are the daemon's own view, and
+`transport/mod.rs` emits those at exactly **1 Hz**. Sampling faster would repeat
+half of each row verbatim.
+
+Vitals flow for **any station with a live session**. There is no sampling,
+throttling or admission layer on top of that, deliberately — the sessions most
+worth having are the bad ones, and every such layer drops them first.
+
+### What it costs — recorded as a fact, not used as a constraint
+
+**511 bytes/row**, measured, worst case with every one of the 33 columns
+populated. This gallery has one visitor; none of the numbers below is a budget
+anything is sized against, and they are written down for whoever needs them the
+day that changes.
+
+| load | rows/day | MB/day | at 30-day retention |
+|---|---|---|---|
+| realistic (one visitor, ~1 h/day) | 3,600 | **1.8 MB** | 0.06 GB |
+| the measured peak (4 concurrent, 24 h) | 345,600 | 177 MB | 5.3 GB |
+| hypothetical saturation (all 71, 24 h) | 6,134,400 | 3.1 GB | 94 GB |
+
+`/data` has ~166 GB free. The realistic row is the one that describes this box:
+the measured busiest day in `clientlog.jsonl` was 2,262 five-second samples,
+which at 1 Hz is a couple of megabytes.
+
+**Cardinality** is the one limit that is *not* ours to waive, because it is the
+vendor's. A series is (metric × station × session), and `session` is the only
+unbounded term — which is exactly why it rides as a **data-point attribute** and
+never in the resource. In the resource each session id would mint a new
+OpenTelemetry *entity*, and entities are what an infrastructure backend keeps
+forever. One live stream is 33 series; all 71 at once would be 2,343.
+
+**Retention is 30 days — the longest window in the plane, not the shortest.**
+The instinct with dense data is to keep a tight window, but density is a reason
+to size the disk, not to throw the data away. A month makes *"has this station
+always been like this, or did it change?"* answerable, which is the question
+this gallery actually asks; three days would have answered only *"is it bad
+now"*, which the `live` read already answers for free. The runaway backstop
+(`MAX_ROWS`) is what handles the case a tight retention used to: a producer
+stuck in a flush loop is a **fault**, and a fault gets a ceiling — set well
+above any plausible real load so that hitting it is diagnostic rather than
+routine.
+
+**There is no downsampling.** A rollup is a second schema, a second prune and a
+second thing to be wrong. If the gallery ever gets real traffic the honest first
+move is a bigger disk and the second is a rollup, in that order.
+
+### The read surface
+
+Admin-only, mirroring the log lane's four leaves so one surface teaches the
+other: `series` (the chart read — **oldest first**, because a time series is
+read as a line and every other store here answers newest-first), `live` (one
+row per stream reporting in the last two minutes — the triage read), `facets`
+(what is in the window, the catalogue, and **coverage**: a store holding a
+thousand rows from one 40-second session is a souvenir, not monitoring), and
+`otlp` (the same page as OTLP/JSON, so "are the numbers Instana shows the
+numbers we sent" is answerable without reading a forwarder log).
+
+Ingest is **open**, like `/traces` and `/analytics`, and walk-ins are allowed:
+the visitor whose picture is breaking up is the one whose numbers matter, and
+they hold no admin session.
+
+### The Instana leg, and the cadence constraint that shaped everything
+
+    "The metric timestamp that is recorded for OpenTelemetry metrics is the
+     timestamp of ingestion into Instana."  — 0307-opentelemetry-signals.md:98
+
+Instana stamps a metric point when it **arrives**, not when we measured it.
+Everything below follows from that one sentence.
+
+**The five-minute forwarder could not carry this.** It would hand Instana 60
+consecutive 5-second samples per stream, all stamped with one ingest moment:
+sixty distinct measurements of a changing stream collapsed onto one instant.
+Not a degraded chart — a wrong one, and one that would look perfect in
+`--dry-run`. So the vitals leg has **its own timer at 10 seconds**
+(`kh-instana-vitals.timer`), running `instana-forward.py --scheduled
+--no-traces --no-logs --no-metrics`.
+
+**Ten**, because that is Instana's own floor: infrastructure metrics on a
+custom dashboard have "10 second resolution" (`0261`), and the Saturation SLO
+blueprint samples at 10 s (`0262`). Faster buys resolution the backend will not
+display; slower throws away resolution already collected.
+
+Note the **asymmetry, and that it is deliberate**: our store samples at 1 Hz,
+Instana gets one point per 10 s tick. That is not a resolution we traded away to
+save anything — it is the finest thing an ingest-stamped backend can represent,
+and it is Instana's own documented floor. The good signal lives in our store;
+Instana gets what Instana can display.
+
+A run ships **one point per (station, session, metric)** — the newest sample —
+because "this is the value now" is the most a run can truthfully say when the
+timestamp will be replaced on arrival. The intermediate samples are not lost:
+they are in **our** store at full resolution with the producer's own clock,
+which is the whole point of having one. `INSTANA_VITALS_ALL=1` ships every
+unsent sample instead, for a payload proof or a backfill, with its cost stated —
+backfilled points arrive stamped *now*, so they land as a spike at the current
+instant, not as history.
+
+The watermark is therefore called `lastVitalsSeenSeq`, **not** `lastVitalsSeq`:
+in the default mode it records how far the leg has *looked*, not what it has
+delivered. Naming it after a guarantee this lane does not make is exactly the
+mistake that cost the trace lane half of every trace until 2026-09-01.
+
+**Cost per tick, measured:** one point per metric per live stream. At the
+measured peak of four streams that is 132 data points, ~40 KiB — three orders
+of magnitude under the measured 5 MiB agent wall, which is why this leg reuses
+`instana_batch`'s planner unchanged. With nothing streaming — the museum's
+normal state — a tick runs one indexed query, sends nothing and exits.
+
+### One station, one entity — the reason the export looks like this
+
+> "Instana creates an OpenTelemetry entity from the metrics data. OpenTelemetry
+> spans automatically link to this entity by using the `service.name` and
+> `service.instance.id` resource attributes… Correlation chain: OpenTelemetry
+> span > OpenTelemetry entity > Host entity"
+> — `0311-…-infrastructure-correlation.md`:236-248
+
+**OTLP metrics alone create a first-class monitored entity; no spans are
+needed.** So `vitals_otlp.py` puts the **station id** in `service.instance.id`,
+and that one choice turns 71 exhibits into 71 entities rather than one blurred
+service with a label. They are reachable at *Infrastructure → Analyze
+infrastructure → OpenTelemetry*, or by Dynamic Focus `entity.type:opentelemetry`.
+
+The **session** id is a data-point attribute and never part of the resource:
+session ids are unbounded over time, and in the resource each one would mint a
+new *entity* — the thing an infrastructure backend keeps forever.
+
+Instrument kinds are the catalogue's: Gauge and Sum are what Instana's acceptor
+takes (exponential histograms are unmentioned in the corpus and treated as
+unsupported). Cumulative counters export as **monotonic cumulative Sums** —
+exported as a gauge, "4 frames dropped so far" renders as a level and means
+nothing, and only the axis lies, which is why the test pins it.
+
+### Out of scope, deliberately, and not foreclosed
+
+Discrete degradations — a stall, a decode error, an ABR downshift, blocked
+audio — are **events**, and they already have a lane
+(`analytics/streamEvents.ts`); the planned Instana **Event SDK** integration is
+a follow-up, not part of this. What this lane carries is the **continuous level
+such an event would be a threshold on**, which is exactly the number that
+follow-up will fire against. The same is true of SLOs: infrastructure metrics
+support the Saturation blueprint at 10 s sampling, and nothing here forecloses
+one.
+
+---
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
@@ -2360,6 +2642,15 @@ real wire from one credentialed page load, which is where to look next.
 | `spa/src/analytics/instanaStreamEvents.ts` | the Instana mirror: thin, isolated, deletable, and the three vendor rules that fail silently |
 | `spa/src/three/streamClient/analyticsEvents.ts` | the stream client's call sites, kept out of the load-bearing decode/transport modules |
 | `scripts/test_stream_event_intake.py` | proves every event name and attribute survives the REAL `/traces` and `/analytics` validators |
+| `scripts/serve/vitals_schema.py` | the vitals CATALOGUE — column, OTLP metric name, unit and instrument kind, in one place — plus the SCHEMA built from it and the generic add-a-column migration (§8.6) |
+| `scripts/serve/vitals.py` | the time-series store: open ingest, admin reads, 3-day prune, the runaway backstop |
+| `scripts/serve/vitals_read.py` | the four admin leaves — `series`, `live`, `facets`, `otlp` — and the filter whitelist beside the store it filters |
+| `scripts/serve/vitals_otlp.py` | stored rows → OTLP `resourceMetrics`; the file where `service.instance.id = station` turns each exhibit into its own OpenTelemetry entity |
+| `spa/src/three/streamClient/vitals.ts` | the browser sink: queue, 20 s flush, pagehide keepalive, fold-back on network failure, and the u32 capture-clock wrap |
+| `spa/src/three/streamClient/vitalsSample.ts` | one ABR tick → one vitals row; the file that changes when a vital is added, with no I/O in it |
+| `scripts/observability/instana_vitals.py` | the fourth OTLP leg, and the cadence argument — why 10 s, why latest-only, and why the watermark is called `Seen` |
+| `scripts/observability/kh-instana-vitals.{service,timer}` | the 10-second carrier, separate from the 5-minute one because Instana ingest-stamps metrics |
+| `scripts/test_vitals_plane.py` | the migration crash-loop test, the intake rules, and the OTLP entity/instrument-kind pins |
 | `spa/src/ui/fleetFindEpisode.ts` | the `fleet.find` episode |
 | `spa/src/scene/hallEngagement.ts` | the `hall.navigate` episode, and what "approached" means |
 | `spa/src/ui/posterReadEpisode.ts` | the `poster.read` episode and the reversal counter |

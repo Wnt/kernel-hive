@@ -52,6 +52,8 @@
 // ============================================================================
 
 import { AudioPlayer } from './streamClient/audioPlayer';
+import { beginVitals } from './streamClient/vitals';
+import { BUILD_ID } from '../analytics/build';
 import {
   moveWireSnapshotImpl, noteMoveWireImpl, sendButtonImpl, sendKeyScancodeImpl,
   sendMoveAbsImpl, sendMoveRelImpl, sendRehomeHintImpl, sendWheelImpl,
@@ -233,6 +235,10 @@ export class StreamClient {
   freezeInInterval = false;
   frozen = false;
   lastDecodeOutAt = 0;
+  /** Capture stamp (server µs epoch) of the last DECODED frame — the video
+   *  operand of the A/V skew vital, against `audioPlayer.vitals().tsUs` off
+   *  the same clock. Raw u32; the wrap is vitalsSample.ts's problem. */
+  lastVideoTsUs: number | null = null;
   /** last silent-stall decoder rebuild (rate limit for the self-heal). */
   lastStallRebuildAt = 0;
   /** Consecutive silent-stall decoder rebuilds that produced no output since.
@@ -338,6 +344,10 @@ export class StreamClient {
     this.stationId = cfg.osId ?? null;
     // onError mirrors the original inline `this.stats.lastError = …` writes.
     this.audioPlayer = new AudioPlayer((msg) => { this.stats.lastError = msg; });
+    // Name this session's vitals producer BEFORE anything can sample one. The
+    // station id becomes the OTLP `service.instance.id`, i.e. the field that
+    // makes this exhibit its own entity (docs/ANALYTICS.md §8.6).
+    beginVitals(this.stationId ?? 'unknown', BUILD_ID);
     // Feature detection, deliberately not a browser/UA check. This also catches
     // Firefox for Android, where WebTransport exists but VideoDecoder does not.
     if (typeof VideoDecoder === 'undefined') {

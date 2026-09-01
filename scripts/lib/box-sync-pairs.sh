@@ -192,7 +192,8 @@ box_sync_load_pairs() {
     config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
     usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py eum_proxy.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
     tracing.py tracing_http.py \
-    logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py; do
+    logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py \
+    vitals.py vitals_schema.py vitals_otlp.py vitals_read.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
@@ -263,6 +264,13 @@ box_sync_load_pairs() {
   # decision — docs/lab/INSTANA-VIEW-INVENTORY.md §2.
   box_sync_add_pair kh-instana-forward-unit scripts/observability/kh-instana-forward.service /etc/systemd/system/kh-instana-forward.service exact repo daemon-reload
   box_sync_add_pair kh-instana-forward-timer scripts/observability/kh-instana-forward.timer /etc/systemd/system/kh-instana-forward.timer exact repo daemon-reload
+  # The VITALS leg is a THIRD carrier and a third pair, not a flag on the first,
+  # because its cadence is different by two orders of magnitude: Instana stamps
+  # metric points at INGEST, so the tick period IS the resolution in the tenant
+  # and a five-minute batch of five-second samples would land as one instant.
+  # 10 s; the whole argument is in scripts/observability/instana_vitals.py.
+  box_sync_add_pair kh-instana-vitals-unit scripts/observability/kh-instana-vitals.service /etc/systemd/system/kh-instana-vitals.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-vitals-timer scripts/observability/kh-instana-vitals.timer /etc/systemd/system/kh-instana-vitals.timer exact repo daemon-reload
   box_sync_add_pair kh-trace-ship-unit scripts/observability/kh-trace-ship.service /etc/systemd/system/kh-trace-ship.service exact repo daemon-reload
   box_sync_add_pair kh-trace-ship-timer scripts/observability/kh-trace-ship.timer /etc/systemd/system/kh-trace-ship.timer exact repo daemon-reload
   box_sync_add_pair solaris-cdrv streamhost/guest-agents/solaris/cdrv.py /root/cdrv.py exact repo

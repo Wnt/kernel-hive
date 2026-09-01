@@ -53,6 +53,20 @@ def bind_logs(store) -> None:
     _LOGS = store
 
 
+# The vitals store, bound the same way and for the same reason as the two
+# above. A plane deployed before this pillar existed must still answer
+# /auth/traces/* and /auth/logs/*, so it is a third binder rather than a third
+# argument to one — the state "traces but no vitals" has to stay representable.
+_VITALS = None
+
+
+def bind_vitals(store) -> None:
+    """Give the auth surface the vitals store to read. 503 rather than 404 when
+    unbound, so "not deployed yet" and "no such route" stay different answers."""
+    global _VITALS
+    _VITALS = store
+
+
 COOKIE_NAME = "osg_session"
 BODY_CAP = 64 * 1024
 JSON = "application/json"
@@ -266,6 +280,22 @@ def _route(handler, path: str, service, user, body: dict) -> None:
         import logs_read
 
         logs_read.route(_LOGS, path[len("/auth/logs/") :], body, lambda code, obj: _reply(handler, code, obj))
+        return
+
+    # ---- vitals (docs/ANALYTICS.md) ---------------------------------------
+    # The fence again, one pillar over, for a slightly different reason: a
+    # vitals sample carries no stack and no identity, but it does say which
+    # station a named session was on and how well it was working, minute by
+    # minute. That is a movement log if you read enough of it, so it leaves the
+    # box through these routes and no other. The route body lives in
+    # serve/vitals_read.py.
+    if path.startswith("/auth/vitals/"):
+        if _VITALS is None:
+            _reply(handler, 503, {"error": "vitals store unavailable"})
+            return
+        import vitals_read
+
+        vitals_read.route(_VITALS, path[len("/auth/vitals/") :], body, lambda code, obj: _reply(handler, code, obj))
         return
 
     if path == "/auth/invites/create":

@@ -32,6 +32,7 @@ import linecov
 import logs
 import probes
 import traces
+import vitals
 from static_files import MIME
 
 import analytics
@@ -104,6 +105,23 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
                 return True
             n = stores["logs"].record(obj) if isinstance(obj, dict) else 0
             handler._send(200, json.dumps({"ok": True, "logs": n}), MIME[".json"], cache=False)
+            return True
+
+        # POST /vitals — one tab's stream-health SAMPLES, on a fixed cadence
+        # rather than on an event. Open for exactly the reason /logs and
+        # /traces are, and here the argument is at its strongest: the visitor
+        # whose picture is breaking up is the one whose numbers are worth
+        # having, and they hold no admin session. Reads live behind
+        # /auth/vitals/* (serve/vitals_read.py).
+        if path == "/vitals":
+            if _bad_origin(handler, public_origin):
+                return True
+            obj, err = handler._read_json_body(vitals.BODY_MAX)
+            if err:
+                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+                return True
+            n = stores["vitals"].record(obj) if isinstance(obj, dict) else 0
+            handler._send(200, json.dumps({"ok": True, "samples": n}), MIME[".json"], cache=False)
             return True
         return False
 
