@@ -247,6 +247,23 @@ def cmd_exec(argv):
         # address. Extra argv passes through (--timeout).
         r = subprocess.run(["python3", NEWSOSEXEC, c["dir"], cmdline, *argv[2:]])
         sys.exit(r.returncode)
+    if kind == "serial_shell":
+        # hpuxvue: the checkpoint bakes a LIVE root session on the guest's
+        # serial line (no getty to log in to, and Mosaic is that shell's child,
+        # so the client must never end the session). One command, sentinel
+        # framed, the guest's exit code; 125 when the line is wedged. The
+        # station DIRECTORY is the address. Extra argv passes through
+        # (--timeout).
+        import hpuxvueexec
+
+        timeout = hpuxvueexec.DEFAULT_TIMEOUT
+        if "--timeout" in argv[2:]:
+            timeout = float(argv[argv.index("--timeout") + 1])
+        code, out, diag = hpuxvueexec.run(c["dir"], cmdline, timeout)
+        sys.stdout.write(out)
+        if diag:
+            sys.stderr.write("labctl exec: " + diag + "\n")
+        sys.exit(code)
     if kind == "serial_getty":
         # rhapsody: a getty on the guest's COM1 (`<dir>/serial.sock`), one login
         # session per command, sentinel-framed capture, the guest's exit code.

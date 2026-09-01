@@ -200,6 +200,11 @@ export interface StreamClientStats {
 export interface StreamClientConfig {
   /** HTTP(S) endpoint returning the signaling doc (JSON or bare base64 hash). */
   signalEndpoint: string;
+  /** The station's registry id, when the caller has one (useStreamhostSession
+   *  always does). Carried only as far as `inputTrace.ts`'s sampled-edge meta
+   *  (docs/ANALYTICS.md §8.1) — never a key or a coordinate, just which
+   *  exhibit a sampled `input.edge` trace belongs to. */
+  osId?: string;
   /** Called for every decoded frame. OWNERSHIP TRANSFERS: the callee closes it. */
   onVideoFrame: (frame: VideoFrame) => void;
   /** Guest resolution changed (drives letterbox math + aspect). */

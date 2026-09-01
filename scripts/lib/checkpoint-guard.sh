@@ -47,6 +47,10 @@ CPG_LABEL="${CPG_LABEL:-golden}"
 # state takes the station down instead of merely cold-booting it.
 CPG_STAGING_LABEL="${CPG_STAGING_LABEL:-cpg-staging}"
 CPG_DIRTY_TEXT="${CPG_DIRTY_TEXT:-checkpoint-guard-dirty}"
+# Command that moves THIS guest's framebuffer when typing cannot reach it; run
+# only after the keystrokes fail. docs/lab/checkpoint-guard.md, "When typing
+# cannot dirty the guest".
+CPG_DIRTY_CMD="${CPG_DIRTY_CMD:-}"
 CPG_SETTLE="${CPG_SETTLE:-2}"
 CPG_IDLE_SECONDS="${CPG_IDLE_SECONDS:-3}"
 CPG_SSIM_MIN="${CPG_SSIM_MIN:-0.999}"
@@ -94,20 +98,24 @@ _cpg_have_label() {
 }
 _cpg_status() { _cpg_qmp status 2>/dev/null | tr -d '"' | tail -1; }
 
-# ---- framebuffer comparison ----------------------------------------------------
-# Byte-identical first, then SSIM >= CPG_SSIM_MIN — the same two-step and threshold
-# checkpoint-verify.sh uses. A pure byte compare refuses on every text-mode station with
-# a blinking cursor, and a guard that refuses on healthy stations gets loosened.
-_cpg_same() {
-  cmp -s "$1" "$2" && return 0
-  local ssim
-  ssim="$(ffmpeg -hide_banner -nostats -i "$1" -i "$2" \
-    -lavfi '[0:v]format=gray[x];[1:v]format=gray[y];[x][y]ssim' \
-    -f null - 2>&1 | sed -n 's/.*All:\([0-9.]*\).*/\1/p' | tail -1)"
-  [ -n "$ssim" ] || ssim=0
-  CPG_LAST_SSIM="$ssim"
-  python3 -c "import sys; sys.exit(0 if float('$ssim') >= float('$CPG_SSIM_MIN') else 1)"
+# The framebuffer proof (rule 9) lives in a sibling; same discovery as labqmp.py,
+# so the guard behaves identically run from the repo or from /usr/local/bin.
+_cpg_source_proof() {
+  local here candidate
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  for candidate in "$here/checkpoint-guard-proof.sh" \
+    /usr/local/lib/checkpoint-guard-proof.sh \
+    /data/kernel-hive/scripts/lib/checkpoint-guard-proof.sh; do
+    if [ -f "$candidate" ]; then
+      # shellcheck source=/dev/null
+      . "$candidate"
+      return 0
+    fi
+  done
+  _cpg_err "checkpoint-guard-proof.sh not found — REFUSING: without it there is no framebuffer proof, and a guard that cannot prove a restore must not delete a checkpoint."
+  exit 2
 }
+_cpg_source_proof
 
 # ---- wake lease ----------------------------------------------------------------
 # streamhost re-asserts a believed idle pause every 60 s; without the lease that lands
@@ -272,6 +280,28 @@ _cpg_journal_backup_rows() {
     "$ST_JOURNAL"
 }
 
+# Load the journal's recorded backup rows back into CPG_BACKUPS.
+#
+# cpg_journal_write RE-RENDERS the whole journal from CPG_BACKUPS every time it
+# is called, so any path that writes the journal without having run cpg_backup
+# in the SAME process silently replaces a populated "backups" array with []. That
+# is not a missing carry-over, it is an ERASURE of the only record of where the
+# rollback copy is -- and the loss is invisible until an incident, because the
+# backup FILE is still sitting on disk next to the disk it came from.
+#
+# Measured on aix432, 2026-08-31: a `recapture` wrote the row correctly, the run
+# refused at the dirty step, and the `resume` that finished it wrote the journal
+# four more times (promoting, promoted, cleanup, done) and left "backups": [].
+cpg_journal_load_backups() {
+  CPG_BACKUPS=""
+  [ -f "$ST_JOURNAL" ] || return 0
+  local line
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    CPG_BACKUPS="${CPG_BACKUPS}${line}"$'\n'
+  done < <(_cpg_journal_backup_rows)
+}
+
 # ---- step 1: byte-copy backup, SHA256-verified with the guest STOPPED -----------
 cpg_backup() {
   local ts d bak h1 h2
@@ -299,65 +329,6 @@ cpg_backup() {
     _cpg_log "backup verified with the guest stopped: sha256=$h1"
     CPG_BACKUPS="${CPG_BACKUPS}${d}|${bak}|${h1}"$'\n'
   done <<<"$ST_DISKS"
-  return 0
-}
-
-# ---- the framebuffer proof -----------------------------------------------------
-# cpg_reference <ref.ppm> — a reference the restore can be compared against AT ALL. Two
-# shots CPG_IDLE_SECONDS apart must agree: against a moving framebuffer (a clock, a
-# spinner) "restored != reference" would mean nothing.
-cpg_reference() {
-  local ref="$1" second="$1.b"
-  _cpg_qmp shot "$ref" >/dev/null || {
-    _cpg_err "could not screendump the reference framebuffer"
-    return 7
-  }
-  sleep "$CPG_IDLE_SECONDS"
-  _cpg_qmp shot "$second" >/dev/null
-  if ! _cpg_same "$ref" "$second"; then
-    rm -f "$second"
-    _cpg_err "this station's idle framebuffer is not stable (two shots ${CPG_IDLE_SECONDS}s apart differ, SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN), so no comparison could prove a restore. Park the scene (hide the clock, settle the animation) and re-run. Nothing has been captured or deleted."
-    return 7
-  fi
-  rm -f "$second"
-  _cpg_log "reference framebuffer captured and idle-deterministic"
-}
-
-# cpg_prove_label <label> <ref.ppm> <dirty.ppm> <restored.ppm>
-# Dirty the guest so the framebuffer demonstrably moves, load the label, and require
-# the framebuffer back at the reference AND the guest RUNNING. Logs are not proof.
-cpg_prove_label() {
-  local label="$1" ref="$2" dirty="$3" restored="$4" st
-  _cpg_qmp type "$CPG_DIRTY_TEXT" >/dev/null 2>&1
-  sleep 1
-  _cpg_qmp shot "$dirty" >/dev/null
-  if _cpg_same "$ref" "$dirty"; then
-    _cpg_qmp key tab sleep 0.3 key esc >/dev/null 2>&1
-    sleep 1
-    _cpg_qmp shot "$dirty" >/dev/null
-  fi
-  if _cpg_same "$ref" "$dirty"; then
-    _cpg_err "the guest's framebuffer did not move, so a matching 'restored' shot would prove NOTHING. Set CPG_DIRTY_TEXT to something this guest reacts to. Nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_log "framebuffer moved off the reference — the restore proof can now mean something"
-
-  if ! _cpg_qmp loadvm "$label" >/dev/null; then
-    _cpg_err "loadvm $label FAILED — the checkpoint does not restore. Nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  sleep "$CPG_SETTLE"
-  st="$(_cpg_status)"
-  if [ "$st" != "running" ]; then
-    _cpg_err "loadvm $label restored a guest whose status is '$st', not running. A checkpoint captured while stopped restores PAUSED: the screenshot looks perfect and the station is dead to every visitor. Treating '$label' as UNPROVEN; nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_qmp shot "$restored" >/dev/null
-  if ! _cpg_same "$ref" "$restored"; then
-    _cpg_err "loadvm $label restored a framebuffer that does NOT match the reference (SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN; $restored vs $ref). Treating '$label' as UNPROVEN; nothing of '$CPG_LABEL' has been deleted."
-    return 7
-  fi
-  _cpg_log "PROVEN on the framebuffer: loadvm $label returns to the reference (SSIM ${CPG_LAST_SSIM:-1.0}), guest running"
   return 0
 }
 
@@ -480,6 +451,11 @@ cpg_resume() {
   fi
   trap '_cpg_lease_release' EXIT
   _cpg_lease_hold
+  # Inherit the backup rows the recapture recorded: every cpg_journal_write below
+  # re-renders the journal from CPG_BACKUPS, and this process has not run
+  # cpg_backup. Without this a resumed run finishes with "backups": [] and the
+  # rollback it advertises does not exist.
+  cpg_journal_load_backups
   if _cpg_have_label "$CPG_LABEL" && ! _cpg_have_label "$CPG_STAGING_LABEL"; then
     _cpg_log "'$CPG_LABEL' is present and the staging label is gone: the promote had completed"
     cpg_finish
@@ -505,7 +481,20 @@ cpg_rollback() {
     _cpg_err "no journal at $ST_JOURNAL — nothing to roll back"
     return 4
   fi
-  local disk bak sha now
+  local disk bak sha now rows=0 restored=0
+  rows="$(_cpg_journal_backup_rows | grep -c . || true)"
+  # ZERO ROWS IS A REFUSAL, NOT AN EMPTY SUCCESS.
+  #
+  # Every loop below is `while read` over those rows, so with none of them this
+  # function used to verify nothing and then say "Every recorded backup verified,
+  # so the rollback is available" -- and under CPG_ROLLBACK_CONFIRM=1 it restored
+  # nothing, deleted the journal, and logged "ROLLED BACK to the pre-recapture
+  # disks." A false success on the incident path is worse than no rollback: it
+  # ends the investigation. Fail loudly instead (AGENTS.md rule 7).
+  if [ "$rows" -eq 0 ]; then
+    _cpg_err "the journal at $ST_JOURNAL records NO backups (\"backups\": []), so there is nothing to roll back TO and this cannot restore anything. It is REFUSING rather than reporting a rollback it did not perform. The backup FILES may still be on disk -- look for ${ST_DIR}/*.cpg-bak-* and 'checkpoint-guard status $STATION' -- and if one is the copy you want, re-record it in the journal's \"backups\" array (disk, backup, sha256 of the backup file) before running this again, or restore it by hand with the station STOPPED. A journal can reach this state through a resumed run recorded by a guard older than 2026-08-31; see docs/lab/checkpoint-guard.md."
+    return 4
+  fi
   while IFS='|' read -r disk bak sha; do
     [ -n "$disk" ] || continue
     if [ ! -f "$bak" ]; then
@@ -521,7 +510,7 @@ cpg_rollback() {
   done < <(_cpg_journal_backup_rows)
 
   if [ "${CPG_ROLLBACK_CONFIRM:-0}" != "1" ]; then
-    _cpg_err "rollback replaces LIVE disks and needs the guest DOWN. Stop the station (systemctl stop streamhost@$STATION), then re-run with CPG_ROLLBACK_CONFIRM=1. Every recorded backup verified, so the rollback is available."
+    _cpg_err "rollback replaces LIVE disks and needs the guest DOWN. Stop the station (systemctl stop streamhost@$STATION), then re-run with CPG_ROLLBACK_CONFIRM=1. All $rows recorded backup(s) verified against their sha256, so the rollback is available."
     return 4
   fi
   if [ -f "$ST_PID" ] && kill -0 "$(cat "$ST_PID")" 2>/dev/null; then
@@ -538,9 +527,16 @@ cpg_rollback() {
       return 4
     fi
     _cpg_log "restored and verified: $disk"
+    restored=$((restored + 1))
   done < <(_cpg_journal_backup_rows)
+  # Belt and braces behind the zero-row refusal: never delete the journal, and
+  # never claim a rollback, on the strength of a loop that copied nothing.
+  if [ "$restored" -eq 0 ]; then
+    _cpg_err "restored 0 disks despite $rows recorded backup(s) — REFUSING to delete the journal or report a rollback. Nothing has been changed."
+    return 4
+  fi
   rm -f "$ST_JOURNAL"
-  _cpg_log "ROLLED BACK to the pre-recapture disks. Start the station and confirm on the framebuffer."
+  _cpg_log "ROLLED BACK $restored disk(s) to the pre-recapture copies. Start the station and confirm on the framebuffer."
 }
 
 cpg_status() {

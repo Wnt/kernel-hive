@@ -6,12 +6,12 @@ import argparse
 import difflib
 import json
 import os
-import re
 import sys
 from collections import OrderedDict
 from pathlib import Path
 
-from .constants import LABCTL_KEYS, RENDER_DIR, REPO
+from .constants import RENDER_DIR, REPO
+from .drift import cmd_drift
 from .facts_live import cmd_facts_live
 from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, generated
 from .loading import RegistryError, is_x11_runtime, load
@@ -49,36 +49,6 @@ def cmd_emit(name: str) -> int:
     return 0
 
 
-def compare_live_labctl(outputs: OrderedDict[str, bytes]) -> list[str]:
-    live = Path("/data/vms/streamhost/stations.json")
-    if not live.exists():
-        return ["SKIP live labctl semantic check (/data/vms/streamhost/stations.json absent)"]
-    current = json.loads(live.read_text()).get("tiles", {})
-    declared = json.loads(outputs["registry/generated/labctl-declarations.json"])["tiles"]
-    mismatches = []
-    if set(current) != set(declared):
-        mismatches.append(f"tile set current={sorted(current)} declared={sorted(declared)}")
-    for tile in sorted(set(current) & set(declared)):
-        for key in LABCTL_KEYS:
-            actual = current[tile].get(key)
-            if key == "notes" and isinstance(actual, str):
-                actual = re.sub(
-                    r"; (?:no 'golden' snapshot found:.*|golden snapshot state unknown \(probe failed\))$",
-                    "",
-                    actual,
-                )
-            if actual != declared[tile].get(key):
-                mismatches.append(
-                    f"{tile}.{key}: current={current[tile].get(key)!r} declared={declared[tile].get(key)!r}"
-                )
-    if mismatches:
-        raise RegistryError("live labctl declared-field mismatch:\n  - " + "\n  - ".join(mismatches))
-    return [
-        f"SEMANTIC-IDENTICAL live labctl declarations ({len(declared)} tiles; "
-        "observed golden state intentionally excluded)"
-    ]
-
-
 def cmd_check() -> int:
     outputs = generated()
     bad = False
@@ -103,8 +73,14 @@ def cmd_check() -> int:
         print(f"RENDERED {RENDER_DIR}/{name} ({len(data)} bytes, not committed)")
     for line in check_gate_lists(list(outputs)):
         print(line)
-    for line in compare_live_labctl(outputs):
-        print(line)
+    # The live-box comparison that used to run HERE is deliberately gone. `check`
+    # is a pre-push gate, and a gate may test only properties of the commit being
+    # pushed; "does the live box already agree with this declaration?" is a
+    # property of the box, shared by every session and unsatisfiable by the author
+    # of an unrelated change. It is now `stations-registry.py drift` — same code,
+    # opposite plumbing: a mismatch there is the convergence loop's to-do list.
+    # See scripts/stations_registry/drift.py for the incident that moved it.
+    print("SEE ALSO stations-registry.py drift (declared-vs-live; report, never a gate)")
     _, rows = load()
     hand_managed = []
     for row in sorted(
@@ -179,6 +155,10 @@ def main() -> int:
     sub.add_parser("check")
     sub.add_parser("count")
     sub.add_parser("facts-live", help="check registry retronet claims against the live box (SKIPs if unreachable)")
+    sub.add_parser(
+        "drift",
+        help="report declared-vs-live station drift (never a gate; SKIPs if the live roster is absent)",
+    )
     paths = sub.add_parser("paths")
     paths.add_argument(
         "--rendered",
@@ -222,6 +202,8 @@ def main() -> int:
             return 0
         if command == "facts-live":
             return cmd_facts_live()
+        if command == "drift":
+            return cmd_drift()
         if command == "generate":
             return cmd_generate()
         if command == "check":

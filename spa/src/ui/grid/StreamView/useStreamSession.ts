@@ -8,6 +8,7 @@ import type { StreamControlHandle, StreamControlState, StreamStats } from '../..
 import { resumeVideoElement, probeVideoSink, isPausedSink } from '../../../three/streamClient/videoResume';
 import { attachResumeSignals, attachSinkPauseSignal, isVisible } from '../../../three/streamClient/resumeSignals';
 import { logClientEvent } from '../../../three/clientDebug';
+import { reach } from '../../../analytics';
 
 // Media/control/audio/stats wiring — the contiguous run of connect-time effects
 // extracted verbatim from StreamView. Returns the derived `connected` flag.
@@ -125,6 +126,11 @@ export function useStreamSession({
   // ---- poll live stream stats for the debug overlay -------------------------
   useEffect(() => {
     if (!control) { setStats(null); return; }
+    // Once per SESSION, not once per tick: the useful ratio against
+    // stream.overlay.shown is "sessions that paid for this poll" over "sessions
+    // where anybody looked at what it produced", and a per-tick count would
+    // make that ratio a function of how long the tab stayed open.
+    reach('stream.stats.polled', 'auto');
     let alive = true;
     const tick = () => {
       control.getStats().then((s) => { if (alive) setStats(s); }).catch(() => {});

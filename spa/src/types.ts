@@ -44,6 +44,17 @@ export interface VMManifestEntry {
   relativePointerOnly?: boolean;
   coldBoot?: boolean;
 
+  // STATION-TYPE grouping dimensions (docs/ANALYTICS.md), sourced from the
+  // registry's own `emulator.family` / `ui` / `reset.resetMode` — see
+  // scripts/stations_registry/render.py's `emit_gallery_manifest`. Low
+  // cardinality by construction (a handful of emulator families, five UI
+  // kinds, four reset modes), unlike `id`, which stays a separate attribute
+  // wherever these travel onto a span. Not every station has all three: a
+  // poster entry has no live golden to report a reset mode for.
+  emulatorFamily?: string;
+  uiKind?: string;
+  resetMode?: string;
+
   // OPTIONAL boot-video replay descriptor, merged at runtime from
   // /boot/index.json (BOOT-VIDEO-REPLAY-SPEC §4). Additive: absent ⇒ today's
   // behaviour. Carries the durations/paths the UI can use without a rebuild;

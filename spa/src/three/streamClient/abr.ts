@@ -16,11 +16,14 @@ import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { formatStatsLine } from './telemetry';
+import { dueForVitals } from './vitals';
+import { sampleVitals } from './vitalsSample';
 import {
   T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
 } from './constants';
 import { latchSoftwareDecode } from './softwareDecodeLatch';
+import { noteDecoderRebuild, noteStallLatched } from './analyticsEvents';
 
 /** Rolling window the REPORTED loss percentage is measured over (ms). */
 const LOSS_WINDOW_MS = 3000;
@@ -163,6 +166,16 @@ export function tickStatsImpl(this: StreamClient): void {
     !!this.wt && !this.disposed && decodeRef > 0
     && (now - decodeRef > FRAME_STALL_MS);
   if (stalledNow && !this.frameStalled) {
+    // THE LATCH EDGE ONLY. A stall that lasts a minute is one event, not six
+    // hundred ticks of one — the analytics plane counts episodes, and a level
+    // reported per tick would make the count a function of how long the tab
+    // stayed open rather than of how often stations freeze.
+    noteStallLatched({
+      thresholdMs: FRAME_STALL_MS,
+      sinceLastPaintMs: now - decodeRef,
+      hadDecodeError: !!this.lastDecodeError,
+      stationId: this.stationId,
+    });
     logClientEvent(
       'stall',
       `frame watchdog latched (> ${FRAME_STALL_MS}ms no decoded frame)${this.lastDecodeError ? `; last decoder error: ${this.lastDecodeError}` : ''}`,
@@ -197,6 +210,7 @@ export function tickStatsImpl(this: StreamClient): void {
     latchSoftwareDecode();
     this.hwFellBack = true;
     this.hwDecodeOk = false;
+    noteDecoderRebuild(this.stallRebuildsWithoutOutput, MAX_SILENT_STALL_REBUILDS, this.stationId);
     logClientEvent('stall', `decoder rebuild ${this.stallRebuildsWithoutOutput}/${MAX_SILENT_STALL_REBUILDS} (silent stall: AUs arriving, no output) — demoting to software decode`);
     try { this.videoDecoder?.close(); } catch { /* noop */ }
     this.videoDecoder = null;
@@ -226,6 +240,16 @@ export function tickStatsImpl(this: StreamClient): void {
 
   // ---- banner state machine (Section 2.6) ----
   this.updateBanner(now);
+
+  // ---- continuous vitals sample -> the time-series lane ----
+  // ITS OWN CLOCK, faster than the log line below (1 s against 5 s), because
+  // the two answer different questions. The log line is prose for a human
+  // reading clientlog.jsonl after a session died; this is a series something
+  // can plot and threshold, and at 5 s an ABR downshift and the recovery from
+  // it can both fall between two samples. Both survive: every existing
+  // stream-debugging runbook greps for the log line, and removing it to
+  // celebrate the new lane would break those on the day it is least proven.
+  if (dueForVitals(now)) sampleVitals(this, now, decodeQueue);
 
   // ---- periodic telemetry sample -> server-side rolling log ----
   // The overlay's diagnostics live ONLY in the browser, so a session that dies

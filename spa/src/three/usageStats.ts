@@ -23,6 +23,8 @@
 // ============================================================================
 
 import { activeDebugTile } from './clientDebug';
+import { postTelemetry } from '../analytics/beacon';
+import { withoutHumanCredit } from '../analytics';
 
 /** Flush cadence. Long enough that a busy session is a handful of requests, short
  *  enough that a tab closed by force loses only a few seconds of counting. */
@@ -94,7 +96,13 @@ export function countKeystroke(scancode: number): void {
 export function withSyntheticInput<T>(fn: () => T): T {
   synthetic += 1;
   try {
-    return fn();
+    // ONE bracket, both planes. The analytics plane grades an act by whether a
+    // trusted human edge happened recently, and software input produces no such
+    // edge — but it does run inside handlers that just saw one (the click that
+    // started the demo), so without this it would inherit that click's credit
+    // for every key it sends. Two brackets that had to be remembered separately
+    // would have drifted the first time one caller was added.
+    return withoutHumanCredit(fn);
   } finally {
     synthetic -= 1;
   }
@@ -107,35 +115,31 @@ function ensureTimer(): void {
     try {
       // Both, deliberately: pagehide is the reliable one on desktop, and iOS
       // Safari can go straight to hidden and never fire it.
-      window.addEventListener('pagehide', () => flushUsage());
+      window.addEventListener('pagehide', () => flushUsage(true));
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') flushUsage();
+        if (document.visibilityState === 'hidden') flushUsage(true);
       });
     } catch { /* noop */ }
   }
-  if (!flushTimer) flushTimer = window.setInterval(() => flushUsage(), FLUSH_MS);
+  if (!flushTimer) flushTimer = window.setInterval(() => flushUsage(false), FLUSH_MS);
 }
 
 /** Send what has been counted so far. A failed send folds the tally back in, so
  *  a box that is briefly unreachable costs nothing but a delay. */
-export function flushUsage(): void {
+export function flushUsage(final = false): void {
   try {
     if (!pending.size) return;
     const batch = pending;
     pending = new Map();
     const stations: Record<string, Tally> = {};
     for (const [tile, tally] of batch) stations[tile] = tally;
-    void fetch('/usage', {
-      method: 'POST',
-      keepalive: true,
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stations }),
-      // Only a NETWORK failure folds the batch back. An HTTP refusal (a
-      // signed-out tab, a deployment with no counter plane) is a settled
-      // answer, and retrying it forever would turn one lost tally into an
-      // unbounded queue of them.
-    }).catch(() => { foldBack(batch); });
+    // Only a NETWORK failure folds the batch back. An HTTP refusal (a
+    // signed-out tab, a deployment with no counter plane) is a settled answer,
+    // and retrying it forever would turn one lost tally into an unbounded queue
+    // of them. `keepalive` only on the final flush — `analytics/beacon.ts`.
+    void postTelemetry('/usage', JSON.stringify({ stations }), { final }).then((result) => {
+      if (result === 'failed') foldBack(batch);
+    });
   } catch { /* never throw */ }
 }
 

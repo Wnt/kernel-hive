@@ -23,9 +23,13 @@ export interface Session {
   role: Role;
   /** The account's display handle, when it has one. */
   name: string;
+  /** The account's server-side id, when it has one ('' for `anon`). Not
+   *  previously surfaced here — `analytics/instana.ts` is the first reader,
+   *  which is why this field exists at all. */
+  id: string;
 }
 
-const ANON: Session = { role: 'anon', name: '' };
+const ANON: Session = { role: 'anon', name: '', id: '' };
 
 const KNOWN: Role[] = ['admin', 'viewer', 'walkin'];
 
@@ -40,6 +44,7 @@ function parse(value: unknown): Session {
   return {
     role: KNOWN.includes(role as Role) ? (role as Role) : 'anon',
     name: typeof user.name === 'string' ? user.name : '',
+    id: typeof user.id === 'string' ? user.id : '',
   };
 }
 
@@ -61,7 +66,7 @@ function parse(value: unknown): Session {
  */
 export async function loadSession(fetcher: typeof fetch = fetch): Promise<Session> {
   const forced = forcedRole();
-  if (forced) return { role: forced, name: `${forced} (preview)` };
+  if (forced) return { role: forced, name: `${forced} (preview)`, id: `preview-${forced}` };
   try {
     const response = await fetcher('/auth/state', { credentials: 'same-origin', cache: 'no-store' });
     if (!response.ok) return ANON;

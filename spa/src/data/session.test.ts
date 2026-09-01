@@ -19,7 +19,7 @@ function jsonResponse(body: unknown, ok = true): typeof fetch {
 describe('loadSession', () => {
   it('reads the role off /auth/state', async () => {
     const session = await loadSession(jsonResponse({ authenticated: true, user: { id: 'w1', name: 'bold-turing', role: 'walkin' } }));
-    expect(session).toEqual({ role: 'walkin', name: 'bold-turing' });
+    expect(session).toEqual({ role: 'walkin', name: 'bold-turing', id: 'w1' });
   });
 
   it('carries the invited roles through unchanged', async () => {

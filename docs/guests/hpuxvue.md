@@ -133,15 +133,18 @@ The station is on the retronet **web** plane. Full as-built:
   11.x); LVM growth stays `lvextend`+`extendfs` (756 MB spare in vg00).
 - Pointer: a **closed loop over the Artist hardware cursor** since 2026-08-30.
   See "The pointer is a closed loop" below.
-- Exec channel: none over the network, but there **is** a working serial
-  console now. QEMU's `-serial` is the guest's *second* RS-232C port
-  (`ioscan -fnC tty`: `8/0/63`→`tty0p0`, `8/16/4`→**`tty1p0`**), and
-  `/etc/inittab` carries `s1:234:respawn:/usr/sbin/getty -h tty1p0 9600`, so
-  `serial.sock` in the station dir gives a root shell (no password;
-  `/etc/profile` asks for `TERM` — answer `dumb`). Wiring `labctl exec` to it is
-  a small separate job. Two traps: the line editor mangles command lines past
-  ~70 characters, and the QEMU serial socket serves **one client at a time**, so
-  connect momentarily and never hold it.
+- Exec channel: **`labctl exec hpuxvue`** (`exec_kind: serial_shell`) over the
+  serial line; none over the network. QEMU's `-serial` is the guest's *second*
+  RS-232C port (`ioscan -fnC tty`: `8/0/63`→`tty0p0`, `8/16/4`→**`tty1p0`**), and
+  `serial.sock` in the station dir lands on the **live root shell the checkpoint
+  bakes** there — no login, no password. `/etc/inittab` does carry
+  `s1:234:respawn:/usr/sbin/getty -h tty1p0 9600`, but that respawn slot is
+  occupied by the baked shell and no getty is running. Read the whole channel,
+  and its measured limit, under "`labctl exec hpuxvue`" below. Three traps: the
+  line editor mangles command **echo** past ~70 characters (the line still
+  executes), the QEMU serial socket serves **one client at a time** so connect
+  momentarily and never hold it, and Mosaic is a child of that shell so nothing
+  may end the session.
 - Automation path for a future builder: HP's install runs a config from the
   CD's INSTALLFS (`post_load_cmd`/`post_config_cmd` hooks — the "user
   specified script" seen on camera is HP's own); patching that config is the
@@ -265,3 +268,246 @@ depth, re-aims, give-ups and the guest runstate.
 **Single injector (binding).** While the control socket is connected the engine
 owns the guest pointer: no rel bridge, no QMP `input-send-event`, no `labctl`
 pointer helper. Two injectors and the loop reads motion it did not cause.
+
+## The keyboard is NOT broken: it is a FOCUS trap in the baked scene
+
+Opened 2026-08-31 while verifying the restore-re-arm fix, and CLOSED the same
+day. The earlier heading here said "the keyboard does not reach this guest" and
+called it a second independent fault. **That was wrong, and this is the
+correction.** There is one real fault (the pointer freeze, fixed) and one
+usability trap that imitates a second one.
+
+**What the trap is.** The golden bakes **Mosaic** as the focused window — VUE
+paints the focused title bar pink and the rest cyan, and Mosaic's is pink in the
+checkpoint. This VUE session moves keyboard focus only on a **title-bar/frame**
+click, not on a client-area click. So a visitor clicks a File Manager icon (it
+visibly selects — the click is working), types, and sees nothing: the keys are
+going to Mosaic, which does nothing visible with bare letters or arrows. It
+reads exactly like a dead keyboard.
+
+**Proof that the keyboard is fine** (clone, this station's own golden, same
+device set):
+
+- click the File Manager's TITLE BAR -> 61731 changed pixels, and the title bars
+  swap: Mosaic pink -> cyan (sampled at (300,15): `[253,130,130]` -> `[122,202,197]`).
+  Focus has moved.
+- arrow keys immediately after -> **976 changed pixels**, the icon selection
+  moves. The keyboard works.
+- the same arrow keys BEFORE the title-bar click -> 0 pixels.
+
+**And the keys were never the problem end-to-end.** With `SH_INPUT_TELEMETRY=1`
+armed, a browser typing `khive` produced matching `[key-tel dbus] recv` **and**
+`sent` pairs for `0x25 0x23 0x17 0x2f 0x12` — correct XT set1 codes, delivered
+to QEMU within ~3 ms. Browser -> daemon -> D-Bus is healthy. (Telemetry is off
+again; it is diagnostic only and logs every visitor keystroke to journald.)
+
+**What is still open, and it is the PRE-EXISTING one.** Through the real SPA the
+title-bar click does **not** land on the live station — Mosaic stays pink — while
+the identical click lands on the clone. The title bar abuts the window frame,
+which is the region named by the standing finding *"hpuxvue: engine cannot hold
+the pointer on resize borders"*. So today a visitor cannot perform the one
+gesture that would give them the keyboard. Client-area clicks land normally
+(1359 px, an icon selects), so this is specific to the frame region.
+
+**Two ways out, neither taken here** (a recapture needs the operator's word, and
+hpuxvue's only rollback on record is still the 2026-08-24 one):
+
+1. Re-bake the golden with the File Manager focused, or with dtwm's focus policy
+   set to pointer (focus-follows-mouse), so no frame click is needed at all.
+   Cheapest for the visitor; costs a checkpoint.
+2. Fix the resize-border hold in the engine, which the standing finding wants
+   anyway and which would also restore drag-on-frame. **Attempted 2026-08-31 and
+   NOT deployed** — the premise did not survive measurement (the engine holds the
+   title bar perfectly: one reading over 17 s, `giveups=0`, and the sprite does
+   not even change there), and the obvious fix made things worse (a 425 px miss).
+   The measurements and what a working fix must do are in
+   [`../lab/HPUXVUE-CURSOR-REGISTER-POINTER.md`](../lab/HPUXVUE-CURSOR-REGISTER-POINTER.md).
+
+**And a caution about the click itself.** Some harness runs lose the title-bar
+click 0/5 or 0/6 with the engine demonstrably innocent — `aiming=0`,
+`giveups=0`, the reading on target, and the trace showing `edge btn1 DOWN/UP
+applied` for the very click that had no effect. Other runs, including an
+interleaved control, land 6/6 on the title bar and 6/6 in the client area. The
+variable is NOT: click position (a five-point y-sweep failed together), approach
+direction (five start points failed together), startup vs mid-session restore,
+a stale held button (a leading bare `UP1` does not help), hotspot drift (there is
+none), or an idle gap (20 s still lands 4/4). It is unexplained. Measure a rate
+over repeated trials before believing any single click result on this station —
+one anecdote either way will mislead you.
+
+Do not file this as a keyboard regression again. The check that settles it in
+one step is the title-bar colour at (300,15): pink means Mosaic still owns the
+keyboard and your keys are going there.
+
+
+## `labctl exec hpuxvue` — the channel, and exactly how far it goes
+
+Wired 2026-08-31 as **`exec_kind: serial_shell`** (client
+`scripts/labctl.d/hpuxvueexec.py`, no port, no password, the station DIRECTORY is
+the address). It replaces the "no exec channel" row that blocked every route in
+the section below.
+
+**It is not `serial_getty`.** rhapsody's kind logs in per command; here there is
+nothing to log in to, and logging out would break the exhibit:
+
+- the golden bakes a **live root session** on tty1p0 — `-sh`, ppid 1, PS1
+  `KHPROMPT>` — so a connection to `serial.sock` lands straight on a root shell;
+- `/etc/inittab` does carry `s1:234:respawn:/usr/sbin/getty -h tty1p0 9600`, and
+  that respawn slot is what the baked shell occupies. `ps` shows **no getty on
+  tty1p0**, only `getty console console`;
+- **Mosaic is a CHILD of that shell** (`1104 1019 ... /opt/mosaic/Mosaic-27b5`).
+  Ending the session would take a window of the exhibit scene with it. The
+  client therefore never sends `exit`, and runs each command in a subshell so a
+  bare `exit 3` returns 3 instead of reaching the login shell.
+
+### The measured limit: builtins are reliable, external binaries are not
+
+All of this is from a sandbox clone of this station's own golden, same device
+set, `loadvm golden` before every trial as the positive control (~40 restores,
+the control passed every time).
+
+| what | result |
+|---|---|
+| `echo` builtins, one connection | **120/120** |
+| `echo … >> file` then a `while read` readback | **20/20**, all 20 lines back |
+| forking subshells `( … ) > file` | **10/10** |
+| 20 separate `labctl exec` connections | **20/20** |
+| exec of an external binary | **wedges about half the time**, permanently |
+
+The wedge is per-binary-ish and not a volume effect: `date` ran 50/50 clean and
+`echo` with 256 bytes of output was fine, while `ls`, `cat`, `tty` and `uname`
+wedged. Output size is not the variable and neither is closing the socket
+mid-output — a 261-character command line executes correctly even though the
+line editor mangles its **echo**.
+
+### What a wedge is, and is not
+
+- the tty still **echoes** typed characters, nothing executes, no prompt;
+- **no `login:` appears**, because init's respawn slot is held by the shell that
+  is still there — so the shell has not died, it is blocked;
+- it is **permanent, not slow**: `ls /etc` was given **900 s** and never
+  returned a prompt, and a wedged line is still dead after 60 s reconnected.
+  (`query-blockstats` says nothing either way here — the counters read 0/0 on
+  this station even on a healthy run, so do not reach for them.);
+- it does **not stall the guest**. Measured on a wedged session: the closed-loop
+  pointer converged on two commanded targets, `reading=897,699` for target
+  `900,700` with `hot=2,1 exact=1`, `giveups=0`. The X server is fine.
+- **`loadvm golden` heals it**, every time. `labctl exec` reports a wedge as
+  **exit 125** naming that heal; it never performs it, because a restore also
+  resets the visitor's scene.
+
+So: script this channel in **builtins** — `echo`, redirection, globs, `case`,
+`while read`, subshells — and treat every external binary as a coin flip whose
+loser costs a station reset. That is enough to read and write files in the
+guest, which is what the blocked work below needed.
+
+## Everything that needs a new WINDOW is dead — menus included, from the KEYBOARD too
+
+The section below hypothesised that everything needing an X pointer **grab**
+fails. That hypothesis is now **weakened by measurement, and the pointer is
+cleared of suspicion**: the menus do not post from the keyboard either.
+
+Clone, this station's own golden, File Manager focused by a title-bar click
+(proven: its title bar goes pink in the capture):
+
+| gesture | changed pixels |
+|---|---|
+| `F10` (Motif menubar traversal) | **2516** — the `File` label gets its traversal box |
+| then `Down` (posts the menu in Motif) | **0** |
+| then `Return` | **0** |
+| then `Esc` | **0** |
+| pointer press-and-HOLD on `File` | 298 (label highlight only) |
+| release | 0 |
+
+`F10` proves keystrokes reach the File Manager and that its menubar accepts
+traversal focus. The menu still does not post — by keyboard or by pointer. A
+menu that will not post from the **keyboard** cannot be blamed on the click path,
+the closed-loop pointer, or button-edge ordering.
+
+**Nor is it posting invisibly.** Press-and-hold on `View`, drag to each of six
+item slots, release — looking for the *effect* of an item (`Show Hidden Files`
+repopulates the icon pane) rather than for menu pixels: 212–924 px at every
+slot, no item ever fired. Positive controls on both sides of that run, same
+session: an icon click at **3469 px** before and **214 px** after.
+
+**And a new client cannot put a window up either.** With the exec channel:
+`xclock` and `xterm`, launched from the guest's own shell with the session's
+`DISPLAY=hpuxvue:0`, report **no error at all**, leave `/tmp/…` empty, are gone
+from `ps` seconds later, and change **0 px** of the framebuffer. That is
+consistent with the Style Manager hourglass and the Toolbox drawer that never
+opens: *nothing new appears on this display*. It is NOT yet proof — those two
+clients exiting silently is itself unexplained, and an `xset q` connectivity
+probe (the test that would separate "cannot connect" from "connects, cannot
+map") was lost to the external-command wedge three times and remains **the next
+thing to run**.
+
+`/.vue/errorlog` is clean: two identical warnings about an unrecognised `LABEL`
+field in `mosaic.vf`, nothing else. `/.vue/startlog` gives the session
+environment (`DISPLAY=hpuxvue:0`, `SHELL=/sbin/sh`, `HOME=/`).
+
+### What this means for the exhibit, and for the focus re-bake
+
+Read together with the table below, the split is no longer "grab vs no grab" but
+**"new window vs existing window"**: menus, drawers, dialogs and new clients are
+all new windows; selecting an icon and clicking a title bar are not. A visitor
+can move the pointer, click, select and type, and can switch workspaces on the
+front panel — and can open nothing.
+
+The focus-follows-mouse re-bake is therefore **still worth doing and no longer
+sufficient**. It removes the one gesture (a frame click) a visitor needs to get
+the keyboard, which is a real win; it does not make a single menu post. Do not
+spend the 2026-08-24 checkpoint on it as if it fixed the exhibit's
+interactivity.
+
+## The focus-policy re-bake: no longer blocked, and no longer sufficient
+
+Attempted 2026-08-31 and **not done that day**: the plan was to set vuewm's
+`keyboardFocusPolicy` to `pointer` (focus-follows-mouse) so no frame click is
+needed to hand the visitor the keyboard, then recapture. It was blocked on the
+setting rather than on the recapture — there was no route to change vuewm's
+configuration inside the guest.
+
+**That block is lifted**: `labctl exec hpuxvue` (above) reads and writes files in
+the guest with shell builtins, reliably. What is *not* lifted is the reason to
+be careful about spending the checkpoint — see "Everything that needs a new
+WINDOW is dead" above. Keep the table below: it is the evidence, and every row
+in it failed for want of a command channel.
+
+Routes tried on 2026-08-31, before the channel existed:
+
+| route | outcome |
+|---|---|
+| serial getty (`tty1p0`) | a shell WAS alive (`echo` returned `KHTEST_1019`), then stopped executing mid-session; input still echoes, no prompt, and **no getty respawn** |
+| VUE Style Manager (front panel) | the Window button accepts the click and turns to an hourglass — then nothing renders, watched for **7+ minutes** |
+| Toolboxes -> General | the cell selects (37565 px) but never opens, single or double click |
+| File Manager `File` / `Actions` menus | **do not post**, even press-and-HOLD (Motif menus post on press) |
+| Mosaic URL field | unresponsive, **0/5** clicks |
+| retronet exec | this station has no *network* exec channel |
+| offline edit of the disk image | HP-UX HFS/VxFS is not mountable on the Linux host |
+
+The serial-getty row is now understood and is a finding in its own right: there
+never was a getty to respawn (init's slot holds the baked login shell), and the
+"stopped executing" is the external-command wedge, reproduced and measured
+above.
+
+**The finding that outgrew the task.** Those rows are not six unrelated
+annoyances. With a positive control on BOTH sides in the same session — a File
+Manager icon click measuring **1363 px before and 1359 px after** — the two menu
+presses in between measured **107 px** (the label highlight only) and **0 px**.
+So the instrument was working throughout and *the menus genuinely do not post*.
+
+Everything that fails needs an X **pointer grab** (menus post under a grab,
+drawer/toolbox panels open under one, and a window-manager frame click takes
+one). Everything that works — selecting an icon in a client area — needs no
+grab. That is a coherent hypothesis and it is bigger than a focus policy: it
+would also explain why the title-bar click is intermittent while client-area
+clicks are 6/6. It is UNPROVEN; what is proven is the pattern above.
+
+**Do not re-attempt the focus-policy re-bake before settling that.** If grabs are
+broken, focus-follows-mouse removes the need for the one gesture that needs a
+grab, so it may still be the right fix — but it cannot be *applied* until
+something inside the guest can run a command.
+
+**That cheapest unblock has been done** — `exec_kind: serial_shell`, wired to
+the baked serial session rather than to a getty, because there is no getty.
+What it buys is file edits in the guest; what it does not buy is a working menu.

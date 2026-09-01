@@ -163,6 +163,10 @@ box_sync_load_pairs() {
   box_sync_add_pair chroot-guard scripts/lib/chroot-guard.sh /usr/local/bin/chroot-guard exact repo
   box_sync_add_pair checkpoint-guard scripts/lib/checkpoint-guard.sh \
     /usr/local/bin/checkpoint-guard exact repo
+  # The guard SOURCES its framebuffer-proof half; deploy them together or the
+  # guard refuses to run at all (it will not delete a checkpoint it cannot prove).
+  box_sync_add_pair checkpoint-guard-proof scripts/lib/checkpoint-guard-proof.sh \
+    /usr/local/lib/checkpoint-guard-proof.sh exact repo
   # checkpoint-guard drives QMP through labqmp, so labqmp has to reach the box too:
   # the guard runs on labhost (the station qmp.sock files are root-only there).
   box_sync_add_pair labqmp scripts/lib/labqmp.py /usr/local/lib/labqmp.py exact repo
@@ -176,9 +180,20 @@ box_sync_load_pairs() {
   # gen-local-ca.sh deploys with the operator's real hostname substituted in
   # (discovered 2026-08-11 when the writer's reverse-scrub check refused the
   # row): scrub, not exact, or a push writes a placeholder over it.
+  # deploy_hint.py added 2026-08-31 AND THE OMISSION WAS CAUGHT ONE COMMAND
+  # BEFORE IT SHIPPED: this list is static, and osgallery-https-server.py IMPORTS
+  # deploy_hint at module scope. Deploying the importer without the imported file
+  # does not drift — it stops the serving plane from starting at all, which is a
+  # worse failure than the one the tree loop below was introduced to prevent.
+  # Every new top-level serve module must be added here, and the fact that it
+  # must be is the weakness: see the tree loop for auth/authui/walkin and the
+  # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
     config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
-    usage.py walkin_plane.py; do
+    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py eum_proxy.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
+    tracing.py tracing_http.py \
+    logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py \
+    vitals.py vitals_schema.py vitals_otlp.py vitals_read.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
@@ -240,6 +255,24 @@ box_sync_load_pairs() {
   # unit (what actually runs + auto-starts on boot), like the streamhost/amiga units.
   box_sync_add_pair osgallery-https-unit scripts/serve/osgallery-https.service /etc/systemd/system/osgallery-https.service scrub repo daemon-reload
   box_sync_add_pair vm-idle-watch scripts/vm-idle-watch.sh "$BOX_ROOT/serve/vm-idle-watch.sh" exact repo
+  # The observability carriers, on timers since 2026-09-01. Both were hand-run
+  # for their whole lives, so every Instana view they feed was stale by default.
+  # Only the UNITS are paired: both scripts import from the checkout
+  # (scripts/serve/traces.py, registry/local.env), so the units run them out of
+  # /data/kernel-hive rather than from a copy that could not resolve its own
+  # imports. Landing these installs the units; ENABLING them is the operator's
+  # decision — docs/lab/INSTANA-VIEW-INVENTORY.md §2.
+  box_sync_add_pair kh-instana-forward-unit scripts/observability/kh-instana-forward.service /etc/systemd/system/kh-instana-forward.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-forward-timer scripts/observability/kh-instana-forward.timer /etc/systemd/system/kh-instana-forward.timer exact repo daemon-reload
+  # The VITALS leg is a THIRD carrier and a third pair, not a flag on the first,
+  # because its cadence is different by two orders of magnitude: Instana stamps
+  # metric points at INGEST, so the tick period IS the resolution in the tenant
+  # and a five-minute batch of five-second samples would land as one instant.
+  # 10 s; the whole argument is in scripts/observability/instana_vitals.py.
+  box_sync_add_pair kh-instana-vitals-unit scripts/observability/kh-instana-vitals.service /etc/systemd/system/kh-instana-vitals.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-vitals-timer scripts/observability/kh-instana-vitals.timer /etc/systemd/system/kh-instana-vitals.timer exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-unit scripts/observability/kh-trace-ship.service /etc/systemd/system/kh-trace-ship.service exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-timer scripts/observability/kh-trace-ship.timer /etc/systemd/system/kh-trace-ship.timer exact repo daemon-reload
   box_sync_add_pair solaris-cdrv streamhost/guest-agents/solaris/cdrv.py /root/cdrv.py exact repo
   box_sync_add_pair solaris-gexec streamhost/guest-agents/solaris/gexec.py /root/gexec.py exact repo
   box_sync_add_pair irix-irixexec streamhost/guest-agents/irix/irixexec.py /root/irixexec.py exact repo

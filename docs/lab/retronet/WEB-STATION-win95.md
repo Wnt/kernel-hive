@@ -115,13 +115,55 @@ the bridge: the daemon dials the agent **directly at `10.99.0.13:7777`**
 (`SH_WARPD_ADDR`, `--warpd-addr`, `stream.pointer.agentAddress`,
 `operator.labctl.warpd_addr`).
 
-**Two agents, because the accept loop is serial.** `WIN.INI` carries
-`load=C:\WARPNET.EXE C:\WARPX.EXE`: the `:7777` **pointer** agent (the golden's
-existing one, untouched) and a second `-DWARP_PORT=7788` build for **exec**. The
-`:7777` agent accepts one connection at a time and the daemon holds its pointer
-connection persistently, so anything else — exec, and any hand-driven bring-up
-click — must use `:7788`. Expect a hand-rolled `nc 10.99.0.13 7777` to connect
-and then do nothing: it is sitting in the backlog behind the daemon.
+**Two agents, because a client owns the agent exclusively.** `WIN.INI` carries
+`load=C:\WARPNET.EXE C:\WARPX.EXE`: the `:7777` **pointer** agent and a second
+`-DWARP_PORT=7788` build for **exec**. The `:7777` agent serves ONE connection at
+a time and the daemon holds its pointer connection persistently, so anything else
+— exec, and any hand-driven bring-up click — must use `:7788`.
+
+**Do not hand-dial `:7777` on a live station.** Since the 2026-08-31 takeover fix
+(below) a new connection there does not queue politely in the backlog — it
+*evicts the daemon* and the visitor's pointer becomes yours until the daemon's
+next write fails and it re-dials. Use `:7788`.
+
+### The serial accept loop was a permanent pointer outage (fixed 2026-08-31)
+
+The agent used to `accept()` one client, `recv()` it until the peer closed, then
+accept the next. The daemon (`warpd.rs`) reconnects on ANY write error, and when
+the host end of a TCP connection vanishes mid-flight across the tap, **no FIN or
+RST reaches the guest**: Winsock keeps the dead socket ESTABLISHED and the agent
+blocks in `recv()` on it forever, while the daemon's new connection completes into
+the listen backlog and is never accepted. Every `M x y` lands in the guest's
+receive buffer and is read by nobody.
+
+The symptom is **pointer MOTION dying alone**. Buttons ride the QEMU PS/2 device
+(`SH_WARPD_BUTTONS=qemu`) and keys ride QMP, so both keep working and the station
+looks half-alive — the operator reports "the mouse is broken" on a machine that
+still types. It is not a drift, an anchor loss, or a wrong-place pointer: the
+cursor **never moves at all**, because the bytes are never read.
+
+**The fingerprint, and it is unambiguous.** Compare the two ends of the same link:
+
+```
+ssh lab 'ss -tanp | grep ":7777"'          # host: ONE ESTAB
+ssh lab 'labctl exec win95 "netstat -an"'  # guest: TWO ESTAB on :7777
+```
+
+A guest socket the host has no counterpart for is the orphan wedging the loop.
+
+**The fix** (`streamhost/guest-agents/win9x/warpnet.c`) is a listener takeover:
+`serve()` now `select()`s on the listening socket as well as the current client.
+The daemon is the only client and holds at most one connection at a time (it
+drops the old `TcpStream` before dialling), so a new inbound connection *proves*
+the current peer is dead — the agent closes the old socket and serves the new
+one. Last writer wins, and a wedge heals on the daemon's next reconnect instead
+of lasting until someone reboots the guest. Accepted sockets also get
+`SO_KEEPALIVE`, which on Win95's ~2 h default is far too slow to rescue a
+visitor but does stop an orphan outliving the station.
+
+Because the agent lives in the golden's RAM image, shipping a new build is an
+offline inject plus a **cold** boot plus `checkpoint-guard recapture win95` —
+never `loadvm`, which would resurrect the old agent from pre-inject RAM.
 
 ## Containment — the guest reaches the retronet and nothing else
 

@@ -269,6 +269,8 @@ impl RealtimeInputSink for RamAbsSink {
             return Err(Reject::BackendDown);
         }
 
+        crate::probes::probe!(INPUT_ABS_RAM_WRITE);
+
         let mut edges = Vec::new();
         edge_cmds(p.queued_buttons, event.buttons, &mut edges);
         if edges.is_empty() && !event.ordered {

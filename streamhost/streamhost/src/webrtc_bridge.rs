@@ -94,9 +94,37 @@ async fn relay(
                     key_enc.request_keyframe();
                     eprintln!("[webrtc-bridge] keyframe requested by RTCP PLI/FIR");
                 } else if command[0] == b'S' {
+                    // A lease start is a REAL viewer on the fallback, not the
+                    // bridge merely being reachable: the feed connects on every
+                    // station boot whether or not anyone ever uses WebRTC.
+                    crate::probes::probe!(TRANSPORT_WEBRTC_SESSION);
+                    // The fallback being TAKEN is a transition worth a span: it
+                    // means a visitor's browser had no VideoDecoder and this
+                    // station is now paying for a second egress and a sidecar
+                    // process. A ROOT span — the bridge relays the browser's
+                    // session and hands this daemon no trace context, so there
+                    // is nothing to be a child of and nothing is invented
+                    // (contract §7). `guest.resume` hangs under it, because the
+                    // wake question is the same one on either transport.
+                    let mut span = crate::trace::Span::root(
+                        "transport.webrtc_fallback",
+                        crate::trace::Kind::Server,
+                    );
+                    span.attr("kh.transport", "webrtc").ok();
                     if let Some(p) = &pauser {
-                        p.session_started().await;
+                        crate::trace_session::guest_resume(
+                            span.ctx(),
+                            crate::idle::guest_believed_paused(),
+                            // This task holds only the station name, not the
+                            // Config, so the freezer mechanism is genuinely
+                            // unknown here. Saying so beats guessing "qmp" and
+                            // being wrong on every x11/shm station.
+                            "unknown",
+                            p.session_started(),
+                        )
+                        .await;
                     }
+                    span.end();
                     leases = leases.saturating_add(1);
                     key_enc.request_keyframe();
                     eprintln!("[webrtc-bridge] WebRTC session lease started");

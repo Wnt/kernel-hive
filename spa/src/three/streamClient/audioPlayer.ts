@@ -9,6 +9,7 @@
 // ============================================================================
 
 import type { ByteReader } from './byteReader';
+import { noteAudioBlocked, noteAudioStart } from './analyticsEvents';
 
 export class AudioPlayer {
   private audioDecoder: AudioDecoder | null = null;
@@ -16,6 +17,45 @@ export class AudioPlayer {
   private audioGain: GainNode | null = null;
   private audioEnabled = false;
   private playHead = 0;
+  /** Session start, for `stream.audio.toFirstSampleMs`. The question that
+   *  metric answers is the VISITOR's — how long after opening a machine does
+   *  it make a sound — so it is measured from the moment this session's audio
+   *  path exists, not from the first Opus packet (which would measure only the
+   *  decoder, and would return zero on every sample). */
+  private readonly createdAt = AudioPlayer.now();
+  /** One-shots: the first sample heard, and the first sample that could not
+   *  be. Independent, because a session blocked by autoplay policy and later
+   *  unblocked by a gesture must report BOTH — reporting only the first would
+   *  make every recovered session look permanently silent. */
+  private reportedStart = false;
+  private reportedBlocked = false;
+  // ---- CONTINUOUS AUDIO VITALS (streamClient/vitals.ts) --------------------
+  // Until these existed, audio continuity was UNFALSIFIABLE: the two one-shots
+  // above are the entire audio telemetry this player has ever had, so a
+  // session that fell silent thirty seconds in looked exactly like one that
+  // played for an hour. Every counter below is read off a value the player
+  // already computes; none of them costs a new measurement.
+  /** Times the play head fell behind the context clock — see `play()`. Each
+   *  one is a real gap the visitor heard, not a near miss. */
+  private underruns = 0;
+  /** Discontinuities in the server's Opus `seq`. The wire has carried a
+   *  sequence number since the format was written and this player read it
+   *  only to null-check it; a jump is the audio-side sibling of the video
+   *  frame_id gap that `framesDropped` is counted from. */
+  private seqGaps = 0;
+  private lastSeq: number | null = null;
+  /** AudioData frames scheduled, cumulative. The denominator for everything
+   *  above: 2 underruns in 50 packets and 2 in 50,000 are different faults. */
+  private framesPlayed = 0;
+  /** Capture timestamp (server µs epoch) of the most recent packet scheduled.
+   *  THE A/V SYNC OPERAND — the video side keeps the same stamp for the frame
+   *  it last decoded, off the same clock. */
+  private lastTsUs: number | null = null;
+
+  private static now(): number {
+    try { return typeof performance !== 'undefined' ? performance.now() : Date.now(); }
+    catch { return Date.now(); }
+  }
 
   /** onError mirrors the original `this.stats.lastError = …` assignments. */
   constructor(private readonly onError: (msg: string) => void) {}
@@ -34,6 +74,15 @@ export class AudioPlayer {
     const seq = await br.readU32LE();
     const tsUs = await br.readU32LE();
     if (seq == null || tsUs == null) return;
+    // Sequence continuity. Compared with `!== last + 1` rather than `>` so a
+    // RETRANSMIT (seq behind the newest) counts as a discontinuity too: the
+    // question this answers is "did the audio arrive as an unbroken run", and
+    // an out-of-order packet breaks the run whichever side of it it lands on.
+    // Unsigned 32-bit wrap is left alone: it happens once per 4.3 billion
+    // packets, i.e. never in a session, and special-casing it would be code
+    // that can only ever be wrong.
+    if (this.lastSeq != null && seq !== this.lastSeq + 1) this.seqGaps++;
+    this.lastSeq = seq;
     const pkt = await br.readToEnd();
     if (!pkt.length) return;
     this.setupDecoder(48_000, 2);
@@ -86,9 +135,42 @@ export class AudioPlayer {
       src.buffer = buffer;
       src.connect(gain);
       const now = ctx.currentTime;
-      if (this.playHead < now + 0.02) this.playHead = now + 0.02; // small anti-underrun lead
+      // THIS BRANCH *IS* AN UNDERRUN, and counting it is the whole audio half
+      // of the vitals lane. Reaching it means the play head — where the next
+      // packet was going to be scheduled — had already been overtaken by the
+      // context clock, i.e. the output ran out of buffered audio and the
+      // visitor heard a gap. The clamp that follows papers over the gap for
+      // the NEXT packet; nothing recorded that it happened.
+      //
+      // EXCEPT THE FIRST PACKET, which is not an underrun and must not be
+      // counted as one. `playHead` starts at 0 and `ctx.currentTime` does not,
+      // so the very first `play()` ALWAYS takes this branch — it is the play
+      // head being initialised, not audio running dry. Measured on the first
+      // live run, 2026-09-01: every session reported exactly 1 underrun, which
+      // would have made the metric's zero point a lie and any threshold on it
+      // fire on every visitor.
+      const starting = this.playHead === 0;
+      if (this.playHead < now + 0.02) {
+        if (!starting) this.underruns++;
+        this.playHead = now + 0.02;
+      }
       src.start(this.playHead);
       this.playHead += buffer.duration;
+      this.framesPlayed += frames;
+      this.lastTsUs = data.timestamp;
+      // The only proof this exhibit has audible sound. A configured decoder
+      // and a scheduled buffer prove neither: a suspended context accepts both
+      // and plays nothing, which is why the state is checked here rather than
+      // at setup, and why the two one-shots below are independent.
+      if (ctx.state === 'running') {
+        if (!this.reportedStart) {
+          this.reportedStart = true;
+          noteAudioStart(AudioPlayer.now() - this.createdAt, data.sampleRate, ctx.state);
+        }
+      } else if (!this.reportedBlocked) {
+        this.reportedBlocked = true;
+        noteAudioBlocked(ctx.state, 'context-not-running');
+      }
     } catch (e) {
       this.onError(`aplay: ${String(e)}`);
     } finally {
@@ -96,11 +178,43 @@ export class AudioPlayer {
     }
   }
 
+  /**
+   * One tick's continuous audio vitals, or null when there is no audio path at
+   * all (no AudioContext — the exhibit is silent by construction, and a row of
+   * zeroes would claim we measured silence rather than nothing).
+   *
+   * `leadMs` is the PLAY-HEAD LEAD: how far ahead of the context clock the
+   * scheduled audio reaches. It is the audio queue depth, and it is the number
+   * an underrun threshold would fire on before the underrun happens — a lead
+   * decaying toward the 20 ms floor is a stream about to break up, which the
+   * underrun counter can only report afterwards.
+   */
+  vitals(): { running: number; leadMs: number; underruns: number; gaps: number;
+              frames: number; tsUs: number | null } | null {
+    const ctx = this.audioCtx;
+    if (!ctx) return null;
+    return {
+      running: ctx.state === 'running' ? 1 : 0,
+      leadMs: Math.max(0, (this.playHead - ctx.currentTime) * 1000),
+      underruns: this.underruns,
+      gaps: this.seqGaps,
+      frames: this.framesPlayed,
+      tsUs: this.lastTsUs,
+    };
+  }
+
   setEnabled(on: boolean) {
     this.audioEnabled = on;
     if (this.audioGain) this.audioGain.gain.value = on ? 1 : 0;
     if (on && this.audioCtx && this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume().catch(() => { /* needs a gesture */ });
+      // A rejected resume is the autoplay policy saying no, and until now it
+      // was swallowed here with a comment — the visitor watched a silent
+      // machine and nothing outside their tab could ever know.
+      this.audioCtx.resume().catch((e) => {
+        if (this.reportedBlocked) return;
+        this.reportedBlocked = true;
+        noteAudioBlocked('suspended', e instanceof Error ? e.name : String(e));
+      });
     }
   }
   isEnabled(): boolean { return this.audioEnabled; }

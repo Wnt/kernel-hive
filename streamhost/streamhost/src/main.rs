@@ -21,10 +21,13 @@ mod encode;
 mod idle;
 mod input;
 mod input_telemetry;
+mod input_trace;
 mod key_quirks;
+mod key_state;
 mod mame_input;
 mod mame_sock;
 mod mga_ctl;
+mod probes;
 mod ptr_grid;
 mod ptr_reckon;
 mod ram_abs;
@@ -32,6 +35,9 @@ mod realtime_input;
 mod rel_bridge;
 mod session_ticket;
 mod signaling;
+mod trace;
+mod trace_guest;
+mod trace_session;
 mod transport;
 mod vice_keymap;
 mod vice_sock;
@@ -39,6 +45,7 @@ mod warpd;
 mod webrtc_bridge;
 mod x11_input;
 mod x11_keys;
+mod x11_warp;
 
 use std::sync::Arc;
 
@@ -76,6 +83,19 @@ async fn main() -> Result<()> {
     // Diagnostic pointer-input telemetry (SH_INPUT_TELEMETRY; default off).
     // Installs the process-global singleton + (level >= 1) the 1 s summary task.
     input_telemetry::init(cfg.input_telemetry, &cfg.tile);
+    // Feature-reach probes (docs/ANALYTICS.md §7): periodic + shutdown dump of
+    // the declared catalogue to {station}/probes.json.
+    probes::spawn(&cfg.tile);
+    // Span plane (docs/lab/TRACE-CONTEXT.md). Periodic spool of the daemon's
+    // spans; the shutdown flush rides probes' SIGTERM handler so there is only
+    // ONE handler owning the exit disposition.
+    trace::init(&cfg.tile);
+    // The daemon's own startup trace: guest process age, attach, first frame.
+    // No visitor is present, so it is a root — never a fabricated parent.
+    let mut startup = trace_guest::begin();
+    startup.guest_launch(&cfg);
+
+    let attach_t0 = std::time::Instant::now();
 
     let cap = match cfg.capture_backend {
         config::CaptureBackend::Qemu => capture::connect(&cfg.qmp_sock).await?,
@@ -84,14 +104,17 @@ async fn main() -> Result<()> {
             capture::connect_shm(&cfg.shm_path, cfg.shm_poll_ms, cfg.shm_damage).await?
         }
     };
+    startup.attached(&cfg, attach_t0.elapsed(), true);
     {
         let s = cap.state.lock().unwrap();
-        eprintln!(
-            "[streamhost] first frame {}x{} (shm={})",
+        let (w, h, shm) = (
             s.width.max(s.fb_w),
             s.height.max(s.fb_h),
-            !s.map_ptr.is_null()
+            !s.map_ptr.is_null(),
         );
+        drop(s);
+        eprintln!("[streamhost] first frame {w}x{h} (shm={shm})");
+        startup.first_frame(w, h, shm);
     }
 
     // Guest audio (opt-in per station), from one of two sources. `dbus` rides the

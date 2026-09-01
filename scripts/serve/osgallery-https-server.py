@@ -112,9 +112,14 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clientcmd  # noqa: E402
 import clientlog  # noqa: E402
+import deploy_hint  # noqa: E402
+import logsink  # noqa: E402
 import restore  # noqa: E402
 import signal_route  # noqa: E402
 import static_files  # noqa: E402
+import telemetry_routes  # noqa: E402
+import telemetry_stores  # noqa: E402  (the /analytics + /coverage + /traces group)
+import tracing_http  # noqa: E402  (request spans into TRACES; docs/lab/TRACE-CONTEXT.md)
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
@@ -135,7 +140,6 @@ from config import (  # noqa: E402
     SIGNAL_CONFIG,
     SIGNAL_HOST,
     STREAM_KEY_FILE,
-    USAGE_STATS,
     WEBROOT,
 )
 from static_files import MIME  # noqa: E402
@@ -144,11 +148,40 @@ from static_files import MIME  # noqa: E402
 # handlers reach them as module globals.
 AUTH = None
 STREAM_KEY = b""
-# Interaction counters. Unlike AUTH this exists on BOTH listeners: a station's
-# usage total is a fact about the machine, and the lab's own LAN traffic is as
-# real a use of it as a visitor's. Only the per-PERSON half needs a session, and
-# that half lives behind /auth/usage/report.
-USAGE = usage.UsageStore(USAGE_STATS)
+# The four telemetry stores and the sink that writes to one of them, built as a
+# group by serve/telemetry_stores.py — the same seam, and for the same reason,
+# as the route group in telemetry_routes.py: this file sits on the 600-line hard
+# cap and a fourth pillar did not fit.
+USAGE, ANALYTICS, COVERAGE, TRACES, LOGS, TELEMETRY = telemetry_stores.build(SIGNAL_HOST or "labhost")
+
+
+# The deploy trigger (docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §1.1). Its entire
+# side effect is bumping one file's mtime; it runs no git operation, spawns no
+# process, and CANNOT say what to deploy. The reconciler fetches origin/main
+# itself and converges to what IT finds.
+#
+# UNARMED UNLESS BOTH SECRETS ARE PRESENT ON THE BOX. Keys are read from
+# root-only files outside the repo — never from anything the repo carries, and
+# never from an env var that could reach a log. With no key the receiver answers
+# 503 to everything, which is the correct default for a public deploy trigger:
+# the closed state is the one you get by doing nothing.
+def _deploy_secret(name: str) -> bytes:
+    path = Path(f"/etc/kh/{name}")
+    try:
+        if path.stat().st_mode & 0o077:
+            return b""  # group/other-readable: refuse rather than trust it
+        return path.read_bytes().strip()
+    except OSError:
+        return b""
+
+
+DEPLOY_HINT = deploy_hint.HintReceiver(
+    keys={
+        "webhook": _deploy_secret("deploy-webhook-secret"),
+        "actions": _deploy_secret("deploy-actions-secret"),
+    },
+    wakeup=Path("/data/vms/streamhost/.kh-reconciler/wakeup"),
+)
 
 
 class H(BaseHTTPRequestHandler):
@@ -352,6 +385,18 @@ class H(BaseHTTPRequestHandler):
         # POST; only the GET-heavy static/thumbnail traffic needs persistence.
         self.close_connection = True
 
+        # POST /kh/deploy-hint — the deploy trigger (§1.1). MUST be dispatched
+        # BEFORE `_public_gate`: authorisation here is write access to the REPO,
+        # proved by the HMAC over the raw body, not a visitor session. GitHub
+        # has no cookie, so behind the gate every delivery is 401 — which is
+        # exactly what happened on the first real ping, while the LAN listener
+        # (where `self.public` is false and the gate never runs) answered 202
+        # and made the route look correct. The comment on the misplaced version
+        # already claimed "outside the public gate"; the code did not do it.
+        # Verify this route on the PUBLIC listener or you have tested nothing.
+        if path == "/kh/deploy-hint":
+            return deploy_hint.handle_post(self, DEPLOY_HINT)
+
         if self.public:
             if auth_routes.dispatch(self, path, "POST", AUTH, PUBLIC_ORIGIN):
                 return
@@ -380,6 +425,10 @@ class H(BaseHTTPRequestHandler):
                 return self._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
             user = AUTH.user_for_token(auth_routes.session_token(self)) if (self.public and AUTH) else None
             return usage.handle_post(self, USAGE, user["id"] if user else None)
+
+        # The analytics plane's routes, as a group (serve/telemetry_routes.py).
+        if telemetry_routes.dispatch(self, path, "POST", TELEMETRY, PUBLIC_ORIGIN):
+            return
 
         # POST /clientcmd/admin — enqueue a command for polling UI tabs.
         if path == "/clientcmd/admin":
@@ -425,6 +474,9 @@ class H(BaseHTTPRequestHandler):
         if path == "/usage/stations.json":
             return usage.serve_stations(self, USAGE)
 
+        if telemetry_routes.dispatch(self, path, "GET", TELEMETRY, PUBLIC_ORIGIN):
+            return
+
         if path == "/signal/index.json":
             return signal_route.serve_index(self)
 
@@ -436,13 +488,18 @@ class H(BaseHTTPRequestHandler):
         return static_files.serve_static(self, path)
 
     def log_message(self, fmt, *args):
-        sys.stderr.write(f"[serve] {self.address_string()} - {fmt % args}\n")
+        # Through the sink: it stamps the timestamp this file has never had, and
+        # decides (not by default) whether to store it — see logsink.access.
+        logsink.access(self.address_string(), fmt % args)
 
 
 class PublicH(H):
     """The edge-facing handler: same routes, no implicit trust. See auth/gate.py."""
 
     public = True
+
+
+tracing_http.install(H, TRACES)  # one visit one trace; static is NOT traced (tracing_http.route_of)
 
 
 def _start_public_listener():
@@ -496,9 +553,11 @@ def main():
     ctx.load_cert_chain(certfile=CERT, keyfile=KEY)
     httpd = ThreadingHTTPServer((BIND_IP, PORT), H)
     httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
-    sys.stderr.write(
-        f"[serve] https://{SIGNAL_HOST}:{PORT}/  webroot={WEBROOT}  "
-        f"signal={SIGNAL_CONFIG}  admin_eval={'ON' if OSG_ADMIN_EVAL else 'off'}\n"
+    # The per-boot delimiter this append-mode log file has never had; the trap
+    # it closes is written up in serve/logsink.py.
+    logsink.boot_banner(
+        f"https://{SIGNAL_HOST}:{PORT}/  webroot={WEBROOT}  "
+        f"signal={SIGNAL_CONFIG}  admin_eval={'ON' if OSG_ADMIN_EVAL else 'off'}"
     )
     with contextlib.suppress(KeyboardInterrupt):
         httpd.serve_forever()

@@ -29,6 +29,7 @@ use tokio::sync::Mutex;
 pub(crate) fn key_qnum(code: u32, legacy_kbd: bool) -> u32 {
     if code & 0xff00 == 0xe000 {
         if legacy_kbd && (0xe047..=0xe053).contains(&code) {
+            crate::probes::probe!(KEY_QUIRK_LEGACY_CURSOR);
             code & 0x7f
         } else {
             0x80 | (code & 0x7f)
@@ -48,9 +49,17 @@ pub(crate) fn key_qnum(code: u32, legacy_kbd: bool) -> u32 {
 /// and KEYCODE_RIGHT of the whole edit cluster). On that machine, as on the
 /// Apple II, LEFT ARROW is the rubout key: `0x0e:0xe04b`.
 pub fn remap_key(code: u32, map: &[(u32, u32)]) -> u32 {
-    map.iter()
-        .find(|(from, _)| *from == code)
-        .map_or(code, |(_, to)| *to)
+    match map.iter().find(|(from, _)| *from == code) {
+        // Only a real rewrite counts. An identity entry, or a table that never
+        // matches, must read as "this quirk did nothing" — otherwise every
+        // keystroke on a station that merely DECLARES a table looks like a hit.
+        Some(&(_, to)) if to != code => {
+            crate::probes::probe!(KEY_QUIRK_REMAP);
+            to
+        }
+        Some(&(_, to)) => to,
+        None => code,
+    }
 }
 
 /// Minimum-hold bookkeeping for `SH_KEY_MIN_HOLD_MS` (see the config field doc).

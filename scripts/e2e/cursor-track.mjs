@@ -13,23 +13,88 @@
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { openStation, probeVideo, shotDir, galleryUrl } from './station-open.mjs';
 
 const STATION = process.argv[2];
-const CARD = process.argv[3] || STATION;
-const URL = process.env.GALLERY_URL || 'https://192.0.2.10:8443';
-const OUT = `${process.env.HOME}/e2e/shots`;
-fs.mkdirSync(OUT, { recursive: true });
+// argv[3] used to be a CARD NAME matched with getByText — it selected prose as
+// happily as it selected the tile, and a miss looked exactly like a dead
+// stream. Cards are resolved by href now (station-open.mjs); the argument is
+// accepted and ignored so old invocations do not silently change meaning.
+const URL = galleryUrl();
+const OUT = shotDir();
 const TS = Date.now();
 const log = (...a) => console.error('#', ...a);
 
 // Locate the guest cursor NOW (guest px) via the labhost QMP nudge-diff locator.
+//
+// TWO TRANSPORTS, because CT950 — where this probe runs — has NO ssh route to
+// labhost. The original `ssh lab` call therefore always threw, was swallowed by
+// the catch, and reported `measured: none`. That reads as "the guest cursor did
+// not move", which is a claim about the STATION that a transport failure has no
+// standing to make. So a locator failure is now LOUD and distinguishable.
+//   KH_LOCATE_RELAY=<dir>  → file-drop RPC answered by scripts/e2e/locate-relay.sh
+//   otherwise              → direct `ssh lab` (works from a workstation session)
+const RELAY = process.env.KH_LOCATE_RELAY || '';
+// Two very different failures, kept apart on purpose:
+//   locateErrors  — the locator could not be REACHED or crashed. The run is
+//                   worthless; nothing was measured.
+//   locateNoMatch — the locator ran and honestly said "the screen was too busy
+//                   here to tell". That is one lost sample, not a broken run,
+//                   and a live desktop with a redrawing window produces them.
+// Collapsing the two made a healthy control print UNTRUSTWORTHY over a single
+// busy frame, which would have trained the reader to ignore the word.
+let locateErrors = 0;
+let locateNoMatch = 0;
+// The locator reports the framebuffer size on EVERY answer, including NO_MATCH —
+// it read the screendump either way. Keeping it here means a busy first frame
+// costs us one sample instead of the whole run's coordinate space.
+let lastFb = null;
+
+function locateViaRelay() {
+  const id = `${TS}-${Math.random().toString(36).slice(2, 8)}`;
+  fs.writeFileSync(`${RELAY}/req/${id}`, STATION);
+  const deadline = Date.now() + 120000;
+  while (Date.now() < deadline) {
+    const respPath = `${RELAY}/resp/${id}`;
+    if (fs.existsSync(respPath)) {
+      const out = fs.readFileSync(respPath, 'utf8');
+      fs.unlinkSync(respPath);
+      return out;
+    }
+    // Busy-wait is fine: this probe has nothing else to do while the guest
+    // settles, and the relay answers in ~2s.
+    execFileSync('sleep', ['0.2']);
+  }
+  throw new Error('relay timeout');
+}
+
 function locate() {
   try {
-    const out = execFileSync('ssh', ['lab', `python3 /tmp/mgc.py ${STATION} --no-reset 2>/dev/null`],
-      { encoding: 'utf8', timeout: 60000 });
-    const m = out.match(/HOME_TO=(\d+),(\d+)/);
-    return m ? { x: +m[1], y: +m[2] } : null;
-  } catch (e) { log('locate err', String(e).slice(0, 120)); return null; }
+    const out = RELAY
+      ? locateViaRelay()
+      : execFileSync('ssh', ['lab', `python3 /tmp/mgc.py ${STATION} --no-reset`], {
+          encoding: 'utf8',
+          timeout: 120000,
+        });
+    // AT= is locate-live-cursor.py (animation-masked, live-safe); HOME_TO= is
+    // the older golden tool. NO_MATCH is a real, honest answer and must NOT be
+    // read as a coordinate.
+    const fbAny = out.match(/\bFB=(\d+)x(\d+)/);
+    if (fbAny) lastFb = [+fbAny[1], +fbAny[2]];
+    const m = out.match(/\b(?:AT|HOME_TO)=(\d+),(\d+)/);
+    if (!m) {
+      if (/NO_MATCH/.test(out)) locateNoMatch++;
+      else locateErrors++;
+      log('LOCATE-NO-MATCH:', out.replace(/\s+/g, ' ').slice(0, 200));
+      return null;
+    }
+    const fb = out.match(/\bFB=(\d+)x(\d+)/);
+    return { x: +m[1], y: +m[2], fb: fb ? [+fb[1], +fb[2]] : null };
+  } catch (e) {
+    locateErrors++;
+    log('LOCATE-ERROR:', String(e).replace(/\s+/g, ' ').slice(0, 200));
+    return null;
+  }
 }
 
 const browser = await chromium.launch({
@@ -40,25 +105,57 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ ignoreHTTPSErrors: true, viewport: { width: 1600, height: 900 } });
 page.on('pageerror', e => log('pageerror', String(e).slice(0, 200)));
 
-await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-await page.waitForTimeout(3000);
-const card = page.getByText(new RegExp(CARD.replace(/[.]/g, '\\.'), 'i')).first();
-await card.scrollIntoViewIfNeeded();
-const cbox = await card.boundingBox();
-if (!cbox) { console.log('FAIL: no card'); await browser.close(); process.exit(1); }
-await page.mouse.click(cbox.x + cbox.width / 2, cbox.y + cbox.height / 2);
+const opened = await openStation(page, URL, STATION, { log, waitMs: 45000 });
+if (!opened.ok) {
+  // Say WHICH leg failed. "no live video" after a click that never navigated is
+  // a broken probe, not a station finding, and the two must never read alike.
+  await page.screenshot({ path: `${OUT}/cursor-track-${STATION}-${TS}-openfail.png` }).catch(() => {});
+  console.log(`FAIL(probe): ${opened.why}  url=${opened.url}`);
+  await browser.close();
+  process.exit(1);
+}
+const probe = probeVideo;
+const vinfo = opened.video;
 
-const probe = () => {
-  for (const v of document.querySelectorAll('video')) {
-    if (v.srcObject && v.videoWidth > 0 && v.readyState >= 2) return { w: v.videoWidth, h: v.videoHeight };
+// THE GUEST COORDINATE SPACE IS THE FRAMEBUFFER, NOT `videoWidth`.
+//
+// This probe used to take the guest resolution from the <video> element. That
+// is wrong whenever ABR is downscaling: on a loaded box the same win311 tile
+// reported 1024x768 on one run and 768x576 on the next, and the second run's
+// errors came out at 78-216px — all of them exactly the 1024/768 ratio. The
+// station was fine. The probe had simply aimed in a coordinate space nobody
+// else was using: the SPA maps a pointer to a FRACTION of the content box and
+// the guest lands it in TRUE framebuffer pixels, so a shrunken decode changes
+// nothing about where the cursor should go.
+//
+// A run that silently rescales its own targets manufactures a station fault out
+// of an encoder decision, which is the single most expensive kind of false
+// finding this harness can produce. So the framebuffer size comes from the
+// locator's own screendump — the same image the measurement is read from, so
+// target and measurement cannot drift into different spaces.
+function sniffFramebuffer(tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    const probeRes = locate();
+    if (probeRes && probeRes.fb) return probeRes.fb;
+    if (lastFb) return lastFb; // NO_MATCH still told us the framebuffer size
   }
   return null;
-};
-let vinfo = null;
-for (let i = 0; i < 30 && !vinfo; i++) { await page.waitForTimeout(1000); vinfo = await page.evaluate(probe); }
-if (!vinfo) { console.log('FAIL: no live video'); await browser.close(); process.exit(1); }
-const GW = +(process.argv[4] || vinfo.w), GH = +(process.argv[5] || vinfo.h);
-log('video', JSON.stringify(vinfo), 'guest', GW, 'x', GH);
+}
+let GW = +(process.argv[4] || 0), GH = +(process.argv[5] || 0);
+if (!(GW > 0 && GH > 0)) {
+  const fb = sniffFramebuffer();
+  if (!fb) {
+    console.log('FAIL(probe): could not read the framebuffer size from the locator — refusing to guess a coordinate space.');
+    await browser.close();
+    process.exit(1);
+  }
+  [GW, GH] = fb;
+  // The calibration call is not a measurement; do not let it colour the verdict.
+  locateNoMatch = 0;
+  locateErrors = 0;
+}
+log('video', JSON.stringify(vinfo), 'guest(framebuffer)', GW, 'x', GH,
+    vinfo && vinfo.w !== GW ? `(NOTE: decode is ${vinfo.w}x${vinfo.h} — ABR is downscaling)` : '');
 
 const video = page.locator('video').last();
 const vbox = await video.boundingBox();
@@ -127,8 +224,21 @@ await page.screenshot({ path: `${OUT}/cursor-track-${STATION}-${TS}.png` });
 fs.writeFileSync(`${OUT}/cursor-track-${STATION}-${TS}.json`, JSON.stringify(results, null, 2));
 const errs = results.points.map(p => p.errPx).filter(e => e != null);
 const maxErr = errs.length ? Math.max(...errs) : 999;
-const ok = maxErr <= 12 && (results.reload?.errPx ?? 999) <= 15 && (results.drag?.errPx ?? 999) <= 20;
-console.log(`RESULT ${STATION}: track_max=${maxErr}px reload=${results.reload?.errPx}px drag=${results.drag?.errPx}px -> ${ok ? 'PASS' : 'REVIEW'}`);
+results.locateErrors = locateErrors;
+results.locateNoMatch = locateNoMatch;
+const measured = errs.length;
+const ok = measured >= 3 && maxErr <= 12 && (results.reload?.errPx ?? 999) <= 15 && (results.drag?.errPx ?? 999) <= 20;
+// A run whose LOCATOR could not be reached measures nothing. Saying REVIEW there
+// invites the reader to treat a broken transport as a station fault, so it gets
+// its own word. Same if too few points survived to say anything.
+const untrustworthy = locateErrors > 0 || measured < 3;
+if (locateErrors) {
+  console.log(`LOCATOR-BROKEN ${STATION}: ${locateErrors} locate call(s) could not run — this run measures NOTHING about the station.`);
+}
+if (locateNoMatch) {
+  console.log(`NOTE ${STATION}: ${locateNoMatch} point(s) unmeasurable (screen too busy at that moment) — lost samples, not a fault.`);
+}
+console.log(`RESULT ${STATION}: points=${measured}/${results.points.length} track_max=${maxErr}px reload=${results.reload?.errPx}px drag=${results.drag?.errPx}px errors=${locateErrors} nomatch=${locateNoMatch} -> ${untrustworthy ? 'UNTRUSTWORTHY' : ok ? 'PASS' : 'REVIEW'}`);
 console.log(`shots: ${OUT}/cursor-track-${STATION}-${TS}.{png,json}`);
 await browser.close();
 process.exit(ok ? 0 : 2);

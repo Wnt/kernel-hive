@@ -75,6 +75,15 @@ pub struct Au {
     pub is_key: bool,
     pub capture_ts_us: u32,
     pub frame_id: u32,
+    /// Snapshot -> AU-ready latency (`worker.rs`'s "snap->AU" number, us),
+    /// carried on the AU itself rather than left in journal text only. Read
+    /// only by `trace_session.rs::effect_encoded`, and only for the ONE AU
+    /// answering a sampled input edge — never a per-frame span, per
+    /// `trace/mod.rs`'s cost rule. Populated for every AU regardless (it is
+    /// already computed for the p50/p95 journal line this replaces as the
+    /// span-carrying source of truth), so reading it here costs nothing more
+    /// than the existing `Instant::now()` this module already took.
+    pub encode_us: u32,
 }
 
 /// Static (per-station) encoder configuration threaded from Config into the

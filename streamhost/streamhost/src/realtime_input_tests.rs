@@ -203,59 +203,108 @@ fn a_carried_position_and_its_edge_are_one_event() {
     assert_eq!((st.x, st.y, st.buttons), (300, 400, 1));
 }
 
-/// EVERY routed sink that has a pointer must take its BUTTON edges too.
+/// EVERY pointer sink must DECLARE how it keeps its clicks from racing its
+/// motion, and the button routing must FOLLOW the declaration.
 ///
-/// This is the regression that produced the test. `mgactl` landed routing
-/// motion but not clicks, and the failure mode hides itself: `apply_move_abs`
-/// hands motion to whatever router exists, so the cursor tracks perfectly and
-/// only the click is wrong — the press fires down the D-Bus PS/2 path while the
-/// sink is still walking the cursor to the point the click was aimed at, and
-/// the guest sees press-at-A / motion / release-at-B, a drag. On aix432 that
-/// let links work while HTML form fields never took keyboard focus, and it was
-/// reported as "the keyboard stopped working in Netscape".
+/// The regression that produced this test: `mgactl` landed routing motion but
+/// not clicks, and the failure mode hides itself — `apply_move_abs` hands
+/// motion to whatever router exists, so the cursor tracks perfectly and only
+/// the click is wrong: the press fires down the D-Bus PS/2 path while the
+/// sink is still walking the cursor, and the guest sees press-at-A / motion /
+/// release-at-B, a drag. On aix432 links kept working while HTML form fields
+/// never took keyboard focus, reported as "the keyboard stopped working".
 ///
-/// So: enumerate the backends rather than trusting a hand-kept list. Anything
-/// that produces a router (`from_config` returns None for the D-Bus ones) and
-/// declares a pointer (`pointer_mode() != "none"`) must route buttons.
+/// What this test actually enforces, precisely:
+///  - every backend that builds a router AND has a pointer must have a
+///    `Some(..)` arm in `edge_discharge` (a new sink with NO arm goes red
+///    here — that is the mgactl regression guard);
+///  - names with no pointer sink must declare nothing;
+///  - `backend_routes_buttons` agrees with the declaration (it is derived
+///    from the table, so this pins the derivation staying that way);
+///  - the declared value per sink is pinned below, so an accidental table
+///    edit is loud.
+///
+/// HONESTY — a declaration EXISTS here, it is not proven TRUE. A sink can
+/// declare `VerifiedWarp` without implementing any verification and stay
+/// green in this test. That is more LEGIBLE than the old exception list
+/// (under which a sink could be exempted without implementing anything), not
+/// more ENFORCED: the invariant does not cover what a `VerifiedWarp` or
+/// `TimedHold` sink actually does — their own tests must (x11_warp.rs pins
+/// the armed hold; the warpd delay lives untested in input.rs, as before).
+/// The backend list below is hand-kept, like the enum it mirrors: adding the
+/// variant here is part of adding a sink.
 #[test]
-fn routes_buttons_invariant_every_pointer_sink_takes_its_edges() {
+fn every_pointer_sink_declares_an_edge_discharge_and_routing_follows_it() {
+    use crate::config::InputBackend as B;
     for backend in [
-        InputBackend::Warpd,
-        InputBackend::GalleryHid,
-        InputBackend::X11Test,
-        InputBackend::MameCmd,
-        InputBackend::MameSock,
-        InputBackend::ViceSock,
-        InputBackend::MgaCtl,
-        InputBackend::ArtistCtl,
-        InputBackend::RamAbs,
+        B::Disabled,
+        B::DbusAbs,
+        B::DbusRel,
+        B::Warpd,
+        B::GalleryHid,
+        B::X11Test,
+        B::MameCmd,
+        B::MameSock,
+        B::ViceSock,
+        B::MgaCtl,
+        B::ArtistCtl,
+        B::RamAbs,
+        B::X11Warp,
     ] {
-        let routed = !matches!(
-            backend,
-            InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel
-        );
+        let builds_router = !matches!(backend, B::Disabled | B::DbusAbs | B::DbusRel);
         let has_pointer = backend.pointer_mode() != "none";
-        if !(routed && has_pointer) {
-            continue; // vicesock is keyboard-only: no pointer verb at all.
+        for knob in [false, true] {
+            let d = edge_discharge(backend.as_str(), knob);
+            if builds_router && has_pointer {
+                assert!(
+                    d.is_some(),
+                    "pointer sink {:?} declares NO edge discharge: its motion would \
+                     route to the sink and its clicks around it -- the mgactl drag \
+                     regression. Add an arm to edge_discharge, with the reason.",
+                    backend.as_str()
+                );
+            } else {
+                assert_eq!(
+                    d,
+                    None,
+                    "{:?} has no pointer sink and must not declare a discharge",
+                    backend.as_str()
+                );
+            }
+            assert_eq!(
+                backend_routes_buttons(backend.as_str(), knob),
+                d == Some(EdgeDischarge::RoutesEdges),
+                "backend_routes_buttons must stay derived from edge_discharge ({:?})",
+                backend.as_str()
+            );
         }
-        assert!(
-            backend_routes_buttons(backend.as_str(), false),
-            "backend {:?} routes motion to its sink but NOT button edges -- its \
-             clicks would fire around the queue while the sink is still moving \
-             the cursor. Add it to backend_routes_buttons.",
-            backend.as_str()
+    }
+    // Pin the declared values, so an accidental table edit is red, not silent.
+    // warpd: the knob is warpd's alone -- agent buttons by default, and the
+    // SH_WARPD_BUTTONS=qemu hybrid is a timed, unverified hold (TimedHold, and
+    // named that way on purpose).
+    assert_eq!(
+        edge_discharge("warpd", false),
+        Some(EdgeDischarge::RoutesEdges)
+    );
+    assert_eq!(
+        edge_discharge("warpd", true),
+        Some(EdgeDischarge::TimedHold)
+    );
+    // x11warp: no XTEST on the guest server, nothing to inject an edge WITH;
+    // the QueryPointer-confirmed warp + armed hold discharge instead, and the
+    // warpd knob must not change it.
+    for knob in [false, true] {
+        assert_eq!(
+            edge_discharge("x11warp", knob),
+            Some(EdgeDischarge::VerifiedWarp)
         );
     }
-}
-
-/// warpd is the one deliberate exception, and only under SH_WARPD_BUTTONS=qemu:
-/// there the split is on purpose and input.rs holds the edge back by
-/// SH_WARPD_BUTTON_DELAY_MS instead.
-#[test]
-fn warpd_hybrid_buttons_are_the_one_deliberate_exception() {
-    assert!(backend_routes_buttons("warpd", false));
-    assert!(!backend_routes_buttons("warpd", true));
-    // The exception is warpd's alone: no other sink changes with the knob.
+    // The socket/agent sinks take position+edge as one ordered event, knob or
+    // no knob. artistctl (hpuxvue) and ramabs (rhapsody) are in this list on
+    // purpose: `backend_routes_buttons` is now DERIVED from the table, so a
+    // station missing from it silently loses its button routing, and a missing
+    // arm is exactly what an enum-driven test cannot see.
     for b in [
         "gallery-hid",
         "x11test",
@@ -265,11 +314,13 @@ fn warpd_hybrid_buttons_are_the_one_deliberate_exception() {
         "artistctl",
         "ramabs",
     ] {
-        assert_eq!(
-            backend_routes_buttons(b, true),
-            backend_routes_buttons(b, false),
-            "{b} must not depend on the warpd hybrid-buttons knob"
-        );
+        for knob in [false, true] {
+            assert_eq!(edge_discharge(b, knob), Some(EdgeDischarge::RoutesEdges));
+            assert!(
+                backend_routes_buttons(b, knob),
+                "{b} must keep routing its edges, knob or no knob"
+            );
+        }
     }
 }
 

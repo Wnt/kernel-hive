@@ -127,6 +127,7 @@ impl RelModel {
     /// Aim at a new target (guest delta units). Only the newest target ever
     /// matters — pending motion is re-aimed, never queued.
     pub fn set_target(&mut self, tx: i32, ty: i32, edge: (i8, i8)) {
+        crate::probes::probe!(INPUT_ABS_REL_BRIDGE);
         self.target = (tx, ty);
         self.have_target = true;
         if edge.0 != self.edge.0 {
@@ -257,6 +258,7 @@ pub(crate) fn focus_hint(st: &mut MouseState, cfg: &Config) {
 /// session, i.e. exactly what the pin exists to prevent. Held under the mouse
 /// lock by every caller so no sample can interleave.
 pub(crate) async fn pin_home(cap: &Capture, cfg: &Config, st: &mut MouseState) {
+    crate::probes::probe!(INPUT_REL_REHOMED);
     // KNOWN-POSITION seed (SH_REL_HOME_TO=x,y guest px): the guest cursor sits
     // at a baked constant after a loadvm restore, so instead of driving it to
     // the corner and walking back — a ~1 s excursion on a slow ADB link that

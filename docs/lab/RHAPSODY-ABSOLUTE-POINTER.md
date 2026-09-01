@@ -165,7 +165,48 @@ start), and the **streamhost binary before the env fixture**
 (`SH_INPUT_BACKEND=ramabs` is unknown to an older daemon).
 
 **Rollback is two lines**: drop the `-device kh-ramabs` line from the launcher
-and set `SH_INPUT_BACKEND=dbus-rel` with `SH_CURSOR_SCALE=2.09` in the fixture.
+and set `SH_INPUT_BACKEND=dbus-rel` with `SH_CURSOR_SCALE=2.09` in the fixture —
+and it is two lines *only because* the fixture also still carries
+`SH_REL_MAX_STEP=24` / `SH_REL_STEP_PACE_MS=16`. Those are dead weight under
+`ramabs` and load-bearing the instant `dbus-rel` returns: DR2's PS/2 driver takes
+only the first packet of a chained relative move and desyncs above ~30 units/send
+at any pace. They went missing from the original absolute fixture and were
+restored 2026-08-31; a rollback in that window would have recovered onto a
+pointer that desyncs on a fast drag, with nothing failing and nothing logged.
+
+**A value that is dormant under the shipped configuration and load-bearing on
+the recovery path is more dangerous than one that is simply wrong**, because it
+fires when someone is already dealing with a problem, under pressure, in a file
+they did not write — and because "unused" is exactly what it looks like to
+anyone tidying. Every such value in this station's fixture now says what it is
+*for*, not just what it is.
+
+What made this survivable was luck about **which rollback happened when**. The
+rollback that was actually taken came after the *failed* cutover, returning the
+pointer to a path it had never left. Had it come after the *successful* one, the
+station would have recovered onto a subtly broken pointer while everyone
+believed it had returned to a known-good state — which is the condition under
+which people stop trusting the station rather than the change.
+
+### The fence that was built instead of a fix
+
+The same trace found that the type=4 DIRECT relative record is the ONE pointer
+record `input.rs` routes to nobody: types 1/2/3/5 all consult the router, type=4
+goes straight to D-Bus `Mouse.RelMotion`. On a routed backend that is a
+single-injector violation waiting for a client to send one — and the only thing
+holding it shut is `spa.pointerRel` being false, which nothing enforced.
+
+`validate_rules.py` now enforces it: **a backend that constructs an
+`InputRouter` may not advertise `spa.pointerRel: true`.** Keyed on the backend,
+not the transport — `nt351` is transport `abs` on backend `dbus-rel`, and several
+stations are transport `abs` with no backend at all; those build no router, so
+type=4 is their ONLY injector and the flag is legitimate. The routed set is
+derived as a NEGATIVE of `from_config`'s own first match arm
+(`Disabled | DbusAbs | DbusRel => return None`), so it fails closed: a sink added
+tomorrow counts as routed the day it is added, not the day someone remembers.
+
+The router consultation on the type=4 arm is the proper fix and is deliberately
+NOT done here — shared input routing is the last thing to change mid-wave.
 
 **No golden recapture.** `kh-ramabs` registers no `VMStateDescription` and models
 no hardware, so it adds no section to the migration stream; the device set and
@@ -224,6 +265,138 @@ Two things the shipped run showed that the rig could not:
   unverified address. That is not a fault: `ERR` is a liveness ack on this wire,
   the daemon does not stall on it, and the browser streams targets continuously,
   so the next one lands. Expect exactly one such refusal per connection.
+
+## What the first proof could not see, and the two defects that hid there
+
+**The rule-9 sweep above proved the mechanism, not the shipped path.** It
+commanded every target over `ramabs/1` with its own socket client and
+**`streamhost` was not running** — so `ram_abs.rs`, the daemon sink that
+actually ships, sat entirely outside the proof boundary, and so did every
+session boundary. Both proof runs used ONE session. That is invisible by
+construction: the parts under test were the well-tested parts.
+
+Re-proved at the shipping boundary — real daemon, real browser sessions over
+WebTransport, sequential, one killed mid-stream with no clean close — two real
+defects appeared immediately, neither of which any number of socket-client
+repetitions could have found.
+
+**1. Publishes accumulated in flight.** `kh_movea` issued on every target. The
+daemon streams targets at pointer rates, and each nudge-publish injects a
+relative event the guest consumes on its own schedule — so a second publish
+issued before the first was consumed left BOTH deltas to land on top of the most
+recent write, the read-back then disagreed and issued more. It ran away:
+`gave up publishing 560,330 after 6 tries (guest holds 560,302)`, the first time
+a browser drove it instead of one target at a time. Fixed by allowing **one
+publish in flight**: a newer target supersedes an unconfirmed one (latest wins),
+and `kh_tick` issues it once the wire is clear — and holds any deferred button
+edge until the pointer is at the NEWEST target, not merely at some target.
+
+**2. Verification could resolve against a stopped guest.** Stations launch
+`-loadvm golden -S` and idle-auto-pause, so a stopped guest is a resting state,
+not a corner. `kh_issue`'s paused branch writes the coordinate (correctly — it
+is durable across the resume), but the tick would then read that write straight
+back and call it convergence, and during the probe it would call it a **VERIFIED
+address** — the same quiescence hole the read-back closes everywhere else, let
+back in through the one path where the guest cannot act. Fixed by resolving
+nothing while `!runstate_is_running()`: wait, without spending a try.
+
+Neither defect was the reason the live cutover was rolled back. That was
+[`STREAM-DEBUGGING.md`](STREAM-DEBUGGING.md) — an observation script holding the
+station's QMP socket, which stalls the idle pauser and stops every session after
+the first from negotiating, on **any** backend including `dbus-rel`, which builds
+no sink at all. The live isolation compared this station *with* that observer
+against a control *without* it.
+
+## The paused seam: three defects behind one symptom
+
+The reported regression was narrow — *a button edge issued while the guest is
+stopped never acks* — and it was mine: a `kh_tick` runstate guard that conflated
+**"do not resolve"** with **"do nothing"**. Ack-and-drop is scoped to "the guest
+cannot possibly apply this", and a stopped guest is exactly that case, so a
+deferred edge must still be released (with its `paused=1` reason) even though
+verification must not resolve. Acking a verb the guest cannot possibly apply is
+required; acking one you merely failed to land is a lie.
+
+Releasing the edge in the stopped branch was necessary and **not sufficient**.
+The acceptance test passed on that alone, and the build was still broken:
+
+- **The stranded edge was a symptom.** `issued` survived a stop. `kh_movea`
+  skips `kh_issue` while a publish is in flight — and `kh_arm` is only reached
+  *through* `kh_issue`, so a stuck `issued` stopped the timer entirely and left
+  nothing that could release anything. A stopped guest consumes no injected
+  event, so nothing can be in flight across a stop: it is now cleared there, and
+  `kh_movea` arms unconditionally so a target never waits on nothing.
+- **A coordinate written while stopped was never published.** The paused branch
+  writes and stops there; on resume the value matched what we wrote and the tick
+  called that convergence — with the guest never having repainted, and anything
+  it had queued before the stop landing *after* we declared success with nothing
+  watching. Measured at the shipping boundary as a first session settling at
+  **298,280 for a commanded 300,300**. A written-but-unpublished target is now
+  re-published once the guest runs.
+
+**Two lessons, and the second is the one that nearly shipped.** A test that
+watches only the press passes a build whose release still hangs — `UP1` is the
+half that leaves a button stuck down. And a test that asserts the *symptom* is
+gone passes a build whose *mechanism* is still broken: `btn-paused.py` said PASS
+while `btn-gap.py`, which pins the shape rather than the outcome, said the edge
+was still stranded. The disagreement was the finding. Where they disagree,
+believe the one that measures the mechanism.
+
+Two of the three defects were only reachable through a stop/resume cycle, which
+is a station's **resting** state — `-loadvm golden -S` plus idle-auto-pause — and
+not a corner case at all.
+
+### Harness trap that produced a false negative
+
+A socket timeout raised inside a buffered `readline()` leaves the reader's
+buffer unreliable, and it **does not raise again — it goes quiet**, so a verb
+that did ack reads as "never acked" and the tool's fault reads as the device's.
+Use timed reads with `select`/raw `recv` and assemble lines yourself; never
+`makefile()` on a socket carrying a timeout. Note the bias: this failure mode
+can only manufacture a false HANG, never a false ACK — so a PASS from such a
+harness is still trustworthy, which is why the `btn-paused.py` PASS was
+believable and still wrong for a different reason.
+
+## The standard this leaves behind
+
+- **A pointer proof must cross the boundary that ships.** Browser → daemon →
+  sink → device → guest, multiple sequential sessions, at least one abandoned
+  mid-stream. A socket client cannot see a session-lifetime defect at any
+  repetition count.
+- **Liveness is motion.** `videoWidth`, `readyState` and non-black percentage
+  all pass on a stream that has stopped. Require media still arriving in a later
+  window AND the guest's own coordinate landing where it was commanded.
+- **Prove the mechanism, not the symptom.** A check that asserts the reported
+  outcome is gone will pass a build whose cause is untouched.
+- **Observe sparsely and never hold the monitor.** Connect, read four bytes,
+  close. A 1 Hz screendump poller manufactures the failure it is testing for.
+
+Re-proof on the shipped path, five sequential browser sessions, the third
+SIGKILLed mid-stream with no WebTransport close:
+
+```
+session 1  target 300,300  negotiated, AU still flowing in window 2  guest coordinate 300,300
+session 2  target 700,500  negotiated, AU still flowing              guest coordinate 700,500
+session 3  target 150,620  ABANDONED mid-stream (SIGKILL)            guest coordinate 150,620
+session 4  target 900,200  negotiated, AU still flowing              guest coordinate 900,200
+session 5  target 500,400  negotiated, AU still flowing              guest coordinate 500,400
+device: VERIFIED once, 0 give-ups, 0 re-issues, dropped=0 overflow=0 backend-down=0
+```
+
+and the framebuffer, sampled sparsely around one browser-driven move:
+`226 pixels changed`, `cursor-locate check: OK cursor=900,200 want=900,200
+err=+0,+0` at `--tol 1`, hotspot `(1,1)` — the same arrow hotspot measured
+throughout.
+
+## The glyph bank
+
+`tests/cursor-banks/rhapsody.json` — four templates, hotspots `(1,1)` arrow,
+`(3,3)` Bookmarks frame, `(6,1)` OmniWeb content, `(1,1)` a second arrow learned
+over a different background. **Reuse it rather than learning a new one**: with a
+known template set a `NOTFOUND` is evidence, and with a freshly learned one it is
+a question about the templates. Bound to the golden re-baked 2026-08-23 at
+1024x768 RGB:555/16 — a re-bake invalidates it. Usage, extension and how to read
+`AMBIGUOUS`/`NOTFOUND`: `tests/cursor-banks/README.md`.
 
 ## Two traps worth keeping
 

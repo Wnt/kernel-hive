@@ -8,12 +8,17 @@ import {
 import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { attachSessionResume } from './streamClient/sessionResume';
 import {
-  consumeRetry, retryLimit,
+  consumeRetry, retryLimit, RETRY_REASON_NO_KEYFRAME,
   KEYFRAME_WAIT_MS, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
 } from './streamClient/retryBudget';
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
 import { WebRtcFallbackClient } from './webRtcFallbackClient';
+import { sessionTelemetry } from './sessionTelemetry';
+import type { LivePhase, StreamSessionOptions, StreamSessionResult } from './streamSessionTypes';
+import type { Attrs } from '../analytics/trace';
+
+export type { StreamSessionOptions, StreamSessionResult };
 
 // ============================================================================
 //  LIVE SESSION — streamhost WebTransport + WebCodecs
@@ -26,38 +31,6 @@ import { WebRtcFallbackClient } from './webRtcFallbackClient';
 //  Near-zero buffering by design: we render on decode output (no jitter buffer),
 //  and captureStream is damage-gated by canvas writes — idle stations cost ~nothing.
 // ============================================================================
-
-type LivePhase = 'idle' | 'starting' | 'connecting' | 'live' | 'error';
-
-export interface StreamSessionOptions {
-  /** Construct and expose the imperative input/control handle. */
-  control?: boolean;
-  /** HUD-compatible target value; streamhost itself has no receiver jitter buffer. */
-  jitterBufferTargetMs?: number;
-  /** Keep the HUD's automatic/manual latency-control state. */
-  autoJitter?: boolean;
-  /** OS id, selects the guest-quirks profile in the controller. */
-  osId?: string;
-  /**
-   * Read the visible <video>'s state. The session hook does not own that
-   * element, but it cannot tell "nothing is arriving" from "nothing is being
-   * consumed" without it — and those two want opposite responses.
-   */
-  sinkProbe?: () => VideoSinkProbe | null;
-}
-
-export interface StreamSessionResult {
-  phase: LivePhase;
-  message: string;
-  control: StreamControlHandle | null;
-  stream: MediaStream | null;
-  registerPaintCanvas?: (el: HTMLCanvasElement | null) => void;
-  beginRestoreReconnect?: () => void;
-  finishRestoreReconnect?: () => void;
-  expectedReconnect: 'restore' | null;
-  /** Abandon the current attempt and start a fresh ladder (visitor gesture). */
-  reconnectNow: () => void;
-}
 
 // ---------------------------------------------------------------------------
 //  Negotiation + session resilience
@@ -117,8 +90,15 @@ export function useStreamhostSession(
   // session effect deliberately does not re-run on it.
   const sinkProbeRef = useRef<(() => VideoSinkProbe | null) | undefined>(undefined);
   sinkProbeRef.current = options?.sinkProbe;
+  // Same reason as `sinkProbe`: a fresh object every render must not re-run it.
+  const stationAttrsRef = useRef<Attrs | undefined>(undefined);
+  stationAttrsRef.current = options?.stationAttrs;
   const reconnectRef = useRef<() => void>(() => undefined);
   const reconnectNow = useCallback(() => reconnectRef.current(), []);
+  // Through a ref, like `sinkProbe`: the session effect does not re-run on a
+  // view re-render, and a stale closure would stop witnessing input silently.
+  const noteInputRef = useRef<() => void>(() => undefined);
+  const noteInput = useCallback(() => noteInputRef.current(), []);
 
   useEffect(() => {
     if (!active || !signalEndpoint) return;
@@ -156,6 +136,13 @@ export function useStreamhostSession(
       getSnapshot: () => fallback?.getSnapshot() ?? client?.getMetrics() ?? null,
     });
 
+    // One telemetry object per ATTEMPT-SEQUENCE, not per retry (connectTelemetry.ts).
+    const tel = sessionTelemetry({
+      getKeyframeMs: () => client?.getMetrics().enc?.keyframeMs ?? null,
+      stationAttrs: stationAttrsRef.current,
+      clientTransport: typeof VideoDecoder === 'undefined' ? 'webrtc-fallback' : 'webtransport',
+    });
+
     const clearTimers = () => {
       if (watchdog) { clearTimeout(watchdog); watchdog = 0; }
       if (retryTimer) { clearTimeout(retryTimer); retryTimer = 0; }
@@ -167,6 +154,7 @@ export function useStreamhostSession(
       // The give-up is the most important row a broken session produces, and it
       // used to exist only in the visitor's own console. See STREAM-DEBUGGING.
       logClientEvent('connect-giveup', `${msg} attempts=${attempt} live=${liveReached} ep=${signalEndpoint}`);
+      tel.gaveUp(liveReached);
       parkedError = true; // the recovery probe (sessionResume.ts) may un-park us
       setPhase('error');
       setMessage(msg);
@@ -184,6 +172,7 @@ export function useStreamhostSession(
       }
       clearTimers();
       resolution.w = w; resolution.h = h;
+      tel.firstFrame();
       setPhase('live');
       setMessage('LIVE');
       controller?.notifyConnected();
@@ -191,6 +180,7 @@ export function useStreamhostSession(
 
     const onVideoFrame = (frame: VideoFrame) => {
       if (cancelled) { try { frame.close(); } catch { /* noop */ } return; }
+      tel.painted(); // EVERY frame — the paint side freezes are derived from
       const w = frame.displayWidth, h = frame.displayHeight;
 
       // ---- DIRECT-CANVAS PAINT PATH (2D grid) --------------------------------
@@ -285,6 +275,7 @@ export function useStreamhostSession(
 
     const cleanup = () => {
       cancelled = true;
+      tel.detach();
       clearTimers();
       // Token-guarded: an outgoing mount must never wipe the tag a NEW mount of
       // the same station has already claimed (that is what leaves `tile` empty
@@ -316,6 +307,7 @@ export function useStreamhostSession(
       // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       logClientEvent('connect-retry', `attempt=${attempt}/${v.limit} live=${liveReached} restore=${expectedRestore} why=${why}`);
+      tel.retry({ attempt, limit: v.limit, reason: why, live: liveReached, restore: expectedRestore, exhausted: v.exhausted });
       if (v.exhausted) {
         fail(liveReached
           ? 'lost the connection to this tile — tap Reconnect to try again'
@@ -326,6 +318,7 @@ export function useStreamhostSession(
       // indexing accidentally made every first retry wait 1.5 s instead of 600 ms.
       const delays = expectedRestore ? RESTORE_BACKOFF_MS : RETRY_BACKOFF_MS;
       const delay = delays[Math.min(attempt - 1, delays.length - 1)];
+      tel.transport();
       setPhase('connecting');
       setMessage(expectedRestore
         ? 'Reconnecting to restored tile…'
@@ -353,6 +346,7 @@ export function useStreamhostSession(
 
       const nextClient = new StreamClient({
         signalEndpoint,
+        osId,
         onVideoFrame: (frame) => {
           // A decoder callback can already be queued when its transport reports
           // loss. Never let that old frame cancel the replacement attempt.
@@ -437,11 +431,11 @@ export function useStreamhostSession(
         // dead one from here. Say which it is, and give the sink's own resume
         // path a fresh budget rather than tearing down a working stream.
         if (isPausedSink(sinkProbeRef.current?.() ?? null, isVisible())) {
-          logClientEvent('sink-stalled', `paused sink, transport healthy — not retrying ep=${signalEndpoint}`);
+          tel.sinkPaused(signalEndpoint, isVisible());
           watchdog = window.setTimeout(rearm, RELIVE_KEYFRAME_WAIT_MS);
           return;
         }
-        scheduleRetry('no keyframe within budget');
+        scheduleRetry(RETRY_REASON_NO_KEYFRAME);
       };
       watchdog = window.setTimeout(rearm, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
 
@@ -450,11 +444,12 @@ export function useStreamhostSession(
       });
     };
 
-    // WebCodecs-less fallback. Every streamhost station gets this platform path;
-    // the client selects it solely by feature detection. WebCodecs-capable
-    // browsers never execute this branch and stay on WebTransport unchanged.
+    // WebCodecs-less fallback (feature-detected). `tel` used to go UNCALLED
+    // here, leaving the connect funnel/cost blind for this path;
+    // `stream.recover` stays unwired (needs per-frame paint).
     const startWebRtcFallback = async () => {
       if (cancelled) return;
+      tel.transport();
       setPhase('connecting');
       setMessage('Connecting via browser video fallback…');
       const next = new WebRtcFallbackClient({
@@ -491,6 +486,7 @@ export function useStreamhostSession(
               restoreEndpointSettled = false;
               setExpectedReconnect(null);
             }
+            tel.firstFrame();
             setPhase('live');
             setMessage('LIVE · WebRTC fallback');
           } else if (state === 'reconnecting') {
@@ -500,6 +496,7 @@ export function useStreamhostSession(
             setPhase('connecting');
             setMessage('WebRTC video stalled — recovering…');
           } else if (state === 'failed') {
+            tel.gaveUp(liveReached);
             setPhase('error');
             setMessage(`WebRTC fallback failed: ${error || 'connection failed'}`);
           } else {
@@ -558,11 +555,14 @@ export function useStreamhostSession(
       signalEndpoint,
       getClient: () => client,
       reconnect: () => {
+        tel.resumeReconnect(); // this return costs a full rebuild
         setPhase('connecting');
         setMessage('Reconnecting to tile…');
         reconnectRef.current();
       },
     });
+
+    noteInputRef.current = () => { if (!cancelled) tel.input(); };
 
     reconnectRef.current = () => {
       if (cancelled) return;
@@ -595,6 +595,6 @@ export function useStreamhostSession(
 
   return {
     phase, message, control, stream, registerPaintCanvas,
-    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow,
+    beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
   };
 }

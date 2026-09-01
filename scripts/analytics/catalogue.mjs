@@ -1,0 +1,282 @@
+#!/usr/bin/env node
+// ============================================================================
+//  scripts/analytics/catalogue.mjs — render the probe catalogue, and gate it.
+//  ---------------------------------------------------------------------------
+//  The catalogue is declared once, in TypeScript, so that `reach('...')`,
+//  `beginFlow('...')`, `startTiming('...')` and `recordMetric('...')` are all
+//  type-checked at every call site (spa/src/analytics/catalogue/). The report
+//  tool and the operator both need it as data, so it is RENDERED here into
+//  registry/analytics-catalogue.json — a generated file like every other one in
+//  this repo, byte-parity gated by `make analytics-catalogue-check`.
+//
+//  THE GATE IS THE INTERESTING HALF. `check` fails if a declared id does not
+//  appear literally in the source file that declares itself its owner. Without
+//  it the report has two zeros that look identical and mean opposite things —
+//  "nobody uses this feature" and "I declared it and never called it" — and the
+//  second kind is what gets working code deleted. It also catches the likelier
+//  drift: a call site MOVED to another file, leaving the catalogue pointing at
+//  a file that no longer mentions it.
+//
+//  Flows and metrics are gated the same way and for the same reason. A flow
+//  nothing opens is a funnel of zeros that reads as "nobody ever tried"; a
+//  metric nothing records is an empty distribution that reads as "this is
+//  never slow". Both are worse than an absent row, because both look like data.
+//
+//  Node reads the .ts files directly (type stripping, Node >= 22.18), so there
+//  is no build step and no second copy of the catalogue to fall out of date.
+//
+//  TWO PLANES, ONE DOCUMENT, ONE COMMAND. The SPA declares its probes in
+//  TypeScript; the Python serving plane declares its own in
+//  scripts/serve/probes.py, because that is the file the serving process
+//  imports and a declaration that lived anywhere else could drift from what is
+//  deployed. Rather than a second generator and a second `make` target to
+//  forget, this one ASKS probes.py for its catalogue (`python3 probes.py`,
+//  which prints it as JSON) and renders both sections here. The gate below runs
+//  over both, so `make analytics-catalogue-check` stays the single command that
+//  checks everything.
+// ============================================================================
+
+import { readFile, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, '..', '..');
+const SPA = join(ROOT, 'spa');
+const OUT = join(ROOT, 'registry', 'analytics-catalogue.json');
+
+const { PROBES, FLOWS, METRICS } = await import(
+  join(SPA, 'src', 'analytics', 'catalogue', 'index.ts')
+);
+
+//  The server plane's declaration, read from the module the serving process
+//  actually imports. Running it beats parsing it: a regex over the file would
+//  be a SECOND reader of the catalogue that can disagree with Python's, which
+//  is the exact class of bug this gate exists to prevent.
+const SERVER_PROBES = JSON.parse(
+  execFileSync('python3', [join(ROOT, 'scripts', 'serve', 'probes.py')], {
+    encoding: 'utf8',
+  }),
+);
+//  Owner paths on this side are repo-relative (the serving plane has no single
+//  root the way spa/ does), so this is where they resolve from.
+const SERVER_OWNER_ROOT = ROOT;
+//  A probe whose owner is the declaring file itself would pass the call-site
+//  gate on its own declaration, which is the one way to get a zero that means
+//  nothing at all.
+const SERVER_DECL = 'scripts/serve/probes.py';
+
+/** The rendered document. Sorted so the file is stable across edits. */
+function render() {
+  const probes = {};
+  for (const id of Object.keys(PROBES).sort()) {
+    const p = PROBES[id];
+    probes[id] = {
+      area: p.area,
+      owner: p.owner,
+      what: p.what,
+      grades: [...p.grades],
+      ...(p.consumes ? { consumes: p.consumes } : {}),
+    };
+  }
+  const flows = {};
+  for (const id of Object.keys(FLOWS).sort()) {
+    flows[id] = { area: FLOWS[id].area, what: FLOWS[id].what, steps: [...FLOWS[id].steps] };
+  }
+  const metrics = {};
+  for (const id of Object.keys(METRICS).sort()) {
+    const m = METRICS[id];
+    metrics[id] = {
+      area: m.area,
+      owner: m.owner,
+      what: m.what,
+      scale: m.scale,
+      ...(m.countsHiddenTime ? { countsHiddenTime: true } : {}),
+    };
+  }
+  const serverProbes = {};
+  for (const id of Object.keys(SERVER_PROBES).sort()) {
+    const p = SERVER_PROBES[id];
+    serverProbes[id] = {
+      area: p.area,
+      owner: p.owner,
+      what: p.what,
+      ...(p.consumes ? { consumes: p.consumes } : {}),
+    };
+  }
+  return `${JSON.stringify(
+    {
+      _comment:
+        'GENERATED by scripts/analytics/catalogue.mjs from spa/src/analytics/catalogue/ ' +
+        'and scripts/serve/probes.py. Do not hand-edit: `make analytics-catalogue-check` ' +
+        'compares this byte for byte with what those two sources render right now.',
+      version: 2,
+      probes,
+      flows,
+      metrics,
+      // The serving plane's own branch probes. Kept in a separate section
+      // rather than merged into `probes`: they share the store (class
+      // `server`) and the LEFT-JOIN idea, and nothing else. They carry no
+      // grades — nobody asked the server for anything — and the report must
+      // never sum them with a client count.
+      serverProbes,
+    },
+    null,
+    2,
+  )}\n`;
+}
+
+const sources = new Map();
+async function sourceOf(owner) {
+  if (!sources.has(owner)) {
+    sources.set(owner, await readFile(join(SPA, owner), 'utf8').catch(() => null));
+  }
+  return sources.get(owner);
+}
+
+/** The literal id, quoted, is what a call site writes. Anything clever here
+ *  (an AST walk, a looser match) buys a way for a commented-out call to pass. */
+function mentions(source, id) {
+  return source.includes(`'${id}'`) || source.includes(`"${id}"`);
+}
+
+/** Every complaint the gate can make, in one pass. */
+async function problems() {
+  const found = [];
+
+  for (const [id, spec] of Object.entries(PROBES)) {
+    const source = await sourceOf(spec.owner);
+    if (source === null) {
+      found.push(`probe ${id}: owner ${spec.owner} does not exist`);
+      continue;
+    }
+    if (!mentions(source, id)) {
+      found.push(`probe ${id}: declared, but ${spec.owner} contains no call site for it`);
+    }
+    if (spec.consumes && !(spec.consumes in PROBES)) {
+      found.push(`probe ${id}: consumes '${spec.consumes}', which is not a declared probe`);
+    } else if (spec.consumes && !PROBES[spec.consumes].grades.includes('auto')) {
+      found.push(`probe ${id}: consumes '${spec.consumes}', which is not an 'auto' producer`);
+    }
+    if (!spec.grades.length) found.push(`probe ${id}: declares no grades, so it can never report`);
+  }
+
+  for (const [id, spec] of Object.entries(METRICS)) {
+    const source = await sourceOf(spec.owner);
+    if (source === null) {
+      found.push(`metric ${id}: owner ${spec.owner} does not exist`);
+      continue;
+    }
+    if (!mentions(source, id)) {
+      found.push(`metric ${id}: declared, but ${spec.owner} contains no call site for it`);
+    }
+    if (!['ms', 'count', 'pct'].includes(spec.scale)) {
+      found.push(`metric ${id}: unknown scale '${spec.scale}'`);
+    }
+    if (spec.countsHiddenTime && spec.scale !== 'ms') {
+      found.push(`metric ${id}: countsHiddenTime only means something for an 'ms' metric`);
+    }
+    // Naming, enforced rather than suggested: a report column reading
+    // "fleet.find.hScroll 4200" with no unit is a number two readers will
+    // interpret differently, and the durable ones will outlive both.
+    if (spec.scale === 'ms' && !id.endsWith('Ms')) {
+      found.push(`metric ${id}: an 'ms' metric's id must end in 'Ms'`);
+    }
+    if (spec.scale === 'pct' && !id.endsWith('Pct')) {
+      found.push(`metric ${id}: a 'pct' metric's id must end in 'Pct'`);
+    }
+  }
+
+  // A flow's call site is `beginFlow('<id>')`, which may legitimately live
+  // anywhere, so this searches the whole analytics-using tree rather than one
+  // declared owner. The weaker check is deliberate: a flow spans call sites by
+  // nature, and naming one owner would be a fiction maintained by hand.
+  for (const [id, spec] of Object.entries(FLOWS)) {
+    if (!(await someSourceMentions(id))) {
+      found.push(`flow ${id}: declared, but nothing in spa/src calls beginFlow('${id}')`);
+    }
+    if (spec.steps.length < 2) {
+      found.push(`flow ${id}: has ${spec.steps.length} step(s) — a one-step funnel measures nothing`);
+    }
+    if (new Set(spec.steps).size !== spec.steps.length) {
+      found.push(`flow ${id}: repeats a step name, so its funnel cannot be ordered`);
+    }
+  }
+  found.push(...(await serverProblems()));
+  return found;
+}
+
+/** The same gate, for the Python plane. Identical rule, different tree. */
+async function serverProblems() {
+  const found = [];
+  const seen = new Map();
+  // ID grammar is analytics.ID_RE: these rows land in the same `probe` table as
+  // the client's and a name the store would reject is a probe that can only
+  // ever read zero.
+  const idOk = /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*){0,4}$/;
+  for (const [id, spec] of Object.entries(SERVER_PROBES)) {
+    if (!idOk.test(id)) found.push(`${id}: not a valid probe id (serve/analytics.py ID_RE)`);
+    // Same table, different class. A shared name would still be two distinct
+    // rows, but nobody reading the report would believe that.
+    if (id in PROBES) found.push(`${id}: declared by BOTH the SPA and the server catalogue`);
+    if (spec.owner === SERVER_DECL) {
+      found.push(`${id}: owner is ${SERVER_DECL} itself, so the call-site gate would check its own declaration`);
+      continue;
+    }
+    let source = seen.get(spec.owner);
+    if (source === undefined) {
+      source = await readFile(join(SERVER_OWNER_ROOT, spec.owner), 'utf8').catch(() => null);
+      seen.set(spec.owner, source);
+    }
+    if (source === null) {
+      found.push(`${id}: owner ${spec.owner} does not exist`);
+      continue;
+    }
+    if (!source.includes(`hit('${id}')`) && !source.includes(`hit("${id}")`)) {
+      found.push(`${id}: declared, but ${spec.owner} contains no hit() call site for it`);
+    }
+    if (spec.consumes && !(spec.consumes in SERVER_PROBES)) {
+      found.push(`${id}: consumes '${spec.consumes}', which is not a declared server probe`);
+    }
+  }
+  return found;
+}
+
+let treeCache = null;
+async function someSourceMentions(id) {
+  if (treeCache === null) {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    // `grep -rl` over the SPA source: cheap, and the only thing that can
+    // honestly answer "does anything anywhere open this flow".
+    const run = promisify(execFile);
+    const { stdout } = await run('grep', ['-rl', 'beginFlow(', join(SPA, 'src')]).catch(() => ({ stdout: '' }));
+    const files = stdout.split('\n').filter(Boolean);
+    treeCache = (await Promise.all(files.map((f) => readFile(f, 'utf8').catch(() => '')))).join('\n');
+  }
+  return treeCache.includes(`beginFlow('${id}')`) || treeCache.includes(`beginFlow("${id}")`);
+}
+
+const mode = process.argv[2] ?? 'emit';
+if (mode === 'emit') {
+  await writeFile(OUT, render());
+  console.log(`analytics catalogue: wrote ${OUT}`);
+} else if (mode === 'check') {
+  const found = await problems();
+  const current = await readFile(OUT, 'utf8').catch(() => null);
+  if (current !== render()) found.unshift(`${OUT} is stale — run \`make analytics-catalogue\``);
+  if (found.length) {
+    console.error('analytics catalogue: FAILED');
+    for (const line of found) console.error(`  - ${line}`);
+    process.exit(1);
+  }
+  console.log(
+    `analytics catalogue: ok (${Object.keys(PROBES).length} client probes, ` +
+      `${Object.keys(SERVER_PROBES).length} server probes, ` +
+      `${Object.keys(FLOWS).length} flows, ${Object.keys(METRICS).length} metrics)`,
+  );
+} else {
+  console.error('usage: catalogue.mjs [emit|check]');
+  process.exit(2);
+}

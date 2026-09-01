@@ -43,6 +43,27 @@ from . import clone as clone_mod
 from . import spec as spec_mod
 from .warm import BrokerError, Member, Warming
 
+# Server-side feature reach (serve/probes.py). Two module names for one module —
+# see the identical block in auth/gate.py. A watchdog that dies stops reaping, so
+# the import degrades to a no-op rather than to a traceback.
+try:
+    from probes import hit
+except ImportError:  # pragma: no cover - import shape only
+    try:
+        from serve.probes import hit
+    except ImportError:
+
+        def hit(_probe: str) -> None:
+            """No probes module in this deployment; the pool still runs."""
+
+
+# Spans (serve/tracing.py); see the note on the same import in signal_route.py.
+try:
+    import tracing
+except ImportError:  # pragma: no cover - import shape only
+    from serve import tracing
+
+
 TTL_SECONDS = 20 * 60
 IDLE_SECONDS = 3 * 60
 EXTENSION_SECONDS = 10 * 60
@@ -249,6 +270,20 @@ class Broker(Warming):
     # -- the lifecycle ---------------------------------------------------
 
     def claim(self, user_id: str, station: str) -> dict:
+        """Traced wrapper around `_claim`: THE OUTCOME is the finding — got a
+        machine, joined a queue, or refused — and each answers a different
+        question about the pool's size. The user id is never recorded (a
+        walk-in is an anonymous stranger); the clone identity is, and
+        `walkin-<os>-<n>` names no one."""
+        with tracing.child("walkin.claim", {"kh.station": station}) as span:
+            out = self._claim(user_id, station)
+            if out.get("queued"):
+                span.end("ok", {"kh.walkin.outcome": "queued", "kh.walkin.queuePosition": out.get("position") or 0})
+            else:
+                span.end("ok", {"kh.walkin.outcome": "granted", "kh.clone": out.get("clone") or ""})
+            return out
+
+    def _claim(self, user_id: str, station: str) -> dict:
         with self._lock:
             if self.access == "closed":
                 raise BrokerError("walkin_closed")
@@ -260,10 +295,16 @@ class Broker(Warming):
             existing = self._session_of(user_id)
             if existing:
                 raise BrokerError(f"you already have {existing.identity} — release it first")
+            # Both exits below are the same finding — "somebody wanted a machine
+            # and had to wait" — and the queue is the same machinery either way,
+            # so they are one probe. A pool of three on a private museum may
+            # never reach either, and that is the answer worth having.
             if self._active_count() >= ACTIVE_SESSION_CAP:
+                hit("walkin.claim.queued")
                 return self._enqueue(user_id, station)
             free = next((m for m in self._members.values() if m.clone.spec.station == station and not m.session), None)
             if not free:
+                hit("walkin.claim.queued")
                 return self._enqueue(user_id, station)
             now = self._now()
             free.session = Session(
@@ -282,8 +323,14 @@ class Broker(Warming):
         # nobody else can be handed it while it wakes.
         if self._spawn:
             try:
-                clone.resume()
+                # THE SLOWEST THING THIS SERVER DOES, and the one a visitor is
+                # actually staring at: a wake lease, QMP round trips and a
+                # verify against a paused clone. Its own span so "the walk-in
+                # felt slow" resolves to the resume or to everything else.
+                with tracing.child("walkin.clone.resume", {"kh.clone": identity}):
+                    clone.resume()
             except Exception as exc:
+                hit("walkin.claim.resumeFailed")
                 self._abandon(identity, user_id)
                 raise BrokerError(f"{identity} would not resume: {exc}") from exc
         return {
@@ -406,30 +453,52 @@ class Broker(Warming):
             for member in list(self._members.values()):
                 session = member.session
                 if session and now >= session.expires_at:
+                    hit("walkin.reap.ttl")
                     ended.append((member.identity, CLOSE_REASON_TTL))
                     retired.append(self._end(member, CLOSE_REASON_TTL))
                 elif session and now - session.last_input_at >= IDLE_SECONDS:
+                    # The idle window is three minutes and the TTL is twenty, so
+                    # the idle reap should be the COMMON one; if it is not, the
+                    # 3-minute window is not doing what it was added to do.
+                    hit("walkin.reap.idle")
                     ended.append((member.identity, CLOSE_REASON_IDLE))
                     retired.append(self._end(member, CLOSE_REASON_IDLE))
                 elif not member.clone.alive():
+                    hit("walkin.reap.died")
                     # A pool member whose QEMU died is not a pool member. It is a
                     # directory and a claim, and both have to go back.
                     died.append(member.identity)
                     retired.append(self._end(member, ""))
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
             self._ended = {c: v for c, v in self._ended.items() if now - v[1] < CLOSE_MEMORY}
-        self._destroy(retired)
-        orphans = self.reap_orphans()
-        taps = self.reap_orphan_taps()
-        cells = self.reap_orphan_cells()
-        # A claim registry that is unreachable must not stop the watchdog doing
-        # the two things that actually keep the pool honest.
-        try:
-            strays = self.release_stray_claims()
-        except Exception as exc:
-            sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
-            strays = []
-        built = self._refill()
+        # A reap has NO REQUEST BEHIND IT (own timer thread), so it is a root
+        # of its own — and only when something ENDED: a tick that found nothing
+        # is not a journey, and a span every 15 s forever would be the loudest
+        # thing in the store. The reasons go on the span because the probe
+        # counters say how often and cannot say how long the destroy took.
+        span = tracing.NOOP
+        if ended or died:
+            span = tracing.start_trace(
+                "walkin.reap",
+                {
+                    "kh.walkin.ended": len(ended),
+                    "kh.walkin.died": len(died),
+                    "kh.walkin.reasons": ",".join(sorted({r for _, r in ended if r})) or "none",
+                },
+            )
+        with span:
+            self._destroy(retired)
+            orphans = self.reap_orphans()
+            taps = self.reap_orphan_taps()
+            cells = self.reap_orphan_cells()
+            # A claim registry that is unreachable must not stop the watchdog
+            # doing the two things that actually keep the pool honest.
+            try:
+                strays = self.release_stray_claims()
+            except Exception as exc:
+                sys.stderr.write(f"[walkin] could not check for stray claims: {exc}\n")
+                strays = []
+            built = self._refill()
         return {"ended": ended, "died": died, "orphans": orphans, "taps": taps, "cells": cells,
                 "strays": strays, "built": built}  # fmt: skip
 

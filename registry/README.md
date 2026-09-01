@@ -210,6 +210,50 @@ schema's `additionalProperties` and conditionals are decorative — see below) a
 rejects a hide on an entry that is not in the public lineup anyway, so a
 declared hide can never be a no-op that a later session believes.
 
+## The `acceptance:` stanza — what `station-accept.sh` needs from a station
+
+Optional, and absent from every station today. Authoring one is per-station work
+best done at a natural recapture, because its values are facts about that
+station's screen that nobody can guess.
+
+```jsonc
+"acceptance": {
+  "watchRect":        [982, 747, 29, 10],  // guest pixels: WHERE motion counts
+  "probePoint":       [400, 300],          // move here and click (needs guestSize)
+  "guestSize":        [1024, 768],         // the video letterboxes; needed to map
+  "controlStation":   "someotherstation",  // probed in the SAME pass
+  "sessions":         3,                   // >= 2
+  "abandonAt":        2,                   // SIGKILLed mid-stream; never the last
+  "sampleIntervalMs": 1000,
+  "sampleFloorMs":    400,                 // below this, watching BECOMES the defect
+  "sampleCeilingMs":  3000,                // above this, the change is missed
+  "cursorBank":       "registry/acceptance/<station>-cursor.json"
+}
+```
+
+Four rules that look arbitrary until you know what they cost:
+
+- **`controlStation` is required, must differ, and must have its own stanza.**
+  Every pass probes a control simultaneously, because the gate can cause what it
+  detects — dense observation was measured stopping a session from negotiating.
+  A control sharing the candidate's `watchRect` would fail every run, turning
+  every verdict into "harness suspect" and blaming nobody for anything.
+- **`abandonAt` may not name the last session.** The point of the churn is that
+  something runs *after* the abandoned one; a run without that certifies the
+  defect it exists to catch, by construction.
+- **Both sampling bounds are required and are in tension by construction.** Too
+  sparse misses the commanded change; too dense manufactures the failure being
+  tested for. The design deliberately picks no numbers and requires each station
+  to name its own.
+- **A missing `cursorBank` is INCONCLUSIVE, not a failure.** A `NOTFOUND` from
+  the cursor matcher was once a bank that did not cover a station's glyphs — a
+  harness gap. A harness gap must never be able to roll a healthy station back.
+
+`validate_acceptance.py` enforces the whole shape at commit time, so a
+half-written spec is an error on the push that introduced it rather than a
+refusal in the middle of a cutover. Adding the stanza changes **no** generated
+artifact (verified, not assumed).
+
 ## Generated artifacts and their gate lists
 
 `generated()` in `scripts/stations-registry.py` is the single authoritative list of

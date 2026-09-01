@@ -55,29 +55,84 @@ fi
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# --- the base every range is measured from: merge-base with CURRENT main -----
+# `git diff A..B` diffs the two ENDPOINTS. So when A is a main this clone has
+# not fetched, every file main moved since — an unrelated wave's Rust, say —
+# lands in "the pushed range" and this push is billed for its lint. Observed
+# 2026-08-30 on a rebased branch that touched no Rust at all: the gate demanded
+# `cargo clippy` for somebody else's commits, and an unsatisfiable gate is how
+# SKIP_GATE=1 gets taught. The cut point is not the base; the merge-base with
+# CURRENT origin/main is, and "current" needs a fetch — a branch rebased onto,
+# or merged with, a main this clone last saw an hour ago has a merge-base one
+# hour of other people's work too early.
+#
+# The fetch goes to a PRIVATE ref, and it fetches BY URL rather than by remote
+# name. That is not fussiness: `git fetch origin <refspec>` still performs an
+# "opportunistic update" of refs/remotes/origin/*, so naming the remote would
+# silently advance your origin/main as a side effect of running a gate —
+# a read path that writes, which is the exact shape of the incident that made
+# a dry-run plan move everyone's drift baseline. Measured, not assumed: by name
+# origin/main moves, by URL it does not. refs/kh-gate/main is ours, forced and
+# disposable. Fetch failure is not fatal: fall back to origin/main and say so.
+# GATE_NO_FETCH=1 skips it (offline, or a hot loop).
+gate_main=""
+if git rev-parse --verify --quiet origin/main >/dev/null; then gate_main="origin/main"; fi
+if [[ "${GATE_NO_FETCH:-0}" != "1" ]] && have timeout; then
+  if timeout 25 git fetch --quiet --no-tags "$(git config remote.origin.url)" \
+    "+refs/heads/main:refs/kh-gate/main" >/dev/null 2>&1; then
+    gate_main="refs/kh-gate/main"
+  elif [[ -n "$gate_main" ]]; then
+    echo "pre-push-gate: could not fetch origin/main; measuring the range from the"
+    echo "               local origin/main ($(git rev-parse --short origin/main)) — if it is"
+    echo "               stale this may over-scope the range (GATE_NO_FETCH=1 to silence)"
+  fi
+fi
+
+# range_base <tip> [<pushed_remote_sha>] — the LATEST ancestor of <tip> among
+# the candidate bases, so the range stays as narrow as is still correct:
+#   * merge-base(current main, tip)  — never sweeps in main's own commits;
+#   * the ref's remote sha           — narrower still on a re-push, and used
+#                                      only when it really is an ancestor of
+#                                      the tip (a force-push after a rebase is
+#                                      not, and must not be trusted as a base).
+# Prints nothing when no base is known; the caller then falls back to a bounded
+# slice of the tip's own history, exactly as before.
+range_base() {
+  local tip="$1" remote="${2:-}" mb="" cand=""
+  [[ -n "$gate_main" ]] && mb=$(git merge-base "$gate_main" "$tip" 2>/dev/null)
+  if [[ -n "$remote" && "$remote" != "$zero" ]] &&
+    git merge-base --is-ancestor "$remote" "$tip" 2>/dev/null; then
+    cand=$(git rev-parse "$remote" 2>/dev/null)
+  fi
+  # Whichever candidate is the DESCENDANT of the other is the later base.
+  if [[ -n "$cand" && -n "$mb" ]]; then
+    if git merge-base --is-ancestor "$mb" "$cand" 2>/dev/null; then printf '%s' "$cand"; else printf '%s' "$mb"; fi
+  else
+    printf '%s' "${cand:-$mb}"
+  fi
+}
+
 # --- read git's ref list, derive the pushed ranges and whether we owe the gate -
 zero="0000000000000000000000000000000000000000"
 gate_needed="${GATE_ALL:-0}"
+examined=0
 ranges=()
 while read -r _local_ref local_sha _remote_ref remote_sha; do
   [[ -z "${local_sha:-}" ]] && continue
   [[ "$local_sha" == "$zero" ]] && continue # branch deletion
-  if [[ "$remote_sha" == "$zero" ]]; then
-    # New branch: everything it adds on top of the integration branch, and if
-    # that is unknown, a bounded slice of its own history.
-    if git rev-parse --verify --quiet origin/main >/dev/null; then
-      ranges+=("origin/main..$local_sha")
-      revs=$(git rev-list --max-count=200 "origin/main..$local_sha" 2>/dev/null)
-    else
-      ranges+=("$local_sha")
-      revs=$(git rev-list --max-count=200 "$local_sha" 2>/dev/null)
-    fi
+  base=$(range_base "$local_sha" "$remote_sha")
+  if [[ -n "$base" ]]; then
+    ranges+=("$base..$local_sha")
+    revs=$(git rev-list "$base..$local_sha" 2>/dev/null)
   else
-    ranges+=("$remote_sha..$local_sha")
-    revs=$(git rev-list "$remote_sha..$local_sha" 2>/dev/null)
+    # No main to measure against and no usable remote sha: a bounded slice of
+    # this branch's own history is all there is.
+    ranges+=("$local_sha")
+    revs=$(git rev-list --max-count=200 "$local_sha" 2>/dev/null)
   fi
   while IFS= read -r c; do
     [[ -z "$c" ]] && continue
+    examined=$((${examined:-0} + 1))
     if git show -s --format='%B' "$c" | grep -qiE 'Claude-Session:|Co-Authored-By: .*Claude'; then
       gate_needed=1
       break
@@ -87,20 +142,57 @@ done
 
 # Run by hand (no ref list on stdin): fall back to what a push would send.
 if [[ "${#ranges[@]}" -eq 0 ]]; then
-  if git rev-parse --verify --quiet '@{push}' >/dev/null 2>&1; then
-    ranges+=('@{push}..HEAD')
-  elif git rev-parse --verify --quiet '@{upstream}' >/dev/null 2>&1; then
-    ranges+=('@{upstream}..HEAD')
-  elif git rev-parse --verify --quiet origin/main >/dev/null; then
-    ranges+=('origin/main..HEAD')
-  else
-    ranges+=('HEAD')
-  fi
+  # Same merge-base discipline as the push path: whatever upstream this branch
+  # has is only a CANDIDATE base, and it counts only if it is an ancestor.
+  hand_remote=""
+  for r in '@{push}' '@{upstream}'; do
+    if git rev-parse --verify --quiet "$r" >/dev/null 2>&1; then
+      hand_remote=$(git rev-parse "$r")
+      break
+    fi
+  done
+  base=$(range_base HEAD "$hand_remote")
+  if [[ -n "$base" ]]; then ranges+=("$base..HEAD"); else ranges+=('HEAD'); fi
   echo "pre-push-gate: no ref list on stdin; using ${ranges[*]}"
+  # ...and SCAN THAT RANGE, exactly as the stdin path does. Without this the
+  # fallback never set gate_needed, so it skipped and then blamed the commits
+  # for it — printing "no Claude-session commits in this push" having examined
+  # no commits at all. A message that is true-sounding and wrong about its own
+  # reason is the failure class this gate exists to prevent, and it converts an
+  # unexamined push into a reassuring line in a log.
+  if [[ "$base" == "" ]]; then
+    hand_revs=$(git rev-list --max-count=200 HEAD 2>/dev/null)
+  else
+    hand_revs=$(git rev-list "$base..HEAD" 2>/dev/null)
+  fi
+  hand_n=0
+  while IFS= read -r c; do
+    [[ -z "$c" ]] && continue
+    hand_n=$((hand_n + 1))
+    if git show -s --format='%B' "$c" | grep -qiE 'Claude-Session:|Co-Authored-By: .*Claude'; then
+      gate_needed=1
+      break
+    fi
+  done <<<"$hand_revs"
+  examined="$hand_n"
 fi
 
 if [[ "$gate_needed" != "1" && "${GATE_FULL:-0}" != "1" ]]; then
-  echo "pre-push-gate: no Claude-session commits in this push; skipping (GATE_ALL=1 to force)"
+  # Say what actually happened. "No Claude-session commits" is only honest when
+  # commits were READ; if the range could not be determined, the skip is an
+  # admission of ignorance and must read as one.
+  # ZERO EXAMINED IS NOT "NONE MATCHED". The range may be empty (nothing new to
+  # push), or unresolvable, or rev-list may have failed — in every one of those
+  # cases the gate learned nothing, and saying "no Claude-session commits" would
+  # be asserting a fact about commits it never read.
+  if [[ "${examined:-0}" -eq 0 ]]; then
+    echo "pre-push-gate: examined NO commits in ${ranges[*]-<no range>} — the range is empty or"
+    echo "               could not be resolved, so nothing was checked. This is not a green gate;"
+    echo "               it is the gate saying it had nothing to look at. GATE_ALL=1 to force."
+  else
+    echo "pre-push-gate: examined ${examined:-0} commit(s) in ${ranges[*]-<none>} — none carry the"
+    echo "               Claude-session trailer; skipping (GATE_ALL=1 to force)"
+  fi
   exit 0
 fi
 

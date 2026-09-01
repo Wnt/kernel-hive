@@ -30,7 +30,7 @@ const ENTRY_FIELDS = new Set([
   'accent', 'era', 'eraSoftware', 'periodBrowser', 'iconicApps', 'blurb',
   'archetypeId', 'transport', 'order', 'eraLabel', 'signalEndpoint',
   'endpoint', 'pointerRel', 'hardwareInput', 'coldBoot', 'bootVideo',
-  'relativePointerOnly', 'listed',
+  'relativePointerOnly', 'listed', 'emulatorFamily', 'uiKind', 'resetMode',
 ]);
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 const ACCENT = /^#[0-9a-f]{6}$/i;
@@ -77,6 +77,11 @@ function parseEntry(value: unknown): RuntimeVMManifestEntry | null {
   if (!optionalBoolean(entry.pointerRel) || !optionalBoolean(entry.hardwareInput) || !optionalBoolean(entry.coldBoot)) return null;
   if (!optionalBoolean(entry.relativePointerOnly) || !optionalBoolean(entry.listed)) return null;
   if (entry.bootVideo !== undefined && typeof entry.bootVideo !== 'string') return null;
+  // STATION-TYPE grouping dimensions (docs/ANALYTICS.md's "groupable per
+  // station type" ask) — low-cardinality, public, sourced from the registry's
+  // own `emulator.family` / `ui` / `reset.resetMode`. Optional: a poster entry
+  // has no `reset` to report a mode for.
+  if (!optionalString(entry.emulatorFamily) || !optionalString(entry.uiKind) || !optionalString(entry.resetMode)) return null;
 
   const bootVideo = typeof entry.bootVideo === 'string' ? { mp4: entry.bootVideo } : undefined;
   return { ...entry, bootVideo } as unknown as RuntimeVMManifestEntry;
