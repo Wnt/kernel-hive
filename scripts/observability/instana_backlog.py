@@ -128,7 +128,18 @@ def pending_traces(cfg, after_seq: int, limit: int, now_ms: int | None = None) -
         # the limit is the same skip bug in a different coat.
         rows.sort(key=lambda r: r["ingestSeq"])
         rows = rows[:limit]
-        batch = [t for t in (store.trace(r["traceId"]) for r in rows) if t]
+        # The per-trace ingest sequence rides ALONG with the trace, not just as
+        # a max over the page. Once a page is cut into several requests
+        # (instana_batch.py), "the highest seq in the page" is no longer the
+        # right thing to persist after any one of them: the watermark must
+        # advance to the last trace actually SHIPPED, and only the trace itself
+        # knows which that is.
+        batch = []
+        for r in rows:
+            t = store.trace(r["traceId"])
+            if t:
+                t["ingestSeq"] = r["ingestSeq"]
+                batch.append(t)
         return batch, max((r["ingestSeq"] for r in rows), default=after_seq)
     finally:
         store.close()
@@ -156,3 +167,36 @@ def resume_seq(cfg, state: dict) -> int:
     finally:
         db.close()
     return int(row[0] or 0)
+
+
+def backlog_count(cfg, after_seq: int, now_ms: int | None = None) -> int:
+    """How many eligible traces are still behind the watermark.
+
+    STALENESS MUST BE VISIBLE, not inferred from an empty chart. Before this
+    existed, the only way to learn that the forwarder was 991 traces and ~25
+    minutes behind was to notice the Applications view had flatlined and then go
+    and count rows in sqlite by hand. A run that prints its own remaining
+    backlog turns that into one line in `journalctl -u kh-instana-forward`, and
+    into something an alert can be built on.
+
+    Counts with exactly the filters `pending_traces` selects with, so the number
+    means "traces this forwarder still owes Instana" and not "rows in the
+    store" — a trace inside the quiet window is not backlog, it is not ready.
+    """
+    import traces
+
+    now_ms = int(time.time() * 1000) if now_ms is None else now_ms
+    store = traces.TraceStore(cfg.traces_db)
+    try:
+        return sum(
+            store.search(
+                klass=klass,
+                since_seq=after_seq,
+                quiet_before_ms=now_ms - QUIET_MS,
+                order="ingest",
+                limit=1,
+            )["total"]
+            for klass in cfg.classes
+        )
+    finally:
+        store.close()

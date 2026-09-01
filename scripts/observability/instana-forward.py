@@ -158,7 +158,8 @@ sys.path.insert(0, str(ROOT / "scripts" / "serve"))
 sys.path.insert(0, str(HERE))
 
 import traces_otlp  # noqa: E402
-from instana_backlog import pending_traces, read_state, resume_seq, write_state  # noqa: E402
+from instana_backlog import backlog_count, pending_traces, read_state, resume_seq, write_state  # noqa: E402
+from instana_batch import drain  # noqa: E402
 from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
 from instana_metrics import metric_histograms  # noqa: E402
 
@@ -168,16 +169,24 @@ DEFAULT_TOKEN = ROOT / "scripts" / "serve" / "pki" / "instana.token"
 #: Where the watermark lives, so a re-run does not re-send what already went.
 DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
 
-#: Traces per request. Instana's acceptor, like every OTLP endpoint, has a body
-#: limit; a private gallery never approaches it, but a first run against a
-#: fortnight of history would.
-BATCH = 100
+#: Traces read from the store per PAGE. NOT "traces per request": how many go
+#: in one POST is a span-count and body-byte question, and lives in
+#: instana_batch.py with the measurements behind it. This is only how much of
+#: the backlog one sqlite pass pulls into memory before it is cut into
+#: requests; 500 is the store's own `search()` ceiling, so it is one page.
+#:
+#: The comment that used to stand here said Instana's body limit was one "a
+#: private gallery never approaches". That was measured false on 2026-09-01: a
+#: 100-trace batch carried 16,226 spans (9.6 MB) because ONE trace held 16,139
+#: of them, and the agent closed the connection on it twice in a row.
+PAGE_TRACES = 500
 
 #: THREE THINGS LIVE BESIDE THIS FILE, not in it, each split out so it is
 #: unit-testable without a socket or a real Instana tenant — and, latterly,
 #: because this file reached its line budget:
 #:   instana_destination.py  agent-vs-SaaS choice, the loopback http exception
 #:   instana_backlog.py      the watermark: WHICH traces have not been sent
+#:   instana_batch.py        HOW MUCH goes in one request, and how many a run makes
 #:   instana_metrics.py      analytics.db counters rendered as OTLP histograms
 #: The one with a correctness argument in it is instana_backlog.py; read
 #: `pending_traces()` there before touching anything about ordering.
@@ -344,10 +353,51 @@ def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) ->
 
 
 def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool) -> int:
+    """Ship the backlog until it is empty or the run budget says stop.
+
+    A RUN IS NOT A BATCH. It used to be: one page of 100 traces left the box and
+    the process exited, which on a five-minute timer is 20 traces a minute
+    against a store taking 23 a minute. The pipeline could not catch up from any
+    backlog, ever, and sat 991 traces behind. See instana_batch.drain().
+    """
     state = read_state(cfg.state)
     after = resume_seq(cfg, state)
-    batch, high_seq = pending_traces(cfg, after, BATCH)
-    if not batch:
+    first_seq = after
+
+    def fetch(seq):
+        return pending_traces(cfg, seq, PAGE_TRACES)
+
+    def ship(chunk):
+        doc = traces_otlp.export(chunk, host_id=cfg.host_id if dest.stamp_host_id else None)
+        if verbose or dry_run:
+            print(json.dumps(doc, indent=2)[:4000])
+        ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
+        spans = sum(len(t.get("spans", [])) for t in chunk)
+        print(f"traces [{dest.name}]: {len(chunk)} trace(s), {spans} span(s) -> {detail}")
+        return ok, detail
+
+    def advance(seq):
+        # Persisted after EVERY successful request, not once at the end of the
+        # run. A run that is killed by the systemd timeout, or that dies on its
+        # ninth request, must not re-send its first eight — and must not skip
+        # them either. The watermark is the only thing that makes a partial run
+        # a partial success rather than a rollback.
+        if dry_run:
+            return
+        state["lastIngestSeq"] = seq
+        # Dropped rather than carried forward: it was only ever a courtesy for a
+        # human reading the file, and a run now advances the watermark several
+        # times without ever computing a max(startedMs). A stale field that
+        # looks authoritative is worse than an absent one — it is the exact
+        # field whose misuse as a watermark lost half of every trace until
+        # 2026-09-01.
+        state.pop("lastTraceStartedMs", None)
+        state["lastForwardedMs"] = int(time.time() * 1000)
+        write_state(cfg.state, state)
+
+    stat = drain(after, fetch, ship, advance)
+    behind = backlog_count(cfg, stat["seq"])
+    if stat["requests"] == 0 and stat["ok"]:
         # Say enough that STALENESS is visible in the journal. A timer whose
         # only output is "nothing new" cannot be told apart from a timer that
         # has been failing to see anything for a week.
@@ -356,27 +406,18 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
         if last:
             age = f", last forwarded {int((time.time() * 1000 - last) / 1000)}s ago"
         print(f"traces [{dest.name}]: nothing new (watermark seq {after}{age})")
-        return 0
-    # host.id: stamped by US only on the SaaS leg, which has no other way to
-    # learn the host. The agent leg supplies host identity itself (IBM's
-    # docs: sending to the local agent means host.id is not needed, and
-    # sending it anyway to the direct SaaS backend IS needed) — passing
-    # host_id=None here is that difference made explicit, not an omission.
-    doc = traces_otlp.export(batch, host_id=cfg.host_id if dest.stamp_host_id else None)
-    spans = sum(len(t.get("spans", [])) for t in batch)
-    if verbose or dry_run:
-        print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
-    print(f"traces [{dest.name}]: {len(batch)} trace(s), {spans} span(s), seq {after}->{high_seq} -> {detail}")
-    if ok and not dry_run:
-        state["lastIngestSeq"] = high_seq
-        # Kept for a human reading the state file, and no longer read back as a
-        # watermark by anything but the one-time legacy conversion in
-        # resume_seq(). Writing it as the watermark is the bug.
-        state["lastTraceStartedMs"] = max(t["startedMs"] for t in batch)
-        state["lastForwardedMs"] = int(time.time() * 1000)
-        write_state(cfg.state, state)
-    return 0 if ok else 1
+    else:
+        print(
+            f"traces [{dest.name}]: run done — {stat['traces']} trace(s), {stat['spans']} span(s) in "
+            f"{stat['requests']} request(s), seq {first_seq}->{stat['seq']}, stopped: {stat['stop']}"
+        )
+    if stat["dropped_spans"]:
+        print(f"traces [{dest.name}]: DROPPED {stat['dropped_spans']} span(s) too large to ship — see stderr")
+    # The backlog line is unconditional, including on a caught-up run printing
+    # "backlog: 0". A number that only appears when it is bad is a number nobody
+    # learns to read, and "0" is the baseline that makes "991" mean something.
+    print(f"traces [{dest.name}]: backlog: {behind} trace(s) behind")
+    return 0 if stat["ok"] else 1
 
 
 def forward_metrics(cfg: Config, dest: Destination, dry_run: bool, verbose: bool, days: int) -> int:
