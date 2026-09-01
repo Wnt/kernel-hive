@@ -28,6 +28,7 @@
 
 import { BUILD_ID } from './build';
 import { currentSpan } from './trace';
+import { postTelemetry } from './beacon';
 
 /** Flush cadence, matched to /clientlog's so the two lanes stay comparable
  *  while both run. */
@@ -144,7 +145,9 @@ function ensurePagehide(): void {
   } catch { /* noop */ }
 }
 
-/** Send what is queued. `force` bypasses the single-flight guard, for teardown. */
+/** Send what is queued. `force` bypasses the single-flight guard, for teardown
+ *  — and teardown is also the one flush allowed to spend the document's
+ *  keepalive allowance (`analytics/beacon.ts`), so the same flag carries both. */
 export function flushLogs(force = false): void {
   try {
     if (!pending.length) return;
@@ -171,20 +174,21 @@ export function flushLogs(force = false): void {
       logs: batch,
     });
     inFlight = true;
-    void fetch('/logs', {
-      method: 'POST',
-      keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    }).then((res) => {
+    // A NETWORK failure folds the batch back; an HTTP REFUSAL is a settled
+    // answer and the batch is dropped. Re-queueing on a refusal is what turns
+    // one lost record into an unbounded queue of them.
+    //
+    // `keepalive` only on the FINAL flush (`analytics/beacon.ts`): a document's
+    // allowance is 64 KiB spent once for its whole life, and this route drawing
+    // on it every 250 ms is part of what silently killed the tab's telemetry
+    // mid-visit.
+    void postTelemetry('/logs', body, { final: force }).then((result) => {
       inFlight = false;
-      // A NETWORK failure folds the batch back; an HTTP REFUSAL is a settled
-      // answer and the batch is dropped. Re-queueing on a refusal is what turns
-      // one lost record into an unbounded queue of them.
-      if (!res.ok) return;
-      if (pending.length) window.setTimeout(() => flushLogs(), 250);
-    }).catch(() => {
-      inFlight = false;
+      if (result === 'sent') {
+        if (pending.length) window.setTimeout(() => flushLogs(), 250);
+        return;
+      }
+      if (result === 'refused') return;
       pending = batch.concat(pending);
       if (pending.length > MAX_PENDING) pending.splice(0, pending.length - MAX_PENDING);
     });

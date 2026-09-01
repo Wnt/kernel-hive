@@ -28,7 +28,8 @@ import { PROBES, type ProbeId } from './catalogue';
 import { clientClass, gradeFor, installIntentWitness, type Intent } from './intent';
 import { configureSink, queueProbe } from './sink';
 import { installErrorCapture } from './errors';
-import { configureTracer, type WireSpan } from './trace';
+import { configureTracer, requeueSpans, type WireSpan } from './trace';
+import { postTelemetry } from './beacon';
 
 // Only what CALL SITES use. `fingerprint`, `witnessHumanEdge` and the flush are
 // exported by their own modules for the tests and the operator plane;
@@ -92,7 +93,7 @@ export function initAnalytics(opts: {
     configureSink({ sessionId: opts.sessionId, allowed: opts.allowed, clientClass });
     configureTracer({
       enabled: opts.allowed,
-      emit: (spans) => postSpans(opts.sessionId, spans),
+      emit: (spans, final) => postSpans(opts.sessionId, spans, final),
       identity: opts.user
         ? {
             'enduser.id': opts.user.id,
@@ -117,7 +118,7 @@ export function initAnalytics(opts: {
  * for all of them, and OTLP itself groups spans under one Resource for exactly
  * this reason (serve/traces.py re-expands it on export).
  */
-function postSpans(sessionId: string, spans: WireSpan[]): void {
+function postSpans(sessionId: string, spans: WireSpan[], final = false): void {
   try {
     if (!spans.length) return;
     const body = JSON.stringify({
@@ -137,20 +138,20 @@ function postSpans(sessionId: string, spans: WireSpan[]): void {
       },
       spans,
     });
-    void fetch('/traces', {
-      method: 'POST',
-      keepalive: true,
-      credentials: 'same-origin',
-      // NO `traceparent`: see sink.ts. `/traces` is not even traced server-side
-      // (tracing_http.py's allowlist refuses the telemetry ingest on purpose),
-      // so the header could only ever have been a parent nothing recorded.
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      // No fold-back on failure, unlike the counters. A dropped counter is a
-      // number that reads slightly low forever; a dropped span is one trace
-      // missing from a window that expires in days anyway, and re-queueing
-      // kilobytes of spans through a flaky link is how a tab's memory grows
-      // until the visitor notices the thing that was supposed to be invisible.
-    }).catch(() => {});
+    // NO `traceparent`: see sink.ts. `/traces` is not even traced server-side
+    // (tracing_http.py's allowlist refuses the telemetry ingest on purpose), so
+    // the header could only ever have been a parent nothing recorded.
+    //
+    // `keepalive` ONLY on the final flush, and the batch is KEPT when there was
+    // no answer — both of those are `analytics/beacon.ts`, and both were bought
+    // by the same measured fault. This route used to post every batch with
+    // `keepalive: true` and drop it on failure; a document's keepalive
+    // allowance is 64 KiB spent once, so a tab went silent on `/traces`,
+    // `/analytics`, `/clientlog` and `/logs` in the same second, permanently,
+    // while the daemon's half of every input trace kept landing without its
+    // root. 38% of `input.dispatch` spans over 24 h were orphaned that way.
+    void postTelemetry('/traces', body, { final }).then((result) => {
+      if (result === 'failed') requeueSpans(spans);
+    });
   } catch { /* never throw */ }
 }

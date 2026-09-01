@@ -21,10 +21,17 @@
 //     `pagehide` AND on `visibilitychange` to hidden (iOS Safari can skip
 //     pagehide), with `keepalive` so it outlives the tab. sendBeacon cannot be
 //     used: it omits the Origin header the public listener insists on.
+//
+//     `keepalive` ON THAT FLUSH AND NO OTHER — see `analytics/beacon.ts`. It
+//     was on every flush until 2026-09-01, which spent the document's whole
+//     64 KiB allowance within a couple of minutes and then silently killed
+//     this route, `/traces`, `/clientlog` and `/logs` together for the rest of
+//     the visit.
 // ============================================================================
 
 import type { ClientClass } from './intent';
 import { flushSpans } from './trace';
+import { postTelemetry } from './beacon';
 
 /** Flush cadence. A session of a few minutes is a handful of requests. */
 const FLUSH_MS = 20_000;
@@ -122,20 +129,20 @@ function ensureTimer(): void {
   if (!hooked) {
     hooked = true;
     try {
-      window.addEventListener('pagehide', () => flushAnalytics());
+      window.addEventListener('pagehide', () => flushAnalytics(true));
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') flushAnalytics();
+        if (document.visibilityState === 'hidden') flushAnalytics(true);
       });
     } catch { /* no lifecycle hooks: the interval is still the common path */ }
   }
-  if (!timer) timer = window.setInterval(() => flushAnalytics(), FLUSH_MS);
+  if (!timer) timer = window.setInterval(() => flushAnalytics(false), FLUSH_MS);
 }
 
 /** Send what has been counted. Driven by this module's own interval and its
  *  pagehide/visibilitychange hooks — no caller outside needs it, and a public
  *  flush would only invite a call site to try to make a batch "land now",
  *  which `keepalive` already guarantees for the case that matters. */
-function flushAnalytics(): void {
+function flushAnalytics(final = false): void {
   try {
     if (!allowed) return;
     // Spans first, and unconditionally: they have their own buffer and their
@@ -143,7 +150,7 @@ function flushAnalytics(): void {
     // whole trace. Gating them behind `rows` would have silently dropped the
     // traces of the quietest sessions — which, for a drilldown tool, are
     // exactly the ones somebody is hunting for.
-    flushSpans();
+    flushSpans(final);
     if (!rows) return;
     const batch = pending;
     pending = emptyBatch();
@@ -156,17 +163,13 @@ function flushAnalytics(): void {
       metrics: [...batch.metrics.values()],
       errors: [...batch.errors.values()],
     });
-    void fetch('/analytics', {
-      method: 'POST',
-      keepalive: true,
-      credentials: 'same-origin',
-      // NO `traceparent`. `/analytics` is an excluded telemetry path: it opens
-      // no client span, so there is no span for a header to name, and naming
-      // the ambient one instead is exactly what left `serve.analytics` rootless
-      // (khFetch.ts's `outboundTraceparent`). The server roots its own trace.
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    }).catch(() => { foldBack(batch); });
+    // NO `traceparent`. `/analytics` is an excluded telemetry path: it opens
+    // no client span, so there is no span for a header to name, and naming the
+    // ambient one instead is exactly what left `serve.analytics` rootless
+    // (khFetch.ts's `outboundTraceparent`). The server roots its own trace.
+    void postTelemetry('/analytics', body, { final }).then((result) => {
+      if (result === 'failed') foldBack(batch);
+    });
   } catch { /* analytics must never break the app it measures */ }
 }
 

@@ -102,6 +102,11 @@ LONG_ATTRS = frozenset(
     }
 )
 EVENT_MAX = 64
+#: Span LINKS per span — OTel's "caused by, but not nested under". A trace is
+#: ONE ACTION since 2026-09-01, so an input edge is no longer a child of its
+#: page load and that causal edge is drawn with a link. Bounded like attributes
+#: and events: a buggy caller costs disk once, not without limit.
+LINK_MAX = 8
 #: Days of spans kept. 90, raised from 14 on 2026-09-01. MEASURED cost: the live
 #: store held 39_612 spans in 34 h (~28 MB including the WAL) — ~710 bytes per
 #: stored span, ~20 k spans/day, ~14 MB/day. 90 days is therefore ~1.3 GB against
@@ -143,6 +148,31 @@ def _clean_attrs(raw) -> dict:
     return out
 
 
+def _clean_links(raw) -> list:
+    """Span links, shape-checked exactly like a span's own ids.
+
+    A link that does not name a real 128-bit trace id and 64-bit span id is
+    not a link, it is a typo that would render as a dead end in a UI — so it
+    is dropped here rather than stored. Attributes on a link go through the
+    same `_clean_attrs` as everything else, which is what keeps the secret
+    rule (`traces_policy`) true of every path into the store rather than of
+    most of them.
+    """
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for link in raw[:LINK_MAX]:
+        if not isinstance(link, dict):
+            continue
+        trace_id, span_id = link.get("t"), link.get("s")
+        if not isinstance(trace_id, str) or not TRACE_RE.match(trace_id):
+            continue
+        if not isinstance(span_id, str) or not SPAN_RE.match(span_id):
+            continue
+        out.append({"t": trace_id, "s": span_id, "a": _clean_attrs(link.get("a"))})
+    return out
+
+
 def _clean_events(raw) -> list:
     if not isinstance(raw, list):
         return []
@@ -174,6 +204,7 @@ class TraceStore:
         self._lock = threading.RLock()
         if read_only:
             self._db = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, check_same_thread=False)
+            self._has_links = self._column_exists("span", "links")
             return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(str(self.path), check_same_thread=False)
@@ -181,8 +212,24 @@ class TraceStore:
         self._db.executescript(traces_schema.SCHEMA)
         traces_schema.migrate_ingest_order(self._db)
         traces_schema.migrate_build(self._db)
+        traces_schema.migrate_links(self._db)
         traces_schema.heal_unsequenced(self._db)
         self._db.commit()
+        self._has_links = True
+
+    def _column_exists(self, table: str, column: str) -> bool:
+        """Does `table` have `column` right now?
+
+        Asked ONLY on the read-only path, for a deploy-ordering hazard that
+        has bitten this file before: a read-only reader cannot migrate the
+        store it reads, so between the deploy and the serving plane's restart
+        a report would select a column that is not there yet. It must degrade
+        to "not recorded here", never to a traceback.
+        """
+        try:
+            return any(r[1] == column for r in self._db.execute(f"PRAGMA table_info({table})"))
+        except sqlite3.Error:
+            return False
 
     def record(self, batch: dict) -> int:
         """Fold one tab's spans in. Returns how many were accepted.
@@ -242,7 +289,7 @@ class TraceStore:
                 msg = msg[:1024] if isinstance(msg, str) else None
                 cur.execute(
                     "INSERT INTO span(trace_id,span_id,parent_id,name,kind,started_ms,dur_ms,"
-                    "hidden_ms,status,status_msg,attrs,events) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) "
+                    "hidden_ms,status,status_msg,attrs,events,links) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) "
                     "ON CONFLICT(trace_id,span_id) DO NOTHING",
                     (
                         trace_id,
@@ -257,6 +304,7 @@ class TraceStore:
                         msg,
                         json.dumps(_clean_attrs(raw.get("a")), separators=(",", ":")),
                         json.dumps(_clean_events(raw.get("e")), separators=(",", ":")),
+                        json.dumps(_clean_links(raw.get("l")), separators=(",", ":")),
                     ),
                 )
                 if cur.rowcount:
@@ -435,10 +483,13 @@ class TraceStore:
                     "statusMessage": r[8],
                     "attributes": json.loads(r[9] or "{}"),
                     "events": json.loads(r[10] or "[]"),
+                    "links": json.loads(r[11] or "[]") if self._has_links else [],
                 }
                 for r in cur.execute(
                     "SELECT span_id,parent_id,name,kind,started_ms,dur_ms,hidden_ms,status,"
-                    "status_msg,attrs,events FROM span WHERE trace_id=? ORDER BY started_ms",
+                    "status_msg,attrs,events,"
+                    + ("links" if self._has_links else "NULL")
+                    + " FROM span WHERE trace_id=? ORDER BY started_ms",
                     (trace_id,),
                 )
             ]

@@ -133,6 +133,23 @@ pub fn begin(
     (st, span)
 }
 
+/// The entry span's name for one input class.
+///
+/// `&'static str` and an exhaustive match rather than a formatted string: a
+/// span name is an endpoint identity in every consumer downstream, and an
+/// allocated name is one typo away from an unbounded set of endpoints. An
+/// unrecognised class falls back to the bare name rather than inventing a row.
+/// The vocabulary matches the browser's `kh.input.class`
+/// (`three/streamClient/inputWire.ts`) exactly, which is what keeps the two
+/// ends from disagreeing about what a word means.
+fn dispatch_span_name(input_class: &str) -> &'static str {
+    match input_class {
+        "key" => "input.dispatch.key",
+        "click" => "input.dispatch.click",
+        _ => "input.dispatch",
+    }
+}
+
 impl SessionTrace {
     pub fn ctx(&self) -> Ctx {
         self.ctx
@@ -238,7 +255,19 @@ impl SessionTrace {
         // same "do not relabel a UI span as a server span" rule this repo
         // already states cuts the other way here, since this span already
         // was the server side of a real client/server exchange.
-        let mut span = Span::child("input.dispatch", Kind::Server, ctx);
+        //
+        // AND THE NAME CARRIES THE CLASS. Instana derives an OTLP trace's
+        // ENDPOINT from its entry span's name — the `{otel.operation}` rule in
+        // its predefined endpoint mapping (instana-docs/
+        // 0251-monitoring-applications.md, "Endpoints -> Predefined rules"), so
+        // one name means one endpoint row for every input a visitor ever makes.
+        // A keyboard round trip and a mouse round trip have genuinely different
+        // shapes — different guest work, different damage, different latency
+        // distributions — and folding them into one row hides both. The class
+        // stays an attribute as well, because a NAME cannot be grouped away
+        // when somebody does want the whole input plane at once.
+        let name = dispatch_span_name(input_class);
+        let mut span = Span::child(name, Kind::Server, ctx);
         span.attr("kh.input.class", input_class);
         if let Some(kc) = key_class {
             span.attr("kh.key.class", kc);

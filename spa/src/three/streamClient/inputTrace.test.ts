@@ -5,7 +5,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { configureTracer, __resetTracer } from '../../analytics/trace';
 import {
-  SAMPLE_N, SUFFIX_LEN, maybeSampleEdge, traceSuffix, withSuffix, keyClass,
+  SUFFIX_LEN, maybeSampleEdge, traceSuffix, withSuffix, keyClass,
   __resetSampleCounter,
 } from './inputTrace';
 // The vendor's own accepted shape now lives beside every other fact about the
@@ -31,33 +31,38 @@ function installIneum(): { calls: unknown[][] } {
 }
 
 describe('maybeSampleEdge', () => {
-  it('samples exactly 1 edge in SAMPLE_N, never zero and never two in a row', () => {
-    const sampled: number[] = [];
-    for (let i = 1; i <= SAMPLE_N * 5; i += 1) {
+  // EVERY key and click edge is traced (2026-09-01). The 1-in-10 counter it
+  // replaced aliased against periodic input, applied one rate to populations
+  // differing by orders of magnitude, and — the fault no source-side rate can
+  // fix — threw away the slow edges, which are the whole point of the
+  // measurement. The keep/drop decision moved to the vendor export, where the
+  // trace is complete and its duration is known.
+  it('traces EVERY qualifying edge, with its own trace id', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 30; i += 1) {
       const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'key' });
-      if (span) sampled.push(i);
+      expect(span).not.toBeNull();
+      expect(span!.traceId).toMatch(/^[0-9a-f]{32}$/);
+      seen.add(span!.traceId);
     }
-    expect(sampled).toEqual([SAMPLE_N, SAMPLE_N * 2, SAMPLE_N * 3, SAMPLE_N * 4, SAMPLE_N * 5]);
+    // One trace per ACTION: thirty edges are thirty traces, never one.
+    expect(seen.size).toBe(30);
   });
 
-  it('an unsampled edge costs no id mint: traceId is only ever real on a hit', () => {
-    let hits = 0;
-    for (let i = 0; i < SAMPLE_N * 3; i += 1) {
-      const span = maybeSampleEdge('input.edge', {});
-      if (span) {
-        hits += 1;
-        expect(span.traceId).toMatch(/^[0-9a-f]{32}$/);
-        span.end('ok');
-      }
-    }
-    expect(hits).toBe(3);
+  it('returns NULL when tracing is switched off, so no zero-id suffix goes out', () => {
+    // A NOOP span is TRUTHY with empty ids, and `inputWire.ts` reads
+    // `span ? withSuffix(...) : bare` — so returning one appended a 25-byte
+    // ALL-ZERO trace context to every record a tracing-disabled tab sent. The
+    // daemon rejects a zero context outright (`input_trace::strip`), so those
+    // bytes bought nothing at all.
+    configureTracer({ enabled: false, emit: () => {} });
+    expect(maybeSampleEdge('input.edge', {})).toBeNull();
   });
 });
 
 describe('the EUM↔backend join (Instana reportEvent)', () => {
   it('reports backendTraceId as EXACTLY 32 hex chars — the vendor silently drops anything else', () => {
     const { calls } = installIneum();
-    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
     const span = maybeSampleEdge('input.edge', { 'kh.input.class': 'key', 'kh.station': 'nextstep' });
     expect(span).not.toBeNull();
 
@@ -83,24 +88,17 @@ describe('the EUM↔backend join (Instana reportEvent)', () => {
   });
 
   it('is a no-op with no window.ineum: our own tracing is unaffected', () => {
-    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
-    // Must not throw, and must still return a real sampled span.
+    // Must not throw, and must still return a real traced span.
     const span = maybeSampleEdge('input.edge', {});
     expect(span).not.toBeNull();
     expect(span!.traceId).toMatch(/^[0-9a-f]{32}$/);
   });
 
-  it('sends nothing on an unsampled edge, and nothing when tracing is disabled', () => {
+  it('sends nothing when tracing is disabled', () => {
     const { calls } = installIneum();
-    // Unsampled edges: no span, so no reportEvent either.
-    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
-    expect(calls.filter(([name]) => name === 'reportEvent')).toHaveLength(0);
-
-    // Tracing disabled entirely: even a "sampled" edge mints a NOOP span
-    // (empty traceId), which must never be reported.
+    // Tracing disabled entirely: no span, and nothing reported to the vendor.
     configureTracer({ enabled: false, emit: () => {} });
-    const span = maybeSampleEdge('input.edge', {});
-    expect(span!.traceId).toBe('');
+    expect(maybeSampleEdge('input.edge', {})).toBeNull();
     expect(calls.filter(([name]) => name === 'reportEvent')).toHaveLength(0);
   });
 });
@@ -111,8 +109,6 @@ describe('wire suffix', () => {
   });
 
   it('round-trips a span\'s ids as big-endian bytes matching the hex string order', () => {
-    // Force a sample.
-    for (let i = 0; i < SAMPLE_N - 1; i += 1) maybeSampleEdge('input.edge', {});
     const span = maybeSampleEdge('input.edge', {});
     expect(span).not.toBeNull();
     const suffix = traceSuffix(span!);

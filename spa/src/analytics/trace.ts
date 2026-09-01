@@ -20,23 +20,26 @@
 //  the plane the stack of every fault it recorded. Do not reconstruct it.
 //
 //  A SECOND, DELIBERATE narrowing on 2026-08-31: `three/streamClient/
-//  inputTrace.ts` now collects a SAMPLED per-input timing series — 1 key or
-//  click edge in `SAMPLE_N` (default 10) becomes a real `input.edge` span,
-//  chained through the daemon (`streamhost/src/input_trace.rs`) to the guest
-//  write and the frame it produced. This is the operator's call, made with
-//  eyes open, not erosion: it exists because the open keyboard-lag
-//  investigation (a suspected pacing-queue floor in the emulator ctl module)
-//  needed an end-to-end input->pixel flame graph and nothing short of
-//  per-edge tracing draws one. What still never leaves the tab is TYPED
-//  KEYSTROKE CONTENT — the one item on the 2026-09-01 richness pass the
-//  operator has not been asked about, held behind `KH_TRACE_TYPED_TEXT` in
-//  traces.py (default off) rather than settled by an agent. `kh.key.class` is a coarse bucket (printable/modifier/
+//  inputTrace.ts` collects a per-input timing series — every key and click edge
+//  becomes a real `input.edge` span, chained through the daemon
+//  (`streamhost/src/input_trace.rs`) to the guest write and the frame it
+//  produced. This is the operator's call, made with eyes open, not erosion: it
+//  exists because the open keyboard-lag investigation (a suspected pacing-queue
+//  floor in the emulator ctl module) needed an end-to-end input->pixel flame
+//  graph and nothing short of per-edge tracing draws one. It was 1-in-10 until
+//  2026-09-01, when the sampler moved to the VENDOR EXPORT — where a trace is
+//  complete and its duration is known, so the slow ones can be kept rather than
+//  thrown away by a coin the source had to flip too early
+//  (`scripts/observability/tail_sampler.py`).
+//
+//  What still never leaves the tab is TYPED KEYSTROKE CONTENT — the one item on
+//  the 2026-09-01 richness pass the operator has not been asked about, held
+//  behind `KH_TRACE_TYPED_TEXT` in traces.py (default off) rather than settled
+//  by an agent. `kh.key.class` is a coarse bucket (printable/modifier/
 //  navigation/enter/function) computed from the wire scancode the daemon was
 //  already going to receive to work at all — two unrelated keys in the same
 //  bucket produce the identical string, and nothing in the span can be
-//  inverted back to which key was pressed. The other N-1 edges in ten cost
-//  nothing beyond a counter increment: no id is minted, no span opens, no
-//  wire byte changes (docs/lab/TRACE-CONTEXT.md's in-record hop).
+//  inverted back to which key was pressed.
 //
 //  THIS IS OPENTELEMETRY DATA, not a private format that resembles it. The
 //  span model below is OTel's: 128-bit trace ids and 64-bit span ids in
@@ -65,7 +68,17 @@
 //  fact is impossible, which is why both are captured at the source.
 // ============================================================================
 
-import { pageLoadParent, __resetPageLoadJoin } from './pageLoadJoin';
+import { pageLoadLink, __resetPageLoadLink } from './pageLoadLink';
+import { pageLoadId } from './pageBinding';
+import {
+  bufferHasRoom, bufferSpan, configureSpanBuffer, scheduleEntryFlush, tracerEnabled,
+  __resetSpanBuffer,
+} from './spanBuffer';
+
+// Re-exported so every existing importer keeps one import site for "the
+// tracer": the buffer split (2026-09-01) was a size-budget move, not a change
+// of interface.
+export { flushSpans, requeueSpans, __bufferedSpans } from './spanBuffer';
 
 /** Lowercase hex, `n` bytes. Uses crypto when it exists — not for secrecy, but
  *  because Math.random collides sooner than you would like once ids are being
@@ -106,6 +119,19 @@ interface SpanEvent {
   a?: Attrs;
 }
 
+/**
+ * An OTel SPAN LINK: "this span was caused by that one, WITHOUT being nested
+ * under it". Since 2026-09-01 a trace here means ONE ACTION, so a keystroke is
+ * no longer a child of the page load it happened on — the causal edge is real
+ * and is drawn with a link instead of a parent. `pageLoadLink.ts` has the
+ * reasoning and why the same fact ALSO rides as an attribute.
+ */
+export interface SpanLink {
+  t: string;
+  s: string;
+  a?: Attrs;
+}
+
 /** Attribute values worth carrying. Deliberately narrow: no objects, no
  *  arrays, nothing that could become a nested payload of visitor content. */
 type AttrValue = string | number | boolean;
@@ -141,6 +167,7 @@ export interface WireSpan {
   m?: string;             // OTel status message
   a?: Attrs;              // OTel attributes
   e?: SpanEvent[];        // OTel span events
+  l?: SpanLink[];         // OTel span links
 }
 
 /** A live span. End it exactly once. */
@@ -162,6 +189,24 @@ export interface Span {
   /** Finish. Later calls are ignored, so a `fail` in a catch followed by an
    *  `ok` in a finally cannot report both — the same rule flows.ts uses. */
   end(status?: SpanStatus, attrs?: Attrs, message?: string): void;
+  /**
+   * Finish AT a `performance.now()` reading the caller already took, rather
+   * than at "now".
+   *
+   * For a span whose end is learnt LATER than it happened. The live example is
+   * `input.edge`: its duration is meant to be the visitor-facing edge → painted
+   * pixel round trip, and the tab only finds out which frame answered the edge
+   * when the daemon's frame mark arrives, which can be well after that frame
+   * was painted (docs/lab/TRACE-CONTEXT.md §3.3). Ending at `now()` there would
+   * charge the span for the mark's own travel time, which is not what a visitor
+   * waited for.
+   *
+   * `atMs` is the SAME clock `now()` reads, and the caller must have taken it
+   * in THIS tab — that is the whole reason this measurement needs no clock
+   * agreement between the two machines. A reading in the future, or before the
+   * span started, is clamped rather than trusted.
+   */
+  endAt(atMs: number, status?: SpanStatus, attrs?: Attrs): void;
 }
 
 /** A span that does nothing, for every path that must not throw. */
@@ -173,29 +218,23 @@ const NOOP: Span = {
   event: () => {},
   recordException: () => {},
   end: () => {},
+  endAt: () => {},
 };
 
-/** Spans held between flushes. A trace is worth having whole, so this is
- *  generous compared with the counter buffer — but still bounded, because an
- *  instrumentation bug must cost memory once and then stop. */
-const MAX_BUFFERED = 2048;
-let buffered: WireSpan[] = [];
 let open = 0;
 /** Open spans, so a leaking call site cannot grow the tab without bound. */
 const MAX_OPEN = 128;
-let emit: (spans: WireSpan[]) => void = () => {};
-let enabled = false;
 
 /** Wire the tracer to a sink. Until this is called nothing is buffered and
  *  nothing is sent — the same gate the counter sink uses, for the same reason:
- *  a signed-out stranger at the walk-in door would otherwise queue forever. */
+ *  a signed-out stranger at the walk-in door would otherwise queue forever.
+ *  The buffer and the flush rules live in `spanBuffer.ts`. */
 export function configureTracer(opts: {
   enabled: boolean;
-  emit: (spans: WireSpan[]) => void;
+  emit: (spans: WireSpan[], final: boolean) => void;
   identity?: Attrs;
 }): void {
-  enabled = opts.enabled;
-  emit = opts.emit;
+  configureSpanBuffer({ enabled: opts.enabled, emit: opts.emit });
   identity = opts.identity && Object.keys(opts.identity).length ? opts.identity : undefined;
 }
 
@@ -277,8 +316,9 @@ function makeSpan(
   attrs?: Attrs,
   kind: SpanKind = 'internal',
   traceEntry = false,
+  links?: SpanLink[],
 ): Span {
-  if (!enabled || open >= MAX_OPEN) return NOOP;
+  if (!tracerEnabled() || open >= MAX_OPEN) return NOOP;
   installVisibilityHook();
   open += 1;
   const spanId = newSpanId();
@@ -323,45 +363,57 @@ function makeSpan(
       if (!('error.type' in own)) own['error.type'] = String(type).slice(0, 80);
     },
     end(status: SpanStatus = 'unset', endAttrs?: Attrs, message?: string) {
-      try {
-        if (ended) return;
-        ended = true;
-        open -= 1;
-        Object.assign(own, clean(endAttrs) ?? {});
-        if (buffered.length >= MAX_BUFFERED) return;
-        buffered.push({
-          t: traceId,
-          s: spanId,
-          p: parentId,
-          n: name.slice(0, 80),
-          kd: kind,
-          st: wall0,
-          d: Math.max(0, Math.round(now() - t0)),
-          h: Math.max(0, Math.round(hiddenElapsed() - hidden0)),
-          k: status,
-          ...(message ? { m: message.slice(0, 200) } : {}),
-          ...(Object.keys(own).length ? { a: own } : {}),
-          ...(events.length ? { e: events } : {}),
-        });
-        // A TRACE ENTRY that just ended is this tab's whole contribution to
-        // a trace, and one nobody has uploaded is the second orphan class:
-        // the server span naming it is already stored, so until this joins it
-        // there the trace reads as rootless.
-        //
-        // `traceEntry`, NOT `parentId === null`. That was the first attempt
-        // and it missed the one burst it most needed to catch: while the
-        // page-load join is live, `startTrace()` hangs the tab's entry off
-        // `serve.page`'s span id, so a boot fetch's client span HAS a parent
-        // and never looked like a root. Measured on the deployed build: the
-        // client spans for `/gallery-manifest.json` and `/boot/index.json`
-        // were absent from the store 12 s after the load and present at 30 s
-        // — they were waiting for the 20 s tick, which is exactly the window
-        // a short visit does not survive. `scheduleEntryFlush` says why this
-        // is not a shorter interval.
-        if (traceEntry) scheduleEntryFlush();
-      } catch { /* instrumentation never throws into the app */ }
+      finish(now(), status, endAttrs, message);
+    },
+    endAt(atMs: number, status: SpanStatus = 'unset', endAttrs?: Attrs) {
+      // Clamped, not trusted: a reading before the span started, or after
+      // "now", is a caller bug and must not become a negative or a fictional
+      // duration in a flame graph.
+      finish(Math.min(now(), Math.max(t0, atMs)), status, endAttrs);
     },
   };
+
+  function finish(atMs: number, status: SpanStatus, endAttrs?: Attrs, message?: string): void {
+    try {
+      if (ended) return;
+      ended = true;
+      open -= 1;
+      Object.assign(own, clean(endAttrs) ?? {});
+      if (!bufferHasRoom()) return;
+      bufferSpan({
+        t: traceId,
+        s: spanId,
+        p: parentId,
+        n: name.slice(0, 80),
+        kd: kind,
+        st: wall0,
+        d: Math.max(0, Math.round(atMs - t0)),
+        h: Math.max(0, Math.round(hiddenElapsed() - hidden0)),
+        k: status,
+        ...(message ? { m: message.slice(0, 200) } : {}),
+        ...(Object.keys(own).length ? { a: own } : {}),
+        ...(events.length ? { e: events } : {}),
+        ...(links && links.length ? { l: links } : {}),
+      });
+      // A TRACE ENTRY that just ended is this tab's whole contribution to a
+      // trace, and one nobody has uploaded is an orphan class of its own: the
+      // server span naming it is already stored, so until this joins it there
+      // the trace reads as rootless.
+      //
+      // `traceEntry`, NOT `parentId === null`. Since 2026-09-01 an entry IS
+      // always a root (a trace is one action — `pageLoadLink.ts`), so the two
+      // predicates now agree; the flag is kept because it says what is meant.
+      // It was not always so, and that is why it exists: while the old
+      // page-load JOIN was live, `startTrace()` hung the tab's entry off
+      // `serve.page`'s span id, so a boot fetch's client span HAD a parent and
+      // never looked like a root. Measured on the deployed build then: the
+      // client spans for `/gallery-manifest.json` and `/boot/index.json` were
+      // absent from the store 12 s after the load and present at 30 s — waiting
+      // for the 20 s tick, which is exactly the window a short visit does not
+      // survive. `scheduleEntryFlush` says why this is not a shorter interval.
+      if (traceEntry) scheduleEntryFlush();
+    } catch { /* instrumentation never throws into the app */ }
+  }
 }
 
 /**
@@ -403,17 +455,32 @@ export function childOfActive(name: string, attrs?: Attrs, kind?: SpanKind): Spa
   return parent ? parent.child(name, attrs, kind) : startTrace(name, attrs, kind);
 }
 
-/** Begin a new trace — THIS TAB'S ENTRY into one, which is not the same as
- *  its root: while the page-load join is live (`pageLoadJoin.ts`) the entry
- *  continues the server's `serve.page` span and therefore HAS a parent. That
- *  distinction is load-bearing in `end()`, which flushes on a trace ENTRY
- *  and not on a parentless span, because under the join the boot burst is
- *  never parentless. End the returned span to close this tab's part. */
+/**
+ * Begin a new trace — a ROOT, always, and THIS TAB'S ENTRY into it.
+ *
+ * ONE TRACE MEANS ONE ACTION (2026-09-01). One sampled input edge, one
+ * `station.connect`, one `station.restore`, one page load: each is its own
+ * trace, and the relation between them is drawn with a span LINK plus the
+ * `kh.page.loadId` attribute rather than by nesting. `pageLoadLink.ts` carries
+ * the evidence for that decision and why both channels are used — the short
+ * version is that a trace which meant "a visit" ran to 43 spans over 15.7 s
+ * and was still taking writes 74 s in, which no consumer reads correctly.
+ *
+ * Until that date this function JOINED the page load's trace inside a 15 s
+ * window, so an entry sometimes had a parent and sometimes did not, decided by
+ * a stopwatch. End the returned span to close this tab's part.
+ */
 export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
-  const joined = pageLoadParent();
-  const own = identity ? { ...identity, ...(attrs ?? {}) } : attrs;
-  if (joined) return makeSpan(joined.traceId, joined.spanId, name, own, kind, true);
-  return makeSpan(newTraceId(), null, name, own, kind, true);
+  const page = pageLoadLink();
+  const own: Attrs = { ...(identity ?? {}), 'kh.page.loadId': pageLoadId(), ...(attrs ?? {}) };
+  // `kh.link.kind` names WHY the link exists, so a reader is never left
+  // guessing what a bare pair of ids meant. The link rides only the ENTRY
+  // span: one copy per trace is what a query and a UI each need, and one per
+  // span would be N copies of one fact.
+  const links: SpanLink[] | undefined = page
+    ? [{ t: page.traceId, s: page.spanId, a: { 'kh.link.kind': 'page.load' } }]
+    : undefined;
+  return makeSpan(newTraceId(), null, name, own, kind, true, links);
 }
 
 /**
@@ -443,7 +510,7 @@ export function emitSpan(
   kind: SpanKind = 'internal',
 ): void {
   try {
-    if (!enabled || buffered.length >= MAX_BUFFERED) return;
+    if (!tracerEnabled() || !bufferHasRoom()) return;
     // ROUNDED, and this is not cosmetic. `/traces` requires an INTEGER start
     // (`traces.py`: `if not isinstance(started, int) ... continue`) and JSON
     // has no integer type to fall back on, so a fractional millisecond is a
@@ -458,7 +525,7 @@ export function emitSpan(
     // return leg read as "the frame mark never arrived".
     const wallStart = Math.round(Date.now() - (now() - startAtMs));
     const own = clean(attrs);
-    buffered.push({
+    bufferSpan({
       t: traceId,
       s: newSpanId(),
       p: parentSpanId,
@@ -471,50 +538,6 @@ export function emitSpan(
       ...(own ? { a: own } : {}),
     });
   } catch { /* instrumentation never throws into the app */ }
-}
-
-/** Everything buffered, handed over and cleared. */
-function drainSpans(): WireSpan[] {
-  const out = buffered;
-  buffered = [];
-  return out;
-}
-
-/** Send whatever is buffered now. */
-export function flushSpans(): void {
-  try {
-    if (!enabled || !buffered.length) return;
-    emit(drainSpans());
-  } catch { /* never throw */ }
-}
-
-/**
- * Send the buffer SOON, coalescing every trace entry that ends in one burst.
- *
- * WHY NOT SIMPLY A SHORTER INTERVAL. The sink's 20 s tick is a POLL: it costs
- * a request per tab per tick whether or not anything happened, so a 1 s worst
- * case would cost 60 requests a minute from every open tab — across a
- * 71-station wall and a gallery of visitors, thousands of mostly-empty POSTs
- * an hour, to shorten a window that only matters at the few instants a trace
- * actually completes. This is demand-driven instead: an idle tab makes NO
- * extra request, and one that finished a journey makes exactly one, when the
- * trace became complete. A root ends a handful of times per visit (one
- * `station.connect`, a `poster.read`, a sampled `input.edge`), not once per
- * poll, so the volume is bounded by what the visitor DID, not by how long they
- * stayed — and the debounce keeps a burst of roots finishing together (the
- * boot burst, ten sampled edges in fast typing) one batch.
- */
-const ENTRY_FLUSH_DEBOUNCE_MS = 250;
-let entryFlushTimer = 0;
-
-function scheduleEntryFlush(): void {
-  try {
-    if (typeof window === 'undefined' || entryFlushTimer) return;
-    entryFlushTimer = window.setTimeout(() => {
-      entryFlushTimer = 0;
-      flushSpans();
-    }, ENTRY_FLUSH_DEBOUNCE_MS);
-  } catch { entryFlushTimer = 0; /* the sink's interval is still the backstop */ }
 }
 
 /**
@@ -550,17 +573,10 @@ export function traceparentOf(span: Span | null): string | null {
 /** Test seam. */
 export function __resetTracer(): void {
   activeSpans.length = 0;
-  buffered = [];
   open = 0;
-  enabled = false;
   hiddenTotal = 0;
   hiddenSince = null;
   hookInstalled = false;
-  emit = () => {};
-  if (entryFlushTimer && typeof window !== 'undefined') window.clearTimeout(entryFlushTimer);
-  entryFlushTimer = 0;
-  __resetPageLoadJoin();
+  __resetSpanBuffer();
+  __resetPageLoadLink();
 }
-
-/** Test seam: what is buffered but not yet sent. */
-export function __bufferedSpans(): WireSpan[] { return [...buffered]; }

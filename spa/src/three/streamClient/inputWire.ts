@@ -139,8 +139,16 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     const py = y != null ? clampU16(y) : c.lastAbsY;
     // SAMPLED per-input tracing (docs/lab/TRACE-CONTEXT.md, inputTrace.ts):
     // the browser's decision, made once per qualifying edge (key or click —
-    // never a pointer-move sample). `span` is null on the other N-1 edges and
-    // costs nothing beyond the counter check inside `maybeSampleEdge`.
+    // never a pointer-move sample). `span` is null on an untraced edge and
+    // costs nothing beyond the rate check inside `maybeSampleEdge`.
+    //
+    // DELIBERATELY NOT ENDED HERE. `input.edge` is the ROOT of this action's
+    // trace and its duration is the visitor-facing edge → painted-pixel round
+    // trip, so it is closed by `inputTrace::settleEdge` when the daemon names
+    // the frame that answered it — or by that module's timeout when nothing
+    // ever does. Ending it here is what made every input trace's root report
+    // 0–1 ms of local enqueue for something a visitor waited a quarter of a
+    // second for.
     const span = maybeSampleEdge('input.edge', {
       'kh.input.class': 'click',
       'kh.station': c.stationId ?? 'unknown',
@@ -150,7 +158,6 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
       const rec = span ? withSuffix(bare, 3, traceSuffix(span)) : bare;
       writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
-      span?.end('ok');
       return;
     }
     const b = new Uint8Array(11);
@@ -162,7 +169,6 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     c.lastAbsX = px; c.lastAbsY = py;
     const rec = span ? withSuffix(b, 11, traceSuffix(span)) : b;
     writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
-    span?.end('ok');
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
     if (down) countKeystroke(keycode);
@@ -179,7 +185,6 @@ export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: 
     });
     const rec = span ? withSuffix(b, 4, traceSuffix(span)) : b;
     writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_KEY, rec); });
-    span?.end('ok');
   }
 export function sendWheelImpl(c: StreamClientLike, dx: number, dy: number) {
     const b = new Uint8Array(5); b[0] = T_WHEEL;

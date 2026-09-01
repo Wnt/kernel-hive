@@ -158,6 +158,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "serve"))
 sys.path.insert(0, str(HERE))
 
+import tail_sampler  # noqa: E402
 import telemetry_paths  # noqa: E402
 import traces_otlp  # noqa: E402
 from instana_backlog import backlog_count, pending_traces, read_state, resume_seq, write_state  # noqa: E402
@@ -361,6 +362,10 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
     state = read_state(cfg.state)
     after = resume_seq(cfg, state)
     first_seq = after
+    # THE TAIL DECISION — a VENDOR-VIEW decision, not a capacity one: our own
+    # store keeps every action. `tail_sampler.py` has the reasoning, the
+    # derivation of "slow", and why QUIET_MS already IS a tail sampler's buffer.
+    sampler = tail_sampler.TailSampler(cfg.state.with_suffix(".tail.json"))
 
     def fetch(seq):
         return pending_traces(cfg, seq, PAGE_TRACES)
@@ -386,6 +391,18 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
         if not kept:
             return True, "nothing to send (all telemetry-only)"
         chunk = kept
+        # Beside the telemetry filter and for the same structural reason: in
+        # `ship`, never in `fetch`, so the page stays non-empty and the run
+        # still drains past what was dropped.
+        chunk, tail = tail_sampler.apply(sampler, chunk)
+        if tail["dropped"]:
+            print(
+                f"traces [{dest.name}]: tail sampling kept {tail['error']} errored, "
+                f"{tail['slow']} slow (>= {sampler.slow_ms()} ms), {tail['random']} random; "
+                f"dropped {tail['dropped']}"
+            )
+        if not chunk:
+            return True, "nothing to send (all sampled out)"
         # `host.id` is gated on the destination — the agent supplies host
         # identity itself and a second, differently-derived one would be a
         # claim we cannot back. `host.name` is not gated: it is the box's own

@@ -471,20 +471,23 @@ handle itself) is ordinary telemetry and is governed by §0 like anything else.
 
 **The FORM half of that sentence (name entry, the walk-in flow this section is
 about) is unchanged: still zero per-keystroke telemetry of any kind.** The
-GUEST half changed, deliberately, on 2026-08-31: `three/streamClient/
-inputTrace.ts` now samples 1 key or click edge in `SAMPLE_N` (default 10) into
-a real timing span, chained across the browser, the daemon and the frame the
+GUEST half changed, deliberately, on 2026-08-31 and widened on 2026-09-01:
+`three/streamClient/inputTrace.ts` traces **every** key and click edge into a
+real timing span, chained across the browser, the daemon and the frame the
 guest produced (§8.1, `docs/lab/TRACE-CONTEXT.md`) — an end-to-end input->pixel
 flame graph the keyboard-lag investigation needed and no aggregate could draw.
 This is a widening of what §8.1 already collects about the daemon side of a
 visit. It stops short of the CONTENT question above and for that question's
 reason only: what travels is a coarse class (`kh.key.class`:
 printable/modifier/navigation/enter/function, `kh.input.class`: key/click) and
-a duration, on the ~1-in-10 edges, so nothing about which key it was is
-knowable from it. `SAMPLE_N = 10` is a **volume** knob, not a content one
-(§0.4): raising it to 1-in-1 would roughly double the store's daily span count
-on a busy day, which is a `df` decision anybody may take with a measurement in
-hand.
+a duration, so nothing about which key it was is knowable from it — and that is
+true of every edge now, not of one in ten. Dropping the old `SAMPLE_N` counter
+was a **volume** decision, not a content one (§0.4): this section's own
+estimate for going 1-in-1 was roughly a doubling of the store's daily span
+count on a busy day, and that is the `df` decision that was taken. What
+survives of sampling is a keep/drop at the **vendor export** only (§8.1), which
+changes what Instana is shown and never what our own store holds or what leaves
+the tab.
 
 ### 5.4 The station and stream flows: opening one, coming back to one, watching one freeze
 
@@ -694,12 +697,13 @@ event so a reader can do that multiplication without knowing the source.
 The default is **1-in-1**, and it is the right default because these events are
 RARE and DIAGNOSTIC. **An error is never sampled**, and there is a test that
 fails the build if an event marked `status: error` or `reportsError` declares a
-rate. Exactly one event carries a rate: `stream.keyframe.gap`, at the 1-in-10
-this plane already uses for input edges (`streamClient/inputTrace.ts`
-`SAMPLE_N`). It earns it because it is the only member of the vocabulary that is
-a **level** rather than an **edge** — a congested minute produces them
-continuously — and because the quantity it feeds is a distribution of gap sizes,
-which sampling does not bias.
+rate. Exactly one event carries a rate: `stream.keyframe.gap`, at 1-in-10. It
+earns it because it is the only member of the vocabulary that is a **level**
+rather than an **edge** — a congested minute produces them continuously — and
+because the quantity it feeds is a distribution of gap sizes, which sampling
+does not bias. That rate is now this plane's own and nobody else's: the input
+edges it used to borrow from (`streamClient/inputTrace.ts`) stopped sampling on
+2026-09-01 and are traced 1-in-1 (§8.1).
 
 Two other candidates for a rate were turned into edges at the call site instead,
 which is the better fix every time it is available: the frame watchdog reports
@@ -1139,16 +1143,21 @@ contract every layer implements is [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTE
 run" and cannot answer "why was that slow": a count has no start, no end and no
 parent. A visitor who waits four seconds for a station to appear is asking about
 an interval, and the interval that explains it usually belongs to a different
-process than the one they are looking at. Spans make one visit one flame graph
+process than the one they are looking at. Spans make one ACTION one flame graph
 across four processes, which is the only shape in which "was it slow because the
-guest was asleep" is a lookup rather than a timestamp-correlation exercise.
+guest was asleep" is a lookup rather than a timestamp-correlation exercise. One
+action, not one visit: a trace that meant "a visit" is what this plane had until
+2026-09-01, and what it cost is below.
 
 **The two planes do not overlap and both stay.** Per-frame and per-record data
-belongs in counters; spans mark transitions and one-offs. **There is no span per
-frame and no span per input edge** — at 60 fps that would be 3600 spans a minute
-per station and 219 600 across the fleet. Every mark is a one-shot
-`AtomicBool::swap`, so the encoder relay and the datagram loop pay one relaxed
-load and nothing else.
+belongs in counters; spans mark transitions, one-offs and ACTIONS. **There is
+still no span per frame and none per pointer-motion sample** — at 60 fps that
+would be 3600 spans a minute per station and 219 600 across the fleet, and
+motion is a continuous signal a histogram describes better anyway. A key or a
+click is neither: it is a discrete thing a visitor did, it is what the
+keyboard-lag work is about, and since 2026-09-01 every one of them gets a trace.
+The session marks are still one-shot `AtomicBool::swap`s, so the encoder relay
+and the datagram loop pay one relaxed load and nothing else.
 
 **The spans, and the decision each informs:**
 
@@ -1165,12 +1174,13 @@ load and nothing else.
 | `transport.first_frame` | internal | when a byte of video reached the wire — the daemon's twin of the browser's `station.open.toFirstFrameMs` |
 | `input.first_edge` | internal | when the visitor's first click or key reached the guest, and on which input class |
 | `transport.webrtc_fallback` | server | the fallback transport being TAKEN — a second egress and a sidecar process, for a browser with no `VideoDecoder` |
-| `input.edge` | client (browser) | one SAMPLED input's own start: the event handler firing to the record leaving the tab |
-| `input.dispatch` | internal | that record reaching the daemon's sink and the guest write it caused, as one span (`input.rs` has no headroom left to split it further — see the trap below) |
+| `input.edge` | client (browser) | ONE key or click, root of its own trace, and its DURATION is the visitor's edge -> painted-pixel round trip (see below). An edge no frame ever answered still lands, with `kh.input.answered=false` |
+| `input.wire` | client (browser) | the local handoff into the QUIC stream writer — where backpressure in this tab shows up. Not the hop's cost: two clocks cannot be subtracted, so the hop rides as `kh.transport.rtt_ms` |
+| `input.dispatch.key` / `input.dispatch.click` | server | that record reaching the daemon's sink and the guest write it caused, as one span (`input.rs` has no headroom left to split it further — see the trap below). Named per input class; bare `input.dispatch` is the fallback for an unrecognised one |
 | `guest.frame.next` | internal | the EFFECT: how long from that injection to the next frame this session's capture/encode pipeline produced. Carries `kh.encode.latency_us` (`Au::encode_us`, `worker.rs`'s snapshot->AU-ready number, formerly journal-text only) |
 | `transport.frame.next` | internal | the same edge's frame reaching the wire — splits capture/encode cost from egress cost, same idea as `capture.first_frame` vs `transport.first_frame` |
 | `client.frame.receive` *(browser)* | internal | the AU's bytes arriving off the wire to being handed to `VideoDecoder.decode()` |
-| `client.frame.decode` *(browser)* | internal | the WebCodecs decode itself, per-frame, for THIS sampled frame — not the ABR aggregate `decodeMs` already reports |
+| `client.frame.decode` *(browser)* | internal | the WebCodecs decode itself, per-frame, for THIS traced frame — not the ABR aggregate `decodeMs` already reports |
 | `client.frame.paint` *(browser)* | internal | the paint sink's own synchronous cost (`drawImage`, the direct-canvas path) — closes the trace at the pixel |
 
 The four session stages are all measured from the session's own start, so they
@@ -1178,43 +1188,92 @@ read side by side: `capture.first_frame` short and `transport.first_frame` long
 is egress; `guest.resume` dominating both is a guest that was idle-paused, and
 no other layer can say that.
 
-**Sampled per-input tracing (added 2026-08-31) is a SEPARATE, PARENTED trace per
-edge, not more children under `streamhost.session`.** The browser decides —
-`three/streamClient/inputTrace.ts` — mints a fresh trace for roughly 1 key or
-click edge in `SAMPLE_N` (default 10; the knob is that one exported constant,
-changed and redeployed like any other SPA constant) and appends its 25-byte
-context (a marker byte, a 128-bit trace id, a 64-bit span id — no flags byte,
-since presence on the wire already means sampled) to that ONE record. The other
-N-1 edges cost one counter increment and nothing else: no id minted, no span
-opened, no wire byte added. The input plane is raw WebTransport records with no
-headers (§3 of the trace contract), so this is the only place left to carry the
-context, and `streamhost/streamhost/src/input_trace.rs` is where the daemon
+**A TRACE MEANS ONE ACTION, since 2026-09-01.** One key or click edge, one
+`station.connect`, one `station.restore`, one page load — each is its own trace
+with its own root, never children under `streamhost.session` and never under
+the page load. The shape this replaced was "a trace means a visit": a 15-second
+window (`pageLoadJoin.ts`) made the tab's early traces CHILDREN of the server's
+`serve.page` span. One captured trace on win311 held 43 spans from three
+producers, spanned 15.7 s and was still taking writes 74 s in, with five
+keystrokes sitting as siblings seconds apart — and the window made the shape
+non-deterministic, since eight key edges inside it came out parented and eight
+clicks fifteen seconds later came out as roots. Two shapes for one thing,
+decided by a stopwatch, and every consumer had to cope with both.
+
+**The relation to the page load is still recorded — twice, deliberately**
+(`spa/src/analytics/pageLoadLink.ts`): an OTel **span LINK** on the trace's
+entry span naming `serve.page`'s trace and span (`kh.link.kind=page.load`), and
+the **`kh.page.loadId` attribute** already minted per document (§5.5). Neither
+substitutes for the other. A link is what a UI **navigates** — one click from a
+slow keystroke to the page load it happened on — and cannot be filtered or
+grouped by; an attribute is what a query **groups by** ("every action on this
+page load", one equality filter, in our own SQL and in Instana's Unbounded
+Analytics) and cannot be navigated. The link also needs no window, no count and
+no consumption: a parent claims containment, which goes stale ten minutes into
+a visit, while a link claims only "this action happened on that document",
+which is true for the life of the JS realm.
+
+**Every key and click edge is traced.** The browser decides —
+`three/streamClient/inputTrace.ts` — mints a fresh trace per qualifying edge and
+appends its 25-byte context (a marker byte, a 128-bit trace id, a 64-bit span
+id — no flags byte, since presence on the wire already means sampled) to that
+record. The `SAMPLE_N` counter that used to trace one edge in ten is gone, and
+it went for three faults, not for cost: it ALIASED (input is periodic — auto
+repeat, a held key, a drag — so an every-Nth counter can lock onto one phase of
+a burst forever), it applied one rate to populations differing by orders of
+magnitude (a rare, deliberate click got the same 10% chance as the two-hundredth
+sample of a drag), and it discarded precisely the interesting events — an 800 ms
+keystroke had a 90% chance of never being traced, and the tail IS the signal for
+latency work. That third fault is unfixable at the source at any rate, because
+the decision happens BEFORE the round trip: this code cannot know which edge
+will turn out to be the slow one. **Mouse motion is still not traced, and not
+for volume**: motion is a continuous signal sampled at up to ~250 Hz, better
+described by a rate and a latency histogram than by thousands of span trees —
+you cannot read a distribution off a list of flame graphs. An exemplar belongs
+beside that histogram, not before it.
+
+The input plane is raw WebTransport records with no headers (§3 of the trace
+contract), so the suffix is the only place left to carry the context, and `streamhost/streamhost/src/input_trace.rs` is where the daemon
 recognises it — never invents one, exactly like every other hop in the
 contract. Old browser against new daemon and new browser against old daemon
 both keep working: the suffix's length is checked against every base length
 either record shape has ever shipped, so an old daemon reads its fixed fields
 off the FRONT exactly as before and ignores an unrecognised tail, and a new
 daemon facing an old browser's exact-length record simply finds no suffix.
-Measured cost of the unsampled path (`input_trace.rs`'s own test): **~6 ns per
-record**, the same league as §8's probe hits. `guest.frame.next` and
-`transport.frame.next` are parented on `input.dispatch`, not on the browser's
-root directly, so a flame graph reads input -> dispatch -> effect as one chain;
-they fire only when a sampled edge is actually pending (one relaxed atomic load
-per frame otherwise — the encoder relay's existing budget, unchanged).
+Measured cost of the suffix-less path (`input_trace.rs`'s own test): **~6 ns per
+record**, the same league as §8's probe hits — and it is now the path a
+tracing-DISABLED tab takes rather than nine edges in ten. `guest.frame.next` and
+`transport.frame.next` are parented on the daemon's `input.dispatch.*` span, not
+on the browser's root directly, so a flame graph reads input -> dispatch ->
+effect as one chain; they fire only when a traced edge is actually pending (one
+relaxed atomic load per frame otherwise — the encoder relay's existing budget,
+unchanged).
+
+**The daemon's entry span is named per input class** —
+`input.dispatch.key` / `input.dispatch.click`, with bare `input.dispatch` as the
+fallback (`trace_session.rs::dispatch_span_name`, an exhaustive match on
+`&'static str` so a formatted name can never invent an unbounded set of
+endpoints). The reason is a vendor fact, stated as one: Instana derives an OTLP
+**endpoint** from the entry span's name (`{otel.operation}` —
+`instana-docs/0251-monitoring-applications.md`, "Endpoints -> Predefined
+rules"), so one name gave keyboard and mouse a single endpoint row and one
+merged latency distribution. Two names, two rows. The vocabulary matches the
+browser's `kh.input.class` word for word, which is what keeps the two ends from
+disagreeing about what "click" means.
 
 **The return leg (added 2026-08-31) closes the trace at the pixel.** Until
 this, "input->pixel" was really input->frame-SENT: the daemon's own transport
 send, never the bytes arriving, decoding or painting. The browser cannot know
-which `frame_id` answered its own sampled edge on its own — WebCodecs only
+which `frame_id` answered its own traced edge on its own — WebCodecs only
 ever hands back the frame's OWN capture timestamp, never "this was the effect
 of edge X" — so the daemon tells it: `transport/mod.rs`'s egress loop, right
 after `effect_sent` names the answering `frame_id`, spawns a tiny out-of-band
 wire message (`transport/egress.rs::spawn_frame_mark`, KIND_PARAMS subtype 3 —
 the SAME additive extension point subtypes 1/2 already use for encoder-params
 and HUD stats, not a new mechanism) carrying `frame_id` plus the trace/span ids
-to answer with. Sent roughly once per `SAMPLE_N` input edges, never per frame,
-and spawned rather than awaited so a slow or lost mark can never hold up the
-video AU it describes.
+to answer with. Sent once per traced input edge, never per frame, and spawned
+rather than awaited so a slow or lost mark can never hold up the video AU it
+describes.
 
 The browser (`three/streamClient/frameTrace.ts`) matches that mark against its
 OWN receive/decode/paint timestamps for the SAME `frame_id`, by explicit id,
@@ -1227,17 +1286,95 @@ working set) hold whichever side arrives first; a mark or a frame that never
 finds its match simply ages out — the daemon's half of the trace still stands
 alone. `client.frame.receive` / `client.frame.decode` / `client.frame.paint`
 are emitted only once both halves are in, as siblings of `guest.frame.next` /
-`transport.frame.next` under the same `input.dispatch`:
+`transport.frame.next` under the same `input.dispatch.*`:
 
 ```
-input.edge                    (browser, root — the sampled decision)
-└─ input.dispatch             (daemon)
+input.edge                    (browser, ROOT — link -> serve.page,
+│                              kh.page.loadId; its DURATION is the
+│                              edge -> painted-pixel round trip)
+├─ input.wire                 (browser — local handoff to the QUIC writer)
+└─ input.dispatch.key         (daemon — .click for a button edge)
    ├─ guest.frame.next        (daemon — kh.encode.latency_us)
    ├─ transport.frame.next    (daemon)
    ├─ client.frame.receive    (browser)
    ├─ client.frame.decode     (browser)
    └─ client.frame.paint      (browser)
 ```
+
+**The round trip is the ROOT's duration, not a sibling span.** `input.edge` now
+stays open until the daemon names the frame that answered it and
+`frameTrace.ts` ends it AT that paint, so the one number the operator actually
+asks for — "how long until I saw it" — is the root's own duration, and it is
+the one figure in the whole tree that needs no clock agreement: both ends are
+`performance.now()` readings from the same tab. It replaced a separate span,
+`client.input.roundtrip`, which carried exactly this figure beside a root whose
+own duration was 0-1 ms of local enqueue — so every consumer that reads a root's
+duration (a trace list, a latency percentile, Instana's endpoint view) read 1 ms
+for something a visitor waited 240 ms for. An edge that no frame ever answers is
+settled after 3 s and still lands, with `kh.input.answered=false`: "no frame came
+back" is a value in the store, not a missing row. The timeout is generous on
+purpose — the open keyboard-lag investigation is about round trips that are TOO
+LONG, and a tight cap would discard exactly its evidence.
+
+**KEEPING EVERYTHING HERE, DECIDING AT THE VENDOR LEG.** Our own store keeps
+every action on purpose — one box, our own disk, our own data, and completeness
+beats cleverness when nobody is short of capacity. What needs protecting is
+Instana's Calls and Services views, where routine traffic drowns the traffic
+worth looking at (the operator has raised that twice), so the keep/drop decision
+lives at the export instead: `scripts/observability/tail_sampler.py`, run by the
+forwarder. **It is not a capacity measure and must not be "optimised" as one.**
+
+It can live there at all because we already own the collector a tail sampler
+needs. Tail sampling normally requires something that buffers a COMPLETE trace
+before deciding, which is hard across processes — the browser cannot decide for
+spans the daemon has not emitted. `traces.db` is that buffer: all three producers
+land in it, and the forwarder already waits for a trace to go quiet
+(`instana_backlog.QUIET_MS`, 210 s) before shipping. This adds a decision to that
+wait and no new machinery. It keeps **every error** (a 1-in-N failure record is
+worse than none, because it reads as a rate), **every slow action**, and **1 in
+10 of the rest, chosen by a coin** — random rather than every-Nth for the same
+aliasing reason the source-side counter was deleted for. Anything it cannot
+classify is FORWARDED: a dropped trace is unrecoverable, a duplicate costs a row.
+
+"Slow" is a rolling p95 of the last 512 completed actions, with a FLOOR that is
+derived rather than chosen. A constant cannot be right on this fleet:
+`transport.frame.next` over 597 real samples runs p50 43 ms, p90 243 ms, p99
+489 ms — an elevenfold spread inside one distribution, before a 1982 Spectrum and
+a w2kalpha are even compared. The floor models the visitor-facing round trip from
+the same store's measured parts at p90: 243 ms (daemon injection -> wire) + 23 ms
+(client receive/decode/paint, n=27) + 13 ms (`kh.transport.rtt_ms`, n=49) =
+**279 ms**. It says: never call an action slow when nine in ten of real traffic
+are already at least that slow. Without it a good hour would drag the rolling p95
+down to tens of milliseconds and the export would start forwarding ordinary
+actions as "slow", which is the noise the mechanism exists to remove.
+
+**The sampling factor is ours, and we claim nothing about the vendor reading
+it.** Instana's call detail reads `Sampling factor: 1` whatever we do, and
+under-reports accordingly. Whether an OTLP producer can DECLARE a factor is **not
+documented**: the 326-file docs corpus never mentions "sampling factor",
+`sampling.factor`, extrapolation, or an `x-instana-` header for one. The single
+adjacent hint is a PHP-tracer release note
+(`instana-docs/0006-tracers-and-autotrace-webhook.md`) about that tracer
+capturing an OpenTelemetry TraceState sampling threshold and reporting it —
+implying an OTEP 235 `tracestate` path that is documented for no other producer
+and promised to nobody. So the exporter stamps `kh.sampling.factor` (1 when kept
+for cause, 10 when kept at random) and `kh.sampling.reason` (`error`/`slow`/
+`random`) on the EXPORTED spans only. `traces.db` never carries them: it kept
+everything, and a sampling factor there would be a lie.
+
+**COUNTS NEVER DEPEND ON ANY OF THIS.** "How many clicks happened" comes from the
+always-on counter plane — `three/usageStats.ts` tallies every key and click per
+station to `/usage`, and the `station.key.used` / `station.pointer.used` probes
+land in `analytics.db` — and neither passes through the sampler. The sampler only
+ever decides which actions Instana is shown a flame graph FOR.
+
+**Numbers do not cross 2026-09-01.** Traces recorded before that date have a
+different SHAPE and a different meaning: a trace was a visit (early ones parented
+under `serve.page`), and an `input.edge` root measured ~1 ms of local enqueue
+rather than the round trip, which lived in a sibling `client.input.roundtrip`.
+Any percentile, endpoint latency or trace-count trend that spans the boundary is
+comparing two different measurements. Cut the window at the date, or read the two
+halves separately.
 
 **Grouping dimensions.** A second stream landed station-type grouping
 (`kh.station.emulatorFamily` / `kh.station.ui` / `kh.station.resetMode`,
@@ -1281,12 +1418,12 @@ leg above, box variance is real and the numbers move run to run):
 | default `cargo test` (debug) | 214 ns | 9.3 us |
 
 The return leg adds no new per-frame cost: `spawn_frame_mark` only ever runs
-when `effect_sent` already returned `Some` — the same "sampled edge with a
+when `effect_sent` already returned `Some` — the same "traced edge with a
 pending effect" gate `guest.frame.next`/`transport.frame.next` already pay
 for — so its real cost (one QUIC uni-stream open/write/finish) is bounded by
-the input side's own `SAMPLE_N`, never by frame rate, and is spawned off the
-egress hot path so it cannot add latency to the video AU it describes even
-when it IS sampled.
+the INPUT RATE (a visitor's keys and clicks, one mark each since the sampler
+went away), never by frame rate, and is spawned off the egress hot path so it
+cannot add latency to the video AU it describes.
 
 A session emits at most seven spans, so a visitor costs about 22 us of daemon
 time. Rendering is hand-written rather than `serde_json::Value` because the
@@ -1590,13 +1727,15 @@ distinguishable from ours. Ask, in this order:
    `search` with `build=`. Two builds live in one window means somebody is on a
    shell the box no longer serves. **This is the direct answer, and it is the
    one that did not exist before 2026-09-01.**
-2. **Did the HTML come off the network for THAT load?** — a browser trace whose
-   `app.page` shares a trace id with a `serve.page` that started a second
-   earlier is a **fresh document**: the `traceparent` the tab joined was minted
-   by the serving plane while answering that very request
+2. **Did the HTML come off the network for THAT load?** — an `app.page` whose
+   page-load LINK names a `serve.page` that started a second earlier is a
+   **fresh document**: the `traceparent` that link was read from was minted by
+   the serving plane while answering that very request
    (`scripts/serve/static_files.py` splices the meta into the served bytes).
-   A cached shell replays an OLD trace id, so its `app.page` lands in a trace
-   whose `serve.page` is hours stale — or in no server trace at all.
+   A cached shell replays an OLD meta tag, so its `app.page` links a
+   `serve.page` that is hours stale — or links nothing at all. Read the LINK,
+   not a shared trace id: since 2026-09-01 a trace is one action (§8.1), so the
+   tab's entry is its own root and never shares the page load's trace id.
 3. **Did the vendor agent even load?** — it is served same-origin from
    `/vendor/instana-eum.min.js`, so a `GET` for it appears in
    `/data/vms/streamhost/serve/https-server.log` beside the document request. A
@@ -1608,9 +1747,9 @@ distinguishable from ours. Ask, in this order:
 **What that answered in the 2026-09-01 case**, and it refuted the leading
 hypothesis rather than confirming it:
 
-- Each of the three phone sessions had a `serve.page` span **in its own trace**,
-  one second before its `app.page`, with `kh.route.kind: "initial"`. Three fresh
-  document loads, not one cached shell. **Stale shell: refuted.**
+- Each of the three phone sessions had a `serve.page` span one second before its
+  `app.page`, with `kh.route.kind: "initial"`. Three fresh document loads, not
+  one cached shell. **Stale shell: refuted.**
 - The access log for that minute shows `GET /os/irix` 200, then the current
   hashed `/assets/index-*.js`, then `GET /vendor/instana-eum.min.js` **200**.
   The agent was served. **"The keyless bundle was still being served": refuted**
@@ -2054,6 +2193,14 @@ Traps worth knowing, each of which was hit while writing this:
   can move a total; nothing bounds a patient liar, and nothing needs to.
 - **`never reached` is not `unreachable`.** It means no tab reported it in the
   window. Read the window before the verdict.
+- **Trace numbers do not cross 2026-09-01.** On that date a trace stopped
+  meaning "a visit" and started meaning "one action" (§8.1), and an `input.edge`
+  root stopped measuring ~1 ms of local enqueue and started measuring the
+  edge -> painted-pixel round trip. A latency percentile, an endpoint chart or a
+  traces-per-day trend drawn across that boundary is comparing two different
+  measurements — the p95 will appear to explode and the trace count to multiply,
+  and neither is a regression. Cut the window at the date, or read the halves
+  separately.
 
 ## 12a. Is the trace plane telling the truth? The orphaned-parent rate
 
@@ -2068,6 +2215,24 @@ It went unmeasured until an operator wrote the query by hand on 2026-09-01 and
 found **42.9%** of a six-hour window in that state. The causes and the fix are
 [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4c; this is how the next
 regression gets noticed instead of discovered.
+
+**The largest single cause was a browser budget, not a tracing bug.** Six senders
+posted every batch with `keepalive: true`. A document's keepalive allowance is
+64 KiB spent ONCE for its whole life, not per request: measured on the live
+gallery in Chrome 150 with 4 KiB bodies, ~15 posts succeed and every keepalive
+fetch after that rejects `TypeError: Failed to fetch` permanently, while a plain
+fetch to the same URL still succeeds. So `/traces`, `/analytics`, `/clientlog`
+and `/logs` all died mid-visit — in the same second — while `/clientcmd` polling
+and the vendor's `/eum` beacons kept flowing, which is why the access log showed
+a healthy tab. Each caller swallowed the rejection in a bare `.catch(() => {})`,
+and `/traces` had already DRAINED its buffer before posting, so the browser's
+half of every affected trace — the ROOT — was destroyed while the daemon's half
+kept arriving by an independent path: **175 of 459 `input.dispatch` spans over
+24 h (38%) named a parent the store never had.** The fix is
+`spa/src/analytics/beacon.ts`: `keepalive` only on the final pagehide/hidden
+flush, the response body always drained (an unread body holds the allocation
+open), and an undelivered batch requeued (`spanBuffer.ts`) rather than thrown
+away — a refusal is settled and dropped, a no-answer is kept.
 
 ```sh
 scripts/observability/trace-orphans.py                  # last 6 h, live store
@@ -2104,7 +2269,10 @@ real wire from one credentialed page load, which is where to look next.
 | `spa/src/analytics/intent.ts` | the grade ladder, the human-edge witness, client class |
 | `spa/src/analytics/flows.ts` | flow spans and the funnel rules |
 | `spa/src/analytics/trace.ts` | the span/id model, `traceparentOf()` (the ONLY producer of an outbound `traceparent` — TRACE-CONTEXT.md §4c) and the trace-entry flush — see [`docs/lab/TRACE-CONTEXT.md`](lab/TRACE-CONTEXT.md) §4/§7 |
-| `spa/src/analytics/pageLoadJoin.ts` | the `<meta name="traceparent">` seed every early trace hangs off; split from `trace.ts` so a trace ENTRY being distinct from a trace ROOT is stated where it is decided |
+| `spa/src/analytics/pageLoadLink.ts` | the `<meta name="traceparent">` seed every trace entry LINKS back to (`kh.link.kind=page.load`) beside the `kh.page.loadId` attribute — was `pageLoadJoin.ts`, which made early traces children of `serve.page` until a trace came to mean one action (§8.1) |
+| `spa/src/analytics/spanBuffer.ts` | spans between `end()` and the wire: the bounded buffer, the entry-flush debounce, and the requeue that stops a failed upload deleting a trace's root |
+| `spa/src/analytics/beacon.ts` | the ONE telemetry upload path, and the 64 KiB per-document keepalive budget every other path was spending (§12a) |
+| `scripts/observability/tail_sampler.py` | the keep/drop for the VENDOR export only — every error, every slow action, 1 in 10 of the rest — and the derived 279 ms floor (§8.1) |
 | `scripts/observability/trace-orphans.py` | the orphaned-parent rate — the one number that shows a broken trace JOIN, since every individual span still looks perfect (§12a) |
 | `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |

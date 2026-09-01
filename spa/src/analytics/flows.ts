@@ -129,7 +129,10 @@ function abandonOpenFlows(): void {
         open.abandon?.();
       } catch { /* one stuck flow must not strand the others */ }
     }
-    flushSpans();
+    // `true` = the FINAL flush of this visit: the one upload allowed to spend
+    // the document's keepalive allowance so it outlives the tab
+    // (`analytics/beacon.ts`). This is the only caller in this module.
+    flushSpans(true);
   } catch { /* never throw out of instrumentation */ }
 }
 

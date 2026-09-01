@@ -6,9 +6,9 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
   __bufferedSpans, __resetTracer, childOfActive, configureTracer, currentSpan, emitSpan,
-  flushSpans, newSpanId, newTraceId, popActive, pushActive, startTrace,
+  flushSpans, newSpanId, newTraceId, popActive, pushActive, requeueSpans, startTrace,
 } from './trace';
-import { joinPageLoadTraceFromMeta, parseTraceparent, seedPageLoadTrace } from './pageLoadJoin';
+import { readPageLoadTraceFromMeta, parseTraceparent, seedPageLoadTrace } from './pageLoadLink';
 
 let sent: unknown[][] = [];
 
@@ -81,7 +81,11 @@ describe('attributes and events', () => {
     const s = startTrace('r', { a: 'x', b: 2, c: true });
     (s as unknown as { attr(k: string, v: unknown): void }).attr('d', { nested: 1 });
     s.end('ok');
-    expect(__bufferedSpans()[0].a).toEqual({ a: 'x', b: 2, c: true });
+    // `kh.page.loadId` rides every trace ENTRY since 2026-09-01 — the query
+    // half of the page-load link (pageLoadLink.ts).
+    const { 'kh.page.loadId': loadId, ...rest } = __bufferedSpans()[0].a!;
+    expect(loadId).toMatch(/^[0-9a-f]{16}$/);
+    expect(rest).toEqual({ a: 'x', b: 2, c: true });
   });
 
   it('bounds an ordinary attribute at 2 KiB — a runaway caller, not richness', () => {
@@ -216,12 +220,13 @@ describe('the gate and the buffer', () => {
   });
 });
 
-describe('the page-load join (docs/lab/TRACE-CONTEXT.md §4/§7)', () => {
+describe('the page-load LINK (docs/lab/TRACE-CONTEXT.md §4/§4a)', () => {
+  const PAGE_TRACE = '11111111111111111111111111111111';
+  const PAGE_SPAN = '2222222222222222';
+  const TAG = `00-${PAGE_TRACE}-${PAGE_SPAN}-01`;
+
   it('parses a well-formed traceparent', () => {
-    expect(parseTraceparent('00-11111111111111111111111111111111-2222222222222222-01')).toEqual({
-      traceId: '11111111111111111111111111111111'.slice(0, 32),
-      spanId: '2222222222222222',
-    });
+    expect(parseTraceparent(TAG)).toEqual({ traceId: PAGE_TRACE, spanId: PAGE_SPAN });
   });
 
   it('rejects anything not exactly that shape', () => {
@@ -229,101 +234,120 @@ describe('the page-load join (docs/lab/TRACE-CONTEXT.md §4/§7)', () => {
     expect(parseTraceparent(undefined)).toBeNull();
     expect(parseTraceparent('')).toBeNull();
     expect(parseTraceparent('not-a-traceparent')).toBeNull();
-    expect(parseTraceparent('01-11111111111111111111111111111111-2222222222222222-01')).toBeNull(); // wrong version
-    expect(parseTraceparent('00-1111-2222222222222222-01')).toBeNull(); // trace id too short
-    expect(parseTraceparent('00-11111111111111111111111111111111,2222222222222222,01')).toBeNull();
+    expect(parseTraceparent(`01-${PAGE_TRACE}-${PAGE_SPAN}-01`)).toBeNull(); // wrong version
+    expect(parseTraceparent(`00-1111-${PAGE_SPAN}-01`)).toBeNull(); // trace id too short
+    expect(parseTraceparent(`00-${PAGE_TRACE},${PAGE_SPAN},01`)).toBeNull();
   });
 
-  it('the FIRST trace opened continues a seeded traceparent', () => {
-    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+  // THE SHAPE RULE, and the whole point of the 2026-09-01 change: a trace is
+  // ONE ACTION. It used to be one VISIT — `startTrace` continued `serve.page`'s
+  // trace inside a 15 s window, which produced a 43-span trace still taking
+  // writes 74 s after it started, with five keystrokes as siblings under the
+  // page span. The causal edge is now a LINK, which asserts "caused by" without
+  // asserting "contained in".
+  it('mints its OWN trace and LINKS the page load — never nests under it', () => {
+    seedPageLoadTrace(TAG);
     const root = startTrace('station.connect');
-    expect(root.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
-    expect(root.spanId).not.toBe('2222222222222222'); // a fresh child span id, not the server's own
+    expect(root.traceId).not.toBe(PAGE_TRACE);
+    expect(root.traceId).toMatch(/^[0-9a-f]{32}$/);
     root.end('ok');
-    expect(__bufferedSpans()[0].p).toBe('2222222222222222');
+    const [span] = __bufferedSpans();
+    expect(span.p).toBeNull(); // a ROOT, always
+    expect(span.l).toEqual([
+      { t: PAGE_TRACE, s: PAGE_SPAN, a: { 'kh.link.kind': 'page.load' } },
+    ]);
   });
 
-  // DEFECT (the "ALSO" issue): a one-shot seed consumed by whichever
-  // `startTrace()` fires first raced an incidental early fetch (khFetch's
-  // implicit `childOfActive()` fallback, e.g. `/auth/state`) against the
-  // visit's actual main flow (`station.connect`) for the ONE trace that got
-  // to continue `serve.page` — live evidence: `serve.page` traces containing
-  // `serve.auth.walkin.status`, `station.connect` traces as unrelated
-  // singletons. Fixed: the seed is a page-scoped root BOTH callers hang off
-  // as siblings, bounded by a window/count rather than consumed once.
-  it('a SECOND trace opened soon after the first ALSO continues the page load, as a sibling — not a race one caller wins', () => {
-    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
-    const early = startTrace('serve.auth.walkin.status'); // an incidental boot fetch
-    const main = startTrace('station.connect'); // the visit's actual main flow
-    expect(early.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
-    expect(main.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
-    expect(early.spanId).not.toBe(main.spanId); // distinct sibling spans
-    early.end('ok');
-    main.end('ok');
+  // The other half of the linking decision: a link is what a UI navigates, an
+  // attribute is what a query GROUPS BY, and neither substitutes for the other.
+  it('also stamps kh.page.loadId, so "everything on this page load" is one filter', () => {
+    seedPageLoadTrace(TAG);
+    const root = startTrace('station.connect');
+    root.end('ok');
+    const [span] = __bufferedSpans();
+    expect(span.a?.['kh.page.loadId']).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  // No window and no count any more: a LINK stays true for the life of the JS
+  // realm, where a JOIN went stale (a station opened ten minutes after boot did
+  // not happen "inside" the page load). Two traces opened far apart are two
+  // traces, and both still name the page they happened on.
+  it('links every trace of the document, however late, and never merges them', () => {
+    seedPageLoadTrace(TAG);
+    const first = startTrace('station.connect');
+    const second = startTrace('station.restore');
+    expect(first.traceId).not.toBe(second.traceId);
+    first.end('ok');
+    second.end('ok');
     const spans = __bufferedSpans();
     expect(spans).toHaveLength(2);
-    for (const s of spans) expect(s.p).toBe('2222222222222222');
-  });
-
-  it('stops joining once the join count bound is passed, minting a fresh unrelated trace', () => {
-    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
-    const traceId = '11111111111111111111111111111111'.slice(0, 32);
-    let last = startTrace('boot.burst');
-    for (let i = 0; i < 40; i += 1) {
-      last = startTrace('boot.burst');
-    }
-    // Well past PAGE_LOAD_JOIN_MAX (32): the bound must have kicked in.
-    expect(last.traceId).not.toBe(traceId);
-    expect(last.traceId).toMatch(/^[0-9a-f]{32}$/);
-  });
-
-  it('stops joining once the time window has passed, minting a fresh unrelated trace', () => {
-    const realNow = Date.now;
-    try {
-      let t = 1_000_000;
-      Date.now = () => t;
-      seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
-      const early = startTrace('station.connect');
-      expect(early.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
-      t += 20_000; // past the 15s join window
-      const late = startTrace('station.connect');
-      expect(late.traceId).not.toBe(early.traceId);
-    } finally {
-      Date.now = realNow;
+    for (const s of spans) {
+      expect(s.p).toBeNull();
+      expect(s.l?.[0].t).toBe(PAGE_TRACE);
+      expect(s.a?.['kh.page.loadId']).toBeTruthy();
     }
   });
 
-  it('a missing or malformed seed leaves the first trace exactly as before', () => {
+  it('a missing or malformed tag leaves a trace rooted and simply unlinked', () => {
     seedPageLoadTrace(null);
     const root = startTrace('station.connect');
     expect(root.traceId).toMatch(/^[0-9a-f]{32}$/);
-    expect(__bufferedSpans()).toEqual([]); // not ended yet, just proving no throw
+    root.end('ok');
+    expect(__bufferedSpans()[0].l).toBeUndefined();
 
     seedPageLoadTrace('garbage');
     const other = startTrace('station.connect');
-    expect(other.traceId).toMatch(/^[0-9a-f]{32}$/);
+    other.end('ok');
+    expect(__bufferedSpans()[1].l).toBeUndefined();
   });
 
-  it('joinPageLoadTraceFromMeta reads the tag when present', () => {
+  it('readPageLoadTraceFromMeta reads the tag when present', () => {
     (globalThis as { document?: unknown }).document = {
       querySelector: (sel: string) =>
-        sel === 'meta[name="traceparent"]'
-          ? { getAttribute: () => '00-11111111111111111111111111111111-2222222222222222-01' }
-          : null,
+        sel === 'meta[name="traceparent"]' ? { getAttribute: () => TAG } : null,
     };
-    joinPageLoadTraceFromMeta();
+    readPageLoadTraceFromMeta();
     const root = startTrace('station.connect');
-    expect(root.traceId).toBe('11111111111111111111111111111111'.slice(0, 32));
+    root.end('ok');
+    expect(__bufferedSpans()[0].l?.[0]).toEqual({
+      t: PAGE_TRACE, s: PAGE_SPAN, a: { 'kh.link.kind': 'page.load' },
+    });
   });
 
-  it('joinPageLoadTraceFromMeta is a graceful no-op with no tag, and with no document at all', () => {
+  it('readPageLoadTraceFromMeta is a graceful no-op with no tag, and with no document at all', () => {
     (globalThis as { document?: unknown }).document = { querySelector: () => null };
-    expect(() => joinPageLoadTraceFromMeta()).not.toThrow();
+    expect(() => readPageLoadTraceFromMeta()).not.toThrow();
     const root = startTrace('station.connect');
     expect(root.traceId).toMatch(/^[0-9a-f]{32}$/);
 
     delete (globalThis as { document?: unknown }).document;
-    expect(() => joinPageLoadTraceFromMeta()).not.toThrow();
+    expect(() => readPageLoadTraceFromMeta()).not.toThrow();
+  });
+});
+
+describe('endAt — a duration learnt after the fact', () => {
+  it('ends the span AT the reading the caller took, not at "now"', () => {
+    const span = startTrace('input.edge', undefined, 'client');
+    const at = performance.now();
+    span.endAt(at, 'ok', { 'kh.input.answered': true });
+    const [s] = __bufferedSpans();
+    expect(s.k).toBe('ok');
+    expect(s.a?.['kh.input.answered']).toBe(true);
+    expect(s.d).toBeGreaterThanOrEqual(0);
+  });
+
+  it('clamps a reading from before the span started rather than reporting a negative', () => {
+    const span = startTrace('input.edge', undefined, 'client');
+    span.endAt(performance.now() - 10_000, 'ok');
+    expect(__bufferedSpans()[0].d).toBe(0);
+  });
+
+  it('ends exactly once, whichever of end/endAt is called first', () => {
+    const span = startTrace('input.edge', undefined, 'client');
+    span.end('ok');
+    span.endAt(performance.now(), 'error');
+    expect(__bufferedSpans()).toHaveLength(1);
+    expect(__bufferedSpans()[0].k).toBe('ok');
   });
 });
 
@@ -356,5 +380,36 @@ describe('emitSpan start is storable', () => {
     const spans = __bufferedSpans();
     expect(spans[spans.length - 2].kd).toBe('client');
     expect(spans[spans.length - 1].kd).toBe('internal');
+  });
+});
+
+describe('requeueSpans — a batch that did not land is not deleted', () => {
+  // `flushSpans` drains the buffer BEFORE the upload, so without this a failed
+  // POST destroyed the batch in the tab. That is not a rounding error: the
+  // batch carries the ROOT of a trace whose other half is already on its way
+  // to the same store by an independent path, and the store can then never
+  // draw the join. `analytics/beacon.ts` has the measured failure.
+  it('puts a failed batch back at the front, oldest first', () => {
+    const a = startTrace('one');
+    a.end('ok');
+    const batch = __bufferedSpans();
+    flushSpans();
+    expect(__bufferedSpans()).toEqual([]);
+
+    const b = startTrace('two');
+    b.end('ok');
+    requeueSpans(batch);
+    expect(__bufferedSpans().map((s) => s.n)).toEqual(['one', 'two']);
+  });
+
+  it('is a no-op for an empty batch and for a tracer that is off', () => {
+    expect(() => requeueSpans([])).not.toThrow();
+    const s = startTrace('one');
+    s.end('ok');
+    const batch = __bufferedSpans();
+    flushSpans();
+    __resetTracer();
+    requeueSpans(batch);
+    expect(__bufferedSpans()).toEqual([]);
   });
 });

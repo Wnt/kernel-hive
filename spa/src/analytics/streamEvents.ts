@@ -139,7 +139,7 @@ export const STREAM_EVENTS = {
   // THE ONE SAMPLED EVENT IN THE VOCABULARY. A frame_id gap is a LEVEL on a lossy link, not an
   // edge: a congested minute produces them continuously, and at 1-in-1 this
   // is the one event here that could genuinely flood a collector. 1-in-10 is
-  // the plane's existing precedent (streamClient/inputTrace.ts SAMPLE_N) and
+  // the plane's existing precedent (streamClient/inputTrace.ts) and
   // the quantity being measured is a DISTRIBUTION of gap sizes, which
   // sampling does not bias.
   'stream.keyframe.gap': {
