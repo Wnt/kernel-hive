@@ -28,6 +28,7 @@
 // ============================================================================
 
 import { configureLogSink, logRecord } from '../analytics/logSink';
+import { postTelemetry } from '../analytics/beacon';
 import { getAdminToken } from './adminAuth';
 // The bundle id every lane that names a build reads — the /traces resource
 // envelope, this file's /clientlog batches, its snapshots. Not re-derived here.
@@ -234,18 +235,17 @@ export function flushNow(force = false): void {
     const adminToken = getAdminToken();
     if (adminToken) headers['X-Admin-Token'] = adminToken;
     flushInFlight = true;
-    void fetch('/clientlog', {
-      method: 'POST',
-      keepalive: true,
-      headers,
-      body,
-    }).then((res) => {
+    // `keepalive` only on the FINAL flush — `analytics/beacon.ts`. This route
+    // used to take it on every batch, and a document's allowance is 64 KiB
+    // spent once for its whole life.
+    void postTelemetry('/clientlog', body, { final: force, headers }).then((result) => {
       flushInFlight = false;
-      if (!res.ok) { requeueBatch(batch); return; }
+      // A refusal is a settled answer but the evidence is still worth keeping
+      // here: /clientlog is the raw session record an operator reads when a
+      // stream misbehaves, and a 401 on one batch is routinely a session that
+      // comes back.
+      if (result !== 'sent') { requeueBatch(batch); return; }
       if (pending.length) window.setTimeout(() => flushNow(), 250); // drain overflow
-    }).catch(() => {
-      flushInFlight = false;
-      requeueBatch(batch); // box unreachable — keep the evidence, retry on the interval
     });
   } catch { /* never throw */ }
 }

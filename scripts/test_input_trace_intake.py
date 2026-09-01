@@ -43,11 +43,24 @@ ATTR_SOURCE = SPA / "transportFacts.ts"
 #: Span names emitted on the input path, in both processes. Written out rather
 #: than only extracted so a REMOVED span is a test failure too — an extractor
 #: alone cannot notice something that stopped being emitted.
+#:
+#: `client.input.roundtrip` is deliberately NOT here any more (2026-09-01): the
+#: edge -> painted-pixel round trip it carried is now the DURATION of the
+#: `input.edge` root itself, because a sibling span holding the real number
+#: beside a root reporting 1 ms of local enqueue made every consumer that reads
+#: a root's duration read the wrong figure.
+#:
+#: `input.dispatch` gained two class-suffixed forms, which is what gives keyboard
+#: and mouse DISTINCT endpoint rows in Instana — it derives an OTLP endpoint from
+#: the entry span's name (`{otel.operation}`,
+#: instana-docs/0251-monitoring-applications.md). The bare name remains the
+#: fallback for a class neither end recognises.
 EXPECTED_SPANS = {
     "input.edge",
     "input.wire",
     "input.dispatch",
-    "client.input.roundtrip",
+    "input.dispatch.key",
+    "input.dispatch.click",
     "client.frame.receive",
     "client.frame.decode",
     "client.frame.paint",
@@ -58,6 +71,9 @@ EXPECTED_SPANS = {
 _TS_SPAN = re.compile(r"""(?:emitSpan\(\s*[^,]+,\s*[^,]+,\s*|\.child\(\s*)['"]([a-zA-Z][\w.\-]*)['"]""")
 _TS_LITERAL_SPAN = re.compile(r"""['"](input\.(?:edge|wire)|client\.[\w.]+)['"]""")
 _RS_SPAN = re.compile(r"""(?:Span::child|emit_at)\(\s*\n?\s*"([a-zA-Z][\w.\-]*)\"""")
+#: The daemon names its entry span per input class through a lookup, so the
+#: literals live in a `match` arm rather than at a `Span::child` call site.
+_RS_DISPATCH_NAME = re.compile(r'=>\s*"(input\.dispatch[\w.]*)"')
 _ATTR_KEY = re.compile(r"""^\s*(?:a\[)?['"]([a-z][\w.]*)['"]\s*[\]:]\s*[:=]?""", re.M)
 
 
@@ -74,7 +90,9 @@ def emitted_span_names() -> set[str]:
         names |= set(_TS_SPAN.findall(text))
         names |= set(_TS_LITERAL_SPAN.findall(text))
     for p in RUST_SPAN_SOURCES:
-        names |= set(_RS_SPAN.findall(_read(p)))
+        text = _read(p)
+        names |= set(_RS_SPAN.findall(text))
+        names |= set(_RS_DISPATCH_NAME.findall(text))
     return names
 
 

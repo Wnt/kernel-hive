@@ -8,10 +8,10 @@
 // — as early in OUR OWN bundle as we control — is a deliberate best-effort
 // rather than a hard guarantee against Instana's separately-loaded agent.
 import { installKhFetchPropagation } from './analytics/khFetch';
-import { joinPageLoadTraceFromMeta } from './analytics/pageLoadJoin';
+import { readPageLoadTraceFromMeta } from './analytics/pageLoadLink';
 
 installKhFetchPropagation();
-joinPageLoadTraceFromMeta();
+readPageLoadTraceFromMeta();
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -84,6 +84,10 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
       if (window.__kernelHiveReportError) {
         window.__kernelHiveReportError(input);
       } else {
+        // `keepalive` stays HERE, and only here in this file: a React render
+        // fault can be the last thing that happens before the tab is torn
+        // down, and this is one small body, not a repeating flush. Everything
+        // that flushes on a timer gave `keepalive` up — analytics/beacon.ts.
         void fetch('/clientlog', {
           method: 'POST',
           keepalive: true,

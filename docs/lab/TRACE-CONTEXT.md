@@ -104,14 +104,14 @@ deliberately emits no span per input edge (§5's "no span per frame" sibling
 rule) — a per-edge trace would either need one more span the daemon cannot
 afford at 60 fps of input, or it would need to invent one, which §8 forbids.
 
-Added 2026-08-31: for an end-to-end input→pixel flame graph (the shape the
-open keyboard-lag investigation — a suspected pacing-queue floor in the
-emulator ctl module — actually needs), the browser SAMPLES roughly 1 key or
-click edge in `SAMPLE_N` (default 10; `three/streamClient/inputTrace.ts` is
-the knob) and mints that edge its OWN trace, root span `input.edge`. Its
-context — a 1-byte marker, a 128-bit trace id, a 64-bit span id, 25 bytes,
-**no flags byte**: presence on the wire already means sampled — is appended
-after the record's normal fixed fields, on that ONE record only:
+Added 2026-08-31, and made complete on 2026-09-01: for an end-to-end
+input→pixel flame graph (the shape the open keyboard-lag investigation — a
+suspected pacing-queue floor in the emulator ctl module — actually needs),
+**every key and click edge** mints its OWN trace, root span `input.edge`
+(`three/streamClient/inputTrace.ts`). Its context — a 1-byte marker, a 128-bit
+trace id, a 64-bit span id, 25 bytes, **no flags byte**: presence on the wire
+already means traced — is appended after the record's normal fixed fields, on
+that record only:
 
 ```
 [ ...the record, exactly as always... ][ 0xC5 | trace-id (16 BE) | span-id (8 BE) ]
@@ -151,11 +151,10 @@ telemetry.
 context via `Ctx::child`, exactly like every other hop in this document:
 
 ```
-input.edge                    (browser, root — the sampled decision)
+input.edge                    (browser, root — DURATION = edge → painted pixel)
 ├─ input.wire                 (browser: the handoff to the QUIC stream, and
 │                              the connection's own properties — §3.4)
-├─ client.input.roundtrip     (browser: edge → painted pixel, ONE clock — §3.4)
-└─ input.dispatch             (daemon: record accepted → guest write returned)
+└─ input.dispatch.<class>     (daemon: record accepted → guest write returned)
    ├─ guest.frame.next        (daemon: the EFFECT — next frame produced)
    └─ transport.frame.next    (daemon: that frame reaching the wire)
 ```
@@ -169,6 +168,18 @@ force.
 actually pending — one relaxed atomic load costs the 60 fps encoder relay
 nothing on every other frame, the same `AtomicBool` discipline §5's sibling
 rule already uses for `mark_first_au` / `mark_first_input`.
+
+**The daemon's entry span is named per input CLASS** — `input.dispatch.key`,
+`input.dispatch.click`, with the bare `input.dispatch` as the fallback for a
+class neither end recognises (`trace_session.rs::dispatch_span_name`). Instana
+derives an OTLP trace's ENDPOINT from its entry span's name, the
+`{otel.operation}` rule in its predefined endpoint mapping
+(`instana-docs/0251-monitoring-applications.md`, "Endpoints → Predefined
+rules"), so one name meant one endpoint row for every input a visitor ever
+made. A keyboard round trip and a mouse round trip have different guest work,
+different damage and different latency distributions; folding them into one row
+hid both. `kh.input.class` stays on the span as well, because a name cannot be
+grouped away when somebody does want the whole input plane at once.
 
 **`input.dispatch` is `Kind::Server`, not `Internal`** — this is the daemon's
 receiving side of the browser's `input.edge` **`Kind::Client`** span, the same
@@ -239,10 +250,9 @@ nothing downstream ever treats "no client spans" as an error.
 spans under the same `input.dispatch`:
 
 ```
-input.edge                    (browser, root — the sampled decision)
+input.edge                    (browser, root — DURATION = edge → painted pixel)
 ├─ input.wire                 (browser: handoff to QUIC + transport facts)
-├─ client.input.roundtrip     (browser: edge → painted pixel, ONE clock)
-└─ input.dispatch             (daemon: record accepted → guest write returned)
+└─ input.dispatch.<class>     (daemon: record accepted → guest write returned)
    ├─ guest.frame.next        (daemon: the EFFECT — next frame produced;
    │                            kh.encode.latency_us, promoted from a
    │                            journal-only `worker.rs` line)
@@ -252,16 +262,34 @@ input.edge                    (browser, root — the sampled decision)
    └─ client.frame.paint      (browser: the paint sink's own synchronous cost)
 ```
 
+**THE ROOT'S DURATION IS THE ROUND TRIP, and that is the point of the return
+leg.** `input.edge` is left OPEN when the edge is sampled and closed by
+`frameTrace.ts` at the moment the answering frame finishes painting
+(`inputTrace.ts::settleEdge`, which ends it AT that reading rather than at
+"now", so the frame mark's own travel time is not charged to the visitor).
+Until 2026-09-01 the figure lived in a SIBLING span, `client.input.roundtrip`,
+beside a root whose own duration was the 0–1 ms it took to hand a record to a
+stream writer — so every consumer that reads a root's duration (a trace list, a
+latency percentile, Instana's endpoint view) read 1 ms for something a visitor
+waited a quarter of a second for. One measurement, one span.
+
+**An edge no frame ever answers still lands.** An idle or damage-gated guest
+may legitimately never produce a frame; that edge is settled after 3 s with
+`kh.input.answered=false`. It is not an error — nothing failed — and it must
+not simply be absent, because an open span is never buffered and a leaked one
+would delete the ROOT of its own trace.
+
 A real one, captured on win95 2026-09-01 and reproduced here verbatim from our
 own store (`+n ms` is from the edge; the trailing number is the span's own
 duration):
 
 ```
-input.edge                 client   +   0ms    0ms   kh.input.class=key kh.key.class=modifier
-├─ client.input.roundtrip  client   +   0ms  242ms
+input.edge                 client   +   0ms  242ms   kh.input.class=key kh.key.class=modifier
+│                                                    kh.input.answered=true
+│                                                    LINK -> serve.page (kh.link.kind=page.load)
 ├─ input.wire              client   +   0ms    0ms   quic/h3, server.port=<station UDP>,
 │                                                    kh.transport.rtt_ms=6.3 (source: ping)
-└─ input.dispatch          server   +  15ms    0ms   svc=kernel-hive-daemon
+└─ input.dispatch.key      server   +  15ms    0ms   svc=kernel-hive-daemon
    ├─ guest.frame.next     internal +  16ms  213ms   frame 34, encode 17.7 ms
    ├─ transport.frame.next internal +  16ms  218ms   68 779 bytes
    ├─ client.frame.receive internal + 232ms    1ms
@@ -296,12 +324,11 @@ waiting for.
 
 | layer | span | what it really is |
 |---|---|---|
-| browser edge | `input.edge` (Client) | the key/click handler, this tab's clock. Real, ~0–1 ms. |
+| the envelope | `input.edge` (Client, ROOT) | the whole edge → painted pixel round trip, both ends read from the same tab's `performance.now()`. THE number a visitor waited. |
 | transport | `input.wire` (Client) | REAL, but its DURATION is only the local handoff to the QUIC stream writer. See below. |
-| daemon | `input.dispatch` (**Server**) | the record's whole journey through `input::handle` — sink accepted → guest write returned. Real, and it is the trace's ENTRY span. |
+| daemon | `input.dispatch.<class>` (**Server**) | the record's whole journey through `input::handle` — sink accepted → guest write returned. Real, and it is the trace's ENTRY span. |
 | guest | `guest.frame.next` (Internal) | the next frame the guest PRODUCED after injection. Not the same claim as "the guest reacted" — see below. |
 | return | `transport.frame.next`, `client.frame.receive/decode/paint` | real, one hop each, split across the two processes. |
-| the envelope | `client.input.roundtrip` (Client) | edge → painted pixel, both ends read from the same tab's `performance.now()`. |
 
 **There is no browser→server HTTP hop, and none is faked.** A keystroke is a
 length-prefixed record on a client-opened QUIC unidirectional stream inside one
@@ -367,13 +394,16 @@ deliberately not called `guest.ack`. Read it as an upper bound on "how long
 until something changed", and go to `labctl`/a screendump when the question is
 whether the guest did the right thing.
 
-**`client.input.roundtrip` is the one measurement that needs no clock
+**`input.edge`'s own duration is the one measurement that needs no clock
 agreement.** Everything else in the tree is a browser reading beside a daemon
-reading, so the tree's overall shape depends on two machines' wall clocks
-lining up. This span does not, and it is the envelope the daemon's spans
-decompose. It exists only when this tab minted the edge AND the daemon named a
-frame as its answer, so it is bounded by `SAMPLE_N` on one side and by the
-return-leg mark on the other.
+reading, so the tree's overall SHAPE depends on two machines' wall clocks
+lining up. The root does not: both ends are `performance.now()` readings from
+the same tab, taken when the edge was sampled and when the answering frame
+finished painting. It is the envelope the daemon's spans decompose, and it is
+the root, so a trace list and a latency percentile read the right number
+without knowing any of this. When the daemon never names an answering frame the
+root still lands, after 3 s, with `kh.input.answered=false` — a value in the
+store, never a missing row.
 
 **Two layers that do not exist at all, so nobody goes looking:**
 
@@ -387,7 +417,7 @@ return-leg mark on the other.
   only. `kh.transport` is recorded explicitly anyway, so the day that stops
   being true the trace says so instead of silently reading the same.
 
-### 3.5 A missing `input.dispatch` is usually a DEPLOYMENT fact, not a bug
+### 3.5 A missing daemon entry span is usually a DEPLOYMENT fact, not a bug
 
 Over six hours on 2026-09-01 only 37% of sampled `input.edge` traces carried
 the daemon's `input.dispatch`, and the vendor label on the rest was "To
@@ -508,7 +538,7 @@ malformed, or anything at all raises, `index.html` is served byte-for-byte
 unchanged and no tag appears. A telemetry feature must never be able to break
 the gallery's front door — see §8.
 
-## 4a. The browser hop is automatic, not opt-in — and the page-load join
+## 4a. The browser hop is automatic, not opt-in — and the page-load LINK
 
 Until 2026-08-31, `traceHeaders()` in `trace.ts` (since removed — §4c) existed
 but almost nothing called it: of 24 `fetch()` call sites in `spa/src`, only two
@@ -553,20 +583,24 @@ makes (checked by `URL.origin`, never leaked to a third-party host) it:
   patch sits in front of every network call the app makes, so a bug in it is
   not a missing metric, it is a broken gallery.
 
-**The page-load join.** `trace.ts` also exposes `joinPageLoadTraceFromMeta()`,
-called once from `main.tsx` alongside the fetch patch, before the first flow
-opens. It reads the §4 `<meta name="traceparent">` tag and seeds the id so
-that every trace this tab opens **inside a short window** (`startTrace()` —
-the incidental boot fetches AND the `station.connect` flow, as siblings)
-**continues** `serve.page`'s trace instead of minting an unrelated one. It is
-not a one-shot prize the first caller claims: it was, and in real traffic an
-incidental boot-time fetch routinely won the race against the visit's actual
-main flow. Bounded by a wall-clock window and a join count, so a station
-opened minutes later still gets its own fresh trace rather than a stale parent
-from page load. Missing or malformed content on the tag (no
-server injection, a stale cached document, tracing unbound) leaves the seed
-unset and the first trace mints its own id exactly as it always did — the
-same "malformed → new trace, never refuse the work" rule as §1.
+**The page-load LINK.** `pageLoadLink.ts` exposes
+`readPageLoadTraceFromMeta()`, called once from `main.tsx` alongside the fetch
+patch, before the first flow opens. It reads the §4
+`<meta name="traceparent">` tag and remembers `serve.page`'s span for the life
+of the JS realm, so every trace this tab opens carries a span LINK to it and
+the `kh.page.loadId` attribute beside it — **never a parent**. §7.1 has the
+reasoning, and §7 has the trace-is-one-action rule it follows from.
+
+Until 2026-09-01 this JOINED instead: for 15 seconds and 32 traces, a new
+trace continued `serve.page`'s id with `serve.page`'s span as its parent. It
+was built to stop a visit producing two disconnected trees, and it did — at
+the price of a trace that meant "a visit", ran to 43 spans over 15.7 s, and
+took its last write 74 s in. Worse, the window made the SHAPE depend on a
+stopwatch: reproduced live, eight key edges inside the window came out nested
+and eight click edges 15 s later came out as roots. Missing or malformed
+content on the tag (no server injection, a stale cached document, tracing
+unbound) leaves it unset and a trace is simply unlinked — the same "malformed
+→ new trace, never refuse the work" rule as §1.
 
 **The Instana collision, measured rather than assumed.** Both this patch and
 Instana's own agent (`enableW3CHeaders: true`) want to own the outbound
@@ -633,96 +667,6 @@ bug alive for another day: `traceHeaders()` still existed and was still what a
 call with no span of its own used. §4c is what removed it, and both functions
 with it. **`traceparentOf(span)` is now the only producer in the tab.**
 
-## 4c. THE NO-ORPHAN INVARIANT: never name a span you will not record
-
-> **A `traceparent` this tab emits names a span this tab has created and will
-> record. Otherwise there is no `traceparent`.**
-
-This is §8's "never invent a parent" seen from the SENDER's side, and it was
-broken for as long as browser propagation has existed. Measured on the live
-store on 2026-09-01, over six hours: **2,839 of 6,620 spans that declared a
-parent — 42.9% — named a parent that was not anywhere in the store.** In
-Instana every one of those renders as *"The root call of the trace is missing
-or has not yet arrived in the processing pipeline"*, and nothing else shows
-it: each span is well formed, each request succeeded, only the join is gone.
-
-Three producers, all in the browser, all now removed:
-
-1. **A minted id, on a path we had already decided not to trace.** `trace.ts`
-   had a private `traceparent()` that, with no active span, returned
-   `00-<new trace id>-<new span id>-01`. Nothing ever created that span.
-   `traceHeaders()` handed it to every telemetry POST, and four of those six
-   endpoints (`/analytics`, `/clientcmd`, `/clientlog`, `/usage`) ARE in the
-   serving plane's route allowlist, so each one recorded an entry span under a
-   parent that would never exist. 565 distinct such ids in the window.
-2. **The ambient fallback.** `khFetch.ts` fell back to `currentSpan()`
-   whenever its own client span was absent — an excluded telemetry path (by
-   design) or a NOOP span (`MAX_OPEN` exhausted, tracer off). That named a
-   flow ROOT, which is only written when the flow ENDS. One tab held
-   `station.connect` open for seven hours and pointed 6,678 polls at an id
-   the store never saw. Twelve such ids accounted for 2,274 of the 2,839.
-3. **A span that never left the tab.** A span is buffered at `end()` and
-   uploaded on the next flush. A visit shorter than the sink's 20 s interval,
-   or a tab closed in a way `pagehide`/`visibilitychange` did not catch, lost
-   the client span while the server span it had already parented survived.
-   This has two halves and only the first was obvious: **(3a)** a long-lived
-   flow root, which is not buffered at all until the flow ends; and **(3b)**
-   the BOOT BURST, whose spans end in milliseconds and are buffered
-   immediately, but which — because the page-load join gives them a parent —
-   were not covered by a flush keyed on parentlessness. 3b survived the first
-   fix and was caught by this document's own acceptance probe.
-
-The fixes, in the order the data implicates them:
-
-- **`traceparentOf(span)` is the only producer of an outbound `traceparent`.**
-  `traceparent()` and `traceHeaders()` are gone. A request with no span of its
-  own goes out bare and the serving plane roots its own trace.
-- **The excluded telemetry paths send no header.** The alternative considered
-  was sending the sampled flag OFF, which `tracing_http.begin()` turns into a
-  NOOP span — that suppresses the SERVER span too, and its latency and status
-  are the only record those routes have. Keeping a clean one-span
-  `serve.clientcmd` root beats deleting the evidence to tidy a parent id.
-- **A TRACE ENTRY flushes as soon as it ends**, debounced 250 ms so a burst
-  leaves as one batch. Deliberately NOT a shorter interval: the sink's tick is
-  a poll and costs a request whether or not anything happened, so a 1 s
-  interval would be 60 requests a minute from every open tab across the whole
-  wall. Entry-end flushing is demand-driven — an idle tab costs nothing, a
-  finished journey costs exactly one request.
-
-  **A trace entry, not a parentless span** — and the difference is the whole
-  of cause 3b. The first fix keyed the flush on `parentId === null`, which
-  misses the one burst that always needs it: while the page-load join is live
-  (§4a) `startTrace()` hangs this tab's entry off `serve.page`'s span id, so a
-  boot fetch's client span **has a parent** and never looked like a root.
-  Measured on the deployed build with `beacon-probe.mjs`: the client spans for
-  `/gallery-manifest.json` and `/boot/index.json` were absent from the store
-  12 s after the load and present at 30 s — waiting for the 20 s tick, which
-  is exactly the window a short visit does not survive, while the
-  `traceparent` naming them had already gone out. Under the join, the tab's
-  entry is never the trace's root, so "root" was the wrong predicate; the
-  right one is "the span this tab opened a trace with". The three boot entries
-  end within 18 ms of each other, so the 250 ms debounce still carries them in
-  one POST.
-- **`pagehide` abandons every open flow**, ending its root (`unset`, with
-  `kh.abandoned`) so the root is recorded before the tab goes. Deliberately
-  NOT on `visibilitychange`: hidden is not over, and ending a live flow when a
-  visitor switches tab would swallow the `ok()` that follows and depress the
-  connect success rate for every tab-switcher.
-
-**The server side is unchanged, and that is deliberate.** It cannot know
-whether a parent will ever be recorded, and §8's other rule — honour the
-caller's context, never second-guess it — still holds. The invariant is the
-sender's to keep.
-
-**How a regression is caught.** `TraceStore.orphans()` counts stored spans
-whose `parent_id` is in no span row, ignoring the last hour so a flow that is
-merely still open is not miscounted as broken.
-`scripts/observability/trace-orphans.py` prints it (`--max-rate` exits
-non-zero over budget, so it can gate), and
-`scripts/visitor-sim/beacon-probe.mjs` checks the same invariant on the real
-wire from one credentialed page load: no `traceparent` on a telemetry path,
-and every outbound parent id resolving in the store.
-
 ## 4b. The return leg: `traceresponse` is ours, `Server-Timing` is the bridge
 
 §4 gets a trace id into the page. Everything after it was, until 2026-09-01,
@@ -786,7 +730,171 @@ all). No `Access-Control-Expose-Headers` is configured and none is wanted:
 cross-origin correlation is out of scope, and a trace id is a correlation
 handle for this box's own store.
 
-## 5. Sampling is all-or-nothing PER TRACE, and the browser decides
+## 4c. THE NO-ORPHAN INVARIANT: never name a span you will not record
+
+> **A `traceparent` this tab emits names a span this tab has created and will
+> record. Otherwise there is no `traceparent`.**
+
+This is §8's "never invent a parent" seen from the SENDER's side, and it was
+broken for as long as browser propagation has existed. Measured on the live
+store on 2026-09-01, over six hours: **2,839 of 6,620 spans that declared a
+parent — 42.9% — named a parent that was not anywhere in the store.** In
+Instana every one of those renders as *"The root call of the trace is missing
+or has not yet arrived in the processing pipeline"*, and nothing else shows
+it: each span is well formed, each request succeeded, only the join is gone.
+
+Three producers, all in the browser, all now removed:
+
+1. **A minted id, on a path we had already decided not to trace.** `trace.ts`
+   had a private `traceparent()` that, with no active span, returned
+   `00-<new trace id>-<new span id>-01`. Nothing ever created that span.
+   `traceHeaders()` handed it to every telemetry POST, and four of those six
+   endpoints (`/analytics`, `/clientcmd`, `/clientlog`, `/usage`) ARE in the
+   serving plane's route allowlist, so each one recorded an entry span under a
+   parent that would never exist. 565 distinct such ids in the window.
+2. **The ambient fallback.** `khFetch.ts` fell back to `currentSpan()`
+   whenever its own client span was absent — an excluded telemetry path (by
+   design) or a NOOP span (`MAX_OPEN` exhausted, tracer off). That named a
+   flow ROOT, which is only written when the flow ENDS. One tab held
+   `station.connect` open for seven hours and pointed 6,678 polls at an id
+   the store never saw. Twelve such ids accounted for 2,274 of the 2,839.
+3. **A span that never left the tab.** A span is buffered at `end()` and
+   uploaded on the next flush. A visit shorter than the sink's 20 s interval,
+   or a tab closed in a way `pagehide`/`visibilitychange` did not catch, lost
+   the client span while the server span it had already parented survived.
+   This has two halves and only the first was obvious: **(3a)** a long-lived
+   flow root, which is not buffered at all until the flow ends; and **(3b)**
+   the BOOT BURST, whose spans end in milliseconds and are buffered
+   immediately, but which — because the page-load join gives them a parent —
+   were not covered by a flush keyed on parentlessness. 3b survived the first
+   fix and was caught by this document's own acceptance probe.
+
+The fixes, in the order the data implicates them:
+
+- **`traceparentOf(span)` is the only producer of an outbound `traceparent`.**
+  `traceparent()` and `traceHeaders()` are gone. A request with no span of its
+  own goes out bare and the serving plane roots its own trace.
+- **The excluded telemetry paths send no header.** The alternative considered
+  was sending the sampled flag OFF, which `tracing_http.begin()` turns into a
+  NOOP span — that suppresses the SERVER span too, and its latency and status
+  are the only record those routes have. Keeping a clean one-span
+  `serve.clientcmd` root beats deleting the evidence to tidy a parent id.
+- **A TRACE ENTRY flushes as soon as it ends**, debounced 250 ms so a burst
+  leaves as one batch. Deliberately NOT a shorter interval: the sink's tick is
+  a poll and costs a request whether or not anything happened, so a 1 s
+  interval would be 60 requests a minute from every open tab across the whole
+  wall. Entry-end flushing is demand-driven — an idle tab costs nothing, a
+  finished journey costs exactly one request.
+
+  **A trace entry, not a parentless span** — and the difference is the whole
+  of cause 3b. The first fix keyed the flush on `parentId === null`, which
+  missed the one burst that always needs it: while the page-load JOIN was live
+  (§4a) `startTrace()` hung this tab's entry off `serve.page`'s span id, so a
+  boot fetch's client span **had a parent** and never looked like a root.
+  Measured on the deployed build with `beacon-probe.mjs`: the client spans for
+  `/gallery-manifest.json` and `/boot/index.json` were absent from the store
+  12 s after the load and present at 30 s — waiting for the 20 s tick, which
+  is exactly the window a short visit does not survive, while the
+  `traceparent` naming them had already gone out. The join is gone (§7.1), so
+  an entry is a root again and the two predicates agree today; the flag is
+  kept because it says what is MEANT, and the day something is parented again
+  is the day `parentId === null` silently stops working. The three boot
+  entries end within 18 ms of each other, so the 250 ms debounce still carries
+  them in one POST.
+- **`pagehide` abandons every open flow**, ending its root (`unset`, with
+  `kh.abandoned`) so the root is recorded before the tab goes. Deliberately
+  NOT on `visibilitychange`: hidden is not over, and ending a live flow when a
+  visitor switches tab would swallow the `ok()` that follows and depress the
+  connect success rate for every tab-switcher.
+
+**The server side is unchanged, and that is deliberate.** It cannot know
+whether a parent will ever be recorded, and §8's other rule — honour the
+caller's context, never second-guess it — still holds. The invariant is the
+sender's to keep.
+
+**How a regression is caught.** `TraceStore.orphans()` counts stored spans
+whose `parent_id` is in no span row, ignoring the last hour so a flow that is
+merely still open is not miscounted as broken.
+`scripts/observability/trace-orphans.py` prints it (`--max-rate` exits
+non-zero over budget, so it can gate), and
+`scripts/visitor-sim/beacon-probe.mjs` checks the same invariant on the real
+wire from one credentialed page load: no `traceparent` on a telemetry path,
+and every outbound parent id resolving in the store.
+
+## 4d. DELIVERY: `keepalive` is for the last batch of a visit and nothing else
+
+§4c is about never NAMING a span we will not record. This is about the span we
+promised, buffered, and then destroyed in the tab.
+
+**The measurement.** Over 24 hours on the live store, **175 of 459
+`input.dispatch` spans — 38% — named a parent that was never stored** (26 of 84,
+31%, over the six hours the investigation opened with). The daemon's half of a
+sampled input trace always landed; the browser's `input.edge`, which is that
+trace's ROOT, often did not. And it failed in long unbroken RUNS that start
+mid-session and never recover: on win311, twenty consecutive edges landed
+between 18:31:53 and 18:33:07 and every edge after 18:33:19 was lost. Whole
+sessions exist in the store with 81 daemon spans and not one browser span of
+any kind.
+
+**The cause, and it is not in the trace plane at all.** Six senders posted
+every batch with `keepalive: true` — `/traces` (`analytics/index.ts`),
+`/analytics` (`sink.ts`), `/logs` (`logSink.ts`), `/clientlog`
+(`three/clientDebug.ts`), `/usage` (`three/usageStats.ts`) and `/coverage`
+(`analytics/coverage.ts`). `keepalive` was chosen for one real reason — the
+LAST batch of a visit has to outlive the tab — and then applied to all of them
+for free.
+
+It is not free. **A document gets ONE 64 KiB keepalive allowance, and in Chrome
+it is not returned when the request finishes: it is spent for the life of the
+document.** Probed against the real gallery in Chrome 150 (the browser this
+wall serves), posting 4 KiB keepalive bodies to `/traces`:
+
+```
+  15 succeed  ->  the 16th rejects `TypeError: Failed to fetch`
+  every later keepalive fetch rejects IMMEDIATELY, forever
+  a plain (non-keepalive) fetch to the same URL still succeeds, 20/20
+```
+
+~61 KiB, and the tab's telemetry is over. That is exactly what the access log
+shows at the moment a run of losses begins: `/traces`, `/analytics`,
+`/clientlog` and `/logs` all stop in the same second, while `/clientcmd` keeps
+polling every five seconds and the vendor's `/eum` keeps beaconing — so the tab
+looks perfectly healthy, and it is still minting real trace ids and putting
+them on the wire for the daemon to pick up. Every sender swallowed the
+rejection in a bare `.catch(() => {})`; nothing was logged, nothing retried.
+
+**And `/traces` destroyed the batch rather than delaying it**, because
+`flushSpans()` drains the buffer BEFORE the upload. A dropped counter reads
+slightly low forever; a dropped span batch deletes the ROOT of a trace whose
+other half is already on its way to the same store by an independent path, and
+the store can then never draw the join.
+
+**The three rules, in `spa/src/analytics/beacon.ts`, which is now the only way
+this tab uploads telemetry:**
+
+1. **`keepalive` ONLY on the final flush** — `pagehide`, or
+   `visibilitychange` → hidden, which is the only one iOS Safari reliably
+   gives. An interval flush has a live document to complete in and costs
+   nothing from the allowance. A visit now spends a few KiB at the end instead
+   of exhausting the budget in its first two minutes.
+2. **The response body is ALWAYS drained.** Not politeness: an unread response
+   holds its allocation open, which is what turned a per-request budget into a
+   per-document one. `void fetch(...)` is banned in that module for this
+   reason, and `/clientcmd` and `/eum` — which read their bodies — are why they
+   never broke.
+3. **A batch with NO ANSWER is kept, not deleted.** `postTelemetry` reports
+   three outcomes and callers treat them differently: `sent` (2xx — drop it),
+   `refused` (the server answered and said no: a settled answer, drop it, since
+   re-queueing a refusal turns one lost row into an unbounded queue of them),
+   and `failed` (no answer at all — the box unreachable, or the allowance gone
+   — so KEEP it; `spanBuffer.requeueSpans` puts it back at the front).
+
+**How a regression is caught.** The same `trace-orphans.py` §4c already
+describes, plus `spa/src/analytics/beacon.test.ts`, which pins each of the
+three rules against a stubbed fetch — including that a rejection reports
+`failed` rather than being swallowed.
+
+## 5. Sampling is all-or-nothing PER TRACE, and it is decided ONCE
 
 The `01` flag is set by the tab and every layer honours it. A layer that
 sampled independently would produce traces with holes in them, and a hole in a
@@ -795,16 +903,88 @@ flame graph is indistinguishable from a gap in the work.
 At this scale everything is sampled. The flag exists so that turning sampling
 down later is a one-line change in one place rather than four.
 
-**§3.2's per-input tracing samples WHICH TRACES EXIST, not spans within one.**
-Every trace this document otherwise describes — a station connect, a daemon
-boot — is minted whole and every layer honours its `01` flag exactly as this
-section says. §3.2 sits one level up: the browser decides, once per input
-edge and before any trace exists for it, whether THIS edge gets a trace at
-all (`SAMPLE_N`, default 10). The edges that lose that coin flip are not
-partially-traced — nothing is minted, nothing is sent, nothing downstream
-ever hears about them. The rule that "sampling is the browser's decision" is
-identical in both places; only the unit being sampled — a whole visit's trace
-vs. one input edge's trace — differs.
+### 5.1 The source keeps everything; the VENDOR EXPORT decides — 2026-09-01
+
+The input plane used to sample at the source: one key or click edge in
+`SAMPLE_N` (default 10) got a trace and the other nine were never minted. That
+had three faults, and the third is the one that mattered.
+
+* It was **every-Nth, not random**. Input is periodic — key auto-repeat, a held
+  key, a drag — so a counter firing on every tenth edge can lock onto one PHASE
+  of a repeat burst and sample the same recurring moment forever. That is not a
+  sample of the population.
+* It applied **one rate to populations differing by orders of magnitude**, so a
+  rare click — the edge a visitor thought hardest about — had the same 10%
+  chance as the two-hundredth sample of a drag.
+* It **discarded precisely the interesting events**. An 800 ms keystroke had a
+  90% chance of never being traced, and the tail IS the signal for latency
+  work.
+
+The third fault cannot be fixed at the source at any rate, because the decision
+there happens BEFORE the round trip: the browser cannot know which edge will
+turn out to be the slow one. So the decision moved to where the answer exists,
+and the two halves are now one design.
+
+**SOURCE — keep everything.** Every key and click edge is traced, in full, into
+`traces.db`. One box, our own disk, our own data; completeness beats cleverness
+when nobody is short of capacity.
+
+**FORWARD — decide what the vendor is shown.**
+`scripts/observability/tail_sampler.py`, at the Instana leg, keeps every
+errored action, every slow one, and one in ten of the rest.
+
+**That split is NOT a capacity measure, and a future reader must not
+"optimise" it as one.** Our own plane keeps everything on purpose. The tail
+decision exists solely to keep Instana's Calls and Services views legible,
+because routine traffic drowns the interesting traffic there.
+
+**Why the decision can live at the forward at all** is the part worth
+remembering. Tail sampling normally needs a collector that buffers a complete
+trace before deciding, which is hard across processes — the browser cannot
+decide for spans the daemon has not emitted, and the daemon cannot decide for
+the browser's return leg. **We already have that collector: `traces.db`.** All
+three producers land there, and the forwarder ALREADY holds a trace until it
+has taken nothing new for `instana_backlog.QUIET_MS` (210 s, sized so a trace's
+daemon half has certainly arrived). That quiet window IS the buffering a tail
+sampler needs; it simply was not making a keep/drop decision yet.
+
+**"Slow" is derived, not chosen.** A fixed threshold cannot be right on this
+fleet: measured on the live store, `transport.frame.next` over 597 real samples
+runs p50 = 43 ms, p90 = 243 ms, p99 = 489 ms — an eleven-fold spread inside one
+distribution, before a ZX Spectrum is compared with a w2kalpha. So the line is
+a rolling p95 of the last 512 completed actions, floored at 279 ms, and the
+floor is the number that is derived: modelling the round trip from the same
+store's measured parts at the 90th percentile gives `transport.frame.next`
+243 ms + the client return leg 23 ms + the application RTT 13 ms = 279 ms.
+It says "never call an action slow when nine in ten already are". Without it, a
+good hour would drag the rolling p95 down to tens of milliseconds and ordinary
+actions would start being forwarded as "slow", which is the noise the whole
+mechanism exists to remove.
+
+**Motion is still not traced, and not for volume.** Pointer motion is a
+continuous signal at up to ~250 Hz; "how long from movement to pixel" is a rate
+and a latency histogram, and thousands of eight-span trees describe a
+distribution worse than one histogram does. The time-series lane owns it.
+
+**The sampling factor: the docs are silent.** Instana's call detail shows a
+"Sampling factor" field, and nothing in the 326-file corpus at
+`/home/wnt/instana-docs` documents a way for an OTLP producer to declare one —
+no "sampling factor", no `sampling.factor`, no extrapolation, no
+`x-instana-` header. The single adjacent hint is a PHP-tracer release note
+(`0006-tracers-and-autotrace-webhook.md`) that its tracer "captures the
+OpenTelemetry TraceState sampling threshold value and reports it to the
+backend", implying an OTEP 235 `tracestate` `ot=th:` path documented for no
+other producer and promised to no one. So the sampler stamps our OWN
+`kh.sampling.factor` and `kh.sampling.reason` on the EXPORTED spans — never on
+the store, which kept everything and for which a factor would be a lie — and
+claims nothing about the vendor reading them.
+
+**And counts never depend on any of it.** Every input edge already increments
+the always-on counter plane: `three/usageStats.ts` tallies every key and click
+per station to `/usage`, and the `station.key.used` / `station.pointer.used`
+probes land in `analytics.db`. Neither passes through the sampler, so "how many
+clicks happened" is an exact count from an unsampled source, and the sampler
+only decides which of them Instana is shown a flame graph FOR.
 
 ## 6. The emulator is deliberately NOT traced from inside
 
@@ -826,27 +1006,58 @@ start, `loadvm` restore, first painted frame, first input reaching the guest.
 That is the emulator layer as a visitor experiences it, and it is measured from
 the only place that can honestly measure it.
 
-## 7. What a complete trace looks like
+## 7. ONE TRACE MEANS ONE ACTION — 2026-09-01
+
+**A trace used to mean a visit, and that was the defect underneath everything
+else in this section.** A real operator session on win311 produced trace
+`fc4a9d74…`: 43 spans, root `serve.page`, 15.7 s of wall clock, still taking
+writes 74.4 s after it started, with five separate keystrokes sitting as
+SIBLINGS under the page span seconds apart. Instana assembles a trace in about
+two seconds, so a trace that dribbles for 74 s is fragmented by construction —
+which is what its "the position of this call in the calls tree is unknown
+because the parent call is missing" banner was reporting.
+
+It was also NON-DETERMINISTIC. The page-load JOIN (§4a as it stood) attached
+new traces to `serve.page` for 15 seconds. Reproduced live in one tab in one
+minute: eight sampled key edges inside the window came out as children of
+`serve.page`; eight click edges 15 s later came out as their own roots. Two
+shapes for one thing, decided by a stopwatch, and every downstream reader had
+to cope with both.
+
+So each of these is now its OWN trace, with its own root:
+
+| trace | root | what one of them is |
+|---|---|---|
+| page load | `serve.page` (python, server) | one `index.html` request |
+| station connect | `station.connect` (browser) | one attempt to open a station |
+| station restore | `station.restore` (browser) | one restore-to-golden |
+| **input action** | `input.edge` (browser, client) | one key or click, edge → pixel |
 
 ```
-serve.page                                       (python, root — §4/§4a: named
-│                                                  in the <meta> tag the page
-│                                                  was served with)
-└─ station.connect                                (browser — §4a's join)
-   ├─ http.client.request                client   (browser — khFetch.ts, automatic;
-   │  │                                             GET /signal/<station>.json in
-   │  │                                             its attributes, never its name)
-   │  └─ serve.signal                    server   (python: a CHILD of the client
-   │     │                                          span — §4a — and it names
-   │     │                                          itself back in traceresponse)
-   │     └─ serve.ticket.mint            internal
-   ├─ streamhost.session                 server   (rust: joined by ticket id)
-   │  ├─ guest.resume                    internal (emulator: cont / SIGCONT)
-   │  ├─ capture.first_frame             internal
-   │  ├─ encode.first_key                internal
-   │  ├─ transport.first_frame           internal
-   │  └─ input.first_edge                internal
-   └─ (no browser metric span — see below)
+station.connect                          (browser, ROOT)
+├─ http.client.request            client  (khFetch.ts, automatic; GET
+│  │                                        /signal/<station>.json in its
+│  │                                        attributes, never its name)
+│  └─ serve.signal                server  (python: a CHILD of the client span,
+│     │                                     and it names itself back in
+│     └─ serve.ticket.mint      internal   traceresponse)
+├─ streamhost.session             server  (rust: joined by ticket id)
+│  ├─ guest.resume              internal  (emulator: cont / SIGCONT)
+│  ├─ capture.first_frame       internal
+│  ├─ encode.first_key          internal
+│  └─ transport.first_frame     internal
+└─ station.connect.firstFrame   internal
+```
+
+```
+input.edge                       client   (browser, ROOT — its DURATION is the
+├─ input.wire                    client    edge → painted pixel round trip)
+└─ input.dispatch.<class>        server   (daemon — the trace's ENTRY span)
+   ├─ guest.frame.next         internal
+   ├─ transport.frame.next     internal
+   ├─ client.frame.receive     internal   (browser — §3.3's return leg)
+   ├─ client.frame.decode      internal
+   └─ client.frame.paint       internal
 ```
 
 **Since 2026-09-01 there is no `station.open.toFirstFrameMs` span here**, and
@@ -874,52 +1085,70 @@ station boots with nobody watching — a root `streamhost.start` with
 a visitor's trace: inventing that parent would be the false causal claim §8
 forbids.
 
+The last three return-leg spans exist only when the daemon's return-path mark
+and this tab's own receive/decode/paint for the same `frame_id` both actually
+happen (§3.3) — a dropped or never-marked frame leaves the daemon's spans
+standing alone, which is not an error, just an incomplete return leg. **The
+daemon's entry span missing entirely is a different thing, and it is usually a
+deployment fact rather than a bug — read §3.5 before reading it as one.**
+
 Four processes, one trace id, one flame graph. The browser's time-to-first-frame
 is a span event on `station.connect` (above), the daemon's `guest.resume` is a
 real span under `streamhost.session`, and the question "was it slow because the
 guest was asleep" stops being a correlation exercise — while staying a comparison
 between a measurement and a piece of work, rather than pretending both are work.
 
-**A sampled input edge (§3.2) is its OWN small trace, not more branches under
-`station.connect`.** Roughly 1 key or click edge in `SAMPLE_N` produces:
+### 7.1 The relation to the page load: a LINK and an ATTRIBUTE, never a parent
 
-```
-input.edge                    (browser, root — Client)
-├─ input.wire                 (browser — §3.4's transport hop and its facts)
-├─ client.input.roundtrip     (browser — edge → painted pixel, one clock)
-└─ input.dispatch             (daemon — SERVER, the trace's entry span)
-   ├─ guest.frame.next        (daemon)
-   ├─ transport.frame.next    (daemon)
-   ├─ client.frame.receive    (browser — §3.3's return leg)
-   ├─ client.frame.decode     (browser)
-   └─ client.frame.paint      (browser)
-```
+A keystroke really was caused by a page load, and that fact is still recorded.
+It is just no longer spelled as containment, because containment is a claim
+about a unit of work and a keystroke thirty seconds into a visit is not part of
+the request that served the HTML.
 
-The last three, and `client.input.roundtrip` with them, exist only when the
-daemon's return-path mark and this tab's own receive/decode/paint for the same
-`frame_id` both actually happen (§3.3) — a dropped or never-marked frame simply
-leaves the daemon's spans standing alone, which is not an error, just an
-incomplete return leg. **`input.dispatch` missing entirely is a different
-thing, and it is usually a deployment fact rather than a bug — read §3.5 before
-reading it as one.** §3.4 says what each of these boxes actually measures, and
-which layers do not exist at all.
+Every trace ENTRY this tab opens therefore carries **both**:
 
-This is deliberately a second family of traces alongside the one above, the
-same way a page load answers a different question from a keystroke
-— a session's connect trace and its visitor's individual keystrokes answer
-different questions on different timescales, and folding thousands of input
-edges under one connect span would make that trace impossible to read rather
-than more complete.
+* an OTel **span LINK** naming `serve.page`'s trace and span, with
+  `kh.link.kind=page.load` (`spa/src/analytics/pageLoadLink.ts`,
+  `scripts/serve/traces.py`'s `links` column, `traces_otlp.py`'s `links`
+  export). Instana surfaces links in the call Details view
+  (`instana-docs/0307-opentelemetry-signals.md`, "OpenTelemetry span events and
+  span links"), and `/admin/observability` renders them as a jump.
+* the **`kh.page.loadId` attribute** (`analytics/pageBinding.ts`).
 
-**The §4 page-load span IS a root above this one, now.** `serve.page` is
-minted when `index.html` is served, before any of the above exists;
-`station.connect` used to be minted independently and unrelated the moment the
-app booted, producing two disconnected trees for one visit — this trace, and a
-one-span Instana trace rooted at `serve.page`. §4a's page-load join closes
-that: `joinPageLoadTraceFromMeta()` seeds `station.connect` (or whichever flow
-opens first) to continue `serve.page`'s trace id, with `serve.page`'s span as
-its parent, so the tree above is now genuinely rooted at the page load, not
-merely drawn that way.
+**Both, and it is not belt-and-braces.** A link is what a UI NAVIGATES — one
+click from a slow keystroke to the page load it happened on — and it cannot be
+filtered or grouped by. An attribute is what a QUERY GROUPS BY — "every action
+on this page load", one equality filter, in our own SQL and in Instana's
+Unbounded Analytics — and it cannot be navigated. Neither substitutes for the
+other, and the link additionally survives a consumer that has never heard of
+`kh.` anything.
+
+**No window, no count, no consumption.** The old join was bounded by 15 seconds
+and 32 joins because a JOIN goes stale: a station opened ten minutes after boot
+did not happen "inside" the page load. A LINK makes only the claim that is true
+for the whole life of the JS realm — this action happened on that document — so
+it needs no expiry. A full navigation tears the realm down and the next load
+reads a fresh tag.
+
+### 7.2 Traces before 2026-09-01 are not comparable with traces after it
+
+Say it out loud, because the numbers look like the same numbers.
+
+* A trace **was** a visit and **is** an action, so span-count, trace-duration
+  and traces-per-visit all changed meaning on that date. A drop in "mean spans
+  per trace" from 43 to 8 is this change, not a regression.
+* `input.edge`'s duration **was** ~0–1 ms of local enqueue and **is** the
+  edge → painted-pixel round trip, so any input-latency series steps from
+  roughly 1 ms to roughly 250 ms at the boundary.
+* `client.input.roundtrip` no longer exists; its figure is the root's duration.
+* The daemon's entry span split from `input.dispatch` into
+  `input.dispatch.key` / `input.dispatch.click`, so a per-endpoint series in
+  Instana starts over on that date.
+* Before the fix in §4d, an unknown share of browser spans never reached the
+  store at all (38% of `input.dispatch` spans were orphaned over the 24 h
+  measured), so pre-boundary volume is an undercount of unknown size.
+
+Do not plot across the boundary. Compare 2026-09-01 onwards with itself.
 
 ## 8. Rules that are not negotiable
 
@@ -958,6 +1187,25 @@ merely drawn that way.
   new through `traces.py`'s real validators in a test
   (`scripts/test_input_trace_intake.py`), because intake refuses silently and a
   refused span reads downstream as a zero.
+- **A trace is ONE ACTION, never a visit.** §7. A relation between two actions
+  is a span LINK plus an attribute, never a parent: nesting asserts
+  containment, and a keystroke thirty seconds into a visit is not part of the
+  request that served the HTML.
+- **A span's DURATION is elapsed time for the thing the span is named after.**
+  §3.3: `input.edge` is the round trip a visitor waited, not the millisecond it
+  took to hand a record to a stream writer. A root whose duration measures
+  something narrower than its name is read wrong by every consumer that reads
+  roots, and none of them can tell.
+- **`keepalive` belongs to the LAST batch of a visit and to nothing else**, the
+  response body is always drained, and a batch with no answer is kept rather
+  than deleted. §4d — one 64 KiB allowance per document, spent once, and
+  spending it on every flush silently killed four telemetry routes mid-visit
+  and orphaned 38% of the input plane.
+- **The source keeps everything; the VENDOR EXPORT decides what is forwarded.**
+  §5.1. Never re-introduce sampling at the source to "protect" the store: the
+  store is not what is short, and a source-side coin has to be flipped before
+  the duration exists, which throws away exactly the slow actions the plane is
+  for.
 - **An old browser and an old daemon must both keep working against a new
   counterpart.** §3.2: the fleet rolls in canaried waves and the SPA deploys
   independently of it, so a version skew between browser and daemon is the

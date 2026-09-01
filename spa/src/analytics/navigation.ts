@@ -247,7 +247,7 @@ export function openNavigationSpan(event: NavEvent): Span {
   } catch {
     return {
       traceId: '', spanId: '', child: () => openNavigationSpan(event),
-      attr() {}, event() {}, recordException() {}, end() {},
+      attr() {}, event() {}, recordException() {}, end() {}, endAt() {},
     };
   }
 }

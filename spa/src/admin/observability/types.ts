@@ -37,6 +37,17 @@ export interface SpanEvent {
   a?: Record<string, AttrValue>;
 }
 
+/** One OTel span LINK: "caused by, but not nested under". Since 2026-09-01 a
+ *  trace here means ONE ACTION, so an input edge is no longer a child of the
+ *  page load it happened on — the causal edge is drawn with a link, and the
+ *  same fact ALSO rides as the `kh.page.loadId` attribute (a link is what this
+ *  view NAVIGATES, an attribute is what a query GROUPS BY). */
+interface SpanLink {
+  t: string;
+  s: string;
+  a?: Record<string, AttrValue>;
+}
+
 /** One span of a trace, as `GET /auth/traces/trace` returns it. */
 export interface TraceSpan {
   spanId: string;
@@ -54,6 +65,9 @@ export interface TraceSpan {
   statusMessage: string | null;
   attributes: Record<string, AttrValue>;
   events: SpanEvent[];
+  /** Absent on a span stored before links existed, and on every span that is
+   *  not a trace entry — the link rides the entry only, one copy per trace. */
+  links?: SpanLink[];
 }
 
 /** A trace's summary row — what the list shows without touching the spans. */

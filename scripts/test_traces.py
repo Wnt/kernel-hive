@@ -415,6 +415,18 @@ class PreMigrationStoreTest(unittest.TestCase):
     on startup, in a restart loop, with the gallery serving 502.
     """
 
+    #: The SPAN table as it stood before span LINKS — the shape a live
+    #: traces.db still has at the instant the new code first opens it.
+    OLD_SPAN_TABLE = """
+    CREATE TABLE span (
+      trace_id TEXT NOT NULL, span_id TEXT NOT NULL, parent_id TEXT,
+      name TEXT NOT NULL, kind TEXT NOT NULL,
+      started_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL, hidden_ms INTEGER NOT NULL,
+      status TEXT NOT NULL, status_msg TEXT,
+      attrs TEXT, events TEXT,
+      PRIMARY KEY (trace_id, span_id)) WITHOUT ROWID;
+    """
+
     OLD_TRACE_TABLE = """
     CREATE TABLE trace (
       trace_id TEXT PRIMARY KEY,
@@ -431,6 +443,7 @@ class PreMigrationStoreTest(unittest.TestCase):
         path = Path(tmp.name) / "traces.db"
         db = sqlite3.connect(str(path))
         db.executescript(self.OLD_TRACE_TABLE)
+        db.executescript(self.OLD_SPAN_TABLE)
         db.execute(
             "INSERT INTO trace VALUES(?,'s','human','r',100,200,100,1,0,'ok','2026-09-01')",
             ("a" * 32,),

@@ -12,10 +12,44 @@
 //  decision (`input_trace.rs`'s doc comment says so explicitly) and never
 //  samples independently.
 //
-//  THE KNOB. `SAMPLE_N` below — one exported constant, one place, changed and
-//  redeployed like any other SPA constant. Default 10: a visitor typing or
-//  clicking normally produces a real span roughly once a second, enough to see
-//  the input->pixel path without spending a span per keystroke.
+//  EVERY KEY AND EVERY CLICK IS TRACED. There is no sampler here any more.
+//
+//  Until 2026-09-01 this module traced every `SAMPLE_N`-th qualifying edge
+//  (default 10), and that counter had three faults. It ALIASED: input is
+//  periodic — key auto-repeat, a held key, a drag — so a counter firing on
+//  every tenth edge can lock onto one PHASE of a repeat burst and sample the
+//  same recurring moment forever, which is not a sample of the population. It
+//  applied ONE rate to populations differing by orders of magnitude, so a rare
+//  click — the edge a visitor thought hardest about — got the same 10% chance
+//  as the two-hundredth sample of a drag. And it discarded PRECISELY the
+//  interesting events: an 800 ms keystroke had a 90% chance of never being
+//  traced, and the tail IS the signal for latency work.
+//
+//  The third fault is unfixable at this end at any sampling rate, because the
+//  decision here happens BEFORE the round trip — this code cannot know which
+//  edge will turn out to be the slow one. So the decision moved to where the
+//  answer exists, and the two halves are one design:
+//
+//     SOURCE (here)  — emit EVERYTHING for keys and clicks. Our own box, our
+//                      own store, our own data; completeness beats cleverness,
+//                      and every action is in the store to be queried.
+//     FORWARD        — `scripts/observability/tail_sampler.py`, at the Instana
+//                      leg, where the trace is COMPLETE and its duration is
+//                      known: keep every error, every slow action, and a random
+//                      share of the rest.
+//
+//  THAT SPLIT IS NOT A CAPACITY MEASURE, and a future reader must not
+//  "optimise" it as one. Our own plane keeps everything on purpose. The tail
+//  decision exists solely to keep the VENDOR's Calls and Services views
+//  legible, because routine traffic there drowns the interesting traffic.
+//
+//  MOUSE MOTION IS STILL NOT TRACED, and not for volume either. Motion is a
+//  CONTINUOUS SIGNAL sampled at up to ~250 Hz; "how long from movement to
+//  pixel" is a rate and a latency histogram, and thousands of eight-span trees
+//  describe that worse than one histogram does — you cannot read a distribution
+//  off a list of flame graphs. The time-series lane owns that measurement.
+//  Nothing here forbids an occasional motion EXEMPLAR, and one should be added
+//  beside the histogram it is an exemplar OF, not before it.
 //
 //  WHAT NEVER TRAVELS. The suffix is 25 bytes: a marker and two ids. No
 //  keycode, no button, no coordinate, no character is added to the record by
@@ -60,11 +94,6 @@ function reportSampledEdge(span: Span, meta: Record<string, string>): void {
   reportBackendTrace('kh.input.sampled', span.traceId, meta);
 }
 
-/** The knob: 1 input edge in this many gets a real span and a wire context.
- *  Documented default per docs/lab/TRACE-CONTEXT.md and docs/ANALYTICS.md §8.1
- *  — changing it is a one-line SPA edit, redeployed like any other constant. */
-export const SAMPLE_N = 10;
-
 /** 0xC5 marker + 16-byte trace id + 8-byte span id, matching
  *  `input_trace::SUFFIX_MARKER` / `SUFFIX_LEN` exactly. */
 const SUFFIX_MARKER = 0xc5;
@@ -72,44 +101,67 @@ const TRACE_ID_BYTES = 16;
 const SPAN_ID_BYTES = 8;
 export const SUFFIX_LEN = 1 + TRACE_ID_BYTES + SPAN_ID_BYTES;
 
-let counter = 0;
-
-/** Reset the sampling counter. Test seam only — production never needs this,
- *  the counter free-runs for the life of the tab. */
+/** Forget every pending edge. Test seam only — production never needs this. */
 export function __resetSampleCounter(): void {
-  counter = 0;
+  for (const e of pendingEdges.values()) {
+    try {
+      if (e.timer !== null) clearTimeout(e.timer);
+    } catch { /* noop */ }
+  }
   pendingEdges.clear();
   pendingOrder.length = 0;
 }
 
-/** The browser's sampling decision for ONE qualifying edge (a key transition
- *  or a button transition — never a pointer-move sample, which arrives at up
- *  to ~250 Hz and would defeat the entire point of sampling). Returns a live
- *  span on the sampled edge, `null` on the other N-1 — which is the ENTIRE
- *  cost an unsampled edge pays here: one increment, one comparison, no
- *  allocation, no id minted (`startTrace` is not even called). */
+/** Open the `input.edge` trace for ONE qualifying edge — a key transition or a
+ *  button transition, never a pointer-move sample (see the header: motion is a
+ *  continuous signal and belongs in the time-series lane).
+ *
+ *  ALWAYS returns a span for a qualifying edge when tracing is on; the `| null`
+ *  is the tracer being OFF, not a sampling decision, and there is no longer any
+ *  sampling decision to make here. The "maybe" in the name now means "maybe
+ *  tracing is configured" rather than "maybe this edge won the lottery".
+ *
+ *  NULL, NOT A NOOP SPAN, WHEN THE TRACER IS OFF — and that is a wire
+ *  correctness rule, not tidiness. A NOOP span is truthy with EMPTY ids, and
+ *  `inputWire.ts` reads `span ? withSuffix(...) : bare`, so returning one put a
+ *  25-byte ALL-ZERO trace suffix on the record. The daemon rejects a zero
+ *  context (`input_trace::strip`), so it was pure waste on every key and click
+ *  a tracing-disabled tab ever sent — 1-in-10 of them while this module
+ *  sampled, and ALL of them from the moment it stopped. Not sending it is the
+ *  honest half of the same rule the daemon enforces from its end. */
 export function maybeSampleEdge(
   name: string,
   attrs: Record<string, string>,
 ): Span | null {
-  counter += 1;
-  if (counter < SAMPLE_N) return null;
-  counter = 0;
   const span = startTrace(name, attrs, 'client');
-  // Remember this edge so `frameTrace.ts` can close a browser-clock round trip
-  // against the frame the daemon eventually names as its answer.
+  if (!span.traceId) return null;
+  // The span stays OPEN. Its duration is the round trip to the painted pixel,
+  // which this tab only learns when the daemon names the answering frame
+  // (`frameTrace.ts` -> `settleEdge`), so it cannot be ended here — and every
+  // path out is covered: the answer, the timeout, or eviction below.
   if (span.traceId) {
-    if (!pendingEdges.has(span.traceId)) pendingOrder.push(span.traceId);
-    pendingEdges.set(span.traceId, { spanId: span.spanId, atMs: performance.now() });
+    const traceId = span.traceId;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      timer = setTimeout(() => closeEdge(traceId, null, false), EDGE_ANSWER_TIMEOUT_MS);
+      // Node's timer would hold a test process open; a browser has no such
+      // method and does not need one.
+      (timer as { unref?: () => void }).unref?.();
+    } catch { /* no timer: eviction below is still a hard bound */ }
+    if (!pendingEdges.has(traceId)) pendingOrder.push(traceId);
+    pendingEdges.set(traceId, { span, atMs: performance.now(), timer });
     while (pendingOrder.length > MAX_PENDING_EDGES) {
-      const old = pendingOrder.shift();
-      if (old !== undefined) pendingEdges.delete(old);
+      const oldest = pendingOrder[0];
+      if (oldest === undefined) break;
+      closeEdge(oldest, null, false);
+      // `closeEdge` removes it from both structures; guard against a traceId
+      // that was already gone so this can never spin.
+      if (pendingOrder[0] === oldest) pendingOrder.shift();
     }
   }
-  // Fires only on the ~1-in-SAMPLE_N edges that actually mint a trace, so the
-  // other N-1 pay nothing here either — `reportSampledEdge` itself no-ops
-  // below that (unconfigured build, or a NOOP span because our own tracing
-  // is disabled).
+  // Fires only on the edges that actually mint a trace, so an untraced edge
+  // pays nothing here either — `reportSampledEdge` itself no-ops below that
+  // (unconfigured build, or a NOOP span because our own tracing is disabled).
   reportSampledEdge(span, attrs);
   return span;
 }
@@ -137,23 +189,78 @@ export function maybeSampleEdge(
 //    edge. It is the operator's actual question ("how long until I saw it")
 //    and it is the envelope the daemon's own spans decompose.
 
-/** Edges awaiting their answering frame: `traceId` -> the edge span's id and
- *  the browser clock reading at which it was minted. Bounded, and an entry
- *  that never gets an answer simply ages out — the rest of the trace still
- *  stands. Small because the input side already samples 1-in-`SAMPLE_N` and a
- *  frame answers within a handful of frames. */
+/** Edges still waiting for the frame that answers them: `traceId` -> the live
+ *  `input.edge` span and the browser-clock reading at which it was minted.
+ *  Bounded, and an entry that never gets an answer is settled by the timeout
+ *  below rather than left open — an open span is never buffered, so leaking one
+ *  would delete the root of its trace, which is the exact failure this whole
+ *  change exists to remove. Small because the input side already samples
+ *  and a frame answers within a handful of frames. */
 const MAX_PENDING_EDGES = 32;
-const pendingEdges = new Map<string, { spanId: string; atMs: number }>();
+
+/** How long an edge waits for its answering frame before it is settled
+ *  unanswered.
+ *
+ *  Generous on purpose: the open keyboard-lag investigation is about round
+ *  trips that are TOO LONG, so a cap that quietly discarded the slow ones would
+ *  delete exactly the evidence it exists to collect. 3 s is far above any
+ *  healthy round trip (measured ~240 ms on win95) and far below "leaked".
+ *  An idle or damage-gated guest may legitimately never produce a frame at all
+ *  (`guest.frame.next` is the NEXT frame, not an acknowledgement —
+ *  docs/lab/TRACE-CONTEXT.md §3.4), and that edge still deserves to land: it
+ *  does, with `kh.input.answered=false`, so "no frame came back" is a value in
+ *  the store and not a missing row. */
+const EDGE_ANSWER_TIMEOUT_MS = 3000;
+
+interface PendingEdge {
+  span: Span;
+  atMs: number;
+  /** `globalThis.setTimeout`, not `window.setTimeout`: this module has to
+   *  behave identically under the test runner's node environment, and a
+   *  guard on `window` there quietly meant "no timeout at all" — which is
+   *  the leak this timer exists to prevent. */
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+const pendingEdges = new Map<string, PendingEdge>();
 const pendingOrder: string[] = [];
 
-/** Consume the pending edge for `traceId`, if this tab minted one. Consuming
- *  (rather than peeking) is deliberate: exactly one round-trip span per edge,
- *  even if the daemon marks two frames against the same trace. */
-export function takePendingEdge(traceId: string): { spanId: string; atMs: number } | null {
+/** End one pending edge exactly once, whatever settles it. */
+function closeEdge(traceId: string, atMs: number | null, answered: boolean): void {
   const e = pendingEdges.get(traceId);
-  if (!e) return null;
+  if (!e) return;
   pendingEdges.delete(traceId);
-  return e;
+  const at = pendingOrder.indexOf(traceId);
+  if (at >= 0) pendingOrder.splice(at, 1);
+  try {
+    if (e.timer !== null) clearTimeout(e.timer);
+  } catch { /* the span is closed below either way */ }
+  const attrs = { 'kh.input.answered': answered };
+  if (answered && atMs !== null) e.span.endAt(atMs, 'ok', attrs);
+  else e.span.end('unset', attrs);
+}
+
+/**
+ * The frame that answered `traceId` finished painting at `paintAtMs`. Ends the
+ * `input.edge` span AT that moment, so the ROOT's duration IS the visitor's
+ * edge → painted-pixel round trip.
+ *
+ * THIS IS THE ONE MEASUREMENT THAT NEEDS NO CLOCK AGREEMENT. Both ends —
+ * `atMs` when the edge was sampled, `paintAtMs` when the answering frame was
+ * painted — are `performance.now()` readings from THIS tab. Everything else in
+ * the tree is a browser reading beside a daemon reading, so the tree's SHAPE
+ * depends on two machines' wall clocks lining up; this number does not, and it
+ * is the envelope the daemon's `input.dispatch` / `guest.frame.next` /
+ * `transport.frame.next` decompose.
+ *
+ * It replaced a sibling span, `client.input.roundtrip`, which carried exactly
+ * this figure next to a root whose own duration was 0–1 ms of local enqueue.
+ * Two spans for one measurement meant every consumer that reads a root's
+ * duration — a trace list, a latency percentile, Instana's endpoint view —
+ * read 1 ms for something a visitor waited 240 ms for.
+ */
+export function settleEdge(traceId: string, paintAtMs: number): void {
+  closeEdge(traceId, paintAtMs, true);
 }
 
 /** Run `write` inside a child `input.wire` span when this edge is sampled, and

@@ -180,6 +180,7 @@ export function ObservabilityPage() {
             {trace && (
               <TraceDetail
                 trace={trace}
+                onOpenTrace={openTrace}
                 onSelectSession={(sessionId) => {
                   setTraceError(`Filter the list by session ${sessionId} to see its other journeys.`);
                 }}

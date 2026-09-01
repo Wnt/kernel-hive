@@ -26,9 +26,14 @@ interface Props {
   /** Lets the list view pivot to "this session's other traces". Optional
    *  because the panel is useful before that wiring exists. */
   onSelectSession?: (sessionId: string) => void;
+  /** Follows a span LINK — "the page load this action happened on". Since a
+   *  trace means ONE ACTION (2026-09-01) that relation is a separate trace, so
+   *  reaching it is a navigation rather than a scroll. Optional for the same
+   *  reason `onSelectSession` is. */
+  onOpenTrace?: (traceId: string) => void;
 }
 
-export function TraceDetail({ trace, onSelectSession }: Props) {
+export function TraceDetail({ trace, onSelectSession, onOpenTrace }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const layout = useMemo(() => buildFlameLayout(trace.spans), [trace.spans]);
   const selected = trace.spans.find((s) => s.spanId === selectedId) ?? null;
@@ -72,8 +77,8 @@ export function TraceDetail({ trace, onSelectSession }: Props) {
 
       <div className="td-detail">
         {selected && selectedRow
-          ? <SpanDetail span={selected} anomalies={selectedRow.anomalies} />
-          : <p className="td-hint">Select a span — click a row, or focus the graph and use ↑ ↓ — for its attributes and events.</p>}
+          ? <SpanDetail span={selected} anomalies={selectedRow.anomalies} onOpenTrace={onOpenTrace} />
+          : <p className="td-hint">Select a span — click a row, or focus the graph and use ↑ ↓ — for its attributes, links and events.</p>}
       </div>
     </section>
   );
@@ -126,7 +131,10 @@ function Facts({ trace, layout, worstHidden }: { trace: Trace; layout: FlameLayo
   );
 }
 
-function SpanDetail({ span, anomalies }: { span: TraceSpan; anomalies: RowAnomaly[] }) {
+function SpanDetail(
+  { span, anomalies, onOpenTrace }:
+  { span: TraceSpan; anomalies: RowAnomaly[]; onOpenTrace?: (traceId: string) => void },
+) {
   const exc = exceptionOf(span);
   const attrs = Object.entries(span.attributes);
   const hidden = Math.max(0, span.hiddenMs);
@@ -174,6 +182,26 @@ function SpanDetail({ span, anomalies }: { span: TraceSpan; anomalies: RowAnomal
         <dl className="td-kv">
           {attrs.map(([k, v]) => <Fragmented key={k} k={k} v={String(v)} />)}
         </dl>
+      ) : <p className="td-hint">None.</p>}
+
+      <h4>linked traces</h4>
+      {span.links?.length ? (
+        <ul className="td-links">
+          {span.links.map((l) => (
+            <li key={`${l.t}-${l.s}`}>
+              {/* A link is the one thing in this pane worth NAVIGATING to: it
+                  is how "this keystroke" reaches "the page load it happened
+                  on" now that the two are separate traces (2026-09-01 — one
+                  trace means one action). */}
+              <code>{l.t}</code>
+              <span>{String(l.a?.['kh.link.kind'] ?? 'linked')}</span>
+              {onOpenTrace && (
+                <button type="button" className="td-link" onClick={() => onOpenTrace(l.t)}>open</button>
+              )}
+              <CopyButton value={l.t} label="linked trace id" />
+            </li>
+          ))}
+        </ul>
       ) : <p className="td-hint">None.</p>}
 
       <h4>events</h4>

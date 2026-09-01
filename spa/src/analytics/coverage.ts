@@ -35,6 +35,7 @@
 // ============================================================================
 
 import { clientClass } from './intent';
+import { postTelemetry } from './beacon';
 
 /** Istanbul's per-file shape, narrowed to the two fields this reads. */
 interface FileCoverage {
@@ -64,33 +65,28 @@ export function installCoverageReporter(buildId: string): void {
     build = buildId;
     if (installed || typeof window === 'undefined') return;
     installed = true;
-    window.addEventListener('pagehide', send);
+    window.addEventListener('pagehide', () => send(true));
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') send();
+      if (document.visibilityState === 'hidden') send(true);
     });
   } catch { /* no lifecycle hooks: nothing is reported, and nothing breaks */ }
 }
 
-function send(): void {
+function send(final = false): void {
   try {
     if (refused || attempts >= MAX_ATTEMPTS) return;
     const files = collect();
     if (!files.length) return;
     attempts += 1;
     const body = JSON.stringify({ build, class: clientClass(), files });
-    void fetch('/coverage', {
-      method: 'POST',
-      keepalive: true,
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    })
-      // A settled NO — no session, body too large, plane disabled — is an
-      // answer, not a hiccup. Stop asking for the life of the tab.
-      .then((r) => { if (!r.ok) refused = true; })
-      // A network failure is not an answer: leave `refused` alone so a later
-      // hidden/pagehide gets one more go, bounded by MAX_ATTEMPTS.
-      .catch(() => {});
+    // A settled NO — no session, body too large, plane disabled — is an
+    // answer, not a hiccup. Stop asking for the life of the tab. A network
+    // failure is not an answer: leave `refused` alone so a later hidden/
+    // pagehide gets one more go, bounded by MAX_ATTEMPTS. `keepalive` only on
+    // the final flush — `analytics/beacon.ts`.
+    void postTelemetry('/coverage', body, { final }).then((result) => {
+      if (result === 'refused') refused = true;
+    });
   } catch { /* instrumentation never throws into the app */ }
 }
 

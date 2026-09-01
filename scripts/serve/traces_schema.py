@@ -89,6 +89,30 @@ def migrate_ingest_order(db) -> None:
     cur.execute("CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq)")
 
 
+def migrate_links(db) -> None:
+    """Give a store written before span LINKS existed the column anyway.
+
+    Same reason the two migrations either side of this one exist: `CREATE
+    TABLE IF NOT EXISTS` does not reshape a table that is already there. And
+    the same rule as `migrate_ingest_order`'s closing comment — the column is
+    added HERE and never named in SCHEMA, because SCHEMA runs first on every
+    open and would then fail on every store written before this migration.
+
+    WHAT A LINK IS, and why the store needed a new column rather than an
+    attribute. A link is OpenTelemetry's spelling of "this span was caused by
+    that one, WITHOUT being nested under it" — which is exactly the relation
+    an input action has to the page load it happened on. Since 2026-09-01 a
+    trace here means ONE ACTION, so the page load is no longer an ancestor of
+    the keystroke; the causal edge still exists and it is drawn with a link.
+    Existing rows read `[]`, which is the truth about them: they were recorded
+    when a visit was one trace and nothing needed linking.
+    """
+    cur = db.cursor()
+    have = {r[1] for r in cur.execute("PRAGMA table_info(span)")}
+    if "links" not in have:
+        cur.execute("ALTER TABLE span ADD COLUMN links TEXT")
+
+
 def migrate_build(db) -> None:
     """Give a store written before build identity existed the column anyway.
 

@@ -9,7 +9,7 @@ import { installKhFetchPropagation, __resetKhFetch } from './khFetch';
 import {
   __bufferedSpans, __resetTracer, configureTracer, startTrace, pushActive, popActive,
 } from './trace';
-import { seedPageLoadTrace } from './pageLoadJoin';
+import { seedPageLoadTrace } from './pageLoadLink';
 import { BACKEND_TRACE_ID_RE } from './instana';
 import * as traceModule from './trace';
 
@@ -163,14 +163,18 @@ describe('installKhFetchPropagation', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it('continues the page-load trace for the first client span opened this page', async () => {
+  it('LINKS the page load rather than nesting under it — a trace is one action', () => {
     seedPageLoadTrace('00-33333333333333333333333333333333-4444444444444444-01');
     installKhFetchPropagation();
     const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
-    await win.fetch(`${ORIGIN}/restore/beos`);
-    const [span] = __bufferedSpans();
-    expect(span.t).toBe('33333333333333333333333333333333');
-    expect(span.p).toBe('4444444444444444');
+    return win.fetch(`${ORIGIN}/restore/beos`).then(() => {
+      const [span] = __bufferedSpans();
+      expect(span.t).not.toBe('33333333333333333333333333333333');
+      expect(span.p).toBeNull();
+      expect(span.l).toEqual([
+        { t: '33333333333333333333333333333333', s: '4444444444444444', a: { 'kh.link.kind': 'page.load' } },
+      ]);
+    });
   });
 
   // ==========================================================================

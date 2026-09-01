@@ -4,7 +4,9 @@
 //  `guest.frame.next` -> `transport.frame.next` stops at the daemon's own
 //  transport send; this module closes it with `client.frame.receive` /
 //  `client.frame.decode` / `client.frame.paint`, siblings of the two daemon
-//  spans above under the same `input.dispatch`.
+//  spans above under the same `input.dispatch` — AND it closes the trace's own
+//  ROOT, because `input.edge`'s duration is defined as the edge → painted-pixel
+//  round trip and the paint happens here.
 //  ---------------------------------------------------------------------------
 //  HOW THE CLIENT LEARNS WHICH FRAME ANSWERED ITS INPUT. This tab cannot know
 //  on its own — WebCodecs hands back a `frame.timestamp` (the AU's capture
@@ -30,10 +32,10 @@
 //  passes through `noteReceived`/`noteDecodeSubmit` — no allocation beyond
 //  the entry, no hex encoding, no span. A span is only ever built for a frame
 //  that BOTH finished painting AND was marked, which is bounded by the input
-//  side's own `SAMPLE_N` (`inputTrace.ts`) — never per frame.
+//  side's own qualifying-edge rule (`inputTrace.ts`) — never per frame.
 // ============================================================================
 import { emitSpan } from '../../analytics/trace';
-import { takePendingEdge } from './inputTrace';
+import { settleEdge } from './inputTrace';
 
 interface FrameTiming {
   receiveMs: number;
@@ -147,25 +149,15 @@ function maybeEmit(frameId: number): void {
     m.traceId, m.spanId, 'client.frame.paint',
     t.decodeEndMs, Math.max(0, t.paintEndMs - t.decodeEndMs), attrs,
   );
-  // THE ONE MEASUREMENT THAT NEEDS NO CLOCK AGREEMENT. Everything above is a
-  // browser reading and everything the daemon emitted is a daemon reading, so
-  // the tree's overall shape depends on two machines' wall clocks lining up.
-  // This span does not: `edge.atMs` and `t.paintEndMs` are both
-  // `performance.now()` readings from THIS tab, minted by `inputTrace.ts` when
-  // the edge was sampled and taken when the answering frame finished painting.
-  // It is the envelope — "how long from my click until I saw it" — that the
-  // daemon's `input.dispatch` / `guest.frame.next` / `transport.frame.next`
-  // decompose, and it is emitted as a child of the browser's own `input.edge`
-  // span so it reads as a sibling of the daemon hop rather than as a stage of
-  // it. `null` (no pending edge) whenever the mark outlived its edge entry, in
-  // which case the rest of the trace is unaffected.
-  const edge = takePendingEdge(m.traceId);
-  if (edge) {
-    emitSpan(
-      m.traceId, edge.spanId, 'client.input.roundtrip',
-      edge.atMs, Math.max(0, t.paintEndMs - edge.atMs), attrs, 'ok', 'client',
-    );
-  }
+  // AND THE ROOT'S OWN DURATION. `input.edge` was left OPEN when the edge was
+  // sampled precisely so it could be closed HERE, at the paint — so the root of
+  // an input trace measures the visitor-facing edge → painted-pixel round trip
+  // rather than the millisecond it took to hand a record to a stream writer.
+  // Both ends are `performance.now()` readings from THIS tab, which is why the
+  // number needs no clock agreement between the two machines
+  // (`inputTrace.ts::settleEdge`). A no-op when the mark outlived its edge
+  // entry, in which case the rest of the trace is unaffected.
+  settleEdge(m.traceId, t.paintEndMs);
   timings.delete(frameId);
   marks.delete(frameId);
 }

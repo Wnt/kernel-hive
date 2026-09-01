@@ -31,6 +31,7 @@ THE MAPPING, FIELD BY FIELD, so nobody has to reverse-engineer it:
     status_msg                status.message, omitted when null
     attrs   {k: v}            attributes  [{key, value:{<typed>}}]
     events  [{n,t,a}]         events      [{name, timeUnixNano, attributes}]
+    links   [{t,s,a}]         links       [{traceId, spanId, attributes}]
     hidden_ms                 attribute `kh.hidden_ms`
 
 The last row is the only thing here that is NOT an OTel concept. Hidden time —
@@ -161,6 +162,25 @@ def span_to_otlp(s: dict) -> dict:
     ]
     if events:
         out["events"] = events
+    # SPAN LINKS — OTel's "caused by, but not nested under". Since 2026-09-01 a
+    # trace here is ONE ACTION, so a keystroke is no longer a child of the page
+    # load it happened on; the causal edge is a link instead, and Instana
+    # surfaces links in the call Details view
+    # (instana-docs/0307-opentelemetry-signals.md, "OpenTelemetry span events
+    # and span links"). The same fact ALSO rides as the `kh.page.loadId`
+    # attribute, deliberately: a link is what a UI navigates, an attribute is
+    # what a query groups by, and neither substitutes for the other.
+    links = [
+        {
+            "traceId": link["t"],
+            "spanId": link["s"],
+            "attributes": _attrs(link.get("a") or {}),
+        }
+        for link in (s.get("links") or [])
+        if link.get("t") and link.get("s")
+    ]
+    if links:
+        out["links"] = links
     return out
 
 
