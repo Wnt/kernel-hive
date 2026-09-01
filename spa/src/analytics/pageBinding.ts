@@ -21,11 +21,15 @@
 //  "Show me everything that happened on this page load" is then one equality
 //  filter on `kh.page.loadId`, not an inference from beacon ordering.
 //
-//  WHY A PATTERN AND NOT A PATH. The same cardinality rule `navigation.ts`
-//  already states: 63 stations must group under ONE page, or the dimension is
-//  unusable for exactly the grouping it exists for. The concrete station rides
-//  as `kh.station.id` (analytics/stationAttrs.ts), which is a different
-//  question with a different answer.
+//  WHY A PATTERN AND NOT A PATH, EVEN AFTER 2026-09-01. The operator's page-name
+//  decision that day changed what the PAGE NAME is (`navigation.ts`'s
+//  `kh.page.name` and `ineum('page', ...)` now carry the concrete station); it
+//  deliberately did NOT change this attribute. `kh.page.pattern` is the
+//  ROLL-UP key — the "how is the station page doing overall" grouping every
+//  stream event on this plane is already joined by — and the whole point of
+//  doing that decision as BOTH rather than a swap was to keep it. The concrete
+//  station rides beside it as `kh.station.id` (analytics/stationAttrs.ts) and,
+//  for a navigation, as `kh.page.name`.
 //
 //  WHY READ `location` AT EMIT TIME rather than caching what the router last
 //  said. A cached value is a second opinion about the current route that can

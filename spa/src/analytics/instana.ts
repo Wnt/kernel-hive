@@ -187,8 +187,9 @@ export function configureInstana(sessionId: string): void {
   // autoPageDetection on at the same time would give Instana two mechanisms
   // naming the same transition — its own URL-change heuristic and our
   // explicit call — which structurally cannot agree on timing or on name
-  // (ours is a route PATTERN; autoPageDetection's own default is closer to
-  // the raw path/title) and would double the page-transition beacon count
+  // (ours is a pattern-derived, registry-BOUNDED name; autoPageDetection's
+  // own default is the raw path or title, which is bounded by nothing)
+  // and would double the page-transition beacon count
   // for no gain. Explicit-and-ours was chosen over explicit-and-Instana's
   // specifically because our router already knows the pattern/param split
   // this whole integration wants (§ the cardinality rule in navigation.ts),
