@@ -45,10 +45,25 @@ export class RunManifest {
     this.errors.push({ ...entry, at: new Date().toISOString() });
   }
 
+  /** Visitor entries whose journey reported ok:false — a FAILED journey that
+   *  returned normally (a station that never streamed, a card that was never
+   *  found) rather than throwing. `errors` above is exceptions ONLY (the
+   *  catch block in visitor-sim.mjs); a run can fail a sixth of its journeys
+   *  and throw zero exceptions, so the two counts must never be conflated in
+   *  a summary line — see docs/lab/VISITOR-SIM.md "DEFECT 3". */
+  get failedVisitors() {
+    return this.visitors.filter((v) => v.ok === false);
+  }
+
   write(outDir) {
     fs.mkdirSync(outDir, { recursive: true });
     const file = path.join(outDir, `run-${nowStamp()}.json`);
     this.finishedAt = new Date().toISOString();
+    // `failedVisitors` is a getter (prototype accessor), which
+    // JSON.stringify's own-enumerable-property walk skips — materialize it as
+    // an own field so the manifest on disk actually carries the failure list,
+    // not just this in-process object.
+    this.failedVisitorCount = this.failedVisitors.length;
     fs.writeFileSync(file, JSON.stringify(this, null, 2));
     return file;
   }

@@ -117,12 +117,26 @@ reports a clean failure rather than touching a station outside your pool —
 invited session and a station actually open. `--allow-resets`,
 `--reset-max` and `--reset-min-interval` (see "Safety" below) all gate that
 one call site: the per-run cap, the per-station cooldown, and the master
-on/off switch are enforced there, not merely documented. If your `--mix` has
-no `station` weight — a walk-in-only run, the tool's default without
-`--storage-state`/`--invite` — passing `--allow-resets` arms a budget nothing
-in the run can ever spend; the tool says so plainly, both in `--dry-run`'s
-printed plan and in a live run's own log, rather than silently letting the
-flag sit there unused.
+on/off switch are enforced there, not merely documented — there is no 4th,
+undocumented gate on top (an earlier `&& Math.random() < 0.15` coin-flip did
+sit here, and made a run that printed `resets ARMED` fire zero resets often
+enough to look broken; removed). If your `--mix` has no `station` weight — a
+walk-in-only run, the tool's default without `--storage-state`/`--invite` —
+passing `--allow-resets` arms a budget nothing in the run can ever spend; the
+tool says so plainly, both in `--dry-run`'s printed plan and in a live run's
+own log, rather than silently letting the flag sit there unused.
+
+**The reset is driven through the real "↺ Restore to golden snapshot" button**
+(StageMenu.tsx, behind the ☰ Controls menu), never a bare `fetch`. The
+client-side `station.restore` / `station.restore.toRestoredMs` telemetry —
+click to picture back, the one thing a server-side timer cannot measure — is
+emitted by `useRestoreFlow.ts`'s `restoreToGolden()`, which is wired to
+exactly that button's `onClick`. A raw `POST /restore/<id>` still resets the
+host (the server times its own half regardless, `serve.restore` /
+`serve.restore.reset`) but produces no `station.restore` span at all, so a
+run built that way could reset a station all day and still leave the
+operator's actual ask — golden-restore latency as the visitor experiences
+it — unmeasured.
 
 ## Credentialed mode (optional)
 
@@ -239,6 +253,15 @@ Every switch below defaults to the safe side.
   station that never streams, a signup that never lands) trips it; every
   visitor still queued is skipped rather than hammering a broken gallery, and
   the process exits non-zero.
+- **Any failed journey — consecutive or not — is counted and exits non-zero.**
+  The run summary line (`finished: N visitor(s), F failed, …`) counts every
+  journey whose result was `ok:false`, whether or not it threw an exception
+  (`manifest.errors` is exceptions only — a journey that returns a clean
+  `ok:false`, like a card the grid never rendered, never touches that count).
+  Each failed journey is also logged individually and recorded in the run
+  manifest (`failedVisitorCount`, and `ok:false` on its own entry in
+  `visitors[]`), and the process exits 1 if `F > 0`, even when the breaker
+  never trips.
 - **`--dry-run` prints the resolved plan — every cap, every switch, every
   journey weight — and touches nothing.**
 
