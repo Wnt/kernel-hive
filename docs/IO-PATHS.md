@@ -6,14 +6,14 @@ path is in [`OVERHEAD.md`](OVERHEAD.md).
 
 The organising fact: **video and audio converge, input diverges.** Every tier
 funnels pixels into one capture→encode→transport path and sound into one Opus
-encoder, but a pointer event can end up in any of eight different sinks. That
+encoder, but a pointer event can end up in any of nine different sinks. That
 asymmetry is why almost every "it feels wrong" report is an input report.
 
 ---
 
 ## 1. Pointer
 
-One browser wire format, eight server-side sinks.
+One browser wire format, nine server-side sinks.
 
 **The client is authoritative.** It emits absolute guest-pixel records: a type-1
 move `(u16 x, u16 y, u32 cseq)` and a type-2 button
@@ -30,9 +30,12 @@ declared method is pinned against the emulated device ledger — `qemu-usb-table
 requires `usb-tablet` in the launcher, `qemu-ps2-relative` forbids it,
 `gallery-hid` requires `gallery-hid-pci`.
 
-Backend census across the 59 production stations: **dbus-abs 27, disabled 17,
-dbus-rel 8, warpd 5, gallery-hid 1, mamesock 3** (`irix`, `w2kalpha`, `tru64`),
-**mgactl 1** (`aix432`), **artistctl 1** (`hpuxvue`), **ramabs 1** (`rhapsody`, `macos753`).
+Backend census across the production tiles: **dbus-abs, disabled, dbus-rel,
+warpd**, **gallery-hid 1** (`solaris`), **mamesock** (`irix`, `w2kalpha`,
+`tru64`), **mgactl 1** (`aix432`), **artistctl 1** (`hpuxvue`), **ramabs**
+(`rhapsody`, `macos753`), **x11test 2** (`amigaos35`, `amix`). Run
+`python3 scripts/stations-registry.py count` and read the registry for the
+current split rather than trusting a number written here.
 
 | Path | Used by | Abs/rel | Mechanism | Trade-off |
 |---|---|---|---|---|
@@ -51,6 +54,7 @@ dbus-rel 8, warpd 5, gallery-hid 1, mamesock 3** (`irix`, `w2kalpha`, `tru64`),
 | **ramabs** (absolute write, NOT a loop) | `rhapsody` | abs | absolute `MOVEA x y` over a chardev QEMU serves; `hw/misc/kh-ramabs.c` WRITES the commanded pixel into the guest's OWN pointer coordinate in guest RAM (Rhapsody DR2: `Point{int16 x,y}` at `0x0050fdac`) and injects one 2-unit PS/2 nudge, because the window server repaints on an event and not on a memory write | No control law, no gain and **no hotspot in the path** — the hotspot stays a property of the drawn sprite. No adapter change, so the device set and golden are untouched. Costs: the address is bound to ONE golden, so the device verifies it at connect and refuses every write if it cannot |
 | **ramabs** (absolute write, NOT a loop) | `macos753` | abs | the same `kh-ramabs`, in its `layout=macpoint16be publish=crsrnew` profile: classic Mac OS has no hardware cursor at all (it composites the cursor in software), but it keeps its pointer in LOW-MEMORY GLOBALS, so the device writes `MTemp`/`RawMouse` at `$0828`/`$082C` and publishes with `CrsrNew := CrsrCouple` — the OS's own documented warp idiom, the same path its ADB driver's interrupt uses | The only station whose WRITE TARGET and READ-BACK SENSOR are different addresses: the guest's cursor VBL task computes `Mouse` from `RawMouse`, so the read-back asks whether the GUEST ACTED, not whether the store stuck (that is checked separately, at the write). A wedged guest cannot fake it. Unlike `rhapsody`'s, the address is ARCHITECTURAL, not bound to one golden, so a re-bake does not invalidate it. Costs: `Mouse` must NEVER be written — it is the VBL task's own change detector, and writing it silently stops the cursor while every global reads back correct (see [guests/macos753.md](guests/macos753.md)) |
 | **mamesock** (open loop) | `tru64`, `w2kalpha` | abs | same verb into es40's ctlsock, but there is no cursor readback: the emulator corner-homes once, then believes its own arithmetic. Exactness therefore depends on the guest moving **1 px per injected count** — flat X acceleration, and `ES40_POINTER_GAIN` where it does not (Tru64 moves 2 px/count) | No patched cursor readback needed, but any guest-side acceleration or gain silently doubles every move; measure before declaring `reset.mouse` PASS |
+| **x11test** (XTEST into the captured X server) | `amigaos35`, `amix` | abs **on the host** | `XTestFakeMotionEvent` warps the pointer of the Xvfb the daemon is already capturing, to the guest pixel the client sent; `SH_X11TEST_BUTTONS=xtest` sends the edges as `XTestFakeButtonEvent`, and `SH_BTN_MIN_HOLD_MS` / `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` pace them. The emulator is an ordinary X client and simply reads its own window's pointer | The only sink that touches no emulated input device at all, so it needs no patched emulator, no in-guest agent and no device-set change — but see the rule below: **absolute on the host is not absolute in the guest.** `amigaos35` is 1:1 via the UAE mousehack; `amix` is not, and that is open |
 | **simh-light-pen** | `gt40` | abs | ordinary dbus-abs through a usb-tablet; SIMH's VT11 vector display reads the position as the GT40's light pen | The method label is the only record of the light-pen semantics |
 | **disabled** | 17 kiosks — `armeval bbcmicro c128 cbm2 cbm8032 decos dragon32 kc854 mpf2 oricatmos pdp11 pet2001 plus4 sinclairql vic20 zx81 zxspectrum` | none | every non-type-3 record is dropped before any sink | Cannot strand a button or drift a cursor — **unpointable by design**, not broken |
 
@@ -76,6 +80,7 @@ flowchart LR
   H --> MG[mgactl MOVEA into the QEMU MGA cursor loop]
   H --> AR[artistctl MOVEA into the QEMU Artist cursor loop]
   H --> RA[ramabs MOVEA written into the guest's own pointer coordinate\nrhapsody: one coordinate + a nudge · macos753: Mac low-memory globals + CrsrNew]
+  H --> XT[x11test XTestFakeMotionEvent into the captured Xvfb\nthe emulator reads the host pointer as an ordinary X client]
   H --> X[disabled dropped before any sink]
 ```
 
@@ -107,6 +112,22 @@ flowchart LR
   believing any pointer claim, and set `ES40_POINTER_GAIN` to the measured
   pixels-per-count. On a gain-2 guest the reachable positions are an even
   lattice, so odd targets land 1 px short.
+- **An absolute injection on the HOST does not make an absolute pointer in the
+  GUEST**, and `x11test` is where that bites. The host X server always accepts an
+  absolute warp — `XTestFakeMotionEvent` is not a request, and it always
+  "succeeds". Whether the guest ends up at that coordinate depends on how the
+  emulated machine reads its mouse. An emulator whose guest OS cooperates through
+  an OS-level trap (the UAE **mousehack**: AmigaOS registers a block and UAE
+  writes host coordinates into it) gets a true 1:1 pointer — that is `amigaos35`.
+  A guest that reads the emulated mouse **hardware** instead — any Unix on the
+  same emulator, `amix` being the fleet's first — sees only the relative,
+  accelerated deltas the emulated mouse can express, so its cursor's position is
+  a function of history and lands nowhere near the commanded pixel. Measured on
+  the `amix` rig at a matched 640×512 Xvfb: host (160,120) → guest ~(82,92), host
+  (480,380) → guest ~(331,345). The registry's `absolute: true` on both stations
+  is a statement about the DAEMON's contract, not about either guest; the
+  per-station verdict lives in `reset.mouse`. Keyboard is unaffected either way —
+  XTEST keys go through the same X server and reach both guests correctly.
 - **QMP `abs`/`click` does nothing on a warpd station.** The guest has no working
   absolute pointer — that is why it runs an agent. Do not use QMP to "check"
   pointer behaviour there.
@@ -116,8 +137,10 @@ flowchart LR
 The outer contract is absolute: browser guest-px → `SetAbsPosition` → usb-tablet
 → kiosk Xorg → full-screen emulator. The **inner** emulator then adds its own
 mapping, which must pass its own framebuffer gate. Class A emulators follow the
-host cursor 1:1 (FS-UAE); Class B are relative-only inside and need edge
-re-homing plus a measured cursor scale. `c64` is the documented exception: VICE
+host cursor 1:1 (FS-UAE **with a cooperating guest** — see the x11test rule
+above; the same emulator is Class B under a guest that reads the mouse
+hardware); Class B are relative-only inside and need edge re-homing plus a
+measured cursor scale. `c64` is the documented exception: VICE
 consumes *relative* host motion, so its launcher sets `vmport=off`, keeps `-usb`
 but omits `usb-tablet`, and declares `rel` — without `vmport=off`, QEMU's
 implicit VMware absolute mouse becomes the active handler and silently absorbs

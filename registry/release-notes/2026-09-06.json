@@ -1,0 +1,31 @@
+{
+  "week": 5,
+  "title": "The mouse finally lands",
+  "start": "2026-08-30T09:00:00+03:00",
+  "end": "2026-09-06T09:00:00+03:00",
+  "commitCount": 29,
+  "codeLines": 7484,
+  "summary": [
+    {
+      "theme": "New stations",
+      "text": "One machine arrived, and it is deliberately not open yet. [Amiga UNIX](station:amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put Sun's **OPEN LOOK** desktop on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots here from the real 1992 installation tape — all twenty-nine segments, about two hours of emulated restore — onto an emulated *68030*. It is monochrome, because Amiga UNIX's own graphics were: colour needed an add-on card that no emulator this museum has can actually drive. The pointer does not yet land where you point, so the door stays shut until it does. That makes 73 machines, 68 of them open to visitors."
+    },
+    {
+      "theme": "Major features",
+      "text": "<u>Five more machines now put the cursor exactly where you point.</u> A mouse in a browser sends a position; most of these guests only understand motion, which is why a cursor used to crawl behind your hand and pile up in a corner. [AIX](station:aix432) and [HP-UX](station:hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees — a real feedback loop rather than arithmetic and hope. [Rhapsody](station:rhapsody), [Mac OS 7.5.3](station:macos753) and [BeOS](station:beos) have no such chip, so instead the emulator writes the coordinate straight into the place each operating system keeps its own pointer, and nudges it awake. On all five the cursor is now 1:1: no chase, no drift, no corner."
+    },
+    {
+      "theme": "Quality improvements",
+      "text": "The private machines handed out to signed-in visitors left everyone else on a blank front page; the museum now renders one hall for all and picks what you see by who you are. Clicks, not just movement, take the corrected route into AIX, so a button press lands where the cursor already is. AIX also had an invisible magnet — pass near a window's resize handle and the pointer stuck to it — which is gone. And the museum's own weekly test used to count cards on the collection page, quietly passing while the page was empty; it now checks the gallery really drew."
+    }
+  ],
+  "bullets": [
+    "[Amiga UNIX](station:amix) installs from a 29-segment tape image, the way an *A3000UX* really did — roughly two hours of emulated restore",
+    "**OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it",
+    "[AIX](station:aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all",
+    "[Mac OS 7.5.3](station:macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does",
+    "[HP-UX](station:hpuxvue)'s cursor loop needed no new emulated hardware — the registers were already there, so no machine had to be rebuilt",
+    "[Rhapsody](station:rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved",
+    "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed"
+  ]
+}

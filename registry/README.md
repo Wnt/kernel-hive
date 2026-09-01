@@ -302,15 +302,17 @@ author must satisfy, or `validate` fails:
 
 ### gallery-hid / unified input backend
 
-`stream.pointer.backend` (enum `dbus-abs` / `dbus-rel` / `warpd` / `gallery-hid`)
-is an OPTIONAL sibling of the legacy required `stream.pointer.transport` (enum
-`abs` / `rel` / `warpd`). This mirrors the Rust `config.rs` `InputBackend` +
+`stream.pointer.backend` (enum `disabled` / `dbus-abs` / `dbus-rel` / `warpd` /
+`gallery-hid` / `x11test` / `mamecmd` / `mamesock` / `vicesock` / `mgactl` /
+`artistctl` / `ramabs`) is an OPTIONAL sibling of the legacy required
+`stream.pointer.transport` (enum `abs` / `rel` / `warpd`). This mirrors the Rust `config.rs` `InputBackend` +
 `parse_input_backend` (an explicit `backend` wins; an absent one derives from
 `transport`). gallery-hid tiles carry a redundant `transport: "abs"` by design
 (`config.rs` `GalleryHid → abs`). Business rule (Python, not schema): when
 `backend` is present the stationEnv MUST emit `SH_INPUT_BACKEND=<backend>` and MUST
-NOT also emit the legacy `SH_POINTER`. solaris is the only backend user today;
-qnx is a latent second user (enum already accommodates it).
+NOT also emit the legacy `SH_POINTER`. A backend is now the normal
+declaration rather than the exception: every host-native (Tier 3) station carries
+one, since none of them has a QEMU dbus display to fall back to.
 
 ### Pointer method, absolutivity and presence
 
@@ -338,14 +340,39 @@ tile author all actually ask:
 | `gallery-hid` | a bespoke `gallery-hid-pci` device in the locally patched QEMU plus its matching in-guest driver, taking absolute coordinates natively | `solaris` |
 | `warpd-agent` | an in-guest agent warps the guest's own cursor to the requested coordinate | `win95` |
 | `mame-ioport` | streamhost writes the EMULATOR's input ports, never the guest: closed-loop `MOVEA` targets to MAME's in-emulator control module | `irix` |
-| `x11-xtest` | XTEST fake-input into a captured X server (no tile today; the backend exists for one) | — |
+| `x11-xtest` | XTEST fake-input into the captured X server itself — `XTestFakeMotionEvent` to an absolute root coordinate, and (with `SH_X11TEST_BUTTONS=xtest`) `XTestFakeButtonEvent` for the edges. The only method that never touches an emulated device: it moves the HOST's pointer, and the emulator picks that up as its own input | `amigaos35`, `amix` |
 | `simh-light-pen` | the absolute tablet position plus button 1 IS Open SIMH's VT11 light pen — no cursor, and no keyboard input of any kind | `gt40` |
+
+**`x11-xtest` is absolute on the HOST, which is not the same as absolute in the
+GUEST**, and `amigaos35` vs `amix` is the pair that shows it. Both declare
+`backend: x11test` / `absolute: true`, because that is the DAEMON's injection
+contract — `InputBackend::pointer_mode()` in
+`streamhost/streamhost/src/config/backends.rs` makes `x11test` absolute and
+`validate_pointer_method()` enforces the agreement. What the guest then does with
+the host pointer is a property of the guest, not of the declaration:
+
+- `amigaos35` is genuinely 1:1, because the UAE **mousehack** is an AmigaOS-level
+  trap — the guest OS registers a block and UAE writes host coordinates straight
+  into it (`device: mousehack`).
+- `amix` is **not** 1:1 (open at the time of writing). AMIX is a Unix that drives
+  the emulated Amiga **mouse hardware** directly and never registers a mousehack
+  block (`device: amiga-mouse`), so an absolute host warp reaches it as relative,
+  accelerated deltas and the guest cursor's position depends on history. Closing
+  it needs either a relative XTEST backend in the daemon
+  (`XTestFakeRelativeMotionEvent`) or FS-UAE grab-mode calibration —
+  [`docs/guests/amix.md`](../docs/guests/amix.md).
+
+So on an x11test station the `device` field is the one that says what the guest
+sees, and `reset.mouse` is where the measured verdict belongs. Read
+`absolute: true` here as "the daemon injects a position", never as "the guest
+receives one".
 
 Finer wire detail stays in the sibling fields rather than multiplying the enum:
 `backend` already separates `mamecmd` (Lua command file) from `mamesock`
-(ctlsock), and `agentAddress` already separates a warpd agent on a hostfwd TCP
+(ctlsock), `agentAddress` already separates a warpd agent on a hostfwd TCP
 port (`win95`, `ninefront`) from one on a serial chardev (`win311`, `os2warp`,
-`templeos`).
+`templeos`), and `SH_X11TEST_BUTTONS` separates the two `x11test` button routes
+(the historical command file vs `XTestFakeButtonEvent`).
 
 Nothing at runtime reads these three fields, so `validate_pointer_method()` in
 `scripts/stations-registry.py` DERIVES all three from the places that do decide and
