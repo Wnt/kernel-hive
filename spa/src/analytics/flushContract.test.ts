@@ -27,6 +27,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { beginFlow, __resetFlows } from './flows';
 import { configureSink, __resetSink } from './sink';
 import { __bufferedSpans, __resetTracer, configureTracer, startTrace, type WireSpan } from './trace';
+import { seedPageLoadTrace } from './pageLoadJoin';
 
 let sent: WireSpan[][] = [];
 let listeners: Record<string, (() => void)[]> = {};
@@ -78,7 +79,38 @@ describe('a completed trace leaves the tab without waiting for the interval', ()
     expect(__bufferedSpans()).toHaveLength(0);
   });
 
-  it('does NOT flush for every child span — only a root completes a trace', () => {
+  it('flushes a boot fetch that JOINED the page load, whose entry is not a root', () => {
+    // THE REGRESSION THIS FILE EXISTS FOR, SECOND EDITION. The first fix keyed
+    // the eager flush on `parentId === null`, which is exactly wrong for the
+    // one burst that always needs it: while the page-load join is live,
+    // `startTrace()` hangs the tab's entry off `serve.page`'s span id, so a
+    // boot fetch's client span HAS a parent. Measured on the deployed build —
+    // the `/gallery-manifest.json` and `/boot/index.json` client spans were
+    // absent from the store 12 s after the load and present at 30 s: they
+    // were waiting for the 20 s tick, and a visit shorter than that lost them
+    // while the header naming them had already gone out.
+    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+    const entry = startTrace('http.client.request', { 'url.path': '/gallery-manifest.json' }, 'client');
+    expect(entry.traceId).toBe('11111111111111111111111111111111');
+    entry.end('ok');
+    vi.advanceTimersByTime(1_000);
+    expect(sent).toHaveLength(1);
+    const [span] = sent[0];
+    expect(span.n).toBe('http.client.request');
+    expect(span.p).toBe('2222222222222222'); // NOT a root — that is the point
+  });
+
+  it('still coalesces a seeded boot burst into ONE request', () => {
+    seedPageLoadTrace('00-11111111111111111111111111111111-2222222222222222-01');
+    for (const path of ['/gallery-manifest.json', '/boot/index.json', '/auth/state']) {
+      startTrace('http.client.request', { 'url.path': path }, 'client').end('ok');
+    }
+    vi.advanceTimersByTime(1_000);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toHaveLength(3);
+  });
+
+  it('does NOT flush for every child span — only a trace entry completes one', () => {
     const root = startTrace('station.connect');
     root.child('station.connect.transport').end('ok');
     vi.advanceTimersByTime(1_000);

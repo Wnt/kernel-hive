@@ -494,10 +494,16 @@ Three producers, all in the browser, all now removed:
    flow ROOT, which is only written when the flow ENDS. One tab held
    `station.connect` open for seven hours and pointed 6,678 polls at an id
    the store never saw. Twelve such ids accounted for 2,274 of the 2,839.
-3. **A root that never left the tab.** A span is buffered at `end()` and
+3. **A span that never left the tab.** A span is buffered at `end()` and
    uploaded on the next flush. A visit shorter than the sink's 20 s interval,
    or a tab closed in a way `pagehide`/`visibilitychange` did not catch, lost
    the client span while the server span it had already parented survived.
+   This has two halves and only the first was obvious: **(3a)** a long-lived
+   flow root, which is not buffered at all until the flow ends; and **(3b)**
+   the BOOT BURST, whose spans end in milliseconds and are buffered
+   immediately, but which — because the page-load join gives them a parent —
+   were not covered by a flush keyed on parentlessness. 3b survived the first
+   fix and was caught by this document's own acceptance probe.
 
 The fixes, in the order the data implicates them:
 
@@ -509,12 +515,27 @@ The fixes, in the order the data implicates them:
   NOOP span — that suppresses the SERVER span too, and its latency and status
   are the only record those routes have. Keeping a clean one-span
   `serve.clientcmd` root beats deleting the evidence to tidy a parent id.
-- **A root span flushes as soon as it ends**, debounced 250 ms so a burst
+- **A TRACE ENTRY flushes as soon as it ends**, debounced 250 ms so a burst
   leaves as one batch. Deliberately NOT a shorter interval: the sink's tick is
   a poll and costs a request whether or not anything happened, so a 1 s
   interval would be 60 requests a minute from every open tab across the whole
-  wall. Root-end flushing is demand-driven — an idle tab costs nothing, a
+  wall. Entry-end flushing is demand-driven — an idle tab costs nothing, a
   finished journey costs exactly one request.
+
+  **A trace entry, not a parentless span** — and the difference is the whole
+  of cause 3b. The first fix keyed the flush on `parentId === null`, which
+  misses the one burst that always needs it: while the page-load join is live
+  (§4a) `startTrace()` hangs this tab's entry off `serve.page`'s span id, so a
+  boot fetch's client span **has a parent** and never looked like a root.
+  Measured on the deployed build with `beacon-probe.mjs`: the client spans for
+  `/gallery-manifest.json` and `/boot/index.json` were absent from the store
+  12 s after the load and present at 30 s — waiting for the 20 s tick, which
+  is exactly the window a short visit does not survive, while the
+  `traceparent` naming them had already gone out. Under the join, the tab's
+  entry is never the trace's root, so "root" was the wrong predicate; the
+  right one is "the span this tab opened a trace with". The three boot entries
+  end within 18 ms of each other, so the 250 ms debounce still carries them in
+  one POST.
 - **`pagehide` abandons every open flow**, ending its root (`unset`, with
   `kh.abandoned`) so the root is recorded before the tab goes. Deliberately
   NOT on `visibilitychange`: hidden is not over, and ending a live flow when a

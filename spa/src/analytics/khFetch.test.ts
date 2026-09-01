@@ -7,8 +7,9 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { installKhFetchPropagation, __resetKhFetch } from './khFetch';
 import {
-  __bufferedSpans, __resetTracer, configureTracer, seedPageLoadTrace, startTrace, pushActive, popActive,
+  __bufferedSpans, __resetTracer, configureTracer, startTrace, pushActive, popActive,
 } from './trace';
+import { seedPageLoadTrace } from './pageLoadJoin';
 import { BACKEND_TRACE_ID_RE } from './instana';
 import * as traceModule from './trace';
 

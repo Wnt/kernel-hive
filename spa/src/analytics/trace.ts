@@ -63,6 +63,8 @@
 //  fact is impossible, which is why both are captured at the source.
 // ============================================================================
 
+import { pageLoadParent, __resetPageLoadJoin } from './pageLoadJoin';
+
 /** Lowercase hex, `n` bytes. Uses crypto when it exists — not for secrecy, but
  *  because Math.random collides sooner than you would like once ids are being
  *  joined across two stores. */
@@ -241,12 +243,14 @@ function hiddenElapsed(): number {
 /** Events per span, bounded for the same reason attributes are. */
 const EVENT_MAX = 16;
 
+/** `traceEntry` marks a span THIS TAB opened a trace with — see `end()`. */
 function makeSpan(
   traceId: string,
   parentId: string | null,
   name: string,
   attrs?: Attrs,
   kind: SpanKind = 'internal',
+  traceEntry = false,
 ): Span {
   if (!enabled || open >= MAX_OPEN) return NOOP;
   installVisibilityHook();
@@ -262,6 +266,8 @@ function makeSpan(
     traceId,
     spanId,
     child(childName: string, childAttrs?: Attrs, childKind?: SpanKind) {
+      // Never a trace entry: its parent is a span in THIS tab, which will
+      // schedule the flush that carries this one when it ends.
       return makeSpan(traceId, spanId, childName, childAttrs, childKind);
     },
     attr(key: string, value: AttrValue) {
@@ -308,11 +314,22 @@ function makeSpan(
           ...(Object.keys(own).length ? { a: own } : {}),
           ...(events.length ? { e: events } : {}),
         });
-        // A ROOT that just ended is a COMPLETE trace, and one nobody has
-        // uploaded is the second orphan class whole: the server span naming
-        // it is already stored, so until this joins it there the trace reads
-        // as rootless. `scheduleRootFlush` says why not a shorter interval.
-        if (parentId === null) scheduleRootFlush();
+        // A TRACE ENTRY that just ended is this tab's whole contribution to
+        // a trace, and one nobody has uploaded is the second orphan class:
+        // the server span naming it is already stored, so until this joins it
+        // there the trace reads as rootless.
+        //
+        // `traceEntry`, NOT `parentId === null`. That was the first attempt
+        // and it missed the one burst it most needed to catch: while the
+        // page-load join is live, `startTrace()` hangs the tab's entry off
+        // `serve.page`'s span id, so a boot fetch's client span HAS a parent
+        // and never looked like a root. Measured on the deployed build: the
+        // client spans for `/gallery-manifest.json` and `/boot/index.json`
+        // were absent from the store 12 s after the load and present at 30 s
+        // — they were waiting for the 20 s tick, which is exactly the window
+        // a short visit does not survive. `scheduleEntryFlush` says why this
+        // is not a shorter interval.
+        if (traceEntry) scheduleEntryFlush();
       } catch { /* instrumentation never throws into the app */ }
     },
   };
@@ -357,108 +374,16 @@ export function childOfActive(name: string, attrs?: Attrs, kind?: SpanKind): Spa
   return parent ? parent.child(name, attrs, kind) : startTrace(name, attrs, kind);
 }
 
-/**
- * The page-load join (docs/lab/TRACE-CONTEXT.md §4/§7): the server names a
- * real `serve.page` span in `<meta name="traceparent">` when it serves
- * index.html, minted before any JS on the page has run. Until this module
- * reads it, every trace this tab opens has no relation to that span — a
- * disconnected forest for one visit, which is exactly the thing tracing
- * exists to stop doing.
- *
- * NOT a one-shot seed consumed by whichever `startTrace()` fires first. That
- * was the original design and it shipped a real bug: `khFetch.ts`'s implicit
- * `childOfActive()` fallback ALSO calls `startTrace()` for any fetch with no
- * active parent — the manifest fetch, `/auth/state`, the signalling
- * document — and in real traffic one of those routinely wins the race
- * against the visit's actual main flow. Evidence, from the live store: a
- * `serve.page` trace containing `serve.auth.walkin.status` (an incidental
- * boot-time fetch that happened to go first) while `station.connect` — the
- * flow this join was built for — showed up as an unrelated 4-span singleton,
- * because by the time `beginFlow('station.connect')` called `startTrace()`
- * the one-shot seed was already gone.
- *
- * THE FIX: the seed is a page-scoped ROOT that MULTIPLE early callers hang
- * off as siblings — the incidental fetch AND `station.connect` both become
- * children of `serve.page`, whichever happens to run first — rather than a
- * prize exactly one of them can claim. Bounded two ways, so a station opened
- * long after boot does not retroactively attach to a stale page load and a
- * runaway caller cannot grow the trace unbounded:
- *   - a short WALL-CLOCK WINDOW from the moment the tag is read (this is a
- *     bound on the visit's OWN boot burst, not a latency measurement, so
- *     `Date.now()` — not `performance.now()` — is the right clock here);
- *   - a hard cap on how many traces may join in that window.
- * Once either bound is passed, `startTrace()` goes back to minting a fresh,
- * unrelated trace id exactly as it always did for a "second, later flow in
- * the same tab" (a retry, a second station opened minutes later).
- */
-let pageLoadSeed: { traceId: string; spanId: string; deadline: number } | null = null;
-let pageLoadJoins = 0;
-
-/** How long after the tag is read a new trace may still join `serve.page`.
- *  Generous enough to cover the whole boot burst (manifest + auth/state +
- *  the first station's signalling fetch + `station.connect` itself, all of
- *  which can legitimately take a few seconds on a cold cache) without
- *  reaching into an unrelated later visit to the same tab. */
-const PAGE_LOAD_JOIN_WINDOW_MS = 15_000;
-/** Hard ceiling on how many traces may join one page load, independent of
- *  the time window — the same "bounded, so a leak costs memory once and then
- *  stops" discipline as `MAX_OPEN`/`MAX_ACTIVE` elsewhere in this file. Well
- *  above any honest boot burst. */
-const PAGE_LOAD_JOIN_MAX = 32;
-
-const TRACEPARENT_RE = /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/i;
-
-/** Parse a `traceparent` value per §1; null for anything that is not exactly
- *  that shape. Exported so the meta-tag reader and tests share one parser
- *  rather than two regexes drifting apart. */
-export function parseTraceparent(value: string | null | undefined): { traceId: string; spanId: string } | null {
-  if (!value) return null;
-  const m = TRACEPARENT_RE.exec(value.trim());
-  if (!m) return null;
-  return { traceId: m[1].toLowerCase(), spanId: m[2].toLowerCase() };
-}
-
-/** Seed the page-load join directly from a `traceparent` value. Exported for
- *  tests; `joinPageLoadTraceFromMeta` is what boot code actually calls. A
- *  malformed or missing value clears the seed — the same "malformed → start a
- *  new trace, never refuse the work" rule as everywhere else in this file. */
-export function seedPageLoadTrace(traceparent: string | null | undefined): void {
-  const parsed = parseTraceparent(traceparent);
-  pageLoadSeed = parsed ? { ...parsed, deadline: Date.now() + PAGE_LOAD_JOIN_WINDOW_MS } : null;
-  pageLoadJoins = 0;
-}
-
-/**
- * Read `<meta name="traceparent">` and seed the page-load join, if present.
- * Called once from main.tsx, early — before the first flow opens. Safe with
- * no DOM (tests, SSR-shaped tooling) and safe with no tag at all (a build
- * with tracing unbound, a dev server that never went through
- * `static_files.py`, a stale cached document): both leave the seed unset and
- * every trace mints its own id exactly as it always has.
- */
-export function joinPageLoadTraceFromMeta(): void {
-  try {
-    if (typeof document === 'undefined') return;
-    const el = document.querySelector('meta[name="traceparent"]');
-    seedPageLoadTrace(el?.getAttribute('content'));
-  } catch {
-    pageLoadSeed = null;
-  }
-}
-
-/** Begin a new trace. The returned span is its root; end it to close the
- *  trace. While a page-load join is live (see above), EVERY trace opened
- *  within its window and count bound continues `serve.page` as a sibling —
- *  not just the first one — so the visit's incidental early fetches and its
- *  actual main flow (`station.connect`) both land under the same root
- *  instead of racing for it. Once the window or the count bound passes,
- *  this mints a fresh, unrelated trace id exactly as before. */
+/** Begin a new trace — THIS TAB'S ENTRY into one, which is not the same as
+ *  its root: while the page-load join is live (`pageLoadJoin.ts`) the entry
+ *  continues the server's `serve.page` span and therefore HAS a parent. That
+ *  distinction is load-bearing in `end()`, which flushes on a trace ENTRY
+ *  and not on a parentless span, because under the join the boot burst is
+ *  never parentless. End the returned span to close this tab's part. */
 export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
-  if (pageLoadSeed && pageLoadJoins < PAGE_LOAD_JOIN_MAX && Date.now() <= pageLoadSeed.deadline) {
-    pageLoadJoins += 1;
-    return makeSpan(pageLoadSeed.traceId, pageLoadSeed.spanId, name, attrs, kind);
-  }
-  return makeSpan(newTraceId(), null, name, attrs, kind);
+  const joined = pageLoadParent();
+  if (joined) return makeSpan(joined.traceId, joined.spanId, name, attrs, kind, true);
+  return makeSpan(newTraceId(), null, name, attrs, kind, true);
 }
 
 /**
@@ -521,7 +446,7 @@ export function flushSpans(): void {
 }
 
 /**
- * Send the buffer SOON, coalescing every root that ends in the same burst.
+ * Send the buffer SOON, coalescing every trace entry that ends in one burst.
  *
  * WHY NOT SIMPLY A SHORTER INTERVAL. The sink's 20 s tick is a POLL: it costs
  * a request per tab per tick whether or not anything happened, so a 1 s worst
@@ -536,17 +461,17 @@ export function flushSpans(): void {
  * stayed — and the debounce keeps a burst of roots finishing together (the
  * boot burst, ten sampled edges in fast typing) one batch.
  */
-const ROOT_FLUSH_DEBOUNCE_MS = 250;
-let rootFlushTimer = 0;
+const ENTRY_FLUSH_DEBOUNCE_MS = 250;
+let entryFlushTimer = 0;
 
-function scheduleRootFlush(): void {
+function scheduleEntryFlush(): void {
   try {
-    if (typeof window === 'undefined' || rootFlushTimer) return;
-    rootFlushTimer = window.setTimeout(() => {
-      rootFlushTimer = 0;
+    if (typeof window === 'undefined' || entryFlushTimer) return;
+    entryFlushTimer = window.setTimeout(() => {
+      entryFlushTimer = 0;
       flushSpans();
-    }, ROOT_FLUSH_DEBOUNCE_MS);
-  } catch { rootFlushTimer = 0; /* the sink's interval is still the backstop */ }
+    }, ENTRY_FLUSH_DEBOUNCE_MS);
+  } catch { entryFlushTimer = 0; /* the sink's interval is still the backstop */ }
 }
 
 /**
@@ -589,10 +514,9 @@ export function __resetTracer(): void {
   hiddenSince = null;
   hookInstalled = false;
   emit = () => {};
-  if (rootFlushTimer && typeof window !== 'undefined') window.clearTimeout(rootFlushTimer);
-  rootFlushTimer = 0;
-  pageLoadSeed = null;
-  pageLoadJoins = 0;
+  if (entryFlushTimer && typeof window !== 'undefined') window.clearTimeout(entryFlushTimer);
+  entryFlushTimer = 0;
+  __resetPageLoadJoin();
 }
 
 /** Test seam: what is buffered but not yet sent. */
