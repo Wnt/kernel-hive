@@ -112,7 +112,6 @@ CREATE TABLE IF NOT EXISTS trace (
   ingest_seq INTEGER NOT NULL DEFAULT 0, updated_ms INTEGER NOT NULL DEFAULT 0)
   WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS trace_started ON trace(started_ms DESC);
-CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq);
 CREATE INDEX IF NOT EXISTS trace_session ON trace(session_id, started_ms DESC);
 CREATE INDEX IF NOT EXISTS trace_name ON trace(root_name, started_ms DESC);
 CREATE INDEX IF NOT EXISTS trace_errors ON trace(error_count, started_ms DESC);
@@ -185,15 +184,18 @@ class TraceStore:
         """
         cur = self._db.cursor()
         have = {r[1] for r in cur.execute("PRAGMA table_info(trace)")}
-        if "ingest_seq" in have:
-            return
-        cur.execute("ALTER TABLE trace ADD COLUMN ingest_seq INTEGER NOT NULL DEFAULT 0")
-        cur.execute("ALTER TABLE trace ADD COLUMN updated_ms INTEGER NOT NULL DEFAULT 0")
-        cur.execute(
-            "UPDATE trace SET ingest_seq=(SELECT n FROM (SELECT trace_id,"
-            "ROW_NUMBER() OVER (ORDER BY started_ms) AS n FROM trace) o "
-            "WHERE o.trace_id=trace.trace_id), updated_ms=ended_ms"
-        )
+        if "ingest_seq" not in have:
+            cur.execute("ALTER TABLE trace ADD COLUMN ingest_seq INTEGER NOT NULL DEFAULT 0")
+            cur.execute("ALTER TABLE trace ADD COLUMN updated_ms INTEGER NOT NULL DEFAULT 0")
+            cur.execute(
+                "UPDATE trace SET ingest_seq=(SELECT n FROM (SELECT trace_id,"
+                "ROW_NUMBER() OVER (ORDER BY started_ms) AS n FROM trace) o "
+                "WHERE o.trace_id=trace.trace_id), updated_ms=ended_ms"
+            )
+        # Indexed here and NOT in SCHEMA: SCHEMA runs first and `CREATE TABLE IF
+        # NOT EXISTS` does not reshape a table that already exists, so an index
+        # naming `ingest_seq` in SCHEMA fails on every store written before this
+        # migration -- which took the serving plane down once already.
         cur.execute("CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq)")
 
     def _heal_unsequenced(self) -> None:

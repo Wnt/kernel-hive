@@ -9,6 +9,7 @@ collector months later.
 
 from __future__ import annotations
 
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -348,3 +349,54 @@ class OtlpTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PreMigrationStoreTest(unittest.TestCase):
+    """Opening a store whose db predates ingest ordering.
+
+    This is the case that took the serving plane down: every test built a
+    FRESH db, where `CREATE TABLE` makes the new columns and nothing notices
+    that `SCHEMA` also indexes one of them. On a db that already had a `trace`
+    table, `CREATE TABLE IF NOT EXISTS` is a no-op, so the index in SCHEMA ran
+    against a column the migration had not added yet and the process exited 1
+    on startup, in a restart loop, with the gallery serving 502.
+    """
+
+    OLD_TRACE_TABLE = """
+    CREATE TABLE trace (
+      trace_id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL, class TEXT NOT NULL,
+      root_name TEXT NOT NULL,
+      started_ms INTEGER NOT NULL, ended_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL,
+      span_count INTEGER NOT NULL, error_count INTEGER NOT NULL,
+      status TEXT NOT NULL, day TEXT NOT NULL) WITHOUT ROWID;
+    """
+
+    def _old_db(self) -> Path:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "traces.db"
+        db = sqlite3.connect(str(path))
+        db.executescript(self.OLD_TRACE_TABLE)
+        db.execute(
+            "INSERT INTO trace VALUES(?,'s','human','r',100,200,100,1,0,'ok','2026-09-01')",
+            ("a" * 32,),
+        )
+        db.commit()
+        db.close()
+        return path
+
+    def test_a_store_written_before_ingest_ordering_opens(self):
+        store = traces.TraceStore(self._old_db())
+        self.assertEqual(len(store.search(limit=10)["traces"]), 1)
+
+    def test_the_existing_rows_are_sequenced_not_left_at_zero(self):
+        path = self._old_db()
+        traces.TraceStore(path)
+        db = sqlite3.connect(str(path))
+        self.assertEqual(db.execute("SELECT COUNT(*) FROM trace WHERE ingest_seq=0").fetchone()[0], 0)
+
+    def test_opening_twice_is_stable(self):
+        path = self._old_db()
+        traces.TraceStore(path)
+        traces.TraceStore(path)  # the index already exists; must not raise
