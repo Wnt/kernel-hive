@@ -35,6 +35,7 @@ involved anywhere. One JSON object per line:
 | **`clientTs`** | **Millisecond epoch, stamped in the BROWSER at the moment the event happened** (`logClientEvent`, `clientDebug.ts`). **Use this for every timing question.** |
 | `srvTs` | Server receive time, epoch *seconds*. This is when the BATCH arrived, not when the event happened. |
 | `ip`, `sessionId`, `tile`, `event`, `detail` | Source, 8-hex per page load, station id, event name, payload. |
+| `ua`, `build` | The user agent and the **bundle the tab is running** (`<branch>@<short-sha>`), both on the **first event of a batch only**. `build` is what answers "is this session even running the code I am reading?" — see [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3. |
 
 **Timing must be read from `clientTs`, never from `srvTs`.** Events are batched
 and flushed every ~5 s, so a whole batch shares one `srvTs` — sorting or
@@ -424,6 +425,17 @@ report it.
   then restarts it mid-boot, compounding the failure.
 - A station is per-station canaried: `--canary <tile>`, verify, then `--promote`.
   `--rollback <tile>` swaps back atomically.
+- **The complaint may be about a bundle you no longer ship.** The gallery is an
+  installable PWA, and its service worker keeps one HTML shell for offline use.
+  Before this was fixed the shell cache was named by a constant nobody ever
+  bumped, so a client could hold an old shell indefinitely; the cache is now
+  named after the build id and every deploy retires the previous one. Either
+  way, **check the build before you reproduce anything**: `build` on the first
+  event of the session's `clientlog` batch, or the `builds` facet /
+  `build` filter on the trace store. Two live builds in one window means
+  somebody is on a shell the box no longer serves. The full differential —
+  including how to tell "ran an old shell" from "its beacons were blocked"
+  using only our own data — is [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3.
 
 ## An observer holding QMP stops sessions negotiating (2026-08-30)
 

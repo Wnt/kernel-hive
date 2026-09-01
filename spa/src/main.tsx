@@ -24,6 +24,7 @@ import { exposePointerRecorder, installPointerRecorder } from './input/pointerRe
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
 import { initAnalytics, reportError } from './analytics';
+import { BUILD_ID } from './analytics/build';
 import { configureInstana, configureInstanaIdentity } from './analytics/instana';
 import './index.css';
 
@@ -88,6 +89,9 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
             ua: navigator.userAgent,
             clientTs: Date.now(),
             sessionId: window.__kernelHiveErrorSessionId || 'unknown',
+            // Same reason the inline reporter in index.html carries it: a
+            // client error is only actionable once you know which build threw.
+            build: BUILD_ID,
           }),
         }).catch(() => {});
       }
@@ -211,12 +215,20 @@ void loadSession().then(mount);
 // first paint or the stream handshake; failure is silent (an uninstalled app is
 // a fine fallback). See sw.js for the deliberately network-first, no-app-cache
 // policy that keeps a box deploy visible on the next load.
+//
+// THE `?build=` IS LOAD-BEARING, not a cache-buster habit. The worker names its
+// shell cache after it, so a new bundle means a new script URL, which means a
+// new worker, whose activate deletes every earlier shell — including the
+// `kh-shell-v1` entry a client installed months ago and could otherwise keep
+// serving itself an old HTML shell from forever. The scope is unaffected: a
+// registration's scope comes from the script's PATH, and the query string is
+// not part of it. sw.js has the whole story.
 if (
   'serviceWorker' in navigator
   && import.meta.env.PROD
   && !window.location.pathname.startsWith('/staging/')
 ) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(BUILD_ID)}`).catch(() => {});
   });
 }

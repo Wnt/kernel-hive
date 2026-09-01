@@ -47,6 +47,11 @@ TRACE_RE = re.compile(r"^[0-9a-f]{32}$")
 SPAN_RE = re.compile(r"^[0-9a-f]{16}$")
 NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,79}$")
 SESSION_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+#: The client build id — `<branch>@<short-sha>`, optionally `-dirty`, or the
+#: honest literal `unknown-build` (spa/src/analytics/build.ts). Branch names may
+#: carry `/`, so the class is deliberately wider than SESSION_RE; everything
+#: outside it lands as "unknown" rather than being stored.
+BUILD_RE = re.compile(r"^[A-Za-z0-9._@/+-]{1,64}$")
 STATUSES = ("unset", "ok", "error")
 KINDS = ("internal", "client", "server", "producer", "consumer")
 CLASSES = ("human", "probe", "unknown")
@@ -101,6 +106,14 @@ CREATE TABLE IF NOT EXISTS trace (
   started_ms INTEGER NOT NULL, ended_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL,
   span_count INTEGER NOT NULL, error_count INTEGER NOT NULL,
   status TEXT NOT NULL, day TEXT NOT NULL,
+  -- WHICH BUNDLE THE CLIENT WAS RUNNING, off the batch's RESOURCE envelope
+  -- (spa/src/analytics/index.ts) — not off a span, because it is one fact about
+  -- the tab, not about a moment in it. It is here, on the trace, for the
+  -- question it exists to answer: "was this client on the shell we think we
+  -- deployed?" Reachable with one SQL statement and no vendor; before it, the
+  -- only record of a client's build was a third-party beacon's meta, which is
+  -- the wrong place for a dependency we intend to drop.
+  build TEXT NOT NULL DEFAULT 'unknown',
   -- INGEST ORDER, not trace time. Bumped to (max+1) every time a span lands in
   -- this trace, so "what changed since I last looked" is answerable without
   -- guessing how long a tab will keep contributing to a trace it opened
@@ -168,6 +181,7 @@ class TraceStore:
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.executescript(SCHEMA)
         self._migrate_ingest_order()
+        self._migrate_build()
         self._heal_unsequenced()
         self._db.commit()
 
@@ -197,6 +211,19 @@ class TraceStore:
         # naming `ingest_seq` in SCHEMA fails on every store written before this
         # migration -- which took the serving plane down once already.
         cur.execute("CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq)")
+
+    def _migrate_build(self) -> None:
+        """Give a store written before build identity existed the column anyway.
+
+        Same reason `_migrate_ingest_order` exists: `CREATE TABLE IF NOT EXISTS`
+        does not reshape a table that is already there, so a live traces.db
+        would keep the old shape forever. Existing rows read `unknown`, which is
+        the truth about them — they were recorded when nobody was told.
+        """
+        cur = self._db.cursor()
+        have = {r[1] for r in cur.execute("PRAGMA table_info(trace)")}
+        if "build" not in have:
+            cur.execute("ALTER TABLE trace ADD COLUMN build TEXT NOT NULL DEFAULT 'unknown'")
 
     def _heal_unsequenced(self) -> None:
         """Number any trace still sitting at ingest_seq 0, at the HEAD of the order.
@@ -250,6 +277,9 @@ class TraceStore:
         klass = resource.get("kh.class")
         if klass not in CLASSES:
             klass = "unknown"
+        build = resource.get("kh.bundle")
+        if not isinstance(build, str) or not BUILD_RE.match(build):
+            build = "unknown"
 
         spans = batch.get("spans")
         if not isinstance(spans, list):
@@ -307,13 +337,13 @@ class TraceStore:
                     taken += 1
                     touched.add(trace_id)
             for trace_id in touched:
-                self._resummarise(cur, trace_id, session, klass, self._next_ingest_seq(cur))
+                self._resummarise(cur, trace_id, session, klass, build, self._next_ingest_seq(cur))
             if taken:
                 self._db.commit()
         return taken
 
     @staticmethod
-    def _resummarise(cur, trace_id: str, session: str, klass: str, ingest_seq: int) -> None:
+    def _resummarise(cur, trace_id: str, session: str, klass: str, build: str, ingest_seq: int) -> None:
         """Rebuild one trace's summary row from the spans now present.
 
         The ROOT is the span with no parent; when several batches are in flight
@@ -335,7 +365,7 @@ class TraceStore:
         errors = sum(1 for r in rows if r[5] == "error")
         cur.execute(
             "INSERT INTO trace(trace_id,session_id,class,root_name,started_ms,ended_ms,dur_ms,"
-            "span_count,error_count,status,day,ingest_seq,updated_ms) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "span_count,error_count,status,day,ingest_seq,updated_ms,build) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(trace_id) DO UPDATE SET root_name=excluded.root_name,"
             "started_ms=excluded.started_ms,ended_ms=excluded.ended_ms,dur_ms=excluded.dur_ms,"
             "span_count=excluded.span_count,error_count=excluded.error_count,status=excluded.status,"
@@ -354,7 +384,13 @@ class TraceStore:
             # which is the one column the trace list is filtered by.
             "session_id=CASE WHEN excluded.session_id='unknown' THEN trace.session_id "
             "ELSE excluded.session_id END,"
-            "class=CASE WHEN excluded.class='unknown' THEN trace.class ELSE excluded.class END",
+            "class=CASE WHEN excluded.class='unknown' THEN trace.class ELSE excluded.class END,"
+            # The build id follows the SAME rule and for the same reason: the
+            # serving plane's own batches carry no `kh.bundle` (a Python request
+            # handler has no bundle), they land first, and without this they
+            # would erase the browser's answer to the one question this column
+            # exists for.
+            "build=CASE WHEN excluded.build='unknown' THEN trace.build ELSE excluded.build END",
             (
                 trace_id,
                 session,
@@ -369,6 +405,7 @@ class TraceStore:
                 _day(started),
                 ingest_seq,
                 int(time.time() * 1000),
+                build,
             ),
         )
 
@@ -386,6 +423,9 @@ class TraceStore:
         if f.get("klass"):
             where.append("class=?")
             args.append(f["klass"])
+        if f.get("build"):
+            where.append("build=?")
+            args.append(f["build"])
         if f.get("errors_only"):
             where.append("error_count>0")
         if f.get("status"):
@@ -419,7 +459,7 @@ class TraceStore:
         order = "ingest_seq ASC" if f.get("order") == "ingest" else "started_ms DESC"
         sql = (
             "SELECT trace_id,session_id,class,root_name,started_ms,dur_ms,span_count,"
-            "error_count,status,ingest_seq,updated_ms FROM trace WHERE "  # noqa: S608 - fixed names
+            "error_count,status,ingest_seq,updated_ms,build FROM trace WHERE "  # noqa: S608 - fixed names
             + " AND ".join(where)
             + f" ORDER BY {order} LIMIT ? OFFSET ?"
         )
@@ -435,6 +475,7 @@ class TraceStore:
             "status",
             "ingestSeq",
             "updatedMs",
+            "build",
         )
         with self._lock:
             cur = self._db.cursor()
@@ -450,7 +491,7 @@ class TraceStore:
             cur = self._db.cursor()
             head = cur.execute(
                 "SELECT trace_id,session_id,class,root_name,started_ms,dur_ms,span_count,"
-                "error_count,status FROM trace WHERE trace_id=?",
+                "error_count,status,build FROM trace WHERE trace_id=?",
                 (trace_id,),
             ).fetchone()
             if not head:
@@ -475,7 +516,18 @@ class TraceStore:
                     (trace_id,),
                 )
             ]
-        cols = ("traceId", "sessionId", "class", "name", "startedMs", "durMs", "spanCount", "errorCount", "status")
+        cols = (
+            "traceId",
+            "sessionId",
+            "class",
+            "name",
+            "startedMs",
+            "durMs",
+            "spanCount",
+            "errorCount",
+            "status",
+            "build",
+        )
         return {**dict(zip(cols, head)), "spans": spans}
 
     def facets(self, since_ms: int) -> dict:
@@ -496,7 +548,15 @@ class TraceStore:
                     )
                 ]
 
-            return {"names": group("root_name"), "classes": group("class"), "statuses": group("status")}
+            return {
+                "names": group("root_name"),
+                "classes": group("class"),
+                "statuses": group("status"),
+                # "which builds are out there right now" is a filter AND an
+                # answer on its own: two builds in one window means a client is
+                # running something the box no longer serves.
+                "builds": group("build"),
+            }
 
     def prune(self, keep_days: int = RETENTION_DAYS) -> int:
         """Drop whole traces older than the window. Never half a trace: a trace

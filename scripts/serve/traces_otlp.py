@@ -14,6 +14,8 @@ THE MAPPING, FIELD BY FIELD, so nobody has to reverse-engineer it:
 
     store                     OTLP/JSON
     ------------------------  -------------------------------------------
+    trace.build               resource attr `service.version` (browser
+                              service only; omitted when unknown)
     trace_id (32 hex)         traceId                     (hex, unchanged)
     span_id  (16 hex)         spanId                      (hex, unchanged)
     parent_id or NULL         parentSpanId, omitted when null
@@ -120,13 +122,20 @@ def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | 
     # `telemetry.sdk.language: webjs` was not merely untidy — it merges two
     # services into one node on any service map built from this export, and
     # tells a consumer the wrong language for half the spans.
+    #
+    # THE BUILD ID IS PART OF THE KEY, not of every span. `service.version` is
+    # OTel's home for "which build produced this", and it is a RESOURCE
+    # attribute because it describes the producer, not the moment. It is
+    # attached ONLY to the browser service: the same trace usually also carries
+    # spans from the Python serving plane and the Rust daemon, and stamping the
+    # SPA's bundle id on those would assert something false about their builds.
     by_key: dict[tuple, list] = {}
     for t in traces:
+        build = t.get("build") or "unknown"
         for s in t.get("spans", []):
             svc = (s.get("attributes") or {}).get("kh.service") or service
-            by_key.setdefault((t.get("sessionId", "unknown"), svc), []).append(
-                span_to_otlp({**s, "traceId": t["traceId"]})
-            )
+            key = (t.get("sessionId", "unknown"), svc, build if svc == service else "unknown")
+            by_key.setdefault(key, []).append(span_to_otlp({**s, "traceId": t["traceId"]}))
     return {
         "resourceSpans": [
             {
@@ -144,12 +153,17 @@ def export(traces: list[dict], service: str = "kernel-hive-spa", host_id: str | 
                             "telemetry.sdk.name": "kernel-hive",
                             # The language of the thing that PRODUCED the span.
                             "telemetry.sdk.language": ("python" if svc.endswith("-serve") else "webjs"),
+                            # The client build, when the batch named one. Omitted
+                            # rather than exported as "unknown": a consumer
+                            # grouping by version must not be told a lie it
+                            # cannot distinguish from a real version string.
+                            **({"service.version": build} if build != "unknown" else {}),
                         }
                     )
                 },
                 "scopeSpans": [{"scope": {"name": "kernel-hive-spa"}, "spans": spans}],
             }
-            for (session, svc), spans in sorted(by_key.items())
+            for (session, svc, build), spans in sorted(by_key.items())
         ]
     }
 

@@ -23,6 +23,7 @@
 //  than a fourth meaning bolted onto one of the first two.
 // ============================================================================
 
+import { BUILD_ID } from './build';
 import { PROBES, type ProbeId } from './catalogue';
 import { clientClass, gradeFor, installIntentWitness, type Intent } from './intent';
 import { configureSink, queueProbe } from './sink';
@@ -106,6 +107,15 @@ function postSpans(sessionId: string, spans: WireSpan[]): void {
         'service.name': 'kernel-hive-spa',
         'session.id': sessionId,
         'kh.class': clientClass(),
+        // WHICH BUNDLE THIS CLIENT IS RUNNING — a RESOURCE attribute, not a
+        // per-span one: it is identical for every span a tab will ever emit,
+        // which is exactly what a Resource is for. serve/traces.py stores it on
+        // the trace row and traces_otlp.py exports it as `service.version`.
+        // Before this existed the only place a build id was recorded was a
+        // vendor beacon's `kh.bundle` meta, so "was that phone on an old
+        // shell?" was unanswerable without the vendor — see
+        // docs/ANALYTICS.md §"Which bundle was this client running".
+        'kh.bundle': BUILD_ID,
       },
       spans,
     });

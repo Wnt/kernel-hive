@@ -68,6 +68,12 @@ export interface TraceSummary {
   spanCount: number;
   errorCount: number;
   status: SpanStatus;
+  /** Which BUNDLE the client was running — `<branch>@<short-sha>`, off the
+   *  batch's resource envelope, or `unknown` for a trace recorded before the
+   *  column existed / contributed only by the serving plane. This is how "was
+   *  that client on the shell we think we deployed?" is answered without a
+   *  vendor beacon; see docs/ANALYTICS.md. */
+  build: string;
 }
 
 /** One trace with every span — what the flame graph renders. */
@@ -84,6 +90,8 @@ export interface TraceSearchResult {
 export interface TraceFilters {
   session?: string;
   name?: string;
+  /** Exact bundle id, e.g. `main@3e6c81c4`. */
+  build?: string;
   class?: ClientClass;
   status?: SpanStatus;
   errorsOnly?: boolean;
@@ -101,6 +109,9 @@ export interface TraceFacets {
   names: Array<{ value: string; n: number }>;
   classes: Array<{ value: string; n: number }>;
   statuses: Array<{ value: string; n: number }>;
+  /** Which BUNDLES the window's clients were running. Two live builds at once
+   *  means somebody is still on a shell the box no longer serves. */
+  builds: Array<{ value: string; n: number }>;
 }
 
 // ---- the aggregate side ----------------------------------------------------

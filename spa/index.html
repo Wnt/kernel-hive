@@ -65,6 +65,30 @@
         }
       })();
     </script>
+    <!-- WHICH BUNDLE THIS PAGE IS, stashed on window for the boot-time error
+         reporter further down (and anything else that runs before a module
+         evaluates). Read from the build-id placeholder Vite substitutes here,
+         guarded the same way the vendor keys below are: a LEADING percent
+         character means an unconfigured build left the raw placeholder text in
+         place, and the honest answer is then 'unknown-build', never a value
+         that merely looks like a commit id.
+
+         SEPARATE from the vendor bootstrap below on purpose. That block reads
+         the same placeholder, but it RETURNS EARLY when no vendor key is
+         configured — so a keyless build would leave our own error rows with no
+         build id at all, which is the exact dead end 2026-09-01 cost a
+         debugging cycle to. Our own plane must not depend on the vendor's
+         being switched on. -->
+    <script>
+      (function () {
+        try {
+          var b = "%VITE_KH_BUILD_ID%";
+          window.__kernelHiveBuildId = (b && b.charAt(0) !== '%') ? b : 'unknown-build';
+        } catch (e) {
+          window.__kernelHiveBuildId = 'unknown-build';
+        }
+      })();
+    </script>
     <!-- Instana EUM (Instana/IBM) bootstrap — earliest possible config.
          DEFECT 2/3 FIX (docs/lab/TRACE-CONTEXT.md and a real Instana beacon
          API query both confirm this): Instana sends the page-load beacon
@@ -381,6 +405,10 @@
                 ua: (() => { try { return clip(navigator.userAgent, 512); } catch { return ''; } })(),
                 clientTs: (() => { try { return Date.now(); } catch { return 0; } })(),
                 sessionId,
+                // Which bundle threw it. clientlog.jsonl recorded `ua` and no
+                // build, so a boot-time failure could not be pinned to a
+                // shell; see analytics/build.ts and docs/ANALYTICS.md.
+                build: (() => { try { return window.__kernelHiveBuildId || 'unknown-build'; } catch { return 'unknown-build'; } })(),
               };
               if (input && input.componentStack) record.componentStack = clip(input.componentStack, 4096);
               fetch('/clientlog', {
