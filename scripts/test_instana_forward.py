@@ -18,10 +18,22 @@ timer the pipeline moved 20 traces/minute against a store taking 23/minute and
 sat 991 traces behind — Instana permanently ~25 minutes stale. And because
 trace size on this box spans four orders of magnitude, "100 traces" was once
 16,226 spans and 9.6 MB, which the agent's OTLP receiver refused by closing the
-connection; the same doomed payload was re-sent every five minutes. `DrainTest`
-and `BatchSizeTest` are those two defects, each with the assertion the old code
-could not pass, and `WatermarkTest` is unchanged so the exactly-once property
-they are built on cannot be traded away for throughput.
+connection; the same doomed payload was re-sent every five minutes.
+
+THE THIRD, also 2026-09-01: FORWARDING ORDER. `QUIET_MS` was derived from the
+browser's 20-second flush alone and set to 90 s, which is SHORTER than the two
+minutes `kh-trace-ship.timer` takes to carry the DAEMON's spooled spans into the
+store. So a trace could go quiet, be forwarded, and only then receive its daemon
+half — which the ingest watermark correctly re-selected, forwarding the same
+trace a second time. No loss, but Instana assembles a trace inside a window of
+about two seconds, so the second send is a LATE ARRIVAL: duplicate trace ids
+listed separately, entry and exit unmerged, parents wrong.
+
+`DrainTest` and `BatchSizeTest` are the second defect, each with the assertion
+the old code could not pass; the ordering one and the telemetry filter live in
+`test_instana_ordering.py` beside this file (this one reached its line budget).
+`WatermarkTest` is unchanged so the exactly-once property they are all built on
+cannot be traded away for throughput, for ordering or for a quieter call list.
 """
 
 from __future__ import annotations
@@ -29,7 +41,6 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
-import re
 import sys
 import tempfile
 import unittest
@@ -368,23 +379,6 @@ class BatchSizeTest(unittest.TestCase):
         )
         self.assertFalse(stat["ok"])
         self.assertEqual(len(calls), instana_batch.MAX_HALVINGS + 1)
-
-
-class ConstantTieTest(unittest.TestCase):
-    """QUIET_MS is a function of the browser's flush interval, and the two live
-    in different languages. Nothing but this test stops them drifting apart."""
-
-    def test_quiet_window_is_safely_longer_than_the_browser_flush(self):
-        src = (ROOT / "spa" / "src" / "analytics" / "sink.ts").read_text()
-        m = re.search(r"const FLUSH_MS = ([\d_]+);", src)
-        self.assertIsNotNone(m, "FLUSH_MS moved or was renamed in spa/src/analytics/sink.ts")
-        flush_ms = int(m.group(1).replace("_", ""))
-        self.assertGreaterEqual(
-            instana_backlog.QUIET_MS,
-            2 * flush_ms,
-            "QUIET_MS must stay comfortably above sink.ts's FLUSH_MS — a flush that is slow, "
-            "retried, or from a backgrounded tab arrives later than one interval",
-        )
 
 
 if __name__ == "__main__":

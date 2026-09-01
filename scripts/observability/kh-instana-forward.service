@@ -6,10 +6,14 @@
 # arming it means and docs/ANALYTICS.md §8.1 for what leaves the box.
 Description=kernel-hive: forward stored OTel traces + metric histograms to Instana
 Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
-# The daemon spans this forwards reach the store via kh-trace-ship. Ordering is
-# a nicety, not a requirement: the forwarder watermarks on INGEST sequence, so a
-# batch that lands after it has already walked past that trace pulls the trace
-# back into view on the next run rather than being lost.
+# The daemon spans this forwards reach the store via kh-trace-ship. Ordering was
+# never a CORRECTNESS requirement — the forwarder watermarks on INGEST sequence,
+# so a batch that lands after it has already walked past that trace pulls the
+# trace back into view rather than being lost — but it is a FIDELITY one: a
+# trace forwarded in two pieces mis-correlates inside Instana's ~2 s assembly
+# window. That is now handled where it belongs, in instana_backlog.QUIET_MS,
+# which is derived from kh-trace-ship.timer's period; this ordering is only the
+# boot-time nicety it always was.
 After=network-online.target osgallery-https.service kh-trace-ship.service
 Wants=network-online.target
 

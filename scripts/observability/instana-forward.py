@@ -159,6 +159,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "serve"))
 sys.path.insert(0, str(HERE))
 
+import telemetry_paths  # noqa: E402
 import traces_otlp  # noqa: E402
 from instana_backlog import backlog_count, pending_traces, read_state, resume_seq, write_state  # noqa: E402
 from instana_batch import drain  # noqa: E402
@@ -228,6 +229,20 @@ class Config:
         # a broken exporter rather than a missing field. Defaults to the box's
         # own hostname; override for a deployment where that is not stable.
         self.host_id = env.get("INSTANA_HOST_ID") or socket.gethostname()
+        # WHETHER OUR OWN POLLING PLANE IS FORWARDED AT ALL. Off by default
+        # since 2026-09-01, and the switch is one variable because the
+        # preferred mechanism may start working: Instana's documented way to
+        # say "machine chatter, hide it by default but keep it" is a
+        # `synthetic` span annotation, which `traces_otlp.py` DOES export and
+        # which is NOT honoured over OTLP ingest — measured, five spellings,
+        # all still visible in Analytics -> Calls (telemetry_paths.py has the
+        # experiment). Until it is, a trace made entirely of `/clientcmd`,
+        # `/clientlog`, `/analytics` and `/usage` calls does not leave the box:
+        # they were 896 calls in an hour and buried everything a person would
+        # want to look at. Set INSTANA_FORWARD_TELEMETRY=1 to send them again.
+        # Nothing about this reduces what traces.db keeps or what
+        # /admin/observability shows.
+        self.forward_telemetry = (env.get("INSTANA_FORWARD_TELEMETRY") or "").strip().lower() in ("1", "true", "yes")
         self.classes = tuple(
             c.strip() for c in (env.get("INSTANA_CLASSES") or "human,probe,unknown").split(",") if c.strip()
         )
@@ -370,7 +385,36 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
         return pending_traces(cfg, seq, PAGE_TRACES)
 
     def ship(chunk):
-        doc = traces_otlp.export(chunk, host_id=cfg.host_id if dest.stamp_host_id else None)
+        # THE TELEMETRY FILTER, HERE AND NOT IN `fetch`, deliberately. `drain()`
+        # stops on an empty page (`if not page: break`), so filtering upstream
+        # of it would stall the run on a page of pure polling and re-fetch the
+        # same page forever. Filtering inside `ship` keeps the page non-empty,
+        # so the watermark still advances past what was dropped and the run
+        # still drains — the two properties this pipeline is not allowed to
+        # lose. A chunk that filters down to nothing skips the POST rather than
+        # sending an empty document.
+        kept, dropped = chunk, 0
+        if not cfg.forward_telemetry:
+            kept = [t for t in chunk if not telemetry_paths.is_telemetry_only_trace(t)]
+            dropped = len(chunk) - len(kept)
+        if dropped:
+            print(
+                f"traces [{dest.name}]: {dropped} telemetry-only trace(s) held back "
+                f"(INSTANA_FORWARD_TELEMETRY=1 to send them)"
+            )
+        if not kept:
+            return True, "nothing to send (all telemetry-only)"
+        chunk = kept
+        # `host.id` is gated on the destination — the agent supplies host
+        # identity itself and a second, differently-derived one would be a
+        # claim we cannot back. `host.name` is not gated: it is the box's own
+        # hostname, true on either leg, and it is also what identifies the ONE
+        # serving-plane process as a `service.instance.id`.
+        doc = traces_otlp.export(
+            chunk,
+            host_id=cfg.host_id if dest.stamp_host_id else None,
+            host_name=cfg.host_id,
+        )
         if verbose or dry_run:
             print(json.dumps(doc, indent=2)[:4000])
         ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)

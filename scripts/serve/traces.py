@@ -38,14 +38,26 @@ counters are stored.
 from __future__ import annotations
 
 import json
-import os
 import re
 import sqlite3
 import threading
 import time
 from pathlib import Path
 
+import traces_policy
 import traces_schema
+
+# The content policy lives in `traces_policy`, but it is re-exported here so
+# callers and tests keep ONE import site for "what may enter the store". The
+# split was a size-budget move, not a change of interface.
+BANNED_ATTRS = traces_policy.BANNED_ATTRS
+SECRET_KEY_RE = traces_policy.SECRET_KEY_RE
+SECRET_PARAM_RE = traces_policy.SECRET_PARAM_RE
+TYPED_TEXT_ATTRS = traces_policy.TYPED_TEXT_ATTRS
+TYPED_TEXT_ALLOWED = traces_policy.TYPED_TEXT_ALLOWED
+URL_VALUE_ATTRS = traces_policy.URL_VALUE_ATTRS
+refused = traces_policy.refused
+redact_url_value = traces_policy.redact_url_value
 
 # W3C Trace Context: 128-bit trace id, 64-bit span id, lowercase hex.
 TRACE_RE = re.compile(r"^[0-9a-f]{32}$")
@@ -102,58 +114,9 @@ RETENTION_DAYS = 90
 #: traffic and still bounded.
 MAX_SPANS = 8_000_000
 
-#: Attributes refused outright, regardless of who sends them, because they carry
-#: CREDENTIALS. This is the security rule, and it is the only content rule this
-#: file has: a stored credential is one an admin view, a backup or a forwarded
-#: OTLP batch can replay. Everything else — stacks, URLs, query strings, the
-#: account that hit the fault — is wanted (see the module docstring).
-BANNED_ATTRS = frozenset(
-    {
-        "kh.ticket",
-        "kh.ticket.path",
-        "http.request.header.authorization",
-        "http.request.header.cookie",
-        "http.response.header.set-cookie",
-    }
-)
-#: The same rule as a shape, because a name nobody thought of is the one that
-#: leaks. Checked against every attribute key in the live store before landing:
-#: it matches none of them (`kh.ticket.kind`, `kh.auth.role`, `kh.auth.decision`
-#: and the 75 others all survive).
-SECRET_KEY_RE = re.compile(
-    r"(authorization|cookie|passwd|password|secret|api[-_.]?key|credential|passkey|"
-    r"private[-_.]?key|bearer|token)",
-    re.I,
-)
-#: TYPED KEYSTROKE CONTENT — the one item on the 2026-09-01 richness pass that
-#: was NOT authorised, and must not be enabled without the operator saying so.
-#: The gallery has walk-in visitors who are real third parties; what a stranger
-#: types is materially different from every other field here, and the operator
-#: has not been asked. The plumbing exists so the answer is one env var rather
-#: than a fresh design: set `KH_TRACE_TYPED_TEXT=1` in the serving unit to let
-#: these through. Timing, scancode CLASS and record type are unaffected and were
-#: never gated by this — only the characters themselves.
-TYPED_TEXT_ATTRS = frozenset(
-    {
-        "kh.input.text",
-        "kh.input.chars",
-        "kh.key.name",
-        "kh.key.char",
-    }
-)
-TYPED_TEXT_ALLOWED = os.environ.get("KH_TRACE_TYPED_TEXT") == "1"
-
 
 def _day(ts_ms: int) -> str:
     return time.strftime("%Y-%m-%d", time.gmtime(ts_ms / 1000.0))
-
-
-def refused(key: str) -> bool:
-    """Is this attribute name refused at intake? Credentials always; typed
-    keystroke content unless the operator has armed `KH_TRACE_TYPED_TEXT`."""
-    if key in BANNED_ATTRS or SECRET_KEY_RE.search(key):
-        return True
-    return key in TYPED_TEXT_ATTRS and not TYPED_TEXT_ALLOWED
 
 
 def _clean_attrs(raw) -> dict:
@@ -169,11 +132,13 @@ def _clean_attrs(raw) -> dict:
     for k, v in raw.items():
         if len(out) >= ATTR_MAX:
             break
-        if not isinstance(k, str) or len(k) > 64 or refused(k):
+        if not isinstance(k, str) or len(k) > 64 or traces_policy.refused(k):
             continue
         if isinstance(v, (bool, int, float)):
             out[k] = v
         elif isinstance(v, str):
+            if k in traces_policy.URL_VALUE_ATTRS:
+                v = traces_policy.redact_url_value(v)
             out[k] = v[: (ATTR_STR_MAX_LONG if k in LONG_ATTRS else ATTR_STR_MAX)]
     return out
 

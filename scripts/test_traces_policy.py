@@ -137,3 +137,31 @@ class PolicyTest(unittest.TestCase):
         # Timing, record type and the coarse key CLASS were never gated by it.
         self.assertEqual(attrs["kh.key.class"], "printable")
         self.assertTrue(all(traces.refused(k) for k in traces.TYPED_TEXT_ATTRS))
+
+
+class UrlCredentialRedactionTest(unittest.TestCase):
+    """A credential can ride a query string even when the attribute name is honest.
+
+    The key-name guard cannot see these: the attribute really is called
+    `url.query`. The stream ticket is the live case — signal_route.py mints it
+    into a query string because the raw WebTransport plane has no headers to
+    carry it. Redact the value, keep the rest of the URL: the path and the
+    non-secret parameters are where the diagnostic worth is.
+    """
+
+    def test_a_ticket_in_a_url_is_redacted_and_the_rest_survives(self):
+        out = traces._clean_attrs({"url.full": "https://h/signal?ticket=abc123&tile=win95"})
+        self.assertEqual(out["url.full"], "https://h/signal?ticket=REDACTED&tile=win95")
+
+    def test_other_credential_shaped_parameters_too(self):
+        for param in ("token", "secret", "key", "sig", "auth", "password", "code"):
+            with self.subTest(param=param):
+                out = traces._clean_attrs({"url.query": f"a=1&{param}=hunter2&b=2"})
+                self.assertNotIn("hunter2", out["url.query"])
+                self.assertIn("a=1", out["url.query"])
+
+    def test_a_non_secret_ticket_attribute_still_survives(self):
+        # kh.ticket.kind says WHICH KIND of ticket, not the ticket. Refusing it
+        # would cost a real dimension to guard a value it never carries.
+        out = traces._clean_attrs({"kh.ticket.kind": "walkin"})
+        self.assertEqual(out["kh.ticket.kind"], "walkin")
