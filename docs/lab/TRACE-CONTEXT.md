@@ -492,11 +492,13 @@ reader "fixing" this tag's shape to match Instana's docs will get it wrong,
 because the docs never state it — this file, and the agent's own source, are
 the only record.
 
-As of the same day, `spa/src/analytics/trace.ts` reads it too —
-`joinPageLoadTraceFromMeta()`, called once at boot from `main.tsx` — and uses
-it to seed the FIRST trace this tab opens (§4a). This closes the gap §7 used
-to describe: a visit no longer produces two disconnected trees, one rooted at
-`serve.page` and one at the browser's own first flow.
+As of the same day, `spa/src/analytics/pageLoadLink.ts` reads it too —
+`readPageLoadTraceFromMeta()`, called once at boot from `main.tsx` — and every
+trace this tab opens then carries a span LINK to that span plus the
+`kh.page.loadId` attribute (§7.1). This closes the gap §7 used to describe: a
+visit no longer produces two unrelated trees, one rooted at `serve.page` and
+one at the browser's own first flow. It SEEDED a parent for 15 seconds until
+2026-09-01; §4a says why a link replaced the join.
 
 **The id is real, not a prop.** The span behind the tag is opened and ended in
 `static_files.py` and flows through the same buffered flush (`tracing.py`)
@@ -1045,8 +1047,9 @@ station.connect                          (browser, ROOT)
 │  ├─ guest.resume              internal  (emulator: cont / SIGCONT)
 │  ├─ capture.first_frame       internal
 │  ├─ encode.first_key          internal
-│  └─ transport.first_frame     internal
-└─ station.connect.firstFrame   internal
+│  ├─ transport.first_frame     internal
+│  └─ input.first_edge          internal
+└─ station.connect.firstFrame   internal  (browser — a flow STEP, not a metric)
 ```
 
 ```
@@ -1059,6 +1062,24 @@ input.edge                       client   (browser, ROOT — its DURATION is the
    ├─ client.frame.decode      internal
    └─ client.frame.paint       internal
 ```
+
+**Since 2026-09-01 there is no `station.open.toFirstFrameMs` span here**, and
+traces captured before that date are not comparable with later ones on this
+point. It used to sit at the bottom of that tree as "the metric's twin", and it
+was worse than redundant: it was pushed onto the active-span stack, so the
+signaling fetch made during the connect became its CHILD — a captured operator
+trace (`fc4a9d74…`, win311) shows `http.client.request` -> `serve.signal`
+parented by a clock. A measurement cannot cause an HTTP call, and its wall
+duration is not work. The number is now an OTel **span event** on
+`station.connect`, timestamped at the moment the frame was painted, carrying
+`kh.metric.ms`. See docs/ANALYTICS.md §6, "A measurement is not a span".
+
+The practical consequence for reading a tree: **the browser's connect timing is
+no longer a row you can eyeball beside `guest.resume`** — select the
+`station.connect` span in `/admin/observability` and read its events pane. What
+you gain is that `station.connect`'s children are now only real work, so the
+question "was it slow because the guest was asleep" is answered by comparing
+spans that all actually happened.
 
 The daemon emits one more trace that has no browser in it at all, because a
 station boots with nobody watching — a root `streamhost.start` with
@@ -1073,6 +1094,13 @@ happen (§3.3) — a dropped or never-marked frame leaves the daemon's spans
 standing alone, which is not an error, just an incomplete return leg. **The
 daemon's entry span missing entirely is a different thing, and it is usually a
 deployment fact rather than a bug — read §3.5 before reading it as one.**
+
+Four processes, one trace id per action, one flame graph. The browser's
+time-to-first-frame is a span EVENT on `station.connect` rather than a span of
+its own (a measurement is not a piece of work — `analytics/metrics.ts`), and the
+daemon's `guest.resume` is a real span under `streamhost.session`, so "was it
+slow because the guest was asleep" stops being a correlation exercise while
+staying a comparison between a measurement and a piece of work.
 
 ### 7.1 The relation to the page load: a LINK and an ATTRIBUTE, never a parent
 

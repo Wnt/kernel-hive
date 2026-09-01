@@ -840,11 +840,81 @@ metric. Timings use `performance.now()`, never the wall clock: an NTP step or a
 laptop suspend mid-timing produces a negative or hour-long duration, and both
 survive bucketing to poison the distribution.
 
+### A measurement is not a span (changed 2026-09-01)
+
+**Traces captured before 2026-09-01 are not comparable with later ones on this
+point**, so the change is dated here rather than described as if it had always
+been true.
+
+Every `startTiming` used to open a **child span named after the metric**, push
+it onto the active-span stack, and let the span's wall duration BE the value.
+That was three mistakes wearing one design, and only the last was cosmetic.
+
+1. **A measurement became the parent of real work.** Because the timing was
+   pushed active, anything opened while the clock ran attached to it. In a
+   captured operator trace (`fc4a9d74…`, win311) `station.open.toFirstFrameMs`
+   was the parent of `http.client.request` -> `serve.signal`: the signaling
+   fetch, and the daemon work under it, hung off a clock. That is a false edge
+   in the trace graph — it asserts the HTTP call happened *because of* the
+   measurement — and it misattributes real server work under a synthetic node.
+2. **The duration was the value**, so a flame graph drew
+   `station.open.toFirstInputMs` as 1.573 seconds of *work*. Nothing worked for
+   1.573 seconds; that is the gap between two events, most of it a human
+   deciding whether to touch the machine.
+3. **Span counts and vendor aggregates.** One synthetic span per timing lands
+   in Instana's call and latency rollups as a call that never happened.
+
+A stopped timing now reports itself as an **OTel span event** — a timestamped
+point carrying `kh.metric.ms` — on the innermost span genuinely open around it.
+`station.connect` really does span the connect, so *"first frame painted at T,
+260 ms in"* is a point inside it, which is what a span event is for. An event
+cannot parent anything and has no duration to misread. Events have been carried
+end-to-end since the intake was written (`_clean_events`, `scripts/serve/traces.py`;
+exported by `traces_otlp.py`; rendered by `/admin/observability`'s span detail
+pane, and surfaced by Instana in the call Details view).
+
+**Where a timing has no open span around it** — a poster dwell, a hall
+navigation, a hesitation measured after its connect flow has legitimately
+closed — it falls back to a **zero-duration marker span**. That is not a
+relapse: it is never pushed active, so it cannot parent real work, and its
+duration is `0` rather than the measurement, so no flame graph reads it as
+elapsed effort. Both defects above are gone; a drillable row is what is left.
+
+This makes **call order load-bearing at the call site.** `Span.event()` after
+`end()` is a silent no-op, so a timing must stop *before* the flow it belongs to
+closes. `connectTelemetry.firstFrame`, `resumeTelemetry.painted`,
+`useRestoreFlow`'s settle and `hallEngagement`'s open were all reordered for
+this, and `spa/src/three/connectTelemetry.test.ts` fails if the order is put
+back.
+
+**Nothing was lost.** The bucketed sample still reaches the counter plane on
+every `stop()`, unchanged — that is the durable two-year answer, and it is the
+one that survives trace retention. Only the trace-plane representation moved.
+
+#### Where each number is answerable now
+
+| Question | Answer |
+|---|---|
+| the distribution / p95 of any `Ms` metric | **unchanged** — the metric plane. `/admin/observability` → Metrics, and `scripts/serve/analytics.py`'s bucketed `metric` table. Day resolution, two-year retention |
+| this metric as an OTLP histogram in Instana | **unchanged** — `scripts/observability/instana_metrics.py`. Still **day resolution only**: the counters carry a day bucket and no per-sample timestamps |
+| the exact value on ONE session's journey | `/admin/observability` → open the trace → select the span → the **events** pane. `kh.metric.ms` on the event, with the station dimensions repeated on it |
+| when, precisely, first frame was painted | the event's own **timestamp** on `station.connect` — which the old design could not state at all, only imply from a span's end |
+| why one connect was slow | `station.connect`'s real children — `http.client.request`, `serve.signal`, `streamhost.session` — which are now direct children of the connect instead of buried under a clock |
+
+**Why nothing moved to the metric plane *only*.** That leg is day-resolution by
+construction, so a latency metric living there alone would lose all sub-day
+resolution and every per-session drilldown. Every `ms` metric therefore keeps
+both homes: the bucketed counter for the durable aggregate, and a span event for
+the exact per-session value. **The follow-up this defers, stated as the gap it
+is:** there is no fine-grained metric path — no per-sample timestamped metric
+export — and until one exists the span event *is* the sub-day resolution. Do not
+read this as an argument that one is unnecessary.
+
 ### The three shapes, and the traps
 
 | Call | For |
 |---|---|
-| `startTiming(id)` | a duration. `stop()` records; `abandon()` records **nothing** |
+| `startTiming(id)` | a duration. `stop()` records a bucket AND a span event; `abandon()` records **nothing**, on either plane |
 | `recordMetric(id, v)` | a value the call site computed itself |
 | `accumulator(id)` | an effort total: `add()` as you go, `commit()` once per episode |
 
