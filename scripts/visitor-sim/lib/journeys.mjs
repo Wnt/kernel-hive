@@ -233,18 +233,57 @@ export async function journeyStation(page, ctx) {
   }
   await humanDelay(rng, 1500, 5000);
 
+  // docs/lab/VISITOR-SIM.md's "Resets" section documents exactly three gates
+  // on this call site: --allow-resets, --reset-max and --reset-min-interval
+  // (all enforced by safety.resetGate.eligible() below). A 4th, undocumented
+  // coin-flip used to sit here too (`&& rng() < 0.15`) — with a handful of
+  // "station" journeys in a short run that made a reset "armed" but silently
+  // never fire, which is indistinguishable from broken and defeats the whole
+  // point (the operator explicitly wants station.restore telemetry out of a
+  // run like this). The three real caps are the safety net; nothing here
+  // should also roll dice on top of them.
+  //
+  // DRIVEN THROUGH THE REAL UI CONTROL, NOT A BARE fetch(). The client-side
+  // `station.restore` / `station.restore.toRestoredMs` telemetry (the
+  // click-to-picture-back latency the operator explicitly wants to measure —
+  // useRestoreFlow.ts) fires ONLY from `restoreToGolden()`, which is wired to
+  // StageMenu.tsx's "Restore to golden snapshot" button's onClick. A raw
+  // `POST /restore/<id>` still resets the host (serve.restore fires either
+  // way) but never runs that hook, so no station.restore span is ever
+  // produced — a run could reset a station all day and still leave the
+  // operator's own ask unmeasured. Open the ☰ menu, click the real button.
   let resetTriggered = false;
-  if (safety.resetGate.eligible(station) && rng() < 0.15) {
+  if (safety.resetGate.eligible(station)) {
     try {
-      const resp = await page.evaluate(async (id) => {
-        const r = await fetch(`/restore/${id}`, { method: 'POST', credentials: 'same-origin' });
-        return { status: r.status, ok: r.ok };
-      }, station);
+      await page.getByRole('button', { name: 'Controls' }).click({ timeout: 5000 });
+      const restoreBtn = page.getByRole('button', { name: /Restore to golden snapshot/ });
+      await restoreBtn.waitFor({ state: 'visible', timeout: 5000 });
+      const clickedAt = Date.now();
+      await restoreBtn.click({ timeout: 5000 });
       safety.resetGate.record(station);
       resetTriggered = true;
       manifest?.reset(station);
-      log?.(`reset ${station}: HTTP ${resp.status}`);
-      await humanDelay(rng, 2000, 5000);
+      log?.(`reset ${station}: clicked "Restore to golden snapshot"`);
+      // The click starts a reconnect (phase -> 'connecting' -> 'live'), the
+      // same journey the station took to open in the first place — wait for
+      // the picture to actually come back, which is what a real visitor
+      // watches for.
+      const back = await waitForVideo(page, 45000);
+      log?.(`reset ${station}: video back after restore = ${back.ok}`);
+      // The DOM's video going live is NOT the same moment the client-side
+      // `station.restore` flow settles (useRestoreFlow.ts's settle('ok'),
+      // which is what actually closes and buffers the span/timing). Measured
+      // live against the real gallery: the flow can still be mid-`stream.
+      // recover` (its own reconnect dance, including an abandoned first
+      // attempt) up to ~17s after the click, well after readyState already
+      // reported live pixels. Floor the dwell from the CLICK, not from
+      // video-back, so the journey (and the tab this tool closes right after
+      // it) does not race the flow's own close — otherwise the span never
+      // finishes buffering and this tool's whole reason for driving the real
+      // button instead of a bare fetch is silently defeated.
+      const minSettleMs = 20000;
+      const elapsed = Date.now() - clickedAt;
+      if (elapsed < minSettleMs) await page.waitForTimeout(minSettleMs - elapsed);
     } catch (e) {
       log?.(`reset ${station} failed: ${e}`);
     }
