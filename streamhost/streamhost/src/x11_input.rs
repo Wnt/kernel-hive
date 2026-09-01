@@ -43,6 +43,20 @@
 //! Both paced channels ride ONE dwell pacer (`x11_keys::Pacer`) drained by a
 //! background task, so edges of one field can never deadlock or reorder
 //! another field's — see the pacer's module doc for the ctlsock lineage.
+//!
+//! A FOURTH MODE, `SH_X11TEST_MOTION=warp` (the `amix` station): the guest is
+//! a Unix that drives the Amiga mouse hardware itself, so host motion — abs
+//! or rel — reaches it as accelerated relative deltas and no XTEST mapping is
+//! 1:1. Motion therefore goes to the GUEST's own X server through an inner
+//! `x11_warp::X11WarpSink` (WarpPointer, then QueryPointer readback: the
+//! guest is the authority on where its pointer is), while buttons and keys
+//! keep riding XTEST into the host display exactly as above. Two channels
+//! again, so the drain task holds every BUTTON edge on the warp sink's gate
+//! (`x11_warp::wait_settled`) until the guest confirmed the pointer is at the
+//! target, and signals `edge_done()` after the injection — the same
+//! confirm -> inject -> done exclusion sunos414 runs, with the edge on XTEST
+//! instead of D-Bus. SINGLE INJECTOR: in this mode the sink sends NO XTEST
+//! motion at all; nothing else may move this guest's pointer.
 
 use std::io::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -94,6 +108,8 @@ pub struct X11TestSink {
     keycodes: std::collections::HashMap<u16, u8>,
     /// Some only when a paced channel (xtest buttons or keys) is active.
     paced: Option<Arc<Paced>>,
+    /// `SH_X11TEST_MOTION=warp`: the guest-X-server motion sink (module doc).
+    warp: Option<Arc<crate::x11_warp::X11WarpSink>>,
     /// Key edges whose scancode has no keycode — counted AND logged per edge,
     /// same rule as the mamesock/vicesock sinks.
     unmapped: AtomicU64,
@@ -117,9 +133,15 @@ impl X11TestSink {
         } else {
             std::collections::HashMap::new()
         };
+        // Built before the log line so a missing SH_X11WARP_DISPLAY panics
+        // here, at startup, with the sink's own message.
+        let warp = opts
+            .motion_warp
+            .then(|| crate::x11_warp::X11WarpSink::new(crate::x11_warp::display_from_env()));
         eprintln!(
             "[input-router] x11test connected display={display} cmd_file={cmd_file} \
-             abs={} buttons={} keys={} ({} scancodes resolved)",
+             motion={} abs={} buttons={} keys={} ({} scancodes resolved)",
+            if warp.is_some() { "warp" } else { "xtest" },
             opts.abs,
             if opts.buttons_xtest {
                 "xtest"
@@ -147,6 +169,7 @@ impl X11TestSink {
             root,
             keycodes,
             paced: paced.clone(),
+            warp,
             unmapped: AtomicU64::new(0),
         });
         if let Some(paced) = paced {
@@ -236,7 +259,28 @@ impl RealtimeInputSink for X11TestSink {
         use x11rb::connection::Connection as _;
         let mut st = self.st.lock().map_err(|_| Reject::BackendDown)?;
 
-        if self.opts.abs {
+        if let Some(warp) = &self.warp {
+            // MOTION through the guest's own X server (module doc). Ordered
+            // exactly when an edge follows in THIS event: that is the verified
+            // restate the drain task's gate waits on; a move-only event
+            // coalesces. A rejected warp (BackendDown, Overflow) returns here
+            // BEFORE the edges are enqueued, so a click never lands at a
+            // position the guest did not confirm — loud in the router log,
+            // never silent.
+            let changed = st.buttons ^ event.buttons;
+            let ordered = changed != 0 || event.wheel_v != 0 || event.wheel_h != 0;
+            warp.try_pointer_abs(PointerAbs {
+                seq: event.seq,
+                x: event.x,
+                y: event.y,
+                width: event.width,
+                height: event.height,
+                buttons: event.buttons,
+                wheel_v: event.wheel_v,
+                wheel_h: event.wheel_h,
+                ordered,
+            })?;
+        } else if self.opts.abs {
             // TRUE ABSOLUTE: state the surface-clamped target, nothing else.
             // No homing, no Reckoner, no chunking — the X server owns the
             // cursor and the guest (FS-UAE mouse_integration) follows it 1:1.
@@ -351,8 +395,12 @@ impl RealtimeInputSink for X11TestSink {
         Ok(AcceptedSeq(event.seq))
     }
 
+    /// Healthy on its own; in warp mode the guest X connection IS the
+    /// pointer, so its health is this sink's health.
     fn health(&self) -> SinkHealth {
-        SinkHealth::Healthy
+        self.warp
+            .as_ref()
+            .map_or(SinkHealth::Healthy, |w| w.health())
     }
 
     fn backend_name(&self) -> &'static str {
@@ -436,8 +484,22 @@ async fn paced_inject_task(sink: Weak<X11TestSink>, paced: Arc<Paced>) {
             let Some(sink) = sink.upgrade() else { return };
             let n = edges.len();
             for edge in edges {
+                // Warp mode: a BUTTON edge waits for the guest's own readback
+                // to confirm the warp it was carried with (bounded, counted
+                // on expiry by the warp sink), and releases the armed motion
+                // hold only after its injection is FLUSHED to the display.
+                let gated = sink.warp.is_some() && matches!(edge.field, Field::Button(_));
+                if gated {
+                    crate::x11_warp::wait_settled().await;
+                }
                 if let Err(e) = sink.fake_edge(edge) {
                     eprintln!("[x11test] paced edge injection failed: {e:?}");
+                }
+                if gated {
+                    if sink.conn.flush().is_err() {
+                        eprintln!("[x11test] flush failed after gated edge");
+                    }
+                    crate::x11_warp::edge_done();
                 }
             }
             if n > 0 {

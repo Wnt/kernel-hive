@@ -9,10 +9,18 @@
 #
 #   1. The machine is an Amiga 3000 (68030 + MMU + 68882) with Kickstart 2.04
 #      r37.175, not an A4000/040 — AMIX needs the 030 MMU.
-#   2. The pointer is RELATIVE. amigaos35 gets an absolute pointer from the
-#      UAE mousehack, but mousehack is an AmigaOS-level trap: AMIX drives the
-#      Amiga mouse hardware directly and never registers, so host motion
-#      arrives as accelerated relative deltas. Declared pointer=rel.
+#   2. The pointer is ABSOLUTE THROUGH THE GUEST'S OWN X SERVER. amigaos35
+#      gets its 1:1 pointer from the UAE mousehack, an AmigaOS-level trap;
+#      AMIX drives the Amiga mouse hardware itself, so host motion (abs or
+#      rel XTEST) arrives as accelerated relative deltas and is never 1:1.
+#      Instead the A2065 Ethernet card runs on slirp and this launcher adds a
+#      LOOPBACK-ONLY redirect 127.0.0.1:<6000+N> -> 10.0.2.15:6000 (the
+#      patched uae_slirp_redir binds 127.0.0.1, never the LAN); the daemon
+#      (SH_X11TEST_MOTION=warp, SH_X11WARP_DISPLAY=127.0.0.1:N) warps the
+#      guest pointer with XWarpPointer and reads it back with XQueryPointer.
+#      Buttons and keys still ride XTEST into this Xvfb; a button edge is
+#      held until the guest confirmed the warp. Fail-closed: the guest has
+#      no default route, and the redirect is bound to loopback.
 #   3. There is NO statefile. Reset is a cold boot of a fresh work disk copied
 #      from the golden (~2 min to the OPEN LOOK desktop). The guest must be
 #      halted with /sbin/shutdown before a golden is re-baked, or every boot
@@ -21,6 +29,7 @@
 # Per-station knobs from station.env:
 #   SH_STATION            amix
 #   SH_X11_DISPLAY        the pinned display — daemon connects here
+#   SH_X11WARP_DISPLAY    127.0.0.1:N — the guest X server's loopback redirect
 #   FSUAE_NATIVE_BIN      assets/amix/fsuae-native/bin/fs-uae
 #   FSUAE_NATIVE_KICK     Kickstart 2.04 r37.175 (A3000) path
 #   FSUAE_NATIVE_GEOM     WxH of window AND X screen (640x512)
@@ -35,6 +44,16 @@ BIN="${FSUAE_NATIVE_BIN:?FSUAE_NATIVE_BIN not set in station.env}"
 KICK="${FSUAE_NATIVE_KICK:?FSUAE_NATIVE_KICK not set}"
 GEOM="${FSUAE_NATIVE_GEOM:-640x512}"
 DISP="${SH_X11_DISPLAY:?SH_X11_DISPLAY not set}"
+WARP="${SH_X11WARP_DISPLAY:?SH_X11WARP_DISPLAY not set (127.0.0.1:N, the guest X redirect)}"
+X_PORT=$((6000 + ${WARP##*:}))
+GUEST_X="10.0.2.15:6000" # the guest's X11R4 server on the slirp A2065 (static, in the golden)
+case "$WARP" in
+  127.0.0.1:*) ;;
+  *)
+    echo "fsuae-native[$TILE]: SH_X11WARP_DISPLAY=$WARP is not loopback — refusing" >&2
+    exit 1
+    ;;
+esac
 PIDFILE="$BASE/mame.pid" # the x11-runtime pidfile name, not a MAME claim
 
 [ -x "$BIN" ] || {
@@ -126,6 +145,11 @@ W="${GEOM%x*}" H="${GEOM#*x}"
 
 # stretch=1 (FSE_STRETCH_FILL_SCREEN) — without it FS-UAE letterboxes the
 # 640x512 Amiga screen inside its own window and the capture carries bars.
+# zoom=640x512 pins the crop to the standard PAL hires-laced rectangle
+# (74,36,640,512), which IS the AMIX X root: FS-UAE's non-legacy default is
+# the fixed 692x540 mode, which scales the root by 0.925/0.948 and shifts it
+# by (24,13) in the capture -- the readback was exact while the capture was
+# not 1:1 (docs/lab/INPUT-DEBUGGING.md). The pointer maps 1:1 only with this.
 nohup "$BIN" \
   --amiga_model=A3000 \
   --kickstart_file="$KICK" \
@@ -135,8 +159,11 @@ nohup "$BIN" \
   --hard_drive_0_controller=scsi6 \
   --fullscreen=0 --window_width="$W" --window_height="$H" \
   --stretch=1 \
+  --zoom=640x512 \
   --automatic_input_grab=0 --initial_input_grab=0 \
   --floppy_drive_volume=0 \
+  --uae_a2065=slirp \
+  --uae_slirp_redir="tcp:${X_PORT}:${GUEST_X##*:}:${GUEST_X%%:*}" \
   --stdout=1 \
   >"$BASE/fs-uae.log" 2>&1 &
 echo $! >"$PIDFILE"
@@ -150,7 +177,49 @@ for _ in $(seq 1 40); do
   grep -aq "uae_start" "$BASE/fs-uae.log" 2>/dev/null && break
   sleep 0.5
 done
-echo "fsuae-native[$TILE]: pid=$(cat "$PIDFILE") display=$DISP geom=$GEOM (cold boot, no statefile)"
+echo "fsuae-native[$TILE]: pid=$(cat "$PIDFILE") display=$DISP geom=$GEOM x11warp=127.0.0.1:$X_PORT (cold boot, no statefile)"
+
+# x11warp CHECK, not configuration: the golden carries the X access state
+# (`10.0.2.15 amix` / `10.0.2.2 slirphost` in /etc/inet/hosts, so rc.inet's
+# `ifconfig aen0 \`uname -n\`` brings the A2065 up, and `xhost +slirphost` in
+# /etc/kh-xsession). There is no exec channel into this guest, so nothing can
+# be repaired at runtime: a refusal is a STALE GOLDEN and says so. Verified
+# from the host with a bare X11 setup handshake over the redirect — 12 bytes
+# out, first reply byte is success (1) or refusal (0) — never by logging in.
+# X11R4 listens BEFORE kh-xsession has run xhost, so a refusal only counts
+# once it has persisted for 30 s; a single refused probe is the boot window.
+(
+  n=0
+  refused=0
+  while [ "$n" -lt 400 ]; do
+    rc=$(python3 -c '
+import socket, struct, sys
+try:
+    s = socket.create_connection(("127.0.0.1", int(sys.argv[1])), 3)
+    s.sendall(struct.pack(">ccHHHHH", b"B", b"\0", 11, 0, 0, 0, 0))
+    print(0 if s.recv(8)[:1] == b"\1" else 1)
+except Exception:
+    print(2)
+' "$X_PORT")
+    if [ "$rc" = 0 ]; then
+      echo "$(date -u +%FT%TZ) x11warp ok: guest X reachable on 127.0.0.1:$X_PORT, access granted"
+      exit 0
+    fi
+    if [ "$rc" = 1 ]; then
+      refused=$((refused + 1))
+      if [ "$refused" -ge 30 ]; then
+        echo "$(date -u +%FT%TZ) x11warp STALE GOLDEN: guest X refused the slirp peer for ${refused}s; re-bake disk/amix-system.hdf.golden (docs/guests/amix.md)"
+        exit 1
+      fi
+    else
+      refused=0
+    fi
+    n=$((n + 1))
+    sleep 1
+  done
+  echo "$(date -u +%FT%TZ) x11warp TIMED OUT: guest X never answered on 127.0.0.1:$X_PORT (boot is ~2 min; a full fsck ~4)"
+  exit 1
+) >>"$BASE/x11warp-check.log" 2>&1 &
 
 # Standby: freeze once the booted scene has settled; the daemon owns the
 # steady state via SH_IDLE_PAUSE_PIDFILE and SIGCONTs on the first session.

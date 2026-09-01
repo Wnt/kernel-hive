@@ -35,7 +35,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54172,
-      "notes": "HOST-NATIVE: FS-UAE 3.2.35 (its OWN copy at assets/amix/fsuae-native, built with FSUAE_STATION=amix) runs an Amiga 3000 (68030+MMU, Kickstart 2.04 r37.175) on the host inside a pinned Xvfb sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST. No QEMU/QMP, no exec channel. POINTER IS OPEN: the daemon injects absolute XTEST motion (the x11test contract), but the GUEST tracks it relatively and with acceleration — the UAE mousehack that gives amigaos35 a 1:1 pointer is an AmigaOS trap, and AMIX drives the Amiga mouse hardware itself. Measured on the sandbox rig: host (160,120)->guest ~(82,92), host (480,380)->guest ~(331,345), history-dependent. The tile stays hidden until this is closed (an x11test-rel daemon backend, or FS-UAE grab-mode calibration). Reset=relaunch: cold boot (~2 min) of a fresh work HDF copied from disk/amix-system.hdf.golden; no statefile. Launcher stations/amix/x11-runtime.sh."
+      "notes": "HOST-NATIVE: FS-UAE 3.2.35 (its OWN copy at assets/amix/fsuae-native, built with FSUAE_STATION=amix) runs an Amiga 3000 (68030+MMU, Kickstart 2.04 r37.175) on the host inside a pinned Xvfb sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST. No QEMU/QMP, no exec channel. POINTER: ABSOLUTE via the GUEST's X server (SH_X11TEST_MOTION=warp + SH_X11WARP_DISPLAY=127.0.0.1:72). The UAE mousehack is an AmigaOS trap AMIX never registers, so XTEST motion is relative+accelerated there; instead the A2065 runs on slirp and the launcher's patched FS-UAE (fsuae-slirp-hostfwd.patch) adds a LOOPBACK-ONLY redirect 127.0.0.1:6072 -> 10.0.2.15:6000 to the guest's X11R4 server; the daemon warps (XWarpPointer) and reads back (XQueryPointer); buttons/keys ride XTEST into the Xvfb with the edge held until the warp is confirmed. Single injector: never push motion at this guest by another path (no xdotool mousemove on the live Xvfb). The pointer is dead while the guest X server is (boot ~2 min; the launcher's x11warp-check.log says ok / STALE GOLDEN / TIMED OUT). Golden carries /etc/inet/hosts (amix=10.0.2.15, slirphost=10.0.2.2, no default route) and xhost +slirphost in /etc/kh-xsession. Reset=relaunch: cold boot (~2 min) of a fresh work HDF copied from disk/amix-system.hdf.golden; no statefile. The launcher also pins --zoom=640x512: FS-UAE's default 692x540 crop draws the X root at 0.925/0.948 scale and the pointer is 1:1 only with the pinned crop. Framebuffer-proven 2026-09-01: readback exact and sprite tip on target at 16 points incl. all four corners, residual 0 px (docs/guests/amix.md). Launcher stations/amix/x11-runtime.sh."
     }
   },
   "render": {
@@ -64,10 +64,10 @@
     "pointer": {
       "transport": "abs",
       "backend": "x11test",
-      "method": "x11-xtest",
+      "method": "x11-warp-absolute",
       "absolute": true,
       "present": true,
-      "device": "amiga-mouse",
+      "device": "guest X server (motion, via loopback slirp redirect) + amiga-mouse over XTEST (buttons)",
       "scale": 1.0,
       "offset": [
         0,
@@ -113,7 +113,7 @@
         "--capture",
         "x11",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
         "x11test",
         "--audio",
@@ -171,7 +171,7 @@
   "ui": "desktop",
   "network": {
     "status": "host-only",
-    "note": "No networking. AMIX ships an SVR4 TCP/IP stack and FS-UAE emulates the A2065 Ethernet card the A3000UX used, so a retronet web-plane join is a real follow-up; it is deliberately out of scope for the first landing, and the install declined the hosts-file step."
+    "note": "A2065 on FS-UAE slirp, used ONLY for the pointer: a loopback-bound redirect 127.0.0.1:6072 -> guest 10.0.2.15:6000 lets the daemon drive the guest's X server. Fail-closed: the guest has no default route (only 10.0.2.0/24), the redirect binds 127.0.0.1, and there is no retronet tap. Not a retronet join; a web-plane join remains a follow-up."
   },
   "reset": {
     "stationDir": "amix",
@@ -179,7 +179,7 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "OPEN — guest tracks XTEST motion RELATIVELY and with acceleration, not 1:1; see docs/guests/amix.md \"The pointer is not 1:1\". Keyboard is unaffected.",
+    "mouse": "PASS (2026-09-01) — ABSOLUTE through the guest's own X11R4 server: SH_X11TEST_MOTION=warp warps with XWarpPointer and reads back with XQueryPointer over the launcher's loopback-only slirp redirect 127.0.0.1:6072 -> 10.0.2.15:6000; buttons/keys stay on XTEST and a button edge waits for the confirmed warp. Framebuffer-proven sweep in docs/guests/amix.md.",
     "keyboard": "PASS",
     "fixture": "AMIX 2.1 OPEN LOOK desktop on a 640x512 monochrome screen: an xterm titled 'Amiga UNIX 2.1' showing 'UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k' over a root shell, xcalc (in its TI-30 layout, wearing OPEN LOOK's rounded buttons rather than the square Athena ones), and xclock. Started from /etc/inittab (entry 'xw', run level 2) via xinit /etc/kh-xsession, so the desktop is up without a login. resetMode=relaunch with no statefile: reset is a COLD BOOT (~2 min to the desktop) of a fresh work HDF copied from disk/amix-system.hdf.golden. BAKE RULE: halt the guest with /sbin/shutdown -y -g0 -i0 before copying the golden — UFS has no host-repairable dirty flag, and a golden taken from a killed emulator makes every visitor's boot run a full fsck (~4 min instead of ~2). Keyboard PASS on the sandbox rig 2026-08-30 (XTEST). Mouse OPEN: motion reaches the guest but is relative and accelerated."
   }
