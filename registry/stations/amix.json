@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "amix",
+  "era_year": 1992,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 69,
+        "prelude": "",
+        "value": {
+          "key": "amix",
+          "script": "tiles/amix.sh",
+          "outputDir": "AmigaUNIX",
+          "class": "graphical",
+          "estimated": "~4h",
+          "automation": "vision",
+          "produces": "amix-system.hdf golden master (AMIX 2.1 OPEN LOOK desktop; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/amix",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54172,
+      "notes": "HOST-NATIVE: FS-UAE 3.2.35 (its OWN copy at assets/amix/fsuae-native, built from the merged source with fsuae-slirp-hostfwd.patch, FSUAE_STATION=amix) runs an Amiga 3000 (68030+MMU, Kickstart 2.04 r37.175) with an A2410 TIGA board on the host inside a pinned 1024x768 Xvfb; the guest's X -tiga server drives the board (OPEN LOOK, 256 colours) and the daemon captures the X root (SH_CAPTURE=x11). No QEMU/QMP, no exec channel (in.telnetd does listen on 23 inside the guest -- a cheap follow-up). POINTER: ABSOLUTE via the GUEST's X server (SH_INPUT_BACKEND=x11test + SH_X11TEST_MOTION=warp + SH_X11WARP_DISPLAY=127.0.0.1:72). The UAE mousehack is an AmigaOS trap AMIX never registers, so any XTEST motion is relative+accelerated there; instead the A2065 runs on slirp and the launcher adds a LOOPBACK-ONLY redirect 127.0.0.1:6072 -> 10.0.2.15:6000 (the board's X server listens on the same :0); the daemon warps (XWarpPointer) and reads back (XQueryPointer); buttons/keys ride XTEST into the Xvfb with each button edge held until the warp is confirmed. Single injector: never push motion at this guest by another path (no xdotool mousemove on the live Xvfb). The pointer is dead while the guest X server is (boot ~90 s; x11warp-check.log says ok / STALE GOLDEN / TIMED OUT). In RTG mode the capture is identity-mapped (no stretch, zoom only affects the boot console). Golden (unified 2026-09-01) carries the colour session, /etc/inet/hosts amix=10.0.2.15 + slirphost=10.0.2.2 (rc.inet brings aen0 up; NO default route), and xhost +slirphost in both /etc/kh-xsession and /etc/kh-xsession.mono. Reset=relaunch: cold boot of a fresh work HDF copied from disk/amix-system.hdf.golden; no statefile. Framebuffer-proven 2026-09-01 on the shipping binary at 1024x768: readback exact and sprite on target at 16 points incl. all four corners, residual 0 px; click and keys proven by guest response (docs/guests/amix.md). Launcher stations/amix/x11-runtime.sh."
+    }
+  },
+  "render": {
+    "signalOrder": 71,
+    "stationsManifestOrder": 69,
+    "stationsManifestPrelude": "\n# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop, in COLOUR on an A2410 (1024x768, 8-bit PseudoColor, selected by starting AMIX's X server with -tiga). The chipset X server is depth 1, so monochrome 640x512 is the fallback and is one flag away (/etc/kh-xsession.mono in the guest). Absolute 1:1 pointer via x11warp into the guest's own X server over a loopback-bound slirp redirect.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 76,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Amiga 3000 desktop box",
+    "goldenOrder": 69
+  },
+  "stationDir": "amix",
+  "lifecycle": "production",
+  "listing": {
+    "state": "hidden",
+    "since": "2026-08-30",
+    "reason": "Dark launch pending the operator's eyeball at /os/amix. Both original blockers are CLOSED: the pointer is absolute and 1:1 (x11warp into the guest's X server, 0 px residual, framebuffer-proven), and colour is proven and shipped (A2410 via -tiga). Promote by dropping this block."
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54172,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-warp-absolute",
+      "absolute": true,
+      "present": true,
+      "device": "guest X server (X -tiga on the A2410; motion via loopback slirp redirect) + amiga-mouse/keyboard over XTEST (buttons, keys)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 172
+  },
+  "guestDoc": "docs/guests/amix.md",
+  "credentialsRef": "guest/amix",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "amix",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":72",
+      "SH_PORT": "54172",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/amix/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/amix/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/amix/amix_cmd"
+    },
+    "bringUpOrder": 76,
+    "x11": {
+      "display": ":72",
+      "geometry": "1024x768x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/amix/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "amix",
+        "--udp",
+        "54172",
+        "--x11",
+        "--x11-display",
+        ":72",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/amix/x11-runtime.sh",
+        "--env-append-file",
+        "$T/amix/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/amix/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7A8B99",
+    "eraLabel": "1992 · Amiga UNIX (AMIX) 2.1"
+  },
+  "museum": {
+    "id": "amix",
+    "displayName": "Amiga UNIX (AMIX)",
+    "year": 1992,
+    "lineage": "Commodore Amiga / AT&T UNIX System V Release 4 (ported by Commodore)",
+    "arch": "Motorola 68030 @ 25 MHz with MMU + 68882 FPU, A2410 graphics board (Amiga 3000)",
+    "ramMB": 16,
+    "era": "1990s",
+    "accent": "#7A8B99",
+    "eraSoftware": [
+      "OPEN LOOK Window Manager (olwm)",
+      "X11R4 and the AT&T OPEN LOOK toolkit (OLIT)",
+      "the A2410 colour X server (X -tiga)",
+      "GNU Emacs 18.55",
+      "the SVR4 sysadm menus",
+      "uucp, C News and NNTP"
+    ],
+    "periodBrowser": "none — this station is offline, and in 1992 a Unix machine's network was uucp and Usenet: AMIX ships C News, NNTP and an SVR4 TCP/IP stack, not a browser",
+    "iconicApps": [
+      "olwm",
+      "xterm",
+      "xcalc",
+      "GNU Emacs 18.55"
+    ],
+    "blurb": "Commodore licensed AT&T's System V Release 4 and shipped it on the Amiga 3000, wearing OPEN LOOK — the desktop AT&T specified for SVR4, and the one Motif beat — instead of Workbench. Nobody ever published how many sold. This one has the A2410 graphics board fitted, so it runs OPEN LOOK in colour: the option that took the price from $4,998 to $7,713.",
+    "notes": "Live streamhost tile, HOST-NATIVE from birth: FS-UAE 3.2.35 on the host under a pinned Xvfb, x11 root capture + XTEST input, with its own copy of the binary (rule 6). Installed from real media — the AMIX 2.1 boot/root floppies and the 29-segment installation tape (amigaunix.com) restored through UAE's SCSI tape emulation onto a 2 GB RDB disk, exactly as a real A3000UX did it. SHIPS IN COLOUR: the pinned FS-UAE build does drive the Commodore A2410, and AMIX's X server comes up on it at 1024x768 depth 8 PseudoColor (256 colours) when started with -tiga — /usr/X/bin/X and /usr/X/bin/X2410 are byte-identical, so the board is selected by that flag alone. The earlier 'FS-UAE compiles the A2410 code but never calls it' verdict was a tool artefact: ugrep skipped the ISO-8859 gfxboard.cpp as binary, and the dispatch functions are named tms_*, not a2410_*. The 640x512 depth-1 chipset session is kept in-guest as /etc/kh-xsession.mono, so monochrome is a one-line revert. Historically the A2410 was a $998 option and most A3000UX owners ran the mono chipset screen; the poster says so. Distinct from amiga (A500/WB1.3), amigaos35 (A4000/OS 3.5) and aros. See docs/guests/amix.md."
+  },
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.2.35",
+    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (FSUAE_STATION=amix; upstream 3.2.35 + fsuae-native.d/fsuae-mousehack-rearm.patch)",
+    "driver": "A3000"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "host-only",
+    "note": "A2065 on FS-UAE slirp, used ONLY for the pointer: a loopback-bound redirect 127.0.0.1:6072 -> guest 10.0.2.15:6000 lets the daemon drive the guest's X server. Fail-closed: the guest has no default route (only 10.0.2.0/24), the redirect binds 127.0.0.1, and there is no retronet tap. Not a retronet join; a web-plane join remains a follow-up."
+  },
+  "reset": {
+    "stationDir": "amix",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS (2026-09-01) — ABSOLUTE through the guest's own X11R4 server: SH_X11TEST_MOTION=warp warps with XWarpPointer and reads back with XQueryPointer over the launcher's loopback-only slirp redirect 127.0.0.1:6072 -> 10.0.2.15:6000; buttons/keys stay on XTEST and a button edge waits for the confirmed warp. Framebuffer-proven sweep in docs/guests/amix.md.",
+    "keyboard": "PASS",
+    "fixture": "AMIX 2.1 OPEN LOOK desktop in 256 colours at 1024x768 on the A2410 (X -tiga): steel-blue root, grey OPEN LOOK frames with SteelBlue4 title bars; an xterm titled 'Amiga UNIX 2.1' (black on white, 80x24 at +40+120) showing 'UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k' over a root shell; xcalc (TI-30 layout with OPEN LOOK's rounded buttons, gray85); a light-yellow xclock with black hands and a red second hand. Started from /etc/inittab (entry 'xw', run level 2) via xinit /etc/kh-xsession -- /usr/bin/X11/X -tiga, so the desktop is up without a login and, with *pointerFocus: true, the xterm under the initial pointer has keyboard focus. resetMode=relaunch with no statefile: reset is a COLD BOOT of a fresh work HDF copied from disk/amix-system.hdf.golden (chipset console text for ~60 s, board active at ~60 s, desktop by ~90 s). BAKE RULE: halt the guest with /sbin/shutdown -y -g0 -i0 (typed with the pointer INSIDE the xterm -- pointerFocus) before copying the golden; UFS has no host-repairable dirty flag. Pointer PASS 2026-09-01 on the shipping binary at 1024x768: XWarpPointer into the board's X server, readback exact and sprite on target at 16 points incl. all four corners, residual 0 px; click PASS (a warped XTEST click on xcalc's '7' put 7 on its display); keyboard PASS (typed 'echo ok-KEYS' printed in the xterm)."
+  }
+}

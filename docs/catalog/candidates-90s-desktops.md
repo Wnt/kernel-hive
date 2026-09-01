@@ -67,7 +67,23 @@ which no other exhibit in the lineup speaks to.
   richer desktop.
 - **Main cost is media sourcing** (Towns system discs), not integration.
 
-## 4. Amiga UNIX (AMIX) 2.1 (1990)
+## 4. Amiga UNIX (AMIX) 2.1 (1990) — **BUILT 2026-08-30**
+
+> **This one is done.** It is a station: `registry/stations/amix.json`, with
+> [`../guests/amix.md`](../guests/amix.md) as the narrative and
+> [`../lab/research/candidate-amix.md`](../lab/research/candidate-amix.md) as the
+> recon record. The emulator question resolved **exactly** the way this note
+> predicted, after a detour:
+>
+> - The A3000 + 68030 MMU is just a configuration of the FS-UAE build we
+>   already ship — no new emulator for the machine.
+> - **The same build drives the A2410.** A first bring-up shipped monochrome
+>   (640x512, depth 1 — AMIX's chipset X server) on the belief that FS-UAE
+>   3.2.35 "compiles the A2410 code but never calls it"; that was a grep-tool
+>   artefact plus a missing `-tiga` flag on the X server, and it is corrected
+>   in the guest doc. Colour OPEN LOOK at 1024x768, 8-bit, is proven on the
+>   framebuffer (2026-09-01); the colour golden awaits promotion.
+> - It is still OPEN LOOK, and still the "wait, that existed?" tile.
 
 OPEN LOOK running on an Amiga 3000UX — Commodore's SVR4 port, vanishingly rare
 and almost never seen running. The "wait, that existed?" tile.

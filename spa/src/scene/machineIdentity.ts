@@ -117,6 +117,10 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
     badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
   },
+  amix: {
+    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
+    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
+  },
   qnx: {
     caseTint: '#4b4f50', accentTint: '#8a514b', tintMix: 0.6,
     badge: 'FANLESS DEV', spec: 'I/O • 2010', kit: 'modern',

@@ -123,6 +123,20 @@ pub(super) fn parse_x11test_buttons(s: &str) -> bool {
     }
 }
 
+/// Parse `SH_X11TEST_MOTION`: where the `x11test` sink sends pointer MOTION.
+/// `xtest` (default) injects into the host display as before; `warp` hands
+/// motion to the GUEST's own X server through an inner `x11warp` sink
+/// (`SH_X11WARP_DISPLAY`), for a guest that tracks host motion relatively.
+/// Anything else panics: a typo must not silently leave the pointer relative
+/// on a station whose registry promises absolute.
+pub(super) fn parse_x11test_motion(s: &str) -> bool {
+    match s.trim().to_ascii_lowercase().as_str() {
+        "warp" => true,
+        "xtest" | "" => false,
+        v => panic!("invalid SH_X11TEST_MOTION={v:?}; expected xtest|warp"),
+    }
+}
+
 /// The `x11test` sink's opt-in mode block, construction-frozen. Everything
 /// defaults to the historical behavior, so the existing fleet is
 /// byte-identical with the envs unset; each knob is documented in
@@ -140,6 +154,11 @@ pub struct X11TestConfig {
     /// `SH_X11TEST_KEYS` — keyboard as paced XTEST edges (embedded US-layout
     /// table, `SH_X11TEST_KEYMAP` override). Off = keys unrouted, as today.
     pub keys: bool,
+    /// `SH_X11TEST_MOTION=warp` — pointer MOTION through the guest's own X
+    /// server (WarpPointer + QueryPointer readback, `x11_warp.rs`) instead of
+    /// host XTEST, while buttons and keys keep riding XTEST into the host
+    /// display; a button edge waits for the confirmed warp (amix).
+    pub motion_warp: bool,
     /// `SH_BTN_MIN_HOLD_MS` (default 60, capped 250) — XTEST-button dwell
     /// floor, both press-to-release hold and release-to-next-press gap: an
     /// instant browser click is stretched to three 50 Hz frames, never
@@ -174,6 +193,7 @@ impl X11TestConfig {
             abs: flag("SH_X11TEST_ABS"),
             buttons_xtest: parse_x11test_buttons(&env_or("SH_X11TEST_BUTTONS", "cmdfile")),
             keys: flag("SH_X11TEST_KEYS"),
+            motion_warp: parse_x11test_motion(&env_or("SH_X11TEST_MOTION", "xtest")),
             // Same 250 ms cap as the key gate: a station.env typo must not be
             // able to wedge the pointer or keyboard.
             btn_hold_ms: env_or("SH_BTN_MIN_HOLD_MS", "60")
@@ -369,7 +389,7 @@ pub(super) fn parse_input_backend(legacy_pointer: &str, backend: Option<&str>) -
 mod tests {
     use super::{
         parse_audio_source, parse_input_backend, parse_key_remap, parse_silence_thresh,
-        parse_x11test_buttons, AudioSource, InputBackend,
+        parse_x11test_buttons, parse_x11test_motion, AudioSource, InputBackend,
     };
 
     #[test]
@@ -386,6 +406,20 @@ mod tests {
     #[should_panic(expected = "SH_X11TEST_BUTTONS")]
     fn x11test_buttons_rejects_garbage() {
         parse_x11test_buttons("agent");
+    }
+
+    #[test]
+    fn x11test_motion_parses_both_routes() {
+        assert!(!parse_x11test_motion("xtest"));
+        assert!(!parse_x11test_motion("")); // unset -> host XTEST, as before
+        assert!(parse_x11test_motion("warp"));
+        assert!(parse_x11test_motion(" WARP "));
+    }
+
+    #[test]
+    #[should_panic(expected = "SH_X11TEST_MOTION")]
+    fn x11test_motion_rejects_garbage() {
+        parse_x11test_motion("relative");
     }
 
     #[test]

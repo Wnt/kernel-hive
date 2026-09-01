@@ -480,5 +480,14 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'modernD', monitor: 'lcdC',
     keyboard: 'keyboardG', mouse: 'paramMouseE',
   },
+  // amix: the Amiga 3000 is a low desktop box, not a tower — the machine
+  // Commodore sold as the A3000UX workstation. Same pizzaBoxD shell as
+  // amigaos35's sibling A-series entries, under the ordinary crtC: this one
+  // drives an A2410 board at 1024x768 in colour, so it is NOT the mono
+  // setup its chipset X server would imply.
+  amix: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 
