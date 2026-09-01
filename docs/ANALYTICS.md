@@ -524,6 +524,196 @@ its stopping is visible) or the visitor was ASKING it to move (a trusted input
 edge after the last paint, so they are waiting on a reaction). Neither is
 knowable from the wire, which is exactly why the rule lives in the tab.
 
+### 5.5 The stream event vocabulary — the plane that was dark
+
+Everything in §5.4 measures the VISITOR: how long they waited, whether they gave
+up. None of it measures what the streaming plane itself DID, and until
+2026-09-01 nothing did. The audit that produced this section found eight holes,
+and the shape of every one was the same: the fact existed in the tab, it was
+sometimes written to `/clientlog`, and it never reached a durable plane.
+
+* **Quality / bitrate / tier switches** appeared ONLY folded into the 5-second
+  periodic `stats` line. That is a **sample**, not an event: it can say the tier
+  was 3 at 12:04:05, and it can never say the tier CHANGED — a switch that
+  happened and reverted between two samples left nothing at all. This lab has
+  already been bitten by a fleet-wide ABR flap; the evidence for it had to be
+  reconstructed by eye from sample lines.
+* **Decode errors** were caught, so `installErrorCapture`'s window handler never
+  saw them and `reportError` was never called. A decoder dying produced a
+  console line inside one visitor's tab.
+* **Keyframes** had no span, no metric, no flow and not even a clientlog row.
+* **Audio** — `audioPlayer.ts` had zero telemetry. Autoplay block, a refused
+  `AudioContext.resume()` and the first sample were all unobserved, so a station
+  that is silent for every visitor and one nobody turned the sound on for were
+  indistinguishable.
+* **Reconnects** had no per-retry event. The only number,
+  `station.open.attemptCount`, is committed on a painted frame — so a session
+  that retried its budget away and never painted contributed nothing anywhere.
+* **Client-internal stalls** (frame watchdog, decoder wedge, paused sink) were
+  clientlog-only.
+* **`transport.ts`** had zero emissions across all nine of its sites.
+* **`retryBudget.ts`, `softwareDecodeLatch.ts`, `videoResume.ts` and
+  `resumePolicy.ts`** were entirely uninstrumented. A visitor latched
+  permanently into software decode — paying CPU for every frame of every station
+  for the rest of the page's life — was invisible to us.
+
+#### One call, four lanes
+
+`analytics/streamEvents.ts` holds the vocabulary and is the only place it is
+declared. `emitStreamEvent(name, attrs, value)` fans out to a **probe** (the
+durable two-year count), a **metric** (the bucketed distribution of the event's
+one number), a **span** named exactly as the event and opened as a child of
+whichever flow is live, and — through a thin adapter — **Instana**. Nobody
+instruments the same fact twice and the four lanes cannot disagree about it.
+
+The event name, the span name and the probe id are the SAME STRING, so a query
+written against one works against all three. `analytics/catalogue/stream.ts`
+declares the probes and metrics; the taxonomy is their only call site, which is
+the call-site gate working rather than a way around it — an id that fell out of
+the table fails the build instead of quietly reading zero forever.
+
+**One number per event, declared.** `customMetric` is a single number and this
+plane has three ladders (`ms`, `count`, `pct`). An event carrying three numbers
+would have to pick one for the vendor and invent ladders for the rest, so it
+picks one HERE and everything else numeric rides as a span attribute, where it
+is exact rather than bucketed. The clearest case is the quality switch:
+`targetKbps` is an attribute (no honest kbps ladder exists), and the number that
+gets a distribution is `stream.quality.sinceLastSwitchMs` — where a **LOW** value
+is the finding, because tiers changing every few seconds is the flap signature
+and a switch COUNT cannot separate it from a link that honestly degraded twice.
+
+#### The contract
+
+| event | fires when | attributes | number | sampling |
+|---|---|---|---|---|
+| `stream.quality.switch` | a KIND_PARAMS record differs in tier, CRF or target bitrate from the one in force | `tierFrom/To`, `crfFrom/To`, `targetKbps`, `width`, `height`, `fpsCap`, `reason` (`up`/`down`/`rate`) | `sinceLastSwitchMs` | 1-in-1 |
+| `stream.decode.error` | every `noteDecodeFailure`, outside its 1/s console throttle | `error.type`, `consecutive`, `total`, `path`, `fatal` | `errorRun` | 1-in-1 |
+| `stream.decode.rebuild` | a silently wedged decoder is dropped for a fresh one | `rebuild`, `rebuildMax` | — | 1-in-1 |
+| `stream.decode.softwareLatched` | the page-lifetime hardware-decode demotion flips | `cause` | — | 1-in-1 |
+| `stream.keyframe.gap` | `auGate.noteGap()` — a frame_id discontinuity | `gapFrames` | `gapFrames` | **1-in-10** |
+| `stream.keyframe.timeout` | the first-frame budget expires with nothing painted | `budgetMs`, `live`, `restore` | `waitMs` | 1-in-1 |
+| `stream.audio.start` | the first Opus sample scheduled onto a RUNNING context | `sampleRate`, `ctxState` | `toFirstSampleMs` | 1-in-1 |
+| `stream.audio.blocked` | `resume()` rejects, or the first sample lands on a non-running context | `ctxState`, `error.type` | — | 1-in-1 |
+| `stream.transport.retry` | `scheduleRetry` — per attempt | `attempt`, `limit`, `reason`, `live`, `restore` | `retryAttempt` | 1-in-1 |
+| `stream.transport.exhausted` | `consumeRetry` reports the budget spent | `attempt`, `limit`, `live` | — | 1-in-1 |
+| `stream.transport.closed` | `wt.closed` resolves, rejects, or `connect()` throws | `reason` (`server-finished`/`transport-down`/`connect-failed`) | — | 1-in-1 |
+| `stream.stall.detected` | the frame watchdog LATCHES | `thresholdMs`, `hadDecodeError` | `sinceLastPaintMs` | 1-in-1 |
+| `stream.sink.paused` | the watchdog first finds `isPausedSink()` true | `visible` | — | 1-in-1 |
+| `stream.resume.decision` | `sessionNeedsReconnect` settles | `verdict` (`fresh-paint`/`ping-alive`/`ping-dead`) | `probeMs` | 1-in-1 |
+
+Attribute names are given short above; on the wire each is `kh.<group>.<name>`
+(`kh.quality.tierFrom`, `kh.retry.attempt`, …) plus the page binding, plus
+whatever station dimensions the surrounding call site merged in.
+
+#### Sampling, and the rule that is not negotiable
+
+**The sampling decision is made once, upstream of every lane.** A sampled-away
+event costs one counter increment and reaches nothing — no span, no probe, no
+metric, no vendor beacon — so all four describe the identical population and
+`n x sampleN` is the true count for every one of them. `kh.sample.n` rides on the
+event so a reader can do that multiplication without knowing the source.
+
+The default is **1-in-1**, and it is the right default because these events are
+RARE and DIAGNOSTIC. **An error is never sampled**, and there is a test that
+fails the build if an event marked `status: error` or `reportsError` declares a
+rate. Exactly one event carries a rate: `stream.keyframe.gap`, at the 1-in-10
+this plane already uses for input edges (`streamClient/inputTrace.ts`
+`SAMPLE_N`). It earns it because it is the only member of the vocabulary that is
+a **level** rather than an **edge** — a congested minute produces them
+continuously — and because the quantity it feeds is a distribution of gap sizes,
+which sampling does not bias.
+
+Two other candidates for a rate were turned into edges at the call site instead,
+which is the better fix every time it is available: the frame watchdog reports
+its LATCH rather than its state, and the paused sink is latched in
+`sessionTelemetry` and re-armed by a painted frame. Sampling a fault down is how
+a report learns to under-state a fault.
+
+#### Page binding — the capability Instana's browser agent does not have
+
+Instana's browser `reportEvent` has **no `viewName` parameter**. The mobile SDK
+has one; the browser one does not, so a custom event there correlates to a page
+only implicitly, by landing in whatever page the agent's session state happened
+to be naming at that instant. That is fine for a single-route page and useless
+here: a visitor opens `/os/beos`, navigates to `/fleet` while the stream keeps
+running, and every quality switch after that is attributed to the wrong page by
+a mechanism nobody can query around.
+
+So in our plane the binding is **explicit and travels on the event**
+(`analytics/pageBinding.ts`):
+
+* `kh.page.pattern` — the route PATTERN (`/os/:osId`, never `/os/beos`), so 63
+  stations group as one page. The same cardinality rule §navigation already
+  states; the concrete station is `kh.station.id`, a different question.
+* `kh.page.loadId` — 16 hex, minted once per document. "Show me everything that
+  happened on this page load" is an equality filter, not an inference.
+* `kh.page.instanaLoadId` — the vendor's own `ineum('getPageLoadId')`, captured
+  so the two systems can be reconciled for exactly as long as both exist.
+
+The pattern is read from `location` at emit time rather than cached from the
+router, because a cache is a second opinion about the current route that can
+disagree with the address bar — and this binding exists so that it cannot be
+wrong.
+
+#### The Instana adapter is thin, isolated and deletable
+
+`analytics/instanaStreamEvents.ts` translates an already-made decision and does
+nothing else: no sampling, no naming, no defaulting, no enrichment. Deleting it
+and its one call site removes Instana from the stream plane entirely and changes
+nothing about what our own store receives — which is the point, since the vendor
+is a benchmark the operator intends to drop.
+
+Three vendor rules matter, and all three fail SILENTLY:
+
+* `backendTraceId` must be **exactly 16 or 32 hex characters**. The minified
+  agent validates it and drops the field otherwise; the docs state no such rule.
+  Our own trace ids are already 32 lowercase hex, so nothing is reformatted —
+  only checked. Unlike `inputTrace.ts`, which abandons its beacon when the id is
+  unusable (there the join IS the beacon), a stream event is worth reporting
+  with or without a join, so a malformed id costs the FIELD and not the event.
+* `meta` values are **strings**, capped at the vendor's `maxMetadataKeys`
+  default of 25. Coercion happens in the adapter, never at the call site — that
+  is how our own span attributes would have silently become strings too.
+* `customMetric` is **one number** at 4-decimal precision. A non-finite value is
+  omitted rather than coerced to zero, because a zero is a real observation.
+
+**No synthetic entry spans, and no span-kind changes.** A rejected design asked
+for invented entry spans so Instana's UI would render something more
+trace-shaped. It is not done and must not be added: it would make our own data a
+function of a third party's rendering, which is the exact coupling the adapter
+exists to avoid.
+
+#### What is still not measured here, and why
+
+There is **no keyframe REQUEST event, because the browser never makes one.** The
+daemon forces an IDR on subscribe and runs a keyframe heartbeat, so no
+client-side request channel exists to instrument. What a tab honestly has is two
+ways of WAITING for a keyframe — the decode gate armed by a frame_id gap, and
+the first-frame budget expiring — and those are the two events. Naming an event
+after a mechanism that does not exist would have produced a permanent zero that
+reads as "this never happens".
+
+**`stream.recover` is still unwired on the WebRTC fallback path**, and this is
+the precise reason. That flow is defined on the PAINT side — frames that reached
+the glass — because the failure worth catching is exactly the one where the
+encoder's account and the visitor's picture disagree. On the streamhost path the
+tab decodes every frame itself and `sessionTelemetry.painted()` is a real
+observation. On the WebRTC fallback the browser owns the `<video>` presentation
+pipeline end to end and the app never sees a frame, so there is no honest
+`painted()` to call; wiring the flow on a proxy (the element's `currentTime`
+advancing, a `timeupdate`) would produce freeze durations measured against a
+different definition of "moving" than every other station's, silently mixed into
+the same distribution. The fallback is a WebCodecs-less browser's path and is
+rare. Two things narrow the gap without lying: `station.connect` IS wired there,
+so the funnel and the connect cost are not blind, and `requestVideoFrameCallback`
+is the one API that would make a real `painted()` possible — that, not a proxy,
+is what would unblock this.
+
+Loss, RTT, bitrate as a distribution and encode time remain OUT of this plane
+entirely. The boundary this document sets holds: *if the daemon could answer it,
+this plane does not ask it.* What is in the vocabulary above is the client's own
+DECISIONS and FAULTS, which the daemon cannot see.
+
 ## 6. Metrics — how long it took, and how much effort it cost
 
 A probe says a path ran. A flow says how far an attempt got and where it died.
@@ -1434,6 +1624,12 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/analytics/khFetch.ts` | the automatic same-origin `traceparent` propagation + client-span-per-request patch, and the Instana ordering finding |
 | `spa/src/analytics/metrics.ts` | the metrics lane — bucketing, the visible-time clock, effort accumulators |
 | `spa/src/three/connectTelemetry.ts` | the reference call site: one flow + one timing |
+| `spa/src/analytics/streamEvents.ts` | the stream event vocabulary (§5.5): the taxonomy table and the one emitter that fans it to all four lanes |
+| `spa/src/analytics/catalogue/stream.ts` | the probes and metrics those events feed |
+| `spa/src/analytics/pageBinding.ts` | the explicit page/page-load binding on every stream event — the capability Instana's browser agent lacks |
+| `spa/src/analytics/instanaStreamEvents.ts` | the Instana mirror: thin, isolated, deletable, and the three vendor rules that fail silently |
+| `spa/src/three/streamClient/analyticsEvents.ts` | the stream client's call sites, kept out of the load-bearing decode/transport modules |
+| `scripts/test_stream_event_intake.py` | proves every event name and attribute survives the REAL `/traces` and `/analytics` validators |
 | `spa/src/ui/fleetFindEpisode.ts` | the `fleet.find` episode |
 | `spa/src/scene/hallEngagement.ts` | the `hall.navigate` episode, and what "approached" means |
 | `spa/src/ui/posterReadEpisode.ts` | the `poster.read` episode and the reversal counter |

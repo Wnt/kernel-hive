@@ -32,6 +32,7 @@ import { isStaleAu } from './auGate';
 import { DECODER_FAIL_THRESHOLD, IS_FIREFOX } from './constants';
 import { isSoftwareDecodeLatched, latchSoftwareDecode } from './softwareDecodeLatch';
 import { bytesToHex, noteDecodeSubmit, noteDecoded, noteFrameMark, noteReceived } from './frameTrace';
+import { noteDecodeError, noteFrameGap, noteQualitySwitch } from './analyticsEvents';
 
 // ---- server→client encoder params + HUD stats (KIND_PARAMS) --------------
 export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader) {
@@ -64,7 +65,13 @@ export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader)
       enc.nativeWidth = ndv.getUint16(0, true);
       enc.nativeHeight = ndv.getUint16(2, true);
     }
+    const prevEnc = this.encParams;
     this.encParams = enc;
+    // ON THE SWITCH, not on a sample. The 5-second clientlog `stats` line
+    // carries the tier and CRF in force at the moment it is written, which can
+    // never say that a change HAPPENED — a switch that happened and reverted
+    // between two samples left no evidence at all. This record IS the change.
+    noteQualitySwitch(this, prevEnc, enc, this.stationId);
     // Keep the decoder codec in sync with the live encoder (Section 3.2). A tier
     // change is an ffmpeg restart that emits a fresh SPS+PPS+IDR, so we defer the
     // reconfigure to the next keyframe (feedVideoAU) — never mid-GOP.
@@ -144,6 +151,20 @@ export function noteDecodeFailureImpl(this: StreamClient, msg: string) {
     console.error(`[streamhost] decoder error (${this.consecutiveDecodeFails} consecutive): ${msg}`);
     logClientEvent('decoder-error', `${msg} (consecutive=${this.consecutiveDecodeFails})`);
   }
+  // OUTSIDE the 1/s throttle above, deliberately. That throttle exists so a
+  // storm cannot spam a console and a rolling log; the analytics plane folds
+  // repeats into a counter and a fingerprint by construction, so throttling
+  // here would under-report the very fault the counter exists to size. It
+  // cannot storm regardless: a VideoDecoder error is fatal to the instance, so
+  // the next one waits on a keyframe rebuilding the decoder.
+  noteDecodeError({
+    message: msg,
+    consecutive: this.consecutiveDecodeFails,
+    total: this.decodeErrors,
+    path: this.decodePath,
+    fatal: this.decoderFailed,
+    stationId: this.stationId,
+  });
 }
 
 export function setupVideoDecoderImpl(this: StreamClient) {
@@ -365,6 +386,10 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
       // reference frames — arm the gate so deltas are dropped until the next
       // IDR (freeze the last clean picture instead of painting corruption).
       this.auGate.noteGap();
+      // Sampled 1-in-10 (analytics/streamEvents.ts): a gap is a LEVEL on a
+      // congested link, not an edge, and it is the one event in this plane
+      // that could genuinely flood the collector at 1-in-1.
+      noteFrameGap(gap, this.stationId);
     }
   }
   this.lastFrameId = frameId;
