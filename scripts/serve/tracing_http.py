@@ -45,8 +45,11 @@ THE ROUTE, NOT THE PATH. `http.route` is a low-cardinality TEMPLATE
 (`/signal/{station}.json`), which is what the OTel convention means by it and
 what keeps `traces.facets()` usable. The concrete station goes in `kh.station`,
 which is an exhibit id and public in the gallery manifest. Nothing else off the
-request line is recorded: no query string, no body, no header but Host, and
-never a token — `url.query` and `url.full` are in `traces.BANNED_ATTRS` anyway.
+request line is recorded here yet: no query string, no body, no header but Host.
+That is this module's current scope, not a prohibition — `url.query` and
+`url.full` stopped being refused at intake on 2026-09-01 (docs/ANALYTICS.md §0),
+so recording them is now a decision this file may take. A token never goes in a
+span whatever else does: `traces.SECRET_KEY_RE` refuses one at intake by shape.
 """
 
 from __future__ import annotations

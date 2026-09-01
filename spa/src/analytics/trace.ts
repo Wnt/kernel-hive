@@ -1,22 +1,23 @@
 // ============================================================================
 //  analytics/trace — session, trace and span ids, and the spans themselves.
 //  ---------------------------------------------------------------------------
-//  THIS REVERSES A GUARANTEE. Until now this plane stored no identities at all,
-//  by construction, and docs/ANALYTICS.md said so as a feature: "the only
-//  durable privacy guarantee is the data you never wrote down". A trace IS a
-//  correlated per-session record — that is what makes drilldown possible — so
-//  the guarantee cannot survive alongside it and is not pretended to. What
-//  replaces it is narrower and has to be kept honestly:
+//  THIS IS THE CORRELATED LANE, AND IT IS MEANT TO BE RICH. The counter plane
+//  (analytics.py) is a per-day aggregate with no session column, so it can
+//  never answer "show me the visit that produced that number"; this one can,
+//  and the operator's standing instruction is that it carry as much as it
+//  usefully can — stacks, URLs, and the identity of the account involved
+//  (docs/ANALYTICS.md §0 is the policy; `startTrace` stamps the identity).
+//  Reads are ADMIN-ONLY; the aggregates stay open.
 //
-//    * traces are ADMIN-ONLY on the read side; the aggregates stay open;
-//    * they have a SHORT retention (days, not years) while the counters keep
-//      their two years, so the durable record is still the anonymous one;
-//    * the content rules do NOT relax. No typed text, no lengths that could
-//      identify content, no credential handles. A span is a name, a duration
-//      and a bounded set of attributes.
+//  ONE THING IS REFUSED HERE AND IT IS NOT A PREFERENCE: a SECRET never goes
+//  in a span — no ticket, no cookie, no auth header, no passkey material.
+//  `scripts/serve/traces.py` enforces the same rule at intake by name and by
+//  shape, so a mistake in this file is caught there rather than stored.
 //
-//  Read that as: the plane now knows WHICH SESSION did something for a couple
-//  of weeks, and still never knows what was typed into it.
+//  Until 2026-09-01 this header instead argued for a "content rule" — no
+//  stacks, no URLs, no identity, values clipped at 120 characters. That was an
+//  AI-invented constraint that later sessions read back as policy, and it cost
+//  the plane the stack of every fault it recorded. Do not reconstruct it.
 //
 //  A SECOND, DELIBERATE narrowing on 2026-08-31: `three/streamClient/
 //  inputTrace.ts` now collects a SAMPLED per-input timing series — 1 key or
@@ -26,9 +27,10 @@
 //  eyes open, not erosion: it exists because the open keyboard-lag
 //  investigation (a suspected pacing-queue floor in the emulator ctl module)
 //  needed an end-to-end input->pixel flame graph and nothing short of
-//  per-edge tracing draws one. What still
-//  never leaves the tab is unchanged and absolute: no typed text, no key
-//  IDENTITY. `kh.key.class` is a coarse bucket (printable/modifier/
+//  per-edge tracing draws one. What still never leaves the tab is TYPED
+//  KEYSTROKE CONTENT — the one item on the 2026-09-01 richness pass the
+//  operator has not been asked about, held behind `KH_TRACE_TYPED_TEXT` in
+//  traces.py (default off) rather than settled by an agent. `kh.key.class` is a coarse bucket (printable/modifier/
 //  navigation/enter/function) computed from the wire scancode the daemon was
 //  already going to receive to work at all — two unrelated keys in the same
 //  bucket produce the identical string, and nothing in the span can be
@@ -109,12 +111,20 @@ interface SpanEvent {
 type AttrValue = string | number | boolean;
 export type Attrs = Record<string, AttrValue>;
 
-/** Longest attribute string kept. Enough for a station id or a reason token,
- *  far too short for anything a visitor typed. */
-const ATTR_STR_MAX = 120;
-/** Attributes per span. A span wanting more than this is being used as a log
- *  line, which is what /clientlog is for. */
-const ATTR_MAX = 24;
+/** Longest ordinary attribute string kept. 2048, raised from 120 on
+ *  2026-09-01: the old cap was a content rule dressed as a size rule, and it
+ *  truncated anything worth reading. Mirrors `traces.ATTR_STR_MAX`. */
+const ATTR_STR_MAX = 2048;
+/** The long-value allowance, for attributes whose whole point is a long value.
+ *  A stack clipped to 2 KiB is still a usable stack; clipped to 120 it is one
+ *  frame. Mirrors `traces.ATTR_STR_MAX_LONG` / `traces.LONG_ATTRS`. */
+const ATTR_STR_MAX_LONG = 16384;
+const LONG_ATTRS = new Set([
+  'exception.stacktrace', 'code.stacktrace', 'exception.message', 'url.full', 'url.query',
+]);
+/** Attributes per span. A bound on a runaway caller, not on richness: measured
+ *  on the live store, the busiest span carries nine. Mirrors `traces.ATTR_MAX`. */
+const ATTR_MAX = 64;
 
 /** One span on the wire. Short keys: a trace is many spans and this travels
  *  per session, unlike the counters which fold. */
@@ -179,10 +189,25 @@ let enabled = false;
 /** Wire the tracer to a sink. Until this is called nothing is buffered and
  *  nothing is sent — the same gate the counter sink uses, for the same reason:
  *  a signed-out stranger at the walk-in door would otherwise queue forever. */
-export function configureTracer(opts: { enabled: boolean; emit: (spans: WireSpan[]) => void }): void {
+export function configureTracer(opts: {
+  enabled: boolean;
+  emit: (spans: WireSpan[]) => void;
+  identity?: Attrs;
+}): void {
   enabled = opts.enabled;
   emit = opts.emit;
+  identity = opts.identity && Object.keys(opts.identity).length ? opts.identity : undefined;
 }
+
+/** WHO this tab belongs to, stamped on the span that ENTERS each trace (never
+ *  on every span — one copy per journey is what a query needs and 1/N the
+ *  bytes). `enduser.id` / `user.name` are OTel semantic-convention names and
+ *  are accepted by `scripts/serve/traces.py` since 2026-09-01: "which account
+ *  hit this" is the question a support ticket opens with, and the plane could
+ *  not answer it. Absent for a visitor who has no account — never a placeholder
+ *  or an empty string, which would be a value that means "unknown" and reads
+ *  like a user. */
+let identity: Attrs | undefined;
 
 function clean(attrs?: Attrs): Attrs | undefined {
   if (!attrs) return undefined;
@@ -190,7 +215,7 @@ function clean(attrs?: Attrs): Attrs | undefined {
   let n = 0;
   for (const [k, v] of Object.entries(attrs)) {
     if (n >= ATTR_MAX) break;
-    if (typeof v === 'string') out[k] = v.slice(0, ATTR_STR_MAX);
+    if (typeof v === 'string') out[k] = v.slice(0, LONG_ATTRS.has(k) ? ATTR_STR_MAX_LONG : ATTR_STR_MAX);
     else if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
     else if (typeof v === 'boolean') out[k] = v;
     else continue;
@@ -240,8 +265,9 @@ function hiddenElapsed(): number {
   return hiddenTotal + (hiddenSince === null ? 0 : now() - hiddenSince);
 }
 
-/** Events per span, bounded for the same reason attributes are. */
-const EVENT_MAX = 16;
+/** Events per span, bounded for the same reason attributes are. Mirrors
+ *  `traces.EVENT_MAX`. */
+const EVENT_MAX = 64;
 
 /** `traceEntry` marks a span THIS TAB opened a trace with — see `end()`. */
 function makeSpan(
@@ -281,15 +307,18 @@ function makeSpan(
     },
     recordException(err: unknown) {
       if (ended) return;
-      // OTel semantic conventions for an exception event. `exception.stacktrace`
-      // is part of that convention and is deliberately omitted: a stack is the
-      // one field here that can carry arbitrary application strings, and
-      // /clientlog already stores stacks against this same session id.
+      // OTel semantic conventions for an exception event: type, message AND
+      // stacktrace. The stack was omitted until 2026-09-01 on an AI-invented
+      // content rule; the store accepts it now with a 16 KiB allowance, and a
+      // fault whose trace does not carry its stack is a fault you go and look
+      // for somewhere else (docs/ANALYTICS.md §0).
       const type = err instanceof Error ? err.name : typeof err;
       const message = err instanceof Error ? err.message : String(err ?? '');
+      const stack = err instanceof Error ? (err.stack ?? '') : '';
       this.event('exception', {
         'exception.type': String(type).slice(0, 80),
         'exception.message': message,
+        ...(stack ? { 'exception.stacktrace': stack } : {}),
       });
       if (!('error.type' in own)) own['error.type'] = String(type).slice(0, 80);
     },
@@ -382,8 +411,9 @@ export function childOfActive(name: string, attrs?: Attrs, kind?: SpanKind): Spa
  *  never parentless. End the returned span to close this tab's part. */
 export function startTrace(name: string, attrs?: Attrs, kind?: SpanKind): Span {
   const joined = pageLoadParent();
-  if (joined) return makeSpan(joined.traceId, joined.spanId, name, attrs, kind, true);
-  return makeSpan(newTraceId(), null, name, attrs, kind, true);
+  const own = identity ? { ...identity, ...(attrs ?? {}) } : attrs;
+  if (joined) return makeSpan(joined.traceId, joined.spanId, name, own, kind, true);
+  return makeSpan(newTraceId(), null, name, own, kind, true);
 }
 
 /**

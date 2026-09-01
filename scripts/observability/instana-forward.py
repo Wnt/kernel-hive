@@ -32,13 +32,15 @@ of over the internet to a third party. Direct-to-SaaS remains a legitimate,
 fully supported fallback for a box with no agent installed, or to compare the
 two paths deliberately.
 
-THIS SENDS DATA TO A THIRD PARTY. Nothing else in this repo does. The stores it
-reads are already scrubbed at intake — `traces.py` refuses `exception.stacktrace`
-and every other free-text field, so a stack, a typed string or a credential
-handle cannot be in the database to be forwarded — but "already scrubbed" is a
-property worth re-stating at the boundary rather than assumed. `--dry-run`
-exists so the exact bytes can be read before any of them are sent, and it is the
-recommended first run.
+THIS SENDS DATA TO A THIRD PARTY. Nothing else in this repo does, and what it
+sends is deliberately RICH: stacks, URLs and the account identity on a trace are
+exactly what the operator asked Instana to be fed (docs/ANALYTICS.md §0). What
+cannot be in the store to forward is a CREDENTIAL — `traces.py` refuses those by
+name and by shape at intake — and that is the one property worth re-stating at
+the boundary rather than assumed. (Before 2026-09-01 the store also refused
+stacks and identity; this comment used to describe that as the guarantee. It was
+an AI-invented rule, not an operator one.) `--dry-run` exists so the exact bytes
+can be read before any of them are sent, and it is the recommended first run.
 
 INSTANA ONLY BUILDS A TRACE FROM AN ENTRY SPAN — confirmed empirically on
 2026-08-31, and it is the difference between "ingested" and "visible". Spans of

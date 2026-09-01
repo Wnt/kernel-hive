@@ -300,10 +300,13 @@ export function configureInstana(sessionId: string): void {
  */
 export function configureInstanaIdentity(session: Session): void {
   if (session.role === 'anon' || !session.id) return;
-  // No email anywhere in this auth system by design — passkeys only, no
-  // typed identity at all (scripts/serve/auth/walkin.py: "no name, no email,
-  // nothing typed: the only identity is the credential") — so that argument
-  // is omitted rather than padded with an empty string.
+  // The third argument (email) is omitted because THERE IS NO EMAIL — passkeys
+  // only, nothing typed at signup (scripts/serve/auth/walkin.py: "no name, no
+  // email, nothing typed: the only identity is the credential"). That is a fact
+  // about the auth system, NOT a privacy limit: docs/ANALYTICS.md §0 wants
+  // identity in both planes, and the id and display name above are sent in
+  // full. If accounts ever gain an email, pass it here. Never pad the argument
+  // with an empty string — a placeholder identity is worse than none.
   ineum('user', session.id, session.name || undefined);
 }
 

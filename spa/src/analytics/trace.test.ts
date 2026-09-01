@@ -84,10 +84,19 @@ describe('attributes and events', () => {
     expect(__bufferedSpans()[0].a).toEqual({ a: 'x', b: 2, c: true });
   });
 
-  it('truncates a long attribute rather than carrying a payload', () => {
-    const s = startTrace('r', { long: 'x'.repeat(500) });
+  it('bounds an ordinary attribute at 2 KiB — a runaway caller, not richness', () => {
+    const s = startTrace('r', { long: 'x'.repeat(5000) });
     s.end('ok');
-    expect((__bufferedSpans()[0].a!.long as string).length).toBeLessThanOrEqual(120);
+    expect((__bufferedSpans()[0].a!.long as string).length).toBe(2048);
+  });
+
+  it('gives a stack the long-value allowance instead of clipping it to a frame', () => {
+    // The 2026-09-01 reversal: 120 chars was an AI-invented content rule and
+    // it made every stack unreadable. docs/ANALYTICS.md §0.
+    const stack = 'x'.repeat(9000);
+    const s = startTrace('r', { 'exception.stacktrace': stack });
+    s.end('ok');
+    expect(__bufferedSpans()[0].a!['exception.stacktrace']).toBe(stack);
   });
 
   it('records an exception as an OTel event AND sets error.type', () => {
@@ -103,13 +112,28 @@ describe('attributes and events', () => {
     expect(span.a!['error.type']).toBe('TypeError');
   });
 
-  it('never attaches a stacktrace — stacks belong to /clientlog', () => {
+  it('attaches the stacktrace — a fault without one is a fault you go and look for', () => {
     const s = startTrace('r');
     s.recordException(new Error('boom'));
     s.end('error');
-    const json = JSON.stringify(__bufferedSpans()[0]);
-    expect(json).not.toContain('stacktrace');
-    expect(json).not.toContain('at Object');
+    const stack = __bufferedSpans()[0].e?.[0].a?.['exception.stacktrace'];
+    expect(typeof stack).toBe('string');
+    expect(stack as string).toContain('Error');
+  });
+
+  it('stamps the account identity on the span that ENTERS a trace, and only there', () => {
+    configureTracer({
+      enabled: true,
+      emit: () => {},
+      identity: { 'enduser.id': 'u-17', 'user.name': 'ada', 'enduser.role': 'viewer' },
+    });
+    const root = startTrace('r');
+    const child = root.child('inner');
+    child.end('ok');
+    root.end('ok');
+    const spans = __bufferedSpans();
+    expect(spans[0].a?.['enduser.id']).toBeUndefined();   // the child
+    expect(spans[1].a).toMatchObject({ 'enduser.id': 'u-17', 'user.name': 'ada' });
   });
 
   it('ignores attributes and events added after the span ended', () => {

@@ -220,8 +220,8 @@ function backendTraceIdOf(res: Response): string | null {
  *  is the free side effect, not the mechanism.
  *
  *  `kh.backend.trace_id` is 20 characters and its value 32, so it survives
- *  `scripts/serve/traces.py`'s intake unaltered (key ≤ 64, not in
- *  `BANNED_ATTRS`, value ≤ `ATTR_STR_MAX` = 120) — an attribute the store
+ *  `scripts/serve/traces.py`'s intake unaltered (key ≤ 64, not refused as a
+ *  credential, value ≤ `ATTR_STR_MAX` = 2048) — an attribute the store
  *  silently truncated would be worse than none, because it would look right in
  *  the tab and be un-joinable in the store. */
 function recordBackendTrace(span: Span, res: Response, path: string): void {

@@ -315,16 +315,22 @@ class ShapeTest(Base):
         self.assertEqual(span["status"], "error")
         self.assertEqual(span["attributes"]["error.type"], "ValueError")
 
-    def test_an_exception_event_carries_no_message_and_no_stack(self):
-        # The type is a policy fact; the message is arbitrary server text that
-        # can quote a path, a header or a body. traces.py refuses the stack at
-        # intake and this refuses the message at the source.
-        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=ValueError("secret ticket abc123"))
+    def test_an_exception_event_carries_the_type_the_message_and_the_stack(self):
+        # All three since 2026-09-01 (docs/ANALYTICS.md §0). Until then this
+        # emitted the type alone, so a server fault's span said `ValueError`
+        # and every diagnosis began by going elsewhere for the traceback.
+        # The store is admin-only to read; what may never appear in a span is a
+        # CREDENTIAL, which traces.py refuses by attribute name and shape.
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=ValueError("no such station"))
         with self.assertRaises(ValueError):
             h.do_GET()
         events = self.stored(TRACE)["spans"][0]["events"]
         self.assertEqual([e["n"] for e in events], ["exception"])
-        self.assertEqual(events[0]["a"], {"exception.type": "ValueError"})
+        attrs = events[0]["a"]
+        self.assertEqual(attrs["exception.type"], "ValueError")
+        self.assertEqual(attrs["exception.message"], "no such station")
+        self.assertIn("ValueError", attrs["exception.stacktrace"])
+        self.assertIn("Traceback", attrs["exception.stacktrace"])
 
     def test_nested_children_nest(self):
         def body():

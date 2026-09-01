@@ -103,13 +103,6 @@ class StoreTest(unittest.TestCase):
         for bad in ("", "zz", "b7ad6b716920333"):
             self.assertEqual(self.store.record(batch([{**span(S1), "s": bad}])), 0, bad)
 
-    def test_a_stacktrace_attribute_is_refused_even_though_otel_defines_it(self):
-        # The one content rule the trace lane kept. Stacks live in clientlog.
-        self.store.record(batch([span(S1, a={"exception.stacktrace": "at foo()", "kh.flow": "x"})]))
-        attrs = self.store.trace(T1)["spans"][0]["attributes"]
-        self.assertNotIn("exception.stacktrace", attrs)
-        self.assertEqual(attrs["kh.flow"], "x")
-
     def test_the_backend_trace_id_attribute_survives_intake_intact(self):
         """`kh.backend.trace_id` is how a client span points at the server
         trace that answered it (khFetch.ts reads `traceresponse` /
@@ -128,15 +121,16 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(attrs[key], backend)
 
     def test_attributes_are_capped_and_narrowed(self):
-        big = {f"k{i}": "v" for i in range(100)}
-        big["long"] = "x" * 500
+        big = {f"k{i}": "v" for i in range(200)}
+        big["long"] = "x" * (traces.ATTR_STR_MAX + 500)
         big["obj"] = {"nested": 1}
         self.store.record(batch([span(S1, a=big)]))
         attrs = self.store.trace(T1)["spans"][0]["attributes"]
         self.assertLessEqual(len(attrs), traces.ATTR_MAX)
         self.assertNotIn("obj", attrs)
-        for v in attrs.values():
-            self.assertLessEqual(len(str(v)), traces.ATTR_STR_MAX)
+        for k, v in attrs.items():
+            cap = traces.ATTR_STR_MAX_LONG if k in traces.LONG_ATTRS else traces.ATTR_STR_MAX
+            self.assertLessEqual(len(str(v)), cap)
 
     def test_batch_size_is_bounded(self):
         many = [span(f"{i:016x}", parent=S1) for i in range(traces.MAX_SPANS_PER_BATCH + 40)]
