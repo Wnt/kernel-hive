@@ -190,7 +190,7 @@ box_sync_load_pairs() {
   # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
     config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
-    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py eum_proxy.py traces.py traces_schema.py traces_otlp.py tracecontext.py \
+    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py eum_proxy.py traces.py traces_schema.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
     tracing.py tracing_http.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done

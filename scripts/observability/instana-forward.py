@@ -368,7 +368,16 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
         return pending_traces(cfg, seq, PAGE_TRACES)
 
     def ship(chunk):
-        doc = traces_otlp.export(chunk, host_id=cfg.host_id if dest.stamp_host_id else None)
+        # `host.id` is gated on the destination — the agent supplies host
+        # identity itself and a second, differently-derived one would be a
+        # claim we cannot back. `host.name` is not gated: it is the box's own
+        # hostname, true on either leg, and it is also what identifies the ONE
+        # serving-plane process as a `service.instance.id`.
+        doc = traces_otlp.export(
+            chunk,
+            host_id=cfg.host_id if dest.stamp_host_id else None,
+            host_name=cfg.host_id,
+        )
         if verbose or dry_run:
             print(json.dumps(doc, indent=2)[:4000])
         ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)

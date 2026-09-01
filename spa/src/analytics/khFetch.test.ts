@@ -101,6 +101,24 @@ describe('installKhFetchPropagation', () => {
     expect(spans[0].k).toBe('ok');
   });
 
+  it('carries the peer attributes an exit span owes, in current semantic-convention names', async () => {
+    // `scripts/serve/otlp_semconv.py` DERIVES Instana's older spellings
+    // (`http.host`, `net.peer.name`, `net.peer.port`, `http.scheme`) and a
+    // query-free `http.url` from exactly these four. If one of them stops
+    // being set here the cost is an empty pane in a vendor UI that nobody
+    // notices for weeks, so it is pinned on both sides of the boundary
+    // (scripts/test_otlp_fidelity.py has the Python half).
+    installKhFetchPropagation();
+    const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;
+    await win.fetch(`${ORIGIN}/restore/beos`, { method: 'POST' });
+    const attrs = __bufferedSpans()[0].a as Record<string, string | number>;
+    expect(attrs).toMatchObject({
+      'url.scheme': new URL(ORIGIN).protocol.replace(/:$/, ''),
+      'server.address': new URL(ORIGIN).hostname,
+    });
+    expect(typeof attrs['server.port']).toBe('number');
+  });
+
   it('never puts the query string in the span path', async () => {
     installKhFetchPropagation();
     const win = (globalThis as unknown as { window: { fetch: typeof fetch } }).window;

@@ -264,6 +264,34 @@ function outboundTraceparent(span: Span | null): string | null {
   return traceparentOf(span);
 }
 
+/** The attributes an exit span owes, in CURRENT OpenTelemetry HTTP semantic
+ *  convention names — `http.request.method`, `url.path`, `url.scheme`,
+ *  `server.address`, `server.port`. Our plane is the product, so it speaks the
+ *  stable conventions; the previous-generation spellings Instana's documented
+ *  list still uses (`http.method`, `http.target`, `http.host`, `net.peer.*`)
+ *  are derived at the EXPORT boundary in `scripts/serve/otlp_semconv.py`, never
+ *  here — a vendor's vocabulary has no business inside the tab.
+ *
+ *  STILL NEVER THE QUERY STRING. `url.pathname` only, and the three parts added
+ *  here are a scheme, a host and a port — none of which can carry one. The
+ *  server rebuilds a query-free `http.url` out of exactly these, which is what
+ *  populates Instana's call-detail pane without reintroducing what
+ *  `traces.py`'s BANNED_ATTRS exists to keep out.
+ *
+ *  `server.port` is the EFFECTIVE port: `URL.port` is empty for the scheme's
+ *  default, and a consumer reading "no port" cannot tell that from "port not
+ *  recorded". */
+function clientAttrs(method: string, url: URL): Record<string, string | number> {
+  const scheme = url.protocol.replace(/:$/, '');
+  return {
+    'http.request.method': method,
+    'url.path': url.pathname,
+    'url.scheme': scheme,
+    'server.address': url.hostname,
+    'server.port': Number(url.port) || (scheme === 'https' ? 443 : 80),
+  };
+}
+
 function tracedFetch(
   original: typeof fetch,
   input: RequestInfo | URL,
@@ -295,7 +323,7 @@ function tracedFetch(
     // (already carried in `http.request.method` below) rather than in the
     // name, so the name satisfies NAME_RE regardless of verb.
     if (!excluded) {
-      span = childOfActive('http.client.request', { 'http.request.method': method, 'url.path': path }, 'client');
+      span = childOfActive('http.client.request', clientAttrs(method, url), 'client');
     }
   } catch {
     span = null;

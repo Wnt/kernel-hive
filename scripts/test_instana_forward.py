@@ -18,10 +18,21 @@ timer the pipeline moved 20 traces/minute against a store taking 23/minute and
 sat 991 traces behind — Instana permanently ~25 minutes stale. And because
 trace size on this box spans four orders of magnitude, "100 traces" was once
 16,226 spans and 9.6 MB, which the agent's OTLP receiver refused by closing the
-connection; the same doomed payload was re-sent every five minutes. `DrainTest`
-and `BatchSizeTest` are those two defects, each with the assertion the old code
-could not pass, and `WatermarkTest` is unchanged so the exactly-once property
-they are built on cannot be traded away for throughput.
+connection; the same doomed payload was re-sent every five minutes.
+
+THE THIRD, also 2026-09-01: FORWARDING ORDER. `QUIET_MS` was derived from the
+browser's 20-second flush alone and set to 90 s, which is SHORTER than the two
+minutes `kh-trace-ship.timer` takes to carry the DAEMON's spooled spans into the
+store. So a trace could go quiet, be forwarded, and only then receive its daemon
+half — which the ingest watermark correctly re-selected, forwarding the same
+trace a second time. No loss, but Instana assembles a trace inside a window of
+about two seconds, so the second send is a LATE ARRIVAL: duplicate trace ids
+listed separately, entry and exit unmerged, parents wrong.
+
+`DrainTest`, `BatchSizeTest` and `CarrierOrderingTest` are those three defects,
+each with the assertion the old code could not pass, and `WatermarkTest` is
+unchanged so the exactly-once property they are all built on cannot be traded
+away for throughput or for ordering.
 """
 
 from __future__ import annotations
@@ -30,8 +41,10 @@ import contextlib
 import importlib.util
 import io
 import re
+import sqlite3
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -370,9 +383,128 @@ class BatchSizeTest(unittest.TestCase):
         self.assertEqual(len(calls), instana_batch.MAX_HALVINGS + 1)
 
 
+class CarrierOrderingTest(unittest.TestCase):
+    """A trace's daemon half and its browser half must leave in the SAME send.
+
+    Time is moved by backdating the store's own `updated_ms` rather than by
+    freezing the clock: `updated_ms` IS the wall clock of the last span landing,
+    it is the only thing the quiet window compares against, and rewriting it is
+    both smaller and more honest than patching `time.time` under three modules.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = Path(self.tmp.name) / "traces.db"
+        self.state = Path(self.tmp.name) / "state.json"
+        self.store = traces.TraceStore(self.db)
+        self.cfg = fwd.Config({"TRACES_DB": str(self.db), "INSTANA_STATE": str(self.state)})
+        self.sent: list[dict] = []
+        self.real_post = fwd.post
+        fwd.post = lambda cfg, dest, path, doc, dry_run: (self.sent.append(doc), (True, "200 OK"))[1]
+
+    def tearDown(self):
+        fwd.post = self.real_post
+        self.store.close()
+        self.tmp.cleanup()
+
+    def quiet_for(self, ms: int) -> None:
+        """Pretend the trace has taken nothing new for `ms` milliseconds."""
+        db = sqlite3.connect(self.db)
+        try:
+            db.execute("UPDATE trace SET updated_ms=?", (int(time.time() * 1000) - ms,))
+            db.commit()
+        finally:
+            db.close()
+
+    def run_forwarder(self) -> None:
+        self.assertEqual(fwd.forward_traces(self.cfg, DEST, dry_run=False, verbose=False), 0)
+
+    def names(self) -> list[list[str]]:
+        """Span names per SEND — the shape of the question, since "shipped
+        together" is a statement about which request they were in."""
+        out = []
+        for doc in self.sent:
+            names = []
+            for rs in doc.get("resourceSpans", []):
+                for ss in rs.get("scopeSpans", []):
+                    names += [s["name"] for s in ss.get("spans", [])]
+            out.append(sorted(names))
+        return out
+
+    def record_browser_half(self):
+        self.store.record(
+            {
+                "resource": {"session.id": "sess-abc", "kh.class": "human"},
+                "spans": [
+                    span(SERVER, "serve.signal", kind="server"),
+                    span(BROWSER1, "input.edge", parent=SERVER, kind="client"),
+                ],
+            }
+        )
+
+    def record_daemon_half(self):
+        """What `trace-ship.py` carries in, up to two minutes later."""
+        self.store.record(
+            {
+                "resource": {"session.id": "unknown", "kh.class": "unknown"},
+                "spans": [
+                    dict(
+                        span(BROWSER2, "input.dispatch", parent=BROWSER1, kind="server"),
+                        a={"kh.service": "kernel-hive-daemon", "kh.station": "solaris"},
+                    )
+                ],
+            }
+        )
+
+    def test_a_trace_is_not_shipped_before_its_daemon_half_can_have_arrived(self):
+        """100 seconds of quiet is past the OLD 90-second window and short of
+        the carrier period. Under the old constant this shipped the browser half
+        alone; it must now ship nothing at all."""
+        self.record_browser_half()
+        self.quiet_for(100_000)
+        self.run_forwarder()
+        self.assertEqual(self.sent, [])
+
+    def test_both_halves_leave_in_one_send_and_only_once(self):
+        self.record_browser_half()
+        self.quiet_for(100_000)
+        self.run_forwarder()  # too soon — the carrier has not run yet
+        self.record_daemon_half()  # kh-trace-ship, at +2 min
+        self.quiet_for(instana_backlog.QUIET_MS + 10_000)
+        self.run_forwarder()
+        self.assertEqual(self.names(), [["input.dispatch", "input.edge", "serve.signal"]])
+        # …and nothing is re-sent afterwards: the ordering fix must not have
+        # been bought by giving up exactly-once.
+        self.run_forwarder()
+        self.assertEqual(len(self.sent), 1)
+
+
 class ConstantTieTest(unittest.TestCase):
-    """QUIET_MS is a function of the browser's flush interval, and the two live
-    in different languages. Nothing but this test stops them drifting apart."""
+    """QUIET_MS is a function of the browser's flush interval AND of the daemon
+    carrier's period. All three live in different languages and file formats;
+    nothing but this test stops them drifting apart."""
+
+    def test_the_carrier_period_matches_the_unit_that_actually_runs_it(self):
+        unit = (ROOT / "scripts" / "observability" / "kh-trace-ship.timer").read_text()
+        m = re.search(r"OnUnitActiveSec=(\d+)min", unit)
+        self.assertIsNotNone(m, "OnUnitActiveSec moved or changed units in kh-trace-ship.timer")
+        self.assertEqual(
+            instana_backlog.DAEMON_CARRIER_MS,
+            int(m.group(1)) * 60_000,
+            "DAEMON_CARRIER_MS must equal kh-trace-ship.timer's period — it is the whole "
+            "reason the quiet window is as long as it is",
+        )
+
+    def test_quiet_window_clears_the_daemon_carrier_period(self):
+        """The 2026-09-01 defect in one assertion: a window shorter than the
+        carrier ships a trace before its daemon spans can exist in the store,
+        and then ships it again when they arrive."""
+        self.assertGreater(
+            instana_backlog.QUIET_MS,
+            instana_backlog.DAEMON_CARRIER_MS,
+            "QUIET_MS must exceed the daemon carrier period or a trace with a daemon half "
+            "is forwarded in two pieces, which mis-correlates inside Instana's ~2s window",
+        )
 
     def test_quiet_window_is_safely_longer_than_the_browser_flush(self):
         src = (ROOT / "spa" / "src" / "analytics" / "sink.ts").read_text()

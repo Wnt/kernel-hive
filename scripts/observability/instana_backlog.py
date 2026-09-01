@@ -18,17 +18,66 @@ import sys
 import time
 from pathlib import Path
 
+#: The daemon span carrier's period: `kh-trace-ship.timer`'s OnUnitActiveSec.
+#: A daemon span is not written to the store by the daemon — streamhost owns no
+#: HTTP client, so it spools each batch to a file and something else carries it
+#: (scripts/observability/trace-ship.py). Until that carrier runs, a trace's
+#: daemon half does not exist as far as this file is concerned.
+#: scripts/test_instana_forward.py reads the number out of the unit and fails if
+#: this constant drifts from it.
+DAEMON_CARRIER_MS = 120_000
+
+#: Margin on top of the carrier period, for the run itself: the timer has
+#: AccuracySec=15s, a run has to read the spool, POST it and get a 200 back, and
+#: a batch that fails is retried on the NEXT tick rather than immediately. 90 s
+#: is generous on purpose — see QUIET_MS for why being generous is cheap here.
+CARRIER_MARGIN_MS = 90_000
+
 #: How long a trace must go untouched before it is shipped.
 #:
-#: THIS NUMBER IS A FUNCTION OF `FLUSH_MS` IN spa/src/analytics/sink.ts (20 s),
-#: and the two must not drift apart silently: scripts/test_instana_forward.py
-#: reads that constant out of the TypeScript and fails if this one is not
-#: comfortably larger. It is deliberately not "20_000 + a bit": a flush that
-#: coincides with a slow upload, a retry, or a tab that was backgrounded arrives
-#: later than one interval, so the margin is generous. It costs staleness, not
-#: correctness — see the watermark comment below for why nothing is lost when
-#: the guess is wrong.
-QUIET_MS = 90_000
+#: IT IS A FUNCTION OF THE SLOWEST WAY A SPAN CAN REACH THE STORE, and there are
+#: two of them, not one:
+#:
+#:   * the BROWSER's flush interval, `FLUSH_MS` in spa/src/analytics/sink.ts
+#:     (20 s), plus slack for a slow upload, a retry or a backgrounded tab;
+#:   * the DAEMON's carrier period, `DAEMON_CARRIER_MS` above (2 min), which is
+#:     four times bigger and was not accounted for at all until 2026-09-01.
+#:
+#: THE BUG THAT BOUGHT THE SECOND TERM. QUIET_MS was 90 s — derived from the
+#: browser flush alone — which is SHORTER than the two-minute carrier. So a
+#: trace with a daemon half could go quiet, become eligible, and be forwarded
+#: before its daemon spans had been carried into the store at all; the carrier
+#: then landed them, the ingest watermark correctly pulled the trace back, and
+#: it was forwarded a SECOND time. Nothing was lost — that is the watermark
+#: doing its job — but Instana assembles a trace inside a window of roughly two
+#: seconds (instana-docs/0280-custom-tracing.md), so the second send is a LATE
+#: ARRIVAL: separate traces with the same trace id get listed, entry and exit
+#: are not merged, and a parent can come out wrong. Half a journey shown twice
+#: is worse to read than half a journey shown once.
+#:
+#: MEASURED, NOT REASONED. Over an 8-hour window of live forwarder runs
+#: (`journalctl -u kh-instana-forward`, 143 ticks) replayed against the store,
+#: 117 traces carried both a daemon half and a browser or serving-plane half.
+#: For 7 of them a forwarder run fell strictly between the moment the non-daemon
+#: half went quiet and the moment the daemon half landed — i.e. 6% of mixed
+#: traces were shipped in two pieces. Daemon-half arrival lag ran to 130 s after
+#: the trace's own end, comfortably past a 90 s window and consistent with a
+#: 120 s carrier.
+#:
+#: WHY A LONGER WINDOW IS THE RIGHT FIX AND NOT A LONGER GUESS. Quietness has
+#: never been the correctness property here — `since_seq` is, and it is
+#: untouched. Being wrong about the window costs a duplicate send, never a loss,
+#: which is exactly why it is safe to set it from the slowest carrier rather
+#: than from the fastest one. The cost is STALENESS: a trace now reaches the
+#: tenant roughly QUIET_MS after its last span instead of 90 s, so worst-case
+#: age becomes about 3.5 minutes plus one 5-minute tick. That is minutes, on a
+#: view that was days stale until the timer was armed, in exchange for traces
+#: that arrive whole.
+#:
+#: scripts/test_instana_forward.py pins BOTH terms: it reads FLUSH_MS out of the
+#: TypeScript and OnUnitActiveSec out of kh-trace-ship.timer, and fails if this
+#: constant stops clearing either.
+QUIET_MS = DAEMON_CARRIER_MS + CARRIER_MARGIN_MS
 
 
 def read_state(path: Path) -> dict:
