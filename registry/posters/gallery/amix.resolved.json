@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "amix",
+  "images": [
+    {
+      "src": "/posters/amix/gallery/01-amiga3000ux.webp",
+      "alt": "A 1990s home desk with an Amiga 3000UX desktop computer in the centre, its front badge reading 'Commodore AMIGA 3000UX', a telephone handset resting on the case, a Commodore Amiga keyboard in front of it and a colour monitor to the right",
+      "caption": "An Amiga 3000UX in domestic service, photographed in 1994. The badge on the front panel is the whole difference: the UX was the Unix SKU, sold with a larger hard disk, more memory and AMIX on tape, and this is the machine this station emulates.",
+      "author": "Unknown",
+      "license": "CC BY-SA 3.0",
+      "licenseId": "cc-by-sa-3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "shareAlike": true,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga3000UX.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "4ff97f94078d902e34cd3b901808617046b385ed6cced5936aa6bd0048b643a2",
+      "width": 1600,
+      "height": 1067
+    },
+    {
+      "src": "/posters/amix/gallery/02-amiga-3000-front-enhanced.webp",
+      "alt": "The front of a Commodore Amiga 3000 desktop computer, a low beige case with two 3.5-inch floppy slots, power and hard-disk indicator lights, and a Commodore 1950 monitor standing on top of it",
+      "caption": "The Amiga 3000 desktop case, with the Commodore 1950 multisync monitor it was sold beside. That monitor mattered for Unix: AMIX ran the OPEN LOOK desktop at a 31 kHz scan rate the earlier 1084 could not display.",
+      "author": "\"Joe Smith\" (Uploader of original was Joeinwap at en.wikipedia (Changes made by Ubcule))",
+      "license": "Public domain",
+      "licenseId": "pd",
+      "licenseUrl": "https://en.wikipedia.org/wiki/Public_domain",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga_3000_Front_Enhanced.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "2bebf1caf1c8d50e57b63ab4dc52c03ea19e48556421541f4c599a9d7b06f080",
+      "width": 1600,
+      "height": 976
+    },
+    {
+      "src": "/posters/amix/gallery/03-amiga-3000-medley.webp",
+      "alt": "An Amiga 3000 seen from a three-quarter angle on a desk, with a keyboard resting on top of the case, an external floppy drive to the left and a flat-panel monitor behind it showing a 3D modelling program",
+      "caption": "The same case from an angle. Commodore built the A3000 for the desk rather than the living room — SCSI on the motherboard, Zorro III expansion and a flicker fixer — and it was that specification, not the Amiga's games reputation, that made a Unix port plausible.",
+      "author": "Giovanni Cardona",
+      "license": "CC BY 2.0",
+      "licenseId": "cc-by-2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga_3000_(medley).JPG",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "09263e11f3df770167f55b9a23c1134755a85fc6fcb0e8c36317af3fd298f1cb",
+      "width": 1600,
+      "height": 1200
+    },
+    {
+      "src": "/posters/amix/gallery/04-amiga-3000t-motherboard-without-annotations.webp",
+      "alt": "An Amiga 3000T motherboard photographed from above, showing the Motorola 68030 and 68882 chips, the Amiga custom chips Agnus, Denise, Paula and Fat Buster, rows of memory sockets, Zorro III expansion connectors and the rear port cluster",
+      "caption": "An A3000 family motherboard, in the tower variant. The 68030 and its 68882 floating-point companion sit near the middle of the board; the 68030's memory management unit is the part that made this an AT&T System V machine rather than a home computer, because without it Unix cannot run at all.",
+      "author": "Podstawko",
+      "license": "CC0",
+      "licenseId": "cc0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "shareAlike": false,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Amiga_3000T_motherboard_without_annotations.jpg",
+      "sourceName": "Wikimedia Commons",
+      "sha256": "a32b3346377802e4f3902da0b16008cbcc405353cc45b338a8d0c714825c00d5",
+      "width": 1249,
+      "height": 1600
+    }
+  ]
+}
