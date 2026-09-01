@@ -4,7 +4,7 @@ subtitle: 1992 · Amiga 3000UX · System V Release 4 with OPEN LOOK, in colour o
 hero: /posters/amix/desktop.webp
 images:
   - src: /posters/amix/desktop.webp
-    alt: The AMIX 2.1 desktop in colour — a steel-blue background under the OPEN LOOK window manager, whose grey window frames carry darker blue title bars: an xterm in black on white titled "Amiga UNIX 2.1" showing a uname line over a root prompt, the xcalc calculator with its rounded buttons, and an analogue xclock with a light-yellow face
+    alt: The AMIX 2.1 desktop in colour — a plain steel-blue background under the OPEN LOOK window manager, with three windows in pale grey frames, each carrying a small triangular menu button at the top left of its title bar: an xterm in black on white titled "Amiga UNIX 2.1" showing a uname line above a root prompt, the xcalc calculator with its rounded OPEN LOOK buttons, and an analogue xclock with a light-yellow face and red hands
     caption: AMIX 2.1 at 1024×768 in 256 colours, drawn by the A2410 graphics board — the option that took an Amiga 3000UX from $4,998 to $7,713. The rounded buttons, the small triangular window menus and the L-shaped resize corners are OPEN LOOK, the desktop AT&T specified for System V Release 4.
 ---
 ## Origins
