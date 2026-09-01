@@ -54,10 +54,35 @@ export async function openStation(page, id, { waitMs = 30000 } = {}) {
   } catch {
     return { ok: false, why: 'grid never rendered a card', video: null };
   }
-  const cards = page.locator(`a.os-card[href$="${target}"]`);
-  const count = await cards.count();
+  let cards = page.locator(`a.os-card[href$="${target}"]`);
+  let count = await cards.count();
+  // GridView.tsx folds era sections shut by default (DEFAULT_OPEN_ERAS =
+  // 1990s/2000s only) and does not render a folded section's cards into the
+  // DOM at all (`{open && g.items.map(...)}`) — so a station from any other
+  // decade (amiga 1987, zxspectrum 1982, both 1980s) is invisible to a plain
+  // href query until its era is expanded. A real visitor would either type a
+  // filter query (which GridView overrides the fold for) or click the era
+  // header open; this does the equivalent of the click, since the filter's
+  // match rules (stationSearch.ts) are not guaranteed to match a bare id.
+  if (count === 0) {
+    const closedEras = page.locator('button.era-toggle[aria-expanded="false"]');
+    const closedCount = await closedEras.count();
+    for (let i = 0; i < closedCount; i++) {
+      // Always index 0: each click removes an `aria-expanded="false"` match.
+      await closedEras.first().click({ timeout: 5000 }).catch(() => {});
+    }
+    if (closedCount > 0) {
+      cards = page.locator(`a.os-card[href$="${target}"]`);
+      count = await cards.count();
+    }
+  }
   if (count !== 1) {
-    return { ok: false, why: `expected exactly 1 card for ${target}, found ${count}`, video: null };
+    const why =
+      count === 0
+        ? `expected exactly 1 card for ${target}, found 0 even after expanding every era section — ` +
+          `not a fold/virtualisation issue, the grid genuinely has no card for this id`
+        : `expected exactly 1 card for ${target}, found ${count}`;
+    return { ok: false, why, video: null };
   }
   const card = cards.first();
   await card.scrollIntoViewIfNeeded();

@@ -106,6 +106,18 @@ async function runVisitor(browser, config, safety, manifest, visitorId, rng) {
   } finally {
     entry.finishedAt = new Date().toISOString();
     manifest.visitor(entry);
+    // spa/src/analytics/sink.ts batches probes/flows/spans and only flushes
+    // on its own 20s interval or a real `pagehide`/`visibilitychange->hidden`
+    // — neither of which a Playwright `context.close()` reliably delivers to
+    // a still-running page before tearing it down. A short journey (exactly
+    // what a --duration-bounded low-volume run produces) can finish and close
+    // well inside that 20s window, silently dropping every span and counter
+    // it just generated — including the one this tool exists to produce.
+    // Fire the same `pagehide` the real hook listens for while the page is
+    // still alive, then give the resulting keepalive fetch a moment to
+    // actually leave the tab before it is torn down.
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide'))).catch(() => {});
+    await page.waitForTimeout(1000).catch(() => {});
     await context.close().catch(() => {});
   }
 }
@@ -195,17 +207,29 @@ async function main() {
   if (safety.breaker.tripped) {
     log('run', `STOPPED EARLY: ${safety.breaker.limit} consecutive failures. Last: ${safety.breaker.tripReason}`);
   }
+  // `manifest.errors` is EXCEPTIONS only (the catch block in runVisitor
+  // above) — a journey that returns ok:false normally (a card never found, a
+  // stream that never went live) never touches it. A summary that only prints
+  // that count reads clean while a sixth of the run FAILED, which is exactly
+  // what misled the run that found this. `failedVisitors` is every journey
+  // whose own result said ok:false, thrown or not.
+  const failed = manifest.failedVisitors;
   log(
     'run',
-    `finished: ${manifest.visitors.length} visitor(s), ${manifest.walkinAccounts.length} walk-in account(s) created, ${manifest.resets.length} reset(s), ${manifest.errors.length} error(s)`,
+    `finished: ${manifest.visitors.length} visitor(s), ${failed.length} failed, ${manifest.walkinAccounts.length} walk-in account(s) created, ${manifest.resets.length} reset(s), ${manifest.errors.length} exception(s)`,
   );
+  if (failed.length > 0) {
+    for (const v of failed) {
+      log('run', `FAILED v${v.visitorId} "${v.journey}": ${v.detail}`);
+    }
+  }
   const file = manifest.write(config.outDir);
   log('run', `manifest written to ${file}`);
   if (manifest.walkinAccounts.length > 0) {
     log('run', `walk-in handles created this run: ${manifest.walkinAccounts.map((a) => a.handle ?? '(unknown)').join(', ')}`);
     log('run', 'clean these up from /admin (People) when you are done — see docs/lab/VISITOR-SIM.md "Cleanup".');
   }
-  if (safety.breaker.tripped) process.exitCode = 1;
+  if (safety.breaker.tripped || failed.length > 0) process.exitCode = 1;
 }
 
 await main();
