@@ -36,16 +36,17 @@ const MAX_BATCH_CHARS = 14000;  // stay under the server's 16KiB body cap
 const SNAP_CHUNK = 480;         // snapshot JSON is chunked to respect MAX_DETAIL
 const EVAL_RESULT_MAX = 16 * 1024; // cap reassembled eval-result telemetry
 
-/** Bundle marker so a snapshot proves WHICH client build is running. Exported
- *  for analytics/instana.ts too: it is the ACTUAL git commit this build was
- *  made from — `<branch>@<short-sha>`, the SAME shape `box-install.sh` stamps
- *  into `.deployed-rev` and `box-deploy.sh --status` prints — baked in by
- *  vite.config.ts's `computeBuildId()` (see there for short-vs-full/override)
- *  and exposed as `import.meta.env.VITE_KH_BUILD_ID`. Reconciles an Instana
- *  beacon, a clientlog.jsonl/trace row, and `box-deploy.sh --status` by one
- *  id. Falls back to the honest placeholder below (no lookalike value) with
- *  no git, no vite.config.ts `define` (vitest), or an unconfigured build. */
-export const BUNDLE_MARKER =
+/** Bundle marker so a snapshot proves WHICH client build is running: the
+ *  ACTUAL git commit — `<branch>@<short-sha>`, same shape `box-deploy.sh
+ *  --status` prints — baked in by vite.config.ts's `computeBuildId()` and
+ *  exposed as `import.meta.env.VITE_KH_BUILD_ID`. Honest placeholder below
+ *  with no git/`define` (vitest)/unconfigured build.
+ *
+ *  Module-internal now, not exported: analytics/instana.ts and
+ *  spa/index.html's bootstrap used to import this for `kh.bundle`, but both
+ *  now read `VITE_KH_BUILD_ID` themselves (index.html can't evaluate this
+ *  module — see its own and instana.ts's comments for why it moved). */
+const BUNDLE_MARKER =
   (import.meta.env as { VITE_KH_BUILD_ID?: string }).VITE_KH_BUILD_ID || 'unknown-build';
 
 interface ClientLogEvent {

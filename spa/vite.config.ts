@@ -89,6 +89,18 @@ function computeBuildId(): string {
   }
 }
 const BUILD_ID = computeBuildId();
+// Also exported into process.env under its own name, so Vite's SEPARATE
+// index.html `%VITE_..%` placeholder mechanism (a plain env-var substitution
+// pass, unrelated to the `define` block below which only rewrites
+// `import.meta.env.*` inside JS/TS) can see it too. spa/index.html's inline
+// bootstrap needs this value for `kh.bundle` — it runs before any bundle
+// evaluates, so it cannot read `import.meta.env.VITE_KH_BUILD_ID` the way
+// three/clientDebug.ts's BUNDLE_MARKER does. Setting it here, once, keeps
+// both readers (the `define` substitution below and index.html's
+// placeholder pass) agreeing on the exact same computed value rather than
+// each deriving it — same principle as the git-computed value only being
+// computed once above.
+process.env.VITE_KH_BUILD_ID = BUILD_ID;
 
 export default defineConfig({
   base: BASE,

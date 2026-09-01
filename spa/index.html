@@ -99,14 +99,31 @@
 
          Everything that CAN wait for a session id and a resolved account —
          autoPageDetection, secrets, ignoreUrls, wrapEventHandlers/wrapTimers,
-         the `meta` join key, the real account identity, and `page` for every
-         SUBSEQUENT transition — stays in spa/src/analytics/instana.ts,
+         the `kh.sessionId` join key, the real account identity, and `page`
+         for every SUBSEQUENT transition — stays in spa/src/analytics/instana.ts,
          called once from main.tsx's mount(). That module's configureInstana()
          no longer sets trackSessions/enableW3CHeaders/the initial user id:
          doing so again here would just be a harmless duplicate call, but the
          split is kept explicit so it stays obvious which config is early
          because it MUST be, and which is late because it CAN wait for
          identity docs/lab/TRACE-CONTEXT.md §4a's Instana collision applies.
+
+         WALK-IN-DOOR ATTRIBUTION GAP (found by querying the live Instana
+         tenant right after a simulated-visitor run): PAGELOAD beacons from a
+         signed-out visitor at the /walkin door carried NO `meta` at all — no
+         `kh.bundle`, no `kh.client.class`. Root cause: main.tsx's
+         `signedOutAtTheDoor` gate correctly skips calling configureInstana()
+         for that visitor (they have no session; every telemetry flush would
+         401 every 5s and requeue forever — do not weaken that gate, it
+         protects a real failure mode), but THIS bootstrap runs unconditionally,
+         before React and before that gate is even evaluated, and is what
+         already emits the page-load/ajax beacons for exactly that visitor.
+         So `kh.bundle` and `kh.client.class` — both independent of session/
+         identity, unlike everything else instana.ts sets — moved HERE,
+         alongside `page`/`ignoreUrls` above, for the identical "must be on
+         every beacon, including a signed-out one" reason. instana.ts's
+         configureInstana() no longer sets either: see its own comment for
+         the same split, mirrored on both sides.
 
          VITE_INSTANA_WEBSITE_KEY / VITE_INSTANA_EUM_REPORTING_URL are read from
          registry/local.env at build time and substituted here by Vite's own
@@ -199,6 +216,56 @@
         } catch (e3) {
           // A page name is a nicety, not a requirement — the beacon still
           // goes out unnamed rather than not at all.
+        }
+        // WALK-IN-DOOR ATTRIBUTION GAP FIX — see this block's own header
+        // comment above ("WALK-IN-DOOR ATTRIBUTION GAP"). Both keys below are
+        // independent of session/identity (unlike `user`, which genuinely
+        // must wait — see configureInstanaIdentity), so they belong here, not
+        // in instana.ts's configureInstana(): that function is never even
+        // called for a signed-out walk-in visitor, but THIS script always
+        // runs, and is what already beacons for exactly that visitor.
+        //
+        // `kh.client.class` — a deliberately duplicated, minimal
+        // reimplementation of analytics/intent.ts's `clientClass()`. THIS
+        // SCRIPT CANNOT IMPORT THAT MODULE (it runs before any bundle
+        // evaluates — the same reason TELEMETRY_PATHS and ROUTES above are
+        // duplicated), so KEEP THE TWO IN SYNC BY HAND whenever either
+        // changes. Decision, in the same order clientClass() uses: an
+        // explicit `window.__khClientClass` declaration wins
+        // (scripts/visitor-sim and the CT950 e2e fleet set this before the
+        // bundle boots); otherwise `navigator.webdriver === true` means
+        // 'probe' (every remote-debugging attach — Puppeteer, Playwright —
+        // sets it); otherwise 'human'.
+        try {
+          var declaredClass = window.__khClientClass;
+          var clientClass = (declaredClass === 'human' || declaredClass === 'probe' || declaredClass === 'unknown')
+            ? declaredClass
+            : (navigator.webdriver === true ? 'probe' : 'human');
+          ineum('meta', 'kh.client.class', clientClass);
+        } catch (e5) {
+          // Best effort — a beacon with no class label is still a beacon.
+        }
+        // `kh.bundle` — the same value three/clientDebug.ts's BUNDLE_MARKER
+        // reads as `import.meta.env.VITE_KH_BUILD_ID` (that module can wait
+        // for the bundle to evaluate; this script cannot). vite.config.ts
+        // computes the git-derived build id once and ALSO exports it into
+        // process.env under this same name, specifically so Vite's
+        // index.html placeholder-substitution pass (the SAME mechanism `key`
+        // and `reportingUrl` above rely on — a plain env-var text
+        // replacement, unrelated to the `define`-based substitution
+        // `import.meta.env.*` gets inside JS/TS modules) fills it in here
+        // too. UNCONFIGURED-BUILD GUARD, same shape and same reason as the
+        // `key`/`reportingUrl` check above (a leading percent character, not
+        // merely a falsy value) — spelled out in words rather than written
+        // literally in THIS comment for the identical reason that check's
+        // own paragraph gives: written as a literal percent-delimited
+        // placeholder, this comment would itself become substitution text
+        // the moment the value IS filled in.
+        try {
+          var buildId = "%VITE_KH_BUILD_ID%";
+          if (buildId && buildId.charAt(0) !== '%') ineum('meta', 'kh.bundle', buildId);
+        } catch (e6) {
+          // Best effort — a beacon with no build id is still a beacon.
         }
         // Self-hosted: the agent's own minified JS is never committed to this
         // public repo. scripts/serve-https-spa.sh's deploy() fetches the pinned

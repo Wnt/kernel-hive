@@ -66,9 +66,13 @@ the numbers.
 | `--walkin-max <n>` | Real passkey accounts this run may create. | 1 |
 | `--no-walkin` | Disable the walk-in journey entirely. | off |
 | `--storage-state <file>` | An invited (viewer/admin) Playwright storage-state file — see "Credentialed mode". | none |
+| `--invite <code-or-file>` | Redeem an invite link's code for a session with no passkey — see "Credentialed mode". Mutually exclusive with `--storage-state`. | none |
+| `--invite-state <file>` | Where the invite-derived session is cached. | `scripts/visitor-sim/visitor-sim-runs/invite-session.json` |
+| `--invite-refresh` | Redeem `--invite` again even if `--invite-state` already has a cached session. | off |
+| `--browser <name>` | `chromium` (Playwright's bundled build) or `chrome` (the system Chrome, `channel: 'chrome'`). | `chromium` |
 | `--seed <n>` | Seed the RNG, for a reproducible run. | random |
 | `--headed` | Watch it happen instead of running headless. | headless |
-| `--out-dir <dir>` | Where the run manifest lands. | `./visitor-sim-runs` |
+| `--out-dir <dir>` | Where the run manifest lands. An explicit path is honoured exactly as given, relative to your CWD. | `scripts/visitor-sim/visitor-sim-runs` (anchored to the tool's own directory, not your CWD — see below) |
 | `--dry-run` | Print the plan, touch nothing. | — |
 
 ## The journeys (what `--mix` names)
@@ -92,25 +96,96 @@ one visit.
   (`win311`, `os2warp`, `rhapsody`), types a short line at a human pace,
   clicks **Leave** (which releases the clone). Gated by `--walkin-max`.
 - **`station`** — opens *any* pool station from the full grid and interacts
-  with it (typing, pointer movement, occasionally a golden reset). **Requires
-  `--storage-state`** — the walk-in role cannot reach the grid at all
-  (`spa/src/App.tsx`), so this journey needs a real invited session.
+  with it: navigates the grid, opens the station, waits for real stream
+  video, moves the pointer, types a line at a human pace, dwells, and
+  occasionally fires a golden reset (gated exactly like every other reset in
+  this tool — see "Resets" below). **Requires `--storage-state` or
+  `--invite`** — the walk-in role cannot reach the grid at all
+  (`spa/src/App.tsx`), so this journey needs a real invited session. Reuses
+  `scripts/e2e/station-open.mjs`'s card-resolution and stream-probe idiom and
+  `scripts/e2e/typing-pace-probe.mjs`'s pacing, via `lib/stationOpen.mjs` —
+  the same building blocks the `walkin` journey already used.
 
 If your pool has none of the three walk-in-eligible ids, the `walkin` journey
 reports a clean failure rather than touching a station outside your pool —
 `--stations` is the only place the touchable set is declared.
 
+## Resets
+
+`POST /restore/<id>` fires **only** from the `station` journey
+(`journeyStation` in `lib/journeys.mjs`) — it is the one journey with a real
+invited session and a station actually open. `--allow-resets`,
+`--reset-max` and `--reset-min-interval` (see "Safety" below) all gate that
+one call site: the per-run cap, the per-station cooldown, and the master
+on/off switch are enforced there, not merely documented. If your `--mix` has
+no `station` weight — a walk-in-only run, the tool's default without
+`--storage-state`/`--invite` — passing `--allow-resets` arms a budget nothing
+in the run can ever spend; the tool says so plainly, both in `--dry-run`'s
+printed plan and in a live run's own log, rather than silently letting the
+flag sit there unused.
+
 ## Credentialed mode (optional)
 
-Without `--storage-state` this tool can only reach what a signed-out stranger
-can: `/walkin`, `/walkin/exhibits`, and — after a walk-in signup — the three
-walk-in clones. That covers two of this brief's three explicit asks (resetting
-via a walk-in session, and walk-in registration/play) but not "opening
-arbitrary stations", because the gallery's full grid requires an invited
-(viewer/admin) session (`docs/PUBLIC-GALLERY.md`).
+Without `--storage-state` or `--invite` this tool can only reach what a
+signed-out stranger can: `/walkin`, `/walkin/exhibits`, and — after a walk-in
+signup — the three walk-in clones. That covers two of this brief's three
+explicit asks (resetting via a walk-in session, and walk-in
+registration/play) but not "opening arbitrary stations", because the
+gallery's full grid requires an invited (viewer/admin) session
+(`docs/PUBLIC-GALLERY.md`).
 
-To unlock the `station` journey (and let resets fire from a non-walk-in
-visitor), sign in by hand once and export the session:
+Two ways to get one, in order of preference for an unattended/repeated run:
+
+### `--invite` — redeem an invite link's code, no passkey, no human
+
+`docs/PUBLIC-GALLERY.md`, "An invite is a link, and the passkey is optional":
+opening an invite link signs its holder in **immediately, with no passkey at
+all** — `POST /auth/invite/enter {"code": "..."}` sets the session cookie on
+the spot. That is a plain same-origin POST with a JSON body, nothing
+WebAuthn about it, so it works identically from a script as from a browser
+tab following the link by hand — verified live against the real gallery.
+
+```sh
+node visitor-sim.mjs --stations win311,irix --invite /path/to/invite.code ...
+```
+
+`--invite` takes **either** a literal code **or a path to a file containing
+one** — a file is preferred whenever the code lives on a shared machine,
+because it keeps the secret out of `ps`, shell history and this tool's own
+argv logging, all of which a bare `--invite <code>` cannot avoid. The
+box keeps exactly this file, gitignored and mode `600`:
+`/data/vms/streamhost/serve/pki/sim-invite.code` — a `viewer`-role invite
+named "visitor-sim (automated)", made for this tool. **It is a credential:**
+never print it, log it, put it in a commit, or paste it into a chat.
+
+The redemption happens **at most once**. The resulting session is saved as a
+Playwright storage-state file (`--invite-state`, default
+`scripts/visitor-sim/visitor-sim-runs/invite-session.json` — same
+already-gitignored directory the run manifests live in) and every later
+invocation reuses that cached file instead of redeeming again — the same
+mechanism as a hand-exported `--storage-state`, just bootstrapped
+automatically. That cache holds a session cookie only, never the invite code
+itself (a Playwright storage-state is cookies + origin storage; the POST body
+that minted it is never part of that shape) — verified by inspecting the
+saved file after a live redemption. Pass `--invite-refresh` to force a fresh
+redemption (e.g. the cached session expired).
+
+**When it expires:** this invite's session is capped at the invite's own
+expiry while it carries no passkey (`docs/PUBLIC-GALLERY.md`) —
+**2026-09-08**, unless a passkey is added to the account first (which turns
+it into an ordinary long-lived session, but then needs a human to complete a
+passkey ceremony once). When it lapses, mint a fresh one the normal way: sign
+in as any admin, go to `/admin` → **People**, issue a new invite (role
+`viewer` is enough — this tool only ever reads and interacts, never manages
+people), copy its code, and overwrite `sim-invite.code` on the box (or point
+`--invite` at wherever you saved the new one). Delete the stale
+`--invite-state` cache file too, or pass `--invite-refresh`, so a run doesn't
+try the old cookie first.
+
+### `--storage-state` — an already-signed-in session, exported by hand
+
+The original mechanism, still available and still the right choice for a
+one-off interactive run where you're already sitting at a signed-in browser:
 
 ```sh
 npx playwright open --save-storage=state.json https://kernelhive.madekivi.fi
@@ -118,9 +193,24 @@ npx playwright open --save-storage=state.json https://kernelhive.madekivi.fi
 node visitor-sim.mjs --stations win311,irix --storage-state state.json ...
 ```
 
-Every simulated visitor context that uses `--storage-state` shares that **one**
-account — this tool never creates invited accounts, only walk-in ones, and
-that is a deliberate scope limit, not an oversight.
+`--storage-state` and `--invite` are mutually exclusive — pick one; both
+produce exactly the same thing (a session the `station` journey and
+non-walk-in resets can use), so pairing them is refused rather than silently
+preferring one.
+
+Every simulated visitor context that uses a credentialed session (either
+form) shares that **one** account — this tool never creates invited accounts,
+only walk-in ones, and that is a deliberate scope limit, not an oversight.
+
+## Browser choice
+
+`--browser chromium` (default, Playwright's bundled build) or `--browser
+chrome` (the system Chrome, `channel: 'chrome'`). Both were verified live
+against the real gallery origin to expose `VideoDecoder`, `WebTransport` and
+H.264 (`avc1.42E01E`, `avc1.640028`) — either is a viable choice for every
+journey in this tool, including `station`'s live stream decode. `--headed`
+works with either browser on this box's shared X display (`DISPLAY=:1`,
+`xdesk.service`), the same as any other Playwright tool here.
 
 ## Safety
 
@@ -206,7 +296,14 @@ rather than claiming a screenshot never taken.
 - **A run manifest**, `<out-dir>/run-<timestamp>.json` — the config used, every
   visitor's journey/outcome, every reset, every walk-in handle created, every
   error. This is the one place to look after a run to know exactly what it
-  touched; it is local to your machine and is never sent anywhere.
+  touched; it is local to your machine and is never sent anywhere. It never
+  holds an invite code (see "Credentialed mode" above) — only the resolved
+  storage-state file path, if one was used.
+- **A cached invite session**, `--invite-state` (default
+  `visitor-sim-runs/invite-session.json`), only if `--invite` was passed. A
+  Playwright storage-state file — a session cookie, nothing else — reused by
+  every later run until `--invite-refresh` or the session itself expires.
+  Delete it to force a clean redemption next time; leaving it is harmless.
 - **Nothing else.** No station state is force-changed outside the reset
   action above; a `station` journey's typing/clicking is ordinary guest input,
   indistinguishable after the fact from a real visitor's.
@@ -235,15 +332,36 @@ tool for the exact command and its output; the manifest shape is what
 `lib/log.mjs`'s `RunManifest` class documents at the top of this file's
 package.
 
+**`station` journey, added later, also run live** — `--stations win311 --mix
+"station=100" --visitors 1 --invite /data/vms/streamhost/serve/pki/sim-invite.code`:
+the invite redeemed for a `viewer` session with no passkey (`role=viewer`,
+7 days left at the time), the storage-state cache was written and confirmed
+to hold a session cookie only (no code — inspected the saved JSON directly),
+`win311` opened from the full grid, went live, was typed at and clicked, and
+the run completed `ok:true` with no exceptions. A second, immediate run with
+the same `--invite` reused the cached session (logged `reusing cached invite
+session`, no second redemption) and drove the **same** station journey to the
+same result — proving the "redeem once" cache actually works, not just that
+the mechanism works once. See the session that added invite/station support
+for the exact commands and output.
+
+Note for whoever runs this next: a serving-plane restart empties the walk-in
+clone pools (rebuilt one at a time, several minutes) — check `pools=` in
+`/data/vms/streamhost/serve/https-server.log` before reading an immediate
+`walkin`-journey failure as a bug. The `station` journey above does not touch
+the walk-in pool at all (it opens a station from the invited grid, not a
+walk-in clone), so it is unaffected by that warm-up window.
+
 ## What was reused from existing tooling, and what is new
 
 - **`scripts/e2e/station-open.mjs`'s resolution rules** (find a card by
   `href$="/os/<id>"`, never by text; assert the SPA actually navigated before
   waiting on video; the offscreen-canvas stream probe) are reused near-verbatim
-  in `lib/stationOpen.mjs`, trimmed for the public origin.
+  in `lib/stationOpen.mjs`, trimmed for the public origin — this is what both
+  the `walkin` and `station` journeys open a live station through.
 - **`scripts/e2e/typing-pace-probe.mjs`'s human-pace reasoning** (overlapping
   key edges around 5-8 chars/s, not a clean scripted burst) is reused as
-  `typeHumanPace()` in the same module.
+  `typeHumanPace()` in the same module, used by both journeys.
 - **`tests/e2e-live/e2e/publicAuth.spec.ts`'s CDP virtual authenticator**
   (`WebAuthn.addVirtualAuthenticator`, resident-key, auto-presenting) is reused
   verbatim in `lib/webauthn.mjs` for the walk-in signup journey — a genuine
@@ -251,6 +369,10 @@ package.
 - **New, because nothing existing fit:** a Node package installable from a
   plain checkout with no lab-side dependency (`scripts/e2e/*.mjs` assume a
   `~/e2e/node_modules` on CT950 and a LAN address); the journey/mix model;
-  the safety gates (`lib/safety.mjs`); the run manifest; and the
+  the safety gates (`lib/safety.mjs`); the run manifest; the
   `kh.client.class` Instana meta this tool's existence made necessary
-  (`spa/src/analytics/instana.ts`).
+  (`spa/src/analytics/instana.ts`); and `lib/invite.mjs`, which redeems an
+  invite link's code (`POST /auth/invite/enter`, no passkey) and caches the
+  resulting session as a Playwright storage-state — nothing existing needed
+  an unattended, non-interactive way into an invited session before this
+  tool's `station` journey did.

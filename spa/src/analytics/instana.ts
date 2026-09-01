@@ -18,8 +18,6 @@
 //  secrets, the circular-monitoring exclusions, and identity.
 // ============================================================================
 
-import { BUNDLE_MARKER } from '../three/clientDebug';
-import { clientClass } from './intent';
 import type { Session } from '../data/session';
 
 /** The subset of the `ineum` call signature this module actually uses. */
@@ -215,11 +213,7 @@ export function configureInstana(sessionId: string): void {
   // analytics/trace.ts stamps as `session.id` on every OTel span this tab
   // sends to /traces, so an operator holding an Instana beacon can look up
   // this key and pull the matching kernel-hive trace from
-  // /admin/observability, and vice versa. `kh.bundle` is the actual git
-  // commit this build was made from (three/clientDebug.ts's BUNDLE_MARKER —
-  // `<branch>@<short-sha>`, baked in by vite.config.ts, the same shape
-  // box-deploy.sh --status prints — also used to stamp WHICH client build
-  // produced a debug snapshot).
+  // /admin/observability, and vice versa.
   //
   // ONE CALL PER KEY. The documented signature is `ineum('meta', key,
   // value)` — a single string key and a single string value, not an object.
@@ -232,17 +226,24 @@ export function configureInstana(sessionId: string): void {
   // entry, both arguments coerced to string (Instana's own signature takes
   // strings only).
   ineum('meta', 'kh.sessionId', sessionId);
-  ineum('meta', 'kh.bundle', String(BUNDLE_MARKER));
-  // `class` is the SAME dimension analytics/intent.ts stamps on every row this
-  // tab sends to our own store (`human` | `probe` | `unknown`) — declared by
-  // `window.__khClientClass` when a caller sets it (scripts/visitor-sim, and
-  // the CT950 e2e fleet, do this before the bundle boots), falling back to
-  // `navigator.webdriver === true`. Sending it here too is what lets an
-  // operator filter simulated traffic out of Instana itself rather than only
-  // out of kernel-hive's own analytics.db — Instana has no idea this lab runs
-  // a probe fleet, and without this every simulated visitor would beacon in
-  // looking exactly like a human one.
-  ineum('meta', 'kh.client.class', clientClass());
+  // NOT `ineum('meta', 'kh.bundle', ...)` and NOT `ineum('meta',
+  // 'kh.client.class', ...)` here anymore — DEFECT (walk-in-door
+  // attribution gap): a signed-out stranger at the /walkin door never
+  // reaches this function at all (`main.tsx`'s `signedOutAtTheDoor` gate
+  // skips `configureInstana` entirely, and correctly so — see that gate's
+  // own comment), but spa/index.html's inline bootstrap runs unconditionally,
+  // before React and before that gate is even evaluated, and it is what
+  // already emits the page-load/ajax beacons for exactly that visitor. A
+  // beacon that exists but carries neither a build id nor a class label is
+  // indistinguishable from a real human's on an unknown build — which is
+  // exactly the traffic this lab's own visitor-sim and browser probes
+  // produce. Both keys therefore moved to spa/index.html, set alongside
+  // `key`/`reportingUrl`/`trackSessions`/etc. for the identical "must be on
+  // every beacon, including one signed-out visitors ever produce" reason.
+  // Calling either of them again here would be a harmless duplicate for a
+  // signed-in visitor (same value) but is deliberately omitted so the split
+  // stays legible: index.html is what MUST run unconditionally, this file is
+  // what only runs once a session is allowed to be tracked at all.
   // NOT `ineum('user', sessionId)` here — that is now set in spa/index.html's
   // inline bootstrap, before this module even loads, for the reason stated
   // at this function's own header: the page-load beacon needs it and this
