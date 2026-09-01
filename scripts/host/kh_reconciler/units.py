@@ -43,6 +43,12 @@ HOST_TOOLS = (
     re.compile(r"^scripts/host/"),
     re.compile(r"^scripts/labctl(\.d/|$)"),
     re.compile(r"^scripts/dev/"),
+    # The observability carriers and their systemd units (kh-trace-ship,
+    # kh-instana-forward). Box-wide, not per-station: one timer serves the whole
+    # fleet's spans, so they belong with the other host tools rather than to any
+    # station. Added when those units became deployed rows and this list was the
+    # thing that noticed they belonged to nobody.
+    re.compile(r"^scripts/observability/"),
     re.compile(r"^scripts/[^/]+\.(py|sh)$"),
 )
 # The daemon and its service template: built by the loop from the commit (7),

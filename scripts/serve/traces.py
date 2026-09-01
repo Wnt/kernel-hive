@@ -100,8 +100,19 @@ CREATE TABLE IF NOT EXISTS trace (
   root_name TEXT NOT NULL,
   started_ms INTEGER NOT NULL, ended_ms INTEGER NOT NULL, dur_ms INTEGER NOT NULL,
   span_count INTEGER NOT NULL, error_count INTEGER NOT NULL,
-  status TEXT NOT NULL, day TEXT NOT NULL) WITHOUT ROWID;
+  status TEXT NOT NULL, day TEXT NOT NULL,
+  -- INGEST ORDER, not trace time. Bumped to (max+1) every time a span lands in
+  -- this trace, so "what changed since I last looked" is answerable without
+  -- guessing how long a tab will keep contributing to a trace it opened
+  -- minutes ago. `updated_ms` is the wall clock of that same moment, which is
+  -- what a "has this trace been quiet for a while?" question needs; the client
+  -- clocks in started_ms/ended_ms cannot answer it because they are not ours.
+  -- Both exist for scripts/observability/instana-forward.py — see the watermark
+  -- comment there for the data-loss bug that bought them.
+  ingest_seq INTEGER NOT NULL DEFAULT 0, updated_ms INTEGER NOT NULL DEFAULT 0)
+  WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS trace_started ON trace(started_ms DESC);
+CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq);
 CREATE INDEX IF NOT EXISTS trace_session ON trace(session_id, started_ms DESC);
 CREATE INDEX IF NOT EXISTS trace_name ON trace(root_name, started_ms DESC);
 CREATE INDEX IF NOT EXISTS trace_errors ON trace(error_count, started_ms DESC);
@@ -157,7 +168,67 @@ class TraceStore:
         self._db = sqlite3.connect(str(self.path), check_same_thread=False)
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.executescript(SCHEMA)
+        self._migrate_ingest_order()
+        self._heal_unsequenced()
         self._db.commit()
+
+    def _migrate_ingest_order(self) -> None:
+        """Give a store written before ingest ordering existed one anyway.
+
+        `CREATE TABLE IF NOT EXISTS` does not add columns to a table that is
+        already there, so a live traces.db keeps the old shape forever unless
+        somebody says otherwise. The backfill numbers existing traces by
+        `started_ms`, which is the order the only consumer (the Instana
+        forwarder) previously walked them in — so its old `lastTraceStartedMs`
+        watermark converts to a sequence watermark exactly, with neither a gap
+        nor a replay of a fortnight of history on the first run afterwards.
+        """
+        cur = self._db.cursor()
+        have = {r[1] for r in cur.execute("PRAGMA table_info(trace)")}
+        if "ingest_seq" in have:
+            return
+        cur.execute("ALTER TABLE trace ADD COLUMN ingest_seq INTEGER NOT NULL DEFAULT 0")
+        cur.execute("ALTER TABLE trace ADD COLUMN updated_ms INTEGER NOT NULL DEFAULT 0")
+        cur.execute(
+            "UPDATE trace SET ingest_seq=(SELECT n FROM (SELECT trace_id,"
+            "ROW_NUMBER() OVER (ORDER BY started_ms) AS n FROM trace) o "
+            "WHERE o.trace_id=trace.trace_id), updated_ms=ended_ms"
+        )
+        cur.execute("CREATE INDEX IF NOT EXISTS trace_ingest ON trace(ingest_seq)")
+
+    def _heal_unsequenced(self) -> None:
+        """Number any trace still sitting at ingest_seq 0, at the HEAD of the order.
+
+        DEPLOY ORDERING, made harmless. The column arrives with this file, but
+        the serving plane is a long-running process: between `box-deploy.sh
+        --apply` and its restart, the OLD code is still writing trace rows, and
+        its INSERT names no ingest_seq, so those rows default to 0 — below every
+        watermark, and therefore invisible to the forwarder forever. That is the
+        same silent-loss shape this whole change exists to remove, so it is
+        healed rather than documented as a caveat: every open of the store (the
+        restarted plane, and the forwarder itself, which opens it each run)
+        sweeps them to the head of the sequence, which is exactly what "arrived
+        since the last watermark" means for them.
+        """
+        cur = self._db.cursor()
+        if not cur.execute("SELECT 1 FROM trace WHERE ingest_seq=0 LIMIT 1").fetchone():
+            return
+        base = self._next_ingest_seq(cur) - 1
+        cur.execute(
+            "UPDATE trace SET ingest_seq=?+(SELECT n FROM (SELECT trace_id,"
+            "ROW_NUMBER() OVER (ORDER BY started_ms) AS n FROM trace WHERE ingest_seq=0) o "
+            "WHERE o.trace_id=trace.trace_id), updated_ms=MAX(updated_ms,ended_ms) "
+            "WHERE ingest_seq=0",
+            (base,),
+        )
+
+    def _next_ingest_seq(self, cur) -> int:
+        """The next ingest sequence number. Derived from the table, not from a
+        counter in this process: the store is opened by the serving plane and
+        by every offline tool, and two processes holding private counters would
+        hand out the same number twice — which is silent data loss for anything
+        watermarking on it."""
+        return int(cur.execute("SELECT IFNULL(MAX(ingest_seq),0)+1 FROM trace").fetchone()[0])
 
     # ---- intake ------------------------------------------------------------
 
@@ -234,13 +305,13 @@ class TraceStore:
                     taken += 1
                     touched.add(trace_id)
             for trace_id in touched:
-                self._resummarise(cur, trace_id, session, klass)
+                self._resummarise(cur, trace_id, session, klass, self._next_ingest_seq(cur))
             if taken:
                 self._db.commit()
         return taken
 
     @staticmethod
-    def _resummarise(cur, trace_id: str, session: str, klass: str) -> None:
+    def _resummarise(cur, trace_id: str, session: str, klass: str, ingest_seq: int) -> None:
         """Rebuild one trace's summary row from the spans now present.
 
         The ROOT is the span with no parent; when several batches are in flight
@@ -262,10 +333,14 @@ class TraceStore:
         errors = sum(1 for r in rows if r[5] == "error")
         cur.execute(
             "INSERT INTO trace(trace_id,session_id,class,root_name,started_ms,ended_ms,dur_ms,"
-            "span_count,error_count,status,day) VALUES(?,?,?,?,?,?,?,?,?,?,?) "
+            "span_count,error_count,status,day,ingest_seq,updated_ms) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(trace_id) DO UPDATE SET root_name=excluded.root_name,"
             "started_ms=excluded.started_ms,ended_ms=excluded.ended_ms,dur_ms=excluded.dur_ms,"
             "span_count=excluded.span_count,error_count=excluded.error_count,status=excluded.status,"
+            # A trace that just took a span is NEWLY CHANGED, so it moves to the
+            # head of the ingest order — that is the whole point: a consumer
+            # that walked past this trace an hour ago sees it again.
+            "ingest_seq=excluded.ingest_seq,updated_ms=excluded.updated_ms,"
             # A batch that KNOWS the session names it; one that does not never
             # erases one. The serving plane (serve/tracing.py) emits spans into
             # traces the browser also contributes to, and it never learns the
@@ -290,6 +365,8 @@ class TraceStore:
                 errors,
                 root[5],
                 _day(started),
+                ingest_seq,
+                int(time.time() * 1000),
             ),
         )
 
@@ -321,13 +398,42 @@ class TraceStore:
         if f.get("min_dur_ms"):
             where.append("dur_ms>=?")
             args.append(int(f["min_dur_ms"]))
+        # The two INGEST-ORDER filters. They are not "since_ms with better
+        # units": `since_seq` asks what has CHANGED since a marker, which
+        # includes a trace that started before it, and `quiet_before_ms` asks
+        # what has stopped changing. Both are meaningless against started_ms,
+        # and both are what a forwarder needs — see instana-forward.py.
+        if f.get("since_seq"):
+            where.append("ingest_seq>?")
+            args.append(int(f["since_seq"]))
+        if f.get("quiet_before_ms"):
+            where.append("updated_ms<=?")
+            args.append(int(f["quiet_before_ms"]))
         limit = max(1, min(500, int(f.get("limit") or 100)))
         offset = max(0, int(f.get("offset") or 0))
+        # The UI wants newest first; a catch-up consumer wants the order things
+        # were ingested in, oldest first, so that a watermark it advances can
+        # never skip a row it has not seen.
+        order = "ingest_seq ASC" if f.get("order") == "ingest" else "started_ms DESC"
         sql = (
             "SELECT trace_id,session_id,class,root_name,started_ms,dur_ms,span_count,"
-            "error_count,status FROM trace WHERE " + " AND ".join(where) + " ORDER BY started_ms DESC LIMIT ? OFFSET ?"
+            "error_count,status,ingest_seq,updated_ms FROM trace WHERE "  # noqa: S608 - fixed names
+            + " AND ".join(where)
+            + f" ORDER BY {order} LIMIT ? OFFSET ?"
         )
-        cols = ("traceId", "sessionId", "class", "name", "startedMs", "durMs", "spanCount", "errorCount", "status")
+        cols = (
+            "traceId",
+            "sessionId",
+            "class",
+            "name",
+            "startedMs",
+            "durMs",
+            "spanCount",
+            "errorCount",
+            "status",
+            "ingestSeq",
+            "updatedMs",
+        )
         with self._lock:
             cur = self._db.cursor()
             rows = [dict(zip(cols, r)) for r in cur.execute(sql, (*args, limit, offset))]
