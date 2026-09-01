@@ -211,6 +211,13 @@ WALKIN_PATHS = frozenset(
         # different route entirely (/auth/traces/*), so a walk-in can report the
         # journey that just failed them and can see nothing.
         "/traces",
+        # The Instana EUM beacon proxy (serve/eum_proxy.py). Listed HERE and
+        # deliberately NOT in OPEN_PATHS above: it is a telemetry INGEST, so it
+        # gets exactly the fence /traces and /analytics already have — an
+        # invited session or a walk-in, never an anonymous stranger. Widening
+        # it to open would make a route that writes into a third-party tenant
+        # reachable by anyone who can reach the login page.
+        "/eum",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —

@@ -129,7 +129,11 @@
          VITE_INSTANA_WEBSITE_KEY / VITE_INSTANA_EUM_REPORTING_URL are read from
          registry/local.env at build time and substituted here by Vite's own
          index.html env-placeholder replacement (percent-delimited VITE_ names;
-         see scripts/serve-https-spa.sh build()).
+         see scripts/serve-https-spa.sh build()). NOTE what the second one now
+         carries: the FIRST-PARTY PATH `/eum`, not the tenant's reporting URL.
+         The tenant URL never enters this bundle at all — it lives on the box
+         and scripts/serve/eum_proxy.py forwards to it. See the reportingUrl
+         line below for why, and docs/ANALYTICS.md for the whole design.
          See docs/PUBLIC-GALLERY.md-adjacent analytics docs and instana.ts for
          why this is opt-in and operator-decided.
 
@@ -152,6 +156,31 @@
         var key = "%VITE_INSTANA_WEBSITE_KEY%";
         var reportingUrl = "%VITE_INSTANA_EUM_REPORTING_URL%";
         if (!key || key.charAt(0) === '%' || !reportingUrl || reportingUrl.charAt(0) === '%') return;
+        // FIRST-PARTY BEACON DELIVERY. What arrives here is no longer the
+        // vendor's own host: scripts/serve-https-spa.sh substitutes the
+        // FIRST-PARTY PATH `/eum` whenever INSTANA_EUM_REPORTING_URL is
+        // configured, and the tenant's real reporting URL stays on the box
+        // (scripts/serve/eum_proxy.py forwards to it). The reason is a
+        // measured outage, not tidiness: a visitor behind a private-DNS
+        // ad/tracker blocker produced a complete record in our OWN plane —
+        // which is first-party — and not one Instana beacon, because the
+        // blocker refuses to resolve the vendor's reporting host. Every such
+        // visitor was invisible in the Websites view, which biases it toward
+        // exactly the people who do not block trackers.
+        //
+        // Made ABSOLUTE rather than left relative, deliberately. `sendBeacon`
+        // would resolve `/eum` against the document base perfectly well, but
+        // two OTHER mechanisms compare the reporting URL against a FULL URL
+        // string: the agent's own self-exclusion (`Ab()` in the pinned
+        // bundle, which is what stops it monitoring its own beacon) and
+        // `ignoreUrls` below. A bare path can never match either, and both
+        // failures are silent. The guard above still runs on the RAW value,
+        // so the no-key/no-url silent no-op path is untouched.
+        //
+        // The two-checks-not-one guard above is also why this rewrite happens
+        // AFTER it: an unconfigured build must reach `return` before anything
+        // here can turn a placeholder into a plausible-looking URL.
+        if (reportingUrl.charAt(0) === '/') reportingUrl = window.location.origin + reportingUrl;
         (function(s,t,a,n){s[t]||(s[t]=a,n=s[a]=function(){n.q.push(arguments)},
         n.q=[],n.v=2,n.l=Date.now());})(window,"InstanaEumObject","ineum");
         ineum('reportingUrl', reportingUrl);
@@ -222,7 +251,7 @@
         // HTML/TS boundary" trade the ROUTES table just below already makes;
         // keep both in sync.
         try {
-          var TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'];
+          var TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd', '/eum'];
           var ignorePatterns = [];
           for (var p = 0; p < TELEMETRY_PATHS.length; p++) {
             var escaped = TELEMETRY_PATHS[p].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

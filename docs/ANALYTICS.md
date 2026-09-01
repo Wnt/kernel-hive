@@ -1440,7 +1440,17 @@ the three places Instana touches this repo, not asserted:
   the instant either value is unset or still the raw placeholder text. Blanking
   `INSTANA_WEBSITE_KEY` in `registry/local.env` and rebuilding/redeploying the
   SPA is the whole off switch for the browser half; nothing else references
-  the key.
+  the key. Note what the second variable now carries: since §8.3 it is
+  substituted as the **first-party path** `/eum`, not the tenant's reporting
+  URL, so the tenant URL is no longer in the bundle at all.
+- **The beacon proxy comes off with it, and is the newest of the legs.**
+  `scripts/serve/eum_proxy.py` (§8.3) exists solely because Instana does. It
+  deletes as one commit — the module, its `telemetry_routes` row, its
+  `gate.WALKIN_PATHS` entry, its `box-sync-pairs.sh` row, its
+  `KH_TELEMETRY_PATHS` entry and `serve-https-spa.sh`'s
+  `publish_instana_upstream` — and nothing else in the tree references it.
+  Clearing `INSTANA_EUM_REPORTING_URL` turns it off without a code change:
+  the route then 404s, exactly as it does on a fresh clone.
 - **`instana-forward.py` is already the minimum-commitment shape.** It has its
   own `--dry-run` and its one credential, and since 2026-09-01 one timer
   (`kh-instana-forward.timer`, §8.1). `systemctl disable --now
@@ -1454,14 +1464,61 @@ the three places Instana touches this repo, not asserted:
   `registry/local.env` edit or a redeploy. Anyone reading "removable" as "one
   repo change" would be wrong about this third of it.
 
-So two of the three legs come off with a config edit and a rebuild; the third
-is a genuinely separate install that needs its own teardown on labhost
-whenever the operator decides to do it.
+So three of the four legs come off with a config edit and a rebuild; the
+remaining one is a genuinely separate install that needs its own teardown on
+labhost whenever the operator decides to do it.
 
 One fact worth recording rather than planning around: the Instana UI reported,
 as read on 2026-08-31, that this tenant is a trial expiring in 14 days. That
 may force the exit before this plane's own views are ready, independent of
 whatever order the operator would otherwise have chosen.
+
+## 8.3 The beacon proxy — first-party delivery for the vendor's own beacons
+
+**The measurement.** The operator's phone runs a private-DNS ad/tracker blocker
+(Blockada). One real PWA visit produced a complete record in **our own** plane —
+`/clientlog`, `/analytics`, `/traces` — and **zero Instana beacons**. Nothing
+was broken. The blocker refuses to resolve the vendor's reporting host, and a
+beacon whose destination will not resolve is never sent.
+
+That is worth stating as a property of this plane and not only as an Instana
+defect: **our own telemetry has enjoyed first-party delivery since its first
+line**, and that is precisely why it kept working when the vendor's did not.
+Every endpoint in §2 is a path on the origin the page was served from — same
+host, same TLS, same cookie, no second name for anything to filter. The
+Instana half was the only part of this system that depended on a third-party
+hostname resolving in the visitor's own resolver, and it was the only part that
+disappeared.
+
+**What was built.** `scripts/serve/eum_proxy.py` answers `POST /eum` on our own
+origin, and forwards the beacon body verbatim to the tenant from the box. The
+vendor SCRIPT was already self-hosted (`/vendor/instana-eum.min.js`, fetched at
+deploy time), so the beacon POST was the last third-party hop; both halves are
+first-party now. `scripts/serve-https-spa.sh` substitutes `/eum` into the
+bootstrap's `reportingUrl`, so the tenant's URL never enters the bundle.
+
+**The security posture and the blocking-vs-stalling decision** are written out
+in that module's docstring and summarised in
+[`docs/lab/INSTANA-VIEW-INVENTORY.md` §2.2](lab/INSTANA-VIEW-INVENTORY.md).
+The short forms: one destination, from a box-side file, that no request can
+influence; POST only, capped, no redirect, no client headers passed through;
+gated exactly like `/traces` and never traced; and **the upstream call runs on
+a background worker, not the request thread**, so an unreachable Instana costs
+one thread and some telemetry rather than a slow gallery. The route answers 200
+for *queued*, never for *delivered*.
+
+**The trade-off, stated rather than buried.** Instana derives geography from
+the beacon's source IP and browser/OS from its `User-Agent` — neither is in the
+beacon body — so a proxy that forwarded only bytes would collapse both onto the
+box. The docs name the supported fix (`X-Forwarded-For`, or `X-REALER-IP`), and
+we send it, taking the RIGHTMOST entry so a client cannot assert its own
+location. Two honest caveats: IBM states that proxy setups are unsupported even
+while documenting the header, and this lab's geo data was already classed
+POPULATED BUT UNINFORMATIVE (one household, one city). The capability is
+preserved on principle, not because the map was telling us anything.
+
+**It is temporary.** It exists only because Instana does, and it is listed in
+§8.2's off switch as its own leg for exactly that reason.
 
 ## 9. The Python serving plane — branches, not routes
 
@@ -1703,7 +1760,9 @@ Traps worth knowing, each of which was hit while writing this:
 | `scripts/observability/instana-forward.py`, `instana_destination.py`, `instana_backlog.py`, `instana_batch.py`, `instana_metrics.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice and the narrow loopback-http exception; the ingest-sequence watermark and quiet window that decide WHICH traces are still owed; how much goes in one request and how many requests one run may make; the histogram projection |
 | `scripts/observability/kh-instana-forward.{service,timer}`, `kh-trace-ship.{service,timer}` | the schedules for the two carriers. Installed by `box-deploy.sh --apply`, enabled by the operator |
 | `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
-| `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2) |
+| `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2); `reportingUrl` now names our own `/eum` (§8.3) |
+| `scripts/serve/eum_proxy.py`, `scripts/test_eum_proxy.py` | the beacon proxy (§8.3): one fixed destination, POST-only, gated like `/traces`, never traced, forwarded off the request thread — and the tests that pin every one of those refusals |
+| `scripts/visitor-sim/beacon-probe.mjs` | the acceptance probe: where beacons went, whether we accepted them, and (`--instana-check`) whether the tenant actually received them |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |
 | `spa/vite-plugins/coverage.ts`, `spa/src/analytics/coverage.ts` | the armed-only instrumentation plugin and its collector |
 | `spa/src/analytics/*.test.ts`, `spa/src/walkin/telemetry.test.ts`, `spa/src/ui/keyboard/composeTelemetry.test.ts` | the client side; one test per rule that could otherwise silently invert |

@@ -127,6 +127,13 @@ scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
 # outside the repo tree entirely.
 **/vendor/instana-eum.min.js
 
+# The EUM beacon proxy's upstream — the tenant's reporting URL, written to the
+# box's serve directory at deploy time (scripts/serve-https-spa.sh
+# publish_instana_upstream) and read only by scripts/serve/eum_proxy.py. The
+# live copy lives outside the repo tree; this pattern only stops a local
+# experiment from committing the value.
+scripts/serve/instana-eum-upstream.txt
+
 # per-worker session identity written by scripts/dev/wt.sh
 .kh-session
 
