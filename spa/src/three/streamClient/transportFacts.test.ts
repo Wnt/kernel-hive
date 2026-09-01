@@ -59,11 +59,28 @@ describe('transportAttrs', () => {
     expect(transportAttrs('stream')['net.peer.ip']).toBeUndefined();
   });
 
-  it('says "unsupported" rather than staying silent when getStats is absent', () => {
+  it('names the absence when NO browser API and no ping has produced an RTT', () => {
+    // Chrome 150, measured 2026-09-01: WebTransport.prototype.getStats does
+    // not exist. An always-absent attribute would read as "the poll has not
+    // run" forever, so the reason is emitted instead.
     setTransportFacts('https://labhost:8443/wt', {});
     const a = transportAttrs('stream');
-    expect(a['kh.transport.stats']).toBe('unsupported');
+    expect(a['kh.transport.rtt_source']).toBe('no-getstats');
     expect(a['kh.transport.rtt_ms']).toBeUndefined();
+  });
+
+  it('falls back to the liveness-ping RTT when getStats is absent', () => {
+    setTransportFacts('https://labhost:8443/wt', {}, () => 4.25);
+    const a = transportAttrs('stream');
+    expect(a['kh.transport.rtt_ms']).toBe(4.25);
+    expect(a['kh.transport.rtt_source']).toBe('ping');
+  });
+
+  it('carries the negotiated ALPN when the UA exposes one', () => {
+    setTransportFacts('https://labhost:8443/wt', { protocol: 'h3' });
+    expect(transportAttrs('stream')['network.protocol.alpn']).toBe('h3');
+    setTransportFacts('https://labhost:8443/wt', { protocol: '' });
+    expect(transportAttrs('stream')['network.protocol.alpn']).toBeUndefined();
   });
 
   it('reports the connection RTT once a poll has answered', async () => {
@@ -74,12 +91,20 @@ describe('transportAttrs', () => {
     expect(a['kh.transport.rtt_ms']).toBe(7.5);
     expect(a['kh.transport.rtt_min_ms']).toBe(6);
     expect(a['kh.wire.reliability']).toBe('datagram');
-    expect(a['kh.transport.stats']).toBeUndefined();
+    expect(a['kh.transport.rtt_source']).toBe('getstats');
   });
 
-  it('marks the window before the first poll answers as pending, not empty', () => {
+  it('prefers the transport figure over the ping when both exist', async () => {
+    const wt = { getStats: () => Promise.resolve({ smoothedRtt: 7.5 }) };
+    setTransportFacts('https://labhost:8443/wt', wt, () => 99);
+    await Promise.resolve(); await Promise.resolve();
+    expect(transportAttrs('stream')['kh.transport.rtt_ms']).toBe(7.5);
+    expect(transportAttrs('stream')['kh.transport.rtt_source']).toBe('getstats');
+  });
+
+  it('says "none-yet" while a supported getStats has not answered', () => {
     setTransportFacts('https://labhost:8443/wt', { getStats: () => new Promise(() => {}) });
-    expect(transportAttrs('stream')['kh.transport.stats']).toBe('pending');
+    expect(transportAttrs('stream')['kh.transport.rtt_source']).toBe('none-yet');
   });
 
   it('gives each connection its own id, and forgets it on close', () => {
@@ -97,7 +122,7 @@ describe('transportAttrs', () => {
         smoothedRtt: 7.5, minRtt: 6, datagrams: { expiredOutgoing: 2 },
       }),
     };
-    setTransportFacts('https://labhost:8443/wt', wt);
+    setTransportFacts('https://labhost:8443/wt', { ...wt, protocol: 'h3' }, () => 4);
     await Promise.resolve(); await Promise.resolve();
     const a = transportAttrs('stream');
     expect(Object.keys(a).length).toBeLessThanOrEqual(ATTR_MAX);

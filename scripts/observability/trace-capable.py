@@ -56,13 +56,15 @@ def live_stations() -> list[str]:
     """Active `streamhost@<station>` units, as systemd sees them."""
     out = subprocess.run(
         ["systemctl", "list-units", "streamhost@*", "--no-legend", "--state=active"],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     ).stdout
     names = []
     for line in out.splitlines():
         unit = line.split()[0] if line.split() else ""
         if unit.startswith("streamhost@") and unit.endswith(".service"):
-            names.append(unit[len("streamhost@"):-len(".service")])
+            names.append(unit[len("streamhost@") : -len(".service")])
     return sorted(names)
 
 
@@ -76,7 +78,9 @@ def running_binary(station: str) -> Path | None:
     "it is broken"."""
     pid = subprocess.run(
         ["systemctl", "show", "-p", "MainPID", "--value", f"streamhost@{station}.service"],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        check=False,
     ).stdout.strip()
     if not pid.isdigit() or pid == "0":
         return None

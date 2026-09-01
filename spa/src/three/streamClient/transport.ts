@@ -147,7 +147,7 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     // has settled, because before that there is no connection to describe and
     // `getStats()` has nothing to report. Never throws: a UA without
     // `getStats` records that fact and carries the endpoint alone.
-    try { setTransportFacts(sig.url, wt); } catch { /* instrumentation never breaks a connect */ }
+    try { setTransportFacts(sig.url, wt, () => this.lastRtt); } catch { /* instrumentation never breaks a connect */ }
     this.armNoVideoTelemetry();
     // Belt-and-braces: if a session still comes up poisoned (the pre-ready
     // attach lost an unknown variant of the race), detect + rebuild it.

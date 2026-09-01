@@ -5,7 +5,7 @@
 
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
-  __bufferedSpans, __resetTracer, childOfActive, configureTracer, currentSpan,
+  __bufferedSpans, __resetTracer, childOfActive, configureTracer, currentSpan, emitSpan,
   flushSpans, newSpanId, newTraceId, popActive, pushActive, startTrace,
 } from './trace';
 import { joinPageLoadTraceFromMeta, parseTraceparent, seedPageLoadTrace } from './pageLoadJoin';
@@ -300,5 +300,37 @@ describe('the page-load join (docs/lab/TRACE-CONTEXT.md §4/§7)', () => {
 
     delete (globalThis as { document?: unknown }).document;
     expect(() => joinPageLoadTraceFromMeta()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `/traces` requires an INTEGER `st` and drops anything else without a word
+// (traces.py: `if not isinstance(started, int) ... continue`). `emitSpan`
+// derives its start by subtracting two clocks, one of which is fractional, so
+// the whole return leg was being refused at intake — 10 stored `client.frame.
+// paint` spans against 407 daemon `transport.frame.next` spans over 24 h
+// (measured 2026-09-01). Nothing reported it: the tab thought it had emitted.
+// ---------------------------------------------------------------------------
+describe('emitSpan start is storable', () => {
+  it('emits a whole-millisecond start even from a fractional clock reading', () => {
+    __resetTracer();
+    configureTracer({ enabled: true, emit: () => {} });
+    // A `performance.now()`-domain reading with a fraction, which is the
+    // normal case: Chrome reports that clock at 100 us resolution.
+    emitSpan('a'.repeat(32), 'b'.repeat(16), 'client.frame.paint', performance.now() - 3.7, 2.4);
+    const buf = __bufferedSpans();
+    const s = buf[buf.length - 1];
+    expect(Number.isInteger(s.st)).toBe(true);
+    expect(Number.isInteger(s.d)).toBe(true);
+  });
+
+  it('honours the span kind it is given, defaulting to internal', () => {
+    __resetTracer();
+    configureTracer({ enabled: true, emit: () => {} });
+    emitSpan('a'.repeat(32), 'b'.repeat(16), 'client.input.roundtrip', 1, 1, undefined, 'ok', 'client');
+    emitSpan('a'.repeat(32), 'b'.repeat(16), 'client.frame.decode', 1, 1);
+    const spans = __bufferedSpans();
+    expect(spans[spans.length - 2].kd).toBe('client');
+    expect(spans[spans.length - 1].kd).toBe('internal');
   });
 });

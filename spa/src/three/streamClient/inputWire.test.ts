@@ -142,7 +142,7 @@ describe('input.wire', () => {
     const { reliable } = sampledKey();
     expect(reliable).toHaveLength(SAMPLE_N);
     // 4 base bytes + the 25-byte trace suffix on the sampled one only.
-    expect(reliable.at(-1)!.rec.length).toBe(4 + 25);
+    expect(reliable[reliable.length - 1].rec.length).toBe(4 + 25);
     expect(reliable[0].rec.length).toBe(4);
   });
 

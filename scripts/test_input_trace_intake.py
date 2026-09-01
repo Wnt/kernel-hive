@@ -36,9 +36,7 @@ SPAN_SOURCES = (
     SPA / "frameTrace.ts",
 )
 #: The daemon's half. `Span::child("name", ...)` and `emit_at("name", ...)`.
-RUST_SPAN_SOURCES = (
-    RUST / "trace_session.rs",
-)
+RUST_SPAN_SOURCES = (RUST / "trace_session.rs",)
 #: The one module that builds the transport hop's attribute set.
 ATTR_SOURCE = SPA / "transportFacts.ts"
 
@@ -125,8 +123,10 @@ class TransportAttrsSurviveIntake(unittest.TestCase):
         "net.peer.name": "labhost",
         "net.peer.port": 8443,
         "kh.transport.rtt_ms": 7.5,
+        "kh.transport.rtt_source": "getstats",
         "kh.transport.rtt_min_ms": 6.0,
         "kh.transport.dgram_lost": 2,
+        "network.protocol.alpn": "h3",
         "kh.input.class": "key",
         "kh.station.id": "win95",
     }
@@ -138,9 +138,7 @@ class TransportAttrsSurviveIntake(unittest.TestCase):
         intake check below because the check only ever saw the old set."""
         extracted = transport_attr_keys()
         self.assertTrue(extracted, "extractor found no attribute keys")
-        # `kh.transport.stats` is the absence marker, mutually exclusive with
-        # the RTT keys — never present in the fullest form.
-        unknown = extracted - set(self.FULL) - {"kh.transport.stats"}
+        unknown = extracted - set(self.FULL)
         self.assertEqual(set(), unknown, f"untested transport attributes: {sorted(unknown)}")
 
     def test_nothing_is_banned_at_intake(self):
@@ -149,9 +147,9 @@ class TransportAttrsSurviveIntake(unittest.TestCase):
     def test_the_fullest_set_survives_clean_attrs_intact(self):
         cleaned = traces._clean_attrs(dict(self.FULL))
         self.assertEqual(
-            self.FULL, cleaned,
-            "an attribute was dropped or truncated at intake — a truncated set "
-            "is worse than a smaller deliberate one",
+            self.FULL,
+            cleaned,
+            "an attribute was dropped or truncated at intake — a truncated set is worse than a smaller deliberate one",
         )
 
     def test_the_fullest_set_is_inside_the_attribute_ceiling(self):
