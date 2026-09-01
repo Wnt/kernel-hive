@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 70,
     "stationsManifestOrder": 68,
-    "stationsManifestPrelude": "\n# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop. Ships monochrome 640x512 today (AMIX's Amiga-chipset X server is depth 1); colour OPEN LOOK on the A2410 (1024x768, 8-bit) is proven on this same binary and its golden awaits promotion (docs/guests/amix.md).\n",
+    "stationsManifestPrelude": "\n# amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop, in COLOUR on an A2410 (1024x768, 8-bit PseudoColor, selected by starting AMIX's X server with -tiga). The chipset X server is depth 1, so monochrome 640x512 is the fallback and is one flag away (/etc/kh-xsession.mono in the guest). Absolute 1:1 pointer via x11warp into the guest's own X server over a loopback-bound slirp redirect.\n",
     "bringUpGroup": 8,
     "bindingOrder": 75,
     "bindingPrelude": "",
@@ -53,7 +53,7 @@
   "listing": {
     "state": "hidden",
     "since": "2026-08-30",
-    "reason": "Dark launch: the pointer is not 1:1 yet (docs/guests/amix.md), and the operator's call is open on monochrome-vs-A2410 colour. Promote by dropping this block once both are closed."
+    "reason": "Dark launch pending the operator's eyeball at /os/amix. Both original blockers are CLOSED: the pointer is absolute and 1:1 (x11warp into the guest's X server, 0 px residual, framebuffer-proven), and colour is proven and shipped (A2410 via -tiga). Promote by dropping this block."
   },
   "stream": {
     "transport": "streamhost",
