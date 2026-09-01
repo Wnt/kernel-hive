@@ -16,8 +16,8 @@
 //    * `backendTraceId` must be EXACTLY 16 or 32 hex characters. The minified
 //      agent validates it and SILENTLY DROPS THE FIELD otherwise — the docs
 //      state no such rule at all; this was established by reading the real
-//      bundle (`three/streamClient/inputTrace.ts`'s `BACKEND_TRACE_ID_RE`, the
-//      same regex, pinned equal by this file's test). Unlike `inputTrace`,
+//      bundle; `analytics/instana.ts` owns that rule and this module
+//      re-exports it. Unlike `inputTrace`,
 //      which abandons the whole call when the id is unusable BECAUSE the join
 //      is the entire point of that beacon, a stream event is worth reporting
 //      with or without a backend join — so a malformed id drops the FIELD and
@@ -38,6 +38,8 @@
 //  avoid.
 // ============================================================================
 
+import { BACKEND_TRACE_ID_RE } from './instana';
+
 /** The subset of `ineum` this module calls. Declared locally — see the header:
  *  this file must be deletable without touching anything else. */
 declare global {
@@ -49,14 +51,13 @@ declare global {
 /**
  * Exactly what the vendor bundle accepts for `backendTraceId`.
  *
- * Duplicated from `three/streamClient/inputTrace.ts` rather than imported:
- * `analytics/` must not depend on `three/`, and this file in particular must
- * be removable on its own. The duplication is not left to drift —
- * `instanaStreamEvents.test.ts` asserts the two sources are the identical
- * pattern, so a change to one that is not made to the other fails the build
- * instead of silently sending a value the vendor discards.
+ * Re-exported from `./instana`, which is the single home for facts about the
+ * vendor bundle. It briefly lived in `three/streamClient/inputTrace.ts` and was
+ * copied here because `analytics/` must not depend on `three/`; that reason is
+ * gone now that the canonical copy is this module's neighbour, so the copy is
+ * too. One definition cannot drift from itself.
  */
-export const BACKEND_TRACE_ID_RE = /^[0-9a-f]{16}$|^[0-9a-f]{32}$/i;
+export { BACKEND_TRACE_ID_RE };
 
 /** The vendor's own `maxMetadataKeys` default. Enforced here rather than
  *  trusted to stay true by inspection. */

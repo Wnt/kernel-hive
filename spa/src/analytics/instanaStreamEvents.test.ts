@@ -8,7 +8,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 import {
   BACKEND_TRACE_ID_RE, META_MAX_KEYS, mirrorStreamEventToInstana,
 } from './instanaStreamEvents';
-import { BACKEND_TRACE_ID_RE as INPUT_TRACE_RE } from '../three/streamClient/inputTrace';
+import { BACKEND_TRACE_ID_RE as VENDOR_RE } from './instana';
 
 type Call = [string, ...unknown[]];
 
@@ -29,11 +29,11 @@ afterEach(() => { delete (globalThis as { window?: unknown }).window; });
 const OK_TRACE = 'a'.repeat(32);
 
 describe('the vendor rules that fail silently', () => {
-  it('uses the identical backendTraceId rule inputTrace.ts established from the real bundle', () => {
-    // Duplicated on purpose (analytics/ must not depend on three/), pinned here
-    // so the copy cannot drift into sending values the agent discards.
-    expect(BACKEND_TRACE_ID_RE.source).toBe(INPUT_TRACE_RE.source);
-    expect(BACKEND_TRACE_ID_RE.flags).toBe(INPUT_TRACE_RE.flags);
+  it('uses the one backendTraceId rule established from the real bundle', () => {
+    // `analytics/instana.ts` is the single home for facts about the vendor
+    // bundle; this module re-exports that rule rather than restating it, so
+    // there is no second copy to drift.
+    expect(BACKEND_TRACE_ID_RE).toBe(VENDOR_RE);
   });
 
   it('sends the join only when the vendor would keep it — 16 or 32 hex', () => {
