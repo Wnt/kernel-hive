@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 from urllib.parse import parse_qs, urlparse
 
+import eum_proxy
 import linecov
 import probes
 import traces
@@ -45,6 +46,17 @@ def _bad_origin(handler, public_origin: str) -> bool:
 
 def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) -> bool:
     """Answer one of the analytics routes. Returns True when it did."""
+    # /eum — the Instana beacon proxy. Answered before the method split
+    # because it owns EVERY method on its path: falling through on a GET would
+    # hand the SPA fallback back to a vendor agent, which is a worse answer
+    # than a 405. Its own module carries the origin check, the fence and the
+    # queue; see eum_proxy.py for the whole posture. It is NOT one of the four
+    # routes this file's docstring is about — it stores nothing here, reads no
+    # identity, and is deletable with the rest of the Instana integration.
+    if path == eum_proxy.PATH:
+        eum_proxy.dispatch(handler, method, public_origin)
+        return True
+
     if method == "POST":
         # POST /analytics — one tab's feature-reach / flow / error counters.
         if path == "/analytics":

@@ -111,6 +111,15 @@ CLIENTLOG_BODY_MAX = 16 * 1024  # request-body cap (shared by /clientcmd/admin)
 WEBRTC_OFFER_BODY_MAX = 128 * 1024
 WEBRTC_BRIDGE_UPSTREAM = os.environ.get("WEBRTC_BRIDGE_UPSTREAM", "http://127.0.0.1:18080").rstrip("/")
 WEBRTC_ICE_SERVERS_FILE = Path(os.environ.get("WEBRTC_ICE_SERVERS_FILE", str(_HERE / "webrtc-ice-servers.json")))
+# The Instana EUM beacon proxy's ONE upstream (scripts/serve/eum_proxy.py): a
+# single-line file holding the tenant's reporting URL. A FILE rather than an
+# environment variable because the systemd unit is committed to a public repo
+# with placeholder addresses in it and the tenant URL is not publishable — the
+# same reason WEBRTC_ICE_SERVERS_FILE is a file with a committed `.example`
+# beside it. scripts/serve-https-spa.sh publishes it from registry/local.env at
+# deploy time, alongside the vendor agent itself. Absent means the proxy is not
+# configured and POST /eum 404s, which is what a fresh clone must look like.
+INSTANA_EUM_UPSTREAM_FILE = Path(os.environ.get("INSTANA_EUM_UPSTREAM_FILE", str(_HERE / "instana-eum-upstream.txt")))
 CLIENTCMD = Path(os.environ.get("CLIENTCMD", str(_HERE / "clientcmd.json")))
 CLIENTCMD_TOKEN = Path(os.environ.get("CLIENTCMD_TOKEN", str(_HERE / "pki" / "clientcmd.token")))
 # Append-only record of every command an operator ISSUED. Deliberately NOT

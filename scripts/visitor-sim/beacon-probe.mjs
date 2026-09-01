@@ -24,6 +24,26 @@
 // they agree. They come from one constant (spa/src/analytics/build.ts and the
 // placeholder vite substitutes into index.html), so a disagreement means one of
 // the two lanes is not carrying what it thinks it is.
+// SINCE THE BEACON PROXY (scripts/serve/eum_proxy.py) it also answers the
+// question that change created: are beacons actually FIRST-PARTY now, are
+// they accepted, and do they still reach Instana? Those are three separate
+// facts and it checks all three, because two of them can be true while the
+// third quietly is not:
+//
+//   1. WHERE they go. Every beacon must be POSTed to this origin's /eum, and
+//      NONE may go straight to an instana.io host. A direct beacon means the
+//      served bundle predates the proxy — the exact "a push is not a deploy"
+//      mistake — and it must fail loudly rather than look like success,
+//      because a stale bundle keeps working perfectly for everyone whose DNS
+//      is not filtered and vanishes for everyone whose is.
+//   2. WHETHER WE ACCEPTED them. A 401/403/404/415 on /eum is the failure
+//      mode this whole route has to be watched for: the fence is the same one
+//      that once 401'd /vendor/ and silently deleted all browser telemetry.
+//   3. WHETHER INSTANA GOT them. Ours accepting a beacon proves nothing about
+//      the vendor — the forward happens on a background worker AFTER we have
+//      already answered 200. So `--instana-check` queries the tenant's own
+//      beacons API for this page load's `kh.sessionId`. That is the only
+//      end-to-end proof; everything before it is proof of a prefix.
 //
 // See docs/lab/INSTANA-VIEW-INVENTORY.md §7 for the mechanism it verifies and
 // the measured agent behaviour behind it.
@@ -31,6 +51,7 @@
 // Usage:
 //   cd scripts/visitor-sim && node beacon-probe.mjs [--url https://host] [--path /]
 //   node beacon-probe.mjs --json out.json      # also write the raw capture
+//   node beacon-probe.mjs --instana-check      # + prove it reached the tenant
 //
 // Requires the same install as visitor-sim (`npm install` in this directory,
 // `npx playwright install chromium`) and a credentialed session — see
@@ -49,6 +70,13 @@ const DEFAULT_URL = 'https://kernelhive.madekivi.fi';
 // path registry/local.env points at — so match the domain, never a full URL
 // (which is tenant-specific and must not be committed).
 const REPORTING_HOST_RE = /(^|\.)instana\.io$/i;
+// The FIRST-PARTY beacon path (scripts/serve/eum_proxy.py PATH). Beacons post
+// here now; anything still going to REPORTING_HOST_RE above is a stale bundle.
+const FIRST_PARTY_BEACON_PATH = '/eum';
+// Where the tenant's API base and token live. Both are unpublishable, so they
+// are read from the gitignored env file at run time and never defaulted to a
+// literal — the same rule the rest of this repo follows for addresses.
+const LOCAL_ENV = path.join(HERE, '..', '..', 'registry', 'local.env');
 // Bind-mounted into CT950, so a probe running beside the gallery can answer
 // "does this bt exist?" itself instead of printing a query for a human to run.
 const DEFAULT_TRACES_DB = '/data/vms/streamhost/serve/traces.db';
@@ -63,10 +91,99 @@ function usage() {
                           page-load beacon is held ~5 s by the agent itself)
   --traces-db <file>      trace store to resolve each bt against
                           (default ${DEFAULT_TRACES_DB}; '' to skip)
+  --instana-check         after the load, poll the tenant's beacons API until
+                          this page load's kh.sessionId appears (end-to-end
+                          proof the proxy delivered); needs INSTANA_API_BASE +
+                          INSTANA_API_TOKEN_FILE in registry/local.env
+  --instana-wait <ms>     how long to poll for it            (default 180000)
+  --allow-direct          do NOT fail on beacons sent straight to instana.io.
+                          Only for measuring a pre-proxy bundle on purpose
   --json <file>           write the raw capture as JSON
   --insecure              accept the lab's self-signed cert (internal origins)
   --help
 `);
+}
+
+/** `KEY=value` lines from registry/local.env, or {} when it is not there.
+ *  A public clone has no such file and must still be able to run the probe. */
+function readLocalEnv() {
+  const env = {};
+  let text;
+  try {
+    text = fs.readFileSync(LOCAL_ENV, 'utf8');
+  } catch {
+    return env;
+  }
+  for (const line of text.split('\n')) {
+    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
+    if (m) env[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+  }
+  return env;
+}
+
+/** Poll the tenant for the PAGELOAD beacon carrying `backendTraceId`.
+ *
+ *  KEYED ON backendTraceId, NOT ON kh.sessionId, and the difference is the
+ *  whole reliability of this check. `kh.sessionId` is set by
+ *  analytics/instana.ts's configureInstana(), which runs after React mounts —
+ *  by which time the page-load beacon has already gone, so a PAGELOAD's meta
+ *  carries `kh.bundle`/`kh.client.class` and NOT the session id
+ *  (INSTANA-VIEW-INVENTORY.md §4.1 measured exactly this). Looking one up by
+ *  session id reports every delivered beacon as missing. The backend trace id
+ *  comes off the <meta name="traceparent"> of THIS load, is unique to it, and
+ *  is on the beacon by the time it leaves the tab.
+ *
+ *  Returns `{checked: false, why}` when the credentials are not present —
+ *  never a silent pass. A beacon is not queryable the instant it is accepted
+ *  (our worker forwards it asynchronously and IBM's ingest is not instant
+ *  either), so this polls rather than asking once. */
+async function instanaSawPageLoad(backendTraceId, waitMs) {
+  const env = readLocalEnv();
+  const base = (env.INSTANA_API_BASE || '').replace(/\/+$/, '');
+  const tokenFile = env.INSTANA_API_TOKEN_FILE || '';
+  if (!base || !tokenFile) {
+    return { checked: false, why: 'INSTANA_API_BASE / INSTANA_API_TOKEN_FILE not in registry/local.env' };
+  }
+  const abs = path.isAbsolute(tokenFile) ? tokenFile : path.join(HERE, '..', '..', tokenFile);
+  let token;
+  try {
+    token = fs.readFileSync(abs, 'utf8').trim();
+  } catch {
+    return { checked: false, why: `token file unreadable (${tokenFile})` };
+  }
+  const deadline = Date.now() + waitMs;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${base}/api/website-monitoring/analyze/beacons`, {
+        method: 'POST',
+        headers: { authorization: `apiToken ${token}`, 'content-type': 'application/json' },
+        // A short window and a generous page: this is looking for ONE beacon
+        // minted seconds ago, not building a report.
+        body: JSON.stringify({
+          timeFrame: { windowSize: 30 * 60 * 1000, to: Date.now() },
+          type: 'PAGELOAD',
+          pagination: { retrievalSize: 200 },
+        }),
+      });
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+      } else {
+        const doc = await res.json();
+        // Each row is `{beacon: {...}}` — the beacon fields are NOT at the top
+        // level, and reading `it.meta` instead of `it.beacon.meta` reports a
+        // delivered beacon as missing. Verified against a live response.
+        const items = (Array.isArray(doc.items) ? doc.items : []).map((it) => it?.beacon ?? it);
+        const hit = items.find((it) => it?.backendTraceId === backendTraceId);
+        if (hit) return { checked: true, found: true, beacon: hit, sampled: items.length };
+        lastError = `not among ${items.length} PAGELOAD beacon(s) yet`;
+      }
+    } catch (err) {
+      lastError = String(err && err.message ? err.message : err);
+    }
+    await new Promise((r) => setTimeout(r, 15000));
+  }
+  return { checked: true, found: false, why: lastError };
 }
 
 function parseArgs(argv) {
@@ -75,7 +192,11 @@ function parseArgs(argv) {
     const a = argv[i];
     if (!a.startsWith('--')) continue;
     const key = a.slice(2);
-    if (key === 'help' || key === 'insecure') args.set(key, true);
+    // BOOLEAN FLAGS MUST BE LISTED HERE. Anything absent is treated as
+    // taking a value, so it silently swallows the NEXT argument — which is
+    // exactly how `--instana-check --instana-wait 240000` ran with the
+    // default wait and no error, the first time this was used in anger.
+    if (['help', 'insecure', 'instana-check', 'allow-direct'].includes(key)) args.set(key, true);
     else {
       i += 1;
       args.set(key, argv[i]);
@@ -228,17 +349,32 @@ async function main() {
       /* header inspection is diagnostic only */
     }
   });
+  // WHERE each beacon went, kept apart rather than merged: the whole point of
+  // the proxy is that one of these two lists is empty.
+  const transports = { firstParty: 0, direct: 0 };
+  const beaconRequests = [];
   page.on('request', (req) => {
-    let host;
+    let url;
     try {
-      host = new URL(req.url()).hostname;
+      url = new URL(req.url());
     } catch {
       return;
     }
-    if (!REPORTING_HOST_RE.test(host)) return;
+    const direct = REPORTING_HOST_RE.test(url.hostname);
+    const firstParty = url.origin === origin && url.pathname === FIRST_PARTY_BEACON_PATH;
+    if (!direct && !firstParty) return;
     const body = req.postData();
     if (!body) return;
+    transports[direct ? 'direct' : 'firstParty'] += 1;
+    beaconRequests.push({ url: req.url(), method: req.method(), direct, status: null });
     for (const record of parseBeacons(body)) beacons.push(record);
+  });
+  // …and whether WE accepted it. A 401/403/404/415 here is the failure this
+  // route has to be watched for; it looks identical to "no telemetry" from
+  // every other vantage point, which is how /vendor/'s 401 survived so long.
+  page.on('response', (res) => {
+    const hit = beaconRequests.find((b) => b.url === res.url() && b.status === null);
+    if (hit) hit.status = res.status();
   });
 
   const response = await page.goto(target, { waitUntil: 'load', timeout: 60000 });
@@ -247,6 +383,10 @@ async function main() {
     const el = document.querySelector('meta[name="traceparent"]');
     return el ? el.getAttribute('content') : null;
   });
+  // The join key index.html's bootstrap stamps on every beacon as
+  // `kh.sessionId`. It is what `--instana-check` looks this page load up by,
+  // and it has to be read from the live page — it is minted per document.
+  const sessionId = await page.evaluate(() => window.__kernelHiveErrorSessionId ?? null);
   // The agent holds the page-load beacon ~5 s (its own `f.Ea`) while the tab is
   // visible, and batches xhr beacons behind a short timer, so a probe that
   // leaves immediately captures nothing. Waiting is the whole method.
@@ -262,6 +402,9 @@ async function main() {
     traceresponse: headers.traceresponse ?? null,
     outbound,
     serverTiming: headers['server-timing'] ?? null,
+    sessionId,
+    transports,
+    beaconRequests,
     beacons,
     ownResources,
   };
@@ -287,6 +430,7 @@ async function main() {
   if (ownBuilds.length && beaconBuilds.length && ownBuilds.join() !== beaconBuilds.join()) {
     console.log('  DISAGREE — one lane is not reporting the build it is actually running');
   }
+  console.log(`kh.sessionId      ${sessionId ?? '(none)'}`);
 
   console.log(`\nbeacons captured  ${beacons.length}`);
   const counts = {};
@@ -323,6 +467,39 @@ async function main() {
     console.log(`       bt=${b.bt}  ${shape(b.bt)}`);
     console.log(`       ${verdict}${spans && spans.length ? ': ' + spans.map((r) => r.name).join(', ') : ''}`);
     if (spans !== null && spans.length === 0) failures += 1;
+  }
+
+  // ---- the beacon TRANSPORT ------------------------------------------------
+  console.log(`\nbeacon transport  ${transports.firstParty} first-party (${FIRST_PARTY_BEACON_PATH}), `
+    + `${transports.direct} direct to the vendor`);
+  for (const b of beaconRequests) {
+    const verdict = b.status === null ? 'NO RESPONSE SEEN' : b.status;
+    console.log(`  ${b.direct ? 'DIRECT ' : 'ours   '} ${b.method} ${b.url}  -> ${verdict}`);
+  }
+  if (transports.firstParty + transports.direct === 0) {
+    console.log('  FAULT: no beacon request at all — the agent never loaded, or the build is keyless');
+    failures += 1;
+  }
+  if (transports.direct > 0 && !args.has('allow-direct')) {
+    // A stale bundle. It works for everyone whose DNS is unfiltered and
+    // silently loses everyone whose is not, which is the whole reason the
+    // proxy exists — so it fails here rather than reading as a pass.
+    console.log(`  FAULT: ${transports.direct} beacon(s) went straight to the vendor — the served`);
+    console.log('         bundle predates the proxy. A push is not a deploy:');
+    console.log('           scripts/serve-https-spa.sh build && scripts/serve-https-spa.sh deploy');
+    failures += transports.direct;
+  }
+  for (const b of beaconRequests.filter((x) => !x.direct)) {
+    // 2xx only. Our own 200 means "queued", not "delivered" — which is why
+    // --instana-check exists below and why this assertion is not the end of it.
+    if (b.status === null || b.status < 200 || b.status >= 300) {
+      console.log(`  FAULT: ${FIRST_PARTY_BEACON_PATH} answered ${b.status ?? 'nothing'} — we refused our own beacon`);
+      failures += 1;
+    }
+    if (b.method !== 'POST') {
+      console.log(`  FAULT: beacon sent as ${b.method}; the proxy is POST-only by design`);
+      failures += 1;
+    }
   }
 
   const corrupted = outbound.filter((o) => o.traceparent.includes(','));
@@ -371,11 +548,42 @@ async function main() {
     }
   }
 
+  // ---- did the VENDOR get it -----------------------------------------------
+  // The only end-to-end proof. Everything above proves the browser reached US.
+  if (args.has('instana-check')) {
+    const waitMs = Number(args.get('instana-wait') ?? 180000);
+    const key = beacons.find((b) => b.ty === 'pl' && b.bt)?.bt ?? injected?.traceId ?? null;
+    if (!key) {
+      console.log('\ninstana            UNCHECKED — this load produced no page-load beacon to look up');
+    } else {
+      console.log(`\ninstana            polling for backendTraceId=${key} (up to ${Math.round(waitMs / 1000)}s)…`);
+      const seen = await instanaSawPageLoad(key, waitMs);
+      report.instana = seen;
+      if (!seen.checked) {
+        console.log(`  UNCHECKED — ${seen.why}`);
+      } else if (seen.found) {
+        const b = seen.beacon;
+        console.log(`  FOUND in the tenant (${seen.sampled} PAGELOAD beacon(s) sampled)`);
+        console.log('  -> the beacon travelled browser -> our origin -> the box -> Instana.');
+        // The geography facets, printed rather than assumed: they are the one
+        // thing proxying can silently cost (INSTANA-VIEW-INVENTORY.md §2.2).
+        console.log(`  userIp=${b.userIp || '(none)'} country=${b.countryCode || '(none)'} city=${b.city || '(none)'}`);
+        console.log(`  browser=${b.browserName || '(none)'} os=${b.osName || '(none)'}`);
+      } else {
+        console.log(`  NOT FOUND — ${seen.why}`);
+        console.log('  The proxy accepted the beacon and the forward did not arrive. Check');
+        console.log("  /data/vms/streamhost/serve/https-server.log for 'EUM proxy upstream");
+        console.log("  failure' — the unit logs to that file, NOT to journald.");
+        failures += 1;
+      }
+    }
+  }
+
   if (failures > 0) {
-    console.log(`\nFAIL: ${failures} beacon(s) carry a backendTraceId that resolves to no trace.`);
+    console.log(`\nFAIL: ${failures} fault(s) — see the FAULT lines above.`);
     process.exitCode = 1;
   } else if (resolve) {
-    console.log('\nOK: every beacon that carries a backendTraceId resolves in the store.');
+    console.log('\nOK: beacons are first-party, accepted, and every backendTraceId resolves.');
   }
 
   const out = args.get('json');

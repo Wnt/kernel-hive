@@ -91,7 +91,11 @@ build() {
   (
     cd "$SPA_WEB"
     export VITE_INSTANA_WEBSITE_KEY="${INSTANA_WEBSITE_KEY:-}"
-    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:-}"
+    # The bundle gets the beacon proxy's FIRST-PARTY PATH, never the tenant URL
+    # (docs/ANALYTICS.md §8.3). `:+` not `:-`: an unset upstream still exports
+    # EMPTY, so index.html's no-url no-op is reached rather than a
+    # contributor's build pointing at a proxy they do not run.
+    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:+/eum}"
     npm run build
   )
   [ -f "$DIST/index.html" ] || {
@@ -293,12 +297,10 @@ deploy() {
 # self-hosted at $WEBROOT/vendor/instana-eum.min.js — spa/index.html's
 # bootstrap loads it from that path, never from IBM's CDN directly, and it is
 # NEVER committed to this public repo (gitignored on the box the same way
-# scripts/serve/pki/ is; see .gitignore). Every existing published document in
-# this script (tiles.json, gallery-manifest.json, …) is rendered FROM the
-# repo, so this is the one exception — it is fetched from a third party at
-# deploy time instead — and it must not be allowed to fail SILENTLY: an
-# operator who thinks Instana is live but is actually serving a 404 for
-# /vendor/instana-eum.min.js would only find out from a support ticket.
+# scripts/serve/pki/ is). Every other document this script publishes is
+# rendered FROM the repo; this one is fetched from a third party at deploy
+# time, and it must not fail SILENTLY — an operator who thinks Instana is live
+# while serving a 404 for the agent finds out from a support ticket.
 publish_instana_agent() {
   if [ -z "${INSTANA_EUM_SCRIPT_URL:-}" ]; then
     msg "INSTANA_EUM_SCRIPT_URL unset — Instana EUM not configured, skipping vendor fetch"
@@ -317,6 +319,18 @@ publish_instana_agent() {
     # uptime), but this line must be impossible to miss in the deploy log.
     msg "WARNING: failed to fetch the Instana EUM agent — /vendor/instana-eum.min.js was NOT updated." >&2
     msg "         Instana EUM will be broken (404) until this is retried: '$0 all' or rerun deploy." >&2
+  fi
+  # THE BEACON PROXY'S ONE UPSTREAM — the other half of the same artifact: the
+  # bundle posts to our own /eum and scripts/serve/eum_proxy.py forwards here.
+  # A file, not a unit Environment= line: the unit is committed to a PUBLIC
+  # repo and the tenant URL is not. Read once per process — changing it needs a
+  # restart. docs/ANALYTICS.md §8.3.
+  local up="$SERVE_DIR/instana-eum-upstream.txt"
+  if [ -n "${INSTANA_EUM_REPORTING_URL:-}" ] &&
+    printf '%s\n' "$INSTANA_EUM_REPORTING_URL" | $SSH "cat > $up && chmod 600 $up"; then
+    msg "published the EUM beacon proxy upstream"
+  else
+    msg "WARNING: no EUM beacon-proxy upstream — POST /eum will 404, beacons dropped." >&2
   fi
 }
 

@@ -102,7 +102,24 @@ export const SECRET_PATTERNS: RegExp[] = [/traceparent/i, /ticket/i];
 // consumer each — `IGNORE_URL_PATTERNS` for `khFetch.ts`'s pathname test,
 // `INSTANA_IGNORE_URL_PATTERNS` for a full URL — so passing one where the
 // other belongs reads wrong at the call site rather than merely misbehaving.
-export const KH_TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'] as const;
+// `/eum` is the odd one out and belongs here anyway: it is not OUR telemetry,
+// it is the FIRST-PARTY path the vendor's own beacons now post to
+// (scripts/serve/eum_proxy.py forwards them to Instana, so a visitor behind a
+// DNS-level tracker blocker is no longer silently unmeasured). Excluding it is
+// load-bearing rather than cosmetic — without it the agent's wrapped fetch/XHR
+// would beacon the delivery of a beacon, and each beacon would manufacture the
+// next one. The server side of the same loop is closed by `/eum` being absent
+// from `tracing_http.route_of()`'s allowlist, so the route opens no span
+// either. It goes when Instana goes; nothing else in this list does.
+export const KH_TELEMETRY_PATHS = [
+  '/traces',
+  '/analytics',
+  '/coverage',
+  '/clientlog',
+  '/usage',
+  '/clientcmd',
+  '/eum',
+] as const;
 
 /** Escape a literal path for embedding in a RegExp source string. None of
  *  the paths above contain regex metacharacters today, but a future
