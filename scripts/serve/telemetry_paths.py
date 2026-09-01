@@ -12,11 +12,24 @@ drifts. This is that one server-side source, and
 `scripts/test_otlp_fidelity.py` pins it byte-for-byte against the TypeScript so
 it cannot silently fall behind.
 
-WHAT IT IS USED FOR TODAY: marking those calls `synthetic` on the way out to
-Instana (`traces_otlp.py`), which is Instana's own documented mechanism for
-"machine chatter, hidden by default, still queryable on demand" — not a filter
-and not a deletion. Nothing here changes what this box records; see
-docs/lab/INSTANA-VIEW-INVENTORY.md.
+WHAT IT IS USED FOR, AND WHY THERE ARE TWO USERS. The first is Instana's own
+`synthetic` mark, applied on the way out in `traces_otlp.py` — the documented
+mechanism for "machine chatter, hidden by default, still queryable on demand".
+It was tried first because it preserves the data. IT IS NOT HONOURED OVER OTLP
+INGEST: measured 2026-09-01 by sending five otherwise-identical entry spans to
+the agent's receiver, one control and four spellings (`synthetic` as a boolean,
+`synthetic` as the string "true", `instana.synthetic`, `sdk.custom.tags.
+synthetic`), and finding ALL FIVE — control included — in the default Analytics
+-> Calls view. IBM's wording is "which can be achieved with any of the Instana
+tracing SDKs", and OTLP is not one of their SDKs.
+
+So the second user is the FALLBACK the brief asked for: `instana-forward.py`
+drops a trace made ENTIRELY of these calls before it leaves the box, prints how
+many it dropped, and is switched off with one environment variable
+(`INSTANA_FORWARD_TELEMETRY=1`). The mark is still exported, because it is the
+correct annotation and costs one attribute — the day IBM honours it, unsetting
+the variable is the whole change. Nothing here changes what THIS box records;
+see docs/lab/INSTANA-VIEW-INVENTORY.md §4.8.
 
 WHY THE MATCH IS EXACT AND NOT A PREFIX. The browser's matchers are prefix
 tests (`^/analytics\\b`), which is right for "should this fetch open a client
@@ -51,9 +64,14 @@ TWO MORE BOUNDARY CASES, DECIDED AND WRITTEN DOWN SO THEY ARE NOT RE-ARGUED:
                            match plus its absence from this list is what
                            guarantees that.
     /kh/deploy-hint        NOT telemetry, and not in the browser's list either.
-                           It is a deliberate one-shot check, not a per-tab
-                           poll, so it contributes no volume and hiding it would
-                           buy nothing.
+                           It is GitHub's webhook / the Actions ping, not a tab
+                           polling: no visitor is behind it, but it is the
+                           TRIGGER of a deploy, so "did the hint arrive and how
+                           long did it take" is worth seeing. It appears in
+                           bursts around a push (seven rows in fifteen minutes,
+                           observed 2026-09-01) and never otherwise, which is
+                           the opposite of the steady per-tab chatter this list
+                           is about.
 """
 
 from __future__ import annotations
@@ -72,6 +90,31 @@ TELEMETRY_PATHS = frozenset(
         "/eum",
     }
 )
+
+
+def is_telemetry_entry_span(span: dict) -> bool:
+    """Is this stored span an ENTRY span for the telemetry plane?
+
+    Entry spans only, because that is what a "call" is in Instana and what the
+    volume is made of. `span` is the shape `traces.TraceStore.trace()` returns.
+    """
+    return span.get("kind") == "server" and is_telemetry_route((span.get("attributes") or {}).get("http.route"))
+
+
+def is_telemetry_only_trace(trace: dict) -> bool:
+    """Is this WHOLE trace nothing but the telemetry plane talking to itself?
+
+    THE WHOLE-TRACE TEST IS THE SAFE ONE, and it is why the filter can drop
+    rather than merely trim. These polls are one-span traces by construction:
+    `khFetch.ts` sends no `traceparent` on an excluded telemetry path, so the
+    serving plane roots its own trace and nothing else ever joins it. Asking
+    the question of the whole trace means a span that somehow DID share a trace
+    with real work keeps that trace — and the real work with it. Trimming spans
+    out of a mixed trace would do the opposite: ship a trace with a hole in it,
+    which is the one thing this pipeline has spent two fixes not doing.
+    """
+    spans = trace.get("spans") or []
+    return bool(spans) and all(is_telemetry_entry_span(s) for s in spans)
 
 
 def is_telemetry_route(route) -> bool:

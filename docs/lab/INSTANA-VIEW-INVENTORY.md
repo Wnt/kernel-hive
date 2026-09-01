@@ -57,8 +57,8 @@ what fixing it costs:
 | # | Path | Carries | Runs |
 |---|---|---|---|
 | 1 | **Browser EUM agent** → **`POST /eum` on our own origin** → `scripts/serve/eum_proxy.py` → IBM SaaS | page loads, page transitions, HTTP calls, resource loads, JS errors, sessions, identity, geo/browser/OS | continuously, every visit |
-| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table | `kh-instana-forward.timer`, every 5 min, **once the operator enables it** (§2.1) |
-| 2b | **`trace-ship.py`** → the box's own `/traces` | the daemon's spooled spans, out of `stations/<id>/traces/` and into `traces.db`, so path 2 has anything to forward | `kh-trace-ship.timer`, every 2 min, same enable step |
+| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table — **minus** traces made entirely of our own polling, §4.8 | `kh-instana-forward.timer`, every 5 min, **once the operator enables it** (§2.1). A trace is held until it has been quiet for `QUIET_MS` = 3.5 min, which is derived from row 2b's period and is why the tenant is minutes behind rather than seconds |
+| 2b | **`trace-ship.py`** → the box's own `/traces` | the daemon's spooled spans, out of `stations/<id>/traces/` and into `traces.db`, so path 2 has anything to forward | `kh-trace-ship.timer`, every 2 min, same enable step. **This period is load-bearing for row 2**: until 2026-09-01 the quiet window was shorter than it, so a trace could be forwarded before its daemon half had been carried in and then forwarded again — 7 of 117 mixed traces over an 8-hour window, and Instana mis-correlates a late arrival |
 | 3 | **`scripts/serve-https-spa.sh`** → Instana Web REST API, from the deploy machine | built SPA **source maps** (`PUT …/sourcemap-upload/…`), and republishing the pinned EUM agent JS self-hosted | every SPA deploy |
 | 4 | **IBM's host agent on labhost** → SaaS, IBM's own binary | host, process, LXC and agent infrastructure data | continuously, and **not this repo's to switch off** |
 
@@ -309,9 +309,9 @@ monitoring is filtered rather than tolerated.
 
 | View | Us | Class | Cost to fix |
 |---|---|---|---|
-| Services | exactly 3: `kernel-hive-spa` (openTelemetry), `kernel-hive-serve` (openTelemetry + pythonRuntimePlatform), and one literally named **`Unspecified`** | **POPULATED, and a third of it is wrong** | see the next row |
+| Services | exactly 3: `kernel-hive-spa` (openTelemetry), `kernel-hive-serve` (openTelemetry + pythonRuntimePlatform), and one literally named **`Unspecified`**. Each now reports its real `telemetry.sdk.language`, its own `service.version` and a `service.instance.id` — §4.8; the daemon used to be exported as `webjs` | **POPULATED, and a third of it is wrong** | see the next row |
 | ↳ the `Unspecified` third | **96 `input.edge` traces in 24 h, all `Unspecified`**, carrying 145 calls. Both fixes are **in source and not in the running binary**: `trace/mod.rs:338` stamps `kh.service: kernel-hive-daemon`, `trace_session.rs:223` makes `input.dispatch` `Kind::Server`. Our own store proves the fleet predates them — every stored `input.dispatch` is still `internal` and no span anywhere carries `kh.service: kernel-hive-daemon` | **EMPTY, FIXABLE — the top row here** | the expensive one: `cargo build --release`, canary, risk-ordered `fleet_rollout.py` promotion, then `trace-ship.py` and `instana-forward.py` by hand. Converts a whole third of the traces from an unattributable bucket into a named service |
-| Traces / trace view | 200 traces/24 h: `input.edge` 96, `serve.clientcmd` 74, `serve.page` 8, `serve.clientlog` 8, `serve.kh.deploy-hint` 7, `serve.signal` 3, `serve.walkin.state` 3, `serve.restore` 1 | **POPULATED** | — |
+| Traces / trace view | 200 traces/24 h: `input.edge` 96, `serve.clientcmd` 74, `serve.page` 8, `serve.clientlog` 8, `serve.kh.deploy-hint` 7, `serve.signal` 3, `serve.walkin.state` 3, `serve.restore` 1. **The `serve.clientcmd`/`serve.clientlog` share of that no longer arrives** — those are the telemetry plane talking to itself and are held back at the forwarder (§4.8). Do not read their absence as a broken exporter | **POPULATED** | — |
 | **Endpoints** | **13 endpoints exist** — `serve.clientcmd`, `serve.analytics`, `input.edge`, `http.client.request` … one per span name, confirmed by grouping calls on `endpoint.name` | **POPULATED — but named after our span names, not HTTP routes** | small-to-medium if route-level endpoints are wanted: give entry spans an `http.route`. Judge whether span names are good enough FIRST — they may be better than routes here |
 | Calls / latency per service | `kernel-hive-serve` 43→99 calls/h at 1.3 ms mean; `Unspecified` 145 calls at 2.6-4.2 ms; **`kernel-hive-spa` 6 calls** | **POPULATED** | — |
 | Service map / dependencies | three services, one of them `Unspecified`; no database, no queue, no third-party call, no second host | **POPULATED BUT UNINFORMATIVE** — §5 | — |
@@ -388,6 +388,164 @@ area, and none of it needs a decision.
 | IBM Concert / Turbonomic / Kubecost / DBmarlin | no such products |
 | Prometheus, JMX, Java/.NET trace SDKs | no JVM, no CLR, no Prometheus |
 | Custom dashboards | not a data need — a UI over the rows above; anything POPULATED can be dashboarded today |
+
+### 4.8 What Instana is told about each service — the resource pane, and what is hidden
+
+**Landed 2026-09-01 on branch `otlp-fidelity`. Everything in this section was
+read off the live tenant that day, and the point-in-time warning in §1 applies.**
+
+Three complaints from the operator, reading a real trace in the tenant, and what
+each turned out to be.
+
+#### The resource pane: three services, three languages, three build ids
+
+`traces_otlp.export()` was reporting `telemetry.sdk.language` as
+`"python" if service.endswith("-serve") else "webjs"` — a two-way guess, and the
+Rust daemon does not end in `-serve`. **Every daemon span left the box claiming
+to be browser JavaScript** (275 of them in a six-hour sample). `service.version`
+existed only for the browser, so "which build produced this span" was
+unanswerable for two thirds of the system.
+
+What one live trace's resource attributes looked like before and after
+(`3e75c400…`, a `win311` session, exported on the box):
+
+| Resource attribute | `kernel-hive-spa` | `kernel-hive-serve` | `kernel-hive-daemon` |
+|---|---|---|---|
+| `telemetry.sdk.language` **before** | `webjs` | `python` | **`webjs`** ← the defect |
+| `telemetry.sdk.language` **after** | `webjs` | `python` | **`rust`** |
+| `service.version` **before** | `main@95ee4750` | *absent* | *absent* |
+| `service.version` **after** | `main@95ee4750` | `95ee4750adb3…` | `45388f8620…` |
+| `service.instance.id` **after** | the tab's session id | the box | **the station** (`win311`) |
+| `host.name` **after** | `pve-nvme` | `pve-nvme` | `pve-nvme` |
+
+The language table is now data (`scripts/serve/otlp_resource.py`), and a service
+nobody has declared reports **no** language rather than being guessed into one.
+
+**Each build id comes from that plane's own source of truth**, because the three
+ship on three cadences and there is no single "version of Kernel Hive":
+
+| Service | Source | Failure mode |
+|---|---|---|
+| `kernel-hive-spa` | the batch's `build` envelope — the bundle the tab was running | omitted when the batch named none |
+| `kernel-hive-serve` | `/data/vms/streamhost/.deployed-rev`, the sha `box-install.sh` last **wrote** (not `origin/main`, not the checkout's HEAD) | omitted off-box and when the marker is half-written |
+| `kernel-hive-daemon` | `stations/<id>/current` → `streamhost-<gitsha>`, **per station**, because `build-deploy.sh --canary` exists precisely so one station can differ | omitted when the artifact link is NEWER than the span — a canary swap between the span and the forward must not be claimed for it |
+
+Nothing is ever exported as `"unknown"`. A consumer grouping by version must not
+be handed a placeholder it cannot tell from a release name.
+
+#### The attribute bridge: we speak current semconv, Instana's list is the old one
+
+This plane instruments with the **current** OpenTelemetry HTTP conventions
+(`http.request.method`, `url.path`, `http.response.status_code`,
+`server.address`). Instana's documented list of consumed span attributes
+(`0307-opentelemetry-signals.md`) is the **previous** generation
+(`http.method`, `http.target`, `http.status_code`, `http.host`, `net.peer.*`).
+One later page (`0311`, service mapping) does list `url.path`, so support for
+the newer spelling is partial and undocumented rather than absent.
+
+**The decision: add, never replace, and only at the export boundary.** Our plane
+is the product; Instana is a temporary consumer being evaluated against it.
+Renaming our attributes to suit it would break our own UI, our own facets and
+every doc that names them. `scripts/serve/otlp_semconv.py` derives the old
+spellings on the way out and both go on the wire.
+
+| Instana consumes | We emit | Decision |
+|---|---|---|
+| `http.method` | `http.request.method` | derived at export |
+| `http.target` | `url.path` | derived at export |
+| `http.status_code` | `http.response.status_code` | derived at export |
+| `http.host` | `server.address` | derived at export (either span kind) |
+| `net.peer.name`, `net.peer.port` | `server.address`, `server.port` | derived **on exit spans only** — on an entry span `server.address` is *our* authority, and calling it the peer names the wrong machine |
+| `http.scheme` | `url.scheme` | derived at export; `khFetch.ts` now sets the source |
+| `http.route` | `http.route` | already correct — same name in both generations |
+| `http.url` | — | **rebuilt from scheme + authority + path.** Query-free by construction: `traces.py` BANNED_ATTRS refuses `url.full` and `url.query` at intake, so there is no query string in the store to leak |
+| `peer.service` | — | added on the two exit spans whose callee is known by construction: `http.client.request` → `kernel-hive-serve` (khFetch is same-origin-only), `input.edge` → `kernel-hive-daemon`. This is what draws the edge on a service map |
+| `service.name`, `session.id`, `host.id` | same | already emitted |
+| `service.instance.id`, `host.name`, `service.version` | — | **added** (see the table above) |
+| `telemetry.sdk.language` | same | **fixed** (see above) |
+| `http.user_agent` | — | **gap.** The serving plane does not put the UA on a span, so it cannot be derived. Owned by `tracing_http.py` |
+| `db.*`, `messaging.*`, `rpc.*` | — | **N/A and deliberately empty.** There is no database call, queue or RPC framework in a trace here; inventing one to light up a pane would be a fabricated fact |
+| `process.pid`, `container.*` | — | not emitted: the exporter runs in a different process from the producers and does not know their pids |
+
+**What the query-string ban costs, stated plainly.** Instana's call-detail pane
+gets a `http.url` with no query on it. Anyone wanting to know which parameters a
+call carried will not find them there and must use `http.route` and `kh.station`
+instead. That is the intended trade for a gallery whose query strings can carry
+station ids and ticket-shaped values.
+
+#### Analytics → Calls is no longer buried under our own polling
+
+**What the operator saw:** 896 calls in the last hour, and the visible rows
+almost entirely `serve.clientcmd`, `serve.clientlog` and `serve.analytics`.
+
+**We caused it, and it is worth owning.** Those polls used to propagate a
+`traceparent` from whatever span happened to be active, so each hid inside
+somebody else's trace and never appeared as a call. The orphaned-parent fix
+(`khFetch.ts`'s `outboundTraceparent`: an excluded telemetry path names no
+parent, the server roots its own trace) made each poll a correct one-span root
+trace. **The data got more honest and the view got noisier.**
+
+**The native mechanism was tried first, and it does not work over OTLP.**
+Instana marks a call Synthetic when a span is "annotated with `synthetic` with
+the value true" and hides Synthetic calls from Unbounded Analytics by default
+(`0251-monitoring-applications.md`, "Synthetic call rules"). That is exactly the
+wanted behaviour — hidden, not deleted. IBM's wording is *"which can be achieved
+with any of the Instana tracing SDKs"*, and OTLP is not one of their SDKs.
+
+> **Measured 2026-09-01.** Five otherwise-identical `SERVER`-kind spans were
+> posted to the agent's OTLP receiver as service `kernel-hive-synprobe`: a
+> control, and four spellings — `synthetic` as a boolean, `synthetic` as the
+> string `"true"`, `instana.synthetic`, and `sdk.custom.tags.synthetic`. **All
+> five, control included, appeared in the default Analytics → Calls view.** A
+> real `serve.clientcmd` span confirmed to carry `synthetic: true` on the wire
+> was likewise still listed. The flag is not honoured on this ingest path.
+
+**So the fallback runs, and it is one variable.** `instana-forward.py` holds
+back a trace made **entirely** of telemetry-plane entry spans. It is a
+whole-trace test, never a per-span trim: these polls are one-span traces by
+construction, and a trace that somehow held both a poll and real work ships
+intact rather than shipping with a hole. The run prints what it held back:
+
+```
+traces [agent]: 5 telemetry-only trace(s) held back (INSTANA_FORWARD_TELEMETRY=1 to send them)
+traces [agent]: 12 trace(s), 18 span(s) -> 200 OK
+```
+
+**Which routes.** `scripts/serve/telemetry_paths.py` is the server-side source of
+truth, mirrored from the SPA's `KH_TELEMETRY_PATHS` and pinned to it by a test so
+the two cannot drift: `/traces`, `/analytics`, `/coverage`, `/clientlog`,
+`/usage`, `/clientcmd`, `/eum`. The match is **exact**, not a prefix, and that is
+what settles the boundary cases:
+
+| Route | Hidden? | Why |
+|---|---|---|
+| `/clientcmd`, `/clientlog`, `/analytics`, `/usage` | **yes** | ingest. A tab posting on a timer; nobody waits, nobody reads the latency, and these were essentially the whole call list |
+| `/traces`, `/coverage` | **yes** | same, and not traced server-side today anyway |
+| `/eum` | **yes** | the vendor's OWN beacons, proxied first-party (§2.2). Plumbing by the same argument, and doubly so: it is the delivery of a measurement, not a thing measured. Listed for the day it is traced |
+| `/analytics/report.json`, `/coverage/report.json`, `/usage/stations.json` | **no** | reads. Somebody has `/admin` open, or the fleet table is merging usage on a visitor's path, and the report query is one of the heaviest things this server does. Exact matching is what keeps these visible while their parents are hidden |
+| `/signal/{station}.json` (`serve.signal`) | **no** | not telemetry. It is the first thing that happens when a visitor opens a machine; if it is slow, the gallery is slow |
+| `/kh/deploy-hint` | **no** | GitHub's webhook and the Actions ping, not a tab polling. No visitor is behind it, but it is the *trigger* of a deploy, and it arrives in bursts around a push rather than as steady chatter |
+
+**Nothing was deleted, and nothing about this reduces what we record.** These
+spans stay first-class in `traces.db` and in `/admin/observability`; only what
+leaves the box for Instana changed. The `synthetic` attribute is still exported,
+because it is the correct annotation and costs one attribute — the day IBM
+honours it over OTLP, unsetting the variable is the whole change.
+
+**To see the hidden calls again**, in order of effort:
+
+1. `INSTANA_FORWARD_TELEMETRY=1` in `registry/local.env`, then wait for the next
+   `kh-instana-forward` tick. This is the switch; it sends them again from that
+   moment on. It does **not** backfill — the watermark has already passed the
+   ones held back, and by design nothing rescans.
+2. In the Instana UI, **Hidden calls → Synthetic calls** in the Analytics
+   sidebar. Worth knowing about, and today it changes nothing for us: the spans
+   are held back before they reach the tenant, precisely because that switch was
+   measured not to work over OTLP. If the measurement above is ever re-run and
+   comes out differently, this becomes the right control and step 1 becomes
+   permanent.
+3. `/admin/observability` — which never hid them, and is the honest answer to
+   "what did the telemetry plane actually do".
 
 ## 5. Populated and still uninformative — the rows we never rebuild
 
