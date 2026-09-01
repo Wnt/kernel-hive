@@ -16,10 +16,17 @@
 // explicitly passed --out-dir is untouched by this and stays relative to the
 // CWD, as a user typing a path expects.
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveInviteCode } from './invite.mjs';
 
-const DEFAULT_OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'visitor-sim-runs');
+const RUNS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'visitor-sim-runs');
+const DEFAULT_OUT_DIR = RUNS_DIR;
+// Cached invite-derived session lands beside the run manifests — same
+// already-gitignored directory (see DEFAULT_OUT_DIR's note above), one file,
+// reused across runs until it is refreshed or the invite itself expires.
+const DEFAULT_INVITE_STATE = path.join(RUNS_DIR, 'invite-session.json');
 
 // WHY THESE NUMBERS. labhost runs ~71 emulated guests already (one physical
 // box, docs/PUBLIC-GALLERY.md's "one relay hop... a firewall hole to one
@@ -103,7 +110,7 @@ SAFETY SWITCHES (all default to the safe side)
   --dry-run                Print the resolved plan and every cap check, touch
                             nothing.
 
-CREDENTIALED MODE (optional)
+CREDENTIALED MODE (optional — pick ONE of --storage-state or --invite)
   --storage-state <file>   A Playwright storageState JSON for an already
                             signed-in INVITED (viewer/admin) session — e.g.
                             exported once with 'npx playwright open
@@ -115,6 +122,31 @@ CREDENTIALED MODE (optional)
                             context that uses it shares that ONE account —
                             documented, not hidden: this tool never creates
                             invited accounts itself.
+  --invite <code-or-file>  Redeem an invite LINK's code for a session, with NO
+                            passkey (docs/PUBLIC-GALLERY.md "An invite is a
+                            link, and the passkey is optional") — this is how
+                            an unattended run gets the "station" journey
+                            without a human completing a passkey ceremony by
+                            hand. A value that is an existing FILE is read and
+                            trimmed (the documented case: the box's gitignored,
+                            mode-600 serve/pki/sim-invite.code — keeps the
+                            code out of argv/ps/shell history); anything else
+                            is treated as the literal code. Redeemed AT MOST
+                            ONCE: the resulting session is cached to
+                            --invite-state and every later run reuses it via
+                            that file, the same as a hand-exported
+                            --storage-state. Not compatible with
+                            --storage-state — pass one or the other.
+  --invite-state <file>    Where the invite-derived session is cached. Default
+                            scripts/visitor-sim/visitor-sim-runs/invite-session.json
+                            (already gitignored, alongside the run manifests).
+                            The invite CODE itself is never written here —
+                            only the session cookie a Playwright storageState
+                            captures.
+  --invite-refresh          Redeem --invite again even if --invite-state
+                             already has a cached session (e.g. the cached one
+                             expired). Off by default — the whole point of the
+                             cache is to redeem once.
 
 JOURNEYS (what --mix names)
   exhibits   Browse /walkin/exhibits (no login needed), widen to the whole
@@ -123,11 +155,21 @@ JOURNEYS (what --mix names)
              sometimes scroll back).
   walkin     Sign up for a walk-in passkey account (capped, see --walkin-max),
              play a walk-in clone from the pool, type, leave.
-  station    Open a live pool station from the full grid and interact.
-             Requires --storage-state.
+  station    Open a live pool station from the full grid and interact —
+             occasionally a golden reset, gated by --allow-resets/--reset-max/
+             --reset-min-interval exactly like every other reset in this tool.
+             Requires --storage-state or --invite.
 
 OTHER
-  --headed        Run headed instead of headless (debugging).
+  --headed        Run headed instead of headless (debugging). Works on
+                  labhost's shared X display (DISPLAY=:1, xdesk.service) same
+                  as any other Playwright tool here.
+  --browser <name> 'chromium' (Playwright's bundled build, default) or
+                   'chrome' (the system Chrome, channel:'chrome'). Both were
+                   verified live to expose VideoDecoder, WebTransport and
+                   H.264 (avc1.42E01E / avc1.640028) against the real origin —
+                   pick 'chrome' only if you specifically want the system
+                   browser's build.
   --out-dir <dir> Where run manifests and screenshots land. Default is
                   scripts/visitor-sim/visitor-sim-runs — anchored to this
                   tool's own directory, not wherever you ran it from, so it
@@ -173,6 +215,7 @@ export function parseArgs(argv) {
     'force-walkin',
     'dry-run',
     'headed',
+    'invite-refresh',
     'help',
   ]);
   for (let i = 0; i < argv.length; i++) {
@@ -193,7 +236,15 @@ export function parseArgs(argv) {
     process.exit(0);
   }
 
-  const hasStorageState = args.has('storage-state');
+  if (args.has('storage-state') && args.has('invite')) {
+    throw new Error('pass either --storage-state or --invite, not both — they both produce a session for this run.');
+  }
+  // A pending --invite counts as "will have a session" for every check below
+  // that gates on credentials (mix.station, the default mix, --allow-resets'
+  // effective reach) even though the session itself is not obtained until
+  // main() redeems it — parseArgs stays synchronous and network-free, the
+  // invite POST happens later in visitor-sim.mjs.
+  const hasStorageState = args.has('storage-state') || args.has('invite');
   const allowedJourneys = ['exhibits', 'poster', 'walkin', 'station'];
 
   const stationsRaw = args.get('stations');
@@ -255,11 +306,36 @@ export function parseArgs(argv) {
   const mix = parseMix(args.get('mix') ?? defaultMix, allowedJourneys);
   if (mix.walkin && walkinMax === 0) delete mix.walkin;
   if (mix.station && !hasStorageState) {
-    throw new Error('--mix includes "station" but no --storage-state was given — that journey needs an invited session.');
+    throw new Error(
+      '--mix includes "station" but neither --storage-state nor --invite was given — that journey needs an invited session.',
+    );
   }
-  if (Object.keys(mix).length === 0) throw new Error('--mix resolved to no usable journeys — check --walkin-max/--storage-state');
+  if (Object.keys(mix).length === 0) throw new Error('--mix resolved to no usable journeys — check --walkin-max/--storage-state/--invite');
 
-  return {
+  // Resets (POST /restore/<id>) fire ONLY from journeyStation
+  // (lib/journeys.mjs) — a walk-in-only mix (no "station") can never use the
+  // reset budget no matter how --allow-resets/--reset-max are set. Say that
+  // now rather than let it arm silently; visitor-sim.mjs's printPlan repeats
+  // this in the printed plan so it shows up even under --dry-run.
+  const resetsCanFire = allowResets && !!mix.station;
+  const resetsArmedButUnusable = allowResets && !mix.station;
+
+  const browser = args.get('browser') ?? 'chromium';
+  if (!['chromium', 'chrome'].includes(browser)) {
+    throw new Error(`--browser must be "chromium" or "chrome", got "${browser}"`);
+  }
+
+  const invite = args.has('invite')
+    ? {
+        statePath: args.get('invite-state') ?? DEFAULT_INVITE_STATE,
+        refresh: !!args.get('invite-refresh'),
+        // Local, synchronous, no network: just "does a cached file already
+        // exist" — safe to report in a --dry-run plan.
+        willReuseCache: !args.get('invite-refresh') && fs.existsSync(args.get('invite-state') ?? DEFAULT_INVITE_STATE),
+      }
+    : null;
+
+  const config = {
     galleryUrl: (args.get('gallery-url') ?? 'https://kernelhive.madekivi.fi').replace(/\/$/, ''),
     stations,
     visitors,
@@ -267,15 +343,34 @@ export function parseArgs(argv) {
     concurrency,
     mix,
     allowResets,
+    resetsCanFire,
+    resetsArmedButUnusable,
     resetMax,
     resetMinIntervalMs,
     walkinMax,
+    // Explicit --storage-state stays here; a pending --invite is resolved to
+    // a real path (this SAME field, mutated in place) by main() before the
+    // run starts — see visitor-sim.mjs. Never the invite code itself: see
+    // `inviteCode` below, deliberately NOT part of this object, because this
+    // whole object is what lib/log.mjs's RunManifest serializes to disk.
     storageState: args.get('storage-state') ?? null,
+    invite,
+    browser,
     dryRun: !!args.get('dry-run'),
     headed: !!args.get('headed'),
     outDir: args.get('out-dir') ?? DEFAULT_OUT_DIR,
     seed: args.has('seed') ? Number(args.get('seed')) : null,
   };
+
+  // inviteCode is intentionally NOT attached to `config` — see the comment
+  // above `storageState`. It is a bearer credential
+  // (docs/PUBLIC-GALLERY.md); config is what gets logged (printPlan) and
+  // written verbatim into the run manifest (RunManifest.write), so it must
+  // never land there. Callers destructure it out immediately and let it fall
+  // out of scope once the invite is redeemed.
+  const inviteCode = args.has('invite') ? resolveInviteCode(args.get('invite')) : null;
+
+  return { config, inviteCode };
 }
 
 export { HELP };
