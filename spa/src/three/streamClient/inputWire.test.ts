@@ -8,9 +8,14 @@
 // cursor to the top-left corner. Measured on rhapsody, 2026-08-24:
 //   [input] ABS->REL recv=(0,0) off=(0,0) scale=2.09 -> target=(0,0)
 // See docs/lab/INPUT-DEBUGGING.md.
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { configureTracer, __resetTracer, __bufferedSpans } from '../../analytics/trace';
+import { SAMPLE_N, __resetSampleCounter } from './inputTrace';
+import { setTransportFacts, clearTransportFacts } from './transportFacts';
 import { ICLASS_BUTTON, T_BUTTON, T_MOVE_REL } from './constants';
-import { sendButtonImpl, sendMoveAbsImpl, sendMoveRelImpl, type StreamClientLike } from './inputWire';
+import {
+  sendButtonImpl, sendKeyScancodeImpl, sendMoveAbsImpl, sendMoveRelImpl, type StreamClientLike,
+} from './inputWire';
 
 function fakeClient() {
   const reliable: { cls: number; rec: Uint8Array }[] = [];
@@ -85,5 +90,65 @@ describe('inputWire — a button record only carries a point it actually knows',
     expect(datagrams[0][0]).toBe(T_MOVE_REL);
     expect(c.lastAbsX).toBeNull();
     expect(c.lastAbsY).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The transport hop as its own span. A sampled edge's record does not vanish
+// into an unexplained gap between the browser and the daemon: the handoff to
+// the QUIC stream writer is a span of its own, carrying the connection's
+// identity and characteristics (transportFacts.ts). An UNSAMPLED edge emits
+// nothing at all — the 9-in-10 case still costs one counter check.
+// ---------------------------------------------------------------------------
+describe('input.wire', () => {
+  beforeEach(() => {
+    __resetTracer();
+    configureTracer({ enabled: true, emit: () => {} });
+    __resetSampleCounter();
+    setTransportFacts('https://labhost:8443/wt', {});
+  });
+  afterEach(() => { clearTransportFacts(); });
+
+  function sampledKey() {
+    const { c, reliable } = fakeClient();
+    for (let i = 0; i < SAMPLE_N; i += 1) sendKeyScancodeImpl(c, 0x1e, true);
+    return { reliable };
+  }
+
+  it('wraps the sampled write in a client-kind child of input.edge', () => {
+    sampledKey();
+    const spans = __bufferedSpans();
+    const wire = spans.filter((s) => s.n === 'input.wire');
+    const edge = spans.filter((s) => s.n === 'input.edge');
+    expect(wire).toHaveLength(1);
+    expect(edge).toHaveLength(1);
+    expect(wire[0].kd).toBe('client');
+    expect(wire[0].p).toBe(edge[0].s);
+  });
+
+  it('carries the endpoint, protocol and reliability class of the real hop', () => {
+    sampledKey();
+    const a = __bufferedSpans().find((s) => s.n === 'input.wire')!.a!;
+    expect(a['server.address']).toBe('labhost');
+    expect(a['server.port']).toBe(8443);
+    expect(a['net.peer.port']).toBe(8443);
+    expect(a['network.transport']).toBe('quic');
+    expect(a['network.protocol.version']).toBe('3');
+    expect(a['kh.wire.reliability']).toBe('stream');
+    expect(a['peer.service']).toBe('kernel-hive-daemon');
+  });
+
+  it('still puts the record on the wire, suffix and all', () => {
+    const { reliable } = sampledKey();
+    expect(reliable).toHaveLength(SAMPLE_N);
+    // 4 base bytes + the 25-byte trace suffix on the sampled one only.
+    expect(reliable[reliable.length - 1].rec.length).toBe(4 + 25);
+    expect(reliable[0].rec.length).toBe(4);
+  });
+
+  it('emits no span at all on an unsampled edge', () => {
+    const { c } = fakeClient();
+    sendKeyScancodeImpl(c, 0x1e, true); // 1 of SAMPLE_N — not the sampled one
+    expect(__bufferedSpans()).toHaveLength(0);
   });
 });

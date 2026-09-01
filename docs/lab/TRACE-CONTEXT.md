@@ -152,6 +152,9 @@ context via `Ctx::child`, exactly like every other hop in this document:
 
 ```
 input.edge                    (browser, root — the sampled decision)
+├─ input.wire                 (browser: the handoff to the QUIC stream, and
+│                              the connection's own properties — §3.4)
+├─ client.input.roundtrip     (browser: edge → painted pixel, ONE clock — §3.4)
 └─ input.dispatch             (daemon: record accepted → guest write returned)
    ├─ guest.frame.next        (daemon: the EFFECT — next frame produced)
    └─ transport.frame.next    (daemon: that frame reaching the wire)
@@ -237,6 +240,8 @@ spans under the same `input.dispatch`:
 
 ```
 input.edge                    (browser, root — the sampled decision)
+├─ input.wire                 (browser: handoff to QUIC + transport facts)
+├─ client.input.roundtrip     (browser: edge → painted pixel, ONE clock)
 └─ input.dispatch             (daemon: record accepted → guest write returned)
    ├─ guest.frame.next        (daemon: the EFFECT — next frame produced;
    │                            kh.encode.latency_us, promoted from a
@@ -245,6 +250,23 @@ input.edge                    (browser, root — the sampled decision)
    ├─ client.frame.receive    (browser: AU bytes -> handed to the decoder)
    ├─ client.frame.decode     (browser: the WebCodecs decode itself)
    └─ client.frame.paint      (browser: the paint sink's own synchronous cost)
+```
+
+A real one, captured on win95 2026-09-01 and reproduced here verbatim from our
+own store (`+n ms` is from the edge; the trailing number is the span's own
+duration):
+
+```
+input.edge                 client   +   0ms    0ms   kh.input.class=key kh.key.class=modifier
+├─ client.input.roundtrip  client   +   0ms  242ms
+├─ input.wire              client   +   0ms    0ms   quic/h3, server.port=<station UDP>,
+│                                                    kh.transport.rtt_ms=6.3 (source: ping)
+└─ input.dispatch          server   +  15ms    0ms   svc=kernel-hive-daemon
+   ├─ guest.frame.next     internal +  16ms  213ms   frame 34, encode 17.7 ms
+   ├─ transport.frame.next internal +  16ms  218ms   68 779 bytes
+   ├─ client.frame.receive internal + 232ms    1ms
+   ├─ client.frame.decode  internal + 233ms    7ms
+   └─ client.frame.paint   internal + 240ms    2ms
 ```
 
 **Compatibility, both directions, is the same additive-channel argument §3.2
@@ -264,6 +286,148 @@ it:**
 Neither direction needs a version check: it is the same "additive tail /
 additive subtype, unconditionally ignorable" shape every other KIND_PARAMS
 extension in this file already relies on, not a new compatibility mechanism.
+
+### 3.4 Which layers in an input trace are REAL, and which do not exist
+
+Read a flame graph expecting the wrong four boxes and every one of them looks
+broken. This is what each box in §3.3's tree actually measures, in the order
+the tree draws them, and — just as important — what a reader should stop
+waiting for.
+
+| layer | span | what it really is |
+|---|---|---|
+| browser edge | `input.edge` (Client) | the key/click handler, this tab's clock. Real, ~0–1 ms. |
+| transport | `input.wire` (Client) | REAL, but its DURATION is only the local handoff to the QUIC stream writer. See below. |
+| daemon | `input.dispatch` (**Server**) | the record's whole journey through `input::handle` — sink accepted → guest write returned. Real, and it is the trace's ENTRY span. |
+| guest | `guest.frame.next` (Internal) | the next frame the guest PRODUCED after injection. Not the same claim as "the guest reacted" — see below. |
+| return | `transport.frame.next`, `client.frame.receive/decode/paint` | real, one hop each, split across the two processes. |
+| the envelope | `client.input.roundtrip` (Client) | edge → painted pixel, both ends read from the same tab's `performance.now()`. |
+
+**There is no browser→server HTTP hop, and none is faked.** A keystroke is a
+length-prefixed record on a client-opened QUIC unidirectional stream inside one
+WebTransport session; pointer motion is a QUIC datagram. Both live inside an
+HTTP/3 CONNECT session, which is the only sense in which HTTP is involved: no
+request, no method, no status code, nothing for an `http.client.request` span
+to describe. Emitting one anyway to make the tree look familiar would be
+exactly the false claim §8 forbids about a span's causal shape. `input.wire` is
+what exists instead.
+
+**So `input.wire`'s duration is NOT the network hop.** It cannot be: the
+daemon's clock is a different clock, and subtracting two wall clocks across two
+machines yields skew, not latency. What it measures is real and worth having —
+how long this tab spent getting the record into the writer, which is where
+backpressure appears — and the hop's actual cost rides beside it as an
+attribute:
+
+- `server.address` / `server.port`, and the same pair as `net.peer.name` /
+  `net.peer.port` — the current OTel spelling and the older one Instana's
+  documented consumed-attribute list reads, emitted together, the shape the
+  OTel SDKs spell `http/dup`. Our own plane's naming is the product; the vendor
+  is the temporary consumer. When the HTTP side of this repo settles one
+  bridging rule, `transportFacts.ts` follows it — it never invents a third.
+- `network.transport=quic`, `network.protocol.name=http`,
+  `network.protocol.version=3`, `network.protocol.alpn` when the UA exposes it,
+  `peer.service=kernel-hive-daemon`.
+- `kh.wire.reliability` ∈ {stream, datagram} — key and button records ride a
+  reliable per-class stream; pointer motion rides a datagram. They have
+  genuinely different loss and latency behaviour and must not read the same.
+- `kh.transport.conn`, a per-connection id minted in the tab, so several
+  sampled edges over one session group without any of them carrying a ticket.
+- `kh.transport.rtt_ms` with `kh.transport.rtt_source` naming which kind.
+
+**`WebTransport.getStats()` does not exist in the browser this gallery serves.**
+Measured, not assumed: Chrome 150 on CT950, 2026-09-01 —
+`typeof WebTransport.prototype.getStats === 'undefined'`, and the whole
+prototype is `ready`/`closed`/`close`/`datagrams`/`protocol` plus the two
+stream factories. So the spec'd connection stats — smoothed RTT, estimated
+send rate, datagram loss counters — are simply not obtainable from a browser
+here. An attribute that is always absent is worse than none, because it reads
+as "the poll has not run yet" forever.
+
+What stands in is not a consolation prize: the stream client already runs a
+liveness PING over this same connection (`streamClient.ts::pingRtt`, a type-9
+datagram the daemon echoes, re-taken by the ABR loop), and both ends of that
+measurement are `performance.now()` readings in the same tab. It is an
+APPLICATION-level round trip rather than a transport estimate — which is the
+number a visitor's finger actually waits on — and `kh.transport.rtt_source`
+says `ping` so nobody mistakes it for `smoothedRtt`. The day a UA ships
+`getStats()`, the transport's own figure wins and the source attribute says
+`getstats`, with no other change. To get the transport-level number sooner
+would take either a browser that implements the API or a QUIC-level reader on
+the daemon side reporting its own view of the connection back to the tab; both
+are real options and neither is done.
+
+**`guest.frame.next` is not proof the guest reacted.** Rule 9 (`AGENTS.md`) is
+that the framebuffer is the only proof, and this span IS drawn from the
+framebuffer — it fires on a real captured, encoded access unit, never on a
+queue write. But it is the NEXT frame after injection, which on a damage-gated
+station may be a frame the input had nothing to do with, and on an idle guest
+may not arrive at all. The name says exactly that much and no more; it is
+deliberately not called `guest.ack`. Read it as an upper bound on "how long
+until something changed", and go to `labctl`/a screendump when the question is
+whether the guest did the right thing.
+
+**`client.input.roundtrip` is the one measurement that needs no clock
+agreement.** Everything else in the tree is a browser reading beside a daemon
+reading, so the tree's overall shape depends on two machines' wall clocks
+lining up. This span does not, and it is the envelope the daemon's spans
+decompose. It exists only when this tab minted the edge AND the daemon named a
+frame as its answer, so it is bounded by `SAMPLE_N` on one side and by the
+return-leg mark on the other.
+
+**Two layers that do not exist at all, so nobody goes looking:**
+
+- `net.peer.ip` and any LOCAL port. The browser cannot see the peer's resolved
+  address or its own QUIC source port, and the daemon is forbidden from putting
+  a peer address in a span (§8: never a secret, and the peer address is on that
+  list). This is not "not yet"; it is not going to exist.
+- A second input transport. `webRtcFallbackClient.ts` carries VIDEO and has no
+  send path at all — every input record goes through
+  `StreamClient.writeReliableClass`/`writeDatagram`, which are WebTransport
+  only. `kh.transport` is recorded explicitly anyway, so the day that stops
+  being true the trace says so instead of silently reading the same.
+
+### 3.5 A missing `input.dispatch` is usually a DEPLOYMENT fact, not a bug
+
+Over six hours on 2026-09-01 only 37% of sampled `input.edge` traces carried
+the daemon's `input.dispatch`, and the vendor label on the rest was "To
+input.edge of **Unspecified**". Both readings are correct and neither is an
+instrumentation fault.
+
+Broken down per station, every station whose daemon could emit the span joined
+**100%** of its edges. The entire 63% was ONE station, win95, running a binary
+from before this feature existed and doing exactly what §3.2's "new browser →
+old daemon" paragraph promises: read the fixed fields off the front, ignore the
+25-byte tail, land the click, emit nothing. `Unspecified` followed from the
+same fact — with no daemon span there is no `Server`-kind entry span, and
+Instana derives a trace's owning service from its entry. Once the two stale
+stations were promoted, the same query returned `input.dispatch` /
+`kernel-hive-daemon` for every new trace.
+
+This will recur, on purpose: §8's last rule says version skew between browser
+and daemon is the NORMAL state, because the fleet rolls in canaried waves and
+the SPA deploys independently of it. What was missing was a way to SEE it — a
+station that CANNOT trace looked identical to one that simply had no traffic.
+
+```sh
+ssh lab 'scripts/dev/labrun scripts/observability/trace-capable.py'
+```
+
+resolves every live daemon through `/proc/<pid>/exe` and reports which builds
+can emit `input.dispatch` at all, exiting 1 when any cannot. **Read a low join
+rate against that report before reading it as a propagation bug.**
+
+**One related trap, and it was a real bug.** `/traces` requires an INTEGER span
+start and drops anything else without a word (`traces.py`: `if not
+isinstance(started, int) ... continue`). `analytics/trace.ts`'s `emitSpan`
+derives its start by subtracting `performance.now()` — a fractional clock — from
+`Date.now()`, so nearly every span it produced was refused at intake: 10 stored
+`client.frame.paint` spans against 407 daemon `transport.frame.next` spans over
+24 hours. The tab believed it had emitted; the store had nothing; the missing
+return leg read as "the frame mark never arrived". Fixed by rounding at the
+source. The general rule this is an instance of: **anything a new span emits
+must be run through the real `traces.py` validators in a test**, which is what
+`scripts/test_input_trace_intake.py` now does for this whole family.
 
 ## 4. The page-load hop: an HTML `<meta>` tag, read by a vendor agent
 
@@ -701,8 +865,10 @@ correlation exercise.
 `station.connect`.** Roughly 1 key or click edge in `SAMPLE_N` produces:
 
 ```
-input.edge                    (browser, root)
-└─ input.dispatch             (daemon)
+input.edge                    (browser, root — Client)
+├─ input.wire                 (browser — §3.4's transport hop and its facts)
+├─ client.input.roundtrip     (browser — edge → painted pixel, one clock)
+└─ input.dispatch             (daemon — SERVER, the trace's entry span)
    ├─ guest.frame.next        (daemon)
    ├─ transport.frame.next    (daemon)
    ├─ client.frame.receive    (browser — §3.3's return leg)
@@ -710,10 +876,14 @@ input.edge                    (browser, root)
    └─ client.frame.paint      (browser)
 ```
 
-The last three exist only when the daemon's return-path mark and this tab's
-own receive/decode/paint for the same `frame_id` both actually happen (§3.3)
-— a dropped or never-marked frame simply leaves the daemon's three spans
-standing alone, which is not an error, just an incomplete return leg.
+The last three, and `client.input.roundtrip` with them, exist only when the
+daemon's return-path mark and this tab's own receive/decode/paint for the same
+`frame_id` both actually happen (§3.3) — a dropped or never-marked frame simply
+leaves the daemon's spans standing alone, which is not an error, just an
+incomplete return leg. **`input.dispatch` missing entirely is a different
+thing, and it is usually a deployment fact rather than a bug — read §3.5 before
+reading it as one.** §3.4 says what each of these boxes actually measures, and
+which layers do not exist at all.
 
 This is deliberately a second family of traces alongside the one above, the
 same way a page load answers a different question from a keystroke
@@ -758,6 +928,17 @@ merely drawn that way.
   open question in ANALYTICS.md §0.5.
 - **A layer that cannot trace still works.** Every hop degrades to "no parent",
   never to "no service".
+- **Never fake a hop that does not exist.** §3.4: input travels over
+  WebTransport, not HTTP, so there is no `http.client.request` span on the
+  input path and never will be. Describe the transport that IS there.
+- **Never name a span for a claim the evidence does not support.** §3.4:
+  `guest.frame.next` is the next frame the guest produced, which is not the
+  same statement as "the guest reacted" — so it is not called `guest.ack`.
+  Rule 9's framebuffer discipline, applied to a span name.
+- **A span that cannot be stored is worse than no span.** §3.5: run anything
+  new through `traces.py`'s real validators in a test
+  (`scripts/test_input_trace_intake.py`), because intake refuses silently and a
+  refused span reads downstream as a zero.
 - **An old browser and an old daemon must both keep working against a new
   counterpart.** §3.2: the fleet rolls in canaried waves and the SPA deploys
   independently of it, so a version skew between browser and daemon is the

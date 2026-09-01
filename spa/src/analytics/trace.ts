@@ -440,17 +440,30 @@ export function emitSpan(
   durMs: number,
   attrs?: Attrs,
   status: SpanStatus = 'ok',
+  kind: SpanKind = 'internal',
 ): void {
   try {
     if (!enabled || buffered.length >= MAX_BUFFERED) return;
-    const wallStart = Date.now() - (now() - startAtMs);
+    // ROUNDED, and this is not cosmetic. `/traces` requires an INTEGER start
+    // (`traces.py`: `if not isinstance(started, int) ... continue`) and JSON
+    // has no integer type to fall back on, so a fractional millisecond is a
+    // span the store silently refuses. `Date.now()` is whole but
+    // `performance.now()` is not — Chrome reports it at 100 us resolution — so
+    // this subtraction produced a float on almost every call and the whole
+    // return leg (`client.frame.receive`/`decode`/`paint`) was being dropped
+    // at intake: 10 stored paints against 407 daemon `transport.frame.next`
+    // spans over 24 h, measured 2026-09-01. `makeSpan` never had the bug
+    // because its `wall0` is a bare `Date.now()`. Nothing said anything: the
+    // tab thought it had emitted, the store had nothing, and the missing
+    // return leg read as "the frame mark never arrived".
+    const wallStart = Math.round(Date.now() - (now() - startAtMs));
     const own = clean(attrs);
     buffered.push({
       t: traceId,
       s: newSpanId(),
       p: parentSpanId,
       n: name.slice(0, 80),
-      kd: 'internal',
+      kd: kind,
       st: wallStart,
       d: Math.max(0, Math.round(durMs)),
       h: 0,
