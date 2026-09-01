@@ -82,6 +82,7 @@ from __future__ import annotations
 TELEMETRY_PATHS = frozenset(
     {
         "/traces",
+        "/logs",
         "/analytics",
         "/coverage",
         "/clientlog",

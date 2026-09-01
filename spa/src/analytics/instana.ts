@@ -113,6 +113,7 @@ export const SECRET_PATTERNS: RegExp[] = [/traceparent/i, /ticket/i];
 // either. It goes when Instana goes; nothing else in this list does.
 export const KH_TELEMETRY_PATHS = [
   '/traces',
+  '/logs',
   '/analytics',
   '/coverage',
   '/clientlog',
