@@ -34,12 +34,40 @@
 //  ALREADY-VERIFIED call shape (`meta`, fixed by defect 1) rather than an
 //  invented, untested custom-event API — see reportPageToInstana() / reportTransitionDurationToInstana() below.
 //
-//  CARDINALITY. The page name Instana (and our own probe) receives is the
-//  route PATTERN — `/os/:osId`, never `/os/solaris` — so every station
-//  groups under one page instead of exploding into one page per exhibit.
-//  The concrete station id rides as `meta`/a span attribute instead, same
-//  rule `trace.ts` and `errors.ts` already state: never the query string,
-//  never free text, only short stable tokens.
+//  CARDINALITY — REVISED 2026-09-01, operator decision. The page name is now
+//  the CONCRETE STATION (`/os/solaris`), with the route PATTERN kept beside
+//  it as `meta`/`kh.route.pattern`. It used to be the pattern alone.
+//
+//  Why the usual RUM convention does not apply here. Templating a page name
+//  exists to stop UNBOUNDED identifiers (user ids, order ids, cart ids) from
+//  exploding the page dimension. `osId` is not one of those: it is a FIXED
+//  REGISTRY (`registry/stations/*.json`, one name per station, enforced by
+//  `scripts/stations-registry.py`), and the stations are genuinely different
+//  products — measured golden-restore times on the same box the same day span
+//  win95 639 ms, beos 1695 ms, amiga 2535 ms, zxspectrum 17.2 s. Averaging a
+//  QEMU x86 guest with a MAME-driven 8-bit micro into one number hides the
+//  order of magnitude that is the whole point of looking.
+//
+//  BOTH, NOT A SWAP. `kh.route.pattern` goes out as `meta` on the same
+//  navigation, so "how is the station page doing overall" stays one filter
+//  away — a pure swap would trade one blindness for another.
+//
+//  THE BOUND IS STILL ENFORCED, and syntactically, because this code cannot
+//  ask the registry: `STATION_ID` below. A param value that is not a plausible
+//  registry id (anything a crawler or a typo produces) is NOT substituted, and
+//  the page name falls back to exactly the old pattern — so the worst case is
+//  the previous behaviour, never a leaked path. See docs/ANALYTICS.md for the
+//  escalation if that syntactic bound ever proves too loose in practice.
+//
+//  WALK-IN CLONES REPORT AS THE STATION. `/walkin/play/:os` carries the
+//  EXHIBIT id (`win311`), never the clone id (`walkin-win311-1`) — the clone
+//  is only ever named inside the claim's `signalEndpoint`, never in the URL —
+//  so a poolSize-3 exhibit is one page, not three. `/walkin/play/win311` stays
+//  distinct from `/os/win311` on purpose: a private clone with a reset button
+//  and a queue is a different product from the shared exhibit.
+//
+//  Everything else is unchanged: never the query string, never free text,
+//  only short stable tokens — the same rule `trace.ts` and `errors.ts` state.
 //
 //  THE INITIAL LOAD IS NOT DOUBLE-REPORTED. Instana already emits its own
 //  automatic `pageLoad` beacon for the first page (unaffected by
@@ -109,6 +137,47 @@ const ROUTES: readonly string[] = [
  *  of leaking the raw path as a "pattern". */
 const UNMATCHED_PATTERN = '*';
 
+/**
+ * What a route param has to look like before it is allowed into a page NAME.
+ *
+ * Every id in `registry/stations/*.json` is lowercase-alphanumeric, starts
+ * with a letter and is at most 12 characters (`aix432`, `zxspectrum`,
+ * `msdoswin1`); this allows 16 for headroom. It is a SYNTACTIC bound, not a
+ * registry-membership check — the browser has no synchronous list of stations
+ * (the manifest is fetched, and index.html's copy of this logic runs before
+ * any module evaluates, so neither can wait for one). What it buys is that a
+ * page name can only ever be a short stable token: no path traversal, no
+ * query string, no free text, no unbounded identifier shape.
+ *
+ * Duplicated by hand in spa/index.html's inline bootstrap, and pinned equal to
+ * it by scripts/test_page_naming_in_sync.py.
+ */
+const STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
+
+/**
+ * The PAGE NAME for a navigation: the route pattern with each `:param`
+ * replaced by its concrete value, when that value passes `STATION_ID`.
+ *
+ * Generic rather than special-cased on `osId`/`os`, so a future station-scoped
+ * route names itself correctly with no edit here. A param that fails the guard
+ * keeps its `:name` placeholder, which means an unrecognised id degrades to
+ * EXACTLY the old pattern-only name (`/os/:osId`) rather than to anything new.
+ *
+ * Exported for tests and for spa/index.html's hand-duplicated copy to be
+ * checked against.
+ */
+export function pageName(pattern: string, params: Record<string, string>): string {
+  if (pattern === UNMATCHED_PATTERN) return UNMATCHED_PATTERN;
+  return pattern
+    .split('/')
+    .map((seg) => {
+      if (!seg.startsWith(':')) return seg;
+      const value = params[seg.slice(1)];
+      return value && STATION_ID.test(value) ? value : seg;
+    })
+    .join('/');
+}
+
 export interface RouteMatch {
   pattern: string;
   params: Record<string, string>;
@@ -148,6 +217,12 @@ export interface NavEvent {
  *  id — never free text, per this module's own header. */
 function navAttrs(event: NavEvent): Record<string, string> {
   const attrs: Record<string, string> = {
+    // The page NAME (`/os/beos`) and the route PATTERN (`/os/:osId`) are both
+    // carried, deliberately — the same "both, not a swap" rule this module's
+    // header states for Instana, so our own store keeps the pattern roll-up
+    // that /admin/observability and pageBinding.ts's `kh.page.pattern` group
+    // by, and gains the per-station view beside it.
+    'kh.page.name': pageName(event.pattern, event.params),
     'kh.route.pattern': event.pattern,
     'kh.route.kind': event.kind,
   };
@@ -207,10 +282,18 @@ export function finishNavigationSpan(span: Span, transitionMs: number): void {
  */
 export function reportPageToInstana(event: NavEvent): void {
   if (event.kind === 'initial') return;
-  ineum('page', event.pattern);
+  // META FIRST, PAGE LAST — and this is not stylistic. The vendor's own API
+  // reference says it outright: "Make sure to change the page name last as
+  // this immediately triggers the transition" (0250-monitoring-websites.md).
+  // `ineum('page', ...)` is what CUTS the page-transition beacon, so any meta
+  // set after it lands on the NEXT transition, not this one. This function
+  // used to call `page` first, which is why the route pattern is added here
+  // rather than tacked on at the end.
+  ineum('meta', 'kh.route.pattern', event.pattern);
   for (const [k, v] of Object.entries(event.params)) {
     ineum('meta', `kh.route.param.${k}`, v);
   }
+  ineum('page', pageName(event.pattern, event.params));
 }
 
 /**

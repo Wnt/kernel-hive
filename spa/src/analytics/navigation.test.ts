@@ -9,6 +9,7 @@ import {
   matchRoute,
   openNavigationSpan,
   finishNavigationSpan,
+  pageName,
   reportPageToInstana,
   reportTransitionDurationToInstana,
   nextPaint,
@@ -104,21 +105,29 @@ describe('consumer B: Instana', () => {
     expect(() => reportTransitionDurationToInstana(50)).not.toThrow();
   });
 
-  it('calls ineum(page, <pattern>) and meta(param) for a real transition', () => {
+  it('names the STATION and keeps the route pattern as meta (both, not a swap)', () => {
     const { calls } = installIneum();
     const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'beos' }, prevPattern: '/', kind: 'push' };
     reportPageToInstana(event);
-    expect(calls).toContainEqual(['page', '/os/:osId']);
+    expect(calls).toContainEqual(['page', '/os/beos']);
+    expect(calls).toContainEqual(['meta', 'kh.route.pattern', '/os/:osId']);
     expect(calls).toContainEqual(['meta', 'kh.route.param.osId', 'beos']);
   });
 
-  it('never sends the raw station path as the page name — only the pattern', () => {
+  it('sets the page name LAST — meta after it would belong to the next transition', () => {
     const { calls } = installIneum();
     const event: NavEvent = { pattern: '/os/:osId', params: { osId: 'solaris' }, prevPattern: null, kind: 'push' };
     reportPageToInstana(event);
-    const pageCall = calls.find((c) => c[0] === 'page');
-    expect(pageCall).toEqual(['page', '/os/:osId']);
-    expect(JSON.stringify(calls)).not.toContain('/os/solaris');
+    expect(calls.findIndex((c) => c[0] === 'page')).toBe(calls.length - 1);
+  });
+
+  it('never mints a page name from something that is not a plausible station id', () => {
+    const { calls } = installIneum();
+    const event: NavEvent = { pattern: '/os/:osId', params: { osId: '../etc/passwd' }, prevPattern: null, kind: 'push' };
+    reportPageToInstana(event);
+    // Degrades to EXACTLY the old pattern-only name — the worst case is the
+    // previous behaviour, never a leaked path in the page dimension.
+    expect(calls.find((c) => c[0] === 'page')).toEqual(['page', '/os/:osId']);
   });
 
   it('skips the INITIAL navigation entirely — index.html already named that page-load beacon', () => {
@@ -145,8 +154,37 @@ describe('both consumers receive the same event', () => {
     const [ourSpan] = __bufferedSpans();
     expect(ourSpan.a?.['kh.route.pattern']).toBe('/os/:osId');
     expect(ourSpan.a?.['kh.route.param.osId']).toBe('irix');
-    expect(calls).toContainEqual(['page', '/os/:osId']);
+    // Both planes agree on the page NAME as well as on the pattern — the whole
+    // point of carrying `kh.page.name` beside `kh.route.pattern` on our span.
+    expect(ourSpan.a?.['kh.page.name']).toBe('/os/irix');
+    expect(calls).toContainEqual(['page', '/os/irix']);
+    expect(calls).toContainEqual(['meta', 'kh.route.pattern', '/os/:osId']);
     expect(calls).toContainEqual(['meta', 'kh.route.param.osId', 'irix']);
+  });
+});
+
+describe('pageName — the cardinality bound, stated as a function', () => {
+  it('substitutes a registry-shaped id and leaves everything else alone', () => {
+    expect(pageName('/os/:osId', { osId: 'zxspectrum' })).toBe('/os/zxspectrum');
+    expect(pageName('/fleet', {})).toBe('/fleet');
+    expect(pageName('/', {})).toBe('/');
+    expect(pageName('*', {})).toBe('*');
+  });
+
+  it('collapses all three clones of a poolSize-3 walk-in exhibit to one page', () => {
+    // The pool is walkin-win311-1/-2/-3, but only the EXHIBIT id is ever in
+    // the URL — the clone lives in the claim's signalEndpoint. One page.
+    expect(pageName('/walkin/play/:os', { os: 'win311' })).toBe('/walkin/play/win311');
+  });
+
+  it('keeps /os/<id> and /walkin/play/<id> distinct — different products', () => {
+    expect(pageName('/os/win311', {})).not.toBe(pageName('/walkin/play/:os', { os: 'win311' }));
+  });
+
+  it('refuses anything that is not a short lowercase token', () => {
+    for (const bad of ['', '../etc', 'Win95', 'win 95', '1win', 'a'.repeat(40), 'win95?x=1']) {
+      expect(pageName('/os/:osId', { osId: bad })).toBe('/os/:osId');
+    }
   });
 });
 

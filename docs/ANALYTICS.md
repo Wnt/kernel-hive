@@ -720,9 +720,11 @@ a mechanism nobody can query around.
 So in our plane the binding is **explicit and travels on the event**
 (`analytics/pageBinding.ts`):
 
-* `kh.page.pattern` — the route PATTERN (`/os/:osId`, never `/os/beos`), so 63
-  stations group as one page. The same cardinality rule §navigation already
-  states; the concrete station is `kh.station.id`, a different question.
+* `kh.page.pattern` — the route PATTERN (`/os/:osId`, never `/os/beos`), so
+  every station groups as one page. This attribute is the **roll-up key** and
+  it did NOT change on 2026-09-01 when the page NAME became per-station (§8.2a):
+  keeping it is exactly what made that change "both, not a swap". The concrete
+  station is `kh.station.id`, and on a navigation also `kh.page.name`.
 * `kh.page.loadId` — 16 hex, minted once per document. "Show me everything that
   happened on this page load" is an equality filter, not an inference.
 * `kh.page.instanaLoadId` — the vendor's own `ineum('getPageLoadId')`, captured
@@ -1621,6 +1623,179 @@ as read on 2026-08-31, that this tenant is a trial expiring in 14 days. That
 may force the exit before this plane's own views are ready, independent of
 whatever order the operator would otherwise have chosen.
 
+## 8.2a Page names: the station, not the route pattern (changed 2026-09-01)
+
+**The rule, as of 2026-09-01.** The page name this app reports — to Instana via
+`ineum('page', ...)` and to our own store as `kh.page.name` — is the **concrete
+station**: `/os/beos`, `/walkin/play/win311`. The route **pattern** (`/os/:osId`)
+goes out beside it as `kh.route.pattern` — `meta` on the vendor's plane, a span
+attribute on ours — and `kh.page.pattern` (§5.5, page binding) is unchanged.
+Before this date the page name was the pattern alone.
+
+**Read any page-name comparison across 2026-09-01 as two different questions.**
+A "page" before that date is a route; after it, a station. Nothing rewrites
+history in either store, so the dimension is genuinely discontinuous at that
+timestamp — and today's data is already a construction site for several other
+reasons (the beacon proxy, the log plane, the metric-span split of the same
+week). Do not put a trend line through it.
+
+### Why per-station, when the RUM convention says otherwise
+
+Every RUM tool teaches you to template the page name, and the teaching is
+correct — for the thing it is about. Templating exists to stop **unbounded
+identifiers** (a user id, an order id, a cart id) from exploding the page
+dimension into one row per visitor, at which point the dimension answers
+nothing and costs everything.
+
+`osId` is not one of those. It is a **fixed registry** — one file per station in
+`registry/stations/`, one name each, enforced by `scripts/stations-registry.py`
+— that grows by a station every few weeks, by hand, through a documented
+playbook. A dimension whose value set is a curated list of exhibits is a
+legitimate dimension, not a cardinality leak.
+
+And the stations are genuinely different products. Golden-restore times measured
+on this box on one day:
+
+| station | golden restore |
+|---|---|
+| `win95` | 639 ms |
+| `beos` | 1695 ms |
+| `amiga` | 2535 ms |
+| `zxspectrum` | 17.2 s |
+
+An order of magnitude, inside one "page". Averaging a QEMU x86 guest with a
+MAME-driven 8-bit micro produces a number that describes no exhibit anybody can
+visit, and hides exactly the variation worth looking at. The generalised name
+was answering "how is the station page doing" — a real question, and the only
+one it could answer.
+
+### Both, not a swap — and the roll-up is verified, not assumed
+
+So the roll-up question keeps its answer. `kh.route.pattern` is emitted as
+`meta` on the vendor's plane, which its page-load view filters on, and as a span
+attribute on ours. A pure swap would have traded one blindness for another:
+per-station detail bought at the cost of never again being able to ask how the
+station page as a whole is doing.
+
+### The bound, and where it actually is
+
+The registry is finite, but the URL is not: anyone can request `/os/anything`.
+So neither copy of the naming logic substitutes a param value blindly. A value
+enters a page name only if it matches `STATION_ID` — `^[a-z][a-z0-9]{1,15}$`,
+which every id in `registry/stations/` satisfies (longest today: 12 characters).
+Anything else keeps its `:name` placeholder, so an unrecognised path degrades to
+**exactly the old pattern-only name**. The worst case of this change is the
+previous behaviour.
+
+Be honest about what that guard is: **syntactic, not a registry-membership
+check.** The browser has no synchronous list of stations — the manifest is
+fetched, and `spa/index.html`'s copy of this logic runs before any module
+evaluates, so neither can wait for one. A determined crawler walking
+`/os/aa`, `/os/ab`, … would still mint page names. If the page dimension ever
+shows ids that are not stations, the escalation is to project the registry id
+list into the bundle (a generated module for `navigation.ts`, and a Vite
+placeholder for `index.html`, the mechanism `%VITE_KH_BUILD_ID%` already uses)
+and check membership rather than shape. That is deliberately not built yet: it
+is real duplication to maintain, for a failure mode that has not happened.
+
+### Does Instana collapse high-cardinality page names? Docs silent.
+
+Asked because the answer would have changed the decision. For **endpoints** the
+vendor documents a collapse: "When too many endpoints are detected on a given
+service, calls are grouped under the special 'Others' endpoint. This safeguard
+is meant to keep the set of endpoints to a reasonable size"
+(`0251-monitoring-applications.md`). There is **no equivalent statement anywhere
+in the corpus for website page names.** `beacon.page.name` appears once, as the
+grouping tag of the page-loads view (`0250-monitoring-websites.md`), with no cap
+or "Others" language near it, and none in the mobile-monitoring or
+known-issues documents either.
+
+The only adjacent documented limits are the JavaScript agent's **per-tab rate
+limits** — 128 beacons/10 s, 4096/10 min, 8096/page-load; page changes 32/10 s,
+128/10 min (`0250-monitoring-websites.md`). Those throttle throughput per tab
+and are indifferent to how many distinct names exist across the site; naming
+per-station does not change how many beacons a tab sends.
+
+So: **docs silent on page-name cardinality**. The empirical check on this
+tenant (2026-09-01, `analyze/beacon-groups` grouped by `beacon.page.name`, 7-day
+window) returned **6 distinct PAGELOAD page names and 5 PAGE_CHANGE ones, with
+no "Others"-style collapse bucket among them.** That is honest but weak
+evidence: the site has never had 63 page names, so the observation shows no
+collapse *at the sizes reached*, it does not disprove one at 63. What makes that
+acceptable is the syntactic bound above — the dimension cannot grow past the
+registry plus the handful of static routes without a code change — and the fact
+that the failure mode, if it ever happened, would be visible in the same query
+and reversible in one commit.
+
+#### Querying the roll-up: the filter syntax that silently returns nothing
+
+Verified against the live tenant on 2026-09-01, because "the aggregate is still
+queryable" is a claim that had to be tested rather than asserted. `beacon.meta`
+is a `KEY_VALUE_PAIR` tag, and the two API shapes are **not** symmetric:
+
+| purpose | shape | result |
+|---|---|---|
+| **filter** to one pattern | `{name: 'beacon.meta', operator: 'EQUALS', value: 'kh.route.pattern=/os/:osId'}` | works — `key=value` in one string |
+| **group** by pattern | `{groupbyTag: 'beacon.meta', groupbyTagSecondLevelKey: 'kh.route.pattern'}` | works — one row per pattern |
+| filter, the shape that reads natural | `{name: 'beacon.meta', operator: 'EQUALS', value: '/os/:osId', tagSecondLevelKey: 'kh.route.pattern'}` | **HTTP 200, zero rows** |
+
+The third form is the trap: it is accepted, it is the obvious mirror of the
+grouping form, and it matches nothing. `beacon.meta.<key>` as a filter or group
+name is rejected outright (HTTP 400, "Invalid or unknown tag filter name"),
+which is the better failure of the two. Anyone reading a zero out of a meta
+filter should check the shape before concluding the meta is not there.
+
+Both roll-up forms were confirmed to return the expected rows after this change:
+filtering PAGELOAD on `kh.route.pattern=/os/:osId` returned the per-station page
+names underneath it, and grouping on the meta returned one row per pattern.
+
+### Where the page name is decided (all of it)
+
+Three places, and they are three because two of them physically cannot import
+the third:
+
+| where | decides | why it is separate |
+|---|---|---|
+| `spa/src/analytics/navigation.ts` | every SPA transition, both planes | the canonical copy: `ROUTES`, `STATION_ID`, `pageName()` |
+| `spa/index.html` inline bootstrap | the FIRST beacon of every visit | runs before any module evaluates; the page-load beacon fires ~1 s after `onLoad` and cannot be retroactively updated |
+| `spa/src/App.tsx` | which routes exist at all | the router itself — the authority the other two are pinned to |
+
+`analytics/pageBinding.ts` reads `navigation.ts`'s `matchRoute`, so it is a
+consumer, not a fourth copy.
+
+**They are pinned.** `scripts/test_page_naming_in_sync.py` parses App.tsx's
+route declarations, both `ROUTES` copies, both `STATION_ID` copies and the
+substitution/`meta` calls in each, and fails if any two disagree — with a
+vacuous-pass guard, so a restructure that defeats the parsing errors rather than
+asserting nothing. It exists because the identical duplication in
+`TELEMETRY_PATHS` was missed twice in one day (`/eum`, then `/logs`, each added
+to some copies and not the others), and the symptom showed up in the vendor's
+UI rather than in a test. That guard is
+`scripts/test_telemetry_paths_complete.py`; this is the same shape for the same
+reason.
+
+### One ordering bug fixed on the way
+
+`ineum('page', ...)` **cuts** the page-transition beacon: the vendor's own API
+reference says "make sure to change the page name last as this immediately
+triggers the transition". `reportPageToInstana` used to call `page` first and
+`meta` after, so the route params it sent landed on the *next* transition. Both
+copies now set every `meta` first and the page name last, and both have a test
+asserting the order.
+
+### Walk-in clones report as the exhibit
+
+The walk-in pool is `walkin-<station>-1/-2/-3` (poolSize 3). The clone id never
+reaches the page dimension: `/walkin/play/:os` carries the **exhibit** id, and
+the clone is named only inside the claim's `signalEndpoint` (§5.3 — a walk-in is
+never handed another station's signaling document). Three clones of one exhibit
+are one page, which is the analytically correct answer: they are the same
+software on the same golden.
+
+`/walkin/play/win311` stays distinct from `/os/win311`, also deliberately. A
+private clone with a reset button and a queue is a different product from the
+shared exhibit, and their timings are not comparable.
+
 ## 8.3 Which bundle was this client running — and old shell vs blocked beacon
 
 **Every telemetry lane this plane owns names the client's build, and the answer
@@ -2213,6 +2388,8 @@ real wire from one credentialed page load, which is where to look next.
 | `scripts/observability/kh-instana-forward.{service,timer}`, `kh-trace-ship.{service,timer}` | the schedules for the two carriers. Installed by `box-deploy.sh --apply`, enabled by the operator |
 | `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
 | `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2); `reportingUrl` now names our own `/eum` (§8.4) |
+| `spa/src/analytics/navigation.ts` | the canonical `ROUTES` table, `STATION_ID` and `pageName()` — what a page is CALLED, on both planes (§8.2a) |
+| `scripts/test_page_naming_in_sync.py` | pins App.tsx's routes and both hand-duplicated copies of the naming tables equal, with a vacuous-pass guard (§8.2a) |
 | `scripts/serve/eum_proxy.py`, `scripts/test_eum_proxy.py` | the beacon proxy (§8.3): one fixed destination, POST-only, gated like `/traces`, never traced, forwarded off the request thread — and the tests that pin every one of those refusals |
 | `scripts/visitor-sim/beacon-probe.mjs` | the acceptance probe: where beacons went, whether we accepted them, and (`--instana-check`) whether the tenant actually received them |
 | `scripts/serve/linecov.py` | `POST /coverage`, `GET /coverage/report.json`, the line-set merge |

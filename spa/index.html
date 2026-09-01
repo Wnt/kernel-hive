@@ -293,26 +293,60 @@
         }
         // DEFECT 4 (initial page name only — see analytics/navigation.ts for
         // every subsequent transition). Minimal duplicate of that module's
-        // ROUTES table: pattern segments, ':name' = param. Keep in sync by
-        // hand.
+        // ROUTES table and its STATION_ID guard: pattern segments, ':name' =
+        // param. Keep in sync by hand — and they CANNOT drift silently any
+        // more: scripts/test_page_naming_in_sync.py parses this array, this
+        // regex and this substitution rule against navigation.ts's copies and
+        // fails if they disagree, exactly like TELEMETRY_PATHS above.
+        //
+        // The page NAME is the concrete station (`/os/beos`), the route
+        // PATTERN rides as meta — operator decision 2026-09-01, reasoned in
+        // navigation.ts's CARDINALITY header and docs/ANALYTICS.md. A param
+        // that does not look like a registry id keeps its ':name' placeholder,
+        // so an unrecognised path degrades to the old pattern-only name.
+        //
+        // ORDER: meta first, page LAST. The vendor's API reference — "make
+        // sure to change the page name last as this immediately triggers the
+        // transition" — means anything set after `page` belongs to the next
+        // transition, not this one.
         try {
           var ROUTES = [
             '/', '/os/:osId', '/fleet', '/about', '/admin/walkin',
             '/admin/observability', '/museum', '/museum2', '/walkin',
             '/walkin/exhibits', '/walkin/play/:os',
           ];
+          var STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
           var segs = (location.pathname || '/').split('/').filter(Boolean);
           var pattern = '*';
+          var params = {};
           for (var i = 0; i < ROUTES.length; i++) {
             var pSegs = ROUTES[i].split('/').filter(Boolean);
             if (pSegs.length !== segs.length) continue;
             var ok = true;
+            var got = {};
             for (var j = 0; j < pSegs.length; j++) {
-              if (pSegs[j].charAt(0) !== ':' && pSegs[j] !== segs[j]) { ok = false; break; }
+              if (pSegs[j].charAt(0) === ':') got[pSegs[j].slice(1)] = segs[j];
+              else if (pSegs[j] !== segs[j]) { ok = false; break; }
             }
-            if (ok) { pattern = ROUTES[i]; break; }
+            if (ok) { pattern = ROUTES[i]; params = got; break; }
           }
-          ineum('page', pattern);
+          var name = pattern;
+          if (pattern !== '*') {
+            var parts = pattern.split('/');
+            for (var k = 0; k < parts.length; k++) {
+              if (parts[k].charAt(0) !== ':') continue;
+              var v = params[parts[k].slice(1)];
+              if (v && STATION_ID.test(v)) parts[k] = v;
+            }
+            name = parts.join('/');
+          }
+          ineum('meta', 'kh.route.pattern', pattern);
+          for (var pk in params) {
+            if (Object.prototype.hasOwnProperty.call(params, pk)) {
+              ineum('meta', 'kh.route.param.' + pk, params[pk]);
+            }
+          }
+          ineum('page', name);
         } catch (e3) {
           // A page name is a nicety, not a requirement — the beacon still
           // goes out unnamed rather than not at all.
