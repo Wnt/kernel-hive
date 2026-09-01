@@ -37,6 +37,381 @@
         }
       })();
     </script>
+    <!-- The tab's pseudonymous session id, minted ONCE, as early as possible,
+         and stashed on window so every later reader (the Instana bootstrap
+         right below, the boot-time client-error reporter further down, and
+         analytics/three/clientDebug.ts's makeSessionId() once the module
+         graph evaluates) uses the SAME value rather than each minting its
+         own. Used to live inside the error-reporter script further down,
+         generated only when THAT script ran — too late for Instana, whose
+         bootstrap needs it before the agent script below evaluates. Moved
+         here, unconditionally (independent of whether Instana is
+         configured), so both readers agree. -->
+    <script>
+      (function () {
+        try {
+          var bytes = new Uint8Array(4);
+          crypto.getRandomValues(bytes);
+          window.__kernelHiveErrorSessionId = Array.from(bytes, function (b) {
+            return b.toString(16).padStart(2, '0');
+          }).join('');
+        } catch (e1) {
+          try {
+            window.__kernelHiveErrorSessionId = Math.floor(Math.random() * 0xffffffff)
+              .toString(16).padStart(8, '0');
+          } catch (e2) {
+            window.__kernelHiveErrorSessionId = 'unknown';
+          }
+        }
+      })();
+    </script>
+    <!-- WHICH BUNDLE THIS PAGE IS, stashed on window for the boot-time error
+         reporter further down (and anything else that runs before a module
+         evaluates). Read from the build-id placeholder Vite substitutes here,
+         guarded the same way the vendor keys below are: a LEADING percent
+         character means an unconfigured build left the raw placeholder text in
+         place, and the honest answer is then 'unknown-build', never a value
+         that merely looks like a commit id.
+
+         SEPARATE from the vendor bootstrap below on purpose. That block reads
+         the same placeholder, but it RETURNS EARLY when no vendor key is
+         configured — so a keyless build would leave our own error rows with no
+         build id at all, which is the exact dead end 2026-09-01 cost a
+         debugging cycle to. Our own plane must not depend on the vendor's
+         being switched on. -->
+    <script>
+      (function () {
+        try {
+          var b = "%VITE_KH_BUILD_ID%";
+          window.__kernelHiveBuildId = (b && b.charAt(0) !== '%') ? b : 'unknown-build';
+        } catch (e) {
+          window.__kernelHiveBuildId = 'unknown-build';
+        }
+      })();
+    </script>
+    <!-- Instana EUM (Instana/IBM) bootstrap — earliest possible config.
+         DEFECT 2/3 FIX (docs/lab/TRACE-CONTEXT.md and a real Instana beacon
+         API query both confirm this): Instana sends the page-load beacon
+         ~1s after `onLoad`, and "data already transmitted cannot be
+         retroactively updated" — so anything that must be ON that beacon
+         (sessionId, userId, the W3C trace-context header that backfills
+         backendTraceId) has to be configured before React ever boots, not
+         from main.tsx/instana.ts's configureInstana(), which runs after
+         mount. Queried live: a page-load beacon showed empty sessionId,
+         userId and backendTraceId while an HTTP-request beacon from the SAME
+         session carried all three — proof the config below WAS arriving too
+         late for the FIRST beacon of every visit, even though every later
+         beacon (and every unit test, which never exercises page-load
+         timing) looked correct.
+
+         So: trackSessions, enableW3CHeaders (set to FALSE — see the long
+         note on the call itself for what it actually decides; it has to be
+         set before the agent initialises either way, because init is where
+         the backendTraceId is chosen once and for all) and
+         the pseudonymous identity move HERE, beside `key`/`reportingUrl`,
+         which already had to be this early for the same reason (the agent
+         script itself needs them the instant it loads). Also set here for
+         the SAME reason: an initial `page` name (defect 4) — without it the
+         very page-load beacon this block exists to fix would carry
+         `page: ""` regardless, since autoPageDetection is explicitly OFF
+         (see analytics/navigation.ts's header for why: driving transitions
+         ourselves and leaving auto-detection on would double-count and
+         disagree on naming). The pattern matcher below is a minimal,
+         deliberately duplicated copy of analytics/navigation.ts's ROUTES
+         table — it has to run here, in plain JS, before any module
+         evaluates; keep the two lists in sync by hand, the same trade the
+         session-id generator above already makes.
+
+         Everything that CAN wait for a session id and a resolved account —
+         autoPageDetection, secrets, ignoreUrls, wrapEventHandlers/wrapTimers,
+         the `kh.sessionId` join key, the real account identity, and `page`
+         for every SUBSEQUENT transition — stays in spa/src/analytics/instana.ts,
+         called once from main.tsx's mount(). That module's configureInstana()
+         no longer sets trackSessions/enableW3CHeaders/the initial user id:
+         doing so again here would just be a harmless duplicate call, but the
+         split is kept explicit so it stays obvious which config is early
+         because it MUST be, and which is late because it CAN wait for
+         identity docs/lab/TRACE-CONTEXT.md §4a's Instana collision applies.
+
+         WALK-IN-DOOR ATTRIBUTION GAP (found by querying the live Instana
+         tenant right after a simulated-visitor run): PAGELOAD beacons from a
+         signed-out visitor at the /walkin door carried NO `meta` at all — no
+         `kh.bundle`, no `kh.client.class`. Root cause: main.tsx's
+         `signedOutAtTheDoor` gate correctly skips calling configureInstana()
+         for that visitor (they have no session; every telemetry flush would
+         401 every 5s and requeue forever — do not weaken that gate, it
+         protects a real failure mode), but THIS bootstrap runs unconditionally,
+         before React and before that gate is even evaluated, and is what
+         already emits the page-load/ajax beacons for exactly that visitor.
+         So `kh.bundle` and `kh.client.class` — both independent of session/
+         identity, unlike everything else instana.ts sets — moved HERE,
+         alongside `page`/`ignoreUrls` above, for the identical "must be on
+         every beacon, including a signed-out one" reason. instana.ts's
+         configureInstana() no longer sets either: see its own comment for
+         the same split, mirrored on both sides.
+
+         VITE_INSTANA_WEBSITE_KEY / VITE_INSTANA_EUM_REPORTING_URL are read from
+         registry/local.env at build time and substituted here by Vite's own
+         index.html env-placeholder replacement (percent-delimited VITE_ names;
+         see scripts/serve-https-spa.sh build()). NOTE what the second one now
+         carries: the FIRST-PARTY PATH `/eum`, not the tenant's reporting URL.
+         The tenant URL never enters this bundle at all — it lives on the box
+         and scripts/serve/eum_proxy.py forwards to it. See the reportingUrl
+         line below for why, and docs/ANALYTICS.md for the whole design.
+         See docs/PUBLIC-GALLERY.md-adjacent analytics docs and instana.ts for
+         why this is opt-in and operator-decided.
+
+         UNCONFIGURED CHECKOUT, EXPLICITLY: a fresh public clone, a
+         contributor's build, or CI has no registry/local.env, so the env var
+         is unset. Verified against a real `npm run build`: with the var
+         unset, Vite leaves the RAW PLACEHOLDER TEXT (percent, the var name,
+         percent) sitting in the emitted HTML rather than substituting an
+         empty string — so the guard below checks for a LEADING percent
+         character, not merely a falsy value, and that check is deliberately
+         duplicated (never trust one). (This paragraph spells the token out in
+         words rather than writing it literally, on purpose — written as a
+         literal percent-delimited placeholder, this very comment would itself
+         become substitution text the moment the build IS configured, putting
+         the real key value in a comment instead of only in the script below.)
+         Either way: no ineum stub, no script tag, no request to any Instana
+         host, no beacon — the page must render exactly as it does today. -->
+    <script>
+      (function () {
+        var key = "%VITE_INSTANA_WEBSITE_KEY%";
+        var reportingUrl = "%VITE_INSTANA_EUM_REPORTING_URL%";
+        if (!key || key.charAt(0) === '%' || !reportingUrl || reportingUrl.charAt(0) === '%') return;
+        // FIRST-PARTY BEACON DELIVERY. What arrives here is no longer the
+        // vendor's own host: scripts/serve-https-spa.sh substitutes the
+        // FIRST-PARTY PATH `/eum` whenever INSTANA_EUM_REPORTING_URL is
+        // configured, and the tenant's real reporting URL stays on the box
+        // (scripts/serve/eum_proxy.py forwards to it). The reason is a
+        // measured outage, not tidiness: a visitor behind a private-DNS
+        // ad/tracker blocker produced a complete record in our OWN plane —
+        // which is first-party — and not one Instana beacon, because the
+        // blocker refuses to resolve the vendor's reporting host. Every such
+        // visitor was invisible in the Websites view, which biases it toward
+        // exactly the people who do not block trackers.
+        //
+        // Made ABSOLUTE rather than left relative, deliberately. `sendBeacon`
+        // would resolve `/eum` against the document base perfectly well, but
+        // two OTHER mechanisms compare the reporting URL against a FULL URL
+        // string: the agent's own self-exclusion (`Ab()` in the pinned
+        // bundle, which is what stops it monitoring its own beacon) and
+        // `ignoreUrls` below. A bare path can never match either, and both
+        // failures are silent. The guard above still runs on the RAW value,
+        // so the no-key/no-url silent no-op path is untouched.
+        //
+        // The two-checks-not-one guard above is also why this rewrite happens
+        // AFTER it: an unconfigured build must reach `return` before anything
+        // here can turn a placeholder into a plausible-looking URL.
+        if (reportingUrl.charAt(0) === '/') reportingUrl = window.location.origin + reportingUrl;
+        (function(s,t,a,n){s[t]||(s[t]=a,n=s[a]=function(){n.q.push(arguments)},
+        n.q=[],n.v=2,n.l=Date.now());})(window,"InstanaEumObject","ineum");
+        ineum('reportingUrl', reportingUrl);
+        ineum('key', key);
+        // Required this early so the page-load beacon itself carries them —
+        // see the block comment above. Both are read once, by the agent's own
+        // init, which runs before any of this app's JS.
+        ineum('trackSessions');
+        // enableW3CHeaders OFF, DELIBERATELY, and not a default we forgot to
+        // set: this one flag decides whether the PAGE-LOAD beacon can be
+        // resolved to a backend trace at all, and `true` makes it impossible.
+        // Read from the pinned agent's own bytes (v1.8.1, the self-hosted
+        // /vendor/instana-eum.min.js below), because Instana's docs state the
+        // opposite in one section and contradict themselves in another — see
+        // docs/lab/INSTANA-VIEW-INVENTORY.md §7 for both quotes and the
+        // measured beacons. The agent's init does, in this exact order:
+        //
+        //     backendTraceId = <whatever ineum('traceId', ...) set>
+        //                      || <Server-Timing 'intid' on the navigation entry>
+        //     if (enableW3CHeaders && <meta name="traceparent"> parses)
+        //         backendTraceId = the meta's PARENT-ID   // 16 hex, the SPAN
+        //
+        // That last line is the whole problem. Our traces are keyed by the
+        // 32-hex TRACE id (`SELECT COUNT(*) FROM span WHERE length(trace_id)=16`
+        // is 0, and always will be), so with the flag on every page-load
+        // beacon carries a 16-hex span id that resolves to nothing, forever.
+        // With it off the fallback wins and the beacon carries the trace id
+        // out of `Server-Timing: intid;desc=<trace-id>` — the header
+        // scripts/serve/tracing_http.py already emits on the very response
+        // that served this document.
+        //
+        // XHR CORRELATION DOES NOT DEPEND ON THIS FLAG, which is the thing the
+        // docs make you fear. An xhr beacon's backendTraceId comes from the
+        // RESOURCE-timing entry's `Server-Timing: intid` (the agent's `Gb`),
+        // on a code path that never reads this flag. Verified both ways with
+        // scripts/visitor-sim/beacon-probe.mjs.
+        //
+        // It also removes a collision we documented but could not previously
+        // avoid: with the flag on, the agent APPENDS its own synthetic
+        // `traceparent: 00-0000000000000000<id>-<id>-03` to our outbound
+        // fetches, which — depending on monkey-patch install order — can turn
+        // khFetch's real header into two comma-joined values that neither our
+        // parser nor Instana's accepts (see analytics/khFetch.ts, "THE INSTANA
+        // COLLISION"). Off, the agent adds only its X-INSTANA-* headers, which
+        // our server ignores, and khFetch owns `traceparent` outright.
+        //
+        // The `false` is written out rather than omitted so that deleting this
+        // line is a visible act. Nothing else on our side changes: we keep
+        // emitting the meta tag, `traceresponse` and `Server-Timing` exactly as
+        // before, and our own plane reads none of the vendor's headers.
+        ineum('enableW3CHeaders', false);
+        var sid = window.__kernelHiveErrorSessionId || 'unknown';
+        ineum('user', sid);
+        // Our own telemetry endpoints, excluded from Instana's OWN
+        // page-load/ajax beaconing (not to be confused with
+        // analytics/khFetch.ts's separate exclusion of the SAME endpoints
+        // from our own client spans). Set here rather than from
+        // analytics/instana.ts's configureInstana(), which runs after React
+        // mounts and would leave any pre-boot request unfiltered — this
+        // module can't import that one; it has to run before any bundle
+        // evaluates. `ineum('ignoreUrls', ...)` matches against the FULL URL
+        // string Instana's wrapped fetch/XHR sees
+        // (`https://host/clientcmd?since=64`), never a bare pathname, which
+        // is exactly the distinction that shipped broken before this fix —
+        // see analytics/instana.ts's `KH_TELEMETRY_PATHS` comment for the
+        // whole story. TELEMETRY_PATHS below is a duplicated copy of that
+        // same list, the same "keep two lists in sync by hand across the
+        // HTML/TS boundary" trade the ROUTES table just below already makes;
+        // keep both in sync. THEY CANNOT DRIFT SILENTLY any more:
+        // scripts/test_telemetry_paths_complete.py parses this array, the TS
+        // constant and the Python mirror and fails if the three disagree. It
+        // exists because /eum and then /logs were each added to some of them
+        // and not the others, and the symptom — telemetry beaconing about
+        // telemetry — showed up in the vendor's UI rather than in a test.
+        try {
+          var TELEMETRY_PATHS = ['/traces', '/logs', '/vitals', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd', '/eum'];
+          var ignorePatterns = [];
+          for (var p = 0; p < TELEMETRY_PATHS.length; p++) {
+            var escaped = TELEMETRY_PATHS[p].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            ignorePatterns.push(new RegExp('^https?://[^/]+' + escaped + '\\b'));
+          }
+          ineum('ignoreUrls', ignorePatterns);
+        } catch (e4) {
+          // ignoreUrls is noise-reduction, not correctness — the beacon still
+          // goes out (just noisier) rather than not at all.
+        }
+        // DEFECT 4 (initial page name only — see analytics/navigation.ts for
+        // every subsequent transition). Minimal duplicate of that module's
+        // ROUTES table and its STATION_ID guard: pattern segments, ':name' =
+        // param. Keep in sync by hand — and they CANNOT drift silently any
+        // more: scripts/test_page_naming_in_sync.py parses this array, this
+        // regex and this substitution rule against navigation.ts's copies and
+        // fails if they disagree, exactly like TELEMETRY_PATHS above.
+        //
+        // The page NAME is the concrete station (`/os/beos`), the route
+        // PATTERN rides as meta — operator decision 2026-09-01, reasoned in
+        // navigation.ts's CARDINALITY header and docs/ANALYTICS.md. A param
+        // that does not look like a registry id keeps its ':name' placeholder,
+        // so an unrecognised path degrades to the old pattern-only name.
+        //
+        // ORDER: meta first, page LAST. The vendor's API reference — "make
+        // sure to change the page name last as this immediately triggers the
+        // transition" — means anything set after `page` belongs to the next
+        // transition, not this one.
+        try {
+          var ROUTES = [
+            '/', '/os/:osId', '/fleet', '/about', '/admin/walkin',
+            '/admin/observability', '/museum', '/museum2', '/walkin',
+            '/walkin/exhibits', '/walkin/play/:os',
+          ];
+          var STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
+          var segs = (location.pathname || '/').split('/').filter(Boolean);
+          var pattern = '*';
+          var params = {};
+          for (var i = 0; i < ROUTES.length; i++) {
+            var pSegs = ROUTES[i].split('/').filter(Boolean);
+            if (pSegs.length !== segs.length) continue;
+            var ok = true;
+            var got = {};
+            for (var j = 0; j < pSegs.length; j++) {
+              if (pSegs[j].charAt(0) === ':') got[pSegs[j].slice(1)] = segs[j];
+              else if (pSegs[j] !== segs[j]) { ok = false; break; }
+            }
+            if (ok) { pattern = ROUTES[i]; params = got; break; }
+          }
+          var name = pattern;
+          if (pattern !== '*') {
+            var parts = pattern.split('/');
+            for (var k = 0; k < parts.length; k++) {
+              if (parts[k].charAt(0) !== ':') continue;
+              var v = params[parts[k].slice(1)];
+              if (v && STATION_ID.test(v)) parts[k] = v;
+            }
+            name = parts.join('/');
+          }
+          ineum('meta', 'kh.route.pattern', pattern);
+          for (var pk in params) {
+            if (Object.prototype.hasOwnProperty.call(params, pk)) {
+              ineum('meta', 'kh.route.param.' + pk, params[pk]);
+            }
+          }
+          ineum('page', name);
+        } catch (e3) {
+          // A page name is a nicety, not a requirement — the beacon still
+          // goes out unnamed rather than not at all.
+        }
+        // WALK-IN-DOOR ATTRIBUTION GAP FIX — see this block's own header
+        // comment above ("WALK-IN-DOOR ATTRIBUTION GAP"). Both keys below are
+        // independent of session/identity (unlike `user`, which genuinely
+        // must wait — see configureInstanaIdentity), so they belong here, not
+        // in instana.ts's configureInstana(): that function is never even
+        // called for a signed-out walk-in visitor, but THIS script always
+        // runs, and is what already beacons for exactly that visitor.
+        //
+        // `kh.client.class` — a deliberately duplicated, minimal
+        // reimplementation of analytics/intent.ts's `clientClass()`. THIS
+        // SCRIPT CANNOT IMPORT THAT MODULE (it runs before any bundle
+        // evaluates — the same reason TELEMETRY_PATHS and ROUTES above are
+        // duplicated), so KEEP THE TWO IN SYNC BY HAND whenever either
+        // changes. Decision, in the same order clientClass() uses: an
+        // explicit `window.__khClientClass` declaration wins
+        // (scripts/visitor-sim and the CT950 e2e fleet set this before the
+        // bundle boots); otherwise `navigator.webdriver === true` means
+        // 'probe' (every remote-debugging attach — Puppeteer, Playwright —
+        // sets it); otherwise 'human'.
+        try {
+          var declaredClass = window.__khClientClass;
+          var clientClass = (declaredClass === 'human' || declaredClass === 'probe' || declaredClass === 'unknown')
+            ? declaredClass
+            : (navigator.webdriver === true ? 'probe' : 'human');
+          ineum('meta', 'kh.client.class', clientClass);
+        } catch (e5) {
+          // Best effort — a beacon with no class label is still a beacon.
+        }
+        // `kh.bundle` — the same value three/clientDebug.ts's BUNDLE_MARKER
+        // reads as `import.meta.env.VITE_KH_BUILD_ID` (that module can wait
+        // for the bundle to evaluate; this script cannot). vite.config.ts
+        // computes the git-derived build id once and ALSO exports it into
+        // process.env under this same name, specifically so Vite's
+        // index.html placeholder-substitution pass (the SAME mechanism `key`
+        // and `reportingUrl` above rely on — a plain env-var text
+        // replacement, unrelated to the `define`-based substitution
+        // `import.meta.env.*` gets inside JS/TS modules) fills it in here
+        // too. UNCONFIGURED-BUILD GUARD, same shape and same reason as the
+        // `key`/`reportingUrl` check above (a leading percent character, not
+        // merely a falsy value) — spelled out in words rather than written
+        // literally in THIS comment for the identical reason that check's
+        // own paragraph gives: written as a literal percent-delimited
+        // placeholder, this comment would itself become substitution text
+        // the moment the value IS filled in.
+        try {
+          var buildId = "%VITE_KH_BUILD_ID%";
+          if (buildId && buildId.charAt(0) !== '%') ineum('meta', 'kh.bundle', buildId);
+        } catch (e6) {
+          // Best effort — a beacon with no build id is still a beacon.
+        }
+        // Self-hosted: the agent's own minified JS is never committed to this
+        // public repo. scripts/serve-https-spa.sh's deploy() fetches the pinned
+        // build from VITE_INSTANA_EUM_SCRIPT_URL and publishes it to the
+        // webroot at deploy time (gitignored on disk, same as pki/).
+        var agent = document.createElement('script');
+        agent.defer = true;
+        agent.crossOrigin = 'anonymous';
+        agent.src = '/vendor/instana-eum.min.js';
+        document.head.appendChild(agent);
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -72,18 +447,10 @@
               return '';
             }
           };
-          let sessionId = '';
-          try {
-            const bytes = new Uint8Array(4);
-            crypto.getRandomValues(bytes);
-            sessionId = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-          } catch {
-            try {
-              sessionId = Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0');
-            } catch {
-              sessionId = 'unknown';
-            }
-          }
+          // Minted once, in the very first inline script in <head> — see that
+          // script's comment for why it moved (Instana's bootstrap needs the
+          // SAME id before this script even runs).
+          const sessionId = window.__kernelHiveErrorSessionId || 'unknown';
           const report = (input) => {
             try {
               if (sent >= 10) return;
@@ -106,6 +473,10 @@
                 ua: (() => { try { return clip(navigator.userAgent, 512); } catch { return ''; } })(),
                 clientTs: (() => { try { return Date.now(); } catch { return 0; } })(),
                 sessionId,
+                // Which bundle threw it. clientlog.jsonl recorded `ua` and no
+                // build, so a boot-time failure could not be pinned to a
+                // shell; see analytics/build.ts and docs/ANALYTICS.md.
+                build: (() => { try { return window.__kernelHiveBuildId || 'unknown-build'; } catch { return 'unknown-build'; } })(),
               };
               if (input && input.componentStack) record.componentStack = clip(input.componentStack, 4096);
               fetch('/clientlog', {

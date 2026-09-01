@@ -14,7 +14,17 @@ You only owe the gate for the languages your branch **touches**, plus the two
 cross-cutting gates, which every branch owes:
 
 - **file-size budget** — `node scripts/check-file-size.mjs --strict`
-- **generated-file drift** — `make station-registry-check`
+- **generated-file drift** — `make station-registry-check`. Byte parity between
+  each generated artifact and what its registry source produces right now, and
+  nothing else. It deliberately asks **no question about the live box**: the
+  live labctl comparison that used to be welded into this stage is
+  `python3 scripts/stations-registry.py drift`, a report you can run any time
+  and which gates nothing. A push gate may only test properties of the commit
+  being pushed — see docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2 for the day that
+  rule cost, and scripts/stations_registry/drift.py for the code. The same
+  applies to `python3 scripts/lint/published-form-drift.py` (does the published
+  QEMU fork still match `streamhost/qemu-patches/`?): a report you run on
+  demand, never a gate — CONTINUOUS-DEPLOY-PROPOSAL.md §2.5.
 
 Plus one gate CI cannot run, enforced by the pre-push hook whenever labhost is
 reachable: **box state** — live labhost files nobody's commit accounts for, on
@@ -123,6 +133,56 @@ real address substituted in, and are compared in canonical form on labhost
 inside the one batched session, so a placeholder is never written over a live
 address and a scrubbed row never spuriously fails.
 
+## Red `main` that no commit caused — check the environment before the commit
+
+**When `main` goes red, find out whether the ENVIRONMENT moved before you go
+looking for the commit that broke it.** The bisect instinct is wrong here by
+construction: there may be no first bad commit to find, and you can burn an
+afternoon proving that the hard way.
+
+Measured 2026-08-31: the Rust job went red on
+`streamhost/src/audio.rs` — `chunks_exact_to_as_chunks`, a lint that arrived
+with clippy in `rust-1.98.0`. The offending lines had not changed since
+2026-08-07 and the file was last touched 2026-08-11. **No commit introduced
+it.** A toolchain moved under three-week-old code and every branch in flight
+inherited a red `main`.
+
+Check, in this order, before blaming a commit:
+
+1. **Did the toolchain move?** Compare the failing job's reported compiler /
+   linter version against a previously-green run of the same job. A lint name
+   in the error that you have never seen before is the tell.
+2. **Did something outside the repo move?** A published artifact, an upstream
+   branch, a base image, a dependency resolved unpinned.
+3. **Only then** look for a commit — and if you do bisect, expect to find that
+   every commit fails, which is itself the answer.
+
+### Why the pre-push gate did not catch it, and why that is correct
+
+It said `Rust lint == not owed` throughout, because those pushes contained no
+Rust. **That is the range-scoping working, not a miss.** "Does this compile
+under today's clippy" is a property of the commit **× the toolchain**, and the
+gate only has the commit.
+
+So do not "fix" this by making the gate run every stage on every push. That
+recreates exactly the unsatisfiable gate that had to be removed: a check nobody
+can satisfy is a check that teaches `SKIP_GATE=1`, and then it protects
+nothing. **A gate that cannot catch this is not defective; it is correctly
+scoped.**
+
+The rule that follows, and it is the general form:
+
+> **A push gate answers what the commit alone can answer. Checks whose answer
+> depends on the box, the network, a published artifact, a running process or a
+> toolchain belong where re-running is cheap and redness is a report about the
+> world *now* — CI and the drift reports — never where they hold an unrelated
+> author's push hostage.**
+
+`docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md` §2.8 has the full family (live box,
+published fork, deployed-vs-loaded, toolchain) and the option of pinning the
+environment to make it a commit property again — with its cost, which is that
+somebody then owns the bump.
+
 ## File-size budget
 
 `scripts/check-file-size.mjs` enforces per-dialect line-count caps. Soft cap = a
@@ -168,11 +228,29 @@ staged 621-line script → `--committed` exits 1).
 ### The pre-push hook runs only what you owe
 
 `.claude/hooks/pre-push-gate.sh` derives the pushed range from git's own ref
-list (`<remote_sha>..<local_sha>`; by hand it falls back to `@{push}..HEAD`,
-`@{upstream}..HEAD`, `origin/main..HEAD`, then `HEAD`) and runs a language stage
-only when that language changed in it — the same "you owe the gate only for the
-language(s) your branch touches" rule stated above. The two cross-cutting gates
-always run. `GATE_FULL=1` forces the full-tree, every-language run.
+list and runs a language stage only when that language changed in it — the same
+"you owe the gate only for the language(s) your branch touches" rule stated
+above. The two cross-cutting gates always run. `GATE_FULL=1` forces the
+full-tree, every-language run.
+
+**The range is measured from the merge-base with a freshly fetched `main`,
+not from wherever the branch was cut.** `git diff A..B` diffs the two
+*endpoints*, so if `A` is a `main` this clone has not fetched, every file `main`
+has moved since lands in "your range" and your push is billed for lint on
+somebody else's commits. On 2026-08-30 that demanded `cargo clippy` from a
+rebased branch that touched no Rust at all. The hook therefore fetches
+`refs/heads/main` into a private ref (`refs/kh-gate/main`) and takes
+`merge-base(that, tip)`, preferring the ref's own remote sha when that is both
+known and a genuine ancestor, which keeps a re-push narrow. A failed fetch falls
+back to the local `origin/main` **and says so**; `GATE_NO_FETCH=1` skips the
+fetch deliberately.
+
+It fetches **by URL, not by remote name.** `git fetch origin <refspec>` also
+performs an *opportunistic update* of `refs/remotes/origin/*`, so naming the
+remote would make running the gate silently advance your `origin/main` — a read
+path that writes, the same shape as the dry-run plan that used to move everyone's
+drift baseline. Measured both ways rather than assumed: by name `origin/main`
+moves, by URL it does not.
 
 **Every skip is loud.** In particular the Rust stage: `streamhost/.cargo/config.toml`
 pins `target-dir` to `/data/vms/streamhost/build/target`, labhost's shared

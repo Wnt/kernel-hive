@@ -1,5 +1,6 @@
 import { invalidate } from '@react-three/fiber';
 import type { Object3D } from 'three';
+import { noteHallApproach } from './hallEngagement';
 
 export type ScreenTier = 'focused' | 'near' | 'far' | 'culled';
 
@@ -108,6 +109,12 @@ export function updateFocusedScreen(next: ScreenRegistration | null) {
     if (candidate !== next || next.tier !== 'focused') return;
     active = next;
     next.setLiveFocused(true);
+    // The scene's definition of "the visitor is AT this machine": nearest
+    // screen to the centre of the view, held there for the full dwell. This is
+    // the same edge that decides to spend a live texture on it, which is why
+    // hall.navigate reuses it rather than inventing a proximity rule of its own
+    // — see hallEngagement.ts.
+    noteHallApproach(next.tileId);
     invalidate();
   }, SCREEN_FOCUS_DWELL_MS);
 }

@@ -49,10 +49,26 @@ this into the thing that gets it deleted:
     would have to match the install path. Implementing it now would be a rule with
     zero instances and a built-in false-positive mode. The station-launcher half of
     that shape is already covered by validate_retronet.py's rn-tapnet check.
-  * Imports that resolve to anything other than scripts/lib/*.py -- stdlib, the
-    venv, a sibling in the importer's own directory (which the pair loops already
-    carry as a tree). Only scripts/lib/ is the trap, because only scripts/lib/ sits
-    outside every tree loop while being importable from inside one.
+  * Imports that resolve to stdlib or the venv.
+
+SAME-DIRECTORY SIBLINGS ARE CHECKED TOO, since 2026-08-31, and this paragraph
+used to say the opposite. It read: "a sibling in the importer's own directory
+(which the pair loops already carry as a tree)". That is true for
+scripts/labctl.d/, scripts/serve/auth/, authui/ and walkin/ -- and FALSE for
+top-level scripts/serve/, which is a STATIC NAME LIST. scripts/serve/
+deploy_hint.py landed in exactly that gap: imported at module scope by
+osgallery-https-server.py, no row of its own, so installing the importer alone
+would have stopped the serving plane from starting -- strictly worse than the
+scripts/lib/ outage this file was written for. A human caught it by looking up a
+pair label by hand.
+
+The reasoning that excluded siblings was sound about the directories it had in
+mind and wrong about the one it did not enumerate, which is the more dangerous
+shape of wrong: it did not merely miss a case, it explained why the case could
+not happen. The predicate is unchanged -- fire only on a positive contradiction,
+this paired file imports that file and that file has no pair -- so a directory
+genuinely covered by a tree loop stays silent without this check needing to know
+which loops exist.
 
 Repo-only and static: no ssh, no box access, so CI and a public clone stay green.
 Run standalone, or via `make station-registry-check`.
@@ -174,6 +190,39 @@ def resolves_to_lib(importer: Path, name: str) -> Path | None:
     return candidate
 
 
+def resolves_to_sibling(importer: Path, name: str) -> Path | None:
+    """A module in the importer's OWN directory, as a package or a module.
+
+    WHY THIS IS CHECKED AND NOT ASSUMED SAFE. The docstring above used to
+    dismiss siblings on the grounds that "the pair loops already carry [them] as
+    a tree". That is true for scripts/labctl.d/, scripts/serve/auth/,
+    authui/ and walkin/ — and FALSE for top-level scripts/serve/, which is a
+    STATIC NAME LIST. So a new module dropped beside osgallery-https-server.py
+    and imported by it has no pair, and the assumption that made it unnecessary
+    to look was the whole gap.
+
+    Measured 2026-08-31: scripts/serve/deploy_hint.py, imported at module scope
+    by scripts/serve/osgallery-https-server.py, had no row. Installing the
+    importer without it does not drift — the serving plane fails to start, which
+    is strictly worse than the scripts/lib/ outage this file was written for.
+    It was caught by a human looking up a pair label by hand.
+
+    Same predicate as the lib case, and the same principle: fire only on a
+    positive contradiction — this paired file imports that file, and that file
+    has no pair. A directory genuinely covered by a tree loop always has one, so
+    this is silent there rather than needing to know which loops exist.
+    """
+    if importer.parent == LIB:
+        return None  # already the resolves_to_lib case, transitively walked
+    for candidate in (
+        importer.parent / f"{name}.py",
+        importer.parent / name / "__init__.py",
+    ):
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main() -> int:
     if not PAIRS.exists():
         print(f"deploy-pair-imports: {PAIRS.relative_to(REPO)} is missing", file=sys.stderr)
@@ -202,6 +251,20 @@ def main() -> int:
             continue
         walked += 1
         for name in sorted(imported_names(importer)):
+            sibling = resolves_to_sibling(importer, name)
+            if sibling is not None:
+                target = str(sibling.relative_to(REPO))
+                if target not in paired:
+                    errors.append(
+                        f"{rel}: imports `{name}`, which resolves to its SIBLING {target} — "
+                        f"and {target} has no `box_sync_add_pair` row. {rel} IS deployed, so "
+                        f"installing it without {target} does not merely drift: the deployed "
+                        f"copy dies in this import and its plane never starts. Directories "
+                        f"carried by a tree loop cannot hit this; the top-level "
+                        f"scripts/serve/ list is a STATIC NAME LIST, so a new module beside a "
+                        f"deployed one needs its name added there explicitly."
+                    )
+                continue
             module = resolves_to_lib(importer, name)
             if module is None:
                 continue
@@ -226,7 +289,10 @@ def main() -> int:
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1
-    print(f"deploy-pair-imports: OK ({walked} deployed python file(s) walked, {LIB_REL} imports all paired)")
+    print(
+        f"deploy-pair-imports: OK ({walked} deployed python file(s) walked; "
+        f"{LIB_REL} imports and same-directory siblings all paired)"
+    )
     return 0
 
 

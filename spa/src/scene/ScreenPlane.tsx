@@ -26,6 +26,7 @@ import {
   type ScreenTier,
 } from './screenTiers';
 import { getCurrentRailT, requestRailApproach } from './railNavigation';
+import { noteHallOpen } from './hallEngagement';
 import { useFocusedLiveTexture } from './useFocusedLiveTexture';
 
 interface Props {
@@ -119,6 +120,9 @@ export default function ScreenPlane({
       return;
     }
     preserveMuseumRailPosition(location.state);
+    // Before the navigate, not after: this unmounts the hall, and the episode
+    // has to know the machine was opened before it settles its counts.
+    noteHallOpen(tileId);
     navigate(`/os/${tileId}`, { state: { fromMuseum: true } });
   };
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {

@@ -44,13 +44,13 @@
         "kbd_note": "Workspace Manager desktop; labctl exec gives a root shell over serial. Type into TextEdit/Terminal via labctl keys — unverified via UI",
         "audio_trigger": null,
         "validated": false,
-        "note": "PS/2 relative pointer (dbus-rel), Mouse-Speed pref at slowest = dead-linear 0.478 px/unit -> cursor_scale 2.09; the daemon caps each PS/2 send at one packet (SH_REL_MAX_STEP) so a fast drag can't desync the guest. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade)."
+        "note": "ABSOLUTE pointer with no absolute device and no control loop: the kh-ramabs control object writes the commanded pixel into the guest's own pointer coordinate (guest-physical 0x0050fdac, Point{int16 x, int16 y}) and injects one 2-unit PS/2 nudge so the window server republishes it, then reads the coordinate back and re-issues on the ~5% of nudges that publish 0 px. The address is derived against ONE golden; the object verifies it at connect and refuses to write at all if it cannot. 1024x768 RGB:555/16 on Cirrus GD5446. Station QEMU /opt/qemu-rhapsody (i8259 lenient-cascade + kh-ramabs)."
       }
     },
     "labctl": {
       "dir": "/data/vms/streamhost/stations/rhapsody",
       "qmp": "/data/vms/streamhost/stations/rhapsody/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54146,
-      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. PS/2 deltas mis-decode if the i8042 queue is flooded — the daemon paces; SH_REL_MAX_STEP caps each send at one packet. loadvm golden."
+      "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock: the commanded pixel is written into the guest's own pointer coordinate and published with one small PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. loadvm golden."
     }
   },
   "render": {
@@ -70,7 +70,7 @@
     "goldenOrder": 63,
     "actionMapOrder": 37,
     "bringUpGroup": 0,
-    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt). TCG, pentium2, 64 MB, one\n#   2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip (DEC 21143) bridged onto\n#   the retronet, PS/2 mouse (dbus-rel). loadvm golden -S (the daemon resumes);\n#   the checkpoint restores with OmniWeb 3.0 open on the corpus web.\n",
+    "stationsManifestPrelude": "\n# rhapsody (slot 146) — Rhapsody 5.1 Developer Release 2 for Intel (Apple, 1998):\n#   the Platinum Finder on the NeXT/Mach substrate. qemu-system-i386 from\n#   /opt/qemu-rhapsody (kernel-hive fork + i8259 lenient-cascade patch, without\n#   which the Mach kernel loses every IDE interrupt, plus 0007 kh-ramabs). TCG,\n#   pentium2, 64 MB, one 2 GB IDE disk, Cirrus GD5446 at 1024x768x16, tulip\n#   (DEC 21143) bridged onto the retronet, PS/2 mouse. loadvm golden -S (the\n#   daemon resumes); the checkpoint restores with OmniWeb 3.0 open on the\n#   corpus web.\n#   POINTER: absolute with no absolute device and no control loop — `-device\n#   kh-ramabs` writes the commanded pixel into Rhapsody's OWN pointer coordinate\n#   in guest RAM and publishes it with one 2-unit PS/2 nudge, so the hotspot is\n#   never in the path and the device set is unchanged (no golden recapture). The\n#   address is bound to the golden; kh-ramabs verifies it at connect and refuses\n#   every write otherwise. Needs the station binary rebuilt with qemu-patch 0007\n#   INSTALLED BEFORE this launcher.\n",
     "bindingPrelude": "",
     "bindingComment": "NeXTSTEP -> Rhapsody -> Mac OS X lineage"
   },
@@ -81,13 +81,13 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "ps2",
-      "scale": 2.09,
+      "scale": 1.0,
       "offset": [
         0,
         0
@@ -102,7 +102,7 @@
     "transport": "streamhost",
     "accentColor": "#7a8fb0",
     "eraLabel": "1998 · Rhapsody DR2 — Apple/NeXT",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "rhapsody",
@@ -168,11 +168,11 @@
         "--udp",
         "54146",
         "--pointer",
-        "rel",
+        "abs",
         "--input-backend",
-        "dbus-rel",
+        "ramabs",
         "--cursor-scale",
-        "2.09",
+        "1.0",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -208,6 +208,8 @@
         "-netdev tap,id=n0,ifname=rhaprn0,script=no,downscript=no -device tulip,netdev=n0,mac=\"$RN_RHAPSODY_MAC\"",
         "-serial file:$D/serial.log",
         "$LOADVM",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off",
+        "-device kh-ramabs,chardev=ptr0,addr=0x0050fdac,layout=point16le,width=1024,height=768,nudge-units=2,nudge-px=1",
         "-qmp unix:$D/qmp.sock,server=on,wait=off",
         "-pidfile $D/qemu.pid"
       ],
@@ -229,13 +231,14 @@
           "streamhost/qemu-patches/0006-i8259-lenient-spurious-cascade.patch",
           "streamhost/qemu-patches/0007-kh-ramabs-guest-ram-absolute-pointer.patch"
         ],
-        "note": "Both patches verified to apply cleanly to that fork commit, in that order. forkCommit was 196124da... until 2026-08-30; it moved twice that day (196124da -> 623f1dcb -> c5449c80) and this value was READ BACK FROM THE FORK after the last push rather than predicted from what was pushed. The fork guarantees TREE EQUALITY with the patch series, not a commit per patch. binarySha256 is deliberately ABSENT until a binary is actually installed at runtime.qemu.binary: recording a sha for an artifact nobody deployed would be a confident-looking value that was never measured. The binary currently at /opt/qemu-rhapsody was built from the SUPERSEDED pre-fix 0007 and must be rebuilt before any cutover."
+        "note": "Both patches verified to apply cleanly to that fork commit, in that order. forkCommit was 196124da... until 2026-08-30; it moved twice that day (196124da -> 623f1dcb -> c5449c80) and this value was READ BACK FROM THE FORK after the last push rather than predicted from what was pushed. The fork guarantees TREE EQUALITY with the patch series, not a commit per patch. binarySha256 IS NOW RECORDED (754e762d...), read from the INSTALLED file at runtime.qemu.binary after the 2026-08-31 cutover -- not from a build log and not copied from a report. It was deliberately absent until then, on the grounds that a sha for an artifact nobody deployed is a confident-looking value nobody measured; that reasoning stands, and the condition it waited on has now been met. The previous binary remains beside it as <path>.pre-abs-bak, so a reader has two candidates on disk and this field is what distinguishes them.",
+        "binarySha256": "754e762d1e61494b2d5a488b81396e3fb67eb2c790f18d74bb9b87f0bde2bd19"
       }
     }
   },
   "reset": {
     "stationDir": "rhapsody",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",

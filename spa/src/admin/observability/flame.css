@@ -1,0 +1,144 @@
+/* Flame graph + trace detail. Paper palette from index.css, same operator idiom
+   as /fleet and the walk-in panel: dense, legible, no dark mode, nothing cute.
+
+   The two rules that keep this readable at 200 spans and at depth 15:
+   - the name column is a FIXED track with `min-width: 0`, so a long span name
+     or a deep indent ellipsises instead of pushing the time axis off-screen;
+   - the row list scrolls in its own box under a sticky axis, so the page never
+     grows a second scrollbar and the axis stays with the bars it labels. */
+
+.fg { display: flex; flex-direction: column; gap: 8px; font-family: var(--font-ui); }
+
+.fg-empty { color: var(--ink-muted); font-size: 13px; max-width: 60ch; }
+
+.fg-axis, .fg-row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); align-items: center; }
+.fg-axis {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--paper-raised); border-bottom: 1px solid var(--line);
+  font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em;
+  padding-bottom: 4px;
+}
+.fg-axis-gutter { padding-inline-start: 6px; }
+.fg-axis-scale { position: relative; height: 14px; }
+.fg-tick { position: absolute; transform: translateX(-50%); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fg-tick:first-child { transform: none; }
+.fg-tick:last-child { transform: translateX(-100%); }
+
+.fg-rows {
+  max-height: 60vh; overflow-y: auto; overflow-x: hidden;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--paper-raised);
+}
+.fg-rows:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.fg-row { height: 24px; cursor: pointer; border-bottom: 1px solid var(--tint-1); }
+.fg-row:last-child { border-bottom: 0; }
+.fg-row:hover { background: var(--tint-1); }
+/* aria-activedescendant moves selection without moving DOM focus, so the
+   selected row must be visibly marked here — there is no :focus to rely on. */
+.fg-row.is-selected { background: var(--accent-wash); box-shadow: inset 3px 0 0 var(--accent); }
+.fg-row.is-synthetic .fg-name-text { font-style: italic; color: var(--ink-muted); }
+
+.fg-name {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-size: 12px; color: var(--ink); padding-inline-end: 8px;
+}
+.fg-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fg-depth { color: var(--ink-muted); font-size: 10px; font-variant-numeric: tabular-nums; flex: none; }
+.fg-kind {
+  flex: none; font-size: 10px; color: var(--info); border: 1px solid var(--line);
+  border-radius: 3px; padding: 0 3px; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.fg-badge { flex: none; font-size: 10px; font-weight: 700; border-radius: 3px; padding: 0 4px; }
+.fg-badge--error { background: var(--danger); color: var(--paper-raised); text-transform: uppercase; }
+.fg-badge--anomaly { background: var(--warn); color: var(--paper-raised); }
+
+.fg-track { position: relative; height: 100%; min-width: 0; }
+.fg-bar { position: absolute; top: 5px; height: 14px; border-radius: 3px; overflow: hidden; min-width: 3px; }
+/* Status is the ONE colour axis. `unset` is deliberately a flat grey: it is the
+   common case and means "ended without an opinion", so it must not read as a
+   pass. `ok` is the exception — a success somebody actually asserted. */
+.fg-bar--unset { background: #8d8677; }
+.fg-bar--ok { background: var(--ok); }
+/* Error is the thing you are scanning for: full-strength, and ringed so it
+   still separates from its neighbours when a dozen bars are 3px wide. */
+.fg-bar--error { background: var(--danger); box-shadow: 0 0 0 2px rgba(178, 58, 44, 0.35); }
+
+/* Hidden time. Hatched, never a flat fill, so it cannot be misread as a
+   measured sub-interval — see FlameGraph.tsx's header: we know the amount and
+   not the position, and the drawing has to admit that. */
+.fg-hidden {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(251, 249, 243, 0.92) 0 3px,
+    rgba(251, 249, 243, 0.28) 3px 6px
+  );
+  border-left: 1px solid rgba(251, 249, 243, 0.9);
+}
+
+.fg-dur {
+  position: absolute; top: 0; line-height: 24px; margin-inline-start: 6px;
+  font-size: 11px; color: var(--ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap;
+  pointer-events: none;
+}
+.fg-dur-hidden { font-style: normal; color: var(--accent-ink); }
+
+.fg-legend {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0; list-style: none;
+  font-size: 11px; color: var(--ink-muted);
+}
+.fg-legend li { display: flex; align-items: center; gap: 5px; }
+.fg-key { width: 14px; height: 10px; border-radius: 2px; flex: none; }
+.fg-key--error { background: var(--danger); }
+.fg-key--unset { background: #8d8677; }
+.fg-key--ok { background: var(--ok); }
+.fg-key--hidden {
+  background: repeating-linear-gradient(-45deg, #8d8677 0 3px, rgba(141, 134, 119, 0.25) 3px 6px);
+}
+.fg-key--anomaly { background: var(--warn); }
+
+/* ---- the panel around it ------------------------------------------------ */
+
+.td-panel { display: flex; flex-direction: column; gap: 16px; color: var(--ink); font-family: var(--font-ui); }
+.td-head { display: flex; flex-direction: column; gap: 10px; }
+.td-title { margin: 0; font-size: 16px; font-weight: 700; }
+.td-id { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.td-copy { font: inherit; font-family: var(--font-ui); font-size: 11px; padding: 2px 8px; cursor: pointer;
+  background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 5px; }
+.td-copy:hover { background: var(--tint-1); }
+.td-link { font: inherit; font-size: 12px; padding: 0; cursor: pointer; background: none; border: 0;
+  color: var(--accent-ink); text-decoration: underline; }
+
+.td-facts { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 0; }
+.td-fact dt { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.td-fact dd { margin: 2px 0 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.td-fact dd small { font-size: 12px; font-weight: 500; color: var(--ink-muted); }
+.td-fact--bad dd { color: var(--danger); }
+
+.td-warn {
+  margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  background: rgba(143, 100, 7, 0.10); border: 1px solid rgba(143, 100, 7, 0.35); color: var(--ink);
+}
+
+.td-detail {
+  background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.td-detail h3 { margin: 0; font-size: 14px; }
+.td-detail h4 { margin: 0; font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.td-hint { margin: 0; color: var(--ink-muted); font-size: 13px; }
+.td-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 12px; }
+.td-kv dt { color: var(--ink-muted); font-family: var(--font-mono); }
+.td-kv dd { margin: 0; overflow-wrap: anywhere; }
+.td-exc {
+  margin: 0; padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  background: rgba(178, 58, 44, 0.09); border: 1px solid rgba(178, 58, 44, 0.35);
+}
+.td-exc strong { font-family: var(--font-mono); }
+.td-anoms { margin: 0; padding-inline-start: 18px; font-size: 12px; color: var(--ink-soft); }
+.td-links { margin: 0 0 4px; padding: 0; list-style: none; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.td-links li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.td-links code { font-family: var(--font-mono); color: var(--ink-soft); }
+.td-events { margin: 0; padding: 0; list-style: none; font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.td-events li { display: flex; gap: 8px; }
+.td-events code { font-family: var(--font-mono); color: var(--ink-soft); flex: none; }

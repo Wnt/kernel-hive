@@ -1,0 +1,72 @@
+# retronet-aim-bridge.service — the AIM<->ICQ identity bridge.
+#
+# Makes the ICQ fleet addressable from win311's AIM client and vice versa, by
+# holding a second identity for each side of a naming rule neither client family
+# can cross: AIM refuses an all-numeric screen name, ICQ 2001b silently drops a
+# message from a non-numeric sender. See scripts/retronet/aimbridge/aim_bridge.py
+# for the full argument and docs/lab/retronet/ICQ-STATION-win311.md for the
+# station it exists for.
+#
+# It holds up to ~13 OSCAR sessions, all of them idle between messages: one
+# always-on watcher, one numeric proxy for the AIM station, and one alias per
+# ICQ station signed on ONLY while that station really is.
+#
+# Same cage as the greeter bot: outbound to the gateway and nothing else, no
+# listening socket anywhere, DynamicUser with nothing writable outside /tmp.
+#
+# Install with scripts/retronet/aimbridge/install-aim-bridge.sh --apply.
+
+[Unit]
+Description=retronet AIM<->ICQ identity bridge (win311 <-> the ICQ fleet)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/ICQ-STATION-win311.md
+After=network.target
+# Deliberately NOT bound to the greeter: a bridge outage must not take the
+# greeter down with it, and vice versa.
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/python3 /data/retronet/aimbridge/aim_bridge.py
+Restart=always
+RestartSec=10
+
+# --- resource cage -----------------------------------------------------------
+Nice=10
+CPUWeight=20
+CPUQuota=50%
+MemoryMax=256M
+IOSchedulingClass=idle
+TasksMax=48
+
+# --- sandbox -----------------------------------------------------------------
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadOnlyPaths=/data/retronet/aimbridge /data/retronet/bot
+# The config holds the bridge's own account passwords, 0600 and root-owned; a
+# DynamicUser cannot read it without this.
+LoadCredential=aim-bridge.json:/etc/retronet/aim-bridge.json
+Environment=RN_BRIDGE_CONFIG=%d/aim-bridge.json
+# 10.99.0.2 is the gateway CT (POC-PLAN contract). install-aim-bridge.sh adds a
+# drop-in when the server points somewhere else.
+IPAddressAllow=localhost 10.99.0.2
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target

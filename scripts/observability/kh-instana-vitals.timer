@@ -1,0 +1,29 @@
+[Unit]
+Description=kernel-hive: periodic stream-vitals forward (every 10s)
+Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
+
+[Timer]
+# TEN SECONDS, and it is chosen against the BACKEND, not against our sampler.
+# Instana ingest-stamps metrics, so the tick period IS the effective resolution
+# in the tenant -- our own store samples five times faster and keeps all of it;
+# and Instana's own floor for an infrastructure metric is 10 s
+# (custom dashboards, 0261:178-181; the Saturation SLO blueprint samples at the
+# same, 0262:415-424). Faster buys resolution the backend will not display;
+# slower throws away resolution we have already paid to collect.
+#
+# The COST is bounded and measured: a tick ships one point per metric per LIVE
+# stream. At the measured peak concurrency of four streams that is 132 data
+# points, ~40 KiB -- three orders of magnitude under the measured 5 MiB agent
+# wall. With nothing streaming, which is the museum's normal state, a tick
+# reads one indexed query, sends nothing, and exits.
+OnBootSec=2min
+OnUnitActiveSec=10s
+AccuracySec=1s
+# Single-flight is systemd's: a oneshot cannot overlap itself, and a tick that
+# arrives mid-run is DROPPED rather than queued. That is the right behaviour
+# here -- a slow run means the box is busy, and queueing ticks behind it would
+# turn a hiccup into a backlog. Persistent= is deliberately absent: catching up
+# missed vitals ticks at boot would replay stale values stamped as current.
+
+[Install]
+WantedBy=timers.target

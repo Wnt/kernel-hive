@@ -11,7 +11,19 @@ from pathlib import Path
 
 from auth import tickets
 from config import PUBLIC_HOST, SIGNAL_CONFIG, SIGNAL_HOST
+from probes import hit
 from static_files import MIME
+
+# Spans (serve/tracing.py). Two module names for one module — see probes.py.
+# Unlike the probes import there is no third no-op fallback: `tracing` is in the
+# same static box-sync list as this file and scripts/lint/deploy-pair-imports.py
+# fails the build if a paired file imports an unpaired module, so "deployed
+# without it" is not a state this plane can reach.
+try:
+    import tracecontext
+    import tracing
+except ImportError:  # pragma: no cover - import shape only
+    from serve import tracecontext, tracing
 from webrtc import ice_servers
 
 # The walk-in pool, bound by the server at startup (contract ledger §3.1). A
@@ -65,7 +77,24 @@ def serve_index(handler):
 
 
 def serve_tile(handler, tile, stream_key):
-    tiles = load_tiles()
+    # THE TRACE ID THE DAEMON JOINS BY (docs/lab/TRACE-CONTEXT.md §3). The input
+    # plane is WebTransport straight to the station's own QUIC listener and
+    # carries no headers, so there is no hop on which to put a `traceparent`.
+    # This request — the signalling fetch the tab makes before it connects — is
+    # therefore where the session's trace id is decided: the browser's when it
+    # sent one, a fresh one when it did not. Recording it as an attribute makes
+    # the join key EXPLICIT in the data rather than implicit in the span's own
+    # id, so an operator holding a daemon-side id can search for it directly.
+    # The ticket itself is never recorded: the ticket carries the trace id, the
+    # trace never carries the ticket.
+    request = tracing.current()
+    request.attr("kh.session.traceId", request.trace_id)
+    # Where signalling latency actually goes, part one: reading tiles.json off
+    # disk and merging the walk-in broker's live pool rows on top. Both are done
+    # fresh per request on purpose, and a broker under its own lock is the
+    # plausible stall.
+    with tracing.child("serve.signal.load", {"kh.station": tile}):
+        tiles = load_tiles()
     info = tiles.get(tile)
     if not info:
         # A reaped clone is GONE, not unknown, and the difference is the whole
@@ -78,12 +107,17 @@ def serve_tile(handler, tile, stream_key):
             return handler._send(410, json.dumps({**ended, "tile": tile}), MIME[".json"], cache=False)
         return handler._send(404, json.dumps({"error": "unknown tile", "tile": tile}), MIME[".json"], cache=False)
     hashfile = info.get("hashFile")
-    try:
-        cert_hash = Path(hashfile).read_text().strip()
-    except Exception:
-        return handler._send(
-            503, json.dumps({"error": "cert hash not ready", "tile": tile}), MIME[".json"], cache=False
-        )
+    # Part two: the daemon's published cert hash. A station that has not written
+    # it yet is the 503 below, and this span is what says whether that 503 was
+    # instant (no file) or a slow read on a loaded box.
+    with tracing.child("serve.signal.certhash", {"kh.station": tile}) as certspan:
+        try:
+            cert_hash = Path(hashfile).read_text().strip()
+        except Exception:
+            certspan.end("error", {"error.type": "certHashNotReady"})
+            return handler._send(
+                503, json.dumps({"error": "cert hash not ready", "tile": tile}), MIME[".json"], cache=False
+            )
     body = {
         "host": SIGNAL_HOST,
         "udpPort": info.get("udpPort"),
@@ -104,6 +138,17 @@ def serve_tile(handler, tile, stream_key):
     try:
         signal_doc = json.loads(Path(hashfile).with_name("signaling.json").read_text())
         ticket_tile = signal_doc.get("tile") or tile
+        if ticket_tile != tile:
+            # The fallback is doing real work RIGHT NOW: this document's key and
+            # the daemon's own name disagree, and every ticket for this station
+            # is being signed over the daemon's. That is correct behaviour and it
+            # is also a latent four-hour outage the registry is supposed to make
+            # impossible, so a non-zero here is a station to go and look at.
+            hit("signal.ticket.identityDiffers")
+            # The counter says how often; the span says WHICH station, right
+            # now, in a trace an operator is already looking at. A station id is
+            # public in the gallery manifest, so this carries nothing private.
+            request.attr("kh.station.identity", ticket_tile)
     except Exception:
         pass
     # The stream ticket is minted for EVERY caller, LAN included: a station
@@ -117,10 +162,30 @@ def serve_tile(handler, tile, stream_key):
         # a browser useless before the clones die, or a disconnected client
         # re-handshakes into the machine it was just removed from (brief §5.1).
         # A station's ticket stays stateless, as it has always been.
-        if WALKIN_TICKETS is not None and tile in _pool_rows():
-            body["path"] = WALKIN_TICKETS.mint(stream_key, ticket_tile)
-        else:
-            body["path"] = tickets.mint(stream_key, ticket_tile)
+        # Which of the two ticket paths a station got, and what it cost. The
+        # walk-in path takes the registry lock and expires old nonces; the
+        # station path is a stateless HMAC. Only the KIND is recorded — the
+        # ticket is a credential and never goes in a span.
+        with tracing.child("serve.ticket.mint", {"kh.station": ticket_tile}) as mintspan:
+            if WALKIN_TICKETS is not None and tile in _pool_rows():
+                mintspan.attr("kh.ticket.kind", "walkin")
+                body["path"] = WALKIN_TICKETS.mint(stream_key, ticket_tile)
+            else:
+                mintspan.attr("kh.ticket.kind", "station")
+                body["path"] = tickets.mint(stream_key, ticket_tile)
+            # The daemon's half of the trace (docs/lab/TRACE-CONTEXT.md §3.1).
+            # The input plane is raw WebTransport with no headers, so the id
+            # rides the ticket's query string — which the HMAC does not cover
+            # and `session_ticket.rs::verify` has always split off before
+            # verifying, so appending it neither invalidates a ticket nor lets
+            # a tampered query forge one.
+            #
+            # This is the span the whole trace hangs from: it is the id the
+            # BROWSER will see in its signalling document and the id the DAEMON
+            # will stamp on its session, so recording it here is what lets one
+            # visit be one trace across three processes.
+            body["path"] += "?traceparent=" + tracecontext.format(mintspan.trace_id, mintspan.span_id)
+            mintspan.attr("kh.session.traceId", mintspan.trace_id)
     if handler.public:
         # Same station, same cert: WebTransport pins the certificate by
         # HASH, so the hostname it is reached under is not part of

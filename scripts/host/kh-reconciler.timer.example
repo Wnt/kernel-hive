@@ -1,0 +1,19 @@
+# The BACKSTOP, not the trigger. NOT INSTALLED.
+#
+# The operator's ruling is that a push must converge the box immediately, so the
+# webhook is the mechanism and this timer is only the liveness floor: without it
+# a missed delivery means the box quietly stops converging with nothing
+# reporting it. 30 minutes is deliberately slow — if this is what is keeping the
+# fleet current, something is broken, and `kh-reconciler status` says so out loud
+# rather than letting it look healthy at a coarser latency.
+
+[Unit]
+Description=kernel-hive reconciler backstop tick (NOT the trigger)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=30min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

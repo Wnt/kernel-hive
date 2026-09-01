@@ -10,6 +10,30 @@ here, so adding a route to the server cannot silently publish it.
 
 from __future__ import annotations
 
+# Server-side feature reach (serve/probes.py). Two names for one module: the
+# serving process puts `scripts/serve` on sys.path, the unit-test runner works
+# from `scripts/`. probes.py aliases itself into both so the counters cannot
+# split. A missing module must not stop the fence from working, so the last
+# resort is a no-op — the call-site gate, not the import, is what proves the
+# probe is wired.
+try:
+    from probes import hit
+except ImportError:  # pragma: no cover - import shape only
+    try:
+        from serve.probes import hit
+    except ImportError:
+
+        def hit(_probe: str) -> None:
+            """No probes module in this deployment; the fence still works."""
+
+
+# Spans (serve/tracing.py); see the note on the same import in signal_route.py.
+try:
+    import tracing
+except ImportError:  # pragma: no cover - import shape only
+    from serve import tracing
+
+
 # Reachable with no session: the login page and the auth API itself, plus the
 # health probe the deploy scripts poll. Everything else needs a session.
 # /link is open because a device arrives there with nothing but a code — it
@@ -78,7 +102,17 @@ OPEN_PATHS = frozenset(
 # manifest, the fleet table, station signaling, /admin, /clientcmd*).
 # /posters/ holds the captured exhibit stills. The walk-in landing page and its
 # exhibits view are built from them, and they are published art, not data.
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/")
+# /vendor/ holds the self-hosted third-party static agent (Instana EUM),
+# mirrored byte-for-byte from IBM's CDN by serve-https-spa.sh's
+# publish_instana_agent() at deploy time. spa/index.html loads it BEFORE any
+# auth decision — the earliest possible <script> in <head>, ahead of React —
+# because the whole point is a page-load beacon for the visit that is
+# happening right now, signed in or not. Gated behind a 401 it cannot get:
+# the browser never even reaches the app to authenticate, so no telemetry is
+# ever produced. It is a public, unmodified third-party script (nothing of
+# ours, nothing secret) that is already downloadable straight from IBM, so
+# publishing it here leaks nothing that gating it would have protected.
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to
@@ -116,7 +150,15 @@ ADMIN_PREFIXES: tuple[str, ...] = ()
 
 
 def is_blocked(path: str) -> bool:
-    return path.startswith(BLOCKED_PREFIXES)
+    # Probed HERE rather than at the three call sites, because this predicate is
+    # the whole rule and a caller that forgot to probe would be indistinguishable
+    # from a refusal that never happens. The counter costs nothing on the common
+    # answer: it is inside the `if`, so an ordinary request pays one `startswith`
+    # exactly as it always did.
+    if path.startswith(BLOCKED_PREFIXES):
+        hit("auth.gate.blocked")
+        return True
+    return False
 
 
 def is_open(path: str) -> bool:
@@ -159,10 +201,39 @@ WALKIN_PATHS = frozenset(
         # a walk-in is exactly the session nobody can reach any other way.
         "/clientlog",
         "/usage",
+        # Feature-reach counters. A walk-in exercises a DIFFERENT set of the UI
+        # than an invited visitor does — the whole walk-in plane, and none of
+        # the fleet table — so leaving them out would make exactly the surface
+        # built for strangers look unused. It carries no identity to leak
+        # (serve/analytics.py stores none) and the report it feeds is read-only.
+        "/analytics",
+        # Stream-health SAMPLES in, nothing out. Listed for the reason
+        # `/clientlog` is listed, only more sharply: a walk-in on a station
+        # whose picture is breaking up is the single session whose vitals are
+        # worth having, and it is the session nobody can reach any other way.
+        # Reads are admin-only behind /auth/vitals/*, so this grants a stranger
+        # the ability to report on their own stream and to see nothing.
+        "/vitals",
+        # Span INGEST only. Reading a trace back needs an admin session and a
+        # different route entirely (/auth/traces/*), so a walk-in can report the
+        # journey that just failed them and can see nothing.
+        "/traces",
+        # The Instana EUM beacon proxy (serve/eum_proxy.py). Listed HERE and
+        # deliberately NOT in OPEN_PATHS above: it is a telemetry INGEST, so it
+        # gets exactly the fence /traces and /analytics already have — an
+        # invited session or a walk-in, never an anonymous stranger. Widening
+        # it to open would make a route that writes into a third-party tenant
+        # reachable by anyone who can reach the login page.
+        "/eum",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —
 # captured stills already published to the webroot.
+# /vendor/ is deliberately NOT listed again here: walkin_allows() checks
+# is_open() first, and /vendor/ joined OPEN_PREFIXES above, so a walk-in
+# already reaches it before this allowlist is even consulted. A stranger's
+# tab needs the telemetry agent exactly as much as an invited one does — a
+# walk-in session is not exempt from the outage this fixes.
 WALKIN_PREFIXES = ("/assets/", "/posters/", "/walkin/play/", "/fonts/")
 
 # The exhibition fields, named to KEEP (brief §5.3). Built as an allowlist so a
@@ -199,11 +270,19 @@ def walkin_allows(path: str, own_signal: str | None = None) -> bool:
     other station's signaling — and the fleet index that would enumerate them —
     is refused here rather than filtered downstream.
     """
+    hit("auth.gate.walkin")
     if is_blocked(path):
         return False
+    # The two branches below are the ONLY interactive surface a walk-in is ever
+    # granted, so they are what separates "a stranger reached the landing page"
+    # from "a stranger reached a machine". Probed as one fact, not two: the
+    # signaling document and the webrtc offer under it are one visitor doing one
+    # thing, and counting them apart would read as twice the reach.
     if own_signal and path == own_signal:
+        hit("auth.gate.walkinOwn")
         return True
     if own_signal and path.startswith(_webrtc_prefix(own_signal)):
+        hit("auth.gate.walkinOwn")
         return True
     if path.startswith("/signal/") or path.startswith("/webrtc/"):
         return False
@@ -221,9 +300,30 @@ def _webrtc_prefix(own_signal: str) -> str:
 def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
     """The role fence. Non-walk-in sessions keep the behaviour they had:
     signed in is enough for everything this listener still serves."""
+    # ATTRIBUTES ON THE REQUEST SPAN, NOT A CHILD SPAN OF THEIR OWN. This
+    # decision is a dict lookup and a `startswith`; a span for it would be a
+    # zero-millisecond row in every public flame graph, adding a bar and no
+    # information. What is worth having is WHICH branch answered, on the span
+    # that is already there — a 403 in a trace is otherwise indistinguishable
+    # from a 403 in the access log. The ROLE is recorded and the user is NOT:
+    # a role is a policy fact, an id is an identity, and traces.py refuses
+    # `enduser.id` at intake for exactly this reason.
+    span = tracing.current()
+    role = (user or {}).get("role") or "anonymous"
+    span.attr("kh.auth.role", role)
     if user and user.get("role") == "walkin":
-        return walkin_allows(path, own_signal)
-    return not is_blocked(path)
+        allowed = walkin_allows(path, own_signal)
+        span.attr("kh.auth.decision", "allow" if allowed else "deny")
+        return allowed
+    # Reached only for a GATED path on the PUBLIC listener — `is_open` has
+    # already short-circuited the login page, the bundle and the posters, and
+    # the LAN listener never enters the gate at all. So this is not a request
+    # counter: it is "the invited plane was used", against which the walk-in
+    # counts above are readable.
+    hit("auth.gate.invited")
+    allowed = not is_blocked(path)
+    span.attr("kh.auth.decision", "allow" if allowed else "deny")
+    return allowed
 
 
 def landing_for(user: dict | None) -> str:

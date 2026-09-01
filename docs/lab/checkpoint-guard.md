@@ -43,6 +43,29 @@ ssh lab 'checkpoint-guard prune    <station>'    # drop the backup once you are 
 `recapture` captures the station's **current live state** as the new checkpoint. Curate
 the scene first — the guest is captured as it stands.
 
+**Curating the scene is not only the picture.** What the guard proves is that the
+checkpoint RESTORES: the framebuffer moves off a reference and comes back to it. It
+cannot prove the restored exhibit is USABLE, and the two came apart on `aix432`,
+2026-08-31. That recapture passed every gate here, and it baked a Netscape whose HTML
+content area no longer takes keyboard focus: a visitor could click a form field, see
+the caret blink, and type into a void. The screenshot was perfect. The interaction
+state that made it useless is in the vmstate, so it came back on every restore, and a
+month of input-plane debugging could not have touched it.
+
+So for any station whose exhibit is an APPLICATION a visitor drives, add one manual
+step the guard cannot do for you, AFTER the run: restore the new checkpoint into a
+sandbox clone (`clone-guard`-linted launcher, same device set) and drive the thing the
+visitor drives — click the field, type, read the characters back out of a screendump.
+If that is not done, "restore-proven" means only that the pixels come back.
+
+`aix432` closed that loop on 2026-08-31: the repaired scene was captured, the
+acceptance clone was booted from the NEW checkpoint, and typing into the page's
+form field was read out of a screendump before the run was called done. That
+station also needs a `CPG_DIRTY_CMD` (its registry notes carry the exact one):
+with a freshly started browser and no window yet clicked, `CPG_DIRTY_TEXT` and
+the `tab`/`esc` fallback both change **0 px** and the guard refuses — correctly,
+and without deleting anything.
+
 Knobs, all env: `CPG_LABEL` (default `golden`), `CPG_STAGING_LABEL` (default
 `cpg-staging`), `CPG_DIRTY_TEXT`, `CPG_SSIM_MIN` (default `0.999`), `CPG_IDLE_SECONDS`,
 `CPG_SETTLE`, `CPG_STATIONS_ROOT` (point it at a sandbox to exercise the guard on a
@@ -69,6 +92,53 @@ clone).
 6. **A failed run deletes nothing.** Every refusal message says so explicitly.
 7. **It holds streamhost's wake lease** for the run, so the idle-pause reconciler
    cannot re-freeze the guest in the middle of a capture.
+
+### The rollback is only as real as the journal's `backups` array
+
+`cpg_rollback` restores from the rows recorded in `.checkpoint-guard.json`, and
+**nothing else on disk tells it anything.** A `.cpg-bak-<stamp>` file sitting
+next to the station's qcow2 is not a rollback target until a row names it, with
+its `sha256`.
+
+Two things follow, both found on `aix432` on 2026-08-31 by checking a reported
+rollback against the tool instead of taking it on trust:
+
+- **A resumed run used to ERASE the rows.** `cpg_journal_write` re-renders the
+  whole journal from the in-memory `CPG_BACKUPS`, and `cpg_resume` never runs
+  `cpg_backup` — so each of the four journal writes a resume performs replaced a
+  populated array with `[]`. The backup FILE was fine; the only record of where
+  it was, and what it should hash to, was gone. `cpg_resume` now calls
+  `cpg_journal_load_backups` before its first write, and
+  `scripts/test_checkpoint_guard_rollback.py` fails if that ordering is ever
+  undone.
+- **Zero rows is now a REFUSAL.** Every loop in `cpg_rollback` is a `while read`
+  over those rows, so with none of them it verified nothing and printed *"Every
+  recorded backup verified, so the rollback is available"*; under
+  `CPG_ROLLBACK_CONFIRM=1` it restored nothing, deleted the journal, logged
+  *"ROLLED BACK to the pre-recapture disks"* — **and exited 0.** A false success
+  on the incident path ends an investigation instead of starting one. It now
+  refuses, names the `*.cpg-bak-*` files still on disk, and says how to
+  re-record one. Belt and braces behind that: a restore loop that copied zero
+  disks refuses to delete the journal or claim a rollback.
+
+**Sweep result, 2026-08-31.** Of the five stations holding a guard journal,
+`aix432` and `sunos414` both had `"backups": []`; `hpuxvue`, `macos9` and `win95`
+each had their row. `aix432`'s is now registered. **`sunos414`'s is deliberately
+NOT**: its journal is stamped 08:09 and its lone `cpg-bak-20260831T073623Z` has a
+10:36 mtime, while the live `golden` was captured at 11:08 — so that file cannot
+be shown to be the copy the current checkpoint replaced, and registering it would
+manufacture exactly the false confidence this section is about. It belongs to the
+`sunos414-abs` stream, whose own recapture is still pending. With the fixed guard
+that station's rollback refuses loudly and names the file, which is the correct
+state for an unproven backup.
+
+**The journal is line-oriented.** `_cpg_journal_backup_rows` reads the array with
+a `sed`, so each row must sit whole on ONE line exactly as `cpg_journal_write`
+prints it. Pretty-printed JSON parses fine as JSON and reads as **zero rows** —
+which is the silent-empty state above. If you ever hand-record a row, match the
+writer's format and then prove it by running `checkpoint-guard rollback <station>`
+WITHOUT `CPG_ROLLBACK_CONFIRM`: that verifies every recorded sha256 against the
+file and then refuses, touching nothing.
 
 ### Which disk it backs up, and how it knows
 
@@ -101,6 +171,59 @@ The guard matches snapshot tags **exactly** (awk on the tag column) rather than 
 `grep -qw`, for the same reason: getting it wrong inside the guard would make `resume`
 believe the promote had finished, delete the staging label, and leave the station with
 no checkpoint at all — precisely the outcome the tool exists to prevent.
+
+## When typing cannot dirty the guest
+
+The restore proof needs the framebuffer to **move** before the `loadvm`, or a
+matching "restored" shot proves nothing. The guard's default way of moving it is
+to type `CPG_DIRTY_TEXT` and, failing that, `tab`/`esc`.
+
+**Typing needs KEYBOARD FOCUS, and focus is a property of the guest AND of the
+scene** — not something the guard can assume. `sunos414` is the case that proved
+it: OpenWindows runs with `OpenWindows.SetInput: select` (click-to-focus), so a
+restored golden in which no window has ever been clicked swallows every
+keystroke. Measured on the live station, with the wake lease held and the guest
+confirmed `running`: typing `checkpoint-guard-dirty` changed **0 pixels**.
+
+That is not a fault to work around. It is a fact about the guest, so the station
+supplies the action that moves *its* framebuffer:
+
+```sh
+CPG_DIRTY_CMD='labctl exec sunos414 "echo checkpoint-guard-dirty > /dev/console"'   ssh lab 'checkpoint-guard recapture sunos414'
+```
+
+`CPG_DIRTY_CMD` runs only after the keystroke attempts have failed, and whatever
+it does is discarded by the `loadvm` that immediately follows — so it is free to
+be loud. If it is set and the framebuffer *still* does not move, the guard
+refuses exactly as before: the hook adds a way to succeed, never a way to skip
+the proof.
+
+### Why there is no built-in mouse wiggle
+
+The obvious general fallback — jiggle the pointer, every graphical guest has a
+cursor — was measured and rejected. `_cpg_same` accepts **SSIM >= 0.999** as
+"unchanged", and on `sunos414` moving the cursor alone scores **0.999756**: the
+guard would judge the wiggled frame identical and refuse anyway. A large pointer
+excursion scored 0.998128 only because it dragged 8-bit colormap focus across
+window boundaries and repainted ~1000 px, which is luck, not mechanism. A
+built-in wiggle would therefore be a placebo that passes on some stations and
+silently fails on others. Writing to a console scores **0.984**, comfortably
+clear of the bar.
+
+The general lesson for anyone choosing a dirty action: **the bar is not "some
+pixels changed", it is SSIM below `CPG_SSIM_MIN`.** A few hundred changed pixels
+in a 1024x768 frame does not clear it.
+
+### An interrupted run needs `resume`, not `recapture`
+
+If a previous attempt refused at the proof, the journal is left in state
+`captured` with the staging snapshot on disk — correct, and `golden` is
+untouched. A second `recapture` will refuse to start on top of it. Finish it
+with the hook supplied:
+
+```sh
+CPG_DIRTY_CMD='...' ssh lab 'checkpoint-guard resume sunos414'
+```
 
 ## The residual window, stated honestly
 

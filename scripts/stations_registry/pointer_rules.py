@@ -76,6 +76,17 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # verified its address, so the ledger must show the `kh-ramabs` control
     # object. Without it the daemon has nothing to talk to.
     "qemu-guestram-abswrite": ({"ramabs"}, ("kh-ramabs",), ("usb-tablet",)),
+    # sunos414: absolute through the GUEST'S OWN X SERVER, which is the only
+    # station that reaches its pointer over the guest's network stack. The SS-5
+    # has no absolute device and cg3 has no hardware cursor (hw/display/cg3.c
+    # models a Bt458 palette and five FBC scratch registers -- there is nothing
+    # to close a loop on), so neither a device nor a register can carry this.
+    # What can: xnews runs -noauth on TCP :6000, so XWarpPointer is the actuator
+    # and XQueryPointer the sensor, and `absolute: true` is earned by reading
+    # the guest's own answer back. The ledger must show the loopback forward
+    # that publishes that server -- without it the daemon has nothing to talk to
+    # -- and must NOT claim a tablet the machine cannot have.
+    "x11-warp-absolute": ({"x11warp"}, ("10.0.2.15:6000",), ("usb-tablet",)),
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and
@@ -92,6 +103,7 @@ POINTER_MODE_BY_BACKEND = {
     "mgactl": "abs",
     "artistctl": "abs",
     "ramabs": "abs",
+    "x11warp": "abs",
     # Keyboard-only by construction: InputBackend::pointer_mode() reports
     # "none" for ViceSock, and the sink has no pointer verb at all.
     "vicesock": "none",
@@ -101,3 +113,19 @@ LEGACY_POINTER_BACKEND = {"abs": "dbus-abs", "rel": "dbus-rel", "warpd": "warpd"
 # `vmport=auto`, so its device ledger names neither `vmmouse` nor `vmport=on`
 # (verified live: dbus SetAbsPosition lands 1:1, a relative delta is ignored).
 POINTER_LEDGER_EXCEPTION = "pointer-vmmouse-implicit"
+
+# Backends that construct NO InputRouter, mirroring the single seam that decides
+# it: `InputRouter::from_config` in streamhost/streamhost/src/realtime_input.rs,
+# whose first match arm is
+#     InputBackend::Disabled | InputBackend::DbusAbs | InputBackend::DbusRel => return None
+# Everything else builds a sink and therefore routes.
+#
+# DELIBERATELY A NEGATIVE SET, so it fails CLOSED: a backend added tomorrow is
+# treated as routed on the day it is added rather than the day someone remembers
+# to extend a positive list. Only add a name here after checking that arm.
+NON_ROUTED_BACKENDS = {"disabled", "dbus-abs", "dbus-rel"}
+
+
+def constructs_router(backend: str | None) -> bool:
+    """Does this backend build an InputRouter? Absent backend -> no."""
+    return bool(backend) and backend not in NON_ROUTED_BACKENDS

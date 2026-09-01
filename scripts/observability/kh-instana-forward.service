@@ -1,0 +1,34 @@
+[Unit]
+# The Instana forwarder, on a schedule. It was hand-run for its whole life, so
+# every Instana view it feeds was stale by default and a measurement doc was
+# once written from a tenant nobody had forwarded to in days. Driven by
+# kh-instana-forward.timer; see docs/lab/INSTANA-VIEW-INVENTORY.md §2 for what
+# arming it means and docs/ANALYTICS.md §8.1 for what leaves the box.
+Description=kernel-hive: forward stored OTel traces + metric histograms to Instana
+Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
+# The daemon spans this forwards reach the store via kh-trace-ship. Ordering was
+# never a CORRECTNESS requirement — the forwarder watermarks on INGEST sequence,
+# so a batch that lands after it has already walked past that trace pulls the
+# trace back into view rather than being lost — but it is a FIDELITY one: a
+# trace forwarded in two pieces mis-correlates inside Instana's ~2 s assembly
+# window. That is now handled where it belongs, in instana_backlog.QUIET_MS,
+# which is derived from kh-trace-ship.timer's period; this ordering is only the
+# boot-time nicety it always was.
+After=network-online.target osgallery-https.service kh-trace-ship.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# --scheduled = one pass, and an unconfigured box (no INSTANA_ENDPOINT and no
+# local agent) is a logged no-op with exit 0. A timer that reddens every five
+# minutes because a feature is switched off teaches everyone to ignore it.
+ExecStart=/usr/bin/python3 /data/kernel-hive/scripts/observability/instana-forward.py --scheduled
+# The watermark is a file under /data (instana-forward.state.json), NOT runtime
+# state: it must survive a restart, a reboot and a reinstall of this unit, or
+# the next run either replays history or skips it.
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

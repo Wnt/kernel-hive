@@ -67,12 +67,13 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Whose rig/claim is this | `ssh lab 'labctl who'` |
 | Preview a UI/registry change before it is live | `scripts/dev/stage.sh` → `/staging/<session>/` |
 | Deploy a pushed commit / see what the box runs | `scripts/dev/box-deploy.sh` (plan) / `--apply` / `--status` |
+| Restart the fleet without taking the gallery down | [`docs/lab/FLEET-ROLLOUT.md`](docs/lab/FLEET-ROLLOUT.md) — `scripts/dev/fleet_rollout.py` (plan) / `--apply` |
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 | Understand how any of this works | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — tiers, I/O paths, costs |
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md); start with `labctl facts <tile>` |
 | Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
-| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with `clientlog.jsonl`, not a repro |
+| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with the log plane, not a repro |
 | Recapture a checkpoint | [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |
 | Fix a station that freezes or will not connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
 | Which emulator runs a given OS, with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — BEFORE spending an agent on recon |
@@ -80,6 +81,8 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md) |
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** |
+| Know whether a feature is used, or where a flow breaks | [`docs/ANALYTICS.md`](docs/ANALYTICS.md); `scripts/dev/reach-report.py` |
+| Drill into ONE session's journey, or read a flame graph | `/admin/observability` (admin-only); [`docs/lab/TRACE-CONTEXT.md`](docs/lab/TRACE-CONTEXT.md) for how a trace crosses processes |
 | Measure performance | [`docs/lab/MEASUREMENT-METHODOLOGY.md`](docs/lab/MEASUREMENT-METHODOLOGY.md) |
 | Get a cloud agent onto labhost | [`docs/lab/CLOUD-AGENTS.md`](docs/lab/CLOUD-AGENTS.md) |
 | Find anything else | [`docs/README.md`](docs/README.md) |

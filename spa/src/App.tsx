@@ -7,6 +7,7 @@ import ExhibitPoster from './ui/ExhibitPoster';
 import { FleetTable } from './ui/FleetTable';
 import { About } from './ui/About';
 import { AdminPage } from './admin/AdminPage';
+import { ObservabilityPage } from './admin/observability/ObservabilityPage';
 import { useManifest } from './data/useManifest';
 import { useSession } from './data/SessionContext';
 import WalkinLanding from './walkin/WalkinLanding';
@@ -16,12 +17,16 @@ import { WalkinChrome } from './walkin/WalkinChrome';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
 import { MUSEUM_NAME, MUSEUM_TAGLINES } from './config';
+import { useNavigationTelemetry } from './analytics/navigation';
 
 // Dev-only: expose the store so headless verification can read hover/select state.
 if (import.meta.env.DEV) (window as any).__museum = useMuseum;
 
 export default function App() {
   useManifest();
+  // One router-level navigation observer, feeding both our own plane and
+  // Instana off the SAME event — see analytics/navigation.ts's header.
+  useNavigationTelemetry();
 
   const { role } = useSession();
   const walkin = role === 'walkin';
@@ -125,6 +130,7 @@ export default function App() {
             is. The walk-in panel lives one path down, at /admin/walkin, which falls
             through to the SPA untouched — see spa/src/admin/AdminPage.tsx. */}
         <Route path="/admin/walkin" element={<AdminPage />} />
+        <Route path="/admin/observability" element={<ObservabilityPage />} />
 
         {/* ---------- 3D museum ---------- */}
         <Route path="/museum" element={<SceneV2 />} />

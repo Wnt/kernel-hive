@@ -107,13 +107,59 @@ pub struct InputRouter {
     state: Mutex<RouterState>,
 }
 
-/// The routed-button set, by backend NAME so it is testable without a sink.
-/// See `InputRouter::routes_buttons` for why this list is an invariant.
+/// HOW a pointer sink discharges the obligation behind the button-routing
+/// invariant: no sink may have its CLICKS race its MOTION. See
+/// `InputRouter::routes_buttons` for the incident that made this a declared,
+/// tested fact rather than a preference.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum EdgeDischarge {
+    /// The sink takes the button edge itself: position and edge leave as ONE
+    /// ordered event on the sink's own channel, so nothing can interleave.
+    RoutesEdges,
+    /// The sink CANNOT inject an edge at all; the edge stays on the D-Bus
+    /// PS/2 path, and the sink discharges by CONFIRMING its warp with a
+    /// readback and holding the pointer across the injection.
+    VerifiedWarp,
+    /// Named unflatteringly on purpose: the edge is held for a FIXED DELAY so
+    /// the motion channel has PROBABLY applied first. Timed, unverified,
+    /// probabilistic — correct only because the delay is sized against a
+    /// measured channel. Legacy; do not add new users.
+    TimedHold,
+}
+
+/// Every pointer sink DECLARES its discharge here, by backend NAME (testable
+/// without a sink), with the reason at its own arm. `None` = no pointer sink
+/// exists under that name (the D-Bus paths build no router; vicesock is
+/// keyboard-only). `backend_routes_buttons` is DERIVED from this table, so a
+/// sink cannot route its edges one way and declare another.
+pub(crate) fn edge_discharge(backend: &str, warpd_buttons_qemu: bool) -> Option<EdgeDischarge> {
+    match backend {
+        // Position+edge as one ordered event over the sink's own channel
+        // (socket verb, XTEST pair, cmd-file line, HID record).
+        // artistctl (hpuxvue) and ramabs (rhapsody) are socket sinks like the
+        // rest: the edge is a verb on the same wire as the position.
+        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "artistctl" | "ramabs" => {
+            Some(EdgeDischarge::RoutesEdges)
+        }
+        // Default agent-buttons warpd: edges ride the SAME agent channel as
+        // motion, in order.
+        "warpd" if !warpd_buttons_qemu => Some(EdgeDischarge::RoutesEdges),
+        // SH_WARPD_BUTTONS=qemu hybrid: motion on the agent channel, edges on
+        // PS/2, held SH_WARPD_BUTTON_DELAY_MS in input.rs. Nothing verifies
+        // that the motion actually landed before the edge fires.
+        "warpd" => Some(EdgeDischarge::TimedHold),
+        // x11warp (sunos414): the guest X server has no XTEST — there is
+        // nothing to inject an edge WITH. Discharged by the
+        // QueryPointer-confirmed warp plus the armed hold across the D-Bus
+        // injection (x11_warp.rs).
+        "x11warp" => Some(EdgeDischarge::VerifiedWarp),
+        _ => None,
+    }
+}
+
+/// The routed-button set, DERIVED from the discharge declarations above.
 pub(crate) fn backend_routes_buttons(backend: &str, warpd_buttons_qemu: bool) -> bool {
-    matches!(
-        backend,
-        "gallery-hid" | "x11test" | "mamecmd" | "mamesock" | "mgactl" | "artistctl" | "ramabs"
-    ) || (backend == "warpd" && !warpd_buttons_qemu)
+    edge_discharge(backend, warpd_buttons_qemu) == Some(EdgeDischarge::RoutesEdges)
 }
 
 impl InputRouter {
@@ -145,6 +191,9 @@ impl InputRouter {
             InputBackend::RamAbs => {
                 crate::ram_abs::RamAbsSink::new(crate::ram_abs::socket_from_env(&cfg.tile))
             }
+            InputBackend::X11Warp => {
+                crate::x11_warp::X11WarpSink::new(crate::x11_warp::display_from_env())
+            }
             InputBackend::X11Test => {
                 match crate::x11_input::X11TestSink::new(
                     &cfg.x11_display,
@@ -164,6 +213,21 @@ impl InputRouter {
             sink.backend_name(),
             sink.health(),
         );
+        // By-path edge telemetry: the mgactl incident ran 85 minutes with a
+        // healthy-looking sink counter line while ZERO button edges reached
+        // the sink, and no number anywhere could contradict it. These two
+        // counters make a false discharge declaration visible at runtime, on
+        // every station, whichever discharge it declares.
+        tokio::spawn(async {
+            let mut tick = tokio::time::interval(Duration::from_secs(10));
+            loop {
+                tick.tick().await;
+                eprintln!(
+                    "[input-router] edges {}",
+                    crate::input_telemetry::edge_path_line()
+                );
+            }
+        });
         Some(Arc::new(Self {
             sink,
             seq: AtomicU64::new(1),
@@ -206,12 +270,12 @@ impl InputRouter {
     /// operator as "the keyboard stopped working in the browser".
     ///
     /// mgactl (aix432) shipped missing from it and cost an afternoon, so
-    /// `routes_buttons_invariant` in the tests below now pins it: every sink
-    /// that can carry an ordered button edge must be listed.
-    ///
-    /// warpd is the ONE deliberate exception: with SH_WARPD_BUTTONS=qemu its
-    /// motion rides the agent channel while buttons ride PS/2 on purpose, and
-    /// input.rs holds the edge back by SH_WARPD_BUTTON_DELAY_MS instead.
+    /// every pointer sink now DECLARES how it keeps clicks from racing
+    /// motion — `edge_discharge` above, one arm per sink with its reason —
+    /// and the tests assert every sink declares one. This predicate is
+    /// derived from those declarations: only `RoutesEdges` sinks take the
+    /// type=2 edge; `TimedHold` (warpd hybrid) and `VerifiedWarp` (x11warp)
+    /// keep the edge on the D-Bus PS/2 path and discharge in input.rs.
     pub fn routes_buttons(&self, cfg: &Config) -> bool {
         backend_routes_buttons(self.backend(), cfg.warpd_buttons_qemu)
     }

@@ -17,7 +17,7 @@ mine" — the same rule as AGENTS.md rule 7, applied to a filename.
 | 0005 | `cirrus-isa-vmstate-descend-substruct` | Cirrus fix |
 | 0006 | `i8259-lenient-spurious-cascade` | interrupt fix |
 | 0007 | `kh-ramabs-guest-ram-absolute-pointer` | `rhapsody` — absolute write into guest RAM |
-| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor |
+| 0008 | `artist-closed-loop-pointer` | `hpuxvue` — closed loop over the Artist hardware cursor (published as `Wnt/qemu` 12305f6; the restore re-arm is part of the patch, the resize-border attempt is deliberately NOT — see `docs/lab/HPUXVUE-CURSOR-REGISTER-POINTER.md`) |
 | ~~0009~~ | ~~`kh-ramabs-mac-lowmem-profile`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
 | ~~0010~~ | ~~`kh-ramabs-point32le-layout`~~ | **RETIRED 2026-08-30 — merged into `0007`** |
 
@@ -74,6 +74,23 @@ commit counts or subjects.
 
 Never edit the fork's checked-out tree directly and call that the source of
 truth — the patch files are.
+
+**Two representations of one artifact drift, and this pair drifts INVISIBLY.**
+On 2026-08-30 one agent pushed the fork from the series and a second regenerated
+a patch and found the fork had moved underneath. `git apply` of a file-creating
+patch fails only once the file exists, so there was no symptom at all until a
+build attempt. Before you regenerate a patch, push the fork, or trust a recorded
+`forkCommit`, run the check that answers it without building:
+
+```sh
+python3 scripts/lint/published-form-drift.py          # ls-remote + reverse-apply
+python3 scripts/lint/published-form-drift.py --offline # skip the network leg
+```
+
+It is a REPORT and must never be wired into the push gate — see
+docs/lab/CONTINUOUS-DEPLOY-PROPOSAL.md §2.5 for why, and for the standing rule
+that a recorded pointer at a mutable branch (`qemuBuild.forkCommit`, the
+submodule gitlink) goes stale in silence.
 
 **Where the submodule is and is not initialised** — this differs by checkout and
 the difference is load-bearing:

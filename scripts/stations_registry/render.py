@@ -219,6 +219,23 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
                 ("signalEndpoint", f"/signal/{row['id']}.json" if spa["transport"] == "streamhost" else None),
             ]
         )
+        # STATION-TYPE grouping dimensions (docs/ANALYTICS.md's "groupable per
+        # station type" ask). Low-cardinality, public, already committed in the
+        # registry (fleet-table.json has shown them since the /fleet view
+        # existed) — this is the first time they reach the PUBLIC manifest so
+        # the SPA's own telemetry can stamp them on a station's spans without
+        # hand-maintaining a second copy of registry data. Emitted only when
+        # present, same convention as the museum/spa loops below, so a poster
+        # entry missing `reset` (it has no live golden to reset) does not grow
+        # a null field.
+        emulator = row.get("emulator") or {}
+        if emulator.get("family"):
+            entry["emulatorFamily"] = emulator["family"]
+        if row.get("ui"):
+            entry["uiKind"] = row["ui"]
+        reset = row.get("reset") or {}
+        if reset.get("resetMode"):
+            entry["resetMode"] = reset["resetMode"]
         # Soft hide (registry `listing`). The ROW STAYS — dropping it is what a
         # deployment-only override used to do, and it is exactly what breaks the
         # /os/<id> deep link, since the UI resolves that id out of this manifest.

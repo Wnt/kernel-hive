@@ -42,6 +42,8 @@ _HAS_SUBST = re.compile(r"\$\(|`")
 _COMMAND_WORD = re.compile(r'^\s*(?:nohup\s+)?(?P<word>"[^"]+"|[^\s|;&]+)')
 _TAPNET = re.compile(r"(?:bash|sh)\s+(?P<path>\"?[^\"'\s]*tapnet[\w.-]*\.sh\"?)\s+(?P<verb>up|down)\b")
 _UNRESOLVED = re.compile(r"\$\{?[A-Za-z_0-9@*#?]")
+# The whole reference at an _UNRESOLVED match, for naming it in the error.
+_TOKEN = re.compile(r"\$\{[^}]*\}|\$[A-Za-z_]\w*|\$.")
 _REDIRECT = re.compile(r"^(?:\d?[<>]|&$|\d>&\d)")
 
 
@@ -60,14 +62,29 @@ class Launcher:
     tapnet: str = ""  # resolved path of the station's own tap script, if any
 
 
+_VAR = re.compile(r"\$(?:\{(?P<braced>[A-Za-z_]\w*)(?:(?P<op>:?-)(?P<default>[^}]*))?\}|(?P<name>[A-Za-z_]\w*))")
+
+
 def _expand(text: str, variables: dict, where: str) -> str:
     def sub(match: re.Match) -> str:
         name = match.group("name") or match.group("braced")
+        op = match.group("op")
+        if op is not None:
+            # `${NAME:-default}` / `${NAME-default}` — a bash default-value
+            # expansion, not an unresolved reference. `:-` also falls back on an
+            # EMPTY value, not just an unset one; `-` falls back only when unset.
+            # None of the launchers this reads use the default for anything the
+            # derivation cares about (debug trace toggles), so the default is
+            # taken as a literal — it is never itself expanded.
+            value = variables.get(name)
+            if value is None or (op == ":-" and value == ""):
+                return match.group("default")
+            return str(value)
         if name not in variables:
             raise LauncherError(f"{where}: launcher uses ${name}, which nothing defines and no preset supplies")
         return str(variables[name])
 
-    return re.sub(r"\$(?:\{(?P<braced>[A-Za-z_]\w*)\}|(?P<name>[A-Za-z_]\w*))", sub, text)
+    return _VAR.sub(sub, text)
 
 
 def _collect_variables(lines: list, presets: dict, where: str) -> dict:
@@ -152,8 +169,18 @@ def parse(path, presets: dict | None = None, text: str | None = None) -> Launche
     binary, command = _qemu_block(lines, variables, where)
     command = re.sub(r"^\s*nohup\s+", "", command)
     expanded = _expand(command, variables, where)
-    if _UNRESOLVED.search(expanded):
-        raise LauncherError(f"{where}: unresolved shell expansion in the qemu command line: {expanded[:200]!r}")
+    unresolved = _UNRESOLVED.search(expanded)
+    if unresolved:
+        # Name the offending token and show it in context, rather than a blind
+        # prefix of the command line — on a long invocation the culprit is
+        # routinely well past character 200, so a truncated-from-the-start
+        # message shows everything EXCEPT the thing that needs fixing (measured
+        # on rhapsody's `trace=${PTR_TRACE:-off}`, which sits near the end).
+        token_match = _TOKEN.match(expanded, unresolved.start())
+        token = token_match.group(0) if token_match else expanded[unresolved.start() : unresolved.start() + 20]
+        ctx_start = max(0, unresolved.start() - 30)
+        context = expanded[ctx_start : unresolved.start() + len(token) + 30]
+        raise LauncherError(f"{where}: unresolved shell expansion {token!r} in the qemu command line, near {context!r}")
     argv = [tok for tok in shlex.split(expanded) if not _REDIRECT.match(tok)]
     if not argv or "qemu-system" not in Path(argv[0]).name:
         raise LauncherError(f"{where}: could not tokenize the qemu command line")

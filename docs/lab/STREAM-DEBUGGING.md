@@ -10,20 +10,64 @@ happened an hour ago is usually already on disk.
 
 ---
 
-## 1. The three places evidence lives
+## 1. The places evidence lives
 
 | Plane | Where | Covers |
 |---|---|---|
-| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | What the BROWSER saw: quality tier, loss, RTT, freezes, decoder state. Rolling ~36 h. |
-| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | What the SERVER did: tier decisions, encoder reconfigs, session lifecycle, input. |
+| **Log plane** | `lab:/data/vms/streamhost/serve/logs.db`, or `POST /auth/logs/search` | Every producer's records — browser, serving plane, station daemon — with severity and, where a span was open, `traceId`/`spanId`. 7 days. |
+| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | The same browser events as the log plane, as flat JSONL. Rolling ~36 h. **Being retired** — see §1.1. |
+| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | Everything the daemon printed. The subset at WARN and above is also in the log plane, correlated. |
 | **Live overlay** | the SPA, **Ctrl/Cmd+N** | The same client state as the log, live. Ask the operator for a screenshot. |
 
 **The client plane is the one people forget, and it is usually the decisive
 one.** The server cannot see most of what the browser knows (§3).
 
+### 1.1 Start here now: the log plane, and the pivot
+
+The instruction that used to open this document — *start with
+`clientlog.jsonl`, not a repro* — is still right about where to start and wrong
+about the file. The same events now land in `logs.db` **carrying the trace
+context that was open when they happened**, which turns the two questions this
+document exists to answer into one query each:
+
+```sh
+# "What did EVERY plane say during this trace?" — the pivot. `id` is the trace
+# id from a slow span, or off the `traceresponse` header of the request itself.
+ssh lab 'curl -sk -X POST https://127.0.0.1:8443/auth/logs/trace \
+  -H "Content-Type: application/json" -H "Cookie: osg_session=$TOK" \
+  -d "{\"id\":\"<trace id>\"}"'
+
+# "What went wrong for anybody in the last hour?" — severity is a RANGE.
+#   {"minSeverity":"WARN","sinceMs":<now-3600000>,"limit":200}
+# Filter further with service (kernel-hive-spa | -serve | -daemon), instance
+# (the station or the box), session, build, traceId, or `contains` on the body.
+```
+
+Reads are **admin-only** and live under `/auth/logs/*`, exactly like
+`/auth/traces/*`; ingest is open, so a visitor can report the error that broke
+their visit without holding an admin session. Straight SQL against
+`/data/vms/streamhost/serve/logs.db` works too and is often faster to iterate
+on — the schema is in `scripts/serve/logs_schema.py`.
+
+The reverse direction is the one that was impossible before: take a
+`traceId` out of a log row, open it in `/admin/observability`, and read the
+flame graph the record was emitted inside.
+
+**What is NOT here yet**, so you know when to fall back to the file: the
+pre-bundle bootstrap error handler in `spa/index.html` still posts only to
+`/clientlog` (it runs before any module loads and has no span to name), and
+`clientlog.jsonl` is still being written in parallel for one deploy. Until both
+are settled, a client error from the very first moments of a page load is in the
+file and not in the store.
+
 ---
 
-## 2. Client telemetry: `clientlog.jsonl`
+## 2. Client telemetry: `clientlog.jsonl` (being retired)
+
+**This file is on its way out.** Everything below is still true and still works;
+it is documented because the file is still written and still holds the ~36 hours
+before the log plane landed. New investigations should start at §1.1 — the same
+events, with severity and a trace id, and a query surface that is not `grep`.
 
 Written by `POST /clientlog` in `scripts/serve/osgallery-https-server.py`.
 Untokened, and open to **every** session — on the public listener the visitor's
@@ -35,6 +79,7 @@ involved anywhere. One JSON object per line:
 | **`clientTs`** | **Millisecond epoch, stamped in the BROWSER at the moment the event happened** (`logClientEvent`, `clientDebug.ts`). **Use this for every timing question.** |
 | `srvTs` | Server receive time, epoch *seconds*. This is when the BATCH arrived, not when the event happened. |
 | `ip`, `sessionId`, `tile`, `event`, `detail` | Source, 8-hex per page load, station id, event name, payload. |
+| `ua`, `build` | The user agent and the **bundle the tab is running** (`<branch>@<short-sha>`), both on the **first event of a batch only**. `build` is what answers "is this session even running the code I am reading?" — see [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3. |
 
 **Timing must be read from `clientTs`, never from `srvTs`.** Events are batched
 and flushed every ~5 s, so a whole batch shares one `srvTs` — sorting or
@@ -424,3 +469,64 @@ report it.
   then restarts it mid-boot, compounding the failure.
 - A station is per-station canaried: `--canary <tile>`, verify, then `--promote`.
   `--rollback <tile>` swaps back atomically.
+- **The complaint may be about a bundle you no longer ship.** The gallery is an
+  installable PWA, and its service worker keeps one HTML shell for offline use.
+  Before this was fixed the shell cache was named by a constant nobody ever
+  bumped, so a client could hold an old shell indefinitely; the cache is now
+  named after the build id and every deploy retires the previous one. Either
+  way, **check the build before you reproduce anything**: `build` on the first
+  event of the session's `clientlog` batch, or the `builds` facet /
+  `build` filter on the trace store. Two live builds in one window means
+  somebody is on a shell the box no longer serves. The full differential —
+  including how to tell "ran an old shell" from "its beacons were blocked"
+  using only our own data — is [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3.
+
+## An observer holding QMP stops sessions negotiating (2026-08-30)
+
+**If a station streams for the first visitor and then every later session times
+out negotiating, check what else is talking to its QMP socket before you touch
+the station.** This cost a cutover a rollback and very nearly condemned an
+innocent component.
+
+QEMU's QMP chardev serves **one monitor at a time**. Anything that connects and
+holds it — an observation script, a screendump poller, an interactive session
+somebody left open — makes every *other* QMP client wait. `idle.rs::qmp_execute`
+gives up after 2 s (that timeout exists precisely "so a busy socket ... fails
+fast instead of wedging the pauser") and returns `EAGAIN`, which surfaces as:
+
+```
+[idle] resume on connect failed (Resource temporarily unavailable (os error 11)); reconciler will retry
+```
+
+The damage is not the failed resume. `IdlePauser::session_started()` holds the
+pauser's `st` mutex **across** that 2 s blocking call, and `handle_session`
+awaits `session_started()` **before** any priming or keyframe work. So sessions
+queue behind it: the first one through is fine, everything after it blows the
+SPA's negotiation timeout. The symptom is `SESSION_ACCEPTED` with nothing after
+it, and input-router counters **frozen at exactly the first session's totals** —
+which reads exactly like a sink holding a claim, and is not.
+
+Reproduced deliberately on a sandbox clone, driving real browser sessions
+through a real daemon, with a second QMP client screendumping at 1 Hz:
+
+| backend | QMP holder | result |
+|---|---|---|
+| `ramabs` | none | 5/5 sessions negotiate, counters advance |
+| `ramabs` | 1 Hz | session 1 OK (degraded), sessions 2-4 time out |
+| `dbus-rel` | none | 3/3 negotiate |
+| `dbus-rel` | 1 Hz | sessions 1-2 OK (degraded), 3-4 time out |
+
+`dbus-rel` builds **no InputRouter at all**, so no sink exists on that row: the
+variable that decides the outcome is the observer, not the backend.
+
+**Two rules follow.**
+
+1. **Never diagnose a streaming complaint with an observer attached**, and never
+   compare a suspect configuration measured *with* an observer against a control
+   measured *without* one. That is the mistake that pointed a whole wave at the
+   wrong component. Sample sparsely, and connect/read/close rather than holding
+   the monitor open.
+2. **This is a fleet-wide fragility, not a station's bug.** One well-behaved QMP
+   client can stall every new session on any of the 61 stations. Recorded here
+   deliberately un-fixed: it belongs to `idle.rs` and deserves its own change
+   with its own proof, not a rider on a station cutover.

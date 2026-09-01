@@ -395,11 +395,21 @@ fn worker_main(
                     }
                 }
 
+                // server-side encode latency: snapshot -> AU ready. Includes the
+                // handoff queue wait, so the number stays comparable with the old
+                // synchronous snap->AU metric (downstream tooling parses this line
+                // AND `Au::encode_us` below, now the same measurement twice: once
+                // for the journal's p50/p95 window, once riding the AU itself so
+                // `trace_session.rs` can attach it to a real span instead of text).
+                let now_end = Instant::now();
+                let encode_ns = now_end.duration_since(job.snap_t0).as_nanos();
+
                 let au = Au {
                     data: Arc::new(au_bytes),
                     is_key,
                     capture_ts_us: job.cap_ts_us,
                     frame_id,
+                    encode_us: (encode_ns / 1000).min(u32::MAX as u128) as u32,
                 };
                 if is_key {
                     // blocking_lock is legal here: this is a plain OS thread,
@@ -411,11 +421,7 @@ fn worker_main(
                 let _ = tx.send(au);
                 frame_id = frame_id.wrapping_add(1);
 
-                // server-side encode latency: snapshot -> AU ready. Includes the
-                // handoff queue wait, so the number stays comparable with the old
-                // synchronous snap->AU metric (downstream tooling parses this line).
-                let now_end = Instant::now();
-                enc_ns.push(now_end.duration_since(job.snap_t0).as_nanos());
+                enc_ns.push(encode_ns);
                 if prof {
                     p_snap.push(job.prof_snap_ns);
                     p_scene.push(job.prof_scene_ns);

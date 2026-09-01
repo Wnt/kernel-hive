@@ -18,6 +18,7 @@ import { requestHoverZoom } from './railNavigation';
 import type { HallDesk } from './hallLayout';
 import SceneInteractionDebug from './SceneInteractionDebug';
 import EditorialGrade from './EditorialGrade';
+import { beginHallEpisode, endHallEpisode } from './hallEngagement';
 
 // ============================================================================
 //  SCENE V2 — root ("/museum")
@@ -71,6 +72,14 @@ export default function SceneV2() {
         : null,
     );
   }, [layout]);
+  // One `hall.navigate` episode per mount of the hall: entered -> approached a
+  // machine -> opened one. In an effect, not the render body, so StrictMode's
+  // double render cannot open two. See hallEngagement.ts for what an approach
+  // is defined as and what it deliberately does not claim.
+  useEffect(() => {
+    beginHallEpisode();
+    return endHallEpisode;
+  }, []);
   useEffect(() => {
     if (import.meta.env.DEV && layout) {
       (window as unknown as { __shots?: string[] }).__shots = shotNames(layout);

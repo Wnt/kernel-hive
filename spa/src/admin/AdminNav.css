@@ -1,0 +1,30 @@
+/* Admin-level nav: same segmented-control look the top app bar already uses
+   (.seg in index.css), so an admin sees one visual language for "which view
+   am I in" whether they are on the gallery or on an admin page. Neither
+   /admin/walkin nor /admin/observability renders the app bar (App.tsx mounts
+   them bare), so this owns its own top clearance rather than the 76px
+   "clear the fixed app bar" offset About.css uses. */
+.admin-nav {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--tint-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+  margin: 24px 24px 0;
+}
+.admin-nav-link {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.admin-nav-link:hover { color: var(--accent-ink); }
+.admin-nav-link.active { background: var(--accent); color: var(--paper-raised); }
+
+@media (max-width: 640px) {
+  .admin-nav { margin: 16px 12px 0; flex-wrap: wrap; }
+}

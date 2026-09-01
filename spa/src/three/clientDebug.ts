@@ -5,8 +5,10 @@
 //    POST /clientlog          — NO token. JSON body: ONE event object or an ARRAY of
 //                               events. Event fields: ts (ms epoch), sessionId
 //                               (8-hex per page load), station (osId or ''), ua
-//                               (only on the FIRST event of a batch), event,
-//                               detail (<=512 chars). 16KiB body cap.
+//                               (only on the FIRST event of a batch), build
+//                               (the bundle id, likewise only on the FIRST
+//                               event), event, detail (<=512 chars). 16KiB
+//                               body cap.
 //    GET  /clientcmd?since=N  — NO token. Any authenticated gallery session may
 //                               poll; {"seq":N,"cmds":[...]} with only cmds
 //                               seq>since. cmd is one of snapshot | verbose |
@@ -25,7 +27,12 @@
 //  US) and free of React.
 // ============================================================================
 
+import { configureLogSink, logRecord } from '../analytics/logSink';
+import { postTelemetry } from '../analytics/beacon';
 import { getAdminToken } from './adminAuth';
+// The bundle id every lane that names a build reads — the /traces resource
+// envelope, this file's /clientlog batches, its snapshots. Not re-derived here.
+import { BUILD_ID } from '../analytics/build';
 
 const FLUSH_MS = 5000;          // normal batching cadence
 const VERBOSE_FLUSH_MS = 1000;  // verbose mode lowers batching latency
@@ -36,14 +43,13 @@ const MAX_BATCH_CHARS = 14000;  // stay under the server's 16KiB body cap
 const SNAP_CHUNK = 480;         // snapshot JSON is chunked to respect MAX_DETAIL
 const EVAL_RESULT_MAX = 16 * 1024; // cap reassembled eval-result telemetry
 
-/** Bundle marker so a snapshot proves WHICH client build is running. */
-const BUNDLE_MARKER = 'spa-webrtc-phase1-20260716';
-
 interface ClientLogEvent {
   ts: number;
   sessionId: string;
   tile: string;
   ua?: string;
+  /** The bundle id — first event of a batch only, exactly like `ua`. */
+  build?: string;
   event: string;
   detail: string;
 }
@@ -57,7 +63,25 @@ interface ClientCmd {
 }
 
 // ---- session id: 8 hex chars per page load ---------------------------------
+/**
+ * The tab's session id — ADOPTED from the pre-React bootstrap when there is one.
+ *
+ * `spa/index.html` runs a tiny inline error reporter before any of this loads,
+ * so that a crash during boot is still reported, and it mints its own id into
+ * `window.__kernelHiveErrorSessionId`. Minting a second one here meant one tab
+ * had TWO identities: early errors and late errors landed in /clientlog under
+ * different ids, and nothing could tell they came from the same visit. That
+ * cost nothing while the ids were only ever printed — and became load-bearing
+ * the moment traces wanted to join a span to the raw event tail behind it.
+ *
+ * So the bootstrap's id wins when present, and this generator is the fallback
+ * for the case that has no bootstrap at all: the unit tests.
+ */
 function makeSessionId(): string {
+  try {
+    const early = (window as { __kernelHiveErrorSessionId?: string }).__kernelHiveErrorSessionId;
+    if (early && early !== 'unknown') return early;
+  } catch { /* no window (tests) — fall through and mint one */ }
   try {
     const b = new Uint8Array(4);
     crypto.getRandomValues(b);
@@ -67,6 +91,12 @@ function makeSessionId(): string {
   }
 }
 const sessionId = makeSessionId();
+
+/** THE session id for this tab. Exported so the analytics/trace plane stamps
+ *  the same value /clientlog does — one id, two stores, so a trace and the raw
+ *  event tail behind it are joinable — and the same value the pre-React
+ *  bootstrap in index.html already stamped on any boot-time error. */
+export function clientSessionId(): string { return sessionId; }
 
 // ---- module state -----------------------------------------------------------
 let pending: ClientLogEvent[] = [];
@@ -106,6 +136,7 @@ let telemetryAllowed = false;
 /** Enable the /clientlog sink for this document. See `logClientEvent`. */
 export function setTelemetryAllowed(allowed: boolean): void {
   telemetryAllowed = allowed;
+  configureLogSink({ allowed, sessionId }); // one switch for both lanes
 }
 /** Queue one telemetry event (batched; flushed every 5s / 1s verbose). Never throws. */
 export function logClientEvent(event: string, detail: string): void {
@@ -123,6 +154,8 @@ export function logClientEvent(event: string, detail: string): void {
   if (!telemetryAllowed) return;
   try {
     const d = detail.length > MAX_DETAIL ? `${detail.slice(0, MAX_DETAIL - 1)}…` : detail;
+    logRecord(event, d, activeTile ?? ''); // the lane that replaces this one
+
     pending.push({ ts: Date.now(), sessionId, tile: activeTile ?? '', event, detail: d });
     if (pending.length > MAX_PENDING) pending.splice(0, pending.length - MAX_PENDING);
     ensureFlushTimer();
@@ -187,8 +220,11 @@ export function flushNow(force = false): void {
     }
     const batch = pending.slice(0, take);
     pending = pending.slice(take);
-    // ua rides only the first event of each batch (contract: keeps bodies small).
+    // ua and build ride only the first event of each batch (contract: keeps
+    // bodies small). `build` because clientlog.jsonl recorded the UA and not
+    // the bundle — see analytics/build.ts and docs/ANALYTICS.md §8.3.
     try { batch[0].ua = navigator.userAgent; } catch { /* noop */ }
+    try { batch[0].build = BUILD_ID; } catch { /* noop */ }
     const body = JSON.stringify(batch);
     // /clientlog is never token-gated: on the public edge the visitor's own
     // session cookie authorizes it, on LAN it is open. Telemetry therefore
@@ -199,18 +235,17 @@ export function flushNow(force = false): void {
     const adminToken = getAdminToken();
     if (adminToken) headers['X-Admin-Token'] = adminToken;
     flushInFlight = true;
-    void fetch('/clientlog', {
-      method: 'POST',
-      keepalive: true,
-      headers,
-      body,
-    }).then((res) => {
+    // `keepalive` only on the FINAL flush — `analytics/beacon.ts`. This route
+    // used to take it on every batch, and a document's allowance is 64 KiB
+    // spent once for its whole life.
+    void postTelemetry('/clientlog', body, { final: force, headers }).then((result) => {
       flushInFlight = false;
-      if (!res.ok) { requeueBatch(batch); return; }
+      // A refusal is a settled answer but the evidence is still worth keeping
+      // here: /clientlog is the raw session record an operator reads when a
+      // stream misbehaves, and a 401 on one batch is routinely a session that
+      // comes back.
+      if (result !== 'sent') { requeueBatch(batch); return; }
       if (pending.length) window.setTimeout(() => flushNow(), 250); // drain overflow
-    }).catch(() => {
-      flushInFlight = false;
-      requeueBatch(batch); // box unreachable — keep the evidence, retry on the interval
     });
   } catch { /* never throw */ }
 }
@@ -243,7 +278,7 @@ export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }
  *  context, a restricted network's blocked QUIC). Kept well under the 512-char
  *  detail cap and free of anything identifying beyond the UA we already log. */
 function describeEnvironment(tile: string | null): string {
-  const probe: Record<string, unknown> = { tile: tile ?? '', bundle: BUNDLE_MARKER };
+  const probe: Record<string, unknown> = { tile: tile ?? '', bundle: BUILD_ID };
   try {
     probe.wt = typeof WebTransport !== 'undefined';
     probe.vd = typeof VideoDecoder !== 'undefined';
@@ -543,7 +578,7 @@ function emitSnapshot(): void {
     payload = JSON.stringify({
       metrics: snapshotHook ? snapshotHook() : null,
       ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-      bundle: BUNDLE_MARKER,
+      bundle: BUILD_ID,
     });
   } catch (e) {
     payload = `snapshot failed: ${String(e)}`;

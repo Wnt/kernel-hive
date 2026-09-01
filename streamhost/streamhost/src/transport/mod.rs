@@ -56,7 +56,7 @@ mod input_stream;
 use backlog::{session_backlog, BacklogGate, RelayVerdict};
 use egress::{send_au, send_audio, send_params_encoder, send_params_stats};
 use input_bench::spawn_input_bench;
-use input_stream::drain_input_stream;
+use input_stream::{spawn_bi_readers, spawn_uni_readers, SessionInputCtx};
 
 // CLIENT->SERVER feedback datagram opcode (SECTION 3.1). Distinct from the type-9
 // RTT ping and the input record namespace {1..6}.
@@ -151,6 +151,17 @@ pub async fn serve(
         ));
     }
 
+    // Held-key teardown reaper (key_state.rs), ONE per station like the pacer
+    // above — see its module doc for why sessions get their OWN fresh
+    // `KeyState` yet release through this one shared channel/task.
+    let (key_reap_tx, key_reap_rx) = tokio::sync::mpsc::unbounded_channel();
+    tokio::spawn(crate::key_state::run_reaper(
+        cap.clone(),
+        cfg.clone(),
+        input_router.clone(),
+        key_reap_rx,
+    ));
+
     // Outer loop: (re)generate cert, (re)bind endpoint, serve until the rotation
     // deadline, then rebuild on the same UDP port.
     loop {
@@ -208,9 +219,19 @@ pub async fn serve(
                     let pauser = pauser.clone();
                     let input_router = input_router.clone();
                     let mouse = mouse.clone();
+                    let key_reap_tx = key_reap_tx.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = handle_session(incoming, cfg, cap, enc, audio, abr, pauser, input_router, mouse).await {
-                            eprintln!("[transport] session error: {e:?}");
+                        if let Err(e) = handle_session(incoming, cfg, cap, enc, audio, abr, pauser, input_router, mouse, key_reap_tx).await {
+                            // No ctx: the session's own context died with it,
+                            // and inventing one here would manufacture a
+                            // correlation that joins to nothing. The record is
+                            // still searchable by station and severity, which
+                            // is what "which station is failing sessions" needs.
+                            crate::sh_log!(
+                                crate::trace::Level::Error,
+                                None,
+                                "[transport] session error: {e:?}"
+                            );
                         }
                     });
                 }
@@ -241,6 +262,7 @@ async fn handle_session(
     pauser: Option<Arc<crate::idle::IdlePauser>>,
     input_router: Option<Arc<crate::realtime_input::InputRouter>>,
     mouse: input::SharedMouse,
+    key_reap_tx: tokio::sync::mpsc::UnboundedSender<Vec<u16>>,
 ) -> Result<()> {
     let req = incoming.await?;
     eprintln!("[transport] SESSION path={}", req.path());
@@ -252,7 +274,20 @@ async fn handle_session(
         req.forbidden().await;
         return Ok(());
     }
+    // The browser's trace id rides the session path's query string — the input
+    // plane has no headers to carry it (contract §3). Parsed BEFORE accept so
+    // the session span starts where the session does; `None` means this becomes
+    // a ROOT rather than a fabricated child (contract §7). The ticket half of
+    // the path is never read here and never reaches a span.
+    let trace_parent = crate::trace::context::from_wt_path(req.path());
     let conn = Arc::new(req.accept().await?);
+    crate::probes::probe!(TRANSPORT_WT_SESSION);
+    let (strace, mut session_span) = crate::trace_session::begin(
+        trace_parent,
+        "webtransport",
+        cfg.capture_backend.as_str(),
+        cfg.input_backend.as_str(),
+    );
     eprintln!(
         "[transport] SESSION_ACCEPTED addr={}",
         conn.remote_address()
@@ -264,7 +299,20 @@ async fn handle_session(
     // idle-pause grace clock once the last session is gone.
     let _pause_guard = match &pauser {
         Some(p) => {
-            p.session_started().await;
+            // `guest.resume` — the emulator span that answers "was it slow
+            // because the machine was asleep". The belief is read BEFORE the
+            // resume, which clears it.
+            crate::trace_session::guest_resume(
+                strace.ctx(),
+                crate::idle::guest_believed_paused(),
+                if cfg.capture_backend.is_qemu() {
+                    "qmp"
+                } else {
+                    "signal"
+                },
+                p.session_started(),
+            )
+            .await;
             Some(crate::idle::SessionGuard::new(p.clone()))
         }
         None => None,
@@ -287,6 +335,11 @@ async fn handle_session(
     // position, so a browser reload continues tracking without a corner-chase.
     mouse.lock().await.reset_for_session();
 
+    // OPPOSITE of `mouse` above: genuinely per-session, fresh every time (see
+    // key_state.rs). `Drop` queues whatever is still held once the LAST
+    // clone below is gone — every exit from this session, abrupt or not.
+    let keys = crate::key_state::new_session(key_reap_tx);
+
     // MOVE COALESCER for the dbus (abs/rel) stations — mirrors warpd.rs. The datagram
     // receive loop must NOT apply each move as an awaited dbus call_method
     // (SetAbsPosition/RelMotion waits for a QEMU method REPLY), because at
@@ -307,6 +360,7 @@ async fn handle_session(
         let cap = cap.clone();
         let cfg = cfg.clone();
         let mouse = mouse.clone();
+        let keys = keys.clone();
         tokio::spawn(async move {
             while let Some(first) = rx.recv().await {
                 let mut batch = vec![first];
@@ -329,14 +383,14 @@ async fn handle_session(
                 }
                 let t0 = crate::input_telemetry::enabled().then(Instant::now);
                 if let Some(rec) = last_abs {
-                    input::handle(&cap, &cfg, &mouse, None, &rec).await;
+                    input::handle(&cap, &cfg, &mouse, &keys, None, &rec).await;
                 } else if have_rel {
                     let dx = sdx.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
                     let dy = sdy.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
                     let mut rec = vec![4u8, 0, 0, 0, 0];
                     rec[1..3].copy_from_slice(&dx.to_le_bytes());
                     rec[3..5].copy_from_slice(&dy.to_le_bytes());
-                    input::handle(&cap, &cfg, &mouse, None, &rec).await;
+                    input::handle(&cap, &cfg, &mouse, &keys, None, &rec).await;
                 }
                 if let Some(t0) = t0 {
                     let age = oldest.map(|o| t0.saturating_duration_since(o).as_micros() as u64);
@@ -359,10 +413,12 @@ async fn handle_session(
         let cap = cap.clone();
         let cfg = cfg.clone();
         let mouse = mouse.clone();
+        let keys = keys.clone();
         let input_router = input_router.clone();
         let abr = abr.clone();
         let move_tx = move_tx.clone();
         let skip_count = skip_count.clone();
+        let strace = strace.clone();
         tokio::spawn(async move {
             while let Ok(dg) = conn.receive_datagram().await {
                 let p = dg.payload();
@@ -379,69 +435,38 @@ async fn handle_session(
                     }
                 } else if let (Some(tx), true) = (&move_tx, p[0] == 1 || p[0] == 4) {
                     // Move -> coalescer (never blocks). Instant only when tel on.
+                    strace.mark_first_input("datagram");
                     let at = crate::input_telemetry::enabled().then(Instant::now);
                     let _ = tx.send((p.to_vec(), at));
                 } else {
-                    input::handle(&cap, &cfg, &mouse, input_router.as_ref(), &p).await;
+                    strace.mark_first_input("datagram");
+                    input::handle(&cap, &cfg, &mouse, &keys, input_router.as_ref(), &p).await;
                 }
             }
         });
     }
 
-    // ---- LEGACY reliable input: client opens ONE bidi stream, all classes
-    // interleaved as length-prefixed records. Kept running unconditionally so an
-    // old UI still drives input. A new
-    // client that uses per-type uni streams simply never opens a bidi, so this loop
-    // idles harmlessly. `has_tag=false`: no leading class byte on this framing.
-    {
-        let conn = conn.clone();
-        let cap = cap.clone();
-        let cfg = cfg.clone();
-        let mouse = mouse.clone();
-        let input_router = input_router.clone();
-        tokio::spawn(async move {
-            while let Ok((_send, recv)) = conn.accept_bi().await {
-                let cap = cap.clone();
-                let cfg = cfg.clone();
-                let mouse = mouse.clone();
-                let input_router = input_router.clone();
-                tokio::spawn(async move {
-                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), false)
-                        .await;
-                });
-            }
-        });
-    }
+    // Bundle for the two reliable-input acceptors below (input_stream.rs):
+    // one clone per accepted stream instead of five.
+    let input_ctx = SessionInputCtx {
+        cap: cap.clone(),
+        cfg: cfg.clone(),
+        mouse: mouse.clone(),
+        keys: keys.clone(),
+        input_router: input_router.clone(),
+    };
 
-    // ---- PER-TYPE reliable input (HOL avoidance): the client opens ONE
-    // unidirectional reliable stream PER input class, each led by a 1-byte class tag
-    // (ICLASS_KEY/BUTTON/WHEEL/CONTROL) then the same [len u16 | record] framing. A
-    // retransmit on one class's stream can't stall another's. Each accepted stream
-    // gets its own reader task with a CLONE of the shared per-session `mouse` state,
-    // so keys/buttons/wheel still reach input::handle in per-class order and the
-    // abs->rel pointer state stays coherent with the datagram (moves) task.
-    // `has_tag=true`: the first byte of the stream is the class tag. Always on:
-    // the shipped UI opens per-class uni streams unconditionally, so disabling
-    // this router (the old SH_INPUT_STREAMS=off) silently killed all reliable
-    // input; the knob was removed 2026-07-14.
-    {
-        let conn = conn.clone();
-        let cap = cap.clone();
-        let cfg = cfg.clone();
-        let mouse = mouse.clone();
-        let input_router = input_router.clone();
-        tokio::spawn(async move {
-            while let Ok(recv) = conn.accept_uni().await {
-                let cap = cap.clone();
-                let cfg = cfg.clone();
-                let mouse = mouse.clone();
-                let input_router = input_router.clone();
-                tokio::spawn(async move {
-                    drain_input_stream(recv, &cap, &cfg, &mouse, input_router.as_ref(), true).await;
-                });
-            }
-        });
-    }
+    // LEGACY reliable input: client opens ONE bidi stream, all classes
+    // interleaved as length-prefixed records. Kept running unconditionally
+    // so an old UI still drives input; a client that uses per-type uni
+    // streams simply never opens a bidi, so this idles harmlessly.
+    spawn_bi_readers(conn.clone(), input_ctx.clone(), strace.clone());
+
+    // PER-TYPE reliable input (HOL avoidance): the client opens ONE
+    // unidirectional reliable stream PER input class (ICLASS_KEY/BUTTON/
+    // WHEEL/CONTROL), each a retransmit-isolated class so one can't stall
+    // another. Always on -- the shipped UI opens these unconditionally.
+    spawn_uni_readers(conn.clone(), input_ctx, strace.clone());
 
     // ---- audio: one Opus packet per uni-stream (kind=2) ----
     if let Some(audio) = audio {
@@ -555,6 +580,8 @@ async fn handle_session(
     }
     // B1: frame_id of the last AU relayed to THIS session, the `sent` half of
     // the sent-acked backlog estimate (see transport/backlog.rs).
+    // Set only on a daemon-internal fault; a client that simply left is not one.
+    let mut fault: Option<&'static str> = None;
     let mut last_sent_id: u32 = 0;
     if let Some(k) = primed {
         let r = send_au(&conn, &k).await;
@@ -662,6 +689,12 @@ async fn handle_session(
                         au.data.len()
                     );
                 }
+                // One-shot marks: an AtomicBool swap per AU, never a span per
+                // frame (trace/mod.rs states the rule and why).
+                strace.mark_first_au(au.frame_id, au.is_key);
+                // Sampled-input EFFECT, half 1 of 2: one relaxed load unless a
+                // sampled edge is pending (input_trace.rs / trace_session.rs).
+                strace.effect_encoded(au.frame_id, au.is_key, au.encode_us);
                 let r = send_au(&conn, &au).await;
                 if vt {
                     eprintln!("[vtrace] sent frame_id={} ok={}", au.frame_id, r.is_ok());
@@ -670,6 +703,16 @@ async fn handle_session(
                     break;
                 }
                 tx_bytes.fetch_add((10 + au.data.len()) as u64, Ordering::Relaxed);
+                strace.mark_first_send(au.data.len());
+                // Half 2 of 2: closes the window `effect_encoded` peeked at. A
+                // `Some` means THIS au answered a sampled edge — tell the
+                // client which frame_id it was so it can close the return leg
+                // (RETURN LEG doc, trace_session.rs header). Spawned: the mark
+                // is its own tiny uni-stream and must never make the next
+                // video AU wait on it.
+                if let Some(effect_ctx) = strace.effect_sent(au.frame_id, au.data.len()) {
+                    egress::spawn_frame_mark(conn.clone(), effect_ctx, au.frame_id);
+                }
                 last_sent_id = au.frame_id;
             }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
@@ -683,11 +726,22 @@ async fn handle_session(
                 }
                 continue;
             }
-            Err(_) => break,
+            Err(_) => {
+                // The encoder's broadcast SENDER is gone: a daemon-internal
+                // fault, unlike the send failure above, which is just a visitor
+                // closing the tab. Only the former makes the session a red span.
+                fault = Some("encoder stream closed");
+                break;
+            }
         }
     }
     abr.unregister(sess_id);
     eprintln!("[transport] SESSION_ENDED");
+    match fault {
+        Some(f) => session_span.error(f),
+        None => session_span.ok(),
+    };
+    session_span.end();
     Ok(())
 }
 

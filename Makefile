@@ -1,8 +1,9 @@
 .PHONY: station-registry-generate station-registry-check station-registry-validate \
 	gallery-manifest-check check-file-size check-generated-drift quality-gate \
 	deploy-pair-imports-check \
-	poster-gallery-fetch poster-gallery-verify devwatch \
-	release-notes release-notes-check release-notes-brief
+	poster-gallery-fetch poster-gallery-verify devwatch drift-report \
+	release-notes release-notes-check release-notes-brief \
+	analytics-catalogue analytics-catalogue-check reach-report
 
 station-registry-generate:
 	python3 scripts/stations-registry.py generate
@@ -67,6 +68,31 @@ release-notes-brief:
 deploy-pair-imports-check:
 	python3 scripts/lint/deploy-pair-imports.py
 
+# Drift REPORTS. Deliberately not part of quality-gate or the pre-push hook:
+# each asks whether live/published state agrees with the repo, which is a
+# property of the world at this instant and not of the commit being pushed.
+# Wiring either into a push gate recreates the wedge CONTINUOUS-DEPLOY-PROPOSAL
+# .md §2 removes. Run them when you want to know; they block nobody.
+drift-report:
+	-python3 scripts/stations-registry.py drift
+	-python3 scripts/lint/published-form-drift.py
+
+# Feature-reach probe catalogue (docs/ANALYTICS.md). `check` does two things:
+# byte-parity of the generated registry document, and — the load-bearing half —
+# that every declared probe still has a live call site. Without the second, a
+# probe that was declared and never called (or whose call site MOVED) reads as
+# "nobody uses this feature", which is how working code gets deleted.
+analytics-catalogue:
+	node scripts/analytics/catalogue.mjs emit
+
+analytics-catalogue-check:
+	node scripts/analytics/catalogue.mjs check
+
+# What production actually uses, crossed with what the tests cover. Reads the
+# live box by default; --report <file> to join an already-fetched aggregate.
+reach-report:
+	python3 scripts/dev/reach-report.py
+
 # Cross-cutting quality gates (see docs/lab/AGENT-CI-EXIT-RULE.md).
 check-file-size:
 	node scripts/check-file-size.mjs --strict
@@ -75,7 +101,7 @@ check-generated-drift:
 	scripts/check-generated-drift.sh
 
 # The two gates every branch owes, regardless of language touched.
-quality-gate: check-file-size check-generated-drift
+quality-gate: check-file-size check-generated-drift analytics-catalogue-check
 
 # Old target names (terminology stage 2, 2026-08-12) — one-epoch aliases so
 # muscle memory and in-flight agent briefs keep working. Removed in stage 5.

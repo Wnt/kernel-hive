@@ -120,6 +120,20 @@ scripts/build-guests/assets/freedos/cosmo.zip
 scripts/build-guests/assets/freedos/jill.zip
 scripts/build-guests/assets/winxp/Winamp-2.95-installed.tar.gz
 
+# Instana EUM agent — fetched from INSTANA_EUM_SCRIPT_URL and self-hosted at
+# deploy time (scripts/serve-https-spa.sh publish_instana_agent), never
+# committed. This pattern covers a local dev-serving copy too, should one ever
+# be added under spa/public/; the live copy lives only on the box's webroot,
+# outside the repo tree entirely.
+**/vendor/instana-eum.min.js
+
+# The EUM beacon proxy's upstream — the tenant's reporting URL, written to the
+# box's serve directory at deploy time (scripts/serve-https-spa.sh
+# publish_instana_upstream) and read only by scripts/serve/eum_proxy.py. The
+# live copy lives outside the repo tree; this pattern only stops a local
+# experiment from committing the value.
+scripts/serve/instana-eum-upstream.txt
+
 # per-worker session identity written by scripts/dev/wt.sh
 .kh-session
 
@@ -132,3 +146,16 @@ scripts/serve/clientlog.jsonl*
 scripts/serve/clientcmd.json
 scripts/serve/clientcmd-audit.jsonl
 scripts/serve/usage-stats.json*
+
+# scripts/dev/fleet_rollout.py resume journals — local run state, never shared
+.fleet-rollout/
+
+# scripts/visitor-sim run manifests — local accounting of what a run touched
+# (walk-in handles created, resets fired), never source, never shared. The
+# default --out-dir is anchored to the tool's own directory (lib/cli.mjs), so
+# it always lands here — but an explicit `--out-dir visitor-sim-runs` typed
+# while sitting at the repo root (the same name shown in --help/the docs)
+# would still land at the git root, so that one specific, narrow case is
+# covered too, belt-and-braces, without ignoring anything else there.
+scripts/visitor-sim/visitor-sim-runs/
+/visitor-sim-runs/

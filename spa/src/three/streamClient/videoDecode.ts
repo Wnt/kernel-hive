@@ -31,6 +31,8 @@ import { codecStringFor } from './format';
 import { isStaleAu } from './auGate';
 import { DECODER_FAIL_THRESHOLD, IS_FIREFOX } from './constants';
 import { isSoftwareDecodeLatched, latchSoftwareDecode } from './softwareDecodeLatch';
+import { bytesToHex, noteDecodeSubmit, noteDecoded, noteFrameMark, noteReceived } from './frameTrace';
+import { noteDecodeError, noteFrameGap, noteQualitySwitch } from './analyticsEvents';
 
 // ---- server→client encoder params + HUD stats (KIND_PARAMS) --------------
 export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader) {
@@ -63,7 +65,13 @@ export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader)
       enc.nativeWidth = ndv.getUint16(0, true);
       enc.nativeHeight = ndv.getUint16(2, true);
     }
+    const prevEnc = this.encParams;
     this.encParams = enc;
+    // ON THE SWITCH, not on a sample. The 5-second clientlog `stats` line
+    // carries the tier and CRF in force at the moment it is written, which can
+    // never say that a change HAPPENED — a switch that happened and reverted
+    // between two samples left no evidence at all. This record IS the change.
+    noteQualitySwitch(this, prevEnc, enc, this.stationId);
     // Keep the decoder codec in sync with the live encoder (Section 3.2). A tier
     // change is an ffmpeg restart that emits a fresh SPS+PPS+IDR, so we defer the
     // reconfigure to the next keyframe (feedVideoAU) — never mid-GOP.
@@ -96,6 +104,20 @@ export async function handleParamsStreamImpl(this: StreamClient, br: ByteReader)
       stats.skippedFrames = sdv.getUint32(0, true);
     }
     this.serverStats = stats;
+  } else if (subtype === 3) {
+    // Return-path frame-trace mark (docs/lab/TRACE-CONTEXT.md §3.2/§8.1,
+    // `transport/egress.rs::spawn_frame_mark`): frame_id (u32 LE) + trace-id
+    // (16 BE) + span-id (8 BE) naming which AU answered a sampled input
+    // edge. `frameTrace.ts` matches it against this tab's own receive/
+    // decode/paint timestamps for that frame_id, in whichever order the two
+    // independent uni-streams happen to arrive.
+    const b = await br.readBytes(28);
+    if (!b) return;
+    const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+    const frameId = dv.getUint32(0, true);
+    const traceId = bytesToHex(b.subarray(4, 20));
+    const spanId = bytesToHex(b.subarray(20, 28));
+    noteFrameMark(frameId, traceId, spanId, this.stationId);
   } else {
     await br.readToEnd();
   }
@@ -129,6 +151,20 @@ export function noteDecodeFailureImpl(this: StreamClient, msg: string) {
     console.error(`[streamhost] decoder error (${this.consecutiveDecodeFails} consecutive): ${msg}`);
     logClientEvent('decoder-error', `${msg} (consecutive=${this.consecutiveDecodeFails})`);
   }
+  // OUTSIDE the 1/s throttle above, deliberately. That throttle exists so a
+  // storm cannot spam a console and a rolling log; the analytics plane folds
+  // repeats into a counter and a fingerprint by construction, so throttling
+  // here would under-report the very fault the counter exists to size. It
+  // cannot storm regardless: a VideoDecoder error is fatal to the instance, so
+  // the next one waits on a keyframe rebuilding the decoder.
+  noteDecodeError({
+    message: msg,
+    consecutive: this.consecutiveDecodeFails,
+    total: this.decodeErrors,
+    path: this.decodePath,
+    fatal: this.decoderFailed,
+    stationId: this.stationId,
+  });
 }
 
 export function setupVideoDecoderImpl(this: StreamClient) {
@@ -149,6 +185,10 @@ export function setupVideoDecoderImpl(this: StreamClient) {
         this.submitTimes.delete(ts);
       }
       this.lastDecodeOutAt = now;
+      // The A/V skew operand. `frame.timestamp` is the capture stamp this AU
+      // was submitted with, unchanged by WebCodecs, so it is the server's own
+      // µs clock coming back out of the decoder.
+      this.lastVideoTsUs = ts;
       this.frozen = false; // a painted frame clears the freeze latch
       const w = frame.displayWidth, h = frame.displayHeight;
       if (w && h && (w !== this.stats.guestW || h !== this.stats.guestH)) {
@@ -162,8 +202,13 @@ export function setupVideoDecoderImpl(this: StreamClient) {
         this.stats.fps = +(this.fCount * 1000 / (now - this.fT)).toFixed(1);
         this.fCount = 0; this.fT = now;
       }
-      // Hand the frame to the sink; it takes ownership and closes it.
+      // Hand the frame to the sink; it takes ownership and closes it. Timed
+      // for return-path tracing: the sink's `drawImage` (the direct-canvas
+      // paint path, `useStreamhostSession.ts`) runs SYNCHRONOUSLY inside this
+      // call, so wrapping it is a real paint measurement, not a guess — no
+      // separate hook into the paint sink was needed.
       try { this.cfg.onVideoFrame(frame); } catch { try { frame.close(); } catch { /* noop */ } }
+      noteDecoded(ts, now, performance.now());
     },
     error: (e) => {
       this.stats.lastError = `decode: ${String(e)}`;
@@ -315,6 +360,11 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const frameId = dv.getUint32(0, true);
   const isKey = dv.getUint8(4) === 1;
+  // Return-path tracing (frameTrace.ts): the wire arrival of every AU, cheap
+  // and unconditional — no span here, just a bounded timestamp the mark
+  // (if one ever names this frame_id) will later pair with a decode+paint
+  // pair to emit real spans from.
+  noteReceived(frameId, performance.now());
   // OUT-OF-ORDER / STALE-AU GUARD: per-AU uni streams complete in retransmit
   // order, not frame_id order — a delayed delta arriving behind the newest
   // frame would decode against the wrong reference. Keys always pass (an IDR
@@ -340,6 +390,10 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
       // reference frames — arm the gate so deltas are dropped until the next
       // IDR (freeze the last clean picture instead of painting corruption).
       this.auGate.noteGap();
+      // Sampled 1-in-10 (analytics/streamEvents.ts): a gap is a LEVEL on a
+      // congested link, not an edge, and it is the one event in this plane
+      // that could genuinely flood the collector at 1-in-1.
+      noteFrameGap(gap, this.stationId);
     }
   }
   this.lastFrameId = frameId;
@@ -369,12 +423,16 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
     }
   }
   // Record submit time so the output callback can diff decode latency.
-  this.submitTimes.set(ts, performance.now());
+  const submitAt = performance.now();
+  this.submitTimes.set(ts, submitAt);
   if (this.submitTimes.size > 240) {
     // bound the map — drop the oldest inserted key
     const first = this.submitTimes.keys().next().value;
     if (first !== undefined) this.submitTimes.delete(first);
   }
+  // Return-path tracing: `ts` is the only join key the output callback below
+  // gets back from WebCodecs, so record frameId against it now.
+  noteDecodeSubmit(frameId, ts, submitAt);
   try {
     this.videoDecoder.decode(new EncodedVideoChunk({
       type: isKey ? 'key' : 'delta',

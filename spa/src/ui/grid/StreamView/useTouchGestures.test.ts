@@ -26,6 +26,7 @@ function wireRecorder() {
   const records: Uint8Array[] = [];
   const c: StreamClientLike = {
     cseq: 0,
+    stationId: null,
     lastAbsX: null,
     lastAbsY: null,
     moveSent: 0,

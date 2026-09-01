@@ -102,6 +102,12 @@ export interface OSBinding {
    * may also arrive at runtime via /boot/index.json (VMManifestEntry.bootVideo).
    */
   bootVideo?: string;
+  /** STATION-TYPE grouping dimensions, carried through from the manifest so
+   *  telemetry call sites that only have an `OSBinding` (not the full
+   *  manifest row) can still stamp them — see analytics/stationAttrs.ts. */
+  emulatorFamily?: string;
+  uiKind?: string;
+  resetMode?: string;
 }
 
 // One entry per OS. @@STREAMED_COUNT@@ rows are streamhost; @@SHOWCASE_COUNT@@ are showcase posters.
@@ -125,5 +131,8 @@ export function bindingFromManifest(vm: RuntimeVMManifestEntry): OSBinding {
     hardwareInput: vm.hardwareInput,
     relativePointerOnly: vm.relativePointerOnly,
     bootVideo: vm.bootVideo?.mp4,
+    emulatorFamily: vm.emulatorFamily,
+    uiKind: vm.uiKind,
+    resetMode: vm.resetMode,
   };
 }

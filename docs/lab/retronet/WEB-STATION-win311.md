@@ -111,17 +111,26 @@ bridge. That is period furniture visible only to the retronet (the bridge has no
 uplink and the guard chain screens labhost); NetBEUI is not loaded — only
 `ms$ndishlp` and TCP/IP are bound.
 
-## ICQ feasibility — assessed, deferred
+## The IM plane — DONE, and it is AIM, not ICQ
 
-The fleet's ICQ build (2001b) is Win32 and will not run on Win16. Mirabilis did
-ship 16-bit clients (the 1.x line, 1996–97), which speak the **pre-OSCAR UDP
-:4000** protocol — unreachable through slirp but *reachable from this station
-now that it is bridged*, exactly as `beos`/ICBM does it
-([`STATION-beos.md`](STATION-beos.md)). So transport is no longer the blocker;
-sourcing and proving a Win16 1.x client (and its v2/v3 dialect against the
-server's v4/v5 handlers) is. AIM 16-bit is also preinstalled (`AIM.INI` points
-at real AOL hosts) and the gateway's TOC door (:9898) might suit it. Both are
-follow-ups; the web plane was the deliverable.
+**Superseded 2026-09-01.** This section used to record ICQ as assessed-and-
+deferred, and guessed that the preinstalled AIM client would want the gateway's
+TOC door (`:9898`). Both guesses are now retired by measurement:
+
+- The preinstalled client is **Netscape AOL Instant Messenger 1.0.414**, a plain
+  **OSCAR** client (`OSCARUI.DLL`, `OSCORE.DLL`, `OSCLOGIN.OCM`), talking to
+  `10.99.0.2:5190` like everything else. TOC is not used.
+- Its `AIM.INI` shipped pointing at `login.oscar.aol.com`, which the retronet's
+  wildcard DNS already resolves to the gateway — so it could reach our OSCAR
+  service with **no configuration at all**, which is how this started.
+- No Win16 ICQ client was needed or sourced.
+
+What it did need was a bridge, because AIM and ICQ clients cannot name each
+other: AIM refuses an all-numeric screen name and ICQ 2001b silently drops a
+message from a non-numeric sender. The full account, the design, and the
+acceptance evidence are in
+[`ICQ-STATION-win311.md`](ICQ-STATION-win311.md). The transport described in
+this document was sufficient as-built and **nothing about it changed**.
 
 ## Golden lineage & rollback (FULL paths)
 

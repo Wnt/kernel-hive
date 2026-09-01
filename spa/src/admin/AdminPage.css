@@ -1,5 +1,14 @@
-.admin-page { min-height: 100%; background: var(--paper); overflow: auto; }
-.admin-page-head { max-width: 720px; margin: 0 auto; padding: 76px 24px 0; }
+/* html/body/#root are overflow:hidden (index.css), so this view owns its own
+   scrolling — the outer element is the ONLY scroller and must be
+   position:absolute + a bounded box for overflow to engage at all.
+   min-height:100%/overflow:auto on one element (the old shape here) cannot
+   scroll: the element grows with its content instead of being constrained. */
+.admin-page-scroll {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  background: var(--paper);
+}
+.admin-page-head { max-width: 720px; margin: 0 auto; padding: 40px 24px 0; }
 .admin-page-head h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
 .admin-page-sub { margin: 0; color: var(--ink-muted); font-size: 13px; }
 .admin-page-sub a { color: var(--accent-ink); }

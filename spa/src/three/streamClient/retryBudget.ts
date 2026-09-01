@@ -37,6 +37,20 @@ export const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000];
 /** Restore delays: the host is EXPECTED to be briefly unavailable. */
 export const RESTORE_BACKOFF_MS = [250, 500, 1000, 2000];
 
+/**
+ * The reason token the keyframe watchdog spends an attempt with.
+ *
+ * A CONSTANT rather than a literal at the call site, because two places now
+ * depend on it meaning the same thing: `useStreamhostSession`'s watchdog
+ * writes it, and `sessionTelemetry` recognises it to emit
+ * `stream.keyframe.timeout` — the client has no keyframe REQUEST channel to
+ * instrument (the daemon forces an IDR on subscribe and runs a heartbeat), so
+ * the keyframe WAIT expiring is the only keyframe event a browser can
+ * honestly report. A string literal in two files would be a coupling nobody
+ * could see; this one fails to compile.
+ */
+export const RETRY_REASON_NO_KEYFRAME = 'no keyframe within budget';
+
 export interface RetryVerdict {
   /** The attempt number to act on and to LOG — never above `limit`. */
   attempt: number;

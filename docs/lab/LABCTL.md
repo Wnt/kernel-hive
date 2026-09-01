@@ -48,6 +48,18 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
    has no route off the bridge" is not a reason a station cannot have an exec
    channel — aix432 carried that sentence in its guest doc for four days.
 
+   `hpuxvue` (`serial_shell`) is the odd one and worth reading before you copy
+   it: its checkpoint bakes a **live** root session on the serial line (`-sh`,
+   PS1 `KHPROMPT>`), so there is no login to perform — and **Mosaic is a child
+   of that shell**, so the client must never end the session (it wraps each
+   command in a subshell for exactly that reason). Its limit is measured, not
+   theoretical: shell **builtins** are reliable (120/120), while running an
+   **external binary** wedges the session permanently about half the time. A
+   wedge echoes but never executes, respawns no getty, and clears only on
+   `labctl reset hpuxvue`; `exec` reports it as **exit 125** and never heals it
+   itself, because a restore also resets the visitor's scene. Script it in
+   builtins. See [`../guests/hpuxvue.md`](../guests/hpuxvue.md).
+
    The `serialcon_e` client (`streamhost/guest-agents/tru64/tru64exec.py`) logs
    in fresh per call, pins `ksh` (root's login shell is Tru64's legacy Bourne
    `/bin/sh`, which has no `$(...)`), silences the tty so shell echo cannot be mistaken

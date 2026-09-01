@@ -28,13 +28,19 @@
 // ============================================================================
 import { recordWireMove } from '../../input/pointerRecorder';
 import { countClick, countKeystroke } from '../usageStats';
+import { reach } from '../../analytics';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
+import { maybeSampleEdge, traceSuffix, withSuffix, keyClass, writeTraced } from './inputTrace';
 
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
   cseq: number;
+  /** The station this edge belongs to, or null when the caller gave none
+   *  (`StreamClient.stationId`, from `cfg.osId`). Carried into a sampled
+   *  edge's meta only — never into the wire record. */
+  stationId: string | null;
   /** Last absolute position this client PUT ON THE WIRE, or null while none ever
    *  was. Nullable on purpose: it is a cache of something the client said, and a
    *  cache that has never been filled must be able to say so — see sendButtonImpl. */
@@ -123,12 +129,35 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     // The DOWN edge only: a press and its release are one click, and counting
     // both would double every number on the scoreboard (three/usageStats).
     if (down) countClick();
+    // Same edge, a different question. countClick asks "how much is this
+    // MACHINE used" (the exhibit-popularity scoreboard); this asks "does the
+    // pointer path get used at all". Graded `act`, so an edge with no trusted
+    // human input behind it — a type-in demo, the win9x boot-modal dismissal —
+    // is dropped rather than counted (analytics/intent withoutHumanCredit).
+    if (down) reach('station.pointer.used', 'act');
     const px = x != null ? clampU16(x) : c.lastAbsX;
     const py = y != null ? clampU16(y) : c.lastAbsY;
+    // SAMPLED per-input tracing (docs/lab/TRACE-CONTEXT.md, inputTrace.ts):
+    // the browser's decision, made once per qualifying edge (key or click —
+    // never a pointer-move sample). `span` is null on an untraced edge and
+    // costs nothing beyond the rate check inside `maybeSampleEdge`.
+    //
+    // DELIBERATELY NOT ENDED HERE. `input.edge` is the ROOT of this action's
+    // trace and its duration is the visitor-facing edge → painted-pixel round
+    // trip, so it is closed by `inputTrace::settleEdge` when the daemon names
+    // the frame that answered it — or by that module's timeout when nothing
+    // ever does. Ending it here is what made every input trace's root report
+    // 0–1 ms of local enqueue for something a visitor waited a quarter of a
+    // second for.
+    const span = maybeSampleEdge('input.edge', {
+      'kh.input.class': 'click',
+      'kh.station': c.stationId ?? 'unknown',
+    });
     if (px == null || py == null) {
       const bare = new Uint8Array(3);
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
-      c.writeReliableClass(ICLASS_BUTTON, bare);
+      const rec = span ? withSuffix(bare, 3, traceSuffix(span)) : bare;
+      writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
       return;
     }
     const b = new Uint8Array(11);
@@ -138,13 +167,24 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     dv.setUint16(5, py, true);
     dv.setUint32(7, c.nextCseq(), true);
     c.lastAbsX = px; c.lastAbsY = py;
-    c.writeReliableClass(ICLASS_BUTTON, b);
+    const rec = span ? withSuffix(b, 11, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
     if (down) countKeystroke(keycode);
+    if (down) reach('station.key.used', 'act');
     const b = new Uint8Array(4); b[0] = T_KEY; b[1] = down ? 1 : 0;
     new DataView(b.buffer).setUint16(2, keycode & 0xffff, true);
-    c.writeReliableClass(ICLASS_KEY, b);
+    // See sendButtonImpl above for the sampling contract. `kh.key.class` is a
+    // BUCKET computed from the same scancode already on the wire (never the
+    // key itself, never typed text — see inputTrace.ts's header).
+    const span = maybeSampleEdge('input.edge', {
+      'kh.input.class': 'key',
+      'kh.key.class': keyClass(keycode),
+      'kh.station': c.stationId ?? 'unknown',
+    });
+    const rec = span ? withSuffix(b, 4, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_KEY, rec); });
   }
 export function sendWheelImpl(c: StreamClientLike, dx: number, dy: number) {
     const b = new Uint8Array(5); b[0] = T_WHEEL;

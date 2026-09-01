@@ -1,0 +1,75 @@
+# retronet-bot-aim.service — the greeter's SECOND identity, for AIM clients.
+#
+# Same bot.py, same LLM, same cage as retronet-bot.service. The only difference
+# is WHO it signs in as: the AIM screen name `hivebot` instead of ICQ UIN 10000,
+# reading /etc/retronet/bot-aim.env instead of /etc/retronet/bot.env.
+#
+# WHY A SECOND IDENTITY EXISTS (do not "simplify" this away):
+#   win311 runs Netscape AOL Instant Messenger 1.0.414, a real OSCAR client but
+#   an AIM one. It validates screen names in its OWN UI and rejects anything
+#   all-numeric — it will not put a UIN in its buddy list, will not open a
+#   message to one, and will not even REPLY to one ("The screen name '10000' is
+#   not valid."). A UIN greeter therefore leaves that station able to receive
+#   and unable to answer, which is a broken exhibit, not a limitation.
+#   `hivebot` is a name that client accepts, so the conversation goes both ways.
+#
+# The two instances PARTITION the fleet — scripts/retronet/icq/roster.json's
+# `greeter` field decides which one watches a station, so nobody is greeted
+# twice and nobody is greeted by an identity they cannot answer.
+#
+# The ICQ instance is untouched by this unit: UIN 10000 keeps its account, its
+# personas and its place in all eleven ICQ stations' baked buddy lists.
+#
+# Install with: install-bot.sh --instance aim --apply
+# See docs/lab/retronet/BOT.md and docs/lab/retronet/ICQ-STATION-win311.md.
+
+[Unit]
+Description=retronet AIM bot (greeter for AIM-screen-name stations)
+Documentation=file:///data/kernel-hive/docs/lab/retronet/BOT.md
+After=network.target retronet-llm.service
+Wants=retronet-llm.service
+
+[Service]
+Type=exec
+EnvironmentFile=/etc/retronet/bot-aim.env
+ExecStart=/usr/bin/python3 /data/retronet/bot/bot.py
+Restart=always
+RestartSec=10
+
+# --- resource cage -----------------------------------------------------------
+Nice=10
+CPUWeight=20
+CPUQuota=50%
+MemoryMax=256M
+IOSchedulingClass=idle
+TasksMax=32
+
+# --- sandbox -----------------------------------------------------------------
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+ReadOnlyPaths=/data/retronet/bot
+# 10.99.0.2 is the gateway CT (POC-PLAN contract). install-bot.sh adds a drop-in
+# when RN_BOT_SERVER points somewhere else.
+IPAddressAllow=localhost 10.99.0.2
+IPAddressDeny=any
+
+[Install]
+WantedBy=multi-user.target
