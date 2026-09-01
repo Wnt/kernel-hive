@@ -32,8 +32,9 @@ from config import AUTH_PAGES, AUTH_UI, WEBROOT
 try:
     import tracecontext
     import tracing
+    import tracing_http
 except ImportError:  # pragma: no cover - import shape only
-    from serve import tracecontext, tracing
+    from serve import tracecontext, tracing, tracing_http
 
 MIME = {
     ".html": "text/html; charset=utf-8",
@@ -122,11 +123,23 @@ def _traceparent_meta(handler) -> bytes | None:
     `document.querySelector('meta[name="traceparent"]')` and silently ignores
     anything else. See docs/lab/TRACE-CONTEXT.md §8.
 
-    The id is a REAL span, opened and ended right here and handed to
-    `tracing.py` the same way every other request span is — recorded in our
-    own store (traces.db), not merely stamped into a page and never seen
-    again. That is what lets an operator find this page load in
-    /admin/observability by the same id the tag advertises to Instana.
+    The id is a REAL span, recorded in our own store (traces.db), not merely
+    stamped into a page and never seen again. That is what lets an operator
+    find this page load in /admin/observability by the same id the tag
+    advertises to Instana.
+
+    IT IS THE REQUEST'S SPAN WHENEVER THERE IS ONE. `tracing.current()` is the
+    root span `tracing_http` opened for this request, and a fresh `serve.page`
+    root is minted ONLY when there is none — i.e. only for the untraced routes
+    (`/`, `/os/<id>`, every SPA client route) that the allowlist deliberately
+    leaves out. Minting one unconditionally made a single HTTP request produce
+    TWO spans in two unrelated traces, because an allowlisted route can also
+    reach this code: on the ungated LAN listener `auth_routes.dispatch` never
+    runs, so `/auth/state` and every `/walkin/*` path fall through to the SPA
+    fallback and are answered with index.html. The visible damage was two
+    `traceresponse` headers on one response and one browser client span
+    parenting both a `serve.page` and a `serve.auth.state` — a document
+    navigation and an in-page fetch that never happened.
 
     FAIL SAFE, explicitly: any problem at all here — tracing not bound (a dev
     server with no store attached), a malformed inbound header, an exception
@@ -146,18 +159,20 @@ def _traceparent_meta(handler) -> bytes | None:
         parent = tracecontext.parse(tracecontext.header_of(handler))
         if parent is not None and not parent.sampled:
             return None
-        trace_id = parent.trace_id if parent is not None else tracing.new_trace_id()
-        span = tracing.Span(trace_id, parent.span_id if parent else None, "serve.page", None, "server")
-        span.end("ok", {"http.response.status_code": 200})
+        span = tracing.current()
+        if span is tracing.NOOP:
+            trace_id = parent.trace_id if parent is not None else tracing.new_trace_id()
+            span = tracing.Span(trace_id, parent.span_id if parent else None, "serve.page", None, "server")
+            span.end("ok", {"http.response.status_code": 200})
         header = tracecontext.format(span.trace_id, span.span_id)
         # The SAME span, also handed back in the response headers (§4 of
         # docs/lab/TRACE-CONTEXT.md): the meta tag is what a vendor agent reads
         # out of the DOM, `traceresponse`/`Server-Timing` is what any HTTP
-        # client — ours included — can read without parsing HTML. Stashed
-        # rather than returned so this function keeps its one job (and its one
-        # return type) and the caller stays the only place that decides what
-        # goes on the wire.
-        handler._kh_page_trace = tracecontext.response_headers(span.trace_id, span.span_id)
+        # client — ours included — can read without parsing HTML. Handed to
+        # `tracing_http`, the single writer of those two headers, rather than
+        # returned into this response's `extra` dict — see its
+        # `set_response_trace` for the two-writer bug that cost.
+        tracing_http.set_response_trace(handler, span)
         return f'<meta name="traceparent" content="{header}">'.encode("ascii")
     except Exception:  # noqa: BLE001 - telemetry must never break the page
         return None
@@ -168,7 +183,6 @@ def _inject_traceparent(handler, target: Path, data: bytes, fingerprint: tuple) 
     `<head>`, or `data` UNCHANGED when tracing is unavailable or there is no
     `<head>` to inject after — never anything else, never a raise."""
     try:
-        handler._kh_page_trace = None
         idx = _head_split_at(target, data, fingerprint)
         if idx is None:
             return data
@@ -337,13 +351,15 @@ def serve_static(handler, path):
             # spa/index.html on disk (untouched; a build/deploy never bakes a
             # stale id into the artifact, because there is nothing to bake:
             # the id is minted fresh per request, right here).
-            data = _inject_traceparent(handler, target, data, (st.st_mtime_ns, size))
             # Header AND tag, from the one span: a page load correlates for a
-            # reader that never touches the DOM. Empty (so: no headers) when
-            # the injection above declined for any reason — tracing unbound, a
-            # <head>-less document, anything raising — which keeps the two
-            # channels from ever disagreeing about whether a span exists.
-            extra = {**extra, **(getattr(handler, "_kh_page_trace", None) or {})}
+            # reader that never touches the DOM. The headers do NOT go in
+            # `extra` — `_traceparent_meta` hands the span to
+            # `tracing_http.set_response_trace`, and `end_headers` writes them,
+            # which is what keeps ONE response to ONE pair of them. Empty (so:
+            # no headers) when the injection declined for any reason — tracing
+            # unbound, a <head>-less document, anything raising — which keeps
+            # the two channels from ever disagreeing about whether a span exists.
+            data = _inject_traceparent(handler, target, data, (st.st_mtime_ns, size))
         return handler._send(200, data, ctype, cache=cache_ctl is not None, extra=extra)
 
     start, end = rng  # inclusive offsets

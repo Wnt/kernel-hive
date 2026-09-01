@@ -51,6 +51,7 @@ never a token — `url.query` and `url.full` are in `traces.BANNED_ATTRS` anyway
 
 from __future__ import annotations
 
+import contextlib
 import functools
 from urllib.parse import unquote, urlparse
 
@@ -195,38 +196,88 @@ def _status_of(handler) -> tuple:
     return ("error" if code >= 500 else "ok"), code
 
 
+def set_response_trace(handler, span) -> None:
+    """Name `span` as the span THIS response reports back — the ONE writer of
+    the return-leg headers.
+
+    Nothing else in the serving plane may put `traceresponse` or
+    `Server-Timing` on a response. They wait here, on the handler, until
+    `end_headers` writes them (see `_wrap_end_headers`), and the last caller
+    wins rather than appending — which is what makes "one response, one pair"
+    a property of the code rather than of every caller remembering.
+
+    It was NOT a property of the code until 2026-09-01. `static_files.py`
+    merged its own copy of the same two headers into the `extra` dict of the
+    index.html reply, so a request that BOTH matched the route allowlist AND
+    fell through to the SPA fallback emitted two pairs naming two different
+    spans. Every `/auth/*` and `/walkin/*` path on the ungated LAN listener is
+    exactly that request: `auth_routes.dispatch` runs only when `self.public`,
+    so on LAN those paths are answered with index.html. Two writers, no
+    arbitration; now one writer, and `extra` cannot carry these at all.
+
+    NOOP (or any span without a well-formed id pair) clears the stash, because
+    `tracecontext.response_headers` returns `{}` for one — an untraced response
+    says nothing about a trace rather than saying something empty.
+    """
+    with contextlib.suppress(Exception):  # never fail a response over a header
+        handler._kh_trace_response = tracecontext.response_headers(span.trace_id, span.span_id)
+
+
 def _wrap_verb(fn):
     @functools.wraps(fn)
     def wrapper(self, *a, **kw):
+        # ONE REQUEST, ONE SPAN, even if this verb is wrapped more than once.
+        # `instrument()` will not wrap an already-wrapped function, but a
+        # subclass that overrides `do_GET` and calls `super().do_GET()` puts two
+        # DIFFERENT wrapped functions on one call stack, which no wrapping-time
+        # check can see. The guard is on the request, so it holds either way.
         try:
-            self._kh_status = 0
-            # Per RESPONSE, not per connection: keep-alive reuses the handler
-            # instance, so a traced reply must not leak its ids onto the next
-            # request's untraced one.
-            self._kh_trace_response = None
-            path = unquote(urlparse(self.path).path)
-        except Exception:  # noqa: BLE001
+            reentrant = bool(getattr(self, "_kh_in_request", False))
+            if not reentrant:
+                self._kh_in_request = True
+        except Exception:  # noqa: BLE001 - a handler we cannot mark is passed through
+            reentrant = True
+        if reentrant:
             return fn(self, *a, **kw)
-        span = begin(self, self.command or fn.__name__[3:], path)
-        if span is tracing.NOOP:
-            return fn(self, *a, **kw)
-        # Stashed for `end_headers` to write, not written here: at this point
-        # the handler has not sent a status line yet, and headers may only be
-        # emitted between `send_response()` and `end_headers()`.
-        self._kh_trace_response = tracecontext.response_headers(span.trace_id, span.span_id)
-        tracing.push(span)
         try:
-            return fn(self, *a, **kw)
-        except BaseException as exc:
-            span.record_exception(exc)
-            span.end("error", {"http.response.status_code": _status_of(self)[1] or 500})
-            raise
+            return _traced_call(self, fn, a, kw)
         finally:
-            tracing.pop(span)
-            status, code = _status_of(self)
-            span.end(status, {"http.response.status_code": code} if code else None)
+            self._kh_in_request = False
 
+    wrapper._kh_traced_wrapper = True  # after functools.wraps, which copies __dict__
     return wrapper
+
+
+def _traced_call(self, fn, a, kw):
+    """One request, inside the re-entrancy guard `_wrap_verb` just armed."""
+    try:
+        self._kh_status = 0
+        # Per RESPONSE, not per connection: keep-alive reuses the handler
+        # instance, so a traced reply must not leak its ids onto the next
+        # request's untraced one. This is also the ONLY place the stash is
+        # cleared — every response starts with nothing to report.
+        self._kh_trace_response = None
+        path = unquote(urlparse(self.path).path)
+    except Exception:  # noqa: BLE001
+        return fn(self, *a, **kw)
+    span = begin(self, self.command or fn.__name__[3:], path)
+    if span is tracing.NOOP:
+        return fn(self, *a, **kw)
+    # Stashed for `end_headers` to write, not written here: at this point
+    # the handler has not sent a status line yet, and headers may only be
+    # emitted between `send_response()` and `end_headers()`.
+    set_response_trace(self, span)
+    tracing.push(span)
+    try:
+        return fn(self, *a, **kw)
+    except BaseException as exc:
+        span.record_exception(exc)
+        span.end("error", {"http.response.status_code": _status_of(self)[1] or 500})
+        raise
+    finally:
+        tracing.pop(span)
+        status, code = _status_of(self)
+        span.end(status, {"http.response.status_code": code} if code else None)
 
 
 def _wrap_end_headers(fn):
@@ -256,6 +307,7 @@ def _wrap_end_headers(fn):
             pass
         return fn(self, *a, **kw)
 
+    wrapper._kh_traced_wrapper = True
     return wrapper
 
 
@@ -265,11 +317,22 @@ def _wrap_send_response(fn):
         self._kh_status = code
         return fn(self, code, *a, **kw)
 
+    wrapper._kh_traced_wrapper = True
     return wrapper
 
 
+#: Which method gets which wrapper. One table so `instrument()` is a loop with
+#: no special cases, and so "what does instrumentation touch?" has one answer.
+_WRAPPERS = {
+    "do_GET": _wrap_verb,
+    "do_POST": _wrap_verb,
+    "send_response": _wrap_send_response,
+    "end_headers": _wrap_end_headers,
+}
+
+
 def instrument(handler_cls):
-    """Give one handler class request spans. Idempotent; safe on a subclass.
+    """Give one handler class request spans. Idempotent, at any depth.
 
     Wrapping `do_GET`/`do_POST` rather than editing them keeps the whole of this
     out of `osgallery-https-server.py`, which is five lines under the file-size
@@ -277,23 +340,34 @@ def instrument(handler_cls):
     the stdlib records it only in the log line. `end_headers` is wrapped to write
     the return-leg headers (module docstring) at the one point every response
     shape passes through.
+
+    IDEMPOTENCE IS PER METHOD, NOT PER CLASS, and that distinction is the whole
+    point. A class-level "already done" flag lives in ONE class's `__dict__`, so
+    instrumenting a base and then a subclass wrapped every inherited method a
+    second time — two spans, in two unrelated traces, for one request — while
+    still refusing to wrap a subclass's own overriding `do_GET`, which is the
+    one case a subclass call actually needs. Marking the WRAPPER FUNCTION gets
+    both right: an inherited wrapper is recognised through any number of
+    subclasses, and a genuinely new override is wrapped. The remaining case no
+    wrapping-time check can see — an override that calls `super()` into another
+    wrapper — is caught at request time by `_wrap_verb`'s re-entrancy guard.
+
+    NOTHING HERE IS SWALLOWED. This runs once, at import, wiring a server that
+    has not yet accepted a connection; "never fail a request over telemetry"
+    (docs/lab/TRACE-CONTEXT.md §7) is a rule about the REQUEST path, and the
+    per-request wrappers keep their own guards. A blanket `except Exception:
+    pass` here bought nothing and cost the ability to see a wiring mistake:
+    a half-instrumented handler serves perfectly well and reports nothing,
+    which is exactly the failure that hides longest.
     """
-    try:
-        if handler_cls.__dict__.get("_kh_traced"):
-            return handler_cls
-        handler_cls._kh_traced = True
-        handler_cls._kh_status = 0
-        handler_cls._kh_trace_response = None
-        for verb in ("do_GET", "do_POST"):
-            fn = getattr(handler_cls, verb, None)
-            if fn is not None:
-                setattr(handler_cls, verb, _wrap_verb(fn))
-        handler_cls.send_response = _wrap_send_response(handler_cls.send_response)
-        end_headers = getattr(handler_cls, "end_headers", None)
-        if end_headers is not None:
-            handler_cls.end_headers = _wrap_end_headers(end_headers)
-    except Exception:  # noqa: BLE001 - an uninstrumented server still serves
-        pass
+    for name, wrap in _WRAPPERS.items():
+        fn = getattr(handler_cls, name, None)
+        if fn is None or getattr(fn, "_kh_traced_wrapper", False):
+            continue
+        setattr(handler_cls, name, wrap(fn))
+    handler_cls._kh_status = 0
+    handler_cls._kh_trace_response = None
+    handler_cls._kh_in_request = False
     return handler_cls
 
 
