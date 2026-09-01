@@ -6,8 +6,12 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { configureTracer, __resetTracer } from '../../analytics/trace';
 import {
   SAMPLE_N, SUFFIX_LEN, maybeSampleEdge, traceSuffix, withSuffix, keyClass,
-  __resetSampleCounter, BACKEND_TRACE_ID_RE,
+  __resetSampleCounter,
 } from './inputTrace';
+// The vendor's own accepted shape now lives beside every other fact about the
+// vendor (analytics/instana.ts), and this suite asserts against THAT rule —
+// not a looser copy, which would pass while the field is silently dropped.
+import { BACKEND_TRACE_ID_RE } from '../../analytics/instana';
 
 beforeEach(() => {
   __resetTracer();

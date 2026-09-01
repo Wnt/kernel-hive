@@ -34,6 +34,7 @@ can break the thing it measures is not telemetry, it is a fault injector.
 |---|---|---|
 | serving plane → browser (page load) | `<meta name="traceparent">` in `index.html` | the FIRST hop of a visit, before any JS has run — see §4 |
 | browser → serving plane | `traceparent` request header | **automatic, on every same-origin request** — `spa/src/analytics/khFetch.ts` patches `window.fetch` once at boot, so this is no longer a per-call-site opt-in. See §4a |
+| serving plane → browser (every traced response) | `traceresponse` response header, plus `Server-Timing: intid;desc=` | the return leg: the reply names the span that answered it — see §4b |
 | serving plane → its own spans | in-process | child of the inbound span |
 | browser → daemon (input plane, session join) | the session ticket | the input plane is WebTransport straight to the daemon's QUIC listener and carries no headers, so the id rides the thing that is already exchanged |
 | browser → daemon (input plane, per-edge) | inside the input RECORD itself, on a SAMPLED edge only | no headers here either, and no per-request exchange to piggyback on the way the ticket does — see §3.2 |
@@ -307,6 +308,12 @@ an operator finds in Instana by this id is the identical span they can also
 find in `/admin/observability`, not a parallel identity invented only to look
 plausible in a tag.
 
+**The document response carries the headers too.** The same span is handed
+back in `traceresponse` and `Server-Timing` (§4b), so a page load correlates
+for any reader that never touches the DOM — the tag is the vendor's channel,
+the headers are everyone's. Two channels, one span: they are emitted together
+or not at all, so they can never disagree about whether a span exists.
+
 **Deliberately narrow.** This is a targeted, named exception to "static asset
 serving is not traced" (`tracing_http.py`'s allowlist — left unchanged by
 this): only the ONE response that is the start of a visit,
@@ -337,11 +344,14 @@ evidence above, since a wrapper only helps the call sites that adopt it, which
 is the same failure mode restated. For every same-origin request the app
 makes (checked by `URL.origin`, never leaked to a third-party host) it:
 
-- adds `traceparent`, from the current active span if one is open, a fresh
-  trace otherwise — unless the caller already set one, which is respected,
-  not overwritten;
-- opens a **client span** — name, method, `url.pathname` (never the query
-  string — the same rule `errors.ts`'s fingerprint and this file's own §8
+- opens a **client span** FIRST, and adds `traceparent` naming **that
+  span** — so the serving plane's entry span is the client span's CHILD and
+  the RPC edge exists. Unless the caller already set the header, which is
+  respected, not overwritten. On a path with no span of its own (the
+  telemetry endpoints below) the header still goes out, from the current
+  active span, or a fresh trace when there is none;
+- names that client span `http.client.request` and records method,
+  `url.pathname` (never the query string — the same rule `errors.ts`'s fingerprint and this file's own §8
   state), status code and duration — UNLESS the path is one of this repo's own
   telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
   `/usage`, `/clientcmd`), reusing `instana.ts`'s `IGNORE_URL_PATTERNS`
@@ -349,6 +359,8 @@ makes (checked by `URL.origin`, never leaked to a third-party host) it:
   span is the feedback loop the per-tab beacon budget exists to prevent — the
   header still goes out to those endpoints (it always did, by hand), only the
   client-side span is skipped;
+- reads the response's return leg (§4b) back onto the client span as
+  `kh.backend.trace_id`;
 - respects the same `enabled`/`allowed` gates as everything else in this
   plane (`configureTracer`, the `allowed` answer `main.tsx` computes) — spans
   fall out for free, since `makeSpan()` already no-ops when the tracer is
@@ -409,6 +421,84 @@ orders. Findings, in full in `khFetch.ts`'s own header:
   this section exists to stop having). A best-effort win that degrades to "no
   join, never a broken request" was judged the better trade.
 
+**The header must name the span, so the span is created first.** Until
+2026-09-01 `khFetch.ts` built the header *before* opening its client span, from
+`traceHeaders()` — which reads `currentSpan()`, and the client span is never
+that: `childOfActive()` deliberately does not `pushActive()`. The result was two
+distinct wrong parents, neither visible from the browser side:
+
+- **inside an open flow**, the header named the FLOW ROOT, so the server's
+  entry span came back a *sibling* of `http.client.request` instead of its
+  child — the RPC edge simply absent from every flame graph;
+- **with no active span**, `traceHeaders()` minted a fresh trace id and a span
+  id belonging to no span at all, while the client span minted a *different*
+  trace — one call, two unrelated traces.
+
+The fix is in `khFetch.ts` (span first, then `traceparentOf(span)`), **not** in
+the active-span model, and that is deliberate: a client span lives across an
+`await`, `activeSpans` is a synchronous LIFO with no async context to hang
+scope on, and pushing the client span would silently re-parent every span
+opened by unrelated code while the request is in flight. `trace.ts` exports
+`traceparentOf(span)` for exactly this — naming a specific span rather than
+guessing at the current one — and carries the same note.
+
+## 4b. The return leg: `traceresponse` is ours, `Server-Timing` is the bridge
+
+§4 gets a trace id into the page. Everything after it was, until 2026-09-01,
+one-directional: the browser SENT a `traceparent` and never learned what the
+server did with it. That is not a cosmetic gap. The server does not always
+honour the id it was sent — a malformed or unsampled header starts a fresh
+trace (§1), and the document request mints its own — so a client span's own
+trace id is a *guess* about which server trace answered it, and the guess is
+wrong exactly when something interesting happened.
+
+So every **traced** response (`tracing_http.py`'s allowlist, unchanged, plus
+the `index.html` document response of §4) carries two headers:
+
+```
+traceresponse: 00-<32 hex trace-id>-<16 hex span-id>-01
+Server-Timing: intid;desc=<32 hex trace-id>
+```
+
+**`traceresponse` is ours, and it is a standard.** W3C Trace Context Level 2
+defines it as the mirror of `traceparent`: same four fields, same spelling,
+opposite direction, naming the span the server actually recorded for THIS
+response. `spa/src/analytics/khFetch.ts` reads it, prefers it, and records the
+trace id on its client span as `kh.backend.trace_id` — which is what lets
+`/admin/observability` jump from a click to the server trace **with no vendor
+in the loop**. That attribute is chosen to survive `traces.py` intake unaltered
+(key ≤ 64 chars, not in `BANNED_ATTRS`, value ≤ `ATTR_STR_MAX`); a truncated or
+dropped id would look right in the tab and join nothing in the store.
+
+**`Server-Timing: intid;desc=` is the vendor bridge, and nothing else.**
+Instana's EUM agent parses exactly that token off a response and sets the value
+as the beacon's `backendTraceId`. Emitting it costs one header and buys vendor
+correlation for free; nothing in this repo reads it except as a *fallback* in
+`khFetch.ts`, and deleting it would cost only the Instana join. Where khFetch
+has a backend trace id it also mirrors it to Instana explicitly
+(`analytics/instana.ts`'s `reportBackendTrace`), under the vendor's silent
+16-or-32-lowercase-hex rule — a value of any other length is dropped with no
+error, which is indistinguishable from never having tried.
+
+**Written at one choke point, so no reply shape can miss it or be broken by
+it.** `tracing_http.py` wraps `end_headers`, which every reply the stdlib can
+produce passes through: 200, 304, 206, 416, HEAD (headers only, by definition),
+an error page, and the long-lived streaming replies whose headers are written
+once at the top. The values are stashed when the request span is opened and
+cleared when they are written, so a keep-alive connection cannot leak one
+response's ids onto the next. `tracecontext.response_headers()` returns `{}`
+for a NOOP span, which is what an untraced route, an unsampled parent and an
+unbound tracer all are — so **an untraced route emits neither header, by
+construction** rather than by a second copy of the allowlist. The whole write
+sits in a `try`: a telemetry header may never be the reason a response fails to
+close its header block.
+
+**Same-origin only.** The browser reads these headers because the request was
+same-origin (`khFetch.ts` refuses anything else before it does anything at
+all). No `Access-Control-Expose-Headers` is configured and none is wanted:
+cross-origin correlation is out of scope, and a trace id is a correlation
+handle for this box's own store.
+
 ## 5. Sampling is all-or-nothing PER TRACE, and the browser decides
 
 The `01` flag is set by the tab and every layer honours it. A layer that
@@ -456,8 +546,12 @@ serve.page                                       (python, root — §4/§4a: nam
 │                                                  in the <meta> tag the page
 │                                                  was served with)
 └─ station.connect                                (browser — §4a's join)
-   ├─ HTTP GET /signal/<station>.json    client   (browser — khFetch.ts, automatic)
-   │  └─ serve.signal                    server   (python: mints the id below)
+   ├─ http.client.request                client   (browser — khFetch.ts, automatic;
+   │  │                                             GET /signal/<station>.json in
+   │  │                                             its attributes, never its name)
+   │  └─ serve.signal                    server   (python: a CHILD of the client
+   │     │                                          span — §4a — and it names
+   │     │                                          itself back in traceresponse)
    │     └─ serve.ticket.mint            internal
    ├─ streamhost.session                 server   (rust: joined by ticket id)
    │  ├─ guest.resume                    internal (emulator: cont / SIGCONT)
@@ -521,6 +615,11 @@ merely drawn that way.
 - **Never invent a parent.** An unknown or malformed context starts a new trace.
 - **Never let the meta-tag injection break the page.** §4: any failure serves
   `index.html` unchanged, byte-for-byte.
+- **Never let a response header break a response.** §4b: the return leg is
+  written inside a `try` at one choke point, and an untraced route emits
+  nothing at all.
+- **A propagated header names the span that made the call**, never the
+  ambient one. §4a.
 - **Never propagate into a guest.** §6.
 - **Never put a secret in a span.** The ticket carries the trace id; the trace
   never carries the ticket. Same rule as `traces.py`: no stacktraces, no typed

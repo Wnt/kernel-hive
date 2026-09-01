@@ -22,6 +22,25 @@ Three more paths are named and refused below for reasons of their own:
 lands inside the very trace it is delivering, where it reads as work the
 visitor's journey did).
 
+THE RETURN LEG. A traced response carries its own span back to the caller in
+two headers, written at one choke point (`end_headers`, wrapped below) so that
+every reply shape the stdlib can produce — 200, 304, 206, 416, HEAD, an error
+page, a streamed body — gets them without any handler knowing they exist:
+
+  * `traceresponse: 00-<trace-id>-<span-id>-01` — W3C Trace Context Level 2's
+    response header, the mirror of the inbound `traceparent`. This is OUR
+    plane's mechanism: the browser reads it in `khFetch.ts` and records the id
+    on its client span, so `/admin/observability` can walk from a click to the
+    server trace with no vendor in the loop.
+  * `Server-Timing: intid;desc=<trace-id>` — the vendor bridge. Instana's EUM
+    agent parses exactly this token and sets it as the beacon's
+    `backendTraceId`. It is emitted because it is free, not because anything
+    here depends on it.
+
+Both come from `tracecontext.response_headers()`, which returns `{}` for a
+NOOP span, so an UNTRACED route emits neither header, by construction rather
+than by a second copy of the allowlist.
+
 THE ROUTE, NOT THE PATH. `http.route` is a low-cardinality TEMPLATE
 (`/signal/{station}.json`), which is what the OTel convention means by it and
 what keeps `traces.facets()` usable. The concrete station goes in `kh.station`,
@@ -181,12 +200,20 @@ def _wrap_verb(fn):
     def wrapper(self, *a, **kw):
         try:
             self._kh_status = 0
+            # Per RESPONSE, not per connection: keep-alive reuses the handler
+            # instance, so a traced reply must not leak its ids onto the next
+            # request's untraced one.
+            self._kh_trace_response = None
             path = unquote(urlparse(self.path).path)
         except Exception:  # noqa: BLE001
             return fn(self, *a, **kw)
         span = begin(self, self.command or fn.__name__[3:], path)
         if span is tracing.NOOP:
             return fn(self, *a, **kw)
+        # Stashed for `end_headers` to write, not written here: at this point
+        # the handler has not sent a status line yet, and headers may only be
+        # emitted between `send_response()` and `end_headers()`.
+        self._kh_trace_response = tracecontext.response_headers(span.trace_id, span.span_id)
         tracing.push(span)
         try:
             return fn(self, *a, **kw)
@@ -198,6 +225,36 @@ def _wrap_verb(fn):
             tracing.pop(span)
             status, code = _status_of(self)
             span.end(status, {"http.response.status_code": code} if code else None)
+
+    return wrapper
+
+
+def _wrap_end_headers(fn):
+    """Write the response's trace headers, once, immediately before the blank
+    line that closes the header block.
+
+    One choke point rather than a call in each handler: every reply the stdlib
+    can produce ends here — 200, 304 (no body, headers still legal and still
+    useful: the browser learns which trace answered its revalidation), 206,
+    416, a HEAD (headers only, by definition), an error page, and the
+    long-lived streaming replies, whose headers are written once at the top and
+    are exactly as safe to extend as anyone else's.
+
+    Cleared after writing so a keep-alive connection's NEXT response starts
+    with nothing stashed, and wrapped in a `try` so a telemetry header can never
+    be the reason a response fails to close its header block.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(self, *a, **kw):
+        try:
+            headers = getattr(self, "_kh_trace_response", None)
+            self._kh_trace_response = None
+            for k, v in (headers or {}).items():
+                self.send_header(k, v)
+        except Exception:  # noqa: BLE001 - never fail a response over a header
+            pass
+        return fn(self, *a, **kw)
 
     return wrapper
 
@@ -217,18 +274,24 @@ def instrument(handler_cls):
     Wrapping `do_GET`/`do_POST` rather than editing them keeps the whole of this
     out of `osgallery-https-server.py`, which is five lines under the file-size
     hard cap. `send_response` is wrapped too, purely to learn the status code:
-    the stdlib records it only in the log line.
+    the stdlib records it only in the log line. `end_headers` is wrapped to write
+    the return-leg headers (module docstring) at the one point every response
+    shape passes through.
     """
     try:
         if handler_cls.__dict__.get("_kh_traced"):
             return handler_cls
         handler_cls._kh_traced = True
         handler_cls._kh_status = 0
+        handler_cls._kh_trace_response = None
         for verb in ("do_GET", "do_POST"):
             fn = getattr(handler_cls, verb, None)
             if fn is not None:
                 setattr(handler_cls, verb, _wrap_verb(fn))
         handler_cls.send_response = _wrap_send_response(handler_cls.send_response)
+        end_headers = getattr(handler_cls, "end_headers", None)
+        if end_headers is not None:
+            handler_cls.end_headers = _wrap_end_headers(end_headers)
     except Exception:  # noqa: BLE001 - an uninstrumented server still serves
         pass
     return handler_cls

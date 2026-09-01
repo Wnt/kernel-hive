@@ -318,3 +318,53 @@ export function tagInstanaStation(attrs: { [key: string]: string | number | bool
     if (value !== undefined) ineum('meta', key, String(value));
   }
 }
+
+// -- the EUM↔backend join ----------------------------------------------------
+
+/** Exactly what the vendor bundle accepts for `backendTraceId` — 16 or 32 hex
+ *  characters, nothing else, and a value of any other length is dropped
+ *  SILENTLY (no console warning, no beacon field, no error): the join simply
+ *  never appears in the Websites view, which is indistinguishable from never
+ *  having tried.
+ *
+ *  It lives in this module, not in the two that use it, because it is a fact
+ *  about the VENDOR — the same class of fact as `SECRET_PATTERNS` and
+ *  `IGNORE_URL_PATTERNS` above. It was previously declared inside
+ *  `three/streamClient/inputTrace.ts`, which was fine while exactly one caller
+ *  needed it and became a second opinion the moment `khFetch.ts` did. */
+export const BACKEND_TRACE_ID_RE = /^[0-9a-f]{16}$|^[0-9a-f]{32}$/i;
+
+/** Attributes per `reportEvent` `meta` object. The vendor's own default is 25
+ *  (`maxMetadataKeys`); no caller here comes close, but the cap is enforced
+ *  rather than trusted to stay true by inspection. */
+const META_MAX_KEYS = 25;
+
+/**
+ * Point one Instana custom event at a backend trace WE minted.
+ *
+ * This is the whole vendor bridge, in both directions it exists in: an input
+ * edge we sampled (`inputTrace.ts`) and an HTTP response whose server trace id
+ * we read back off `traceresponse`/`Server-Timing` (`khFetch.ts`). Everything
+ * our own plane needs is already recorded as a span before this is called —
+ * this only mirrors the id to the vendor, so a no-op here costs nothing but
+ * the vendor's own view.
+ *
+ * Refuses a malformed id rather than sending it: see `BACKEND_TRACE_ID_RE`.
+ * A NOOP span's empty trace id (tracing off) is exactly that case.
+ */
+export function reportBackendTrace(eventName: string, backendTraceId: string, meta: Record<string, string>): void {
+  if (!BACKEND_TRACE_ID_RE.test(backendTraceId)) return;
+  const capped: Record<string, string> = {};
+  let n = 0;
+  for (const [k, v] of Object.entries(meta)) {
+    if (n >= META_MAX_KEYS) break;
+    capped[k] = v;
+    n += 1;
+  }
+  ineum('reportEvent', eventName, {
+    timestamp: Date.now(),
+    backendTraceId,
+    meta: capped,
+    maxMetadataKeys: META_MAX_KEYS,
+  });
+}
