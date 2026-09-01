@@ -72,16 +72,17 @@ which no other exhibit in the lineup speaks to.
 > **This one is done.** It is a station: `registry/stations/amix.json`, with
 > [`../guests/amix.md`](../guests/amix.md) as the narrative and
 > [`../lab/research/candidate-amix.md`](../lab/research/candidate-amix.md) as the
-> recon record. Two corrections to what this note guessed, below:
-> the emulator question resolved **half** the way it predicted, and the
-> exhibit is **monochrome**.
+> recon record. The emulator question resolved **exactly** the way this note
+> predicted, after a detour:
 >
-> - The A3000 + 68030 MMU really is just a configuration of the FS-UAE build we
+> - The A3000 + 68030 MMU is just a configuration of the FS-UAE build we
 >   already ship — no new emulator for the machine.
-> - But **FS-UAE 3.2.35 cannot drive the A2410**: the TMS34010 core is compiled
->   in and never called, so the board enumerates and does nothing. AMIX's own
->   chipset X server is 640x512 **depth 1**, and on Amiga UNIX colour X requires
->   a colour board. Colour would need a new pinned emulator build.
+> - **The same build drives the A2410.** A first bring-up shipped monochrome
+>   (640x512, depth 1 — AMIX's chipset X server) on the belief that FS-UAE
+>   3.2.35 "compiles the A2410 code but never calls it"; that was a grep-tool
+>   artefact plus a missing `-tiga` flag on the X server, and it is corrected
+>   in the guest doc. Colour OPEN LOOK at 1024x768, 8-bit, is proven on the
+>   framebuffer (2026-09-01); the colour golden awaits promotion.
 > - It is still OPEN LOOK, and still the "wait, that existed?" tile.
 
 OPEN LOOK running on an Amiga 3000UX — Commodore's SVR4 port, vanishingly rare

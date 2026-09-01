@@ -13,39 +13,46 @@ tile. Genuinely a different desktop from the CDE/VUE stations (`hpuxvue`,
 ## The two open questions, answered
 
 **1. Which emulator, and can we already run it?** FS-UAE — yes for the machine,
-**no for the colour desktop.**
+**and yes for the colour desktop** (the latter corrected 2026-09-01; the first
+answer here was "no", and it was wrong).
 
 The Virtual OS Museum runs its AMIX 2.1c installation under **FS-UAE** on an
 **A3000** with an **A2410** graphics board (read from their config as a fact;
 nothing copied — see [`vom-reference.md`](vom-reference.md) for the licence
-boundary). The important part is what that implies for us:
+boundary). What that implies for us:
 
 > The **pinned FS-UAE 3.2.35 build we already ship for `amigaos35`**
-> (`build-fsuae-native.sh`) runs the A3000 with its 68030 MMU. It also *appears*
-> to offer the A2410 graphics board — and does not really.
+> (`build-fsuae-native.sh`) runs the A3000 with its 68030 MMU **and** its A2410:
+> `uae_gfxcard_type = A2410` is a real, wired board in that tree.
 
 So the **machine** needs no new emulator, no new build and no new patch: AMIX
 installs and boots on the host-native x11-capture path `amigaos35` already
 proved, and the station ships that way.
 
-**But the colour OPEN LOOK desktop does need a new emulator.** The A2410 is
-compiled into FS-UAE 3.2.35 (`src/mame/a2410.cpp`, and its symbols are in the
-binary — which is exactly what made this look supported) but **nothing in the
-tree calls a single `a2410_*` function**: `gfxboard.cpp` has no A2410 reference,
-and `expansion.cpp` supplies only the card's autoconfig name. The board
-enumerates, the guest's `X2410` server paints on the Amiga chipset screen
-instead, and `A2410 ACTIVE` never appears in the log. `A2410` is not a
-documented `uae_gfxcard_type` value either.
+**The colour desktop needs no new emulator either.** The 2026-08-30 bring-up
+concluded the opposite — "`gfxboard.cpp` has no A2410 reference, nothing calls
+`a2410_*`" — and that conclusion came from a tool, not the tree: the agent
+shell's `grep` is ugrep with `-I`, and `gfxboard.cpp` is ISO-8859 text, so it was
+skipped as binary and every pattern returned nothing. `/bin/grep -a` shows the
+`GFXBOARD_A2410` dispatch into the `tms_*` handlers (`gfxboard.cpp:359,491,501,
+1739,1766`, `expansion.cpp:2238`). The second half of the mistake was in the
+guest: `/usr/X/bin/X` and `X2410` are the same binary and pick the board only
+with **`-tiga`**; the station's inittab ran `X` bare, so `A2410 ACTIVE` never
+appeared because the board was never asked. With `X -tiga` the pinned binary
+logs `TMS34010 started`, `A2410 1024*768`, `A2410 ACTIVE=1` and the framebuffer
+shows the colour OPEN LOOK desktop (1024x768, depth 8 PseudoColor). Full chain
+and costs in [`../../guests/amix.md`](../../guests/amix.md).
 
 AMIX's own chipset X server is **640x512 depth 1 (StaticGray)**, measured with
 `xdpyinfo`; its `-z <planes>` argument is ignored. On Amiga UNIX colour X means
 a colour *board* — the installer offers A2410 / Resolver / 1600GX and nothing
-else. So the shipped exhibit is monochrome, which is also what nearly every real
-A3000UX owner saw.
+else — and the shipped mono exhibit is what nearly every real A3000UX owner
+saw.
 
-**The lesson (AGENTS.md rule 9):** the symbol table said "supported"; the
-framebuffer said otherwise. Only the framebuffer was right. A `strings` grep is
-not a capability test.
+**The lesson (AGENTS.md rule 9), as it actually reads now:** the framebuffer
+was right both times; what was wrong was the *question* put to it (no `-tiga`)
+and the *tool* used on the source (a grep that skips Latin-1 files). A `strings`
+grep is not a capability test — and neither is a grep that returns nothing.
 
 **2. Is the MMU configuration reachable?** Yes. `amiga_model = A3000` gives the
 68030 + 68882 the installer requires, and the AMIX kernel enables the MMU itself
@@ -137,7 +144,7 @@ kickstart_file         = kick37175.A3000.rom
 motherboard_ram        = 16384          # 16 MB; guest reports 14.3 MB available
 hard_drive_0_type      = rdb
 hard_drive_0_controller= scsi6
-uae_gfxcard_type       = A2410          # Lowell TIGA — what AMIX drives for X
+uae_gfxcard_type       = A2410          # Lowell TIGA — driven by `X -tiga` (colour golden)
 uae_gfxcard_size       = 2
 ```
 

@@ -13,7 +13,9 @@
 #     inverted filename test and the tape reads as empty with no error
 #     (docs/guests/amix.md, trap 1);
 #   * both fs-uae configs — install (floppies + tape at SCSI 4 + blank 2 GB
-#     RDB disk at SCSI 6) and station (golden only, 640x512, stretch=1).
+#     RDB disk at SCSI 6) and station (golden only, 640x512, stretch=1 for
+#     the mono golden; the colour golden wants the A2410 declared and a
+#     1024x768 window -- see docs/guests/amix.md "Ready scene / golden").
 #
 # What is VISION-DRIVEN, not blind (stage: install): the AMIX install script
 # is an interactive SVR4 shell script with no unattended interface. fs-uae
@@ -194,15 +196,17 @@ First boot (system configuration):
   password for your user account? [n]       -> RETURN
   A2024 or Moniterm monitor? [n]            -> RETURN
   configure X for a color graphics card?    -> y, then 1 (A2410), then q
-      NOTE: this configures the guest, but FS-UAE 3.2.35 cannot actually drive
-      an A2410 -- the exhibit stays monochrome. See docs/guests/amix.md.
+      NOTE: this configures the kernel's tiga driver only. The X server drives
+      the board only when started with -tiga (colour golden); without the flag
+      it paints the chipset screen, 640x512 depth 1. See docs/guests/amix.md.
   configure Netnews? [n]                    -> RETURN
   change any of these? [n]                  -> RETURN
 
 Ready scene (as root, once at the amix login: prompt):
   write /etc/kh-shell   : #!/bin/sh ; uname -a ; echo ; exec /bin/sh
   write /etc/kh-xsession: xclock/xcalc/xterm -e /etc/kh-shell, then exec olwm
-  append to /etc/inittab:
+  append to /etc/inittab (add "-tiga" after X for the colour golden; then
+  /etc/kh-xsession also does xrdb -merge /etc/kh-xres + xsetroot, see the doc):
     xw:2:respawn:/usr/bin/X11/xinit /etc/kh-xsession -- /usr/bin/X11/X >/dev/null 2>&1
   then: /sbin/shutdown -y -g0 -i0     (ABSOLUTE path -- /usr/ucb/shutdown is
                                        a different command and rejects these flags)
