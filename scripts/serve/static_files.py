@@ -150,6 +150,14 @@ def _traceparent_meta(handler) -> bytes | None:
         span = tracing.Span(trace_id, parent.span_id if parent else None, "serve.page", None, "server")
         span.end("ok", {"http.response.status_code": 200})
         header = tracecontext.format(span.trace_id, span.span_id)
+        # The SAME span, also handed back in the response headers (§4 of
+        # docs/lab/TRACE-CONTEXT.md): the meta tag is what a vendor agent reads
+        # out of the DOM, `traceresponse`/`Server-Timing` is what any HTTP
+        # client — ours included — can read without parsing HTML. Stashed
+        # rather than returned so this function keeps its one job (and its one
+        # return type) and the caller stays the only place that decides what
+        # goes on the wire.
+        handler._kh_page_trace = tracecontext.response_headers(span.trace_id, span.span_id)
         return f'<meta name="traceparent" content="{header}">'.encode("ascii")
     except Exception:  # noqa: BLE001 - telemetry must never break the page
         return None
@@ -160,6 +168,7 @@ def _inject_traceparent(handler, target: Path, data: bytes, fingerprint: tuple) 
     `<head>`, or `data` UNCHANGED when tracing is unavailable or there is no
     `<head>` to inject after — never anything else, never a raise."""
     try:
+        handler._kh_page_trace = None
         idx = _head_split_at(target, data, fingerprint)
         if idx is None:
             return data
@@ -329,6 +338,12 @@ def serve_static(handler, path):
             # stale id into the artifact, because there is nothing to bake:
             # the id is minted fresh per request, right here).
             data = _inject_traceparent(handler, target, data, (st.st_mtime_ns, size))
+            # Header AND tag, from the one span: a page load correlates for a
+            # reader that never touches the DOM. Empty (so: no headers) when
+            # the injection above declined for any reason — tracing unbound, a
+            # <head>-less document, anything raising — which keeps the two
+            # channels from ever disagreeing about whether a span exists.
+            extra = {**extra, **(getattr(handler, "_kh_page_trace", None) or {})}
         return handler._send(200, data, ctype, cache=cache_ctl is not None, extra=extra)
 
     start, end = rng  # inclusive offsets

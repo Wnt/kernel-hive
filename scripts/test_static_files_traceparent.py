@@ -141,6 +141,28 @@ class TracingOnTest(Base):
         self.assertIn(b"Kernel Hive (staging)", body)
         self.assertIsNotNone(TAG_RE.search(body))
 
+    def test_the_document_carries_the_same_span_in_its_response_headers(self):
+        """The tag is for a vendor agent reading the DOM; the headers are for
+        every other reader, ours included. Two channels, ONE span — if they
+        could disagree, a reader would have no way to tell which one lied."""
+        h = self._get("/")
+        extra = h.replied[4] or {}
+        tag = TAG_RE.search(h.replied[1]).group(1).decode("ascii")
+        self.assertEqual(extra["traceresponse"], tag)
+        trace_id = tag.split("-")[1]
+        self.assertEqual(extra["Server-Timing"], f"intid;desc={trace_id}")
+
+    def test_the_response_headers_name_a_recorded_span(self):
+        h = self._get("/")
+        trace_id = (h.replied[4] or {})["Server-Timing"].split("=", 1)[1]
+        tracing.flush()
+        self.assertIsNotNone(self.store.trace(trace_id))
+
+    def test_a_non_index_asset_gets_no_trace_headers(self):
+        h = self._get("/assets/app-abcdef01.js")
+        self.assertNotIn("traceresponse", h.replied[4] or {})
+        self.assertNotIn("Server-Timing", h.replied[4] or {})
+
     def test_repeated_requests_mint_distinct_spans(self):
         first = TAG_RE.search(self._get("/").replied[1]).group(1)
         second = TAG_RE.search(self._get("/").replied[1]).group(1)
@@ -157,6 +179,13 @@ class TracingOffTest(Base):
         code, body, ctype, cache, extra = h.replied
         self.assertEqual(code, 200)
         self.assertEqual(body, INDEX_HTML)
+
+    def test_no_trace_headers_either(self):
+        """No tag and no headers: the two channels stay consistent when there
+        is no span to name, not merely when there is one."""
+        h = FakeHandler()
+        static_files.serve_static(h, "/")
+        self.assertNotIn("traceresponse", h.replied[4] or {})
 
     def test_a_non_index_asset_is_never_modified(self):
         h = FakeHandler()
@@ -179,6 +208,7 @@ class FailSafeTest(Base):
             h = FakeHandler()
             static_files.serve_static(h, "/")
             self.assertEqual(h.replied[1], INDEX_HTML)
+            self.assertNotIn("traceresponse", h.replied[4] or {})
         finally:
             static_files._traceparent_meta = original
 

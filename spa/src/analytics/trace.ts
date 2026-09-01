@@ -525,11 +525,26 @@ export function flushSpans(): void {
  * the server side rather than merely parentless.
  */
 function traceparent(): string {
-  const span = currentSpan();
-  if (span && span.traceId && span.spanId) {
-    return `00-${span.traceId}-${span.spanId}-01`;
-  }
-  return `00-${newTraceId()}-${newSpanId()}-01`;
+  return traceparentOf(currentSpan()) ?? `00-${newTraceId()}-${newSpanId()}-01`;
+}
+
+/**
+ * The `traceparent` header naming ONE SPECIFIC span, or null when that span
+ * has no ids (a NOOP span — the tracer is off).
+ *
+ * Why this is exported and `traceparent()` is not: a caller that has just
+ * OPENED the span it is about to describe must name THAT span, not whatever
+ * `currentSpan()` happens to be. `childOfActive()` deliberately does not
+ * `pushActive()` — a client span lives across an `await`, and this stack is a
+ * synchronous LIFO with no async context, so pushing one would silently
+ * re-parent every span opened by unrelated code while the request is in
+ * flight. `khFetch.ts` therefore builds its header from its own span with
+ * this, rather than the active-span model being bent to make an implicit
+ * lookup come out right.
+ */
+export function traceparentOf(span: Span | null): string | null {
+  if (!span || !span.traceId || !span.spanId) return null;
+  return `00-${span.traceId}-${span.spanId}-01`;
 }
 
 /** Headers to merge into a same-origin fetch. Never throws: a request that

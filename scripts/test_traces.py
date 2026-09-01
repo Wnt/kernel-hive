@@ -105,6 +105,23 @@ class StoreTest(unittest.TestCase):
         self.assertNotIn("exception.stacktrace", attrs)
         self.assertEqual(attrs["kh.flow"], "x")
 
+    def test_the_backend_trace_id_attribute_survives_intake_intact(self):
+        """`kh.backend.trace_id` is how a client span points at the server
+        trace that answered it (khFetch.ts reads `traceresponse` /
+        `Server-Timing: intid` off the response). Intake drops a key over 64
+        chars or in BANNED_ATTRS and TRUNCATES a value over ATTR_STR_MAX — all
+        three silently, and a truncated trace id joins nothing while still
+        looking like an id. So assert the round trip, byte for byte, rather
+        than the rules it happens to satisfy today."""
+        backend = "abcdefabcdefabcdefabcdefabcdefab"
+        key = "kh.backend.trace_id"
+        self.assertLessEqual(len(key), 64)
+        self.assertNotIn(key, traces.BANNED_ATTRS)
+        self.assertLessEqual(len(backend), traces.ATTR_STR_MAX)
+        self.store.record(batch([span(S1, a={key: backend})]))
+        attrs = self.store.trace(T1)["spans"][0]["attributes"]
+        self.assertEqual(attrs[key], backend)
+
     def test_attributes_are_capped_and_narrowed(self):
         big = {f"k{i}": "v" for i in range(100)}
         big["long"] = "x" * 500

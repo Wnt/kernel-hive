@@ -28,79 +28,35 @@
 //  process ever transmitting which key it was.
 // ============================================================================
 import { startTrace, type Span } from '../../analytics/trace';
+import { reportBackendTrace } from '../../analytics/instana';
 
 // -- the EUM↔backend join (Instana `reportEvent`) ---------------------------
 // A vendor beacon can name a backend trace; a backend span can never name a
 // browser session — the join is one-directional and has to be driven from
 // here, the ONE place a sampled `input.edge` trace is minted
-// (docs/lab/TRACE-CONTEXT.md §3.2, docs/ANALYTICS.md §8.1). `ineum('reportEvent',
-// name, { backendTraceId, ... })` is the documented mechanism; the vendor
-// bundle validates `backendTraceId` as a hex string of EXACTLY 16 or 32
-// characters and SILENTLY DROPS the field otherwise (established by reading
-// the real minified agent, not the docs — the docs state no such length rule
-// at all). Our `Span.traceId` is already 32 lowercase hex
-// (`analytics/trace.ts`'s `newTraceId()`), so no reformatting happens here —
-// only a defensive length check, so a future change to that format cannot
-// silently start sending a value the vendor drops without anyone noticing.
+// (docs/lab/TRACE-CONTEXT.md §3.2, docs/ANALYTICS.md §8.1).
 //
-// Declared locally (rather than importing `instana.ts`'s private `ineum`
-// guard) so this module has no dependency on that file beyond its own
-// judgment of what is safe to send — the same isolation `navigation.ts` and
-// `khFetch.ts` already keep from it.
-declare global {
-  interface Window {
-    ineum?: (...args: unknown[]) => void;
-  }
-}
-
-function ineum(...args: unknown[]): void {
-  try {
-    if (typeof window === 'undefined') return;
-    const fn = window.ineum;
-    if (typeof fn === 'function') fn(...args);
-  } catch {
-    /* never throw: the vendor is a benchmark, never a dependency */
-  }
-}
-
-/** Exactly what the vendor bundle accepts for `backendTraceId` — 16 or 32 hex
- *  characters. Exported so a test can assert against the SAME rule this
- *  module gates on, rather than a looser one that would pass while the
- *  feature is silently dead on the wire. */
-export const BACKEND_TRACE_ID_RE = /^[0-9a-f]{16}$|^[0-9a-f]{32}$/i;
-
-/** Attributes per `reportEvent` `meta` object. The vendor's own default is 25
- *  (`maxMetadataKeys`); this module never comes close, but the cap is
- *  enforced here rather than trusted to stay true by inspection. */
-const META_MAX_KEYS = 25;
+// The mechanics — the guarded `ineum` call, the 16-or-32-hex `backendTraceId`
+// rule the vendor enforces SILENTLY, the meta-key cap — now live in
+// `analytics/instana.ts`, which is where facts about the vendor belong. They
+// were declared here while this module was the only caller; `khFetch.ts`
+// reporting the same join off a response header made a local copy a second
+// opinion about what the vendor accepts, and two opinions is exactly how a
+// silently-dropped field survives a green test suite.
 
 /**
  * Tag a just-minted sampled `input.edge` trace onto the browser session via
- * Instana's EUM↔backend join. A no-op, entirely, when `window.ineum` does
- * not exist (unconfigured build — the vendor script never loaded) — our own
- * tracing above this call is already complete and unaffected either way.
+ * Instana's EUM↔backend join. A no-op, entirely, when `window.ineum` does not
+ * exist (unconfigured build — the vendor script never loaded) and when the
+ * span is a NOOP (tracing off, empty trace id) — our own tracing above this
+ * call is already complete and unaffected either way.
  *
  * `meta` NEVER carries a key's identity or typed text — the caller already
  * enforces that (`keyClass` is a bucket, `kh.input.class` is a wire-record
- * type), and this function only forwards what it is given, capped at
- * `META_MAX_KEYS`.
+ * type), and this function only forwards what it is given.
  */
 function reportSampledEdge(span: Span, meta: Record<string, string>): void {
-  if (typeof window === 'undefined' || typeof window.ineum !== 'function') return;
-  if (!BACKEND_TRACE_ID_RE.test(span.traceId)) return; // NOOP span (tracing off) or malformed — never send a value the vendor would drop
-  const capped: Record<string, string> = {};
-  let n = 0;
-  for (const [k, v] of Object.entries(meta)) {
-    if (n >= META_MAX_KEYS) break;
-    capped[k] = v;
-    n += 1;
-  }
-  ineum('reportEvent', 'kh.input.sampled', {
-    timestamp: Date.now(),
-    backendTraceId: span.traceId,
-    meta: capped,
-    maxMetadataKeys: META_MAX_KEYS,
-  });
+  reportBackendTrace('kh.input.sampled', span.traceId, meta);
 }
 
 /** The knob: 1 input edge in this many gets a real span and a wire context.

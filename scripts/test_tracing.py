@@ -48,9 +48,19 @@ class FakeHandler:
         #: Run INSIDE the traced verb, so a test can open children the way a
         #: route body does — under the request span the wrapper just opened.
         self._hook = hook
+        #: Everything `send_header` was given, in order — the return-leg
+        #: headers are asserted off this rather than off a socket.
+        self.sent_headers = []
+        self.ended = False
 
     def send_response(self, code, message=None):
         self.replied = code
+
+    def send_header(self, key, value):
+        self.sent_headers.append((key, value))
+
+    def end_headers(self):
+        self.ended = True
 
     def do_GET(self):
         if self._hook:
@@ -58,6 +68,7 @@ class FakeHandler:
         if self._boom:
             raise self._boom
         self.send_response(self._status)
+        self.end_headers()
         return "answered"
 
     def do_POST(self):
@@ -317,6 +328,89 @@ class RaisingStoreTest(unittest.TestCase):
         h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=KeyError("k"))
         with self.assertRaises(KeyError):
             h.do_GET()
+
+
+# ---------------------------------------------------------------------------
+# the return leg: traceresponse + Server-Timing
+# ---------------------------------------------------------------------------
+
+
+class ResponseHeaderTest(Base):
+    """A response has to name the span that answered it, or the browser can
+    only ever guess whether the id it SENT was the id the server used (it is
+    not, whenever the inbound header was malformed or absent). Two headers,
+    one span: `traceresponse` is ours, `Server-Timing: intid` is what Instana's
+    EUM agent parses into `backendTraceId`."""
+
+    def headers_of(self, handler):
+        return {k.lower(): v for k, v in handler.sent_headers}
+
+    def test_a_traced_response_names_its_own_span_in_both_headers(self):
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        doc = self.stored(TRACE)
+        root = doc["spans"][0]
+        sent = self.headers_of(h)
+        self.assertEqual(sent["traceresponse"], f"00-{TRACE}-{root['spanId']}-01")
+        self.assertEqual(sent["server-timing"], f"intid;desc={TRACE}")
+
+    def test_the_ids_are_the_response_span_not_the_inbound_parent(self):
+        """The whole point: the caller learns the id of the span the SERVER
+        opened. Echoing the inbound span id back would be indistinguishable
+        from working, and useless."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        sent = self.headers_of(h)
+        self.assertNotIn(SPAN, sent["traceresponse"])
+
+    def test_an_untraced_route_emits_neither_header(self):
+        h = FakeHandler(path="/assets/app-abcdef01.js")
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_an_unsampled_parent_emits_neither_header(self):
+        """Unsampled in means nothing out, headers included — there is no span
+        to name, and naming one anyway would advertise a trace the store will
+        never hold."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-00"})
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_tracing_unbound_emits_neither_header(self):
+        tracing.reset_for_tests()  # no store: every span is NOOP
+        h = FakeHandler()
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_a_keepalive_connection_does_not_leak_ids_onto_the_next_response(self):
+        """One handler instance serves many requests. The stash is per
+        response, so an untraced second request on the same connection must
+        come back bare."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        self.assertIn("traceresponse", self.headers_of(h))
+        h.sent_headers = []
+        h.path = "/assets/app-abcdef01.js"
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_a_response_still_closes_its_headers_when_the_stash_is_garbage(self):
+        """`end_headers` is on the path of every reply this server makes. It
+        may never fail because of a telemetry header."""
+        h = FakeHandler()
+        h._kh_trace_response = "not a dict"
+        h.end_headers()
+        self.assertTrue(h.ended)
+
+    def test_the_ids_are_well_formed_for_a_freshly_minted_trace(self):
+        h = FakeHandler()
+        h.do_GET()
+        sent = self.headers_of(h)
+        self.assertRegex(sent["traceresponse"], r"^00-[0-9a-f]{32}-[0-9a-f]{16}-01$")
+        self.assertRegex(sent["server-timing"], r"^intid;desc=[0-9a-f]{32}$")
+        # Instana silently DROPS a backendTraceId that is not 16 or 32 hex, so
+        # the length is the feature, not an incidental property of the format.
+        self.assertEqual(len(sent["server-timing"].split("=", 1)[1]), 32)
 
 
 if __name__ == "__main__":
