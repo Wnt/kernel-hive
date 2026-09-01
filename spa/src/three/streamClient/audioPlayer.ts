@@ -141,7 +141,19 @@ export class AudioPlayer {
       // context clock, i.e. the output ran out of buffered audio and the
       // visitor heard a gap. The clamp that follows papers over the gap for
       // the NEXT packet; nothing recorded that it happened.
-      if (this.playHead < now + 0.02) { this.underruns++; this.playHead = now + 0.02; }
+      //
+      // EXCEPT THE FIRST PACKET, which is not an underrun and must not be
+      // counted as one. `playHead` starts at 0 and `ctx.currentTime` does not,
+      // so the very first `play()` ALWAYS takes this branch — it is the play
+      // head being initialised, not audio running dry. Measured on the first
+      // live run, 2026-09-01: every session reported exactly 1 underrun, which
+      // would have made the metric's zero point a lie and any threshold on it
+      // fire on every visitor.
+      const starting = this.playHead === 0;
+      if (this.playHead < now + 0.02) {
+        if (!starting) this.underruns++;
+        this.playHead = now + 0.02;
+      }
       src.start(this.playHead);
       this.playHead += buffer.duration;
       this.framesPlayed += frames;

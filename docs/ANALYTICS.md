@@ -2003,6 +2003,18 @@ name, its unit and its instrument kind.
   is real.** The u32 µs counter wraps every 71.6 minutes and the difference is
   read as signed 32-bit, which is right for any true skew under ±35.8 minutes.
 
+  **What the first live run actually showed, and what it does not prove.** On
+  win311 the skew read −309 ms early and drifted to −7,510 ms, while
+  `audio_frames` stayed pinned at 26,880 and `audio_lead_ms` at 0 — i.e. the
+  audio pipeline delivered one buffer and stopped, and the vital tracked video
+  walking away from a frozen audio clock. That is the metric behaving exactly
+  as designed on a **stalled** stream, and it is a useful confirmation that
+  both operands are live and on one epoch. It is **not** a calibration: the
+  sim runs muted, so the absolute zero of this vital has never been checked
+  against a known-good synchronised stream. Until it has been, read `av_skew_ms`
+  as a **trend** — a number that walks away from where it started means audio
+  and video have decoupled — and not yet as an absolute millisecond offset.
+
 **What is NOT observable, checked rather than assumed** — this is listed in
 `vitals_schema.py` too, so nobody rediscovers an absence:
 

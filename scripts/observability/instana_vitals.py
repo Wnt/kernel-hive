@@ -145,16 +145,31 @@ def forward_vitals(cfg, dest, post, dry_run: bool, verbose: bool) -> int:
     after = int(state.get("lastVitalsSeenSeq") or 0)
     first_seq = after
     every = _all_mode()
+    served_live = False
 
     def fetch(seq):
         if every:
             page = store.series(since_seq=seq, order="ingest", limit=PAGE_SAMPLES)["samples"]
             return page, (page[-1]["seq"] if page else seq)
-        # LATEST_ONLY: one row per (station, session, source), newest first —
-        # and note this ignores `seq` entirely for SELECTION. The watermark
-        # still advances past everything seen, so a later switch to backfill
-        # mode does not re-send a fortnight; but what leaves the box is the
+        # LATEST_ONLY: one row per (station, session, source), and note this
+        # ignores `seq` entirely for SELECTION — what leaves the box is the
         # present, because the present is all Instana's ingest clock can hold.
+        # The watermark still advances past everything seen, so a later switch
+        # to backfill mode does not re-send a fortnight.
+        #
+        # ONE PAGE PER RUN, AND THE LATCH IS LOAD-BEARING. `drain()` keeps
+        # calling `fetch` until it comes back EMPTY, which is the right loop
+        # for a backlog and the wrong one for a snapshot: the live set does not
+        # shrink as it is sent, so without this latch the same row is re-fetched
+        # and re-POSTed until the run budget stops it. Measured on the first
+        # live run of this leg, 2026-09-01: 200 identical requests for one
+        # sample, ending "stopped: request budget (200)". Harmless data, an
+        # absurd request rate, and it would have been 200 POSTs every 10 s
+        # forever.
+        nonlocal served_live
+        if served_live:
+            return [], seq
+        served_live = True
         page = store.live(LIVE_WINDOW_MS)["live"]
         high = max((r["seq"] for r in page), default=seq)
         return page, high
