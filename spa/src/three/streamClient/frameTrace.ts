@@ -33,6 +33,7 @@
 //  side's own `SAMPLE_N` (`inputTrace.ts`) — never per frame.
 // ============================================================================
 import { emitSpan } from '../../analytics/trace';
+import { takePendingEdge } from './inputTrace';
 
 interface FrameTiming {
   receiveMs: number;
@@ -146,6 +147,25 @@ function maybeEmit(frameId: number): void {
     m.traceId, m.spanId, 'client.frame.paint',
     t.decodeEndMs, Math.max(0, t.paintEndMs - t.decodeEndMs), attrs,
   );
+  // THE ONE MEASUREMENT THAT NEEDS NO CLOCK AGREEMENT. Everything above is a
+  // browser reading and everything the daemon emitted is a daemon reading, so
+  // the tree's overall shape depends on two machines' wall clocks lining up.
+  // This span does not: `edge.atMs` and `t.paintEndMs` are both
+  // `performance.now()` readings from THIS tab, minted by `inputTrace.ts` when
+  // the edge was sampled and taken when the answering frame finished painting.
+  // It is the envelope — "how long from my click until I saw it" — that the
+  // daemon's `input.dispatch` / `guest.frame.next` / `transport.frame.next`
+  // decompose, and it is emitted as a child of the browser's own `input.edge`
+  // span so it reads as a sibling of the daemon hop rather than as a stage of
+  // it. `null` (no pending edge) whenever the mark outlived its edge entry, in
+  // which case the rest of the trace is unaffected.
+  const edge = takePendingEdge(m.traceId);
+  if (edge) {
+    emitSpan(
+      m.traceId, edge.spanId, 'client.input.roundtrip',
+      edge.atMs, Math.max(0, t.paintEndMs - edge.atMs), attrs, 'ok', 'client',
+    );
+  }
   timings.delete(frameId);
   marks.delete(frameId);
 }

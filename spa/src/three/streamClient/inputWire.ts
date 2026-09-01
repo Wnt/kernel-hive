@@ -32,7 +32,7 @@ import { reach } from '../../analytics';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
-import { maybeSampleEdge, traceSuffix, withSuffix, keyClass } from './inputTrace';
+import { maybeSampleEdge, traceSuffix, withSuffix, keyClass, writeTraced } from './inputTrace';
 
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
@@ -148,7 +148,8 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     if (px == null || py == null) {
       const bare = new Uint8Array(3);
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
-      c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(bare, 3, traceSuffix(span)) : bare);
+      const rec = span ? withSuffix(bare, 3, traceSuffix(span)) : bare;
+      writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
       span?.end('ok');
       return;
     }
@@ -159,7 +160,8 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     dv.setUint16(5, py, true);
     dv.setUint32(7, c.nextCseq(), true);
     c.lastAbsX = px; c.lastAbsY = py;
-    c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(b, 11, traceSuffix(span)) : b);
+    const rec = span ? withSuffix(b, 11, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
     span?.end('ok');
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
@@ -175,7 +177,8 @@ export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: 
       'kh.key.class': keyClass(keycode),
       'kh.station': c.stationId ?? 'unknown',
     });
-    c.writeReliableClass(ICLASS_KEY, span ? withSuffix(b, 4, traceSuffix(span)) : b);
+    const rec = span ? withSuffix(b, 4, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_KEY, rec); });
     span?.end('ok');
   }
 export function sendWheelImpl(c: StreamClientLike, dx: number, dy: number) {

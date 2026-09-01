@@ -29,6 +29,7 @@
 // ============================================================================
 import { startTrace, type Span } from '../../analytics/trace';
 import { reportBackendTrace } from '../../analytics/instana';
+import { transportAttrs } from './transportFacts';
 
 // -- the EUM↔backend join (Instana `reportEvent`) ---------------------------
 // A vendor beacon can name a backend trace; a backend span can never name a
@@ -77,6 +78,8 @@ let counter = 0;
  *  the counter free-runs for the life of the tab. */
 export function __resetSampleCounter(): void {
   counter = 0;
+  pendingEdges.clear();
+  pendingOrder.length = 0;
 }
 
 /** The browser's sampling decision for ONE qualifying edge (a key transition
@@ -93,12 +96,87 @@ export function maybeSampleEdge(
   if (counter < SAMPLE_N) return null;
   counter = 0;
   const span = startTrace(name, attrs, 'client');
+  // Remember this edge so `frameTrace.ts` can close a browser-clock round trip
+  // against the frame the daemon eventually names as its answer.
+  if (span.traceId) {
+    if (!pendingEdges.has(span.traceId)) pendingOrder.push(span.traceId);
+    pendingEdges.set(span.traceId, { spanId: span.spanId, atMs: performance.now() });
+    while (pendingOrder.length > MAX_PENDING_EDGES) {
+      const old = pendingOrder.shift();
+      if (old !== undefined) pendingEdges.delete(old);
+    }
+  }
   // Fires only on the ~1-in-SAMPLE_N edges that actually mint a trace, so the
   // other N-1 pay nothing here either — `reportSampledEdge` itself no-ops
   // below that (unconfigured build, or a NOOP span because our own tracing
   // is disabled).
   reportSampledEdge(span, attrs);
   return span;
+}
+
+// -- the transport hop, and the browser-clock round trip ---------------------
+// TWO THINGS THE OLD SHAPE LEFT INVISIBLE, added here because this is the one
+// module that already knows a sampled edge exists.
+//
+// 1. `input.wire` — the WebTransport hop as ITS OWN span rather than an
+//    unexplained gap between `input.edge` (this tab) and `input.dispatch` (the
+//    daemon). Its DURATION is only the local handoff: how long this tab spent
+//    getting the record into the QUIC stream writer, which is where
+//    backpressure shows up. The hop's actual cost is not a duration this tab
+//    can measure — the daemon's clock is a different clock, and subtracting
+//    two wall clocks across two machines yields skew, not latency — so it is
+//    carried as the connection's own `kh.transport.rtt_ms` instead
+//    (`transportFacts.ts`). A measured RTT beside a measured local enqueue is
+//    an honest account of the hop; a span whose ends were read off two clocks
+//    would not be.
+//
+// 2. `client.input.roundtrip` — edge to painted pixel, start and end BOTH read
+//    from this tab's own `performance.now()`, so it is the one number in the
+//    whole tree that needs no clock agreement at all. Emitted from
+//    `frameTrace.ts` once the daemon names which `frame_id` answered this
+//    edge. It is the operator's actual question ("how long until I saw it")
+//    and it is the envelope the daemon's own spans decompose.
+
+/** Edges awaiting their answering frame: `traceId` -> the edge span's id and
+ *  the browser clock reading at which it was minted. Bounded, and an entry
+ *  that never gets an answer simply ages out — the rest of the trace still
+ *  stands. Small because the input side already samples 1-in-`SAMPLE_N` and a
+ *  frame answers within a handful of frames. */
+const MAX_PENDING_EDGES = 32;
+const pendingEdges = new Map<string, { spanId: string; atMs: number }>();
+const pendingOrder: string[] = [];
+
+/** Consume the pending edge for `traceId`, if this tab minted one. Consuming
+ *  (rather than peeking) is deliberate: exactly one round-trip span per edge,
+ *  even if the daemon marks two frames against the same trace. */
+export function takePendingEdge(traceId: string): { spanId: string; atMs: number } | null {
+  const e = pendingEdges.get(traceId);
+  if (!e) return null;
+  pendingEdges.delete(traceId);
+  return e;
+}
+
+/** Run `write` inside a child `input.wire` span when this edge is sampled, and
+ *  run it untouched when it is not. `reliability` is the caller's own fact —
+ *  `stream` for a key/button record on its per-class QUIC stream, `datagram`
+ *  for pointer motion — because the two have genuinely different loss and
+ *  latency behaviour.
+ *
+ *  The write is in a `try/finally` so a throwing writer still closes the span:
+ *  a wire span that never ends would be a hole in the tree exactly where the
+ *  failure was. */
+export function writeTraced(
+  span: Span | null,
+  reliability: 'stream' | 'datagram',
+  write: () => void,
+): void {
+  if (!span) { write(); return; }
+  const wire = span.child('input.wire', transportAttrs(reliability), 'client');
+  try {
+    write();
+  } finally {
+    wire.end('ok');
+  }
 }
 
 function hexToBytes(hex: string, out: Uint8Array, offset: number, len: number): void {

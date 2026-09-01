@@ -410,6 +410,7 @@ export function emitSpan(
   durMs: number,
   attrs?: Attrs,
   status: SpanStatus = 'ok',
+  kind: SpanKind = 'internal',
 ): void {
   try {
     if (!enabled || buffered.length >= MAX_BUFFERED) return;
@@ -420,7 +421,7 @@ export function emitSpan(
       s: newSpanId(),
       p: parentSpanId,
       n: name.slice(0, 80),
-      kd: 'internal',
+      kd: kind,
       st: wallStart,
       d: Math.max(0, Math.round(durMs)),
       h: 0,

@@ -14,6 +14,7 @@ import { ByteReader } from './byteReader';
 import { fetchSignal } from './signal';
 import { logClientEvent, flushNow } from '../clientDebug';
 import { noteTransportClosed } from './analyticsEvents';
+import { setTransportFacts, clearTransportFacts } from './transportFacts';
 
 /** How long WebTransport may sit in `ready` before we record the silence as
  *  evidence. Chrome gives up on a blackholed QUIC handshake at its own idle
@@ -141,6 +142,12 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     if (this.disposed) { try { wt.close(); } catch { /* noop */ } return; }
     this.wtReady = true;
     this.sessionReadyAt = performance.now();
+    // The transport hop's own identity and characteristics, for the sampled
+    // `input.wire` span (`transportFacts.ts`). Recorded here, once `ready`
+    // has settled, because before that there is no connection to describe and
+    // `getStats()` has nothing to report. Never throws: a UA without
+    // `getStats` records that fact and carries the endpoint alone.
+    try { setTransportFacts(sig.url, wt); } catch { /* instrumentation never breaks a connect */ }
     this.armNoVideoTelemetry();
     // Belt-and-braces: if a session still comes up poisoned (the pre-ready
     // attach lost an unknown variant of the race), detect + rebuild it.
@@ -340,6 +347,9 @@ export function disposeImpl(this: StreamClient): void {
   // capture BEFORE wtReady is cleared — it decides whether close() is safe
   const wtReadyForClose = this.wtReady;
   this.wtReady = false;
+  // Stop the transport-stats poll and forget this connection, so a reconnect's
+  // spans never carry the previous connection's RTT or id (transportFacts.ts).
+  clearTransportFacts();
   if (this.ffStallTimer) { clearInterval(this.ffStallTimer); this.ffStallTimer = 0; }
   if (this.noVideoTimer) { clearTimeout(this.noVideoTimer); this.noVideoTimer = 0; }
   if (this.lifecycleHooksInstalled) {
