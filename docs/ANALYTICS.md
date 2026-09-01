@@ -1322,6 +1322,55 @@ sends rare without ever being the thing correctness rests on. See the
 `pending_traces()` docstring for why the alternatives lost and what re-sending
 means on IBM's side.
 
+**A run drains the backlog, and a request is bounded in SPANS and BYTES — not
+in traces.** Landing the timer exposed two more defects the same afternoon, and
+both are worth knowing because both were invisible from inside Instana (the
+symptom for each is "the chart is empty"). First, a run shipped exactly ONE
+batch of 100 traces and exited, which on a five-minute timer is 20 traces a
+minute against a store measured taking 23 a minute: the pipeline could not
+catch up from any backlog, sat 991 traces behind, and the Applications → Calls
+view flatlined about 25 minutes behind reality — a visitor simulation's traces
+took the better part of an hour to appear. A run now keeps shipping until it is
+caught up or until a 120-second budget stops it (40% of both the unit's
+`TimeoutStartSec=300` and the timer's own 5-minute period, because an
+over-running oneshot is killed AND costs the next tick, which would lose ground
+at exactly the moment it was catching up). Draining the 991-trace backlog takes
+ten requests and about three seconds.
+
+Second, 100 traces is not a size. Trace size here spans four orders of
+magnitude — a `serve.clientcmd` poll trace holds one span while a live browser
+session accumulates thousands of `input.edge` spans into a single trace — and
+one such batch carried 16,226 spans in 9.6 MB, which the agent refused by
+closing the connection mid-upload (`[Errno 32] Broken pipe`, no HTTP status,
+twice in a row). Probing the agent's OTLP receiver put its wall at exactly
+5 MiB, which is the documented *minimum* of `INSTANA_AGENT_OTEL_HTTP_MAX_MESSAGE_SIZE`
+(configurable to 49.5 MB, if requests ever need to be bigger). Batching is now
+by span count and serialized bytes, budgeted at 4,000 spans / 4 MiB, and a
+single trace over that is SPLIT across consecutive requests. Splitting is safe:
+this plane already relies on it, since a trace's server half and browser half
+reach Instana in different runs minutes apart and assemble correctly. The one
+real caveat is IBM's ~2-second trace-assembly window (`0280-custom-tracing.md`),
+so the few pieces of a very large trace may correlate imperfectly — a
+cosmetically split trace view, against the alternative of never shipping it and
+stalling everything behind it. Every run now prints `backlog: N trace(s)
+behind`, including `0`, so falling behind is a line in the journal rather than
+something to infer from an empty chart. `instana_batch.py` holds the numbers
+and the probe that produced them.
+
+**Five minutes was re-examined and KEPT**, which is worth saying because the
+throughput fix removes the reason anyone would shorten it. The period was never
+the bottleneck — one batch per run was — and now that a run drains, the worst
+case age of data in the tenant is one interval plus the 90-second quiet window,
+i.e. under seven minutes, against a store taking ~23 traces a minute. Dropping
+to one minute would buy roughly four minutes of freshness and cost five times
+the runs, five times the journal, and five times the chance of a run landing
+inside a trace's quiet window and shipping it twice — Instana does not
+de-duplicate re-sent spans (docs silent, so assume not), and duplicates are the
+one error mode the quiet window exists to keep rare. If sub-two-minute
+freshness is ever wanted, `OnUnitActiveSec` is the one line to change and
+`RUN_BUDGET_S` must come down with it, since the budget is defined as a
+fraction of the period.
+
 **Neither timer is armed by landing this.** `box-deploy.sh --apply` installs the
 units; the operator enables them — the commands are in
 `docs/lab/INSTANA-VIEW-INVENTORY.md` §2.
@@ -1651,7 +1700,7 @@ Traps worth knowing, each of which was hit while writing this:
 | `streamhost/streamhost/src/trace_guest.rs` | the guest-lifecycle spans, measured from outside the guest |
 | `scripts/serve/traces.py`, `scripts/serve/tracecontext.py` | the span store and the shared `traceparent` rule |
 | `scripts/observability/trace-ship.py` | ships daemon spool batches to the box's own `/traces` route |
-| `scripts/observability/instana-forward.py`, `instana_destination.py`, `instana_backlog.py`, `instana_metrics.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice and the narrow loopback-http exception; the ingest-sequence watermark and quiet window that decide WHICH traces are still owed; the histogram projection |
+| `scripts/observability/instana-forward.py`, `instana_destination.py`, `instana_backlog.py`, `instana_batch.py`, `instana_metrics.py` | forwards traces + metric histograms to Instana; agent-vs-SaaS destination choice and the narrow loopback-http exception; the ingest-sequence watermark and quiet window that decide WHICH traces are still owed; how much goes in one request and how many requests one run may make; the histogram projection |
 | `scripts/observability/kh-instana-forward.{service,timer}`, `kh-trace-ship.{service,timer}` | the schedules for the two carriers. Installed by `box-deploy.sh --apply`, enabled by the operator |
 | `spa/src/analytics/instana.ts` | Instana EUM configuration — the pseudonymous-then-real identity upgrade, `ignoreUrls`, the fetch/XHR collision writeup (§8.2) |
 | `spa/index.html` (inline bootstrap) | the earliest-possible `ineum` config; the unconfigured-checkout guard that is the browser-side off switch (§8.2) |
