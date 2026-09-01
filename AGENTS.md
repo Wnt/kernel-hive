@@ -73,7 +73,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md); start with `labctl facts <tile>` |
 | Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
-| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with `clientlog.jsonl`, not a repro |
+| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with the log plane, not a repro |
 | Recapture a checkpoint | [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |
 | Fix a station that freezes or will not connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
 | Which emulator runs a given OS, with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — BEFORE spending an agent on recon |

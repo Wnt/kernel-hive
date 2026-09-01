@@ -37,6 +37,7 @@
 //  the exception it used to be described as.
 // ============================================================================
 
+import { logRecord } from './logSink';
 import { currentFlow } from './flows';
 import { queueError } from './sink';
 import { currentSpan } from './trace';
@@ -80,6 +81,7 @@ export function reportError(input: {
   message: string;
   source: string;
   stack?: string;
+  componentStack?: string;
 }): string {
   const fp = fingerprint(input.message, input.source, input.stack ?? '');
   try {
@@ -103,6 +105,25 @@ export function reportError(input: {
       });
       span.attr('error.type', input.source);
     }
+    // AND as a correlated ERROR log record, carrying the STACK. This is the
+    // seam that lets `/clientlog` be retired: the flat file existed to hold
+    // stacks because the trace store refuses them, and this lane does not.
+    // `reportError` is the one choke point every window error, unhandled
+    // rejection and React boundary error already passes through, so hooking it
+    // here covers all three without a call site anywhere else.
+    logRecord(
+      input.source === 'react' ? 'react-error' : 'client-error',
+      String(input.message ?? '').slice(0, MESSAGE_MAX),
+      '',
+      {
+        'exception.type': input.source,
+        'exception.message': String(input.message ?? '').slice(0, MESSAGE_MAX),
+        'exception.stacktrace': String(input.stack ?? '').slice(0, 4096),
+        'kh.fingerprint': fp,
+        ...(input.componentStack ? { 'kh.component_stack': input.componentStack.slice(0, 4096) } : {}),
+        ...(typeof location !== 'undefined' ? { 'url.full': location.href.slice(0, 512) } : {}),
+      },
+    );
     const flow = currentFlow();
     queueError({
       fp,

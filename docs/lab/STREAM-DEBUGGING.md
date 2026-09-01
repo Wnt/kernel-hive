@@ -10,20 +10,64 @@ happened an hour ago is usually already on disk.
 
 ---
 
-## 1. The three places evidence lives
+## 1. The places evidence lives
 
 | Plane | Where | Covers |
 |---|---|---|
-| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | What the BROWSER saw: quality tier, loss, RTT, freezes, decoder state. Rolling ~36 h. |
-| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | What the SERVER did: tier decisions, encoder reconfigs, session lifecycle, input. |
+| **Log plane** | `lab:/data/vms/streamhost/serve/logs.db`, or `POST /auth/logs/search` | Every producer's records — browser, serving plane, station daemon — with severity and, where a span was open, `traceId`/`spanId`. 7 days. |
+| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | The same browser events as the log plane, as flat JSONL. Rolling ~36 h. **Being retired** — see §1.1. |
+| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | Everything the daemon printed. The subset at WARN and above is also in the log plane, correlated. |
 | **Live overlay** | the SPA, **Ctrl/Cmd+N** | The same client state as the log, live. Ask the operator for a screenshot. |
 
 **The client plane is the one people forget, and it is usually the decisive
 one.** The server cannot see most of what the browser knows (§3).
 
+### 1.1 Start here now: the log plane, and the pivot
+
+The instruction that used to open this document — *start with
+`clientlog.jsonl`, not a repro* — is still right about where to start and wrong
+about the file. The same events now land in `logs.db` **carrying the trace
+context that was open when they happened**, which turns the two questions this
+document exists to answer into one query each:
+
+```sh
+# "What did EVERY plane say during this trace?" — the pivot. `id` is the trace
+# id from a slow span, or off the `traceresponse` header of the request itself.
+ssh lab 'curl -sk -X POST https://127.0.0.1:8443/auth/logs/trace \
+  -H "Content-Type: application/json" -H "Cookie: osg_session=$TOK" \
+  -d "{\"id\":\"<trace id>\"}"'
+
+# "What went wrong for anybody in the last hour?" — severity is a RANGE.
+#   {"minSeverity":"WARN","sinceMs":<now-3600000>,"limit":200}
+# Filter further with service (kernel-hive-spa | -serve | -daemon), instance
+# (the station or the box), session, build, traceId, or `contains` on the body.
+```
+
+Reads are **admin-only** and live under `/auth/logs/*`, exactly like
+`/auth/traces/*`; ingest is open, so a visitor can report the error that broke
+their visit without holding an admin session. Straight SQL against
+`/data/vms/streamhost/serve/logs.db` works too and is often faster to iterate
+on — the schema is in `scripts/serve/logs_schema.py`.
+
+The reverse direction is the one that was impossible before: take a
+`traceId` out of a log row, open it in `/admin/observability`, and read the
+flame graph the record was emitted inside.
+
+**What is NOT here yet**, so you know when to fall back to the file: the
+pre-bundle bootstrap error handler in `spa/index.html` still posts only to
+`/clientlog` (it runs before any module loads and has no span to name), and
+`clientlog.jsonl` is still being written in parallel for one deploy. Until both
+are settled, a client error from the very first moments of a page load is in the
+file and not in the store.
+
 ---
 
-## 2. Client telemetry: `clientlog.jsonl`
+## 2. Client telemetry: `clientlog.jsonl` (being retired)
+
+**This file is on its way out.** Everything below is still true and still works;
+it is documented because the file is still written and still holds the ~36 hours
+before the log plane landed. New investigations should start at §1.1 — the same
+events, with severity and a trace id, and a query surface that is not `grep`.
 
 Written by `POST /clientlog` in `scripts/serve/osgallery-https-server.py`.
 Untokened, and open to **every** session — on the public listener the visitor's

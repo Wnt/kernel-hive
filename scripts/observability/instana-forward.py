@@ -145,7 +145,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import socket
 import sys
@@ -163,11 +162,14 @@ import telemetry_paths  # noqa: E402
 import traces_otlp  # noqa: E402
 from instana_backlog import backlog_count, pending_traces, read_state, resume_seq, write_state  # noqa: E402
 from instana_batch import drain  # noqa: E402
+from instana_config import load_env  # noqa: E402
 from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
+from instana_logs import forward_logs  # noqa: E402
 from instana_metrics import metric_histograms  # noqa: E402
 
 DEFAULT_TRACES_DB = Path("/data/vms/streamhost/serve/traces.db")
 DEFAULT_ANALYTICS_DB = Path("/data/vms/streamhost/serve/analytics.db")
+DEFAULT_LOGS_DB = Path("/data/vms/streamhost/serve/logs.db")
 DEFAULT_TOKEN = ROOT / "scripts" / "serve" / "pki" / "instana.token"
 #: Where the watermark lives, so a re-run does not re-send what already went.
 DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
@@ -218,6 +220,7 @@ class Config:
         self.token_file = Path(env.get("INSTANA_TOKEN_FILE") or DEFAULT_TOKEN)
         self.traces_db = Path(env.get("TRACES_DB") or DEFAULT_TRACES_DB)
         self.analytics_db = Path(env.get("ANALYTICS_DB") or DEFAULT_ANALYTICS_DB)
+        self.logs_db = Path(env.get("LOGS_DB") or DEFAULT_LOGS_DB)
         self.state = Path(env.get("INSTANA_STATE") or DEFAULT_STATE)
         # Which client classes to forward. Defaulting to everything is right for
         # a COMPARISON — the point is to see the same population in both UIs —
@@ -312,28 +315,6 @@ class Config:
             else:
                 h["x-instana-key"] = self.token
         return h
-
-
-def load_env() -> dict:
-    """registry/local.env, then the real environment on top."""
-    env = {}
-    path = ROOT / "registry" / "local.env"
-    try:
-        for line in path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            k, v = line.split("=", 1)
-            env[k.strip()] = v.strip().strip("\"'")
-    except OSError:
-        pass
-    # INSTANA_* plus the two store paths this reads. The store paths matter
-    # because they are how anyone tests this against a fixture instead of the
-    # live databases — filtering them out made `Config` claim to honour an
-    # override it never saw, which is worse than not offering one.
-    passthrough = ("TRACES_DB", "ANALYTICS_DB")
-    env.update({k: v for k, v in os.environ.items() if k.startswith("INSTANA_") or k in passthrough})
-    return env
 
 
 def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
@@ -490,6 +471,7 @@ def main() -> int:
     ap.add_argument("--metric-days", type=int, default=2)
     ap.add_argument("--no-metrics", action="store_true")
     ap.add_argument("--no-traces", action="store_true")
+    ap.add_argument("--no-logs", action="store_true")
     ap.add_argument("-v", "--verbose", action="store_true", help="print the OTLP document")
     ap.add_argument("--via-agent", action="store_true", help="force the local Instana host agent (127.0.0.1)")
     ap.add_argument("--via-saas", action="store_true", help="force direct-to-SaaS (INSTANA_ENDPOINT)")
@@ -582,6 +564,14 @@ def main() -> int:
     while True:
         if not args.no_traces:
             rc |= forward_traces(cfg, dest, args.dry_run, args.verbose)
+        # AFTER the traces, deliberately. Instana links a log to a call it
+        # already holds; shipping the log first means the correlation is
+        # resolved against a trace that has not landed, and the docs are silent
+        # on whether a late-arriving trace back-fills. Ordering costs nothing
+        # and removes the question. (A missing log store is not a failure — a
+        # box that has not deployed this pillar yet still forwards traces.)
+        if not args.no_logs and cfg.logs_db.exists():
+            rc |= forward_logs(cfg, dest, post, args.dry_run, args.verbose)
         if not args.no_metrics:
             rc |= forward_metrics(cfg, dest, args.dry_run, args.verbose, args.metric_days)
         if not args.follow:

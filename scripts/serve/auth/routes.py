@@ -39,6 +39,20 @@ def bind_traces(store) -> None:
     _TRACES = store
 
 
+# The log store, bound the same way and for the same reason. Separate binder
+# rather than one call taking both: a plane that has a trace store and no log
+# store (an older deploy, a test) must still answer /auth/traces/*, and one
+# binder taking two arguments makes that state unrepresentable.
+_LOGS = None
+
+
+def bind_logs(store) -> None:
+    """Give the auth surface the log store to read. 503 rather than 404 when
+    unbound, so "not deployed yet" and "no such route" stay different answers."""
+    global _LOGS
+    _LOGS = store
+
+
 COOKIE_NAME = "osg_session"
 BODY_CAP = 64 * 1024
 JSON = "application/json"
@@ -238,6 +252,20 @@ def _route(handler, path: str, service, user, body: dict) -> None:
             _reply(handler, 503, {"error": "trace store unavailable"})
             return
         _trace_route(handler, path[len("/auth/traces/") :], body)
+        return
+
+    # ---- logs (docs/ANALYTICS.md) -----------------------------------------
+    # The same fence, one pillar over, for the same reason: a log record names
+    # a session and may carry a stack. `/auth/logs/trace` is the pivot the log
+    # plane exists for — hand it a trace id, get back what every producer said
+    # while that trace was open. The route body lives in serve/logs_read.py.
+    if path.startswith("/auth/logs/"):
+        if _LOGS is None:
+            _reply(handler, 503, {"error": "log store unavailable"})
+            return
+        import logs_read
+
+        logs_read.route(_LOGS, path[len("/auth/logs/") :], body, lambda code, obj: _reply(handler, code, obj))
         return
 
     if path == "/auth/invites/create":

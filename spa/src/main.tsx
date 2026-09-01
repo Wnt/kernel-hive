@@ -75,7 +75,12 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
       // COUNT so a fault that happens four hundred times is one row that says
       // so. The fingerprint is printed into neither by accident — it is how an
       // operator gets from the top row of the report back to a real stack.
-      reportError({ message: input.message, source: 'react', stack: input.stack });
+      reportError({
+        message: input.message,
+        source: 'react',
+        stack: input.stack,
+        componentStack: input.componentStack,
+      });
       if (window.__kernelHiveReportError) {
         window.__kernelHiveReportError(input);
       } else {

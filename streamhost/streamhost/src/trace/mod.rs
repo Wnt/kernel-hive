@@ -59,6 +59,7 @@
 //! context, not the path.
 
 pub mod context;
+pub mod logs;
 mod spool;
 mod types;
 
@@ -67,6 +68,7 @@ use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 pub use context::Ctx;
+pub use logs::Level;
 pub use types::{Kind, Val};
 
 // ---------------------------------------------------------------------------
@@ -214,6 +216,24 @@ impl Span {
     pub fn error(&mut self, msg: &'static str) -> &mut Self {
         self.status = "error";
         self.msg = Some(msg.to_string());
+        // AND one correlated ERROR log record, automatically. This is the
+        // cheapest correlation in the plane and the reason it is here rather
+        // than at each call site: every span that fails already knows its own
+        // trace and span ids, so an operator who filters the log lane to ERROR
+        // gets every daemon failure with a working pivot back to the span that
+        // failed — with no call-site churn and no site that can forget. The
+        // reverse pivot (span -> what was said during it) still needs explicit
+        // `sh_log!` calls; this is the floor, not the ceiling.
+        logs::record(
+            logs::Level::Error,
+            Some(Ctx {
+                trace: self.trace,
+                span: self.id,
+                sampled: self.sampled,
+            }),
+            msg,
+            &[("kh.span", Val::S(self.name.to_string()))],
+        );
         self
     }
 
@@ -360,6 +380,14 @@ fn render(
 
 /// A JSON string literal. Escapes what RFC 8259 requires and nothing else;
 /// non-ASCII passes through as UTF-8, which every JSON parser accepts.
+/// `push_str_json` for the two modules beside this one. A separate name rather
+/// than making the private one `pub(super)`: the escaper is an implementation
+/// detail of the renderer, and one deliberate door is easier to keep track of
+/// than a widened visibility.
+pub(crate) fn push_str_json_pub(out: &mut String, s: &str) {
+    push_str_json(out, s);
+}
+
 fn push_str_json(out: &mut String, s: &str) {
     out.push('"');
     for c in s.chars() {
@@ -409,6 +437,10 @@ pub fn drain() -> Vec<String> {
 /// and returns — the exhibit never degrades because telemetry could not be
 /// written (contract §7).
 pub fn flush_now(tile: &str) {
+    // The LOG lane rides the same call, so the shutdown flush that
+    // `probes::spawn`'s signal handler already owns drains both. A second
+    // handler is exactly what the comment on `init()` says not to add.
+    logs::flush_now(tile);
     let spans = drain();
     if spans.is_empty() {
         return;
@@ -437,8 +469,10 @@ pub fn init(tile: &str) {
     let dir = spool::spool_dir(tile);
     let every = env_u64("SH_TRACE_FLUSH_SECS", 30).max(1);
     eprintln!(
-        "[trace] spans -> {}/ every {every}s (+ on SIGTERM/SIGINT)",
-        dir.display()
+        "[trace] spans -> {}/ every {every}s (+ on SIGTERM/SIGINT); logs -> {}/ at {} and above",
+        dir.display(),
+        spool::log_spool_dir(tile).display(),
+        logs::min_level().as_str()
     );
     let tile = tile.to_string();
     tokio::spawn(async move {

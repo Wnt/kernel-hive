@@ -204,6 +204,42 @@ def requests_for(traces: list[dict], max_spans: int = MAX_SPANS, max_bytes: int 
     return out, dropped
 
 
+def log_requests_for(rows: list[dict], max_records: int = MAX_SPANS, max_bytes: int = MAX_BODY_BYTES, sizer=None):
+    """The LOG lane's planner, with the same `(page, watermark)` contract.
+
+    Simpler than `requests_for` because a log record is atomic: there is no
+    parent to keep contiguous and nothing to split, so every record either fits
+    a request or is dropped alone. It carries its own `seq`, so a watermark is
+    available on every request rather than only on the last piece of a trace.
+
+    One record that is over budget on its own is DROPPED and reported, exactly
+    as an oversized span is: without that, a single 4 MiB body would wedge the
+    lane and every later record behind it — the failure mode the trace lane
+    already paid for once.
+    """
+    sizer = sizer or (lambda rows: len(json.dumps(rows, separators=(",", ":")).encode()))
+    out: list[tuple[list[dict], int | None]] = []
+    dropped: list = []
+    cur: list[dict] = []
+    cur_bytes = 0
+    for r in rows:
+        b = sizer([r])
+        if b > max_bytes:
+            dropped.append(r)
+            sys.stderr.write(f"[instana] DROPPED one log record of {b} bytes (over the {max_bytes}-byte request cap)\n")
+            # The watermark still moves past it, or the lane wedges here.
+            out.append(([], r.get("seq")))
+            continue
+        if cur and (len(cur) >= max_records or cur_bytes + b > max_bytes):
+            out.append((cur, cur[-1].get("seq")))
+            cur, cur_bytes = [], 0
+        cur.append(r)
+        cur_bytes += b
+    if cur:
+        out.append((cur, cur[-1].get("seq")))
+    return out, dropped
+
+
 #: How long ONE run may spend shipping, in seconds.
 #:
 #: The unit is `Type=oneshot` with `TimeoutStartSec=300`, fired by a timer with
@@ -259,6 +295,8 @@ def drain(
     max_bytes=MAX_BODY_BYTES,
     sizer=None,
     clock=None,
+    planner=None,
+    unit="spans",
 ):
     """Ship pages until caught up or out of budget. Returns a summary dict.
 
@@ -276,7 +314,16 @@ def drain(
       `fetch(seq) -> (traces, high_seq)`   the next page of the backlog
       `ship(traces) -> (ok, detail)`       one POST, already logged by the caller
       `advance(seq)`                       persist the watermark, now safe
+
+    `planner` and `unit` are what let the LOG lane reuse this loop rather than
+    grow a second one. Everything this function actually decides — the time and
+    request budgets, the size-shaped halve-and-retry, the watermark-only-after-
+    success rule, and the 2026-09-01 drain-within-a-run fix below — is true of
+    any signal; only the shape of a page differs, and that is the planner's
+    business. Both default to the trace lane, so every existing caller is
+    unchanged.
     """
+    planner = planner or requests_for
     clock = clock or time.monotonic
     deadline = clock() + budget_s
     seq, halvings = after_seq, 0
@@ -291,7 +338,7 @@ def drain(
         page, _high = fetch(seq)
         if not page:
             break
-        plan, dropped = requests_for(page, max_spans, max_bytes, sizer)
+        plan, dropped = planner(page, max_spans, max_bytes, sizer)
         stat["dropped_spans"] += len(dropped)
         shrink = False
         for chunk, watermark in plan:
@@ -313,7 +360,7 @@ def drain(
                     stat["seq"] = seq
                     return stat
                 stat["traces"] += len(chunk)
-                stat["spans"] += sum(len(t.get("spans", [])) for t in chunk)
+                stat["spans"] += sum(len(t.get("spans", [])) for t in chunk) if unit == "spans" else len(chunk)
             if watermark is not None:
                 seq = watermark
                 advance(seq)

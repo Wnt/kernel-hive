@@ -53,6 +53,17 @@ TRACES_DB = Path(os.environ.get("TRACES_DB", str(_HERE / "traces.db")))
 # Days of spans kept. Short on purpose — see docs/ANALYTICS.md on what the trace
 # lane costs in exchange for drilldown.
 TRACE_RETENTION_DAYS = int(os.environ.get("TRACE_RETENTION_DAYS", "14"))
+# The correlated LOG lane, beside traces.db rather than a table in it: a log
+# row is roughly an order of magnitude more voluminous than a trace row at this
+# box's traffic (~20 MB/day against ~2 MB/day), and giving it its own file
+# means its retention, its WAL and its runaway backstop can be tuned without
+# touching the store the Applications view reads.
+LOGS_DB = Path(os.environ.get("LOGS_DB", str(_HERE / "logs.db")))
+# SEVEN days, half the trace window. Two reasons, both defensible on one box:
+# a log row costs ~10x a trace row, and 7 days is Instana's own default log
+# retention ("All the collected logs are kept for 7 days", 0321-policies.md),
+# so both stores answer a question for the same window.
+LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", "7"))
 # Days of per-day detail kept (serve/analytics.py prunes on startup).
 ANALYTICS_RETENTION_DAYS = int(os.environ.get("ANALYTICS_RETENTION_DAYS", "730"))
 
