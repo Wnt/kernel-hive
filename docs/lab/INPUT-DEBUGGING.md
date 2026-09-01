@@ -222,6 +222,19 @@ to prevent.** The worse-looking behaviour is the safer one. A safe version would
 have to engage only when the sink is down AND no edge is armed, with an explicit
 handoff rather than two live movers — a deliberate design, not a patch.
 
+**The same loop has a second consumer, with the edge on a different wire.**
+`amix` (host-native FS-UAE, `SH_INPUT_BACKEND=x11test` with
+`SH_X11TEST_MOTION=warp`) reaches its AMIX X11R4 server the same way — a
+loopback-only slirp redirect, WarpPointer, QueryPointer — but its buttons and
+keys ride XTEST into the host Xvfb, because FS-UAE has no D-Bus edge path. The
+exclusion is unchanged: the `x11test` pacer holds each button edge on the warp
+sink's gate (`x11_warp::wait_settled`), injects, flushes, then `edge_done()`.
+The single-injector rule is the same too, and easier to break there: an
+`xdotool mousemove` on the station's Xvfb IS a second mover (FS-UAE turns host
+motion into accelerated relative deltas the guest applies), so hand-driving the
+live display invalidates the readback. See
+[`../guests/amix.md`](../guests/amix.md).
+
 And be precise about what a success means. An ack can report ACCEPTANCE or
 APPLICATION and they are not the same claim: on the mgactl wire `MOVEA` acks in
 ~100-200 us (accepted) while `DOWN1`/`UP1` acked at 5637 us and 35559 us,
@@ -492,6 +505,24 @@ Two things to know before trusting a result:
   Netscape repainted between frames. It says which cluster defeated it, and
   `--at X,Y` learns from a box at a position the caller already knows, which is
   the normal path on a busy exhibit.
+
+Two more lessons from `amix`, where the oracle was the guest X server itself:
+
+- **An exact readback is not an exact exhibit.** Every `XQueryPointer` on amix
+  matched its warp target to the pixel, and the sprite in the captured frame
+  was still off by up to 45 px at the far edge — FS-UAE's auto zoom was
+  rendering the Amiga display *with its border* scaled into the 640×512
+  window (host = 0.93·guest + 22 in x), so the guest was right and the
+  CAPTURE was not 1:1 with it. The visitor clicks in capture space. Check the
+  sprite in the frame against the readback at more than one point, and fix
+  the scaling at the emulator (`zoom = 640x512`), never by rescaling clicks.
+- **Exact matching needs a glyph learned over a solid background.** A cursor
+  learned over a dithered root carries the dither's black/white pixels in its
+  mask wherever the sprite happened to coincide with them, so it will not
+  match at any other phase of the pattern; it returns `NOTFOUND` (honestly).
+  Learn each glyph over a flat area (an xterm, a window header), or measure by
+  differencing against a frame whose pointer sits elsewhere and reading the
+  bounding box.
 
 Validated on `aix432`, the one station with an independent oracle: against the
 Matrox hardware-cursor registers it located the sprite **pixel-exact (±0) in

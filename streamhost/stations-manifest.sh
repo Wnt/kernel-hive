@@ -976,7 +976,7 @@ emit aix432 \
 # amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop. Monochrome 640x512: AMIX's Amiga-chipset X server is depth 1, and colour needs an A2410 board FS-UAE cannot drive.
 emit amix \
   --tile amix --udp 54172 --x11 --x11-display :72 --capture x11 --pointer \
-  rel --input-backend x11test --audio off --fps 25 --x11-runtime-file \
+  abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
   "$T/amix/x11-runtime.sh" --env-append-file "$T/amix/station.env.fixture"
 
 # ---------------------------------------------------------------------------

@@ -3,10 +3,12 @@
 # (amigaos35 by default; FSUAE_STATION=amix for the Amiga UNIX station).
 #
 # Fetches the upstream 3.2.35 release tarball (sha256-verified), applies the
-# lab's mousehack re-arm patch (fsuae-native.d/fsuae-mousehack-rearm.patch —
-# without it every savestate restore leaves the absolute mouse dead, see
-# docs/guests/amigaos35.md), builds, and installs into the station assets
-# tree. The golden statefile + this binary + the device set are ONE
+# lab's two patches from fsuae-native.d/ — the mousehack re-arm (without it
+# every savestate restore leaves amigaos35's absolute mouse dead, see
+# docs/guests/amigaos35.md) and the slirp hostfwd fix (stock 3.2.35 parses
+# `slirp_redir` and then silently drops it; amix's x11warp pointer needs the
+# loopback-only forward, see docs/guests/amix.md) — builds, and installs into
+# the station assets tree. The golden statefile + this binary + the device set are ONE
 # combination: rebuilding to a different FS-UAE version orphans the golden.
 #
 # Usage: [FSUAE_STATION=<station>] build-fsuae-native.sh [--no-install]
@@ -24,15 +26,20 @@ FSUAE_STATION="${FSUAE_STATION:-amigaos35}"
 PREFIX="$ASSETS_ROOT/$FSUAE_STATION/fsuae-native"
 WORK="${WORK:-/data/vms/sandbox/BUILD-fsuae}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PATCH="$HERE/fsuae-native.d/fsuae-mousehack-rearm.patch"
+PATCHES=(
+  "$HERE/fsuae-native.d/fsuae-mousehack-rearm.patch"
+  "$HERE/fsuae-native.d/fsuae-slirp-hostfwd.patch"
+)
 
 INSTALL=1
 [ "${1:-}" = --no-install ] && INSTALL=0
 
-[ -f "$PATCH" ] || {
-  echo "missing $PATCH" >&2
-  exit 1
-}
+for PATCH in "${PATCHES[@]}"; do
+  [ -f "$PATCH" ] || {
+    echo "missing $PATCH" >&2
+    exit 1
+  }
+done
 
 mkdir -p "$WORK"
 cd "$WORK"
@@ -45,7 +52,9 @@ echo "$SHA256  fs-uae-${VER}.tar.xz" | sha256sum -c -
 rm -rf "fs-uae-${VER}"
 tar xf "fs-uae-${VER}.tar.xz"
 cd "fs-uae-${VER}"
-patch -p1 <"$PATCH"
+for PATCH in "${PATCHES[@]}"; do
+  patch -p1 <"$PATCH"
+done
 
 ./configure --prefix="$PREFIX" >configure.log 2>&1
 make -j"$(nproc)" >build.log 2>&1 || {
