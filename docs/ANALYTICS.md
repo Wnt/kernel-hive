@@ -1357,6 +1357,20 @@ behind`, including `0`, so falling behind is a line in the journal rather than
 something to infer from an empty chart. `instana_batch.py` holds the numbers
 and the probe that produced them.
 
+**Five minutes was re-examined and KEPT**, which is worth saying because the
+throughput fix removes the reason anyone would shorten it. The period was never
+the bottleneck — one batch per run was — and now that a run drains, the worst
+case age of data in the tenant is one interval plus the 90-second quiet window,
+i.e. under seven minutes, against a store taking ~23 traces a minute. Dropping
+to one minute would buy roughly four minutes of freshness and cost five times
+the runs, five times the journal, and five times the chance of a run landing
+inside a trace's quiet window and shipping it twice — Instana does not
+de-duplicate re-sent spans (docs silent, so assume not), and duplicates are the
+one error mode the quiet window exists to keep rare. If sub-two-minute
+freshness is ever wanted, `OnUnitActiveSec` is the one line to change and
+`RUN_BUDGET_S` must come down with it, since the budget is defined as a
+fraction of the period.
+
 **Neither timer is armed by landing this.** `box-deploy.sh --apply` installs the
 units; the operator enables them — the commands are in
 `docs/lab/INSTANA-VIEW-INVENTORY.md` §2.
