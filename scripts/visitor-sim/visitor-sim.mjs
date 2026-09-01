@@ -19,9 +19,11 @@ import { JOURNEYS } from './lib/journeys.mjs';
 import { Semaphore, FailureBreaker, ResetGate, WalkinSignupGate } from './lib/safety.mjs';
 import { RunManifest, log } from './lib/log.mjs';
 import { makeRng, weightedPick } from './lib/rng.mjs';
+import { ensureInviteSession } from './lib/invite.mjs';
 
 function printPlan(config) {
   log('plan', `gallery      ${config.galleryUrl}`);
+  log('plan', `browser      ${config.browser}`);
   log('plan', `stations     ${config.stations.join(', ')}`);
   log('plan', `visitors     ${config.visitors} over ${config.durationMs / 1000}s, concurrency ${config.concurrency}`);
   log('plan', `mix          ${Object.entries(config.mix).map(([k, v]) => `${k}=${v}`).join(', ')}`);
@@ -30,7 +32,25 @@ function printPlan(config) {
     'plan',
     `resets       ${config.allowResets ? `ARMED, max ${config.resetMax}, min ${config.resetMinIntervalMs / 1000}s between same-station resets` : 'disabled (--allow-resets not set)'}`,
   );
-  log('plan', `credentials  ${config.storageState ? `storage-state: ${config.storageState}` : 'none — walk-in-only journeys'}`);
+  if (config.resetsArmedButUnusable) {
+    log(
+      'plan',
+      'resets NOTE  --allow-resets is armed but --mix has no "station" journey — resets only ever fire from ' +
+        'journeyStation (lib/journeys.mjs), so nothing in this run can use that budget. Add station=<weight> to ' +
+        '--mix (needs --storage-state or --invite) if you actually want resets to fire.',
+    );
+  }
+  let credLine;
+  if (config.storageState) {
+    credLine = `storage-state: ${config.storageState}`;
+  } else if (config.invite) {
+    credLine = config.invite.willReuseCache
+      ? `invite: will reuse cached session at ${config.invite.statePath}`
+      : `invite: will redeem once and cache the session at ${config.invite.statePath}`;
+  } else {
+    credLine = 'none — walk-in-only journeys';
+  }
+  log('plan', `credentials  ${credLine}`);
   log('plan', `out-dir      ${config.outDir}`);
 }
 
@@ -92,8 +112,9 @@ async function runVisitor(browser, config, safety, manifest, visitorId, rng) {
 
 async function main() {
   let config;
+  let inviteCode; // never attached to `config` — see lib/cli.mjs's comment on why.
   try {
-    config = parseArgs(process.argv.slice(2));
+    ({ config, inviteCode } = parseArgs(process.argv.slice(2)));
   } catch (err) {
     process.stderr.write(`visitor-sim: ${err.message}\n`);
     process.exitCode = 1;
@@ -115,7 +136,34 @@ async function main() {
   const manifest = new RunManifest(config);
   const sem = new Semaphore(config.concurrency);
 
-  const browser = await chromium.launch({ headless: !config.headed, args: ['--ignore-certificate-errors'] });
+  const browser = await chromium.launch({
+    headless: !config.headed,
+    channel: config.browser === 'chrome' ? 'chrome' : undefined,
+    args: ['--ignore-certificate-errors'],
+  });
+
+  // Resolve --invite into a real storage-state path BEFORE any visitor
+  // context is created, using this same browser instance — one throwaway
+  // context, closed immediately after. `inviteCode` goes out of scope right
+  // after this call and is never read again.
+  if (config.invite) {
+    try {
+      config.storageState = await ensureInviteSession(browser, {
+        galleryUrl: config.galleryUrl,
+        code: inviteCode,
+        statePath: config.invite.statePath,
+        refresh: config.invite.refresh,
+        log: (msg) => log('invite', msg),
+      });
+    } catch (err) {
+      log('invite', `FAILED: ${err.message}`);
+      await browser.close();
+      process.exitCode = 1;
+      return;
+    } finally {
+      inviteCode = undefined;
+    }
+  }
 
   // Spread `visitors` arrivals across `durationMs`, at random offsets — a
   // gallery does not receive visitors on a metronome. Each visitor's own
