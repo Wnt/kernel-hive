@@ -1,11 +1,11 @@
 ---
 title: Amiga UNIX (AMIX)
-subtitle: 1992 · Amiga 3000 · System V Release 4 with OPEN LOOK
+subtitle: 1992 · Amiga 3000UX · System V Release 4 with OPEN LOOK, in colour on an A2410
 hero: /posters/amix/desktop.webp
 images:
   - src: /posters/amix/desktop.webp
-    alt: The AMIX 2.1 desktop — a black-and-white screen one bit deep, with an xterm titled "Amiga UNIX 2.1" showing a uname line over a root prompt, a Calculator window with rounded buttons, and an analogue clock, on a stippled grey background
-    caption: AMIX 2.1 on a screen one bit deep. The rounded buttons, the small triangular window menus and the L-shaped resize corners are OPEN LOOK — the desktop AT&T specified for System V Release 4, and the one Motif beat.
+    alt: The AMIX 2.1 desktop in colour — a steel-blue background under the OPEN LOOK window manager, whose grey window frames carry darker blue title bars: an xterm in black on white titled "Amiga UNIX 2.1" showing a uname line over a root prompt, the xcalc calculator with its rounded buttons, and an analogue xclock with a light-yellow face
+    caption: AMIX 2.1 at 1024×768 in 256 colours, drawn by the A2410 graphics board — the option that took an Amiga 3000UX from $4,998 to $7,713. The rounded buttons, the small triangular window menus and the L-shaped resize corners are OPEN LOOK, the desktop AT&T specified for System V Release 4.
 ---
 ## Origins
 
@@ -27,13 +27,13 @@ The scarcity is the reason it belongs on a wall. Most people who owned an Amiga 
 
 ## What you're looking at
 
-An emulated **Amiga 3000** — 68030 with its MMU, a 68882, 16 MB of memory, Kickstart 2.04 — cold-booting AMIX 2.1 from a SCSI disk. The terminal holds the machine's own account of itself: `UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k`. The `4.0` is System V Release 4, the `2.1` is Amiga UNIX's own version, and `(Unlimited)` is the licence class — the $1,195 one.
+An emulated **Amiga 3000** — 68030 with its MMU, a 68882, 16 MB of memory, an A2410 graphics board, Kickstart 2.04 — cold-booting AMIX 2.1 from a SCSI disk. The terminal holds the machine's own account of itself: `UNIX_System_V amix 4.0 2.1 0800430 Amiga (Unlimited) m68k`. The `4.0` is System V Release 4, the `2.1` is Amiga UNIX's own version, and `(Unlimited)` is the licence class — the $1,195 one.
 
 One liberty has been taken with the arrangement. A real A3000UX booted to a text console, and OPEN LOOK was something you started afterwards by typing `olinit`; this station starts it from `/etc/inittab` instead, so the desktop is already up when a visitor arrives.
 
 The two windows beside the terminal are stock X clients. The clock is `xclock`, with hands rather than digits. The calculator is `xcalc` in the TI-30 layout it has worn since the 1980s — but look at the buttons: rounded, not the square Athena rectangles the same program has on every other Unix system in this gallery. The window frames tell the same story. That small triangular button at the left of each title bar is olwm's window menu, and the L-shaped brackets at the four corners are its resize handles.
 
-The screen is **monochrome, 640×512**, and that is the exhibit being accurate rather than cutting a corner. AMIX's X server for the Amiga's own chipset is one bit deep — black and white and nothing else, so the grey backdrop is not a grey at all but a checkerboard of alternating pixels, and every shade on the screen is a dither pattern. Colour did not come from a setting; it came from buying a board. Amiga UNIX had no colour X at all until version 2.0, and even then the installer offers exactly three cards — Commodore's own A2410, the Digital Micronics Resolver, and the Ameristar 1600GX. The A2410 listed at $998 on its own, and the configuration with that board and the multiscanning monitor it wanted came to $7,713. This is the screen the cheaper answer gave you.
+The screen is **1024×768 in 256 colours**, and it is not the screen most people who ran this system were looking at. AMIX's X server drives the Amiga's own chipset by default, and there it is one bit deep — black and white and nothing else, every grey on the screen a checkerboard of alternating pixels. Colour never came from a setting; it came from buying a board. Amiga UNIX had no colour X at all before version 2.0, and even then the installer offers exactly three cards: Commodore's own A2410, the Digital Micronics Resolver, and the Ameristar 1600GX. The A2410 listed at $998 by itself, and the configuration built around it came to $7,713 against $4,998 for the machine alone. This exhibit has that board fitted, so what is on the wall is the version of the A3000UX somebody paid the extra for — a real configuration, sold by Commodore for this exact machine, and uncommon for the obvious reason. The two are closer together than the price suggests: `/usr/X/bin/X` and `/usr/X/bin/X2410` are byte-identical, one server that paints on the chipset unless you start it with `-tiga`.
 
 ## Legacy
 

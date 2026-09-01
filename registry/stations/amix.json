@@ -141,13 +141,14 @@
     "displayName": "Amiga UNIX (AMIX)",
     "year": 1992,
     "lineage": "Commodore Amiga / AT&T UNIX System V Release 4 (ported by Commodore)",
-    "arch": "Motorola 68030 @ 25 MHz with MMU + 68882 FPU (Amiga 3000)",
+    "arch": "Motorola 68030 @ 25 MHz with MMU + 68882 FPU, A2410 graphics board (Amiga 3000)",
     "ramMB": 16,
     "era": "1990s",
     "accent": "#7A8B99",
     "eraSoftware": [
       "OPEN LOOK Window Manager (olwm)",
       "X11R4 and the AT&T OPEN LOOK toolkit (OLIT)",
+      "the A2410 colour X server (X -tiga)",
       "GNU Emacs 18.55",
       "the SVR4 sysadm menus",
       "uucp, C News and NNTP"
@@ -159,8 +160,8 @@
       "xcalc",
       "GNU Emacs 18.55"
     ],
-    "blurb": "Commodore licensed AT&T's System V Release 4 and shipped it on the Amiga 3000, wearing OPEN LOOK — the desktop AT&T specified for SVR4, and the one Motif beat — instead of Workbench. Nobody ever published how many sold. The screen is one bit deep because colour on Amiga UNIX meant a $998 graphics board on top of a $5,000 machine.",
-    "notes": "Live streamhost tile, HOST-NATIVE from birth: FS-UAE 3.2.35 on the host under a pinned Xvfb, x11 root capture + XTEST input, with its own copy of the binary (rule 6). Installed from real media — the AMIX 2.1 boot/root floppies and the 29-segment installation tape (amigaunix.com) restored through UAE's SCSI tape emulation onto a 2 GB RDB disk, exactly as a real A3000UX did it. The desktop is MONOCHROME 640x512 because AMIX's Amiga-chipset X server is depth 1; colour needs an A2410 (or Resolver/1600GX) board, and FS-UAE 3.2.35 compiles the A2410 code but never calls it. Distinct from amiga (A500/WB1.3), amigaos35 (A4000/OS 3.5) and aros. See docs/guests/amix.md."
+    "blurb": "Commodore licensed AT&T's System V Release 4 and shipped it on the Amiga 3000, wearing OPEN LOOK — the desktop AT&T specified for SVR4, and the one Motif beat — instead of Workbench. Nobody ever published how many sold. This one has the A2410 graphics board fitted, so it runs OPEN LOOK in colour: the option that took the price from $4,998 to $7,713.",
+    "notes": "Live streamhost tile, HOST-NATIVE from birth: FS-UAE 3.2.35 on the host under a pinned Xvfb, x11 root capture + XTEST input, with its own copy of the binary (rule 6). Installed from real media — the AMIX 2.1 boot/root floppies and the 29-segment installation tape (amigaunix.com) restored through UAE's SCSI tape emulation onto a 2 GB RDB disk, exactly as a real A3000UX did it. SHIPS IN COLOUR: the pinned FS-UAE build does drive the Commodore A2410, and AMIX's X server comes up on it at 1024x768 depth 8 PseudoColor (256 colours) when started with -tiga — /usr/X/bin/X and /usr/X/bin/X2410 are byte-identical, so the board is selected by that flag alone. The earlier 'FS-UAE compiles the A2410 code but never calls it' verdict was a tool artefact: ugrep skipped the ISO-8859 gfxboard.cpp as binary, and the dispatch functions are named tms_*, not a2410_*. The 640x512 depth-1 chipset session is kept in-guest as /etc/kh-xsession.mono, so monochrome is a one-line revert. Historically the A2410 was a $998 option and most A3000UX owners ran the mono chipset screen; the poster says so. Distinct from amiga (A500/WB1.3), amigaos35 (A4000/OS 3.5) and aros. See docs/guests/amix.md."
   },
   "emulator": {
     "family": "FS-UAE",
