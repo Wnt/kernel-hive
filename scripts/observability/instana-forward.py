@@ -165,11 +165,13 @@ from instana_batch import drain  # noqa: E402
 from instana_config import load_env  # noqa: E402
 from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
 from instana_logs import forward_logs  # noqa: E402
-from instana_metrics import metric_histograms  # noqa: E402
+from instana_metrics import forward_metrics  # noqa: E402
+from instana_vitals import forward_vitals  # noqa: E402
 
 DEFAULT_TRACES_DB = Path("/data/vms/streamhost/serve/traces.db")
 DEFAULT_ANALYTICS_DB = Path("/data/vms/streamhost/serve/analytics.db")
 DEFAULT_LOGS_DB = Path("/data/vms/streamhost/serve/logs.db")
+DEFAULT_VITALS_DB = Path("/data/vms/streamhost/serve/vitals.db")
 DEFAULT_TOKEN = ROOT / "scripts" / "serve" / "pki" / "instana.token"
 #: Where the watermark lives, so a re-run does not re-send what already went.
 DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
@@ -221,6 +223,7 @@ class Config:
         self.traces_db = Path(env.get("TRACES_DB") or DEFAULT_TRACES_DB)
         self.analytics_db = Path(env.get("ANALYTICS_DB") or DEFAULT_ANALYTICS_DB)
         self.logs_db = Path(env.get("LOGS_DB") or DEFAULT_LOGS_DB)
+        self.vitals_db = Path(env.get("VITALS_DB") or DEFAULT_VITALS_DB)
         self.state = Path(env.get("INSTANA_STATE") or DEFAULT_STATE)
         # Which client classes to forward. Defaulting to everything is right for
         # a COMPARISON — the point is to see the same population in both UIs —
@@ -447,20 +450,6 @@ def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool)
     return 0 if stat["ok"] else 1
 
 
-def forward_metrics(cfg: Config, dest: Destination, dry_run: bool, verbose: bool, days: int) -> int:
-    since = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
-    doc = metric_histograms(cfg, since)
-    if not doc:
-        print(f"metrics [{dest.name}]: nothing to send")
-        return 0
-    n = sum(len(m["histogram"]["dataPoints"]) for m in doc["resourceMetrics"][0]["scopeMetrics"][0]["metrics"])
-    if verbose or dry_run:
-        print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, dest, "/v1/metrics", doc, dry_run)
-    print(f"metrics [{dest.name}]: {n} data point(s) -> {detail}")
-    return 0 if ok else 1
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true", help="validate configuration and exit")
@@ -472,6 +461,7 @@ def main() -> int:
     ap.add_argument("--no-metrics", action="store_true")
     ap.add_argument("--no-traces", action="store_true")
     ap.add_argument("--no-logs", action="store_true")
+    ap.add_argument("--no-vitals", action="store_true")
     ap.add_argument("-v", "--verbose", action="store_true", help="print the OTLP document")
     ap.add_argument("--via-agent", action="store_true", help="force the local Instana host agent (127.0.0.1)")
     ap.add_argument("--via-saas", action="store_true", help="force direct-to-SaaS (INSTANA_ENDPOINT)")
@@ -573,7 +563,15 @@ def main() -> int:
         if not args.no_logs and cfg.logs_db.exists():
             rc |= forward_logs(cfg, dest, post, args.dry_run, args.verbose)
         if not args.no_metrics:
-            rc |= forward_metrics(cfg, dest, args.dry_run, args.verbose, args.metric_days)
+            rc |= forward_metrics(cfg, dest, post, args.dry_run, args.verbose, args.metric_days)
+        # STREAM VITALS, and this leg is the reason `kh-instana-vitals.timer`
+        # exists beside the five-minute one. Instana stamps a metric point at
+        # INGEST (0307:98), so a five-minute batch of five-second samples would
+        # land as sixty points at one instant — resolution destroyed, silently.
+        # The timer runs this leg alone (`--no-traces --no-logs --no-metrics`)
+        # every 10 s; see instana_vitals.py for the whole argument.
+        if not args.no_vitals and cfg.vitals_db.exists():
+            rc |= forward_vitals(cfg, dest, post, args.dry_run, args.verbose)
         if not args.follow:
             return rc
         time.sleep(max(10, args.interval))

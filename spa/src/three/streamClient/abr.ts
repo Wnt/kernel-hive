@@ -16,6 +16,7 @@ import { clampU16 } from './format';
 import { ewma, rawScores } from './scoring';
 import { bankServerSkips, spendSkipCredit } from './skipCredit';
 import { formatStatsLine } from './telemetry';
+import { sampleVitals } from './vitalsSample';
 import {
   T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
@@ -248,6 +249,13 @@ export function tickStatsImpl(this: StreamClient): void {
   if (now - this.lastStatsLogAt >= STATS_LOG_MS) {
     this.lastStatsLogAt = now;
     const enc = this.encParams;
+    // THE SAME TICK, TWICE, ON PURPOSE. `sampleVitals` sends these numbers AS
+    // NUMBERS to the time-series lane (streamClient/vitals.ts); the log line
+    // below renders them as prose for a human reading clientlog.jsonl. Neither
+    // replaces the other yet: the log line is what every existing
+    // stream-debugging runbook greps for, and removing it to celebrate the new
+    // lane would break those on the day the new lane is least proven.
+    sampleVitals(this, now, decodeQueue);
     logClientEvent('stats', formatStatsLine(this.telemetry.snapshot(now), {
       tier: enc?.tier ?? null,
       crf: enc?.crf ?? null,

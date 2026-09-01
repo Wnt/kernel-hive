@@ -15,6 +15,7 @@ import { fetchSignal } from './signal';
 import { logClientEvent, flushNow } from '../clientDebug';
 import { noteTransportClosed } from './analyticsEvents';
 import { setTransportFacts, clearTransportFacts } from './transportFacts';
+import { endVitals } from './vitals';
 
 /** How long WebTransport may sit in `ready` before we record the silence as
  *  evidence. Chrome gives up on a blackholed QUIC handshake at its own idle
@@ -350,6 +351,10 @@ export function disposeImpl(this: StreamClient): void {
   // Stop the transport-stats poll and forget this connection, so a reconnect's
   // spans never carry the previous connection's RTT or id (transportFacts.ts).
   clearTransportFacts();
+  // Flush the last vitals samples and forget this station's envelope. The
+  // final minute before a session is torn down is the minute an investigation
+  // wants most, and without this it dies in the tab with the client.
+  endVitals();
   if (this.ffStallTimer) { clearInterval(this.ffStallTimer); this.ffStallTimer = 0; }
   if (this.noVideoTimer) { clearTimeout(this.noVideoTimer); this.noVideoTimer = 0; }
   if (this.lifecycleHooksInstalled) {

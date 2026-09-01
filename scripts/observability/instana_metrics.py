@@ -8,6 +8,7 @@ which is the seam: the trace half has a correctness argument
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import time
 
@@ -86,3 +87,32 @@ def metric_histograms(cfg, since_day: str) -> dict:
         if grouped
         else {}
     )
+
+
+def forward_metrics(cfg, dest, post, dry_run: bool, verbose: bool, days: int) -> int:
+    """Ship the day-resolution histograms to `/v1/metrics`.
+
+    MOVED HERE FROM `instana-forward.py` when the vitals leg landed, for the
+    reason `forward_logs` lives in `instana_logs.py`: that file is at its line
+    budget, and a leg's shipping function belongs beside the projection it
+    ships. `cfg`, `dest` and `post` are injected rather than imported, so this
+    module still has no cycle with the script that owns them.
+
+    THIS IS THE DAY-RESOLUTION LANE, and it shares a URL with the vitals leg
+    and nothing else. The counters behind it carry no per-sample timestamp, so
+    one point per day is the finest thing it can honestly say. Continuous
+    stream health is the OTHER lane (`instana_vitals.py`), which samples at
+    seconds and forwards on its own timer; do not merge them, and do not
+    "improve" this one's resolution — there is no finer data underneath it.
+    """
+    since = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
+    doc = metric_histograms(cfg, since)
+    if not doc:
+        print(f"metrics [{dest.name}]: nothing to send")
+        return 0
+    n = sum(len(m["histogram"]["dataPoints"]) for m in doc["resourceMetrics"][0]["scopeMetrics"][0]["metrics"])
+    if verbose or dry_run:
+        print(json.dumps(doc, indent=2)[:4000])
+    ok, detail = post(cfg, dest, "/v1/metrics", doc, dry_run)
+    print(f"metrics [{dest.name}]: {n} data point(s) -> {detail}")
+    return 0 if ok else 1

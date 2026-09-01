@@ -20,6 +20,7 @@ import logsink
 import probes
 import traces
 import usage
+import vitals
 from auth import routes as auth_routes
 from config import (
     ANALYTICS_DB,
@@ -29,6 +30,8 @@ from config import (
     TRACE_RETENTION_DAYS,
     TRACES_DB,
     USAGE_STATS,
+    VITALS_DB,
+    VITALS_RETENTION_DAYS,
 )
 
 import analytics
@@ -77,5 +80,13 @@ def build(instance: str):
     LOGS.prune(LOG_RETENTION_DAYS)
     auth_routes.bind_logs(LOGS)
     logsink.bind(LOGS, instance)
-    TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE, "traces": TRACES, "logs": LOGS}
+    # The VITALS lane: continuous stream health, sampled rather than evented.
+    # Same posture as TRACES and LOGS — open ingest, admin-only reads — and the
+    # same binder shape, one pillar over (serve/vitals.py). It is bound LAST
+    # because nothing in the boot path produces a vital: unlike the log sink,
+    # this process is not itself a producer, only a keeper.
+    VITALS = vitals.VitalsStore(VITALS_DB)
+    VITALS.prune(VITALS_RETENTION_DAYS)
+    auth_routes.bind_vitals(VITALS)
+    TELEMETRY = {"analytics": ANALYTICS, "coverage": COVERAGE, "traces": TRACES, "logs": LOGS, "vitals": VITALS}
     return USAGE, ANALYTICS, COVERAGE, TRACES, LOGS, TELEMETRY

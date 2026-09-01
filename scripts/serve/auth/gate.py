@@ -207,6 +207,13 @@ WALKIN_PATHS = frozenset(
         # built for strangers look unused. It carries no identity to leak
         # (serve/analytics.py stores none) and the report it feeds is read-only.
         "/analytics",
+        # Stream-health SAMPLES in, nothing out. Listed for the reason
+        # `/clientlog` is listed, only more sharply: a walk-in on a station
+        # whose picture is breaking up is the single session whose vitals are
+        # worth having, and it is the session nobody can reach any other way.
+        # Reads are admin-only behind /auth/vitals/*, so this grants a stranger
+        # the ability to report on their own stream and to see nothing.
+        "/vitals",
         # Span INGEST only. Reading a trace back needs an admin session and a
         # different route entirely (/auth/traces/*), so a walk-in can report the
         # journey that just failed them and can see nothing.

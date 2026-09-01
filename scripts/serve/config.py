@@ -64,6 +64,19 @@ LOGS_DB = Path(os.environ.get("LOGS_DB", str(_HERE / "logs.db")))
 # retention ("All the collected logs are kept for 7 days", 0321-policies.md),
 # so both stores answer a question for the same window.
 LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", "7"))
+# The VITALS lane — continuous stream health as a time series, its own file for
+# the same reason logs.db is: a different shape, a different volume curve and a
+# different retention. It is the only store here whose size grows with WALL
+# CLOCK rather than with visitor actions, so it is the only one that can run
+# away while nobody is visiting, which is what its own WAL and its own prune
+# are for.
+VITALS_DB = Path(os.environ.get("VITALS_DB", str(_HERE / "vitals.db")))
+# THREE days, the shortest window in the plane, and the arithmetic is in
+# docs/ANALYTICS.md. Sub-minute samples are dense: the window is chosen so a
+# saturated box stays inside a budget rather than so a number looks generous.
+# "What happened over the weekend" fits; anything older is a question for the
+# trace and log lanes, which keep 14 and 7 days of the events themselves.
+VITALS_RETENTION_DAYS = int(os.environ.get("VITALS_RETENTION_DAYS", "3"))
 # Days of per-day detail kept (serve/analytics.py prunes on startup).
 ANALYTICS_RETENTION_DAYS = int(os.environ.get("ANALYTICS_RETENTION_DAYS", "730"))
 

@@ -83,6 +83,7 @@ TELEMETRY_PATHS = frozenset(
     {
         "/traces",
         "/logs",
+        "/vitals",
         "/analytics",
         "/coverage",
         "/clientlog",

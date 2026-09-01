@@ -185,6 +185,10 @@ export function setupVideoDecoderImpl(this: StreamClient) {
         this.submitTimes.delete(ts);
       }
       this.lastDecodeOutAt = now;
+      // The A/V skew operand. `frame.timestamp` is the capture stamp this AU
+      // was submitted with, unchanged by WebCodecs, so it is the server's own
+      // µs clock coming back out of the decoder.
+      this.lastVideoTsUs = ts;
       this.frozen = false; // a painted frame clears the freeze latch
       const w = frame.displayWidth, h = frame.displayHeight;
       if (w && h && (w !== this.stats.guestW || h !== this.stats.guestH)) {

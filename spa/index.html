@@ -280,7 +280,7 @@
         // and not the others, and the symptom — telemetry beaconing about
         // telemetry — showed up in the vendor's UI rather than in a test.
         try {
-          var TELEMETRY_PATHS = ['/traces', '/logs', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd', '/eum'];
+          var TELEMETRY_PATHS = ['/traces', '/logs', '/vitals', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd', '/eum'];
           var ignorePatterns = [];
           for (var p = 0; p < TELEMETRY_PATHS.length; p++) {
             var escaped = TELEMETRY_PATHS[p].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

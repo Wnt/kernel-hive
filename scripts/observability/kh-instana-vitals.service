@@ -1,0 +1,47 @@
+[Unit]
+# The VITALS leg of the Instana forward, on its OWN schedule — and the schedule
+# is the whole reason this is a second unit rather than a fourth signal inside
+# kh-instana-forward.service.
+#
+#   "The metric timestamp that is recorded for OpenTelemetry metrics is the
+#    timestamp of ingestion into Instana."  -- 0307-opentelemetry-signals.md:98
+#
+# Instana stamps a metric point when it ARRIVES, not when we measured it. The
+# five-minute forwarder would therefore hand it sixty consecutive five-second
+# samples per stream, all stamped with one ingest moment: sixty distinct
+# measurements of a changing stream collapsed onto one instant. That is not a
+# degraded chart, it is a wrong one, and it would look perfect in --dry-run.
+# So the vitals leg ticks at 10 s, which is also Instana's own floor for
+# infrastructure metrics (10 s resolution, 0261:178-181). The full argument,
+# with the volume arithmetic, is in scripts/observability/instana_vitals.py.
+#
+# Our OWN store keeps every sample at full resolution with the producer's own
+# clock regardless of any of this. That is the part that survives dropping
+# Instana; this unit is a consumer of it.
+Description=kernel-hive: forward live stream vitals to Instana (10s cadence)
+Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
+After=network-online.target osgallery-https.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# --scheduled keeps an unconfigured box a logged no-op with exit 0. The three
+# --no-* flags are what make this the vitals leg ALONE: traces and logs have
+# their own watermarks and their own five-minute unit, and running them here
+# would quadruple their request rate for no gain and steal their run budget.
+ExecStart=/usr/bin/python3 /data/kernel-hive/scripts/observability/instana-forward.py \
+    --scheduled --no-traces --no-logs --no-metrics
+# The watermark shares instana-forward.state.json with the other legs, under
+# its own key (lastVitalsSeenSeq). Two units writing one state file is safe
+# because they never run the same leg, and each leg only ever touches its own
+# key -- but it is the reason read_state/write_state read-modify-write the
+# whole file rather than rewriting it from a leg's own view.
+Nice=10
+IOSchedulingClass=idle
+# Ten seconds between ticks, so a run that takes longer than about that is
+# already the problem. Killed well short of the next tick rather than allowed
+# to pile up; the watermark makes a killed run a partial success, never a loss.
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

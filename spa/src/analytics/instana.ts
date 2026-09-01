@@ -114,6 +114,7 @@ export const SECRET_PATTERNS: RegExp[] = [/traceparent/i, /ticket/i];
 export const KH_TELEMETRY_PATHS = [
   '/traces',
   '/logs',
+  '/vitals',
   '/analytics',
   '/coverage',
   '/clientlog',
