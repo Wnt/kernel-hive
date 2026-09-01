@@ -167,6 +167,11 @@ function mount(session: Session) {
     // every raw event, so a trace and the event tail behind it join on it.
     sessionId: clientSessionId(),
     allowed: !signedOutAtTheDoor,
+    // WHO, when there is a who. The gallery has named invited accounts and
+    // pseudonymous walk-in handles, and both are wanted on the trace —
+    // "which account hit this" is the first question a report opens with.
+    // Omitted entirely for `anon`, which is a UI shape and not a person.
+    user: session.role === 'anon' || !session.id ? undefined : session,
   });
   // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
   // `allowed` gate as the plane above — a build with no website key configured

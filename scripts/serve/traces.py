@@ -1,21 +1,23 @@
 """Traces: OpenTelemetry spans, stored whole, queryable, admin-only to read.
 
-WHAT THIS CHANGES ABOUT THE PLANE. `analytics.py` stores no identity by
-construction and says so as a feature. A trace is a correlated per-session
-record — that is precisely what makes drilldown work — so this file is where
-that guarantee stops, deliberately and visibly rather than by drift. Three
-things keep it honest:
+WHAT THIS PLANE IS FOR: RICH TELEMETRY. The operator's standing instruction is
+that this lab submits **as rich a record as possible** to both its own
+observability plane and to Instana — stacks, URLs, the identity of the account
+that hit a fault. `docs/ANALYTICS.md` §0 is the data policy this file
+implements; read it before adding any restriction here. Only three reasons
+refuse anything, and every one of them is named at the constant that enforces
+it: SECRETS (security — a stored credential is a replayable one), VOLUME (one
+box, one disk, caps sized against measured traffic), and typed keystroke
+CONTENT, which is off behind `KH_TRACE_TYPED_TEXT` pending an operator answer.
 
-  * READS ARE ADMIN-ONLY. The aggregates stay open on both listeners; nothing
-    here is reachable without an admin session (auth/routes.py).
-  * RETENTION IS DAYS, NOT YEARS. Counters keep 730 days; spans keep 14 by
-    default. The durable record of this gallery is still the anonymous one, and
-    the correlated one is a working set that expires.
-  * THE CONTENT RULES DID NOT RELAX. No typed text, no stacks, no credential
-    handles, no per-keystroke series. A span is a name, a duration, a bounded
-    attribute set and its events. `exception.stacktrace` is part of the OTel
-    convention and is deliberately NOT accepted here — stacks stay in
-    clientlog.jsonl, which prunes itself by age.
+Reads stay ADMIN-ONLY (auth/routes.py); the aggregates are open, this is not.
+
+Until 2026-09-01 this file also refused `exception.stacktrace`,
+`code.stacktrace`, `url.full`, `url.query`, `user.email`, `user.name` and
+`enduser.id`, truncated every value at 120 characters and kept 14 days. None of
+that was an operator decision — an AI session invented it, argued it in prose,
+and later sessions read it back as settled policy. It is gone; do not restore it
+from a code comment quoted somewhere else.
 
 THIS IS OTEL DATA IN A COMPACT ENCODING. The span model is OpenTelemetry's —
 128-bit trace ids, 64-bit span ids, span kinds, status codes, span events,
@@ -36,6 +38,7 @@ counters are stored.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 import threading
@@ -59,54 +62,119 @@ KINDS = ("internal", "client", "server", "producer", "consumer")
 CLASSES = ("human", "probe", "unknown")
 
 #: Per-batch caps. A tab flushes every ~20 s; a session that honestly produced
-#: more spans than this in that window has an instrumentation bug.
-MAX_SPANS_PER_BATCH = 512
-#: A body larger than this is not one tab's spans.
-BODY_MAX = 512 * 1024
-#: Attribute and event caps, mirroring spa/src/analytics/trace.ts.
-ATTR_MAX = 24
-ATTR_STR_MAX = 120
-EVENT_MAX = 16
-#: Days of spans kept. Deliberately short — see the module docstring.
-RETENTION_DAYS = 14
-#: Hard ceiling on stored spans, so a runaway client cannot fill the disk
-#: between prunes. Oldest traces are dropped whole, never half a trace.
-MAX_SPANS = 2_000_000
-
-#: Attributes refused outright regardless of who sends them. `stacktrace` is the
-#: one OTel convention field deliberately not accepted (see the docstring); the
-#: rest are fields no browser span has any business carrying.
-BANNED_ATTRS = frozenset(
+#: more spans than this in that window has an instrumentation bug. Raised from
+#: 512 on 2026-09-01: a sampled input trace plus a page-load burst can legitimately
+#: crowd one window, and a batch clipped at the cap loses the tail SILENTLY.
+MAX_SPANS_PER_BATCH = 2048
+#: A body larger than this is not one tab's spans. 4 MiB is 2048 spans at ~2 KiB
+#: each — the worst honest case once stacks are carried (measured: the live store
+#: averages 179 bytes of attributes per span, so this is ~10x headroom).
+BODY_MAX = 4 * 1024 * 1024
+#: Attribute and event caps, mirroring spa/src/analytics/trace.ts. Measured on
+#: the live store 2026-09-01: the busiest span carries 9 attributes and no value
+#: reached even the old 120-character cap, so these bound a runaway client and
+#: nothing an honest one does.
+ATTR_MAX = 64
+ATTR_STR_MAX = 2048
+#: Attributes allowed a much longer value because the whole point of them is a
+#: long one. A stack truncated to 120 characters is one frame, which is worse
+#: than useless: it looks like a stack and cannot be read as one.
+ATTR_STR_MAX_LONG = 16384
+LONG_ATTRS = frozenset(
     {
         "exception.stacktrace",
         "code.stacktrace",
+        "exception.message",
         "url.full",
         "url.query",
-        "user.email",
-        "user.name",
-        "enduser.id",
     }
 )
+EVENT_MAX = 64
+#: Days of spans kept. 90, raised from 14 on 2026-09-01. MEASURED cost: the live
+#: store held 39_612 spans in 34 h (~28 MB including the WAL) — ~710 bytes per
+#: stored span, ~20 k spans/day, ~14 MB/day. 90 days is therefore ~1.3 GB against
+#: 168 GB free on /data. Retention here is a DISK question and nothing else; if
+#: it ever needs lowering again, lower it with a df number, not with a principle.
+RETENTION_DAYS = 90
+#: Hard ceiling on stored spans, so a runaway client cannot fill the disk
+#: between prunes. Oldest traces are dropped whole, never half a trace. 8 M at
+#: the measured ~710 B/span is ~5.7 GB, comfortably above 90 days of honest
+#: traffic and still bounded.
+MAX_SPANS = 8_000_000
+
+#: Attributes refused outright, regardless of who sends them, because they carry
+#: CREDENTIALS. This is the security rule, and it is the only content rule this
+#: file has: a stored credential is one an admin view, a backup or a forwarded
+#: OTLP batch can replay. Everything else — stacks, URLs, query strings, the
+#: account that hit the fault — is wanted (see the module docstring).
+BANNED_ATTRS = frozenset(
+    {
+        "kh.ticket",
+        "kh.ticket.path",
+        "http.request.header.authorization",
+        "http.request.header.cookie",
+        "http.response.header.set-cookie",
+    }
+)
+#: The same rule as a shape, because a name nobody thought of is the one that
+#: leaks. Checked against every attribute key in the live store before landing:
+#: it matches none of them (`kh.ticket.kind`, `kh.auth.role`, `kh.auth.decision`
+#: and the 75 others all survive).
+SECRET_KEY_RE = re.compile(
+    r"(authorization|cookie|passwd|password|secret|api[-_.]?key|credential|passkey|"
+    r"private[-_.]?key|bearer|token)",
+    re.I,
+)
+#: TYPED KEYSTROKE CONTENT — the one item on the 2026-09-01 richness pass that
+#: was NOT authorised, and must not be enabled without the operator saying so.
+#: The gallery has walk-in visitors who are real third parties; what a stranger
+#: types is materially different from every other field here, and the operator
+#: has not been asked. The plumbing exists so the answer is one env var rather
+#: than a fresh design: set `KH_TRACE_TYPED_TEXT=1` in the serving unit to let
+#: these through. Timing, scancode CLASS and record type are unaffected and were
+#: never gated by this — only the characters themselves.
+TYPED_TEXT_ATTRS = frozenset(
+    {
+        "kh.input.text",
+        "kh.input.chars",
+        "kh.key.name",
+        "kh.key.char",
+    }
+)
+TYPED_TEXT_ALLOWED = os.environ.get("KH_TRACE_TYPED_TEXT") == "1"
 
 
 def _day(ts_ms: int) -> str:
     return time.strftime("%Y-%m-%d", time.gmtime(ts_ms / 1000.0))
 
 
+def refused(key: str) -> bool:
+    """Is this attribute name refused at intake? Credentials always; typed
+    keystroke content unless the operator has armed `KH_TRACE_TYPED_TEXT`."""
+    if key in BANNED_ATTRS or SECRET_KEY_RE.search(key):
+        return True
+    return key in TYPED_TEXT_ATTRS and not TYPED_TEXT_ALLOWED
+
+
 def _clean_attrs(raw) -> dict:
-    """Attributes, capped and type-narrowed exactly as the tab promised."""
+    """Attributes, capped and type-narrowed exactly as the tab promised.
+
+    The SHAPE checks here (a string key, a scalar value, a length bound) are
+    validation and stay. What is NOT here any more is a judgement about which
+    facts are too rich to keep — see the module docstring.
+    """
     if not isinstance(raw, dict):
         return {}
     out = {}
     for k, v in raw.items():
         if len(out) >= ATTR_MAX:
             break
-        if not isinstance(k, str) or len(k) > 64 or k in BANNED_ATTRS:
+        if not isinstance(k, str) or len(k) > 64 or refused(k):
             continue
         if isinstance(v, (bool, int, float)):
             out[k] = v
         elif isinstance(v, str):
-            out[k] = v[:ATTR_STR_MAX]
+            out[k] = v[: (ATTR_STR_MAX_LONG if k in LONG_ATTRS else ATTR_STR_MAX)]
     return out
 
 
@@ -203,7 +271,10 @@ class TraceStore:
                 status = raw.get("k") if raw.get("k") in STATUSES else "unset"
                 kind = raw.get("kd") if raw.get("kd") in KINDS else "internal"
                 msg = raw.get("m")
-                msg = msg[:200] if isinstance(msg, str) else None
+                # 1024, not 200: a status message is where an error's own words
+                # land, and the first 200 characters of a Rust or Python message
+                # is routinely the boilerplate prefix rather than the fault.
+                msg = msg[:1024] if isinstance(msg, str) else None
                 cur.execute(
                     "INSERT INTO span(trace_id,span_id,parent_id,name,kind,started_ms,dur_ms,"
                     "hidden_ms,status,status_msg,attrs,events) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) "

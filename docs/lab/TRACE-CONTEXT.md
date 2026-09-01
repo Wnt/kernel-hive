@@ -46,7 +46,8 @@ can break the thing it measures is not telemetry, it is a fault injector.
 The serving plane never sees a click: input goes from the tab to the station's
 own QUIC listener, and the ticket that gates it carries a station and an expiry
 and no identity (this is the same fact that made `usage.py` a client-reported
-counter rather than a server observation). There is no header to put a
+counter rather than a server observation — a ticket shape, not a policy: the
+span store carries `enduser.id` since 2026-09-01, `docs/ANALYTICS.md` §0). There is no header to put a
 `traceparent` in.
 
 So the trace id travels in the **signalling document exchange** — the tab asks
@@ -141,8 +142,10 @@ from that keycode, LOCALLY, for their own span attributes, is a coarse bucket �
 `kh.key.class` ∈ {printable, modifier, navigation, enter, function} — never
 transmitted as such and never invertible back to which key it was;
 `kh.input.class` ∈ {key, click} names the wire record type. Neither process
-ever puts the character or the keycode itself in a span attribute. This is the
-same content rule §8 has always stated, applied to a new pair of processes.
+ever puts the character or the keycode itself in a span attribute. That is the
+typed-CONTENT question in §8, which is open pending an operator decision —
+everything else about the edge (timing, class, record type) is ordinary
+telemetry.
 
 **The daemon's half of the chain**, parented on the browser's `input.edge`
 context via `Ctx::child`, exactly like every other hop in this document:
@@ -581,8 +584,9 @@ response. `spa/src/analytics/khFetch.ts` reads it, prefers it, and records the
 trace id on its client span as `kh.backend.trace_id` — which is what lets
 `/admin/observability` jump from a click to the server trace **with no vendor
 in the loop**. That attribute is chosen to survive `traces.py` intake unaltered
-(key ≤ 64 chars, not in `BANNED_ATTRS`, value ≤ `ATTR_STR_MAX`); a truncated or
-dropped id would look right in the tab and join nothing in the store.
+(key ≤ 64 chars, not refused by `traces.refused()`, value ≤ `ATTR_STR_MAX`,
+which is 2048 since 2026-09-01); a truncated or dropped id would look right in
+the tab and join nothing in the store.
 
 **`Server-Timing: intid;desc=` is the vendor bridge, and nothing else.**
 Instana's EUM agent parses exactly that token off a response and sets the value
@@ -742,11 +746,16 @@ merely drawn that way.
   such span there is NO HEADER. §4a, §4c.
 - **Never propagate into a guest.** §6.
 - **Never put a secret in a span.** The ticket carries the trace id; the trace
-  never carries the ticket. Same rule as `traces.py`: no stacktraces, no typed
-  text, no credential handles.
-- **Never put a key's identity or any typed text in a span.** §3.2's addition:
-  a key class is a coarse bucket, never the key. Absolute, with no exception
-  for a "safe-looking" key.
+  never carries the ticket. Auth headers, cookies and passkey material likewise.
+  `traces.py` enforces it at intake by attribute name and by key shape
+  (`BANNED_ATTRS`, `SECRET_KEY_RE`), so a slip here is refused rather than
+  stored. This is the ONE content rule, it is security, and it is not a proxy
+  for a general "keep spans thin" instinct — stacks, messages, full URLs and
+  the account identity are all wanted (`docs/ANALYTICS.md` §0).
+- **Typed keystroke CONTENT stays out until the operator says otherwise.**
+  §3.2: a key class is a coarse bucket, never the key. Held behind
+  `KH_TRACE_TYPED_TEXT` (default off) rather than settled by an agent — the one
+  open question in ANALYTICS.md §0.5.
 - **A layer that cannot trace still works.** Every hop degrades to "no parent",
   never to "no service".
 - **An old browser and an old daemon must both keep working against a new

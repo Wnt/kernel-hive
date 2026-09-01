@@ -78,11 +78,29 @@ function queueProbeGrade(id: string, grade: Intent): void {
  * stranger at the walk-in signup door has no session, so every flush would 401
  * and re-queue forever.
  */
-export function initAnalytics(opts: { sessionId: string; allowed: boolean }): void {
+export function initAnalytics(opts: {
+  sessionId: string;
+  allowed: boolean;
+  /** The signed-in account, when there is one. Stamped on the span that enters
+   *  each trace as the OTel `enduser.id` / `user.name` / `enduser.role`
+   *  attributes — see `trace.ts`'s `identity`, and docs/ANALYTICS.md §0 for
+   *  why this plane carries identity at all. */
+  user?: { id: string; name: string; role: string };
+}): void {
   try {
     installIntentWitness();
     configureSink({ sessionId: opts.sessionId, allowed: opts.allowed, clientClass });
-    configureTracer({ enabled: opts.allowed, emit: (spans) => postSpans(opts.sessionId, spans) });
+    configureTracer({
+      enabled: opts.allowed,
+      emit: (spans) => postSpans(opts.sessionId, spans),
+      identity: opts.user
+        ? {
+            'enduser.id': opts.user.id,
+            'enduser.role': opts.user.role,
+            ...(opts.user.name ? { 'user.name': opts.user.name } : {}),
+          }
+        : undefined,
+    });
     if (opts.allowed) installErrorCapture();
   } catch { /* a gallery that loads beats a gallery that measures */ }
 }

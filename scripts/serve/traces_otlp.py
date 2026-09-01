@@ -37,9 +37,13 @@ convention because it is a browser-plane concern, so it is exported as a
 namespaced attribute rather than dropped. Dropping it would make the exported
 trace disagree with our own metrics, which count visible time only.
 
-A NOTE ON WHAT ISN'T HERE. No stacktraces: `exception.stacktrace` is refused at
-intake (see traces.py) and so can never appear on the way out. An exporter that
-quietly reintroduced it would undo the one content rule the trace lane kept.
+WHAT TRAVELS. Everything the store holds, unfiltered — including
+`exception.stacktrace`, `url.full` and the `enduser.id` / `user.name` identity
+attributes, all of which this module used to be able to promise were absent
+because `traces.py` refused them at intake. That refusal was lifted on
+2026-09-01 (docs/ANALYTICS.md §0): the export is a faithful rendering of the
+store, and the store is where the content rules live. The only thing that can
+never appear here is a credential, because it can never enter the store.
 """
 
 from __future__ import annotations

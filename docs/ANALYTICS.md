@@ -14,12 +14,14 @@ really does on a station that has it.
 
 This plane — everything described below, client and server, Rust and Python —
 is entirely inside kernel-hive: no external service, no third-party script, no
-account anywhere in it. That is not only a privacy preference here — the
+account anywhere in it. That is an ARCHITECTURE fact, not a privacy stance: the
 gallery's public edge is a loopback-bound listener behind a forwarder, the LAN
 listener uses the lab's own CA, and stations are reached over WebTransport
 straight from the tab. There is no point in this plane's own request path
 where a hosted analytics SDK would see anything useful without being handed it
-deliberately.
+deliberately — which is exactly why the Instana comparison below had to be
+wired by hand. What these planes may CARRY is §0, and the answer is "as much as
+is useful".
 
 That used to be true of the whole gallery; it no longer is. Since 2026-08-31
 an Instana JavaScript agent runs in every visitor's browser and beacons to
@@ -34,6 +36,77 @@ integration is **temporary** — meant to come off once this plane's own
 Every capability this plane gains for that reason has to work with Instana
 entirely absent; §8.2 is where that principle is argued in full, against the
 real decisions it already produced.
+
+---
+
+## 0. The data policy — READ THIS BEFORE ADDING A RESTRICTION
+
+**This is the one section written to stop a recurrence.** In August 2026 a
+series of AI sessions invented privacy, retention and content restrictions for
+these planes, wrote them into code as enforced limits *and* into this document
+as though the operator had required them, and later sessions then reasoned from
+them as settled policy. Nobody chose them. On 2026-09-01 they were removed. The
+policy below is what is actually true.
+
+**1. Rich telemetry into both planes is the goal.** The operator's words:
+*"we can and should submit as rich as possible data to both our to-be-fully-built
+observability platform and into Instana."* Stacks, messages, full URLs and query
+strings, the identity of the account involved, per-request detail — all wanted,
+in our own trace store and in what the forwarder ships to Instana. A telemetry
+plane that cannot tell you which account hit a fault, or what the stack was, is
+not doing the job it exists for.
+
+**2. Secrets never.** Auth tokens, session cookies, passkey material, the
+Instana website key, the stream ticket. Not stored, not shipped, not logged.
+This is **security**, not privacy squeamishness: a stored credential is one an
+admin view, a backup or a forwarded OTLP batch can replay. Enforced at intake in
+`scripts/serve/traces.py` by explicit name (`BANNED_ATTRS`) and by key shape
+(`SECRET_KEY_RE`), so a name nobody anticipated still fails closed. It cannot
+catch a credential that arrives as the *value* of an innocent key — the call
+sites are the only defence there, and that is the honest limit of the mechanism.
+
+**3. The public-repo rule is about COMMITTED FILES, not runtime data.**
+`AGENTS.md` rule 1 — never commit a real IP, host, MAC, serial or domain to this
+public repo — is real and stays. It says **nothing** about what telemetry may
+contain at runtime: a span attribute holding labhost's real address is fine, a
+markdown file holding it is not. Do not use rule 1 to argue for dropping a field.
+(`kernelhive.madekivi.fi` is the one publishable domain, committed on purpose.)
+
+**4. Volume is the only other reason to say no, and it must be MEASURED.**
+One box, one disk. Every cap in these planes is allowed to exist for that reason
+alone, and each one states its number at the constant. If you raise or lower a
+retention or size limit, state the disk cost per day at current traffic, taken
+from the live store — not a round number that felt safe. As measured 2026-09-01:
+the trace store held **39 612 spans in 34 hours in ~28 MB** — about **710 bytes
+per stored span**, **~20 k spans/day**, **~14 MB/day**. The 90-day window is
+therefore **~1.3 GB** against **168 GB free** on `/data`. Retention here is a
+`df` question and nothing else.
+
+**5. One thing is genuinely undecided: typed keystroke CONTENT.** The actual
+characters a visitor types, as opposed to timing, scancode class or record type.
+The gallery has walk-in visitors who are real third parties, and capturing what a
+stranger types is materially different in kind from everything above; it is also
+genuinely useful (a stuck-key bug was debugged on 2026-09-01). It is therefore
+**implemented and off**: `traces.TYPED_TEXT_ATTRS` behind the environment flag
+`KH_TRACE_TYPED_TEXT`, default off, one env var away from on. **An agent must not
+turn it on.** This is an operator decision and it has not been given.
+
+**What was removed on 2026-09-01, so nobody restores it from a stale quote:**
+
+| Restriction | Was | Now |
+|---|---|---|
+| `exception.stacktrace`, `code.stacktrace` | refused at intake | stored whole, 16 KiB allowance, exported to OTLP |
+| `url.full`, `url.query` | refused at intake | accepted |
+| `user.name`, `user.email`, `enduser.id` | refused at intake | accepted, and stamped by the SPA on the span that enters each trace |
+| server-side `record_exception` | type only, no message, no stack | type + message + full traceback |
+| attribute value cap | 120 chars (truncated a stack to one frame) | 2048, and 16384 for stack/URL-shaped keys |
+| attributes / events per span | 24 / 16 | 64 / 64 |
+| spans per batch, body cap | 512 / 512 KiB | 2048 / 4 MiB |
+| trace retention | 14 days | 90 days (measured above) |
+
+The counter plane (`analytics.py`) still holds no identity — that is a **table
+shape**, not a policy: its rows are counts keyed by day, and a person has nowhere
+to live in one. The correlated plane is where identity belongs, and it has it.
 
 ---
 
@@ -379,18 +452,22 @@ number. `keyboard.osk.used` still covers both and is unchanged, so the
 through the touch keyboard at all — is untouched: everything added here is
 per-episode and declares no probe on either side of that pair.
 
-#### The privacy line, which is tighter here than anywhere else in this plane
+#### Typed CONTENT at the walk-in door — the one open operator question
 
 This is a stranger typing, sometimes their own name, into a form and into a
-guest. **Nothing about the content leaves the tab.** Not the text; not its
-length; not a handle, a credential id or a clone identity; not which of the
-three machines a given visitor took. Characters are counted only as the
-*denominator* of a percentage that is bucketed into deciles before it is
-queued, so the count itself never travels and cannot be recovered from what
-does. `scripts/serve/analytics.py` stores no identity by construction, and the
-walk-in door is the last place that sentence should acquire an exception. The
-rule the call sites are written to: **if a change here would need one more
-field to make a number better, that is the signal to stop.**
+guest, and it is the **single item §0 leaves undecided**. Today **nothing about
+the content leaves the tab**: not the text, not its length, not a credential id.
+Characters are counted only as the *denominator* of a percentage bucketed into
+deciles before it is queued, so the count itself never travels.
+
+That is the CURRENT state, not a principle this document is defending. §0 says
+why: a walk-in visitor is a real third party, capturing what they type differs in
+kind from everything else these planes carry, and **the operator has not been
+asked**. The plumbing is in place — `traces.TYPED_TEXT_ATTRS` behind
+`KH_TRACE_TYPED_TEXT`, default off — so the answer is one environment variable
+rather than a fresh design. **An agent must not turn it on.** Everything that is
+NOT content (timing, the coarse key class, the wire record type, the walk-in
+handle itself) is ordinary telemetry and is governed by §0 like anything else.
 
 **The FORM half of that sentence (name entry, the walk-in flow this section is
 about) is unchanged: still zero per-keystroke telemetry of any kind.** The
@@ -400,13 +477,14 @@ a real timing span, chained across the browser, the daemon and the frame the
 guest produced (§8.1, `docs/lab/TRACE-CONTEXT.md`) — an end-to-end input->pixel
 flame graph the keyboard-lag investigation needed and no aggregate could draw.
 This is a widening of what §8.1 already collects about the daemon side of a
-visit, not a widening of THIS section's guarantee: the content rule above still
-holds without exception — no typed text, no key identity, ever, on either
-side of the wire. What travels is a coarse class (`kh.key.class`:
+visit. It stops short of the CONTENT question above and for that question's
+reason only: what travels is a coarse class (`kh.key.class`:
 printable/modifier/navigation/enter/function, `kh.input.class`: key/click) and
-a duration, on the ~1-in-10 edges, and nothing else about the keystroke is
-knowable from it — the same discipline as the rest of this section, applied
-to a session id's cousin instead of to a count.
+a duration, on the ~1-in-10 edges, so nothing about which key it was is
+knowable from it. `SAMPLE_N = 10` is a **volume** knob, not a content one
+(§0.4): raising it to 1-in-1 would roughly double the store's daily span count
+on a busy day, which is a `df` decision anybody may take with a measurement in
+hand.
 
 ### 5.4 The station and stream flows: opening one, coming back to one, watching one freeze
 
@@ -1823,13 +1901,14 @@ Traps worth knowing, each of which was hit while writing this:
   dicts, silently halving every fold, so `probes.py` aliases itself into both
   names in `sys.modules` on import.
 
-## 12. Privacy and honesty
+## 12. What these numbers are, and what they are not
 
-- **No identities at all, by construction.** Unlike `usage.py` this plane has no
-  per-person half: no user id is accepted, none is stored, and there is no
-  column a future caller could put one into (asserted by a test). The only
-  durable privacy guarantee is the data you never wrote down, and *"which
-  feature is dead"* never needed to know who.
+- **The counter plane holds no identity, because its rows are COUNTS.** Every
+  row is keyed by (day, thing, class) and holds an `n`; there is no column a
+  person could occupy without changing what the number means, and *"which
+  feature is dead"* never needed to know who. This is a table shape, not a
+  privacy policy — §0. Identity lives in the trace plane, deliberately, and the
+  Instana forwarder ships it onward.
 - **These are the tab's own account of what it did.** Same caveat as `usage.py`,
   same reason: the counters come from the client. Right for deciding what to
   build; not an audit trail. The per-batch caps bound how far one forged report
