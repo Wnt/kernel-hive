@@ -13,7 +13,7 @@
       "summary": [
         {
           "theme": "New stations",
-          "text": "One machine arrived, and it is deliberately not open yet. [Amiga UNIX](station:amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put Sun's **OPEN LOOK** desktop on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots here from the real 1992 installation tape \u2014 all twenty-nine segments, about two hours of emulated restore \u2014 onto an emulated *68030*. It is monochrome, because Amiga UNIX's own graphics were: colour needed an add-on card that no emulator this museum has can actually drive. The pointer does not yet land where you point, so the door stays shut until it does. That makes 73 machines, 68 of them open to visitors."
+          "text": "Two machines arrived; one of them is deliberately not open yet. [Amiga UNIX](station:amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put **OPEN LOOK** on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots here from the real 1992 installation tape \u2014 all twenty-nine segments, about two hours of emulated restore \u2014 onto an emulated *68030*, and it runs in colour on the **A2410**, the $998 graphics card that took the machine from $4,998 to $7,713. Most owners never saw that; the one-bit screen they did see is still one flag away. Its cursor lands exactly where you point, by a route no other machine here uses: the museum reaches inside the guest's own X server and moves the pointer there. It stays shut only until it has been looked at properly. [ravynOS](station:ravynos) also joined. That makes 74 machines, 69 of them open to visitors."
         },
         {
           "theme": "Major features",
@@ -31,7 +31,8 @@
         "[Mac OS 7.5.3](station:macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does",
         "[HP-UX](station:hpuxvue)'s cursor loop needed no new emulated hardware \u2014 the registers were already there, so no machine had to be rebuilt",
         "[Rhapsody](station:rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved",
-        "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed"
+        "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed",
+        "Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card"
       ]
     },
     {
