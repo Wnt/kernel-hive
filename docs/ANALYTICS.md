@@ -1463,6 +1463,116 @@ as read on 2026-08-31, that this tenant is a trial expiring in 14 days. That
 may force the exit before this plane's own views are ready, independent of
 whatever order the operator would otherwise have chosen.
 
+## 8.3 Which bundle was this client running — and old shell vs blocked beacon
+
+**Every telemetry lane this plane owns names the client's build, and the answer
+does not pass through a vendor.** `<branch>@<short-sha>` (`-dirty` when the tree
+was; `unknown-build` when there was no git to ask) — the same string
+`box-deploy.sh --status` prints, so the two compare character-for-character:
+
+| Lane | Where the build id sits |
+|---|---|
+| `/traces` | the batch's **resource** envelope, `kh.bundle` (`spa/src/analytics/index.ts`) → stored on the `trace` row (`traces.build`) → exported as the OTLP resource attribute **`service.version`** |
+| `clientlog.jsonl` | the `build` field, on the **first event of a batch**, exactly like `ua` |
+| the boot-time error reporter | `build` on every `client-error` / `unhandled-rejection` row, from `window.__kernelHiveBuildId` — set by its own inline script so it survives a build with no vendor key |
+| Instana (while it lasts) | the `kh.bundle` beacon meta. Same value, same source, and now the *least* authoritative copy |
+
+One value, one place: `spa/src/analytics/build.ts` reads
+`import.meta.env.VITE_KH_BUILD_ID`, which `vite.config.ts` computes once. The two
+inline scripts in `spa/index.html` cannot import it — they run before any bundle
+evaluates — so they read the placeholder Vite substitutes into the HTML instead.
+
+**Why this is here and not only on a beacon.** On 2026-09-01 the operator used
+the installed PWA on a phone. Our own plane recorded the visit in full: three
+`serve.page` + `app.page` + `station.connect` traces, `class=human`, real
+`input.edge` spans, a full `clientlog` tail. Instana received **nothing** — a
+three-hour window held exactly one page load, a desktop probe. The first
+question — *was that phone running the bundle we think we deployed?* — could
+only be asked of a beacon that did not exist. The build id was recorded
+**exclusively as vendor beacon metadata**, which is precisely backwards for a
+dependency §8.2 says we intend to drop.
+
+### The differential: telling "old shell" from "beacons blocked", using only our own data
+
+Both look identical from the vendor's side (silence). They are trivially
+distinguishable from ours. Ask, in this order:
+
+1. **What build was it?** — `SELECT build, COUNT(*) FROM trace WHERE started_ms
+   > … GROUP BY build`, or `GET /auth/traces/facets`'s `builds` facet, or
+   `search` with `build=`. Two builds live in one window means somebody is on a
+   shell the box no longer serves. **This is the direct answer, and it is the
+   one that did not exist before 2026-09-01.**
+2. **Did the HTML come off the network for THAT load?** — a browser trace whose
+   `app.page` shares a trace id with a `serve.page` that started a second
+   earlier is a **fresh document**: the `traceparent` the tab joined was minted
+   by the serving plane while answering that very request
+   (`scripts/serve/static_files.py` splices the meta into the served bytes).
+   A cached shell replays an OLD trace id, so its `app.page` lands in a trace
+   whose `serve.page` is hours stale — or in no server trace at all.
+3. **Did the vendor agent even load?** — it is served same-origin from
+   `/vendor/instana-eum.min.js`, so a `GET` for it appears in
+   `/data/vms/streamhost/serve/https-server.log` beside the document request. A
+   content blocker that matches the path drops it there, visibly. If the agent
+   was fetched and the beacon still never arrived, the loss is on the leg this
+   lab cannot see: the client to IBM's EUM host (DNS filtering, a content
+   blocker, a private relay, a captive network).
+
+**What that answered in the 2026-09-01 case**, and it refuted the leading
+hypothesis rather than confirming it:
+
+- Each of the three phone sessions had a `serve.page` span **in its own trace**,
+  one second before its `app.page`, with `kh.route.kind: "initial"`. Three fresh
+  document loads, not one cached shell. **Stale shell: refuted.**
+- The access log for that minute shows `GET /os/irix` 200, then the current
+  hashed `/assets/index-*.js`, then `GET /vendor/instana-eum.min.js` **200**.
+  The agent was served. **"The keyless bundle was still being served": refuted**
+  — a shell from that window would have carried no vendor script tag at all and
+  would never have requested it.
+- The traces carry `kh.auth.role: admin` on a signed-in session at `/os/:osId`.
+  **`signedOutAtTheDoor` suppression: refuted** — and it never fitted anyway,
+  since that gate cannot explain missing beacons while our own spans exist: it
+  gates *both* planes together, so it would have silenced ours too.
+- `kh.route.kind: "initial"` on all three. **"A PWA start_url produced a
+  transition, not a page load": refuted.**
+
+What is left is the one leg our own data does not reach: the beacon never got
+from that phone to IBM. **Unproven which of blocking, filtering or an agent-side
+failure it was**, and the plane cannot prove it from here — but the useful half
+is now decided by evidence rather than by argument, and the next occurrence
+starts at query 1 instead of a debugging cycle.
+
+### The staleness trap the review found anyway
+
+The hypothesis was wrong about that visit and right about the code.
+`spa/public/sw.js` named its shell cache with a hand-written `kh-shell-v1` that
+had never been bumped, and `activate` deletes only caches whose key *differs*
+from the current one — so the cached HTML shell survived every deploy this
+gallery has ever had. The worker is network-first, so it takes a failed
+navigation (one flaky moment on mobile) to start serving that shell, and nothing
+at all to keep it. And an HTML shell is not inert: it carries the inline
+bootstraps — vendor config, session-id minting, the boot error reporter — so an
+old shell means old boot behaviour even while the hashed bundle it names is
+still on the box.
+
+**The fix**: the cache name is derived from the build id, which
+`spa/src/main.tsx` passes on the registration URL (`/sw.js?build=<id>`; a
+registration's scope comes from the script's path, so the query changes nothing
+about scope). Every deploy is therefore a different script URL → a new worker →
+an `activate` that deletes every cache but its own. That **actively retires** a
+`kh-shell-v1` a client is holding today, on its first online load after this
+ships; it does not merely stop creating new ones. A worker that somehow loads
+with no parameter names its cache `kh-shell-unknown` rather than pretending to
+be a build. Nothing else moved: no app code or data is cached, navigations stay
+network-first, and the offline fallback is still one HTML document. This is not
+an offline app cache and must not become one.
+
+`spa/src/pwa/serviceWorker.test.ts` executes the real shipped `sw.js` against
+stubs and pins all of that. **What no test can prove is the device**: that a
+particular phone, holding a particular old registration, actually installs the
+new worker and drops its cache. That is verified by looking — open the installed
+app, then `builds` in the trace facets should show only the current build for
+that session.
+
 ## 9. The Python serving plane — branches, not routes
 
 **Shipped.** `scripts/serve/probes.py` declares twelve branches; the call sites
@@ -1687,6 +1797,9 @@ Traps worth knowing, each of which was hit while writing this:
 | `spa/src/analytics/coverage.ts` | production LINE coverage collector; in the instrumented bundle only |
 | `spa/vite-plugins/coverage.ts` | the arming flag, the istanbul transform, the collector injection |
 | `spa/src/analytics/index.ts` | `reach` / `beginFlow` / `reportError` / `initAnalytics` |
+| `spa/src/analytics/build.ts` | the ONE build-id constant every lane names a bundle from (§8.3) |
+| `spa/public/sw.js`, `spa/src/pwa/serviceWorker.test.ts` | the PWA worker whose shell cache is named after the build, so a deploy cannot strand a client on old HTML (§8.3) |
+| `spa/src/analytics/buildIdentity.test.ts`, `scripts/test_traces.py` | the build id from the `/traces` envelope through intake to the OTLP `service.version` |
 | `scripts/serve/analytics.py` | `POST /analytics`, `GET /analytics/report.json`, the SQLite aggregate |
 | `scripts/serve/probes.py` | the SERVER catalogue, the in-memory fold, and `hit()` |
 | `scripts/analytics/catalogue.mjs` | renders the registry document for BOTH planes; **gates the call sites** |

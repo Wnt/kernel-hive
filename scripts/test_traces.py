@@ -41,8 +41,11 @@ def span(sid, parent=None, name="station.connect", start=1_700_000_000_000, dur=
     return s
 
 
-def batch(spans, session="sess-abc", klass="human"):
-    return {"resource": {"session.id": session, "kh.class": klass}, "spans": spans}
+def batch(spans, session="sess-abc", klass="human", build=None):
+    resource = {"session.id": session, "kh.class": klass}
+    if build is not None:
+        resource["kh.bundle"] = build
+    return {"resource": resource, "spans": spans}
 
 
 class StoreTest(unittest.TestCase):
@@ -400,3 +403,130 @@ class PreMigrationStoreTest(unittest.TestCase):
         path = self._old_db()
         traces.TraceStore(path)
         traces.TraceStore(path)  # the index already exists; must not raise
+
+    def test_a_store_written_before_build_identity_gets_the_column(self):
+        """Same shape as the ingest-order migration, same reason: a live
+        traces.db keeps its old columns forever unless somebody says otherwise,
+        and the FIRST batch to arrive after the deploy would otherwise fail its
+        INSERT against a column that is not there — with the gallery in a
+        restart loop, which is exactly how this class was born."""
+        path = self._old_db()
+        store = traces.TraceStore(path)
+        self.addCleanup(store.close)
+        # The pre-existing row reads `unknown`, which is the truth about it.
+        self.assertEqual(store.search(limit=10)["traces"][0]["build"], "unknown")
+        self.assertEqual(store.record(batch([span(S1)], build="main@abc1234")), 1)
+        self.assertEqual(store.trace(T1)["build"], "main@abc1234")
+
+
+class BuildIdentityTest(unittest.TestCase):
+    """WHICH BUNDLE THE CLIENT WAS RUNNING, on our own plane, end to end.
+
+    The bug behind these tests was not in any of this code: on 2026-09-01 a
+    phone's visit was recorded in full here and not at all by the vendor, and
+    the only place a client's build id was ever written down was a vendor beacon
+    meta — so the first question ("was that client on the shell we deployed?")
+    could not be asked of our own data at all. It rides the RESOURCE envelope
+    now, because it is one fact about the producer rather than a fact about a
+    moment in the journey, and these tests pin it from intake to OTLP.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.store = traces.TraceStore(Path(self.tmp.name) / "traces.db")
+
+    def tearDown(self):
+        self.store.close()
+        self.tmp.cleanup()
+
+    def test_the_build_survives_intake_and_is_readable_from_the_trace(self):
+        self.store.record(batch([span(S1)], build="main@3e6c81c4"))
+        self.assertEqual(self.store.trace(T1)["build"], "main@3e6c81c4")
+        self.assertEqual(self.store.search(limit=10)["traces"][0]["build"], "main@3e6c81c4")
+
+    def test_a_batch_that_names_no_build_is_labelled_unknown_not_dropped(self):
+        self.assertEqual(self.store.record(batch([span(S1)])), 1)
+        self.assertEqual(self.store.trace(T1)["build"], "unknown")
+
+    def test_a_build_id_outside_the_character_class_is_refused(self):
+        for bad in ["main@abc 1234", "<script>", "x" * 65, 7, None, "sha\nmain@1"]:
+            with self.subTest(bad=bad):
+                store = traces.TraceStore(Path(self.tmp.name) / f"b{abs(hash(str(bad)))}.db")
+                store.record(batch([span(S1)], build=bad))
+                self.assertEqual(store.trace(T1)["build"], "unknown")
+                store.close()
+
+    def test_a_dirty_working_tree_build_is_accepted_verbatim(self):
+        """`computeBuildId()` appends `-dirty`, and a slash is legal in a branch
+        name. Both are exactly the cases where knowing the build matters most —
+        somebody is running something that is not a commit anybody can fetch."""
+        self.store.record(batch([span(S1)], build="feat/walkin@3e6c81c4-dirty"))
+        self.assertEqual(self.store.trace(T1)["build"], "feat/walkin@3e6c81c4-dirty")
+
+    def test_the_serving_planes_own_batch_never_erases_the_browsers_answer(self):
+        """The same race `session_id` and `class` already survive: a Python
+        request handler has no bundle, its spans land FIRST (a server span ends
+        in milliseconds; a tab flushes every twenty seconds), and without the
+        rule it would overwrite the one column this exists for."""
+        self.store.record(batch([span(S1)], build="main@3e6c81c4"))
+        self.store.record(batch([span(S2, parent=S1, name="serve.page")], build=None))
+        self.assertEqual(self.store.trace(T1)["build"], "main@3e6c81c4")
+
+    def test_a_later_batch_from_a_reloaded_tab_updates_the_build(self):
+        self.store.record(batch([span(S1)], build="main@aaaaaaa"))
+        self.store.record(batch([span(S2, parent=S1, name="step")], build="main@bbbbbbb"))
+        self.assertEqual(self.store.trace(T1)["build"], "main@bbbbbbb")
+
+    def test_traces_can_be_filtered_by_build(self):
+        """The query the diagnosis needs: which clients are on a build the box
+        no longer serves."""
+        self.store.record(batch([span(S1)], build="main@aaaaaaa"))
+        self.store.record(batch([span(S1, trace=T2)], session="sess-two", build="main@bbbbbbb"))
+        found = self.store.search(build="main@bbbbbbb", limit=10)
+        self.assertEqual([t["traceId"] for t in found["traces"]], [T2])
+
+    def test_the_facets_name_every_build_in_the_window(self):
+        self.store.record(batch([span(S1)], build="main@aaaaaaa"))
+        self.store.record(batch([span(S1, trace=T2)], session="sess-two", build="main@bbbbbbb"))
+        builds = {f["value"]: f["n"] for f in self.store.facets(0)["builds"]}
+        self.assertEqual(builds, {"main@aaaaaaa": 1, "main@bbbbbbb": 1})
+
+    # ---- the OTLP boundary -------------------------------------------------
+
+    def test_the_build_is_exported_as_the_service_version_resource_attribute(self):
+        self.store.record(batch([span(S1)], build="main@3e6c81c4"))
+        doc = traces_otlp.export([self.store.trace(T1)])
+        keys = {a["key"]: a["value"] for a in doc["resourceSpans"][0]["resource"]["attributes"]}
+        self.assertEqual(keys["service.version"]["stringValue"], "main@3e6c81c4")
+        # …and the session/service keys it sits beside are untouched.
+        self.assertEqual(keys["session.id"]["stringValue"], "sess-abc")
+        self.assertEqual(keys["service.name"]["stringValue"], "kernel-hive-spa")
+
+    def test_an_unknown_build_is_omitted_rather_than_exported_as_a_version(self):
+        """A consumer grouping by version must not be handed the string
+        "unknown" and be unable to tell it from a real release name."""
+        self.store.record(batch([span(S1)]))
+        doc = traces_otlp.export([self.store.trace(T1)])
+        keys = {a["key"] for a in doc["resourceSpans"][0]["resource"]["attributes"]}
+        self.assertNotIn("service.version", keys)
+
+    def test_the_browsers_build_is_never_stamped_on_the_daemons_resource(self):
+        """`service.version` describes the producer. The daemon and the serving
+        plane ship on their own cadence, and asserting the SPA's bundle id about
+        them would be a lie a service map would happily draw."""
+        self.store.record(
+            batch(
+                [
+                    span(S1, name="input.edge", kind="client"),
+                    span(S2, parent=S1, name="input.dispatch", a={"kh.service": "kernel-hive-daemon"}),
+                ],
+                build="main@3e6c81c4",
+            )
+        )
+        doc = traces_otlp.export([self.store.trace(T1)])
+        by_service = {}
+        for rs in doc["resourceSpans"]:
+            keys = {a["key"]: a["value"]["stringValue"] for a in rs["resource"]["attributes"]}
+            by_service[keys["service.name"]] = keys
+        self.assertEqual(by_service["kernel-hive-spa"]["service.version"], "main@3e6c81c4")
+        self.assertNotIn("service.version", by_service["kernel-hive-daemon"])

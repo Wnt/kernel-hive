@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // beacon-probe — capture the Instana EUM beacons a REAL page load produces,
-// and check each one's backendTraceId against this box's own trace store.
+// check each one's backendTraceId against this box's own trace store, and
+// report WHICH BUNDLE the page said it was, on both planes.
 //
 // WHY THIS EXISTS. "Does a page load correlate to a backend trace?" is not a
 // question any document can answer. Instana's own docs contradict themselves
@@ -14,6 +15,15 @@
 // it saw. Nothing in CI runs it (it needs a credentialed session and the live
 // gallery); run it by hand after any change to the traceparent meta, the
 // Server-Timing header, or the `ineum(...)` bootstrap in spa/index.html.
+//
+// THE BUNDLE ID IS PART OF THE CAPTURE, for the reason docs/ANALYTICS.md §8.3
+// gives: on 2026-09-01 a phone produced a full record on our own plane and no
+// beacon at all, and "which bundle was that client running?" had exactly one
+// possible source — a beacon's `kh.bundle` meta, which did not exist. Our own
+// `/traces` envelope carries it now, so this probe reads BOTH and says whether
+// they agree. They come from one constant (spa/src/analytics/build.ts and the
+// placeholder vite substitutes into index.html), so a disagreement means one of
+// the two lanes is not carrying what it thinks it is.
 //
 // See docs/lab/INSTANA-VIEW-INVENTORY.md §7 for the mechanism it verifies and
 // the measured agent behaviour behind it.
@@ -162,6 +172,21 @@ async function main() {
   const page = await context.newPage();
 
   const beacons = [];
+  // OUR OWN plane's uploads. Same page load, same tab: the resource envelope of
+  // a /traces batch is where this app writes the build id it is running.
+  const ownResources = [];
+  page.on('request', (req) => {
+    try {
+      const url = new URL(req.url());
+      if (url.origin !== origin || url.pathname !== '/traces' || req.method() !== 'POST') return;
+      const body = req.postData();
+      if (!body) return;
+      const parsed = JSON.parse(body);
+      if (parsed && parsed.resource) ownResources.push(parsed.resource);
+    } catch {
+      /* a probe must never fail on a body it cannot parse */
+    }
+  });
   // The OUTBOUND leg, watched for the collision analytics/khFetch.ts documents:
   // Instana's agent APPENDS its own traceparent when enableW3CHeaders is on, so
   // depending on monkey-patch order our header can arrive as two comma-joined
@@ -210,6 +235,7 @@ async function main() {
     outbound,
     serverTiming: headers['server-timing'] ?? null,
     beacons,
+    ownResources,
   };
 
   console.log(`page              ${target}`);
@@ -220,6 +246,20 @@ async function main() {
     console.log(`  trace id (32)   ${injected.traceId}`);
     console.log(`  span id  (16)   ${injected.spanId}`);
   }
+  // WHICH BUNDLE, on each plane. `unknown-build` is an honest answer (a build
+  // with no git); a MISSING one on our plane means the resource envelope is not
+  // carrying it, which is the regression this line exists to catch.
+  const ownBuilds = [...new Set(ownResources.map((r) => r['kh.bundle']).filter(Boolean))];
+  // Custom meta rides the beacon as `m_<key>`; matched by suffix so a change in
+  // the agent's prefix shows up as a value, not as a silent "(none)".
+  const beaconBuild = (b) => Object.entries(b).find(([k]) => k === 'kh.bundle' || k.endsWith('_kh.bundle'))?.[1];
+  const beaconBuilds = [...new Set(beacons.map(beaconBuild).filter(Boolean))];
+  console.log(`\nbundle (our /traces)   ${ownBuilds.join(', ') || (ownResources.length ? 'MISSING from the resource envelope' : '(no /traces upload seen)')}`);
+  console.log(`bundle (beacon meta)   ${beaconBuilds.join(', ') || '(none)'}`);
+  if (ownBuilds.length && beaconBuilds.length && ownBuilds.join() !== beaconBuilds.join()) {
+    console.log('  DISAGREE — one lane is not reporting the build it is actually running');
+  }
+
   console.log(`\nbeacons captured  ${beacons.length}`);
   const counts = {};
   for (const b of beacons) counts[b.ty ?? '?'] = (counts[b.ty ?? '?'] ?? 0) + 1;

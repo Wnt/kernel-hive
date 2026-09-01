@@ -317,6 +317,11 @@ def _search_filters(body: dict) -> dict:
     return {
         "session": str(body["session"])[:64] if body.get("session") else None,
         "name": str(body["name"])[:80] if body.get("name") else None,
+        # The client build id (`<branch>@<short-sha>`). Bounded and passed as a
+        # bound parameter like every other filter here; traces.py refuses
+        # anything outside BUILD_RE at INTAKE, so a stored value is already
+        # narrow — this cap is the second lock, not the first.
+        "build": str(body["build"])[:64] if body.get("build") else None,
         "klass": body["class"] if body.get("class") in ("human", "probe", "unknown") else None,
         "status": body["status"] if body.get("status") in ("unset", "ok", "error") else None,
         "errors_only": bool(body.get("errorsOnly")),

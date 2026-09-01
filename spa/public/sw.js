@@ -13,10 +13,42 @@
  * ONLY when the device is fully offline (the gallery cannot stream offline
  * anyway; this just avoids a blank page).
  *
+ * THE CACHE NAME CARRIES THE BUILD ID, and that is not decoration. Until
+ * 2026-09-01 it was the hand-written constant `kh-shell-v1`, unchanged across
+ * every deploy this gallery has ever had, and `activate` deletes only caches
+ * whose key DIFFERS from the current one — so the cached shell entry survived
+ * every deploy indefinitely and a single failed navigation on a flaky mobile
+ * network could pin a client to an HTML shell from any earlier build, forever.
+ * (An HTML shell is not inert: it carries the inline bootstraps — the vendor
+ * telemetry config, the session-id minting, the boot error reporter — so an old
+ * shell means old boot behaviour even when the hashed bundle it names is still
+ * on the box.) The name is now derived from the `?build=` the registration
+ * carries (spa/src/main.tsx passes the bundle id vite baked in), so:
+ *
+ *   * every deploy registers a DIFFERENT script URL, which installs a new
+ *     worker, whose activate deletes every cache but its own — including a
+ *     `kh-shell-v1` entry a client is holding today. The stale shell is
+ *     actively retired on the first online load after this ships, not merely
+ *     left uncreated.
+ *   * a worker that somehow loads without the parameter names its cache
+ *     `kh-shell-unknown` rather than pretending to be a build.
+ *
+ * What did NOT change: no app code or data is ever cached, navigations are
+ * still network-first, and the offline fallback is still one HTML document.
+ * This is not an offline app cache and must not become one.
+ *
  * To retire the PWA later, replace this file with a self-unregistering stub —
  * a live worker cannot be removed just by deleting the file it was served from.
  */
-const SHELL_CACHE = 'kh-shell-v1';
+const BUILD_ID = (() => {
+  try {
+    return new URL(self.location.href).searchParams.get('build') || 'unknown';
+  } catch {
+    // A worker that cannot read its own URL still gets a usable, honest name.
+    return 'unknown';
+  }
+})();
+const SHELL_CACHE = `kh-shell-${BUILD_ID}`;
 const SHELL_KEY = 'kh-app-shell';
 
 self.addEventListener('install', (event) => {
@@ -39,7 +71,10 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Drop any cache a previous shell version left behind.
+      // Drop every cache this origin holds except this build's. That is what
+      // retires a shell cached by ANY earlier build, `kh-shell-v1` included —
+      // and the sweep is deliberately not limited to a name pattern, because
+      // this origin has exactly one worker and anything else in it is debris.
       const keys = await caches.keys();
       await Promise.all(keys.filter((key) => key !== SHELL_CACHE).map((key) => caches.delete(key)));
       await self.clients.claim();
