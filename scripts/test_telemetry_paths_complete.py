@@ -25,6 +25,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "serve"))
 import telemetry_paths  # noqa: E402
 
 ROUTES = pathlib.Path(__file__).resolve().parent / "serve" / "telemetry_routes.py"
+REPO = pathlib.Path(__file__).resolve().parents[1]
+TS_SOURCE = REPO / "spa" / "src" / "analytics" / "instana.ts"
+HTML_SOURCE = REPO / "spa" / "index.html"
 
 #: Routes the dispatcher serves that are READS, not ingest. A report a human
 #: opens is ordinary traffic and should stay visible in both planes.
@@ -59,3 +62,43 @@ class TelemetryPathsAreComplete(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def ts_paths() -> list[str]:
+    """The SPA module's list — the one khFetch derives its ignore test from."""
+    src = TS_SOURCE.read_text()
+    body = src.split("export const KH_TELEMETRY_PATHS = [", 1)[1].split("]", 1)[0]
+    return re.findall(r"'(/[^']+)'", body)
+
+
+def html_paths() -> list[str]:
+    """The inline bootstrap's copy — it runs before any module evaluates, so it
+    cannot import the constant and is duplicated by hand."""
+    src = HTML_SOURCE.read_text()
+    body = src.split("var TELEMETRY_PATHS = [", 1)[1].split("]", 1)[0]
+    return re.findall(r"'(/[^']+)'", body)
+
+
+class TheThreeCopiesAgree(unittest.TestCase):
+    """The list exists three times, in three languages, and cannot be shared.
+
+    `index.html`'s copy runs before any module evaluates; the Python copy is in
+    another process entirely. Sharing them would need a build step none of the
+    three currently has, so instead they are pinned equal here. Both /eum and
+    /logs were added to SOME of them and not the others, and each time the
+    symptom appeared in the vendor's UI rather than in a test.
+    """
+
+    def test_the_typescript_and_python_lists_are_identical(self):
+        self.assertEqual(sorted(ts_paths()), sorted(telemetry_paths.TELEMETRY_PATHS))
+
+    def test_the_inline_bootstrap_copy_matches_the_module(self):
+        self.assertEqual(sorted(html_paths()), sorted(ts_paths()))
+
+    def test_each_copy_actually_parsed(self):
+        # Vacuous-pass guard: a restructure that defeats the parsing must fail
+        # here rather than quietly asserting nothing.
+        for name, got in (("ts", ts_paths()), ("html", html_paths())):
+            with self.subTest(copy=name):
+                self.assertIn("/traces", got)
+                self.assertGreater(len(got), 3)
