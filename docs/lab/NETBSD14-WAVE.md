@@ -65,6 +65,8 @@ Trap met in round 3: a SECOND IDE CD (`-drive ...,media=cdrom,index=3` → `cd1`
 
 Disk layout (sysinst "standard with X"): wd0a=/ 277 MB, wd0b=swap 513 MB, wd0e=/usr 1257 MB — a chroot from the INSTALL ramdisk must mount BOTH wd0a and wd0e, or every /usr tool reads as missing. The ramdisk route (sysinst Utility menu → Run /bin/sh → mount → chroot) needs no `boot -a` dance and its CD mount does not hang.
 
+A hung guest is not idle: the GENERIC kernel spinning after `lpt0` burned 91 % of a core for 55 minutes in the forgotten smoke rig (box load 57 on 16 cores, coordinator alert). Kill a loser or a stale rig the minute its verdict is in — `rig-clone.sh down --rm`, `smoke-rig.sh --down`.
+
 Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
