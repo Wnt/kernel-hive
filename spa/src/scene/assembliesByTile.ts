@@ -499,5 +499,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardD',
   },
+  // pcgeos: a 386-class beige desktop box under a colour VGA CRT, with the
+  // PS/2 mouse the desktop is built around (CTMOUSE + genmouse.geo, relative).
+  // Same wide beige case family as bootos, but a mouse and the 101-key board.
+  pcgeos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 

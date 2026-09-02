@@ -303,6 +303,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // bootOS: a bare `$` prompt over BIOS int 16h; the dos rows lead with
   // Ctrl+Alt+Del, which is the way home from a boot-sector game.
   bootos: 'dos',
+  // PC/GEOS: a full GUI over DOS, but its chords are its own (Ctrl+Esc for the
+  // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
+  // stays the honest common ground until a GEOS profile is worth writing.
+  pcgeos: 'dos',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
