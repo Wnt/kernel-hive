@@ -1,0 +1,24 @@
+#!/bin/bash
+# Tier 1 builder scaffold for pcgeos — replace every TODO before promotion.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+LABQMP="$HERE/../../lib/labqmp.py"
+OS_ID="pcgeos"
+TILE_DIR="pcgeos"
+WORK="${WORK:-/data/vms/build-${OS_ID}}"
+QMP="$WORK/qmp.sock"
+PIDFILE="$WORK/qemu.pid"
+
+log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
+die() {
+  log "ERROR: $*"
+  exit 1
+}
+# shellcheck disable=SC2317 # scaffold hook becomes reachable when TODO flow is filled
+qmp() { python3 "$LABQMP" "$QMP" "$@"; }
+
+log "TODO: resolve latest stable media, verify its publisher checksum, and stage it atomically"
+log "TODO: launch a namespaced LiveCD/scratch VM using the final pinned device set"
+log "TODO: drive the ready fixture with labqmp, then run scripts/lib/golden-verify.sh"
+die "scaffold only: fill the Tier 1 builder for $TILE_DIR"

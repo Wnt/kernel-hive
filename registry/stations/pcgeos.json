@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "pcgeos",
+  "era_year": 1993,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 71,
+        "prelude": "",
+        "value": {
+          "key": "pcgeos",
+          "script": "tiles/pcgeos.sh",
+          "outputDir": "PCGEOS",
+          "class": "fast",
+          "estimated": "~2m",
+          "automation": "full",
+          "produces": "pcgeos.qcow2 (FreeDOS 1.3 disk + C:\\ENSEMBLE, autoexec runs loader.exe)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 12
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "pcgeos",
+      "value": {
+        "os": "PC/GEOS Ensemble",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "F1",
+        "kbd_reset": "Escape",
+        "kbd_note": "desktop GUI; F1 opens GEOS help. Express menu is the taskbar button bottom-left.",
+        "audio_trigger": "tone",
+        "note": "sb16 + PC speaker; PS/2 relative pointer via CTMOUSE + genmouse.geo (INT 33h)",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/pcgeos",
+      "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54175,
+      "notes": "no exec channel: drive via QMP keys/mouse and read the framebuffer. disk.qcow2 is the ONLY block device and carries the 'golden' vmstate (FreeDOS FAT16 + C:\\ENSEMBLE) — never delete or replace it; recapture only via checkpoint-guard."
+    }
+  },
+  "render": {
+    "signalOrder": 73,
+    "stationsManifestOrder": 71,
+    "stationsManifestPrelude": "\n# pcgeos (VMID 175) — PC/GEOS Ensemble (GeoWorks lineage, bluewaysw Apache-2.0 build) on FreeDOS 1.3.\n#   VERBATIM LAUNCHER: disk.qcow2 (FreeDOS FAT16 + C:\\ENSEMBLE, copied from the\n#   builder output on first launch) is the ONLY block device and holds the savevm\n#   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker\n#   -> dbus audiodev, PS/2 relative pointer (CTMOUSE + genmouse.geo).\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 78,
+    "bindingPrelude": "",
+    "goldenOrder": 71,
+    "actionMapOrder": 43
+  },
+  "stationDir": "pcgeos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54175,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 175
+  },
+  "guestDoc": "docs/guests/pcgeos.md",
+  "credentialsRef": "guest/pcgeos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "pcgeos",
+      "SH_QMP": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
+      "SH_PORT": "54175",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/pcgeos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/pcgeos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 175,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "pcgeos",
+        "--vmid",
+        "175",
+        "--udp",
+        "54175",
+        "--pointer",
+        "rel",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/pcgeos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/pcgeos/station.env.fixture"
+      ],
+      "deviceSetId": "pcgeos-current",
+      "launcher": "streamhost/stations/pcgeos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/pcgeos/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 64,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-pcgeos",
+        "-enable-kvm -m 64 -smp 2",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=/data/vms/streamhost/stations/pcgeos/disk.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
+        "-qmp unix:/data/vms/streamhost/stations/pcgeos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/pcgeos/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing; same device set as freedos except -vga std (VESA 800x600 for vga16.geo) and the station's own disk"
+      }
+    },
+    "bringUpOrder": 78
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#e08a3c",
+    "eraLabel": "1993 · GeoWorks Ensemble",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "pcgeos",
+    "displayName": "PC/GEOS Ensemble",
+    "year": 1993,
+    "lineage": "GeoWorks Ensemble → NewDeal Office → Breadbox Ensemble → PC/GEOS (open source 2018)",
+    "arch": "i386 (runs on a 286 in 640 KB), on FreeDOS 1.3",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#e08a3c",
+    "eraSoftware": [
+      "GeoManager",
+      "GeoWrite",
+      "GeoDraw",
+      "GeoCalc",
+      "GeoFile",
+      "Preferences"
+    ],
+    "periodBrowser": "WebMagick (Breadbox)",
+    "iconicApps": [
+      "GeoWrite",
+      "GeoDraw",
+      "GeoCalc",
+      "Solitaire",
+      "Tetris"
+    ],
+    "blurb": "GeoWorks Ensemble: a preemptive-multitasking, object-oriented graphical desktop that ran in 640 KB on a 286 — the 1990 GUI that made Windows 3.0 look slow, kept alive as open-source PC/GEOS.",
+    "notes": "Live streamhost station. FreeDOS 1.3 boots straight into loader.exe; the whole desktop (Motif Redux look, taskbar, 800x600 VESA) is drawn by GEOS itself. PS/2 relative pointer through CTMOUSE + the generic INT 33h driver. disk.qcow2 is the single block device and carries the golden vmstate, so a reset restores the FAT filesystem too."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "pcgeos",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "PC/GEOS Ensemble desktop (Computer/Documents/World icons, Meadows wallpaper, taskbar) at 800x600 16-bit right after loader.exe; software cursor in the scanout."
+  },
+  "migrationExceptions": []
+}

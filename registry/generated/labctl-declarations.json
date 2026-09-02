@@ -812,6 +812,24 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "pcgeos": {
+      "dir": "/data/vms/streamhost/stations/pcgeos",
+      "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54175,
+      "notes": "no exec channel: drive via QMP keys/mouse and read the framebuffer. disk.qcow2 is the ONLY block device and carries the 'golden' vmstate (FreeDOS FAT16 + C:\\ENSEMBLE) — never delete or replace it; recapture only via checkpoint-guard."
+    },
     "pdp11": {
       "dir": "/data/vms/streamhost/stations/pdp11",
       "qmp": "/data/vms/streamhost/stations/pdp11/qmp.sock",

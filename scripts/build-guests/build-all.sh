@@ -147,13 +147,14 @@ MANIFEST=(
 #   the project deleted every FreeBSD-era release from GitHub and SourceForge.
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
+  "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m     |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
 # the two Sailfish stages because Stage 1 needs account-gated SDK media. Add
 # --with-media after staging it. The licensed pair is appended only by
 # --include-licensed. An explicit --only always opts that key in.
-DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore bootos
+DEFAULT_ORDER=(kolibrios toaruos helenos 9front reactos haiku templeos amigaos qnx alpine tinycore bootos pcgeos
   freedos msdos-win1 win311 win95 win98 win2000 os2warp redstar3
   android-x86 postmarketos sailfishos sailfishos-gui serenityos
   bridge-base c64 atarist apple2 amiga amstradcpc redstar2 mpf2 vic20 plus4 c128 pet2001 cbm8032 decos zxspectrum bbcmicro dragon32 kc854 oricatmos armeval indyr4400 daybreak)
