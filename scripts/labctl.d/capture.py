@@ -38,7 +38,13 @@ def ppm_to_png(ppm, png):
 def capture_png(name, c, out, resume):
     if resume:
         ensure_running(c, name)
-    ppm = os.path.join(os.path.dirname(out), ".labctl-%s-%d.ppm" % (name, os.getpid()))
+    # `or "."` is load-bearing, and its absence reads as a fleet-wide outage.
+    # QEMU resolves a RELATIVE screendump path against its own cwd, not ours, so
+    # a bare `out.png` (dirname "") made the dump land somewhere we never look:
+    # cdrv exits 0 and prints "ok", the existence check below fails, and every
+    # station answers `screendump failed: ok` while streaming perfectly.
+    # capture_png_x11() below has always had this guard; this one did not.
+    ppm = os.path.join(os.path.dirname(out) or ".", ".labctl-%s-%d.ppm" % (name, os.getpid()))
     r = cdrv(c["qmp"], "dump", ppm)
     if r.returncode != 0 or not os.path.exists(ppm):
         raise RuntimeError("screendump failed: %s" % (r.stderr.strip() or r.stdout.strip() or "no PPM produced"))

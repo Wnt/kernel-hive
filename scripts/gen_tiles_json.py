@@ -10,6 +10,19 @@ import os
 import re
 import socket
 
+# A walk-in pool clone (docs/lab/walkin/CONTRACT-LEDGER.md §5.1) is an
+# EPHEMERAL DAEMON IDENTITY, not a registry station: it has a station dir and a
+# unit so /signal/<clone>.json can resolve, but the registry never declares it
+# and `stations-registry.py` would refuse it if it did. The same rule is already
+# stated in serve/check-stream-tickets.py.
+#
+# It is excluded from the live set below because otherwise enabling walk-in
+# makes `labctl gen` refuse fleet-wide on a mismatch that is not a fault — which
+# is exactly what happened: nine live clones (plus five dirs left from a larger
+# pool) froze stations.json at 2026-08-31, so labctl did not know `ravynos` or
+# `amix` for two days and `labctl shot` answered "unknown tile" for both.
+WALKIN_CLONE = re.compile(r"^walkin-[a-z0-9]+-\d+$")
+
 TILES_DIR = "/data/vms/streamhost/stations"
 OUT = "/data/vms/streamhost/stations.json"
 DECLARATIONS = "/data/vms/streamhost/build/registry/generated/labctl-declarations.json"
@@ -110,7 +123,9 @@ def main():
     args = parser.parse_args()
     with open(args.declarations) as f:
         declarations = json.load(f)["tiles"]
-    live_dirs = {t for t in os.listdir(TILES_DIR) if os.path.isdir(os.path.join(TILES_DIR, t))}
+    live_dirs = {
+        t for t in os.listdir(TILES_DIR) if os.path.isdir(os.path.join(TILES_DIR, t)) and not WALKIN_CLONE.match(t)
+    }
     if live_dirs != set(declarations):
         raise SystemExit(f"declared/live tile set mismatch: declared={sorted(declarations)} live={sorted(live_dirs)}")
     tiles = {}
