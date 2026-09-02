@@ -451,6 +451,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // pcbsd: a 2008 beige-going-grey office PC running FreeBSD 6.3 + KDE 3.5 at
+  // 1024x768 on the vesa driver. Registry red accent (the PC-BSD/BSD daemon red).
+  pcbsd: {
+    caseTint: '#b9b7ae', accentTint: '#c8102e', tintMix: 0.4,
+    badge: 'OFFICE PC', spec: 'x86 • 2008', kit: 'modern',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

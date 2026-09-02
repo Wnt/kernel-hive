@@ -307,6 +307,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // PC-BSD 1.5.1 is KDE 3.5 on X.org: a standard PC-104 board, Alt+F1 for the
+  // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
+  // 'generic' is the honest PC-104 common ground.
+  pcbsd: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
