@@ -35,8 +35,8 @@
             40
           ],
           "b": [
-            980,
-            720
+            612,
+            450
           ]
         },
         "kbd": "alt+F2",
@@ -44,7 +44,7 @@
         "kbd_note": "Alt+F2 opens GNOME 2.8's Run Application dialog; Escape closes it",
         "audio_trigger": "none",
         "validated": false,
-        "note": "1024x768 std VGA (XFree86 vesa) / USB-tablet via 2.6.8 mousedev; live CD session as user 'ubuntu', no install; -nodefaults, no NIC, no audio (AC97+ACPI hangs the live boot)"
+        "note": "640x480 std VGA (XFree86 vesa, no DDC) / USB-tablet via 2.6.8 mousedev; live CD session as user 'warty', no install; -nodefaults, no NIC, no audio (AC97+ACPI hangs the live boot)"
       }
     },
     "labctl": {
@@ -230,7 +230,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Ubuntu 4.10 live CD session logged in as 'ubuntu' on the idle 1024x768 GNOME 2.8 desktop; no dialog, screensaver off; absolute USB tablet and keyboard ready"
+    "fixture": "Ubuntu 4.10 live CD session logged in as 'warty' on the idle 640x480 GNOME 2.8 desktop; no dialog, screensaver off; absolute USB tablet and keyboard ready"
   },
   "notes": [
     "Live CD, not an install: the golden vmstate lives in an otherwise empty 1G qcow2 (ubuntu.qcow2) alongside the read-only ISO — both are the device set",
