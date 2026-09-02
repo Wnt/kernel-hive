@@ -207,6 +207,9 @@ const POSTER_INDEX = {
   "tru64": {
     "hero": "/posters/tru64/desktop.webp"
   },
+  "ubuntu": {
+    "hero": "/posters/ubuntu/desktop.webp"
+  },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
   },

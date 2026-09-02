@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "id": "ubuntu",
+  "era_year": 2004,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 72,
+        "prelude": "",
+        "value": {
+          "key": "ubuntu",
+          "script": "tiles/ubuntu.sh",
+          "outputDir": "Ubuntu",
+          "class": "retro",
+          "estimated": "~5m",
+          "automation": "scripted",
+          "produces": "warty-release-live-i386.iso + ubuntu.qcow2 (empty 1G vmstate carrier; live CD, no install)",
+          "flags": [
+            "media"
+          ]
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "ubuntu",
+      "value": {
+        "os": "Ubuntu 4.10 Warty Warthog (live CD)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            40,
+            40
+          ],
+          "b": [
+            980,
+            720
+          ]
+        },
+        "kbd": "alt+F2",
+        "kbd_reset": "Escape",
+        "kbd_note": "Alt+F2 opens GNOME 2.8's Run Application dialog; Escape closes it",
+        "audio_trigger": "none",
+        "validated": false,
+        "note": "1024x768 std VGA (XFree86 vesa) / USB-tablet via 2.6.8 mousedev; live CD session as user 'ubuntu', no install; -nodefaults, no NIC, no audio (AC97+ACPI hangs the live boot)"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/ubuntu",
+      "qmp": "/data/vms/streamhost/stations/ubuntu/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54183,
+      "notes": "air-gapped live-CD guest: no NIC and no exec channel; framebuffer/QMP/HMP only"
+    }
+  },
+  "render": {
+    "signalOrder": 74,
+    "stationsManifestOrder": 72,
+    "stationsManifestPrelude": "\n# ubuntu (VMID 183) — Ubuntu 4.10 Warty Warthog live CD (GNOME 2.8), KVM/i440fx acpi=off, std VGA, USB tablet, no NIC, no audio.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 79,
+    "bindingPrelude": "",
+    "goldenOrder": 72,
+    "actionMapOrder": 44
+  },
+  "stationDir": "ubuntu",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54183,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "method": "qemu-usb-tablet",
+      "absolute": true,
+      "present": true,
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 183
+  },
+  "guestDoc": "docs/guests/ubuntu.md",
+  "credentialsRef": "guest/ubuntu",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "ubuntu",
+      "SH_QMP": "/data/vms/streamhost/stations/ubuntu/qmp.sock",
+      "SH_PORT": "54183",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/ubuntu/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/ubuntu/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 183,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "ubuntu",
+        "--vmid",
+        "183",
+        "--udp",
+        "54183",
+        "--pointer",
+        "abs",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--input-dev",
+        "usb",
+        "--launcher-file",
+        "$T/ubuntu/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/ubuntu/station.env.fixture"
+      ],
+      "deviceSetId": "ubuntu-current",
+      "launcher": "streamhost/stations/ubuntu/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/ubuntu/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 512,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-ubuntu -nodefaults",
+        "-enable-kvm -machine pc-i440fx-11.0,acpi=off -cpu host",
+        "-m 512 -smp 1 -rtc base=localtime",
+        "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$ISO\",format=raw,if=ide,index=2,media=cdrom,readonly=on -boot order=d -loadvm golden",
+        "-vga std",
+        "-usb -device usb-tablet",
+        "-display dbus,p2p=on",
+        "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+        "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+        "-pidfile \"$T/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 512,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-ubuntu -nodefaults",
+          "-enable-kvm -machine pc-i440fx-11.0,acpi=off -cpu host",
+          "-m 512 -smp 1 -rtc base=localtime",
+          "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$ISO\",format=raw,if=ide,index=2,media=cdrom,readonly=on -boot order=d -loadvm golden",
+          "-vga std",
+          "-usb -device usb-tablet",
+          "-display dbus,p2p=on",
+          "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+          "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+          "-pidfile \"$T/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the production device ledger; live CD + empty qcow2 vmstate carrier; zero guest network devices"
+      }
+    },
+    "bringUpOrder": 79
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#dd4814",
+    "eraLabel": "2004 · Ubuntu 4.10 Warty Warthog",
+    "bootVideo": null
+  },
+  "museum": {
+    "id": "ubuntu",
+    "displayName": "Ubuntu 4.10 Warty Warthog",
+    "year": 2004,
+    "lineage": "Linux (Debian lineage)",
+    "arch": "i386",
+    "ramMB": 512,
+    "era": "2000s",
+    "accent": "#dd4814",
+    "eraSoftware": [
+      "GNOME 2.8",
+      "Firefox 0.9",
+      "Evolution 2.0",
+      "OpenOffice.org 1.1",
+      "GIMP 2.0"
+    ],
+    "periodBrowser": "Firefox 0.9.3",
+    "iconicApps": [
+      "Firefox",
+      "Evolution",
+      "OpenOffice.org",
+      "GIMP"
+    ],
+    "blurb": "The first Ubuntu, October 2004: a Debian-derived desktop that booted straight into a brown GNOME 2.8 from a live CD and promised a new release every six months."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "ubuntu",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Ubuntu 4.10 live CD session logged in as 'ubuntu' on the idle 1024x768 GNOME 2.8 desktop; no dialog, screensaver off; absolute USB tablet and keyboard ready"
+  },
+  "notes": [
+    "Live CD, not an install: the golden vmstate lives in an otherwise empty 1G qcow2 (ubuntu.qcow2) alongside the read-only ISO — both are the device set",
+    "AC97 together with ACPI hangs the 2.6.8 live boot at the usplash bar (measured 2026-09-03, 3 rigs raced); ship acpi=off and no audio",
+    "Scaffolded from redstar2 on 2026-09-03"
+  ]
+}
