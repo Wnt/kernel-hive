@@ -242,8 +242,8 @@
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
+    "mouse": "FAIL",
+    "keyboard": "PASS",
     "fixture": "Slackware 3.4 fvwm95 desktop at 1024x768x16, root logged in: xterm 'darkstar' with a bash# prompt top-left, xclock top-right, FvwmButtons dock bottom-right, Start/taskbar bottom. X autostarts from rc.local, so a cold boot lands here too. loadvm restores it (golden vmstate in disk.qcow2)."
   },
   "migrationExceptions": [
