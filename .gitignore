@@ -54,6 +54,9 @@ venv/
 !.claude/hooks/
 !.claude/hooks/**
 !.claude/settings.json
+# checked-in subagent types (haiku-low / sonnet-low / sonnet) — AGENTS.md rule 12
+!.claude/agents/
+!.claude/agents/**
 
 # ---- Test artifacts (Playwright) ----
 test-results*/
