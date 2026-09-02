@@ -218,8 +218,8 @@
       "bootBASIC",
       "fbird"
     ],
-    "blurb": "An entire operating system in one 512-byte boot sector — a shell, a filesystem, a hex program loader — and a floppy of games that are each exactly one sector: chess, Doom, BASIC, Flappy Bird.",
-    "notes": "Live streamhost station. Keyboard-only (BIOS int 16h); the guest is a 720K floppy image as qcow2 so loadvm restores what visitors wrote. Type `dir` for the programs, a program's name to run it, Ctrl+Alt+Del is the way home from most games (they end with int 0x20 or a reboot)."
+    "blurb": "An entire operating system in one 512-byte boot sector — a shell, a filesystem and a hex program loader — plus a floppy of games that are each exactly one sector: chess, a Doom-style raycaster, BASIC, a Flappy Bird, Space Invaders, Tetris.",
+    "notes": "Live streamhost station. Keyboard-only (bootOS reads the BIOS keyboard, int 16h; there is no pointer device). The guest is the 720K floppy as qcow2, so loadvm restores the directory as well as RAM — anything a visitor `enter`s is gone at the next reset. Type `dir` for the programs, a program's name to run it; most games end with int 0x20 back at the `$` prompt or need Ctrl+Alt+Del (a warm boot returns to bootOS). The type-in demo needs the empty line: `enter` reads hex lines until it gets one."
   },
   "emulator": {
     "family": "QEMU",
@@ -234,6 +234,7 @@
       "bb 17 7c 8a 07 84 c0 74 0c 53 b4 0e bb 0f 00 cd",
       "10 5b 43 eb ee cd 20 48 65 6c 6c 6f 2c 20 77 6f",
       "72 6c 64 0d 0a 00",
+      "",
       "hello"
     ],
     "runCommand": "hello",

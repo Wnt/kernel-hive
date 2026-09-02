@@ -93,6 +93,25 @@ describe('typeDemoProgram', () => {
     expect(r.typed).toEqual(['10 MODE 1']);
   });
 
+  it('sends a bare ENTER for an empty line and never types an empty string', async () => {
+    // bootOS's `enter` command reads hex lines until it receives an EMPTY one,
+    // so a listing that types a program must be able to say "just ENTER here".
+    const hex: DemoProgram = {
+      label: 'x',
+      lines: ['enter', 'cd 20', '', 'nop'],
+      runCommand: 'nop',
+    };
+    const r = recorder();
+    await typeDemoProgram({
+      program: hex, handle: r.handle, sleep: r.sleep,
+      delayMs: 42, enterDelayMs: 99, perCharMs: 0,
+    });
+    expect(r.typed).toEqual(['enter', '\n', 'cd 20', '\n', '\n', 'nop', '\n', 'nop']);
+    expect(r.typed).not.toContain('');
+    // The empty line costs only the post-ENTER settle: there was nothing to pace.
+    expect(r.waits).toEqual([42, 99, 42, 99, 99, 42, 99, 0]);
+  });
+
   it('is content-agnostic: any listing length works', async () => {
     const long: DemoProgram = {
       label: 'x',
