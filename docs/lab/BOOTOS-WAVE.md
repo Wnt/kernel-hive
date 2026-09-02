@@ -1,5 +1,16 @@
 # bootOS integration wave — 2026-09-02
 
+**Outcome: LIVE.** First message 20:07 UTC (session opener), `streamhost@bootos`
+active with framebuffer + keyboard + reset proven at 20:48 UTC, SPA bundle with the
+poster, scene and type-in demo deployed at 20:52 UTC — **45 minutes** from the
+YouTube link to a listed, fully featured station, on main at `37fdd685`. One
+ledger commit, four streams (build, golden, spa, docs), zero textual merge
+conflicts except one two-line hunk in the registry entry (blurb wording), one
+cross-stream fact caught at integration (the floppy is 360K, three streams had
+copied the ledger's "720K"). Pre-existing `verify-emit` deltas on `tinycore`,
+`win95` (machine alias vs pinned type) and `tru64` (comment prose) are not from
+this wave and were left alone.
+
 Speed-record attempt: integrate **bootOS** (Óscar Toledo G., 2019 — an entire OS in
 one 512-byte boot sector, https://github.com/nanochess/bootOS, BSD-2) as a fully
 featured Tier-1 host-native station, with four parallel streams and one
@@ -12,6 +23,7 @@ coordinator. Branch `bootos` is the ledger; every stream branches from it.
 | id / stationDir / SH_STATION | `bootos` |
 | slot / UDP / VMID label | 174 / 54174 / 174 |
 | render orders | signal 72 · stationsManifest 70 · binding 77 · golden 70 · actionMap 42 · bringUp 77 (group 1) · build row 70, defaultOrder group 0 pos 11 |
+| floppy geometry | `osall.img` is **360K** (368640 bytes = 40 tracks × 2 heads × 9 sectors); QEMU derives floppy geometry from image size and it is inside the vmstate, so the pristine qcow2 must stay 360K |
 | upstream pin | commit `329b75e60d04e89616bc1844578098df43d4f432` (master, 2026-08-01) |
 | staged media | `/data/assets-staging/bootos/` (`os.img`, `osall.img` = 360K floppy (368640 bytes) with 19 programs, `os.asm`, `patch/*`, `MANIFEST.sha256`) |
 | builder output | `/data/gallery-guests/BootOS/bootos-floppy.qcow2` (pristine, no golden) |
