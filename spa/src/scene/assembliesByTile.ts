@@ -506,12 +506,26 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+<<<<<<< HEAD
   // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
   // serial mouse the X server is told about (relative). Same tower family as
   // tinycore, the other small-Linux desktop in the hall.
   slackware: {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseB',
+=======
+  // ubuntu: a 2004 beige-and-black minitower under a CRT — the ShipIt-CD PC
+  // Warty was posted to. USB tablet in the guest, so a mouse on the desk.
+  ubuntu: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'paramCrt',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  // pcbsd: a 2008 office desktop — a putty SFF box under a 4:3 LCD, with the
+  // USB tablet pointer the station forwards as absolute (same era kit as reactos).
+  pcbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+>>>>>>> origin/main
   },
 } as const satisfies Record<string, Assembly>;
 

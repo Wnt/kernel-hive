@@ -135,7 +135,22 @@ see *Known gaps* for the absolute-pointer follow-up.
 
 ## Checkpoint
 
-TODO(golden): filled by the coordinator from the golden stream's report (bake clock, restore proof, keyboard/pointer proof).
+Baked 2026-09-03 by the golden stream on a sandbox clone of the pristine composed
+disk with the exact station launcher (KVM, `-cpu host`, 32 MB, i440fx, cirrus,
+msmouse serial, IDE disk + GRUB2 ISO): cold boot settles on the desktop 32 s after
+power-on; `savevm golden` at VM_CLOCK 0000:00:42.223, VM_SIZE 16.7 MiB, stored in
+`disk.qcow2` (the ISO is attached read-only and is part of the device set).
+
+- **Restore proof**: relaunch → `-loadvm golden -S` → `cont` → the desktop frame,
+  not a cold boot (`/data/vms/sandbox/slackware-golden/bake/fb-restore1.png`).
+- **Keyboard proof**: `uname -a` typed into the xterm echoes
+  `Linux darkstar 2.0.30 #3 Tue Jun 24 03:49:52 CDT 1997 i686 unknown`.
+- **Reset is the restore**: `loadvm golden` after typing → the output is gone and
+  the clock is back at bake time (`fb-reset.png`).
+- **Pointer**: relative Microsoft serial mouse; the X pointer starts at the screen
+  centre (the "X" root cursor at 512,384) and QMP `mouse_move` carries it across
+  the desktop (coordinator-verified on the smoke rig after the golden stream's
+  pixel diff missed it). Per-unit gain: see the fixture comments.
 
 ## Known gaps
 

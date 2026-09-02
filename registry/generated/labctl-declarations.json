@@ -812,6 +812,24 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "pcbsd": {
+      "dir": "/data/vms/streamhost/stations/pcbsd",
+      "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54179,
+      "notes": "no exec channel and no NIC (golden device set has none); rel PS/2 pointer only — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
+    },
     "pcgeos": {
       "dir": "/data/vms/streamhost/stations/pcgeos",
       "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
@@ -1207,6 +1225,24 @@
       "console": "x11",
       "udp_port": 54141,
       "notes": "x11 runtime (es40 AlphaServer ES40 emulator, headless SDL dummy + shm capture) — SRM-boots the disk directly, no ARC autoboot. No QMP; input = streamhost mamesock -> es40 ctlsock mamectl/1 unix socket ctl.sock. es40 binary is multi-client ctlsock (operator tools can inject input beside the attached daemon). Serial pair 21974/21975 is this tile's claim; ser1 doubles as the EXEC channel — exec_kind serialcon_e: the guest runs a getty on /dev/tty01 and the tile's pumps.py lends that line one client at a time over serial-exec.sock in the tile dir, so `labctl exec tru64 <cmd>` returns captured stdout and the guest's exit code with no network device in the machine. Pointer is ABSOLUTE and pixel-exact: the launcher sets ES40_POINTER_GAIN=2 because this guest moves 2 px per injected PS/2 count (odd targets land 1 px short), and the checkpoint carries X acceleration 1/1 threshold 0. Screen is 1280x1024 via -screen on the X server line in /etc/dt/config/Xservers. reset = relaunch restoring the CHECKPOINT: the launcher reflink-copies assets/tru64/checkpoint/tru64.img and restores checkpoint/tru64.axp (ES40_RESTORE), CDE desktop ~3 s after exec instead of the ~7-10 min cold boot; rollback = delete assets/tru64/checkpoint/ and it cold-boots img/tru64-seed.img."
+    },
+    "ubuntu": {
+      "dir": "/data/vms/streamhost/stations/ubuntu",
+      "qmp": "/data/vms/streamhost/stations/ubuntu/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54183,
+      "notes": "air-gapped live-CD guest: no NIC and no exec channel; framebuffer/QMP/HMP only"
     },
     "vic20": {
       "dir": "/data/vms/streamhost/stations/vic20",

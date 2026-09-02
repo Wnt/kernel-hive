@@ -42,7 +42,7 @@
         "kbd_note": "keyboard proof: type in the xterm (bash# prompt echoes). Start menu bottom-left; FvwmButtons dock bottom-right (xclock/xload/xterm/xfm/xcalc/xv).",
         "audio_trigger": "beep",
         "validated": false,
-        "note": "1024x768x16 fvwm95 desktop on XFree86 3.3.1 XF86_SVGA/cirrus; RELATIVE pointer: Microsoft serial mouse on ttyS0 (QEMU msmouse), X `xset m 1 1` for 1:1 gain; kernel 2.0.30 bare.i via GRUB2 linux16 ISO (1997 LILO wedges at LI on SeaBIOS)"
+        "note": "1024x768x16 fvwm95 desktop on XFree86 3.3.1 XF86_SVGA/cirrus; RELATIVE pointer: Microsoft serial mouse on ttyS0 (QEMU msmouse), measured 2 px per unit (cursor_scale 0.5, SH_REL_MAX_STEP 32 = one 7-bit Microsoft packet); kernel 2.0.30 bare.i via GRUB2 linux16 ISO (1997 LILO wedges at LI on SeaBIOS)"
       }
     },
     "labctl": {
@@ -66,7 +66,7 @@
     "stationsManifestOrder": 72,
     "stationsManifestPrelude": "\n# slackware (slot 184) — Slackware 3.4 (Linux 2.0.30, XFree86 3.3.1, fvwm95) on\n#   pve-qemu i440fx/KVM, -vga cirrus 1024x768x16, RELATIVE serial-mouse pointer\n#   (msmouse chardev -> ttyS0, dbus-rel), GRUB2 linux16 ISO boots the zImage.\n#   Checkpoint 'golden' in disk.qcow2; -loadvm golden -S.\n",
     "bringUpGroup": 0,
-    "bindingOrder": 79,
+    "bindingOrder": 81,
     "bindingPrelude": "",
     "goldenOrder": 72,
     "actionMapOrder": 44
@@ -86,7 +86,7 @@
       "absolute": false,
       "present": true,
       "device": "msmouse",
-      "scale": 1.0,
+      "scale": 0.5,
       "offset": [
         0,
         0
@@ -127,7 +127,7 @@
         "--input-backend",
         "dbus-rel",
         "--cursor-scale",
-        "1.0",
+        "0.5",
         "--cursor-off-x",
         "0",
         "--cursor-off-y",
@@ -252,7 +252,7 @@
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "FAIL",
+    "mouse": "PASS",
     "keyboard": "PASS",
     "fixture": "Slackware 3.4 fvwm95 desktop at 1024x768x16, root logged in: xterm 'darkstar' with a bash# prompt top-left, xclock top-right, FvwmButtons dock bottom-right, Start/taskbar bottom. X autostarts from rc.local, so a cold boot lands here too. loadvm restores it (golden vmstate in disk.qcow2)."
   },
