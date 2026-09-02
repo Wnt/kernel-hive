@@ -398,11 +398,15 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             # session. Four stations shipped that way on 2026-08-09.
             low = globals_doc["ports"]["publicRelayLow"]
             high = globals_doc["ports"]["publicRelayHigh"]
-            # legacyPortException stations are deliberately off the base+slot policy
-            # (reactos sits on 4433) and the edge carries its own rule for them, so
-            # the range check does not apply.
+            # The RANGE check is unconditional, and `legacyPortException` does NOT
+            # excuse it. The two rules answer different questions: the exception
+            # says "this port need not follow base+slot", the range says "this port
+            # is inside the edge's DNAT hole". Coupling them is how reactos shipped
+            # on 4433 for months on the belief that "the edge carries its own rule"
+            # -- it cannot, the hole is a RANGE -- perfect on the LAN and dead to
+            # every public visitor (2026-09-02).
             in_range = low <= stream.get("udpPort", -1) <= high
-            if stream.get("transport") == "streamhost" and not stream.get("legacyPortException") and not in_range:
+            if stream.get("transport") == "streamhost" and not in_range:
                 fail(
                     errors,
                     row,

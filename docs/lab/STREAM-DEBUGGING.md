@@ -245,6 +245,35 @@ Two causes, both fixed 2026-08-17 (see `abr.rs`), both worth re-checking:
   a keyframe; tier 0 has no bitrate ceiling (CQP, no VBV), so a big station's
   heartbeat IDR spikes the ping. RTT smoothing is now asymmetric (rise m=16,
   fall m=4) and an RTT-only breach must persist 4 s, not 1.5 s.
+- **the very first `T`-line of the session reads `loss45`–`loss87`** and the
+  downshift lands ~4 s after `connect` — the join, not the link. See the next
+  signature; fixed 2026-09-02 in `transport/mod.rs` + `abr.rs`.
+
+### Loss on a link that is not losing anything
+The client has no packet counter. Its `lossPct` is **frame_id holes**
+(`spa/src/three/streamClient/videoDecode.ts` `feedVideoAU`), and that percentage
+is what it reports back in `T_STATS` for `abr.rs` to steer the ladder with. Until
+2026-09-02 the id on the wire was the ENCODER's, which is wrong for one session
+in three ways, all of which read as loss:
+
+- **session start** — the relay sends the primed cached keyframe, then the join
+  gate discards every mid-GOP delta until the first broadcast key (measured on
+  freedos: primed 423, first relayed 453). One AU, then a 29-frame hole.
+- **ABR tier change** — `encode/worker.rs` sets `frame_id = 0` on every reopen,
+  so the id space rewinds under a session that lost nothing.
+- **a second viewer** — their join keyframe and input burst make the relay skip
+  AUs for the FIRST viewer, and the `KIND_PARAMS` subtype-2 skip credit is only
+  1 Hz, far too coarse for the client's 100 ms accounting ticks. The operator's
+  win95 tab read 93–96 % "loss" this way while RTT stayed 11–14 ms.
+
+The wire now carries a **session-local** id (`transport/mod.rs` `out_id`) that
+counts the AUs THIS session was actually sent, so a hole the client sees is a
+hole the wire made. The skip counter is unchanged and still reported — it feeds
+the HUD and the server-authoritative ABR backlog signal — it simply no longer has
+to race the frames it explains. `abr.rs` additionally ignores reported loss for
+the first 4 s / 20 reports of a session (`warming_up`) and requires the CURRENT
+report to agree with the smoothed value before a downshift (`loss_congested`), so
+one bad interval cannot trip the 1.5 s breach on its decay tail.
 
 ### Station "freezes" while in use
 Look for `rx0.0M fps0` in consecutive `stats` rows with healthy `rtt` and zero
@@ -444,6 +473,33 @@ floor it should be approaching, not 10 s).
 `TypeError: Failed to fetch` arriving in a batch of 4–5 identical lines within
 the same millisecond, after a telemetry silence gap, is the reliable
 **"this machine just woke up"** marker.
+
+### `ping-timeout` on a healthy transport, right after a mouse move
+Three missed liveness pings in 1.8 s and a hard reconnect, with the daemon
+logging nothing but `SESSION_ENDED` and a normal `[encode]` line. Until
+2026-09-02 the type-9 echo shared the datagram RECEIVE loop with
+`input::handle`, whose first act is `idle::wake_for_input()` — on an
+idle-auto-paused guest that takes the pauser lock and issues a QMP `cont` over a
+fresh socket with 2 s read AND 2 s write timeouts (`idle.rs qmp_execute`). One
+input record could hold the loop for seconds whenever the QMP socket was busy
+(another transient client, an out-of-band driver's wake lease, the reconciler),
+and every ping queued behind it. win95 lost the echo for >1.8 s at 18:39:03 and
+18:43:41 UTC on 2026-09-02 that way. The datagram plane is now its own module
+(`transport/datagram.rs`) and the receive loop only demuxes: it echoes, folds a
+report, or hands the record to a channel. A slow guest now delays input, and
+nothing else.
+
+### The station is active and healthy and no session ever arrives
+`streamhost@<id>` active and encoding, `check-stream-tickets.py` says the ticket
+is accepted, `/signal/<id>.json` returns a valid path — and the daemon journal
+has no `[transport] SESSION` line at all, while the browser logs "WebTransport
+ready has not settled after 3000ms" then `Opening handshake failed`. The packets
+never reach the box: a **public** visitor's UDP goes through the edge, whose
+nftables DNAT covers `54080-54200` only, so a station outside that range is
+invisible to the gallery and perfect on the LAN. It bit slots 131-134 on
+2026-08-09 and `reactos` (which sat on the legacy port 4433) until 2026-09-02.
+UDP port is `54000 + slot`; `stations-registry.py validate` fails any production
+station outside the range. See [PUBLIC-GALLERY.md](../PUBLIC-GALLERY.md).
 
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct

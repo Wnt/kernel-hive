@@ -108,6 +108,12 @@ struct SessionState {
     /// "unknown" the client sends before its first ping resolves. Used only to
     /// seed the conservative start tier; None until a real sample arrives.
     first_real_rtt: Option<f32>,
+    // ---- L-5 LOSS WARM-UP (2026-09-02) ----
+    /// When the session registered. With `reports`, the two halves of the
+    /// warm-up window: see `warming_up`.
+    created: Instant,
+    /// Reports folded for this session (the ~100 ms T_STATS cadence).
+    reports: u32,
 }
 
 impl SessionState {
@@ -128,7 +134,34 @@ impl SessionState {
             prev_server_skips: 0,
             skip_rate_ewma: 0.0,
             first_real_rtt: None,
+            created: Instant::now(),
+            reports: 0,
         }
+    }
+
+    /// L-5: is this session still inside the loss WARM-UP window?
+    ///
+    /// A freshly-connected client's first loss samples are not a measurement of
+    /// the network. Its `lossPct` is a ratio over a 3 s window with a 10-frame
+    /// minimum denominator, so the first intervals are the smallest, noisiest
+    /// ratios the session will ever produce, and anything the SERVER withholds
+    /// while the session is joining lands in exactly those intervals. Until
+    /// 2026-09-02 the join-gate discard alone made every connect on this LAN
+    /// open with a 45-87 % first-interval loss reading; `fold` then SEEDED the
+    /// smoothed loss with that first sample, so `loss_pct_ewma` started at ~86,
+    /// took ~2.1 s (m=8) to decay under DOWN_LOSS_PCT, and satisfied the 1.5 s
+    /// BREACH on the way down. That is the T0->T1 downshift ~4 s after every
+    /// connect, and (with UP_HOLD + the 25 s dwell) the T0<->T1 limit cycle
+    /// behind it.
+    ///
+    /// BOTH halves must pass: enough reports that the ratio has a denominator,
+    /// and enough wall-clock that the client's own 3 s loss window has rolled
+    /// over the join. Only the LOSS signal is held off — RTT growth and the
+    /// server's own skip counter are trustworthy from the first sample and keep
+    /// their existing sensitivity, so a genuinely bad path still downshifts
+    /// during warm-up.
+    fn warming_up(&self, now: Instant) -> bool {
+        self.reports < LOSS_WARMUP_REPORTS || now.duration_since(self.created) < LOSS_WARMUP
     }
 }
 
@@ -187,6 +220,14 @@ const BREACH: Duration = Duration::from_millis(1500);
 const RTT_BREACH: Duration = Duration::from_secs(4);
 /// A healthy window must persist this long before stepping the tier back up.
 const UP_HOLD: Duration = Duration::from_secs(8);
+/// L-5 loss WARM-UP: wall-clock a session must be connected before its reported
+/// loss is allowed to move the ladder. Longer than the client's own 3 s loss
+/// window (spa abr.ts LOSS_WINDOW_MS) so the join can no longer be inside it.
+const LOSS_WARMUP: Duration = Duration::from_secs(4);
+/// L-5 loss WARM-UP, second half: reports the session must have folded (~100 ms
+/// cadence). Guards against a client whose reports are sparse satisfying the
+/// wall-clock half with two samples.
+const LOSS_WARMUP_REPORTS: u32 = 20;
 /// L-1 backlog trigger (armed by SH_ABR_BACKLOG_DOWNSHIFT): downshift when the
 /// smoothed per-report egress SKIP count (the relay dropping non-key AUs while a
 /// session runs past its backlog bound) stays at/above this. On a LAN the gate
@@ -195,6 +236,20 @@ const DOWN_SKIP_RATE: f32 = 1.5;
 /// ... and only treat the link healthy-enough to UPSHIFT once skipping is back
 /// at/below this (asymmetric dead-band, like the loss/rtt thresholds above).
 const UP_SKIP_RATE: f32 = 0.3;
+
+/// Pure LOSS contribution to the CONGESTED decision (L-5), split out so the
+/// threshold logic is unit-testable without an Abr/EncoderOut.
+///
+/// Both the SMOOTHED loss and the loss the client is reporting RIGHT NOW must be
+/// at/above the threshold. The EWMA alone cannot tell a link that is losing
+/// frames from one that lost a burst and recovered: at m=8 a single 90 % sample
+/// stays above 5 % for ~2.1 s, which is longer than BREACH, so one bad interval
+/// used to be sufficient on its own. Requiring the current report to agree makes
+/// the persistence window mean what it says — the breach must still be TRUE when
+/// it expires — while a sustained loss (which keeps reporting high) is unchanged.
+fn loss_congested(loss_ewma: f32, loss_now: f32) -> bool {
+    loss_ewma >= DOWN_LOSS_PCT && loss_now >= DOWN_LOSS_PCT
+}
 
 /// Pure backlog-signal contribution to the CONGESTED decision (L-1), split out so
 /// the threshold logic is unit-testable without an Abr/EncoderOut. `armed` is
@@ -344,6 +399,7 @@ impl Abr {
         // consulted — a slow decoder on a busy client is not a network problem.
         let stale_cutoff = Duration::from_secs(3);
         let mut worst_loss = 0.0f32; // smoothed loss %, max across sessions
+        let mut worst_loss_now = 0.0f32; // loss % in the LATEST report, max across sessions
         let mut worst_excess = 0.0f32; // RTT above path floor (ms), max across sessions
         let mut worst_skip = 0.0f32; // smoothed egress-skip rate, max across sessions (L-1)
         let mut worst_first_rtt: Option<f32> = None; // highest first-real-RTT (L-3 seed)
@@ -353,7 +409,13 @@ impl Abr {
                 continue;
             }
             n_active += 1;
-            worst_loss = worst_loss.max(s.loss_pct_ewma);
+            // L-5: a session inside its loss warm-up contributes NO loss (its
+            // `loss_pct_ewma` is pinned at 0 by `fold`, and its raw report is
+            // ignored here for the same reason).
+            if !s.warming_up(now) {
+                worst_loss = worst_loss.max(s.loss_pct_ewma);
+                worst_loss_now = worst_loss_now.max(s.last.loss_pct_x10 as f32 / 10.0);
+            }
             worst_excess = worst_excess.max((s.rtt_ewma - s.rtt_floor).max(0.0));
             worst_skip = worst_skip.max(s.skip_rate_ewma);
             if let Some(fr) = s.first_real_rtt {
@@ -402,7 +464,8 @@ impl Abr {
         let armed = self.cfg.abr_backlog_downshift;
         // Split by signal: loss/backlog are not self-inflicted and keep the short
         // BREACH; an RTT-only breach must hold for RTT_BREACH (see its comment).
-        let fast_congested = worst_loss >= DOWN_LOSS_PCT || skip_congested(worst_skip, armed);
+        let fast_congested =
+            loss_congested(worst_loss, worst_loss_now) || skip_congested(worst_skip, armed);
         let rtt_congested = worst_excess >= DOWN_RTT_EXCESS_MS;
         let congested = fast_congested || rtt_congested;
         // A session still skipping is not healthy-enough to upshift (L-1 veto).
@@ -484,6 +547,9 @@ impl Abr {
 /// is driven by decode_queue / freeze (NOT recv/cap) to honor the museum caveat.
 fn fold(s: &mut SessionState, server_skips: u64) {
     let r = s.last;
+    s.reports = s.reports.saturating_add(1);
+    // L-5: the reported loss is not evidence yet (see `SessionState::warming_up`).
+    let warming = s.warming_up(Instant::now());
     let rtt = if r.rtt_ms == 0xFFFF {
         250.0
     } else {
@@ -527,7 +593,10 @@ fn fold(s: &mut SessionState, server_skips: u64) {
         s.bw_ewma = bw;
         s.rtt_ewma = rtt;
         s.overall_ewma = overall_raw;
-        s.loss_pct_ewma = loss_pct;
+        // NOT seeded from the first sample: the first samples of a session are
+        // exactly the ones the join makes wrong (L-5). Starting at 0 costs a
+        // genuinely lossy path only the EWMA's own rise time.
+        s.loss_pct_ewma = 0.0;
         s.rtt_floor = rtt;
         // Seed the skip baseline so the first interval's delta is 0, not the whole
         // pre-connect cumulative count.
@@ -552,8 +621,14 @@ fn fold(s: &mut SessionState, server_skips: u64) {
         s.rtt_ewma = lw(s.rtt_ewma, rtt, m);
 
         // ---- NETWORK-decision signals ----
-        // Smoothed loss %, reacts a touch faster than the HUD score (m=8).
-        s.loss_pct_ewma = lw(s.loss_pct_ewma, loss_pct, 8.0);
+        // Smoothed loss %, reacts a touch faster than the HUD score (m=8). Held
+        // at 0 through the warm-up so nothing the join produced can be smoothed
+        // into the window that outlives it (L-5).
+        s.loss_pct_ewma = if warming {
+            0.0
+        } else {
+            lw(s.loss_pct_ewma, loss_pct, 8.0)
+        };
         // RTT floor: snap DOWN to any new minimum immediately, but decay UP only
         // very slowly (0.1%/sample). A LAN floor stays ~1 ms; a WAN client's
         // steady baseline is learned so only true queueing growth reads as excess,
@@ -574,122 +649,5 @@ fn fold(s: &mut SessionState, server_skips: u64) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The L-1 backlog trigger is fully inert unless SH_ABR_BACKLOG_DOWNSHIFT is
-    /// armed — so a bare deploy keeps the loss/rtt-only tier decision (no LAN change).
-    #[test]
-    fn skip_trigger_is_inert_when_disarmed() {
-        assert!(!skip_congested(100.0, false));
-        assert!(!skip_blocks_upshift(100.0, false));
-    }
-
-    /// Armed thresholds: congested at/above DOWN_SKIP_RATE; the up-veto trips just
-    /// above UP_SKIP_RATE (asymmetric dead-band).
-    #[test]
-    fn skip_trigger_thresholds_when_armed() {
-        assert!(!skip_congested(DOWN_SKIP_RATE - 0.1, true));
-        assert!(skip_congested(DOWN_SKIP_RATE, true));
-        assert!(!skip_blocks_upshift(UP_SKIP_RATE, true));
-        assert!(skip_blocks_upshift(UP_SKIP_RATE + 0.1, true));
-    }
-
-    /// L-3 conservative start: default (threshold 0) never moves off tier 0; a LAN
-    /// sub-ms RTT stays 0; a WAN RTT opens at tier 1 (>= threshold) or 2 (>= 2x).
-    #[test]
-    fn start_tier_from_rtt() {
-        assert_eq!(start_tier_for_rtt(500.0, 0), 0); // disabled → always 0
-        assert_eq!(start_tier_for_rtt(0.6, 120), 0); // LAN
-        assert_eq!(start_tier_for_rtt(119.0, 120), 0); // just under
-        assert_eq!(start_tier_for_rtt(120.0, 120), 1);
-        assert_eq!(start_tier_for_rtt(239.0, 120), 1);
-        assert_eq!(start_tier_for_rtt(240.0, 120), 2);
-    }
-
-    /// ASYMMETRIC RTT SMOOTHING: a keyframe-burst transient must not leave a
-    /// tail. A short spike is absorbed within a few samples of the link
-    /// recovering (m=4 falling), so it cannot hold the excess above
-    /// DOWN_RTT_EXCESS_MS long enough to satisfy RTT_BREACH.
-    #[test]
-    fn rtt_spike_decays_without_a_tail() {
-        let mut s = SessionState::new();
-        let mut r = Report {
-            rtt_ms: 3,
-            ..Report::default()
-        };
-        fold(&mut s, 0);
-        for _ in 0..40 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        let floor = s.rtt_floor;
-        // A burst: ten samples of badly-queued pings.
-        r.rtt_ms = 400;
-        for _ in 0..10 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(s.rtt_ewma - floor > DOWN_RTT_EXCESS_MS, "spike registers");
-        // The link recovers; the excess must collapse fast, not linger.
-        r.rtt_ms = 3;
-        for _ in 0..15 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(
-            s.rtt_ewma - s.rtt_floor < DOWN_RTT_EXCESS_MS,
-            "excess must not linger after recovery: ewma={} floor={}",
-            s.rtt_ewma,
-            s.rtt_floor
-        );
-    }
-
-    /// Sustained bufferbloat must STILL trip: rising is slow (m=16) but a path
-    /// that holds RTT high keeps feeding high samples, so the excess accumulates.
-    #[test]
-    fn sustained_rtt_growth_still_trips() {
-        let mut s = SessionState::new();
-        let mut r = Report {
-            rtt_ms: 20,
-            ..Report::default()
-        };
-        fold(&mut s, 0);
-        for _ in 0..60 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        r.rtt_ms = 300;
-        for _ in 0..60 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(
-            s.rtt_ewma - s.rtt_floor >= DOWN_RTT_EXCESS_MS,
-            "genuine bufferbloat must still read as congested: ewma={} floor={}",
-            s.rtt_ewma,
-            s.rtt_floor
-        );
-    }
-
-    /// The smoothed skip rate: first fold seeds the baseline (delta 0, not the whole
-    /// pre-connect count); sustained skipping lifts it above the up-veto; a quiet
-    /// spell decays it back toward zero (so it can't pin the tier low forever).
-    #[test]
-    fn fold_smooths_server_skip_delta() {
-        let mut s = SessionState::new();
-        fold(&mut s, 1000);
-        assert_eq!(s.skip_rate_ewma, 0.0);
-        assert_eq!(s.prev_server_skips, 1000);
-        for _ in 0..64 {
-            let n = s.prev_server_skips + 3;
-            fold(&mut s, n);
-        }
-        assert!(s.skip_rate_ewma > UP_SKIP_RATE, "rate={}", s.skip_rate_ewma);
-        for _ in 0..64 {
-            let n = s.prev_server_skips;
-            fold(&mut s, n);
-        }
-        assert!(s.skip_rate_ewma < UP_SKIP_RATE, "rate={}", s.skip_rate_ewma);
-    }
-}
+#[path = "abr_tests.rs"]
+mod tests;

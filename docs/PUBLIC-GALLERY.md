@@ -342,7 +342,13 @@ UDP relay.
   the daemon never saw a single session: service active, ticket accepted,
   `/signal/<id>.json` returning a valid path, and nothing in the journal.
   `check-stream-tickets.py` cannot see this — it validates the ticket, not the
-  path the packets take. `stations-registry.py` now fails validation for any
+  path the packets take. It bit one more on 2026-09-02: `reactos` was carrying a
+  `legacyPortException` on the pre-slot port 4433 in the belief that "the edge
+  carries its own rule for them". It does not — the hole is a RANGE — so every
+  public visitor got `Opening handshake failed` against a station that looked
+  perfect from labhost. It now sits on its slot port like everything else, and
+  the exception (and with it the escape hatch) is gone.
+  `stations-registry.py` now fails validation for any
   production station whose `udpPort` falls outside `ports.publicRelayLow..High` in
   `registry/registry-v1.json`, which is the source of truth these three places
   must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's
