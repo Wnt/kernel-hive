@@ -195,6 +195,9 @@ const POSTER_INDEX = {
   "sunos414": {
     "hero": "/posters/sunos414/desktop.webp"
   },
+  "suse64": {
+    "hero": "/posters/suse64/desktop.webp"
+  },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"
   },

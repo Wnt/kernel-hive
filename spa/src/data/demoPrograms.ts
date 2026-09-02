@@ -148,6 +148,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 400
   },
+  "suse64": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xcalc &"
+    ],
+    "runCommand": "xcalc &",
+    "perCharMs": 80
+  },
   "vic20": {
     "label": "Type in a demo program",
     "lines": [
