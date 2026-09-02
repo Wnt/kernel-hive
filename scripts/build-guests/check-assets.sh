@@ -99,6 +99,7 @@ ROWS=(
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries
   # Amstrad's 1999 emulator permission. zxspectrum.sh extracts 48.rom from it.
   "opt-file|zxspectrum|Sinclair ZX Spectrum 48K ROM, in Debian's spectrum-roms package (fetched by zxspectrum.sh from deb.debian.org if absent)|$ASSET_STAGING/zxspectrum/spectrum-roms_20081224-5_all.deb|sha256:8d25dd300a0c86b4459e152de3bc657dca894b167e6a6419eb195d9669bfe950|freely-fetchable-pinned"
+  "opt-file|ubuntu|Ubuntu 4.10 Warty Warthog live CD ISO (fetched by ubuntu.sh from old-releases.ubuntu.com if absent)|$ASSET_STAGING/ubuntu/warty-release-live-i386.iso|sha256:189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013|freely-fetchable-pinned"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).
