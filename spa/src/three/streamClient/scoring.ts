@@ -12,6 +12,22 @@ export function ewma(prev: number, next: number, m: number): number {
   return prev * (m - 1) / m + next / m;
 }
 
+/**
+ * May the `el` scorer run at all yet?
+ *
+ * A client that is still negotiating has no RTT sample and no frames, and the
+ * scorer's "unknown → worst" defaults then say the WORST possible thing:
+ * `rttMs` falls back to 250, `latRaw` scores 0, `overall` is the min of the
+ * three, and after the 2 s dwell the banner reads "Spotty connection" about a
+ * session that has never had a connection to be spotty. Measured 2026-09-02:
+ * reactos, whose WebTransport handshake never completed at all, showed
+ * "Spotty connection" at +6.0 s interleaved with "Reconnecting to tile…
+ * (attempt N)". Score nothing until there is something to score.
+ */
+export function scorerReady({ hasRtt, framesSeen }: { hasRtt: boolean; framesSeen: boolean }): boolean {
+  return hasRtt && framesSeen;
+}
+
 export interface RawScoreInputs {
   /** last RTT sample in ms, already defaulted (unknown → 250, the worst). */
   rttMs: number;
