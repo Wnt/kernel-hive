@@ -67,6 +67,8 @@ Disk layout (sysinst "standard with X"): wd0a=/ 277 MB, wd0b=swap 513 MB, wd0e=/
 
 A hung guest is not idle: the GENERIC kernel spinning after `lpt0` burned 91 % of a core for 55 minutes in the forgotten smoke rig (box load 57 on 16 cores, coordinator alert). Kill a loser or a stale rig the minute its verdict is in — `rig-clone.sh down --rm`, `smoke-rig.sh --down`.
 
+Two more facts from the X step: the QEMU cirrus BitBLT path leaves client text unpainted under XFree86 3.3 — `Option "no_bitblt"` (found by the slackware wave); and a kernel with fewer `ne` instances renames the NIC (`ne2` under GENERIC → `ne0` under KHMIN), so a per-interface config file written for one kernel silently does nothing under the other — the guest had no IP and every X-forward probe died in SYN_SENT.
+
 Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
