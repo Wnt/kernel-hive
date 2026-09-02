@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "id": "slackware",
+  "era_year": 1997,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 72,
+        "prelude": "",
+        "value": {
+          "key": "slackware",
+          "script": "tiles/slackware.sh",
+          "outputDir": "Slackware",
+          "class": "fast",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "slackware.qcow2 (Slackware 3.4 root composed host-side from the mirror .tgz set, rev-0 ext2, no golden) + grub-boot.iso (GRUB2 linux16 -> kernels/bare.i zImage) -> /data/gallery-guests/Slackware/",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "slackware",
+      "value": {
+        "os": "Slackware 3.4 (fvwm95)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            300,
+            200
+          ],
+          "b": [
+            700,
+            500
+          ]
+        },
+        "kbd": "term:xterm",
+        "kbd_reset": "Escape",
+        "kbd_note": "keyboard proof: type in the xterm (bash# prompt echoes). Start menu bottom-left; FvwmButtons dock bottom-right (xclock/xload/xterm/xfm/xcalc/xv).",
+        "audio_trigger": "beep",
+        "validated": false,
+        "note": "1024x768x16 fvwm95 desktop on XFree86 3.3.1 XF86_SVGA/cirrus; RELATIVE pointer: Microsoft serial mouse on ttyS0 (QEMU msmouse), measured 2 px per unit (cursor_scale 0.5, SH_REL_MAX_STEP 32 = one 7-bit Microsoft packet); kernel 2.0.30 bare.i via GRUB2 linux16 ISO (1997 LILO wedges at LI on SeaBIOS)"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/tinycore",
+      "qmp": "/data/vms/streamhost/stations/slackware/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54184,
+      "notes": "No exec channel: bare.i has no NIC driver. Framebuffer + qmp-type into the xterm is the proof path."
+    }
+  },
+  "render": {
+    "signalOrder": 74,
+    "stationsManifestOrder": 72,
+    "stationsManifestPrelude": "\n# slackware (slot 184) — Slackware 3.4 (Linux 2.0.30, XFree86 3.3.1, fvwm95) on\n#   pve-qemu i440fx/KVM, -vga cirrus 1024x768x16, RELATIVE serial-mouse pointer\n#   (msmouse chardev -> ttyS0, dbus-rel), GRUB2 linux16 ISO boots the zImage.\n#   Checkpoint 'golden' in disk.qcow2; -loadvm golden -S.\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 81,
+    "bindingPrelude": "",
+    "goldenOrder": 72,
+    "actionMapOrder": 44
+  },
+  "stationDir": "slackware",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54184,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "msmouse",
+      "scale": 0.5,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 184
+  },
+  "guestDoc": "docs/guests/slackware.md",
+  "credentialsRef": "guest/slackware",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "slackware",
+      "SH_QMP": "/data/vms/streamhost/stations/slackware/qmp.sock",
+      "SH_PORT": "54184",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/slackware/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/slackware/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 184,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "slackware",
+        "--vmid",
+        "184",
+        "--udp",
+        "54184",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "0.5",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/slackware/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/slackware/station.env.fixture"
+      ],
+      "deviceSetId": "slackware-i440fx-cirrus-1024x768x16",
+      "launcher": "streamhost/stations/slackware/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/slackware/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 32,
+      "smp": 1,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-slackware",
+        "-enable-kvm -m 32 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot d",
+        "-vga cirrus",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-chardev msmouse,id=ms0 -serial chardev:ms0",
+        "-drive file=$BASE/disk.qcow2,format=qcow2,if=ide",
+        "-drive file=$BASE/grub-boot.iso,format=raw,if=ide,index=2,media=cdrom,readonly=on",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 32,
+        "smp": 1,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-slackware",
+          "-enable-kvm -m 768 -smp 2",
+          "-machine pc -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$STATE\",if=virtio,format=qcow2 -cdrom /data/isos/TinyCore.iso -boot d",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-chardev msmouse,id=ms0 -serial chardev:ms0",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 81
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#008080",
+    "eraLabel": "1997 · Slackware 3.4 — fvwm95",
+    "pointerRel": true
+  },
+  "demoProgram": {
+    "label": "Ask the kernel who it is",
+    "lines": [
+      "uname -a",
+      "cat /proc/version"
+    ],
+    "runCommand": "uname -a",
+    "perCharMs": 80
+  },
+  "museum": {
+    "id": "slackware",
+    "displayName": "Slackware 3.4",
+    "year": 1997,
+    "lineage": "SLS → Slackware (1993) — Linux 2.0.30",
+    "arch": "i386",
+    "ramMB": 32,
+    "era": "1990s",
+    "accent": "#008080",
+    "eraSoftware": [
+      "XFree86 3.3.1",
+      "fvwm95",
+      "xterm / bash 2.0",
+      "xv, xfm, xpaint",
+      "Midnight Commander",
+      "BSD games"
+    ],
+    "periodBrowser": "none installed (Arena / Lynx were the era's)",
+    "iconicApps": [
+      "xterm",
+      "xv",
+      "xfm",
+      "xpaint",
+      "xcalc",
+      "Midnight Commander"
+    ],
+    "blurb": "Slackware 3.4 from October 1997: Linux 2.0.30, XFree86 3.3.1 and the fvwm95 desktop that made a Unix workstation look like Windows 95 — from the oldest distribution still run by its original maintainer.",
+    "notes": "Root filesystem composed host-side from the mirror's a/ap/x/xap/y .tgz series (no interactive setup); GRUB2 linux16 boots the stock bare.i zImage because the 1997 LILO boot floppy wedges at 'LI' under SeaBIOS."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "slackware",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Slackware 3.4 fvwm95 desktop at 1024x768x16, root logged in: xterm 'darkstar' with a bash# prompt top-left, xclock top-right, FvwmButtons dock bottom-right, Start/taskbar bottom. X autostarts from rc.local, so a cold boot lands here too. loadvm restores it (golden vmstate in disk.qcow2)."
+  },
+  "migrationExceptions": [
+    "legacy-machine-alias"
+  ],
+  "notes": [
+    "Speed-record wave 2026-09-03 (docs/lab/SLACKWARE-WAVE.md). Root fs composed host-side; 1997 LILO wedges at LI on SeaBIOS -> GRUB2 linux16; cirrus BitBLT breaks xterm text on XFree86 3.3.1 -> Option no_bitblt."
+  ]
+}

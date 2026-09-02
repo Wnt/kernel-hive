@@ -455,6 +455,24 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
+  // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
+  slackware: {
+    caseTint: '#c9c2ae', accentTint: '#008080', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'SVGA 1024x768 • 1997', kit: 'office90',
+  },
+  // ubuntu: a 2004 beige/black OEM minitower with a CRT — the class of PC the
+  // live CD was made for. Registry accent: Ubuntu orange.
+  ubuntu: {
+    caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
+    badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
+  // pcbsd: a 2008 beige-going-grey office PC running FreeBSD 6.3 + KDE 3.5 at
+  // 1024x768 on the vesa driver. Registry red accent (the PC-BSD/BSD daemon red).
+  pcbsd: {
+    caseTint: '#b9b7ae', accentTint: '#c8102e', tintMix: 0.4,
+    badge: 'OFFICE PC', spec: 'x86 • 2008', kit: 'modern',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

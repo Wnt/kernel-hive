@@ -51,8 +51,8 @@ same; `-accel tcg` runs the identical install ~20x faster. Race (3-QEMU cap):
 |---|---|---|
 | keep the KVM install running | baseline | LOSS — 70 KiB/s, hours |
 | `ide0=dma` boot parameter | cancelled | redhat62 measured DMA flags as no-ops under KVM |
-| rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | TODO(coordinator) |
-| `lsi53c895a` SCSI disk under KVM (DMA by design, `ncr53c8xx` module) | sonnet | TODO(coordinator) |
+| rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | TODO(coordinator): measured rate |
+| `lsi53c895a` SCSI disk under KVM (DMA by design, `ncr53c8xx` module) | sonnet | UNMEASURED, killed at 12 min: under the same load the installer's own 47 MB ramdisk load from the ATAPI CD (PIO too) had not finished, so the theory never reached mke2fs; the 3-QEMU cap went to the TCG rig |
 
 Decision: the station runs under TCG (sunos414 precedent); golden + binary + device
 set are one combination, so the golden is baked under TCG too.
