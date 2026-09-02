@@ -76,7 +76,7 @@ describe('the query has to survive being typed five different ways', () => {
   });
 
   it('dos finds the DOS machines, including the one that spells it FreeDOS', () => {
-    expect(hits('dos')).toEqual(['freedos', 'win311', 'msdoswin1']);
+    expect(hits('dos')).toEqual(['freedos', 'win311', 'msdoswin1', 'pcgeos']);
   });
 });
 
