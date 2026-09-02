@@ -66,7 +66,7 @@
     "stationsManifestOrder": 73,
     "stationsManifestPrelude": "\n# freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.3.0\n#   (cirrus driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one IDE disk\n#   carrying the golden vmstate, ne2k_pci SLIRP with the loopback X forward 6078->6000 for the\n#   x11warp absolute pointer (display :78); keys + buttons ride the PS/2 path.\n",
     "bringUpGroup": 1,
-    "bindingOrder": 80,
+    "bindingOrder": 82,
     "bindingPrelude": "",
     "goldenOrder": 73,
     "actionMapOrder": 45
@@ -176,7 +176,7 @@
         "note": "Same installed build as beos (/opt/qemu-beos); see beos.json for provenance."
       }
     },
-    "bringUpOrder": 80
+    "bringUpOrder": 82
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",

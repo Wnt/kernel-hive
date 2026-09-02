@@ -123,7 +123,7 @@ ssh lab 'mkdir -p /data/assets-staging/<id> && cd /data/assets-staging/<id> && s
 # smoke boot in YOUR sandbox with the sibling's device set (vom-reference.md names the emulator/machine;
 # os-media-catalog.md may already hold the recipe — pcgeos's was there). Launch exactly as the sibling's
 # launcher does (dbus display, -qmp unix:<sandbox>/smoke/qmp.sock, namespaced -name), then:
-python3 /data/vms/streamhost/serve/qmp-type.py --sock smoke/qmp.sock 'dir\n' && qmp screendump smoke/frame.png
+python3 scripts/dev/qmp-type.py --qmp smoke/qmp.sock 'dir\n' && qmp screendump smoke/frame.png
 # PUBLISH THE SMOKE RIG NOW — this is the 5-minute target: operator watches /os/<id>
 scripts/dev/smoke-rig.sh <id> --like <sibling>            # claims slot/port/vmid, stream.env, daemon, dark-launch
 python3 scripts/stations-registry.py new <id> --like <sibling> --production --slot auto   # validates on the spot
