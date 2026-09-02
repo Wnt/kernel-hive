@@ -189,7 +189,7 @@
     "id": "freebsd411",
     "displayName": "FreeBSD 4.11",
     "year": 2005,
-    "lineage": "386BSD → FreeBSD 1.0 (1993) → 2.x → 3.x → 4.0 (2000) → 4.11 (2005, the last of the 4.x line) → 5/6 → FreeBSD 15",
+    "lineage": "386BSD → FreeBSD 1.0 (1993) → 2.x → 3.x → 4.0 → 4.11 (2005, the last of the 4.x line) → 5/6 → FreeBSD 15",
     "arch": "i386, XFree86 4.3.0 (cirrus driver), KDE 3.3.2",
     "ramMB": 256,
     "era": "2000s",
