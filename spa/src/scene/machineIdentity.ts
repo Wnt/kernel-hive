@@ -451,6 +451,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // ubuntu: a 2004 beige/black OEM minitower with a CRT — the class of PC the
+  // live CD was made for. Registry accent: Ubuntu orange.
+  ubuntu: {
+    caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
+    badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
