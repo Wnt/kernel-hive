@@ -101,6 +101,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "openbsd": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xlogo &"
+    ],
+    "runCommand": "xlogo &",
+    "perCharMs": 80
+  },
   "oricatmos": {
     "label": "Type in a demo program",
     "lines": [

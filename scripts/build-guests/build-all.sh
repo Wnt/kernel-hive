@@ -148,6 +148,7 @@ MANIFEST=(
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m     |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
+  "openbsd        |tiles/openbsd.sh                                      |OPENBSD           |slow      |~6m     |full     |openbsd.qcow2 (OpenBSD 7.9 amd64 unattended autoinstall from a loopback HTTP set server + site79.tgz: fvwm desktop, ttyC0 autologin)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

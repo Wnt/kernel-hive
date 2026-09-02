@@ -132,6 +132,9 @@ const POSTER_INDEX = {
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
   },
+  "openbsd": {
+    "hero": "/posters/openbsd/desktop.webp"
+  },
   "openvms": {
     "hero": "/posters/openvms/desktop.webp"
   },
