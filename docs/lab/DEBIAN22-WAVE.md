@@ -27,6 +27,36 @@ memory) — this wave joins their landing queue; **no main push without "go"**.
   `run-daemon.sh` restarts the hand-run daemon after every guest relaunch).
   The rig's `disk.qcow2` is an EMPTY 2 GiB qcow2 — nothing installed yet.
 
+## Measured by `debian22-golden` (Fable, 2026-09-02 23:12–23:42, 30-minute budget)
+
+- **cfdisk refuses the empty qcow2** ("FATAL ERROR: Bad signature on partition
+  table"): the "Partition a Hard Disk" menu item is a dead end on a blank disk.
+  Partition from the tty2 shell (`alt-f2`, Enter) with `fdisk /dev/hda` instead;
+  dbootstrap then sees the table. Layout used: **hda1 = cylinders 1–483
+  (1947 MB, type 83, bootable), hda2 = 484–520 (149 MB, type 82)**; the
+  kernel sees the 2 GiB disk as **CHS 520/128/63**.
+- Swap init and mke2fs (ext2, 4 KiB blocks, "no 2.0 compat") go through
+  dbootstrap as planned.
+- **WALL: guest disk writes run at ~50–80 KB/s.** `mke2fs` on hda1 took
+  ~5.5 min for the 15 inode tables and was still "Writing superblocks" 6 min
+  later; the qcow2 grows ~2 MB/min. No `lost interrupt` on tty4. The host is
+  not the cause (`dd oflag=dsync` 6.7 MB/s on the same ZFS dataset). Raced
+  theories (`rig-clone.sh new debian22 <theory>`, each driven to a raw
+  `mke2fs /dev/hda1` from tty2): `nodma` (`ide0=nodma`) and `p2cpu`
+  (`-cpu pentium2`) were NOT faster (same ~2 MB/min growth); `nodisp`
+  (`-display none`, no 4 ms dbus refresh) and `tcg` (no KVM, `-cpu pentium3`,
+  cf. beos which is TCG-only) were still running at the budget cut — see
+  `/data/vms/sandbox/debian22-golden/progress.md` and
+  `/data/vms/sandbox/debian22-golden/shots/race-*/m*/cur.png`. At this rate
+  kernel+base+X+GNOME (~300 MB) is hours, not minutes: **the interactive
+  install cannot meet the 10-minute bar on this device set** — the
+  `debian22-compose` route (populate the ext2 on the host, boot only to bake)
+  is the one that fits the budget.
+- Nothing installed, no golden baked, no station-dir staging. The rig
+  (`/data/vms/sandbox/debian22/smoke/`, now with a `launch-smoke.sh` in the
+  rig-clone convention) is left running mid-dbootstrap so the operator can
+  see it at `/os/debian22`.
+
 ## Allocation ledger (claimed on labhost by session `debian22`)
 
 | Thing | Value |
