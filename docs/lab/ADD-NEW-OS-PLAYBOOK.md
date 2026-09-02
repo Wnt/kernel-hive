@@ -689,6 +689,7 @@ the registry whenever something needs them:
 | `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `stationDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
 | `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
 | `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
+| `fleet-table.json` | The `/fleet` view's runtime source: per-station emulator, machine, capture, pointer, pacing, golden and exec detail. Fetched by `spa/src/data/fleetTable.ts`; nothing is bundled. |
 | `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
 | `index.json` | The aggregate of every entry — `runtime.stationEnv` merged with the station's `station.env.fixture` — excluding generator-only `render` data. |
 
@@ -933,18 +934,28 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 5. emit/deploy the new station directory;
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<stationDir>`;
-7. publish the **three** runtime documents with
-   `scripts/serve-https-spa.sh manifests` (or atomically copy generated
-   `emit tiles.json` to the live `SIGNAL_CONFIG` path, `emit
-   gallery-manifest.json` to the live webroot, and `emit golden-manifest.json`
-   beside the HTTPS server).
-   **Do not skip the third.** Its keys are the allow-list for
-   `POST /restore/<osId>` (`_restore_osids()` in
-   `scripts/serve/osgallery-https-server.py`), so a station missing from the
-   live copy streams perfectly while its "reset to golden" button returns
-   `404 unknown osId` — a failure that looks like a broken station and is not.
-   This doc said "the two runtime documents" until 2026-08-09 and that is
-   exactly how the Commodore wave shipped with dead reset buttons;
+7. publish the **five** runtime documents with
+   `scripts/serve-https-spa.sh manifests`. That one command writes
+   `tiles.json` to the live `SIGNAL_CONFIG` path and `gallery-manifest.json`,
+   `poster-docs.json` and `fleet-table.json` into the webroot, plus
+   `golden-manifest.json` beside the HTTPS server — **use it rather than
+   hand-copying**, precisely because the count keeps growing.
+   Two of the five fail in ways that do not look like a missing document:
+   - `golden-manifest.json` keys are the allow-list for `POST /restore/<osId>`
+     (`_restore_osids()` in `scripts/serve/osgallery-https-server.py`), so a
+     station missing from the live copy streams perfectly while its "reset to
+     golden" button returns `404 unknown osId`;
+   - `fleet-table.json` is what `/fleet` fetches at runtime
+     (`spa/src/data/fleetTable.ts`); nothing about it is bundled, so a station
+     missing from the live copy is simply absent from the fleet table while the
+     main grid shows it correctly.
+   **This line is load-bearing and has been wrong twice.** It said "the two
+   runtime documents" until 2026-08-09, which is exactly how the Commodore wave
+   shipped with dead reset buttons; it then said "three" until 2026-09-02, by
+   which time `poster-docs.json` and `fleet-table.json` had joined the set — a
+   ravynos deploy that hand-copied the three named here published a station that
+   was invisible in `/fleet`. If you add a runtime document, fix this step, the
+   rendered-artifact table in §6, and the `msg` line in `serve-https-spa.sh`;
 8. run `labctl gen` so the generated declarations are checked against the live
    runtime and observed state is added;
 9. do not rebuild the UI for a station that uses an existing archetype; a new
