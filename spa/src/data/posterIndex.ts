@@ -165,6 +165,9 @@ const POSTER_INDEX = {
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
   },
+  "redhat62": {
+    "hero": "/posters/redhat62/desktop.webp"
+  },
   "redstar2": {
     "hero": "/posters/redstar2/desktop.webp"
   },

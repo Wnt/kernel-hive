@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "redhat62",
+  "era_year": 2000,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 72,
+        "prelude": "",
+        "value": {
+          "key": "redhat62",
+          "script": "tiles/redhat62.sh",
+          "outputDir": "RedHat62",
+          "class": "heavy",
+          "estimated": "~15m",
+          "automation": "kickstart",
+          "produces": "redhat62.qcow2 (kickstart install from zoot-i386.iso + golden)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "redhat62",
+      "value": {
+        "os": "Red Hat Linux 6.2",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            100,
+            100
+          ],
+          "b": [
+            900,
+            700
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "inittab respawns startx as the gallery user; GNOME 1.0 + Enlightenment at 1024x768x16",
+        "audio_trigger": "none",
+        "validated": false,
+        "note": "1024x768x16 cirrus (XF86_SVGA 3.3.6); pointer is x11warp over the loopback SLIRP forward 127.0.0.1:6081 -> guest :6000; buttons/keys PS/2 via QEMU"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/redhat62",
+      "qmp": "/data/vms/streamhost/stations/redhat62/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54181,
+      "notes": "kickstart-installed Red Hat Linux 6.2; SLIRP ne2k_pci with a loopback-only X forward (x11warp pointer); reset is loadvm golden"
+    }
+  },
+  "render": {
+    "signalOrder": 74,
+    "stationsManifestOrder": 72,
+    "stationsManifestPrelude": "\n# redhat62 (VMID 181) — Red Hat Linux 6.2 'Zoot' (2000), GNOME 1.0 + Enlightenment; x11warp pointer.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 79,
+    "bindingPrelude": "",
+    "goldenOrder": 72,
+    "actionMapOrder": 44
+  },
+  "stationDir": "redhat62",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54181,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11warp",
+      "method": "x11-warp-absolute",
+      "absolute": true,
+      "present": true,
+      "device": "guest XFree86 3.3.6 server (motion) + PS/2 (buttons)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 181
+  },
+  "guestDoc": "docs/guests/redhat62.md",
+  "credentialsRef": "guest/redhat62",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "redhat62",
+      "SH_QMP": "/data/vms/streamhost/stations/redhat62/qmp.sock",
+      "SH_PORT": "54181",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/redhat62/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/redhat62/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 181,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "redhat62",
+        "--vmid",
+        "181",
+        "--udp",
+        "54181",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11warp",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/redhat62/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/redhat62/station.env.fixture"
+      ],
+      "deviceSetId": "redhat62-kickstart-cirrus-slirp",
+      "launcher": "streamhost/stations/redhat62/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/redhat62/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 256,
+      "smp": 1,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-redhat62 -nodefaults",
+        "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+        "-m 256 -smp 1 -rtc base=localtime",
+        "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
+        "-vga cirrus",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-display dbus,p2p=on",
+        "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+        "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+        "-pidfile \"$T/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 256,
+        "smp": 1,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-redhat62 -nodefaults",
+          "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+          "-m 256 -smp 1 -rtc base=localtime",
+          "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
+          "-vga cirrus",
+          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+          "-display dbus,p2p=on",
+          "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+          "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+          "-pidfile \"$T/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the production device ledger; the kickstart install and the golden were baked on this exact set (cirrus, IDE hda, ne2k_pci on SLIRP). The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate."
+      }
+    },
+    "bringUpOrder": 79
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#cc0000",
+    "eraLabel": "2000 · Red Hat Linux 6.2 — GNOME",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "redhat62",
+    "displayName": "Red Hat Linux 6.2",
+    "year": 2000,
+    "lineage": "Linux (Red Hat)",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "2000s",
+    "accent": "#cc0000",
+    "eraSoftware": [
+      "GNOME 1.0.55",
+      "Enlightenment 0.16",
+      "XFree86 3.3.6",
+      "Netscape Communicator 4.72",
+      "KDE 1.1.2"
+    ],
+    "periodBrowser": "Netscape Communicator 4.72",
+    "iconicApps": [
+      "GNOME panel + gmc",
+      "gnome-terminal",
+      "Netscape Communicator",
+      "GIMP"
+    ],
+    "blurb": "Red Hat Linux 6.2 'Zoot' from April 2000: kernel 2.2 with the GNOME 1.0 desktop under Enlightenment, the last Red Hat before the dot-com peak turned Linux into a boxed product."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "redhat62",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Red Hat Linux 6.2 GNOME 1.0 desktop under Enlightenment, logged in as the unprivileged gallery user via an inittab startx respawn, 1024x768x16 on cirrus; /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest's own X server. loadvm golden restores the desktop; guest starts frozen (-S) until the first visitor."
+  },
+  "notes": [
+    "scaffolded from redstar2 on 2026-09-02; TODO: media, museum, spa"
+  ]
+}
