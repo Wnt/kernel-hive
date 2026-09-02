@@ -156,6 +156,7 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 | **OpenVMS x86 9.2-3** | officially-free (VSI Community) | DEC/VMS lineage; **text** Guest Console works-known (CDE needs bridge) | 5 |
 | **Windows NT 4.0 SP6a** | preservation | classic Explorer shell on the NT kernel; prebuilt VM = near-trivial | 4 |
 | **BeOS R5 PE** | preservation (PE was freeware) | "the original behind Haiku" | 5 |
+| **Debian GNU/Linux 2.2 "potato"** | officially-free (DFSG) | GNOME 1.0 desktop, kernel 2.2.19; a full Linux distro tile, air-gapped like `redstar2` | 4 |
 | **MeeGo 1.2 Netbook** | preservation (LF/Intel/Nokia) | Sailfish's ancestor; one 864 MB x86 image boots to the Netbook UX | 5 |
 
 ### Wave 1b — Native, works-known, a bit more choreography (medium effort)
