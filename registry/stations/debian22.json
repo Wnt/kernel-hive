@@ -46,7 +46,7 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/stations/redstar2",
+      "dir": "/data/vms/streamhost/stations/debian22",
       "qmp": "/data/vms/streamhost/stations/debian22/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
@@ -64,9 +64,9 @@
   "render": {
     "signalOrder": 74,
     "stationsManifestOrder": 72,
-    "stationsManifestPrelude": "\n# debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
+    "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 79,
+    "bindingOrder": 82,
     "bindingPrelude": "",
     "goldenOrder": 72,
     "actionMapOrder": 44
@@ -176,13 +176,13 @@
         "reason": "tracked verbatim launcher is the production device ledger; zero guest network devices, no USB"
       }
     },
-    "bringUpOrder": 79
+    "bringUpOrder": 82
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#d70a53",
-    "eraLabel": "2000 · Debian GNU/Linux 2.2",
+    "eraLabel": "2000 \u00b7 Debian GNU/Linux 2.2",
     "pointerRel": true
   },
   "museum": {
@@ -209,8 +209,8 @@
       "Emacs 20",
       "Lynx 2.8.3"
     ],
-    "blurb": "Debian 2.2 \"potato\" (14 August 2000): Linux 2.2, XFree86 3.3.6 and the first packaged GNOME desktop, with apt 0.3 over roughly 3,900 packages on six architectures — the last release installed from boot-floppies.",
-    "notes": "Air-gapped streamhost station: no NIC, no exec channel. PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol) — visitors drag rather than point. Golden restores onto a logged-in GNOME 1.0 desktop with gnome-terminal focused."
+    "blurb": "Debian 2.2 \"potato\" (14 August 2000): Linux 2.2, XFree86 3.3.6 and the first packaged GNOME desktop, with apt 0.3 over roughly 3,900 packages on six architectures \u2014 the last release installed from boot-floppies.",
+    "notes": "Air-gapped streamhost station: no NIC, no exec channel. PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol) \u2014 visitors drag rather than point. Golden restores onto a logged-in GNOME 1.0 desktop with gnome-terminal focused."
   },
   "emulator": {
     "family": "QEMU",
