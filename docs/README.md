@@ -106,6 +106,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
 | [guests/solaris.md](guests/solaris.md) | Solaris 10 x86 with real CDE; in-guest warpd agent documented in `streamhost/guest-agents/solaris/README.md`. |
+| [guests/suse64.md](guests/suse64.md) | SuSE Linux 6.4 — YaST2 CD1 install, KDE 1.1.2 on kernel 2.2, absolute x11warp pointer. |
 | [guests/templeos.md](guests/templeos.md) | TempleOS station. |
 | [guests/win11.md](guests/win11.md) | Windows 11 unattended install + the RDP-bridge exhibit (VM 900 since deleted — showcase-only). |
 | [guests/win9x.md](guests/win9x.md) | Windows 95/98 (+ the Win 3.11 material) — KVM recipe & root-cause, perf tuning, as-built image manifests. |

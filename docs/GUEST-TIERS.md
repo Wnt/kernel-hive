@@ -103,7 +103,7 @@ the schema but used by no station**.
 - **Tier 1 (40)** — `aix432 alpine android aros aux beos bootos chokanji freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
   os2warp postmarketos qnx ravynos reactos redstar2 redstar3 rhapsody
-  sailfishos serenityos solaris sunos414 templeos tinycore toaruos win11
+  sailfishos serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   indyr4400 pdp11 star`
