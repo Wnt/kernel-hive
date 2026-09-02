@@ -105,19 +105,20 @@ launcher device set, first boot without `-loadvm`/`-S`):
 
 ## Pointer status
 
-**Not 1:1 at 640x480 — open follow-up.** A QMP `input-send-event` abs move to
-screen-fraction ~0.5 landed with the cursor not visible on the desktop (a
-date tooltip appeared over the top-right panel clock instead — the cursor
-had overshot far right/up of centre). A subsequent move to (0,0) landed at
-screen pixel ~(130,390), not the top-left corner. This matches the ledger's
-own prediction: `mousedev.xres`/`yres` default to 1024x768 while X runs at
-640x480, so the tablet's absolute range does not map 1:1 to this screen. The
-two probes also read as position-dependent rather than a clean affine
-mismatch — not investigated further, out of budget for the golden stream.
-Two ways forward: get X to 1024x768 (the scale mismatch disappears per the
-ledger's own note; a `/etc/X11/XF86Config-4` `Modes` edit was not reached
-inside this wave's time budget), or recalibrate `mousedev.xres`/`yres` for
-640x480 explicitly.
+**Fixed on the daemon side, framebuffer proof pending the first station-up.**
+On the golden clone, a raw QMP `input-send-event` abs move to the screen centre
+overshot off the desktop and a move to (0,0) landed at ~(130,390): Linux 2.6.8's
+`mousedev` maps the tablet's 0..32767 range onto its default 1024x768 and emits
+the *difference* as PS/2-style deltas, while X runs at 640x480, so every raw
+move travels 1.6x too far. The station therefore declares
+`SH_CURSOR_SCALE=0.625` (= 640/1024, `stream.pointer.scale` in the registry):
+the daemon multiplies the client pixel by it before `SetAbsPosition`
+(`streamhost/src/input.rs` `set_abs`), which cancels the rescale exactly — the
+same mechanism tinycore ships as 0.783. X acceleration is off inside the golden
+(`xset m 1 1`), which is required for the delta sum to stay 1:1. A corner
+MOVEA that pins the cursor at (0,0) re-syncs X and mousedev after a restore.
+Alternative that removes the need for the scale: X at 1024x768 (edit the
+`Modes` line in `/etc/X11/XF86Config-4`, restart X, re-bake).
 
 ## Rollback
 
@@ -139,7 +140,7 @@ recapture must keep them matched. The pre-golden empty carrier is kept at
   from a terminal (Alt+F2 → `gnome-terminal`) and restart X
   (Ctrl-Alt-Backspace), which per the ledger should also resolve the pointer
   scale mismatch.
-- **Pointer not 1:1** at the shipped 640x480 resolution — see *Pointer
-  status* above.
+- **Pointer scale is a daemon-side correction** (`SH_CURSOR_SCALE=0.625`), not
+  a guest fix — see *Pointer status* above.
 - **No network, no audio** by design — AC97 together with ACPI hangs the live
   boot; not revisited since dropping both is sufficient to ship.
