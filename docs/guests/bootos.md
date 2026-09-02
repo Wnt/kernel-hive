@@ -1,16 +1,12 @@
 # bootos guest — bootOS, an operating system in one 512-byte boot sector
 
-Status: **integration wave in flight** (Tier 1, host-native, KVM). The media is
-sourced, hashed and staged; the device set is settled and the launcher is the
-tracked verbatim one; a cold boot under it reaches the `$` prompt in 720×400 VGA
-text mode and `dir` typed over QMP lists all 19 directory entries — the two facts
-the coordinator proved first-hand on 2026-09-02. **Not yet claimed here:** the
-baked golden, the PC-speaker audio proof, the measured key pacing and the SPA
-poster, which the `bootos-golden` and `bootos-spa` streams own
-([`lab/BOOTOS-WAVE.md`](../lab/BOOTOS-WAVE.md)). Every line below marked
-`TODO(bootos-golden)` or `TODO(bootos-spa)` is a number or a verdict that stream
-fills in; everything else is first-hand from the upstream source at the pinned
-commit or from the coordinator's smoke run.
+Status: **LIVE** (Tier 1, host-native, KVM), integrated 2026-09-02 in one parallel
+wave ([`lab/BOOTOS-WAVE.md`](../lab/BOOTOS-WAVE.md)). The media is sourced,
+hashed and staged; the launcher is the tracked verbatim one; the golden is baked
+and restore-proven on a clone, the PC speaker is heard through the production
+audiodev, the key pacing is bisected, and the type-in demo runs end to end on
+the framebuffer. Everything below is first-hand from the upstream source at the
+pinned commit or from framebuffer proofs taken during the wave.
 
 The exhibit is the smallest operating system in the museum by four orders of
 magnitude, and it is complete: a command shell, a 32-file filesystem on the
@@ -59,16 +55,19 @@ a BASIC, a Flappy Bird, each exactly one sector too.
 
 `osall.img` is what the station boots; `os.img` is kept so the boot sector
 inside it can be verified against the assembled source (the first 512 bytes of
-`osall.img` should be `os.img` — TODO(bootos-build) state whether the builder
-checks that, and whether the `patch/` images are applied on top of `osall.img`).
+`osall.img` should be `os.img` — the builder checks each file's size and the
+`0x55AA` signature, and pins all eleven upstream files by SHA-256; it does not
+compare the two sectors, and it stages the `patch/` images without applying
+them — `osall.img` already carries `mine`, `snake` and `sokoban`.
 
 The 19 directory entries that `dir` lists, as proven by the coordinator's smoke
 run, are `fbird pillman invaders basic textmode counter data.bin bootslide
 atomchess tetranglix snake mine rogue bricks cubicdoom sokoban heart pi bootle`.
 Upstream attributes them as follows; `textmode`, `counter` and `data.bin` are
 on the floppy but not in upstream's README list, and `data.bin` is a data
-sector rather than a program (TODO(bootos-golden): confirm which program reads
-it, and what `textmode` and `counter` do on screen).
+sector rather than a program: `counter` reads and rewrites it (`del data.bin`
+then `counter` prints `?01` and recreates the file, framebuffer-proven on the
+SPA stream's clone), and `textmode` is a text-mode demo.
 
 | entry | program | author | note |
 |---|---|---|---|
@@ -174,10 +173,12 @@ anyone files a bug: **bootOS itself is silent** — the shell makes no sound —
 so audio is only audible while a game is running and only for the games that
 beep.
 
-TODO(bootos-golden): state here whether the PC speaker was heard through the
-production dbus audiodev on the clone (the `actionMap` trigger is `tone`). If
-it was not, this section, `stream.audio`, `SH_AUDIO` and the `pcspk-audiodev`
-machine option all flip together — the last one is a device-set change and
+**Proven 2026-09-02 on the clone with the production dbus audiodev:** a 36-byte
+8253 program typed in through `enter` produced a 999 Hz, 0.996 s tone (peak
+24831) in the captured stream (`/data/vms/sandbox/bootos-golden/audio/beep.wav`).
+`invaders` fired shots with no speaker output, so some games are simply silent.
+If audio ever has to go, this section, `stream.audio`, `SH_AUDIO` and the
+`pcspk-audiodev` machine option all flip together — the last one is a device-set change and
 therefore precedes the bake, not follows it.
 
 ## Ready scene
@@ -186,8 +187,8 @@ The `$` prompt straight after an untouched cold boot: SeaBIOS's
 `Booting from Floppy...` line, the `bootOS` banner (the `ver` string, printed
 once at start-up), then `$` with the caret, white on black in 720×400 text
 mode. **Nothing is typed into the golden.** This is the `reset.fixture` and it
-is what the poster shows (`spa/public/posters/bootos/desktop.webp`,
-TODO(bootos-spa)).
+is the first panel of the poster hero (`spa/public/posters/bootos/desktop.webp`:
+`dir`, invaders, pillman, atomchess — all real frames from a clone).
 
 Reject any capture with a command already echoed after `$`, a game's screen, a
 `format`-wiped directory (`dir` prints nothing), or SeaBIOS still on its own
@@ -223,14 +224,18 @@ shows the tag; without the tag it cold-boots.
   above → compare; then prove the floppy came back too by typing `dir` after
   the restore and seeing all 19 entries. A live recapture is
   `ssh lab 'checkpoint-guard recapture bootos'` and nothing hand-rolled.
-- TODO(bootos-golden): golden proven on `<date>`; `qemu-img snapshot -l`
-  reports `golden` at `<size>` on `floppy.qcow2`; sha256 of the floppy with the
-  golden in it `<hash>`.
+- Golden proven 2026-09-02: `qemu-img snapshot -l` reports `golden` at
+  1.29 MiB on `floppy.qcow2`; three in-process restores and one fresh-process
+  `-loadvm golden -S` launch were byte-identical to the cold-boot frame (the
+  only pixels that ever differ between two samples of the prompt are the 9×2
+  caret's blink phase, which is display state, not vmstate); `del pi` + `dir`
+  then `loadvm` then `dir` listed `pi` again. Staged floppy with the golden:
+  sha256 `62d29dd6551d8ea119bc003fc4a0189329901cdc57115237e2757b353011edf0`.
 - Cold boot is **zero-input**: the BIOS boots the floppy with no menu and
   bootOS asks nothing. Boot is a couple of seconds, so a boot video is not
   worth a clip; `spa.bootVideo` is unset. Cold-boot arm and audit:
-  `scripts/coldboot/bootrec-tiles.conf` (`bootos` case, TODO(bootos-golden) —
-  `scripts/coldboot/bootos-bootrec-arm.sh` is the draft) and
+  `scripts/coldboot/bootrec-tiles.conf` (`bootos` case: vmstate, 720×400 at
+  30 fps, audio on, `BR_DISKS="floppy.qcow2"`) and
   `scripts/coldboot/bootos-zero-input-prep.md`.
 
 A **warm reboot** (Ctrl+Alt+Del, below) is *not* a reset: it re-runs the BIOS
@@ -242,28 +247,29 @@ Only `loadvm golden` — the tile's Reset — puts the floppy back.
 - Path: QMP `send-key`/`input-send-event` into the i440FX PS/2 keyboard
   controller; bootOS reads it with `int 16h` AH=0 (`input_key`), one key at a
   time, and echoes through `int 10h` teletype. No pointer plane at all.
-- Pacing: `SH_KEY_MIN_HOLD_MS=40` / `SH_KEY_MIN_GAP_MS=40` in
+- Pacing: `SH_KEY_MIN_HOLD_MS=20` / `SH_KEY_MIN_GAP_MS=20` in
   `station.env.fixture`. The BIOS keyboard is interrupt-driven into a 16-key
   ring, not a frame-sampled matrix, so the frame-period derivation of the
-  playbook's §5.1 does not apply and the floor is host scheduling alone; 40/40
-  is the fleet's proven keyboard-only floor (`pdp11`). TODO(bootos-golden):
-  bisected on a clone with `scripts/dev/emu-key-pacing-bisect.py` — `<n>` lines
-  of `<len>` chars at 40/40 → `<result>`; shipped `<hold>/<gap>`.
-- `reset.keyboard` is **UNVERIFIED** in the registry until the golden stream
-  types at a restored golden and reads the echo off the framebuffer.
-  TODO(bootos-golden): flip it, with the date.
+  playbook's §5.1 does not apply and the floor is host scheduling alone.
+  Bisected 2026-09-02 on a clone with `scripts/dev/emu-key-pacing-bisect.py`:
+  a 43-character line, 10 trials per rung, at 10/10, 20/20, 30/30 and 40/40 ms
+  → 0 of 10 corrupted at every rung; 20/20 ships as one rung of margin above
+  the lowest tested value.
+- `reset.keyboard` is **PASS** (2026-09-02): typed at a restored golden and read
+  off the framebuffer, on the clone.
 - Backspace works but does not erase on screen: `input_line` steps the buffer
   pointer back, while the BIOS teletype only moves the caret left, so the
   glyph stays until overwritten. Not a bug to chase.
-- Ctrl+Alt+Del is a real key here (see *For visitors*). Whether the SPA's
-  on-screen keyboard offers the `cad` macro on this station's profile is
-  TODO(bootos-spa).
+- Ctrl+Alt+Del is a real key here (see *For visitors*). The station uses the
+  `dos` on-screen keyboard family, whose rows lead with the Ctrl+Alt+Del key.
 - The type-in demo (`demoProgram`) is the README's hello-world, at 80 ms per
   character. Its shape has a rule the demo validator did not allow when this
   was written: after the last hex line, bootOS's `enter` needs an **empty
   line** to leave the `h` prompt and ask for the name at the `*` prompt
-  (`os.asm`, `enter_command`: `cmp byte [si],0 / je os20`). TODO(bootos-spa):
-  the blank line is sent and the demo runs end to end on the framebuffer.
+  (`os.asm`, `enter_command`: `cmp byte [si],0 / je os20`). The validator and
+  the SPA typist now admit an exact empty line (sent as a bare Enter), and the
+  demo was typed line for line over QMP on a clone: `hello` printed
+  `Hello, world` (`spa/public/posters/bootos/hello.webp`).
 
 ## For visitors — how to use bootOS
 
@@ -317,11 +323,10 @@ happens to end with `int 0x20`, it runs until you leave it. So:
 - Or press the tile's **Reset**, which is `loadvm golden`: back at `$` with the
   floppy as it shipped.
 
-TODO(bootos-golden): the per-program list of which of the 19 return to `$` by
-themselves (`heart`, `pi`, `textmode` and `counter` are the candidates — they
-are demos, not games) and a framebuffer proof that Ctrl+Alt+Del over the
-production keyboard path reboots to `$`. Until that lands, the visitor copy
-says "Ctrl+Alt+Del or Reset", which is true for all 19.
+Which of the 19 return to `$` by themselves is not catalogued (`heart`, `pi`,
+`textmode` and `counter` are demos rather than games and do); the visitor copy
+says "Ctrl+Alt+Del or Reset", which is true for all 19. Ctrl+Alt+Del reaching
+`$` was seen on the SPA stream's clone between game captures.
 
 ## Verification
 
@@ -331,16 +336,11 @@ Proven so far (coordinator, 2026-09-02, sandbox `/data/vms/sandbox/bootos/smoke/
 - `dir` typed over QMP lists all 19 entries — keyboard reaches the guest and
   the floppy is read.
 
-Owed before the station is listed:
-
-- TODO(bootos-golden): golden baked and restore-proven on a clone; the
-  floppy-contents restore (`del` then `loadvm` then `dir`) proven; audio
-  verdict; key pacing measured; `reset.keyboard` flipped.
-- TODO(bootos-spa): poster frames captured from the real station; demo runs
-  end to end.
-- Coordinator: deploy, `streamhost@bootos` up, a browser pass through the SPA
-  including the Reset button and a cold restart of the service, final
-  framebuffer acceptance.
+Done before listing (2026-09-02): golden baked and restore-proven on a clone
+with the floppy-contents restore; audio heard; key pacing bisected;
+`reset.keyboard` PASS; poster frames from real captures; the demo run end to
+end. The operator validates the live station in the browser (Reset button,
+type-in demo, a game).
 
 The final gate is the framebuffer seen by streamhost, not a QMP log.
 
@@ -348,8 +348,9 @@ The final gate is the framebuffer seen by streamhost, not a QMP log.
 
 - **Idle cost.** bootOS waits in `int 16h` AH=0. Whether SeaBIOS halts the
   vCPU in that wait or polls is not established here; if it polls, the vCPU
-  spins at the prompt until idle-pause freezes it. TODO(bootos-golden): host CPU at an idle `$` with no
-  client, before and after `SH_IDLE_PAUSE_SECS`.
+  spins at the prompt until idle-pause freezes it. Host CPU at an idle `$` with
+  no client has not been measured; check `labctl ls` / `top` on the live
+  station if the box looks busier after this add.
 - **`format` is one word away.** A visitor can wipe the directory with a
   six-letter command and no confirmation. That is faithful to the OS and Reset
   undoes it; it is not being disabled.
