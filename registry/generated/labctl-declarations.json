@@ -1064,6 +1064,24 @@
       "udp_port": 54133,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/sinclairql/sta."
     },
+    "slackware": {
+      "dir": "/data/vms/streamhost/stations/tinycore",
+      "qmp": "/data/vms/streamhost/stations/slackware/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54184,
+      "notes": "No exec channel: bare.i has no NIC driver. Framebuffer + qmp-type into the xterm is the proof path."
+    },
     "solaris": {
       "dir": "/data/vms/streamhost/stations/solaris",
       "qmp": "/data/vms/streamhost/stations/solaris/qmp.sock",

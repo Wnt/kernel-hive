@@ -186,6 +186,9 @@ const POSTER_INDEX = {
   "sinclairql": {
     "hero": "/posters/sinclairql/desktop.webp"
   },
+  "slackware": {
+    "hero": "/posters/slackware/desktop.webp"
+  },
   "solaris": {
     "hero": "/posters/solaris/desktop.webp"
   },
