@@ -15,7 +15,7 @@
           "class": "heavy",
           "estimated": "~20-30m",
           "automation": "vision",
-          "produces": "suse64.qcow2 (CD1 YaST1 install + KDE 1.1.2 golden)",
+          "produces": "suse64.qcow2 (CD1 YaST2 install + KDE 1.1.2 golden)",
           "flags": []
         }
       }
