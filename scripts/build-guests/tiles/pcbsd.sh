@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-guests/tiles/pcbsd.sh — fetch + stage PC-BSD 1.5.1 "Da Vinci" media
+# build-guests/tiles/pcbsd.sh — fetch + stage PC-BSD 1.5.1 "Edison" media
 # for the neko+QEMU Kernel Hive station `pcbsd`.
 #
-# WHAT PC-BSD IS: FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, released March 2008 —
+# WHAT PC-BSD IS: FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, released 23 April 2008 —
 # the last PC-BSD release before iXsystems' 7.x line. Licence BSD (base) / GPL
 # (KDE components). Installer is PC-BSD's own graphical Qt wizard (PBI-based),
 # NOT a text installer — there is no scripted/unattended path for 1.5.1.

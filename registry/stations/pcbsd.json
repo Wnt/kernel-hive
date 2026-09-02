@@ -220,8 +220,8 @@
    "KWrite",
    "PBI Installer"
   ],
-  "blurb": "PC-BSD — FreeBSD made point-and-click: a graphical installer, KDE 3.5 and one-click PBI packages, the last release before iXsystems' 7.x \"Galileo\".",
-  "notes": "PC-BSD 1.5.1 \"Da Vinci\" (23 April 2008; 1.5 was March), FreeBSD 6.3-RELEASE, KDE 3.5.8, X.org 7.3; Kris Moore's project since 2005, iXsystems since October 2006, renamed TrueOS in 2016. Installed from CD1 only (688930816 bytes)."
+  "blurb": "PC-BSD — FreeBSD made point-and-click: a graphical installer, KDE 3.5 and one-click PBI packages, the last release before 7.0 \"Fibonacci\" moved it to KDE 4.",
+  "notes": "PC-BSD 1.5.1 \"Edison\" (23 April 2008; 1.5 was March), FreeBSD 6.3-RELEASE, KDE 3.5.8, X.org 7.3; Kris Moore's project since 2005, iXsystems since October 2006, renamed TrueOS in 2016. Installed from CD1 only (688930816 bytes)."
  },
  "emulator": {
   "family": "QEMU",
@@ -245,7 +245,7 @@
  "demoProgram": {
   "label": "Type a note about PC-BSD into KWrite",
   "lines": [
-   "PC-BSD 1.5.1 \"Da Vinci\", April 2008.",
+   "PC-BSD 1.5.1 \"Edison\", April 2008.",
    "FreeBSD 6.3-RELEASE underneath, KDE 3.5.8 on top,",
    "and a graphical installer so nobody has to meet sysinstall.",
    "Every PBI package carries its own dependencies:"

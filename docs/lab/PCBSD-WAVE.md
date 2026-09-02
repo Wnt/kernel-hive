@@ -1,7 +1,7 @@
 # PC-BSD 1.5.1 integration wave — 2026-09-03
 
 Speed-record attempt #3 (bootOS 45 min, PC/GEOS 18 min): integrate **PC-BSD 1.5.1
-"Da Vinci"** (FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, March 2008 — the last
+"Edison"** (FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, 23 April 2008 — the last
 PC-BSD release before iXsystems' 7.x) as a fully featured Tier-1 host-native
 station `pcbsd`. Branch `pcbsd` is the ledger; every stream branches from it.
 Concurrent waves on the box: netbsd14 (176), openbsd (177), freebsd411 (178) —

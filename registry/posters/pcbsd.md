@@ -14,7 +14,7 @@ images:
 
 **PC-BSD** was started in 2005 by **Kris Moore**, with a single aim: a FreeBSD that a desktop user could install and run without ever meeting the command line. Under the hood it was unmodified FreeBSD — 1.5.1 is built on **FreeBSD 6.3-RELEASE** — but on top of it came a Qt graphical installer, **KDE 3.5.8** on **X.org 7.3** as the one supported desktop, and the project's own answer to package management: the **PBI**, a self-contained "Push Button Installer" bundle with every dependency inside it, installed with a double-click and a few Next buttons, the way Windows users already installed software.
 
-In October 2006 the project was acquired by **iXsystems**, the FreeBSD hardware vendor, which kept Moore on and funded development. Version 1.5.1 "Da Vinci", released in the spring of 2008, was the last of the 1.x line and the last built on FreeBSD 6; the next release, **7.0 "Galileo"**, moved to FreeBSD 7 and KDE 4 later that year. The lineage carried on for a decade and was renamed **TrueOS** in 2016 before winding down.
+In October 2006 the project was acquired by **iXsystems**, the FreeBSD hardware vendor, which kept Moore on and funded development. Version 1.5.1 "Edison", released in the spring of 2008, was the last of the 1.x line and the last built on FreeBSD 6; the next release, **7.0 "Fibonacci"** (September 2008), moved to FreeBSD 7 and KDE 4. The lineage carried on for a decade and was renamed **TrueOS** in 2016 before winding down.
 
 ## Significance
 
