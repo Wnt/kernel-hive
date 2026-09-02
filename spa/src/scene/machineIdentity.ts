@@ -443,6 +443,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c2ad83', accentTint: '#8ecae6', tintMix: 0.4,
     badge: 'XT 8088', spec: 'FLOPPY • 2019', kit: 'office90',
   },
+  // pcgeos: a 386-class beige desktop with a colour VGA CRT — GEOS runs on a
+  // 286 in 640 KB, but the 800x600 64K-colour VESA desktop this exhibit shows
+  // wants a 1990s SuperVGA card, so the badge names the class that had one.
+  // Registry orange accent (the canyon wallpaper's own colour).
+  pcgeos: {
+    caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
+    badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
