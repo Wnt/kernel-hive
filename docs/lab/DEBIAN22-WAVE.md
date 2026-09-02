@@ -44,10 +44,17 @@ memory) — this wave joins their landing queue; **no main push without "go"**.
   theories (`rig-clone.sh new debian22 <theory>`, each driven to a raw
   `mke2fs /dev/hda1` from tty2): `nodma` (`ide0=nodma`) and `p2cpu`
   (`-cpu pentium2`) were NOT faster (same ~2 MB/min growth); `nodisp`
-  (`-display none`, no 4 ms dbus refresh) and `tcg` (no KVM, `-cpu pentium3`,
-  cf. beos which is TCG-only) were still running at the budget cut — see
-  `/data/vms/sandbox/debian22-golden/progress.md` and
-  `/data/vms/sandbox/debian22-golden/shots/race-*/m*/cur.png`. At this rate
+  (`-display none`) was killed by the coordinator for load before it proved
+  anything; **`tcg` (no KVM, `-cpu pentium3`) is the winner: a full
+  `mke2fs /dev/hda1` finished in 47 s** (02:26:40 → 02:27:27 on the guest
+  clock, frame `shots/race-tcg/m4/cur.png`; its qcow2 grew 21 MB in the same
+  60 s in which the KVM rig grew 3 MB) while the KVM rig was still inside the
+  same mke2fs after 13 min. So the wall is **KVM + the 2.2.17 boot-floppy
+  kernel's 512-byte IDE PIO writes** (suse64 measured the same), not the
+  disk, the CPU model, DMA or the display. Untested KVM-preserving theories:
+  `-machine kernel-irqchip=off`/`split`, `-cpu host,-x2apic`, a 2.2.19
+  kernel-image. Frames: `/data/vms/sandbox/debian22-golden/shots/`
+  (control `s*/cur.png`, races `race-*/`). At this rate
   kernel+base+X+GNOME (~300 MB) is hours, not minutes: **the interactive
   install cannot meet the 10-minute bar on this device set** — the
   `debian22-compose` route (populate the ext2 on the host, boot only to bake)
