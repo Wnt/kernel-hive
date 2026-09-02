@@ -76,9 +76,10 @@ ssh -n "$LAB" "grep -q '^emit $id ' /data/kernel-hive/streamhost/stations-manife
 
 # ---- 1. single-station emit + 2. binary symlink (+3. start) — one labrun -----
 step "1-3 emit, binary, start (on labhost)"
-"$LABRUN" "$id" "$no_start" <<'EOF_REMOTE'
+"$LABRUN" "$id" "$no_start" "${STATION_UP_LISTEN_TIMEOUT:-60}" <<'EOF_REMOTE'
 id="$1"
 no_start="$2"
+listen_timeout="$3"
 cd /data/kernel-hive/streamhost
 tmp="./.emit-$id-once.sh"
 trap 'rm -f "$tmp"' EXIT
@@ -120,11 +121,19 @@ echo "-- journal tail"
 journalctl -u "streamhost@$id" -n 12 --no-pager -o cat | sed 's/^/   /'
 # whole current invocation: on a long-lived station the LISTENING line is old.
 inv="$(systemctl show -p InvocationID --value "streamhost@$id")"
-lst="$(journalctl "_SYSTEMD_INVOCATION_ID=$inv" --no-pager -o cat | grep 'LISTENING udp/' | tail -1 || true)"
+lst=""
+waited=0
+while [ "$waited" -lt "$listen_timeout" ]; do
+  lst="$(journalctl "_SYSTEMD_INVOCATION_ID=$inv" --no-pager -o cat | grep 'LISTENING udp/' | tail -1 || true)"
+  [ -n "$lst" ] && break
+  sleep 1
+  waited=$((waited + 1))
+done
 [ -n "$lst" ] || {
-  echo "no 'LISTENING udp/' line in the journal of streamhost@$id" >&2
+  echo "no 'LISTENING udp/' line in the journal of streamhost@$id after ${listen_timeout}s" >&2
   exit 1
 }
+echo "-- waited ${waited}s"
 echo "   $lst"
 EOF_REMOTE
 
