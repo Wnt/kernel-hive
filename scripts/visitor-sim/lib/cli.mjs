@@ -18,6 +18,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { autoGrid, parseGridSpec, parseScreenSpec } from './grid.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolveInviteCode } from './invite.mjs';
 
@@ -163,7 +164,22 @@ JOURNEYS (what --mix names)
 OTHER
   --headed        Run headed instead of headless (debugging). Works on
                   labhost's shared X display (DISPLAY=:1, xdesk.service) same
-                  as any other Playwright tool here.
+                  as any other Playwright tool here, and on your own desktop
+                  (e.g. a Mac) when run from a session inside the GUI.
+  --tile          Lay the headed windows out as a non-overlapping grid instead
+                  of stacking them. Needs --headed. The grid auto-sizes to hold
+                  --concurrency (6 -> 3x2). The window fills the tile (viewport
+                  follows the window, so pages render at the tile size).
+  --grid <CxR>    Force the grid shape, e.g. 3x2. Default: auto from concurrency.
+  --screen <WxH>  Usable desktop area in POINTS (not pixels — a 2880x1800
+                  Retina panel is 1440x900 points). Default 1440x900, a 15"
+                  MacBook Pro's default mode. Shrink it to leave room for a Dock.
+  --tile-gap <px>  Gap between and around windows. Default 8.
+  --tile-top <px>  Top inset for the menu bar. Default 28.
+  --burst         Start every visitor at once (still bounded by --concurrency)
+                  instead of spreading arrivals over --duration, so all the
+                  tiled windows are on screen together. Less realistic; use it
+                  when the point is to WATCH the grid.
   --browser <name> 'chromium' (Playwright's bundled build, default) or
                    'chrome' (the system Chrome, channel:'chrome'). Both were
                    verified live to expose VideoDecoder, WebTransport and
@@ -215,6 +231,8 @@ export function parseArgs(argv) {
     'force-walkin',
     'dry-run',
     'headed',
+    'tile',
+    'burst',
     'invite-refresh',
     'help',
   ]);
@@ -325,6 +343,25 @@ export function parseArgs(argv) {
     throw new Error(`--browser must be "chromium" or "chrome", got "${browser}"`);
   }
 
+  // Window tiling. Only meaningful with real windows, so it requires --headed;
+  // a grid in a headless run would silently do nothing. The grid defaults to
+  // the smallest square-ish layout that holds `concurrency` (so 6 -> 3x2), and
+  // every dimension is a flag so the layout can be tuned without touching code.
+  const tile = !!args.get('tile');
+  if (tile && !args.get('headed')) {
+    throw new Error('--tile positions real browser windows, so it needs --headed. Add --headed or drop --tile.');
+  }
+  const grid = args.has('grid') ? parseGridSpec(args.get('grid')) : autoGrid(concurrency);
+  const screen = parseScreenSpec(args.get('screen') ?? '1440x900');
+  const gap = args.has('tile-gap') ? Number(args.get('tile-gap')) : 8;
+  if (!Number.isInteger(gap) || gap < 0) throw new Error('--tile-gap must be a non-negative integer');
+  const tileTop = args.has('tile-top') ? Number(args.get('tile-top')) : 28;
+  if (!Number.isInteger(tileTop) || tileTop < 0) throw new Error('--tile-top must be a non-negative integer');
+  // --burst starts every visitor at once (bounded by the semaphore) instead of
+  // spreading arrivals over --duration, so all `concurrency` windows are up
+  // together — which is the whole point of watching a tiled grid.
+  const burst = !!args.get('burst');
+
   const invite = args.has('invite')
     ? {
         statePath: args.get('invite-state') ?? DEFAULT_INVITE_STATE,
@@ -358,6 +395,12 @@ export function parseArgs(argv) {
     browser,
     dryRun: !!args.get('dry-run'),
     headed: !!args.get('headed'),
+    tile,
+    grid,
+    screen,
+    tileGap: gap,
+    tileTop,
+    burst,
     outDir: args.get('out-dir') ?? DEFAULT_OUT_DIR,
     seed: args.has('seed') ? Number(args.get('seed')) : null,
   };
