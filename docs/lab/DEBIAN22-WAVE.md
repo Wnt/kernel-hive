@@ -95,3 +95,19 @@ Measured facts (Claude Fable, 23:12–23:37):
   not measured.
 - Installed on the rig: base 2.2 r0, kernel 2.2.17 (CD rescue kernel), XFree86 3.3.6-10
   svga, Window Maker 0.61.1, xterm; X never came up, resolution/VM_SIZE unmeasured.
+
+### golden2, +15 min extension (23:37–23:53): X up at 1024x768, `golden` saved, NOT proven
+
+- Two more host-unpack traps, framebuffer-proven: host `umask 077` left `fonts.dir`
+  and `XF86Config` mode 0600 (`chmod -R a+rX /usr/X11R6/lib/X11 /etc/X11`), and
+  `fonts.alias` is assembled by the xfonts postinst — without it the server dies with
+  "could not open default font 'fixed'" (`x5.png`); fix: `cat /etc/X11/fonts/$d/*.alias
+  > /usr/X11R6/lib/X11/fonts/$d/fonts.alias; mkfontdir` for misc and 75dpi.
+- After that `startx` switched modes in ~10 s: 1024x768, stipple root, one xterm
+  (`x8.png`). The xterm paints NO text (`y0c.png`) — BitBLT path; `Option "no_bitblt"`
+  was not yet in the guest's XF86Config; wmaker never appeared; Ctrl-Alt-Backspace and
+  Ctrl-Alt-F1 through QMP had no visible effect (server starved on PIO, or not taking input).
+- `savevm golden` on that state: VM_SIZE 31.7 MiB, disk 366 MB — restore NOT proven,
+  desktop NOT shippable as is. Nothing staged into the station dir. Not folded into
+  `build-tree.sh` yet: ld.so.conf, /etc/hosts, chmod 644/a+rX, fonts.alias, no_bitblt,
+  setuid XF86_SVGA (or Xwrapper).
