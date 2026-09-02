@@ -468,6 +468,7 @@ export const EXHIBIT_IDENTITIES = {
   pcbsd: {
     caseTint: '#b9b7ae', accentTint: '#c8102e', tintMix: 0.4,
     badge: 'OFFICE PC', spec: 'x86 • 2008', kit: 'modern',
+  },
   // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a Cirrus SVGA
   // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the
   // kind of box ISPs racked by the hundred. The accent is the registry's

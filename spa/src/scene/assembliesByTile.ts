@@ -524,6 +524,7 @@ export const ASSEMBLIES_BY_TILE = {
   pcbsd: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
   // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
   // with the PS/2 mouse and 101-key board KDE 3.3.2 on XFree86 4.3.0 is driven
   // by — a tower, not the flat 1990 desktop case pcgeos sits in.
