@@ -5,7 +5,7 @@
 # WHAT THIS SCRIPT DOES:
 #   1. Download suse-linux-6.4-cd1.iso from archive.org (unless already
 #      staged), verify sha256 + size.
-#   2. Create a 4 GiB qcow2 disk in OUT_DIR.
+#   2. Create a 1.5 GiB qcow2 disk in OUT_DIR.
 #   3. Boot it headless with the EXACT suse64 station device set (see
 #      docs/lab/SUSE64-WAVE.md allocation ledger), CD1 attached, -boot d.
 #   4. Wait for the linuxrc/YaST2 boot screen (fb-wait.py --settle) and
@@ -56,7 +56,7 @@ die() {
 [ "$WORK" != /mnt/poc ] || die "refusing /mnt/poc"
 [[ "$WORK" == /data/vms/sandbox/suse64-build-* ]] || die "WORK must be namespaced under /data/vms/sandbox/suse64-build-*"
 [ -x "$QEMU_BIN" ] || die "$QEMU_BIN missing"
-[ -c /dev/kvm ] || die "/dev/kvm missing"
+# TCG on purpose: the 2.2 kernel drives IDE in 16-bit PIO and every outw is a KVM exit (70 KiB/s measured); see docs/lab/SUSE64-WAVE.md
 
 mkdir -p "$WORK" "$STAGE" "$OUT_DIR"
 
@@ -99,7 +99,7 @@ boot_installer() {
   # EXACTLY the suse64 station device set + -display none for the headless
   # build; see docs/lab/SUSE64-WAVE.md allocation ledger.
   "$QEMU_BIN" \
-    -enable-kvm -m 256 -smp 1 -machine pc-i440fx-11.0,acpi=off -cpu host \
+    -accel tcg -cpu pentium3 -m 256 -smp 1 -machine pc-i440fx-11.0,acpi=off \
     -rtc base=localtime -vga cirrus \
     -drive file="$DISK",format=qcow2,if=ide \
     -cdrom "$ISO" -boot d \

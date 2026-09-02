@@ -165,7 +165,7 @@
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under KVM with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6080->6000 for x11warp; no audio device"
+        "reason": "pc-i440fx-11.0 under TCG (2.2 IDE PIO is a KVM exit per outw) with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6080->6000 for x11warp; no audio device"
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",

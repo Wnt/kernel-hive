@@ -44,7 +44,7 @@ runs the first install.
 - Runtime path: `/data/vms/streamhost/stations/suse64/disk.qcow2` — the ONLY
   block device
 - QEMU: `/opt/qemu-beos/bin/qemu-system-x86_64` (QEMU 11.0.2, the same build
-  the `beos`/`pcgeos` stations run), `pc-i440fx-11.0,acpi=off`, KVM, `-cpu
+  the `beos`/`pcgeos` stations run), `pc-i440fx-11.0,acpi=off`, TCG (`-accel tcg -cpu pentium3`, see "The wall" in the wave doc), `-cpu
   host`, 256 MB RAM, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci`
   on SLIRP with a loopback X forward `127.0.0.1:6080 -> 10.0.2.15:6000`
   carrying the pointer's X connection, no audio device
@@ -111,7 +111,7 @@ TODO(golden): VM_SIZE, VM_CLOCK, bake date, X server line
 
 ## Host-native capture path
 
-**Tier 1**, direct-QEMU, KVM-accelerated. The guest's VGA framebuffer is
+**Tier 1**, direct-QEMU, TCG (the 2.2 IDE PIO wall makes KVM 20x slower on disk). The guest's VGA framebuffer is
 captured straight off QEMU's dbus display and input goes straight in through
 QMP plus the x11warp loopback — no kiosk, bridge or second VM in the path.
 
