@@ -12,7 +12,7 @@
 // never a fixed-interval hammer.
 
 import { humanDelay } from './rng.mjs';
-import { openStation, waitForVideo, typeHumanPace, wanderPointer } from './stationOpen.mjs';
+import { openStation, waitForVideo, typeHumanPace, traceFigureEight } from './stationOpen.mjs';
 import { armVirtualAuthenticator } from './webauthn.mjs';
 
 const WALKIN_OS_IDS = ['win311', 'os2warp', 'rhapsody'];
@@ -193,11 +193,18 @@ export async function journeyWalkin(page, ctx) {
   const videoResult = await waitForVideo(page, 25000);
   if (videoResult.ok) {
     await humanDelay(rng, 800, 2000);
+    // Trace a figure-8 across the live stream: a continuous glide of real
+    // pointer events into the station, which is both the thing worth watching
+    // and a dense run of input.dispatch spans on the trace plane — far more
+    // signal than the odd random poke. A couple of unhurried loops, then a
+    // short type so the keyboard plane sees traffic too.
+    await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+    await humanDelay(rng, 400, 1000);
     const line = TYPING_LINES[Math.floor(rng() * TYPING_LINES.length)];
     await typeHumanPace(page, line, { baseMs: 150, jitter: 70 });
     await page.keyboard.press('Enter').catch(() => {});
-    await wanderPointer(page, 1 + Math.floor(rng() * 2));
-    await humanDelay(rng, 1000, 3000);
+    await traceFigureEight(page, { loops: 1 + Math.floor(rng() * 2), periodMs: 3000 });
+    await humanDelay(rng, 800, 2000);
   }
 
   // Leave via the UI control, which triggers releaseWalkin() on unmount —
@@ -226,7 +233,8 @@ export async function journeyStation(page, ctx) {
   log?.(`opened ${station} live`);
 
   await humanDelay(rng, 1000, 2500);
-  await wanderPointer(page, 1 + Math.floor(rng() * 3));
+  await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+  await humanDelay(rng, 400, 1000);
   if (rng() < 0.6) {
     const line = TYPING_LINES[Math.floor(rng() * TYPING_LINES.length)];
     await typeHumanPace(page, line, { baseMs: 140, jitter: 60 });

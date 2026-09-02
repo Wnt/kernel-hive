@@ -121,18 +121,49 @@ export async function typeHumanPace(page, text, { baseMs = 140, jitter = 60 } = 
   }
 }
 
-/** A few plausible clicks/moves inside a station's video area — a visitor
- *  poking at a desktop, not a bot hammering one pixel. */
-export async function wanderPointer(page, times = 3) {
+
+/** The points of a figure-8 (a Gerono lemniscate) centred in a box.
+ *  x = cx + ax·cos(t), y = cy + ay·sin(t)·cos(t), t over `loops` full turns —
+ *  a horizontal ∞ that crosses its own centre once per loop. Pure and
+ *  deterministic (given `phase`) so the geometry is unit-tested without a
+ *  browser; the mouse driving is traceFigureEight below. `samples` is points
+ *  PER loop — more is a smoother glide and a denser stream of pointer events,
+ *  which is the signal this motion exists to produce. */
+export function figureEightPoints({ cx, cy, ax, ay, loops = 2, samples = 96, phase = 0 }) {
+  const pts = [];
+  const total = Math.max(1, Math.round(loops * samples));
+  for (let i = 0; i <= total; i++) {
+    const t = phase + (i / samples) * 2 * Math.PI;
+    pts.push({ x: cx + ax * Math.cos(t), y: cy + ay * Math.sin(t) * Math.cos(t) });
+  }
+  return pts;
+}
+
+/** Trace a figure-8 with the real pointer across a station's video, so the
+ *  daemon sees a continuous stream of genuine mouse-move events (and the trace
+ *  plane, a run of input.dispatch spans) rather than the odd random poke.
+ *  Amplitude is a fraction of the video box so it stays well inside the frame;
+ *  `periodMs` is the time for one full loop, split evenly across its samples. */
+export async function traceFigureEight(page, { loops = 2, periodMs = 3500, samples = 96, amp = 0.38 } = {}) {
   const video = page.locator('video').first();
   const box = await video.boundingBox().catch(() => null);
-  if (!box) return;
-  for (let i = 0; i < times; i++) {
-    const x = box.x + box.width * (0.2 + 0.6 * Math.random());
-    const y = box.y + box.height * (0.2 + 0.6 * Math.random());
-    await page.mouse.move(x, y, { steps: 8 + Math.floor(Math.random() * 8) });
-    await page.waitForTimeout(200 + Math.random() * 500);
-    if (Math.random() < 0.5) await page.mouse.click(x, y);
-    await page.waitForTimeout(300 + Math.random() * 900);
+  if (!box) return { ok: false, why: 'no video box to trace over' };
+  const pts = figureEightPoints({
+    cx: box.x + box.width / 2,
+    cy: box.y + box.height / 2,
+    ax: box.width * amp,
+    ay: box.height * amp,
+    loops,
+    samples,
+  });
+  const stepMs = periodMs / samples;
+  // Prime the pointer at the first point, then glide — one move per sample, no
+  // Playwright-interpolated sub-steps, because the samples ARE the smoothness
+  // and each move is one pointer event we want the station to receive.
+  await page.mouse.move(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    await page.mouse.move(pts[i].x, pts[i].y);
+    await page.waitForTimeout(stepMs);
   }
+  return { ok: true, why: 'traced', points: pts.length };
 }
