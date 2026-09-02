@@ -1,7 +1,7 @@
 # Guest execution tiers
 
-Kernel Hive is not one architecture repeated 73 times. It is one *daemon*
-repeated 73 times, in front of **five structurally different ways of producing
+Kernel Hive is not one architecture repeated 75 times. It is one *daemon*
+repeated 75 times, in front of **five structurally different ways of producing
 pixels**. Everything downstream of the framebuffer — damage tracking, encode,
 transport, client — is identical across tiers. Everything upstream differs, and
 that difference is what this page is about.
@@ -38,10 +38,10 @@ migration ledger, not a taxonomy. So the test is:
 | id is `openvms` | **4** — two-QEMU X bridge |
 | otherwise | **1** — direct QEMU |
 
-Applying that to all 75 registry entries gives **38 / 11 / 23 / 1 / 2**.
+Applying that to all 77 registry entries gives **40 / 11 / 23 / 1 / 2**.
 
-> **Roster note.** `python3 scripts/stations-registry.py count` prints *75 lineup
-> entries: 73 streamhost production tiles, 2 showcase posters*. If a doc tells
+> **Roster note.** `python3 scripts/stations-registry.py count` prints *77 lineup
+> entries: 75 streamhost production tiles, 2 showcase posters*. If a doc tells
 > you 61/59, it is stale — run the command. The posters today are `riscos` and
 > `macos`; `win11` is a live Tier-1 station, not a poster.
 >
@@ -100,11 +100,11 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (38)** — `aix432 alpine android aros aux beos chokanji freedos haiku
-  helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
-  os2warp postmarketos qnx reactos redstar2 redstar3 rhapsody sailfishos
-  serenityos solaris sunos414 templeos tinycore toaruos win11 win2000 win311
-  win95 win98se winxp`
+- **Tier 1 (40)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+  haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
+  os2warp postmarketos qnx ravynos reactos redstar2 redstar3 rhapsody
+  sailfishos serenityos solaris sunos414 templeos tinycore toaruos win11
+  win2000 win311 win95 win98se winxp`
 - **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   indyr4400 pdp11 star`
 - **Tier 3 (23)** — `amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
@@ -116,11 +116,11 @@ the schema but used by no station**.
 
 **Tier 1 is not homogeneous.** Eleven stations are TCG-interpreted rather than
 KVM-accelerated — `aix432 aux beos hpuxvue macos753 macos9 nt351 os2warp
-rhapsody sunos414 win311` — so they carry an interpretation layer the other 27
+rhapsody sunos414 win311` — so they carry an interpretation layer the other 29
 do not. Every foreign-architecture guest is necessarily in that list (PowerPC,
 PA-RISC, m68k, SPARC); the rest are x86 guests too old for KVM. Counting
-`openvms` as a QEMU station the split is 28 KVM / 11 TCG out of 39; counting it
-as its own tier, Tier 1 is 27 / 11 out of 38. Both numbers are correct and they
+`openvms` as a QEMU station the split is 30 KVM / 11 TCG out of 41; counting it
+as its own tier, Tier 1 is 29 / 11 out of 40. Both numbers are correct and they
 differ only in where `openvms` is filed.
 
 Three stations do **not** run a stock QEMU binary: `solaris` uses the patched build
@@ -174,7 +174,7 @@ can disagree. `irix` is the live example: the registry declares
 `SH_AUDIO=on` with `SH_AUDIO_SOURCE=fifo`. Reading only the registry block for a
 station can give you the pre-fixture value.
 
-**Only 5 of 73 stations put their guest in a memory-capped cgroup** — the four
+**Only 5 of 75 stations put their guest in a memory-capped cgroup** — the four
 original kiosks `c64 atarist apple2 amiga` and `irix`. Both scopes are
 `BindsTo=` their unit, so `systemctl stop` reaches the whole tree; that binding
 was added after orphaned watchdogs survived a stop and poisoned a measurement
@@ -185,19 +185,22 @@ campaign. Every other launcher is exec'd bare.
 Generated from `registry/stations/*.json` and `registry/bridge-suites.json` — the
 same files the daemon and the UI read. Regenerate rather than hand-edit.
 
-Pointer methods across the 73 production tiles: `qemu-usb-tablet` 23, **none
-18**, `qemu-ps2-relative` 12, `warpd-agent` 5, `mame-ioport` 4, `qemu-vmmouse` 2,
-`qemu-adb-relative` 2, `x11-xtest` 2, and one each of `gallery-hid`,
-`simh-light-pen`, `qemu-mga-closedloop`, `qemu-usb-hid-relative`,
-`previous-tablet`. Audio on 53 / off 20. Stream rate 30 fps on 39, 60 fps on 32,
-and one each at 50 (`amigaos35`) and 25 (`amix`). Exec channel: none 46, `ssh`
-14, `warpd_e` 5, `telnet_unix_e` 3, and one each of `serial_e`, `serialcsh_e`,
-`serialcon_e`, `serial_getty`, `telnet_e`.
+Pointer methods across the 75 production tiles: `qemu-usb-tablet` 24, **none
+19**, `qemu-ps2-relative` 8, `warpd-agent` 5, `mame-ioport` 4,
+`qemu-guestram-abswrite` 3, `x11-warp-absolute` 2, `qemu-vmmouse` 2, and one
+each of `gallery-hid`, `simh-light-pen`, `qemu-mga-closedloop`,
+`qemu-artist-closedloop`, `qemu-usb-hid-relative`, `qemu-adb-relative`,
+`x11-xtest`, `previous-tablet`. Audio on 55 / off 20. Stream rate 30 fps on 41,
+60 fps on 32, and one each at 50 (`amigaos35`) and 25 (`amix`). Exec channel:
+none 47, `ssh` 14, `warpd_e` 5, `telnet_unix_e` 3, and one each of
+`serial_shell`, `serial_e`, `serialcsh_e`, `serialcon_e`, `serial_getty`,
+`telnet_e`.
 
-That "none 18" is the single most surprising number here: **a quarter of the
+That "none 19" is the single most surprising number here: **a quarter of the
 lineup has no pointer at all.** Those are the keyboard-only and switch-only
-machines — PETs, the KC 85, the single-board trainers — where a mouse would be
-an anachronism, not a missing feature.
+machines — PETs, the KC 85, the single-board trainers, and `bootos`, whose whole
+OS reads the BIOS keyboard — where a mouse would be an anachronism, not a
+missing feature.
 
 | Station | Tier | Suite / accel | Pointer method | Mode | Touch | Audio | fps | Exec |
 |---|---|---|---|---|---|---|---:|---|
@@ -216,6 +219,7 @@ an anachronism, not a missing feature.
 | `aux` | 1 direct-QEMU | tcg | `qemu-adb-relative` | rel | — | on | 30 | — |
 | `bbcmicro` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `beos` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | off | 30 | telnet_unix_e |
+| `bootos` | 1 direct-QEMU | kvm | `none` | none | — | on | 30 | — |
 | `c128` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `c64` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `cbm2` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
@@ -251,6 +255,7 @@ an anachronism, not a missing feature.
 | `plus4` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `postmarketos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | on | 60 | — |
 | `qnx` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |
+| `ravynos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `reactos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `redstar2` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | none |
 | `redstar3` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | — |
