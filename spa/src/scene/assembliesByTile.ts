@@ -523,7 +523,7 @@ export const ASSEMBLIES_BY_TILE = {
   // ubuntu: a 2004 beige-and-black minitower under a CRT — the ShipIt-CD PC
   // Warty was posted to. USB tablet in the guest, so a mouse on the desk.
   ubuntu: {
-    kind: 'towerSetup', body: 'towerE', monitor: 'paramCrt',
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtD',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
   },
 } as const satisfies Record<string, Assembly>;

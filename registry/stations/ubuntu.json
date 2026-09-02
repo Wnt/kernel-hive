@@ -216,7 +216,7 @@
       "OpenOffice.org",
       "GIMP"
     ],
-    "blurb": "The first Ubuntu, October 2004: a Debian snapshot with one desktop, GNOME 2.8 in the brown Human theme, on a single CD. This is the live session, so nothing is installed and every reset returns the same instant."
+    "blurb": "The first Ubuntu, October 2004: a Debian-derived distribution with one desktop, GNOME 2.8 in the brown Human theme, on a single CD. This is the live session, so nothing is installed and every reset returns the same instant."
   },
   "emulator": {
     "family": "QEMU",
