@@ -107,9 +107,45 @@ device set, first boot **without** `-loadvm`/`-S`):
   live-CD ISO is read-only and stays at its live path, not cloned);
   `scripts/coldboot/ubuntu-bootrec-arm.sh` scaffold removed.
 
-## Measured milestones
+## Measured milestones (session-timeline.py, start 23:00:31Z = operator's message)
 
-TODO(coordinator): from `scripts/dev/session-timeline.py` after landing.
+| Milestone | Wall clock | Note |
+|---|---|---|
+| ISO downloaded + hashed on the box | 4 min | 674 MB at ~30 MB/s |
+| first smoke boot hung at the usplash bar | 6 min | `-cpu host`, AC97, ACPI on |
+| race: 2 more rigs launched | 8 min | Nehalem CPU / minimal+acpi=off |
+| desktop on the minimal rig | 11 min | 640x480 GNOME 2.8 |
+| `/os/ubuntu` viewable (smoke-rig.sh) | **12 min** | slot 183 after 182 was taken mid-flight |
+| ledger pushed, 3 streams launched | 14 min | build sonnet-low · golden sonnet · spa Fable |
+| build + spa merged | 17–20 min | builder run by the coordinator (the stream's guard blocked labrun) |
+| golden merged, docs launched, "ready to land" | 24 min | golden 11.4 min: 640x480, restore-proven |
+| hold in the landing queue (pcbsd's window) | 24 → 31 min | 9 waves on one box, load 57 |
+| "go", merge main: 6 conflicts (3 generated) + 2 order collisions | 31 → 34 min | union-resolve by hand |
+| pre-push gate: shfmt on the builder + bootrec-tiles.conf | 34 min | one retry |
+| main `b1a13d57` pushed · box deployed · unit LISTENING | **34.5 / 35.5 / 36 min** | station-up stopped at `labctl gen` (fleet mismatch from other waves' rigs) |
+| SPA deployed, poster public | **38 min** | featured |
+
+Split: coordinator model 48 %, tools 28 %, waiting on agents 24 % (two idle waits,
+3 + 6 min — the golden stream was the long pole and nothing else was queued).
+
+### Retro — what cost time this run
+
+| Sink | Cost | Fix |
+|---|---|---|
+| Slot chosen from the registry (`--slot auto` = 176) while 7 concurrent waves held 176–182 outside the registry; two renumberings | ~2 min | smoke-rig.sh should pick `--slot auto` from `kh-claim ls` max, not the registry; the coordinator memory names the next free slot |
+| The first device set hung; the race was started only after 150 s of `fb-wait --change` on the first rig | ~3 min | Start the race at the FIRST settle without progress (`--settle 20` on a splash = hang), not after a `--change` timeout |
+| Landing queue hold + merge conflicts with the wave that landed just before | ~10 min | Unavoidable with a shared main; keep hand-edited scene tables append-only per station in separate files (assembliesByTile/machineIdentity per-tile modules) so union merges are automatic |
+| Pre-push gate shfmt on `bootrec-tiles.conf` (2175-line reformat of a file the golden stream only appended to) | ~1.5 min | shfmt the file once on main so appends stay clean |
+| The build stream could not run the builder (its worktree guard refused `labrun`) | ~1 min coordinator | Brief streams to run box commands via `ssh lab '<cmd>'`, not labrun, or lift the guard for sandboxed streams |
+| Scaffold emits `bootVideo: null` → `None` in generated TS | spa stream time | fix in `scripts/stations_registry/scaffold.py` |
+
+### Open follow-ups
+
+- Pointer proof through the daemon path (`SH_CURSOR_SCALE=0.625`) — pending
+  `labctl gen` (blocked fleet-wide until origin/labctl-gen-undeclared lands); the
+  operator can eyeball it at `/os/ubuntu`.
+- X at 1024x768 (XF86Config-4 Modes + re-bake) would remove the scale entirely.
+- No `demoProgram`: the schema is type-in only; Alt+F2 → gedit needs a chord step.
 
 ## Pointer fix (coordinator, while queued for the landing window)
 
