@@ -63,6 +63,8 @@ emulated PC has. Whichever boots past `lpt0` ships as `/netbsd`
 
 Trap met in round 3: a SECOND IDE CD (`-drive ...,media=cdrom,index=3` → `cd1`) mounts forever under the INSTALL kernel — no error, the shell blocks in the syscall. Serve everything from the one `-cdrom` slot (`cd0`, which sysinst mounted fine).
 
+Disk layout (sysinst "standard with X"): wd0a=/ 277 MB, wd0b=swap 513 MB, wd0e=/usr 1257 MB — a chroot from the INSTALL ramdisk must mount BOTH wd0a and wd0e, or every /usr tool reads as missing. The ramdisk route (sysinst Utility menu → Run /bin/sh → mount → chroot) needs no `boot -a` dance and its CD mount does not hang.
+
 Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
