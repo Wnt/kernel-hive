@@ -38,10 +38,10 @@ migration ledger, not a taxonomy. So the test is:
 | id is `openvms` | **4** — two-QEMU X bridge |
 | otherwise | **1** — direct QEMU |
 
-Applying that to all 77 registry entries gives **40 / 11 / 23 / 1 / 2**.
+Applying that to all 78 registry entries gives **41 / 11 / 23 / 1 / 2**.
 
 > **Roster note.** `python3 scripts/stations-registry.py count` prints *77 lineup
-> entries: 75 streamhost production tiles, 2 showcase posters*. If a doc tells
+> entries: 76 streamhost production tiles, 2 showcase posters*. If a doc tells
 > you 61/59, it is stale — run the command. The posters today are `riscos` and
 > `macos`; `win11` is a live Tier-1 station, not a poster.
 >
@@ -89,7 +89,7 @@ flowchart TD
 
 | Tier | Count | What actually runs | Capture | Emulation layers between host CPU and the exhibit |
 |---|---:|---|---|---|
-| **1 — direct QEMU** | 38 | One `qemu-system-*` running the guest OS itself | `qemu` (default) | 1 VM; **0** interpretation layers under KVM, **1** under TCG |
+| **1 — direct QEMU** | 41 | One `qemu-system-*` running the guest OS itself | `qemu` (default) | 1 VM; **0** interpretation layers under KVM, **1** under TCG |
 | **2 — emulator bridge** | 11 | Same QEMU/KVM device set, but the guest is a thin overlay on a shared read-only Debian base: autologin → `startx` → **no window manager** → one full-screen emulator | `qemu` (default) — an ordinary Linux framebuffer | **2** (KVM VM + software emulator), +1 managed runtime on `alto`/`star`/`daybreak` |
 | **3 — host-native** | 23 | No QEMU, no QMP. One emulator on the bare-metal host CPU — MAME, VICE, es40, Previous, FS-UAE — either headless or inside a pinned Xvfb sized to its own window | `shm` where the emulator publishes its own framebuffer, `x11` where it needs a window | **1** (software emulator only, no VM) |
 | **4 — two-QEMU X bridge** | 1 | One supervisor owns **two sibling VMs**: a 768 MiB Debian running lean Xorg (captured) and an 8192 MiB OpenVMS VM with `display none` reaching it as an X client | `qemu`, attached to the **bridge** VM | 1 VM for the pixels, produced by a second sibling VM over X |
@@ -100,9 +100,9 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (40)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (41)** — `aix432 alpine android aros aux beos bootos chokanji freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
-  os2warp postmarketos qnx ravynos reactos redstar2 redstar3 rhapsody
+  os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos serenityos solaris sunos414 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
@@ -120,7 +120,7 @@ rhapsody sunos414 win311` — so they carry an interpretation layer the other 29
 do not. Every foreign-architecture guest is necessarily in that list (PowerPC,
 PA-RISC, m68k, SPARC); the rest are x86 guests too old for KVM. Counting
 `openvms` as a QEMU station the split is 30 KVM / 11 TCG out of 41; counting it
-as its own tier, Tier 1 is 29 / 11 out of 40. Both numbers are correct and they
+as its own tier, Tier 1 is 30 / 11 out of 41. Both numbers are correct and they
 differ only in where `openvms` is filed.
 
 Three stations do **not** run a stock QEMU binary: `solaris` uses the patched build
@@ -258,6 +258,7 @@ missing feature.
 | `qnx` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |
 | `ravynos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `reactos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
+| `redhat62` | 1 direct-QEMU | kvm | `x11-warp-absolute` | abs | — | off | 30 | none |
 | `redstar2` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | none |
 | `redstar3` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `rhapsody` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | off | 30 | serial_getty |

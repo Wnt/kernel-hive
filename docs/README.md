@@ -103,6 +103,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
+| [guests/redhat62.md](guests/redhat62.md) | Red Hat Linux 6.2 "Zoot" — kickstart install, GNOME 1.0/Enlightenment on cirrus, kernel 2.2.14 IDE PIO wall (TCG install), x11warp pointer. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
 | [guests/solaris.md](guests/solaris.md) | Solaris 10 x86 with real CDE; in-guest warpd agent documented in `streamhost/guest-agents/solaris/README.md`. |
