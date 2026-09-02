@@ -451,6 +451,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a Cirrus SVGA
+  // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the
+  // kind of box ISPs racked by the hundred. The accent is the registry's
+  // FreeBSD daemon red.
+  freebsd411: {
+    caseTint: '#cfc6ae', accentTint: '#ab2b28', tintMix: 0.35,
+    badge: 'PENTIUM 4 PC', spec: 'CIRRUS SVGA 1024x768 • FREEBSD 4.11 • 2005', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

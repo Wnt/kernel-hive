@@ -86,7 +86,7 @@ const DEMO_PROGRAMS = {
     "perCharMs": 170
   },
   "freebsd411": {
-    "label": "Type a few commands into the Konsole",
+    "label": "Type a few commands into the root Konsole",
     "lines": [
       "uname -a",
       "ls /usr/local/bin | head",
