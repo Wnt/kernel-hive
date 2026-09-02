@@ -15,7 +15,7 @@ coordination" session allocated slot 180; landing is serialized through it.
 | slot / UDP / VMID | 180 / 54180 / 180 (kh-claimed by `smoke-rig.sh`, session `suse`) |
 | X forward (host loopback → guest) | 127.0.0.1:6080 → 10.0.2.15:6000, `SH_X11WARP_DISPLAY=127.0.0.1:80` |
 | render orders | as assigned by `stations-registry.py new --like freedos --slot 180` |
-| QEMU | `/opt/qemu-beos/bin/qemu-system-x86_64`, `pc-i440fx-11.0,acpi=off`, KVM, `-cpu host`, 256 MB, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci` on SLIRP, no audio |
+| QEMU | `/opt/qemu-beos/bin/qemu-system-x86_64`, `pc-i440fx-11.0,acpi=off`, **TCG** (`-accel tcg -cpu pentium3` — see "The wall"), 256 MB, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci` on SLIRP, no audio |
 | Release | SuSE Linux 6.4 (2000-03-28 README; retail six-CD set), i386: kernel 2.2.14, XFree86 3.3.6 (+4.0), KDE 1.1.2, YaST2 installer (YaST1 for admin) |
 | Media | archive.org item `suse-linux-6.4`, `suse-linux-6.4-cd1.iso` — **663 029 760 bytes**, sha256 `5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33`; staged `/data/assets-staging/suse64/` (labhost path) with `MANIFEST.sha256`. Only CD1 is used. |
 | Smoke rig | `/data/vms/sandbox/suse/smoke/` (`launch-smoke.sh [d|c]`, `run-daemon.sh`), published at `/os/suse64` |
@@ -37,3 +37,22 @@ sees `hda` (QEMU HARDDISK, 4096 MB), `hdc` (ATAPI CD), `fd0`, and loads the
 ## Timeline (measured after landing with session-timeline.py)
 
 TODO(coordinator)
+
+## The wall, and the race (2026-09-03)
+
+Under KVM the YaST2 install crawled: mke2fs of the 4 GiB root took 17 min and the
+package copy ran at **70 KiB/s** (4 of 281 packages after 5 min). Cause, measured
+by the concurrent redhat62 wave: the 2.2.14 kernel drives the emulated IDE disk in
+16-bit PIO and every `outw` is a KVM exit (~28 µs; one 512-byte write per ~19 ms).
+`ide0=dma`, `-cpu pentium3`, `kernel-irqchip=off` and a tmpfs disk all measure the
+same; `-accel tcg` runs the identical install ~20x faster. Race (3-QEMU cap):
+
+| Theory | Runner | Result |
+|---|---|---|
+| keep the KVM install running | baseline | LOSS — 70 KiB/s, hours |
+| `ide0=dma` boot parameter | cancelled | redhat62 measured DMA flags as no-ops under KVM |
+| rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | TODO(coordinator) |
+| `lsi53c895a` SCSI disk under KVM (DMA by design, `ncr53c8xx` module) | sonnet | TODO(coordinator) |
+
+Decision: the station runs under TCG (sunos414 precedent); golden + binary + device
+set are one combination, so the golden is baked under TCG too.

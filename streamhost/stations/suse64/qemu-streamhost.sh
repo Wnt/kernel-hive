@@ -1,6 +1,9 @@
 #!/bin/bash
 # suse64 — SuSE Linux 6.4 (2000) i386, KDE 1.1.2 on XFree86 3.3.6 (SVGA server on
 # the emulated Cirrus GD5446). VERBATIM launcher, emitted into stations-manifest.sh.
+# TCG, not KVM: the 2.2.14 kernel drives the IDE disk in 16-bit PIO and every outw is a
+# KVM exit (~28 us; 70 KiB/s writes measured 2026-09-03) — under TCG the same guest is ~20x
+# faster on disk, so the golden is baked and run under -accel tcg (sunos414 precedent).
 # Reset = `-loadvm golden` on disk.qcow2, the ONLY block device (rule 6: golden +
 # /opt/qemu-beos binary + this device set are one combination — recapture through
 # checkpoint-guard, never by hand). Pointer: motion is absolute through the guest's
@@ -19,8 +22,8 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm go
 X_PORT=6080
 nohup "${SUSE64_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-suse64 \
-  -enable-kvm -m 256 -smp 1 \
-  -machine pc-i440fx-11.0,acpi=off -cpu host \
+  -accel tcg -cpu pentium3 -m 256 -smp 1 \
+  -machine pc-i440fx-11.0,acpi=off \
   -rtc base=localtime \
   -boot c \
   $LOADVM \
