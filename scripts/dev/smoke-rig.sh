@@ -180,25 +180,44 @@ session="$1"
 slot_arg="$2"
 id="$3"
 export KH_SESSION="$session"
+mine_slot="$(kh-claim ls --mine --json 2>/dev/null | python3 -c '
+import json,sys
+for c in json.load(sys.stdin):
+    if c.get("class") == "slot":
+        print(c["name"]); break
+' 2>/dev/null || true)"
 if [ "$slot_arg" != "auto" ] && [ -n "$slot_arg" ]; then
   slot="$slot_arg"
-elif kh-claim who slot "$session" >/dev/null 2>&1; then
-  slot="$(kh-claim who slot "$session" 2>/dev/null | grep -oE 'purpose=[0-9]+' | cut -d= -f2 || true)"
-fi
-if [ -z "${slot:-}" ]; then
-  max=0
-  for f in /data/kernel-hive/registry/stations/*.json; do
-    s="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('stream',{}).get('slot',0))" "$f" 2>/dev/null || echo 0)"
-    [ "$s" -gt "$max" ] 2>/dev/null && max="$s"
-  done
-  slot=$((max + 1))
+elif [ -n "$mine_slot" ]; then
+  slot="$mine_slot" # re-run: reuse the slot this session already holds
+else
+  # next free slot: above every registry slot AND every slot claim anyone holds
+  slot="$(python3 - <<'PY_SLOT'
+import glob, json, subprocess
+taken = set()
+for f in glob.glob("/data/kernel-hive/registry/stations/*.json"):
+    try:
+        taken.add(int(json.load(open(f)).get("stream", {}).get("slot", 0)))
+    except Exception:
+        pass
+try:
+    for c in json.loads(subprocess.run(["kh-claim", "ls", "--all", "--json"], capture_output=True, text=True).stdout):
+        if c.get("class") == "slot" and str(c.get("name", "")).isdigit():
+            taken.add(int(c["name"]))
+except Exception:
+    pass
+print(max(taken) + 1)
+PY_SLOT
+  )"
 fi
 port=$((54000 + slot))
-kh-claim take slot "$session" --purpose "$slot" >&2 || kh-claim who slot "$session" >&2
-kh-claim take port "$port" --purpose "$id station (smoke rig)" >&2 || fail_port=1
-kh-claim take vmid "$session" --purpose "$id station (smoke rig)" >&2 || fail_vmid=1
-if [ "${fail_port:-0}" = 1 ]; then
-  echo "port $port already claimed by another session" >&2
+# fleet convention (see bootos/pcgeos): claims are named by the NUMBER, so they
+# pass to the real station and `kh-claim who slot <n>` answers.
+kh-claim take slot "$slot" --purpose "$id station slot (smoke rig)" >&2 || kh-claim who slot "$slot" >&2
+kh-claim take port "$port" --purpose "$id station streamhost UDP (slot $slot, smoke rig)" >&2 || fail_port=1
+kh-claim take vmid "$slot" --purpose "$id station VMID label (slot $slot, smoke rig)" >&2 || fail_vmid=1
+if [ "${fail_port:-0}" = 1 ] || [ "${fail_vmid:-0}" = 1 ]; then
+  echo "port $port / vmid $slot already claimed by another session (kh-claim who port $port)" >&2
   exit 1
 fi
 echo "$slot"
