@@ -95,6 +95,7 @@ from fleet_rollout_policy import (  # noqa: E402,F401
     claim_owner,
     claim_token_match,
     classify,
+    completion_report,
     effective_floor,
     load_registry,
     make_waves,
@@ -502,7 +503,34 @@ def main(argv=None):
         ok(f"wave {n} healthy")
 
     report_state(doc, [])
-    step(f"rollout complete: {len(doc['status'])} station(s)")
+    # THE DENOMINATOR IS PART OF THE RESULT. "rollout complete: 70 station(s)"
+    # is true and useless: from outside, a run that skipped four stations is
+    # indistinguishable from one scoped to seventy on purpose. That is how a
+    # station goes quietly off-fleet — amix sat alone on its own bring-up binary
+    # from the day it landed, skipped for a kh-claim, and nothing said so.
+    # docs/lab/ADD-NEW-OS-PLAYBOOK.md 7.2.1 lists "the station is running an old
+    # binary" as trap #1; a silent skip is how that trap gets set.
+    #
+    # And the skip is NOT stable, which is what makes reporting it load-bearing
+    # rather than tidy. A station-allocation claim carries no pid, so kh-claim
+    # ages it from `held` to `stale` on a 12 h timer (`--stale-after`): a station
+    # is skipped when any same-named claim was TOUCHED within 12 h of the run.
+    # Coverage therefore depends on unrelated recent activity — aix432 rolled
+    # tonight and ravynos did not, only because ravynos's sandbox claim was
+    # re-taken hours earlier to re-label it. The same two stations may roll fine
+    # tomorrow with nothing fixed, which reads as an intermittent mystery rather
+    # than a rule.
+    #
+    # This is deliberately NOT auto-exempted. `wt.sh` takes a sandbox claim with
+    # no --pid and derives its name from the directory, so an active bring-up's
+    # claim and a retained-evidence claim are byte-identical: nothing here can
+    # tell "someone is mid-surgery on this station" from "someone keeps evidence
+    # for it", and guessing wrong restarts a station out from under its owner.
+    # So the tool reports and defers to a human instead of deciding.
+    head, *rest = completion_report(len(doc["status"]), len(live), doc["skips"])
+    step(head)
+    for line in rest:
+        print(f"    {line}")
     ok(f"state journal kept at {path}")
     return 0
 

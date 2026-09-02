@@ -383,5 +383,51 @@ class RegistryTest(unittest.TestCase):
         self.assertLess(max(first_ten), min(last_ten))
 
 
+class CompletionReportTest(unittest.TestCase):
+    """What the run SAYS it covered.
+
+    The journal always knew what was skipped; the final report did not say.
+    "rollout complete: 70 station(s)" reads identically whether four stations
+    were deferred or the run was scoped to seventy deliberately — and a station
+    that quietly misses every rollout is trap #1 of ADD-NEW-OS-PLAYBOOK.md
+    7.2.1, running an old binary while looking perfectly healthy.
+    """
+
+    def test_a_clean_run_states_the_denominator(self):
+        lines = ROLLOUT.completion_report(70, 70, {})
+        self.assertEqual(lines, ["rollout complete: 70 of 70 live station(s)"])
+
+    def test_a_skipped_station_is_named_with_its_reason(self):
+        lines = ROLLOUT.completion_report(70, 74, {"amix": "kh-claim held by session 'amix'"})
+        blob = "\n".join(lines)
+        self.assertIn("70 of 74 live station(s)", blob)
+        self.assertIn("amix", blob)
+        self.assertIn("kh-claim held by session 'amix'", blob)
+
+    def test_every_skip_appears_not_just_the_count(self):
+        """The bug was a total that hid its own exceptions, so all of them show."""
+        skips = {
+            "amix": "kh-claim held by session 'amix'",
+            "ravynos": "kh-claim held by session 'ravynos'",
+            "sailfishos": "unit is absent, not active (parked on purpose)",
+            "win311": "a visitor is connected (--include-busy to restart anyway)",
+        }
+        blob = "\n".join(ROLLOUT.completion_report(70, 74, skips))
+        for name in skips:
+            self.assertIn(name, blob)
+        self.assertIn("4 station(s) NOT rolled", blob)
+
+    def test_the_skips_are_ordered_so_two_runs_can_be_diffed(self):
+        skips = {"win311": "busy", "amix": "claimed", "ravynos": "claimed"}
+        names = [ln.split()[0] for ln in ROLLOUT.completion_report(70, 73, skips) if ln.startswith("  ")]
+        self.assertEqual(names, ["amix", "ravynos", "win311"])
+
+    def test_a_skip_is_described_as_deferred_work(self):
+        """A skipped station is not a finished station; the wording has to say so."""
+        blob = "\n".join(ROLLOUT.completion_report(1, 2, {"amix": "claimed"}))
+        self.assertIn("still on its previous binary", blob)
+        self.assertIn("deferred work, not done work", blob)
+
+
 if __name__ == "__main__":
     unittest.main()
