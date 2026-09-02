@@ -506,13 +506,6 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
-  // serial mouse the X server is told about (relative). Same tower family as
-  // tinycore, the other small-Linux desktop in the hall.
-  slackware: {
-    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
-    keyboard: 'keyboardA', mouse: 'paramMouseB',
-  },
   // pcbsd: a 2008 office desktop — a putty SFF box under a 4:3 LCD, with the
   // USB tablet pointer the station forwards as absolute (same era kit as reactos).
   pcbsd: {
@@ -524,6 +517,13 @@ export const ASSEMBLIES_BY_TILE = {
   ubuntu: {
     kind: 'towerSetup', body: 'towerE', monitor: 'crtD',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
+  // serial mouse the X server is told about (relative). Same tower family as
+  // tinycore, the other small-Linux desktop in the hall.
+  slackware: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
   },
 } as const satisfies Record<string, Assembly>;
 
