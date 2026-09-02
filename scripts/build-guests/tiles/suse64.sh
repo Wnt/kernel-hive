@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the suse64 gallery guest: SuSE Linux 6.4 i386 (2000), KDE 1.1.2 on
-# XFree86 3.3.6, YaST1 installer.
+# XFree86 3.3.6, YaST2 installer.
 #
 # WHAT THIS SCRIPT DOES:
 #   1. Download suse-linux-6.4-cd1.iso from archive.org (unless already
@@ -8,16 +8,16 @@
 #   2. Create a 4 GiB qcow2 disk in OUT_DIR.
 #   3. Boot it headless with the EXACT suse64 station device set (see
 #      docs/lab/SUSE64-WAVE.md allocation ledger), CD1 attached, -boot d.
-#   4. Wait for the linuxrc/YaST1 boot screen (fb-wait.py --settle) and
+#   4. Wait for the linuxrc/YaST2 boot screen (fb-wait.py --settle) and
 #      screendump it as proof the install media boots.
 #
 # AUTOMATION HONESTY — what this script does NOT do:
 #   It stops at the booted installer. Everything past that point is driven
 #   interactively over QMP by an agent using scripts/dev/qmp-type.py (a
 #   vision loop: screendump -> OCR/read -> type/click -> repeat), because
-#   YaST1's text-mode installer, XF86Config, and the KDE 1.1.2 desktop have
+#   YaST2's graphical installer, XF86Config, and the KDE 1.1.2 desktop have
 #   no unattended/answer-file path on this media:
-#     - YaST1 install: language English, keyboard us, source CD, partition
+#     - YaST2 install: language English, keyboard us, source CD, partition
 #       one swap + one ext2 `/`, package selection default + KDE, bootloader
 #       LILO to the MBR, root password `gallery`, network eth0 via DHCP.
 #     - /etc/XF86Config: SVGA server on the cirrus chipset, 1024x768x16.
@@ -117,7 +117,7 @@ boot_installer() {
 }
 
 wait_and_prove() {
-  log "waiting for the linuxrc/YaST1 boot screen to settle"
+  log "waiting for the linuxrc/YaST2 boot screen to settle"
   mkdir -p "$WORK/evidence"
   python3 "$SELF_DIR/../../dev/fb-wait.py" --qmp "$QMP" --settle 3 --timeout 180 \
     --out "$WORK/evidence/linuxrc-boot.png" \
@@ -133,14 +133,14 @@ vm_stop
 
 cat <<EOF
 
-[suse64] PASS: booted to the linuxrc/YaST1 installer on a fresh 4 GiB disk.
+[suse64] PASS: booted to the linuxrc/YaST2 installer on a fresh 4 GiB disk.
   disk:      $DISK
   qemu.pid:  (stopped after proof)
   evidence:  $WORK/evidence/linuxrc-boot.png
 
 Next steps (agent, over QMP with scripts/dev/qmp-type.py, vision loop):
   1. Re-launch with the same device set (this script's boot_installer)
-     minus -display none if you need a local view, and drive YaST1:
+     minus -display none if you need a local view, and drive YaST2:
      English / us keyboard / CD source / one swap + one ext2 "/" /
      default+KDE package selection / LILO to MBR / root password "gallery" /
      eth0 via DHCP.
