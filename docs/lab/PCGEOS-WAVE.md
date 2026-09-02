@@ -15,8 +15,9 @@ station. Branch `pcgeos` is the ledger; every stream branches from it.
   mtools (`-i disk.raw@@32256`): `mcopy -s ensemble ::/ENSEMBLE`; `FDAUTO.BAT`
   (CRLF!) with `call \MENU.BAT` replaced by `cd \ENSEMBLE` + `loader`. CTMOUSE
   is already loaded by FDAUTO.BAT; `SET BLASTER=A220 I5 D1 H5 T6` too.
-- `geos.ini` edits (the zip targets DOSBox): `[mouse] device = Generic Mouse`,
-  `driver = genmouse.geo` (INT 33h over CTMOUSE; was "Basebox Mouse"/abs);
+- `geos.ini` edits (the zip targets DOSBox): `[mouse]` LEFT AS SHIPPED (device "Basebox Mouse", driver "Abs. coord.
+  Wheel Mouse" — it moves 1:1 under QEMU; the Generic Mouse/genmouse.geo entry this
+  ledger first prescribed does NOT move the pointer, measured 2026-09-03);
   `screenBlanker = false` (was true, 1 minute); `Lights Out Launcher` removed
   from `[ui] execOnStartup`. Screen stays the zip default: `VESA Compatible
   SuperVGA: 800x600 64K-color`, `vga16.geo` — works on `-vga std`.
@@ -62,7 +63,7 @@ Operator: "pointer based graphical OSes need absolute cursor positioning before
 they are considered fully integrated." Route: `kh-ramabs` (beos/rhapsody), because
 DOS's CTMOUSE understands no absolute device and `-vga std` has no hardware cursor,
 but CTMOUSE keeps the pointer as int16 x,y in its resident data and GEOS's
-`genmouse.geo` takes the absolute CX/DX from the INT 33h callback. Steps: re-bake
+GEOS's mouse driver takes the absolute CX/DX from the INT 33h callback. Steps: re-bake
 the golden under `/opt/qemu-beos` (binary + golden are one unit); five positions at
 2-unit steps (1:1 below GEOS's acceleration; 20-unit packets accelerate ~1.4x),
 screendump + `pmemsave` of the first 1 MB, bias search → six (0,0) candidates;
@@ -70,3 +71,14 @@ one QEMU start per candidate with the device's connect-time write probe → exac
 one verified, `0x76e0`; MOVEA sweep pixel-exact at five targets. Tooling:
 `scripts/dev/pcgeos-ramabs-derive.py`. Trap: a reference frame with the pointer
 clipped at the screen edge still shows 3 px of the sprite — mask it.
+
+## KR-11 in GeoWrite (2026-09-03, operator-found)
+
+The operator opened GeoWrite → new document in the browser and got `System Error
+Code: KR-11` (= general-protection fault). Bisected on three parallel sandbox rigs
+in ~10 minutes: it is the `truetype.geo` font driver under KVM (also with
+`-cpu pentium3`); without that `font = {}` line GeoWrite works and text renders.
+Shipped: builder strips the line, golden re-baked (address re-derived). Details:
+`docs/guests/pcgeos.md`. Lesson for the playbook: **open a document in the
+flagship app before calling a GUI station done** — the smoke boot and the Express
+menu proved nothing about the apps.

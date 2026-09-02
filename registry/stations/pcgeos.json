@@ -68,7 +68,7 @@
   "render": {
     "signalOrder": 73,
     "stationsManifestOrder": 71,
-    "stationsManifestPrelude": "\n# pcgeos (VMID 175) — PC/GEOS Ensemble (GeoWorks lineage, bluewaysw Apache-2.0 build) on FreeDOS 1.3.\n#   VERBATIM LAUNCHER: disk.qcow2 (FreeDOS FAT16 + C:\\ENSEMBLE, copied from the\n#   builder output on first launch) is the ONLY block device and holds the savevm\n#   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker\n#   -> dbus audiodev, PS/2 relative pointer (CTMOUSE + genmouse.geo).\n",
+    "stationsManifestPrelude": "\n# pcgeos (VMID 175) — PC/GEOS Ensemble (GeoWorks lineage, bluewaysw Apache-2.0 build) on FreeDOS 1.3.\n#   VERBATIM LAUNCHER: disk.qcow2 (FreeDOS FAT16 + C:\\ENSEMBLE, copied from the\n#   builder output on first launch) is the ONLY block device and holds the savevm\n#   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker\n#   -> dbus audiodev, absolute pointer via kh-ramabs (CTMOUSE coordinate).\n",
     "bringUpGroup": 1,
     "bindingOrder": 78,
     "bindingPrelude": "",
@@ -175,9 +175,9 @@
       "pointerRamAddress": {
         "addr": "0x76e0",
         "layout": "point16le",
-        "derivedAgainstGolden": "2026-09-03 cold bake under /opt/qemu-beos (VM_CLOCK 0000:01:06.812, tag `golden` in disk.qcow2)",
+        "derivedAgainstGolden": "2026-09-03 01:21 cold bake under /opt/qemu-beos without truetype.geo (VM_CLOCK 0000:00:42.439, VM_SIZE 3.47 MiB, tag `golden` in disk.qcow2)",
         "status": "LIVE",
-        "note": "Guest-physical address of CTMOUSE's own pointer coordinate (int16 x, int16 y, little-endian) -- the input kh-ramabs writes; GEOS's genmouse.geo takes the absolute CX/DX from CTMOUSE's INT 33h callback, so the guest republishes it after one 1-unit nudge. Valid ONLY for the golden named in derivedAgainstGolden (loadvm restores RAM verbatim). Re-derive after every re-bake with scripts/dev/pcgeos-ramabs-derive.py (four-position pmemsave bias search over the first 1 MB, then the device's own connect-time write probe per candidate, ~3 minutes). The search returned six (0,0)-bias addresses (0x76e0 0x76e4 0x931e 0x936a 0x4c564 0x4f6de); exactly one verified. Five MOVEA targets incl. (20,560) and (780,30) landed pixel-exact in the framebuffer, hotspot (0,0)."
+        "note": "Guest-physical address of CTMOUSE's own pointer coordinate (int16 x, int16 y, little-endian) -- the input kh-ramabs writes; GEOS's mouse driver (the zip's default [mouse] entry) takes the absolute CX/DX from CTMOUSE's INT 33h callback, so the guest republishes it after one 1-unit nudge. Valid ONLY for the golden named in derivedAgainstGolden (loadvm restores RAM verbatim). Re-derive after every re-bake with scripts/dev/pcgeos-ramabs-derive.py (four-position pmemsave bias search over the first 1 MB, then the device's own connect-time write probe per candidate, ~3 minutes). The search returned six (0,0)-bias addresses on each of two bakes (0x76e0 0x76e4 0x931e 0x936a and two GEOS-side copies); exactly one verified both times — CTMOUSE loads before GEOS, so its data segment did not move. Five MOVEA targets incl. (20,560) and (780,30) landed pixel-exact in the framebuffer, hotspot (0,0)."
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",

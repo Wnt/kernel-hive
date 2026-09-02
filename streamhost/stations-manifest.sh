@@ -1032,7 +1032,7 @@ emit bootos \
 #   VERBATIM LAUNCHER: disk.qcow2 (FreeDOS FAT16 + C:\ENSEMBLE, copied from the
 #   builder output on first launch) is the ONLY block device and holds the savevm
 #   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker
-#   -> dbus audiodev, PS/2 relative pointer (CTMOUSE + genmouse.geo).
+#   -> dbus audiodev, absolute pointer via kh-ramabs (CTMOUSE coordinate).
 emit pcgeos \
   --tile pcgeos --vmid 175 --udp 54175 --pointer abs --input-backend ramabs \
   --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \

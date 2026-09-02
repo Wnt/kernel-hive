@@ -12,11 +12,11 @@ when the tag exists.
     python3 pcgeos-ramabs-derive.py test RIG ADDR...    # one QEMU start per candidate; the device's own
                                                         # connect-time probe is the write test; then a MOVEA sweep
 
-`derive` expects RIG/qmp.sock (guest running, golden restored) and RIG/s1.ppm: a
-screendump of the fixture with the pointer parked at the right edge. Locating is
-a diff against that reference rather than cursor-locate.py, because GEOS repaints
-nothing but the taskbar clock (masked, y >= 575) and the parked sprite still
-leaves 3 px at x=799 (masked too). Motion is 1:1 only below GEOS's acceleration
+`derive` expects RIG/qmp.sock (guest restored from the golden, still paused or
+running). It parks the pointer bottom-right and shoots its own reference frame
+(RIG/ref.ppm); locating is a diff against that rather than cursor-locate.py,
+because GEOS repaints nothing but the taskbar clock (masked, y >= 575) and the
+parked sprite's edge pixels (masked, x >= 780). `test` reuses RIG/ref.ppm. Motion is 1:1 only below GEOS's acceleration
 threshold: 2-unit steps 8 ms apart (20-unit packets move ~1.4 px per unit).
 
 Exactly ONE candidate must verify. If more do, stop and escalate.
@@ -71,14 +71,24 @@ class Q:
         self.cmd("pmemsave", val=0, size=0x100000, filename=p)
 
 
-def locator(rig):
-    ref = np.asarray(Image.open(os.path.join(rig, "s1.ppm")).convert("RGB")).astype(int)
+def locator(rig, q=None):
+    """Diff-based sprite locator. The reference is THIS golden with the pointer parked
+    in the bottom-right corner (built by `derive`, saved as RIG/ref.ppm), so nothing
+    but the cursor differs; the parked sprite's few edge pixels and the taskbar clock
+    are masked. A reference from another bake does not work: any static difference
+    dominates the min() and every frame "locates" at the same spot."""
+    ref_path = os.path.join(rig, "ref.ppm")
+    if q is not None:
+        q.rel(3000, 3000, step=20)
+        time.sleep(0.5)
+        q.shot(ref_path)
+    ref = np.asarray(Image.open(ref_path).convert("RGB")).astype(int)
 
     def locate(p):
         a = np.asarray(Image.open(p).convert("RGB")).astype(int)
         d = np.abs(a - ref).sum(2) > 0
         d[575:, :] = False
-        d[446:456, 795:] = False
+        d[:, 780:] = False
         ys, xs = np.nonzero(d)
         return (int(xs.min()), int(ys.min())) if len(xs) else None
 
@@ -87,8 +97,9 @@ def locator(rig):
 
 def derive(rig):
     q = Q(rig)
-    locate = locator(rig)
-    moves = [(-200, -150), (300, 100), (100, 200), (-250, 50), (-100, -250)]
+    q.cmd("cont")
+    locate = locator(rig, q)  # parks the pointer bottom-right and shoots the reference
+    moves = [(-500, -400), (300, 100), (-200, 200), (-250, -350), (400, 250)]
     loc = []
     for i, (dx, dy) in enumerate(moves):
         q.rel(dx, dy)
@@ -98,7 +109,7 @@ def derive(rig):
         pos = locate(f"{rig}/d{i}.ppm")
         print(i, (dx, dy), pos)
         if pos is None:
-            sys.exit("pointer not located; is s1.ppm a parked-pointer reference of THIS golden?")
+            sys.exit("pointer not located (did the guest resume? is the pointer alive?)")
         loc.append(pos)
     dumps = [np.fromfile(f"{rig}/m{i}.bin", dtype="<i2") for i in range(len(moves))]
     n = len(dumps[0])
