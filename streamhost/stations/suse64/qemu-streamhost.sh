@@ -20,6 +20,7 @@ export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
 qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 X_PORT=6080
+# shellcheck disable=SC2086 # $LOADVM must word-split into flags
 nohup "${SUSE64_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-suse64 \
   -accel tcg -cpu pentium3 -m 256 -smp 1 \

@@ -120,8 +120,8 @@ wait_and_prove() {
   log "waiting for the linuxrc/YaST2 boot screen to settle"
   mkdir -p "$WORK/evidence"
   python3 "$SELF_DIR/../../dev/fb-wait.py" --qmp "$QMP" --settle 3 --timeout 180 \
-    --out "$WORK/evidence/linuxrc-boot.png" \
-    || die "linuxrc screen did not settle within 180s"
+    --out "$WORK/evidence/linuxrc-boot.png" ||
+    die "linuxrc screen did not settle within 180s"
   log "proof framebuffer: $WORK/evidence/linuxrc-boot.png"
 }
 
