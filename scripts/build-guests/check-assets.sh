@@ -140,6 +140,10 @@ ROWS=(
   # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
   "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
+  # Slackware Linux 3.4 (1997, kernel 2.0.30): slackware.sh composes the root fs
+  # host-side from the mirror .tgz set (128 files); pins recorded in
+  # scripts/build-guests/tiles/slackware/MANIFEST.sha256.
+  "opt-file|slackware|Slackware 3.4 install set manifest (128 pinned files, mirrors.slackware.com/slackware/slackware-3.4)|$ASSET_STAGING/slackware/MANIFEST.sha256|sha256:f74ddc25f891b658f2083e71ac9849c990007c7e64cfd1691a3ce8bb83fc89be|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
