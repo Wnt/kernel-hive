@@ -812,6 +812,24 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "pcbsd": {
+      "dir": "/data/vms/streamhost/stations/pcbsd",
+      "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54179,
+      "notes": "no exec channel and no NIC (golden device set has none); rel PS/2 pointer only — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
+    },
     "pcgeos": {
       "dir": "/data/vms/streamhost/stations/pcgeos",
       "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",

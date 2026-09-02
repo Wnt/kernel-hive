@@ -68,7 +68,7 @@
     "stationsManifestOrder": 72,
     "stationsManifestPrelude": "\n# ubuntu (VMID 183) — Ubuntu 4.10 Warty Warthog live CD (GNOME 2.8), KVM/i440fx acpi=off, std VGA, USB tablet, no NIC, no audio.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 79,
+    "bindingOrder": 80,
     "bindingPrelude": "",
     "goldenOrder": 72,
     "actionMapOrder": 44
@@ -185,7 +185,7 @@
         "reason": "tracked verbatim launcher is the production device ledger; live CD + empty qcow2 vmstate carrier; zero guest network devices"
       }
     },
-    "bringUpOrder": 79
+    "bringUpOrder": 80
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
