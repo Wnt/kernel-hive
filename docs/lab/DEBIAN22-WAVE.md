@@ -27,6 +27,51 @@ memory) — this wave joins their landing queue; **no main push without "go"**.
   `run-daemon.sh` restarts the hand-run daemon after every guest relaunch).
   The rig's `disk.qcow2` is an EMPTY 2 GiB qcow2 — nothing installed yet.
 
+## Measured by `debian22-golden` (Fable, 2026-09-02 23:12–23:42, 30-minute budget)
+
+- **cfdisk refuses the empty qcow2** ("FATAL ERROR: Bad signature on partition
+  table"): the "Partition a Hard Disk" menu item is a dead end on a blank disk.
+  Partition from the tty2 shell (`alt-f2`, Enter) with `fdisk /dev/hda` instead;
+  dbootstrap then sees the table. Layout used: **hda1 = cylinders 1–483
+  (1947 MB, type 83, bootable), hda2 = 484–520 (149 MB, type 82)**; the
+  kernel sees the 2 GiB disk as **CHS 520/128/63**.
+- Swap init and mke2fs (ext2, 4 KiB blocks, "no 2.0 compat") go through
+  dbootstrap as planned.
+- **WALL: guest disk writes run at ~50–80 KB/s.** `mke2fs` on hda1 took
+  ~5.5 min for the 15 inode tables and was still "Writing superblocks" 6 min
+  later; the qcow2 grows ~2 MB/min. No `lost interrupt` on tty4. The host is
+  not the cause (`dd oflag=dsync` 6.7 MB/s on the same ZFS dataset). Raced
+  theories (`rig-clone.sh new debian22 <theory>`, each driven to a raw
+  `mke2fs /dev/hda1` from tty2): `nodma` (`ide0=nodma`) and `p2cpu`
+  (`-cpu pentium2`) were NOT faster (same ~2 MB/min growth); `nodisp`
+  (`-display none`) was killed by the coordinator for load before it proved
+  anything; **`tcg` (no KVM, `-cpu pentium3`) is the winner: a full
+  `mke2fs /dev/hda1` finished in 47 s** (02:26:40 → 02:27:27 on the guest
+  clock, frame `shots/race-tcg/m4/cur.png`; its qcow2 grew 21 MB in the same
+  60 s in which the KVM rig grew 3 MB) while the KVM rig was still inside the
+  same mke2fs after 13 min. So the wall is **KVM + the 2.2.17 boot-floppy
+  kernel's 512-byte IDE PIO writes** (suse64 measured the same), not the
+  disk, the CPU model, DMA or the display. Untested KVM-preserving theories:
+  `-machine kernel-irqchip=off`/`split`, `-cpu host,-x2apic`, a 2.2.19
+  kernel-image. Frames: `/data/vms/sandbox/debian22-golden/shots/`
+  (control `s*/cur.png`, races `race-*/`). At this rate
+  kernel+base+X+GNOME (~300 MB) is hours, not minutes: **the interactive
+  install cannot meet the 10-minute bar on this device set** — the
+  `debian22-compose` route (populate the ext2 on the host, boot only to bake)
+  is the one that fits the budget.
+- X was never reached here; whoever builds the disk writes the XF86Config from
+  the proven siblings, not from the plan above: Device `Chipset "clgd5446"`,
+  `VideoRam 4096`, **`Option "no_bitblt"`** (slackware wave: without it xterm
+  text does not paint on XF86_SVGA + GD5446 — the BitBLT path; depth 8 and 16
+  both proven with it); Monitor HorizSync 30-64, VertRefresh 50-90, Modeline
+  "1024x768" 65 1024 1032 1176 1344 768 771 777 806 -hsync -vsync; Pointer
+  PS/2 `/dev/psaux`. Full file: netbsd14's
+  `scripts/build-guests/tiles/netbsd14/XF86Config`.
+- Nothing installed, no golden baked, no station-dir staging. The rig
+  (`/data/vms/sandbox/debian22/smoke/`, now with a `launch-smoke.sh` in the
+  rig-clone convention) is left running mid-dbootstrap so the operator can
+  see it at `/os/debian22`.
+
 ## Allocation ledger (claimed on labhost by session `debian22`)
 
 | Thing | Value |
