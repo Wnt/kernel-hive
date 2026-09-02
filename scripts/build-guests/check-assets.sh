@@ -274,6 +274,9 @@ ROWS=(
   #     (the six build-mame-*.sh products bbcb/dragon/kc85/mpf2/oricatmos/zx81,
   #     plus irix's separately-built sgi; 68-122 MB each) are BUILD ARTIFACTS, not
   #     media: losing one costs a chroot rebuild, not the station. No rows.
+  # suse64.sh re-fetches CD1 from archive.org if absent; the row is here so a
+  # staged copy is hash-checked before a build spends time on it.
+  "opt-file|suse64|SuSE Linux 6.4 i386 install CD1 (archive.org suse-linux-6.4)|$ASSET_STAGING/suse64/suse-linux-6.4-cd1.iso|sha256:5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33|freely-fetchable-pinned"
 )
 
 # ---- impl ---------------------------------------------------------------------
