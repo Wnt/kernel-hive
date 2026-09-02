@@ -247,6 +247,7 @@ missing feature.
 | `ninefront` | 1 direct-QEMU | kvm | `warpd-agent` | warpd | — | on | 60 | — |
 | `nt351` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | abs | — | on | 30 | — |
 | `nt4` | 1 direct-QEMU | kvm | `qemu-vmmouse` | abs | — | off | 30 | warpd_e |
+| `openbsd` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `openvms` | 4 two-QEMU | kvm x2 | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `oricatmos` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `os2warp` | 1 direct-QEMU | tcg | `warpd-agent` | warpd | — | on | 30 | — |

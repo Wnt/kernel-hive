@@ -506,5 +506,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
+  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  openbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
+  },
 } as const satisfies Record<string, Assembly>;
 

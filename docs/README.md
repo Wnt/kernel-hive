@@ -99,6 +99,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/msdos-win1.md](guests/msdos-win1.md) | MS-DOS + Windows 1.0 station. |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |
 | [guests/ninefront.md](guests/ninefront.md) | 9front (Plan 9 fork) station — warpd agent on :57793. |
+| [guests/openbsd.md](guests/openbsd.md) | OpenBSD 7.9 amd64 station — unattended autoinstall over loopback HTTP, fvwm from base Xenocara, usb-tablet InputClass pointer fix. |
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
