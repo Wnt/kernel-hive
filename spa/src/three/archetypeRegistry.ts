@@ -204,7 +204,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   ravynos:     { osId: 'ravynos', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#64748b', eraLabel: '2025 · ravynOS 0.6.1' }, // ideal: any 2020s PC — the point is that it is not a Mac
   amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
   bootos:      { osId: 'bootos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#8ecae6', eraLabel: '2019 · 512-byte boot-sector OS' },
-  pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: true },
+  pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

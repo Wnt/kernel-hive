@@ -1034,7 +1034,8 @@ emit bootos \
 #   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker
 #   -> dbus audiodev, PS/2 relative pointer (CTMOUSE + genmouse.geo).
 emit pcgeos \
-  --tile pcgeos --vmid 175 --udp 54175 --pointer rel --audio on --fps 30 \
+  --tile pcgeos --vmid 175 --udp 54175 --pointer abs --input-backend ramabs \
+  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \
   --launcher-file "$T/pcgeos/qemu-streamhost.sh" --env-append-file \
   "$T/pcgeos/station.env.fixture"
 
