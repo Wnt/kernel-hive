@@ -20,6 +20,17 @@
 // needed, and none was made — which also keeps this tool off the toes of
 // anyone editing the SPA.
 //
+// WHY A DEDICATED CDP SESSION. Measured 2026-09-02: a transition on a BUSY
+// tab was photographed up to 7 s late, long after the banner had cleared, while
+// the same code caught an idle tab's banner perfectly. Playwright multiplexes
+// every call for one page over ONE ordered protocol channel, so a screenshot
+// queues behind whatever the journey is doing — traceFigureEight alone issues
+// ~200 round trips. The watch therefore opens its OWN CDP session and uses
+// Runtime.evaluate / Page.captureScreenshot on it, which is ordered
+// independently of the journey's. Every record still carries `shotLagMs`, the
+// measured gap between the page's own transition timestamp and the capture, so
+// a late frame can never be mistaken for the moment itself.
+//
 // WHY THE SAMPLER RUNS IN-PAGE. A node-side poll can only see the state at the
 // instant it asks; a 250 ms poll across six tabs would miss a banner that
 // flashes between two asks and would also mis-time the ones it caught by up to
@@ -171,6 +182,9 @@ export function startBannerWatch(page, {
   let shotSeq = 0;
   if (shotsDir) fs.mkdirSync(shotsDir, { recursive: true });
 
+  let cdp = null;
+  const cdpReady = page.context().newCDPSession(page).then((s) => { cdp = s; }).catch(() => { cdp = null; });
+
   const payload = {
     phaseWords: PHASE_WORDS,
     bannerWords: BANNER_WORDS,
@@ -188,19 +202,36 @@ export function startBannerWatch(page, {
     const name = `${vis}-${station}-${String(elapsedMs).padStart(6, '0')}-${stateSlug(ev)}.png`;
     const file = path.join(shotsDir, name);
     try {
-      await page.screenshot({ path: file, timeout: 8000 });
+      if (cdp) {
+        const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
+        fs.writeFileSync(file, Buffer.from(data, 'base64'));
+      } else {
+        await page.screenshot({ path: file, timeout: 8000 });
+      }
       shotSeq++;
-      return { file, kind };
+      return { file, kind, at: Date.now() };
     } catch (err) {
       log(`banner: screenshot failed (${String(err).split('\n')[0]})`);
       return null;
     }
   }
 
+  /** Run `fn` (a zero-arg page function) on the watch's own CDP session when
+   *  there is one, so it is not queued behind the journey's actions. */
+  async function evalInPage(fn, arg) {
+    const expr = `(${fn.toString()})(${JSON.stringify(arg ?? null)})`;
+    if (cdp) {
+      const r = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
+      if (r.exceptionDetails) throw new Error(r.exceptionDetails.text);
+      return r.result.value;
+    }
+    return page.evaluate(fn, arg);
+  }
+
   async function drain() {
     let evs = [];
     try {
-      evs = await page.evaluate(() => {
+      evs = await evalInPage(() => {
         const s = window.__khBannerWatch;
         if (!s) return null;
         return s.queue.splice(0, s.queue.length);
@@ -211,7 +242,7 @@ export function startBannerWatch(page, {
     if (evs === null) {
       // A hard reload landed before addInitScript could re-arm, or the very
       // first evaluate beat the arming — install it directly.
-      await page.evaluate(installSampler, payload).catch(() => {});
+      await evalInPage(installSampler, payload).catch(() => {});
       return;
     }
     for (const ev of evs) {
@@ -230,7 +261,11 @@ export function startBannerWatch(page, {
         phase: ev.phase,
         chips: ev.chips,
         shot: shot ? path.basename(shot.file) : null,
+        shotLagMs: shot ? shot.at - ev.at : null,
       });
+      if (shot && shot.at - ev.at > 1000) {
+        log(`banner: shot of "${stateSlug(ev)}" is ${((shot.at - ev.at) / 1000).toFixed(1)}s late — the timeline is the record, not the frame`);
+      }
     }
   }
 
@@ -241,7 +276,7 @@ export function startBannerWatch(page, {
     lastPeriodic = now;
     let cur = { banner: null, phase: null, chips: [] };
     try {
-      const s = await page.evaluate(() => {
+      const s = await evalInPage(() => {
         const st = window.__khBannerWatch;
         if (!st || !st.last) return null;
         const [banner, phase, chips] = JSON.parse(st.last);
@@ -265,13 +300,15 @@ export function startBannerWatch(page, {
         phase: cur.phase,
         chips: cur.chips ?? [],
         shot: path.basename(shot.file),
+        shotLagMs: shot.at - now,
       });
     }
   }
 
   const loop = (async () => {
     await armed;
-    await page.evaluate(installSampler, payload).catch(() => {});
+    await cdpReady;
+    await evalInPage(installSampler, payload).catch(() => {});
     while (!stopped) {
       await drain();
       await periodic();

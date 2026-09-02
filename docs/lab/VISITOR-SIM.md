@@ -491,6 +491,15 @@ as it did before. The full timeline is also written into the run manifest as
 `bannerTimeline` (transitions and the 5 s stills, sorted across all visitors),
 which is what you cross-reference against `logs.db`.
 
+The watch opens its **own CDP session** for the sampling and the capture.
+Measured 2026-09-02: without one, a transition on a busy tab was photographed
+up to 7 s late — long after the banner had cleared — because Playwright
+multiplexes every call for a page over one ordered channel and
+`traceFigureEight` alone issues ~200 round trips ahead of it. Every record
+still carries `shotLagMs` (page-transition timestamp → capture), and a lag over
+1 s is called out in the log: **the timeline is the record, the frame is
+corroboration.**
+
 Each log line reads:
 
 ```
