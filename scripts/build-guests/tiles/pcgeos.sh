@@ -12,8 +12,9 @@
 #      <STAGE_DIR>, verified against the pinned SHA-256 below (CI-latest is a
 #      moving upstream tag; the hash, not the tag, is the pin).
 #   2. compose the disk: qemu-img convert the fleet FreeDOS disk to raw,
-#      unzip the ensemble payload, patch geos.ini (Generic Mouse / genmouse.geo,
-#      screenBlanker off, drop the Lights Out Launcher autostart entry),
+#      unzip the ensemble payload, patch geos.ini ([mouse] left as shipped — see below,
+#      screenBlanker off, drop the Lights Out Launcher autostart entry, drop the
+#      truetype.geo font driver -- it #GPs (KR-11) under KVM when GeoWrite opens a document),
 #      mcopy -s the ensemble dir onto the FAT16 partition (offset 32256) as
 #      ::/ENSEMBLE, rewrite FDAUTO.BAT so `call \MENU.BAT` becomes
 #      `cd \ENSEMBLE` + `loader`, convert back to qcow2.
@@ -146,20 +147,26 @@ else
   python3 - "$ENS_DIR/geos.ini" <<'PY'
 import re, sys
 path = sys.argv[1]
-text = open(path, encoding="utf-8", errors="replace").read()
-text = re.sub(r"(?im)^device\s*=.*$", "device = Generic Mouse", text, count=1)
-text = re.sub(r"(?im)^driver\s*=.*genmouse.*$", "driver = genmouse.geo", text, count=0)
-if "driver = genmouse.geo" not in text:
-    text = re.sub(r"(?im)^(device = Generic Mouse)$", r"\1\ndriver = genmouse.geo", text, count=1)
+text = open(path, encoding="latin-1").read()
+# [mouse] is left as the zip ships it (device "Basebox Mouse", driver "Abs. coord.
+# Wheel Mouse"): under QEMU with CTMOUSE loaded it moves the pointer 1:1 and is
+# what the kh-ramabs absolute pointer was derived against. The "Generic Mouse" /
+# genmouse.geo entry the first ledger prescribed does NOT move the pointer here
+# (measured 2026-09-03: five relative moves, cursor never left 320,134).
 text = re.sub(r"(?im)^screenBlanker\s*=.*$", "screenBlanker = false", text, count=1)
+# truetype.geo raises a general-protection fault (System Error KR-11) under KVM
+# the moment GeoWrite opens a document (2026-09-03, docs/guests/pcgeos.md);
+# GEOS's own Nimbus outline fonts render fine without it.
+text = text.replace("font = {\n  truetype.geo\n}\n", "")
 text = "\n".join(
     line for line in text.splitlines()
     if "lights out launcher" not in line.lower()
 )
-open(path, "w", encoding="utf-8").write(text + "\n")
+open(path, "w", encoding="latin-1").write(text + "\n")
 PY
-  grep -qi "generic mouse" "$ENS_DIR/geos.ini" || die "geos.ini mouse patch failed"
+  grep -A2 '^\[mouse\]' "$ENS_DIR/geos.ini" | grep -q "Basebox Mouse" || die "geos.ini [mouse] is not the zip default"
   grep -qi "screenBlanker = false" "$ENS_DIR/geos.ini" || die "geos.ini screenBlanker patch failed"
+  if grep -q "truetype.geo" "$ENS_DIR/geos.ini"; then die "geos.ini still loads truetype.geo"; fi
   grep -qi "lights out launcher" "$ENS_DIR/geos.ini" && die "geos.ini still has Lights Out Launcher"
 
   log "converting base FreeDOS disk to raw scratch"

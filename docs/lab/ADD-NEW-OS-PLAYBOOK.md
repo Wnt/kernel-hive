@@ -154,6 +154,22 @@ waits for that stream's report — it never edits the file.
 | `spa` | `registry/posters/<id>.md`, a better hero + extra frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram`; the only stream that edits visitor-facing prose | Playtesting the demo beyond one `labctl type` + `shot` |
 | `docs` (start when `golden` reports) | `docs/guests/<id>.md` including §Checkpoint from golden's report, `GUEST-TIERS.md`, release-notes JSON, `docs/README.md` index | — |
 
+**When a stream hits a wall (netbsd14, 2026-09-03: the installed kernel hung in
+the ISA probe after `lpt0`, and the golden agent bisected it one reboot at a
+time), the stream STOPS and reports the frame; the coordinator races it** —
+OPERATING-RULES §13: theories written down, one cheap agent per theory on its
+own `scripts/dev/rig-clone.sh new <id> <theory> [-- qemu args]` clone, 3-minute
+stops, `rig-clone.sh keep <id> <winner>`. Inside every stream, waits are
+`scripts/dev/fb-wait.py --qmp <sock> --settle S` / `--change` on the box, never
+`sleep N` then look: the boot prompt's 5-second window and a 40-second stare at
+a hang are the same mistake. Three more pitfalls from that run: the golden brief
+carried install + X config + bake in one agent — split it at the first
+framebuffer that differs from the sibling's; `/data/assets-staging` is a
+different mount inside CT950 than on labhost, so give a stream the measured
+hashes and sizes inline instead of a path; and a stream that reports "hard stop
+reached" after two minutes has stopped early — resume it with the missing facts
+rather than redoing its work.
+
 Facts flow one way: a stream that *measures* a fact corrects the ledger in its own
 commit and says so in its report; nobody copies a number from a README. While the
 streams run, the coordinator is not idle: it prepares the framebuffer-proof

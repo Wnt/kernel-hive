@@ -11,7 +11,7 @@
 #   * sb16 + PC speaker -> dbus audiodev.
 #   * POINTER: ABSOLUTE with no absolute device and no control loop. CTMOUSE keeps
 #     the pointer as int16 x,y (little-endian) in its resident data at guest-physical
-#     KH_RAMABS_ADDR (0x76e0 on the 2026-09-03 golden); GEOS's genmouse.geo takes the
+#     KH_RAMABS_ADDR (0x76e0 on the 2026-09-03 golden); GEOS's mouse driver (the zip's default [mouse] entry) takes the
 #     absolute CX/DX from CTMOUSE's INT 33h callback, so `-device kh-ramabs` writes the
 #     commanded pixel there and injects one 1-unit PS/2 nudge to make CTMOUSE republish
 #     it. 1 unit = 1 px below GEOS's acceleration threshold, hotspot (0,0). Needs the

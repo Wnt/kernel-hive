@@ -66,6 +66,11 @@ arbitrary. Do not re-expand this file; put the detail there.
     bridges are legacy to convert, not a template. Source your own install media
     and ROMs; the operator supplies Windows licensing only.
 
+14. **A wall is raced, never bisected serially; nothing waits on a guessed sleep.**
+    Theories → one cheap agent each on its own `rig-clone.sh` clone, first
+    framebuffer proof wins, `keep` kills the rest; waits are `fb-wait.py`
+    (`--settle`/`--change`), not `sleep N`. Applies to all work, not only speedruns.
+
 ## Where to look
 
 | I need to… | Go to |
@@ -75,6 +80,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Whose rig/claim is this | `ssh lab 'labctl who'` |
 | Preview a UI/registry change before it is live | `scripts/dev/stage.sh` → `/staging/<session>/` |
 | Bring a deployed new station online (emit, binary, start, manifests, checks) | `scripts/dev/station-up.sh <id>` |
+| A bring-up step hangs or fails for an unknown reason | `scripts/dev/rig-clone.sh new <id> <theory>` per theory + `scripts/dev/fb-wait.py`; rule 14, [`OPERATING-RULES.md` §13](docs/lab/OPERATING-RULES.md#13-a-wall-is-raced-and-nothing-waits-on-a-guess) |
 | Publish a booted smoke guest at `/os/<id>` before it is a registry station | `scripts/dev/smoke-rig.sh <id> --like <station>` |
 | Deploy a pushed commit / see what the box runs | `scripts/dev/box-deploy.sh` (plan) / `--apply` / `--status` |
 | Restart the fleet without taking the gallery down | [`docs/lab/FLEET-ROLLOUT.md`](docs/lab/FLEET-ROLLOUT.md) — `scripts/dev/fleet_rollout.py` (plan) / `--apply` |

@@ -244,6 +244,10 @@ while IFS= read -r line; do
   case "$line" in
     \#*) continue ;;
     SH_GOLDEN_*|SH_RESET_MODE=*|SH_FIXTURE_DESC*|SH_KEY_*) continue ;;
+    # a sibling's pointer backend names ITS device (ramabs socket, x11warp
+    # display, mga ptrctl): on a rig that device does not exist and the daemon
+    # retries it forever (netbsd14, 2026-09-03). Rigs are relative-pointer.
+    SH_INPUT_BACKEND=*|SH_RAMABS_*|SH_X11WARP_*|SH_X11TEST_*|KH_RAMABS_*|SH_MGACTL_*) continue ;;
     SH_STATION=*) echo "SH_STATION=$id" >>"$out" ;;
     SH_QMP=*) echo "SH_QMP=$qmp" >>"$out" ;;
     SH_PORT=*) echo "SH_PORT=$port" >>"$out" ;;
@@ -253,6 +257,7 @@ while IFS= read -r line; do
     *) continue ;;
   esac
 done <"$src"
+echo "SH_INPUT_BACKEND=dbus-rel" >>"$out"
 echo "SH_IDLE_PAUSE_SECS=0" >>"$out"
 echo "SH_RESET_MODE=restart" >>"$out"
 echo "-- wrote $out ($(wc -l <"$out") lines)"

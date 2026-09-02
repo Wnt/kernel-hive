@@ -57,10 +57,12 @@ fleet disk):
   unchanged from the FreeDOS base.
 - `geos.ini` edited in three places, because the zip's defaults target
   DOSBox, not a raw QEMU PC:
-  - `[mouse] device = Generic Mouse`, `driver = genmouse.geo` — was
-    "Basebox Mouse" driving an absolute pointer that only exists inside
-    DOSBox; `genmouse.geo` reads INT 33h, which CTMOUSE provides on real
-    (emulated) hardware.
+  - `[mouse]` is LEFT AS SHIPPED (device `Basebox Mouse`, driver `Abs. coord. Wheel
+    Mouse`): under QEMU with CTMOUSE loaded it moves the pointer 1:1. The `Generic
+    Mouse` / `genmouse.geo` entry the first ledger prescribed does NOT move the
+    pointer here (measured 2026-09-03: five relative moves, cursor stayed at 320,134);
+    the builder's first version had written it under `[task driver]` by mistake,
+    which is why the original golden worked.
   - `screenBlanker = false` — was `true` with a 1-minute timeout, which would
     blank a station nobody is actively driving.
   - `Lights Out Launcher` removed from `[ui] execOnStartup` — a DOSBox-era
@@ -104,9 +106,10 @@ text-mode VGA) and this station's own disk.
   partition FreeDOS boots from, so storing it as qcow2 lets `savevm golden`
   capture RAM and the disk contents together, and `loadvm golden` restores
   both: a visitor's edits do not carry to the next.
+- **Mouse driver:** the zip's default `[mouse]` entry (`Basebox Mouse` / `Abs. coord. Wheel Mouse`); see the composition recipe for why not `genmouse.geo`.
 - **Pointer: ABSOLUTE** via `-device kh-ramabs` (the beos/rhapsody route, `docs/lab/BEOS-ABSOLUTE-POINTER.md`). DOS's CTMOUSE keeps the pointer as int16 x,y at guest-physical `0x76e0` and GEOS's `genmouse.geo` takes the absolute CX/DX from its INT 33h callback, so the device writes the visitor's pixel there and one 1-unit PS/2 nudge makes CTMOUSE republish it. 1 unit = 1 px below GEOS's acceleration threshold; hotspot (0,0); five MOVEA targets including (20,560) and (780,30) landed pixel-exact. The address is BOUND TO THE GOLDEN — re-derive with `scripts/dev/pcgeos-ramabs-derive.py` after every re-bake (~3 min: bias search over the first 1 MB, then the device's own write probe per candidate; six addresses tracked, exactly one verified). Runs under `/opt/qemu-beos` (the kh-ramabs build): binary and golden are one unit.
   qemu-ps2-relative`) through CTMOUSE (loaded by `FDAUTO.BAT`) feeding
-  `genmouse.geo`'s INT 33h reads. No absolute-pointer path has been attempted
+  the mouse driver's INT 33h reads.
   on this station — see *Known gaps*.
 - **Audio**: `sb16` (Sound Blaster, `SET BLASTER=A220 I5 D1 H5 T6`) plus the
   PC speaker (`pcspk-audiodev=snd0` on the machine option), both routed into
@@ -135,7 +138,7 @@ hardware overlay.
 
 ## Checkpoint
 
-- **Re-baked 2026-09-03 under `/opt/qemu-beos/bin/qemu-system-x86_64`** (the kh-ramabs build; the earlier pve-qemu bake is kept beside it as `disk.qcow2.pre-abs-bak`). VM_CLOCK 0000:01:06.812, VM_SIZE 3.51 MiB, `KH_RAMABS_ADDR=0x76e0` derived against it. The facts below describe the first bake and still hold except the binary.
+- **Re-baked 2026-09-03 (twice) under `/opt/qemu-beos/bin/qemu-system-x86_64`** (the kh-ramabs build): first for the absolute pointer (pve-qemu bake kept as `disk.qcow2.pre-abs-bak`), then without `truetype.geo` after the KR-11 finding (previous kept as `disk.qcow2.pre-kr11-bak`). Current: VM_CLOCK 0000:00:42.439, VM_SIZE 3.47 MiB, `KH_RAMABS_ADDR=0x76e0` re-derived against it (same address: CTMOUSE loads before GEOS). GeoWrite new document + typed text proven on this golden before it was staged. The facts below describe the first bake and still hold except the binary.
 
 - Snapshot name: `golden`, saved via QMP `human-monitor-command` `savevm golden`.
 - Carrier disk: `disk.qcow2` is the ONLY block device — staged at
@@ -156,10 +159,32 @@ hardware overlay.
 - Coldboot-record arm: `pcgeos` case in `scripts/coldboot/bootrec-tiles.conf`
   (`BR_BOOT_KIND=vmstate`, canvas 800x600 @30fps, audio on, `BR_DISKS=disk.qcow2`).
 
+## GeoWrite "System Error Code: KR-11" — the TrueType driver under KVM
+
+Operator, 2026-09-03: GeoWrite → new document showed `System Error Code: KR-11`
+(the SPA stream had already lost its typed text to the same fault). KR-11 is
+`KS_TIE_PROTECTION_FAULT` in `Library/Kernel/Boot/bootStrings.asm` — a CPU
+general-protection fault inside real-mode GEOS. Bisected on sandbox rigs (QMP
+`send-key` walk: Ctrl+Esc, 15×Down, Enter, Enter):
+
+| rig | result |
+|---|---|
+| KVM `-cpu host`, zip `geos.ini` (`font = { truetype.geo }`) | KR-11 every time |
+| KVM `-cpu pentium3`, same ini | KR-11 |
+| KVM `-cpu host`, `font = { truetype.geo }` removed | new document opens; typed text renders (Nimbus outline fonts, ruler, sizes) |
+| GeoPoint new document, any ini | fine (no TrueType path) |
+
+So `truetype.geo` (the FreeType-based driver added to PC/GEOS in 2019) faults
+under KVM on the first document; GEOS's own outline fonts do not need it. The
+builder now strips that line; the golden was re-baked without the driver.
+**Follow-up:** find the faulting instruction in `truetype.geo` (unreal-mode /
+32-bit access under a real-mode segment is the usual shape) and report upstream;
+until then TrueType fonts in `USERDATA` are not available to visitors.
+
 ## Known gaps / next
 
 - **Absolute pointer not attempted.** This station ships relative-only
-  (PS/2 + CTMOUSE + `genmouse.geo`); an absolute path (à la the fleet's
+  (PS/2 + CTMOUSE + the zip's default GEOS mouse driver); an absolute path (à la the fleet's
   `qemu-usb-tablet` stations) has not been evaluated for GEOS.
 - **Network.** GEOS has its own TCP/IP stack and a WebMagick browser; the
   device set already carries a user-mode `ne2k_pci` NIC from the freedos

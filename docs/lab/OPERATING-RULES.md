@@ -177,3 +177,37 @@ touches deployed files, put it on the box: `scripts/dev/box-deploy.sh --apply`
 installs from the commit. Restarts are a separate decision —
 `build-deploy.sh` / `systemctl restart streamhost@<x>` /
 `serve-https-spa.sh deploy`.
+
+## 13. A wall is raced, and nothing waits on a guess
+
+Two sinks ate the netbsd14 bring-up (2026-09-03) and every install before it:
+an agent that **sleeps a guessed number of seconds** before looking (too short:
+look again; too long: the 5-second boot prompt has passed, or 40 s were spent
+staring at a hang recognisable after 5), and an agent that meets a wall with
+several plausible causes and **bisects them serially** — reboot, wait, look,
+change one thing, repeat — at a full boot plus a guessed wait per theory.
+
+- **Wait on the framebuffer, never on the clock.** `scripts/dev/fb-wait.py
+  --settle S` returns the moment the screen has stopped changing (a menu is up,
+  a hang is a hang, X finished painting); `--change` the moment it moved (the
+  key landed, the prompt appeared). Cursor blink is ignored. On the box, unix
+  socket; `labctl wait-for` for units, files and commands.
+- **Race a wall; do not bisect it.** When a step fails for an unknown reason
+  with more than one plausible cause, the coordinator writes the theories down
+  (one line each: what to change, what the framebuffer must show), and starts
+  one **cheap** agent per theory (`sonnet-low`, `qwen-low`), each on its own
+  clone of the rig: `scripts/dev/rig-clone.sh new <id> <theory> [-- qemu args]`
+  (0.6 s, a sparse copy, no claims, no publish). Each agent has a 3-minute
+  stop and reports a frame. The first framebuffer proof wins:
+  `rig-clone.sh keep <id> <winner>` kills the others through `clone-guard`;
+  `down <id> --all --rm` is the teardown (rule 9). The winner's change goes
+  into the ledger; the losers' frames go into the guest doc as ruled-out causes.
+- **Escalate, don't grind.** If every theory loses, the next round is one
+  capable agent (Opus/Fable) given ALL the losing frames — not the same cheap
+  agents with new guesses, and never the original agent continuing serially.
+  Capable models are for writing the theory list and for the round after the
+  race fails; cheap ones are for running it.
+- **This is not only for speedruns.** Every install, every debugging session
+  and every unknown failure in this project runs this way: measured waits,
+  parallel theories on clones, a kill for every loser. Serial trial-and-error
+  on the one rig is the pitfall, not a fallback.
