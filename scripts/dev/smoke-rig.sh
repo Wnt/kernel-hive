@@ -138,16 +138,17 @@ EOF_REMOTE
     "$LABRUN" "$session" <<'EOF_REMOTE'
 session="$1"
 export KH_SESSION="$session"
-for entry in $(kh-claim ls --mine --json 2>/dev/null | python3 -c '
+while IFS=' ' read -r cls name; do
+  [ -n "$cls" ] || continue
+  kh-claim release "$cls" "$name" && echo "-- released $cls $name"
+done <<CLAIMLIST
+$(kh-claim ls --mine --json 2>/dev/null | python3 -c '
 import json,sys
 for c in json.load(sys.stdin):
     if c.get("class") in ("port","slot","vmid"):
         print(c["class"]+" "+c["name"])
-'); do
-  cls="${entry%% *}"
-  name="${entry#* }"
-  kh-claim release "$cls" "$name" && echo "-- released $cls $name"
-done
+')
+CLAIMLIST
 EOF_REMOTE
   else
     echo "-- claims kept (slot/port/vmid pass to the real station); use --release-claims to drop them"
