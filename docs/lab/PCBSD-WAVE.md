@@ -32,10 +32,10 @@ serialized through it ("ready to land pcbsd" → "go pcbsd").
 | upstream | archive.org `pcbsd-1.5.1-x-86-cd-1` / `PCBSD1.5.1-x86-CD1.iso` (688930816 bytes; the builder pins the sha256 from MANIFEST.sha256) |
 | builder output | `/data/gallery-guests/PCBSD/pcbsd.iso` (pinned CD1) + `pcbsd.qcow2` (installed, pristine, no golden) — install is GUI, so the builder is `automation: assisted` |
 | station dir | `/data/vms/streamhost/stations/pcbsd/` — `disk.qcow2` = the ONLY block device, carries the `golden` vmstate; no cdrom at runtime |
-| device set | `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB, 1 vCPU, `-vga std`, IDE disk index 0, AC97 + dbus audiodev, `-usb -device usb-tablet` (+ PS/2 from the pc machine), `e1000` user net |
+| device set | `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB, 1 vCPU, `-vga std`, IDE disk index 0, AC97 + dbus audiodev, PS/2 relative mouse only (usb-tablet dropped: inert in FreeBSD 6.3 X); **no NIC** |
 | screen | 1024x768 (X.org 7.3 vesa on the Bochs VGA) |
 | guest accounts | root / `kernelhive`; user `visitor` / `kernelhive`, KDM autologin (credentialsRef `guest/pcbsd`) |
-| pointer | `abs` via usb-tablet is the ledger's bet; the golden stream measures whether FreeBSD 6.3 `ums`+`moused` track it 1:1 and corrects `stream.pointer`/`SH_POINTER` if it must fall back to `rel` |
+| pointer | **`rel` (PS/2)** — measured by the golden stream: the usb-tablet is inert in FreeBSD 6.3 X (installer and KDE); PS/2 relative moves with X acceleration ≈3.5 px/unit under KDE, ≈2 px/unit in the installer. The tablet was dropped from the device set (the validator forbids an inert absolute device next to a `rel` method) and the golden re-baked without it |
 
 ## Streams (each: `scripts/dev/wt.sh new <name> --from pcbsd`, commit on its branch, push, 4-minute stop)
 
@@ -51,6 +51,20 @@ serialized through it ("ready to land pcbsd" → "go pcbsd").
 Merging, "ready to land" → `git push origin HEAD:main` from this sandbox worktree,
 `box-deploy.sh --apply`, `smoke-rig.sh pcbsd --down`, `station-up.sh pcbsd`,
 SPA build/deploy, final framebuffer acceptance, teardown of stream sandboxes.
+
+## Golden stream report (measured)
+
+- Install: installer wizard driven over QMP with PS/2 relative moves (driver
+  `/data/vms/sandbox/pcbsd/smoke/drv.py`); copy phase ~4.5 min; whole-disk ad0,
+  default KDE components; installer sets KDM autologin itself.
+- First boot: one-time Display Settings wizard (vesa 1024x768x24 autodetected —
+  "Apply" test fails, "Skip" keeps the working default); no Kpersonalizer; KTip
+  and Konsole tips unchecked; `~/.kde/Autostart/noblank.sh` (`xset s off -dpms`),
+  kdesktoprc ScreenSaver disabled. No xorg.conf written.
+- Golden: VM_SIZE 388 MiB, VM_CLOCK 0:11:40, one loadvm proven pixel-identical.
+  Fixture = clean desktop, Konsole focused at an empty `%` prompt, pointer at (450,680).
+- Shared with the freebsd411 wave: PC-BSD's own X + KDM autologin need nothing
+  hand-written; the usb-tablet route is dead on FreeBSD ≤6 — plan for `rel`.
 
 ## Measured milestones
 

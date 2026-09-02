@@ -43,8 +43,8 @@ command-line install. It layers KDE 3.5.8 and a graphical installer on top of
 
 `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB RAM, 1 vCPU, `-vga std`, IDE disk
 at index 0 (install: IDE cdrom too, removed after install), AC97 audio on a
-dbus audiodev, `-usb -device usb-tablet` plus the pc machine's PS/2, `e1000`
-user-mode net. Screen is 1024x768 (X.org 7.3's vesa driver on the Bochs VGA
+dbus audiodev, the pc machine's PS/2 mouse and keyboard. No NIC, no USB (a
+usb-tablet was tried during install and is inert in FreeBSD 6.3 X). Screen is 1024x768 (X.org 7.3's vesa driver on the Bochs VGA
 device `-vga std` exposes).
 
 ## Accounts
@@ -54,9 +54,11 @@ device `-vga std` exposes).
 
 ## Input
 
-`usb-tablet` abs is the ledger's bet for the pointer transport — the golden
-stream measures whether FreeBSD 6.3's `ums` + `moused` track it 1:1, and
-corrects `stream.pointer` / `SH_POINTER` to `rel` if it must fall back.
+Pointer is **relative PS/2** (`SH_POINTER=rel`, SPA `pointerRel`): the golden
+stream measured that a usb-tablet never moves the X pointer on FreeBSD 6.3, while
+PS/2 relative moves land with X acceleration (≈3.5 px per unit under KDE, ≈2 px
+in the installer). Keyboard is the pc machine's PS/2; Konsole is the focused
+keyboard surface at golden.
 
 ## Reset
 
@@ -65,4 +67,17 @@ checkpoint travels with it.
 
 ## Checkpoint
 
-<!-- filled by the coordinator from the golden stream's report -->
+Baked 2026-09-03 on the smoke rig with the station launcher's device set (no
+cdrom, no NIC): `savevm golden` on `disk.qcow2` — VM_SIZE **388 MiB**, VM_CLOCK
+0:11:40; one `loadvm golden` restore proven pixel-identical to the pre-save frame.
+Fixture: KDE 3.5.8 desktop, user `visitor` autologged in via KDM
+(`AutoLoginEnable=true` in `/usr/local/share/config/kdm/kdmrc`), **Konsole focused
+with an empty `%` prompt** (keyboard surface, window at 176..846 x 108..608),
+pointer parked at (450,680) on clear desktop, KTip and Konsole tips off,
+`~/.kde/Autostart/noblank.sh` runs `xset s off -dpms`, `kdesktoprc` ScreenSaver
+disabled. Power-on to first desktop: ~5 min including the one-time Display
+Settings wizard (vesa 1024x768x24 autodetected; its "Apply" test fails, "Skip"
+keeps the working default). Pointer: **relative PS/2 only** — a usb-tablet was tried and FreeBSD 6.3's X
+never moves on it, so it is not in the device set; X acceleration
+makes 1 unit ≈ 3.5 px under KDE (≈2 px in the installer). Timezone was left at the
+installer default (America/Los_Angeles); NTP and usage statistics unchecked.

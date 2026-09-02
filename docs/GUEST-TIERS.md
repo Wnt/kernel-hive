@@ -250,7 +250,7 @@ missing feature.
 | `openvms` | 4 two-QEMU | kvm x2 | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `oricatmos` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `os2warp` | 1 direct-QEMU | tcg | `warpd-agent` | warpd | — | on | 30 | — |
-| `pcbsd` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
+| `pcbsd` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |
 | `pcgeos` | 1 direct-QEMU | kvm | `qemu-guestram-abswrite` | abs | ramabs | on | 30 | — |
 | `pdp11` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
 | `pet2001` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |

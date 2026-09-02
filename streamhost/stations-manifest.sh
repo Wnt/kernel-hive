@@ -1041,9 +1041,9 @@ emit pcgeos \
 
 # pcbsd (VMID 179) — PC-BSD 1.5.1 (FreeBSD 6.3 + KDE 3.5.8), golden on disk.qcow2. UDP 54179. VERBATIM launcher.
 emit pcbsd \
-  --tile pcbsd --vmid 179 --udp 54179 --pointer abs --abs-pace-ms 30 --audio \
-  on --fps 30 --launcher-file "$T/pcbsd/qemu-streamhost.sh" \
-  --env-append-file "$T/pcbsd/station.env.fixture"
+  --tile pcbsd --vmid 179 --udp 54179 --pointer rel --audio on --fps 30 \
+  --launcher-file "$T/pcbsd/qemu-streamhost.sh" --env-append-file \
+  "$T/pcbsd/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)

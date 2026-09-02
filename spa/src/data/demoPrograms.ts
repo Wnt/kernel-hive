@@ -116,14 +116,14 @@ const DEMO_PROGRAMS = {
     "perCharMs": 160
   },
   "pcbsd": {
-    "label": "Type a note about PC-BSD into KWrite",
+    "label": "Ask the FreeBSD 6.3 kernel who it is, in Konsole",
     "lines": [
-      "PC-BSD 1.5.1 \"Edison\", April 2008.",
-      "FreeBSD 6.3-RELEASE underneath, KDE 3.5.8 on top,",
-      "and a graphical installer so nobody has to meet sysinstall.",
-      "Every PBI package carries its own dependencies:"
+      "# PC-BSD 1.5.1 \"Edison\" - FreeBSD 6.3 with KDE 3.5.8 on top",
+      "uname -a",
+      "sysctl hw.model hw.physmem",
+      "ls /Programs"
     ],
-    "runCommand": "double-click, Next, done.",
+    "runCommand": "cat /etc/pcbsd-release",
     "perCharMs": 60
   },
   "pet2001": {

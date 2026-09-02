@@ -42,13 +42,13 @@
     "kbd_note": "Alt+F1 opens the KDE 3 K menu",
     "audio_trigger": "tone",
     "validated": false,
-    "note": "scaffolded 2026-09-03; retune after golden"
+    "note": "2026-09-03: rel PS/2 only (X accel ~3.5 px/unit under KDE); abs usb-tablet inert. Konsole focused at golden."
    }
   },
   "labctl": {
    "dir": "/data/vms/streamhost/stations/pcbsd",
    "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
-   "pointer_mode": "abs",
+   "pointer_mode": "rel",
    "warpd_port": null,
    "warpd_addr": null,
    "ssh_port": null,
@@ -58,7 +58,7 @@
    "exec_key": null,
    "console": "fb",
    "udp_port": 54179,
-   "notes": "no exec channel yet; e1000 user net present, ssh forward is a follow-up"
+   "notes": "no exec channel and no NIC (golden device set has none); rel PS/2 pointer only — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
   }
  },
  "render": {
@@ -80,11 +80,11 @@
   "audio": true,
   "touch": false,
   "pointer": {
-   "transport": "abs",
-   "method": "qemu-usb-tablet",
-   "absolute": true,
+   "transport": "rel",
+   "method": "qemu-ps2-relative",
+   "absolute": false,
    "present": true,
-   "device": "usb-tablet",
+   "device": "ps2",
    "scale": 1.0,
    "offset": [
     0,
@@ -103,13 +103,12 @@
    "SH_FPS": "30",
    "SH_HOST_IP": "192.0.2.10",
    "SH_ADVERTISE_HOST": "192.0.2.10",
-   "SH_POINTER": "abs",
+   "SH_POINTER": "rel",
    "SH_AUDIO": "on",
    "SH_AUDIO_BITRATE": "96000",
    "SH_HASH_FILE": "/data/vms/streamhost/stations/pcbsd/cert_hash_b64.txt",
    "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/pcbsd/signaling.json",
-   "SH_CERT_ROTATE_DAYS": "10",
-   "SH_ABS_PACE_MS": "30"
+   "SH_CERT_ROTATE_DAYS": "10"
   },
   "vmidLabel": 179,
   "qemu": {
@@ -122,9 +121,7 @@
     "--udp",
     "54179",
     "--pointer",
-    "abs",
-    "--abs-pace-ms",
-    "30",
+    "rel",
     "--audio",
     "on",
     "--fps",
@@ -155,8 +152,6 @@
     "-vga std",
     "-display dbus,p2p=on,audiodev=snd0",
     "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-    "-usb -device usb-tablet",
-    "-netdev user,id=n0 -device e1000,netdev=n0",
     "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
     "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
    ],
@@ -179,8 +174,6 @@
      "-vga std",
      "-display dbus,p2p=on,audiodev=snd0",
      "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-     "-usb -device usb-tablet",
-     "-netdev user,id=n0 -device e1000,netdev=n0",
      "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
      "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
     ]
@@ -196,7 +189,8 @@
   "archetypeId": "putty-lcd",
   "transport": "streamhost",
   "accentColor": "#2f6fba",
-  "eraLabel": "2008 · PC-BSD 1.5.1"
+  "eraLabel": "2008 · PC-BSD 1.5.1",
+  "pointerRel": true
  },
  "museum": {
   "id": "pcbsd",
@@ -231,7 +225,7 @@
  "ui": "desktop",
  "reset": {
   "stationDir": "pcbsd",
-  "pointer": "abs",
+  "pointer": "rel",
   "touch": false,
   "resetMode": "loadvm",
   "snapshot": "golden",
@@ -243,14 +237,14 @@
   "scaffolded from reactos 2026-09-03 (speedrun #3); PC-BSD 1.5.1 CD1 from archive.org item pcbsd-1.5.1-x-86-cd-1"
  ],
  "demoProgram": {
-  "label": "Type a note about PC-BSD into KWrite",
+  "label": "Ask the FreeBSD 6.3 kernel who it is, in Konsole",
   "lines": [
-   "PC-BSD 1.5.1 \"Edison\", April 2008.",
-   "FreeBSD 6.3-RELEASE underneath, KDE 3.5.8 on top,",
-   "and a graphical installer so nobody has to meet sysinstall.",
-   "Every PBI package carries its own dependencies:"
+   "# PC-BSD 1.5.1 \"Edison\" - FreeBSD 6.3 with KDE 3.5.8 on top",
+   "uname -a",
+   "sysctl hw.model hw.physmem",
+   "ls /Programs"
   ],
-  "runCommand": "double-click, Next, done.",
+  "runCommand": "cat /etc/pcbsd-release",
   "perCharMs": 60
  }
 }

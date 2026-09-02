@@ -6,8 +6,8 @@
 # (savevm golden at the clean KDE desktop). Kill only by pidfile.
 # Device set (golden + binary + devices are ONE combination): pc-i440fx-11.0,
 # KVM, -cpu host, 1024 MB, 1 vCPU, -vga std (X.org vesa 1024x768), IDE disk,
-# AC97 over the dbus audiodev, usb-tablet (+ the pc machine's PS/2 mouse),
-# e1000 user-mode NIC. No cdrom at runtime.
+# AC97 over the dbus audiodev, PS/2 relative mouse (the usb-tablet is inert in
+# FreeBSD 6.3 X, so it is NOT in the set); no NIC, no cdrom at runtime.
 set -e
 SDIR=/data/vms/streamhost/stations/pcbsd
 [ -f "$SDIR/qemu.pid" ] && kill "$(cat "$SDIR/qemu.pid")" 2>/dev/null || true
@@ -26,8 +26,6 @@ nohup qemu-system-x86_64 \
   -vga std \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0 \
-  -usb -device usb-tablet \
-  -netdev user,id=n0 -device e1000,netdev=n0 \
   \
   -qmp unix:$SDIR/qmp.sock,server=on,wait=off \
   -pidfile $SDIR/qemu.pid \
