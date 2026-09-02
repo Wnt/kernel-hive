@@ -375,6 +375,23 @@ scripts/lib/checkpoint-verify.sh <stationDir> --capture
 scripts/lib/checkpoint-verify.sh <stationDir>
 ```
 
+**The fast first bake (brand-new Tier-1 station).** `checkpoint-verify.sh` has
+no cold-boot-plus-fixed-settle mode (only `--capture`, driven by the station's
+`bootrec-tiles.conf` ready metadata, which a new station does not have yet).
+For the very first golden, boot the sandbox clone, wait a fixed settle you
+chose by eye, then drive QMP/HMP by hand on the clone's monitor socket:
+
+```bash
+labqmp <clone-socket> stop
+labqmp <clone-socket> 'savevm golden'
+labqmp <clone-socket> 'info snapshots'      # the golden tag must be listed
+labqmp <clone-socket> 'loadvm golden'
+labqmp <clone-socket> 'screendump /tmp/golden-restore.ppm'   # the framebuffer is the proof
+```
+
+Then wire up `bootrec-tiles.conf` and run the standard proof above; the
+recapture path (`checkpoint-guard recapture`) is for live stations only.
+
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
 every writable disk under a namespaced `/data/vms/sandbox/golden-verify-*`
 directory, statically checks the rewritten launcher, gates destructive QMP by
