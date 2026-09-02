@@ -52,22 +52,45 @@ stream of an unfamiliar guest, for any bring-up that misbehaves, and for the
 poster's prose — a cheaper model that misreads the brief costs a whole 4-minute
 stream, which is the one thing this plan cannot afford.
 
-### Why this exists: the bootos retro (2026-09-02, 45 min → should be 10)
+**Measure the run, never estimate it.** The clock starts at the operator's
+message. After landing, run `scripts/dev/session-timeline.py` on the session
+transcript (`ls -t ~/.claude/projects/<repo-slug>/*.jsonl | head -1`) and put the
+measured milestones in the wave brief; the pcgeos run was reported from memory as
+15/25/35 min and measured as 6/14/18.
 
-One coordinator + 4 parallel agents, nothing waited on the operator, still 45 min.
-Where the time went and what this procedure does instead:
+### The two retros this procedure comes from
+
+**bootos (2026-09-02, 45 min)** — one coordinator + 4 agents, nothing waited on
+the operator. The sinks and their fixes:
 
 | Sink (bootos) | Cost | Fix in this procedure |
 |---|---|---|
 | Reading playbook + sibling entries before touching anything | ~6 min | Read this section; one sibling entry, `grep` not read |
-| Scaffold leaves validate failures (no poster md, no hero webp, demoProgram rules) | ~5 min | Scaffold, commit with placeholders the validator accepts, let streams fill; fix the scaffold at the root when you meet a new one |
+| Scaffold leaves validate failures (no poster md, no hero webp, demoProgram rules) | ~5 min | Scaffold `--like <sibling> --production` validates on the spot |
 | Golden stream: key-pacing bisect | ~7 min | SKIP. Ship the fleet floor **40/40** for QEMU keyboard stations; measure only if characters drop |
 | Golden stream: audio proof ceremony | ~4 min | SKIP. Declare `stream.audio`; operator hears it |
-| Guest doc with ~15 TODO placeholders filled at integration from agent reports | ~4 min | Streams write their own facts into the doc sections they own; docs stream writes prose only |
+| Guest doc with ~15 TODO placeholders filled at integration from agent reports | ~4 min | One owner per file (below) |
 | Separate TS+Python gate run, then the pre-push gate ran the same stages | ~5 min | Push; the pre-push gate IS the gate |
-| Hand-rolled single-station emit (`manifest` has no `--only`, relative-path failure), `current` symlink by hand, `manifests` failing inside `labrun` (nested ssh) | ~6 min | `scripts/dev/station-up.sh <id>` (single-station emit + binary symlink + start + manifests + `labctl gen` + checks, run from CT950) |
+| Hand-rolled single-station emit, `current` symlink by hand, `manifests` failing inside `labrun` | ~6 min | `scripts/dev/station-up.sh <id>` |
 | One cross-stream fact copied wrong by 3 streams (360K vs 720K in 4 files) | ~3 min | The ledger states measured facts (`stat -c %s` the image), never copies from a README |
 | Merge conflict in the registry blurb | ~1 min | Only the spa stream edits visitor-facing prose |
+
+**pcgeos (2026-09-02, viewable 6 min · live station 14 · featured 18)** — same
+shape, and the transcript says where the 21 minutes went: **67% coordinator
+model time, 24% tools, 10% waiting on agents.** The tools and the agents were
+fast; the coordinator reading and writing was the cost.
+
+| Sink (pcgeos) | Cost | Fix in this procedure |
+|---|---|---|
+| Hand-writing a 100-line registry entry + launcher + fixture that were the freedos ones with paths swapped; two failed scaffold runs (`--archetype` wants a SPA archetype, not a station; duplicate `bringUpOrder`) | ~4 min | `stations-registry.py new <id> --like <sibling> --production` — copies the sibling, auto-assigns every render order, validates immediately |
+| Publishing the smoke rig by hand: `kh-claim` syntax, hand-written `stream.env`, hand-run daemon, guessing which manifest file to derive the entry from | ~3 min after the guest had booted | `scripts/dev/smoke-rig.sh <id> --like <sibling>` — one command, prints `/os/<id>` |
+| Two streams owned `docs/guests/<id>.md`; a bad conflict resolution dropped the prose | ~1 min | One owner per file: the golden stream writes its facts into the fixture comments and its report; the docs stream runs AFTER golden (it takes 2.5 min; spa is the long pole anyway) |
+| Two pushes to main, two gates, two box-deploys because the spa stream finished 3 min after the others | ~2.5 min | The coordinator ships the hero from its own smoke frame in the ledger commit; spa polish lands in one push with everything else or in the next wave |
+| `station-up.sh` gave up 14 s before the daemon printed LISTENING; rerun | ~1 min | station-up polls up to 60 s |
+| `labctl key ctrl-esc` / `ctrl+esc` / `ctrl-escape`: three failed guesses | ~1 min | qcodes are space- or `+`-separated: `labctl key <id> ctrl esc`; the error now says so |
+| `here.sh` printed 60 claim lines, 50 of them stale, paid for on every turn | model time | stale claims are folded into one summary line |
+| Memory notes + a long final report written serially after the station was featured | ~2 min | Off the clock: hand the retro to a `sonnet-low` agent with the transcript and `session-timeline.py` |
+| 99 s idle "waiting for agents" | ~1.5 min | Use the wait: draft the framebuffer-proof commands and the report while streams run |
 
 ### Minute 0–3: spine (you, alone)
 
@@ -75,21 +98,22 @@ Where the time went and what this procedure does instead:
 scripts/dev/wt.sh new <id> --from origin/main            # full stack + KH_SESSION=<id>
 # stage media: fetch, hash, keep the byte size — it is a ledger fact
 ssh lab 'mkdir -p /data/assets-staging/<id> && cd /data/assets-staging/<id> && sha256sum * > MANIFEST.sha256 && stat -c "%n %s" *'
-# smoke boot in YOUR sandbox with the intended device set (see vom-reference.md for the emulator/machine)
-scripts/dev/labrun <<'EOF2'
-cd /data/vms/sandbox/<id> && qemu-img convert -O qcow2 /data/assets-staging/<id>/<img> smoke/disk.qcow2
-# launch exactly as the launcher will (dbus display, -qmp unix:smoke/qmp.sock, namespaced port), then:
-python3 /data/vms/streamhost/serve/qmp-type.py --sock smoke/qmp.sock 'dir\n' && qmp screendump smoke/frame.ppm
-EOF2
+# smoke boot in YOUR sandbox with the sibling's device set (vom-reference.md names the emulator/machine;
+# os-media-catalog.md may already hold the recipe — pcgeos's was there). Launch exactly as the sibling's
+# launcher does (dbus display, -qmp unix:<sandbox>/smoke/qmp.sock, namespaced -name), then:
+python3 /data/vms/streamhost/serve/qmp-type.py --sock smoke/qmp.sock 'dir\n' && qmp screendump smoke/frame.png
 # PUBLISH THE SMOKE RIG NOW — this is the 5-minute target: operator watches /os/<id>
-ssh lab "python3 /data/vms/sandbox/<id>/repo/scripts/dev/darklaunch-station.py publish <id> --rig /data/vms/sandbox/<id>/smoke --entry /data/vms/sandbox/<id>/entry.json"
-python3 scripts/stations-registry.py new <id> --emulator qemu --kind <archetype> ...   # scaffold (see §6.0 for flags)
+scripts/dev/smoke-rig.sh <id> --like <sibling>            # claims slot/port/vmid, stream.env, daemon, dark-launch
+python3 scripts/stations-registry.py new <id> --like <sibling> --production --slot auto   # validates on the spot
 ```
 
 Then the ledger commit on branch `<id>`: `docs/lab/<ID>-WAVE.md` with the allocation
-table (slot/UDP/VMID via `kh-claim`, render orders, device set, measured media
-size, upstream pin), the registry entry, launcher and fixture as scaffolded, and
-the stream table below. Commit, push (recipe below). Do not fix validate
+table (slot/UDP/VMID as claimed by smoke-rig, render orders as assigned, device set,
+measured media size, upstream pin), the scaffolded entry with only the fields that
+differ from the sibling edited (media, museum, spa, reset fixture), the launcher
+and fixture, **and the hero** (`spa/public/posters/<id>/desktop.webp` from the
+smoke frame — a 4:3 upscale is fine; the spa stream replaces it if it does better),
+and the stream table below. Commit, push (recipe below). Do not fix validate
 failures by hand for more than one minute — leave the field as the scaffold
 wrote it and assign it to a stream.
 
@@ -97,40 +121,50 @@ wrote it and assign it to a stream.
 
 Each: `scripts/dev/wt.sh new <id>-<stream> --from <id>`, commit on its branch, push,
 report the branch. **Hard stop at 4 minutes** — report what is proven and what is
-not; the coordinator ships what exists.
+not; the coordinator ships what exists. **One owner per file**: the table names it;
+a stream that needs a fact from another stream's file reads it from the ledger or
+waits for that stream's report — it never edits the file.
 
-| Stream | Deliverable | Skips by default |
+| Stream | Owns | Skips by default |
 |---|---|---|
 | `build` | `scripts/build-guests/tiles/<id>.sh` (pinned fetch, SHA-256, compose disk, framebuffer-verify boot); RUN it so the pristine output exists; `check-assets.sh`, `ASSETS-MANIFEST.md`, `os-media-catalog.md` rows | No bisecting machine types — use the device set from the ledger |
-| `golden` | bake `golden` on a sandbox clone with the exact launcher, one `loadvm` restore proof, stage the disk into the station dir; `bootrec-tiles.conf` arm; registry `runtime`/`reset`/`operator` truth; writes its own facts into `docs/guests/<id>.md` §Checkpoint | Pacing bisect (ship 40/40), audio proof (declare it), reset-N-times loops |
-| `spa` (+docs) | `registry/posters/<id>.md`, `spa/public/posters/<id>/desktop.webp` from real frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram`; `docs/guests/<id>.md` prose, `GUEST-TIERS.md`, release-notes JSON | Playtesting the demo beyond one `labctl type` + `shot` |
+| `golden` | bake `golden` on a sandbox clone with the exact launcher, one `loadvm` restore proof, stage the disk into the station dir; `bootrec-tiles.conf` arm; registry `runtime`/`reset`/`operator` truth; the checkpoint facts go into `station.env.fixture` comments and its report — NOT the guest doc | Pacing bisect (ship 40/40), audio proof (declare it), reset-N-times loops |
+| `spa` | `registry/posters/<id>.md`, a better hero + extra frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram`; the only stream that edits visitor-facing prose | Playtesting the demo beyond one `labctl type` + `shot` |
+| `docs` (start when `golden` reports) | `docs/guests/<id>.md` including §Checkpoint from golden's report, `GUEST-TIERS.md`, release-notes JSON, `docs/README.md` index | — |
 
 Facts flow one way: a stream that *measures* a fact corrects the ledger in its own
-commit and says so in its report; nobody copies a number from a README.
+commit and says so in its report; nobody copies a number from a README. While the
+streams run, the coordinator is not idle: it prepares the framebuffer-proof
+commands, the merge order and the report skeleton.
 
 ### Minute 7–10: integrate and ship (you)
 
 ```bash
 # merge the stream branches into <id> (ledger is a union; generated files: regenerate, never hand-merge),
-# then land on main from a /data worktree and push — the pre-push gate is the only gate run
-git merge --no-edit origin/<id>-build origin/<id>-golden origin/<id>-spa && git checkout main && git merge --no-ff <id>
-GIT_SSH_COMMAND="ssh -i /home/wnt/.ssh/id_github -o IdentitiesOnly=yes" git push origin main
+# then push <id> to main as a fast-forward FROM THE SANDBOX WORKTREE — the pre-push gate is the only gate run
+git merge --no-edit origin/<id>-build origin/<id>-golden origin/<id>-spa origin/<id>-docs
+python3 scripts/stations-registry.py validate && python3 scripts/stations-registry.py generate
+GIT_SSH_COMMAND="ssh -i /home/wnt/.ssh/id_github -o IdentitiesOnly=yes" git push origin HEAD:main
 scripts/dev/box-deploy.sh --apply                       # a push is not a deploy
-scripts/dev/station-up.sh <id>                          # emit + /usr/local/lib/streamhost/stations/<id>/current + start + manifests + labctl gen + checks
-ssh lab "labctl shot <id> && labctl type <id> 'dir' && labctl shot <id> && labctl restore <id>"   # framebuffer proof, once
-scripts/serve-https-spa.sh build && scripts/serve-https-spa.sh deploy                   # poster/scene/demo; re-arms nothing, so:
-ssh lab 'python3 .../darklaunch-station.py withdraw <id>'                               # the smoke overlay is now superseded by the real row
+scripts/dev/smoke-rig.sh <id> --down                     # the smoke rig holds the station's UDP port
+scripts/dev/station-up.sh <id>                          # emit + binary symlink + start + manifests + labctl gen + checks
+ssh lab "labctl shot <id> && labctl key <id> ctrl esc && labctl shot <id> && labctl reset <id>"   # framebuffer proof, once
+scripts/serve-https-spa.sh build && scripts/serve-https-spa.sh deploy                   # poster/scene/demo
 ```
 
+Land main **once**. If one stream is late, ship without it and let it land in the
+next wave; a second gate + deploy + SPA build cycle costs ~2.5 minutes.
+
 Done means: `/os/<id>` shows the real station, the grid lists it, the smoke rig is
-withdrawn and its sandbox released (`kh-claim release`), and the report names the
-three checks above. Tear-down is part of done.
+down and the stream sandboxes are removed (`wt.sh rm <id>-<stream>`; the claims
+for slot/port/VMID pass to the station), and the report names the three checks
+above with measured times from `session-timeline.py`. Tear-down is part of done.
 
 ### Push recipe (3 lines)
 
 1. `SKIP_GATE=1` ONLY on feature branches (`<id>`, `<id>-*`); never on `main`.
 2. `GIT_SSH_COMMAND="ssh -i /home/wnt/.ssh/id_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20" git push -u origin <branch>`
-3. Push `main` from a `/data` worktree (`/data/vms/sandbox/<name>/repo`), never the shared clone — the box-state gate needs it.
+3. Push `main` from a `/data` worktree (`/data/vms/sandbox/<name>/repo`, `git push origin HEAD:main`), never the shared clone — the box-state gate needs it.
 
 ### What NOT to skip
 
