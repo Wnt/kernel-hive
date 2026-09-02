@@ -39,10 +39,22 @@ FORCE=0
 VERIFY=1
 while [ $# -gt 0 ]; do
   case "$1" in
-    --force) FORCE=1; shift ;;
-    --no-verify) VERIFY=0; shift ;;
-    -h | --help) sed -n '2,28p' "$0"; exit 0 ;;
-    *) echo "unknown arg: $1" >&2; exit 2 ;;
+    --force)
+      FORCE=1
+      shift
+      ;;
+    --no-verify)
+      VERIFY=0
+      shift
+      ;;
+    -h | --help)
+      sed -n '2,28p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "unknown arg: $1" >&2
+      exit 2
+      ;;
   esac
 done
 
@@ -58,14 +70,20 @@ PIDFILE="${WORK}/verify/qemu.pid"
 VERIFY_PNG="${GUEST_DIR}/verify-desktop.png"
 
 log() { printf '\033[1;36m[slackware]\033[0m %s\n' "$*"; }
-die() { printf '\033[1;31m[slackware] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+die() {
+  printf '\033[1;31m[slackware] ERROR:\033[0m %s\n' "$*" >&2
+  exit 1
+}
 
 stop_qemu() {
   local p=""
   [ -f "$PIDFILE" ] && p="$(cat "$PIDFILE" 2>/dev/null || true)"
   if [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then
     kill -TERM "$p" 2>/dev/null || true
-    for _ in 1 2 3 4 5 6; do kill -0 "$p" 2>/dev/null || break; sleep 0.5; done
+    for _ in 1 2 3 4 5 6; do
+      kill -0 "$p" 2>/dev/null || break
+      sleep 0.5
+    done
     kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null || true
   fi
   rm -f "$PIDFILE" "$QMPSOCK"
@@ -83,7 +101,7 @@ install -d -m 0750 "$STAGE_DIR"
 # =============================================================================
 # (1) FETCH + PIN-VERIFY the mirror asset set
 # =============================================================================
-log "checking $(wc -l < "$MANIFEST") pinned files against $STAGE_DIR"
+log "checking $(wc -l <"$MANIFEST") pinned files against $STAGE_DIR"
 while read -r want_sha rel; do
   rel="${rel#./}"
   case "$rel" in
@@ -99,8 +117,8 @@ while read -r want_sha rel; do
     got_sha="$(sha256sum "$dest" | awk '{print $1}')"
   fi
   [ "$got_sha" = "$want_sha" ] || die "sha256 mismatch for $rel (got $got_sha, want $want_sha)"
-done < "$MANIFEST"
-log "asset set verified: $(wc -l < "$MANIFEST") files"
+done <"$MANIFEST"
+log "asset set verified: $(wc -l <"$MANIFEST") files"
 
 if [ "$FORCE" = 0 ] && [ -s "$QCOW2_OUT" ] && [ -s "$ISO_OUT" ]; then
   log "outputs already present in $GUEST_DIR, skipping compose (use --force to rebuild)"
@@ -120,7 +138,7 @@ else
   rm -rf "$ISO_DIR"
   mkdir -p "$ISO_DIR/boot/grub"
   cp "$STAGE_DIR/zImage" "$ISO_DIR/zImage"
-  cat > "$ISO_DIR/boot/grub/grub.cfg" <<'GRUBCFG'
+  cat >"$ISO_DIR/boot/grub/grub.cfg" <<'GRUBCFG'
 set timeout=0
 set default=0
 menuentry "Slackware 3.4 (kernel 2.0.30 bare.i)" {
@@ -135,13 +153,16 @@ GRUBCFG
   # ===========================================================================
   cp "$WORK/build/disk.qcow2" "$QCOW2_OUT"
   cp "$WORK/grub-boot.iso" "$ISO_OUT"
-  sha256sum "$QCOW2_OUT" | awk '{print $1}' > "${QCOW2_OUT}.sha256"
-  sha256sum "$ISO_OUT" | awk '{print $1}' > "${ISO_OUT}.sha256"
+  sha256sum "$QCOW2_OUT" | awk '{print $1}' >"${QCOW2_OUT}.sha256"
+  sha256sum "$ISO_OUT" | awk '{print $1}' >"${ISO_OUT}.sha256"
   log "output: $QCOW2_OUT ($(stat -c%s "$QCOW2_OUT") bytes)"
   log "output: $ISO_OUT ($(stat -c%s "$ISO_OUT") bytes)"
 fi
 
-[ "$VERIFY" = 1 ] || { log "skipping verify (--no-verify)"; exit 0; }
+[ "$VERIFY" = 1 ] || {
+  log "skipping verify (--no-verify)"
+  exit 0
+}
 
 # =============================================================================
 # (5) VERIFY: boot a scratch copy on the pinned device set, fb-wait for the
