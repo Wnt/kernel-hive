@@ -288,7 +288,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54174,
-      "notes": "keyboard-only (bootOS reads the BIOS keyboard, no pointer at all); no exec channel: type at the $ prompt via 'labctl type' and read the framebuffer"
+      "notes": "keyboard-only (bootOS reads the BIOS keyboard, no pointer at all); no exec channel: type at the $ prompt via 'labctl type' and read the framebuffer. floppy.qcow2 is the ONLY block device and carries the 'golden' vmstate — never delete or replace it; recapture only via checkpoint-guard. Sample screendumps at a fixed instant (stop; screendump; cont): the 9x2 px text caret blinks and is the only thing that ever differs between two samples of the prompt."
     },
     "c128": {
       "dir": "/data/vms/streamhost/stations/c128",
