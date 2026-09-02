@@ -9,8 +9,11 @@ prove and record below.
 
 - Public ID / `stationDir` / `SH_STATION`: `netbsd14`
 - Archetype: `beige-ibm-pc`
-- Release: NetBSD 1.4.1 i386, released 1999-08-26 — GENERIC kernel,
-  `pccons` console (not wscons), XFree86 3.3.3.1 (`XF86_SVGA` on Cirrus).
+- Release: NetBSD 1.4.1 i386, released 1999-08-26 — custom `KHMIN` kernel
+  (GENERIC minus the ISA devices the emulated PC lacks; GENERIC hangs in
+  autoconf after `lpt0` on QEMU and 1.4.1 has no userconf), wscons console
+  (`wsdisplay0 at vga1`), XFree86 3.3.3.1 (`XF86_SVGA` on the Cirrus GD5446,
+  1024x768, depth 8, `Option "no_bitblt"`).
 - Reserved slot / UDP port / VMID: `176` / `54176` / `176`
 - Upstream: `archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/` —
   `installation/floppy/boot.fs` (1 474 560 B) + 13 binary sets under
@@ -36,17 +39,23 @@ prove and record below.
 Installed via `sysinst` from the `boot.fs` floppy, sets supplied on `cd0`
 from `sets.iso`. Measured on the smoke boot (framebuffer, 720x400 text):
 kernel probes `wd0` (IDE), `cd0`, `ne2` (RTL8029), `pc0` (pccons), `com0`,
-`fdc0`; sysinst main menu appears ~25 s after power-on. No `pms0` line was
-seen on the INSTALL kernel — whether the PS/2 mouse is present on GENERIC is
-for the golden stream to confirm; fallback is a `-chardev msmouse` serial
-mouse on `com0` with XFree86 protocol `Microsoft`.
+`fdc0`; sysinst main menu appears ~25 s after power-on. The INSTALL kernel is
+pccons; the installed kernels are wscons. The PS/2 mouse is `opms0 at pckbc0`
+(`/dev/pms0`, XFree86 protocol `PS/2`) — the serial-mouse fallback was never
+needed. After sysinst the kernel and the X setup are applied from the INSTALL
+floppy's ramdisk shell (mount `wd0a` AND `wd0e`, chroot, `build-kernel.sh
+KHMIN`, `apply-x.sh` — [`../../scripts/build-guests/tiles/netbsd14/README.md`](../../scripts/build-guests/tiles/netbsd14/README.md)).
+Under `KHMIN` the PCI NE2000 is `ne0`, not GENERIC's `ne2`, so both
+`/etc/ifconfig.ne0` and `/etc/ifconfig.ne2` are written; `/etc/nsswitch.conf`
+is `hosts: files` and `/etc/resolv.conf` names SLIRP's `10.0.2.3`, because the
+X server resolves every TCP client and a resolver timeout stalls the handshake.
 
 Guest network is static: `10.0.2.15/24`, gateway `10.0.2.2`, and
 `/etc/hosts` names `10.0.2.2 slirphost`.
 
 Session start: `/etc/rc.local` runs `/etc/kh-xsession` under `xinit` —
 `xhost +10.0.2.2`, an xterm over the origin, xclock, xcalc, and a window
-manager. <!-- TODO(golden): wm --> (ctwm if present, twm otherwise).
+manager — **twm** (the 1.4.1 X sets ship no ctwm).
 
 ## Device set
 
@@ -84,7 +93,16 @@ recapture netbsd14`, see below).
 
 ## Checkpoint
 
-<!-- TODO(golden): VM_SIZE, VM_CLOCK, bake date, restore proof -->
+`golden` in `disk.qcow2` (the only block device), baked 2026-09-03 02:54:27
+with the station launcher under `/opt/qemu-beos`: VM_SIZE 38.6 MiB, VM_CLOCK
+0000:01:01.205. Cold boot to the settled desktop: 49 s. Restore proven the same
+minute: `loadvm golden -S` + `cont` shows the desktop after 3.2 s and the X
+connection-setup handshake on `127.0.0.1:6076` answers `1` in 0.5 s
+(`x11warp-bootstrap.log`: `x11warp ok: the golden carries the X access state`).
+The ready scene: SteelBlue root, xterm `NetBSD 1.4.1` 80x28 at the origin with
+a root prompt, Calculator at (640,80), xclock top-right, X cursor parked at
+the screen centre (512,384) — outside the xterm, so the daemon's first warp to
+the origin is what gives the xterm the keyboard.
 
 ## Operating
 
@@ -101,10 +119,10 @@ recapture netbsd14`, see below).
 
 - **No exec channel.** Everything is QMP keys/mouse plus the framebuffer,
   same as several of the fleet's other small stations.
-- **PS/2 mouse presence unconfirmed on GENERIC** — the INSTALL kernel log
-  showed no `pms0` line; the golden stream verifies this and the serial
-  `msmouse` fallback is documented above in case it is absent. This does not
-  affect the pointer route above, which never touches PS/2 motion.
-- **Window manager not yet confirmed** — see the `<!-- TODO(golden): wm -->`
-  marker in the install log above.
+- **Custom kernel.** `/netbsd` is `KHMIN`; a GENERIC kernel on this disk hangs
+  after `lpt0`. The ruled-out causes and the race that found the route are in
+  [`../lab/NETBSD14-WAVE.md`](../lab/NETBSD14-WAVE.md).
+- **Relative pointer motion is unusable** (the guest's `opms` Y axis pins the
+  pointer to the bottom edge under QEMU relative packets) — irrelevant to the
+  station, whose motion is `x11warp`, but do not debug with `qmp-type --mouse`.
 - **Network** is SLIRP-only; no retronet tap on this station.

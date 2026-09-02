@@ -29,17 +29,17 @@
         "win": "qemu",
         "mouse": {
           "a": [
-            120,
-            360
+            735,
+            270
           ],
           "b": [
-            480,
-            150
+            950,
+            90
           ]
         },
         "kbd": "Return",
         "kbd_reset": "Escape",
-        "kbd_note": "X11 desktop (ctwm); an xterm holds the keyboard. Type into the xterm.",
+        "kbd_note": "X11 desktop (twm, focus follows the pointer); the xterm at the origin holds the keyboard once the daemon's first warp lands there. Type into the xterm.",
         "audio_trigger": "none",
         "note": "no audio device; ABSOLUTE pointer via x11warp into the guest XFree86 server (loopback SLIRP forward 6076->6000), buttons + keys over D-Bus PS/2",
         "accel": "kvm"
@@ -197,7 +197,7 @@
     "eraSoftware": [
       "sysinst",
       "XFree86 3.3.3.1",
-      "ctwm",
+      "twm",
       "xterm",
       "xclock",
       "xcalc",
@@ -205,13 +205,13 @@
     ],
     "periodBrowser": "none in base (Lynx via pkgsrc)",
     "iconicApps": [
-      "ctwm",
+      "twm",
       "xterm",
       "xclock",
       "xcalc"
     ],
     "blurb": "NetBSD 1.4.1, August 1999: the portable BSD that ran one source tree on every architecture it touched, with sysinst, the new UVM memory system and pkgsrc \u2014 here on i386 under the last monolithic XFree86 3.3 server, a year before the 4.0 rewrite.",
-    "notes": "Live streamhost station. Boots to an XFree86 3.3.3.1 ctwm session on the Cirrus adapter with an xterm, xclock and xcalc; the pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
+    "notes": "Live streamhost station. Boots to an XFree86 3.3.3.1 twm session on the Cirrus adapter with an xterm, xclock and xcalc; the pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
   },
   "emulator": {
     "family": "QEMU",
@@ -227,7 +227,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "NetBSD 1.4.1 ctwm desktop (XFree86 3.3.3.1 SVGA on Cirrus, 1024x768x8): xterm holding a root shell over the origin, xclock and xcalc; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
+    "fixture": "NetBSD 1.4.1 twm desktop (XFree86 3.3.3.1 SVGA on the Cirrus GD5446, 1024x768x8, custom KHMIN kernel): xterm 'NetBSD 1.4.1' 80x28 at the origin holding a root shell, Calculator at (640,80), xclock top-right; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore (proven: desktop 3.2 s after cont, X handshake 0.5 s)."
   },
   "migrationExceptions": [],
   "notes": [
