@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (77 of the 79
+//    - transport   : how its LIVE framebuffer texture is obtained (80 of the 82
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 77 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 80 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -205,6 +205,9 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
   bootos:      { osId: 'bootos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#8ecae6', eraLabel: '2019 · 512-byte boot-sector OS' },
   pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
+  pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1', pointerRel: true },
+  ubuntu:      { osId: 'ubuntu', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#dd4814', eraLabel: '2004 · Ubuntu 4.10 Warty Warthog' },
+  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: true },
   netbsd14:    { osId: 'netbsd14', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#f26522', eraLabel: '1999 · NetBSD 1.4.1 — XFree86 3.3.3.1', pointerRel: false },
 };
 

@@ -23,6 +23,7 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm go
 # start without touching the device set. The guest's only interfaces are ne2
 # (SLIRP) and lo0; the golden carries `xhost +10.0.2.2` (never `xhost +`).
 X_PORT=6076
+# shellcheck disable=SC2086 # $LOADVM must word-split into flags
 nohup "${NETBSD14_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-netbsd14 \
   -enable-kvm -m 128 -smp 1 \

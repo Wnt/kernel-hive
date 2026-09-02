@@ -91,5 +91,36 @@ class WalkinCloneExclusionTest(unittest.TestCase):
         self.assertEqual(live, {"win95", "ravynos", "amix"})
 
 
+class RuntimeResidueExclusionTest(unittest.TestCase):
+    """A directory of runtime residue is not a station either.
+
+    On 2026-09-03 nine station waves ran in parallel; each dark-launched smoke
+    rig ran a hand daemon with `SH_PROBES_JSON` / `SH_TRACE_DIR` unset, so the
+    daemon planted `<id>/probes.json` + `<id>/traces/` under the fleet tree for
+    eight undeclared ids, and the first landing's `station-up` step 5 refused
+    `labctl gen` fleet-wide — the new station was invisible to every framebuffer
+    check. A station is a directory that carries `station.env`.
+    """
+
+    def setUp(self):
+        self.mod = _load()
+
+    def test_only_dirs_with_station_env_are_live(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "win95").mkdir()
+            (root / "win95" / "station.env").write_text("SH_STATION=win95\n")
+            (root / "walkin-win311-3").mkdir()
+            (root / "walkin-win311-3" / "station.env").write_text("SH_STATION=walkin-win311-3\n")
+            (root / "debian22").mkdir()
+            (root / "debian22" / "probes.json").write_text("{}")
+            (root / "debian22" / "traces").mkdir()
+            (root / "zzsmoke").mkdir()
+            (root / "stations.json").write_text("{}")
+            self.assertEqual(self.mod.live_station_dirs(str(root)), {"win95"})
+
+
 if __name__ == "__main__":
     unittest.main()

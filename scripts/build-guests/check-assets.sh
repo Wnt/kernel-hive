@@ -99,6 +99,7 @@ ROWS=(
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries
   # Amstrad's 1999 emulator permission. zxspectrum.sh extracts 48.rom from it.
   "opt-file|zxspectrum|Sinclair ZX Spectrum 48K ROM, in Debian's spectrum-roms package (fetched by zxspectrum.sh from deb.debian.org if absent)|$ASSET_STAGING/zxspectrum/spectrum-roms_20081224-5_all.deb|sha256:8d25dd300a0c86b4459e152de3bc657dca894b167e6a6419eb195d9669bfe950|freely-fetchable-pinned"
+  "opt-file|ubuntu|Ubuntu 4.10 Warty Warthog live CD ISO (fetched by ubuntu.sh from old-releases.ubuntu.com if absent)|$ASSET_STAGING/ubuntu/warty-release-live-i386.iso|sha256:189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013|freely-fetchable-pinned"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).
@@ -140,6 +141,10 @@ ROWS=(
   # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
   "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
+  # Slackware Linux 3.4 (1997, kernel 2.0.30): slackware.sh composes the root fs
+  # host-side from the mirror .tgz set (128 files); pins recorded in
+  # scripts/build-guests/tiles/slackware/MANIFEST.sha256.
+  "opt-file|slackware|Slackware 3.4 install set manifest (128 pinned files, mirrors.slackware.com/slackware/slackware-3.4)|$ASSET_STAGING/slackware/MANIFEST.sha256|sha256:f74ddc25f891b658f2083e71ac9849c990007c7e64cfd1691a3ce8bb83fc89be|freely-fetchable-pinned"
   # NetBSD 1.4.1 i386 (1999, BSD-2): netbsd14.sh re-fetches boot.fs + the 13
   # binary sets from archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/
   # if absent; sets.iso is composed locally from the tgz sets.
@@ -158,6 +163,7 @@ ROWS=(
   "opt-file|netbsd14|NetBSD 1.4.1 i386 xfont.tgz|$ASSET_STAGING/netbsd14/xfont.tgz|sha256:edf9bf393678b0351399550f9025fccbd97d3d8d27ccc30ffc665ad9bfcb5e3b|freely-fetchable-pinned"
   "opt-file|netbsd14|NetBSD 1.4.1 i386 xserver.tgz|$ASSET_STAGING/netbsd14/xserver.tgz|sha256:e4d98777ba2d95471f53ab751a6181c92f3cb2def641a1729cfa138317bdf462|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  "opt-file|pcbsd|PC-BSD 1.5.1 CD1 (archive.org pcbsd-1.5.1-x-86-cd-1)|$GALLERY_ROOT/PCBSD/pcbsd.iso|sha256:69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
   # so the only supply is volunteer mirrors (nomadlogic / NTNU / Clarkson). This hash was

@@ -111,19 +111,19 @@ die() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-  --dir)
-    GUEST_DIR="$2"
-    shift 2
-    ;;
-  --force)
-    FORCE=1
-    shift
-    ;;
-  -h | --help)
-    sed -n '2,60p' "$0"
-    exit 0
-    ;;
-  *) die "unknown arg: $1" ;;
+    --dir)
+      GUEST_DIR="$2"
+      shift 2
+      ;;
+    --force)
+      FORCE=1
+      shift
+      ;;
+    -h | --help)
+      sed -n '2,60p' "$0"
+      exit 0
+      ;;
+    *) die "unknown arg: $1" ;;
   esac
 done
 
