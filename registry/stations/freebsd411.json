@@ -211,8 +211,8 @@
       "Kate",
       "KCalc"
     ],
-    "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line that ran Yahoo, Hotmail and half the early web — here with the full KDE 3.3.2 desktop from the release CD, on the same i386 that hosted it.",
-    "notes": "Live streamhost station. Boots straight into a KDE 3.3.2 session on XFree86 4.3.0 (cirrus driver on the emulated Cirrus, 1024x768x16) with the K menu, Kicker panel, Konqueror, Konsole, Kate and KCalc one click away; the pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
+    "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line — the FreeBSD that ran Yahoo!, Hotmail and a generation of ISPs — here with the full KDE 3.3.2 desktop from the release CD, on the i386 it was built for.",
+    "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.3.0 (cirrus driver on the emulated Cirrus, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
   },
   "emulator": {
     "family": "QEMU",
@@ -235,7 +235,7 @@
     "scaffolded from netbsd14 on 2026-09-02 (same pc-i440fx-11.0/KVM/cirrus/ne2k_pci device set, x11warp pointer route); media: 4.11-RELEASE-i386-disc1-kde.iso from ftp-archive.freebsd.org (base + XFree86 4.3.0 + KDE 3.3.2 on one disc)"
   ],
   "demoProgram": {
-    "label": "Type a few commands into the Konsole",
+    "label": "Type a few commands into the root Konsole",
     "lines": [
       "uname -a",
       "ls /usr/local/bin | head",
