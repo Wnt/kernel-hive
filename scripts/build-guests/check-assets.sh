@@ -141,6 +141,7 @@ ROWS=(
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
   "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  "opt-file|pcbsd|PC-BSD 1.5.1 CD1 (archive.org pcbsd-1.5.1-x-86-cd-1)|$GALLERY_ROOT/PCBSD/pcbsd.iso|sha256:69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
   # so the only supply is volunteer mirrors (nomadlogic / NTNU / Clarkson). This hash was
