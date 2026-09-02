@@ -13,9 +13,10 @@ from pathlib import Path
 from .constants import RENDER_DIR, REPO
 from .drift import cmd_drift
 from .facts_live import cmd_facts_live
-from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, cmd_new_like, generated
+from .generate import atomic_write, check_gate_lists, cmd_generate, generated
 from .loading import RegistryError, is_x11_runtime, load
 from .render import rendered
+from .scaffold import cmd_new, cmd_new_like
 from .validate_rules import validate
 
 
