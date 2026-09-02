@@ -66,6 +66,36 @@ SPA build/deploy, final framebuffer acceptance, teardown of stream sandboxes.
 - Shared with the freebsd411 wave: PC-BSD's own X + KDM autologin need nothing
   hand-written; the usb-tablet route is dead on FreeBSD ≤6 — plan for `rel`.
 
-## Measured milestones
+## Measured milestones (from the session transcript, git and box timestamps)
 
-Filled at landing from `scripts/dev/session-timeline.py`.
+Clock zero = operator's message, 2026-09-02 22:55:38Z. Coordinator + 4 Claude
+agents (golden Fable 22 min + 4.5 min rebake, build sonnet-low 2 min, spa Fable
+3 min, docs sonnet-low 1 min). Session split: 60% coordinator model time, 19%
+tools, 21% waiting on agents (37 min span).
+
+| Milestone | Wall clock | Minute |
+|---|---|---|
+| ISO fully on the box (7 MB/s from archive.org) | 22:57:30Z | 2 |
+| Installer on screen in the smoke rig | 22:58:30Z | 3 |
+| `/os/pcbsd` viewable (smoke-rig.sh, slot 179) | 22:59Z | **4** |
+| Ledger commit pushed | 23:02Z | 6.5 |
+| build / spa / docs merged | 23:08Z | 12 |
+| First KDE desktop on the rig | ~23:15Z | 20 |
+| First golden (with usb-tablet) staged | 23:21Z | 26 |
+| Rebake without the tablet staged | 23:28Z | 32 |
+| `main` pushed (7ace57e8), gate green | 23:24:35Z | 29 |
+| streamhost@pcbsd LISTENING | 23:28:47Z | 33 |
+| SPA + runtime manifests deployed | 23:31:42Z | **36** |
+
+Where the time went vs. pcgeos (18 min): the GUI install itself (~5 min copy +
+~5 min first boot with the Display Settings wizard) is irreducible for this OS;
+**~9 min were lost to the usb-tablet** — declared `abs` in the ledger from the
+reactos sibling, dead on FreeBSD 6.3 X, and the validator rightly refused a
+`rel` method next to an absolute device, so the golden had to be re-baked on a
+tablet-free set. Lesson for the next BSD/X11 wave: **pick the pointer transport
+before the bake** — one PS/2 `rel` nudge and one tablet `abs` move on the
+installer screen settle it in 20 seconds, and the launcher never carries a dead
+device. Also: `station-up.sh` step 4 republishes the runtime manifests and wipes
+every other wave's dark-launch overlay (seven this time), and `labctl gen`
+refuses while undeclared station dirs from sibling waves exist — both are
+coordination-level, reported to the coordination session.
