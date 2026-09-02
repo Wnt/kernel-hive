@@ -1,0 +1,245 @@
+{
+ "schemaVersion": 1,
+ "id": "pcbsd",
+ "era_year": 2008,
+ "enabled": true,
+ "build": {
+  "rows": [
+   {
+    "order": 72,
+    "prelude": "",
+    "value": {
+     "key": "pcbsd",
+     "script": "tiles/pcbsd.sh",
+     "outputDir": "PCBSD",
+     "class": "slow",
+     "estimated": "~15m (GUI install, assisted)",
+     "automation": "assisted",
+     "produces": "pcbsd.iso (PC-BSD 1.5.1 CD1, pinned) + pcbsd.qcow2 (installed KDE desktop)",
+     "flags": []
+    }
+   }
+  ]
+ },
+ "operator": {
+  "actionMap": {
+   "key": "pcbsd",
+   "value": {
+    "os": "PC-BSD 1.5.1",
+    "win": "qemu",
+    "mouse": {
+     "a": [
+      120,
+      120
+     ],
+     "b": [
+      560,
+      300
+     ]
+    },
+    "kbd": "alt-f1",
+    "kbd_reset": "Escape",
+    "kbd_note": "Alt+F1 opens the KDE 3 K menu",
+    "audio_trigger": "tone",
+    "validated": false,
+    "note": "scaffolded 2026-09-03; retune after golden"
+   }
+  },
+  "labctl": {
+   "dir": "/data/vms/streamhost/stations/pcbsd",
+   "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
+   "pointer_mode": "abs",
+   "warpd_port": null,
+   "warpd_addr": null,
+   "ssh_port": null,
+   "exec_port": null,
+   "exec_kind": null,
+   "exec_user": null,
+   "exec_key": null,
+   "console": "fb",
+   "udp_port": 54179,
+   "notes": "no exec channel yet; e1000 user net present, ssh forward is a follow-up"
+  }
+ },
+ "render": {
+  "signalOrder": 74,
+  "stationsManifestOrder": 72,
+  "stationsManifestPrelude": "\n# pcbsd (VMID 179) — PC-BSD 1.5.1 (FreeBSD 6.3 + KDE 3.5.8), golden on disk.qcow2. UDP 54179. VERBATIM launcher.\n",
+  "bringUpGroup": 0,
+  "bindingOrder": 79,
+  "bindingPrelude": "",
+  "goldenOrder": 72,
+  "actionMapOrder": 44
+ },
+ "stationDir": "pcbsd",
+ "lifecycle": "production",
+ "stream": {
+  "transport": "streamhost",
+  "udpPort": 54179,
+  "fps": 30,
+  "audio": true,
+  "touch": false,
+  "pointer": {
+   "transport": "abs",
+   "method": "qemu-usb-tablet",
+   "absolute": true,
+   "present": true,
+   "device": "usb-tablet",
+   "scale": 1.0,
+   "offset": [
+    0,
+    0
+   ]
+  },
+  "slot": 179
+ },
+ "guestDoc": "docs/guests/pcbsd.md",
+ "credentialsRef": "guest/pcbsd",
+ "runtime": {
+  "stationEnv": {
+   "SH_STATION": "pcbsd",
+   "SH_QMP": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
+   "SH_PORT": "54179",
+   "SH_FPS": "30",
+   "SH_HOST_IP": "192.0.2.10",
+   "SH_ADVERTISE_HOST": "192.0.2.10",
+   "SH_POINTER": "abs",
+   "SH_AUDIO": "on",
+   "SH_AUDIO_BITRATE": "96000",
+   "SH_HASH_FILE": "/data/vms/streamhost/stations/pcbsd/cert_hash_b64.txt",
+   "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/pcbsd/signaling.json",
+   "SH_CERT_ROTATE_DAYS": "10",
+   "SH_ABS_PACE_MS": "30"
+  },
+  "vmidLabel": 179,
+  "qemu": {
+   "mode": "verbatim",
+   "emitArgs": [
+    "--tile",
+    "pcbsd",
+    "--vmid",
+    "179",
+    "--udp",
+    "54179",
+    "--pointer",
+    "abs",
+    "--abs-pace-ms",
+    "30",
+    "--audio",
+    "on",
+    "--fps",
+    "30",
+    "--launcher-file",
+    "$T/pcbsd/qemu-streamhost.sh",
+    "--env-append-file",
+    "$T/pcbsd/station.env.fixture"
+   ],
+   "deviceSetId": "pcbsd-current",
+   "launcher": "streamhost/stations/pcbsd/qemu-streamhost.sh",
+   "envFixture": "streamhost/stations/pcbsd/station.env.fixture",
+   "binary": "qemu-system-x86_64",
+   "machine": "pc-i440fx-11.0",
+   "accel": "kvm",
+   "cpu": "host",
+   "memoryMB": 1024,
+   "smp": 1,
+   "vga": "std",
+   "deviceSetSummary": [
+    "-name streamhost-pcbsd",
+    "-enable-kvm -m 1024 -smp 1",
+    "-machine pc-i440fx-11.0 -cpu host",
+    "-rtc base=localtime",
+    "-drive file=$SDIR/disk.qcow2,if=ide,index=0,media=disk,format=qcow2",
+    "-boot c",
+    "-loadvm golden",
+    "-vga std",
+    "-display dbus,p2p=on,audiodev=snd0",
+    "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+    "-usb -device usb-tablet",
+    "-netdev user,id=n0 -device e1000,netdev=n0",
+    "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
+    "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
+   ],
+   "sourceDeviceSet": {
+    "binary": "qemu-system-x86_64",
+    "machine": "pc-i440fx-11.0",
+    "accel": "kvm",
+    "cpu": "host",
+    "memoryMB": 1024,
+    "smp": 1,
+    "vga": "std",
+    "deviceSetSummary": [
+     "-name streamhost-pcbsd",
+     "-enable-kvm -m 1024 -smp 1",
+     "-machine pc-i440fx-11.0 -cpu host",
+     "-rtc base=localtime",
+     "-drive file=$SDIR/disk.qcow2,if=ide,index=0,media=disk,format=qcow2",
+     "-boot c",
+     "-loadvm golden",
+     "-vga std",
+     "-display dbus,p2p=on,audiodev=snd0",
+     "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+     "-usb -device usb-tablet",
+     "-netdev user,id=n0 -device e1000,netdev=n0",
+     "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
+     "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
+    ]
+   },
+   "launcherParity": {
+    "status": "byte-identical",
+    "reason": "tracked verbatim launcher equals live"
+   }
+  },
+  "bringUpOrder": 79
+ },
+ "spa": {
+  "archetypeId": "beige-tower-crt",
+  "transport": "streamhost",
+  "accentColor": "#2f6fba",
+  "eraLabel": "2008 · PC-BSD 1.5.1"
+ },
+ "museum": {
+  "id": "pcbsd",
+  "displayName": "PC-BSD 1.5.1",
+  "year": 2008,
+  "lineage": "BSD / FreeBSD 6.3 / KDE 3",
+  "arch": "i386",
+  "ramMB": 1024,
+  "era": "2000s",
+  "accent": "#c8102e",
+  "eraSoftware": [
+   "KDE 3.5.8",
+   "Konqueror",
+   "PBI installer",
+   "Kontact"
+  ],
+  "periodBrowser": "Konqueror 3.5 (KHTML)",
+  "iconicApps": [
+   "Konqueror",
+   "Konsole",
+   "KWrite",
+   "PBI Installer"
+  ],
+  "blurb": "TODO(spa): PC-BSD — FreeBSD made point-and-click: a graphical installer, KDE 3 and one-click PBI packages, from the year before iXsystems took it over.",
+  "notes": "TODO(spa): PC-BSD 1.5.1 \"Da Vinci\" (March 2008), FreeBSD 6.3-RELEASE, KDE 3.5.8, X.org 7.3; installed from CD1 (688930816 bytes). Archetype beige-tower-crt placeholder — the spa stream may pick a 2008 desktop."
+ },
+ "emulator": {
+  "family": "QEMU",
+  "version": "11.0.2",
+  "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+ },
+ "ui": "desktop",
+ "reset": {
+  "stationDir": "pcbsd",
+  "pointer": "abs",
+  "touch": false,
+  "resetMode": "loadvm",
+  "snapshot": "golden",
+  "mouse": "PASS",
+  "keyboard": "PASS",
+  "fixture": "PC-BSD 1.5.1 KDE 3.5.8 desktop, visitor autologin, focused editor window (caret = keyboard surface), pointer on clear desktop, screensaver/DPMS off."
+ },
+ "notes": [
+  "scaffolded from reactos 2026-09-03 (speedrun #3); PC-BSD 1.5.1 CD1 from archive.org item pcbsd-1.5.1-x-86-cd-1"
+ ]
+}
