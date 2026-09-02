@@ -383,6 +383,24 @@ scripts/lib/checkpoint-verify.sh <stationDir> --capture
 scripts/lib/checkpoint-verify.sh <stationDir>
 ```
 
+**The fast first bake (brand-new Tier-1 station).** `checkpoint-verify.sh` has
+no cold-boot-plus-fixed-settle mode (only `--capture`, driven by the station's
+`bootrec-tiles.conf` ready metadata, which a new station does not have yet).
+For the very first golden, boot the sandbox clone, wait a fixed settle you
+chose by eye, then drive QMP/HMP by hand on the clone's monitor socket:
+
+```bash
+Q=scripts/lib/labqmp.py; S=<clone-qmp-socket>
+python3 $Q $S stop
+python3 $Q $S savevm golden
+python3 $Q $S querysnap                 # 'info snapshots' — the golden tag must be listed
+python3 $Q $S loadvm golden
+echo '{"execute":"qmp_capabilities"}{"execute":"screendump","arguments":{"filename":"/tmp/golden-restore.ppm"}}' | socat - UNIX-CONNECT:$S   # the framebuffer is the proof
+```
+
+Then wire up `bootrec-tiles.conf` and run the standard proof above; the
+recapture path (`checkpoint-guard recapture`) is for live stations only.
+
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
 every writable disk under a namespaced `/data/vms/sandbox/golden-verify-*`
 directory, statically checks the rewritten launcher, gates destructive QMP by
@@ -944,7 +962,7 @@ re-running it on a live station is safe.)
 3. sync the tracked tree, including the registry, generated streamhost/serve/UI
    files, generated labctl declarations, and hand-managed tracked sidecars;
 4. emit with pinned machine types into scratch and pass `verify-emit`;
-5. emit/deploy the new station directory;
+5. emit/deploy the new station directory — `bash streamhost/stations-manifest.sh --only <stationDir> --pin-machine` emits just that one station (the flag is repeatable; the fixture preflight still runs fleet-wide);
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<stationDir>`;
 7. publish the **five** runtime documents with
