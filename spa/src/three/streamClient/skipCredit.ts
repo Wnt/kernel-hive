@@ -52,3 +52,43 @@ export function spendSkipCredit(s: SkipCreditState, missed: number): number {
   }
   return missed;
 }
+
+/** One slot of the reported-loss window (abr.ts `lossWindow`). */
+export interface LossWindowSlot {
+  at: number;
+  recv: number;
+  missed: number;
+}
+
+/**
+ * RETROACTIVE spend — the fix for the 2026-09-02 multi-viewer reading.
+ *
+ * The server reports its cumulative skip count at 1 Hz (KIND_PARAMS subtype 2,
+ * transport/mod.rs:521) but the gaps those skips produce appear on the ~100 ms
+ * tick, up to a full second EARLIER. `spendSkipCredit` only ever spends
+ * forward, so on a burst — exactly what a second viewer on the same station
+ * causes, via the backlog gate and broadcast `Lagged` — every skipped frame was
+ * billed as loss first and credited a second later against ticks that had no
+ * misses left to cancel. The client then reported 93-96 % loss on a 12 ms LAN,
+ * AND told the server ABR the same over T_STATS, which is what makes the ladder
+ * oscillate.
+ *
+ * The reported percentage is recomputed from the whole window every tick, so
+ * the correction can still be applied to slots already in it. Spend OLDEST
+ * FIRST: the lagging 1 Hz report is talking about the past, not the present.
+ *
+ * Returns the number of frames actually un-billed (so the cumulative drop
+ * counter can be corrected too).
+ */
+export function spendSkipCreditOverWindow(s: SkipCreditState, window: LossWindowSlot[]): number {
+  let applied = 0;
+  for (const slot of window) {
+    if (s.serverSkipCredit <= 0) break;
+    if (slot.missed <= 0) continue;
+    const take = Math.min(s.serverSkipCredit, slot.missed);
+    slot.missed -= take;
+    s.serverSkipCredit -= take;
+    applied += take;
+  }
+  return applied;
+}

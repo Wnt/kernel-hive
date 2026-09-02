@@ -246,6 +246,71 @@ Two causes, both fixed 2026-08-17 (see `abr.rs`), both worth re-checking:
   heartbeat IDR spikes the ping. RTT smoothing is now asymmetric (rise m=16,
   fall m=4) and an RTT-only breach must persist 4 s, not 1.5 s.
 
+### `loss…` on the FIRST T-line of every session (fixed 2026-09-02)
+The signature: the first `stats` row after every connect *and every reconnect*
+reads `loss86.7/w86.7n30` (or `w50.0n12`, `w71.4n7`…), and the next row reads
+`loss0`. It is not the network — a 4 ms LAN produced it on all six stations of a
+sim run.
+
+**Why it happened.** Video AUs ride *reliable* QUIC uni-streams, so a `frame_id`
+gap is almost never packet loss. On subscribe the daemon sends its freshest
+**cached** key and then discards every AU until the next real IDR
+(`transport/mod.rs`, the `JoinGate`; measured on freedos: primed `423`, first
+broadcast `453`). Those 29 ids were never sent to this session, but the client
+billed them as loss — which (a) seeded `sOverall` low so the 2 s dwell tripped
+`spotty` a few seconds after connect, and (b) went to the server in `T_STATS`,
+so the server ABR downshifted T0→T1 about 4 s in and the ladder then oscillated
+on the 25 s dwell.
+
+**What the client does now** (`spa/src/three/streamClient/lossLedger.ts`): a gap
+is *pending*, not missed. It is billed only after `REORDER_GRACE_MS` with no
+arrival, never inside the join window (the hole between AU #1 and AU #2), and
+the whole pending set is dropped when the encoder restarts `frame_id` at 0
+(`encode/worker.rs`). Server-intentional skips are credited **retroactively**
+across the 3 s reporting window (`skipCredit.ts`), because the daemon's
+cumulative skip count arrives at 1 Hz while the gaps it explains appeared on
+100 ms ticks up to a second earlier — the forward-only spend could never cancel
+a burst.
+
+### A second viewer makes the first viewer's client report 95 % loss
+Same root cause as above, different trigger. With two active viewers on one
+station the daemon's backlog gate and broadcast `Lagged` both skip AUs, and
+per-AU uni-streams complete out of order much more often. Before the ledger the
+first viewer read `loss93.3` → `loss96.0/w96.0n50` with three `frame watchdog
+latched` WARNs at RTT 11-14 ms. If you see this again, check
+`skipped_frames` in the vitals lane: if it is climbing, the daemon is skipping
+on purpose and the credit is doing its job; if it is flat, the gaps are real.
+
+### `ping-timeout: tile stopped responding to liveness pings` on a LAN
+The type-9 RTT ping is a **datagram** — droppable — raced against a
+`setTimeout` on a main thread that six decoders can starve, and the ABR loop
+fires one every 100 ms. Three "consecutive" timeouts could therefore be banked
+~800 ms into a single hiccup (or a `loadvm` pause), and the hook rebuilt a
+perfectly healthy transport. Since 2026-09-02 (`streamClient/liveness.ts`) the
+ping is serialised (one in flight), and unanswered pings alone only produce a
+**soft** `spotty`. The session is dropped only when the server has *also* been
+completely silent — no uni-stream, no datagram — for `SILENCE_MS`. Hard closes
+(`wt.closed` resolve/reject) are untouched and still instant.
+
+### "Spotty connection" on a session that never connected
+`updateBannerImpl` used to score a client with no RTT sample and no frames: the
+scorer's unknown → 250 ms default makes `latRaw` 0, `overall` 0, and after the
+2 s dwell the banner accuses a link that does not exist (measured on reactos,
+whose WebTransport handshake never completed: "Spotty connection" at +6.0 s,
+interleaved with "Reconnecting to tile… (attempt N)"). The EWMAs are now seeded
+only once an RTT sample **and** a frame have both landed (`scoring.ts`
+`scorerReady`), and the banner stays quiet until then.
+
+### The first attempt after a restore is always abandoned
+`Reconnecting to restored tile…`, then the ladder walks 250/500/1000/2000 ms and
+the flow is still in `stream.recover` ~17 s after the click. The first
+post-restore attempt was spending `RELIVE_KEYFRAME_WAIT_MS` (3 s) because the
+station *had* been live — but `loadvm` stops the guest and swaps its RAM, so
+frame #1 legitimately takes longer. A restore now gets the cold budget
+(`retryBudget.ts` `keyframeWaitMs`) and does **not** `markWarm()`, which also
+stops `dropStaleSession('stream-stalled')` firing against a guest that is simply
+still being restored.
+
 ### Station "freezes" while in use
 Look for `rx0.0M fps0` in consecutive `stats` rows with healthy `rtt` and zero
 loss. If it starts right after an `[abr] tier` change, the reconfig wedged the

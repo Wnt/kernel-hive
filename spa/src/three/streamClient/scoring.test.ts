@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ewma, rawScores } from './scoring';
+import { ewma, rawScores, scorerReady } from './scoring';
 
 describe('ewma', () => {
   it('is the exact prev*(m-1)/m + next/m recurrence', () => {
@@ -46,5 +46,18 @@ describe('rawScores', () => {
     // lat=50, loss=90, bw=50 → overall 50
     expect(r.overallRaw).toBe(Math.min(r.latRaw, r.lossRaw, r.bwRaw));
     expect(r.overallRaw).toBe(50);
+  });
+});
+
+describe('scorerReady', () => {
+  it('refuses to score a session with no RTT sample and no frames', () => {
+    expect(scorerReady({ hasRtt: false, framesSeen: false })).toBe(false);
+  });
+  it('refuses to score on one half of the evidence', () => {
+    expect(scorerReady({ hasRtt: true, framesSeen: false })).toBe(false);
+    expect(scorerReady({ hasRtt: false, framesSeen: true })).toBe(false);
+  });
+  it('scores once an RTT sample and a frame have both landed', () => {
+    expect(scorerReady({ hasRtt: true, framesSeen: true })).toBe(true);
   });
 });

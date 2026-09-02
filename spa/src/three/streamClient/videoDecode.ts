@@ -364,7 +364,16 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
   // and unconditional — no span here, just a bounded timestamp the mark
   // (if one ever names this frame_id) will later pair with a decode+paint
   // pair to emit real spans from.
-  noteReceived(frameId, performance.now());
+  const arrivedAt = performance.now();
+  noteReceived(frameId, arrivedAt);
+  // LOSS ACCOUNTING RUNS BEFORE THE DECODE GATE (lossLedger.ts). An AU the
+  // decoder must refuse as stale still PROVES it was not lost in transit, and
+  // per-AU uni-streams complete out of order often enough that billing the hole
+  // straight away is what made a second viewer on the same station read as
+  // 93-96 % loss on a 12 ms LAN. The ledger holds the hole for a grace period
+  // instead, never bills the daemon's join-gate window, and drops everything
+  // pending when the encoder restarts frame_id at 0.
+  this.lossLedger.note(frameId, arrivedAt);
   // OUT-OF-ORDER / STALE-AU GUARD: per-AU uni streams complete in retransmit
   // order, not frame_id order — a delayed delta arriving behind the newest
   // frame would decode against the wrong reference. Keys always pass (an IDR
@@ -377,18 +386,15 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
 
   // ---- ABR instrumentation: bytes, loss (frame_id gaps), arrival time ----
   this.recvBytesInterval += bytes.length;
-  this.lastAuAt = performance.now();
+  this.lastAuAt = arrivedAt;
   if (this.lastFrameId >= 0) {
     const gap = (frameId - this.lastFrameId - 1) | 0;
     if (gap > 0 && gap < 0x40000000) {
-      // Missed frame_ids = frames lost in transit (congestion). Feeds both the
-      // per-interval loss rate and the cumulative drop counter (WebCodecs exposes
-      // no drop count of its own, so frame_id gaps are our authoritative source).
-      this.missedInterval += gap;
-      this.framesDropped += gap;
-      // GAP → KEYFRAME GATE: the AUs we never received are this stream's
-      // reference frames — arm the gate so deltas are dropped until the next
-      // IDR (freeze the last clean picture instead of painting corruption).
+      // GAP → KEYFRAME GATE. Unchanged and DELIBERATELY not deferred: whatever
+      // the hole turns out to mean for the loss METRIC, the AUs that are not
+      // here yet are this stream's reference frames, so deltas must wait for the
+      // healing IDR rather than paint corruption. The ledger above owns the
+      // accounting; this owns the picture.
       this.auGate.noteGap();
       // Sampled 1-in-10 (analytics/streamEvents.ts): a gap is a LEVEL on a
       // congested link, not an edge, and it is the one event in this plane
@@ -398,7 +404,6 @@ export function feedVideoAUImpl(this: StreamClient, bytes: Uint8Array) {
   }
   this.lastFrameId = frameId;
   this.lastDecodedFrameId = frameId;
-  this.receivedInterval++;
 
   // Key AUs own ALL decoder (re)configuration: SPS/PPS extraction → avc mode
   // (description + AVCC), reconfigured only on parameter-set byte changes;

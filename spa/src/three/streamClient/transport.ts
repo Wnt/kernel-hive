@@ -40,6 +40,7 @@ import {
 export async function connectImpl(this: StreamClient): Promise<void> {
   this.wtReady = false;
   this.transportDown = false;
+  this.lastServerDataAt = 0;
   this.exitReason = null;
   this.consecutivePingTimeouts = 0;
   // Missing WebCodecs is terminal. Do not fetch signaling, open WebTransport,
@@ -206,6 +207,52 @@ export async function connectImpl(this: StreamClient): Promise<void> {
   }
 }
 
+// ---- liveness / RTT ping (type-9 datagram) --------------------------------
+/**
+ * SERIALISED: the ABR loop asks every 100 ms but a ping waits `timeoutMs`, so
+ * the old code kept up to six in flight and could bank three "consecutive
+ * timeouts" ~800 ms into a single hiccup. One at a time makes a strike mean a
+ * whole ping interval, and makes the strike count a real elapsed time.
+ */
+export async function pingRttImpl(this: StreamClient, timeoutMs = 500): Promise<number | null> {
+  if (!this.dgWriter || this.disposed || this.pingInFlight) return null;
+  this.pingInFlight = true;
+  try {
+    const seq = this.pingSeq++ >>> 0;
+    const b = new Uint8Array(5); b[0] = T_PING;
+    new DataView(b.buffer).setUint32(1, seq, true);
+    const t0 = performance.now();
+    const echoed = new Promise<number>((res) => this.pingWaiters.set(seq, res));
+    this.writeDatagram(b);
+    const t1 = await Promise.race([
+      echoed,
+      new Promise<number>((r) => setTimeout(() => r(-1), timeoutMs)),
+    ]);
+    this.pingWaiters.delete(seq);
+    if (t1 > 0) {
+      this.lastRtt = t1 - t0;
+      this.consecutivePingTimeouts = 0;
+      return this.lastRtt;
+    }
+    // A LOST ECHO IS NOT A LOST TILE. The ping is a datagram (droppable) raced
+    // against a setTimeout on a main thread that six decoders can starve, so
+    // strikes alone never tear the transport down any more — the session is
+    // dropped only once the server has also gone COMPLETELY silent for
+    // liveness.SILENCE_MS. Real hard closes still land instantly via
+    // `transportDown` (transport.ts wt.closed).
+    this.consecutivePingTimeouts++;
+    if (!this.transportDown && this.liveness() === 'lost') {
+      this.dropStaleSession(
+        'ping-timeout',
+        `tile silent for ${Math.round(this.msSinceServerData() ?? 0)}ms (${this.consecutivePingTimeouts} unanswered pings)`,
+      );
+    }
+    return null;
+  } finally {
+    this.pingInFlight = false;
+  }
+}
+
 // ---- incoming datagrams (RTT echoes) -------------------------------------
 export async function readDatagramsImpl(this: StreamClient, wt: WebTransport) {
   try {
@@ -214,6 +261,8 @@ export async function readDatagramsImpl(this: StreamClient, wt: WebTransport) {
       const { value, done } = await r.read();
       if (done || this.disposed || this.wt !== wt) break;
       this.datagramsSeen++;
+      // PROOF OF LIFE (liveness.ts): any datagram at all, echo or not.
+      this.lastServerDataAt = performance.now();
       if (value && value.length >= 5 && value[0] === T_PING) {
         const seq = (value[1] | (value[2] << 8) | (value[3] << 16) | (value[4] << 24)) >>> 0;
         const w = this.pingWaiters.get(seq);
@@ -234,6 +283,8 @@ export async function readIncomingStreamsImpl(this: StreamClient, wt: WebTranspo
       this.uniStreamsSeen++;
       this.totalUniStreamsSeen++;
       this.lastUniStreamAt = performance.now();
+      // PROOF OF LIFE (liveness.ts): a stream arriving outranks a lost echo.
+      this.lastServerDataAt = this.lastUniStreamAt;
       // Each stream is handled independently so a slow audio stream can't stall
       // per-frame video streams (and vice-versa).
       void this.handleStream(value as unknown as ReadableStream<Uint8Array>);
