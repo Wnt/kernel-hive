@@ -92,6 +92,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/bootos.md](guests/bootos.md) | bootOS — an OS in one 512-byte boot sector, on a 360K floppy of one-sector games; keyboard-only, floppy-as-qcow2 golden. |
 | [guests/c64.md](guests/c64.md) | Commodore 64 (VICE) — the reference kiosk implementation. |
 | [guests/daybreak.md](guests/daybreak.md) | Xerox 6085 "Daybreak" running ViewPoint 2.0.5, via the Dwarf/Draco Mesa emulator in a bare-X kiosk. |
+| [guests/debian22.md](guests/debian22.md) | Debian GNU/Linux 2.2 "potato" — GNOME 1.0 / XFree86 3.3.6, air-gapped like redstar2. |
 | [guests/haiku.md](guests/haiku.md) | Haiku station (ssh exec channel wired). |
 | [guests/helenos.md](guests/helenos.md) | HelenOS 0.14.1 LiveCD station — absolute pointer via usb-tablet. |
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS station — absolute-pointer notes (live 2026-07-13). |

@@ -226,6 +226,7 @@ missing feature.
 | `cbm8032` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `chokanji` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | off | 30 | — |
 | `daybreak` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | off | 60 | ssh |
+| `debian22` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | off | 30 | — |
 | `decos` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
 | `dragon32` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `freedos` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |

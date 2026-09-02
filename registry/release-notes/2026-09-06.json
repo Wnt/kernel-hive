@@ -30,6 +30,7 @@
     "[Rhapsody](station:rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved",
     "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed",
     "Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card",
-    "[PC/GEOS Ensemble](station:pcgeos) boots straight into its desktop from FreeDOS 1.3, mouse driven by CTMOUSE the way a real 1990s PC would drive it"
+    "[PC/GEOS Ensemble](station:pcgeos) boots straight into its desktop from FreeDOS 1.3, mouse driven by CTMOUSE the way a real 1990s PC would drive it",
+    "[Debian GNU/Linux 2.2 \"potato\"](station:debian22) joins as an air-gapped GNOME 1.0 / XFree86 3.3.6 station, installed from the original 2000 boot-floppies dbootstrap installer"
   ]
 }
