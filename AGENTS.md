@@ -53,12 +53,14 @@ arbitrary. Do not re-expand this file; put the detail there.
     entry. Commands: [`docs/lab/AGENT-CI-EXIT-RULE.md`](docs/lab/AGENT-CI-EXIT-RULE.md).
 11. **A push is not a deploy.** `git push origin main`, then
     `scripts/dev/box-deploy.sh --apply`; restarts are a separate decision.
-12. **Pick the cheapest capable subagent for every delegated task**: mechanical,
-    well-briefed work → `haiku-low`; bounded implementation or prose from proven
-    facts → `sonnet-low` / `sonnet`; Opus/Fable-class subagents only for discovery,
-    correctness-critical verification, or the museum's public voice. Wall-clock
-    and weekly quota are the cost the operator feels; a Fable agent doing a
-    rename is the waste. Defaults inherit the coordinator's model — always say which.
+12. **Match the subagent to the task; say which model ran.** Well-briefed
+    mechanical work (rows, links, regenerate, copy a proven pattern) → `haiku-low`;
+    bounded implementation from proven facts → `sonnet-low` / `sonnet`; keep
+    Opus/Fable for discovery, an unknown failure, correctness-critical proofs,
+    the museum's public voice, and any step where a wrong answer costs a retry.
+    Both directions waste: a Fable agent renaming links, and a low-effort agent
+    misreading a brief and returning work to redo. Defaults inherit the
+    coordinator's model — choose deliberately, never by omission.
 13. **New work lands host-native** — direct framebuffer capture + input forwarding.
     A trixie kiosk bridge is a throwaway PoC, never what ships; the 28 surviving
     bridges are legacy to convert, not a template. Source your own install media

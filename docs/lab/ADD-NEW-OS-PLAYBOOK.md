@@ -45,10 +45,12 @@ fully featured (listed, golden, poster, type-in demo) in 10. Sections 1–8 belo
 are the reference — open one only when a step here fails or needs its reasoning,
 or the station is a harder tier than this spine covers. Operator rules that make
 this legal: move fast, operator validates; a restoring golden is enough proof;
-the framebuffer is the only proof a guest reacted. Give each stream to the
-cheapest capable subagent type — `haiku-low` for mechanical rows/links/regenerate,
-`sonnet-low` for a builder or a doc from proven facts, Opus/Fable only for
-discovery or the museum's public voice (AGENTS.md rule 12).
+the framebuffer is the only proof a guest reacted. Staff each stream deliberately
+(AGENTS.md rule 12): `haiku-low` for mechanical rows/links/regenerate, `sonnet-low`
+or `sonnet` for a builder or a doc from proven facts, Opus/Fable for the `golden`
+stream of an unfamiliar guest, for any bring-up that misbehaves, and for the
+poster's prose — a cheaper model that misreads the brief costs a whole 4-minute
+stream, which is the one thing this plan cannot afford.
 
 ### Why this exists: the bootos retro (2026-09-02, 45 min → should be 10)
 
