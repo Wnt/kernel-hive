@@ -88,7 +88,9 @@ CORE PARAMETERS
   --mix <spec>             Journey weights, e.g. "exhibits=40,poster=15,
                             walkin=35,station=10". Unknown/zero-weight
                             journeys are dropped. See JOURNEYS below.
-  --gallery-url <url>      Default https://kernelhive.madekivi.fi
+  --gallery-url <url>      Default https://kernelhive.madekivi.fi. May carry a
+                            staging-slot path (…/staging/<session>); auth stays
+                            at the origin.
 
 SAFETY SWITCHES (all default to the safe side)
   --allow-resets           Arm the golden-reset journey (POST /restore/<id>).
