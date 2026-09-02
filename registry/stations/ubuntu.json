@@ -87,7 +87,7 @@
       "absolute": true,
       "present": true,
       "device": "usb-tablet",
-      "scale": 1.0,
+      "scale": 0.625,
       "offset": [
         0,
         0
@@ -106,6 +106,9 @@
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
       "SH_POINTER": "abs",
+      "SH_CURSOR_SCALE": "0.625",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "off",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/ubuntu/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/ubuntu/signaling.json",
@@ -233,6 +236,7 @@
   },
   "notes": [
     "Live CD, not an install: the golden vmstate lives in an otherwise empty 1G qcow2 (ubuntu.qcow2) alongside the read-only ISO — both are the device set",
+    "Pointer: usb-tablet abs, but Linux 2.6.8 mousedev rescales the tablet to 1024x768 while X runs at 640x480 — SH_CURSOR_SCALE=0.625 (640/1024) on the daemon's abs path cancels it (same trick as tinycore's 0.783); measured on the golden clone: unscaled (0,0) landed at ~(130,390)",
     "AC97 together with ACPI hangs the 2.6.8 live boot at the usplash bar (measured 2026-09-03, 3 rigs raced); ship acpi=off and no audio",
     "Scaffolded from redstar2 on 2026-09-03"
   ]

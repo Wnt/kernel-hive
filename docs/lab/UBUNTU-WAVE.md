@@ -110,3 +110,13 @@ device set, first boot **without** `-loadvm`/`-S`):
 ## Measured milestones
 
 TODO(coordinator): from `scripts/dev/session-timeline.py` after landing.
+
+## Pointer fix (coordinator, while queued for the landing window)
+
+The daemon's abs path (`input.rs` `set_abs`) multiplies the client pixel by
+`SH_CURSOR_SCALE` before `SetAbsPosition` (console pixels, QEMU rescales to the
+tablet's 0..32767). mousedev maps the tablet onto 1024x768 and X runs at 640x480,
+so `SH_CURSOR_SCALE=0.625` (= 640/1024) makes the guest cursor track the client 1:1
+without a rebake — the same mechanism tinycore ships as 0.783. Declared in
+`runtime.stationEnv` and `stream.pointer.scale`; framebuffer-proven after
+`station-up` (corner MOVEAs), see the landing report.
