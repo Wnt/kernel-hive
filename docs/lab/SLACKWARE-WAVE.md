@@ -89,7 +89,7 @@ session's "go slackware".
 - **Absolute pointer** via x11warp needs guest TCP/IP: swap the `net.i` zImage
   (NE2000-PCI/RTL8029 in 2.0.30's `ne.c`) plus the `n` series (tcpip) and
   `xhost +10.0.2.2`; then `SH_INPUT_BACKEND=x11warp`, hostfwd 127.0.0.1:6084→:6000.
-- The playbook §0 cites `/data/vms/streamhost/serve/qmp-type.py`; the tool lives at
+- Playbook §0 cited `/data/vms/streamhost/serve/qmp-type.py`; fixed in this wave to
   `scripts/dev/qmp-type.py` (`--qmp` or `--station`).
 - `pgrep -x qemu-system-x86_64` matches nothing (15-char comm limit); prune by
   `/proc/<pid>/cwd` with `pgrep qemu-system`.
