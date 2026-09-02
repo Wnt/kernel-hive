@@ -102,6 +102,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
+| [guests/slackware.md](guests/slackware.md) | Slackware 3.4 — Linux 2.0.30, XFree86 3.3.1, fvwm95 desktop composed host-side from the mirror's .tgz packages; GRUB2 boots the stock zImage. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
