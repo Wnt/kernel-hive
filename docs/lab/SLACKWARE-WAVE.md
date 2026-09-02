@@ -84,6 +84,28 @@ Merging to `main`, `git push`, `scripts/dev/box-deploy.sh --apply`,
 smoke overlay, and the final framebuffer acceptance — all after the coordinator
 session's "go slackware".
 
+## Measured run (session-timeline.py on the coordinator transcript, UTC)
+
+| Milestone | Clock | From the ask |
+|---|---|---|
+| Operator's message | 23:00:49 | 0 |
+| Smoke rig published at `/os/slackware` (viewable) | 23:22 | **21 min** |
+| Ledger pushed, 4 streams launched | 23:34 | 33 min |
+| Streams merged, "ready to land" | 23:41 | 40 min |
+| main pushed (gate green, after conflict-marker + shfmt fixes) | 23:45 | 45 min |
+| Station live (`station-up`, labctl gen PASS) | 23:48 | 47 min |
+| SPA deployed, proofs done (fully featured) | 23:49 | **48 min** |
+
+Split over the 50-minute span: coordinator model time 58 %, tools 35 %, waiting on
+agents 6 %. Not a record against pcgeos (18 min): this guest had no install media
+and no known-good boot path, so minutes 5–22 went to four walls raced in sequence —
+LILO `LI`, `-kernel` hang, the missing soname links, the cirrus BitBLT — each
+costing one compose+boot cycle (~1.5 min). Sinks worth fixing next time: the quiet
+`git merge -q origin/main` hid conflict markers that the gate then caught (3 min);
+`stations-registry.py new --like` copies the sibling's `operator.labctl.dir/qmp`
+(one extra push+deploy); the four X-config race should have started the moment the
+first blank xterm appeared instead of after two serial theories.
+
 ## Open follow-ups
 
 - **Absolute pointer** via x11warp needs guest TCP/IP: swap the `net.i` zImage
