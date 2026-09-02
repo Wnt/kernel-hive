@@ -59,6 +59,14 @@ memory) — this wave joins their landing queue; **no main push without "go"**.
   install cannot meet the 10-minute bar on this device set** — the
   `debian22-compose` route (populate the ext2 on the host, boot only to bake)
   is the one that fits the budget.
+- X was never reached here; whoever builds the disk writes the XF86Config from
+  the proven siblings, not from the plan above: Device `Chipset "clgd5446"`,
+  `VideoRam 4096`, **`Option "no_bitblt"`** (slackware wave: without it xterm
+  text does not paint on XF86_SVGA + GD5446 — the BitBLT path; depth 8 and 16
+  both proven with it); Monitor HorizSync 30-64, VertRefresh 50-90, Modeline
+  "1024x768" 65 1024 1032 1176 1344 768 771 777 806 -hsync -vsync; Pointer
+  PS/2 `/dev/psaux`. Full file: netbsd14's
+  `scripts/build-guests/tiles/netbsd14/XF86Config`.
 - Nothing installed, no golden baked, no station-dir staging. The rig
   (`/data/vms/sandbox/debian22/smoke/`, now with a `launch-smoke.sh` in the
   rig-clone convention) is left running mid-dbootstrap so the operator can
