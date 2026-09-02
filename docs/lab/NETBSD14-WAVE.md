@@ -61,6 +61,8 @@ emulated PC has. Whichever boots past `lpt0` ships as `/netbsd`
 (GENERIC kept as `/netbsd.GENERIC`). Mouse: GENERIC 1.4.1 has `opms* at pckbc?`
 (the XFree86-3.3 PS/2 `/dev/pms0`), kept in both.
 
+Trap met in round 3: a SECOND IDE CD (`-drive ...,media=cdrom,index=3` → `cd1`) mounts forever under the INSTALL kernel — no error, the shell blocks in the syscall. Serve everything from the one `-cdrom` slot (`cd0`, which sysinst mounted fine).
+
 Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
