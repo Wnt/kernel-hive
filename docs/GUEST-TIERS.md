@@ -272,6 +272,7 @@ missing feature.
 | `tinycore` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `toaruos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `tru64` | 3 host-native | es40/host | `mame-ioport` | abs | — | off | 30 | serialcon_e |
+| `ubuntu` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `vic20` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `w2kalpha` | 3 host-native | es40/host | `mame-ioport` | abs | — | off | 30 | telnet_e |
 | `win11` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
