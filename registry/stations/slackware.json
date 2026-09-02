@@ -46,7 +46,7 @@
       }
     },
     "labctl": {
-      "dir": "/data/vms/streamhost/stations/tinycore",
+      "dir": "/data/vms/streamhost/stations/slackware",
       "qmp": "/data/vms/streamhost/stations/slackware/qmp.sock",
       "pointer_mode": "rel",
       "warpd_port": null,
