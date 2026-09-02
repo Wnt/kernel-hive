@@ -180,7 +180,7 @@
     "bringUpOrder": 79
   },
   "spa": {
-    "archetypeId": "beige-ibm-pc",
+    "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#6ea339",
     "eraLabel": "2000 · SuSE Linux 6.4",
@@ -190,28 +190,30 @@
     "id": "suse64",
     "displayName": "SuSE Linux 6.4",
     "year": 2000,
-    "lineage": "SuSE (Slackware-derived, Nuremberg) → openSUSE / SUSE Linux Enterprise",
+    "lineage": "SuSE Linux (Slackware-derived, Nuremberg 1992) → SUSE Linux → openSUSE / SUSE Linux Enterprise",
     "arch": "i386",
     "ramMB": 256,
     "era": "1990s",
     "accent": "#6ea339",
     "eraSoftware": [
-      "YaST",
       "KDE 1.1.2",
-      "XFree86 3.3.6",
+      "YaST",
+      "XFree86 3.3.6 (4.0 alongside)",
       "StarOffice 5.1",
       "Netscape Communicator 4.7",
+      "GNOME 1.0.x",
       "kernel 2.2.14"
     ],
-    "periodBrowser": "Netscape Communicator 4.7 / KFM",
+    "periodBrowser": "Netscape Communicator 4.7 / kfm",
     "iconicApps": [
       "KDE 1.1.2",
       "YaST",
       "kfm",
-      "Konsole"
+      "konsole",
+      "StarOffice 5.1"
     ],
-    "blurb": "The green-boxed German Linux of the six-CD era — YaST, KDE 1 and a 444-page manual, from the year SuSE still spelled itself with a small u.",
-    "notes": "SuSE Linux 6.4 (released 2000-03), the last 6.x: kernel 2.2.14, XFree86 3.3.6 (4.0 shipped alongside), KDE 1.1.2 as the default desktop, GNOME 1.0.x, YaST1 (text, curses) as the installer and admin tool. Installed from CD1 of the six-CD retail set; the station boots a golden snapshot of a KDE 1 desktop."
+    "blurb": "The green-boxed German Linux of the six-CD era: KDE 1 on kernel 2.2, YaST, and a 444-page manual, from the last spring SuSE spelled itself with a small u.",
+    "notes": "SuSE Linux 6.4 (March 2000), the last 6.x release: kernel 2.2.14, XFree86 3.3.6 with 4.0 supplied alongside, KDE 1.1.2 as the default desktop, GNOME 1.0.x, StarOffice 5.1, Netscape Communicator 4.7. YaST is the installer and the administration tool (text YaST1, and the graphical front end that runs the first install). Installed from CD1 of the six-CD retail set; the station boots a golden snapshot of a KDE 1 desktop at 1024x768x16 with a konsole open."
   },
   "emulator": {
     "family": "QEMU",
@@ -231,16 +233,17 @@
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from freedos on 2026-09-02; TODO: media, museum, spa"
+    "scaffolded from freedos on 2026-09-02; TODO: media"
   ],
   "demoProgram": {
-    "label": "Type a few commands into the xterm",
+    "label": "Type a few commands into the konsole",
     "lines": [
+      "cat /etc/SuSE-release",
       "uname -a",
       "ls /usr/X11R6/bin | head",
-      "xcalc &"
+      "df -h /"
     ],
-    "runCommand": "xcalc &",
+    "runCommand": "df -h /",
     "perCharMs": 80
   },
   "media": null

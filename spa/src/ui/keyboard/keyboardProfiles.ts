@@ -274,6 +274,7 @@ export const OS_FAMILY: Record<string, Family> = {
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
   alpine: 'linux-tty',
+  suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
