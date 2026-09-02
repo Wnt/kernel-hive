@@ -189,10 +189,12 @@ Two goldens exist, one combination each with the same binary and device set:
   (`*windowFrameColor: gray82`, `*inputWindowHeader: SteelBlue4`,
   `*pointerFocus: true`) and `xsetroot -solid SteelBlue`; the clients carry
   their own colours (`xclock -bg LightYellow -hd black -hl red`,
-  `xcalc -bg gray85`, xterm black on white at `+40+120`, 80x24, so the pointer's
-  initial position -- screen centre -- is inside it and it has keyboard focus
-  from the first frame). The mono session is kept as `/etc/kh-xsession.mono`,
-  which is what makes monochrome a one-line revert rather than a rebuild.
+  `xcalc -bg gray85`, xterm black on white at `+40+120`, 80x24). **`pointerFocus`
+  means focus follows the pointer, and a fresh boot leaves the pointer at
+  `(0,0)` — over the ROOT — so nothing holds keyboard focus until the visitor
+  moves the mouse: see "Open" item 2.** The mono session is kept as
+  `/etc/kh-xsession.mono`, which is what makes monochrome a one-line revert
+  rather than a rebuild.
 - **Shipping colour changes three things outside the guest:**
   1. `streamhost/stations/amix/x11-runtime.sh` passes `--gfxcard_type=A2410
      --gfxcard_size=2` and **drops `--stretch=1`** (the board surface is
@@ -347,6 +349,37 @@ console the visitor sees during boot (its own rectangle, `74 36 640 512`,
 measured with a one-off diagnostic build). `stream.pointer.scale=1.0 /
 offset=[0,0]` is therefore true, not decorative.
 
+### Probing the pointer channel: standby looks EXACTLY like a dead channel
+
+**A connect timeout on `127.0.0.1:6072` is most often the station working
+correctly.** The station SIGSTOPs its emulator after ~60 s idle
+(`SH_IDLE_PAUSE_SECS=60`, `SH_IDLE_PAUSE_WARMUP_SECS=200`), and a frozen
+`fs-uae` cannot service the slirp redirect it owns. So the socket stops
+answering, `xwarp.py` times out, and the symptom is indistinguishable from a
+pointer channel that has died — while `systemctl is-active` says `active`, the
+daemon logs `backend-down=0`, and `x11warp-check.log` still shows its last
+`ok`. Check `/proc/<pid>/status` for `State: T (stopped)` before concluding
+anything. Either probe inside the warmup window after a restart, or wake the
+station first. This is the lab's recurring shape — a frozen guest answering
+nothing while every upstream indicator stays green.
+
+Two more things that make a healthy pointer look broken:
+
+- **`xdotool` cannot drive this guest at all.** X11R4 (1992) predates the XTEST
+  extension; `xdotool` warns `XTEST extension unavailable` and then
+  **segfaults** rather than falling back to `XWarpPointer`. This says nothing
+  about the station: the daemon never uses XTEST for motion either — it calls
+  `XWarpPointer` directly, which is the whole design. Use
+  `/data/vms/sandbox/amix-cursor/rig3/xwarp.py` (~30 lines, stdlib sockets,
+  speaks the X protocol directly — no `python-xlib`, nothing to install).
+- **Do not test over the xterm.** `xterm` hides its pointer sprite after
+  keystrokes, so a warp into it can produce an exact `QueryPointer` readback and
+  a frame with no visible cursor — a correct station that reads as a regression.
+  Test on the root background (RGB `70,130,180`); `(700,600)`, `(300,600)`,
+  `(900,650)` and `(850,450)` are clear of every window in the ready scene.
+  Correct is sprite bbox origin at **`(target_x, target_y + 1)`** — the arrow's
+  first opaque row sits one pixel below the tip. That IS the 0 px baseline.
+
 ### Boot behaviour, and the console-VT anomaly
 
 The unified golden, cold-booted **8 times in a row** from a fresh copy on the
@@ -385,19 +418,36 @@ bottom-right corner).
 
 ## Open
 
-1. **Unify the two goldens.** The pointer work and the colour work each baked
-   their own golden from the same 2026-08-30 base: the pointer golden carries
-   the guest network config the `x11warp` loop needs (`/etc/inet/hosts`,
-   `xhost +slirphost`), the colour golden carries the `-tiga` session. The
-   shipping golden must carry both, and the pointer must then be re-proven
-   against the BOARD's X server at 1024x768 -- `XWarpPointer` is absolute
-   within whichever X server owns the screen, so this is expected to hold, but
-   expected is not measured.
-2. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
+1. **The ready scene is NONDETERMINISTIC — roughly 1 cold boot in 5 comes up
+   without `xclock`.** Observed 2026-09-02 on the live station: the settled
+   desktop carried only the xterm and the Calculator, and the Calculator sat
+   ~29 px higher than normal, which is what olwm placement looks like when one
+   client never maps. A single controlled cold restart brought the clock back
+   and returned the Calculator to its documented position, which is the control
+   that separates this from anything in the daemon or the emulator: **it is a
+   guest-side startup race in `/etc/kh-xsession`, and a restart does not fix
+   it — only a re-baked golden will.** This matters because `resetMode=relaunch`
+   IS the visitor's reset button, so a visitor can land on a scene that is
+   missing a client `reset.fixture` promises. Rate is from 5 observed boots;
+   treat "1 in 5" as an order of magnitude, not a measurement.
+2. **The pointer starts at (0,0), over the root — so NOTHING has keyboard focus
+   on arrival.** The session sets `*pointerFocus: true` (focus follows the
+   pointer), and a fresh boot leaves the pointer in the top-left corner rather
+   than at screen centre. A visitor who types before moving the mouse gets
+   nothing, on an exhibit whose main object is a Unix shell. Verified 2026-09-02
+   by `xwarp.py 6072 query` on two separate cold boots, both returning `0 0`.
+   (An earlier revision of this document claimed the xterm is placed at `+40+120`
+   "so the pointer's initial position — screen centre — is inside it and it has
+   keyboard focus from the first frame". That claim was wrong and has been
+   removed; the placement is right, the premise about where the pointer starts
+   was not.)
+3. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
    2.1c/2.1p2a; this install is stock 2.1 (`0800430`).
-3. **Retronet.** The A2065 is now up on slirp for the pointer only
-   (host-only, loopback-bound, no default route). A web-plane join is a real
-   follow-up; note `in.telnetd` listens on 23, so an exec channel is cheap.
-4. **The golden is ~150 MB larger than it needs to be** — package set (2) pulled
+4. **Retronet.** The A2065 is up on slirp for the pointer only (host-only,
+   loopback-bound, no default route). A web-plane join is a real follow-up;
+   note `in.telnetd` listens on 23, so an exec channel is cheap. But see
+   `museum.periodBrowser`: a 1992 SVR4 machine has no browser and no ICQ
+   client, so a retronet join would show a visitor nothing.
+5. **The golden is ~150 MB larger than it needs to be** — package set (2) pulled
    in the `amigasrc`/`gnusrc`/`Xsource`/`X11r5src` trees, which the exhibit does
    not use. A custom selection would trim it if the size ever matters.
