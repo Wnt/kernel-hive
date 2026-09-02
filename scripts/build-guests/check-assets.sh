@@ -140,6 +140,23 @@ ROWS=(
   # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
   "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
+  # NetBSD 1.4.1 i386 (1999, BSD-2): netbsd14.sh re-fetches boot.fs + the 13
+  # binary sets from archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/
+  # if absent; sets.iso is composed locally from the tgz sets.
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 install floppy (boot.fs)|$ASSET_STAGING/netbsd14/boot.fs|sha256:5bbe8a5e9a28851d549a52506f0f94b21e7b962a863c6a13c6ce314e6ceb2e85|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 base.tgz|$ASSET_STAGING/netbsd14/base.tgz|sha256:342bb4631f237b2c22e5c8682b9cfeb63a39c38aa617e9f9020a709212a3e930|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 comp.tgz|$ASSET_STAGING/netbsd14/comp.tgz|sha256:8af3d8253275667c4b1bb4401182a83cee90b450911d9b697e6d2055e7877232|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 etc.tgz|$ASSET_STAGING/netbsd14/etc.tgz|sha256:8641cdbc4dc91cc77bcc4905ffdcf98be9ab400c52266474bfea406b80d38f93|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 games.tgz|$ASSET_STAGING/netbsd14/games.tgz|sha256:70f88300bff7df7df455a5f77851c30f7d0fe30f7c86909cc298c79ceae5b052|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 kern.tgz|$ASSET_STAGING/netbsd14/kern.tgz|sha256:7e57e4080f9d67666ed95c88e309243745f7e96676c579e6c1131c12e8928924|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 man.tgz|$ASSET_STAGING/netbsd14/man.tgz|sha256:e45806509cdce23efbecd57f6889d257e0fe4faf898146f8679957a05bf8d8c5|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 misc.tgz|$ASSET_STAGING/netbsd14/misc.tgz|sha256:9e27078392c728438732916e6ae695e66905d4570d987a9a3ed66ffb6ba47ae3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 text.tgz|$ASSET_STAGING/netbsd14/text.tgz|sha256:60f2befdff6554c74ce8b601ccf67347164a26d183747b4a06bd0de2e1435af3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xbase.tgz|$ASSET_STAGING/netbsd14/xbase.tgz|sha256:8501d77e1869487c9853fc358443a799d40145405a4d1ee59179be9b15ae73fd|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcomp.tgz|$ASSET_STAGING/netbsd14/xcomp.tgz|sha256:68134c7da74431f2d640a89acaf953b32cd267c3a93877f9cb421f360c12985c|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcontrib.tgz|$ASSET_STAGING/netbsd14/xcontrib.tgz|sha256:b7d429bae3636c28d92627e7688b2a00908c3efa0668cabe1d46df09e1c193ff|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xfont.tgz|$ASSET_STAGING/netbsd14/xfont.tgz|sha256:edf9bf393678b0351399550f9025fccbd97d3d8d27ccc30ffc665ad9bfcb5e3b|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xserver.tgz|$ASSET_STAGING/netbsd14/xserver.tgz|sha256:e4d98777ba2d95471f53ab751a6181c92f3cb2def641a1729cfa138317bdf462|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
