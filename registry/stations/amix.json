@@ -50,11 +50,6 @@
   },
   "stationDir": "amix",
   "lifecycle": "production",
-  "listing": {
-    "state": "hidden",
-    "since": "2026-08-30",
-    "reason": "Dark launch pending the operator's eyeball at /os/amix. Both original blockers are CLOSED: the pointer is absolute and 1:1 (x11warp into the guest's X server, 0 px residual, framebuffer-proven), and colour is proven and shipped (A2410 via -tiga). Promote by dropping this block."
-  },
   "stream": {
     "transport": "streamhost",
     "udpPort": 54172,

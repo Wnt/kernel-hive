@@ -1,12 +1,13 @@
 # Amiga UNIX (AMIX) 2.1 — gallery station notes
 
-Status: **BUILT AND PROVEN ON THE SANDBOX RIG** (2026-08-30). Two things that
-were open at the first landing are now closed: the **pointer is absolute and
-1:1** (2026-09-01, `x11warp` into the guest's own X server — see "The pointer"),
-and **colour is proven on the pinned binary** (2026-09-01, the A2410 driven by
-`X -tiga` at 1024x768x8 — see "Colour"). Both were baked into SEPARATE goldens
-by parallel work; the unified golden (below) carries BOTH.
-Registry entry landed `listing.state=hidden`; not yet deployed.
+Status: **LIVE AND LISTED** — deployed to the box 2026-09-01
+(`main@fa9e78b3`), promoted out of dark launch 2026-09-02. Both things that
+were open at the first landing are closed: the **pointer is absolute and 1:1**
+(`x11warp` into the guest's own X server — see "The pointer", 0 px residual),
+and the exhibit **ships in colour** (the A2410 driven by `X -tiga` at
+1024x768x8 — see "Colour"). Those two were baked into SEPARATE goldens by
+parallel work; the shipping golden (below) is the unified one carrying BOTH,
+and neither half was shippable alone.
 
 **Guest:** an emulated **Amiga 3000** (Motorola 68030 + MMU + 68882, 16 MB,
 Kickstart 2.04 r37.175) booting **Amiga UNIX 2.1** — Commodore's licensed
