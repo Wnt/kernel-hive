@@ -87,8 +87,8 @@ verify_boot() {
     -qmp "unix:$QMP,server,nowait" \
     -pidfile "$PIDFILE" \
     -daemonize
-  python3 "$SELF_DIR/../../dev/fb-wait.py" --qmp "$QMP" --settle 15 --timeout 240 --out "$WORK/fb.png" \
-    || die "verify boot: no framebuffer settle"
+  python3 "$SELF_DIR/../../dev/fb-wait.py" --qmp "$QMP" --settle 15 --timeout 240 --out "$WORK/fb.png" ||
+    die "verify boot: no framebuffer settle"
   log "verify: framebuffer settled, see $WORK/fb.png"
   if [ -f "$PIDFILE" ]; then
     kill "$(cat "$PIDFILE")" 2>/dev/null || true
