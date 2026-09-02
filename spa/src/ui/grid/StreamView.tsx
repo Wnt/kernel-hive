@@ -380,6 +380,7 @@ export default function StreamView({
   const restoreReconnect = expectedReconnect === 'restore';
   const showBanner = restoreReconnect
     || bannerState === 'spotty'
+    || bannerState === 'device-load'
     || bannerState === 'reconnecting'
     || bannerState === 'decoder-unsupported';
   const decoderUnsupported = bannerState === 'decoder-unsupported';

@@ -7,7 +7,7 @@ import type { StreamClient } from '../streamClient';
 function client(over: Partial<{
   banner: string; transportDown: boolean; decoderFailed: boolean;
   consecutiveTimeouts: number; msSinceServerData: number | null; sOverall: number;
-  scoreInit: boolean;
+  scoreInit: boolean; sBandwidth: number;
 }> = {}) {
   const c = {
     banner: over.banner ?? 'good',
@@ -16,6 +16,8 @@ function client(over: Partial<{
     exitReason: null as string | null,
     sOverall: over.sOverall ?? 100,
     scoreInit: over.scoreInit ?? true,
+    sBandwidth: over.sBandwidth ?? 100,
+    deviceBelowSince: 0,
     belowSince: 0,
     aboveSince: 0,
     liveness: () => livenessVerdict({
@@ -85,5 +87,46 @@ describe('a session with nothing to score is never spotty', () => {
     const c = client({ scoreInit: false, transportDown: true });
     updateBannerImpl.call(c, 1000);
     expect(c.banner).toBe('reconnecting');
+  });
+});
+
+describe('device pressure never says "Spotty connection"', () => {
+  const dwell = (c: ReturnType<typeof client>, from: number, to: number) => {
+    for (let t = from; t <= to; t += 100) updateBannerImpl.call(c, t);
+  };
+
+  it('raises device-load, not spotty, when only the decode queue is bad', () => {
+    // Six decoders on one Intel Mac: dec1209.0/q16 with loss0.0 and rtt8.
+    const c = client({ sOverall: 100, sBandwidth: 0 });
+    updateBannerImpl.call(c, 1000);
+    expect(c.banner).toBe('good');       // the 2 s dwell still applies
+    dwell(c, 1100, 2900);
+    expect(c.banner).toBe('good');
+    dwell(c, 3000, 3000);
+    expect(c.banner).toBe('device-load');
+    expect(c.exitReason).toBeNull();
+  });
+
+  it('a bad NETWORK still reads spotty and outranks device pressure', () => {
+    const c = client({ sOverall: 10, sBandwidth: 0 });
+    dwell(c, 1000, 3000);
+    expect(c.banner).toBe('spotty');
+  });
+
+  it('an idle guest with a clean network stays good', () => {
+    // nt4 run 3: fps0, rx0.0M, loss0.0, rtt7.8 — and the old banner said spotty.
+    // scoring.ts scores an idle interval bw=100, so nothing dwells here at all.
+    const c = client({ sOverall: 100, sBandwidth: 100 });
+    dwell(c, 1000, 11000);
+    expect(c.banner).toBe('good');
+  });
+
+  it('clears device-load once the decoder catches up', () => {
+    const c = client({ sOverall: 100, sBandwidth: 0 });
+    dwell(c, 1000, 3000);
+    expect(c.banner).toBe('device-load');
+    const d = client({ banner: 'device-load', sOverall: 100, sBandwidth: 100 });
+    updateBannerImpl.call(d, 1000);
+    expect(d.banner).toBe('good');
   });
 });

@@ -265,6 +265,8 @@ export class StreamClient {
 
   // ---- client-local `el` scorer (Section 2.3) EWMA state ----
   scoreInit = false;
+  /** dwell start for the DEVICE banner ('device-load'), sibling of belowSince. */
+  deviceBelowSince = 0;
   sLatency = 100;
   sLoss = 100;
   sBandwidth = 100;

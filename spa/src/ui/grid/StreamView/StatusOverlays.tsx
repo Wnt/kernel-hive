@@ -93,8 +93,10 @@ export function StatusOverlays({
       )}
 
       {/* GFN-STYLE CONNECTION BANNER (Section 2.6) — driven by the client-local
-          `el` scorer via ctl.bannerState. 'spotty' = smoothed overall < 60 for
-          ≥2s (cleared > 75 for ≥2s); 'reconnecting' = QUIC loss / 3 ping timeouts.
+          `el` scorer via ctl.bannerState. 'spotty' = smoothed NETWORK score
+          (latency+loss) < 60 for ≥2s (cleared > 75 for ≥2s); 'device-load' = the
+          decode-queue/freeze score dwelled low while the network scored clean;
+          'reconnecting' = transport closed, or unanswered pings AND total silence.
           EWMA windows are the hysteresis, so a single dropped frame never flashes. */}
       {showBanner && (
         <div style={{
