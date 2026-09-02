@@ -31,6 +31,7 @@ Section "Device"
     BoardName  "GD5446"
     Chipset    "clgd5446"
     VideoRam   4096
+    Option     "no_bitblt"   # QEMU cirrus BitBLT: text never paints without it (proven by the slackware wave, 2026-09-03)
 EndSection
 Section "Screen"
     Driver     "svga"
