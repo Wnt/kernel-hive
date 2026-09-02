@@ -148,6 +148,15 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 400
   },
+  "slackware": {
+    "label": "Ask the kernel who it is",
+    "lines": [
+      "uname -a",
+      "cat /proc/version"
+    ],
+    "runCommand": "uname -a",
+    "perCharMs": 80
+  },
   "vic20": {
     "label": "Type in a demo program",
     "lines": [
