@@ -109,3 +109,34 @@ framebuffer acceptance.
 ## Timeline (measured after landing with `scripts/dev/session-timeline.py`)
 
 TODO(coordinator)
+
+## golden2 race result (lightest desktop, private rig) — NO golden at the 25-minute stop
+
+Rig `/data/vms/sandbox/debian22-golden2/rig/` (disk `disk.qcow2`, QEMU left running,
+root shell on tty1, no vmstate). Progress log `../progress.md`; frames `rig/*.png`.
+Measured facts (Claude Fable, 23:12–23:37):
+
+- **In-guest install is not viable under wave load**: host load 44 on 16 cores, swap
+  full; the guest got ~23 % of a core and `mke2fs` inside dbootstrap wrote inode
+  tables at ~140 KB/s (7/15 groups in 4 min, frames `f18`–`f22`). Two waves measured
+  the underlying 2.2 IDE PIO wall at ~27 KB/s each way (one KVM exit per 16-bit word).
+- **cfdisk refuses a blank qcow2** ("Bad signature on partition table", frame `f8`):
+  partition from tty2 with `echo -e "n\np\n1\n\n+1900M\na\n1\nn\np\n2\n\n\nt\n2\n82\nw" | fdisk /dev/hda`
+  (the rescue shell has no `printf`), answer **No** to dbootstrap's "wipe and re-run cfdisk".
+- **Host-side tree build works and takes ~20 s** — `/data/vms/sandbox/debian22-golden2/build-tree.sh`
+  (qemu-nbd → `mke2fs -t ext2 -O none -I 128` → `base2_2.tgz` → `dpkg-deb -x` of
+  xfree86-common, xlib6g, xpm4g, xserver-common, xserver-svga, xbase-clients,
+  xfonts-base/75dpi, xterm, wmaker 0.61.1-4 + libwraster1, libproplist0, libungif3g,
+  libjpeg62, libpng2, libtiff3g, zlib1g, libncurses5, cpp, kernel-image-2.2.17 →
+  `mkfontdir` → fstab/passwd/inittab/XF86Config). Boot it from the CD prompt with
+  `linux root=/dev/hda1` — no LILO needed for a vmstate golden. Traps hit, each
+  framebuffer-proven: kernel 2.2 rejects 256-byte inodes (`-I 128`, frame `g1`);
+  `/sbin/unconfigured.sh` forces a reboot loop (rm it, `g3`/`g5`); AF_UNIX is a module
+  (`insmod /lib/modules/2.2.17/misc/unix.o` in rcS, `g7`); `/usr/X11R6/lib` missing from
+  `ld.so.conf` (+`ldconfig`, `h4`); `/tmp/.X11-unix` ownership (`h7`); XF86_SVGA must run
+  as root — Xwrapper or setuid (`h9`); setuid server reads
+  `/usr/X11R6/lib/X11/XF86Config`, not `/etc/X11` (`i1`, unresolved at the stop).
+- Kernel/DMA: `kernel-image-2.2.17-ide` is on CD1 (`base/`); not tried — `hdparm` numbers
+  not measured.
+- Installed on the rig: base 2.2 r0, kernel 2.2.17 (CD rescue kernel), XFree86 3.3.6-10
+  svga, Window Maker 0.61.1, xterm; X never came up, resolution/VM_SIZE unmeasured.
