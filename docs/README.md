@@ -88,7 +88,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/apple2.md](guests/apple2.md) | Apple II kiosk. |
 | [guests/aros.md](guests/aros.md) | AROS x86 (AmigaOS re-implementation) under QEMU — distinct from amiga500. |
 | [guests/atarist.md](guests/atarist.md) | Atari ST kiosk. |
-| [guests/bootos.md](guests/bootos.md) | bootOS — an OS in one 512-byte boot sector, on a 720K floppy of one-sector games; keyboard-only, floppy-as-qcow2 golden. |
+| [guests/bootos.md](guests/bootos.md) | bootOS — an OS in one 512-byte boot sector, on a 360K floppy of one-sector games; keyboard-only, floppy-as-qcow2 golden. |
 | [guests/c64.md](guests/c64.md) | Commodore 64 (VICE) — the reference kiosk implementation. |
 | [guests/daybreak.md](guests/daybreak.md) | Xerox 6085 "Daybreak" running ViewPoint 2.0.5, via the Dwarf/Draco Mesa emulator in a bare-X kiosk. |
 | [guests/haiku.md](guests/haiku.md) | Haiku station (ssh exec channel wired). |

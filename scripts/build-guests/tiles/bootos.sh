@@ -9,7 +9,7 @@
 #     <STAGE_DIR>/            (default /data/assets-staging/bootos)
 # and produce the canonical station media
 #     <GUEST_DIR>/bootos-floppy.qcow2   (default /data/gallery-guests/BootOS)
-# = the upstream 720K `osall.img` floppy converted raw -> qcow2, PRISTINE (no
+# = the upstream 360K `osall.img` floppy converted raw -> qcow2, PRISTINE (no
 # snapshot; the `golden` vmstate is baked by the station stream, never here),
 # then framebuffer-verify that it boots to the `$` prompt and that `dir` lists
 # the programs. `os.img` (the bare 512-byte boot sector) is kept next to it.
@@ -18,7 +18,7 @@
 # sector (BSD-2-Clause, https://github.com/nanochess/bootOS): a command shell,
 # a filesystem on the floppy, a hex program loader (`enter`), `dir`/`del`/
 # `format`/`ver`, and it runs any boot-sector program by name. `osall.img` is
-# the upstream 720K floppy that bundles bootOS with 19 one-sector programs:
+# the upstream 360K floppy that bundles bootOS with 19 one-sector programs:
 # fbird pillman invaders basic textmode counter data.bin bootslide atomchess
 # tetranglix snake mine rogue bricks cubicdoom sokoban heart pi bootle. The
 # third-party ones (bootSlide, tetranglix, snake, bootMine, sokoban) carry their
@@ -27,7 +27,7 @@
 # ---- AUTOMATION HONESTY -----------------------------------------------------
 #   (1) DOWNLOAD ....... FULLY AUTOMATED: raw.githubusercontent.com at a pinned
 #                        COMMIT, every file SHA-256-pinned in this script.
-#   (2) DISK CREATE .... `qemu-img convert -f raw -O qcow2` of the 720K floppy.
+#   (2) DISK CREATE .... `qemu-img convert -f raw -O qcow2` of the 360K floppy.
 #   (3) INSTALL ........ N/A — the floppy IS the installed system.
 #   (4) INPUT AUTOMATION only for the verify: `dir` + Enter over QMP.
 #   (5) ERA SOFTWARE ... on the upstream floppy already (19 programs).
@@ -71,7 +71,7 @@ GUEST_DIR="/data/gallery-guests/BootOS"
 STAGE_DIR="${STAGE_DIR:-/data/assets-staging/bootos}"
 WORK="${WORK:-/data/vms/build-bootos}"
 OUT_NAME="bootos-floppy.qcow2"
-FLOPPY_BYTES=368640                                        # 720K: 80 tracks x 2 heads x 9 sectors x 512
+FLOPPY_BYTES=368640                                        # 360K: 40 tracks x 2 heads x 9 sectors x 512
 UPSTREAM_COMMIT="329b75e60d04e89616bc1844578098df43d4f432" # nanochess/bootOS master, 2026-08-01
 SRC_BASE="https://raw.githubusercontent.com/nanochess/bootOS/${UPSTREAM_COMMIT}"
 # Every upstream file we take, with its SHA-256 at the pinned commit. Order is
@@ -213,7 +213,7 @@ for f in os.img osall.img; do
   sz="$(stat -c %s "$STAGE_DIR/$f")"
   case "$f" in
     os.img) [ "$sz" = 512 ] || die "$f is $sz bytes, not one 512-byte sector" ;;
-    osall.img) [ "$sz" = "$FLOPPY_BYTES" ] || die "$f is $sz bytes, not a 720K floppy ($FLOPPY_BYTES)" ;;
+    osall.img) [ "$sz" = "$FLOPPY_BYTES" ] || die "$f is $sz bytes, not a 360K floppy ($FLOPPY_BYTES)" ;;
   esac
 done
 # 0x55AA boot signature at the end of the boot sector, on both images.
@@ -261,7 +261,7 @@ else
     printf '# upstream nanochess/bootOS commit %s\n' "$UPSTREAM_COMMIT"
   } >"${OUT_PATH}.sha256"
   chmod 0644 "${OUT_PATH}.sha256"
-  log "composed -> $OUT_PATH ($(stat -c %s "$OUT_PATH") bytes, qcow2 of the 720K osall.img, no snapshot) + os.img"
+  log "composed -> $OUT_PATH ($(stat -c %s "$OUT_PATH") bytes, qcow2 of the 360K osall.img, no snapshot) + os.img"
 fi
 
 # =============================================================================
@@ -404,7 +404,7 @@ cat <<EOF
 
 ============================================================================
 bootOS build complete.
-  Station media        : ${OUT_PATH}   (qcow2 of the 720K osall.img, pristine)
+  Station media        : ${OUT_PATH}   (qcow2 of the 360K osall.img, pristine)
   Boot sector only     : ${GUEST_DIR}/os.img
   Intake               : ${STAGE_DIR}/ (MANIFEST.sha256, upstream commit ${UPSTREAM_COMMIT})
   Integrity            : osall.img sha256 ${PIN_SHA["osall.img"]}

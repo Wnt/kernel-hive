@@ -1,8 +1,8 @@
 #!/bin/bash
 # Launch station 'bootos' (VMID 174) QEMU with the streamhost display wiring.
 # bootOS (Oscar Toledo G., 2019): an entire OS in one 512-byte boot sector, on a
-# 720K floppy that also carries 19 boot-sector programs. HOST-NATIVE Tier 1.
-#   * ONE block device: floppy.qcow2 — the 720K floppy image AS QCOW2. It holds
+# 360K floppy (osall.img, 368640 bytes) that also carries 19 boot-sector programs. HOST-NATIVE Tier 1.
+#   * ONE block device: floppy.qcow2 — the 360K floppy image AS QCOW2. It holds
 #     the filesystem the guest writes (enter/del/format) AND the `savevm golden`
 #     vmstate, so `loadvm golden` restores the floppy contents too: a visitor who
 #     deletes fbird does not delete it for the next visitor.

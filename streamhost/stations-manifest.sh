@@ -995,7 +995,7 @@ emit amix \
   "$T/amix/x11-runtime.sh" --env-append-file "$T/amix/station.env.fixture"
 
 # bootos (VMID 174) — bootOS, a 512-byte boot-sector OS (Oscar Toledo G., 2019).
-#   VERBATIM LAUNCHER: floppy.qcow2 (720K floppy as qcow2, copied from the
+#   VERBATIM LAUNCHER: floppy.qcow2 (360K floppy as qcow2, copied from the
 #   builder output on first launch) is the ONLY block device; it holds both the
 #   filesystem the guest writes (enter/del/format) AND the savevm 'golden'
 #   vmstate, so loadvm restores the floppy contents too. PC speaker -> dbus

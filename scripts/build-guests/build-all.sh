@@ -146,7 +146,7 @@ MANIFEST=(
 #   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --
 #   the project deleted every FreeBSD-era release from GitHub and SourceForge.
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
-  "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (720K floppy: bootOS boot sector + 19 boot-sector programs)"
+  "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

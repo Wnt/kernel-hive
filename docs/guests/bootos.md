@@ -49,12 +49,12 @@ a BASIC, a Flappy Bird, each exactly one sector too.
 | property | value |
 |---|---|
 | `os.img` | the bare 512-byte boot sector, `nasm -f bin os.asm` output — **512 bytes**, SHA-256 **`35e1231cf29f8750566a97dfb628b2bbe2c24a2f7d7518d7a94103f9976d3df8`** |
-| `osall.img` | upstream's pre-built **720K floppy** (bootOS + directory + 19 entries) — **368 640 bytes**, SHA-256 **`20927188a96cca1cc41bd43a24186cd6fb3e68a4f82fdaf7c2e59c9bfd874653`** |
+| `osall.img` | upstream's pre-built **360K floppy** (bootOS + directory + 19 entries) — **368 640 bytes**, SHA-256 **`20927188a96cca1cc41bd43a24186cd6fb3e68a4f82fdaf7c2e59c9bfd874653`** |
 | `os.asm` | the source, for the record — SHA-256 `5d9cf205a76aae591aba2fed015d1bfbd10bab586441f32e9badac7c4bfec6d3` |
 | `patch/mine.img`, `patch/snake.img`, `patch/sokoban.fdd` | upstream's `patch/` directory, staged with the rest; what the builder does with it is recorded by the builder and [`lab/ASSETS-MANIFEST.md`](../lab/ASSETS-MANIFEST.md) |
 | Intake staging | `/data/assets-staging/bootos/` with `MANIFEST.sha256`, `LICENSE`, `README.md` |
 | Builder | `scripts/build-guests/tiles/bootos.sh` (`build.rows` key `bootos`, class `fast`, `automation: full`) |
-| Builder output | `/data/gallery-guests/BootOS/bootos-floppy.qcow2` — the 720K floppy **as qcow2**, pristine, no golden |
+| Builder output | `/data/gallery-guests/BootOS/bootos-floppy.qcow2` — the 360K floppy **as qcow2**, pristine, no golden |
 | Runtime path | `/data/vms/streamhost/stations/bootos/floppy.qcow2` — copied from the builder output on the station's first launch, and after the bake it **is** the golden |
 
 `osall.img` is what the station boots; `os.img` is kept so the boot sector
