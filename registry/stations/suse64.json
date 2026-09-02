@@ -233,7 +233,7 @@
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from freedos on 2026-09-02; TODO: media"
+    "scaffolded from freedos on 2026-09-02, runtime/pointer shape from netbsd14; media: archive.org suse-linux-6.4 CD1 (see docs/lab/SUSE64-WAVE.md)"
   ],
   "demoProgram": {
     "label": "Type a few commands into the konsole",
