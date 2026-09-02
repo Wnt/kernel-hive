@@ -167,3 +167,41 @@ export async function traceFigureEight(page, { loops = 2, periodMs = 3500, sampl
   }
   return { ok: true, why: 'traced', points: pts.length };
 }
+
+// The sessionStorage key the SPA uses to remember it already played a station's
+// boot-video overlay (App.tsx's BOOT_VIDEO_SESSION_PREFIX + osId). Kept in
+// lockstep with that constant — bootVideoPlayedFor() returns true when this key
+// is '1', so pre-seeding it before the station mounts suppresses the overlay.
+export function bootVideoPlayedKey(osId) {
+  return `kernelHive.bootVideoPlayed:${osId}`;
+}
+
+/** Skip the boot-video overlay for `station`: mark it already-played in
+ *  sessionStorage BEFORE the /os/<id> route mounts, so App.tsx passes
+ *  playBootVideo={false} and BootVideoOverlay never mounts — the demo lands
+ *  straight on the live desktop instead of interacting behind a boot clip. The
+ *  gallery is a client-routed SPA (clicking a card does not reload the
+ *  document), so setting this on the grid page persists into the station route;
+ *  an addInitScript also re-applies it across any hard reload. Call AFTER
+ *  page.goto(gallery) and BEFORE openStation(). Best-effort: a station with no
+ *  bootVideo is unaffected, and storage being blocked is harmless. */
+export async function suppressBootVideo(page, station) {
+  const key = bootVideoPlayedKey(station);
+  await page.addInitScript(
+    ([k]) => {
+      try {
+        window.sessionStorage.setItem(k, '1');
+      } catch {
+        /* storage blocked — the live grid still works, boot just plays */
+      }
+    },
+    [key],
+  );
+  await page.evaluate((k) => {
+    try {
+      window.sessionStorage.setItem(k, '1');
+    } catch {
+      /* no-op */
+    }
+  }, key).catch(() => {});
+}

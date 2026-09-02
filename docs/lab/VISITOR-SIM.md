@@ -108,7 +108,10 @@ one visit.
 - **`editor`** — a scripted demo built on `station`, for **watching** and for
   populating the keyboard/click trace planes. Each visitor gets a **distinct**
   station (by visitor number, so `--visitors 6` drives 6 different machines,
-  not a random 6), and on it: **resets to golden first**, opens a text editor
+  not a random 6), and on it: **skips the boot-video intro clip** (pre-marks
+  `BootVideoOverlay` as played, via `suppressBootVideo`, so the demo lands on the
+  live desktop instead of acting behind the clip), **resets to golden first**,
+  opens a text editor
   **with the keyboard** (`Ctrl+Esc → R → notepad → Enter` on a Windows guest —
   never the Windows key, which would collide with the driving browser and, on a
   Mac, `Cmd+R`-reload the tab), types a funny line, **selects it with the

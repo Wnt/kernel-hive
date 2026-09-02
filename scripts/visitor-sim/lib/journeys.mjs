@@ -12,7 +12,7 @@
 // never a fixed-interval hammer.
 
 import { humanDelay } from './rng.mjs';
-import { openStation, waitForVideo, typeHumanPace, traceFigureEight } from './stationOpen.mjs';
+import { openStation, waitForVideo, typeHumanPace, traceFigureEight, suppressBootVideo } from './stationOpen.mjs';
 import { openEditor, keyboardSelect, randomClicks, pickFunnyLine } from './editorDemo.mjs';
 import { armVirtualAuthenticator } from './webauthn.mjs';
 
@@ -307,6 +307,9 @@ export async function journeyEditor(page, ctx) {
   // Distinct station per visitor (round-robins if visitors > stations).
   const station = stations[(visitorId - 1) % stations.length];
   await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  // Skip the boot-video overlay so the demo lands on the live desktop rather
+  // than acting behind a boot clip — set before the station route mounts.
+  await suppressBootVideo(page, station);
   await humanDelay(rng, 800, 2000);
   const opened = await openStation(page, station, { waitMs: 30000 });
   if (!opened.ok) return { ok: false, detail: opened.why, station };

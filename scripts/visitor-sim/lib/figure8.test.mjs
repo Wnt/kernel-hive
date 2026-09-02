@@ -2,7 +2,15 @@
 // Run: node --test scripts/visitor-sim/lib/figure8.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { figureEightPoints } from './stationOpen.mjs';
+import { figureEightPoints, bootVideoPlayedKey } from './stationOpen.mjs';
+
+// The boot-video skip works only if this key byte-matches App.tsx's
+// BOOT_VIDEO_SESSION_PREFIX ('kernelHive.bootVideoPlayed:') + osId. If someone
+// renames the SPA constant, this pins the drift so the skip cannot silently rot.
+test('bootVideoPlayedKey matches the SPA sessionStorage key', () => {
+  assert.equal(bootVideoPlayedKey('win95'), 'kernelHive.bootVideoPlayed:win95');
+  assert.equal(bootVideoPlayedKey('nt4'), 'kernelHive.bootVideoPlayed:nt4');
+});
 
 const BOX = { cx: 500, cy: 300, ax: 200, ay: 120 };
 
