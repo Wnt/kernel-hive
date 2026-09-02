@@ -451,6 +451,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
