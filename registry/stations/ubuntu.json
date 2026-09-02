@@ -188,8 +188,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#dd4814",
-    "eraLabel": "2004 · Ubuntu 4.10 Warty Warthog",
-    "bootVideo": null
+    "eraLabel": "2004 · Ubuntu 4.10 Warty Warthog"
   },
   "museum": {
     "id": "ubuntu",
@@ -214,7 +213,7 @@
       "OpenOffice.org",
       "GIMP"
     ],
-    "blurb": "The first Ubuntu, October 2004: a Debian-derived desktop that booted straight into a brown GNOME 2.8 from a live CD and promised a new release every six months."
+    "blurb": "The first Ubuntu, October 2004: a Debian snapshot with one desktop, GNOME 2.8 in the brown Human theme, on a single CD. This is the live session, so nothing is installed and every reset returns the same instant."
   },
   "emulator": {
     "family": "QEMU",
