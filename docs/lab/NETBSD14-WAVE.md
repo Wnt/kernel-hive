@@ -34,6 +34,37 @@ kernel — the golden stream verifies the PS/2 mouse on GENERIC (fallback:
 | spa | Fable | `registry/posters/netbsd14.md`, hero + frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram` |
 | docs | sonnet-low (after golden) | `docs/guests/netbsd14.md`, `GUEST-TIERS.md`, release notes, `docs/README.md` |
 
+## The wall, and the race that solved it (2026-09-03)
+
+The installed GENERIC kernel hangs in autoconf right after
+`lpt0 at isa0 port 0x378-0x37b irq 7`; the INSTALL floppy kernel probes fine.
+The golden stream bisected it serially (reboot, guessed sleep, look) and was
+stopped; the operator's rule from this is AGENTS.md rule 14 / OPERATING-RULES
+§13, with `scripts/dev/rig-clone.sh` + `scripts/dev/fb-wait.py` written on the
+spot. Two rounds of cheap runners (`sonnet-low`, one clone each, 0.6 s to clone):
+
+| Theory | Result | Evidence |
+|---|---|---|
+| userconf `disable wdc0/wdc1` (ISA IDE vs pciide) | blocked by method | **1.4.1 has no userconf**: the boot block rejects `-c` (`boot [xdNx:][filename] [-adrs]`) |
+| userconf `disable pcic*` | blocked by method | same |
+| userconf disable every optional ISA device | blocked by method | same |
+| KVM-specific: `-accel tcg -cpu pentium` | LOSS | identical hang under TCG |
+| Sound Blaster probe spinning: `-device sb16` at 0x220 | LOSS | identical hang, no `sb0` line |
+| pciide port conflict: `-machine isapc` (IDE on ISA) | LOSS, but decisive | `wdc0 at isa0` attached BEFORE `lpt0` there and the hang stayed after `lpt0` — IDE is exonerated |
+| INSTALL kernel from the floppy, `boot -a`, root `wd0a` | **WIN** | full multiuser boot of the installed disk (`evidence/instk-boot-a-wd0a-multiuser.png`) — the enabler for an in-guest kernel build |
+
+Round 3 (running as this is written): two `sonnet` runners build custom kernels
+in-guest from `syssrc.tgz` (14 234 946 B, staged) on a second CD (`extras.iso`):
+`KHCONS` = GENERIC minus the ISA devices INSTALL lacks (sound, bus mice,
+joystick, tape, mcd, nca, lpt1/lpt2) and `KHMIN` = only the ISA devices the
+emulated PC has. Whichever boots past `lpt0` ships as `/netbsd`
+(GENERIC kept as `/netbsd.GENERIC`). Mouse: GENERIC 1.4.1 has `opms* at pckbc?`
+(the XFree86-3.3 PS/2 `/dev/pms0`), kept in both.
+
+Rule for the next OS: a theory list must first name the MECHANISM each theory
+needs (here: userconf), and one runner tests the mechanism before three depend
+on it.
+
 ## Timeline (measured after landing with session-timeline.py)
 
 TODO(coordinator)
