@@ -44,108 +44,31 @@ open-sourced codebase, not an archival GeoWorks release.
 
 ## Composition recipe
 
-The disk is FreeDOS 1.3 converted to raw, then composed with `mtools`
-(`-i disk.raw@@32256`, matching the FAT16 partition's byte offset on the
-fleet disk):
-
-- `mcopy -s ensemble ::/ENSEMBLE` — copies the unzipped `ensemble/` tree onto
-  the FAT filesystem as `C:\ENSEMBLE`.
-- `FDAUTO.BAT` edited (kept CRLF) so `call \MENU.BAT` is replaced by
-  `cd \ENSEMBLE` + `loader` — the disk boots straight into GEOS instead of the
-  FreeDOS menu. `FDAUTO.BAT` already loads `CTMOUSE` and sets
-  `SET BLASTER=A220 I5 D1 H5 T6` for the Sound Blaster, both inherited
-  unchanged from the FreeDOS base.
-- `geos.ini` edited in three places, because the zip's defaults target
-  DOSBox, not a raw QEMU PC:
-  - `[mouse] device = Generic Mouse`, `driver = genmouse.geo` — was
-    "Basebox Mouse" driving an absolute pointer that only exists inside
-    DOSBox; `genmouse.geo` reads INT 33h, which CTMOUSE provides on real
-    (emulated) hardware.
-  - `screenBlanker = false` — was `true` with a 1-minute timeout, which would
-    blank a station nobody is actively driving.
-  - `Lights Out Launcher` removed from `[ui] execOnStartup` — a DOSBox-era
-    convenience utility with no place on a kiosk.
-  - Left untouched: the screen mode, `VESA Compatible SuperVGA: 800x600
-    64K-color` via `vga16.geo` — this works unmodified on `-vga std`.
-
-## Device set
-
-`streamhost/stations/pcgeos/qemu-streamhost.sh` is deployed **verbatim**.
-QEMU **11.0.2** (host `pve-qemu-kvm` 11.0.2-1).
-
-```
-qemu-system-x86_64 -name streamhost-pcgeos \
-  -enable-kvm -m 64 -smp 2 \
-  -machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host \
-  -rtc base=localtime \
-  -boot c \
-  -vga std \
-  -display dbus,p2p=on,audiodev=snd0 \
-  -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
-  -device sb16,audiodev=snd0 \
-  -drive file=$BASE/disk.qcow2,format=qcow2,if=ide \
-  -netdev user,id=n0 -device ne2k_pci,netdev=n0 \
-  [-loadvm golden -S] \
-  -qmp unix:$BASE/qmp.sock,server=on,wait=off -pidfile $BASE/qemu.pid
-```
-
-Semantically identical to the fleet freedos launcher — same
-`pc-i440fx-11.0,acpi=off` machine, same backend-only PC-speaker routing —
-except **`-vga std`** (VESA 800x600 for `vga16.geo`, freedos uses the default
-text-mode VGA) and this station's own disk.
-
-- **`-vga std`.** GEOS's screen driver is `vga16.geo`, targeting the VESA
-  Compatible SuperVGA 800x600 16-bit mode the zip ships configured for.
-  `-vga std` is the Bochs VGA BIOS QEMU exposes for that mode; nothing more
-  exotic is needed.
-- **`disk.qcow2` is the only block device**, and it carries the `golden`
-  vmstate. GEOS's own filesystem — `C:\ENSEMBLE`, any files a visitor's
-  session creates or a scratch save writes — lives on the same FAT16
-  partition FreeDOS boots from, so storing it as qcow2 lets `savevm golden`
-  capture RAM and the disk contents together, and `loadvm golden` restores
-  both: a visitor's edits do not carry to the next.
-- **PS/2 relative pointer** (`SH_POINTER=rel`, `pointer.method:
-  qemu-ps2-relative`) through CTMOUSE (loaded by `FDAUTO.BAT`) feeding
-  `genmouse.geo`'s INT 33h reads. No absolute-pointer path has been attempted
-  on this station — see *Known gaps*.
-- **Audio**: `sb16` (Sound Blaster, `SET BLASTER=A220 I5 D1 H5 T6`) plus the
-  PC speaker (`pcspk-audiodev=snd0` on the machine option), both routed into
-  the dbus audiodev.
-- **`ne2k_pci` user-mode NIC**, inherited from the freedos base disk; GEOS's
-  own TCP/IP stack and WebMagick browser are not wired to it yet — see
-  *Known gaps*.
-- **64 MB RAM, 2 vCPU, KVM, `-cpu host`.** PC/GEOS is designed to run in
-  640 KB on a 286; 64 MB and a modern host CPU under KVM leave enormous
-  headroom, same reasoning as the fleet's other small-DOS stations.
-- **No exec channel.** `operator.labctl.exec_kind` is `null`, `console` is
-  `fb`: drive the station with QMP keys/mouse and read the framebuffer.
-
-## Host-native capture path
-
-**Tier 1**, direct-QEMU, KVM-accelerated. The guest's VGA framebuffer is
-captured straight off QEMU's dbus display and input goes straight in through
-QMP — no kiosk, bridge or second VM in the path.
-
-## Ready scene
-
-`museum.notes` / `reset.fixture`: the PC/GEOS Ensemble desktop (Computer,
-Documents, World icons; Meadows wallpaper; taskbar) at 800x600 16-bit, right
-after `loader.exe` finishes — a software cursor drawn into the scanout, not a
-hardware overlay.
+- Reset mode and fixture: TODO
+- Run `scripts/lib/golden-verify.sh pcgeos --bake` on a namespaced clone, then
+  rerun without `--bake` before promotion.
+- Pointer/click/drag/wheel/keyboard proof: TODO
+- Cold-boot zero-input state and optional clip: TODO
+- Credentials reference only (never values): `guest/pcgeos`
+- Rollback plan: TODO
 
 ## Checkpoint
 
-(written by the golden stream)
-
-## Known gaps / next
-
-- **Absolute pointer not attempted.** This station ships relative-only
-  (PS/2 + CTMOUSE + `genmouse.geo`); an absolute path (à la the fleet's
-  `qemu-usb-tablet` stations) has not been evaluated for GEOS.
-- **Network.** GEOS has its own TCP/IP stack and a WebMagick browser; the
-  device set already carries a user-mode `ne2k_pci` NIC from the freedos
-  base, but joining retronet (`periodBrowser: WebMagick (Breadbox)`) is a
-  follow-up, not part of this wave.
-- **No exec channel.** As with several of the fleet's small-DOS stations,
-  there is no ssh/serial path in — everything is QMP keys/mouse plus the
-  framebuffer.
+- Snapshot name: `golden`, saved via QMP `human-monitor-command` `savevm golden`.
+- Carrier disk: `disk.qcow2` is the ONLY block device — staged at
+  `/data/vms/streamhost/stations/pcgeos/disk.qcow2` (399,572,992 bytes / 381 MiB
+  on disk; 512 MiB virtual). `qemu-img snapshot -l` reports the `golden` tag at
+  `VM_SIZE 3.48 MiB`.
+- Boot time: cold boot (no `-loadvm`) reaches the full PC/GEOS desktop
+  (Computer/Documents/World icons on the orange "Meadows" wallpaper, taskbar at
+  the bottom) in ~31 s under KVM (QMP `VM_CLOCK` read `0000:00:30.870` at the
+  moment `savevm` ran, after a settle wait past the desktop paint).
+- Restore proven: 2026-09-02, one `loadvm` cycle on a sandbox clone
+  (`/data/vms/sandbox/pcgeos-golden/`) — quit QEMU after `savevm`, relaunched the
+  same launcher (picks up `-loadvm golden -S` automatically once the tag
+  exists), sent QMP `cont`, screendumped. The restored frame is byte-identical
+  in size (263,816 bytes PNG) to the pre-`savevm` cold-boot frame and shows the
+  same settled desktop. One restore only, per the operator's no-proof-gate rule
+  (a restoring golden is enough).
+- Coldboot-record arm: `pcgeos` case in `scripts/coldboot/bootrec-tiles.conf`
+  (`BR_BOOT_KIND=vmstate`, canvas 800x600 @30fps, audio on, `BR_DISKS=disk.qcow2`).
