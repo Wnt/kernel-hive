@@ -161,6 +161,10 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#4b4d4b', accentTint: '#686d6b', tintMix: 0.6,
     badge: 'OEM TOWER', spec: 'INSTITUTIONAL', kit: 'workstation',
   },
+  debian22: {
+    caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
+    badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',
+  },
   redstar3: {
     caseTint: '#55595b', accentTint: '#737a7b', tintMix: 0.52,
     badge: 'OEM SFF', spec: 'OFFICE • 2013', kit: 'modern',
