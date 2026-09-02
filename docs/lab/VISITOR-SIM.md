@@ -105,6 +105,21 @@ one visit.
   `scripts/e2e/station-open.mjs`'s card-resolution and stream-probe idiom and
   `scripts/e2e/typing-pace-probe.mjs`'s pacing, via `lib/stationOpen.mjs` —
   the same building blocks the `walkin` journey already used.
+- **`editor`** — a scripted demo built on `station`, for **watching** and for
+  populating the keyboard/click trace planes. Each visitor gets a **distinct**
+  station (by visitor number, so `--visitors 6` drives 6 different machines,
+  not a random 6), and on it: **resets to golden first**, opens a text editor
+  **with the keyboard** (`Ctrl+Esc → R → notepad → Enter` on a Windows guest —
+  never the Windows key, which would collide with the driving browser and, on a
+  Mac, `Cmd+R`-reload the tab), types a funny line, **selects it with the
+  keyboard** (`Home`/`Shift+End`/`Shift+ArrowLeft` — classic Notepad has no
+  `Ctrl+A`), clicks a few random spots, and finishes with a figure-8. **Keys
+  and clicks each become a discrete `input.dispatch.key` / `input.dispatch.click`
+  span** — which continuous pointer motion (the figure-8) does *not* produce, so
+  this is the journey that actually exercises those planes end to end. Also
+  **requires `--storage-state` or `--invite`**. The editor-open recipe lives in
+  `lib/editorDemo.mjs`; today it covers `win95`, `win98se`, `win2000`, `winxp`,
+  `nt4`, `reactos` (any other id falls back to the same Windows Start→Run path).
 
 If your pool has none of the three walk-in-eligible ids, the `walkin` journey
 reports a clean failure rather than touching a station outside your pool —
@@ -112,16 +127,17 @@ reports a clean failure rather than touching a station outside your pool —
 
 ## Resets
 
-`POST /restore/<id>` fires **only** from the `station` journey
-(`journeyStation` in `lib/journeys.mjs`) — it is the one journey with a real
-invited session and a station actually open. `--allow-resets`,
+`POST /restore/<id>` fires **only** from the `station` and `editor` journeys
+(via `restoreToGolden` in `lib/journeys.mjs`) — the journeys with a real
+invited session and a station actually open (`editor` resets unconditionally at
+the start of each station, `station` occasionally). `--allow-resets`,
 `--reset-max` and `--reset-min-interval` (see "Safety" below) all gate that
 one call site: the per-run cap, the per-station cooldown, and the master
 on/off switch are enforced there, not merely documented — there is no 4th,
 undocumented gate on top (an earlier `&& Math.random() < 0.15` coin-flip did
 sit here, and made a run that printed `resets ARMED` fire zero resets often
-enough to look broken; removed). If your `--mix` has no `station` weight — a
-walk-in-only run, the tool's default without `--storage-state`/`--invite` —
+enough to look broken; removed). If your `--mix` has no `station` or `editor`
+weight — a walk-in-only run, the tool's default without `--storage-state`/`--invite` —
 passing `--allow-resets` arms a budget nothing in the run can ever spend; the
 tool says so plainly, both in `--dry-run`'s printed plan and in a live run's
 own log, rather than silently letting the flag sit there unused.

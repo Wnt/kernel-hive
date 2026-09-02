@@ -45,9 +45,9 @@ function printPlan(config) {
   if (config.resetsArmedButUnusable) {
     log(
       'plan',
-      'resets NOTE  --allow-resets is armed but --mix has no "station" journey — resets only ever fire from ' +
-        'journeyStation (lib/journeys.mjs), so nothing in this run can use that budget. Add station=<weight> to ' +
-        '--mix (needs --storage-state or --invite) if you actually want resets to fire.',
+      'resets NOTE  --allow-resets is armed but --mix has no "station" or "editor" journey — resets only ever ' +
+        'fire from those (lib/journeys.mjs), so nothing in this run can use that budget. Add station=<weight> or ' +
+        'editor=<weight> to --mix (needs --storage-state or --invite) if you actually want resets to fire.',
     );
   }
   let credLine;

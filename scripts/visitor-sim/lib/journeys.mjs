@@ -13,6 +13,7 @@
 
 import { humanDelay } from './rng.mjs';
 import { openStation, waitForVideo, typeHumanPace, traceFigureEight } from './stationOpen.mjs';
+import { openEditor, keyboardSelect, randomClicks, pickFunnyLine } from './editorDemo.mjs';
 import { armVirtualAuthenticator } from './webauthn.mjs';
 
 const WALKIN_OS_IDS = ['win311', 'os2warp', 'rhapsody'];
@@ -220,6 +221,47 @@ export async function journeyWalkin(page, ctx) {
   };
 }
 
+/** Restore a station to its golden snapshot through the REAL UI control, gated
+ *  by ctx.safety.resetGate (--allow-resets / --reset-max / --reset-min-interval).
+ *  Returns true iff a reset actually fired. Shared by journeyStation and
+ *  journeyEditor so both produce the SAME station.restore telemetry.
+ *
+ *  DRIVEN THROUGH THE UI, NOT A BARE fetch(). The client-side station.restore /
+ *  station.restore.toRestoredMs telemetry (the click-to-picture-back latency the
+ *  operator wants to measure — useRestoreFlow.ts) fires ONLY from
+ *  restoreToGolden(), wired to StageMenu.tsx's "Restore to golden snapshot"
+ *  button. A raw POST /restore/<id> still resets the host but never runs that
+ *  hook, so no span is produced. Open the ☰ menu, click the real button. */
+async function restoreToGolden(page, station, { safety, manifest, log }) {
+  if (!safety.resetGate.eligible(station)) return false;
+  try {
+    await page.getByRole('button', { name: 'Controls' }).click({ timeout: 5000 });
+    const restoreBtn = page.getByRole('button', { name: /Restore to golden snapshot/ });
+    await restoreBtn.waitFor({ state: 'visible', timeout: 5000 });
+    const clickedAt = Date.now();
+    await restoreBtn.click({ timeout: 5000 });
+    safety.resetGate.record(station);
+    manifest?.reset(station);
+    log?.(`reset ${station}: clicked "Restore to golden snapshot"`);
+    // The click starts a reconnect (connecting -> live); wait for the picture
+    // to actually come back, which is what a real visitor watches for.
+    const back = await waitForVideo(page, 45000);
+    log?.(`reset ${station}: video back after restore = ${back.ok}`);
+    // The DOM's video going live is NOT the moment useRestoreFlow.ts settles
+    // (settle('ok'), which closes and buffers the span). Measured live, the
+    // flow can still be mid-recover ~17s after the click, well after readyState
+    // reported live pixels. Floor the dwell from the CLICK, not from
+    // video-back, so the tab is not reused before the span finishes buffering.
+    const minSettleMs = 20000;
+    const elapsed = Date.now() - clickedAt;
+    if (elapsed < minSettleMs) await page.waitForTimeout(minSettleMs - elapsed);
+    return true;
+  } catch (e) {
+    log?.(`reset ${station} failed: ${e}`);
+    return false;
+  }
+}
+
 /** Open a live pool station from the full grid and interact — requires an
  *  invited (viewer/admin) session via --storage-state; the walk-in role
  *  cannot reach "/". Optionally fires a golden reset, gated by ctx.safety. */
@@ -241,64 +283,61 @@ export async function journeyStation(page, ctx) {
   }
   await humanDelay(rng, 1500, 5000);
 
-  // docs/lab/VISITOR-SIM.md's "Resets" section documents exactly three gates
-  // on this call site: --allow-resets, --reset-max and --reset-min-interval
-  // (all enforced by safety.resetGate.eligible() below). A 4th, undocumented
-  // coin-flip used to sit here too (`&& rng() < 0.15`) — with a handful of
-  // "station" journeys in a short run that made a reset "armed" but silently
-  // never fire, which is indistinguishable from broken and defeats the whole
-  // point (the operator explicitly wants station.restore telemetry out of a
-  // run like this). The three real caps are the safety net; nothing here
-  // should also roll dice on top of them.
-  //
-  // DRIVEN THROUGH THE REAL UI CONTROL, NOT A BARE fetch(). The client-side
-  // `station.restore` / `station.restore.toRestoredMs` telemetry (the
-  // click-to-picture-back latency the operator explicitly wants to measure —
-  // useRestoreFlow.ts) fires ONLY from `restoreToGolden()`, which is wired to
-  // StageMenu.tsx's "Restore to golden snapshot" button's onClick. A raw
-  // `POST /restore/<id>` still resets the host (serve.restore fires either
-  // way) but never runs that hook, so no station.restore span is ever
-  // produced — a run could reset a station all day and still leave the
-  // operator's own ask unmeasured. Open the ☰ menu, click the real button.
-  let resetTriggered = false;
-  if (safety.resetGate.eligible(station)) {
-    try {
-      await page.getByRole('button', { name: 'Controls' }).click({ timeout: 5000 });
-      const restoreBtn = page.getByRole('button', { name: /Restore to golden snapshot/ });
-      await restoreBtn.waitFor({ state: 'visible', timeout: 5000 });
-      const clickedAt = Date.now();
-      await restoreBtn.click({ timeout: 5000 });
-      safety.resetGate.record(station);
-      resetTriggered = true;
-      manifest?.reset(station);
-      log?.(`reset ${station}: clicked "Restore to golden snapshot"`);
-      // The click starts a reconnect (phase -> 'connecting' -> 'live'), the
-      // same journey the station took to open in the first place — wait for
-      // the picture to actually come back, which is what a real visitor
-      // watches for.
-      const back = await waitForVideo(page, 45000);
-      log?.(`reset ${station}: video back after restore = ${back.ok}`);
-      // The DOM's video going live is NOT the same moment the client-side
-      // `station.restore` flow settles (useRestoreFlow.ts's settle('ok'),
-      // which is what actually closes and buffers the span/timing). Measured
-      // live against the real gallery: the flow can still be mid-`stream.
-      // recover` (its own reconnect dance, including an abandoned first
-      // attempt) up to ~17s after the click, well after readyState already
-      // reported live pixels. Floor the dwell from the CLICK, not from
-      // video-back, so the journey (and the tab this tool closes right after
-      // it) does not race the flow's own close — otherwise the span never
-      // finishes buffering and this tool's whole reason for driving the real
-      // button instead of a bare fetch is silently defeated.
-      const minSettleMs = 20000;
-      const elapsed = Date.now() - clickedAt;
-      if (elapsed < minSettleMs) await page.waitForTimeout(minSettleMs - elapsed);
-    } catch (e) {
-      log?.(`reset ${station} failed: ${e}`);
-    }
-  }
+  // Resets are gated by exactly three caps — --allow-resets, --reset-max and
+  // --reset-min-interval — all enforced inside restoreToGolden via
+  // safety.resetGate.eligible(). No extra coin-flip here: a 4th undocumented
+  // `rng() < 0.15` used to make a reset "armed" but silently never fire, which
+  // is indistinguishable from broken and defeats the operator's ask for
+  // station.restore telemetry.
+  const resetTriggered = await restoreToGolden(page, station, ctx);
 
   await humanDelay(rng, 500, 2000);
   return { ok: true, detail: `interacted with ${station}${resetTriggered ? ' (reset)' : ''}`, station, resetTriggered };
+}
+
+/** Credentialed editor demo (requires --storage-state or --invite, like
+ *  journeyStation). Each visitor gets a DISTINCT station by visitorId, so a
+ *  6-visitor run drives 6 different machines. Per station: reset to golden,
+ *  open a text editor with the keyboard, type a funny line, select it with the
+ *  keyboard, click a few random spots, and finish with a figure-8. Keys and
+ *  clicks are what light up the input.dispatch.* trace plane (bare motion does
+ *  not), so this is the journey that exercises the keyboard and click planes. */
+export async function journeyEditor(page, ctx) {
+  const { galleryUrl, stations, rng, visitorId, log } = ctx;
+  // Distinct station per visitor (round-robins if visitors > stations).
+  const station = stations[(visitorId - 1) % stations.length];
+  await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await humanDelay(rng, 800, 2000);
+  const opened = await openStation(page, station, { waitMs: 30000 });
+  if (!opened.ok) return { ok: false, detail: opened.why, station };
+  log?.(`opened ${station} live`);
+
+  // Start from a clean desktop, as asked — reset to golden first, then let the
+  // picture settle before driving the Start menu.
+  const resetTriggered = await restoreToGolden(page, station, ctx);
+  await humanDelay(rng, 1000, 2000);
+
+  // Open a text editor with the keyboard and type a funny line into it.
+  const ed = await openEditor(page, station, { log: (m) => log?.(m) });
+  if (!ed.ok) return { ok: false, detail: ed.why, station, resetTriggered };
+  const line = pickFunnyLine(rng);
+  await typeHumanPace(page, line, { baseMs: 150, jitter: 70 });
+  await humanDelay(rng, 600, 1400);
+
+  // Select the line with the keyboard, click a few random spots, then a figure-8.
+  await keyboardSelect(page, rng);
+  await humanDelay(rng, 400, 900);
+  await randomClicks(page, rng, { n: 3 + Math.floor(rng() * 3) });
+  await humanDelay(rng, 400, 900);
+  await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+  await humanDelay(rng, 600, 1500);
+
+  return {
+    ok: true,
+    detail: `editor demo on ${station}${resetTriggered ? ' (reset first)' : ''}: typed "${line}"`,
+    station,
+    resetTriggered,
+  };
 }
 
 export const JOURNEYS = {
@@ -306,4 +345,5 @@ export const JOURNEYS = {
   poster: journeyPoster,
   walkin: journeyWalkin,
   station: journeyStation,
+  editor: journeyEditor,
 };

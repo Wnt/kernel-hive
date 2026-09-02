@@ -160,6 +160,14 @@ JOURNEYS (what --mix names)
              occasionally a golden reset, gated by --allow-resets/--reset-max/
              --reset-min-interval exactly like every other reset in this tool.
              Requires --storage-state or --invite.
+  editor     Like "station", but a scripted demo: each visitor gets a DISTINCT
+             station (by visitor number, so --visitors 6 drives 6 machines),
+             resets it to golden, opens a text editor with the keyboard
+             (Ctrl+Esc -> R -> notepad on Windows guests), types a funny line,
+             selects it with the keyboard, clicks a few random spots, and ends
+             with a figure-8. Keys and clicks are what populate the
+             input.dispatch.* trace plane. Requires --storage-state or --invite;
+             editor-open recipe today covers win95/98se/2000/xp/nt4/reactos.
 
 OTHER
   --headed        Run headed instead of headless (debugging). Works on
@@ -263,7 +271,11 @@ export function parseArgs(argv) {
   // main() redeems it — parseArgs stays synchronous and network-free, the
   // invite POST happens later in visitor-sim.mjs.
   const hasStorageState = args.has('storage-state') || args.has('invite');
-  const allowedJourneys = ['exhibits', 'poster', 'walkin', 'station'];
+  const allowedJourneys = ['exhibits', 'poster', 'walkin', 'station', 'editor'];
+  // Journeys that open a live pool station from the full grid — unreachable by
+  // the walk-in role, so they need an invited session (--storage-state/--invite).
+  // These are also the only journeys that can fire a golden reset.
+  const CREDENTIALED = ['station', 'editor'];
 
   const stationsRaw = args.get('stations');
   if (!stationsRaw) {
@@ -323,9 +335,11 @@ export function parseArgs(argv) {
     : 'exhibits=45,poster=20,walkin=35';
   const mix = parseMix(args.get('mix') ?? defaultMix, allowedJourneys);
   if (mix.walkin && walkinMax === 0) delete mix.walkin;
-  if (mix.station && !hasStorageState) {
+  const credInMix = CREDENTIALED.filter((j) => mix[j]);
+  if (credInMix.length > 0 && !hasStorageState) {
     throw new Error(
-      '--mix includes "station" but neither --storage-state nor --invite was given — that journey needs an invited session.',
+      `--mix includes ${credInMix.map((j) => `"${j}"`).join('/')} but neither --storage-state nor --invite was ` +
+        'given — that journey opens a live pool station and needs an invited session.',
     );
   }
   if (Object.keys(mix).length === 0) throw new Error('--mix resolved to no usable journeys — check --walkin-max/--storage-state/--invite');
@@ -335,8 +349,9 @@ export function parseArgs(argv) {
   // reset budget no matter how --allow-resets/--reset-max are set. Say that
   // now rather than let it arm silently; visitor-sim.mjs's printPlan repeats
   // this in the printed plan so it shows up even under --dry-run.
-  const resetsCanFire = allowResets && !!mix.station;
-  const resetsArmedButUnusable = allowResets && !mix.station;
+  const resetCapableInMix = !!mix.station || !!mix.editor;
+  const resetsCanFire = allowResets && resetCapableInMix;
+  const resetsArmedButUnusable = allowResets && !resetCapableInMix;
 
   const browser = args.get('browser') ?? 'chromium';
   if (!['chromium', 'chrome'].includes(browser)) {
