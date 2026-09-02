@@ -506,5 +506,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
+  // serial mouse the X server is told about (relative). Same tower family as
+  // tinycore, the other small-Linux desktop in the hall.
+  slackware: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
 } as const satisfies Record<string, Assembly>;
 

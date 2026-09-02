@@ -202,11 +202,20 @@
     "eraLabel": "1997 · Slackware 3.4 — fvwm95",
     "pointerRel": true
   },
+  "demoProgram": {
+    "label": "Ask the kernel who it is",
+    "lines": [
+      "uname -a",
+      "cat /proc/version"
+    ],
+    "runCommand": "uname -a",
+    "perCharMs": 80
+  },
   "museum": {
     "id": "slackware",
     "displayName": "Slackware 3.4",
     "year": 1997,
-    "lineage": "Slackware Linux (SLS lineage, Linux 2.0.30)",
+    "lineage": "SLS → Slackware (1993) — Linux 2.0.30",
     "arch": "i386",
     "ramMB": 32,
     "era": "1990s",
@@ -224,10 +233,11 @@
       "xterm",
       "xv",
       "xfm",
+      "xpaint",
       "xcalc",
-      "xpaint"
+      "Midnight Commander"
     ],
-    "blurb": "The Linux distribution that still ships from the same maintainer: 1997's Slackware 3.4 with kernel 2.0.30, XFree86 and the fvwm95 desktop that made a Unix workstation look like Windows 95.",
+    "blurb": "Slackware 3.4 from October 1997: Linux 2.0.30, XFree86 3.3.1 and the fvwm95 desktop that made a Unix workstation look like Windows 95 — from the oldest distribution still run by its original maintainer.",
     "notes": "Root filesystem composed host-side from the mirror's a/ap/x/xap/y .tgz series (no interactive setup); GRUB2 linux16 boots the stock bare.i zImage because the 1997 LILO boot floppy wedges at 'LI' under SeaBIOS."
   },
   "emulator": {

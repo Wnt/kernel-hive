@@ -315,6 +315,9 @@ export const OS_FAMILY: Record<string, Family> = {
   irix: 'generic',
   indyr4400: 'generic',
   ninefront: 'plan9',
+  // Slackware 3.4: fvwm95 over XFree86 with xterm/bash — a PC keyboard driving
+  // a Unix shell, so the generic Unix rows apply.
+  slackware: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',
