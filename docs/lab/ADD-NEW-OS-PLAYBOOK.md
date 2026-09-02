@@ -923,6 +923,11 @@ framebuffer, input, and golden round-trip gates before registration is deployed.
 ### 7.2 Supervised station deployment
 
 Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
+(steps 5–8 below are ONE command once the tree is deployed:
+`scripts/dev/station-up.sh <stationDir>` — it emits the single station, links the
+fleet binary, starts the unit, publishes the five runtime documents, runs
+`labctl gen`, shoots a frame and checks signal / manifests / `POST /restore`;
+re-running it on a live station is safe.)
 
 1. finish `registry/stations/<osId>.json` and any hand-managed builder, guest doc,
    launcher, `station.env.fixture`, or coldboot sidecar; prepare the gitignored
