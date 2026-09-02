@@ -382,11 +382,12 @@ For the very first golden, boot the sandbox clone, wait a fixed settle you
 chose by eye, then drive QMP/HMP by hand on the clone's monitor socket:
 
 ```bash
-labqmp <clone-socket> stop
-labqmp <clone-socket> 'savevm golden'
-labqmp <clone-socket> 'info snapshots'      # the golden tag must be listed
-labqmp <clone-socket> 'loadvm golden'
-labqmp <clone-socket> 'screendump /tmp/golden-restore.ppm'   # the framebuffer is the proof
+Q=scripts/lib/labqmp.py; S=<clone-qmp-socket>
+python3 $Q $S stop
+python3 $Q $S savevm golden
+python3 $Q $S querysnap                 # 'info snapshots' — the golden tag must be listed
+python3 $Q $S loadvm golden
+echo '{"execute":"qmp_capabilities"}{"execute":"screendump","arguments":{"filename":"/tmp/golden-restore.ppm"}}' | socat - UNIX-CONNECT:$S   # the framebuffer is the proof
 ```
 
 Then wire up `bootrec-tiles.conf` and run the standard proof above; the
