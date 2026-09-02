@@ -12,6 +12,7 @@ nothing restarts. Note the trap in AGENTS.md: `serve-https-spa.sh deploy`
 republishes both documents from the registry and wipes the overlay — re-run
 `publish` after any deploy.
 
+    darklaunch-station.py publish  <id> --rig DIR --like STATION [--display-name NAME]
     darklaunch-station.py publish  <id> --rig DIR --entry FILE   # FILE: manifest entry JSON
     darklaunch-station.py withdraw <id>
     darklaunch-station.py status   <id> [--rig DIR]
@@ -19,6 +20,15 @@ republishes both documents from the registry and wipes the overlay — re-run
 `--rig DIR` is the sandbox station dir holding the daemon's `signaling.json`
 and `cert_hash_b64.txt` (the daemon writes both; the rig's signaling.json is
 the authority for id and UDP port). Run ON THE BOX; defaults are box paths.
+
+`--like STATION` builds the manifest entry for you instead of requiring a
+hand-written `--entry FILE`: it copies STATION's own row out of
+`<serve>/webroot/gallery-manifest.json`, then sets id=<id>,
+displayName="<id> (smoke rig)" (or --display-name), order=900, listed=false,
+signalEndpoint=/signal/<id>.json. This is the guessing step the pcgeos
+speedrun (2026-09-02) got wrong by hand — the sibling's row, not some other
+manifest file, is the only correct template. `--entry` still works, for a
+one-off shape `--like` cannot produce.
 """
 
 from __future__ import annotations
@@ -86,17 +96,36 @@ def write_declaration(serve: Path, station_id: str, present: bool) -> None:
     print(f"declared darklaunch: {path}")
 
 
-def cmd_publish(serve: Path, station_id: str, rig: Path, entry_file: Path) -> int:
-    entry = json.loads(entry_file.read_text())
+def build_entry_from_sibling(manifest_path: Path, station_id: str, like: str, display_name: str | None) -> dict:
+    manifest = load(manifest_path)
+    sibling = next((e for e in manifest["entries"] if e.get("id") == like), None)
+    if sibling is None:
+        sys.exit(f"{manifest_path}: no entry with id {like!r} — --like must name a real station")
+    entry = dict(sibling)
+    entry["id"] = station_id
+    entry["displayName"] = display_name or f"{station_id} (smoke rig)"
+    entry["order"] = 900
+    entry["listed"] = False
+    entry["signalEndpoint"] = f"/signal/{station_id}.json"
+    return entry
+
+
+def cmd_publish(
+    serve: Path, station_id: str, rig: Path, entry_file: Path | None, like: str | None, display_name: str | None
+) -> int:
+    manifest_path = serve / "webroot" / "gallery-manifest.json"
+    if entry_file is not None:
+        entry = json.loads(entry_file.read_text())
+    else:
+        entry = build_entry_from_sibling(manifest_path, station_id, like, display_name)
     if entry.get("id") != station_id:
-        sys.exit(f"{entry_file}: id is {entry.get('id')!r}, expected {station_id!r}")
+        sys.exit(f"entry id is {entry.get('id')!r}, expected {station_id!r}")
     entry["listed"] = False
     entry.setdefault("signalEndpoint", f"/signal/{station_id}.json")
     if not isinstance(entry.get("order"), int) or entry["order"] < 900:
         sys.exit("manifest entry needs an integer order >= 900 (parked above the real lineup)")
 
     tiles_path = serve / "tiles.json"
-    manifest_path = serve / "webroot" / "gallery-manifest.json"
     tiles = load(tiles_path)
     manifest = load(manifest_path)
     tiles[station_id] = read_signaling(rig, station_id)
@@ -145,14 +174,16 @@ def main() -> int:
     ap.add_argument("id")
     ap.add_argument("--rig", type=Path)
     ap.add_argument("--entry", type=Path, help="manifest entry JSON (publish)")
+    ap.add_argument("--like", help="sibling station id to derive the manifest entry from (publish)")
+    ap.add_argument("--display-name", help="displayName for the derived entry (default: '<id> (smoke rig)')")
     ap.add_argument("--serve-root", default=SERVE_ROOT, type=Path)
     args = ap.parse_args()
     if not ID_RE.match(args.id):
         sys.exit(f"bad station id {args.id!r}")
     if args.command == "publish":
-        if not args.rig or not args.entry:
-            sys.exit("publish needs --rig DIR and --entry FILE")
-        return cmd_publish(args.serve_root, args.id, args.rig, args.entry)
+        if not args.rig or not (args.entry or args.like):
+            sys.exit("publish needs --rig DIR and either --entry FILE or --like STATION")
+        return cmd_publish(args.serve_root, args.id, args.rig, args.entry, args.like, args.display_name)
     if args.command == "withdraw":
         return cmd_withdraw(args.serve_root, args.id)
     return cmd_status(args.serve_root, args.id, args.rig)

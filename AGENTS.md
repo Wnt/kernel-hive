@@ -75,6 +75,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Whose rig/claim is this | `ssh lab 'labctl who'` |
 | Preview a UI/registry change before it is live | `scripts/dev/stage.sh` → `/staging/<session>/` |
 | Bring a deployed new station online (emit, binary, start, manifests, checks) | `scripts/dev/station-up.sh <id>` |
+| Publish a booted smoke guest at `/os/<id>` before it is a registry station | `scripts/dev/smoke-rig.sh <id> --like <station>` |
 | Deploy a pushed commit / see what the box runs | `scripts/dev/box-deploy.sh` (plan) / `--apply` / `--status` |
 | Restart the fleet without taking the gallery down | [`docs/lab/FLEET-ROLLOUT.md`](docs/lab/FLEET-ROLLOUT.md) — `scripts/dev/fleet_rollout.py` (plan) / `--apply` |
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |

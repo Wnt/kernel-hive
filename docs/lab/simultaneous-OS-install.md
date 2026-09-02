@@ -11,16 +11,26 @@ The first thing a bring-up session does after its guest shows *any* frame:
 
 1. run the guest with `-display dbus,p2p=on` (dbus capture, no other display)
    and a QMP socket in the sandbox rig dir;
-2. run a streamhost daemon by hand from a `stream.env` in that dir — borrow
-   a released binary (`readlink -f /usr/local/lib/streamhost/stations/<any>/current`)
-   and `set -a; . stream.env; . /etc/osgallery/stream-ticket.env; set +a`
-   so the browser's ticket path works exactly as in production;
-3. publish `/os/<id>` with `scripts/dev/darklaunch-station.py publish <id>
-   --rig <dir> --entry <entry.json>` (`listed:false`, declared in
-   `serve/darklaunch.d/<id>.json` so the sync gate stays green);
-4. **restart the daemon every time you relaunch the guest** — a hand-run
-   daemon keeps encoding the last frame after `qemu.pid` vanishes and the
-   operator sees a frozen picture. Put the restart in the rig's launch helper.
+2. `scripts/dev/smoke-rig.sh <id> --like <sibling-station>` — ONE command,
+   run from CT950. It claims slot/port/vmid, derives `stream.env` from the
+   sibling's live `station.env` (SH_* lines rewritten for the rig,
+   golden/reset/fixture/key lines dropped, `SH_IDLE_PAUSE_SECS=0` +
+   `SH_RESET_MODE=restart` appended), runs the sibling's released binary as
+   the streamhost daemon (`set -a; . stream.env; . /etc/osgallery/stream-ticket.env;
+   set +a` — same ticket path as production), and publishes `/os/<id>` via
+   `darklaunch-station.py publish <id> --rig <dir> --like <sibling-station>`
+   (`listed:false`, declared in `serve/darklaunch.d/<id>.json` so the sync
+   gate stays green — the manifest entry itself is derived from the
+   sibling's own row in `serve/webroot/gallery-manifest.json`, not
+   hand-written).
+   (pcgeos speedrun, 2026-09-02: doing this by hand — kh-claim syntax,
+   a hand-written stream.env, a hand-run daemon, guessing which manifest to
+   copy the entry from — cost five steps and four retries between "guest
+   boots" and "/os/pcgeos resolves". `smoke-rig.sh` is that sequence, once.)
+3. **restart the daemon every time you relaunch the guest** —
+   `<rig>/run-daemon.sh` (smoke-rig.sh writes it); a stale daemon keeps
+   encoding the last frame after `qemu.pid` vanishes and the operator sees a
+   frozen picture.
 
 Say the URL to the operator the moment it streams. Then debug.
 
