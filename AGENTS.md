@@ -77,6 +77,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Recapture a checkpoint | [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |
 | Fix a station that freezes or will not connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
 | Which emulator runs a given OS, with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — BEFORE spending an agent on recon |
+| Add a new OS station FAST (10-minute path) | [`docs/lab/ADD-NEW-OS-FASTPATH.md`](docs/lab/ADD-NEW-OS-FASTPATH.md) |
 | Add a new OS station | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
 | Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md) |

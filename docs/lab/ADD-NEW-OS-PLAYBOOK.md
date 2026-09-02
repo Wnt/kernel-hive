@@ -1,5 +1,9 @@
 # Add a new OS to the gallery
 
+> **In a hurry?** Read [`ADD-NEW-OS-FASTPATH.md`](ADD-NEW-OS-FASTPATH.md) first — the
+> timed 10-minute path with the steps to skip by default; come back here only for the
+> section a step points at.
+
 This is the end-to-end procedure for taking an arbitrary operating system from
 source media to a reproducible, interactive streamhost exhibit. It fills the
 gap between the per-guest notes in [`docs/guests/`](../guests/) and the
