@@ -506,11 +506,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // pcbsd: a 2008 office desktop — a putty SFF box under a 4:3 LCD, with the
-  // USB tablet pointer the station forwards as absolute (same era kit as reactos).
+  // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
+  // two-button PS/2 mouse (the station forwards a relative pointer; FreeBSD 6.3's
+  // X never moved on a USB tablet). Distinct from reactos's SFF pizza-box kit.
   pcbsd: {
-    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
-    keyboard: 'keyboardF', mouse: 'paramMouseE',
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseD',
   },
   // ubuntu: a 2004 beige-and-black minitower under a CRT — the ShipIt-CD PC
   // Warty was posted to. USB tablet in the guest, so a mouse on the desk.
