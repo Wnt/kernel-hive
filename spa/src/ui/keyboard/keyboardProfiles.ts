@@ -273,6 +273,7 @@ export const OS_FAMILY: Record<string, Family> = {
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
+  ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply

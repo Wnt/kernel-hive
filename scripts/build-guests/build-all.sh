@@ -149,6 +149,7 @@ MANIFEST=(
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m                          |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m                          |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
   "pcbsd          |tiles/pcbsd.sh                                        |PCBSD             |slow      |~15m (GUI install, assisted) |assisted |pcbsd.iso (PC-BSD 1.5.1 CD1, pinned) + pcbsd.qcow2 (installed KDE desktop)"
+  "ubuntu         |tiles/ubuntu.sh                                       |Ubuntu            |retro     |~5m                          |scripted |warty-release-live-i386.iso + ubuntu.qcow2 (empty 1G vmstate carrier; live CD, no install)|media"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

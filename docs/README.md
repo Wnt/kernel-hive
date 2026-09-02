@@ -104,6 +104,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
+| [guests/ubuntu.md](guests/ubuntu.md) | Ubuntu 4.10 Warty Warthog — live-CD-as-OS station, no NIC/audio (AC97+ACPI hangs the boot), pointer not 1:1 at 640x480. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
 | [guests/solaris.md](guests/solaris.md) | Solaris 10 x86 with real CDE; in-guest warpd agent documented in `streamhost/guest-agents/solaris/README.md`. |

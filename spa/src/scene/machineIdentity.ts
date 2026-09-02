@@ -451,6 +451,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // ubuntu: a 2004 beige/black OEM minitower with a CRT — the class of PC the
+  // live CD was made for. Registry accent: Ubuntu orange.
+  ubuntu: {
+    caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
+    badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
   // pcbsd: a 2008 beige-going-grey office PC running FreeBSD 6.3 + KDE 3.5 at
   // 1024x768 on the vesa driver. Registry red accent (the PC-BSD/BSD daemon red).
   pcbsd: {

@@ -583,3 +583,9 @@ content is folded in and verified here.
 Research produced 2026-07-08 by 10 parallel OS-family research agents +
 synthesis; see `streamhost/docs/BRIDGE.md` and `docs/guests/c64.md` for the
 proven bridge implementation.*
+
+## 12. Linux distributions — native QEMU-x86
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| Ubuntu 4.10 "Warty Warthog" (first Ubuntu, Oct 2004, GNOME 2.8) | http://old-releases.ubuntu.com/releases/4.10/warty-release-live-i386.iso (✓, sha256 `189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013`, 674 152 448 bytes) | GPL/various (open-source) | live CD ISO, no install | none | 643 MB | small | **works-known** | 5 |
