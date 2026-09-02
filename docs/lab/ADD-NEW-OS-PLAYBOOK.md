@@ -28,7 +28,29 @@ with a 1024x768 placeholder hero (`spa/public/posters/<id>/desktop.webp`), and f
 tier 1 scaffolds `streamhost/stations/<id>/qemu-streamhost.sh` and
 `station.env.fixture` (loadvm golden, TODO media/devices) — so validate is green
 the moment the entry is flipped to production. Disabled means it does not enter the streamhost, signaling,
-reset, or UI lineups while its TODOs remain. The paved path is now **scaffold →
+reset, or UI lineups while its TODOs remain.
+
+If the new station is a close relative of one already in the museum (same
+archetype, same device family), scaffold from the sibling instead of the bare
+Tier N template:
+
+```bash
+python3 scripts/stations-registry.py new <osId> \
+  --like <siblingId> --production --slot auto
+make station-registry-check
+```
+
+`--like` deep-copies the sibling's registry row, `qemu-streamhost.sh` and
+`station.env.fixture`, rewrites every id/path/port that names the sibling, and
+reassigns every render-order field (`signalOrder`, `stationsManifestOrder`,
+`bindingOrder`, `goldenOrder`, `actionMapOrder`, `bringUpOrder`, the build row's
+`order`/`defaultOrder`) to a free slot past the current max — the scaffold
+that hand-copying a sibling used to get wrong. `--production` writes
+`lifecycle: production, enabled: true` straight away (default, as with the bare
+template, is `candidate`/disabled); `--tier`/`--archetype` are inferred from the
+sibling and can be omitted. `museum`/`spa` prose is carried over prefixed
+`TODO(<sib>): ` so validate stays green while the text is still the sibling's.
+The paved path is now **scaffold →
 fill → verify**: builders use [`scripts/lib/labqmp.py`](../../scripts/lib/labqmp.py)
 for build-time QMP console/input, and clone-only checkpoint proof uses
 [`scripts/lib/checkpoint-verify.sh`](../../scripts/lib/checkpoint-verify.sh).
@@ -83,7 +105,7 @@ python3 /data/vms/streamhost/serve/qmp-type.py --sock smoke/qmp.sock 'dir\n' && 
 EOF2
 # PUBLISH THE SMOKE RIG NOW — this is the 5-minute target: operator watches /os/<id>
 ssh lab "python3 /data/vms/sandbox/<id>/repo/scripts/dev/darklaunch-station.py publish <id> --rig /data/vms/sandbox/<id>/smoke --entry /data/vms/sandbox/<id>/entry.json"
-python3 scripts/stations-registry.py new <id> --emulator qemu --kind <archetype> ...   # scaffold (see §6.0 for flags)
+python3 scripts/stations-registry.py new <id> --like <siblingId> --production --slot auto   # scaffold (see §6.0 for flags)
 ```
 
 Then the ledger commit on branch `<id>`: `docs/lab/<ID>-WAVE.md` with the allocation

@@ -13,7 +13,7 @@ from pathlib import Path
 from .constants import RENDER_DIR, REPO
 from .drift import cmd_drift
 from .facts_live import cmd_facts_live
-from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, generated
+from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, cmd_new_like, generated
 from .loading import RegistryError, is_x11_runtime, load
 from .render import rendered
 from .validate_rules import validate
@@ -177,9 +177,21 @@ def main() -> int:
         "poster prose + placeholder hero, and (tier 1) station launcher + env fixture",
     )
     new.add_argument("id")
-    new.add_argument("--tier", type=int, choices=(1, 2, 3), required=True)
-    new.add_argument("--archetype", required=True)
+    new.add_argument("--tier", type=int, choices=(1, 2, 3), required=False)
+    new.add_argument("--archetype", required=False)
     new.add_argument("--slot", required=True, help="auto or an explicit non-negative slot")
+    new.add_argument(
+        "--like",
+        metavar="STATION_ID",
+        help="clone an existing sibling station's registry row, launcher and env fixture "
+        "instead of the bare Tier N template; --tier/--archetype default to the sibling's",
+    )
+    new.add_argument(
+        "--production",
+        action="store_true",
+        help="with --like: scaffold straight to lifecycle=production, enabled=true "
+        "(default is candidate/disabled, same as the bare template path)",
+    )
     ns = ap.parse_args()
     try:
         command = "check" if ns.check else ns.command
@@ -221,6 +233,10 @@ def main() -> int:
         if command == "explain":
             return cmd_explain(ns.id)
         if command == "new":
+            if ns.like:
+                return cmd_new_like(ns.id, ns.like, ns.slot, ns.production)
+            if ns.tier is None or ns.archetype is None:
+                raise RegistryError("new: --tier and --archetype are required unless --like is given")
             return cmd_new(ns.id, ns.tier, ns.archetype, ns.slot)
         ap.print_help()
         return 2

@@ -12,6 +12,7 @@ import tempfile
 from collections import OrderedDict
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from poster_registry import PosterError, load_posters
 from serve.walkin.naming import SLOT_MAX as WALKIN_SLOT_MAX
@@ -253,6 +254,259 @@ def placeholder_hero(os_id: str) -> bytes:
     buffer = BytesIO()
     image.save(buffer, format="WEBP", quality=60)
     return buffer.getvalue()
+
+
+def _reserve_slot(globals_doc: dict, rows: list[dict], slot_arg: str) -> tuple[int, int]:
+    """Shared --slot auto/explicit reservation logic for `new` and `new --like`."""
+    used_slots = {row.get("stream", {}).get("slot") for row in rows}
+    used_slots.discard(None)
+    ports = globals_doc["ports"]
+    relay_low = ports.get("publicRelayLow")
+    relay_high = ports.get("publicRelayHigh")
+
+    if slot_arg == "auto":
+        slot = next(
+            (
+                value
+                for value in range(NEW_TILE_SLOT_FLOOR, 11536)
+                if value not in used_slots and slot_refusal(globals_doc, value) is None
+            ),
+            None,
+        )
+        if slot is None:
+            raise RegistryError(
+                f"--slot auto found nothing usable at or above {NEW_TILE_SLOT_FLOOR}: every "
+                f"candidate is taken, inside the walk-in reservation "
+                f"{WALKIN_SLOT_MIN}-{WALKIN_SLOT_MAX}, or outside the relay window "
+                f"{relay_low}-{relay_high}. Re-cut the reservation or widen the relay window "
+                "(edge nftables, the wg0.conf comment, docs/PUBLIC-GALLERY.md and "
+                "publicRelayHigh move together), then retry."
+            )
+    else:
+        try:
+            slot = int(slot_arg)
+        except ValueError as exc:
+            raise RegistryError("--slot must be 'auto' or a non-negative integer") from exc
+        if slot < 0 or slot > 11535:
+            raise RegistryError("--slot must keep 54000+slot within the UDP port range")
+        if slot in used_slots:
+            owner = next(row["id"] for row in rows if row.get("stream", {}).get("slot") == slot)
+            raise RegistryError(f"slot {slot} is already reserved by {owner}")
+        refusal = slot_refusal(globals_doc, slot)
+        if refusal:
+            raise RegistryError(f"slot {slot}: {refusal}")
+    udp_port = globals_doc["ports"]["productionBase"] + slot
+    if any(row.get("stream", {}).get("udpPort") == udp_port for row in rows):
+        raise RegistryError(f"UDP port {udp_port} is already in use")
+    return slot, udp_port
+
+
+_LIKE_REWRITE_PATTERNS = [
+    (r"/data/vms/streamhost/stations/{sib}/", "/data/vms/streamhost/stations/{new}/"),
+    (r"stations/{sib}/", "stations/{new}/"),
+    (r"-name streamhost-{sib}", "-name streamhost-{new}"),
+    (r"\$T/{sib}/", "$T/{new}/"),
+    (r"guests/{sib}\.md", "guests/{new}.md"),
+    (r"guest/{sib}\b", "guest/{new}"),
+    (r"{sib}-current", "{new}-current"),
+]
+
+
+def _rewrite_like_text(text: str, sib: str, new_id: str) -> str:
+    esc = re.escape(sib)
+    for pattern, replacement in _LIKE_REWRITE_PATTERNS:
+        text = re.sub(pattern.format(sib=esc), replacement.format(new=new_id), text)
+    # Any JSON string that is EXACTLY the sibling id (id, stationDir, museum.id,
+    # operator.actionMap.key, build.rows[].value.key, runtime.stationEnv.SH_STATION, ...)
+    text = re.sub(rf'"{esc}"', f'"{new_id}"', text)
+    return text
+
+
+def _next_order(rows: list[dict], *path: str) -> int:
+    """max(existing values at this dotted render/runtime path) + 1, over ALL rows."""
+    best = 0
+    for row in rows:
+        node: Any = row
+        for key in path:
+            if not isinstance(node, dict) or key not in node:
+                node = None
+                break
+            node = node[key]
+        if isinstance(node, int) and not isinstance(node, bool):
+            best = max(best, node)
+    return best + 1
+
+
+def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool) -> int:
+    """Scaffold a new station as a rewritten deep copy of a proven sibling's
+    registry row, launcher and env fixture, instead of the bare Tier N template
+    the coordinator otherwise hand-edits field by field."""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", os_id):
+        raise RegistryError("new id must match [a-z0-9][a-z0-9-]*")
+    globals_doc, rows = load()
+    if any(row["id"] == os_id for row in rows):
+        raise RegistryError(f"tile {os_id!r} already exists")
+    sib = next((row for row in rows if row["id"] == sib_id), None)
+    if sib is None:
+        raise RegistryError(f"--like sibling {sib_id!r} not found in the registry")
+
+    slot, udp_port = _reserve_slot(globals_doc, rows, slot_arg)
+
+    sib_clean = {k: v for k, v in sib.items() if not str(k).startswith("_")}
+    text = json.dumps(sib_clean, indent=2, ensure_ascii=False)
+    text = _rewrite_like_text(text, sib_id, os_id)
+    row: dict = json.loads(text)
+
+    row["era_year"] = date.today().year
+    row.setdefault("stream", {})["experimentSlot"] = sib.get("stream", {}).get("experimentSlot")
+    if row["stream"].get("experimentSlot") is None:
+        row["stream"].pop("experimentSlot", None)
+    row["stream"]["slot"] = slot
+    row["stream"]["udpPort"] = udp_port
+    row["stream"].pop("legacyPortException", None)
+    row["lifecycle"] = "production" if production else "candidate"
+    row["enabled"] = bool(production)
+
+    render = row.setdefault("render", {})
+    for path in (
+        ("signalOrder",),
+        ("stationsManifestOrder",),
+        ("bindingOrder",),
+        ("goldenOrder",),
+        ("actionMapOrder",),
+        ("mockManifestOrder",),
+    ):
+        if path[0] in render:
+            render[path[0]] = _next_order(rows, "render", *path)
+    render["stationsManifestPrelude"] = (
+        f"\n# {os_id} (VMID {row.get('runtime', {}).get('vmidLabel', slot)}) — TODO one line; "
+        f"scaffolded from {sib_id}.\n"
+    )
+    render["bindingPrelude"] = ""
+
+    runtime = row.get("runtime", {})
+    # load() merges the fixture's keys into runtime.stationEnv for every row it
+    # returns, so `sib`'s copy already carries them. Strip those back out before
+    # writing, or the fresh load of the new row's own fixture double-defines them.
+    fixture_owned = set(sib.get("_fixtureEnv", {}))
+    if fixture_owned and "stationEnv" in runtime:
+        runtime["stationEnv"] = {k: v for k, v in runtime["stationEnv"].items() if k not in fixture_owned}
+    if "bringUpOrder" in runtime:
+        runtime["bringUpOrder"] = _next_order(rows, "runtime", "bringUpOrder")
+    if "vmidLabel" in runtime:
+        runtime["vmidLabel"] = slot
+    station_env = runtime.get("stationEnv", {})
+    if "SH_PORT" in station_env:
+        station_env["SH_PORT"] = str(udp_port)
+    qemu = runtime.get("qemu", {})
+    emit_args = qemu.get("emitArgs", [])
+    for i, _arg in enumerate(emit_args):
+        if i == 0:
+            continue
+        if emit_args[i - 1] == "--tile":
+            emit_args[i] = os_id
+        elif emit_args[i - 1] == "--vmid":
+            emit_args[i] = str(slot)
+        elif emit_args[i - 1] == "--udp":
+            emit_args[i] = str(udp_port)
+    qemu["deviceSetId"] = f"{os_id}-current"
+
+    if "reset" in row:
+        row["reset"]["stationDir"] = os_id
+
+    # build.rows[].value.key was already rewritten by the exact-string pass above.
+    if row.get("build", {}).get("rows"):
+        order = (
+            max(
+                (item["order"] for r in rows for item in r.get("build", {}).get("rows", [])),
+                default=0,
+            )
+            + 1
+        )
+        first_row = row["build"]["rows"][0]
+        first_row["order"] = order
+        first_row.pop("defaultOrder", None)
+
+    for field in (
+        ("museum", "displayName"),
+        ("museum", "blurb"),
+        ("museum", "notes"),
+        ("museum", "lineage"),
+        ("spa", "eraLabel"),
+    ):
+        node = row
+        for k in field[:-1]:
+            node = node.get(k, {})
+        leaf = field[-1]
+        if leaf in node and isinstance(node[leaf], str):
+            node[leaf] = f"TODO({sib_id}): " + node[leaf]
+
+    row["notes"] = [f"scaffolded from {sib_id} on {date.today().isoformat()}; TODO: media, museum, spa"]
+
+    registry_path = TILES / f"{os_id}.json"
+    guest_path = REPO / row["guestDoc"]
+    coldboot_path = REPO / "scripts/coldboot" / f"{os_id}-bootrec-arm.sh"
+    poster_path = POSTERS / f"{os_id}.md"
+    hero_path = REPO / "spa/public/posters" / os_id / "desktop.webp"
+    builder_path = REPO / "scripts/build-guests/tiles" / f"{os_id}.sh"
+    station_dir = REPO / "streamhost/stations" / os_id
+    launcher_path = station_dir / "qemu-streamhost.sh"
+    fixture_path = station_dir / "station.env.fixture"
+    sib_dir = REPO / "streamhost/stations" / sib_id
+    like_paths = (
+        registry_path,
+        guest_path,
+        coldboot_path,
+        poster_path,
+        hero_path,
+        builder_path,
+        launcher_path,
+        fixture_path,
+    )
+    for path in like_paths:
+        if path.exists():
+            raise RegistryError(f"refusing to overwrite existing {path.relative_to(REPO)}")
+    for src in (sib_dir / "qemu-streamhost.sh", sib_dir / "station.env.fixture"):
+        if not src.is_file():
+            raise RegistryError(f"sibling {sib_id!r} is missing {src.relative_to(REPO)}")
+
+    values = {
+        "OS_ID": os_id,
+        "TILE_DIR": os_id,
+        "TIER": "1",
+        "SLOT": str(slot),
+        "UDP_PORT": str(udp_port),
+        "ARCHETYPE": row.get("spa", {}).get("archetypeId", ""),
+    }
+    launcher_text = _rewrite_like_text((sib_dir / "qemu-streamhost.sh").read_text(), sib_id, os_id)
+    fixture_text = _rewrite_like_text((sib_dir / "station.env.fixture").read_text(), sib_id, os_id)
+    scaffold_files: OrderedDict[Path, bytes] = OrderedDict(
+        [
+            (registry_path, (json.dumps(row, indent=2, ensure_ascii=False) + "\n").encode()),
+            (builder_path, scaffold_template("new-os-builder-tier1.sh.in", values)),
+            (guest_path, scaffold_template("new-os-guest.md.in", values)),
+            (coldboot_path, scaffold_template("new-os-coldboot-arm.sh.in", values)),
+            (poster_path, scaffold_template("new-os-poster.md.in", values)),
+            (hero_path, placeholder_hero(os_id)),
+            (launcher_path, launcher_text.encode()),
+            (fixture_path, fixture_text.encode()),
+        ]
+    )
+    try:
+        for path, data in scaffold_files.items():
+            atomic_write(path, data)
+        os.chmod(builder_path, 0o755)
+        os.chmod(launcher_path, 0o755)
+        cmd_generate()
+    except Exception:
+        for path in scaffold_files:
+            path.unlink(missing_ok=True)
+        raise
+    print(f"scaffolded {os_id} --like {sib_id}: slot={slot} udp={udp_port} production={production}")
+    for path in scaffold_files:
+        print(f"  {path.relative_to(REPO)}")
+    print("candidate carries TODO-tagged sibling prose; run `stations-registry.py validate` after edits")
+    return 0
 
 
 def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
