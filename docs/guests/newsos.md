@@ -196,7 +196,13 @@ no-HUP), which is all this station ever does — reset = relaunch, no savestate.
   `lifecycle=production` — unwatched MAME pinned a full core around the clock
   until the flip. `SH_IDLE_PAUSE_SECS` gates BOTH the launcher's one-shot
   freeze and the daemon's steady-state pauser, so `0` meant no auto-pause at
-  all even though `SH_IDLE_PAUSE_PIDFILE`/`_PROC_MATCH` were correct.
+  all even though `SH_IDLE_PAUSE_PIDFILE`/`_PROC_MATCH` were correct. The two
+  arms keep SEPARATE clocks, and newsos is the one station where they cross:
+  the daemon's pauser fires `SH_IDLE_PAUSE_SECS` after daemon start regardless
+  of `MAME_NATIVE_STANDBY_DELAY_S`, so on the first restart after the flip it
+  froze the guest at 27 s of emulated time — a boot console. Hence
+  `SH_IDLE_PAUSE_WARMUP_SECS=240`, above the launcher's 200 s, so the launcher
+  freezes the settled login and the daemon inherits an already-paused guest.
 - Hero photo: placeholder is the live LCD frame; a real NWS-3260 photo
   (Commons) is the operator's pick.
 - Sound: driver has none.
