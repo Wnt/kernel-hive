@@ -258,7 +258,7 @@ Notable recipes / gotchas:
 
 | OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
 |---|---|---|---|---|---|---|---|---|
-| PC/GEOS Ensemble (bluewaysw) | https://github.com/bluewaysw/pcgeos/releases/download/CI-latest/pcgeos-ensemble_nc.zip (✓) | officially-free (Apache-2.0) | DOS app folder (zip) | none | 10.9 MB | small | works-known | 5 |
+| PC/GEOS Ensemble (bluewaysw) — station `pcgeos` | https://github.com/bluewaysw/pcgeos/releases/download/CI-latest/pcgeos-ensemble_nc.zip (✓, measured 10932546 bytes) | officially-free (Apache-2.0) | DOS app folder (zip) | none | 10.9 MB | small | works-known | 5 |
 | DR GEM — OpenGEM 7 RC3 | https://archive.org/download/opengem7-rc-3/OPENGEM7-RC3.zip (✓) | officially-free (GPL-2.0) | DOS installer (zip) | none | 2.2 MB | small | works-known | 4 |
 | CP/M-86 1.1 | https://github.com/tsupplis/cpm86-kernel (✓); hubs cpm.z80.de, seasip.info/Cpm | permissive (2022 CP/M) | bootable floppy IMG | none | ~1.44 MB | small | works-known | 4 |
 | CP/M-80 2.2 (Z80/8080) | z80pack https://github.com/udo-munk/z80pack (✓); RunCPM https://github.com/MockbaTheBorg/RunCPM (✓) | officially-free | emulator + .dsk | none | <5 MB | medium | needs-bridge | 5 |
