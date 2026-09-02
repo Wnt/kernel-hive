@@ -64,7 +64,7 @@
   "render": {
     "signalOrder": 74,
     "stationsManifestOrder": 72,
-    "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
+    "stationsManifestPrelude": "\n# debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
     "bringUpGroup": 6,
     "bindingOrder": 79,
     "bindingPrelude": "",
@@ -182,7 +182,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#d70a53",
-    "eraLabel": "2000 \u00b7 Debian GNU/Linux 2.2",
+    "eraLabel": "2000 · Debian GNU/Linux 2.2",
     "pointerRel": true
   },
   "museum": {
@@ -197,17 +197,20 @@
     "eraSoftware": [
       "Linux 2.2.19",
       "XFree86 3.3.6",
-      "GNOME 1.0",
-      "apt 0.3 / dselect"
+      "GNOME 1.0 (gnome-core 1.0.55)",
+      "apt 0.3.19 / dpkg 1.6.15",
+      "Emacs 20.7"
     ],
-    "periodBrowser": "Mozilla M18",
+    "periodBrowser": "Mozilla M18 (main); Netscape 4.7 in non-free",
     "iconicApps": [
       "GNOME panel",
       "gmc file manager",
-      "GNOME Terminal",
-      "Emacs 20"
+      "gnome-terminal",
+      "Emacs 20",
+      "Lynx 2.8.3"
     ],
-    "blurb": "Debian 2.2 \"potato\" (August 2000): the first Debian with a packaged GNOME desktop, apt over 3,900 packages, and the release that made Debian the base other distributions build on."
+    "blurb": "Debian 2.2 \"potato\" (14 August 2000): Linux 2.2, XFree86 3.3.6 and the first packaged GNOME desktop, with apt 0.3 over roughly 3,900 packages on six architectures — the last release installed from boot-floppies.",
+    "notes": "Air-gapped streamhost station: no NIC, no exec channel. PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol) — visitors drag rather than point. Golden restores onto a logged-in GNOME 1.0 desktop with gnome-terminal focused."
   },
   "emulator": {
     "family": "QEMU",
@@ -227,5 +230,15 @@
   },
   "notes": [
     "scaffolded from redstar2 on 2026-09-02; TODO: media, museum, spa"
-  ]
+  ],
+  "demoProgram": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
+  }
 }

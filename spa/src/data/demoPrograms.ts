@@ -71,6 +71,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "debian22": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
+  },
   "dragon32": {
     "label": "Type in a demo program",
     "lines": [

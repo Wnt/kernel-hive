@@ -133,6 +133,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
   },
+  // Debian 2.2 potato (2000): a beige mini-tower and a 17" CRT of the year the
+  // release shipped; the same tower body as the other turn-of-century PCs.
+  debian22: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'paramCrt',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
   redstar3: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseD',
