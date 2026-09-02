@@ -1,7 +1,10 @@
 # Amiga UNIX (AMIX) 2.1 — gallery station notes
 
 Status: **LIVE AND LISTED** — deployed to the box 2026-09-01
-(`main@fa9e78b3`), promoted out of dark launch 2026-09-02. Both things that
+(`main@fa9e78b3`), promoted out of dark launch 2026-09-02. The two ready-scene
+defects found that morning (a nondeterministic scene, and no keyboard focus on
+arrival) are fixed in the `golden-scene-20260902` golden — see "Ready scene /
+golden"; the cutover is the operator's. Both things that
 were open at the first landing are closed: the **pointer is absolute and 1:1**
 (`x11warp` into the guest's own X server — see "The pointer", 0 px residual),
 and the exhibit **ships in colour** (the A2410 driven by `X -tiga` at
@@ -174,7 +177,8 @@ Two goldens exist, one combination each with the same binary and device set:
 | `amix-system.hdf.golden` (2026-08-30) | `X` on the Amiga chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — what the registry ships today |
 | `amix-system.hdf.golden-color-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix-color/golden/` — baked from a copy of the mono golden; colour only, no pointer network |
 | `amix-system.hdf.golden-20260901-x11warp` | `X` on the chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — mono plus the pointer network (hosts, aen0, xhost) |
-| **`amix-system.hdf.golden-unified-20260901`** | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `0da364ed…` — **the one to ship**: the colour golden plus the pointer network, `xhost +slirphost` in both `/etc/kh-xsession` and `/etc/kh-xsession.mono`; halted per the bake rule |
+| `amix-system.hdf.golden-unified-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `0da364ed…` — shipped 2026-09-01: the colour golden plus the pointer network, `xhost +slirphost` in both `/etc/kh-xsession` and `/etc/kh-xsession.mono`; halted per the bake rule |
+| **`amix-system.hdf.golden-scene-20260902`** | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `78fc69e6…` — **the one to ship**: the unified golden with the deterministic `/etc/kh-xsession` (olwm first, xterm frame over the origin); the previous session kept as `/etc/kh-xsession.20260901`; halted per the bake rule |
 
 - Ready state (both): the OPEN LOOK desktop, up **without a login**, holding an
   xterm titled `Amiga UNIX 2.1` that opens with
@@ -183,18 +187,51 @@ Two goldens exist, one combination each with the same binary and device set:
   square Athena ones it has elsewhere in the gallery — and `xclock`.
 - Started from `/etc/inittab` (entry `xw`, run level 2, `respawn`):
   `xinit /etc/kh-xsession -- /usr/bin/X11/X` (mono) or
-  `... -- /usr/bin/X11/X -tiga` (colour). `/etc/kh-xsession` runs the three
-  clients and `exec olwm`; `/etc/kh-shell` prints `uname -a` and `exec /bin/sh`.
-- The colour session additionally does `xrdb -merge /etc/kh-xres`
-  (`*windowFrameColor: gray82`, `*inputWindowHeader: SteelBlue4`,
-  `*pointerFocus: true`) and `xsetroot -solid SteelBlue`; the clients carry
-  their own colours (`xclock -bg LightYellow -hd black -hl red`,
-  `xcalc -bg gray85`, xterm black on white at `+40+120`, 80x24). **`pointerFocus`
-  means focus follows the pointer, and a fresh boot leaves the pointer at
-  `(0,0)` — over the ROOT — so nothing holds keyboard focus until the visitor
-  moves the mouse: see "Open" item 2.** The mono session is kept as
-  `/etc/kh-xsession.mono`, which is what makes monochrome a one-line revert
-  rather than a rebuild.
+  `... -- /usr/bin/X11/X -tiga` (colour). `/etc/kh-shell` prints `uname -a`
+  and `exec /bin/sh`. `scripts/build-guests/tiles/amix.sh scene` prints every
+  scene file byte for byte.
+- **`/etc/kh-xsession` starts olwm FIRST and the clients only once olwm is
+  managing.** It does `xrdb -merge /etc/kh-xres` (`*windowFrameColor: gray82`,
+  `*inputWindowHeader: SteelBlue4`, `*pointerFocus: true`) and
+  `xsetroot -solid SteelBlue`, then `exec olwm` with a background subshell
+  that polls `xprop -root OL_MANAGER_STATE` — the property this olwm
+  publishes on the root once it owns SubstructureRedirect — and only then
+  runs `xclock -bg LightYellow -hd black -hl red -geometry 120x120+860+30`,
+  `xcalc -bg gray85 -geometry +640+60`, the xterm (black on white, **86x30 at
+  `+0+0`**) and `xhost +slirphost`, each client with its stderr in
+  `/tmp/<client>.err` (olwm's in `/tmp/olwm.err`) for the next investigator.
+  A condition, not a sleep; bounded at
+  120 s so a broken olwm still leaves a screen. The two rules baked in here
+  were both paid for on the live station on 2026-09-02:
+  1. **Clients started before olwm race it.** The previous script spawned the
+     three clients and `exec olwm` three seconds later (the guest's own log:
+     clients at :01, olwm at :04). On a 25 MHz emulated 68030 that is exactly
+     the window in which a client maps, so each boot rolled the dice per
+     window: one that mapped before olwm's adoption scan was ADOPTED — client
+     kept at its requested spot, frame header stacked 27–30 px above it —
+     while one that mapped later went through MapRequest and had its FRAME
+     placed at the requested spot. Same script, two placements (xterm frame
+     at row 89 or 119, Calculator at row 29 or 59, seen on separate fresh
+     sessions), and about one boot in five lost `xclock` outright. With olwm
+     managing first, every window takes the MapRequest path, every time.
+  2. **The xterm's frame covers the origin AND the screen centre.** Focus
+     follows the pointer, and where the pointer is on arrival is decided
+     outside the guest: the X server starts it at the centre `(512,384)`, and
+     the daemon's x11warp worker restates its browser-truth target — zero
+     until a visitor moves — on every (re)connect, so on the live station the
+     first thing streamhost does after `xhost` lets it in is warp to `(0,0)`.
+     Over the root, nothing has the keyboard. olwm's pointer focus treats the
+     whole frame as the client (proven: keys typed with the pointer on the
+     header, the resize corner and the bottom edge all landed in the shell;
+     on the root they landed nowhere), so an xterm whose frame includes both
+     points holds the keys whichever way the pointer arrives — and the guest
+     never warps or grabs anything itself, so nothing fights the daemon.
+     Click-to-type was measured and rejected: at arrival the Calculator took
+     the keys, and a click in the xterm's **pane** did not move focus (only a
+     header click does), so a visitor who touched the Calculator once would
+     have lost the shell. The mono session is kept as
+     `/etc/kh-xsession.mono`, which is what makes monochrome a one-line
+     revert rather than a rebuild.
 - **Shipping colour changes three things outside the guest:**
   1. `streamhost/stations/amix/x11-runtime.sh` passes `--gfxcard_type=A2410
      --gfxcard_size=2` and **drops `--stretch=1`** (the board surface is
@@ -380,6 +417,42 @@ Two more things that make a healthy pointer look broken:
   Correct is sprite bbox origin at **`(target_x, target_y + 1)`** — the arrow's
   first opaque row sits one pixel below the tip. That IS the 0 px baseline.
 
+### Acceptance of the scene golden (2026-09-02)
+
+`golden-scene-20260902`, cold-booted from a fresh copy on the shipping binary
+in the `amix-scene` rig (`/data/vms/sandbox/amix-scene/rig/`, `fixboots.log`
+and the `fb*.png` frames): **12 consecutive boots, 12/12 with all three
+clients in the framebuffer** — xclock in its region, Calculator frame at row
+59, xterm frame at row 0 — the desktop condition (steel-blue root at two probe
+points plus the three windows) met 62–81 s after launch, X answering the
+redirect 4–8 s earlier. On every boot `echo typed-fbN` was typed through the
+host Xvfb **without moving the pointer** and landed in the shell (the
+`fb*k.png` frames). Pointer sweep on the same golden: readback exact at all
+ten targets, sprite bbox origin at `(target, target+1)`, 16×15, at
+`(700,600) (300,600) (900,650) (850,450) (5,500) (600,50)`; corner remnants
+at `(1023,0) (0,767) (1023,767)`; `(0,0)` sits on the xterm's frame corner —
+0 px residual, unchanged from the 2026-09-01 sweep.
+
+The honest count behind it: across every boot of the fixed session (two
+harness runs) it is 14 complete scenes in 15. The one loss — `fb3` of the
+first run, before the session wrote stderr files — came up with xclock and
+the Calculator and **no xterm process at all**: the client exited during
+startup, with olwm already managing (so not the placement race). The stderr
+files were added for exactly that case and have been empty in every boot
+since; see the stress note below for the hypothesis tested.
+
+### Two emulators on one Xvfb look like a console with the desktop running
+
+A frame showing the chipset console (`The system is coming up. Please wait.`)
+while the guest's own process list shows X, olwm and all three clients alive
+is not a flapping session — it is a **second emulator** painting its boot
+console over the first one's window on the same display. It happened on the
+`amix-scene` rig on 2026-09-02 when two copies of the acceptance loop were
+started against one rig: both claimed `:83`, the second's `hostfwd` on 6083
+failed silently, and every "desktop" query answered from the first while
+every frame came from the second. Before reading such a frame, list the
+emulators by `/proc/<pid>/exe` and their config path; one rig, one `fs-uae`.
+
 ### Boot behaviour, and the console-VT anomaly
 
 The unified golden, cold-booted **8 times in a row** from a fresh copy on the
@@ -406,9 +479,10 @@ bottom-right corner).
 
 ### Driving this guest by hand (what the bring-up taught)
 
-- **olwm focus is click-to-type on the FRAME.** A click in an xterm's text
-  area does not move keyboard focus; a click on its header does. The ready
-  scene's Calculator holds focus after boot, so typed digits go into it.
+- **Focus follows the pointer** (`*pointerFocus: true`), and olwm counts the
+  frame as the window. Under click-to-type (the mono era) a click in an
+  xterm's text area did not move keyboard focus; only a click on its header
+  did — which is why the colour session does not use it.
 - **Relative XTEST motion clamps at the host edge**, and the guest never sees
   the clamped part. To put the guest pointer somewhere known without the warp
   channel: warp the *host* pointer into a corner (the guest pointer clamps
@@ -418,29 +492,14 @@ bottom-right corner).
 
 ## Open
 
-1. **The ready scene is NONDETERMINISTIC — roughly 1 cold boot in 5 comes up
-   without `xclock`.** Observed 2026-09-02 on the live station: the settled
-   desktop carried only the xterm and the Calculator, and the Calculator sat
-   ~29 px higher than normal, which is what olwm placement looks like when one
-   client never maps. A single controlled cold restart brought the clock back
-   and returned the Calculator to its documented position, which is the control
-   that separates this from anything in the daemon or the emulator: **it is a
-   guest-side startup race in `/etc/kh-xsession`, and a restart does not fix
-   it — only a re-baked golden will.** This matters because `resetMode=relaunch`
-   IS the visitor's reset button, so a visitor can land on a scene that is
-   missing a client `reset.fixture` promises. Rate is from 5 observed boots;
-   treat "1 in 5" as an order of magnitude, not a measurement.
-2. **The pointer starts at (0,0), over the root — so NOTHING has keyboard focus
-   on arrival.** The session sets `*pointerFocus: true` (focus follows the
-   pointer), and a fresh boot leaves the pointer in the top-left corner rather
-   than at screen centre. A visitor who types before moving the mouse gets
-   nothing, on an exhibit whose main object is a Unix shell. Verified 2026-09-02
-   by `xwarp.py 6072 query` on two separate cold boots, both returning `0 0`.
-   (An earlier revision of this document claimed the xterm is placed at `+40+120`
-   "so the pointer's initial position — screen centre — is inside it and it has
-   keyboard focus from the first frame". That claim was wrong and has been
-   removed; the placement is right, the premise about where the pointer starts
-   was not.)
+1. **The daemon restates `(0,0)` on connect.** `x11_warp.rs` seeds its
+   browser-truth target at zero and warps there the moment it reaches the
+   guest X server, on every reconnect. The scene absorbs it (the xterm's frame
+   covers the origin), but it is the daemon deciding where a visitor's pointer
+   starts; a centre default would match what the X server itself does.
+2. **Instrumented boots of the OLD session are in
+   `/data/vms/sandbox/amix-scene/rig/diagboots.log`** (per-client exit status
+   and stderr, frame classification per boot) for anyone re-deriving the race.
 3. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
    2.1c/2.1p2a; this install is stock 2.1 (`0800430`).
 4. **Retronet.** The A2065 is up on slirp for the pointer only (host-only,

@@ -63,6 +63,7 @@ usage: amix.sh <stage>
   assemble  unpack floppies, build the tape dir + index.tape, write both configs
   install   launch fs-uae on the install config (interactive; see --answers)
   answers   print the AMIX install script's answer sequence
+  scene     print the ready-scene files (kh-shell, kh-xres, kh-xsession, inittab)
   bake      copy the (cleanly halted) work disk to $OUT as the golden master
 USAGE
 }
@@ -202,15 +203,68 @@ First boot (system configuration):
   configure Netnews? [n]                    -> RETURN
   change any of these? [n]                  -> RETURN
 
-Ready scene (as root, once at the amix login: prompt):
-  write /etc/kh-shell   : #!/bin/sh ; uname -a ; echo ; exec /bin/sh
-  write /etc/kh-xsession: xclock/xcalc/xterm -e /etc/kh-shell, then exec olwm
-  append to /etc/inittab (add "-tiga" after X for the colour golden; then
-  /etc/kh-xsession also does xrdb -merge /etc/kh-xres + xsetroot, see the doc):
-    xw:2:respawn:/usr/bin/X11/xinit /etc/kh-xsession -- /usr/bin/X11/X >/dev/null 2>&1
-  then: /sbin/shutdown -y -g0 -i0     (ABSOLUTE path -- /usr/ucb/shutdown is
-                                       a different command and rejects these flags)
+Ready scene (as root, once at the amix login: prompt): the four files that
+  `amix.sh scene` prints, verbatim -- /etc/kh-shell, /etc/kh-xres,
+  /etc/kh-xsession and the inittab line. Then:
+    /sbin/shutdown -y -g0 -i0     (ABSOLUTE path -- /usr/ucb/shutdown is
+                                   a different command and rejects these flags)
 ANSWERS
+}
+
+# The ready scene, byte for byte. Two rules are baked into kh-xsession and both
+# were paid for on the live station (docs/guests/amix.md "Ready scene"):
+#   1. olwm FIRST, clients only after OL_MANAGER_STATE is on the root. Started
+#      the other way round the clients raced the window manager on the 25 MHz
+#      emulated 68030: a window that mapped before olwm's adoption scan came up
+#      27 px above its requested position, and ~1 cold boot in 5 lost xclock.
+#   2. The xterm's frame covers the origin AND the screen centre. Focus follows
+#      the pointer, streamhost restates its (0,0) target the moment it connects
+#      to the guest X server, and the server itself starts the pointer at the
+#      centre -- so wherever the pointer is on arrival, the shell has the keys.
+stage_scene() {
+  cat <<'SCENE'
+--- /etc/kh-shell (chmod 755)
+#!/bin/sh
+uname -a
+echo
+exec /bin/sh
+--- /etc/kh-xres
+*windowFrameColor: gray82
+*inputWindowHeader: SteelBlue4
+*pointerFocus: true
+--- /etc/kh-xsession (chmod 755; /etc/kh-xsession.mono is the same without
+--- xrdb/xsetroot and with the chipset geometry, see docs/guests/amix.md)
+#!/bin/sh
+# /etc/kh-xsession -- the Kernel Hive ready scene (colour, A2410), run by xinit
+# from the inittab entry xw. ORDER IS THE POINT: olwm must own the root's
+# SubstructureRedirect before any client maps. When the clients were started
+# first they raced olwm (2026-09-02): a window that mapped before olwm was up
+# was ADOPTED (frame stacked 27 px above the requested position) instead of
+# placed through MapRequest, and about one cold boot in five lost xclock.
+PATH=/usr/bin:/usr/bin/X11:/usr/ucb:/etc:/usr/sbin; export PATH; HOME=/; export HOME
+xrdb -merge /etc/kh-xres
+xsetroot -solid SteelBlue
+(
+  # olwm publishes OL_MANAGER_STATE on the root once it is managing: wait for
+  # that condition, not for a fixed time (bounded so a broken olwm still
+  # leaves a usable screen)
+  n=0
+  until xprop -root OL_MANAGER_STATE 2>/dev/null | grep 0x >/dev/null; do
+    n=`expr $n + 1`; [ $n -gt 120 ] && break; sleep 1
+  done
+  xclock -bg LightYellow -fg black -hd black -hl red -geometry 120x120+860+30 2>/tmp/xclock.err &
+  xcalc -bg gray85 -geometry +640+60 2>/tmp/xcalc.err &
+  # focus follows the pointer (*pointerFocus). The xterm's frame covers BOTH
+  # the origin (streamhost restates its (0,0) target on connect) and the
+  # screen centre (where the X server starts the pointer), so the shell
+  # holds the keyboard from the first frame with no warp of our own.
+  xterm -bg white -fg black -geometry 86x30+0+0 -T "Amiga UNIX 2.1" -e /etc/kh-shell 2>/tmp/xterm.err &
+  /usr/bin/X11/xhost +slirphost >/tmp/xhost.log 2>&1
+) &
+exec olwm 2>/tmp/olwm.err
+--- append to /etc/inittab (drop -tiga for the mono golden)
+xw:2:respawn:/usr/bin/X11/xinit /etc/kh-xsession -- /usr/bin/X11/X -tiga >/dev/null 2>&1
+SCENE
 }
 
 stage_bake() {
@@ -229,6 +283,7 @@ case "${1:-}" in
   assemble) stage_assemble ;;
   install) stage_install ;;
   answers) stage_answers ;;
+  scene) stage_scene ;;
   bake) stage_bake ;;
   *)
     usage
