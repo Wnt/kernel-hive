@@ -101,7 +101,7 @@ Row: `registry/stations/newsos.json` (dragon32's host-native shape:
 Fixture: `streamhost/stations/newsos/station.env.fixture`
 (`MAME_NATIVE_ARGS=-hard1 …/newsos-disk.img -cfg_directory …/cfg -serial0 pty`,
 `MAME_NATIVE_SKIP_WARNINGS=1`, `MAME_CTL_PTR_PORTS=:hid`,
-`SH_IDLE_PAUSE_SECS=0`). The `-serial0 pty` line carries the exec channel
+`SH_IDLE_PAUSE_SECS=60`). The `-serial0 pty` line carries the exec channel
 (below). The disk is a **writable raw image** (not a CHD +
 diff — a mid-boot relaunch left the CHD diff dirty and corrupted the next
 boot, 2026-08-18): it persists across relaunches like a real workstation's
@@ -188,11 +188,15 @@ no-HUP), which is all this station ever does — reset = relaunch, no savestate.
   axis path (`mame-ctlsock-ptr-tags.patch`, irix's shape) is the next step
   once X is up; until then the exhibit is keyboard-only.
 - Golden: none possible (no save state); "checkpoint" = the installed disk
-  + Automatic Boot DIP + `/fastboot`. Standby (`SH_IDLE_PAUSE_SECS`) is OFF
-  during dark launch: the launcher's SIGSTOP is unconditional after
-  `MAME_NATIVE_STANDBY_DELAY_S`, so a delay shorter than the ~90-120 s boot
-  freezes a half-painted console. Enable it only when listed, with a delay
-  >= 200 s so the freeze lands on the login.
+  + Automatic Boot DIP + `/fastboot`. Standby (`SH_IDLE_PAUSE_SECS=60`) is ON
+  since 2026-09-02, with `MAME_NATIVE_STANDBY_DELAY_S=200`: the launcher's
+  SIGSTOP is unconditional after that delay, so it must stay comfortably past
+  the ~90-120 s boot or it freezes a half-painted console. It was held OFF for
+  the dark launch and was not turned back on when the station went
+  `lifecycle=production` — unwatched MAME pinned a full core around the clock
+  until the flip. `SH_IDLE_PAUSE_SECS` gates BOTH the launcher's one-shot
+  freeze and the daemon's steady-state pauser, so `0` meant no auto-pause at
+  all even though `SH_IDLE_PAUSE_PIDFILE`/`_PROC_MATCH` were correct.
 - Hero photo: placeholder is the live LCD frame; a real NWS-3260 photo
   (Commons) is the operator's pick.
 - Sound: driver has none.
