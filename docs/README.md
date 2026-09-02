@@ -27,7 +27,7 @@ coverage. Read §8 before adding a probe — it lists the double-count traps.
 
 | Doc | What it is |
 |---|---|
-| [lab/ADD-NEW-OS-FASTPATH.md](lab/ADD-NEW-OS-FASTPATH.md) | **Add a new OS station in 10 minutes** — the timed spine / parallel-streams / ship plan, what to skip by default (pacing bisect, audio ceremony, separate gate run, TODO guest docs), the bootos retro that justifies it (45 min → 10), and the 3-line push recipe. Read this instead of the playbook when the operator says "fast". |
+| [lab/ADD-NEW-OS-PLAYBOOK.md](lab/ADD-NEW-OS-PLAYBOOK.md) | **Add a new OS to the gallery**, end to end. §0 is the timed 10-minute procedure — spine / parallel-streams / ship plan, what to skip by default (pacing bisect, audio ceremony, separate gate run, TODO guest docs), the bootos retro that justifies it (45 min → 10), and the 3-line push recipe; §§1–8 are the reference for the *why* and the harder tiers. |
 | [lab/OPERATING-RULES.md](lab/OPERATING-RULES.md) | **The long form of the root `AGENTS.md` rules.** `AGENTS.md` is loaded into every agent's context so it states each rule in one line; this file carries the reasoning, the exceptions and the incident that bought each one. Read it before your first write to the box. |
 | [lab/MIGRATION-MAC-RUNBOOK.md](lab/MIGRATION-MAC-RUNBOOK.md) | Historical: the Mac-session bootstrap runbook that drove the completed (2026-07-15) NVMe migration — dev-seat handoff, preconditions to sync while CT950 is alive, first actions. |
 | [lab/MASTER-REPRODUCE.md](lab/MASTER-REPRODUCE.md) | Single ordered runbook to rebuild the whole lab (host + all guests + gallery) on the NVMe labhost from source. |
