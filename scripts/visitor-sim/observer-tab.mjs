@@ -81,7 +81,7 @@ async function main() {
   const startedAt = new Date().toISOString();
   let opened = { ok: false, why: 'not attempted' };
   try {
-    await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(`${galleryUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await suppressBootVideo(page, station);
     opened = await openStation(page, station, { waitMs: 30000 });
     log('observer', `open ${station}: ok=${opened.ok} ${opened.why}`);
