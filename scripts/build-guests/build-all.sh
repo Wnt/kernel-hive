@@ -145,18 +145,12 @@ MANIFEST=(
 #   0.6.1 disk installer completes but the installed system stalls at
 #   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --
 #   the project deleted every FreeBSD-era release from GitHub and SourceForge.
-<<<<<<< HEAD
-  "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
-  "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
-  "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m     |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
-  "slackware      |tiles/slackware.sh                                    |Slackware         |fast      |~3-5m   |full     |slackware.qcow2 (Slackware 3.4 root composed host-side from the mirror .tgz set, rev-0 ext2, no golden) + grub-boot.iso (GRUB2 linux16 -> kernels/bare.i zImage) -> /data/gallery-guests/Slackware/"
-=======
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m                      |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m                          |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m                          |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
   "pcbsd          |tiles/pcbsd.sh                                        |PCBSD             |slow      |~15m (GUI install, assisted) |assisted |pcbsd.iso (PC-BSD 1.5.1 CD1, pinned) + pcbsd.qcow2 (installed KDE desktop)"
+  "slackware      |tiles/slackware.sh                                    |Slackware         |fast      |~3-5m                        |full     |slackware.qcow2 (Slackware 3.4 root composed host-side from the mirror .tgz set, rev-0 ext2, no golden) + grub-boot.iso (GRUB2 linux16 -> kernels/bare.i zImage) -> /data/gallery-guests/Slackware/"
   "ubuntu         |tiles/ubuntu.sh                                       |Ubuntu            |retro     |~5m                          |scripted |warty-release-live-i386.iso + ubuntu.qcow2 (empty 1G vmstate carrier; live CD, no install)|media"
->>>>>>> origin/main
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

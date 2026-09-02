@@ -193,7 +193,7 @@
         "reason": "tracked verbatim launcher equals live"
       }
     },
-    "bringUpOrder": 79
+    "bringUpOrder": 81
   },
   "spa": {
     "archetypeId": "putty-lcd",
