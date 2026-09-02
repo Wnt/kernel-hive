@@ -69,6 +69,9 @@ const POSTER_INDEX = {
   "daybreak": {
     "hero": "/posters/daybreak/desktop.webp"
   },
+  "debian22": {
+    "hero": "/posters/debian22/desktop.webp"
+  },
   "decos": {
     "hero": "/posters/decos/desktop.webp"
   },

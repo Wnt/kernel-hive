@@ -398,6 +398,24 @@
       "udp_port": 54139,
       "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
     },
+    "debian22": {
+      "dir": "/data/vms/streamhost/stations/redstar2",
+      "qmp": "/data/vms/streamhost/stations/debian22/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54182,
+      "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only; PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol)"
+    },
     "decos": {
       "dir": "/data/vms/streamhost/stations/decos",
       "qmp": "/data/vms/streamhost/stations/decos/qmp.sock",

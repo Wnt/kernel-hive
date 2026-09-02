@@ -148,6 +148,7 @@ MANIFEST=(
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m     |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
+  "debian22       |tiles/debian22.sh                                     |Debian22          |heavy     |~30-60m |vision   |debian22.qcow2 (potato install + XFree86 3.3.6 + GNOME 1.0, no golden) + debian-2.2-i386-cd1.iso"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
