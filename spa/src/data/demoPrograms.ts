@@ -115,6 +115,17 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 160
   },
+  "pcbsd": {
+    "label": "Ask the FreeBSD 6.3 kernel who it is, in Konsole",
+    "lines": [
+      "# PC-BSD 1.5.1 \"Edison\" - FreeBSD 6.3 with KDE 3.5.8 on top",
+      "uname -a",
+      "sysctl hw.model hw.physmem",
+      "ls /Programs"
+    ],
+    "runCommand": "cat /etc/pcbsd-release",
+    "perCharMs": 60
+  },
   "pet2001": {
     "label": "Type in a demo program",
     "lines": [
@@ -147,6 +158,15 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "RUN",
     "perCharMs": 400
+  },
+  "slackware": {
+    "label": "Ask the kernel who it is",
+    "lines": [
+      "uname -a",
+      "cat /proc/version"
+    ],
+    "runCommand": "uname -a",
+    "perCharMs": 80
   },
   "vic20": {
     "label": "Type in a demo program",

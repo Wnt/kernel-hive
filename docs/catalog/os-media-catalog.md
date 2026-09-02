@@ -240,6 +240,7 @@ opened / gated / re-verify.
 | Syllable Desktop (AtheOS) | https://archive.org/details/SyllableDesktop0.6.6LiveCD.i586 (✓) | officially-free (GPL) | Live CD ISO | none | ~65–97 MB | small | works-known | 4 |
 | bootOS (Óscar Toledo G., 2019 — an OS in one 512-byte boot sector) | https://github.com/nanochess/bootOS — `os.img` + `osall.img` fetched from raw.githubusercontent.com at commit `329b75e60d04e89616bc1844578098df43d4f432` (✓, fetched + hashed: os.img `35e1231c…`, osall.img `20927188…`) | officially-free (BSD-2-Clause) for bootOS and Toledo's programs; `osall.img` also bundles five third-party boot-sector programs (bootSlide, tetranglix, snake, bootMine, sokoban) under their own licences — staged locally, never committed | 360K raw floppy → qcow2 (`bootos.sh`) | none (SeaBIOS) | 512 B + 368 640 B | trivial | works-known (station `bootos`: KVM, `pc-i440fx-11.0`, 64 MB, `-vga std`, BIOS 80x25 text, keyboard-only) | 5 |
 | ravynOS 0.6.1 “Hyperpop Hyena” (amd64) | http://ftp.nvg.ntnu.no/pub/mirrors2/mirrors.nomadlogic.org/www/releases/0.6.1/ravynOS_0.6.1_amd64.iso (✓, fetched + hashed); mirrors https://mirrors.nomadlogic.org/ravynOS/releases/0.6.1/ and https://mirror.clarkson.edu/ravynos/releases/0.6.1/ (both ✓). **The GitHub release and the SourceForge mirror are both 404 — deleted upstream, not moved** | officially-free (BSD; ISO tooling BSD-3-Clause) | live ISO (UEFI-only) | none | 762 972 160 B (728 MiB) | small | works-known (station `ravynos`) | 5 |
+| PC-BSD 1.5.1 "Edison" (FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, Apr 2008) | https://archive.org/download/pcbsd-1.5.1-x-86-cd-1/PCBSD1.5.1-x86-CD1.iso (✓, fetched + hashed, sha256 `69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3`) | officially-free (BSD base; KDE components GPL) | ISO (CD1 only needed) | none | 688 930 816 B (657 MiB) | medium (graphical Qt installer, no unattended path) | works-known, assisted install (station `pcbsd`) | 4 |
 
 **bridgeNeeded:** only **Inferno**, and it is the lightest kind — build/run the
 hosted `emu` binary full-screen inside a normal captured x86 Linux tile
@@ -259,6 +260,7 @@ Notable recipes / gotchas:
 | OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
 |---|---|---|---|---|---|---|---|---|
 | PC/GEOS Ensemble (bluewaysw) — station `pcgeos` | https://github.com/bluewaysw/pcgeos/releases/download/CI-latest/pcgeos-ensemble_nc.zip (✓, measured 10932546 bytes) | officially-free (Apache-2.0) | DOS app folder (zip) | none | 10.9 MB | small | works-known | 5 |
+| Slackware Linux 3.4 (1997, kernel 2.0.30) — station `slackware` | https://mirrors.slackware.com/slackware/slackware-3.4/ (✓, 128 files, 54 251 183 bytes of .tgz + kernel/bootdsk/rootdsk) | officially-free (GPL/BSD-ish, per-package) | mirror .tgz set, composed host-side | none | ~55 MB | small | works-known | 4 — boot-loader trap: 1997 LILO wedges at `LI` under SeaBIOS, and QEMU `-kernel` hangs this zImage, so boot is GRUB2 `linux16` from a `grub-mkrescue` ISO around the pinned zImage; X trap: XFree86 3.3.1 on QEMU's cirrus (CL-GD5446) needs `Option "no_bitblt"` or the fvwm95 desktop never paints |
 | DR GEM — OpenGEM 7 RC3 | https://archive.org/download/opengem7-rc-3/OPENGEM7-RC3.zip (✓) | officially-free (GPL-2.0) | DOS installer (zip) | none | 2.2 MB | small | works-known | 4 |
 | CP/M-86 1.1 | https://github.com/tsupplis/cpm86-kernel (✓); hubs cpm.z80.de, seasip.info/Cpm | permissive (2022 CP/M) | bootable floppy IMG | none | ~1.44 MB | small | works-known | 4 |
 | CP/M-80 2.2 (Z80/8080) | z80pack https://github.com/udo-munk/z80pack (✓); RunCPM https://github.com/MockbaTheBorg/RunCPM (✓) | officially-free | emulator + .dsk | none | <5 MB | medium | needs-bridge | 5 |
@@ -582,3 +584,9 @@ content is folded in and verified here.
 Research produced 2026-07-08 by 10 parallel OS-family research agents +
 synthesis; see `streamhost/docs/BRIDGE.md` and `docs/guests/c64.md` for the
 proven bridge implementation.*
+
+## 12. Linux distributions — native QEMU-x86
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| Ubuntu 4.10 "Warty Warthog" (first Ubuntu, Oct 2004, GNOME 2.8) | http://old-releases.ubuntu.com/releases/4.10/warty-release-live-i386.iso (✓, sha256 `189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013`, 674 152 448 bytes) | GPL/various (open-source) | live CD ISO, no install | none | 643 MB | small | **works-known** | 5 |

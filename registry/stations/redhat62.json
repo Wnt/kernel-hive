@@ -6,7 +6,7 @@
   "build": {
     "rows": [
       {
-        "order": 72,
+        "order": 73,
         "prelude": "",
         "value": {
           "key": "redhat62",
@@ -62,14 +62,14 @@
     }
   },
   "render": {
-    "signalOrder": 74,
-    "stationsManifestOrder": 72,
+    "signalOrder": 75,
+    "stationsManifestOrder": 73,
     "stationsManifestPrelude": "\n# redhat62 (VMID 181) — Red Hat Linux 6.2 'Zoot' (2000), GNOME 1.0 + Enlightenment; x11warp pointer.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 79,
+    "bindingOrder": 82,
     "bindingPrelude": "",
-    "goldenOrder": 72,
-    "actionMapOrder": 44
+    "goldenOrder": 73,
+    "actionMapOrder": 45
   },
   "stationDir": "redhat62",
   "lifecycle": "production",
@@ -186,7 +186,7 @@
         "reason": "tracked verbatim launcher is the production device ledger; the kickstart install and the golden were baked on this exact set (cirrus, IDE hda, ne2k_pci on SLIRP). The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate."
       }
     },
-    "bringUpOrder": 79
+    "bringUpOrder": 82
   },
   "spa": {
     "archetypeId": "beige-tower-crt",

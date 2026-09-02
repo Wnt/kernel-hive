@@ -250,6 +250,7 @@ missing feature.
 | `openvms` | 4 two-QEMU | kvm x2 | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `oricatmos` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `os2warp` | 1 direct-QEMU | tcg | `warpd-agent` | warpd | — | on | 30 | — |
+| `pcbsd` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |
 | `pcgeos` | 1 direct-QEMU | kvm | `qemu-guestram-abswrite` | abs | ramabs | on | 30 | — |
 | `pdp11` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
 | `pet2001` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
@@ -266,6 +267,7 @@ missing feature.
 | `sailfishos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | off | 30 | — |
 | `serenityos` | 1 direct-QEMU | kvm | `qemu-vmmouse` | abs | — | on | 60 | — |
 | `sinclairql` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
+| `slackware` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | dbus-rel | on | 30 | — |
 | `solaris` | 1 direct-QEMU | kvm | `gallery-hid` | abs | — | on | 60 | warpd_e |
 | `star` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | off | 30 | ssh |
 | `sunos414` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | on | 30 | telnet_unix_e |
@@ -273,6 +275,7 @@ missing feature.
 | `tinycore` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `toaruos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `tru64` | 3 host-native | es40/host | `mame-ioport` | abs | — | off | 30 | serialcon_e |
+| `ubuntu` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `vic20` | 3 host-native | VICE/host | `none` | none | — | on | 60 | — |
 | `w2kalpha` | 3 host-native | es40/host | `mame-ioport` | abs | — | off | 30 | telnet_e |
 | `win11` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |

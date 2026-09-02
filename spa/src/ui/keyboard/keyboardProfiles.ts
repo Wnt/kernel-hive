@@ -273,6 +273,7 @@ export const OS_FAMILY: Record<string, Family> = {
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
+  ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
@@ -311,6 +312,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
   // Unix rows are the honest common ground, at the fleet's pacing floor.
   redhat62: 'generic',
+  // PC-BSD 1.5.1 is KDE 3.5 on X.org: a standard PC-104 board, Alt+F1 for the
+  // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
+  // 'generic' is the honest PC-104 common ground.
+  pcbsd: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
@@ -319,6 +324,9 @@ export const OS_FAMILY: Record<string, Family> = {
   irix: 'generic',
   indyr4400: 'generic',
   ninefront: 'plan9',
+  // Slackware 3.4: fvwm95 over XFree86 with xterm/bash — a PC keyboard driving
+  // a Unix shell, so the generic Unix rows apply.
+  slackware: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',

@@ -141,6 +141,9 @@ const POSTER_INDEX = {
   "os2warp": {
     "hero": "/posters/os2warp/desktop.webp"
   },
+  "pcbsd": {
+    "hero": "/posters/pcbsd/desktop.webp"
+  },
   "pcgeos": {
     "hero": "/posters/pcgeos/desktop.webp"
   },
@@ -189,6 +192,9 @@ const POSTER_INDEX = {
   "sinclairql": {
     "hero": "/posters/sinclairql/desktop.webp"
   },
+  "slackware": {
+    "hero": "/posters/slackware/desktop.webp"
+  },
   "solaris": {
     "hero": "/posters/solaris/desktop.webp"
   },
@@ -209,6 +215,9 @@ const POSTER_INDEX = {
   },
   "tru64": {
     "hero": "/posters/tru64/desktop.webp"
+  },
+  "ubuntu": {
+    "hero": "/posters/ubuntu/desktop.webp"
   },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
