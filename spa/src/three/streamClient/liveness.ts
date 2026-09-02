@@ -30,8 +30,11 @@
 //  still tears down immediately through `transportDown` (transport.ts).
 // ============================================================================
 
-/** Consecutive unanswered liveness pings before the link is even suspect. */
-export const PING_STRIKES = 3;
+/** Consecutive unanswered liveness pings before the link is even suspect.
+ *  Four rather than three at the daemon owner's request (2026-09-02): with the
+ *  echo moved off the input path, a single missed echo next to fresh AUs is
+ *  overwhelmingly a starved reader, and the strike count should say so. */
+export const PING_STRIKES = 4;
 
 /**
  * How long the server must be COMPLETELY silent — no uni-stream, no datagram —

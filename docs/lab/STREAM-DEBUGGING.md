@@ -361,6 +361,32 @@ interleaved with "Reconnecting to tile… (attempt N)"). The EWMAs are now seede
 only once an RTT sample **and** a frame have both landed (`scoring.ts`
 `scorerReady`), and the banner stays quiet until then.
 
+### "Spotty connection" over a fully painted, IDLE desktop
+`T1 fps0 rx0.0M loss0.0/w0.0n12 rtt7.8 dr10 tier0ch spotty` (nt4). Loss is zero
+and RTT is 8 ms on the same line, so the accusation cannot be about the network.
+It was the bandwidth term: `bwRaw` is derived from `decodeQueueSize` and the
+paint-freeze detector, and an idle guest emits no AUs at all, so a queue snapshot
+left over from the connect burst kept scoring pressure against a decoder nobody
+was asking anything of. `rawScores` now takes `received` and scores an idle
+interval a clean 100.
+
+### "Spotty connection" on a tab full of tiles
+`dec1209.0/q16`, `dec1158.1/q18`, `dec1059.4/q14` on the first T-lines of a
+six-tile run on one Intel Mac — about a second of decode latency with 14-18 AUs
+queued. `bwRaw = 100 - (q-1)*25` floors at 0, and the old
+`overall = min(lat, loss, bw)` turned that into "Spotty connection" inside 2 s
+with `loss0.0` and `rtt8` beside it. That is **device** load, and the
+`useDevicePressure` relabel could not catch it: `PressureObserver` is
+Chrome-desktop-only, so `deviceUnderLoad` stays false on most machines that
+actually struggle.
+
+`overallRaw` is now `min(latRaw, lossRaw)` — the banner's score is the NETWORK's
+score, and nothing about the local decoder can make the client blame the link.
+The device story is still told: `abr.ts` dwells on `sBandwidth` separately (same
+60/75 thresholds, same 2 s hysteresis) and raises a distinct banner state,
+`'device-load'`, which `bannerCopy.ts` renders as **"Device under load"**. A bad
+network still outranks it.
+
 ### The first attempt after a restore is always abandoned
 `Reconnecting to restored tile…`, then the ladder walks 250/500/1000/2000 ms and
 the flow is still in `stream.recover` ~17 s after the click. The first

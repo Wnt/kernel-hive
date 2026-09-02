@@ -150,6 +150,7 @@ export function tickStatsImpl(this: StreamClient): void {
     freeze: freezeThisInterval,
     missed: missedThisInterval,
     decodeQueue,
+    received: receivedThisInterval,
   });
 
   if (!canScore) {
@@ -309,7 +310,14 @@ export function tickStatsImpl(this: StreamClient): void {
   // ---- fire the feedback datagram + a fresh RTT ping ----
   this.sendStats(decodeQueue, missedThisInterval);
   this.freezeInInterval = false;
-  void this.pingRtt(600).catch(() => { /* noop */ });
+  // LONGER DEADLINE WHILE THE TILE IS DEMONSTRABLY ALIVE. A missing echo next to
+  // AUs that arrived milliseconds ago is a starved main thread (or a daemon
+  // paused for a loadvm), not a dead link, and the 600 ms race against a
+  // setTimeout on that same starved loop is exactly what manufactured the
+  // 2026-09-02 ping-timeouts. Pings are serialised (transport.ts), so a longer
+  // deadline costs cadence only while something is actually wrong.
+  const serverRecent = (this.msSinceServerData(now) ?? Infinity) < 1000;
+  void this.pingRtt(serverRecent ? 1500 : 600).catch(() => { /* noop */ });
 }
 
 export function updateBannerImpl(this: StreamClient, now: number) {
@@ -329,7 +337,7 @@ export function updateBannerImpl(this: StreamClient, now: number) {
     // real transport close already set 'transport-down'/'server-finished' — don't
     // clobber that more-specific reason.
     if (live === 'lost' && !this.transportDown) this.exitReason = 'ping-timeout';
-    this.belowSince = 0; this.aboveSince = 0;
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
     return;
   }
   // Explicit local-decoder failure (≥3 consecutive configure/decode failures,
@@ -338,7 +346,7 @@ export function updateBannerImpl(this: StreamClient, now: number) {
   // frame (the output callback resets the latch).
   if (this.decoderFailed) {
     this.banner = 'decoder-failed';
-    this.belowSince = 0; this.aboveSince = 0;
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
     return;
   }
   // Coming out of reconnecting/decoder-failed: fall back to good until the
@@ -349,19 +357,30 @@ export function updateBannerImpl(this: StreamClient, now: number) {
   // instead of tearing a working transport down.
   if (live === 'suspect') {
     this.banner = 'spotty';
-    this.belowSince = 0; this.aboveSince = 0;
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
     return;
   }
   // A session that has never had an RTT sample AND a frame cannot be judged.
   // The connect ladder owns the UI until then ('Connecting to tile…').
-  if (!this.scoreInit) { this.belowSince = 0; this.aboveSince = 0; return; }
+  if (!this.scoreInit) { this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0; return; }
   const o = this.sOverall;
   if (o < 60) { this.belowSince = this.belowSince || now; this.aboveSince = 0; }
   else if (o > 75) { this.aboveSince = this.aboveSince || now; this.belowSince = 0; }
-  else { this.belowSince = 0; this.aboveSince = 0; }
+  else { this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0; }
   // Let the 2s dwell be the hysteresis (never threshold a raw sample).
-  if (this.belowSince && now - this.belowSince >= 2000) this.banner = 'spotty';
-  else if (this.aboveSince && now - this.aboveSince >= 2000) this.banner = 'good';
+  if (this.belowSince && now - this.belowSince >= 2000) { this.banner = 'spotty'; return; }
+  // THE NETWORK IS FINE. Is this DEVICE? `sBandwidth` is the decode-queue /
+  // paint-freeze score (scoring.ts), which is about the machine in front of the
+  // visitor, so it gets its own dwell and its own word — never "Spotty
+  // connection". Same 60/75 thresholds and 2 s dwell as the network banner.
+  if (this.sBandwidth < 60) { this.deviceBelowSince = this.deviceBelowSince || now; }
+  else if (this.sBandwidth > 75) { this.deviceBelowSince = 0; }
+  if (this.deviceBelowSince && now - this.deviceBelowSince >= 2000) {
+    this.banner = 'device-load';
+    return;
+  }
+  if (this.aboveSince && now - this.aboveSince >= 2000) this.banner = 'good';
+  else if (this.banner === 'spotty' || this.banner === 'device-load') this.banner = 'good';
 }
 
 /** Emit the fixed 29-byte T_STATS feedback datagram (Section 3.1). */
