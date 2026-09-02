@@ -461,3 +461,59 @@ outside the tracing allowlist (`gallery-manifest.json`, `boot/index.json`) has
 **no** `bt`, correctly — there is no server span to point at; and an anonymous
 run captures the *login page's* beacons, because the gallery answers 401 to an
 unauthenticated `/`. Always pass a session.
+
+## `--shots-dir` — the banner watch, and why the log plane needed one
+
+The operator sees **"Spotty connection"** and **"Reconnecting to tile… (attempt
+N)"** in the sim's own headed windows, on a 4 ms LAN. The log plane could not
+confirm it: `spa/src/three/streamClient/telemetry.ts` emits the stream line once
+per 5 s, so a 2–5 s spotty dwell can start and end between two consecutive
+T-lines and leave `good` on both. Every banner in this class is styled with
+*inline* styles (`spa/src/ui/grid/StreamView/styles.ts`) and carries no class,
+id or `data-testid` — the words are the stable hook, and they are pure
+derivations (`bannerCopy.ts`, `exitReason.ts`, `useStreamhostSession.ts`).
+
+`lib/bannerWatch.mjs` therefore injects a 4 Hz sampler into each tab which
+walks text nodes for those exact strings, queues every **transition** with the
+page's own timestamp, and lets the node side drain the queue, log it and
+photograph it. The one string that is both a banner and a chip — "Device under
+load" — is disambiguated by geometry, not by words: the banner is centred, the
+chip stack is pinned top-right.
+
+| flag | effect |
+|---|---|
+| `--banner-watch` | watch and log transitions; no files written |
+| `--shots-dir <d>` | the above, plus `page.screenshot()` at every transition **and** every 5 s, into `<d>/<visitor>-<station>-<elapsed ms>-<state>.png` |
+
+Neither is on by default: the sampler is extra work inside a tab whose whole
+purpose is to look like a visitor's. Absent both flags the tool behaves exactly
+as it did before. The full timeline is also written into the run manifest as
+`bannerTimeline` (transitions and the 5 s stills, sorted across all visitors),
+which is what you cross-reference against `logs.db`.
+
+Each log line reads:
+
+```
+[19:17:04] [v2] banner win95 +43.2s: "Spotty connection"
+[19:17:09] [v2] banner win95 +48.1s: "(none)"
+```
+
+### `observer-tab.mjs` — the second viewer
+
+The sharpest finding in this class is about a **second** viewer: while a sim
+visitor typed on win95, the operator's already-open tab on the same station
+counted ~95 % frame-id loss, latched its frame watchdog three times and went
+spotty. Reproducing that needs a tab that does nothing but watch, for the whole
+run — and the sim's visitors are all doers. `observer-tab.mjs` is that tab: it
+opens one station with the cached invite session, sits for `--duration`, clicks
+and types nothing, and runs the same banner watch.
+
+```sh
+node observer-tab.mjs --station win95 --duration 3m --headed --browser chrome \
+  --shots-dir ~/sim-shots/run2-observer
+```
+
+It writes its own `observer-<station>-<stamp>.json` manifest beside the run
+manifests. A "sit still" *journey* was deliberately not added to
+`lib/journeys.mjs`: it would put a non-visitor behaviour into the visitor mix
+and quietly change what every existing `--mix` means.

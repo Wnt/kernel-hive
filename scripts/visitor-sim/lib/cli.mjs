@@ -200,6 +200,20 @@ OTHER
                   always lands in the already-gitignored spot. Pass a path
                   explicitly and it is honoured exactly as given, relative to
                   your current working directory.
+  --shots-dir <d> Turn on the CONNECTION-BANNER WATCH and photograph it.
+                  Every visitor's tab is sampled 4x/s for the connection
+                  banner ("Spotty connection", "Device under load",
+                  "Reconnecting…", the exit-reason lines), the phase overlay
+                  ("Reconnecting to tile… (attempt N)", "Restoring tile…",
+                  "Waiting for desktop…") and the device/stall chips; every
+                  TRANSITION is logged and photographed, plus one shot every
+                  5s regardless, into <d> as
+                  <visitor>-<station>-<elapsed ms>-<state>.png. The full
+                  timeline also lands in the run manifest (bannerTimeline).
+                  Without this flag nothing is watched and nothing is
+                  photographed — the tool behaves exactly as before.
+  --banner-watch  Watch and LOG the banner transitions (same observer as
+                  --shots-dir) without writing any screenshots.
   --seed <n>      Seed the RNG for reproducible runs.
   --help          This.
 `;
@@ -242,6 +256,7 @@ export function parseArgs(argv) {
     'tile',
     'burst',
     'invite-refresh',
+    'banner-watch',
     'help',
   ]);
   for (let i = 0; i < argv.length; i++) {
@@ -418,6 +433,12 @@ export function parseArgs(argv) {
     burst,
     outDir: args.get('out-dir') ?? DEFAULT_OUT_DIR,
     seed: args.has('seed') ? Number(args.get('seed')) : null,
+    // The banner watch is OFF unless asked for: it injects a 4 Hz sampler into
+    // every tab, and this tool's whole point is that its traffic looks like a
+    // visitor's. --shots-dir implies it (photographing nothing would be a
+    // no-op flag), --banner-watch is the log-only half.
+    shotsDir: args.get('shots-dir') ?? null,
+    bannerWatch: !!args.get('banner-watch') || args.has('shots-dir'),
   };
 
   // inviteCode is intentionally NOT attached to `config` — see the comment
