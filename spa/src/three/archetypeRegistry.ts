@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (74 of the 76
+//    - transport   : how its LIVE framebuffer texture is obtained (75 of the 77
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 74 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 75 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -203,6 +203,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   aix432:      { osId: 'aix432', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6ea8', eraLabel: '1999 · IBM RS/6000 — AIX 4.3.3 / CDE', pointerRel: false },
   ravynos:     { osId: 'ravynos', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#64748b', eraLabel: '2025 · ravynOS 0.6.1' }, // ideal: any 2020s PC — the point is that it is not a Mac
   amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
+  bootos:      { osId: 'bootos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#8ecae6', eraLabel: '2019 · 512-byte boot-sector OS' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

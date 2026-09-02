@@ -272,6 +272,24 @@
       "udp_port": 54143,
       "notes": "RETRONET BRIDGE (2026-08-22): n0 is a tap on vmbr-rn (NOT slirp); the guest is a DHCP client on the reserved 10.99.0.16/24 with NO default route (rn-tapnet.sh + the fail-closed guard chain BEOSRN-IN, which aborts the launch if it does not verify). PS/2 RELATIVE pointer (pointerRel) -- R5 has no absolute tablet, and it applies its own acceleration, so scripted pointer work must be closed-loop (slam to 0,0, step, screendump, correct). exec = telnet_unix_e: labctl exec beos over BeOS R5's OWN telnetd at 10.99.0.16:23 over the bridge (no hostfwd, no agent in the guest, no port forward), user baron, password from the station dir's telnet-exec.passwd which the launcher writes from registry/local.env; client /root/sunexec.py with SUN_RC=$? because R5's login shell is bash. R5's ftpd is on :21 the same way for file transfer. KDL/kernel debug still lands on serial.log. See docs/lab/retronet/STATION-beos.md."
     },
+    "bootos": {
+      "dir": "/data/vms/streamhost/stations/bootos",
+      "qmp": "/data/vms/streamhost/stations/bootos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54174,
+      "notes": "keyboard-only (bootOS reads the BIOS keyboard, no pointer at all); no exec channel: type at the $ prompt via 'labctl type' and read the framebuffer"
+    },
     "c128": {
       "dir": "/data/vms/streamhost/stations/c128",
       "qmp": null,

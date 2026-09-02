@@ -48,6 +48,9 @@ const POSTER_INDEX = {
   "beos": {
     "hero": "/posters/beos/desktop.webp"
   },
+  "bootos": {
+    "hero": "/posters/bootos/desktop.webp"
+  },
   "c128": {
     "hero": "/posters/c128/desktop.webp"
   },

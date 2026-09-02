@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "id": "bootos",
+  "era_year": 2019,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 70,
+        "prelude": "",
+        "value": {
+          "key": "bootos",
+          "script": "tiles/bootos.sh",
+          "outputDir": "BootOS",
+          "class": "fast",
+          "estimated": "~1m",
+          "automation": "full",
+          "produces": "bootos-floppy.qcow2 (720K floppy: bootOS boot sector + 19 boot-sector programs)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 11
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "bootos",
+      "value": {
+        "os": "bootOS",
+        "win": "qemu",
+        "mouse": null,
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "the $ shell echoes typed characters",
+        "audio_trigger": "tone",
+        "note": "text console: no mouse cursor rendered -> mouse N/A",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/bootos",
+      "qmp": "/data/vms/streamhost/stations/bootos/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54174,
+      "notes": "keyboard-only (bootOS reads the BIOS keyboard, no pointer at all); no exec channel: type at the $ prompt via 'labctl type' and read the framebuffer"
+    }
+  },
+  "render": {
+    "signalOrder": 72,
+    "stationsManifestOrder": 70,
+    "stationsManifestPrelude": "\n# bootos (VMID 174) — bootOS, a 512-byte boot-sector OS (Oscar Toledo G., 2019).\n#   VERBATIM LAUNCHER: floppy.qcow2 (720K floppy as qcow2, copied from the\n#   builder output on first launch) is the ONLY block device; it holds both the\n#   filesystem the guest writes (enter/del/format) AND the savevm 'golden'\n#   vmstate, so loadvm restores the floppy contents too. PC speaker -> dbus\n#   audiodev. Keyboard-only: SH_INPUT_BACKEND=disabled, no pointer device.\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 77,
+    "bindingPrelude": "",
+    "goldenOrder": 70,
+    "actionMapOrder": 42
+  },
+  "stationDir": "bootos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54174,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 174
+  },
+  "guestDoc": "docs/guests/bootos.md",
+  "credentialsRef": "guest/bootos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "bootos",
+      "SH_QMP": "/data/vms/streamhost/stations/bootos/qmp.sock",
+      "SH_PORT": "54174",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_INPUT_BACKEND": "disabled",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/bootos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/bootos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 174,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "bootos",
+        "--vmid",
+        "174",
+        "--udp",
+        "54174",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "disabled",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/bootos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/bootos/station.env.fixture"
+      ],
+      "deviceSetId": "bootos-current",
+      "launcher": "streamhost/stations/bootos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/bootos/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-bootos",
+        "-enable-kvm -m 64 -smp 1",
+        "-machine pc-i440fx-11.0,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-drive file=\"$FLOPPY\",if=floppy,format=qcow2 -boot a",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+        "-pidfile $BASE/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,pcspk-audiodev=snd0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 64,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-bootos",
+          "-enable-kvm -m 64 -smp 1",
+          "-machine pc-i440fx-11.0,pcspk-audiodev=snd0 -cpu host",
+          "-rtc base=localtime",
+          "-drive file=\"$FLOPPY\",if=floppy,format=qcow2 -boot a",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
+          "-pidfile $BASE/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 77
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#8ecae6",
+    "eraLabel": "2019 · 512-byte boot-sector OS"
+  },
+  "museum": {
+    "id": "bootos",
+    "displayName": "bootOS",
+    "year": 2019,
+    "lineage": "Óscar Toledo G. / from-scratch boot sector",
+    "arch": "x86 real mode (8088-compatible), 512-byte kernel",
+    "ramMB": 64,
+    "era": "2010s",
+    "accent": "#8ecae6",
+    "eraSoftware": [
+      "Toledo Atomchess (512-byte chess)",
+      "cubicDoom",
+      "bootBASIC",
+      "fbird",
+      "Pillman",
+      "invaders",
+      "bootRogue",
+      "sokoban",
+      "snake",
+      "tetranglix",
+      "bootMine",
+      "bricks",
+      "bootle",
+      "pi",
+      "heart"
+    ],
+    "periodBrowser": "none — 512 bytes leaves no room for a network stack",
+    "iconicApps": [
+      "Toledo Atomchess",
+      "cubicDoom",
+      "bootBASIC",
+      "fbird"
+    ],
+    "blurb": "An entire operating system in one 512-byte boot sector — a shell, a filesystem, a hex program loader — and a floppy of games that are each exactly one sector: chess, Doom, BASIC, Flappy Bird.",
+    "notes": "Live streamhost station. Keyboard-only (BIOS int 16h); the guest is a 720K floppy image as qcow2 so loadvm restores what visitors wrote. Type `dir` for the programs, a program's name to run it, Ctrl+Alt+Del is the way home from most games (they end with int 0x20 or a reboot)."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "text-console",
+  "demoProgram": {
+    "label": "Type in a hello-world program",
+    "lines": [
+      "enter",
+      "bb 17 7c 8a 07 84 c0 74 0c 53 b4 0e bb 0f 00 cd",
+      "10 5b 43 eb ee cd 20 48 65 6c 6c 6f 2c 20 77 6f",
+      "72 6c 64 0d 0a 00",
+      "hello"
+    ],
+    "runCommand": "hello",
+    "perCharMs": 80
+  },
+  "reset": {
+    "stationDir": "bootos",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "N/A",
+    "keyboard": "UNVERIFIED",
+    "fixture": "bootOS at its `$` prompt straight after an untouched cold boot from the 720K floppy: SeaBIOS's 'Booting from Floppy...' line, the 'bootOS' banner, then `$` with the caret, in the 720x400 VGA text mode (80x25, 9x16 cells). Nothing is typed into the golden. Keyboard-only exhibit; PC speaker audio."
+  }
+}

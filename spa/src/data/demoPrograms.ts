@@ -46,6 +46,18 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "bootos": {
+    "label": "Type in a hello-world program",
+    "lines": [
+      "enter",
+      "bb 17 7c 8a 07 84 c0 74 0c 53 b4 0e bb 0f 00 cd",
+      "10 5b 43 eb ee cd 20 48 65 6c 6c 6f 2c 20 77 6f",
+      "72 6c 64 0d 0a 00",
+      "hello"
+    ],
+    "runCommand": "hello",
+    "perCharMs": 80
+  },
   "cbm8032": {
     "label": "Type in a demo program",
     "lines": [
