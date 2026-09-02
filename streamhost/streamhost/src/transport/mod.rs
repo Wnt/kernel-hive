@@ -49,11 +49,13 @@ use crate::encode::EncoderOut;
 use crate::input;
 
 mod backlog;
+mod datagram;
 mod egress;
 mod input_bench;
 mod input_stream;
 
 use backlog::{session_backlog, BacklogGate, RelayVerdict};
+use datagram::{spawn_datagram_plane, DatagramCtx};
 use egress::{send_au, send_audio, send_params_encoder, send_params_stats};
 use input_bench::spawn_input_bench;
 use input_stream::{spawn_bi_readers, spawn_uni_readers, SessionInputCtx};
@@ -329,6 +331,16 @@ async fn handle_session(
     // the ABR controller (the server-authoritative backlog signal). Stays 0 on a LAN
     // (the gate never skips there), so every downstream use is a no-op there.
     let skip_count = Arc::new(AtomicU64::new(0));
+    // ...and the CONGESTION half of the same story, reported to nobody but the ABR
+    // controller. `skip_count` above answers "what did the relay withhold from this
+    // client", which the HUD wants and which must include the join gate. The ladder
+    // must NOT: a join-gate discard is the cost of starting a session cleanly, it
+    // happens once, in the first milliseconds, and feeding a ~30-frame burst of it
+    // into `skip_rate_ewma` would let a connect read as sustained egress backlog the
+    // moment SH_ABR_BACKLOG_DOWNSHIFT is ever armed. Only the backlog gate and a
+    // ring overrun — the two things that mean "this session cannot keep up" —
+    // increment this one.
+    let congestion_skips = Arc::new(AtomicU64::new(0));
 
     // The abs->rel model is DAEMON-WIDE (created in serve()); a new client session
     // re-arms only its own per-connection fields and keeps the tracked guest
@@ -340,111 +352,21 @@ async fn handle_session(
     // clone below is gone — every exit from this session, abrupt or not.
     let keys = crate::key_state::new_session(key_reap_tx);
 
-    // MOVE COALESCER for the dbus (abs/rel) stations — mirrors warpd.rs. The datagram
-    // receive loop must NOT apply each move as an awaited dbus call_method
-    // (SetAbsPosition/RelMotion waits for a QEMU method REPLY), because at
-    // pointer-lock move rates (~1 record per mousemove, up to ~1 kHz) that serializes
-    // the loop on the reply RTT and a backlog of SUPERSEDED positions piles up in
-    // quinn -> the guest cursor lags behind + rubber-bands. Instead we funnel move
-    // records into an mpsc; a drain-coalesce task takes ALL pending each wakeup, keeps
-    // the LATEST absolute (type 1) / SUMS relative deltas (type 4), and issues ONE
-    // dbus inject — so a burst collapses to the freshest position and receive_datagram
-    // is never throttled. Buttons/keys/wheel ride the reliable stream and are never
-    // pooled here. Warpd stations skip this (warpd.rs already coalesces downstream).
-    let move_tx = if matches!(
-        cfg.input_backend,
-        crate::config::InputBackend::DbusAbs | crate::config::InputBackend::DbusRel
-    ) {
-        // Item = (bytes, recv Instant for telemetry age; None when telemetry off).
-        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(Vec<u8>, Option<Instant>)>();
-        let cap = cap.clone();
-        let cfg = cfg.clone();
-        let mouse = mouse.clone();
-        let keys = keys.clone();
-        tokio::spawn(async move {
-            while let Some(first) = rx.recv().await {
-                let mut batch = vec![first];
-                while let Ok(m) = rx.try_recv() {
-                    batch.push(m);
-                }
-                let (batch_len, oldest) = (batch.len() as u64, batch[0].1);
-                let mut last_abs: Option<Vec<u8>> = None;
-                let (mut sdx, mut sdy, mut have_rel) = (0i32, 0i32, false);
-                for (rec, _) in &batch {
-                    match rec.first() {
-                        Some(1) if rec.len() >= 5 => last_abs = Some(rec.clone()),
-                        Some(4) if rec.len() >= 5 => {
-                            sdx += i16::from_le_bytes([rec[1], rec[2]]) as i32;
-                            sdy += i16::from_le_bytes([rec[3], rec[4]]) as i32;
-                            have_rel = true;
-                        }
-                        _ => {}
-                    }
-                }
-                let t0 = crate::input_telemetry::enabled().then(Instant::now);
-                if let Some(rec) = last_abs {
-                    input::handle(&cap, &cfg, &mouse, &keys, None, &rec).await;
-                } else if have_rel {
-                    let dx = sdx.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
-                    let dy = sdy.clamp(i16::MIN as i32, i16::MAX as i32) as i16;
-                    let mut rec = vec![4u8, 0, 0, 0, 0];
-                    rec[1..3].copy_from_slice(&dx.to_le_bytes());
-                    rec[3..5].copy_from_slice(&dy.to_le_bytes());
-                    input::handle(&cap, &cfg, &mouse, &keys, None, &rec).await;
-                }
-                if let Some(t0) = t0 {
-                    let age = oldest.map(|o| t0.saturating_duration_since(o).as_micros() as u64);
-                    let rtt = t0.elapsed().as_micros() as u64;
-                    crate::input_telemetry::record_inject("dbus", batch_len, rtt, age);
-                }
-                if cfg.abs_pace_ms > 0 {
-                    tokio::time::sleep(Duration::from_millis(cfg.abs_pace_ms)).await;
-                }
-            }
-        });
-        Some(tx)
-    } else {
-        None
-    };
-
-    // ---- datagrams: mouse-move + RTT ping echo + T_STATS feedback ----
-    {
-        let conn = conn.clone();
-        let cap = cap.clone();
-        let cfg = cfg.clone();
-        let mouse = mouse.clone();
-        let keys = keys.clone();
-        let input_router = input_router.clone();
-        let abr = abr.clone();
-        let move_tx = move_tx.clone();
-        let skip_count = skip_count.clone();
-        let strace = strace.clone();
-        tokio::spawn(async move {
-            while let Ok(dg) = conn.receive_datagram().await {
-                let p = dg.payload();
-                if p.is_empty() {
-                    continue;
-                }
-                if p[0] == 9 {
-                    let _ = conn.send_datagram(p.clone()); // RTT ping: echo verbatim
-                } else if p[0] == OP_STATS {
-                    // CLIENT->SERVER ABR feedback (SECTION 3.1); intercept
-                    // BEFORE input::handle so opcode 10 never reaches input.
-                    if let Some(r) = crate::abr::parse_report(&p) {
-                        abr.submit(sess_id, r, skip_count.load(Ordering::Relaxed));
-                    }
-                } else if let (Some(tx), true) = (&move_tx, p[0] == 1 || p[0] == 4) {
-                    // Move -> coalescer (never blocks). Instant only when tel on.
-                    strace.mark_first_input("datagram");
-                    let at = crate::input_telemetry::enabled().then(Instant::now);
-                    let _ = tx.send((p.to_vec(), at));
-                } else {
-                    strace.mark_first_input("datagram");
-                    input::handle(&cap, &cfg, &mouse, &keys, input_router.as_ref(), &p).await;
-                }
-            }
-        });
-    }
+    // The DATAGRAM plane (moves, the RTT ping echo, T_STATS) — its own module so
+    // the one loop that must never block has one place to be read. See
+    // `transport/datagram.rs`.
+    spawn_datagram_plane(DatagramCtx {
+        conn: conn.clone(),
+        cfg: cfg.clone(),
+        cap: cap.clone(),
+        mouse: mouse.clone(),
+        keys: keys.clone(),
+        input_router: input_router.clone(),
+        abr: abr.clone(),
+        skip_count: congestion_skips.clone(),
+        strace: strace.clone(),
+        sess_id,
+    });
 
     // Bundle for the two reliable-input acceptors below (input_stream.rs):
     // one clone per accepted stream instead of five.
@@ -578,23 +500,51 @@ async fn handle_session(
     if vt {
         eprintln!("[vtrace] last_key lock ok; primed={}", primed.is_some());
     }
-    // B1: frame_id of the last AU relayed to THIS session, the `sent` half of
-    // the sent-acked backlog estimate (see transport/backlog.rs).
     // Set only on a daemon-internal fault; a client that simply left is not one.
     let mut fault: Option<&'static str> = None;
+    // PER-SESSION WIRE FRAME IDs (2026-09-02). The id on the wire counts the AUs
+    // THIS session was sent, starting at 0 — it is NOT the encoder's `au.frame_id`.
+    //
+    // WHY: the client derives its loss percentage from frame_id gaps (spa
+    // videoDecode.ts feedVideoAU), and that percentage is what it reports back in
+    // T_STATS for abr.rs to steer the ladder with. The ENCODER id is shared by every
+    // viewer of the station and is wrong for a single session in three ways:
+    //   * SESSION START — the primed cached key carries whatever id it was encoded
+    //     with, and the join gate below then discards every mid-GOP delta until the
+    //     first broadcast keyframe. Measured on freedos: primed id=423, first
+    //     relayed id=453. The client saw one AU, then a 29-frame hole, and reported
+    //     45-87 % loss for its first interval on a flawless LAN.
+    //   * TIER CHANGE — encode/worker.rs sets `frame_id = 0` on every Reopen, so an
+    //     ABR step rewinds the id space under a session that never lost anything.
+    //   * OTHER VIEWERS — a second viewer's join keyframe and its input burst make
+    //     the relay skip AUs for the FIRST viewer (backlog gate / ring overrun), and
+    //     the 1 Hz KIND_PARAMS subtype-2 skip credit arrives up to a second after the
+    //     gaps it explains, far too late for the client's 100 ms accounting ticks.
+    //     The operator's win95 tab read 93-96 % "loss" at 19:17 for exactly this.
+    // Counting what we actually SENT removes all three at the source: a gap that
+    // reaches the client is now a gap the wire made, and nothing else. The skip
+    // counter below is unchanged and still reported (HUD + the server-authoritative
+    // ABR backlog signal); it simply no longer has to race the frames it explains.
+    let mut out_id: u32 = 0;
+    // B1: wire id of the last AU relayed to THIS session, the `sent` half of the
+    // sent-acked backlog estimate (see transport/backlog.rs). The client's acked
+    // `last_frame_id` is in the same session-local space, so the two are directly
+    // comparable — which they were NOT while an encoder reopen could rewind one of
+    // them to 0 mid-session.
     let mut last_sent_id: u32 = 0;
     if let Some(k) = primed {
-        let r = send_au(&conn, &k).await;
+        let r = send_au(&conn, &k, out_id).await;
         if vt {
             eprintln!(
-                "[vtrace] primed key frame_id={} sent ok={}",
+                "[vtrace] primed key f={out_id} (enc {}) sent ok={}",
                 k.frame_id,
                 r.is_ok()
             );
         }
         if r.is_ok() {
             tx_bytes.fetch_add((10 + k.data.len()) as u64, Ordering::Relaxed);
-            last_sent_id = k.frame_id;
+            last_sent_id = out_id;
+            out_id = out_id.wrapping_add(1);
         }
     }
     // JOIN GATE (2026-07-11): relay nothing to this session until the first
@@ -636,6 +586,7 @@ async fn handle_session(
                     match backlog_gate.on_au(au.is_key, behind, now) {
                         RelayVerdict::Skip => {
                             skip_count.fetch_add(1, Ordering::Relaxed);
+                            congestion_skips.fetch_add(1, Ordering::Relaxed);
                             if vt {
                                 eprintln!(
                                     "[vtrace] backlog-skip frame_id={} behind={behind}",
@@ -673,6 +624,13 @@ async fn handle_session(
                     }
                 }
                 if !gate.admit(au.is_key) {
+                    // A pre-key delta withheld from THIS session is a server
+                    // skip like any other: count it so the HUD and the ABR
+                    // backlog signal see the whole picture. (The client no
+                    // longer needs it to explain a gap — the wire id above
+                    // never had one — but "what the relay dropped" must still
+                    // be one honest number.)
+                    skip_count.fetch_add(1, Ordering::Relaxed);
                     if vt {
                         eprintln!(
                             "[vtrace] join-gate discard frame_id={} (pre-key delta)",
@@ -691,13 +649,17 @@ async fn handle_session(
                 }
                 // One-shot marks: an AtomicBool swap per AU, never a span per
                 // frame (trace/mod.rs states the rule and why).
-                strace.mark_first_au(au.frame_id, au.is_key);
+                strace.mark_first_au(out_id, au.is_key);
                 // Sampled-input EFFECT, half 1 of 2: one relaxed load unless a
                 // sampled edge is pending (input_trace.rs / trace_session.rs).
-                strace.effect_encoded(au.frame_id, au.is_key, au.encode_us);
-                let r = send_au(&conn, &au).await;
+                strace.effect_encoded(out_id, au.is_key, au.encode_us);
+                let r = send_au(&conn, &au, out_id).await;
                 if vt {
-                    eprintln!("[vtrace] sent frame_id={} ok={}", au.frame_id, r.is_ok());
+                    eprintln!(
+                        "[vtrace] sent f={out_id} (enc {}) ok={}",
+                        au.frame_id,
+                        r.is_ok()
+                    );
                 }
                 if r.is_err() {
                     break;
@@ -710,10 +672,12 @@ async fn handle_session(
                 // (RETURN LEG doc, trace_session.rs header). Spawned: the mark
                 // is its own tiny uni-stream and must never make the next
                 // video AU wait on it.
-                if let Some(effect_ctx) = strace.effect_sent(au.frame_id, au.data.len()) {
-                    egress::spawn_frame_mark(conn.clone(), effect_ctx, au.frame_id);
+                // The mark names the id the CLIENT will see, not the encoder's.
+                if let Some(effect_ctx) = strace.effect_sent(out_id, au.data.len()) {
+                    egress::spawn_frame_mark(conn.clone(), effect_ctx, out_id);
                 }
-                last_sent_id = au.frame_id;
+                last_sent_id = out_id;
+                out_id = out_id.wrapping_add(1);
             }
             Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                 backlog_gate.on_lagged();
@@ -721,6 +685,7 @@ async fn handle_session(
                 // them — count them as skips too so the client's gap for this lap is
                 // attributed to the server, not to network loss.
                 skip_count.fetch_add(n, Ordering::Relaxed);
+                congestion_skips.fetch_add(n, Ordering::Relaxed);
                 if vt {
                     eprintln!("[vtrace] lagged {n}");
                 }

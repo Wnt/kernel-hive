@@ -39,6 +39,8 @@
 //! exists here, in `PendingEffect` — so `effect_sent` hands its `Ctx` back to
 //! `transport/mod.rs`, which mints a tiny out-of-band WIRE message (KIND_PARAMS
 //! subtype 3, `transport/egress.rs::spawn_frame_mark`) naming `frame_id` and
+//! (`frame_id` here is the SESSION-LOCAL wire id the client sees — transport/mod.rs
+//! `out_id` — not the encoder's shared counter, so both ends name the same frame)
 //! the trace/span to answer with. The browser
 //! (`three/streamClient/frameTrace.ts`) matches that id against its OWN local
 //! receive/decode/paint timestamps for the same `frame_id` — by EXPLICIT id,
