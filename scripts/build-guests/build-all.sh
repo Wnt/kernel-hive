@@ -148,6 +148,7 @@ MANIFEST=(
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast      |~10-20m |full     |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m     |full     |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m     |full     |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
+  "netbsd14       |tiles/netbsd14.sh                                     |NETBSD14          |slow      |~15m    |assisted |netbsd14.qcow2 (NetBSD 1.4.1 i386 full install incl. X sets; XFree86 3.3.3.1 SVGA on Cirrus, ctwm session auto-started on the console)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
