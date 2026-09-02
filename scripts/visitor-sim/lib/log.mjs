@@ -27,6 +27,10 @@ export class RunManifest {
     this.resets = [];
     this.walkinAccounts = [];
     this.errors = [];
+    // Every connection-banner / phase-overlay transition every watched tab
+    // went through, in wall-clock order across all visitors — the record the
+    // 5s telemetry line cannot hold (see lib/bannerWatch.mjs's header).
+    this.bannerTimeline = [];
   }
 
   visitor(entry) {
@@ -39,6 +43,11 @@ export class RunManifest {
 
   walkinAccount({ handle, station, visitorId }) {
     this.walkinAccounts.push({ handle, station, visitorId, at: new Date().toISOString() });
+  }
+
+  banner(entries) {
+    for (const e of entries) this.bannerTimeline.push(e);
+    this.bannerTimeline.sort((a, b) => a.atMs - b.atMs);
   }
 
   error(entry) {

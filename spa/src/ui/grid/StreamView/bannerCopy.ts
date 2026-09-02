@@ -25,8 +25,17 @@ export function bannerCopy({
       ? "This browser can't play the live stream — the required video decoder (WebCodecs) or codec isn't supported. Open the gallery in Chrome, or on a desktop browser."
       : bannerState === 'reconnecting'
       ? (exitReasonCopy(exitReason) ?? 'Reconnecting…')
-      : deviceUnderLoad
+      // 'device-load' is the CLIENT's own verdict from its decode queue /
+      // paint-freeze score (streamClient/scoring.ts). It outranks the
+      // PressureObserver relabel below because it works everywhere:
+      // PressureObserver is Chrome-desktop-only, so on the machines that
+      // actually struggle — a tab full of tiles on a laptop — `deviceUnderLoad`
+      // stayed false and the visitor was told their CONNECTION was spotty.
+      : bannerState === 'device-load' || deviceUnderLoad
         ? 'Device under load'
         : 'Spotty connection';
-  return { bannerText, bannerIsDevice: bannerState === 'spotty' && deviceUnderLoad };
+  return {
+    bannerText,
+    bannerIsDevice: bannerState === 'device-load' || (bannerState === 'spotty' && deviceUnderLoad),
+  };
 }

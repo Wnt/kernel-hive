@@ -917,7 +917,7 @@
       "exec_shell": null,
       "exec_subshell": null,
       "console": "fb",
-      "udp_port": 4433,
+      "udp_port": 54106,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
     "redstar2": {

@@ -268,7 +268,7 @@ async function restoreToGolden(page, station, { safety, manifest, log }) {
 export async function journeyStation(page, ctx) {
   const { galleryUrl, stations, rng, safety, manifest, log } = ctx;
   const station = stations[Math.floor(rng() * stations.length)];
-  await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${galleryUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await humanDelay(rng, 1000, 3000);
   const result = await openStation(page, station, { waitMs: 30000 });
   if (!result.ok) return { ok: false, detail: result.why, station };
@@ -306,7 +306,7 @@ export async function journeyEditor(page, ctx) {
   const { galleryUrl, stations, rng, visitorId, log } = ctx;
   // Distinct station per visitor (round-robins if visitors > stations).
   const station = stations[(visitorId - 1) % stations.length];
-  await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${galleryUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   // Skip the boot-video overlay so the demo lands on the live desktop rather
   // than acting behind a boot clip — set before the station route mounts.
   await suppressBootVideo(page, station);

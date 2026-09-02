@@ -136,13 +136,13 @@ emit tinycore \
   "$T/tinycore/qemu-streamhost.sh" --env-append-file \
   "$T/tinycore/station.env.fixture"
 
-# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM
+# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 54106. VERBATIM
 #   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached
 #   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —
 #   matches the baked device set). Golden store canonical at
 #   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).
 emit reactos \
-  --tile reactos --vmid 106 --udp 4433 --pointer abs --abs-pace-ms 30 \
+  --tile reactos --vmid 106 --udp 54106 --pointer abs --abs-pace-ms 30 \
   --audio on --fps 30 --launcher-file "$T/reactos/qemu-streamhost.sh" \
   --env-append-file "$T/reactos/station.env.fixture"
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bankServerSkips,
   spendSkipCredit,
+  spendSkipCreditOverWindow,
   SKIP_CREDIT_CAP,
   type SkipCreditState,
 } from './skipCredit';
@@ -57,5 +58,46 @@ describe('server-skip loss correction (L-1)', () => {
     const s = fresh();
     bankServerSkips(s, 10_000);
     expect(s.serverSkipCredit).toBe(SKIP_CREDIT_CAP);
+  });
+});
+
+describe('retroactive skip credit across the reported-loss window', () => {
+  const win = (...missed: number[]) => missed.map((m, i) => ({ at: i * 100, recv: 2, missed: m }));
+
+  it('cancels a burst the server only admits to a second later', () => {
+    // The multi-viewer shape: the backlog gate skips ~30 frames over three
+    // 100 ms ticks, and the cumulative count arrives on the NEXT 1 Hz push.
+    const s = fresh();
+    const w = win(10, 10, 10, 0, 0);
+    bankServerSkips(s, 30);
+    expect(spendSkipCreditOverWindow(s, w)).toBe(30);
+    expect(w.map((x) => x.missed)).toEqual([0, 0, 0, 0, 0]);
+    expect(s.serverSkipCredit).toBe(0);
+  });
+
+  it('spends oldest first — the lagging report is about the past', () => {
+    const s = fresh();
+    const w = win(5, 5, 5);
+    bankServerSkips(s, 7);
+    expect(spendSkipCreditOverWindow(s, w)).toBe(7);
+    expect(w.map((x) => x.missed)).toEqual([0, 3, 5]);
+  });
+
+  it('leaves genuine loss alone when there is no credit', () => {
+    const s = fresh();
+    const w = win(4, 4);
+    expect(spendSkipCreditOverWindow(s, w)).toBe(0);
+    expect(w.map((x) => x.missed)).toEqual([4, 4]);
+  });
+
+  it('keeps unspent credit for a later tick rather than discarding it', () => {
+    const s = fresh();
+    bankServerSkips(s, 12);
+    const w1 = win(2);
+    expect(spendSkipCreditOverWindow(s, w1)).toBe(2);
+    expect(s.serverSkipCredit).toBe(10);
+    const w2 = win(0, 6);
+    expect(spendSkipCreditOverWindow(s, w2)).toBe(6);
+    expect(s.serverSkipCredit).toBe(4);
   });
 });

@@ -32,6 +32,31 @@ export const KEYFRAME_WAIT_MS = 12000;
  *  12 s here was the single biggest contributor to a long black area after a
  *  resume: the replacement attempt sat silent for 12 s before even retrying. */
 export const RELIVE_KEYFRAME_WAIT_MS = 3000;
+/**
+ * A RESTORE is a cold start wearing a warm session's clothes. `loadvm` stops
+ * the guest, swaps its RAM out from under the encoder and starts it again;
+ * measured on the sim's editor journey, frame #1 lands seconds after the POST
+ * settles. Spending RELIVE_KEYFRAME_WAIT_MS there guaranteed the FIRST
+ * post-restore attempt was abandoned at 3 s and the ladder then walked
+ * 250/500/1000/2000 ms of backoff on top — the "still mid-stream.recover up to
+ * ~17 s after the click" the visitor-sim journey notes. The station was never
+ * broken; the budget was.
+ */
+const RESTORE_KEYFRAME_WAIT_MS = 12000;
+
+/**
+ * How long THIS attempt may wait for frame #1.
+ *
+ * A restore outranks "live": `markWarm()` is also withheld for it in
+ * useStreamhostSession, because `warm` lets abr.ts judge the session on
+ * transport-ready + FIRST_FRAME_GRACE_MS, and during a loadvm that means
+ * dropStaleSession('stream-stalled') fires against a guest that is simply still
+ * being restored.
+ */
+export function keyframeWaitMs({ restore, live }: { restore: boolean; live: boolean }): number {
+  if (restore) return RESTORE_KEYFRAME_WAIT_MS;
+  return live ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS;
+}
 /** Unexpected-loss retry delays; attempt 1 uses index 0. */
 export const RETRY_BACKOFF_MS = [600, 1500, 3000, 6000];
 /** Restore delays: the host is EXPECTED to be briefly unavailable. */

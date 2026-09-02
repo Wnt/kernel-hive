@@ -245,6 +245,157 @@ Two causes, both fixed 2026-08-17 (see `abr.rs`), both worth re-checking:
   a keyframe; tier 0 has no bitrate ceiling (CQP, no VBV), so a big station's
   heartbeat IDR spikes the ping. RTT smoothing is now asymmetric (rise m=16,
   fall m=4) and an RTT-only breach must persist 4 s, not 1.5 s.
+- **the very first `T`-line of the session reads `loss45`–`loss87`** and the
+  downshift lands ~4 s after `connect` — the join, not the link. See the next
+  signature; fixed 2026-09-02 in `transport/mod.rs` + `abr.rs`.
+
+### Loss on a link that is not losing anything
+The client has no packet counter. Its `lossPct` is **frame_id holes**
+(`spa/src/three/streamClient/videoDecode.ts` `feedVideoAU`), and that percentage
+is what it reports back in `T_STATS` for `abr.rs` to steer the ladder with. Until
+2026-09-02 the id on the wire was the ENCODER's, which is wrong for one session
+in three ways, all of which read as loss:
+
+- **session start** — the relay sends the primed cached keyframe, then the join
+  gate discards every mid-GOP delta until the first broadcast key (measured on
+  freedos: primed 423, first relayed 453). One AU, then a 29-frame hole.
+- **ABR tier change** — `encode/worker.rs` sets `frame_id = 0` on every reopen,
+  so the id space rewinds under a session that lost nothing.
+- **a second viewer** — their join keyframe and input burst make the relay skip
+  AUs for the FIRST viewer, and the `KIND_PARAMS` subtype-2 skip credit is only
+  1 Hz, far too coarse for the client's 100 ms accounting ticks. The operator's
+  win95 tab read 93–96 % "loss" this way while RTT stayed 11–14 ms.
+
+**The steady-state cycle is the same fault, on a long-lived tab.** Two viewers
+of win95, same second, 2026-09-02 19:30:12-18 UTC:
+
+```
+19:30:13 18e85073  fps20 dec10.3/q0 rtt7.9/fl8.1/ex0 loss0.0/w0.0n70  dr4
+19:30:18 5905d5cc  fps2  dec2.4/q0 rtt16.0/fl16.9/ex9 loss93.8/w93.8n48 dr163
+```
+
+B is typing, so the shared encoder runs at 20 fps; A is idle and is relayed ~2
+fps of it, so ~90 % of the ENCODER's ids never reach A and A reports 93.8 %
+"loss" with `framesDropped` 4→163 in six seconds. `worst_loss` is a MAX across
+sessions and the tier is GLOBAL, so A's arithmetic downshifts the station for
+everyone — including a clean observer tab reporting `loss0.0` and `rtt 8-9 ms`
+on every line. That is the whole `path0→1→0→1→0→1→0` cycle; the daemon's own
+`[abr] DOWN why=` said `loss/backlog` every time and never `rtt`, and
+`SH_ABR_BACKLOG_DOWNSHIFT` is unset so the skip trigger was inert.
+
+The wire now carries a **session-local** id (`transport/mod.rs` `out_id`) that
+counts the AUs THIS session was actually sent, so a hole the client sees is a
+hole the wire made. The skip counter is unchanged and still reported — it feeds
+the HUD and the server-authoritative ABR backlog signal — it simply no longer has
+to race the frames it explains. `abr.rs` additionally ignores reported loss for
+the first 4 s / 20 reports of a session (`warming_up`) and requires the CURRENT
+report to agree with the smoothed value before a downshift (`loss_congested`), so
+one bad interval cannot trip the 1.5 s breach on its decay tail.
+
+Two more pieces of hysteresis went in with it:
+
+- **the persistence window is PER SESSION** (`SessionState::congested_since`). It
+  was one global window, which a churning set of sessions filled between them: A
+  breaches 0.8 s and leaves, B connects and breaches 0.8 s, and the global window
+  — never reset while *somebody* was congested each tick — satisfied the 1.5 s
+  BREACH though no single viewer ever had a sustained problem.
+- **futile-cycle damping** (`breach_need`). A downshift that an upshift undoes
+  within 45 s did not fix anything, so the next breach must hold twice as long,
+  doubling per cycle, capped at 12 s and forgotten after 5 minutes of a still
+  ladder. Each cycle costs every viewer of the station an encoder reopen and a
+  fresh IDR, so the controller gets more sceptical every time it is proven wrong.
+  `[abr] DOWN`/`UP` now print `futile=N`.
+
+### `loss…` on the FIRST T-line of every session (fixed 2026-09-02)
+The signature: the first `stats` row after every connect *and every reconnect*
+reads `loss86.7/w86.7n30` (or `w50.0n12`, `w71.4n7`…), and the next row reads
+`loss0`. It is not the network — a 4 ms LAN produced it on all six stations of a
+sim run.
+
+**Why it happened.** Video AUs ride *reliable* QUIC uni-streams, so a `frame_id`
+gap is almost never packet loss. On subscribe the daemon sends its freshest
+**cached** key and then discards every AU until the next real IDR
+(`transport/mod.rs`, the `JoinGate`; measured on freedos: primed `423`, first
+broadcast `453`). Those 29 ids were never sent to this session, but the client
+billed them as loss — which (a) seeded `sOverall` low so the 2 s dwell tripped
+`spotty` a few seconds after connect, and (b) went to the server in `T_STATS`,
+so the server ABR downshifted T0→T1 about 4 s in and the ladder then oscillated
+on the 25 s dwell.
+
+**What the client does now** (`spa/src/three/streamClient/lossLedger.ts`): a gap
+is *pending*, not missed. It is billed only after `REORDER_GRACE_MS` with no
+arrival, never inside the join window (the hole between AU #1 and AU #2), and
+the whole pending set is dropped when the encoder restarts `frame_id` at 0
+(`encode/worker.rs`). Server-intentional skips are credited **retroactively**
+across the 3 s reporting window (`skipCredit.ts`), because the daemon's
+cumulative skip count arrives at 1 Hz while the gaps it explains appeared on
+100 ms ticks up to a second earlier — the forward-only spend could never cancel
+a burst.
+
+### A second viewer makes the first viewer's client report 95 % loss
+Same root cause as above, different trigger. With two active viewers on one
+station the daemon's backlog gate and broadcast `Lagged` both skip AUs, and
+per-AU uni-streams complete out of order much more often. Before the ledger the
+first viewer read `loss93.3` → `loss96.0/w96.0n50` with three `frame watchdog
+latched` WARNs at RTT 11-14 ms. If you see this again, check
+`skipped_frames` in the vitals lane: if it is climbing, the daemon is skipping
+on purpose and the credit is doing its job; if it is flat, the gaps are real.
+
+### `ping-timeout: tile stopped responding to liveness pings` on a LAN
+The type-9 RTT ping is a **datagram** — droppable — raced against a
+`setTimeout` on a main thread that six decoders can starve, and the ABR loop
+fires one every 100 ms. Three "consecutive" timeouts could therefore be banked
+~800 ms into a single hiccup (or a `loadvm` pause), and the hook rebuilt a
+perfectly healthy transport. Since 2026-09-02 (`streamClient/liveness.ts`) the
+ping is serialised (one in flight), and unanswered pings alone only produce a
+**soft** `spotty`. The session is dropped only when the server has *also* been
+completely silent — no uni-stream, no datagram — for `SILENCE_MS`. Hard closes
+(`wt.closed` resolve/reject) are untouched and still instant.
+
+### "Spotty connection" on a session that never connected
+`updateBannerImpl` used to score a client with no RTT sample and no frames: the
+scorer's unknown → 250 ms default makes `latRaw` 0, `overall` 0, and after the
+2 s dwell the banner accuses a link that does not exist (measured on reactos,
+whose WebTransport handshake never completed: "Spotty connection" at +6.0 s,
+interleaved with "Reconnecting to tile… (attempt N)"). The EWMAs are now seeded
+only once an RTT sample **and** a frame have both landed (`scoring.ts`
+`scorerReady`), and the banner stays quiet until then.
+
+### "Spotty connection" over a fully painted, IDLE desktop
+`T1 fps0 rx0.0M loss0.0/w0.0n12 rtt7.8 dr10 tier0ch spotty` (nt4). Loss is zero
+and RTT is 8 ms on the same line, so the accusation cannot be about the network.
+It was the bandwidth term: `bwRaw` is derived from `decodeQueueSize` and the
+paint-freeze detector, and an idle guest emits no AUs at all, so a queue snapshot
+left over from the connect burst kept scoring pressure against a decoder nobody
+was asking anything of. `rawScores` now takes `received` and scores an idle
+interval a clean 100.
+
+### "Spotty connection" on a tab full of tiles
+`dec1209.0/q16`, `dec1158.1/q18`, `dec1059.4/q14` on the first T-lines of a
+six-tile run on one Intel Mac — about a second of decode latency with 14-18 AUs
+queued. `bwRaw = 100 - (q-1)*25` floors at 0, and the old
+`overall = min(lat, loss, bw)` turned that into "Spotty connection" inside 2 s
+with `loss0.0` and `rtt8` beside it. That is **device** load, and the
+`useDevicePressure` relabel could not catch it: `PressureObserver` is
+Chrome-desktop-only, so `deviceUnderLoad` stays false on most machines that
+actually struggle.
+
+`overallRaw` is now `min(latRaw, lossRaw)` — the banner's score is the NETWORK's
+score, and nothing about the local decoder can make the client blame the link.
+The device story is still told: `abr.ts` dwells on `sBandwidth` separately (same
+60/75 thresholds, same 2 s hysteresis) and raises a distinct banner state,
+`'device-load'`, which `bannerCopy.ts` renders as **"Device under load"**. A bad
+network still outranks it.
+
+### The first attempt after a restore is always abandoned
+`Reconnecting to restored tile…`, then the ladder walks 250/500/1000/2000 ms and
+the flow is still in `stream.recover` ~17 s after the click. The first
+post-restore attempt was spending `RELIVE_KEYFRAME_WAIT_MS` (3 s) because the
+station *had* been live — but `loadvm` stops the guest and swaps its RAM, so
+frame #1 legitimately takes longer. A restore now gets the cold budget
+(`retryBudget.ts` `keyframeWaitMs`) and does **not** `markWarm()`, which also
+stops `dropStaleSession('stream-stalled')` firing against a guest that is simply
+still being restored.
 
 ### Station "freezes" while in use
 Look for `rx0.0M fps0` in consecutive `stats` rows with healthy `rtt` and zero
@@ -444,6 +595,33 @@ floor it should be approaching, not 10 s).
 `TypeError: Failed to fetch` arriving in a batch of 4–5 identical lines within
 the same millisecond, after a telemetry silence gap, is the reliable
 **"this machine just woke up"** marker.
+
+### `ping-timeout` on a healthy transport, right after a mouse move
+Three missed liveness pings in 1.8 s and a hard reconnect, with the daemon
+logging nothing but `SESSION_ENDED` and a normal `[encode]` line. Until
+2026-09-02 the type-9 echo shared the datagram RECEIVE loop with
+`input::handle`, whose first act is `idle::wake_for_input()` — on an
+idle-auto-paused guest that takes the pauser lock and issues a QMP `cont` over a
+fresh socket with 2 s read AND 2 s write timeouts (`idle.rs qmp_execute`). One
+input record could hold the loop for seconds whenever the QMP socket was busy
+(another transient client, an out-of-band driver's wake lease, the reconciler),
+and every ping queued behind it. win95 lost the echo for >1.8 s at 18:39:03 and
+18:43:41 UTC on 2026-09-02 that way. The datagram plane is now its own module
+(`transport/datagram.rs`) and the receive loop only demuxes: it echoes, folds a
+report, or hands the record to a channel. A slow guest now delays input, and
+nothing else.
+
+### The station is active and healthy and no session ever arrives
+`streamhost@<id>` active and encoding, `check-stream-tickets.py` says the ticket
+is accepted, `/signal/<id>.json` returns a valid path — and the daemon journal
+has no `[transport] SESSION` line at all, while the browser logs "WebTransport
+ready has not settled after 3000ms" then `Opening handshake failed`. The packets
+never reach the box: a **public** visitor's UDP goes through the edge, whose
+nftables DNAT covers `54080-54200` only, so a station outside that range is
+invisible to the gallery and perfect on the LAN. It bit slots 131-134 on
+2026-08-09 and `reactos` (which sat on the legacy port 4433) until 2026-09-02.
+UDP port is `54000 + slot`; `stations-registry.py validate` fails any production
+station outside the range. See [PUBLIC-GALLERY.md](../PUBLIC-GALLERY.md).
 
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct

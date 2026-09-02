@@ -21,6 +21,7 @@ import { RunManifest, log } from './lib/log.mjs';
 import { makeRng, weightedPick } from './lib/rng.mjs';
 import { ensureInviteSession } from './lib/invite.mjs';
 import { GridSlots, cellBounds } from './lib/grid.mjs';
+import { startBannerWatch } from './lib/bannerWatch.mjs';
 
 function printPlan(config) {
   log('plan', `gallery      ${config.galleryUrl}`);
@@ -62,6 +63,9 @@ function printPlan(config) {
   }
   log('plan', `credentials  ${credLine}`);
   log('plan', `out-dir      ${config.outDir}`);
+  if (config.bannerWatch) {
+    log('plan', `banner watch ON — transitions logged${config.shotsDir ? `, shots + 5s stills to ${config.shotsDir}` : ' (no screenshots: --banner-watch)'}`);
+  }
 }
 
 async function runVisitor(browser, config, safety, manifest, visitorId, rng, slots) {
@@ -101,6 +105,16 @@ async function runVisitor(browser, config, safety, manifest, visitorId, rng, slo
       log(`v${visitorId}`, `tile: could not position window (${err.message}); leaving it where it opened`);
     }
   }
+  // Arm the banner watch BEFORE the journey starts, so the very first
+  // connect — the interval whose loss reading the dossier records at 45-87% —
+  // is inside the record rather than before it.
+  const watch = config.bannerWatch
+    ? startBannerWatch(page, {
+        visitorId,
+        shotsDir: config.shotsDir,
+        log: (msg) => log(`v${visitorId}`, msg),
+      })
+    : null;
   const journeyName = weightedPick(rng, config.mix);
   const journeyFn = JOURNEYS[journeyName];
   const entry = { visitorId, journey: journeyName, startedAt: new Date().toISOString() };
@@ -138,6 +152,12 @@ async function runVisitor(browser, config, safety, manifest, visitorId, rng, slo
     safety.breaker.fail(entry.detail);
   } finally {
     entry.finishedAt = new Date().toISOString();
+    if (watch) {
+      const timeline = await watch.stop();
+      manifest.banner(timeline);
+      entry.bannerTransitions = timeline.filter((t) => t.kind === 'transition').length;
+      log(`v${visitorId}`, `banner watch: ${entry.bannerTransitions} transition(s), ${timeline.length} record(s)`);
+    }
     manifest.visitor(entry);
     // spa/src/analytics/sink.ts batches probes/flows/spans and only flushes
     // on its own 20s interval or a real `pagehide`/`visibilitychange->hidden`

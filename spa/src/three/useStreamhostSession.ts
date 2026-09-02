@@ -9,7 +9,7 @@ import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { attachSessionResume } from './streamClient/sessionResume';
 import {
   consumeRetry, retryLimit, RETRY_REASON_NO_KEYFRAME,
-  KEYFRAME_WAIT_MS, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
+  keyframeWaitMs, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
 } from './streamClient/retryBudget';
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
@@ -381,10 +381,11 @@ export function useStreamhostSession(
       });
       client = nextClient;
       // A reconnect to a station that has already painted is WARM: the daemon
-      // forces an IDR on subscribe on top of priming its freshest cached key,
-      // so this attempt is judged on transport-ready rather than waiting for a
-      // first frame that may never come. Cold connects stay untouched.
-      if (liveReached) nextClient.markWarm();
+      // forces an IDR on subscribe on top of priming its freshest cached key, so
+      // this attempt is judged on transport-ready, not on a first frame that may
+      // never come. Cold connects — and a RESTORE, cold however live the station
+      // was (retryBudget.ts) — stay untouched.
+      if (liveReached && !expectedRestore) nextClient.markWarm();
 
       if (wantControl) {
         controller = createStreamController(client, {
@@ -413,10 +414,8 @@ export function useStreamhostSession(
       }
 
       setPhase('connecting');
-      setMessage(expectedRestore
-        ? 'Reconnecting to restored tile…'
-        : attempt === 0 && !liveReached
-          ? 'Connecting to tile…'
+      setMessage(expectedRestore ? 'Reconnecting to restored tile…'
+        : attempt === 0 && !liveReached ? 'Connecting to tile…'
           : `Reconnecting to tile… (attempt ${Math.max(1, attempt)})`);
 
       // Keyframe watchdog: the transport can be connected yet an idle station sends
@@ -437,7 +436,7 @@ export function useStreamhostSession(
         }
         scheduleRetry(RETRY_REASON_NO_KEYFRAME);
       };
-      watchdog = window.setTimeout(rearm, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
+      watchdog = window.setTimeout(rearm, keyframeWaitMs({ restore: expectedRestore, live: liveReached }));
 
       nextClient.connect().catch((e) => {
         if (client === nextClient) scheduleRetry(`connect failed: ${(e as Error).message}`);
