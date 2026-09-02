@@ -205,7 +205,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
   bootos:      { osId: 'bootos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#8ecae6', eraLabel: '2019 · 512-byte boot-sector OS' },
   pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
-  pcbsd:       { osId: 'pcbsd', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1' },
+  pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

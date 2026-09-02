@@ -115,6 +115,17 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 160
   },
+  "pcbsd": {
+    "label": "Type a note about PC-BSD into KWrite",
+    "lines": [
+      "PC-BSD 1.5.1 \"Da Vinci\", April 2008.",
+      "FreeBSD 6.3-RELEASE underneath, KDE 3.5.8 on top,",
+      "and a graphical installer so nobody has to meet sysinstall.",
+      "Every PBI package carries its own dependencies:"
+    ],
+    "runCommand": "double-click, Next, done.",
+    "perCharMs": 60
+  },
   "pet2001": {
     "label": "Type in a demo program",
     "lines": [

@@ -193,7 +193,7 @@
   "bringUpOrder": 79
  },
  "spa": {
-  "archetypeId": "beige-tower-crt",
+  "archetypeId": "putty-lcd",
   "transport": "streamhost",
   "accentColor": "#2f6fba",
   "eraLabel": "2008 · PC-BSD 1.5.1"
@@ -220,8 +220,8 @@
    "KWrite",
    "PBI Installer"
   ],
-  "blurb": "TODO(spa): PC-BSD — FreeBSD made point-and-click: a graphical installer, KDE 3 and one-click PBI packages, from the year before iXsystems took it over.",
-  "notes": "TODO(spa): PC-BSD 1.5.1 \"Da Vinci\" (March 2008), FreeBSD 6.3-RELEASE, KDE 3.5.8, X.org 7.3; installed from CD1 (688930816 bytes). Archetype beige-tower-crt placeholder — the spa stream may pick a 2008 desktop."
+  "blurb": "PC-BSD — FreeBSD made point-and-click: a graphical installer, KDE 3.5 and one-click PBI packages, the last release before iXsystems' 7.x \"Galileo\".",
+  "notes": "PC-BSD 1.5.1 \"Da Vinci\" (23 April 2008; 1.5 was March), FreeBSD 6.3-RELEASE, KDE 3.5.8, X.org 7.3; Kris Moore's project since 2005, iXsystems since October 2006, renamed TrueOS in 2016. Installed from CD1 only (688930816 bytes)."
  },
  "emulator": {
   "family": "QEMU",
@@ -241,5 +241,16 @@
  },
  "notes": [
   "scaffolded from reactos 2026-09-03 (speedrun #3); PC-BSD 1.5.1 CD1 from archive.org item pcbsd-1.5.1-x-86-cd-1"
- ]
+ ],
+ "demoProgram": {
+  "label": "Type a note about PC-BSD into KWrite",
+  "lines": [
+   "PC-BSD 1.5.1 \"Da Vinci\", April 2008.",
+   "FreeBSD 6.3-RELEASE underneath, KDE 3.5.8 on top,",
+   "and a graphical installer so nobody has to meet sysinstall.",
+   "Every PBI package carries its own dependencies:"
+  ],
+  "runCommand": "double-click, Next, done.",
+  "perCharMs": 60
+ }
 }
