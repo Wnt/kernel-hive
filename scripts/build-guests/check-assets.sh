@@ -141,6 +141,22 @@ ROWS=(
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
   "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  # OpenBSD 7.9 amd64 (officially-free, ISC/BSD): openbsd.sh re-fetches all 13
+  # release files from the fu-berlin mirror if absent, verified against the
+  # literal SHA-256s measured on labhost 2026-09-02 (see docs/lab/OPENBSD-WAVE.md).
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install CD (cd79.iso)|$ASSET_STAGING/openbsd79/cd79.iso|sha256:da6eed49185e7d4e5199e4fb15252d53a377e4a7dad572838705bfebfb7ac0ab|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC kernel (bsd)|$ASSET_STAGING/openbsd79/bsd|sha256:5d576c453f78a48dbb20f9e7d26eeacabb2a4e0b814e5cb578c52489a6ab1030|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC.MP kernel (bsd.mp)|$ASSET_STAGING/openbsd79/bsd.mp|sha256:869351281e616b2eea8cade78f1081babd88d646e89f57acf2938eaa54734793|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 ramdisk installer kernel (bsd.rd)|$ASSET_STAGING/openbsd79/bsd.rd|sha256:6f0974bf92e28e2a97594987cfd1db135fc2fb4aea00f3f3e35ca6f70448f034|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 base set (base79.tgz)|$ASSET_STAGING/openbsd79/base79.tgz|sha256:923d2e03f06408d50d4848334398c6d04b5514dcac7917badfc178a0eef248de|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 man set (man79.tgz)|$ASSET_STAGING/openbsd79/man79.tgz|sha256:7a5e66facf678b41b6b4722b073c357d1eea27facaf4610701ffbec1c80751af|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xbase set (xbase79.tgz)|$ASSET_STAGING/openbsd79/xbase79.tgz|sha256:9418643106bdd17bdf1fad19e2dd9af789c42d5a184999696af23c6e71b94edb|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xfont set (xfont79.tgz)|$ASSET_STAGING/openbsd79/xfont79.tgz|sha256:72ca863adeff7c719f27bd5b74b98f4dd1ecd7980a44ec38fc368d807becf6a2|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xserv set (xserv79.tgz)|$ASSET_STAGING/openbsd79/xserv79.tgz|sha256:2983b33123226d3086290ea7e0497e93553abdf0ffd3bda633cfa47e8b8f7be7|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xshare set (xshare79.tgz)|$ASSET_STAGING/openbsd79/xshare79.tgz|sha256:4a16fb91da827ddd5ef8cea43f3d22753ac02137144bd23bdd7fd91e8ab186a6|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256 manifest|$ASSET_STAGING/openbsd79/SHA256|sha256:50bec66f28426a22b9c9436f6a87cf3e7029e636bb915ba1d0db80d638881b87|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256.sig|$ASSET_STAGING/openbsd79/SHA256.sig|sha256:99db2ba3d63cddeeb9a1166319e48bf4b22224c48bbdc4deff8ecadc0f7b2786|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install notes (INSTALL.amd64)|$ASSET_STAGING/openbsd79/INSTALL.amd64|sha256:28c272da41fa8d6f9ff1399ec4b7748368438c86e4a516e302cad1f16e657807|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
   # so the only supply is volunteer mirrors (nomadlogic / NTNU / Clarkson). This hash was
