@@ -300,6 +300,9 @@ export const OS_FAMILY: Record<string, Family> = {
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
   freedos: 'dos', msdoswin1: 'dos',
+  // bootOS: a bare `$` prompt over BIOS int 16h; the dos rows lead with
+  // Ctrl+Alt+Del, which is the way home from a boot-sector game.
+  bootos: 'dos',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows

@@ -489,5 +489,15 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // bootos: 8088-compatible on purpose, so the exhibit is an XT-class desktop
+  // box — pizzaBoxA, the same wide beige case msdoswin1 sits in, but under
+  // crtA rather than msdoswin1's green-mono crtD (bootOS boots in colour VGA
+  // text mode) with the keyboardD XT board. NO mouse: bootOS reads the BIOS
+  // keyboard and nothing else, and the station has no pointer device, so the
+  // desk is honest about it. pizzaBoxA|crtA|keyboardD|none is unique.
+  bootos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
+    keyboard: 'keyboardD',
+  },
 } as const satisfies Record<string, Assembly>;
 

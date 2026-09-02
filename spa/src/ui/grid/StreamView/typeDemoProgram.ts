@@ -107,10 +107,17 @@ export async function typeDemoProgram({
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
   for (const line of program.lines) {
     if (cancelled()) return false;
-    handle.typeText(applyKeyboard(line, keyboard));
-    // Long enough for the whole line to have actually reached the guest.
-    await sleep(Math.max(delayMs, line.length * charMs));
-    if (cancelled()) return false;
+    // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
+    // either -- the ENTER below is the whole line. bootOS's `enter` command
+    // reads hex lines until it gets one, and the registry validator admits
+    // exactly '' for it (never whitespace, which would type as nothing but
+    // read as content).
+    if (line.length > 0) {
+      handle.typeText(applyKeyboard(line, keyboard));
+      // Long enough for the whole line to have actually reached the guest.
+      await sleep(Math.max(delayMs, line.length * charMs));
+      if (cancelled()) return false;
+    }
     // ENTER commits the line; give the guest time to tokenise it before the
     // next character arrives.
     handle.typeText('\n');

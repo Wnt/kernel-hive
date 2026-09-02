@@ -435,6 +435,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c6c8ca', accentTint: '#64748b', tintMix: 0.3,
     badge: 'x86-64 PC', spec: 'x86-64 • ravynOS 0.6.1 • 2025', kit: 'modern',
   },
+  // bootos: an XT-class beige box (the OS is 8088-compatible by design) in
+  // msdoswin1's warm case beige, with the registry's pale-blue accent. The
+  // badge names the CPU class the code targets; the spec names the only
+  // storage it has and the year it was written, four decades after the XT.
+  bootos: {
+    caseTint: '#c2ad83', accentTint: '#8ecae6', tintMix: 0.4,
+    badge: 'XT 8088', spec: 'FLOPPY • 2019', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
