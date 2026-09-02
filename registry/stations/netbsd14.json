@@ -64,7 +64,7 @@
   "render": {
     "signalOrder": 74,
     "stationsManifestOrder": 72,
-    "stationsManifestPrelude": "\n# netbsd14 (VMID 176) \u2014 NetBSD 1.4.1 i386 (1999), XFree86 3.3.3.1 on Cirrus; absolute pointer via x11warp.\n",
+    "stationsManifestPrelude": "\n# netbsd14 (VMID 176) — NetBSD 1.4.1 i386 (1999), XFree86 3.3.3.1 on Cirrus; absolute pointer via x11warp.\n",
     "bringUpGroup": 1,
     "bindingOrder": 79,
     "bindingPrelude": "",
@@ -182,14 +182,14 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#f26522",
-    "eraLabel": "1999 \u00b7 NetBSD 1.4.1 \u2014 XFree86 3.3",
+    "eraLabel": "1999 · NetBSD 1.4.1 — XFree86 3.3.3.1",
     "pointerRel": false
   },
   "museum": {
     "id": "netbsd14",
     "displayName": "NetBSD 1.4.1",
     "year": 1999,
-    "lineage": "386BSD \u2192 NetBSD 0.8 (1993) \u2192 1.0 \u2192 1.4.1 (1999) \u2192 NetBSD 10",
+    "lineage": "386BSD → NetBSD 0.8 (1993) → 1.0 → 1.4.1 (1999) → NetBSD 10",
     "arch": "i386 (i486+), XFree86 3.3.3.1 SVGA server",
     "ramMB": 128,
     "era": "1990s",
@@ -210,7 +210,7 @@
       "xclock",
       "xcalc"
     ],
-    "blurb": "NetBSD 1.4.1: the \"of course it runs NetBSD\" BSD of 1999 \u2014 one kernel tree for 20 architectures, sysinst, pkgsrc and the last XFree86 3.3 desktop before the 4.x rewrite.",
+    "blurb": "NetBSD 1.4.1, August 1999: the portable BSD that ran one source tree on every architecture it touched, with sysinst, the new UVM memory system and pkgsrc — here on i386 under the last monolithic XFree86 3.3 server, a year before the 4.0 rewrite.",
     "notes": "Live streamhost station. Boots to an XFree86 3.3.3.1 ctwm session on the Cirrus adapter with an xterm, xclock and xcalc; the pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
   },
   "emulator": {
@@ -232,5 +232,15 @@
   "migrationExceptions": [],
   "notes": [
     "scaffolded from pcgeos on 2026-09-02 (NETBSD14-WAVE); media: NetBSD-1.4.1/i386 boot.fs + 13 binary sets from archive.netbsd.org, staged in /data/assets-staging/netbsd14"
-  ]
+  ],
+  "demoProgram": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xcalc &"
+    ],
+    "runCommand": "xcalc &",
+    "perCharMs": 80
+  }
 }

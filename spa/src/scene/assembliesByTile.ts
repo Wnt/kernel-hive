@@ -506,5 +506,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // netbsd14: a 1999 beige PC clone under a colour SVGA CRT — same case family
+  // as pcgeos, with the PS/2 mouse and 101-key board the X server is driven by.
+  netbsd14: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 

@@ -451,6 +451,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // netbsd14: a late-1990s beige Pentium-class clone with a Cirrus SVGA card,
+  // the kind of box NetBSD's i386 port was installed on with sysinst. The accent
+  // is the registry's NetBSD flag orange.
+  netbsd14: {
+    caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
