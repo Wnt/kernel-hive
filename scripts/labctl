@@ -52,7 +52,8 @@
 #   labctl shot  <tile> [out.png] screendump -> PNG (default /tmp/<tile>.png)
 #   labctl type  <tile> "<text>"  type text into the guest (no Enter; --verify
 #                                 also screendumps afterwards)
-#   labctl key   <tile> <qcode..> send one key chord (e.g. ctrl c ; or: ret)
+#   labctl key   <tile> <qcode..> send one key chord (e.g. ctrl c ; or: ret ;
+#                                 or +-separated: ctrl+esc, ctrl+alt+delete)
 #   labctl sh    <tile> "<cmd>"   type a shell line + Enter (BLIND — no capture)
 #   labctl exec  <tile> "<cmd>"   REAL exec w/ captured stdout+exit (ssh tiles);
 #                                 errors with alternatives where unavailable
