@@ -55,3 +55,18 @@ station. Branch `pcgeos` is the ledger; every stream branches from it.
 Merging to `main`, `git push origin main`, `scripts/dev/box-deploy.sh --apply`,
 `scripts/dev/station-up.sh pcgeos`, the SPA build/deploy, withdrawing the smoke
 overlay, and the final framebuffer acceptance.
+
+## Absolute pointer (2026-09-03, coordinator alone, ~40 min)
+
+Operator: "pointer based graphical OSes need absolute cursor positioning before
+they are considered fully integrated." Route: `kh-ramabs` (beos/rhapsody), because
+DOS's CTMOUSE understands no absolute device and `-vga std` has no hardware cursor,
+but CTMOUSE keeps the pointer as int16 x,y in its resident data and GEOS's
+`genmouse.geo` takes the absolute CX/DX from the INT 33h callback. Steps: re-bake
+the golden under `/opt/qemu-beos` (binary + golden are one unit); five positions at
+2-unit steps (1:1 below GEOS's acceleration; 20-unit packets accelerate ~1.4x),
+screendump + `pmemsave` of the first 1 MB, bias search → six (0,0) candidates;
+one QEMU start per candidate with the device's connect-time write probe → exactly
+one verified, `0x76e0`; MOVEA sweep pixel-exact at five targets. Tooling:
+`scripts/dev/pcgeos-ramabs-derive.py`. Trap: a reference frame with the pointer
+clipped at the screen edge still shows 3 px of the sprite — mask it.

@@ -104,7 +104,7 @@ text-mode VGA) and this station's own disk.
   partition FreeDOS boots from, so storing it as qcow2 lets `savevm golden`
   capture RAM and the disk contents together, and `loadvm golden` restores
   both: a visitor's edits do not carry to the next.
-- **PS/2 relative pointer** (`SH_POINTER=rel`, `pointer.method:
+- **Pointer: ABSOLUTE** via `-device kh-ramabs` (the beos/rhapsody route, `docs/lab/BEOS-ABSOLUTE-POINTER.md`). DOS's CTMOUSE keeps the pointer as int16 x,y at guest-physical `0x76e0` and GEOS's `genmouse.geo` takes the absolute CX/DX from its INT 33h callback, so the device writes the visitor's pixel there and one 1-unit PS/2 nudge makes CTMOUSE republish it. 1 unit = 1 px below GEOS's acceleration threshold; hotspot (0,0); five MOVEA targets including (20,560) and (780,30) landed pixel-exact. The address is BOUND TO THE GOLDEN — re-derive with `scripts/dev/pcgeos-ramabs-derive.py` after every re-bake (~3 min: bias search over the first 1 MB, then the device's own write probe per candidate; six addresses tracked, exactly one verified). Runs under `/opt/qemu-beos` (the kh-ramabs build): binary and golden are one unit.
   qemu-ps2-relative`) through CTMOUSE (loaded by `FDAUTO.BAT`) feeding
   `genmouse.geo`'s INT 33h reads. No absolute-pointer path has been attempted
   on this station — see *Known gaps*.
@@ -134,6 +134,8 @@ after `loader.exe` finishes — a software cursor drawn into the scanout, not a
 hardware overlay.
 
 ## Checkpoint
+
+- **Re-baked 2026-09-03 under `/opt/qemu-beos/bin/qemu-system-x86_64`** (the kh-ramabs build; the earlier pve-qemu bake is kept beside it as `disk.qcow2.pre-abs-bak`). VM_CLOCK 0000:01:06.812, VM_SIZE 3.51 MiB, `KH_RAMABS_ADDR=0x76e0` derived against it. The facts below describe the first bake and still hold except the binary.
 
 - Snapshot name: `golden`, saved via QMP `human-monitor-command` `savevm golden`.
 - Carrier disk: `disk.qcow2` is the ONLY block device — staged at

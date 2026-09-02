@@ -815,7 +815,7 @@
     "pcgeos": {
       "dir": "/data/vms/streamhost/stations/pcgeos",
       "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -828,7 +828,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54175,
-      "notes": "no exec channel: drive via QMP keys/mouse and read the framebuffer. disk.qcow2 is the ONLY block device and carries the 'golden' vmstate (FreeDOS FAT16 + C:\\ENSEMBLE) — never delete or replace it; recapture only via checkpoint-guard."
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock (labctl mctl): the commanded pixel is written into CTMOUSE's own coordinate and published with one 1-unit PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. disk.qcow2 is the ONLY block device and carries the 'golden' vmstate (FreeDOS FAT16 + C:\\ENSEMBLE), baked under /opt/qemu-beos -- never delete or replace it; recapture only via checkpoint-guard, and re-derive KH_RAMABS_ADDR after."
     },
     "pdp11": {
       "dir": "/data/vms/streamhost/stations/pdp11",
