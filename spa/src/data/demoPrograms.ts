@@ -85,6 +85,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "freebsd411": {
+    "label": "Type a few commands into the Konsole",
+    "lines": [
+      "uname -a",
+      "ls /usr/local/bin | head",
+      "kcalc &"
+    ],
+    "runCommand": "kcalc &",
+    "perCharMs": 80
+  },
   "mpf2": {
     "label": "Type in a demo program",
     "lines": [
