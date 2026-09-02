@@ -4,7 +4,7 @@ subtitle: 1999 · the portable BSD, on i386 under the last XFree86 3.3 server
 hero: /posters/netbsd14/desktop.webp
 images:
   - src: /posters/netbsd14/desktop.webp
-    alt: NetBSD 1.4.1 on an i386 PC — the XFree86 3.3.3.1 desktop with an xterm, xclock and xcalc under the ctwm window manager
+    alt: NetBSD 1.4.1 on an i386 PC — the XFree86 3.3.3.1 desktop with an xterm, xclock and xcalc under the twm window manager
     caption: NetBSD 1.4.1 booted to an XFree86 3.3.3.1 session on an emulated Cirrus Logic GD5446 — an xterm, xclock and xcalc under the window manager the install sets provide.
 ---
 ## Origins

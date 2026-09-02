@@ -15,7 +15,7 @@
           "class": "slow",
           "estimated": "~15m",
           "automation": "assisted",
-          "produces": "netbsd14.qcow2 (NetBSD 1.4.1 i386 full install incl. X sets; XFree86 3.3.3.1 SVGA on Cirrus, ctwm session auto-started on the console)",
+          "produces": "netbsd14.qcow2 (NetBSD 1.4.1 i386 full install incl. X sets; XFree86 3.3.3.1 SVGA on Cirrus, twm session auto-started on the console)",
           "flags": []
         }
       }
