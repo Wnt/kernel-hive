@@ -241,8 +241,24 @@ def scaffold_template(name: str, values: dict[str, str]) -> bytes:
     return text.encode()
 
 
+def placeholder_hero(os_id: str) -> bytes:
+    """A 1024x768 black WebP carrying the id, so a promoted entry has a hero to validate."""
+    from io import BytesIO
+
+    from PIL import Image, ImageDraw
+
+    image = Image.new("RGB", (1024, 768), "black")
+    draw = ImageDraw.Draw(image)
+    draw.text((32, 32), f"{os_id}\nPLACEHOLDER hero", fill="white")
+    buffer = BytesIO()
+    image.save(buffer, format="WEBP", quality=60)
+    return buffer.getvalue()
+
+
 def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
-    """Create an inert candidate scaffold, then regenerate canonical outputs."""
+    """Create an inert candidate scaffold (registry row, builder, guest doc, cold-boot arm,
+    poster prose + placeholder hero, and for tier 1 the station launcher + env fixture),
+    then regenerate canonical outputs."""
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", os_id):
         raise RegistryError("new id must match [a-z0-9][a-z0-9-]*")
     globals_doc, rows = load()
@@ -392,7 +408,13 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
     builder_path = REPO / "scripts/build-guests/tiles" / f"{os_id}.sh"
     guest_path = REPO / "docs/guests" / f"{os_id}.md"
     coldboot_path = REPO / "scripts/coldboot" / f"{os_id}-bootrec-arm.sh"
-    for path in (registry_path, builder_path, guest_path, coldboot_path):
+    poster_path = POSTERS / f"{os_id}.md"
+    hero_path = REPO / "spa/public/posters" / os_id / "desktop.webp"
+    station_dir = REPO / "streamhost/stations" / os_id
+    launcher_path = station_dir / "qemu-streamhost.sh"
+    fixture_path = station_dir / "station.env.fixture"
+    sidecars = [poster_path, hero_path] + ([launcher_path, fixture_path] if tier == 1 else [])
+    for path in (registry_path, builder_path, guest_path, coldboot_path, *sidecars):
         if path.exists():
             raise RegistryError(f"refusing to overwrite existing {path.relative_to(REPO)}")
 
@@ -410,12 +432,22 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
             (builder_path, scaffold_template(f"new-os-builder-tier{tier}.sh.in", values)),
             (guest_path, scaffold_template("new-os-guest.md.in", values)),
             (coldboot_path, scaffold_template("new-os-coldboot-arm.sh.in", values)),
+            # The sidecars validate demands the moment the entry is promoted: poster
+            # prose and a hero image, plus (tier 1) the launcher and env fixture the
+            # coordinator otherwise hand-copies from a sibling station.
+            (poster_path, scaffold_template("new-os-poster.md.in", values)),
+            (hero_path, placeholder_hero(os_id)),
         ]
     )
+    if tier == 1:
+        scaffold_files[launcher_path] = scaffold_template("new-os-qemu-streamhost.sh.in", values)
+        scaffold_files[fixture_path] = scaffold_template("new-os-station.env.fixture.in", values)
     try:
         for path, data in scaffold_files.items():
             atomic_write(path, data)
         os.chmod(builder_path, 0o755)
+        if tier == 1:
+            os.chmod(launcher_path, 0o755)
         # A scaffold is an ordinary canonical registry change: leave generated
         # files current so `make station-registry-check` passes immediately.
         cmd_generate()
@@ -428,6 +460,8 @@ def cmd_new(os_id: str, tier: int, archetype: str, slot_arg: str) -> int:
     print(f"  scripts/build-guests/tiles/{os_id}.sh")
     print(f"  docs/guests/{os_id}.md")
     print(f"  scripts/coldboot/{os_id}-bootrec-arm.sh")
+    for path in sidecars:
+        print(f"  {path.relative_to(REPO)}")
     print("candidate is disabled; fill TODOs and prove its golden before promotion")
     return 0
 
