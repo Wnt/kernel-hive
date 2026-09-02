@@ -53,7 +53,7 @@ spot. Two rounds of cheap runners (`sonnet-low`, one clone each, 0.6 s to clone)
 | pciide port conflict: `-machine isapc` (IDE on ISA) | LOSS, but decisive | `wdc0 at isa0` attached BEFORE `lpt0` there and the hang stayed after `lpt0` — IDE is exonerated |
 | INSTALL kernel from the floppy, `boot -a`, root `wd0a` | **WIN** | full multiuser boot of the installed disk (`evidence/instk-boot-a-wd0a-multiuser.png`) — the enabler for an in-guest kernel build |
 
-Round 3 (running as this is written): two `sonnet` runners build custom kernels
+Round 3 — **WIN: `KHMIN`** (`scripts/build-guests/tiles/netbsd14/KHMIN`), built in-guest from the INSTALL ramdisk chroot and booted from `wd0` to the wscons `login:`; `KHCONS` never built (its runner stayed on the multiuser route, where every CD mount and TFTP transfer hangs). Two `sonnet` runners built custom kernels
 in-guest from `syssrc.tgz` (14 234 946 B, staged) on a second CD (`extras.iso`):
 `KHCONS` = GENERIC minus the ISA devices INSTALL lacks (sound, bus mice,
 joystick, tape, mcd, nca, lpt1/lpt2) and `KHMIN` = only the ISA devices the

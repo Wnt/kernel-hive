@@ -1,0 +1,45 @@
+# netbsd14 -- XFree86 3.3.x XF86_SVGA on the emulated Cirrus Logic GD5446 (QEMU -vga cirrus)
+Section "Files"
+    RgbPath   "/usr/X11R6/lib/X11/rgb"
+    FontPath  "/usr/X11R6/lib/X11/fonts/misc/"
+    FontPath  "/usr/X11R6/lib/X11/fonts/75dpi/"
+    FontPath  "/usr/X11R6/lib/X11/fonts/100dpi/"
+EndSection
+Section "ServerFlags"
+EndSection
+Section "Keyboard"
+    Protocol  "Standard"
+    AutoRepeat 500 30
+    XkbDisable
+EndSection
+Section "Pointer"
+    Protocol  "PS/2"
+    Device    "/dev/pms0"
+EndSection
+Section "Monitor"
+    Identifier "mon"
+    VendorName "Unknown"
+    ModelName  "Unknown"
+    HorizSync  30-64
+    VertRefresh 50-90
+    Modeline "1024x768" 65 1024 1032 1176 1344 768 771 777 806 -hsync -vsync
+    Modeline "800x600"  40  800  840  968 1056 600 601 605 628 +hsync +vsync
+EndSection
+Section "Device"
+    Identifier "cirrus"
+    VendorName "Cirrus Logic"
+    BoardName  "GD5446"
+    Chipset    "clgd5446"
+    VideoRam   4096
+EndSection
+Section "Screen"
+    Driver     "svga"
+    Device     "cirrus"
+    Monitor    "mon"
+    DefaultColorDepth 8
+    Subsection "Display"
+        Depth    8
+        Modes    "1024x768" "800x600"
+        ViewPort 0 0
+    EndSubsection
+EndSection

@@ -42,7 +42,7 @@
 #   -> confirm install, let sysinst extract every set
 #   -> configure timezone/rc, no X config needed here (XFree86 3.3.3.1 ships
 #      in the sets; the golden stream configures XF86Config after first boot)
-#   -> Exit sysinst -> reboot -> remove floppy/CD, boot wd0
+#   -> Exit sysinst -> KERNEL + X: tiles/netbsd14/README.md (GENERIC hangs on QEMU)
 #
 # Launch line (assisted install; disk boots wd0 afterward with -boot c):
 #   qemu-system-i386 -enable-kvm -machine pc-i440fx-11.0,acpi=off -cpu host \
