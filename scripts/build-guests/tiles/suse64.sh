@@ -79,7 +79,7 @@ stage_media() {
 
 make_disk() {
   [ ! -e "$DISK" ] || die "refusing to overwrite existing $DISK (move it aside explicitly)"
-  qemu-img create -f qcow2 "$DISK.tmp" 4G >/dev/null
+  qemu-img create -f qcow2 "$DISK.tmp" 1536M >/dev/null
   mv "$DISK.tmp" "$DISK"
 }
 
