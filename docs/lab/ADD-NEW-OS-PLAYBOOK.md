@@ -22,8 +22,12 @@ make station-registry-check
 ```
 
 The command reserves `slot` and UDP `54000+slot`, writes a schema-valid disabled
-candidate entry, copies the matching builder template, and stubs the guest doc
-and cold-boot arm. Disabled means it does not enter the streamhost, signaling,
+candidate entry, copies the matching builder template, stubs the guest doc
+and cold-boot arm, writes PLACEHOLDER poster prose (`registry/posters/<id>.md`)
+with a 1024x768 placeholder hero (`spa/public/posters/<id>/desktop.webp`), and for
+tier 1 scaffolds `streamhost/stations/<id>/qemu-streamhost.sh` and
+`station.env.fixture` (loadvm golden, TODO media/devices) — so validate is green
+the moment the entry is flipped to production. Disabled means it does not enter the streamhost, signaling,
 reset, or UI lineups while its TODOs remain. The paved path is now **scaffold →
 fill → verify**: builders use [`scripts/lib/labqmp.py`](../../scripts/lib/labqmp.py)
 for build-time QMP console/input, and clone-only checkpoint proof uses

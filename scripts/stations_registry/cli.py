@@ -171,7 +171,11 @@ def main() -> int:
     emit.add_argument("name", help="e.g. gallery-manifest.json, index.json, scripts/serve/tiles.json")
     explain = sub.add_parser("explain")
     explain.add_argument("id")
-    new = sub.add_parser("new", help="scaffold an inert candidate tile")
+    new = sub.add_parser(
+        "new",
+        help="scaffold an inert candidate tile: registry row, builder, guest doc, cold-boot arm, "
+        "poster prose + placeholder hero, and (tier 1) station launcher + env fixture",
+    )
     new.add_argument("id")
     new.add_argument("--tier", type=int, choices=(1, 2, 3), required=True)
     new.add_argument("--archetype", required=True)
