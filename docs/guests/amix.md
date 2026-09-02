@@ -178,7 +178,7 @@ Two goldens exist, one combination each with the same binary and device set:
 | `amix-system.hdf.golden-color-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix-color/golden/` — baked from a copy of the mono golden; colour only, no pointer network |
 | `amix-system.hdf.golden-20260901-x11warp` | `X` on the chipset | 640×512, depth 1 | `/data/vms/sandbox/amix/rig/` — mono plus the pointer network (hosts, aen0, xhost) |
 | `amix-system.hdf.golden-unified-20260901` | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `0da364ed…` — shipped 2026-09-01: the colour golden plus the pointer network, `xhost +slirphost` in both `/etc/kh-xsession` and `/etc/kh-xsession.mono`; halted per the bake rule |
-| **`amix-system.hdf.golden-scene-20260902`** | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `78fc69e6…` — **the one to ship**: the unified golden with the deterministic `/etc/kh-xsession` (olwm first, xterm frame over the origin); the previous session kept as `/etc/kh-xsession.20260901`; halted per the bake rule |
+| **`amix-system.hdf.golden-scene-20260902`** | `X -tiga` on the A2410 | 1024×768, depth 8 | `/data/vms/sandbox/amix/rig/`, sha256 `8c2e175c…` — **the one to ship**: the unified golden with the deterministic `/etc/kh-xsession` (olwm first, xterm frame over the origin); the previous session kept as `/etc/kh-xsession.20260901`; halted per the bake rule |
 
 - Ready state (both): the OPEN LOOK desktop, up **without a login**, holding an
   xterm titled `Amiga UNIX 2.1` that opens with
@@ -439,7 +439,14 @@ first run, before the session wrote stderr files — came up with xclock and
 the Calculator and **no xterm process at all**: the client exited during
 startup, with olwm already managing (so not the placement race). The stderr
 files were added for exactly that case and have been empty in every boot
-since; see the stress note below for the hypothesis tested.
+since. The hypothesis tested next — that the slirp peer's connection attempts,
+**refused** by the server until `xhost` runs (the harness and the live daemon
+both knock from the moment X answers), hit X11R4's refusal path while the
+clients are connecting — did not hold: 8 boots knocking every 250 ms
+(`stressboots.log`, ~8× the rate) were 8/8 complete. So the fixed session
+stands at 22 complete scenes in 23 boots, the last 20 consecutive, against
+the old session's ~1 loss in 5; the single early-exit remains an open item
+below, with the stderr files in the golden as the trap for it.
 
 ### Two emulators on one Xvfb look like a console with the desktop running
 
@@ -497,16 +504,24 @@ bottom-right corner).
    guest X server, on every reconnect. The scene absorbs it (the xterm's frame
    covers the origin), but it is the daemon deciding where a visitor's pointer
    starts; a centre default would match what the X server itself does.
-2. **Instrumented boots of the OLD session are in
+2. **One client exit in 23 boots of the fixed session is unexplained.** `fb3`
+   of the first acceptance run (`fixboots-v1.log`, `fb3.png`): olwm managing,
+   xclock and the Calculator up, and no xterm process — it exited during
+   startup and left nothing (no stderr capture yet on that disk; the golden
+   now writes `/tmp/xterm.err` etc.). Not the placement race (olwm was first)
+   and not refused peer connections (stress-tested 8/8). If a visitor ever
+   meets a two-client scene on the new golden, read those files before the
+   next reset overwrites the disk, and raise the count here.
+3. **Instrumented boots of the OLD session are in
    `/data/vms/sandbox/amix-scene/rig/diagboots.log`** (per-client exit status
    and stderr, frame classification per boot) for anyone re-deriving the race.
-3. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
+4. **The 2.1p2a patch disk** (archive.org, 872 196 B) is not applied. VOM runs
    2.1c/2.1p2a; this install is stock 2.1 (`0800430`).
-4. **Retronet.** The A2065 is up on slirp for the pointer only (host-only,
+5. **Retronet.** The A2065 is up on slirp for the pointer only (host-only,
    loopback-bound, no default route). A web-plane join is a real follow-up;
    note `in.telnetd` listens on 23, so an exec channel is cheap. But see
    `museum.periodBrowser`: a 1992 SVR4 machine has no browser and no ICQ
    client, so a retronet join would show a visitor nothing.
-5. **The golden is ~150 MB larger than it needs to be** — package set (2) pulled
+6. **The golden is ~150 MB larger than it needs to be** — package set (2) pulled
    in the `amigasrc`/`gnusrc`/`Xsource`/`X11r5src` trees, which the exhibit does
    not use. A custom selection would trim it if the size ever matters.
