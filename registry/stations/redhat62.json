@@ -192,7 +192,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#cc0000",
-    "eraLabel": "2000 · Red Hat Linux 6.2 — GNOME",
+    "eraLabel": "2000 · Red Hat Linux 6.2 — GNOME 1.0",
     "pointerRel": false
   },
   "museum": {
@@ -207,18 +207,19 @@
     "eraSoftware": [
       "GNOME 1.0.55",
       "Enlightenment 0.16",
+      "KDE 1.1.2",
       "XFree86 3.3.6",
       "Netscape Communicator 4.72",
-      "KDE 1.1.2"
+      "RPM 3.0.4"
     ],
     "periodBrowser": "Netscape Communicator 4.72",
     "iconicApps": [
       "GNOME panel + gmc",
       "gnome-terminal",
-      "Netscape Communicator",
+      "Netscape Communicator 4.72",
       "GIMP"
     ],
-    "blurb": "Red Hat Linux 6.2 'Zoot' from April 2000: kernel 2.2 with the GNOME 1.0 desktop under Enlightenment, the last Red Hat before the dot-com peak turned Linux into a boxed product."
+    "blurb": "Red Hat Linux 6.2 'Zoot' from April 2000: kernel 2.2.14 with the GNOME 1.0 desktop under Enlightenment, the last 6.x release before 7.0's glibc 2.2 transition and the first Red Hat shipped as a public company."
   },
   "emulator": {
     "family": "QEMU",
@@ -237,6 +238,6 @@
     "fixture": "Red Hat Linux 6.2 GNOME 1.0 desktop under Enlightenment, logged in as the unprivileged gallery user via an inittab startx respawn, 1024x768x16 on cirrus; /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest's own X server. loadvm golden restores the desktop; guest starts frozen (-S) until the first visitor."
   },
   "notes": [
-    "scaffolded from redstar2 on 2026-09-02; TODO: media, museum, spa"
+    "scaffolded from redstar2 on 2026-09-02; museum + spa filled by the spa stream; no demoProgram — GNOME 1.0 has no safe keyboard-only demo sequence"
   ]
 }

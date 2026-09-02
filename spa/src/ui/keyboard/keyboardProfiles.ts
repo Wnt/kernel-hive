@@ -307,6 +307,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
+  // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
+  // Unix rows are the honest common ground, at the fleet's pacing floor.
+  redhat62: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows

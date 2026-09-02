@@ -451,6 +451,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
+  // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
+  // Registry red accent (Red Hat's own).
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

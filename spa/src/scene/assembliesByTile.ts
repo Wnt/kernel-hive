@@ -506,5 +506,12 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
+  // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
+  // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
+  redhat62: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
 } as const satisfies Record<string, Assembly>;
 
