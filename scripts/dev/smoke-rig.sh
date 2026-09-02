@@ -260,6 +260,12 @@ done <"$src"
 echo "SH_INPUT_BACKEND=dbus-rel" >>"$out"
 echo "SH_IDLE_PAUSE_SECS=0" >>"$out"
 echo "SH_RESET_MODE=restart" >>"$out"
+# Runtime residue stays in the rig: unset, the daemon writes probes.json, traces/ and
+# logs/ under /data/vms/streamhost/stations/<id>/, which creates an undeclared
+# station dir in the fleet tree and refuses `labctl gen` fleet-wide (2026-09-03).
+echo "SH_PROBES_JSON=$rig/probes.json" >>"$out"
+echo "SH_TRACE_DIR=$rig/traces" >>"$out"
+echo "SH_LOG_DIR=$rig/logs" >>"$out"
 echo "-- wrote $out ($(wc -l <"$out") lines)"
 EOF_REMOTE
 
