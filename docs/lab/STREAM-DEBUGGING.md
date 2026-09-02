@@ -266,6 +266,23 @@ in three ways, all of which read as loss:
   1 Hz, far too coarse for the client's 100 ms accounting ticks. The operator's
   win95 tab read 93–96 % "loss" this way while RTT stayed 11–14 ms.
 
+**The steady-state cycle is the same fault, on a long-lived tab.** Two viewers
+of win95, same second, 2026-09-02 19:30:12-18 UTC:
+
+```
+19:30:13 18e85073  fps20 dec10.3/q0 rtt7.9/fl8.1/ex0 loss0.0/w0.0n70  dr4
+19:30:18 5905d5cc  fps2  dec2.4/q0 rtt16.0/fl16.9/ex9 loss93.8/w93.8n48 dr163
+```
+
+B is typing, so the shared encoder runs at 20 fps; A is idle and is relayed ~2
+fps of it, so ~90 % of the ENCODER's ids never reach A and A reports 93.8 %
+"loss" with `framesDropped` 4→163 in six seconds. `worst_loss` is a MAX across
+sessions and the tier is GLOBAL, so A's arithmetic downshifts the station for
+everyone — including a clean observer tab reporting `loss0.0` and `rtt 8-9 ms`
+on every line. That is the whole `path0→1→0→1→0→1→0` cycle; the daemon's own
+`[abr] DOWN why=` said `loss/backlog` every time and never `rtt`, and
+`SH_ABR_BACKLOG_DOWNSHIFT` is unset so the skip trigger was inert.
+
 The wire now carries a **session-local** id (`transport/mod.rs` `out_id`) that
 counts the AUs THIS session was actually sent, so a hole the client sees is a
 hole the wire made. The skip counter is unchanged and still reported — it feeds
@@ -274,6 +291,20 @@ to race the frames it explains. `abr.rs` additionally ignores reported loss for
 the first 4 s / 20 reports of a session (`warming_up`) and requires the CURRENT
 report to agree with the smoothed value before a downshift (`loss_congested`), so
 one bad interval cannot trip the 1.5 s breach on its decay tail.
+
+Two more pieces of hysteresis went in with it:
+
+- **the persistence window is PER SESSION** (`SessionState::congested_since`). It
+  was one global window, which a churning set of sessions filled between them: A
+  breaches 0.8 s and leaves, B connects and breaches 0.8 s, and the global window
+  — never reset while *somebody* was congested each tick — satisfied the 1.5 s
+  BREACH though no single viewer ever had a sustained problem.
+- **futile-cycle damping** (`breach_need`). A downshift that an upshift undoes
+  within 45 s did not fix anything, so the next breach must hold twice as long,
+  doubling per cycle, capped at 12 s and forgotten after 5 minutes of a still
+  ladder. Each cycle costs every viewer of the station an encoder reopen and a
+  fresh IDR, so the controller gets more sceptical every time it is proven wrong.
+  `[abr] DOWN`/`UP` now print `futile=N`.
 
 ### Station "freezes" while in use
 Look for `rx0.0M fps0` in consecutive `stats` rows with healthy `rtt` and zero

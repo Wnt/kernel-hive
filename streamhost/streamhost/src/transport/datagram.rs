@@ -45,6 +45,9 @@ pub(super) struct DatagramCtx {
     pub keys: crate::key_state::SharedKeys,
     pub input_router: Option<Arc<crate::realtime_input::InputRouter>>,
     pub abr: Arc<Abr>,
+    /// The CONGESTION skip counter (backlog gate + ring overrun only), folded into
+    /// the ABR backlog signal. NOT the client-facing `skip_count` — see the two
+    /// counters where they are created in `transport/mod.rs`.
     pub skip_count: Arc<AtomicU64>,
     pub strace: Arc<SessionTrace>,
     pub sess_id: u64,

@@ -198,6 +198,59 @@ fn loss_congested_needs_both_signals() {
     assert!(!loss_congested(50.0, DOWN_LOSS_PCT - 0.1));
 }
 
+/// L-6: the per-session breach verdict. Loss and backlog keep the short BREACH;
+/// an RTT-only breach must hold for RTT_BREACH; a clean session breaches never.
+#[test]
+fn session_breach_names_the_signal_and_its_window() {
+    assert_eq!(session_breach(0.0, 0.0, 0.0, 0.0, false), None);
+    assert_eq!(
+        session_breach(50.0, 50.0, 0.0, 0.0, false),
+        Some(("loss/backlog", BREACH))
+    );
+    assert_eq!(
+        session_breach(0.0, 0.0, DOWN_RTT_EXCESS_MS, 0.0, false),
+        Some(("rtt", RTT_BREACH))
+    );
+    // Backlog only counts while armed, and loss wins the naming when both hold.
+    assert_eq!(session_breach(0.0, 0.0, 0.0, 99.0, false), None);
+    assert_eq!(
+        session_breach(0.0, 0.0, 0.0, DOWN_SKIP_RATE, true),
+        Some(("loss/backlog", BREACH))
+    );
+    // A recovered burst (smoothed still high, current clean) is NOT a breach —
+    // and RTT must not pick up the slack for it.
+    assert_eq!(session_breach(50.0, 0.0, 0.0, 0.0, false), None);
+}
+
+/// L-6, the win95 `path0->1->0->1->0->1->0` of 2026-09-02: a downshift that an
+/// upshift undoes taught the ladder nothing, so the next breach must hold longer.
+/// It doubles per futile cycle, is capped, and a genuinely degrading link is
+/// still caught within MAX_BREACH.
+#[test]
+fn a_futile_cycle_makes_the_next_breach_harder() {
+    assert_eq!(breach_need(BREACH, 0), BREACH);
+    assert_eq!(breach_need(BREACH, 1), BREACH * 2);
+    assert_eq!(breach_need(BREACH, 2), BREACH * 4);
+    // Capped: 1.5 s * 8 = 12 s is exactly MAX_BREACH, and nothing exceeds it.
+    assert_eq!(breach_need(BREACH, 3), MAX_BREACH);
+    assert_eq!(breach_need(BREACH, 99), MAX_BREACH);
+    // The RTT window is already long; damping must not push it past the cap.
+    assert_eq!(breach_need(RTT_BREACH, 0), RTT_BREACH);
+    assert!(breach_need(RTT_BREACH, 9) <= MAX_BREACH);
+}
+
+/// A session inside its warm-up must produce no breach at all, whatever it
+/// reports — the ladder cannot be moved by a client that has not measured
+/// anything yet (L-5 feeding L-6).
+#[test]
+fn a_warming_session_breaches_on_nothing() {
+    let s = SessionState::new();
+    assert!(s.warming_up(Instant::now()));
+    // `evaluate` zeroes a warming session's loss before asking; the verdict on
+    // those zeroed inputs must be None even though the raw report was 93.8 %.
+    assert_eq!(session_breach(0.0, 0.0, 0.0, 0.0, false), None);
+}
+
 /// The smoothed skip rate: first fold seeds the baseline (delta 0, not the whole
 /// pre-connect count); sustained skipping lifts it above the up-veto; a quiet
 /// spell decays it back toward zero (so it can't pin the tier low forever).

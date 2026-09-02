@@ -331,6 +331,16 @@ async fn handle_session(
     // the ABR controller (the server-authoritative backlog signal). Stays 0 on a LAN
     // (the gate never skips there), so every downstream use is a no-op there.
     let skip_count = Arc::new(AtomicU64::new(0));
+    // ...and the CONGESTION half of the same story, reported to nobody but the ABR
+    // controller. `skip_count` above answers "what did the relay withhold from this
+    // client", which the HUD wants and which must include the join gate. The ladder
+    // must NOT: a join-gate discard is the cost of starting a session cleanly, it
+    // happens once, in the first milliseconds, and feeding a ~30-frame burst of it
+    // into `skip_rate_ewma` would let a connect read as sustained egress backlog the
+    // moment SH_ABR_BACKLOG_DOWNSHIFT is ever armed. Only the backlog gate and a
+    // ring overrun — the two things that mean "this session cannot keep up" —
+    // increment this one.
+    let congestion_skips = Arc::new(AtomicU64::new(0));
 
     // The abs->rel model is DAEMON-WIDE (created in serve()); a new client session
     // re-arms only its own per-connection fields and keeps the tracked guest
@@ -353,7 +363,7 @@ async fn handle_session(
         keys: keys.clone(),
         input_router: input_router.clone(),
         abr: abr.clone(),
-        skip_count: skip_count.clone(),
+        skip_count: congestion_skips.clone(),
         strace: strace.clone(),
         sess_id,
     });
@@ -576,6 +586,7 @@ async fn handle_session(
                     match backlog_gate.on_au(au.is_key, behind, now) {
                         RelayVerdict::Skip => {
                             skip_count.fetch_add(1, Ordering::Relaxed);
+                            congestion_skips.fetch_add(1, Ordering::Relaxed);
                             if vt {
                                 eprintln!(
                                     "[vtrace] backlog-skip frame_id={} behind={behind}",
@@ -674,6 +685,7 @@ async fn handle_session(
                 // them — count them as skips too so the client's gap for this lap is
                 // attributed to the server, not to network loss.
                 skip_count.fetch_add(n, Ordering::Relaxed);
+                congestion_skips.fetch_add(n, Ordering::Relaxed);
                 if vt {
                     eprintln!("[vtrace] lagged {n}");
                 }
