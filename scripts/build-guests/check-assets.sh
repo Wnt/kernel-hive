@@ -136,6 +136,10 @@ ROWS=(
   "opt-file|bootos|bootOS 512-byte boot sector (os.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/os.img|sha256:35e1231cf29f8750566a97dfb628b2bbe2c24a2f7d7518d7a94103f9976d3df8|freely-fetchable-pinned"
   "opt-file|bootos|bootOS 360K floppy with 19 boot-sector programs (osall.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/osall.img|sha256:20927188a96cca1cc41bd43a24186cd6fb3e68a4f82fdaf7c2e59c9bfd874653|freely-fetchable-pinned"
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
+  # PC/GEOS Ensemble (GeoWorks Ensemble lineage, bluewaysw open-source build,
+  # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
+  # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
+  "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
