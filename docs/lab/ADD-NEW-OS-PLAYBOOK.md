@@ -931,7 +931,7 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 3. sync the tracked tree, including the registry, generated streamhost/serve/UI
    files, generated labctl declarations, and hand-managed tracked sidecars;
 4. emit with pinned machine types into scratch and pass `verify-emit`;
-5. emit/deploy the new station directory;
+5. emit/deploy the new station directory — `bash streamhost/stations-manifest.sh --only <stationDir> --pin-machine` emits just that one station (the flag is repeatable; the fixture preflight still runs fleet-wide);
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<stationDir>`;
 7. publish the **five** runtime documents with

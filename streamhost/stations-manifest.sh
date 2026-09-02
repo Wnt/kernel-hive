@@ -13,6 +13,10 @@
 #     bash stations-manifest.sh --pin-machine   # versioned machine types (NVMe rebuild;
 #                                            # see streamhost-station.sh header)
 #     bash stations-manifest.sh --out-root /tmp/x   # scratch emit (verify-emit.sh)
+#     bash stations-manifest.sh --only <stationDir> [--only <stationDir> ...]
+#                                             # emit ONLY the named station(s);
+#                                             # every other emit line is skipped
+#                                             # (preflight still checks the fleet)
 #
 # It does NOT start QEMU or the daemons — bring-up-all.sh does the full ordered
 # boot. This file is purely the "what reproduces each tile" ledger.
@@ -43,6 +47,7 @@ T="$HERE/stations"                        # tracked verbatim launchers + env fix
 RUNTIME_T="/data/vms/streamhost/stations" # runtime tile root (referenced in args)
 
 FWD=()
+ONLY=()
 OUT_ROOT="$RUNTIME_T"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -57,6 +62,14 @@ while [ $# -gt 0 ]; do
   --out-root)
     OUT_ROOT="$2"
     FWD+=(--out-root "$2")
+    shift 2
+    ;;
+  --only)
+    [ -n "${2:-}" ] || {
+      echo "--only needs a stationDir" >&2
+      exit 2
+    }
+    ONLY+=("$2")
     shift 2
     ;;
   *)
@@ -93,7 +106,16 @@ fi
 echo "=== preflight: ${#FIXTURES[@]}/${#FIXTURES[@]} station.env fixtures present under $T"
 
 EMITTED=0
+SKIPPED=0
 emit() {
+  if [ "${#ONLY[@]}" -gt 0 ]; then
+    local want="" o
+    for o in "${ONLY[@]}"; do [ "$o" = "$1" ] && want=1; done
+    if [ -z "$want" ]; then
+      SKIPPED=$((SKIPPED + 1))
+      return 0
+    fi
+  fi
   echo "=== emit: $1"
   shift
   bash "$SH" "$@" ${FWD[@]+"${FWD[@]}"}
@@ -1013,13 +1035,25 @@ emit bootos \
 # seed ONCE — never clobber an existing one, phosh's boot entry lives in it).
 PMOS_VARS="$OUT_ROOT/postmarketos/OVMF_VARS.qcow2"
 PMOS_SRC=/usr/share/pve-edk2-firmware/OVMF_VARS_4M.fd
-if [ ! -f "$PMOS_VARS" ]; then
+# (a --only run that did not emit postmarketos has no postmarketos/ dir to seed)
+if [ -d "$OUT_ROOT/postmarketos" ] && [ ! -f "$PMOS_VARS" ]; then
   if command -v qemu-img >/dev/null 2>&1 && [ -f "$PMOS_SRC" ]; then
     qemu-img convert -f raw -O qcow2 "$PMOS_SRC" "$PMOS_VARS"
     echo "=== pre-seed: postmarketos OVMF_VARS.qcow2 created from $PMOS_SRC"
   else
     echo "WARN: cannot pre-seed $PMOS_VARS (qemu-img or $PMOS_SRC missing) — do it before first boot" >&2
   fi
+fi
+
+# --only: a selected-station run is not a sweep. It must have emitted every
+# station it was asked for (an unknown name is an error, not a no-op).
+if [ "${#ONLY[@]}" -gt 0 ]; then
+  if [ "$EMITTED" -ne "${#ONLY[@]}" ]; then
+    echo "FATAL: --only named ${#ONLY[@]} station(s) but $EMITTED emitted ($SKIPPED skipped) — check the stationDir spelling." >&2
+    exit 1
+  fi
+  echo "=== --only: $EMITTED station(s) emitted, $SKIPPED skipped ==="
+  exit 0
 fi
 
 # Truncation guard: a sweep that covered fewer tiles than the roster must never
