@@ -149,13 +149,14 @@ const DEMO_PROGRAMS = {
     "perCharMs": 400
   },
   "suse64": {
-    "label": "Type a few commands into the xterm",
+    "label": "Type a few commands into the konsole",
     "lines": [
+      "cat /etc/SuSE-release",
       "uname -a",
       "ls /usr/X11R6/bin | head",
-      "xcalc &"
+      "df -h /"
     ],
-    "runCommand": "xcalc &",
+    "runCommand": "df -h /",
     "perCharMs": 80
   },
   "vic20": {

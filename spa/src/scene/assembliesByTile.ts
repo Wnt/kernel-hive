@@ -133,6 +133,10 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
   },
+  suse64: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
   redstar3: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseD',
