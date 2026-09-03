@@ -137,3 +137,19 @@ production.
    station.
 3. `seed_contacts.py ssi --apply` so every other live station's roster gains
    `redhat62`.
+
+## Live-station proof after landing (2026-09-03, main 187ed322)
+
+- `bridge fdb show br vmbr-rn` lists `52:54:00:52:4e:21 dev redhat62rn0`; the
+  x11warp handshake on `127.0.0.1:6081` answers success with `restrict=on`.
+- `labctl reset redhat62` (`loadvm golden`): the first frame 3 s after the
+  restore shows Netscape + gmc but **no Gaim window** — the restored OSCAR socket
+  is stale and Gaim signs off (buddy list closes, no dialog, no login window: the
+  tru64 patch's part 5). **Do not read that as a failure**: the core
+  auto-reconnect from the tru64 patch (part 4) signs 18100 back on after the
+  first overdue keepalive, and the buddy list with HiveBot is back within ~3
+  minutes of guest time (frames `rn-after-reset.png` → `rn-after-reset2.png`,
+  golden clock 8:52 → 8:55). Same behaviour as tru64; no watchdog, no nudge.
+- `ping 10.99.0.33` from labhost is DROPPED by `REDHAT62RN-IN` (ESTABLISHED
+  RETURN + DROP) — that is containment working, not a dead guest; probe the
+  guest through the gateway's session list or the framebuffer.
