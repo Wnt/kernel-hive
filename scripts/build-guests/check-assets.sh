@@ -141,6 +141,11 @@ ROWS=(
   # debian22.sh copies from /data/assets-staging/debian22 (staged from
   # archive.org / archive.debian.org) if present, else re-fetches and pins.
   "opt-file|debian22|Debian 2.2 potato i386 CD1 (archive.org Debian-GNULinux-2.2-arch-i386-CD)|$ASSET_STAGING/debian22/debian-2.2-i386-cd1.iso|sha256:2b1d2b18a14ea1f62302aeb98caf1a7b9191a87c3591a42d8bbf0fe5ef1abf1f|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato navigator-smotif-477 (non-free; Netscape Navigator 4.77 static-Motif binary)|$ASSET_STAGING/debian22/deb/navigator-smotif-477_4.77-2.deb|sha256:4935309549c9b712b3dfcb0134d37eee70e2920759644fea4cadc4e70ca9c783|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato navigator-base-477 (non-free; Netscape Navigator 4.77 base files)|$ASSET_STAGING/debian22/deb/navigator-base-477_4.77-2.deb|sha256:954c48ee1c7c002c3a44ace1f81fe821d0bb73cb075f966132f91f000a95fc4d|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato netscape-base-477 (non-free; Netscape 4.77 shared base)|$ASSET_STAGING/debian22/deb/netscape-base-477_4.77-2.deb|sha256:6f4502e549583572adc937eec737abcc3fa701f18b18d87645a5f35bc1354f21|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato netscape-base-4 (contrib; Netscape 4.x wrapper (/usr/lib/netscape/base-4/wrapper))|$ASSET_STAGING/debian22/deb/netscape-base-4_4.77-1.deb|sha256:dfc02893ab29f107102d8cd9887cd42784366c02894c70f5ddacd66e3b87f739|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato libstdc++2.9-glibc2.1 (main/oldlibs; libstdc++-libc6.1-1.so.2 that navigator-smotif.real links)|$ASSET_STAGING/debian22/deb/libstdc++2.9-glibc2.1_2.91.66-4.deb|sha256:1e71b4caa8d408dde0d3669e474905844e45c2bfc121e96840f0bf2437c6d1bd|freely-fetchable-pinned"
   "opt-file|debian22|Debian 2.2 potato hdparm 3.6-1 (archive.debian.org dists/potato/main/binary-i386/admin; not on CD1)|$ASSET_STAGING/debian22/hdparm.deb|sha256:3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9|freely-fetchable-pinned"
   "opt-file|debian22|Debian 2.2 potato i386 base2_2.tgz (archive.debian.org dists/potato/main/disks-i386)|$ASSET_STAGING/debian22/base2_2.tgz|sha256:2f53ecb6a1508be95d5351e468b0197e8dca2a58ecf24c8fc1e07765b9817585|freely-fetchable-pinned"
   # PC/GEOS Ensemble (GeoWorks Ensemble lineage, bluewaysw open-source build,

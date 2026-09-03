@@ -166,7 +166,7 @@ qemu-nbd -d /dev/nbd"$N"
 rm -f "$R"/qmp.sock "$R"/hmp.sock "$R"/qemu.pid
 cd "$R"
 export SH_DBUS_UPDATE_MS=4
-nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X11WARP_PORT:-6082}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 -netdev tap,id=n1,ifname=${RN_TAP_IF:-debian22rn0},script=no,downscript=no -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24 -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
+nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:"${X11WARP_PORT:-6082}"-10.0.2.15:6000 -device ne2k_pci,netdev=n0 -netdev tap,id=n1,ifname="${RN_TAP_IF:-debian22rn0}",script=no,downscript=no -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24 -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
 sleep 2
 cat "$R"/qemu.pid
 bash "$R"/run-daemon.sh >/dev/null 2>&1

@@ -130,6 +130,17 @@ inittab autologin fixed (no shell redirection on the init line; `/etc/X11/Xserve
 restore: warps to (100,100)/(900,700) read back exactly and visible, keys reach
 the terminal, loadvm returns the clean prompt. Golden VM_SIZE 44.9 MiB.
 
+## Phase 3: retronet web + ICQ (Opus subagent, 4 passes, ~3 h wall)
+
+One Opus subagent on its own rig: tap `debian22rn0`/`DEBIAN22RN-IN`, rtl8139 as the
+second NIC (deterministic eth1 under 2.2.17), slirp `restrict=on`, GnomeICU 0.90b
+signed in on the v5 door, Netscape 4.77 rendering search.retronet, golden 61.9 MiB
+restore-proven. What cost the passes: the closure's `MISSING netscape-base-4`
+(contrib) read past on pass one; `libstdc++2.9-glibc2.1` (oldlibs, depended on by
+nothing) needed by `navigator-smotif.real`; a recompose that destroyed the previous
+proven golden before the new one existed (rule: bake the moment the scene is
+landable, rebake over it later). HiveBot stays OPEN (v5 client, client-local list).
+
 ## Timeline (box clock; operator message 02:01)
 
 | Milestone | Time | Elapsed |

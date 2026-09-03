@@ -414,7 +414,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54182,
-      "notes": "one SLIRP NIC whose only forward is the loopback x11warp port; no exec channel; framebuffer/QMP/HMP + x11warp only"
+      "notes": "slirp ne2k_pci with restrict=on (only the loopback x11warp forward), rtl8139 tap debian22rn0 on vmbr-rn = retronet 10.99.0.36 (web + ICQ planes); no exec channel; framebuffer/QMP/HMP + x11warp only"
     },
     "decos": {
       "dir": "/data/vms/streamhost/stations/decos",

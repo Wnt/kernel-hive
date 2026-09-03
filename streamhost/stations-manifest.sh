@@ -1041,7 +1041,8 @@ emit pcgeos \
 
 # debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0 under Window Maker.
 #   VERBATIM launcher: -nodefaults, IDE golden disk + CD1 ISO, Cirrus VGA (XF86_SVGA, 1024x768x16),
-#   ne2k_pci on SLIRP with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000), PS/2 keys/buttons,
+#   ne2k_pci on SLIRP restrict=on with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000),
+#   rtl8139 tap debian22rn0 on vmbr-rn (retronet 10.99.0.36: web + ICQ), PS/2 keys/buttons,
 #   no audio, no USB. Required -loadvm golden; dedicated HMP reset socket.
 emit debian22 \
   --tile debian22 --vmid 182 --udp 54182 --pointer abs --input-backend \
