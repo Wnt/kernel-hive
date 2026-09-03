@@ -161,10 +161,6 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#4b4d4b', accentTint: '#686d6b', tintMix: 0.6,
     badge: 'OEM TOWER', spec: 'INSTITUTIONAL', kit: 'workstation',
   },
-  suse64: {
-    caseTint: '#d9d4c3', accentTint: '#6ea339', tintMix: 0.38,
-    badge: 'PENTIUM III', spec: '17" CRT • 2000', kit: 'workstation',
-  },
   redstar3: {
     caseTint: '#55595b', accentTint: '#737a7b', tintMix: 0.52,
     badge: 'OEM SFF', spec: 'OFFICE • 2013', kit: 'modern',
@@ -493,6 +489,10 @@ export const EXHIBIT_IDENTITIES = {
   openbsd: {
     caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
     badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
+  },
+  suse64: {
+    caseTint: '#d9d4c3', accentTint: '#6ea339', tintMix: 0.38,
+    badge: 'PENTIUM III', spec: '17" CRT • 2000', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
