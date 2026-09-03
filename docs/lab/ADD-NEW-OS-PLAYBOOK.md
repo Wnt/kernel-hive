@@ -170,6 +170,19 @@ hashes and sizes inline instead of a path; and a stream that reports "hard stop
 reached" after two minutes has stopped early — resume it with the missing facts
 rather than redoing its work.
 
+**When the station needs a real OS install (debian22, 2026-09-03: 93 active
+minutes, nine concurrent waves), time the installer's FIRST disk write in the
+spine.** A Linux 2.2 guest kernel writes the emulated IDE disk in 16-bit PIO
+under KVM at ~27 KB/s (one VM exit per `outw`); its `mke2fs` never finishes and
+two golden agents burned their budgets on it before racing. The route that
+works, from minute 3: compose the root filesystem ON THE HOST (`mke2fs -I 128`,
+the release's base tarball, `dpkg-deb -x` a Depends closure of the desktop
+packages from the ISO, boot the CD kernel with `root=/dev/hda1`) — recipe
+`scripts/build-guests/tiles/debian22.sh`; the XFree86 3.3.x trap list is in
+`docs/guests/debian22.md` §Install recipe — hand it to the next 1990s Linux/BSD
+stream before it boots anything. Give such a golden stream one agent and a
+30-minute stop, not two racing agents with 4-minute stops.
+
 Facts flow one way: a stream that *measures* a fact corrects the ledger in its own
 commit and says so in its report; nobody copies a number from a README. While the
 streams run, the coordinator is not idle: it prepares the framebuffer-proof
