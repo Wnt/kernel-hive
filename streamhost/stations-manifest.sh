@@ -51,31 +51,31 @@ ONLY=()
 OUT_ROOT="$RUNTIME_T"
 while [ $# -gt 0 ]; do
   case "$1" in
-  --install)
-    FWD+=(--install)
-    shift
-    ;;
-  --pin-machine)
-    FWD+=(--pin-machine)
-    shift
-    ;;
-  --out-root)
-    OUT_ROOT="$2"
-    FWD+=(--out-root "$2")
-    shift 2
-    ;;
-  --only)
-    [ -n "${2:-}" ] || {
-      echo "--only needs a stationDir" >&2
+    --install)
+      FWD+=(--install)
+      shift
+      ;;
+    --pin-machine)
+      FWD+=(--pin-machine)
+      shift
+      ;;
+    --out-root)
+      OUT_ROOT="$2"
+      FWD+=(--out-root "$2")
+      shift 2
+      ;;
+    --only)
+      [ -n "${2:-}" ] || {
+        echo "--only needs a stationDir" >&2
+        exit 2
+      }
+      ONLY+=("$2")
+      shift 2
+      ;;
+    *)
+      echo "unknown arg: $1" >&2
       exit 2
-    }
-    ONLY+=("$2")
-    shift 2
-    ;;
-  *)
-    echo "unknown arg: $1" >&2
-    exit 2
-    ;;
+      ;;
   esac
 done
 

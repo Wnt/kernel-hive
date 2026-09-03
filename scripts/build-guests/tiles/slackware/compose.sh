@@ -15,7 +15,7 @@ PKGS_AP="manpgs sudo joe bc diff sc zsh ash jpeg mc vim"
 PKGS_X="fvwm fvwmicns x331bin x331cfg x331doc x331fnts x331lib x331man x331svga x331vg16 x331fscl xlock xpm"
 PKGS_XAP="fvwm95 libgr xv xfm xpaint xgames"
 PKGS_Y="bsdgames"
-PKGS_N="tcpip"   # n6: ifconfig/route/rc.inet1 — the x11warp absolute pointer needs guest TCP/IP
+PKGS_N="tcpip" # n6: ifconfig/route/rc.inet1 — the x11warp absolute pointer needs guest TCP/IP
 rm -rf "$ROOT"
 mkdir -p "$ROOT" "$OUT/noop"
 for t in ldconfig depmod chroot; do
