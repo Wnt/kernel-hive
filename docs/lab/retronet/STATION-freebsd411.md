@@ -1,9 +1,11 @@
 # freebsd411 on the retronet — the bridge, Konqueror, and Kopete
 
 **Status: WEB PLANE DONE AND BAKED; ICQ PLANE OPEN.** The station has a golden
-on the retronet device set (VM_SIZE **112 MiB**, VM_CLOCK **0000:01:24.239**,
-baked **2026-09-03 09:12:43 UTC**), restore-proven, and staged for the landing
-window. Konqueror renders the museum corpus and a **"Retronet Web" desktop icon**
+on the retronet device set (VM_SIZE **118 MiB**, VM_CLOCK **0000:06:02.670**,
+baked **2026-09-03 09:58:56 UTC**), restore-proven, and staged for the landing
+window. The retronet NIC is an **`e1000` (guest `em0`)**: the first bake used an
+`rtl8139` and it does not survive a vmstate restore — §The `rl0`-after-restore
+trap. Konqueror renders the museum corpus and a **"Retronet Web" desktop icon**
 opens it. Kopete is installed and its account exists on the gateway, but it has
 never signed in — it is **kept out of the golden scene** so a cold boot is clean. `freebsd411` (FreeBSD 4.11-RELEASE i386, KDE 3.3.2 on XFree86
 4.4.0) was given a second, **bridged** NIC on `vmbr-rn` on 2026-09-03 so that
@@ -20,24 +22,28 @@ What is **proven on the framebuffer** (frames in
 | the guest resolves and fetches `http://search.retronet/` over the bridge with **no proxy** | `retronet-guest-fetch-search-retronet-20260903.png` |
 | **Konqueror renders `http://search.retronet/`** — the AltaVista-styled retronet search page, status bar "Page loaded." | `retronet-konqueror-search-retronet-20260903.png` |
 | the golden scene on a cold boot with no input: KDE desktop, Kicker, a root Konsole, no dialogs | `retronet-goldenscene-coldboot-20260903.png` |
-| **`loadvm golden` restore** on a FRESH QEMU process: keys reach the Konsole, `uname -a` is FreeBSD 4.11-RELEASE, and `rl0` still holds **10.99.0.35** | `retronet-golden-restore-proof-20260903.png` |
+| **`loadvm golden` restore** on a FRESH QEMU process: keys reach the Konsole, `uname -a` is FreeBSD 4.11-RELEASE, and `rl0` still holds **10.99.0.35** — the address survives, the transmit path does not (see the trap below) | `retronet-golden-restore-proof-20260903.png` |
+| **the e1000 golden transmits after `-loadvm golden -S` + `cont`**: a typed `ping -c 3 10.99.0.2` answered 3/3, the guest's own frames captured leaving `freebsd411rn0` (`52:54:…:23 > bc:24:… ICMP echo request 10.99.0.35 > 10.99.0.2`), `bridge fdb` learns the MAC, and the x11warp handshake on `127.0.0.1:6078` is accepted | `retronet-e1000-golden-restore-proof.png` (+ `.tcpdump.txt`) |
+| the same on a scratch clone before the re-bake — cold boot, `dhclient em0` → a pool address, ping, `savevm`, `quit`, `-loadvm`, ping still answered | `retronet-e1000-after-loadvm.png` (+ `.tcpdump.txt`) |
 | Kopete's own **"Please enter your password for ICQ account 17800"** prompt, reached by finishing the KWallet wizard with the box unchecked | `retronet-kopete-password-prompt-20260903.png` |
-| the guest takes its **reserved** address — `ifconfig rl0` → `inet 10.99.0.35 netmask 0xffffff00`, on a cold boot of the exact new launcher set | `retronet-dhcp-10.99.0.35-20260903.png` |
+| the guest takes its **reserved** address — `ifconfig em0` → `inet 10.99.0.35 netmask 0xffffff00`, on a cold boot of the exact new launcher set (the reservation is MAC-keyed, so the device swap did not move it) | `retronet-dhcp-10.99.0.35-20260903.png` |
 
 What is **not yet proven**: Kopete signed in as UIN `17800`, HiveBot in the
-contact list, the desktop Konqueror launcher, and the **re-baked golden** on the
-new device set. See §Open.
+contact list, and the desktop Konqueror launcher **opened from the icon** (the
+icon itself is confirmed present and rendering — it is simply hidden behind the
+autostarted Konsole, which occupies the top-left column KDE fills with desktop
+icons; Ctrl+Alt+D reveals Trash, Home and `Web (search.retr…)`). See §Open.
 
 ## The wiring, at a glance
 
 | | |
 |---|---|
-| NIC | **second** NIC `-device rtl8139,netdev=rn0,mac="$RN_FREEBSD411_MAC"`, backend `-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no`. FreeBSD 4.11 drives it as **`rl0`** (GENERIC). `rtl8139` and not `ne2k_pci`: the NE2000 is 16-bit PIO and under KVM that is one VM exit per word — the same trap that put this station's system disk on an `lsi53c895a` (`docs/lab/FREEBSD411-WAVE.md` §Measured facts). `rl` does real DMA. |
+| NIC | **second** NIC `-device e1000,netdev=rn0,mac="$RN_FREEBSD411_MAC"`, backend `-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no`. FreeBSD 4.11 drives it as **`em0`** (GENERIC). Not `ne2k_pci`: the NE2000 is 16-bit PIO and under KVM that is one VM exit per word — the same trap that put this station's system disk on an `lsi53c895a` (`docs/lab/FREEBSD411-WAVE.md` §Measured facts). Not `rtl8139` either, though `rl` does real DMA and was the first bake: it stops transmitting for good the moment the vmstate is restored — §The `rl0`-after-restore trap. |
 | slirp NIC | same device, now `-netdev user,id=n0,**restrict=on**,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0`, guest `ed0`. It carries **only** the x11warp pointer forward, so the pointer route is untouched and the fixture's `SH_X11WARP_DISPLAY=127.0.0.1:78` still holds. **`restrict=on` is containment, not tidiness**: without it SLIRP hands the guest a default route via `10.0.2.2` and the guest can reach whatever labhost's own stack can. `hostfwd` (host → guest) keeps working under it. It is a backend option, not a device change, but the golden is baked with the exact launcher regardless. |
 | MAC | fleet scheme `52:54:00:52:4e:23` (`52:4e` = RN, last octet = last IP octet, `.35` → `0x23`). Real value box-local in gitignored `registry/local.env` `RN_FREEBSD411_MAC`; the committed launcher carries the scrubbed placeholder `02:00:00:00:00:23` and reads the one line at boot. **The MAC lives in the golden's device vmstate**, so the golden must be baked by a COLD boot on this set. |
 | Tap | `freebsd411rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/freebsd411/rn-tapnet.sh up` from the launcher on **every** start. The launcher runs under `set -e` and `rn-tapnet.sh` exits non-zero unless it can read its own rules back out of the kernel, so **QEMU never starts an uncontained guest**. |
 | Guard chain | `FREEBSD411RN-IN`, hooked into `INPUT` twice — scoped to the guest IP **and** to the guest MAC (the beos lesson: an IP-scoped chain stops containing a guest that lands on a pool address). ESTABLISHED,RELATED → RETURN; everything else the guest starts toward labhost → DROP. |
-| Guest IP | **DHCP** (`dhclient rl0`), reservation `52:54:00:52:4e:23 → 10.99.0.35`, DNS `10.99.0.2`, domain `retronet.lab`, **no default gateway** (`retronet-dhcp` withholds option 3, so the addressing itself is Lock 1). |
+| Guest IP | **DHCP** (`ifconfig_em0="DHCP"` in `/etc/rc.conf`; `dhclient em0` by hand), reservation `52:54:00:52:4e:23 → 10.99.0.35`, DNS `10.99.0.2`, domain `retronet.lab`, **no default gateway** (`retronet-dhcp` withholds option 3, so the addressing itself is Lock 1). |
 | Seamless web | DNS = `10.99.0.2` via DHCP + **no proxy** → any name resolves to the gateway and its `:80` origin serves the corpus by `Host`. Konqueror 3.3.2 is HTTP/1.1 and sends `Host:`, so it uses the origin door, not `:3128`. |
 | ICQ | Kopete **0.9.1** (from `kdenetwork-3.3.2`), UIN **`17800`**, gateway `10.99.0.2:5190`. Account exists and is open; the client is installed but **not yet configured or signed in**. |
 
@@ -86,6 +92,55 @@ the X connection-setup handshake (the same one `x11warp-check.sh` does), the
 round-trip as a barrier before the button. Every menu click in this doc was made
 that way, first try. It is the only reliable pointer this station has outside
 the daemon, and it is the same route the pcbsd-rn wave used.
+
+## The `rl0`-after-restore trap — why this NIC is an `e1000`
+
+**Measured 2026-09-03, on clones, never on the live station.** The retronet NIC
+was first baked as an `rtl8139` for the obvious reason: `rl(4)` does real DMA
+where the NE2000 path is one KVM exit per 16-bit word. It works perfectly on a
+cold boot. It then fails at the only moment a museum station cares about — the
+restore.
+
+**The symptom.** After `-loadvm golden`, the guest looks completely healthy:
+`rl0` is `UP`, holds `10.99.0.35`, and the routes are right. But **not one frame
+ever reaches the tap.** `tcpdump -nn -e -i freebsd411rn0` stays silent while the
+guest pings `10.99.0.2`, and `bridge fdb show br vmbr-rn` never learns the MAC.
+Nothing revives it: `ifconfig rl0 down; ifconfig rl0 up` in the guest, and QMP
+`set_link` off/on from outside, both leave it mute. It is not QEMU and not the
+bridge — Linux guests on the same `rtl8139` transmit fine after a restore. It is
+4.11's `rl(4)` against its own restored device state: the driver trusts the
+descriptor-ring state it finds and never reprograms the chip.
+
+**The fix, proven end to end.** `e1000` — `em0` in 4.11 GENERIC, DMA, and a
+driver that reprograms its rings rather than trusting them.
+
+| Step (on a clone, `-display none`, own tap/QMP/pidfile, no hostfwd clash) | Result |
+|---|---|
+| cold boot, `ifconfig em0` | present, `status: active`, `1000baseTX <full-duplex>` |
+| `dhclient em0` | leased (a pool address on the scratch MAC; the reserved `10.99.0.35` once the station MAC is used) |
+| `ping -c 2 10.99.0.2` **before** any restore | 2/2, ~0.3 ms |
+| `savevm` → `quit` → relaunch `-loadvm … -S` → `cont` | — |
+| `ping -c 3 10.99.0.2` **after** the restore | **3/3**, and `tcpdump -nn -e` on the tap shows the guest's own `ICMP echo request` frames with the replies; `bridge fdb` holds the MAC |
+
+Frames: `retronet-e1000-after-loadvm.png` (the scratch-clone proof) and
+`retronet-e1000-golden-restore-proof.png` (the shipped golden), with the matching
+`.tcpdump.txt` beside each.
+
+**What the swap costs.** A device-set change, so **rule 6 applies**: the
+rtl8139-era golden does not restore against an `e1000` and was replaced by a cold
+boot on the new set (VM_SIZE **118 MiB**, VM_CLOCK **0000:06:02.670**,
+**2026-09-03 09:58:56 UTC**). In the guest, one line: `ifconfig_rl0` →
+`ifconfig_em0` in `/etc/rc.conf`. Nothing else moved — the DHCP reservation is
+keyed on the MAC, which is unchanged, so the guest still comes up on
+`10.99.0.35`. Superseded goldens are kept as
+`/data/gallery-guests/FREEBSD411/freebsd411.rtl8139-rn.qcow2` and
+`freebsd411.pre-rn.qcow2`.
+
+**The general lesson.** A NIC that passes a cold-boot smoke test has proven
+nothing about a station: on this fleet every guest arrives through
+`-loadvm golden`, so *the* network test is ping **after** a restore of a fresh
+QEMU process, with `tcpdump` on the tap as the witness. A log line inside the
+guest is not evidence — the address and the routes survive this bug intact.
 
 ## The two traps that cost this bring-up its ICQ half
 
@@ -183,9 +238,13 @@ freebsd411 yet.
    with focus in the field. Type the 8 characters, `alt-r` to tick **Remember
    password**, `ret`. That much works every time. What still does not happen is
    the **connect**: no `17800` line has ever reached `retronet-oscar`'s journal,
-   with the account icon present in Kopete's status bar and `rl0` up on
-   10.99.0.35. That is the single open question — start there, with a packet
-   capture on `freebsd411rn0` rather than more UI.
+   with the account icon present in Kopete's status bar and the NIC up on
+   10.99.0.35. **Re-test this first on the e1000 golden.** Every one of those
+   attempts ran on a guest resumed from an rtl8139 vmstate, i.e. on a NIC that
+   was silently transmitting nothing at all (§The `rl0`-after-restore trap) — a
+   client that cannot put a SYN on the wire looks exactly like a client that
+   cannot log in. Start with a packet capture on `freebsd411rn0` rather than more
+   UI.
 1. **Kopete**: finish the wizard (see the keyboard map above — make the wizard's
    buttons visible first), confirm the account appears in the Accounts list,
    prove a `17800` login in the gateway journal, and prove **HiveBot** by name in

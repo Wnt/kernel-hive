@@ -163,11 +163,11 @@
         "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
         "-qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid",
-        "-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no -device rtl8139,netdev=rn0,mac=<RN_FREEBSD411_MAC>"
+        "-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no -device e1000,netdev=rn0,mac=<RN_FREEBSD411_MAC>"
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under KVM with -vga std (XFree86 4.4.0 vesa, 1024x768x16), one SCSI disk on an lsi53c895a (FreeBSD sym, real DMA -- 4.11's ata driver gets no bus-master DMA on QEMU's PIIX3 and PIO under KVM is ~150 KB/s) carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device ; retronet 2026-09-03: a SECOND bridged NIC (rtl8139 on tap freebsd411rn0, vmbr-rn, DHCP-reserved 10.99.0.35) for the web + ICQ planes, and restrict=on on the slirp backend so the pointer NIC hands the guest no route anywhere"
+        "reason": "pc-i440fx-11.0 under KVM with -vga std (XFree86 4.4.0 vesa, 1024x768x16), one SCSI disk on an lsi53c895a (FreeBSD sym, real DMA -- 4.11's ata driver gets no bus-master DMA on QEMU's PIIX3 and PIO under KVM is ~150 KB/s) carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device ; retronet 2026-09-03: a SECOND bridged NIC (e1000 -> guest em0, on tap freebsd411rn0, vmbr-rn, DHCP-reserved 10.99.0.35) for the web + ICQ planes -- e1000 and NOT rtl8139 because 4.11's rl(4) never transmits again after a vmstate restore (after -loadvm the address and routes survive but no frame ever reaches the tap and the bridge fdb never learns the MAC), while em(4) reprograms its rings and transmits immediately; measured and restore-proven 2026-09-03 on a clone, and restrict=on on the slirp backend so the pointer NIC hands the guest no route anywhere"
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",
