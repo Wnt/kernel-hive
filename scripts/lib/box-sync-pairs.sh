@@ -359,6 +359,13 @@ box_sync_load_pairs() {
   # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
   box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
 
+  # ubuntu retronet WEB + ICQ planes: the same mirror pair, for the same reason —
+  # the launcher calls `bash "$T/rn-tapnet.sh" up` before QEMU and dies without
+  # it. Ubuntu 4.10 Warty is a live-CD guest with NO exec channel, one rtl8139 on
+  # tap ubunturn0, DHCP-reserved 10.99.0.30; Firefox 0.9 on the corpus and Gaim
+  # 1.0 as UIN 18300. See docs/lab/retronet/STATION-ubuntu.md.
+  box_sync_add_pair ubuntu-rn-tapnet streamhost/stations/ubuntu/rn-tapnet.sh "$BOX_ROOT/stations/ubuntu/rn-tapnet.sh" exact repo
+
   # rhapsody retronet WEB plane: same mirror-pair shape again. The generic
   # launcher sweep carries qemu-streamhost.sh, but NOT the helper it calls, so
   # without this pair the box checkout has rn-tapnet.sh and the station dir does
