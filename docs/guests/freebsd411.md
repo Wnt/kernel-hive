@@ -139,6 +139,8 @@ NIC** — `rtl8139` on tap `freebsd411rn0` on `vmbr-rn`, guest `rl0`, DHCP-reser
   creates the persistent tap and the fail-closed `FREEBSD411RN-IN` chain (scoped
   to both the guest IP and its MAC) on every launcher start.
 
-The new NIC is a **new device set**, so the golden must be re-baked by a cold
-boot on the new launcher before this ships. Full detail, and the list of what is
+The new NIC is a **new device set**, so the golden was re-baked by a cold boot on
+the new launcher (VM_SIZE 112 MiB, VM_CLOCK 0000:01:24.239, 2026-09-03 09:12:43
+UTC) and restore-proven; the pre-retronet golden is kept beside it as
+`freebsd411.pre-rn.qcow2`. Full detail, and the list of what is
 still open: [`docs/lab/retronet/STATION-freebsd411.md`](../lab/retronet/STATION-freebsd411.md).

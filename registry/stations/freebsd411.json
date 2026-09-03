@@ -205,7 +205,8 @@
       "Konsole",
       "Kate",
       "KCalc",
-      "ports collection"
+      "ports collection",
+      "Kopete 0.9.1"
     ],
     "periodBrowser": "Konqueror 3.3.2 (KHTML)",
     "iconicApps": [
@@ -215,7 +216,7 @@
       "KCalc"
     ],
     "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line \u2014 the FreeBSD that ran Yahoo!, Hotmail and a generation of ISPs \u2014 here with the full KDE 3.3.2 desktop from the release CD, on the i386 it was built for.",
-    "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.4.0 (vesa driver on the emulated VGA, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
+    "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.4.0 (vesa driver on the emulated VGA, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate. Since 2026-09-03 the station is on the retronet: a second, bridged NIC puts it on the museum's offline 1990s web, and Konqueror opens it from a desktop icon."
   },
   "emulator": {
     "family": "QEMU",
@@ -231,7 +232,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0 vesa on -vga std, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
+    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0 vesa on -vga std, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell and a 'Retronet Web' desktop icon onto http://search.retronet/; the guest holds its retronet address 10.99.0.35 across the restore, and the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
   },
   "migrationExceptions": [],
   "notes": [

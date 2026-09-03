@@ -1,8 +1,11 @@
 # freebsd411 on the retronet — the bridge, Konqueror, and Kopete
 
-**Status: PARTIAL — web plane proven on the framebuffer and the station's
-retronet address confirmed; ICQ plane wired, client installed, NOT yet signed
-in.** `freebsd411` (FreeBSD 4.11-RELEASE i386, KDE 3.3.2 on XFree86
+**Status: WEB PLANE DONE AND BAKED; ICQ PLANE OPEN.** The station has a golden
+on the retronet device set (VM_SIZE **112 MiB**, VM_CLOCK **0000:01:24.239**,
+baked **2026-09-03 09:12:43 UTC**), restore-proven, and staged for the landing
+window. Konqueror renders the museum corpus and a **"Retronet Web" desktop icon**
+opens it. Kopete is installed and its account exists on the gateway, but it has
+never signed in — it is **kept out of the golden scene** so a cold boot is clean. `freebsd411` (FreeBSD 4.11-RELEASE i386, KDE 3.3.2 on XFree86
 4.4.0) was given a second, **bridged** NIC on `vmbr-rn` on 2026-09-03 so that
 Konqueror can reach the gateway's `:80` museum-corpus origin and Kopete can reach
 its OSCAR door — OSCAR cannot traverse the station's slirp NIC, which stays in
@@ -16,6 +19,9 @@ What is **proven on the framebuffer** (frames in
 | `kdenetwork-3.3.2` (Kopete) installed from the 4.11 package archive, `EXIT=0`; `/usr/local/bin/kopete` present | `retronet-kdenetwork-pkg_add-exit0-20260903.png` |
 | the guest resolves and fetches `http://search.retronet/` over the bridge with **no proxy** | `retronet-guest-fetch-search-retronet-20260903.png` |
 | **Konqueror renders `http://search.retronet/`** — the AltaVista-styled retronet search page, status bar "Page loaded." | `retronet-konqueror-search-retronet-20260903.png` |
+| the golden scene on a cold boot with no input: KDE desktop, Kicker, a root Konsole, no dialogs | `retronet-goldenscene-coldboot-20260903.png` |
+| **`loadvm golden` restore** on a FRESH QEMU process: keys reach the Konsole, `uname -a` is FreeBSD 4.11-RELEASE, and `rl0` still holds **10.99.0.35** | `retronet-golden-restore-proof-20260903.png` |
+| Kopete's own **"Please enter your password for ICQ account 17800"** prompt, reached by finishing the KWallet wizard with the box unchecked | `retronet-kopete-password-prompt-20260903.png` |
 | the guest takes its **reserved** address — `ifconfig rl0` → `inet 10.99.0.35 netmask 0xffffff00`, on a cold boot of the exact new launcher set | `retronet-dhcp-10.99.0.35-20260903.png` |
 
 What is **not yet proven**: Kopete signed in as UIN `17800`, HiveBot in the
@@ -132,6 +138,13 @@ answers `login.icq.com` with `10.99.0.2`, so Kopete's shipped default host
 reaches the gateway. Set the literal `10.99.0.2:5190` on the *Account
 Preferences* tab only if the hijack proves flaky.
 
+**One more thing the fourth window measured:** with `-display dbus,p2p=on` (the
+shipping backend) a **button-only QMP `input-send-event` does not reach the
+guest** — the same click that worked under `-display none` did nothing. The
+keyboard is unaffected. So on a rig that must match the shipping display
+backend, drive dialogs with **keys**, and keep `-display none` for the windows
+where you need to click.
+
 **Where the third window ended:** `kopeterc` now carries a correct, multi-line
 `[Account_ICQProtocol_17800]` group (`AccountId`, `Protocol=ICQProtocol`,
 `Server=10.99.0.2`, `Port=5190`, `RequireAuth=false`, `AutoConnect=true`,
@@ -163,6 +176,16 @@ freebsd411 yet.
 
 ## Open — what the next pass must finish
 
+0. **The KWallet route is now solved and proven** — on a cold boot Kopete
+   autostarts and the wallet wizard comes up **in front**: `ret` on *Next*,
+   then `alt-f` on the *Password Selection* page with the box **unchecked**, and
+   Kopete immediately shows *"Please enter your password for ICQ account 17800"*
+   with focus in the field. Type the 8 characters, `alt-r` to tick **Remember
+   password**, `ret`. That much works every time. What still does not happen is
+   the **connect**: no `17800` line has ever reached `retronet-oscar`'s journal,
+   with the account icon present in Kopete's status bar and `rl0` up on
+   10.99.0.35. That is the single open question — start there, with a packet
+   capture on `freebsd411rn0` rather than more UI.
 1. **Kopete**: finish the wizard (see the keyboard map above — make the wizard's
    buttons visible first), confirm the account appears in the Accounts list,
    prove a `17800` login in the gateway journal, and prove **HiveBot** by name in
@@ -175,10 +198,12 @@ freebsd411 yet.
    only once the client is proven signed in.
 3. **Konqueror launcher**: a desktop icon / Kicker button pointing at
    `http://search.retronet/`, and the home page set to it.
-4. **Golden**: the new NIC is a **new device set**, so the shipped `golden` is
-   invalid against this launcher (rule 6). Bake a fresh one by COLD boot on the
-   exact new launcher, restore-prove it, and stage it as
-   `/data/gallery-guests/FREEBSD411/freebsd411.qcow2` +
-   `/data/vms/streamhost/stations/freebsd411/disk.next.qcow2`. Until then the
-   station must keep its current launcher and golden.
+4. **Golden — DONE.** Baked by cold boot on the exact new launcher, restore-proven
+   on a fresh QEMU process, and staged (sha256
+   `468771096ef63948fb72f5b8ef9b8a6c69fa46a37261c9068a22fe3939215e74`) at
+   `/data/gallery-guests/FREEBSD411/freebsd411.qcow2` and
+   `/data/vms/streamhost/stations/freebsd411/disk.next.qcow2`. The
+   pre-retronet golden is kept as `…/FREEBSD411/freebsd411.pre-rn.qcow2`.
+   **When ICQ lands it needs ANOTHER bake** — the signed-in client has to be in
+   the vmstate.
 5. **Remove the port-8112 hole** and stop the mirror.
