@@ -1010,6 +1010,24 @@
       "udp_port": 54106,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "redhat62": {
+      "dir": "/data/vms/streamhost/stations/redhat62",
+      "qmp": "/data/vms/streamhost/stations/redhat62/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54181,
+      "notes": "kickstart-installed Red Hat Linux 6.2; SLIRP ne2k_pci with a loopback-only X forward (x11warp pointer); reset is loadvm golden"
+    },
     "redstar2": {
       "dir": "/data/vms/streamhost/stations/redstar2",
       "qmp": "/data/vms/streamhost/stations/redstar2/qmp.sock",

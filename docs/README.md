@@ -107,6 +107,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
 | [guests/slackware.md](guests/slackware.md) | Slackware 3.4 — Linux 2.0.30, XFree86 3.3.1, fvwm95 desktop composed host-side from the mirror's .tgz packages; GRUB2 boots the stock zImage. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
+| [guests/redhat62.md](guests/redhat62.md) | Red Hat Linux 6.2 "Zoot" — kickstart install, GNOME 1.0/Enlightenment on cirrus, kernel 2.2.14 IDE PIO wall (TCG install), x11warp pointer. |
 | [guests/ubuntu.md](guests/ubuntu.md) | Ubuntu 4.10 Warty Warthog — live-CD-as-OS station, no NIC/audio (AC97+ACPI hangs the boot), pointer not 1:1 at 640x480. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
