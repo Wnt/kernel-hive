@@ -3,6 +3,11 @@
 #
 # Kickstart-installed guest (scripts/build-guests/assets/redhat62/ks.cfg) on
 # -vga cirrus (XF86_SVGA 3.3.6, 1024x768x16) with ONE NIC: ne2k_pci on SLIRP.
+# KVM is viable ONLY because the golden boots the UP kernel (LILO default
+# linux-up; anaconda's default "linux" is kernel-smp, which loops on
+# "hda: lost interrupt" through the IO-APIC) and rc.local runs `hdparm -d1`:
+# measured 2026-09-03 using_dma=1, 69.57 MB/s buffered reads under -cpu host,
+# against ~27 KB/s of 512-byte PIO without it. loadvm golden lands after both.
 # The SLIRP hostfwd publishes the guest's X server on a LOOPBACK-ONLY host port
 # (127.0.0.1:6081 -> 10.0.2.15:6000) for the x11warp pointer backend: the daemon
 # moves the pointer with XWarpPointer and reads it back with XQueryPointer

@@ -42,7 +42,7 @@
         "kbd_note": "inittab respawns startx as the gallery user; GNOME 1.0 + Enlightenment at 1024x768x16",
         "audio_trigger": "none",
         "validated": false,
-        "note": "1024x768x16 cirrus (XF86_SVGA 3.3.6); pointer is x11warp over the loopback SLIRP forward 127.0.0.1:6081 -> guest :6000; buttons/keys PS/2 via QEMU"
+        "note": "1024x768x16 cirrus (XF86_SVGA 3.3.6, Chipset clgd5446 + Option no_bitblt); pointer is x11warp over the loopback SLIRP forward 127.0.0.1:6081 -> guest :6000 (two-target warp proven 2026-09-03); buttons/keys PS/2 via QEMU. KVM -cpu host with the UP kernel (linux-up) and hdparm -d1: DMA on, 69.57 MB/s; the SMP kernel anaconda defaults to loses IRQ14."
       }
     },
     "labctl": {
@@ -183,7 +183,7 @@
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the production device ledger; the kickstart install and the golden were baked on this exact set (cirrus, IDE hda, ne2k_pci on SLIRP). The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate."
+        "reason": "tracked verbatim launcher is the production device ledger; the kickstart install and the golden (2026-09-03, VM_CLOCK 0000:03:39.425, VM_SIZE 86.4 MiB) were baked on this exact set under KVM -cpu host (cirrus, IDE hda, ne2k_pci on SLIRP). KVM is viable because the golden boots the UP kernel (LILO default linux-up) with hdparm -d1 from rc.local: using_dma=1, 69.57 MB/s. The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate."
       }
     },
     "bringUpOrder": 82
@@ -235,7 +235,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Red Hat Linux 6.2 GNOME 1.0 desktop under Enlightenment, logged in as the unprivileged gallery user via an inittab startx respawn, 1024x768x16 on cirrus; /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest's own X server. loadvm golden restores the desktop; guest starts frozen (-S) until the first visitor."
+    "fixture": "Red Hat Linux 6.2 GNOME 1.0.55 desktop under Enlightenment, logged in as the unprivileged gallery user via an inittab startx respawn, 1024x768x16 on cirrus; GNOME Help Browser (Red Hat Online Help) and the file manager on /home/gallery are open. /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest's own X server (framebuffer-proven 2026-09-03: XWarpPointer to (100,100) and (900,700) read back exactly; keystrokes reach X windows). loadvm golden restores the desktop (restore-proven); guest starts frozen (-S) until the first visitor."
   },
   "notes": [
     "scaffolded from redstar2 on 2026-09-02; museum + spa filled by the spa stream; no demoProgram — GNOME 1.0 has no safe keyboard-only demo sequence"
