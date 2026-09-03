@@ -18,8 +18,10 @@ from .pointer_rules import (
 from .validate_acceptance import validate_acceptance, validate_rollout
 from .validate_emulator import validate_emulator, validate_ui
 from .validate_facts import validate_facts
+from .validate_pairs import validate_pairs
 from .validate_retronet import validate_retronet
 from .validate_schema import fail, validate_json_schema, validate_schema_shape
+from .validate_spa_scene import validate_spa_scene
 
 
 def is_hidden(row: dict[str, Any]) -> bool:
@@ -334,6 +336,8 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     validate_retronet(rows, errors)
+    validate_spa_scene(rows, errors)
+    validate_pairs(rows, errors)
     validate_acceptance(rows, errors)
     validate_rollout(rows, errors)
     validate_facts(rows, errors)
