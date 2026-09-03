@@ -78,6 +78,9 @@ const POSTER_INDEX = {
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
   },
+  "freebsd411": {
+    "hero": "/posters/freebsd411/desktop.webp"
+  },
   "freedos": {
     "hero": "/posters/freedos/desktop.webp"
   },

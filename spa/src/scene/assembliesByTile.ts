@@ -133,8 +133,6 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
   },
-  // Debian 2.2 potato (2000): a beige mini-tower and a 17" CRT of the year the
-  // release shipped; the same tower body as the other turn-of-century PCs.
   redstar3: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseD',
@@ -537,14 +535,22 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
-  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  // openbsd: a 2020s small-form-factor amd64 box, but on a wider flat panel than
+  // alpine's desk (same case family, distinct signature) — USB tablet pointer,
+  // 101-key board.
   redhat62: {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseC',
   },
   openbsd: {
-    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
+  },
+  // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
+  // with the PS/2 mouse and 101-key board KDE 3.3.2 on XFree86 4.4.0 is driven
+  // by — a tower, not the flat 1990 desktop case pcgeos sits in.
+  freebsd411: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
   debian22: {

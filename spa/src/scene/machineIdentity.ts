@@ -490,6 +490,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
     badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
   },
+  // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a plain VGA
+  // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the
+  // kind of box ISPs racked by the hundred. The accent is the registry's
+  // FreeBSD daemon red.
+  freebsd411: {
+    caseTint: '#cfc6ae', accentTint: '#ab2b28', tintMix: 0.35,
+    badge: 'PENTIUM 4 PC', spec: 'VESA SVGA 1024x768 • FREEBSD 4.11 • 2005', kit: 'office90',
+  },
   debian22: {
     caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
     badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',

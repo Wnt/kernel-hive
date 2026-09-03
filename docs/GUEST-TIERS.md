@@ -101,6 +101,8 @@ the schema but used by no station**.
 ## Membership
 
 - **Tier 1 (41)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (41)** — `aix432 alpine android aros aux beos bootos chokanji
+  freebsd411 freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
   os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos serenityos solaris sunos414 templeos tinycore toaruos win11
@@ -229,6 +231,7 @@ missing feature.
 | `debian22` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | off | 30 | — |
 | `decos` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
 | `dragon32` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
+| `freebsd411` | 1 direct-QEMU | kvm | `qemu-x11warp` | abs | — | off | 30 | — |
 | `freedos` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |
 | `gt40` | 2 bridge | trixie | `simh-light-pen` | abs | — | on | 60 | ssh |
 | `haiku` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |

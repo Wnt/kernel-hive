@@ -66,7 +66,7 @@
     "stationsManifestOrder": 72,
     "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 85,
+    "bindingOrder": 86,
     "bindingPrelude": "",
     "goldenOrder": 72,
     "actionMapOrder": 44
@@ -176,7 +176,7 @@
         "reason": "tracked verbatim launcher is the production device ledger; zero guest network devices, no USB"
       }
     },
-    "bringUpOrder": 85
+    "bringUpOrder": 86
   },
   "spa": {
     "archetypeId": "beige-tower-crt",

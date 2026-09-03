@@ -154,6 +154,7 @@ MANIFEST=(
   "pcbsd          |tiles/pcbsd.sh                                        |PCBSD             |slow      |~15m (GUI install, assisted) |assisted                     |pcbsd.iso (PC-BSD 1.5.1 CD1, pinned) + pcbsd.qcow2 (installed KDE desktop)"
   "slackware      |tiles/slackware.sh                                    |Slackware         |fast      |~3-5m                        |full                         |slackware.qcow2 (Slackware 3.4 root composed host-side from the mirror .tgz set, rev-0 ext2, no golden) + grub-boot.iso (GRUB2 linux16 -> kernels/bare.i zImage) -> /data/gallery-guests/Slackware/"
   "ubuntu         |tiles/ubuntu.sh                                       |Ubuntu            |retro     |~5m                          |scripted                     |warty-release-live-i386.iso + ubuntu.qcow2 (empty 1G vmstate carrier; live CD, no install)|media"
+  "freebsd411     |tiles/freebsd411.sh                                   |FREEBSD411        |slow      |~25m                         |assisted                     |freebsd411.qcow2 (FreeBSD 4.11-RELEASE i386 full install from disc1-kde: base + XFree86 4.4.0 + KDE 3.3.2; KDE session auto-started on the console)"
   "redhat62       |tiles/redhat62.sh                                     |RedHat62          |heavy     |~15m                         |kickstart                    |redhat62.qcow2 (kickstart install from zoot-i386.iso + golden)"
 )
 
