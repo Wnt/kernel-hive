@@ -26,7 +26,10 @@ if ! qemu-img snapshot -l "$DISK" | grep -Eq '^[[:space:]]*[0-9]+[[:space:]]+gol
   echo "debian22: required qcow2 snapshot 'golden' is missing" >&2
   exit 1
 fi
-[ -f "$CDROM" ] || { echo "debian22: CD image missing: $CDROM" >&2; exit 1; }
+[ -f "$CDROM" ] || {
+  echo "debian22: CD image missing: $CDROM" >&2
+  exit 1
+}
 
 if [ -f "$T/qemu.pid" ]; then
   pid=$(cat "$T/qemu.pid")
