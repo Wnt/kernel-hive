@@ -4,8 +4,8 @@ subtitle: 2005 · the last release of the 4.x line, with the KDE 3.3.2 desktop f
 hero: /posters/freebsd411/desktop.webp
 images:
   - src: /posters/freebsd411/desktop.webp
-    alt: The FreeBSD 4.11 sysinstall main menu in white text on a blue background — a bordered box listing Usage, Standard, Express, Custom, Configure, Doc, Keymap, Options, Fixit, Upgrade, Load Config and Index, with Select and Exit Install buttons along the bottom
-    caption: sysinstall, the text-mode installer FreeBSD shipped from 2.0 until 9.0. This is the frame the smoke rig produced fifteen seconds after the kernel came up; the KDE desktop the exhibit restores to replaces it as soon as the golden checkpoint is baked.
+    alt: The FreeBSD 4.11 KDE 3.3.2 desktop at 1024 by 768 — a blue-grey gradient background, the Kicker panel along the bottom with the K menu, home, Konqueror, help and Konsole icons and a clock, and a Konsole window open with a root shell prompt reading freebsd411#.
+    caption: The desktop as the exhibit boots into it, taken from the golden checkpoint. The machine logs in as root by itself and starts KDE 3.3.2; the Konsole is where the type-in demo lands.
 ---
 ## Origins
 
@@ -21,7 +21,7 @@ The desktop on top of it is the other half of the story. **KDE 3**, which reache
 
 ## What you're looking at
 
-A single-processor i386 PC with 256 MB of RAM, an emulated Cirrus Logic SVGA card driven by XFree86's `cirrus` driver at 1024 by 768 in 16-bit colour, a PS/2 keyboard and mouse, and an NE2000-compatible network card. The machine boots straight into a root KDE 3.3.2 session: the **Kicker** panel runs along the bottom with the **K** menu at its left, and a **Konsole** window is already open with a root shell.
+A single-processor i386 PC with 256 MB of RAM, a standard VGA card driven by XFree86 4.4.0's `vesa` driver at 1024 by 768 in 16-bit colour, a SCSI hard disk on an LSI controller, a PS/2 keyboard and mouse, and an NE2000-compatible network card. The machine boots straight into a root KDE 3.3.2 session: the **Kicker** panel runs along the bottom with the **K** menu at its left, and a **Konsole** window is already open with a root shell.
 
 Type into the Konsole — `uname -a` names the kernel and its build date, `ls /usr/local/bin` shows how much of the installed system came from ports. The K menu holds **Konqueror** (which will show you the local filesystem, and the documentation under `/usr/local/share/doc`), **Kate**, **KCalc**, and the kdegames set. The pointer is absolute: the exhibit moves the cursor by asking the guest's own X server to warp it, so it lands where you point.
 

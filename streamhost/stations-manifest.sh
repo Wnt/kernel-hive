@@ -1068,8 +1068,8 @@ emit ubuntu \
   --input-dev usb --launcher-file "$T/ubuntu/qemu-streamhost.sh" \
   --env-append-file "$T/ubuntu/station.env.fixture"
 
-# freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.3.0
-#   (cirrus driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one IDE disk
+# freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0
+#   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)
 #   carrying the golden vmstate, ne2k_pci SLIRP with the loopback X forward 6078->6000 for the
 #   x11warp absolute pointer (display :78); keys + buttons ride the PS/2 path.
 emit freebsd411 \

@@ -24,7 +24,7 @@
 #   (3) INSTALL ........ ASSISTED — sysinstall is curses-driven; the golden
 #                        stream types the sequence documented below.
 #   (4) INPUT AUTOMATION none here; QMP typing lives in the golden stream.
-#   (5) ERA SOFTWARE ... base + XFree86 4.3.0 + KDE 3.3.2 packages, all from
+#   (5) ERA SOFTWARE ... base + XFree86 4.4.0 + KDE 3.3.2 packages, all from
 #                        the one disc (that is why this variant, not
 #                        disc1-gnome or the miniinst discs).
 #   (6) FINAL IMAGE .... freebsd411.qcow2
@@ -38,19 +38,26 @@
 #   -> Boot Manager: BootMgr (or None, per golden stream's choice)
 #   -> disklabel: a (auto-defaults)            -> q (finish)
 #   -> Distributions: All, then "no" to the ports collection prompt
+#   NOTE (measured 2026-09-03): run the INSTALL under `-accel tcg,thread=single
+#   -cpu pentium3` — 4.11 drives the CD and the IDE disk with 16-bit PIO (no
+#   bus-master DMA on QEMU's PIIX3) and under KVM that is one exit per word,
+#   ~70 KB/s; TCG runs the same transfer ~20x faster. The station itself runs
+#   KVM with the disk on an lsi53c895a SCSI controller (`sym`, DMA), so after
+#   the install retarget /etc/fstab ad0 -> da0.
 #   -> Media: CD/DVD
 #   -> confirm install, let sysinstall extract the distribution
 #   -> Post-install config: Network -> ed0, DHCP: Yes
 #   -> Config -> Mouse: moused daemon, port /dev/psm0, protocol auto
-#   -> Packages: browse CD packages, install kde-3.3.2 (pulls XFree86 4.3.0
-#      and dependencies)
+#   -> Packages: browse CD packages, install kde-lite-3.3.2 + kdegames + kdegraphics (there is no
+#      kde-3.3.2 meta on the disc; dependencies pull the rest of KDE)
 #   -> set root password
 #   -> Exit sysinstall -> reboot, remove CD, boot from the hard disk
 #
 # Launch line (assisted install):
 #   /opt/qemu-beos/bin/qemu-system-x86_64 -enable-kvm -m 256 -smp 1 \
-#     -machine pc-i440fx-11.0,acpi=off -cpu host -rtc base=localtime -vga cirrus \
-#     -drive file=freebsd411.qcow2,format=qcow2,if=ide \
+#     -machine pc-i440fx-11.0,acpi=off -cpu host -rtc base=localtime -vga std \
+#     -device lsi53c895a,id=scsi0 -drive file=freebsd411.qcow2,format=qcow2,if=none,id=hd0 \
+#     -device scsi-hd,bus=scsi0.0,drive=hd0 \
 #     -cdrom 4.11-RELEASE-i386-disc1-kde.iso -boot d \
 #     -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 \
 #     -device ne2k_pci,netdev=n0
@@ -137,8 +144,9 @@ fi
 log "assisted install — drive sysinstall per the header comment, then launch:"
 cat <<EOF
 /opt/qemu-beos/bin/qemu-system-x86_64 -enable-kvm -m 256 -smp 1 \\
-  -machine pc-i440fx-11.0,acpi=off -cpu host -rtc base=localtime -vga cirrus \\
-  -drive file=$DISK,format=qcow2,if=ide \\
+  -machine pc-i440fx-11.0,acpi=off -cpu host -rtc base=localtime -vga std \\
+  -device lsi53c895a,id=scsi0 -drive file=$DISK,format=qcow2,if=none,id=hd0 \\
+  -device scsi-hd,bus=scsi0.0,drive=hd0 \\
   -cdrom $STAGE_DIR/$ISO_NAME -boot d \\
   -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 \\
   -device ne2k_pci,netdev=n0

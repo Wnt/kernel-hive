@@ -26,7 +26,7 @@ stream's to prove and record.
 | Size | 663 328 768 bytes |
 | Publisher MD5 | `84921fe6b6b4bfd3f7011788985d34e2` (`CHECKSUM.MD5`, same archive dir) |
 | SHA-256 | `45a6094b377b041194d582c12daa8e6c1809872acb502e9c4a0f7c7cf19e7fd7` |
-| Contents | base system + XFree86 4.3.0 + KDE 3.3.2 packages, all on the one disc (why `disc1-kde`, not `disc1-gnome` or a miniinst disc) |
+| Contents | base system + XFree86 4.4.0 + KDE 3.3.2 packages, all on the one disc (why `disc1-kde`, not `disc1-gnome` or a miniinst disc) |
 | Staged at | `/data/assets-staging/freebsd411/`, `MANIFEST.sha256` |
 
 ## Install log
@@ -49,9 +49,8 @@ the golden was baked and is served under (KVM) is.
 
 - QEMU: `/opt/qemu-beos/bin/qemu-system-x86_64`, machine
   `pc-i440fx-11.0,acpi=off`, KVM, `-cpu host`, 256 MB RAM, 1 vCPU,
-  `-vga cirrus`, `-rtc base=localtime`, `-display dbus,p2p=on`.
-- Storage: one IDE `qcow2` (`disk.qcow2`) — the only block device, and it
-  carries the golden vmstate.
+  `-vga std` (XFree86 `vesa`), `-rtc base=localtime`, `-display dbus,p2p=on`.
+- Storage: one SCSI `qcow2` (`disk.qcow2`) on an emulated LSI 53c895a (`sym`) — the only block device, and it carries the golden vmstate. Not IDE: the 4.11 `ata` driver gets no bus-master DMA on QEMU's PIIX3 and 16-bit PIO under KVM is one exit per word.
 - NIC: `ne2k_pci` on SLIRP, with a host loopback forward
   `6078 → 10.0.2.15:6000` for the X pointer route (below).
 - No audio device.
@@ -64,7 +63,7 @@ Same route as `netbsd14` and `amix`: no absolute input device and no
 hardware cursor from XFree86, so the museum reaches into the guest's own X
 server instead of a device.
 
-- Motion: `x11warp` into the guest XFree86 4.3.0 server,
+- Motion: `x11warp` into the guest XFree86 4.4.0 server,
   `SH_X11WARP_DISPLAY=127.0.0.1:78` over the loopback SLIRP forward
   `6078 → 10.0.2.15:6000`. The golden carries `xhost +10.0.2.2` (never
   `xhost +`) so the daemon's connection is allowed; if `startx`/`xinit` ever
@@ -82,11 +81,13 @@ server instead of a device.
 - Session: console autologin as root into `startkde` (or `kdm` autologin);
   the KDE first-run wizard (kpersonalizer) and Kandalf tips suppressed; a
   root Konsole open; Kicker panel visible.
-- Fixture: FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.3.0, cirrus, 1024×768,
+- Fixture: FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0, vesa, 1024×768,
   depth 16) — Kicker panel with the K menu, a root Konsole open, Konqueror,
   Kate, KCalc and kdegames a click away.
 
-TODO(golden): VM_SIZE, VM_CLOCK, bake date, autologin route
+- Snapshot `golden` on `disk.qcow2`: VM_SIZE 113 MiB, VM_CLOCK 0003:07:42.509, baked 2026-09-03 06:28:53 under the shipped KVM launcher; restore proven by framebuffer (`uname -a; xhost` typed into the Konsole after `-loadvm golden -S` + `cont`).
+- Autologin route: `/etc/gettytab` `Al|Autologin:al=root:tc=Pc:`, `/etc/ttys` `ttyv0 "/usr/libexec/getty Al" cons25 on secure`, `/root/.login` runs `startx; logout` on ttyv0, `/root/.xinitrc` = `xset s off; xset -dpms; xhost +10.0.2.2; exec startkde`; `startx` patched to `listen_tcp=""` (4.4.0 ships `-nolisten tcp`). Cold boot to the desktop with no input: ~72 s.
+- Quiet boot: `sendmail_enable="NONE"`, `blanktime="NO"`, `/etc/hosts` `10.0.2.15 freebsd411.local freebsd411`, static ed0 10.0.2.15/24; KDE: kpersonalizer FirstLogin=false, ktip RunOnStart=false, screensaver off, aRts off, Konsole in `~/.kde/Autostart`. Full file list: `docs/lab/FREEBSD411-WAVE.md` §Golden.
 
 ## Operating
 
