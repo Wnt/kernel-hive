@@ -89,12 +89,24 @@ so the disk is composed on the host instead:
    xset -dpms; wmaker & … gnome-terminal & exec gnome-session`.
 5. Boot on the launcher device set with `-boot order=d`; at the CD's `boot:`
    prompt type `linux root=/dev/hda1` (no boot loader on the disk; the golden
-   vmstate carries the running kernel). Log in root on tty1 and run
-   `su - gallery -c /usr/bin/X11/startx >/root/x.log 2>&1 &` — init cannot
-   start X (an init-spawned `startx` has no controlling tty and never spawns the
-   server; proven, the `x1` respawn line was dropped). X paints in ~30 s,
-   Window Maker + the GNOME panel in another ~1–2 min (libraries come through
-   the PIO path). Click the terminal, `xset m 1 1; clear`, HMP `savevm golden`.
+   vmstate carries the running kernel). inittab `x1:2345:respawn:/bin/su -
+   gallery -c /usr/bin/X11/startx` starts X by itself — two traps: the line
+   must carry NO shell redirection (init passes it verbatim, `>/dev/null 2>&1`
+   became `su` arguments and startx never ran) and `/etc/X11/Xserver` must say
+   `Anybody` (`Console` refuses an init-spawned session: "user not authorized to
+   run the X server"). Window Maker + the GNOME panel are up ~75 s after power-on
+   with DMA. Bake: warp the pointer onto the terminal (`tiles/debian22/xwarp.py
+   127.0.0.1 6082 800,600`), one PS/2 click, `clear`, warp to 512,384, HMP
+   `savevm golden`.
+6. Disk DMA: `hdparm_3.6-1.deb` (not on CD1; archive.debian.org potato/admin,
+   sha256 `3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9`)
+   unpacked into the tree, `hdparm -d1 /dev/hda` at the end of rcS:
+   `using_dma = 1`, 66.67 MB/s buffered reads (was ~27 KB/s PIO).
+7. Pointer (x11warp): `8390.o` + `ne2k-pci.o` insmod'd in rcS, `eth0 10.0.2.15`,
+   `/etc/X0.hosts` = `10.0.2.2` (never `xhost +`), `/etc/hosts` names
+   `slirphost`. The launcher forwards `127.0.0.1:6082 -> 10.0.2.15:6000`
+   (loopback only); the daemon warps through the guest X server and reads back
+   with XQueryPointer; buttons and keys ride the PS/2 path.
 
 ## Operator notes
 
@@ -109,19 +121,15 @@ so the disk is composed on the host instead:
 
 ## Checkpoint
 
-`golden` baked 2026-09-03 06:33 on the smoke rig (`/data/vms/sandbox/debian22/smoke`)
-against the exact launcher device set; VM_SIZE **46.5 MiB**, disk.qcow2 380 MB,
-VM_CLOCK 3:16:29. Restore proof on a fresh launch with `-boot order=c -loadvm golden -S`
-+ `cont`: desktop within 4 s; `cat /etc/debian_version; uname -sr` typed and echoed
-(`2.2`, `Linux 2.2.17`); a 300-unit relative pointer move landed the arrow on the
-terminal title bar; a second HMP `loadvm golden` returned the clean prompt.
-Frames: `smoke/p1.png … p4.png` (PPM despite the name).
+`golden` baked 2026-09-03 07:47 on the smoke rig (`/data/vms/sandbox/debian22/smoke`)
+against the exact launcher device set (ne2k_pci NIC included); VM_SIZE **44.9 MiB**,
+VM_CLOCK 3:15. Restore proof on a fresh launch with `-boot order=c -loadvm golden -S`
++ `cont`: desktop within 4 s; `XWarpPointer` to (100,100) and (900,700) read back
+exactly by `XQueryPointer` and the arrow seen at each target; `su -c hdparm` typed
+into the terminal echoed `using_dma = 1` and `66.67 MB/sec`; a second HMP `loadvm
+golden` returned the clean prompt. Frames: `smoke/q1.png … q5.png`. The first
+(relative-pointer, PIO) golden of 06:33 was VM_SIZE 46.5 MiB.
 
-**OPEN:** (1) disk I/O at runtime is still 2.2 PIO — `hdparm` is not on CD1; the
-redhat62 wave proved `hdparm -d1 /dev/hda` on the UP kernel gives PIIX DMA at
-60+ MB/s, so the follow-up is to add hdparm (archive.debian.org potato/admin) to
-the compose and rebake. (2) No cold-boot path: the disk has no boot loader and X
-is started by hand; a recapture needs the five-line bake above, or a
-`mingetty --autologin` + `.profile` `exec startx` route as netbsd14/slackware use.
-(3) Pointer is relative; an absolute route (in-guest X pointer write as amix) is
-a follow-up.
+**OPEN:** none of the three from the first landing — DMA, cold boot and the
+absolute pointer all landed in the x11warp rebake. Follow-ups: a GNOME 1.0 type-in
+demo beyond the shell one-liners; the clock applet stays in the fixture (as pcgeos).

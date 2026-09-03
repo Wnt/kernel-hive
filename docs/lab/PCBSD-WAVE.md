@@ -99,3 +99,37 @@ device. Also: `station-up.sh` step 4 republishes the runtime manifests and wipes
 every other wave's dark-launch overlay (seven this time), and `labctl gen`
 refuses while undeclared station dirs from sibling waves exist — both are
 coordination-level, reported to the coordination session.
+
+## Phase 2 — absolute pointer via x11warp (2026-09-03)
+
+Operator: "pointer-based graphical OSes need absolute cursor positioning before
+they are considered fully integrated." The usb-tablet is dead on FreeBSD 6.3 X
+(phase 1), so pcbsd takes the fleet's `x11warp` route proven the same night on
+freebsd411 / netbsd14 / suse64 / redhat62: the daemon warps the pointer inside
+the guest's X server over TCP and reads it back.
+
+- Device set gains ONE device: `-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000
+  -device e1000,netdev=n0` (display :79 was this wave's allocation). Everything
+  else unchanged, so a new golden was baked on a sandbox clone of the live disk
+  (`/data/vms/sandbox/pcbsd/abs/`, never the station) and staged as
+  `disk.qcow2.x11warp`, swapped in during the landing window.
+- Guest: X listens on TCP (KDM `ServerArgsLocal` without `-nolisten tcp`),
+  `xhost +10.0.2.2` appended to `~visitor/.kde/Autostart/noblank.sh`, `em0` on DHCP.
+- Fixture: `SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:79`,
+  `SH_CURSOR_SCALE=1.0`; registry `stream.pointer` = freebsd411's shape, emit
+  `--pointer abs --input-backend x11warp`, no legacy `SH_POINTER`.
+- **pf is the trap** (not in the fleet recipe until now): PC-BSD 1.5.1 ships
+  `pf_enable="YES"` with `/etc/pf.conf`, which resets inbound :6000 even once X
+  listens. Appended `pass in quick on em0 proto tcp from 10.0.2.2 to any port 6000`
+  and `pfctl -f /etc/pf.conf`; the rule loads at boot via `pf_rules` and the
+  running ruleset is inside the vmstate. kdmrc: `[X-:*-Core] ServerArgsLocal=`
+  (was `-nolisten tcp`, line 469); no `Xservers` file on PC-BSD; `em0` was already
+  `DHCP` in rc.conf. After reboot `sockstat -4l` shows `Xorg tcp4 *:6000`, `xhost`
+  prints `INET:10.0.2.2`.
+- Proof on the clone (golden stream, Fable, 15 min): `xdpyinfo -display 127.0.0.1:79`
+  answers (X.Org, 1024x768); `scripts/dev/x11ptr.py 127.0.0.1 6079 X,Y q` warps read
+  back **(100,100)** and **(900,650)** exactly, cursor sprite on both frames
+  (`/data/vms/sandbox/pcbsd/abs/w1.png`, `w2.png`). Golden: VM_SIZE **296 MiB**,
+  VM_CLOCK 0:12:55, restore pixel-identical and `query_pointer` = (450,680) after
+  the restore; power-on → desktop ≈90 s. Staged as `disk.qcow2.x11warp`, swapped in
+  during the landing window (old kept as `disk.qcow2.rel-bak` until the live proof).

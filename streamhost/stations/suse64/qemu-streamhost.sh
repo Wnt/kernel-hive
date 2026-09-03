@@ -5,6 +5,10 @@
 # PIIX bus-master DMA is on (using_dma = 1); YaST2's default k_smp loses every IDE/keyboard
 # interrupt on this machine type (noapic works around it but stays PIO). The INSTALL ran under
 # TCG because the 2.2 IDE PIO path is a KVM exit per outw (70 KiB/s); docs/lab/SUSE64-WAVE.md.
+# TWO NICs: the slirp one is FIRST so it stays eth0 (10.0.2.15, the x11warp forward)
+# and carries `restrict=on` — the guest cannot reach labhost's stack through
+# 10.0.2.2 any more, while the hostfwd to :6000 keeps working. The retronet tap is
+# SECOND and becomes eth1 (10.99.0.37); the guest's default route goes through it.
 # Reset = `-loadvm golden` on disk.qcow2, the ONLY block device (rule 6: golden +
 # /opt/qemu-beos binary + this device set are one combination — recapture through
 # checkpoint-guard, never by hand). Pointer: motion is absolute through the guest's
@@ -16,7 +20,10 @@ DISK="$BASE/disk.qcow2"
 [ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
-[ -f "$DISK" ] || cp /data/gallery-guests/SUSE64/suse64.qcow2 "$DISK"
+[ -f "$DISK" ] || cp /data/gallery-guests/SUSE64/suse64-rn.qcow2 "$DISK"
+# The retronet link: a persistent tap on vmbr-rn plus this station's own
+# fail-closed SUSE64RN-IN chain. Idempotent, and re-asserted on every launch.
+"$BASE/rn-tapnet.sh" up
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
 qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
@@ -32,7 +39,8 @@ nohup "${SUSE64_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -vga cirrus \
   -display dbus,p2p=on \
   -drive file=/data/vms/streamhost/stations/suse64/disk.qcow2,format=qcow2,if=ide \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev tap,id=rn0,ifname=suse64rn0,script=no,downscript=no -device ne2k_pci,netdev=rn0,mac=52:54:00:52:4e:25 \
   -qmp unix:/data/vms/streamhost/stations/suse64/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/suse64/qemu.pid \
   >"/data/vms/streamhost/stations/suse64/qemu.log" 2>&1 &
