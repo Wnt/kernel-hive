@@ -135,10 +135,6 @@ export const ASSEMBLIES_BY_TILE = {
   },
   // Debian 2.2 potato (2000): a beige mini-tower and a 17" CRT of the year the
   // release shipped; the same tower body as the other turn-of-century PCs.
-  debian22: {
-    kind: 'towerSetup', body: 'towerA', monitor: 'paramCrt',
-    keyboard: 'keyboardB', mouse: 'paramMouseB',
-  },
   redstar3: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseD',
@@ -515,10 +511,6 @@ export const ASSEMBLIES_BY_TILE = {
   // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
   // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
   // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
-  redhat62: {
-    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
-    keyboard: 'keyboardA', mouse: 'paramMouseB',
-  },
   // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
   // two-button PS/2 mouse (the station forwards a relative pointer; FreeBSD 6.3's
   // X never moved on a USB tablet). Distinct from reactos's SFF pizza-box kit.
@@ -547,9 +539,17 @@ export const ASSEMBLIES_BY_TILE = {
   },
   // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
   // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  redhat62: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseC',
+  },
   openbsd: {
     kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
-    keyboard: 'keyboardA', mouse: 'paramMouseD',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  debian22: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'paramCrt',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
   },
 } as const satisfies Record<string, Assembly>;
 

@@ -161,10 +161,6 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#4b4d4b', accentTint: '#686d6b', tintMix: 0.6,
     badge: 'OEM TOWER', spec: 'INSTITUTIONAL', kit: 'workstation',
   },
-  debian22: {
-    caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
-    badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',
-  },
   redstar3: {
     caseTint: '#55595b', accentTint: '#737a7b', tintMix: 0.52,
     badge: 'OEM SFF', spec: 'OFFICE • 2013', kit: 'modern',
@@ -458,10 +454,6 @@ export const EXHIBIT_IDENTITIES = {
   // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
   // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
   // Registry red accent (Red Hat's own).
-  redhat62: {
-    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
-    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
-  },
   // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
   // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
   slackware: {
@@ -490,9 +482,17 @@ export const EXHIBIT_IDENTITIES = {
   // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
   // the hardware class, the spec the X server and the year. Registry accent is
   // the Puffy yellow.
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
   openbsd: {
     caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
     badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
+  },
+  debian22: {
+    caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
+    badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
