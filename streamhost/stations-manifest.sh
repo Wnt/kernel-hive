@@ -1039,14 +1039,15 @@ emit pcgeos \
   --launcher-file "$T/pcgeos/qemu-streamhost.sh" --env-append-file \
   "$T/pcgeos/station.env.fixture"
 
-# debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED
-#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,
-#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.
-#   Required -loadvm golden; dedicated HMP reset socket.
+# debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0 under Window Maker.
+#   VERBATIM launcher: -nodefaults, IDE golden disk + CD1 ISO, Cirrus VGA (XF86_SVGA, 1024x768x16),
+#   ne2k_pci on SLIRP with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000), PS/2 keys/buttons,
+#   no audio, no USB. Required -loadvm golden; dedicated HMP reset socket.
 emit debian22 \
-  --tile debian22 --vmid 182 --udp 54182 --pointer rel --audio off --fps 30 \
-  --launcher-file "$T/debian22/qemu-streamhost.sh" --env-append-file \
-  "$T/debian22/station.env.fixture"
+  --tile debian22 --vmid 182 --udp 54182 --pointer abs --input-backend \
+  x11warp --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
+  --fps 30 --launcher-file "$T/debian22/qemu-streamhost.sh" \
+  --env-append-file "$T/debian22/station.env.fixture"
 
 # netbsd14 (VMID 176) — NetBSD 1.4.1 i386 (1999), XFree86 3.3.3.1 on Cirrus; absolute pointer via x11warp.
 emit netbsd14 \

@@ -21,27 +21,16 @@
 # hda2 cyl 484-520, CHS 520/128/63) booted on the EXACT launcher device set
 # (streamhost/stations/debian22/qemu-streamhost.sh) with -boot order=d.
 #
-# After it boots to the login prompt: log in root on tty1, run
-#   su - gallery -c /usr/bin/X11/startx >/root/x.log 2>&1 &
-# wait for Window Maker + the GNOME 1.0 panel (~1-2 min: fonts and libraries
-# come through the PIO path), click the terminal, `xset m 1 1; clear`, then
-# HMP `savevm golden`. init cannot start X here (no controlling tty; proven),
-# and hdparm is not on CD1, so DMA (`hdparm -d1 /dev/hda`, proven 60+ MB/s by
-# the redhat62 wave) is a follow-up — see docs/guests/debian22.md.
+# It boots straight into X (inittab `x1` respawns `su - gallery -c startx`,
+# NO shell redirection on that line, /etc/X11/Xserver = Anybody), Window Maker
+# + the GNOME 1.0 panel in ~75 s with hdparm -d1 DMA (66 MB/s). x11warp: the
+# ne2k_pci NIC on SLIRP + /etc/X0.hosts = 10.0.2.2; the host forwards
+# 127.0.0.1:6082 -> :6000 and warps the pointer through the guest X server.
+# Bake: warp the pointer onto the terminal, one PS/2 click, `clear`, warp to
+# 512,384, HMP `savevm golden`. Proof: tiles/debian22/xwarp.py HOST PORT X,Y…
 #
 # Usage: R=/data/vms/sandbox/<session>/smoke  B=<dir with closure.py + XF86Config>  bash debian22.sh
 # =============================================================================
-set -e
-umask 022
-R="${R:-/data/vms/sandbox/debian22/smoke}"
-B="${B:-$(cd "$(dirname "$0")" && pwd)/debian22}"
-M="$B/mnt"
-CD="$B/cd"
-[ -f "$R/disk.qcow2" ] || qemu-img create -f qcow2 "$R/disk.qcow2" 2G
-if [ -f "$R/qemu.pid" ]; then
-  kill "$(cat "$R/qemu.pid")" 2>/dev/null || true
-  sleep 2
-fi
 set -e
 umask 022
 for N in 5 6 7 8 9 10 11; do [ "$(cat /sys/block/nbd$N/size)" = 0 ] && qemu-nbd -c /dev/nbd$N "$R"/disk.qcow2 && break; done
@@ -55,7 +44,7 @@ mkdir -p "$M" "$CD"
 mount /dev/nbd"${N}"p1 "$M"
 mount -o loop,ro /data/assets-staging/debian22/debian-2.2-i386-cd1.iso "$CD"
 tar -xzpf /data/assets-staging/debian22/base2_2.tgz -C "$M"
-python3 "$B"/closure.py "$CD"/dists/potato/main/binary-i386/Packages.gz gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga xbase-clients xfonts-base xfonts-75dpi xterm wmaker hdparm >"$B"/closure.txt 2>"$B"/closure.err
+python3 "$B"/closure.py "$CD"/dists/potato/main/binary-i386/Packages.gz gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga xbase-clients xfonts-base xfonts-75dpi xterm wmaker >"$B"/closure.txt 2>"$B"/closure.err
 wc -l "$B"/closure.txt
 cat "$B"/closure.err
 mkdir -p "$M"/var/lib/dpkg/info
@@ -67,7 +56,7 @@ while read -r f; do
   dpkg-deb -x "$CD"/"$f" "$M"
   p=$(dpkg-deb -f "$CD"/"$f" Package)
   dpkg-deb -e "$CD"/"$f" "$B"/ctl
-  for c in "$B"/ctl/*; do [ "$(basename "$c")" = control ] || cp "$c" "$M/var/lib/dpkg/info/$p.$(basename "$c")"; done
+  for c in "$B"/ctl/*; do [ "$(basename "$c")" = control ] || cp "$c" "$M"/var/lib/dpkg/info/"$p".$(basename "$c"); done
   {
     dpkg-deb -f "$CD"/"$f" | sed '1a Status: install ok unpacked'
     echo
@@ -83,10 +72,12 @@ done                                      # fixed alias lives in /etc/X11/fonts;
 chmod -R a+rX "$M"/usr/X11R6 "$M"/etc/X11 # host umask left fonts.dir/XF86Config 0600
 chmod 4755 "$M"/usr/bin/X11/XF86_SVGA     # no Xwrapper on potato; server must be setuid
 echo /usr/X11R6/lib >>"$M"/etc/ld.so.conf # libXmu.so.6 not found otherwise (ldconfig runs in rcS)
-printf '127.0.0.1\tlocalhost potato\n' >"$M"/etc/hosts
+printf '127.0.0.1\tlocalhost potato\n10.0.2.2\tslirphost\n' >"$M"/etc/hosts
+echo 10.0.2.2 >"$M"/etc/X0.hosts # x11warp: the SLIRP peer may connect to the guest X server (never xhost +)
 cp "$B"/XF86Config "$M"/etc/X11/XF86Config
 chmod 644 "$M"/etc/X11/XF86Config # clgd5446 + no_bitblt + 1024x768x16
 ln -sf /usr/bin/X11/XF86_SVGA "$M"/etc/X11/X
+printf '/usr/bin/X11/XF86_SVGA\nAnybody\n' >"$M"/etc/X11/Xserver # Debian's xserver wrapper policy: 'Console' refuses an init-spawned (no utmp) session with 'user not authorized to run the X server'
 # --- system ---
 printf '/dev/hda1 / ext2 defaults,errors=remount-ro 0 1\n/dev/hda2 none swap sw 0 0\nproc /proc proc defaults 0 0\n' >"$M"/etc/fstab
 rm -f "$M"/etc/rc2.d/S11pcmcia "$M"/etc/rc2.d/S14ppp "$M"/etc/rcS.d/S15isapnp "$M"/etc/rcS.d/S45mountnfs.sh "$M"/etc/rc2.d/S20inetd "$M"/etc/rc2.d/S20logoutd "$M"/etc/rc2.d/S99gdm "$M"/etc/rc2.d/S99xdm
@@ -98,11 +89,13 @@ printf '#!/bin/sh\nxset s off; xset -dpms\nwmaker &\nsleep 3\ngnome-terminal --g
 cp "$M"/home/gallery/.xsession "$M"/home/gallery/.xinitrc
 chmod +x "$M"/home/gallery/.xsession "$M"/home/gallery/.xinitrc
 chown -R 1000:1000 "$M"/home/gallery
-# no inittab autologin: X started by init has no controlling tty and never spawns (proven 2026-09-03); the golden vmstate carries the running session, X is started once from the root console at bake time
+sed -i 's|^2:23:respawn.*|x1:2345:respawn:/bin/su - gallery -c /usr/bin/X11/startx|' "$M"/etc/inittab # NO redirection: init passes the line verbatim to su, '>/dev/null 2>&1' became su arguments and startx never ran (proven 2026-09-03; redhat62 uses this exact shape)
 echo potato >"$M"/etc/hostname
 dpkg-deb -x "$CD"/dists/potato/main/binary-i386/base/kernel-image-2.2.17_2.2.17pre6-1.deb "$M"
+echo "3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9  /data/assets-staging/debian22/hdparm.deb" | sha256sum -c - >/dev/null && dpkg-deb -x /data/assets-staging/debian22/hdparm.deb "$M" # hdparm 3.6-1 is not on CD1: archive.debian.org potato/main/admin
 sed -i "2i /sbin/insmod /lib/modules/2.2.17/misc/unix.o >/dev/null 2>&1" "$M"/etc/init.d/rcS
 echo "mkdir -p /tmp/.X11-unix; chown root:root /tmp/.X11-unix; chmod 1777 /tmp/.X11-unix   # bootmisc cleans /tmp; X aborts on a gallery-owned socket dir" >>"$M"/etc/init.d/rcS
+echo "/sbin/insmod /lib/modules/2.2.17/net/8390.o >/dev/null 2>&1; /sbin/insmod /lib/modules/2.2.17/net/ne2k-pci.o >/dev/null 2>&1; /sbin/ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up; /sbin/route add default gw 10.0.2.2   # ne2k_pci on SLIRP: x11warp reaches X :0 via hostfwd" >>"$M"/etc/init.d/rcS
 echo "/sbin/hdparm -d1 /dev/hda >/dev/null 2>&1   # PIIX bus-master DMA on the UP 2.2 kernel: 60+ MB/s instead of 27 KB/s PIO under KVM (redhat62 wave, proven)" >>"$M"/etc/init.d/rcS
 echo "/sbin/ldconfig >/dev/null 2>&1   # after / is rw: at the top of rcS the cache write fails silently (libXmu.so.6 not found)" >>"$M"/etc/init.d/rcS
 rm -f "$M"/sbin/unconfigured.sh "$M"/etc/rcS.d/S20modutils "$M"/etc/rc2.d/S12kerneld "$M"/etc/rc2.d/S20makedev
@@ -115,7 +108,7 @@ qemu-nbd -d /dev/nbd"$N"
 rm -f "$R"/qmp.sock "$R"/hmp.sock "$R"/qemu.pid
 cd "$R"
 export SH_DBUS_UPDATE_MS=4
-nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
+nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0 -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
 sleep 2
 cat "$R"/qemu.pid
 bash "$R"/run-daemon.sh >/dev/null 2>&1
