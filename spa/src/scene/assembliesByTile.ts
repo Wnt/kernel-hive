@@ -560,13 +560,6 @@ export const ASSEMBLIES_BY_TILE = {
   suse64: {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
     keyboard: 'keyboardB', mouse: 'paramMouseC',
-=======
-  // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
-  // with the PS/2 mouse and 101-key board KDE 3.3.2 on XFree86 4.4.0 is driven
-  // by — a tower, not the flat 1990 desktop case pcgeos sits in.
-  freebsd411: {
-    kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
-    keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
 } as const satisfies Record<string, Assembly>;
 

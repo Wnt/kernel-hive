@@ -76,9 +76,13 @@ paying that cost again.
 - Fixture: a KDE 1.1.2 desktop at 1024x768x16 (XFree86 3.3.6 SVGA on Cirrus),
   reached by console autologin into `startx`, with `kpanel` and a `konsole`
   open — see the Checkpoint section below for the bake that produces it
-- Pointer/click/drag/wheel/keyboard proof: TODO(golden) — to be recorded when
-  the golden stream proves the x11warp path against the baked snapshot
-- Cold-boot zero-input state and optional clip: TODO(golden)
+- Pointer/keyboard proof on the rig: the X11 handshake on the loopback forward
+  (127.0.0.1:6080) answers `0x01` before `savevm` and after `loadvm`; a QMP
+  `--mouse 50 30` moved the cursor (515,390)→(615,450); typing `ls -l /etc` into
+  the konsole filled it and `loadvm golden` rewound it. Click/drag/wheel through
+  the station daemon: verified at station-up (the operator eyeballs the tile).
+- Cold-boot zero-input state: the KDE desktop with one konsole, 80 s after
+  power-on with no keystroke (`kde-final.png` in the rig dir); no clip recorded.
 - Credentials reference only (never values): `guest/suse64`
 - Rollback plan: `git revert` the landing commit and drop the `suse64` row
   from the registry; the golden disk and its staged copy under
@@ -130,9 +134,9 @@ QMP plus the x11warp loopback — no kiosk, bridge or second VM in the path.
 
 ## Known gaps / next
 
-- **Golden bake not yet recorded here.** The measured facts above cover the
-  install; the desktop configuration, the bake itself and its restore proof
-  are the golden stream's, to be filled in against the `TODO(golden)` line.
+- **Not yet measured:** key pacing (fleet floor 40/40 shipped), audio (none
+  declared), the kcontrol screensaver page (KDE 1's `kssrc` is empty = no saver,
+  and `xset s off -dpms` runs in `.xinitrc`).
 - **No exec channel.** As with several of the fleet's small stations, there is
   no ssh/serial path in — everything is QMP keys/mouse plus the x11warp
   pointer and the framebuffer.
