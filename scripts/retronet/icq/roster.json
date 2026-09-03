@@ -136,6 +136,13 @@
       "nick": "slackware",
       "client": "micq043",
       "onboarded": true
+    },
+    {
+      "station": "netbsd14",
+      "uin": "17600",
+      "nick": "netbsd14",
+      "client": "micq-0412",
+      "onboarded": true
     }
   ]
 }
