@@ -118,6 +118,18 @@ rebuilt twice (second time adding Window Maker), started X by hand and baked
 the launcher line at 06:34 (`smoke/p2–p4.png`). A three-hour usage-limit pause
 (03:24–06:24) sits inside the wall clock; the rig survived it.
 
+## Phase 2: absolute pointer (coordinator, 07:20–07:50)
+
+Operator: pointer-based graphical OSes need absolute positioning. Route x11warp
+as redhat62/suse64: ne2k_pci on SLIRP with one loopback hostfwd
+(127.0.0.1:6082 -> 10.0.2.15:6000), `/etc/X0.hosts` = 10.0.2.2. Rebaked on the
+sandbox rig with the new launcher (rule 4), and since it was a rebake anyway:
+hdparm 3.6-1 from archive.debian.org (`hdparm -d1` -> 66.67 MB/s), and the
+inittab autologin fixed (no shell redirection on the init line; `/etc/X11/Xserver`
+= Anybody) so the disk cold-boots into the desktop by itself. Proof on the
+restore: warps to (100,100)/(900,700) read back exactly and visible, keys reach
+the terminal, loadvm returns the clean prompt. Golden VM_SIZE 44.9 MiB.
+
 ## Timeline (box clock; operator message 02:01)
 
 | Milestone | Time | Elapsed |
