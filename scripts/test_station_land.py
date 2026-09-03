@@ -95,7 +95,7 @@ class DryRunTest(unittest.TestCase):
         self.assertIn("--since", text)
         self.assertNotIn("login successful uin=$uin'\"", text)  # no home-grown journal grep
         # suse64 is an onboarded ICQ station, so its uin must reach the proof.
-        self.assertIn("uin=18000", result.stdout)
+        self.assertIn("--icq 18000", result.stdout)
 
     def test_it_says_what_to_do_when_wave_sh_is_absent(self) -> None:
         if (REPO / "scripts/dev/wave.sh").exists():
