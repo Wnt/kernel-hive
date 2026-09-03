@@ -120,7 +120,7 @@ exec startkde
 `xhost +10.0.2.2` is what lets the x11warp pointer reach the guest's X server
 from the host side of the loopback forward on every restore.
 
-TODO(golden): VM_SIZE, VM_CLOCK, bake date (KDE golden)
+Golden (KDE): `savevm golden` 79.6 MiB, VM_CLOCK 0:01:21, baked 2026-09-03 06:57 under KVM with `/opt/qemu-beos`; staged image 186 MiB on disk (virtual 1.5 GiB). KDE 1.1.2 = kbase-1.1.2-87 + klibs-1.1.2-76 (+ ksupp, kicons, kutils, qtlib-1.45) from `kde.iso`; kbase installed `--nodeps` (it requires SuSE's `susewm` menu generator, absent — KDE runs without it). `~/.xinitrc`: `xset s off -dpms; xhost +10.0.2.2; export KDEDIR=/opt/kde; PATH=/opt/kde/bin:$PATH; konsole -geometry 100x30+40+40 &; exec startkde`. Desktop up 80 s after power-on with no keystroke; the loadvm proof rewinds a dirtied konsole to the clean desktop.
 
 ## Host-native capture path
 

@@ -4,8 +4,8 @@ subtitle: 2000 · the green-boxed German Linux, KDE 1 on kernel 2.2
 hero: /posters/suse64/desktop.webp
 images:
   - src: /posters/suse64/desktop.webp
-    alt: SuSE Linux 6.4 installer, the Personalize step, with the chameleon and the eight-step progress strip across the top
-    caption: The graphical SuSE installer of 6.4 walks a first user through eight numbered steps; this is the account page, captured from the station's own install.
+    alt: SuSE Linux 6.4's KDE 1.1.2 desktop at 1024x768 — desktop icons down the left, a konsole window in the middle, the grey SuSE chameleon in the corner and kpanel with the K menu, pager and clock along the bottom
+    caption: KDE 1.1.2 as SuSE shipped it in 6.4 — kpanel, a four-desktop pager, a konsole, and the chameleon watermark; this frame is the station's own golden snapshot.
 ---
 ## Origins
 

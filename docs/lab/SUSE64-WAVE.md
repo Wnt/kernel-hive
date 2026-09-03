@@ -96,7 +96,9 @@ whose BitBLT text is blank; it also wants CD2 for 54 packages, among them all of
 KDE. Skipped: boot `linux noapic single`, delete the trigger. KDE 1.1.2 is then
 installed from the composed `kde.iso` (see the ledger). Golden facts and the
 autologin mechanism are in `docs/guests/suse64.md` §Checkpoint. First golden
-(twm, before KDE): 90.4 MiB, VM_CLOCK 0:06:19, KVM, `hdparm -t` 58.72 MB/s.
+(twm, before KDE): 90.4 MiB, VM_CLOCK 0:06:19, KVM, `hdparm -t` 58.72 MB/s. Final golden
+(KDE 1.1.2, kbase `--nodeps` because it requires the absent `susewm`): **79.6 MiB, VM_CLOCK
+0:01:21**, staged 186 MiB; desktop 80 s after power-on, no keystroke.
 
 Guest userland traps (SuSE 6.4): `sed` has no `-i`; `mingetty` has no
 `--autologin` (use a `/sbin/autologin` wrapper: `exec </dev/tty1 >/dev/tty1 2>&1;
