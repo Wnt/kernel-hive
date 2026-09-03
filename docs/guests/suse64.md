@@ -170,6 +170,17 @@ file, not a replacement for `suse64.qcow2`**, so the old checkpoint stays
 restorable until this one is live. `savevm golden`, VM_SIZE 84.1 MiB, VM_CLOCK
 `0000:16:02.407`, 2026-09-03 08:58, restore-proven.
 
+**A restore is not a sign-in.** The gateway reaps a legacy ICQ session after
+120 s, and GtkICQ 0.60 neither notices nor exits — after `loadvm golden` it shows
+`Ready (Online)` with HiveBot listed while every packet is answered
+`NOT_CONNECTED`. The framebuffer cannot show this; the gateway journal is the
+only proof. The station therefore runs `/root/bin/icq-session`
+(`streamhost/stations/suse64/icq-session`) from `~/.xinitrc` instead of a bare
+`gtkicq &`: it restarts the client every 100 s, inside the reaper's window. Each
+restart re-logs in with no GUI step because `gtkicqrc` keeps the shipped default
+`Server "icq.mirabilis.com"` — which the retronet DNS resolves to the gateway —
+and carries HiveBot in its `Contacts` section.
+
 **The ICQ client's configuration lives in the running process, not on disk.**
 GtkICQ writes `~/.icq/gtkicqrc` on a clean Quit but never persists a server
 edited in Options → Network — the file still reads `icq.mirabilis.com` — and a

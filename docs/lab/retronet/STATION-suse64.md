@@ -363,3 +363,97 @@ a way to set the server**, and this station's configuration necessarily lives in
 the **running process** — which is exactly why the golden is baked with gtkicq
 signed in, and why a recapture must re-do the Options → Network edit rather than
 rely on the file.
+
+
+## Restore is not a sign-in — the reaper, and the watchdog for it
+
+**The defect.** After `loadvm golden` the scene is perfect and wrong: GtkICQ
+shows `Ready (Online)` with HiveBot listed, while the gateway logs, for every
+packet the guest sends:
+
+```
+msg="V4 packet received" svc=ICQLegacy command=0x042E uin=18000 addr=10.99.0.37:1024 session_found=false
+msg="V4 packet from unknown session, sending NOT_CONNECTED" svc=ICQLegacy command=0x042E uin=18000 addr=10.99.0.37:1024
+```
+
+The gateway reaped the legacy session after `ICQ_LEGACY_SESSION_TIMEOUT` (120 s,
+**by design — do not change it**), and the restored client never notices. **This
+is the one failure mode on this station that the framebuffer cannot show**,
+which is exactly why rule 9 needs a companion here: for the ICQ plane the proof
+is the gateway journal, not the frame.
+
+**Why no reconnect.** GtkICQ 0.60 has **no reconnect path** — there is no
+`reconnect` / auto-connect / re-login string anywhere in the binary and no
+Status-menu item that re-logs in. It also does **not** exit on `NOT_CONNECTED`;
+it keeps painting a signed-in window indefinitely. It *does* exit promptly when
+it cannot resolve or reach the server at **startup**. So slackware's
+"restart it when it exits" watchdog has no edge to fire on here.
+
+**The fix: `streamhost/stations/suse64/icq-session`**, installed in the guest at
+`/root/bin/icq-session` and launched from `~/.xinitrc` **instead of** a bare
+`gtkicq &`:
+
+```sh
+while :; do gtkicq & p=$!; sleep 100; kill $p; wait $p 2>/dev/null; sleep 1; done
+```
+
+100 s keeps every session inside the 120 s reaper with margin, and each fresh
+start re-logs in **with no GUI step at all** — which is the second half of the
+fix and depends on two things being true in the file:
+
+1. `Server "icq.mirabilis.com"` — the retronet DNS resolves it to the gateway
+   (`getent hosts icq.mirabilis.com` in CT 951 → `10.99.0.2`), and the guest's
+   `resolv.conf` is `10.99.0.2`. **So the default server in gtkicqrc is
+   correct as shipped and must be left alone** — the Options → Network edit that
+   the first bake relied on is not needed and does not persist anyway.
+2. `Section "Contacts"` must carry HiveBot, because a restarted client has only
+   the file:
+
+```
+Section "Contacts"
+	"10000"	"HiveBot"
+	"4664755"	"Jeremy Wise"
+EndSection "Contacts"
+```
+
+**Restarting gtkicq drops any contact that lives only in the process** — that is
+how HiveBot vanished during the previous recapture. With the line above in the
+file it comes back on every restart.
+
+### What is proven, and what is NOT
+
+Proven on an isolated rig (2026-09-03, `/data/vms/sandbox/suse64-rn2`): the
+`Contacts` section carries `"10000" "HiveBot"` after the edit; `~/.xinitrc`
+launches the wrapper; the wrapper runs as `sh /root/bin/icq-session` and
+respawns gtkicq after a `killall` — and, incidentally, that gtkicq exits at once
+when the server cannot be resolved, so the loop self-heals a cold start that
+races the gateway.
+
+**NOT proven, and it is the substance:** a new `V4 login successful … uin=18000`
+in the gateway journal after a `loadvm`. That needs the retronet, and the rig
+could not join it — see below. **No golden was rebaked**, because baking a fix
+whose whole point is a journal line nobody has seen would repeat the mistake
+this section exists to correct.
+
+### Why the rig could not join the retronet
+
+The station **landed while this work was in flight**. `10.99.0.37`, the tap
+`suse64rn0`, the chain `SUSE64RN-IN` and UIN `18000` are now held by the LIVE
+station (`kh-claim ls` shows the `rnip` as `suse64 LIVE`, and
+`systemctl is-active streamhost@suse64` is `active`). Bringing the same tap and
+chain up for a rig is precisely the containment incident `rn-tapnet.sh`'s own
+header records — a clone's teardown removing the live station's INPUT filter —
+and a second client on UIN `18000` would fight the live one for the session.
+
+So the rig ran with the **same device set but the retronet NIC on a dead `user`
+backend** (`-netdev user,id=rn0,restrict=on` in place of the tap): `loadvm`
+only checks the two `ne2k_pci` **devices**, not their backends, so the vmstate
+restores unchanged and the rig cannot reach `vmbr-rn` at all. That is what made
+the offline half of this work safe; it is also why the journal half is
+outstanding.
+
+**To finish (one short run, needs the operator's go-ahead to stop the station):**
+stop `streamhost@suse64`, take the tap/IP back for a rig, `loadvm golden`, note
+the journal timestamp, leave the guest running ≥ 150 s, and require a **new**
+`V4 login successful … uin=18000` after that timestamp plus HiveBot Online on
+the frame. Then compose, `sync`, `delvm`/`savevm golden`, loadvm proof, restage.

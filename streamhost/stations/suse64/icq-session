@@ -1,0 +1,35 @@
+#!/bin/sh
+# icq-session — keep GtkICQ's OSCAR session alive across restores and idle pauses.
+# Lives in the guest at /root/bin/icq-session and is launched from ~/.xinitrc
+# INSTEAD of a bare `gtkicq &`. This copy is the source of truth.
+#
+# WHY A TIMER AND NOT A WATCHDOG. slackware's watchdog
+# (docs/lab/retronet/STATION-slackware.md) restarts its client when the client
+# EXITS. GtkICQ 0.60 gives you no such edge in the case that matters:
+#
+#   * It has NO reconnect path at all — there is no "reconnect", "auto connect"
+#     or re-login string anywhere in the binary, and no Status-menu item that
+#     re-logs in.
+#   * When the gateway reaps its legacy session (ICQ_LEGACY_SESSION_TIMEOUT,
+#     120 s, by design) the client does NOT notice and does NOT exit. It keeps
+#     painting "Ready (Online)" and its full contact list while every packet it
+#     sends is answered `V4 packet from unknown session, sending NOT_CONNECTED`.
+#     That is the exact failure a `loadvm golden` produces, and it is invisible
+#     on the framebuffer — the exhibit looks perfect and is talking to nobody.
+#   * It DOES exit promptly when it cannot resolve or reach the server at
+#     STARTUP ("Couldn't determine hostname"), which is why the loop also
+#     self-heals a guest that comes up before the gateway does.
+#
+# So the session is refreshed on a timer instead. 100 s keeps every session
+# inside the 120 s reaper with margin. A fresh start re-logs in with no GUI step:
+# gtkicqrc's Server is "icq.mirabilis.com", which the retronet DNS resolves to
+# the gateway 10.99.0.2, and the Contacts section carries HiveBot — which is why
+# the contact MUST be in the file and not only in the running process.
+while :; do
+  gtkicq &
+  p=$!
+  sleep 100
+  kill $p 2>/dev/null
+  wait $p 2>/dev/null
+  sleep 1
+done
