@@ -73,6 +73,22 @@ Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
 
-## Timeline (measured after landing with session-timeline.py)
+## Landed 2026-09-03
 
-TODO(coordinator)
+main `4910a97d` (station) + `d2f4f01b` (key pacing 60/60, demo 120 ms/char);
+box-deploy, `station-up.sh netbsd14`, SPA deployed. Proofs on the live station:
+desktop after `loadvm golden`; x11warp to (100,700) and (900,100) with exact
+`QueryPointer` readback and the cursor visible at both (`xwarp.py`, raw X11 over
+the 6076 forward — xdotool segfaults against an XFree86 3.3 server); keys land
+in the xterm. Open: the XFree86 mode-switch pan (guest doc, Known limits).
+
+## Timeline
+
+Operator message 2026-09-02 ~22:08 UTC (clock start). Smoke rig at `/os/netbsd14`
+at +5 min; ledger pushed +12 min; four streams done +25 min; the golden stream hit
+the `lpt0` wall and the operator paused the run at ~+50 min for the tooling
+(rig-clone.sh, fb-wait.py, rule 14 on main at +90 min); kernel race rounds
++95..+160 min; X + golden + restore proof +185 min; landed +215 min (serialized
+behind three sibling waves by the coordinator); pacing fix +235 min. The station
+itself, after the tooling existed, took ~2 h of which ~40 min were the seven
+losing theories — measured, not estimated, from git and box timestamps.
