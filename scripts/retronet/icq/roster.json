@@ -1,106 +1,113 @@
 {
-  "note": "Retronet ICQ cross-list roster — the single source for the contact seeder (scripts/retronet/icq/seed_contacts.py). Each live station carries every OTHER live station + the bot in its contact list. Adding a station is ONE row here, then re-run `seed_contacts.py ssi --apply`. UIN/tier table: docs/lab/retronet/ICQ-ONBOARDING-PLAN.md. uin = the OSCAR screen name: a numeric UIN for the ICQ stations, and an alphanumeric AIM screen name for win311 (Netscape AIM 1.0.414 is an AIM client, not an ICQ one) — rn-tool.py keys the server-side roster by screen name either way. nick = the display name (SSI 0x0131 alias TLV in the server-side roster; also the ICQ directory nickname), never a bare UIN. client = which fallback client-UI seeding driver applies. onboarded=true means LIVE: it gates the SSI cross-list (only live stations appear in each other's rosters). Primary path is SSI/feedbag (`ssi`); the client-UI `seed`/`plan` path is the non-SSI ICQ 2000b fallback. greeter = which greeter instance watches the station: 'icq' (default, HiveBot UIN 10000) or 'aim' (the hivebot AIM screen name, retronet-bot-aim.service). aimScreenName is present ONLY for a station whose client is an AIM client: it is the name that station's own client signs in as, while `uin` is the NUMERIC identity the ICQ fleet addresses it by — held by retronet-aim-bridge, not by the guest. The two exist because AIM refuses an all-numeric screen name and ICQ 2001b silently drops a message from a non-numeric sender, so one account cannot be addressable by both families. `uin` stays the SSI cross-list key either way, so every station carries win311 as a normal contact. See docs/lab/retronet/ICQ-STATION-win311.md.",
-  "gateway": {
-    "host": "10.99.0.2",
-    "port": 5190
+ "note": "Retronet ICQ cross-list roster — the single source for the contact seeder (scripts/retronet/icq/seed_contacts.py). Each live station carries every OTHER live station + the bot in its contact list. Adding a station is ONE row here, then re-run `seed_contacts.py ssi --apply`. UIN/tier table: docs/lab/retronet/ICQ-ONBOARDING-PLAN.md. uin = the OSCAR screen name: a numeric UIN for the ICQ stations, and an alphanumeric AIM screen name for win311 (Netscape AIM 1.0.414 is an AIM client, not an ICQ one) — rn-tool.py keys the server-side roster by screen name either way. nick = the display name (SSI 0x0131 alias TLV in the server-side roster; also the ICQ directory nickname), never a bare UIN. client = which fallback client-UI seeding driver applies. onboarded=true means LIVE: it gates the SSI cross-list (only live stations appear in each other's rosters). Primary path is SSI/feedbag (`ssi`); the client-UI `seed`/`plan` path is the non-SSI ICQ 2000b fallback. greeter = which greeter instance watches the station: 'icq' (default, HiveBot UIN 10000) or 'aim' (the hivebot AIM screen name, retronet-bot-aim.service). aimScreenName is present ONLY for a station whose client is an AIM client: it is the name that station's own client signs in as, while `uin` is the NUMERIC identity the ICQ fleet addresses it by — held by retronet-aim-bridge, not by the guest. The two exist because AIM refuses an all-numeric screen name and ICQ 2001b silently drops a message from a non-numeric sender, so one account cannot be addressable by both families. `uin` stays the SSI cross-list key either way, so every station carries win311 as a normal contact. See docs/lab/retronet/ICQ-STATION-win311.md.",
+ "gateway": {
+  "host": "10.99.0.2",
+  "port": 5190
+ },
+ "bot": {
+  "uin": "10000",
+  "nick": "HiveBot"
+ },
+ "stations": [
+  {
+   "station": "win98se",
+   "uin": "98980",
+   "nick": "win98se",
+   "client": "icq2001b",
+   "onboarded": true
   },
-  "bot": {
-    "uin": "10000",
-    "nick": "HiveBot"
+  {
+   "station": "win2000",
+   "uin": "20000",
+   "nick": "win2000",
+   "client": "icq2001b",
+   "onboarded": true
   },
-  "stations": [
-    {
-      "station": "win98se",
-      "uin": "98980",
-      "nick": "win98se",
-      "client": "icq2001b",
-      "onboarded": true
-    },
-    {
-      "station": "win2000",
-      "uin": "20000",
-      "nick": "win2000",
-      "client": "icq2001b",
-      "onboarded": true
-    },
-    {
-      "station": "nt4",
-      "uin": "40000",
-      "nick": "nt4",
-      "client": "icq2001b",
-      "onboarded": true
-    },
-    {
-      "station": "win95",
-      "uin": "95000",
-      "nick": "win95",
-      "client": "icq2000b",
-      "onboarded": true
-    },
-    {
-      "station": "solaris",
-      "uin": "30000",
-      "nick": "solaris",
-      "client": "unix-oscar",
-      "onboarded": true
-    },
-    {
-      "station": "tru64",
-      "uin": "64000",
-      "nick": "tru64",
-      "client": "unix-oscar",
-      "onboarded": true
-    },
-    {
-      "station": "beos",
-      "uin": "50000",
-      "nick": "beos",
-      "client": "icbm",
-      "onboarded": true
-    },
-    {
-      "station": "macos753",
-      "uin": "75300",
-      "nick": "macos753",
-      "client": "mac-oscar",
-      "onboarded": false
-    },
-    {
-      "station": "winxp",
-      "uin": "51000",
-      "nick": "winxp",
-      "client": "icq2001b",
-      "onboarded": true
-    },
-    {
-      "station": "w2kalpha",
-      "uin": "50010",
-      "nick": "w2kalpha",
-      "client": "icq2001b",
-      "onboarded": true
-    },
-    {
-      "station": "os2warp",
-      "uin": "23000",
-      "nick": "os2warp",
-      "client": "icq2-1503i",
-      "onboarded": true
-    },
-    {
-      "station": "irix",
-      "uin": "65000",
-      "nick": "irix",
-      "client": "gaim064",
-      "onboarded": true
-    },
-    {
-      "station": "win311",
-      "uin": "31100",
-      "nick": "win311",
-      "client": "netscape-aim-1.0",
-      "onboarded": true,
-      "greeter": "aim",
-      "aimScreenName": "win311"
-    }
-  ]
+  {
+   "station": "nt4",
+   "uin": "40000",
+   "nick": "nt4",
+   "client": "icq2001b",
+   "onboarded": true
+  },
+  {
+   "station": "win95",
+   "uin": "95000",
+   "nick": "win95",
+   "client": "icq2000b",
+   "onboarded": true
+  },
+  {
+   "station": "solaris",
+   "uin": "30000",
+   "nick": "solaris",
+   "client": "unix-oscar",
+   "onboarded": true
+  },
+  {
+   "station": "tru64",
+   "uin": "64000",
+   "nick": "tru64",
+   "client": "unix-oscar",
+   "onboarded": true
+  },
+  {
+   "station": "beos",
+   "uin": "50000",
+   "nick": "beos",
+   "client": "icbm",
+   "onboarded": true
+  },
+  {
+   "station": "macos753",
+   "uin": "75300",
+   "nick": "macos753",
+   "client": "mac-oscar",
+   "onboarded": false
+  },
+  {
+   "station": "winxp",
+   "uin": "51000",
+   "nick": "winxp",
+   "client": "icq2001b",
+   "onboarded": true
+  },
+  {
+   "station": "w2kalpha",
+   "uin": "50010",
+   "nick": "w2kalpha",
+   "client": "icq2001b",
+   "onboarded": true
+  },
+  {
+   "station": "os2warp",
+   "uin": "23000",
+   "nick": "os2warp",
+   "client": "icq2-1503i",
+   "onboarded": true
+  },
+  {
+   "station": "irix",
+   "uin": "65000",
+   "nick": "irix",
+   "client": "gaim064",
+   "onboarded": true
+  },
+  {
+   "station": "win311",
+   "uin": "31100",
+   "nick": "win311",
+   "client": "netscape-aim-1.0",
+   "onboarded": true,
+   "greeter": "aim",
+   "aimScreenName": "win311"
+  },
+  {
+   "station": "suse64",
+   "uin": "18000",
+   "nick": "suse64",
+   "client": "gtkicq",
+   "onboarded": true
+  }
+ ]
 }

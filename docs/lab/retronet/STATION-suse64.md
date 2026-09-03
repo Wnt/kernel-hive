@@ -1,14 +1,12 @@
 # suse64 on the retronet — phase 3, PARTIAL (web plane proven, ICQ not)
 
-> **STATUS (2026-09-03, session `suse64-rn`, 70-minute budget): the WEB plane is
-> framebuffer-proven on the NEW device set; the ICQ plane is NOT, and no new
-> golden was baked.** Netscape 4.72 renders `http://search.retronet/` from a
-> cold-booted suse64 whose second NIC is a bridged tap on `vmbr-rn` at
-> `10.99.0.37`. GtkICQ 0.60 is installed and autostarts, its account `18000`
-> exists and is login-proven on the gateway. **GtkICQ 0.60 is now signed in as
-> `18000` with `HiveBot` listed online in its contact list** — driven with
-> `x11ptr.py` for motion and QMP for the button. No golden yet: the bake needs
-> one more run on the final device set (`restrict=on`). See §ICQ plane.
+> **STATUS: LIVE-READY (2026-09-03, session `suse64-rn`).** Both planes are
+> framebuffer-proven on the final device set and a new golden is baked and
+> restore-proven. Netscape Communicator 4.72 renders `http://search.retronet/`;
+> GtkICQ 0.60 is signed in as UIN `18000` with **HiveBot online** in its contact
+> list. Golden staged at `/data/gallery-guests/SUSE64/suse64-rn.qcow2`
+> (`golden`, VM_SIZE 84 MiB, VM_CLOCK `0000:12:04.997`). **Not yet deployed** —
+> the coordinator swaps the disk and restarts the station at landing.
 
 ## Allocation (written by the wave coordinator; do not edit here)
 
