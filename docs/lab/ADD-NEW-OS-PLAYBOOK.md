@@ -339,6 +339,7 @@ Facts every 1990s guest wave paid for once and should not pay again:
 | Installed Linux 2.2 loops `hda: lost interrupt`, keyboard "not present" | anaconda / YaST install the **SMP** kernel on `-smp 2`; IO-APIC routing on i440fx with `acpi=off` drops IRQs under both accels | Boot the **UP** kernel (`noapic` also works); with `hdparm -d1` PIIX DMA runs 58–70 MB/s under KVM, so the station stays KVM |
 | OpenBSD 7.9 drops key releases under X | `-smp 2` on the i440fx IOAPIC loses keyboard IRQs | `-smp 1` (or `acpi=off`); pick one vCPU first for any 1990s guest |
 | `mke2fs` of a 4 GiB root takes 17 min | same PIO path | 1.5–2 GiB disk, or compose the root filesystem on the host (`mke2fs -I 128 -O none -d <tree>`; 2.2 rejects 256-byte inodes) and boot the CD kernel |
+| A FreeBSD 4.11 station's NIC is silent after `loadvm` (ifconfig fine, ARP sent, nothing on the tap) | `rl(4)` (rtl8139) never re-initialises after a vmstate restore; `ifconfig down/up` and QMP `set_link` do not help | use `e1000` (`em(4)` is in 4.11 GENERIC); prove with tcpdump on the tap AFTER a `loadvm`, not with `ifconfig` |
 | `-kernel <2.2 bzImage>` hangs at "Booting from ROM" | both accels | boot from a boot loader on the disk; `sendkey spc` (not shift) stops LILO's timeout |
 | xterm text does not paint on XF86_SVGA + cirrus 5446 | BitBLT path | `Option "no_bitblt"` (depth 8 and 16 proven) |
 | Typed characters drop under XFree86 over QMP | 40/40 key pacing floor | 60/60 measured on wscons+X (netbsd14); measure, ship the number |

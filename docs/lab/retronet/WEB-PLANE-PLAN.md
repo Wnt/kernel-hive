@@ -62,6 +62,9 @@ invisible to the gate, and nothing will warn you. Reserving first and landing th
 registry block in the same wave is what closes that, which is why the order above
 is the rule and not a preference.
 
+
+**NIC after a restore is a proof, not an assumption (freebsd411, 2026-09-03).** FreeBSD 4.11's `rl(4)` shows a configured interface and sends ARP after `loadvm golden`, but nothing reaches the tap; `em(4)`/e1000 transmits. Every station's web-plane proof is therefore tcpdump on `<id>rn0` + the MAC on the bridge fdb AFTER a `labctl reset`, which `rn-verify.sh` reports.
+
 ## Browsers that have actually rendered the corpus
 
 **Read this before spending an agent on browser recon.** Every row below put
