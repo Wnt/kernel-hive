@@ -1,7 +1,7 @@
 # Debian GNU/Linux 2.2 "potato" integration wave — 2026-09-03
 
 Speed-record attempt #3 (bootOS 45 min, pcgeos 6/14/18): integrate **Debian
-GNU/Linux 2.2 "potato"** (i386, released 2000-08-14; kernel 2.2.19, XFree86
+GNU/Linux 2.2 "potato"** (i386, released 2000-08-14; kernel 2.2.17 on the CD (2.2.19 in later point releases), XFree86
 3.3.6, GNOME 1.0) as a fully featured Tier-1 host-native station, air-gapped
 like redstar2. Branch `debian22` is the ledger; every stream branches from it.
 Six other station waves run concurrently (slots 176–181, see the coordinator
@@ -106,9 +106,31 @@ Merging to `main`, the main push (after "go" from the wave coordinator),
 `scripts/dev/station-up.sh debian22`, the SPA build/deploy, and the final
 framebuffer acceptance.
 
-## Timeline (measured after landing with `scripts/dev/session-timeline.py`)
+## Landing (coordinator)
 
-TODO(coordinator)
+Neither golden stream produced a golden inside its budget: the GNOME stream
+raced the CD installer's `mke2fs` wall (TCG won, KVM never finished), the wmaker
+stream pivoted to a host-composed tree and got X up but hit the font-alias and
+BitBLT traps at its stop. The coordinator merged both recipes into one compose
+script with every proven trap fixed (`scripts/build-guests/tiles/debian22.sh`),
+rebuilt twice (second time adding Window Maker), started X by hand and baked
+`golden` (VM_SIZE 46.5 MiB) at 06:33; keyboard, pointer and loadvm proven on
+the launcher line at 06:34 (`smoke/p2–p4.png`). A three-hour usage-limit pause
+(03:24–06:24) sits inside the wall clock; the rig survived it.
+
+## Timeline (box clock; operator message 02:01)
+
+| Milestone | Time | Elapsed |
+|---|---|---|
+| media staged + CD smoke-booted | 02:05 | 4 min |
+| `/os/debian22` viewable (installer on the framebuffer) | 02:06 | 5 min |
+| ledger pushed, 5 streams launched | 02:12 | 11 min |
+| docs/spa/build streams merged | 02:16–02:20 | 19 min |
+| CD-install wall proven (TCG vs KVM race) | 02:28 | 27 min |
+| host-composed GNOME desktop on the framebuffer (no WM) | 03:15 | 74 min |
+| usage-limit pause | 03:24–06:24 | — |
+| golden baked + restore-proven | 06:34 | 93 min active |
+
 
 ## golden2 race result (lightest desktop, private rig) — NO golden at the 25-minute stop
 

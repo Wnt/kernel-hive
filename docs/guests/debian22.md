@@ -5,7 +5,7 @@ Status: **Tier 1**, host-native, KVM, air-gapped like `redstar2`. Integrated
 
 ## What it is
 
-Debian GNU/Linux 2.2 "potato", released 2000-08-14: kernel 2.2.19, XFree86
+Debian GNU/Linux 2.2 "potato", released 2000-08-14: kernel 2.2.17 on the CD (2.2.19 in later point releases), XFree86
 3.3.6, GNOME 1.0. i386. Installed from the archived boot-floppies `dbootstrap`
 installer, the same generation of Debian install experience as the contemporary
 `bootos`/`pcgeos` FreeDOS-era stations are to DOS. The station boots straight
@@ -51,24 +51,50 @@ has no VESA server, so the era-correct Cirrus driver is the display path
 (compare `redstar2`, whose later 2.6 kernel forced a `-vga std`/`vesa` swap;
 potato's XFree86 3.3.6 stays on the Cirrus-native driver at install time).
 
-## Install recipe
+## Install recipe (host-composed; the CD installer is not viable)
 
-1. Boot CD1 to the `boot:` prompt, Enter into boot-floppies 2.2.16.
-2. `dbootstrap`: language/keyboard, partition the single IDE disk, format,
-   install the base system from `base2_2.tgz` (or CD packages), configure
-   the bootloader (LILO) on the MBR.
-3. First-boot configuration (`base-config`): timezone, root password, one
-   `gallery` user, package selection including `gnome-desktop` (task) and
-   `xserver-xfree86`.
-4. `XF86Config` for `XF86_SVGA`: `Driver "cirrus"`, 1024x768 at 16bpp,
-   PS/2 `Protocol "PS/2"` mouse section, no VESA fallback (3.3.6 has none).
-5. `/etc/inittab` edited so the default console runlevel auto-logs `gallery`
-   in and starts X straight into the GNOME 1.0 desktop — no `xdm`/`gdm`
-   chooser, matching `redstar2`'s KDM auto-login approach but via inittab
-   rather than a display manager, since potato predates a configured `gdm`
-   greeter on this fixture.
+Measured 2026-09-03 by three waves independently: a Linux 2.2 kernel writes an
+emulated IDE disk in 16-bit PIO under KVM, one VM exit per `outw`, ~27 KB/s.
+dbootstrap's `mke2fs` on a 2 GiB disk had not finished after 13 minutes, and
+cfdisk refuses the blank qcow2 ("Bad signature") in the first place. Under
+`-accel tcg` the same `mke2fs` takes 47 s, but TCG would change the device set,
+so the disk is composed on the host instead:
+`scripts/build-guests/tiles/debian22.sh` (root on labhost).
 
-Fallback if GNOME 1.0 does not fit the bring-up window: X + Window Maker.
+1. `qemu-nbd` the 2 GiB qcow2; partition table made once with `fdisk` from the
+   rescue shell (hda1 cyl 1–483 bootable Linux, hda2 cyl 484–520 swap; CHS
+   520/128/63). `mke2fs -t ext2 -O none -I 128` — 2.2 rejects 256-byte inodes.
+2. `base2_2.tgz` (the potato base system) untarred, then the Depends closure of
+   `gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga
+   xbase-clients xfonts-base xfonts-75dpi xterm wmaker` from CD1's `Packages.gz`
+   (`tiles/debian22/closure.py`, 62 .debs) unpacked with `dpkg-deb -x`, control
+   files into `/var/lib/dpkg/info`, a `Status: install ok unpacked` stanza per
+   package so the guest's dpkg agrees.
+3. The eight X traps, each framebuffer-proven: `fonts.alias` assembled from
+   `/etc/X11/fonts/<dir>/*.alias` + `mkfontdir` (the xfonts postinst never ran,
+   so the `fixed` alias did not exist); `chmod -R a+rX` on the X tree (host umask
+   left `fonts.dir`/`XF86Config` 0600 and X dies silently); `XF86_SVGA` setuid
+   root (no Xwrapper on potato); `/usr/X11R6/lib` in `ld.so.conf` with `ldconfig`
+   run at the END of rcS (at the top `/` is still read-only and the cache write
+   fails silently: `libXmu.so.6: cannot open`); `/etc/hosts`; `/tmp/.X11-unix`
+   recreated root-owned 1777 after bootmisc cleans `/tmp` (X aborts on a
+   gallery-owned socket dir); `Chipset "clgd5446"`, `VideoRam 4096`,
+   `Option "no_bitblt"` (without it xterm/gnome-terminal paint no text), 1024x768
+   at depth 16 (`tiles/debian22/XF86Config`); `unix.o` insmod'd in rcS (AF_UNIX
+   is a module in the 2.2.17 kernel-image).
+4. `kernel-image-2.2.17` unpacked for its modules; `unconfigured.sh` (forces a
+   reboot loop), modutils/kerneld/makedev init scripts, gdm/xdm/pcmcia/ppp/inetd
+   links removed. Root and gallery accounts (passwords in the gitignored
+   `registry/local.env`, key `guest/debian22`). `~/.xsession`: `xset s off;
+   xset -dpms; wmaker & … gnome-terminal & exec gnome-session`.
+5. Boot on the launcher device set with `-boot order=d`; at the CD's `boot:`
+   prompt type `linux root=/dev/hda1` (no boot loader on the disk; the golden
+   vmstate carries the running kernel). Log in root on tty1 and run
+   `su - gallery -c /usr/bin/X11/startx >/root/x.log 2>&1 &` — init cannot
+   start X (an init-spawned `startx` has no controlling tty and never spawns the
+   server; proven, the `x1` respawn line was dropped). X paints in ~30 s,
+   Window Maker + the GNOME panel in another ~1–2 min (libraries come through
+   the PIO path). Click the terminal, `xset m 1 1; clear`, HMP `savevm golden`.
 
 ## Operator notes
 
@@ -83,4 +109,19 @@ Fallback if GNOME 1.0 does not fit the bring-up window: X + Window Maker.
 
 ## Checkpoint
 
-TODO(golden): spliced from the golden stream's report at integration
+`golden` baked 2026-09-03 06:33 on the smoke rig (`/data/vms/sandbox/debian22/smoke`)
+against the exact launcher device set; VM_SIZE **46.5 MiB**, disk.qcow2 380 MB,
+VM_CLOCK 3:16:29. Restore proof on a fresh launch with `-boot order=c -loadvm golden -S`
++ `cont`: desktop within 4 s; `cat /etc/debian_version; uname -sr` typed and echoed
+(`2.2`, `Linux 2.2.17`); a 300-unit relative pointer move landed the arrow on the
+terminal title bar; a second HMP `loadvm golden` returned the clean prompt.
+Frames: `smoke/p1.png … p4.png` (PPM despite the name).
+
+**OPEN:** (1) disk I/O at runtime is still 2.2 PIO — `hdparm` is not on CD1; the
+redhat62 wave proved `hdparm -d1 /dev/hda` on the UP kernel gives PIIX DMA at
+60+ MB/s, so the follow-up is to add hdparm (archive.debian.org potato/admin) to
+the compose and rebake. (2) No cold-boot path: the disk has no boot loader and X
+is started by hand; a recapture needs the five-line bake above, or a
+`mingetty --autologin` + `.profile` `exec startx` route as netbsd14/slackware use.
+(3) Pointer is relative; an absolute route (in-guest X pointer write as amix) is
+a follow-up.

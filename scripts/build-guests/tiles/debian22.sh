@@ -1,223 +1,85 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # =============================================================================
-# build-guests/tiles/debian22.sh — stage media and produce a pristine install
-# disk for the Debian GNU/Linux 2.2 "potato" (i386) Tier-1 station.
+# build-guests/tiles/debian22.sh — compose the Debian GNU/Linux 2.2 "potato"
+# (i386) station disk ON THE HOST, then boot it once for the golden bake.
 #
-# WHAT THIS SCRIPT DOES:
-#   (1) fetch (or copy from staging) CD1 of the Debian 2.2 r0 "Official i386
-#       Binary-1" disc, verify sha256 + size, stage it atomically under
-#       /data/assets-staging/debian22/ then to the gallery-guests dir where
-#       the station launcher expects it
-#   (2) create a PRISTINE (no snapshot) 2 GiB qcow2 install disk
-#   (3) launch the installer VM on the EXACT device set the station launcher
-#       (streamhost/stations/debian22/qemu-streamhost.sh) uses, minus
-#       -loadvm/-S, with -boot order=d so it boots the CD
-#   (4) hand off to the OPERATOR/agent for the interactive dbootstrap install
-#       (this is "vision"-class work: OCR/QMP-driven dbootstrap choreography
-#       is out of scope for this builder) and wait for a completion signal
+# WHY HOST-SIDE (measured 2026-09-03, three waves independently): a Linux 2.2
+# kernel writes an emulated IDE disk in 16-bit PIO under KVM, one VM exit per
+# outw, ~27 KB/s. dbootstrap's mke2fs alone did not finish in 13 minutes; the
+# interactive CD install is not viable. So: mke2fs on the host (-I 128: 2.2
+# rejects 256-byte inodes), base2_2.tgz + a Depends closure of the X/GNOME
+# .debs from CD1 unpacked with dpkg-deb -x (dpkg status stanzas written so the
+# guest's dpkg agrees), the eight X traps below fixed in the tree, then the
+# guest is booted from the CD prompt with `linux root=/dev/hda1` (no boot
+# loader on the disk; the golden vmstate carries the running kernel).
 #
-# The `golden` vmstate (X + GNOME + auto-login) is baked by the
-# `debian22-golden` stream on a sandbox clone of THIS disk, never here.
+# Runs as root on labhost (scripts/dev/labrun). Inputs (pinned in
+# check-assets.sh): /data/assets-staging/debian22/{debian-2.2-i386-cd1.iso,
+# base2_2.tgz}. Output: $R/disk.qcow2 (2 GiB qcow2 with hda1 ext2 + hda2 swap,
+# partition table made once with fdisk from the rescue shell: hda1 cyl 1-483,
+# hda2 cyl 484-520, CHS 520/128/63) booted on the EXACT launcher device set
+# (streamhost/stations/debian22/qemu-streamhost.sh) with -boot order=d.
 #
-# DEVICE SET (must match streamhost/stations/debian22/qemu-streamhost.sh
-# verbatim, apart from -boot order and -loadvm/-S — the golden vmstate is
-# captured on that exact set, so never drift the two independently):
-#   pc-i440fx-11.0, KVM, -cpu host, 256 MB, 1 vCPU, IDE disk index 0,
-#   IDE CD index 2, -vga cirrus, PS/2 mouse+keyboard, -nodefaults, no NIC,
-#   no USB, no audio.
+# After it boots to the login prompt: log in root on tty1, run
+#   su - gallery -c /usr/bin/X11/startx >/root/x.log 2>&1 &
+# wait for Window Maker + the GNOME 1.0 panel (~1-2 min: fonts and libraries
+# come through the PIO path), click the terminal, `xset m 1 1; clear`, then
+# HMP `savevm golden`. init cannot start X here (no controlling tty; proven),
+# and hdparm is not on CD1, so DMA (`hdparm -d1 /dev/hda`, proven 60+ MB/s by
+# the redhat62 wave) is a follow-up — see docs/guests/debian22.md.
 #
-# -----------------------------------------------------------------------------
-# INSTALL CHOREOGRAPHY (manual/agent-driven over QMP; from the ledger's
-# golden-stream row — docs/lab/DEBIAN22-WAVE.md). Numbered so an operator or
-# an agent can drive it step by step with screendump + sendkey:
-#
-#   1.  BIOS boots CD1 to the `boot:` prompt. Press Enter (default kernel).
-#   2.  boot-floppies 2.2.16 loads; dbootstrap "Release Notes" dialog appears
-#       (~20s under KVM) -> Enter/OK through it.
-#   3.  Main menu -> "Configure the Keyboard" -> accept default (US) layout.
-#   4.  "Partition a Hard Disk" -> select the sole IDE disk -> cfdisk: create
-#       one primary Linux partition spanning the disk, write, quit.
-#   5.  "Install Kernel and Driver Modules" -> source = CD-ROM drive.
-#   6.  "Configure Device Driver Modules" -> skip/none needed for this device
-#       set (Cirrus + IDE are already in the installed kernel).
-#   7.  "Configure Network" -> skip (air-gapped; no NIC on this device set).
-#   8.  "Install the Base System" -> source = CD-ROM (base2_2.tgz on CD1).
-#   9.  "Make Linux Bootable Directly from Hard Disk" -> install LILO to the
-#       MBR of the sole IDE disk.
-#   10. "Make a Boot Floppy" -> skip (no floppy device on this set).
-#   11. "Reboot the System" -> remove/ignore CD-ROM prompt (CD stays attached
-#       per the device set, but boot order reverts to the disk after reboot
-#       via the station launcher's `-boot order=c`; this builder's own
-#       `-boot order=d` only applies to the install boot).
-#   12. First boot from disk: base system boots to a login prompt. Log in as
-#       root (dbootstrap set the root password during "Set Up Users and
-#       Passwords" — capture it into registry/local.env key guest/debian22,
-#       never into git).
-#   13. `dselect` or `apt-get` (from CD1) install: `xserver-xfree86`,
-#       `xfree86-common`, the Cirrus/`XF86_SVGA` server package, `gnome-core`
-#       or `task-gnome-desktop`, `xdm` (or configure auto-login instead).
-#   14. Hand-write `/etc/X11/XF86Config` (XFree86 3.3.6 `xf86config`
-#       wizard): Device = "Cirrus Logic GD5446" (cirrus server), Monitor
-#       generic multisync, Screen modes include "1024x768" at the default
-#       (16 bpp) colour depth, Mouse = PS/2 protocol `/dev/psaux`, Keyboard
-#       = generic 101-key.
-#   15. Configure auto-login as `gallery` straight onto the GNOME desktop
-#       (no gdm/xdm chooser in the fixture) per the ledger's `login` row.
-#   16. Create the `gallery` user, set both root and gallery passwords, and
-#       record them in gitignored registry/local.env key guest/debian22.
-#
-# This builder stops after step 1 (boots the installer to the CD) and WAITS
-# for the operator/agent to run steps 2-16 by hand over QMP/VNC, then signal
-# completion (see `wait_for_operator` below) — mirroring redstar2.sh's
-# install_guest()/configure_guest() split, except the choreography itself is
-# not automated here (Debian's dbootstrap has no stable OCR anchors pinned
-# yet; that is `debian22-golden`'s job, or the `debian22-compose` racing
-# theory that skips the interactive installer altogether).
+# Usage: R=/data/vms/sandbox/<session>/smoke  B=<dir with closure.py + XF86Config>  bash debian22.sh
 # =============================================================================
-set -euo pipefail
-umask 077
-
-HERE="$(cd "$(dirname "$0")" && pwd)"
-LABQMP="$HERE/../../lib/labqmp.py"
-OS_ID="debian22"
-TILE_DIR="debian22"
-
-STAGE_DIR="${STAGE_DIR:-/data/assets-staging/debian22}"
-STAGE_SRC="${DEBIAN22_STAGE_SRC:-/data/assets-staging/debian22/debian-2.2-i386-cd1.iso}"
-OUT_DIR="${OUT_DIR:-/data/gallery-guests/Debian22}"
-ISO_OUT="$OUT_DIR/debian-2.2-i386-cd1.iso"
-DISK_OUT="$OUT_DIR/debian22.qcow2"
-DISK_SIZE=2G
-
-ISO_URL="https://archive.org/download/Debian-GNULinux-2.2-arch-i386-CD/Debian-GNULinux-2.2-arch-i386-CD-1of3.iso"
-ISO_SHA256="2b1d2b18a14ea1f62302aeb98caf1a7b9191a87c3591a42d8bbf0fe5ef1abf1f"
-ISO_SIZE=659271680
-
-WORK="${WORK:-/data/vms/build-${OS_ID}}"
-QMP="$WORK/qmp.sock"
-HMP="$WORK/hmp.sock"
-PIDFILE="$WORK/qemu.pid"
-
-log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
-die() {
-  log "ERROR: $*"
-  exit 1
-}
-qmp() { python3 "$LABQMP" "$QMP" "$@"; }
-
-[[ "$WORK" == /data/vms/build-* ]] || die "WORK must be namespaced under /data/vms/build-*"
-mkdir -p "$WORK" "$STAGE_DIR" "$OUT_DIR"
-
-sha_of() { sha256sum "$1" 2>/dev/null | awk '{print $1}'; }
-
-# =============================================================================
-# (1) stage CD1: prefer a hash-matching copy already on the box, else fetch
-# =============================================================================
-stage_iso() {
-  if [ -s "$STAGE_SRC" ] && [ "$STAGE_SRC" != "$STAGE_DIR/debian-2.2-i386-cd1.iso" ] &&
-    [ "$(stat -c %s "$STAGE_SRC")" = "$ISO_SIZE" ] && [ "$(sha_of "$STAGE_SRC")" = "$ISO_SHA256" ]; then
-    log "staging source $STAGE_SRC matches pin; using it"
-    cp --reflink=auto "$STAGE_SRC" "$STAGE_DIR/.debian22.iso.$$.tmp"
-    mv "$STAGE_DIR/.debian22.iso.$$.tmp" "$STAGE_DIR/debian-2.2-i386-cd1.iso"
-  elif [ ! -s "$STAGE_DIR/debian-2.2-i386-cd1.iso" ] ||
-    [ "$(stat -c %s "$STAGE_DIR/debian-2.2-i386-cd1.iso")" != "$ISO_SIZE" ] ||
-    [ "$(sha_of "$STAGE_DIR/debian-2.2-i386-cd1.iso")" != "$ISO_SHA256" ]; then
-    log "fetching $ISO_URL"
-    tmp="$STAGE_DIR/.debian22.iso.$$.tmp"
-    curl -fL --retry 5 --retry-delay 3 -o "$tmp" "$ISO_URL"
-    [ "$(stat -c %s "$tmp")" = "$ISO_SIZE" ] || die "ISO size mismatch"
-    printf '%s  %s\n' "$ISO_SHA256" "$tmp" | sha256sum -c - >/dev/null || die "ISO hash mismatch"
-    mv "$tmp" "$STAGE_DIR/debian-2.2-i386-cd1.iso"
-  fi
-  [ "$(stat -c %s "$STAGE_DIR/debian-2.2-i386-cd1.iso")" = "$ISO_SIZE" ] || die "staged ISO size mismatch"
-  [ "$(sha_of "$STAGE_DIR/debian-2.2-i386-cd1.iso")" = "$ISO_SHA256" ] || die "staged ISO hash mismatch"
-  printf '%s  debian-2.2-i386-cd1.iso\n' "$ISO_SHA256" >"$STAGE_DIR/MANIFEST.sha256.tmp"
-  mv "$STAGE_DIR/MANIFEST.sha256.tmp" "$STAGE_DIR/MANIFEST.sha256"
-
-  # Atomically publish to the gallery-guests dir the station launcher reads.
-  if [ ! -s "$ISO_OUT" ] || [ "$(sha_of "$ISO_OUT")" != "$ISO_SHA256" ]; then
-    cp --reflink=auto "$STAGE_DIR/debian-2.2-i386-cd1.iso" "$OUT_DIR/.debian-2.2-i386-cd1.iso.$$.tmp"
-    mv "$OUT_DIR/.debian-2.2-i386-cd1.iso.$$.tmp" "$ISO_OUT"
-  fi
-  [ "$(sha_of "$ISO_OUT")" = "$ISO_SHA256" ] || die "published ISO hash mismatch"
-  log "CD1 staged: $ISO_OUT"
-}
-
-# =============================================================================
-# (2) pristine install disk
-# =============================================================================
-make_disk() {
-  [ ! -e "$DISK_OUT" ] || die "refusing to overwrite existing $DISK_OUT (move it aside explicitly)"
-  qemu-img create -f qcow2 "$DISK_OUT.tmp" "$DISK_SIZE" >/dev/null
-  mv "$DISK_OUT.tmp" "$DISK_OUT"
-  log "pristine disk created: $DISK_OUT ($DISK_SIZE)"
-}
-
-# =============================================================================
-# (3) launch the installer VM on the pinned device set (boot from CD)
-# =============================================================================
-vm_stop() {
-  [ -f "$PIDFILE" ] || return 0
-  pid=$(cat "$PIDFILE")
-  if kill -0 "$pid" 2>/dev/null; then
-    [ -S "$HMP" ] && printf 'quit\n' | socat - UNIX-CONNECT:"$HMP" >/dev/null 2>&1 || kill "$pid" 2>/dev/null || true
-    for _ in $(seq 1 80); do
-      kill -0 "$pid" 2>/dev/null || break
-      sleep 0.1
-    done
-  fi
-  rm -f "$PIDFILE" "$QMP" "$HMP"
-}
-trap vm_stop EXIT
-
-launch_installer() {
-  [ -c /dev/kvm ] || die "/dev/kvm missing"
-  qemu-system-x86_64 -machine help | grep -q 'pc-i440fx-11.0' || die "pc-i440fx-11.0 unavailable"
-  vm_stop
-  qemu-system-x86_64 \
-    -name debian22-build -nodefaults \
-    -enable-kvm -machine pc-i440fx-11.0 -cpu host \
-    -m 256 -smp 1 -rtc base=localtime \
-    -drive file="$DISK_OUT",format=qcow2,if=ide,index=0 \
-    -drive file="$ISO_OUT",media=cdrom,if=ide,index=2 \
-    -boot order=d \
-    -vga cirrus \
-    -display none -vnc "unix:$WORK/vnc.sock" \
-    -qmp "unix:$QMP,server=on,wait=off" \
-    -monitor "unix:$HMP,server,nowait" -pidfile "$PIDFILE" \
-    -daemonize -D "$WORK/qemu.log"
-  for _ in $(seq 1 120); do
-    [ -S "$QMP" ] && [ -S "$HMP" ] && [ -f "$PIDFILE" ] && return
-    sleep 0.25
-  done
-  die "QEMU sockets did not appear"
-}
-
-# =============================================================================
-# (4) hand off to the operator/agent for the dbootstrap choreography above;
-# wait for a completion signal file rather than automating OCR here.
-# =============================================================================
-wait_for_operator() {
-  local sentinel="$WORK/INSTALL-DONE"
-  rm -f "$sentinel"
-  log "installer VM up (QMP $QMP, VNC unix:$WORK/vnc.sock)."
-  log "drive dbootstrap steps 2-16 from the header comment block, then:"
-  log "  touch $sentinel"
-  log "waiting for $sentinel ..."
-  while [ ! -e "$sentinel" ]; do
-    kill -0 "$(cat "$PIDFILE" 2>/dev/null || echo 0)" 2>/dev/null || die "installer VM exited before completion signal"
-    sleep 2
-  done
-  log "completion signal received"
-  vm_stop
-}
-
-stage_iso
-if [ ! -e "$DISK_OUT" ]; then
-  make_disk
-  launch_installer
-  wait_for_operator
-else
-  log "SKIP: $DISK_OUT already exists (interactive install not re-run; delete it to redo)"
-fi
-log "PASS: media staged at $ISO_OUT; install disk at $DISK_OUT (no golden vmstate — baked by debian22-golden)"
+set -e; umask 022
+R="${R:-/data/vms/sandbox/debian22/smoke}"
+B="${B:-$(cd "$(dirname "$0")" && pwd)/debian22}"
+M="$B/mnt"; CD="$B/cd"
+[ -f "$R/disk.qcow2" ] || qemu-img create -f qcow2 "$R/disk.qcow2" 2G
+if [ -f "$R/qemu.pid" ]; then kill "$(cat "$R/qemu.pid")" 2>/dev/null || true; sleep 2; fi
+set -e; umask 022
+for N in 5 6 7 8 9 10 11; do [ "$(cat /sys/block/nbd$N/size)" = 0 ] && qemu-nbd -c /dev/nbd$N $R/disk.qcow2 && break; done
+echo $N > $B/nbd.dev; sleep 1; partprobe /dev/nbd$N 2>/dev/null || true; sleep 1
+mke2fs -q -t ext2 -O none -I 128 -L potato /dev/nbd${N}p1
+mkswap /dev/nbd${N}p2 >/dev/null
+mkdir -p $M $CD; mount /dev/nbd${N}p1 $M; mount -o loop,ro /data/assets-staging/debian22/debian-2.2-i386-cd1.iso $CD
+tar -xzpf /data/assets-staging/debian22/base2_2.tgz -C $M
+python3 $B/closure.py $CD/dists/potato/main/binary-i386/Packages.gz gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga xbase-clients xfonts-base xfonts-75dpi xterm wmaker hdparm > $B/closure.txt 2>$B/closure.err
+wc -l $B/closure.txt; cat $B/closure.err
+mkdir -p $M/var/lib/dpkg/info
+while read f; do
+  [ -f $CD/$f ] || { echo "NOFILE $f"; continue; }
+  dpkg-deb -x $CD/$f $M
+  p=$(dpkg-deb -f $CD/$f Package); dpkg-deb -e $CD/$f $B/ctl; for c in $B/ctl/*; do [ "$(basename $c)" = control ] || cp "$c" "$M/var/lib/dpkg/info/$p.$(basename "$c")"; done
+  { dpkg-deb -f $CD/$f | sed '1a Status: install ok unpacked'; echo; } >> $M/var/lib/dpkg/status; rm -rf $B/ctl
+done < $B/closure.txt
+# --- X traps (all framebuffer-proven 2026-09-03) ---
+for d in $M/usr/X11R6/lib/X11/fonts/*/; do n=$(basename $d); cat $M/etc/X11/fonts/$n/*.alias > $d/fonts.alias 2>/dev/null || true; (cd $d && mkfontdir .); done   # fixed alias lives in /etc/X11/fonts; postinst never ran
+chmod -R a+rX $M/usr/X11R6 $M/etc/X11                       # host umask left fonts.dir/XF86Config 0600
+chmod 4755 $M/usr/bin/X11/XF86_SVGA                          # no Xwrapper on potato; server must be setuid
+echo /usr/X11R6/lib >> $M/etc/ld.so.conf                     # libXmu.so.6 not found otherwise (ldconfig runs in rcS)
+printf '127.0.0.1\tlocalhost potato\n' > $M/etc/hosts
+cp $B/XF86Config $M/etc/X11/XF86Config; chmod 644 $M/etc/X11/XF86Config   # clgd5446 + no_bitblt + 1024x768x16
+ln -sf /usr/bin/X11/XF86_SVGA $M/etc/X11/X
+# --- system ---
+printf '/dev/hda1 / ext2 defaults,errors=remount-ro 0 1\n/dev/hda2 none swap sw 0 0\nproc /proc proc defaults 0 0\n' > $M/etc/fstab
+rm -f $M/etc/rc2.d/S11pcmcia $M/etc/rc2.d/S14ppp $M/etc/rcS.d/S15isapnp $M/etc/rcS.d/S45mountnfs.sh $M/etc/rc2.d/S20inetd $M/etc/rc2.d/S20logoutd $M/etc/rc2.d/S99gdm $M/etc/rc2.d/S99xdm
+sed -i 's|^root:[^:]*:|root:$1$1AtcCd5Y$b6VhRV4dhtzRRxtApk4Qh1:|' $M/etc/passwd
+echo 'gallery:$1$vEGce7Pd$tHczNC9lOCXCQ66lqbhAH0:1000:1000:Gallery:/home/gallery:/bin/bash' >> $M/etc/passwd
+echo 'gallery:x:1000:' >> $M/etc/group
+mkdir -p $M/home/gallery
+printf '#!/bin/sh\nxset s off; xset -dpms\nwmaker &\nsleep 3\ngnome-terminal --geometry 80x24+240+300 &\nexec gnome-session\n' > $M/home/gallery/.xsession
+cp $M/home/gallery/.xsession $M/home/gallery/.xinitrc; chmod +x $M/home/gallery/.xsession $M/home/gallery/.xinitrc
+chown -R 1000:1000 $M/home/gallery
+# no inittab autologin: X started by init has no controlling tty and never spawns (proven 2026-09-03); the golden vmstate carries the running session, X is started once from the root console at bake time
+echo potato > $M/etc/hostname
+dpkg-deb -x $CD/dists/potato/main/binary-i386/base/kernel-image-2.2.17_2.2.17pre6-1.deb $M
+sed -i "2i /sbin/insmod /lib/modules/2.2.17/misc/unix.o >/dev/null 2>&1" $M/etc/init.d/rcS
+echo "mkdir -p /tmp/.X11-unix; chown root:root /tmp/.X11-unix; chmod 1777 /tmp/.X11-unix   # bootmisc cleans /tmp; X aborts on a gallery-owned socket dir" >> $M/etc/init.d/rcS
+echo "/sbin/hdparm -d1 /dev/hda >/dev/null 2>&1   # PIIX bus-master DMA on the UP 2.2 kernel: 60+ MB/s instead of 27 KB/s PIO under KVM (redhat62 wave, proven)" >> $M/etc/init.d/rcS
+echo "/sbin/ldconfig >/dev/null 2>&1   # after / is rw: at the top of rcS the cache write fails silently (libXmu.so.6 not found)" >> $M/etc/init.d/rcS
+rm -f $M/sbin/unconfigured.sh $M/etc/rcS.d/S20modutils $M/etc/rc2.d/S12kerneld $M/etc/rc2.d/S20makedev
+mkdir -p $M/lib/modules/2.2.17; du -sh $M; sync; umount $M; umount $CD; qemu-nbd -d /dev/nbd$N
+rm -f $R/qmp.sock $R/hmp.sock $R/qemu.pid
+cd $R; export SH_DBUS_UPDATE_MS=4
+nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file=$R/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -display dbus,p2p=on -qmp unix:$R/qmp.sock,server=on,wait=off -monitor unix:$R/hmp.sock,server,nowait -pidfile $R/qemu.pid >$R/qemu.log 2>&1 &
+sleep 2; cat $R/qemu.pid; bash $R/run-daemon.sh >/dev/null 2>&1; chmod -R a+rwX $R; echo relaunched
