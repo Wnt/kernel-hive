@@ -312,6 +312,8 @@ export const OS_FAMILY: Record<string, Family> = {
   // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
   // 'generic' is the honest PC-104 common ground.
   pcbsd: 'generic',
+  // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
+  netbsd14: 'generic',
   // FreeBSD 4.11 under KDE 3.3.2: a full 101-key PC board driving XFree86, but
   // KDE 3's chords (Alt+F2 run, Ctrl+Esc process table) are its own, so it takes
   // the generic Unix rows like netbsd14 until a KDE profile is worth writing.
