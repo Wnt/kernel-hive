@@ -99,3 +99,73 @@ device. Also: `station-up.sh` step 4 republishes the runtime manifests and wipes
 every other wave's dark-launch overlay (seven this time), and `labctl gen`
 refuses while undeclared station dirs from sibling waves exist — both are
 coordination-level, reported to the coordination session.
+
+## Phase 2 — absolute pointer via x11warp (2026-09-03)
+
+Operator: "pointer-based graphical OSes need absolute cursor positioning before
+they are considered fully integrated." The usb-tablet is dead on FreeBSD 6.3 X
+(phase 1), so pcbsd takes the fleet's `x11warp` route proven the same night on
+freebsd411 / netbsd14 / suse64 / redhat62: the daemon warps the pointer inside
+the guest's X server over TCP and reads it back.
+
+- Device set gains ONE device: `-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000
+  -device e1000,netdev=n0` (display :79 was this wave's allocation). Everything
+  else unchanged, so a new golden was baked on a sandbox clone of the live disk
+  (`/data/vms/sandbox/pcbsd/abs/`, never the station) and staged as
+  `disk.qcow2.x11warp`, swapped in during the landing window.
+- Guest: X listens on TCP (KDM `ServerArgsLocal` without `-nolisten tcp`),
+  `xhost +10.0.2.2` appended to `~visitor/.kde/Autostart/noblank.sh`, `em0` on DHCP.
+- Fixture: `SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:79`,
+  `SH_CURSOR_SCALE=1.0`; registry `stream.pointer` = freebsd411's shape, emit
+  `--pointer abs --input-backend x11warp`, no legacy `SH_POINTER`.
+- **pf is the trap** (not in the fleet recipe until now): PC-BSD 1.5.1 ships
+  `pf_enable="YES"` with `/etc/pf.conf`, which resets inbound :6000 even once X
+  listens. Appended `pass in quick on em0 proto tcp from 10.0.2.2 to any port 6000`
+  and `pfctl -f /etc/pf.conf`; the rule loads at boot via `pf_rules` and the
+  running ruleset is inside the vmstate. kdmrc: `[X-:*-Core] ServerArgsLocal=`
+  (was `-nolisten tcp`, line 469); no `Xservers` file on PC-BSD; `em0` was already
+  `DHCP` in rc.conf. After reboot `sockstat -4l` shows `Xorg tcp4 *:6000`, `xhost`
+  prints `INET:10.0.2.2`.
+- Proof on the clone (golden stream, Fable, 15 min): `xdpyinfo -display 127.0.0.1:79`
+  answers (X.Org, 1024x768); `scripts/dev/x11ptr.py 127.0.0.1 6079 X,Y q` warps read
+  back **(100,100)** and **(900,650)** exactly, cursor sprite on both frames
+  (`/data/vms/sandbox/pcbsd/abs/w1.png`, `w2.png`). Golden: VM_SIZE **296 MiB**,
+  VM_CLOCK 0:12:55, restore pixel-identical and `query_pointer` = (450,680) after
+  the restore; power-on → desktop ≈90 s. Staged as `disk.qcow2.x11warp`, swapped in
+  during the landing window (old kept as `disk.qcow2.rel-bak` until the live proof).
+
+## Phase 3 — retronet web + ICQ planes (2026-09-03)
+
+Operator: join pcbsd to the museum's offline period internet on both planes.
+Delegated to ONE Opus subagent (60 min, 205 tool uses); the coordinator briefed,
+reviewed and landed. As-built: `docs/lab/retronet/STATION-pcbsd.md`.
+
+- Device set gains a second NIC, a bridged tap: `-netdev tap,id=n1,ifname=pcbsdrn0,
+  script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC` (MAC from
+  `registry/local.env`, placeholder in the launcher) → `em1`, DHCP-reserved
+  **10.99.0.29**, guard chain `PCBSDRN-IN` armed by `rn-tapnet.sh up` on every launch
+  (os2warp pattern; the `pcbsd-rn-tapnet` box-sync pair mirrors the script). The
+  x11warp slirp NIC stays as `n0` and now runs **`restrict=on`** — without it the
+  guest kept a default route into the host's stack; with it the containment table
+  from inside the guest is: gateway :80/:5190/ping OK, host :8443/:22 blocked,
+  1.1.1.1 no route. `restrict=on` is a netdev option, so the device set is unchanged.
+- Guest: `ifconfig_em1="DHCP"`; the tap lease's `nameserver 10.99.0.2` wins over the
+  slirp lease on its own; pf (on by default) gets `pass in quick on em1 from
+  10.99.0.0/24 to any` + `pass out quick on em1 from any to 10.99.0.0/24`.
+- Web: Konqueror 3.5.8 (KHTML, the 4th Kicker icon as shipped) renders
+  `http://search.retronet/` with no proxy. `periodBrowser` corrected accordingly.
+- ICQ: **Kopete 0.12.7 was already on the CD1 install.** UIN 17900, server
+  10.99.0.2:5190, `AutoConnect=true`, auto-away off, started from
+  `~/.kde/Autostart/kopete.sh`; roster row + `seed_contacts.py ssi --apply`. The wizard
+  is drivable by x11ptr warp + QMP click; **the trap is KWallet** — Kopete 0.12 opens
+  the wallet regardless of `kwalletrc Enabled=false`, and cancelling loses the
+  password; run the KWallet wizard to Password Selection and Finish with "use the KDE
+  wallet" UNCHECKED, then Kopete's "Remember password" sticks in kopeterc. Proven by a
+  full power cycle: silent sign-in, roster populated, HiveBot greets.
+- Golden: VM_SIZE **305 MiB**, VM_CLOCK 0:11:39, restore pixel-identical; after the
+  restore HiveBot is online in the list and `x11ptr.py … 470,690 q` reads back
+  exactly. Scene: Kopete contact list top-left showing HiveBot, **Konsole focused =
+  keyboard surface**, no chat window baked, pointer at (470,690). KWin is
+  ClickToFocus: the last click decides where keys land. Staged as `disk.qcow2.rn`.
+- Unproven: Firefox (the panel's first icon) on the web plane; reconnect after a
+  link loss; resolv.conf ordering observed, not pinned.

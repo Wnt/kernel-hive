@@ -42,13 +42,13 @@
     "kbd_note": "Alt+F1 opens the KDE 3 K menu",
     "audio_trigger": "tone",
     "validated": false,
-    "note": "2026-09-03: rel PS/2 only (X accel ~3.5 px/unit under KDE); abs usb-tablet inert. Konsole focused at golden."
+    "note": "2026-09-03: pointer motion absolute via x11warp (guest X on TCP through the loopback forward); usb-tablet inert on FreeBSD 6.3. Konsole focused at golden."
    }
   },
   "labctl": {
    "dir": "/data/vms/streamhost/stations/pcbsd",
    "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
-   "pointer_mode": "rel",
+   "pointer_mode": "abs",
    "warpd_port": null,
    "warpd_addr": null,
    "ssh_port": null,
@@ -58,7 +58,7 @@
    "exec_key": null,
    "console": "fb",
    "udp_port": 54179,
-   "notes": "no exec channel and no NIC (golden device set has none); rel PS/2 pointer only — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
+   "notes": "retronet: em1 on tap pcbsdrn0 (DHCP 10.99.0.29); em0 is a restrict=on slirp NIC carrying only the x11warp door 127.0.0.1:6079 -> 10.0.2.15:6000. No exec channel; rel PS/2 pointer only (motion is warped absolutely through the guest X server) — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
   }
  },
  "render": {
@@ -80,11 +80,12 @@
   "audio": true,
   "touch": false,
   "pointer": {
-   "transport": "rel",
-   "method": "qemu-ps2-relative",
-   "absolute": false,
+   "transport": "abs",
+   "backend": "x11warp",
+   "method": "x11-warp-absolute",
+   "absolute": true,
    "present": true,
-   "device": "ps2",
+   "device": "guest X server (motion) + ps2 (buttons)",
    "scale": 1.0,
    "offset": [
     0,
@@ -103,7 +104,6 @@
    "SH_FPS": "30",
    "SH_HOST_IP": "192.0.2.10",
    "SH_ADVERTISE_HOST": "192.0.2.10",
-   "SH_POINTER": "rel",
    "SH_AUDIO": "on",
    "SH_AUDIO_BITRATE": "96000",
    "SH_HASH_FILE": "/data/vms/streamhost/stations/pcbsd/cert_hash_b64.txt",
@@ -121,7 +121,15 @@
     "--udp",
     "54179",
     "--pointer",
-    "rel",
+    "abs",
+    "--input-backend",
+    "x11warp",
+    "--cursor-scale",
+    "1.0",
+    "--cursor-off-x",
+    "0",
+    "--cursor-off-y",
+    "0",
     "--audio",
     "on",
     "--fps",
@@ -152,6 +160,8 @@
     "-vga std",
     "-display dbus,p2p=on,audiodev=snd0",
     "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+    "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+    "-netdev tap,id=n1,ifname=pcbsdrn0,script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC",
     "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
     "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
    ],
@@ -174,6 +184,8 @@
      "-vga std",
      "-display dbus,p2p=on,audiodev=snd0",
      "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+     "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+     "-netdev tap,id=n1,ifname=pcbsdrn0,script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC",
      "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
      "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
     ]
@@ -189,8 +201,7 @@
   "archetypeId": "putty-lcd",
   "transport": "streamhost",
   "accentColor": "#2f6fba",
-  "eraLabel": "2008 · PC-BSD 1.5.1",
-  "pointerRel": true
+  "eraLabel": "2008 · PC-BSD 1.5.1"
  },
  "museum": {
   "id": "pcbsd",
@@ -207,7 +218,7 @@
    "PBI installer",
    "Kontact"
   ],
-  "periodBrowser": "Konqueror 3.5 (KHTML)",
+  "periodBrowser": "Konqueror 3.5.8 (KHTML)",
   "iconicApps": [
    "Konqueror",
    "Konsole",
@@ -225,13 +236,13 @@
  "ui": "desktop",
  "reset": {
   "stationDir": "pcbsd",
-  "pointer": "rel",
+  "pointer": "abs",
   "touch": false,
   "resetMode": "loadvm",
   "snapshot": "golden",
   "mouse": "PASS",
   "keyboard": "PASS",
-  "fixture": "PC-BSD 1.5.1 KDE 3.5.8 desktop, visitor autologin, focused editor window (caret = keyboard surface), pointer on clear desktop, screensaver/DPMS off."
+  "fixture": "PC-BSD 1.5.1 KDE 3.5.8 desktop, visitor autologin, focused editor window (caret = keyboard surface), pointer on clear desktop, screensaver/DPMS off. The golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
  },
  "notes": [
   "scaffolded from reactos 2026-09-03 (speedrun #3); PC-BSD 1.5.1 CD1 from archive.org item pcbsd-1.5.1-x-86-cd-1"
@@ -246,5 +257,17 @@
   ],
   "runCommand": "cat /etc/pcbsd-release",
   "perCharMs": 60
+ },
+ "retronet": {
+  "planes": [
+   "web",
+   "icq"
+  ],
+  "address": "10.99.0.29",
+  "addressing": "dhcp",
+  "link": "tap pcbsdrn0 on vmbr-rn",
+  "guard": "PCBSDRN-IN",
+  "joined": "2026-09-03",
+  "doc": "docs/lab/retronet/STATION-pcbsd.md"
  }
 }

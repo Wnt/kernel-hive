@@ -24,7 +24,13 @@ def _tapnet_pairs() -> tuple[set[str], str]:
     if not BOX_SYNC_PAIRS.exists():
         return set(), rel
     text = "\n".join(f.read_text(encoding="utf-8") for f in BOX_SYNC_PAIRS_FAMILY)
-    return set(re.findall(r"^\s*box_sync_add_pair\s+([a-z0-9_]+)-rn-tapnet\b", text, re.M)), rel
+    ids = set(re.findall(r"^\s*box_sync_add_pair\s+([a-z0-9_]+)-rn-tapnet\b", text, re.M))
+    # box-sync-pairs-retronet.sh registers the pair for EVERY station helper with one
+    # glob loop (`for rn_helper in "$REPO"/streamhost/stations/*/rn-tapnet.sh`), so a
+    # helper that exists in the tree is paired by construction — credit the glob.
+    if re.search(r"streamhost/stations/\*/rn-tapnet\.sh", text):
+        ids |= {p.parent.name for p in (REPO / "streamhost/stations").glob("*/rn-tapnet.sh")}
+    return ids, rel
 
 
 def validate_retronet(rows: list[dict[str, Any]], errors: list[str]) -> None:

@@ -35,12 +35,14 @@ script runs safely under the host's own `sh` with `ldconfig`/`depmod`/`chroot`
 neutered to no-ops — no chroot, no interactive prompts, no floppy dance the
 1997 installer would otherwise demand.
 
-65 packages across five series: `a` (base system, ADD+REC, minus `gpm` — it
+72 packages across seven series: `a` (base system, ADD+REC, minus `gpm` — it
 would grab the mouse away from X — plus scsi/pcmcia/loadlin/umsprogs/ibcs2/
 scsimods excluded), `ap` (manpgs, sudo, joe, bc, diff, sc, zsh, ash, jpeg, mc,
 vim), `x` (fvwm, fvwmicns, the x331 XFree86 3.3.1 binaries/config/docs/fonts/
 lib/man/svga/vg16/fscl set, xlock, xpm), `xap` (fvwm95, libgr, xv, xfm,
-xpaint, xgames), `y` (bsdgames).
+xpaint, xgames, **arena**), `y` (bsdgames), `n` (**tcpip**, **lynx**) and `d`
+(**binutils, gcc2723, linuxinc, libc, gmake, ncurses** — a real C compiler, and
+not for decoration: the station's ICQ client is built by it, see *Retronet*).
 
 Two traps found composing it this way:
 
@@ -76,6 +78,8 @@ qemu-system-x86_64 -name streamhost-slackware \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
   -device sb16,audiodev=snd0 \
   -chardev msmouse,id=ms0 -serial chardev:ms0 \
+  -netdev tap,id=rn0,ifname=slackwarern0,script=no,downscript=no \
+  -device ne2k_isa,netdev=rn0,mac="$RN_SLACKWARE_MAC" \
   -drive file=$BASE/disk.qcow2,format=qcow2,if=ide \
   -drive file=$BASE/grub-boot.iso,format=raw,if=ide,index=2,media=cdrom,readonly=on \
   -qmp unix:$BASE/qmp.sock,server=on,wait=off -pidfile $BASE/qemu.pid
@@ -103,8 +107,15 @@ qemu-system-x86_64 -name streamhost-slackware \
   64 MB; the station runs comfortably under half that.
 - **Audio**: `sb16` plus the PC speaker (`pcspk-audiodev=snd0`), both routed
   into the dbus audiodev — the desktop only beeps.
-- **No exec channel.** `bare.i` has no NIC driver, so `operator.labctl.qmp`
-  and the framebuffer are the only path in; `exec_kind` is `null`.
+- **One NIC, on the retronet bridge.** `ne2k_isa` (the `bare.i` kernel's `ne.o`
+  module at `io=0x300`) with a unique MAC, backed by a **tap on `vmbr-rn`** —
+  `rn-tapnet.sh up` creates it and installs the fail-closed `SLACKWARERN-IN`
+  chain before QEMU starts, and the launcher runs under `set -e`, so an
+  uncontained guest is not a reachable state. The MAC lives in the device
+  vmstate: changing it needs a cold re-bake, not a warm re-save.
+- **Exec channel**: the guest's own `in.telnetd` at `10.99.0.31:23`
+  (`telnet_unix_e`). Before phase 3 there was none — `operator.labctl.qmp` and
+  the framebuffer were the only path in.
 
 ## Host-native capture path
 
@@ -115,10 +126,12 @@ QMP — no kiosk, bridge or second VM in the path.
 ## Ready scene
 
 `museum.notes` / `reset.fixture`: the fvwm95 desktop at 1024x768x16, root
-logged in — `xterm` titled "darkstar" with a `bash#` prompt top-left,
-`xclock` top-right, the FvwmButtons dock bottom-right, Start button and
-taskbar bottom. `/root/.xinitrc` sets `xset s off`/`-dpms`/`m 1 1`, paints the
-background, launches `xterm` and `xclock`, then execs `fvwm95-2`; `.fvwm2rc95`
+logged in — `xterm` titled "darkstar" with a `bash#` prompt top-left, an
+`ICQ - retronet` xterm directly below it **already signed in to the museum
+gateway as UIN 18400, with HiveBot and beos online by name**, `xclock`
+top-right, the FvwmButtons dock bottom-right (its `web` button opens Arena on
+the corpus), Start button and taskbar bottom. `/root/.xinitrc` sets `xset s off`/`-dpms`/`m 1 1`, paints the
+background, launches `xterm`, `xclock` and the ICQ client's xterm, then execs `fvwm95-2`; `.fvwm2rc95`
 is copied from `/var/X11R6/lib/fvwm95-2/system.fvwm2rc95` (without it fvwm95
 runs with a bare builtin look, not the Windows-95-style desktop). `rc.local`
 runs `startx` on every boot, so a **cold boot lands on the same desktop** —
@@ -129,21 +142,57 @@ root has an empty password in both `passwd` and `shadow`.
 **Absolute, through the guest's own X server (x11warp).** XFree86 3.3.1 knows no
 absolute input device QEMU can offer, so the streamhost daemon connects to the
 guest X server over TCP and moves the pointer with `XWarpPointer`, reading it back
-with `XQueryPointer` (`SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:84`,
-`method: x11-warp-absolute`). The plumbing composed into the root filesystem:
+with `XQueryPointer` (`SH_INPUT_BACKEND=x11warp`, `method: x11-warp-absolute`).
+
+Since the retronet join (phase 3, 2026-09-03) that connection goes **straight over
+the bridge** — `SH_X11WARP_DISPLAY=10.99.0.31:0`, the guest's own address on
+`vmbr-rn`. There is no slirp on this station any more, and no host-side forward to
+re-declare on every start. The plumbing composed into the root filesystem:
 
 - the `tcpip` package (n6) for `ifconfig`/`route`; `/etc/rc.d/rc.inet1` sets the
-  slirp address 10.0.2.15/24 with 10.0.2.2 as gateway; `rc.inet2` is emptied so
-  nothing but X listens;
+  static retronet address 10.99.0.31/24 with the on-link route and **no default
+  gateway** (which is also retronet containment Lock 2);
 - `/etc/rc.d/rc.modules` loads `ne` (`io=0x300`) — the kernel's own NE2000 driver
   as a module, matching QEMU's `ne2k_isa` defaults (io 0x300, irq 9);
-- the launcher's `-netdev user,…,hostfwd=tcp:127.0.0.1:6084-10.0.2.15:6000` and
-  `xhost +10.0.2.2` in `.xinitrc` (XFree86 3.3 listens on TCP by default).
+- `xhost +10.99.0.1` in `.xinitrc` — the bridge address labhost sources from
+  (XFree86 3.3 listens on TCP by default). Without that ACL every warp is silently
+  refused and the station falls back to relative motion.
 
 Buttons and the relative fallback still travel the Microsoft serial mouse on
 `ttyS0` (QEMU `msmouse`; measured 2 px per unit). Proof tool:
 `scripts/build-guests/tiles/slackware/xwarp.py` — raw core protocol, because
 xdotool segfaults against an XFree86 3.3 server and labhost has no python-xlib.
+
+**Trap.** An X client holding a pointer grab defeats `XWarpPointer`: the request
+returns cleanly and the pointer does not move. Measured with Arena during its own
+shutdown — a single `MISMATCH` immediately after closing an app is that, not a
+broken route. Re-run it.
+
+## Retronet
+
+The station is on **both** retronet planes since 2026-09-03 — full write-up in
+[`docs/lab/retronet/STATION-slackware.md`](../lab/retronet/STATION-slackware.md).
+In one paragraph: the one `ne2k_isa` is now a bridge port on `vmbr-rn` (tap
+`slackwarern0`, unique MAC, static `10.99.0.31`, no default route); it browses
+the museum corpus in **Arena beta-2b** through the gateway's `:3128` proxy door
+(Arena predates `Host:` and cannot use the `:80` origin); it is signed in to the
+gateway as ICQ UIN **18400** with **micq 0.4.3** over the pre-OSCAR **UDP 4000**
+door; and it finally has an **exec channel** — `inetd` + `in.telnetd` behind
+`tcpd` at `10.99.0.31:23`, the shared `telnet_unix_e` kind.
+
+Two facts about this guest that the retronet work established, and that will
+outlive it:
+
+- **libc5 binaries do not run under `chroot` on the trixie host** beyond the
+  simplest ones. `/bin/ls` works; `bash` dies with `Out of virtual memory!` and
+  `gcc` with `virtual memory exhausted`, on a box with hundreds of GB free —
+  libc5's `sbrk` malloc against a modern mmap layout. `setarch linux32 -L`,
+  `setarch -R` and `ulimit -s` do not change it; only `/bin/ash` runs. So
+  anything that must be *compiled* for this guest is compiled **in** it.
+- **`login(1)` refuses root on any tty missing from `/etc/securetty`**, and every
+  pty is missing by default. A telnet exec channel therefore needs the 64 pty
+  names appended, or telnetd answers, accepts `root`, and silently rejects the
+  login — which reads as a broken daemon and is not.
 
 ## Checkpoint
 
@@ -164,13 +213,24 @@ power-on; `savevm golden` at VM_CLOCK 0000:00:42.223, VM_SIZE 16.7 MiB, stored i
   100 700 900 100` reads back exact and the cursor is visible at both targets on
   the framebuffer, before and after `loadvm golden`; golden and restore frames
   differ by zero pixels (`/data/vms/sandbox/slackware/abs/fb-*.png`).
+- **Retronet (phase 3, 2026-09-03)**: golden re-baked **cold** on
+  `/data/vms/sandbox/slackware-rn/rig/` with the tap device set and the unique MAC
+  (a MAC lives in the device vmstate, so this could not be a warm re-save).
+  VM_SIZE 17.1 MiB, VM_CLOCK 0000:01:26.825; scene = the desktop with the ICQ
+  window signed in as UIN 18400, HiveBot and beos online by name, pointer parked
+  at (1020,760). Cold boot paints the whole scene 16.3 s after power-on. Restore
+  frame vs bake frame: **10 pixels out of 786432**, all one 2×5 block that is the
+  dock's xload load-graph bar redrawing on its own 5-second timer.
+  `xwarp.py 10.99.0.31:0 100 700 900 100` exact after the restore.
+  Staged as `disk.qcow2.rn-new` beside the live golden, never over it.
 
 ## Known gaps
 
 - ~~Absolute pointer~~ — done in phase 2 (x11warp), see *Pointer* above. The
   `bare.i` kernel's NE2000 module was enough; no kernel swap was needed.
-- **No exec channel.** `bare.i` has no NIC driver; everything is QMP
-  keys/mouse plus the framebuffer, same as several of the fleet's other
-  small, driver-light stations.
+- ~~No exec channel~~ — done in phase 3. `labctl exec slackware "<cmd>"` runs over
+  the guest's own `in.telnetd` at `10.99.0.31:23` (`telnet_unix_e`, host client
+  `/root/sunexec.py`, `SUN_RC='$?'`, empty password). The earlier note that
+  "`bare.i` has no NIC driver" was wrong: it ships `ne.o` as a module.
 - **a.out libs make `readelf` fail** under `set -o pipefail` in
   `compose.sh` — worked around, not fixed generally.
