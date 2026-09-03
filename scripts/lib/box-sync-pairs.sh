@@ -389,6 +389,15 @@ box_sync_load_pairs() {
   # IRIX yet. See docs/lab/retronet/WEB-STATION-irix.md.
   box_sync_add_pair irix-rn-tapnet streamhost/stations/irix/rn-tapnet.sh "$BOX_ROOT/stations/irix/rn-tapnet.sh" exact repo
 
+  # netbsd14 retronet WEB + ICQ planes: the same mirror pair, for the same reason
+  # as every one above — the launcher calls `bash "$BASE/rn-tapnet.sh" up` before
+  # QEMU, so without this pair the box checkout has the helper and the station
+  # dir does not, and the station cannot start at all. NetBSD 1.4.1 on a SECOND
+  # ne2k_pci (the first stays SLIRP and is the x11warp channel), statically
+  # addressed in-guest on 10.99.0.32, mICQ 0.4.12 as UIN 17600.
+  # See docs/lab/retronet/STATION-netbsd14.md.
+  box_sync_add_pair netbsd14-rn-tapnet streamhost/stations/netbsd14/rn-tapnet.sh "$BOX_ROOT/stations/netbsd14/rn-tapnet.sh" exact repo
+
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.
   box_sync_add_pair tiles-json scripts/tiles.json.sample "$BOX_ROOT/tiles.json" exact box

@@ -8,6 +8,14 @@
 # disk.qcow2 is the ONLY block device and carries the 'golden' vmstate. Baked
 # under /opt/qemu-beos (QEMU 11.0.2 fork, same machine types as the host pve
 # build): golden + binary + device set are ONE combination (rule 6).
+#
+# RETRONET (2026-09-03): a SECOND ne2k_pci, backend tap netbsd14rn0 on vmbr-rn,
+# carries the ICQ and web planes. OSCAR cannot traverse SLIRP, so the ICQ NIC has
+# to be real L2 to the gateway CT (10.99.0.2); the guest is static 10.99.0.32/24
+# on ne1 with NO default route of its own on that link. ne0 stays SLIRP and stays
+# the x11warp channel (SH_X11WARP_DISPLAY is unchanged). rn-tapnet.sh creates the
+# tap and arms the fail-closed NETBSD14RN-IN chain BEFORE QEMU opens it.
+# docs/lab/retronet/STATION-netbsd14.md.
 set -e
 BASE=/data/vms/streamhost/stations/netbsd14
 DISK="$BASE/disk.qcow2"
@@ -20,9 +28,24 @@ LOADVM=""
 qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # X pointer forward: host loopback 6076 -> guest 10.0.2.15:6000. SLIRP forwards
 # are host-side state, not vmstate, so declaring it on -netdev re-adds it every
-# start without touching the device set. The guest's only interfaces are ne2
+# start without touching the device set. `restrict=on` makes this netdev a
+# ONE-WAY door: the host-initiated forward still lands in the guest, but the
+# guest can no longer use 10.0.2.2 as a route into the host stack or 10.0.2.3 as
+# a resolver. The guest's only outbound network is the retronet tap below, whose
+# resolver and default route are 10.99.0.2. The guest's only interfaces are ne2
 # (SLIRP) and lo0; the golden carries `xhost +10.0.2.2` (never `xhost +`).
 X_PORT=6076
+# Retronet link: create/enslave the vmbr-rn tap + arm the guest-containment chain
+# BEFORE QEMU opens it (script=no means QEMU attaches to an existing tap, it does
+# not create one). Idempotent; fail-closed under `set -e`.
+bash "$BASE/rn-tapnet.sh" up
+# UNIQUE per-station MAC on vmbr-rn (fleet scheme 52:54:00:52:4e:<last IP octet>,
+# .32 -> 0x20). The real value is box-local in registry/local.env
+# RETRONET_ICQ_NETBSD14_MAC; the committed fallback below is the allocated value
+# for this station. The MAC is ALSO in the golden's device vmstate, so `loadvm`
+# restores THAT regardless of this mac= — the golden was cold-baked with it.
+RN_MAC="$(sed -n 's/^[[:space:]]*RETRONET_ICQ_NETBSD14_MAC=//p' /data/kernel-hive/registry/local.env 2>/dev/null | tail -1 | tr -d '"'\''')"
+RN_MAC="${RN_MAC:-52:54:00:52:4e:20}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into flags
 nohup "${NETBSD14_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-netbsd14 \
@@ -34,7 +57,8 @@ nohup "${NETBSD14_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -vga cirrus \
   -display dbus,p2p=on \
   -drive file=/data/vms/streamhost/stations/netbsd14/disk.qcow2,format=qcow2,if=ide \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev tap,id=n1,ifname=netbsd14rn0,script=no,downscript=no -device ne2k_pci,netdev=n1,mac="$RN_MAC" \
   -qmp unix:/data/vms/streamhost/stations/netbsd14/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/netbsd14/qemu.pid \
   >"/data/vms/streamhost/stations/netbsd14/qemu.log" 2>&1 &
@@ -67,4 +91,4 @@ echo "$(date -u +%FT%TZ) x11warp TIMED OUT: the guest X server never answered on
 CHECK
 chmod +x "$BASE/x11warp-check.sh"
 setsid nohup "$BASE/x11warp-check.sh" "$X_PORT" >>"$BASE/x11warp-bootstrap.log" 2>&1 &
-echo "station netbsd14 qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54176 x11=127.0.0.1:${X_PORT} loadvm='${LOADVM:-<none: cold boot>}'"
+echo "station netbsd14 qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54176 x11=127.0.0.1:${X_PORT} loadvm='${LOADVM:-<none: cold boot>}' rn=10.99.0.32/netbsd14rn0"
