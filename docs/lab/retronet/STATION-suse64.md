@@ -5,12 +5,10 @@
 > restore-proven. Netscape Communicator 4.72 renders `http://search.retronet/`;
 > GtkICQ 0.60 is signed in as UIN `18000` with **HiveBot online** in its contact
 > list. Golden staged at `/data/gallery-guests/SUSE64/suse64-rn.qcow2`
-> (`golden`, VM_SIZE 84 MiB, VM_CLOCK `0000:12:04.997`). **Not yet deployed** —
-> the coordinator swaps the disk and restarts the station at landing.
->
-> **One scene defect is OPEN and must be fixed before this lands** — the KDE
-> panel is hidden and two desktop icons are missing in the baked scene. Cause
-> found, fix not yet applied: see §The scene defect.
+> (`golden`, VM_SIZE 84.1 MiB, VM_CLOCK `0000:16:02.407`, 2026-09-03 08:58).
+> The scene defect is **fixed**: kpanel is back along the bottom at full size.
+> **Not yet deployed** — the coordinator swaps the disk and restarts the station
+> at landing.
 
 ## Allocation (written by the wave coordinator; do not edit here)
 
@@ -276,7 +274,7 @@ its disk** — on this station that is not optional hygiene, because the very sa
 cold boot breaks a clone taken from a killed rig.
 
 
-## The scene defect — diagnosed, not yet fixed
+## The scene defect — FIXED
 
 The baked scene regressed against the shipped golden in two ways: **the KDE
 panel is not visible** along the bottom, and the desktop icons are down to
@@ -309,7 +307,10 @@ died in the cloned session. Restarting it (`kfm -d &`) brings the icons back and
 was observed doing so mid-session (`Floppy` and `CD-ROM` repainting in
 `g2-restored.png`); it simply had not finished before the budget ended.
 
-**The fix, for a 20-minute follow-up run** — none of it is a search:
+**The fix, applied 2026-09-03 08:58** — `PanelHidden=00000000` and
+`PanelHiddenLeft=00000000` in `kpanelrc`, then `kpanel &`. The panel came back
+along the bottom at full size (K menu, pager, clock) and is in the golden. The
+steps were:
 
 1. `loadvm golden` on the final device set.
 2. `killall kpanel`, set `PanelHidden=00000000` and `PanelHiddenLeft=00000000`
@@ -323,17 +324,42 @@ was observed doing so mid-session (`Floppy` and `CD-ROM` repainting in
    a freshly relaunched client shows HiveBot Offline for a few seconds first.
 5. `sync`, `delvm golden`, `savevm golden`, loadvm proof, restage.
 
+**Two things did NOT come back and are accepted as-is:** the desktop icons are
+still only `CD-ROM` (kfm redraws them lazily and had not finished), and there is
+**no Netscape icon on the panel** — the `.kdelnk` under
+`~/.kde/share/apps/kpanel/applnk/` is not a directory KDE 1.1.2's kpanel reads.
+The browser is discoverable from the taskbar entry and the K menu instead. If a
+panel button is wanted, use kpanel's own *Add application* from the K menu on a
+live station and recapture.
+
+**Restarting gtkicq drops the contact list.** `killall gtkicq` then relaunch came
+back signed in but with HiveBot gone, because the roster lives in the process and
+`gtkicqrc`'s `Contacts` section on disk still held only the sample contact. The
+contact had to be re-added through *Add Contact* before the bake. Budget one
+extra minute for this in any future recapture.
+
 **A trap that cost this run its last minutes:** after `kpanel &` and `kfm -d &`
 the konsole loses keyboard focus, so the next `qmp-type.py` line goes nowhere
 and the screen does not change. Click the konsole (x11ptr to ~`550,450` + a QMP
 click) before every typed command that follows a GUI restart.
 
-## The gtkicqrc diff — still owed
+## The gtkicqrc diff — ANSWERED: seeding the file cannot set the server
 
-Also not captured: the `Section "Server"` line of the file gtkicq wrote on a
-clean Quit. The read-back command was in the same batch that lost focus above.
-This is the one question that decides whether seeding `gtkicqrc` from an ISO
-works: if the written file carries `Server "10.99.0.2"`, then the parser round-trips
-it and seeding is viable; if it carries `icq.mirabilis.com`, the value really
-does live only in the widget. Answer it in the follow-up run — it is one `grep`
-after a clean Quit.
+After a clean *ICQ → Quit* with the client signed in to `10.99.0.2`, the file it
+wrote reads:
+
+```
+Section "Server"
+	Server		"icq.mirabilis.com"
+EndSection "Server"
+```
+
+**The edited server is never written back.** So the earlier, stronger conclusion
+was right after all, with one correction: gtkicq *does* **read** `Section
+"Server"` (the Options → Network tab opens populated from the file), but the
+value the connect path uses comes from the dialog's `GtkEntry`, and an edit made
+there is not persisted. Seeding `gtkicqrc` from an ISO is therefore **refuted as
+a way to set the server**, and this station's configuration necessarily lives in
+the **running process** — which is exactly why the golden is baked with gtkicq
+signed in, and why a recapture must re-do the Options → Network edit rather than
+rely on the file.

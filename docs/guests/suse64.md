@@ -167,7 +167,15 @@ DNS is `10.99.0.2`, and `eth0` keeps its address with no route.
 
 The golden is staged at `/data/gallery-guests/SUSE64/suse64-rn.qcow2` — **a new
 file, not a replacement for `suse64.qcow2`**, so the old checkpoint stays
-restorable until this one is live.
+restorable until this one is live. `savevm golden`, VM_SIZE 84.1 MiB, VM_CLOCK
+`0000:16:02.407`, 2026-09-03 08:58, restore-proven.
+
+**The ICQ client's configuration lives in the running process, not on disk.**
+GtkICQ writes `~/.icq/gtkicqrc` on a clean Quit but never persists a server
+edited in Options → Network — the file still reads `icq.mirabilis.com` — and a
+restart of the client also loses the contact list. So a recapture of this golden
+must re-do the Options → Network server edit and re-add HiveBot before `savevm`;
+seeding the file does not work.
 
 **Correction to an assumption that was carried for a while:** GtkICQ 0.60 signs
 in with the **v4** legacy flow, not v5. That matters because
