@@ -125,19 +125,19 @@ FETCH_FILES=(
   INSTALL.amd64
 )
 declare -A PIN_SHA256=(
-  [cd79.iso]="da6eed49185e7d4e5199e4fb15252d53a377e4a7dad572838705bfebfb7ac0ab"
-  [bsd]="5d576c453f78a48dbb20f9e7d26eeacabb2a4e0b814e5cb578c52489a6ab1030"
-  [bsd.mp]="869351281e616b2eea8cade78f1081babd88d646e89f57acf2938eaa54734793"
-  [bsd.rd]="6f0974bf92e28e2a97594987cfd1db135fc2fb4aea00f3f3e35ca6f70448f034"
-  [base79.tgz]="923d2e03f06408d50d4848334398c6d04b5514dcac7917badfc178a0eef248de"
-  [man79.tgz]="7a5e66facf678b41b6b4722b073c357d1eea27facaf4610701ffbec1c80751af"
-  [xbase79.tgz]="9418643106bdd17bdf1fad19e2dd9af789c42d5a184999696af23c6e71b94edb"
-  [xfont79.tgz]="72ca863adeff7c719f27bd5b74b98f4dd1ecd7980a44ec38fc368d807becf6a2"
-  [xserv79.tgz]="2983b33123226d3086290ea7e0497e93553abdf0ffd3bda633cfa47e8b8f7be7"
-  [xshare79.tgz]="4a16fb91da827ddd5ef8cea43f3d22753ac02137144bd23bdd7fd91e8ab186a6"
-  [SHA256]="50bec66f28426a22b9c9436f6a87cf3e7029e636bb915ba1d0db80d638881b87"
-  [SHA256.sig]="99db2ba3d63cddeeb9a1166319e48bf4b22224c48bbdc4deff8ecadc0f7b2786"
-  [INSTALL.amd64]="28c272da41fa8d6f9ff1399ec4b7748368438c86e4a516e302cad1f16e657807"
+  ["cd79.iso"]="da6eed49185e7d4e5199e4fb15252d53a377e4a7dad572838705bfebfb7ac0ab"
+  ["bsd"]="5d576c453f78a48dbb20f9e7d26eeacabb2a4e0b814e5cb578c52489a6ab1030"
+  ["bsd.mp"]="869351281e616b2eea8cade78f1081babd88d646e89f57acf2938eaa54734793"
+  ["bsd.rd"]="6f0974bf92e28e2a97594987cfd1db135fc2fb4aea00f3f3e35ca6f70448f034"
+  ["base79.tgz"]="923d2e03f06408d50d4848334398c6d04b5514dcac7917badfc178a0eef248de"
+  ["man79.tgz"]="7a5e66facf678b41b6b4722b073c357d1eea27facaf4610701ffbec1c80751af"
+  ["xbase79.tgz"]="9418643106bdd17bdf1fad19e2dd9af789c42d5a184999696af23c6e71b94edb"
+  ["xfont79.tgz"]="72ca863adeff7c719f27bd5b74b98f4dd1ecd7980a44ec38fc368d807becf6a2"
+  ["xserv79.tgz"]="2983b33123226d3086290ea7e0497e93553abdf0ffd3bda633cfa47e8b8f7be7"
+  ["xshare79.tgz"]="4a16fb91da827ddd5ef8cea43f3d22753ac02137144bd23bdd7fd91e8ab186a6"
+  ["SHA256"]="50bec66f28426a22b9c9436f6a87cf3e7029e636bb915ba1d0db80d638881b87"
+  ["SHA256.sig"]="99db2ba3d63cddeeb9a1166319e48bf4b22224c48bbdc4deff8ecadc0f7b2786"
+  ["INSTALL.amd64"]="28c272da41fa8d6f9ff1399ec4b7748368438c86e4a516e302cad1f16e657807"
 )
 
 FORCE=0
@@ -194,7 +194,7 @@ fetch_and_verify() {
 build_site_tarball() {
   local kit="$HERE/openbsd-site"
   [ -d "$kit" ] || die "missing site kit $kit — checked-in owned path"
-  ( cd "$kit" && tar --owner=0 --group=0 --numeric-owner -czf "$WORK/site79.tgz" . )
+  (cd "$kit" && tar --owner=0 --group=0 --numeric-owner -czf "$WORK/site79.tgz" .)
   log "built site79.tgz from $kit"
 }
 
@@ -209,7 +209,7 @@ build_www_tree() {
   local conf="$HERE/openbsd-install.conf"
   [ -f "$conf" ] || die "missing $conf — checked-in owned path"
   cp "$conf" "$WWW_DIR/install.conf"
-  ( cd "$dir" && ls -lL > index.txt )
+  (cd "$dir" && ls -lL >index.txt)
   log "www tree ready at $WWW_DIR"
 }
 
@@ -217,7 +217,10 @@ serve_www() {
   command -v kh-claim >/dev/null || die "kh-claim not on PATH"
   [ -n "${KH_SESSION:-}" ] || die "KH_SESSION not set — required to claim port $HTTP_PORT"
   kh-claim take port "$HTTP_PORT" || die "could not claim port $HTTP_PORT"
-  ( cd "$WWW_DIR" && python3 -m http.server "$HTTP_PORT" --bind 127.0.0.1 >"$WORK/httpd.log" 2>&1 & echo $! >"$HTTPD_PIDFILE" )
+  (
+    cd "$WWW_DIR" && python3 -m http.server "$HTTP_PORT" --bind 127.0.0.1 >"$WORK/httpd.log" 2>&1 &
+    echo $! >"$HTTPD_PIDFILE"
+  )
   log "loopback httpd on 127.0.0.1:$HTTP_PORT (pid $(cat "$HTTPD_PIDFILE"))"
 }
 
@@ -249,14 +252,14 @@ install_guest() {
     -pidfile "$PIDFILE" \
     -daemonize
 
-  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --settle 3 --timeout 60 \
-    || die "installer prompt did not settle"
+  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --settle 3 --timeout 60 ||
+    die "installer prompt did not settle"
   python3 "$HERE/../../dev/qmp-type.py" --qmp "$QMP" "a\n"
-  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --change --timeout 30 \
-    || die "no response-file prompt after autoinstall selection"
+  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --change --timeout 30 ||
+    die "no response-file prompt after autoinstall selection"
   python3 "$HERE/../../dev/qmp-type.py" --qmp "$QMP" "http://10.0.2.2:${HTTP_PORT}/install.conf\n"
-  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --settle 25 --timeout 900 \
-    || die "install did not reach the halt screen within 900s"
+  python3 "$HERE/../../dev/fb-wait.py" --qmp "$QMP" --settle 25 --timeout 900 ||
+    die "install did not reach the halt screen within 900s"
 
   if [ -f "$PIDFILE" ]; then
     kill "$(cat "$PIDFILE")" 2>/dev/null || true
