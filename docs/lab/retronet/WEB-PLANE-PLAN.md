@@ -62,6 +62,34 @@ invisible to the gate, and nothing will warn you. Reserving first and landing th
 registry block in the same wave is what closes that, which is why the order above
 is the rule and not a preference.
 
+## Browsers that have actually rendered the corpus
+
+**Read this before spending an agent on browser recon.** Every row below put
+`http://search.retronet/` — the AltaVista-styled search page — on a station's
+framebuffer. The `periodBrowser` field in the registry is curated metadata and
+is NOT this table: verify in the guest.
+
+| Browser | Station | Door | What it took |
+|---|---|---|---|
+| **Konqueror 3.5.8 / 3.3.2** | `pcbsd`, `freebsd411` | `:80` origin, **no proxy** | nothing — HTTP/1.1, sends `Host:`, DHCP + DNS is the whole configuration |
+| **Firefox 0.9** | `ubuntu` | `:80` origin | nothing |
+| **Netscape Communicator 4.72** | `redhat62`, `suse64` | `redhat62` `:80`; `suse64` `:3128` proxy | `browser.startup.homepage_override false` in `preferences.js`, or Netscape 4 overrides the home page once and opens its SmartUpdate tour instead. First run has three modals no pref suppresses (licence + two cache-directory notices) — accept them BEFORE the golden or every restore shows them. `suse64` came off SuSE 6.4 **CD2** |
+| **Netscape Navigator 4.77** | `debian22` | `:80` origin | **four packages from three archive sections.** `netscape-base-4` is in potato **contrib**, without which `navigator-smotif` is a dangling symlink; `libstdc++2.9-glibc2.1` is in **main/oldlibs**, without which the binary exits instantly into the log with nothing on the framebuffer. Neither is reachable by walking Depends from the CD index |
+| **Lynx 2.8.2rel.1** | `netbsd14` | `:80` origin | built from source; runs in an xterm titled `Web Browser - Lynx`, so it is a window on the desktop like any other |
+| **Arena beta-2b** | `slackware` 3.4 | **`:3128` proxy only** | out of the distribution's own `xap1` series. It is a 1996 libwww browser and **predates `Host:`** |
+| **Netscape 4.76** | `tru64` | `:3128` proxy | `WEB-BROWSER-tru64.md` |
+| **IE5** | `win98se` | `:80` origin | the pathfinder for the seamless web |
+| **MacWeb 2.0** | `macos753` | **`:3128` proxy only** | pre-`Host:`; measured getting `400` from the origin every time |
+| **Dillo 3.2.0** | `openbsd` | unproven | `pkg_add dillo` works (17 deps, ~1 min) but nothing has rendered through the plane yet |
+
+**The dividing line is the `Host:` header, and it is not a preference.** The
+`:80` origin serves the corpus *by* `Host`, so a request without one has nothing
+to dispatch on and is answered `400`. Mosaic 2.x, MacWeb 2.0 and Arena are all in
+that class, and the symptom reads exactly like "the corpus is broken" or "the
+station is not on the network" when the network is fine. **Check the browser's
+HTTP version before assuming a station can go seamless** — that is most of why
+the proxy door stays rather than being retired.
+
 ## Principles
 
 - **Corpus-only, offline by construction.** The proxy answers every request
