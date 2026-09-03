@@ -98,14 +98,17 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS station — absolute-pointer notes (live 2026-07-13). |
 | [guests/macos.md](guests/macos.md) | Historical macOS OpenCore/Sequoia recipe; current station is a showcase poster. |
 | [guests/msdos-win1.md](guests/msdos-win1.md) | MS-DOS + Windows 1.0 station. |
+| [guests/netbsd14.md](guests/netbsd14.md) | NetBSD 1.4.1 i386 (1999) — XFree86 3.3 desktop, absolute pointer through the guest's X server (x11warp). |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |
 | [guests/ninefront.md](guests/ninefront.md) | 9front (Plan 9 fork) station — warpd agent on :57793. |
+| [guests/openbsd.md](guests/openbsd.md) | OpenBSD 7.9 amd64 station — unattended autoinstall over loopback HTTP, fvwm from base Xenocara, usb-tablet InputClass pointer fix. |
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
 | [guests/pcbsd.md](guests/pcbsd.md) | PC-BSD 1.5.1 "Edison" — FreeBSD 6.3 + KDE 3.5.8 desktop BSD, assisted GUI install. |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
 | [guests/slackware.md](guests/slackware.md) | Slackware 3.4 — Linux 2.0.30, XFree86 3.3.1, fvwm95 desktop composed host-side from the mirror's .tgz packages; GRUB2 boots the stock zImage. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
+| [guests/redhat62.md](guests/redhat62.md) | Red Hat Linux 6.2 "Zoot" — kickstart install, GNOME 1.0/Enlightenment on cirrus, kernel 2.2.14 IDE PIO wall (TCG install), x11warp pointer. |
 | [guests/ubuntu.md](guests/ubuntu.md) | Ubuntu 4.10 Warty Warthog — live-CD-as-OS station, no NIC/audio (AC97+ACPI hangs the boot), pointer not 1:1 at 640x480. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |

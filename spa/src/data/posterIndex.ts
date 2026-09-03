@@ -120,6 +120,9 @@ const POSTER_INDEX = {
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
   },
+  "netbsd14": {
+    "hero": "/posters/netbsd14/desktop.webp"
+  },
   "newsos": {
     "hero": "/posters/newsos/desktop.webp"
   },
@@ -134,6 +137,9 @@ const POSTER_INDEX = {
   },
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
+  },
+  "openbsd": {
+    "hero": "/posters/openbsd/desktop.webp"
   },
   "openvms": {
     "hero": "/posters/openvms/desktop.webp"
@@ -170,6 +176,9 @@ const POSTER_INDEX = {
   },
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
+  },
+  "redhat62": {
+    "hero": "/posters/redhat62/desktop.webp"
   },
   "redstar2": {
     "hero": "/posters/redstar2/desktop.webp"

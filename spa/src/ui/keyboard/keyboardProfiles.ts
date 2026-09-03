@@ -310,10 +310,17 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
+  // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
+  // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
+  // Unix rows are the honest common ground, at the fleet's pacing floor.
+  redhat62: 'generic',
   // PC-BSD 1.5.1 is KDE 3.5 on X.org: a standard PC-104 board, Alt+F1 for the
   // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
   // 'generic' is the honest PC-104 common ground.
   pcbsd: 'generic',
+  // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
+  netbsd14: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows

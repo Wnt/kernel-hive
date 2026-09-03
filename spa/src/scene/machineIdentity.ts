@@ -455,6 +455,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
+  // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
+  // Registry red accent (Red Hat's own).
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
   // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
   // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
   slackware: {
@@ -472,6 +479,20 @@ export const EXHIBIT_IDENTITIES = {
   ubuntu: {
     caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
     badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
+  // netbsd14: a late-1990s beige Pentium-class clone with a Cirrus SVGA card,
+  // the kind of box NetBSD's i386 port was installed on with sysinst. The accent
+  // is the registry's NetBSD flag orange.
+  netbsd14: {
+    caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 

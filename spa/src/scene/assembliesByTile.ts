@@ -512,24 +512,44 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
-  // serial mouse the X server is told about (relative). Same tower family as
-  // tinycore, the other small-Linux desktop in the hall.
-  slackware: {
-    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
+  // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
+  // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
+  // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
+  redhat62: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseB',
   },
-  // pcbsd: a 2008 office desktop — a putty SFF box under a 4:3 LCD, with the
-  // USB tablet pointer the station forwards as absolute (same era kit as reactos).
+  // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
+  // two-button PS/2 mouse (the station forwards a relative pointer; FreeBSD 6.3's
+  // X never moved on a USB tablet). Distinct from reactos's SFF pizza-box kit.
   pcbsd: {
-    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
-    keyboard: 'keyboardF', mouse: 'paramMouseE',
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseD',
   },
   // ubuntu: a 2004 beige-and-black minitower under a CRT — the ShipIt-CD PC
   // Warty was posted to. USB tablet in the guest, so a mouse on the desk.
   ubuntu: {
     kind: 'towerSetup', body: 'towerE', monitor: 'crtD',
     keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
+  // serial mouse the X server is told about (relative). Same tower family as
+  // tinycore, the other small-Linux desktop in the hall.
+  slackware: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
+  // netbsd14: a 1999 beige PC clone under a colour SVGA CRT — same case family
+  // as pcgeos, with the PS/2 mouse and 101-key board the X server is driven by.
+  netbsd14: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
+  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  openbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
 } as const satisfies Record<string, Assembly>;
 

@@ -149,9 +149,12 @@ MANIFEST=(
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast      |~1m                          |full                         |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast      |~2m                          |full                         |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
   "debian22       |tiles/debian22.sh                                     |Debian22          |heavy     |~5m compose + ~5m bake       |host-compose + one hand bake |debian22.qcow2 (host-composed potato + XFree86 3.3.6 + GNOME 1.0 + Window Maker, no golden) + debian-2.2-i386-cd1.iso"
+  "netbsd14       |tiles/netbsd14.sh                                     |NETBSD14          |slow      |~15m                         |assisted                     |netbsd14.qcow2 (NetBSD 1.4.1 i386 full install incl. X sets; XFree86 3.3.3.1 SVGA on Cirrus, twm session auto-started on the console)"
+  "openbsd        |tiles/openbsd.sh                                      |OPENBSD           |slow      |~6m                          |full                         |openbsd.qcow2 (OpenBSD 7.9 amd64 unattended autoinstall from a loopback HTTP set server + site79.tgz: fvwm desktop, ttyC0 autologin)"
   "pcbsd          |tiles/pcbsd.sh                                        |PCBSD             |slow      |~15m (GUI install, assisted) |assisted                     |pcbsd.iso (PC-BSD 1.5.1 CD1, pinned) + pcbsd.qcow2 (installed KDE desktop)"
   "slackware      |tiles/slackware.sh                                    |Slackware         |fast      |~3-5m                        |full                         |slackware.qcow2 (Slackware 3.4 root composed host-side from the mirror .tgz set, rev-0 ext2, no golden) + grub-boot.iso (GRUB2 linux16 -> kernels/bare.i zImage) -> /data/gallery-guests/Slackware/"
   "ubuntu         |tiles/ubuntu.sh                                       |Ubuntu            |retro     |~5m                          |scripted                     |warty-release-live-i386.iso + ubuntu.qcow2 (empty 1G vmstate carrier; live CD, no install)|media"
+  "redhat62       |tiles/redhat62.sh                                     |RedHat62          |heavy     |~15m                         |kickstart                    |redhat62.qcow2 (kickstart install from zoot-i386.iso + golden)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

@@ -150,7 +150,40 @@ ROWS=(
   # host-side from the mirror .tgz set (128 files); pins recorded in
   # scripts/build-guests/tiles/slackware/MANIFEST.sha256.
   "opt-file|slackware|Slackware 3.4 install set manifest (128 pinned files, mirrors.slackware.com/slackware/slackware-3.4)|$ASSET_STAGING/slackware/MANIFEST.sha256|sha256:f74ddc25f891b658f2083e71ac9849c990007c7e64cfd1691a3ce8bb83fc89be|freely-fetchable-pinned"
+  # NetBSD 1.4.1 i386 (1999, BSD-2): netbsd14.sh re-fetches boot.fs + the 13
+  # binary sets from archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/
+  # if absent; sets.iso is composed locally from the tgz sets.
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 install floppy (boot.fs)|$ASSET_STAGING/netbsd14/boot.fs|sha256:5bbe8a5e9a28851d549a52506f0f94b21e7b962a863c6a13c6ce314e6ceb2e85|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 base.tgz|$ASSET_STAGING/netbsd14/base.tgz|sha256:342bb4631f237b2c22e5c8682b9cfeb63a39c38aa617e9f9020a709212a3e930|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 comp.tgz|$ASSET_STAGING/netbsd14/comp.tgz|sha256:8af3d8253275667c4b1bb4401182a83cee90b450911d9b697e6d2055e7877232|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 etc.tgz|$ASSET_STAGING/netbsd14/etc.tgz|sha256:8641cdbc4dc91cc77bcc4905ffdcf98be9ab400c52266474bfea406b80d38f93|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 games.tgz|$ASSET_STAGING/netbsd14/games.tgz|sha256:70f88300bff7df7df455a5f77851c30f7d0fe30f7c86909cc298c79ceae5b052|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 kern.tgz|$ASSET_STAGING/netbsd14/kern.tgz|sha256:7e57e4080f9d67666ed95c88e309243745f7e96676c579e6c1131c12e8928924|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 man.tgz|$ASSET_STAGING/netbsd14/man.tgz|sha256:e45806509cdce23efbecd57f6889d257e0fe4faf898146f8679957a05bf8d8c5|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 misc.tgz|$ASSET_STAGING/netbsd14/misc.tgz|sha256:9e27078392c728438732916e6ae695e66905d4570d987a9a3ed66ffb6ba47ae3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 text.tgz|$ASSET_STAGING/netbsd14/text.tgz|sha256:60f2befdff6554c74ce8b601ccf67347164a26d183747b4a06bd0de2e1435af3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xbase.tgz|$ASSET_STAGING/netbsd14/xbase.tgz|sha256:8501d77e1869487c9853fc358443a799d40145405a4d1ee59179be9b15ae73fd|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcomp.tgz|$ASSET_STAGING/netbsd14/xcomp.tgz|sha256:68134c7da74431f2d640a89acaf953b32cd267c3a93877f9cb421f360c12985c|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcontrib.tgz|$ASSET_STAGING/netbsd14/xcontrib.tgz|sha256:b7d429bae3636c28d92627e7688b2a00908c3efa0668cabe1d46df09e1c193ff|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xfont.tgz|$ASSET_STAGING/netbsd14/xfont.tgz|sha256:edf9bf393678b0351399550f9025fccbd97d3d8d27ccc30ffc665ad9bfcb5e3b|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xserver.tgz|$ASSET_STAGING/netbsd14/xserver.tgz|sha256:e4d98777ba2d95471f53ab751a6181c92f3cb2def641a1729cfa138317bdf462|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  # OpenBSD 7.9 amd64 (officially-free, ISC/BSD): openbsd.sh re-fetches all 13
+  # release files from the fu-berlin mirror if absent, verified against the
+  # literal SHA-256s measured on labhost 2026-09-02 (see docs/lab/OPENBSD-WAVE.md).
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install CD (cd79.iso)|$ASSET_STAGING/openbsd79/cd79.iso|sha256:da6eed49185e7d4e5199e4fb15252d53a377e4a7dad572838705bfebfb7ac0ab|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC kernel (bsd)|$ASSET_STAGING/openbsd79/bsd|sha256:5d576c453f78a48dbb20f9e7d26eeacabb2a4e0b814e5cb578c52489a6ab1030|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC.MP kernel (bsd.mp)|$ASSET_STAGING/openbsd79/bsd.mp|sha256:869351281e616b2eea8cade78f1081babd88d646e89f57acf2938eaa54734793|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 ramdisk installer kernel (bsd.rd)|$ASSET_STAGING/openbsd79/bsd.rd|sha256:6f0974bf92e28e2a97594987cfd1db135fc2fb4aea00f3f3e35ca6f70448f034|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 base set (base79.tgz)|$ASSET_STAGING/openbsd79/base79.tgz|sha256:923d2e03f06408d50d4848334398c6d04b5514dcac7917badfc178a0eef248de|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 man set (man79.tgz)|$ASSET_STAGING/openbsd79/man79.tgz|sha256:7a5e66facf678b41b6b4722b073c357d1eea27facaf4610701ffbec1c80751af|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xbase set (xbase79.tgz)|$ASSET_STAGING/openbsd79/xbase79.tgz|sha256:9418643106bdd17bdf1fad19e2dd9af789c42d5a184999696af23c6e71b94edb|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xfont set (xfont79.tgz)|$ASSET_STAGING/openbsd79/xfont79.tgz|sha256:72ca863adeff7c719f27bd5b74b98f4dd1ecd7980a44ec38fc368d807becf6a2|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xserv set (xserv79.tgz)|$ASSET_STAGING/openbsd79/xserv79.tgz|sha256:2983b33123226d3086290ea7e0497e93553abdf0ffd3bda633cfa47e8b8f7be7|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xshare set (xshare79.tgz)|$ASSET_STAGING/openbsd79/xshare79.tgz|sha256:4a16fb91da827ddd5ef8cea43f3d22753ac02137144bd23bdd7fd91e8ab186a6|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256 manifest|$ASSET_STAGING/openbsd79/SHA256|sha256:50bec66f28426a22b9c9436f6a87cf3e7029e636bb915ba1d0db80d638881b87|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256.sig|$ASSET_STAGING/openbsd79/SHA256.sig|sha256:99db2ba3d63cddeeb9a1166319e48bf4b22224c48bbdc4deff8ecadc0f7b2786|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install notes (INSTALL.amd64)|$ASSET_STAGING/openbsd79/INSTALL.amd64|sha256:28c272da41fa8d6f9ff1399ec4b7748368438c86e4a516e302cad1f16e657807|freely-fetchable-pinned"
   "opt-file|pcbsd|PC-BSD 1.5.1 CD1 (archive.org pcbsd-1.5.1-x-86-cd-1)|$GALLERY_ROOT/PCBSD/pcbsd.iso|sha256:69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3|freely-fetchable-pinned"
   # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
   # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
