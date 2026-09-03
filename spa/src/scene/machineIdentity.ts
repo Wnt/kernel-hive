@@ -451,6 +451,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
+  // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
+  // Registry red accent (Red Hat's own).
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
   // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
   // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
   slackware: {
@@ -475,6 +482,13 @@ export const EXHIBIT_IDENTITIES = {
   netbsd14: {
     caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
     badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
   },
   // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a plain VGA
   // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the

@@ -1,0 +1,13 @@
+#!/bin/sh
+# install.site — run by the OpenBSD installer at the end of the install, chrooted
+# into the new root (site79.tgz). Kernel Hive station 'openbsd': console autologin
+# as root on ttyC0 (/root/kh-autologin = login -f root; OpenBSD getty has no
+# autologin capability) -> ~/.profile runs startx -> fvwm desktop (~/.xinitrc).
+sed -i 's|^ttyC0[[:space:]].*|ttyC0 "/root/kh-autologin" vt220 on  secure|' /etc/ttys
+grep -q '^xenodm_flags=NO' /etc/rc.conf.local 2>/dev/null || cat >> /etc/rc.conf.local <<'RC'
+xenodm_flags=NO
+smtpd_flags=NO
+ntpd_flags=NO
+RC
+chmod 755 /root/.xinitrc /root/kh-autologin
+exit 0

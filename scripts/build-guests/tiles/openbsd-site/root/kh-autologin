@@ -1,0 +1,3 @@
+#!/bin/sh
+# Kernel Hive: /etc/ttys runs this instead of getty on ttyC0 -> root login shell, no password.
+exec /usr/bin/login -f root </dev/ttyC0 >/dev/ttyC0 2>&1

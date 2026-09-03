@@ -62,14 +62,14 @@
     }
   },
   "render": {
-    "signalOrder": 75,
-    "stationsManifestOrder": 73,
+    "signalOrder": 76,
+    "stationsManifestOrder": 74,
     "stationsManifestPrelude": "\n# freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0\n#   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)\n#   carrying the golden vmstate, ne2k_pci SLIRP with the loopback X forward 6078->6000 for the\n#   x11warp absolute pointer (display :78); keys + buttons ride the PS/2 path.\n",
     "bringUpGroup": 1,
-    "bindingOrder": 83,
+    "bindingOrder": 85,
     "bindingPrelude": "",
-    "goldenOrder": 73,
-    "actionMapOrder": 45
+    "goldenOrder": 74,
+    "actionMapOrder": 46
   },
   "stationDir": "freebsd411",
   "lifecycle": "production",
@@ -178,7 +178,7 @@
         "note": "Same installed build as beos (/opt/qemu-beos); see beos.json for provenance."
       }
     },
-    "bringUpOrder": 83
+    "bringUpOrder": 85
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",

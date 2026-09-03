@@ -138,6 +138,9 @@ const POSTER_INDEX = {
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
   },
+  "openbsd": {
+    "hero": "/posters/openbsd/desktop.webp"
+  },
   "openvms": {
     "hero": "/posters/openvms/desktop.webp"
   },
@@ -173,6 +176,9 @@ const POSTER_INDEX = {
   },
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
+  },
+  "redhat62": {
+    "hero": "/posters/redhat62/desktop.webp"
   },
   "redstar2": {
     "hero": "/posters/redstar2/desktop.webp"

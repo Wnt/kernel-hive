@@ -506,6 +506,13 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
+  // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
+  // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
+  // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
+  redhat62: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
   // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
   // two-button PS/2 mouse (the station forwards a relative pointer; FreeBSD 6.3's
   // X never moved on a USB tablet). Distinct from reactos's SFF pizza-box kit.
@@ -531,6 +538,12 @@ export const ASSEMBLIES_BY_TILE = {
   netbsd14: {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
+  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  openbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
   // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
   // with the PS/2 mouse and 101-key board KDE 3.3.2 on XFree86 4.4.0 is driven
