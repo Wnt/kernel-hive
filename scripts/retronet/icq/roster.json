@@ -103,6 +103,13 @@
       "aimScreenName": "win311"
     },
     {
+      "station": "redhat62",
+      "uin": "18100",
+      "nick": "redhat62",
+      "client": "gaim0599",
+      "onboarded": true
+    },
+    {
       "station": "ubuntu",
       "uin": "18300",
       "nick": "ubuntu",
@@ -128,6 +135,20 @@
       "uin": "18400",
       "nick": "slackware",
       "client": "micq043",
+      "onboarded": true
+    },
+    {
+      "station": "netbsd14",
+      "uin": "17600",
+      "nick": "netbsd14",
+      "client": "micq-0412",
+      "onboarded": true
+    },
+    {
+      "station": "debian22",
+      "uin": "18200",
+      "nick": "debian22",
+      "client": "gnomeicu-0.90b",
       "onboarded": true
     },
     {

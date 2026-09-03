@@ -117,3 +117,28 @@ confirm on a fresh run).
 - No retronet join yet (no NIC path beyond the loopback X forward).
 - No `demoProgram` defined.
 - Mouse clicks and the screensaver-off state are unproven (see Checkpoint).
+
+## Retronet
+
+Joined **2026-09-03**, both planes (`web` + `icq`), address **10.99.0.33**,
+statically configured. A **second** `ne2k_pci` is a real bridge port on
+`vmbr-rn` through the persistent tap `redhat62rn0`; the original SLIRP NIC stays
+(now with `restrict=on`) because it carries the only path the x11warp pointer
+has. There is **no default route on either NIC**, and `eth0` is static
+`10.0.2.15/24` so nothing on the SLIRP side offers one. Containment chain
+`REDHAT62RN-IN`.
+
+- **Web:** Netscape Communicator 4.72 (already on the GNOME panel) with
+  `network.proxy.type 0` — seamless, no proxy: the gateway's wildcard DNS
+  resolves every name to `10.99.0.2` and its `:80` origin serves the corpus.
+  `browser.startup.homepage_override=false` is what stops Netscape 4 opening its
+  first-run SmartUpdate tour instead of the home page.
+- **ICQ:** **Gaim 0.59.9** built in the guest (egcs 1.1.2 + GTK+ 1.2.6 from the
+  station's own CD) with the tru64 SSI patch, auto-signing in as UIN **18100**;
+  the buddy list renders **HiveBot** from the server-side SSI roster. The patch
+  needs one C89 declaration-order fix to compile under egcs.
+
+The golden was re-baked on the new device set after a cold boot (2026-09-03
+08:52:21 UTC, VM_SIZE 80.5 MiB, VM_CLOCK 0000:02:11.960) and restore-proven.
+Full as-built, every measured fact and the traps:
+[`docs/lab/retronet/STATION-redhat62.md`](../lab/retronet/STATION-redhat62.md).
