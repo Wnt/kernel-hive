@@ -168,3 +168,14 @@ Staged (not promoted) at `/data/vms/streamhost/stations/pcbsd/disk.qcow2.rn`,
   its own, but that was not exercised here.
 - The station has **no exec channel**, so everything above was driven through the
   framebuffer and x11warp; there is no scripted regression for it.
+
+## Reconnect after a golden restore — proven on the live station
+
+`loadvm golden` hands Kopete a TCP socket the gateway no longer knows. Measured
+2026-09-03 on the live station under a `guest_wake` lease (180 s asserted
+running): the gateway journal logs `RelayToScreenName: session not found …
+screenName=17900` for the stale socket and then `user signed on … screenName=17900
+ip=10.99.0.29` **59 s after the reset** (a second run: 58 s). Kopete 0.12's own
+reconnect handles it; no watchdog is needed. The frame at +3 min shows the contact
+list online with HiveBot. Trap: a reset proof "waited" with no viewer and no lease
+is invalid — the station idle-pauses and the wait never elapses in the guest.

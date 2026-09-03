@@ -167,5 +167,8 @@ reviewed and landed. As-built: `docs/lab/retronet/STATION-pcbsd.md`.
   exactly. Scene: Kopete contact list top-left showing HiveBot, **Konsole focused =
   keyboard surface**, no chat window baked, pointer at (470,690). KWin is
   ClickToFocus: the last click decides where keys land. Staged as `disk.qcow2.rn`.
-- Unproven: Firefox (the panel's first icon) on the web plane; reconnect after a
-  link loss; resolv.conf ordering observed, not pinned.
+- Reset proof on the live station: after `loadvm golden` Kopete re-signs on by
+  itself 58–59 s later (gateway journal `user signed on … 17900` after the reset
+  timestamp; frame at +3 min online with HiveBot) — measured under a wake lease.
+- Unproven: Firefox (the panel's first icon) on the web plane; resolv.conf
+  ordering observed, not pinned.
