@@ -162,3 +162,10 @@ scripts/serve/usage-stats.json*
 # covered too, belt-and-braces, without ignoring anything else there.
 scripts/visitor-sim/visitor-sim-runs/
 /visitor-sim-runs/
+
+# scripts/dev/wave.sh alloc writes this at the repo root: the wave's own
+# allocation (slot/UDP/VMID, X-warp display, retronet address + REAL MAC),
+# sourced by the launcher, the fixture and rn-onboard.sh. It carries a real
+# MAC, so it is box-local like registry/local.env and never committed
+# (AGENTS.md rule 1).
+/.wave.env
