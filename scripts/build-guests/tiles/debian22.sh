@@ -63,6 +63,27 @@ while read -r f; do
   } >>"$M"/var/lib/dpkg/status
   rm -rf "$B"/ctl
 done <"$B"/closure.txt
+# --- retronet extras that are NOT on CD1: Netscape Navigator 4.77 (non-free),
+# staged as .debs in /data/assets-staging/debian22/deb/ (check-assets.sh pins
+# their hashes). Same unpack + dpkg-status shape as the CD loop above.
+for f in /data/assets-staging/debian22/deb/*.deb; do
+  dpkg-deb -x "$f" "$M"
+  p=$(dpkg-deb -f "$f" Package)
+  dpkg-deb -e "$f" "$B"/ctl
+  for c in "$B"/ctl/*; do [ "$(basename "$c")" = control ] || cp "$c" "$M/var/lib/dpkg/info/$p.$(basename "$c")"; done
+  {
+    dpkg-deb -f "$f" | sed '1a Status: install ok unpacked'
+    echo
+  } >>"$M"/var/lib/dpkg/status
+  rm -rf "$B"/ctl
+done
+# update-alternatives never ran (no postinst), so there is no /usr/bin/netscape
+# and no /usr/bin/navigator-smotif-477 -> the wrapper. The real binary is
+# .../navigator/navigator-smotif.real; .../477/netscape is a DIRECTORY, which is
+# what an `Exit 126 … is a directory` in the guest terminal means.
+mkdir -p "$M"/usr/bin
+ln -sf /usr/lib/netscape/477/navigator/navigator-smotif "$M"/usr/bin/navigator-smotif-477
+ln -sf /usr/bin/navigator-smotif-477 "$M"/usr/bin/netscape
 # --- X traps (all framebuffer-proven 2026-09-03) ---
 for d in "$M"/usr/X11R6/lib/X11/fonts/*/; do
   n=$(basename "$d")
@@ -72,7 +93,8 @@ done                                      # fixed alias lives in /etc/X11/fonts;
 chmod -R a+rX "$M"/usr/X11R6 "$M"/etc/X11 # host umask left fonts.dir/XF86Config 0600
 chmod 4755 "$M"/usr/bin/X11/XF86_SVGA     # no Xwrapper on potato; server must be setuid
 echo /usr/X11R6/lib >>"$M"/etc/ld.so.conf # libXmu.so.6 not found otherwise (ldconfig runs in rcS)
-printf '127.0.0.1\tlocalhost potato\n10.0.2.2\tslirphost\n' >"$M"/etc/hosts
+printf '127.0.0.1\tlocalhost potato\n10.0.2.2\tslirphost\n10.99.0.2\tgateway search.retronet\n' >"$M"/etc/hosts
+printf 'nameserver 10.99.0.2\nsearch retronet.lab\n' >"$M"/etc/resolv.conf   # retronet wildcard DNS (docs/lab/retronet/WEB-PLANE-PLAN.md); reached over eth1, never a default route
 echo 10.0.2.2 >"$M"/etc/X0.hosts # x11warp: the SLIRP peer may connect to the guest X server (never xhost +)
 cp "$B"/XF86Config "$M"/etc/X11/XF86Config
 chmod 644 "$M"/etc/X11/XF86Config # clgd5446 + no_bitblt + 1024x768x16
@@ -88,6 +110,18 @@ mkdir -p "$M"/home/gallery
 printf '#!/bin/sh\nxset s off; xset -dpms\nwmaker &\nsleep 3\ngnome-terminal --geometry 80x24+240+300 &\nexec gnome-session\n' >"$M"/home/gallery/.xsession
 cp "$M"/home/gallery/.xsession "$M"/home/gallery/.xinitrc
 chmod +x "$M"/home/gallery/.xsession "$M"/home/gallery/.xinitrc
+mkdir -p "$M"/home/gallery/.netscape
+# Netscape 4.77 first run: a pre-existing preferences.js skips the licence
+# dialog; proxy type 0 = direct, because the retronet DNS resolves every name to
+# the gateway and its :80 origin serves the corpus (the "seamless web").
+cat >"$M"/home/gallery/.netscape/preferences.js <<'NSP'
+// Netscape User Preferences
+user_pref("browser.startup.homepage", "http://search.retronet/");
+user_pref("browser.startup.page", 1);
+user_pref("network.proxy.type", 0);
+user_pref("browser.wfe.ignore_def_check", true);
+user_pref("browser.startup.license_accepted", true);
+NSP
 chown -R 1000:1000 "$M"/home/gallery
 sed -i 's|^2:23:respawn.*|x1:2345:respawn:/bin/su - gallery -c /usr/bin/X11/startx|' "$M"/etc/inittab # NO redirection: init passes the line verbatim to su, '>/dev/null 2>&1' became su arguments and startx never ran (proven 2026-09-03; redhat62 uses this exact shape)
 echo potato >"$M"/etc/hostname
@@ -96,6 +130,7 @@ echo "3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9  /data/as
 sed -i "2i /sbin/insmod /lib/modules/2.2.17/misc/unix.o >/dev/null 2>&1" "$M"/etc/init.d/rcS
 echo "mkdir -p /tmp/.X11-unix; chown root:root /tmp/.X11-unix; chmod 1777 /tmp/.X11-unix   # bootmisc cleans /tmp; X aborts on a gallery-owned socket dir" >>"$M"/etc/init.d/rcS
 echo "/sbin/insmod /lib/modules/2.2.17/net/8390.o >/dev/null 2>&1; /sbin/insmod /lib/modules/2.2.17/net/ne2k-pci.o >/dev/null 2>&1; /sbin/ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up; /sbin/route add default gw 10.0.2.2   # ne2k_pci on SLIRP: x11warp reaches X :0 via hostfwd" >>"$M"/etc/init.d/rcS
+echo "/sbin/insmod /lib/modules/2.2.17/net/rtl8139.o >/dev/null 2>&1; /sbin/ifconfig eth1 10.99.0.36 netmask 255.255.255.0 up   # retronet: the SECOND NIC is an rtl8139 on tap debian22rn0/vmbr-rn, deliberately a DIFFERENT driver from the slirp ne2k_pci so the interface numbering is deterministic (ne2k-pci.o=eth0, rtl8139.o=eth1). Static per WEB-PLANE-PLAN: potato's boot tree has no DHCP client. NO default route via it (containment Lock 1)" >>"$M"/etc/init.d/rcS
 echo "/sbin/hdparm -d1 /dev/hda >/dev/null 2>&1   # PIIX bus-master DMA on the UP 2.2 kernel: 60+ MB/s instead of 27 KB/s PIO under KVM (redhat62 wave, proven)" >>"$M"/etc/init.d/rcS
 echo "/sbin/ldconfig >/dev/null 2>&1   # after / is rw: at the top of rcS the cache write fails silently (libXmu.so.6 not found)" >>"$M"/etc/init.d/rcS
 rm -f "$M"/sbin/unconfigured.sh "$M"/etc/rcS.d/S20modutils "$M"/etc/rc2.d/S12kerneld "$M"/etc/rc2.d/S20makedev
@@ -108,7 +143,7 @@ qemu-nbd -d /dev/nbd"$N"
 rm -f "$R"/qmp.sock "$R"/hmp.sock "$R"/qemu.pid
 cd "$R"
 export SH_DBUS_UPDATE_MS=4
-nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0 -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
+nohup qemu-system-x86_64 -name debian22-smoke -nodefaults -enable-kvm -machine pc-i440fx-11.0 -cpu host -m 256 -smp 1 -rtc base=localtime -drive file="$R"/disk.qcow2,format=qcow2,if=ide,index=0 -drive file=/data/assets-staging/debian22/debian-2.2-i386-cd1.iso,media=cdrom,if=ide,index=2 -boot order=d -vga cirrus -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X11WARP_PORT:-6082}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 -netdev tap,id=n1,ifname=${RN_TAP_IF:-debian22rn0},script=no,downscript=no -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24 -display dbus,p2p=on -qmp unix:"$R"/qmp.sock,server=on,wait=off -monitor unix:"$R"/hmp.sock,server,nowait -pidfile "$R"/qemu.pid >"$R"/qemu.log 2>&1 &
 sleep 2
 cat "$R"/qemu.pid
 bash "$R"/run-daemon.sh >/dev/null 2>&1
