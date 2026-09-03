@@ -132,7 +132,7 @@ including the mICQ/Lynx builds and the traps, is
 the short version:
 
 - **Link.** A **second** `ne2k_pci` whose backend is the tap `netbsd14rn0` on
-  `vmbr-rn`, MAC `52:54:00:52:4e:20`, created and guarded by
+  `vmbr-rn`, MAC `RN_NETBSD14_MAC` in gitignored `registry/local.env` (committed placeholder `02:00:00:00:00:20`), created and guarded by
   `streamhost/stations/netbsd14/rn-tapnet.sh up` from the launcher
   (chain `NETBSD14RN-IN`). The guest is **`ne1`, static `10.99.0.32/24`, no
   default route on that link's own config**; `/etc/mygate` is `10.99.0.2`, so the

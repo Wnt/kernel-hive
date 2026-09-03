@@ -44,8 +44,12 @@ bash "$BASE/rn-tapnet.sh" up
 # RETRONET_ICQ_NETBSD14_MAC; the committed fallback below is the allocated value
 # for this station. The MAC is ALSO in the golden's device vmstate, so `loadvm`
 # restores THAT regardless of this mac= — the golden was cold-baked with it.
-RN_MAC="$(sed -n 's/^[[:space:]]*RETRONET_ICQ_NETBSD14_MAC=//p' /data/kernel-hive/registry/local.env 2>/dev/null | tail -1 | tr -d '"'\''')"
-RN_MAC="${RN_MAC:-52:54:00:52:4e:20}"
+RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
+RN_NETBSD14_MAC="02:00:00:00:00:20" # placeholder (committed); real value from local.env
+if [ -r "$RN_LOCAL_ENV" ]; then
+  _m="$(sed -n 's/^RN_NETBSD14_MAC=//p' "$RN_LOCAL_ENV" | head -1 | tr -d '"')"
+  [ -n "$_m" ] && RN_NETBSD14_MAC="$_m"
+fi
 # shellcheck disable=SC2086 # $LOADVM must word-split into flags
 nohup "${NETBSD14_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-netbsd14 \
@@ -58,7 +62,7 @@ nohup "${NETBSD14_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -display dbus,p2p=on \
   -drive file=/data/vms/streamhost/stations/netbsd14/disk.qcow2,format=qcow2,if=ide \
   -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
-  -netdev tap,id=n1,ifname=netbsd14rn0,script=no,downscript=no -device ne2k_pci,netdev=n1,mac="$RN_MAC" \
+  -netdev tap,id=n1,ifname=netbsd14rn0,script=no,downscript=no -device ne2k_pci,netdev=n1,mac="$RN_NETBSD14_MAC" \
   -qmp unix:/data/vms/streamhost/stations/netbsd14/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/netbsd14/qemu.pid \
   >"/data/vms/streamhost/stations/netbsd14/qemu.log" 2>&1 &
