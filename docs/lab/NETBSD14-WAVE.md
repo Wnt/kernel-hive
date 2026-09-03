@@ -51,7 +51,7 @@ spot. Two rounds of cheap runners (`sonnet-low`, one clone each, 0.6 s to clone)
 | KVM-specific: `-accel tcg -cpu pentium` | LOSS | identical hang under TCG |
 | Sound Blaster probe spinning: `-device sb16` at 0x220 | LOSS | identical hang, no `sb0` line |
 | pciide port conflict: `-machine isapc` (IDE on ISA) | LOSS, but decisive | `wdc0 at isa0` attached BEFORE `lpt0` there and the hang stayed after `lpt0` — IDE is exonerated |
-| INSTALL kernel from the floppy, `boot -a`, root `wd0a` | **WIN** | full multiuser boot of the installed disk (`evidence/instk-boot-a-wd0a-multiuser.png`) — the enabler for an in-guest kernel build |
+| INSTALL kernel from the floppy, `boot -a`, root `wd0a` | **WIN** | full multiuser boot of the installed disk (`/data/vms/streamhost/stations/netbsd14/evidence/instk-boot-a-wd0a-multiuser.png`) — the enabler for an in-guest kernel build |
 
 Round 3 — **WIN: `KHMIN`** (`scripts/build-guests/tiles/netbsd14/KHMIN`), built in-guest from the INSTALL ramdisk chroot and booted from `wd0` to the wscons `login:`; `KHCONS` never built (its runner stayed on the multiuser route, where every CD mount and TFTP transfer hangs). Two `sonnet` runners built custom kernels
 in-guest from `syssrc.tgz` (14 234 946 B, staged) on a second CD (`extras.iso`):
@@ -73,6 +73,22 @@ Rule for the next OS: a theory list must first name the MECHANISM each theory
 needs (here: userconf), and one runner tests the mechanism before three depend
 on it.
 
-## Timeline (measured after landing with session-timeline.py)
+## Landed 2026-09-03
 
-TODO(coordinator)
+main `4910a97d` (station) + `d2f4f01b` (key pacing 60/60, demo 120 ms/char);
+box-deploy, `station-up.sh netbsd14`, SPA deployed. Proofs on the live station:
+desktop after `loadvm golden`; x11warp to (100,700) and (900,100) with exact
+`QueryPointer` readback and the cursor visible at both (`evidence/xwarp.py` in the station dir, raw X11 over
+the 6076 forward — xdotool segfaults against an XFree86 3.3 server); keys land
+in the xterm. Open: the XFree86 mode-switch pan (guest doc, Known limits).
+
+## Timeline
+
+Operator message 2026-09-02 ~22:08 UTC (clock start). Smoke rig at `/os/netbsd14`
+at +5 min; ledger pushed +12 min; four streams done +25 min; the golden stream hit
+the `lpt0` wall and the operator paused the run at ~+50 min for the tooling
+(rig-clone.sh, fb-wait.py, rule 14 on main at +90 min); kernel race rounds
++95..+160 min; X + golden + restore proof +185 min; landed +215 min (serialized
+behind three sibling waves by the coordinator); pacing fix +235 min. The station
+itself, after the tooling existed, took ~2 h of which ~40 min were the seven
+losing theories — measured, not estimated, from git and box timestamps.

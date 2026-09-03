@@ -125,4 +125,15 @@ the origin is what gives the xterm the keyboard.
 - **Relative pointer motion is unusable** (the guest's `opms` Y axis pins the
   pointer to the bottom edge under QEMU relative packets) — irrelevant to the
   station, whose motion is `x11warp`, but do not debug with `qmp-type --mouse`.
+- **OPEN — XFree86 mode switch pans the desktop.** After the pacing change to
+  60/60 (2026-09-03 03:15), one `labctl type` run into the xterm left the screen
+  panned (the 1024x768 virtual desktop shown through a smaller mode, the typed
+  line gone) — the signature of XFree86's Ctrl+Alt+KP_Plus mode switch, which
+  is possible because `Modes` lists `"800x600"` after `"1024x768"`. `labctl
+  reset` restores a clean golden. Fix: `Modes "1024x768"` only in XF86Config
+  (drop the 800x600 line from `scripts/build-guests/tiles/netbsd14/XF86Config`),
+  apply in-guest, then `checkpoint-guard recapture netbsd14`. Until then a
+  visitor who hits that chord gets a panned screen until the next reset.
+- **Key pacing is 60/60, not the 40/40 floor** — at 40/40 the guest dropped 3 of
+  37 typed characters; demoProgram.perCharMs is 120 to match.
 - **Network** is SLIRP-only; no retronet tap on this station.
