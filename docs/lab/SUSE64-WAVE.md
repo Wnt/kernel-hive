@@ -34,9 +34,32 @@ sees `hda` (QEMU HARDDISK, 4096 MB), `hdc` (ATAPI CD), `fd0`, and loads the
 | spa | Fable | `registry/posters/suse64.md`, hero + frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram` in the entry (the scaffold carries netbsd14's demoProgram as a placeholder — replace it) |
 | docs | sonnet-low (after golden) | `docs/guests/suse64.md`, `GUEST-TIERS.md`, release notes, `docs/README.md` |
 
-## Timeline (measured after landing with session-timeline.py)
+## Timeline (measured after landing with session-timeline.py; box clock = UTC+3)
 
-TODO(coordinator)
+| Milestone | Box time | Minutes from the operator's message (01:57) |
+|---|---|---|
+| CD1 staged and hashed (663 MB, ~1 min) | 02:00 | 3 |
+| smoke boot proven (linuxrc loading under KVM) | 02:02 | 5 |
+| `/os/suse64` published (smoke-rig.sh) | 02:07 | 10 |
+| ledger pushed, build/spa streams launched | 02:12 | 15 |
+| build + spa streams merged (2.3 min / 3 min each) | 02:20 | 23 |
+| wall 1 recognised (70 KiB/s KVM copy), rig restarted under TCG | 02:34 | 37 |
+| YaST2 install complete on disk (TCG, 10 min) | 02:49 | 52 |
+| wall 2 (k_smp lost interrupts) raced, `noapic` wins | 03:19 | 82 |
+| **usage-limit pause, every session on the box** | 03:24 – 06:24 | 87 – 267 |
+| golden #1 (twm) baked, restore-proven, staged | 06:43 | 286 (106 without the pause) |
+| golden #2 (KDE 1.1.2) baked, restore-proven, staged | 06:58 | 301 (121) |
+| main pushed 21383ec2, box-deploy, station-up, SPA deployed | 07:05 | 308 (**128 without the pause**) |
+
+Session split: 78 % coordinator model time (10 834 s of it the pause itself),
+9 % tools, 13 % waiting on agents. Agents: golden (Fable, 4 rounds), build
+(sonnet-low, 2.3 min), spa (Fable, 3 min), docs (sonnet-low, 2.4 min), one
+SCSI race runner (sonnet, killed unmeasured). Where the time went vs the
+10-minute bar: two guest walls that no sibling had met (2.2-era IDE PIO under
+KVM, an SMP kernel that cannot take interrupts on this machine type) plus a
+graphical installer that is 10 minutes even at TCG speed; a compose-on-the-host
+root (debian22's route, now in playbook §0) is the way past the first and a UP
+kernel chosen up front the way past the second.
 
 ## The wall, and the race (2026-09-03)
 
