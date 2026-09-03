@@ -32,9 +32,44 @@ main is serialized through it). Procedure: `ADD-NEW-OS-PLAYBOOK.md` §0.
 
 Shared fleet files: append own rows only, never reorder neighbours.
 
-## Timeline (measured after landing with session-timeline.py)
+## Timeline (measured from git commit times, box stamps and session-timeline.py; UTC)
 
-- 02:00 operator message (box clock) · 02:01 ISO staged · 02:04 installer booted in the sandbox · 02:08 `/os/redhat62` published (smoke rig) · TODO(coordinator)
+| Clock | +min | Milestone |
+|---|---|---|
+| 23:00 | 0 | operator message |
+| 23:01 | 1 | ISO staged on the box (671881216 B, sha256 verified) |
+| 23:04 | 4 | kickstart installer booted in the sandbox (framebuffer: anaconda newt) |
+| 23:08 | **8** | **viewable** — `/os/redhat62` published from the smoke rig (slot 181 claimed) |
+| 23:09 | 9 | ledger commit `d4ad2fcb` pushed; build + spa streams launched |
+| 23:12 / 23:14 | 12 / 14 | build (Sonnet, 1.5 min) and spa (Fable, 3 min) streams reported |
+| 23:13–23:30 | 13–30 | **the wall**: mke2fs at 27 KB/s; raced 7 theories (dma-on, kernel-irqchip=off, pentium3, tmpfs disk, cache=unsafe, ide0=dma, TCG) — TCG won at ~550 KB/s; load alert from the coordinator, pruned to 1 QEMU |
+| 23:32 | 32 | golden stream (Fable) launched on the TCG install; docs stream (Sonnet) launched |
+| 23:35 | 35 | docs stream reported; 23:48 origin/main merged, all gates green locally |
+| 00:18 | **78** | **golden baked** (KVM, UP kernel, DMA) and restore-proven; x11warp read back at 3 targets |
+| 00:24 | 84 | golden merged, checkpoint written, hero cut — "ready to land" state reached |
+| 00:24–03:24 | — | usage-limit pause, all nine wave sessions stopped together (not counted) |
+| 03:27 | 87 (active) | main `a8dabc52` pushed (gate green) and deployed |
+| 03:29 | 89 | `station-up.sh`: unit active, 5 manifests, restore 200, framebuffer shows the desktop |
+| 03:31 | **91** | **fully featured**: SPA built and deployed (poster + real hero) |
+
+Active wall-clock: viewable 8 min · golden 78 min · featured 91 min (plus a 3-hour
+usage-limit pause that hit every session at once). The 8-minute viewable beats
+pcgeos (6 min was the record; this run lost 2 min to two wrong tool paths).
+Everything after minute 13 was the wall.
+
+### Where the time went, and the fixes
+
+| Sink | Cost | Fix |
+|---|---|---|
+| kernel 2.2 IDE PIO under KVM: one KVM exit per 16-bit `outw`, ~28 µs each → 27 KB/s; mke2fs of a 4 GiB root never finished | ~17 min (race) + the install itself | **Race TCG first** for any 2.x-kernel install; better: the wall is the **SMP kernel** — anaconda saw QEMU's MP tables and installed `kernel-smp` as the LILO default even at `-smp 1`, and that kernel loops on `hda: lost interrupt` through the IO-APIC; the UP kernel + `hdparm -d1` does 60+ MB/s DMA under KVM. Builder now forces `linux-up` and `hdparm -d1` in `%post` |
+| `sed -i` does not exist in RH 6.2 (GNU sed 3.02) — both inittab edits in `%post` were silent no-ops | ~5 min in golden | `%post` uses `perl -pi -e`; the ledger's "best-guess truth" must be **checked on the disk** by the golden stream before the desktop is trusted |
+| Xwrapper's `pam_console` refuses `su - gallery` from inittab ("Authentication failed — cannot start X server") | ~5 min | `/etc/pam.d/xserver` → `pam_permit` in `%post` |
+| Every landing wipes the other waves' dark-launch overlays; three merges of origin/main with conflicts in the append-only shared files + generated files, duplicate render orders each time | ~6 min | Resolve as unions, `git checkout --theirs` the generated files, re-assign orders by max+1 (script in this session), regenerate; the coordinator now serializes landings |
+| Coordinator waiting idle on the golden stream (12 min + 13 min blocks) | model time | Nothing to do — the wall was serial; the streams that could run did |
+
+Lessons for the next 2.x-kernel Linux station: `-smp 1` is not enough — check `uname -r` for `smp`
+after install; budget the install disk at 1.5–2 GiB; race TCG vs KVM on the *installed* disk before
+committing the station's accel; `Option "no_bitblt"` + `Chipset "clgd5446"` for XF86_SVGA on cirrus.
 
 ## Golden stream findings (2026-09-03, Fable; every item framebuffer-proven on the smoke rig)
 
