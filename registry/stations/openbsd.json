@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "id": "openbsd",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 72,
+        "prelude": "",
+        "value": {
+          "key": "openbsd",
+          "script": "tiles/openbsd.sh",
+          "outputDir": "OPENBSD",
+          "class": "slow",
+          "estimated": "~6m",
+          "automation": "full",
+          "produces": "openbsd.qcow2 (OpenBSD 7.9 amd64 unattended autoinstall from a loopback HTTP set server + site79.tgz: fvwm desktop, ttyC0 autologin)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "openbsd",
+      "value": {
+        "os": "OpenBSD 7.9 (fvwm)",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "Return",
+        "kbd_reset": "Escape",
+        "kbd_note": "X11 desktop (fvwm); the xterm holds the keyboard (focus follows mouse). Type into the xterm.",
+        "audio_trigger": "none",
+        "note": "ABSOLUTE pointer: usb-tablet -> ums0/wsmouse1 -> xf86-input-ws with a 0..32767 InputClass calibration; AC97 audio",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/openbsd",
+      "qmp": "/data/vms/streamhost/stations/openbsd/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54177,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. usb-tablet absolute pointer (X InputClass MinX/MaxX 0..32767). disk.qcow2 is the only block device and carries the golden vmstate."
+    }
+  },
+  "render": {
+    "signalOrder": 74,
+    "stationsManifestOrder": 72,
+    "stationsManifestPrelude": "\n# openbsd (VMID 177) — OpenBSD 7.9 amd64 (2026), fvwm from base Xenocara; usb-tablet absolute pointer.\n",
+    "bringUpGroup": 0,
+    "bindingOrder": 84,
+    "bindingPrelude": "",
+    "goldenOrder": 72,
+    "actionMapOrder": 44
+  },
+  "stationDir": "openbsd",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54177,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "method": "qemu-usb-tablet",
+      "absolute": true,
+      "present": true,
+      "device": "usb-tablet (ums0 -> wsmouse1, X ws driver calibrated 0..32767)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 177
+  },
+  "guestDoc": "docs/guests/openbsd.md",
+  "credentialsRef": "guest/openbsd",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "openbsd",
+      "SH_QMP": "/data/vms/streamhost/stations/openbsd/qmp.sock",
+      "SH_PORT": "54177",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "abs",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/openbsd/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/openbsd/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 177,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "openbsd",
+        "--vmid",
+        "177",
+        "--udp",
+        "54177",
+        "--pointer",
+        "abs",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/openbsd/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/openbsd/station.env.fixture"
+      ],
+      "deviceSetId": "openbsd-current",
+      "launcher": "streamhost/stations/openbsd/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/openbsd/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 1024,
+      "smp": 1,
+      "vga": "none",
+      "deviceSetSummary": [
+        "-name streamhost-openbsd",
+        "-enable-kvm -m 1024 -smp 1",
+        "-machine pc-i440fx-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-drive file=/data/vms/streamhost/stations/openbsd/disk.qcow2,format=qcow2,if=virtio",
+        "-vga none -device VGA,edid=on,xres=1024,yres=768",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-usb -device usb-tablet",
+        "-netdev user,id=n0 -device virtio-net-pci,netdev=n0",
+        "-qmp unix:/data/vms/streamhost/stations/openbsd/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/openbsd/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "pc-i440fx-11.0 under KVM; bochs stdvga as -device VGA with a 1024x768 EDID (Xorg vesa), one virtio disk carrying the golden vmstate, usb-tablet, AC97, virtio-net on SLIRP; -smp 1 on purpose (2 vCPUs lose keyboard interrupts under X)"
+      },
+      "machine": "pc-i440fx-11.0"
+    },
+    "bringUpOrder": 84
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#f2c94c",
+    "eraLabel": "2026 · OpenBSD 7.9 — fvwm",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "openbsd",
+    "displayName": "OpenBSD 7.9",
+    "year": 2026,
+    "lineage": "4.4BSD-Lite → NetBSD 1.0 → OpenBSD 1.2 (1996, Theo de Raadt) → 7.9 (2026)",
+    "arch": "amd64, Xorg (Xenocara) vesa server",
+    "ramMB": 1024,
+    "era": "2020s",
+    "accent": "#f2c94c",
+    "eraSoftware": [
+      "fvwm 2.2.5",
+      "xterm",
+      "xcalc",
+      "xclock",
+      "xeyes",
+      "xedit",
+      "xman",
+      "ksh",
+      "pf",
+      "OpenSSH"
+    ],
+    "periodBrowser": "none in base (Firefox/Chromium via packages)",
+    "iconicApps": [
+      "fvwm",
+      "xterm",
+      "xcalc",
+      "xclock"
+    ],
+    "blurb": "OpenBSD 7.9, May 2026: the security-first BSD that gave the world OpenSSH, pf and LibreSSL, still shipping fvwm 2.2 as the default window manager in its own X tree, Xenocara — here on amd64 with the classic X applications one click away.",
+    "notes": "Live streamhost station. Cold boot autologs root on ttyC0 and starts X (vesa, 1024x768) with an xterm, xclock, xeyes and xcalc under fvwm; left- or right-click the desktop for the applications menu, middle-click for the window list. usb-tablet absolute pointer via an xf86-input-ws calibration InputClass. disk.qcow2 is the single block device and carries the golden vmstate. One vCPU on purpose: with two, the guest loses keyboard interrupts under X."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "openbsd",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "OpenBSD 7.9 fvwm desktop (Xorg vesa 1024x768x24): root xterm top-left, xclock and xeyes top-right, xcalc bottom-right; screen saver and DPMS off."
+  },
+  "migrationExceptions": [
+    "legacy-machine-alias"
+  ],
+  "notes": [
+    "scaffolded from alpine on 2026-09-03 (OPENBSD-WAVE); media: OpenBSD 7.9 amd64 cd79.iso + sets from ftp.spline.inf.fu-berlin.de (signify-verified by the installer), staged in /data/assets-staging/openbsd79"
+  ],
+  "demoProgram": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xlogo &"
+    ],
+    "runCommand": "xlogo &",
+    "perCharMs": 100
+  }
+}
