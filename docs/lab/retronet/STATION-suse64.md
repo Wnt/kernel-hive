@@ -7,6 +7,10 @@
 > list. Golden staged at `/data/gallery-guests/SUSE64/suse64-rn.qcow2`
 > (`golden`, VM_SIZE 84 MiB, VM_CLOCK `0000:12:04.997`). **Not yet deployed** —
 > the coordinator swaps the disk and restarts the station at landing.
+>
+> **One scene defect is OPEN and must be fixed before this lands** — the KDE
+> panel is hidden and two desktop icons are missing in the baked scene. Cause
+> found, fix not yet applied: see §The scene defect.
 
 ## Allocation (written by the wave coordinator; do not edit here)
 
@@ -270,3 +274,66 @@ then **CONTROL-D** (the maintenance shell says plainly that `reboot` and
 its disk** — on this station that is not optional hygiene, because the very same
 "disk is only consistent with its vmstate" property that breaks the golden's
 cold boot breaks a clone taken from a killed rig.
+
+
+## The scene defect — diagnosed, not yet fixed
+
+The baked scene regressed against the shipped golden in two ways: **the KDE
+panel is not visible** along the bottom, and the desktop icons are down to
+`CD-ROM` and `Floppy` (the shipped golden also has Trash, Autostart, Templates,
+Printer). Netscape is discoverable only as a taskbar entry, not as a panel icon.
+
+**The panel is HIDDEN, not missing, and the config says so.** `~/.kde/share/config/kpanelrc`
+in the baked guest reads:
+
+```
+[kpanel]
+BackgroundTexture=panel.xpm
+DateFont=helvetica,11,5,iso-8859-1,50,0
+TaskbarPosition=top
+PanelHidden=10000000
+PanelHiddenLeft=01111111
+```
+
+Two things follow. **`TaskbarPosition=top` is original and correct** — the thin
+strip along the top is the *taskbar*, which the shipped golden has too; that is
+not the regression. The regression is `PanelHidden` / `PanelHiddenLeft`, KDE 1's
+saved auto-hide state: kpanel is running but retracted, and the small unhide
+handle it leaves is visible in the bottom-right corner of every baked frame
+(`evidence/f6-scene.png`, `g2-restored.png`). The shipped golden looked right
+because its kpanel was running *un*-retracted with that state never written back;
+this session's kpanel was restarted and honoured the file.
+
+The desktop icons are `kfm -d` — KDE 1 draws the desktop from kfm, which had
+died in the cloned session. Restarting it (`kfm -d &`) brings the icons back and
+was observed doing so mid-session (`Floppy` and `CD-ROM` repainting in
+`g2-restored.png`); it simply had not finished before the budget ended.
+
+**The fix, for a 20-minute follow-up run** — none of it is a search:
+
+1. `loadvm golden` on the final device set.
+2. `killall kpanel`, set `PanelHidden=00000000` and `PanelHiddenLeft=00000000`
+   in `~/.kde/share/config/kpanelrc`, `kpanel &`. The Netscape `.kdelnk` already
+   written to `~/.kde/share/apps/kpanel/applnk/` should then appear on the panel
+   — **verify it visually; that is still unconfirmed.**
+3. `kfm -d &` for the desktop icons.
+4. Restart gtkicq and **wait for the status line to settle and HiveBot to go
+   Online** before capturing — at bake time the status bar still read
+   *"Connecting to Server…"* even though the gateway had logged the session, and
+   a freshly relaunched client shows HiveBot Offline for a few seconds first.
+5. `sync`, `delvm golden`, `savevm golden`, loadvm proof, restage.
+
+**A trap that cost this run its last minutes:** after `kpanel &` and `kfm -d &`
+the konsole loses keyboard focus, so the next `qmp-type.py` line goes nowhere
+and the screen does not change. Click the konsole (x11ptr to ~`550,450` + a QMP
+click) before every typed command that follows a GUI restart.
+
+## The gtkicqrc diff — still owed
+
+Also not captured: the `Section "Server"` line of the file gtkicq wrote on a
+clean Quit. The read-back command was in the same batch that lost focus above.
+This is the one question that decides whether seeding `gtkicqrc` from an ISO
+works: if the written file carries `Server "10.99.0.2"`, then the parser round-trips
+it and seeding is viable; if it carries `icq.mirabilis.com`, the value really
+does live only in the widget. Answer it in the follow-up run — it is one `grep`
+after a clean Quit.
