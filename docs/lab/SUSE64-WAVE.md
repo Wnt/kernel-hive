@@ -17,7 +17,7 @@ coordination" session allocated slot 180; landing is serialized through it.
 | render orders | as assigned by `stations-registry.py new --like freedos --slot 180` |
 | QEMU | `/opt/qemu-beos/bin/qemu-system-x86_64`, `pc-i440fx-11.0,acpi=off`, KVM, `-cpu host`, guest kernel booted `noapic` (the INSTALL ran under TCG — see "The wall"), 256 MB, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci` on SLIRP, no audio |
 | Release | SuSE Linux 6.4 (2000-03-28 README; retail six-CD set), i386: kernel 2.2.14, XFree86 3.3.6 (+4.0), KDE 1.1.2, YaST2 installer (YaST1 for admin) |
-| Media | archive.org item `suse-linux-6.4`, `suse-linux-6.4-cd1.iso` — **663 029 760 bytes**, sha256 `5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33`; staged `/data/assets-staging/suse64/` (labhost path) with `MANIFEST.sha256`. Only CD1 is used. |
+| Media | archive.org item `suse-linux-6.4`, `suse-linux-6.4-cd1.iso` — **663 029 760 bytes**, sha256 `5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33`; staged `/data/assets-staging/suse64/` (labhost path) with `MANIFEST.sha256`. CD2 `suse-linux-6.4-cd2.iso` — **650 475 520 bytes**, sha256 `87c994de3ded3f9ffd09c72451dbeb73d9b7af1a58e6b4fc2056cec5174790fa` — is used only for `suse/kde2/kbase.rpm` (KDE 1.1.2's base is on CD2; every other KDE 1 package and qtlib are on CD1 under `suse/kde1/`, `suse/xdev1/`). The 12 rpms are composed into `kde.iso` (genisoimage -R -J) and installed in-guest with rpm. |
 | Smoke rig | `/data/vms/sandbox/suse/smoke/` (`launch-smoke.sh [d|c]`, `run-daemon.sh`), published at `/os/suse64` |
 | Golden disk | staged to `/data/gallery-guests/SUSE64/suse64.qcow2`; the launcher copies it to the station dir on first start |
 
@@ -87,3 +87,19 @@ start QEMU with `-S`, `cont`, spam `spc` for ~6 s, then type the line
 (`/data/vms/sandbox/suse/race/k/lilo-race.sh`). `qmp-type.py --out` treats the
 path as a directory (`<out>/cur.png`). Relayed to the redhat62 wave, which hit the
 same symptom with `kernel-smp`.
+
+## Wall 3: YaST2 stage 2 and KDE (2026-09-03)
+
+After the first disk boot YaST2 runs a second stage (trigger file
+`/var/lib/YaST2/runme_at_boot`) whose X ignores keyboard and mouse under QEMU and
+whose BitBLT text is blank; it also wants CD2 for 54 packages, among them all of
+KDE. Skipped: boot `linux noapic single`, delete the trigger. KDE 1.1.2 is then
+installed from the composed `kde.iso` (see the ledger). Golden facts and the
+autologin mechanism are in `docs/guests/suse64.md` §Checkpoint. First golden
+(twm, before KDE): 90.4 MiB, VM_CLOCK 0:06:19, KVM, `hdparm -t` 58.72 MB/s.
+
+Guest userland traps (SuSE 6.4): `sed` has no `-i`; `mingetty` has no
+`--autologin` (use a `/sbin/autologin` wrapper: `exec </dev/tty1 >/dev/tty1 2>&1;
+exec /bin/login -f root`); `DISPLAYMANAGER=""` in rc.config does not stop xdm in
+runlevel 3 — remove the `rc3.d` links; `savevm` pauses the guest and a key sent
+meanwhile is discarded.

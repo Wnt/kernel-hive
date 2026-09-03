@@ -8,6 +8,11 @@
 #   2. Create a 1.5 GiB qcow2 disk in OUT_DIR.
 #   3. Boot it headless with the EXACT suse64 station device set (see
 #      docs/lab/SUSE64-WAVE.md allocation ledger), CD1 attached, -boot d.
+#   NOTE (measured 2026-09-03): after the YaST2 install, boot `linux noapic single`,
+#   delete /var/lib/YaST2/runme_at_boot (stage 2 is unusable under QEMU), install the
+#   UP kernel (rpm -Uvh --force /cdrom/suse/images/k_deflt.rpm; lilo), add
+#   `hdparm -d1 /dev/hda` to /sbin/init.d/boot.local, and install KDE 1.1.2 from a
+#   composed kde.iso (CD1 suse/kde1/*.rpm + suse/xdev1/qtlib.rpm + CD2 suse/kde2/kbase.rpm).
 #   4. Wait for the linuxrc/YaST2 boot screen (fb-wait.py --settle) and
 #      screendump it as proof the install media boots.
 #

@@ -87,6 +87,19 @@ paying that cost again.
 
 ## Checkpoint
 
+Measured on the rig (framebuffer): kernel `Linux 2.2.14 #1 Fri Mar 17 2000 i686` — the
+UP `k_deflt`, installed by hand over YaST2's `k_smp` (which loses every IDE and keyboard
+interrupt on `pc-i440fx-11.0,acpi=off`); `append = "noapic"` kept in lilo.conf, harmless.
+`hdparm -d1 /dev/hda` in `/sbin/init.d/boot.local` → `using_dma = 1 (on)`, `hdparm -t`
+58.72 MB/s under KVM. XFree86 3.3.6 `XF86_SVGA`, `Chipset "clgd5446"`, `Option
+"no_bitblt"`, 1024x768 at depth 16, PS/2 pointer on `/dev/psaux`. Autologin: inittab
+`1:123:respawn:/sbin/autologin` where `/sbin/autologin` is `exec </dev/tty1 >/dev/tty1
+2>&1; exec /bin/login -f root`, and `/root/.bash_profile` ends with `[ "$(tty)" =
+/dev/tty1 ] && exec startx`; xdm's rc3.d links removed. Network: eth0 `ne2k-pci`
+10.0.2.15/24, gw 10.0.2.2, dns 10.0.2.3 (rc.config). YaST2 stage 2 skipped (trigger
+`/var/lib/YaST2/runme_at_boot` deleted); KDE 1.1.2 installed from the composed `kde.iso`.
+
+
 The install (YaST2, package set, disk layout, LILO, `mke2fs` timing) above is
 proven on the golden stream's smoke boot. The desktop configuration below is
 the plan the golden bake follows; it becomes fact once that bake completes and
@@ -107,7 +120,7 @@ exec startkde
 `xhost +10.0.2.2` is what lets the x11warp pointer reach the guest's X server
 from the host side of the loopback forward on every restore.
 
-TODO(golden): VM_SIZE, VM_CLOCK, bake date, X server line
+TODO(golden): VM_SIZE, VM_CLOCK, bake date (KDE golden)
 
 ## Host-native capture path
 
