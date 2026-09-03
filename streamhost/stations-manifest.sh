@@ -1087,8 +1087,9 @@ emit ubuntu \
 emit redhat62 \
   --tile redhat62 --vmid 181 --udp 54181 --pointer abs --input-backend \
   x11warp --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
-  --fps 30 --launcher-file "$T/redhat62/qemu-streamhost.sh" \
-  --env-append-file "$T/redhat62/station.env.fixture"
+  --fps 30 --launcher-file "$T/redhat62/qemu-streamhost.sh" --aux-file \
+  "$T/redhat62/rn-tapnet.sh" --env-append-file \
+  "$T/redhat62/station.env.fixture"
 
 # freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0
 #   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)

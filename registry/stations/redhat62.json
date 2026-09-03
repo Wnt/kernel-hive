@@ -135,10 +135,12 @@
         "30",
         "--launcher-file",
         "$T/redhat62/qemu-streamhost.sh",
+        "--aux-file",
+        "$T/redhat62/rn-tapnet.sh",
         "--env-append-file",
         "$T/redhat62/station.env.fixture"
       ],
-      "deviceSetId": "redhat62-kickstart-cirrus-slirp",
+      "deviceSetId": "redhat62-cirrus-slirp-rntap",
       "launcher": "streamhost/stations/redhat62/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/redhat62/station.env.fixture",
       "binary": "qemu-system-x86_64",
@@ -154,7 +156,8 @@
         "-m 256 -smp 1 -rtc base=localtime",
         "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
         "-vga cirrus",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-netdev tap,id=n1,ifname=redhat62rn0,script=no,downscript=no -device ne2k_pci,netdev=n1,mac=\"$RN_REDHAT62_MAC\"",
         "-display dbus,p2p=on",
         "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
         "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -174,7 +177,8 @@
           "-m 256 -smp 1 -rtc base=localtime",
           "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -boot order=c -loadvm golden",
           "-vga cirrus",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+          "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6081-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+          "-netdev tap,id=n1,ifname=redhat62rn0,script=no,downscript=no -device ne2k_pci,netdev=n1,mac=\"$RN_REDHAT62_MAC\"",
           "-display dbus,p2p=on",
           "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
           "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -183,8 +187,11 @@
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the production device ledger; the kickstart install and the golden (2026-09-03, VM_CLOCK 0000:03:39.425, VM_SIZE 86.4 MiB) were baked on this exact set under KVM -cpu host (cirrus, IDE hda, ne2k_pci on SLIRP). KVM is viable because the golden boots the UP kernel (LILO default linux-up) with hdparm -d1 from rc.local: using_dma=1, 69.57 MB/s. The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate."
-      }
+        "reason": "tracked verbatim launcher is the production device ledger. Device set changed 2026-09-03 for the retronet join: a SECOND ne2k_pci on the bridged tap redhat62rn0 (MAC from gitignored registry/local.env RN_REDHAT62_MAC; the committed launcher carries the placeholder 02:00:00:00:00:21) and restrict=on on the SLIRP netdev. The golden was re-baked on this exact set - COLD BOOT first, then savevm - 2026-09-03 08:52:21 UTC, VM_SIZE 80.5 MiB, VM_CLOCK 0000:02:11.960, and restore-proven under it. KVM is still viable because the golden boots the UP kernel (LILO default linux-up) with hdparm -d1 from rc.local. The SLIRP hostfwd 127.0.0.1:6081 -> :6000 is host-side state for the x11warp pointer, not vmstate; both NICs share IRQ 11 in the guest and both work."
+      },
+      "auxFiles": [
+        "streamhost/stations/redhat62/rn-tapnet.sh"
+      ]
     },
     "bringUpOrder": 83
   },
@@ -239,5 +246,21 @@
   },
   "notes": [
     "scaffolded from redstar2 on 2026-09-02; museum + spa filled by the spa stream; no demoProgram — GNOME 1.0 has no safe keyboard-only demo sequence"
-  ]
+  ],
+  "retronet": {
+    "planes": [
+      "web",
+      "icq"
+    ],
+    "address": "10.99.0.33",
+    "addressing": "static",
+    "link": "tap redhat62rn0 on vmbr-rn",
+    "guard": "REDHAT62RN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-redhat62.md"
+  },
+  "network": {
+    "status": "host-only",
+    "note": "retronet web+ICQ planes: a SECOND ne2k_pci NIC is a real bridged port on vmbr-rn via the persistent tap redhat62rn0, statically addressed 10.99.0.33/24 in the guest (ifcfg-eth1, BOOTPROTO=none) with NO default route on either NIC - so it reaches the gateway CT 10.99.0.2 and nothing else, in either direction; the bridge has no uplink. The FIRST NIC stays on user-mode SLIRP with restrict=on and carries only the loopback X forward 127.0.0.1:6081 -> 10.0.2.15:6000 that the x11warp pointer backend needs; eth0 is static 10.0.2.15/24 so nothing on the SLIRP side hands out a route. docs/lab/retronet/STATION-redhat62.md"
+  }
 }

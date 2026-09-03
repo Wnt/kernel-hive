@@ -101,6 +101,13 @@
       "onboarded": true,
       "greeter": "aim",
       "aimScreenName": "win311"
+    },
+    {
+      "station": "redhat62",
+      "uin": "18100",
+      "nick": "redhat62",
+      "client": "gaim0599",
+      "onboarded": true
     }
   ]
 }
