@@ -43,6 +43,31 @@ freebsd411 (178), pcbsd (179); landings serialised through the coordination sess
 - `login -f root` from `/etc/ttys` works as the console autologin; `kill -HUP 1`
   makes init re-read ttys without a reboot.
 
+## Golden and the two late findings (2026-09-03)
+
+- `savevm golden` on the smoke rig with the station device set: VM_SIZE 911 MiB,
+  VM_CLOCK 0001:00:08; `loadvm golden` after a pointer move + click restored a
+  pixel-identical frame (PIL diff bbox None). Disk staged to
+  `/data/vms/streamhost/stations/openbsd/disk.qcow2` and (same bytes) to
+  `/data/gallery-guests/OPENBSD/openbsd.qcow2`.
+- **Resolution:** `-device VGA,edid=on,xres=1024,yres=768` did NOT pin Xorg's
+  vesa driver (it took 1920x1200); `20-kh-screen.conf` (Monitor PreferredMode +
+  Screen Modes "1024x768") does. Both stay.
+- **HMP `mouse_move` is relative** and goes to the PS/2 mouse; every "pointer
+  wall" frame before the QMP `input-send-event` abs probe was the wrong device.
+  With the InputClass the tablet is 1:1 (centre pixel exact, corners within the
+  menu title). `smoke/absprobe.py` is the probe.
+- **OPEN — keyboard under X:** keys sent over QMP `input-send-event` (40/40 and
+  200/200 ms) arrive partially ("abcdef" -> a b f) and a lost release leaves the
+  last key autorepeating until an explicit release; the wscons text console
+  types cleanly at the default pacing; a `usb-kbd` race clone lost keys the same
+  way, so the emulated controller is not the cause. Not yet reproduced through
+  the daemon's D-Bus key path — the operator's first browser session is the
+  test. Fixture pacing set to 100/100 pending measurement.
+- `system_reset` leaves FFS dirty: single-user needs `fsck -y` before
+  `mount -uw /`; DHCP is not up in single-user (`ifconfig vio0 10.0.2.15/24 up;
+  route add default 10.0.2.2`).
+
 ## Streams (each `wt.sh new openbsd-<stream> --from openbsd`, 4-minute stop)
 
 | Stream | Model | Owns |

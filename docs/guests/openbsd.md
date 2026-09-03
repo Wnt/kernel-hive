@@ -151,13 +151,13 @@ is what keeps the vesa driver off its native 1920x1200 preferred mode.
 
 Golden baked by the coordinator; `loadvm` restores RAM + disk together (see
 `streamhost/stations/openbsd/station.env.fixture` for the runtime pointer
-facts). TODO(golden): record the measured `VM_SIZE` / `VM_CLOCK` from the
+facts). golden baked 2026-09-03 03:08 on the smoke rig with the station device set: VM_SIZE 911 MiB, VM_CLOCK 0001:00:08; one loadvm restore proven pixel-identical (framebuffer diff empty): record the measured `VM_SIZE` / `VM_CLOCK` from the
 coordinator's bake and `loadvm` proof here once landed.
 
 - Snapshot name: `golden`, saved via QMP `human-monitor-command` `savevm golden`.
 - Carrier disk: `disk.qcow2` — the ONLY block device — staged at
   `/data/vms/streamhost/stations/openbsd/disk.qcow2`.
-- Restore proven: TODO(golden) — one `loadvm` cycle on a sandbox clone, per
+- Restore proven: golden baked 2026-09-03 03:08 on the smoke rig with the station device set: VM_SIZE 911 MiB, VM_CLOCK 0001:00:08; one loadvm restore proven pixel-identical (framebuffer diff empty) — one `loadvm` cycle on a sandbox clone, per
   the operator's no-proof-gate rule (a restoring golden is enough).
 
 ## Credentials
