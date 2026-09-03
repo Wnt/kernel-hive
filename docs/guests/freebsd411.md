@@ -104,3 +104,29 @@ Reset restores `disk.qcow2` to the golden checkpoint.
 - Shares the X + KDE bring-up tail with the `pcbsd` wave (FreeBSD 6.3, KDE
   3.5.8, display `:79`) — the two waves coordinate on whoever solves a piece
   first.
+
+## Retronet
+
+`freebsd411` joined the retronet on **2026-09-03** through a **second, bridged
+NIC** — `rtl8139` on tap `freebsd411rn0` on `vmbr-rn`, guest `rl0`, DHCP-reserved
+**10.99.0.35**, DNS `10.99.0.2`, no default gateway. The station's original slirp
+`ne2k_pci` is unchanged and now carries **only** the x11warp pointer forward
+(`6078 → 10.0.2.15:6000`), because OSCAR cannot traverse slirp and the NE2000's
+16-bit PIO is as slow under KVM as the IDE path this station already avoids.
+
+- **Web plane — proven.** Konqueror 3.3.2 renders `http://search.retronet/` with
+  no proxy configured: DHCP hands it the gateway as its resolver, every name
+  resolves to `10.99.0.2`, and the gateway's `:80` origin serves the museum
+  corpus by `Host`. Frame:
+  `/data/vms/streamhost/stations/freebsd411/evidence/retronet-konqueror-search-retronet-20260903.png`.
+- **ICQ plane — wired, not signed in.** Kopete 0.9.1 is installed
+  (`kdenetwork-3.3.2` from the FreeBSD 4.11 package archive — it is **not** on the
+  `disc1-kde` ISO), and the gateway account UIN **17800** exists and is open. The
+  client is not yet configured, so the roster row is `onboarded: false`.
+- Containment is the fleet pattern: `streamhost/stations/freebsd411/rn-tapnet.sh`
+  creates the persistent tap and the fail-closed `FREEBSD411RN-IN` chain (scoped
+  to both the guest IP and its MAC) on every launcher start.
+
+The new NIC is a **new device set**, so the golden must be re-baked by a cold
+boot on the new launcher before this ships. Full detail, and the list of what is
+still open: [`docs/lab/retronet/STATION-freebsd411.md`](../lab/retronet/STATION-freebsd411.md).

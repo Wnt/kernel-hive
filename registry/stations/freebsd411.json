@@ -64,7 +64,7 @@
   "render": {
     "signalOrder": 76,
     "stationsManifestOrder": 74,
-    "stationsManifestPrelude": "\n# freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0\n#   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)\n#   carrying the golden vmstate, ne2k_pci SLIRP with the loopback X forward 6078->6000 for the\n#   x11warp absolute pointer (display :78); keys + buttons ride the PS/2 path.\n",
+    "stationsManifestPrelude": "\n# freebsd411 (VMID 178) \u2014 FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0\n#   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)\n#   carrying the golden vmstate, ne2k_pci SLIRP with the loopback X forward 6078->6000 for the\n#   x11warp absolute pointer (display :78); keys + buttons ride the PS/2 path.\n",
     "bringUpGroup": 1,
     "bindingOrder": 85,
     "bindingPrelude": "",
@@ -184,14 +184,14 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#ab2b28",
-    "eraLabel": "2005 · FreeBSD 4.11 — KDE 3.3.2",
+    "eraLabel": "2005 \u00b7 FreeBSD 4.11 \u2014 KDE 3.3.2",
     "pointerRel": false
   },
   "museum": {
     "id": "freebsd411",
     "displayName": "FreeBSD 4.11",
     "year": 2005,
-    "lineage": "386BSD → FreeBSD 1.0 (1993) → 2.x → 3.x → 4.0 → 4.11 (2005, the last of the 4.x line) → 5/6 → FreeBSD 15",
+    "lineage": "386BSD \u2192 FreeBSD 1.0 (1993) \u2192 2.x \u2192 3.x \u2192 4.0 \u2192 4.11 (2005, the last of the 4.x line) \u2192 5/6 \u2192 FreeBSD 15",
     "arch": "i386, XFree86 4.4.0 (vesa driver), KDE 3.3.2",
     "ramMB": 256,
     "era": "2000s",
@@ -213,7 +213,7 @@
       "Kate",
       "KCalc"
     ],
-    "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line — the FreeBSD that ran Yahoo!, Hotmail and a generation of ISPs — here with the full KDE 3.3.2 desktop from the release CD, on the i386 it was built for.",
+    "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line \u2014 the FreeBSD that ran Yahoo!, Hotmail and a generation of ISPs \u2014 here with the full KDE 3.3.2 desktop from the release CD, on the i386 it was built for.",
     "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.4.0 (vesa driver on the emulated VGA, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
   },
   "emulator": {
@@ -234,7 +234,7 @@
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from netbsd14 on 2026-09-02 (same pc-i440fx-11.0/KVM/ne2k_pci device set, but -vga std (vesa) and a SCSI disk on lsi53c895a instead of cirrus + IDE — see docs/lab/FREEBSD411-WAVE.md, x11warp pointer route); media: 4.11-RELEASE-i386-disc1-kde.iso from ftp-archive.freebsd.org (base + XFree86 4.4.0 + KDE 3.3.2 on one disc)"
+    "scaffolded from netbsd14 on 2026-09-02 (same pc-i440fx-11.0/KVM/ne2k_pci device set, but -vga std (vesa) and a SCSI disk on lsi53c895a instead of cirrus + IDE \u2014 see docs/lab/FREEBSD411-WAVE.md, x11warp pointer route); media: 4.11-RELEASE-i386-disc1-kde.iso from ftp-archive.freebsd.org (base + XFree86 4.4.0 + KDE 3.3.2 on one disc)"
   ],
   "demoProgram": {
     "label": "Type a few commands into the root Konsole",
@@ -245,5 +245,17 @@
     ],
     "runCommand": "kcalc &",
     "perCharMs": 80
+  },
+  "retronet": {
+    "planes": [
+      "web",
+      "icq"
+    ],
+    "address": "10.99.0.35",
+    "addressing": "dhcp",
+    "link": "tap freebsd411rn0 on vmbr-rn",
+    "guard": "FREEBSD411RN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-freebsd411.md"
   }
 }

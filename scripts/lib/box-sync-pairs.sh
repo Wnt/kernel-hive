@@ -328,6 +328,7 @@ box_sync_load_pairs() {
   # icbm-watchdog.sh is what keeps ICBM signed on to the gateway -- ICBM .71 has
   # no auto-reconnect of its own. See docs/lab/retronet/STATION-beos.md.
   box_sync_add_pair beos-rn-tapnet streamhost/stations/beos/rn-tapnet.sh "$BOX_ROOT/stations/beos/rn-tapnet.sh" exact repo
+  box_sync_add_pair freebsd411-rn-tapnet streamhost/stations/freebsd411/rn-tapnet.sh "$BOX_ROOT/stations/freebsd411/rn-tapnet.sh" exact repo
   box_sync_add_pair beos-bootscript streamhost/stations/beos/UserBootscript "$BOX_ROOT/stations/beos/UserBootscript" exact repo
   box_sync_add_pair beos-icbm-watchdog streamhost/stations/beos/icbm-watchdog.sh "$BOX_ROOT/stations/beos/icbm-watchdog.sh" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
