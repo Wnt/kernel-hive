@@ -14,7 +14,7 @@ freebsd411 (178), pcbsd (179); landings serialised through the coordination sess
 | slot / UDP / VMID | 177 / 54177 / 177 |
 | loopback HTTP (install only) | 127.0.0.1:8079 (`kh-claim port 8079`), released with the smoke rig |
 | render orders | as assigned by `stations-registry.py new --like alpine --slot 177` |
-| QEMU | host `qemu-system-x86_64` (pve 11.0.2), `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB, 2 vCPU, `-vga none -device VGA,edid=on,xres=1024,yres=768`, one virtio qcow2 (4 GiB), `virtio-net-pci` on SLIRP, `-usb -device usb-tablet`, AC97 |
+| QEMU | host `qemu-system-x86_64` (pve 11.0.2), `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB, **1 vCPU** (2 lose keyboard interrupts, see below), `-vga none -device VGA,edid=on,xres=1024,yres=768`, one virtio qcow2 (4 GiB), `virtio-net-pci` on SLIRP, `-usb -device usb-tablet`, AC97 |
 | Release | OpenBSD 7.9 amd64 (released 2026-05; kernel `GENERIC.MP #449`, built Wed May 6 2026) |
 | Media | mirror `https://ftp.spline.inf.fu-berlin.de/pub/OpenBSD/7.9/amd64/` (cdn.openbsd.org ran at 0.8 MB/s from labhost, fu-berlin at 59 MB/s): `cd79.iso` 11 829 248 B, `bsd` 32 976 428, `bsd.mp` 33 107 757, `bsd.rd` 4 848 172, `base79.tgz` 535 342 217, `man79.tgz` 8 608 220, `xbase79.tgz` 48 983 459, `xfont79.tgz` 23 575 522, `xserv79.tgz` 12 098 678, `xshare79.tgz` 4 672 246, `SHA256`, `SHA256.sig`; every file matches the release `SHA256` (sha256sum on labhost) and the installer signify-verifies them against `SHA256.sig`; staged in `/data/assets-staging/openbsd79/` |
 | Install | UNATTENDED: `cd79.iso` boots bsd.rd; at the `(I)nstall … (A)utoinstall` prompt type `a`, at `Response file location?` type `http://10.0.2.2:8079/install.conf`; sets over HTTP from the same loopback server (`python3 -m http.server 8079 --bind 127.0.0.1` on labhost, 10.0.2.2 from the guest), `Set name(s) = -comp* -game* +site* done`, `site79.tgz` carries the whole desktop config; `Exit to … = halt` (QEMU stays up at the halt screen — kill by pidfile, relaunch `-boot c`) |
@@ -57,13 +57,15 @@ freebsd411 (178), pcbsd (179); landings serialised through the coordination sess
   wall" frame before the QMP `input-send-event` abs probe was the wrong device.
   With the InputClass the tablet is 1:1 (centre pixel exact, corners within the
   menu title). `smoke/absprobe.py` is the probe.
-- **OPEN — keyboard under X:** keys sent over QMP `input-send-event` (40/40 and
-  200/200 ms) arrive partially ("abcdef" -> a b f) and a lost release leaves the
-  last key autorepeating until an explicit release; the wscons text console
-  types cleanly at the default pacing; a `usb-kbd` race clone lost keys the same
-  way, so the emulated controller is not the cause. Not yet reproduced through
-  the daemon's D-Bus key path — the operator's first browser session is the
-  test. Fixture pacing set to 100/100 pending measurement.
+- **Keyboard under X — SOLVED by a race (rule 14):** with `-smp 2` keys sent
+  over QMP `input-send-event` at 40/40 … 200/200 arrived partially ("abcdef" →
+  a b f) and lost releases left the kernel's raw-mode autorepeat flooding
+  (`xset r off` changed nothing, so not X's repeat); the wscons text console typed
+  cleanly; a `usb-kbd` clone lost keys the same way. Theories raced on
+  `rig-clone.sh` clones: `-machine pc-i440fx-11.0,acpi=off` and `-smp 1` BOTH
+  typed the 40-char line complete at 40/40 → keyboard-interrupt delivery on the
+  2-vCPU IOAPIC config, not pacing. Shipped `-smp 1` (ACPI power-off kept),
+  fixture pacing at the 40/40 floor, golden re-baked on that device set.
 - `system_reset` leaves FFS dirty: single-user needs `fsck -y` before
   `mount -uw /`; DHCP is not up in single-user (`ifconfig vio0 10.0.2.15/24 up;
   route add default 10.0.2.2`).

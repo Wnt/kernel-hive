@@ -119,7 +119,7 @@ const DEMO_PROGRAMS = {
       "xlogo &"
     ],
     "runCommand": "xlogo &",
-    "perCharMs": 220
+    "perCharMs": 100
   },
   "oricatmos": {
     "label": "Type in a demo program",

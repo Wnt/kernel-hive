@@ -12,6 +12,9 @@
 #     -vga std, with an EDID whose preferred mode pins the Xorg vesa server to
 #     1024x768 (plain -vga std advertises 1920x1200 and X takes it).
 #   * usb-tablet -> ums0/wsmouse0 -> xf86-input-ws: ABSOLUTE pointer.
+#   * -smp 1 ON PURPOSE: with 2 vCPUs (IOAPIC) the guest loses PS/2 AND USB keyboard
+#     interrupts under X (releases vanish, wskbd raw-mode autorepeat floods); one vCPU
+#     (or acpi=off) types a 40-char line clean at 40/40 — measured 2026-09-03.
 #   * AC97 (auich) -> sndio -> dbus audiodev.
 #   * virtio-net on SLIRP (vio0, autoconf): the guest can reach out, nothing reaches in.
 # Kill only by pidfile.
@@ -31,7 +34,7 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm go
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-x86_64 \
   -name streamhost-openbsd \
-  -enable-kvm -m 1024 -smp 2 \
+  -enable-kvm -m 1024 -smp 1 \
   -machine pc-i440fx-11.0 -cpu host \
   -rtc base=localtime \
   -boot c \

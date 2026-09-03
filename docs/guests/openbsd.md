@@ -89,7 +89,7 @@ console, which would corrupt any file typed live.
 
 ```
 qemu-system-x86_64 -name streamhost-openbsd \
-  -enable-kvm -m 1024 -smp 2 \
+  -enable-kvm -m 1024 -smp 1 (two vCPUs lose keyboard interrupts under X; measured 2026-09-03) \
   -machine pc-i440fx-11.0 -cpu host \
   -rtc base=localtime \
   -boot c \

@@ -138,11 +138,11 @@
       "accel": "kvm",
       "cpu": "host",
       "memoryMB": 1024,
-      "smp": 2,
+      "smp": 1,
       "vga": "none",
       "deviceSetSummary": [
         "-name streamhost-openbsd",
-        "-enable-kvm -m 1024 -smp 2",
+        "-enable-kvm -m 1024 -smp 1",
         "-machine pc-i440fx-11.0 -cpu host",
         "-rtc base=localtime",
         "-boot c",
@@ -157,7 +157,7 @@
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under KVM; bochs stdvga as -device VGA with a 1024x768 EDID (Xorg vesa), one virtio disk carrying the golden vmstate, usb-tablet, AC97, virtio-net on SLIRP"
+        "reason": "pc-i440fx-11.0 under KVM; bochs stdvga as -device VGA with a 1024x768 EDID (Xorg vesa), one virtio disk carrying the golden vmstate, usb-tablet, AC97, virtio-net on SLIRP; -smp 1 on purpose (2 vCPUs lose keyboard interrupts under X)"
       },
       "machine": "pc-i440fx-11.0"
     },
@@ -199,7 +199,7 @@
       "xclock"
     ],
     "blurb": "OpenBSD 7.9, May 2026: the security-first BSD that gave the world OpenSSH, pf and LibreSSL, still shipping fvwm 2.2 as the default window manager in its own X tree, Xenocara — here on amd64 with the classic X applications one click away.",
-    "notes": "Live streamhost station. Cold boot autologs root on ttyC0 and starts X (vesa, 1024x768) with an xterm, xclock, xeyes and xcalc under fvwm; left- or right-click the desktop for the applications menu, middle-click for the window list. usb-tablet absolute pointer via an xf86-input-ws calibration InputClass. disk.qcow2 is the single block device and carries the golden vmstate."
+    "notes": "Live streamhost station. Cold boot autologs root on ttyC0 and starts X (vesa, 1024x768) with an xterm, xclock, xeyes and xcalc under fvwm; left- or right-click the desktop for the applications menu, middle-click for the window list. usb-tablet absolute pointer via an xf86-input-ws calibration InputClass. disk.qcow2 is the single block device and carries the golden vmstate. One vCPU on purpose: with two, the guest loses keyboard interrupts under X."
   },
   "emulator": {
     "family": "QEMU",
@@ -231,6 +231,6 @@
       "xlogo &"
     ],
     "runCommand": "xlogo &",
-    "perCharMs": 220
+    "perCharMs": 100
   }
 }
