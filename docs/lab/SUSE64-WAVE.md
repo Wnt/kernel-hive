@@ -15,7 +15,7 @@ coordination" session allocated slot 180; landing is serialized through it.
 | slot / UDP / VMID | 180 / 54180 / 180 (kh-claimed by `smoke-rig.sh`, session `suse`) |
 | X forward (host loopback → guest) | 127.0.0.1:6080 → 10.0.2.15:6000, `SH_X11WARP_DISPLAY=127.0.0.1:80` |
 | render orders | as assigned by `stations-registry.py new --like freedos --slot 180` |
-| QEMU | `/opt/qemu-beos/bin/qemu-system-x86_64`, `pc-i440fx-11.0,acpi=off`, **TCG** (`-accel tcg -cpu pentium3` — see "The wall"), 256 MB, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci` on SLIRP, no audio |
+| QEMU | `/opt/qemu-beos/bin/qemu-system-x86_64`, `pc-i440fx-11.0,acpi=off`, KVM, `-cpu host`, guest kernel booted `noapic` (the INSTALL ran under TCG — see "The wall"), 256 MB, 1 vCPU, `-vga cirrus`, one IDE qcow2 (4 GiB), `ne2k_pci` on SLIRP, no audio |
 | Release | SuSE Linux 6.4 (2000-03-28 README; retail six-CD set), i386: kernel 2.2.14, XFree86 3.3.6 (+4.0), KDE 1.1.2, YaST2 installer (YaST1 for admin) |
 | Media | archive.org item `suse-linux-6.4`, `suse-linux-6.4-cd1.iso` — **663 029 760 bytes**, sha256 `5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33`; staged `/data/assets-staging/suse64/` (labhost path) with `MANIFEST.sha256`. Only CD1 is used. |
 | Smoke rig | `/data/vms/sandbox/suse/smoke/` (`launch-smoke.sh [d|c]`, `run-daemon.sh`), published at `/os/suse64` |
@@ -54,8 +54,9 @@ same; `-accel tcg` runs the identical install ~20x faster. Race (3-QEMU cap):
 | rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | **WIN** — CD boot to YaST2 60 s, copy 1.5 MiB/s (47.6 MB/31 s), all 281 packages + LILO in 10 min |
 | `lsi53c895a` SCSI disk under KVM (DMA by design, `ncr53c8xx` module) | sonnet | UNMEASURED, killed at 12 min: under the same load the installer's own 47 MB ramdisk load from the ATAPI CD (PIO too) had not finished, so the theory never reached mke2fs; the 3-QEMU cap went to the TCG rig |
 
-Decision: the station runs under TCG (sunos414 precedent); golden + binary + device
-set are one combination, so the golden is baked under TCG too.
+Decision (revised after wall 2): TCG is the install-time tool only; the station runs
+under KVM with `noapic`, and the golden is baked under KVM (a TCG station burns a core
+whenever unpaused).
 
 ## Wall 2: the installed SMP kernel loses every interrupt (2026-09-03)
 

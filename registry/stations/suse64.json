@@ -140,20 +140,20 @@
         "--env-append-file",
         "$T/suse64/station.env.fixture"
       ],
-      "deviceSetId": "suse64-tcg-cirrus-x11warp-golden",
+      "deviceSetId": "suse64-kvm-noapic-cirrus-x11warp-golden",
       "launcher": "streamhost/stations/suse64/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/suse64/station.env.fixture",
       "binary": "/opt/qemu-beos/bin/qemu-system-x86_64",
       "machine": "pc-i440fx-11.0,acpi=off",
-      "accel": "tcg",
-      "cpu": "pentium3",
+      "accel": "kvm",
+      "cpu": "host",
       "memoryMB": 256,
       "smp": 1,
       "vga": "cirrus",
       "deviceSetSummary": [
         "-name streamhost-suse64",
-        "-accel tcg -cpu pentium3 -m 256 -smp 1",
-        "-machine pc-i440fx-11.0,acpi=off",
+        "-enable-kvm -m 256 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off -cpu host",
         "-rtc base=localtime",
         "-boot c",
         "-vga cirrus",
@@ -165,7 +165,7 @@
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under TCG (2.2 IDE PIO is a KVM exit per outw) with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6080->6000 for x11warp; no audio device"
+        "reason": "pc-i440fx-11.0 under KVM (k_smp booted noapic; the install ran under TCG because 2.2 IDE PIO is a KVM exit per outw) with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6080->6000 for x11warp; no audio device"
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",
