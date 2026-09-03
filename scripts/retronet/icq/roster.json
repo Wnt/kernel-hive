@@ -101,6 +101,13 @@
       "onboarded": true,
       "greeter": "aim",
       "aimScreenName": "win311"
+    },
+    {
+      "station": "pcbsd",
+      "uin": "17900",
+      "nick": "pcbsd",
+      "client": "unix-oscar",
+      "onboarded": true
     }
   ]
 }

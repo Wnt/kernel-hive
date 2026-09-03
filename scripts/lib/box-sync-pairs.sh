@@ -359,6 +359,12 @@ box_sync_load_pairs() {
   # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
   box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
 
+  # pcbsd retronet WEB + ICQ planes: same mirror-pair shape. PC-BSD 1.5.1 browses
+  # the corpus with Konqueror 3.5.8 and signs into the OSCAR gateway with Kopete
+  # 0.12.7 (UIN 17900) over tap pcbsdrn0. Without this pair the launcher dies at
+  # `bash "$B/rn-tapnet.sh" up`. See docs/lab/retronet/STATION-pcbsd.md.
+  box_sync_add_pair pcbsd-rn-tapnet streamhost/stations/pcbsd/rn-tapnet.sh "$BOX_ROOT/stations/pcbsd/rn-tapnet.sh" exact repo
+
   # rhapsody retronet WEB plane: same mirror-pair shape again. The generic
   # launcher sweep carries qemu-streamhost.sh, but NOT the helper it calls, so
   # without this pair the box checkout has rn-tapnet.sh and the station dir does
