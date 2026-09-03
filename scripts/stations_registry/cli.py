@@ -188,6 +188,14 @@ def main() -> int:
         "instead of the bare Tier N template; --tier/--archetype default to the sibling's",
     )
     new.add_argument(
+        "--tuple",
+        dest="tuple_arg",
+        metavar="BODY,MONITOR,KEYBOARD,MOUSE",
+        help="with --like: the new station's SPA scene hardware tuple. REQUIRED — a copied "
+        "tuple fails spa/src/scene/machines.test.ts, which every wave of 2026-09-03 "
+        "discovered at push time. `new --like` prints free combinations when it refuses.",
+    )
+    new.add_argument(
         "--production",
         action="store_true",
         help="with --like: scaffold straight to lifecycle=production, enabled=true "
@@ -235,7 +243,9 @@ def main() -> int:
             return cmd_explain(ns.id)
         if command == "new":
             if ns.like:
-                return cmd_new_like(ns.id, ns.like, ns.slot, ns.production)
+                return cmd_new_like(ns.id, ns.like, ns.slot, ns.production, ns.tuple_arg)
+            if ns.tuple_arg:
+                raise RegistryError("new: --tuple applies to the --like scaffold only")
             if ns.tier is None or ns.archetype is None:
                 raise RegistryError("new: --tier and --archetype are required unless --like is given")
             return cmd_new(ns.id, ns.tier, ns.archetype, ns.slot)
