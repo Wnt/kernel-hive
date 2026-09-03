@@ -125,9 +125,69 @@ already reformatted (`>etc/HOSTNAME`) and silently applied nothing — check the
 composed tree for your marker before booting. Fixture keys: `SH_INPUT_BACKEND=x11warp`,
 `SH_X11WARP_DISPLAY=127.0.0.1:84`; registry pointer `x11-warp-absolute`, abs.
 
+## Phase 3 — the retronet: web plane, ICQ plane, and an exec channel (2026-09-03)
+
+Full write-up: [`docs/lab/retronet/STATION-slackware.md`](retronet/STATION-slackware.md).
+One worker, branch `slackware-rn`, rig `/data/vms/sandbox/slackware-rn/rig/`.
+
+**What landed.** The station's single `ne2k_isa` moved off slirp onto a bridge
+port (`tap slackwarern0` on `vmbr-rn`, unique MAC, static `10.99.0.31/24`, no
+default route), and that one link now carries four things: the x11warp absolute
+pointer (`SH_X11WARP_DISPLAY=10.99.0.31:0`, `xhost +10.99.0.1`), the museum web
+(**Arena beta-2b** from the distribution's own `xap1` series, through the
+gateway's `:3128` **proxy** door — Arena predates `Host:` and cannot use the `:80`
+origin), ICQ (**micq 0.4.3**, UIN `18400`, the pre-OSCAR **UDP 4000** door that
+`beos` already uses), and a **new exec channel** (`inetd` + `in.telnetd` behind
+`tcpd`, `telnet_unix_e`). Discoverability: a `web` dock button in the slot the
+stock `system.fvwm2rc95` already reserved for Netscape, plus `Web browser` and
+`ICQ (retronet)` as the first two Start-menu entries.
+
+**Design chosen: (a), one NIC on the tap.** The alternative — keep slirp for
+x11warp and add a *second* NIC on the tap, the `amix` shape — was rejected
+before it was tried: labhost reaches the guest's X server perfectly well over
+the bridge (that is exactly what `solaris` does for warpd at `10.99.0.14:7777`),
+so the second NIC would buy nothing and cost a second `ne` module instance at a
+different `io`/`irq`, a second address to contain, and a bigger device set in
+the vmstate. Design (a) was proven on the first boot: ping, telnet `:23` and X
+`:6000` all answered.
+
+**Three walls, and what they actually were.**
+
+| Wall | What it was |
+|---|---|
+| No graphical ICQ client exists for libc5/1997 | True, and not worth fighting: GnomeICU/kicq/licq all need GTK+/Qt, and climm 0.6.4 (the `solaris` client) is C99 against `gcc 2.7.2.3`. micq 0.4.3 is ~10 files of C89 with no dependencies and speaks ICQ v5, which a **bridged** station can reach. The IM surface is a terminal client in its own xterm, exactly as `solaris` ran climm in a `dtterm` |
+| Building it host-side in a chroot | **Does not work on this box.** `/bin/ls` runs under `chroot`; `bash` dies with `Out of virtual memory!` and `gcc` with `virtual memory exhausted` — libc5's `sbrk` malloc against a modern mmap layout. `setarch linux32 -L`, `setarch -R`, `ulimit -s` all fail to change it; `/bin/ash` is the only shell that works. Cost ~5 minutes, then the theory was dropped rather than bisected. The build moved **into the guest** over the new telnet channel — 20 s with `gcc 2.7.2.3`, first try, zero errors |
+| The ICQ window scrolled for ever | The gateway answers every contact-list refresh with a full presence dump and an `SRV_X1` ack, and never acks three of micq's queued commands. Stock micq reprints "logged on" for every contact, redraws the online block, and prints `Discarded a … packet.` — roughly every ten seconds. **Measured: `fb-wait --settle 75` timed out with the last change at 200.4 s.** Fixed by `scripts/build-guests/patches/micq-0.4.3-quiet-retronet-chatter.patch` (announce transitions only; login summary once; routine unacked commands silent, a discarded LOGIN/KEEP_ALIVE still loud and still fatal). This was found only because the golden bake needs a settled framebuffer — a station that is only ever looked at for ten seconds would have shipped it |
+
+**Two traps worth carrying forward.**
+
+- `login(1)` refuses **root** on any tty absent from `/etc/securetty`, and every
+  pty is absent by default. Telnet answers, accepts `root`, and silently rejects
+  the login — indistinguishable from a broken daemon. The 64 pty names are now
+  appended by `compose.sh`.
+- An X client holding a **pointer grab** defeats `XWarpPointer`: the request
+  returns cleanly and the pointer does not move. One `MISMATCH` right after
+  closing Arena was that, not a broken route.
+
+**Proofs (all on the framebuffer, rig `fb-*.png`).** Golden scene signed in as
+18400 with HiveBot + beos online by name; Start menu showing both new entries;
+Arena rendering `http://search.retronet/` **and** the corpus site
+`http://home.netscape.com/` with images; `savevm golden` (VM_SIZE 17.1 MiB,
+VM_CLOCK `0000:01:26.825`) restoring to a frame differing by **10 pixels out of
+786432** — one 2×5 block that is the dock's xload bar on its own timer;
+`xwarp.py 10.99.0.31:0 100 700 900 100` exact **after** the restore; the ICQ
+watchdog signing back in 6.2 s after the client is killed.
+
+**Staged, not deployed.** `disk.qcow2.rn-new` sits beside the live golden; the
+live station was never touched. Landing (deploy, restart, `seed_contacts.py ssi
+--apply`, retiring the old golden) is the coordinator's.
+
 ## Open follow-ups
 
 - ~~Absolute pointer~~ — landed in phase 2 below.
+- ~~No exec channel~~ — landed in phase 3 (in-guest telnetd).
+- micq's contact list is **guest-side** (ICQ v5 has no SSI), so a roster change on
+  this station is a compose + golden re-bake, not a `seed_contacts.py` re-run.
 - Playbook §0 cited `/data/vms/streamhost/serve/qmp-type.py`; fixed in this wave to
   `scripts/dev/qmp-type.py` (`--qmp` or `--station`).
 - `pgrep -x qemu-system-x86_64` matches nothing (15-char comm limit); prune by

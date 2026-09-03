@@ -349,6 +349,13 @@ box_sync_load_pairs() {
   box_sync_add_pair win2000-icq-nudge scripts/retronet/win2000-icq-nudge.py /usr/local/sbin/win2000-icq-nudge.py exact repo
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
+  # slackware retronet (BOTH planes): bridge-tap lifecycle helper only. No ICQ
+  # nudge — micq 0.4.3 is kept on the air by a guest-side wrapper
+  # (/usr/local/bin/icq-session), not by a host timer, because the client exits
+  # on a dropped session instead of sitting there believing it is connected.
+  # See docs/lab/retronet/STATION-slackware.md.
+  box_sync_add_pair slackware-rn-tapnet streamhost/stations/slackware/rn-tapnet.sh "$BOX_ROOT/stations/slackware/rn-tapnet.sh" exact repo
+
   # hpuxvue retronet web plane: bridge-tap lifecycle helper only (no ICQ persona,
   # no exec channel on this station). Same mirror pair as the helpers above.
   # See docs/lab/retronet/WEB-STATION-hpuxvue.md.
