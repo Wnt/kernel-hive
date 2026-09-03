@@ -44,7 +44,7 @@ mkdir -p "$M" "$CD"
 mount /dev/nbd"${N}"p1 "$M"
 mount -o loop,ro /data/assets-staging/debian22/debian-2.2-i386-cd1.iso "$CD"
 tar -xzpf /data/assets-staging/debian22/base2_2.tgz -C "$M"
-python3 "$B"/closure.py "$CD"/dists/potato/main/binary-i386/Packages.gz gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga xbase-clients xfonts-base xfonts-75dpi xterm wmaker >"$B"/closure.txt 2>"$B"/closure.err
+python3 "$B"/closure.py "$CD"/dists/potato/main/binary-i386/Packages.gz gnome-core gnome-panel gnome-terminal gmc gnome-session xserver-svga xbase-clients xfonts-base xfonts-75dpi xterm wmaker gnomeicu >"$B"/closure.txt 2>"$B"/closure.err
 wc -l "$B"/closure.txt
 cat "$B"/closure.err
 mkdir -p "$M"/var/lib/dpkg/info
@@ -67,9 +67,21 @@ done <"$B"/closure.txt
 # SSI roster), so HiveBot is seeded into its gnome_config file. NOTE: seeding
 # [Contacts] alone did NOT take on 0.90b (proven 2026-09-03) — kept here as the
 # documented starting point, not as a working recipe. See STATION-debian22.md.
-# --- retronet extras that are NOT on CD1: Netscape Navigator 4.77 (non-free),
-# staged as .debs in /data/assets-staging/debian22/deb/ (check-assets.sh pins
-# their hashes). Same unpack + dpkg-status shape as the CD loop above.
+# --- retronet extras that are NOT on CD1, staged as .debs in
+# /data/assets-staging/debian22/deb/ (check-assets.sh pins their hashes). Same
+# unpack + dpkg-status shape as the CD loop above. FOUR packages in THREE
+# archive sections are needed before Netscape 4.77 will start, and each one
+# fails differently and misleadingly:
+#   non-free  navigator-smotif-477, netscape-base-477   the browser itself
+#   contrib   netscape-base-4        /usr/lib/netscape/base-4/wrapper — without
+#             it navigator-smotif is a DANGLING symlink and bash reports
+#             "No such file or directory" for a path ls happily shows
+#   main      libstdc++2.9-glibc2.1  libstdc++-libc6.1-1.so.2; the closure
+#             installs libstdc++2.10, which is NOT what a 2000 Motif binary
+#             linked against. Symptom: the wrapper runs, .real exits instantly
+#             with "error in loading shared libraries" into the log and NOTHING
+#             appears on the framebuffer. It is in section oldlibs, so it is
+#             not pulled in by any Depends we walk.
 for f in /data/assets-staging/debian22/deb/*.deb; do
   dpkg-deb -x "$f" "$M"
   p=$(dpkg-deb -f "$f" Package)
@@ -105,8 +117,8 @@ chmod -R a+rX "$M"/usr/X11R6 "$M"/etc/X11 # host umask left fonts.dir/XF86Config
 chmod 4755 "$M"/usr/bin/X11/XF86_SVGA     # no Xwrapper on potato; server must be setuid
 echo /usr/X11R6/lib >>"$M"/etc/ld.so.conf # libXmu.so.6 not found otherwise (ldconfig runs in rcS)
 printf '127.0.0.1\tlocalhost potato\n10.0.2.2\tslirphost\n10.99.0.2\tgateway search.retronet\n' >"$M"/etc/hosts
-printf 'nameserver 10.99.0.2\nsearch retronet.lab\n' >"$M"/etc/resolv.conf   # retronet wildcard DNS (docs/lab/retronet/WEB-PLANE-PLAN.md); reached over eth1, never a default route
-echo 10.0.2.2 >"$M"/etc/X0.hosts # x11warp: the SLIRP peer may connect to the guest X server (never xhost +)
+printf 'nameserver 10.99.0.2\nsearch retronet.lab\n' >"$M"/etc/resolv.conf # retronet wildcard DNS (docs/lab/retronet/WEB-PLANE-PLAN.md); reached over eth1, never a default route
+echo 10.0.2.2 >"$M"/etc/X0.hosts                                           # x11warp: the SLIRP peer may connect to the guest X server (never xhost +)
 cp "$B"/XF86Config "$M"/etc/X11/XF86Config
 chmod 644 "$M"/etc/X11/XF86Config # clgd5446 + no_bitblt + 1024x768x16
 ln -sf /usr/bin/X11/XF86_SVGA "$M"/etc/X11/X

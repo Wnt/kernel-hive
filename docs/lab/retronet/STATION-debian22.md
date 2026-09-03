@@ -2,9 +2,8 @@
 
 **Status: golden baked and restore-proven on a sandbox rig; NOT yet live.** The
 disk is `/data/vms/sandbox/debian22-rn/rig/disk.qcow2` (snapshot `golden`,
-VM_SIZE **47.6 MiB** (baked on the restricted line)). Debian GNU/Linux 2.2 "potato" joins the retronet on the
-**ICQ plane** (UIN `18200`, signed in) over a second bridged NIC. The **web
-plane is wired but not yet rendered** — see §Undone.
+VM_SIZE **61.9 MiB** (baked on the restricted line, with the browser)). Debian GNU/Linux 2.2 "potato" joins the retronet on the
+**ICQ plane** (UIN `18200`, signed in) over a second bridged NIC. The **web plane is live**: Netscape 4.77 renders `http://search.retronet/search`.
 
 ## The wiring, at a glance
 
@@ -20,7 +19,7 @@ plane is wired but not yet rendered** — see §Undone.
 | OSCAR server | **the legacy v5 UDP door, `10.99.0.2:4000`** — not `:5190`. See below. |
 | Persona / bot | UIN `18200` (nick `debian22`, `user-open`) / UIN `10000` (HiveBot); password in gitignored `registry/local.env` `RETRONET_ICQ_DEBIAN22_PASS` |
 | ICQ client | **GnomeICU 0.90b** (`main/net/gnomeicu_0.90b-1.deb`, **on CD1**), a GNOME 1.0 panel applet + contact-list toplevel |
-| Browser | **Netscape Navigator 4.77 static-Motif** (non-free: `navigator-smotif-477`, `navigator-base-477`, `netscape-base-477`) |
+| Browser | **Netscape Navigator 4.77 static-Motif**, proven rendering the gateway's AltaVista page. It needs **four packages from three archive sections** — see §Traps |
 
 ## Why GnomeICU, and why the v5 door
 
@@ -73,7 +72,32 @@ and HiveBot has to be added in the client UI, which is the
 | x11warp still works on the second NIC | `xwarp.py … 400,300 700,500` → both readbacks OK, before and after restore |
 | ICQ signed in, in-guest | `r8v.png`: applet tooltip `18200: 0 Users Online`, green |
 | ICQ signed in, server-side | gateway `/session` lists `18200` (empty `remote_addr` = the legacy UDP door, same shape as `beos`/`50000`) |
+| Netscape renders the corpus | `d8v.png`: `http://search.retronet/search`, title "Netscape: AltaVista: Search", the gateway's AltaVista page. The miss page (`d6v.png`, "Not in the Museum's Internet") was rendered first — both come from the `:80` origin, so **DNS `search.retronet` -> 10.99.0.2 and the seamless web are proven end to end** |
 | golden restores | fresh launch, `-boot order=c -loadvm golden -S` + QMP `cont` → `p1v.png` (desktop, applet green, terminal); `p2v.png` a typed `RESTORE-KEY-OK` reaching the terminal; `18200 online after restore: True`; a second HMP `loadvm golden` reverts the typed line (`p3v.png`) |
+
+## Netscape needs four packages from three sections
+
+This is the single most expensive thing in this station's bring-up, and every
+failure mode looks like something else:
+
+| Section | Package | Without it |
+|---|---|---|
+| non-free | `navigator-smotif-477`, `netscape-base-477` | no browser at all |
+| **contrib** | **`netscape-base-4` 1:4.77-1** | `/usr/lib/netscape/base-4/wrapper` is absent, so `navigator-smotif` is a **dangling symlink** and bash reports `No such file or directory` for a path `ls` shows |
+| **main/oldlibs** | **`libstdc++2.9-glibc2.1` 2.91.66-4** | the wrapper runs, `.real` exits instantly with `libstdc++-libc6.1-1.so.2: cannot open shared object file` into the log, and **nothing appears on the framebuffer** |
+
+`libstdc++2.10` is in the closure and is *not* a substitute: a 2000 Motif binary
+links `libstdc++-libc6.1-1.so.2`. Neither `netscape-base-4` nor
+`libstdc++2.9-glibc2.1` is reachable by walking Depends from the CD index —
+contrib is a section we never fetch, and oldlibs is not depended on by anything
+in the closure. Both are staged in `/data/assets-staging/debian22/deb/`, which
+the builder's extras loop globs.
+
+**First run is modal**: a *License Agreement* dialog (Accept) and then the
+bundled `home.netscape.com` Product Registration page — the shipped
+`preferences.js` does not suppress either, because Netscape rewrites the file at
+first run. The golden is captured **after** both are dealt with, which is what
+keeps a restore non-modal.
 
 ## The slirp NIC is restricted
 
