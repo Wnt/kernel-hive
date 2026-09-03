@@ -75,14 +75,28 @@ the focused keyboard surface at golden.
 `loadvm golden` on `disk.qcow2` — the disk is the only block device, so the
 checkpoint travels with it.
 
+## Retronet (web + ICQ)
+
+Joined 2026-09-03 on both planes — as-built in
+[`docs/lab/retronet/STATION-pcbsd.md`](../lab/retronet/STATION-pcbsd.md). A second
+`e1000` (`em1`) on tap `pcbsdrn0` / bridge `vmbr-rn`, DHCP-reserved 10.99.0.29,
+guard chain `PCBSDRN-IN` (`rn-tapnet.sh up` from the launcher). Konqueror 3.5.8
+renders `search.retronet` with no proxy; Kopete 0.12.7 (on the CD1 install)
+auto-signs in as UIN 17900 and shows HiveBot by name from the server-side roster.
+The x11warp slirp NIC runs `restrict=on`, so the guest has no route off the box.
+pf carries the two `em1` pass rules; the KWallet wizard must be finished with the
+wallet UNCHECKED or Kopete forgets its password.
+
 ## Checkpoint
 
-Re-baked 2026-09-03 (phase 2, x11warp) on a sandbox clone with the station
-launcher's device set (no cdrom, e1000 SLIRP NIC with the :6079 forward):
-`savevm golden` on `disk.qcow2` — VM_SIZE **296 MiB**, VM_CLOCK 0:12:55; one
-`loadvm golden` restore proven pixel-identical, and the X TCP display still answers
-`XQueryPointer` = (450,680) after the restore. (Phase 1 golden, relative PS/2, no
-NIC: 388 MiB.)
+Re-baked 2026-09-03 (phase 3, retronet) on a sandbox clone with the station
+launcher's device set (no cdrom; e1000 SLIRP NIC `restrict=on` with the :6079
+forward; e1000 on tap `pcbsdrn0`): `savevm golden` on `disk.qcow2` — VM_SIZE
+**305 MiB**, VM_CLOCK 0:11:39; one `loadvm golden` restore proven pixel-identical,
+HiveBot online in Kopete's list after the restore, and the X TCP display answers
+`XQueryPointer` = (470,690). Scene: Kopete contact list top-left, Konsole focused
+(keyboard surface), pointer at (470,690). (Phase 2 golden 296 MiB; phase 1, relative
+PS/2, no NIC: 388 MiB.)
 Fixture: KDE 3.5.8 desktop, user `visitor` autologged in via KDM
 (`AutoLoginEnable=true` in `/usr/local/share/config/kdm/kdmrc`), **Konsole focused
 with an empty `%` prompt** (keyboard surface, window at 176..846 x 108..608),

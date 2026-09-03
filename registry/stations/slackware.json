@@ -58,7 +58,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54184,
-      "notes": "Pointer via x11warp on 127.0.0.1:84 (slirp hostfwd to the guest X :0). No exec channel yet; framebuffer + qmp-type into the xterm is the proof path."
+      "notes": "Pointer via x11warp on 10.99.0.31:0 (the guest X server over the retronet tap slackwarern0, MAC from local.env). Exec channel: telnet at 10.99.0.31:23 (telnet_unix_e wrapper) — wire exec_kind in a follow-up. Note: with no viewer the idle pause freezes the guest after 60 s and every TCP probe times out; hold a wake lease."
     }
   },
   "render": {
@@ -227,19 +227,36 @@
       "xterm / bash 2.0",
       "xv, xfm, xpaint",
       "Midnight Commander",
-      "BSD games"
+      "BSD games",
+      "Arena beta-2b (W3C)",
+      "micq 0.4.3 (ICQ)",
+      "gcc 2.7.2.3"
     ],
-    "periodBrowser": "none installed (Arena / Lynx were the era's)",
+    "periodBrowser": "Arena beta-2b (W3C, 1996) on the retronet proxy; Lynx 2.7 in a terminal",
     "iconicApps": [
       "xterm",
       "xv",
       "xfm",
       "xpaint",
       "xcalc",
-      "Midnight Commander"
+      "Midnight Commander",
+      "Arena",
+      "micq"
     ],
     "blurb": "Slackware 3.4 from October 1997: Linux 2.0.30, XFree86 3.3.1 and the fvwm95 desktop that made a Unix workstation look like Windows 95 — from the oldest distribution still run by its original maintainer.",
-    "notes": "Root filesystem composed host-side from the mirror's a/ap/x/xap/y .tgz series (no interactive setup); GRUB2 linux16 boots the stock bare.i zImage because the 1997 LILO boot floppy wedges at 'LI' under SeaBIOS."
+    "notes": "Root filesystem composed host-side from the mirror's a/ap/x/xap/y .tgz series (no interactive setup); GRUB2 linux16 boots the stock bare.i zImage because the 1997 LILO boot floppy wedges at 'LI' under SeaBIOS. On the retronet since 2026-09-03: one NE2000 on a bridge port, statically addressed, browsing the museum corpus in Arena and signed in to the gateway as ICQ UIN 18400 with micq 0.4.3 built by the guest's own gcc."
+  },
+  "retronet": {
+    "planes": [
+      "web",
+      "icq"
+    ],
+    "address": "10.99.0.31",
+    "addressing": "static",
+    "link": "tap slackwarern0 on vmbr-rn",
+    "guard": "SLACKWARERN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-slackware.md"
   },
   "emulator": {
     "family": "QEMU",

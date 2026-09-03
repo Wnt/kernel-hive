@@ -1,9 +1,22 @@
 #!/bin/sh
 # netbsd14 exhibit session: the xterm covers the origin (the daemon warps there first).
-PATH=/usr/X11R6/bin:/usr/bin:/bin:/usr/sbin:/sbin; export PATH
+# Retronet (2026-09-03): two more xterms on the bottom row — the mICQ client on
+# the ICQ plane and Lynx on the web plane. Both use absolute paths: the xinit
+# session does not inherit /usr/local/bin in PATH.
+PATH=/usr/X11R6/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin; export PATH
+# rc.local runs xinit with no HOME, so mICQ would look for ./.micq in / and run
+# its setup wizard instead of signing in. Pin both.
+HOME=/root; export HOME
 xhost +10.0.2.2
 xsetroot -solid SteelBlue
 xclock -geometry 120x120-10+10 &
 xcalc -geometry +640+80 &
 xterm -geometry 80x28+0+0 -bg white -fg black -title 'NetBSD 1.4.1' &
+# ICQ: mICQ 0.4.12 signs in to the retronet OSCAR gateway (10.99.0.2:5190) from
+# ~/.micq/micqrc, contact list carrying HiveBot.
+xterm -geometry 80x20+0+430 -bg white -fg black -title 'ICQ - mICQ' \
+      -e /usr/local/bin/micq -b /root/.micq/ &
+# Web: Lynx 2.8.2 on the retronet search engine.
+xterm -geometry 80x20+510+430 -bg white -fg black -title 'Web Browser - Lynx' \
+      -e /usr/local/bin/lynx http://search.retronet/ &
 if [ -x /usr/X11R6/bin/ctwm ]; then exec ctwm; else exec twm; fi

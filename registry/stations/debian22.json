@@ -58,13 +58,13 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54182,
-      "notes": "one SLIRP NIC whose only forward is the loopback x11warp port; no exec channel; framebuffer/QMP/HMP + x11warp only"
+      "notes": "slirp ne2k_pci with restrict=on (only the loopback x11warp forward), rtl8139 tap debian22rn0 on vmbr-rn = retronet 10.99.0.36 (web + ICQ planes); no exec channel; framebuffer/QMP/HMP + x11warp only"
     }
   },
   "render": {
     "signalOrder": 74,
     "stationsManifestOrder": 72,
-    "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0 under Window Maker.\n#   VERBATIM launcher: -nodefaults, IDE golden disk + CD1 ISO, Cirrus VGA (XF86_SVGA, 1024x768x16),\n#   ne2k_pci on SLIRP with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000), PS/2 keys/buttons,\n#   no audio, no USB. Required -loadvm golden; dedicated HMP reset socket.\n",
+    "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0 under Window Maker.\n#   VERBATIM launcher: -nodefaults, IDE golden disk + CD1 ISO, Cirrus VGA (XF86_SVGA, 1024x768x16),\n#   ne2k_pci on SLIRP restrict=on with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000),\n#   rtl8139 tap debian22rn0 on vmbr-rn (retronet 10.99.0.36: web + ICQ), PS/2 keys/buttons,\n#   no audio, no USB. Required -loadvm golden; dedicated HMP reset socket.\n",
     "bringUpGroup": 6,
     "bindingOrder": 86,
     "bindingPrelude": "",
@@ -138,7 +138,7 @@
         "--env-append-file",
         "$T/debian22/station.env.fixture"
       ],
-      "deviceSetId": "debian22-x11warp-golden-cirrus",
+      "deviceSetId": "debian22-x11warp-retronet-golden-cirrus",
       "launcher": "streamhost/stations/debian22/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/debian22/station.env.fixture",
       "binary": "qemu-system-x86_64",
@@ -154,7 +154,8 @@
         "-m 256 -smp 1 -rtc base=localtime",
         "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$CDROM\",media=cdrom,if=ide,index=2 -boot order=c -loadvm golden",
         "-vga cirrus",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-netdev tap,id=n1,ifname=debian22rn0,script=no,downscript=no -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24",
         "-display dbus,p2p=on",
         "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
         "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -174,7 +175,8 @@
           "-m 256 -smp 1 -rtc base=localtime",
           "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$CDROM\",media=cdrom,if=ide,index=2 -boot order=c -loadvm golden",
           "-vga cirrus",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+          "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+          "-netdev tap,id=n1,ifname=debian22rn0,script=no,downscript=no -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24",
           "-display dbus,p2p=on",
           "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
           "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -183,7 +185,7 @@
       },
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher is the production device ledger; one SLIRP NIC, loopback-only x11warp forward, no USB"
+        "reason": "tracked verbatim launcher is the production device ledger; slirp ne2k_pci restricted to the loopback x11warp forward, rtl8139 tap on the retronet bridge, no USB"
       }
     },
     "bringUpOrder": 86
@@ -211,13 +213,15 @@
       "apt 0.3.19 / dpkg 1.6.15",
       "Emacs 20.7"
     ],
-    "periodBrowser": "Mozilla M18 (main); Netscape 4.7 in non-free",
+    "periodBrowser": "Netscape Navigator 4.77",
     "iconicApps": [
       "GNOME panel",
       "gmc file manager",
       "gnome-terminal",
       "Emacs 20",
-      "Lynx 2.8.3"
+      "Lynx 2.8.3",
+      "Netscape Navigator 4.77",
+      "GnomeICU 0.90b"
     ],
     "blurb": "Debian 2.2 \"potato\" (14 August 2000): Linux 2.2, XFree86 3.3.6 and the first packaged GNOME desktop, with apt 0.3 over roughly 3,900 packages on six architectures \u2014 the last release installed from boot-floppies.",
     "notes": "Air-gapped streamhost station: no NIC, no exec channel. PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol) \u2014 visitors drag rather than point. Golden restores onto a logged-in GNOME 1.0 desktop with gnome-terminal focused."
@@ -236,7 +240,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Debian GNU/Linux 2.2 logged in as gallery on a 1024x768 16-bit GNOME 1.0 desktop under Window Maker: panel with foot menu and clock, gmc file manager, gnome-terminal focused at a bash prompt; /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest X server; hdparm -d1 DMA active; no screensaver, no modal."
+    "fixture": "Debian GNU/Linux 2.2 logged in as gallery on a 1024x768 16-bit GNOME 1.0 desktop under Window Maker: Netscape Navigator 4.77 on http://search.retronet/, gnome-terminal open, GnomeICU applet green in the panel signed in as UIN 18200 (v5/UDP on the legacy gateway door); /etc/X0.hosts grants the SLIRP peer 10.0.2.2 so the daemon warps the pointer through the guest X server; hdparm -d1 DMA active; no screensaver, no modal."
   },
   "notes": [
     "scaffolded from redstar2 on 2026-09-02; TODO: media, museum, spa"
@@ -250,5 +254,17 @@
     ],
     "runCommand": "dpkg -l | grep -c '^ii'",
     "perCharMs": 60
+  },
+  "retronet": {
+    "planes": [
+      "web",
+      "icq"
+    ],
+    "address": "10.99.0.36",
+    "addressing": "static",
+    "link": "tap debian22rn0 on vmbr-rn",
+    "guard": "DEBIAN22RN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-debian22.md"
   }
 }

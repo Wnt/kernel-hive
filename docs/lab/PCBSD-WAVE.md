@@ -133,3 +133,42 @@ the guest's X server over TCP and reads it back.
   VM_CLOCK 0:12:55, restore pixel-identical and `query_pointer` = (450,680) after
   the restore; power-on → desktop ≈90 s. Staged as `disk.qcow2.x11warp`, swapped in
   during the landing window (old kept as `disk.qcow2.rel-bak` until the live proof).
+
+## Phase 3 — retronet web + ICQ planes (2026-09-03)
+
+Operator: join pcbsd to the museum's offline period internet on both planes.
+Delegated to ONE Opus subagent (60 min, 205 tool uses); the coordinator briefed,
+reviewed and landed. As-built: `docs/lab/retronet/STATION-pcbsd.md`.
+
+- Device set gains a second NIC, a bridged tap: `-netdev tap,id=n1,ifname=pcbsdrn0,
+  script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC` (MAC from
+  `registry/local.env`, placeholder in the launcher) → `em1`, DHCP-reserved
+  **10.99.0.29**, guard chain `PCBSDRN-IN` armed by `rn-tapnet.sh up` on every launch
+  (os2warp pattern; the `pcbsd-rn-tapnet` box-sync pair mirrors the script). The
+  x11warp slirp NIC stays as `n0` and now runs **`restrict=on`** — without it the
+  guest kept a default route into the host's stack; with it the containment table
+  from inside the guest is: gateway :80/:5190/ping OK, host :8443/:22 blocked,
+  1.1.1.1 no route. `restrict=on` is a netdev option, so the device set is unchanged.
+- Guest: `ifconfig_em1="DHCP"`; the tap lease's `nameserver 10.99.0.2` wins over the
+  slirp lease on its own; pf (on by default) gets `pass in quick on em1 from
+  10.99.0.0/24 to any` + `pass out quick on em1 from any to 10.99.0.0/24`.
+- Web: Konqueror 3.5.8 (KHTML, the 4th Kicker icon as shipped) renders
+  `http://search.retronet/` with no proxy. `periodBrowser` corrected accordingly.
+- ICQ: **Kopete 0.12.7 was already on the CD1 install.** UIN 17900, server
+  10.99.0.2:5190, `AutoConnect=true`, auto-away off, started from
+  `~/.kde/Autostart/kopete.sh`; roster row + `seed_contacts.py ssi --apply`. The wizard
+  is drivable by x11ptr warp + QMP click; **the trap is KWallet** — Kopete 0.12 opens
+  the wallet regardless of `kwalletrc Enabled=false`, and cancelling loses the
+  password; run the KWallet wizard to Password Selection and Finish with "use the KDE
+  wallet" UNCHECKED, then Kopete's "Remember password" sticks in kopeterc. Proven by a
+  full power cycle: silent sign-in, roster populated, HiveBot greets.
+- Golden: VM_SIZE **305 MiB**, VM_CLOCK 0:11:39, restore pixel-identical; after the
+  restore HiveBot is online in the list and `x11ptr.py … 470,690 q` reads back
+  exactly. Scene: Kopete contact list top-left showing HiveBot, **Konsole focused =
+  keyboard surface**, no chat window baked, pointer at (470,690). KWin is
+  ClickToFocus: the last click decides where keys land. Staged as `disk.qcow2.rn`.
+- Reset proof on the live station: after `loadvm golden` Kopete re-signs on by
+  itself 58–59 s later (gateway journal `user signed on … 17900` after the reset
+  timestamp; frame at +3 min online with HiveBot) — measured under a wake lease.
+- Unproven: Firefox (the panel's first icon) on the web plane; resolv.conf
+  ordering observed, not pinned.

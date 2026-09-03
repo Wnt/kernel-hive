@@ -58,7 +58,7 @@
    "exec_key": null,
    "console": "fb",
    "udp_port": 54179,
-   "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:79; the launcher publishes a loopback SLIRP forward 6079->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. A usb-tablet is inert in FreeBSD 6.3 X. disk.qcow2 is the only block device and carries the golden vmstate."
+   "notes": "retronet: em1 on tap pcbsdrn0 (DHCP 10.99.0.29); em0 is a restrict=on slirp NIC carrying only the x11warp door 127.0.0.1:6079 -> 10.0.2.15:6000. No exec channel; rel PS/2 pointer only (motion is warped absolutely through the guest X server) — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
   }
  },
  "render": {
@@ -160,7 +160,8 @@
     "-vga std",
     "-display dbus,p2p=on,audiodev=snd0",
     "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-    "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+    "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+    "-netdev tap,id=n1,ifname=pcbsdrn0,script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC",
     "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
     "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
    ],
@@ -183,7 +184,8 @@
      "-vga std",
      "-display dbus,p2p=on,audiodev=snd0",
      "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
-     "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+     "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000 -device e1000,netdev=n0",
+     "-netdev tap,id=n1,ifname=pcbsdrn0,script=no,downscript=no -device e1000,netdev=n1,mac=$RN_PCBSD_MAC",
      "-qmp unix:/data/vms/streamhost/stations/pcbsd/qmp.sock,server=on,wait=off",
      "-pidfile /data/vms/streamhost/stations/pcbsd/qemu.pid"
     ]
@@ -216,7 +218,7 @@
    "PBI installer",
    "Kontact"
   ],
-  "periodBrowser": "Konqueror 3.5 (KHTML)",
+  "periodBrowser": "Konqueror 3.5.8 (KHTML)",
   "iconicApps": [
    "Konqueror",
    "Konsole",
@@ -255,5 +257,17 @@
   ],
   "runCommand": "cat /etc/pcbsd-release",
   "perCharMs": 60
+ },
+ "retronet": {
+  "planes": [
+   "web",
+   "icq"
+  ],
+  "address": "10.99.0.29",
+  "addressing": "dhcp",
+  "link": "tap pcbsdrn0 on vmbr-rn",
+  "guard": "PCBSDRN-IN",
+  "joined": "2026-09-03",
+  "doc": "docs/lab/retronet/STATION-pcbsd.md"
  }
 }

@@ -1041,7 +1041,8 @@ emit pcgeos \
 
 # debian22 (VMID 182) — Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0 under Window Maker.
 #   VERBATIM launcher: -nodefaults, IDE golden disk + CD1 ISO, Cirrus VGA (XF86_SVGA, 1024x768x16),
-#   ne2k_pci on SLIRP with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000), PS/2 keys/buttons,
+#   ne2k_pci on SLIRP restrict=on with ONE loopback hostfwd (x11warp 127.0.0.1:6082 -> :6000),
+#   rtl8139 tap debian22rn0 on vmbr-rn (retronet 10.99.0.36: web + ICQ), PS/2 keys/buttons,
 #   no audio, no USB. Required -loadvm golden; dedicated HMP reset socket.
 emit debian22 \
   --tile debian22 --vmid 182 --udp 54182 --pointer abs --input-backend \
@@ -1089,8 +1090,9 @@ emit ubuntu \
 emit redhat62 \
   --tile redhat62 --vmid 181 --udp 54181 --pointer abs --input-backend \
   x11warp --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio off \
-  --fps 30 --launcher-file "$T/redhat62/qemu-streamhost.sh" \
-  --env-append-file "$T/redhat62/station.env.fixture"
+  --fps 30 --launcher-file "$T/redhat62/qemu-streamhost.sh" --aux-file \
+  "$T/redhat62/rn-tapnet.sh" --env-append-file \
+  "$T/redhat62/station.env.fixture"
 
 # freebsd411 (VMID 178) — FreeBSD 4.11-RELEASE (Jan 2005, the last 4.x), KDE 3.3.2 on XFree86 4.4.0
 #   (vesa driver, 1024x768x16). VERBATIM launcher, same device set as netbsd14: one SCSI disk on an LSI 53c895a (the 4.11 ata driver gets no DMA on QEMU's PIIX3)

@@ -160,13 +160,14 @@
         "-device lsi53c895a,id=scsi0",
         "-drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=none,id=hd0",
         "-device scsi-hd,bus=scsi0.0,drive=hd0",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
         "-qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off",
-        "-pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid"
+        "-pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid",
+        "-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no -device rtl8139,netdev=rn0,mac=<RN_FREEBSD411_MAC>"
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under KVM with -vga std (XFree86 4.4.0 vesa, 1024x768x16), one SCSI disk on an lsi53c895a (FreeBSD sym, real DMA -- 4.11's ata driver gets no bus-master DMA on QEMU's PIIX3 and PIO under KVM is ~150 KB/s) carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device"
+        "reason": "pc-i440fx-11.0 under KVM with -vga std (XFree86 4.4.0 vesa, 1024x768x16), one SCSI disk on an lsi53c895a (FreeBSD sym, real DMA -- 4.11's ata driver gets no bus-master DMA on QEMU's PIIX3 and PIO under KVM is ~150 KB/s) carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device ; retronet 2026-09-03: a SECOND bridged NIC (rtl8139 on tap freebsd411rn0, vmbr-rn, DHCP-reserved 10.99.0.35) for the web + ICQ planes, and restrict=on on the slirp backend so the pointer NIC hands the guest no route anywhere"
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",
@@ -204,7 +205,8 @@
       "Konsole",
       "Kate",
       "KCalc",
-      "ports collection"
+      "ports collection",
+      "Kopete 0.9.1"
     ],
     "periodBrowser": "Konqueror 3.3.2 (KHTML)",
     "iconicApps": [
@@ -214,7 +216,7 @@
       "KCalc"
     ],
     "blurb": "FreeBSD 4.11, January 2005: the last release of the 4.x line — the FreeBSD that ran Yahoo!, Hotmail and a generation of ISPs — here with the full KDE 3.3.2 desktop from the release CD, on the i386 it was built for.",
-    "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.4.0 (vesa driver on the emulated VGA, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate."
+    "notes": "Live streamhost station. Boots straight into a root KDE 3.3.2 session on XFree86 4.4.0 (vesa driver on the emulated VGA, 1024x768x16): Kicker panel, K menu, a Konsole already open, with Konqueror, Kate, KCalc and kdegames a click away. The pointer is absolute because the daemon warps the guest X server itself (x11warp over a loopback SLIRP forward) while clicks and keys ride the PS/2 path. disk.qcow2 is the single block device and carries the golden vmstate. Since 2026-09-03 the station is on the retronet: a second, bridged NIC puts it on the museum's offline 1990s web, and Konqueror opens it from a desktop icon."
   },
   "emulator": {
     "family": "QEMU",
@@ -230,7 +232,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0 vesa on -vga std, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
+    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0 vesa on -vga std, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell and a 'Retronet Web' desktop icon onto http://search.retronet/; the guest holds its retronet address 10.99.0.35 across the restore, and the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
   },
   "migrationExceptions": [],
   "notes": [
@@ -245,5 +247,16 @@
     ],
     "runCommand": "kcalc &",
     "perCharMs": 80
+  },
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.35",
+    "addressing": "dhcp",
+    "link": "tap freebsd411rn0 on vmbr-rn",
+    "guard": "FREEBSD411RN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-freebsd411.md"
   }
 }

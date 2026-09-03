@@ -119,17 +119,34 @@ so the disk is composed on the host instead:
   `registry/local.env` under key `guest/debian22` — set and reported there by
   the golden stream, never written in git.
 
+## Retronet (web + ICQ planes, LIVE 2026-09-03)
+
+Wiring, packages, prefs and the seven traps: [`docs/lab/retronet/STATION-debian22.md`](../lab/retronet/STATION-debian22.md).
+Second NIC = rtl8139 (a different driver from the slirp ne2k_pci, so eth0/eth1
+numbering is deterministic under Linux 2.2) on tap `debian22rn0` / `vmbr-rn`,
+10.99.0.36 static, default route + DNS 10.99.0.2, guard chain `DEBIAN22RN-IN`
+(`rn-tapnet.sh up` from the launcher). The slirp NIC runs `restrict=on`: only the
+loopback x11warp forward passes. Web: Netscape Navigator 4.77 — four packages from
+three archive sections (`navigator-smotif-477`/`navigator-base-477`/`netscape-base-477`
+non-free, `netscape-base-4` contrib for the wrapper, `libstdc++2.9-glibc2.1` from
+main/oldlibs), licence + first-run page dismissed inside the golden. ICQ: GnomeICU
+0.90b (CD1), ICQ v5/UDP on the legacy gateway door `10.99.0.2:4000`, UIN 18200;
+a v5 client is not SSI-aware, so `ssi-seed` cannot list HiveBot — **OPEN**: the
+client-local contact file format (0.90b ignored a seeded `[Contacts]` stanza; its
+Add-Contact search segfaults). The v5 session reads offline for ~90 s after a
+restore and returns by itself.
+
 ## Checkpoint
 
-`golden` baked 2026-09-03 07:47 on the smoke rig (`/data/vms/sandbox/debian22/smoke`)
-against the exact launcher device set (ne2k_pci NIC included); VM_SIZE **44.9 MiB**,
-VM_CLOCK 3:15. Restore proof on a fresh launch with `-boot order=c -loadvm golden -S`
-+ `cont`: desktop within 4 s; `XWarpPointer` to (100,100) and (900,700) read back
-exactly by `XQueryPointer` and the arrow seen at each target; `su -c hdparm` typed
-into the terminal echoed `using_dma = 1` and `66.67 MB/sec`; a second HMP `loadvm
-golden` returned the clean prompt. Frames: `smoke/q1.png … q5.png`. The first
-(relative-pointer, PIO) golden of 06:33 was VM_SIZE 46.5 MiB.
+`golden` baked 2026-09-03 09:14 on the rn rig (`/data/vms/sandbox/debian22-rn/rig`)
+against the exact launcher device set (slirp `restrict=on` + rtl8139 tap); VM_SIZE
+**61.9 MiB**. Scene: Netscape 4.77 on `http://search.retronet/search`, gnome-terminal,
+GnomeICU applet green (signed in as 18200). Restore proof on a fresh launch with
+`-boot order=c -loadvm golden -S` + `cont`: scene back; `XWarpPointer` (512,384) and
+(700,250) read back exactly; typed `RESTORE-KEY-OK` reached the terminal and
+`ping 10.99.0.2` 2/2 through the restriction; a second HMP `loadvm golden` returned
+the scene with the typed line reverted (`rig/g2v.png`, `g3v.png`, `g5v.png`).
+Earlier goldens: 06:33 relative pointer (46.5 MiB), 07:47 x11warp + DMA (44.9 MiB).
 
-**OPEN:** none of the three from the first landing — DMA, cold boot and the
-absolute pointer all landed in the x11warp rebake. Follow-ups: a GNOME 1.0 type-in
-demo beyond the shell one-liners; the clock applet stays in the fixture (as pcgeos).
+**OPEN:** HiveBot in the GnomeICU contact list (see §Retronet). Follow-ups: a GNOME
+1.0 type-in demo beyond the shell one-liners; the clock applet stays (as pcgeos).
