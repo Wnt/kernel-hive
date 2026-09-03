@@ -45,8 +45,8 @@ freebsd411 (178), pcbsd (179); landings serialised through the coordination sess
 
 ## Golden and the two late findings (2026-09-03)
 
-- `savevm golden` on the smoke rig with the station device set: VM_SIZE 911 MiB,
-  VM_CLOCK 0001:00:08; `loadvm golden` after a pointer move + click restored a
+- `savevm golden` on the smoke rig with the station device set: VM_SIZE 904 MiB,
+  VM_CLOCK 0000:03:04 (re-bake on -smp 1); `loadvm golden` after a pointer move + click restored a
   pixel-identical frame (PIL diff bbox None). Disk staged to
   `/data/vms/streamhost/stations/openbsd/disk.qcow2` and (same bytes) to
   `/data/gallery-guests/OPENBSD/openbsd.qcow2`.
@@ -65,7 +65,8 @@ freebsd411 (178), pcbsd (179); landings serialised through the coordination sess
   `rig-clone.sh` clones: `-machine pc-i440fx-11.0,acpi=off` and `-smp 1` BOTH
   typed the 40-char line complete at 40/40 → keyboard-interrupt delivery on the
   2-vCPU IOAPIC config, not pacing. Shipped `-smp 1` (ACPI power-off kept),
-  fixture pacing at the 40/40 floor, golden re-baked on that device set.
+  fixture pacing at the 40/40 floor, golden re-baked on that device set; after `loadvm golden` the 40-char line lands
+  complete at 40/40 except the first key, which the focus-giving click eats.
 - `system_reset` leaves FFS dirty: single-user needs `fsck -y` before
   `mount -uw /`; DHCP is not up in single-user (`ifconfig vio0 10.0.2.15/24 up;
   route add default 10.0.2.2`).
