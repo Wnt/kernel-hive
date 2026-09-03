@@ -12,10 +12,17 @@
 # that; fb-wait.py is the waiting half.
 #
 # usage (from CT950 or on labhost; it hops to labhost by itself):
-#   rig-clone.sh new  <id> <theory> [--rig DIR] [--boot a|c] [-- <extra qemu args>]
+#   rig-clone.sh new  <id> <theory> [--rig DIR] [--boot a|c] [--force] [-- <extra qemu args>]
 #   rig-clone.sh ls   <id>
 #   rig-clone.sh keep <id> <theory>          # kill every OTHER clone of <id>
 #   rig-clone.sh down <id> <theory>|--all [--rm]
+#
+# `new` refuses to start a guest when labhost's 1-min load average exceeds
+# KH_LOAD_CAP (default 50) — the box is already saturated, and a wall is
+# raced with cheap clones, not by adding to the pile (rule 14). --force
+# overrides for a caller that has already weighed the cost. Probe command
+# and cap are both overridable (KH_LOADAVG_CMD, KH_LOAD_CAP) — see
+# scripts/lib/load-guard.sh.
 #
 # A clone is /data/vms/sandbox/<id>/race/<theory>/ : a sparse COPY of the rig's
 # disk image(s) (a qcow2 overlay would share a backing file the running rig is
@@ -58,6 +65,10 @@ GUARD=/usr/local/bin/clone-guard
   exit 1
 }
 
+LIB_DIR="$(cd "$(dirname "$(readlink -f "$0")")/../lib" && pwd)"
+# shellcheck disable=SC1091
+. "$LIB_DIR/load-guard.sh"
+
 cmd="${1:-}"
 [ -n "$cmd" ] || usage 1
 id="${2:-}"
@@ -84,6 +95,7 @@ case "$cmd" in
     shift 3
     rig="$ROOT/$id/smoke"
     boot=""
+    force=0
     extra=()
     while [ $# -gt 0 ]; do
       case "$1" in
@@ -94,6 +106,10 @@ case "$cmd" in
         --boot)
           boot="$2"
           shift 2
+          ;;
+        --force)
+          force=1
+          shift
           ;;
         --)
           shift
@@ -106,6 +122,7 @@ case "$cmd" in
           ;;
       esac
     done
+    load_guard_check "clone $id/$theory" "$force" || exit 1
     "$GUARD" assert-path "$rig" >/dev/null
     [ -f "$rig/launch-smoke.sh" ] || {
       echo "rig-clone: $rig/launch-smoke.sh missing (see the rig convention in the header)" >&2

@@ -64,6 +64,68 @@ expires by itself (`LEASE_TTL`, 90 s), so the worst case is one station running
 90 s longer than it had to — **idle auto-pause is not weakened**, which matters:
 it is worth about 10% of a core per station, continuously.
 
+## The idle-pause trap on an x11warp probe, and driving a GUI wizard through it
+
+The wake-lease machinery above covers the daemon's own input paths
+(`labctl`, `qmp-type.py`) because they call `guest_wake` themselves. A raw
+X11 probe against an x11warp station's loopback forward does **not**, and it
+fails differently: **a paused guest answers no TCP at all.** The forward is
+alive, but the guest's own X server sits inside frozen vCPUs, so the connect
+either hangs or the browser's own X client reports "stopped working" — not a
+refusal, not an auth error, just silence. That reads exactly like a dead X
+server or a wrong port, and it is neither: it is the same idle-auto-pause every
+station gets 60 s after its last visitor. The daemon says so in its own log the
+moment a driven input wakes it back up:
+
+```
+[idle] driver active but guest paused -> resumed
+```
+
+**Probe it awake, don't guess.** Either hold a `guest_wake.WakeLease` for the
+duration (`scripts/dev/x11warp-probe.py --station <id> ...` does this
+automatically whenever `--click` is given, because that is the QMP half that
+knows the station name; the bare X11 warp+readback half has no station
+concept and connects regardless of pause state, which is exactly why a
+mismatch there can mean "paused", not "pointer broken" — check `labctl health
+<id>` first), or keep a real `/os/<id>` browser tab open in another window so
+streamhost never lets the guest go idle while you work it. `labctl health
+<station>` reporting `QEMU state: paused (idle-paused)` is the tell.
+
+## Driving a keyboard-only guest's GUI wizard: warp, read back, then click
+
+Several install-time wizards (an ICQ client's server-address dialog, a
+network-settings applet) live behind a form a visitor would normally click
+into, and the exhibit or the guest has no working absolute pointer of its own
+— that is *why* it needs driving instead of just typing. The technique three
+waves independently reinvented (each earning its own ruff pass on a slightly
+different copy — see `scripts/dev/x11warp-probe.py`'s header for the exact
+commits) is:
+
+1. **Warp** the X pointer to the widget's coordinates (`XWarpPointer`) over
+   the raw X11 wire against the station's loopback forward.
+2. **Read it back** (`XQueryPointer`) and confirm the guest's own X server
+   agrees — a warp that silently failed (auth, a stale connection, the guest
+   still paused) must never be followed by a click aimed at nothing.
+3. **Only then** send a **button-only** QMP `input-send-event` (press,
+   release — no motion in the same event) so the click lands exactly where
+   the confirmed warp put the pointer, through the same PS/2 path every other
+   click on the station uses.
+
+```
+python3 scripts/dev/x11warp-probe.py --display 127.0.0.1:84 \
+  --warp 220,140 --click --qmp /data/vms/streamhost/stations/<id>/qmp.sock \
+  --station <id> --shot
+```
+
+This is the general form of the "confirmed position is not a held position"
+property discussed below for `sunos414`'s production sink — the probe gets the
+weaker, sufficient guarantee (warp, confirm, click, all inside one short
+synchronous script) rather than the sink's continuous exclusion, which is
+correct for a one-shot install driver and would be wrong for live production
+input. `--shot` closes the loop with a `labctl shot`: a readback matching the
+warp target is not proof the cursor is *visible* there (rule 9 — the
+framebuffer is the only proof a guest reacted).
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the

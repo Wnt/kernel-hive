@@ -9,8 +9,14 @@
 # sibling station's own row). This script is that whole sequence, once.
 #
 # usage: scripts/dev/smoke-rig.sh <id> --like STATION [--qmp PATH]
-#                                  [--slot N|auto] [--display-name NAME]
+#                                  [--slot N|auto] [--display-name NAME] [--force]
 #        scripts/dev/smoke-rig.sh <id> --down [--release-claims]
+#
+# The publish path refuses to start when labhost's 1-min load average exceeds
+# KH_LOAD_CAP (default 50) — rule 14, a wall is raced with cheap clones, not
+# fed by piling another guest onto a saturated box. --force overrides;
+# KH_LOADAVG_CMD overrides the probe (default `ssh lab cat /proc/loadavg`).
+# See scripts/lib/load-guard.sh.
 #
 # Preconditions: the caller has ALREADY launched QEMU for <id> with
 # `-display dbus,p2p=on` and a QMP socket (default: <rig>/qmp.sock, where
@@ -46,6 +52,8 @@ LABRUN="$SCRIPT_DIR/labrun"
 LAB="${LAB:-lab}"
 # shellcheck disable=SC1091
 . "$REPO_ROOT/scripts/lib/kh-session.sh" 2>/dev/null || true
+# shellcheck disable=SC1091
+. "$SCRIPT_DIR/../lib/load-guard.sh"
 
 id=""
 like=""
@@ -54,6 +62,7 @@ slot_arg=""
 display_name=""
 down=0
 release_claims=0
+force=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --like)
@@ -74,6 +83,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --down) down=1 ;;
     --release-claims) release_claims=1 ;;
+    --force) force=1 ;;
     -h | --help)
       sed -n '2,35p' "$0"
       exit 0
@@ -158,6 +168,9 @@ fi
 
 # ---- publish path -------------------------------------------------------------
 [ -n "$like" ] || fail "--like STATION is required (whose stream.env / binary to borrow)"
+
+KH_LOADAVG_CMD="${KH_LOADAVG_CMD:-ssh $LAB cat /proc/loadavg}" \
+  load_guard_check "smoke rig $id" "$force" || exit 1
 
 step "0 rig + QMP socket"
 "$LABRUN" "$rig" <<'EOF_REMOTE'
