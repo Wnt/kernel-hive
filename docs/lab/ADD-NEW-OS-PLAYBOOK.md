@@ -224,6 +224,64 @@ launcher must be the one the golden was baked with; addresses stay placeholders
 (`192.0.2.10`, `labhost`); every claim goes through `kh-claim`; the framebuffer
 is the proof, not a log line.
 
+### Several waves at once: the coordinator contract (2026-09-03, nine stations)
+
+Nine station waves ran in parallel on one box (pcbsd, ubuntu, slackware,
+netbsd14, redhat62, openbsd, freebsd411, debian22, suse64), one session each,
+plus one coordinator session that owned nothing but the shared values. What
+held, in the order it mattered:
+
+- **Allocate before anyone scaffolds.** The coordinator hands each wave its
+  slot / UDP / VMID and an X-warp display number (`:NN` = loopback `60NN`) the
+  minute the session appears; the wave still claims through `kh-claim`, and a
+  failed claim is reported, never bumped silently. Two waves that start in the
+  same minute otherwise take the same `--slot auto`.
+- **One main landing at a time.** "ready to land <id>" → "go <id>" → the
+  wave's window (fetch + merge main, validate + generate, push, `box-deploy
+  --apply`, `smoke-rig --down`, `station-up`, framebuffer proof, SPA deploy) →
+  "landed <id>". Nobody else runs `box-deploy --apply` inside a window (it
+  reverts other waves' uncommitted live edits). Doc-only commits push bare,
+  without a window. A "go" older than 15 min without "landed" gets a status
+  ping; the window was 5–15 min per station, the long ones spent in the gate.
+- **Before "ready", not inside the window:** merge main and run the gate the
+  pre-push hook will run (shfmt on every touched shell file, ruff, tsc,
+  `cd spa && npx vitest run`). Ten of slackware's fifteen window minutes were
+  the gate.
+- **Shared SPA tables are re-inserted, never unioned.** `assembliesByTile.ts`
+  and `machineIdentity.ts` conflict on every merge because every wave appends
+  at the end. Take main's table and re-insert only your row at its lineup
+  position; a plain union doubled a row twice. The scene test then wants a
+  **distinct hardware tuple** (body|monitor|keyboard|mouse): a `--like` copy
+  keeps the sibling's, so change one part.
+- **Every landing wipes the other waves' dark-launch overlays** (the SPA
+  deploy trap). Owners re-arm with `darklaunch-station.py publish` only when
+  the operator needs `/os/<id>` seen; keep the rig's `entry.json`.
+- **Every hand-run daemon must namespace `SH_PROBES_JSON`, `SH_TRACE_DIR`,
+  `SH_LOG_DIR`** (smoke-rig.sh does now); unset, it plants an undeclared
+  station dir in the fleet tree and `labctl gen` refuses fleet-wide.
+- **Load rule (operator):** saturating the cores is fine; 1-min load above 50
+  means scale down. Each wave holds at most three guests; a race is three
+  runners and the losers die on the first frame; nothing hung is left
+  spinning. The measured load was fleet baseline (~8 cores) plus one full vCPU
+  per running install; QEMU counts were never the problem.
+- **Cross-wave relay is the coordinator's job.** A finding goes into the wave
+  doc AND to the sibling sessions by name; pairs that share a tail (two KDE 3
+  installs, three XFree86 3.3.6-on-cirrus desktops) told each other directly.
+
+Facts every 1990s guest wave paid for once and should not pay again:
+
+| Wall | Measured cause | Fix |
+|---|---|---|
+| Linux 2.2 / FreeBSD 4.x install crawls (70 KB/s CD or disk) | 16-bit PIO is a KVM exit per `outw`; no KVM-side flag helps | Install under `-accel tcg` (~20x faster), bake the golden under the shipped launcher; FreeBSD 4.11 has no busmaster DMA on PIIX3, so its station disk lives on `lsi53c895a` (sym) |
+| Installed Linux 2.2 loops `hda: lost interrupt`, keyboard "not present" | anaconda / YaST install the **SMP** kernel on `-smp 2`; IO-APIC routing on i440fx with `acpi=off` drops IRQs under both accels | Boot the **UP** kernel (`noapic` also works); with `hdparm -d1` PIIX DMA runs 58–70 MB/s under KVM, so the station stays KVM |
+| OpenBSD 7.9 drops key releases under X | `-smp 2` on the i440fx IOAPIC loses keyboard IRQs | `-smp 1` (or `acpi=off`); pick one vCPU first for any 1990s guest |
+| `mke2fs` of a 4 GiB root takes 17 min | same PIO path | 1.5–2 GiB disk, or compose the root filesystem on the host (`mke2fs -I 128 -O none -d <tree>`; 2.2 rejects 256-byte inodes) and boot the CD kernel |
+| `-kernel <2.2 bzImage>` hangs at "Booting from ROM" | both accels | boot from a boot loader on the disk; `sendkey spc` (not shift) stops LILO's timeout |
+| xterm text does not paint on XF86_SVGA + cirrus 5446 | BitBLT path | `Option "no_bitblt"` (depth 8 and 16 proven) |
+| Typed characters drop under XFree86 over QMP | 40/40 key pacing floor | 60/60 measured on wscons+X (netbsd14); measure, ship the number |
+| Pixel-diff pointer proof passes a pointer that never moved | X root cursor parked at screen centre after startx | take the reference frame after moving to a corner; prove two targets |
+| `stations-registry.py new --like` left `operator.labctl.dir` on the sibling | slash-anchored rewrite | fixed 2026-09-03; the scaffold test covers the bare dir |
+
 ## 1. Current scope and candidate backlog
 
 `registry/stations/` is the source of truth for the current lineup. Each entry has
