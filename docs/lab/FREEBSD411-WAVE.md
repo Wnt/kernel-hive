@@ -116,6 +116,22 @@ KDE suppression, in `/root/.kde/share/config/`: `kpersonalizerrc` `[General] Fir
 Name=Konsole`). Sendmail must be NONE or every cold boot stalls twice for 60 s on the
 unqualified host name.
 
-## Timeline (measured after landing with `scripts/dev/session-timeline.py`)
+## Timeline (measured: git commit times, box mtimes, `session-timeline.py`; UTC)
 
-TODO(coordinator).
+Operator's message 22:54:51Z, 2026-09-02. 1 coordinator (Fable) + 4 streams (golden Fable, spa Fable, build sonnet-low, docs sonnet-low).
+
+| Milestone | Clock | Elapsed |
+|---|---|---|
+| ISO fetched + hashed on the box (663 MB) | 22:58Z | 3.5 min |
+| Kernel Configuration Menu → sysinstall frame; smoke rig published at `/os/freebsd411` | 22:59Z | **5 min viewable** |
+| Ledger commit pushed, three streams launched | 23:03Z | 8 min |
+| build merged / spa merged | 23:07Z / 23:16Z | 12 / 21 min |
+| PIO wall found (67 KB/s), race started | 23:15Z | 20 min |
+| TCG runner finished the install; docs merged; all gates green minus golden | ~00:05Z | 70 min |
+| KDE 3.3.2 up under KVM on the rig | 00:25Z | 90 min |
+| **Usage-limit pause, every session** | 00:25Z–03:24Z | 179 min lost |
+| golden baked + restore-proven, branch pushed | 03:29Z | 275 min (96 active) |
+| main pushed 2e94505f / box deployed / `station-up` LISTENING + restore 200 | 03:34Z / 03:36Z / 03:38Z | 283 min (**104 active**) |
+| SPA build + deploy (poster, hero, scene) | see landing log | +~4 min |
+
+Where the active 104 minutes went: 5 to viewable and 8 to the ledger as the procedure predicts; the rest is the guest — a 2005 kernel that reads a CD one 16-bit PIO word at a time under KVM (rule 14 race: `hw.ata.atapi_dma=1` 162 KB/s, SCSI CD + IDE disk 144 KB/s, the TCG install won at ~3 MB/s; the shipped station moved the disk to `lsi53c895a` because the IDE disk is PIO too), plus a KDE package install of ~25 min even under TCG, plus four `origin/main` merges against sibling waves landing the same hour (each ~2 min: union the append-only files, reassign render orders, re-apply the release note — `scripts/dev` has no tool for this yet; the coordinator wrote a throwaway resolver). Coordinator model time was 86% of the span, most of it in the pause.
