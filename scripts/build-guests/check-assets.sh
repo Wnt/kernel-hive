@@ -141,6 +141,7 @@ ROWS=(
   # debian22.sh copies from /data/assets-staging/debian22 (staged from
   # archive.org / archive.debian.org) if present, else re-fetches and pins.
   "opt-file|debian22|Debian 2.2 potato i386 CD1 (archive.org Debian-GNULinux-2.2-arch-i386-CD)|$ASSET_STAGING/debian22/debian-2.2-i386-cd1.iso|sha256:2b1d2b18a14ea1f62302aeb98caf1a7b9191a87c3591a42d8bbf0fe5ef1abf1f|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato hdparm 3.6-1 (archive.debian.org dists/potato/main/binary-i386/admin; not on CD1)|$ASSET_STAGING/debian22/hdparm.deb|sha256:3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9|freely-fetchable-pinned"
   "opt-file|debian22|Debian 2.2 potato i386 base2_2.tgz (archive.debian.org dists/potato/main/disks-i386)|$ASSET_STAGING/debian22/base2_2.tgz|sha256:2f53ecb6a1508be95d5351e468b0197e8dca2a58ecf24c8fc1e07765b9817585|freely-fetchable-pinned"
   # PC/GEOS Ensemble (GeoWorks Ensemble lineage, bluewaysw open-source build,
   # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent

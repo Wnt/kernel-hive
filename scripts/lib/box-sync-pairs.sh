@@ -328,6 +328,9 @@ box_sync_load_pairs() {
   # icbm-watchdog.sh is what keeps ICBM signed on to the gateway -- ICBM .71 has
   # no auto-reconnect of its own. See docs/lab/retronet/STATION-beos.md.
   box_sync_add_pair beos-rn-tapnet streamhost/stations/beos/rn-tapnet.sh "$BOX_ROOT/stations/beos/rn-tapnet.sh" exact repo
+
+  # suse64's retronet link, same shape as beos: the launcher runs it on every start.
+  box_sync_add_pair suse64-rn-tapnet streamhost/stations/suse64/rn-tapnet.sh "$BOX_ROOT/stations/suse64/rn-tapnet.sh" exact repo
   box_sync_add_pair beos-bootscript streamhost/stations/beos/UserBootscript "$BOX_ROOT/stations/beos/UserBootscript" exact repo
   box_sync_add_pair beos-icbm-watchdog streamhost/stations/beos/icbm-watchdog.sh "$BOX_ROOT/stations/beos/icbm-watchdog.sh" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
@@ -358,6 +361,13 @@ box_sync_load_pairs() {
   # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
   # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
   box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
+
+  # ubuntu retronet WEB + ICQ planes: the same mirror pair, for the same reason —
+  # the launcher calls `bash "$T/rn-tapnet.sh" up` before QEMU and dies without
+  # it. Ubuntu 4.10 Warty is a live-CD guest with NO exec channel, one rtl8139 on
+  # tap ubunturn0, DHCP-reserved 10.99.0.30; Firefox 0.9 on the corpus and Gaim
+  # 1.0 as UIN 18300. See docs/lab/retronet/STATION-ubuntu.md.
+  box_sync_add_pair ubuntu-rn-tapnet streamhost/stations/ubuntu/rn-tapnet.sh "$BOX_ROOT/stations/ubuntu/rn-tapnet.sh" exact repo
 
   # rhapsody retronet WEB plane: same mirror-pair shape again. The generic
   # launcher sweep carries qemu-streamhost.sh, but NOT the helper it calls, so
