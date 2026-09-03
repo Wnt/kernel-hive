@@ -51,8 +51,33 @@ same; `-accel tcg` runs the identical install ~20x faster. Race (3-QEMU cap):
 |---|---|---|
 | keep the KVM install running | baseline | LOSS — 70 KiB/s, hours |
 | `ide0=dma` boot parameter | cancelled | redhat62 measured DMA flags as no-ops under KVM |
-| rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | TODO(coordinator): measured rate |
+| rig restarted under `-accel tcg -cpu pentium3`, 1.5 GiB disk | golden (Fable) | **WIN** — CD boot to YaST2 60 s, copy 1.5 MiB/s (47.6 MB/31 s), all 281 packages + LILO in 10 min |
 | `lsi53c895a` SCSI disk under KVM (DMA by design, `ncr53c8xx` module) | sonnet | UNMEASURED, killed at 12 min: under the same load the installer's own 47 MB ramdisk load from the ATAPI CD (PIO too) had not finished, so the theory never reached mke2fs; the 3-QEMU cap went to the TCG rig |
 
 Decision: the station runs under TCG (sunos414 precedent); golden + binary + device
 set are one combination, so the golden is baked under TCG too.
+
+## Wall 2: the installed SMP kernel loses every interrupt (2026-09-03)
+
+YaST2 picked **k_smp** (the CD's boot kernel saw an MP table from QEMU). On the
+first disk boot it prints `PIIX3: not 100% native mode`, `hda: IRQ probe failed (0)`,
+`keyboard: Timeout - AT keyboard not present?`, then loops `hda: lost interrupt`
+(one ~10 s timeout per sector) under TCG **and** KVM; the CD's UP install kernel had
+booted the same disk fine under both. Raced with three clones off a sparse copy of
+the installed disk, LILO driven at its prompt:
+
+| Theory | Result |
+|---|---|
+| `-kernel <bzImage> -append root=/dev/hda3` (both kernels, both accels) | LOSS by method — QEMU's linuxboot hangs at "Booting from ROM…" with these 2.2.14 images; never use `-kernel` here |
+| `linux noapic` at the LILO prompt, TCG | **WIN** — full boot into YaST2's second stage in ~65 s |
+| `linux noapic`, KVM | WIN — fsck clean at 16 s; PIIX DMA state unmeasured |
+| `linux ide=nodma`, TCG | untested (the first round's keystrokes never reached LILO, see trap) |
+| `lsi53c895a` SCSI disk, KVM | killed unmeasured (see above) |
+| CD `k_deflt` written over `/boot/vmlinuz.suse`'s blocks | abandoned — `debugfs blocks` lists the IND/DIND metadata blocks too; the first write clobbered an indirect block; superseded by noapic |
+
+Permanent fix: `append = "noapic"` in `/etc/lilo.conf`, rerun `lilo`. Traps: a
+`sendkey shift` does NOT stop LILO's 3-second `timeout`; `sendkey spc` does —
+start QEMU with `-S`, `cont`, spam `spc` for ~6 s, then type the line
+(`/data/vms/sandbox/suse/race/k/lilo-race.sh`). `qmp-type.py --out` treats the
+path as a directory (`<out>/cur.png`). Relayed to the redhat62 wave, which hit the
+same symptom with `kernel-smp`.
