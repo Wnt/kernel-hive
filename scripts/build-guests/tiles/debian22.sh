@@ -56,7 +56,7 @@ while read -r f; do
   dpkg-deb -x "$CD"/"$f" "$M"
   p=$(dpkg-deb -f "$CD"/"$f" Package)
   dpkg-deb -e "$CD"/"$f" "$B"/ctl
-  for c in "$B"/ctl/*; do [ "$(basename "$c")" = control ] || cp "$c" "$M"/var/lib/dpkg/info/"$p".$(basename "$c"); done
+  for c in "$B"/ctl/*; do [ "$(basename "$c")" = control ] || cp "$c" "$M/var/lib/dpkg/info/$p.$(basename "$c")"; done
   {
     dpkg-deb -f "$CD"/"$f" | sed '1a Status: install ok unpacked'
     echo
