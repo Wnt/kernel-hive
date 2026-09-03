@@ -176,9 +176,101 @@ Frames (kept):
 | Post-restore second page | `/data/vms/sandbox/ubuntu-rn/shots/ff2-postrestore.png` |
 | Cold boot to desktop | `/data/vms/sandbox/ubuntu-rn/bake/desktop.png` |
 
+## Reset and reconnect
+
+**`labctl reset ubuntu` used to leave the exhibit at a password box.** Measured
+on the live station 2026-09-03 06:37:28Z: the restored scene looks perfect for
+~40 s, then Gaim notices the OSCAR socket the `golden` vmstate carries is one
+the gateway has long since dropped, signs 18300 off, and raises
+**"18300 has been disconnected." (Reconnect / Close)** with its **Login window,
+password pre-filled**, behind it. Stock Gaim 1.0 then does **nothing**: the
+station was still sitting on that dialog at **+270 s** (frame
+`shots/m-t270.png`). Do not confuse this with tru64/redhat62, where the
+*patched* Gaim 0.59.9 has auto-reconnect **in the core** and heals in ~3 min —
+Warty's stock 1.0.0 does not.
+
+**The fix is one plugin that is already on the CD**, `/usr/lib/gaim/autorecon.so`,
+plus its own two error-suppression prefs. Without those prefs the plugin still
+reconnects but the "has been disconnected" dialog stays on the desktop forever
+(observed: after a manual Reconnect the dialog survives, losing only its
+Reconnect button). In `~/.gaim/prefs.xml`:
+
+```xml
+<pref name='plugins'>
+  <pref name='loaded' type='stringlist'>
+    <item value='/usr/lib/gaim/docklet.so' />
+    <item value='/usr/lib/gaim/autorecon.so' />   <!-- added -->
+  </pref>
+  <pref name='core'>
+    <pref name='autorecon'>
+      <pref name='hide_connected_error'  type='bool' value='1' />  <!-- was 0 -->
+      <pref name='hide_connecting_error' type='bool' value='1' />  <!-- was 0 -->
+      <pref name='restore_state'         type='bool' value='1' />
+    </pref>
+  </pref>
+</pref>
+```
+
+Gaim rewrites `prefs.xml` on exit, so the edit must happen with **gaim not
+running**: `pkill gaim`, sleep 3, `sed -i`, then start `gaim` again (it
+auto-logs-in from `accounts.xml` and paints a fresh Buddy List — never a Login
+window). Delivered by the same `wget -qO- http://10.99.0.2:8099/s.sh | sh` route
+as the original onboarding; the script is tracked at
+`scripts/retronet/guest/ubuntu-gaim-autorecon.sh`.
+
+**No host-side nudge.** The `nt4-icq-nudge` pattern is not needed here — nothing
+has to elicit a RST, because Gaim's own keepalive timeout notices the dead
+socket and autorecon takes it from there.
+
+### Proof, on the live station
+
+`labctl reset ubuntu` at **2026-09-03 06:57:51Z**, wake lease held throughout:
+
+| Frame | What it shows |
+|---|---|
+| `/data/vms/sandbox/ubuntu-recon/shots/final-t90.png` | +90 s — Buddy List, **HiveBot online**, no dialog, no Login window |
+| `/data/vms/sandbox/ubuntu-recon/shots/final-t150.png` | +150 s — same, still clean |
+| `/data/vms/sandbox/ubuntu-recon/shots/m-t270.png` | the OLD behaviour at +270 s, for contrast |
+| `/data/vms/sandbox/ubuntu-recon/bake/k-t30.png` | bake clone, +30 s after the gateway socket was killed with `ss -K` |
+
+A frame alone is not enough — a Gaim that *thinks* it is online paints the same
+buddy list. The gateway is the second witness, and it logged a **new sign-on
+40 s after the reset**:
+
+```
+Sep 03 06:58:31 retronet-gw open_oscar_server[92]: time=2026-09-03T06:58:31.783Z \
+  level=INFO msg="user signed on" svc=OSCAR screenName=18300 ip=10.99.0.30:33326
+```
+
+(`pct exec 951 -- journalctl -u retronet-oscar --since '<reset time, box local>'`;
+the gateway's `/session` API showed `18300` absent at +30 s and present on the
+**new** port 33326 from +90 s on.)
+
+The golden was re-baked for this on `/data/vms/sandbox/ubuntu-recon/bake/` with
+the production device set (tap `ubunturn0`, the real MAC, `-loadvm golden`):
+**VM_SIZE 307 MiB, VM_CLOCK 0000:14:58.326**. Live-station downtime for the
+swap: **06:43:02Z → 06:57:32Z**.
+
+**The pre-autorecon golden is gone, and that is worth knowing.** It was moved
+aside as `ubuntu.qcow2.bak-pre-recon` at 06:57:32Z; by 07:07 it had been deleted
+by something outside this session — the same sweep also took
+`ubuntu.qcow2.bak-pre-rn`, the retronet rollback the section below still
+promises, and left `/data/gallery-guests/Ubuntu/` holding only `ubuntu.qcow2`,
+the 192 KiB `ubuntu.qcow2.bak-pre-golden` and the ISO. `/data` was 38 % full, so
+it was not a space reaper. **Do not assume a `.bak-*` beside a gallery guest is
+still there** — check before you plan a rollback on it.
+
+Rolling autorecon back therefore means undoing it in the guest, not restoring a
+file: boot a clone with the production device set, `pkill gaim`, drop the
+`autorecon.so` `<item>` from `~/.gaim/prefs.xml`, set the two `hide_*_error`
+prefs back to `0`, restart gaim, `savevm golden`. The shipping golden is also
+copied at `/data/vms/sandbox/ubuntu-recon/bake/ubuntu.qcow2` while that sandbox
+lives.
+
 ## Rollback
 
-The pre-retronet golden is kept **byte-for-byte** at
+The pre-**autorecon** golden is `ubuntu.qcow2.bak-pre-recon` (see
+§Reset and reconnect). The pre-**retronet** golden is kept **byte-for-byte** at
 `/data/gallery-guests/Ubuntu/ubuntu.qcow2.bak-pre-rn` (it is the air-gapped
 `golden`, VM_SIZE 255 MiB / VM_CLOCK 0000:05:55.667). Full rollback:
 
@@ -205,9 +297,9 @@ ssh lab 'bridge fdb show dev ubunturn0'                                  # the g
 
 ## Unproven / next
 
-- The station has **not** been restarted onto this golden; the coordinator lands
-  the branch and restarts. Everything above is proven on the bake clone with the
-  production device set, not through `streamhost@ubuntu`.
+- The station **is** running this golden (restarted 2026-09-03 06:57:32Z with
+  the autorecon re-bake, §Reset and reconnect); the web plane above is still
+  only proven on a bake clone, not through `streamhost@ubuntu`.
 - The `:3128` proxy door was not exercised — this station does not need it
   (Firefox 0.9 sends `Host:`), and the seamless route is the one that ships.
 - `museum.periodBrowser` stays **Firefox 0.9.3**, which is what Warty ships; the
