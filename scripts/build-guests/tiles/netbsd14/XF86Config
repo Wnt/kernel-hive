@@ -31,6 +31,13 @@ Section "Device"
     BoardName  "GD5446"
     Chipset    "clgd5446"
     VideoRam   4096
+    # XAA off entirely. no_bitblt alone leaves the SCROLL path (CopyArea) broken:
+    # any window that scrolls repaints with a stale column artifact over every
+    # character cell and only an Expose (xrefresh) repairs it — proven 2026-09-03
+    # in a plain xterm, so it is the server, not the client. With noaccel a 600-line
+    # scroll is pixel-clean. It matters now because the retronet mICQ window scrolls
+    # on every reconnect. See docs/lab/retronet/STATION-netbsd14.md.
+    Option     "noaccel"
     Option     "no_bitblt"   # QEMU cirrus BitBLT: text never paints without it (proven by the slackware wave, 2026-09-03)
 EndSection
 Section "Screen"
