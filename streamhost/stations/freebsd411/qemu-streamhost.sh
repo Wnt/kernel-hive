@@ -10,6 +10,11 @@
 # SH_X11WARP_DISPLAY=127.0.0.1:78 via the loopback SLIRP forward 6078->6000 below),
 # buttons + keys ride the D-Bus PS/2 path.
 #
+# The station is on the retronet (2026-09-03): a second, BRIDGED NIC on vmbr-rn
+# carries the ICQ plane (Kopete 0.9.1 -> the gateway's OSCAR door 10.99.0.2:5190)
+# and the web plane (Konqueror -> the gateway's :80 corpus origin, seamless, no
+# proxy). docs/lab/retronet/STATION-freebsd411.md.
+#
 # disk.qcow2 is the ONLY block device and carries the 'golden' vmstate. Baked
 # under /opt/qemu-beos (QEMU 11.0.2 fork, same machine types as the host pve
 # build): golden + binary + device set are ONE combination (rule 6).
@@ -23,6 +28,25 @@ rm -f "$BASE/qmp.sock" "$BASE/qemu.pid"
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
 qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+# Retronet: the SECOND NIC is a real bridged tap on vmbr-rn (rtl8139 -> FreeBSD
+# `rl`, DMA — the ne2k PIO path is one KVM exit per 16-bit word, the same trap
+# the disk hit). OSCAR cannot traverse slirp, so the ICQ plane needs L2; the web
+# plane rides the same NIC (DHCP-reserved 10.99.0.35, DNS 10.99.0.2, no default
+# route). The slirp NIC above stays exactly as it was, purely as the x11warp
+# pointer path. rn-tapnet.sh creates the tap and installs the fail-closed
+# FREEBSD411RN-IN guard chain on EVERY start, under `set -e`: QEMU never starts
+# an uncontained guest. The MAC lives in the golden's device vmstate.
+RN_MAC="$(sed -n 's/^[[:space:]]*RN_FREEBSD411_MAC=//p' /data/kernel-hive/registry/local.env 2>/dev/null | tail -1 | tr -d '"'"'"'"')"
+RN_MAC="${RN_MAC:-02:00:00:00:00:23}"
+"$BASE/rn-tapnet.sh" up
+
+# `restrict=on` on the slirp backend: without it SLIRP hands the guest a default
+# route via 10.0.2.2 and the guest can reach whatever the host's stack can. The
+# station needs nothing outbound on this NIC — it is the pointer path only — so
+# the backend is restricted and `hostfwd` (host -> guest) keeps working. This is
+# a BACKEND option, not a device change, but the golden is baked with the exact
+# launcher regardless.
+#
 # X pointer forward: host loopback 6078 -> guest 10.0.2.15:6000. SLIRP forwards
 # are host-side state, not vmstate, so declaring it on -netdev re-adds it every
 # start without touching the device set. The guest's only interfaces are ne2
@@ -41,7 +65,8 @@ nohup "${FREEBSD411_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -device lsi53c895a,id=scsi0 \
   -drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=none,id=hd0 \
   -device scsi-hd,bus=scsi0.0,drive=hd0 \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no -device rtl8139,netdev=rn0,mac="$RN_MAC" \
   -qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid \
   >"/data/vms/streamhost/stations/freebsd411/qemu.log" 2>&1 &

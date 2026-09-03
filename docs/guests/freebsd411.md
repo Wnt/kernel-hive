@@ -104,3 +104,43 @@ Reset restores `disk.qcow2` to the golden checkpoint.
 - Shares the X + KDE bring-up tail with the `pcbsd` wave (FreeBSD 6.3, KDE
   3.5.8, display `:79`) — the two waves coordinate on whoever solves a piece
   first.
+
+## Retronet
+
+`freebsd411` joined the retronet on **2026-09-03** through a **second, bridged
+NIC** — `rtl8139` on tap `freebsd411rn0` on `vmbr-rn`, guest `rl0`, DHCP-reserved
+**10.99.0.35**, DNS `10.99.0.2`, no default gateway. The station's original slirp
+`ne2k_pci` is unchanged and now carries **only** the x11warp pointer forward
+(`6078 → 10.0.2.15:6000`), because OSCAR cannot traverse slirp and the NE2000's
+16-bit PIO is as slow under KVM as the IDE path this station already avoids.
+
+- **Web plane — proven.** Konqueror 3.3.2 renders `http://search.retronet/` with
+  no proxy configured: DHCP hands it the gateway as its resolver, every name
+  resolves to `10.99.0.2`, and the gateway's `:80` origin serves the museum
+  corpus by `Host`. Frame:
+  `/data/vms/streamhost/stations/freebsd411/evidence/retronet-konqueror-search-retronet-20260903.png`.
+- **Addressing — proven.** A cold boot of the new launcher set plus
+  `ifconfig_rl0="DHCP"` in `/etc/rc.conf` takes the **reserved** address:
+  `ifconfig rl0` → `inet 10.99.0.35 netmask 0xffffff00`.
+- **ICQ plane — wired, not signed in.** Kopete 0.9.1 is installed
+  (`kdenetwork-3.3.2` from the FreeBSD 4.11 package archive — it is **not** on the
+  `disc1-kde` ISO), the gateway account UIN **17800** exists and is open, and its
+  server-side SSI roster already carries **HiveBot**. The client's Add-Account
+  wizard is filled but not finished, so no login has reached the gateway and the
+  roster row stays `onboarded: false`. `~/.kde/share/config/kopeterc` carries the
+  account group and `~/.kde/Autostart/kopete.desktop` starts it with the session;
+  what is missing is the password, which KWallet must be walked through once.
+- **Konqueror launcher.** `~/Desktop/Retronet Web.desktop` opens
+  `http://search.retronet/`, and `konquerorrc` sets it as the home page. Written,
+  not yet proven by opening it from the icon.
+- The slirp pointer NIC now carries `restrict=on` so it hands the guest no route
+  at all; the bridged NIC is the guest's only network.
+- Containment is the fleet pattern: `streamhost/stations/freebsd411/rn-tapnet.sh`
+  creates the persistent tap and the fail-closed `FREEBSD411RN-IN` chain (scoped
+  to both the guest IP and its MAC) on every launcher start.
+
+The new NIC is a **new device set**, so the golden was re-baked by a cold boot on
+the new launcher (VM_SIZE 112 MiB, VM_CLOCK 0000:01:24.239, 2026-09-03 09:12:43
+UTC) and restore-proven; the pre-retronet golden is kept beside it as
+`freebsd411.pre-rn.qcow2`. Full detail, and the list of what is
+still open: [`docs/lab/retronet/STATION-freebsd411.md`](../lab/retronet/STATION-freebsd411.md).

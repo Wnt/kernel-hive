@@ -129,6 +129,13 @@
       "nick": "slackware",
       "client": "micq043",
       "onboarded": true
+    },
+    {
+      "station": "freebsd411",
+      "uin": "17800",
+      "nick": "freebsd411",
+      "client": "unix-oscar",
+      "onboarded": false
     }
   ]
 }

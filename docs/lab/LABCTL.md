@@ -98,6 +98,14 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   correct fail-closed behaviour, not a broken station — start the station first.
 - **`labctl reset`** is `loadvm golden`, and refuses stations without a checkpoint
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
+- **`qmp-type.py` eats backslash escapes, so never type a `printf` format into a
+  guest.** `\n` is Enter and `\012` is swallowed too, so `printf "%s\n" …` put a
+  literal `n` in the file one run and submitted a half-typed command the next —
+  on freebsd411 that silently wrote `kopeterc`, a `.desktop` launcher and an
+  autostart file as one broken line each, and cost a bring-up window before
+  anyone looked at the bytes. Write multi-line files with a
+  `{ echo …; echo …; } > file` group instead, and remember many of these guests
+  run **csh** as root's shell: wrap the whole thing in `sh -c '…'`.
 - **Restoring and recapturing are different halves, and agents confuse them.**
   `labctl reset <station>` RESTORES the checkpoint; `ssh lab 'checkpoint-guard
   recapture <station>'` RECAPTURES it — the only safe way to replace a `golden`
