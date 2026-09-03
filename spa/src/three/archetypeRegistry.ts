@@ -207,7 +207,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
   pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1', pointerRel: true },
   ubuntu:      { osId: 'ubuntu', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#dd4814', eraLabel: '2004 · Ubuntu 4.10 Warty Warthog' },
-  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: true },
+  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

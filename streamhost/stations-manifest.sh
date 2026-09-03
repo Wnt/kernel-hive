@@ -1050,8 +1050,8 @@ emit pcbsd \
 #   (msmouse chardev -> ttyS0, dbus-rel), GRUB2 linux16 ISO boots the zImage.
 #   Checkpoint 'golden' in disk.qcow2; -loadvm golden -S.
 emit slackware \
-  --tile slackware --vmid 184 --udp 54184 --pointer rel --input-backend \
-  dbus-rel --cursor-scale 0.5 --cursor-off-x 0 --cursor-off-y 0 --audio on \
+  --tile slackware --vmid 184 --udp 54184 --pointer abs --input-backend \
+  x11warp --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on \
   --fps 30 --launcher-file "$T/slackware/qemu-streamhost.sh" \
   --env-append-file "$T/slackware/station.env.fixture"
 

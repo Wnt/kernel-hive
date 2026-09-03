@@ -266,7 +266,7 @@ missing feature.
 | `sailfishos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | off | 30 | — |
 | `serenityos` | 1 direct-QEMU | kvm | `qemu-vmmouse` | abs | — | on | 60 | — |
 | `sinclairql` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
-| `slackware` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | dbus-rel | on | 30 | — |
+| `slackware` | 1 direct-QEMU | kvm | `x11-warp-absolute` | abs | x11warp | on | 30 | — |
 | `solaris` | 1 direct-QEMU | kvm | `gallery-hid` | abs | — | on | 60 | warpd_e |
 | `star` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | off | 30 | ssh |
 | `sunos414` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | on | 30 | telnet_unix_e |

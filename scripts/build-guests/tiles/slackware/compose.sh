@@ -15,6 +15,7 @@ PKGS_AP="manpgs sudo joe bc diff sc zsh ash jpeg mc vim"
 PKGS_X="fvwm fvwmicns x331bin x331cfg x331doc x331fnts x331lib x331man x331svga x331vg16 x331fscl xlock xpm"
 PKGS_XAP="fvwm95 libgr xv xfm xpaint xgames"
 PKGS_Y="bsdgames"
+PKGS_N="tcpip"   # n6: ifconfig/route/rc.inet1 — the x11warp absolute pointer needs guest TCP/IP
 rm -rf "$ROOT"
 mkdir -p "$ROOT" "$OUT/noop"
 for t in ldconfig depmod chroot; do
@@ -41,6 +42,7 @@ for p in $PKGS_AP; do inst ap "$p"; done
 for p in $PKGS_X; do inst x "$p"; done
 for p in $PKGS_XAP; do inst xap "$p"; done
 for p in $PKGS_Y; do inst y "$p"; done
+for p in $PKGS_N; do inst n "$p"; done
 echo "packages: $(find "$ROOT/var/log/packages" -type f | wc -l)"
 
 # ---- soname links: libc5-era Slackware leaves these to ldconfig (which we neutered) ----
@@ -65,6 +67,26 @@ cat >etc/fstab <<'F'
 none             /proc            proc        defaults   0   0
 F
 echo darkstar >etc/HOSTNAME
+# ---- network: slirp user-net 10.0.2.0/24, NE2000 ISA at io 0x300 (QEMU ne2k_isa defaults) ----
+# The only consumer is the x11warp pointer sink: host 127.0.0.1:6084 -> guest :6000 (X on TCP).
+printf '127.0.0.1\tlocalhost\n10.0.2.15\tdarkstar.example.com darkstar\n10.0.2.2\tslirp-host\n' >etc/hosts
+cat >etc/rc.d/rc.inet1 <<'F'
+#!/bin/sh
+# Kernel Hive: static slirp address; the NE2000 module is loaded by rc.modules.
+/sbin/ifconfig lo 127.0.0.1
+/sbin/route add -net 127.0.0.0 netmask 255.0.0.0 lo
+/sbin/ifconfig eth0 10.0.2.15 broadcast 10.0.2.255 netmask 255.255.255.0
+/sbin/route add -net 10.0.2.0 netmask 255.255.255.0 eth0
+/sbin/route add default gw 10.0.2.2 metric 1
+F
+chmod 755 etc/rc.d/rc.inet1
+printf '#!/bin/sh\n# Kernel Hive: no inetd/portmap -- nothing listens but X.\n' >etc/rc.d/rc.inet2
+chmod 755 etc/rc.d/rc.inet2
+cat >>etc/rc.d/rc.modules <<'F'
+
+# Kernel Hive: QEMU ne2k_isa (io 0x300, irq 9) for the x11warp pointer forward
+/sbin/modprobe ne io=0x300
+F
 cat >etc/lilo.conf <<'F'
 boot = /dev/hda
 delay = 5
@@ -155,6 +177,7 @@ cat >root/.xinitrc <<F
 xset s off 2>/dev/null
 xset -dpms 2>/dev/null
 xset m 1 1
+xhost +10.0.2.2 >/dev/null 2>&1   # the host's x11warp sink (slirp gateway) may move the pointer
 xsetroot -solid "#2f4f6f"
 xterm -geometry 80x24+48+40 -sb -title "darkstar" &
 xclock -geometry 120x120-40+40 &

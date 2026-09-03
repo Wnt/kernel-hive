@@ -126,12 +126,24 @@ root has an empty password in both `passwd` and `shadow`.
 
 ## Pointer
 
-**Relative.** A Microsoft serial mouse on `ttyS0` (QEMU `-chardev msmouse`,
-`SH_INPUT_BACKEND=dbus-rel`, `method: qemu-ps2-relative`, scale 1.0); X runs
-`xset m 1 1` in `.xinitrc` so 1 mouse unit = 1 px, no acceleration. PS/2 exists
-only as a module (`CONFIG_PSMOUSE=m`) in `bare.i`, unused here. XFree86 3.3.1
-knows no absolute device QEMU can offer this guest (no usb-tablet, no evdev) —
-see *Known gaps* for the absolute-pointer follow-up.
+**Absolute, through the guest's own X server (x11warp).** XFree86 3.3.1 knows no
+absolute input device QEMU can offer, so the streamhost daemon connects to the
+guest X server over TCP and moves the pointer with `XWarpPointer`, reading it back
+with `XQueryPointer` (`SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:84`,
+`method: x11-warp-absolute`). The plumbing composed into the root filesystem:
+
+- the `tcpip` package (n6) for `ifconfig`/`route`; `/etc/rc.d/rc.inet1` sets the
+  slirp address 10.0.2.15/24 with 10.0.2.2 as gateway; `rc.inet2` is emptied so
+  nothing but X listens;
+- `/etc/rc.d/rc.modules` loads `ne` (`io=0x300`) — the kernel's own NE2000 driver
+  as a module, matching QEMU's `ne2k_isa` defaults (io 0x300, irq 9);
+- the launcher's `-netdev user,…,hostfwd=tcp:127.0.0.1:6084-10.0.2.15:6000` and
+  `xhost +10.0.2.2` in `.xinitrc` (XFree86 3.3 listens on TCP by default).
+
+Buttons and the relative fallback still travel the Microsoft serial mouse on
+`ttyS0` (QEMU `msmouse`; measured 2 px per unit). Proof tool:
+`scripts/build-guests/tiles/slackware/xwarp.py` — raw core protocol, because
+xdotool segfaults against an XFree86 3.3 server and labhost has no python-xlib.
 
 ## Checkpoint
 
@@ -147,18 +159,16 @@ power-on; `savevm golden` at VM_CLOCK 0000:00:42.223, VM_SIZE 16.7 MiB, stored i
   `Linux darkstar 2.0.30 #3 Tue Jun 24 03:49:52 CDT 1997 i686 unknown`.
 - **Reset is the restore**: `loadvm golden` after typing → the output is gone and
   the clock is back at bake time (`fb-reset.png`).
-- **Pointer**: relative Microsoft serial mouse; the X pointer starts at the screen
-  centre (the "X" root cursor at 512,384) and QMP `mouse_move` carries it across
-  the desktop (coordinator-verified on the smoke rig after the golden stream's
-  pixel diff missed it). Per-unit gain: see the fixture comments.
+- **Pointer (phase 2, 2026-09-03)**: golden re-baked with the NE2000 device set
+  (VM_CLOCK 0000:00:55, pointer parked at 1020,760). `xwarp.py 127.0.0.1:84
+  100 700 900 100` reads back exact and the cursor is visible at both targets on
+  the framebuffer, before and after `loadvm golden`; golden and restore frames
+  differ by zero pixels (`/data/vms/sandbox/slackware/abs/fb-*.png`).
 
 ## Known gaps
 
-- **Absolute pointer** needs guest TCP/IP: swap the `net.i` zImage
-  (NE2000-PCI/RTL8029 in 2.0.30's `ne.c`) plus the `n` series (tcpip) and
-  `xhost +10.0.2.2`, then run `SH_INPUT_BACKEND=x11warp` with hostfwd
-  `127.0.0.1:6084→:6000` (X warp port reserved but unused). Not attempted in
-  this wave — the station ships relative-only.
+- ~~Absolute pointer~~ — done in phase 2 (x11warp), see *Pointer* above. The
+  `bare.i` kernel's NE2000 module was enough; no kernel swap was needed.
 - **No exec channel.** `bare.i` has no NIC driver; everything is QMP
   keys/mouse plus the framebuffer, same as several of the fleet's other
   small, driver-light stations.

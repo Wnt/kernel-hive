@@ -1085,7 +1085,7 @@
     "slackware": {
       "dir": "/data/vms/streamhost/stations/slackware",
       "qmp": "/data/vms/streamhost/stations/slackware/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -1098,7 +1098,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54184,
-      "notes": "No exec channel: bare.i has no NIC driver. Framebuffer + qmp-type into the xterm is the proof path."
+      "notes": "Pointer via x11warp on 127.0.0.1:84 (slirp hostfwd to the guest X :0). No exec channel yet; framebuffer + qmp-type into the xterm is the proof path."
     },
     "solaris": {
       "dir": "/data/vms/streamhost/stations/solaris",

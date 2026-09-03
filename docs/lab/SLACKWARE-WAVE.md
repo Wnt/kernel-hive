@@ -106,11 +106,28 @@ costing one compose+boot cycle (~1.5 min). Sinks worth fixing next time: the qui
 (one extra push+deploy); the four X-config race should have started the moment the
 first blank xterm appeared instead of after two serial theories.
 
+## Phase 2 — absolute pointer via x11warp (2026-09-03, coordinator alone, ~35 min)
+
+Operator: "pointer-based graphical OSes need absolute cursor positioning before
+they are considered fully integrated." Route as netbsd14's: the daemon warps the
+pointer inside the guest X server over a slirp forward. What it took, all in
+`compose.sh`: the `tcpip` package from n6, a static `rc.inet1` (10.0.2.15/24, gw
+10.0.2.2), `rc.inet2` emptied, `modprobe ne io=0x300` in `rc.modules` (the
+`bare.i` kernel ships `ne.o` as a module — no kernel swap), `xhost +10.0.2.2` in
+`.xinitrc`; launcher: `-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6084-10.0.2.15:6000
+-device ne2k_isa,netdev=n0`. Proof: `xwarp.py` (raw X11 WarpPointer+QueryPointer;
+xdotool segfaults on XFree86 3.3) warps to (100,700) and (900,100) with exact
+readback and the cursor visible on the framebuffer at both; new golden baked with
+the pointer parked at (1020,760), restore frame pixel-identical, warps exact after
+restore. Traps: an absolute-symlink append (`cat >> etc/rc.d/…`) on the host is
+safe here (regular file), but the site-config patch anchored on a line `shfmt` had
+already reformatted (`>etc/HOSTNAME`) and silently applied nothing — check the
+composed tree for your marker before booting. Fixture keys: `SH_INPUT_BACKEND=x11warp`,
+`SH_X11WARP_DISPLAY=127.0.0.1:84`; registry pointer `x11-warp-absolute`, abs.
+
 ## Open follow-ups
 
-- **Absolute pointer** via x11warp needs guest TCP/IP: swap the `net.i` zImage
-  (NE2000-PCI/RTL8029 in 2.0.30's `ne.c`) plus the `n` series (tcpip) and
-  `xhost +10.0.2.2`; then `SH_INPUT_BACKEND=x11warp`, hostfwd 127.0.0.1:6084→:6000.
+- ~~Absolute pointer~~ — landed in phase 2 below.
 - Playbook §0 cited `/data/vms/streamhost/serve/qmp-type.py`; fixed in this wave to
   `scripts/dev/qmp-type.py` (`--qmp` or `--station`).
 - `pgrep -x qemu-system-x86_64` matches nothing (15-char comm limit); prune by
