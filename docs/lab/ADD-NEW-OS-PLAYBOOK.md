@@ -258,6 +258,9 @@ never counts the seconds), then `labctl shot` shows the client online (not
 dated after the reset in the gateway's ICQ journal (CT 951; `rn-verify.sh <id>
 --icq <uin> --since <reset-ts>`). The frame alone lies: suse64's GtkICQ showed
 "Online" for minutes while the gateway answered every packet NOT_CONNECTED.
+The same reconnect fires in steady state: an idle-paused station sends no
+keepalives, the gateway reaps its session, and the client must re-login on
+wake (debian22's GnomeICU did, unaided, in ~2 min).
 Measured: Gaim 0.59.9 reconnects at ~3 min by itself, Kopete 0.12 at ~1 min,
 mICQ 0.4.12 at ~70 s; Gaim 1.0 and GtkICQ 0.60 never (autorecon plugin /
 restart wrapper needed); micq 0.4.3 exits, so an exit-driven loop works.

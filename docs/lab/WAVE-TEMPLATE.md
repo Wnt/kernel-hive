@@ -84,7 +84,8 @@ step-by-step output. Note anything it stopped on and how it was resolved.
   showed "Online" while the gateway rejected it). If it does not reconnect
   unassisted (Gaim 1.0, GtkICQ 0.60), the station needs the autorecon plugin
   or a restart wrapper (as slackware's micq and suse64's GtkICQ do) before
-  this counts as done — note which case this station is in the report
+  this counts as done; the same path fires after every idle pause, since the
+  gateway reaps a session that sends no keepalives — note which case this station is in the report
 
 ## OPEN items
 

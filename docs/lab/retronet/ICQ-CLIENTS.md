@@ -45,6 +45,12 @@ no GTK anywhere), which is why that station took mICQ.
 
 ## The frame is not the proof — a restored client lies
 
+The same lie appears without any restore: an idle-paused station sends no
+keepalives, the gateway reaps its session, the client keeps its green icon, and
+on wake it must re-login (debian22's GnomeICU did so unaided in ~2 min; a
+client without a reconnect path needs the wrapper below). Proof after a wake is
+the same journal line.
+
 **Every visitor arrives through `loadvm golden`, not a cold boot.** A restored
 vmstate carries a TCP socket the gateway forgot hours ago, so "signed in when we
 baked it" says nothing about "signed in when a visitor looks at it". This has
