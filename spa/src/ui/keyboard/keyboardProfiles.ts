@@ -313,6 +313,8 @@ export const OS_FAMILY: Record<string, Family> = {
   // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
   // 'generic' is the honest PC-104 common ground.
   pcbsd: 'generic',
+  // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
+  netbsd14: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows

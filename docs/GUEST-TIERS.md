@@ -242,6 +242,7 @@ missing feature.
 | `macos9` | 1 direct-QEMU | tcg | `qemu-usb-hid-relative` | rel | — | off | 30 | — |
 | `mpf2` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `msdoswin1` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 60 | — |
+| `netbsd14` | 1 direct-QEMU | kvm | `x11warp` | abs | — | on | 30 | — |
 | `newsos` | 3 host-native | MAME/host | `mame-ioport` | abs | — | off | 30 | serialcsh_e |
 | `nextstep` | 3 host-native | Previous/host | `previous-tablet` | abs | — | on | 60 | — |
 | `ninefront` | 1 direct-QEMU | kvm | `warpd-agent` | warpd | — | on | 60 | — |

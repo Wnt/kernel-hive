@@ -101,6 +101,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "netbsd14": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xcalc &"
+    ],
+    "runCommand": "xcalc &",
+    "perCharMs": 120
+  },
   "openbsd": {
     "label": "Type a few commands into the xterm",
     "lines": [
@@ -109,7 +119,7 @@ const DEMO_PROGRAMS = {
       "xlogo &"
     ],
     "runCommand": "xlogo &",
-    "perCharMs": 80
+    "perCharMs": 220
   },
   "oricatmos": {
     "label": "Type in a demo program",
