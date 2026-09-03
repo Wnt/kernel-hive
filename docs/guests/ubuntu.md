@@ -104,8 +104,17 @@ the device vmstate — `loadvm` would have restored the old, NIC-less machine):
 - Scene: the **Gaim 1.0 Buddy List** open and signed in as UIN `18300`, with
   **HiveBot** and the retronet fleet listed by name; **Firefox 0.9 closed**, its
   globe on the top GNOME panel; terminal closed; no dialogs.
-- Snapshot `golden`, saved via the HMP socket (`savevm golden`):
-  **VM_SIZE = 307 MiB, VM_CLOCK = 00:11:25.966** (`qemu-img snapshot -l`).
+- Snapshot `golden`, saved via the HMP socket (`savevm golden`). It was
+  **re-baked 2026-09-03 09:49** on `/data/vms/sandbox/ubuntu-recon/bake/` to load
+  Gaim's `autorecon` plugin, so a reset re-signs-in by itself
+  ([STATION-ubuntu.md §Reset and reconnect](../lab/retronet/STATION-ubuntu.md#reset-and-reconnect)):
+  **VM_SIZE = 307 MiB, VM_CLOCK = 0000:14:58.326** (`qemu-img snapshot -l`).
+  The pre-autorecon golden (VM_SIZE 307 MiB, VM_CLOCK 0000:11:25.966) was moved
+  aside as `ubuntu.qcow2.bak-pre-recon` and then **deleted from
+  `/data/gallery-guests/Ubuntu/` by an unrelated sweep ~10 minutes later**,
+  which also took `ubuntu.qcow2.bak-pre-rn` — see
+  [STATION-ubuntu.md §Reset and reconnect](../lab/retronet/STATION-ubuntu.md#reset-and-reconnect)
+  for the rollback that replaces it.
 - **Restore-proven**: killed the bake clone by pidfile, relaunched with
   `-loadvm golden -S`, QMP `cont`, `fb-wait.py --settle 4 --timeout 60` landed
   on the identical scene in **4.1 s**. Both planes survived the restore with no
