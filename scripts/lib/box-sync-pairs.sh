@@ -361,11 +361,7 @@ box_sync_load_pairs() {
   # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
   # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
   box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
-
-  # pcbsd retronet WEB + ICQ planes: same mirror-pair shape. PC-BSD 1.5.1 browses
-  # the corpus with Konqueror 3.5.8 and signs into the OSCAR gateway with Kopete
-  # 0.12.7 (UIN 17900) over tap pcbsdrn0. Without this pair the launcher dies at
-  # `bash "$B/rn-tapnet.sh" up`. See docs/lab/retronet/STATION-pcbsd.md.
+  # pcbsd WEB + ICQ (Konqueror 3.5.8 / Kopete 0.12.7, UIN 17900) — docs/lab/retronet/STATION-pcbsd.md
   box_sync_add_pair pcbsd-rn-tapnet streamhost/stations/pcbsd/rn-tapnet.sh "$BOX_ROOT/stations/pcbsd/rn-tapnet.sh" exact repo
   # ubuntu retronet WEB + ICQ planes: the same mirror pair, for the same reason —
   # the launcher calls `bash "$T/rn-tapnet.sh" up` before QEMU and dies without
