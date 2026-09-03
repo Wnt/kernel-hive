@@ -900,7 +900,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54179,
-      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:79; the launcher publishes a loopback SLIRP forward 6079->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. A usb-tablet is inert in FreeBSD 6.3 X. disk.qcow2 is the only block device and carries the golden vmstate."
+      "notes": "retronet: em1 on tap pcbsdrn0 (DHCP 10.99.0.29); em0 is a restrict=on slirp NIC carrying only the x11warp door 127.0.0.1:6079 -> 10.0.2.15:6000. No exec channel; rel PS/2 pointer only (motion is warped absolutely through the guest X server) — the usb-tablet is inert in FreeBSD 6.3 X and was dropped from the device set"
     },
     "pcgeos": {
       "dir": "/data/vms/streamhost/stations/pcgeos",
@@ -1188,7 +1188,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54184,
-      "notes": "Pointer via x11warp on 127.0.0.1:84 (slirp hostfwd to the guest X :0). No exec channel yet; framebuffer + qmp-type into the xterm is the proof path."
+      "notes": "Pointer via x11warp on 10.99.0.31:0 (the guest X server over the retronet tap slackwarern0, MAC from local.env). Exec channel: telnet at 10.99.0.31:23 (telnet_unix_e wrapper) — wire exec_kind in a follow-up. Note: with no viewer the idle pause freezes the guest after 60 s and every TCP probe times out; hold a wake lease."
     },
     "solaris": {
       "dir": "/data/vms/streamhost/stations/solaris",
