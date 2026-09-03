@@ -1,6 +1,11 @@
 #!/bin/bash
-# freebsd411 — FreeBSD 4.11-RELEASE i386 (Jan 2005), KDE 3.3.2 on XFree86 4.3.0 (cirrus driver).
-# Scaffolded from netbsd14 (same pc-i440fx-11.0 KVM device set) on 2026-09-02;
+# freebsd411 — FreeBSD 4.11-RELEASE i386 (Jan 2005), KDE 3.3.2 on XFree86 4.4.0 (vesa driver on -vga std).
+# Scaffolded from netbsd14 (pc-i440fx-11.0 KVM) on 2026-09-02, then measured (golden stream, 2026-09-03):
+#   * the system disk is a SCSI disk on an lsi53c895a (FreeBSD `sym`), NOT IDE: 4.11's ata driver
+#     refuses bus-master DMA on QEMU's PIIX3 ("atapci0: Busmastering DMA not supported",
+#     "ad0 ... BIOSPIO") and 16-bit PIO under KVM is one exit per word — ~150 KB/s disk I/O.
+#     The `sym` path does real DMA; the guest's /etc/fstab names da0s1*.
+#   * -vga std: XFree86 4.4.0 vesa at 1024x768x16 (the cirrus route was never needed).
 # pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on
 # SH_X11WARP_DISPLAY=127.0.0.1:78 via the loopback SLIRP forward 6078->6000 below),
 # buttons + keys ride the D-Bus PS/2 path.
@@ -31,9 +36,11 @@ nohup "${FREEBSD411_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -rtc base=localtime \
   -boot c \
   $LOADVM \
-  -vga cirrus \
+  -vga std \
   -display dbus,p2p=on \
-  -drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=ide \
+  -device lsi53c895a,id=scsi0 \
+  -drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=none,id=hd0 \
+  -device scsi-hd,bus=scsi0.0,drive=hd0 \
   -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
   -qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid \

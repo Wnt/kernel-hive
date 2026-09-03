@@ -148,23 +148,25 @@
       "cpu": "host",
       "memoryMB": 256,
       "smp": 1,
-      "vga": "cirrus",
+      "vga": "std",
       "deviceSetSummary": [
         "-name streamhost-freebsd411",
         "-enable-kvm -m 256 -smp 1",
         "-machine pc-i440fx-11.0,acpi=off -cpu host",
         "-rtc base=localtime",
         "-boot c",
-        "-vga cirrus",
+        "-vga std",
         "-display dbus,p2p=on",
-        "-drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=ide",
+        "-device lsi53c895a,id=scsi0",
+        "-drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=none,id=hd0",
+        "-device scsi-hd,bus=scsi0.0,drive=hd0",
         "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
         "-qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid"
       ],
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "pc-i440fx-11.0 under KVM with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device"
+        "reason": "pc-i440fx-11.0 under KVM with -vga std (XFree86 4.4.0 vesa, 1024x768x16), one SCSI disk on an lsi53c895a (FreeBSD sym, real DMA -- 4.11's ata driver gets no bus-master DMA on QEMU's PIIX3 and PIO under KVM is ~150 KB/s) carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6078->6000 for x11warp; no audio device"
       },
       "qemuBuild": {
         "prefix": "/opt/qemu-beos",
@@ -228,7 +230,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.3.0 cirrus, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
+    "fixture": "FreeBSD 4.11 KDE 3.3.2 desktop (XFree86 4.4.0 vesa on -vga std, 1024x768x16): Kicker panel with the K menu, a Konsole holding a root shell; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
   },
   "migrationExceptions": [],
   "notes": [
