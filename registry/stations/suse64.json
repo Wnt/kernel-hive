@@ -66,7 +66,7 @@
     "stationsManifestOrder": 73,
     "stationsManifestPrelude": "\n# suse64 (VMID 180) — SuSE Linux 6.4 i386 (2000), KDE 1.1.2 on XFree86 3.3.6 (cirrus).\n#   VERBATIM launcher: /opt/qemu-beos binary, -loadvm golden on disk.qcow2 (only block device),\n#   ne2k_pci SLIRP with the loopback X forward 6080->6000 for the x11warp pointer.\n",
     "bringUpGroup": 4,
-    "bindingOrder": 82,
+    "bindingOrder": 83,
     "bindingPrelude": "",
     "mockManifestOrder": 3,
     "goldenOrder": 73,
@@ -177,7 +177,7 @@
         "note": "Same installed build as beos (/opt/qemu-beos); see beos.json for provenance."
       }
     },
-    "bringUpOrder": 82
+    "bringUpOrder": 83
   },
   "spa": {
     "archetypeId": "beige-tower-crt",

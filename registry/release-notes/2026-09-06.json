@@ -34,6 +34,7 @@
     "[Ubuntu 4.10](station:ubuntu) is the live CD itself, not an install — every reset returns to the exact same moment on the desktop",
     "[PC-BSD 1.5.1 \"Edison\"](station:pcbsd) — FreeBSD 6.3 and KDE 3.5.8 behind a graphical installer, the last PC-BSD release before iXsystems took the project to 7.x",
     "[Slackware 3.4](station:slackware)'s 1997 boot floppy still wedges under modern QEMU, so the museum boots its kernel through a GRUB2 rescue disc instead",
+    "[NetBSD 1.4.1](station:netbsd14) (1999) puts XFree86 3.3 on the Cirrus card, and the cursor is exact: the museum reaches into the guest's own X server, the same route as Amiga UNIX",
     "SuSE Linux 6.4 joins the gallery: KDE 1.1.2 on kernel 2.2, installed by SuSE's own graphical **YaST2**, from the last release before the small u disappeared"
   ]
 }
