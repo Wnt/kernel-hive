@@ -127,7 +127,14 @@ NIC** — `rtl8139` on tap `freebsd411rn0` on `vmbr-rn`, guest `rl0`, DHCP-reser
   `disc1-kde` ISO), the gateway account UIN **17800** exists and is open, and its
   server-side SSI roster already carries **HiveBot**. The client's Add-Account
   wizard is filled but not finished, so no login has reached the gateway and the
-  roster row stays `onboarded: false`.
+  roster row stays `onboarded: false`. `~/.kde/share/config/kopeterc` carries the
+  account group and `~/.kde/Autostart/kopete.desktop` starts it with the session;
+  what is missing is the password, which KWallet must be walked through once.
+- **Konqueror launcher.** `~/Desktop/Retronet Web.desktop` opens
+  `http://search.retronet/`, and `konquerorrc` sets it as the home page. Written,
+  not yet proven by opening it from the icon.
+- The slirp pointer NIC now carries `restrict=on` so it hands the guest no route
+  at all; the bridged NIC is the guest's only network.
 - Containment is the fleet pattern: `streamhost/stations/freebsd411/rn-tapnet.sh`
   creates the persistent tap and the fail-closed `FREEBSD411RN-IN` chain (scoped
   to both the guest IP and its MAC) on every launcher start.

@@ -40,6 +40,13 @@ RN_MAC="$(sed -n 's/^[[:space:]]*RN_FREEBSD411_MAC=//p' /data/kernel-hive/regist
 RN_MAC="${RN_MAC:-02:00:00:00:00:23}"
 "$BASE/rn-tapnet.sh" up
 
+# `restrict=on` on the slirp backend: without it SLIRP hands the guest a default
+# route via 10.0.2.2 and the guest can reach whatever the host's stack can. The
+# station needs nothing outbound on this NIC — it is the pointer path only — so
+# the backend is restricted and `hostfwd` (host -> guest) keeps working. This is
+# a BACKEND option, not a device change, but the golden is baked with the exact
+# launcher regardless.
+#
 # X pointer forward: host loopback 6078 -> guest 10.0.2.15:6000. SLIRP forwards
 # are host-side state, not vmstate, so declaring it on -netdev re-adds it every
 # start without touching the device set. The guest's only interfaces are ne2
@@ -58,7 +65,7 @@ nohup "${FREEBSD411_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -device lsi53c895a,id=scsi0 \
   -drive file=/data/vms/streamhost/stations/freebsd411/disk.qcow2,format=qcow2,if=none,id=hd0 \
   -device scsi-hd,bus=scsi0.0,drive=hd0 \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:${X_PORT}-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
   -netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no -device rtl8139,netdev=rn0,mac="$RN_MAC" \
   -qmp unix:/data/vms/streamhost/stations/freebsd411/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/freebsd411/qemu.pid \

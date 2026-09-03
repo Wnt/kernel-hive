@@ -27,7 +27,7 @@ new device set. See §Open.
 | | |
 |---|---|
 | NIC | **second** NIC `-device rtl8139,netdev=rn0,mac="$RN_FREEBSD411_MAC"`, backend `-netdev tap,id=rn0,ifname=freebsd411rn0,script=no,downscript=no`. FreeBSD 4.11 drives it as **`rl0`** (GENERIC). `rtl8139` and not `ne2k_pci`: the NE2000 is 16-bit PIO and under KVM that is one VM exit per word — the same trap that put this station's system disk on an `lsi53c895a` (`docs/lab/FREEBSD411-WAVE.md` §Measured facts). `rl` does real DMA. |
-| slirp NIC | **unchanged** — `-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0`, guest `ed0`. It carries **only** the x11warp pointer forward; the pointer route is untouched, so the fixture's `SH_X11WARP_DISPLAY=127.0.0.1:78` still holds. |
+| slirp NIC | same device, now `-netdev user,id=n0,**restrict=on**,hostfwd=tcp:127.0.0.1:6078-10.0.2.15:6000 -device ne2k_pci,netdev=n0`, guest `ed0`. It carries **only** the x11warp pointer forward, so the pointer route is untouched and the fixture's `SH_X11WARP_DISPLAY=127.0.0.1:78` still holds. **`restrict=on` is containment, not tidiness**: without it SLIRP hands the guest a default route via `10.0.2.2` and the guest can reach whatever labhost's own stack can. `hostfwd` (host → guest) keeps working under it. It is a backend option, not a device change, but the golden is baked with the exact launcher regardless. |
 | MAC | fleet scheme `52:54:00:52:4e:23` (`52:4e` = RN, last octet = last IP octet, `.35` → `0x23`). Real value box-local in gitignored `registry/local.env` `RN_FREEBSD411_MAC`; the committed launcher carries the scrubbed placeholder `02:00:00:00:00:23` and reads the one line at boot. **The MAC lives in the golden's device vmstate**, so the golden must be baked by a COLD boot on this set. |
 | Tap | `freebsd411rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/freebsd411/rn-tapnet.sh up` from the launcher on **every** start. The launcher runs under `set -e` and `rn-tapnet.sh` exits non-zero unless it can read its own rules back out of the kernel, so **QEMU never starts an uncontained guest**. |
 | Guard chain | `FREEBSD411RN-IN`, hooked into `INPUT` twice — scoped to the guest IP **and** to the guest MAC (the beos lesson: an IP-scoped chain stops containing a guest that lands on a pool address). ESTABLISHED,RELATED → RETURN; everything else the guest starts toward labhost → DROP. |
@@ -61,6 +61,46 @@ sh -c 'PACKAGESITE=http://10.99.0.1:8112/All/ pkg_add -r kdenetwork-3.3.2'
 `rn-tapnet.sh` and does not survive a `rn-tapnet.sh up`, which rebuilds the chain
 from empty.
 
+## The pointer that works on this rig — `xclick.py` (x11warp motion + QMP button)
+
+The rig's QMP **PS/2 relative** mouse is not accurate enough here: a click aimed
+at a dialog field landed on the root window. The route that does work is the one
+the daemon itself uses on the live station — **XWarpPointer for motion over the
+loopback X forward, QMP for the button**:
+
+```
+python3 scripts/dev/x11ptr.py 127.0.0.1 <the rig's X forward port> X,Y q
+```
+
+then a **button-only** QMP `input-send-event` (`btn` left, down then up, **no
+motion**) — the click lands wherever X thinks the pointer is. Mechanically it is
+the X connection-setup handshake (the same one `x11warp-check.sh` does), the
+**root window id** read out of the setup reply, `WarpPointer` (opcode 41) with
+`dst-window = root` so the coordinates are absolute, and a `GetInputFocus`
+round-trip as a barrier before the button. Every menu click in this doc was made
+that way, first try. It is the only reliable pointer this station has outside
+the daemon, and it is the same route the pcbsd-rn wave used.
+
+## The two traps that cost this bring-up its ICQ half
+
+**KWallet.** Kopete's first connect pops the **KDE Wallet first-use wizard**,
+and on the first attempt it opened *behind* the Configure dialog — so Kopete
+looked "hung" (KWin offered to kill it, PID 222) and the account that had been
+typed into the wizard was **lost**. Confirmed by the pcbsd-rn wave: Kopete
+ignores `kwalletrc [Wallet] Enabled=false`, and **cancelling** the wallet wizard
+silently drops the password. The fix is to run that wizard through to its
+*Password Selection* page and **Finish with "Yes, I wish to use the KDE wallet"
+UNCHECKED**; Kopete then prompts once for the password and "Remember password"
+lands it in `kopeterc`.
+
+**`qmp-type.py` eats backslash escapes.** Typing `printf "%s\n"` into the guest
+put a literal `n` in the file the first time and pressed **Enter** the second —
+so `kopeterc`, the desktop launcher and the autostart file were all written as
+one broken line, and the account was invisible to Kopete. `\012` is eaten too.
+**Write multi-line files with a `{ echo …; echo …; } > file` group, never with
+`printf` escapes**, and remember root's shell is **csh**: wrap everything in
+`sh -c '…'` (no single quotes inside).
+
 ## Driving Kopete's Add-Account wizard by keyboard — the map, measured
 
 There is no exec channel and the station's pointer is x11warp (the rig's QMP
@@ -91,6 +131,17 @@ is the measured route, from `kopete` started with no config:
 answers `login.icq.com` with `10.99.0.2`, so Kopete's shipped default host
 reaches the gateway. Set the literal `10.99.0.2:5190` on the *Account
 Preferences* tab only if the hijack proves flaky.
+
+**Where the third window ended:** `kopeterc` now carries a correct, multi-line
+`[Account_ICQProtocol_17800]` group (`AccountId`, `Protocol=ICQProtocol`,
+`Server=10.99.0.2`, `Port=5190`, `RequireAuth=false`, `AutoConnect=true`,
+`RememberPassword=true`) next to the `[Plugins] kopete_icqEnabled=true` the
+wizard had already written, and Kopete starts and reads it — but **it has never
+opened a socket to the gateway**: no `17800` line has ever appeared in
+`retronet-oscar`'s journal. The missing piece is the **password**, which is what
+the KWallet dance above is for. Frames
+`retronet-kopeterc-and-desktop-launcher-20260903.png` (the file, and the desktop
+launcher) and `retronet-kopete-running-not-connected-20260903.png`.
 
 **Where the second window ended:** the wizard was filled correctly (UIN `17800`,
 8-character password, both boxes ticked — frame `retronet-kopete-wizard-filled-20260903.png`)
