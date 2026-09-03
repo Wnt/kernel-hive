@@ -5,9 +5,10 @@
 > golden was baked.** Netscape 4.72 renders `http://search.retronet/` from a
 > cold-booted suse64 whose second NIC is a bridged tap on `vmbr-rn` at
 > `10.99.0.37`. GtkICQ 0.60 is installed and autostarts, its account `18000`
-> exists and is login-proven on the gateway, and its v5/UDP protocol is proven
-> against this gateway — but GtkICQ's server address can only be set through a
-> mouse-driven dialog, and a rig has no absolute pointer. See §ICQ plane.
+> exists and is login-proven on the gateway. **GtkICQ 0.60 is now signed in as
+> `18000` with `HiveBot` listed online in its contact list** — driven with
+> `x11ptr.py` for motion and QMP for the button. No golden yet: the bake needs
+> one more run on the final device set (`restrict=on`). See §ICQ plane.
 
 ## Allocation (written by the wave coordinator; do not edit here)
 
@@ -157,170 +158,100 @@ A KDE 1 panel launcher was written to `~/.kde/share/apps/kpanel/applnk/` and
 confirmed on the panel** and the correct KDE 1.1.2 panel directory is still
 unverified.
 
-## ICQ plane — NOT proven; GtkICQ 0.60 cannot be configured without a pointer
+## ICQ plane — SIGNED IN, with HiveBot listed; bake still outstanding
 
-Server side is done and checked:
+Server side:
 
 ```
 created 18000
-nick    18000 -> 'suse64' (ICQ directory; a client receives it on add-by-UIN)
+nick    18000 -> 'suse64'
 PASS  18000 authenticated at 10.99.0.2:5190
-      BOS address advertised to this client: 10.99.0.2:5190
 ```
 
-`gtkicq` autostarts: `~/.xinitrc` is now
-`konsole -geometry 100x30+40+40 &` / `gtkicq &` / `exec startkde`, and a cold
-boot brings it up on the desktop — the autostart mechanism itself is proven.
-
-**The protocol is not the problem.** Open OSCAR Server 0.24.0 serves the
-pre-OSCAR **v5 UDP** protocol natively, and on this very gateway a sibling
-station signed in over it while this session was running:
+**The sign-in, from the gateway's own log** (`addr` is this station's tap
+address, so there is no ambiguity about which guest it is):
 
 ```
-msg="V5 login successful"        svc=ICQLegacy uin=18200 session_id=905676299
-msg="created legacy session"     svc=ICQLegacy uin=18200 addr=10.99.0.36:1025 version=5
-msg="V5 contact list"            svc=ICQLegacy uin=18200 count=1 contacts=[4664755]
+msg="user authenticated successfully"     svc=ICQLegacy uin=18000 version=4 status=0x00000098
+msg="V4 login successful (direct flow)"   svc=ICQLegacy uin=18000 session_id=372001343
+msg="created legacy session"              svc=ICQLegacy uin=18000 addr=10.99.0.37:1024 version=4
 ```
 
-`4664755` is *Jeremy Wise*, the sample contact GtkICQ writes into every fresh
-config — so **GtkICQ 0.60 does interoperate with this gateway over v5/UDP**, and
-slirp's TCP-only limit does not apply on the bridged `eth1`. Nothing about the
-transport, the tap, the UDP port or the account blocks this station.
+**GtkICQ 0.60 speaks v4, not v5.** Every earlier note (including this doc's
+previous revision) assumed v5 because that is what the sibling station at
+`10.99.0.36` used. This client takes open-oscar-server's **V4 direct flow**,
+which is the better half of the deal: the v4 handler logs `password_len`, never
+the password, so the `LogFilterPatterns=~password=` concern in
+[`GATEWAY.md`](GATEWAY.md) does not apply to this station at all.
 
-### The config file — fully decoded, and it is not enough
+Proof frame: `evidence/t1-25-list.png` — the GtkICQ window with **HiveBot under
+`Online` with a green dot**, next to the konsole.
 
-The wizard writes `~/.icq/gtkicqrc`, an XF86Config-style file. The complete
-grammar, recovered from `strings /usr/X11R6/bin/gtkicq` (the format strings the
-writer uses, so this is exact):
+### The pointer — this is what unblocked it
 
-```
-Section "Personal"
-	UIN		"%ld"
-	Password	"%s"
-	Status		"0"
-	Nickname	"%s"
-EndSection "Personal"
-Section "Server"
-	Server		"icq.mirabilis.com"
-	Port		"4000"
-EndSection "Server"
-Section "Sound"       … UserOnline / UserOnlineSound / UserOffline /
-                        UserOfflineSound / RecvMessage / RecvMessageSound /
-                        RecvChat / RecvChatSound
-Section "Status"      … AWAY / WindowSize "%dx%d" / WindowTitle / Sound /
-                        PacketDump / ChatFont
-Section "Contacts"
-	"4664755"	"Jeremy Wise"      <- one tab-separated "uin" "nick" pair per contact
-EndSection "Contacts"
-```
+A rig has no absolute pointer, and that (not the protocol, not the config) was
+the whole wall. The working combination is **two different channels**:
 
-Separators are **hard tabs**. The default server really is `icq.mirabilis.com`
-in the binary, but it is a plain string in a normal `Section "Server"` — the
-value **is** meant to be configurable, so no DNS hijack of `icq.mirabilis.com`
-is needed and none was used.
+| | |
+|---|---|
+| Motion | `x11ptr.py 127.0.0.1 6180 X,Y q` — raw X11 `WarpPointer`/`QueryPointer` straight to the guest's X server over the slirp `hostfwd`, no XTEST, no client library. The golden's `xhost +10.0.2.2` is what permits it |
+| Button | `qmp-type.py --qmp <sock> --click` — the PS/2 path, **button only, zero motion** |
 
-A complete, correctly tab-separated file was seeded from the setup ISO — UIN
-`18000`, the real password, `Server "10.99.0.2"`, `Port "4000"`, and
-`"10000" "HiveBot"` in `Section "Contacts"` (`evidence/t1-05-seeded.png` shows
-it back through `cat -A`, tabs as `^I`). Two variants were tried: the three
-sections that carry meaning, and then **all five sections in the exact order the
-writer emits them**, in case the parser is a sequential state machine.
+The framebuffer is the coordinate space 1:1 (1024x768), so coordinates are read
+straight off the PNG and `x11ptr` reads back exactly what it was given
+(`warp -> 150,278 readback: (150, 278, 0)`). **The rig's `hostfwd` must be
+`6180`, not the live station's `6080`.**
 
-**Both fail identically, at startup, before any packet is sent:**
+### The click-through, in order (all coordinates at 1024x768)
 
-```
-Couldn't determine hostname:
-Couldn't establish connection, 0
-```
+1. `rm -f ~/.icq/gtkicqrc`, `gtkicq &` → the wizard opens.
+2. *Existing ICQ #* radio — **(150, 278)**; *Next* — **(90, 349)**.
+3. UIN **(189, 107)** = `18000`; Password **(189, 149)**; Nickname **(189, 191)**
+   = `suse64`; *Next* **(90, 349)**.
+4. Menu `ICQ` **(30, 58)** → *Options* **(44, 120)** → tab *Network* **(83, 66)**.
+5. `ICQ Server` **(259, 146)**: `end`, 24 × `backspace`, type `10.99.0.2`.
+   Port is already `4000`. *Save* **(113, 258)**.
+6. Restart gtkicq — **the running process does not pick the server up**; it is
+   read at connect time on startup.
+7. Menu `ICQ` **(30, 58)** → *Add Contact* **(58, 80)**: UIN **(167, 573)** =
+   `10000`, Nick Name **(167, 605)** = `HiveBot`, *Search* **(122, 732)**.
+8. The *User Information* window returns `UIN 10000 / Nick HiveBot`; *Add User*
+   **(744, 305)**, then *Close* **(828, 305)**. HiveBot appears under `Online`.
 
-The `%s` in `Couldn't determine hostname: %s` is the name being looked up, and
-it prints **empty** — the connect path is calling `gethostbyname("")`. The
-seeded file is intact and unmodified on disk afterwards (gtkicq dies before it
-would rewrite it), so the file is present and well-formed at the moment the
-lookup happens and its `Server` value still does not reach the resolver.
+### Correcting the previous revision
 
-That matches what the symbol table says: `icqserver:G` and `portnumber:G` are
-**GtkWidget globals** — `GtkEntry`s owned by the wizard/Preferences dialog. The
-connect path reads the *widget*, not the parsed file, so a value that only ever
-existed in `gtkicqrc` is never applied. **The server can only be set through the
-GUI.**
+The earlier conclusion — "the config file's `Server` is never applied, the value
+lives only in a GtkWidget" — is **wrong, and this doc previously stated it too
+strongly**. The Options → Network tab opened showing `icq.mirabilis.com` /
+`4000` **read out of the file**, so the parser does read `Section "Server"`.
+What actually broke the seeded-file attempts is still unidentified; the seeded
+file differed from a wizard-written one only in whitespace as far as could be
+compared. Treat "seed `gtkicqrc` from an ISO" as **unproven, not refuted** — and
+note the ordering that matters either way: **gtkicq writes the file on Quit**,
+so a config edited while it runs is overwritten, and a file written under it is
+not re-read until restart.
 
-### Why that is a wall on a rig, specifically
+`ssi-seed` does **not** apply: this is a legacy client with a client-side
+contact list.
 
-Both GUI routes need a pointer, and a rig has none:
+### What is left before this station can land
 
-- `qmp-type.py --mouse X Y` sends **relative** PS/2 motion, so absolute clicks
-  at dialog coordinates do nothing — two frames apart and identical.
-- This station's absolute pointer is **x11warp over the slirp forward**, which
-  the streamhost daemon provides and a bare rig does not.
-- Keyboard navigation gets close but not there: `alt-tab` focuses the wizard,
-  `down` picks *Existing ICQ #*, `tab`+`ret` advances, and `tab`-then-type fills
-  **Password** and **Nickname** — but the **UIN** entry is not reachable in the
-  focus chain from where the dialog opens, and `shift-tab` does not walk back to
-  it (`evidence/15-wizform.png`).
+1. **The final device set** — `restrict=on` on the slirp netdev in both the rig
+   launcher and `streamhost/stations/suse64/qemu-streamhost.sh`, plus a
+   guest-side default route through the tap (`/etc/route.conf` →
+   `default 10.99.0.2`) and DNS on `10.99.0.2`, with `route -n`, `ping`,
+   Netscape-renders-`search.retronet` and the gtkicq sign-in all re-verified on
+   it. `restrict=on` is a **slirp backend option, not a device**, so it should
+   not invalidate a vmstate — the two `ne2k_pci` devices are unchanged.
+2. **Then** `savevm golden`, a `loadvm` proof, `qemu-img snapshot -l`, and stage
+   to `/data/gallery-guests/SUSE64/suse64-rn.qcow2`.
 
-### What the next agent should do — this is now a one-shot, not a search
-
-Do **not** re-derive any of the above. The whole remaining problem is "get a
-pointer onto the rig once". Two routes, cheapest first:
-
-1. **Stand the rig up with x11warp** (the station's own absolute-pointer path
-   over the slirp `hostfwd` to `10.0.2.15:6000`, which the golden already
-   permits with its `xhost +10.0.2.2`), then click through the wizard **once**:
-   *Existing ICQ #* → UIN `18000`, the password from
-   `RETRONET_ICQ_SUSE64_PASS`, nickname `suse64` → Preferences → Server
-   `10.99.0.2`, Port `4000` → add contact `10000`.
-2. Then **capture the resulting `~/.icq/gtkicqrc`** and compare it against the
-   seeded file in `race/t1/cdsrc/gtkicqrc`. If they differ only in whitespace,
-   the parser is fine and the widget hypothesis above is confirmed — in which
-   case the durable fix for every future bake is not the file at all: it is that
-   **the golden must be captured with gtkicq already signed in**, because the
-   configuration lives in the running process's widgets, and the vmstate is what
-   carries it. That is a natural fit for this station, whose golden already
-   carries a running konsole.
-
-`ssi-seed` is **not** applicable here: gtkicq is a v5 client with a
-**client-side** contact list (the gateway logs it as `V5 contact list … count=1`
-sent *by* the client), so `HiveBot` has to be in `Section "Contacts"` or added in
-the GUI, and its display name comes from that file or from the account's ICQ
-directory nickname (`rn-tool.py nick 10000 HiveBot`, already set).
-
-Gaim 0.59.9 (the tru64 client) was held as the second theory and **not started**:
-it needs a source tarball, GTK/glib devel packages that are not in the obvious
-`suse/gra1/` series on either CD, and a `configure`+`make` on a 256 MB
-guest — none of which fits beside a one-shot GUI click that is now fully
-specified. Reach for it only if route 1 above fails.
-
-## Not done
-
-- No new golden. Nothing was written to `/data/gallery-guests/`; the live
-  station's `suse64.qcow2` is untouched.
-- `registry/stations/suse64.json` has no `retronet` block yet, and
-  `streamhost/stations/suse64/qemu-streamhost.sh` still carries the old,
-  one-NIC device set. **`rn-tapnet.sh` is landed and proven** (it brought
-  `suse64rn0` up on `vmbr-rn`, installed and verified `SUSE64RN-IN`, and tore
-  both down cleanly), so the launcher change is the two lines in §Launcher.
-- The roster row for `suse64` is not added, because the client cannot yet sign in.
-
-## Launcher — the exact lines to add when this lands
-
-Before QEMU starts:
-
-```sh
-/data/vms/streamhost/stations/suse64/rn-tapnet.sh up
-```
-
-and in the QEMU argument list, **after** the existing slirp NIC so it stays
-`eth0`:
-
-```
--netdev tap,id=rn0,ifname=suse64rn0,script=no,downscript=no \
--device ne2k_pci,netdev=rn0,mac=52:54:00:52:4e:25
-```
-
-The rig that proved all of the above is kept at
-`/data/vms/sandbox/suse64-rn/rig/` (`launch.sh`, `RIG_MODE=orig|rn`) with its
-frames in `../evidence/`.
+**A resume point exists so none of the click-through has to be repeated:**
+`/data/vms/sandbox/suse64-rn/race/t1/disk.qcow2` carries snapshot **`signedin`**
+(62.3 MiB, VM_CLOCK `0000:07:59.408`) taken with gtkicq signed in and HiveBot
+listed. `loadvm signedin` on the two-NIC device set restores that scene; the
+OSCAR session itself will have been reaped by timeout, so re-confirm the
+sign-in from the gateway log after restoring.
 
 ## One more trap: never clone a rig disk from a KILLED QEMU
 
