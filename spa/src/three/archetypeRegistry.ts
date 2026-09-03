@@ -207,7 +207,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
   pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1' },
   ubuntu:      { osId: 'ubuntu', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#dd4814', eraLabel: '2004 · Ubuntu 4.10 Warty Warthog' },
-  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: true },
+  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: false },
   netbsd14:    { osId: 'netbsd14', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#f26522', eraLabel: '1999 · NetBSD 1.4.1 — XFree86 3.3.3.1', pointerRel: false },
   redhat62:    { osId: 'redhat62', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#cc0000', eraLabel: '2000 · Red Hat Linux 6.2 — GNOME 1.0', pointerRel: false },
   openbsd:     { osId: 'openbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#f2c94c', eraLabel: '2026 · OpenBSD 7.9 — fvwm', pointerRel: false },

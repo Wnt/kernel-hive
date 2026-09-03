@@ -104,15 +104,19 @@ install -d -m 0750 "$STAGE_DIR"
 log "checking $(wc -l <"$MANIFEST") pinned files against $STAGE_DIR"
 while read -r want_sha rel; do
   rel="${rel#./}"
+  # where each pinned file lives on the mirror (the boot ISO is BUILT below, never fetched)
   case "$rel" in
-    zImage | color.gz | bare.i.img | grub-boot.iso) dest="$STAGE_DIR/$rel" ;;
-    *) dest="$STAGE_DIR/slakware/$rel" ;;
+    zImage) dest="$STAGE_DIR/$rel" src="kernels/bare.i/zImage" ;;
+    color.gz) dest="$STAGE_DIR/$rel" src="rootdsks/color.gz" ;;
+    bare.i.img) dest="$STAGE_DIR/$rel" src="bootdsks.144/bare.i" ;;
+    grub-boot.iso) continue ;;
+    *) dest="$STAGE_DIR/slakware/$rel" src="slakware/$rel" ;;
   esac
   got_sha="$(sha256sum "$dest" 2>/dev/null | awk '{print $1}')"
-  if [ "$FORCE" = 1 ] || [ "$got_sha" != "$want_sha" ]; then
+  if [ "$got_sha" != "$want_sha" ]; then
     mkdir -p "$(dirname "$dest")"
     log "fetching $rel"
-    curl -fsSL --retry 3 -o "${dest}.part" "$MIRROR/$rel"
+    curl -fsSL --retry 3 -o "${dest}.part" "$MIRROR/$src"
     mv "${dest}.part" "$dest"
     got_sha="$(sha256sum "$dest" | awk '{print $1}')"
   fi
