@@ -77,6 +77,26 @@ class DryRunTest(unittest.TestCase):
         self.assertLess(result.stdout.index(park), result.stdout.index(copy))
         self.assertIn("rollback", result.stdout.lower())
 
+    def test_the_reset_mark_is_stamped_before_station_up(self) -> None:
+        """rn-verify --since needs a mark older than the reset it proves survival of.
+
+        station-up's last act is POST /restore, so a mark taken after it would
+        let the PREVIOUS run's ICQ login line read as this run's reconnect proof.
+        """
+        result = land(STATION, "--dry-run")
+        mark = result.stdout.index("reset mark:")
+        self.assertLess(mark, result.stdout.index("station-up.sh"))
+
+    def test_the_retronet_proof_delegates_the_icq_reconnect_to_rn_verify(self) -> None:
+        """The uin comes from the roster; the grep belongs to rn-verify, not here."""
+        result = land(STATION, "--dry-run")
+        text = SCRIPT.read_text()
+        self.assertIn("--icq", text)
+        self.assertIn("--since", text)
+        self.assertNotIn("login successful uin=$uin'\"", text)  # no home-grown journal grep
+        # suse64 is an onboarded ICQ station, so its uin must reach the proof.
+        self.assertIn("uin=18000", result.stdout)
+
     def test_it_says_what_to_do_when_wave_sh_is_absent(self) -> None:
         if (REPO / "scripts/dev/wave.sh").exists():
             self.skipTest("wave.sh has landed; the fallback path is no longer reachable here")

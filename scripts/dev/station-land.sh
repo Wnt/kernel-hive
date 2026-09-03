@@ -243,6 +243,16 @@ fi
 
 # ---- 9 bring the station up --------------------------------------------------
 step "9 station-up (emit, binary, unit, manifests, checks)"
+# Stamped BEFORE station-up, because station-up's last act is POST /restore —
+# the reset an IM client has to survive. rn-verify --since needs a mark that
+# predates it, or a login line from the PREVIOUS run reads as this run's proof.
+# The BOX clock, not this one: the journal it greps is CT 951's.
+if [ "$dry" = 1 ]; then
+  reset_ts="<box date at station-up time>"
+else
+  reset_ts="$(ssh -n "$LAB" "date '+%Y-%m-%d %H:%M:%S'")" || reset_ts=""
+fi
+say "reset mark: $reset_ts"
 run "$SCRIPT_DIR/station-up.sh" "$id" || fail "station-up did not come back green"
 
 # ---- 10 re-home the claims ---------------------------------------------------
@@ -292,10 +302,30 @@ if [ -n "$x11warp" ]; then
   fi
 fi
 if grep -q '"retronet"' "$REPO_ROOT/registry/stations/$id.json"; then
+  # The RECONNECT proof for an IM station is two facts, not one: a NEW
+  # "login successful uin=<uin>" in CT 951's ICQ journal AFTER the reset, and the
+  # frame. A client that never re-logs in after `loadvm golden` looks perfectly
+  # alive on the framebuffer — slackware's micq needed a watchdog for exactly
+  # that — so the journal line is what separates "painting" from "on the plane".
+  # rn-verify owns that grep; this script must not grow its own.
+  declare -a rn_args=("$id")
+  uin="$(python3 -c '
+import json, sys
+rows = json.load(open("scripts/retronet/icq/roster.json"))["stations"]
+print(next((r["uin"] for r in rows if r.get("station") == sys.argv[1] and r.get("uin")), ""))
+' "$id" 2>/dev/null || true)"
+  if [ -n "$uin" ] && [ -n "$reset_ts" ]; then
+    rn_args+=(--icq "$uin" --since "$reset_ts")
+  elif [ -n "$uin" ]; then
+    say "WARNING: no reset mark — the ICQ reconnect cannot be proved to be NEW; re-run the proof by hand"
+  fi
   if [ -x "$REPO_ROOT/scripts/retronet/rn-verify.sh" ]; then
-    run "$REPO_ROOT/scripts/retronet/rn-verify.sh" "$id" || fail "rn-verify says $id is not on the plane"
+    run "$REPO_ROOT/scripts/retronet/rn-verify.sh" "${rn_args[@]}" ||
+      fail "rn-verify says $id is not on the plane (tap, reservation, fdb, or the post-reset ICQ login)"
   else
-    say "WARNING: scripts/retronet/rn-verify.sh absent (agent B's deliverable) — verify the tap by hand"
+    say "WARNING: scripts/retronet/rn-verify.sh absent (agent B's deliverable) — verify by hand:"
+    say "  the tap UP on vmbr-rn, the reservation rendered in CT 951, the MAC on the bridge fdb,"
+    [ -n "$uin" ] && say "  and a NEW 'login successful uin=$uin' in CT 951's ICQ journal after $reset_ts"
   fi
 fi
 
