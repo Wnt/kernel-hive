@@ -101,7 +101,7 @@ class RefusalTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         session_line = next(line for line in result.stdout.splitlines() if "session " in line)
         self.assertNotIn("<unset>", session_line)
-        self.assertIn(f"station-{STATION}", session_line)
+        self.assertTrue(session_line.rstrip().endswith(f"->  {STATION}"), session_line)
 
     def test_it_refuses_a_relative_golden_path(self) -> None:
         """The path is resolved ON THE BOX, so a relative one would mean the wrong file."""

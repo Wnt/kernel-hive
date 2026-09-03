@@ -94,7 +94,7 @@ case "$id" in *[!a-z0-9-]*)
   exit 2
   ;;
 esac
-: "${station_session:=station-$id}"
+: "${station_session:=$id}" # fleet convention: a station's claims live under KH_SESSION=<id>
 tag="$(date +%Y%m%d-%H%M%S)"
 
 step_label=""
