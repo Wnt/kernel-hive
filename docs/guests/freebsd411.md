@@ -119,10 +119,15 @@ NIC** — `rtl8139` on tap `freebsd411rn0` on `vmbr-rn`, guest `rl0`, DHCP-reser
   resolves to `10.99.0.2`, and the gateway's `:80` origin serves the museum
   corpus by `Host`. Frame:
   `/data/vms/streamhost/stations/freebsd411/evidence/retronet-konqueror-search-retronet-20260903.png`.
+- **Addressing — proven.** A cold boot of the new launcher set plus
+  `ifconfig_rl0="DHCP"` in `/etc/rc.conf` takes the **reserved** address:
+  `ifconfig rl0` → `inet 10.99.0.35 netmask 0xffffff00`.
 - **ICQ plane — wired, not signed in.** Kopete 0.9.1 is installed
   (`kdenetwork-3.3.2` from the FreeBSD 4.11 package archive — it is **not** on the
-  `disc1-kde` ISO), and the gateway account UIN **17800** exists and is open. The
-  client is not yet configured, so the roster row is `onboarded: false`.
+  `disc1-kde` ISO), the gateway account UIN **17800** exists and is open, and its
+  server-side SSI roster already carries **HiveBot**. The client's Add-Account
+  wizard is filled but not finished, so no login has reached the gateway and the
+  roster row stays `onboarded: false`.
 - Containment is the fleet pattern: `streamhost/stations/freebsd411/rn-tapnet.sh`
   creates the persistent tap and the fail-closed `FREEBSD411RN-IN` chain (scoped
   to both the guest IP and its MAC) on every launcher start.

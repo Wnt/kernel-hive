@@ -1,7 +1,8 @@
 # freebsd411 on the retronet — the bridge, Konqueror, and Kopete
 
-**Status: PARTIAL — web plane proven on the framebuffer, ICQ plane wired but NOT
-yet signed in.** `freebsd411` (FreeBSD 4.11-RELEASE i386, KDE 3.3.2 on XFree86
+**Status: PARTIAL — web plane proven on the framebuffer and the station's
+retronet address confirmed; ICQ plane wired, client installed, NOT yet signed
+in.** `freebsd411` (FreeBSD 4.11-RELEASE i386, KDE 3.3.2 on XFree86
 4.4.0) was given a second, **bridged** NIC on `vmbr-rn` on 2026-09-03 so that
 Konqueror can reach the gateway's `:80` museum-corpus origin and Kopete can reach
 its OSCAR door — OSCAR cannot traverse the station's slirp NIC, which stays in
@@ -15,6 +16,7 @@ What is **proven on the framebuffer** (frames in
 | `kdenetwork-3.3.2` (Kopete) installed from the 4.11 package archive, `EXIT=0`; `/usr/local/bin/kopete` present | `retronet-kdenetwork-pkg_add-exit0-20260903.png` |
 | the guest resolves and fetches `http://search.retronet/` over the bridge with **no proxy** | `retronet-guest-fetch-search-retronet-20260903.png` |
 | **Konqueror renders `http://search.retronet/`** — the AltaVista-styled retronet search page, status bar "Page loaded." | `retronet-konqueror-search-retronet-20260903.png` |
+| the guest takes its **reserved** address — `ifconfig rl0` → `inet 10.99.0.35 netmask 0xffffff00`, on a cold boot of the exact new launcher set | `retronet-dhcp-10.99.0.35-20260903.png` |
 
 What is **not yet proven**: Kopete signed in as UIN `17800`, HiveBot in the
 contact list, the desktop Konqueror launcher, and the **re-baked golden** on the
@@ -59,18 +61,67 @@ sh -c 'PACKAGESITE=http://10.99.0.1:8112/All/ pkg_add -r kdenetwork-3.3.2'
 `rn-tapnet.sh` and does not survive a `rn-tapnet.sh up`, which rebuilds the chain
 from empty.
 
+## Driving Kopete's Add-Account wizard by keyboard — the map, measured
+
+There is no exec channel and the station's pointer is x11warp (the rig's QMP
+PS/2 relative mouse is **not** accurate enough — a click aimed at the UIN field
+landed on the root window and took focus off the dialog). So the wizard is
+driven by **keys only**, and its focus chain is not what you would guess. This
+is the measured route, from `kopete` started with no config:
+
+1. Kopete opens **Configure - Kopete** on the *Appearance* page. `up` selects
+   **Accounts** in the left icon list.
+2. `alt-n` → **New...** → the Add Account Wizard. `ret` → Step One.
+3. Step One's protocol list does **not** have focus: `shift-tab` moves into it
+   and selects the LAST row (Yahoo). The order is AIM, Gadu-Gadu, ICQ, IRC,
+   Jabber, MSN, SMS, Yahoo — so `up up up up up` reaches **ICQ**. `alt-n` → Step Two.
+4. Step Two, "ICQ Account Settings": `alt-p` ticks **Remember password** *and
+   leaves focus on that checkbox*; `alt-s` ticks **Connect automatically at
+   startup**; `alt-w` focuses **Password**.
+5. **The UIN field is reachable only as `shift-tab` FROM the Remember-password
+   checkbox** — and only when focus is actually on that checkbox. `tab tab` from
+   the UIN field skips Password and lands on the Connect checkbox, so a password
+   typed after tabbing goes nowhere visible. Every wasted cycle in the first
+   attempt was this. Verify each field by frame: the UIN shows its digits, the
+   password shows one asterisk per character (8 for this account).
+6. A line edit does **not** select-all on focus and `ctrl-a` does not select-all
+   either (it moves to the start), so clearing a field is `end` + N × `backspace`.
+
+**The server is not set in the wizard and does not need to be:** `retronet-dns`
+answers `login.icq.com` with `10.99.0.2`, so Kopete's shipped default host
+reaches the gateway. Set the literal `10.99.0.2:5190` on the *Account
+Preferences* tab only if the hijack proves flaky.
+
+**Where the second window ended:** the wizard was filled correctly (UIN `17800`,
+8-character password, both boxes ticked — frame `retronet-kopete-wizard-filled-20260903.png`)
+and then `alt-n`/`alt-f` closed it **without the account appearing in the
+Accounts list**, and no `17800` login reached the gateway. The Finish step is the
+one part of the route still unmapped: the wizard's buttons sit below the visible
+1024x768 frame, so the next pass should **move or resize the wizard window first**
+(`alt-F3` → Move, or shrink the Configure dialog) so Back/Next/Finish are visible
+and can be confirmed by frame instead of guessed at by accelerator.
+
+## Server-side state that is already done
+
+`rn-tool.py ssi-seed 17800 10000=HiveBot` has been run: `buddies 17800` returns
+`10000 HiveBot`, so the account's server-side roster is populated and an
+SSI-aware client gets HiveBot **by name** on its first login with nothing added
+by hand. The fleet-wide cross-list (`seed_contacts.py ssi --apply`) has **not**
+been run and the roster row stays `onboarded: false`, so no other station lists
+freebsd411 yet.
+
 ## Open — what the next pass must finish
 
-1. **Kopete**: create the ICQ account (UIN `17800`, password
-   `registry/local.env RETRONET_ICQ_FREEBSD411_PASS`, server `10.99.0.2:5190`),
-   auto-connect on start, autostart from `/root/.kde/Autostart/`, and prove the
-   contact list shows **HiveBot** by name. Kopete 0.9's OSCAR plugin reads the
-   server-side SSI roster, so the contact should arrive from
-   `seed_contacts.py ssi --apply` with nothing added by hand; if it does not,
-   add UIN `10000` in the client and alias it.
+1. **Kopete**: finish the wizard (see the keyboard map above — make the wizard's
+   buttons visible first), confirm the account appears in the Accounts list,
+   prove a `17800` login in the gateway journal, and prove **HiveBot** by name in
+   the contact list on the framebuffer. Then autostart it from
+   `/root/.kde/Autostart/kopete.desktop` and confirm it reconnects silently after
+   a `loadvm` wake (the win98se lesson: a restored socket is stale, so the client
+   must heal itself or the exhibit shows a signed-out client).
 2. **Roster**: `scripts/retronet/icq/roster.json` carries the row with
-   `onboarded: false`. Flip it to `true` and re-run
-   `seed_contacts.py ssi --apply` only once the client is proven signed in.
+   `onboarded: false`. Flip it to `true` and run `seed_contacts.py ssi --apply`
+   only once the client is proven signed in.
 3. **Konqueror launcher**: a desktop icon / Kicker button pointing at
    `http://search.retronet/`, and the home page set to it.
 4. **Golden**: the new NIC is a **new device set**, so the shipped `golden` is
