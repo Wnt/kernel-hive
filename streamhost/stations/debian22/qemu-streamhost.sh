@@ -24,7 +24,10 @@
 #     tap debian22rn0 + the fail-closed DEBIAN22RN-IN guard chain and is called
 #     `up` on every launch. The MAC lives in the golden vmstate, so this mac=
 #     must MATCH the baked one (52:54:00:52:4e:24) — a change needs a cold bake.
-#   * ne2k_pci on user-mode SLIRP, hostfwd tcp:127.0.0.1:6082-10.0.2.15:6000
+#   * ne2k_pci on user-mode SLIRP with restrict=on: the hostfwd to :6000 still
+#     works (it is inbound), but the guest can no longer reach labhost's stack
+#     through 10.0.2.2 — the slirp NIC is a pointer sink only, and the retronet
+#     tap is the guest's ONLY way out. hostfwd tcp:127.0.0.1:6082-10.0.2.15:6000
 #     (x11warp: the daemon warps the pointer through the guest X server and
 #     reads it back; /etc/X0.hosts in the golden grants 10.0.2.2)
 #   * PS/2 keyboard + PS/2 mouse for buttons; no USB, no audio
@@ -66,7 +69,7 @@ nohup qemu-system-x86_64 \
   -drive file="$CDROM",media=cdrom,if=ide,index=2 \
   -boot order=c -loadvm golden -S \
   -vga cirrus \
-  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
+  -netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
   -netdev tap,id=n1,ifname=debian22rn0,script=no,downscript=no \
   -device rtl8139,netdev=n1,mac=52:54:00:52:4e:24 \
   -display dbus,p2p=on \

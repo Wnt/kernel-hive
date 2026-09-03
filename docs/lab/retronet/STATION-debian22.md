@@ -2,7 +2,7 @@
 
 **Status: golden baked and restore-proven on a sandbox rig; NOT yet live.** The
 disk is `/data/vms/sandbox/debian22-rn/rig/disk.qcow2` (snapshot `golden`,
-VM_SIZE **47.8 MiB**). Debian GNU/Linux 2.2 "potato" joins the retronet on the
+VM_SIZE **47.6 MiB** (baked on the restricted line)). Debian GNU/Linux 2.2 "potato" joins the retronet on the
 **ICQ plane** (UIN `18200`, signed in) over a second bridged NIC. The **web
 plane is wired but not yet rendered** — see §Undone.
 
@@ -75,14 +75,42 @@ and HiveBot has to be added in the client UI, which is the
 | ICQ signed in, server-side | gateway `/session` lists `18200` (empty `remote_addr` = the legacy UDP door, same shape as `beos`/`50000`) |
 | golden restores | fresh launch, `-boot order=c -loadvm golden -S` + QMP `cont` → `p1v.png` (desktop, applet green, terminal); `p2v.png` a typed `RESTORE-KEY-OK` reaching the terminal; `18200 online after restore: True`; a second HMP `loadvm golden` reverts the typed line (`p3v.png`) |
 
+## The slirp NIC is restricted
+
+`-netdev user,id=n0,restrict=on,...`: the inbound `hostfwd` to the guest's X
+server still works, but the guest cannot reach labhost's stack through
+`10.0.2.2`. The **default route lives on the retronet side** (`default gw
+10.99.0.2`), so the tap is the guest's only way out and the slirp NIC is a
+pointer sink and nothing else. Re-proven on the restricted line after a
+`loadvm`: `ping 10.99.0.2` 2/2, 0 % loss.
+
+**The running golden predates the route change.** `route del default` from the
+`gallery` terminal is `Operation not permitted`, and the root password is not
+known to this stream, so the golden still carries `default gw 10.0.2.2` from the
+old rcS line. `restrict=on` makes that route inert, but a **cold boot on the
+fixed builder** is what actually moves it to `10.99.0.2`.
+
 ## Undone
 
 - **HiveBot is not in the contact list** (the Add-Contact segfault above). Next
   route to try: seed `~/.gnome/GnomeICU`'s `[Contacts] Contacts=10000,HiveBot`
   with GnomeICU stopped, then launch — the string `Contacts/Contacts=4664755,GnomeICU Author`
-  in the binary is that key's default and shows the format.
-- **Netscape has never rendered `search.retronet`.** It was launched three ways;
-  only the last (the wrapper symlink) is the correct one and it was not given
-  time to paint. DNS to `10.99.0.2` is therefore also unproven from this guest.
+  in the binary is that key's default and shows the format. **This was tried and
+  did NOT take**: GnomeICU was quit cleanly through its ICQ->Exit menu (which is
+  what writes `~/.gnome/GnomeICU` — the file then held the full config), the
+  section was appended, and the relaunched client signed in from the saved
+  config with **no wizard** but an **empty** Online/Offline/Not-In-List. So the
+  contacts are stored somewhere else (or under a per-UIN key); find it by
+  adding a contact through the UI *without* the search step and diffing the
+  file.
+- **Netscape has never rendered `search.retronet`, and the reason is now known
+  and fixable**: `/usr/lib/netscape/477/navigator/navigator-smotif` is a symlink
+  to `../../base-4/wrapper`, and `/usr/lib/netscape/base-4/` does not exist
+  because the wrapper ships in **`netscape-base-4` 1:4.77-1, in potato
+  *contrib*** — a third section neither the CD nor the non-free index carries.
+  It is staged at `/data/assets-staging/debian22/deb/netscape-base-4_4.77-1.deb`.
+  Adding it to the compose and re-running is the whole fix; nothing else about
+  the browser was found to be wrong. DNS to `10.99.0.2` is therefore also still
+  unproven from this guest.
 - The golden's scene is consequently **desktop + terminal + signed-in applet**,
   not the briefed scene.
