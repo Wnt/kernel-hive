@@ -232,6 +232,7 @@ opened / gated / re-verify.
 |---|---|---|---|---|---|---|---|---|
 | FreeBSD 15.1-RELEASE amd64 | https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/15.1/ (✓) | officially-free (BSD-2) | ISO / qcow2 | none | ~1.2 GB ISO | small | works-known | 5 |
 | NetBSD 10.1 amd64 | https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/ (✓) | officially-free (BSD-2) | ISO | none | ~500 MB | small | works-known | 4 |
+| NetBSD 1.4.1 i386 (1999) | http://archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/ (✓, fetched + hashed: boot.fs + 13 binary sets) | officially-free (BSD-2) | boot floppy + 13 tgz sets → sets.iso | none | 62 106 331 B (59.2 MiB) | small | works-known (station `netbsd14`: KVM, `pc-i440fx-11.0`, cirrus, XFree86 3.3.3.1) | 4 |
 | OpenBSD 7.9 amd64 | https://cdn.openbsd.org/pub/OpenBSD/7.9/amd64/install79.iso (✓) | officially-free (ISC/BSD) | ISO | none | ~800 MB | small | works-known | 4 |
 | Minix 3.3.0 i386 | http://iso.linuxquestions.org/minix/minix-3.3.0/ (~ — official minix3.org has a TLS altname bug) | officially-free (BSD-3) | ISO (bz2) | none | ~280 MB | trivial | works-known | 5 |
 | Oberon A2 / Bluebottle | https://sourceforge.net/projects/a2oberon/files/ (✓ `A2_Rev-6498_serial-trace.iso`) | officially-free (ETH) | live ISO | none | ~120–165 MB | trivial | works-known | 5 |
@@ -248,6 +249,7 @@ hosted `emu` binary full-screen inside a normal captured x86 Linux tile
 native x86 `-display dbus,p2p=on`.
 
 Notable recipes / gotchas:
+- **NetBSD 1.4.1**: curses `sysinst` (assisted, not automated) — Install → wd0 whole disk, default sizes → source CD-ROM `cd0`, dir `/i386/binary/sets` → select all 13 sets incl. X → reboot; XFree86 3.3.3.1 ships in the sets, configure `XF86Config` after first boot.
 - **FreeBSD**: `qemu-system-x86_64 -enable-kvm -M q35 -cpu host -smp 2 -m 4096 -drive if=virtio,format=qcow2,file=freebsd.qcow2 -cdrom FreeBSD-15.1-...-disc1.iso -boot d -vga std -netdev user,id=n0 -device virtio-net,netdev=n0 -display dbus,p2p=on`. No live GUI — `bsdinstall` is text; reach X post-install (`pkg install xorg twm xterm`, `.xinitrc`+`startx`). With `-vga std` use the Xorg `scfb`/`vesa` path.
 - **OpenBSD** is best-in-family for a light-WM tile: **fvwm ships in base Xenocara**, so `startx` needs zero extra packages. NetBSD: select the **X sets** at install (easy to miss) → `startx` gives ctwm.
 - **A2 Oberon** and **Syllable Live CD** boot straight to a desktop (no install). A2 needs a **3-button mouse** (middle-click "interclick" is core). Do NOT confuse A2 with the *book* Project Oberon (RISC5 CPU → separate emulator bridge).

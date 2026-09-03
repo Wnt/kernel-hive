@@ -54,10 +54,9 @@ port `0x1f0`, ~28 us each (measured with `perf kvm stat` and HMP
 difference to that rate. Under `-accel tcg` the same guest does roughly
 1100 writes/s (~550 KB/s) — about 20x faster, because TCG does not pay a KVM
 vmexit per port I/O. **The kickstart install therefore ran under TCG.**
-Whether the production station itself runs KVM (if in-guest PIIX bus-master
-DMA via `hdparm -d1` engages once installed, avoiding this PIO path
-post-install) or stays on TCG is a golden-stream decision — see Checkpoint
-below.
+The production station runs **KVM**: on the installed uniprocessor kernel,
+`hdparm -d1` engages PIIX bus-master DMA and the PIO path is never taken — see
+Checkpoint below.
 
 ## Pointer and input
 
@@ -85,12 +84,36 @@ exposed to visitors.
 
 ## Checkpoint
 
-TODO(golden): VM_CLOCK, VM_SIZE, bake date, accel, restore proof
+Baked 2026-09-03 03:18:53Z by the golden stream, under **KVM, `-cpu host`** —
+the production launcher's device set. `qemu-img snapshot -l`: ID 1 `golden`,
+**VM_SIZE 86.4 MiB, VM_CLOCK 0000:03:39.425**. Disk
+`/data/gallery-guests/RedHat62/redhat62.qcow2` (683 MB apparent).
+
+Scene: GNOME 1.0.55 + Enlightenment at 1024x768x16 as `gallery`, the GNOME Help
+Browser on "Red Hat Online Help" and gmc on `/home/gallery` (GNOME restored its
+saved session). Restore proof: kill, relaunch with `-loadvm golden`, `cont` →
+desktop back in 3 s on the framebuffer. x11warp: the X11 handshake from labhost
+to `127.0.0.1:6081` answers success with only `/etc/X0.hosts = 10.0.2.2`;
+`XWarpPointer` to (100,100), (900,700) and (300,650) each read back exactly by
+`XQueryPointer`, cursor seen at every target. Keystrokes reached an X window and
+every VT login. Cold power-on → settled desktop: 93 s under KVM.
+
+**Why KVM after all.** The PIO wall above belongs to the **SMP kernel**: anaconda
+saw QEMU's MP tables and installed `kernel-smp` as LILO's default `linux` label
+even at `-smp 1`, and that kernel loops on `hda: lost interrupt` through the
+IO-APIC (forever under TCG, ~30 s stalls under KVM). The uniprocessor kernel
+`linux-up` (2.2.14-5.0), now the LILO default in the golden, boots with zero lost
+interrupts, and `hdparm -d1 /dev/hda` in `rc.local` engages PIIX DMA:
+`using_dma = 1`, `hdparm -t` 62.75 and 69.57 MB/s, `info blockstats` shows 64 MB
+in ~1000 ops. `noapic` (suse64's fix for the SMP kernel) was not needed.
+
+Unproven: PS/2 mouse *clicks* were not exercised; `xset s off` in `~/.Xclients`
+is on disk but the screensaver was never observed to be off; `%post` running
+`/sbin/lilo` assumes anaconda writes `lilo.conf` before `%post` (builder must
+confirm on a fresh run).
 
 ## Open items
 
 - No retronet join yet (no NIC path beyond the loopback X forward).
 - No `demoProgram` defined.
-- Accel decision (KVM vs TCG) for the production station is open — see the
-  PIO wall section above; the golden stream fills in the Checkpoint section
-  once decided.
+- Mouse clicks and the screensaver-off state are unproven (see Checkpoint).
