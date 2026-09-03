@@ -12,9 +12,12 @@
 #     so the ISO IS part of the device set (the vmstate was baked with it attached).
 #   * -vga cirrus: XFree86 3.3.1 has no driver for -vga std beyond 16 colours; the cirrus
 #     driver needs Option "no_bitblt" (BitBLT emulation drops xterm text) and "sw_cursor".
-#   * POINTER: RELATIVE. A Microsoft serial mouse on ttyS0 (QEMU msmouse chardev); X runs
-#     `xset m 1 1` so 1 unit = 1 px (dbus-rel, cursor_scale 1.0). No absolute device this
-#     XFree86 understands; x11warp needs a NIC driver bare.i lacks (see the wave doc).
+#   * POINTER: ABSOLUTE through the guest's own X server (x11warp): slirp user-net with a
+#     loopback forward 127.0.0.1:6084 -> 10.0.2.15:6000, NE2000 ISA (ne.o module, io 0x300)
+#     in the guest, `xhost +10.0.2.2` in the session; the daemon does XWarpPointer +
+#     XQueryPointer readback. Buttons still travel the Microsoft serial mouse on ttyS0
+#     (QEMU msmouse chardev), which is also the relative fallback. The hostfwd is
+#     host-side state, not vmstate, so the launcher re-declares it on every start.
 #   * sb16 + PC speaker -> dbus audiodev (the desktop only beeps).
 #   * KVM, -cpu host, 32 MB, 1 vCPU: kernel 2.0 is happiest under 64 MB.
 # Kill only by pidfile.
@@ -43,6 +46,7 @@ nohup qemu-system-x86_64 \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -chardev msmouse,id=ms0 -serial chardev:ms0 \
+  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6084-10.0.2.15:6000 -device ne2k_isa,netdev=n0 \
   -drive file=/data/vms/streamhost/stations/slackware/disk.qcow2,format=qcow2,if=ide \
   -drive file=/data/vms/streamhost/stations/slackware/grub-boot.iso,format=raw,if=ide,index=2,media=cdrom,readonly=on \
   -qmp unix:/data/vms/streamhost/stations/slackware/qmp.sock,server=on,wait=off \
