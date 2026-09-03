@@ -539,10 +539,11 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
-  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  // openbsd: a 2020s small-form-factor amd64 box, but on a wider flat panel than
+  // alpine's desk (same case family, distinct signature) — USB tablet pointer,
+  // 101-key board.
   openbsd: {
-    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
     keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
   // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
