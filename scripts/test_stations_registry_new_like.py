@@ -35,7 +35,15 @@ GENERATED = [
     "spa/src/three/archetypeRegistry.ts",
     "streamhost/bring-up-all.sh",
     "streamhost/stations-manifest.sh",
+    # `new --like` now inserts the station's two SPA scene rows at its lineup
+    # position (scripts/dev/spa-scene-rows.py), so these are restored too.
+    "spa/src/scene/assembliesByTile.ts",
+    "spa/src/scene/machineIdentity.ts",
 ]
+
+#: distinct from freedos's pizzaBoxB|crtA|keyboardA|paramMouseA — a copied tuple
+#: is refused, which is the point of the tuple test below.
+TUPLE = "pizzaBoxD,crtF,paramKeyboard,paramMouseG"
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:
@@ -64,7 +72,7 @@ class NewLikeTest(unittest.TestCase):
         subprocess.run(["git", "checkout", "--", *GENERATED], cwd=REPO, check=False)
 
     def test_scaffold_then_validate_is_green_with_no_order_collisions(self) -> None:
-        new_result = _run("new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto")
+        new_result = _run("new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto", "--tuple", TUPLE)
         self.assertEqual(new_result.returncode, 0, new_result.stdout + new_result.stderr)
         self.assertTrue((REPO / f"registry/stations/{NEW_ID}.json").is_file())
         self.assertTrue((REPO / f"streamhost/stations/{NEW_ID}/qemu-streamhost.sh").is_file())
@@ -90,6 +98,18 @@ class NewLikeTest(unittest.TestCase):
         launcher = (REPO / f"streamhost/stations/{NEW_ID}/qemu-streamhost.sh").read_text()
         self.assertNotIn(f"streamhost-{SIB_ID}", launcher)
         self.assertIn(f"streamhost-{NEW_ID}", launcher)
+        # The two SPA scene rows are part of the scaffold now: without them the
+        # entry is a lineup member with no hardware binding, which is exactly
+        # the red push every wave of 2026-09-03 discovered at push time.
+        for rel in ("spa/src/scene/assembliesByTile.ts", "spa/src/scene/machineIdentity.ts"):
+            self.assertIn(f"  {NEW_ID}: {{", (REPO / rel).read_text(), rel)
+
+    def test_like_refuses_to_inherit_the_siblings_hardware_tuple(self) -> None:
+        refused = _run("new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto")
+        self.assertEqual(refused.returncode, 1, refused.stdout)
+        self.assertIn("would copy its hardware tuple", refused.stderr)
+        self.assertIn("--tuple", refused.stderr)
+        self.assertFalse((REPO / f"registry/stations/{NEW_ID}.json").exists())
 
 
 class LikeRewriteTest(unittest.TestCase):

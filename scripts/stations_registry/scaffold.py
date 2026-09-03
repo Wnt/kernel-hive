@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 from collections import OrderedDict
 from datetime import date
 from pathlib import Path
@@ -21,6 +22,14 @@ from serve.walkin.naming import SLOT_MIN as WALKIN_SLOT_MIN
 from .constants import NEW_TILE_SLOT_FLOOR, POSTERS, REPO, TEMPLATES, TILES
 from .generate import atomic_write, cmd_generate, slot_refusal
 from .loading import RegistryError, load
+from .spa_scene import (
+    ASSEMBLIES_CONST,
+    ASSEMBLIES_REL,
+    TUPLE_PARTS,
+    free_tuple_suggestions,
+    read_table,
+    tuple_of,
+)
 
 
 def scaffold_template(name: str, values: dict[str, str]) -> bytes:
@@ -131,7 +140,56 @@ def _next_order(rows: list[dict], *path: str) -> int:
     return best + 1
 
 
-def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool) -> int:
+def refuse_inherited_tuple(sib_id: str, tuple_arg: str | None) -> None:
+    """`--like` may not inherit the sibling's body|monitor|keyboard|mouse.
+
+    machines.test.ts requires a DISTINCT hardware signature per station, so a
+    copied tuple is a guaranteed red push — and it was, on every one of the nine
+    waves of 2026-09-03, discovered at push time inside a serialised landing
+    window. Refuse here instead, and hand over combinations that are actually
+    free rather than leaving the operator to grep machines.ts.
+    """
+    if tuple_arg:
+        return
+    try:
+        table = read_table(ASSEMBLIES_REL, ASSEMBLIES_CONST)
+    except (RegistryError, OSError):  # pragma: no cover - no spa/ checkout
+        return
+    if sib_id not in table.blocks:
+        return
+    inherited = tuple_of(table.blocks[sib_id])
+    free = free_tuple_suggestions(table, sib_id)
+    raise RegistryError(
+        f"--like {sib_id} would copy its hardware tuple {inherited}, and every station needs a "
+        f"DISTINCT {'|'.join(TUPLE_PARTS)} (spa/src/scene/machines.test.ts). Pass "
+        "--tuple body,monitor,keyboard,mouse. Free near the sibling: " + "; ".join(free)
+    )
+
+
+def insert_spa_rows(os_id: str, sib_id: str, tuple_arg: str | None, enabled: bool) -> None:
+    """Put the station's two scene rows in at its lineup position, or say why not.
+
+    Shelling out to scripts/dev/spa-scene-rows.py rather than reimplementing the
+    rebuild keeps ONE writer for these two files — the same one station-land.sh
+    calls, so the scaffold and the landing cannot disagree about placement.
+    """
+    if not enabled:
+        print(f"  spa scene rows: skipped — {os_id} is a disabled candidate, not a lineup entry yet")
+        print(f"    at promotion: scripts/dev/spa-scene-rows.py {os_id} --like {sib_id} --tuple ... --apply")
+        return
+    cmd = ["python3", str(REPO / "scripts/dev/spa-scene-rows.py"), os_id, "--like", sib_id, "--apply"]
+    if tuple_arg:
+        cmd += ["--tuple", tuple_arg]
+    result = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True, check=False)
+    print("  spa scene rows:")
+    for line in (result.stdout + result.stderr).splitlines():
+        if line.lstrip().startswith(("wrote", "spa-scene-rows", "NOTE")):
+            print(f"    {line.strip()}")
+    if result.returncode != 0:
+        raise RegistryError(f"spa-scene-rows.py refused the rows for {os_id}: {result.stderr.strip() or 'see above'}")
+
+
+def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple_arg: str | None = None) -> int:
     """Scaffold a new station as a rewritten deep copy of a proven sibling's
     registry row, launcher and env fixture, instead of the bare Tier N template
     the coordinator otherwise hand-edits field by field."""
@@ -143,6 +201,7 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool) -> in
     sib = next((row for row in rows if row["id"] == sib_id), None)
     if sib is None:
         raise RegistryError(f"--like sibling {sib_id!r} not found in the registry")
+    refuse_inherited_tuple(sib_id, tuple_arg)
 
     slot, udp_port = _reserve_slot(globals_doc, rows, slot_arg)
 
@@ -207,6 +266,14 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool) -> in
 
     if "reset" in row:
         row["reset"]["stationDir"] = os_id
+
+    # A retronet block is a LEDGER entry, not a shape to copy: address, MAC, ICQ
+    # persona and roster row are all unique per station, so an inherited block
+    # collides with the sibling on its first validate ("address is already taken
+    # by <sibling>") and claims an icq plane no roster row backs. The station
+    # joins the bridge later, through scripts/retronet/rn-onboard.sh, which is
+    # what writes this block from the allocation it actually holds.
+    row.pop("retronet", None)
 
     # build.rows[].value.key was already rewritten by the exact-string pass above.
     if row.get("build", {}).get("rows"):
@@ -291,10 +358,19 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool) -> in
             atomic_write(path, data)
         os.chmod(builder_path, 0o755)
         os.chmod(launcher_path, 0o755)
+        # BEFORE cmd_generate(): generate runs validate(), and validate now fails
+        # on a lineup entry with no scene rows. The rows depend only on the
+        # registry file that is already written, so this is the right order, not
+        # a workaround for the check.
+        insert_spa_rows(os_id, sib_id, tuple_arg, bool(production))
         cmd_generate()
     except Exception:
         for path in scaffold_files:
             path.unlink(missing_ok=True)
+        print(
+            f"  rolled back the {os_id} scaffold. If the scene rows were written first, "
+            f"drop {os_id} from spa/src/scene/{{assembliesByTile,machineIdentity}}.ts too.",
+        )
         raise
     print(f"scaffolded {os_id} --like {sib_id}: slot={slot} udp={udp_port} production={production}")
     for path in scaffold_files:
