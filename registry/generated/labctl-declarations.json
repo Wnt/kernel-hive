@@ -401,7 +401,7 @@
     "debian22": {
       "dir": "/data/vms/streamhost/stations/debian22",
       "qmp": "/data/vms/streamhost/stations/debian22/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -414,7 +414,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54182,
-      "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only; PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol)"
+      "notes": "one SLIRP NIC whose only forward is the loopback x11warp port; no exec channel; framebuffer/QMP/HMP + x11warp only"
     },
     "decos": {
       "dir": "/data/vms/streamhost/stations/decos",

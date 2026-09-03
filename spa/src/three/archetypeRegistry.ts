@@ -212,7 +212,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   redhat62:    { osId: 'redhat62', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#cc0000', eraLabel: '2000 · Red Hat Linux 6.2 — GNOME 1.0', pointerRel: false },
   openbsd:     { osId: 'openbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#f2c94c', eraLabel: '2026 · OpenBSD 7.9 — fvwm', pointerRel: false },
   freebsd411:  { osId: 'freebsd411', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#ab2b28', eraLabel: '2005 · FreeBSD 4.11 — KDE 3.3.2', pointerRel: false },
-  debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: true },
+  debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: false },
   suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
 };
 

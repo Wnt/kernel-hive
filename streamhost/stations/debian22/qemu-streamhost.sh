@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Debian GNU/Linux 2.2 "potato" (i386, 2000) — VMID/slot 182, UDP 54182.
 #
-# AIR-GAPPED GUEST: -nodefaults is mandatory and this launcher intentionally
-# contains no NIC, netdev, host forwarding, or other guest network hardware.
+# -nodefaults with ONE NIC: ne2k_pci on SLIRP, whose only host forward is a
+# LOOPBACK port publishing the guest X server for the x11warp pointer sink
+# (127.0.0.1:6082 -> 10.0.2.15:6000). No other network hardware or forwards.
 # The qcow2 must carry the internal snapshot "golden"; launcher and disk are an
 # atomic pair.  Reset is HMP `loadvm golden`, never an in-guest channel.
 #
@@ -14,8 +15,11 @@
 #     and part of the captured device set)
 #   * -vga cirrus: XFree86 3.3.6 XF86_SVGA drives the Cirrus GD5446 natively
 #     (3.3.x has no generic VESA server, so -vga std would leave X at 320x200)
-#   * PS/2 relative mouse (XFree86 3.3.6 has no absolute/tablet protocol),
-#     PS/2 keyboard; no USB, no audio
+#   * ne2k_pci on user-mode SLIRP, hostfwd tcp:127.0.0.1:6082-10.0.2.15:6000
+#     (x11warp: the daemon warps the pointer through the guest X server and
+#     reads it back; /etc/X0.hosts in the golden grants 10.0.2.2)
+#   * PS/2 keyboard + PS/2 mouse for buttons; no USB, no audio
+#   * hdparm -d1 in rcS: PIIX bus-master DMA (60+ MB/s) instead of 27 KB/s PIO
 set -euo pipefail
 
 T=/data/vms/streamhost/stations/debian22
@@ -51,6 +55,7 @@ nohup qemu-system-x86_64 \
   -drive file="$CDROM",media=cdrom,if=ide,index=2 \
   -boot order=c -loadvm golden -S \
   -vga cirrus \
+  -netdev user,id=n0,hostfwd=tcp:127.0.0.1:6082-10.0.2.15:6000 -device ne2k_pci,netdev=n0 \
   -display dbus,p2p=on \
   -qmp unix:"$T/qmp.sock",server=on,wait=off \
   -monitor unix:"$T/reset-hmp.sock",server,nowait \
@@ -62,4 +67,4 @@ for _ in $(seq 1 80); do
   sleep 0.25
 done
 [ -S "$T/qmp.sock" ] && [ -f "$T/qemu.pid" ]
-echo "tile debian22 qemu pid=$(cat "$T/qemu.pid") qmp=$T/qmp.sock reset-hmp=$T/reset-hmp.sock udp=54182 (air-gapped; -loadvm golden)"
+echo "tile debian22 qemu pid=$(cat "$T/qemu.pid") qmp=$T/qmp.sock reset-hmp=$T/reset-hmp.sock udp=54182 x11warp=127.0.0.1:6082 (-loadvm golden)"
