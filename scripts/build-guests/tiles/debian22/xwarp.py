@@ -2,7 +2,10 @@
 """Raw-X11 warp proof: connect to host:port (an x11warp loopback forward into the
 guest's XFree86 :0), XWarpPointer to each target, XQueryPointer it back.
 usage: xwarp.py HOST PORT X,Y [X,Y ...]"""
-import socket, struct, sys
+
+import socket
+import struct
+import sys
 
 host, port = sys.argv[1], int(sys.argv[2])
 s = socket.create_connection((host, port), timeout=10)
@@ -19,8 +22,8 @@ while len(body) < length:
 vlen = struct.unpack("<H", body[16:18])[0]
 nfmt = body[21]
 off = 32 + ((vlen + 3) & ~3) + 8 * nfmt
-root = struct.unpack("<I", body[off:off + 4])[0]
-print("root window 0x%x" % root)
+root = struct.unpack("<I", body[off : off + 4])[0]
+print(f"root window 0x{root:x}")
 ok = True
 for t in sys.argv[3:]:
     x, y = (int(v) for v in t.split(","))
@@ -30,6 +33,7 @@ for t in sys.argv[3:]:
     while len(r) < 32:
         r += s.recv(32 - len(r))
     rx, ry = struct.unpack("<hh", r[16:20])
-    print("warp (%d,%d) -> readback (%d,%d) %s" % (x, y, rx, ry, "OK" if (rx, ry) == (x, y) else "MISMATCH"))
+    verdict = "OK" if (rx, ry) == (x, y) else "MISMATCH"
+    print(f"warp ({x},{y}) -> readback ({rx},{ry}) {verdict}")
     ok = ok and (rx, ry) == (x, y)
 sys.exit(0 if ok else 1)
