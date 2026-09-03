@@ -241,6 +241,6 @@
       "xcalc &"
     ],
     "runCommand": "xcalc &",
-    "perCharMs": 80
+    "perCharMs": 120
   }
 }
