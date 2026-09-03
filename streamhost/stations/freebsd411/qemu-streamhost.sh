@@ -23,6 +23,7 @@ qemu-img snapshot -l "$DISK" 2>/dev/null | grep -qw golden && LOADVM="-loadvm go
 # start without touching the device set. The guest's only interfaces are ne2
 # (SLIRP) and lo0; the golden carries `xhost +10.0.2.2` (never `xhost +`).
 X_PORT=6078
+# shellcheck disable=SC2086 # $LOADVM is "-loadvm golden -S" or empty: word-splitting is the point
 nohup "${FREEBSD411_QEMU:-/opt/qemu-beos/bin/qemu-system-x86_64}" \
   -name streamhost-freebsd411 \
   -enable-kvm -m 256 -smp 1 \
@@ -66,4 +67,4 @@ echo "$(date -u +%FT%TZ) x11warp TIMED OUT: the guest X server never answered on
 CHECK
 chmod +x "$BASE/x11warp-check.sh"
 setsid nohup "$BASE/x11warp-check.sh" "$X_PORT" >>"$BASE/x11warp-bootstrap.log" 2>&1 &
-echo "station freebsd411 qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54176 x11=127.0.0.1:${X_PORT} loadvm='${LOADVM:-<none: cold boot>}'"
+echo "station freebsd411 qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=54178 x11=127.0.0.1:${X_PORT} loadvm='${LOADVM:-<none: cold boot>}'"
