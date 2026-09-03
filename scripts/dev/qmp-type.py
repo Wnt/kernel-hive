@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """qmp-type.py — drive a QEMU guest's keyboard/mouse over QMP and screendump the result.
 
+ESCAPE CONTRACT (trap: this cost several waves 10-60 min each). By default the
+positional TEXT argument is decoded with Python's `unicode_escape`, so `\\n`
+and `\\t` in it become a real newline / tab keypress, not literal backslash-n.
+A `printf 'a\\nb'` or a heredoc therefore types as ONE line unless the caller
+escapes the backslash itself (`\\\\`) or writes config with
+`sh -c '{ echo l1; echo l2; } > f'` instead. Pass --raw to type TEXT exactly
+as given, with NO escape decoding at all — every character, backslash
+included, goes to the keyboard literally.
+
 The install-phase driver for stations that have no exec channel yet (HP-UX,
 Mac OS, ...): the streamhost daemon only injects input while a browser client
 is attached, and the operator's browser should stay a read-only monitor, so
@@ -22,6 +31,7 @@ instead of handing you a screenshot that means nothing. See scripts/lib/
 guest_wake.py and docs/lab/INPUT-DEBUGGING.md.
 
     qmp-type.py --station hpuxvue "text to type\\n"          # \\n = Enter
+    qmp-type.py --station X --raw 'C:\\DOS\\path'               # literal backslashes
     qmp-type.py --qmp /path/qmp.sock --keys ret tab f5 ctrl-c  # raw sendkey names
     qmp-type.py --station X --mouse 130 -84 --click            # move, then left click
     qmp-type.py --station X --shot                             # screendump only
@@ -142,7 +152,10 @@ def main() -> int:
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--station", help="station dir name under /data/vms/streamhost/stations (uses its qmp.sock)")
     src.add_argument("--qmp", help="explicit QMP unix socket path (a clone or a rig)")
-    ap.add_argument("text", nargs="?", help="text to type; \\n and \\t escapes are honoured")
+    ap.add_argument("text", nargs="?", help="text to type; \\n and \\t escapes are honoured (see --raw)")
+    ap.add_argument(
+        "--raw", action="store_true", help="type TEXT literally, no unicode_escape decoding (see module docstring)"
+    )
     ap.add_argument("--keys", nargs="*", default=[], help="raw sendkey names, sent after the text")
     ap.add_argument("--mouse", nargs=2, type=int, metavar=("DX", "DY"), help="relative mouse_move before any click")
     ap.add_argument("--click", action="store_true", help="left click (mouse_button 1 then 0)")
@@ -168,7 +181,9 @@ def main() -> int:
         except GuestPaused as e:
             raise SystemExit(f"qmp-type: {e}") from e
         if not a.shot:
-            text = (a.text or "").encode().decode("unicode_escape")
+            text = a.text or ""
+            if not a.raw:
+                text = text.encode().decode("unicode_escape")
             for ch in text:
                 q.hmp(f"sendkey {key_for(ch)}")
                 time.sleep(a.gap)
