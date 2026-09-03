@@ -129,7 +129,7 @@ describe('a short query must not light up the whole page', () => {
   });
 
   it('2000 is a year or a version, not a decade', () => {
-    expect(hits('2000')).toEqual(['win2000', 'w2kalpha', 'beos', 'redhat62', 'suse64']);
+    expect(hits('2000')).toEqual(['win2000', 'w2kalpha', 'beos', 'redhat62', 'debian22', 'suse64']);
   });
 
   it('an empty or punctuation-only query matches everything', () => {

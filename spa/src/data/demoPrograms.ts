@@ -71,6 +71,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "debian22": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
+  },
   "dragon32": {
     "label": "Type in a demo program",
     "lines": [
@@ -84,6 +94,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 170
+  },
+  "freebsd411": {
+    "label": "Type a few commands into the root Konsole",
+    "lines": [
+      "uname -a",
+      "ls /usr/local/bin | head",
+      "kcalc &"
+    ],
+    "runCommand": "kcalc &",
+    "perCharMs": 80
   },
   "mpf2": {
     "label": "Type in a demo program",

@@ -137,6 +137,11 @@ ROWS=(
   "opt-file|bootos|bootOS 512-byte boot sector (os.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/os.img|sha256:35e1231cf29f8750566a97dfb628b2bbe2c24a2f7d7518d7a94103f9976d3df8|freely-fetchable-pinned"
   "opt-file|bootos|bootOS 360K floppy with 19 boot-sector programs (osall.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/osall.img|sha256:20927188a96cca1cc41bd43a24186cd6fb3e68a4f82fdaf7c2e59c9bfd874653|freely-fetchable-pinned"
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
+  # Debian GNU/Linux 2.2 "potato" (DFSG-free, redistributable install media):
+  # debian22.sh copies from /data/assets-staging/debian22 (staged from
+  # archive.org / archive.debian.org) if present, else re-fetches and pins.
+  "opt-file|debian22|Debian 2.2 potato i386 CD1 (archive.org Debian-GNULinux-2.2-arch-i386-CD)|$ASSET_STAGING/debian22/debian-2.2-i386-cd1.iso|sha256:2b1d2b18a14ea1f62302aeb98caf1a7b9191a87c3591a42d8bbf0fe5ef1abf1f|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato i386 base2_2.tgz (archive.debian.org dists/potato/main/disks-i386)|$ASSET_STAGING/debian22/base2_2.tgz|sha256:2f53ecb6a1508be95d5351e468b0197e8dca2a58ecf24c8fc1e07765b9817585|freely-fetchable-pinned"
   # PC/GEOS Ensemble (GeoWorks Ensemble lineage, bluewaysw open-source build,
   # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
   # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.

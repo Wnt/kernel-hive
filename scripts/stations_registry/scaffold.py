@@ -93,7 +93,10 @@ def _reserve_slot(globals_doc: dict, rows: list[dict], slot_arg: str) -> tuple[i
 
 
 _LIKE_REWRITE_PATTERNS = [
-    (r"/data/vms/streamhost/stations/{sib}/", "/data/vms/streamhost/stations/{new}/"),
+    # `(?![a-z0-9])`, not a trailing slash: `operator.labctl.dir` is the bare station
+    # dir with nothing after the id, and a slash-anchored pattern left it pointing at
+    # the sibling (slackware's station-up, 2026-09-03).
+    (r"/data/vms/streamhost/stations/{sib}(?![a-z0-9])", "/data/vms/streamhost/stations/{new}"),
     (r"stations/{sib}/", "stations/{new}/"),
     (r"-name streamhost-{sib}", "-name streamhost-{new}"),
     (r"\$T/{sib}/", "$T/{new}/"),

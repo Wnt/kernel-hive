@@ -267,7 +267,9 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
   helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
-  tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
+  tinycore: 'generic', redstar2: 'generic',
+  debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
+  redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
@@ -320,6 +322,10 @@ export const OS_FAMILY: Record<string, Family> = {
   pcbsd: 'generic',
   // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
   netbsd14: 'generic',
+  // FreeBSD 4.11 under KDE 3.3.2: a full 101-key PC board driving XFree86, but
+  // KDE 3's chords (Alt+F2 run, Ctrl+Esc process table) are its own, so it takes
+  // the generic Unix rows like netbsd14 until a KDE profile is worth writing.
+  freebsd411: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
