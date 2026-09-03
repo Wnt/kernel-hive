@@ -76,7 +76,12 @@ the installed disk, LILO driven at its prompt:
 | `lsi53c895a` SCSI disk, KVM | killed unmeasured (see above) |
 | CD `k_deflt` written over `/boot/vmlinuz.suse`'s blocks | abandoned — `debugfs blocks` lists the IND/DIND metadata blocks too; the first write clobbered an indirect block; superseded by noapic |
 
-Permanent fix: `append = "noapic"` in `/etc/lilo.conf`, rerun `lilo`. Traps: a
+Permanent fix, first version: `append = "noapic"` in `/etc/lilo.conf`, rerun `lilo`.
+Better (redhat62 wave, then proven here on the rig framebuffer): install the CD's UP
+kernel (`rpm -Uvh --force /cdrom/suse/images/k_deflt.rpm`, rerun `lilo`) and put
+`hdparm -d1 /dev/hda` in `/sbin/init.d/boot.local` — under KVM `-cpu host` the UP
+2.2.14 boots clean and `hdparm -d /dev/hda` reports `using_dma = 1 (on)`, so the
+station runs KVM with bus-master DMA instead of PIO. Traps: a
 `sendkey shift` does NOT stop LILO's 3-second `timeout`; `sendkey spc` does —
 start QEMU with `-S`, `cont`, spam `spc` for ~6 s, then type the line
 (`/data/vms/sandbox/suse/race/k/lilo-race.sh`). `qmp-type.py --out` treats the

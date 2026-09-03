@@ -1,9 +1,10 @@
 #!/bin/bash
 # suse64 — SuSE Linux 6.4 (2000) i386, KDE 1.1.2 on XFree86 3.3.6 (SVGA server on
 # the emulated Cirrus GD5446). VERBATIM launcher, emitted into stations-manifest.sh.
-# KVM with the guest's k_smp booted `noapic` (LILO append): without it the SMP kernel loses
-# every IDE/keyboard interrupt on this machine type. The INSTALL ran under TCG because the
-# 2.2 IDE PIO path is a KVM exit per outw (70 KiB/s); see docs/lab/SUSE64-WAVE.md.
+# KVM. The guest runs the UP kernel (k_deflt 2.2.14) with `hdparm -d1` from boot.local, so
+# PIIX bus-master DMA is on (using_dma = 1); YaST2's default k_smp loses every IDE/keyboard
+# interrupt on this machine type (noapic works around it but stays PIO). The INSTALL ran under
+# TCG because the 2.2 IDE PIO path is a KVM exit per outw (70 KiB/s); docs/lab/SUSE64-WAVE.md.
 # Reset = `-loadvm golden` on disk.qcow2, the ONLY block device (rule 6: golden +
 # /opt/qemu-beos binary + this device set are one combination — recapture through
 # checkpoint-guard, never by hand). Pointer: motion is absolute through the guest's
