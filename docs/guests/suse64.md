@@ -143,3 +143,41 @@ QMP plus the x11warp loopback — no kiosk, bridge or second VM in the path.
 - **Network beyond the X forward not evaluated.** `ne2k_pci` is present on
   SLIRP for the pointer's loopback X connection; joining retronet is a
   follow-up, not part of this wave.
+
+## Retronet
+
+suse64 is on both retronet planes since **2026-09-03**
+(full bring-up, every trap: [`docs/lab/retronet/STATION-suse64.md`](../lab/retronet/STATION-suse64.md)).
+
+| | |
+|---|---|
+| Address | `10.99.0.37/24`, **static** (no DHCP client is used), MAC `52:54:00:52:4e:25` |
+| Link | tap `suse64rn0` on `vmbr-rn`, guard chain `SUSE64RN-IN` (`streamhost/stations/suse64/rn-tapnet.sh`) |
+| Web | Netscape Communicator **4.72** (SuSE CD2 `suse/xap1/netscape.rpm`) through the proxy `10.99.0.2:3128`, home page `http://search.retronet/` |
+| ICQ | GtkICQ **0.60** (CD2 `suse/xap1/gtkicq.rpm`), UIN **18000**, server `10.99.0.2:4000`, HiveBot in the contact list |
+
+**The device set changed** and the checkpoint changed with it (rule 6 — golden,
+binary and device set are one combination). There are now **two `ne2k_pci`
+NICs**: the slirp one stays **first** so it remains `eth0` with `10.0.2.15` and
+the x11warp forward, and it now carries **`restrict=on`** — the `hostfwd` to
+`:6000` still works, but the guest can no longer reach labhost's own stack
+through `10.0.2.2`. The retronet tap is second and becomes `eth1`. The guest's
+**default route goes through the tap** (`/etc/route.conf`: `default 10.99.0.2`),
+DNS is `10.99.0.2`, and `eth0` keeps its address with no route.
+
+The golden is staged at `/data/gallery-guests/SUSE64/suse64-rn.qcow2` — **a new
+file, not a replacement for `suse64.qcow2`**, so the old checkpoint stays
+restorable until this one is live. `savevm golden`, VM_SIZE 84.1 MiB, VM_CLOCK
+`0000:16:02.407`, 2026-09-03 08:58, restore-proven.
+
+**The ICQ client's configuration lives in the running process, not on disk.**
+GtkICQ writes `~/.icq/gtkicqrc` on a clean Quit but never persists a server
+edited in Options → Network — the file still reads `icq.mirabilis.com` — and a
+restart of the client also loses the contact list. So a recapture of this golden
+must re-do the Options → Network server edit and re-add HiveBot before `savevm`;
+seeding the file does not work.
+
+**Correction to an assumption that was carried for a while:** GtkICQ 0.60 signs
+in with the **v4** legacy flow, not v5. That matters because
+[`GATEWAY.md`](../lab/retronet/GATEWAY.md)'s cleartext-password log line is a
+**v5-only** defect — it never applies to this station.

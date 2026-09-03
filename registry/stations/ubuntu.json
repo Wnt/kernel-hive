@@ -44,7 +44,7 @@
         "kbd_note": "Alt+F2 opens GNOME 2.8's Run Application dialog; Escape closes it",
         "audio_trigger": "none",
         "validated": false,
-        "note": "640x480 std VGA (XFree86 vesa, no DDC) / USB-tablet via 2.6.8 mousedev; live CD session as user 'warty', no install; -nodefaults, no NIC, no audio (AC97+ACPI hangs the live boot)"
+        "note": "640x480 std VGA (XFree86 vesa, no DDC) / USB-tablet via 2.6.8 mousedev; live CD session as user 'warty', no install; -nodefaults, no audio (AC97+ACPI hangs the live boot); ONE NIC, the retronet rtl8139 on tap ubunturn0 (10.99.0.30, DHCP reservation)"
       }
     },
     "labctl": {
@@ -60,7 +60,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54183,
-      "notes": "air-gapped live-CD guest: no NIC and no exec channel; framebuffer/QMP/HMP only"
+      "notes": "live-CD guest with no exec channel — framebuffer/QMP/HMP only. NOT air-gapped since 2026-09-03: one rtl8139 on the retronet bridge vmbr-rn (tap ubunturn0, DHCP-reserved 10.99.0.30, no default route, guard chain UBUNTURN-IN), carrying the web plane (Firefox 0.9 -> gateway :80 corpus) and the ICQ plane (Gaim 1.0 -> 10.99.0.2:5190 as UIN 18300). docs/lab/retronet/STATION-ubuntu.md"
     }
   },
   "render": {
@@ -137,7 +137,7 @@
         "--env-append-file",
         "$T/ubuntu/station.env.fixture"
       ],
-      "deviceSetId": "ubuntu-current",
+      "deviceSetId": "ubuntu-retronet",
       "launcher": "streamhost/stations/ubuntu/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/ubuntu/station.env.fixture",
       "binary": "qemu-system-x86_64",
@@ -154,6 +154,7 @@
         "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$ISO\",format=raw,if=ide,index=2,media=cdrom,readonly=on -boot order=d -loadvm golden",
         "-vga std",
         "-usb -device usb-tablet",
+        "-netdev tap,id=n0,ifname=ubunturn0,script=no,downscript=no -device rtl8139,netdev=n0,mac=\"$RN_UBUNTU_MAC\"",
         "-display dbus,p2p=on",
         "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
         "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -174,6 +175,7 @@
           "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$ISO\",format=raw,if=ide,index=2,media=cdrom,readonly=on -boot order=d -loadvm golden",
           "-vga std",
           "-usb -device usb-tablet",
+          "-netdev tap,id=n0,ifname=ubunturn0,script=no,downscript=no -device rtl8139,netdev=n0,mac=\"$RN_UBUNTU_MAC\"",
           "-display dbus,p2p=on",
           "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
           "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
@@ -218,6 +220,22 @@
     ],
     "blurb": "The first Ubuntu, October 2004: a Debian-derived distribution with one desktop, GNOME 2.8 in the brown Human theme, on a single CD. This is the live session, so nothing is installed and every reset returns the same instant."
   },
+  "network": {
+    "status": "host-only",
+    "note": "retronet web + ICQ planes: ONE rtl8139 on the persistent tap ubunturn0, enslaved to vmbr-rn (a bridge with no uplink), DHCP-reserved to 10.99.0.30/24 with DNS 10.99.0.2 and NO router option — so the guest reaches the gateway CT 10.99.0.2 and nothing else, in either direction. The station was air-gapped (-nodefaults, zero NICs) until 2026-09-03; the NIC is part of the golden's device vmstate, so launcher + ISO + ubuntu.qcow2 are one combination. docs/lab/retronet/STATION-ubuntu.md"
+  },
+  "retronet": {
+    "planes": [
+      "web",
+      "icq"
+    ],
+    "address": "10.99.0.30",
+    "addressing": "dhcp",
+    "link": "tap ubunturn0 on vmbr-rn",
+    "guard": "UBUNTURN-IN",
+    "joined": "2026-09-03",
+    "doc": "docs/lab/retronet/STATION-ubuntu.md"
+  },
   "emulator": {
     "family": "QEMU",
     "version": "11.0.2",
@@ -232,7 +250,7 @@
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Ubuntu 4.10 live CD session logged in as 'warty' on the idle 640x480 GNOME 2.8 desktop; no dialog, screensaver off; absolute USB tablet and keyboard ready"
+    "fixture": "Ubuntu 4.10 live CD session as 'warty' on the 640x480 GNOME 2.8 desktop with the Gaim 1.0 Buddy List open and signed in as UIN 18300 (HiveBot and the retronet fleet listed by name); Firefox 0.9 closed, its globe on the top panel; no dialog, screensaver off; absolute USB tablet and keyboard ready"
   },
   "notes": [
     "Live CD, not an install: the golden vmstate lives in an otherwise empty 1G qcow2 (ubuntu.qcow2) alongside the read-only ISO — both are the device set",

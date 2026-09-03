@@ -103,6 +103,20 @@
       "aimScreenName": "win311"
     },
     {
+      "station": "ubuntu",
+      "uin": "18300",
+      "nick": "ubuntu",
+      "client": "gaim1.0",
+      "onboarded": true
+    },
+    {
+      "station": "suse64",
+      "uin": "18000",
+      "nick": "suse64",
+      "client": "gtkicq",
+      "onboarded": true
+    },
+    {
       "station": "pcbsd",
       "uin": "17900",
       "nick": "pcbsd",
