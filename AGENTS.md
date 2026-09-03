@@ -70,6 +70,9 @@ arbitrary. Do not re-expand this file; put the detail there.
     Theories → one cheap agent each on its own `rig-clone.sh` clone, first
     framebuffer proof wins, `keep` kills the rest; waits are `fb-wait.py`
     (`--settle`/`--change`), not `sleep N`. Applies to all work, not only speedruns.
+15. **Commit a station's `rn-tapnet.sh` only with a proven station** —
+    `box-sync-pairs-retronet.sh` deploys every committed one fleet-wide, so an
+    unproven tap script ships live on the next `box-deploy --apply`.
 
 ## Where to look
 
