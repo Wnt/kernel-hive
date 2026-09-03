@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "id": "suse64",
+  "era_year": 2000,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 74,
+        "prelude": "",
+        "value": {
+          "key": "suse64",
+          "script": "tiles/suse64.sh",
+          "outputDir": "SUSE64",
+          "class": "heavy",
+          "estimated": "~20-30m",
+          "automation": "vision",
+          "produces": "suse64.qcow2 (CD1 YaST2 install + KDE 1.1.2 golden)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "suse64",
+      "value": {
+        "os": "SuSE Linux 6.4",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            100,
+            100
+          ],
+          "b": [
+            900,
+            700
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "konsole over the origin has focus in the golden",
+        "audio_trigger": "none",
+        "validated": false,
+        "note": "XFree86 3.3.6 SVGA on cirrus 1024x768x16; absolute pointer through the guest X server (x11warp over loopback 6080); keys/buttons over PS/2"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/suse64",
+      "qmp": "/data/vms/streamhost/stations/suse64/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54180,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:80; the launcher publishes a loopback SLIRP forward 6080->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. disk.qcow2 is the only block device and carries the golden vmstate under /opt/qemu-beos."
+    }
+  },
+  "render": {
+    "signalOrder": 77,
+    "stationsManifestOrder": 75,
+    "stationsManifestPrelude": "\n# suse64 (VMID 180) — SuSE Linux 6.4 i386 (2000), KDE 1.1.2 on XFree86 3.3.6 (cirrus).\n#   VERBATIM launcher: /opt/qemu-beos binary, -loadvm golden on disk.qcow2 (only block device),\n#   ne2k_pci SLIRP with the loopback X forward 6080->6000 for the x11warp pointer.\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 87,
+    "bindingPrelude": "",
+    "mockManifestOrder": 3,
+    "goldenOrder": 75,
+    "actionMapOrder": 47
+  },
+  "stationDir": "suse64",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54180,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11warp",
+      "method": "x11-warp-absolute",
+      "absolute": true,
+      "present": true,
+      "device": "guest X server (motion) + ps2 (buttons)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 180
+  },
+  "guestDoc": "docs/guests/suse64.md",
+  "credentialsRef": "guest/suse64",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "suse64",
+      "SH_QMP": "/data/vms/streamhost/stations/suse64/qmp.sock",
+      "SH_PORT": "54180",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/suse64/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/suse64/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 180,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "suse64",
+        "--vmid",
+        "180",
+        "--udp",
+        "54180",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11warp",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/suse64/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/suse64/station.env.fixture"
+      ],
+      "deviceSetId": "suse64-kvm-noapic-cirrus-x11warp-golden",
+      "launcher": "streamhost/stations/suse64/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/suse64/station.env.fixture",
+      "binary": "/opt/qemu-beos/bin/qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 256,
+      "smp": 1,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-suse64",
+        "-enable-kvm -m 256 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga cirrus",
+        "-display dbus,p2p=on",
+        "-drive file=/data/vms/streamhost/stations/suse64/disk.qcow2,format=qcow2,if=ide",
+        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6080-10.0.2.15:6000 -device ne2k_pci,netdev=n0",
+        "-qmp unix:/data/vms/streamhost/stations/suse64/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/suse64/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "pc-i440fx-11.0 under KVM (k_smp booted noapic; the install ran under TCG because 2.2 IDE PIO is a KVM exit per outw) with -vga cirrus (XFree86 3.3 SVGA cirrus driver), one IDE disk carrying the golden vmstate, ne2k_pci on SLIRP with the loopback X forward 6080->6000 for x11warp; no audio device"
+      },
+      "qemuBuild": {
+        "prefix": "/opt/qemu-beos",
+        "binary": "/opt/qemu-beos/bin/qemu-system-x86_64",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
+        "base": "QEMU 11.0.2 (the same version as the host pve-qemu-kvm 11.0.2-1, so machine type pc-i440fx-11.0 is unchanged)",
+        "configure": "--target-list=x86_64-softmmu --enable-slirp --enable-dbus-display --disable-opengl --disable-werror --disable-tools",
+        "binarySha256": "90baceeb55935aa28c0f7637cb5218cda41bd24413ea870d2637c43415708669",
+        "note": "Same installed build as beos (/opt/qemu-beos); see beos.json for provenance."
+      }
+    },
+    "bringUpOrder": 87
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#6ea339",
+    "eraLabel": "2000 · SuSE Linux 6.4",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "suse64",
+    "displayName": "SuSE Linux 6.4",
+    "year": 2000,
+    "lineage": "SuSE Linux (Slackware-derived, Nuremberg 1992) → SUSE Linux → openSUSE / SUSE Linux Enterprise",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "1990s",
+    "accent": "#6ea339",
+    "eraSoftware": [
+      "KDE 1.1.2",
+      "YaST",
+      "XFree86 3.3.6 (4.0 alongside)",
+      "StarOffice 5.1",
+      "Netscape Communicator 4.7",
+      "GNOME 1.0.x",
+      "kernel 2.2.14"
+    ],
+    "periodBrowser": "Netscape Communicator 4.7 / kfm",
+    "iconicApps": [
+      "KDE 1.1.2",
+      "YaST",
+      "kfm",
+      "konsole",
+      "StarOffice 5.1"
+    ],
+    "blurb": "The green-boxed German Linux of the six-CD era: KDE 1 on kernel 2.2, YaST, and a 444-page manual, from the last spring SuSE spelled itself with a small u.",
+    "notes": "SuSE Linux 6.4 (March 2000), the last 6.x release: kernel 2.2.14, XFree86 3.3.6 with 4.0 supplied alongside, KDE 1.1.2 as the default desktop, GNOME 1.0.x, StarOffice 5.1, Netscape Communicator 4.7. YaST is the installer and the administration tool (text YaST1, and the graphical front end that runs the first install). Installed from CD1 of the six-CD retail set; the station boots a golden snapshot of a KDE 1 desktop at 1024x768x16 with a konsole open."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "text-console",
+  "reset": {
+    "stationDir": "suse64",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "SuSE Linux 6.4 KDE 1.1.2 desktop (XFree86 3.3.6 SVGA on Cirrus, 1024x768x16): console autologin into startx, kpanel and a konsole over the origin; the golden carries xhost +10.0.2.2 so the x11warp pointer works on every restore."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from freedos on 2026-09-02, runtime/pointer shape from netbsd14; media: archive.org suse-linux-6.4 CD1 (see docs/lab/SUSE64-WAVE.md)"
+  ],
+  "demoProgram": {
+    "label": "Type a few commands into the konsole",
+    "lines": [
+      "cat /etc/SuSE-release",
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "df -h /"
+    ],
+    "runCommand": "df -h /",
+    "perCharMs": 80
+  },
+  "media": null
+}

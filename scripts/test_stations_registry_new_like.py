@@ -92,5 +92,33 @@ class NewLikeTest(unittest.TestCase):
         self.assertIn(f"streamhost-{NEW_ID}", launcher)
 
 
+class LikeRewriteTest(unittest.TestCase):
+    """The sibling rewrite must catch the BARE station dir, not only paths under it.
+
+    `operator.labctl.dir` is `/data/vms/streamhost/stations/<id>` with nothing after
+    the id. A slash-anchored pattern rewrote `qmp` (`.../<id>/qmp.sock`) and left
+    `dir` pointing at the sibling; slackware's station-up found it on 2026-09-03
+    (labctl drove tinycore's directory). A longer id that merely starts with the
+    sibling's must not be touched.
+    """
+
+    def test_bare_station_dir_is_rewritten_and_longer_ids_are_not(self) -> None:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from stations_registry.scaffold import _rewrite_like_text
+
+        text = (
+            '{"dir": "/data/vms/streamhost/stations/tinycore", '
+            '"qmp": "/data/vms/streamhost/stations/tinycore/qmp.sock", '
+            '"other": "/data/vms/streamhost/stations/tinycorex/qmp.sock", "id": "tinycore"}'
+        )
+        out = _rewrite_like_text(text, "tinycore", "slackware")
+        self.assertIn('"dir": "/data/vms/streamhost/stations/slackware"', out)
+        self.assertIn('"qmp": "/data/vms/streamhost/stations/slackware/qmp.sock"', out)
+        self.assertIn('"other": "/data/vms/streamhost/stations/tinycorex/qmp.sock"', out)
+        self.assertIn('"id": "slackware"', out)
+        self.assertNotIn("stations/tinycore/", out)
+        self.assertNotIn('stations/tinycore"', out)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -267,7 +267,9 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
   helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
-  tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
+  tinycore: 'generic', redstar2: 'generic',
+  debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
+  redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
@@ -275,6 +277,7 @@ export const OS_FAMILY: Record<string, Family> = {
   openvms: 'generic',
   ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
+  suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
@@ -308,10 +311,21 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
+  // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
+  // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
+  // Unix rows are the honest common ground, at the fleet's pacing floor.
+  redhat62: 'generic',
   // PC-BSD 1.5.1 is KDE 3.5 on X.org: a standard PC-104 board, Alt+F1 for the
   // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
   // 'generic' is the honest PC-104 common ground.
   pcbsd: 'generic',
+  // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
+  netbsd14: 'generic',
+  // FreeBSD 4.11 under KDE 3.3.2: a full 101-key PC board driving XFree86, but
+  // KDE 3's chords (Alt+F2 run, Ctrl+Esc process table) are its own, so it takes
+  // the generic Unix rows like netbsd14 until a KDE profile is worth writing.
+  freebsd411: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows

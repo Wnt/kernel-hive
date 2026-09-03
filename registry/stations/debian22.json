@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "id": "debian22",
+  "era_year": 2000,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 72,
+        "prelude": "",
+        "value": {
+          "key": "debian22",
+          "script": "tiles/debian22.sh",
+          "outputDir": "Debian22",
+          "class": "heavy",
+          "estimated": "~5m compose + ~5m bake",
+          "automation": "host-compose + one hand bake",
+          "produces": "debian22.qcow2 (host-composed potato + XFree86 3.3.6 + GNOME 1.0 + Window Maker, no golden) + debian-2.2-i386-cd1.iso",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "debian22",
+      "value": {
+        "os": "Debian GNU/Linux 2.2",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            100,
+            100
+          ],
+          "b": [
+            900,
+            700
+          ]
+        },
+        "kbd": "type:x",
+        "kbd_reset": "BackSpace",
+        "kbd_note": "golden restores onto a logged-in GNOME 1.0 / Window Maker desktop with gnome-terminal focused; typed text echoes at the bash prompt",
+        "audio_trigger": "none",
+        "validated": true,
+        "note": "1024x768x16 Cirrus GD5446 (XFree86 3.3.6 XF86_SVGA, Option no_bitblt) / PS/2 relative mouse (xset m 1 1 baked in); keyboard echo, pointer move and loadvm reset framebuffer-proven 2026-09-03"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/debian22",
+      "qmp": "/data/vms/streamhost/stations/debian22/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54182,
+      "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only; PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol)"
+    }
+  },
+  "render": {
+    "signalOrder": 74,
+    "stationsManifestOrder": 72,
+    "stationsManifestPrelude": "\n# debian22 (VMID 182) \u2014 Debian GNU/Linux 2.2 potato i386, XFree86 3.3.6 + GNOME 1.0. AIR-GAPPED\n#   VERBATIM launcher: -nodefaults, no NIC/netdev/hostfwd, IDE golden disk + CD1 ISO,\n#   Cirrus VGA (XF86_SVGA, 1024x768), PS/2 relative mouse, no audio, no USB.\n#   Required -loadvm golden; dedicated HMP reset socket.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 86,
+    "bindingPrelude": "",
+    "goldenOrder": 72,
+    "actionMapOrder": 44
+  },
+  "stationDir": "debian22",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54182,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 182
+  },
+  "guestDoc": "docs/guests/debian22.md",
+  "credentialsRef": "guest/debian22",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "debian22",
+      "SH_QMP": "/data/vms/streamhost/stations/debian22/qmp.sock",
+      "SH_PORT": "54182",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "rel",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/debian22/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/debian22/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 182,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "debian22",
+        "--vmid",
+        "182",
+        "--udp",
+        "54182",
+        "--pointer",
+        "rel",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/debian22/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/debian22/station.env.fixture"
+      ],
+      "deviceSetId": "debian22-airgapped-golden-cirrus",
+      "launcher": "streamhost/stations/debian22/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/debian22/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 256,
+      "smp": 1,
+      "vga": "cirrus",
+      "deviceSetSummary": [
+        "-name streamhost-debian22 -nodefaults",
+        "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+        "-m 256 -smp 1 -rtc base=localtime",
+        "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$CDROM\",media=cdrom,if=ide,index=2 -boot order=c -loadvm golden",
+        "-vga cirrus",
+        "-display dbus,p2p=on",
+        "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+        "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+        "-pidfile \"$T/qemu.pid\""
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 256,
+        "smp": 1,
+        "vga": "cirrus",
+        "deviceSetSummary": [
+          "-name streamhost-debian22 -nodefaults",
+          "-enable-kvm -machine pc-i440fx-11.0 -cpu host",
+          "-m 256 -smp 1 -rtc base=localtime",
+          "-drive file=\"$DISK\",format=qcow2,if=ide,index=0 -drive file=\"$CDROM\",media=cdrom,if=ide,index=2 -boot order=c -loadvm golden",
+          "-vga cirrus",
+          "-display dbus,p2p=on",
+          "-qmp unix:\"$T/qmp.sock\",server=on,wait=off",
+          "-monitor unix:\"$T/reset-hmp.sock\",server,nowait",
+          "-pidfile \"$T/qemu.pid\""
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher is the production device ledger; zero guest network devices, no USB"
+      }
+    },
+    "bringUpOrder": 86
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#d70a53",
+    "eraLabel": "2000 \u00b7 Debian GNU/Linux 2.2",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "debian22",
+    "displayName": "Debian GNU/Linux 2.2",
+    "year": 2000,
+    "lineage": "Linux (Debian)",
+    "arch": "i386",
+    "ramMB": 256,
+    "era": "2000s",
+    "accent": "#d70a53",
+    "eraSoftware": [
+      "Linux 2.2.17",
+      "XFree86 3.3.6",
+      "GNOME 1.0 (gnome-core 1.0.55)",
+      "apt 0.3.19 / dpkg 1.6.15",
+      "Emacs 20.7"
+    ],
+    "periodBrowser": "Mozilla M18 (main); Netscape 4.7 in non-free",
+    "iconicApps": [
+      "GNOME panel",
+      "gmc file manager",
+      "gnome-terminal",
+      "Emacs 20",
+      "Lynx 2.8.3"
+    ],
+    "blurb": "Debian 2.2 \"potato\" (14 August 2000): Linux 2.2, XFree86 3.3.6 and the first packaged GNOME desktop, with apt 0.3 over roughly 3,900 packages on six architectures \u2014 the last release installed from boot-floppies.",
+    "notes": "Air-gapped streamhost station: no NIC, no exec channel. PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol) \u2014 visitors drag rather than point. Golden restores onto a logged-in GNOME 1.0 desktop with gnome-terminal focused."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "debian22",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Debian GNU/Linux 2.2 logged in as gallery on a 1024x768 16-bit GNOME 1.0 desktop under Window Maker: panel with foot menu and clock, gmc file manager, gnome-terminal focused at a bash prompt; no screensaver, no modal."
+  },
+  "notes": [
+    "scaffolded from redstar2 on 2026-09-02; TODO: media, museum, spa"
+  ],
+  "demoProgram": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
+  }
+}

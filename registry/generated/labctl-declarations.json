@@ -398,6 +398,24 @@
       "udp_port": 54139,
       "notes": "exec: labctl exec daybreak \"<cmd>\" (ssh root@:5849, key bridge_key) — reaches the Debian kiosk, NOT the Mesa guest; drive ViewPoint through the framebuffer + Ctrl+letter Level-V keys"
     },
+    "debian22": {
+      "dir": "/data/vms/streamhost/stations/debian22",
+      "qmp": "/data/vms/streamhost/stations/debian22/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54182,
+      "notes": "air-gapped guest: no emulated NIC and no exec channel; framebuffer/QMP/HMP only; PS/2 relative pointer (XFree86 3.3.6 has no tablet protocol)"
+    },
     "decos": {
       "dir": "/data/vms/streamhost/stations/decos",
       "qmp": "/data/vms/streamhost/stations/decos/qmp.sock",
@@ -433,6 +451,24 @@
       "console": "x11",
       "udp_port": 54130,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/dragon32/sta."
+    },
+    "freebsd411": {
+      "dir": "/data/vms/streamhost/stations/freebsd411",
+      "qmp": "/data/vms/streamhost/stations/freebsd411/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54178,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:78; the launcher publishes a loopback SLIRP forward 6078->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. disk.qcow2 is the only block device and carries the golden vmstate under /opt/qemu-beos."
     },
     "freedos": {
       "dir": "/data/vms/streamhost/stations/freedos",
@@ -668,6 +704,24 @@
       "udp_port": 54113,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "netbsd14": {
+      "dir": "/data/vms/streamhost/stations/netbsd14",
+      "qmp": "/data/vms/streamhost/stations/netbsd14/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54176,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:76; the launcher publishes a loopback SLIRP forward 6076->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. disk.qcow2 is the only block device and carries the golden vmstate under /opt/qemu-beos."
+    },
     "newsos": {
       "dir": "/data/vms/streamhost/stations/newsos",
       "qmp": null,
@@ -757,6 +811,24 @@
       "console": "fb",
       "udp_port": 54089,
       "notes": "exec: labctl exec nt4 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.12:7788 (n0 is a tap on vmbr-rn, NOT slirp -- no hostfwd). It is RUNNING inside the golden and restarts from the All Users StartUp folder on a cold boot. Also true absolute vmmouse pointer. See docs/lab/retronet/ICQ-STATION-NT4.md."
+    },
+    "openbsd": {
+      "dir": "/data/vms/streamhost/stations/openbsd",
+      "qmp": "/data/vms/streamhost/stations/openbsd/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54177,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. usb-tablet absolute pointer (X InputClass MinX/MaxX 0..32767). disk.qcow2 is the only block device and carries the golden vmstate."
     },
     "openvms": {
       "dir": "/data/vms/streamhost/stations/openvms",
@@ -974,6 +1046,24 @@
       "udp_port": 54106,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "redhat62": {
+      "dir": "/data/vms/streamhost/stations/redhat62",
+      "qmp": "/data/vms/streamhost/stations/redhat62/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": "none",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54181,
+      "notes": "kickstart-installed Red Hat Linux 6.2; SLIRP ne2k_pci with a loopback-only X forward (x11warp pointer); reset is loadvm golden"
+    },
     "redstar2": {
       "dir": "/data/vms/streamhost/stations/redstar2",
       "qmp": "/data/vms/streamhost/stations/redstar2/qmp.sock",
@@ -1153,6 +1243,24 @@
       "console": "fb",
       "udp_port": 54147,
       "notes": "OpenWindows 3 desktop as the unprivileged guest, restored via loadvm golden. Mouse and keyboard both work (keyboard needs SetInput: select click-to-focus, baked in the golden's ~/.Xdefaults; with followmouse keys only land while the pointer is over the window). exec = telnet_unix_e: labctl exec sunos414 over in.telnetd at 127.0.0.1:5947 (launcher re-adds the SLIRP hostfwd each start; client /root/sunexec.py)."
+    },
+    "suse64": {
+      "dir": "/data/vms/streamhost/stations/suse64",
+      "qmp": "/data/vms/streamhost/stations/suse64/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54180,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer MOTION is absolute through the guest X server (SH_INPUT_BACKEND=x11warp on SH_X11WARP_DISPLAY=127.0.0.1:80; the launcher publishes a loopback SLIRP forward 6080->10.0.2.15:6000 and the golden carries xhost +10.0.2.2). Buttons and keys ride the PS/2 path over D-Bus. SINGLE INJECTOR: nothing else may move this pointer. disk.qcow2 is the only block device and carries the golden vmstate under /opt/qemu-beos."
     },
     "templeos": {
       "dir": "/data/vms/streamhost/stations/templeos",

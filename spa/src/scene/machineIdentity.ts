@@ -451,6 +451,9 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
+  // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
+  // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
+  // Registry red accent (Red Hat's own).
   // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
   // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
   slackware: {
@@ -468,6 +471,40 @@ export const EXHIBIT_IDENTITIES = {
   ubuntu: {
     caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
     badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
+  // netbsd14: a late-1990s beige Pentium-class clone with a Cirrus SVGA card,
+  // the kind of box NetBSD's i386 port was installed on with sysinst. The accent
+  // is the registry's NetBSD flag orange.
+  netbsd14: {
+    caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
+  },
+  // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a plain VGA
+  // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the
+  // kind of box ISPs racked by the hundred. The accent is the registry's
+  // FreeBSD daemon red.
+  freebsd411: {
+    caseTint: '#cfc6ae', accentTint: '#ab2b28', tintMix: 0.35,
+    badge: 'PENTIUM 4 PC', spec: 'VESA SVGA 1024x768 • FREEBSD 4.11 • 2005', kit: 'office90',
+  },
+  debian22: {
+    caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
+    badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',
+  },
+  suse64: {
+    caseTint: '#d9d4c3', accentTint: '#6ea339', tintMix: 0.38,
+    badge: 'PENTIUM III', spec: '17" CRT • 2000', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 

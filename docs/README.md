@@ -92,23 +92,29 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/bootos.md](guests/bootos.md) | bootOS — an OS in one 512-byte boot sector, on a 360K floppy of one-sector games; keyboard-only, floppy-as-qcow2 golden. |
 | [guests/c64.md](guests/c64.md) | Commodore 64 (VICE) — the reference kiosk implementation. |
 | [guests/daybreak.md](guests/daybreak.md) | Xerox 6085 "Daybreak" running ViewPoint 2.0.5, via the Dwarf/Draco Mesa emulator in a bare-X kiosk. |
+| [guests/debian22.md](guests/debian22.md) | Debian GNU/Linux 2.2 "potato" — GNOME 1.0 / XFree86 3.3.6, air-gapped like redstar2. |
+| [guests/freebsd411.md](guests/freebsd411.md) | FreeBSD 4.11-RELEASE i386 (2005, last of the 4.x line) with the KDE 3.3.2 desktop from the disc1-kde install CD; x11warp absolute pointer into the guest XFree86 4.3.0 server. |
 | [guests/haiku.md](guests/haiku.md) | Haiku station (ssh exec channel wired). |
 | [guests/helenos.md](guests/helenos.md) | HelenOS 0.14.1 LiveCD station — absolute pointer via usb-tablet. |
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS station — absolute-pointer notes (live 2026-07-13). |
 | [guests/macos.md](guests/macos.md) | Historical macOS OpenCore/Sequoia recipe; current station is a showcase poster. |
 | [guests/msdos-win1.md](guests/msdos-win1.md) | MS-DOS + Windows 1.0 station. |
+| [guests/netbsd14.md](guests/netbsd14.md) | NetBSD 1.4.1 i386 (1999) — XFree86 3.3 desktop, absolute pointer through the guest's X server (x11warp). |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |
 | [guests/ninefront.md](guests/ninefront.md) | 9front (Plan 9 fork) station — warpd agent on :57793. |
+| [guests/openbsd.md](guests/openbsd.md) | OpenBSD 7.9 amd64 station — unattended autoinstall over loopback HTTP, fvwm from base Xenocara, usb-tablet InputClass pointer fix. |
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
 | [guests/pcbsd.md](guests/pcbsd.md) | PC-BSD 1.5.1 "Edison" — FreeBSD 6.3 + KDE 3.5.8 desktop BSD, assisted GUI install. |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
 | [guests/slackware.md](guests/slackware.md) | Slackware 3.4 — Linux 2.0.30, XFree86 3.3.1, fvwm95 desktop composed host-side from the mirror's .tgz packages; GRUB2 boots the stock zImage. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
+| [guests/redhat62.md](guests/redhat62.md) | Red Hat Linux 6.2 "Zoot" — kickstart install, GNOME 1.0/Enlightenment on cirrus, kernel 2.2.14 IDE PIO wall (TCG install), x11warp pointer. |
 | [guests/ubuntu.md](guests/ubuntu.md) | Ubuntu 4.10 Warty Warthog — live-CD-as-OS station, no NIC/audio (AC97+ACPI hangs the boot), pointer not 1:1 at 640x480. |
 | [guests/riscos.md](guests/riscos.md) | RISC OS station. |
 | [guests/sailfish.md](guests/sailfish.md) | Sailfish OS — bochs-drm KMS GUI recipe (authoritative) + earlier console/VirtualBox routes as appendices. |
 | [guests/solaris.md](guests/solaris.md) | Solaris 10 x86 with real CDE; in-guest warpd agent documented in `streamhost/guest-agents/solaris/README.md`. |
+| [guests/suse64.md](guests/suse64.md) | SuSE Linux 6.4 — YaST2 CD1 install, KDE 1.1.2 on kernel 2.2, absolute x11warp pointer. |
 | [guests/templeos.md](guests/templeos.md) | TempleOS station. |
 | [guests/win11.md](guests/win11.md) | Windows 11 unattended install + the RDP-bridge exhibit (VM 900 since deleted — showcase-only). |
 | [guests/win9x.md](guests/win9x.md) | Windows 95/98 (+ the Win 3.11 material) — KVM recipe & root-cause, perf tuning, as-built image manifests. |

@@ -71,6 +71,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "debian22": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
+  },
   "dragon32": {
     "label": "Type in a demo program",
     "lines": [
@@ -84,6 +94,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 170
+  },
+  "freebsd411": {
+    "label": "Type a few commands into the root Konsole",
+    "lines": [
+      "uname -a",
+      "ls /usr/local/bin | head",
+      "kcalc &"
+    ],
+    "runCommand": "kcalc &",
+    "perCharMs": 80
   },
   "mpf2": {
     "label": "Type in a demo program",
@@ -100,6 +120,26 @@ const DEMO_PROGRAMS = {
       "100 goto 30"
     ],
     "runCommand": "run"
+  },
+  "netbsd14": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xcalc &"
+    ],
+    "runCommand": "xcalc &",
+    "perCharMs": 120
+  },
+  "openbsd": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xlogo &"
+    ],
+    "runCommand": "xlogo &",
+    "perCharMs": 100
   },
   "oricatmos": {
     "label": "Type in a demo program",
@@ -166,6 +206,17 @@ const DEMO_PROGRAMS = {
       "cat /proc/version"
     ],
     "runCommand": "uname -a",
+    "perCharMs": 80
+  },
+  "suse64": {
+    "label": "Type a few commands into the konsole",
+    "lines": [
+      "cat /etc/SuSE-release",
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "df -h /"
+    ],
+    "runCommand": "df -h /",
     "perCharMs": 80
   },
   "vic20": {

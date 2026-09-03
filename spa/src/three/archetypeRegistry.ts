@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (79 of the 81
+//    - transport   : how its LIVE framebuffer texture is obtained (85 of the 87
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 79 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 85 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -208,6 +208,12 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1', pointerRel: true },
   ubuntu:      { osId: 'ubuntu', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#dd4814', eraLabel: '2004 · Ubuntu 4.10 Warty Warthog' },
   slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: false },
+  netbsd14:    { osId: 'netbsd14', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#f26522', eraLabel: '1999 · NetBSD 1.4.1 — XFree86 3.3.3.1', pointerRel: false },
+  redhat62:    { osId: 'redhat62', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#cc0000', eraLabel: '2000 · Red Hat Linux 6.2 — GNOME 1.0', pointerRel: false },
+  openbsd:     { osId: 'openbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#f2c94c', eraLabel: '2026 · OpenBSD 7.9 — fvwm', pointerRel: false },
+  freebsd411:  { osId: 'freebsd411', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#ab2b28', eraLabel: '2005 · FreeBSD 4.11 — KDE 3.3.2', pointerRel: false },
+  debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: true },
+  suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

@@ -69,11 +69,17 @@ const POSTER_INDEX = {
   "daybreak": {
     "hero": "/posters/daybreak/desktop.webp"
   },
+  "debian22": {
+    "hero": "/posters/debian22/desktop.webp"
+  },
   "decos": {
     "hero": "/posters/decos/desktop.webp"
   },
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
+  },
+  "freebsd411": {
+    "hero": "/posters/freebsd411/desktop.webp"
   },
   "freedos": {
     "hero": "/posters/freedos/desktop.webp"
@@ -117,6 +123,9 @@ const POSTER_INDEX = {
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
   },
+  "netbsd14": {
+    "hero": "/posters/netbsd14/desktop.webp"
+  },
   "newsos": {
     "hero": "/posters/newsos/desktop.webp"
   },
@@ -131,6 +140,9 @@ const POSTER_INDEX = {
   },
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
+  },
+  "openbsd": {
+    "hero": "/posters/openbsd/desktop.webp"
   },
   "openvms": {
     "hero": "/posters/openvms/desktop.webp"
@@ -168,6 +180,9 @@ const POSTER_INDEX = {
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
   },
+  "redhat62": {
+    "hero": "/posters/redhat62/desktop.webp"
+  },
   "redstar2": {
     "hero": "/posters/redstar2/desktop.webp"
   },
@@ -200,6 +215,9 @@ const POSTER_INDEX = {
   },
   "sunos414": {
     "hero": "/posters/sunos414/desktop.webp"
+  },
+  "suse64": {
+    "hero": "/posters/suse64/desktop.webp"
   },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"

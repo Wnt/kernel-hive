@@ -260,6 +260,12 @@ elif ! have npx; then
 else
   stage "TS/JS lint (eslint + knip)" "cd spa && npx eslint . --max-warnings=0 && npx knip" \
     bash -c 'cd spa && npx eslint . --max-warnings=0 && npx knip'
+  # spa.yml runs vitest too, and this hook did not: on 2026-09-03 nine station
+  # waves each pushed a scene row copied from a sibling, main went red twice on
+  # machines.test.ts (duplicate hardware signatures, lineup order) and
+  # stationSearch.test.ts, and nobody saw it until a wave ran vitest by hand.
+  stage "TS unit tests (vitest)" "cd spa && npx vitest run" \
+    bash -c 'cd spa && npx vitest run'
 fi
 
 # The Rust target dir is an ABSOLUTE BOX PATH (streamhost/.cargo/config.toml:

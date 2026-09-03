@@ -1,0 +1,9 @@
+#!/bin/sh
+# netbsd14 exhibit session: the xterm covers the origin (the daemon warps there first).
+PATH=/usr/X11R6/bin:/usr/bin:/bin:/usr/sbin:/sbin; export PATH
+xhost +10.0.2.2
+xsetroot -solid SteelBlue
+xclock -geometry 120x120-10+10 &
+xcalc -geometry +640+80 &
+xterm -geometry 80x28+0+0 -bg white -fg black -title 'NetBSD 1.4.1' &
+if [ -x /usr/X11R6/bin/ctwm ]; then exec ctwm; else exec twm; fi
