@@ -109,20 +109,19 @@ the device vmstate — `loadvm` would have restored the old, NIC-less machine):
   Gaim's `autorecon` plugin, so a reset re-signs-in by itself
   ([STATION-ubuntu.md §Reset and reconnect](../lab/retronet/STATION-ubuntu.md#reset-and-reconnect)):
   **VM_SIZE = 307 MiB, VM_CLOCK = 0000:14:58.326** (`qemu-img snapshot -l`).
-  The pre-autorecon golden (VM_SIZE 307 MiB, VM_CLOCK 0000:11:25.966) was moved
-  aside as `ubuntu.qcow2.bak-pre-recon` and then **deleted from
-  `/data/gallery-guests/Ubuntu/` by an unrelated sweep ~10 minutes later**,
-  which also took `ubuntu.qcow2.bak-pre-rn` — see
-  [STATION-ubuntu.md §Reset and reconnect](../lab/retronet/STATION-ubuntu.md#reset-and-reconnect)
-  for the rollback that replaces it.
+  The pre-autorecon golden (VM_CLOCK 0000:11:25.966) and the air-gapped golden
+  were each **retired by the coordinator after their replacement passed its live
+  proof** (rule 6); there is no file-level rollback — see
+  [STATION-ubuntu.md §Rollback](../lab/retronet/STATION-ubuntu.md#rollback).
 - **Restore-proven**: killed the bake clone by pidfile, relaunched with
   `-loadvm golden -S`, QMP `cont`, `fb-wait.py --settle 4 --timeout 60` landed
   on the identical scene in **4.1 s**. Both planes survived the restore with no
   nudge and no re-login: HiveBot **replied in the frame** to a message sent
   after the restore, and Firefox loaded a second corpus page.
 - Staged at `/data/gallery-guests/Ubuntu/ubuntu.qcow2`; the air-gapped golden
-  was moved aside first to **`ubuntu.qcow2.bak-pre-rn`** (VM_SIZE 255 MiB,
-  VM_CLOCK 0000:05:55.667 — the 2026-09-03 02:19 bake), which is the rollback.
+  (VM_SIZE 255 MiB, VM_CLOCK 0000:05:55.667 — the 2026-09-03 02:19 bake) was
+  kept as `ubuntu.qcow2.bak-pre-rn` until the retronet golden's live proof, then
+  retired.
 - Reset mode: `loadvm`, fixture in `streamhost/stations/ubuntu/station.env.fixture`
   (`SH_RESET_MODE=loadvm`, `SH_GOLDEN_SNAPSHOT=golden`,
   `SH_RESET_MONITOR=.../reset-hmp.sock`).
@@ -155,7 +154,6 @@ vmstate whose rtl8139 the device set no longer provides. Backups:
 
 | Backup | What |
 |---|---|
-| `/data/gallery-guests/Ubuntu/ubuntu.qcow2.bak-pre-rn` | the **air-gapped** golden (255 MiB), the rollback for the retronet swap |
 | `/data/gallery-guests/Ubuntu/ubuntu.qcow2.bak-pre-golden` | the builder's pristine empty carrier, no snapshot |
 
 ## Operator notes

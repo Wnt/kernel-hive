@@ -251,33 +251,33 @@ the production device set (tap `ubunturn0`, the real MAC, `-loadvm golden`):
 **VM_SIZE 307 MiB, VM_CLOCK 0000:14:58.326**. Live-station downtime for the
 swap: **06:43:02Z → 06:57:32Z**.
 
-**The pre-autorecon golden is gone, and that is worth knowing.** It was moved
-aside as `ubuntu.qcow2.bak-pre-recon` at 06:57:32Z; by 07:07 it had been deleted
-by something outside this session — the same sweep also took
-`ubuntu.qcow2.bak-pre-rn`, the retronet rollback the section below still
-promises, and left `/data/gallery-guests/Ubuntu/` holding only `ubuntu.qcow2`,
-the 192 KiB `ubuntu.qcow2.bak-pre-golden` and the ISO. `/data` was 38 % full, so
-it was not a space reaper. **Do not assume a `.bak-*` beside a gallery guest is
-still there** — check before you plan a rollback on it.
+**Both earlier goldens were retired on purpose.** The coordinator removed
+`ubuntu.qcow2.bak-pre-rn` after the retronet golden passed its live proof
+(2026-09-03 ~05:35Z) and `ubuntu.qcow2.bak-pre-recon` after the autorecon golden
+passed this one (~07:07Z), on the wave coordinator's instruction and within
+rule 6 (a golden is retired only after its replacement is restore-proven). So
+`/data/gallery-guests/Ubuntu/` holds only `ubuntu.qcow2`, the 192 KiB
+`ubuntu.qcow2.bak-pre-golden` (the builder's empty carrier) and the ISO. **Do
+not assume a `.bak-*` beside a gallery guest is still there** — check before
+you plan a rollback on it.
 
 Rolling autorecon back therefore means undoing it in the guest, not restoring a
 file: boot a clone with the production device set, `pkill gaim`, drop the
 `autorecon.so` `<item>` from `~/.gaim/prefs.xml`, set the two `hide_*_error`
-prefs back to `0`, restart gaim, `savevm golden`. The shipping golden is also
-copied at `/data/vms/sandbox/ubuntu-recon/bake/ubuntu.qcow2` while that sandbox
-lives.
+prefs back to `0`, restart gaim, `savevm golden`.
 
 ## Rollback
 
-The pre-**autorecon** golden is `ubuntu.qcow2.bak-pre-recon` (see
-§Reset and reconnect). The pre-**retronet** golden is kept **byte-for-byte** at
-`/data/gallery-guests/Ubuntu/ubuntu.qcow2.bak-pre-rn` (it is the air-gapped
-`golden`, VM_SIZE 255 MiB / VM_CLOCK 0000:05:55.667). Full rollback:
+There is no file-level rollback (see above). The live CD is the OS, so a full
+rollback to the air-gapped station is a re-bake from the ISO: `git revert` the
+retronet commit (launcher drops the NIC + tap guard, registry, fixture), run
+`scripts/build-guests/tiles/ubuntu.sh` with `FORCE=1` for a fresh empty carrier,
+bake `golden` on a clone as `docs/lab/UBUNTU-WAVE.md` § Golden describes
+(~5 minutes: boot, `xset m 1 1`, `xset s off`, `savevm golden`), then:
 
 ```bash
 ssh lab 'systemctl stop streamhost@ubuntu'
-ssh lab 'cp /data/gallery-guests/Ubuntu/ubuntu.qcow2.bak-pre-rn /data/gallery-guests/Ubuntu/ubuntu.qcow2'
-git revert <this commit>          # launcher (drops the NIC + tap guard), registry, fixture
+# copy the re-baked carrier over /data/gallery-guests/Ubuntu/ubuntu.qcow2
 ssh lab 'bash /data/vms/streamhost/stations/ubuntu/rn-tapnet.sh down'   # tap + UBUNTURN-IN
 ssh lab 'systemctl start streamhost@ubuntu'
 ```
