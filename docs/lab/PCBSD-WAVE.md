@@ -118,6 +118,18 @@ the guest's X server over TCP and reads it back.
 - Fixture: `SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:79`,
   `SH_CURSOR_SCALE=1.0`; registry `stream.pointer` = freebsd411's shape, emit
   `--pointer abs --input-backend x11warp`, no legacy `SH_POINTER`.
-- Proof: two-target warp with XQueryPointer readback and the cursor visible at both
-  targets on the framebuffer (golden stream report below), then the same on the
-  live station after the swap.
+- **pf is the trap** (not in the fleet recipe until now): PC-BSD 1.5.1 ships
+  `pf_enable="YES"` with `/etc/pf.conf`, which resets inbound :6000 even once X
+  listens. Appended `pass in quick on em0 proto tcp from 10.0.2.2 to any port 6000`
+  and `pfctl -f /etc/pf.conf`; the rule loads at boot via `pf_rules` and the
+  running ruleset is inside the vmstate. kdmrc: `[X-:*-Core] ServerArgsLocal=`
+  (was `-nolisten tcp`, line 469); no `Xservers` file on PC-BSD; `em0` was already
+  `DHCP` in rc.conf. After reboot `sockstat -4l` shows `Xorg tcp4 *:6000`, `xhost`
+  prints `INET:10.0.2.2`.
+- Proof on the clone (golden stream, Fable, 15 min): `xdpyinfo -display 127.0.0.1:79`
+  answers (X.Org, 1024x768); `scripts/dev/x11ptr.py 127.0.0.1 6079 X,Y q` warps read
+  back **(100,100)** and **(900,650)** exactly, cursor sprite on both frames
+  (`/data/vms/sandbox/pcbsd/abs/w1.png`, `w2.png`). Golden: VM_SIZE **296 MiB**,
+  VM_CLOCK 0:12:55, restore pixel-identical and `query_pointer` = (450,680) after
+  the restore; power-on → desktop ≈90 s. Staged as `disk.qcow2.x11warp`, swapped in
+  during the landing window (old kept as `disk.qcow2.rel-bak` until the live proof).

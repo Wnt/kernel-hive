@@ -60,8 +60,10 @@ Pointer MOTION is **absolute through the guest's own X server** (`x11warp`,
 phase 2 of the wave): the daemon connects to `SH_X11WARP_DISPLAY=127.0.0.1:79`,
 which the launcher forwards to the guest's X on `10.0.2.15:6000`, and moves the
 pointer with `XWarpPointer` + `XQueryPointer` readback. For that the golden
-carries `xhost +10.0.2.2` (never `xhost +`) and KDM starts X without
-`-nolisten tcp`. Buttons and keys ride the PS/2 path over D-Bus. Nothing else may
+carries `xhost +10.0.2.2` (never `xhost +`), KDM starts X without
+`-nolisten tcp` (`kdmrc` `[X-:*-Core] ServerArgsLocal=`), and — the PC-BSD-specific
+trap — `/etc/pf.conf` carries `pass in quick on em0 proto tcp from 10.0.2.2 to any
+port 6000`, because PC-BSD ships pf enabled and it resets inbound :6000 otherwise. Buttons and keys ride the PS/2 path over D-Bus. Nothing else may
 move this pointer (single injector), and the sink sends no relative motion, so
 drags are warp sequences (see `docs/lab/INPUT-DEBUGGING.md`). History: phase 1
 shipped relative PS/2 because a usb-tablet never moves the X pointer on FreeBSD
@@ -75,9 +77,12 @@ checkpoint travels with it.
 
 ## Checkpoint
 
-Baked 2026-09-03 on the smoke rig with the station launcher's device set (no
-cdrom, no NIC): `savevm golden` on `disk.qcow2` — VM_SIZE **388 MiB**, VM_CLOCK
-0:11:40; one `loadvm golden` restore proven pixel-identical to the pre-save frame.
+Re-baked 2026-09-03 (phase 2, x11warp) on a sandbox clone with the station
+launcher's device set (no cdrom, e1000 SLIRP NIC with the :6079 forward):
+`savevm golden` on `disk.qcow2` — VM_SIZE **296 MiB**, VM_CLOCK 0:12:55; one
+`loadvm golden` restore proven pixel-identical, and the X TCP display still answers
+`XQueryPointer` = (450,680) after the restore. (Phase 1 golden, relative PS/2, no
+NIC: 388 MiB.)
 Fixture: KDE 3.5.8 desktop, user `visitor` autologged in via KDM
 (`AutoLoginEnable=true` in `/usr/local/share/config/kdm/kdmrc`), **Konsole focused
 with an empty `%` prompt** (keyboard surface, window at 176..846 x 108..608),
