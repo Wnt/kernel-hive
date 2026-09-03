@@ -420,7 +420,37 @@ EndSection "Contacts"
 how HiveBot vanished during the previous recapture. With the line above in the
 file it comes back on every restart.
 
-### What is proven, and what is NOT
+### PROVEN end to end (2026-09-03, station stopped for the run)
+
+With the real device set (tap `suse64rn0`, `restrict=on` slirp), `loadvm golden`
+at journal mark **06:46:42Z**, then held:
+
+```
+Sep 03 06:48:05  msg="user authenticated successfully"    svc=ICQLegacy uin=18000 version=4
+Sep 03 06:48:05  msg="V4 login successful (direct flow)"  svc=ICQLegacy uin=18000 session_id=10982733
+```
+
+**A NEW login 83 s after the restore** — inside the 120 s reaper window — and
+**no `NOT_CONNECTED` line at all** after it. The frame at the end of the hold
+shows `Ready (Online)` with **HiveBot under `Online`, green dot**. The defect is
+fixed.
+
+Two details worth keeping:
+
+- **The first login came from the file's default server with no GUI step**: a
+  fresh start after the mark signed in at 06:44:39Z having read
+  `Server "icq.mirabilis.com"` out of `gtkicqrc` and resolved it through the
+  retronet DNS. That is the whole reason no Options → Network edit survives in
+  the golden any more.
+- **The restarted window lands in exactly the same top-left position** — kwm does
+  not wander it, so no geometry option or `kwmrc` placement rule was needed.
+- **Presence is not instant.** For ~40 s after a restart HiveBot is listed but
+  shows *Offline* and the status bar still reads "Connecting to Server…"; the
+  client has not yet exchanged presence. Do not screenshot a restart before
+  ~60 s and conclude the contact is missing — the frame above was taken at the
+  end of a 160 s hold and shows it Online.
+
+### What was proven on the earlier isolated rig
 
 Proven on an isolated rig (2026-09-03, `/data/vms/sandbox/suse64-rn2`): the
 `Contacts` section carries `"10000" "HiveBot"` after the edit; `~/.xinitrc`
