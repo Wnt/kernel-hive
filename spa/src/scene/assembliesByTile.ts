@@ -510,8 +510,8 @@ export const ASSEMBLIES_BY_TILE = {
   // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
   // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
   // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
-  // two-button PS/2 mouse (the station forwards a relative pointer; FreeBSD 6.3's
-  // X never moved on a USB tablet). Distinct from reactos's SFF pizza-box kit.
+  // two-button PS/2 mouse (pointer motion is absolute through the guest's X via
+  // x11warp; FreeBSD 6.3's X never moved on a USB tablet). Distinct from reactos.
   pcbsd: {
     kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
     keyboard: 'keyboardF', mouse: 'paramMouseD',

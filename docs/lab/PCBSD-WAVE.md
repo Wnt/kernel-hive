@@ -99,3 +99,25 @@ device. Also: `station-up.sh` step 4 republishes the runtime manifests and wipes
 every other wave's dark-launch overlay (seven this time), and `labctl gen`
 refuses while undeclared station dirs from sibling waves exist — both are
 coordination-level, reported to the coordination session.
+
+## Phase 2 — absolute pointer via x11warp (2026-09-03)
+
+Operator: "pointer-based graphical OSes need absolute cursor positioning before
+they are considered fully integrated." The usb-tablet is dead on FreeBSD 6.3 X
+(phase 1), so pcbsd takes the fleet's `x11warp` route proven the same night on
+freebsd411 / netbsd14 / suse64 / redhat62: the daemon warps the pointer inside
+the guest's X server over TCP and reads it back.
+
+- Device set gains ONE device: `-netdev user,id=n0,hostfwd=tcp:127.0.0.1:6079-10.0.2.15:6000
+  -device e1000,netdev=n0` (display :79 was this wave's allocation). Everything
+  else unchanged, so a new golden was baked on a sandbox clone of the live disk
+  (`/data/vms/sandbox/pcbsd/abs/`, never the station) and staged as
+  `disk.qcow2.x11warp`, swapped in during the landing window.
+- Guest: X listens on TCP (KDM `ServerArgsLocal` without `-nolisten tcp`),
+  `xhost +10.0.2.2` appended to `~visitor/.kde/Autostart/noblank.sh`, `em0` on DHCP.
+- Fixture: `SH_INPUT_BACKEND=x11warp`, `SH_X11WARP_DISPLAY=127.0.0.1:79`,
+  `SH_CURSOR_SCALE=1.0`; registry `stream.pointer` = freebsd411's shape, emit
+  `--pointer abs --input-backend x11warp`, no legacy `SH_POINTER`.
+- Proof: two-target warp with XQueryPointer readback and the cursor visible at both
+  targets on the framebuffer (golden stream report below), then the same on the
+  live station after the swap.

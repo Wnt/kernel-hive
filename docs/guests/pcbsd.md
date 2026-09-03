@@ -43,8 +43,10 @@ command-line install. It layers KDE 3.5.8 and a graphical installer on top of
 
 `pc-i440fx-11.0`, KVM, `-cpu host`, 1024 MB RAM, 1 vCPU, `-vga std`, IDE disk
 at index 0 (install: IDE cdrom too, removed after install), AC97 audio on a
-dbus audiodev, the pc machine's PS/2 mouse and keyboard. No NIC, no USB (a
-usb-tablet was tried during install and is inert in FreeBSD 6.3 X). Screen is 1024x768 (X.org 7.3's vesa driver on the Bochs VGA
+dbus audiodev, the pc machine's PS/2 mouse and keyboard, and an `e1000` SLIRP NIC
+whose only job is the loopback forward `127.0.0.1:6079 -> 10.0.2.15:6000` for the
+x11warp pointer. No USB (a usb-tablet was tried during install and is inert in
+FreeBSD 6.3 X). Screen is 1024x768 (X.org 7.3's vesa driver on the Bochs VGA
 device `-vga std` exposes).
 
 ## Accounts
@@ -54,11 +56,17 @@ device `-vga std` exposes).
 
 ## Input
 
-Pointer is **relative PS/2** (`SH_POINTER=rel`, SPA `pointerRel`): the golden
-stream measured that a usb-tablet never moves the X pointer on FreeBSD 6.3, while
-PS/2 relative moves land with X acceleration (≈3.5 px per unit under KDE, ≈2 px
-in the installer). Keyboard is the pc machine's PS/2; Konsole is the focused
-keyboard surface at golden.
+Pointer MOTION is **absolute through the guest's own X server** (`x11warp`,
+phase 2 of the wave): the daemon connects to `SH_X11WARP_DISPLAY=127.0.0.1:79`,
+which the launcher forwards to the guest's X on `10.0.2.15:6000`, and moves the
+pointer with `XWarpPointer` + `XQueryPointer` readback. For that the golden
+carries `xhost +10.0.2.2` (never `xhost +`) and KDM starts X without
+`-nolisten tcp`. Buttons and keys ride the PS/2 path over D-Bus. Nothing else may
+move this pointer (single injector), and the sink sends no relative motion, so
+drags are warp sequences (see `docs/lab/INPUT-DEBUGGING.md`). History: phase 1
+shipped relative PS/2 because a usb-tablet never moves the X pointer on FreeBSD
+6.3 (PS/2 moves land with X acceleration, ≈3.5 px per unit under KDE). Konsole is
+the focused keyboard surface at golden.
 
 ## Reset
 
