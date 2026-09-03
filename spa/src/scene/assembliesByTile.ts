@@ -506,17 +506,6 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
-  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
-  openbsd: {
-    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
-    keyboard: 'keyboardA', mouse: 'paramMouseD',
-  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
-  // serial mouse the X server is told about (relative). Same tower family as
-  // tinycore, the other small-Linux desktop in the hall.
-  slackware: {
-    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
-    keyboard: 'keyboardA', mouse: 'paramMouseB',
   // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
   // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
   // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
@@ -549,6 +538,12 @@ export const ASSEMBLIES_BY_TILE = {
   netbsd14: {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // openbsd: a 2020s small-form-factor amd64 box under a flat LCD, the same
+  // desk as alpine (its device-set sibling) — USB tablet pointer, 101-key board.
+  openbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdA',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
 } as const satisfies Record<string, Assembly>;
 

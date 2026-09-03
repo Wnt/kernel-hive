@@ -451,12 +451,6 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
     badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
   },
-  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
-  // the hardware class, the spec the X server and the year. Registry accent is
-  // the Puffy yellow.
-  openbsd: {
-    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
-    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
   // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
   // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
   // Registry red accent (Red Hat's own).
@@ -488,6 +482,13 @@ export const EXHIBIT_IDENTITIES = {
   netbsd14: {
     caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
     badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
