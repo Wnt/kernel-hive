@@ -251,9 +251,17 @@ names the checks above with measured times from `session-timeline.py`.
 **The IM proof is not "signed in once" — it is "signed in AGAIN after a
 reset"**: `labctl reset <id>` (`loadvm golden`) restores the checkpoint with
 the OLD TCP socket, which the server has already dropped, so the client must
-notice and reconnect, not just sit on stale state. Proof = `labctl reset`,
-wait up to 90 s awake, `labctl shot` shows the client online (not "signed
-off" or a login dialog). Tear-down is part of done.
+notice and reconnect, not just sit on stale state. Proof = TWO things:
+`labctl reset`, wait up to 4 min AWAKE (hold a wake lease; an idle-paused guest
+never counts the seconds), then `labctl shot` shows the client online (not
+"signed off" or a login dialog) AND a NEW `login successful uin=<uin>` line
+dated after the reset in the gateway's ICQ journal (CT 951; `rn-verify.sh <id>
+--icq <uin> --since <reset-ts>`). The frame alone lies: suse64's GtkICQ showed
+"Online" for minutes while the gateway answered every packet NOT_CONNECTED.
+Measured: Gaim 0.59.9 reconnects at ~3 min by itself, Kopete 0.12 at ~1 min,
+mICQ 0.4.12 at ~70 s; Gaim 1.0 and GtkICQ 0.60 never (autorecon plugin /
+restart wrapper needed); micq 0.4.3 exits, so an exit-driven loop works.
+Tear-down is part of done.
 
 ### Push recipe (3 lines)
 

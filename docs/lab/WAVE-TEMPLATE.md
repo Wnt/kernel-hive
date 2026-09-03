@@ -77,11 +77,14 @@ step-by-step output. Note anything it stopped on and how it was resolved.
 - **IM client reconnects after `labctl reset <id>`** — not just signed in at
   bake time. `loadvm golden` restores the checkpoint with the OLD TCP socket,
   already dropped server-side, so the client must notice and re-log in, not
-  sit on stale state. `labctl reset <id>` → wait up to 90 s awake → `labctl
-  shot <id>` shows the client ONLINE, not signed off or a login dialog. If it
-  does not reconnect unassisted (Gaim 0.59.9 on redhat62 does not), the
-  station needs a watchdog (as slackware's micq does) before this counts as
-  done — note which case this station is in the report
+  sit on stale state. `labctl reset <id>` → wait up to 4 min AWAKE (wake
+  lease) → `labctl shot <id>` shows the client ONLINE, not signed off or a
+  login dialog, AND `rn-verify.sh <id> --icq <uin> --since <reset-ts>` finds a
+  NEW login line in the gateway journal (the frame alone lies: suse64's client
+  showed "Online" while the gateway rejected it). If it does not reconnect
+  unassisted (Gaim 1.0, GtkICQ 0.60), the station needs the autorecon plugin
+  or a restart wrapper (as slackware's micq and suse64's GtkICQ do) before
+  this counts as done — note which case this station is in the report
 
 ## OPEN items
 
