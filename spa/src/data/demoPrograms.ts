@@ -177,6 +177,20 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 180
   },
+  "samcoupe": {
+    "label": "Type in a demo program (press B for SAM BASIC first)",
+    "lines": [
+      "10 MODE 4",
+      "20 PAPER 0: PEN 15: CLS",
+      "30 FOR r=4 TO 84 STEP 4",
+      "40 PEN 1+r/4 MOD 15",
+      "50 CIRCLE 128,88,r",
+      "60 NEXT r",
+      "70 PEN 15: PRINT AT 20,6;\"SAM COUPE 1989\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 170
+  },
   "sinclairql": {
     "label": "Draw a rose in SuperBASIC",
     "lines": [
