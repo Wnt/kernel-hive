@@ -67,7 +67,7 @@ describe('typeDemoProgram', () => {
     const chars = PROGRAM.lines.join('').length + PROGRAM.runCommand.length;
     const total = chars * DEMO_PER_CHAR_MS + PROGRAM.lines.length * (DEMO_LINE_DELAY_MS + DEMO_ENTER_DELAY_MS);
     expect(r.waits.reduce((a, b) => a + b, 0)).toBe(total);
-    expect(Math.max(...r.waits)).toBeLessThanOrEqual(Math.max(DEMO_ENTER_DELAY_MS, 8 * DEMO_PER_CHAR_MS));
+    expect(Math.max(...r.waits)).toBeLessThanOrEqual(Math.max(DEMO_ENTER_DELAY_MS, DEMO_CHUNK_CHARS * DEMO_PER_CHAR_MS));
     expect(DEMO_LINE_DELAY_MS).toBeGreaterThan(0);
     // The post-ENTER settle must be the longer of the two, or the next line's
     // first character lands while BASIC is still tokenising and is lost.
@@ -83,9 +83,9 @@ describe('typeDemoProgram', () => {
     await typeDemoProgram({ program: slow, handle: r.handle, sleep: r.sleep });
     // The first line's chunk waits add up to its length at the tile's rate,
     // before the line pace; the run command's chunks end the run.
-    const firstLineChunks = Math.ceil(PROGRAM.lines[0].length / 8);
+    const firstLineChunks = Math.ceil(PROGRAM.lines[0].length / DEMO_CHUNK_CHARS);
     expect(r.waits.slice(0, firstLineChunks).reduce((a, b) => a + b, 0)).toBe(PROGRAM.lines[0].length * 170);
-    const runChunks = Math.ceil(PROGRAM.runCommand.length / 8);
+    const runChunks = Math.ceil(PROGRAM.runCommand.length / DEMO_CHUNK_CHARS);
     expect(r.waits.slice(-runChunks).reduce((a, b) => a + b, 0)).toBe(PROGRAM.runCommand.length * 170);
   });
 
