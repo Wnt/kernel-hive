@@ -506,6 +506,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d9d4c3', accentTint: '#6ea339', tintMix: 0.38,
     badge: 'PENTIUM III', spec: '17" CRT • 2000', kit: 'workstation',
   },
+  // TODO(apple2e): exhibit finish copied from apple2 — set the real era cues.
+  apple2e: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (85 of the 87
+//    - transport   : how its LIVE framebuffer texture is obtained (86 of the 88
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 85 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 86 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -214,6 +214,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   freebsd411:  { osId: 'freebsd411', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#ab2b28', eraLabel: '2005 · FreeBSD 4.11 — KDE 3.3.2', pointerRel: false },
   debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: false },
   suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
+  apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8A8577', eraLabel: 'TODO(apple2): 1988 · Apple II — GEOS' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

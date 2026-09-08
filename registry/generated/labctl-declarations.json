@@ -164,6 +164,24 @@
       "udp_port": 54117,
       "notes": "exec: labctl exec apple2 \"<cmd>\" (ssh root@:5817, key bridge_key)"
     },
+    "apple2e": {
+      "dir": "/data/vms/streamhost/stations/apple2e",
+      "qmp": "/data/vms/streamhost/stations/apple2e/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": 5817,
+      "exec_port": 5817,
+      "exec_host": null,
+      "exec_kind": "ssh",
+      "exec_user": "root",
+      "exec_key": "/data/vms/bridge/bridge_key",
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54117,
+      "notes": "exec: labctl exec apple2 \"<cmd>\" (ssh root@:5817, key bridge_key)"
+    },
     "armeval": {
       "dir": "/data/vms/streamhost/stations/armeval",
       "qmp": null,

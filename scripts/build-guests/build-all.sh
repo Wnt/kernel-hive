@@ -157,6 +157,7 @@ MANIFEST=(
   "freebsd411     |tiles/freebsd411.sh                                   |FREEBSD411        |slow      |~25m                         |assisted                     |freebsd411.qcow2 (FreeBSD 4.11-RELEASE i386 full install from disc1-kde: base + XFree86 4.4.0 + KDE 3.3.2; KDE session auto-started on the console)"
   "redhat62       |tiles/redhat62.sh                                     |RedHat62          |heavy     |~15m                         |kickstart                    |redhat62.qcow2 (kickstart install from zoot-i386.iso + golden)"
   "suse64         |tiles/suse64.sh                                       |SUSE64            |heavy     |~20-30m                      |vision                       |suse64.qcow2 (CD1 YaST2 install + KDE 1.1.2 golden)"
+  "apple2e        |tiles/apple2.sh                                       |bridge/apple2     |retro     |~3-5m                        |full                         |tiles/apple2 overlay + golden (Apple //e → GEOS)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

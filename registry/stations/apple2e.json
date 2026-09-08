@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "apple2e",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 75,
+        "prelude": "",
+        "value": {
+          "key": "apple2e",
+          "script": "tiles/apple2.sh",
+          "outputDir": "bridge/apple2",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "tiles/apple2 overlay + golden (Apple //e \u2192 GEOS)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/apple2e",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54117,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/apple2e/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 78,
+    "stationsManifestOrder": 76,
+    "stationsManifestPrelude": "\n# apple2e (VMID 217) \u2014 TODO one line; scaffolded from apple2.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 88,
+    "bindingPrelude": "",
+    "goldenOrder": 76
+  },
+  "stationDir": "apple2e",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54185,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 185
+  },
+  "guestDoc": "docs/guests/apple2e.md",
+  "credentialsRef": "guest/apple2e",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "apple2e",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":73",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/apple2e/apple2e_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/apple2e/fb.shm",
+      "SH_PORT": "54185",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/apple2e/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/apple2e/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 185,
+    "bringUpOrder": 88,
+    "x11": {
+      "display": ":73",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "apple2e",
+        "--udp",
+        "54185",
+        "--x11",
+        "--x11-display",
+        ":73",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/apple2e/apple2e.keymap",
+        "--env-append-file",
+        "$T/apple2e/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/apple2e/apple2e.keymap",
+        "streamhost/stations/apple2e/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#8A8577",
+    "eraLabel": "TODO(apple2): 1988 \u00b7 Apple II \u2014 GEOS"
+  },
+  "museum": {
+    "id": "apple2e",
+    "displayName": "TODO(apple2): Apple II",
+    "year": 1988,
+    "lineage": "TODO(apple2): Apple II / GEOS",
+    "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#8A8577",
+    "eraSoftware": [
+      "Apple GEOS deskTop",
+      "geoWrite",
+      "geoPaint",
+      "ProDOS",
+      "DeskTop file manager"
+    ],
+    "periodBrowser": "none \u2014 pre-web 8-bit era",
+    "iconicApps": [
+      "geoWrite",
+      "geoPaint",
+      "GEOS deskTop",
+      "Preference Manager"
+    ],
+    "blurb": "TODO(apple2): A windows-icons-menus desktop (GEOS) with geoWrite & geoPaint running on a 1 MHz Apple //e \u2014 the 8-bit era\u2019s Macintosh, on Apple hardware.",
+    "notes": "TODO(apple2): Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md."
+  },
+  "emulator": {
+    "family": "LinApple",
+    "version": "2.3.0",
+    "source": "scripts/build-guests/tiles/apple2.sh",
+    "driver": "Apple //e enhanced"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "apple2e",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Apple GEOS deskTop (BIGWON disk window open) in LinApple 2.3.0 on an Apple //e; speaker->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2 on 2026-09-08; TODO: media, museum, spa"
+  ]
+}
