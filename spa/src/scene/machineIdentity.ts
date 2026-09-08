@@ -519,6 +519,7 @@ export const EXHIBIT_IDENTITIES = {
   samcoupe: {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
     badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+  },
   // The XL wedge is the pale warm grey Atari used across the 1983 line, with
   // the keyboard sunk in a dark brown bezel and the rainbow fuji badge on the
   // front right. The accent is that bezel brown rather than any of the rainbow

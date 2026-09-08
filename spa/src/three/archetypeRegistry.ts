@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (87 of the 89
+//    - transport   : how its LIVE framebuffer texture is obtained (88 of the 90
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 87 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 88 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -216,6 +216,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
   apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
   samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
+  atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

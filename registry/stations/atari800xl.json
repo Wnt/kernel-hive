@@ -6,7 +6,7 @@
   "build": {
     "rows": [
       {
-        "order": 76,
+        "order": 77,
         "prelude": "",
         "value": {
           "key": "atari800xl",
@@ -39,13 +39,13 @@
     }
   },
   "render": {
-    "signalOrder": 79,
-    "stationsManifestOrder": 77,
+    "signalOrder": 80,
+    "stationsManifestOrder": 78,
     "stationsManifestPrelude": "\n# atari800xl (slot 186) — Atari 800XL, host-native MAME a800xlp, boot menu of period software; atari800xl wave 2026-09-08.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 89,
+    "bindingOrder": 90,
     "bindingPrelude": "",
-    "goldenOrder": 77
+    "goldenOrder": 78
   },
   "stationDir": "atari800xl",
   "lifecycle": "production",
@@ -92,7 +92,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 186,
-    "bringUpOrder": 89,
+    "bringUpOrder": 90,
     "x11": {
       "display": ":74",
       "geometry": "1024x768x32",

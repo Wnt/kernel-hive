@@ -567,8 +567,9 @@ export const ASSEMBLIES_BY_TILE = {
   },
   samcoupe: {
     kind: 'homeMicro', body: 'amstradCpc', monitor: 'homeCrtD',
+  },
   atari800xl: {
     kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtC',
-    },
+  },
 } as const satisfies Record<string, Assembly>;
 
