@@ -20,10 +20,11 @@ one is derived from), `mpf2`/`zxspectrum` the keyboard-only precedents.
 | Scene tuple | `c64A,homeCrtC,none,none` | spine (scaffold refused every tuple already in the lineup) |
 | MAME pin | `mame0289` (fleet pin, `build-mame-native.sh`) | spine |
 | Driver | `a800xlp` — src/mame/atari/atari400.cpp (MACHINE_IMPERFECT_GRAPHICS; no MACHINE_SUPPORTS_SAVE flag — the golden stream MUST prove SAVEST/LOADST or ship MAME_NATIVE_CHECKPOINT=0 with a cold boot to the menu) | spine |
-| Device set (target) | a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC) | spine from stock MAME 0.276 `-listslots/-listmedia` on labhost; **native stream confirms on 0.289** |
-| ROMs | co61598b.rom (XL OS rev 2, 16 KB) sha1 ae4f523ba08b6fd59f3cae515a2b2410bbd98f55; co60302a.rom (Atari BASIC rev C, 8 KB) sha1 7ad88dd99ff4a6ee66f6d162074db6f8bef7a9b6 — staged at `/data/assets-staging/atari800xl/roms/` (MANIFEST.sha256, `.staged`), from archive.org `MAME_0.224_ROMs_merged` | spine |
-| Keyboard ioports | 8 matrix ports keyboard.0..7 (Return, Break on Backspace, Atari key on RCONTROL, Tab, Escape, BackS/Delete, < Clear, > Insert, Lowr/Caps, Shift, Ctrl) + console port (Start/Select/Option/Reset) + fake; joystick fields live under :ctrl1:joy — dump with KEYDUMP --tags ':' | spine from source; native stream dumps the real tags with KEYDUMP |
-| Published surface | 1024x768 (MAME aspect-corrects the native raster) | native stream re-measures |
+| Device set (target) | a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), a1050 disk drive (`-flop1..4` .atr/.xfd) — a800xlp's own DEFAULT sio slot, left OFF the command line, see below — -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC) | spine from stock MAME 0.276 `-listslots/-listmedia` on labhost; **CONFIRMED on 0.289 by native stream** — MEASURED: passing `-sio a1050` explicitly on the command line (even though it names the default) makes this narrow build silently drop the `-flop1..4` media options entirely (`-flop1` then errors as "unknown option"); OMITTING `-sio` keeps the same a1050 drive attached (it is the default) and keeps `-flop1` working — `NATIVE_MAME_ARGS=(-ctrl1 joy)` only. With no disk in `-flop1` the XL OS retries the boot sector forever ("BOOT ERROR" loop), real hardware behaviour for a powered-but-diskless drive, not a bug; with the media stream's `hive.atr` present the native stream's rig booted straight to MyPicoDOS 4.06's file menu (BOULDER.XEX, DROPZONE.XEX, LASTWORD.XEX, RIVRRAID.XEX, STARRAID.XEX, XBASIC.XEX) |
+| ROMs | co61598b.rom (XL OS rev 2, 16 KB) sha1 ae4f523ba08b6fd59f3cae515a2b2410bbd98f55; co60302a.rom (Atari BASIC rev C, 8 KB) sha1 7ad88dd99ff4a6ee66f6d162074db6f8bef7a9b6; atari1050 sub-device firmware 1050-revl.rom (default BIOS "l") sha1 8b540906049864a18bdc4eff6c0a2160eac8ce39 plus revh/revj/revk/wstr5 variants — all staged at `/data/assets-staging/atari800xl/roms/` (MANIFEST.sha256, `.staged`), from archive.org `MAME_0.224_ROMs_merged` | spine; atari1050 set added by native stream (2026-09-08, first "NOT FOUND" gate run) |
+| Keyboard ioports | 8 matrix ports keyboard.0..7 (Return, Break on Backspace, Atari key on RCONTROL, Tab, Escape, BackS/Delete, < Clear, > Insert, Lowr/Caps, Shift, Ctrl) + console port (Start/Select/Option/Reset) + fake; joystick fields live under :ctrl1:joy:JOY (P1 Up/Down/Left/Right/Button 1) — dump with KEYDUMP --tags ':' | spine from source; **CONFIRMED by native stream's KEYDUMP** — the arrow keys already carry the joystick's default MAME assignment (KEYCODE_UP/DOWN/LEFT/RIGHT), no override needed to bind them, though the keymap pins them explicitly; Left Alt (0x38) overridden to Button 1 (its default KEYCODE_LCONTROL collided with the keyboard's own Ctrl field) |
+| Published surface | 1024x768 (MAME aspect-corrects the native raster) | **CONFIRMED** by native stream's drawshm gate |
+| Warning panel | MACHINE_IMPERFECT_GRAPHICS shows a "known problems" panel ("Completely unemulated features: disk / Imperfectly emulated features: graphics — Press any key to continue") on every cold boot. **MEASURED: ui.ini's `skip_warnings` option alone does NOTHING upstream** (`options().skip_warnings()` is never consulted in stock 0.289's `display_startup_screens`) — the mpf2-style `mame-irix-skip-warnings.patch` is REQUIRED to make it take effect; without it the panel is a stuck screen (no ctlsock command responds until a key is pressed, and a keypress does not dismiss it — the boot gate's non-black check would silently pass on the panel, not the exhibit). `atari800xl.sh` carries the patch and `MAME_NATIVE_SKIP_WARNINGS=1` | native stream, 2026-09-08 |
 | Media | `hive.atr` — **MyDOS format, standard ENHANCED density (1040 x 128-byte sectors), 133 136 B**, sha256 `171a10ce1198d15da524730d3b07476d30dd7b4d1c183fb994b4e1050dda5aa5`, boot code **MyPicoDos 4.06N** (HiassofT; the `N` build has high-speed SIO off, see Walls). Built by `scripts/build-guests/tiles/atari800xl.sh`, installed at `/data/vms/streamhost/assets/atari800xl/media/hive.atr`. **NOT 16 MB and not double density** — an Atari 1050 is SD/ED only, so 130 KB on `-flop1` is the ceiling; a bigger library needs `-flop2` | media stream (measured 2026-09-08) |
 | Titles SHIPPED | Boulder Dash (1984) `BOULDER.XEX`, Dropzone (1984) `DROPZONE.XEX`, River Raid (1984, Activision) `RIVRRAID.XEX`, Star Raiders (1979, Atari) `STARRAID.XEX`, **The Last Word 3.2** (Jonathan Halliday, freeware 80-column word processor) `LASTWORD.XEX` + `LW.CFG`, and `XBASIC.XEX` (ours, 18 bytes) for Atari BASIC. **DROPPED: M.U.L.E.** (no clean single-file XEX found in the time box), **Yoomp!** and **Rescue on Fractalus!** — both are distributed only as their own bootable ATRs, and MyPicoDos cannot launch a disk image from inside a disk | media stream 2026-09-08 |
 | Stock MAME for quick media boots | `/usr/games/mame` 0.276 on labhost has this driver (`-listroms` matched); ROMs in the staging dir above | spine |
@@ -69,6 +70,28 @@ The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file
   to the menu with the high-speed-SIO indicator forced from `AUTO` to `OFF` — that is
   MyPicoDos retrying after a SIO error, not a bad XEX. The shipped disk therefore uses
   **`MyPicoDos406N`**, the variant with high-speed SIO off from the start.
+
+- **native stream (2026-09-08)**: the built binary's rig sat on a black frame
+  with every ctlsock command (even PING) timing out. Cause: the
+  MACHINE_IMPERFECT_GRAPHICS "known problems" panel was up, and
+  `ui.ini`'s `skip_warnings` setting has no effect in stock MAME 0.289 —
+  `display_startup_screens()` never checks `options().skip_warnings()`.
+  Fixed by adding `mame-irix-skip-warnings.patch` (mpf2's own fix for the
+  same upstream gap) to `NATIVE_EXTRA_PATCHES`.
+- **native stream (2026-09-08)**: with no disk in `-flop1` the machine
+  never reaches BASIC — the XL OS retries the SIO boot sector forever
+  ("BOOT ERROR" loop). This is real hardware behaviour (a powered disk
+  drive with no disk in it), not a bug; with the media stream's
+  `hive.atr` present it boots straight to the MyPicoDOS menu instead.
+  BASIC READY was proven reachable separately with no disk attached at
+  all.
+- **native stream (2026-09-08)**: passing `-sio a1050` explicitly on the
+  command line — even though it only names the driver's own default —
+  makes this narrow build silently drop the `-flop1..4` media options;
+  `-flop1 hive.atr` then errors as "unknown option". Fix: never pass
+  `-sio` on this station (the a1050 stays attached as the default either
+  way); `NATIVE_MAME_ARGS`/`MAME_NATIVE_ARGS` carry only `-ctrl1 joy` (+
+  `-flop1` in the fixture).
 
 ## Menu
 
