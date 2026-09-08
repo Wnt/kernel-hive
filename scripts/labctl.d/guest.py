@@ -426,7 +426,14 @@ def cmd_reset(argv):
         # failure and stays loud.
         sock = ctl_sock(c, name)
         tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-        state = read_env(os.path.join(tile_dir, "station.env")).get("IRIX_STATE")
+        env = read_env(os.path.join(tile_dir, "station.env"))
+        state = env.get("IRIX_STATE")
+        # The mame-native launcher's own checkpoint: `-state golden` from
+        # sta/<driver>/golden.sta whenever MAME_NATIVE_CHECKPOINT is not 0 —
+        # the same in-process LOADST that serve/reset-tile.sh now prefers.
+        if not state and env.get("MAME_NATIVE_DRIVER") and env.get("MAME_NATIVE_CHECKPOINT", "1") != "0":
+            if os.path.isfile(os.path.join(tile_dir, "sta", env["MAME_NATIVE_DRIVER"], "golden.sta")):
+                state = "golden"
         if sock and state:
             r = mctl_run(sock, verb="LOADST " + state, timeout=60)
             if r.returncode == 0:
