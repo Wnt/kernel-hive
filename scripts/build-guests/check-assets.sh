@@ -298,6 +298,16 @@ ROWS=(
   "opt-file|apple2e|ProDOS 2.4.2 (John Brooks, carries BASIC.SYSTEM) install disk|$ASSET_STAGING/apple2e/media/ProDOS_2_4_2.dsk|sha256:d1e6fab8d9a25acf6e10ffa15e4120a616898c03613ab87a8e12882b12102543|abandonware-URL"
   "opt-file|apple2e|AppleWorks 3.0 (Claris) all-in-one program image|$ASSET_STAGING/apple2e/media/AppleWorks30.2mg|sha256:ea624d6b6fe6fb932fdd0de3035a4714cd3700e3fee7da8ac28b8540dc14b469|abandonware-URL"
   "opt-file|apple2e|Dazzle Draw 1.2 (Broderbund-1988) ProDOS disk|$ASSET_STAGING/apple2e/media/dazzledraw_v12_broderbund_1988.dsk|sha256:291f54945a1c946ba7985093ce686d01f5d74c7173cf84b0108c0839be0e6191|abandonware-URL"
+  # -- atari800xl: five pinned zips compose the MyPicoDos boot disk hive.atr
+  # (scripts/build-guests/tiles/atari800xl.sh). opt-file because the builder
+  # re-fetches + re-verifies anything missing. The Last Word 3.2 is the author's
+  # own freeware release; the four Fandal game zips are abandonware in wide
+  # preservation circulation. NO title bits are ever committed to this repo.
+  "opt-file|atari800xl|Boulder Dash (1984) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/boulder_dash.zip|sha256:30b9e8b36fe761a804b2d7af18ed2f52acf3fbe9e2121c3217b10bc8cceb2fc2|abandonware-URL"
+  "opt-file|atari800xl|Dropzone (1984) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/dropzone.zip|sha256:b8af400e4d5a6135645d52bb04995ad1955f7eb02700a57197f9c0a4c8149bfb|abandonware-URL"
+  "opt-file|atari800xl|River Raid (1984, Activision) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/river_raid.zip|sha256:9db57d32ff2a43a736f6afbda5a15ba38426383104ce8d2948973f57d03dda52|abandonware-URL"
+  "opt-file|atari800xl|Star Raiders (1979, Atari) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/star_raiders.zip|sha256:46d084e428ac9b85be0f0e5fda8f1af28bc4157db528547fc57c73e3102f3e3d|abandonware-URL"
+  "opt-file|atari800xl|The Last Word 3.2 (Jonathan Halliday, freeware) disk set|$ASSET_STAGING/atari800xl/media/LW32.zip|sha256:d97fc6f4ff412f92e391e253b30bca164e6fcfa5e84e9628d2e5896299f01d4b|freely-fetchable-pinned"
   # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
