@@ -331,8 +331,9 @@ UDP relay.
   `VideoDecoder` and gets the existing banner. Safari 26 (iOS/iPadOS 18.7+)
   has WebTransport + WebCodecs and streams since 2026-09-08 — it implements
   only the spec's `datagrams.createWritable()`, not the legacy `writable`
-  Chromium still carries (`STREAM-DEBUGGING.md` §5, "Safari 26"). Older Safari
-  has no WebTransport and gets the banner.
+  Chromium still carries (`STREAM-DEBUGGING.md` §5, "Safari 26"). Safari 17
+  has WebCodecs but no WebTransport and takes the native WebRTC fallback
+  (`WEBRTC-PLATFORM.md`), as does any browser lacking either API.
 - **One relay hop** of added latency for public visitors (~4.5 ms labhost↔edge, plus
   the visitor's own path to Helsinki). LAN visitors are unaffected — they still
   talk to the station directly.

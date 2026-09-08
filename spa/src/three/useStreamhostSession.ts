@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { selectClientTransport, usesWebRtcFallback } from './streamTransportSelect';
 import { StreamClient } from './streamClient';
 import {
   createStreamController,
@@ -140,7 +141,7 @@ export function useStreamhostSession(
     const tel = sessionTelemetry({
       getKeyframeMs: () => client?.getMetrics().enc?.keyframeMs ?? null,
       stationAttrs: stationAttrsRef.current,
-      clientTransport: typeof VideoDecoder === 'undefined' ? 'webrtc-fallback' : 'webtransport',
+      clientTransport: selectClientTransport(),
     });
 
     const clearTimers = () => {
@@ -443,9 +444,11 @@ export function useStreamhostSession(
       });
     };
 
-    // WebCodecs-less fallback (feature-detected). `tel` used to go UNCALLED
-    // here, leaving the connect funnel/cost blind for this path;
-    // `stream.recover` stays unwired (needs per-frame paint).
+    // ONE selection for every start (first, restore, reconnect): streamTransportSelect.ts.
+    const startSelected = () => { if (usesWebRtcFallback()) void startWebRtcFallback(); else startAttempt(); };
+
+    // WebRTC fallback (feature-detected). `tel` used to go UNCALLED here, leaving
+    // the connect funnel blind; `stream.recover` stays unwired (needs per-frame paint).
     const startWebRtcFallback = async () => {
       if (cancelled) return;
       tel.transport();
@@ -542,8 +545,7 @@ export function useStreamhostSession(
       setMessage('Reconnecting to restored tile…');
       // First post-restore signal fetch is immediate. Only a genuinely not-yet-
       // ready host uses the short restore-specific retry sequence above.
-      if (typeof VideoDecoder === 'undefined') void startWebRtcFallback();
-      else startAttempt();
+      startSelected();
     };
 
     // ---- RESUME FAST PATH (streamClient/sessionResume.ts) -------------------
@@ -568,13 +570,12 @@ export function useStreamhostSession(
       clearTimers();
       teardownAttempt();
       attempt = 0; // a visitor gesture buys a whole fresh ladder
-      startAttempt();
+      startSelected();
     };
 
     setPhase('starting');
     setMessage('Connecting to tile…');
-    if (typeof VideoDecoder === 'undefined') void startWebRtcFallback();
-    else startAttempt();
+    startSelected();
 
     return () => {
       detachResume();

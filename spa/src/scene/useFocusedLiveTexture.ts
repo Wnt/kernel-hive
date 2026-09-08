@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usesWebRtcFallback } from '../three/streamTransportSelect';
 import { invalidate, useFrame } from '@react-three/fiber';
 import {
   LinearFilter,
@@ -78,7 +79,9 @@ export function useFocusedLiveTexture(
       setPhase('idle');
       return undefined;
     }
-    if (!binding || !streamable || typeof VideoDecoder === 'undefined') {
+    // The hall paints decoded VideoFrames, so it needs the primary path
+    // (WebTransport + WebCodecs); a fallback-only browser gets no texture.
+    if (!binding || !streamable || usesWebRtcFallback()) {
       setTexture(null);
       setPhase('error');
       return undefined;

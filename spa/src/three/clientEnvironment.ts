@@ -11,6 +11,7 @@
 //  UA the sink already logs.
 // ============================================================================
 import { BUILD_ID } from '../analytics/build';
+import { selectClientTransport } from './streamTransportSelect';
 
 /** The role app boot reported (`main.tsx`), carried on every row after. */
 let bootRole: string | null = null;
@@ -26,6 +27,9 @@ export function describeEnvironment(tile: string | null): string {
     probe.wt = typeof WebTransport !== 'undefined';
     probe.vd = typeof VideoDecoder !== 'undefined';
     probe.rtc = typeof RTCPeerConnection !== 'undefined';
+    // Which client path the two facts above select (streamTransportSelect.ts),
+    // so a row says `transport` outright instead of leaving it to be derived.
+    probe.transport = selectClientTransport();
     probe.secure = typeof isSecureContext !== 'undefined' ? isSecureContext : null;
     probe.sw = typeof navigator !== 'undefined' && 'serviceWorker' in navigator
       ? (navigator.serviceWorker.controller ? 'controlled' : 'registered-or-none')

@@ -385,6 +385,19 @@ same day: the walk-in shape skipped `initClientDebug()` and gate.py refused
 `GET /clientcmd` for the role, so `clientcmd.sh sessions` never listed the
 guest. Both are fixed together (`clientcmd-admin-security.md`).
 
+### Safari 17: `ReferenceError: Can't find variable: WebTransport` (fixed 2026-09-08)
+A `station-open` row with `wt:false vd:true rtc:true` on a Safari 17 UA
+(`Macintosh … Version/17.14 Safari/605.1.15` — an iPad "requesting desktop
+site" reads the same), then four `connect-retry … why=connect: ReferenceError:
+Can't find variable: WebTransport`, `wt-close`, `connect-giveup` (session
+d5af8bdf, walk-in on win311). Not a Safari 26 sibling: this browser has the
+decoder and no transport, and the fallback selection asked only about the
+decoder, so it took the primary path. `streamTransportSelect.ts` now sends any
+browser lacking either API to the WebRTC fallback; the row's new `transport`
+field says which path was chosen (`webrtc-fallback` here), and the stage
+reads `LIVE · WebRTC fallback` only once `framesDecoded` advances
+(`docs/WEBRTC-PLATFORM.md`).
+
 ### "Spotty connection" on a session that never connected
 `updateBannerImpl` used to score a client with no RTT sample and no frames: the
 scorer's unknown → 250 ms default makes `latRaw` 0, `overall` 0, and after the
