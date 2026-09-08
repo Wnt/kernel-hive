@@ -90,7 +90,7 @@
       "SH_HASH_FILE": "/data/vms/streamhost/stations/samcoupe/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/samcoupe/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "=:[,+:=,*:+,%3A:',\":],/:_,_:{"
+      "SH_KEY_MAP": "=:[,+:=,*:+,%3A:',\":],/:_,_:{,(:*,):(,&:^,':&,~:)"
     },
     "vmidLabel": 187,
     "bringUpOrder": 89,
@@ -211,7 +211,12 @@
       ":": "'",
       "\"": "]",
       "/": "_",
-      "_": "{"
+      "_": "{",
+      "(": "*",
+      ")": "(",
+      "&": "^",
+      "'": "&",
+      "~": ")"
     }
   }
 }
