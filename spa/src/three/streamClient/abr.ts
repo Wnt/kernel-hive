@@ -19,9 +19,10 @@ import { formatStatsLine } from './telemetry';
 import { dueForVitals } from './vitals';
 import { sampleVitals } from './vitalsSample';
 import {
-  T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
+  T_STATS, FIRST_FRAME_GRACE_MS,
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
 } from './constants';
+import { frameStallMsFor } from './frameStall';
 import { latchSoftwareDecode } from './softwareDecodeLatch';
 import { noteDecoderRebuild, noteStallLatched } from './analyticsEvents';
 
@@ -170,7 +171,7 @@ export function tickStatsImpl(this: StreamClient): void {
   // ---- idle-frame-stall watchdog (Item 4) ----
   //  DISTINCT from RTT-ping liveness: a wedged/throttled encoder can keep the
   //  QUIC link + type-9 pings perfectly healthy while zero frames decode. Latch
-  //  when no frame has painted for > FRAME_STALL_MS and the transport is still
+  //  when no frame has painted for > the derived frameStallMs and the transport is still
   //  open. DETECTOR ONLY — surfaced to the HUD/banner; it never triggers reconnect.
   //  The reference is the last DECODED frame — or, before this session has ever
   //  decoded one, transport-ready plus FIRST_FRAME_GRACE_MS. Measuring only from
@@ -184,26 +185,34 @@ export function tickStatsImpl(this: StreamClient): void {
   //  station legitimately takes a while to produce frame #1 and keeps its
   //  existing behaviour (no stall chip, no drop) — the hook's 12 s cold
   //  keyframe budget stays that path's only deadline.
+  // The station's advertised keyframe heartbeat drives BOTH the frame-stall
+  // watchdog (frameStallMs) and the reconnect-staleness window (staleMs, below).
+  // A static desktop only repaints on that heartbeat and many exhibits run at
+  // 2-6 fps by design, so the old FIXED 2 s threshold false-latched on every
+  // heartbeat; frameStallMsFor derives it and stays strictly under staleMs for
+  // every heartbeat (see frameStall.ts).
+  const keyframeMs = this.encParams?.keyframeMs ?? this.signalVideo?.keyframeMs ?? 2500;
+  const frameStallMs = frameStallMsFor(keyframeMs);
   const decodeRef = this.lastDecodeOutAt > 0
     ? this.lastDecodeOutAt
     : (this.warm && this.sessionReadyAt > 0 ? this.sessionReadyAt + FIRST_FRAME_GRACE_MS : 0);
   const stalledNow =
     !!this.wt && !this.disposed && decodeRef > 0
-    && (now - decodeRef > FRAME_STALL_MS);
+    && (now - decodeRef > frameStallMs);
   if (stalledNow && !this.frameStalled) {
     // THE LATCH EDGE ONLY. A stall that lasts a minute is one event, not six
     // hundred ticks of one — the analytics plane counts episodes, and a level
     // reported per tick would make the count a function of how long the tab
     // stayed open rather than of how often stations freeze.
     noteStallLatched({
-      thresholdMs: FRAME_STALL_MS,
+      thresholdMs: frameStallMs,
       sinceLastPaintMs: now - decodeRef,
       hadDecodeError: !!this.lastDecodeError,
       stationId: this.stationId,
     });
     logClientEvent(
       'stall',
-      `frame watchdog latched (> ${FRAME_STALL_MS}ms no decoded frame)${this.lastDecodeError ? `; last decoder error: ${this.lastDecodeError}` : ''}`,
+      `frame watchdog latched (> ${frameStallMs}ms no decoded frame)${this.lastDecodeError ? `; last decoder error: ${this.lastDecodeError}` : ''}`,
     );
   }
   // SELF-HEAL (2026-07-14): a silently wedged decoder (output stops, NO error
@@ -250,7 +259,6 @@ export function tickStatsImpl(this: StreamClient): void {
   // watched keyframe heartbeat, so prolonged absence of decoded output is a
   // terminal stale session. Reconnecting also replaces a decoder that failed
   // to recover from the lighter in-place rebuild above.
-  const keyframeMs = this.encParams?.keyframeMs ?? this.signalVideo?.keyframeMs ?? 2500;
   const staleMs = Math.min(MAX_SESSION_STALE_MS, Math.max(MIN_SESSION_STALE_MS, keyframeMs * 2 + 3000));
   const pageVisible = typeof document === 'undefined' || document.visibilityState === 'visible';
   if (stalledNow && pageVisible && now - decodeRef >= staleMs) {

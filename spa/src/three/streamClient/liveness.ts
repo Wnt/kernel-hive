@@ -41,7 +41,7 @@ export const PING_STRIKES = 4;
  * before an unanswered-ping run is allowed to tear the transport down. Chosen
  * against the two legitimate stalls that used to trip the old rule: a daemon
  * paused for a loadvm/restore, and a main thread stalled by a tab full of
- * decoders. The frame watchdog (abr.ts FRAME_STALL_MS) still reports a frozen
+ * decoders. The frame watchdog (abr.ts, heartbeat-derived) still reports a frozen
  * picture long before this, and dropStaleSession('stream-stalled') still owns
  * the "connected but nothing decodes" case on its own, shorter clock.
  */

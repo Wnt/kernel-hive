@@ -169,7 +169,7 @@ export interface StreamMetrics {
   banner: StreamBannerState;
   /**
    * idle-frame-stall watchdog (Section 2.2 addendum): true when NO decoded frame
-   * has been painted for > FRAME_STALL_MS while the transport is still open. This
+   * has been painted for > the heartbeat-derived frame-stall threshold while the transport is still open. This
    * is DISTINCT from the RTT-ping liveness (a stalled encoder can keep the QUIC
    * link + pings perfectly healthy) and from the freeze counter (which needs AUs
    * to still be arriving). Detector only — it informs the HUD/banner, never a

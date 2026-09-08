@@ -447,7 +447,7 @@ export class StreamClient {
   /** Structured cause of the last transport drop / liveness loss, or null. */
   getExitReason(): StreamExitReason | null { return this.exitReason; }
   /** idle-frame-stall watchdog flag (Item 4) — true when no decoded frame has
-   *  painted for > FRAME_STALL_MS while the transport is open. Detector only. */
+   *  painted for > the heartbeat-derived frame-stall threshold while the transport is open. Detector only. */
   getFrameStalled(): boolean { return this.frameStalled; }
 
   // ---- transport / session lifecycle (impls in ./streamClient/transport) ----

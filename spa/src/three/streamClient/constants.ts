@@ -38,9 +38,12 @@ export const KIND_PARAMS = 3;
 //  the type-9 RTT ping). T_STATS carries the ABR measurement report every 100ms.
 export const T_STATS = 10;
 
-// idle-frame-stall watchdog (Item 4): no decoded frame painted for this long while
-// the transport is still open ⇒ raise the stall flag. Chosen > the ~250ms freeze
-// window so it flags a genuine multi-frame stall, not a single dropped GOP.
+// idle-frame-stall watchdog FLOOR (Item 4). The watchdog threshold is derived
+// per-session from the station's keyframe heartbeat (frameStall.ts) — a static
+// desktop only repaints on that heartbeat, so a FIXED value false-latched every
+// low-fps exhibit — and floored here so a genuine multi-frame stall on a fast
+// (or nonsense-0-heartbeat) station is still caught above the ~250ms single-
+// dropped-GOP window. Also the floor stallWatch.ts uses for the same shape.
 export const FRAME_STALL_MS = 2000;
 // A watched streamhost session emits a keyframe heartbeat even for a perfectly
 // static desktop. Missing decoded output for two advertised heartbeat windows
