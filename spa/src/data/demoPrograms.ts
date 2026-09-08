@@ -184,13 +184,13 @@ const DEMO_PROGRAMS = {
       "10 MODE 4",
       "20 PAPER 0: PEN 15: CLS",
       "30 FOR r=4 TO 84 STEP 4",
-      "40 PEN 1+((r/4) MOD 15)",
+      "40 LET c=(r DIV 4) MOD 15: PEN c+1",
       "50 CIRCLE 128,88,r",
       "60 NEXT r",
       "70 PEN 15: PRINT AT 20,6;\"SAM COUPE 1989\""
     ],
     "runCommand": "RUN",
-    "perCharMs": 170
+    "perCharMs": 260
   },
   "sinclairql": {
     "label": "Draw a rose in SuperBASIC",
