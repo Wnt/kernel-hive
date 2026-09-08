@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DemoProgram } from '../../../types';
 import {
-  DEMO_ENTER_DELAY_MS, DEMO_LINE_DELAY_MS, DEMO_PER_CHAR_MS, applyKeyboard, typeDemoProgram,
+  DEMO_CHUNK_CHARS, DEMO_ENTER_DELAY_MS, DEMO_LINE_DELAY_MS, DEMO_PER_CHAR_MS, applyKeyboard, typeDemoProgram,
 } from './typeDemoProgram';
 import { demoProgramFor } from '../../../data/demoPrograms';
 import { keyboardFor } from '../../../data/keyboards';
