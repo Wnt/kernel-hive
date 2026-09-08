@@ -110,7 +110,6 @@ export function useStreamhostSession(
     let controller: ReturnType<typeof createStreamController> | null = null;
     let canvas: HTMLCanvasElement | null = document.createElement('canvas');
     let ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
-    let fallbackAudio: HTMLAudioElement | null = null;
     let captureTrack: CanvasCaptureMediaStreamTrack | null = null;
     let firstFrame = true;
     let drawImageErrLogged = false; // log a drawImage() throw ONCE (never swallow silently)
@@ -288,10 +287,6 @@ export function useStreamhostSession(
       captureTrack = null;
       setStream(null);
       setExpectedReconnect(null);
-      if (fallbackAudio) {
-        try { fallbackAudio.pause(); fallbackAudio.srcObject = null; } catch { /* noop */ }
-        fallbackAudio = null;
-      }
       canvas = null; ctx = null;
     };
 
@@ -463,19 +458,9 @@ export function useStreamhostSession(
           if (w > 0 && h > 0) {
             resolution.w = w; resolution.h = h;
           }
-
-          if (fallbackAudio) {
-            try { fallbackAudio.pause(); fallbackAudio.srcObject = null; } catch { /* noop */ }
-          }
-          // The visible stream <video> is muted for autoplay parity with every
-          // other path. Play the same MediaStream through a dedicated audio
-          // element so the bridge's Opus track is usable after the station-opening
-          // user gesture. A blocked autoplay is harmless and video stays live.
-          fallbackAudio = document.createElement('audio');
-          fallbackAudio.autoplay = true;
-          fallbackAudio.srcObject = mediaStream;
-          void fallbackAudio.play().catch(() => { /* browser may require another gesture */ });
-
+          // Audio (the bridge's Opus track) is attached inside the fallback
+          // client itself now — it owns the MediaStream lifecycle and the
+          // control handle's setAudioEnabled, so the hook only presents video.
           setStream(mediaStream);
         },
         onState: (state, error, snapshot) => {
@@ -491,6 +476,7 @@ export function useStreamhostSession(
             tel.firstFrame();
             setPhase('live');
             setMessage('LIVE · WebRTC fallback');
+            controller?.notifyConnected();
           } else if (state === 'reconnecting') {
             setPhase('connecting');
             setMessage(`Reconnecting WebRTC… (attempt ${Math.max(1, snapshot.reconnectAttempt)})`);
@@ -508,6 +494,19 @@ export function useStreamhostSession(
         },
       });
       fallback = next;
+      // The fallback now carries an INPUT plane too (two DataChannels, same
+      // wire as WebTransport — webRtcFallbackInput.ts). Build the SAME control
+      // handle the WebTransport path builds, over the fallback's input client,
+      // so useStreamControl / OnScreenKeyboard / keySender need no branch.
+      if (wantControl) {
+        controller = createStreamController(next.inputClient(osId ?? null), {
+          getResolution: () => resolution,
+          osId,
+          jitterBufferTargetMs: jitterMs,
+          autoJitter,
+        });
+        if (!cancelled) setControl(controller.handle);
+      }
       try {
         const configured = await next.connect(signalEndpoint);
         if (cancelled || fallback !== next) return;

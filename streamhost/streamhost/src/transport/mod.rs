@@ -164,6 +164,17 @@ pub async fn serve(
         key_reap_rx,
     ));
 
+    // WebRTC fallback INPUT ingress (webrtc_input.rs): feeds the SAME pipeline
+    // as the WebTransport path (this daemon-wide `mouse`, the router, a fresh
+    // per-peer key session). Inert on any host without the bridge's runtime dir.
+    crate::webrtc_input::spawn(
+        cfg.clone(),
+        cap.clone(),
+        mouse.clone(),
+        input_router.clone(),
+        key_reap_tx.clone(),
+    );
+
     // Outer loop: (re)generate cert, (re)bind endpoint, serve until the rotation
     // deadline, then rebuild on the same UDP port.
     loop {

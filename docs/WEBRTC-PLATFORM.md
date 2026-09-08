@@ -32,6 +32,49 @@ The fallback is one platform service:
    WebTransport sessions. A WebRTC-only visitor wakes and holds the guest rather
    than watching it freeze after the idle grace period.
 
+### Input path
+
+The fallback carries INPUT as well as video (until 2026-09-08 it was video
+only — a Safari-17 / Firefox-Android visitor could watch a station but not touch
+it). It rides the SAME wire the WebTransport path speaks — the compact
+little-endian records of `spa/src/three/streamClient/inputWire.ts` and
+`streamhost/src/input.rs` — so the daemon decoder is reused, never forked. Only
+the carrier changes: two WebRTC DataChannels instead of QUIC datagrams + per-type
+reliable streams.
+
+```
+ iPad Safari 17 (webRtcFallbackClient.ts)
+   │  DataChannel "input-rel"  (ordered:false, maxRetransmits:0)   moves + re-home hint  (type 1/4/7)
+   │  DataChannel "input"      (reliable, ordered)                 ticket, then buttons/keys/wheel (type 2/3/5)
+   ▼
+ osgallery-webrtc-bridge (Go/pion)  — OnDataChannel per peer; FORWARDS ONLY, never verifies
+   │  unix /run/osgallery-webrtc/input-<tile>.sock   framed: [len u32 LE][channel u8][payload]
+   │  handshake "OSGWI1"; channel 0=rel, 1=reliable; first reliable payload = the TICKET
+   ▼
+ streamhost daemon (webrtc_input.rs)  — VERIFIES the ticket, then input::handle
+   → the daemon-wide abs→rel SharedMouse (per SH_POINTER) · the key sink (paced) · buttons/wheel
+```
+
+**The ticket rule.** The bridge is a dumb pipe: it neither reads nor checks the
+credential. The browser sends the SAME stream ticket it would use as its
+WebTransport `:path` (`/wt/<exp>.<nonce>.<sig>`, minted by `signal_route.py` and
+delivered in the signal doc's `path`) as the FIRST message on the reliable
+`input` channel. `webrtc_input.rs` verifies it with `session_ticket::admit`
+against `SH_STATION` before injecting anything; every record before the ticket is
+dropped. So an unticketed peer that reaches the open offer route gets video but
+cannot drive the guest — the same gate the WebTransport session applies before
+`accept()`. On a keyless LAN station the gate is inert (`admit` returns `Ok`), so
+the leading empty ticket frame is accepted and input flows, exactly as WebTransport
+does on the LAN.
+
+The daemon ingress is **env-gated**: it binds `input-<tile>.sock` only when its
+directory exists — that directory is the bridge's systemd `RuntimeDirectory`, so
+a host without the bridge creates no socket and nothing changes.
+`OSGALLERY_WEBRTC_INPUT_DIR` overrides the directory (an isolated test); an empty
+value disables the ingress. The bridge finds the same directory automatically
+(`-input-dir`, default: the feed socket's directory). `webrtc-input` rows on both
+sides trace a session (see `docs/lab/STREAM-DEBUGGING.md`).
+
 Pion is the deliberate interim rather than in-process webrtc-rs: its
 H.264/RTP, NACK/PLI/FIR, per-peer playout-delay extension, and reconnect behavior
 were already proven. This limits the shared Rust binary change to a small,
@@ -127,6 +170,15 @@ show `candidateType=relay` and `protocol=tcp` in `__kernelHiveWebRtcDebug()`.
 The shared binary must be built first without restart, backed up, then restarted
 on one canary. Confirm both its bridge feed and normal WebTransport stream before
 using explicit, reviewed waves of station names. Never use a blind `--all` restart.
+
+The INPUT plane (2026-09-08) touches BOTH sides, so a full rollout is: rebuild
+and install the bridge (`deploy/install-bridge.sh`, which restarts it and reopens
+`input-<tile>.sock` discovery), then roll the daemon out fleet-wide with
+`scripts/dev/fleet_rollout.py` (plan → `--apply`) after proving it on a walk-in
+win311 canary. The daemon ingress is env-gated on the bridge's runtime directory,
+so a daemon rolled out before the bridge is inert until the bridge is live — the
+two orderings are both safe. Old daemons keep working: the bridge logs `no daemon
+input socket` and drops input while video streams.
 
 The generic bridge has one non-template unit:
 

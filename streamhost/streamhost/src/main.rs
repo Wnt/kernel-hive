@@ -43,6 +43,7 @@ mod vice_keymap;
 mod vice_sock;
 mod warpd;
 mod webrtc_bridge;
+mod webrtc_input;
 mod x11_input;
 mod x11_keys;
 mod x11_warp;

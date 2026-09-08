@@ -371,6 +371,31 @@ session's `webrtc-stats` row must read `remote=host@<public>:54200`
 visitor failing the same way with `remote=` empty is a different fault — the
 bridge is down or the tile has no feed (`journalctl -u osgallery-webrtc-bridge`).
 
+### A walk-in fallback session that streams video but eats input (fixed 2026-09-08)
+The video is live — `webrtc-stats media=live framesDecoded=…` climbs — but the
+guest never reacts to the trackpad or keyboard. This is the fallback carrying
+video only, the state before the WebRTC input plane landed. A repaired session
+carries INPUT too, over two DataChannels (`docs/WEBRTC-PLATFORM.md` §Input path).
+Read the plane end to end:
+
+- **Client** (`clientcmd.sh evallog <sid>` or the client log): a healthy session
+  logs `webrtc-input open label=input-rel` and `webrtc-input open label=input
+  ticket=present` shortly after `webrtc-state pc=connected`. No `open label=input`
+  row ⇒ the reliable channel never opened (no input at all, and no ticket sent).
+- **Bridge** (`journalctl -u osgallery-webrtc-bridge`): `webrtc-input: peer input
+  connected tile=<tile>` on the first message. `no daemon input socket tile=<tile>`
+  means the station's daemon has no input listener — an old daemon, or the bridge
+  runtime dir is missing; video is unaffected, input is dropped.
+- **Daemon** (`journalctl -u streamhost@<cell>`): `[webrtc-input] ingress
+  listening at …` at boot, then `[webrtc-input] session admitted tile=<tile>` when
+  the ticket verifies. `[webrtc-input] REJECTED reason=…` is a bad/expired ticket
+  — the peer gets video but injects nothing (the ticket rule, working). After
+  admission the ordinary `[input]` counters and `input.first_edge` span advance
+  exactly as on WebTransport, because it is the same `input::handle`.
+
+The proof is always the framebuffer, never these rows: `labctl shot <cell> <png>`
+before and after driving the tab.
+
 ### Safari 26: `datagrams.writable` is undefined — `createWritable()` (fixed 2026-09-08)
 A `session-start` row with `wt:true vd:true rtc:true` on an iOS/iPadOS Safari
 UA (`iPhone OS 18_7 … Version/26.6.1 Mobile Safari`), then, on every attempt:

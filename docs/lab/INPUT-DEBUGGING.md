@@ -126,6 +126,19 @@ input. `--shot` closes the loop with a `labctl shot`: a readback matching the
 warp target is not proof the cursor is *visible* there (rule 9 — the
 framebuffer is the only proof a guest reacted).
 
+## Input on the WebRTC fallback (Safari 17, Firefox-Android)
+
+A browser with no WebTransport or WebCodecs takes the native-decoder WebRTC
+fallback, and its input travels a different CARRIER from every other station —
+two WebRTC DataChannels through the Pion bridge to a per-tile daemon socket, not
+QUIC. The RECORDS are identical (same `inputWire.ts` encoders, same
+`input::handle`), so everything below about pointer paths, the button allowlist
+and pacing applies unchanged once a record reaches the daemon. When a fallback
+session streams video but eats input, debug the carrier first:
+`docs/lab/STREAM-DEBUGGING.md` ("A walk-in fallback session that streams video
+but eats input") and `docs/WEBRTC-PLATFORM.md` §Input path (the `webrtc-input`
+rows and the ticket rule).
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the
