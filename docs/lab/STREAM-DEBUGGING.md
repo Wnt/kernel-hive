@@ -366,7 +366,8 @@ listens on `54200` and appends the public address as a second host candidate
 (`docs/WEBRTC-PLATFORM.md` §Remote visitors). Check, in this order:
 `ssh lab 'ss -lun | grep 54200'`; `ssh lab 'cat /etc/osgallery-webrtc/bridge.env'`
 (must hold the address `kernelhive.madekivi.fi` resolves to); then a working
-session's `webrtc-stats` row must read `remote=host@<public>:54200`. A LAN
+session's `webrtc-stats` row must read `remote=host@<public>:54200`
+(`remote=host@?:54200` on Safari, which withholds the address). A LAN
 visitor failing the same way with `remote=` empty is a different fault — the
 bridge is down or the tile has no feed (`journalctl -u osgallery-webrtc-bridge`).
 

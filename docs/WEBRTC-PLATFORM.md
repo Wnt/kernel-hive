@@ -96,7 +96,10 @@ webrtc-stats   media=live … framesDecoded=18 fps=7 … candidate=prflx/udp rem
 `candidate=` is the browser's OWN selected candidate — `prflx` on cellular is
 normal (the client offers no STUN, so its NAT mapping is learnt from the
 bridge's checks). `remote=` (added 2026-09-08) is the bridge-side half of the
-pair: `<public>:54200` for a remote visitor, `<lan>:54200` for a LAN one. On
+pair: `<public>:54200` for a remote visitor, `<lan>:54200` for a LAN one —
+except on Safari, whose `remote-candidate` stat carries the port and type but
+withholds the address, so `remote=host@?:54200` is the normal Safari reading
+(the deployed proof, session `12f816e4`/`77e8d905`, read exactly that). On
 the box, `tcpdump -ni wg0 udp port 54200` shows the same session arriving
 through the tunnel. The operator no longer hand-tests: drive the real tab
 with `clientcmd.sh eval <sid> 'location.assign("/walkin/play/win311"); return "nav"'`
