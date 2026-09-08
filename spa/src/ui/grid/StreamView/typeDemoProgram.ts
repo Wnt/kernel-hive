@@ -113,9 +113,10 @@ export async function typeDemoProgram({
     // exactly '' for it (never whitespace, which would type as nothing but
     // read as content).
     if (line.length > 0) {
-      handle.typeText(applyKeyboard(line, keyboard));
-      // Long enough for the whole line to have actually reached the guest.
-      await sleep(Math.max(delayMs, line.length * charMs));
+      if (!(await typePaced(applyKeyboard(line, keyboard), handle, charMs, sleep, cancelled))) return false;
+      // The line has reached the guest chunk by chunk; the inter-line pace is
+      // what is left.
+      await sleep(delayMs);
       if (cancelled()) return false;
     }
     // ENTER commits the line; give the guest time to tokenise it before the
@@ -125,7 +126,33 @@ export async function typeDemoProgram({
   }
   if (cancelled()) return false;
   // No newline: the visitor supplies it.
-  handle.typeText(applyKeyboard(program.runCommand, keyboard));
-  await sleep(program.runCommand.length * charMs);
+  return typePaced(applyKeyboard(program.runCommand, keyboard), handle, charMs, sleep, cancelled);
+}
+
+/**
+ * Characters a single typeText() call may carry. The daemon's mamesock sink
+ * queues at most 64 commands (ORDERED_CAPACITY in mame_sock.rs) and a typed
+ * character is two of them, four when shifted -- so a whole 38-character
+ * BASIC line handed over in one call OVERFLOWS the queue and the tail of the
+ * line is silently dropped (samcoupe, 2026-09-08: `[input-router] mamesock
+ * ... dropped=3 overflow=3`, the demo listing arrived truncated). Eight
+ * characters are at most 32 commands; the wait between chunks is the
+ * station's own drain rate, so the queue never holds more than one chunk.
+ */
+export const DEMO_CHUNK_CHARS = 8;
+
+async function typePaced(
+  text: string,
+  handle: DemoTypist,
+  charMs: number,
+  sleep: (ms: number) => Promise<void>,
+  cancelled: () => boolean,
+): Promise<boolean> {
+  for (let i = 0; i < text.length; i += DEMO_CHUNK_CHARS) {
+    if (cancelled()) return false;
+    const chunk = text.slice(i, i + DEMO_CHUNK_CHARS);
+    handle.typeText(chunk);
+    await sleep(chunk.length * charMs);
+  }
   return true;
 }

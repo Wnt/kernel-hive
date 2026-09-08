@@ -18,7 +18,14 @@ function recorder() {
   return {
     typed,
     waits,
-    handle: { typeText: (t: string) => typed.push(t) },
+    // A line arrives in DEMO_CHUNK_CHARS-sized calls; the recorder joins them
+    // back into lines at each newline so the tests read like the listing.
+    handle: {
+      typeText: (t: string) => {
+        if (t === '\n' || typed.length === 0 || typed[typed.length - 1] === '\n') typed.push(t);
+        else typed[typed.length - 1] += t;
+      },
+    },
     sleep: async (ms: number) => { waits.push(ms); },
   };
 }
@@ -46,17 +53,21 @@ describe('typeDemoProgram', () => {
       program: PROGRAM, handle: r.handle, sleep: r.sleep,
       delayMs: 42, enterDelayMs: 99, perCharMs: 0,
     });
-    expect(r.waits).toEqual([42, 99, 42, 99, 0]);
+    // perCharMs 0 makes every chunk wait 0; what remains is the line pace and
+    // the ENTER settle, once per line, then the run command's chunk.
+    expect(r.waits.filter((w) => w !== 0)).toEqual([42, 99, 42, 99]);
   });
 
   it('defaults the pacing to the named constant', async () => {
     const r = recorder();
     await typeDemoProgram({ program: PROGRAM, handle: r.handle, sleep: r.sleep });
-    const perLine = PROGRAM.lines.map((l) => Math.max(DEMO_LINE_DELAY_MS, l.length * DEMO_PER_CHAR_MS));
-    expect(r.waits).toEqual([
-      perLine[0], DEMO_ENTER_DELAY_MS, perLine[1], DEMO_ENTER_DELAY_MS,
-      PROGRAM.runCommand.length * DEMO_PER_CHAR_MS,
-    ]);
+    // Every character is paid for at DEMO_PER_CHAR_MS across the chunks, plus
+    // one line pace and one ENTER settle per line; the run command is chunked
+    // the same way. Compare totals, not the chunk boundaries.
+    const chars = PROGRAM.lines.join('').length + PROGRAM.runCommand.length;
+    const total = chars * DEMO_PER_CHAR_MS + PROGRAM.lines.length * (DEMO_LINE_DELAY_MS + DEMO_ENTER_DELAY_MS);
+    expect(r.waits.reduce((a, b) => a + b, 0)).toBe(total);
+    expect(Math.max(...r.waits)).toBeLessThanOrEqual(Math.max(DEMO_ENTER_DELAY_MS, 8 * DEMO_PER_CHAR_MS));
     expect(DEMO_LINE_DELAY_MS).toBeGreaterThan(0);
     // The post-ENTER settle must be the longer of the two, or the next line's
     // first character lands while BASIC is still tokenising and is lost.
@@ -70,8 +81,12 @@ describe('typeDemoProgram', () => {
     const slow: DemoProgram = { ...PROGRAM, perCharMs: 170 };
     const r = recorder();
     await typeDemoProgram({ program: slow, handle: r.handle, sleep: r.sleep });
-    expect(r.waits[0]).toBe(PROGRAM.lines[0].length * 170);
-    expect(r.waits[r.waits.length - 1]).toBe(PROGRAM.runCommand.length * 170);
+    // The first line's chunk waits add up to its length at the tile's rate,
+    // before the line pace; the run command's chunks end the run.
+    const firstLineChunks = Math.ceil(PROGRAM.lines[0].length / 8);
+    expect(r.waits.slice(0, firstLineChunks).reduce((a, b) => a + b, 0)).toBe(PROGRAM.lines[0].length * 170);
+    const runChunks = Math.ceil(PROGRAM.runCommand.length / 8);
+    expect(r.waits.slice(-runChunks).reduce((a, b) => a + b, 0)).toBe(PROGRAM.runCommand.length * 170);
   });
 
   it('lets an explicit perCharMs argument override even a tile-declared one', async () => {
@@ -80,7 +95,8 @@ describe('typeDemoProgram', () => {
       program: { ...PROGRAM, perCharMs: 170 }, handle: r.handle, sleep: r.sleep,
       delayMs: 1, enterDelayMs: 1, perCharMs: 0,
     });
-    expect(r.waits).toEqual([1, 1, 1, 1, 0]);
+    // perCharMs 0 wins over the tile's 170: every chunk wait is 0.
+    expect(r.waits.filter((w) => w !== 0)).toEqual([1, 1, 1, 1]);
   });
 
   it('stops mid-listing when cancelled and never sends the run command', async () => {
@@ -90,7 +106,9 @@ describe('typeDemoProgram', () => {
       cancelled: () => r.typed.length >= 1,
     });
     expect(done).toBe(false);
-    expect(r.typed).toEqual(['10 MODE 1']);
+    // Cancelled after the first chunk of the first line: nothing else, and
+    // never the run command.
+    expect(r.typed).toEqual(['10 MODE ']);
   });
 
   it('sends a bare ENTER for an empty line and never types an empty string', async () => {
@@ -108,8 +126,10 @@ describe('typeDemoProgram', () => {
     });
     expect(r.typed).toEqual(['enter', '\n', 'cd 20', '\n', '\n', 'nop', '\n', 'nop']);
     expect(r.typed).not.toContain('');
+    // The empty line costs only its ENTER settle: no chunk wait, no line pace.
+    expect(r.waits.filter((w) => w !== 0)).toEqual([42, 99, 42, 99, 99, 42, 99]);
     // The empty line costs only the post-ENTER settle: there was nothing to pace.
-    expect(r.waits).toEqual([42, 99, 42, 99, 99, 42, 99, 0]);
+
   });
 
   it('is content-agnostic: any listing length works', async () => {
