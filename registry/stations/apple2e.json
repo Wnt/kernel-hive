@@ -164,24 +164,25 @@
     "notes": "Host-native station: MAME 0.289's apple2ee runs on the host (drawshm frames, ctlsock keys + mouse card, FIFO audio). Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) whose STARTUP program is a one-key selector: AppleWorks, Dazzle Draw, Angry Birds, BASIC prompt. Sibling of apple2 (GEOS); the pair shows the same hardware as it was used and as it was later persuaded to look."
   },
   "emulator": {
-    "family": "LinApple",
-    "version": "2.3.0",
-    "source": "scripts/build-guests/tiles/apple2.sh",
-    "driver": "Apple //e enhanced"
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/apple2e.sh",
+    "driver": "apple2ee"
   },
   "ui": "desktop",
   "reset": {
     "stationDir": "apple2e",
-    "pointer": "abs",
+    "pointer": "none",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "Apple GEOS deskTop (BIGWON disk window open) in LinApple 2.3.0 on an Apple //e; speaker->ALSA->AC97. Emulator-bridge tile added 2026-07-08."
+    "mouse": "wired (relative MOVE via ctlsock reaches a2mse_x/y on the live rig; no SPA pointer contract yet -- see notes)",
+    "keyboard": "verified (menu navigation via generated keymap on the live rig; rollover/overlap not stress-tested)",
+    "fixture": "Apple //e (enhanced) ProDOS boot menu (STARTUP Applesoft program on /HIVE, CFFA 2.0 slot 7) offering ProDOS, AppleWorks and Dazzle Draw; Apple II Mouse Card in slot 4. MAME 0.289 apple2ee running HOST-NATIVE (drawshm); apple2e wave, native stream, 2026-09-08."
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from apple2 on 2026-09-08; TODO: media, museum, spa"
+    "scaffolded from apple2 on 2026-09-08; TODO: media, museum, spa",
+    "native stream (2026-09-08): pointer.transport is 'none' ON PURPOSE despite the Apple II Mouse Card being wired at the emulator layer (MAME_CTL_PTR_TAGS/_BTN_NAMES/_MOD in station.env.fixture, mame-ctlsock-ptr-tags.patch) -- InputBackend::MameSock::pointer_mode() in streamhost/streamhost/src/config/backends.rs hardcodes 'abs' for every mamesock station, and the mouse card has no absolute cursor readout (dead-reckoning relative only, unlike newsos's Newport VC2 registers), so this station cannot honestly claim an SPA pointer contract yet. Surfacing a relative mamesock pointer_mode is a daemon change outside this stream; report it to whoever owns spa/backends next."
   ]
 }

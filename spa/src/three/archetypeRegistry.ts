@@ -214,7 +214,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   freebsd411:  { osId: 'freebsd411', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#ab2b28', eraLabel: '2005 · FreeBSD 4.11 — KDE 3.3.2', pointerRel: false },
   debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: false },
   suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
-  apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#8A8577', eraLabel: 'TODO(apple2): 1988 · Apple II — GEOS' },
+  apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
