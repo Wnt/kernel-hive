@@ -1,22 +1,32 @@
 #!/bin/bash
-# Build the atari800xl station's boot disk (hive.atr): an Atari MyDOS-format
-# enhanced-density (1040 x 128-byte sectors, 130 KB) ATR whose boot sectors
-# carry MyPicoDos 4.06 (Matthias Reichl / HiassofT). MyPicoDos's boot screen IS
-# the menu -- it lists every file on the disk and loads the highlighted one on
-# RETURN -- so this station gets its one-key selector for free, the way the
-# apple2e station gets one from a ProDOS STARTUP program
-# (scripts/build-guests/tiles/apple2e.sh).
+# Build the atari800xl station's boot disks (hive.atr, hive2.atr): Atari
+# MyDOS-format SINGLE-density (720 x 128-byte sectors, 90 K) ATRs. hive.atr's
+# boot sectors carry MyPicoDos 4.06 (Matthias Reichl / HiassofT); its boot
+# screen IS the menu -- it lists every file on the disk and loads the
+# highlighted one on RETURN -- so this station gets its one-key selector for
+# free, the way the apple2e station gets one from a ProDOS STARTUP program
+# (scripts/build-guests/tiles/apple2e.sh). hive2.atr (-flop2) is a plain
+# second data drive (D2:, no boot code) for what does not fit on D1:.
 #
 # Owned by the atari800xl wave's "media" stream (docs/lab/ATARI800XL-WAVE.md).
 # It touches media only: fetch, verify, compose, boot-gate, install. The
 # emulator/ROM plane is the native stream's, the poster the spa stream's.
 #
-# WALL, recorded so nobody re-walks it: an Atari 1050 is a single/enhanced
-# density drive. A double-density (256-byte sector) image -- dir2atr's `-d`, and
-# the obvious choice for "fit more titles" -- boots to a blue screen and hangs
-# forever under `-sio a1050`, because the drive cannot read the sectors. Build
-# ED (`-E`) and it boots in ~28 emulated seconds. 130 KB is therefore the hard
-# ceiling for this disk; a bigger library needs a second drive on -flop2.
+# WALL, recorded so nobody re-walks it: MAME's emulated Atari 1050
+# (src/devices/bus/a800/atari1050.cpp) only supports SINGLE density (FM,
+# 720 x 128 B, 90 K) and DOUBLE density (MFM, 256 B/sector, DOS 3) -- it does
+# NOT emulate enhanced density (1040 x 128 B), even though a real 1050 drive
+# reads it. An ED image (dir2atr's `-E`) boots to a perfectly-drawn MyPicoDos
+# menu -- the boot sectors and the low-numbered directory sectors happen to
+# read fine -- but every XEX LOAD off it fails partway (the drive can't
+# actually deliver the higher sector range) and MyPicoDos silently redraws
+# the menu instead of running the program: three race runners each confirmed
+# this independently (any confirm key -> blue "loading" screen ~20 s -> menu
+# back, pixel-identical). A DD image (`-d`) never even gets that far -- it
+# hangs on a blank blue screen forever, because the drive can't read 256-byte
+# sectors either. Fix: build SINGLE density (dir2atr's default, no -d/-E; `-S`
+# pins it explicitly) -- 90 K is the hard per-drive ceiling, so the library is
+# split across D1: (priority titles) and D2: (`-flop2`, overflow).
 #
 # Titles are XEX/COM single-file binaries wherever possible: MyPicoDos loads
 # those directly, while a title distributed only as its own bootable ATR
@@ -115,15 +125,24 @@ if [[ ! -x "$DIR2ATR" ]]; then
 fi
 [[ -x "$DIR2ATR" ]] || die "dir2atr missing at $DIR2ATR"
 
-# --- compose the disk directory --------------------------------------------
+# --- compose the disk directories -------------------------------------------
+# An Atari 1050 (MAME's a1050) is single/enhanced density ONLY -- and the
+# emulated a1050 (src/devices/bus/a800/atari1050.cpp) doesn't even carry
+# enhanced density support, only single (FM, 720 x 128 B, 90 K). An ED image
+# (dir2atr -E, 1040 x 128 B) boots and lists fine, but every XEX LOAD off it
+# fails partway (MyPicoDos silently re-draws the menu) because the drive can't
+# actually read the higher sector count. Fix: build SD (dir2atr's default, no
+# -d/-E) and split the library across two drives -- D1: for the disk1
+# priority list, D2: (-flop2) for what doesn't fit.
 DISK="$WORK/disk"
-rm -rf "$DISK"
-mkdir -p "$DISK"
+DISK2="$WORK/disk2"
+rm -rf "$DISK" "$DISK2"
+mkdir -p "$DISK" "$DISK2"
 
 unzip -o -j "$STAGE_DIR/boulder_dash.zip" -d "$WORK/x" >/dev/null
 mv "$WORK/x/Boulder Dash.xex" "$DISK/BOULDER.XEX"
 unzip -o -j "$STAGE_DIR/dropzone.zip" -d "$WORK/x" >/dev/null
-mv "$WORK/x/Dropzone.xex" "$DISK/DROPZONE.XEX"
+mv "$WORK/x/Dropzone.xex" "$DISK2/DROPZONE.XEX"
 unzip -o -j "$STAGE_DIR/river_raid.zip" -d "$WORK/x" >/dev/null
 mv "$WORK/x/River Raid.xex" "$DISK/RIVRRAID.XEX"
 unzip -o -j "$STAGE_DIR/star_raiders.zip" -d "$WORK/x" >/dev/null
@@ -182,14 +201,22 @@ xex += bytes([0xE0, 0x02, 0xE1, 0x02, s & 255, s >> 8])   # RUNAD $02E0
 open(sys.argv[1], 'wb').write(xex)
 PY
 
-# --- build the image --------------------------------------------------------
-# -m MyDOS format, -E standard enhanced density (1040 x 128 B), -p long names,
-# -b MyPicoDos406N the boot code. NOT -d: see the header wall note.
+# --- build the images --------------------------------------------------------
+# -m MyDOS format, single density (dir2atr's default -- omit -d/-E; -S pins it
+# explicitly), -p long names, -b MyPicoDos406N the boot code on disk1 only
+# (disk2 carries no boot code, it is a plain data drive on D2:).
 ATR="$WORK/hive.atr"
-rm -f "$ATR"
-"$DIR2ATR" -m -p -E -b MyPicoDos406N "$ATR" "$DISK/" || die "dir2atr failed"
+ATR2="$WORK/hive2.atr"
+rm -f "$ATR" "$ATR2"
+"$DIR2ATR" -m -p -S -b MyPicoDos406N "$ATR" "$DISK/" || die "dir2atr failed (disk1)"
+"$DIR2ATR" -m -p -S "$ATR2" "$DISK2/" || die "dir2atr failed (disk2)"
 
-# --- boot gate: the composed disk must reach a non-black frame in MAME -------
+# --- boot gate: the composed disk must reach a non-black frame in MAME, and
+# every title must actually LOAD (not just list) -- an enhanced-density image
+# passed this same "menu is drawn" check while every XEX load silently failed,
+# so the gate also drives one RETURN on the default highlight and checks the
+# frame changed away from the menu (proves the drive delivered sector data,
+# not just the directory).
 if [[ -x "$MAME" && -d "$ROM_DIR" ]]; then
   GATE="$WORK/gate"
   rm -rf "$GATE"
@@ -198,7 +225,7 @@ if [[ -x "$MAME" && -d "$ROM_DIR" ]]; then
   printf '[misc]\nskip_warnings 1\n' >"$GATE/ui.ini"
   (cd "$GATE" && timeout 400 "$MAME" a800xlp -rompath ./roms -homepath . \
     -cfg_directory ./cfg -nvram_directory ./nvram -inipath . -skip_gameinfo \
-    -video none -sound none -sio a1050 -flop1 "$ATR" -ctrl1 joy \
+    -video none -sound none -flop1 "$ATR" -flop2 "$ATR2" -ctrl1 joy \
     -str 45 -snapshot_directory ./shots >/dev/null 2>&1) || die "MAME boot gate crashed"
   SHOT="$(find "$GATE/shots" -name '*.png' | head -1)"
   [[ -n "$SHOT" ]] || die "boot gate produced no frame"
@@ -223,4 +250,6 @@ fi
 
 mkdir -p "$INSTALL_DIR"
 cp -f "$ATR" "$INSTALL_DIR/hive.atr"
+cp -f "$ATR2" "$INSTALL_DIR/hive2.atr"
 log "installed $INSTALL_DIR/hive.atr ($(stat -c %s "$INSTALL_DIR/hive.atr") bytes, sha256 $(sha256sum "$INSTALL_DIR/hive.atr" | awk '{print $1}'))"
+log "installed $INSTALL_DIR/hive2.atr ($(stat -c %s "$INSTALL_DIR/hive2.atr") bytes, sha256 $(sha256sum "$INSTALL_DIR/hive2.atr" | awk '{print $1}'))"

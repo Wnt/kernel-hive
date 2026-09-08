@@ -25,8 +25,8 @@ one is derived from), `mpf2`/`zxspectrum` the keyboard-only precedents.
 | Keyboard ioports | 8 matrix ports keyboard.0..7 (Return, Break on Backspace, Atari key on RCONTROL, Tab, Escape, BackS/Delete, < Clear, > Insert, Lowr/Caps, Shift, Ctrl) + console port (Start/Select/Option/Reset) + fake; joystick fields live under :ctrl1:joy:JOY (P1 Up/Down/Left/Right/Button 1) — dump with KEYDUMP --tags ':' | spine from source; **CONFIRMED by native stream's KEYDUMP** — the arrow keys already carry the joystick's default MAME assignment (KEYCODE_UP/DOWN/LEFT/RIGHT), no override needed to bind them, though the keymap pins them explicitly; Left Alt (0x38) overridden to Button 1 (its default KEYCODE_LCONTROL collided with the keyboard's own Ctrl field) |
 | Published surface | 1024x768 (MAME aspect-corrects the native raster) | **CONFIRMED** by native stream's drawshm gate |
 | Warning panel | MACHINE_IMPERFECT_GRAPHICS shows a "known problems" panel ("Completely unemulated features: disk / Imperfectly emulated features: graphics — Press any key to continue") on every cold boot. **MEASURED: ui.ini's `skip_warnings` option alone does NOTHING upstream** (`options().skip_warnings()` is never consulted in stock 0.289's `display_startup_screens`) — the mpf2-style `mame-irix-skip-warnings.patch` is REQUIRED to make it take effect; without it the panel is a stuck screen (no ctlsock command responds until a key is pressed, and a keypress does not dismiss it — the boot gate's non-black check would silently pass on the panel, not the exhibit). `atari800xl.sh` carries the patch and `MAME_NATIVE_SKIP_WARNINGS=1` | native stream, 2026-09-08 |
-| Media | `hive.atr` — **MyDOS format, standard ENHANCED density (1040 x 128-byte sectors), 133 136 B**, sha256 `171a10ce1198d15da524730d3b07476d30dd7b4d1c183fb994b4e1050dda5aa5`, boot code **MyPicoDos 4.06N** (HiassofT; the `N` build has high-speed SIO off, see Walls). Built by `scripts/build-guests/tiles/atari800xl.sh`, installed at `/data/vms/streamhost/assets/atari800xl/media/hive.atr`. **NOT 16 MB and not double density** — an Atari 1050 is SD/ED only, so 130 KB on `-flop1` is the ceiling; a bigger library needs `-flop2` | media stream (measured 2026-09-08) |
-| Titles SHIPPED | Boulder Dash (1984) `BOULDER.XEX`, Dropzone (1984) `DROPZONE.XEX`, River Raid (1984, Activision) `RIVRRAID.XEX`, Star Raiders (1979, Atari) `STARRAID.XEX`, **The Last Word 3.2** (Jonathan Halliday, freeware 80-column word processor) `LASTWORD.XEX` + `LW.CFG`, and `XBASIC.XEX` (ours, 18 bytes) for Atari BASIC. **DROPPED: M.U.L.E.** (no clean single-file XEX found in the time box), **Yoomp!** and **Rescue on Fractalus!** — both are distributed only as their own bootable ATRs, and MyPicoDos cannot launch a disk image from inside a disk | media stream 2026-09-08 |
+| Media | **REBUILT single density, golden-fix stream 2026-09-08.** `hive.atr` — MyDOS format, standard SINGLE density (720 x 128-byte sectors), 92 176 B, sha256 `d77e41f2a11287e1b8aab89e9d6a5e51fe870c19cb10c1f11ba9ccd1782742fa`, boot code **MyPicoDos 4.06N** (HiassofT; the `N` build has high-speed SIO off, see Walls). `hive2.atr` — same format, 92 176 B, sha256 `2d68e38b3211038927b4af16587ecd5c3c22459800da00e2135cf78403ad6b4e`, no boot code (plain D2: data drive, `-flop2`). Both built by `scripts/build-guests/tiles/atari800xl.sh` (sha256 stable across two builds), installed at `/data/vms/streamhost/assets/atari800xl/media/{hive.atr,hive2.atr}`. **NOT enhanced density** — MAME's emulated 1050 (`src/devices/bus/a800/atari1050.cpp`) only implements single/double density, so enhanced (the previous build) drew a correct menu but every XEX load off it failed; single density is the fix, 90 KB per drive is the new ceiling | golden-fix stream (measured 2026-09-08) |
+| Titles SHIPPED | On D1: (`hive.atr`) — Boulder Dash (1984) `BOULDER.XEX`, River Raid (1984, Activision) `RIVRRAID.XEX`, Star Raiders (1979, Atari) `STARRAID.XEX`, **The Last Word 3.2** (Jonathan Halliday, freeware 80-column word processor) `LASTWORD.XEX` + `LW.CFG`, and `XBASIC.XEX` (ours, 18 bytes) for Atari BASIC — all five fit inside the 90 K single-density ceiling with room to spare. On D2: (`hive2.atr`) — Dropzone (1984) `DROPZONE.XEX`, moved off D1: only because it was the largest single file (35 511 B) and priority order put the other five first; D2: switching is UNTESTED (blocked on the RETURN wall below, see Walls/OPEN). **DROPPED: M.U.L.E.** (no clean single-file XEX found in the time box), **Yoomp!** and **Rescue on Fractalus!** — both are distributed only as their own bootable ATRs, and MyPicoDos cannot launch a disk image from inside a disk | media stream 2026-09-08, disk split by golden-fix stream 2026-09-08 |
 | Stock MAME for quick media boots | `/usr/games/mame` 0.276 on labhost has this driver (`-listroms` matched); ROMs in the staging dir above | spine |
 
 ## Streams
@@ -54,6 +54,48 @@ The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file
   screen forever, because a real Atari 1050 is a single/enhanced density drive and
   MAME emulates that faithfully. Build with `-E` (standard ED, 1040 x 128 B) and the
   same directory boots to the menu in ~28 emulated seconds. Cost: ~15 min.
+- **Enhanced density boots to a correct menu but every XEX LOAD off it fails
+  (golden-fix stream, 2026-09-08).** The wall above says a real 1050 is
+  single/enhanced-density-capable and MAME "emulates that faithfully" — that
+  claim was WRONG for the emulated 1050 specifically: MAME's
+  `src/devices/bus/a800/atari1050.cpp` implements only single density (FM,
+  720 x 128 B, 90 K) and double density (MFM, 256 B/sector); enhanced density
+  is not modeled at all. An ED image's boot sectors and low-numbered
+  directory sectors happen to read fine (so the menu draws correctly and the
+  boot gate's "non-black frame" check passes), but every XEX beyond the
+  directory fails partway through, and MyPicoDos silently redraws the menu
+  instead of running the program — three independent race runners each
+  reproduced this: any confirm input → blue "loading" screen ~20 s → menu
+  back, pixel-identical (PIL bbox `None` against the pre-RETURN frame). Fix:
+  build SINGLE density (`dir2atr`'s default, no `-d`/`-E`; `-S` pins it
+  explicitly) — 90 K is the hard per-drive ceiling, so the 6-title library
+  (77 011 B of payload) still fits on one drive with room to spare; only
+  Dropzone (35 511 B, the largest single file) was moved to a second drive
+  (`hive2.atr`, `-flop2`) by priority order, not because it didn't fit.
+- **The single-density rebuild does NOT close the "RETURN doesn't commit a
+  load" wall — that bug is separate from density (golden-fix stream,
+  2026-09-08).** Re-testing RETURN on the SD disk, on the golden-fix
+  stream's own sandbox rig (`atari800xl-golden2/rig2`, `-state golden`
+  restored, real ctlsock/keymap path, `:keyboard.1 Return`), reproduces the
+  EXACT same symptom the earlier ED-disk proof and the pre-existing
+  "STILL OPEN" wall (below, under Proofs) already named: a frame-size
+  transient (842 B blank blue → briefly 402 B "list clearing") followed by
+  the unchanged menu (2980 B, pixel-identical to the pre-RETURN frame) at
+  15-25 s, tried with a single tap, a longer 500 ms hold, and a second
+  RETURN 2 s after the first. This DISPROVES the assumption (this stream's
+  own brief included) that enhanced density fully explained the "confirm
+  input → blue loading screen → menu back" symptom on THIS rig's real
+  ctlsock/keymap key-transport path — the density bug and the RETURN-commit
+  bug are two separate walls that happened to produce visually similar
+  symptoms. The density fix is real and necessary (an ED disk cannot load
+  ANY title, full stop) but not sufficient: per-title first-screen proofs
+  are still blocked by the older, still-open RETURN wall. Not bisected
+  further inside the time box — this is exactly what rule 14 says to race
+  on `rig-clone.sh`, not chase serially past a deadline; the candidate
+  theories already listed under Proofs (hold across a frame boundary,
+  release the highlight key before RETURN, a second RETURN after the first
+  swallow) are still untested in isolation and should be the race's
+  theories.
 - **`-autoboot_command` reaches Atari BASIC but not MyPicoDos.** MAME's natural
   keyboard drives this driver through the OS key path: posting `PRINT 40+2\n` at the
   BASIC `READY` prompt works perfectly (`proof/nk/`), but the same mechanism is
@@ -108,15 +150,26 @@ already offers, so the visitor CAN move the bar. Reset re-boots `D1:` and
 lands back on this menu, so there is no way to get stuck. Entries are in disk
 order:
 
+**Disk layout changed 2026-09-08 (golden-fix stream): single density, two
+drives.** D1: (`hive.atr`, boots) carries five titles + BASIC; Dropzone moved
+to D2: (`hive2.atr`, `-flop2`, no boot code) since it was the largest single
+file and priority order put the other five first. D2: switching is
+**UNTESTED** — the on-screen legend shows a `1 - 8 = D1: - D8:` row so a
+drive-select key almost certainly exists, but proving it is blocked on the
+RETURN wall below (nothing on D1: reliably loads yet, so D2: was never
+reached). Entries below are in `hive.atr`'s disk order; **every "first
+screen" column is UNPROVEN** — see Walls/Proofs, this is the open item this
+stream did not close.
+
 | Menu entry | Down-presses from the top | What it is | From the menu to its first screen |
 |---|---|---|---|
-| `BOULDER.XEX` | 0 (default highlight) | Boulder Dash (First Star, 1984) | RETURN → ~15 s of SIO load → title screen; **fire (joystick 1 button)** starts the cave |
-| `DROPZONE.XEX` | 1 | Dropzone (Archer Maclean, 1984) | RETURN → title screen; fire starts |
-| `LASTWORD.XEX` | 2 | The Last Word 3.2 — 80-column word processor (Jonathan Halliday, freeware) | RETURN → the editor opens on an empty document, ready to type. Reads `LW.CFG` off the same disk |
-| `LW.CFG` | 3 | The Last Word's config file, not a program | do not select it — it is listed because MyPicoDos lists every file. **Cosmetic wart, OPEN** |
-| `RIVRRAID.XEX` | 4 | River Raid (Activision, 1984) | RETURN → title screen; fire starts the run |
-| `STARRAID.XEX` | 5 | Star Raiders (Atari, 1979) | RETURN → mission-select screen; press **1**–**4** to pick a mission level |
-| `XBASIC.XEX` | 6 | exit to **Atari BASIC** | RETURN → `READY` on the blue BASIC screen |
+| `BOULDER.XEX` | 0 (default highlight) | Boulder Dash (First Star, 1984) | RETURN → **UNPROVEN**, blocked on the RETURN-commit wall (SD-disk re-test 2026-09-08 reproduced the same "blue loading, then menu returns" symptom as the old ED disk) |
+| `LASTWORD.XEX` | 1 | The Last Word 3.2 — 80-column word processor (Jonathan Halliday, freeware) | RETURN → **UNPROVEN**, same wall. Reads `LW.CFG` off the same disk |
+| `LW.CFG` | 2 | The Last Word's config file, not a program | do not select it — it is listed because MyPicoDos lists every file. **Cosmetic wart, OPEN** |
+| `RIVRRAID.XEX` | 3 | River Raid (Activision, 1984) | RETURN → **UNPROVEN**, same wall |
+| `STARRAID.XEX` | 4 | Star Raiders (Atari, 1979) | RETURN → **UNPROVEN**, same wall (mission-select screen expected once RETURN commits) |
+| `XBASIC.XEX` | 5 | exit to **Atari BASIC** | RETURN → **UNPROVEN**, same wall (`READY` on the blue BASIC screen expected once RETURN commits) |
+| `DROPZONE.XEX` | — (D2:, not on this menu) | Dropzone (Archer Maclean, 1984) | On `hive2.atr` — reachable only after the D2: switch is proven, which is itself blocked on the same RETURN wall |
 
 **The BASIC route** is `XBASIC.XEX`, 18 bytes of 6502 written by the builder: it
 clears bit 1 of PORTB (`$D301`) so the Atari BASIC ROM pages back in over the RAM
@@ -178,19 +231,29 @@ no resident DOS); press **Reset** for that.
 
 ## Checkpoint
 
+**REBAKED 2026-09-08 (golden-fix stream) on the single-density disk pair** —
+the earlier golden below was captured on the now-superseded enhanced-density
+`hive.atr` and is no longer installed.
+
 - **Method**: `SAVEST golden` over ctlsock, at the fully-settled MyPicoDos menu
-  (mtime≈19s into a cold boot), on `/data/vms/sandbox/atari800xl-golden/rig`.
-- **Path**: `rig/sta/a800xlp/golden.sta` (31 899 B, sha256
-  `c5bde4943f5fef2e5fb4e6f186b66462a2a31ec1c8a2532b562672d8c79e265d`), capture
-  cost 128 ms. Staged into the future station dir at
+  (mtime≈19s into a cold boot with `-flop1 hive.atr -flop2 hive2.atr`, both
+  single density), on `/data/vms/sandbox/atari800xl-golden2/rig`.
+- **Path**: `rig/sta/a800xlp/golden.sta` (31 855 B, sha256
+  `94eab84d9c91fda52f4c853fec27accddf6f0a550129666399364bcaabe9e64b`), capture
+  cost 115 ms. Staged into the future station dir at
   `/data/vms/streamhost/stations/atari800xl/sta/a800xlp/golden.sta` (same
   bytes, same sha256 — copy verified).
-- **Restore**: relaunch with `-state_directory rig/sta -state golden`; ctl.sock
-  ready in 5 ms, first SHOT 75 ms after launch, pixel-identical to the frame
-  SAVEST captured (bbox `None`). `atari400.cpp`/`a800xlp` carries no
+- **Restore**: relaunch on a separate rig (`atari800xl-golden2/rig2`) with
+  `-state_directory rig/sta -state golden`; ctl.sock ready in 206 ms, SHOT
+  taken immediately after, pixel-identical to the pre-SAVEST frame (PIL
+  `ImageChops.difference` bbox `None`). `atari400.cpp`/`a800xlp` carries no
   `MACHINE_SUPPORTS_SAVE` flag in its driver info, but the restore is
-  measured, not assumed — `MAME_NATIVE_CHECKPOINT=1` is the golden stream's
-  decision, stated because the driver flag alone would not have justified it.
+  measured, not assumed — `MAME_NATIVE_CHECKPOINT=1` remains the golden
+  stream's decision, re-confirmed on this disk pair.
+- **Caveat**: the golden state is the settled MENU only, same as before — no
+  title has yet been proven to load past it (see Walls/Menu), so this
+  checkpoint does not by itself prove any exhibit content works, only that
+  the menu itself is fast and stable to return to.
 
 ## OPEN items
 
@@ -209,10 +272,21 @@ no resident DOS); press **Reset** for that.
   (`stream.pointer.transport: none`), as apple2e does — a relative-only mouse
   has no honest absolute contract yet.
 - **Title-load RETURN is unreliable inside MyPicoDos on the real ctlsock/keymap
-  path** — see "## Proofs", STILL OPEN. Blocks per-title first-screen proofs
-  and the BASIC-prompt typing proof (`PRINT 1+2` → `3`) that depend on
-  reaching `XBASIC.XEX`. Next stream: race the candidate theories above on
-  `rig-clone.sh`, first framebuffer proof wins.
+  path — CONFIRMED still open after the density fix (golden-fix stream,
+  2026-09-08).** See "## Walls hit" and "## Proofs". Blocks ALL per-title
+  first-screen proofs (Boulder Dash, Star Raiders, River Raid, The Last Word,
+  XBASIC) and the BASIC-prompt typing proof (`PRINT 1+2` → `3`, `PRINT 2=2` →
+  `1`) that depend on reaching `XBASIC.XEX`, and blocks proving the D2:
+  switch to reach Dropzone. The golden-fix stream's brief assumed enhanced
+  density fully explained the symptom; re-testing RETURN on the rebuilt
+  single-density disk reproduced the identical "blue loading screen → menu
+  returns unchanged" symptom, which disproves that assumption — this is a
+  second, independent bug in the RETURN-key path, not a density artifact.
+  **Not a media/density fix — needs its own stream.** Next stream: race the
+  candidate theories already listed under Proofs (RETURN held across a frame
+  boundary, the highlight key released before RETURN, a second RETURN after
+  the first swallow — none tested in isolation yet, only combined and both
+  still failed) on `rig-clone.sh`, first framebuffer proof wins, per rule 14.
 
 ## Measured timeline
 
