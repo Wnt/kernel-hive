@@ -179,8 +179,8 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
-    "keyboard": "TODO(golden): UNVERIFIED — verify the whole visitor path on the framebuffer at 40/40 pacing",
-    "fixture": "TODO(golden): Atari 800XL boot menu — TODO(media): a MyDOS-format large ATR (up to 16 MB) booting MyPicoDOS (HiassofT) — a game DOS whose boot screen IS a file menu that loads XEX/COM/BAS with one key — or an equivalent; measured size + sha256 in the builder"
+    "keyboard": "PARTIALLY VERIFIED on the golden stream's sandbox rig 2026-09-08 at the fleet-floor 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP), no MAME_CTL_KEY_EXCL: menu-highlight navigation is PROVEN over ctlsock through the real keymap fields (:ctrl1:joy:JOY P1 Up/Down, the same mapping the PC arrow keys already carry) -- the bar visibly moves entry-to-entry and back, no dropped or duplicated input observed. STILL OPEN: RETURN on the highlighted entry does not reliably commit a load on this rig (two tries, 50ms and 150ms holds -- the file list transiently clears then the menu returns pixel-unchanged), the same symptom the media stream already flagged on MAME's natural-keyboard path, so per-title first-screen proofs (Boulder Dash, Star Raiders mission-select, the XBASIC BASIC-prompt typing proof) are UNVERIFIED. See docs/lab/ATARI800XL-WAVE.md ## Proofs.",
+    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr) lists BOULDER.XEX, DROPZONE.XEX, LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX, XBASIC.XEX; highlight starts on BOULDER.XEX. Cold boot MEASURED 2026-09-08: directory fully painted by mtime~19s. Reset is a relaunch that restores sta/a800xlp/golden.sta (the MAME savestate captured at the fully-settled menu 2026-09-08); the restore was proven PIXEL-IDENTICAL to the pre-capture frame (PIL bbox None), 75 ms after relaunch vs. the ~19 s cold boot. Menu navigation (PC arrows -> joystick Up/Down, no chord needed) is verified; RETURN-to-load a title is STILL OPEN (see reset.keyboard)."
   },
   "migrationExceptions": [],
   "notes": [
