@@ -128,9 +128,6 @@ application and rejected — despite the name it is a tape-backup utility
 
 ## Proofs
 
-- framebuffer of the menu after a cold boot, and after a relaunch restore
-- one title launched from the menu by keys, on the framebuffer
-
 **media stream, DONE 2026-09-08** — stock MAME 0.276 on labhost, headless
 (`SDL_VIDEODRIVER=dummy -video soft -window -seconds_to_run`, frames via a Lua
 `manager.machine.video:snapshot()`), under `/data/vms/sandbox/samcoupe-media/mame/`:
@@ -144,14 +141,79 @@ application and rejected — despite the name it is a tape-backup utility
 | `proof/key-4.png` | The Secretary's menu, LOAD THE SECRETARY highlighted |
 | `proof/key-b.png` | SAM BASIC (`16 STOP statement, 130:3`) |
 
-The golden stream still owns the restore-side proof.
-- `labctl shot` / `type` on the live station after landing
+**golden stream, DONE 2026-09-08** — MAME 0.289 host-native, real `ctlsock`
+`KEY` presses through the generated `samcoupe.keymap` (the actual fleet input
+path, NOT the Lua `-autoboot_command`/`emu.keypost` harness media used), under
+`/data/vms/sandbox/samcoupe-golden/rig/png/`:
+
+| Proof | Shows |
+|---|---|
+| `png/a-poweron.png` | cold-boot MGT copyright screen (colour bars), lit=446518 — matches the boot-gate floor fact above |
+| `png/d-hivemenu.png` | the menu after Enter (dismiss banner) + typed `BOOT`+Enter — pixel source for the golden savestate |
+| `png/e-restored.png` | a FRESH process relaunched with `-state golden` — PIL `ImageChops.difference` bbox against `d-hivemenu.png` is `None` (pixel-identical) |
+| `png/f-key1-title.png` | `1` pressed at fleet 40/40 ms pacing → Manic Miner's title screen ("Game One / The story so far…"), no dropped/duplicated characters |
+| `png/g3-lowercase-b.png`, `png/g4-after-extra-enter.png`, `png/h4-print-final.png` | `B`/`b` pressed the same way: CLS runs, but the guest lands in the BASIC **program-EDIT view** (arrow cursor on program line 10 of `auto.bas`), not the `0 OK` prompt media's harness saw — see OPEN items |
+
+Measured timings (process-start clock, `date +%s.%N` around each step, sandbox
+rig, never the station dir):
+
+| Step | Time |
+|---|---|
+| cold boot → banner (colour-bar screen) | immediate (< 1 s to first frame) |
+| Enter (dismiss banner) → frame dumped | 2.5 s (includes a 1.5 s settle sleep) |
+| typed `BOOT`+Enter (18 key edges, burst 582 ms) → menu settled | 5.3 s after typing |
+| **cold boot → menu settled, end to end** | **9.0 s** (T0 process start → T3 settled dump) |
+| SAVEST at the menu | 13 ms ack, 11 871 bytes |
+| fresh relaunch with `-state golden` → menu settled | 4.7 s (includes a 1 s pre-poll sleep; restore itself well under that) |
+| `1` pressed (fleet 40/40 ms pacing) → Manic Miner title | ~25 s (matches the ledger's estimate) |
+
+## Checkpoint
+
+Captured on a sandbox rig (namespaced `/data/vms/sandbox/samcoupe-golden/rig/`,
+never the station dir), 2026-09-08: cold boot the `mame-native` binary with the
+media stream's `hive.mgt` attached (`-drive1 floppy -drive2 floppy -flop1
+hive.mgt -state_directory $RIG/sta`, no `-state` yet), Enter to dismiss the MGT
+copyright banner, type `BOOT`+Enter over `ctlsock` (18 key edges, 582 ms
+burst), wait for the framebuffer to settle on the "KERNEL HIVE - SAM COUPE"
+menu (`png/d-hivemenu.png`), then `ctlclient.py … SAVEST golden` (13 ms,
+11 871 bytes → `$RIG/sta/samcoupe/golden.sta`, MAME's own nested layout — see
+`x11-runtime.sh` line ~159). Restore proof: kill that process (env-checked
+against its own `MAME_CTL_SOCK`), relaunch fresh with `-state golden` added to
+the same argv, wait for settle (4.7 s including a 1 s pre-poll sleep),
+`png/e-restored.png` diffs `None` (`PIL.ImageChops.difference` bbox) against
+the baked frame.
+
+Staged into the **future** station dir (not live — nothing runs there yet):
+`/data/vms/streamhost/stations/samcoupe/sta/samcoupe/golden.sta`, 11 871
+bytes, sha256 `987e84bc94c606645f5254787458f6d8ee6cd236bb9c4a5a79d311a1bfe14cae`.
+`MAME_NATIVE_CHECKPOINT=1` in the fixture: the relaunch restore is proven
+frame-identical, so a visitor's reset skips the banner/BOOT keying entirely.
 
 ## OPEN items
 
 - Pointer: the driver has a mouse device, but the station ships keyboard-only
   (`stream.pointer.transport: none`), as apple2e does — a relative-only mouse
   has no honest absolute contract yet.
+- **`B` (SAM BASIC) keyboard path, golden stream 2026-09-08**: driven over the
+  real `ctlsock` `KEY` path (the fleet's actual input mechanism), pressing
+  `b`/`B` at the menu does run `CLS` (menu text clears) but the guest lands in
+  MAME samcoupe's BASIC **program-EDIT view** — an arrow cursor sitting on
+  `auto.bas` program line 10 — rather than the `0 OK` prompt the media
+  stream's Lua `-autoboot_command`/`emu.keypost` harness observed
+  (`proof/key-b.png`). Typing further characters there edits the listed
+  program line in place; submitting it produced a `12 Missing DEF PROC` parse
+  error rather than a usable command line. Tried both a plain `b` press and a
+  shifted `B` press (`ctlclient.py KEY :kbd_7 'b  B'`, with and without
+  `Shift`) — same result both times. Not bisected further (rule 14: this is a
+  real behavioral difference between two input mechanisms, not a pacing
+  guess). A follow-up stream should find the extra key (ESC/BREAK is the
+  likely candidate on Sinclair-family BASICs to leave an edit-line view) that
+  reaches a clean `0 OK` prompt on the REAL input path, then re-verify
+  `PRINT 1+2` → `3` from there before calling SAM BASIC access verified for
+  visitors. `1`–`4` are NOT expected to hit this (same `INKEY$` line 80/90-120
+  as `1`, which is proven clean), but only `1` (Manic Miner) was actually
+  keyed and watched to a title screen; `2`/`3`/`4` are untested by this
+  stream, low risk given `1`'s clean result.
 
 ## Measured timeline
 
