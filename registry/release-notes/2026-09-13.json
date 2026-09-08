@@ -1,0 +1,27 @@
+{
+  "week": 6,
+  "title": "The Apple II most people used",
+  "start": "2026-09-06T09:00:00+03:00",
+  "end": "2026-09-13T09:00:00+03:00",
+  "commitCount": 0,
+  "codeLines": 0,
+  "summary": [
+    {
+      "theme": "New stations",
+      "text": "<u>[Apple //e](station:apple2e) joins as a second Apple II station, next to the 1988 GEOS desktop the museum already showed.</u> Almost nobody actually ran GEOS on an Apple II in the day, so this one boots the machine as it was really used: **ProDOS 8** brings up a one-keypress menu, the Apple II's own version of an `AUTOEXEC.BAT`, offering **AppleWorks**, the 80-column word processor, database and spreadsheet that made the //e a business machine, and **Dazzle Draw**, a double-hi-res paint program that pushed 16 colours out of hardware built for six. Both load in a couple of seconds from an emulated hard disk behind a CFFA card, and a keypress returns to the menu at any time. It runs host-native from day one, the same MAME driver family as the museum's Taiwanese MPF-II clone, with no bridge machine anywhere underneath it. A modern coda is planned too: a 2023 fan port of **Angry Birds** for the same 128 KB hardware, waiting only on a working copy of the disk image."
+    },
+    {
+      "theme": "Major features",
+      "text": "Safari 26 gained a native streaming write path: the gallery's video pipeline now offers `datagrams.createWritable()` alongside the older writable-stream fallback it already used everywhere else, so the newest Safari drives the same low-latency path Chrome and Firefox have had for months instead of falling back to a slower one. The walk-in cells used for signed-in visitors also picked up a shared client-debug plane, so a session that misbehaves on someone's own laptop can be inspected the same way a developer's own test session already could, without asking them to reproduce it twice."
+    },
+    {
+      "theme": "Quality improvements",
+      "text": "The posters fact-checking pass kept going: two more period write-ups were checked line by line against primary sources, catching a wrong chip name and adding the Signetics 2513 character generator's own history — the chip that drew text on an early Apple II and, through a Philips/Signetics collaboration, on the BBC Micro's teletext decoder too. Thirteen of fifteen posters are now checked and merged."
+    }
+  ],
+  "bullets": [
+    "[Apple //e](station:apple2e)'s STARTUP menu is a tokenized Applesoft program on the boot volume — the exact mechanism ProDOS used for an autoexec in 1985",
+    "Reset always returns [Apple //e](station:apple2e) to its menu: a MAME savestate captured there restores in half a second against a 2.6 second cold boot",
+    "An Apple II Mouse Card is wired into [Apple //e](station:apple2e) for Dazzle Draw, but its cursor does not yet track — the station ships keyboard-only until that is solved"
+  ]
+}
