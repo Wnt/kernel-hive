@@ -124,24 +124,44 @@ override rows above.
 ## §Checkpoint
 Captured on a sandbox rig (never the station dir): cold boot with
 `-flop1 hive.atr -flop2 hive2.atr` attached (no `-sio` on the command line —
-see §Traps), wait for the directory listing to settle (11 polls), then
-`SAVEST golden`. Path `sta/a800xlp/golden.sta`, 31 852 bytes, sha256
-`57c84b9d3e39f8c58c75b8ffe7b512b0d7edbb4d279ea2092cd7f07424eb7c48`, capture
-cost 126 ms. Staged into the station dir at the same path, same bytes (copy
-verified by sha256).
+see §Traps), wait for the directory listing to settle, then `SAVEST golden`.
+Current golden (quiet-sio stream, 2026-09-08, see "Quiet SIO" below): path
+`sta/a800xlp/golden.sta`, **31 830 bytes**, sha256
+`ccbe6260f7c55409f7abcfa31b01951ccce0c212e0c1cbc717999ad829d00509`, capture
+cost 122 ms. Staged into the station dir at the same path, same bytes (copy
+verified by sha256), dirs chmod 755, file chmod 644.
 
 **Restore proven, not assumed**: `a800xlp` carries no `MACHINE_SUPPORTS_SAVE`
 flag in its driver info — the shared launcher's checkpoint restore is not
 guaranteed by the driver the way it is on `apple2e`/`samcoupe`. Measured
-anyway: a fresh process relaunched with `-state golden` produced a
-pixel-identical frame (`PIL.ImageChops.difference` bbox `None`, matching
-sha256 prefix on both sides) 1.29 s after launch. `MAME_NATIVE_CHECKPOINT=1`
+anyway (golden stream): a fresh process relaunched with `-state golden`
+produced a pixel-identical frame (`PIL.ImageChops.difference` bbox `None`,
+matching sha256 prefix on both sides) 1.29 s after launch. `MAME_NATIVE_CHECKPOINT=1`
 ships on that measurement. Cold boot to the same settled menu, for
 comparison, takes ≈19–21 s.
 
 The golden state is the settled **menu only** — LASTWORD, RIVRRAID and
 STARRAID are all proven to load past it fresh; XBASIC and Dropzone do not
 work from the menu (see §Open).
+
+**Quiet SIO** (quiet-sio stream, 2026-09-08): the golden also carries
+`SOUNDR=0` (Atari OS zero page, `$0041`) — the XL OS's SIO routine drives
+the speaker on every SIO frame while `SOUNDR` is non-zero (power-on default
+3), which turns a MyPicoDos load into a "beep concert" (dozens of beeps over
+the ~15 s load). Authentic 800XL behaviour, silenced here by operator
+choice: `streamhost/stations/atari800xl/quiet-sio.lua` is a one-shot MAME
+Lua `-autoboot_script` that pokes the byte before `SAVEST` — the ctlsock
+protocol has no memory-write verb, checked before adding a script (see
+`docs/lab/ATARI800XL-WAVE.md` "Quiet SIO" for the full method, the
+`-autoboot_delay`+`-state golden` timing trap hit while proving the
+read-back, and the reversal path). Proven: fresh `-state golden` restore
+reads `$0041 == 0`; the same restore's `SHOT` is byte-identical to the
+pre-poke settled-menu PNG (sha256
+`e775b58d332c2e5f69f951319563009d9776e27d550d9cc007a73b4468e01c46` on both
+sides); RETURN on the default highlight (`LASTWORD.XEX`) from that restore
+still reaches The Last Word's splash — the load still works, just silently.
+Reversible: recapture the golden on a plain cold boot (no `quiet-sio.lua`)
+to bring the authentic SIO noise back.
 
 ## §Media
 See the media table above; sourcing/hash details live in
@@ -190,6 +210,17 @@ code again:
 - With no disk in `-flop1` at all, the XL OS retries the SIO boot sector
   forever ("BOOT ERROR" loop) — real hardware behaviour for a powered,
   diskless drive, not a station bug.
+- **`-autoboot_delay N` (N ≥ 1) combined with `-state golden` never fires
+  the autoboot script.** MAME's autoboot timer is re-armed only off
+  `MACHINE_NOTIFY_RESET` (`reset()` in `mame.cpp`), and a state-loaded boot
+  never reaches the N-second mark relative to that notifier the way a cold
+  boot does. `-autoboot_delay 0` DOES fire, but early enough that a memory
+  read at that point can return garbage (measured: `255` instead of the
+  real value) — wrap any post-restore Lua read in
+  `emu.register_periodic(...)` and act a few ticks in instead. Bakes
+  (writes before `SAVEST`) are unaffected: they run from a cold boot with a
+  real delay, where the trap does not apply. See
+  `docs/lab/ATARI800XL-WAVE.md` "Quiet SIO" for the full account.
 
 ## §Open
 - **`XBASIC.XEX` does not reach a BASIC READY prompt.** The 18-byte stub

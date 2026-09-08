@@ -337,6 +337,69 @@ the earlier golden below (golden4) was captured with `XBASIC.XEX` still on
   from the restored golden state reaches The Last Word's splash. Dropzone
   still does not work from the menu, see OPEN.
 
+### Quiet SIO (quiet-sio stream, 2026-09-08 — REBAKED onto the golden5 disk pair)
+
+**Operator report**: selecting a title (The Last Word) produces a "beep
+concert" — dozens of beeps over the ~15 s load. **Cause, not a bug**: the XL
+OS's SIO routine drives the speaker for every SIO frame while `SOUNDR`
+($0041) is non-zero (power-on default 3); a disk load is many frames, so it
+sounds like machine-gun beeps. MyPicoDos loads go through the OS SIO vector,
+so `SOUNDR` governs it too — authentic 800XL behaviour, silenced here by
+operator choice.
+
+- **Route tried and used**: MAME's `-autoboot_script` Lua hook
+  (`streamhost/stations/atari800xl/quiet-sio.lua`), poking
+  `:maincpu`'s program space at `$0041` to `0`. **Checked and ruled out
+  first**: the mamectl ctlsock protocol
+  (`scripts/build-guests/emulators/mamectl/src/osd/modules/ctlsock/ctlsock.cpp`)
+  has no memory read/write verb (MOVE/MOVEP/MOVEA/KEY/KEYDUMP/POST/CODE/
+  PROBE/ESCON/ESCOFF/DUMP/PING/ITEM/CUR/STAT/SYNC/SHOT/PAUSE/RESUME/SAVEST/
+  LOADST/RESET/EXIT — the full verb list, none of it a poke) — adding one is
+  out of this stream's scope.
+- **A trap worth recording**: `-autoboot_delay N` (N ≥ 1) combined with
+  `-state golden` on the command line **never fires** the autoboot script —
+  `mame_machine_manager::reset()` re-arms the autoboot timer only off
+  `MACHINE_NOTIFY_RESET`, and a state-loaded boot's timing relative to that
+  notifier does not reach the N-second mark the way a cold boot's does
+  (`third_party/mame-mpf2/src/frontend/mame/mame.cpp:317-347`). `-autoboot_delay
+  0` DOES fire, but immediately — early enough that a bare memory read at
+  that point returned `255` (garbage), not the real value. Fix used for the
+  read-back proof only (not the bake, which cold-boots): wrap the read in
+  `emu.register_periodic(...)` and act on it a number of periodic ticks in,
+  by which point the restore has settled — `255` became `0` (real quiet-sio
+  read-back script, one-shot, not shipped — the shipped `quiet-sio.lua` does
+  a single write on a COLD boot with a real `-autoboot_delay`, which is not
+  affected by this trap).
+- **Bake**: cold boot on a sandbox rig with `-flop1 hive.atr -flop2
+  hive2.atr` (no `-sio`, per the Traps above), `-autoboot_delay 23
+  -autoboot_script quiet-sio.lua` — the script pokes `$0041` to `0` and
+  writes `soundr_poke.txt` next to itself confirming the read-back is `0`.
+  `SAVEST golden` over ctlsock (PAUSE first, `--timeout 60`) —
+  `ms=122 bytes=31830`.
+- **Golden**: `sta/a800xlp/golden.sta`, **31 830 B**, sha256
+  `ccbe6260f7c55409f7abcfa31b01951ccce0c212e0c1cbc717999ad829d00509`
+  (9 bytes larger than the golden5 bake above — MAME's savestate carries the
+  written byte inline, no header change). Staged to
+  `/data/vms/streamhost/stations/atari800xl/sta/a800xlp/golden.sta`, chmod
+  644, same bytes/sha256 verified by copy.
+- **Restore proof**: fresh process, `-state golden`, no autoboot script —
+  `SHOT` **byte-identical PNG** to the pre-SAVEST frame (both sha256
+  `e775b58d332c2e5f69f951319563009d9776e27d550d9cc007a73b4468e01c46`, same
+  hash the golden5 bake above already recorded for this menu — pixel
+  identity holds across the poke). Byte proof: `emu.register_periodic`
+  read-back on the same fresh restore read `$0041 == 0` (20 periodic ticks
+  in, well past the restore).
+- **Load-still-works proof**: `KEY 1`/`KEY 0` on `:keyboard.1 Return` (the
+  default highlight, `LASTWORD.XEX`) from the fresh restore → The Last
+  Word's splash screen after ~9 s, same as golden5's own proof — the SIO
+  load path still runs, just silently.
+- **Live**: `ssh lab 'labctl reset atari800xl'` (in-process LOADST) then
+  `labctl shot atari800xl` — the live station's menu after reset matches
+  the same settled-menu frame.
+- **Reversible**: recapture the golden without running `quiet-sio.lua` (a
+  plain cold boot leaves `SOUNDR` at the OS default, 3) — see
+  `docs/lab/checkpoint-guard.md`; nothing else about the station changes.
+
 ## OPEN items (golden5 stream, 2026-09-08 — current)
 
 - **The BASIC route is dropped, not fixed.** `XBASIC.XEX` never reached a
