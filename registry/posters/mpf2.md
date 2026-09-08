@@ -17,7 +17,7 @@ Taiwan had built parts for the computer industry for years. This was among the f
 
 ## Significance
 
-The most revealing thing about the Microprofessor II is what it lacks. There is no character generator chip — no dedicated hardware that turns a byte into a letter on screen. Every character you see is drawn by the processor itself, plotting a glyph pixel by pixel into the same bitmap that holds the graphics. The ROM contains the font as data and the routine that paints it.
+The most revealing thing about the Microprofessor II is what it lacks. There is no character generator chip — no Signetics 2513 like the one that lettered the Apple II it so plainly follows, no dedicated hardware of any kind that turns a byte into a letter on screen. Every character you see is drawn by the processor itself, plotting a glyph pixel by pixel into the same bitmap that holds the graphics. The ROM contains the font as data and the routine that paints it.
 
 This is why the display behaves the way it does. Scrolling a line of text is not a matter of nudging a pointer; it is the 6502 moving the picture, one region at a time, while everything else waits. The deliberateness is not a fault to be excused but the machine's honest cost of doing business, visible in a way that later hardware hides.
 

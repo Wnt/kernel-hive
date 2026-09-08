@@ -64,9 +64,10 @@ the machine comes up.
 
 It is text, and it is the right text. Look at the type — it is proportionally
 spaced, with a serif, on a bitmap screen, at a time when a terminal meant a fixed
-grid of identical cells. The Alto had no character generator. Every letter is
-pixels the software drew, which is precisely why it could draw any letter it
-liked, and precisely why Bravo could show you the page.
+grid of identical cells. The Alto had no character generator — no Signetics
+2513 turning a byte into one fixed 5×7 letter, as the terminals of 1973 did.
+Every letter is pixels the software drew, which is precisely why it could draw
+any letter it liked, and precisely why Bravo could show you the page.
 
 Two commands are one tap away on the exhibit's keyboard:
 
