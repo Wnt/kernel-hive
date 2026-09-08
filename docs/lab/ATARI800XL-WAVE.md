@@ -49,27 +49,6 @@ The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file
 
 ## Walls hit
 
-- **native stream (2026-09-08)**: the built binary's rig sat on a black frame
-  with every ctlsock command (even PING) timing out. Cause: the
-  MACHINE_IMPERFECT_GRAPHICS "known problems" panel was up, and
-  `ui.ini`'s `skip_warnings` setting has no effect in stock MAME 0.289 —
-  `display_startup_screens()` never checks `options().skip_warnings()`.
-  Fixed by adding `mame-irix-skip-warnings.patch` (mpf2's own fix for the
-  same upstream gap) to `NATIVE_EXTRA_PATCHES`.
-- **native stream (2026-09-08)**: with no disk in `-flop1` the machine
-  never reaches BASIC — the XL OS retries the SIO boot sector forever
-  ("BOOT ERROR" loop). This is real hardware behaviour (a powered disk
-  drive with no disk in it), not a bug; with the media stream's
-  `hive.atr` present it boots straight to the MyPicoDOS menu instead.
-  BASIC READY was proven reachable separately with no disk attached at
-  all.
-- **native stream (2026-09-08)**: passing `-sio a1050` explicitly on the
-  command line — even though it only names the driver's own default —
-  makes this narrow build silently drop the `-flop1..4` media options;
-  `-flop1 hive.atr` then errors as "unknown option". Fix: never pass
-  `-sio` on this station (the a1050 stays attached as the default either
-  way); `NATIVE_MAME_ARGS`/`MAME_NATIVE_ARGS` carry only `-ctrl1 joy` (+
-  `-flop1` in the fixture).
 - **A double-density ATR does not boot under `-sio a1050`.** `dir2atr -d` (256-byte
   sectors) is the obvious way to fit more titles; the result hangs on a blank blue
   screen forever, because a real Atari 1050 is a single/enhanced density drive and
@@ -91,6 +70,28 @@ The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file
   to the menu with the high-speed-SIO indicator forced from `AUTO` to `OFF` — that is
   MyPicoDos retrying after a SIO error, not a bad XEX. The shipped disk therefore uses
   **`MyPicoDos406N`**, the variant with high-speed SIO off from the start.
+
+- **native stream (2026-09-08)**: the built binary's rig sat on a black frame
+  with every ctlsock command (even PING) timing out. Cause: the
+  MACHINE_IMPERFECT_GRAPHICS "known problems" panel was up, and
+  `ui.ini`'s `skip_warnings` setting has no effect in stock MAME 0.289 —
+  `display_startup_screens()` never checks `options().skip_warnings()`.
+  Fixed by adding `mame-irix-skip-warnings.patch` (mpf2's own fix for the
+  same upstream gap) to `NATIVE_EXTRA_PATCHES`.
+- **native stream (2026-09-08)**: with no disk in `-flop1` the machine
+  never reaches BASIC — the XL OS retries the SIO boot sector forever
+  ("BOOT ERROR" loop). This is real hardware behaviour (a powered disk
+  drive with no disk in it), not a bug; with the media stream's
+  `hive.atr` present it boots straight to the MyPicoDOS menu instead.
+  BASIC READY was proven reachable separately with no disk attached at
+  all.
+- **native stream (2026-09-08)**: passing `-sio a1050` explicitly on the
+  command line — even though it only names the driver's own default —
+  makes this narrow build silently drop the `-flop1..4` media options;
+  `-flop1 hive.atr` then errors as "unknown option". Fix: never pass
+  `-sio` on this station (the a1050 stays attached as the default either
+  way); `NATIVE_MAME_ARGS`/`MAME_NATIVE_ARGS` carry only `-ctrl1 joy` (+
+  `-flop1` in the fixture).
 
 ## Menu
 
@@ -193,6 +194,17 @@ no resident DOS); press **Reset** for that.
 
 ## OPEN items
 
+- **`keyboard.charMap` is DERIVED, not framebuffer-verified (spa stream).** The
+  Atari's `- = + *` sit on host scancodes 0x1a/0x1b/0x28/0x2b, which a US host
+  labels `[` `]` `'` `\` — so typed text (and the `demoProgram`) needs a
+  translation or every `=` arrives as `>`. The map in `registry/stations/atari800xl.json`
+  (`keyboard.charMap` + the matching `SH_KEY_MAP` in `runtime.stationEnv`) is read
+  straight off the generated keymap plus the US scancode table; the golden stream
+  should prove one `=` and one `+` on the framebuffer. The same derivation is what
+  the OSK's CTRL-chord cursor keys rest on.
+- **BREAK has no keymap row** — the driver exposes it, the generated keymap does
+  not carry it, so the on-screen keyboard deliberately omits it (a dead key is
+  silent through the whole pipeline).
 - Pointer: the driver has a mouse device, but the station ships keyboard-only
   (`stream.pointer.transport: none`), as apple2e does — a relative-only mouse
   has no honest absolute contract yet.
