@@ -119,11 +119,11 @@ screen (Space) and launcher panel (`Input Device: Mouse` / `File System:
 Professional File`; Return reaches the canvas with the File/Tools/Edit/
 Goodies/Undo bar). Rollover/overlap is not stress-tested.
 
-## Pointer — scale fixed, origin still open; ships keyboard-only
-`stream.pointer.transport` stays `"none"`. Two real mechanisms were found and
-fixed in the station's binary (both wired in via
-`scripts/build-guests/emulators/native.d/apple2e.sh`), and a third — the
-open-loop homing slam — is still wrong:
+## Pointer — scale and origin fixed, residual drift still open; ships keyboard-only
+`stream.pointer.transport` stays `"none"`. Three real mechanisms were found and
+fixed in the station's binary (all wired in via
+`scripts/build-guests/emulators/native.d/apple2e.sh`); what is left is not a
+mechanism but an accumulation:
 
 **1. A differencing window, not a lost write.** `src/devices/bus/a2bus/mouse.cpp`,
 `a2bus_mouse_device::update_axis()`, differences successive reads of the 8-bit
@@ -168,7 +168,29 @@ MAME_CTL_PTR_MOD=256
 MAME_CTL_SCREEN=1024x768
 MAME_CTL_GAIN_X=1.547
 MAME_CTL_GAIN_Y=1.674
+MAME_CTL_HOME_SETTLE=750
 ```
+
+**3. The homing slam does not die at the guest's clamp.** The open-loop branch
+opened a session with `move_paced(-(18*m_move_step), …)` — 2160 counts — and
+enqueued the first target's travel immediately behind it, on the standing belief
+that "the overshoot must die against the guest's edge clamp before the real move
+starts". It does not. The clamp that stops the **arrow** lives in the mouse
+card's firmware, several stages downstream of the accumulator that nets our
+counts: `update_axis()` does `m_count += diff` into a *signed, unbounded* total
+and drains **one unit per MCU port-B read**. A 2160-count slam therefore parks
+`m_count` near −2000, and the travel appended microseconds later is added to
+*that number*, not to the arrow. The arrow moves by the net, the net is still
+leftward, and the whole of the first target's travel is spent unwinding a slam
+that had already reached the corner. An open loop's only origin is its belief,
+so the deficit never cleared. `mame-ctlsock-home-drain.patch` sizes the slam in
+pixels through the gain (`ceil(surface/gain) + m_move_step` per axis) and holds
+the travel in a pending-home slot that `drain_move()` releases only once the
+move queue is empty **and** the guest has had `MAME_CTL_HOME_SETTLE` ms of
+quiet. It also clears `m_fl_valid` on a state load, so a restore re-homes
+instead of stating a delta from a belief the restored arrow never shared.
+
+### Measured, before the fix
 
 MEASURED on a live rig 2026-09-08 (pointer stream), arrow tip located in the
 framebuffer on the Dazzle Draw canvas (`x≥10`, `72≤y<640` — the canvas' left
@@ -182,21 +204,61 @@ border column is lit and is not the arrow):
 | (900,100) | off the canvas band | — |
 | (300,200) | (152,112) | (−148,−88) |
 
-**The scale is right; the origin is not.** Two *interior* targets 600 px apart
-(no clamp between them) land at **0.988×** of commanded on X and **0.940×** on
-Y, which refines the seeds to `1.529` / `1.573`. But the open-loop branch homes
-with a hardcoded `18 * MOVE_STEP` **count** slam, and after it the first target
-lands ~147 px short on X and ~85 px short on Y — the guest owes back part of the
-overshoot before the arrow moves again — and since an open loop's only origin is
-its own belief, that deficit never clears. Every landing above is far outside
-the ±6 px this station needs, so the pointer stays an open item.
+Two *interior* targets 600 px apart (no clamp between them) landed at **0.988×**
+of commanded on X and **0.940×** on Y: the scale was right all along, and the
+origin was wrong by precisely the first target's travel.
 
-**Next step:** size that homing slam in *pixels* through the gain rather than in
-raw counts (`ctlsock.cpp`, `movea_target()`'s degraded branch), and re-measure.
+### Measured, with the fix (`MAME_CTL_HOME_SETTLE=750`)
 
-The button is the card's single `Mouse Button` (`MAME_CTL_BTN_NAMES`); it was
-not exercised on the canvas, because a click is only meaningful once the arrow
-lands where it was asked to.
+Same rig, same locator, a fresh session whose first `MOVEA` takes the homing
+branch:
+
+| target | issued counts | arrow tip | error px |
+|---|---|---|---|
+| (300,200) | 976, 698 | (302,196) | (+2,−4) |
+| (700,500) | 259, 180 | (706,496) | (+6,−4) |
+| (150,600) | 356, 60 | (150,600) | (0,0) |
+| (850,150) | 452, 269 | (852,148) | (+2,−2) |
+| (300,200) | 356, 30 | (293,200) | (−7,0) |
+
+The origin deficit is gone: the first `MOVEA`'s 976/698 counts are the sized
+slam *plus* the travel, issued in two breaths instead of one, and the arrow ends
+up where it was asked to.
+
+**The button works.** `MOVEA 293 22` onto the **Tools** menu followed by `DOWN1`
+drops the menu open — Paint Brush / Spray Paint / Flood Fill / Zoom / Text /
+Shapes / Lines, with the arrow sitting on the highlighted title. That is the
+first framebuffer proof of a *click* on this station.
+
+**A restore behaves.** `LOADST` of a copy of the golden mid-session leaves
+`bel=0,0` in `STAT` (the open-loop belief is invalidated, `reseeds=2`), and the
+next `MOVEA 300 200` re-issues the full slam — 976, 698, the same counts as the
+session's first — and lands at (305,204), (+5,+4). The homing branch is paid
+once per session *and* once per state load, exactly as intended.
+
+### Why the pointer is still an open item
+
+A **second lap** of the same five targets inside one session — no re-home, every
+target taken by the belief branch — drifts:
+
+| target | error px |
+|---|---|
+| (300,200) | (+5,+4) |
+| (700,500) | (+13,+8) |
+| (150,600) | (+4,+12) |
+| (850,150) | (+6,+14) |
+| (300,200) | (−4,+12) |
+
+Worst 13 px on X and 14 on Y. This is not the origin bug returning: the
+landings track the belief and the belief tracks the targets. It is per-move
+quantization — `round(Δpx / gain)` counts issued, `counts × gain` integrated —
+accumulating in an open loop that has no reading to correct against and never
+re-anchors. Outside the ±6 px a published pointer contract needs, so
+`stream.pointer.transport` stays `"none"`.
+
+**Next step:** a periodic re-home on a quiet timer (the same branch, re-armed),
+or a fractional-count carry in the open-loop branch so the rounding error does
+not accumulate — measured over several laps, not one.
 
 ## Reset / checkpoint
 `SH_RESET_MODE=relaunch`, restoring the MAME savestate at
