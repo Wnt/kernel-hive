@@ -15,7 +15,7 @@
           "class": "retro",
           "estimated": "~3-5m",
           "automation": "full",
-          "produces": "tiles/apple2 overlay + golden (Apple //e \u2192 GEOS)",
+          "produces": "tiles/apple2 overlay + golden (Apple //e → GEOS)",
           "flags": []
         }
       }
@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 78,
     "stationsManifestOrder": 76,
-    "stationsManifestPrelude": "\n# apple2e (VMID 217) \u2014 TODO one line; scaffolded from apple2.\n",
+    "stationsManifestPrelude": "\n# apple2e (VMID 217) — TODO one line; scaffolded from apple2.\n",
     "bringUpGroup": 6,
     "bindingOrder": 88,
     "bindingPrelude": "",
@@ -134,7 +134,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#7C8B5E",
-    "eraLabel": "1985 \u00b7 Apple //e \u2014 ProDOS"
+    "eraLabel": "1985 · Apple //e — ProDOS"
   },
   "museum": {
     "id": "apple2e",
@@ -153,14 +153,14 @@
       "Dazzle Draw",
       "Angry Birds (8-Bit Shack, 2023)"
     ],
-    "periodBrowser": "none \u2014 pre-web 8-bit era",
+    "periodBrowser": "none — pre-web 8-bit era",
     "iconicApps": [
       "AppleWorks",
       "Dazzle Draw",
       "Applesoft BASIC",
       "Angry Birds"
     ],
-    "blurb": "The Apple II most people actually used: ProDOS, a 40-column boot menu, AppleWorks in 80 columns and Dazzle Draw in double hi-res on a 128 KB //e \u2014 plus a 2023 Angry Birds for the same machine.",
+    "blurb": "The Apple II most people actually used: ProDOS, a 40-column boot menu, AppleWorks in 80 columns and Dazzle Draw in double hi-res on a 128 KB //e — plus a 2023 Angry Birds for the same machine.",
     "notes": "Host-native station: MAME 0.289's apple2ee runs on the host (drawshm frames, ctlsock keys + mouse card, FIFO audio). Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) whose STARTUP program is a one-key selector: AppleWorks, Dazzle Draw, Angry Birds, BASIC prompt. Sibling of apple2 (GEOS); the pair shows the same hardware as it was used and as it was later persuaded to look."
   },
   "emulator": {
@@ -176,9 +176,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "wired (relative MOVE via ctlsock reaches a2mse_x/y on the live rig; no SPA pointer contract yet -- see notes)",
-    "keyboard": "verified (menu navigation via generated keymap on the live rig; rollover/overlap not stress-tested)",
-    "fixture": "Apple //e (enhanced) ProDOS boot menu (STARTUP Applesoft program on /HIVE, CFFA 2.0 slot 7) offering ProDOS, AppleWorks and Dazzle Draw; Apple II Mouse Card in slot 4. MAME 0.289 apple2ee running HOST-NATIVE (drawshm); apple2e wave, native stream, 2026-09-08."
+    "mouse": "wired, NOT yet usable -- MEASURED on the live rig 2026-09-08 (golden stream): the ctlsock module does write counts to :sl4:mouse:a2mse_x/_y (STAT applied=4070,3740) and Dazzle Draw's launcher already reports \"Input Device: Mouse\", but open-loop MOVEA does not track: of four MOVEA targets on the Dazzle Draw canvas only 500,300 moved the arrow at all (tip landed at 400,260 = 0.80x/0.87x of target), the others left it parked in the top-left corner, and plain MOVE 200 0 / MOVE 0 200 moved it 0 screen pixels. No calibration (MAME_CTL_CAL_*) is warranted until the loss is understood -- the counts are applied but the guest is not consuming them at the rate the module assumes. Open item.",
+    "keyboard": "verified on the live rig 2026-09-08 (golden stream): the generated keymap drives the whole visitor path -- [1] into AppleWorks 3.0 (its GETTING STARTED date prompt, then Return to the Main Menu), [2] into Dazzle Draw 1.2 (title, Space to the launcher panel, Return to the canvas), [B] to BASIC. 40/40 ms pacing, no MAME_CTL_KEY_EXCL, no dropped or duplicated characters observed. Rollover/overlap not stress-tested.",
+    "fixture": "Apple //e (enhanced) ProDOS boot menu -- a tokenized Applesoft STARTUP program on the /HIVE volume (CFFA 2.0, slot 7) offers [1] AppleWorks 3.0, [2] Dazzle Draw 1.2 and [B] BASIC. Apple II Mouse Card in slot 4. MAME 0.289 apple2ee running HOST-NATIVE (drawshm). Cold boot reaches the menu in 2.6 s; the golden savestate restores it in 0.5 s (MEASURED, golden stream 2026-09-08). Reset is a relaunch that restores sta/apple2ee/golden.sta (the MAME savestate captured at the menu 2026-09-08); the restore was proven frame-identical to the cold boot both in-process and across a relaunch."
   },
   "migrationExceptions": [],
   "notes": [

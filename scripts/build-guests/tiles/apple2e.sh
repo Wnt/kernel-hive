@@ -24,10 +24,12 @@
 # volume yet: 8bitshack.org/post/angrybirds now serves the site's own 404
 # page, and the free-Christmas-download mirror named in a still-indexed
 # secondary source (callapple.org) -- www.golombeck.eu/fileadmin/downloads/
-# AngryBirds_V101.dsk -- refuses our TLS SNI / returns 503. The [3] menu entry
-# is stubbed to say so and return to the menu; see docs/lab/APPLE2E-WAVE.md
-# for the open item. Re-run this script once a reachable source exists --
-# ANGRYBIRDS_DSK_URL / ANGRYBIRDS_DSK_SHA256 below are the hook.
+# AngryBirds_V101.dsk -- refuses our TLS SNI / returns 503. The menu therefore
+# does not MENTION it: STARTUP.bas carries a @BIRDS@ token this script
+# substitutes with 1 or 0, and at 0 the [3] line, the [3] key and the "3" in
+# the prompt all disappear -- a visitor never reads "(not staged yet)" on the
+# exhibit. Set ANGRYBIRDS_DSK_URL / ANGRYBIRDS_DSK_SHA256 and re-run to bring
+# the entry back; see docs/lab/APPLE2E-WAVE.md for the open item.
 #
 # Usage: apple2e.sh [--force]
 set -euo pipefail
@@ -96,8 +98,8 @@ fi
 
 HDV="$WORK/hive.po"
 rm -f "$HDV"
-"$A2KIT" mkdsk -o prodos -t po -k hdmax -v HIVE -d "$HDV" \
-  || die "mkdsk failed"
+"$A2KIT" mkdsk -o prodos -t po -k hdmax -v HIVE -d "$HDV" ||
+  die "mkdsk failed"
 
 # ProDOS kernel + BASIC.SYSTEM (the program ProDOS boots by default, and which
 # auto-runs a root file named STARTUP).
@@ -113,51 +115,62 @@ done
 
 # Dazzle Draw 1.2 -- DD.SYSTEM + DD.OBJ (engine) + UTILITIES, all in /DAZZLE.
 "$A2KIT" mkdir -f DAZZLE -d "$HDV" || die "mkdir /DAZZLE failed"
-"$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/DD.SYSTEM" "$HDV/DAZZLE" \
-  || die "copy DD.SYSTEM failed"
+"$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/DD.SYSTEM" "$HDV/DAZZLE" ||
+  die "copy DD.SYSTEM failed"
 "$A2KIT" mkdir -f DAZZLE/DD.OBJ -d "$HDV" || die "mkdir /DAZZLE/DD.OBJ failed"
 for f in BOOT.4000 BOOT.4400 TITLEPAGE IRQ.ROUTINE INP.MODS FONTS \
   DZLDRW.MAIN DZLDRW.AUX CGR.RAMCARD AUX.RAMCARD FILESYSTEM; do
-  "$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/DD.OBJ/$f" "$HDV/DAZZLE/DD.OBJ" \
-    || die "copy DD.OBJ/$f failed"
+  "$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/DD.OBJ/$f" "$HDV/DAZZLE/DD.OBJ" ||
+    die "copy DD.OBJ/$f failed"
 done
 "$A2KIT" mkdir -f DAZZLE/UTILITIES -d "$HDV" || die "mkdir /DAZZLE/UTILITIES failed"
 for f in HELP.INFO SLIDE1.SYSTEM SLIDE2.SYSTEM; do
-  "$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/UTILITIES/$f" "$HDV/DAZZLE/UTILITIES" \
-    || die "copy UTILITIES/$f failed"
+  "$A2KIT" cp "$STAGE_DIR/dazzledraw_v12_broderbund_1988.dsk/UTILITIES/$f" "$HDV/DAZZLE/UTILITIES" ||
+    die "copy UTILITIES/$f failed"
 done
 
+BIRDS=0
 if [[ -f "$STAGE_DIR/angrybirds.dsk" ]]; then
   log "Angry Birds source present -- wiring /HIVE/BIRDS (adjust file list to the real image's catalog)"
   "$A2KIT" mkdir -f BIRDS -d "$HDV" || die "mkdir /BIRDS failed"
   # TODO: once a reachable source exists, `a2kit catalog -d angrybirds.dsk`
   # and copy its actual files here; STARTUP.bas's [3] branch assumes
   # /HIVE/BIRDS/ANGRY.BIRDS as a SYS launcher -- adjust both together.
+  BIRDS=1
 else
-  log "Angry Birds not staged (see header) -- STARTUP menu's [3] stays a stub"
+  log "Angry Birds not staged (see header) -- the menu omits [3] entirely"
 fi
 
 # STARTUP menu (Applesoft, tokenized, loads at $0801 / 2049 decimal).
+# @BIRDS@ -> 1/0: the [3] line, the [3] key and the "3" in the prompt are all
+# gated on that one variable, so an unstaged game is INVISIBLE to the visitor
+# rather than advertised as missing.
 STARTUP_SRC="$HERE/../assets/apple2e/STARTUP.bas"
 [[ -f "$STARTUP_SRC" ]] || die "STARTUP.bas source missing: $STARTUP_SRC"
-"$A2KIT" tokenize -a 2049 -t atxt <"$STARTUP_SRC" >"$WORK/STARTUP.atok" \
-  || die "tokenize STARTUP.bas failed"
-"$A2KIT" put -f STARTUP -t atok -d "$HDV" <"$WORK/STARTUP.atok" \
-  || die "put STARTUP failed"
+grep -q '@BIRDS@' "$STARTUP_SRC" || die "STARTUP.bas lost its @BIRDS@ token"
+sed "s/@BIRDS@/$BIRDS/" "$STARTUP_SRC" >"$WORK/STARTUP.bas"
+"$A2KIT" tokenize -a 2049 -t atxt <"$WORK/STARTUP.bas" >"$WORK/STARTUP.atok" ||
+  die "tokenize STARTUP.bas failed"
+"$A2KIT" put -f STARTUP -t atok -d "$HDV" <"$WORK/STARTUP.atok" ||
+  die "put STARTUP failed"
 
 # Plain-text copy of the menu, for anyone browsing the volume.
-cat >"$WORK/MENU.README.txt" <<'EOF'
+{
+  cat <<'EOF'
 APPLE //e -- PRODOS MENU
 ========================
 [1] AppleWorks 3.0
 [2] Dazzle Draw 1.2
-[3] Angry Birds (not staged yet)
+EOF
+  [[ "$BIRDS" == 1 ]] && echo "[3] Angry Birds"
+  cat <<'EOF'
 [B] BASIC prompt -- type RUN STARTUP to return
 
 Reset always returns to this menu (STARTUP auto-runs under BASIC.SYSTEM).
 EOF
-"$A2KIT" put -f MENU.README -t txt -d "$HDV" <"$WORK/MENU.README.txt" \
-  || die "put MENU.README failed"
+} >"$WORK/MENU.README.txt"
+"$A2KIT" put -f MENU.README -t txt -d "$HDV" <"$WORK/MENU.README.txt" ||
+  die "put MENU.README failed"
 
 log "composed volume catalog:"
 "$A2KIT" catalog -d "$HDV" >&2
