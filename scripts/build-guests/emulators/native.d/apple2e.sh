@@ -29,7 +29,22 @@ NATIVE_MAME_ARGS=(-sl4 mouse -sl6 diskiing -sl7 cffa2)
 # module's default 1.0 px/count under-issues by ~40% (measured: 1.547 px per
 # count on X, 1.674 on Y). The station fixture sets MAME_CTL_GAIN_X/Y and
 # MAME_CTL_SCREEN to match.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch)
+# ...and finally home-drain, because the homing slam that opens an open-loop
+# session does NOT die against the guest's edge clamp: on the Apple II Mouse
+# Card that clamp is in the card's firmware, downstream of an accumulator that
+# nets our counts and drains one per MCU read, so the first target's travel is
+# spent unwinding the slam and every later target inherits the deficit
+# (measured: every landing short by exactly the first target's travel). It
+# sizes the slam through the gain and holds the travel for MAME_CTL_HOME_SETTLE
+# of device quiet; the station fixture sets that knob.
+# ...and last, count-carry, because the open loop rounded twice on every
+# move -- the belief by llround(counts * gain) per FIXED-size pacer chunk,
+# the wire by llround(Delta-px / gain) -- and a rounding whose operands never
+# vary is a bias, not a wash: a second lap of the same five targets in one
+# session drifted up to +14 px, every error the same sign. It carries both
+# remainders and re-anchors them at every home and restore. Its
+# MAME_CTL_REHOME_PX knob (periodic silent re-home) stays off by default.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {
