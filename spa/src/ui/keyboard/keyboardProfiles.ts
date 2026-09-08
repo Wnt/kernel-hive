@@ -404,6 +404,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // ARM supervisor rather than BASIC, so the rows are its four commands.
   armeval: 'armeval',
   apple2: 'appleii',
+  // apple2e is the same //e keyboard on MAME's apple2ee: Open/Closed Apple ride
+  // on the Alt keysyms the ctlsock keymap binds to the driver's Apple keys.
+  apple2e: 'appleii',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
