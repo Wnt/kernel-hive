@@ -215,7 +215,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: false },
   suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
   apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
-  samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAM BASIC' },
+  samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

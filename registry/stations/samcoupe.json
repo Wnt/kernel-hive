@@ -134,7 +134,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3B6EA5",
-    "eraLabel": "1989 · SAM Coupé — SAM BASIC"
+    "eraLabel": "1989 · SAM Coupé — SAMDOS + SAM BASIC"
   },
   "museum": {
     "id": "samcoupe",
@@ -147,23 +147,22 @@
     "era": "1980s",
     "accent": "#3B6EA5",
     "eraSoftware": [
+      "SAMDOS 2.0",
       "SAM BASIC",
-      "SAMDOS",
-      "MasterDOS",
-      "Lemmings",
-      "Prince of Persia",
-      "Manic Miner",
-      "Flash!"
+      "The Secretary (A. N. Stevens, 1992)",
+      "Manic Miner (Revelation, 1992)",
+      "Mr. Pac (Revelation, 1992)",
+      "Splat! (Incentive / Colin Jordan)"
     ],
     "periodBrowser": "none — pre-web 8-bit era",
     "iconicApps": [
-      "Lemmings",
-      "Prince of Persia",
+      "The Secretary",
+      "SAM BASIC",
       "Manic Miner",
-      "SAM BASIC"
+      "Splat!"
     ],
-    "blurb": "TODO(spa): The Spectrum's would-be successor: a 6 MHz Z80 with 512 KB and 256 colours, booting SAM BASIC into a one-key menu of the games that made the machine's name.",
-    "notes": "TODO(spa): Host-native station: MAME 0.289's samcoupe runs on the host (drawshm frames, ctlsock keys, FIFO audio). Boots a composed disk whose first screen is a one-key menu of period titles; see docs/lab/SAMCOUPE-WAVE.md."
+    "blurb": "The Spectrum's Welsh successor: a 6 MHz Z80B with 512 KB, a 128-colour palette and a floppy drive in the case. Boots SAMDOS into a one-key menu — Manic Miner, Mr. Pac, Splat!, The Secretary word processor, and SAM BASIC to type into.",
+    "notes": "Host-native station: MAME 0.289's samcoupe driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), ROM v3.1, no QEMU and no guest OS. -flop1 is hive.mgt, an 800K SAMDOS 2.0 disk composed on the host by scripts/build-guests/tiles/samcoupe.sh; SAMDOS auto-runs the first file whose name starts with 'auto', which is the SAM BASIC menu. Keyboard-only exhibit (pointer transport none), like apple2e. Titles load from floppy in ~20-25 s. See docs/lab/SAMCOUPE-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -186,5 +185,19 @@
   "notes": [
     "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
     "spine 2026-09-08: device set samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5\" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN)"
-  ]
+  ],
+  "demoProgram": {
+    "label": "Type in a demo program (press B for SAM BASIC first)",
+    "lines": [
+      "10 MODE 4",
+      "20 PAPER 0: PEN 15: CLS",
+      "30 FOR r=4 TO 84 STEP 4",
+      "40 PEN 1+r/4 MOD 15",
+      "50 CIRCLE 128,88,r",
+      "60 NEXT r",
+      "70 PEN 15: PRINT AT 20,6;\"SAM COUPE 1989\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 170
+  }
 }
