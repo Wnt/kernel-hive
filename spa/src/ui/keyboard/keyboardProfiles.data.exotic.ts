@@ -16,8 +16,8 @@ import {
 
 export type ExoticFamily =
   | 'kc854' | 'sinclairql' | 'bbcmicro' | 'armeval' | 'alto' | 'appleii'
-  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'xerox-dwarf'
-  | 'xerox-star';
+  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'samcoupe'
+  | 'xerox-dwarf' | 'xerox-star';
 
 export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   // KC 85/4 — a GERMAN keyboard with an East German operating system, and the
@@ -312,6 +312,51 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   //
   // The two latches stay as well: held across a key the visitor types on the
   // QWERTY row, they reach every remaining combination the exhibit has.
+  // SAM Coupé. It could NOT take the zxspectrum family even though the machine
+  // runs Spectrum software: MGT gave the SAM a full 72-key board with real
+  // cursor keys, punctuation and a top row of function keys, so nothing the
+  // Spectrum profile exists to solve (no arrows, no Ctrl, two shifts doing
+  // different jobs) is true here. What IS unfindable is the naming: the SAM's
+  // own modifier keys are CNTRL and SYMBOL and EDIT, and the ctlsock keymap
+  // (streamhost/stations/samcoupe/samcoupe.keymap, dumped from the driver)
+  // puts them on host keys whose labels say something else entirely —
+  // CNTRL is Left Alt (0x38), SYMBOL is Left Ctrl (0x1d), EDIT is Right Alt
+  // (0xe038). A visitor pressing the key marked Ctrl gets SYMBOL.
+  //
+  // INV is the SAM's inverse-video key and lives on the host's '/' (0x35), so
+  // it is sent as that keysym rather than as a character: typing '/' on this
+  // machine reaches the matrix as INV, not as a slash (the slash is SHIFT and
+  // the '-' key). DELETE is Backspace, which is the SAM's own name for it.
+  //
+  // The function row runs F0..F9, not F1..F10 — the SAM numbers from zero, and
+  // the keymap wires the SAM's F0 to host F10 (0x44). fkeyRow() cannot express
+  // that off-by-one, so the row is written out.
+  samcoupe: {
+    family: 'samcoupe',
+    rows: [[
+      latch('sc-cntrl', 'CNTRL', XK.Alt_L, 'CNTRL — the SAM’s own control key (host Left Alt)'),
+      latch('sc-symbol', 'SYMBOL', XK.Control_L, 'SYMBOL — the second symbols on the keys (host Left Ctrl)'),
+      latch('sc-edit', 'EDIT', XK.Alt_R, 'EDIT — recalls a BASIC line for editing (host Right Alt)'),
+      tap('sc-inv', 'INV', 0x2f, { hint: 'INV — inverse video' }),
+      tap('sc-del', 'DELETE', XK.BackSpace, { hint: 'DELETE — the SAM’s backspace' }),
+      tap('sc-ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      tap('sc-f0', 'F0', F(10), { hint: 'F0 — the SAM numbers its function keys from zero' }),
+      tap('sc-f1', 'F1', F(1)),
+      tap('sc-f2', 'F2', F(2)),
+      tap('sc-f3', 'F3', F(3)),
+      tap('sc-f4', 'F4', F(4)),
+      tap('sc-f5', 'F5', F(5)),
+      tap('sc-f6', 'F6', F(6)),
+      tap('sc-f7', 'F7', F(7)),
+      tap('sc-f8', 'F8', F(8)),
+      tap('sc-f9', 'F9', F(9)),
+      tap('sc-esc', 'ESC', XK.Escape, { hint: 'ESC — breaks out of a running BASIC program' }),
+    ]],
+  },
+
   zxspectrum: {
     family: 'zxspectrum',
     rows: [[

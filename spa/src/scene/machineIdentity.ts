@@ -511,10 +511,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
     badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
   },
-  // TODO(samcoupe): exhibit finish copied from apple2 — set the real era cues.
+  // MGT built the SAM in Swansea in an off-white wedge with a dark keyboard
+  // well and dark keycaps — the same two-tone the Spectrum +2 had made
+  // familiar, but inverted: pale case, dark keys. The accent is that keyboard
+  // well rather than a logo colour, because the machine's own front badge is
+  // simply its name in dark lettering on the cream.
   samcoupe: {
-    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
-    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
