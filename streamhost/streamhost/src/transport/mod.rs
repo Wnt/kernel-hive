@@ -166,13 +166,18 @@ pub async fn serve(
 
     // WebRTC fallback INPUT ingress (webrtc_input.rs): feeds the SAME pipeline
     // as the WebTransport path (this daemon-wide `mouse`, the router, a fresh
-    // per-peer key session). Inert on any host without the bridge's runtime dir.
+    // per-peer key session) AND the same idle-pause session accounting as
+    // this function's own `_pause_guard` below — a peer whose ticket verifies
+    // holds a SessionGuard for as long as it is connected, so the fleet
+    // auto-pause counts a fallback visitor even if they never send input.
+    // Inert on any host without the bridge's runtime dir.
     crate::webrtc_input::spawn(
         cfg.clone(),
         cap.clone(),
         mouse.clone(),
         input_router.clone(),
         key_reap_tx.clone(),
+        pauser.clone(),
     );
 
     // Outer loop: (re)generate cert, (re)bind endpoint, serve until the rotation

@@ -557,6 +557,14 @@ impl IdlePauser {
         }
     }
 
+    /// The live session count, for tests that prove a session guard actually
+    /// registers and releases (`key_state.rs::held_for_test` is the sibling
+    /// pattern) — never used by production logic.
+    #[cfg(test)]
+    pub(crate) async fn sessions_for_test(&self) -> usize {
+        self.st.lock().await.sessions
+    }
+
     async fn reconcile_loop(self: Arc<Self>) {
         loop {
             tokio::time::sleep(TICK).await;

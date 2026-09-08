@@ -81,6 +81,7 @@ pub fn spawn(
     mouse: crate::input::SharedMouse,
     router: Option<Arc<crate::realtime_input::InputRouter>>,
     key_reap_tx: tokio::sync::mpsc::UnboundedSender<Vec<u16>>,
+    pauser: Option<Arc<crate::idle::IdlePauser>>,
 ) {
     let Some(path) = socket_path(&cfg.tile) else {
         eprintln!("[webrtc-input] ingress OFF (no bridge runtime dir / disabled)");
@@ -114,8 +115,11 @@ pub fn spawn(
                     let mouse = mouse.clone();
                     let router = router.clone();
                     let keys = crate::key_state::new_session(key_reap_tx.clone());
+                    let pauser = pauser.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = handle_peer(stream, cfg, cap, mouse, router, keys).await {
+                        if let Err(e) =
+                            handle_peer(stream, cfg, cap, mouse, router, keys, pauser).await
+                        {
                             eprintln!("[webrtc-input] peer ended: {e}");
                         }
                     });
@@ -129,6 +133,22 @@ pub fn spawn(
     });
 }
 
+/// Arm the idle-pause session guard for a peer WHOSE TICKET JUST VERIFIED.
+///
+/// Split out so the session-count seam (0→1 on admission, 1→0 on drop) is
+/// testable with a bare `IdlePauser`, without a full `Config` — this peer's
+/// pre-admission frames must never reach here (`FrameAction::Ticket`/`Drop`
+/// never call it; only the `Ok` arm of ticket verification does), which is
+/// what keeps "input before admission does not count" true by construction
+/// rather than by a separate check.
+async fn arm_session(
+    pauser: &Option<Arc<crate::idle::IdlePauser>>,
+) -> Option<crate::idle::SessionGuard> {
+    let p = pauser.as_ref()?;
+    p.session_started().await;
+    Some(crate::idle::SessionGuard::new(p.clone()))
+}
+
 async fn handle_peer(
     mut stream: UnixStream,
     cfg: Arc<Config>,
@@ -136,6 +156,7 @@ async fn handle_peer(
     mouse: crate::input::SharedMouse,
     router: Option<Arc<crate::realtime_input::InputRouter>>,
     keys: crate::key_state::SharedKeys,
+    pauser: Option<Arc<crate::idle::IdlePauser>>,
 ) -> anyhow::Result<()> {
     let mut magic = [0u8; MAGIC.len()];
     stream.read_exact(&mut magic).await?;
@@ -147,6 +168,13 @@ async fn handle_peer(
     mouse.lock().await.reset_for_session();
     let router = router.as_ref();
     let mut verified = false;
+    // Held for the rest of this peer's life once its ticket verifies; dropped
+    // (any return path — clean close, a bad frame, the loop's own `?`) reports
+    // the session end exactly the way `transport::mod.rs::handle_session`'s
+    // `_pause_guard` does. A peer that never verifies never gets one: the
+    // fleet auto-pause must count a fallback VIEWER (admitted), not a socket
+    // that connected and said nothing useful.
+    let mut _session_guard: Option<crate::idle::SessionGuard> = None;
     let mut len_buf = [0u8; 4];
     loop {
         if stream.read_exact(&mut len_buf).await.is_err() {
@@ -166,6 +194,7 @@ async fn handle_peer(
                 match crate::session_ticket::admit(&cfg, ticket) {
                     Ok(()) => {
                         verified = true;
+                        _session_guard = arm_session(&pauser).await;
                         eprintln!("[webrtc-input] session admitted tile={}", cfg.tile);
                     }
                     Err(why) => {
@@ -216,5 +245,73 @@ mod tests {
         let p = socket_path("win311").expect("temp dir exists");
         assert_eq!(p, dir.join("input-win311.sock"));
         unsafe { std::env::remove_var("OSGALLERY_WEBRTC_INPUT_DIR") };
+    }
+
+    /// A real `IdlePauser` with a `Signal` freezer whose pidfile never resolves
+    /// to a live process: `session_started`/`session_ended` still update the
+    /// session count (that bookkeeping does not depend on the freezer actually
+    /// firing), and the reconciler it spawns has nothing to pause. Mirrors
+    /// `key_state.rs`'s `held_for_test` pattern one module over.
+    fn test_pauser() -> std::sync::Arc<crate::idle::IdlePauser> {
+        crate::idle::IdlePauser::new(
+            crate::idle::Freezer::Signal {
+                pidfile: "/nonexistent/webrtc-input-test.pid".to_string(),
+                proc_match: None,
+            },
+            60,
+            0,
+            "webrtc-input-test",
+        )
+        .expect("grace_secs != 0, so a pauser is always returned")
+    }
+
+    // THE SEAM: `arm_session` is the one function `handle_peer` calls on ticket
+    // admission (its `Ok(())` arm — see the call site above), and it is the
+    // only place in this file that touches the idle-pause session count. Every
+    // pre-admission frame is `FrameAction::Drop` or `FrameAction::Ticket`,
+    // neither of which reaches it — so "input before admission does not count"
+    // is a fact about which branch calls this function, not a separate runtime
+    // check, and this test proves the count moves only where that call is.
+    #[tokio::test]
+    async fn admission_arms_a_session_and_drop_releases_it() {
+        let pauser = test_pauser();
+        let some_pauser = Some(pauser.clone());
+
+        // Pre-admission traffic on either channel never arms a session — the
+        // loop in `handle_peer` would classify these as `Drop` or `Ticket`,
+        // never `Record`, and only a verified `Ticket` (this test's next step)
+        // ever calls `arm_session`.
+        assert_eq!(classify(false, 0), FrameAction::Drop);
+        assert_eq!(classify(false, CH_RELIABLE), FrameAction::Ticket);
+        assert_eq!(pauser.sessions_for_test().await, 0, "no admission yet");
+
+        // The ticket verifies (handle_peer's `Ok(())` arm): session count 0->1.
+        let guard = arm_session(&some_pauser).await;
+        assert!(guard.is_some());
+        assert_eq!(pauser.sessions_for_test().await, 1, "admitted peer counts");
+
+        // Once verified, every further frame — either channel — is a Record,
+        // which never calls `arm_session` again (a second call would double
+        // count one peer as two sessions).
+        assert_eq!(classify(true, CH_RELIABLE), FrameAction::Record);
+        assert_eq!(classify(true, 0), FrameAction::Record);
+
+        // The peer disconnects: handle_peer returns and `_session_guard` drops.
+        drop(guard);
+        // `SessionGuard::drop` spawns `session_ended()` rather than awaiting it
+        // inline (idle.rs) — give the runtime one tick to run it.
+        tokio::task::yield_now().await;
+        assert_eq!(
+            pauser.sessions_for_test().await,
+            0,
+            "drop releases the session"
+        );
+    }
+
+    #[tokio::test]
+    async fn no_pauser_configured_arms_nothing() {
+        // A host with idle-pause disabled (grace 0 => IdlePauser::new returns
+        // None) must not panic or fabricate a session.
+        assert!(arm_session(&None).await.is_none());
     }
 }
