@@ -511,6 +511,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
     badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
   },
+  // TODO(samcoupe): exhibit finish copied from apple2 — set the real era cues.
+  samcoupe: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

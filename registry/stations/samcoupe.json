@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "samcoupe",
+  "era_year": 1989,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 76,
+        "prelude": "",
+        "value": {
+          "key": "samcoupe",
+          "script": "tiles/samcoupe.sh",
+          "outputDir": "native/samcoupe",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "samcoupe boot disk (SAMDOS auto-menu → games/apps) + golden savestate (MAME samcoupe)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/samcoupe",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54187,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/samcoupe/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 79,
+    "stationsManifestOrder": 77,
+    "stationsManifestPrelude": "\n# samcoupe (slot 187) — SAM Coupé, host-native MAME samcoupe, boot menu of period software; samcoupe wave 2026-09-08.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 89,
+    "bindingPrelude": "",
+    "goldenOrder": 77
+  },
+  "stationDir": "samcoupe",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54187,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 187
+  },
+  "guestDoc": "docs/guests/samcoupe.md",
+  "credentialsRef": "guest/samcoupe",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "samcoupe",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":75",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/samcoupe/samcoupe_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/samcoupe/fb.shm",
+      "SH_PORT": "54187",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/samcoupe/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/samcoupe/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 187,
+    "bringUpOrder": 89,
+    "x11": {
+      "display": ":75",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "samcoupe",
+        "--udp",
+        "54187",
+        "--x11",
+        "--x11-display",
+        ":75",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/samcoupe/samcoupe.keymap",
+        "--env-append-file",
+        "$T/samcoupe/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/samcoupe/samcoupe.keymap",
+        "streamhost/stations/samcoupe/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#3B6EA5",
+    "eraLabel": "1989 · SAM Coupé — SAM BASIC"
+  },
+  "museum": {
+    "id": "samcoupe",
+    "displayName": "SAM Coupé",
+    "year": 1989,
+    "lineage": "SAM Coupé / SAM BASIC",
+    "arch": "Zilog Z80B, 6 MHz, 512 KB (ASIC video, 256 colours)",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "1980s",
+    "accent": "#3B6EA5",
+    "eraSoftware": [
+      "SAM BASIC",
+      "SAMDOS",
+      "MasterDOS",
+      "Lemmings",
+      "Prince of Persia",
+      "Manic Miner",
+      "Flash!"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Lemmings",
+      "Prince of Persia",
+      "Manic Miner",
+      "SAM BASIC"
+    ],
+    "blurb": "TODO(spa): The Spectrum's would-be successor: a 6 MHz Z80 with 512 KB and 256 colours, booting SAM BASIC into a one-key menu of the games that made the machine's name.",
+    "notes": "TODO(spa): Host-native station: MAME 0.289's samcoupe runs on the host (drawshm frames, ctlsock keys, FIFO audio). Boots a composed disk whose first screen is a one-key menu of period titles; see docs/lab/SAMCOUPE-WAVE.md."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/samcoupe.sh",
+    "driver": "samcoupe"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "samcoupe",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
+    "keyboard": "TODO(golden): UNVERIFIED — verify the whole visitor path on the framebuffer at 40/40 pacing",
+    "fixture": "TODO(golden): SAM Coupé boot menu — TODO(media): an 800K MGT disk (819200 bytes) composed on the host: SAMDOS + an `auto` SAM BASIC menu + titles"
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
+    "spine 2026-09-08: device set samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5\" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN)"
+  ]
+}

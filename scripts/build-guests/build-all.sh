@@ -158,6 +158,7 @@ MANIFEST=(
   "redhat62       |tiles/redhat62.sh                                     |RedHat62          |heavy     |~15m                         |kickstart                    |redhat62.qcow2 (kickstart install from zoot-i386.iso + golden)"
   "suse64         |tiles/suse64.sh                                       |SUSE64            |heavy     |~20-30m                      |vision                       |suse64.qcow2 (CD1 YaST2 install + KDE 1.1.2 golden)"
   "apple2e        |tiles/apple2.sh                                       |bridge/apple2     |retro     |~3-5m                        |full                         |tiles/apple2 overlay + golden (Apple //e → GEOS)"
+  "samcoupe       |tiles/samcoupe.sh                                     |native/samcoupe   |retro     |~3-5m                        |full                         |samcoupe boot disk (SAMDOS auto-menu → games/apps) + golden savestate (MAME samcoupe)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
