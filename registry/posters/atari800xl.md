@@ -4,14 +4,14 @@ subtitle: 1983 · Atari BASIC, a 1050 drive and a disk full of the software peop
 hero: /posters/atari800xl/desktop.webp
 images:
   - src: /posters/atari800xl/desktop.webp
-    alt: The MyPicoDos boot menu on a black screen, seven filenames listed with the first one highlighted
-    caption: The station's boot disk as the 800XL finds it. MyPicoDos loads from the first sector of D1: and its boot screen is the menu — arrow keys move the bar, RETURN loads the highlighted file, and the last entry drops out to Atari BASIC.
+    alt: The MyPicoDos boot menu on a black screen, filenames listed with the first one highlighted
+    caption: The station's boot disk as the 800XL finds it. MyPicoDos loads from the first sector of D1: and its boot screen is the menu — arrow keys move the bar, RETURN loads the highlighted file.
   - src: /posters/atari800xl/loading.webp
     alt: The same menu with the file list cleared, the drive reading a program
     caption: A RETURN clears the list and the 1050 starts reading. A title takes about fifteen seconds to come in over the SIO bus, at the speed a real drive managed in 1983.
   - src: /posters/atari800xl/basic.webp
     alt: A blue screen with READY, the line PRINT 40+2, and the answer 42
-    caption: Atari BASIC, revision C, in the machine's own ROM — no cartridge and no disk. The blue screen was the first thing an 800XL showed you when you switched it on with no disk in the drive.
+    caption: Atari BASIC, revision C, the machine's own built-in language — no cartridge and no disk needed to reach it. Shown here from a bring-up rig, not from this station's own menu: the 800XL's `READY` prompt is the same one you got in 1983 with the drive switched off.
 ---
 ## Origins
 
@@ -29,7 +29,7 @@ Boulder Dash, by Peter Liepa and Chris Gray for First Star Software in 1984, is 
 
 The Last Word is the odd one out in time rather than in kind. Jonathan Halliday released it as freeware, an 80-column word processor for a machine whose screen is forty columns wide, which it manages by drawing the text itself in graphics. It stands in here for the AtariWriter-shaped half of the machine's life — the half that was homework and letters rather than caves and starbases.
 
-The last entry on the menu is Atari BASIC, revision C. Selecting it pages the BASIC ROM back over the memory the disk menu was using and warm-starts the machine, which is the same `READY` an 800XL gave you in 1983 with the drive switched off. It is slow, it has no integer type and its error messages are numbers, and it is what a whole generation's first program was written in.
+Atari BASIC, revision C, lives in the machine's own ROM rather than on this disk — it is the same `READY` prompt an 800XL gave you in 1983 with the drive switched off. It is slow, it has no integer type and its error messages are numbers, and it is what a whole generation's first program was written in.
 
 ## Legacy
 

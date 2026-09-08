@@ -37,12 +37,43 @@
 # as a DOS 2 ATR, so this script lifts LW.EXE + LW.CFG out of that image with a
 # small DOS 2 reader rather than shipping the whole disk.
 #
-# XBASIC.XEX is ours, 18 bytes of 6502 assembled inline: it clears bit 1 of
+# XBASIC.XEX is ours, 31 bytes of 6502 assembled inline: it clears bit 1 of
 # PORTB ($D301) to page the Atari BASIC ROM back in over the RAM MyPicoDos was
 # using, zeroes BOOT? ($09) and COLDST ($0244) so the OS stops believing a DOS
 # is resident, and jumps to WARMSV ($E474). Warm start runs the BASIC
 # "cartridge" without re-reading the disk. COLDSV ($E477) was tried first and is
 # WRONG: a cold start re-boots D1: and you land straight back on the menu.
+#
+# golden4 stream, 2026-09-08: that alone still landed back on the MyPicoDos
+# menu after ~8s (proof/xbasic_back_to_menu.png, golden3). First fix tried:
+# neutralise DOSINI ($0C/$0D) with an RTS stub before JMP WARMSV -- measured
+# NO CHANGE (same menu frame hash back), because WARMSV's own vector-init
+# path re-points DOSVEC ($0A/$0B) at MyPicoDos's own menu-redraw code (no
+# disk re-read needed, which is why the "reboot" symptom is absent and it
+# still reads as an instant return) regardless of DOSINI. Going through the
+# OS's warmstart machinery at all is the wrong layer -- but skipping it
+# entirely (JMP $A000, or JMP ($BFFE) into the cart header's own declared
+# reset entry) either lands back on MyPicoDos (measured: WARMSV's cart-present
+# check reads a RAM-shadowed flag latched once at cold boot, not the live
+# PORTB state, so it falls through to DOSVEC regardless -- $BFFE isn't real
+# BASIC-ROM header data at that address either, same menu frame back) or
+# draws a garbage screen (JMP $A000: BASIC's ROM entry assumes the OS has
+# already reset the screen editor/display list the way WARMSV does, which a
+# bare jump to the top of the ROM skips). A third variant -- let WARMSV do
+# its normal job but neutralise BOTH vectors MyPicoDos owns first (DOSINI to
+# an RTS stub at $0600, DOSVEC to $A000 so the OS's own post-DOSINI fallback
+# lands in BASIC) -- measured WORSE: a permanent hang on the blue pre-boot
+# screen, never even redrawing the menu. STILL OPEN: this script ships the
+# ORIGINAL 18-byte version (return-to-menu, not a hang) rather than the hang;
+# see the OPEN item in docs/lab/ATARI800XL-WAVE.md for the next theory to
+# try (reading MyPicoDos's own resident code to find what it actually hooks
+# on reset, since it is neither DOSINI nor a stale cart-header check alone).
+#
+# golden5 stream, 2026-09-08: XBASIC.XEX is no longer composed onto D1: --
+# every variant above returns either the same menu or a hang, never a BASIC
+# READY prompt, and a menu entry that does nothing does not ship. The
+# assembly stays in the compose step below, disabled by SHIP_XBASIC=0, for
+# whoever next finds the real hook.
 #
 # Usage: atari800xl.sh [--force]
 set -euo pipefail
@@ -66,8 +97,17 @@ ATARISIO_DIR="${ATARISIO_DIR:-$WORK/atarisio}"
 # Fandal's collection (a8.fandal.cz) serves each entry as a zip of one file.
 # Licence class: abandonware home-computer titles, used locally only -- the
 # gallery is private and NO title bits are ever committed to this repo.
-BOULDER_URL="https://a8.fandal.cz/files/binaries/games/b/boulder_dash.zip"
-BOULDER_SHA256="30b9e8b36fe761a804b2d7af18ed2f52acf3fbe9e2121c3217b10bc8cceb2fc2"
+#
+# Boulder Dash was DROPPED here (golden4 stream, 2026-09-08): fandal's
+# BOULDER.XEX (one block 2900-6cbf, RUN 6c80) loads and then RESETS the
+# machine -- full reboot back to the menu, proven three times on the ctlsock
+# path (frame hashes identical to a cold boot with and without BASIC). The
+# one alternative tried in the time box -- archive.org
+# a8b_Boulder_Dash_1984_First_Star_Software_US_h_Iron_Software -- ships only
+# a 16000-byte single-density boot-loader ATR with no DOS directory to lift a
+# clean XEX from, so it does not fit MyPicoDos's launch-a-file model either.
+# The museum prefers a menu where every entry works, so Boulder Dash is off
+# D1: and the default highlight now sits on RIVRRAID.XEX, a proven title.
 DROPZONE_URL="https://a8.fandal.cz/files/binaries/games/d/dropzone.zip"
 DROPZONE_SHA256="b8af400e4d5a6135645d52bb04995ad1955f7eb02700a57197f9c0a4c8149bfb"
 RIVERRAID_URL="https://a8.fandal.cz/files/binaries/games/r/river_raid.zip"
@@ -106,7 +146,6 @@ fetch_pinned() {
 
 mkdir -p "$STAGE_DIR" "$WORK"
 
-fetch_pinned "$BOULDER_URL" "$BOULDER_SHA256" "$STAGE_DIR/boulder_dash.zip"
 fetch_pinned "$DROPZONE_URL" "$DROPZONE_SHA256" "$STAGE_DIR/dropzone.zip"
 fetch_pinned "$RIVERRAID_URL" "$RIVERRAID_SHA256" "$STAGE_DIR/river_raid.zip"
 fetch_pinned "$STARRAIDERS_URL" "$STARRAIDERS_SHA256" "$STAGE_DIR/star_raiders.zip"
@@ -139,8 +178,6 @@ DISK2="$WORK/disk2"
 rm -rf "$DISK" "$DISK2"
 mkdir -p "$DISK" "$DISK2"
 
-unzip -o -j "$STAGE_DIR/boulder_dash.zip" -d "$WORK/x" >/dev/null
-mv "$WORK/x/Boulder Dash.xex" "$DISK/BOULDER.XEX"
 unzip -o -j "$STAGE_DIR/dropzone.zip" -d "$WORK/x" >/dev/null
 mv "$WORK/x/Dropzone.xex" "$DISK2/DROPZONE.XEX"
 unzip -o -j "$STAGE_DIR/river_raid.zip" -d "$WORK/x" >/dev/null
@@ -183,8 +220,20 @@ if missing: sys.exit(f'not found in {img}: {sorted(missing)}')
 PY
 
 # XBASIC.XEX -- see the header note. 18 bytes at $2000, run address $2000.
-# Named to sort LAST so the menu's default highlight sits on a game.
-python3 - "$DISK/XBASIC.XEX" <<'PY'
+# golden5 stream, 2026-09-08: REMOVED from the shipped menu. Three DOSINI/
+# DOSVEC fixes were tried by golden4 (neutralise DOSINI alone: no change;
+# JMP $A000 direct: escapes MyPicoDos but draws a garbage screen; neutralise
+# DOSINI+DOSVEC through WARMSV: a permanent hang) and none reached a BASIC
+# READY prompt -- the safest of the three, the plain 18-byte version below,
+# only returns cleanly to the menu, which does nothing for a visitor. A menu
+# entry that does nothing does not ship (docs/lab/ATARI800XL-WAVE.md OPEN
+# items), so this stream stopped composing it onto D1:. The assembly is kept
+# here, disabled by SHIP_XBASIC=0, for whichever stream next finds the real
+# MyPicoDos warm-start hook -- flip the flag to 1 to put it back on the disk
+# once RETURN on it reaches a BASIC READY prompt.
+SHIP_XBASIC=0
+if [[ "$SHIP_XBASIC" == 1 ]]; then
+  python3 - "$DISK/XBASIC.XEX" <<'PY'
 import sys
 code = bytes([
     0xAD, 0x01, 0xD3,   # LDA $D301        ; PORTB
@@ -200,6 +249,7 @@ xex  = b'\xff\xff' + bytes([s & 255, s >> 8, e & 255, e >> 8]) + code
 xex += bytes([0xE0, 0x02, 0xE1, 0x02, s & 255, s >> 8])   # RUNAD $02E0
 open(sys.argv[1], 'wb').write(xex)
 PY
+fi
 
 # --- build the images --------------------------------------------------------
 # -m MyDOS format, single density (dir2atr's default -- omit -d/-E; -S pins it

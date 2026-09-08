@@ -303,7 +303,6 @@ ROWS=(
   # re-fetches + re-verifies anything missing. The Last Word 3.2 is the author's
   # own freeware release; the four Fandal game zips are abandonware in wide
   # preservation circulation. NO title bits are ever committed to this repo.
-  "opt-file|atari800xl|Boulder Dash (1984) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/boulder_dash.zip|sha256:30b9e8b36fe761a804b2d7af18ed2f52acf3fbe9e2121c3217b10bc8cceb2fc2|abandonware-URL"
   "opt-file|atari800xl|Dropzone (1984) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/dropzone.zip|sha256:b8af400e4d5a6135645d52bb04995ad1955f7eb02700a57197f9c0a4c8149bfb|abandonware-URL"
   "opt-file|atari800xl|River Raid (1984, Activision) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/river_raid.zip|sha256:9db57d32ff2a43a736f6afbda5a15ba38426383104ce8d2948973f57d03dda52|abandonware-URL"
   "opt-file|atari800xl|Star Raiders (1979, Atari) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/star_raiders.zip|sha256:46d084e428ac9b85be0f0e5fda8f1af28bc4157db528547fc57c73e3102f3e3d|abandonware-URL"

@@ -89,8 +89,7 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/atari800xl/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atari800xl/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_KEY_MAP": "-:[,=:],+:',*:\\,<:-,>:=,_:{,|:},\\:\",^:|,[:<,]:>,\":@,&:^,':&,@:*"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 186,
     "bringUpOrder": 89,
@@ -149,23 +148,19 @@
     "accent": "#C8A45A",
     "eraSoftware": [
       "MyDOS + MyPicoDos 4.06N",
-      "Atari BASIC rev C",
+      "Atari BASIC rev C (the machine's built-in language, ROM-resident)",
       "Star Raiders (Atari, 1979)",
-      "Boulder Dash (First Star, 1984)",
-      "Dropzone (Archer Maclean, 1984)",
       "River Raid (Activision, 1984)",
       "The Last Word 3.2 (Jonathan Halliday)"
     ],
     "periodBrowser": "none — pre-web 8-bit era",
     "iconicApps": [
       "Star Raiders",
-      "Boulder Dash",
-      "Dropzone",
-      "The Last Word",
-      "Atari BASIC"
+      "River Raid",
+      "The Last Word"
     ],
-    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, Boulder Dash, Dropzone, River Raid, The Last Word word processor, and Atari BASIC to type into.",
-    "notes": "Host-native station: MAME 0.289's a800xlp driver (Atari 800XL, PAL) runs on the host — drawshm frames, ctlsock keys, FIFO audio, no QEMU and no guest OS. -flop1 is hive.atr, a 133 KB enhanced-density MyDOS disk composed on the host by scripts/build-guests/tiles/atari800xl.sh; its boot sector is MyPicoDos 4.06N, whose boot screen IS the file menu (RETURN loads the highlighted entry, ~15 s per title). Keyboard-only exhibit (pointer transport none), like apple2e, with a CX40 joystick on -ctrl1 driven from the host arrow keys and Left Alt as fire; F1/F2/F3 are the Start/Select/Option console keys. The machine has no cursor keys — menu navigation is CTRL held across - = + *. See docs/lab/ATARI800XL-WAVE.md."
+    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, River Raid and The Last Word word processor.",
+    "notes": "Host-native station: MAME 0.289's a800xlp driver (Atari 800XL, PAL) runs on the host — drawshm frames, ctlsock keys, FIFO audio, no QEMU and no guest OS. -flop1 is hive.atr, a 90 KB single-density MyDOS disk composed on the host by scripts/build-guests/tiles/atari800xl.sh; its boot sector is MyPicoDos 4.06N, whose boot screen IS the file menu (RETURN loads the highlighted entry, ~15 s per title). Keyboard-only exhibit (pointer transport none), like apple2e, with a CX40 joystick on -ctrl1 driven from the host arrow keys and Left Alt as fire; F1/F2/F3 are the Start/Select/Option console keys. Menu navigation is the PC arrow keys directly (MyPicoDos reads the joystick port the arrow keys are mapped to, no CTRL chord needed — measured, golden stream). The menu ships three titles (Star Raiders, River Raid, The Last Word); XBASIC.XEX (an exit to Atari BASIC) was removed 2026-09-08 — it never reached a BASIC READY prompt. See docs/lab/ATARI800XL-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -181,49 +176,13 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
-    "keyboard": "PARTIALLY VERIFIED, re-confirmed on single density by the golden-fix stream 2026-09-08 at the fleet-floor 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP), no MAME_CTL_KEY_EXCL: menu-highlight navigation is PROVEN over ctlsock through the real keymap fields (:ctrl1:joy:JOY P1 Up/Down, the same mapping the PC arrow keys already carry) -- the bar visibly moves entry-to-entry and back, no dropped or duplicated input observed. STILL OPEN, RE-TESTED on the rebuilt single-density disk (golden-fix stream, 2026-09-08): RETURN on the highlighted entry still does not reliably commit a load (single tap, 500ms hold, and a second RETURN 2s later were all tried -- the file list transiently clears then the menu returns pixel-unchanged), the SAME symptom as before the density fix, which disproves that enhanced density alone explained it -- this is a separate, still-unresolved bug. Per-title first-screen proofs (Boulder Dash, Star Raiders mission-select, the XBASIC BASIC-prompt typing proof) and the D2: switch to Dropzone remain UNVERIFIED. See docs/lab/ATARI800XL-WAVE.md ## Walls hit and ## Proofs.",
-    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr, SINGLE density -- rebuilt 2026-09-08, MAME's emulated 1050 has no enhanced-density support) lists BOULDER.XEX, LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX, XBASIC.XEX; highlight starts on BOULDER.XEX. Dropzone (DROPZONE.XEX) moved to a second single-density drive hive2.atr (D2:, -flop2). Cold boot MEASURED 2026-09-08: directory fully painted by mtime~19s. Reset is a relaunch that restores sta/a800xlp/golden.sta (rebaked 2026-09-08 on the new disk pair); the restore was proven PIXEL-IDENTICAL to the pre-capture frame (PIL bbox None), 206ms ctlsock-ready after relaunch vs. the ~19 s cold boot. Menu navigation (PC arrows -> joystick Up/Down, no chord needed) is verified; RETURN-to-load a title is STILL OPEN, confirmed independent of density (see reset.keyboard)."
+    "keyboard": "VERIFIED by the golden5 stream 2026-09-08, 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP): menu-highlight navigation (:ctrl1:joy:JOY P1 Up/Down) and RETURN-to-load are both PROVEN on the shipped disk -- LASTWORD.XEX (default highlight, RETURN reaches The Last Word's splash), RIVRRAID.XEX and STARRAID.XEX all load and show their first screen on frames. XBASIC.XEX was REMOVED from the menu this stream (never reached a BASIC READY prompt, three DOSINI/DOSVEC fixes tried by golden4, none clean -- see docs/lab/ATARI800XL-WAVE.md). STILL OPEN: the D2: drive-select key does not switch drives, so Dropzone is unreachable.",
+    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr, SINGLE density) lists LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX (alphabetical, four entries -- XBASIC.XEX was removed 2026-09-08, golden5 stream, it never reached a BASIC READY prompt); highlight starts on LASTWORD.XEX, a proven title. DROPZONE.XEX sits unreachable on a second single-density drive hive2.atr (D2:, -flop2 -- the drive-select key does not switch drives). Cold boot: directory fully painted by ~19 s. Reset is a relaunch that restores sta/a800xlp/golden.sta (rebaked 2026-09-08, golden5 stream, on the four-entry menu); the restore is PIXEL-IDENTICAL to the pre-capture frame. Menu navigation and RETURN-to-load are both PROVEN (see reset.keyboard); Dropzone remains open."
   },
   "migrationExceptions": [],
   "notes": [
     "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
-    "spine 2026-09-08: device set a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC)"
-  ],
-  "demoProgram": {
-    "label": "Type in a demo program (select XBASIC.XEX first)",
-    "lines": [
-      "10 GRAPHICS 7",
-      "20 SETCOLOR 0,4,8",
-      "30 SETCOLOR 1,9,6",
-      "40 SETCOLOR 2,13,6",
-      "50 C=1",
-      "60 FOR X=0 TO 159 STEP 4",
-      "70 COLOR C:C=C+1:IF C>3 THEN C=1",
-      "80 PLOT X,0:DRAWTO 159-X,79",
-      "90 NEXT X"
-    ],
-    "runCommand": "RUN",
-    "perCharMs": 170
-  },
-  "keyboard": {
-    "charMap": {
-      "-": "[",
-      "=": "]",
-      "+": "'",
-      "*": "\\",
-      "<": "-",
-      ">": "=",
-      "_": "{",
-      "|": "}",
-      "\\": "\"",
-      "^": "|",
-      "[": "<",
-      "]": ">",
-      "\"": "@",
-      "&": "^",
-      "'": "&",
-      "@": "*"
-    },
-    "letterCase": "upper-only"
-  }
+    "spine 2026-09-08: device set a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC)",
+    "golden5 stream 2026-09-08: XBASIC.XEX removed from the menu -- RETURN on it never reached a BASIC READY prompt (three DOSINI/DOSVEC fixes tried by golden4, all worse than or equal to a plain return-to-menu), so it does not ship. demoProgram and keyboard.charMap/SH_KEY_MAP were added only to type into that XBASIC prompt and are removed with it -- the '=' key mapping (host `]` -> guest `=`) is now unproven and unshipped; see docs/lab/ATARI800XL-WAVE.md OPEN items."
+  ]
 }

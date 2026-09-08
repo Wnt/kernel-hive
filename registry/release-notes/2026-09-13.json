@@ -8,7 +8,7 @@
   "summary": [
     {
       "theme": "New stations",
-      "text": "<u>[Apple //e](station:apple2e) joins as a second Apple II station, next to the 1988 GEOS desktop the museum already showed.</u> Almost nobody actually ran GEOS on an Apple II in the day, so this one boots the machine as it was really used: **ProDOS 8** brings up a one-keypress menu, the Apple II's own version of an `AUTOEXEC.BAT`, offering **AppleWorks**, the 80-column word processor, database and spreadsheet that made the //e a business machine, and **Dazzle Draw**, a double-hi-res paint program that pushed 16 colours out of hardware built for six. Both load in a couple of seconds from an emulated hard disk behind a CFFA card, and a keypress returns to the menu at any time. It runs host-native from day one, the same MAME driver family as the museum's Taiwanese MPF-II clone, with no bridge machine anywhere underneath it. A modern coda is planned too: a 2023 fan port of **Angry Birds** for the same 128 KB hardware, waiting only on a working copy of the disk image."
+      "text": "<u>[Apple //e](station:apple2e) joins as a second Apple II station, next to the 1988 GEOS desktop the museum already showed.</u> Almost nobody actually ran GEOS on an Apple II in the day, so this one boots the machine as it was really used: **ProDOS 8** brings up a one-keypress menu, the Apple II's own version of an `AUTOEXEC.BAT`, offering **AppleWorks**, the 80-column word processor, database and spreadsheet that made the //e a business machine, and **Dazzle Draw**, a double-hi-res paint program that pushed 16 colours out of hardware built for six. Both load in a couple of seconds from an emulated hard disk behind a CFFA card, and a keypress returns to the menu at any time. It runs host-native from day one, the same MAME driver family as the museum's Taiwanese MPF-II clone, with no bridge machine anywhere underneath it. A modern coda is planned too: a 2023 fan port of **Angry Birds** for the same 128 KB hardware, waiting only on a working copy of the disk image. [Atari 800XL](station:atari800xl) arrives too, host-native on the same MAME family, booting into a third-party file menu, **MyPicoDos**, that loads whatever the joystick highlights: **The Last Word** word processor, **River Raid** and **Star Raiders**. One title on the menu's default highlight turned out to reset the whole machine on load, making the station look broken until it was isolated from the three good ones next to it."
     },
     {
       "theme": "Major features",
@@ -22,6 +22,8 @@
   "bullets": [
     "[Apple //e](station:apple2e)'s STARTUP menu is a tokenized Applesoft program on the boot volume — the exact mechanism ProDOS used for an autoexec in 1985",
     "Reset always returns [Apple //e](station:apple2e) to its menu: a MAME savestate captured there restores in half a second against a 2.6 second cold boot",
-    "An Apple II Mouse Card is wired into [Apple //e](station:apple2e) for Dazzle Draw, but its cursor does not yet track — the station ships keyboard-only until that is solved"
+    "An Apple II Mouse Card is wired into [Apple //e](station:apple2e) for Dazzle Draw, but its cursor does not yet track — the station ships keyboard-only until that is solved",
+    "[Atari 800XL](station:atari800xl)'s boot menu is read straight off the joystick port, not a keyboard chord — the same arrow keys a visitor already has move the highlight",
+    "[Atari 800XL](station:atari800xl)'s savestate restores pixel-identical in 1.3s vs a 19-21s cold boot — measured, since the driver declares no save-state support"
   ]
 }

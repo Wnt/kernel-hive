@@ -25,8 +25,8 @@ one is derived from), `mpf2`/`zxspectrum` the keyboard-only precedents.
 | Keyboard ioports | 8 matrix ports keyboard.0..7 (Return, Break on Backspace, Atari key on RCONTROL, Tab, Escape, BackS/Delete, < Clear, > Insert, Lowr/Caps, Shift, Ctrl) + console port (Start/Select/Option/Reset) + fake; joystick fields live under :ctrl1:joy:JOY (P1 Up/Down/Left/Right/Button 1) — dump with KEYDUMP --tags ':' | spine from source; **CONFIRMED by native stream's KEYDUMP** — the arrow keys already carry the joystick's default MAME assignment (KEYCODE_UP/DOWN/LEFT/RIGHT), no override needed to bind them, though the keymap pins them explicitly; Left Alt (0x38) overridden to Button 1 (its default KEYCODE_LCONTROL collided with the keyboard's own Ctrl field) |
 | Published surface | 1024x768 (MAME aspect-corrects the native raster) | **CONFIRMED** by native stream's drawshm gate |
 | Warning panel | MACHINE_IMPERFECT_GRAPHICS shows a "known problems" panel ("Completely unemulated features: disk / Imperfectly emulated features: graphics — Press any key to continue") on every cold boot. **MEASURED: ui.ini's `skip_warnings` option alone does NOTHING upstream** (`options().skip_warnings()` is never consulted in stock 0.289's `display_startup_screens`) — the mpf2-style `mame-irix-skip-warnings.patch` is REQUIRED to make it take effect; without it the panel is a stuck screen (no ctlsock command responds until a key is pressed, and a keypress does not dismiss it — the boot gate's non-black check would silently pass on the panel, not the exhibit). `atari800xl.sh` carries the patch and `MAME_NATIVE_SKIP_WARNINGS=1` | native stream, 2026-09-08 |
-| Media | **REBUILT single density, golden-fix stream 2026-09-08.** `hive.atr` — MyDOS format, standard SINGLE density (720 x 128-byte sectors), 92 176 B, sha256 `d77e41f2a11287e1b8aab89e9d6a5e51fe870c19cb10c1f11ba9ccd1782742fa`, boot code **MyPicoDos 4.06N** (HiassofT; the `N` build has high-speed SIO off, see Walls). `hive2.atr` — same format, 92 176 B, sha256 `2d68e38b3211038927b4af16587ecd5c3c22459800da00e2135cf78403ad6b4e`, no boot code (plain D2: data drive, `-flop2`). Both built by `scripts/build-guests/tiles/atari800xl.sh` (sha256 stable across two builds), installed at `/data/vms/streamhost/assets/atari800xl/media/{hive.atr,hive2.atr}`. **NOT enhanced density** — MAME's emulated 1050 (`src/devices/bus/a800/atari1050.cpp`) only implements single/double density, so enhanced (the previous build) drew a correct menu but every XEX load off it failed; single density is the fix, 90 KB per drive is the new ceiling | golden-fix stream (measured 2026-09-08) |
-| Titles SHIPPED | On D1: (`hive.atr`) — Boulder Dash (1984) `BOULDER.XEX`, River Raid (1984, Activision) `RIVRRAID.XEX`, Star Raiders (1979, Atari) `STARRAID.XEX`, **The Last Word 3.2** (Jonathan Halliday, freeware 80-column word processor) `LASTWORD.XEX` + `LW.CFG`, and `XBASIC.XEX` (ours, 18 bytes) for Atari BASIC — all five fit inside the 90 K single-density ceiling with room to spare. On D2: (`hive2.atr`) — Dropzone (1984) `DROPZONE.XEX`, moved off D1: only because it was the largest single file (35 511 B) and priority order put the other five first; D2: switching is UNTESTED (blocked on the RETURN wall below, see Walls/OPEN). **DROPPED: M.U.L.E.** (no clean single-file XEX found in the time box), **Yoomp!** and **Rescue on Fractalus!** — both are distributed only as their own bootable ATRs, and MyPicoDos cannot launch a disk image from inside a disk | media stream 2026-09-08, disk split by golden-fix stream 2026-09-08 |
+| Media | **REBUILT, golden5 stream 2026-09-08 — XBASIC.XEX removed from D1: (never reached a BASIC READY prompt).** `hive.atr` — MyDOS format, standard SINGLE density (720 x 128-byte sectors), 92 176 B, sha256 `480c7815f2acc7c7c249bb41f7cc9765c5abe6ae983be5dfac2c686019b638d8` (rebuilt twice, byte-identical both times), boot code **MyPicoDos 4.06N** (HiassofT; the `N` build has high-speed SIO off, see Walls). `hive2.atr` — same format, 92 176 B, sha256 `2d68e38b3211038927b4af16587ecd5c3c22459800da00e2135cf78403ad6b4e` (unchanged — Dropzone was never re-touched), no boot code (plain D2: data drive, `-flop2`, **UNUSED** — see Walls, D2: switching does not select it). Both built by `scripts/build-guests/tiles/atari800xl.sh`, installed at `/data/vms/streamhost/assets/atari800xl/media/{hive.atr,hive2.atr}`. Single density (90 KB/drive ceiling) — MAME's emulated 1050 (`src/devices/bus/a800/atari1050.cpp`) does not implement enhanced density | golden5 stream (measured 2026-09-08) |
+| Titles SHIPPED | On D1: (`hive.atr`, 3 titles + LW.CFG, all shipped entries PROVEN on frames) — River Raid (1984, Activision) `RIVRRAID.XEX`, Star Raiders (1979, Atari) `STARRAID.XEX`, **The Last Word 3.2** (Jonathan Halliday, freeware 80-column word processor) `LASTWORD.XEX` + `LW.CFG` (default menu highlight — MyPicoDos sorts alphabetically, `LASTWORD.XEX` sorts first). **REMOVED: `XBASIC.XEX`** (ours, 18 bytes) for Atari BASIC — golden5 stream, 2026-09-08, after three DOSINI/DOSVEC fixes by golden4 all failed to reach READY; see OPEN. **DROPPED: Boulder Dash** — fandal's `BOULDER.XEX` resets the machine on load; the one alternative tried (archive.org's First Star Software US "h Iron Software" dump) ships only a 16 000-byte boot-loader ATR with no DOS directory to lift a clean XEX from, so it was dropped rather than replaced. **UNUSED: Dropzone** `DROPZONE.XEX` sits on `hive2.atr` (D2:) but the D2: drive-select key does not switch drives (measured, see Walls), so it ships on the disk but is not reachable from the menu — **OPEN**, next stream's to fix or drop for real. **DROPPED: M.U.L.E.**, **Yoomp!**, **Rescue on Fractalus!** — as before | golden5 stream 2026-09-08 |
 | Stock MAME for quick media boots | `/usr/games/mame` 0.276 on labhost has this driver (`-listroms` matched); ROMs in the staging dir above | spine |
 
 ## Streams
@@ -48,6 +48,58 @@ the ledger in its own commit and says so.
 The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file and loads it on a keypress (number/letter + Return, or highlight + Return); BASIC is reachable by the [B]/reset path the media stream documents. Reset = relaunch lands on the menu again.
 
 ## Walls hit
+
+- **THE "RETURN DOESN'T LOAD" WALL IS SOLVED (golden3 stream, 2026-09-08): it
+  was never the loader, the density, or the key transport — it was ONE BAD
+  TITLE, `BOULDER.XEX`, which happens to be the entry the highlight starts
+  on.** Four streams and three race runners all pressed RETURN on the default
+  highlight and only ever tested Boulder Dash. Moving the bar down first and
+  then pressing RETURN loads the other titles correctly, on the SHIPPED
+  single-density `hive.atr`, over the real ctlsock/keymap path
+  (`:ctrl1:joy:JOY P1 Down` x N, then `:keyboard.1 Return`):
+  - 1 down → `LASTWORD.XEX` → **The Last Word 3.2 splash then editor** —
+    `proof/lastword_editor.png`
+  - 3 downs → `RIVRRAID.XEX` → **River Raid attract mode, scrolling** —
+    `proof/rivrraid_attract.png`
+  - 4 downs → `STARRAID.XEX` → **Star Raiders title screen** —
+    `proof/starraid_mission.png`
+  Evidence that Boulder Dash specifically REBOOTS the machine (E1): after
+  RETURN on entry 0 the SHOT sequence is **byte-identical, frame hash for
+  frame hash, to a cold boot** — 842 B blank blue (`36c04d58`) for ~13 s, the
+  402 B MyPicoDos boot frame (`634e1046`) at ~14 s, blue again, the 2090 B
+  half-painted directory (`92f4090b`) at ~19.8 s, the settled 2980 B menu
+  (`7ba7f15e`) at ~21 s. That is a full machine reset, not an aborted load and
+  not "the menu redrawn". Reproduced with the Atari BASIC ROM disabled as well
+  (console OPTION held down from power-on through the whole boot, keymap row
+  `:console CONS.2: Option`) — identical reboot, so BASIC being paged in is
+  not the cause. `ataricom BOULDER.XEX` shows one 17 344-byte block at
+  `2900-6cbf` with `RUN 6c80`; the file loads and then resets the machine.
+  **Boulder Dash must be dropped from (or replaced on) `hive.atr` before the
+  station lands** — a broken title sitting on the default highlight is what
+  made the whole station look broken to four streams in a row. NOT done in
+  this stream: no media rebuild was attempted, so `hive.atr`, `hive2.atr` and
+  the staged golden are byte-unchanged from the golden2 stream.
+- **The boot code is NOT the variable (golden3, 2026-09-08).** RETURN on entry
+  0 was raced across five MyPicoDos builds on the same file set and the same
+  SD geometry — `MyPicoDos406` (highspeed SIO on), `406N` (shipped, HS off),
+  `406B`, `405B`, `404B` (barebone: no highspeed SIO, no remote console) and
+  `403` (standard speed only). **All five produced the identical reboot
+  sequence with the identical frame hashes.** The AtariSIO README's
+  "emulators react allergic to the highspeed SIO code" note is therefore NOT
+  the mechanism here; the shipped `MyPicoDos406N` stays.
+- **The file size / SIO read path is NOT the variable (golden3, 2026-09-08).**
+  A disk carrying only the 18-byte `XBASIC.XEX` (built `-b MyPicoDos406N` and
+  `-b MyPicoDos406B`) does NOT reboot on RETURN — it returns to the menu in
+  ~8 s with no boot frames at all. So MyPicoDos reads and runs files off this
+  emulated 1050 fine; the reboot is the loaded program's own doing.
+- **`XBASIC.XEX` does not reach Atari BASIC — still OPEN, but now understood.**
+  RETURN on `XBASIC.XEX` (5 downs, or alone on a disk) lands back on the
+  **pixel-identical MyPicoDos menu** (2980 B / `7ba7f15e`) after ~8 s, with no
+  reboot frames. The 18 bytes run; the OS warm start (`JMP $E474`) then hands
+  control straight back through `DOSINI` ($0C/$0D), which MyPicoDos still owns,
+  so MyPicoDos re-initialises and redraws its own menu. The fix is to
+  neutralise `DOSINI` (point it at an RTS) as well as zeroing `BOOT?` ($09)
+  before the warm start — NOT attempted inside this stream's time box.
 
 - **A double-density ATR does not boot under `-sio a1050`.** `dir2atr -d` (256-byte
   sectors) is the obvious way to fit more titles; the result hangs on a blank blue
@@ -72,7 +124,7 @@ The XL boots the first disk on SIO (D1:). MyPicoDOS's boot menu lists every file
   (77 011 B of payload) still fits on one drive with room to spare; only
   Dropzone (35 511 B, the largest single file) was moved to a second drive
   (`hive2.atr`, `-flop2`) by priority order, not because it didn't fit.
-- **The single-density rebuild does NOT close the "RETURN doesn't commit a
+- **SUPERSEDED by the golden3 finding above (kept for the record).** **The single-density rebuild does NOT close the "RETURN doesn't commit a
   load" wall — that bug is separate from density (golden-fix stream,
   2026-09-08).** Re-testing RETURN on the SD disk, on the golden-fix
   stream's own sandbox rig (`atari800xl-golden2/rig2`, `-state golden`
@@ -151,34 +203,49 @@ lands back on this menu, so there is no way to get stuck. Entries are in disk
 order:
 
 **Disk layout changed 2026-09-08 (golden-fix stream): single density, two
-drives.** D1: (`hive.atr`, boots) carries five titles + BASIC; Dropzone moved
-to D2: (`hive2.atr`, `-flop2`, no boot code) since it was the largest single
-file and priority order put the other five first. D2: switching is
-**UNTESTED** — the on-screen legend shows a `1 - 8 = D1: - D8:` row so a
-drive-select key almost certainly exists, but proving it is blocked on the
-RETURN wall below (nothing on D1: reliably loads yet, so D2: was never
-reached). Entries below are in `hive.atr`'s disk order; **every "first
-screen" column is UNPROVEN** — see Walls/Proofs, this is the open item this
-stream did not close.
+drives.** D1: (`hive.atr`, boots) carries three titles (Boulder Dash dropped,
+golden4 stream; XBASIC.XEX removed, golden5 stream — see below). Dropzone
+sits on D2: (`hive2.atr`, `-flop2`, no boot code) but is **UNREACHABLE**:
+golden4 measured the `2` key (the on-screen `1 - 8 = D1: - D8:` legend's
+drive-select) — the frame after pressing it is pixel-identical to the D1:
+menu, and a subsequent RETURN loads `LASTWORD.XEX` (D1:'s own default), not
+Dropzone. MyPicoDos never switched drives. Entries below are in `hive.atr`'s
+disk order (alphabetical — MyPicoDos sorts); **every shipped entry's first
+screen is PROVEN**.
 
 | Menu entry | Down-presses from the top | What it is | From the menu to its first screen |
 |---|---|---|---|
-| `BOULDER.XEX` | 0 (default highlight) | Boulder Dash (First Star, 1984) | RETURN → **UNPROVEN**, blocked on the RETURN-commit wall (SD-disk re-test 2026-09-08 reproduced the same "blue loading, then menu returns" symptom as the old ED disk) |
-| `LASTWORD.XEX` | 1 | The Last Word 3.2 — 80-column word processor (Jonathan Halliday, freeware) | RETURN → **UNPROVEN**, same wall. Reads `LW.CFG` off the same disk |
-| `LW.CFG` | 2 | The Last Word's config file, not a program | do not select it — it is listed because MyPicoDos lists every file. **Cosmetic wart, OPEN** |
-| `RIVRRAID.XEX` | 3 | River Raid (Activision, 1984) | RETURN → **UNPROVEN**, same wall |
-| `STARRAID.XEX` | 4 | Star Raiders (Atari, 1979) | RETURN → **UNPROVEN**, same wall (mission-select screen expected once RETURN commits) |
-| `XBASIC.XEX` | 5 | exit to **Atari BASIC** | RETURN → **UNPROVEN**, same wall (`READY` on the blue BASIC screen expected once RETURN commits) |
-| `DROPZONE.XEX` | — (D2:, not on this menu) | Dropzone (Archer Maclean, 1984) | On `hive2.atr` — reachable only after the D2: switch is proven, which is itself blocked on the same RETURN wall |
+| `LASTWORD.XEX` | 0 (default highlight) | The Last Word 3.2 — 80-column word processor (Jonathan Halliday, freeware) | RETURN → **PROVEN**: splash "The Last Word / Version 3.2 / By Jonathan Halliday" — `proof/lastword_from_golden.png` (golden5, restored-golden rig, on the shipped XBASIC-removed disk) |
+| `LW.CFG` | 1 | The Last Word's config file, not a program | do not select it — it is listed because MyPicoDos lists every file. **Cosmetic wart, OPEN** |
+| `RIVRRAID.XEX` | 2 | River Raid (Activision, 1984) | RETURN → **PROVEN**: attract mode, scrolling river, "RIVER RAID(TM) by C..." banner, score/bridge HUD — `proof/rivrraid_attract.png` (golden4 re-proof on the final disk) |
+| `STARRAID.XEX` | 3 | Star Raiders (Atari, 1979) | RETURN → **PROVEN**: the STAR RAIDERS title screen (starfield + cruiser) at ~7 s, static thereafter — `proof/starraid_mission.png` (golden4 re-proof on the final disk) |
+| `DROPZONE.XEX` | — (D2:, not reachable) | Dropzone (Archer Maclean, 1984) | On `hive2.atr` — **CONFIRMED the D2: drive-select key does not switch drives** (golden4, measured: identical frame after `2`, RETURN still loads D1:'s default). Does not fit on D1: either. Ships on disk but is dead weight on the menu — next stream: find the real drive-select mechanism or drop it |
 
-**The BASIC route** is `XBASIC.XEX`, 18 bytes of 6502 written by the builder: it
-clears bit 1 of PORTB (`$D301`) so the Atari BASIC ROM pages back in over the RAM
-MyPicoDos was using, zeroes BOOT? (`$09`) and COLDST (`$0244`) so the OS stops
-believing a DOS is resident, then jumps to WARMSV (`$E474`). Warm start runs the
-BASIC "cartridge" without re-reading the disk. `JMP $E477` (COLDSV) was tried
-first and is **wrong** — a cold start re-boots `D1:` and you land straight back on
-the menu. Typing `DOS` at the BASIC prompt does *not* return to the menu (there is
-no resident DOS); press **Reset** for that.
+**`XBASIC.XEX` was REMOVED from the menu, golden5 stream, 2026-09-08.** It
+never reached a BASIC READY prompt — every fix golden4 tried made it worse
+than or equal to a plain return-to-menu (see below) — and a menu entry that
+does nothing does not ship. The disk now has four entries (three titles + the
+config file), down from five.
+
+Proof frames from the golden3 stream live at
+`/data/vms/sandbox/atari800xl-golden3/proof/`; golden4's re-proofs (final,
+Boulder-dropped disk) live at `/data/vms/sandbox/atari800xl-golden4/proof/`;
+golden5's re-proofs (final, XBASIC-removed disk) live at
+`/data/vms/sandbox/atari800xl-golden5/proof/` (captured on the shipped
+`hive.atr`/`hive2.atr`, real launch line, ctlsock `KEY` through the station
+keymap).
+
+**The BASIC route** was `XBASIC.XEX`, 18 bytes of 6502 written by the builder:
+it clears bit 1 of PORTB (`$D301`) so the Atari BASIC ROM pages back in over
+the RAM MyPicoDos was using, zeroes BOOT? (`$09`) and COLDST (`$0244`) so the
+OS stops believing a DOS is resident, then jumps to WARMSV (`$E474`). Warm
+start runs the BASIC "cartridge" without re-reading the disk. `JMP $E477`
+(COLDSV) was tried first and is **wrong** — a cold start re-boots `D1:` and
+you land straight back on the menu. None of the three variants golden4 tried
+reached a READY prompt (see OPEN items), so golden5 stopped composing the
+file onto D1: — the assembly is still in
+`scripts/build-guests/tiles/atari800xl.sh`, disabled behind `SHIP_XBASIC=0`,
+for whoever next finds the real hook.
 
 ## Proofs
 
@@ -206,7 +273,12 @@ no resident DOS); press **Reset** for that.
   fields (`:ctrl1:joy:JOY P1 Down` / `P1 Up`): the bar visibly moves entry 0 →
   1 → 0 (`.../rig/after_down.png`, `.../rig/after_up.png`). See "## Menu"
   above — this closes the wave's "unknown, you measure it" navigation item.
-- **STILL OPEN** — a title's own first screen after RETURN on the highlighted
+- **DONE (golden3, 2026-09-08)** — three titles' own first screens from the
+  shipped disk over the real ctlsock/keymap path: `proof/lastword_editor.png`,
+  `proof/rivrraid_attract.png`, `proof/starraid_mission.png` (see Menu). The
+  entry below is kept for the record; its conclusion was wrong because every
+  attempt in it pressed RETURN on `BOULDER.XEX`, the one title that reboots.
+- **SUPERSEDED** — a title's own first screen after RETURN on the highlighted
   entry. The golden stream drove RETURN twice through the real ctlsock/keymap
   matrix path (`:keyboard.1 Return`, 50 ms and 150 ms holds, `MAME_CTL_KEY_HOLD/GAP`
   at the fleet floor 40/40 ms) and both times hit exactly the wall the media
@@ -231,31 +303,92 @@ no resident DOS); press **Reset** for that.
 
 ## Checkpoint
 
-**REBAKED 2026-09-08 (golden-fix stream) on the single-density disk pair** —
-the earlier golden below was captured on the now-superseded enhanced-density
-`hive.atr` and is no longer installed.
+**REBAKED 2026-09-08 (golden5 stream) on the XBASIC-removed disk pair** —
+the earlier golden below (golden4) was captured with `XBASIC.XEX` still on
+`hive.atr`'s menu and is no longer installed.
 
 - **Method**: `SAVEST golden` over ctlsock, at the fully-settled MyPicoDos menu
-  (mtime≈19s into a cold boot with `-flop1 hive.atr -flop2 hive2.atr`, both
-  single density), on `/data/vms/sandbox/atari800xl-golden2/rig`.
-- **Path**: `rig/sta/a800xlp/golden.sta` (31 855 B, sha256
-  `94eab84d9c91fda52f4c853fec27accddf6f0a550129666399364bcaabe9e64b`), capture
-  cost 115 ms. Staged into the future station dir at
+  (settled at i=10 polls, `-flop1 hive.atr -flop2 hive2.atr`), on
+  `/data/vms/sandbox/atari800xl-golden5/cold`.
+- **Path**: `sta/a800xlp/golden.sta` (31 821 B, sha256
+  `0ddb64cbb3b2c417f4086d720b5e742d06ad4b0ca3a38666392b4b3a9ce694bf`), capture
+  cost 116 ms. Staged into the station dir at
   `/data/vms/streamhost/stations/atari800xl/sta/a800xlp/golden.sta` (same
-  bytes, same sha256 — copy verified).
-- **Restore**: relaunch on a separate rig (`atari800xl-golden2/rig2`) with
-  `-state_directory rig/sta -state golden`; ctl.sock ready in 206 ms, SHOT
-  taken immediately after, pixel-identical to the pre-SAVEST frame (PIL
-  `ImageChops.difference` bbox `None`). `atari400.cpp`/`a800xlp` carries no
-  `MACHINE_SUPPORTS_SAVE` flag in its driver info, but the restore is
-  measured, not assumed — `MAME_NATIVE_CHECKPOINT=1` remains the golden
-  stream's decision, re-confirmed on this disk pair.
-- **Caveat**: the golden state is the settled MENU only, same as before — no
-  title has yet been proven to load past it (see Walls/Menu), so this
-  checkpoint does not by itself prove any exhibit content works, only that
-  the menu itself is fast and stable to return to.
+  bytes, same sha256 — copy verified), dirs chmod 755, file chmod 644.
+- **Restore**: relaunch on a separate rig (`atari800xl-golden5/verify`) with
+  `-state_directory sta -state golden`; ctl.sock+shm ready 0.211 s after
+  launch, SHOT taken 0.266 s after launch, **pixel-identical** to the
+  pre-SAVEST frame (both 2778 B, sha256 `e775b58d332c2e5f69f951319563009d9776e27d550d9cc007a73b4468e01c46`
+  on both sides — `proof/menu4_cold.png` and `proof/menu_restored.png`).
+  `atari400.cpp`/`a800xlp` carries no `MACHINE_SUPPORTS_SAVE` flag in its
+  driver info, but the restore is measured, not assumed —
+  `MAME_NATIVE_CHECKPOINT=1` remains the golden stream's decision,
+  re-confirmed on this disk pair.
+- **Media staged alongside it**: `hive.atr` (92 176 B) sha256
+  `480c7815f2acc7c7c249bb41f7cc9765c5abe6ae983be5dfac2c686019b638d8`
+  (rebuilt without `XBASIC.XEX`; reproducible — a second build on the same
+  sources produced byte-identical output), `hive2.atr` (92 176 B) sha256
+  `2d68e38b3211038927b4af16587ecd5c3c22459800da00e2135cf78403ad6b4e`
+  (unchanged — Dropzone was not touched), both at
+  `/data/vms/streamhost/assets/atari800xl/media/`.
+- **Caveat**: the golden state is the settled MENU only — LASTWORD/RIVRRAID/
+  STARRAID all proven to load past it fresh in this stream (see Menu table);
+  `proof/lastword_from_golden.png` proves RETURN on the default highlight
+  from the restored golden state reaches The Last Word's splash. Dropzone
+  still does not work from the menu, see OPEN.
 
-## OPEN items
+## OPEN items (golden5 stream, 2026-09-08 — current)
+
+- **The BASIC route is dropped, not fixed.** `XBASIC.XEX` never reached a
+  BASIC READY prompt across three variants tried by golden4, in order:
+  (1) neutralise DOSINI ($0C/$0D) alone with an RTS stub — measured no
+  change, identical menu frame back (WARMSV's post-DOSINI fallback still
+  lands on MyPicoDos, not DOSINI itself); (2) `JMP $A000` direct into the
+  BASIC ROM, skipping OS warmstart entirely — escapes MyPicoDos (different,
+  stable frame) but draws a garbage screen, because BASIC's ROM entry
+  assumes the OS already reset the screen editor/display list; (3)
+  neutralise DOSINI AND redirect DOSVEC to $A000, then still go through
+  WARMSV for its screen reinit — measured WORSE, a permanent hang on the
+  blue pre-boot screen. None reached READY, so golden5 stopped shipping the
+  entry at all — a menu item that just returns to the menu (or hangs) does
+  nothing for a visitor. The 18-byte assembly stays in
+  `scripts/build-guests/tiles/atari800xl.sh`, disabled behind
+  `SHIP_XBASIC=0`. Next theory, un-raced: read MyPicoDos's own resident code
+  (`atarisio/tools/MyPicoDosCode.cpp` — this is the build-tool's *encoder*,
+  not disassembled 6502 source, so the real target is disassembling the boot
+  sectors MyPicoDos writes onto `hive.atr` itself) to find the actual hook,
+  which is neither plain DOSINI nor a stale cart-header check. If this
+  closes, flip `SHIP_XBASIC=1`, rebuild, and re-add the
+  `keyboard.charMap`/`SH_KEY_MAP`/`demoProgram` registry rows this stream
+  removed (see below).
+- **`keyboard.charMap` / `SH_KEY_MAP` / `demoProgram` were removed with
+  XBASIC.XEX, golden5 stream.** They existed only to type a BASIC program
+  into the prompt XBASIC.XEX was meant to reach; with no menu entry to type
+  into, they had no visitor-facing use, so this stream deleted all three
+  from `registry/stations/atari800xl.json` and regenerated. The registry
+  validator does not couple them to `demoProgram` (`validate_keyboard_env`
+  only checks `charMap`↔`SH_KEY_MAP` consistency), so it did not force this
+  — it was a judgement call, not a validator failure. **The host-scancode
+  `=` key mapping (`]` on a US host → `=` guest) stays unproven on real
+  frames** — it was derived, never framebuffer-verified, before this stream
+  removed it entirely. Re-derive and re-verify it if BASIC ever ships again.
+- **Dropzone (D2:) is unreachable.** The `2` key (on-screen `1-8 = D1:-D8:`
+  legend) does not switch drives — measured identical frame, RETURN still
+  loads D1:'s default. Ships on `hive2.atr` but is not on any menu a visitor
+  can reach. Next stream: find the real drive-select key/sequence (maybe a
+  different keyboard row, maybe SHIFT+digit, maybe arrow-key column
+  navigation instead of a direct digit) or drop Dropzone for good and free
+  the second drive image entirely.
+- **A working Boulder Dash dump is still open.** Dropped by golden4 — fandal's
+  `BOULDER.XEX` resets the machine on load. One alternative source tried
+  (archive.org's Iron Software crack, 16 000 B) was a boot-loader ATR with no
+  DOS directory to extract an XEX from. A real fix needs either a clean
+  single-file XEX dump from a different source, or hand-converting a
+  boot-loader ATR's load segments into an XEX (feasible — the ATR's boot
+  sectors declare their own load address/length — but out of scope for any
+  stream so far).
+
+## OPEN items (superseded — golden4 and earlier)
 
 - **`keyboard.charMap` is DERIVED, not framebuffer-verified (spa stream).** The
   Atari's `- = + *` sit on host scancodes 0x1a/0x1b/0x28/0x2b, which a US host
@@ -271,7 +404,16 @@ the earlier golden below was captured on the now-superseded enhanced-density
 - Pointer: the driver has a mouse device, but the station ships keyboard-only
   (`stream.pointer.transport: none`), as apple2e does — a relative-only mouse
   has no honest absolute contract yet.
-- **Title-load RETURN is unreliable inside MyPicoDos on the real ctlsock/keymap
+- **CLOSED (golden3, 2026-09-08) — RETURN works; `BOULDER.XEX` is a bad title.**
+  See "## Walls hit". Remaining work this stream did NOT do, in priority order:
+  (1) rebuild `hive.atr` without Boulder Dash (or with a working replacement)
+  so the default highlight is a title that runs, and rebake the golden;
+  (2) fix `XBASIC.XEX` to neutralise `DOSINI` before the warm start so Atari
+  BASIC is actually reachable, then prove `PRINT 1+2` → `3` and `PRINT 2=2` →
+  `1` (the `=` charMap proof is still unmade);
+  (3) prove the D2: drive-select key to reach `DROPZONE.XEX`.
+  The stale entry below is kept only for the record:
+- **SUPERSEDED — Title-load RETURN is unreliable inside MyPicoDos on the real ctlsock/keymap
   path — CONFIRMED still open after the density fix (golden-fix stream,
   2026-09-08).** See "## Walls hit" and "## Proofs". Blocks ALL per-title
   first-screen proofs (Boulder Dash, Star Raiders, River Raid, The Last Word,

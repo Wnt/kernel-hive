@@ -34,22 +34,6 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 160
   },
-  "atari800xl": {
-    "label": "Type in a demo program (select XBASIC.XEX first)",
-    "lines": [
-      "10 GRAPHICS 7",
-      "20 SETCOLOR 0,4,8",
-      "30 SETCOLOR 1,9,6",
-      "40 SETCOLOR 2,13,6",
-      "50 C=1",
-      "60 FOR X=0 TO 159 STEP 4",
-      "70 COLOR C:C=C+1:IF C>3 THEN C=1",
-      "80 PLOT X,0:DRAWTO 159-X,79",
-      "90 NEXT X"
-    ],
-    "runCommand": "RUN",
-    "perCharMs": 170
-  },
   "bbcmicro": {
     "label": "Type in a demo program",
     "lines": [
