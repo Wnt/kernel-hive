@@ -69,6 +69,12 @@
 # try (reading MyPicoDos's own resident code to find what it actually hooks
 # on reset, since it is neither DOSINI nor a stale cart-header check alone).
 #
+# golden5 stream, 2026-09-08: XBASIC.XEX is no longer composed onto D1: --
+# every variant above returns either the same menu or a hang, never a BASIC
+# READY prompt, and a menu entry that does nothing does not ship. The
+# assembly stays in the compose step below, disabled by SHIP_XBASIC=0, for
+# whoever next finds the real hook.
+#
 # Usage: atari800xl.sh [--force]
 set -euo pipefail
 
@@ -214,15 +220,20 @@ if missing: sys.exit(f'not found in {img}: {sorted(missing)}')
 PY
 
 # XBASIC.XEX -- see the header note. 18 bytes at $2000, run address $2000.
-# STILL OPEN (golden4 stream, 2026-09-08): the DOSVEC-redirect variant tried
-# alongside the DOSINI stub (patch both, then JMP WARMSV so the OS still does
-# its own screen/editor reinit) measured WORSE -- a permanent hang on the
-# blue pre-boot screen, not even a redraw of the menu. That is worse for a
-# visitor than the plain return-to-menu this original 18 bytes produces, so
-# this stream reverted to it rather than ship a hang. See the header note for
-# all three variants tried and what each measured.
-# Named to sort LAST so the menu's default highlight sits on a proven title.
-python3 - "$DISK/XBASIC.XEX" <<'PY'
+# golden5 stream, 2026-09-08: REMOVED from the shipped menu. Three DOSINI/
+# DOSVEC fixes were tried by golden4 (neutralise DOSINI alone: no change;
+# JMP $A000 direct: escapes MyPicoDos but draws a garbage screen; neutralise
+# DOSINI+DOSVEC through WARMSV: a permanent hang) and none reached a BASIC
+# READY prompt -- the safest of the three, the plain 18-byte version below,
+# only returns cleanly to the menu, which does nothing for a visitor. A menu
+# entry that does nothing does not ship (docs/lab/ATARI800XL-WAVE.md OPEN
+# items), so this stream stopped composing it onto D1:. The assembly is kept
+# here, disabled by SHIP_XBASIC=0, for whichever stream next finds the real
+# MyPicoDos warm-start hook -- flip the flag to 1 to put it back on the disk
+# once RETURN on it reaches a BASIC READY prompt.
+SHIP_XBASIC=0
+if [[ "$SHIP_XBASIC" == 1 ]]; then
+  python3 - "$DISK/XBASIC.XEX" <<'PY'
 import sys
 code = bytes([
     0xAD, 0x01, 0xD3,   # LDA $D301        ; PORTB
@@ -238,6 +249,7 @@ xex  = b'\xff\xff' + bytes([s & 255, s >> 8, e & 255, e >> 8]) + code
 xex += bytes([0xE0, 0x02, 0xE1, 0x02, s & 255, s >> 8])   # RUNAD $02E0
 open(sys.argv[1], 'wb').write(xex)
 PY
+fi
 
 # --- build the images --------------------------------------------------------
 # -m MyDOS format, single density (dir2atr's default -- omit -d/-E; -S pins it
