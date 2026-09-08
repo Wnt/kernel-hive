@@ -119,28 +119,84 @@ screen (Space) and launcher panel (`Input Device: Mouse` / `File System:
 Professional File`; Return reaches the canvas with the File/Tools/Edit/
 Goodies/Undo bar). Rollover/overlap is not stress-tested.
 
-## Pointer — OPEN item, ships keyboard-only
-The Apple II Mouse Card is wired at the emulator layer (slot 4) but the
-station's registry `stream.pointer.transport` is `"none"` and it ships
-**keyboard-only**. MEASURED on the live rig 2026-09-08 (golden stream): the
-ctlsock module's counts do reach the card's fields
-(`MAME_CTL_PTR_TAGS=:sl4:mouse:a2mse_button,:sl4:mouse:a2mse_x,:sl4:mouse:a2mse_y`,
-`STAT applied=4070,3740`) and Dazzle Draw's launcher panel already reports
-`Input Device: Mouse`, but the arrow does not track: of four `MOVEA` targets
-on the canvas only `MOVEA 500 300` moved it at all (tip landed at 400,260 —
-0.80x/0.87x of target), the rest left it parked top-left, and plain
-`MOVE 200 0` / `MOVE 0 200` moved it zero screen pixels. No
-`MAME_CTL_CAL_X/Y` was set — the loss isn't a linear scale or a slow drift,
-so calibration would only paper over an unknown cause. `MAME_CTL_PTR_MOD=256`
-is set (the card's ioports are 8-bit fields, sensitivity 40 — NOT the
-module's 65536 SGI default, which would saturate the axis on the first
-slam). The registry also notes a separate, daemon-level blocker: MAME-sock
-pointer mode is hardcoded to absolute in
-`InputBackend::MameSock::pointer_mode()`, and the mouse card is
-dead-reckoning relative-only (unlike newsos's Newport VC2 absolute
-registers) — so this station cannot honestly claim an SPA pointer contract
-even after the tracking bug is fixed. Both are open items for whoever owns
-the pointer/backends plane next.
+## Pointer — scale fixed, origin still open; ships keyboard-only
+`stream.pointer.transport` stays `"none"`. Two real mechanisms were found and
+fixed in the station's binary (both wired in via
+`scripts/build-guests/emulators/native.d/apple2e.sh`), and a third — the
+open-loop homing slam — is still wrong:
+
+**1. A differencing window, not a lost write.** `src/devices/bus/a2bus/mouse.cpp`,
+`a2bus_mouse_device::update_axis()`, differences successive reads of the 8-bit
+`a2mse_x`/`a2mse_y` field and folds the result into ±0x80. So ONE field write
+larger than 127 counts is read as motion *the other way*. Measured from the
+left clamp on the Dazzle Draw canvas: `MOVE 10 → 36 px`, `MOVE 100 → 171 px`,
+`MOVE 127 → 217 px` — perfectly linear — then `MOVE 130`, `160`, `200`, `255`
+→ **no movement at all**, because the arrow ran left into the clamp.
+`mame-ctlsock-move-step-cap.patch` caps the module's pacing budget at
+`m_ptr_mod/2 - 1` whenever the accumulator is narrow and routes an oversized
+`MOVE` through the paced queue; paced writes ≤ 127 track linearly with no loss.
+
+**2. An open loop cannot learn a gain.** `MAME_CTL_CURSOR_ITEMS` is unset —
+this machine has no readable cursor register — so `MOVEA` runs in the module's
+open-loop mode. The gain learner (`learn_gain()`) is called only from
+`observe()`, which runs only in the *closed* loop, so `m_gx`/`m_gy` stayed at
+their hardcoded `1.0` forever and open-loop `MOVEA` issued Δpx straight out as
+counts. The Apple //e's measured ratio is **1.547 px per count on X and 1.674
+on Y**, so a 1.0 gain under-issues by about 40% — and because an open loop's
+only origin is its own belief, every later relative target inherits the error.
+`mame-ctlsock-open-loop-gain.patch` adds `MAME_CTL_GAIN_X` / `MAME_CTL_GAIN_Y`
+(guest px per count, float, default 1.0) which seed the gain at setup and after
+a state reload; open-loop `MOVEA` then issues `Δpx / gain` and the belief
+integrates `counts × gain`, so both sides live in published pixels. It also
+fixes the same branch's queued-remainder clamp simulation, which was adding
+queue entries' *counts* to a *pixel* belief.
+
+`MAME_CTL_CAL_X/Y` is **not** set and would be inert here: it calibrates a
+cursor-*register* reading, and there is no register to read.
+`MAME_CTL_SCREEN=1024x768` is set so the belief and every `MOVEA` target clamp
+against this station's published surface rather than the module's 1288x1024
+SGI default. `MAME_CTL_PTR_MOD=256` (the card's ioports are 8-bit fields,
+sensitivity 40) — an unset MOD would saturate the axis on the first homing slam
+exactly like the Atari ST's uncorrected case.
+
+The fixture knobs, in full:
+
+```
+MAME_CTL_PTR_TAGS=:sl4:mouse:a2mse_button,:sl4:mouse:a2mse_x,:sl4:mouse:a2mse_y
+MAME_CTL_BTN_NAMES=Mouse Button,,
+MAME_CTL_PTR_MOD=256
+MAME_CTL_SCREEN=1024x768
+MAME_CTL_GAIN_X=1.547
+MAME_CTL_GAIN_Y=1.674
+```
+
+MEASURED on a live rig 2026-09-08 (pointer stream), arrow tip located in the
+framebuffer on the Dazzle Draw canvas (`x≥10`, `72≤y<640` — the canvas' left
+border column is lit and is not the arrow):
+
+| target | arrow tip | error px |
+|---|---|---|
+| (300,200) | off the canvas band | — |
+| (700,500) | (411,320) | (−289,−180) |
+| (150,600) | (10,424) — at the left clamp | (−140,−176) |
+| (900,100) | off the canvas band | — |
+| (300,200) | (152,112) | (−148,−88) |
+
+**The scale is right; the origin is not.** Two *interior* targets 600 px apart
+(no clamp between them) land at **0.988×** of commanded on X and **0.940×** on
+Y, which refines the seeds to `1.529` / `1.573`. But the open-loop branch homes
+with a hardcoded `18 * MOVE_STEP` **count** slam, and after it the first target
+lands ~147 px short on X and ~85 px short on Y — the guest owes back part of the
+overshoot before the arrow moves again — and since an open loop's only origin is
+its own belief, that deficit never clears. Every landing above is far outside
+the ±6 px this station needs, so the pointer stays an open item.
+
+**Next step:** size that homing slam in *pixels* through the gain rather than in
+raw counts (`ctlsock.cpp`, `movea_target()`'s degraded branch), and re-measure.
+
+The button is the card's single `Mouse Button` (`MAME_CTL_BTN_NAMES`); it was
+not exercised on the canvas, because a click is only meaningful once the arrow
+lands where it was asked to.
 
 ## Reset / checkpoint
 `SH_RESET_MODE=relaunch`, restoring the MAME savestate at
@@ -169,7 +225,9 @@ never signals the wrong MAME process.
 - Keyboard: verified on the live rig, fleet-floor 40/40 ms pacing, whole
   visitor path (menu → AppleWorks → Dazzle Draw → BASIC → reset), no
   dropped/duplicated characters.
-- Pointer: OPEN — wired but not tracking (see above); ships keyboard-only,
-  `pointer.transport: "none"`.
+- Pointer: OPEN — the differencing window and the missing open-loop gain are
+  fixed and the scale now tracks (1.529/1.573 px per count), but the homing
+  origin is still ~147/85 px off; ships keyboard-only, `pointer.transport:
+  "none"`.
 - Angry Birds: gated out of the menu pending a reachable disk-image source
   (see `docs/lab/APPLE2E-WAVE.md`).

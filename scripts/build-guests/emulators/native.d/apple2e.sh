@@ -21,7 +21,15 @@ NATIVE_MAME_ARGS=(-sl4 mouse -sl6 diskiing -sl7 cffa2)
 # needs the env-configurable MAME_CTL_PTR_TAGS/MAME_CTL_BTN_NAMES rebind
 # (mame-ctlsock-ptr-tags.patch) to point at the Apple II Mouse Card's
 # :sl4:a2mse_button/_x/_y ioports instead.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch)
+# ...and two corrections that patch stacks ON TOP of ptr-tags, in this order:
+# move-step-cap, because the mouse card's 8-bit accumulator differences its
+# field inside a +-0x80 window and one write over 127 counts is read
+# BACKWARDS; then open-loop-gain, because this machine has no readable cursor
+# register, so MOVEA runs open-loop, the gain learner never fires and the
+# module's default 1.0 px/count under-issues by ~40% (measured: 1.547 px per
+# count on X, 1.674 on Y). The station fixture sets MAME_CTL_GAIN_X/Y and
+# MAME_CTL_SCREEN to match.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {
