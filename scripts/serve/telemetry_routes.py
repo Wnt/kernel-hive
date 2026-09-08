@@ -30,6 +30,7 @@ from urllib.parse import parse_qs, urlparse
 import eum_proxy
 import linecov
 import logs
+import logsink
 import probes
 import traces
 import vitals
@@ -44,6 +45,38 @@ def _bad_origin(handler, public_origin: str) -> bool:
         handler._send(403, json.dumps({"error": "bad origin"}), MIME[".json"], cache=False)
         return True
     return False
+
+
+def _ingest(handler, store, cap: int, count_key: str, route: str) -> None:
+    """Read one telemetry batch and record it, NEVER REFUSING A PRODUCER.
+
+    A 400 from `_read_json_body` is the one refusal these three routes must NOT
+    surface: it means an unparseable/truncated body — a frozen or backgrounded
+    tab's keepalive flush that arrived garbled — and the browser's beacon treats
+    ANY non-2xx as a settled REFUSAL and drops the batch
+    (spa/src/analytics/beacon.ts). So a 400 on a body we cannot use turned a
+    single lost flush into a per-flush 400 loop for days (~60/h) and lost the
+    tab's log records anyway. We answer 200 with a zero count instead: the
+    records are unrecoverable either way, so 0 is honest, and it matches the
+    store's own posture — a bad SHAPE already counts 0, not errors
+    (serve/logs.py record()). 411 (missing/zero Content-Length) and 413 (over
+    cap) stay HARD: those are honest contract errors and the cap must still bite.
+    """
+    obj, err = handler._read_json_body(cap)
+    if err and err[0] != 400:
+        handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+        return
+    if err:
+        # DEBUG, not WARN: an unparseable body is expected background noise from
+        # frozen tabs, kept only so the signal survives while clientlog.jsonl is
+        # retired. logsink is stderr-always + store-when-bound and never raises.
+        logsink.write(
+            f"dropped unparseable telemetry body on {route}",
+            severity="DEBUG",
+            attrs={"kh.event": "telemetry.drop", "http.route": route},
+        )
+    n = store.record(obj) if isinstance(obj, dict) else 0
+    handler._send(200, json.dumps({"ok": True, count_key: n}), MIME[".json"], cache=False)
 
 
 def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) -> bool:
@@ -82,12 +115,7 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
         if path == "/traces":
             if _bad_origin(handler, public_origin):
                 return True
-            obj, err = handler._read_json_body(traces.BODY_MAX)
-            if err:
-                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
-                return True
-            n = stores["traces"].record(obj) if isinstance(obj, dict) else 0
-            handler._send(200, json.dumps({"ok": True, "spans": n}), MIME[".json"], cache=False)
+            _ingest(handler, stores["traces"], traces.BODY_MAX, "spans", "/traces")
             return True
 
         # POST /logs — severity-bearing records from any of the three
@@ -99,12 +127,7 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
         if path == "/logs":
             if _bad_origin(handler, public_origin):
                 return True
-            obj, err = handler._read_json_body(logs.BODY_MAX)
-            if err:
-                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
-                return True
-            n = stores["logs"].record(obj) if isinstance(obj, dict) else 0
-            handler._send(200, json.dumps({"ok": True, "logs": n}), MIME[".json"], cache=False)
+            _ingest(handler, stores["logs"], logs.BODY_MAX, "logs", "/logs")
             return True
 
         # POST /vitals — one tab's stream-health SAMPLES, on a fixed cadence
@@ -116,12 +139,7 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
         if path == "/vitals":
             if _bad_origin(handler, public_origin):
                 return True
-            obj, err = handler._read_json_body(vitals.BODY_MAX)
-            if err:
-                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
-                return True
-            n = stores["vitals"].record(obj) if isinstance(obj, dict) else 0
-            handler._send(200, json.dumps({"ok": True, "samples": n}), MIME[".json"], cache=False)
+            _ingest(handler, stores["vitals"], vitals.BODY_MAX, "samples", "/vitals")
             return True
         return False
 

@@ -17,7 +17,10 @@ not what was asked for:
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
+import os
 import sys
 import tempfile
 import time
@@ -27,21 +30,100 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "serve"))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "observability"))
 
+# `config.py` reads these four at import and never again; nothing under test
+# here touches the paths, they only have to be present so `telemetry_routes`
+# (and the `static_files`/`config` it imports) can import. Same stubs, same
+# reason, as test_eum_proxy.py / test_serve_return_leg.py.
+os.environ.setdefault("WEBROOT", "/tmp/kh-test-webroot")
+os.environ.setdefault("SIGNAL_CONFIG", "/tmp/kh-test-webroot/signal.json")
+os.environ.setdefault("CERT", "unused-in-tests")
+os.environ.setdefault("KEY", "unused-in-tests")
+
 import logs  # noqa: E402
 import logs_otlp  # noqa: E402
 import logs_read  # noqa: E402
 import logsink  # noqa: E402
+import telemetry_routes  # noqa: E402
 import tracing  # noqa: E402
 from instana_batch import log_requests_for  # noqa: E402
 
 TRACE = "a" * 32
 SPAN = "b" * 16
 
+#: Any origin: the route tests below drive the LAN listener (`public=False`),
+#: where the Origin gate does not apply, so this is never compared.
+ORIGIN = "https://gallery.example.com"
+
 
 def _batch(records, **res):
     resource = {"service.name": "kernel-hive-serve", "service.instance.id": "labhost"}
     resource.update(res)
     return {"resource": resource, "logs": records}
+
+
+class FakeHandler:
+    """Enough of `osgallery-https-server.H` to drive `telemetry_routes.dispatch`.
+
+    `_read_json_body` MIRRORS `H._read_json_body`
+    (scripts/serve/osgallery-https-server.py) on the contract these tests turn
+    on: a positive Content-Length whose body is not JSON is (400, "invalid
+    JSON"); a missing/zero length is 411; a body over the cap is 413. It is
+    modelled rather than imported for the same reason test_serve_return_leg.py
+    mirrors `H._send`: importing the server module builds the real telemetry
+    stores at import time. Keep it in step with the original.
+
+    Shared by test_traces.py and test_vitals_plane.py via `ingest()` below, so
+    the mirror lives in exactly one place.
+    """
+
+    def __init__(
+        self, body: bytes = b"", *, content_length: int | None = None, omit_length: bool = False, public: bool = False
+    ):
+        self.rfile = io.BytesIO(body)
+        self.command = "POST"
+        self.public = public
+        self.headers: dict[str, str] = {}
+        if not omit_length:
+            self.headers["Content-Length"] = str(len(body) if content_length is None else content_length)
+        self.sent = None  # (code, body, ctype) — the one reply dispatch produced
+
+    def _send(self, code, body, ctype, cache=True, extra=None):
+        self.sent = (code, body, ctype)
+
+    def _read_json_body(self, cap):
+        # Mirror of osgallery-https-server.py H._read_json_body — keep in step.
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            return None, (411, "chunked transfer coding not supported; send Content-Length")
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            return None, (411, "bad Content-Length")
+        if n <= 0:
+            return None, (411, "Content-Length required")
+        if n > cap:
+            with contextlib.suppress(OSError):
+                self.rfile.read(min(n, 4 * cap))
+            return None, (413, f"body exceeds {cap} bytes")
+        raw = b""
+        while len(raw) < n:
+            chunk = self.rfile.read(n - len(raw))
+            if not chunk:
+                break
+            raw += chunk
+        try:
+            return json.loads(raw.decode("utf-8")), None
+        except Exception:
+            return None, (400, "invalid JSON")
+
+
+def ingest(path, store_key, store, *, body=b"", content_length=None, omit_length=False, public=False):
+    """Drive one ingest POST through `telemetry_routes.dispatch`; return
+    `(status_code, parsed-json reply)`. Shared with the /traces and /vitals
+    plane tests so all three exercise the real dispatcher, not a copy."""
+    handler = FakeHandler(body=body, content_length=content_length, omit_length=omit_length, public=public)
+    telemetry_routes.dispatch(handler, path, "POST", {store_key: store}, ORIGIN)
+    code, raw, _ = handler.sent
+    return code, json.loads(raw)
 
 
 class LogPlane(unittest.TestCase):
@@ -284,6 +366,54 @@ class LogPlane(unittest.TestCase):
         assert len(dropped) == 1
         assert ([], 1) in plan
         assert any(chunk and chunk[0]["seq"] == 2 for chunk, _ in plan)
+
+
+class IngestRoute(unittest.TestCase):
+    """POST /logs at the DISPATCHER, not the store: the never-refuse-a-producer
+    posture lives here, and it is where the 400 loop was.
+
+    THE BUG: a frozen tab's keepalive flush arrives as a positive Content-Length
+    with a truncated/garbled body. `_read_json_body` calls that (400, "invalid
+    JSON"), the route surfaced it, and the browser's beacon treats ANY non-2xx as
+    a settled refusal and DROPS the batch (spa/src/analytics/beacon.ts) — so the
+    same tab re-POSTs and re-400s ~60/h for days, losing its log records anyway.
+    """
+
+    def setUp(self):
+        self._dir = tempfile.TemporaryDirectory()
+        self.store = logs.LogStore(Path(self._dir.name) / "logs.db")
+
+    def tearDown(self):
+        self.store.close()
+        self._dir.cleanup()
+
+    def test_an_unparseable_body_is_accepted_empty_not_refused(self):
+        # THE REGRESSION TEST. A truncated body (real Content-Length, not JSON)
+        # must answer 200 with a zero count — never the 400 that started the loop.
+        code, reply = ingest("/logs", "logs", self.store, body=b'{"logs": [{"b": "hal')
+        self.assertEqual(code, 200)
+        self.assertEqual(reply, {"ok": True, "logs": 0})
+        self.assertEqual(self.store.search()["total"], 0)
+
+    def test_a_valid_batch_is_stored_and_counted(self):
+        body = json.dumps(_batch([{"b": "hello"}, {"b": "world"}])).encode()
+        code, reply = ingest("/logs", "logs", self.store, body=body)
+        self.assertEqual(code, 200)
+        self.assertEqual(reply, {"ok": True, "logs": 2})
+        self.assertEqual(self.store.search()["total"], 2)
+
+    def test_a_body_over_the_cap_still_refuses_413(self):
+        # The size cap must still bite — softening 400 must not soften 413.
+        code, _ = ingest("/logs", "logs", self.store, body=b"x" * 16, content_length=logs.BODY_MAX + 1)
+        self.assertEqual(code, 413)
+
+    def test_zero_or_missing_content_length_still_refuses_411(self):
+        # An honest contract error, unchanged: nothing to parse is not the same
+        # as a body we failed to parse.
+        zero, _ = ingest("/logs", "logs", self.store, content_length=0)
+        self.assertEqual(zero, 411)
+        missing, _ = ingest("/logs", "logs", self.store, omit_length=True)
+        self.assertEqual(missing, 411)
 
 
 if __name__ == "__main__":

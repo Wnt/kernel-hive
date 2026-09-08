@@ -24,6 +24,8 @@ import vitals_otlp  # noqa: E402
 import vitals_read  # noqa: E402
 import vitals_schema  # noqa: E402
 
+from test_logs_plane import ingest  # noqa: E402  (shared FakeHandler + dispatcher driver)
+
 
 def _store(path):
     return vitals.VitalsStore(path)
@@ -299,6 +301,38 @@ class ReadSurface(unittest.TestCase):
         vitals_read.route(self.s, "otlp", {"station": "win311"}, self._reply)
         doc = self.seen[0][1]
         self.assertEqual(len(doc["resourceMetrics"]), 1)
+
+
+class IngestRoute(unittest.TestCase):
+    """POST /vitals at the dispatcher: the same never-refuse-a-producer posture
+    as /logs and /traces. A truncated sample flush must answer 200 with a zero
+    count, not the 400 the browser's beacon treats as a settled refusal that
+    drops the batch (spa/src/analytics/beacon.ts)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.s = _store(Path(self.tmp.name) / "v.db")
+        self.now = int(time.time() * 1000)
+
+    def tearDown(self):
+        self.s.close()
+        self.tmp.cleanup()
+
+    def test_an_unparseable_body_is_accepted_empty_not_refused(self):
+        code, reply = ingest("/vitals", "vitals", self.s, body=b'{"samples": [{"t": 1, "v')
+        self.assertEqual(code, 200)
+        self.assertEqual(reply, {"ok": True, "samples": 0})
+
+    def test_a_valid_batch_is_stored_and_counted(self):
+        body = json.dumps(
+            {
+                "resource": {"service.instance.id": "win311", "session.id": "abcd1234"},
+                "samples": [{"t": self.now, "v": {"fps": 30}}],
+            }
+        ).encode()
+        code, reply = ingest("/vitals", "vitals", self.s, body=body)
+        self.assertEqual(code, 200)
+        self.assertEqual(reply, {"ok": True, "samples": 1})
 
 
 if __name__ == "__main__":

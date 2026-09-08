@@ -18,11 +18,15 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "serve"))
 
 import telemetry_paths  # noqa: E402
+import traces  # noqa: E402
+
+from test_logs_plane import ingest  # noqa: E402  (shared FakeHandler + dispatcher driver)
 
 ROUTES = pathlib.Path(__file__).resolve().parent / "serve" / "telemetry_routes.py"
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -58,6 +62,29 @@ class TelemetryPathsAreComplete(unittest.TestCase):
         # finds nothing, this test would pass vacuously forever.
         self.assertIn("/traces", ingest_routes())
         self.assertIn("/logs", ingest_routes())
+
+
+class IngestRouteTolerance(unittest.TestCase):
+    """POST /traces at the dispatcher: the never-refuse-a-producer posture that
+    /logs and /vitals also carry (their own plane tests pin theirs). A frozen
+    tab's truncated span flush must answer 200 with a zero count, not the 400
+    the browser's beacon treats as a settled refusal and drops the batch on
+    (spa/src/analytics/beacon.ts). Lives here rather than in test_traces.py,
+    which is at the 600-line hard cap; the shared FakeHandler + `ingest` come
+    from test_logs_plane.py so all three routes exercise the real dispatcher."""
+
+    def setUp(self):
+        self._dir = tempfile.TemporaryDirectory()
+        self.store = traces.TraceStore(pathlib.Path(self._dir.name) / "traces.db")
+
+    def tearDown(self):
+        self.store.close()
+        self._dir.cleanup()
+
+    def test_an_unparseable_traces_body_is_accepted_empty_not_refused(self):
+        code, reply = ingest("/traces", "traces", self.store, body=b'{"spans": [{"t": "0af7')
+        self.assertEqual(code, 200)
+        self.assertEqual(reply, {"ok": True, "spans": 0})
 
 
 if __name__ == "__main__":
