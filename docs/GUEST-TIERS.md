@@ -272,6 +272,7 @@ missing feature.
 | `rhapsody` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | off | 30 | serial_getty |
 | `riscos` | 5 poster | — | `none` | — | — | off | — | — |
 | `sailfishos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | off | 30 | — |
+| `samcoupe` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `serenityos` | 1 direct-QEMU | kvm | `qemu-vmmouse` | abs | — | on | 60 | — |
 | `sinclairql` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `slackware` | 1 direct-QEMU | kvm | `x11-warp-absolute` | abs | x11warp | on | 30 | — |

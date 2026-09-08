@@ -40,6 +40,7 @@ export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
+  | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
   | 'classicmac';
@@ -416,6 +417,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
   // shifts do different jobs from a PC's.
   zxspectrum: 'zxspectrum',
+  // The SAM Coupé runs Spectrum software but does NOT take the Spectrum's
+  // profile — see the samcoupe block in keyboardProfiles.data.exotic.ts for
+  // why a full keyboard with the wrong labels needs its own family.
+  samcoupe: 'samcoupe',
   // Atari 800XL. NOT the atarist family (a different machine, a different
   // matrix) and not generic: the arrow keys on this station are the joystick,
   // and the menu's cursor keys are CTRL chords on punctuation. See the

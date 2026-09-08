@@ -1120,13 +1120,13 @@ emit apple2e \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/apple2e/apple2e.keymap" \
   --env-append-file "$T/apple2e/station.env.fixture"
 
-# atari800xl (slot 186) — Atari 800XL, host-native MAME a800xlp, boot menu of period software; atari800xl wave 2026-09-08.
-emit atari800xl \
-  --tile atari800xl --udp 54186 --x11 --x11-display :74 --capture shm \
+# samcoupe (slot 187) — SAM Coupé, host-native MAME samcoupe, boot menu of period software; samcoupe wave 2026-09-08.
+emit samcoupe \
+  --tile samcoupe --udp 54187 --x11 --x11-display :75 --capture shm \
   --pointer none --input-backend mamesock --audio on --fps 60 \
   --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
-  "$T/atari800xl/atari800xl.keymap" --env-append-file \
-  "$T/atari800xl/station.env.fixture"
+  "$T/samcoupe/samcoupe.keymap" --env-append-file \
+  "$T/samcoupe/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)

@@ -511,6 +511,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
     badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
   },
+  // MGT built the SAM in Swansea in an off-white wedge with a dark keyboard
+  // well and dark keycaps — the same two-tone the Spectrum +2 had made
+  // familiar, but inverted: pale case, dark keys. The accent is that keyboard
+  // well rather than a logo colour, because the machine's own front badge is
+  // simply its name in dark lettering on the cream.
+  samcoupe: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
   // The XL wedge is the pale warm grey Atari used across the 1983 line, with
   // the keyboard sunk in a dark brown bezel and the rainbow fuji badge on the
   // front right. The accent is that bezel brown rather than any of the rainbow

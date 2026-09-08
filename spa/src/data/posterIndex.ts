@@ -204,6 +204,9 @@ const POSTER_INDEX = {
   "sailfishos": {
     "hero": "/posters/sailfishos/desktop.webp"
   },
+  "samcoupe": {
+    "hero": "/posters/samcoupe/desktop.webp"
+  },
   "serenityos": {
     "hero": "/posters/serenityos/desktop.webp"
   },
