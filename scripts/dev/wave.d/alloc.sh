@@ -85,7 +85,17 @@ try:
             taken.add(int(c["name"]))
 except Exception:
     pass
-print(max(taken or {99}) + 1)
+# Above every slot in use, AND not one the registry refuses (the walk-in pool,
+# the relay ceiling, the WebRTC bridge's ICE port at slot 200) -- the same
+# slot_refusal() `stations-registry.py new --slot auto` uses.
+import sys
+sys.path.insert(0, "/data/kernel-hive/scripts")
+from stations_registry.generate import slot_refusal
+ports = json.load(open("/data/kernel-hive/registry/registry-v1.json"))
+slot = max(taken or {99}) + 1
+while slot_refusal(ports, slot) is not None:
+    slot += 1
+print(slot)
 PY
   )"
 fi

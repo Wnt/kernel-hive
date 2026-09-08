@@ -28,6 +28,8 @@ So the public deployment has two planes that reach labhost by different routes:
                      ▼                                          ▼
   ┌──────────────────────────── labhost (the box) ────────────────────────────┐
   │  wg0 10.66.0.3 ──► streamhost@<tile> udp/54xxx   (QUIC, ticket-gated)      │
+  │              ──► osgallery-webrtc-bridge udp/54200 (ICE, every tile; the  │
+  │                  WebRTC fallback for Safari 17 / no-WebCodecs browsers)   │
   │  forwarder-agent ──► 127.0.0.1:8081  the PUBLIC listener (session-gated)   │
   │                      127.0.0.1:8443  the LAN listener (unchanged, open)    │
   └───────────────────────────────────────────────────────────────────────────┘

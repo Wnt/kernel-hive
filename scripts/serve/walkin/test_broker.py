@@ -159,9 +159,43 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(queued, {"queued": True, "position": 1})
 
     def test_one_session_per_account(self):
+        # Still one clone per account -- a second claim never takes a second
+        # member out of the pool.
         self.broker.claim("u1", "os2warp")
-        with self.assertRaises(broker_mod.BrokerError):
-            self.broker.claim("u1", "os2warp")
+        self.broker.claim("u1", "os2warp")
+        self.assertEqual(self.broker.state()["pools"][0]["free"], 1)
+        self.assertEqual(self.broker.live_sessions(), 1)
+
+    def test_a_reload_gets_the_same_clone_back_with_the_clock_where_it_was(self):
+        first = self.broker.claim("u1", "os2warp")
+        self.clock[0] += 300
+        again = self.broker.claim("u1", "os2warp")
+        self.assertEqual(again["clone"], first["clone"])
+        self.assertTrue(again.get("resumed"))
+        # The TTL does not restart: a reload buys nobody a longer turn.
+        self.assertEqual(again["ttlSeconds"], broker_mod.TTL_SECONDS - 300)
+        self.assertEqual(again["signalEndpoint"], first["signalEndpoint"])
+        self.assertFalse(any(c.destroyed for c in self.made))
+
+    def test_a_reload_after_the_clock_ran_out_gets_a_fresh_clone(self):
+        first = self.broker.claim("u1", "os2warp")["clone"]
+        self.clock[0] += broker_mod.TTL_SECONDS + 1
+        again = self.broker.claim("u1", "os2warp")
+        self.assertNotEqual(again["clone"], first)
+        self.assertFalse(again.get("resumed"))
+        self.assertEqual(again["ttlSeconds"], broker_mod.TTL_SECONDS)
+
+    def test_claiming_another_machine_retires_the_one_held(self):
+        self.broker.specs["rhapsody"] = a_spec(station="rhapsody")
+        self.broker.tick()
+        first = self.broker.claim("u1", "os2warp")["clone"]
+        moved = self.broker.claim("u1", "rhapsody")
+        self.assertTrue(moved["clone"].startswith("walkin-rhapsody-"))
+        self.assertFalse(moved.get("resumed"))
+        self.assertIsNone(self.broker.own_of("u2"))
+        self.assertEqual(self.broker.own_of("u1")["clone"], moved["clone"])
+        self.assertTrue(any(c.destroyed and c.identity == first for c in self.made))
+        self.assertEqual(self.broker.live_sessions(), 1)
 
     def test_reset_gives_a_different_machine(self):
         first = self.broker.claim("u1", "os2warp")["clone"]

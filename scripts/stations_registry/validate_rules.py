@@ -410,6 +410,14 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             # -- it cannot, the hole is a RANGE -- perfect on the LAN and dead to
             # every public visitor (2026-09-02).
             in_range = low <= stream.get("udpPort", -1) <= high
+            bridge_port = globals_doc["ports"].get("webrtcBridgeUdp")
+            if bridge_port is not None and stream.get("udpPort") == bridge_port:
+                fail(
+                    errors,
+                    row,
+                    f"udpPort {bridge_port} is reserved for the platform WebRTC bridge "
+                    f"(ports.webrtcBridgeUdp); pick another slot.",
+                )
             if stream.get("transport") == "streamhost" and not in_range:
                 fail(
                     errors,

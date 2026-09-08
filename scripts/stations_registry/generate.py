@@ -46,16 +46,23 @@ def slot_refusal(globals_doc: dict, value: int) -> str | None:
             "clone pool (scripts/serve/walkin/naming.py)"
         )
     ports = globals_doc["ports"]
+    port = ports["productionBase"] + value
+    bridge_port = ports.get("webrtcBridgeUdp")
+    if bridge_port is not None and port == bridge_port:
+        return (
+            f"UDP {port} is the platform WebRTC bridge's ICE port "
+            "(ports.webrtcBridgeUdp in registry/registry-v1.json, "
+            "streamhost/webrtc-bridge/deploy/osgallery-webrtc-bridge.service); a station "
+            "there would fight the bridge for the socket"
+        )
     relay_low = ports.get("publicRelayLow")
     relay_high = ports.get("publicRelayHigh")
-    if relay_low is not None and relay_high is not None:
-        port = ports["productionBase"] + value
-        if not relay_low <= port <= relay_high:
-            return (
-                f"UDP {port} is outside the public relay window {relay_low}-{relay_high} "
-                "(ports.publicRelay* in registry/registry-v1.json), so the station would "
-                "stream on the LAN while being unreachable through the edge"
-            )
+    if relay_low is not None and relay_high is not None and not relay_low <= port <= relay_high:
+        return (
+            f"UDP {port} is outside the public relay window {relay_low}-{relay_high} "
+            "(ports.publicRelay* in registry/registry-v1.json), so the station would "
+            "stream on the LAN while being unreachable through the edge"
+        )
     return None
 
 

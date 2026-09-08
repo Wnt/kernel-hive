@@ -109,7 +109,7 @@ func main() {
 	flag.StringVar(&o.socketPath, "socket", "/run/osgallery-webrtc/feeds.sock", "shared Unix socket for all tile feeds")
 	flag.StringVar(&o.httpAddr, "http", "127.0.0.1:18080", "HTTP offer/health listen address")
 	flag.UintVar(&o.udpPort, "udp-port", 55950, "shared fixed ICE UDP port")
-	flag.StringVar(&o.publicIP, "public-ip", "", "optional 1:1-NAT candidate IP")
+	flag.StringVar(&o.publicIP, "public-ip", "", "optional public address ADDED as a second host candidate on -udp-port (the LAN host candidate is kept)")
 	flag.UintVar(&o.mtu, "mtu", 1188, "RTP packetizer MTU")
 	flag.StringVar(&o.profile, "profile-level-id", "64001f", "platform H.264 SDP profile-level-id")
 	flag.Parse()
@@ -169,18 +169,50 @@ func mustAPI(o options, video, audio webrtc.RTPCodecCapability) *webrtc.API {
 	))
 	registry := &interceptor.Registry{}
 	must(webrtc.RegisterDefaultInterceptors(mediaEngine, registry))
-	settings := webrtc.SettingEngine{}
 	udpConn, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: int(o.udpPort)})
 	must(err)
-	settings.SetICEUDPMux(ice.NewUDPMuxDefault(ice.UDPMuxParams{UDPConn: udpConn}))
-	if o.publicIP != "" {
-		settings.SetNAT1To1IPs([]string{o.publicIP}, webrtc.ICECandidateTypeHost)
-	}
+	settings, err := iceSettings(udpConn, o.publicIP)
+	must(err)
 	return webrtc.NewAPI(
 		webrtc.WithMediaEngine(mediaEngine),
 		webrtc.WithInterceptorRegistry(registry),
 		webrtc.WithSettingEngine(settings),
 	)
+}
+
+// iceSettings puts every peer on ONE UDP socket (the mux) and, when a public
+// address is given, advertises it as a SECOND host candidate on that same port.
+//
+// Why host+append and not the two obvious alternatives:
+//   - host+replace (what SetNAT1To1IPs(…, ICECandidateTypeHost) did) drops the
+//     LAN address from the SDP, so a visitor on the box's own LAN — the
+//     Firefox-Android proof in docs/WEBRTC-PLATFORM.md — is offered only the
+//     public address and hairpins through the edge or fails outright.
+//   - srflx (ICECandidateTypeSrflx) keeps the LAN candidate but pion gathers a
+//     mapped srflx candidate on a NEW ephemeral socket, not on the mux
+//     (ice/v4 gather.go gatherCandidatesSrflxMapped → listenUDPInPortRange),
+//     so the SDP advertises public:<random port> — a port the edge does not
+//     forward. Remote visitors would fail exactly as they did with no flag.
+//
+// Host+append is the one mode that keeps both addresses on the forwarded
+// port: pion's UDP-mux gatherer (gatherCandidatesLocalUDPMux →
+// applyHostRewriteForUDPMux) appends the external IPs to the mux listener's
+// own address and emits one host candidate per address, all on udpConn's port.
+func iceSettings(udpConn *net.UDPConn, publicIP string) (webrtc.SettingEngine, error) {
+	settings := webrtc.SettingEngine{}
+	settings.SetICEUDPMux(ice.NewUDPMuxDefault(ice.UDPMuxParams{UDPConn: udpConn}))
+	if publicIP == "" {
+		return settings, nil
+	}
+	if net.ParseIP(publicIP) == nil {
+		return settings, fmt.Errorf("-public-ip %q is not an IP address", publicIP)
+	}
+	err := settings.SetICEAddressRewriteRules(webrtc.ICEAddressRewriteRule{
+		External:        []string{publicIP},
+		AsCandidateType: webrtc.ICECandidateTypeHost,
+		Mode:            webrtc.ICEAddressRewriteAppend,
+	})
+	return settings, err
 }
 
 func listenUnix(path string) (*net.UnixListener, error) {

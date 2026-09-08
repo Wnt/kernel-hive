@@ -3,7 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import StreamView from '../ui/grid/StreamView';
 import type { OSBinding } from '../three/archetypeRegistry';
 import type { WalkinClaim, WalkinState } from '../data/walkinTypes';
-import { claimWalkin, fetchWalkinState, isClosedError, isQueued, releaseWalkin, resetWalkin } from './api';
+import { claimWalkin, fetchWalkinState, releaseWalkin, resetWalkin } from './api';
+import {
+  phaseAfterClaim,
+  phaseAfterClaimError,
+  playAgainLabel,
+  reclaimsOnPageShow,
+  releasesCloneOnEnd,
+  type Phase,
+} from './playPhase';
 import { accessAllows, clockText, resolveEndReason } from './sessionEnd';
 import { walkinReasonCopy, type WalkinReason } from './reasons';
 import { currentAccount } from './passkey';
@@ -21,6 +29,9 @@ import { IdentityBadge } from '../ui/IdentityBadge';
 //   3. The session can end for reasons that are nobody's fault, and each one
 //      gets its own sentence (§3.1 / reasons.ts). A walk-in dropped because the
 //      operator closed access must never see "connection lost".
+//   4. A reload, a back-navigation or a bfcache restore lands the visitor back
+//      on the cell they still hold (the broker answers the claim `resumed`),
+//      or on a free one — the transitions are playPhase.ts, with tests.
 
 const IDLE_WINDOW_SECONDS = 180;
 
@@ -37,12 +48,6 @@ function cloneBinding(os: string, claim: WalkinClaim): OSBinding {
     signalEndpoint: claim.signalEndpoint,
   };
 }
-
-type Phase =
-  | { kind: 'claiming' }
-  | { kind: 'queued'; position: number }
-  | { kind: 'playing'; claim: WalkinClaim }
-  | { kind: 'ended'; reason: WalkinReason | null; message?: string };
 
 export default function WalkinPlay() {
   const { os = '' } = useParams();
@@ -75,28 +80,23 @@ export default function WalkinPlay() {
       try {
         const held = claimRef.current;
         const result = again && held ? await resetWalkin(held.clone) : await claimWalkin(os);
-        if (isQueued(result)) {
+        const next = phaseAfterClaim(result);
+        if (next.kind === 'queued') {
           telRef.current?.queued();
-          setPhase({ kind: 'queued', position: result.position });
+          setPhase(next);
           return;
         }
+        if (next.kind !== 'playing') return;
         telRef.current?.held();
-        claimRef.current = result;
+        claimRef.current = next.claim;
         lastInputRef.current = Date.now();
-        setSecondsLeft(result.ttlSeconds);
-        setPhase({ kind: 'playing', claim: result });
+        setSecondsLeft(next.claim.ttlSeconds);
+        setPhase(next);
       } catch (reason) {
-        if (isClosedError(reason)) {
-          telRef.current?.refused();
-          setPhase({ kind: 'ended', reason: 'WALKIN_CLOSED' });
-          return;
-        }
-        telRef.current?.failed();
-        setPhase({
-          kind: 'ended',
-          reason: null,
-          message: reason instanceof Error ? reason.message : 'the machine could not be claimed',
-        });
+        const next = phaseAfterClaimError(reason);
+        if (next.kind === 'ended' && next.reason === 'WALKIN_CLOSED') telRef.current?.refused();
+        else telRef.current?.failed();
+        setPhase(next);
       }
     },
     [os],
@@ -105,6 +105,17 @@ export default function WalkinPlay() {
   useEffect(() => { void currentAccount().then((who) => { if (who) roleRef.current = who.role; }); }, []);
 
   useEffect(() => { void take(false); }, [take]);
+
+  // Back/forward cache: Safari restores the old document on a back-navigation,
+  // effects and all, with a clone that was released when the visitor left.
+  // Claim afresh — the broker hands the same cell back if it is still theirs.
+  useEffect(() => {
+    const onShow = (event: PageTransitionEvent) => {
+      if (reclaimsOnPageShow(event.persisted)) void take(false);
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, [take]);
 
   // Hand the clone back when the visitor leaves the page. Without this the pool
   // is only freed by the broker's own reaper, and the next visitor waits for a
@@ -145,6 +156,13 @@ export default function WalkinPlay() {
       });
       if (reason) {
         alive = false;
+        // A clone whose time is up goes back to the pool NOW, so "Play again"
+        // claims a fresh machine instead of re-attaching to this one.
+        const held = claimRef.current;
+        if (held && releasesCloneOnEnd(reason)) {
+          claimRef.current = null;
+          void releaseWalkin(held.clone).catch(() => { /* the reaper is the backstop */ });
+        }
         setPhase({ kind: 'ended', reason });
       }
     }, 1000);
@@ -173,7 +191,7 @@ export default function WalkinPlay() {
         onKeyDown={noteDeliberateInput}
       >
         <div className="walkin-play-chrome">
-          <span className="walkin-play-name">Your {os}</span>
+          <span className="walkin-play-name">{phase.resumed ? `Your ${os}, right where you left it` : `Your ${os}`}</span>
           <span className={`walkin-clock${low ? ' walkin-clock--low' : ''}`}>{clockText(secondsLeft)} left</span>
           <IdentityBadge />
           <span className="walkin-play-chrome-spacer" />
@@ -251,12 +269,17 @@ function EndedCard({
     phase.message ??
     `The connection to your ${os} was lost. Nothing is broken at the museum's end that a retry will not fix.`;
   const retryable = copy?.retryable ?? true;
+  // The way back in is never absent: a retryable end claims a fresh machine;
+  // closed access re-asks the broker, the one party that knows whether the
+  // door has reopened (playPhase.ts).
   return (
     <section className={`walkin-notice${retryable ? '' : ' walkin-notice--warn'}`} aria-live="polite">
       <h2>{title}</h2>
       <p>{detail}</p>
       <div className="walkin-notice-actions">
-        {retryable && <button type="button" className="walkin-btn" onClick={onRetry}>Take another machine</button>}
+        <button type="button" className={`walkin-btn${retryable ? '' : ' walkin-btn--quiet'}`} onClick={onRetry}>
+          {playAgainLabel(phase.reason)}
+        </button>
         <button type="button" className="walkin-btn walkin-btn--quiet" onClick={() => navigate('/walkin')}>
           Back to the three machines
         </button>

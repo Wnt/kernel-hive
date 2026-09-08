@@ -352,6 +352,24 @@ ping is serialised (one in flight), and unanswered pings alone only produce a
 completely silent — no uni-stream, no datagram — for `SILENCE_MS`. Hard closes
 (`wt.closed` resolve/reject) are untouched and still instant.
 
+### `webrtc-state pc=failed ice=failed signaling=stable` = no reachable candidate (fixed 2026-09-08)
+The WebRTC fallback (Safari 17, Firefox-Android, anything without WebTransport
+or WebCodecs) negotiates fine — `webrtc-offer`, `webrtc-track kind=video`,
+`ice=checking` — and then every attempt dies `pc=failed ice=failed` with the
+bridge journal reading `peer tile=… state=connecting → failed → closed`. The
+session is remote (the row's UA plus `candidate=prflx`, or the visitor is on
+cellular). Nothing is wrong with the media: the bridge's SDP answer carried no
+address the visitor could reach. Two causes, both live until 2026-09-08:
+the bridge listened on `55950`, outside the edge's DNAT range `54080-54200`,
+and it offered only the box's LAN host candidates (no `-public-ip`). It now
+listens on `54200` and appends the public address as a second host candidate
+(`docs/WEBRTC-PLATFORM.md` §Remote visitors). Check, in this order:
+`ssh lab 'ss -lun | grep 54200'`; `ssh lab 'cat /etc/osgallery-webrtc/bridge.env'`
+(must hold the address `kernelhive.madekivi.fi` resolves to); then a working
+session's `webrtc-stats` row must read `remote=host@<public>:54200`. A LAN
+visitor failing the same way with `remote=` empty is a different fault — the
+bridge is down or the tile has no feed (`journalctl -u osgallery-webrtc-bridge`).
+
 ### Safari 26: `datagrams.writable` is undefined — `createWritable()` (fixed 2026-09-08)
 A `session-start` row with `wt:true vd:true rtc:true` on an iOS/iPadOS Safari
 UA (`iPhone OS 18_7 … Version/26.6.1 Mobile Safari`), then, on every attempt:

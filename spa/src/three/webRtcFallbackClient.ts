@@ -67,6 +67,9 @@ export interface WebRtcFallbackSnapshot {
   codec: string;
   candidateType: string;
   protocol: string;
+  /** Type and address:port of the bridge-side candidate the selected pair uses. */
+  remoteCandidateType: string;
+  remoteAddress: string;
   lastError: string;
 }
 
@@ -111,7 +114,7 @@ export class WebRtcFallbackClient {
     framesDropped: 0, framesPerSecond: 0,
     packetsReceived: 0, packetsLost: 0, bytesReceived: 0,
     jitterMs: 0, jitterBufferMs: 0, rttMs: 0,
-    codec: '', candidateType: '', protocol: '', lastError: '',
+    codec: '', candidateType: '', protocol: '', remoteCandidateType: '', remoteAddress: '', lastError: '',
   };
 
   constructor(callbacks: WebRtcFallbackCallbacks) {
@@ -329,6 +332,7 @@ export class WebRtcFallbackClient {
       if (pc !== this.pc || this.disposed) return;
       let codecId = '';
       let selectedLocalId = '';
+      let selectedRemoteId = '';
       let peerFramesDecoded = 0;
       let peerPacketsReceived = 0;
       report.forEach((raw) => {
@@ -355,6 +359,7 @@ export class WebRtcFallbackClient {
           && (stat.nominated === true || stat.selected === true)) {
           this.snapshot.rttMs = Number(stat.currentRoundTripTime ?? 0) * 1000;
           selectedLocalId = String(stat.localCandidateId ?? '');
+          selectedRemoteId = String(stat.remoteCandidateId ?? '');
         }
       });
       report.forEach((raw) => {
@@ -363,6 +368,15 @@ export class WebRtcFallbackClient {
         if (stat.id === selectedLocalId) {
           this.snapshot.candidateType = String(stat.candidateType ?? '');
           this.snapshot.protocol = String(stat.protocol ?? '');
+        }
+        // The REMOTE half of the selected pair is the bridge's address the
+        // browser is actually talking to: the box's LAN address for a LAN
+        // visitor, the edge's public address for a remote one. Without it a
+        // failed ICE cannot be told apart from "the bridge offered only LAN
+        // candidates" (docs/WEBRTC-PLATFORM.md §Remote visitors).
+        if (stat.id === selectedRemoteId) {
+          this.snapshot.remoteCandidateType = String(stat.candidateType ?? '');
+          this.snapshot.remoteAddress = `${String(stat.address ?? stat.ip ?? '?')}:${String(stat.port ?? '?')}`;
         }
       });
 
@@ -390,7 +404,7 @@ export class WebRtcFallbackClient {
       if (immediate || peerFramesDecoded > 0) {
         logClientEvent(
           'webrtc-stats',
-          `media=${this.snapshot.mediaState} reconnect=${this.snapshot.reconnectAttempt} framesReceived=${this.snapshot.framesReceived} framesDecoded=${this.snapshot.framesDecoded} fps=${this.snapshot.framesPerSecond} packetsLost=${this.snapshot.packetsLost} jitterMs=${this.snapshot.jitterMs.toFixed(2)} jitterBufferMs=${this.snapshot.jitterBufferMs.toFixed(2)} rttMs=${this.snapshot.rttMs.toFixed(1)} candidate=${this.snapshot.candidateType}/${this.snapshot.protocol} playoutDelay=${this.snapshot.playoutDelayNegotiated}`,
+          `media=${this.snapshot.mediaState} reconnect=${this.snapshot.reconnectAttempt} framesReceived=${this.snapshot.framesReceived} framesDecoded=${this.snapshot.framesDecoded} fps=${this.snapshot.framesPerSecond} packetsLost=${this.snapshot.packetsLost} jitterMs=${this.snapshot.jitterMs.toFixed(2)} jitterBufferMs=${this.snapshot.jitterBufferMs.toFixed(2)} rttMs=${this.snapshot.rttMs.toFixed(1)} candidate=${this.snapshot.candidateType}/${this.snapshot.protocol} remote=${this.snapshot.remoteCandidateType}@${this.snapshot.remoteAddress} playoutDelay=${this.snapshot.playoutDelayNegotiated}`,
         );
       }
     } catch (error) {

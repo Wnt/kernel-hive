@@ -21,7 +21,9 @@ The fallback is one platform service:
    It mirrors the existing encoded H.264 Annex-B AUs and Opus packets. There is
    no second capture or encoder.
 2. One `osgallery-webrtc-bridge.service` owns that socket, loopback HTTP
-   `127.0.0.1:18080`, and ICE UDP `55950`. It multiplexes independent station hubs
+   `127.0.0.1:18080`, and ICE UDP `54200` (registry `ports.webrtcBridgeUdp`;
+   `55950` until 2026-09-08 — a port the edge never forwarded, see
+   [Remote visitors](#remote-visitors)). It multiplexes independent station hubs
    and per-peer Pion sessions. `POST /offer/<tile>` chooses a registered feed.
 3. The HTTPS server advertises `/webrtc/<tile>/offer` for every key in its
    ordinary `tiles.json`. The bridge upstream and ICE list are global platform
@@ -50,9 +52,61 @@ While recovering or stalled it shows that state. Initial negotiation has a
 bounded failure budget and ends at the ordinary error overlay instead of a
 permanent false-LIVE or infinite connecting state.
 
+## Remote visitors
+
+A remote browser (the operator's iPad on cellular, any visitor outside the
+LAN) reaches the bridge through the same hole the WebTransport stations use:
+the edge VPS DNATs UDP `54080-54200` to the box unchanged
+(`docs/PUBLIC-GALLERY.md`, registry `ports.publicRelayLow..High`). The bridge
+therefore listens on **54200**, the top of that range, reserved for it in
+registry `ports.webrtcBridgeUdp` so no station is ever allocated slot 200
+(`stations_registry.generate.slot_refusal`, `validate_rules`, `wave.sh alloc`
+all refuse it; `kh-claim who port 54200` names the owner on the box).
+
+Listening on a forwarded port is half of it. Pion gathers host candidates from
+the box's own interfaces, so the SDP answer used to carry only LAN addresses —
+a remote peer had nothing reachable to try and every attempt ended in
+`webrtc-state pc=failed ice=failed signaling=stable`. The unit now passes
+`-public-ip ${WEBRTC_PUBLIC_IP}` (the address `kernelhive.madekivi.fi`
+resolves to, written box-side into `/etc/osgallery-webrtc/bridge.env` by
+`streamhost/webrtc-bridge/deploy/install-bridge.sh` from `SH_GALLERY_HOST` in
+`registry/local.env`; never committed). The bridge applies it as an ICE
+address-rewrite rule of type **host, mode append**
+(`webrtc.SetICEAddressRewriteRules`; `main.go` `iceSettings`), which is the one
+combination that works with the UDP mux:
+
+| rule | what the SDP carries | verdict |
+|---|---|---|
+| host + replace (the old `SetNAT1To1IPs(…, Host)`) | `public:54200` only | breaks LAN visitors — the Firefox-Android proof below is a LAN visitor |
+| srflx (`ICECandidateTypeSrflx`) | `lan:54200` + `public:<ephemeral>` | pion gathers a mapped srflx candidate on a NEW socket (`ice/v4` `gatherCandidatesSrflxMapped`), not on the mux — a port the edge does not forward |
+| **host + append** | `lan:54200` + `public:54200` | both on the mux socket; LAN visitors pick the LAN pair, remote ones the public pair |
+
+`main_test.go` `TestPublicIPIsAppendedOnTheMuxPort` gathers against a real mux
+and asserts exactly that shape. A remote session that works looks like this in
+`clientlog.jsonl` (Safari 17 on cellular, 2026-09-08, session `c26c357c`):
+
+```
+webrtc-offer   attempt=0 playoutDelayOffered=true iceServers=0
+webrtc-track   kind=video id=… jitterFloorMs=15
+webrtc-state   pc=connecting ice=connected signaling=stable
+webrtc-state   pc=connected ice=connected signaling=stable
+webrtc-stats   media=live … framesDecoded=18 fps=7 … candidate=prflx/udp remote=host@<public>:54200
+```
+
+`candidate=` is the browser's OWN selected candidate — `prflx` on cellular is
+normal (the client offers no STUN, so its NAT mapping is learnt from the
+bridge's checks). `remote=` (added 2026-09-08) is the bridge-side half of the
+pair: `<public>:54200` for a remote visitor, `<lan>:54200` for a LAN one. On
+the box, `tcpdump -ni wg0 udp port 54200` shows the same session arriving
+through the tunnel. The operator no longer hand-tests: drive the real tab
+with `clientcmd.sh eval <sid> 'location.assign("/walkin/play/win311"); return "nav"'`
+and read the rows (`docs/lab/STREAM-DEBUGGING.md` §5, "no reachable candidate").
+
 ## TURN status
 
-TURN is not operational on CT950 as of 2026-07-16. The private ops declaration
+TURN is not operational on CT950 as of 2026-07-16 — and after the remote path
+above it is not needed for a visitor behind an ordinary NAT; only a network
+that blocks outbound UDP entirely would still need a relay. The private ops declaration
 describes a public TCP forward `tunnel.example.com:13478 -> CT950:3478`, but
 the public endpoint refuses TCP connections and CT950 has no TCP or UDP listener
 on 3478. There is no coturn service/config/binary and no forwarder-agent service
@@ -60,10 +114,10 @@ or executable on CT950. Restoring relay needs both missing components plus
 credential provisioning; neither can be recovered through the permitted
 `ssh lab` boundary.
 
-`WEBRTC_ICE_SERVERS_FILE` therefore intentionally remains absent/empty and the
-supported fallback is LAN `host/udp`. Do not claim TURN fixed merely because a
-URL is configured. A remote proof must show `candidateType=relay` and
-`protocol=tcp` in `__kernelHiveWebRtcDebug()`.
+`WEBRTC_ICE_SERVERS_FILE` therefore intentionally remains absent/empty; the
+supported paths are LAN `host/udp` and the public host candidate on udp/54200.
+Do not claim TURN fixed merely because a URL is configured. A TURN proof must
+show `candidateType=relay` and `protocol=tcp` in `__kernelHiveWebRtcDebug()`.
 
 ## Deployment and rollback
 
@@ -74,14 +128,22 @@ using explicit, reviewed waves of station names. Never use a blind `--all` resta
 The generic bridge has one non-template unit:
 
 ```bash
+# Neither CT950 nor the box has a Go toolchain any more (only the box's old
+# module cache survived 2026-07-16). Fetch one into the sandbox; pion is pure
+# Go, so the static amd64 binary runs on the box unchanged:
+curl -sSL https://go.dev/dl/go1.24.7.linux-amd64.tar.gz | tar xz -C "$SANDBOX/build"
 cd streamhost/webrtc-bridge
-go build -o osgallery-webrtc-bridge .
-install -m 0755 osgallery-webrtc-bridge \
-  /data/vms/streamhost/webrtc/bin/osgallery-webrtc-bridge
-install -m 0644 deploy/osgallery-webrtc-bridge.service /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable --now osgallery-webrtc-bridge.service
+GOROOT=$SANDBOX/build/go GOPATH=$SANDBOX/build/gopath PATH=$GOROOT/bin:$PATH \
+  CGO_ENABLED=0 go test ./... && go build -trimpath -o $SANDBOX/build/osgallery-webrtc-bridge .
+# On the box (root): backs up the live binary with a timestamp, writes
+# /etc/osgallery-webrtc/bridge.env from SH_GALLERY_HOST, installs the unit,
+# restarts, and proves `ss -lun` shows udp/54200 + /healthz answers.
+ssh lab "$SANDBOX/repo/streamhost/webrtc-bridge/deploy/install-bridge.sh \
+  $SANDBOX/build/osgallery-webrtc-bridge $SANDBOX/repo"
 ```
+
+The restart drops every open WebRTC peer (they reconnect within the open UI
+session, see above); WebTransport stations never notice.
 
 Rollback does not restore a forbidden per-station sidecar. Stop the one bridge,
 restore the timestamped pre-platform shared streamhost binary, and explicitly
