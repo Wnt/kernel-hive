@@ -89,7 +89,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/atari800xl/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atari800xl/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "-:[,=:],+:',*:\\,<:-,>:=,_:{,|:},\\:\",^:|,[:<,]:>,\":@,&:^,':&,@:*"
     },
     "vmidLabel": 186,
     "bringUpOrder": 89,
@@ -134,7 +135,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#C8A45A",
-    "eraLabel": "1983 · Atari 800XL — Atari BASIC / DOS"
+    "eraLabel": "1983 · Atari 800XL — MyPicoDos + Atari BASIC"
   },
   "museum": {
     "id": "atari800xl",
@@ -147,23 +148,24 @@
     "era": "1980s",
     "accent": "#C8A45A",
     "eraSoftware": [
-      "Atari BASIC",
-      "Atari DOS 2.5",
-      "Star Raiders",
-      "Boulder Dash",
-      "M.U.L.E.",
-      "Rescue on Fractalus!",
-      "AtariWriter"
+      "MyDOS + MyPicoDos 4.06N",
+      "Atari BASIC rev C",
+      "Star Raiders (Atari, 1979)",
+      "Boulder Dash (First Star, 1984)",
+      "Dropzone (Archer Maclean, 1984)",
+      "River Raid (Activision, 1984)",
+      "The Last Word 3.2 (Jonathan Halliday)"
     ],
     "periodBrowser": "none — pre-web 8-bit era",
     "iconicApps": [
-      "Boulder Dash",
-      "M.U.L.E.",
       "Star Raiders",
+      "Boulder Dash",
+      "Dropzone",
+      "The Last Word",
       "Atari BASIC"
     ],
-    "blurb": "TODO(spa): The Atari 8-bit most people owned: a 64 KB 800XL with built-in BASIC, a 1050 disk drive and a joystick, booting into a one-key menu of the games the ANTIC/GTIA/POKEY chips were built for.",
-    "notes": "TODO(spa): Host-native station: MAME 0.289's a800xlp runs on the host (drawshm frames, ctlsock keys, FIFO audio). Boots a composed disk whose first screen is a one-key menu of period titles; see docs/lab/ATARI800XL-WAVE.md."
+    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, Boulder Dash, Dropzone, River Raid, The Last Word word processor, and Atari BASIC to type into.",
+    "notes": "Host-native station: MAME 0.289's a800xlp driver (Atari 800XL, PAL) runs on the host — drawshm frames, ctlsock keys, FIFO audio, no QEMU and no guest OS. -flop1 is hive.atr, a 133 KB enhanced-density MyDOS disk composed on the host by scripts/build-guests/tiles/atari800xl.sh; its boot sector is MyPicoDos 4.06N, whose boot screen IS the file menu (RETURN loads the highlighted entry, ~15 s per title). Keyboard-only exhibit (pointer transport none), like apple2e, with a CX40 joystick on -ctrl1 driven from the host arrow keys and Left Alt as fire; F1/F2/F3 are the Start/Select/Option console keys. The machine has no cursor keys — menu navigation is CTRL held across - = + *. See docs/lab/ATARI800XL-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -186,5 +188,42 @@
   "notes": [
     "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
     "spine 2026-09-08: device set a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC)"
-  ]
+  ],
+  "demoProgram": {
+    "label": "Type in a demo program (select XBASIC.XEX first)",
+    "lines": [
+      "10 GRAPHICS 7",
+      "20 SETCOLOR 0,4,8",
+      "30 SETCOLOR 1,9,6",
+      "40 SETCOLOR 2,13,6",
+      "50 C=1",
+      "60 FOR X=0 TO 159 STEP 4",
+      "70 COLOR C:C=C+1:IF C>3 THEN C=1",
+      "80 PLOT X,0:DRAWTO 159-X,79",
+      "90 NEXT X"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 170
+  },
+  "keyboard": {
+    "charMap": {
+      "-": "[",
+      "=": "]",
+      "+": "'",
+      "*": "\\",
+      "<": "-",
+      ">": "=",
+      "_": "{",
+      "|": "}",
+      "\\": "\"",
+      "^": "|",
+      "[": "<",
+      "]": ">",
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      "@": "*"
+    },
+    "letterCase": "upper-only"
+  }
 }

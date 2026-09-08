@@ -142,6 +142,17 @@ no resident DOS); press **Reset** for that.
 
 ## OPEN items
 
+- **`keyboard.charMap` is DERIVED, not framebuffer-verified (spa stream).** The
+  Atari's `- = + *` sit on host scancodes 0x1a/0x1b/0x28/0x2b, which a US host
+  labels `[` `]` `'` `\` — so typed text (and the `demoProgram`) needs a
+  translation or every `=` arrives as `>`. The map in `registry/stations/atari800xl.json`
+  (`keyboard.charMap` + the matching `SH_KEY_MAP` in `runtime.stationEnv`) is read
+  straight off the generated keymap plus the US scancode table; the golden stream
+  should prove one `=` and one `+` on the framebuffer. The same derivation is what
+  the OSK's CTRL-chord cursor keys rest on.
+- **BREAK has no keymap row** — the driver exposes it, the generated keymap does
+  not carry it, so the on-screen keyboard deliberately omits it (a dead key is
+  silent through the whole pipeline).
 - Pointer: the driver has a mouse device, but the station ships keyboard-only
   (`stream.pointer.transport: none`), as apple2e does — a relative-only mouse
   has no honest absolute contract yet.

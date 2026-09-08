@@ -511,10 +511,14 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
     badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
   },
-  // TODO(atari800xl): exhibit finish copied from apple2 — set the real era cues.
+  // The XL wedge is the pale warm grey Atari used across the 1983 line, with
+  // the keyboard sunk in a dark brown bezel and the rainbow fuji badge on the
+  // front right. The accent is that bezel brown rather than any of the rainbow
+  // stripes: the stripes are a logo, the brown is what half the case reads as
+  // from across a room.
   atari800xl: {
-    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
-    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+    caseTint: '#cfc6b2', accentTint: '#4a3a2c', tintMix: 0.44,
+    badge: 'ATARI 800XL', spec: '8-BIT • 1983', kit: 'eightBit',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
