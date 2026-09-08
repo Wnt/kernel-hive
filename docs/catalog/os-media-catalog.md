@@ -417,6 +417,7 @@ Notable recipes / gotchas (inside the Linux tile; outer QEMU = `-device virtio-v
   MAME sets the ROM is in `tk2000.zip`, while split sets use `mpf2.zip`.
 - **Amstrad CPC**: `cap32 --fullscreen` → the yellow-on-blue Locomotive BASIC `Ready` prompt. Keep the unaltered Amstrad copyright string to stay within the granted permission.
 - **Licensing is unusually clean**: C64 and Apple II GEOS are **official freeware** (not abandonware; source at github.com/mist64/geos); Atari needs zero proprietary ROMs; only the small Apple //e ROM is copyrighted-and-unlicensed (bundled/preservation-hosted). VICE 3.10 (2025-12-24) is current.
+- **apple2e (host-native sibling, 2026-09-08)**: a second, period-typical Apple //e station next to the LinApple-bridge `apple2` row above — ProDOS 2.4.2 + AppleWorks 3.0 + Dazzle Draw 1.2 behind a one-keypress `STARTUP` menu, on MAME's `apple2ee` driver (`-sl7 cffa2 -hard1 hive.hdv`), no bridge. See `docs/lab/APPLE2E-WAVE.md` for the wave ledger and `scripts/build-guests/tiles/apple2e.sh` for the media builder; Angry Birds (8-Bit Shack) is a planned fourth entry, not yet staged — its free-download mirror is currently unreachable.
 
 ## 8. Heritage / serial-console (all need the bridge)
 

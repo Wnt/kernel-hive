@@ -1115,10 +1115,10 @@ emit suse64 \
 
 # apple2e (VMID 217) — TODO one line; scaffolded from apple2.
 emit apple2e \
-  --tile apple2e --vmid 185 --udp 54185 --pointer abs --cursor-scale 1.0 \
-  --cursor-off-x 0 --cursor-off-y 0 --abs-pace-ms 30 --audio on --fps 60 \
-  --launcher-file "$T/apple2e/qemu-streamhost.sh" --env-append-file \
-  "$T/apple2e/station.env.fixture"
+  --tile apple2e --udp 54185 --x11 --x11-display :73 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/apple2e/apple2e.keymap" \
+  --env-append-file "$T/apple2e/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)
