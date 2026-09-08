@@ -14,6 +14,7 @@ import WalkinLanding from './walkin/WalkinLanding';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
 import { WalkinChrome } from './walkin/WalkinChrome';
+import { IdentityBadge } from './ui/IdentityBadge';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
 import { MUSEUM_NAME, MUSEUM_TAGLINES } from './config';
@@ -69,6 +70,7 @@ export default function App() {
         </span>
       </div>
       <div className="appbar-actions">
+        <IdentityBadge />
         {/* The navigation is the role fence made visible. A walk-in is refused
             /museum, /fleet and /about at the gate (gate.py WALKIN_PATHS), and a
             link that 302s the visitor back to where they started teaches them

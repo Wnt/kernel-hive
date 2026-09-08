@@ -8,6 +8,7 @@ import { accessAllows, clockText, resolveEndReason } from './sessionEnd';
 import { walkinReasonCopy, type WalkinReason } from './reasons';
 import { currentAccount } from './passkey';
 import { playTelemetry, type PlayTelemetry } from './playTelemetry';
+import { IdentityBadge } from '../ui/IdentityBadge';
 
 // /walkin/play/<os> — the visitor's own clone, in the normal station view.
 //
@@ -174,6 +175,7 @@ export default function WalkinPlay() {
         <div className="walkin-play-chrome">
           <span className="walkin-play-name">Your {os}</span>
           <span className={`walkin-clock${low ? ' walkin-clock--low' : ''}`}>{clockText(secondsLeft)} left</span>
+          <IdentityBadge />
           <span className="walkin-play-chrome-spacer" />
           <button type="button" className="walkin-btn walkin-btn--quiet" onClick={() => { void take(true); }}>
             Reset — give me a fresh one
