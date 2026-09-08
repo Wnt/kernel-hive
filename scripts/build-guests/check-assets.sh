@@ -298,6 +298,13 @@ ROWS=(
   "opt-file|apple2e|ProDOS 2.4.2 (John Brooks, carries BASIC.SYSTEM) install disk|$ASSET_STAGING/apple2e/media/ProDOS_2_4_2.dsk|sha256:d1e6fab8d9a25acf6e10ffa15e4120a616898c03613ab87a8e12882b12102543|abandonware-URL"
   "opt-file|apple2e|AppleWorks 3.0 (Claris) all-in-one program image|$ASSET_STAGING/apple2e/media/AppleWorks30.2mg|sha256:ea624d6b6fe6fb932fdd0de3035a4714cd3700e3fee7da8ac28b8540dc14b469|abandonware-URL"
   "opt-file|apple2e|Dazzle Draw 1.2 (Broderbund-1988) ProDOS disk|$ASSET_STAGING/apple2e/media/dazzledraw_v12_broderbund_1988.dsk|sha256:291f54945a1c946ba7985093ce686d01f5d74c7173cf84b0108c0839be0e6191|abandonware-URL"
+  # -- samcoupe: host-native MAME SAM Coupe. Three source disks compose the 800K
+  # MGT boot floppy hive.mgt via lib/mgtfs.py + a MAME typing pass
+  # (scripts/build-guests/tiles/samcoupe.sh); opt-file because the builder
+  # re-fetches and re-verifies anything absent.
+  "opt-file|samcoupe|SAMDOS 2.0 system disk (the DOS the hive disk boots)|$ASSET_STAGING/samcoupe/media/SAMDOSVersion2.0.dsk|sha256:7e4de8ae3aef8bbe913ac55ddef320b45f67f8a4fa2778ee3f0391d1e39dfe60|abandonware-URL"
+  "opt-file|samcoupe|5-in-1 Pack (Revelation, 1992) -- Manic Miner, Splat!, Mr. Pac (.sad)|$ASSET_STAGING/samcoupe/media/5in1_ManicMiner_Splat_MrPac_SnakeMania_Craft.sad|sha256:fdec2e69715dcaaed0241d876838a732fa6e8d6095eb0df947177300c7cfde67|abandonware-URL"
+  "opt-file|samcoupe|The Secretary (A. N. Stevens, 1992) word processor disk|$ASSET_STAGING/samcoupe/media/TheSecretary.dsk|sha256:8597f1138ddca18a135b797f404376c296462cb31d987ff70853b00e232a607a|abandonware-URL"
   # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
