@@ -151,20 +151,17 @@
       "MyDOS + MyPicoDos 4.06N",
       "Atari BASIC rev C",
       "Star Raiders (Atari, 1979)",
-      "Boulder Dash (First Star, 1984)",
-      "Dropzone (Archer Maclean, 1984)",
       "River Raid (Activision, 1984)",
       "The Last Word 3.2 (Jonathan Halliday)"
     ],
     "periodBrowser": "none — pre-web 8-bit era",
     "iconicApps": [
       "Star Raiders",
-      "Boulder Dash",
-      "Dropzone",
+      "River Raid",
       "The Last Word",
       "Atari BASIC"
     ],
-    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, Boulder Dash, Dropzone, River Raid, The Last Word word processor, and Atari BASIC to type into.",
+    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, River Raid, The Last Word word processor, and Atari BASIC to type into.",
     "notes": "Host-native station: MAME 0.289's a800xlp driver (Atari 800XL, PAL) runs on the host — drawshm frames, ctlsock keys, FIFO audio, no QEMU and no guest OS. -flop1 is hive.atr, a 133 KB enhanced-density MyDOS disk composed on the host by scripts/build-guests/tiles/atari800xl.sh; its boot sector is MyPicoDos 4.06N, whose boot screen IS the file menu (RETURN loads the highlighted entry, ~15 s per title). Keyboard-only exhibit (pointer transport none), like apple2e, with a CX40 joystick on -ctrl1 driven from the host arrow keys and Left Alt as fire; F1/F2/F3 are the Start/Select/Option console keys. The machine has no cursor keys — menu navigation is CTRL held across - = + *. See docs/lab/ATARI800XL-WAVE.md."
   },
   "emulator": {
@@ -181,8 +178,8 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
-    "keyboard": "PARTIALLY VERIFIED, re-confirmed on single density by the golden-fix stream 2026-09-08 at the fleet-floor 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP), no MAME_CTL_KEY_EXCL: menu-highlight navigation is PROVEN over ctlsock through the real keymap fields (:ctrl1:joy:JOY P1 Up/Down, the same mapping the PC arrow keys already carry) -- the bar visibly moves entry-to-entry and back, no dropped or duplicated input observed. STILL OPEN, RE-TESTED on the rebuilt single-density disk (golden-fix stream, 2026-09-08): RETURN on the highlighted entry still does not reliably commit a load (single tap, 500ms hold, and a second RETURN 2s later were all tried -- the file list transiently clears then the menu returns pixel-unchanged), the SAME symptom as before the density fix, which disproves that enhanced density alone explained it -- this is a separate, still-unresolved bug. Per-title first-screen proofs (Boulder Dash, Star Raiders mission-select, the XBASIC BASIC-prompt typing proof) and the D2: switch to Dropzone remain UNVERIFIED. See docs/lab/ATARI800XL-WAVE.md ## Walls hit and ## Proofs.",
-    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr, SINGLE density -- rebuilt 2026-09-08, MAME's emulated 1050 has no enhanced-density support) lists BOULDER.XEX, LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX, XBASIC.XEX; highlight starts on BOULDER.XEX. Dropzone (DROPZONE.XEX) moved to a second single-density drive hive2.atr (D2:, -flop2). Cold boot MEASURED 2026-09-08: directory fully painted by mtime~19s. Reset is a relaunch that restores sta/a800xlp/golden.sta (rebaked 2026-09-08 on the new disk pair); the restore was proven PIXEL-IDENTICAL to the pre-capture frame (PIL bbox None), 206ms ctlsock-ready after relaunch vs. the ~19 s cold boot. Menu navigation (PC arrows -> joystick Up/Down, no chord needed) is verified; RETURN-to-load a title is STILL OPEN, confirmed independent of density (see reset.keyboard)."
+    "keyboard": "VERIFIED by the golden4 stream 2026-09-08, 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP): menu-highlight navigation (:ctrl1:joy:JOY P1 Up/Down) and RETURN-to-load are both PROVEN on the shipped disk -- LASTWORD.XEX (default highlight), RIVRRAID.XEX and STARRAID.XEX all load and show their first screen on frames. The earlier 'RETURN does not commit a load' wall was ONE BAD TITLE (Boulder Dash, the previous default highlight, reboots the machine on load) -- every earlier stream only ever pressed RETURN on that entry. STILL OPEN: XBASIC.XEX does not reach a BASIC READY prompt (three DOSINI/DOSVEC fixes tried, none clean -- see docs/lab/ATARI800XL-WAVE.md); the D2: drive-select key does not switch drives, so Dropzone is unreachable.",
+    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr, SINGLE density) lists LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX, XBASIC.XEX (alphabetical); highlight starts on LASTWORD.XEX, a proven title (Boulder Dash was DROPPED 2026-09-08, golden4 stream -- it rebooted the machine on load). DROPZONE.XEX sits unreachable on a second single-density drive hive2.atr (D2:, -flop2 -- the drive-select key does not switch drives). Cold boot: directory fully painted by ~19 s. Reset is a relaunch that restores sta/a800xlp/golden.sta (rebaked 2026-09-08 at the Boulder-dropped menu); the restore is PIXEL-IDENTICAL to the pre-capture frame, ctlsock ready 1.29 s after relaunch vs. the ~19 s cold boot. Menu navigation and RETURN-to-load are both PROVEN (see reset.keyboard); XBASIC.XEX and Dropzone remain open."
   },
   "migrationExceptions": [],
   "notes": [
