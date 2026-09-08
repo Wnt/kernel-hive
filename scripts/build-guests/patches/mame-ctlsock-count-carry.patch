@@ -1,0 +1,283 @@
+ctlsock: the open-loop belief must integrate counts * gain EXACTLY -- rounding
+a fixed-size pacer chunk is a ramp, not a wash
+
+Applies AFTER mame-ctlsock-home-drain.patch (same file, same branch, last of
+the apple2e pointer chain: ptr-tags -> move-step-cap -> open-loop-gain ->
+home-drain -> count-carry).
+
+THE BUG. With home-drain in place a FRESH session lands five MOVEA targets
+within +-7 px on the apple2e Dazzle Draw canvas. A SECOND lap of the same
+five targets in the same session, with no re-home in between, did not:
+
+	target        err x   err y
+	(300,200)       +5      +4
+	(700,500)      +13      +8
+	(150,600)       +4     +12
+	(850,150)       +6     +14
+	(300,200)       -4     +12
+
+Every Y error is positive and every X error but the last is too. That is a
+bias, not jitter, and an open loop has nothing to correct it with: its only
+origin is its own belief.
+
+move_rel() advanced the belief by llround(counts * gain) per issued chunk.
+The pacer hands out chunks of a FIXED size -- m_move_step, 120 counts here --
+so the same residue is dropped every window: 120 * 1.547 = 185.64 px booked
+as 186, +0.36 px of phantom travel per window, in whichever direction the
+move went. Over a lap of ~3000 px that is a handful of pixels, always the
+same sign per direction of travel. Rounding is only a wash when the operands
+vary; a pacer exists precisely to make them not vary.
+
+THE FIX. m_bx_frac / m_by_frac: the belief integrates counts * gain in
+floating point and keeps the sub-pixel part, so the integer belief never sits
+more than 1 px from the exact sum however the travel was chunked. A clamp
+drops the carry -- past an edge the guest is not where the arithmetic says it
+is. reset_open_loop_carry() zeroes it wherever the belief is re-anchored
+rather than integrated: the home slam, the release of the held first target
+(the guest IS at the clamp once the slam has drained, so the belief is set to
+0,0 there instead of keeping whatever it accumulated on the way), and
+reseed_after_restore().
+
+AND THE FIX THAT IS NOT ONE -- MEASURED, so nobody re-adds it. The obvious
+companion is a second carry on the OTHER conversion, px_to_counts(): bank the
+sub-count remainder of Delta-px / gain and fold it into the next move. It
+makes things WORSE, and it reverses the sign of the drift. Built and run,
+three laps of the same five targets in one session, X error:
+
+	lap 1   -3   -9   -9  -18
+	lap 2  -18  -24  -20  -26
+	lap 3  -29  -38  -34  -40
+
+Monotone, ~11 px of drift per lap, against a worst of +13 before the change.
+The reason is that the belief integrates the counts ACTUALLY ISSUED: the
+rounding residue of px_to_counts() is therefore already visible to the next
+MOVEA, as a Delta-px the belief has not covered, and correcting it again in
+px_to_counts() applies it twice. Two carries compose only when the second
+one's error is invisible to the first. Here it is not, and the doubled
+correction is bounded by the +-1-count clamp on the carry, which is why the
+error walks off at a steady rate instead of exploding.
+
+WHAT THE FIX BUYS, AND WHAT IT UNCOVERS. MEASURED with this patch, three
+laps of the five targets in ONE session, golden copy restored, arrow tip
+located in the framebuffer (x>=10, 72<=y<640):
+
+	lap  target      tip        err
+	 1   (300,200)  (302,200)   +2, +0
+	 1   (700,500)  (706,500)   +6, +0
+	 1   (150,600)  (150,604)    0, +4
+	 1   (850,150)  (852,152)   +2, +2
+	 1   (300,200)  (294,200)   -6, +0
+	 2   (300,200)  (294,200)   -6, +0    (no travel: same target)
+	 2   (700,500)  (702,504)   +2, +4
+	 2   (150,600)  (143,612)   -7, +12
+	 2   (850,150)  (834,164)  -16, +14
+	 2   (300,200)  (276,212)  -24, +12
+	 3   (700,500)  (677,516)  -23, +16
+	 3   (150,600)  (117,620)  -33, +20
+	 3   (850,150)  (819,164)  -31, +14
+	 3   (300,200)  (261,208)  -39, +8
+
+LAP 1 IS THE BEST THIS STATION HAS EVER MEASURED -- worst 6 px, inside the
+bar a published pointer contract needs. Laps 2 and 3 are not: from the
+seventh move on the landings walk off toward the bottom-left at a steady
+rate, ~15 px per lap on X. That drift is NOT arithmetic. The belief now
+integrates exactly, STAT still reads bel=300,200 at the end, and the drift
+has a FIXED DIRECTION (left and down) rather than a fixed sign per direction
+of travel -- so it survives a closed loop of targets whose net displacement is
+zero, which no gain error and no rounding residue can do. It is the guest
+losing counts, and the suspect is the same 8-bit differencing window that
+move-step-cap addressed: the cap guarantees one WRITE never exceeds 127
+counts, but two paced writes that land between the same pair of MCU port-B
+reads sum at the device, and 240 counts folded into +-0x80 is read as -16.
+
+That also explains why the OLD rounding bias looked better on lap 2 (worst
+14 px, all positive): it was a positive error partly cancelling this negative
+one. Removing it did not create the drift, it uncovered it -- which is why
+this patch is the right change to keep even though the multi-lap numbers got
+worse before they get better. The next measurement is a merge accounting at
+the device, not another correction in the module.
+
+AND ONE KNOB FOR WHAT NO CARRY CAN FIX. MAME_CTL_REHOME_PX (default 0, off)
+re-homes silently before the next MOVEA once the pointer has travelled that
+many px since the last home AND the device has had HOME_SETTLE of quiet with
+an empty queue. The carry removes the drift the open loop MAKES; it can do
+nothing about drift the loop never saw -- a gain seed a little off, a window
+the device merged, a guest that moved its own pointer. Re-anchoring against
+the one position the guest always agrees about is the open loop's only
+recovery. It is off by default because it costs a visible slam.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp	2026-09-08 09:09:38.137856498 +0000
++++ b/src/osd/modules/ctlsock/ctlsock.cpp	2026-09-08 09:19:00.442226123 +0000
+@@ -200,6 +200,20 @@
+                              restated target re-derives the remainder.
+                              A reseed (state load) returns to the SEED,
+                              not to 1.0.                        [1.0/1.0]
++      MAME_CTL_REHOME_PX     open-loop re-anchor threshold, px of
++                             accumulated travel since the last home.
++                             0 disables. With a non-zero value, once the
++                             pointer has travelled this far since the last
++                             homing slam AND the guest has had HOME_SETTLE
++                             of quiet with an empty queue, the next MOVEA
++                             re-homes into the top-left clamp first and
++                             restates the target from a known corner --
++                             the open loop's only way to discard whatever
++                             its belief has stopped being able to explain
++                             (a wrong gain, a merged window, a guest that
++                             moved the pointer itself). The fractional
++                             count carry below removes the QUANTIZATION
++                             drift; this knob exists for the rest.     [0]
+       MAME_CTL_STAT_PERIOD   EV STATS / heartbeat period, wall s    [15]
+       MAME_CTL_TRACE         1 => single-line engine trace on stderr
+                              ("CTLTRACE <wall ms> <emu s> ..."; debug
+@@ -483,6 +497,9 @@
+ 			m_gy0 = 1.0;
+ 		m_gx = m_gx0;
+ 		m_gy = m_gy0;
++		m_rehome_px = env_long("MAME_CTL_REHOME_PX", 0);
++		if (m_rehome_px < 0)
++			m_rehome_px = 0;
+ 		m_dead = env_long("MAME_CTL_DEADBAND", 2);
+ 		if (m_dead < 0 || m_dead > 64)
+ 			m_dead = 2;
+@@ -1213,6 +1230,7 @@
+ 		// from scratch; the golden parks a plain arrow, the glyph the CAL
+ 		// constants calibrate.
+ 		swap_rebase();
++		reset_open_loop_carry();
+ 		m_infl_x = 0.0;
+ 		m_infl_y = 0.0;
+ 		m_obs_valid = false;
+@@ -1378,8 +1396,27 @@
+ 		// closed loop sizes every step from the reading, never from B.
+ 		if (!m_quad_active)
+ 		{
+-			m_bx = clamp_px_x(m_bx + long(std::llround(double(dx) * m_gx)));
+-			m_by = clamp_px_y(m_by + long(std::llround(double(dy) * m_gy)));
++			// The belief must integrate counts * gain EXACTLY. Rounding each
++			// chunk on its own is not a wash: the pacer hands out chunks of
++			// the same size (m_move_step) over and over, so the same residue
++			// is dropped every window and the error is a systematic ramp, not
++			// noise. Measured on apple2e (gain 1.547/1.674, step 120): a
++			// second lap of five targets in one session landed +5,+4 / +13,+8
++			// / +4,+12 / +6,+14 / -4,+12 -- every error positive, which is a
++			// bias, not jitter. Carry the sub-pixel remainder instead; the
++			// integer belief then never drifts more than 1 px from the exact
++			// sum, whatever the chunking. A clamp discards the carry: past an
++			// edge the guest is not where the arithmetic says it is.
++			double const tx = double(dx) * m_gx + m_bx_frac;
++			double const ty = double(dy) * m_gy + m_by_frac;
++			long const ix = long(std::floor(tx));
++			long const iy = long(std::floor(ty));
++			long const nx = clamp_px_x(m_bx + ix);
++			long const ny = clamp_px_y(m_by + iy);
++			m_bx_frac = (nx == m_bx + ix) ? (tx - double(ix)) : 0.0;
++			m_by_frac = (ny == m_by + iy) ? (ty - double(iy)) : 0.0;
++			m_bx = nx;
++			m_by = ny;
+ 		}
+ 		else
+ 		{
+@@ -1398,6 +1435,7 @@
+ 		// holding only the 62 px the step path knew about).
+ 		m_ax += std::abs(dx);
+ 		m_ay += std::abs(dy);
++		m_home_trav += std::abs(double(dx)) * m_gx + std::abs(double(dy)) * m_gy;
+ 		m_cum_ax += std::abs(dx);
+ 		m_cum_ay += std::abs(dy);
+ 		m_mx = ((m_mx + dx) % m_ptr_mod + m_ptr_mod) % m_ptr_mod;
+@@ -1462,6 +1500,15 @@
+ 	// on a guest whose ratio happens to be 1.0. MAME_CTL_GAIN_X/Y supplies
+ 	// the ratio; the belief integrates counts * gain in move_rel(), so both
+ 	// sides stay in px and a restated target re-derives what is left.
++	// The wire is integral and Delta-px / gain is not, so this rounds. It
++	// must NOT also bank the remainder: MEASURED, a second carry here makes
++	// the drift worse and reverses its sign (three laps: -3,-9,-9,-18 /
++	// -18,-24,-20,-26 / -29,-38,-34,-40 px on X, monotone, against +5..+13
++	// before). The reason is that the belief above integrates the counts
++	// ACTUALLY ISSUED -- so the rounding residue is already visible to the
++	// next move as a Delta-px the belief has not covered, and correcting it
++	// again here applies it twice. Two carries only compose when the second
++	// one's error is invisible to the first; here it is not.
+ 	static long px_to_counts(long dpx, double g)
+ 	{
+ 		if (dpx == 0)
+@@ -1479,6 +1526,16 @@
+ 		move_paced_travel(px_to_counts(dpx, m_gx), px_to_counts(dpy, m_gy));
+ 	}
+ 
++	// A home slam and a restore both make every banked remainder a lie: the
++	// belief is re-anchored from scratch, so nothing sub-pixel or sub-count
++	// from before it survives.
++	void reset_open_loop_carry()
++	{
++		m_bx_frac = 0.0;
++		m_by_frac = 0.0;
++		m_home_trav = 0.0;
++	}
++
+ 	long clamp_budget(long pend, long used) const
+ 	{
+ 		long const room = m_move_step - used;
+@@ -1568,6 +1625,11 @@
+ 			long const hx = m_home_x, hy = m_home_y;
+ 			m_home_x = 0;
+ 			m_home_y = 0;
++			// The slam has drained: the guest IS at the clamp, whatever the
++			// belief accumulated on the way there.
++			m_bx = 0;
++			m_by = 0;
++			reset_open_loop_carry();
+ 			move_paced_travel_px(hx, hy);
+ 		}
+ 		if (m_mq.empty())
+@@ -2014,6 +2076,7 @@
+ 				// cannot merge into the travel's first window.
+ 				long const sx = long(std::ceil(double(m_surf_w) / m_gx)) + m_move_step;
+ 				long const sy = long(std::ceil(double(m_surf_h) / m_gy)) + m_move_step;
++				reset_open_loop_carry();
+ 				move_paced(-sx, -sy);
+ 				// ...and do NOT enqueue the travel behind it. Our queue going
+ 				// empty is not the guest's accumulator going empty: the slam
+@@ -2031,6 +2094,28 @@
+ 					move_paced_travel_px(x, y);
+ 				}
+ 			}
++			else if (m_rehome_px > 0 && m_home_trav >= double(m_rehome_px)
++					&& m_mq.empty() && !m_home_pend
++					&& (m_last_issue < 0.0
++						|| (emu_now() - m_last_issue) >= m_home_settle))
++			{
++				// Re-anchor. The carry above removes the drift the OPEN LOOP
++				// itself creates; it cannot remove drift the loop never saw
++				// (a gain seed that is a little wrong, a window the device
++				// merged, a guest that moved its own pointer). After enough
++				// travel, throw the belief away and re-derive it from the one
++				// position the guest will always agree about -- the top-left
++				// clamp. Same slam, same HOME_SETTLE drain, same held target.
++				long const sx = long(std::ceil(double(m_surf_w) / m_gx)) + m_move_step;
++				long const sy = long(std::ceil(double(m_surf_h) / m_gy)) + m_move_step;
++				reset_open_loop_carry();
++				m_bx = 0;
++				m_by = 0;
++				move_paced(-sx, -sy);
++				m_home_x = x;
++				m_home_y = y;
++				m_home_pend = true;
++			}
+ 			else
+ 			{
+ 				// LATEST-WINS over the backlog. A streamed sweep enqueues travel
+@@ -3282,6 +3367,13 @@
+ 	// engine V2 belief + round bookkeeping (emu thread only; deliberately
+ 	// NOT save-registered — COVENANT 1)
+ 	long m_bx = 0, m_by = 0;             // believed true pointer, px
++	// Open-loop quantization carry: the sub-pixel part of the belief, since
++	// counts * gain is not a whole number of px. Pure bookkeeping, reset by
++	// reset_open_loop_carry() at every re-anchor. There is deliberately NO
++	// second carry on the px -> counts conversion (see px_to_counts()).
++	double m_bx_frac = 0.0, m_by_frac = 0.0;
++	double m_home_trav = 0.0;            // px travelled since the last home
++	long m_rehome_px = 0;                // MAME_CTL_REHOME_PX, 0 = off
+ 	long m_bias_x = 0, m_bias_y = 0;     // reading - belief (glyph hotspot)
+ 	long m_last_cx = 0, m_last_cy = 0;   // counts issued by the last step
+ 	double m_infl_x = 0.0, m_infl_y = 0.0;  // px issued but not yet observed

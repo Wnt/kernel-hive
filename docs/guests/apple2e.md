@@ -119,7 +119,7 @@ screen (Space) and launcher panel (`Input Device: Mouse` / `File System:
 Professional File`; Return reaches the canvas with the File/Tools/Edit/
 Goodies/Undo bar). Rollover/overlap is not stress-tested.
 
-## Pointer — scale and origin fixed, residual drift still open; ships keyboard-only
+## Pointer — scale, origin and belief fixed; a count leak in the guest is still open; ships keyboard-only
 `stream.pointer.transport` stays `"none"`. Three real mechanisms were found and
 fixed in the station's binary (all wired in via
 `scripts/build-guests/emulators/native.d/apple2e.sh`); what is left is not a
@@ -236,29 +236,83 @@ next `MOVEA 300 200` re-issues the full slam — 976, 698, the same counts as th
 session's first — and lands at (305,204), (+5,+4). The homing branch is paid
 once per session *and* once per state load, exactly as intended.
 
-### Why the pointer is still an open item
+### The belief rounded every pacer chunk (fixed)
 
-A **second lap** of the same five targets inside one session — no re-home, every
-target taken by the belief branch — drifts:
+`move_rel()` booked `llround(counts × gain)` per issued chunk. The pacer hands
+out chunks of a **fixed** size — `MAME_CTL_MOVE_STEP`, 120 counts here — so the
+same residue was dropped every window: 120 × 1.547 = 185.64 px booked as 186,
+**+0.36 px of phantom travel per window**, in whichever direction the move went.
+Rounding is a wash only when its operands vary; a pacer exists precisely to make
+them not vary. `mame-ctlsock-count-carry.patch` keeps the sub-pixel remainder
+(`m_bx_frac`/`m_by_frac`) and resets it wherever the belief is re-anchored
+rather than integrated — the home slam, the release of the held first target,
+and `reseed_after_restore()`.
 
-| target | error px |
-|---|---|
-| (300,200) | (+5,+4) |
-| (700,500) | (+13,+8) |
-| (150,600) | (+4,+12) |
-| (850,150) | (+6,+14) |
-| (300,200) | (−4,+12) |
+**A second carry on the other conversion is wrong, and it is measured.** The
+obvious companion — bank the sub-count remainder of `Δpx / gain` in
+`px_to_counts()` — was built and run, and it makes the drift *worse* and
+reverses its sign (three laps, X error: −3/−9/−9/−18, −18/−24/−20/−26,
+−29/−38/−34/−40; monotone, ~11 px per lap). The belief integrates the counts
+*actually issued*, so that residue is already visible to the next `MOVEA` as a
+Δpx the belief has not covered; correcting it again applies it twice. The patch
+carries the belief only, and says so where the next reader will look.
 
-Worst 13 px on X and 14 on Y. This is not the origin bug returning: the
-landings track the belief and the belief tracks the targets. It is per-move
-quantization — `round(Δpx / gain)` counts issued, `counts × gain` integrated —
-accumulating in an open loop that has no reading to correct against and never
-re-anchors. Outside the ±6 px a published pointer contract needs, so
-`stream.pointer.transport` stays `"none"`.
+### Three laps, measured (`MAME_CTL_HOME_SETTLE=750`, count-carry)
 
-**Next step:** a periodic re-home on a quiet timer (the same branch, re-armed),
-or a fractional-count carry in the open-loop branch so the rounding error does
-not accumulate — measured over several laps, not one.
+Golden copy restored, Dazzle Draw canvas, three laps of the same five targets in
+**one** session, arrow tip located in the framebuffer:
+
+| lap | target | arrow tip | error px |
+|---|---|---|---|
+| 1 | (300,200) | (302,200) | (+2,0) |
+| 1 | (700,500) | (706,500) | (+6,0) |
+| 1 | (150,600) | (150,604) | (0,+4) |
+| 1 | (850,150) | (852,152) | (+2,+2) |
+| 1 | (300,200) | (294,200) | (−6,0) |
+| 2 | (300,200) | (294,200) | (−6,0) — no travel, same target |
+| 2 | (700,500) | (702,504) | (+2,+4) |
+| 2 | (150,600) | (143,612) | (−7,+12) |
+| 2 | (850,150) | (834,164) | (−16,+14) |
+| 2 | (300,200) | (276,212) | (−24,+12) |
+| 3 | (700,500) | (677,516) | (−23,+16) |
+| 3 | (150,600) | (117,620) | (−33,+20) |
+| 3 | (850,150) | (819,164) | (−31,+14) |
+| 3 | (300,200) | (261,208) | (−39,+8) |
+
+A return to (300,200) after a **30-move random walk** inside the canvas landed
+(283,212), (−17,+12). The **click still works** at the end of all of it:
+`MOVEA 293 22` + `DOWN1` drops the Tools menu open.
+
+**Lap 1 is the best this station has measured** — worst 6 px, inside the ±6 a
+published contract needs. Laps 2 and 3 are not.
+
+### Why the pointer is still an open item — and what changed about it
+
+`stream.pointer.transport` stays `"none"`. But the open item is no longer an
+arithmetic one, and that is the finding worth carrying forward:
+
+- The belief integrates exactly now, and `STAT` still reads `bel=300,200` at the
+  end of the walk. The module believes it is on target and the arrow is 39 px
+  away.
+- The drift has a **fixed direction** — bottom-left — not a fixed sign per
+  direction of travel. It therefore survives a closed loop of targets whose net
+  displacement is zero. No gain error and no rounding residue can do that.
+
+So the guest is **losing counts**, and the suspect is the same 8-bit
+differencing window that `move-step-cap` addressed. The cap guarantees one
+*write* never exceeds 127 counts, but two paced writes that land between the
+same pair of MCU port-B reads **sum at the device**, and 240 counts folded into
+±0x80 is read as −16.
+
+This also explains why the pre-carry second lap *looked* better (worst 14 px,
+all positive): the rounding bias was a positive error partly cancelling this
+negative one. Removing it did not create the drift — it uncovered it.
+
+**Next step:** account for merges at the device (pace against the card's read
+rate rather than a fixed wall-clock window), or re-anchor periodically —
+`MAME_CTL_REHOME_PX`, shipped with the carry patch and **off** by default,
+re-homes before the next `MOVEA` once the pointer has travelled N px since the
+last home. Neither is measured yet.
 
 ## Reset / checkpoint
 `SH_RESET_MODE=relaunch`, restoring the MAME savestate at

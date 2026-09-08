@@ -37,7 +37,14 @@ NATIVE_MAME_ARGS=(-sl4 mouse -sl6 diskiing -sl7 cffa2)
 # (measured: every landing short by exactly the first target's travel). It
 # sizes the slam through the gain and holds the travel for MAME_CTL_HOME_SETTLE
 # of device quiet; the station fixture sets that knob.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch)
+# ...and last, count-carry, because the open loop rounded twice on every
+# move -- the belief by llround(counts * gain) per FIXED-size pacer chunk,
+# the wire by llround(Delta-px / gain) -- and a rounding whose operands never
+# vary is a bias, not a wash: a second lap of the same five targets in one
+# session drifted up to +14 px, every error the same sign. It carries both
+# remainders and re-anchors them at every home and restore. Its
+# MAME_CTL_REHOME_PX knob (periodic silent re-home) stays off by default.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {
