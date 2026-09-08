@@ -361,6 +361,9 @@ attribute:
 - `kh.transport.conn`, a per-connection id minted in the tab, so several
   sampled edges over one session group without any of them carrying a ticket.
 - `kh.transport.rtt_ms` with `kh.transport.rtt_source` naming which kind.
+- `kh.transport.dg_api`, which datagram write API the browser offered —
+  the spec's `createWritable` (Safari 26) or the legacy `writable` (Chromium)
+  — so a pointer-plane trace names the implementation under it.
 
 **`WebTransport.getStats()` does not exist in the browser this gallery serves.**
 Measured, not assumed: Chrome 150 on CT950, 2026-09-01 —

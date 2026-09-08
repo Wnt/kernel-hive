@@ -60,6 +60,7 @@
 //      invisible to JS. Only the SERVER port is knowable, and it is emitted.
 // ============================================================================
 import type { Attrs } from '../../analytics/trace';
+import type { DatagramWriterFacts } from './datagramWriter';
 
 /** How often the connection's stats are re-read. Cheap (one promise per
  *  interval per session) and deliberately slow: `smoothedRtt` is a moving
@@ -107,6 +108,12 @@ interface Facts {
    *  so an absent RTT is legible as "this UA has no such API" rather than as
    *  "the poll has not run yet". */
   statsApi: boolean;
+  /** Which datagram write API the session opened on (`datagramWriter.ts`):
+   *  the spec's `createWritable()` (Safari 26) or the legacy `writable`
+   *  attribute (Chromium). Recorded so a pointer-plane investigation can tell
+   *  the two implementations apart from the span alone. Null when the
+   *  caller did not say. */
+  dg: DatagramWriterFacts | null;
 }
 
 interface Stats {
@@ -173,7 +180,7 @@ export function readStats(raw: Record<string, unknown>): Stats {
  *  poll is torn down by `clearTransportFacts` on close, and a tab that never
  *  calls it simply has no transport attributes on its spans. */
 export function setTransportFacts(
-  url: string, wt: unknown, pingRtt?: () => number | null,
+  url: string, wt: unknown, pingRtt?: () => number | null, dg?: DatagramWriterFacts,
 ): void {
   clearTransportFacts();
   const t = wt as StatsCapableTransport | null;
@@ -186,6 +193,7 @@ export function setTransportFacts(
     statsApi,
     alpn: typeof t?.protocol === 'string' ? t.protocol : '',
     pingRtt: pingRtt ?? null,
+    dg: dg ?? null,
   };
   if (!statsApi) return;
   const poll = () => {
@@ -213,7 +221,7 @@ export function clearTransportFacts(): void {
  *  genuinely different loss and latency behaviour and a trace that could not
  *  tell them apart would be answering the wrong question.
  *
- *  BUDGET: at most 13 keys, well inside `traces.py`'s ATTR_MAX of 24, and
+ *  BUDGET: at most 14 keys, well inside `traces.py`'s ATTR_MAX of 24, and
  *  every string here is a hostname, a token or a fixed literal — nothing that
  *  can approach ATTR_STR_MAX (120). Chosen small on purpose: an attribute set
  *  that gets silently truncated at intake is worse than a smaller one. */
@@ -235,6 +243,8 @@ export function transportAttrs(reliability: 'stream' | 'datagram'): Attrs {
     a['net.peer.port'] = facts.endpoint.port;
   }
   if (facts.alpn) a['network.protocol.alpn'] = facts.alpn;
+  if (facts.dg) a['kh.transport.dg_api'] = facts.dg.api;
+  if (facts.dg) a['kh.transport.dg_api'] = facts.dg.api;
   const s = facts.statsApi ? facts.stats : null;
   if (s && s.rttMs !== null) {
     // The transport's own figure, when a UA has one.

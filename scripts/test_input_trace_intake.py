@@ -145,6 +145,7 @@ class TransportAttrsSurviveIntake(unittest.TestCase):
         "kh.transport.rtt_min_ms": 6.0,
         "kh.transport.dgram_lost": 2,
         "network.protocol.alpn": "h3",
+        "kh.transport.dg_api": "createWritable",
         "kh.input.class": "key",
         "kh.station.id": "win95",
     }

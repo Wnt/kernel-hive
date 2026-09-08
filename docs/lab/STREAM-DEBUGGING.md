@@ -352,6 +352,39 @@ ping is serialised (one in flight), and unanswered pings alone only produce a
 completely silent — no uni-stream, no datagram — for `SILENCE_MS`. Hard closes
 (`wt.closed` resolve/reject) are untouched and still instant.
 
+### Safari 26: `datagrams.writable` is undefined — `createWritable()` (fixed 2026-09-08)
+A `session-start` row with `wt:true vd:true rtc:true` on an iOS/iPadOS Safari
+UA (`iPhone OS 18_7 … Version/26.6.1 Mobile Safari`), then, on every attempt:
+
+```
+connect        transport ok, codec=(default), wire=v3, maxUdpPayload=1200, mtud=false
+wt-close       connect failed: TypeError: undefined is not an object (evaluating 't.datagrams.writable.getWriter')
+connect-retry  attempt=1/4 live=false restore=false why=connect: TypeError: undefined is not an object …
+…
+connect-giveup timed out negotiating tile stream (poster fallback) attempts=4
+```
+
+with every `stats` row at `rx0.0M fps0`. The handshake is fine — `transport ok`
+is written after `wt.ready` settled — and the throw is ours. The W3C
+WebTransport spec moved the write side of datagrams off the duplex stream:
+`WebTransportDatagramDuplexStream` has `readable` and `createWritable(options)`
+(returning a `WebTransportDatagramsWritable`, which owns `sendGroup`/`sendOrder`
+and `outgoingMaxAge`/`outgoingHighWaterMark`); the legacy `writable` attribute
+is gone. Chromium 150 still ships only the legacy shape; Safari 26 ships only
+the spec shape. `streamClient/datagramWriter.ts` now feature-detects
+(`createWritable` when it is a function, else `writable`) and the `connect` row
+says which took: `dgApi=createWritable dgMaxAgeOn=writable` on Safari,
+`dgApi=writable dgMaxAgeOn=duplex` on Chromium. The same session type also
+logged a bare `unhandled-rejection WebTransportError` with an empty stack: a
+`closed` promise rejecting before connect() reached the line that attaches its
+handler (a refused `ready` rejects `closed` too). It is absorbed at
+construction now.
+
+A walk-in that hits this is ALSO the session the plane could not see until the
+same day: the walk-in shape skipped `initClientDebug()` and gate.py refused
+`GET /clientcmd` for the role, so `clientcmd.sh sessions` never listed the
+guest. Both are fixed together (`clientcmd-admin-security.md`).
+
 ### "Spotty connection" on a session that never connected
 `updateBannerImpl` used to score a client with no RTT sample and no frames: the
 scorer's unknown → 250 ms default makes `latRaw` 0, `overall` 0, and after the
