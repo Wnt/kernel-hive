@@ -108,7 +108,7 @@ describe('typeDemoProgram', () => {
     expect(done).toBe(false);
     // Cancelled after the first chunk of the first line: nothing else, and
     // never the run command.
-    expect(r.typed).toEqual(['10 MODE ']);
+    expect(r.typed).toEqual(['1']);
   });
 
   it('sends a bare ENTER for an empty line and never types an empty string', async () => {

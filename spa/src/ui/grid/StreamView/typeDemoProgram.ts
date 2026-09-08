@@ -130,16 +130,19 @@ export async function typeDemoProgram({
 }
 
 /**
- * Characters a single typeText() call may carry. The daemon's mamesock sink
- * queues at most 64 commands (ORDERED_CAPACITY in mame_sock.rs) and a typed
- * character is two of them, four when shifted -- so a whole 38-character
- * BASIC line handed over in one call OVERFLOWS the queue and the tail of the
- * line is silently dropped (samcoupe, 2026-09-08: `[input-router] mamesock
- * ... dropped=3 overflow=3`, the demo listing arrived truncated). Eight
- * characters are at most 32 commands; the wait between chunks is the
- * station's own drain rate, so the queue never holds more than one chunk.
+ * Characters a single typeText() call may carry: ONE.
+ *
+ * Measured on samcoupe with the daemon's mamesock wire trace (2026-09-08): an
+ * 8-character call reaches the MAME ctlsock module as sixteen-plus edges
+ * written back to back, and the module's hold/gap pacing is per FIELD, so
+ * different keys go down in the same emulated frame -- up to an 8-key chord --
+ * and a ROM that scans its own matrix keeps one of them. Exclusive-scan mode
+ * (MAME_CTL_KEY_EXCL) serialises ordinary keys but exempts Shift, so a shifted
+ * character can still overlap the unshifted one before it. One character per
+ * call, with the station's per-character wait between calls, leaves every
+ * edge -- Shift's release included -- applied before the next press.
  */
-export const DEMO_CHUNK_CHARS = 8;
+export const DEMO_CHUNK_CHARS = 1;
 
 async function typePaced(
   text: string,
