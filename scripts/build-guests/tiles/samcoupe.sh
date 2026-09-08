@@ -101,6 +101,7 @@ fetch_pinned() {
 REMOTE=0
 if [[ ! -x "$MAME" ]]; then
   REMOTE=1
+  # shellcheck disable=SC2029  # expansion on the client side is intended
   ssh lab "test -x $MAME" || die "$MAME is on neither this host nor labhost"
   log "MAME runs on labhost (ssh lab); the disk images live on the shared /data mount"
 fi
@@ -113,7 +114,9 @@ mkdir -p "$STAGE_DIR" "$WORK"
 if [[ "$REMOTE" == 1 ]]; then
   # MAME runs as root over the door, so anything a previous run (or a hand
   # driven proof) left behind is root-owned and this script cannot delete it.
+  # shellcheck disable=SC2029  # expansion on the client side is intended
   ssh lab "chown -R 1000:1000 $WORK" || die "could not take back $WORK on labhost"
+  # shellcheck disable=SC2029  # expansion on the client side is intended
   ssh lab "mkdir -p $ROMPATH/samcoupe && cp -f $ROM_DIR/*.z5 $ROMPATH/samcoupe/ && chown -R 1000:1000 $ROMPATH" ||
     die "no ROMs at $ROM_DIR on labhost (the spine stages them)"
 else
@@ -230,6 +233,7 @@ run_mame() { # run_mame <image> <lua> <emulated seconds>
   if [[ "$REMOTE" == 1 ]]; then
     # MAME runs as root over the door; hand the files back so the next local
     # rm/cp does not trip over root-owned snapshots.
+    # shellcheck disable=SC2029  # expansion on the client side is intended
     ssh lab "$cmd; chown -R 1000:1000 $WORK" >/dev/null 2>&1
   else
     bash -c "$cmd" >/dev/null 2>&1
