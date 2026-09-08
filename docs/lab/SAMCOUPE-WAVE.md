@@ -20,10 +20,10 @@ one is derived from), `mpf2`/`zxspectrum` the keyboard-only precedents.
 | Scene tuple | `amstradCpc,homeCrtD,none,none` | spine (scaffold refused every tuple already in the lineup) |
 | MAME pin | `mame0289` (fleet pin, `build-mame-native.sh`) | spine |
 | Driver | `samcoupe` — src/mame/samcoupe/samcoupe.cpp (MACHINE_SUPPORTS_SAVE) | spine |
-| Device set (target) | samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN) | spine from stock MAME 0.276 `-listslots/-listmedia` on labhost; **native stream confirms on 0.289** |
-| ROMs | rom31.z5 (v3.1, default BIOS) sha1 c86601633fb61a8c517f7657aad9af4e6870f2ee; the other 14 z5 variants are optional BIOS choices — staged at `/data/assets-staging/samcoupe/roms/` (MANIFEST.sha256, `.staged`), from archive.org `MAME_0.224_ROMs_merged` | spine |
-| Keyboard ioports | 9 matrix ports kbd_0..kbd_8 (CTRL on LALT, SYMBOL on LCONTROL, EDIT on RALT, F0 on keypad 0, cursor keys real), joy_0/joy_1 = Sinclair-style 6-7-8-9-0 keys, so games needing a joystick are driven from the keyboard | spine from source; native stream dumps the real tags with KEYDUMP |
-| Published surface | 1024x768 (MAME aspect-corrects the native raster) | native stream re-measures |
+| Device set (target) | samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN) | spine from stock MAME 0.276 `-listslots/-listmedia` on labhost; **CONFIRMED on 0.289 by the native stream (2026-09-08)** — `-listslots` shows the same drive1/drive2=floppy default, mouseport=mouse present but left unattached |
+| ROMs | rom31.z5 (v3.1, default BIOS) sha1 c86601633fb61a8c517f7657aad9af4e6870f2ee; the other 14 z5 variants are optional BIOS choices — staged at `/data/assets-staging/samcoupe/roms/` (MANIFEST.sha256, `.staged`), from archive.org `MAME_0.224_ROMs_merged` | spine; native stream's `-listxml samcoupe` on the built 0.289 binary shows ONE machine (samcoupe) with all 15 ROM sets in the maincpu region — no sub-device ROMs, unlike apple2e — all 15 installed, 0 NOT FOUND |
+| Keyboard ioports | 9 matrix ports kbd_0..kbd_8 (CTRL on LALT, SYMBOL on LCONTROL, EDIT on RALT, F0 on keypad 0, cursor keys real), joy_0/joy_1 = Sinclair-style 6-7-8-9-0 keys, so games needing a joystick are driven from the keyboard | spine from source; **native stream KEYDUMPed the live rig (2026-09-08): 69 fields dumped, 71/71 matched** (70 by the default-assignment/name matcher, F0 at `:kbd_5` via a 1-row `--override` since KEYCODE_0PAD's default token collides with the numeric keypad's own KEYCODE_0_PAD row) |
+| Published surface | 1024x768 (MAME aspect-corrects the native raster) | native stream re-measured: `-video shm` publishes exactly 64+1024x768x4 bytes; boot-gate floor set to 223000 (half the measured 446518 lit pixels on the power-on colour-bar/copyright screen) |
 | Media | TODO(media): an 800K MGT disk (819200 bytes) composed on the host: SAMDOS + an `auto` SAM BASIC menu + titles | media stream |
 | Candidate titles | Lemmings (1991), Prince of Persia (1992), Manic Miner (1992), Defenders of the Earth / Sphera; apps: Flash! (paint), The Secretary or Outwrite (WP); [B] SAM BASIC | media stream picks what fits and BOOTS on the framebuffer; the ledger list is a shortlist, not a promise |
 | Stock MAME for quick media boots | `/usr/games/mame` 0.276 on labhost has this driver (`-listroms` matched); ROMs in the staging dir above | spine |
@@ -48,7 +48,16 @@ SAMDOS boots the disk (F9 / BOOT) and auto-LOADs the first file when it is a BAS
 
 ## Walls hit
 
-(none yet)
+- The power-on copyright screen (colour bars + "MILES GORDON TECHNOLOGY PLC
+  (C) 1990 SAM Coupé 512K") does NOT auto-dismiss on its own, and with a
+  floppy attached (`-flop1 hive.mgt`) it does NOT auto-boot either: a key
+  (Enter) is needed to drop to the SAM BASIC command line, and from there
+  `BOOT` + Enter is what loads the disk (F9 alone just dismisses to BASIC,
+  same as Enter — it is not a boot shortcut on this driver). Native stream
+  proved this on a live rig 2026-09-08; the golden stream should decide
+  whether the launch path needs to key this sequence automatically or
+  whether SAMDOS's own auto-run (once the menu disk has an `auto` BASIC
+  loader per the selector section below) makes it unnecessary.
 
 ## Proofs
 
