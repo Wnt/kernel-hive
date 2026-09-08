@@ -292,6 +292,12 @@ ROWS=(
   # mirrors.apple2.org.za is the only source, so the pin is the whole defence.
   "opt-file|apple2|Apple GEOS deskTop mouse HDV, zipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos-mouse.hdv.zip|sha256:64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35|abandonware-URL"
   "opt-file|apple2|Apple GEOS deskTop ProDOS image geos.hdv, unzipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos.hdv|sha256:5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681|abandonware-URL"
+  # -- apple2e: host-native MAME sibling of apple2 above. Three source images
+  # compose the /HIVE ProDOS volume via a2kit (scripts/build-guests/tiles/apple2e.sh);
+  # rows are opt-file because the builder re-fetches+re-verifies if absent.
+  "opt-file|apple2e|ProDOS 2.4.2 (John Brooks, carries BASIC.SYSTEM) install disk|$ASSET_STAGING/apple2e/media/ProDOS_2_4_2.dsk|sha256:d1e6fab8d9a25acf6e10ffa15e4120a616898c03613ab87a8e12882b12102543|abandonware-URL"
+  "opt-file|apple2e|AppleWorks 3.0 (Claris) all-in-one program image|$ASSET_STAGING/apple2e/media/AppleWorks30.2mg|sha256:ea624d6b6fe6fb932fdd0de3035a4714cd3700e3fee7da8ac28b8540dc14b469|abandonware-URL"
+  "opt-file|apple2e|Dazzle Draw 1.2 (Broderbund-1988) ProDOS disk|$ASSET_STAGING/apple2e/media/dazzledraw_v12_broderbund_1988.dsk|sha256:291f54945a1c946ba7985093ce686d01f5d74c7173cf84b0108c0839be0e6191|abandonware-URL"
   # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
