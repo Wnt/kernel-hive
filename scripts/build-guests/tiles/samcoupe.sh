@@ -46,7 +46,7 @@ OS_ID="samcoupe"
 STAGE_DIR="${STAGE_DIR:-/data/assets-staging/$OS_ID/media}"
 ROM_DIR="${ROM_DIR:-/data/assets-staging/$OS_ID/roms}"
 INSTALL_DIR="${INSTALL_DIR:-/data/vms/streamhost/assets/$OS_ID/media}"
-WORK="${WORK:-/data/vms/sandbox/samcoupe-media/mame}"
+WORK="${WORK:-/data/vms/build-samcoupe-media}"
 MAME="${MAME:-/usr/games/mame}"
 GATE=1
 [[ "${1:-}" == "--no-gate" || "${2:-}" == "--no-gate" ]] && GATE=0
