@@ -217,6 +217,7 @@ missing feature.
 | `apple2` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `armeval` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `aros` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
+| `atari800xl` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `atarist` | 2 bridge | trixie | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `aux` | 1 direct-QEMU | tcg | `qemu-adb-relative` | rel | — | on | 30 | — |
 | `bbcmicro` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
