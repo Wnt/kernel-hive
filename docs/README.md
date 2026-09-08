@@ -112,6 +112,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/pcbsd.md](guests/pcbsd.md) | PC-BSD 1.5.1 "Edison" — FreeBSD 6.3 + KDE 3.5.8 desktop BSD, assisted GUI install. |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
+| [guests/samcoupe.md](guests/samcoupe.md) | SAM Coupé (1989) — host-native MAME `samcoupe`, SAM BASIC boot menu for Manic Miner, Mr. Pac, Splat!, The Secretary and SAM BASIC itself; keyboard-only. |
 | [guests/slackware.md](guests/slackware.md) | Slackware 3.4 — Linux 2.0.30, XFree86 3.3.1, fvwm95 desktop composed host-side from the mirror's .tgz packages; GRUB2 boots the stock zImage. |
 | [guests/reactos.md](guests/reactos.md) | ReactOS station. |
 | [guests/redhat62.md](guests/redhat62.md) | Red Hat Linux 6.2 "Zoot" — kickstart install, GNOME 1.0/Enlightenment on cirrus, kernel 2.2.14 IDE PIO wall (TCG install), x11warp pointer. |
