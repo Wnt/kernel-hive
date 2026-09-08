@@ -25,8 +25,21 @@ class TestFence(unittest.TestCase):
         for path in ("/walkin", "/walkin/state", "/walkin/claim", "/walkin/manifest.json", "/poster-docs.json"):
             self.assertTrue(gate.allows(path, self.WALKIN), path)
 
+    def test_a_walk_in_is_reachable_by_the_client_debug_plane(self):
+        # Telemetry in and the command poll — the READ half. A walk-in whose
+        # stream never painted is the session the plane exists for.
+        for path in ("/clientlog", "/clientcmd"):
+            self.assertTrue(gate.allows(path, self.WALKIN), path)
+
+    def test_a_walk_in_can_review_a_staged_bundle(self):
+        # stage.sh previews are static files of the same SPA; the APIs they
+        # call are root-relative and fenced by the same allowlist.
+        for path in ("/staging/safari-wt/", "/staging/safari-wt/walkin", "/staging/safari-wt/assets/index-abc12345.js"):
+            self.assertTrue(gate.allows(path, self.WALKIN), path)
+
     def test_the_operator_surfaces_stay_invisible(self):
-        for path in ("/fleet", "/fleet-table.json", "/admin", "/clientcmd", "/clientcmd/admin", "/museum"):
+        # /clientcmd/admin is the WRITE half (enqueue, arbitrary-JS eval): box-side only.
+        for path in ("/fleet", "/fleet-table.json", "/admin", "/clientcmd/admin", "/museum"):
             self.assertFalse(gate.allows(path, self.WALKIN), path)
 
     def test_the_fleets_interactive_surface_is_refused_except_its_own_clone(self):

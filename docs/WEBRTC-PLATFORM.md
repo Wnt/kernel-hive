@@ -5,8 +5,14 @@ spike and every per-station pilot artifact.
 
 ## Architecture
 
-WebTransport + WebCodecs remains streamhost's primary path. When and only when
-the browser has no `VideoDecoder`, the UI selects native WebRTC.
+WebTransport + WebCodecs remains streamhost's primary path. The UI selects
+native WebRTC whenever the browser lacks EITHER `WebTransport` or
+`VideoDecoder` (`spa/src/three/streamTransportSelect.ts`, one decision for
+every start, restore and reconnect). Firefox-Android lacks the decoder;
+Safari 17 (macOS/iPadOS, `Version/17.x`) lacks WebTransport and was, until
+2026-09-08, routed by the decoder test alone into four `ReferenceError: Can't
+find variable: WebTransport` attempts. A browser with neither also takes WebRTC.
+The `station-open`/`session-start` rows carry `transport` naming the choice.
 
 The fallback is one platform service:
 

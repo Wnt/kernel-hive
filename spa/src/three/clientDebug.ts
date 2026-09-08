@@ -30,6 +30,7 @@
 import { configureLogSink, logRecord } from '../analytics/logSink';
 import { postTelemetry } from '../analytics/beacon';
 import { getAdminToken } from './adminAuth';
+import { describeEnvironment, setBootRole } from './clientEnvironment';
 // The bundle id every lane that names a build reads — the /traces resource
 // envelope, this file's /clientlog batches, its snapshots. Not re-derived here.
 import { BUILD_ID } from '../analytics/build';
@@ -273,29 +274,6 @@ export function setDebugTile(tile: string, hooks: { getSnapshot: () => unknown }
   return tileOwner;
 }
 
-/** Compact one-line environment probe: the facts that explain an early failure
- *  before any transport exists (missing WebTransport/WebCodecs, an insecure
- *  context, a restricted network's blocked QUIC). Kept well under the 512-char
- *  detail cap and free of anything identifying beyond the UA we already log. */
-function describeEnvironment(tile: string | null): string {
-  const probe: Record<string, unknown> = { tile: tile ?? '', bundle: BUILD_ID };
-  try {
-    probe.wt = typeof WebTransport !== 'undefined';
-    probe.vd = typeof VideoDecoder !== 'undefined';
-    probe.rtc = typeof RTCPeerConnection !== 'undefined';
-    probe.secure = typeof isSecureContext !== 'undefined' ? isSecureContext : null;
-    probe.sw = typeof navigator !== 'undefined' && 'serviceWorker' in navigator
-      ? (navigator.serviceWorker.controller ? 'controlled' : 'registered-or-none')
-      : 'unsupported';
-    const conn = (navigator as Navigator & {
-      connection?: { effectiveType?: string; downlink?: number; rtt?: number };
-    }).connection;
-    if (conn) probe.net = { t: conn.effectiveType, dl: conn.downlink, rtt: conn.rtt };
-    probe.hidden = typeof document !== 'undefined' ? document.visibilityState : null;
-    probe.href = typeof location !== 'undefined' ? location.pathname : '';
-  } catch { /* a probe must never be why telemetry is missing */ }
-  try { return JSON.stringify(probe); } catch { return `tile=${tile ?? ''}`; }
-}
 
 /** Station closed. Pass the token setDebugTile returned: a guard on the tile NAME
  *  alone cannot tell two overlapping mounts of the SAME station apart, so the
@@ -331,9 +309,10 @@ export function clearDebugTile(tile?: string, owner?: DebugTileOwner): void {
  * station is chosen and before anything can fail, and the command poller runs
  * for the lifetime of the tab. Idempotent: safe to call more than once.
  */
-export function initClientDebug(): void {
+export function initClientDebug(role?: string): void {
   if (bootLogged) return;
   bootLogged = true;
+  setBootRole(role);
   try {
     logClientEvent('session-start', describeEnvironment(null));
     startPoller();

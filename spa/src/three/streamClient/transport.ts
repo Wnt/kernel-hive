@@ -15,6 +15,7 @@ import { fetchSignal } from './signal';
 import { logClientEvent, flushNow } from '../clientDebug';
 import { noteTransportClosed } from './analyticsEvents';
 import { setTransportFacts, clearTransportFacts } from './transportFacts';
+import { openDatagramWriter, type DatagramDuplexLike } from './datagramWriter';
 import { endVitals } from './vitals';
 
 /** How long WebTransport may sit in `ready` before we record the silence as
@@ -108,6 +109,14 @@ export async function connectImpl(this: StreamClient): Promise<void> {
       congestionControl: 'low-latency',
     });
     this.wt = wt;
+    // `closed` REJECTS whenever `ready` rejects, and the real closed-handler is
+    // attached only at the END of this function — so a refused handshake, or a
+    // throw anywhere between `ready` settling and that handler (Safari 26's
+    // missing `datagrams.writable` was one), left `closed` rejecting with
+    // nobody listening: iOS Safari session 37ec6b3c logged a bare
+    // `unhandled-rejection WebTransportError` with an empty stack. Absorb it
+    // here; the handler below still sees the same promise and does its work.
+    void wt.closed.catch(() => { /* reported by the handler below or by the connect catch */ });
     // FIREFOX DELIVERY-RACE FIX (primary): attach the incoming uni-stream +
     // datagram readers BEFORE awaiting `ready`. Firefox 151 PERMANENTLY stops
     // surfacing server-opened incoming uni-streams to JS when any arrive
@@ -144,24 +153,26 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     if (this.disposed) { try { wt.close(); } catch { /* noop */ } return; }
     this.wtReady = true;
     this.sessionReadyAt = performance.now();
+    // The outgoing datagram writer, on whichever datagram API this browser
+    // has (`datagramWriter.ts`: spec `createWritable()` on Safari 26, legacy
+    // `writable` on Chromium). Opened BEFORE the facts and the `connect` row
+    // so both can say which shape was used — and so a UA with neither fails
+    // here, inside the try, as a connect failure that names the cause.
+    const dgOpened = openDatagramWriter(wt.datagrams as DatagramDuplexLike);
+    this.dgWriter = dgOpened.writer;
     // The transport hop's own identity and characteristics, for the sampled
     // `input.wire` span (`transportFacts.ts`). Recorded here, once `ready`
     // has settled, because before that there is no connection to describe and
     // `getStats()` has nothing to report. Never throws: a UA without
     // `getStats` records that fact and carries the endpoint alone.
-    try { setTransportFacts(sig.url, wt, () => this.lastRtt); } catch { /* instrumentation never breaks a connect */ }
+    try { setTransportFacts(sig.url, wt, () => this.lastRtt, dgOpened.facts); } catch { /* instrumentation never breaks a connect */ }
     this.armNoVideoTelemetry();
     // Belt-and-braces: if a session still comes up poisoned (the pre-ready
     // attach lost an unknown variant of the race), detect + rebuild it.
     if (IS_FIREFOX) this.armFfStallWatchdog(wt);
 
     this.setState(true, '-');
-    logClientEvent('connect', `transport ok, codec=${sig.video?.codec ?? '(default)'}, wire=v${sig.wireVersion}, maxUdpPayload=${this.serverMaxUdpPayloadSize ?? 'unknown'}, mtud=${this.serverMtuDiscovery ?? 'unknown'}`);
-    this.dgWriter = wt.datagrams.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>;
-    // Expire move datagrams stuck in the send queue for >100 ms instead of
-    // delivering stale pointer positions late (bufferbloat guard). Spec'd but
-    // not implemented everywhere — never let the assignment throw.
-    try { wt.datagrams.outgoingMaxAge = 100; } catch { /* unsupported UA */ }
+    logClientEvent('connect', `transport ok, codec=${sig.video?.codec ?? '(default)'}, wire=v${sig.wireVersion}, maxUdpPayload=${this.serverMaxUdpPayloadSize ?? 'unknown'}, mtud=${this.serverMtuDiscovery ?? 'unknown'}, dgApi=${dgOpened.facts.api}, dgMaxAgeOn=${dgOpened.facts.maxAgeOn}`);
 
     // Reliable input: PER-TYPE QUIC streams (HOL avoidance). Open ONE client-
     // opened unidirectional reliable stream per input CLASS, each led by its
@@ -194,6 +205,11 @@ export async function connectImpl(this: StreamClient): Promise<void> {
       .then(() => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'server-finished'; noteTransportClosed('server-finished', this.stationId); logClientEvent('wt-close', 'clean close (server-finished)'); this.setState(false, 'session closed'); } })
       .catch((e) => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'transport-down'; noteTransportClosed('transport-down', this.stationId); logClientEvent('wt-close', `transport error: ${String(e)}`); this.setState(false, `closed: ${String(e)}`); } });
   } catch (e) {
+    // A session that reached `ready` and then failed in this function is ours
+    // to close: dispose() only closes a transport it saw `wtReady` for, and
+    // the line below clears that. Without this, Safari's four failed attempts
+    // each left a live QUIC session open behind the poster.
+    if (this.wtReady && this.wt) { try { this.wt.close(); } catch { /* already gone */ } }
     this.wtReady = false;
     this.stats.lastError = `connect: ${String(e)}`;
     this.exitReason = 'transport-down';

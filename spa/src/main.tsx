@@ -18,7 +18,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { loadSession, type Session } from './data/session';
-import { isWalkinPath, walkinShape } from './walkin/route';
+import { isWalkinPath } from './walkin/route';
 import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
@@ -144,8 +144,8 @@ exposeKeyRecorder();
 // to produce nothing at all because every log call hung off a stream that had
 // already failed to start. This also starts the /clientcmd poller, so every
 // tab is reachable for debugging, not just one with a working station open.
-// …but NOT for a walk-in visitor: the operator poller is a gallery surface a
-// walk-in is fenced out of, and a walk-in has no operator to be reached by.
+// Walk-in accounts included, since 2026-09-08: the poller is the READ half of
+// the client-debug plane and gate.py admits it for the role (see mount()).
 
 // The session is resolved BEFORE the first render, and the whole app hangs off
 // the answer. Waiting costs one cheap same-origin request; not waiting is what
@@ -194,9 +194,14 @@ function mount(session: Session) {
     configureInstana(clientSessionId());
     configureInstanaIdentity(session);
   }
-  if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {
-    initClientDebug();
-  }
+  // Telemetry's first row and the operator poller ride the SAME answer again —
+  // every signed-in tab, walk-in accounts INCLUDED. Until 2026-09-08 the
+  // walk-in shape skipped this, so a stranger whose stream never painted was
+  // the one session `clientcmd.sh sessions` could not list and `eval` could
+  // not reach; gate.py now admits `GET /clientcmd` for the role alongside the
+  // `/clientlog` sink it always allowed. Only the signed-out stranger at the
+  // door stays quiet, for the reason above.
+  if (!signedOutAtTheDoor) initClientDebug(session.role);
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

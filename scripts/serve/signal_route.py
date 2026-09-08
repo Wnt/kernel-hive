@@ -192,9 +192,11 @@ def serve_tile(handler, tile, stream_key):
         # verification. Only the route changes — the public relay host
         # instead of the LAN IP.
         body["host"] = PUBLIC_HOST
-    # WebRTC is a platform capability for every station. The client enters
-    # this path only when VideoDecoder is absent; WebCodecs-capable
-    # clients ignore it and retain the WebTransport default.
+    # WebRTC is a platform capability for every station — walk-in cells
+    # included, they are served by this same route. The client enters this
+    # path when WebTransport OR VideoDecoder is absent (Safari 17 lacks the
+    # first, Firefox-Android the second; spa streamTransportSelect.ts);
+    # browsers with both ignore it and retain the WebTransport default.
     body["webrtc"] = {
         "offerUrl": f"/webrtc/{tile}/offer",
         "iceServers": ice_servers(),
