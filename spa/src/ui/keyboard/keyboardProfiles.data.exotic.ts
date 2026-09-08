@@ -16,8 +16,8 @@ import {
 
 export type ExoticFamily =
   | 'kc854' | 'sinclairql' | 'bbcmicro' | 'armeval' | 'alto' | 'appleii'
-  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'xerox-dwarf'
-  | 'xerox-star';
+  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'atari800xl'
+  | 'xerox-dwarf' | 'xerox-star';
 
 export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   // KC 85/4 — a GERMAN keyboard with an East German operating system, and the
@@ -350,6 +350,56 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
       sym('sp-open', '(', '8'),
       sym('sp-close', ')', '9'),
       sym('sp-pound', '£', 'x'),
+    ]],
+  },
+
+  // Atari 800XL. The only exhibit here whose ARROW KEYS ARE NOT ARROWS: the
+  // station's generated keymap (streamhost/stations/atari800xl/atari800xl.keymap,
+  // dumped from the a800xlp driver) wires the four host arrow scancodes to
+  // :ctrl1:joy:JOY — the CX40 joystick in port 1 — because that is MAME's own
+  // default for this driver and it is what every game on the disk wants. Left
+  // Alt (0x38) is P1 Button 1, overridden there because the joystick's default
+  // KEYCODE_LCONTROL collided with the keyboard matrix's own Ctrl field.
+  //
+  // Which leaves the machine with no cursor keys at all, and that is historically
+  // exact: an Atari 8-bit has none. Moving the bar on the MyPicoDos boot menu is
+  // CTRL held across one of four punctuation keys, the way the Atari's own keycaps
+  // print them — CTRL+`-` up, CTRL+`=` down, CTRL+`+` left, CTRL+`*` right. Those
+  // four Atari keys sit on host scancodes 0x1a/0x1b/0x28/0x2b, which a US host
+  // labels `[` `]` `'` `\\`, so the chords below send those keysyms: the label is
+  // what the Atari prints, the keysym is the host key that reaches it. Without
+  // these buttons a phone visitor cannot move the menu bar at all.
+  //
+  // START / SELECT / OPTION are the three console keys beside the keyboard, on
+  // the :console port, and the keymap puts them on F1-F3. The Atari key (the
+  // inverse-video key with the fuji on it) is Right Ctrl. BREAK is deliberately
+  // ABSENT: the driver exposes it, but the generated keymap has no row for it,
+  // so a button would be silent.
+  atari800xl: {
+    family: 'atari800xl',
+    rows: [
+      [
+        ...ARROWS,
+        tap('a8-fire', 'FIRE', XK.Alt_L, { hint: 'Joystick 1 fire — the arrows above ARE the joystick' }),
+        tap('a8-ret', '\u23ce', XK.Return),
+      ],
+      [
+        chord('a8-cur-up', 'CTRL \u2013', XK.Control_L, 0x5b, 'CTRL+\u2013 \u2014 the Atari\u2019s cursor up; moves the menu bar'),
+        chord('a8-cur-down', 'CTRL =', XK.Control_L, 0x5d, 'CTRL+= \u2014 the Atari\u2019s cursor down; moves the menu bar'),
+        tap('a8-start', 'START', F(1), { hint: 'START \u2014 the console key beside the keyboard' }),
+        tap('a8-select', 'SELECT', F(2), { hint: 'SELECT \u2014 console key' }),
+        tap('a8-option', 'OPTION', F(3), { hint: 'OPTION \u2014 console key; held at power-on it disables BASIC' }),
+        tap('a8-esc', 'ESC', XK.Escape, { hint: 'ESC \u2014 leaves a MyPicoDos sub-directory' }),
+      ],
+    ],
+    moreRows: [[
+      chord('a8-cur-left', 'CTRL +', XK.Control_L, 0x27, 'CTRL++ \u2014 the Atari\u2019s cursor left'),
+      chord('a8-cur-right', 'CTRL *', XK.Control_L, 0x5c, 'CTRL+* \u2014 the Atari\u2019s cursor right'),
+      tap('a8-atari', 'Atari', XK.Control_R, { hint: 'The Atari (fuji) key \u2014 inverse video' }),
+      tap('a8-del', 'BackS', XK.BackSpace, { repeat: true, hint: 'BACK S / DELETE' }),
+      tap('a8-tab', 'Tab', XK.Tab),
+      tap('a8-caps', 'Caps', XK.Caps_Lock, { hint: 'LOWR / CAPS \u2014 this machine boots in CAPITALS' }),
+      tap('a8-space', 'Space', 0x20, { repeat: true }),
     ]],
   },
 
