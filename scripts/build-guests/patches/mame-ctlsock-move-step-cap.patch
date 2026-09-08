@@ -1,0 +1,70 @@
+ctlsock: never hand a narrow-accumulator device a delta it reads backwards
+
+Applies AFTER mame-ctlsock-ptr-tags.patch (it needs m_ptr_mod).
+
+A device whose mouse ioport is narrower than the module's default 16-bit
+accumulator differences successive field reads inside a window of +-mod/2.
+The Apple II Mouse Card is the worst case: src/devices/bus/a2bus/mouse.cpp,
+a2bus_mouse_device::update_axis(), reads the 8-bit IPT_MOUSE_X field and folds
+
+	int diff = new_m - m_last[AXIS];
+	if (diff > 0x80) diff -= 0x100; else if (diff < -0x80) diff += 0x100;
+
+so ONE field write of +200 with MAME_CTL_PTR_MOD=256 is read as -56 and the
+pointer runs the WRONG WAY. `MOVE` was the only verb that could produce such a
+write: it called move_rel() directly, while MOVEP and MOVEA travel already went
+through the paced queue (<= MAME_CTL_MOVE_STEP counts per 40 ms window).
+
+Measured on apple2e (Dazzle Draw canvas, golden.sta, 1.547 px/count on X), one
+MOVE per trial from the left clamp, arrow x measured from the framebuffer:
+
+	MOVE  10 -> 36 px   MOVE 100 -> 171 px   MOVE 130 -> no movement
+	MOVE  20 -> 50 px   MOVE 120 -> 207 px   MOVE 160 -> no movement
+	MOVE  40 -> 79 px   MOVE 127 -> 217 px   MOVE 200 -> no movement
+	MOVE  60 -> 109 px                       MOVE 255 -> no movement
+
+Perfectly linear to 127, dead from 129 (128 is diff == 0x80, still accepted).
+The same 200 and 400 counts issued as 2x100 / 4x100 -- what this patch makes
+the module do internally -- moved 204 and 409 counts' worth, back-to-back with
+no delay, because the card samples port B at least once per emulated frame.
+
+Two hunks: cap the pacing budget at the differencing window whenever the
+accumulator is narrow, and route an oversized MOVE onto the paced queue.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -409,6 +409,16 @@
+ 		m_ptr_mod = env_long("MAME_CTL_PTR_MOD", 65536);
+ 		if (m_ptr_mod < 256 || m_ptr_mod > 65536)
+ 			m_ptr_mod = 65536;
++		// A narrow accumulator has a DIFFERENCING WINDOW: the device reads
++		// the field and folds new-last into +-mod/2 (a2bus mouse.cpp
++		// update_axis(): `if (diff > 0x80) diff -= 0x100`). One field write
++		// larger than mod/2 is therefore read as motion the OTHER WAY.
++		// Measured on apple2e/Dazzle Draw (PTR_MOD=256, 1.55 px/count):
++		// MOVE 127 -> +197 px, MOVE 130/160/200/255 -> 0 px (the arrow ran
++		// LEFT into the clamp). Cap the pacing budget at the window so the
++		// queue never hands the device an ambiguous delta.
++		if (m_ptr_mod < 65536)
++			m_move_step = std::max(1L, std::min(m_move_step, (m_ptr_mod / 2) - 1));
+ 		split3(env_str("MAME_CTL_BTN_NAMES"), m_btn_name[0], m_btn_name[1], m_btn_name[2]);
+ 		if (m_btn_name[0].empty() && m_btn_name[1].empty() && m_btn_name[2].empty())
+ 		{
+@@ -2610,7 +2620,16 @@
+ 			++m_c_move;
+ 			++m_p_move;
+ 			input_seen();
+-			move_rel(dx, dy);
++			// MOVE is the IMMEDIATE verb -- but "immediate" cannot mean one
++			// field write past the device's differencing window: an oversized
++			// single write is read BACKWARDS (see MAME_CTL_PTR_MOD above), so
++			// it goes on the paced queue instead, which emits <= m_move_step
++			// per window and is what MOVEP and MOVEA travel already use. The
++			// ack stays immediate -- MOVE has never acked on drain.
++			if ((std::abs(dx) > m_move_step) || (std::abs(dy) > m_move_step))
++				move_paced(dx, dy);
++			else
++				move_rel(dx, dy);
+ 			hist_apply(ack);
+ 			reply_ok(ack);
+ 		}
