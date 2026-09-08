@@ -435,6 +435,11 @@ def cmd_reset(argv):
             if os.path.isfile(os.path.join(tile_dir, "sta", env["MAME_NATIVE_DRIVER"], "golden.sta")):
                 state = "golden"
         if sock and state:
+            # An idle-paused (SIGSTOPped) emulator never acks: thaw it and take
+            # the wake lease first, exactly as `labctl mctl` does — otherwise
+            # this waits the full LOADST timeout before falling back (measured
+            # 76 s on a paused atari800xl, 2026-09-08).
+            ensure_running(c, name)
             r = mctl_run(sock, verb="LOADST " + state, timeout=60)
             if r.returncode == 0:
                 print("ok: %s restored to '%s' savestate (mamectl LOADST)" % (name, state))
