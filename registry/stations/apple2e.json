@@ -34,7 +34,7 @@
       "exec_user": null,
       "exec_key": null,
       "console": "x11",
-      "udp_port": 54117,
+      "udp_port": 54185,
       "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/apple2e/sta."
     }
   },
