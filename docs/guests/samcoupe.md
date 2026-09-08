@@ -51,9 +51,11 @@ source disks — no Linux tool writes a SAMDOS filesystem directly.
 
 ## Boot media (media stream)
 `hive.mgt` — an 800K MGT container, **819 200 bytes**, sha256
-`dcf956311b7865962ba8cb80b04009fc796f3b887010e45adb9178cdf684a9e8` (rebuilt by
-the golden-fix stream for the `B`-menu fix; the pre-fix disk was
-`bcec34e98a8f5391d6bef666319fa2e55bac164a56a9096eac08905a988e3c6e`), 29 files,
+`818b61d2cec6863920fbc15dd3e215e542dc342b0080affaf7106a32f3a140f1` (rebuilt by
+the `menu-release` stream for the held-key `B` fix; the pre-fix disk was
+`dcf956311b7865962ba8cb80b04009fc796f3b887010e45adb9178cdf684a9e8`, and
+before that `bcec34e98a8f5391d6bef666319fa2e55bac164a56a9096eac08905a988e3c6e`),
+29 files,
 104 of 1560 data sectors free. Installed at
 `/data/vms/streamhost/assets/samcoupe/media/hive.mgt`, mounted as `-flop1`.
 SAMDOS 2.0 is the first directory entry, which is what the ROM's `BOOT`
@@ -93,7 +95,7 @@ pressed, no dismissal keypress needed first.
 | `2` | Mr. Pac | `MR PAC` (BASIC loader) → `MR PAC 1` | ~20 s to the title screen; SPACE (or fire) to play, `F8` toggles music/FX |
 | `3` | Splat! | `SPLATRUN` (BASIC loader) → `ALLCODE`, `LOADSCRN` | ~20 s to the instructions screen; any key reaches the game |
 | `4` | The Secretary | `SECRUN` (renamed loader — see below) → `Secretary`, its `*.Sec`/`*.Key` data, `MDOS22` | ~20 s to The Secretary's own menu with LOAD THE SECRETARY highlighted; ENTER opens the editor |
-| `B` | SAM BASIC | — | lands on `0 OK, 9000:2`; `RUN` returns to the menu |
+| `B` | SAM BASIC | — | lands on `0 OK, 9000:2`; `RUN` returns to the menu. The menu waits for `B` to be RELEASED before acting (line 85), so a held press never leaks into the command line — see §Traps |
 
 Two renames on the disk, both load-bearing:
 
@@ -131,6 +133,19 @@ real `ctlsock` `KEY` path (the generated `samcoupe.keymap`, not a Lua
 autotype harness), with no dropped or duplicated character. Rollover/overlap
 is not stress-tested.
 
+**Demo proven from the real browser (`menu-release` stream, 2026-09-08)**:
+Playwright, headed Chrome, deployed bundle `index-COVo6ODo.js` (matched
+against the served `index.html` at test time). A clean `page.keyboard` tap
+of `b` (~100 ms down/up) landed on `0 OK, 9000:2` with no stray `b` — the
+same held-key-release fix that ctlsock proved also holds over the visitor's
+actual browser input path (both go through the same daemon key-hold floor).
+The daemon's `input-router` `mamesock` counters (`dropped`/`overflow`)
+stayed unchanged across the run. The SPA's own "Type in a demo program"
+action was also exercised in the same session; its playback stalled on this
+run rather than reaching the expected circles + `SAM COUPE 1989` — see
+`docs/lab/SAMCOUPE-WAVE.md` §OPEN, not investigated further here as it is
+outside this station doc's ownership of the `auto.bas` menu fix.
+
 ## §Checkpoint
 Captured on a sandbox rig (never the station dir), `MAME_NATIVE_CHECKPOINT=1`
 (`samcoupe` has `MACHINE_SUPPORTS_SAVE`, so the shared launcher's checkpoint
@@ -146,12 +161,20 @@ visitor ever types it).
 Recaptured by the `golden-fix` stream, 2026-09-08, after the media disk was
 rebuilt for the `B`-menu fix (same sequence, unchanged pixel source): staged
 at `/data/vms/streamhost/stations/samcoupe/sta/samcoupe/golden.sta`,
-**11 921 bytes**, sha256
+11 921 bytes, sha256
 `3fa0e14b77749aa1cce662cc1b6ee396f61f302d5d13519f750732390ff74b9e`. Restore
 proof: a FRESH process relaunched with `-state golden` diffs `None`
-(`PIL.ImageChops.difference` bbox) against the baked menu frame, in **1.6 s**.
-Cold boot → menu settled end to end measured at 9.0 s on the same rig, for
-comparison.
+(`PIL.ImageChops.difference` bbox) against the baked menu frame, in 1.6 s.
+
+**Recaptured again by the `menu-release` stream, 2026-09-08**, after the
+media disk was rebuilt for the held-key-release fix (§Traps; same sequence,
+same pixel source — only what a HELD key does afterward differs): staged at
+the same path, **11 922 bytes**, sha256
+`884936e02f23c9a8c20d80e7ff503c48ae94951f41297f07caacb7a6cf0d0b55`. Restore
+proof: a FRESH process relaunched with `-state golden` diffs `None` against
+the baked menu frame. The live station was reset (`labctl reset samcoupe`,
+in-process LOADST) to pick this up and reshot at the menu, clean. Cold boot →
+menu settled end to end measured at ~9 s on the same rig, for comparison.
 
 ## §Media
 See the media table above; sourcing/hash details live in
@@ -202,6 +225,25 @@ menu"` that the program falls off the end of. A program that ends without a
 `STOP` reports `0 OK` at the command line. Proven on the real `ctlsock` `KEY`
 path from a fresh golden restore (golden-fix stream, 2026-09-08).
 
+A sixth trap, hit and fixed by the `menu-release` stream on the real input
+path (browser, not ctlsock): **`INKEY$` sees a held key, and the ROM editor
+sees it again a scan frame later.** Line 80 (`LET k$=INKEY$ : IF k$="" THEN
+GOTO 80`) takes a keypress the instant it lands, and `GOTO 9000` ends the
+program within milliseconds — but the SAM ROM's keyboard scan runs every
+20 ms, and if the key is STILL DOWN on the next scan, the fresh SAM BASIC
+command line's own editor reads it too. A `labctl`/`ctlsock` press is held
+only 40 ms and this race is invisible; a browser keystroke through the
+daemon is held ≥40 ms (`SH_KEY_MIN_HOLD_MS`) plus the browser's own down/up
+gap, comfortably long enough to lose the race — so a visitor's `B` tap
+typed `b` onto the command line, and the SPA's "Type in a demo program"
+action (whose first line is `NEW`) started as `bNEW` and failed. Fixed by a
+new line 85, `IF INKEY$<>"" THEN GO TO 85`, right after the line-80 read: the
+menu now spins until the key is physically released before dispatching on
+it. This also stops a held `1`–`4` leaking into the game/app that loads.
+Proven on both the real `ctlsock` `KEY` path (held 300 ms) and a real
+browser tap: `B` → clean `0 OK, 9000:2`, no stray `b`; `1` → Manic Miner's
+title screen, no leaked `1`.
+
 Also worth knowing: SAMDOS's `flash`/`flash1`/`flash2` utilities are a
 **tape** backup tool ("Backup to Tape?"), not the Flash! art package the name
 suggests — tried and rejected as a menu entry for that reason.
@@ -216,18 +258,30 @@ suggests — tried and rejected as a menu entry for that reason.
   the shipped titles are the ones that fit the single-`.mgt` recipe cleanly.
 - **Mr. Pac has no poster frame** captured for the SPA gallery — the other
   four titles + the menu do.
-- **`demoProgram` is not framebuffer-proven** — the SPA stream wired
-  `museum`/`spa`/`demoProgram` metadata from the media stream's title list,
-  but no stream in this wave captured a demo-mode framebuffer sequence to
-  confirm it plays back correctly end to end.
+- **`demoProgram` playback is not proven end to end** — the `menu-release`
+  stream (2026-09-08) exercised the SPA's own "Type in a demo program"
+  action from a real browser (the reason it was pressing `B` in the first
+  place: the demo asks the visitor to press `B` first). The `B`-press fix
+  itself is proven clean on that run, but the subsequent typed-listing
+  playback stalled on a scattered/frozen frame rather than reaching the
+  circles + `SAM COUPE 1989` the listing (`registry/stations/samcoupe.json`
+  `demoProgram`) describes. The daemon's own input counters showed no drops,
+  so this looks like an SPA/typist-side issue, not a station or media one —
+  see `docs/lab/SAMCOUPE-WAVE.md` §OPEN for the finding, owned by whichever
+  stream next touches `museum`/`spa`/`demoProgram`.
 
 ## Build status (2026-09-08)
-- Staged (not yet live at the time of this doc): VMID 187, UDP 54187, slot
-  187; scene tuple `amstradCpc,homeCrtD,none,none`; host-native from day one
-  (Rule 13) — no bridge kiosk was built for this station.
+- LIVE: VMID 187, UDP 54187, slot 187; scene tuple
+  `amstradCpc,homeCrtD,none,none`; host-native from day one (Rule 13) — no
+  bridge kiosk was built for this station.
 - Keyboard: verified on the live rig, fleet-floor 40/40 ms pacing, all five
   menu entries (`1`/`2`/`3`/`4`/`B`) proven from a fresh golden restore to
-  their title/usable screens, no dropped or duplicated characters.
+  their title/usable screens, no dropped or duplicated characters; the `B`
+  held-key-release fix (`menu-release` stream, 2026-09-08) additionally
+  proven from a real browser tap.
 - Pointer: OPEN, ships keyboard-only, `pointer.transport: "none"`.
 - Checkpoint: golden savestate captured at the menu, restore proven
-  pixel-identical in 1.6 s.
+  pixel-identical; recaptured twice more for the `B`-command-line fixes
+  (golden-fix, then menu-release), current sha256
+  `884936e02f23c9a8c20d80e7ff503c48ae94951f41297f07caacb7a6cf0d0b55`
+  (11 922 bytes).
