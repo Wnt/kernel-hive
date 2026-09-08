@@ -89,7 +89,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/samcoupe/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/samcoupe/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "=:[,+:=,*:+,%3A:',\":],/:_,_:{"
     },
     "vmidLabel": 187,
     "bringUpOrder": 89,
@@ -184,7 +185,8 @@
   "migrationExceptions": [],
   "notes": [
     "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
-    "spine 2026-09-08: device set samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5\" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN)"
+    "spine 2026-09-08: device set samcoupe, BIOS v3.1 (rom31.z5), -drive1 floppy (3.5\" DD, `-flop1` .mgt/.dsk), -drive2 floppy (`-flop2`), mouseport left empty (keyboard-only, see OPEN)",
+    "keyboard.charMap (2026-09-08, browser-probe stream, framebuffer-proven on the live station): the SPA's type-in path sends US set1 scancodes and the SAM matrix puts = + * : \" / _ on other keys (US '/' lands on INV and latches inverse video) — without this map the demo listing arrived as `PAPER 0; PEN 15` / `FOR r+4` / `PEN 1*r` in inverse video."
   ],
   "demoProgram": {
     "label": "Type in a demo program (press B for SAM BASIC first)",
@@ -199,5 +201,16 @@
     ],
     "runCommand": "RUN",
     "perCharMs": 170
+  },
+  "keyboard": {
+    "charMap": {
+      "=": "[",
+      "+": "=",
+      "*": "+",
+      ":": "'",
+      "\"": "]",
+      "/": "_",
+      "_": "{"
+    }
   }
 }

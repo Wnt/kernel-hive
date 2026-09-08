@@ -137,6 +137,17 @@ const KEYBOARDS = {
   "pet2001": {
     "letterCase": "upper-only"
   },
+  "samcoupe": {
+    "charMap": {
+      "=": "[",
+      "+": "=",
+      "*": "+",
+      ":": "'",
+      "\"": "]",
+      "/": "_",
+      "_": "{"
+    }
+  },
   "vic20": {
     "letterCase": "upper-only"
   },
