@@ -179,8 +179,8 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
-    "keyboard": "PARTIALLY VERIFIED at the fleet 40/40 ms pacing on the framebuffer (2026-09-08): `1` (Manic Miner) reaches the title screen with no dropped/duplicated characters. `B` (SAM BASIC) is OPEN — on the real ctlsock KEY path the guest lands in the BASIC program-EDIT view instead of a clean `0 OK` prompt; a follow-up stream needs to find the key that clears it. `2`/`3`/`4` untested (same INKEY$ mechanism as the proven `1`, low risk).",
-    "fixture": "SAM Coupé \"KERNEL HIVE - SAM COUPE\" boot menu (5 entries), golden savestate baked at the menu so a visitor never sees the MGT copyright banner or the BOOT keystroke. MEASURED 2026-09-08: cold boot→menu 9.0 s, SAVEST 13 ms/11871 bytes, relaunch restore 4.7 s and pixel-identical (PIL diff bbox None) to the baked frame."
+    "keyboard": "FULLY VERIFIED on the real ctlsock KEY path from a fresh golden restore (golden-fix stream, 2026-09-08): `1` (Manic Miner), `2` (Mr Pac) and `3` (Splat!) and `4` (The Secretary) each reach their title/menu screen with no dropped/duplicated characters. `B` (SAM BASIC) lands cleanly on the `0 OK` command line — the menu's B branch now ends the program normally (GOTO a trailing line, falls off the end) instead of via STOP, which used to open the BASIC program-EDIT view — `PRINT 1+2` → `3`, `RUN` returns to the menu.",
+    "fixture": "SAM Coupé \"KERNEL HIVE - SAM COUPE\" boot menu (5 entries), golden savestate baked at the menu so a visitor never sees the MGT copyright banner or the BOOT keystroke. MEASURED 2026-09-08 (golden-fix stream): cold boot→menu 9.0 s, SAVEST 11 ms/11921 bytes, relaunch restore 1.6 s and pixel-identical (PIL diff bbox None) to the baked frame."
   },
   "migrationExceptions": [],
   "notes": [

@@ -10,5 +10,6 @@
 100 IF k$="2" THEN LOAD "MR PAC"
 110 IF k$="3" THEN LOAD "SPLATRUN"
 120 IF k$="4" THEN LOAD "SECRUN"
-130 IF k$="b" OR k$="B" THEN CLS : STOP
+130 IF k$="b" OR k$="B" THEN GOTO 9000
 140 GOTO 80
+9000 CLS : PRINT "SAM BASIC  Type RUN to return to the menu"
