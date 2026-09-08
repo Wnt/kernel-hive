@@ -39,6 +39,9 @@ const POSTER_INDEX = {
   "aros": {
     "hero": "/posters/aros/desktop.webp"
   },
+  "atari800xl": {
+    "hero": "/posters/atari800xl/desktop.webp"
+  },
   "atarist": {
     "hero": "/posters/atarist/desktop.webp"
   },

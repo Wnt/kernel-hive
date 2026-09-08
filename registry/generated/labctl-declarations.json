@@ -218,6 +218,24 @@
       "udp_port": 54110,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "atari800xl": {
+      "dir": "/data/vms/streamhost/stations/atari800xl",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54186,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/atari800xl/sta."
+    },
     "atarist": {
       "dir": "/data/vms/streamhost/stations/atarist",
       "qmp": "/data/vms/streamhost/stations/atarist/qmp.sock",
