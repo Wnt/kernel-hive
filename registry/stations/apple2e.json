@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "apple2e",
-  "era_year": 2026,
+  "era_year": 1985,
   "enabled": true,
   "build": {
     "rows": [
@@ -133,35 +133,35 @@
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
-    "accentColor": "#8A8577",
-    "eraLabel": "TODO(apple2): 1988 \u00b7 Apple II \u2014 GEOS"
+    "accentColor": "#7C8B5E",
+    "eraLabel": "1985 \u00b7 Apple //e \u2014 ProDOS"
   },
   "museum": {
     "id": "apple2e",
-    "displayName": "TODO(apple2): Apple II",
-    "year": 1988,
-    "lineage": "TODO(apple2): Apple II / GEOS",
+    "displayName": "Apple //e",
+    "year": 1985,
+    "lineage": "Apple II / ProDOS",
     "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
     "ramMB": 0,
     "ramKB": 128,
     "era": "1980s",
-    "accent": "#8A8577",
+    "accent": "#7C8B5E",
     "eraSoftware": [
-      "Apple GEOS deskTop",
-      "geoWrite",
-      "geoPaint",
-      "ProDOS",
-      "DeskTop file manager"
+      "ProDOS 8",
+      "Applesoft BASIC",
+      "AppleWorks",
+      "Dazzle Draw",
+      "Angry Birds (8-Bit Shack, 2023)"
     ],
     "periodBrowser": "none \u2014 pre-web 8-bit era",
     "iconicApps": [
-      "geoWrite",
-      "geoPaint",
-      "GEOS deskTop",
-      "Preference Manager"
+      "AppleWorks",
+      "Dazzle Draw",
+      "Applesoft BASIC",
+      "Angry Birds"
     ],
-    "blurb": "TODO(apple2): A windows-icons-menus desktop (GEOS) with geoWrite & geoPaint running on a 1 MHz Apple //e \u2014 the 8-bit era\u2019s Macintosh, on Apple hardware.",
-    "notes": "TODO(apple2): Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs an Apple //e emulator full-screen booting Apple GEOS; streamhost captures the Linux framebuffer + AC97 audio like every other tile. archetype beige-tower-crt (ideal: a bespoke platinum Apple //e all-in-one). See streamhost/docs/BRIDGE.md."
+    "blurb": "The Apple II most people actually used: ProDOS, a 40-column boot menu, AppleWorks in 80 columns and Dazzle Draw in double hi-res on a 128 KB //e \u2014 plus a 2023 Angry Birds for the same machine.",
+    "notes": "Host-native station: MAME 0.289's apple2ee runs on the host (drawshm frames, ctlsock keys + mouse card, FIFO audio). Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) whose STARTUP program is a one-key selector: AppleWorks, Dazzle Draw, Angry Birds, BASIC prompt. Sibling of apple2 (GEOS); the pair shows the same hardware as it was used and as it was later persuaded to look."
   },
   "emulator": {
     "family": "LinApple",
