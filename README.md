@@ -224,6 +224,7 @@ Backends retired; the SPA renders a static placard rather than dialing a dead se
 
 
 
+
 ## How it works
 
 ![Browser, streaming daemon and emulator, with the retronet plane beside them](docs/media/architecture.svg)
@@ -281,59 +282,32 @@ simulator — and, for some machines, the museum's own private network.
 The museum keeps a written account of every week. The latest one:
 
 <!-- release-notes:start -->
-## Release notes
-
 ### Week 5 · Nine Unixes in one night · 2026-08-30 09:00 – 2026-09-06 09:00
 
-#### New stations
+#### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/slackware"><img src="spa/public/posters/slackware/desktop.webp" width="200" alt="Slackware 3.4"></a><br><sub>Slackware 3.4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/netbsd14"><img src="spa/public/posters/netbsd14/desktop.webp" width="200" alt="NetBSD 1.4.1"></a><br><sub>NetBSD 1.4.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/redhat62"><img src="spa/public/posters/redhat62/desktop.webp" width="200" alt="Red Hat Linux 6.2"></a><br><sub>Red Hat Linux 6.2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/debian22"><img src="spa/public/posters/debian22/desktop.webp" width="200" alt="Debian GNU/Linux 2.2"></a><br><sub>Debian GNU/Linux 2.2</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/suse64"><img src="spa/public/posters/suse64/desktop.webp" width="200" alt="SuSE Linux 6.4"></a><br><sub>SuSE Linux 6.4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/ubuntu"><img src="spa/public/posters/ubuntu/desktop.webp" width="200" alt="Ubuntu 4.10 Warty Warthog"></a><br><sub>Ubuntu 4.10 Warty Warthog</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/freebsd411"><img src="spa/public/posters/freebsd411/desktop.webp" width="200" alt="FreeBSD 4.11"></a><br><sub>FreeBSD 4.11</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/pcbsd"><img src="spa/public/posters/pcbsd/desktop.webp" width="200" alt="PC-BSD 1.5.1"></a><br><sub>PC-BSD 1.5.1</sub></td>
+</tr>
+</table>
 
 <u>Nine Unix and Linux machines arrived in a single night.</u> [Slackware 3.4](https://kernelhive.madekivi.fi/os/slackware) brings 1997's **fvwm95**, the desktop that made a Unix workstation look like Windows 95; [NetBSD 1.4.1](https://kernelhive.madekivi.fi/os/netbsd14) follows from 1999. The year 2000 gives three at once — [Red Hat Linux 6.2 "Zoot"](https://kernelhive.madekivi.fi/os/redhat62) with **GNOME 1.0**, [Debian 2.2 "potato"](https://kernelhive.madekivi.fi/os/debian22), and [SuSE Linux 6.4](https://kernelhive.madekivi.fi/os/suse64) with **KDE 1**, from the last spring SuSE spelled itself with a small u. [Ubuntu 4.10 "Warty Warthog"](https://kernelhive.madekivi.fi/os/ubuntu) is the very first Ubuntu, running off its live CD, so every reset returns to the same instant. [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411) closes the 4.x line with the full **KDE 3.3.2**; [PC-BSD 1.5.1](https://kernelhive.madekivi.fi/os/pcbsd) is FreeBSD made point-and-click; [OpenBSD 7.9](https://kernelhive.madekivi.fi/os/openbsd) stands at the modern end. Earlier in the week came [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix), Commodore's *System V Release 4* with **OPEN LOOK**, in colour on the **A2410** card most owners never bought; [ravynOS](https://kernelhive.madekivi.fi/os/ravynos); [PC/GEOS Ensemble](https://kernelhive.madekivi.fi/os/pcgeos), a 1990 desktop in *640 KB on a 286*; and [bootOS](https://kernelhive.madekivi.fi/os/bootos), a whole operating system in *512 bytes*. That makes 87 machines, 85 of them open to visitors.
 
-#### Major features
-
-Eight of the new arrivals joined the museum's private 1990s internet, browsing the archived web through the browser each would really have had, from **Netscape 4.77** on [Debian](https://kernelhive.madekivi.fi/os/debian22) to **Lynx** on [NetBSD](https://kernelhive.madekivi.fi/os/netbsd14). Seven signed on to the chat network too, taking it from eleven machines to nineteen. [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) joined through the **AOL Instant Messenger** already sitting on its disk, and a bridge now relays between the AIM and ICQ halves, so a 1993 desktop can answer a message from a 2000 Linux box. A machine you have just reset signs itself back in, unprompted. The cursor landed on many more machines as well: [AIX](https://kernelhive.madekivi.fi/os/aix432) and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) read it back out of the graphics chip's own registers and steer until it agrees, while [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody), [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) and [BeOS](https://kernelhive.madekivi.fi/os/beos) have the coordinate written straight into the place each system keeps its own pointer. Cursor and hand now agree exactly.
-
-#### Quality improvements
-
-[AIX](https://kernelhive.madekivi.fi/os/aix432) had stopped taking the keyboard and would lock itself out; [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) looked broken the same way and turned out to be a focus trap, not a fault. Both type again. A key still held down when you close the tab is released now, so nobody arrives to a machine stuck on shift. The private machines handed to signed-in visitors used to leave everyone else on a blank front page; the museum renders one hall for all.
-
-#### Also this week
-
-- Each new arrival chats with its era's own client — **GtkICQ** on SuSE, **GnomeICU** on Debian, **mICQ** on NetBSD, **Kopete** on PC-BSD, **Gaim** on Ubuntu
-- The network's resident bot says hello about a minute after a machine signs in, and every station carries every other one in its contact list
-- [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411)'s network card went silent after every reset, so it was swapped for one that survives — the fault shows only on the wire
-- [NetBSD 1.4.1](https://kernelhive.madekivi.fi/os/netbsd14) needed a kernel built inside the guest: the stock 1999 one hangs on this hardware before it ever reaches the disk
-- [Slackware 3.4](https://kernelhive.madekivi.fi/os/slackware)'s 1997 boot floppy still wedges under a modern emulator, so the museum boots its kernel from a GRUB2 rescue disc instead
-- [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411) reads a CD one 16-bit word at a time, so it had to be installed on the slow software emulator and only then run at full speed
-- [Debian 2.2](https://kernelhive.madekivi.fi/os/debian22) writes an emulated disk just as slowly, so its root filesystem was assembled outside the machine and handed over finished
-- [Red Hat Linux 6.2](https://kernelhive.madekivi.fi/os/redhat62) installs itself from a kickstart file and [OpenBSD](https://kernelhive.madekivi.fi/os/openbsd) from a scripted installer — nobody answers a prompt
-- [SuSE Linux 6.4](https://kernelhive.madekivi.fi/os/suse64) is installed by SuSE's own graphical **YaST2** — what its CD really boots, not the text YaST everyone remembers
-- [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) installs from a 29-segment tape image, the way an *A3000UX* really did — roughly two hours of emulated restore
-- **OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it
-- [bootOS](https://kernelhive.madekivi.fi/os/bootos)'s floppy carries chess, a Doom, a BASIC and a Flappy Bird, each one sector long; you run one by typing its name
-- Type `enter` on bootOS and it takes a program as lines of hex; the 'Hello, world' from its own manual is the exhibit's demo button
-- [PC/GEOS Ensemble](https://kernelhive.madekivi.fi/os/pcgeos) boots straight into its desktop from FreeDOS, and its word processor stopped crashing once one font was dropped
-- [AIX](https://kernelhive.madekivi.fi/os/aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all
-- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does
-- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved
-- A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed
-- [OpenBSD](https://kernelhive.madekivi.fi/os/openbsd)'s tablet pointer needed one fix after X registered the same device twice, once with no calibration range
-- [ravynOS](https://kernelhive.madekivi.fi/os/ravynos) 0.6.1 is the last of its kind — days after this build, its makers threw the FreeBSD kernel away and deleted the line
-
-*76,663 lines of code.*
-
-### Earlier weeks
-
-- [Week 4 · The doors open to everyone](docs/RELEASE-NOTES.md#week-4) · 2026-08-23 09:00 – 2026-08-30 09:00
-- [Week 3 · The museum gets its own internet](docs/RELEASE-NOTES.md#week-3) · 2026-08-16 09:00 – 2026-08-23 09:00
-- [Week 2 · Twenty-two machines in one week](docs/RELEASE-NOTES.md#week-2) · 2026-08-09 09:00 – 2026-08-16 09:00
-- [Week 1 · The museum opens its source](docs/RELEASE-NOTES.md#week-1) · 2026-08-07 14:37 – 2026-08-09 09:00
-- [Week 0 · The month the museum was built](docs/RELEASE-NOTES.md#week-0) · 2026-07-07 21:39 – 2026-08-07 14:37
-
-Full archive: [`docs/RELEASE-NOTES.md`](docs/RELEASE-NOTES.md).
+Read [week 5 in full](docs/RELEASE-NOTES.md#week-5), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 <!-- release-notes:end -->
+
 ## A reading tour
 
 Five documents worth reading even if you never run any of this.

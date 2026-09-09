@@ -149,9 +149,11 @@ def render_readme_section(weeks: list[dict]) -> str:
     the README should not have to scroll past a quality-improvements paragraph
     to find the repo's own description.
     """
-    lines = ["## Release notes", ""]
+    # No heading of its own: the README places the block under its own
+    # "This week at the museum" section, so the week heading is the top level.
+    lines: list[str] = []
     if not weeks:
-        return "\n".join(lines + [NOTHING_YET]).rstrip() + "\n"
+        return NOTHING_YET.rstrip() + "\n"
     newest = weeks[0]
     lines += [f"### {heading(newest)}", ""]
     lines += screenshots_section(newest, 3, lambda sid: screenshots_mod.IMG_README.format(id=sid))

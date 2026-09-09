@@ -45,6 +45,40 @@
         "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed",
         "[OpenBSD](station:openbsd)'s tablet pointer needed one fix after X registered the same device twice, once with no calibration range",
         "[ravynOS](station:ravynos) 0.6.1 is the last of its kind \u2014 days after this build, its makers threw the FreeBSD kernel away and deleted the line"
+      ],
+      "screenshots": [
+        {
+          "id": "slackware",
+          "name": "Slackware 3.4"
+        },
+        {
+          "id": "netbsd14",
+          "name": "NetBSD 1.4.1"
+        },
+        {
+          "id": "redhat62",
+          "name": "Red Hat Linux 6.2"
+        },
+        {
+          "id": "debian22",
+          "name": "Debian GNU/Linux 2.2"
+        },
+        {
+          "id": "suse64",
+          "name": "SuSE Linux 6.4"
+        },
+        {
+          "id": "ubuntu",
+          "name": "Ubuntu 4.10 Warty Warthog"
+        },
+        {
+          "id": "freebsd411",
+          "name": "FreeBSD 4.11"
+        },
+        {
+          "id": "pcbsd",
+          "name": "PC-BSD 1.5.1"
+        }
       ]
     },
     {
@@ -82,6 +116,40 @@
         "[OS/2 Warp](station:os2warp) chats through **ICQ/2 1.503i**, the OS/2 native build, speaking an older protocol nobody else here uses",
         "The gallery installs onto a phone's home screen like an app, and its collection page pulls to refresh",
         "The [SGI Indy](station:irix)'s browser stopped nagging on every launch: the setting that silences it is not the one you would guess"
+      ],
+      "screenshots": [
+        {
+          "id": "aix432",
+          "name": "IBM RS/6000 \u2014 AIX 4.3.3"
+        },
+        {
+          "id": "macos9",
+          "name": "Mac OS 9.2.2"
+        },
+        {
+          "id": "chokanji",
+          "name": "Chokanji (\u8d85\u6f22\u5b57)"
+        },
+        {
+          "id": "win311",
+          "name": "Windows 3.11"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "rhapsody",
+          "name": "Rhapsody DR2"
+        },
+        {
+          "id": "winxp",
+          "name": "Windows XP"
+        },
+        {
+          "id": "win95",
+          "name": "Windows 95"
+        }
       ]
     },
     {
@@ -119,6 +187,40 @@
         "Photographs of the real hardware sit beside the write-ups now \u2014 the BeBox, a Quadra 800, an HP 9000 B180L",
         "The picture stops dropping to a soft, low-detail mode for no reason: the stream had been reading its own keyframes as a slow connection",
         "The space bar on the [Sinclair QL](station:sinclairql) typed nothing at all. It types now, and a burst-typed line keeps its order"
+      ],
+      "screenshots": [
+        {
+          "id": "newsos",
+          "name": "NEWS-OS 4.1R"
+        },
+        {
+          "id": "aux",
+          "name": "A/UX 3.0.1"
+        },
+        {
+          "id": "sunos414",
+          "name": "SunOS 4.1.4 / OpenWindows"
+        },
+        {
+          "id": "hpuxvue",
+          "name": "HP-UX 10.20 / HP VUE"
+        },
+        {
+          "id": "rhapsody",
+          "name": "Rhapsody DR2"
+        },
+        {
+          "id": "beos",
+          "name": "BeOS R5"
+        },
+        {
+          "id": "macos753",
+          "name": "Mac OS 7.5.3"
+        },
+        {
+          "id": "tru64",
+          "name": "Tru64 UNIX"
+        }
       ]
     },
     {
@@ -163,6 +265,40 @@
         "[Tru64](station:tru64) was born *OSF/1* in 1992 and ended with 5.1B in 2003, when HP retired it and *Alpha* together",
         "Three operating systems on one [PDP-11](station:decos), because in 1975 you bought a computer and then chose one to run on it",
         "Log into the [PDP-11/70](station:pdp11) as root \u2014 there is no password \u2014 and the whole operating system's source code is sitting in /usr/src"
+      ],
+      "screenshots": [
+        {
+          "id": "alto",
+          "name": "Xerox Alto II"
+        },
+        {
+          "id": "star",
+          "name": "Xerox Star 8010"
+        },
+        {
+          "id": "daybreak",
+          "name": "Xerox 6085"
+        },
+        {
+          "id": "pdp11",
+          "name": "DEC PDP-11/70 \u2014 2.11BSD"
+        },
+        {
+          "id": "gt40",
+          "name": "DEC GT40"
+        },
+        {
+          "id": "decos",
+          "name": "DEC PDP-11 \u2014 RT-11, RSX-11M, RSTS/E"
+        },
+        {
+          "id": "zxspectrum",
+          "name": "Sinclair ZX Spectrum 48K"
+        },
+        {
+          "id": "bbcmicro",
+          "name": "Acorn BBC Micro Model B"
+        }
       ]
     },
     {
@@ -199,6 +335,40 @@
         "One picture on the [Windows 95](station:win95) page showed a *386/16*, a machine below the floor **Windows 95** itself demands; it was replaced",
         "Every gallery image is cleared against Wikimedia's own licence record by a script, which caught two invented file titles on its first run",
         "A survey of the *PDP-11* family and of thirty more home computers went into the notes before any of them got a page"
+      ],
+      "screenshots": [
+        {
+          "id": "vic20",
+          "name": "Commodore VIC-20"
+        },
+        {
+          "id": "plus4",
+          "name": "Commodore Plus/4"
+        },
+        {
+          "id": "amstradcpc",
+          "name": "Amstrad CPC 6128"
+        },
+        {
+          "id": "irix",
+          "name": "SGI Indy"
+        },
+        {
+          "id": "nt351",
+          "name": "Windows NT 3.51"
+        },
+        {
+          "id": "ninefront",
+          "name": "9front (Plan 9)"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "win95",
+          "name": "Windows 95"
+        }
       ]
     },
     {
@@ -249,6 +419,40 @@
         "[Windows 11](station:win11) began as a poster on the wall and was promoted to a machine you can sit down at",
         "[Red Star OS 3](station:redstar3) reaches a logged-in desktop with no input at all: **KDE** on Fedora, reshaped in the DPRK to look like a Mac",
         "The recorded cold boot of [SGI IRIX](station:irix) carries the *Indy*'s PROM startup chime, captured along with the picture"
+      ],
+      "screenshots": [
+        {
+          "id": "macos",
+          "name": "macOS Sequoia"
+        },
+        {
+          "id": "riscos",
+          "name": "RISC OS 5.30"
+        },
+        {
+          "id": "nt351",
+          "name": "Windows NT 3.51"
+        },
+        {
+          "id": "nt4",
+          "name": "Windows NT 4.0"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "solaris",
+          "name": "Solaris CDE"
+        },
+        {
+          "id": "openvms",
+          "name": "OpenVMS x86-64 9.2"
+        },
+        {
+          "id": "msdoswin1",
+          "name": "MS-DOS 6.22 + Windows 1.0"
+        }
       ],
       "source": "osgallery"
     }
