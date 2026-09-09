@@ -15,6 +15,16 @@
 # combination: rebuilding to a different FS-UAE version or pin orphans the
 # golden.
 #
+# A git checkout has no generated configure script (the tarball this script
+# used to fetch shipped one pre-built). This lab's two boxes split the
+# autotools toolchain: CT950, where this script runs (it has `zip` and the
+# compiler; labhost does not), has NO autotools, while labhost has
+# autoconf/automake/libtoolize/m4 but no zip. So the one bootstrap step runs
+# through the one door (AGENTS.md rule 2): `ssh lab "cd $SRC && ./bootstrap"`
+# on the SAME bytes ($SRC lives under /data/vms, bind-mounted into CT950) —
+# no second copy, no apt-get install on either box. configure/make/install
+# still run locally on CT950, same as before.
+#
 # Usage: [FSUAE_STATION=<station>] build-fsuae-native.sh [--no-install]
 set -euo pipefail
 
@@ -72,39 +82,25 @@ echo "  source: $SRC at $FSUAE_FORK_PIN ($FSUAE_FORK_BRANCH)"
 
 # ---------------------------------------------------------------------------
 # 2. bootstrap: a git checkout ships no generated configure script, unlike
-#    the release tarball this builder used to fetch. automake/autoconf/
-#    libtool are not on CT950 or labhost and neither box gives this script
-#    root — same trick the VICE builder uses for xa65: `apt-get download`
-#    needs no privilege, unpacked straight into the work dir, never
-#    installed on the host.
+#    the release tarball this builder used to fetch. This lab's two boxes
+#    split the toolchain: CT950 (where this script runs — it has `zip` and
+#    the compiler, labhost does not) has NO autotools; labhost has
+#    autoconf/automake/libtoolize/m4 but no zip. Neither box gets a stray
+#    `apt-get install`, so the one step that needs autotools goes through
+#    the one door (AGENTS.md rule 2): a single `ssh lab` runs ./bootstrap
+#    on the SAME bytes, since $SRC lives under /data/vms, which is
+#    bind-mounted into CT950 — no separate copy, no patch to hand-apply.
+#    configure/make/install all happen locally afterwards, same as before.
 # ---------------------------------------------------------------------------
 if [ ! -x "$SRC/configure" ]; then
-  if ! command -v automake >/dev/null 2>&1; then
-    say "staging automake/autoconf/libtool (unpacked into the work dir, never installed on the host)"
-    mkdir -p "$WORK/bin" "$WORK/autotools-pkg"
-    (cd "$WORK/autotools-pkg" && apt-get download automake autoconf autotools-dev libtool libtool-bin libltdl-dev m4 >/dev/null 2>&1) ||
-      die "apt-get download automake autoconf autotools-dev libtool libtool-bin libltdl-dev m4 failed — the bootstrap step needs them"
-    for deb in "$WORK"/autotools-pkg/*.deb; do
-      dpkg-deb -x "$deb" "$WORK/autotools-pkg/root"
-    done
-    find "$WORK/autotools-pkg/root/usr/bin" -maxdepth 1 -type f -exec ln -sf {} "$WORK/bin/" \;
-    # libtool's aclocal m4 macros ship under share/aclocal, but libtoolize
-    # looks for them at $_lt_pkgdatadir/m4 — the package's own layout, not a
-    # dpkg-deb -x quirk.
-    ln -sf "$WORK/autotools-pkg/root/usr/share/aclocal" "$WORK/autotools-pkg/root/usr/share/libtool/m4"
-    export PATH="$WORK/bin:$PATH"
-    export AUTOMAKE_LIBDIR="$WORK/autotools-pkg/root/usr/share/automake-1.16"
-    export AUTOCONF_LIBDIR="$WORK/autotools-pkg/root/usr/share/autoconf"
-    export ACLOCAL_PATH="$WORK/autotools-pkg/root/usr/share/aclocal"
-    # Automake's perl module (Automake/Config.pm) ships INSIDE its own
-    # share dir, not under a generic perl5 tree.
-    export PERL5LIB="$WORK/autotools-pkg/root/usr/share/automake-1.16:${PERL5LIB:-}"
-    # libtoolize resolves its own data dir from _lt_pkgdatadir, not PATH.
-    export _lt_pkgdatadir="$WORK/autotools-pkg/root/usr/share/libtool"
-  fi
-  say "bootstrapping the autotools build (./bootstrap)"
-  (cd "$SRC" && ./bootstrap >"$WORK/bootstrap.log" 2>&1) ||
+  say "bootstrapping the autotools build via labhost (ssh lab \"cd $SRC && ./bootstrap\")"
+  # SC2029: deliberate — $SRC is a path under /data/vms, bind-mounted into
+  # CT950, so it must expand HERE (client-side) to name the same bytes on
+  # both sides. There is nothing lab-side to expand it against.
+  # shellcheck disable=SC2029
+  ssh lab "cd $SRC && ./bootstrap" >"$WORK/bootstrap.log" 2>&1 ||
     die "bootstrap failed; see $WORK/bootstrap.log"
+  [ -x "$SRC/configure" ] || die "bootstrap ran but produced no $SRC/configure"
 fi
 
 # configure needs `zip` (and the SDL2/GLib dev headers): present in CT950, NOT
@@ -117,8 +113,9 @@ say "configure --prefix=$PREFIX"
   die "configure failed (see $WORK/configure.log)"
 }
 
-say "building with $(nproc) jobs"
-(cd "$SRC" && make -j"$(nproc)" >"$WORK/build.log" 2>&1) || {
+JOBS="${JOBS:-6}" # capped for now: other streams compile on this box
+say "building with $JOBS jobs"
+(cd "$SRC" && make -j"$JOBS" >"$WORK/build.log" 2>&1) || {
   tail -30 "$WORK/build.log" >&2
   exit 1
 }
