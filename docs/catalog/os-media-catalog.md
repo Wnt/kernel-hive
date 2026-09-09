@@ -604,3 +604,9 @@ proven bridge implementation.*
 | OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
 |---|---|---|---|---|---|---|---|---|
 | Ubuntu 4.10 "Warty Warthog" (first Ubuntu, Oct 2004, GNOME 2.8) | http://old-releases.ubuntu.com/releases/4.10/warty-release-live-i386.iso (✓, sha256 `189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013`, 674 152 448 bytes) | GPL/various (open-source) | live CD ISO, no install | none | 643 MB | small | **works-known** | 5 |
+
+## 13. Amiga 1000 — host-native FS-UAE, floppy boot
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| Workbench 1.2 rev 33.56 (1987, Commodore, A500 Disk 1+2 GB Extras) on an Amiga 1000 | archive.org item `commodore-amiga-operating-systems-workbench` (verified, sha256 4dfd92a4589346f157593d1a3098966b43e2298c46b749c689b9dc457480be4c / 7edba9fcbffacde7f1bf94920b76c57e2002ae07b877f26de152ae96c631ba69, 901120 bytes each) | proprietary (Commodore); private preservation exhibit, not committed | two ADFs, floppy boot, no HDF/installer | Kickstart v1.2 r33.180 (1986-10, A500/A1000/A2000), sha256 87cddb1f499e32758de20145e73031a84bab299e3f6e5c8487e76d02b2ee9d16, 262144 bytes | small | works-known | see docs/lab/A1000-WAVE.md |

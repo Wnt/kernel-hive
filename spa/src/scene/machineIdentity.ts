@@ -529,6 +529,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc6b2', accentTint: '#4a3a2c', tintMix: 0.44,
     badge: 'ATARI 800XL', spec: '8-BIT • 1983', kit: 'eightBit',
   },
+  // The first Amiga was off-white rather than beige — a pale desktop box with
+  // the monitor sitting on top and a garage underneath for the keyboard. The
+  // accent is the dark grey of that recess and of the keycaps, not the rainbow
+  // badge: the shadow under the machine is what carries across a room.
+  a1000: {
+    caseTint: '#dcd6c8', accentTint: '#57544e', tintMix: 0.38,
+    badge: 'A1000 CLASS', spec: '68000 • 1985', kit: 'workstation',
   // TODO(a3000): exhibit finish copied from amigaos35 — set the real era cues.
   // a3000: Commodore's low desktop case, the same cream as the A3000UX (amix)
   // with the Workbench 2.0 grey-blue as the accent.
