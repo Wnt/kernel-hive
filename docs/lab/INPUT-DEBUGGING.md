@@ -617,6 +617,17 @@ Some stations cannot be driven naively:
   It is also why pen HOVER is muted for the double-tap window after a contact —
   moves and buttons ride separate streams, so a queued hover sample was being
   applied between the two clicks, moving the cursor off the pixel.
+- **A keystroke burst into win311 loses its OPENING characters.** Typing
+  `the kernel hive` into Program Manager's Run dialog from the real SPA left the
+  field reading `nel hive` / `nel h` / `nel hiv` across four separate recordings
+  (2026-09-09, `scripts/e2e/readme-demo-capture.mjs`): two to seven characters
+  gone from the FRONT, the rest intact and in order. It is not a focus race —
+  the loss survived a 45-second wait for the dialog to finish painting — and it
+  is not absorbed by a warm-up burst of six `ArrowRight` presses, which is what
+  a queue that discards its first N EVENTS would have eaten instead. So it is
+  neither "the field was not ready" nor "the first events were dropped", and it
+  is still open. Anything that types into this station and then asserts on the
+  result must read the field back rather than assume the string arrived.
 - **`SH_ABS_PACE_MS` / `SH_WARPD_PACE_MS`** pace absolute moves (30 ms on the old
   GUI stations) — see the 2026-07-26 drag investigation.
 - **QMP `abs`/`click` does nothing on a warpd station.** The guest has no working

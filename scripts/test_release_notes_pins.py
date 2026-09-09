@@ -68,6 +68,15 @@ class PinFormatTest(unittest.TestCase):
         doc = json.dumps({"emulator": {"source": "github.com/Wnt/es40 main — no commit pinned in the repo"}})
         self.assertEqual(PINS.json_pins(doc), {("Wnt/es40", "main")})
 
+    def test_a_comma_branch_form_does_not_eat_the_last_repo_letter(self):
+        # The exact string registry/stations/a1000.json and a3000.json carry.
+        # The greedy repo group used to backtrack across the comma to satisfy
+        # the branch group's one-or-more, parsing repo `Wnt/fs-ua` + branch `e`.
+        doc = json.dumps(
+            {"emulator": {"source": "github.com/Wnt/fs-uae, branch kernel-hive/integrated (build-fsuae-native.sh)"}}
+        )
+        self.assertEqual(PINS.json_pins(doc), {("Wnt/fs-uae", "kernel-hive/integrated")})
+
     def test_prose_that_merely_names_a_branch_is_not_a_pin(self):
         # The whole point: the old name lives on in comments and echo lines long
         # after the build was repointed, so a substring scan calls drift clean.

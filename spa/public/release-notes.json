@@ -3,38 +3,82 @@
   "weeks": [
     {
       "week": 5,
-      "title": "The mouse finally lands",
+      "title": "Nine Unixes in one night",
       "start": "2026-08-30T09:00:00+03:00",
       "end": "2026-09-06T09:00:00+03:00",
       "startDate": "2026-08-30",
       "endDate": "2026-09-06",
-      "commitCount": 29,
-      "codeLines": 7484,
+      "commitCount": 436,
+      "codeLines": 76663,
       "summary": [
         {
           "theme": "New stations",
-          "text": "Three machines arrived. [Amiga UNIX](station:amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put **OPEN LOOK** on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots from the real 1992 installation tape onto an emulated *68030*, and runs in colour on the **A2410**, a card most owners never bought. Its cursor lands exactly where you point, by a route no other machine here uses: the museum reaches inside the guest's own X server and moves the pointer there. [ravynOS](station:ravynos) also joined. At the other extreme, [bootOS](station:bootos) is an entire operating system in **512 bytes**, the one sector a PC reads to start up: a prompt, a filesystem and a hex loader, written by \u00d3scar Toledo G. in two evenings in 2019. Its floppy carries nineteen more one-sector programs \u2014 chess, a Doom, a BASIC, a Flappy Bird \u2014 and you run one by typing its name. That makes 75 machines, 71 of them open to visitors."
+          "text": "<u>Nine Unix and Linux machines arrived in a single night.</u> [Slackware 3.4](station:slackware) brings 1997's **fvwm95**, the desktop that made a Unix workstation look like Windows 95; [NetBSD 1.4.1](station:netbsd14) follows from 1999. The year 2000 gives three at once \u2014 [Red Hat Linux 6.2 \"Zoot\"](station:redhat62) with **GNOME 1.0**, [Debian 2.2 \"potato\"](station:debian22), and [SuSE Linux 6.4](station:suse64) with **KDE 1**, from the last spring SuSE spelled itself with a small u. [Ubuntu 4.10 \"Warty Warthog\"](station:ubuntu) is the very first Ubuntu, running off its live CD, so every reset returns to the same instant. [FreeBSD 4.11](station:freebsd411) closes the 4.x line with the full **KDE 3.3.2**; [PC-BSD 1.5.1](station:pcbsd) is FreeBSD made point-and-click; [OpenBSD 7.9](station:openbsd) stands at the modern end. Earlier in the week came [Amiga UNIX](station:amix), Commodore's *System V Release 4* with **OPEN LOOK**, in colour on the **A2410** card most owners never bought; [ravynOS](station:ravynos); [PC/GEOS Ensemble](station:pcgeos), a 1990 desktop in *640 KB on a 286*; and [bootOS](station:bootos), a whole operating system in *512 bytes*. That makes 87 machines, 85 of them open to visitors."
         },
         {
           "theme": "Major features",
-          "text": "<u>Five more machines now put the cursor exactly where you point.</u> A mouse in a browser sends a position; most of these guests only understand motion, which is why a cursor used to crawl behind your hand and pile up in a corner. [AIX](station:aix432) and [HP-UX](station:hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees \u2014 a real feedback loop rather than arithmetic and hope. [Rhapsody](station:rhapsody), [Mac OS 7.5.3](station:macos753) and [BeOS](station:beos) have no such chip, so instead the emulator writes the coordinate straight into the place each operating system keeps its own pointer, and nudges it awake. On all five the cursor is now 1:1: no chase, no drift, no corner."
+          "text": "Eight of the new arrivals joined the museum's private 1990s internet, browsing the archived web through the browser each would really have had, from **Netscape 4.77** on [Debian](station:debian22) to **Lynx** on [NetBSD](station:netbsd14). Seven signed on to the chat network too, taking it from eleven machines to nineteen. [Windows 3.11](station:win311) joined through the **AOL Instant Messenger** already sitting on its disk, and a bridge now relays between the AIM and ICQ halves, so a 1993 desktop can answer a message from a 2000 Linux box. A machine you have just reset signs itself back in, unprompted. The cursor landed on many more machines as well: [AIX](station:aix432) and [HP-UX](station:hpuxvue) read it back out of the graphics chip's own registers and steer until it agrees, while [Rhapsody](station:rhapsody), [Mac OS 7.5.3](station:macos753) and [BeOS](station:beos) have the coordinate written straight into the place each system keeps its own pointer. Cursor and hand now agree exactly."
         },
         {
           "theme": "Quality improvements",
-          "text": "The private machines handed out to signed-in visitors left everyone else on a blank front page; the museum now renders one hall for all and picks what you see by who you are. Clicks, not just movement, take the corrected route into AIX, so a button press lands where the cursor already is. AIX also had an invisible magnet \u2014 pass near a window's resize handle and the pointer stuck to it \u2014 which is gone. And the museum's own weekly test used to count cards on the collection page, quietly passing while the page was empty; it now checks the gallery really drew."
+          "text": "[AIX](station:aix432) had stopped taking the keyboard and would lock itself out; [HP-UX](station:hpuxvue) looked broken the same way and turned out to be a focus trap, not a fault. Both type again. A key still held down when you close the tab is released now, so nobody arrives to a machine stuck on shift. The private machines handed to signed-in visitors used to leave everyone else on a blank front page; the museum renders one hall for all."
         }
       ],
       "bullets": [
+        "Each new arrival chats with its era's own client \u2014 **GtkICQ** on SuSE, **GnomeICU** on Debian, **mICQ** on NetBSD, **Kopete** on PC-BSD, **Gaim** on Ubuntu",
+        "The network's resident bot says hello about a minute after a machine signs in, and every station carries every other one in its contact list",
+        "[FreeBSD 4.11](station:freebsd411)'s network card went silent after every reset, so it was swapped for one that survives \u2014 the fault shows only on the wire",
+        "[NetBSD 1.4.1](station:netbsd14) needed a kernel built inside the guest: the stock 1999 one hangs on this hardware before it ever reaches the disk",
+        "[Slackware 3.4](station:slackware)'s 1997 boot floppy still wedges under a modern emulator, so the museum boots its kernel from a GRUB2 rescue disc instead",
+        "[FreeBSD 4.11](station:freebsd411) reads a CD one 16-bit word at a time, so it had to be installed on the slow software emulator and only then run at full speed",
+        "[Debian 2.2](station:debian22) writes an emulated disk just as slowly, so its root filesystem was assembled outside the machine and handed over finished",
+        "[Red Hat Linux 6.2](station:redhat62) installs itself from a kickstart file and [OpenBSD](station:openbsd) from a scripted installer \u2014 nobody answers a prompt",
+        "[SuSE Linux 6.4](station:suse64) is installed by SuSE's own graphical **YaST2** \u2014 what its CD really boots, not the text YaST everyone remembers",
         "[Amiga UNIX](station:amix) installs from a 29-segment tape image, the way an *A3000UX* really did \u2014 roughly two hours of emulated restore",
         "**OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it",
-        "[bootOS](station:bootos) keeps one file per floppy track, thirty-two at most; the museum snapshots the floppy, so a deleted game is gone only until the next reset",
+        "[bootOS](station:bootos)'s floppy carries chess, a Doom, a BASIC and a Flappy Bird, each one sector long; you run one by typing its name",
         "Type `enter` on bootOS and it takes a program as lines of hex; the 'Hello, world' from its own manual is the exhibit's demo button",
+        "[PC/GEOS Ensemble](station:pcgeos) boots straight into its desktop from FreeDOS, and its word processor stopped crashing once one font was dropped",
         "[AIX](station:aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all",
         "[Mac OS 7.5.3](station:macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does",
-        "[HP-UX](station:hpuxvue)'s cursor loop needed no new emulated hardware \u2014 the registers were already there, so no machine had to be rebuilt",
         "[Rhapsody](station:rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved",
         "A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed",
-        "Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card"
+        "[OpenBSD](station:openbsd)'s tablet pointer needed one fix after X registered the same device twice, once with no calibration range",
+        "[ravynOS](station:ravynos) 0.6.1 is the last of its kind \u2014 days after this build, its makers threw the FreeBSD kernel away and deleted the line"
+      ],
+      "screenshots": [
+        {
+          "id": "slackware",
+          "name": "Slackware 3.4"
+        },
+        {
+          "id": "netbsd14",
+          "name": "NetBSD 1.4.1"
+        },
+        {
+          "id": "redhat62",
+          "name": "Red Hat Linux 6.2"
+        },
+        {
+          "id": "debian22",
+          "name": "Debian GNU/Linux 2.2"
+        },
+        {
+          "id": "suse64",
+          "name": "SuSE Linux 6.4"
+        },
+        {
+          "id": "ubuntu",
+          "name": "Ubuntu 4.10 Warty Warthog"
+        },
+        {
+          "id": "freebsd411",
+          "name": "FreeBSD 4.11"
+        },
+        {
+          "id": "pcbsd",
+          "name": "PC-BSD 1.5.1"
+        }
       ]
     },
     {
@@ -72,6 +116,40 @@
         "[OS/2 Warp](station:os2warp) chats through **ICQ/2 1.503i**, the OS/2 native build, speaking an older protocol nobody else here uses",
         "The gallery installs onto a phone's home screen like an app, and its collection page pulls to refresh",
         "The [SGI Indy](station:irix)'s browser stopped nagging on every launch: the setting that silences it is not the one you would guess"
+      ],
+      "screenshots": [
+        {
+          "id": "aix432",
+          "name": "IBM RS/6000 \u2014 AIX 4.3.3"
+        },
+        {
+          "id": "macos9",
+          "name": "Mac OS 9.2.2"
+        },
+        {
+          "id": "chokanji",
+          "name": "Chokanji (\u8d85\u6f22\u5b57)"
+        },
+        {
+          "id": "win311",
+          "name": "Windows 3.11"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "rhapsody",
+          "name": "Rhapsody DR2"
+        },
+        {
+          "id": "winxp",
+          "name": "Windows XP"
+        },
+        {
+          "id": "win95",
+          "name": "Windows 95"
+        }
       ]
     },
     {
@@ -109,6 +187,40 @@
         "Photographs of the real hardware sit beside the write-ups now \u2014 the BeBox, a Quadra 800, an HP 9000 B180L",
         "The picture stops dropping to a soft, low-detail mode for no reason: the stream had been reading its own keyframes as a slow connection",
         "The space bar on the [Sinclair QL](station:sinclairql) typed nothing at all. It types now, and a burst-typed line keeps its order"
+      ],
+      "screenshots": [
+        {
+          "id": "newsos",
+          "name": "NEWS-OS 4.1R"
+        },
+        {
+          "id": "aux",
+          "name": "A/UX 3.0.1"
+        },
+        {
+          "id": "sunos414",
+          "name": "SunOS 4.1.4 / OpenWindows"
+        },
+        {
+          "id": "hpuxvue",
+          "name": "HP-UX 10.20 / HP VUE"
+        },
+        {
+          "id": "rhapsody",
+          "name": "Rhapsody DR2"
+        },
+        {
+          "id": "beos",
+          "name": "BeOS R5"
+        },
+        {
+          "id": "macos753",
+          "name": "Mac OS 7.5.3"
+        },
+        {
+          "id": "tru64",
+          "name": "Tru64 UNIX"
+        }
       ]
     },
     {
@@ -153,6 +265,40 @@
         "[Tru64](station:tru64) was born *OSF/1* in 1992 and ended with 5.1B in 2003, when HP retired it and *Alpha* together",
         "Three operating systems on one [PDP-11](station:decos), because in 1975 you bought a computer and then chose one to run on it",
         "Log into the [PDP-11/70](station:pdp11) as root \u2014 there is no password \u2014 and the whole operating system's source code is sitting in /usr/src"
+      ],
+      "screenshots": [
+        {
+          "id": "alto",
+          "name": "Xerox Alto II"
+        },
+        {
+          "id": "star",
+          "name": "Xerox Star 8010"
+        },
+        {
+          "id": "daybreak",
+          "name": "Xerox 6085"
+        },
+        {
+          "id": "pdp11",
+          "name": "DEC PDP-11/70 \u2014 2.11BSD"
+        },
+        {
+          "id": "gt40",
+          "name": "DEC GT40"
+        },
+        {
+          "id": "decos",
+          "name": "DEC PDP-11 \u2014 RT-11, RSX-11M, RSTS/E"
+        },
+        {
+          "id": "zxspectrum",
+          "name": "Sinclair ZX Spectrum 48K"
+        },
+        {
+          "id": "bbcmicro",
+          "name": "Acorn BBC Micro Model B"
+        }
       ]
     },
     {
@@ -189,6 +335,40 @@
         "One picture on the [Windows 95](station:win95) page showed a *386/16*, a machine below the floor **Windows 95** itself demands; it was replaced",
         "Every gallery image is cleared against Wikimedia's own licence record by a script, which caught two invented file titles on its first run",
         "A survey of the *PDP-11* family and of thirty more home computers went into the notes before any of them got a page"
+      ],
+      "screenshots": [
+        {
+          "id": "vic20",
+          "name": "Commodore VIC-20"
+        },
+        {
+          "id": "plus4",
+          "name": "Commodore Plus/4"
+        },
+        {
+          "id": "amstradcpc",
+          "name": "Amstrad CPC 6128"
+        },
+        {
+          "id": "irix",
+          "name": "SGI Indy"
+        },
+        {
+          "id": "nt351",
+          "name": "Windows NT 3.51"
+        },
+        {
+          "id": "ninefront",
+          "name": "9front (Plan 9)"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "win95",
+          "name": "Windows 95"
+        }
       ]
     },
     {
@@ -239,6 +419,40 @@
         "[Windows 11](station:win11) began as a poster on the wall and was promoted to a machine you can sit down at",
         "[Red Star OS 3](station:redstar3) reaches a logged-in desktop with no input at all: **KDE** on Fedora, reshaped in the DPRK to look like a Mac",
         "The recorded cold boot of [SGI IRIX](station:irix) carries the *Indy*'s PROM startup chime, captured along with the picture"
+      ],
+      "screenshots": [
+        {
+          "id": "macos",
+          "name": "macOS Sequoia"
+        },
+        {
+          "id": "riscos",
+          "name": "RISC OS 5.30"
+        },
+        {
+          "id": "nt351",
+          "name": "Windows NT 3.51"
+        },
+        {
+          "id": "nt4",
+          "name": "Windows NT 4.0"
+        },
+        {
+          "id": "os2warp",
+          "name": "OS/2 Warp 4"
+        },
+        {
+          "id": "solaris",
+          "name": "Solaris CDE"
+        },
+        {
+          "id": "openvms",
+          "name": "OpenVMS x86-64 9.2"
+        },
+        {
+          "id": "msdoswin1",
+          "name": "MS-DOS 6.22 + Windows 1.0"
+        }
       ],
       "source": "osgallery"
     }

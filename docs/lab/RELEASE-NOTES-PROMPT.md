@@ -6,6 +6,20 @@ the result out. There is no cron, no hook and no CI job behind it — the trigge
 is you, by hand, on a Sunday after **09:00 Europe/Helsinki** (the moment the
 week closes).
 
+**The whole flow, end to end:** `brief` (§1) → author one JSON file (§2) →
+`render` (§3) → `check` (§3) → read the README diff (§3) → commit and push
+(§3) → `publish` (§3) once it is live. Nothing later in that chain runs before
+the step before it is green.
+
+**A week is authored exactly once, after it closes — never mid-week.**
+`registry/release-notes/<end-date>.json` is not an append-only landing
+artifact the way `assembliesByTile.ts` or `bootrec-tiles.conf` are; a station
+wave that lands mid-week writes its facts to the **inbox** instead (§1.2), and
+`brief` folds them into the authoring pass once the week is over. Running
+`brief --week <end-date>` for a week whose file **already exists** is a
+RE-authoring, not a first draft — see Lessons at the bottom of this file for
+what happens when that rule is skipped.
+
 ## 1. Run this first
 
 ```sh
@@ -31,7 +45,11 @@ and names it. Week 0 is the pre-public era and is never offered by `brief`; it
 is hand-written, and it must exist before any other week renders.
 
 `python3 scripts/release-notes.py status` answers "which weeks are still
-unwritten?" without printing a brief.
+unwritten?" without printing a brief. It also warns when a written week's
+recorded `commitCount` is more than 10% off a fresh count — the tripwire for a
+week authored before it closed (Lessons, below) — and when a fact file in the
+inbox (§1.2) is newer than the week it belongs to, meaning something landed
+after the write-up and the week needs a look.
 
 ## 1.1 The emulator forks — half the week is not in this repo
 
@@ -89,6 +107,32 @@ short week for a complete one.
 To add a fork, or to move a build to a different branch, edit sources.json —
 that is the single hand-written home for the fact — and keep `pinnedBy`
 pointing at the file that really pins it.
+
+## 1.2 The facts inbox — where a station wave's landing note goes
+
+A station wave that lands mid-week (the playbook's `docs` stream, or a
+`WAVE-TEMPLATE.md` wave) has real facts worth keeping — what arrived, its
+year, what a visitor can do, what was hard — but the week is not written yet,
+and it may not even be known which Sunday it will close under. Rather than
+editing (or creating) `registry/release-notes/<end-date>.json` mid-week, drop
+one free-form note at:
+
+    registry/release-notes/facts/<next-Sunday>/<station-id>.md
+
+One file per station, named by its id, dated by the Sunday the week will close
+under. The format inside is not enforced — prose, a bullet list, whatever the
+wave already wrote for its own report — because `render` and `check` never
+read this directory at all, and the locked JSON schema (§2) does not either.
+It exists purely so two things landing the same week never fight over one
+file, the way `registry/release-notes/2026-09-06.json` and an in-progress
+`2026-09-13.json` did (Lessons, below).
+
+`brief` prints every fact file for the week it is briefing under a
+**FACTS FROM THE FLOOR** heading, right alongside the commit subjects and the
+emulator-fork section — read it the same way, as raw material, not as
+publishable prose. A fact note is not itself a bullet or a paragraph; the
+authoring pass still writes the prose from scratch, checking every claim
+against the commits and the notes the way it always has.
 
 ## 2. Paste this prompt
 
@@ -213,6 +257,17 @@ Paste the brief output, then this block, into Claude Code:
 > rationed to one per week on purpose: underlined text that is not a link reads
 > as a broken one, and on the About page the station names really are links.
 >
+> **Screenshots — usually leave this alone.** Every rendered week gets a tiled
+> row of screenshots, one per machine, taken from that station's own capture
+> (`spa/public/posters/<id>/desktop.webp` — never a `gallery/` photo). By
+> default the renderer picks this row itself: every station your prose links,
+> in the order it first appears, `New stations` first, de-duplicated, capped at
+> 8. That default is almost always right, because it is just "the machines you
+> already talked about". Add an explicit `"screenshots": ["id", ...]` array
+> (1-8 real station ids, no duplicates) only when the default would be wrong —
+> the week names more than 8 machines and some matter more than others, or the
+> single best frame belongs to a station the prose never happens to link.
+>
 > **Write exactly one file**, at `registry/release-notes/<end-date>.json`,
 > named after the Sunday the week closed (the brief prints the path):
 >
@@ -233,11 +288,15 @@ Paste the brief output, then this block, into Claude Code:
 > }
 > ```
 >
+> (`"screenshots": [...]` is an optional ninth key, omitted above because the
+> derived default covers almost every week — see above.)
+>
 > `start`, `end` and `commitCount` are copied verbatim from the brief — a
 > slipped `start` is refused, because consecutive weeks must abut (week N
 > starts exactly where week N-1 ended). The schema is locked: no other keys,
-> and every one of these is required. Do not touch README.md,
-> docs/RELEASE-NOTES.md or spa/public/release-notes.json — those are rendered.
+> and every one of these is required (`screenshots` is the one optional key).
+> Do not touch README.md, docs/RELEASE-NOTES.md or
+> spa/public/release-notes.json — those are rendered.
 
 ---
 
@@ -254,15 +313,46 @@ is missing rather than malformed: `status` names it, `brief --week <end-date>`
 cuts it, and nothing publishes until it exists.
 
 `render` writes the three committed outputs — the README's "Release notes"
-section, `docs/RELEASE-NOTES.md` and `spa/public/release-notes.json`. `check`
-re-validates every summary file against the locked schema and asserts the three
-outputs are byte-identical to a fresh render, so it is fully deterministic: no
-git history is read for content, and a red `check` always means "run `render`
-and commit", never "someone else pushed".
+section (the SHORT form: the newest week's heading, its screenshot tiles, its
+"New stations" paragraph, then one line into the full archive), the full
+archive in `docs/RELEASE-NOTES.md` (every week, in full, with its screenshot
+tiles) and `spa/public/release-notes.json`. `check` re-validates every summary
+file against the locked schema and asserts all three outputs are byte-identical
+to a fresh render, so it is fully deterministic: no git history is read for
+content, and a red `check` always means "run `render` and commit", never
+"someone else pushed".
 
 Read the README diff before committing. This is the one output a stranger sees
 first, and the pass that wrote it cannot tell whether a sentence is true — you
-can. Then commit the summary file and the three rendered outputs together.
+can. Then commit the summary file and the three rendered outputs together, and
+push:
+
+```sh
+git push origin main
+```
+
+**Then publish the tag and the GitHub release** — this is a separate, later
+step, run only once the week is pushed and live:
+
+```sh
+python3 scripts/release-notes.py publish --dry-run   # or: make release-notes-publish-dry-run
+python3 scripts/release-notes.py publish             # or: make release-notes-publish
+```
+
+`publish` walks every closed, written week and ensures a git tag `week-<N>`
+(at the last commit stamped before that week's `end`, the same clamped
+author-date bucketing `brief` buckets by) and a GitHub release at that tag
+(title `Week N · <title>`, body the week's full write-up with absolute image
+URLs so it reads standalone on GitHub, plus the code-size line and the gallery
+invite). It is idempotent: an existing tag at the right commit, or an existing
+release with the same title and body, is left alone and reported as such; an
+existing tag at the WRONG commit is refused loudly unless you pass `--retag`
+(never silently moved — a moved tag changes what a citation to `week-N` means).
+`--week <end-date>` limits the run to one week; `--dry-run` prints every
+action it would take and each release body's length without touching git or
+the network at all. `publish` needs `gh` authenticated on this box
+(`gh auth status`) and is not part of the offline quality gate for that
+reason — run it by hand, after `check` is green and the week is pushed.
 
 ## Week 0 is a one-off
 
@@ -275,3 +365,40 @@ contact with the project and has to say what this actually is. Its
 `"source": "osgallery"`, which is what makes the archive print the "before the
 repository was public" note. A normal week does not get any of this: three
 sections, 300-400 words. Do not copy week 0's shape into week N.
+
+## Lessons
+
+**Week 5 was authored mid-week and missed roughly 400 commits.** The write-up
+was started before the week had closed — `brief --week 2026-09-06` run days
+early — and locked in a `commitCount` from a partial window. By the time the
+week actually ended, ~400 more commits had landed, none of them reflected in
+the prose. Nothing in the tooling caught this at the time, because `check`
+only validates a file's own internal shape, never whether it was written at
+the right moment.
+
+The fix is the rule at the top of this document, stated plainly because it was
+not obvious enough the first time: **a week is authored once, after 09:00
+Europe/Helsinki on the Sunday it closes — never before.** `brief` for a week
+whose summary file **already exists** is not a refresh, it is a RE-authoring,
+and should be treated with the same care as writing the week for the first
+time: re-read every commit, do not assume the old prose is still accurate. To
+catch the mistake mechanically rather than relying on remembering the rule,
+`status` now warns when a written week's recorded `commitCount` differs from a
+fresh count by more than 10% — a week authored days early against a repo doing
+dozens of commits a day will trip this every time.
+
+**The same week's file grew append-only landing rows from parallel station
+waves, and a separate in-progress week file existed before its Sunday closed.**
+Two different playbook rows (`ADD-NEW-OS-PLAYBOOK.md`'s `docs` stream and
+`WAVE-TEMPLATE.md`'s) told every station wave to write straight into "the
+release-notes JSON" the same way they write into the other append-only shared
+files (`assembliesByTile.ts`, `bootrec-tiles.conf`). That works for a file
+meant to be a running union of rows; it does not work for a file meant to be
+written exactly once, by one pass, after the week closes — nine station waves
+landing the same week turned `2026-09-06.json` into a 578-word, 20-bullet file
+that blew every limit in the schema, and a `2026-09-13.json` existed with a
+`commitCount` of 0 while its week was still open. Both playbook rows now point
+at the facts inbox (§1.2) instead: a wave drops
+`registry/release-notes/facts/<next-Sunday>/<id>.md`, never the week's own
+JSON, and the two writers — nine parallel station waves and one Sunday
+authoring pass — stop fighting over one file.

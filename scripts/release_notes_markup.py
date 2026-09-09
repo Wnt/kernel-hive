@@ -39,6 +39,7 @@ instead of decaying into decoration, so the limit is enforced, not advised.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -59,6 +60,23 @@ def station_ids(repo: Path) -> frozenset[str]:
     this repo derives station facts from registry/stations/ instead of a list.
     """
     return frozenset(path.stem for path in (repo / "registry" / "stations").glob("*.json"))
+
+
+def station_names(repo: Path) -> dict[str, str]:
+    """id -> visitor-facing display name (`museum.displayName`), for the
+    screenshot tiles' alt text and captions. Falls back to the id itself for a
+    station whose registry entry is malformed or missing the field, so a
+    rendering bug there never blocks the release notes."""
+    names: dict[str, str] = {}
+    for path in (repo / "registry" / "stations").glob("*.json"):
+        try:
+            doc = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            continue
+        museum = doc.get("museum") if isinstance(doc, dict) else None
+        name = museum.get("displayName") if isinstance(museum, dict) else None
+        names[path.stem] = name if isinstance(name, str) and name else path.stem
+    return names
 
 
 def plain_text(text: str) -> str:

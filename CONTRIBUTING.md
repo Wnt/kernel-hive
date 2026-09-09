@@ -1,7 +1,7 @@
 # Contributing
 
-This is a personal home-lab project (see the [README](README.md)'s status
-note). Most of the repository — tile launchers, golden-image builders,
+This is a personal home-lab project (see the [README](README.md)'s "Status —
+a home lab, not a product" section). Most of the repository — tile launchers, golden-image builders,
 `labctl`, the live e2e suite under `tests/e2e-live/` — only runs against
 the owner's Proxmox lab box, so most changes cannot be verified end to end
 without that hardware. Issues, questions and PRs against the buildable
@@ -13,7 +13,8 @@ wasn't tested, since a reviewer without the box can't run them either.
 
 Every IP/hostname/domain in the docs (`192.0.2.10`, `labhost`, `example.com`,
 etc.) is a scrubbed stand-in for the operator's lab box — see the README's
-"Addresses and hostnames" note and `registry/README.md`. Never commit a real
+"Addresses and hostnames in these docs are placeholders" section and
+`registry/README.md`. Never commit a real
 address, hostname, MAC, serial or domain back into the repo; operator-local
 values belong only in the gitignored files (`registry/local.env` and similar).
 
@@ -32,7 +33,7 @@ generated artifact you find a comment marking as such.
 
 ## The release notes are written, not generated
 
-`docs/RELEASE-NOTES.md`, the README's "Release notes" section and
+`docs/RELEASE-NOTES.md`, the README's "This week at the museum" section and
 `spa/public/release-notes.json` are **rendered** from one hand-written file
 per week, `registry/release-notes/<end-date>.json`. The prose in those files
 comes from a **Claude Code pass the operator triggers by hand on Sundays** —
