@@ -144,16 +144,18 @@
       "Workbench 2.04",
       "AmigaDOS 2.0 Shell",
       "the Preferences editors",
-      "Installer and the Commodities Exchange"
+      "Commodities Exchange",
+      "ARexx",
+      "Installer"
     ],
-    "periodBrowser": "none — pre-web (AmigaOS 2.04)",
+    "periodBrowser": "none — this machine predates the web, and the exhibit is not networked",
     "iconicApps": [
-      "Workbench 2.04 desktop",
-      "the grey-and-blue 2.0 look",
-      "AmigaDOS Shell",
-      "Preferences"
+      "the grey-and-blue Workbench 2.0 desktop",
+      "AmigaDOS 2.0 Shell",
+      "the Prefs drawer",
+      "the ASL file requester"
     ],
-    "blurb": "Commodore's 1990 flagship: a 68030 with SCSI and a flicker fixer in a low desktop case, running Workbench 2.04 — the release that gave the Amiga its grey-and-blue 3D look, a real Shell and a proper Installer.",
+    "blurb": "Commodore's 1990 flagship: a 68030 with its memory management unit fitted, a floating-point unit, SCSI on the motherboard and a flicker fixer, in a low desktop case. It booted Workbench 2.04 — the rewrite that gave AmigaOS its grey three-dimensional look, a usable Shell and a standard Installer — and, as the Amiga 3000UX, the same machine ran Amiga UNIX, the amix exhibit next door.",
     "notes": "Host-native from birth: FS-UAE 3.2.35 (A3000 model, 68030 + 68882, ECS, Kickstart 2.04 r37.175 A3000 ROM) under a pinned Xvfb :89, x11 root capture + XTEST input, same backend as amigaos35. Media: the KS 2.04 A3000 ROM (the one amix already stages) + the four Workbench 2.04 rev 37.67 ADFs from archive.org (preservation-class, never committed), composed host-side with amitools xdftool into an FFS hardfile as amigaos35 does for 3.1. Reset = relaunch: a cold boot of a fresh work HDF copied from the golden. Between amiga (A500 / 1.3) and amigaos35 (A4000 / 3.5) in the lineup, and the machine amix (Amiga UNIX) shares. See docs/guests/a3000.md."
   },
   "emulator": {
