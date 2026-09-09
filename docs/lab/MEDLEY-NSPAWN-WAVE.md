@@ -80,9 +80,20 @@ relaunch → old maiko and old nspawn gone, new pids, `work/` wiped
 
 ## Landing
 
-`station-land.sh medley` (no `--golden`; relaunch reset). The unit was
-**unmasked only after the rig proofs above**, immediately before the landing
-window; the live proofs after `station-up` are in the report and the guest doc.
+`station-land.sh medley` (no `--golden`; relaunch reset) landed main at
+`a2a0e0ba`, rc 0, one window. The unit was **unmasked only after the rig
+proofs above**, immediately before the window.
+
+**Live proofs on the station** (frames `/data/vms/sandbox/medley-nspawn/`,
+wake lease held; `medley-landed.png`, `live-proofs.png`, `live-violation.png`,
+`live-after-reset.png`): unit active; maiko uid 1966080, `CapEff 15808dff`,
+`NoNewPrivs 1`, in `qcap-medley-*.scope/payload`, every namespace differs from
+PID 1's; `/tmp/.X11-unix/X91 -> /run/streamhost/x11/medley/X91`; the
+`setpriv` mount test denies tmpfs, block device and umount; `ip link` = `lo`;
+`ps` = stub init, ldex, Xvfb. Typed: `local.env` → NIL, the live nspawn pid's
+`/proc/<pid>/comm` → NIL, net = `lo`, `CREATE-PROCESS-STREAM` → NIL, the
+read-only open → `Protection violation`. `labctl reset medley` → new maiko
+(old gone), pristine Exec.
 
 ## Walls
 
@@ -108,7 +119,8 @@ window; the live proofs after `station-up` are in the report and the guest doc.
 | first contained Exec on the rig (`f1.png`) | 16 |
 | host-side audit + Exec-typed proofs (`p1`–`p6`) | 21 |
 | freeze / relaunch proofs | 24 |
-| landed | see report |
+| landed (`station-land.sh` rc 0, main `a2a0e0ba`) | 31 |
+| live proofs + reset on the station | 33 |
 
 ## Teardown
 
