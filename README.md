@@ -7,10 +7,12 @@ right now — and you can move their mice.**
   <img src="docs/media/hero.webp" alt="Twenty desktops from the collection, side by side" width="100%">
 </a>
 
-![A machine opening, the pointer moving, a line being typed](docs/media/demo.gif)
+![A visitor opens Windows 3.11 from the collection and drives it live](docs/media/demo.gif)
 
-*Not a video of an old computer. That is a real guest, booted, at the other end
-of a browser tab — the pointer and the keystrokes are going back into it.*
+*Not a video of an old computer. Recorded from the public gallery: the
+collection, one card clicked, Windows 3.11 arriving, and Program Manager's File
+menu unfolding under a pointer that is being moved from a browser tab.
+[How it was made](docs/media/README.md).*
 
 [![rust](https://img.shields.io/github/actions/workflow/status/Wnt/kernel-hive/rust.yml?branch=main&label=rust)](https://github.com/Wnt/kernel-hive/actions/workflows/rust.yml)
 [![spa](https://img.shields.io/github/actions/workflow/status/Wnt/kernel-hive/spa.yml?branch=main&label=spa)](https://github.com/Wnt/kernel-hive/actions/workflows/spa.yml)
