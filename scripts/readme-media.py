@@ -51,15 +51,27 @@ TEXT_COLOR = (235, 235, 235)
 SUB_TEXT_COLOR = (170, 170, 178)
 CELL_ASPECT = 3 / 4  # height / width, i.e. a 4:3-ish landscape screenshot
 
+ACCENT_COLOR = (255, 196, 120)
+SAFE_MARGIN = 80  # GitHub's card template: nothing important inside this frame
+SUPERSAMPLE = 3
+
+# Inter (SIL OFL 1.1, docs/media/fonts/LICENSE.txt) — the sans GitHub's own
+# card uses a cousin of; DejaVu is the fallback when the files are missing.
+FONT_DIR = REPO_ROOT / "docs" / "media" / "fonts"
+FONT_BOLD = str(FONT_DIR / "Inter-Bold.ttf")
+FONT_SEMIBOLD = str(FONT_DIR / "Inter-SemiBold.ttf")
+FONT_REGULAR = str(FONT_DIR / "Inter-Regular.ttf")
 DEJAVU_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 DEJAVU_REGULAR = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 
 def _font(path: str, size: int) -> ImageFont.FreeTypeFont:
-    try:
-        return ImageFont.truetype(path, size)
-    except OSError:
-        return ImageFont.load_default()
+    for candidate in (path, DEJAVU_BOLD if "Bold" in path else DEJAVU_REGULAR):
+        try:
+            return ImageFont.truetype(candidate, size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size)
 
 
 def _cover_crop(im: Image.Image, cell_w: int, cell_h: int) -> Image.Image:
@@ -114,28 +126,49 @@ def render_hero(rows: list[dict[str, Any]]) -> Image.Image:
     return build_mosaic(chosen, cols=5, grid_rows=4, width=1600, height=960, gutter=6)
 
 
+def _band_text(width: int, height: int, title: str, subtitle: str, footer: str, x0: int) -> Image.Image:
+    """The card's text band, rendered at SUPERSAMPLE x and downscaled once with
+    LANCZOS: FreeType at 1x on a dark ground hints glyphs to the pixel grid and
+    the result reads as jagged at card size; supersampling gives clean
+    anti-aliased stems. Text sits at x0 = the template's safe margin."""
+    ss = SUPERSAMPLE
+    band = Image.new("RGB", (width * ss, height * ss), BAND_COLOR)
+    draw = ImageDraw.Draw(band)
+    title_font = _font(FONT_BOLD, 42 * ss)
+    sub_font = _font(FONT_REGULAR, 23 * ss)
+    foot_font = _font(FONT_SEMIBOLD, 18 * ss)
+    # 440 + 14 .. 558: every glyph stays above the template's bottom safe line (560).
+    y = 14 * ss
+    draw.text((x0 * ss, y), title, font=title_font, fill=TEXT_COLOR)
+    y += 54 * ss
+    draw.text((x0 * ss, y), subtitle, font=sub_font, fill=SUB_TEXT_COLOR)
+    y += 32 * ss
+    draw.text((x0 * ss, y), footer, font=foot_font, fill=ACCENT_COLOR)
+    return band.resize((width, height), Image.LANCZOS)
+
+
 def render_social_preview(rows: list[dict[str, Any]]) -> Image.Image:
+    """1280x640, GitHub's Open Graph card size (docs/media/
+    repository-open-graph-template.png is GitHub's own template: an 80 px
+    frame on every side is the crop-safe zone, so all text starts at x=80 and
+    ends above y=560). The mosaic is built ONCE at final size — each tile is a
+    single LANCZOS pass from the source screenshot, never resized twice — and
+    only the text band is supersampled."""
     chosen = lib.select_preview_rows(rows, lib.PREVIEW_COUNT)
     width, height = 1280, 640
-    band_h = 168
+    band_h = 200
     grid_h = height - band_h
     mosaic = build_mosaic(chosen, cols=6, grid_rows=3, width=width, height=grid_h, gutter=4)
 
-    canvas = Image.new("RGB", (width, height), BAND_COLOR)
-    canvas.paste(mosaic, (0, 0))
-    draw = ImageDraw.Draw(canvas)
-    draw.rectangle([0, grid_h, width, height], fill=BAND_COLOR)
-
     live_n = lib.live_count(rows)
     lo, hi = lib.year_span(rows)
-    title = "Kernel Hive — a living computer museum"
-    subtitle = f"{live_n} operating systems, {lo}–{hi}, live in your browser"
+    title = "Kernel Hive"
+    subtitle = f"Virtual computer museum streamed into your browser · {live_n} operating systems, {lo}–{hi}"
+    footer = "kernelhive.madekivi.fi"
 
-    title_font = _font(DEJAVU_BOLD, 34)
-    sub_font = _font(DEJAVU_REGULAR, 22)
-    pad_top = grid_h + 28
-    draw.text((40, pad_top), title, font=title_font, fill=TEXT_COLOR)
-    draw.text((40, pad_top + 46), subtitle, font=sub_font, fill=SUB_TEXT_COLOR)
+    canvas = Image.new("RGB", (width, height), BAND_COLOR)
+    canvas.paste(mosaic, (0, 0))
+    canvas.paste(_band_text(width, band_h, title, subtitle, footer, SAFE_MARGIN), (0, grid_h))
     return canvas
 
 

@@ -1,7 +1,12 @@
 # docs/media — README imagery, and how to re-record the demo clip
 
 `hero.webp`, `social-preview.png` and the lineup grid are generated from the
-station registry by `scripts/readme-media.py` (never hand-edit them). The
+station registry by `scripts/readme-media.py` (never hand-edit them).
+`social-preview.png` is laid out on GitHub's own Open Graph card template
+(`repository-open-graph-template.png`, 1280x640, an 80 px crop-safe frame):
+every tile is one LANCZOS pass from its source screenshot, and the text band is
+set in Inter (`fonts/`, SIL OFL) at 3x and downscaled once, so nothing is
+resampled twice. Upload it under Settings → Social preview after a re-render. The
 `museum-*.webp` views are operator screenshots of the gallery, resized to
 1600 px.
 
