@@ -164,6 +164,7 @@ MANIFEST=(
   "a3000          |tiles/a3000.sh                                        |A3000             |graphical |~2m                          |full                         |a3000-system.hdf golden master (Workbench 2.04 composed host-side from the four ADFs with xdftool; cold-boot reset)"
   "medley         |tiles/medley.sh                                       |Medley            |graphical |~3m                          |full                         |assets/medley/{medley,maiko} staged from the pinned Interlisp release tarball (sysout + maiko VM; relaunch reset)"
   "sculpt         |tiles/serenityos.sh                                   |SerenityOS        |heavy     |~20-60m                      |full                         |_disk_image + Kernel (compiled)"
+  "lisa           |tiles/lisa.sh                                         |Lisa              |graphical |~10m                         |none                         |assets/lisa (LisaEm 2.0 + GTK closure + Rev H ROM + config template) and disk/lisa-profile.dc42.golden (LOS 3.1 ProFile image; cold-boot reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

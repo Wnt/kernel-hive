@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (92 of the 94
+//    - transport   : how its LIVE framebuffer texture is obtained (93 of the 95
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 92 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 93 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -221,6 +221,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '1990 · Amiga 3000 — Workbench 2.04' }, // ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top
   medley:      { osId: 'medley', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B23A48', eraLabel: '1987 · Interlisp Medley — the Xerox Lisp machine desktop' }, // ideal: Xerox 1186 Daybreak-style low workstation box with a large portrait-ish CRT (the D-machine Medley ran on)
   sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04', pointerRel: true },
+  lisa:        { osId: 'lisa', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B9A27A', eraLabel: '1984 · Lisa Office System 3.1' }, // ideal: Apple Lisa 2 one-piece
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
