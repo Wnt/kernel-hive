@@ -108,7 +108,12 @@ fi
 # to a silent "zip not found" exit, 2026-09-09). Its exit code is checked on
 # purpose.
 say "configure --prefix=$PREFIX"
-(cd "$SRC" && ./configure --prefix="$PREFIX" >"$WORK/configure.log" 2>&1) || {
+# Compile cache (operator rule 2026-09-10: a cache is ALWAYS wired for a build;
+# scripts/dev/box-ccache-conf.sh makes labhost's default cache the shared one).
+# CT950 has no ccache today — then this is a plain build, said out loud.
+CC_CACHE=()
+if command -v ccache >/dev/null 2>&1; then CC_CACHE=(CC="ccache gcc" CXX="ccache g++"); else say "no ccache on this box: cold compile"; fi
+(cd "$SRC" && ./configure --prefix="$PREFIX" "${CC_CACHE[@]}" >"$WORK/configure.log" 2>&1) || {
   tail -15 "$WORK/configure.log" >&2
   die "configure failed (see $WORK/configure.log)"
 }

@@ -172,6 +172,23 @@ tracked `streamhost/stations/soltest-*/` launchers (clone scaffolds that run out
 (the last seven are osgallery-https-server.py's route/config modules, split out 2026-08-17).
 ² `tiles.json`, `golden-manifest.json`.
 
+## Build caches — always on
+
+**Operator rule (2026-09-10): a compile cache is set up and used for every
+build; a cold rebuild is a bug, not a cost.** What exists, and who must use it:
+
+| Build | Cache | How it is wired |
+|---|---|---|
+| Every MAME binary (chroot or host-native) | the shared ccache at `/data/vms/sandbox/trixie-chroot/ccache` (32 G, `hash_dir=false`, `compiler_check=content`) | `build-guests/emulators/mame-ccache.sh`, sourced by every `build-mame-*.sh` and `build-mame-native.sh`; lifetime 91.7 % hits, one cold MAME core ever |
+| A hand-run `make` in any tree on labhost | the SAME cache, by default | `scripts/dev/box-ccache-conf.sh` installs root's primary ccache config (`cache_dir`, `hash_dir=false`, host `base_dir`), so a make without the builder's env can no longer fall back to `/root/.cache/ccache` and go cold — which is how the domainos wave paid three cold compiles (34 % hits) and tripped the load rule |
+| ES40, FS-UAE, VICE (autotools) | ccache via `CC="ccache gcc" CXX="ccache g++"` at configure time | in the builders; CT950 has no ccache, so an FS-UAE build there says "cold compile" out loud |
+| The Rust daemon | one shared cargo target dir `/data/vms/streamhost/build/target` + mold | `streamhost/.cargo/config.toml`; every worktree reuses it |
+
+Rules of thumb: never pass `-j$(nproc)` on a shared box (`JOBS=6`; the load rule
+is 50); `REGENIE=1` only when flags changed; a new MAME **tag** is a genuine
+one-time cold core — pin it per station and let the cache warm once; check
+`scripts/dev/box-ccache-conf.sh --check` before blaming a slow build on the box.
+
 ## Top-level scripts
 
 | script | purpose | runs on |

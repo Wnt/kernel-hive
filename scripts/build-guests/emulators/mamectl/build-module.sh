@@ -48,8 +48,10 @@ irix_mame_apply "$T" "$PATCHES" || {
 }
 
 chroot "$C" /bin/bash -c \
-  'cd /build/mame && make SUBTARGET=sgi SOURCES=src/mame/sgi/indy_indigo2.cpp \
-   REGENIE=1 USE_QTDEBUG=0 TOOLS=0 -j16' >"$LOG" 2>&1 || {
+  'cd /build/mame && MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++);
+   if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi;  # shared compile cache (mame-ccache.sh); operator rule 2026-09-10
+   make SUBTARGET=sgi SOURCES=src/mame/sgi/indy_indigo2.cpp \
+   REGENIE=1 USE_QTDEBUG=0 TOOLS=0 "${MAME_MAKE_CC_ARGS[@]}" -j"${JOBS:-8}"' >"$LOG" 2>&1 || {
   echo "BUILD FAILED"
   grep -E "error:|Error " "$LOG" | head -20
   exit 1
