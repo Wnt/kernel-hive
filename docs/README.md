@@ -106,6 +106,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/helenos.md](guests/helenos.md) | HelenOS 0.14.1 LiveCD station — absolute pointer via usb-tablet. |
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS station — absolute-pointer notes (live 2026-07-13). |
 | [guests/macos.md](guests/macos.md) | Historical macOS OpenCore/Sequoia recipe; current station is a showcase poster. |
+| [guests/medley.md](guests/medley.md) | Interlisp Medley (1987, Xerox PARC Lisp environment) — host-native maiko VM as an X client under Xvfb, x11 capture + XTEST; the first station with no emulated machine; no network plane. |
 | [guests/msdos-win1.md](guests/msdos-win1.md) | MS-DOS + Windows 1.0 station. |
 | [guests/netbsd14.md](guests/netbsd14.md) | NetBSD 1.4.1 i386 (1999) — XFree86 3.3 desktop, absolute pointer through the guest's X server (x11warp). |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |

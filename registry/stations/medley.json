@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "id": "medley",
+  "era_year": 1987,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 79,
+        "prelude": "",
+        "value": {
+          "key": "medley",
+          "script": "tiles/medley.sh",
+          "outputDir": "Medley",
+          "class": "graphical",
+          "estimated": "~3m",
+          "automation": "full",
+          "produces": "assets/medley/{medley,maiko} staged from the pinned Interlisp release tarball (sysout + maiko VM; relaunch reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/medley",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54191,
+      "notes": "HOST-NATIVE, NOT AN EMULATED MACHINE: the maiko Lisp VM (github.com/Interlisp/medley, MIT; release medley-260826, linux x86_64 build) renders Medley's display into an X window under a pinned 1024x768 Xvfb; the daemon captures the X root (SH_CAPTURE=x11) and drives input over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_ABS=1: true absolute motion in root coordinates, buttons and keys as XTEST edges). No QEMU/QMP, no disk image, no exec channel — `labctl shot` reads the X root; to drive it by hand use xdotool on the station's display (only while no visitor is attached). Reset=relaunch: kill maiko by mame.pid, wipe work/, exec the release full.sysout again (~2 s to the Exec). Launcher stations/medley/x11-runtime.sh; assets in assets/medley (MANIFEST.sha256 pins the tarball)."
+    }
+  },
+  "render": {
+    "signalOrder": 83,
+    "stationsManifestOrder": 81,
+    "stationsManifestPrelude": "\n# medley — host-native Interlisp Medley (maiko Lisp VM under a pinned Xvfb, x11 capture, XTEST input; relaunch reset from the release sysout).\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 93,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Xerox 1186 Daybreak-style low workstation box with a large portrait-ish CRT (the D-machine Medley ran on)",
+    "goldenOrder": 81
+  },
+  "stationDir": "medley",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54191,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "Xvfb root pointer over XTEST (maiko reads X motion directly; readback exact on the smoke rig)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 191
+  },
+  "guestDoc": "docs/guests/medley.md",
+  "credentialsRef": "guest/medley",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "medley",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":91",
+      "SH_PORT": "54191",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/medley/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/medley/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/medley/medley_cmd"
+    },
+    "bringUpOrder": 93,
+    "x11": {
+      "display": ":91",
+      "geometry": "1024x768x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/medley/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "medley",
+        "--udp",
+        "54191",
+        "--x11",
+        "--x11-display",
+        ":91",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/medley/x11-runtime.sh",
+        "--env-append-file",
+        "$T/medley/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/medley/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#B23A48",
+    "eraLabel": "1987 · Interlisp Medley — the Xerox Lisp machine desktop"
+  },
+  "museum": {
+    "id": "medley",
+    "displayName": "Interlisp Medley",
+    "year": 1987,
+    "lineage": "Xerox PARC Interlisp-D (1981) → Medley (Xerox AIS / Envos / Venue, 1987) → open-source Interlisp project (2020– )",
+    "arch": "Xerox 1186 'Daybreak' Lisp workstation (Mesa-microcoded 8086-class CPU) — here the maiko byte-code VM on the host, 256 MB Lisp virtual memory, 1024x768 bitmap display",
+    "ramMB": 256,
+    "era": "1980s",
+    "accent": "#B23A48",
+    "eraSoftware": [
+      "the Exec (XCL: Common Lisp and Interlisp in one listener)",
+      "SEdit, the structure editor",
+      "the Inspector and the Break window",
+      "DEdit and the Grapher",
+      "TEdit, the WYSIWYG document editor",
+      "Sketch, the vector drawing program",
+      "NoteCards, the 1985 hypertext system",
+      "LOOPS, Xerox's object system",
+      "Rooms, the virtual-desktop manager"
+    ],
+    "periodBrowser": "none — Medley predates the web; its network was XNS/PUP to Xerox file servers, and this exhibit is not networked",
+    "iconicApps": [
+      "the Exec listener",
+      "SEdit",
+      "the Inspector",
+      "TEdit",
+      "Sketch",
+      "NoteCards"
+    ],
+    "blurb": "Xerox PARC's Lisp machine environment, the software half of the 1108 and 1186 'D-machines'. Everything on the screen is a live Lisp object: windows, menus and fonts are data you can inspect and edit while the system runs, and the structure editor edits programs as trees rather than text. Medley (1987) was the last Xerox release before Envos and then Venue took it over; the Interlisp project revived it in 2020, and this is that revival, running its own virtual machine on the host rather than an emulated Xerox.",
+    "notes": "Host-native Tier 3 with NO emulated machine: maiko (the portable Interlisp-D VM, in C since the late 1980s) is a plain X client, so the station is a stock X app under a pinned Xvfb with x11 root capture and XTEST input. Media is the pinned Interlisp release tarball (MIT; sha256 in ASSETS-MANIFEST.md) unpacked by tiles/medley.sh — no ROM, no disk, no checkpoint; reset is a ~2 s relaunch from the release full.sysout. The rest scene is the default MEDLEYDIR-INIT greet: the XCL Exec at the top-left and the Medley logo top-right. Distinct from alto/star/daybreak (Xerox's own OSes under emulation): this is the Lisp-side of the same PARC lineage, on the Interlisp project's own VM. See docs/guests/medley.md."
+  },
+  "emulator": {
+    "family": "maiko",
+    "version": "medley-260826-3a14c9aa_260319-9259716e",
+    "source": "github.com/Interlisp/medley release tarball (medley-full-linux-x86_64); staged by scripts/build-guests/tiles/medley.sh",
+    "driver": "ldex"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "No network plane. maiko can bridge Lisp TCP/IP to a host TAP (its -N/nethub options) but that is a follow-up; the retronet reservation 10.99.0.39 / tap medleyrn0 is held as the uniqueness ledger only, with no tap script committed."
+  },
+  "reset": {
+    "stationDir": "medley",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS (2026-09-09, smoke rig) — true absolute XTEST motion on the Xvfb root: xdotool mousemove 200,300 then 900,700 read back exactly (getmouselocation) and a click at 200,300 gave the Exec keyboard focus (the typed form was echoed there).",
+    "keyboard": "PASS (2026-09-09, smoke rig) — '(PLUS 40 2)' typed over XTEST echoed byte-perfect in the Exec and was evaluated (typed.png).",
+    "fixture": "Interlisp Medley booted from the release full.sysout with the MEDLEYDIR-INIT greet at 1024x768: white root; the black-on-white XCL 'Exec (XCL)' listener window at the top-left (+8+60, ~550x330) showing the greet transcript ('Hi.' then the '2>' prompt); the Medley / INTERLISP / COMMON LISP logo window at the top-right; the black one-line status bar across the top (Pkg XCL-USER · Rdtbl XCL · Tty EXEC · Dir · VMem · Time). Reached ≤2 s after exec (measured 2026-09-09: f2.png == f30.png apart from the caret blink). resetMode=relaunch with no statefile: kill maiko by mame.pid, wipe work/ (LDEDESTSYSOUT lives there, so nothing a visitor SaveVM's survives), start the sysout again. The typed-in demo evaluates Common Lisp in the XCL Exec."
+  },
+  "notes": [
+    "Wave 2026-09-09 (docs/lab/MEDLEY-WAVE.md): host-native X client under Xvfb, the first station with no emulated machine at all."
+  ],
+  "demoProgram": {
+    "label": "Type a Lisp form into the Exec (click in the Exec window first)",
+    "lines": [
+      "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))",
+      "(mapcar #'fib '(1 2 3 4 5 6 7 8 9 10 11 12))"
+    ],
+    "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
+    "perCharMs": 80
+  }
+}

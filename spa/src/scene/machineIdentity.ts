@@ -543,6 +543,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
     badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
+  // medley: the Xerox 1186 Daybreak that Medley shipped on — warm Xerox
+  // putty with the red digital-X accent; a 1980s lab kit, not an office one.
+  medley: {
+    caseTint: '#d6cfbf', accentTint: '#b23a48', tintMix: 0.38,
+    badge: '1186', spec: 'MESA • LISP', kit: 'workstation',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
