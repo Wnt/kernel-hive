@@ -1,12 +1,13 @@
 # domainos — facts for release notes
 
-**What arrived:** an Apollo DN3500 (1988), running Domain/OS SR10.4.1 —
+**What arrived:** an Apollo DN3500 (1989), running Domain/OS SR10.4.1 —
 Apollo Computer's own UNIX-derived, distributed, single-level-store
 operating system, on host-native MAME (`dn3500` driver). No bridge kiosk was
 ever built for this station.
 
-**Year:** 1988 (Domain/OS SR10.4.1 winchester image last recorded 2002-07-31,
-but the hardware and OS lineage are 1988).
+**Year:** 1989 (the DN3500 is MAME's 1989 machine; the SR10.4.1 release is
+1994, and this particular disk was last written in 2002 — an Apollo that
+stayed in service).
 
 **What a visitor can do:** the exhibit is Apollo's own Display Manager (DM),
 driven by function keys rather than a mouse — `F1` opens a `Command:` bar to
@@ -26,11 +27,14 @@ keyboard-only station, like `apple2e` and `samcoupe`.
    Service-mode `EX CALENDAR` run baked into the disk; a visible side
    effect is that the guest's clock now reads 1981.
 3. The pointer doesn't move, and it's now understood exactly why: the
-   emulated keyboard is a 1200-baud serial device that stays in a
-   "compatibility mode" MAME never leaves because Domain/OS's own pointer
-   initializer script is missing from the disk. The two-byte handshake that
-   would unlock it is known; wiring it up is the next step, not done this
-   wave.
+   emulated keyboard is a 1200-baud serial device that only reports the
+   mouse once the operating system has taken it out of "compatibility
+   mode", and Domain/OS never does — proven by attaching a debugger to the
+   running emulator and watching the mode-setting call never fire once
+   across a whole boot, login and mouse burst. The two-byte handshake that
+   would unlock it is known, and the likeliest reason it is never sent is a
+   Display Manager startup file this disk does not have. Wiring it up is the
+   next step, not done this wave.
 4. The keyboard needed its own pacing profile — 180 ms per key edge — since
    it's a serial device, not a scanned matrix, so the fleet's usual
    matrix-scan pacing knob doesn't apply here.
