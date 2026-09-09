@@ -543,10 +543,12 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
     badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
-  // TODO(domainos): exhibit finish copied from samcoupe — set the real era cues.
+  // domainos: Apollo DN3500 workstation, beige case like the other Unix
+  // towers on the floor; the brown accent is the DM's pad0000 title bar,
+  // the machine's own screen colour rather than a case moulding.
   domainos: {
-    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
-    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+    caseTint: '#c9c2ae', accentTint: '#8b5a2b', tintMix: 0.35,
+    badge: 'APOLLO DN3500', spec: '68020 • DOMAIN/OS SR10.4.1 • 1988', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
