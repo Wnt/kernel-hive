@@ -171,9 +171,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "Workbench 2.04 desktop (grey 2.0 look, 640x256 PAL in a 720x568 window) booted from the host-composed FFS hardfile: Ram Disk + System disk icons, no windows open, no first-boot keymap prompt (the floppy's startup-sequence runs one; the HDF's does not). resetMode=relaunch with no statefile: every launch copies disk/a3000-system.hdf.golden to work/ and cold-boots. TODO(golden): measured boot time, XTEST pointer + keyboard proof on the framebuffer, the FFS bm_flag rule if the golden is captured from a running session (compose it host-side and never boot the golden itself instead)."
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Workbench 2.04 desktop (grey 2.0 look, 640x256 PAL in a 720x568 window) booted from the host-composed FFS hardfile: Ram Disk + System disk icons, no windows open, no first-boot keymap prompt (the floppy's startup-sequence runs one; the HDF's does not). resetMode=relaunch with no statefile: every launch copies disk/a3000-system.hdf.golden to work/ and cold-boots. MEASURED 2026-09-09 (golden stream, station launcher on :85): desktop present at the FIRST 5s capture after launch (frame boot-5s.png), byte-identical to the 10s/15s/20s/25s/30s captures — boot-to-desktop is <=5s, no visible settle. Pointer PASS: xdotool mousemove --sync + mousedown/sleep 0.15/mouseup twice 200ms apart (XTEST abs, as the daemon drives it) double-clicked the System disk icon and opened its window (frame dblclick.png). Keyboard PASS: the System drawer has no Shell icon (Fountain/AddMonitor/BindMonitor/Setmap/Format/DiskCopy/RexxMast/NoFastMem/FixFonts only) — used the Workbench menu's Execute Command... instead (RMB mousedown 3, drag to the Workbench title then down the menu with intermediate frames confirming the highlighted item before mouseup on 'Execute Command...', frame execdlg.png); xdotool type --delay 60 'dir' + Return typed correctly (frame typed.png) and the Output Window listed env/Clipboards/T (frame dirout.png). Reset PASS: kill -TERM on $BASE/mame.pid + relaunch returned the pristine desktop (System and Output windows both gone) within 8s, frame byte-identical to the original boot desktop (frame reset-8s.png)."
   },
   "notes": [
     "a3000 wave 2026-09-09 (docs/lab/A3000-WAVE.md): scaffolded from amigaos35; slot 189, Xvfb :89"
