@@ -90,9 +90,10 @@ session itself (model: Claude Fable 5.1).
 | LisaEm AppImage dies on labhost: `libgtk-3.so.0: cannot open shared object file` | AppImages assume GTK on the host; labhost (Proxmox, no desktop) has none | bundle the 7 missing objects from CT950 into `assets/lisa/lib`, `LD_LIBRARY_PATH` + `GCONV_PATH` in the launcher **(cross-wave)** |
 | `ldd`/`ld.so --list` say "not a dynamic executable" / "no dynamic section" | the AppImage's binary is UPX-packed | `LD_DEBUG=libs lisaem --help` enumerates the closure on a host where it resolves **(cross-wave)** |
 | archive.org "Apple Lisa ROMs (Rev. H)" halves carry the item's own SHA-1s but neither MAME's CRCs nor a working checksum | a bad dump (bit 6 stuck low in ~1300 bytes) | the MAME romset halves (CRCs match) interleaved high,low — sha256-identical to the Virtual OS Museum's file |
-| A frame-change detector on PNGs "changed" every tick | ImageMagick stamps `date:modify` into every PNG | hash the pixels (`convert f.png rgb:- \| md5sum`) or write with `-strip` **(cross-wave)** |
+| A frame-change detector on PNGs "changed" every tick; the "fixed" one then never changed (an hour of double-click theories against windows that had opened) | ImageMagick stamps `date:modify` into every PNG; and `convert f.png rgb:-` writes ALL ZEROS for the 2-bit palette PNGs `xwd` produces, so a pixel hash of that is constant | hash ImageMagick's own pixel signature: `identify -format '%#' f.png` (content-only, format-independent) **(cross-wave: every fb-diff loop)** |
 | `xdotool search --name` matched LisaEm's 10x10 helper window; `windowmove` refused `-150` | two toplevels share the name; negative coordinates parse as options | pick the toplevel by width, `xdotool windowmove -- <id> -150 -26` **(cross-wave: any wx/GTK emulator)** |
 | Files a rig writes under `labrun` are root-owned and unwritable from CT950 | root umask (fixed by `umask 022`) but ownership stays root | write rig configs FROM the labhost-side script, not from CT950 |
+| Double-clicks "stopped working" in the sandboxed LisaEm | they never stopped: the blind detector above; LOS takes 20-60 s at 5 MHz to draw a window after a double-click | wait for a signature change up to 60 s; two 70 ms presses 70 ms apart open icons (`xdotool mousedown 1 sleep 0.07 mouseup 1 sleep 0.07 mousedown 1 sleep 0.07 mouseup 1`) |
 
 ## OPEN
 
