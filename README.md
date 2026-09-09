@@ -265,7 +265,7 @@ Line counts are additions plus deletions in our own commits, measured against
 each fork's merge base on 2026-09-09; upstream history the branches carry is not
 counted. Design notes: [`docs/lab/ES40-FORK-BRIEF.md`](docs/lab/ES40-FORK-BRIEF.md),
 [`docs/lab/FSUAE-NATIVE-BRIEF.md`](docs/lab/FSUAE-NATIVE-BRIEF.md),
-[`third_party/mame-irix/README.md`](third_party/mame-irix/README.md),
+the [`irix` branch README](https://github.com/Wnt/mame/tree/irix),
 [`streamhost/qemu-patches/`](streamhost/qemu-patches/).
 <!-- forks:end -->
 
