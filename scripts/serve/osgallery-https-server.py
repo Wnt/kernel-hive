@@ -124,7 +124,7 @@ import tracing_http  # noqa: E402  (request spans into TRACES; docs/lab/TRACE-CO
 import usage  # noqa: E402
 import walkin_plane  # noqa: E402  (the walk-in seams; contract ledger §3.1)
 import webrtc  # noqa: E402
-from auth import gate  # noqa: E402  (import needs the sys.path line above)
+from auth import gate, operator_routes  # noqa: E402  (box-side /auth/invite/issue)
 from auth import routes as auth_routes  # noqa: E402
 from auth.service import AuthService  # noqa: E402
 from config import (  # noqa: E402
@@ -466,11 +466,12 @@ class H(BaseHTTPRequestHandler):
         if telemetry_routes.dispatch(self, path, "POST", TELEMETRY, PUBLIC_ORIGIN):
             return
 
-        # POST /clientcmd/admin — enqueue a command for polling UI tabs.
-        if path == "/clientcmd/admin":
+        if path == "/clientcmd/admin":  # enqueue a command for polling UI tabs.
             if not self._require_box_side("clientcmd enqueue"):
                 return
             return clientcmd.handle_admin_post(self, self._admin_identity())
+        if path == "/auth/invite/issue":  # box-side viewer invite mint; same gate as above.
+            return operator_routes.handle_issue_invite(self, AUTH)
 
         # POST /restore/<osId> — reset ONE station to its golden fixture.
         if path.startswith("/restore/"):

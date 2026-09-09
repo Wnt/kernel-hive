@@ -171,13 +171,17 @@ saved file after a live redemption. Pass `--invite-refresh` to force a fresh
 redemption (e.g. the cached session expired).
 
 **When it expires:** this invite's session is capped at the invite's own
-expiry while it carries no passkey (`docs/PUBLIC-GALLERY.md`) —
-**2026-09-08**, unless a passkey is added to the account first (which turns
-it into an ordinary long-lived session, but then needs a human to complete a
-passkey ceremony once). When it lapses, mint a fresh one the normal way: sign
-in as any admin, go to `/admin` → **People**, issue a new invite (role
-`viewer` is enough — this tool only ever reads and interacts, never manages
-people), copy its code, and overwrite `sim-invite.code` on the box (or point
+expiry while it carries no passkey (`docs/PUBLIC-GALLERY.md`), unless a
+passkey is added to the account first (which turns it into an ordinary
+long-lived session, but then needs a human to complete a passkey ceremony
+once). When it lapses, run `scripts/dev/sim-invite-rotate.sh` from CT950: it
+mints a fresh `viewer` invite through the box-side `/auth/invite/issue` route
+(`docs/lab/clientcmd-admin-security.md`) — no admin browser session needed —
+writes it to `sim-invite.code` atomically, and deletes the stale
+`--invite-state` cache itself. The manual alternative still works: sign in as
+any admin, go to `/admin` → **People**, issue a new invite (role `viewer` is
+enough — this tool only ever reads and interacts, never manages people),
+copy its code, and overwrite `sim-invite.code` on the box (or point
 `--invite` at wherever you saved the new one). Delete the stale
 `--invite-state` cache file too, or pass `--invite-refresh`, so a run doesn't
 try the old cookie first.

@@ -98,7 +98,11 @@ gallery" window closes on use rather than staying open until someone remembers.
 Everyone after that needs an invite an admin issues at `/admin`. The name and
 role are baked into the invite, so using one cannot promote anybody. Roles are
 `admin` (also manages people) and `viewer` (the gallery). The last admin cannot
-be deleted or demoted.
+be deleted or demoted. The one exception is box-side, not a browser session:
+`POST /auth/invite/issue`, gated identically to `/clientcmd/admin` (loopback
+peer plus the operator token) and forced to `role: "viewer"`, lets automation
+such as `scripts/dev/sim-invite-rotate.sh` refresh a standing credential with
+no admin passkey ceremony (`docs/lab/clientcmd-admin-security.md`).
 
 Codes are Crockford base32 — no character pair that is misread aloud, and a
 documented mapping for the mistakes people do make (`I`/`L`→`1`, `O`→`0`). They

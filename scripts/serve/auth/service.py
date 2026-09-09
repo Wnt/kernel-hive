@@ -359,14 +359,49 @@ class AuthService:
 
     # ---- admin surface -----------------------------------------------------
 
-    def create_invite(self, admin: dict, name: str, role: str) -> dict:
+    def create_invite(self, admin: dict, name: str, role: str, ttl_secs: int | None = None) -> dict:
         name = (name or "").strip()
         if not name:
             raise AuthError("a name is required")
         if role not in ("admin", "viewer"):
             raise AuthError("role must be admin or viewer")
         token = codes.generate()
-        inv = self.store.add_invite(codes.hash_code(token), name, role, admin["id"])
+        kwargs = {} if ttl_secs is None else {"ttl_secs": ttl_secs}
+        inv = self.store.add_invite(codes.hash_code(token), name, role, admin["id"], **kwargs)
+        return self._invite_result(token, inv)
+
+    # Bounds for an operator-issued invite's lifetime (create_operator_invite).
+    # 1 day floor keeps a typo from minting a same-day-dead link; 90 days is a
+    # season, generous enough that a standing tool credential (visitor-sim)
+    # doesn't need re-minting every wave without being effectively permanent.
+    OPERATOR_INVITE_MIN_TTL_DAYS = 1
+    OPERATOR_INVITE_MAX_TTL_DAYS = 90
+    OPERATOR_INVITE_DEFAULT_TTL_DAYS = 7
+
+    def create_operator_invite(self, name: str, ttl_days: int | None = None) -> dict:
+        """Mint a viewer invite from the box side, no admin session involved.
+
+        This is the ONLY invite-creation path with no `admin` dict: the caller
+        is `/auth/invite/issue`, gated identically to `/clientcmd/admin`
+        (loopback peer AND the operator token) before this is ever reached —
+        see osgallery-https-server.py's `_require_box_side`. Role is always
+        `viewer`; there is no way to reach `admin` through this route, by
+        construction rather than by a check that could drift from it.
+        """
+        name = (name or "").strip()
+        if not name:
+            raise AuthError("a name is required")
+        if ttl_days is None:
+            ttl_days = self.OPERATOR_INVITE_DEFAULT_TTL_DAYS
+        if not (self.OPERATOR_INVITE_MIN_TTL_DAYS <= ttl_days <= self.OPERATOR_INVITE_MAX_TTL_DAYS):
+            raise AuthError(f"ttlDays must be {self.OPERATOR_INVITE_MIN_TTL_DAYS}..{self.OPERATOR_INVITE_MAX_TTL_DAYS}")
+        token = codes.generate()
+        inv = self.store.add_invite(
+            codes.hash_code(token), name, "viewer", "operator:clientcmd", ttl_secs=ttl_days * 24 * 3600
+        )
+        return self._invite_result(token, inv)
+
+    def _invite_result(self, token: str, inv: dict) -> dict:
         # The plaintext is returned exactly once, here. It is not stored, so a
         # lost code is re-issued rather than recovered.
         #

@@ -33,6 +33,15 @@ a phone: a phone session is the TARGET — it polls, receives the command, repor
 back — so touch and stylus bugs are more reachable than before, because every
 session now polls rather than only an admin's own tab.
 
+**`POST /auth/invite/issue` — mint a viewer invite. Box-side only, same gate.**
+A second write under this exact gate (loopback peer AND `X-Admin-Token`,
+`scripts/serve/auth/operator_routes.py`): it exists so
+`scripts/dev/sim-invite-rotate.sh` can refresh visitor-sim's standing invite
+with no human completing a passkey ceremony. It can only ever issue `role:
+"viewer"` — there is no parameter that reaches `admin`, by construction, not
+by a check that could drift from it — so this credential can debug the
+gallery as a guest but never manage people.
+
 ## eval needs no second switch
 
 `OSG_ADMIN_EVAL` used to be a default-off opt-in guarding a browser-reachable

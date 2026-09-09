@@ -265,7 +265,9 @@ class AuthStore:
             self._prune()
             return [dict(i) for i in self._doc["invites"]]
 
-    def add_invite(self, token_hash: str, name: str, role: str, created_by: str) -> dict:
+    def add_invite(
+        self, token_hash: str, name: str, role: str, created_by: str, ttl_secs: int = INVITE_TTL_SECS
+    ) -> dict:
         with self._lock:
             inv = {
                 "tokenHash": token_hash,
@@ -273,8 +275,8 @@ class AuthStore:
                 "role": role if role in ROLES else "viewer",
                 "createdBy": created_by,
                 "createdAt": iso(now()),
-                "expiresAt": iso(now() + INVITE_TTL_SECS),
-                "expiresAtTs": now() + INVITE_TTL_SECS,
+                "expiresAt": iso(now() + ttl_secs),
+                "expiresAtTs": now() + ttl_secs,
                 "usedAt": None,
             }
             self._doc["invites"].append(inv)
