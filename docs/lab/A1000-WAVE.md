@@ -118,3 +118,29 @@ or written in the wall table below.
 | a validate error shipped in a commit | `validate 2>&1 \| tail -1 && …` masks the exit code | run it to a file and test `$?`; never pipe a gate |
 | `build-fsuae-native.sh` exits silently after the patches | `configure` needs `zip`; labhost has none; the script did not check configure's exit | run the build in CT950; the script now checks and says so |
 | golden's pointer probe: an instant `xdotool click` never selects | FS-UAE's mousehack samples per frame; press+release inside one frame is lost | 150 ms hold, 150–200 ms between the two clicks of a double-click |
+
+## Converted to host-native (no X) — 2026-09-09
+
+a1000 moved off the pinned-Xvfb/x11test plane onto the shared FS-UAE
+host-native launcher (`streamhost/stations/fsuae-native/x11-runtime.sh`, rule
+13, `docs/lab/FSUAE-NATIVE-BRIEF.md`): `SH_CAPTURE=shm` 640x512,
+`SH_INPUT_BACKEND=mamesock` against `FSUAE_NATIVE_CTL_SOCK` with
+`amiga.keymap`, `SH_AUDIO_SOURCE=fifo`, `SH_BTN_MIN_HOLD_MS=150`. Pointer
+proof is exact through the real daemon on the shared plane (an A3000 rig):
+MOVEA 41,148 landed the tip at 38,148, double-click opened the System
+window. Daemon lines proving the plane is live: `[shmcap] geometry 640x480
+-> 640x512`, `[mamesock] connected, HELLO verified`, `[audio] fifo open`.
+Xvfb `:88` is released and unused; `runtime.x11.display` stays as inert
+registry bookkeeping.
+
+Walls specific to the conversion (on top of the table above):
+
+| Wall | Cause | Fix |
+|---|---|---|
+| validate-pipe mask | a validate error shipped in a commit because a piped `validate 2>&1 \| tail -1 && …` swallowed the exit code | run to a file, test `$?`, never pipe a gate |
+| missing `zip` | `configure` on the fork needs `zip`; labhost has none | bootstrap on labhost (autotools, no zip), configure/make in CT950 (zip, no autotools) |
+| autotools split | the reverse of the above — CT950 has zip but not autotools | same two-host split as the wall above; the builder does both legs |
+| `--mouse_integration=1` missing | mousehack never registers a click without it | mandatory flag on the launch line, not optional |
+| first build ignored SIGTERM | the shm binary didn't handle clean shutdown | fixed on the fork: clean SIGTERM quit in ~55 ms |
+| smoke rig / station Xvfb collision | a smoke rig's own Xvfb held the display an x11 station reused | moot once the station is on the no-X plane — no display to collide on |
+| station-up shot fired before the mapping existed | a proof screenshot was taken before `amiga.keymap` landed | sequence the keymap commit before the bring-up proof step |

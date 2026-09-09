@@ -1,11 +1,13 @@
 # FS-UAE host-native (no Xvfb) — fork brief
 
-**Status: IN PROGRESS (2026-09-09).** The FS-UAE stations (`a1000`, `a3000`,
-`amigaos35`, `amix`) run stock FS-UAE under a pinned Xvfb with x11 capture and
-XTEST input. The operator wants them on the direct planes the MAME and VICE
-stations use — shared-memory frames (`SH_CAPTURE=shm`), a mamectl-style
-control socket with ABSOLUTE mouse and keys, audio into a FIFO — with no X
-server in the path. Rule 13 work, carried as commits on the fork:
+**Status: IN PROGRESS (2026-09-09).** `a1000` and `a3000` are LIVE on the box
+on the host-native plane since ~19:57 (box clock) — no Xvfb, no XTEST:
+`SH_CAPTURE=shm` 640x512, `SH_INPUT_BACKEND=mamesock` against the
+`FSUAE_NATIVE_CTL_SOCK` control socket, `SH_AUDIO_SOURCE=fifo`, pointer
+proven exact through the real daemon. `amigaos35` and `amix` boot headless on
+rigs (desktop up, a socket double-click proven) but their conversion —
+netns cage, audio, reset, RTG publish gating — is still in progress on
+branch `fsuae-stations2`. Rule 13 work, carried as commits on the fork:
 
 | | |
 |---|---|
