@@ -1,0 +1,48 @@
+MAME kiosk-no-ui, ported to mame0276 for the domainos station.
+
+WHY A SEPARATE VARIANT. See mame-ctlsock-0276.patch's header — same story,
+same station, same tag pin (docs/lab/DOMAINOS-WAVE.md "wall 1").
+
+WHAT DIFFERS FROM mame-kiosk-no-ui.patch (0289)
+  - src/emu/render.cpp: same MAME_NO_UI gate around the UI-container
+    composition (`if (m_ui_container && !kh_no_ui)`), same
+    `#include <cstdlib>` addition. Only the surrounding include block
+    differs: 0.276's render.cpp includes "emu.h" then "render.h" directly
+    with no intervening util/* headers, so the 0289 patch's first hunk (that
+    inserts the include mid-way through a longer include block) does not
+    match; the cstdlib include lands right after "emu.h" instead. The second
+    hunk (the actual kh_no_ui logic, at "process UI elements if applicable")
+    is otherwise identical — line numbers differ only because 0.276's file is
+    shorter.
+
+diff --git a/src/emu/render.cpp b/src/emu/render.cpp
+--- a/src/emu/render.cpp
++++ b/src/emu/render.cpp
+@@ -37,6 +37,8 @@
+ ***************************************************************************/
+
+ #include "emu.h"
++
++#include <cstdlib>
+ #include "render.h"
+
+ #include "corestr.h"
+@@ -1718,8 +1720,17 @@ render_primitive_list &render_target::get_primitives()
+ 		}
+ 	}
+
++	// KERNEL HIVE (MAME_NO_UI): a station streams the guest's framebuffer and
++	// nothing else -- no popmessage, no FPS overlay, no menu, no paused banner.
++	// Read once; this runs per composed frame.
++	static int const kh_no_ui = []
++			{
++				char const *const e = std::getenv("MAME_NO_UI");
++				return (e && *e && *e != '0') ? 1 : 0;
++			}();
++
+ 	// process UI elements if applicable
+-	if (m_ui_container)
++	if (m_ui_container && !kh_no_ui)
+ 	{
+ 		// compute the transform for the UI
+ 		object_transform ui_xform;

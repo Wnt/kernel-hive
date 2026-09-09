@@ -233,6 +233,7 @@ missing feature.
 | `daybreak` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | off | 60 | ssh |
 | `debian22` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | off | 30 | — |
 | `decos` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
+| `domainos` | 3 host-native | MAME/host | `none` | none | — | off | 60 | — |
 | `dragon32` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `freebsd411` | 1 direct-QEMU | kvm | `qemu-x11warp` | abs | — | off | 30 | — |
 | `freedos` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 30 | — |

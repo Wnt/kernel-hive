@@ -310,6 +310,12 @@ ROWS=(
   "opt-file|apple2e|ProDOS 2.4.2 (John Brooks, carries BASIC.SYSTEM) install disk|$ASSET_STAGING/apple2e/media/ProDOS_2_4_2.dsk|sha256:d1e6fab8d9a25acf6e10ffa15e4120a616898c03613ab87a8e12882b12102543|abandonware-URL"
   "opt-file|apple2e|AppleWorks 3.0 (Claris) all-in-one program image|$ASSET_STAGING/apple2e/media/AppleWorks30.2mg|sha256:ea624d6b6fe6fb932fdd0de3035a4714cd3700e3fee7da8ac28b8540dc14b469|abandonware-URL"
   "opt-file|apple2e|Dazzle Draw 1.2 (Broderbund-1988) ProDOS disk|$ASSET_STAGING/apple2e/media/dazzledraw_v12_broderbund_1988.dsk|sha256:291f54945a1c946ba7985093ce686d01f5d74c7173cf84b0108c0839be0e6191|abandonware-URL"
+  # -- domainos: host-native MAME Apollo DN3500. Boot PROM + 3C505 card
+  # firmware from bitsavers.org/bits/Apollo/firmware (scripts/build-guests/
+  # tiles/domainos.sh); opt-file because the builder re-fetches+re-verifies
+  # if absent, with a staged-copy fallback when bitsavers is unreachable.
+  "opt-file|domainos|Apollo DN3500 boot PROM 3500_BOOT_12191_7|$ASSET_STAGING/domainos/roms/3500_boot_12191_7.bin|sha256:7f1028f990027eead992204003dc85a6f411484e8a851af677db5dbe4a630584|preservation-source"
+  "opt-file|domainos|3Com 3C505 EtherLink Plus firmware/PROM set (5 files, bitsavers 3c505.zip)|$ASSET_STAGING/domainos/roms/0729-12_a.3h|sha256:ae898709d39eb5ce2eb44d5213fc53b942737df233d384215c7d119d9376c178|preservation-source"
   # -- samcoupe: host-native MAME SAM Coupe. Three source disks compose the 800K
   # MGT boot floppy hive.mgt via lib/mgtfs.py + a MAME typing pass
   # (scripts/build-guests/tiles/samcoupe.sh); opt-file because the builder
