@@ -18,6 +18,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -241,12 +242,19 @@ class Week0Test(unittest.TestCase):
 
     def test_it_renders_without_git_and_carries_its_note(self):
         with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1)]):
+            original_run_git = RN.run_git
             RN.run_git = lambda args: self.fail(f"render must not touch git, called with {args}")
             try:
                 self.assertEqual(RN.cmd_render(NOW), 0)
                 archive = (RN.REPO_ROOT / "docs" / "RELEASE-NOTES.md").read_text()
             finally:
-                del RN.run_git
+                # Restore the ORIGINAL function object, not merely remove the
+                # override: `del` here would permanently erase run_git from the
+                # module for the rest of the process (module-level definitions
+                # are not "restored" by deleting an override), breaking every
+                # later test that needs a real run_git — the exact way this bug
+                # surfaced once TagCommitResolutionTest started needing it.
+                RN.run_git = original_run_git
         self.assertIn(RENDER.WEEK0_NOTE, archive)
         self.assertIn("## Week 0 · The month the museum was built · 2026-07-07 21:39", archive)
         # ... and the note belongs to week 0 alone.
@@ -293,30 +301,79 @@ class RenderTest(unittest.TestCase):
         self.assertNotIn("entries", doc["weeks"][0])
         self.assertEqual(
             set(doc["weeks"][0]),
-            {"week", "title", "start", "end", "startDate", "endDate", "commitCount", "codeLines", "summary", "bullets"},
+            {
+                "week",
+                "title",
+                "start",
+                "end",
+                "startDate",
+                "endDate",
+                "commitCount",
+                "codeLines",
+                "summary",
+                "bullets",
+                "screenshots",
+            },
         )
+        # No station links in these fixtures, so the derived tile row is empty
+        # rather than crashing on a fixture that names no machine.
+        self.assertEqual(doc["weeks"][0]["screenshots"], [])
         self.assertEqual(doc["weeks"][-1]["source"], "osgallery")
 
-    def test_the_readme_shows_the_newest_week_in_full_and_links_the_rest(self):
-        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week_doc(2, **WEEK2)]) as root:
+    def test_the_readme_shows_only_the_newest_weeks_short_form(self):
+        # The README carries the SHORT form of the newest week only: heading,
+        # its screenshot tiles, the "New stations" paragraph, then one line
+        # into the archive. Everything else (Major features, Quality
+        # improvements, the highlights, every earlier week) lives in
+        # docs/RELEASE-NOTES.md.
+        distinct_summary = [
+            {"theme": "New stations", "text": " ".join(["newstation"] * 110)},
+            {"theme": "Major features", "text": " ".join(["majorfeature"] * 120)},
+            {"theme": "Quality improvements", "text": " ".join(["qualityimprovement"] * 120)},
+        ]
+        week2 = week_doc(2, **{**WEEK2, "summary": distinct_summary}, screenshots=["win311"])
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week2]) as root:
             RN.cmd_render(NOW)
             readme = (root / "README.md").read_text()
         self.assertIn("### Week 2 · Twenty-two new machines · 2026-08-09 09:00 – 2026-08-16 09:00", readme)
-        self.assertIn("A 1994 <u>SGI workstation</u> dialled out to a period web server", readme)
-        self.assertIn(f"[Week 1 · The museum opens its source]({RENDER.ARCHIVE_PATH}#week-1)", readme)
-        self.assertIn(f"[Week 0 · The month the museum was built]({RENDER.ARCHIVE_PATH}#week-0)", readme)
+        # The tile row for the overridden screenshot list.
+        self.assertIn("<table>", readme)
+        self.assertIn("spa/public/posters/win311/desktop.webp", readme)
+        # The "New stations" paragraph, and only that theme.
+        self.assertIn("newstation", readme)
+        self.assertNotIn("majorfeature", readme)
+        self.assertNotIn("qualityimprovement", readme)
+        # Bullets and the "Also this week" heading belong to the full form only.
+        self.assertNotIn("A 1994 <u>SGI workstation</u> dialled out to a period web server", readme)
+        self.assertNotIn("Also this week", readme)
+        # The single line into the full week and the archive.
+        self.assertIn(f"[week 2 in full]({RENDER.ARCHIVE_PATH}#week-2)", readme)
+        self.assertIn(f"[full archive]({RENDER.ARCHIVE_PATH})", readme)
+        # No per-week index of earlier weeks — that lives in the archive.
+        self.assertNotIn(f"{RENDER.ARCHIVE_PATH}#week-1", readme)
+        self.assertNotIn(f"{RENDER.ARCHIVE_PATH}#week-0", readme)
         # The reader-facing pages carry no maintainer scaffolding: no authoring
         # prompt, no `make release-notes`, no commit count. They point at the
         # gallery instead, which is the only thing a visitor can act on.
         self.assertNotIn(RENDER.PROMPT_PATH, readme)
         self.assertNotIn("make release-notes", readme)
         self.assertIn("kernelhive.madekivi.fi", readme)
-        self.assertIn("46,149 lines of code", readme)
-        # Highlights get their own heading — emitted bare they render INSIDE
-        # "Quality improvements", which is what shipped in the first draft.
-        self.assertIn("#### Also this week", readme)
         # An earlier week's prose stays in the archive, not the README.
         self.assertNotIn("### Week 1 ·", readme)
+
+    def test_the_archive_carries_the_full_form_with_tiles_per_week(self):
+        week2 = week_doc(2, **WEEK2, screenshots=["win311", "os2warp"])
+        with temp_tree([week_doc(0, **WEEK0), week_doc(1, **WEEK1), week2]) as root:
+            RN.cmd_render(NOW)
+            archive = (root / "docs" / "RELEASE-NOTES.md").read_text()
+        self.assertIn("A 1994 <u>SGI workstation</u> dialled out to a period web server", archive)
+        self.assertIn("### Also this week", archive)
+        self.assertIn(WEEK2["summary"][1]["text"], archive)
+        self.assertIn(WEEK2["summary"][2]["text"], archive)
+        self.assertIn("<table>", archive)
+        self.assertIn("../spa/public/posters/win311/desktop.webp", archive)
+        self.assertIn("../spa/public/posters/os2warp/desktop.webp", archive)
+        self.assertIn("46,149 lines of code", archive)
 
     def test_a_deleted_output_is_stale_not_a_traceback(self):
         # A bad merge that drops one rendered file must name it, not raise.
@@ -444,6 +501,73 @@ class PluralTest(unittest.TestCase):
             RENDER.heading(week_doc(2, title="Twenty-two new machines")),
             "Week 2 · Twenty-two new machines · 2026-08-16 09:00 – 2026-08-23 09:00",
         )
+
+
+class CommitCountDriftTest(unittest.TestCase):
+    """`status`'s tripwire for a week authored before it closed — week 5 was
+    authored missing ~400 commits, and this is the check that would have named
+    it."""
+
+    def commits(self, count: int, stamp: str = "2026-08-10T00:00:00") -> list[tuple[datetime, str]]:
+        return [(helsinki(stamp), f"sha{i}") for i in range(count)]
+
+    def test_within_ten_percent_is_not_flagged(self):
+        result = RN._commit_count_drift(
+            helsinki("2026-08-09T09:00:00"), helsinki("2026-08-16T09:00:00"), 29, self.commits(30)
+        )
+        self.assertIsNone(result)
+
+    def test_a_400_commit_shortfall_is_flagged(self):
+        result = RN._commit_count_drift(
+            helsinki("2026-08-09T09:00:00"), helsinki("2026-08-16T09:00:00"), 29, self.commits(429)
+        )
+        self.assertIsNotNone(result)
+        self.assertIn("429", result)
+        self.assertIn("29", result)
+
+    def test_a_missing_or_zero_recorded_count_is_never_flagged(self):
+        start, end = helsinki("2026-08-09T09:00:00"), helsinki("2026-08-16T09:00:00")
+        self.assertIsNone(RN._commit_count_drift(start, end, None, []))
+        self.assertIsNone(RN._commit_count_drift(start, end, 0, []))
+
+
+class LateFactsTest(unittest.TestCase):
+    """A fact file dropped into the inbox after the week was authored means the
+    write-up is missing whatever it says — `status` flags it by mtime."""
+
+    def test_a_fact_file_older_than_the_week_is_not_late(self):
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "registry" / "release-notes" / "facts" / "2026-08-23").mkdir(parents=True)
+            week_file = root / "registry" / "release-notes" / "2026-08-23.json"
+            week_file.write_text("{}")
+            fact_file = root / "registry" / "release-notes" / "facts" / "2026-08-23" / "win311.md"
+            fact_file.write_text("older fact")
+            os.utime(fact_file, (week_file.stat().st_mtime - 100, week_file.stat().st_mtime - 100))
+            original = RN.REPO_ROOT
+            RN.REPO_ROOT = root
+            try:
+                self.assertEqual(RN._late_facts(week_file, helsinki("2026-08-23T09:00:00")), [])
+            finally:
+                RN.REPO_ROOT = original
+
+    def test_a_fact_file_newer_than_the_week_is_flagged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "registry" / "release-notes" / "facts" / "2026-08-23").mkdir(parents=True)
+            week_file = root / "registry" / "release-notes" / "2026-08-23.json"
+            week_file.write_text("{}")
+            fact_file = root / "registry" / "release-notes" / "facts" / "2026-08-23" / "win311.md"
+            fact_file.write_text("late fact")
+            os.utime(fact_file, (week_file.stat().st_mtime + 100, week_file.stat().st_mtime + 100))
+            original = RN.REPO_ROOT
+            RN.REPO_ROOT = root
+            try:
+                late = RN._late_facts(week_file, helsinki("2026-08-23T09:00:00"))
+            finally:
+                RN.REPO_ROOT = original
+        self.assertEqual([f.stem for f in late], ["win311"])
 
 
 if __name__ == "__main__":

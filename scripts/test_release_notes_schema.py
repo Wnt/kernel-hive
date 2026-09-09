@@ -16,6 +16,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import release_notes_schema as SCHEMA
+import release_notes_screenshots as SCREENSHOTS
 
 # The realistic week fixtures and the temp-tree helper live in the sibling test
 # module; importing them keeps ONE definition of what a plausible week looks
@@ -207,6 +208,35 @@ class NumberingTest(unittest.TestCase):
 
     def test_a_duplicate_week_number_is_refused(self):
         self.assertTrue(any("not unique" in line for line in self.numbering_errors([0, 1, 1])))
+
+
+class ScreenshotOverrideTest(unittest.TestCase):
+    """`screenshots` is an optional override of the derived tile row, checked
+    the same way a `station:` link is: it must name a real station."""
+
+    def errors(self, doc, stem: str = "2026-08-23") -> list[str]:
+        found: list[str] = []
+        RN.validate_week(doc, Path(f"/tmp/{stem}.json"), found)
+        return found
+
+    def test_a_real_station_list_passes(self):
+        self.assertEqual(self.errors(week_doc(screenshots=["win311", "os2warp"])), [])
+
+    def test_an_unknown_station_is_refused(self):
+        found = self.errors(week_doc(screenshots=["not-a-real-station"]))
+        self.assertTrue(any("not-a-real-station" in line for line in found), found)
+
+    def test_an_empty_override_is_refused(self):
+        found = self.errors(week_doc(screenshots=[]))
+        self.assertTrue(any("non-empty list" in line for line in found), found)
+
+    def test_more_than_the_cap_is_refused(self):
+        found = self.errors(week_doc(screenshots=["win311"] * (SCREENSHOTS.CAP + 1)))
+        self.assertTrue(any("must be <=" in line for line in found), found)
+
+    def test_a_duplicate_id_is_refused(self):
+        found = self.errors(week_doc(screenshots=["win311", "win311"]))
+        self.assertTrue(any("duplicate" in line for line in found), found)
 
 
 class ContinuityTest(unittest.TestCase):
