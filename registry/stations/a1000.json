@@ -145,16 +145,16 @@
       "Workbench 1.2",
       "AmigaDOS CLI",
       "Preferences",
-      "Clock, Notepad, Say (the Extras disk)"
+      "Notepad, Clock and Say (the Extras disk)"
     ],
-    "periodBrowser": "none — pre-web (AmigaOS 1.2)",
+    "periodBrowser": "none — the Amiga 1000 predates the web",
     "iconicApps": [
-      "Workbench 1.2 desktop",
-      "the Kickstart hand",
-      "AmigaDOS CLI",
-      "Say (the speech synthesizer)"
+      "The Workbench 1.2 desktop",
+      "The AmigaDOS command line",
+      "Preferences",
+      "Say, the speech synthesizer on the Extras disk"
     ],
-    "blurb": "The first Amiga: Commodore's 1985 multitasking colour desktop, a 68000 with custom chips and the designers' signatures moulded inside the case, booting Workbench 1.2 from a floppy the way every A1000 did — Kickstart itself came on a disk.",
+    "blurb": "The first Amiga: Commodore's 1985 desktop with custom chips for graphics, sound and disks, multitasking in colour when most personal computers ran one program at a time — and with the designers' signatures moulded inside the lid. It boots Workbench 1.2 from a floppy, as every A1000 did; on this model the Kickstart operating system came on a disk too.",
     "notes": "Host-native from birth: FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) under a pinned Xvfb :88, x11 root capture + XTEST input, same backend as amigaos35. Media: Kickstart 1.2 r33.180 ROM image + Workbench 1.2 rev 33.56 / Extras ADFs from archive.org (preservation-class, never committed). Reset = relaunch: a cold boot from fresh copies of the disks (~55 s to the desktop). OPEN: the authentic Kickstart-from-floppy bootstrap (A1000 boot ROM + Kickstart disk in DF0) reset-loops in this FS-UAE build; shipped with the Kickstart 1.2 image in the ROM slot until a runner proves the bootstrap route (FSUAE_NATIVE_A1000_BOOTSTRAP=1 in the launcher). Distinct from amiga (A500 / Workbench 1.3 bridge kiosk) and amigaos35 (A4000 / OS 3.5). See docs/guests/a1000.md."
   },
   "emulator": {
