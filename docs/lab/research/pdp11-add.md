@@ -1,9 +1,16 @@
 # Adding a PDP-11 to the gallery — backend, OS and integration research
 
-Status: **research only, 2026-08-08.** Nothing is built, no registry entry
-exists, no slot is claimed. This document is the feasibility study that
-[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects before a
-candidate enters the backlog table.
+Status: **research, 2026-08-08 — built since.** Three DEC minicomputer
+stations now exist in the registry: `pdp11` (2.11BSD), `gt40` and `decos` —
+see `registry/stations/pdp11.json`, `registry/stations/gt40.json`,
+`registry/stations/decos.json` and their guest docs
+[`docs/guests/pdp11.md`](../../guests/pdp11.md),
+[`docs/guests/gt40.md`](../../guests/gt40.md) and
+[`docs/guests/decos.md`](../../guests/decos.md) for what actually shipped.
+This document is the feasibility study that
+[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expected before the
+candidate entered the backlog table; it is left below as the original recon
+record, not updated line-by-line against the final build.
 
 Verdict: **feasible, Tier 2 (bridge)**. SIMH inside a captured Debian-X kiosk,
 the same shape as `c64`/`atarist`/`apple2`/`amstradcpc`/`mpf2`.

@@ -2,7 +2,7 @@
 
 Five short notes, written 2026-08-30 from an operator survey of the Virtual OS
 Museum catalog (1703 installations, 922 families) cross-referenced against the
-74-entry registry lineup and the open issues on the predecessor repo
+then-74-entry registry lineup (now 92) and the open issues on the predecessor repo
 `Wnt/osgallery`. These are **candidates, not commitments** — no media has been
 fetched and no recipe has been run for any of them.
 
@@ -19,7 +19,11 @@ there, not repeated here. The other three are new to this repo.
 
 ---
 
-## 1. PC/GEOS — GeoWorks Ensemble 2.0 (1993) — *recommended first*
+## 1. PC/GEOS — GeoWorks Ensemble 2.0 (1993) — **BUILT 2026-09-02**
+
+> **This one is done.** It is a station: `registry/stations/pcgeos.json`,
+> live 2026-09-02 (viewable at 6 min, fully featured at 18). The note below
+> is left as the original recon record.
 
 An object-oriented, preemptively multitasking graphical desktop that ran in
 640 KB on a 286, with its own application suite (GeoManager, GeoWrite,
@@ -125,12 +129,12 @@ currently tell. Native x86 KVM, no bridge, and UnixWare has an official free
   **Newton OS 2.1** — all in VOM, all either too close to an existing station
   or not a desktop.
 
-## Two corrections this survey turned up
+## Two corrections this survey turned up (both closed)
 
-- **`Wnt/osgallery` #28 (HP-UX 11i) and #29 (SunOS 4.1.4) are stale** — both
-  shipped, as `hpuxvue` and `sunos414`. They should be closed.
-- **`os-media-catalog.md` §5 calls Tru64 a dead-end** ("qemu-system-alpha
-  clipper has no SRM firmware; nothing boots"). That verdict predates the
-  `tru64` station, which is live via the ES40 fork — see
-  [`../lab/ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md). Fix the row so a
-  future agent does not skip a family on stale advice.
+- **`Wnt/osgallery` #28 (HP-UX 11i) and #29 (SunOS 4.1.4) were stale** — both
+  had shipped, as `hpuxvue` and `sunos414`. Closed.
+- **`os-media-catalog.md` §5 called Tru64 a dead-end** ("qemu-system-alpha
+  clipper has no SRM firmware; nothing boots"). That verdict predated the
+  `tru64` station, live via the ES40 fork — see
+  [`../lab/ES40-FORK-BRIEF.md`](../lab/ES40-FORK-BRIEF.md). The row in
+  `os-media-catalog.md` now says so.

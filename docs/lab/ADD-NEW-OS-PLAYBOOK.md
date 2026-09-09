@@ -362,7 +362,7 @@ Facts every 1990s guest wave paid for once and should not pay again:
 an explicit `lifecycle`; `streamhost/stations-manifest.sh` is generated from its
 production entries rather than maintained as an independent inventory. At the
 current registry revision, `python3 scripts/stations-registry.py count` reports
-**39 lineup entries: 37 streamhost production stations and 2 showcase posters**.
+**92 lineup entries: 90 streamhost production stations and 2 showcase posters**.
 Use that command for the current roster count and `labctl ls` for observed live
 service state; do not copy the number into another inventory.
 
@@ -403,16 +403,27 @@ Difficulty tiers used below:
 - **Tier 4 — research:** emulator incompatibility, bespoke kernel/device work,
   or a platform whose streaming path has not yet been designed.
 
-The planned/recovery set is:
+`nextstep`, `win11`, `winxp` and `sailfishos` — all once listed here as
+recovery work — are now live production stations; see their guest docs
+([`nextstep.md`](../guests/nextstep.md), [`win11.md`](../guests/win11.md),
+[`winxp.md`](../guests/winxp.md), [`sailfish.md`](../guests/sailfish.md)) for
+what shipped. `macos` and `riscos` remain the two showcase posters — static,
+no live guest — not full streaming stations.
+
+The actual unbuilt backlog is:
 
 | OS / exhibit | State and blocker | Rough tier |
 |---|---|---|
-| `macos` | Showcase poster. The proven Sequoia VM 925 and VNC/WebSocket bridge were deleted; recreation needs Apple-compatible OpenCore/QEMU work, substantial disk space, and a new streamhost-era capture path. Tahoe is not viable without working accelerated graphics on this host. | **4** |
-| `nextstep` | Not live and not in the UI lineup. The builder reaches device detection, but NeXTSTEP 3.3 loses IDE/SCSI I/O under current QEMU; the likely paths are a QEMU 0.9 sidecar or Previous plus a licensed NeXT ROM. The ISO is also not staged. | **4** |
-| `riscos` | Showcase poster. Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but it needs a streamhost-compatible captured-Linux/RPCEmu bridge and a new checkpoint. | **3** |
-| `win11` | Showcase poster. VM 900 was deleted with the legacy RDP/neko path. Re-entry needs user-supplied licensed media plus a supported UEFI/TPM guest and streamhost/RDP capture design. | **3–4** |
-| `winxp` | Fully registered and previously built, but currently inactive. A clean rebuild is blocked on the operator's licensed XP SP3 ISO, product key, and administrator password; the consumed ISO has no recorded hash. | **3** |
-| `sailfishos` | Fully registered and previously built, but currently inactive. A clean two-stage rebuild needs an account/EULA-gated Sailfish SDK emulator VDI; the source VDI was not retained. | **3** |
+| `macos` (showcase poster only) | The proven Sequoia VM 925 and VNC/WebSocket bridge were deleted; recreation needs Apple-compatible OpenCore/QEMU work, substantial disk space, and a new streamhost-era capture path. Tahoe is not viable without working accelerated graphics on this host. | **4** |
+| `riscos` (showcase poster only) | Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but a streaming Archimedes/RISC OS station needs a streamhost-compatible captured-Linux/RPCEmu (or Arculator) bridge and a new checkpoint — see `docs/lab/research/home-computer-candidates.md` §4.7. | **3** |
+| FM Towns / Towns System Software 2.1 | Not started. Runs on the Tsugaru backend, host-native Tier 3; media sourcing (Towns system discs) is the main cost. See `docs/catalog/candidates-90s-desktops.md` §3. | **3** |
+| Magic Cap 3.1 (General Magic) | Not started. VOM files it as a hosted (non-emulated) OS; the host binary, runtime requirements and licensing posture are all unverified — establish that before scheduling build work. See `docs/catalog/candidates-90s-desktops.md` §2. | **4** |
+| UnixWare 7.1.4 / SCO OpenServer 5.0.7 | Not started. Native x86 KVM, no bridge, UnixWare has an official free 90-day eval; low novelty (another Motif desktop) so it keeps losing to higher-value work. See `docs/catalog/candidates-90s-desktops.md` §5. | **2** |
+| DESQview/X 2.1 | Not started. DOS multitasker hosting X11 clients, trivial x86 install; deferred because PC/GEOS covered the "DOS-hosted GUI" slot first. See `docs/catalog/candidates-90s-desktops.md` "Also considered". | **2** |
+| Mainframe/minicomputer kiosk — Multics, MVS 3.8j, TOPS-20, ITS, Research UNIX v6/v7, CP/M-80 | Not started. One SIMH/Hercules/dps8m/KLH10+x3270 bridge unlocks the first five; CP/M-80 wants z80pack's Altair front panel instead. See `docs/catalog/os-media-catalog.md` "Wave 2". | **2–3** |
+| NetBSD/alpha 10.1 (on the w2kalpha ES40 machine) | Not started. Best-supported second-OS candidate for that machine, no licence question, free verified media; treat as infrastructure proof before Tru64/OpenVMS. See `docs/lab/research/alpha-second-os-candidates.md` §2. | **2** |
+| OpenVMS Alpha 8.4-2L1/2L2 | Escalate to the operator, not to a build — the Alpha community licence has been gone since March 2025; only archived-kit or clock-rollback paths remain. See `docs/lab/research/alpha-second-os-candidates.md` §3.2 and §5. | **3–4** |
+| Mobile/TV images — Symbian S60, BlackBerry 10/pre-10, Palm OS, Windows Mobile/CE, webOS, MeeGo/Maemo, LibreELEC, Pebble, Android TV | Not started; see the gap list in `docs/catalog/os-media-catalog.md` "Coverage vs the current registry lineup". | **3–4** |
 
 `amiga500` is not a missing candidate: it is the active production station
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
@@ -421,14 +432,9 @@ awaiting conversion — read it to understand FS-UAE's media and settings, but
 build new emulator stations host-native (the nine converted MAME stations are
 the template).
 
-Candidate details and the live bridge distinction are recorded in the existing
-guest notes: [`macos.md`](../guests/macos.md),
-[`nextstep.md`](../guests/nextstep.md),
-[`riscos.md`](../guests/riscos.md), [`win11.md`](../guests/win11.md),
-[`winxp.md`](../guests/winxp.md), [`sailfish.md`](../guests/sailfish.md),
-and [`amiga500.md`](../guests/amiga500.md). These notes include historical
-neko-era material; the canonical registry and a current read-only `labctl ls`
-result take precedence for lineup and live status respectively.
+[`amiga500.md`](../guests/amiga500.md) includes historical neko-era material;
+the canonical registry and a current read-only `labctl ls` result take
+precedence for lineup and live status respectively.
 
 [`docs/guests/UNDOCUMENTED.md`](../guests/UNDOCUMENTED.md) is a documentation
 gap list, not a candidate list: its rows are already-live stations. At the time of

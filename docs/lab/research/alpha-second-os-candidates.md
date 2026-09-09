@@ -14,10 +14,9 @@ and is its install media obtainable from the archival sources we already use?
 upstream emulator lists four of them as working **with graphics** — which is the
 only property that matters here, because [the framebuffer is the only
 proof](../../AGENTS.md). Ranked recommendation in §5. The single best
-technical/legal package is **NetBSD/alpha 10.1**; the single best *exhibit* is
-**Tru64 UNIX 5.1B** (CDE on DEC's own UNIX), and it is the one that overturns a
-"dead-end" verdict currently recorded in
-[`os-media-catalog.md`](../../catalog/os-media-catalog.md).
+technical/legal package is **NetBSD/alpha 10.1**; the single best *exhibit* was
+**Tru64 UNIX 5.1B** (CDE on DEC's own UNIX), and it shipped as its own station,
+`tru64` — see §3.1. `os-media-catalog.md` no longer records it as a dead-end.
 
 ---
 
@@ -82,7 +81,13 @@ re-read the README and issue list at build time.**
 Legal-posture buckets are the catalog's
 ([`os-media-catalog.md`](../../catalog/os-media-catalog.md) §"Legal posture").
 
-### 3.1 Tru64 UNIX 5.1B — the exhibit-value pick
+### 3.1 Tru64 UNIX 5.1B — the exhibit-value pick — **BUILT → `tru64`**
+
+> This one shipped. It is a station, `registry/stations/tru64.json`, running
+> Tru64 UNIX 5.1B on the es40 fork with a 1280x1024 CDE desktop and Netscape
+> Navigator 4.76; the PAK question below was resolved (see
+> [`docs/guests/tru64.md`](../../guests/tru64.md) "The licence, and how it was
+> resolved"). The rest of this section is the original research record.
 
 - **Compatibility:** native ES40 platform (this is literally the OS the hardware
   shipped with); upstream lists it **with graphics**.
@@ -94,20 +99,18 @@ Legal-posture buckets are the catalog's
   sources we already use. **UNVERIFIED:** none fetched or hashed this session.
 - **Posture:** contested-commercial (HPE). Worse than NetBSD, comparable to the
   IRIX and Solaris stations already on the wall.
-- **The gating unknown — license PAKs.** Tru64 gates products behind `lmf`
-  PAKs; whether a PAK-less install reaches **CDE** (as opposed to console
-  multi-user) is **UNVERIFIED and is the first thing to settle** — it decides
-  whether this is an exhibit or a login prompt. PAK lists circulate publicly;
-  using one is an operator call, not an agent's.
+- **The gating unknown — license PAKs (RESOLVED).** Tru64 gates products behind
+  `lmf` PAKs; a PAK-less install reaches console multi-user, not CDE. The
+  `tru64` station resolved this — see `docs/guests/tru64.md` for how.
 - **Risk:** upstream's own "installation still fails on SCSI disk" note. The
   documented workaround shape is the reverse of ours (install from CD on IDE,
   run from SCSI) — cheap to try, **UNVERIFIED**.
-- **Why it is worth it:** the gallery has no Tru64, `os-media-catalog.md`
-  currently records Tru64 as a **dead-end** ("qemu-system-alpha `clipper` has no
+- **Why it was worth it:** the gallery had no Tru64, and `os-media-catalog.md`
+  used to record Tru64 as a **dead-end** ("qemu-system-alpha `clipper` has no
   SRM firmware; commercial emulators are serial/headless only") — a verdict
-  written before we had es40 with a working S3. If Tru64 comes up with CDE, that
-  catalog row needs rewriting and the museum gains DEC's own UNIX on DEC's own
-  64-bit hardware.
+  written before we had es40 with a working S3. Tru64 came up with CDE; that
+  catalog row is rewritten and the museum has DEC's own UNIX on DEC's own
+  64-bit hardware, as `tru64`.
 
 ### 3.2 OpenVMS Alpha 8.4-2L1 / 8.4-2L2 — best-supported, licence-blocked
 
@@ -226,10 +229,9 @@ This is the part that should decide how many of these we build, not which one:
    non-Windows guest come up on our headless-shm/mamectl launcher?") for the
    price of a download. Its own exhibit value is modest; treat the result as
    infrastructure proof.
-2. **Then decide Tru64 5.1B on evidence** — settle the PAK/CDE question and
-   upstream's SCSI-install caveat *before* committing a session. If CDE comes
-   up, this is the station worth building, and the `os-media-catalog.md` "dead-end"
-   row gets corrected.
+2. **Tru64 5.1B — done.** The PAK/CDE question and upstream's SCSI-install
+   caveat were settled; CDE came up, the station was built as `tru64`, and the
+   `os-media-catalog.md` "dead-end" row is corrected.
 3. **Escalate OpenVMS Alpha to the operator, not to a build** — technically the
    best-supported guest we could pick, but the Alpha community licence is gone
    since March 2025 and the only paths run through archived kits or clock
