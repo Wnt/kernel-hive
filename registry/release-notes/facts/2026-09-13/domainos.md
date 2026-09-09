@@ -25,7 +25,8 @@ keyboard-only station, like `apple2e` and `samcoupe`.
    check that no amount of clock-faking satisfies (Domain/OS windows a
    spoofed year through its own two-digit logic). The fix is a one-time
    Service-mode `EX CALENDAR` run baked into the disk; a visible side
-   effect is that the guest's clock now reads 1981.
+   effect is that the guest's clock reads 2003, and that a rebuilt
+   disk's answer goes stale against real time and has to be redone.
 3. The pointer doesn't move, and it's now understood exactly why: the
    emulated keyboard is a 1200-baud serial device that only reports the
    mouse once the operating system has taken it out of "compatibility

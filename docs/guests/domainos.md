@@ -126,7 +126,7 @@ Three walls this station cost, and their fixes:
    the two-digit year) satisfies it. What works: boot ONCE in Service mode
    and run `EX CALENDAR`, answering `W`, `N`, `Y`; that disk then boots
    Normal mode to the Display Manager. A visible consequence remains open:
-   the guest's clock reads **1981-12-26**, which shows in the process
+   the guest's clock reads **2003-01-10**, which shows in the process
    display — a cosmetic item, not fixed this session.
 3. **The MD prompt does baud recognition on the first Return.** Apollo's MD
    boot-monitor drops characters typed before it has synced; press Return
@@ -164,7 +164,7 @@ does not visibly change the screen.
 ## §Open
 - **Pointer**: proven root cause, proven unlock mechanism, not yet
   implemented — see §Pointer above.
-- **Clock**: the guest's calendar reads 1981-12-26 (a side effect of the
+- **Clock**: the guest's calendar reads 2003-01-10 (a side effect of the
   CALENDAR-halt fix in §Traps) and shows in the process display; cosmetic,
   not fixed this session.
 - **Checkpoint**: mechanism settled, `mame-apollo-savestate.patch` required;

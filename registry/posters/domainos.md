@@ -4,8 +4,11 @@ subtitle: 1989 · a DN3500, the Display Manager, and a network that was one file
 hero: /posters/domainos/desktop.webp
 images:
   - src: /posters/domainos/desktop.webp
-    alt: Three overlapping text windows with coloured title bars on a black screen, above a command line reading Command
-    caption: The Display Manager. Each window is a "pad" with a transcript above and an input line below; the bar along the bottom is the DM's own command line. The listing on the left is the root of a Domain/OS disk — bsd4.3 and sys5.3 sitting side by side is the point of the release.
+    alt: Two large text windows with coloured title bars on a black screen, above a command line reading Command
+    caption: The Display Manager, as the station hands it to you. Each window is a "pad" — a scrolling transcript with its own input line underneath — and the bar along the bottom is the DM's own command line, where `cp /com/sh` opens another shell and `cp /com/pst` the process display on the right.
+  - src: /posters/domainos/shellpads.webp
+    alt: Three overlapping pads, one listing directory names in four columns and a table of network nodes
+    caption: A few commands later. `/com/ld /` lists the root of a Domain/OS disk — bsd4.3 and sys5.3 sitting side by side is the whole point of the SR10 release — and `/com/lcnode` answers with this machine's node ID and the network it can see.
   - src: /posters/domainos/selftest.webp
     alt: White text on black listing the DN3500's power-on tests, ending SELF TESTS PASSED
     caption: The boot PROM talks the whole way through the power-on sequence — keyboard, CPU, each memory module, both winchester channels, then the network controller. A 1989 workstation told you what it was doing while it did it.

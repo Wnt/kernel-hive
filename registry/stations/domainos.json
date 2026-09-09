@@ -158,7 +158,7 @@
       "pst process display"
     ],
     "blurb": "Apollo's Domain/OS on a DN3500 workstation. The Display Manager tiles the screen with 'pads' instead of stacking windows, keeps a command line along the bottom edge, and treats every machine on the network as another branch of one file system.",
-    "notes": "Host-native MAME dn3500, pinned to 0.276 (0.289 hangs this machine's Normal-mode boot). Keyboard-only: the pointer is an OPEN item with a known cause and a known unlock — see docs/guests/domainos.md. The guest clock reads 1981 because the boot ROM's CALENDAR check had to be answered once by hand; cosmetic, and visible in the process display."
+    "notes": "Host-native MAME dn3500, pinned to 0.276 (0.289 hangs this machine's Normal-mode boot). Keyboard-only: the pointer is an OPEN item with a known cause and a known unlock — see docs/guests/domainos.md. The guest clock reads 2003 because the boot ROM's CALENDAR check had to be answered once by hand when the disk was composed; cosmetic, and visible in the process display."
   },
   "emulator": {
     "family": "MAME",

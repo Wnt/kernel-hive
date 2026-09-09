@@ -74,8 +74,14 @@ What works: boot the disk ONCE in Service mode (`apollo_config` mask 1 value 0)
 and run `EX CALENDAR`, answering `W`, `N`, `Y` → "Done." That disk then boots
 Normal mode straight through to the DM. `tiles/domainos.sh` does it.
 
-**Cosmetic consequence, still open:** the guest clock reads 1981-12-26, which is
-visible in the process display and therefore in the poster hero.
+**The disk has a shelf life.** The CALENDAR answer satisfies the check against
+*real host time*, so a composed station disk goes stale — the checkpoint stream
+found the wave's own post-CALENDAR disk refusing a cold boot again a day later
+and had to re-run the compose step. It does not affect a running station, which
+never cold-boots (it starts from the golden), but `tiles/domainos.sh` must be
+re-run whenever the disk is rebuilt, and a stale disk is the first thing to
+suspect if a fresh build will not boot. The shipped disk's clock reads
+**2003-01-10**, which is what the process display shows.
 
 ### 3. The MD prompt needs Return pressed first
 
@@ -184,9 +190,11 @@ station it should be run *before* the checkpoint is designed.
 ## Still open
 
 1. **Pointer** — §6 above, with the exact next step.
-2. **The guest clock reads 1981-12-26** (§2). Cosmetic, visible in the process
-   display. Fixable by choosing the date when CALENDAR is answered during the
-   tile build, which nobody has tried.
+2. **The composed disk's CALENDAR answer expires against real host time** (§2),
+   so `tiles/domainos.sh` has to be re-run to rebuild the disk. Nobody has
+   tried pinning the answered date deliberately, which would also let the
+   exhibit show a chosen year rather than whatever the compose run produced
+   (currently 2003-01-10).
 3. **Retronet** — the 3C505 is in the device set and Domain/OS has TCP/IP, but
    the tap NIC is not wired and there is no era browser for this platform. The
    web plane is a research question, not a task; the IM plane is n/a. Rule 15:
