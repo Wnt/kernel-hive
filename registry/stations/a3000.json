@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54189,
-      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a3000/x11-runtime.sh."
+      "notes": "HOST-NATIVE, no X: FS-UAE (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs on the host headless (no DISPLAY, no GL). Frames publish into SH_SHM_PATH (drawshm-format shm), keys and the absolute pointer (mousehack) ride the ctlsock (SH_MAMECTL_SOCK) with the shared streamhost/stations/fsuae-native/amiga.keymap, audio into SH_AUDIO_FIFO. No QEMU/QMP, no guest Linux, no exec channel, no Xvfb/XTEST. Reset=relaunch: fresh work disk(s) copied from disk/*.golden on every launch, cold boot, no statefile. Launcher stations/fsuae-native/x11-runtime.sh (shared with a1000/a3000; amigaos35/amix stay on the Xvfb+XTEST path, rule 13)."
     }
   },
   "render": {
     "signalOrder": 82,
     "stationsManifestOrder": 80,
-    "stationsManifestPrelude": "\n# a3000 — host-native FS-UAE 3.2.35 (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; x11 capture on :89, XTEST input.\n",
+    "stationsManifestPrelude": "\n# a3000 — host-native FS-UAE (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; shm capture, ctlsock input, no X.\n",
     "bringUpGroup": 8,
     "bindingOrder": 92,
     "bindingPrelude": "",
@@ -54,12 +54,12 @@
     "transport": "streamhost",
     "udpPort": 54189,
     "fps": 50,
-    "audio": false,
+    "audio": true,
     "touch": false,
     "pointer": {
       "transport": "abs",
-      "backend": "x11test",
-      "method": "x11-xtest",
+      "backend": "mamesock",
+      "method": "mame-ioport",
       "absolute": true,
       "present": true,
       "device": "mousehack",
@@ -77,25 +77,27 @@
     "stationEnv": {
       "SH_STATION": "a3000",
       "SH_STATION_RUNTIME": "x11",
-      "SH_INPUT_BACKEND": "x11test",
-      "SH_AUDIO": "off",
-      "SH_CAPTURE": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":89",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a3000/a3000_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/a3000/fb.shm",
       "SH_PORT": "54189",
       "SH_FPS": "50",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/a3000/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/a3000/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a3000/a3000_cmd"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "bringUpOrder": 92,
     "x11": {
       "display": ":89",
-      "geometry": "720x568x24",
-      "capture": "x11",
-      "launcher": "streamhost/stations/a3000/x11-runtime.sh",
+      "geometry": "640x512x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/fsuae-native/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
@@ -106,21 +108,24 @@
         "--x11-display",
         ":89",
         "--capture",
-        "x11",
+        "shm",
         "--pointer",
         "abs",
         "--input-backend",
-        "x11test",
+        "mamesock",
         "--audio",
-        "off",
+        "on",
         "--fps",
         "50",
         "--x11-runtime-file",
-        "$T/a3000/x11-runtime.sh",
+        "$T/fsuae-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/fsuae-native/amiga.keymap",
         "--env-append-file",
         "$T/a3000/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/fsuae-native/amiga.keymap",
         "streamhost/stations/a3000/station.env.fixture"
       ]
     }
@@ -156,12 +161,12 @@
       "the ASL file requester"
     ],
     "blurb": "Commodore's 1990 flagship: a 68030 with its memory management unit fitted, a floating-point unit, SCSI on the motherboard and a flicker fixer, in a low desktop case. It booted Workbench 2.04 — the rewrite that gave AmigaOS its grey three-dimensional look, a usable Shell and a standard Installer — and, as the Amiga 3000UX, the same machine ran Amiga UNIX, the amix exhibit next door.",
-    "notes": "Host-native from birth: FS-UAE 3.2.35 (A3000 model, 68030 + 68882, ECS, Kickstart 2.04 r37.175 A3000 ROM) under a pinned Xvfb :89, x11 root capture + XTEST input, same backend as amigaos35. Media: the KS 2.04 A3000 ROM (the one amix already stages) + the four Workbench 2.04 rev 37.67 ADFs from archive.org (preservation-class, never committed), composed host-side with amitools xdftool into an FFS hardfile as amigaos35 does for 3.1. Reset = relaunch: a cold boot of a fresh work HDF copied from the golden. Between amiga (A500 / 1.3) and amigaos35 (A4000 / 3.5) in the lineup, and the machine amix (Amiga UNIX) shares. See docs/guests/a3000.md."
+    "notes": "Host-native without X: FS-UAE (fork github.com/Wnt/fs-uae, branch kernel-hive/integrated; A3000 model, 68030 + 68882, ECS, Kickstart 2.04 r37.175 A3000 ROM) runs headless, publishing shm frames and taking ctlsock keys/pointer directly -- no Xvfb, no XTEST. Media: the KS 2.04 A3000 ROM (the one amix already stages) + the four Workbench 2.04 rev 37.67 ADFs from archive.org (preservation-class, never committed), composed host-side with amitools xdftool into an FFS hardfile as amigaos35 does for 3.1. Reset = relaunch: a cold boot of a fresh work HDF copied from the golden. Between amiga (A500 / 1.3) and amigaos35 (A4000 / 3.5) in the lineup, and the machine amix (Amiga UNIX) shares. See docs/guests/a3000.md."
   },
   "emulator": {
     "family": "FS-UAE",
     "version": "3.2.35",
-    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (github.com/Wnt/fs-uae kernel-hive/integrated (upstream v3.2.35 + 2 lab commits, e8c4f74))",
+    "source": "github.com/Wnt/fs-uae, branch kernel-hive/integrated (build-fsuae-native.sh)",
     "driver": "A3000"
   },
   "ui": "desktop",

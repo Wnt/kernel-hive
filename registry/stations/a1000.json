@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54188,
-      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a1000/x11-runtime.sh."
+      "notes": "HOST-NATIVE, no X: FS-UAE (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs on the host headless (no DISPLAY, no GL). Frames publish into SH_SHM_PATH (drawshm-format shm), keys and the absolute pointer (mousehack) ride the ctlsock (SH_MAMECTL_SOCK) with the shared streamhost/stations/fsuae-native/amiga.keymap, audio into SH_AUDIO_FIFO. No QEMU/QMP, no guest Linux, no exec channel, no Xvfb/XTEST. Reset=relaunch: fresh work disk(s) copied from disk/*.golden on every launch, cold boot, no statefile. Launcher stations/fsuae-native/x11-runtime.sh (shared with a1000/a3000; amigaos35/amix stay on the Xvfb+XTEST path, rule 13)."
     }
   },
   "render": {
     "signalOrder": 81,
     "stationsManifestOrder": 79,
-    "stationsManifestPrelude": "\n# a1000 — host-native FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; x11 capture on :88, XTEST input. The first Amiga.\n",
+    "stationsManifestPrelude": "\n# a1000 — host-native FS-UAE (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; shm capture, ctlsock input, no X. The first Amiga.\n",
     "bringUpGroup": 8,
     "bindingOrder": 91,
     "bindingPrelude": "",
@@ -54,12 +54,12 @@
     "transport": "streamhost",
     "udpPort": 54188,
     "fps": 50,
-    "audio": false,
+    "audio": true,
     "touch": false,
     "pointer": {
       "transport": "abs",
-      "backend": "x11test",
-      "method": "x11-xtest",
+      "backend": "mamesock",
+      "method": "mame-ioport",
       "absolute": true,
       "present": true,
       "device": "mousehack",
@@ -77,25 +77,27 @@
     "stationEnv": {
       "SH_STATION": "a1000",
       "SH_STATION_RUNTIME": "x11",
-      "SH_INPUT_BACKEND": "x11test",
-      "SH_AUDIO": "off",
-      "SH_CAPTURE": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":88",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a1000/a1000_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/a1000/fb.shm",
       "SH_PORT": "54188",
       "SH_FPS": "50",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/a1000/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/a1000/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a1000/a1000_cmd"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "bringUpOrder": 91,
     "x11": {
       "display": ":88",
-      "geometry": "720x568x24",
-      "capture": "x11",
-      "launcher": "streamhost/stations/a1000/x11-runtime.sh",
+      "geometry": "640x512x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/fsuae-native/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
@@ -106,21 +108,24 @@
         "--x11-display",
         ":88",
         "--capture",
-        "x11",
+        "shm",
         "--pointer",
         "abs",
         "--input-backend",
-        "x11test",
+        "mamesock",
         "--audio",
-        "off",
+        "on",
         "--fps",
         "50",
         "--x11-runtime-file",
-        "$T/a1000/x11-runtime.sh",
+        "$T/fsuae-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/fsuae-native/amiga.keymap",
         "--env-append-file",
         "$T/a1000/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/fsuae-native/amiga.keymap",
         "streamhost/stations/a1000/station.env.fixture"
       ]
     }
@@ -155,12 +160,12 @@
       "Say, the speech synthesizer on the Extras disk"
     ],
     "blurb": "The first Amiga: Commodore's 1985 desktop with custom chips for graphics, sound and disks, multitasking in colour when most personal computers ran one program at a time — and with the designers' signatures moulded inside the lid. It boots Workbench 1.2 from a floppy, as every A1000 did; on this model the Kickstart operating system came on a disk too.",
-    "notes": "Host-native from birth: FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) under a pinned Xvfb :88, x11 root capture + XTEST input, same backend as amigaos35. Media: Kickstart 1.2 r33.180 ROM image + Workbench 1.2 rev 33.56 / Extras ADFs from archive.org (preservation-class, never committed). Reset = relaunch: a cold boot from fresh copies of the disks (~55 s to the desktop). OPEN: the authentic Kickstart-from-floppy bootstrap (A1000 boot ROM + Kickstart disk in DF0) reset-loops in this FS-UAE build; shipped with the Kickstart 1.2 image in the ROM slot until a runner proves the bootstrap route (FSUAE_NATIVE_A1000_BOOTSTRAP=1 in the launcher). Distinct from amiga (A500 / Workbench 1.3 bridge kiosk) and amigaos35 (A4000 / OS 3.5). See docs/guests/a1000.md."
+    "notes": "Host-native without X: FS-UAE (fork github.com/Wnt/fs-uae, branch kernel-hive/integrated; A1000 model, OCS, 512 KB chip) runs headless -- shm frames, ctlsock keys/pointer, no Xvfb, no XTEST. Media: Kickstart 1.2 r33.180 ROM image + Workbench 1.2 rev 33.56 / Extras ADFs from archive.org (preservation-class, never committed). Reset = relaunch: a cold boot from fresh copies of the disks (~55 s to the desktop, measured on the prior Xvfb launcher). OPEN: the authentic Kickstart-from-floppy bootstrap (A1000 boot ROM + Kickstart disk in DF0) reset-loops in this FS-UAE build; shipped with the Kickstart 1.2 image in the ROM slot -- the shared fsuae-native launcher does not implement the bootstrap-ROM branch. Distinct from amiga (A500 / Workbench 1.3 bridge kiosk) and amigaos35 (A4000 / OS 3.5). See docs/guests/a1000.md."
   },
   "emulator": {
     "family": "FS-UAE",
     "version": "3.2.35",
-    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (github.com/Wnt/fs-uae kernel-hive/integrated (upstream v3.2.35 + 2 lab commits, e8c4f74))",
+    "source": "github.com/Wnt/fs-uae, branch kernel-hive/integrated (build-fsuae-native.sh)",
     "driver": "A1000"
   },
   "ui": "desktop",

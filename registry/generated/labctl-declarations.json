@@ -18,7 +18,7 @@
       "exec_subshell": null,
       "console": "x11",
       "udp_port": 54188,
-      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a1000/x11-runtime.sh."
+      "notes": "HOST-NATIVE, no X: FS-UAE (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs on the host headless (no DISPLAY, no GL). Frames publish into SH_SHM_PATH (drawshm-format shm), keys and the absolute pointer (mousehack) ride the ctlsock (SH_MAMECTL_SOCK) with the shared streamhost/stations/fsuae-native/amiga.keymap, audio into SH_AUDIO_FIFO. No QEMU/QMP, no guest Linux, no exec channel, no Xvfb/XTEST. Reset=relaunch: fresh work disk(s) copied from disk/*.golden on every launch, cold boot, no statefile. Launcher stations/fsuae-native/x11-runtime.sh (shared with a1000/a3000; amigaos35/amix stay on the Xvfb+XTEST path, rule 13)."
     },
     "a3000": {
       "dir": "/data/vms/streamhost/stations/a3000",
@@ -36,7 +36,7 @@
       "exec_subshell": null,
       "console": "x11",
       "udp_port": 54189,
-      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a3000/x11-runtime.sh."
+      "notes": "HOST-NATIVE, no X: FS-UAE (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs on the host headless (no DISPLAY, no GL). Frames publish into SH_SHM_PATH (drawshm-format shm), keys and the absolute pointer (mousehack) ride the ctlsock (SH_MAMECTL_SOCK) with the shared streamhost/stations/fsuae-native/amiga.keymap, audio into SH_AUDIO_FIFO. No QEMU/QMP, no guest Linux, no exec channel, no Xvfb/XTEST. Reset=relaunch: fresh work disk(s) copied from disk/*.golden on every launch, cold boot, no statefile. Launcher stations/fsuae-native/x11-runtime.sh (shared with a1000/a3000; amigaos35/amix stay on the Xvfb+XTEST path, rule 13)."
     },
     "aix432": {
       "dir": "/data/vms/streamhost/stations/aix432",

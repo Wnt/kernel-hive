@@ -1136,17 +1136,19 @@ emit atari800xl \
   "$T/atari800xl/atari800xl.keymap" --env-append-file \
   "$T/atari800xl/station.env.fixture"
 
-# a1000 — host-native FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; x11 capture on :88, XTEST input. The first Amiga.
+# a1000 — host-native FS-UAE (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; shm capture, ctlsock input, no X. The first Amiga.
 emit a1000 \
-  --tile a1000 --udp 54188 --x11 --x11-display :88 --capture x11 --pointer \
-  abs --input-backend x11test --audio off --fps 50 --x11-runtime-file \
-  "$T/a1000/x11-runtime.sh" --env-append-file "$T/a1000/station.env.fixture"
+  --tile a1000 --udp 54188 --x11 --x11-display :88 --capture shm --pointer \
+  abs --input-backend mamesock --audio on --fps 50 --x11-runtime-file \
+  "$T/fsuae-native/x11-runtime.sh" --aux-file "$T/fsuae-native/amiga.keymap" \
+  --env-append-file "$T/a1000/station.env.fixture"
 
-# a3000 — host-native FS-UAE 3.2.35 (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; x11 capture on :89, XTEST input.
+# a3000 — host-native FS-UAE (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; shm capture, ctlsock input, no X.
 emit a3000 \
-  --tile a3000 --udp 54189 --x11 --x11-display :89 --capture x11 --pointer \
-  abs --input-backend x11test --audio off --fps 50 --x11-runtime-file \
-  "$T/a3000/x11-runtime.sh" --env-append-file "$T/a3000/station.env.fixture"
+  --tile a3000 --udp 54189 --x11 --x11-display :89 --capture shm --pointer \
+  abs --input-backend mamesock --audio on --fps 50 --x11-runtime-file \
+  "$T/fsuae-native/x11-runtime.sh" --aux-file "$T/fsuae-native/amiga.keymap" \
+  --env-append-file "$T/a3000/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)
