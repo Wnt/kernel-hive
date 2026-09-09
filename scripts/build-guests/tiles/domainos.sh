@@ -223,9 +223,9 @@ LUAEOF
   ) || die "CALENDAR compose run exited non-zero; see $calwork/mame.log"
 
   mkdir -p "$INSTALL_DIR/nvram"
-  cp -f "$calwork/disk.awd" "$INSTALL_DIR/disk.awd"
+  cp -f "$calwork/disk.awd" "$INSTALL_DIR/domainos-station.awd"
   cp -rf "$calwork/nvram/." "$INSTALL_DIR/nvram/"
-  log "station disk composed: $INSTALL_DIR/disk.awd ($(stat -c %s "$INSTALL_DIR/disk.awd") bytes)"
+  log "station disk composed: $INSTALL_DIR/domainos-station.awd ($(stat -c %s "$INSTALL_DIR/domainos-station.awd") bytes)"
 }
 
 mkdir -p "$WORK"
