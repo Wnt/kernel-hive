@@ -320,7 +320,12 @@ print(next((r["uin"] for r in rows if r.get("station") == sys.argv[1] and r.get(
     say "WARNING: no reset mark — the ICQ reconnect cannot be proved to be NEW; re-run the proof by hand"
   fi
   if [ -x "$REPO_ROOT/scripts/retronet/rn-verify.sh" ]; then
-    run "$REPO_ROOT/scripts/retronet/rn-verify.sh" "${rn_args[@]}" ||
+    # rn-verify reads `ip link`, systemd and CT 951 — it only answers ON labhost.
+    # Run from CT950 it reports tap=none unit=inactive for a station that is up
+    # (sculpt, 2026-09-09: a landed station failed its own proof step). The
+    # box already carries this commit (step 6), so call the deployed copy.
+    rn_remote="$(printf '%q ' "${rn_args[@]}")"
+    run ssh -n "$LAB" "/data/kernel-hive/scripts/retronet/rn-verify.sh $rn_remote" ||
       fail "rn-verify says $id is not on the plane (tap, reservation, fdb, or the post-reset ICQ login)"
   else
     say "WARNING: scripts/retronet/rn-verify.sh absent (agent B's deliverable) — verify by hand:"

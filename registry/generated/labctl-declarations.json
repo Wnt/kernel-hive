@@ -1244,6 +1244,24 @@
       "udp_port": 54187,
       "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/samcoupe/sta."
     },
+    "sculpt": {
+      "dir": "/data/vms/streamhost/stations/sculpt",
+      "qmp": "/data/vms/streamhost/stations/sculpt/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54190,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
     "serenityos": {
       "dir": "/data/vms/streamhost/stations/serenityos",
       "qmp": "/data/vms/streamhost/stations/serenityos/qmp.sock",

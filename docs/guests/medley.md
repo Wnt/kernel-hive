@@ -53,11 +53,17 @@ through 60 s. **Boot ≤ 2 s.**
 
 `resetMode=relaunch`, no statefile: kill by `mame.pid`, `rm -rf work/`,
 relaunch the release sysout. Fixture = the default greet scene: white root,
-the `Exec (XCL)` listener top-left with the greet transcript ending in `Hi.`
-and the `2>` prompt, the Medley logo top-right, the black status line across
-the top.
+the `Exec (XCL)` listener top-left with the greet transcript ending in a
+time-of-day greeting (`Hi.` / `Good evening.` — MEDLEYDIR-INIT picks it, so
+two resets can differ by that one line) and the `2>` prompt, the Medley logo
+top-right, the black status line across the top.
 
-## Input proofs (framebuffer, 2026-09-09, smoke rig on `:91`)
+## Input proofs (framebuffer, 2026-09-09)
+
+Live station, wake lease held: `(+ 40 2)` typed over XTEST returned `42` in
+the Exec (`live/typed2.png`); pointer readback 900,700 exact; `labctl reset`
+gave a new pid and the pristine Exec (only the greeting and clock differ).
+Earlier, on the smoke rig on `:91`:
 
 - **Pointer PASS**: `xdotool mousemove 200 300` and `900 700` read back
   exactly; the click at 200,300 gave the Exec keyboard focus.
@@ -69,15 +75,57 @@ the top.
 
 ## Driving it by hand
 
-There is no QMP and no exec channel. With no visitor attached:
+There is no QMP and no exec channel. With no visitor attached the daemon
+SIGSTOPs maiko after 60 s idle, so **hold the wake lease first** or every
+keystroke silently queues (measured 2026-09-09: a typed form changed nothing
+until the lease was held):
 
 ```bash
-ssh lab 'DISPLAY=:91 xdotool mousemove 200 300 click 1 type "(+ 40 2)"; DISPLAY=:91 xdotool key Return'
+ssh lab 'touch /run/streamhost/wake/medley.lease   # TTL 90 s; re-touch for longer work
+         grep State /proc/$(cat /data/vms/streamhost/stations/medley/mame.pid)/status   # want S, not T
+         DISPLAY=:91 xdotool mousemove 200 300 click 1 type "(+ 40 2)"; DISPLAY=:91 xdotool key Return'
 ssh lab 'labctl shot medley'      # reads the X root
+ssh lab 'labctl reset medley'     # relaunch: new pid, pristine Exec in ~3 s
 ```
 
 Never inject while a session is attached — the daemon is the single injector
 on this display.
+
+## Security — DEACTIVATED 2026-09-09 (operator: "absolute no-go")
+
+**Status: stopped, disabled and masked on the box; `listing.state: hidden`.**
+Do not relaunch this station until the paragraph below is false.
+
+Medley is not an emulated machine. `maiko` is a host application, and the
+station ran it **as root on labhost in the host PID and mount namespaces**
+(the stock `streamhost@` template: no `User=`, no `ProtectSystem`, no private
+namespace). The Exec a visitor types into has the host file system through
+Lisp's file functions and can spawn Unix subprocesses through maiko's
+subprocess support, so a gallery visitor was one typed form away from a root
+shell on the hypervisor. The launcher's `HOME`/`LOGINDIR`/`LDEDESTSYSOUT`
+redirection into `work/` is a convention, not a boundary.
+
+Every other host-native station (MAME, VICE, FS-UAE, ES40, Previous) also
+runs as root in the host namespaces, but the visitor only reaches an emulated
+guest; escaping needs an emulator bug. The one existing precedent for doing
+this right is `nextstep`, whose Previous runs as the unprivileged `nsexhibit`
+user.
+
+What "safe to relaunch" means, in order of cost:
+
+1. A dedicated unprivileged user plus a systemd drop-in for `streamhost@medley`
+   (`User=`, `ProtectSystem=strict`, `ReadWritePaths=` the work dir only,
+   `PrivateTmp=`, `NoNewPrivileges=`, `RestrictAddressFamilies=AF_UNIX` — it
+   needs nothing but the Xvfb socket). The asset tree must be readable by
+   that user and the Xvfb socket reachable.
+2. Or `bwrap`/`unshare` around the launch with a private mount namespace:
+   assets read-only, `work/` read-write, nothing else.
+3. Or a throwaway container, as the retronet planes already are (CT 951).
+
+Whichever lands, the proof is the same: from the Exec, `(SHELL "id")` and a
+file open outside `work/` must fail, on the framebuffer, before the listing
+block is removed. The same review applies to any future station whose guest
+is a stock host application rather than an emulated machine.
 
 ## OPEN
 

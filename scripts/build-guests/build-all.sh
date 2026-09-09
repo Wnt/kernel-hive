@@ -163,6 +163,7 @@ MANIFEST=(
   "a1000          |tiles/a1000.sh                                        |A1000             |graphical |~1m                          |full                         |a1000 golden floppy set (Kickstart 1.2 r33.180 image + Workbench 1.2 rev 33.56 + Extras ADFs, hash-verified; cold-boot reset)"
   "a3000          |tiles/a3000.sh                                        |A3000             |graphical |~2m                          |full                         |a3000-system.hdf golden master (Workbench 2.04 composed host-side from the four ADFs with xdftool; cold-boot reset)"
   "medley         |tiles/medley.sh                                       |Medley            |graphical |~3m                          |full                         |assets/medley/{medley,maiko} staged from the pinned Interlisp release tarball (sysout + maiko VM; relaunch reset)"
+  "sculpt         |tiles/serenityos.sh                                   |SerenityOS        |heavy     |~20-60m                      |full                         |_disk_image + Kernel (compiled)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

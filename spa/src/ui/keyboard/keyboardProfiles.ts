@@ -267,7 +267,7 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
-  helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
+  helenos: 'generic', serenityos: 'generic', sculpt: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic',
   debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
   redstar3: 'generic', postmarketos: 'generic',

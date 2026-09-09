@@ -549,6 +549,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d6cfbf', accentTint: '#b23a48', tintMix: 0.38,
     badge: '1186', spec: 'MESA • LISP', kit: 'workstation',
   },
+  // TODO(sculpt): exhibit finish copied from serenityos — set the real era cues.
+  sculpt: {
+    caseTint: '#3f4344', accentTint: '#858b88', tintMix: 0.62,
+    badge: 'HOBBY BUILD', spec: 'x86-64 • 2018', kit: 'modern',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

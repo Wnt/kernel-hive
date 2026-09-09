@@ -33,6 +33,11 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # mac99 via=pmu has BUILT-IN USB kbd+mouse and Mac OS 9 has no usb-tablet
     # driver; the launcher must add neither a tablet nor a second usb-mouse.
     "qemu-usb-hid-relative": ({"dbus-rel"}, (), ("usb-tablet", "-device usb-mouse")),
+    # sculpt: an EXPLICIT relative USB mouse on an x86 EHCI controller. Genode's
+    # usb_hid never binds QEMU's absolute usb-tablet (xHCI: a sprite that never
+    # moves; EHCI: none), so the launcher attaches `-device usb-mouse` on
+    # purpose and the ledger MUST show it -- the opposite of the mac99 rule.
+    "qemu-usb-mouse-relative": ({"dbus-rel"}, ("-device usb-mouse",), ("usb-tablet",)),
     "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
     "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
     "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),

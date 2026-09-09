@@ -180,9 +180,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "PASS (2026-09-09, smoke rig) — true absolute XTEST motion on the Xvfb root: xdotool mousemove 200,300 then 900,700 read back exactly (getmouselocation) and a click at 200,300 gave the Exec keyboard focus (the typed form was echoed there).",
-    "keyboard": "PASS (2026-09-09, smoke rig) — '(PLUS 40 2)' typed over XTEST echoed byte-perfect in the Exec and was evaluated (typed.png).",
-    "fixture": "Interlisp Medley booted from the release full.sysout with the MEDLEYDIR-INIT greet at 1024x768: white root; the black-on-white XCL 'Exec (XCL)' listener window at the top-left (+8+60, ~550x330) showing the greet transcript ('Hi.' then the '2>' prompt); the Medley / INTERLISP / COMMON LISP logo window at the top-right; the black one-line status bar across the top (Pkg XCL-USER · Rdtbl XCL · Tty EXEC · Dir · VMem · Time). Reached ≤2 s after exec (measured 2026-09-09: f2.png == f30.png apart from the caret blink). resetMode=relaunch with no statefile: kill maiko by mame.pid, wipe work/ (LDEDESTSYSOUT lives there, so nothing a visitor SaveVM's survives), start the sysout again. The typed-in demo evaluates Common Lisp in the XCL Exec."
+    "mouse": "PASS (2026-09-09) — true absolute XTEST motion on the Xvfb root: xdotool readback exact at 200,300 and 900,700 on the smoke rig and again on the live station; a click at 200,300 gives the Exec keyboard focus (the typed form is echoed there).",
+    "keyboard": "PASS (2026-09-09) — live station under a wake lease: '(+ 40 2)' typed over XTEST returned 42 in the Exec (live/typed2.png); earlier on the smoke rig '(PLUS 40 2)' echoed byte-perfect. NOTE the idle auto-pause: with no visitor the daemon SIGSTOPs maiko after 60 s, so a hand-driven proof must hold /run/streamhost/wake/medley.lease first.",
+    "fixture": "Interlisp Medley booted from the release full.sysout with the MEDLEYDIR-INIT greet at 1024x768: white root; the black-on-white XCL 'Exec (XCL)' listener window at the top-left (+8+60, ~550x330) showing the greet transcript (a time-of-day greeting — 'Hi.' or 'Good evening.' — then the '2>' prompt); the Medley / INTERLISP / COMMON LISP logo window at the top-right; the black one-line status bar across the top (Pkg XCL-USER · Rdtbl XCL · Tty EXEC · Dir · VMem · Time). Reached ≤2 s after exec (measured 2026-09-09: f2.png == f30.png apart from the caret blink). resetMode=relaunch with no statefile: kill maiko by mame.pid, wipe work/ (LDEDESTSYSOUT lives there, so nothing a visitor SaveVM's survives), start the sysout again. The typed-in demo evaluates Common Lisp in the XCL Exec."
   },
   "notes": [
     "Wave 2026-09-09 (docs/lab/MEDLEY-WAVE.md): host-native X client under Xvfb, the first station with no emulated machine at all."
@@ -195,5 +195,10 @@
     ],
     "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
     "perCharMs": 80
+  },
+  "listing": {
+    "state": "hidden",
+    "since": "2026-09-09",
+    "reason": "DEACTIVATED by the operator 2026-09-09: maiko ran as an unsandboxed root process on labhost, and the Medley Exec gives a visitor host file-system access and Unix subprocesses. The unit is stopped, disabled and masked on the box. Do not relaunch until the station runs unprivileged inside a mount/PID namespace or a container (see docs/guests/medley.md §Security)."
   }
 }

@@ -100,12 +100,12 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (41)** — `aix432 alpine android aros aux beos bootos chokanji freedos
-- **Tier 1 (41)** — `aix432 alpine android aros aux beos bootos chokanji
+- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji
   freebsd411 freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
   os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
-  sailfishos serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
+  sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   indyr4400 pdp11 star`
@@ -191,7 +191,7 @@ Pointer methods across the 75 production tiles: `qemu-usb-tablet` 24, **none
 19**, `qemu-ps2-relative` 8, `warpd-agent` 5, `mame-ioport` 4,
 `qemu-guestram-abswrite` 3, `x11-warp-absolute` 2, `qemu-vmmouse` 2, and one
 each of `gallery-hid`, `simh-light-pen`, `qemu-mga-closedloop`,
-`qemu-artist-closedloop`, `qemu-usb-hid-relative`, `qemu-adb-relative`,
+`qemu-artist-closedloop`, `qemu-usb-hid-relative`, `qemu-usb-mouse-relative`, `qemu-adb-relative`,
 `x11-xtest`, `previous-tablet`. Audio on 55 / off 20. Stream rate 30 fps on 41,
 60 fps on 32, and one each at 50 (`amigaos35`) and 25 (`amix`). Exec channel:
 none 47, `ssh` 14, `warpd_e` 5, `telnet_unix_e` 3, and one each of
@@ -276,6 +276,7 @@ missing feature.
 | `riscos` | 5 poster | — | `none` | — | — | off | — | — |
 | `sailfishos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | off | 30 | — |
 | `samcoupe` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
+| `sculpt` | 1 direct-QEMU | kvm | `qemu-usb-mouse-relative` | rel | — | off | 60 | — |
 | `serenityos` | 1 direct-QEMU | kvm | `qemu-vmmouse` | abs | — | on | 60 | — |
 | `sinclairql` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `slackware` | 1 direct-QEMU | kvm | `x11-warp-absolute` | abs | x11warp | on | 30 | — |
