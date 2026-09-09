@@ -8,10 +8,6 @@ with highly optimized round-trip latency.**
   <img src="docs/media/hero.webp" alt="Twenty desktops from the collection, side by side" width="100%">
 </a>
 
-![Gallery grid view, then Windows 3.11 driven live from the browser](docs/media/demo.gif)
-
-*Gallery grid view. Classic Windows 3.11.*
-
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-informational)](LICENSE)
 [![streamhost: GPL-2.0-or-later](https://img.shields.io/badge/streamhost-GPL--2.0--or--later-informational)](streamhost/LICENSE)
 

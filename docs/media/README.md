@@ -1,17 +1,18 @@
-# docs/media — the README's demo clip
+# docs/media — README imagery, and how to re-record the demo clip
 
-`demo.gif` is the first thing a stranger sees on GitHub, and the only claim it
-has to make is **this museum is live and you can touch it**. A screenshot cannot
-make that claim, and a video GitHub will not play cannot make it either (a
-README inlines GIFs and essentially nothing else), so: a GIF, ten seconds,
-recorded from the real public gallery rather than staged.
+`hero.webp`, `social-preview.png` and the lineup grid are generated from the
+station registry by `scripts/readme-media.py` (never hand-edit them). The
+`museum-*.webp` views are operator screenshots of the gallery, resized to
+1600 px.
 
-| file | what it is |
-|---|---|
-| `demo.gif` | 800x600, 95 frames at 10 fps, ~9.5 s — the clip the README opens with |
-| `demo-poster.png` | one frame of it (Program Manager's File menu open), for anywhere the GIF is too heavy |
+**The demo GIF was removed on 2026-09-09**: the first recording's direction was
+too poor to lead the README with, and a better one may come later. The capture
+script (`scripts/e2e/readme-demo-capture.mjs`) and the notes below are kept so a
+re-record starts from a working pipeline rather than from scratch. The clip it
+produced was 800x600, 95 frames at 10 fps, ~9.5 s, under 5 MB, and GitHub
+inlines GIFs and essentially nothing else, so a GIF is still the right target.
 
-**What is on screen:** the collection at `kernelhive.madekivi.fi`; a card
+**What the first recording showed:** the collection at `kernelhive.madekivi.fi`; a card
 clicked; `Waiting for desktop… 1990 · Windows 3.11`; the Windows 3.11 desktop
 arriving; the pointer crossing it to Program Manager's **File** menu; the menu
 unfolding; the pointer running down it to `Run…`; and the Run dialog painting
