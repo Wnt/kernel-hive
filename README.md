@@ -224,6 +224,17 @@ straight into the running system.
 ## Inside the museum
 
 <!-- museum-views:start -->
+<a href="https://kernelhive.madekivi.fi/os/rhapsody"><img src="docs/media/museum-rhapsody.png" alt="Rhapsody DR2 in the museum: OmniWeb on the archived 1998 apple.com beside a Terminal" width="100%"></a>
+
+*Rhapsody DR2. OmniWeb on the retronet's archived apple.com, May 1998.*
+
+<a href="https://kernelhive.madekivi.fi"><img src="docs/media/museum-grid.png" alt="The gallery grid, 1990s section: live thumbnails of Amiga 3000, NEWS-OS, Amiga UNIX, A/UX, PC/GEOS, SGI Indy, Windows 3.11, FreeDOS and MS-DOS with Windows 1.0" width="100%"></a>
+
+*The collection, grouped by decade. Every thumbnail is the machine's live framebuffer.*
+
+<a href="https://kernelhive.madekivi.fi/os/irix"><img src="docs/media/museum-exhibit-irix.png" alt="Exhibit notes for the SGI Indy: year, lineage, architecture, iconic software, and the Indigo Magic Desktop with FSN" width="100%"></a>
+
+*Exhibit notes. Each machine carries its lineage, hardware, period software and a caption for what is on screen.*
 <!-- museum-views:end -->
 
 
