@@ -548,7 +548,7 @@ export const EXHIBIT_IDENTITIES = {
   // the machine's own screen colour rather than a case moulding.
   domainos: {
     caseTint: '#c9c2ae', accentTint: '#8b5a2b', tintMix: 0.35,
-    badge: 'APOLLO DN3500', spec: '68020 • DOMAIN/OS SR10.4.1 • 1988', kit: 'workstation',
+    badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989', kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 

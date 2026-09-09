@@ -6,6 +6,15 @@ images:
   - src: /posters/domainos/desktop.webp
     alt: Three overlapping text windows with coloured title bars on a black screen, above a command line reading Command
     caption: The Display Manager. Each window is a "pad" with a transcript above and an input line below; the bar along the bottom is the DM's own command line. The listing on the left is the root of a Domain/OS disk — bsd4.3 and sys5.3 sitting side by side is the point of the release.
+  - src: /posters/domainos/selftest.webp
+    alt: White text on black listing the DN3500's power-on tests, ending SELF TESTS PASSED
+    caption: The boot PROM talks the whole way through the power-on sequence — keyboard, CPU, each memory module, both winchester channels, then the network controller. A 1989 workstation told you what it was doing while it did it.
+  - src: /posters/domainos/login.webp
+    alt: A single pale login bar across the bottom of an otherwise black screen
+    caption: Before a session exists there is no desktop to show, so the Display Manager gives itself one line at the foot of the screen and asks for a name.
+  - src: /posters/domainos/boot.webp
+    alt: A text window headed Apollo Domain/OS Version SR10.4.1 above copyright notices
+    caption: The first pad of a session. The copyrights read Hewlett-Packard, the University of California and UNIX System Laboratories — an operating system that started as none of the three, ending up owned by the first and speaking the languages of the other two.
 ---
 ## Origins
 
