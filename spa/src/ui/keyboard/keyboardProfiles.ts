@@ -338,6 +338,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // Slackware 3.4: fvwm95 over XFree86 with xterm/bash — a PC keyboard driving
   // a Unix shell, so the generic Unix rows apply.
   slackware: 'generic',
+  // Apollo DN3500, Domain/OS SR10.4.1: the Display Manager's shell pad is a
+  // Bourne shell, and the Apollo serial keyboard's shifted number row is the
+  // only thing unusual about it (carried by keyboards.ts charMap, not this
+  // OSK chord set) — no DM-specific chords to profile, so generic Unix rows.
+  domainos: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',
