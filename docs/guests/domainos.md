@@ -188,13 +188,32 @@ after a restore — not before.
 ## §Open
 - **Pointer**: proven root cause, proven unlock mechanism, not yet
   implemented — see §Pointer above.
-- **Clock**: the guest's calendar reads 2003-01-10 (a side effect of the
-  CALENDAR-halt fix in §Traps) and shows in the process display; cosmetic,
-  not fixed this session.
-- **Checkpoint repaint**: the reset works via a service restart, but the fast
-  in-process path is off until MAME's apollo driver repaints after a state
-  load. The fix is small and local — force `m_update_flag = 1` from a save
-  postload registered on the graphics device — see §Checkpoint.
+- **Clock, and the disk's shelf life**: the guest's calendar reads 2003-01-10
+  (a side effect of the CALENDAR-halt fix in §Traps) and shows in the process
+  display — cosmetic. What is not cosmetic is that a composed disk's CALENDAR
+  answer expires against real host time, so `tiles/domainos.sh` has to be
+  re-run to rebuild it. The tolerance is TIGHTER than the 14 days of the
+  original halt: a second cold boot of a freshly composed disk, minutes of
+  wall-clock later, halted with "the calendar is more than a minute slow" —
+  so there appear to be two checks, and only the loose one is documented
+  upstream. Not characterised; a running station never cold-boots, so this
+  bites rebuilds only.
+- **Checkpoint repaint** (the fast reset path): the reset works via a service
+  restart; the in-process path is off. The cause is NOT the driver's save
+  state, which was chased to the end and cleared: a checksum of the whole
+  image-memory buffer logged from inside a save postload is **identical**
+  between a cold `-state golden` load and a dirty-then-`LOADST` cycle
+  (`sum=14f4f9ef size=524288 planes=8 w=1024 h=800`), and the postload fires
+  every time. Forcing a repaint from the postload does not help either:
+  `m_screen->update_now()` changes nothing, and adding
+  `machine().video().frame_update()` **freezes the published frame entirely**
+  (it stops responding to fresh keystrokes) — do not repeat that. So the stale
+  pixels live between `screen_update1()` writing a correct bitmap and
+  `mame-drawshm-0276.patch` publishing it. The drawshm patch's header claims
+  every published frame is flagged whole-frame dirty, which is inconsistent
+  with the measurement; the next step is to check whether it publishes from a
+  stale bitmap/texture reference, or whether `screen_device::m_changed` gates
+  it. That is a render-path question, not an Apollo one.
 - **`3c505-nw.bin`**: no good dump known; the EtherLink Plus NIC is present
   in the device set but not fully ROMed.
 

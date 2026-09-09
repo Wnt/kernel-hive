@@ -74,10 +74,13 @@ What works: boot the disk ONCE in Service mode (`apollo_config` mask 1 value 0)
 and run `EX CALENDAR`, answering `W`, `N`, `Y` → "Done." That disk then boots
 Normal mode straight through to the DM. `tiles/domainos.sh` does it.
 
-**The disk has a shelf life.** The CALENDAR answer satisfies the check against
-*real host time*, so a composed station disk goes stale — the checkpoint stream
-found the wave's own post-CALENDAR disk refusing a cold boot again a day later
-and had to re-run the compose step. It does not affect a running station, which
+**The disk has a shelf life, and a shorter one than the 14 days suggest.** The
+CALENDAR answer is satisfied against *real host time*, so a composed station
+disk goes stale — the checkpoint stream found the wave's own post-CALENDAR disk
+refusing a cold boot again and had to re-run the compose step, and then hit a
+*second* halt ("the calendar is more than a minute slow") on a second cold boot
+of a freshly composed disk minutes later. There appear to be two checks and only
+the loose one is documented; the tight one is uncharacterised. It does not affect a running station, which
 never cold-boots (it starts from the golden), but `tiles/domainos.sh` must be
 re-run whenever the disk is rebuilt, and a stale disk is the first thing to
 suspect if a fresh build will not boot. The shipped disk's clock reads
@@ -208,12 +211,18 @@ harmless artefact, which is exactly how this nearly shipped.
 ## Still open
 
 1. **Pointer** — §6 above, with the exact next step.
-1b. **The fast in-process reset** — off for this station until MAME's apollo
-   driver repaints after a state load. The fix is small and local: register a
-   save postload on `apollo_graphics_15i` that forces `m_update_flag = 1`
-   (and clears `m_update_pending`), so the restored image memory is drawn.
-   Then delete `SH_MAME_RESET_INPROCESS=0` from the fixture and re-prove by
-   dirtying a whole window, not a status line.
+1b. **The fast in-process reset** — off for this station, and the cause is
+   **not** the driver. The save state was chased to the end and cleared: a
+   checksum of the whole image-memory buffer taken inside a save postload is
+   identical between a cold `-state golden` load and a dirty-then-`LOADST`
+   cycle, and the postload fires every time. Forcing a repaint from there does
+   not help (`m_screen->update_now()` does nothing; adding
+   `machine().video().frame_update()` freezes the published frame and must not
+   be repeated). The stale pixels live between `screen_update1()` writing a
+   correct bitmap and `mame-drawshm-0276.patch` publishing it — a render-path
+   question for someone with drawshm context, not an Apollo one. When it is
+   fixed, delete `SH_MAME_RESET_INPROCESS=0` and re-prove by dirtying a whole
+   window, not a status line.
 2. **The composed disk's CALENDAR answer expires against real host time** (§2),
    so `tiles/domainos.sh` has to be re-run to rebuild the disk. Nobody has
    tried pinning the answered date deliberately, which would also let the
