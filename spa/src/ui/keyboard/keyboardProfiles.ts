@@ -409,7 +409,7 @@ export const OS_FAMILY: Record<string, Family> = {
   // on the Alt keysyms the ctlsock keymap binds to the driver's Apple keys.
   apple2e: 'appleii',
   atarist: 'atarist',
-  amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga',
+  amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
   // (the profile already carries Ctrl, which the Unix shell needs).
   amix: 'amiga',

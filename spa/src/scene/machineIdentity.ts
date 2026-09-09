@@ -530,9 +530,11 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'ATARI 800XL', spec: '8-BIT • 1983', kit: 'eightBit',
   },
   // TODO(a3000): exhibit finish copied from amigaos35 — set the real era cues.
+  // a3000: Commodore's low desktop case, the same cream as the A3000UX (amix)
+  // with the Workbench 2.0 grey-blue as the accent.
   a3000: {
-    caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
-    badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
+    caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
+    badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
