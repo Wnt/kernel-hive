@@ -101,3 +101,27 @@ and its Xvfb by pidfile BEFORE landing an x11 station that reuses the display.
 | duplicate `bindingOrder=91` (and signal/manifest/golden/bringUp) | two `new --like` scaffolds from the same base | reassign every order to max+1 over all rows before the landing merge |
 | `spa-scene-rows` "no row for a3000" after the union merge | the seam dropped `keyboard/mouse` + `},` of the a1000 row above ours | grep the row after the id's line; run vitest src/scene before committing the merge |
 | `streamhost@a3000` failed 3× at start | smoke rig's Xvfb still on `:89` | kill smoke `fsuae.pid` + `xvfb.pid` before `station-land` |
+
+## Converted to host-native (no X) — 2026-09-09
+
+a3000 moved off the pinned-Xvfb/x11test plane onto the shared FS-UAE
+host-native launcher (`streamhost/stations/fsuae-native/x11-runtime.sh`, rule
+13, `docs/lab/FSUAE-NATIVE-BRIEF.md`): `SH_CAPTURE=shm` 640x512,
+`SH_INPUT_BACKEND=mamesock` against `FSUAE_NATIVE_CTL_SOCK`,
+`SH_AUDIO_SOURCE=fifo`, `SH_BTN_MIN_HOLD_MS=150`. Pointer proof is exact
+through the real daemon: MOVEA 41,148 landed the tip at 38,148, double-click
+opened the System window. Daemon lines proving the plane is live:
+`[shmcap] geometry 640x480 -> 640x512`, `[mamesock] connected, HELLO
+verified`, `[audio] fifo open`. Xvfb `:89` is released and unused.
+
+Walls specific to the conversion (on top of the table above):
+
+| Wall | Cause | Fix |
+|---|---|---|
+| validate-pipe mask | a validate error shipped in a commit because a piped `validate 2>&1 \| tail -1 && …` swallowed the exit code | run to a file, test `$?`, never pipe a gate |
+| missing `zip` | `configure` on the fork needs `zip`; labhost has none | bootstrap on labhost (autotools, no zip), configure/make in CT950 (zip, no autotools) |
+| autotools split | the reverse of the above — CT950 has zip but not autotools | same two-host split as the wall above; the builder does both legs |
+| `--mouse_integration=1` missing | mousehack never registers a click without it | mandatory flag on the launch line, not optional |
+| first build ignored SIGTERM | the shm binary didn't handle clean shutdown | fixed on the fork: clean SIGTERM quit in ~55 ms |
+| smoke rig / station Xvfb collision | a smoke rig's own Xvfb held the display an x11 station reused | moot once the station is on the no-X plane — no display to collide on |
+| station-up shot fired before the mapping existed | a proof screenshot was taken before the keymap/mapping landed | sequence the mapping commit before the bring-up proof step |
