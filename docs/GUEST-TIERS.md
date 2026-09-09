@@ -206,6 +206,7 @@ missing feature.
 
 | Station | Tier | Suite / accel | Pointer method | Mode | Touch | Audio | fps | Exec |
 |---|---|---|---|---|---|---|---:|---|
+| `a3000` | 3 host-native | FS-UAE/host | `x11-xtest` | abs | — | off | 50 | — |
 | `aix432` | 1 direct-QEMU | tcg | `qemu-mga-closedloop` | abs | — | off | 30 | telnet_unix_e |
 | `alpine` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `alto` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |
