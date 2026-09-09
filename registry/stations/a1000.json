@@ -145,16 +145,16 @@
       "Workbench 1.2",
       "AmigaDOS CLI",
       "Preferences",
-      "Clock, Notepad, Say (the Extras disk)"
+      "Notepad, Clock and Say (the Extras disk)"
     ],
-    "periodBrowser": "none — pre-web (AmigaOS 1.2)",
+    "periodBrowser": "none — the Amiga 1000 predates the web",
     "iconicApps": [
-      "Workbench 1.2 desktop",
-      "the Kickstart hand",
-      "AmigaDOS CLI",
-      "Say (the speech synthesizer)"
+      "The Workbench 1.2 desktop",
+      "The AmigaDOS command line",
+      "Preferences",
+      "Say, the speech synthesizer on the Extras disk"
     ],
-    "blurb": "The first Amiga: Commodore's 1985 multitasking colour desktop, a 68000 with custom chips and the designers' signatures moulded inside the case, booting Workbench 1.2 from a floppy the way every A1000 did — Kickstart itself came on a disk.",
+    "blurb": "The first Amiga: Commodore's 1985 desktop with custom chips for graphics, sound and disks, multitasking in colour when most personal computers ran one program at a time — and with the designers' signatures moulded inside the lid. It boots Workbench 1.2 from a floppy, as every A1000 did; on this model the Kickstart operating system came on a disk too.",
     "notes": "Host-native from birth: FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) under a pinned Xvfb :88, x11 root capture + XTEST input, same backend as amigaos35. Media: Kickstart 1.2 r33.180 ROM image + Workbench 1.2 rev 33.56 / Extras ADFs from archive.org (preservation-class, never committed). Reset = relaunch: a cold boot from fresh copies of the disks (~55 s to the desktop). OPEN: the authentic Kickstart-from-floppy bootstrap (A1000 boot ROM + Kickstart disk in DF0) reset-loops in this FS-UAE build; shipped with the Kickstart 1.2 image in the ROM slot until a runner proves the bootstrap route (FSUAE_NATIVE_A1000_BOOTSTRAP=1 in the launcher). Distinct from amiga (A500 / Workbench 1.3 bridge kiosk) and amigaos35 (A4000 / OS 3.5). See docs/guests/a1000.md."
   },
   "emulator": {
@@ -170,9 +170,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNVERIFIED",
+    "mouse": "PASS",
     "keyboard": "UNVERIFIED",
-    "fixture": "Workbench 1.2 desktop (blue, 640x256 PAL in a 720x568 window): RAM Disk + 'A500 WB 1.2' disk icons on the right, title bar 'Workbench release 1.2.  389152 free memory', no windows open. resetMode=relaunch with no statefile: every launch copies the pristine Workbench 1.2 and Extras ADFs into work/ and cold-boots (~55 s to the desktop, measured on the 2026-09-09 smoke rig). TODO(golden): XTEST pointer + keyboard proof on the framebuffer; measured boot time."
+    "fixture": "Workbench 1.2 desktop (blue, 640x256 PAL in a 720x568 window): RAM Disk + 'A500 WB 1.2' + Extras disk icons on the right, title bar 'Workbench release 1.2.  364736 free memory', no windows open. resetMode=relaunch with no statefile: every launch copies the pristine Workbench 1.2 and Extras ADFs into work/ and cold-boots. Measured on the golden stream 2026-09-09, first with amigaos35's fs-uae binary (station's own build not yet staged): desktop reached between +52 s (AmigaDOS banner still up) and +57 s (desktop with icons) after process start — consistent with the ledger's ~55 s. Repeated once the build stream staged the station's own binary (`/data/vms/streamhost/assets/a1000/fsuae-native/bin/fs-uae`, confirmed via /proc/<pid>/exe): identical desktop up by +55 s (ownbin_055.png) — golden + binary + device set is the proven combination for this station. Pointer PASS: XTEST mousedown+sleep 150ms+mouseup (NOT a bare xdotool click — an instant press+release was invisible to FS-UAE's mousehack poll every time it was tried) selects an icon on mousedown alone (frame proof: mdown.png, mup.png keeps the selection) and a 150 ms-hold/150 ms-gap double-click opens the 'A500 WB 1.2' disk window (dblclick.png, free memory 364736->364272) and its zoom gadget maximizes it to show the System/Utilities/Demos drawers (zoom.png). Keyboard: NOT PROVEN this run — double-clicking into System (system.png/system2.png, single click only registered, ran out of the 20-minute window before a second attempt) — no CLI/Shell was reached, so no typed-character proof exists yet. Reset PASS: kill by mame.pid + relaunch returns the identical pristine desktop (364736 free, no windows) in one more boot cycle (reset_desktop.png)."
   },
   "notes": [
     "a1000 wave 2026-09-09 (docs/lab/A1000-WAVE.md): scaffolded from amigaos35; slot 188, Xvfb :88; KS-from-floppy bootstrap OPEN"

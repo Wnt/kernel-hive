@@ -95,6 +95,10 @@ ROWS=(
   # Stored content-addressed in the media archive; opt-file => fetched at build if absent.
   "opt-file|chokanji|超漢字/Chokanji-V + B-right/V + QEMU-CKJ media set (archive.org 'chokanji'; qemuckj/mc.img = pre-installed B-right/V)|${MEDIA_ARCHIVE_ROOT:-/data/media-archive}/blobs/b8/b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|sha256:b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
+  "req-file|a1000|Kickstart v1.2 r33.180 (A500-A1000-A2000) ROM|/data/vms/sandbox/a1000/media/Kickstart v1.2 r33.180 (1986-10)(Commodore)(A500-A1000-A2000)[!].rom|sha256:87cddb1f499e32758de20145e73031a84bab299e3f6e5c8487e76d02b2ee9d16|preservation-source"
+  "req-file|a1000|Amiga 1000 ROM Bootstrap (1985)|/data/vms/sandbox/a1000/media/Amiga 1000 ROM Bootstrap (1985)(Commodore)(A1000)[!].rom|sha256:c67d47d0ff4a4cd29104e96fe7920a2ec13dff4f7f0fbcf7be645e2ae493262c|preservation-source"
+  "req-file|a1000|Workbench v1.2 rev 33.56 Disk 1 (Workbench).adf|/data/vms/sandbox/a1000/media/Workbench v1.2 rev 33.56 (1987)(Commodore)(A500)(Disk 1 of 2)(Workbench).adf|sha256:4dfd92a4589346f157593d1a3098966b43e2298c46b749c689b9dc457480be4c|preservation-source"
+  "req-file|a1000|Workbench v1.2 rev 33.56 Disk 2 (GB)(Extras).adf|/data/vms/sandbox/a1000/media/Workbench v1.2 rev 33.56 (1987)(Commodore)(A500)(GB)(Disk 2 of 2)(Extras).adf|sha256:7edba9fcbffacde7f1bf94920b76c57e2002ae07b877f26de152ae96c631ba69|preservation-source"
   # -- freely fetchable, pinned (the builder fetches + verifies if absent) -------
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries
   # Amstrad's 1999 emulator permission. zxspectrum.sh extracts 48.rom from it.
