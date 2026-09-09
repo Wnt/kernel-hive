@@ -571,5 +571,9 @@ export const ASSEMBLIES_BY_TILE = {
   atari800xl: {
     kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtC',
   },
+  a1000: {
+    kind: 'towerSetup', body: 'pizzaBoxB', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
 

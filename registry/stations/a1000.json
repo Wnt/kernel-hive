@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "id": "a1000",
+  "era_year": 1985,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 78,
+        "prelude": "",
+        "value": {
+          "key": "a1000",
+          "script": "tiles/a1000.sh",
+          "outputDir": "A1000",
+          "class": "graphical",
+          "estimated": "~1m",
+          "automation": "full",
+          "produces": "a1000 golden floppy set (Kickstart 1.2 r33.180 image + Workbench 1.2 rev 33.56 + Extras ADFs, hash-verified; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/a1000",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54151,
+      "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a1000/x11-runtime.sh."
+    }
+  },
+  "render": {
+    "signalOrder": 81,
+    "stationsManifestOrder": 79,
+    "stationsManifestPrelude": "\n# a1000 — host-native FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; x11 capture on :88, XTEST input. The first Amiga.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 91,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage",
+    "goldenOrder": 79
+  },
+  "stationDir": "a1000",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54188,
+    "fps": 50,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "mousehack",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 188
+  },
+  "guestDoc": "docs/guests/a1000.md",
+  "credentialsRef": "guest/a1000",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "a1000",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":88",
+      "SH_PORT": "54188",
+      "SH_FPS": "50",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/a1000/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/a1000/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a1000/a1000_cmd"
+    },
+    "bringUpOrder": 91,
+    "x11": {
+      "display": ":88",
+      "geometry": "720x568x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/a1000/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "a1000",
+        "--udp",
+        "54188",
+        "--x11",
+        "--x11-display",
+        ":88",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "50",
+        "--x11-runtime-file",
+        "$T/a1000/x11-runtime.sh",
+        "--env-append-file",
+        "$T/a1000/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/a1000/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#1E5BB8",
+    "eraLabel": "1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2"
+  },
+  "museum": {
+    "id": "a1000",
+    "displayName": "Amiga 1000",
+    "year": 1985,
+    "lineage": "Commodore Amiga / AmigaOS",
+    "arch": "Motorola 68000 @ 7.16 MHz, OCS chipset (Agnus, Denise, Paula), 512 KB chip RAM",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "1980s",
+    "accent": "#1E5BB8",
+    "eraSoftware": [
+      "Workbench 1.2",
+      "AmigaDOS CLI",
+      "Preferences",
+      "Clock, Notepad, Say (the Extras disk)"
+    ],
+    "periodBrowser": "none — pre-web (AmigaOS 1.2)",
+    "iconicApps": [
+      "Workbench 1.2 desktop",
+      "the Kickstart hand",
+      "AmigaDOS CLI",
+      "Say (the speech synthesizer)"
+    ],
+    "blurb": "The first Amiga: Commodore's 1985 multitasking colour desktop, a 68000 with custom chips and the designers' signatures moulded inside the case, booting Workbench 1.2 from a floppy the way every A1000 did — Kickstart itself came on a disk.",
+    "notes": "Host-native from birth: FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) under a pinned Xvfb :88, x11 root capture + XTEST input, same backend as amigaos35. Media: Kickstart 1.2 r33.180 ROM image + Workbench 1.2 rev 33.56 / Extras ADFs from archive.org (preservation-class, never committed). Reset = relaunch: a cold boot from fresh copies of the disks (~55 s to the desktop). OPEN: the authentic Kickstart-from-floppy bootstrap (A1000 boot ROM + Kickstart disk in DF0) reset-loops in this FS-UAE build; shipped with the Kickstart 1.2 image in the ROM slot until a runner proves the bootstrap route (FSUAE_NATIVE_A1000_BOOTSTRAP=1 in the launcher). Distinct from amiga (A500 / Workbench 1.3 bridge kiosk) and amigaos35 (A4000 / OS 3.5). See docs/guests/a1000.md."
+  },
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.2.35",
+    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (upstream 3.2.35 + fsuae-native.d/fsuae-mousehack-rearm.patch)",
+    "driver": "A1000"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "a1000",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Workbench 1.2 desktop (blue, 640x256 PAL in a 720x568 window): RAM Disk + 'A500 WB 1.2' disk icons on the right, title bar 'Workbench release 1.2.  389152 free memory', no windows open. resetMode=relaunch with no statefile: every launch copies the pristine Workbench 1.2 and Extras ADFs into work/ and cold-boots (~55 s to the desktop, measured on the 2026-09-09 smoke rig). TODO(golden): XTEST pointer + keyboard proof on the framebuffer; measured boot time."
+  },
+  "notes": [
+    "a1000 wave 2026-09-09 (docs/lab/A1000-WAVE.md): scaffolded from amigaos35; slot 188, Xvfb :88; KS-from-floppy bootstrap OPEN"
+  ],
+  "retronet": null
+}
