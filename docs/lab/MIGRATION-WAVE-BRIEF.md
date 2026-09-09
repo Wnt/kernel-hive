@@ -40,14 +40,19 @@ do not rebuild them.**
 | `scripts/dev/tile-accept.sh` (+ `frame-compare.py`) | "Open the two PNGs and squint" | Post-migration health bundle: unit, health, ticket, `/etc/bridge/suite` read from inside the **production** boot, `labctl reset` proving `loadvm` under the station's own launcher, and a numeric frame compare. Exit 10 = "the frames differ, a human must look" — that is not a failure |
 | `scripts/dev/box-sync-push.sh` (+ `scripts/lib/box-sync-pairs.sh`) | Four hand `scp`s in one day | Each migrated station dirties ~3 mirrored rows and the pre-push gate blocks on drift **the driver itself created**. `verify-box-sync.sh` to see it, then `box-sync-push.sh --all-drift` (dry-run) and `--apply` |
 
-**Four stations are inactive, not three.** `indyr4400`, `star` and `nextstep` were
-stopped by the operator (§10 of the handover). **`amiga` is down and nobody
-declared it** — inactive since 2026-08-10 02:12:28, `ExecMainStatus=15`, after
-being active since Aug 5. That also explains its `?` in `labctl ls`'s GOLDEN
-column, which the handover wrongly files as a QMP probe artifact. A pre-existing
-outage and a migration regression are the same screenshot: **get an operator
-decision on `amiga` before migrating it**, and take its BEFORE frame from a
-healthy bookworm scene, not a cold start.
+**~~Four stations are inactive, not three.~~ That was true on 2026-08-10 and is
+not true now.** `indyr4400`, `star`, `nextstep` and `amiga` all read **active**
+in `labctl ls` (checked 2026-09-09). The stop was a capacity measure for the
+2026-08 measurement campaign, not a standing order. `nextstep` has since been
+converted host-native (2026-08-25) and `indyr4400` too (2026-09,
+[`IRIS-DEBRIDGE-BRIEF.md`](IRIS-DEBRIDGE-BRIEF.md)), so neither is a kiosk to
+migrate at all any more. **Ask `ssh lab 'labctl ls'` before acting on any
+inactive/stopped claim in this file** — a station that looks broken is often
+just stopped or paused, and the reverse rots just as fast. `amiga`'s
+2026-08-10 outage (`ExecMainStatus=15`, and the `?` in the GOLDEN column the
+handover filed as a QMP probe artifact) is resolved; the underlying advice
+survives it — a pre-existing outage and a migration regression are the same
+screenshot, so take a BEFORE frame from a healthy scene, not a cold start.
 
 **Two verdicts in the plan doc are stale — do not re-audit them:**
 
@@ -86,10 +91,11 @@ returned while the screen still read `Loading Linux 6.12.101+deb13-amd64 ...`.
 | **zxspectrum** (w7) | **risky.** Same 0.251 pin; `zxspectrum.sh:475` dies by design. Re-derive the `-bios en` sha1 from 0.276's `-listxml`. `-verifyroms spectrum` is **not** the gate and never was (31 alternative BIOS entries are unstaged, so it reports "bad" on a hash-perfect ROM). Verify on a real framebuffer that `spectrum` is still `status="good"` in 0.276 — this station ships stock MAME with **no** skip-warnings patch. Full recapture. | **ACCEPT:** the 48K power-on screen — **white paper** filling the frame with `© 1982 Sinclair Research Ltd` in black across the bottom. Paper (each channel 190–220) **> 600 000 px** AND ink (each channel < 40) **> 300 px**. The copyright string must be **unaltered** — that is the licence condition and the exhibit's whole compliance story. Keyboard proof: a single `b` at the K cursor puts the whole word `BORDER` on screen. **REJECT:** any MAME nag panel; paper alone. |
 | **mpf2** (w2 rollback) | **needs-work.** MAME exits after the **second** cold boot, though the first drew the real banner. Trixie binary is already built and installed. Three cheap fixes on a clone, shared with `kc854`: (1) add stderr capture to the kiosk launcher — `.xinitrc` execs `launch.sh` which execs MAME with **no redirect**, so there is no diagnostic at all; (2) replace the point-sample `pgrep` with a **windowed** assert sampling frame + process together for ≥60 s (`.xinitrc` EXECs the emulator, so a death tears down X and getty relaunches it — a restart loop passes the frame poll and fails `pgrep`); (3) read `systemctl show getty@tty1 -p NRestarts` in-guest to tell a loop from a single death. Plus rewrite the predicate at `mpf2.sh:199-218`. | **ACCEPT:** the MPF-II's own Applesoft-clone power-on — banner line and `>` prompt at the left margin on a 560×192 composite picture aspect-corrected to fill the frame, in the 6-colour artifact palette and nothing else. Assert the palette IS present and the lit region has the banner's two-line shape. **REJECT:** **any Linux text at all** — a GRUB menu, `Loading Linux 6.12.101+deb13-amd64 ...`, a kernel console (the overlay quiets that whole path on purpose, so one line of it is a failure); MAME's known-problems dialog (mostly RGB (191,114,37)); a mostly-black frame with a few hundred lit pixels, which is exactly what the old predicate licensed. |
 | **kc854** (w2 rollback) | **needs-work.** Identical shape and the same three fixes as `mpf2`; batch them. Trixie MAME 0.289 already built and installed. Not the suite, not the chroot. | **ACCEPT:** the KC 85/4's own **CAOS 4.2 power-on menu** (that menu is the fixture and its own launcher), aspect-corrected 4:3 filling the 1024×768 root — 320×256 is the pixel count, **not** the picture's shape; do not force `-resolution` to it (that is what left `mpf2` a narrow strip in a black surround). Bright px (R,G,B all >96) **> 20 000** (trixie measured 27868) AND nag-red (R>140, G<90, B<90) **< 2000** (measured 0). Keyboard proof: unshifted `basic` works (MAME declares `PORT_CHAR('B')` before `'b'`) and HC-BASIC clears the menu asking `MEMORY END ?`. **REJECT:** a full-screen red "THIS SYSTEM DOESN'T WORK" panel — the skip-warnings patch was lost and you are about to ship an error message as an exhibit. |
-| **indyr4400** (unwaved) | **needs-work, and last.** No package blocker — trixie actually *simplifies* it (host and guest are both glibc 2.41, so `iris` builds with the host cargo and the throwaway debootstrap goes away). Gates are procedural: operator-stopped, never part of the apt sweep (unassessed, not clean), and a new `iris` binary **forces** a checkpoint recapture (a bridge checkpoint holds the running emulator in RAM). **Also fix the builder's closing instruction first** — it says capture with the IRIX login showing; `docs/guests/indyr4400.md:165-168` says the checkpoint is the Indigo Magic Desktop and the login is explicitly *not* in it. | **ACCEPT:** the IRIX 6.5 Indigo Magic Desktop of the `demos` session at exactly **1280×1024, no black border**: 4Dwm up, Toolchest docked upper-left, the demos/fsn/buttonfly icon column down the right edge, nothing else open. **REJECT:** the graphical login box; a bare blue root with REX3 frozen (the jitv2 wedge signature — CP0 Status `00000081`, every interrupt masked — not a slow boot); any frame showing Iris's own HUD (`18.5 MIPS … LED:`) or a 1282×1040 / 1288×1024 geometry — the root is pinned to 1280×1024+0+0 to clip the HUD and 2 overscan columns, so a visible HUD means the visitor is looking at the emulator instead of the machine. Audio is off by design. |
+| **indyr4400** (~~unwaved~~ **converted, not migrated**) | **Not a trixie-migration station any more.** It never went through a kiosk migration and it never will: as of 2026-09 it is **host-native** — no QEMU, no Debian kiosk, no X, `SH_STATION_RUNTIME=x11` with `SH_CAPTURE=shm`, Iris publishing its own IFB1 framebuffer and speaking `mamectl/1`. See [`IRIS-DEBRIDGE-BRIEF.md`](IRIS-DEBRIDGE-BRIEF.md) and [`../guests/indyr4400.md`](../guests/indyr4400.md). Two facts from this row that survived and were the reason it was 'last': trixie *simplified* it (host and guest are both glibc 2.41, so `iris` builds with the host cargo and the throwaway debootstrap goes away — the conversion collected that for free), and **a new `iris` binary forces a checkpoint recapture** — golden + binary + device set are ONE combination (rule 6), which is as true of an Iris snapshot as it was of the bridge vmstate. The builder's closing instruction was wrong and is fixed: the scene is the Indigo Magic Desktop, and the login is explicitly NOT in it. The old procedural gates are void: the station is **live and active**, not operator-stopped, and there is no apt sweep to be unassessed by. | **Unchanged and still non-negotiable. ACCEPT:** the IRIX 6.5 Indigo Magic Desktop of the `demos` session at exactly **1280×1024, no black border**: 4Dwm up, Toolchest docked upper-left, the demos/fsn/buttonfly icon column down the right edge, nothing else open. **REJECT:** the graphical login box; a bare blue root with REX3 frozen (the jitv2 wedge signature — CP0 Status `00000081`, every interrupt masked — not a slow boot; the wedge itself is gone at `0540991`); any frame showing Iris's own HUD (`18.5 MIPS … LED:`) or a 1282×1040 / 1288×1024 geometry. **What changed is only HOW the HUD is excluded**: the bridge pinned an X root to 1280×1024+0+0 to clip it, and host-native the HUD is a separate 2048×16 texture that never enters the published surface at all — so a visible HUD row is now a publisher bug rather than a geometry slip, and it still means the visitor is looking at the emulator instead of the machine. Audio is off by design. |
 
 Two cross-cutting facts for the manual-capture set (`amiga`, `apple2`, `c64`,
-`daybreak`, `star`, `indyr4400` — six of these 13):
+`daybreak`, `star` — five of these 13; `indyr4400` was the sixth and left the
+list when it was converted rather than migrated):
 
 - `migrate-tile.sh`'s inline capture **omits the `info status | grep running`
   assertion** that the shared `lib/bridge-bake-golden` makes. A checkpoint captured
@@ -112,10 +118,11 @@ overlay backing files, not assets.
 
 ## 3. Non-negotiable, each with the incident that bought it
 
-- **Never start a station the operator stopped.** `indyr4400`/`star`/`nextstep`
-  were paused to free labhost; starting one during someone's timing run
-  corrupts their numbers. `amiga` is down *undeclared* — that is a question for
-  the operator, not a licence.
+- **Never start a station the operator stopped**, and never assume a station is
+  still stopped. `indyr4400`/`star`/`nextstep` were paused in 2026-08 to free
+  labhost — starting one during someone's timing run corrupts their numbers —
+  and all three are running again as of 2026-09-09. The rule is the same in both
+  directions: `ssh lab 'labctl ls'` is the authority, this table is not.
 - **Never `pkill -f` from `ssh lab`.** The remote shell's own command line
   contains the pattern, so it matches itself and the session dies with exit 144
   that reads like a network fault. The same self-match ruins process *scans* —

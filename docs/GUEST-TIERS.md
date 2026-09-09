@@ -38,7 +38,7 @@ migration ledger, not a taxonomy. So the test is:
 | id is `openvms` | **4** — two-QEMU X bridge |
 | otherwise | **1** — direct QEMU |
 
-Applying that to all 78 registry entries gives **41 / 11 / 23 / 1 / 2**.
+Applying that to all 78 registry entries gives **41 / 10 / 24 / 1 / 2**.
 
 > **Roster note.** `python3 scripts/stations-registry.py count` prints *77 lineup
 > entries: 76 streamhost production tiles, 2 showcase posters*. If a doc tells
@@ -66,14 +66,14 @@ flowchart TD
     A1[One qemu-system process 26 KVM 3 TCG] --> A2[Guest OS itself winxp solaris haiku os2warp win11]
   end
 
-  subgraph T2[Tier 2 emulator bridge 11 stations]
+  subgraph T2[Tier 2 emulator bridge 10 stations]
     B1[QEMU KVM shared device set] --> B2[Debian bare X kiosk no window manager]
-    B2 --> B3[One full screen emulator VICE MAME hatari FS-UAE SIMH Iris]
-    B3 --> B4[Vintage machine C64 Atari ST PDP-11 SGI Indy Alto]
+    B2 --> B3[One full screen emulator hatari FS-UAE SIMH Caprice32 LinApple ContrAlto Darkstar Dwarf]
+    B3 --> B4[Vintage machine Atari ST PDP-11 Amiga 1200 Alto Star]
   end
 
-  subgraph T3[Tier 3 host native 23 stations MAME VICE FS-UAE es40 Previous]
-    C1[One emulator on the bare metal host CPU under a pinned Xvfb or an shm framebuffer] --> C2[Vintage machine SGI Indy Amiga 3000 AlphaServer ES40 NeXTstation C64]
+  subgraph T3[Tier 3 host native 24 stations MAME VICE FS-UAE es40 Previous Iris]
+    C1[One emulator on the bare metal host CPU under a pinned Xvfb or an shm framebuffer] --> C2[Vintage machine SGI Indy Amiga 3000 AlphaServer ES40 NeXTstation C64 Apple Lisa]
   end
 
   subgraph T4[Tier 4 two QEMU X bridge 1 station openvms]
@@ -90,8 +90,8 @@ flowchart TD
 | Tier | Count | What actually runs | Capture | Emulation layers between host CPU and the exhibit |
 |---|---:|---|---|---|
 | **1 — direct QEMU** | 41 | One `qemu-system-*` running the guest OS itself | `qemu` (default) | 1 VM; **0** interpretation layers under KVM, **1** under TCG |
-| **2 — emulator bridge** | 11 | Same QEMU/KVM device set, but the guest is a thin overlay on a shared read-only Debian base: autologin → `startx` → **no window manager** → one full-screen emulator | `qemu` (default) — an ordinary Linux framebuffer | **2** (KVM VM + software emulator), +1 managed runtime on `alto`/`star`/`daybreak` |
-| **3 — host-native** | 23 | No QEMU, no QMP. One emulator on the bare-metal host CPU — MAME, VICE, es40, Previous, FS-UAE — either headless or inside a pinned Xvfb sized to its own window | `shm` where the emulator publishes its own framebuffer, `x11` where it needs a window | **1** (software emulator only, no VM) |
+| **2 — emulator bridge** | 10 | Same QEMU/KVM device set, but the guest is a thin overlay on a shared read-only Debian base: autologin → `startx` → **no window manager** → one full-screen emulator | `qemu` (default) — an ordinary Linux framebuffer | **2** (KVM VM + software emulator), +1 managed runtime on `alto`/`star`/`daybreak` |
+| **3 — host-native** | 24 | No QEMU, no QMP. One emulator on the bare-metal host CPU — MAME, VICE, es40, Previous, FS-UAE, Iris, LisaEm, maiko — either headless or inside a pinned Xvfb sized to its own window | `shm` where the emulator publishes its own framebuffer, `x11` where it needs a window | **1** (software emulator only, no VM) |
 | **4 — two-QEMU X bridge** | 1 | One supervisor owns **two sibling VMs**: a 768 MiB Debian running lean Xorg (captured) and an 8192 MiB OpenVMS VM with `display none` reaching it as an X client | `qemu`, attached to the **bridge** VM | 1 VM for the pixels, produced by a second sibling VM over X |
 | **5 — showcase poster** | 2 | Nothing. No runtime, no launcher, no unit | none | 0 |
 
@@ -107,11 +107,11 @@ the schema but used by no station**.
   os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
-- **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
-  indyr4400 pdp11 star`
-- **Tier 3 (25)** — `a1000 amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
-  dragon32 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001 plus4
-  sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
+- **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
+  pdp11 star`
+- **Tier 3 (26)** — `a1000 amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
+  dragon32 indyr4400 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001
+  plus4 sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
 
 ## Sub-structure worth knowing
@@ -141,28 +141,41 @@ drifted.
 The inner emulators still inside a kiosk, from the registry build rows: **Open
 SIMH** (`pdp11`, `gt40` VT11, `decos`), **Hatari** (`atarist`), **LinApple**
 (`apple2`), **FS-UAE** (`amiga` A1200), **Caprice32** (`amstradcpc`),
-**ContrAlto 2** on .NET (`alto`), **Darkstar** on mono (`star`), **Dwarf/Draco**
-on OpenJDK (`daybreak`), **Iris** — native Rust (`indyr4400`). The three managed
-runtimes are why `alto`, `star` and `daybreak` are the hardest left to
-de-bridge: converting them means hosting .NET, mono or a JVM on labhost itself.
+**ContrAlto 2** on .NET (`alto`), **Darkstar** on mono (`star`) and
+**Dwarf/Draco** on OpenJDK (`daybreak`). Those three managed runtimes are why
+`alto`, `star` and `daybreak` are the hardest left to de-bridge: converting them
+means hosting .NET, mono or a JVM on labhost itself. **Iris** (`indyr4400`) used
+to be in this list and is not any more — it was native Rust, so it converted
+([`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md)).
 
 **Tier 3 is where the emulators went.** Its 23 stations run **MAME** (`irix`
 indy_4610, `newsos` nws3260, `bbcmicro`/`armeval` bbcb, `dragon32`, `oricatmos`,
 `kc854`, `sinclairql`, `zx81`, `zxspectrum`, `mpf2`), **VICE** (`c64` x64sc,
 `c128` x128, `vic20` xvic, `plus4` xplus4, `pet2001` xpet, `cbm8032` xpet -model
-8032, `cbm2` xcbm2), **es40** (`tru64`, `w2kalpha`), **Previous** (`nextstep`)
-and **FS-UAE 3.2.35** (`amigaos35` A4000/040, `amix` A3000). Capture splits with
-the emulator, not with the tier: everything above publishes its own framebuffer
-into shared memory (`SH_CAPTURE=shm`) except the two FS-UAE stations, which need
-a window and are captured off the root of a pinned Xvfb (`SH_CAPTURE=x11`).
+8032, `cbm2` xcbm2), **es40** (`tru64`, `w2kalpha`), **Previous** (`nextstep`),
+**FS-UAE** (`amigaos35` A4000/040, `amix` A3000, `a1000`, `a3000`), **LisaEm**
+(`lisa`), **maiko** (`medley`) and **Iris** (`indyr4400`, SGI Indy R4400).
+Capture splits with the emulator, not with the tier: most publish their own
+framebuffer into shared memory (`SH_CAPTURE=shm`), while the stations that need
+a real window are captured off the root of a pinned Xvfb (`SH_CAPTURE=x11`).
 
-**`irix` and `indyr4400` are a deliberate tier-contrast pair**, not a duplicate
-exhibit: the same IRIX 6.5 install rendered through two different tiers, with
-`indyr4400`'s disk extracted from a copy of `irix`'s seed CHD. Tier 3 exists
-because MAME's SGI Indy emulation **kernel-panics under a KVM vCPU** — a
-constraint, not a preference. The performance consequence of that pairing is in
-[`OVERHEAD.md`](OVERHEAD.md#cpu); the short version is that comparing them
-directly flatters MAME, because MAME runs throttled and Iris runs free.
+**`irix` and `indyr4400` are a deliberate EMULATOR-contrast pair**, not a
+duplicate exhibit: the same IRIX 6.5 install driven by two independently written
+emulators (MAME's R4600 `indy_4610` and Iris's R4400), with `indyr4400`'s disk
+extracted from a copy of `irix`'s seed CHD. They were a *tier*-contrast pair
+until 2026-09; `indyr4400` is now Tier 3 as well, and the measurement that
+forced the conversion — every Iris build 250–400 ms from a pointer move to the
+framebuffer against MAME's 68 ms, all of it bridge overhead — is in
+[`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md). The table below
+still shows `indyr4400` as `rel`, which is the transport it shipped on the
+bridge and the deliberate fallback if the conversion's closed-loop absolute
+pointer does not converge; `irix` reached `abs` against the same IRIX X server
+by the same VC2 mechanism, so the row may yet move. `irix` is host-native
+for a different reason again: MAME's SGI Indy emulation **kernel-panics under a
+KVM vCPU**, a constraint rather than a preference. The CPU consequence of the
+pairing is in [`OVERHEAD.md`](OVERHEAD.md#cpu); the short version is that
+comparing them directly flatters MAME, because MAME runs throttled and Iris runs
+free.
 
 **Every tier is served by the same systemd template and the same binary shape.**
 `streamhost@<tile>.service` reads `/data/vms/streamhost/stations/%i/station.env` and
@@ -240,7 +253,7 @@ missing feature.
 | `haiku` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |
 | `helenos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `hpuxvue` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | off | 30 | — |
-| `indyr4400` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | off | 30 | ssh |
+| `indyr4400` | 3 host-native | Iris/host | `iris-mamesock` | rel | — | off | 30 | serial_e |
 | `irix` | 3 host-native | MAME/host | `mame-ioport` | abs | — | on | 30 | serial_e |
 | `kc854` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `kolibrios` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
