@@ -573,6 +573,8 @@ export const ASSEMBLIES_BY_TILE = {
   },
   a1000: {
     kind: 'towerSetup', body: 'pizzaBoxB', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
   a3000: {
     kind: 'towerSetup', body: 'paramTower', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',

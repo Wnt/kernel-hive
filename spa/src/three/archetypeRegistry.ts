@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (89 of the 91
+//    - transport   : how its LIVE framebuffer texture is obtained (90 of the 92
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 89 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 90 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -218,6 +218,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
   atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
   a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1E5BB8', eraLabel: '1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2' }, // ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage
+  a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '1990 · Amiga 3000 — Workbench 2.04' }, // ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

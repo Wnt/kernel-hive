@@ -536,7 +536,7 @@ export const EXHIBIT_IDENTITIES = {
   a1000: {
     caseTint: '#dcd6c8', accentTint: '#57544e', tintMix: 0.38,
     badge: 'A1000 CLASS', spec: '68000 • 1985', kit: 'workstation',
-  // TODO(a3000): exhibit finish copied from amigaos35 — set the real era cues.
+  },
   // a3000: Commodore's low desktop case, the same cream as the A3000UX (amix)
   // with the Workbench 2.0 grey-blue as the accent.
   a3000: {

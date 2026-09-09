@@ -6,6 +6,9 @@ const POSTER_INDEX = {
   "a1000": {
     "hero": "/posters/a1000/desktop.webp"
   },
+  "a3000": {
+    "hero": "/posters/a3000/desktop.webp"
+  },
   "aix432": {
     "hero": "/posters/aix432/desktop.webp"
   },

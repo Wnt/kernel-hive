@@ -39,14 +39,14 @@
     }
   },
   "render": {
-    "signalOrder": 81,
-    "stationsManifestOrder": 79,
+    "signalOrder": 82,
+    "stationsManifestOrder": 80,
     "stationsManifestPrelude": "\n# a3000 — host-native FS-UAE 3.2.35 (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; x11 capture on :89, XTEST input.\n",
     "bringUpGroup": 8,
-    "bindingOrder": 91,
+    "bindingOrder": 92,
     "bindingPrelude": "",
     "bindingComment": "ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top",
-    "goldenOrder": 79
+    "goldenOrder": 80
   },
   "stationDir": "a3000",
   "lifecycle": "production",
@@ -90,7 +90,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a3000/a3000_cmd"
     },
-    "bringUpOrder": 91,
+    "bringUpOrder": 92,
     "x11": {
       "display": ":89",
       "geometry": "720x568x24",
