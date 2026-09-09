@@ -3,6 +3,9 @@
 // Existence + hero only — the prose is runtime data (/poster-docs.json).
 
 const POSTER_INDEX = {
+  "a3000": {
+    "hero": "/posters/a3000/desktop.webp"
+  },
   "aix432": {
     "hero": "/posters/aix432/desktop.webp"
   },

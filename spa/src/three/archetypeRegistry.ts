@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (88 of the 90
+//    - transport   : how its LIVE framebuffer texture is obtained (89 of the 91
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 88 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 89 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -217,6 +217,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
   samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
   atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
+  a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC4444', eraLabel: 'TODO(amigaos35): 1999 · AmigaOS 3.5 (AWeb II)' }, // ideal: Amiga big-box tower
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

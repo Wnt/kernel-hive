@@ -529,6 +529,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc6b2', accentTint: '#4a3a2c', tintMix: 0.44,
     badge: 'ATARI 800XL', spec: '8-BIT • 1983', kit: 'eightBit',
   },
+  // TODO(a3000): exhibit finish copied from amigaos35 — set the real era cues.
+  a3000: {
+    caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
+    badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
