@@ -184,7 +184,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   sinclairql:  { osId: 'sinclairql', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2EE65A', eraLabel: '1984 · Sinclair QL (QDOS · SuperBASIC)' },
   nextstep:    { osId: 'nextstep', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#8C8C8C', eraLabel: '1995 · NeXTSTEP 3.3 (NeXTcube)' },
   armeval:     { osId: 'armeval', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#0000FF', eraLabel: '1986 · ARM Evaluation System (ARM BBC Basic V)' },
-  indyr4400:   { osId: 'indyr4400', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3E6E9E', eraLabel: '1993 · SGI Indy R4400 — IRIX 6.5', pointerRel: true },
+  indyr4400:   { osId: 'indyr4400', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3E6E9E', eraLabel: '1993 · SGI Indy R4400 — IRIX 6.5' },
   alto:        { osId: 'alto', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#9FE3EA', eraLabel: '1973 · Alto II XM (portrait page display)' },
   star:        { osId: 'star', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#D6001C', eraLabel: '1981 · Pilot + ViewPoint 2.0 on the 8010', pointerRel: true },
   daybreak:    { osId: 'daybreak', archetypeId: 'sparc-pizzabox', transport: 'streamhost', accentColor: '#C8102E', eraLabel: '1985 · ViewPoint 2.0.5 on the 6085' },

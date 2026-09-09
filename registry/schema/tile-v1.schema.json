@@ -231,6 +231,7 @@
                 "x11-xtest",
                 "simh-light-pen",
                 "previous-tablet",
+              "iris-vc2-closedloop",
                 "qemu-mga-closedloop",
                 "qemu-artist-closedloop",
                 "qemu-guestram-abswrite",

@@ -49,6 +49,27 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # on the commanded pixel. There is no QEMU here at all -- no usb-tablet, no
     # PS/2, no ADB -- so the device ledger must name none of them.
     "previous-tablet": ({"mamesock"}, (), ("usb-tablet",)),
+    # indyr4400: the closed-loop pointer, host-native and with no QEMU anywhere
+    # in the path. Iris emulates the Indy's VC2 hardware cursor and computes
+    # `cursor_reg - 31 + adjust` for the hotspot (src/compositor.rs) -- the
+    # IDENTICAL arithmetic the MAME `irix` sibling's vc2 cursor swap exploits
+    # against this same IRIX 6.5 X server. So MOVEA reads the register, emits
+    # paced relative counts and converges, and `absolute: true` is earned by
+    # reading the guest's own cursor position back, not by a device: the Indy
+    # has a PS/2 mouse and no absolute device at all. The ledger token is the
+    # launcher's two --setenv lines: the mamectl/1 socket the daemon talks to
+    # and the pointer-mode knob that arms the loop inside the container. The
+    # ledger reads the LAUNCHER, not the fixture, so those are what can be
+    # checked -- the fixture then chooses vc2 or the shipped rel fallback.
+    # x11warp is NOT an option here
+    # and must not be re-litigated: that sink carries motion only, and buttons
+    # and keys on a host-native station have no second channel to ride (the
+    # `amix` rollback, 2026-09-09).
+    "iris-vc2-closedloop": (
+        {"mamesock"},
+        ("--setenv=IRIS_CTL_SOCK", "--setenv=IRIS_PTR_MODE"),
+        ("usb-tablet",),
+    ),
     # aix432: the fleet's second CLOSED-LOOP pointer and the first inside QEMU.
     # The 40p has a PS/2 mouse and no absolute device at all, so on the WIRE
     # this is still relative -- but AIX's X server drives the emulated Matrox
