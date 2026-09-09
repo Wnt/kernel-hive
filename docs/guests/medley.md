@@ -91,6 +91,42 @@ ssh lab 'labctl reset medley'     # relaunch: new pid, pristine Exec in ~3 s
 Never inject while a session is attached — the daemon is the single injector
 on this display.
 
+## Security — DEACTIVATED 2026-09-09 (operator: "absolute no-go")
+
+**Status: stopped, disabled and masked on the box; `listing.state: hidden`.**
+Do not relaunch this station until the paragraph below is false.
+
+Medley is not an emulated machine. `maiko` is a host application, and the
+station ran it **as root on labhost in the host PID and mount namespaces**
+(the stock `streamhost@` template: no `User=`, no `ProtectSystem`, no private
+namespace). The Exec a visitor types into has the host file system through
+Lisp's file functions and can spawn Unix subprocesses through maiko's
+subprocess support, so a gallery visitor was one typed form away from a root
+shell on the hypervisor. The launcher's `HOME`/`LOGINDIR`/`LDEDESTSYSOUT`
+redirection into `work/` is a convention, not a boundary.
+
+Every other host-native station (MAME, VICE, FS-UAE, ES40, Previous) also
+runs as root in the host namespaces, but the visitor only reaches an emulated
+guest; escaping needs an emulator bug. The one existing precedent for doing
+this right is `nextstep`, whose Previous runs as the unprivileged `nsexhibit`
+user.
+
+What "safe to relaunch" means, in order of cost:
+
+1. A dedicated unprivileged user plus a systemd drop-in for `streamhost@medley`
+   (`User=`, `ProtectSystem=strict`, `ReadWritePaths=` the work dir only,
+   `PrivateTmp=`, `NoNewPrivileges=`, `RestrictAddressFamilies=AF_UNIX` — it
+   needs nothing but the Xvfb socket). The asset tree must be readable by
+   that user and the Xvfb socket reachable.
+2. Or `bwrap`/`unshare` around the launch with a private mount namespace:
+   assets read-only, `work/` read-write, nothing else.
+3. Or a throwaway container, as the retronet planes already are (CT 951).
+
+Whichever lands, the proof is the same: from the Exec, `(SHELL "id")` and a
+file open outside `work/` must fail, on the framebuffer, before the listing
+block is removed. The same review applies to any future station whose guest
+is a stock host application rather than an emulated machine.
+
 ## OPEN
 
 - **Network plane.** maiko can bridge Lisp TCP/IP to the host (its nethub /
