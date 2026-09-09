@@ -21,6 +21,19 @@ The survey, source map and commit plan below were produced by an Opus
 discovery agent on 2026-09-09 and are kept verbatim as the design record; the
 station conversions and measured results are appended as they land.
 
+**Station status (2026-09-09, box clock):**
+
+| Station | Path | Proof |
+|---|---|---|
+| `a1000` | native since 19:58 | shm 640x512 floppy boot; pointer exact; keys via socket unmeasured on this station |
+| `a3000` | native since 19:57 | shm 640x512; pointer exact; `KEY` PASS (Right-Amiga+E, `echo hello 1234` → Output Window); reset in 5 s |
+| `amigaos35` | native since 20:32 | shm 640x514; ~10 s cold boot (was ~85 s); inside the `rn-amigaos35` cage AWeb loaded the retronet www.amiga.de mirror after a socket double-click |
+| `amix` | **rolled back to Xvfb** at 20:35 | headless video proven (A2410 1024x768 via the RTG route), but its buttons/keys rode XTEST into the Xvfb window while the pointer warps into the guest's X — with no Xvfb the daemon's `x11test` sink had nothing to connect to (input disabled). Reconvert once the daemon composes `x11warp` motion with ctlsock button/key edges (one input backend per station today). |
+
+Open on the fork: RTG publish rate is ungated (~80/s at 1024x768); SAVEST/LOADST and
+the FIFO reopen throttle unexercised; `labctl type` needs the natural-keyboard
+verbs (`POST`/`CODE`) — drive keys with `labctl mctl <id> "KEY 1 amiga <raw>"`.
+
 ---
 
 # FS-UAE host-native (no Xvfb): fork survey, source map, commit plan
