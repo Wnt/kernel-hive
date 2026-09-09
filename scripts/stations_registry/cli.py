@@ -16,7 +16,8 @@ from .facts_live import cmd_facts_live
 from .generate import atomic_write, check_gate_lists, cmd_generate, generated
 from .loading import RegistryError, is_x11_runtime, load
 from .render import rendered
-from .scaffold import cmd_new, cmd_new_like
+from .scaffold import cmd_new
+from .scaffold_like import cmd_new_like
 from .validate_rules import validate
 
 
