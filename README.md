@@ -60,7 +60,168 @@ Every machine on the floor, by the decade it came from. Each one is a link
 straight into the running system.
 
 <!-- lineup:start -->
+### 1970s
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/decos"><img src="spa/public/posters/decos/desktop.webp" width="150" alt="DEC PDP-11 — RT-11, RSX-11M, RSTS/E"></a><br><sub>DEC PDP-11 — RT-11, RSX-11M, RSTS/E · 1970</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/alto"><img src="spa/public/posters/alto/desktop.webp" width="150" alt="Xerox Alto II"></a><br><sub>Xerox Alto II · 1973</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/gt40"><img src="spa/public/posters/gt40/desktop.webp" width="150" alt="DEC GT40"></a><br><sub>DEC GT40 · 1973</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/pdp11"><img src="spa/public/posters/pdp11/desktop.webp" width="150" alt="DEC PDP-11/70 — 2.11BSD"></a><br><sub>DEC PDP-11/70 — 2.11BSD · 1975</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/pet2001"><img src="spa/public/posters/pet2001/desktop.webp" width="150" alt="Commodore PET 2001"></a><br><sub>Commodore PET 2001 · 1977</sub></td>
+</tr>
+</table>
+
+### 1980s
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/cbm8032"><img src="spa/public/posters/cbm8032/desktop.webp" width="150" alt="Commodore CBM 8032"></a><br><sub>Commodore CBM 8032 · 1980</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/vic20"><img src="spa/public/posters/vic20/desktop.webp" width="150" alt="Commodore VIC-20"></a><br><sub>Commodore VIC-20 · 1980</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/bbcmicro"><img src="spa/public/posters/bbcmicro/desktop.webp" width="150" alt="Acorn BBC Micro Model B"></a><br><sub>Acorn BBC Micro Model B · 1981</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/star"><img src="spa/public/posters/star/desktop.webp" width="150" alt="Xerox Star 8010"></a><br><sub>Xerox Star 8010 · 1981</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/zx81"><img src="spa/public/posters/zx81/desktop.webp" width="150" alt="Sinclair ZX81"></a><br><sub>Sinclair ZX81 · 1981</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/c64"><img src="spa/public/posters/c64/desktop.webp" width="150" alt="Commodore 64"></a><br><sub>Commodore 64 · 1982</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/cbm2"><img src="spa/public/posters/cbm2/desktop.webp" width="150" alt="Commodore CBM 610"></a><br><sub>Commodore CBM 610 · 1982</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/dragon32"><img src="spa/public/posters/dragon32/desktop.webp" width="150" alt="Dragon 32"></a><br><sub>Dragon 32 · 1982</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/mpf2"><img src="spa/public/posters/mpf2/desktop.webp" width="150" alt="Multitech Microprofessor II"></a><br><sub>Multitech Microprofessor II · 1982</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/zxspectrum"><img src="spa/public/posters/zxspectrum/desktop.webp" width="150" alt="Sinclair ZX Spectrum 48K"></a><br><sub>Sinclair ZX Spectrum 48K · 1982</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/atari800xl"><img src="spa/public/posters/atari800xl/desktop.webp" width="150" alt="Atari 800XL"></a><br><sub>Atari 800XL · 1983</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/oricatmos"><img src="spa/public/posters/oricatmos/desktop.webp" width="150" alt="Oric Atmos"></a><br><sub>Oric Atmos · 1984</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/plus4"><img src="spa/public/posters/plus4/desktop.webp" width="150" alt="Commodore Plus/4"></a><br><sub>Commodore Plus/4 · 1984</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/sinclairql"><img src="spa/public/posters/sinclairql/desktop.webp" width="150" alt="Sinclair QL"></a><br><sub>Sinclair QL · 1984</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/a1000"><img src="spa/public/posters/a1000/desktop.webp" width="150" alt="Amiga 1000"></a><br><sub>Amiga 1000 · 1985</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/amstradcpc"><img src="spa/public/posters/amstradcpc/desktop.webp" width="150" alt="Amstrad CPC 6128"></a><br><sub>Amstrad CPC 6128 · 1985</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2e"><img src="spa/public/posters/apple2e/desktop.webp" width="150" alt="Apple //e"></a><br><sub>Apple //e · 1985</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/atarist"><img src="spa/public/posters/atarist/desktop.webp" width="150" alt="Atari ST (EmuTOS GEM)"></a><br><sub>Atari ST (EmuTOS GEM) · 1985</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/c128"><img src="spa/public/posters/c128/desktop.webp" width="150" alt="Commodore 128"></a><br><sub>Commodore 128 · 1985</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/daybreak"><img src="spa/public/posters/daybreak/desktop.webp" width="150" alt="Xerox 6085"></a><br><sub>Xerox 6085 · 1985</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/armeval"><img src="spa/public/posters/armeval/desktop.webp" width="150" alt="Acorn ARM Evaluation System"></a><br><sub>Acorn ARM Evaluation System · 1986</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/amiga"><img src="spa/public/posters/amiga/desktop.webp" width="150" alt="Amiga 500"></a><br><sub>Amiga 500 · 1987</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="150" alt="Interlisp Medley"></a><br><sub>Interlisp Medley · 1987</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2"><img src="spa/public/posters/apple2/desktop.webp" width="150" alt="Apple II"></a><br><sub>Apple II · 1988</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="150" alt="SAM Coupé"></a><br><sub>SAM Coupé · 1989</sub></td>
+</tr>
+</table>
+
+### 1990s
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/a3000"><img src="spa/public/posters/a3000/desktop.webp" width="150" alt="Amiga 3000"></a><br><sub>Amiga 3000 · 1990</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/newsos"><img src="spa/public/posters/newsos/desktop.webp" width="150" alt="NEWS-OS 4.1R"></a><br><sub>NEWS-OS 4.1R · 1991</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/amix"><img src="spa/public/posters/amix/desktop.webp" width="150" alt="Amiga UNIX (AMIX)"></a><br><sub>Amiga UNIX (AMIX) · 1992</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/aux"><img src="spa/public/posters/aux/desktop.webp" width="150" alt="A/UX 3.0.1"></a><br><sub>A/UX 3.0.1 · 1993</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/indyr4400"><img src="spa/public/posters/indyr4400/desktop.webp" width="150" alt="SGI Indy R4400"></a><br><sub>SGI Indy R4400 · 1993</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/irix"><img src="spa/public/posters/irix/desktop.webp" width="150" alt="SGI Indy"></a><br><sub>SGI Indy · 1993</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/pcgeos"><img src="spa/public/posters/pcgeos/desktop.webp" width="150" alt="PC/GEOS Ensemble"></a><br><sub>PC/GEOS Ensemble · 1993</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/win311"><img src="spa/public/posters/win311/desktop.webp" width="150" alt="Windows 3.11"></a><br><sub>Windows 3.11 · 1993</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/freedos"><img src="spa/public/posters/freedos/desktop.webp" width="150" alt="FreeDOS"></a><br><sub>FreeDOS · 1994</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/msdoswin1"><img src="spa/public/posters/msdoswin1/desktop.webp" width="150" alt="MS-DOS 6.22 + Windows 1.0"></a><br><sub>MS-DOS 6.22 + Windows 1.0 · 1994</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/solaris"><img src="spa/public/posters/solaris/desktop.webp" width="150" alt="Solaris CDE"></a><br><sub>Solaris CDE · 1994</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/sunos414"><img src="spa/public/posters/sunos414/desktop.webp" width="150" alt="SunOS 4.1.4 / OpenWindows"></a><br><sub>SunOS 4.1.4 / OpenWindows · 1994</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/nextstep"><img src="spa/public/posters/nextstep/desktop.webp" width="150" alt="NeXTSTEP 3.3"></a><br><sub>NeXTSTEP 3.3 · 1995</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/nt351"><img src="spa/public/posters/nt351/desktop.webp" width="150" alt="Windows NT 3.51"></a><br><sub>Windows NT 3.51 · 1995</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/win95"><img src="spa/public/posters/win95/desktop.webp" width="150" alt="Windows 95"></a><br><sub>Windows 95 · 1995</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/hpuxvue"><img src="spa/public/posters/hpuxvue/desktop.webp" width="150" alt="HP-UX 10.20 / HP VUE"></a><br><sub>HP-UX 10.20 / HP VUE · 1996</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/macos753"><img src="spa/public/posters/macos753/desktop.webp" width="150" alt="Mac OS 7.5.3"></a><br><sub>Mac OS 7.5.3 · 1996</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/nt4"><img src="spa/public/posters/nt4/desktop.webp" width="150" alt="Windows NT 4.0"></a><br><sub>Windows NT 4.0 · 1996</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/os2warp"><img src="spa/public/posters/os2warp/desktop.webp" width="150" alt="OS/2 Warp 4"></a><br><sub>OS/2 Warp 4 · 1996</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/slackware"><img src="spa/public/posters/slackware/desktop.webp" width="150" alt="Slackware 3.4"></a><br><sub>Slackware 3.4 · 1997</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/rhapsody"><img src="spa/public/posters/rhapsody/desktop.webp" width="150" alt="Rhapsody DR2"></a><br><sub>Rhapsody DR2 · 1998</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/aix432"><img src="spa/public/posters/aix432/desktop.webp" width="150" alt="IBM RS/6000 — AIX 4.3.3"></a><br><sub>IBM RS/6000 — AIX 4.3.3 · 1999</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/amigaos35"><img src="spa/public/posters/amigaos35/desktop.webp" width="150" alt="AmigaOS 3.5"></a><br><sub>AmigaOS 3.5 · 1999</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/netbsd14"><img src="spa/public/posters/netbsd14/desktop.webp" width="150" alt="NetBSD 1.4.1"></a><br><sub>NetBSD 1.4.1 · 1999</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/w2kalpha"><img src="spa/public/posters/w2kalpha/desktop.webp" width="150" alt="Windows 2000 for Alpha"></a><br><sub>Windows 2000 for Alpha · 1999</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/win98se"><img src="spa/public/posters/win98se/desktop.webp" width="150" alt="Windows 98 SE"></a><br><sub>Windows 98 SE · 1999</sub></td>
+</tr>
+</table>
+
+### 2000s
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/beos"><img src="spa/public/posters/beos/desktop.webp" width="150" alt="BeOS R5"></a><br><sub>BeOS R5 · 2000</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/debian22"><img src="spa/public/posters/debian22/desktop.webp" width="150" alt="Debian GNU/Linux 2.2"></a><br><sub>Debian GNU/Linux 2.2 · 2000</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/redhat62"><img src="spa/public/posters/redhat62/desktop.webp" width="150" alt="Red Hat Linux 6.2"></a><br><sub>Red Hat Linux 6.2 · 2000</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/suse64"><img src="spa/public/posters/suse64/desktop.webp" width="150" alt="SuSE Linux 6.4"></a><br><sub>SuSE Linux 6.4 · 2000</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/win2000"><img src="spa/public/posters/win2000/desktop.webp" width="150" alt="Windows 2000"></a><br><sub>Windows 2000 · 2000</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/macos9"><img src="spa/public/posters/macos9/desktop.webp" width="150" alt="Mac OS 9.2.2"></a><br><sub>Mac OS 9.2.2 · 2001</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/winxp"><img src="spa/public/posters/winxp/desktop.webp" width="150" alt="Windows XP"></a><br><sub>Windows XP · 2001</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/chokanji"><img src="spa/public/posters/chokanji/desktop.webp" width="150" alt="Chokanji (超漢字)"></a><br><sub>Chokanji (超漢字) · 2002</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/tru64"><img src="spa/public/posters/tru64/desktop.webp" width="150" alt="Tru64 UNIX"></a><br><sub>Tru64 UNIX · 2003</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/kolibrios"><img src="spa/public/posters/kolibrios/desktop.webp" width="150" alt="KolibriOS"></a><br><sub>KolibriOS · 2004</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/ubuntu"><img src="spa/public/posters/ubuntu/desktop.webp" width="150" alt="Ubuntu 4.10 Warty Warthog"></a><br><sub>Ubuntu 4.10 Warty Warthog · 2004</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/alpine"><img src="spa/public/posters/alpine/desktop.webp" width="150" alt="Alpine Linux"></a><br><sub>Alpine Linux · 2005</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/freebsd411"><img src="spa/public/posters/freebsd411/desktop.webp" width="150" alt="FreeBSD 4.11"></a><br><sub>FreeBSD 4.11 · 2005</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/helenos"><img src="spa/public/posters/helenos/desktop.webp" width="150" alt="HelenOS"></a><br><sub>HelenOS · 2006</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/android"><img src="spa/public/posters/android/desktop.webp" width="150" alt="Android"></a><br><sub>Android · 2008</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/pcbsd"><img src="spa/public/posters/pcbsd/desktop.webp" width="150" alt="PC-BSD 1.5.1"></a><br><sub>PC-BSD 1.5.1 · 2008</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/redstar2"><img src="spa/public/posters/redstar2/desktop.webp" width="150" alt="Red Star OS 2.0"></a><br><sub>Red Star OS 2.0 · 2009</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/tinycore"><img src="spa/public/posters/tinycore/desktop.webp" width="150" alt="Tiny Core Linux"></a><br><sub>Tiny Core Linux · 2009</sub></td>
+</tr>
+</table>
+
+### 2010s–2020s
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/qnx"><img src="spa/public/posters/qnx/desktop.webp" width="150" alt="QNX Neutrino 6.5"></a><br><sub>QNX Neutrino 6.5 · 2010</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/ninefront"><img src="spa/public/posters/ninefront/desktop.webp" width="150" alt="9front (Plan 9)"></a><br><sub>9front (Plan 9) · 2011</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/toaruos"><img src="spa/public/posters/toaruos/desktop.webp" width="150" alt="ToaruOS"></a><br><sub>ToaruOS · 2011</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/redstar3"><img src="spa/public/posters/redstar3/desktop.webp" width="150" alt="Red Star OS 3.0 Desktop"></a><br><sub>Red Star OS 3.0 Desktop · 2013</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/sailfishos"><img src="spa/public/posters/sailfishos/desktop.webp" width="150" alt="Sailfish OS"></a><br><sub>Sailfish OS · 2013</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/templeos"><img src="spa/public/posters/templeos/desktop.webp" width="150" alt="TempleOS"></a><br><sub>TempleOS · 2013</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/postmarketos"><img src="spa/public/posters/postmarketos/desktop.webp" width="150" alt="postmarketOS"></a><br><sub>postmarketOS · 2017</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/serenityos"><img src="spa/public/posters/serenityos/desktop.webp" width="150" alt="SerenityOS"></a><br><sub>SerenityOS · 2018</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/bootos"><img src="spa/public/posters/bootos/desktop.webp" width="150" alt="bootOS"></a><br><sub>bootOS · 2019</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/win11"><img src="spa/public/posters/win11/desktop.webp" width="150" alt="Windows 11"></a><br><sub>Windows 11 · 2021</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/aros"><img src="spa/public/posters/aros/desktop.webp" width="150" alt="AROS"></a><br><sub>AROS · 2024</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/haiku"><img src="spa/public/posters/haiku/desktop.webp" width="150" alt="Haiku R1/beta5"></a><br><sub>Haiku R1/beta5 · 2024</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/openvms"><img src="spa/public/posters/openvms/desktop.webp" width="150" alt="OpenVMS x86-64 9.2"></a><br><sub>OpenVMS x86-64 9.2 · 2024</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/reactos"><img src="spa/public/posters/reactos/desktop.webp" width="150" alt="ReactOS 0.4.14"></a><br><sub>ReactOS 0.4.14 · 2024</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/ravynos"><img src="spa/public/posters/ravynos/desktop.webp" width="150" alt="ravynOS"></a><br><sub>ravynOS · 2025</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/openbsd"><img src="spa/public/posters/openbsd/desktop.webp" width="150" alt="OpenBSD 7.9"></a><br><sub>OpenBSD 7.9 · 2026</sub></td>
+</tr>
+</table>
+
+### Placards
+
+Backends retired; the SPA renders a static placard rather than dialing a dead service.
+
+<table>
+<tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/riscos"><img src="spa/public/posters/riscos/desktop.webp" width="150" alt="RISC OS 5.30"></a><br><sub>RISC OS 5.30 · 2022</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/macos"><img src="spa/public/posters/macos/desktop.webp" width="150" alt="macOS Sequoia"></a><br><sub>macOS Sequoia · 2024</sub></td>
+</tr>
+</table>
 <!-- lineup:end -->
+
 
 ## How it works
 
