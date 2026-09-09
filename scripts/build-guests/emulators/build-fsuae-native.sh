@@ -30,7 +30,7 @@ set -euo pipefail
 
 FSUAE_FORK_URL="${FSUAE_FORK_URL:-https://github.com/Wnt/fs-uae.git}"
 FSUAE_FORK_BRANCH=kernel-hive/integrated
-FSUAE_FORK_PIN=e8c4f74a9dc3b4676ba15d0d5655a0aaec3e1b5e
+FSUAE_FORK_PIN=ff98d1ba8a26b6a43dc0e56e51d58220b9e9a584
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
