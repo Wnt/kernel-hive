@@ -4,6 +4,7 @@
 	poster-gallery-fetch poster-gallery-verify devwatch drift-report \
 	release-notes release-notes-check release-notes-brief \
 	readme-media readme-media-check \
+	release-notes-publish release-notes-publish-dry-run \
 	analytics-catalogue analytics-catalogue-check reach-report
 
 station-registry-generate:
@@ -72,6 +73,17 @@ readme-media:
 
 readme-media-check:
 	python3 scripts/readme-media.py check
+
+# Ensure a git tag + GitHub release for every closed, written week (idempotent
+# — see docs/lab/RELEASE-NOTES-PROMPT.md §4). Uses `gh`, so it is not part of
+# the offline quality gate; run it by hand after `release-notes-check` is
+# green and the week is pushed. release-notes-publish-dry-run touches neither
+# git nor the network.
+release-notes-publish:
+	python3 scripts/release-notes.py publish
+
+release-notes-publish-dry-run:
+	python3 scripts/release-notes.py publish --dry-run
 
 # Deployed Python vs the box-sync pair table: a paired file importing a
 # scripts/lib/ module that has no pair of its own is DEPLOYED-INVISIBLE and kills

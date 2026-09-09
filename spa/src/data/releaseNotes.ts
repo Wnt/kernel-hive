@@ -46,6 +46,14 @@ export interface ReleaseWeek {
   /** One-line highlights, rendered as a list. */
   bullets: string[];
   /**
+   * The week's screenshot tile row — every station its prose links (or an
+   * authored override), `New stations` first, capped at 8. `scripts/release-
+   * notes.py` resolves the id -> display name once at render time so the SPA
+   * never has to read the station registry itself; the image comes from
+   * posterIndex.ts, the same source every other poster thumbnail uses.
+   */
+  screenshots?: { id: string; name: string }[];
+  /**
    * Present only on a week reconstructed from a history OTHER than this
    * repository's — today just week 0, summarised from the private `osgallery`
    * repo the lab was built in before it was published. Its presence, not the

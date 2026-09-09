@@ -172,7 +172,18 @@ waits for that stream's report — it never edits the file.
 | `build` | `scripts/build-guests/tiles/<id>.sh` (pinned fetch, SHA-256, compose disk, framebuffer-verify boot); RUN it so the pristine output exists; `check-assets.sh`, `ASSETS-MANIFEST.md`, `os-media-catalog.md` rows | No bisecting machine types — use the device set from the ledger |
 | `golden` | bake `golden` on a sandbox clone with the **complete** device set from `.wave.env` (tap NIC + slirp `restrict=on` + x11warp, wired by `rn-onboard.sh` in the spine): one `loadvm` restore proof, one `scripts/dev/x11warp-probe.py` two-target warp+readback proof, `scripts/retronet/rn-verify.sh <id>` green, an IM client signed in and visible in the scene (`docs/lab/retronet/ICQ-CLIENTS.md` has the proven client per era/OSCAR-vs-legacy-door); stage the disk into the station dir; `bootrec-tiles.conf` arm; registry `runtime`/`reset`/`operator`/`retronet` truth; the checkpoint facts go into `station.env.fixture` comments and its report — NOT the guest doc | Pacing bisect (ship 40/40), audio proof (declare it), reset-N-times loops |
 | `spa` | `registry/posters/<id>.md`, a better hero + extra frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram`; the only stream that edits visitor-facing prose | Playtesting the demo beyond one `labctl type` + `shot` |
-| `docs` (start when `golden` reports) | `docs/guests/<id>.md` including §Checkpoint from golden's report, `GUEST-TIERS.md`, release-notes JSON, `docs/README.md` index | — |
+| `docs` (start when `golden` reports) | `docs/guests/<id>.md` including §Checkpoint from golden's report, `GUEST-TIERS.md`, `registry/release-notes/facts/<next-Sunday>/<id>.md` (never the week JSON — see below), `docs/README.md` index | — |
+
+**Never write a station's arrival straight into a week's release-notes JSON.**
+`registry/release-notes/<end-date>.json` is written exactly once, after that
+week closes, by the Sunday authoring pass (`docs/lab/RELEASE-NOTES-PROMPT.md`)
+— it is not an append-only landing artifact like `assembliesByTile.ts`. A
+`docs` stream instead drops one free-form note at
+`registry/release-notes/facts/<next-Sunday>/<id>.md`: what arrived, its year,
+what a visitor can do, what was hard. `release-notes.py brief` prints every
+fact file for the week it briefs under a `FACTS FROM THE FLOOR` heading, so
+none of it is lost — it just is not prose yet, and two waves landing the same
+week never fight over one JSON file again.
 
 The GUI wizard an IM client needs (server host/port, screen name, password) is
 driven the same way any keyboard-only GUI is driven on these guests:

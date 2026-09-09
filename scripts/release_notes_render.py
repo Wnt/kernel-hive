@@ -17,8 +17,10 @@ why every output can be diffed byte-for-byte against a fresh render.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Callable
 
 import release_notes_markup as markup
+import release_notes_screenshots as screenshots_mod
 
 README_START = "<!-- release-notes:start -->"
 README_END = "<!-- release-notes:end -->"
@@ -75,8 +77,23 @@ def md(text: str) -> str:
     return markup.to_markdown(text)
 
 
-def _body(week: dict, level: int) -> list[str]:
-    """The themed sections, then the highlights, then the week's size.
+def screenshots_section(week: dict, level: int, img: Callable[[str], str]) -> list[str]:
+    """The "tiled screenshots" sub-section: a heading plus the `<table>` of
+    thumbnails, or nothing at all when the week's tile list is empty (a
+    fixture with no station links, in practice — every real week names at
+    least one machine)."""
+    items = week.get("screenshots") or []
+    if not items:
+        return []
+    lines = ["#" * (level + 1) + " Screenshots", ""]
+    lines += screenshots_mod.table(items, img)
+    lines.append("")
+    return lines
+
+
+def _body(week: dict, level: int, img: Callable[[str], str]) -> list[str]:
+    """The screenshot tiles, the themed sections, then the highlights, then
+    the week's size.
 
     THE HIGHLIGHTS NEED THEIR OWN HEADING. Emitted straight after the last
     section, the bullet list renders *inside* "Quality improvements" — so a
@@ -91,6 +108,7 @@ def _body(week: dict, level: int) -> list[str]:
     section.
     """
     lines: list[str] = []
+    lines += screenshots_section(week, level, img)
     for section in week["summary"]:
         lines += ["#" * (level + 1) + f" {section['theme']}", "", md(section["text"]), ""]
     if week["bullets"]:
@@ -117,25 +135,53 @@ def render_archive(weeks: list[dict], cutoff: str) -> str:
         return "\n".join(lines + [NOTHING_YET]).rstrip() + "\n"
     for week in weeks:
         lines += [f'<a id="{anchor(week)}"></a>', "", f"## {heading(week)}", ""]
-        lines += _body(week, 2)
+        lines += _body(week, 2, lambda sid: screenshots_mod.IMG_ARCHIVE.format(id=sid))
     return "\n".join(lines).rstrip() + "\n"
 
 
 def render_readme_section(weeks: list[dict]) -> str:
-    """The most recent week in full, then a linked index of the earlier ones."""
+    """The SHORT form: only the most recent week, and only enough of it to make
+    someone click through — its screenshot tiles and its "New stations"
+    paragraph — then one line into the full week and the archive.
+
+    The full weekly write-up (all three themed sections, the highlights, every
+    earlier week) lives in docs/RELEASE-NOTES.md; a stranger's first look at
+    the README should not have to scroll past a quality-improvements paragraph
+    to find the repo's own description.
+    """
     lines = ["## Release notes", ""]
     if not weeks:
         return "\n".join(lines + [NOTHING_YET]).rstrip() + "\n"
-    newest, earlier = weeks[0], weeks[1:]
+    newest = weeks[0]
     lines += [f"### {heading(newest)}", ""]
-    lines += _body(newest, 3)
-    if earlier:
-        lines += ["### Earlier weeks", ""]
-        for week in earlier:
-            link = f"[Week {week['week']} · {md(week['title'])}]({ARCHIVE_PATH}#{anchor(week)})"
-            lines.append(f"- {link} · {span(week)}")
-        lines.append("")
-    lines += [f"Full archive: [`{ARCHIVE_PATH}`]({ARCHIVE_PATH}).", "", GALLERY_INVITE]
+    lines += screenshots_section(newest, 3, lambda sid: screenshots_mod.IMG_README.format(id=sid))
+    new_stations = next((s for s in newest["summary"] if s["theme"] == "New stations"), None)
+    if new_stations is not None:
+        lines += [md(new_stations["text"]), ""]
+    lines += [
+        f"Read [week {newest['week']} in full]({ARCHIVE_PATH}#{anchor(newest)}), and every earlier "
+        f"week, in the [full archive]({ARCHIVE_PATH}).",
+        "",
+        GALLERY_INVITE,
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def release_title(week: dict) -> str:
+    """The GitHub release title: `Week N · <title>` — no dates, no code-line
+    count; those belong to the body, not the tab a release list shows."""
+    return f"Week {week['week']} · {week['title']}"
+
+
+def release_body(week: dict) -> str:
+    """A week's full write-up as a standalone GitHub release body: the tile
+    row with ABSOLUTE image URLs (a release is read on GitHub's own domain,
+    nowhere near this repo's raw files), the three themed sections, the
+    highlights, the `codeLines` footer and the gallery invite — everything
+    `_body` already renders for the archive, at heading depth 1 since a
+    release has no surrounding page to nest under."""
+    lines = _body(week, 1, lambda sid: screenshots_mod.IMG_ABSOLUTE.format(id=sid))
+    lines += [GALLERY_INVITE]
     return "\n".join(lines).rstrip() + "\n"
 
 

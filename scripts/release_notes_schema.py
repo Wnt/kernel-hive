@@ -22,6 +22,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import release_notes_markup as markup_mod
+import release_notes_screenshots as screenshots_mod
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # The cutoff's zone, needed here only to name a week file after its `end`.
@@ -32,7 +33,7 @@ TZ = ZoneInfo("Europe/Helsinki")
 # made the week the project was open-sourced look like its quietest. The pages
 # print `codeLines` instead — added lines of hand-written source, docs excluded.
 REQUIRED_KEYS = {"week", "title", "start", "end", "commitCount", "codeLines", "summary", "bullets"}
-ALLOWED_KEYS = REQUIRED_KEYS | {"source"}
+ALLOWED_KEYS = REQUIRED_KEYS | {"source", "screenshots"}
 WEEK0_SOURCE = "osgallery"
 TITLE_WORDS = (2, 6)
 # The three questions a visitor actually has, in the order they ask them: what
@@ -130,6 +131,23 @@ def _check_bullets(bullets: object, fail, stations: frozenset[str]) -> None:
             fail(f"bullet {index + 1} carries its own list marker — the renderer adds it")
 
 
+def _check_screenshots(value: object, fail, stations: frozenset[str]) -> None:
+    """An optional override of the derived screenshot tile row. Same station-id
+    rule as a `station:` link: it must name a real station, or the tile's own
+    link and image would 404. Kept to the same cap as the derived list, so an
+    override cannot make the tile row worse than the default it replaces."""
+    if not isinstance(value, list) or not value:
+        fail("`screenshots` must be a non-empty list of station ids")
+        return
+    if len(value) > screenshots_mod.CAP:
+        fail(f"`screenshots` has {len(value)} entries, must be <= {screenshots_mod.CAP}")
+    if len(set(value)) != len(value):
+        fail("`screenshots` has duplicate station ids")
+    for station in value:
+        if not isinstance(station, str) or station not in stations:
+            fail(f"`screenshots` names `{station}`, not a station in registry/stations/")
+
+
 def _check_underline(doc: dict, fail) -> None:
     """Exactly one <u> per week — see release_notes_markup: underlined text that
     is not a link reads as a broken one, and in the About view the station names
@@ -182,6 +200,8 @@ def validate_week(doc: object, path: Path, errors: list[str]) -> None:
         _check_summary(doc["summary"], week, fail, stations)
     if "bullets" in doc:
         _check_bullets(doc["bullets"], fail, stations)
+    if "screenshots" in doc:
+        _check_screenshots(doc["screenshots"], fail, stations)
     _check_underline(doc, fail)
     if week == 0 and doc.get("source") != WEEK0_SOURCE:
         fail(f'week 0 must carry "source": "{WEEK0_SOURCE}" — it predates this repository')

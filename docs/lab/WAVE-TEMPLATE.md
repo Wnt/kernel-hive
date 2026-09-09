@@ -52,7 +52,7 @@ x11warp, all present in ONE bake — see §0's "Done means").
 | `build` | `scripts/build-guests/tiles/<id>.sh`, `ASSETS-MANIFEST.md`, `os-media-catalog.md` rows | | |
 | `golden` | bake + restore proof + x11warp two-target proof + `rn-onboard.sh`/`rn-verify.sh` + an IM client signed in (`docs/lab/retronet/ICQ-CLIENTS.md`) | | |
 | `spa` | poster, hero, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram` | | |
-| `docs` (after golden reports) | `docs/guests/<id>.md` incl. §Checkpoint, `GUEST-TIERS.md`, release notes, `docs/README.md` | | |
+| `docs` (after golden reports) | `docs/guests/<id>.md` incl. §Checkpoint, `GUEST-TIERS.md`, `registry/release-notes/facts/<next-Sunday>/<id>.md` (never the week JSON), `docs/README.md` | | |
 
 ## Walls hit (if any)
 
