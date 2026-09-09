@@ -222,13 +222,25 @@ case "$RESETMODE" in
     # for does not apply. The service restart stays the fallback for every
     # other case: no ctl socket, no baked state, a SIGSTOPped (idle-paused)
     # emulator that would never ack, or an ERR/timeout from the module.
+    # SH_MAME_RESET_INPROCESS=0 opts a station OUT of the in-process path and
+    # down to the service restart below. It exists for one measured reason
+    # (domainos, 2026-09-10): MAME's apollo driver repaints the screen from
+    # its image memory ONLY when apollo_v.cpp's m_update_flag is set, so an
+    # in-process LOADST restores the machine — the emulated clock rewinds, the
+    # guest forgets the windows it opened — while the PREVIOUS VISITOR'S PIXELS
+    # stay on the glass, which is exactly what a reset exists to prevent. A
+    # fresh process starts with a blank framebuffer and paints the restored
+    # state in full, so the service restart is correct where the fast path is
+    # not. Costs ~16 s instead of ~0.4 s; correctness wins. Delete the opt-out
+    # when the driver repaints after a restore, not before.
     if [ -f "$TDIR/station.env" ]; then
       CTL="$(sed -n 's/^SH_MAMECTL_SOCK=//p' "$TDIR/station.env" | tail -1)"
       DRV="$(sed -n 's/^MAME_NATIVE_DRIVER=//p' "$TDIR/station.env" | tail -1)"
       CKPT="$(sed -n 's/^MAME_NATIVE_CHECKPOINT=//p' "$TDIR/station.env" | tail -1)"
+      INPROC="$(sed -n 's/^SH_MAME_RESET_INPROCESS=//p' "$TDIR/station.env" | tail -1)"
       EPID="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
       ESTATE="$(awk '{print $3}' "/proc/${EPID:-0}/stat" 2>/dev/null || true)"
-      if [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
+      if [ "${INPROC:-1}" != 0 ] && [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
         [ -f "$TDIR/sta/$DRV/golden.sta" ] && [ -f /root/mctl.py ] &&
         [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
         if OUT="$(python3 /root/mctl.py "$CTL" --timeout 60 LOADST golden 2>&1)"; then

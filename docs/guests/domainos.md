@@ -139,27 +139,51 @@ Three walls this station cost, and their fixes:
    `skip_warnings 1` in `ui.ini` plus the skip-warnings patch.
 
 ## §Checkpoint
-The mechanism is settled; the measured numbers below are placeholders for
-the coordinator to fill in from the checkpoint stream's run — **do not
-guess a byte count or restore time here.**
-
-The `dn3500` driver registers **no** save state of its own
+The `dn3500` driver ships registering **no** save state of its own
 (`grep -c 'save_item\|save_pointer' src/mame/apollo/*.cpp` is 0 in every
 file), so a stock `LOADST` restores CPU, RAM and the emulated clock (the
 heartbeat `mtime` genuinely rewinds) but leaves the graphics device's image
-memory untouched — and because the Display Manager repaints only on demand,
-the previous visitor's screen simply stays on the glass after a reset. The
-wave's fix is `mame-apollo-savestate.patch`, registering the Apollo devices'
-own state; this station's reset **depends on it** — without it, `LOADST`
-does not visibly change the screen.
+memory untouched. The wave's `mame-apollo-savestate.patch` registers what the
+driver does not: the graphics device's image memory and its CR/ROP/write-enable
+registers and palette state, the keyboard's serial state machine and mouse
+counters (without which the keyboard wedges after a restore), and the
+machine-level DMA and CSR members. This station's checkpoint depends on it.
 
-- Golden savestate captured at: `TODO — coordinator fills in (which DM
-  scene, e.g. an open shell pad vs. the bare DM)`
-- File: `TODO — path, size, sha256` (once staged at
-  `/data/vms/streamhost/stations/domainos/sta/dn3500/golden.sta`)
-- Restore proof: `TODO — pixel-diff bbox and elapsed time, from a FRESH
-  process relaunched with -state golden`
-- Cold boot → DM settled, for comparison: `TODO`
+**And the reset takes the SERVICE-RESTART path, not the fleet's fast
+in-process `LOADST`** — `SH_MAME_RESET_INPROCESS=0` in the fixture, honoured
+by `scripts/serve/reset-tile.sh`. The distinction is worth understanding
+because it is not the one the patch was written for:
+
+- An in-process `LOADST` **does** restore the machine. Measured by asking the
+  guest rather than by looking: after a restore, a fresh `cp /com/pst` came
+  back numbered `pad0003` again, its process list holding pad0000/pad0001/
+  pad0003 and no pad0002, the Null Process time falling 198.572 → 127.539 and
+  the guest clock rewinding 1:04:43 → 1:03:18 pm.
+- It does **not** repaint. `apollo_v.cpp`'s `screen_update()` copies
+  `m_image_memory` into the bitmap only when `m_update_flag` is set, and a
+  restore faithfully brings that flag back as it was — so a window opened
+  after the save was still on the glass afterwards, `fbdiff` bbox byte-identical
+  before and after the restore (407 829 px both ways).
+- A **fresh process** starts with a blank framebuffer and paints the restored
+  state in full, which is why launching with `-state golden` looks right.
+
+So the station restarts its service to reset: ~16 s (10 s for `ExecStop` to
+give up on a SIGTERM this binary ignores, then SIGKILL and relaunch) instead
+of ~0.4 s. Correctness wins. Remove the opt-out when the driver repaints
+after a restore — not before.
+
+- Golden savestate: the DM desktop, logged in, with the shell pads and the
+  process display open (the scene in `registry/posters/domainos.md`'s hero).
+- File: `sta/dn3500/golden.sta`, 5 142 737 bytes, staged at
+  `/data/vms/streamhost/stations/domainos/sta/dn3500/golden.sta`. It pairs
+  with `cfg/dn3500.cfg` (Normal mode), `nvram/`, and the post-CALENDAR
+  `media/domainos-station.awd` — **one combination**, per AGENTS.md rule 6.
+- Restore proof: a fresh process launched `-state golden` paints the desktop
+  within a few seconds of start (`rig2/r0-fromstate.png`); in-process `LOADST`
+  acks in 130-131 ms and restores the machine, with the repaint caveat above.
+- Cold boot → DM settled, for comparison: ~135-165 s to the `login:` bar plus
+  ~30 s for the login, i.e. roughly 3 minutes — which is why the checkpoint
+  exists at all.
 
 ## §Open
 - **Pointer**: proven root cause, proven unlock mechanism, not yet
@@ -167,8 +191,10 @@ does not visibly change the screen.
 - **Clock**: the guest's calendar reads 2003-01-10 (a side effect of the
   CALENDAR-halt fix in §Traps) and shows in the process display; cosmetic,
   not fixed this session.
-- **Checkpoint**: mechanism settled, `mame-apollo-savestate.patch` required;
-  numbers pending the parallel checkpoint stream — see §Checkpoint.
+- **Checkpoint repaint**: the reset works via a service restart, but the fast
+  in-process path is off until MAME's apollo driver repaints after a state
+  load. The fix is small and local — force `m_update_flag = 1` from a save
+  postload registered on the graphics device — see §Checkpoint.
 - **`3c505-nw.bin`**: no good dump known; the EtherLink Plus NIC is present
   in the device set but not fully ROMed.
 

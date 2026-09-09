@@ -164,9 +164,27 @@ simply stays on the glass after a reset**, which is exactly the failure a
 checkpoint exists to prevent. The wave's answer is
 `patches/mame-apollo-savestate.patch`.
 
-**The general lesson:** "the driver registers state" is not something to infer
-from a driver's flags — it is one `grep` away, and on any new host-native
-station it should be run *before* the checkpoint is designed.
+**And registering the state is not the end of it.** With the patch in, an
+in-process `LOADST` genuinely restores the machine — asked rather than looked
+at, a fresh `cp /com/pst` after a restore came back numbered `pad0003` again
+with `pad0002` gone, the Null Process time fell 198.572 → 127.539 and the guest
+clock rewound 1:04:43 → 1:03:18 pm — and **the previous screen was still on the
+glass**, byte-identical bbox before and after. `apollo_v.cpp`'s
+`screen_update()` copies `m_image_memory` into the bitmap only when
+`m_update_flag` is set, and a faithful restore brings that flag back exactly as
+it was, so nothing ever repaints. A *fresh process* starts with a blank
+framebuffer and paints the restored state in full, which is why `-state golden`
+at launch looks perfect and a reset did not.
+
+The station therefore takes the service-restart reset path
+(`SH_MAME_RESET_INPROCESS=0`, a new per-station opt-out in
+`scripts/serve/reset-tile.sh`): ~16 s instead of ~0.4 s, and correct.
+
+**Two general lessons:** "the driver registers state" is not something to infer
+from a driver's flags — it is one `grep` away, and belongs *before* the
+checkpoint is designed. And a restore proof must dirty a WHOLE WINDOW, not a
+status line: a small dirty area makes a non-repainting restore look like a
+harmless artefact, which is exactly how this nearly shipped.
 
 ## Driving this guest
 
@@ -190,6 +208,12 @@ station it should be run *before* the checkpoint is designed.
 ## Still open
 
 1. **Pointer** — §6 above, with the exact next step.
+1b. **The fast in-process reset** — off for this station until MAME's apollo
+   driver repaints after a state load. The fix is small and local: register a
+   save postload on `apollo_graphics_15i` that forces `m_update_flag = 1`
+   (and clears `m_update_pending`), so the restored image memory is drawn.
+   Then delete `SH_MAME_RESET_INPROCESS=0` from the fixture and re-prove by
+   dirtying a whole window, not a status line.
 2. **The composed disk's CALENDAR answer expires against real host time** (§2),
    so `tiles/domainos.sh` has to be re-run to rebuild the disk. Nobody has
    tried pinning the answered date deliberately, which would also let the
