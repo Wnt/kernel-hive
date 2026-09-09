@@ -1013,10 +1013,9 @@ emit ravynos \
 
 # amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop, in COLOUR on an A2410 (1024x768, 8-bit PseudoColor, selected by starting AMIX's X server with -tiga). The chipset X server is depth 1, so monochrome 640x512 is the fallback and is one flag away (/etc/kh-xsession.mono in the guest). Absolute 1:1 pointer via x11warp into the guest's own X server over a loopback-bound slirp redirect.
 emit amix \
-  --tile amix --udp 54172 --x11 --x11-display :72 --capture shm --pointer \
+  --tile amix --udp 54172 --x11 --x11-display :72 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/fsuae-native/x11-runtime.sh" --env-append-file \
-  "$T/amix/station.env.fixture"
+  "$T/amix/x11-runtime.sh" --env-append-file "$T/amix/station.env.fixture"
 
 # bootos (VMID 174) — bootOS, a 512-byte boot-sector OS (Oscar Toledo G., 2019).
 #   VERBATIM LAUNCHER: floppy.qcow2 (360K floppy as qcow2, copied from the
