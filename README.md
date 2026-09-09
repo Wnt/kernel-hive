@@ -225,6 +225,7 @@ Two machines whose live backends were retired; they stay on the floor as placard
 
 
 
+
 ## How it works
 
 ![Browser, streaming daemon and emulator, with the retronet plane beside them](docs/media/architecture.svg)
