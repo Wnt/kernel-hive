@@ -24,7 +24,8 @@ VMID label 239, archetype `beige-tower-crt`.
 
 ## Acceptance criteria
 
-- Iris `main` @ `1e05210`, features `lightning,rex-jit,chd`, BSD-3.
+- Iris `main` @ `0540991`, features `lightning,rex-jit,chd,jitv2`, BSD-3
+  (the live station still runs `1e05210`, interpreter only — see *Upstream bump*).
 - IRIX 6.5.22, MIPS R4400, 256 MB (`banks = [128, 128, 0, 0]`), XL 24-bit.
 - Pinned QEMU: `qemu-system-x86_64`, `pc-i440fx-11.0,vmport=off`, KVM,
   `-cpu host`, 2048 MB, 4 vCPU, `-vga std`, `-display dbus,p2p=on`, IDE
@@ -189,7 +190,7 @@ is why the station ships `-loadvm golden`.
 
 | | |
 |---|---|
-| `iris` in-guest | **~310-320 % CPU**, RSS ~528 MB, steady state at the desktop |
+| `iris` in-guest | **~320 % CPU**, RSS ~530 MB, steady state at the desktop (jitv2 build: ~360 %, RSS ~890 MB — its compile thread runs continuously) |
 | station QEMU (host view) | ~150 % CPU, RSS ~1.15 GB |
 | overlay.qcow2 | 702 MB (1.1 GiB vmstate inside it) |
 | asset | 6.4 GB apparent / ~500 MB allocated (sparse) |
@@ -198,6 +199,72 @@ Iris is the most expensive emulator in the lineup, so this station deliberately
 **does not** override `SH_IDLE_PAUSE_SECS`: it takes the fleet default and is
 QMP-paused when no visitor is attached. Do not copy the amiga/gt40/irix
 `SH_IDLE_PAUSE_SECS=0` stanza onto it.
+
+## Upstream bump 2026-09-09: 1e05210 → 0540991, measured against MAME
+
+The question was whether Iris had got faster since the station was built, because
+the exhibit's pointer feels laggy next to the MAME `irix` station. Upstream `main`
+was 134 commits ahead of the pin (old JIT removed, jitv2 matured, CPU model a
+runtime setting, PS/2 toggles, timer fixes). There were **no local patches to
+rebase**: the station has always run an unmodified upstream binary, and the one
+local Iris commit anywhere on the box (an `iris-ci` timeout fix in an old sandbox)
+is already upstream.
+
+Both feature sets were built in the bookworm chroot (upstream now pins a nightly
+toolchain; the throwaway chroot fetches it, ~19 min for both builds cold) and run
+on three sparse clones of the station's own overlay under `/data/vms/sandbox/`,
+one at a time with the others QMP-stopped, box load 12–17. Each new binary was
+swapped into its clone's kiosk, cold-booted IRIX (autoconfig relink + reboot,
+~7 min), and logged in as `demos` on the framebuffer. The MAME `irix` station was
+measured live through `ctl.sock` and `fb.shm`.
+
+| | Iris `1e05210` (live) | Iris `0540991` interp | Iris `0540991` jitv2 | MAME `irix` (R4600, DRC, throttled) |
+|---|---|---|---|---|
+| boots IRIX to the desktop | yes | yes | **yes** (the 43d2715 jitv2 wedge is gone) | yes |
+| fixed CPU work, HOST wall-clock (100 k-iteration awk loop, 3 runs) | 8.4 s | 8.1–10.2 s | **1.95–2.04 s** | 1.60 s |
+| single pointer move → framebuffer, median of 5 | 361 ms | 285 ms | 383 ms | **68 ms** |
+| pointer stream (60 events @ 20 ms), lag after the last event | 216 ms | 224 ms | 397 ms | ~0 ms (settled before the last ack) |
+| `iris` CPU at idle desktop | 320 % | 320 % | 360 % | — |
+
+Three conclusions:
+
+- **The interpreter did not get faster.** A like-for-like bump is neutral on CPU
+  and on the pointer.
+- **jitv2 is now usable and is a 4x CPU win** — level with MAME, whose DRC is
+  throttled to real-Indy speed. It costs a continuously busy compile thread and
+  ~360 MB more RSS.
+- **The pointer lag is not the emulator core.** Every Iris build sits at
+  250–400 ms and MAME at ~70 ms, because this station is a bridge: QEMU PS/2 →
+  guest X → winit → Iris → llvmpipe → dbus capture, versus MAME's host-native
+  `mamesock` → ioport → shm. The mouse gets fixed by converting the station to a
+  host-native runtime (rule 13), not by any Iris commit.
+
+Two things the measurement itself taught:
+
+- **Never time Iris with the guest's clock.** Under `1e05210` IRIX's `/bin/time`
+  reported the same loop at **0.86–0.92 s** while the host clock said 8.4 s: the
+  old pin's IRIX clock stands nearly still through CPU-bound work (a timer-tick
+  starvation the August handover already circled — its `MIPS` HUD was a liar for
+  the same reason). `0540991` keeps guest time honest (8.1–9.4 s guest vs
+  8.1–10.2 s host). The numbers above are host wall-clock stamped on the SCC
+  serial line (`hosttime.py`), and MAME's guest clock was checked against a
+  `sleep 10` first.
+- **The SCC telnet channel is single-client and wedges.** A timed-out command
+  leaves a shell (or a running `awk`) on the getty and every later login fails;
+  root's `.login` also asks `TERM = (vt100)` and swallows the next line as the
+  answer. `hosttime.py` unwedges and answers it; `iexec.py` does not.
+
+The harness lives in `scripts/build-guests/irix/iris-perf/` (`measure.py` for
+an Iris clone over QMP + ssh, `hosttime.py` inside the kiosk, `mame-measure.py`
+for the MAME station). The two built binaries stay in the asset dir as
+`iris-bookworm-0540991` and `iris-bookworm-0540991-jitv2`.
+
+**Not deployed.** The pin and the builder now say jitv2 at `0540991`, but the
+live station still runs `1e05210`: deploying means swapping the kiosk binary, a
+~7 min cold boot plus login, and a golden recapture through `checkpoint-guard`
+(rule 6) — ~20 min of exhibit downtime for a faster CPU and the same mouse. That
+is the operator's call. Shortcut when taken: copy `iris-bookworm-0540991-jitv2`
+over `iris-bookworm` in the asset dir instead of a 19-minute `--build-iris`.
 
 ## Known gaps / not done in this phase
 
