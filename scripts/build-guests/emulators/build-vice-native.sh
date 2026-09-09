@@ -275,7 +275,9 @@ export PATH="$WORK/bin:$PATH"
 mkdir -p "$BUILD"
 if [ ! -f "$BUILD/Makefile" ]; then
   say "configure --enable-headlessui --prefix=$OUT"
-  (cd "$BUILD" && "$SRC/vice/configure" --enable-headlessui --prefix="$OUT" >"$WORK/configure.log" 2>&1) ||
+  CC_CACHE=() # operator rule 2026-09-10: a compile cache is always wired (scripts/dev/box-ccache-conf.sh)
+  if command -v ccache >/dev/null 2>&1; then CC_CACHE=(CC="ccache gcc" CXX="ccache g++"); else say "no ccache on this box: cold compile"; fi
+  (cd "$BUILD" && "$SRC/vice/configure" --enable-headlessui --prefix="$OUT" "${CC_CACHE[@]}" >"$WORK/configure.log" 2>&1) ||
     die "configure failed; see $WORK/configure.log"
 fi
 

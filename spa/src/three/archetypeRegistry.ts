@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (91 of the 93
+//    - transport   : how its LIVE framebuffer texture is obtained (94 of the 96
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 91 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 94 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -219,6 +219,9 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
   a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1E5BB8', eraLabel: '1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2' }, // ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage
   a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '1990 · Amiga 3000 — Workbench 2.04' }, // ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top
+  medley:      { osId: 'medley', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B23A48', eraLabel: '1987 · Interlisp Medley — the Xerox Lisp machine desktop' }, // ideal: Xerox 1186 Daybreak-style low workstation box with a large portrait-ish CRT (the D-machine Medley ran on)
+  sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04', pointerRel: true },
+  lisa:        { osId: 'lisa', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B9A27A', eraLabel: '1984 · Lisa Office System 3.1' }, // ideal: Apple Lisa 2 one-piece
   domainos:    { osId: 'domainos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A6A55', eraLabel: '1989 · Apollo DN3500 — Domain/OS SR10.4.1' },
 };
 

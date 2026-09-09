@@ -116,6 +116,22 @@ describe('releaseWeekViews', () => {
     expect(views[0].range).toBe('7 Aug 14:37 – 9 Aug 09:00 2026');
   });
 
+  it('carries the resolved screenshot tile list through unchanged', () => {
+    const views = releaseWeekViews(doc([week(3, {
+      screenshots: [{ id: 'win311', name: 'Windows 3.11' }, { id: 'os2warp', name: 'OS/2 Warp' }],
+    })]));
+    expect(views[0].screenshots).toEqual([
+      { id: 'win311', name: 'Windows 3.11' },
+      { id: 'os2warp', name: 'OS/2 Warp' },
+    ]);
+  });
+
+  it('defaults to an empty tile list for a document written before the field existed', () => {
+    const { screenshots: _drop, ...withoutScreenshots } = week(3);
+    const views = releaseWeekViews(doc([withoutScreenshots as ReleaseWeek]));
+    expect(views[0].screenshots).toEqual([]);
+  });
+
   it('spells the year on BOTH ends of a range that crosses new year', () => {
     const views = releaseWeekViews(doc([week(1, {
       start: '2026-12-27T09:00:00+02:00',

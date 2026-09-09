@@ -13,6 +13,10 @@
 #      hand-written registry/release-notes/*.json, never from git history, so
 #      this step is deterministic: red means "run `make release-notes` and
 #      commit", never "someone else pushed".
+#   5. the README media freshness check — the hero images and the lineup grid
+#      are RENDERED from the station registry + committed screenshots, so
+#      this step is deterministic too: red means "run `make readme-media` and
+#      commit".
 #
 # Python's unit tests run in step 1 beside ruff, because scripts/ has no test
 # job of its own. The other per-language test jobs stay in their own workflows:
@@ -60,6 +64,9 @@ jobs:
 
       - name: Install ruff (pinned; bump deliberately with ruff.toml)
         run: pipx install ruff==0.15.21
+
+      - name: Install Pillow (scripts/readme-media.py image rendering)
+        run: pip install --user Pillow==12.0.0
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
@@ -115,3 +122,7 @@ jobs:
       # ---- 4. release-notes: outputs match a fresh render ----
       - name: Release notes up to date
         run: make release-notes-check
+
+      # ---- 5. README hero images + lineup grid: match a fresh render ----
+      - name: README media up to date
+        run: make readme-media-check

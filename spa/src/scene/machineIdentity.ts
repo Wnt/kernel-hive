@@ -543,12 +543,29 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
     badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
-  // domainos: Apollo DN3500 workstation, beige case like the other Unix
-  // towers on the floor; the brown accent is the DM's pad0000 title bar,
-  // the machine's own screen colour rather than a case moulding.
+  // medley: the Xerox 1186 Daybreak that Medley shipped on — warm Xerox
+  // putty with the red digital-X accent; a 1980s lab kit, not an office one.
+  medley: {
+    caseTint: '#d6cfbf', accentTint: '#b23a48', tintMix: 0.38,
+    badge: '1186', spec: 'MESA • LISP', kit: 'workstation',
+  },
+  // TODO(sculpt): exhibit finish copied from serenityos — set the real era cues.
+  sculpt: {
+    caseTint: '#3f4344', accentTint: '#858b88', tintMix: 0.62,
+    badge: 'HOBBY BUILD', spec: 'x86-64 • 2018', kit: 'modern',
+  },
+  // TODO(lisa): exhibit finish copied from amix — set the real era cues.
+  lisa: {
+    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
+    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
+  },
+  // domainos: Apollo DN3500 workstation, beige case like the other Unix towers
+  // on the floor; the brown accent is the DM's pad0000 title bar, the machine's
+  // own screen colour rather than a case moulding.
   domainos: {
     caseTint: '#c9c2ae', accentTint: '#8b5a2b', tintMix: 0.35,
-    badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989', kit: 'workstation',
+    badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
+    kit: 'workstation',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 

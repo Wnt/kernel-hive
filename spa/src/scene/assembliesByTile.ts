@@ -579,13 +579,18 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'paramTower', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
-  // domainos: Apollo DN3500 — a beige desktop/tower workstation under a large
-  // 1024x800 colour monitor, full-travel keyboard and a three-button mouse,
-  // not a home micro (the samcoupe scaffold copy had it wrong). crtE is the
-  // big workstation tube macos753 also uses; keyboardH|paramMouseG is the
-  // shared Unix keyboard/mouse pairing other workstation stations use, and
-  // towerA|crtE|keyboardH|paramMouseG is a pair nothing else holds (macos753
-  // is towerA|crtE|keyboardH|paramMouseF -- the one-button Mac mouse).
+  medley: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  sculpt: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'lcdB',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  lisa: {
+    kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'compactA',
+    keyboard: 'keyboardA', mouse: 'paramMouseC',
+  },
   domainos: {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',

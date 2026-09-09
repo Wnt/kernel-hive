@@ -113,6 +113,15 @@ const DEMO_PROGRAMS = {
     "runCommand": "kcalc &",
     "perCharMs": 80
   },
+  "medley": {
+    "label": "Type a Lisp form into the Exec (click in the Exec window first)",
+    "lines": [
+      "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))",
+      "(mapcar #'fib '(1 2 3 4 5 6 7 8 9 10 11 12))"
+    ],
+    "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
+    "perCharMs": 80
+  },
   "mpf2": {
     "label": "Type in a demo program",
     "lines": [

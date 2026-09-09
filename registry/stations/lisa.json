@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "lisa",
+  "era_year": 1984,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 80,
+        "prelude": "",
+        "value": {
+          "key": "lisa",
+          "script": "tiles/lisa.sh",
+          "outputDir": "Lisa",
+          "class": "graphical",
+          "estimated": "~10m",
+          "automation": "none",
+          "produces": "assets/lisa (LisaEm 2.0 + GTK closure + Rev H ROM + config template) and disk/lisa-profile.dc42.golden (LOS 3.1 ProFile image; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/lisa",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54193,
+      "notes": "HOST-NATIVE, SANDBOXED: LisaEm 2.0.0 (assets/lisa/lisaem, the upstream AppImage extracted; its GTK 3 closure in assets/lisa/lib) runs — inside a systemd-nspawn container with private PID/mount/net/user namespaces (host uid range 200000+, read-only rootfs skeleton with the host /usr bound in, only the station's work/ and x11/ dirs writable, capabilities dropped, @mount filtered; the operator's host-application rule after the medley incident) — an Apple Lisa 2 (68000 5 MHz, 1 MB, boot ROM rev H, 5 MB ProFile) on the host inside a pinned 720x498 Xvfb on :93; the daemon captures the X root (SH_CAPTURE=x11). No QEMU/QMP, no exec channel, no network. POINTER: ABSOLUTE via XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_ABS=1): the root is the Lisa video, LisaEm maps the host pointer 1:1 onto the Lisa mouse; buttons held 150 ms (SH_BTN_MIN_HOLD_MS). Keys: XTEST. The launcher (stations/lisa/x11-runtime.sh) collapses the wx menubar via gtk.css, resizes the window to 720 wide and moves it to y=-42 so only the Lisa is captured — a negative X offset breaks GDK button delivery, so never move it horizontally. Reset=relaunch: fresh copy of disk/lisa-profile.dc42.golden + cold boot; the launcher clicks the ProFile icon at the ROM's STARTUP FROM menu 4 s after launch; desktop ~150 s later. Drive it with xdotool on DISPLAY=:93 from labrun (mousemove X Y mousedown 1 sleep 0.15 mouseup 1) or `labctl shot lisa`. LisaEm's own menus are the collapsed 2 px strip above the root — reach them only by keyboard if ever needed."
+    }
+  },
+  "render": {
+    "signalOrder": 84,
+    "stationsManifestOrder": 82,
+    "stationsManifestPrelude": "\n# lisa (VMID 193) — host-native LisaEm 2.0 (Apple Lisa 2, 68000 5 MHz, 1 MB, ROM rev H, ProFile) -> Lisa Office System 3.1, the document-centric 1984 desktop, inside a pinned 720x498 Xvfb whose root is the aspect-corrected Lisa screen. Absolute pointer over XTEST (LisaEm follows the host X pointer 1:1); reset = cold boot from a fresh ProFile copy (~150 s).\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 95,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Apple Lisa 2 one-piece",
+    "goldenOrder": 82
+  },
+  "stationDir": "lisa",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54193,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "host X pointer over XTEST (root coordinates are Lisa pixels; LisaEm maps the pointer 1:1 onto the Lisa mouse) + Lisa keyboard over XTEST keys",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 193
+  },
+  "guestDoc": "docs/guests/lisa.md",
+  "credentialsRef": "guest/lisa",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "lisa",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":93",
+      "SH_PORT": "54193",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/lisa/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/lisa/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/lisa/lisa_cmd"
+    },
+    "bringUpOrder": 95,
+    "x11": {
+      "display": ":93",
+      "geometry": "720x498x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/lisa/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "lisa",
+        "--udp",
+        "54193",
+        "--x11",
+        "--x11-display",
+        ":93",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/lisa/x11-runtime.sh",
+        "--aux-file",
+        "$T/lisa/lisa-inner.sh",
+        "--env-append-file",
+        "$T/lisa/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/lisa/lisa-inner.sh",
+        "streamhost/stations/lisa/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#B9A27A",
+    "eraLabel": "1984 · Lisa Office System 3.1"
+  },
+  "museum": {
+    "id": "lisa",
+    "displayName": "Lisa Office System 3.1",
+    "year": 1984,
+    "lineage": "Apple Lisa (Lisa 2)",
+    "arch": "Motorola 68000 @ 5 MHz, 1 MB RAM, 720x364 bitmapped display, 5 MB ProFile",
+    "ramMB": 1,
+    "era": "1980s",
+    "accent": "#B9A27A",
+    "eraSoftware": [
+      "LisaWrite, LisaDraw, LisaCalc, LisaGraph, LisaList, LisaProject and LisaTerminal — the seven Lisa tools",
+      "the Lisa Desktop Manager and its document-centric filing (stationery pads, tear-off documents, the Wastebasket)",
+      "Preferences, the Clipboard and the Calculator desk accessories"
+    ],
+    "periodBrowser": "none — 1984, a decade before the web; the Lisa's network was a serial port and AppleNet that never shipped",
+    "iconicApps": [
+      "LisaWrite",
+      "LisaDraw",
+      "LisaCalc",
+      "LisaProject"
+    ],
+    "blurb": "Apple's Lisa (1983) put the mouse, overlapping windows, pull-down menus and drag-and-drop filing in front of the public a year before the Macintosh, at $9,995. Lisa Office System 3.1 (1984) is its last release: a document-centric desktop where you tear a sheet off a stationery pad instead of launching a program, and the machine remembers every open window across a power cycle. The Lisa 2 shown here is the 1984 revision with a Sony 3.5-inch drive and the 5 MB ProFile hard disk.",
+    "notes": "Live streamhost tile, HOST-NATIVE from birth: LisaEm 2.0.0 (Ray Arachelian, GPL-2.0) runs on the host as a wxGTK application inside a pinned 720x498 Xvfb; the daemon captures the X root and drives XTEST. The Lisa video (LisaEm's aspect-corrected 720x498 for the 720x364 frame buffer with its 1.5:1 pixels) is the whole root: the launcher collapses the GTK menubar with a gtk.css and moves the window to y=-42 so nothing but the Lisa is captured. Boot ROM rev H assembled from the MAME lisa2 romset halves; LOS 3.1 with the seven tools on a pre-installed ProFile image from archive.org (docs/lab/LISA-WAVE.md). Reset = relaunch: a fresh copy of the golden ProFile image and a cold boot; the ROM's STARTUP FROM menu is answered by a click on the ProFile icon from the launcher. No network of any kind: a 1984 Lisa has no TCP/IP. See docs/guests/lisa.md."
+  },
+  "emulator": {
+    "family": "LisaEm",
+    "version": "2.0.0 (2026.01.25), upstream Linux AppImage, GTK 3 closure bundled from CT950 (Ubuntu 24.04)",
+    "source": "scripts/build-guests/tiles/lisa.sh (github.com/arcanebyte/lisaem release 2.0.0)",
+    "driver": "Lisa 2 (ROM rev H, ProFile on the motherboard parallel port)"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "No network device of any kind: LisaEm emulates the Lisa's serial ports and parallel port only, and a 1984 Lisa has no TCP/IP stack. The retronet reservation 10.99.0.41 (tap lisarn0, UIN 19300) is held as the plane's uniqueness ledger only — nothing is attached to it."
+  },
+  "reset": {
+    "stationDir": "lisa",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS (2026-09-09) — ABSOLUTE over XTEST: SH_X11TEST_ABS=1 moves the host X pointer to root coordinates that ARE Lisa pixels (Xvfb 720x498 == the Lisa video); LisaEm feeds the host pointer position to the Lisa mouse 1:1, so the Lisa's own arrow lands on the commanded pixel. Buttons are XTEST with SH_BTN_MIN_HOLD_MS=150 (an instant press/release is sampled away by LisaEm). Framebuffer-proven on the rig: the ROM's STARTUP FROM icon, the Preferences icon and its check boxes all answered clicks at their pixel targets.",
+    "keyboard": "OPEN (2026-09-09) — XTEST keys reach LisaEm (the daemon resolved 103 scancodes on the sandboxed display; pacing 40/40) but no typed line has been proven in a LisaWrite document yet: the proof needs Disk → Lisa Write → tear a sheet off the pad → open it → type, each step 20-60 s at 5 MHz. Pointer, single click and double-click (Preferences and the Disk window opened) ARE framebuffer-proven.",
+    "fixture": "Lisa Office System 3.1 desktop at rest: the grey stipple desktop with the Desk / File/Print / Edit / Housekeeping menu bar, Preferences, Wastebasket and Clipboard icons along the bottom and the ProFile 'Disk' icon at the bottom right, exactly as the pre-installed LOS 3.1 image boots. resetMode=relaunch with no state: the launcher copies disk/lisa-profile.dc42.golden to work/profile.dc42, cold-boots LisaEm (-p), clicks the ProFile icon at the ROM's STARTUP FROM menu, and LOS 3.1 shows its 'Wait' splash for ~150 s before the desktop. Golden = the pristine archive.org image (sha256 bbc97e82d544050c156057fd80e28a7f66a8e24429e7ed28442fe9d62b84e2ae); nothing is baked from a running session."
+  },
+  "notes": [
+    "Scaffolded from amix on 2026-09-09 and rewritten the same day: host-native LisaEm under Xvfb, x11 capture, XTEST absolute pointer (docs/lab/LISA-WAVE.md)."
+  ]
+}

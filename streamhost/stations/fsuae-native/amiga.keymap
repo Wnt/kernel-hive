@@ -11,9 +11,21 @@
 # Left column: browser/XT set-1 scancode as the daemon's input router emits it.
 # Right column: Amiga raw key code (Amiga Hardware Reference Manual, appendix F).
 #
-# UNPROVEN as of this commit: only the socket wire and the pointer verbs were
-# framebuffer-proven on the a3000 rig. Typing has NOT been proven end to end;
-# treat every row below as derived-from-the-manual, not measured.
+# PROVEN 2026-09-09 on the a3000 rig (real browser -> gallery -> daemon ->
+# mamesock -> FS-UAE ctlsock, framebuffer-read): the base-row (non-extended)
+# mappings up to 0x53 were already correct — `echo hello 1234` and
+# `echo AZ az 09 -=[];,./` both echoed byte-for-byte in an FS-UAE Shell.
+#
+# The extended-key rows (originally 0x9c/0x9d/0xb5/0xb8/0xc7/0xc8/0xcb/0xcd/
+# 0xd0/0xd3/0xdb/0xdc, i.e. base|0x80) were WRONG and are fixed below: the
+# daemon's input-router puts an extended key on the mamesock wire as the full
+# 16-bit XT code with its 0xE0 prefix INTACT (streamhost/streamhost/src/
+# mame_input.rs's own MATRIX table uses literal 0xe05c/0xe01d/etc, and
+# `journalctl -u streamhost@a3000` showed `[mamesock] unmapped scancode
+# 0xe05c` for every Right-Amiga press before this fix) — never the
+# base|0x80 "translated PS/2" byte this table originally assumed. Right
+# Amiga (MetaRight, wire 0xe05c) opening Execute Command and typing into it
+# is the framebuffer proof for this fix.
 0x01	amiga	0x45	# Esc
 0x02	amiga	0x01	# 1
 0x03	amiga	0x02	# 2
@@ -95,15 +107,15 @@
 0x51	amiga	0x1f	# Keypad 3
 0x52	amiga	0x0f	# Keypad 0
 0x53	amiga	0x3c	# Keypad .
-0x9c	amiga	0x43	# Keypad Enter
-0x9d	amiga	0x63	# Right Ctrl -> Ctrl
-0xb5	amiga	0x5c	# Keypad /
-0xb8	amiga	0x65	# Right Alt
-0xc7	amiga	0x5f	# Home -> Help
-0xc8	amiga	0x4c	# Up
-0xcb	amiga	0x4f	# Left
-0xcd	amiga	0x4e	# Right
-0xd0	amiga	0x4d	# Down
-0xd3	amiga	0x46	# Delete
-0xdb	amiga	0x66	# Left Meta -> Left Amiga
-0xdc	amiga	0x67	# Right Meta -> Right Amiga
+0xe01c	amiga	0x43	# Keypad Enter
+0xe01d	amiga	0x63	# Right Ctrl -> Ctrl
+0xe035	amiga	0x5c	# Keypad /
+0xe038	amiga	0x65	# Right Alt
+0xe047	amiga	0x5f	# Home -> Help
+0xe048	amiga	0x4c	# Up
+0xe04b	amiga	0x4f	# Left
+0xe04d	amiga	0x4e	# Right
+0xe050	amiga	0x4d	# Down
+0xe053	amiga	0x46	# Delete
+0xe05b	amiga	0x66	# Left Meta -> Left Amiga
+0xe05c	amiga	0x67	# Right Meta -> Right Amiga

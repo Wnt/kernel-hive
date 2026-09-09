@@ -267,7 +267,7 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
-  helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
+  helenos: 'generic', serenityos: 'generic', sculpt: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic',
   debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
   redstar3: 'generic', postmarketos: 'generic',
@@ -290,6 +290,7 @@ export const OS_FAMILY: Record<string, Family> = {
   aux: 'classicmac', // A/UX runs the Finder as its shell — Command chords, as macos753
   rhapsody: 'generic', // Platinum Finder over NeXT Workspace — install phase; revisit once the desktop is up
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
+  lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
   // ravynOS 0.6.1. Command chords are the project's stated design goal, but the
@@ -402,6 +403,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // already expose; the machine's real interface is the mouse, and a bespoke
   // profile would only duplicate what the on-screen menus already show.
   nextstep: 'generic',
+  // medley: maiko maps X keysyms straight onto the Lisp keyboard; a plain
+  // US layout over XTEST is what the Interlisp project itself runs on Linux.
+  medley: 'generic',
   // BBC Micro Model B: ESCAPE, the BREAK key MAME hides on host F12, and the
   // machine's ten RED function keys, which MAME drives from F1..F10 offset by
   // one (host F1 is the BBC's f0). None of the three is findable by guessing.
