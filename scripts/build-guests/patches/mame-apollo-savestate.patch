@@ -1,0 +1,437 @@
+--- a/src/mame/apollo/apollo.h
++++ b/src/mame/apollo/apollo.h
+@@ -454,6 +454,18 @@
+ 	virtual void device_reset() override ATTR_COLD;
+ 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+ 
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): the renderer
++	// only repaints the bitmap from m_image_memory when m_update_flag is set
++	// (screen_update() below) — and that flag is itself part of the
++	// restored state, so a LOADST that lands with m_update_flag==0 (the
++	// steady-state value once the DM has painted) restores CPU/RAM/image
++	// memory correctly but never triggers a redraw: the framebuffer keeps
++	// showing whatever was on screen at LOADST time. A save_prepost_delegate
++	// postload forces the next screen_update() to repaint regardless of
++	// what value m_update_flag was saved with — registered once in
++	// device_start(), runs after every save_item has been read.
++	void postload();
++
+ protected:
+ 	class lut_fifo;
+ 	class bt458;
+@@ -606,6 +618,20 @@
+ 		return ((m_put_index + 1) % m_size) == m_get_index;
+ 	}
+ 
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): this FIFO's
++	// members are private, so the enclosing apollo_graphics_15i::device_start
++	// (which owns save_item/save_pointer) cannot register them directly — a
++	// nested class does not grant its enclosing class access to its own
++	// private members. Register from inside the FIFO's own member function
++	// instead, called once from device_start with the owning device.
++	void save_state(device_t &owner)
++	{
++		owner.save_item(NAME(m_size));
++		owner.save_item(NAME(m_get_index));
++		owner.save_item(NAME(m_put_index));
++		owner.save_item(NAME(m_data));
++	}
++
+ private:
+ 	uint16_t m_size = 0U;
+ 	uint16_t m_get_index = 0U;
+@@ -627,6 +653,24 @@
+ 	void write(uint8_t data, uint8_t c10);
+ 	uint32_t get_rgb(uint8_t index);
+ 
++	// CHECKPOINT: same reasoning as lut_fifo::save_state above — the color
++	// palette RAM and the LUT/BT458 register file are read by the renderer
++	// every frame and are not re-derived, so a LOADST that skips them
++	// restores CPU/RAM but repaints with the wrong colours.
++	void save_state(device_t &owner)
++	{
++		owner.save_item(NAME(m_color_counter));
++		owner.save_item(NAME(m_red));
++		owner.save_item(NAME(m_green));
++		owner.save_item(NAME(m_address_register));
++		owner.save_item(NAME(m_color_palette_RAM));
++		owner.save_item(NAME(m_overlay_color));
++		owner.save_item(NAME(m_read_mask_register));
++		owner.save_item(NAME(m_blink_mask_register));
++		owner.save_item(NAME(m_command_register));
++		owner.save_item(NAME(m_control_test_register));
++	}
++
+ private:
+ 	running_machine &machine() const
+ 	{
+--- a/src/mame/apollo/apollo.cpp
++++ b/src/mame/apollo/apollo.cpp
+@@ -956,6 +956,18 @@
+ 	// install nop handlers for unmapped ISA bus addresses
+ 	m_isa->install16_device((ATBUS_IO_BASE - 0x40000) >> 7, (ATBUS_IO_END - 0x40000) >> 7, read16s_delegate(*this, FUNC(apollo_state::apollo_atbus_unmap_io_r)), write16s_delegate(*this, FUNC(apollo_state::apollo_atbus_unmap_io_w)));
+ 	m_isa->install_memory(0, ATBUS_MEMORY_END, read8s_delegate(*this, FUNC(apollo_state::apollo_atbus_unmap_r)), write8s_delegate(*this, FUNC(apollo_state::apollo_atbus_unmap_w)));
++
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): apollo_state
++	// itself carries a handful of machine-level members that change at
++	// runtime (the PTM tick counter, the SIO console-output byte, and which
++	// DMA channel/EOP is in flight) and were not registered for save state
++	// like everything else in this device set — a station's reset is an
++	// in-process LOADST, so these must be registered for the restored CPU
++	// to see a DMA/timer state consistent with the restored RAM.
++	save_item(NAME(ptm_counter));
++	save_item(NAME(sio_output_data));
++	save_item(NAME(m_dma_channel));
++	save_item(NAME(m_cur_eop));
+ }
+ 
+ /***************************************************************************
+--- a/src/mame/apollo/apollo_v.cpp
++++ b/src/mame/apollo/apollo_v.cpp
+@@ -1746,11 +1746,13 @@
+ {
+ 	MLOG1(("apollo_graphics_15i::device_start"))
+ 
+-	m_n_planes = 0;
+-	m_width = 0;
+-	m_height = 0;
+-	m_buffer_width = 0;
+-	m_buffer_height = 0;
++	// m_n_planes/m_width/m_height/m_buffer_width/m_buffer_height are NOT
++	// zeroed here: apollo_graphics_19i::device_start() (below) pins them to
++	// the 19" geometry BEFORE calling this base method, exactly the way
++	// apollo_graphics_19i::device_reset() already ordered things against
++	// this class's device_reset(). A plain 15i device gets them from the
++	// C++ in-class member initializers (0U), so the "if (m_n_planes == 0)"
++	// block below still fires for it.
+ 
+ 	m_sr = 0;
+ 	m_device_id = 0;
+@@ -1784,24 +1786,25 @@
+ 	m_p_clock = 0;
+ 	m_data_clock = 0;
+ 
+-	m_image_memory = nullptr;
+-	m_image_plane_size = 0;
+-	m_image_memory_size = 0;
+-
+ 	memset(m_color_lookup_table, 0, sizeof(m_color_lookup_table));
+ 
+-	m_lut_fifo.reset();
+-	m_bt458.reset();
+-}
+-
+-//-------------------------------------------------
+-//  device_reset - device-specific reset
+-//-------------------------------------------------
+-
+-void apollo_graphics_15i::device_reset()
+-{
+-	MLOG1(("apollo_graphics_15i::device_reset"));
+-
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): a station's
++	// reset is an in-process LOADST, which restores only what MAME's save
++	// state manager was told about. This device previously registered
++	// nothing (mame-apollo-savestate.patch fixes that for the whole apollo/
++	// device set), so LOADST rewound the CPU/clock correctly but left the
++	// Display Manager framebuffer showing whatever was on screen at SAVEST
++	// time — measured on a live rig, byte-for-byte, across two restores.
++	//
++	// The image memory buffer and the display geometry it is sized from
++	// used to be determined lazily in device_reset() (guarded by
++	// "if (m_image_memory == nullptr)"), which runs on every cold boot and
++	// hardware reset but NOT on a state restore — so save_pointer() could
++	// never be called with a live pointer+count from there. Do it here in
++	// device_start() instead, which runs exactly once before the state
++	// manager's registration closes: apollo_config() reads the machine's
++	// static configuration switches (DIP-style), not guest state, so
++	// determining the geometry this early is deterministic and safe.
+ 	if (m_n_planes == 0)
+ 	{
+ 		if (apollo_config(APOLLO_CONF_MONO_19I))
+@@ -1843,27 +1846,103 @@
+ 			m_height = 800;
+ 			m_buffer_width = 1024;
+ 			m_buffer_height = 1024;
+-
+-			m_lut_fifo = std::make_unique<lut_fifo>();
+-
+-			m_bt458 = std::make_unique<bt458>(machine());
+-			m_bt458->start();
+-			m_bt458->reset();
+ 		}
+ 	}
+ 
+-	if (m_image_memory == nullptr)
++	if (m_n_planes == 8)
+ 	{
+-		/* allocate the memory image */
+-		m_image_plane_size = m_buffer_height * m_buffer_width / 16;
+-		m_image_memory_size = m_image_plane_size * m_n_planes;
+-		m_image_memory
+-				= std::make_unique<uint16_t[]>(m_image_memory_size);
+-		assert(m_image_memory != nullptr);
++		m_lut_fifo = std::make_unique<lut_fifo>();
+ 
+-		MLOG1(("device reset apollo graphics: buffer=%p size=%0x", (void *) m_image_memory.get(), m_image_memory_size));
++		m_bt458 = std::make_unique<bt458>(machine());
++		m_bt458->start();
++		m_bt458->reset();
++
++		// see apollo.h lut_fifo::save_state / bt458::save_state: private
++		// members of a nested class, registered from inside their own type
++		m_lut_fifo->save_state(*this);
++		m_bt458->save_state(*this);
+ 	}
++	else
++	{
++		m_lut_fifo.reset();
++		m_bt458.reset();
++	}
++
++	/* allocate the memory image */
++	m_image_plane_size = m_buffer_height * m_buffer_width / 16;
++	m_image_memory_size = m_image_plane_size * m_n_planes;
++	m_image_memory = std::make_unique<uint16_t[]>(m_image_memory_size);
++	assert(m_image_memory != nullptr);
++	memset(m_image_memory.get(), 0, m_image_memory_size * 2);
++
++	MLOG1(("device start apollo graphics: buffer=%p size=%0x", (void *) m_image_memory.get(), m_image_memory_size));
+ 
++	// -- save state: every register the renderer reads and every counter
++	// that is not re-derived every frame. Registering too much here is the
++	// safe direction — a missed one shows up as a wrongly-coloured or
++	// shifted screen after a restore, which is much harder to notice than
++	// an inert extra save_item.
++	save_item(NAME(m_n_planes));
++	save_item(NAME(m_width));
++	save_item(NAME(m_height));
++	save_item(NAME(m_buffer_width));
++	save_item(NAME(m_buffer_height));
++	save_item(NAME(m_sr));
++	save_item(NAME(m_device_id));
++	save_item(NAME(m_write_enable_register));
++	save_item(NAME(m_rop_register));
++	save_item(NAME(m_diag_mem_request));
++	save_item(NAME(m_cr0));
++	save_item(NAME(m_cr1));
++	save_item(NAME(m_cr2));
++	save_item(NAME(m_cr2b));
++	save_item(NAME(m_cr2_s_data));
++	save_item(NAME(m_cr2_s_plane));
++	save_item(NAME(m_cr2_d_plane));
++	save_item(NAME(m_cr3a));
++	save_item(NAME(m_cr3b));
++	save_item(NAME(m_ad_result));
++	save_item(NAME(m_ad_pending));
++	save_item(NAME(m_lut_control));
++	save_item(NAME(m_lut_data));
++	save_item(NAME(m_update_flag));
++	save_item(NAME(m_update_pending));
++	save_item(NAME(m_blt_cycle_count));
++	save_item(NAME(m_image_offset));
++	save_item(NAME(m_guard_latch));
++	save_item(NAME(m_h_clock));
++	save_item(NAME(m_v_clock));
++	save_item(NAME(m_p_clock));
++	save_item(NAME(m_data_clock));
++	save_item(NAME(m_color_lookup_table));
++	save_pointer(NAME(m_image_memory), m_image_memory_size);
++
++	// CHECKPOINT: force a full repaint after every state load — see the
++	// postload() comment in apollo.h and postload()'s definition below for
++	// why m_update_flag alone cannot be trusted to trigger the redraw.
++	machine().save().register_postload(save_prepost_delegate(FUNC(apollo_graphics_15i::postload), this));
++}
++
++//-------------------------------------------------
++//  device_reset - device-specific reset
++//-------------------------------------------------
++
++void apollo_graphics_15i::device_reset()
++{
++	MLOG1(("apollo_graphics_15i::device_reset"));
++
++	// CHECKPOINT: the geometry determination and the image memory
++	// allocation used to live here, guarded by "if (m_n_planes == 0)" /
++	// "if (m_image_memory == nullptr)" so a cold boot (the only caller
++	// this device used to have) did it exactly once. device_start() now
++	// does both unconditionally and earlier, so the buffer is already
++	// allocated and sized by the time device_reset() runs on every cold
++	// boot AND on a hardware reset — the two guards above would never
++	// fire again, so the dead branches are gone rather than left as
++	// unreachable code. device_reset() still needs to run on every actual
++	// reset to blank the screen and colour table (a LOADST restore does
++	// NOT call device_reset(), so this has no effect on the checkpoint
++	// path — it only re-zeroes an active boot/reset).
+ 	memset(m_color_lookup_table, 0, sizeof(m_color_lookup_table));
+ 	memset(m_image_memory.get(), 0, m_image_memory_size * 2);
+ 
+@@ -1874,6 +1953,45 @@
+ }
+ 
+ //-------------------------------------------------
++//  postload - force a repaint after a state load
++//-------------------------------------------------
++
++void apollo_graphics_15i::postload()
++{
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): m_image_
++	// memory IS correctly restored by save_pointer() above — VERIFIED by a
++	// checksum logged here during debugging: identical between a cold
++	// "-state golden" load and a dirty+LOADST cycle. screen_update() only
++	// copies image memory into the published bitmap when m_update_flag is
++	// set (and m_update_pending is NOT), and m_update_flag sits at 0 in
++	// steady state, so a LOADST restores it as 0 and no repaint is queued.
++	// This sets the flag so the next screen_update() call repaints from
++	// the now-correct image memory.
++	//
++	// KNOWN GAP (2026-09-09, not yet resolved): setting the flag makes
++	// screen_update()/screen_update1() run again — confirmed via a
++	// postload checksum log, both m_screen->update_now() and
++	// machine().video().frame_update() were tried immediately after this
++	// to force the repaint synchronously inside postload() — but the
++	// PUBLISHED drawshm frame still does not show the reverted picture in
++	// either case, even after an unrelated 12s real-time wait. The
++	// frame_update() variant additionally froze the published frame
++	// entirely (no further updates even for fresh post-restore guest
++	// activity) and was reverted — calling it from inside a postload
++	// appears to disrupt MAME's own frame-pacing state and should not be
++	// reattempted without checking screen.cpp's throttle/next-update
++	// bookkeeping first. The remaining bug is therefore NOT in save-state
++	// registration (image memory + registers restore is byte-correct) but
++	// somewhere between screen_update1()'s bitmap write and drawshm's
++	// publish of that bitmap — worth checking whether drawshm
++	// (mame-drawshm-0276.patch) reads a bitmap/texture reference that
++	// needs its own invalidation independent of the screen device's
++	// m_changed/UPDATE_HAS_NOT_CHANGED bookkeeping.
++	m_update_flag = 1;
++	m_update_pending = 0;
++}
++
++//-------------------------------------------------
+ 
+ void apollo_graphics_19i::device_add_mconfig(machine_config &config)
+ {
+@@ -1900,6 +2018,19 @@
+ {
+ 	MLOG1(("apollo_graphics_19i::device_start"));
+ 
++	// CHECKPOINT: pin the fixed 19" geometry BEFORE the base class's
++	// device_start() allocates and registers the image buffer — mirrors
++	// the ordering apollo_graphics_19i::device_reset() already used below
++	// for the same fields, so the base class's "if (m_n_planes == 0)"
++	// guard sees them already set and skips its own (wrong, color-8i)
++	// determination.
++	m_n_planes = 1;
++	m_device_id = SCREEN_DEVICE_ID_19I;
++	m_width = 1280;
++	m_height = 1024;
++	m_buffer_width = 2048;
++	m_buffer_height = 1024;
++
+ 	apollo_graphics_15i::device_start();
+ }
+ 
+--- a/src/mame/apollo/apollo_kbd.h
++++ b/src/mame/apollo/apollo_kbd.h
+@@ -100,6 +100,21 @@
+ 		void start(apollo_kbd_device *device);
+ 		void reset();
+ 		void read_mouse();
++
++		// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): the
++		// mouse's delta-tracking state is private to this nested class, so
++		// it is registered from inside the class's own member function
++		// (called once from apollo_kbd_device::device_start) rather than
++		// from the enclosing device, which cannot see these members.
++		// Missing this makes the FIRST mouse sample after a LOADST restore
++		// compute a bogus delta against the pre-restore position.
++		void save_state(device_t &owner)
++		{
++			owner.save_item(NAME(m_last_b));
++			owner.save_item(NAME(m_last_x));
++			owner.save_item(NAME(m_last_y));
++			owner.save_item(NAME(m_tx_pending));
++		}
+ 	private:
+ 		apollo_kbd_device *m_device; // pointer back to our device
+ 
+--- a/src/mame/apollo/apollo_kbd.cpp
++++ b/src/mame/apollo/apollo_kbd.cpp
+@@ -231,6 +231,34 @@
+ 	m_mouse.start(this);
+ 
+ 	m_timer = timer_alloc(FUNC(apollo_kbd_device::kbd_scan_timer), this);
++
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): a station's
++	// reset is an in-process LOADST. This device previously registered no
++	// save state at all, so a restore left the serial protocol state
++	// machine (mode, receive-message-in-progress, the tx ring) and the
++	// mouse's delta-tracking wherever they were at SAVEST time instead of
++	// matching the restored CPU — the observed symptom is the keyboard
++	// wedging after a restore (a stuck m_tx_busy, or a stale m_mode the
++	// guest driver never re-negotiates). m_timer itself does not need
++	// save_item: MAME's device_t::timer_alloc() timers are saved
++	// automatically by the state manager.
++	save_item(NAME(m_xmitring));
++	save_item(NAME(m_xmit_read));
++	save_item(NAME(m_xmit_write));
++	save_item(NAME(m_tx_busy));
++	save_item(NAME(m_rx_message));
++	save_item(NAME(m_loopback_mode));
++	save_item(NAME(m_mode));
++	save_item(NAME(m_delay));
++	save_item(NAME(m_repeat));
++	save_item(NAME(m_last_pressed));
++	save_item(NAME(m_numlock_state));
++	save_item(NAME(m_keytime));
++	save_item(NAME(m_keyon));
++
++	// see apollo_kbd.h mouse::save_state: m_last_b/m_last_x/m_last_y are
++	// private to the nested mouse class, registered from inside it.
++	m_mouse.save_state(*this);
+ }
+ 
+ //-------------------------------------------------
+--- a/src/mame/apollo/apollo_m.cpp
++++ b/src/mame/apollo/apollo_m.cpp
+@@ -148,9 +148,23 @@
+ //  device_start - device-specific startup
+ //-------------------------------------------------
+ 
++// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): forward
++// declaration only — the CSR/DMA statics this registers for save state are
++// declared further down this file (they must stay file-scope `static`,
++// a pre-existing pattern here, not introduced by this patch), so the
++// definition lives after them; apollo_config_device::device_start() is the
++// one device_start() already in this translation unit and runs once at
++// machine start, which is early enough for save state registration.
++static void apollo_csr_dma_register_savestate(device_t &owner);
++
+ void apollo_config_device::device_start()
+ {
+ 	MLOG1(("start apollo_config"));
++
++	// A LOADST restore rewinds the CPU/RAM but, without this, left the CSR
++	// interrupt-enable/parity state and the DMA page mapping at whatever
++	// they were when SAVEST ran — inconsistent with the restored CPU/RAM.
++	apollo_csr_dma_register_savestate(*this);
+ }
+ 
+ //-------------------------------------------------
+@@ -302,6 +316,14 @@
+ static uint16_t dma_page_register[16] =
+ 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+ 
++static void apollo_csr_dma_register_savestate(device_t &owner)
++{
++	owner.save_item(NAME(cpu_status_register));
++	owner.save_item(NAME(cpu_control_register));
++	owner.save_item(NAME(address_translation_map));
++	owner.save_item(NAME(dma_page_register));
++}
++
+ static const uint8_t channel2page_register[8] = { 7, 3, 1, 2, 0, 11, 9, 10};
+ 
+ static uint8_t dn3000_dma_channel1 = 1; // 1 = memory/ctape, 2 = floppy dma channel

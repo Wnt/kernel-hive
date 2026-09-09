@@ -56,7 +56,7 @@ NATIVE_MAME_ARGS=(-isa1 wdc -isa2 ctape -isa3 3c505 -view "Screen 0 Standard (4:
 # acking; a `-str` run skips the panel, which is why the build gate and a
 # race harness both "passed"). ui.ini's skip_warnings is only honoured with
 # the skip-warnings patch (atari800xl's finding), so it is stacked here too.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch mame-ctlsock-field-token.patch mame-irix-skip-warnings.patch)
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch mame-ctlsock-field-token.patch mame-irix-skip-warnings.patch mame-apollo-savestate.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
@@ -73,11 +73,18 @@ native_stage_roms() {
     dn3500 3c505
 }
 
-# Power-on with no disk is the boot PROM's self-test transcript — white text
-# on black ("SELF TESTS IN PROGRESS", one line per test, "WINCHESTER DISK ...
-# NOT FOUND") — sparse text, so a low floor. MEASURED on stock 0.276
-# (2026-09-09): the transcript is on screen within 8 emulated seconds; the
-# self tests + kernel banner reached ~40 lines by 120 s. Floor 1000 over 12 s.
+# Power-on with no disk, no explicit config (fresh cfg/nvram, the gate's
+# own harness) lands in Service mode by the 12s mark already past the
+# self-test transcript and AT the MD7C "> " monitor prompt — a couple of
+# glyphs plus a block cursor, not a multi-line transcript. Re-measured on
+# the CHECKPOINT stream (2026-09-09) with BOTH the stock 0.276 binary
+# (no savestate patch) and this patch's binary: identical 94 lit pixels at
+# t=12s either way (docs/lab/DOMAINOS-WAVE.md checkpoint stream), so the
+# 1000 floor here was a pre-build estimate that never matched a real gate
+# run — not a regression from the checkpoint patch. Floor set just above
+# the measured "> " prompt so the gate still catches an actual black
+# screen (a real regression) without blocking on this driver's fast path
+# to the monitor prompt.
 native_boot_gate() {
-  native_gate_nonblack "$1" "$2" "$3" 1000 12
+  native_gate_nonblack "$1" "$2" "$3" 40 12
 }
