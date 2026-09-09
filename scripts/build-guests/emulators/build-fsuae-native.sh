@@ -56,7 +56,14 @@ for PATCH in "${PATCHES[@]}"; do
   patch -p1 <"$PATCH"
 done
 
-./configure --prefix="$PREFIX" >configure.log 2>&1
+# configure needs `zip` (and the SDL2/GLib dev headers): present in CT950, NOT on
+# labhost — run this script from CT950 (the a1000 wave lost a build stream to a
+# silent "zip not found" exit, 2026-09-09). Its exit code is checked on purpose.
+./configure --prefix="$PREFIX" >configure.log 2>&1 || {
+  tail -15 configure.log >&2
+  echo "configure failed (see $WORK/fs-uae-${VER}/configure.log)" >&2
+  exit 1
+}
 make -j"$(nproc)" >build.log 2>&1 || {
   tail -30 build.log >&2
   exit 1
