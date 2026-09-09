@@ -47,6 +47,9 @@ irix_mame_apply "$T" "$PATCHES" || {
   exit 1
 }
 
+# SC2016: deliberate — the single-quoted string is a script for the CHROOT's
+# bash; ${MAME_MAKE_CC_ARGS[@]} and ${JOBS:-8} must expand there, not here.
+# shellcheck disable=SC2016
 chroot "$C" /bin/bash -c \
   'cd /build/mame && MAME_MAKE_CC_ARGS=(OVERRIDE_CC=gcc OVERRIDE_CXX=g++);
    if [ -r /ccache/env.sh ]; then . /ccache/env.sh; fi;  # shared compile cache (mame-ccache.sh); operator rule 2026-09-10

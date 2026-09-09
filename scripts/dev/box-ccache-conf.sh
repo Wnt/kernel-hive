@@ -42,12 +42,21 @@ check() {
 }
 
 case "${1:-install}" in
-  --check) check; exit 0 ;;
+  --check)
+    check
+    exit 0
+    ;;
   install) ;;
-  *) sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *)
+    sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1
+    ;;
 esac
 
-[ -d "$(dirname "$0")/../build-guests/emulators" ] || { echo "run from the repo" >&2; exit 1; }
+[ -d "$(dirname "$0")/../build-guests/emulators" ] || {
+  echo "run from the repo" >&2
+  exit 1
+}
 
 ssh -n lab "set -e
 umask 022
