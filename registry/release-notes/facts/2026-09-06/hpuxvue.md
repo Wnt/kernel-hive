@@ -1,0 +1,12 @@
+# hpuxvue — facts from week ending 2026-09-06 ("The mouse finally lands")
+
+Extracted mechanically from the in-progress/append-only week JSON; raw material
+for the Sunday authoring pass, not publishable prose on its own.
+
+## From the summary prose
+
+- (Major features) [AIX](station:aix432) and [HP-UX](station:hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees — a real feedback loop rather than arithmetic and hope.
+
+## Bullets
+
+- [HP-UX](station:hpuxvue)'s cursor loop needed no new emulated hardware — the registers were already there, so no machine had to be rebuilt

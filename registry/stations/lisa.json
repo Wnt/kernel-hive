@@ -6,7 +6,7 @@
   "build": {
     "rows": [
       {
-        "order": 79,
+        "order": 80,
         "prelude": "",
         "value": {
           "key": "lisa",
@@ -39,14 +39,14 @@
     }
   },
   "render": {
-    "signalOrder": 83,
-    "stationsManifestOrder": 81,
+    "signalOrder": 84,
+    "stationsManifestOrder": 82,
     "stationsManifestPrelude": "\n# lisa (VMID 193) — host-native LisaEm 2.0 (Apple Lisa 2, 68000 5 MHz, 1 MB, ROM rev H, ProFile) -> Lisa Office System 3.1, the document-centric 1984 desktop, inside a pinned 720x498 Xvfb whose root is the aspect-corrected Lisa screen. Absolute pointer over XTEST (LisaEm follows the host X pointer 1:1); reset = cold boot from a fresh ProFile copy (~150 s).\n",
     "bringUpGroup": 8,
-    "bindingOrder": 93,
+    "bindingOrder": 95,
     "bindingPrelude": "",
     "bindingComment": "ideal: Apple Lisa 2 one-piece",
-    "goldenOrder": 81
+    "goldenOrder": 82
   },
   "stationDir": "lisa",
   "lifecycle": "production",
@@ -90,7 +90,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/lisa/lisa_cmd"
     },
-    "bringUpOrder": 93,
+    "bringUpOrder": 95,
     "x11": {
       "display": ":93",
       "geometry": "720x498x24",

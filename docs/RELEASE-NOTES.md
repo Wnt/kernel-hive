@@ -6,38 +6,82 @@ Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.
 
 <a id="week-5"></a>
 
-## Week 5 · The mouse finally lands · 2026-08-30 09:00 – 2026-09-06 09:00
+## Week 5 · Nine Unixes in one night · 2026-08-30 09:00 – 2026-09-06 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/slackware"><img src="../spa/public/posters/slackware/desktop.webp" width="200" alt="Slackware 3.4"></a><br><sub>Slackware 3.4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/netbsd14"><img src="../spa/public/posters/netbsd14/desktop.webp" width="200" alt="NetBSD 1.4.1"></a><br><sub>NetBSD 1.4.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/redhat62"><img src="../spa/public/posters/redhat62/desktop.webp" width="200" alt="Red Hat Linux 6.2"></a><br><sub>Red Hat Linux 6.2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/debian22"><img src="../spa/public/posters/debian22/desktop.webp" width="200" alt="Debian GNU/Linux 2.2"></a><br><sub>Debian GNU/Linux 2.2</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/suse64"><img src="../spa/public/posters/suse64/desktop.webp" width="200" alt="SuSE Linux 6.4"></a><br><sub>SuSE Linux 6.4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/ubuntu"><img src="../spa/public/posters/ubuntu/desktop.webp" width="200" alt="Ubuntu 4.10 Warty Warthog"></a><br><sub>Ubuntu 4.10 Warty Warthog</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/freebsd411"><img src="../spa/public/posters/freebsd411/desktop.webp" width="200" alt="FreeBSD 4.11"></a><br><sub>FreeBSD 4.11</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/pcbsd"><img src="../spa/public/posters/pcbsd/desktop.webp" width="200" alt="PC-BSD 1.5.1"></a><br><sub>PC-BSD 1.5.1</sub></td>
+</tr>
+</table>
 
 ### New stations
 
-Three machines arrived. [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put **OPEN LOOK** on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots from the real 1992 installation tape onto an emulated *68030*, and runs in colour on the **A2410**, a card most owners never bought. Its cursor lands exactly where you point, by a route no other machine here uses: the museum reaches inside the guest's own X server and moves the pointer there. [ravynOS](https://kernelhive.madekivi.fi/os/ravynos) also joined. At the other extreme, [bootOS](https://kernelhive.madekivi.fi/os/bootos) is an entire operating system in **512 bytes**, the one sector a PC reads to start up: a prompt, a filesystem and a hex loader, written by Óscar Toledo G. in two evenings in 2019. Its floppy carries nineteen more one-sector programs — chess, a Doom, a BASIC, a Flappy Bird — and you run one by typing its name. That makes 75 machines, 71 of them open to visitors.
+<u>Nine Unix and Linux machines arrived in a single night.</u> [Slackware 3.4](https://kernelhive.madekivi.fi/os/slackware) brings 1997's **fvwm95**, the desktop that made a Unix workstation look like Windows 95; [NetBSD 1.4.1](https://kernelhive.madekivi.fi/os/netbsd14) follows from 1999. The year 2000 gives three at once — [Red Hat Linux 6.2 "Zoot"](https://kernelhive.madekivi.fi/os/redhat62) with **GNOME 1.0**, [Debian 2.2 "potato"](https://kernelhive.madekivi.fi/os/debian22), and [SuSE Linux 6.4](https://kernelhive.madekivi.fi/os/suse64) with **KDE 1**, from the last spring SuSE spelled itself with a small u. [Ubuntu 4.10 "Warty Warthog"](https://kernelhive.madekivi.fi/os/ubuntu) is the very first Ubuntu, running off its live CD, so every reset returns to the same instant. [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411) closes the 4.x line with the full **KDE 3.3.2**; [PC-BSD 1.5.1](https://kernelhive.madekivi.fi/os/pcbsd) is FreeBSD made point-and-click; [OpenBSD 7.9](https://kernelhive.madekivi.fi/os/openbsd) stands at the modern end. Earlier in the week came [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix), Commodore's *System V Release 4* with **OPEN LOOK**, in colour on the **A2410** card most owners never bought; [ravynOS](https://kernelhive.madekivi.fi/os/ravynos); [PC/GEOS Ensemble](https://kernelhive.madekivi.fi/os/pcgeos), a 1990 desktop in *640 KB on a 286*; and [bootOS](https://kernelhive.madekivi.fi/os/bootos), a whole operating system in *512 bytes*. That makes 87 machines, 85 of them open to visitors.
 
 ### Major features
 
-<u>Five more machines now put the cursor exactly where you point.</u> A mouse in a browser sends a position; most of these guests only understand motion, which is why a cursor used to crawl behind your hand and pile up in a corner. [AIX](https://kernelhive.madekivi.fi/os/aix432) and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees — a real feedback loop rather than arithmetic and hope. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody), [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) and [BeOS](https://kernelhive.madekivi.fi/os/beos) have no such chip, so instead the emulator writes the coordinate straight into the place each operating system keeps its own pointer, and nudges it awake. On all five the cursor is now 1:1: no chase, no drift, no corner.
+Eight of the new arrivals joined the museum's private 1990s internet, browsing the archived web through the browser each would really have had, from **Netscape 4.77** on [Debian](https://kernelhive.madekivi.fi/os/debian22) to **Lynx** on [NetBSD](https://kernelhive.madekivi.fi/os/netbsd14). Seven signed on to the chat network too, taking it from eleven machines to nineteen. [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) joined through the **AOL Instant Messenger** already sitting on its disk, and a bridge now relays between the AIM and ICQ halves, so a 1993 desktop can answer a message from a 2000 Linux box. A machine you have just reset signs itself back in, unprompted. The cursor landed on many more machines as well: [AIX](https://kernelhive.madekivi.fi/os/aix432) and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) read it back out of the graphics chip's own registers and steer until it agrees, while [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody), [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) and [BeOS](https://kernelhive.madekivi.fi/os/beos) have the coordinate written straight into the place each system keeps its own pointer. Cursor and hand now agree exactly.
 
 ### Quality improvements
 
-The private machines handed out to signed-in visitors left everyone else on a blank front page; the museum now renders one hall for all and picks what you see by who you are. Clicks, not just movement, take the corrected route into AIX, so a button press lands where the cursor already is. AIX also had an invisible magnet — pass near a window's resize handle and the pointer stuck to it — which is gone. And the museum's own weekly test used to count cards on the collection page, quietly passing while the page was empty; it now checks the gallery really drew.
+[AIX](https://kernelhive.madekivi.fi/os/aix432) had stopped taking the keyboard and would lock itself out; [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) looked broken the same way and turned out to be a focus trap, not a fault. Both type again. A key still held down when you close the tab is released now, so nobody arrives to a machine stuck on shift. The private machines handed to signed-in visitors used to leave everyone else on a blank front page; the museum renders one hall for all.
 
 ### Also this week
 
+- Each new arrival chats with its era's own client — **GtkICQ** on SuSE, **GnomeICU** on Debian, **mICQ** on NetBSD, **Kopete** on PC-BSD, **Gaim** on Ubuntu
+- The network's resident bot says hello about a minute after a machine signs in, and every station carries every other one in its contact list
+- [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411)'s network card went silent after every reset, so it was swapped for one that survives — the fault shows only on the wire
+- [NetBSD 1.4.1](https://kernelhive.madekivi.fi/os/netbsd14) needed a kernel built inside the guest: the stock 1999 one hangs on this hardware before it ever reaches the disk
+- [Slackware 3.4](https://kernelhive.madekivi.fi/os/slackware)'s 1997 boot floppy still wedges under a modern emulator, so the museum boots its kernel from a GRUB2 rescue disc instead
+- [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411) reads a CD one 16-bit word at a time, so it had to be installed on the slow software emulator and only then run at full speed
+- [Debian 2.2](https://kernelhive.madekivi.fi/os/debian22) writes an emulated disk just as slowly, so its root filesystem was assembled outside the machine and handed over finished
+- [Red Hat Linux 6.2](https://kernelhive.madekivi.fi/os/redhat62) installs itself from a kickstart file and [OpenBSD](https://kernelhive.madekivi.fi/os/openbsd) from a scripted installer — nobody answers a prompt
+- [SuSE Linux 6.4](https://kernelhive.madekivi.fi/os/suse64) is installed by SuSE's own graphical **YaST2** — what its CD really boots, not the text YaST everyone remembers
 - [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) installs from a 29-segment tape image, the way an *A3000UX* really did — roughly two hours of emulated restore
 - **OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it
-- [bootOS](https://kernelhive.madekivi.fi/os/bootos) keeps one file per floppy track, thirty-two at most; the museum snapshots the floppy, so a deleted game is gone only until the next reset
+- [bootOS](https://kernelhive.madekivi.fi/os/bootos)'s floppy carries chess, a Doom, a BASIC and a Flappy Bird, each one sector long; you run one by typing its name
 - Type `enter` on bootOS and it takes a program as lines of hex; the 'Hello, world' from its own manual is the exhibit's demo button
+- [PC/GEOS Ensemble](https://kernelhive.madekivi.fi/os/pcgeos) boots straight into its desktop from FreeDOS, and its word processor stopped crashing once one font was dropped
 - [AIX](https://kernelhive.madekivi.fi/os/aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all
 - [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does
-- [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue)'s cursor loop needed no new emulated hardware — the registers were already there, so no machine had to be rebuilt
 - [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved
 - A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed
-- Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card
+- [OpenBSD](https://kernelhive.madekivi.fi/os/openbsd)'s tablet pointer needed one fix after X registered the same device twice, once with no calibration range
+- [ravynOS](https://kernelhive.madekivi.fi/os/ravynos) 0.6.1 is the last of its kind — days after this build, its makers threw the FreeBSD kernel away and deleted the line
 
-*7,484 lines of code.*
+*76,663 lines of code.*
 
 <a id="week-4"></a>
 
 ## Week 4 · The doors open to everyone · 2026-08-23 09:00 – 2026-08-30 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/aix432"><img src="../spa/public/posters/aix432/desktop.webp" width="200" alt="IBM RS/6000 — AIX 4.3.3"></a><br><sub>IBM RS/6000 — AIX 4.3.3</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/macos9"><img src="../spa/public/posters/macos9/desktop.webp" width="200" alt="Mac OS 9.2.2"></a><br><sub>Mac OS 9.2.2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/chokanji"><img src="../spa/public/posters/chokanji/desktop.webp" width="200" alt="Chokanji (超漢字)"></a><br><sub>Chokanji (超漢字)</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/win311"><img src="../spa/public/posters/win311/desktop.webp" width="200" alt="Windows 3.11"></a><br><sub>Windows 3.11</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/os2warp"><img src="../spa/public/posters/os2warp/desktop.webp" width="200" alt="OS/2 Warp 4"></a><br><sub>OS/2 Warp 4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/rhapsody"><img src="../spa/public/posters/rhapsody/desktop.webp" width="200" alt="Rhapsody DR2"></a><br><sub>Rhapsody DR2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/winxp"><img src="../spa/public/posters/winxp/desktop.webp" width="200" alt="Windows XP"></a><br><sub>Windows XP</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/win95"><img src="../spa/public/posters/win95/desktop.webp" width="200" alt="Windows 95"></a><br><sub>Windows 95</sub></td>
+</tr>
+</table>
 
 ### New stations
 
@@ -71,6 +115,23 @@ Three machines joined the floor, and one of them needed its graphics card built 
 
 ## Week 3 · The museum gets its own internet · 2026-08-16 09:00 – 2026-08-23 09:00
 
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/newsos"><img src="../spa/public/posters/newsos/desktop.webp" width="200" alt="NEWS-OS 4.1R"></a><br><sub>NEWS-OS 4.1R</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/aux"><img src="../spa/public/posters/aux/desktop.webp" width="200" alt="A/UX 3.0.1"></a><br><sub>A/UX 3.0.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/sunos414"><img src="../spa/public/posters/sunos414/desktop.webp" width="200" alt="SunOS 4.1.4 / OpenWindows"></a><br><sub>SunOS 4.1.4 / OpenWindows</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/hpuxvue"><img src="../spa/public/posters/hpuxvue/desktop.webp" width="200" alt="HP-UX 10.20 / HP VUE"></a><br><sub>HP-UX 10.20 / HP VUE</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/rhapsody"><img src="../spa/public/posters/rhapsody/desktop.webp" width="200" alt="Rhapsody DR2"></a><br><sub>Rhapsody DR2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/beos"><img src="../spa/public/posters/beos/desktop.webp" width="200" alt="BeOS R5"></a><br><sub>BeOS R5</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/macos753"><img src="../spa/public/posters/macos753/desktop.webp" width="200" alt="Mac OS 7.5.3"></a><br><sub>Mac OS 7.5.3</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/tru64"><img src="../spa/public/posters/tru64/desktop.webp" width="200" alt="Tru64 UNIX"></a><br><sub>Tru64 UNIX</sub></td>
+</tr>
+</table>
+
 ### New stations
 
 Seven machines joined the floor, each installed from original media the museum tracked down itself. [NEWS-OS](https://kernelhive.madekivi.fi/os/newsos) is Sony's own Unix, running on a *1991* *MIPS* laptop. [A/UX](https://kernelhive.madekivi.fi/os/aux) is Apple's strangest hybrid: a Unix root prompt living inside the Macintosh Finder. [SunOS](https://kernelhive.madekivi.fi/os/sunos414) brings up **OPEN LOOK** and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) answers with **HP VUE** — two rival visions of what a *1990s* Unix workstation should look like. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) is the missing link between NeXT and Mac OS X, the NeXT system wearing a Mac face. [BeOS](https://kernelhive.madekivi.fi/os/beos) is the fast, doomed upstart of the late nineties. And [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) runs on emulated *68040* hardware. [Tru64 UNIX](https://kernelhive.madekivi.fi/os/tru64), which arrived last week, got past the licensing wall that kept it shut, so the museum now stands at 68 machines, 65 of them open to visitors.
@@ -102,6 +163,23 @@ Machines that used to make you wait mostly don't any more. The [Tru64](https://k
 <a id="week-2"></a>
 
 ## Week 2 · Twenty-two machines in one week · 2026-08-09 09:00 – 2026-08-16 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/alto"><img src="../spa/public/posters/alto/desktop.webp" width="200" alt="Xerox Alto II"></a><br><sub>Xerox Alto II</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/star"><img src="../spa/public/posters/star/desktop.webp" width="200" alt="Xerox Star 8010"></a><br><sub>Xerox Star 8010</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/daybreak"><img src="../spa/public/posters/daybreak/desktop.webp" width="200" alt="Xerox 6085"></a><br><sub>Xerox 6085</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/pdp11"><img src="../spa/public/posters/pdp11/desktop.webp" width="200" alt="DEC PDP-11/70 — 2.11BSD"></a><br><sub>DEC PDP-11/70 — 2.11BSD</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/gt40"><img src="../spa/public/posters/gt40/desktop.webp" width="200" alt="DEC GT40"></a><br><sub>DEC GT40</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/decos"><img src="../spa/public/posters/decos/desktop.webp" width="200" alt="DEC PDP-11 — RT-11, RSX-11M, RSTS/E"></a><br><sub>DEC PDP-11 — RT-11, RSX-11M, RSTS/E</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/zxspectrum"><img src="../spa/public/posters/zxspectrum/desktop.webp" width="200" alt="Sinclair ZX Spectrum 48K"></a><br><sub>Sinclair ZX Spectrum 48K</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/bbcmicro"><img src="../spa/public/posters/bbcmicro/desktop.webp" width="200" alt="Acorn BBC Micro Model B"></a><br><sub>Acorn BBC Micro Model B</sub></td>
+</tr>
+</table>
 
 ### New stations
 
@@ -142,6 +220,23 @@ Machines used to boot when you opened them. Now they are simply left running, he
 
 ## Week 1 · The museum opens its source · 2026-08-07 14:37 – 2026-08-09 09:00
 
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/vic20"><img src="../spa/public/posters/vic20/desktop.webp" width="200" alt="Commodore VIC-20"></a><br><sub>Commodore VIC-20</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/plus4"><img src="../spa/public/posters/plus4/desktop.webp" width="200" alt="Commodore Plus/4"></a><br><sub>Commodore Plus/4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/amstradcpc"><img src="../spa/public/posters/amstradcpc/desktop.webp" width="200" alt="Amstrad CPC 6128"></a><br><sub>Amstrad CPC 6128</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/irix"><img src="../spa/public/posters/irix/desktop.webp" width="200" alt="SGI Indy"></a><br><sub>SGI Indy</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/nt351"><img src="../spa/public/posters/nt351/desktop.webp" width="200" alt="Windows NT 3.51"></a><br><sub>Windows NT 3.51</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/ninefront"><img src="../spa/public/posters/ninefront/desktop.webp" width="200" alt="9front (Plan 9)"></a><br><sub>9front (Plan 9)</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/os2warp"><img src="../spa/public/posters/os2warp/desktop.webp" width="200" alt="OS/2 Warp 4"></a><br><sub>OS/2 Warp 4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/win95"><img src="../spa/public/posters/win95/desktop.webp" width="200" alt="Windows 95"></a><br><sub>Windows 95</sub></td>
+</tr>
+</table>
+
 ### New stations
 
 Two Commodores joined the gallery, both picked after a survey of the *8-bit* and *16-bit* home-computer field. The [VIC-20](https://kernelhive.madekivi.fi/os/vic20) came first, and there is charmingly little to it: open the page and you are looking at the same friendly BASIC screen a child saw on a shop shelf, cursor blinking, ready for you to type. The [Plus/4](https://kernelhive.madekivi.fi/os/plus4) followed, the odder of the pair — Commodore built an office suite into the machine itself, so **3-PLUS-1** (a word processor, a spreadsheet and a card-file program) is there the instant it powers on, with one-tap buttons on the on-screen keyboard to reach each one. On its first day the Plus/4 opened mid-spreadsheet, which rather gave the game away; it now starts where the real machine starts, on the power-on screen that says "3-PLUS-1 ON KEY F1".
@@ -172,6 +267,23 @@ A visitor's typed-in program came back scrambled on the VIC-20, which turned out
 <a id="week-0"></a>
 
 ## Week 0 · The month the museum was built · 2026-07-07 21:39 – 2026-08-07 14:37
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/macos"><img src="../spa/public/posters/macos/desktop.webp" width="200" alt="macOS Sequoia"></a><br><sub>macOS Sequoia</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/riscos"><img src="../spa/public/posters/riscos/desktop.webp" width="200" alt="RISC OS 5.30"></a><br><sub>RISC OS 5.30</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/nt351"><img src="../spa/public/posters/nt351/desktop.webp" width="200" alt="Windows NT 3.51"></a><br><sub>Windows NT 3.51</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/nt4"><img src="../spa/public/posters/nt4/desktop.webp" width="200" alt="Windows NT 4.0"></a><br><sub>Windows NT 4.0</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/os2warp"><img src="../spa/public/posters/os2warp/desktop.webp" width="200" alt="OS/2 Warp 4"></a><br><sub>OS/2 Warp 4</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/solaris"><img src="../spa/public/posters/solaris/desktop.webp" width="200" alt="Solaris CDE"></a><br><sub>Solaris CDE</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/openvms"><img src="../spa/public/posters/openvms/desktop.webp" width="200" alt="OpenVMS x86-64 9.2"></a><br><sub>OpenVMS x86-64 9.2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/msdoswin1"><img src="../spa/public/posters/msdoswin1/desktop.webp" width="200" alt="MS-DOS 6.22 + Windows 1.0"></a><br><sub>MS-DOS 6.22 + Windows 1.0</sub></td>
+</tr>
+</table>
 
 ### The story so far
 

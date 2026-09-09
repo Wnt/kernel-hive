@@ -132,6 +132,9 @@ const POSTER_INDEX = {
   "macos9": {
     "hero": "/posters/macos9/desktop.webp"
   },
+  "medley": {
+    "hero": "/posters/medley/desktop.webp"
+  },
   "mpf2": {
     "hero": "/posters/mpf2/desktop.webp"
   },
@@ -215,6 +218,9 @@ const POSTER_INDEX = {
   },
   "samcoupe": {
     "hero": "/posters/samcoupe/desktop.webp"
+  },
+  "sculpt": {
+    "hero": "/posters/sculpt/desktop.webp"
   },
   "serenityos": {
     "hero": "/posters/serenityos/desktop.webp"

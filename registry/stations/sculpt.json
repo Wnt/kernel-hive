@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "id": "sculpt",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 79,
+        "prelude": "",
+        "value": {
+          "key": "sculpt",
+          "script": "tiles/serenityos.sh",
+          "outputDir": "SerenityOS",
+          "class": "heavy",
+          "estimated": "~20-60m",
+          "automation": "full",
+          "produces": "_disk_image + Kernel (compiled)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "sculpt",
+      "value": {
+        "os": "SerenityOS",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            600,
+            200
+          ]
+        },
+        "kbd": "super",
+        "kbd_reset": "Escape",
+        "kbd_note": "has a taskbar menu; unverified",
+        "audio_trigger": "tone"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/sculpt",
+      "qmp": "/data/vms/streamhost/stations/sculpt/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54190,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 83,
+    "stationsManifestOrder": 81,
+    "stationsManifestPrelude": "\n# sculpt (slot 190) \u2014 Genode Sculpt OS 25.04 under KVM: q35, AHCI disk, EHCI\n#   usb-mouse (RELATIVE: Genode's usb_hid never binds the absolute usb-tablet),\n#   e1000 on the retronet tap sculptrn0 (the rtl8139 never transmits), no audio.\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 94,
+    "bindingPrelude": "",
+    "goldenOrder": 81,
+    "actionMapOrder": 48
+  },
+  "stationDir": "sculpt",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54190,
+    "fps": 60,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-usb-mouse-relative",
+      "absolute": false,
+      "present": true,
+      "device": "usb-mouse on EHCI (Genode usb_hid; the absolute usb-tablet is never bound)",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 190
+  },
+  "guestDoc": "docs/guests/sculpt.md",
+  "credentialsRef": "guest/sculpt",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "sculpt",
+      "SH_QMP": "/data/vms/streamhost/stations/sculpt/qmp.sock",
+      "SH_PORT": "54190",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "off",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/sculpt/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/sculpt/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 190,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "sculpt",
+        "--vmid",
+        "190",
+        "--udp",
+        "54190",
+        "--pointer",
+        "rel",
+        "--audio",
+        "off",
+        "--fps",
+        "60",
+        "--launcher-file",
+        "$T/sculpt/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/sculpt/station.env.fixture"
+      ],
+      "deviceSetId": "sculpt-current",
+      "launcher": "streamhost/stations/sculpt/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/sculpt/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-q35-11.0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 2048,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-sculpt",
+        "-enable-kvm -m 2048 -smp 2",
+        "-machine pc-q35-11.0 -cpu host",
+        "-rtc base=localtime",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+        "-kernel /data/gallery-guests/SerenityOS/Kernel/Kernel -append root=nvme0:1:0 -drive file=/data/vms/streamhost/stations/sculpt/serenity.qcow2,if=none,format=qcow2,id=boot-drive -device i82801b11-bridge,id=bridge4 -device nvme,serial=deadbeef,drive=boot-drive,bus=bridge4,logical_block_size=4096,physical_block_size=4096",
+        "-qmp unix:/data/vms/streamhost/stations/sculpt/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/sculpt/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-q35-11.0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 2048,
+        "smp": 2,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-sculpt",
+          "-enable-kvm -m 2048 -smp 2",
+          "-machine pc-q35-11.0 -cpu host",
+          "-rtc base=localtime",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device AC97,audiodev=snd0",
+          "-kernel /data/gallery-guests/SerenityOS/Kernel/Kernel -append root=nvme0:1:0 -drive file=/data/vms/streamhost/stations/sculpt/serenity.qcow2,if=none,format=qcow2,id=boot-drive -device i82801b11-bridge,id=bridge4 -device nvme,serial=deadbeef,drive=boot-drive,bus=bridge4,logical_block_size=4096,physical_block_size=4096",
+          "-qmp unix:/data/vms/streamhost/stations/sculpt/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/sculpt/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals live"
+      }
+    },
+    "bringUpOrder": 94
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#4a90c2",
+    "eraLabel": "2025 \u00b7 Genode Sculpt 25.04",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "sculpt",
+    "displayName": "Genode Sculpt OS",
+    "year": 2025,
+    "lineage": "Genode OS Framework (microkernel, capability-based)",
+    "arch": "x86_64",
+    "ramMB": 4096,
+    "era": "2020s",
+    "accent": "#4a90c2",
+    "eraSoftware": [
+      "Leitzentrale (control center)",
+      "component graph",
+      "depot package manager",
+      "runtime sandbox"
+    ],
+    "periodBrowser": "Morph (Falkon/WebKit)",
+    "iconicApps": [
+      "Leitzentrale",
+      "Text editor",
+      "Terminal",
+      "System log"
+    ],
+    "blurb": "A microkernel desktop where the running system is a live, editable graph of components. Genode Labs\u2019 Sculpt turns the OS itself into the interface: every driver, service and application is a node you can add, connect and inspect on screen."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "sculpt",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Genode Sculpt 25.04 Leitzentrale at 1024x768: the component graph (Hardware -> ps2 / vesa fb / usb+usb hid / ahci / nic; Config, Info, GUI, ram fs in use, depot, nic router) with the '+' menu open on its Options tab (acpi support, audio, black hole, mixer, system clock, touchpad, trace logger, vm fs) and the Network panel showing Wired 10.99.0.38/24; pointer parked at (701,451). Baked 2026-09-09 with savevm on the shipped device set (q35, AHCI, EHCI usb-mouse+usb-kbd, e1000 on tap sculptrn0); loadvm restores framebuffer-identical (diff bbox None) and the pointer drives afterwards."
+  },
+  "migrationExceptions": [
+    "pointer-vmmouse-implicit"
+  ],
+  "notes": [
+    "scaffolded from serenityos on 2026-09-09; TODO: media, museum, spa"
+  ],
+  "retronet": {
+    "planes": [
+      "web"
+    ],
+    "address": "10.99.0.38",
+    "addressing": "dhcp",
+    "link": "tap sculptrn0 on vmbr-rn",
+    "guard": "SCULPTRN-IN",
+    "joined": "2026-09-09",
+    "doc": "docs/lab/retronet/STATION-sculpt.md"
+  },
+  "title": "Genode Sculpt OS",
+  "media": {
+    "kind": "disk-image",
+    "source": "https://genode.org/files/sculpt/sculpt-25-04.img",
+    "sha256": "54e8bd5f3b7c5ebf0fac84aa2c103d8bb8efa62ef6bcb5a08f2cad42cc29c366",
+    "bytes": 33923072,
+    "note": "Official Genode Sculpt 25.04 release image (GPLv2 / AGPL components; Genode Labs). Fetched from origin, never from VOM."
+  }
+}

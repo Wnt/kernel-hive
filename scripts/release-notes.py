@@ -63,8 +63,11 @@ from zoneinfo import ZoneInfo
 # script and under `unittest discover -s scripts`.
 import release_notes_codelines as codelines_mod
 import release_notes_forks as forks_mod
+import release_notes_markup as markup_mod
 import release_notes_pins as pins_mod
+import release_notes_publish as publish_mod
 import release_notes_render as render_mod
+import release_notes_screenshots as screenshots_mod
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TZ = ZoneInfo("Europe/Helsinki")
@@ -205,12 +208,19 @@ def load_weeks() -> list[dict]:
             + f"\n  see {render_mod.PROMPT_PATH}"
         )
     docs.sort(key=lambda d: d["week"], reverse=True)
-    return [_decorate(doc) for doc in docs]
+    names = markup_mod.station_names(REPO_ROOT)
+    return [_decorate(doc, names) for doc in docs]
 
 
-def _decorate(doc: dict) -> dict:
+def _decorate(doc: dict, names: dict[str, str] | None = None) -> dict:
     """The published week document: the authored fields plus the two date-only
-    convenience keys the SPA renders with."""
+    convenience keys the SPA renders with, and the resolved screenshot tile row
+    (an authored override, or the derived default — see
+    release_notes_screenshots), as `[{"id", "name"}, ...]` so every renderer
+    (both markdown outputs, the SPA, a GitHub release body) draws the same grid
+    from one list without going back to the registry itself."""
+    names = names or {}
+    ids = screenshots_mod.resolve(doc)
     out = {
         "week": doc["week"],
         "title": doc["title"],
@@ -222,6 +232,7 @@ def _decorate(doc: dict) -> dict:
         "codeLines": doc["codeLines"],
         "summary": list(doc["summary"]),
         "bullets": list(doc["bullets"]),
+        "screenshots": [{"id": sid, "name": names.get(sid, sid)} for sid in ids],
     }
     if "source" in doc:
         out["source"] = doc["source"]
@@ -310,13 +321,78 @@ def week_path(end: datetime) -> Path:
     return summary_dir() / f"{end.astimezone(TZ).date().isoformat()}.json"
 
 
+FACTS_DIRNAME = "facts"
+
+
+def facts_dir(end: datetime) -> Path:
+    """registry/release-notes/facts/<end-date>/ — the free-form inbox a
+    station wave drops a note into (`<station-id>.md`) instead of touching the
+    week's own JSON. `render`/`check` never read this directory: it holds raw
+    material, not anything that has to match the locked schema."""
+    return summary_dir() / FACTS_DIRNAME / end.astimezone(TZ).date().isoformat()
+
+
+def facts_files(end: datetime) -> list[Path]:
+    d = facts_dir(end)
+    return sorted(d.glob("*.md")) if d.is_dir() else []
+
+
+DRIFT_WARN_FRACTION = 0.10
+
+
+def _commit_count_drift(
+    start: datetime, end: datetime, recorded: object, all_commits: list[tuple[datetime, str]]
+) -> str | None:
+    """None when `recorded` is missing/unusable or within `DRIFT_WARN_FRACTION`
+    of a fresh count; otherwise a one-line warning.
+
+    A week authored mid-week (before its Sunday closed) records a commit count
+    that a later, complete re-count will not match — that is exactly what
+    happened to week 5, which was authored missing ~400 commits. `brief` for a
+    week whose file already exists is a RE-authoring, and this is the check
+    that notices someone skipped straight to it.
+    """
+    if not isinstance(recorded, int) or isinstance(recorded, bool) or recorded <= 0:
+        return None
+    fresh = sum(1 for stamp, _ in all_commits if start <= stamp < end)
+    drift = abs(fresh - recorded) / recorded
+    if drift <= DRIFT_WARN_FRACTION:
+        return None
+    return (
+        f"WARNING: commitCount {recorded} recorded, {fresh} on a fresh count "
+        f"({drift:.0%} drift — was this authored before the week closed?)"
+    )
+
+
+def _late_facts(path: Path, end: datetime) -> list[Path]:
+    """Fact notes dropped into the inbox AFTER the week was authored — a
+    station wave landed once the write-up already existed, so the write-up is
+    missing whatever it says. Compared by mtime, offline, no git involved."""
+    written_at = path.stat().st_mtime
+    return [f for f in facts_files(end) if f.stat().st_mtime > written_at]
+
+
 def cmd_status(now: datetime) -> int:
     epoch = repo_epoch(now)
     print(f"release-notes: weeks close {CUTOFF_LABEL}; the in-progress week is never published")
     rows = [(0, None, epoch)] + [(n, s, e) for n, s, e in closed_spans(epoch, now)]
+    all_commits = read_commits(now)
     for number, start, end in rows:
         path = week_path(end)
         state = "written" if path.exists() else "MISSING"
+        if path.exists() and start is not None:
+            try:
+                recorded = json.loads(path.read_text()).get("commitCount")
+            except json.JSONDecodeError:
+                recorded = None
+            drift = _commit_count_drift(start, end, recorded, all_commits)
+            if drift:
+                state = f"written — {drift}"
+        if path.exists():
+            late_facts = _late_facts(path, end)
+            if late_facts:
+                names = ", ".join(f.stem for f in late_facts)
+                state += f" — WARNING: facts arrived after authoring ({names}) — re-author this week"
         window = "pre-public era" if start is None else f"{start:%Y-%m-%d %H:%M}"
         print(f"  week {number:>2}  {window} – {end:%Y-%m-%d %H:%M}  {path.relative_to(REPO_ROOT)}  {state}")
     missing = [n for n, _, e in rows if not week_path(e).exists()]
@@ -430,6 +506,15 @@ def cmd_brief(now: datetime, want: str | None) -> int:
     for line in fork_lines:
         print(line)
     print("")
+    fact_paths = facts_files(end)
+    if fact_paths:
+        print("FACTS FROM THE FLOOR")
+        print(f"  (dropped by station waves at {facts_dir(end).relative_to(REPO_ROOT)}/ — raw material, not prose)")
+        print("")
+        for fact_path in fact_paths:
+            print(f"--- {fact_path.relative_to(REPO_ROOT)} ---")
+            print(fact_path.read_text().rstrip("\n"))
+            print("")
     print(
         CONTRACT.format(
             path=path,
@@ -448,6 +533,30 @@ def cmd_brief(now: datetime, want: str | None) -> int:
     return 0
 
 
+# --------------------------------------------------------------------- publish
+
+
+def resolve_week_commit(now: datetime, week_number: int, end: datetime) -> str:
+    return publish_mod.resolve_week_commit(
+        now, week_number, end, run_git=run_git, git_format=GIT_FORMAT, stamp=_stamp, repo_epoch=repo_epoch
+    )
+
+
+def cmd_publish(now: datetime, want: str | None, dry_run: bool, retag: bool) -> int:
+    return publish_mod.cmd_publish(
+        now,
+        want,
+        dry_run,
+        retag,
+        repo_root=REPO_ROOT,
+        load_weeks=load_weeks,
+        run_git=run_git,
+        git_format=GIT_FORMAT,
+        stamp=_stamp,
+        repo_epoch=repo_epoch,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Render the release notes from the weekly summary files.")
     sub = parser.add_subparsers(dest="command")
@@ -456,6 +565,12 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="list the closed weeks and whether each has been written up")
     brief = sub.add_parser("brief", help="print the authoring brief for the OLDEST week with no summary yet")
     brief.add_argument("--week", metavar="END-DATE", help="the Sunday a week closed, e.g. 2026-08-23")
+    publish = sub.add_parser("publish", help="ensure a git tag + GitHub release for every closed, written week")
+    publish.add_argument("--week", metavar="END-DATE", help="limit to the week that closed on this Sunday")
+    publish.add_argument(
+        "--dry-run", action="store_true", help="print every tag/release action and body length; touch nothing"
+    )
+    publish.add_argument("--retag", action="store_true", help="move a tag that already exists at a different commit")
     args = parser.parse_args(argv)
     now = datetime.now(TZ)
     if args.command == "check":
@@ -464,6 +579,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_status(now)
     if args.command == "brief":
         return cmd_brief(now, args.week)
+    if args.command == "publish":
+        return cmd_publish(now, args.week, args.dry_run, args.retag)
     return cmd_render(now)
 
 
