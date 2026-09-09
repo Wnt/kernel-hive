@@ -70,6 +70,34 @@ See `A1000-WAVE.md` (same session): the scaffold's QEMU-sibling assumption
 (fixed), `smoke-rig.sh`'s QMP requirement, root-umask rig files, and the
 root-owned `/data/assets-staging` inside CT950.
 
-## Timeline
+## Timeline (measured: transcript ask timestamp + git/box mtimes)
 
-Measured after landing with `scripts/dev/session-timeline.py`; filled in by the retro.
+| Milestone | Clock (UTC) | Minutes from the ask |
+|---|---|---|
+| Operator ask ("Add the two Amigas") | 14:56 | 0 |
+| Stack, alloc, media staged + hashed | 15:03 | 7 |
+| A3000 smoke boot proven (Workbench 2.04 floppy → keymap prompt) | 15:08 | 12 |
+| `/os/a3000` viewable (smoke rig) | 15:13 | 17 |
+| Ledger pushed (`a3000`) | 15:16 | 20 |
+| build stream (compose HDF + station FS-UAE) reported | 15:37 | 41 |
+| golden stream (boot 5 s, pointer, keyboard, reset — all PASS) reported | 15:46 | 50 |
+| a3000 main push | 15:49 | 53 |
+| **a3000 landed live** (`/os/a3000`, unit active, framebuffer shows Workbench 2.04) | 15:53 | **57** |
+
+The a3000 ran second through one coordinator; its golden stream waited on the
+build stream's hardfile (19 minutes, most of it the CT950 compile + the
+host-side compose), and its landing paid for landing behind a1000: every
+append-only table conflicted with main, the union seam dropped the a1000 row's
+closing `},` in both scene tables, and both scaffolds had picked the same
+render orders (bindingOrder 91 twice → reassign max+1). Third attempt failed
+because the smoke rig's own Xvfb still held `:89`, the station's display —
+`smoke-rig.sh --down` stops the daemon, not the guest; kill the smoke emulator
+and its Xvfb by pidfile BEFORE landing an x11 station that reuses the display.
+
+## Walls hit at landing (2026-09-09)
+
+| Wall | Cause | Fix |
+|---|---|---|
+| duplicate `bindingOrder=91` (and signal/manifest/golden/bringUp) | two `new --like` scaffolds from the same base | reassign every order to max+1 over all rows before the landing merge |
+| `spa-scene-rows` "no row for a3000" after the union merge | the seam dropped `keyboard/mouse` + `},` of the a1000 row above ours | grep the row after the id's line; run vitest src/scene before committing the merge |
+| `streamhost@a3000` failed 3× at start | smoke rig's Xvfb still on `:89` | kill smoke `fsuae.pid` + `xvfb.pid` before `station-land` |

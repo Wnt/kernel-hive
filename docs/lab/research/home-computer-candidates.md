@@ -14,8 +14,8 @@ asset, no checksum gate and no new emulator build, only a launcher, a checkpoint
 a registry entry. §2's "VICE covers the whole Commodore 8-bit wishlist" claim is
 now proven rather than predicted. Two costs the study did not predict are
 recorded in the guest doc: VICE segfaults when its stdout is not a terminal, and
-the base's installed VIC20 ROM set is missing its BASIC ROM. Everything else
-below remains unbuilt.
+the base's installed VIC20 ROM set is missing its BASIC ROM. Most of phases 1–4 have since
+shipped (see the registry); the Amigas are noted in §4.4.
 
 Companion study for the minicomputer end of the same wishlist:
 [`pdp11-add.md`](pdp11-add.md).
@@ -161,6 +161,14 @@ supported model.
 
 Recommendation: **A1000 first** (best story, cheapest media), **A4000 second**
 (best desktop), A3000 optional, A2000 as a poster.
+
+**Built 2026-09-09:** `a1000` (Kickstart 1.2 + Workbench 1.2 from floppy, live
+in 45 minutes) and `a3000` (Kickstart 2.04 + Workbench 2.04 on a host-composed
+hardfile, live in 57 minutes), both host-native FS-UAE stations on the
+`amigaos35` pattern — `docs/lab/A1000-WAVE.md`, `docs/lab/A3000-WAVE.md`. The
+A4000 was already on the board as `amigaos35`'s hardware, which is why the
+A3000 took its place. The A1000's Kickstart-from-floppy boot is still OPEN
+(reset-loops in FS-UAE 3.2.35; findings in the a1000 guest doc).
 
 ### 4.5 Dragon 32
 

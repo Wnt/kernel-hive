@@ -85,6 +85,36 @@ is a launcher change, not a re-bake.
 - `/data/assets-staging` is root-owned inside CT950 and a different mount on
   labhost; this wave staged media under `/data/vms/sandbox/<id>/media/` instead.
 
-## Timeline
+## Timeline (measured: transcript ask timestamp + git/box mtimes)
 
-Measured after landing with `scripts/dev/session-timeline.py`; filled in by the retro.
+| Milestone | Clock (UTC) | Minutes from the ask |
+|---|---|---|
+| Operator ask ("Add the two Amigas") | 14:56 | 0 |
+| Both stacks (`wt.sh new`), both `wave.sh alloc`, media staged + hashed | 15:03 | 7 |
+| A1000 smoke boot proven (Workbench 1.2 desktop, full-ROM race runner) | 15:10 | 14 |
+| `/os/a1000` viewable (smoke rig) | 15:12 | 16 |
+| Ledger pushed (`a1000`) | 15:16 | 20 |
+| Five streams launched (a1000 build/golden/spa, a3000 build/spa) | 15:18 | 22 |
+| a1000 main push | 15:39 | 43 |
+| **a1000 landed live** (`/os/a1000`, unit active, framebuffer shows Workbench 1.2) | 15:41 | **45** |
+
+Where the 45 minutes went: 16 to viewable (about 5 of them were self-inflicted:
+the root-owned staging mount, a `cd` that failed and hashed the shared clone, a
+frame loop with broken quoting), 4 to the ledger, 20 in the streams (the FS-UAE
+build stream lost 10 minutes to labhost's missing `zip`), and 5 across four
+landing attempts: a unit test I ran in the landing worktree leaked a temporary
+station into the tree; the a1000 tile had no keyboard-profile family
+(`spa/src/ui/keyboard/keyboardProfiles.ts` OS_FAMILY — the spa stream looked
+under `spa/src/data/`); the scaffold had copied the sibling's
+`operator.labctl.udp_port`. Every one of those is now either fixed in the tool
+or written in the wall table below.
+
+## Walls hit at landing (2026-09-09)
+
+| Wall | Cause | Fix |
+|---|---|---|
+| `station-up` red: `labctl: declared/live mismatch a1000.udp_port` | scaffold copied `operator.labctl.udp_port` from the sibling | scaffold now rewrites it; check the field on any pre-fix scaffold |
+| vitest `tileWiring` + `keyboardProfiles`: no keyboard family for the tile | the family map lives in `spa/src/ui/keyboard/keyboardProfiles.ts` (OS_FAMILY), not under `spa/src/data/` | add `<id>: 'amiga'` next to amigaos35's |
+| a validate error shipped in a commit | `validate 2>&1 \| tail -1 && …` masks the exit code | run it to a file and test `$?`; never pipe a gate |
+| `build-fsuae-native.sh` exits silently after the patches | `configure` needs `zip`; labhost has none; the script did not check configure's exit | run the build in CT950; the script now checks and says so |
+| golden's pointer probe: an instant `xdotool click` never selects | FS-UAE's mousehack samples per frame; press+release inside one frame is lost | 150 ms hold, 150–200 ms between the two clicks of a double-click |
