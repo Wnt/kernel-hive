@@ -1,15 +1,19 @@
 #!/bin/bash
 # Launch station 'sculpt' (VMID 190): Genode Sculpt OS 25.04 under KVM.
-# Device set (2026-09-09, sculpt wave): q35, -cpu host, 4 GiB, 2 vCPUs, AHCI
-# disk carrying the Sculpt image (GPT) + the 'golden' vmstate, xHCI with a
-# USB tablet (absolute pointer) and a USB keyboard, ONE guest NIC: the
-# retronet tap (rtl8139, driven by Sculpt's ipxe_nic driver). No audio device:
+# Device set (2026-09-09, sculpt wave, raced): q35, -cpu host, 4 GiB, 2 vCPUs,
+# AHCI disk carrying the Sculpt image (GPT) + the 'golden' vmstate, an EHCI
+# controller with a RELATIVE USB mouse and a USB keyboard, ONE guest NIC: the
+# retronet tap (e1000 — Genode's PC NIC driver does not drive the rtl8139: bound, never transmitted). Genode's usb_hid never binds QEMU's absolute
+# usb-tablet (on xHCI the sprite exists but never moves; on EHCI no sprite at
+# all) and HMP mouse_move is dead — a six-runner race proved usb-mouse on EHCI
+# is the pointer that moves nitpicker's sprite, so the station ships the
+# daemon's rel bridge with readback (docs/lab/SCULPT-WAVE.md). No audio device:
 # the default Sculpt scenario has no audio driver. Disk + launcher are ONE
 # combination: the golden vmstate was baked on exactly this device set.
 # Kill only by pidfile.
 set -euo pipefail
 T="${SCULPT_STATION_DIR:-/data/vms/streamhost/stations/sculpt}"
-DISK="${SCULPT_DISK:-$T/sculpt.qcow2}"
+DISK="${SCULPT_DISK:-$T/disk.qcow2}"
 if [ -z "${SCULPT_NO_GOLDEN:-}" ]; then
   if ! qemu-img snapshot -l "$DISK" | grep -Eq '^[[:space:]]*[0-9]+[[:space:]]+golden[[:space:]]'; then
     echo "sculpt: required qcow2 snapshot 'golden' is missing in $DISK" >&2
@@ -45,15 +49,14 @@ fi
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 nohup qemu-system-x86_64 \
   -name "streamhost-${SCULPT_NAME:-sculpt}" \
-  -nodefaults \
   -enable-kvm -machine pc-q35-11.0 -cpu host \
   -m 4096 -smp 2 -rtc base=localtime \
   -drive id=disk0,file="$DISK",format=qcow2,if=none \
   -device ahci,id=ahci0 -device ide-hd,drive=disk0,bus=ahci0.0 \
   -boot order=c \
   -vga std \
-  -device qemu-xhci,id=xhci -device usb-tablet,bus=xhci.0 -device usb-kbd,bus=xhci.0 \
-  -netdev tap,id=rn0,ifname="${SCULPT_TAP:-sculptrn0}",script=no,downscript=no -device rtl8139,netdev=rn0,mac="$RN_SCULPT_MAC" \
+  -device usb-ehci,id=ehci0 -device usb-mouse,bus=ehci0.0 -device usb-kbd,bus=ehci0.0 \
+  -netdev tap,id=rn0,ifname="${SCULPT_TAP:-sculptrn0}",script=no,downscript=no -device e1000,netdev=rn0,mac="$RN_SCULPT_MAC" \
   "${LOADVM[@]}" \
   -display dbus,p2p=on \
   -qmp unix:"$T/qmp.sock",server=on,wait=off \

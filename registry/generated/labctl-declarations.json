@@ -1229,7 +1229,7 @@
     "sculpt": {
       "dir": "/data/vms/streamhost/stations/sculpt",
       "qmp": "/data/vms/streamhost/stations/sculpt/qmp.sock",
-      "pointer_mode": "abs",
+      "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,

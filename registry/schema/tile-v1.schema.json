@@ -224,6 +224,7 @@
                 "qemu-ps2-relative",
                 "qemu-adb-relative",
                 "qemu-usb-hid-relative",
+                "qemu-usb-mouse-relative",
                 "gallery-hid",
                 "warpd-agent",
                 "mame-ioport",

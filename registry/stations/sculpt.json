@@ -46,7 +46,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/sculpt",
       "qmp": "/data/vms/streamhost/stations/sculpt/qmp.sock",
-      "pointer_mode": "abs",
+      "pointer_mode": "rel",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -75,14 +75,15 @@
     "transport": "streamhost",
     "udpPort": 54190,
     "fps": 60,
-    "audio": true,
+    "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "abs",
-      "method": "qemu-usb-tablet",
-      "absolute": true,
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-usb-mouse-relative",
+      "absolute": false,
       "present": true,
-      "device": "usb-tablet",
+      "device": "usb-mouse on EHCI (Genode usb_hid; the absolute usb-tablet is never bound)",
       "scale": 1.0,
       "offset": [
         0,
@@ -101,8 +102,7 @@
       "SH_FPS": "60",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_POINTER": "abs",
-      "SH_AUDIO": "on",
+      "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/sculpt/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/sculpt/signaling.json",
@@ -119,9 +119,9 @@
         "--udp",
         "54190",
         "--pointer",
-        "abs",
+        "rel",
         "--audio",
-        "on",
+        "off",
         "--fps",
         "60",
         "--launcher-file",
@@ -183,7 +183,8 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#4a90c2",
-    "eraLabel": "2025 \u00b7 Genode Sculpt 25.04"
+    "eraLabel": "2025 \u00b7 Genode Sculpt 25.04",
+    "pointerRel": true
   },
   "museum": {
     "id": "sculpt",
@@ -217,13 +218,13 @@
   "ui": "desktop",
   "reset": {
     "stationDir": "sculpt",
-    "pointer": "abs",
+    "pointer": "rel",
     "touch": false,
-    "resetMode": "restart",
-    "snapshot": null,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
     "mouse": "PASS",
-    "keyboard": "SKIP",
-    "fixture": "Genode Sculpt 25.04 Leitzentrale: the component graph desktop (Hardware -> ps2/vesa fb/usb hid/ahci) on the dark control-center background. Cold-boot reset from a fresh qcow2 over the base image."
+    "keyboard": "UNVERIFIED",
+    "fixture": "Genode Sculpt 25.04 Leitzentrale at 1024x768: the component graph (Hardware -> ps2 / vesa fb / usb+usb hid / ahci / nic; Config, Info, GUI, ram fs in use, depot, nic router) with the '+' menu open on its Options tab (acpi support, audio, black hole, mixer, system clock, touchpad, trace logger, vm fs) and the Network panel showing Wired 10.99.0.38/24; pointer parked at (701,451). Baked 2026-09-09 with savevm on the shipped device set (q35, AHCI, EHCI usb-mouse+usb-kbd, e1000 on tap sculptrn0); loadvm restores framebuffer-identical (diff bbox None) and the pointer drives afterwards."
   },
   "migrationExceptions": [
     "pointer-vmmouse-implicit"
@@ -249,10 +250,5 @@
     "sha256": "54e8bd5f3b7c5ebf0fac84aa2c103d8bb8efa62ef6bcb5a08f2cad42cc29c366",
     "bytes": 33923072,
     "note": "Official Genode Sculpt 25.04 release image (GPLv2 / AGPL components; Genode Labs). Fetched from origin, never from VOM."
-  },
-  "listing": {
-    "state": "hidden",
-    "since": "2026-09-09",
-    "reason": "Dark launch: the Genode Sculpt 25.04 Leitzentrale boots and streams at /os/sculpt, but interactive pointer injection into this fresh official image is unproven (see docs/lab/SCULPT-WAVE.md OPEN items). Promote once the pointer transport is raced and a golden is baked."
   }
 }

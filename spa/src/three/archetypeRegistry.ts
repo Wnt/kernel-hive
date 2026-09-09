@@ -219,7 +219,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
   a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1E5BB8', eraLabel: '1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2' }, // ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage
   a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '1990 · Amiga 3000 — Workbench 2.04' }, // ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top
-  sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04' },
+  sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

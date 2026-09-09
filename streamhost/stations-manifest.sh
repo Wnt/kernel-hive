@@ -1153,7 +1153,7 @@ emit a3000 \
 
 # sculpt (VMID 102) — TODO one line; scaffolded from serenityos.
 emit sculpt \
-  --tile sculpt --vmid 190 --udp 54190 --pointer abs --audio on --fps 60 \
+  --tile sculpt --vmid 190 --udp 54190 --pointer rel --audio off --fps 60 \
   --launcher-file "$T/sculpt/qemu-streamhost.sh" --env-append-file \
   "$T/sculpt/station.env.fixture"
 
