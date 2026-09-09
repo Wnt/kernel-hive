@@ -45,8 +45,18 @@ SOURCES_NAME = SOURCES_PATH.name
 SH_FORK_RE = re.compile(r"^[ \t]*(?:export[ \t]+)?(\w*)FORK_(URL|BRANCH)=(\S.*?)[ \t]*$", re.M)
 SH_DEFAULT_RE = re.compile(r"^\$\{[A-Za-z_][A-Za-z0-9_]*:-(.*)\}$")
 # "github.com/Wnt/es40 main — ...", "github.com/Wnt/qemu @ kernel-hive (...)",
-# "build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)".
-SOURCE_RE = re.compile(r"github\.com[/:]([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)[ \t]*@?[ \t]*([A-Za-z0-9_./-]+)")
+# "build-vice-native.sh (github.com/Wnt/vice kernel-hive/integrated on 3.10.0)",
+# "github.com/Wnt/fs-uae, branch kernel-hive/integrated (build-fsuae-native.sh)".
+#
+# The optional `,?` before the separator matters: without it, a repo slug
+# immediately followed by a comma (the fourth form above) forces the engine to
+# backtrack INTO the slug to satisfy the branch group's one-or-more — comma is
+# in neither character class — so "fs-uae, branch kernel-hive/integrated" was
+# parsed as repo `Wnt/fs-ua` + branch `e`. Consuming the comma explicitly means
+# the slug group never has to give a character back.
+SOURCE_RE = re.compile(
+    r"github\.com[/:]([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)[ \t]*,?[ \t]*(?:@|branch)?[ \t]*([A-Za-z0-9_./-]+)"
+)
 # The reverse sweep: build -> declaration. Only the forks we own can be declared.
 OUR_FORK_OWNER = "Wnt"
 SCAN_GLOBS = ("*.sh", "scripts/**/*.sh", "streamhost/**/*.sh", "registry/stations/*.json")
