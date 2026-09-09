@@ -160,7 +160,7 @@ MANIFEST=(
   "apple2e        |tiles/apple2.sh                                       |bridge/apple2     |retro     |~3-5m                        |full                         |tiles/apple2 overlay + golden (Apple //e → GEOS)"
   "samcoupe       |tiles/samcoupe.sh                                     |native/samcoupe   |retro     |~3-5m                        |full                         |samcoupe boot disk (SAMDOS auto-menu → games/apps) + golden savestate (MAME samcoupe)"
   "atari800xl     |tiles/atari800xl.sh                                   |native/atari800xl |retro     |~3-5m                        |full                         |atari800xl boot disk (game/app menu ATR) + golden savestate (MAME a800xlp)"
-  "a3000          |tiles/amigaos35.sh                                    |AmigaOS35         |graphical |~30-60m                      |vision                       |amigaos35-system.hdf golden master (AmigaOS 3.5 desktop, AWeb II; cold-boot reset)"
+  "a3000          |tiles/a3000.sh                                        |A3000             |graphical |~2m                          |full                         |a3000-system.hdf golden master (Workbench 2.04 composed host-side from the four ADFs with xdftool; cold-boot reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

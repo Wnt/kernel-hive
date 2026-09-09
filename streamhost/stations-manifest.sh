@@ -1136,9 +1136,9 @@ emit atari800xl \
   "$T/atari800xl/atari800xl.keymap" --env-append-file \
   "$T/atari800xl/station.env.fixture"
 
-# a3000 (VMID 189) — TODO one line; scaffolded from amigaos35.
+# a3000 — host-native FS-UAE 3.2.35 (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; x11 capture on :89, XTEST input.
 emit a3000 \
-  --tile a3000 --udp 54151 --x11 --x11-display :58 --capture x11 --pointer \
+  --tile a3000 --udp 54189 --x11 --x11-display :89 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 50 --x11-runtime-file \
   "$T/a3000/x11-runtime.sh" --env-append-file "$T/a3000/station.env.fixture"
 
