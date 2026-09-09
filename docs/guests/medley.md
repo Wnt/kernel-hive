@@ -91,41 +91,71 @@ ssh lab 'labctl reset medley'     # relaunch: new pid, pristine Exec in ~3 s
 Never inject while a session is attached — the daemon is the single injector
 on this display.
 
-## Security — DEACTIVATED 2026-09-09 (operator: "absolute no-go")
+## Security — CONTAINED (systemd-nspawn, 2026-09-09)
 
-**Status: stopped, disabled and masked on the box; `listing.state: hidden`.**
-Do not relaunch this station until the paragraph below is false.
+Medley is not an emulated machine: `maiko` is a host application, and the
+Exec a visitor types into can open files and (with UNIXCOMM) spawn Unix
+subprocesses. Until 2026-09-09 maiko ran **as root on labhost in the host
+namespaces** under the stock `streamhost@` template, so a visitor was one
+typed form away from the hypervisor's file system; the operator deactivated
+the station ("absolute no-go") and set four requirements for relaunch:
 
-Medley is not an emulated machine. `maiko` is a host application, and the
-station ran it **as root on labhost in the host PID and mount namespaces**
-(the stock `streamhost@` template: no `User=`, no `ProtectSystem`, no private
-namespace). The Exec a visitor types into has the host file system through
-Lisp's file functions and can spawn Unix subprocesses through maiko's
-subprocess support, so a gallery visitor was one typed form away from a root
-shell on the hypervisor. The launcher's `HOME`/`LOGINDIR`/`LDEDESTSYSOUT`
-redirection into `work/` is a convention, not a boundary.
+1. own PID namespace — the Lisp side sees only its own processes;
+2. no host applications visible;
+3. no host network interfaces or devices;
+4. no mount/unmount of host file systems, even as root inside.
 
-Every other host-native station (MAME, VICE, FS-UAE, ES40, Previous) also
-runs as root in the host namespaces, but the visitor only reaches an emulated
-guest; escaping needs an emulator bug. The one existing precedent for doing
-this right is `nextstep`, whose Previous runs as the unprivileged `nsexhibit`
-user.
+**The boundary now** (`streamhost/stations/medley/x11-runtime.sh` +
+`nspawn-inner.sh`): maiko AND its Xvfb run inside a `systemd-nspawn`
+container — `--private-users=1966080:65536` (root inside is an unprivileged
+host uid), `--private-network` (only `lo`), `--volatile=overlay` over a minimal
+Debian trixie tree built by `tiles/medley.sh` (nothing persists), the Medley
+tree and maiko bound **read-only** at their host paths, `work/` the only
+writable bind, `CAP_SYS_ADMIN` and friends dropped, `--system-call-filter=~@mount`,
+`--no-new-privileges`, `--as-pid2` (maiko's exit ends the container) and
+`--keep-unit` (it lives in the unit's BindsTo scope, so `systemctl stop`
+sweeps it). The host reaches the display through a symlink
+`/tmp/.X11-unix/X91 -> /run/streamhost/x11/medley/X91` (the container's socket
+directory bound out), so the daemon's capture (GetImage, no MIT-SHM), XTEST
+input, `labctl shot` and the idle freezer (SIGSTOP on `mame.pid`, which holds
+maiko's host pid) are unchanged. The X server is the only thing the Lisp side
+can talk to, and only over the X protocol.
 
-What "safe to relaunch" means, in order of cost:
+**Proven on the framebuffer, typed into the Exec** (frames in
+[`../lab/MEDLEY-NSPAWN-WAVE.md`](../lab/MEDLEY-NSPAWN-WAVE.md)). The Exec is in
+the XCL package, so Interlisp functions take the `IL:` prefix:
 
-1. A dedicated unprivileged user plus a systemd drop-in for `streamhost@medley`
-   (`User=`, `ProtectSystem=strict`, `ReadWritePaths=` the work dir only,
-   `PrivateTmp=`, `NoNewPrivileges=`, `RestrictAddressFamilies=AF_UNIX` — it
-   needs nothing but the Xvfb socket). The asset tree must be readable by
-   that user and the Xvfb socket reachable.
-2. Or `bwrap`/`unshare` around the launch with a private mount namespace:
-   assets read-only, `work/` read-write, nothing else.
-3. Or a throwaway container, as the retronet planes already are (CT 951).
+| Typed form | Shows | Requirement |
+|---|---|---|
+| `(IL:INFILEP "{DSK}/data/kernel-hive/registry/local.env")` | `NIL` | host files invisible |
+| `(IL:INFILEP "{DSK}/etc/osgallery/stream-ticket.env")` | `NIL` | host secrets invisible |
+| `(IL:INFILEP "{DSK}/proc/<host nspawn pid>/comm")` | `NIL`; `/proc/1/comm` (the container's stub init) exists | own PID namespace, no host processes (1, 2) |
+| `(DIRECTORY "{DSK}/sys/class/net/*")` | `lo` only | no host interfaces (3) |
+| `(DIRECTORY "{DSK}/dev/*")` | nspawn's minimal set (null, zero, random, tty, pts, shm…) | no host devices (3) |
+| `(IL:OPENFILE "{DSK}/data/vms/streamhost/assets/medley/medley/hacked" 'IL:OUTPUT)` | `FS-PROTECTION-VIOLATION` | Medley tree read-only |
+| `(IL:INFILEP "{DSK}/work/proof.txt")` | the file | `work/` is the scratch |
+| `(IL:FILESLOAD IL:UNIXCOMM)` then `(IL:CREATE-PROCESS-STREAM "id")` | `NIL` | no subprocess at all (maiko reports "no UNIXCOMM file handles" in this launch shape — it did before the container too) |
 
-Whichever lands, the proof is the same: from the Exec, `(SHELL "id")` and a
-file open outside `work/` must fail, on the framebuffer, before the listing
-block is removed. The same review applies to any future station whose guest
-is a stock host application rather than an emulated machine.
+Requirement 4 cannot be typed (no subprocess), so it is proven **inside the
+container's namespaces with maiko's capability set**:
+`nsenter -t $(cat mame.pid) -m -p -n -u -U -S 0 -G 0 -- setpriv --nnp
+--bounding-set -sys_admin,… -- sh -c 'mount -t tmpfs none /mnt; mount
+/dev/sda1 /mnt; umount /work'` — all three `permission denied` / `must be
+superuser`. (A plain `nsenter` shell keeps full user-namespace capabilities
+and CAN mount a tmpfs there — that is not what maiko has; `CapEff` of maiko
+is `15808dff`, no `CAP_SYS_ADMIN`, `NoNewPrivs 1`.)
+
+**Host-side audit** (`docs/lab/MEDLEY-NSPAWN-WAVE.md`): maiko uid 1966080,
+every `/proc/<pid>/ns/*` differs from PID 1's, mounts inside are the overlay
+root, tmpfs `/tmp` `/dev` `/run`, the two read-only binds, `/work`, and `/proc`
+with the kernel interfaces masked.
+
+**Run the proofs again** (after any change to the launcher, the rootfs or
+nspawn): hold the wake lease, type the table above into the Exec with
+`xdotool` on `:91` (see §Driving it by hand), `labctl shot medley`, and run
+the `nsenter … setpriv` line. The same review applies to any future station
+whose guest is a stock host application rather than an emulated machine — see
+memory/rule "no unsandboxed host-app stations".
 
 ## OPEN
 

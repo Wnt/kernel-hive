@@ -83,3 +83,33 @@ rm -rf "\$P"
 echo "medley: Medley window mapped; frame at $WORK/proof.png"
 EOF
 log "done — proof frame $WORK/proof.png"
+
+# ---------------------------------------------------------------------------
+# The container root the station runs INSIDE (docs/guests/medley.md
+# §Security): a minimal Debian trixie tree with Xvfb and maiko's runtime
+# libraries, built once with debootstrap and shifted into the container's uid
+# range with a one-shot nspawn (`--private-users-ownership=chown` cannot be
+# combined with the volatile root the launcher uses, so the shift is done here
+# and the launcher runs with ownership=off). Idempotent: an existing tree with
+# Xvfb in it is kept. procps/iproute2/util-linux are there so the operator's
+# proofs (ps, ip link, a failing mount) can be run inside.
+# ---------------------------------------------------------------------------
+ROOTFS="${MEDLEY_ROOTFS:-$ASSETS/rootfs}"
+UIDBASE="${MEDLEY_UIDBASE:-1966080}" # 30*65536; nspawn wants a multiple of 2^16
+"$LABRUN" <<EOF
+umask 022
+set -u
+R="$ROOTFS"
+if [ -x "\$R/usr/bin/Xvfb" ] && [ "\$(stat -c %u "\$R")" = "$UIDBASE" ]; then
+  echo "medley: container rootfs present at \$R (uid \$(stat -c %u "\$R"))"; exit 0
+fi
+rm -rf "\$R.staging"; mkdir -p "\$R.staging"
+debootstrap --variant=minbase --include=xvfb,procps,iproute2,libbsd0,util-linux,x11-utils,xauth \
+  trixie "\$R.staging" http://deb.debian.org/debian >"\$R.staging.log" 2>&1 \
+  || { tail -20 "\$R.staging.log" >&2; exit 1; }
+systemd-nspawn --quiet --register=no -D "\$R.staging" \
+  --private-users=$UIDBASE:65536 --private-users-ownership=chown /bin/true
+rm -rf "\$R"; mv "\$R.staging" "\$R"; rm -f "\$R.staging.log"
+echo "medley: container rootfs built at \$R (\$(du -sh "\$R" | cut -f1), uid $UIDBASE)"
+EOF
+log "container rootfs ready at $ROOTFS"

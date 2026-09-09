@@ -1155,8 +1155,8 @@ emit a3000 \
 emit medley \
   --tile medley --udp 54191 --x11 --x11-display :91 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/medley/x11-runtime.sh" --env-append-file \
-  "$T/medley/station.env.fixture"
+  "$T/medley/x11-runtime.sh" --aux-file "$T/medley/nspawn-inner.sh" \
+  --env-append-file "$T/medley/station.env.fixture"
 
 # sculpt (slot 190) — Genode Sculpt OS 25.04 under KVM: q35, AHCI disk, EHCI
 #   usb-mouse (RELATIVE: Genode's usb_hid never binds the absolute usb-tablet),
