@@ -124,7 +124,7 @@ class LikeRewriteTest(unittest.TestCase):
 
     def test_bare_station_dir_is_rewritten_and_longer_ids_are_not(self) -> None:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
-        from stations_registry.scaffold import _rewrite_like_text
+        from stations_registry.scaffold_like import _rewrite_like_text
 
         text = (
             '{"dir": "/data/vms/streamhost/stations/tinycore", '
