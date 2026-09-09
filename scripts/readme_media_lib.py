@@ -246,7 +246,7 @@ def render_lineup_html(rows: list[dict[str, Any]]) -> str:
     posters = sorted((r for r in rows if is_poster(r)), key=_sort_key)
     if posters:
         parts.append("### Placards\n")
-        parts.append("Backends retired; the SPA renders a static placard rather than dialing a dead service.")
+        parts.append("Two machines whose live backends were retired; they stay on the floor as placards.")
         parts.append("")
         parts.append(_thumb_table(posters))
         parts.append("")

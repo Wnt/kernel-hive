@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420"
      role="img" aria-labelledby="t d">
   <title id="t">How Kernel Hive gets a 1990s desktop into a browser tab</title>
   <desc id="d">A browser decodes H.264 and Opus over WebTransport and sends pointer and keyboard
@@ -10,7 +10,8 @@
     .box   { fill: #8a8a8a; fill-opacity: .08; stroke: #8a8a8a; stroke-width: 1.25; rx: 10; }
     .h     { fill: #8a8a8a; font: 600 15px/1.2 ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
     .l     { fill: #8a8a8a; font: 400 12.5px/1.2 ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
-    .k     { fill: #8a8a8a; font: 600 11.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; }
+    .s     { fill: #8a8a8a; font: 400 11px/1.2 ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .k     { fill: #8a8a8a; font: 600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .03em; }
     .wire  { fill: none; stroke: #8a8a8a; stroke-width: 1.5; }
     .dash  { fill: none; stroke: #8a8a8a; stroke-width: 1.25; stroke-dasharray: 5 4; }
     .cap   { fill: #8a8a8a; font: 600 12px/1.2 ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
@@ -22,55 +23,55 @@
     </marker>
   </defs>
 
-  <!-- ── column 1: the browser ─────────────────────────────────────────── -->
-  <rect class="box" x="18" y="66" width="216" height="150"/>
-  <text class="h" x="34" y="94">Your browser tab</text>
-  <text class="l" x="34" y="120">React gallery UI</text>
-  <text class="l" x="34" y="142">WebCodecs H.264 decode</text>
-  <text class="l" x="34" y="164">Opus audio out</text>
-  <text class="l" x="34" y="186">pointer, keys, wheel in</text>
+  <!-- column 1: the browser (x 16..216) -->
+  <rect class="box" x="16" y="66" width="200" height="150"/>
+  <text class="h" x="32" y="94">Your browser tab</text>
+  <text class="l" x="32" y="120">React gallery UI</text>
+  <text class="l" x="32" y="142">WebCodecs H.264 decode</text>
+  <text class="l" x="32" y="164">Opus audio out</text>
+  <text class="l" x="32" y="186">pointer, keys, wheel in</text>
 
-  <!-- ── link 1: WebTransport ──────────────────────────────────────────── -->
-  <text class="cap" x="342" y="94" text-anchor="middle">WebTransport over QUIC</text>
-  <path class="wire" d="M356 122 H 244" marker-end="url(#a)"/>
-  <text class="l" x="356" y="114" text-anchor="end">H.264 + Opus, one frame per stream</text>
-  <path class="wire" d="M244 168 H 356" marker-end="url(#a)"/>
-  <text class="l" x="244" y="160">pointer / keys, each on its own stream</text>
+  <!-- gap 1 (x 216..400): WebTransport -->
+  <text class="cap" x="308" y="86" text-anchor="middle">WebTransport over QUIC</text>
+  <text class="s" x="308" y="116" text-anchor="middle">H.264 video + Opus audio</text>
+  <path class="wire" d="M390 126 H 226" marker-end="url(#a)"/>
+  <text class="s" x="308" y="166" text-anchor="middle">pointer + keys, own streams</text>
+  <path class="wire" d="M226 176 H 390" marker-end="url(#a)"/>
 
-  <!-- ── column 2: the daemon ──────────────────────────────────────────── -->
-  <rect class="box" x="366" y="66" width="216" height="150"/>
-  <text class="h" x="382" y="94">streamhost</text>
-  <text class="l" x="382" y="112">one Rust daemon per machine</text>
-  <text class="l" x="382" y="140">damage-gated capture</text>
-  <text class="l" x="382" y="162">in-process x264 + Opus</text>
-  <text class="l" x="382" y="184">ticket gate, idle pause</text>
+  <!-- column 2: the daemon (x 400..600) -->
+  <rect class="box" x="400" y="66" width="200" height="150"/>
+  <text class="h" x="416" y="94">streamhost</text>
+  <text class="l" x="416" y="114">one Rust daemon per machine</text>
+  <text class="l" x="416" y="142">damage-gated capture</text>
+  <text class="l" x="416" y="164">in-process x264 + Opus</text>
+  <text class="l" x="416" y="186">ticket gate, idle pause</text>
 
-  <!-- ── link 2: capture + injection paths ─────────────────────────────── -->
-  <path class="wire" d="M700 122 H 592" marker-end="url(#a)"/>
-  <text class="k" x="700" y="114" text-anchor="end">shared-memory scanout</text>
-  <path class="wire" d="M592 152 H 700" marker-end="url(#a)"/>
-  <text class="k" x="592" y="144">QMP / dbus</text>
-  <path class="wire" d="M592 182 H 700" marker-end="url(#a)"/>
-  <text class="k" x="592" y="174">in-guest agent</text>
+  <!-- gap 2 (x 600..776): capture and injection paths -->
+  <text class="k" x="688" y="108" text-anchor="middle">shared memory</text>
+  <path class="wire" d="M766 118 H 610" marker-end="url(#a)"/>
+  <text class="k" x="688" y="146" text-anchor="middle">QMP / dbus</text>
+  <path class="wire" d="M610 156 H 766" marker-end="url(#a)"/>
+  <text class="k" x="688" y="184" text-anchor="middle">in-guest agent</text>
+  <path class="wire" d="M610 194 H 766" marker-end="url(#a)"/>
 
-  <!-- ── column 3: the emulators ───────────────────────────────────────── -->
-  <rect class="box" x="714" y="66" width="168" height="150"/>
-  <text class="h" x="730" y="94">The machine</text>
-  <text class="l" x="730" y="120">QEMU</text>
-  <text class="l" x="730" y="142">MAME</text>
-  <text class="l" x="730" y="164">FS-UAE</text>
-  <text class="l" x="730" y="186">es40</text>
+  <!-- column 3: the emulators (x 776..944) -->
+  <rect class="box" x="776" y="66" width="168" height="150"/>
+  <text class="h" x="792" y="94">The machine</text>
+  <text class="l" x="792" y="120">QEMU</text>
+  <text class="l" x="792" y="142">MAME</text>
+  <text class="l" x="792" y="164">FS-UAE</text>
+  <text class="l" x="792" y="186">es40</text>
 
-  <!-- ── the instant-ready note ────────────────────────────────────────── -->
-  <path class="dash" d="M798 216 V 250"/>
-  <rect class="box" x="636" y="250" width="246" height="62"/>
-  <text class="cap" x="652" y="274">Starts at a checkpoint, paused</text>
-  <text class="l" x="652" y="296">no boot to watch; first visitor resumes it</text>
+  <!-- the instant-ready note -->
+  <path class="dash" d="M860 216 V 250"/>
+  <rect class="box" x="668" y="250" width="276" height="62"/>
+  <text class="cap" x="684" y="274">Starts at a checkpoint, paused</text>
+  <text class="l" x="684" y="296">no boot to watch; the first visitor resumes it</text>
 
-  <!-- ── the retronet plane ────────────────────────────────────────────── -->
-  <path class="dash" d="M636 281 H 320 V 312" />
-  <rect class="box" x="104" y="312" width="432" height="82"/>
-  <text class="h" x="120" y="338">retronet — a 1990s internet with no way out</text>
-  <text class="l" x="120" y="360">archived 1998 web pages, served over real HTTP/1.0</text>
-  <text class="l" x="120" y="382">ICQ, AIM and IRC between the machines · no route to today</text>
+  <!-- the retronet plane -->
+  <path class="dash" d="M668 281 H 340 V 312"/>
+  <rect class="box" x="124" y="312" width="432" height="82"/>
+  <text class="h" x="140" y="338">retronet — a 1990s internet with no way out</text>
+  <text class="l" x="140" y="360">archived 1998 web pages, served over real HTTP/1.0</text>
+  <text class="l" x="140" y="382">ICQ, AIM and IRC between the machines · no route to today</text>
 </svg>

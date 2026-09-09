@@ -14,9 +14,6 @@ collection, one card clicked, Windows 3.11 arriving, and Program Manager's File
 menu unfolding under a pointer that is being moved from a browser tab.
 [How it was made](docs/media/README.md).*
 
-[![rust](https://img.shields.io/github/actions/workflow/status/Wnt/kernel-hive/rust.yml?branch=main&label=rust)](https://github.com/Wnt/kernel-hive/actions/workflows/rust.yml)
-[![spa](https://img.shields.io/github/actions/workflow/status/Wnt/kernel-hive/spa.yml?branch=main&label=spa)](https://github.com/Wnt/kernel-hive/actions/workflows/spa.yml)
-[![quality](https://img.shields.io/github/actions/workflow/status/Wnt/kernel-hive/quality.yml?branch=main&label=quality)](https://github.com/Wnt/kernel-hive/actions/workflows/quality.yml)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-informational)](LICENSE)
 [![streamhost: GPL-2.0-or-later](https://img.shields.io/badge/streamhost-GPL--2.0--or--later-informational)](streamhost/LICENSE)
 
@@ -211,7 +208,7 @@ straight into the running system.
 
 ### Placards
 
-Backends retired; the SPA renders a static placard rather than dialing a dead service.
+Two machines whose live backends were retired; they stay on the floor as placards.
 
 <table>
 <tr>
@@ -220,6 +217,7 @@ Backends retired; the SPA renders a static placard rather than dialing a dead se
 </tr>
 </table>
 <!-- lineup:end -->
+
 
 
 

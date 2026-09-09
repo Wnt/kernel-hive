@@ -8,7 +8,7 @@ recorded from the real public gallery rather than staged.
 
 | file | what it is |
 |---|---|
-| `demo.gif` | 800x600, 98 frames at 10 fps, ~9.8 s — the clip the README opens with |
+| `demo.gif` | 800x600, 95 frames at 10 fps, ~9.5 s — the clip the README opens with |
 | `demo-poster.png` | one frame of it (Program Manager's File menu open), for anywhere the GIF is too heavy |
 
 **What is on screen:** the collection at `kernelhive.madekivi.fi`; a card
