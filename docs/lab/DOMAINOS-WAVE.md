@@ -269,3 +269,23 @@ when that is understood; nothing else is waiting on it.
 4. **`tiles/domainos.sh`** is written end-to-end but its build and
    CALENDAR-compose steps have not been run from scratch in one pass; the ROM
    staging step has.
+
+## What the next session should pick up, and where it is
+
+| Thing | Where |
+|---|---|
+| The golden combination (state + disk + cfg + nvram), as staged | `/data/vms/streamhost/stations/domainos/{sta/dn3500/golden.sta,cfg,nvram}` + `assets/domainos/media/domainos-station.awd`. A reference copy is kept at `/data/vms/sandbox/domainos/golden/` |
+| The station binary | `/data/vms/streamhost/assets/domainos/mame-native/domainos` (sha256 `c2851abbecc0e666…`), built from `mame0276` + the fleet stack + `mame-apollo-savestate.patch` |
+| A WARM 0.276 build tree | `/data/vms/sandbox/BUILD-native-domainos276-savestate` — kept on purpose: apollo/drawshm rebuild in seconds there, and open item 1b needs exactly that. Build only via `JOBS=6 build-mame-native.sh domainos <that dir>` so the shared ccache is used |
+| Pristine media + flat ROMs | `/data/vms/sandbox/domainos/media/` |
+| Tools that encode the hard-won facts | `/data/vms/sandbox/domainos/tools/` and `/data/vms/sandbox/domainos-finish/tools/`: `shmwait.py`, `shm2png.py`, `fbdiff.py`, `ktype2.py` (derives the char map from the keymap; `--gap` is required), `kpress.py` |
+| Frames referenced above | `/data/vms/sandbox/domainos-finish/` (`landed-1.png`, `after-reset.png`, `live-demo.png`, `rig/`, `rig2/`) |
+
+Teardown at the end of the wave: every rig killed by pidfile after a
+`/proc/<pid>/exe` check (these binaries ignore SIGTERM — SIGKILL), a
+`/proc/*/exe` sweep clean of `domainos`, and the seven stream sandboxes removed
+(`domainos-{build,docs,spa,ptra,ptrb,dmptr,scaffold-split,ckpt}`). The claims —
+slot 192, udp 54192, vmid 192, display :92 (loopback 6092), rnip 10.99.0.40,
+tap `domainosrn0`, chain `DOMAINOSRN-IN`, uin 19200 — are re-homed from the wave
+session to the station session `domainos` and stay held; the retronet ones are
+reserved, not wired (open item 3).
