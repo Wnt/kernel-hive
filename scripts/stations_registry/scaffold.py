@@ -112,8 +112,7 @@ _LIKE_REWRITE_PATTERNS = [
     (r"guests/{sib}\.md", "guests/{new}.md"),
     (r"guest/{sib}\b", "guest/{new}"),
     (r"{sib}-current", "{new}-current"),
-    # x11-runtime siblings name the daemon cmd file after the station (SH_X11_CMD_FILE)
-    (r"{sib}_cmd\b", "{new}_cmd"),
+    (r"{sib}_cmd\b", "{new}_cmd"),  # SH_X11_CMD_FILE of x11-runtime siblings
 ]
 
 
@@ -253,6 +252,8 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     station_env = runtime.get("stationEnv", {})
     if "SH_PORT" in station_env:
         station_env["SH_PORT"] = str(udp_port)
+    if "udp_port" in row.get("operator", {}).get("labctl", {}):
+        row["operator"]["labctl"]["udp_port"] = udp_port  # labctl declares it (a1000 landing, 2026-09-09)
     qemu = runtime.get("qemu", {})
     emit_args = qemu.get("emitArgs", [])
     for i, _arg in enumerate(emit_args):
@@ -265,8 +266,6 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
         elif emit_args[i - 1] == "--udp":
             emit_args[i] = str(udp_port)
     qemu["deviceSetId"] = f"{os_id}-current"
-    # x11-runtime siblings carry their emit args under runtime.x11 (the Xvfb
-    # display stays the sibling's: it is a claimed resource the wave assigns).
     x11_args = runtime.get("x11", {}).get("emitArgs", [])
     for i in range(1, len(x11_args)):
         if x11_args[i - 1] == "--tile":
@@ -321,8 +320,6 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     hero_path = REPO / "spa/public/posters" / os_id / "desktop.webp"
     builder_path = REPO / "scripts/build-guests/tiles" / f"{os_id}.sh"
     station_dir = REPO / "streamhost/stations" / os_id
-    # An x11-runtime sibling (host-native FS-UAE/MAME under Xvfb: amigaos35, amix)
-    # names its launcher in runtime.x11.launcher; a QEMU sibling has qemu-streamhost.sh.
     sib_launcher = Path(sib.get("runtime", {}).get("x11", {}).get("launcher", "")).name or "qemu-streamhost.sh"
     launcher_path = station_dir / sib_launcher
     fixture_path = station_dir / "station.env.fixture"
