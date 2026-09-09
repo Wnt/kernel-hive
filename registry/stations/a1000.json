@@ -176,6 +176,5 @@
   },
   "notes": [
     "a1000 wave 2026-09-09 (docs/lab/A1000-WAVE.md): scaffolded from amigaos35; slot 188, Xvfb :88; KS-from-floppy bootstrap OPEN"
-  ],
-  "retronet": null
+  ]
 }

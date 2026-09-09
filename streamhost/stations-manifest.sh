@@ -1136,9 +1136,9 @@ emit atari800xl \
   "$T/atari800xl/atari800xl.keymap" --env-append-file \
   "$T/atari800xl/station.env.fixture"
 
-# a1000 (VMID 188) — TODO one line; scaffolded from amigaos35.
+# a1000 — host-native FS-UAE 3.2.35 (A1000 model, OCS, 512 KB chip) -> Kickstart 1.2 + Workbench 1.2 from floppy; x11 capture on :88, XTEST input. The first Amiga.
 emit a1000 \
-  --tile a1000 --udp 54151 --x11 --x11-display :58 --capture x11 --pointer \
+  --tile a1000 --udp 54188 --x11 --x11-display :88 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 50 --x11-runtime-file \
   "$T/a1000/x11-runtime.sh" --env-append-file "$T/a1000/station.env.fixture"
 

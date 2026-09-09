@@ -217,7 +217,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
   samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
   atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
-  a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC4444', eraLabel: 'TODO(amigaos35): 1999 · AmigaOS 3.5 (AWeb II)' }, // ideal: Amiga big-box tower
+  a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1E5BB8', eraLabel: '1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2' }, // ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
