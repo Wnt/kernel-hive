@@ -3,6 +3,7 @@
 	deploy-pair-imports-check \
 	poster-gallery-fetch poster-gallery-verify devwatch drift-report \
 	release-notes release-notes-check release-notes-brief \
+	readme-media readme-media-check \
 	analytics-catalogue analytics-catalogue-check reach-report
 
 station-registry-generate:
@@ -58,6 +59,19 @@ release-notes-check:
 # the week up from it would under-report exactly what it exists to catch.
 release-notes-brief:
 	python3 scripts/release-notes.py brief
+
+# GitHub README hero images + lineup grid: ALL generated from the station
+# registry (registry/stations/*.json) and the committed
+# spa/public/posters/<id>/desktop.webp captures — never hand-edit
+# docs/media/hero.webp, docs/media/social-preview.png or the README.md
+# content between <!-- lineup:start/end -->. readme-media-check is
+# deterministic on the markdown (not byte-identical images): red means "run
+# `make readme-media` and commit".
+readme-media:
+	python3 scripts/readme-media.py render
+
+readme-media-check:
+	python3 scripts/readme-media.py check
 
 # Deployed Python vs the box-sync pair table: a paired file importing a
 # scripts/lib/ module that has no pair of its own is DEPLOYED-INVISIBLE and kills
