@@ -220,6 +220,7 @@ straight into the running system.
 <!-- lineup:end -->
 
 
+
 ## Inside the museum
 
 <!-- museum-views:start -->
@@ -246,6 +247,26 @@ is the map into the rest.
 ## Emulator forks
 
 <!-- forks:start -->
+Every emulator behind the museum is forked and patched for headless, low-overhead
+streaming: a shared-memory framebuffer instead of a window, a control socket for
+paced input with an absolute mouse, savestates that actually restore, and the
+device models the guests needed. One commit per patch, on the pinned branch.
+
+| Fork | Machines | What we patched | ≈ our diff |
+|---|---|---|---|
+| [Wnt/mame](https://github.com/Wnt/mame) (`irix`, `mpf2`) | SGI Indy, Microprofessor II | R4600 DRC cache, GIO64/Newport shared-memory framebuffer, a control-socket OSD module for headless input, PS/2 mouse and DMA/RTC fixes | 3.5k lines, 16 commits |
+| [Wnt/qemu](https://github.com/Wnt/qemu) (`kernel-hive`, `aix432-s3`) | Rhapsody, Mac OS 7.5.3, AIX, and the x86 fleet's patch set | dbus console fast-poll, a low-latency `gallery-hid` input device, Cirrus VGA vmstate and ROP fixes, PPC timebase migration, absolute pointer by writing guest RAM, closed-loop 1:1 pointer over the hardware cursor; AIX carries forward-ported S3 Trio and Matrox MGA models | 3.4k lines, 14 commits |
+| [Wnt/vice](https://github.com/Wnt/vice) (`kernel-hive/integrated`) | C64, C128, CBM-II, PET, Plus/4, VIC-20 | headless control-socket input with keymap, shared-memory framebuffer, CRTC restore fixes, raw-PCM audio FIFO, in-process save/load state via a CPU trap | 4.4k lines, 14 commits |
+| [Wnt/es40](https://github.com/Wnt/es40) (`main`) | Windows 2000 Alpha, Tru64 UNIX | JIT chain-exit and compile fixes, working savestate and instant resume, paced absolute pointer with per-guest gain, live checkpoint verb, host-freeze absorption | 1.6k lines, 19 commits |
+| [Wnt/fs-uae](https://github.com/Wnt/fs-uae) (`kernel-hive/integrated`) | Amiga 1000, Amiga 3000, AmigaOS 3.5, Amiga UNIX | headless native entry (no window, GL or X), shared-memory framebuffer, control socket with mousehack re-arm after restore, 48 kHz PCM FIFO, clean SIGTERM | 1.5k lines, 11 commits |
+| [Wnt/previous](https://github.com/Wnt/previous) (`kernel-hive`) | NeXTSTEP | shared-memory framebuffer, control-socket input paced to the keyboard floor, framebuffer republish and network down/up around checkpoints, raw-PCM audio FIFO | 1.7k lines, 12 commits |
+
+Line counts are additions plus deletions in our own commits, measured against
+each fork's merge base on 2026-09-09; upstream history the branches carry is not
+counted. Design notes: [`docs/lab/ES40-FORK-BRIEF.md`](docs/lab/ES40-FORK-BRIEF.md),
+[`docs/lab/FSUAE-NATIVE-BRIEF.md`](docs/lab/FSUAE-NATIVE-BRIEF.md),
+[`third_party/mame-irix/README.md`](third_party/mame-irix/README.md),
+[`streamhost/qemu-patches/`](streamhost/qemu-patches/).
 <!-- forks:end -->
 
 ## This week at the museum
