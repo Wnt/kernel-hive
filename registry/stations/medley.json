@@ -195,5 +195,10 @@
     ],
     "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
     "perCharMs": 80
+  },
+  "listing": {
+    "state": "hidden",
+    "since": "2026-09-09",
+    "reason": "DEACTIVATED by the operator 2026-09-09: maiko ran as an unsandboxed root process on labhost, and the Medley Exec gives a visitor host file-system access and Unix subprocesses. The unit is stopped, disabled and masked on the box. Do not relaunch until the station runs unprivileged inside a mount/PID namespace or a container (see docs/guests/medley.md §Security)."
   }
 }
