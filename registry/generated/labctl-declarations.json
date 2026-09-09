@@ -17,7 +17,7 @@
       "exec_shell": null,
       "exec_subshell": null,
       "console": "x11",
-      "udp_port": 54151,
+      "udp_port": 54189,
       "notes": "HOST-NATIVE: patched FS-UAE 3.2.35 (build-fsuae-native.sh — mousehack re-arm) runs on the host inside a pinned Xvfb :58 sized to the emulator window; the daemon captures the X root (SH_CAPTURE=x11) and injects input over XTEST (SH_X11TEST_ABS/_BUTTONS/_KEYS). No QEMU/QMP, no guest Linux, no exec channel. Reset=relaunch: fresh work HDF reflinked from disk/amigaos35-system.hdf.golden + --load_state of sta/'Saved State 1.uss' + FS_UAE_MOUSEHACK_ADDR re-arm (the addr is PAIRED with the statefile). Launcher stations/a3000/x11-runtime.sh."
     },
     "aix432": {
