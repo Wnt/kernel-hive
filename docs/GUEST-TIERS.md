@@ -244,6 +244,7 @@ missing feature.
 | `irix` | 3 host-native | MAME/host | `mame-ioport` | abs | — | on | 30 | serial_e |
 | `kc854` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `kolibrios` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
+| `lisa` | 3 host-native | LisaEm 2.0 / nspawn sandbox | `x11-xtest` | abs | — | off | 25 | — |
 | `macos` | 5 poster | — | `none` | — | — | off | — | — |
 | `macos753` | 1 direct-QEMU | tcg | `qemu-adb-relative` | rel | — | on | 30 | — |
 | `macos9` | 1 direct-QEMU | tcg | `qemu-usb-hid-relative` | rel | — | off | 30 | — |

@@ -543,6 +543,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
     badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
+  // TODO(lisa): exhibit finish copied from amix — set the real era cues.
+  lisa: {
+    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
+    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

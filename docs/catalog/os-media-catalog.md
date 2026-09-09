@@ -287,6 +287,7 @@ Notable recipes / gotchas:
 
 | OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
 |---|---|---|---|---|---|---|---|---|
+| **Lisa Office System 3.1** (Apple Lisa 2, 68000) | archive.org `apple-lisa-profile-hd-disk-images-for-lisaem-and-idle-lisa-office-system-3.1-lis` (✓ pre-installed ProFile image, sha256 bbc97e82…) + `los-3.1-en` (✓ five install floppies) | preservation-source (Apple); LisaEm GPL-2.0 | 10 MB DC42 ProFile image, no install needed | boot ROM rev H = MAME `lisa2` halves `341-0175-h`/`341-0176-h` interleaved (archive.org `mame-0.264-roms-non-merged`) — the `apple-lisa-h-1983` item is a BAD dump | 5 MB AppImage + 10 MB disk | small | works-known (**BUILT → `lisa`**, host-native LisaEm 2.0 in an nspawn sandbox, 2026-09-09; MAME `lisa2` has no ProFile and cannot boot LOS) | see docs/lab/LISA-WAVE.md |
 | Classic Mac OS 7.1 | https://macintoshgarden.org/apps/mac-os-install-cd-library (✓, entry #1) | preservation | CD ISO + ROM | **Quadra 800 ROM** | ~80 MB | small | works-known | 5 |
 | Classic Mac OS 7.5.3 | https://macintoshgarden.org/apps/mac-os-install-cd-library (✓, `SYSTEM_7-5-3-RETAIL`) | preservation | CD ISO + ROM | **Quadra 800 ROM** | ~255 MB | small | works-known | 5 |
 | Classic Mac OS 8.1 | https://macintoshgarden.org/apps/mac-os-install-cd-library (✓, `MAC_OS_8-1_RETAIL`) | preservation | CD ISO + ROM | **Quadra 800 ROM** | ~401 MB | small | works-known | 4 |
