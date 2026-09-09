@@ -111,6 +111,14 @@ ROWS=(
   "repo|win311|GALLERY.GRP|$ASSETS/win311/GALLERY.GRP||repo"
   "repo|apple2|linapple kiosk patch|$ASSETS/apple2/linapple-kiosk.patch||repo"
   "repo|amigaos|AROS icons/backdrop|$ASSETS/amigaos/icons/Games.info||repo"
+  # -- a3000: preservation-source media staged outside GALLERY_ROOT/ASSET_STAGING
+  # (kept alongside the a3000 sandbox that composed the golden, never committed;
+  # see docs/lab/ASSETS-MANIFEST.md and docs/lab/A3000-WAVE.md) --------------
+  "req-file|a3000|A3000 Kickstart 2.04 r37.175 ROM|/data/vms/sandbox/a3000/media/Kickstart v2.04 r37.175 (1991-05)(Commodore)(A3000).rom|sha256:563f948af19c09daed1f06b8760221ff4b2789c1690cdcfbce2c941157af23d1|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 1 of 4 (Workbench) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 1 of 4)(Workbench).adf|sha256:ac6b2529b2896474401ff51c4fcf79464a5f53331b6ad872f0bb721a0a63b8ab|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 2 of 4 (Extras) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 2 of 4)(Extras).adf|sha256:3da86648e602f4e0916663d2b4893011423837b2f2b6885e421310338412c02a|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 3 of 4 (Fonts) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 3 of 4)(Fonts).adf|sha256:c04f0ed8016ff2aa458c977722ede02f5e607cdb206a384ae61b081fd694702e|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 4 of 4 (Install) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 4 of 4)(Install).adf|sha256:c98c97be15f52e25610ee2d4a1fe99807ba9fe11aa81fa0c81fd37cab725bcdd|preservation-source"
   "repo|toaruos|Desktop launchers|$ASSETS/toaruos/Desktop/4_mines.launcher||repo"
   # -- abandonware-URL: verified if the cache survives, refetched otherwise ----
   "opt-file|msdos-win1|MS-DOS 6.22 Disk1|$GALLERY_ROOT/MSDOSWin1/.build-work/dl/Disk1.img|sha256:b88030401122d234ea6aafba3cfed7de2b7b1782700a67be5498edca6f9fec5d|abandonware-URL"
