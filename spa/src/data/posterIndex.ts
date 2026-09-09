@@ -87,6 +87,9 @@ const POSTER_INDEX = {
   "decos": {
     "hero": "/posters/decos/desktop.webp"
   },
+  "domainos": {
+    "hero": "/posters/domainos/desktop.webp"
+  },
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
   },

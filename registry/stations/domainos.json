@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "domainos",
+  "era_year": 1989,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 79,
+        "prelude": "",
+        "value": {
+          "key": "domainos",
+          "script": "tiles/domainos.sh",
+          "outputDir": "native/domainos",
+          "class": "workstation",
+          "estimated": "~30m",
+          "automation": "partial",
+          "produces": "Apollo DN3500 boot ROMs + Domain/OS SR10.4.1 winchester image staged; golden savestate at the Display Manager (OPEN — see DOMAINOS-WAVE.md)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/domainos",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54192,
+      "notes": "HOST-NATIVE: MAME 0.289 dn3500 (Apollo DN3500) runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock keymap, no audio. Launcher stations/mame-native/x11-runtime.sh. GOLDEN NOT BAKED — station boots Domain/OS to the boot-ROM 14-day CALENDAR halt; the DM desktop is an OPEN item (docs/lab/DOMAINOS-WAVE.md)."
+    }
+  },
+  "render": {
+    "signalOrder": 83,
+    "stationsManifestOrder": 81,
+    "stationsManifestPrelude": "\n# domainos (VMID 187) — TODO one line; scaffolded from samcoupe.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 93,
+    "bindingPrelude": "",
+    "goldenOrder": 81
+  },
+  "stationDir": "domainos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54192,
+    "fps": 60,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "apollo-keyboard-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 192
+  },
+  "guestDoc": "docs/guests/domainos.md",
+  "credentialsRef": "guest/domainos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "domainos",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":75",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/domainos/domainos_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/domainos/fb.shm",
+      "SH_PORT": "54192",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/domainos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/domainos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 192,
+    "bringUpOrder": 93,
+    "x11": {
+      "display": ":75",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "domainos",
+        "--udp",
+        "54192",
+        "--x11",
+        "--x11-display",
+        ":75",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/domainos/domainos.keymap",
+        "--env-append-file",
+        "$T/domainos/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/domainos/domainos.keymap",
+        "streamhost/stations/domainos/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7A6A55",
+    "eraLabel": "TODO(spa): 1989 · Apollo DN3500 — Domain/OS SR10.4.1"
+  },
+  "museum": {
+    "id": "domainos",
+    "displayName": "TODO(spa): Apollo Domain/OS",
+    "year": 1989,
+    "lineage": "Apollo Computer / Domain/OS",
+    "arch": "Motorola MC68030, 25 MHz, 16 MB, 8-plane colour (1024x800)",
+    "ramMB": 16,
+    "ramKB": 0,
+    "era": "1980s",
+    "accent": "#7A6A55",
+    "eraSoftware": [
+      "Domain/OS SR10.4.1",
+      "Display Manager (DM)",
+      "Aegis"
+    ],
+    "periodBrowser": "none — Apollo Domain networking (802.3), no era web browser on this station",
+    "iconicApps": [
+      "Display Manager",
+      "DM pads"
+    ],
+    "blurb": "TODO(spa): Apollo's Domain/OS on a DN3500 workstation — the pane-and-transcript Display Manager, a desktop unlike any window manager in the lineup.",
+    "notes": "TODO(spa): host-native MAME dn3500. GOLDEN NOT BAKED — see docs/lab/DOMAINOS-WAVE.md; the DM rest state is OPEN (boot-ROM CALENDAR halt + flaky MD-prompt keyboard)."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/domainos.sh",
+    "driver": "dn3500"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "domainos",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "Apollo 3-button mouse on the keyboard port; open-loop pointer stack compiled in but UNPROVEN until the DM is reachable (transport stays none).",
+    "keyboard": "Apollo serial keyboard (1200 baud). Echo PROVEN on the framebuffer at the MD prompt via Lua set_value (uppercase EX executed); mame-ctlsock-field-token.patch resolves Return (MAME names Backspace/Tab/Return all \"Unnamed Key\"). NOT yet proven on the ctlsock path at the DM — the MD prompt drops programmatic input and is not a valid test point.",
+    "fixture": "GOLDEN NOT BAKED. The disk boots Domain/OS to the kernel and halts at the boot ROM 14-day CALENDAR check. See docs/lab/DOMAINOS-WAVE.md OPEN items."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from samcoupe on 2026-09-09 (--like samcoupe --tuple towerA,homeCrtD,none,none); native shape is samcoupe/apple2e",
+    "GOLDEN OPEN: boot-ROM 14-day CALENDAR halt blocks the Display Manager; museum/spa prose and demoProgram are TODO pending DM screenshots. See docs/lab/DOMAINOS-WAVE.md."
+  ],
+  "demoProgram": {
+    "label": "TODO(spa): a DM shell demo once the Display Manager is reachable",
+    "lines": [
+      "date"
+    ],
+    "runCommand": "",
+    "perCharMs": 200
+  }
+}

@@ -1,0 +1,60 @@
+MAME ctlsock: a KEY field spec may carry its default-assignment token
+
+WHY
+
+The key engine resolves `KEY <0|1> <port> <field>` by the field's display
+name. Drivers that declare PORT_CODE without PORT_NAME get MAME's generic
+"Unnamed Key" for every such field — the Apollo keyboard (apollo_kbd.cpp)
+has three on :kbd:keyboard1: Backspace, Tab and Return — and a name-only
+lookup returns the first, so every Enter the daemon sent was a Backspace
+(domainos wave, 2026-09-09; measured with the apollo_kbd LOG1 trace).
+
+WHAT
+
+A spec of the form `<name>#KEYCODE_<X>` also requires the field's default
+assignment to be that token — the same token KEYDUMP already prints as its
+third column, so scripts/dev/mame-keymap.py can emit it whenever a name is
+shared inside one port. Specs without `#KEYCODE_` behave exactly as before.
+No save items change; the savestate signature is untouched. Applies after
+mame-ctlsock.patch.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -1879,11 +1879,34 @@
+ 		return found;
+ 	}
+ 
+-	static ioport_field *find_field(ioport_port *port, std::string const &name)
++	// A field spec is the field's display name, optionally followed by
++	// '#' and its default-assignment token (KEYDUMP's third column):
++	// "Unnamed Key#KEYCODE_ENTER". Drivers that omit PORT_NAME on
++	// Backspace/Tab/Return (the Apollo keyboard, domainos wave 2026-09-09)
++	// give all three the same "Unnamed Key" name, and a name-only lookup
++	// returned the first of them -- Backspace -- for every Enter the daemon
++	// sent. With the token the match is exact; without it, unchanged.
++	ioport_field *find_field(ioport_port *port, std::string const &spec) const
+ 	{
++		std::string name = spec, tok;
++		size_t const hash = spec.rfind('#');
++		if (hash != std::string::npos && spec.compare(hash + 1, 8, "KEYCODE_") == 0)
++		{
++			name = spec.substr(0, hash);
++			tok = spec.substr(hash + 1);
++		}
+ 		for (ioport_field &f : port->fields())
+-			if (f.name() == name)
+-				return &f;
++		{
++			if (f.name() != name)
++				continue;
++			if (!tok.empty())
++			{
++				input_seq const &dseq = f.defseq();
++				if (dseq.length() == 0 || m_machine.input().code_to_token(dseq[0]) != tok)
++					continue;
++			}
++			return &f;
++		}
+ 		return nullptr;
+ 	}
+ 

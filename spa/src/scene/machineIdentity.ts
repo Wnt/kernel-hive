@@ -543,6 +543,11 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
     badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
+  // TODO(domainos): exhibit finish copied from samcoupe — set the real era cues.
+  domainos: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

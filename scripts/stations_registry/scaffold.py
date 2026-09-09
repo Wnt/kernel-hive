@@ -320,24 +320,40 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     hero_path = REPO / "spa/public/posters" / os_id / "desktop.webp"
     builder_path = REPO / "scripts/build-guests/tiles" / f"{os_id}.sh"
     station_dir = REPO / "streamhost/stations" / os_id
-    sib_launcher = Path(sib.get("runtime", {}).get("x11", {}).get("launcher", "")).name or "qemu-streamhost.sh"
-    launcher_path = station_dir / sib_launcher
+    sib_launcher_rel = sib.get("runtime", {}).get("x11", {}).get("launcher", "")
+    sib_launcher = Path(sib_launcher_rel).name or "qemu-streamhost.sh"
     fixture_path = station_dir / "station.env.fixture"
     sib_dir = REPO / "streamhost/stations" / sib_id
-    like_paths = (
-        registry_path,
-        guest_path,
-        coldboot_path,
-        poster_path,
-        hero_path,
-        builder_path,
-        launcher_path,
-        fixture_path,
+    # A host-native sibling (mame-native, fsuae-native, vice-native) names a
+    # launcher SHARED under streamhost/stations/<engine>/ rather than one of
+    # its own; the new station keeps pointing at that shared file (the
+    # emitter installs it via --x11-runtime-file), so there is nothing to
+    # copy — the domainos wave (2026-09-09) hit "sibling 'samcoupe' is
+    # missing streamhost/stations/samcoupe/x11-runtime.sh" here.
+    shared_launcher = (
+        bool(sib_launcher_rel)
+        and not (sib_dir / sib_launcher).is_file()
+        and (REPO / sib_launcher_rel).is_file()
+    )
+    launcher_path = None if shared_launcher else station_dir / sib_launcher
+    like_paths = tuple(
+        p
+        for p in (
+            registry_path,
+            guest_path,
+            coldboot_path,
+            poster_path,
+            hero_path,
+            builder_path,
+            launcher_path,
+            fixture_path,
+        )
+        if p is not None
     )
     for path in like_paths:
         if path.exists():
             raise RegistryError(f"refusing to overwrite existing {path.relative_to(REPO)}")
-    for src in (sib_dir / sib_launcher, sib_dir / "station.env.fixture"):
+    for src in ([] if shared_launcher else [sib_dir / sib_launcher]) + [sib_dir / "station.env.fixture"]:
         if not src.is_file():
             raise RegistryError(f"sibling {sib_id!r} is missing {src.relative_to(REPO)}")
 
@@ -349,7 +365,7 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
         "UDP_PORT": str(udp_port),
         "ARCHETYPE": row.get("spa", {}).get("archetypeId", ""),
     }
-    launcher_text = _rewrite_like_text((sib_dir / sib_launcher).read_text(), sib_id, os_id)
+    launcher_text = "" if shared_launcher else _rewrite_like_text((sib_dir / sib_launcher).read_text(), sib_id, os_id)
     fixture_text = _rewrite_like_text((sib_dir / "station.env.fixture").read_text(), sib_id, os_id)
     scaffold_files: OrderedDict[Path, bytes] = OrderedDict(
         [
@@ -359,15 +375,17 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
             (coldboot_path, scaffold_template("new-os-coldboot-arm.sh.in", values)),
             (poster_path, scaffold_template("new-os-poster.md.in", values)),
             (hero_path, placeholder_hero(os_id)),
-            (launcher_path, launcher_text.encode()),
             (fixture_path, fixture_text.encode()),
         ]
     )
+    if launcher_path is not None:
+        scaffold_files[launcher_path] = launcher_text.encode()
     try:
         for path, data in scaffold_files.items():
             atomic_write(path, data)
         os.chmod(builder_path, 0o755)
-        os.chmod(launcher_path, 0o755)
+        if launcher_path is not None:
+            os.chmod(launcher_path, 0o755)
         # BEFORE cmd_generate(): generate runs validate(), and validate now fails
         # on a lineup entry with no scene rows. The rows depend only on the
         # registry file that is already written, so this is the right order, not
