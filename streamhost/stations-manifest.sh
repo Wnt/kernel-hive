@@ -973,11 +973,12 @@ emit macos9 \
   off --fps 30 --launcher-file "$T/macos9/qemu-streamhost.sh" \
   --env-append-file "$T/macos9/station.env.fixture"
 
-# amigaos35 — host-native FS-UAE 3.2.35 (A4000/040, AGA, Kickstart 3.1) -> AmigaOS 3.5 desktop with AWeb II. The first x11-capture station since irix de-bridged: stock SDL emulator under a pinned Xvfb, XTEST input.
+# amigaos35 — host-native FS-UAE 3.2.35 (A4000/040, AGA, Kickstart 3.1) -> AmigaOS 3.5 desktop with AWeb II. No X: shm capture, ctlsock keys/pointer (mousehack), shared launcher with a1000/a3000/amix.
 emit amigaos35 \
-  --tile amigaos35 --udp 54151 --x11 --x11-display :58 --capture x11 \
-  --pointer abs --input-backend x11test --audio off --fps 50 \
-  --x11-runtime-file "$T/amigaos35/x11-runtime.sh" --env-append-file \
+  --tile amigaos35 --udp 54151 --x11 --x11-display :58 --capture shm \
+  --pointer abs --input-backend mamesock --audio on --fps 50 \
+  --x11-runtime-file "$T/fsuae-native/x11-runtime.sh" --aux-file \
+  "$T/fsuae-native/amiga.keymap" --env-append-file \
   "$T/amigaos35/station.env.fixture"
 
 # aix432 (slot 171) — IBM AIX 4.3.3 / CDE on an emulated RS/6000 7020 (40p):
@@ -1012,9 +1013,10 @@ emit ravynos \
 
 # amix — host-native FS-UAE 3.2.35 (A3000, 68030+MMU, Kickstart 2.04) -> Amiga UNIX (AMIX) 2.1, System V R4 with the OPEN LOOK desktop, in COLOUR on an A2410 (1024x768, 8-bit PseudoColor, selected by starting AMIX's X server with -tiga). The chipset X server is depth 1, so monochrome 640x512 is the fallback and is one flag away (/etc/kh-xsession.mono in the guest). Absolute 1:1 pointer via x11warp into the guest's own X server over a loopback-bound slirp redirect.
 emit amix \
-  --tile amix --udp 54172 --x11 --x11-display :72 --capture x11 --pointer \
+  --tile amix --udp 54172 --x11 --x11-display :72 --capture shm --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/amix/x11-runtime.sh" --env-append-file "$T/amix/station.env.fixture"
+  "$T/fsuae-native/x11-runtime.sh" --env-append-file \
+  "$T/amix/station.env.fixture"
 
 # bootos (VMID 174) — bootOS, a 512-byte boot-sector OS (Oscar Toledo G., 2019).
 #   VERBATIM LAUNCHER: floppy.qcow2 (360K floppy as qcow2, copied from the

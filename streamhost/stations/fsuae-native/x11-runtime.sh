@@ -1,9 +1,10 @@
 #!/bin/bash
 # =============================================================================
 # stations/fsuae-native/x11-runtime.sh — the SHARED launcher for host-native
-# (de-bridged) FS-UAE stations: a3000, a1000 (amigaos35 and amix stay on the
-# Xvfb+XTEST path for now — RTG and the in-guest X pointer are separate
-# waves; do not point them at this launcher).
+# (de-bridged) FS-UAE stations: a1000, a3000, amigaos35, amix. No X anywhere
+# in this launcher, even for amix: its pointer rides XWarpPointer into the
+# GUEST's own X server over a loopback slirp redirect (SH_X11WARP_DISPLAY),
+# which needs no host Xvfb — see FSUAE_NATIVE_EXTRA_ARGS below.
 #
 # Despite the historical filename there is NO X here: the fork
 # (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs headless (no
@@ -33,6 +34,14 @@
 #   FSUAE_NATIVE_FLOPPIES    space-separated golden ADF names in $BASE/disk/,
 #                            copied to $BASE/work/ and passed as DF0, DF1, ...
 #   FSUAE_NATIVE_EXTRA_ARGS  extra flags, shell-quoted string (eval'd)
+#   FSUAE_NATIVE_NET         off | bsdsocket — bsdsocket only inside the
+#                            retronet netns cage named by FSUAE_NATIVE_NETNS
+#                            (rn-netns.sh up/down; docs/lab/retronet/
+#                            WEB-STATION-<station>.md). Same semantics as the
+#                            amigaos35-only launcher this replaces.
+#   FSUAE_NATIVE_NETNS       netns name for FSUAE_NATIVE_NET=bsdsocket
+#                            (rn-<station> by convention); the station's own
+#                            rn-netns.sh must be staged at $BASE/rn-netns.sh
 #   FSUAE_NATIVE_STANDBY_DELAY_S  settle before the standby freeze (see below)
 #   FSUAE_NATIVE_BASE        override for $BASE — rig/scratch runs outside a
 #                            real station dir (e.g. a proof under
@@ -165,6 +174,31 @@ MEM_ARGS=()
 [ -n "${FSUAE_NATIVE_MEM_ARGS:-}" ] && eval 'MEM_ARGS=('"$FSUAE_NATIVE_MEM_ARGS"')'
 EXTRA=()
 [ -n "${FSUAE_NATIVE_EXTRA_ARGS:-}" ] && eval 'EXTRA=('"$FSUAE_NATIVE_EXTRA_ARGS"')'
+# amix-only fixed constant, inert for every other station on this launcher:
+# its A2065 uae_slirp_redir (passed via FSUAE_NATIVE_EXTRA_ARGS) targets the
+# guest's own X server at 10.0.2.15:6000, same as the per-station launcher
+# it replaces — named here, not just in station.env.fixture, so this
+# launcher's own text still carries the literal the pointer-ledger
+# validator checks for (scripts/stations_registry/pointer_rules.py
+# "x11-warp-absolute").
+: "${FSUAE_NATIVE_AMIX_X11_GUEST:=10.0.2.15:6000}"
+
+# --- retronet cage: bsdsocket host sockets only ever open INSIDE the ------
+# station netns (veth on vmbr-rn, no default route, guard chain) — never on
+# labhost's own stack. Same semantics as the amigaos35-only launcher this
+# replaces; rn-netns.sh is idempotent and re-verifies its own containment
+# rules on every launch.
+NET_ARGS=()
+NSWRAP=()
+if [ "${FSUAE_NATIVE_NET:-off}" = bsdsocket ]; then
+  NS="${FSUAE_NATIVE_NETNS:?FSUAE_NATIVE_NETNS not set with FSUAE_NATIVE_NET=bsdsocket}"
+  RN_NS="$NS" bash "$BASE/rn-netns.sh" up || {
+    echo "fsuae-native[$TILE]: rn-netns.sh up failed — refusing to start networked" >&2
+    exit 1
+  }
+  NET_ARGS+=(--bsdsocket_library=1)
+  NSWRAP=(ip netns exec "$NS")
+fi
 
 # No X, no GL: the fork's second frontend (docs/lab/FSUAE-NATIVE-BRIEF.md
 # Part 3, commit 2) is entered only because FSUAE_NATIVE_SHM is set below;
@@ -178,7 +212,7 @@ export FSUAE_NATIVE_CTL_SOCK="$CTL"
 [ -n "$AFIFO" ] && export FSUAE_NATIVE_AUDIO_FIFO="$AFIFO"
 [ "${FSUAE_NATIVE_SHM_TRACE:-0}" = 1 ] && export FSUAE_NATIVE_SHM_TRACE=1
 
-nohup "$BIN" \
+nohup ${NSWRAP[@]+"${NSWRAP[@]}"} "$BIN" \
   --amiga_model="$MODEL" \
   --kickstart_file="$KICK" \
   "${MEM_ARGS[@]}" \
@@ -190,6 +224,7 @@ nohup "$BIN" \
   --save_states=0 \
   --stdout=1 \
   "${EXTRA[@]}" \
+  ${NET_ARGS[@]+"${NET_ARGS[@]}"} \
   >"$BASE/fs-uae.log" 2>&1 &
 echo $! >"$PIDFILE"
 
