@@ -1,6 +1,25 @@
 --- a/src/mame/apollo/apollo.h
 +++ b/src/mame/apollo/apollo.h
-@@ -606,6 +606,20 @@
+@@ -454,6 +454,18 @@
+ 	virtual void device_reset() override ATTR_COLD;
+ 	virtual void device_add_mconfig(machine_config &config) override ATTR_COLD;
+ 
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): the renderer
++	// only repaints the bitmap from m_image_memory when m_update_flag is set
++	// (screen_update() below) — and that flag is itself part of the
++	// restored state, so a LOADST that lands with m_update_flag==0 (the
++	// steady-state value once the DM has painted) restores CPU/RAM/image
++	// memory correctly but never triggers a redraw: the framebuffer keeps
++	// showing whatever was on screen at LOADST time. A save_prepost_delegate
++	// postload forces the next screen_update() to repaint regardless of
++	// what value m_update_flag was saved with — registered once in
++	// device_start(), runs after every save_item has been read.
++	void postload();
++
+ protected:
+ 	class lut_fifo;
+ 	class bt458;
+@@ -606,6 +618,20 @@
  		return ((m_put_index + 1) % m_size) == m_get_index;
  	}
  
@@ -21,7 +40,7 @@
  private:
  	uint16_t m_size = 0U;
  	uint16_t m_get_index = 0U;
-@@ -627,6 +641,24 @@
+@@ -627,6 +653,24 @@
  	void write(uint8_t data, uint8_t c10);
  	uint32_t get_rgb(uint8_t index);
  
@@ -130,7 +149,7 @@
  	if (m_n_planes == 0)
  	{
  		if (apollo_config(APOLLO_CONF_MONO_19I))
-@@ -1843,27 +1846,98 @@
+@@ -1843,27 +1846,103 @@
  			m_height = 800;
  			m_buffer_width = 1024;
  			m_buffer_height = 1024;
@@ -163,13 +182,13 @@
 +		// members of a nested class, registered from inside their own type
 +		m_lut_fifo->save_state(*this);
 +		m_bt458->save_state(*this);
-+	}
+ 	}
 +	else
 +	{
 +		m_lut_fifo.reset();
 +		m_bt458.reset();
- 	}
- 
++	}
++
 +	/* allocate the memory image */
 +	m_image_plane_size = m_buffer_height * m_buffer_width / 16;
 +	m_image_memory_size = m_image_plane_size * m_n_planes;
@@ -178,7 +197,7 @@
 +	memset(m_image_memory.get(), 0, m_image_memory_size * 2);
 +
 +	MLOG1(("device start apollo graphics: buffer=%p size=%0x", (void *) m_image_memory.get(), m_image_memory_size));
-+
+ 
 +	// -- save state: every register the renderer reads and every counter
 +	// that is not re-derived every frame. Registering too much here is the
 +	// safe direction — a missed one shows up as a wrongly-coloured or
@@ -218,6 +237,11 @@
 +	save_item(NAME(m_data_clock));
 +	save_item(NAME(m_color_lookup_table));
 +	save_pointer(NAME(m_image_memory), m_image_memory_size);
++
++	// CHECKPOINT: force a full repaint after every state load — see the
++	// postload() comment in apollo.h and postload()'s definition below for
++	// why m_update_flag alone cannot be trusted to trigger the redraw.
++	machine().save().register_postload(save_prepost_delegate(FUNC(apollo_graphics_15i::postload), this));
 +}
 +
 +//-------------------------------------------------
@@ -243,7 +267,53 @@
  	memset(m_color_lookup_table, 0, sizeof(m_color_lookup_table));
  	memset(m_image_memory.get(), 0, m_image_memory_size * 2);
  
-@@ -1900,6 +1974,19 @@
+@@ -1874,6 +1953,45 @@
+ }
+ 
+ //-------------------------------------------------
++//  postload - force a repaint after a state load
++//-------------------------------------------------
++
++void apollo_graphics_15i::postload()
++{
++	// CHECKPOINT (docs/lab/DOMAINOS-WAVE.md, checkpoint stream): m_image_
++	// memory IS correctly restored by save_pointer() above — VERIFIED by a
++	// checksum logged here during debugging: identical between a cold
++	// "-state golden" load and a dirty+LOADST cycle. screen_update() only
++	// copies image memory into the published bitmap when m_update_flag is
++	// set (and m_update_pending is NOT), and m_update_flag sits at 0 in
++	// steady state, so a LOADST restores it as 0 and no repaint is queued.
++	// This sets the flag so the next screen_update() call repaints from
++	// the now-correct image memory.
++	//
++	// KNOWN GAP (2026-09-09, not yet resolved): setting the flag makes
++	// screen_update()/screen_update1() run again — confirmed via a
++	// postload checksum log, both m_screen->update_now() and
++	// machine().video().frame_update() were tried immediately after this
++	// to force the repaint synchronously inside postload() — but the
++	// PUBLISHED drawshm frame still does not show the reverted picture in
++	// either case, even after an unrelated 12s real-time wait. The
++	// frame_update() variant additionally froze the published frame
++	// entirely (no further updates even for fresh post-restore guest
++	// activity) and was reverted — calling it from inside a postload
++	// appears to disrupt MAME's own frame-pacing state and should not be
++	// reattempted without checking screen.cpp's throttle/next-update
++	// bookkeeping first. The remaining bug is therefore NOT in save-state
++	// registration (image memory + registers restore is byte-correct) but
++	// somewhere between screen_update1()'s bitmap write and drawshm's
++	// publish of that bitmap — worth checking whether drawshm
++	// (mame-drawshm-0276.patch) reads a bitmap/texture reference that
++	// needs its own invalidation independent of the screen device's
++	// m_changed/UPDATE_HAS_NOT_CHANGED bookkeeping.
++	m_update_flag = 1;
++	m_update_pending = 0;
++}
++
++//-------------------------------------------------
+ 
+ void apollo_graphics_19i::device_add_mconfig(machine_config &config)
+ {
+@@ -1900,6 +2018,19 @@
  {
  	MLOG1(("apollo_graphics_19i::device_start"));
  
