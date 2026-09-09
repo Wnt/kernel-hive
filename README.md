@@ -1,5 +1,11 @@
 # Kernel Hive
 
+![A visitor opens Windows 3.11 from the Kernel Hive collection and drives it live](docs/media/demo.gif)
+
+*Recorded from the public gallery: the collection, one card clicked, the guest
+arriving, and Program Manager's File menu unfolding under a pointer that is
+being moved from a browser. [How it was made](docs/media/README.md).*
+
 Kernel Hive is a "living computer museum": a single Proxmox host runs around
 three dozen vintage and exotic operating systems as live emulated or
 virtualised guests — from 1980s home computers to hobby OSes still under
