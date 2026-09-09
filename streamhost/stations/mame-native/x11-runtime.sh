@@ -191,6 +191,10 @@ if [ -n "${MAME_NATIVE_DISK_TEMPLATE:-}" ]; then
     exit 1
   }
   cp --reflink=auto -f "$TPL_SRC" "$BASE/$TPL_DST"
+  # the template is deliberately mode 444 so nothing writes the golden by
+  # accident; the per-start COPY has to be writable or MAME mounts it
+  # read-only and the guest cannot even update its own volume label
+  chmod u+w "$BASE/$TPL_DST"
   echo "mame-native[$TILE]: disk template $TPL_SRC -> $BASE/$TPL_DST ($(stat -c %s "$BASE/$TPL_DST") bytes)"
 fi
 
