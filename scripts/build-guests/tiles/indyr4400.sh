@@ -122,14 +122,24 @@ if [ "$DO_ROOTFS" -eq 1 ]; then
   for l in bin sbin lib lib64; do [ -e "$RF/$l" ] || ln -s "usr/$l" "$RF/$l"; done
   : >"$RF/etc/ld.so.cache"
   : >"$RF/etc/localtime"
-  # The two FILE binds (the framebuffer mapping and the disk) need their mount
-  # points to be files, not directories — nspawn will not turn one into the
-  # other, and a read-only root cannot create either.
+  # The THREE FILE binds (the emulator binary, the framebuffer mapping and the
+  # disk) need their mount points to be files, not directories — nspawn will not
+  # turn one into the other, and a read-only root cannot create either. Missing
+  # any one of them is `Failed to create mount point ...: Read-only file system`
+  # and a container that dies before Iris ever runs.
   : >"$RF$STATION/fb.shm"
   : >"$RF$DISK"
+  : >"$RF$IRIS_BIN"
   [ -f "$RF/etc/os-release" ] || cp /etc/os-release "$RF/etc/os-release"
   printf 'root:x:0:0:root:/root:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n' >"$RF/etc/passwd"
   printf 'root:x:0:\nnogroup:x:65534:\n' >"$RF/etc/group"
+  # MODES ARE EXPLICIT, NEVER THE UMASK'S. The container's root is host uid
+  # $UIDBASE (--private-users), so every directory it must traverse has to be
+  # o+rx. `mkdir -p` obeys the caller's umask, and a sandbox shell's 0077 leaves
+  # the whole skeleton 0700 root-owned: nspawn then dies with the useless
+  # "Failed to resolve /proc: Permission denied" before the payload ever runs.
+  find "$RF" -type d -exec chmod 0755 {} +
+  find "$RF" -type f -exec chmod 0644 {} +
   chmod 1777 "$RF/tmp" "$RF/var/tmp" "$RF/tmp/.X11-unix"
   log "skeleton: $RF"
 fi
