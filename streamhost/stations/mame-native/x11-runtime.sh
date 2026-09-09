@@ -169,6 +169,31 @@ if [ "${MAME_NATIVE_CHECKPOINT:-1}" = 1 ] && [ -f "$BASE/sta/$DRIVER/golden.sta"
   STARG+=(-state golden)
 fi
 
+# IMMUTABLE DISK TEMPLATE (MAME_NATIVE_DISK_TEMPLATE="<src>:<dest-name>").
+# MAME writes a hard-disk image IN PLACE, and a savestate is only valid against
+# the bytes the disk had when it was saved (AGENTS.md rule 6: checkpoint +
+# binary + device set are ONE combination). A station that is SIGKILLed --
+# which is exactly how the service stops, because these binaries ignore
+# SIGTERM -- loses whatever MAME had not flushed, so the next start restores a
+# checkpoint against a disk that has drifted underneath it. MEASURED on
+# domainos, 2026-09-10: the guest came up, decided its boot volume was
+# inconsistent, and cold-booted into SALVAGING BOOT VOL -- which then rewrote
+# the disk some more, so the damage compounded on every start.
+# The fix is irix's: keep the golden disk IMMUTABLE in assets/ and give the
+# emulator a fresh copy of it every start, so a launch always restores against
+# the exact bytes the checkpoint was taken from. --reflink=auto makes that
+# nearly free on a CoW filesystem and a plain copy elsewhere.
+if [ -n "${MAME_NATIVE_DISK_TEMPLATE:-}" ]; then
+  TPL_SRC="${MAME_NATIVE_DISK_TEMPLATE%%:*}"
+  TPL_DST="${MAME_NATIVE_DISK_TEMPLATE##*:}"
+  [ -f "$TPL_SRC" ] || {
+    echo "mame-native[$TILE]: MAME_NATIVE_DISK_TEMPLATE source missing: $TPL_SRC" >&2
+    exit 1
+  }
+  cp --reflink=auto -f "$TPL_SRC" "$BASE/$TPL_DST"
+  echo "mame-native[$TILE]: disk template $TPL_SRC -> $BASE/$TPL_DST ($(stat -c %s "$BASE/$TPL_DST") bytes)"
+fi
+
 EXTRA=()
 # shellcheck disable=SC2294 # the fixture value is a shell-quoted string on
 # purpose: `-ext ""` must survive as a literal empty argument.
