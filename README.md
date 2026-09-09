@@ -106,10 +106,11 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/daybreak"><img src="spa/public/posters/daybreak/desktop.webp" width="150" alt="Xerox 6085"></a><br><sub>Xerox 6085 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/armeval"><img src="spa/public/posters/armeval/desktop.webp" width="150" alt="Acorn ARM Evaluation System"></a><br><sub>Acorn ARM Evaluation System · 1986</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/amiga"><img src="spa/public/posters/amiga/desktop.webp" width="150" alt="Amiga 500"></a><br><sub>Amiga 500 · 1987</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="150" alt="Interlisp Medley"></a><br><sub>Interlisp Medley · 1987</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2"><img src="spa/public/posters/apple2/desktop.webp" width="150" alt="Apple II"></a><br><sub>Apple II · 1988</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
 </tr>
 <tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="150" alt="SAM Coupé"></a><br><sub>SAM Coupé · 1989</sub></td>
 </tr>
 </table>
@@ -219,6 +220,7 @@ Backends retired; the SPA renders a static placard rather than dialing a dead se
 </tr>
 </table>
 <!-- lineup:end -->
+
 
 
 
