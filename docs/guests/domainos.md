@@ -1,10 +1,10 @@
-# Apollo DN3500 (1988) — Domain/OS SR10.4.1 Display Manager station (:54192)
+# Apollo DN3500 (1989) — Domain/OS SR10.4.1 Display Manager station (:54192)
 
 **Guest:** a **host-native** MAME 0.276 station — the daemon runs the emulator
 directly on the host (drawshm frames, ctlsock keys), no bridge VM, no QMP.
 MAME's **`dn3500`** driver (`src/mame/apollo/apollo.cpp`) emulates an
 **Apollo DN3500** (Motorola MC68030 @ 25 MHz, 16 MB RAM, 8-plane colour), a
-1988 engineering workstation running **Domain/OS SR10.4.1**, Apollo's own
+1989 engineering workstation running **Domain/OS SR10.4.1**, Apollo's own
 UNIX-derived, distributed, single-level-store operating system. See
 **`docs/guests/samcoupe.md`** and **`docs/guests/apple2e.md`** for the
 host-native MAME shape this station follows (device set, ctlsock keyboard,

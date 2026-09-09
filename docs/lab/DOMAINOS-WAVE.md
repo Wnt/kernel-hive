@@ -2,188 +2,195 @@
 
 Operator ask (2026-09-09): add four distinctive graphical-desktop stations from
 the Virtual OS Museum extraction in one fast-path wave (sculpt, medley, lisa,
-domainos). This is Domain/OS. **STOPPED by operator order 2026-09-10 00:15 UTC+3**
-before landing — this file is the handoff. Nothing is deployed; the station is
-not on main; the claims are still held (see §Claims).
+domainos). This is Domain/OS. The first session was **stopped by operator order
+2026-09-10 00:15 UTC+3** with the desktop reached and no golden baked; this file
+is the whole station, not that session's diary.
 
 Apollo's Domain/OS on a DN3500 runs the **Display Manager** (DM): a
-pane-and-transcript desktop with no overlapping-window manager, unlike anything
-in the lineup. Host-native on the MAME `dn3500` driver (rule 13), the same path
-as `apple2e`/`samcoupe`/`atari800xl`; `samcoupe` is the `--like` shape sibling.
+pane-and-transcript desktop with no icons and no menus, unlike anything else in
+the lineup. Host-native on MAME's `dn3500` driver (rule 13), the same shape as
+`apple2e`/`samcoupe`/`atari800xl`; `samcoupe` is the `--like` sibling.
 
-## Where it stands (all proven on the framebuffer)
+**Read `docs/guests/domainos.md` first** — it is the station's operating manual
+(device set, keyboard, checkpoint, traps). This file carries the wave: the
+ledger, the walls and their fixes, and what is still open.
 
-**The Display Manager desktop was reached, on the shipping ctlsock/shm rig
-path**, minutes before the stop order — frame
-`/data/vms/sandbox/domainos/rig3/s4-desktop.png`: the `pad0000` window with
-"Apollo Domain/OS Version SR10.4.1" and the DM `Command:` bar, after logging in
-as `user` / `-apollo-` through the daemon's keymap. No golden was baked (the
-stop came first). Everything a resumer needs is below; the whole recipe from a
-cold rig to that frame is about four minutes of emulated time.
+## Ledger
 
-## The three walls, in the order they fell
-
-### 1. MAME 0.289 (the fleet pin) cannot boot this machine in Normal mode — use 0.276
-
-Every Normal-mode boot on the 0.289 build was BLACK forever (all four
-front-panel LEDs lit), on the shipping binary, on a pristine unpatched 0.289
-build, with mono/4-plane/8-plane graphics, with the 3C505 removed, with and
-without the kiosk env, for 220 s. Service mode works on 0.289 (MD `>` prompt).
-Stock `/usr/games/mame` 0.276 on labhost boots Normal mode fine.
-
-Pinned by sampling the 68030's PC with a Lua autoboot: it spins at
-0x67a2–0x67b2 with A0 = 0x10400 (the SIO), a send-and-compare loop polling SIO
-status with a 65535-iteration timeout and retrying forever — the ROM's
-KEYBOARD self-test (Service mode skips the self-tests, hence the asymmetry).
-The keyboard VERBOSE trace showed the host byte never reaches the keyboard on
-0.289; with the DUART transmitter hunks reverted the keyboard received 0xff and
-echoed, but channel A still never completed a receive. Bisected by whole-file
-and hunk swaps (all still black): diserial.cpp 0.276, the DUART receiver
-condition, the DUART transmitter TxRDY/`m_tx_enabled`/`write_CR` hunks. Not
-finished — the regression is somewhere else in 0.276→0.289 (68030 core or
-another device). **Not pursued further: the fix that works is building the
-station binary from `mame0276`.**
-
-The 0.276 tree with the full fleet patch stack is built and works:
-`/data/vms/sandbox/BUILD-native-domainos276/mame` (binary copied to
-`/data/vms/sandbox/domainos/domainos-0276`). Ports needed on 0.276, all done in
-that tree and NOT yet turned into patch files:
-- `scripts/src/osd/modules.lua`: the two `ctlsock/ctlsock.{cpp,h}` source
-  lines after `netdev/taptun.cpp` (the ctlsock patch's hunk context differs);
-- `src/emu/render.cpp`: `#include <cstdlib>` (kiosk patch hunk 1);
-- `src/osd/modules/render/drawshm.cpp`: `std::atomic_ref` (C++20) replaced by
-  `__atomic_load_n`/`__atomic_store_n` on the seq word (0.276 builds C++17);
-- the ctlsock patch's `src/emu/save.cpp` hunk (a diagnostic message only)
-  skipped — 0.276's `validate_header` has a different signature;
-- ptr-tags, move-step-cap, open-loop-gain, home-drain, count-carry,
-  field-token, irix-skip-warnings all apply cleanly.
-A resumer should make this a proper per-station pin: `build-mame-native.sh`
-hard-codes `MAME_TAG=mame0289`; it needs a stanza override (tag + base sha +
-an "0276" patch variant set), or a second builder. This deviates from the
-fleet pin deliberately and only for this station.
-
-### 2. The boot ROM's 14-day CALENDAR halt — cleared by running CALENDAR once
-
-"More than 14 days have elapsed since the last shutdown. Switch to service
-mode, press reset and run CALENDAR." halts the kernel; plain Returns do not
-advance it. The RTC cannot be made to satisfy it: the volume's last recorded
-time is **2002/07/31 19:59:06 MDT** (CALENDAR printed it), the MAME "N years
-ago" offsets reach only 1996/1999 from a 2026 host, and an RTC patch pinning
-2011-08-19 (decoded from the volume-label timestamps, which turned out to be
-write times, not the reference) was read by Domain/OS as 1981/12/26 — the OS
-windows the two-digit year — and still halted. Frames:
-`/data/vms/sandbox/domainos/b-0276/snap/dn3500/0000.png` (1994 patch),
-`b-0276b/…` (2011 patch), `norm-wait/…`, `norm-ret/…`.
-
-**What works: run CALENDAR once in Service mode and answer it.** Then a Normal
-boot of the SAME disk goes through to the DM (frames
-`/data/vms/sandbox/domainos/postcal/snap/dn3500/000{3,8}.png`: HP splash,
-"Apollo Phase II Environment Revision 10.4", "Loading Init", then the login
-bar). The post-CALENDAR disk is
-`/data/vms/sandbox/domainos/cal276b/disk.awd` (with its `nvram/`) — **this is
-the station disk**; the pristine copy stays at
-`/data/vms/sandbox/domainos/media/domainos.awd`.
-
-The RTC patch (`/data/vms/sandbox/domainos/race/rtcpatch/mame-apollo-fixed-date.patch`,
-the 1994 variant) is applied in the 0.289 tree `BUILD-native-domainos/mame`
-(source edit in place, binary `…/mame/domainos`, original at
-`/tmp/apollo_m.cpp.orig` on labhost) and, as the 2011 variant, in the 0.276
-tree. It is harmless but not sufficient; keep or drop it. The other two raced
-runners: libfaketime stalls MAME (monotonic clock) — dead theory; "type
-CALENDAR" was the one that worked once the keyboard was understood (below).
-
-### 3. The Apollo keyboard at the MD prompt — press Return first
-
-Programmatic typing at the MD `>` prompt dropped most characters or all of
-them. Cause: **the MD does baud recognition on the first Return** (the
-driver's own `apollo_sio::read` comment says so). Press Return two or three
-times (the `MD7C REV 8.00` banner appears), THEN type; after that every
-character lands, at 0.25 s hold / 0.35 s gap. Frames:
-`/data/vms/sandbox/domainos/cal276b/snap/dn3500/000{0..6}.png`.
-
-Second keyboard fact: MAME names Backspace, Tab and Return all "Unnamed Key"
-on this driver, so the daemon's name-only KEY lookup sent Backspace for every
-Enter. Fixed by `mame-ctlsock-field-token.patch` + the keymap generator
-(`Unnamed Key#KEYCODE_ENTER`), committed on branch `domainos`.
-
-## The recipe that reaches the desktop (resume here)
-
-Rig launcher that produces frames (the bare binary WITHOUT `skip_warnings 1`
-in `ui.ini` sits paused on the 3C505 "no good dump" warning panel until a
-keypress — that is why the raced runners saw black; not the daemon):
-`/data/vms/sandbox/domainos/rig3/run.sh` — `-video shm`, `MAME_SHM_PATH`,
-`MAME_CTL_SOCK`, `MAME_NO_UI=1`, `-view "Screen 0 Standard (4:3)"` (the
-default view is 1024x844 with a key-legend strip; the layout's own
-"XGA Screen (1024x768)" name is NOT honoured by the shm target, the
-Screen 0 view is), `-isa1 wdc -isa2 ctape -isa3 3c505 -disk1 <awd>`,
-`ui.ini` = `skip_warnings 1`, cfg `apollo_config` mask 1 value 1 (Normal;
-0 = Service).
-
-1. Service mode, stock-style Lua or ctlsock: wait ~32 s for `>`, Return ×3,
-   `EX CALENDAR`↵ (wait 25 s), `W`↵, `N`↵ (keep the time zone), `Y`↵ at
-   "Is the calendar correct?" → "Done." (`cal276b/t.lua` does exactly this.)
-   Keep the resulting `disk.awd` + `nvram/`.
-2. Normal mode with that disk: login bar in ~90 s (`shmwait.py --settle 25`),
-   then through ctlsock with `rig3/domainos.keymap`: `user`↵, `-apollo-`↵ →
-   the DM with `pad0000` in ~30 s.
-3. Then (not done): pick the rest state (a shell pad — Shift-F1 opens one —
-   plus the copyright pad), `PAUSE`, `SAVEST golden`, relaunch fresh with
-   `-state golden`, diff; flip `MAME_NATIVE_CHECKPOINT=1`, stage
-   `sta/dn3500/golden.sta` and the post-CALENDAR disk under
-   `/data/vms/streamhost/assets/domainos/`; prove the mouse (apple2e's
-   open-loop stack is compiled in: `MAME_CTL_PTR_TAGS=:kbd:mouse1,:kbd:mouse2,:kbd:mouse3`,
-   `MAME_CTL_BTN_NAMES="Left mouse button,Right mouse button,Center mouse button"`,
-   `MAME_CTL_PTR_MOD=256`) or take the lisa/sculpt readback route; measure
-   typing at the DM; museum/spa prose from real frames; then `station-land.sh`.
-
-Tools written for this wave (in `/data/vms/sandbox/domainos/tools/`):
-`shm2png.py`, `shmwait.py` (fb-wait for drawshm mappings), `ktype.py`
-(types through ctlsock KEY with a keymap), `rtcvariant.py`, `duarttx.py`.
-
-## Ledger (from `wave.sh alloc domainos --retronet --x11warp`, session `domainos`)
-
-| Station | Session | Slot / UDP / VMID | X-warp | retronet (addr / tap / chain / UIN) |
+| Station | Session | Slot / UDP / VMID | Display | retronet (addr / tap / chain / UIN) |
 |---|---|---|---|---|
 | domainos | domainos | 192 / 54192 / 192 | :92 (127.0.0.1:6092) | 10.99.0.40 / `domainosrn0` / `DOMAINOSRN-IN` / UIN 19200 |
 
 | Fact | Value | Measured by |
 |---|---|---|
-| MAME | **must be `mame0276` for this station** (see wall 1); fleet pin 0289 hangs Normal mode | this wave, PC sampling + bisect |
-| Driver / machine | `dn3500` — src/mame/apollo/apollo.cpp (DN_FLAGS=0) | spine |
-| Device set | isa1=wdc (OMTI 8621; `-disk1 .awd`), isa2=ctape, isa3=3c505 — driver defaults, set explicitly | spine, stock 0.276 `-listslots` |
-| Published surface | 1024x768 via `-view "Screen 0 Standard (4:3)"` (bare raster, aspect-corrected) | native stream, measured |
-| Boot ROMs | `3500_boot_12191_7.bin` (sha256 `7f1028f9…`) + the `3c505` set (`0729-12_a.3h`, `0729-62_a.3f`, `3000_3c505_010728-00.bin`, `3com.9h`, `apollo.9h`); `3c505-nw.bin` has no good dump (expected). Origin **bitsavers.org/bits/Apollo/firmware** (needs a UA header) | build stream |
-| Winchester image | `domain_os_10.4.1.awd`, 348 701 760 bytes, sha256 `9f9ae29c56e456e2520d9107ea2fc30eb8f0dae2d46f6475cc7aa3a92db1f917`; SR10.4.1, volume last recorded 2002-07-31; Provided-by `andrew_warkentin` (VOM); not committed, gallery is private | spine |
-| Credentials | `user` / `-apollo-` (proven at the DM login bar) | this wave |
-| Keyboard | Apollo serial keyboard, 1200 baud 8E1 — NOT a scanned matrix, `MAME_CTL_KEY_EXCL` does not apply; keymap `rig3/domainos.keymap` (81 keys, token-pinned Return/Backspace/Tab) | native stream |
+| MAME | **`mame0276`** (`758c8a169a44f0ce3abfd28e8b5c44cc49148eba`) — a deliberate per-station deviation from the fleet's 0.289; see wall 1 | this wave, PC sampling + bisect |
+| Driver / machine | `dn3500` — `src/mame/apollo/apollo.cpp` (DN_FLAGS = 0) | spine |
+| Device set | `-isa1 wdc` (OMTI 8621; `-disk1 .awd`), `-isa2 ctape`, `-isa3 3c505` — driver defaults, set explicitly | stock 0.276 `-listslots` |
+| Published surface | 1024x768 via `-view "Screen 0 Standard (4:3)"`. The default view snapshots at **1024x844** (raster + a function-key legend strip) and the layout's own "XGA Screen (1024x768)" name is **not** honoured by the drawshm target | native stream, measured |
+| Boot ROMs | `3500_boot_12191_7.bin` (sha256 `7f1028f9…`) + the `3c505` set. Origin **bitsavers.org/bits/Apollo/firmware** (needs a UA header); `3c505-nw.bin` has no good dump (expected) | build stream, re-fetched and hash-verified |
+| Winchester image | `domain_os_10.4.1.awd`, 348 701 760 bytes, sha256 `9f9ae29c56e456e2520d9107ea2fc30eb8f0dae2d46f6475cc7aa3a92db1f917`; SR10.4.1, volume last recorded 2002-07-31; provided-by `andrew_warkentin` (VOM). Not committed — the gallery is private | spine |
+| Station disk | the **post-CALENDAR** disk composed by `tiles/domainos.sh`. The pristine image halts in the boot ROM (wall 2) and is never the station disk | this wave |
+| Credentials | `user` / `-apollo-` (`registry/local.env`) | this wave |
+| Keyboard | Apollo serial keyboard, 1200 baud — NOT a scanned matrix, so `MAME_CTL_KEY_EXCL` does not apply. **180 ms per key edge** (wall 4). Shifted number row is DEC-style (wall 5) | this wave, framebuffer |
+| Pointer | **none**, cause proven (wall 6) | this wave, gdb + framebuffer |
 
-## Reusable fixes (committed on branch `domainos`, commit e93fe11 and later)
+## The walls, and what each one is worth remembering for
 
-1. `scripts/stations_registry/scaffold.py` — `new --like <host-native sibling>`
-   no longer fails on the shared `streamhost/stations/<engine>/x11-runtime.sh`.
-2. `scripts/build-guests/patches/mame-ctlsock-field-token.patch` +
-   `scripts/dev/mame-keymap.py` — `name#KEYCODE_TOKEN` field specs.
-3. Playbook wall rows worth adding: the startup warning panel pauses a bare
-   MAME until a keypress (`skip_warnings 1` in `ui.ini` + the skip-warnings
-   patch); `-view` must name a view the shm target honours; the Apollo MD
-   needs Return before typing; a fleet-pin regression is bisected by sampling
-   the PC in Lua before touching patches.
+### 1. MAME 0.289 cannot boot this machine in Normal mode — pin the station to 0.276
 
-## Claims still held (deliberately — the numbers stay reserved)
+Every Normal-mode boot on a 0.289 build is BLACK forever with all four
+front-panel LEDs lit: the shipping binary, a pristine unpatched 0.289 build,
+mono/4-plane/8-plane, with and without the 3C505, for 220 s. Service mode works
+on 0.289 — which is exactly what makes this look like a disk fault.
 
-Session `domainos` holds slot 192, port 54192, vmid 192, display :92 (loopback
-6092), rnip 10.99.0.40, tap `domainosrn0`, chain `DOMAINOSRN-IN`, uin 19200,
-sandbox `domainos`. Release all of it with
-`ssh lab 'kh-claim release-session domainos'` (or `scripts/dev/wt.sh rm
-domainos` for the sandbox) only when the station is abandoned. The station
-entry is on the branch only, `rn-tapnet.sh` was never generated or committed
-(rule 15), nothing is listed.
+Pinned by sampling the 68030's PC from a Lua autoboot: it spins at
+0x67a2–0x67b2 with A0 = 0x10400 (the SIO), a send-and-compare loop polling SIO
+status with a 65535-iteration timeout, retrying forever — the ROM's KEYBOARD
+self-test, which Service mode skips. Bisected by whole-file and hunk swaps
+(diserial.cpp, the DUART receiver condition, the DUART transmitter
+TxRDY/`m_tx_enabled`/`write_CR` hunks) without finding the 0.276→0.289
+regression. It was not worth finding: the fix is to build the station binary
+from `mame0276`.
 
-## Teardown at the stop (2026-09-10 00:1x)
+**The reusable part:** `build-mame-native.sh` now takes a per-station
+`NATIVE_MAME_TAG` / `NATIVE_MAME_BASE` / `NATIVE_BASE_PATCHES` override, and
+`patches/mame-{ctlsock,drawshm,kiosk-no-ui}-0276.patch` are the 0.276 variants
+(the others in the stack apply cleanly to both tags). Any future station that
+needs a different MAME now has a paved path instead of a fork.
+**And the lesson worth more than the patch:** a fleet-pin regression is bisected
+by *sampling the PC in Lua* before touching a single patch file.
 
-Killed by pid after an `/proc/<pid>/exe` check: the rig3 emulator (pid
-1329580, `/data/vms/sandbox/domainos/domainos-0276`); earlier rigs (4008173,
-3935122, 3729062, 592550) likewise. No `make` was running. Sweep of
-`/proc/*/exe` for `domainos`/`BUILD-native-domainos`: none remaining. Build
-trees, binaries, race dirs and frames left in place under
-`/data/vms/sandbox/domainos/` and `/data/vms/sandbox/BUILD-native-domainos{,276}/`.
+### 2. The boot ROM's 14-day CALENDAR halt — answer it once, in Service mode
+
+"More than 14 days have elapsed since the last shutdown. Switch to service
+mode, press reset and run CALENDAR." halts the kernel; Returns do not advance
+it. The RTC cannot be made to satisfy it: the volume's last recorded time is
+2002-07-31, MAME's "N years ago" config bits reach only 1996/1999 from a 2026
+host, libfaketime stalls MAME (monotonic clock), and an RTC patch pinning
+2011-08-19 was read by Domain/OS as 1981-12-26 because the OS windows the
+two-digit year.
+
+What works: boot the disk ONCE in Service mode (`apollo_config` mask 1 value 0)
+and run `EX CALENDAR`, answering `W`, `N`, `Y` → "Done." That disk then boots
+Normal mode straight through to the DM. `tiles/domainos.sh` does it.
+
+**Cosmetic consequence, still open:** the guest clock reads 1981-12-26, which is
+visible in the process display and therefore in the poster hero.
+
+### 3. The MD prompt needs Return pressed first
+
+Programmatic typing at the Service-mode MD `>` prompt dropped most characters.
+The MD does **baud recognition on the first Return** (`apollo_sio::read` says so
+in its own comment). Press Return two or three times — the `MD7C REV 8.00`
+banner appears — and then every character lands. Second fact: MAME names
+Backspace, Tab and Return all "Unnamed Key" on this driver, so a name-only KEY
+lookup sends Backspace for every Enter; `mame-ctlsock-field-token.patch` plus
+`scripts/dev/mame-keymap.py`'s `name#KEYCODE_TOKEN` specs fix it fleet-wide.
+
+### 4. The fleet's key pacing floor leaks Shift by exactly one character
+
+At the module's 80 ms per edge, `echo Apollo DN3500 Domain/OS SR10.4.1` arrived
+on the framebuffer as `APollo dN#500 - dOmain/Os sr!0.4.1` — every shifted
+character one key late, because the Shift field and the character field are
+paced independently and Shift is on a different port. At ~180 ms per edge the
+same line typed byte-perfect, twice. `SH_KEY_MIN_HOLD_MS`/`SH_KEY_MIN_GAP_MS`
+are 180, and `demoProgram.perCharMs` follows the validator's drain rate (360
+ms/char) at 380.
+
+This is samcoupe's per-field pacing finding on a completely different keyboard —
+a serial one, where `MAME_CTL_KEY_EXCL` does not even apply. **Treat "Shift
+lands one character late" as a fleet-wide symptom with a known shape**, not a
+new mystery, whenever a MAME station mangles capitals.
+
+### 5. `new --like` copies the sibling's charMap, and nobody re-derives it
+
+`registry/stations/domainos.json` shipped samcoupe's `keyboard.charMap`
+verbatim, because that is what a deep copy does. The Apollo's shifted number row
+is DEC-style: shift-2 is `"`, shift-6 `&`, shift-7 `'`, shift-8 `(`, shift-9
+`)`, shift-0 nothing; the key a US board calls `'` is `:`/`*`, and the backtick
+key is `~`/`'`. `@` and `^` are on a real Apollo key that `mame-keymap.py` does
+not carry, so they are unavailable on this station.
+
+The map is derivable **from the station's own generated keymap**, whose field
+names carry each key's legend (`8 (`, `2 "`). That is a check any `--like`
+station can run in one command, and the wave's `ktype2.py` does exactly it.
+
+### 6. The pointer: the emulated keyboard never leaves compatibility mode — OPEN
+
+The Apollo's 3-button mouse hangs off the keyboard. apple2e's whole open-loop
+stack is compiled in and correctly configured, and the module applies every
+count (`STAT` → `applied=660,300`, belief integrating). **Nothing moves.**
+
+Cause, proven with gdb on the live guest rather than guessed:
+`apollo_kbd.cpp`'s `kbd_scan_timer()` calls `m_mouse.read_mouse()` only when
+`m_mode != KBD_MODE_0_COMPATIBILITY`, and a `dprintf` on
+`apollo_kbd_device::set_mode` recorded **zero hits** across a full boot, login
+and count burst. The mouse ports are never sampled; `read_mouse()` is dead code
+at runtime, so nothing downstream of it — pacing, gain, re-latching — can
+matter.
+
+**The unlock, read out of `rcv_complete()`:** Domain/OS must send the keyboard
+the two bytes `0xFF 0x01` to reach `KBD_MODE_1_KEYSTATE` (`0xFF 0x00` goes back
+to compatibility; the ID query `0xFF 0x12 0x21` does not change the mode).
+Once in mode 1, `read_mouse()` self-promotes to
+`KBD_MODE_2_RELATIVE_CURSOR_CONTROL` on the first motion — so reaching mode 1 is
+the entire unlock.
+
+**Exact next step:** the DM's own pointer initialisation is the natural sender
+and never runs on this disk — the DM prints
+`(CMDF) user_data/startup_dm.191 - name not found` on every boot. From a shell
+pad, `ld /com | grep -i mou`, `ld /sys/dm`, `ld /domain_examples` to find a
+shipped `startup_dm.191` template or a `/com` mouse-enable command; if the guest
+has no such command, the fallback is a MAME patch. Budget a boot (~2–3 min)
+before the first experiment, or start from the golden.
+
+The station ships keyboard-only meanwhile, exactly as `apple2e` does, and the
+DM is a keyboard desktop anyway.
+
+### 7. The Apollo driver registers no save state at all
+
+`grep -c 'save_item\|save_pointer' src/mame/apollo/*.cpp` is **0** in every
+file. A stock `SAVEST`/`LOADST` therefore restores the CPU, RAM and the
+emulated clock (the heartbeat `mtime` genuinely rewinds — 1708.501 → 1687.925)
+but leaves the graphics device's image memory untouched. On a machine whose
+desktop repaints only on demand, that means **the previous visitor's screen
+simply stays on the glass after a reset**, which is exactly the failure a
+checkpoint exists to prevent. The wave's answer is
+`patches/mame-apollo-savestate.patch`.
+
+**The general lesson:** "the driver registers state" is not something to infer
+from a driver's flags — it is one `grep` away, and on any new host-native
+station it should be run *before* the checkpoint is designed.
+
+## Driving this guest
+
+- Boot to the `login:` bar takes ~110–190 s; then `user`↵, `-apollo-`↵ and the
+  DM appears ~30 s later. Wait on the framebuffer, never on a guess.
+- Tools live in `/data/vms/sandbox/domainos/tools/` and
+  `/data/vms/sandbox/domainos-finish/tools/`: `shm2png.py`, `shmwait.py`
+  (fb-wait for drawshm mappings), `fbdiff.py` (changed-pixel bounding box —
+  this is how you SEE something move), `ktype2.py` (types through ctlsock,
+  deriving the char map from the keymap; `--gap=0.10` is required),
+  `kpress.py` (named keys).
+- **DM keys**, which ARE the interaction on a pointerless DM: `F1` = the Apollo
+  CMD/SHELL key → the bottom `Command:` bar, where `cp /com/sh` makes a shell
+  pad, `cp /com/pst` a process-display pad and `wp` pops a window; `F11` =
+  ABORT → input back to the shell pad; `F6` = LINE DEL. Home/End/MENU/the
+  numpad/F2–F5/F9/F10 move, grow, pop, close and reprompt — they will rearrange
+  a scene you were about to bake.
+- ctlsock commands take a sequence prefix (`1 STAT`). The binary **ignores
+  SIGTERM**; kill by pidfile with SIGKILL after a `/proc/<pid>/exe` check.
+
+## Still open
+
+1. **Pointer** — §6 above, with the exact next step.
+2. **The guest clock reads 1981-12-26** (§2). Cosmetic, visible in the process
+   display. Fixable by choosing the date when CALENDAR is answered during the
+   tile build, which nobody has tried.
+3. **Retronet** — the 3C505 is in the device set and Domain/OS has TCP/IP, but
+   the tap NIC is not wired and there is no era browser for this platform. The
+   web plane is a research question, not a task; the IM plane is n/a. Rule 15:
+   no `rn-tapnet.sh` is committed for this station.
+4. **`tiles/domainos.sh`** is written end-to-end but its build and
+   CALENDAR-compose steps have not been run from scratch in one pass; the ROM
+   staging step has.
