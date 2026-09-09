@@ -89,6 +89,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 
 | Doc | Guest |
 |---|---|
+| [guests/a1000.md](guests/a1000.md) | Amiga 1000 (1985) — host-native FS-UAE 3.2.35, floppy-boot Workbench 1.2 (no ROM Kickstart, only a WCS); pre-web, keyboard unverified, authentic bootstrap route still open. |
 | [guests/amiga500.md](guests/amiga500.md) | Real 68000 Amiga 500 via the FS-UAE kiosk. |
 | [guests/apple2.md](guests/apple2.md) | Apple II kiosk. |
 | [guests/apple2e.md](guests/apple2e.md) | Apple //e (enhanced) — host-native MAME `apple2ee`, ProDOS boot menu for AppleWorks 3.0 and Dazzle Draw 1.2; keyboard-only, mouse card wired but not tracking (open item). |

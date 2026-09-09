@@ -26,6 +26,7 @@
     "[SAM Coupé](station:samcoupe)'s boot menu is a SAM BASIC program that loads from disk the moment SAMDOS finds it — the machine's own version of an autoexec",
     "Reset always returns [SAM Coupé](station:samcoupe) to its menu: a savestate captured there restores in under two seconds",
     "[Atari 800XL](station:atari800xl)'s boot menu is read straight off the joystick port, not a keyboard chord — the same arrow keys a visitor already has move the highlight",
-    "[Atari 800XL](station:atari800xl)'s savestate restores pixel-identical in 1.3s vs a 19-21s cold boot — measured, since the driver declares no save-state support"
+    "[Atari 800XL](station:atari800xl)'s savestate restores pixel-identical in 1.3s vs a 19-21s cold boot — measured, since the driver declares no save-state support",
+    "The 1985 Amiga 1000 is dark-launched host-native on FS-UAE, booting Workbench 1.2 from floppy the way the real machine did — it had no Kickstart in ROM, only a write-control store loaded fresh from a Kickstart disk on every power-up"
   ]
 }

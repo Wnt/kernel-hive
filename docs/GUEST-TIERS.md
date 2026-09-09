@@ -109,7 +109,7 @@ the schema but used by no station**.
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (11)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   indyr4400 pdp11 star`
-- **Tier 3 (23)** — `amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
+- **Tier 3 (24)** — `a1000 amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
   dragon32 irix kc854 mpf2 newsos nextstep oricatmos pet2001 plus4 sinclairql
   tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
@@ -207,6 +207,7 @@ missing feature.
 | Station | Tier | Suite / accel | Pointer method | Mode | Touch | Audio | fps | Exec |
 |---|---|---|---|---|---|---|---:|---|
 | `aix432` | 1 direct-QEMU | tcg | `qemu-mga-closedloop` | abs | — | off | 30 | telnet_unix_e |
+| `a1000` | 3 host-native | FS-UAE/host | `x11-xtest` | abs | — | off | 50 | — |
 | `alpine` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
 | `alto` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |
 | `amiga` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
