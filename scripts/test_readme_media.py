@@ -121,16 +121,12 @@ class RenderLineupHtmlTests(unittest.TestCase):
         self.assertIn("spa/public/posters/winnt/desktop.webp", html)
         self.assertIn("WINNT · 1993", html)
 
-    def test_placards_section_for_posters_only(self):
+    def test_posters_are_not_listed(self):
         rows = [_row("a", 1990), _row("macos", 2024, lifecycle="showcase")]
         html = lib.render_lineup_html(rows)
-        self.assertIn("### Placards", html)
-        self.assertIn("spa/public/posters/macos/desktop.webp", html)
-
-    def test_no_placards_section_when_no_posters(self):
-        rows = [_row("a", 1990)]
-        html = lib.render_lineup_html(rows)
         self.assertNotIn("Placards", html)
+        self.assertNotIn("spa/public/posters/macos/desktop.webp", html)
+        self.assertIn("spa/public/posters/a/desktop.webp", html)
 
     def test_six_per_row(self):
         rows = [_row(f"s{i}", 1980 + i) for i in range(7)]

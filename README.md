@@ -1,56 +1,67 @@
 # Kernel Hive
 
-**A living computer museum. Operating systems from 1970 to today, running
-right now — and you can move their mice.**
+**Virtual computer museum streamed into your browser. 90+ operating systems
+ready for your interaction instantly, spanning from 1970 to modern times —
+with highly optimized round-trip latency.**
 
 <a href="https://kernelhive.madekivi.fi">
   <img src="docs/media/hero.webp" alt="Twenty desktops from the collection, side by side" width="100%">
 </a>
 
-![A visitor opens Windows 3.11 from the collection and drives it live](docs/media/demo.gif)
+![Gallery grid view, then Windows 3.11 driven live from the browser](docs/media/demo.gif)
 
-*Not a video of an old computer. Recorded from the public gallery: the
-collection, one card clicked, Windows 3.11 arriving, and Program Manager's File
-menu unfolding under a pointer that is being moved from a browser tab.
-[How it was made](docs/media/README.md).*
+*Gallery grid view. Classic Windows 3.11.*
 
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-informational)](LICENSE)
 [![streamhost: GPL-2.0-or-later](https://img.shields.io/badge/streamhost-GPL--2.0--or--later-informational)](streamhost/LICENSE)
 
-## Why this is interesting
+## Major features
 
-- **Every machine here is live, not a recording.** Open one and you are driving
-  a running guest: click a menu, launch an application, break something. There
-  is no scripted path and nothing pre-rendered.
-- **The pointer lands where you point — even on a 1990s Unix workstation.**
-  Most of these systems only understand *motion*, not position, so a browser's
-  coordinates used to turn into a cursor that crawled behind your hand. On the
-  hardest machines the emulator now reads the cursor back out of the graphics
-  chip's own registers and steers until the two agree. Click to photon is
-  around 20–25 ms on the LAN
-  ([`docs/INPUT-LATENCY.md`](docs/INPUT-LATENCY.md)).
-- **The machines are wired to a 1990s internet that has no way out.** Sign into
-  **ICQ** on Windows 98 and message someone at a Solaris workstation; open
-  **Internet Explorer 5** and land on archived 1998 pages exactly as they were,
-  nothing later than the end of 2000. A chatbot lives on that network and says
-  hello about thirty seconds after a machine wakes up. Nothing on it can reach
-  today's internet.
-- **You can have one to yourself.** No invitation needed: sign up and the
-  museum hands you a private copy of Windows 3.11, OS/2 Warp or Rhapsody. Wreck
-  it, close the tab — the next visitor still gets a pristine one.
+- **Instant machines.** Every guest launches from a full machine-state
+  checkpoint — RAM, devices and disk together — and waits paused; the first
+  visitor resumes it. A 1999 Alpha workstation is on screen in seconds.
+  ([`docs/GUEST-TIERS.md`](docs/GUEST-TIERS.md))
+- **A latency-first pipeline, end to end.** Input rides **WebTransport over
+  QUIC/UDP**: pointer moves as unreliable datagrams, keys and clicks on their
+  own reliable streams, so no class ever blocks another. The whole host-side
+  critical path is **Rust** — one daemon per machine pulls a frame only when the
+  emulator reports damage, encodes it in-process with **libx264 tuned for zero
+  latency**, and ships one access unit per QUIC stream straight into
+  **WebCodecs** in the browser. Measured LAN click-to-photon: **~20–25 ms**,
+  down from ~200 ms on the WebRTC stack it replaced.
+  ([`docs/INPUT-LATENCY.md`](docs/INPUT-LATENCY.md),
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md))
+- **Headless, low-overhead emulators.** On the host-native path there is no X
+  server and no virtual display: QEMU, MAME, VICE, FS-UAE and es40 publish
+  their framebuffer straight into shared memory and take input over a control
+  socket. An idle desktop costs nothing to stream, and an unwatched machine is
+  paused outright. ([`streamhost/docs/DESIGN.md`](streamhost/docs/DESIGN.md),
+  [`streamhost/docs/IDLE-PAUSE.md`](streamhost/docs/IDLE-PAUSE.md))
+- **Absolute cursor positioning, on every kind of guest.** Machines that only
+  understand relative mouse motion still put the cursor exactly under yours:
+  closed-loop readback from the graphics chip's registers (AIX, HP-UX), the
+  coordinate written into the place the OS keeps its own pointer (classic Mac
+  OS, BeOS, Rhapsody, DOS GUIs), or the guest's own X server warped from
+  outside (Amiga UNIX, the Linux and BSD fleet).
+  ([`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md))
+- **Patched emulators.** MAME, QEMU, VICE, FS-UAE and es40 are all forked for
+  shared-memory scanout, control-socket input, savestates and the device models
+  these machines needed — see [Emulator forks](#emulator-forks).
+- **A private 1990s internet.** Period browsers reach an archived 1998 web;
+  ICQ, AIM and IRC connect the machines to each other and to a chatbot. No
+  route to today. ([`docs/lab/RETRONET-BRIEF.md`](docs/lab/RETRONET-BRIEF.md))
+- **Walk-in machines.** Sign up with a passkey and get a private clone of
+  Windows 3.11, OS/2 Warp or Rhapsody, reaped after the visit.
+  ([`docs/lab/WALKIN-BRIEF.md`](docs/lab/WALKIN-BRIEF.md))
 
 ## Visit the museum
 
 **[kernelhive.madekivi.fi](https://kernelhive.madekivi.fi)**
 
-Walk in and you can register an account on the spot and be given a private
-machine for the visit — three to choose from, yours to install things on and
-ruin. Signing in on an invited account opens the whole floor instead: every
-live machine in the collection, its write-up, photographs of the real hardware
-it is imitating, and the private 1990s internet several of them are joined to.
-Sign-in is a passkey, so there is no password to pick.
-
-The full public path — the edge, the three gates, the media plane — is
+Walk in, register on the spot and get a private machine for the visit.
+An invited account opens the whole floor: every live machine, its write-up,
+photographs of the real hardware, and the private 1990s internet. Sign-in is a
+passkey; there is no password. The public path — edge, gates, media plane — is
 [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md).
 
 ## The lineup
@@ -88,25 +99,26 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/mpf2"><img src="spa/public/posters/mpf2/desktop.webp" width="150" alt="Multitech Microprofessor II"></a><br><sub>Multitech Microprofessor II · 1982</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/zxspectrum"><img src="spa/public/posters/zxspectrum/desktop.webp" width="150" alt="Sinclair ZX Spectrum 48K"></a><br><sub>Sinclair ZX Spectrum 48K · 1982</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/atari800xl"><img src="spa/public/posters/atari800xl/desktop.webp" width="150" alt="Atari 800XL"></a><br><sub>Atari 800XL · 1983</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/oricatmos"><img src="spa/public/posters/oricatmos/desktop.webp" width="150" alt="Oric Atmos"></a><br><sub>Oric Atmos · 1984</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/lisa"><img src="spa/public/posters/lisa/desktop.webp" width="150" alt="Lisa Office System 3.1"></a><br><sub>Lisa Office System 3.1 · 1984</sub></td>
 </tr>
 <tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/oricatmos"><img src="spa/public/posters/oricatmos/desktop.webp" width="150" alt="Oric Atmos"></a><br><sub>Oric Atmos · 1984</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/plus4"><img src="spa/public/posters/plus4/desktop.webp" width="150" alt="Commodore Plus/4"></a><br><sub>Commodore Plus/4 · 1984</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/sinclairql"><img src="spa/public/posters/sinclairql/desktop.webp" width="150" alt="Sinclair QL"></a><br><sub>Sinclair QL · 1984</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/a1000"><img src="spa/public/posters/a1000/desktop.webp" width="150" alt="Amiga 1000"></a><br><sub>Amiga 1000 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/amstradcpc"><img src="spa/public/posters/amstradcpc/desktop.webp" width="150" alt="Amstrad CPC 6128"></a><br><sub>Amstrad CPC 6128 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2e"><img src="spa/public/posters/apple2e/desktop.webp" width="150" alt="Apple //e"></a><br><sub>Apple //e · 1985</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/atarist"><img src="spa/public/posters/atarist/desktop.webp" width="150" alt="Atari ST (EmuTOS GEM)"></a><br><sub>Atari ST (EmuTOS GEM) · 1985</sub></td>
 </tr>
 <tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/atarist"><img src="spa/public/posters/atarist/desktop.webp" width="150" alt="Atari ST (EmuTOS GEM)"></a><br><sub>Atari ST (EmuTOS GEM) · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/c128"><img src="spa/public/posters/c128/desktop.webp" width="150" alt="Commodore 128"></a><br><sub>Commodore 128 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/daybreak"><img src="spa/public/posters/daybreak/desktop.webp" width="150" alt="Xerox 6085"></a><br><sub>Xerox 6085 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/armeval"><img src="spa/public/posters/armeval/desktop.webp" width="150" alt="Acorn ARM Evaluation System"></a><br><sub>Acorn ARM Evaluation System · 1986</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/amiga"><img src="spa/public/posters/amiga/desktop.webp" width="150" alt="Amiga 500"></a><br><sub>Amiga 500 · 1987</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="150" alt="Interlisp Medley"></a><br><sub>Interlisp Medley · 1987</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2"><img src="spa/public/posters/apple2/desktop.webp" width="150" alt="Apple II"></a><br><sub>Apple II · 1988</sub></td>
 </tr>
 <tr>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2"><img src="spa/public/posters/apple2/desktop.webp" width="150" alt="Apple II"></a><br><sub>Apple II · 1988</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="150" alt="SAM Coupé"></a><br><sub>SAM Coupé · 1989</sub></td>
 </tr>
@@ -205,18 +217,13 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/openbsd"><img src="spa/public/posters/openbsd/desktop.webp" width="150" alt="OpenBSD 7.9"></a><br><sub>OpenBSD 7.9 · 2026</sub></td>
 </tr>
 </table>
-
-### Placards
-
-Two machines whose live backends were retired; they stay on the floor as placards.
-
-<table>
-<tr>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/riscos"><img src="spa/public/posters/riscos/desktop.webp" width="150" alt="RISC OS 5.30"></a><br><sub>RISC OS 5.30 · 2022</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/macos"><img src="spa/public/posters/macos/desktop.webp" width="150" alt="macOS Sequoia"></a><br><sub>macOS Sequoia · 2024</sub></td>
-</tr>
-</table>
 <!-- lineup:end -->
+
+
+## Inside the museum
+
+<!-- museum-views:start -->
+<!-- museum-views:end -->
 
 
 
@@ -230,53 +237,16 @@ Two machines whose live backends were retired; they stay on the floor as placard
 
 ![Browser, streaming daemon and emulator, with the retronet plane beside them](docs/media/architecture.svg)
 
-A browser tab decodes H.264 and Opus arriving over WebTransport, and sends the
-pointer and keyboard back the same way. Behind it, one small Rust daemon per
-machine captures the screen only when it actually changes, encodes it, and
-injects your input into the guest by whichever channel that guest understands.
-Behind *that* is a period-correct emulator — QEMU, MAME, FS-UAE or an Alpha
-simulator — and, for some machines, the museum's own private network.
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) is the map into the rest.
+One Rust daemon per machine: damage-gated capture from shared memory, QMP or an
+in-guest agent; in-process x264 + Opus; WebTransport to the browser; input
+injected back by whichever channel the guest supports. Behind it, a patched
+emulator restored from a checkpoint. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+is the map into the rest.
 
-### Six things that turned out to be hard
+## Emulator forks
 
-- **Nobody wants to watch a boot.** A machine is launched already restored to a
-  captured full machine state — RAM, devices and disk together — and left
-  paused; the first visitor to arrive resumes it. Which is why a Tru64 Alpha
-  puts a CDE desktop on screen in seconds rather than minutes.
-  ([`docs/GUEST-TIERS.md`](docs/GUEST-TIERS.md),
-  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md))
-- **The closed-loop pointer.** Where a guest exposes no absolute pointing
-  device, the emulator reads the cursor position back — from the graphics
-  chip's registers, or from the address the operating system itself keeps its
-  pointer at — and corrects until it matches. Arithmetic and hope was not
-  enough; a feedback loop was.
-  ([`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md))
-- **Encoding a screen that mostly does not move.** An idle desktop should cost
-  nothing, and a dragged window should still be smooth. Capture is gated on the
-  emulator signalling damage rather than run at a fixed rate, encoding happens
-  on its own thread at constant quality, and an unwatched machine is paused
-  outright. ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
-  [`streamhost/docs/DESIGN.md`](streamhost/docs/DESIGN.md),
-  [`streamhost/docs/IDLE-PAUSE.md`](streamhost/docs/IDLE-PAUSE.md))
-- **Giving the 1990s machines an internet.** Period browsers and period chat
-  clients speaking real HTTP/1.0 and real OSCAR to services inside the lab,
-  against an archive of pages as they were — with no route to the modern web
-  anywhere in the design, because half of what makes it convincing is that it
-  cannot cheat. ([`docs/lab/RETRONET-BRIEF.md`](docs/lab/RETRONET-BRIEF.md),
-  [`docs/lab/retronet/`](docs/lab/retronet/))
-- **Handing a stranger a machine of their own.** A private copy per visitor,
-  spun off a shared starting state onto its own throwaway overlay and its own
-  isolated network, reaped when the visit ends.
-  ([`docs/lab/WALKIN-BRIEF.md`](docs/lab/WALKIN-BRIEF.md))
-- **Patching the emulators.** Several exhibits only exist because the emulator
-  was changed: an SGI Indy that panics under hardware virtualisation, an Amiga
-  that had to publish its frames into shared memory, an Alpha, and a Cirrus
-  card that restored a saved Windows NT desktop in the wrong colours for
-  reasons that took a trace to find. The patches are published, one commit per
-  patch. ([`docs/lab/ES40-FORK-BRIEF.md`](docs/lab/ES40-FORK-BRIEF.md),
-  [`docs/lab/FSUAE-NATIVE-BRIEF.md`](docs/lab/FSUAE-NATIVE-BRIEF.md),
-  [`streamhost/qemu-patches/`](streamhost/qemu-patches/))
+<!-- forks:start -->
+<!-- forks:end -->
 
 ## This week at the museum
 
@@ -391,8 +361,8 @@ external inputs and the ordered full-box runbook chain.
 <br>
 
 This assumes a single Linux host (Proxmox VE in production) with enough CPU and
-RAM to run the fleet plus a per-station encoder — the lab box is a Supermicro
-server, not a laptop. There is no cloud deployment path and no installer: the
+RAM to run the fleet plus a per-station encoder. The kernelhive.madekivi.fi host
+is a 6+ years old Supermicro server with no GPU. There is no cloud deployment path and no installer: the
 [reproduction quickstart](docs/REPRODUCE-QUICKSTART.md) separates what builds on
 any machine (the SPA, the `streamhost` daemon) from what only makes sense
 against the Proxmox host and its VM inventory (station launchers, seed-image
@@ -434,19 +404,6 @@ reproducing the stack means supplying your own via `registry/local.env` (see
 the other gitignored, operator-local files listed in `.gitignore`. A deployment
 left on the placeholders builds but is unreachable. Please don't submit patches
 that put real addresses, hostnames or credentials back into the repo.
-
-</details>
-
-<details>
-<summary><b>The MAME fork</b></summary>
-
-<br>
-
-Several exhibits (SGI IRIX, the Microprofessor II) need MAME patches that are
-not upstream. Those patches are published, one commit per patch, on a fork of
-MAME at [github.com/Wnt/mame](https://github.com/Wnt/mame), on branches `irix`,
-`irix-experimental` (working patches deliberately not shipped in the default
-stack), and `mpf2`. The fork exists to support Kernel Hive.
 
 </details>
 

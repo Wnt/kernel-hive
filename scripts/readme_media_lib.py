@@ -236,20 +236,15 @@ def _thumb_table(group_rows: list[dict[str, Any]], per_row: int = 6) -> str:
 
 def render_lineup_html(rows: list[dict[str, Any]]) -> str:
     """The full lineup grid body (between, not including, the markers): one
-    section per decade, live stations only, plus a trailing "Placards" row for
-    the showcase posters (retired backends), 6 thumbnails per row."""
+    section per decade, live stations only (showcase posters with retired
+    backends are left out), 6 thumbnails per row."""
     parts: list[str] = []
     for label, group_rows in group_by_decade(rows):
         parts.append(f"### {label}\n")
         parts.append(_thumb_table(group_rows))
         parts.append("")
-    posters = sorted((r for r in rows if is_poster(r)), key=_sort_key)
-    if posters:
-        parts.append("### Placards\n")
-        parts.append("Two machines whose live backends were retired; they stay on the floor as placards.")
-        parts.append("")
-        parts.append(_thumb_table(posters))
-        parts.append("")
+    # Showcase posters (retired backends) are deliberately NOT listed: the
+    # operator wants the grid to show only machines a visitor can drive.
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
