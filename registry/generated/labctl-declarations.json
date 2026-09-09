@@ -522,7 +522,7 @@
       "exec_subshell": null,
       "console": "x11",
       "udp_port": 54192,
-      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/domainos/sta."
+      "notes": "HOST-NATIVE: MAME 0.276 dn3500 (Apollo DN3500) runs on the host — no QEMU, no QMP, no exec channel. Frames drawshm->shm, keys ctlsock through the generated keymap, no audio. PINNED TO 0.276, NOT the fleet's 0.289: on 0.289 every Normal-mode boot is black forever (the boot ROM's keyboard self-test spins on the SIO). Keys need 180 ms per edge — at the fleet floor of 80 the Shift key lands one character late. Pointer transport is none: the emulated Apollo keyboard never leaves compatibility mode, so its mouse ports are never sampled (proven with gdb; see docs/guests/domainos.md). Launcher stations/mame-native/x11-runtime.sh."
     },
     "dragon32": {
       "dir": "/data/vms/streamhost/stations/dragon32",

@@ -1151,13 +1151,13 @@ emit a3000 \
   "$T/fsuae-native/x11-runtime.sh" --aux-file "$T/fsuae-native/amiga.keymap" \
   --env-append-file "$T/a3000/station.env.fixture"
 
-# domainos (VMID 187) — TODO one line; scaffolded from samcoupe.
+# domainos (VMID 192) — Apollo DN3500, Domain/OS SR10.4.1: the Display
+# Manager desktop, host-native MAME dn3500 pinned to 0.276.
 emit domainos \
-  --tile domainos --udp 54192 --x11 --x11-display :75 --capture shm \
-  --pointer none --input-backend mamesock --audio on --fps 60 \
-  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
-  "$T/domainos/samcoupe.keymap" --env-append-file \
-  "$T/domainos/station.env.fixture"
+  --tile domainos --udp 54192 --x11 --x11-display :92 --capture shm \
+  --pointer none --input-backend mamesock --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/domainos/domainos.keymap" \
+  --env-append-file "$T/domainos/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)

@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54192,
-      "notes": "HOST-NATIVE: MAME 0.289 dn3500 (Apollo DN3500) runs on the host, no QEMU/QMP, no exec channel. Frames drawshm->shm, keys ctlsock keymap, no audio. Launcher stations/mame-native/x11-runtime.sh. GOLDEN NOT BAKED — station boots Domain/OS to the boot-ROM 14-day CALENDAR halt; the DM desktop is an OPEN item (docs/lab/DOMAINOS-WAVE.md)."
+      "notes": "HOST-NATIVE: MAME 0.276 dn3500 (Apollo DN3500) runs on the host — no QEMU, no QMP, no exec channel. Frames drawshm->shm, keys ctlsock through the generated keymap, no audio. PINNED TO 0.276, NOT the fleet's 0.289: on 0.289 every Normal-mode boot is black forever (the boot ROM's keyboard self-test spins on the SIO). Keys need 180 ms per edge — at the fleet floor of 80 the Shift key lands one character late. Pointer transport is none: the emulated Apollo keyboard never leaves compatibility mode, so its mouse ports are never sampled (proven with gdb; see docs/guests/domainos.md). Launcher stations/mame-native/x11-runtime.sh."
     }
   },
   "render": {
     "signalOrder": 83,
     "stationsManifestOrder": 81,
-    "stationsManifestPrelude": "\n# domainos (VMID 187) — TODO one line; scaffolded from samcoupe.\n",
+    "stationsManifestPrelude": "\n# domainos (VMID 192) — Apollo DN3500, Domain/OS SR10.4.1: the Display\n# Manager desktop, host-native MAME dn3500 pinned to 0.276.\n",
     "bringUpGroup": 6,
     "bindingOrder": 93,
     "bindingPrelude": "",
@@ -79,7 +79,7 @@
       "SH_INPUT_BACKEND": "mamesock",
       "SH_AUDIO": "off",
       "SH_CAPTURE": "shm",
-      "SH_X11_DISPLAY": ":75",
+      "SH_X11_DISPLAY": ":92",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/domainos/domainos_cmd",
       "SH_SHM_PATH": "/data/vms/streamhost/stations/domainos/fb.shm",
       "SH_PORT": "54192",
@@ -89,12 +89,13 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/domainos/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/domainos/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "\":@,&:^,':&,(:*,):(,%3A:',*:\",~:`"
     },
     "vmidLabel": 192,
     "bringUpOrder": 93,
     "x11": {
-      "display": ":75",
+      "display": ":92",
       "geometry": "1024x768x32",
       "capture": "shm",
       "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
@@ -106,7 +107,7 @@
         "54192",
         "--x11",
         "--x11-display",
-        ":75",
+        ":92",
         "--capture",
         "shm",
         "--pointer",
@@ -132,11 +133,11 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#7A6A55",
-    "eraLabel": "TODO(spa): 1989 · Apollo DN3500 — Domain/OS SR10.4.1"
+    "eraLabel": "1989 · Apollo DN3500 — Domain/OS SR10.4.1"
   },
   "museum": {
     "id": "domainos",
-    "displayName": "TODO(spa): Apollo Domain/OS",
+    "displayName": "Apollo Domain/OS",
     "year": 1989,
     "lineage": "Apollo Computer / Domain/OS",
     "arch": "Motorola MC68030, 25 MHz, 16 MB, 8-plane colour (1024x800)",
@@ -152,14 +153,16 @@
     "periodBrowser": "none — Apollo Domain networking (802.3), no era web browser on this station",
     "iconicApps": [
       "Display Manager",
-      "DM pads"
+      "DM pads",
+      "Aegis shell",
+      "pst process display"
     ],
-    "blurb": "TODO(spa): Apollo's Domain/OS on a DN3500 workstation — the pane-and-transcript Display Manager, a desktop unlike any window manager in the lineup.",
-    "notes": "TODO(spa): host-native MAME dn3500. GOLDEN NOT BAKED — see docs/lab/DOMAINOS-WAVE.md; the DM rest state is OPEN (boot-ROM CALENDAR halt + flaky MD-prompt keyboard)."
+    "blurb": "Apollo's Domain/OS on a DN3500 workstation. The Display Manager tiles the screen with 'pads' instead of stacking windows, keeps a command line along the bottom edge, and treats every machine on the network as another branch of one file system.",
+    "notes": "Host-native MAME dn3500, pinned to 0.276 (0.289 hangs this machine's Normal-mode boot). Keyboard-only: the pointer is an OPEN item with a known cause and a known unlock — see docs/guests/domainos.md. The guest clock reads 1981 because the boot ROM's CALENDAR check had to be answered once by hand; cosmetic, and visible in the process display."
   },
   "emulator": {
     "family": "MAME",
-    "version": "0.289",
+    "version": "0.276",
     "source": "scripts/build-guests/emulators/native.d/domainos.sh",
     "driver": "dn3500"
   },
@@ -170,14 +173,16 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "Apollo 3-button mouse on the keyboard port; open-loop pointer stack compiled in but UNPROVEN until the DM is reachable (transport stays none).",
-    "keyboard": "Apollo serial keyboard (1200 baud). Echo PROVEN on the framebuffer at the MD prompt via Lua set_value (uppercase EX executed); mame-ctlsock-field-token.patch resolves Return (MAME names Backspace/Tab/Return all \"Unnamed Key\"). NOT yet proven on the ctlsock path at the DM — the MD prompt drops programmatic input and is not a valid test point.",
-    "fixture": "GOLDEN NOT BAKED. The disk boots Domain/OS to the kernel and halts at the boot ROM 14-day CALENDAR check. See docs/lab/DOMAINOS-WAVE.md OPEN items."
+    "mouse": "None. The Apollo 3-button mouse hangs off the keyboard and apple2e's open-loop stack is compiled in and configured, but apollo_kbd's scan timer samples the mouse ports only when the keyboard has left KBD_MODE_0_COMPATIBILITY, and Domain/OS never sends the 0xFF 0x01 that would do it (gdb dprintf on set_mode: zero hits across boot, login and a count burst). The DM is driven from the keyboard instead.",
+    "keyboard": "Apollo serial keyboard, 1200 baud. PROVEN on the framebuffer at the Display Manager: 'echo Apollo DN3500 Domain/OS SR10.4.1' typed and echoed byte-perfect at 180 ms per key edge. At the fleet floor of 80 ms the Shift key leaks one character late ('APollo dN#500'). The shifted number row is DEC-style, not US (shift-8 is '(', shift-2 is '\"'); spa/src/data/keyboards.ts carries the charMap. MAME names Backspace, Tab and Return all 'Unnamed Key' on this driver, so the keymap pins them by KEYCODE token (mame-ctlsock-field-token.patch).",
+    "fixture": "The Display Manager desktop, logged in as user: pad0000 with a /com/ld / listing of the Domain/OS root and a /com/lcnode node table, an empty shell pad, and the process display, over the DM's Command: bar. Baked with MAME SAVEST on the post-CALENDAR disk; the pristine media halts in the boot ROM's 14-day CALENDAR check and is never the station disk."
   },
   "migrationExceptions": [],
   "notes": [
     "scaffolded from samcoupe on 2026-09-09 (--like samcoupe --tuple towerA,homeCrtD,none,none); native shape is samcoupe/apple2e",
-    "GOLDEN OPEN: boot-ROM 14-day CALENDAR halt blocks the Display Manager; museum/spa prose and demoProgram are TODO pending DM screenshots. See docs/lab/DOMAINOS-WAVE.md."
+    "MAME is pinned to 0.276 for this station via NATIVE_MAME_TAG in native.d/domainos.sh — the fleet's 0.289 cannot boot the DN3500 in Normal mode (docs/lab/DOMAINOS-WAVE.md wall 1)",
+    "the station disk is the POST-CALENDAR disk composed by tiles/domainos.sh; the pristine media image halts in the boot ROM",
+    "pointer OPEN: the emulated Apollo keyboard never leaves compatibility mode, so its mouse ports are never sampled — next step is making Domain/OS send 0xFF 0x01 (docs/guests/domainos.md)"
   ],
   "demoProgram": {
     "label": "TODO(spa): a DM shell demo once the Display Manager is reachable",
@@ -185,6 +190,18 @@
       "date"
     ],
     "runCommand": "",
-    "perCharMs": 200
+    "perCharMs": 380
+  },
+  "keyboard": {
+    "charMap": {
+      "\"": "@",
+      "&": "^",
+      "'": "&",
+      "(": "*",
+      ")": "(",
+      ":": "'",
+      "*": "\"",
+      "~": "`"
+    }
   }
 }
