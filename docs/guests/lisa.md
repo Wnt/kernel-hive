@@ -1,6 +1,6 @@
 # Apple Lisa — Lisa Office System 3.1 — gallery station notes
 
-Status: **LIVE, host-native, SANDBOXED** since 2026-09-09 — LisaEm 2.0.0
+Status: **LIVE, host-native, SANDBOXED** since 2026-09-09 (main d0a8905e, reset-proven) — LisaEm 2.0.0
 running inside a systemd-nspawn container on labhost, the daemon capturing a
 pinned 720x498 Xvfb whose root is the aspect-corrected Lisa screen. Wave
 record: [`../lab/LISA-WAVE.md`](../lab/LISA-WAVE.md).

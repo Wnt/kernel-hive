@@ -99,11 +99,80 @@ session itself (model: Claude Fable 5.1).
 
 - Retronet web plane + IM: no TCP/IP exists for a 1984 Lisa. The reservation
   10.99.0.41 stays as the ledger entry.
+- Keyboard typing proof in a LisaWrite document (XTEST keys reach LisaEm — the
+  daemon resolved 103 scancodes on the sandboxed display — but no typed line
+  was framebuffer-proven). Next: on the live station under a wake lease,
+  Disk → Lisa Write → double-click "LisaWrite Paper" → double-click the torn
+  sheet → `labctl type`, waiting for a signature change (up to 60 s) after
+  each double-click.
+- PRAM default boot device (LOS Preferences → Select Defaults → "Start Up
+  From: Profile", then a clean power-off so LisaEm writes `[pram]`); until
+  then `lisa-inner.sh` clicks the ProFile icon 4 s after launch.
+- A type-in demo (needs the document above); audio (`SH_AUDIO=off`).
 
 ## Landing
 
-(filled by the landing)
+`scripts/dev/station-land.sh lisa` (no `--golden`: the golden ProFile image
+was staged into `stations/lisa/disk/` by the spine), run detached with its log
+polled. First attempt stopped at step 2 (merge conflict with origin/main after
+the `medley` and `sculpt` landings: the six generated/scene files). Resolved
+by the recipe — `--theirs` for the generated files and the two scene tables,
+`spa-scene-rows.py lisa --like amix --tuple … --apply`, render orders max+1
+(bringUp/binding 93→95, signal 83→84, manifest/golden 81→82, build 79→80),
+then `spa-scene-rows.py` AGAIN because the order bump moved lisa's lineup
+index (92→94) after the rows had been written — validate names exactly that.
+Second attempt: window taken at once, gate green (eslint+knip, vitest,
+shfmt+shellcheck on 4 files, size budget, generated drift, box state), main
+`d0a8905e` pushed 19:40:50Z, `box-deploy --apply` (`.deployed-rev` 19:42Z),
+smoke rig withdrawn, `station-up` (unit active, boot click 19:46:32Z),
+10 claims re-homed to session `lisa`, SPA built and deployed, window
+released. `== LANDED lisa`.
 
-## Measured timeline
+## Proofs (rule 9)
 
-(filled after landing from `session-timeline.py`)
+- Spine: LOS 3.1 desktop on the framebuffer (`smoke/frames/c050.png`,
+  18:48Z); the Lisa's arrow at the X pointer's position (absolute mapping).
+- Launcher, unsandboxed: desktop after its own boot click (`rig/l2.png`).
+- Launcher, sandboxed: `rig/n1.png` desktop; from inside the container `id`
+  = uid 0 (host 200000), only `lo`, five processes, no `/data`, no
+  `/etc/shadow`; from the host LisaEm as uid 200000 with its exe under
+  `assets/lisa/lisaem/`.
+- Clicks: ROM `STARTUP FROM` icon, Preferences icon + its check boxes, the
+  Disk icon (window with the seven tool folders), all on the sandboxed rig.
+- Landed station: `labctl shot lisa` = the ROM boot in progress seconds after
+  station-up (`lisa-landed.png`), the desktop afterwards (`live-desk.png`).
+- **Reset:** `labctl reset lisa` → new nspawn + LisaEm pids (uid 200000) →
+  the desktop signature identical to the pre-reset one after 145 s
+  (`live-reset.png`).
+
+## Measured timeline (git + box mtimes; the fork's own transcript is inside the coordinator's)
+
+| Milestone | Clock (UTC) | Minutes from `wave.sh alloc` |
+|---|---|---|
+| `wave.sh alloc lisa` | 18:14 | 0 |
+| ROM assembled + hash-verified (after the bad-dump detour) | 18:34 | 20 |
+| LOS 3.1 desktop on the framebuffer (Xvfb rig, GTK closure bundled) | 18:48 | 34 |
+| Sandboxed launcher end-to-end (desktop, `rig/n1.png`) | 19:21 | 67 |
+| `/os/lisa` viewable (smoke rig, x11test) | 19:22 | 68 |
+| Branch pushed (`f1e42f9a`) | 19:34 | 80 |
+| main pushed (`d0a8905e`) / box deployed | 19:40 / 19:42 | 86 / 88 |
+| station-up boot click / landed | 19:46 / 19:48 | 92 / 94 |
+| reset proof on the live station | 19:53 | 99 |
+
+Where it went: the operator's mid-wave sandbox rule (≈25 min: nspawn shape,
+the `/assets` vs host-path pid trap, `--console=pipe`), and ≈40 min lost to a
+frame detector that hashed zeros — the two wall rows above.
+
+## Teardown (rule 8)
+
+- Smoke rig withdrawn by `station-land` (`smoke-rig.sh --down`); its nspawn
+  container, Xvfb and the placeholder-QMP python killed by pidfile before the
+  landing; the host `/tmp/.X11-unix/X93` link now points at the station's own
+  `stations/lisa/x11/X93`.
+- Check: a `/proc/*/exe` sweep for `assets/lisa` finds exactly the station's
+  LisaEm (uid 200000) beside its nspawn; `kh-claim ls` shows every lisa claim
+  (slot/port/vmid/display/6093/rnip/tap/chain/uin/sandbox) held by session
+  `lisa`, the station session.
+- Kept as provenance: `/data/vms/sandbox/lisa/{media,smoke,rig}` (media +
+  MANIFEST.sha256, the proof frames); no stream sandboxes were created
+  (single-session wave).
