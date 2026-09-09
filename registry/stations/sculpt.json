@@ -62,9 +62,9 @@
   "render": {
     "signalOrder": 83,
     "stationsManifestOrder": 81,
-    "stationsManifestPrelude": "\n# sculpt (VMID 102) \u2014 TODO one line; scaffolded from serenityos.\n",
+    "stationsManifestPrelude": "\n# sculpt (slot 190) \u2014 Genode Sculpt OS 25.04 under KVM: q35, AHCI disk, EHCI\n#   usb-mouse (RELATIVE: Genode's usb_hid never binds the absolute usb-tablet),\n#   e1000 on the retronet tap sculptrn0 (the rtl8139 never transmits), no audio.\n",
     "bringUpGroup": 5,
-    "bindingOrder": 93,
+    "bindingOrder": 94,
     "bindingPrelude": "",
     "goldenOrder": 81,
     "actionMapOrder": 48
@@ -177,7 +177,7 @@
         "reason": "tracked verbatim launcher equals live"
       }
     },
-    "bringUpOrder": 93
+    "bringUpOrder": 94
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
