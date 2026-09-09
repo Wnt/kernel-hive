@@ -25,23 +25,40 @@ README_END = "<!-- lineup:end -->"
 GALLERY_BASE = "https://kernelhive.madekivi.fi/os"
 POSTER_REL = "spa/public/posters/{id}/desktop.webp"
 
-# Hero mosaic (20 tiles): these ids are always included when present in the
-# registry — a deliberate, hand-picked spread across eras and families so the
-# mosaic reads as "computer museum", not "whatever sorted first".
+# Hero mosaic (20 tiles): a CURATED list, chosen by eye from a contact sheet
+# of every desktop.webp — the frames that read as "computer museum" at
+# thumbnail size (colour, a recognisable desktop, something on screen). An
+# evenly-spaced-by-year pick was tried first and chose blank white and
+# near-empty frames; visual weight cannot be derived from the registry. Every
+# id here that exists in the registry is used, in this order; only if one is
+# missing does an evenly-year-spaced fill top the count up. Re-curate when a
+# station's poster is recaptured or a stronger machine lands.
 HERO_REQUIRED_IDS = (
-    "c64",
+    "apple2",
+    "amstradcpc",
+    "vic20",
+    "atari800xl",
     "msdoswin1",
+    "win311",
+    "os2warp",
     "win95",
-    "solaris",
-    "irix",
     "nextstep",
-    "beos",
-    "macos9",
+    "irix",
+    "hpuxvue",
+    "aix432",
     "amix",
+    "beos",
+    "chokanji",
+    "macos9",
+    "winxp",
     "haiku",
-    "templeos",
+    "openvms",
     "bootos",
 )
+
+# Social preview (18 tiles): the hero list minus the two text-mode 8-bit
+# frames, which are illegible at the 1280x640 card size.
+PREVIEW_OMIT_IDS = ("vic20", "atari800xl")
 
 HERO_COUNT = 20
 PREVIEW_COUNT = 18
@@ -159,10 +176,11 @@ def select_hero_rows(rows: list[dict[str, Any]], count: int = HERO_COUNT) -> lis
 
 
 def select_preview_rows(rows: list[dict[str, Any]], count: int = PREVIEW_COUNT) -> list[dict[str, Any]]:
-    """18 (default) rows for the social-preview mosaic — a plain evenly-spread
-    sample across the live lineup, no hand-picked requirements."""
-    live = sorted((r for r in rows if is_live(r)), key=_sort_key)
-    return _pick_evenly(live, count)
+    """18 (default) rows for the social-preview mosaic: the curated hero list
+    minus PREVIEW_OMIT_IDS, topped up from the hero fill if short."""
+    hero = select_hero_rows(rows, count=count + len(PREVIEW_OMIT_IDS))
+    kept = [r for r in hero if r["id"] not in PREVIEW_OMIT_IDS]
+    return kept[:count]
 
 
 def decade_for(year: int) -> str:

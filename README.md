@@ -223,6 +223,7 @@ Backends retired; the SPA renders a static placard rather than dialing a dead se
 <!-- lineup:end -->
 
 
+
 ## How it works
 
 ![Browser, streaming daemon and emulator, with the retronet plane beside them](docs/media/architecture.svg)
