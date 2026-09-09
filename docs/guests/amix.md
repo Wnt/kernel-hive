@@ -296,7 +296,7 @@ pieces make the server reachable, and none of them is a retronet join:
 2. **A loopback-only redirect.** Stock FS-UAE 3.2.35 *parses*
    `slirp_redir` and then drops it (`uae_slirp_redir` is a stub under the
    vendored libslirp — the source says `FIXME: Add redir functionality!`).
-   `scripts/build-guests/emulators/fsuae-native.d/fsuae-slirp-hostfwd.patch`
+   github.com/Wnt/fs-uae kernel-hive/integrated (slirp hostfwd commit)
    forwards it to `slirp_add_hostfwd`, **bound to 127.0.0.1 by construction**
    — the LAN cannot reach the guest's X server whatever the config says. The
    launcher passes `--uae_slirp_redir=tcp:6072:6000:10.0.2.15` (host port =

@@ -160,7 +160,7 @@
   "emulator": {
     "family": "FS-UAE",
     "version": "3.2.35",
-    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (upstream 3.2.35 + fsuae-native.d/fsuae-mousehack-rearm.patch)",
+    "source": "scripts/build-guests/emulators/build-fsuae-native.sh (github.com/Wnt/fs-uae kernel-hive/integrated (upstream v3.2.35 + 2 lab commits, e8c4f74))",
     "driver": "A1000"
   },
   "ui": "desktop",

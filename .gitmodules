@@ -18,3 +18,7 @@
 	path = third_party/es40
 	url = https://github.com/Wnt/es40.git
 	branch = main
+[submodule "third_party/fs-uae-kernel-hive"]
+	path = third_party/fs-uae-kernel-hive
+	url = https://github.com/Wnt/fs-uae.git
+	branch = kernel-hive/integrated

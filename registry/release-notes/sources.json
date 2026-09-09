@@ -66,6 +66,18 @@
       "excludes": []
     },
     {
+      "repo": "Wnt/fs-uae",
+      "what": "FS-UAE patches for the Amiga stations (mousehack re-arm after restore, slirp hostfwd; the headless video/audio/input planes are next)",
+      "branches": [
+        {
+          "name": "kernel-hive/integrated",
+          "what": "the integrated branch every FS-UAE station is built from",
+          "pinnedBy": ["scripts/build-guests/emulators/build-fsuae-native.sh", ".gitmodules"]
+        }
+      ],
+      "excludes": []
+    },
+    {
       "repo": "Wnt/qemu",
       "what": "QEMU patches for the foreign-architecture stations (Rhapsody i8259 cascade, Mac OS 7.5.3 m68k, AIX 4.3.3 on an RS/6000 40p) and the host's fast-poll build",
       "branches": [
