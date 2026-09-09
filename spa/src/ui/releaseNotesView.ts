@@ -32,6 +32,7 @@ export interface WeekView {
   sourceNote: string | null;
   summary: ReleaseSection[];
   bullets: string[];
+  screenshots: { id: string; name: string }[];
 }
 
 /** "2026-08-16" -> "16 Aug 2026"; anything unparseable is passed through. */
@@ -78,5 +79,6 @@ export function releaseWeekViews(doc: ReleaseNotesDoc): WeekView[] {
     sourceNote: sourceNote(week),
     summary: week.summary,
     bullets: week.bullets,
+    screenshots: Array.isArray(week.screenshots) ? week.screenshots : [],
   }));
 }

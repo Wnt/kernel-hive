@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useReleaseNotes } from '../data/releaseNotes';
+import { posterFor } from '../data/posterIndex';
 import { releaseWeekViews, type WeekView } from './releaseNotesView';
 import { parseMarkup, plainText, stationPath, type MarkupToken } from './releaseNotesMarkup';
 import './About.css';
@@ -39,6 +40,28 @@ function Markup({ tokens }: { tokens: MarkupToken[] }) {
   );
 }
 
+// The tile row: one thumbnail per station the week names, in the order
+// scripts/release-notes.py resolved (New stations first, capped at 8). The
+// image comes from posterIndex.ts — the same source every other poster
+// thumbnail in the SPA uses — so a station missing a capture just renders no
+// image rather than a broken one.
+function ScreenshotStrip({ screenshots }: { screenshots: WeekView['screenshots'] }) {
+  if (screenshots.length === 0) return null;
+  return (
+    <div className="about-week-screenshots">
+      {screenshots.map(({ id, name }) => {
+        const hero = posterFor(id)?.hero;
+        return (
+          <Link key={id} className="about-screenshot" to={stationPath(id)}>
+            {hero && <img src={hero} width={200} alt={name} loading="lazy" />}
+            <span className="about-screenshot-caption">{name}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 function WeekBlock({ week }: { week: WeekView }) {
   return (
     <details className="about-week" open={week.defaultOpen}>
@@ -50,6 +73,7 @@ function WeekBlock({ week }: { week: WeekView }) {
       </summary>
       <div className="about-week-body">
         {week.sourceNote && <p className="about-week-source">{week.sourceNote}</p>}
+        <ScreenshotStrip screenshots={week.screenshots} />
         {week.summary.map((section) => (
           <section className="about-section" key={section.theme}>
             <h3 className="about-theme">{section.theme}</h3>
