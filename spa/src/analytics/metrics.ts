@@ -43,7 +43,7 @@
 
 import { METRICS, bucketFor, type MetricId } from './catalogue';
 import { queueMetric } from './sink';
-import { childOfActive, popActive, pushActive, type Attrs, type Span } from './trace';
+import { childOfActive, currentSpan, type Attrs } from './trace';
 
 /** Values above this are refused outright rather than bucketed into `inf`.
  *  An hour of visible wait is not a slow connect, it is a bug in a call site
@@ -71,10 +71,6 @@ const MAX_RUNNING = 64;
 
 interface Live {
   id: MetricId;
-  /** The span this timing also is. A duration worth aggregating is a duration
-   *  worth seeing in a flame graph, and measuring it twice would be two chances
-   *  to disagree. */
-  span: Span;
   /** Visible milliseconds banked before the current visible span. */
   banked: number;
   /** `performance.now()` when the current visible span began, or null while
@@ -125,12 +121,74 @@ function ensureHooked(): void {
 }
 
 /**
+ * Put one finished measurement on the trace plane, as a point rather than a
+ * shape.
+ *
+ * THE HOST IS RESOLVED AT STOP TIME, not at start, and that is the whole
+ * subtlety. `currentSpan()` is guaranteed to be OPEN: every call site in this
+ * codebase pops a span from the active stack BEFORE ending it (flows.ts's
+ * `close`, navigation.ts's `finishNavigationSpan`, and this file), so a span
+ * that is still active is a span that can still take an event. Resolving the
+ * host at START time would instead hand us a span that may well have ended by
+ * the time we stop — `Span.event()` after `end()` is a silent no-op, and the
+ * number would vanish. Where the ordering matters the CALL SITE is what moves:
+ * see `connectTelemetry.firstFrame`, which now stops its clock before it
+ * closes its flow, precisely so the event lands on `station.connect`.
+ *
+ * WITH NO OPEN SPAN AROUND IT — a poster dwell, a hall navigation, an input
+ * hesitation measured after its connect flow is legitimately over — the value
+ * would otherwise never reach the trace plane at all, and this change is not
+ * allowed to lose a number. Such a timing falls back to a ZERO-DURATION marker
+ * span. That is not a relapse: it is not pushed active so it can never parent
+ * real work, and its duration is 0 rather than the measurement, so no flame
+ * graph can read it as elapsed effort. Those are exactly the two defects being
+ * removed; a drillable row is what is left.
+ */
+function reportTiming(id: MetricId, ms: number, attrs?: Attrs): void {
+  const host = currentSpan();
+  if (host) return host.event(id, { 'kh.metric': id, 'kh.metric.ms': ms, ...attrs });
+  const marker = childOfActive(id, { 'kh.metric': id, 'kh.metric.ms': ms, ...attrs });
+  marker.end('ok');
+}
+
+/**
  * Begin measuring `id`. Always returns a handle; never throws.
  *
- * `attrs` land on the timing's OWN span (typically `stationAttrs(...)`) — not
- * only on the flow it nests under, for the same reason `beginFlow` repeats
- * them on every step: a consumer reading this span in isolation must not have
- * to walk up to a parent to learn which station type it belongs to.
+ * A MEASUREMENT IS NOT A SPAN. Until 2026-09-01 each timing opened a child
+ * span named after the metric, made it the ACTIVE span, and let its wall
+ * duration BE the value. All three of those were wrong, and the third was
+ * only cosmetic:
+ *
+ *   1. `pushActive` made a measurement the PARENT of real work. In a captured
+ *      operator trace (`fc4a9d74…`, win311) `station.open.toFirstFrameMs` was
+ *      the parent of `http.client.request` -> `serve.signal`: the signaling
+ *      fetch issued during the connect attached to whatever was active, and
+ *      what was active was a clock. That is a false edge in the trace graph —
+ *      it says the HTTP call happened *because of* the measurement — and it
+ *      misattributes real server work under a synthetic node.
+ *   2. The span's duration was the metric value, so a flame graph drew
+ *      `station.open.toFirstInputMs` as 1.573 s of *work*. Nothing worked for
+ *      1.573 s; that is the interval between two events, most of it a human
+ *      deciding whether to touch the machine.
+ *   3. One synthetic span per timing inflates span counts and lands in
+ *      Instana's call and latency aggregates as a call that never happened.
+ *
+ * So a stopped timing now reports itself as an OTel SPAN EVENT — a timestamped
+ * point carrying `kh.metric.ms` — on the innermost span that is genuinely open
+ * around it. `station.connect` really does span the connect, so "first frame
+ * painted at T, 260 ms after the attempt began" is a point inside it, which is
+ * exactly what a span event is for. The event cannot parent anything and has
+ * no duration to misread, and `_clean_events` (scripts/serve/traces.py) has
+ * carried events end-to-end since the intake was written.
+ *
+ * NOTHING IS LOST. The bucketed sample still goes to the counter plane on
+ * every stop, unchanged, which is the durable two-year answer. The exact value
+ * still reaches the trace plane per session. What changed is where it hangs.
+ *
+ * `attrs` are repeated on the event (typically `stationAttrs(...)`) rather
+ * than left to the host span, for the same reason `beginFlow` repeats them on
+ * every step: a consumer reading the event in isolation must not have to walk
+ * up to learn which station type it belongs to.
  */
 export function startTiming(id: MetricId, attrs?: Attrs): Timing {
   try {
@@ -138,13 +196,8 @@ export function startTiming(id: MetricId, attrs?: Attrs): Timing {
     if (!spec || spec.scale !== 'ms') return NOOP_TIMING;
     if (running.size >= MAX_RUNNING) return NOOP_TIMING;
     ensureHooked();
-    // Attaches to whatever flow is open, so a station-open timing lands inside
-    // the station.connect trace rather than orphaned beside it.
-    const span = childOfActive(id, { 'kh.metric': id, ...attrs });
-    pushActive(span);
     const live: Live = {
       id,
-      span,
       banked: 0,
       since: visible() ? now() : null,
       wallStart: now(),
@@ -162,20 +215,17 @@ export function startTiming(id: MetricId, attrs?: Attrs): Timing {
             ? now() - live.wallStart
             : live.banked + (live.since === null ? 0 : now() - live.since);
           recordMetric(id, elapsed);
-          popActive(live.span);
-          // The bucketed value rides along as an attribute so a trace UI can
-          // show the same number the aggregate will, without joining stores.
-          live.span.end('ok', { 'kh.metric.ms': Math.round(elapsed) });
+          reportTiming(id, Math.round(elapsed), attrs);
         } catch { /* instrumentation never throws into the app */ }
       },
       abandon() {
         try {
           done = true;
           running.delete(live);
-          popActive(live.span);
-          // No metric sample and no opinion on the span: an abandoned timing is
-          // not a fast one and not a failed one (see the Timing docblock).
-          live.span.end('unset', { 'kh.abandoned': true });
+          // Nothing is reported at all — not a sample, not an event. An
+          // abandoned timing is not a fast one and not a failed one (see the
+          // Timing docblock), and the old code's `unset` span was a row in the
+          // trace whose only content was that a React effect had unmounted.
         } catch { /* noop */ }
       },
     };

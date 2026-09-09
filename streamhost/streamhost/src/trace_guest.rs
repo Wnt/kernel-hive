@@ -102,6 +102,23 @@ impl Startup {
             )],
             if ok { "ok" } else { "error" },
         );
+        // The correlated log record for the phase an operator most often
+        // pivots INTO: `guest.attach` is the span that is slow when a station
+        // "will not connect", and the span alone says how long, never why. The
+        // ctx is the startup trace's, so this record lands under the same
+        // trace id in both stores.
+        if !ok {
+            crate::sh_log!(
+                trace::Level::Warn,
+                Some(self.ctx),
+                [(
+                    "kh.capture.backend",
+                    Val::S(cfg.capture_backend.as_str().into())
+                )],
+                "[guest] attach FAILED after {}ms — the daemon has no pixels",
+                took.as_millis()
+            );
+        }
     }
 
     /// `guest.first_frame` — a framebuffer with real geometry exists. Closes
@@ -120,6 +137,16 @@ impl Startup {
                 ("kh.capture.shm", Val::B(shm)),
             ],
             "ok",
+        );
+        crate::sh_log!(
+            trace::Level::Info,
+            Some(self.ctx),
+            [
+                ("kh.frame.width", Val::I(w as i64)),
+                ("kh.frame.height", Val::I(h as i64))
+            ],
+            "[guest] first frame {w}x{h} (shm={shm}) after {}ms",
+            self.t0.elapsed().as_millis()
         );
         if let Some(mut s) = self.span.take() {
             s.ok();

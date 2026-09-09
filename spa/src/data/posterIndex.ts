@@ -3,6 +3,12 @@
 // Existence + hero only — the prose is runtime data (/poster-docs.json).
 
 const POSTER_INDEX = {
+  "a1000": {
+    "hero": "/posters/a1000/desktop.webp"
+  },
+  "a3000": {
+    "hero": "/posters/a3000/desktop.webp"
+  },
   "aix432": {
     "hero": "/posters/aix432/desktop.webp"
   },
@@ -18,6 +24,9 @@ const POSTER_INDEX = {
   "amigaos35": {
     "hero": "/posters/amigaos35/desktop.webp"
   },
+  "amix": {
+    "hero": "/posters/amix/desktop.webp"
+  },
   "amstradcpc": {
     "hero": "/posters/amstradcpc/desktop.webp"
   },
@@ -27,11 +36,17 @@ const POSTER_INDEX = {
   "apple2": {
     "hero": "/posters/apple2/desktop.webp"
   },
+  "apple2e": {
+    "hero": "/posters/apple2e/desktop.webp"
+  },
   "armeval": {
     "hero": "/posters/armeval/desktop.webp"
   },
   "aros": {
     "hero": "/posters/aros/desktop.webp"
+  },
+  "atari800xl": {
+    "hero": "/posters/atari800xl/desktop.webp"
   },
   "atarist": {
     "hero": "/posters/atarist/desktop.webp"
@@ -44,6 +59,9 @@ const POSTER_INDEX = {
   },
   "beos": {
     "hero": "/posters/beos/desktop.webp"
+  },
+  "bootos": {
+    "hero": "/posters/bootos/desktop.webp"
   },
   "c128": {
     "hero": "/posters/c128/desktop.webp"
@@ -63,11 +81,17 @@ const POSTER_INDEX = {
   "daybreak": {
     "hero": "/posters/daybreak/desktop.webp"
   },
+  "debian22": {
+    "hero": "/posters/debian22/desktop.webp"
+  },
   "decos": {
     "hero": "/posters/decos/desktop.webp"
   },
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
+  },
+  "freebsd411": {
+    "hero": "/posters/freebsd411/desktop.webp"
   },
   "freedos": {
     "hero": "/posters/freedos/desktop.webp"
@@ -111,6 +135,9 @@ const POSTER_INDEX = {
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
   },
+  "netbsd14": {
+    "hero": "/posters/netbsd14/desktop.webp"
+  },
   "newsos": {
     "hero": "/posters/newsos/desktop.webp"
   },
@@ -126,6 +153,9 @@ const POSTER_INDEX = {
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
   },
+  "openbsd": {
+    "hero": "/posters/openbsd/desktop.webp"
+  },
   "openvms": {
     "hero": "/posters/openvms/desktop.webp"
   },
@@ -134,6 +164,12 @@ const POSTER_INDEX = {
   },
   "os2warp": {
     "hero": "/posters/os2warp/desktop.webp"
+  },
+  "pcbsd": {
+    "hero": "/posters/pcbsd/desktop.webp"
+  },
+  "pcgeos": {
+    "hero": "/posters/pcgeos/desktop.webp"
   },
   "pdp11": {
     "hero": "/posters/pdp11/desktop.webp"
@@ -150,8 +186,14 @@ const POSTER_INDEX = {
   "qnx": {
     "hero": "/posters/qnx/desktop.webp"
   },
+  "ravynos": {
+    "hero": "/posters/ravynos/desktop.webp"
+  },
   "reactos": {
     "hero": "/posters/reactos/desktop.webp"
+  },
+  "redhat62": {
+    "hero": "/posters/redhat62/desktop.webp"
   },
   "redstar2": {
     "hero": "/posters/redstar2/desktop.webp"
@@ -168,11 +210,17 @@ const POSTER_INDEX = {
   "sailfishos": {
     "hero": "/posters/sailfishos/desktop.webp"
   },
+  "samcoupe": {
+    "hero": "/posters/samcoupe/desktop.webp"
+  },
   "serenityos": {
     "hero": "/posters/serenityos/desktop.webp"
   },
   "sinclairql": {
     "hero": "/posters/sinclairql/desktop.webp"
+  },
+  "slackware": {
+    "hero": "/posters/slackware/desktop.webp"
   },
   "solaris": {
     "hero": "/posters/solaris/desktop.webp"
@@ -182,6 +230,9 @@ const POSTER_INDEX = {
   },
   "sunos414": {
     "hero": "/posters/sunos414/desktop.webp"
+  },
+  "suse64": {
+    "hero": "/posters/suse64/desktop.webp"
   },
   "templeos": {
     "hero": "/posters/templeos/desktop.webp"
@@ -194,6 +245,9 @@ const POSTER_INDEX = {
   },
   "tru64": {
     "hero": "/posters/tru64/desktop.webp"
+  },
+  "ubuntu": {
+    "hero": "/posters/ubuntu/desktop.webp"
   },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"

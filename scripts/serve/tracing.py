@@ -46,6 +46,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 
 #: How long ended spans may sit in memory before a flush folds them in. Much
 #: shorter than the counter plane's minute: a trace is looked at while somebody
@@ -59,10 +60,15 @@ MAX_BUFFERED = 4096
 #: Open spans per thread. A request that nests deeper than this has a bug.
 MAX_DEPTH = 32
 #: Mirrors the caps traces.py enforces at intake, so a value is truncated here
-#: rather than silently dropped there.
-ATTR_MAX = 24
-ATTR_STR_MAX = 120
-EVENT_MAX = 16
+#: rather than silently dropped there. Raised with them on 2026-09-01 — the old
+#: 120 was an AI-invented content rule, not a volume one, and it truncated a
+#: stack to a single frame (docs/ANALYTICS.md §0).
+ATTR_MAX = 64
+ATTR_STR_MAX = 2048
+#: The long-value allowance, same keys as `traces.ATTR_STR_MAX_LONG` covers.
+ATTR_STR_MAX_LONG = 16384
+LONG_ATTRS = frozenset({"exception.stacktrace", "code.stacktrace", "exception.message", "url.full", "url.query"})
+EVENT_MAX = 64
 
 STATUSES = ("unset", "ok", "error")
 KINDS = ("internal", "client", "server", "producer", "consumer")
@@ -106,7 +112,7 @@ def _clean_attrs(raw) -> dict:
         if isinstance(v, (bool, int, float)):
             out[k] = v
         elif isinstance(v, str):
-            out[k] = v[:ATTR_STR_MAX]
+            out[k] = v[: (ATTR_STR_MAX_LONG if k in LONG_ATTRS else ATTR_STR_MAX)]
     return out
 
 
@@ -155,18 +161,28 @@ class Span:
             pass
 
     def record_exception(self, err: BaseException) -> None:
-        """An OTel `exception` event plus `error.type`.
+        """A full OTel `exception` event — type, message AND stacktrace.
 
-        `exception.stacktrace` is part of the convention and is deliberately
-        omitted — it is the one field that can carry arbitrary strings out of
-        this process, `traces.py` refuses it at intake anyway, and stacks
-        already live in clientlog.jsonl. The MESSAGE is omitted too, for the
-        same reason one level down: a server-side exception message can quote a
-        path, a header or a body fragment, none of which a span may carry.
+        All three, on purpose. Until 2026-09-01 this emitted the type alone,
+        on an AI-invented content rule that read as policy; the result was a
+        server-side error whose span said `error.type=KeyError` and nothing
+        else, so every diagnosis started by going and finding the traceback
+        somewhere it had not been correlated. `traces.py` accepts all three now
+        and gives the stack a 16 KiB allowance. A message or a frame CAN quote a
+        path or a query string — that is the point of a stack, and this plane is
+        admin-only to read; what must never appear is a credential, which is
+        `traces.SECRET_KEY_RE`'s job and not a reason to drop the stack.
         """
         try:
             kind = type(err).__name__[:80]
-            self.event("exception", {"exception.type": kind})
+            self.event(
+                "exception",
+                {
+                    "exception.type": kind,
+                    "exception.message": str(err),
+                    "exception.stacktrace": "".join(traceback.format_exception(type(err), err, err.__traceback__)),
+                },
+            )
             self._a.setdefault("error.type", kind)
         except Exception:  # noqa: BLE001
             pass

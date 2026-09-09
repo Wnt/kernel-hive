@@ -1,0 +1,19 @@
+/* One small pill, sized to sit in an existing chrome bar's corner — never a
+   header of its own. Wraps rather than truncates on a narrow phone, and stays
+   readable against both the light appbar and the dark walkin-play-chrome. */
+.identity-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-line, rgba(255, 255, 255, 0.28));
+  background: var(--accent-wash, rgba(255, 255, 255, 0.08));
+  color: var(--accent-ink, inherit);
+  white-space: normal;
+  max-width: 46vw;
+}
+
+@media (max-width: 640px) {
+  .identity-badge { max-width: 60vw; font-size: 10px; }
+}

@@ -147,8 +147,16 @@ export function connectTelemetry(stationAttrs?: Attrs): ConnectTelemetry {
     firstFrame() {
       if (settled) return;
       flow.step('firstFrame');
-      flow.ok();
+      // STOP THE CLOCK BEFORE CLOSING THE FLOW. Since 2026-09-01 a stopped
+      // timing reports itself as a span EVENT on the innermost span still open
+      // around it (analytics/metrics.ts) instead of as a span of its own. The
+      // span that should host "first frame painted at T" is `station.connect`,
+      // which is this flow's root — so it has to still be open when the clock
+      // stops. Calling `flow.ok()` first would end it, `Span.event()` after
+      // `end()` is a silent no-op, and the number would quietly fall back to a
+      // marker span outside the connect it describes.
       openMs.stop();
+      flow.ok();
       attempts.commit();
       if (!inputMs) inputMs = startTiming('station.open.toFirstInputMs', stationAttrs);
     },

@@ -526,6 +526,18 @@ pub async fn ordered_warp_then_hold(
     }
 }
 
+/// For a sink that carries the EDGE itself on another channel — `x11test`
+/// with `SH_X11TEST_MOTION=warp`, whose buttons ride host XTEST — the same
+/// bounded hold as `ordered_warp_then_hold`, taken from the pacer's drain
+/// task right before it injects a button edge. No-op when no warp sink
+/// exists or nothing is pending. The caller MUST follow the injection with
+/// `edge_done()`, exactly like input.rs.
+pub async fn wait_settled() {
+    if let Some(shared) = GATE.get() {
+        wait_settled_on(shared, EDGE_HOLD_MAX).await;
+    }
+}
+
 /// input.rs calls this AFTER the D-Bus edge injection returns (there is no
 /// error branch that skips it): ends the armed exclusion window and lets the
 /// worker resume applying motion. No-op for every other backend (the GATE is

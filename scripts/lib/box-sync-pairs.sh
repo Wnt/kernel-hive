@@ -190,8 +190,10 @@ box_sync_load_pairs() {
   # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
     config.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
-    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py traces.py traces_otlp.py tracecontext.py \
-    tracing.py tracing_http.py; do
+    usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py eum_proxy.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
+    tracing.py tracing_http.py \
+    logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py \
+    vitals.py vitals_schema.py vitals_otlp.py vitals_read.py; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   box_sync_add_pair serve/gen-local-ca.sh scripts/serve/gen-local-ca.sh "$BOX_ROOT/serve/gen-local-ca.sh" scrub repo
@@ -253,6 +255,24 @@ box_sync_load_pairs() {
   # unit (what actually runs + auto-starts on boot), like the streamhost/amiga units.
   box_sync_add_pair osgallery-https-unit scripts/serve/osgallery-https.service /etc/systemd/system/osgallery-https.service scrub repo daemon-reload
   box_sync_add_pair vm-idle-watch scripts/vm-idle-watch.sh "$BOX_ROOT/serve/vm-idle-watch.sh" exact repo
+  # The observability carriers, on timers since 2026-09-01. Both were hand-run
+  # for their whole lives, so every Instana view they feed was stale by default.
+  # Only the UNITS are paired: both scripts import from the checkout
+  # (scripts/serve/traces.py, registry/local.env), so the units run them out of
+  # /data/kernel-hive rather than from a copy that could not resolve its own
+  # imports. Landing these installs the units; ENABLING them is the operator's
+  # decision — docs/lab/INSTANA-VIEW-INVENTORY.md §2.
+  box_sync_add_pair kh-instana-forward-unit scripts/observability/kh-instana-forward.service /etc/systemd/system/kh-instana-forward.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-forward-timer scripts/observability/kh-instana-forward.timer /etc/systemd/system/kh-instana-forward.timer exact repo daemon-reload
+  # The VITALS leg is a THIRD carrier and a third pair, not a flag on the first,
+  # because its cadence is different by two orders of magnitude: Instana stamps
+  # metric points at INGEST, so the tick period IS the resolution in the tenant
+  # and a five-minute batch of five-second samples would land as one instant.
+  # 10 s; the whole argument is in scripts/observability/instana_vitals.py.
+  box_sync_add_pair kh-instana-vitals-unit scripts/observability/kh-instana-vitals.service /etc/systemd/system/kh-instana-vitals.service exact repo daemon-reload
+  box_sync_add_pair kh-instana-vitals-timer scripts/observability/kh-instana-vitals.timer /etc/systemd/system/kh-instana-vitals.timer exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-unit scripts/observability/kh-trace-ship.service /etc/systemd/system/kh-trace-ship.service exact repo daemon-reload
+  box_sync_add_pair kh-trace-ship-timer scripts/observability/kh-trace-ship.timer /etc/systemd/system/kh-trace-ship.timer exact repo daemon-reload
   box_sync_add_pair solaris-cdrv streamhost/guest-agents/solaris/cdrv.py /root/cdrv.py exact repo
   box_sync_add_pair solaris-gexec streamhost/guest-agents/solaris/gexec.py /root/gexec.py exact repo
   box_sync_add_pair irix-irixexec streamhost/guest-agents/irix/irixexec.py /root/irixexec.py exact repo
@@ -285,8 +305,6 @@ box_sync_load_pairs() {
   # CRIU-checkpointable — criu can dump a veth it is told about and cannot dump a
   # foreign tap fd at all. It is also where the pcap checksum-offload fix lives,
   # without which the guest silently drops every TCP segment labhost sends it. See
-  # docs/lab/retronet/WEB-STATION-nextstep.md.
-  box_sync_add_pair nextstep-rn-tapnet streamhost/stations/nextstep/rn-tapnet.sh "$BOX_ROOT/stations/nextstep/rn-tapnet.sh" exact repo
   # …and the station's own launcher and control-socket client. The launcher rides
   # the emit as --x11-runtime-file and ctl.py as an --aux-file, but an aux file
   # only lands on a RE-EMIT, and both of these are on the reset path: a fix to
@@ -307,7 +325,6 @@ box_sync_load_pairs() {
   # drift silently the way tru64's did. UserBootscript is the ready scene;
   # icbm-watchdog.sh is what keeps ICBM signed on to the gateway -- ICBM .71 has
   # no auto-reconnect of its own. See docs/lab/retronet/STATION-beos.md.
-  box_sync_add_pair beos-rn-tapnet streamhost/stations/beos/rn-tapnet.sh "$BOX_ROOT/stations/beos/rn-tapnet.sh" exact repo
   box_sync_add_pair beos-bootscript streamhost/stations/beos/UserBootscript "$BOX_ROOT/stations/beos/UserBootscript" exact repo
   box_sync_add_pair beos-icbm-watchdog streamhost/stations/beos/icbm-watchdog.sh "$BOX_ROOT/stations/beos/icbm-watchdog.sh" exact repo
   # win98se ICQ presence healer (labhost): a timer nudges the persona's golden
@@ -316,44 +333,39 @@ box_sync_load_pairs() {
   box_sync_add_pair win98se-icq-nudge scripts/retronet/win98se-icq-nudge.py /usr/local/sbin/win98se-icq-nudge.py exact repo
   box_sync_add_pair win98se-icq-nudge-unit scripts/retronet/win98se-icq-nudge.service /etc/systemd/system/win98se-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win98se-icq-nudge-timer scripts/retronet/win98se-icq-nudge.timer /etc/systemd/system/win98se-icq-nudge.timer exact repo daemon-reload
-  # nt4 retronet: its bridge-tap lifecycle helper and its own ICQ presence healer
-  # (guest 10.99.0.12, persona 40000). See docs/lab/retronet/ICQ-STATION-NT4.md.
-  box_sync_add_pair nt4-rn-tapnet streamhost/stations/nt4/rn-tapnet.sh "$BOX_ROOT/stations/nt4/rn-tapnet.sh" exact repo
   box_sync_add_pair nt4-icq-nudge scripts/retronet/nt4-icq-nudge.py /usr/local/sbin/nt4-icq-nudge.py exact repo
   box_sync_add_pair nt4-icq-nudge-unit scripts/retronet/nt4-icq-nudge.service /etc/systemd/system/nt4-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair nt4-icq-nudge-timer scripts/retronet/nt4-icq-nudge.timer /etc/systemd/system/nt4-icq-nudge.timer exact repo daemon-reload
   # win2000 retronet: same shape as win98se — its bridge-tap lifecycle helper and
   # its own ICQ presence healer (the timer/nudge is per-station, targeting the
-  # win2000 guest IP + its golden ICQ port). See docs/lab/retronet/ICQ-STATION-win2000.md.
-  box_sync_add_pair win2000-rn-tapnet streamhost/stations/win2000/rn-tapnet.sh "$BOX_ROOT/stations/win2000/rn-tapnet.sh" exact repo
   box_sync_add_pair win2000-icq-nudge scripts/retronet/win2000-icq-nudge.py /usr/local/sbin/win2000-icq-nudge.py exact repo
   box_sync_add_pair win2000-icq-nudge-unit scripts/retronet/win2000-icq-nudge.service /etc/systemd/system/win2000-icq-nudge.service exact repo daemon-reload
   box_sync_add_pair win2000-icq-nudge-timer scripts/retronet/win2000-icq-nudge.timer /etc/systemd/system/win2000-icq-nudge.timer exact repo daemon-reload
+  # slackware retronet (BOTH planes): bridge-tap lifecycle helper only. No ICQ
+  # nudge — micq 0.4.3 is kept on the air by a guest-side wrapper
+  # (/usr/local/bin/icq-session), not by a host timer, because the client exits
+  # on a dropped session instead of sitting there believing it is connected.
+  # See docs/lab/retronet/STATION-slackware.md.
+
   # hpuxvue retronet web plane: bridge-tap lifecycle helper only (no ICQ persona,
   # no exec channel on this station). Same mirror pair as the helpers above.
-  # See docs/lab/retronet/WEB-STATION-hpuxvue.md.
-  box_sync_add_pair hpuxvue-rn-tapnet streamhost/stations/hpuxvue/rn-tapnet.sh "$BOX_ROOT/stations/hpuxvue/rn-tapnet.sh" exact repo
 
-  # os2warp retronet WEB plane: its bridge-tap lifecycle helper, same mirror-pair
-  # shape as win98se's above. No ICQ nudge — os2warp is a web-only retronet
-  # station (no chat client). See docs/lab/retronet/WEB-STATION-os2warp.md.
-  box_sync_add_pair os2warp-rn-tapnet streamhost/stations/os2warp/rn-tapnet.sh "$BOX_ROOT/stations/os2warp/rn-tapnet.sh" exact repo
+  # ubuntu retronet WEB + ICQ planes: the same mirror pair, for the same reason —
+  # the launcher calls `bash "$T/rn-tapnet.sh" up` before QEMU and dies without
+  # it. Ubuntu 4.10 Warty is a live-CD guest with NO exec channel, one rtl8139 on
+  # tap ubunturn0, DHCP-reserved 10.99.0.30; Firefox 0.9 on the corpus and Gaim
 
   # rhapsody retronet WEB plane: same mirror-pair shape again. The generic
   # launcher sweep carries qemu-streamhost.sh, but NOT the helper it calls, so
   # without this pair the box checkout has rn-tapnet.sh and the station dir does
   # not — and the launcher dies at `bash "$B/rn-tapnet.sh" up` with "No such file
   # or directory", i.e. the station cannot start at all. Web-only (no ICQ
-  # persona: DR2 has no OSCAR client). See docs/lab/retronet/WEB-STATION-rhapsody.md.
-  box_sync_add_pair rhapsody-rn-tapnet streamhost/stations/rhapsody/rn-tapnet.sh "$BOX_ROOT/stations/rhapsody/rn-tapnet.sh" exact repo
 
   # macos753 retronet WEB plane: the same mirror pair, for the same reason as the
   # three above — the launcher's FIRST action is `bash "$D/rn-tapnet.sh" up`, so
   # without this pair the station cannot start at all. This guest is Mac OS 7.5.3
   # on the q800's built-in dp83932 SONIC, statically addressed via MacTCP (which
   # has no DHCP client) on 10.99.0.23. Web-only: ICQ is out of scope for this
-  # station. See docs/lab/retronet/WEB-STATION-macos753.md.
-  box_sync_add_pair macos753-rn-tapnet streamhost/stations/macos753/rn-tapnet.sh "$BOX_ROOT/stations/macos753/rn-tapnet.sh" exact repo
 
   # irix retronet WEB plane, and the first rn-tapnet on an x11-RUNTIME station.
   # irix is not QEMU: its helpers normally travel as emit `--aux-file`s from the
@@ -366,8 +378,6 @@ box_sync_load_pairs() {
   # reinstate only on the next re-emit. Both paths write the same repo bytes.
   # This guest is IRIX 6.5 in MAME on the Indy's SEEQ 80C03, statically
   # addressed in-guest on 10.99.0.24. Web-only: no OSCAR client is built for
-  # IRIX yet. See docs/lab/retronet/WEB-STATION-irix.md.
-  box_sync_add_pair irix-rn-tapnet streamhost/stations/irix/rn-tapnet.sh "$BOX_ROOT/stations/irix/rn-tapnet.sh" exact repo
 
   # The live labctl matrix is harvested into the committed reference sample:
   # `labctl gen` writes the labhost copy, so labhost is the source of truth.

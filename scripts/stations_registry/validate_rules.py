@@ -18,8 +18,10 @@ from .pointer_rules import (
 from .validate_acceptance import validate_acceptance, validate_rollout
 from .validate_emulator import validate_emulator, validate_ui
 from .validate_facts import validate_facts
+from .validate_pairs import validate_pairs
 from .validate_retronet import validate_retronet
 from .validate_schema import fail, validate_json_schema, validate_schema_shape
+from .validate_spa_scene import validate_spa_scene
 
 
 def is_hidden(row: dict[str, Any]) -> bool:
@@ -334,6 +336,8 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validate_demo_pacing(rows, errors)
     validate_fleet_encoder(globals_doc, errors)
     validate_retronet(rows, errors)
+    validate_spa_scene(rows, errors)
+    validate_pairs(rows, errors)
     validate_acceptance(rows, errors)
     validate_rollout(rows, errors)
     validate_facts(rows, errors)
@@ -398,11 +402,23 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
             # session. Four stations shipped that way on 2026-08-09.
             low = globals_doc["ports"]["publicRelayLow"]
             high = globals_doc["ports"]["publicRelayHigh"]
-            # legacyPortException stations are deliberately off the base+slot policy
-            # (reactos sits on 4433) and the edge carries its own rule for them, so
-            # the range check does not apply.
+            # The RANGE check is unconditional, and `legacyPortException` does NOT
+            # excuse it. The two rules answer different questions: the exception
+            # says "this port need not follow base+slot", the range says "this port
+            # is inside the edge's DNAT hole". Coupling them is how reactos shipped
+            # on 4433 for months on the belief that "the edge carries its own rule"
+            # -- it cannot, the hole is a RANGE -- perfect on the LAN and dead to
+            # every public visitor (2026-09-02).
             in_range = low <= stream.get("udpPort", -1) <= high
-            if stream.get("transport") == "streamhost" and not stream.get("legacyPortException") and not in_range:
+            bridge_port = globals_doc["ports"].get("webrtcBridgeUdp")
+            if bridge_port is not None and stream.get("udpPort") == bridge_port:
+                fail(
+                    errors,
+                    row,
+                    f"udpPort {bridge_port} is reserved for the platform WebRTC bridge "
+                    f"(ports.webrtcBridgeUdp); pick another slot.",
+                )
+            if stream.get("transport") == "streamhost" and not in_range:
                 fail(
                     errors,
                     row,

@@ -1,0 +1,124 @@
+micq 0.4.3: stop the retronet ICQ window scrolling for ever.
+
+micq talks to the museum gateway (Retro AIM Server, legacy ICQ v5 door on UDP 4000)
+and keeps a contact-list refresh on a timer. The gateway answers each refresh with a
+full presence dump and another SRV_X1 "list done" ack, and it never acknowledges
+three of the client commands micq queues (Finish Login, Contact List, Delete Server
+Messages). Stock micq treats all of that as news, so an idle station prints, roughly
+every ten seconds and for ever:
+
+  <nick> (Online) logged on.          for every contact
+  ============ 18400: Your status is Online ... Users online: ...
+  Discarded a Contact List packet.
+
+None of it means anything is wrong -- the station signs in, sees its roster and
+exchanges messages. But on an exhibit the ICQ window never stops scrolling, so the
+framebuffer never settles: the golden bake has no stable frame to capture and an
+idle station streams changed tiles all day.
+
+Three surgical changes, each keeping the case that IS news:
+
+  icq_response.c  announce a presence TRANSITION only; a repeat of a status we
+                  already hold is silent.
+  server.c        print the login summary once, when SRV_X1 actually means
+                  "you are signed in", not on every later refresh ack.
+  sendmsg.c       a routine unacked command is silent (including its newline and
+                  redraw); a discarded LOGIN or KEEP_ALIVE -- which really does mean
+                  the session is gone -- stays loud and still exits.
+
+Applied by scripts/build-guests/tiles/slackware/compose.sh to /usr/src/micq, where the
+guest's own gcc 2.7.2.3 builds it (docs/lab/retronet/STATION-slackware.md).
+
+--- a/icq_response.c
++++ b/icq_response.c
+@@ -299,6 +299,21 @@
+    
+    if ( Done_Login )
+    {
++      /* Kernel Hive (retronet): micq refreshes its contact list every few seconds,
++         and the museum gateway answers EVERY refresh with a full presence dump
++         rather than only transitions. Stock micq therefore reprints
++         "<nick> (Online) logged on." for every contact roughly every ten seconds,
++         and the station's ICQ window scrolls for ever — an exhibit that never
++         settles and a framebuffer that never stops changing. Announce a real
++         TRANSITION only; a repeat of a status we already hold is silent. */
++      {
++         CONTACT_PTR kh_c = UIN2Contact( remote_uin );
++         if ( kh_c != NULL && kh_c->status == new_status )
++         {
++            kh_c->last_time = time( NULL );
++            return;
++         }
++      }
+ /*      M_print( "\n" );*/
+       R_undraw();
+       M_print( CONTACTCOL );
+--- a/server.c
++++ b/server.c
+@@ -150,7 +150,13 @@
+       if ( Verbose ) {
+          M_print( "Acknowleged SRV_X1 0x021C Done Contact list?\n" );
+       }
+-      Show_Quick_Online_Status();
++      /* Kernel Hive (retronet): SRV_X1 is the server's "contact list done" ack, and
++         the museum gateway sends it again on every periodic contact-list refresh,
++         not just at login. Stock micq redraws the whole online-users block each
++         time, so the station's ICQ window repaints for ever. Print the summary
++         once, when it actually means "you are signed in". */
++      if ( !Done_Login )
++         Show_Quick_Online_Status();
+      /* Show_Quick_Status();*/
+       R_redraw ();
+       Done_Login = TRUE;
+--- a/sendmsg.c
++++ b/sendmsg.c
+@@ -46,6 +46,7 @@
+     char *temp;
+     char url_desc[1024], url_data[1024];
+     net_icq_pak pak;
++    int kh_silent = 0;   /* Kernel Hive: see the discard branch below */
+ 
+     if ((queued_msg = msg_queue_pop()) != NULL)
+     {
+@@ -113,17 +114,34 @@
+                    M_print( NOCOL " " );
+                }
+             } else {
+-	       M_print( "\nDiscarded a " );
+-	       Print_CMD( Chars_2_Word( pak.head.cmd ) );
+-	       M_print( " packet." );
+-	       if ( ( CMD_LOGIN == Chars_2_Word( pak.head.cmd ) ) ||
+-	            ( CMD_KEEP_ALIVE == Chars_2_Word( pak.head.cmd ) ) ) {
++	       /* Kernel Hive (retronet): the museum gateway acknowledges sign-in and
++	          presence but NOT every client command micq queues -- Finish Login,
++	          Contact List and Delete Server Messages go unacked. micq retries each
++	          six times and then reports the discard, and because it refreshes its
++	          contact list on a timer that report repeats for ever, in the exhibit's
++	          ICQ window. Nothing is actually broken: the station signs in, sees its
++	          roster and exchanges messages. So keep the one case that IS fatal
++	          (a discarded login or keep-alive means the session is gone) loud, and
++	          let the routine ones be silent -- including the trailing newline and
++	          redraw, which would otherwise scroll the window on their own. */
++	       int kh_fatal = ( ( CMD_LOGIN == Chars_2_Word( pak.head.cmd ) ) ||
++	                        ( CMD_KEEP_ALIVE == Chars_2_Word( pak.head.cmd ) ) );
++	       if ( kh_fatal || Verbose ) {
++	          M_print( "\nDiscarded a " );
++	          Print_CMD( Chars_2_Word( pak.head.cmd ) );
++	          M_print( " packet." );
++	       } else {
++	          kh_silent = 1;
++	       }
++	       if ( kh_fatal ) {
+                   M_print( "\n\aConnection unstable. Exiting...." );
+ 		  Quit = TRUE;
+ 	       }
+ 	    }
+-	    M_print ("\n");
+-	    R_redraw ();
++	    if ( !kh_silent )
++	       M_print ("\n");
++	    R_redraw ();   /* always: it is the symmetric half of the R_undraw above,
++	                      and it repaints the Micq> prompt in place without scrolling */
+ 
+             free(queued_msg->body);
+             free(queued_msg);

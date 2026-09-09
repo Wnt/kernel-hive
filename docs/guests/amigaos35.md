@@ -47,7 +47,7 @@ FS-UAE — chosen for: proven in-lab (the `amiga` bridge), A4000/040 + AGA +
 KS3.1, `save_states`/`load_state`, and `bsdsocket_library` host-socket
 networking for the retronet plane. Shipped as a **pinned 3.2.35 source build**
 (`scripts/build-guests/emulators/build-fsuae-native.sh`) carrying one lab
-patch, `fsuae-native.d/fsuae-mousehack-rearm.patch`: **every UAE savestate
+patch, `github.com/Wnt/fs-uae kernel-hive/integrated (mousehack re-arm commit)`: **every UAE savestate
 restore runs customreset → mousehack_reset(), zeroing the host-side
 mousehack_address, and the restored guest never re-issues the mode-5
 registration trap — so absolute mouse is dead after every restore** (proven

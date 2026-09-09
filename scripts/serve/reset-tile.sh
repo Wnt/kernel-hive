@@ -211,6 +211,33 @@ case "$RESETMODE" in
     exit 5
     ;;
   restart | relaunch)
+    # MAMECTL-FIRST (2026-09-08): a host-native MAME station whose launcher
+    # restored a golden savestate (`-state golden`, MAME_NATIVE_CHECKPOINT=1)
+    # can restore it again IN-PROCESS through its ctlsock — `LOADST golden`
+    # acks on completion in well under a second on the 8-bit machines (samcoupe
+    # 11 KB state, apple2e 27 KB), against the ~16 s a service restart costs:
+    # ~10 s for ExecStop to give up on a SIGTERM the shm binary ignores and
+    # SIGKILL it, then the relaunch. Same MAME process, same framebuffer
+    # mapping, so the frozen-buffer hazard the service restart below exists
+    # for does not apply. The service restart stays the fallback for every
+    # other case: no ctl socket, no baked state, a SIGSTOPped (idle-paused)
+    # emulator that would never ack, or an ERR/timeout from the module.
+    if [ -f "$TDIR/station.env" ]; then
+      CTL="$(sed -n 's/^SH_MAMECTL_SOCK=//p' "$TDIR/station.env" | tail -1)"
+      DRV="$(sed -n 's/^MAME_NATIVE_DRIVER=//p' "$TDIR/station.env" | tail -1)"
+      CKPT="$(sed -n 's/^MAME_NATIVE_CHECKPOINT=//p' "$TDIR/station.env" | tail -1)"
+      EPID="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
+      ESTATE="$(awk '{print $3}' "/proc/${EPID:-0}/stat" 2>/dev/null || true)"
+      if [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
+        [ -f "$TDIR/sta/$DRV/golden.sta" ] && [ -f /root/mctl.py ] &&
+        [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
+        if OUT="$(python3 /root/mctl.py "$CTL" --timeout 60 LOADST golden 2>&1)"; then
+          echo "reset $OSID: OK (mamectl LOADST golden on $TILEDIR, in-process)"
+          exit 0
+        fi
+        echo "reset $OSID: mamectl LOADST golden failed on $TILEDIR (${OUT//$'\n'/ }) — falling back to a service restart" >&2
+      fi
+    fi
     # relaunch = the x11/shm runtime stations (irix). They have no QMP monitor and
     # no vmstate snapshot, so "restore to golden" means relaunching the emulator:
     # the launcher rebuilds disk.chd from the immutable golden CHD on every

@@ -105,6 +105,24 @@ one visit.
   `scripts/e2e/station-open.mjs`'s card-resolution and stream-probe idiom and
   `scripts/e2e/typing-pace-probe.mjs`'s pacing, via `lib/stationOpen.mjs` —
   the same building blocks the `walkin` journey already used.
+- **`editor`** — a scripted demo built on `station`, for **watching** and for
+  populating the keyboard/click trace planes. Each visitor gets a **distinct**
+  station (by visitor number, so `--visitors 6` drives 6 different machines,
+  not a random 6), and on it: **skips the boot-video intro clip** (pre-marks
+  `BootVideoOverlay` as played, via `suppressBootVideo`, so the demo lands on the
+  live desktop instead of acting behind the clip), **resets to golden first**,
+  opens a text editor
+  **with the keyboard** (`Ctrl+Esc → R → notepad → Enter` on a Windows guest —
+  never the Windows key, which would collide with the driving browser and, on a
+  Mac, `Cmd+R`-reload the tab), types a funny line, **selects it with the
+  keyboard** (`Home`/`Shift+End`/`Shift+ArrowLeft` — classic Notepad has no
+  `Ctrl+A`), clicks a few random spots, and finishes with a figure-8. **Keys
+  and clicks each become a discrete `input.dispatch.key` / `input.dispatch.click`
+  span** — which continuous pointer motion (the figure-8) does *not* produce, so
+  this is the journey that actually exercises those planes end to end. Also
+  **requires `--storage-state` or `--invite`**. The editor-open recipe lives in
+  `lib/editorDemo.mjs`; today it covers `win95`, `win98se`, `win2000`, `winxp`,
+  `nt4`, `reactos` (any other id falls back to the same Windows Start→Run path).
 
 If your pool has none of the three walk-in-eligible ids, the `walkin` journey
 reports a clean failure rather than touching a station outside your pool —
@@ -112,17 +130,32 @@ reports a clean failure rather than touching a station outside your pool —
 
 ## Resets
 
-`POST /restore/<id>` fires **only** from the `station` journey
-(`journeyStation` in `lib/journeys.mjs`) — it is the one journey with a real
-invited session and a station actually open. `--allow-resets`,
+`POST /restore/<id>` fires **only** from the `station` and `editor` journeys
+(via `restoreToGolden` in `lib/journeys.mjs`) — the journeys with a real
+invited session and a station actually open (`editor` resets unconditionally at
+the start of each station, `station` occasionally). `--allow-resets`,
 `--reset-max` and `--reset-min-interval` (see "Safety" below) all gate that
 one call site: the per-run cap, the per-station cooldown, and the master
-on/off switch are enforced there, not merely documented. If your `--mix` has
-no `station` weight — a walk-in-only run, the tool's default without
-`--storage-state`/`--invite` — passing `--allow-resets` arms a budget nothing
-in the run can ever spend; the tool says so plainly, both in `--dry-run`'s
-printed plan and in a live run's own log, rather than silently letting the
-flag sit there unused.
+on/off switch are enforced there, not merely documented — there is no 4th,
+undocumented gate on top (an earlier `&& Math.random() < 0.15` coin-flip did
+sit here, and made a run that printed `resets ARMED` fire zero resets often
+enough to look broken; removed). If your `--mix` has no `station` or `editor`
+weight — a walk-in-only run, the tool's default without `--storage-state`/`--invite` —
+passing `--allow-resets` arms a budget nothing in the run can ever spend; the
+tool says so plainly, both in `--dry-run`'s printed plan and in a live run's
+own log, rather than silently letting the flag sit there unused.
+
+**The reset is driven through the real "↺ Restore to golden snapshot" button**
+(StageMenu.tsx, behind the ☰ Controls menu), never a bare `fetch`. The
+client-side `station.restore` / `station.restore.toRestoredMs` telemetry —
+click to picture back, the one thing a server-side timer cannot measure — is
+emitted by `useRestoreFlow.ts`'s `restoreToGolden()`, which is wired to
+exactly that button's `onClick`. A raw `POST /restore/<id>` still resets the
+host (the server times its own half regardless, `serve.restore` /
+`serve.restore.reset`) but produces no `station.restore` span at all, so a
+run built that way could reset a station all day and still leave the
+operator's actual ask — golden-restore latency as the visitor experiences
+it — unmeasured.
 
 ## Credentialed mode (optional)
 
@@ -243,6 +276,15 @@ Every switch below defaults to the safe side.
   station that never streams, a signup that never lands) trips it; every
   visitor still queued is skipped rather than hammering a broken gallery, and
   the process exits non-zero.
+- **Any failed journey — consecutive or not — is counted and exits non-zero.**
+  The run summary line (`finished: N visitor(s), F failed, …`) counts every
+  journey whose result was `ok:false`, whether or not it threw an exception
+  (`manifest.errors` is exceptions only — a journey that returns a clean
+  `ok:false`, like a card the grid never rendered, never touches that count).
+  Each failed journey is also logged individually and recorded in the run
+  manifest (`failedVisitorCount`, and `ok:false` on its own entry in
+  `visitors[]`), and the process exits 1 if `F > 0`, even when the breaker
+  never trips.
 - **`--dry-run` prints the resolved plan — every cap, every switch, every
   journey weight — and touches nothing.**
 
@@ -380,3 +422,111 @@ walk-in clone), so it is unaffected by that warm-up window.
   resulting session as a Playwright storage-state — nothing existing needed
   an unattended, non-interactive way into an invited session before this
   tool's `station` journey did.
+
+## beacon-probe — the diagnostic beside the traffic generator
+
+`scripts/visitor-sim/beacon-probe.mjs` shares this package's Playwright install
+and its cached invite session, but it is the opposite kind of tool: visitor-sim
+*makes* traffic, beacon-probe *reads one page load in full detail*.
+
+It drives a single credentialed page load, captures every beacon the Instana EUM
+agent POSTs to the vendor's reporting host, decodes the tab-separated wire format,
+and then answers the question no document can:
+
+- does the `ty pl` (page-load) beacon carry a `backendTraceId`, and does that id
+  **exist** in `traces.db`?
+- do the `ty xhr` beacons still resolve too — i.e. did a change to the page-load
+  path regress the in-page correlation that already worked?
+- does our outbound `traceparent` reach the wire as one clean value, or has a
+  second writer comma-joined it (`spa/src/analytics/khFetch.ts`)?
+
+It resolves ids against the store itself (`/data/vms/streamhost/serve/traces.db`,
+bind-mounted, read-only) and exits non-zero on a failure, so it can be used as an
+acceptance check rather than something to eyeball.
+
+```sh
+cd scripts/visitor-sim
+node beacon-probe.mjs                                   # public gallery
+node beacon-probe.mjs --url https://<SH_HOST_IP>:8443 --insecure   # LAN origin
+node beacon-probe.mjs --json /tmp/capture.json          # keep the raw beacons
+node beacon-probe.mjs --traces-db ''                    # off-box: capture only
+```
+
+**Run it after any change to** the `<meta name="traceparent">` injection
+(`scripts/serve/static_files.py`), the `traceresponse` / `Server-Timing` headers
+(`scripts/serve/tracing_http.py`), the `ineum(...)` bootstrap in
+`spa/index.html`, or the pinned EUM agent version. The correctness argument for
+all of those is a beacon on the wire and nothing else —
+`docs/lab/INSTANA-VIEW-INVENTORY.md` §7a records what that measurement found and
+why the vendor's own documentation could not be used.
+
+Two things that will otherwise read as faults and are not: a beacon for a route
+outside the tracing allowlist (`gallery-manifest.json`, `boot/index.json`) has
+**no** `bt`, correctly — there is no server span to point at; and an anonymous
+run captures the *login page's* beacons, because the gallery answers 401 to an
+unauthenticated `/`. Always pass a session.
+
+## `--shots-dir` — the banner watch, and why the log plane needed one
+
+The operator sees **"Spotty connection"** and **"Reconnecting to tile… (attempt
+N)"** in the sim's own headed windows, on a 4 ms LAN. The log plane could not
+confirm it: `spa/src/three/streamClient/telemetry.ts` emits the stream line once
+per 5 s, so a 2–5 s spotty dwell can start and end between two consecutive
+T-lines and leave `good` on both. Every banner in this class is styled with
+*inline* styles (`spa/src/ui/grid/StreamView/styles.ts`) and carries no class,
+id or `data-testid` — the words are the stable hook, and they are pure
+derivations (`bannerCopy.ts`, `exitReason.ts`, `useStreamhostSession.ts`).
+
+`lib/bannerWatch.mjs` therefore injects a 4 Hz sampler into each tab which
+walks text nodes for those exact strings, queues every **transition** with the
+page's own timestamp, and lets the node side drain the queue, log it and
+photograph it. The one string that is both a banner and a chip — "Device under
+load" — is disambiguated by geometry, not by words: the banner is centred, the
+chip stack is pinned top-right.
+
+| flag | effect |
+|---|---|
+| `--banner-watch` | watch and log transitions; no files written |
+| `--shots-dir <d>` | the above, plus `page.screenshot()` at every transition **and** every 5 s, into `<d>/<visitor>-<station>-<elapsed ms>-<state>.png` |
+
+Neither is on by default: the sampler is extra work inside a tab whose whole
+purpose is to look like a visitor's. Absent both flags the tool behaves exactly
+as it did before. The full timeline is also written into the run manifest as
+`bannerTimeline` (transitions and the 5 s stills, sorted across all visitors),
+which is what you cross-reference against `logs.db`.
+
+The watch opens its **own CDP session** for the sampling and the capture.
+Measured 2026-09-02: without one, a transition on a busy tab was photographed
+up to 7 s late — long after the banner had cleared — because Playwright
+multiplexes every call for a page over one ordered channel and
+`traceFigureEight` alone issues ~200 round trips ahead of it. Every record
+still carries `shotLagMs` (page-transition timestamp → capture), and a lag over
+1 s is called out in the log: **the timeline is the record, the frame is
+corroboration.**
+
+Each log line reads:
+
+```
+[19:17:04] [v2] banner win95 +43.2s: "Spotty connection"
+[19:17:09] [v2] banner win95 +48.1s: "(none)"
+```
+
+### `observer-tab.mjs` — the second viewer
+
+The sharpest finding in this class is about a **second** viewer: while a sim
+visitor typed on win95, the operator's already-open tab on the same station
+counted ~95 % frame-id loss, latched its frame watchdog three times and went
+spotty. Reproducing that needs a tab that does nothing but watch, for the whole
+run — and the sim's visitors are all doers. `observer-tab.mjs` is that tab: it
+opens one station with the cached invite session, sits for `--duration`, clicks
+and types nothing, and runs the same banner watch.
+
+```sh
+node observer-tab.mjs --station win95 --duration 3m --headed --browser chrome \
+  --shots-dir ~/sim-shots/run2-observer
+```
+
+It writes its own `observer-<station>-<stamp>.json` manifest beside the run
+manifests. A "sit still" *journey* was deliberately not added to
+`lib/journeys.mjs`: it would put a non-visitor behaviour into the visitor mix
+and quietly change what every existing `--mix` means.

@@ -101,10 +101,6 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#404547', accentTint: '#5d7886', tintMix: 0.62,
     badge: 'AIRFLOW DIY', spec: 'x86-64 • 2024', kit: 'modern',
   },
-  beos: {
-    caseTint: '#d9d5c9', accentTint: '#3466a0', tintMix: 0.5,
-    badge: 'BeBox', spec: 'x86 • 2000', kit: 'office90',
-  },
   os2warp: {
     caseTint: '#aeb1aa', accentTint: '#536578', tintMix: 0.38,
     badge: 'PS/2 77', spec: 'BUSINESS • 1996', kit: 'office90',
@@ -112,10 +108,6 @@ export const EXHIBIT_IDENTITIES = {
   aros: {
     caseTint: '#686a6c', accentTint: '#8a5450', tintMix: 0.45,
     badge: 'DIY 5:4', spec: 'x86 • 2024', kit: 'modern',
-  },
-  amigaos35: {
-    caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
-    badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
   },
   qnx: {
     caseTint: '#4b4f50', accentTint: '#8a514b', tintMix: 0.6,
@@ -176,13 +168,6 @@ export const EXHIBIT_IDENTITIES = {
   irix: {
     caseTint: '#c2c6c2', accentTint: '#2f7a72', tintMix: 0.34,
     badge: 'INDY R4600', spec: 'MIPS III • 1993', kit: 'workstation',
-  },
-  // The other Indy: same case, a colder blue-grey so the pair reads as two
-  // machines rather than one exhibit drawn twice, and the badge carries the
-  // only thing that actually differs — the processor.
-  indyr4400: {
-    caseTint: '#b6bec8', accentTint: '#3e6e9e', tintMix: 0.34,
-    badge: 'INDY R4400', spec: 'MIPS III • 1993', kit: 'workstation',
   },
   mpf2: {
     caseTint: '#d8cfbb', accentTint: '#7d2e2a', tintMix: 0.38,
@@ -312,6 +297,13 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#d3cab4', accentTint: '#0000ff', tintMix: 0.36,
     badge: 'ARM EVALUATION SYSTEM', spec: 'ARM1 • 4M • 1986', kit: 'eightBit',
   },
+  // The other Indy: same case, a colder blue-grey so the pair reads as two
+  // machines rather than one exhibit drawn twice, and the badge carries the
+  // only thing that actually differs — the processor.
+  indyr4400: {
+    caseTint: '#b6bec8', accentTint: '#3e6e9e', tintMix: 0.34,
+    badge: 'INDY R4400', spec: 'MIPS III • 1993', kit: 'workstation',
+  },
   // PARC's pale office beige, and the accent is sampled rather than chosen:
   // ContrAlto lights a set pixel as 0xdffcff, a faintly blue-green white, which
   // is the only colour this exhibit emits. Everything else on its screen is the
@@ -321,14 +313,6 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'XEROX ALTO II XM', spec: 'PAGE DISPLAY • 606x808 • 1973',
     kit: 'workstation',
   },
-  // Xerox's own office grey-beige, a shade cooler and lighter than the PC
-  // beiges around it. The accent is Xerox red — the only colour anywhere near
-  // this machine, because the display itself emits exactly two: black and
-  // white, with every mid-tone dithered out of them.
-  daybreak: {
-    caseTint: '#cdc8bd', accentTint: '#c8102e', tintMix: 0.34,
-    badge: 'XEROX 6085', spec: 'MESA • VIEWPOINT • 1985', kit: 'workstation',
-  },
   // The 8010 shipped in the earlier, warmer Xerox office grey — closer to putty
   // than the cooler shell the 6085 arrived in four years later. The accent is a
   // brighter Xerox red than its successor's, which also keeps the two Xerox
@@ -336,6 +320,14 @@ export const EXHIBIT_IDENTITIES = {
   star: {
     caseTint: '#d5cec1', accentTint: '#d6001c', tintMix: 0.34,
     badge: 'XEROX 8010', spec: 'DANDELION • VIEWPOINT 2.0 • 1981', kit: 'workstation',
+  },
+  // Xerox's own office grey-beige, a shade cooler and lighter than the PC
+  // beiges around it. The accent is Xerox red — the only colour anywhere near
+  // this machine, because the display itself emits exactly two: black and
+  // white, with every mid-tone dithered out of them.
+  daybreak: {
+    caseTint: '#cdc8bd', accentTint: '#c8102e', tintMix: 0.34,
+    badge: 'XEROX 6085', spec: 'MESA • VIEWPOINT • 1985', kit: 'workstation',
   },
   // Compaq's AlphaServer ivory-grey, a shade cooler than the PC beiges around
   // it; the accent is DEC's brand maroon — the one colour that says Digital —
@@ -371,13 +363,9 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'HP 9000 / 778 VISUALIZE B160L', spec: 'PA-7300LC 160MHz • HP-UX 10.20 • 1996',
     kit: 'workstation',
   },
-  // aix432: IBM RS/6000 40P — IBM's warm beige with the AIX blue the registry
-  // carries as this station's accent; the badge names the machine type because
-  // "RS/6000" alone spans everything from this desktop to a rack.
-  aix432: {
-    caseTint: '#cfc9bb', accentTint: '#2f6ea8', tintMix: 0.32,
-    badge: 'IBM RS/6000 40P (7020)', spec: 'PowerPC 601 66MHz • AIX 4.3.3 • 1994',
-    kit: 'workstation',
+  beos: {
+    caseTint: '#d9d5c9', accentTint: '#3466a0', tintMix: 0.5,
+    badge: 'BeBox', spec: 'x86 • 2000', kit: 'office90',
   },
   // newsos: Sony NEWS — off-white Sony case with the muted violet NEWS-OS
   // accent this station carries in the registry; "SONY NEWS" badge.
@@ -421,6 +409,139 @@ export const EXHIBIT_IDENTITIES = {
     caseTint: '#9b9ca6', accentTint: '#9a9ad1', tintMix: 0.4,
     badge: 'POWER MAC G4', spec: 'PowerPC G4 • MAC OS 9.2.2 • 2001',
     kit: 'workstation',
+  },
+  amigaos35: {
+    caseTint: '#d3ccba', accentTint: '#b03a3a', tintMix: 0.42,
+    badge: 'A4000 BIG BOX', spec: '68040 • 1999', kit: 'office90',
+  },
+  // aix432: IBM RS/6000 40P — IBM's warm beige with the AIX blue the registry
+  // carries as this station's accent; the badge names the machine type because
+  // "RS/6000" alone spans everything from this desktop to a rack.
+  aix432: {
+    caseTint: '#cfc9bb', accentTint: '#2f6ea8', tintMix: 0.32,
+    badge: 'IBM RS/6000 40P (7020)', spec: 'PowerPC 601 66MHz • AIX 4.3.3 • 1994',
+    kit: 'workstation',
+  },
+  // ravynos: an ordinary 2025 PC in modern aluminium-grey, with the slate accent
+  // the registry carries. The badge names the hardware rather than the OS on
+  // purpose — the desktop imitates a Mac, the machine underneath does not, and
+  // the placard's whole subject is the gap between the two. Low-ish tintMix:
+  // the identity of a minimal modern case is its uniform finish, not a stripe.
+  ravynos: {
+    caseTint: '#c6c8ca', accentTint: '#64748b', tintMix: 0.3,
+    badge: 'x86-64 PC', spec: 'x86-64 • ravynOS 0.6.1 • 2025', kit: 'modern',
+  },
+  amix: {
+    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
+    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
+  },
+  // bootos: an XT-class beige box (the OS is 8088-compatible by design) in
+  // msdoswin1's warm case beige, with the registry's pale-blue accent. The
+  // badge names the CPU class the code targets; the spec names the only
+  // storage it has and the year it was written, four decades after the XT.
+  bootos: {
+    caseTint: '#c2ad83', accentTint: '#8ecae6', tintMix: 0.4,
+    badge: 'XT 8088', spec: 'FLOPPY • 2019', kit: 'office90',
+  },
+  // pcgeos: a 386-class beige desktop with a colour VGA CRT — GEOS runs on a
+  // 286 in 640 KB, but the 800x600 64K-colour VESA desktop this exhibit shows
+  // wants a 1990s SuperVGA card, so the badge names the class that had one.
+  // Registry orange accent (the canyon wallpaper's own colour).
+  pcgeos: {
+    caseTint: '#c9b995', accentTint: '#e08a3c', tintMix: 0.35,
+    badge: '386 PC', spec: 'SVGA 800x600 • FreeDOS', kit: 'office90',
+  },
+  // pcbsd: a 2008 beige-going-grey office PC running FreeBSD 6.3 + KDE 3.5 at
+  // 1024x768 on the vesa driver. Registry red accent (the PC-BSD/BSD daemon red).
+  pcbsd: {
+    caseTint: '#b9b7ae', accentTint: '#c8102e', tintMix: 0.4,
+    badge: 'OFFICE PC', spec: 'x86 • 2008', kit: 'modern',
+  },
+  // ubuntu: a 2004 beige/black OEM minitower with a CRT — the class of PC the
+  // live CD was made for. Registry accent: Ubuntu orange.
+  ubuntu: {
+    caseTint: '#c7c0b0', accentTint: '#dd4814', tintMix: 0.32,
+    badge: 'OEM TOWER', spec: 'LIVE CD • 2004', kit: 'workstation',
+  },
+  // redhat62: a beige Pentium-class ATX tower of 2000 with a colour CRT at
+  // 1024x768 — the SVGA card is the Cirrus GD5446 the emulator presents.
+  // Registry red accent (Red Hat's own).
+  // slackware: a Pentium-class beige tower with a Cirrus SVGA card driving
+  // 1024x768 in 16-bit colour. Registry teal accent (fvwm95's desktop colour).
+  slackware: {
+    caseTint: '#c9c2ae', accentTint: '#008080', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'SVGA 1024x768 • 1997', kit: 'office90',
+  },
+  // netbsd14: a late-1990s beige Pentium-class clone with a Cirrus SVGA card,
+  // the kind of box NetBSD's i386 port was installed on with sysinst. The accent
+  // is the registry's NetBSD flag orange.
+  netbsd14: {
+    caseTint: '#cfc6ae', accentTint: '#f26522', tintMix: 0.35,
+    badge: 'PENTIUM PC', spec: 'CIRRUS GD5446 • NETBSD 1.4.1 • 1999', kit: 'office90',
+  },
+  // openbsd: a current amd64 SFF box running a 1990s desktop — the badge names
+  // the hardware class, the spec the X server and the year. Registry accent is
+  // the Puffy yellow.
+  redhat62: {
+    caseTint: '#c4b596', accentTint: '#cc0000', tintMix: 0.35,
+    badge: 'ATX TOWER', spec: 'SVGA 1024x768 • 2000', kit: 'office90',
+  },
+  openbsd: {
+    caseTint: '#a5aaa8', accentTint: '#f2c94c', tintMix: 0.35,
+    badge: 'AMD64 SFF', spec: 'XENOCARA 1024x768 • 2026', kit: 'workstation',
+  },
+  // freebsd411: a mid-2000s beige Pentium-4-class mini-tower with a plain VGA
+  // card running a 1024x768 KDE 3.3.2 desktop — the last 4.x FreeBSD on the
+  // kind of box ISPs racked by the hundred. The accent is the registry's
+  // FreeBSD daemon red.
+  freebsd411: {
+    caseTint: '#cfc6ae', accentTint: '#ab2b28', tintMix: 0.35,
+    badge: 'PENTIUM 4 PC', spec: 'VESA SVGA 1024x768 • FREEBSD 4.11 • 2005', kit: 'office90',
+  },
+  debian22: {
+    caseTint: '#d9cfb8', accentTint: '#d70a53', tintMix: 0.35,
+    badge: 'DEBIAN GNU/LINUX 2.2', spec: 'POTATO • 2000', kit: 'office90',
+  },
+  suse64: {
+    caseTint: '#d9d4c3', accentTint: '#6ea339', tintMix: 0.38,
+    badge: 'PENTIUM III', spec: '17" CRT • 2000', kit: 'workstation',
+  },
+  // TODO(apple2e): exhibit finish copied from apple2 — set the real era cues.
+  apple2e: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
+  // MGT built the SAM in Swansea in an off-white wedge with a dark keyboard
+  // well and dark keycaps — the same two-tone the Spectrum +2 had made
+  // familiar, but inverted: pale case, dark keys. The accent is that keyboard
+  // well rather than a logo colour, because the machine's own front badge is
+  // simply its name in dark lettering on the cream.
+  samcoupe: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+  },
+  // The XL wedge is the pale warm grey Atari used across the 1983 line, with
+  // the keyboard sunk in a dark brown bezel and the rainbow fuji badge on the
+  // front right. The accent is that bezel brown rather than any of the rainbow
+  // stripes: the stripes are a logo, the brown is what half the case reads as
+  // from across a room.
+  atari800xl: {
+    caseTint: '#cfc6b2', accentTint: '#4a3a2c', tintMix: 0.44,
+    badge: 'ATARI 800XL', spec: '8-BIT • 1983', kit: 'eightBit',
+  },
+  // The first Amiga was off-white rather than beige — a pale desktop box with
+  // the monitor sitting on top and a garage underneath for the keyboard. The
+  // accent is the dark grey of that recess and of the keycaps, not the rainbow
+  // badge: the shadow under the machine is what carries across a room.
+  a1000: {
+    caseTint: '#dcd6c8', accentTint: '#57544e', tintMix: 0.38,
+    badge: 'A1000 CLASS', spec: '68000 • 1985', kit: 'workstation',
+  },
+  // a3000: Commodore's low desktop case, the same cream as the A3000UX (amix)
+  // with the Workbench 2.0 grey-blue as the accent.
+  a3000: {
+    caseTint: '#cfc7b4', accentTint: '#5b7fa6', tintMix: 0.42,
+    badge: 'A3000 CLASS', spec: '68030 • 1990', kit: 'office90',
   },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 

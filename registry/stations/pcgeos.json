@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "id": "pcgeos",
+  "era_year": 1993,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 71,
+        "prelude": "",
+        "value": {
+          "key": "pcgeos",
+          "script": "tiles/pcgeos.sh",
+          "outputDir": "PCGEOS",
+          "class": "fast",
+          "estimated": "~2m",
+          "automation": "full",
+          "produces": "pcgeos.qcow2 (FreeDOS 1.3 disk + C:\\ENSEMBLE, autoexec runs loader.exe)",
+          "flags": []
+        },
+        "defaultOrder": {
+          "group": 0,
+          "position": 12
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "pcgeos",
+      "value": {
+        "os": "PC/GEOS Ensemble",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "F1",
+        "kbd_reset": "Escape",
+        "kbd_note": "desktop GUI; F1 opens GEOS help. Express menu is the taskbar button bottom-left.",
+        "audio_trigger": "tone",
+        "note": "sb16 + PC speaker; ABSOLUTE pointer via kh-ramabs (CTMOUSE coordinate at KH_RAMABS_ADDR)",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/pcgeos",
+      "qmp": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54175,
+      "notes": "no exec channel: drive via QMP keys and read the framebuffer. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock (labctl mctl): the commanded pixel is written into CTMOUSE's own coordinate and published with one 1-unit PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. disk.qcow2 is the ONLY block device and carries the 'golden' vmstate (FreeDOS FAT16 + C:\\ENSEMBLE), baked under /opt/qemu-beos -- never delete or replace it; recapture only via checkpoint-guard, and re-derive KH_RAMABS_ADDR after."
+    }
+  },
+  "render": {
+    "signalOrder": 73,
+    "stationsManifestOrder": 71,
+    "stationsManifestPrelude": "\n# pcgeos (VMID 175) — PC/GEOS Ensemble (GeoWorks lineage, bluewaysw Apache-2.0 build) on FreeDOS 1.3.\n#   VERBATIM LAUNCHER: disk.qcow2 (FreeDOS FAT16 + C:\\ENSEMBLE, copied from the\n#   builder output on first launch) is the ONLY block device and holds the savevm\n#   'golden' vmstate. -vga std VESA 800x600 16-bit (vga16.geo), sb16 + PC speaker\n#   -> dbus audiodev, absolute pointer via kh-ramabs (CTMOUSE coordinate).\n",
+    "bringUpGroup": 1,
+    "bindingOrder": 78,
+    "bindingPrelude": "",
+    "goldenOrder": 71,
+    "actionMapOrder": 43
+  },
+  "stationDir": "pcgeos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54175,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 175
+  },
+  "guestDoc": "docs/guests/pcgeos.md",
+  "credentialsRef": "guest/pcgeos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "pcgeos",
+      "SH_QMP": "/data/vms/streamhost/stations/pcgeos/qmp.sock",
+      "SH_PORT": "54175",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/pcgeos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/pcgeos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 175,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "pcgeos",
+        "--vmid",
+        "175",
+        "--udp",
+        "54175",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "ramabs",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/pcgeos/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/pcgeos/station.env.fixture"
+      ],
+      "deviceSetId": "pcgeos-ramabs-800x600",
+      "launcher": "streamhost/stations/pcgeos/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/pcgeos/station.env.fixture",
+      "binary": "/opt/qemu-beos/bin/qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 64,
+      "smp": 2,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-pcgeos",
+        "-enable-kvm -m 64 -smp 2",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=/data/vms/streamhost/stations/pcgeos/disk.qcow2,format=qcow2,if=ide -netdev user,id=n0 -device ne2k_pci,netdev=n0",
+        "-chardev socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off",
+        "-device kh-ramabs,chardev=ptr0,addr=0x76e0,layout=point16le,width=800,height=600,nudge-units=1,nudge-px=1",
+        "-qmp unix:/data/vms/streamhost/stations/pcgeos/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/pcgeos/qemu.pid"
+      ],
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "freedos device set with -vga std (VESA 800x600 for vga16.geo), the station's own disk, and the kh-ramabs control object (no vmstate, no emulated hardware) under the /opt/qemu-beos build"
+      },
+      "pointerRamAddress": {
+        "addr": "0x76e0",
+        "layout": "point16le",
+        "derivedAgainstGolden": "2026-09-03 01:21 cold bake under /opt/qemu-beos without truetype.geo (VM_CLOCK 0000:00:42.439, VM_SIZE 3.47 MiB, tag `golden` in disk.qcow2)",
+        "status": "LIVE",
+        "note": "Guest-physical address of CTMOUSE's own pointer coordinate (int16 x, int16 y, little-endian) -- the input kh-ramabs writes; GEOS's mouse driver (the zip's default [mouse] entry) takes the absolute CX/DX from CTMOUSE's INT 33h callback, so the guest republishes it after one 1-unit nudge. Valid ONLY for the golden named in derivedAgainstGolden (loadvm restores RAM verbatim). Re-derive after every re-bake with scripts/dev/pcgeos-ramabs-derive.py (four-position pmemsave bias search over the first 1 MB, then the device's own connect-time write probe per candidate, ~3 minutes). The search returned six (0,0)-bias addresses on each of two bakes (0x76e0 0x76e4 0x931e 0x936a and two GEOS-side copies); exactly one verified both times — CTMOUSE loads before GEOS, so its data segment did not move. Five MOVEA targets incl. (20,560) and (780,30) landed pixel-exact in the framebuffer, hotspot (0,0)."
+      },
+      "qemuBuild": {
+        "prefix": "/opt/qemu-beos",
+        "binary": "/opt/qemu-beos/bin/qemu-system-x86_64",
+        "forkCommit": "c5449c80f228befd48de08df7dc7ea598730d2fb",
+        "base": "QEMU 11.0.2 (the same version as the host pve-qemu-kvm 11.0.2-1, so machine type pc-i440fx-11.0 is unchanged)",
+        "configure": "--target-list=x86_64-softmmu --enable-slirp --enable-dbus-display --disable-opengl --disable-werror --disable-tools",
+        "binarySha256": "90baceeb55935aa28c0f7637cb5218cda41bd24413ea870d2637c43415708669",
+        "note": "Same installed build as beos (/opt/qemu-beos); see beos.json for provenance."
+      }
+    },
+    "bringUpOrder": 78
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#e08a3c",
+    "eraLabel": "1993 · GeoWorks Ensemble",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "pcgeos",
+    "displayName": "PC/GEOS Ensemble",
+    "year": 1993,
+    "lineage": "GeoWorks Ensemble → NewDeal Office → Breadbox Ensemble → PC/GEOS (open source 2018)",
+    "arch": "i386 (runs on a 286 in 640 KB), on FreeDOS 1.3",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#e08a3c",
+    "eraSoftware": [
+      "GeoManager",
+      "GeoWrite",
+      "GeoDraw",
+      "GeoCalc",
+      "GeoFile",
+      "Preferences"
+    ],
+    "periodBrowser": "WebMagick (Breadbox)",
+    "iconicApps": [
+      "GeoWrite",
+      "GeoDraw",
+      "GeoCalc",
+      "Solitaire",
+      "Tetris"
+    ],
+    "blurb": "GeoWorks Ensemble: a preemptive-multitasking, object-oriented graphical desktop that ran in 640 KB on a 286 — the 1990 GUI that made Windows 3.0 look slow, kept alive as open-source PC/GEOS.",
+    "notes": "Live streamhost station. FreeDOS 1.3 boots straight into loader.exe; the whole desktop (Motif Redux look, taskbar, 800x600 VESA) is drawn by GEOS itself. Absolute pointer: the daemon writes the visitor's pixel straight into CTMOUSE's own coordinate (kh-ramabs) and GEOS's generic INT 33h driver picks it up, so the cursor maps 1:1. disk.qcow2 is the single block device and carries the golden vmstate, so a reset restores the FAT filesystem too."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "pcgeos",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "SKIP",
+    "fixture": "PC/GEOS Ensemble desktop (Computer/Documents/World icons, Meadows wallpaper, taskbar) at 800x600 16-bit right after loader.exe; software cursor in the scanout."
+  },
+  "migrationExceptions": []
+}

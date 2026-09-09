@@ -4,9 +4,13 @@
 // It matters because the gallery boots machinery a walk-in has no business
 // starting and no permission to use: the full-fleet /gallery-manifest.json
 // (gated by design — a walk-in reads the /walkin/manifest.json allowlist
-// projection instead), /boot/index.json, the /clientcmd operator poller and
-// /clientlog telemetry. On the live plane every one of those answers 401, which
-// produced ten failed POSTs per page load — noise that hides a real error later.
+// projection instead) and /boot/index.json. On the live plane those answer
+// 401, which produced ten failed POSTs per page load — noise that hides a real
+// error later. NOT on that list any more: /clientlog telemetry and the
+// /clientcmd poller. Both are admitted for the walk-in role in gate.py, and
+// main.tsx starts them for every signed-in tab — a walk-in whose stream never
+// painted was exactly the session the remote-debugging plane could not reach
+// (the iPad walk-in of 2026-09-08).
 //
 // The PATH test alone used to answer it, and that was the bug: a signed-up
 // walk-in browsing the ROOT url is allowed `/` by the gate, so the shell

@@ -6,10 +6,20 @@ After=network.target
 Type=simple
 RuntimeDirectory=osgallery-webrtc
 RuntimeDirectoryMode=0755
+# WEBRTC_PUBLIC_IP: the address kernelhive.madekivi.fi resolves to. Box-side,
+# never committed, written by deploy/install-bridge.sh from registry/local.env
+# (SH_GALLERY_HOST). Absent file => no public candidate => LAN-only bridge, and
+# every remote visitor fails with `webrtc-state pc=failed ice=failed`
+# (docs/lab/STREAM-DEBUGGING.md §5).
+EnvironmentFile=-/etc/osgallery-webrtc/bridge.env
+# UDP 54200 is inside the edge's DNAT range (registry ports.publicRelayLow..High)
+# and reserved for this unit in registry ports.webrtcBridgeUdp. 55950 (the
+# 2026-07-16 port) was never forwarded, which is why remote WebRTC never worked.
 ExecStart=/data/vms/streamhost/webrtc/bin/osgallery-webrtc-bridge \
   -socket /run/osgallery-webrtc/feeds.sock \
   -http 127.0.0.1:18080 \
-  -udp-port 55950 \
+  -udp-port 54200 \
+  -public-ip ${WEBRTC_PUBLIC_IP} \
   -mtu 1188 \
   -profile-level-id 64001f
 Restart=on-failure

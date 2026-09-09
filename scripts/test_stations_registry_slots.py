@@ -23,6 +23,7 @@ GLOBALS = {
         "productionBase": 54000,
         "publicRelayLow": 54080,
         "publicRelayHigh": 54200,
+        "webrtcBridgeUdp": 54200,
     }
 }
 
@@ -48,6 +49,19 @@ class SlotRefusalTest(unittest.TestCase):
         assert refusal is not None
         self.assertIn("54201", refusal)
         self.assertIn("relay window", refusal)
+
+    def test_refuses_the_webrtc_bridges_ice_port(self) -> None:
+        # 54000 + 200 = 54200 is inside the relay window AND the bridge's socket.
+        # Before the reservation, `--slot auto` and wave.sh alloc would both have
+        # handed slot 200 to the next station and it would have fought the
+        # bridge for the port.
+        refusal = slot_refusal(GLOBALS, 200)
+        self.assertIsNotNone(refusal)
+        assert refusal is not None
+        self.assertIn("54200", refusal)
+        self.assertIn("WebRTC bridge", refusal)
+        self.assertIn("ports.webrtcBridgeUdp", refusal)
+        self.assertIsNone(slot_refusal(GLOBALS, 199))
 
     def test_relay_check_is_skipped_when_the_window_is_undeclared(self) -> None:
         bare = {"ports": {"productionBase": 54000}}

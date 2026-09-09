@@ -53,10 +53,26 @@ arbitrary. Do not re-expand this file; put the detail there.
     entry. Commands: [`docs/lab/AGENT-CI-EXIT-RULE.md`](docs/lab/AGENT-CI-EXIT-RULE.md).
 11. **A push is not a deploy.** `git push origin main`, then
     `scripts/dev/box-deploy.sh --apply`; restarts are a separate decision.
-12. **New work lands host-native** — direct framebuffer capture + input forwarding.
+12. **Match the subagent to the task; say which model ran.** Well-briefed
+    mechanical work (rows, links, regenerate, copy a proven pattern) → `haiku-low`;
+    bounded implementation from proven facts → `sonnet-low` / `sonnet`; keep
+    Opus/Fable for discovery, an unknown failure, correctness-critical proofs,
+    the museum's public voice, and any step where a wrong answer costs a retry.
+    Both directions waste: a Fable agent renaming links, and a low-effort agent
+    misreading a brief and returning work to redo. Defaults inherit the
+    coordinator's model — choose deliberately, never by omission.
+13. **New work lands host-native** — direct framebuffer capture + input forwarding.
     A trixie kiosk bridge is a throwaway PoC, never what ships; the 28 surviving
     bridges are legacy to convert, not a template. Source your own install media
     and ROMs; the operator supplies Windows licensing only.
+
+14. **A wall is raced, never bisected serially; nothing waits on a guessed sleep.**
+    Theories → one cheap agent each on its own `rig-clone.sh` clone, first
+    framebuffer proof wins, `keep` kills the rest; waits are `fb-wait.py`
+    (`--settle`/`--change`), not `sleep N`. Applies to all work, not only speedruns.
+15. **Commit a station's `rn-tapnet.sh` only with a proven station** —
+    `box-sync-pairs-retronet.sh` deploys every committed one fleet-wide, so an
+    unproven tap script ships live on the next `box-deploy --apply`.
 
 ## Where to look
 
@@ -66,6 +82,9 @@ arbitrary. Do not re-expand this file; put the detail there.
 | The reasoning behind a rule above | [`docs/lab/OPERATING-RULES.md`](docs/lab/OPERATING-RULES.md) |
 | Whose rig/claim is this | `ssh lab 'labctl who'` |
 | Preview a UI/registry change before it is live | `scripts/dev/stage.sh` → `/staging/<session>/` |
+| Bring a deployed new station online (emit, binary, start, manifests, checks) | `scripts/dev/station-up.sh <id>` |
+| A bring-up step hangs or fails for an unknown reason | `scripts/dev/rig-clone.sh new <id> <theory>` per theory + `scripts/dev/fb-wait.py`; rule 14, [`OPERATING-RULES.md` §13](docs/lab/OPERATING-RULES.md#13-a-wall-is-raced-and-nothing-waits-on-a-guess) |
+| Publish a booted smoke guest at `/os/<id>` before it is a registry station | `scripts/dev/smoke-rig.sh <id> --like <station>` |
 | Deploy a pushed commit / see what the box runs | `scripts/dev/box-deploy.sh` (plan) / `--apply` / `--status` |
 | Restart the fleet without taking the gallery down | [`docs/lab/FLEET-ROLLOUT.md`](docs/lab/FLEET-ROLLOUT.md) — `scripts/dev/fleet_rollout.py` (plan) / `--apply` |
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
@@ -73,11 +92,11 @@ arbitrary. Do not re-expand this file; put the detail there.
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md); start with `labctl facts <tile>` |
 | Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
-| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with `clientlog.jsonl`, not a repro |
+| Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with the log plane, not a repro |
 | Recapture a checkpoint | [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |
 | Fix a station that freezes or will not connect | `ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py'` |
 | Which emulator runs a given OS, with what settings | [`docs/lab/research/vom-reference.md`](docs/lab/research/vom-reference.md) — BEFORE spending an agent on recon |
-| Add a new OS station | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
+| Add a new OS station (10-minute procedure is §0) | [`docs/lab/ADD-NEW-OS-PLAYBOOK.md`](docs/lab/ADD-NEW-OS-PLAYBOOK.md) |
 | Migrate a kiosk to trixie | [`docs/lab/MIGRATION-WAVE-BRIEF.md`](docs/lab/MIGRATION-WAVE-BRIEF.md) |
 | Build the daemon, a guest, or the UI | [`scripts/README.md`](scripts/README.md) |
 | Work on the public gallery or passkeys | [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md). **Never `rm auth-state.json`** |

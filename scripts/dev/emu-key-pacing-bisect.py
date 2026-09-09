@@ -119,13 +119,28 @@ def type_line(q, hold_ms, gap_ms):
         time.sleep(gap)
 
 
+def ppm_expected_size(path):
+    """Byte length a binary P6 file must reach to hold the frame its header declares."""
+    with open(path, "rb") as fh:
+        head = fh.read(64)
+    fields = head.split(maxsplit=4)
+    if len(fields) < 4 or fields[0] != b"P6":
+        return 1 << 62  # header not written yet: keep waiting
+    width, height = int(fields[1]), int(fields[2])
+    header_len = head.index(fields[3]) + len(fields[3]) + 1
+    return header_len + width * height * 3
+
+
 def shot(q, out_dir, tag):
     ppm = os.path.join(out_dir, f"{tag}.ppm")
     if os.path.exists(ppm):
         os.unlink(ppm)
     q.hmp(f"screendump {ppm}")
+    # Wait for the WHOLE frame, sized from the PPM header, not for "> 1 MB":
+    # a 720x400 text-mode frame (bootos) is 864 KB, and the old fixed threshold
+    # made every shot sit out the full 10 s timeout instead of returning.
     for _ in range(40):
-        if os.path.exists(ppm) and os.path.getsize(ppm) > 1_000_000:
+        if os.path.exists(ppm) and os.path.getsize(ppm) >= ppm_expected_size(ppm):
             break
         time.sleep(0.25)
     time.sleep(0.2)

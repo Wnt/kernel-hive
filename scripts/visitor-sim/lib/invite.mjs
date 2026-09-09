@@ -60,10 +60,13 @@ export function resolveInviteCode(value) {
  *  rather than silently leaving the run in walk-in-only mode. */
 export async function redeemInvite(browser, { galleryUrl, code, statePath }) {
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  // The auth routes live at the ORIGIN even when the UI under test is a
+  // staging slot (`--gallery-url https://<lab>/staging/<session>`).
+  const origin = new URL(galleryUrl).origin;
   try {
-    const resp = await context.request.post(`${galleryUrl}/auth/invite/enter`, {
+    const resp = await context.request.post(`${origin}/auth/invite/enter`, {
       data: { code },
-      headers: { 'content-type': 'application/json', origin: galleryUrl },
+      headers: { 'content-type': 'application/json', origin },
     });
     if (!resp.ok()) {
       throw new Error(`invite redemption failed: HTTP ${resp.status()}`);

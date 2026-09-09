@@ -142,38 +142,38 @@ external inputs and the ordered full-box runbook chain.
 <!-- release-notes:start -->
 ## Release notes
 
-### Week 4 · The doors open to everyone · 2026-08-23 09:00 – 2026-08-30 09:00
+### Week 5 · The mouse finally lands · 2026-08-30 09:00 – 2026-09-06 09:00
 
 #### New stations
 
-Three machines joined the floor, and one of them needed its graphics card built from scratch first. [AIX](https://kernelhive.madekivi.fi/os/aix432) is IBM's own Unix on IBM's own *PowerPC* workstation, and it refused to paint a desktop until the museum wrote that workstation's *Matrox* card into the emulator itself. The reward is a full **CDE** desktop, **Netscape Communicator**, and **Quake** running its demo loop on a *1999* RS/6000. [Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) is the last classic Mac OS — one menu bar, no protected memory, the Finder as the whole machine — and the first *PowerPC* Macintosh here. [超漢字](https://kernelhive.madekivi.fi/os/chokanji) is the strangest arrival yet: Ken Sakamura's **BTRON** desktop, where every file is a 'real object', heir to the system Japan once planned for all its schools. That makes 72 machines, 68 of them open to visitors.
+Three machines arrived. [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put **OPEN LOOK** on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots from the real 1992 installation tape onto an emulated *68030*, and runs in colour on the **A2410**, a card most owners never bought. Its cursor lands exactly where you point, by a route no other machine here uses: the museum reaches inside the guest's own X server and moves the pointer there. [ravynOS](https://kernelhive.madekivi.fi/os/ravynos) also joined. At the other extreme, [bootOS](https://kernelhive.madekivi.fi/os/bootos) is an entire operating system in **512 bytes**, the one sector a PC reads to start up: a prompt, a filesystem and a hex loader, written by Óscar Toledo G. in two evenings in 2019. Its floppy carries nineteen more one-sector programs — chess, a Doom, a BASIC, a Flappy Bird — and you run one by typing its name. That makes 75 machines, 71 of them open to visitors.
 
 #### Major features
 
-<u>You no longer need an invitation to use the museum.</u> Anyone can sign up and be handed a machine of their own — [Windows 3.11](https://kernelhive.madekivi.fi/os/win311), [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) or [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) — a private copy that is yours for the visit. Install something, break something, close the tab: the next visitor still gets a pristine one. The museum's private 1990s internet grew as well. Five more machines signed on to **ICQ**, taking the chat network to eleven: [Windows XP](https://kernelhive.madekivi.fi/os/winxp), [Windows 95](https://kernelhive.madekivi.fi/os/win95), OS/2 Warp on a client from before the protocol changed, [Windows 2000 on *Alpha*](https://kernelhive.madekivi.fi/os/w2kalpha) — running the ordinary *x86* client through the Alpha's own translator — and an [SGI Indy](https://kernelhive.madekivi.fi/os/irix), whose sign-in kept crashing the emulator until the fault was traced into its instruction translator and fixed. More machines browse the archived 1998 web too, each with the browser it would really have had: **Mosaic** on [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue), **WebExplorer** on OS/2, **OmniWeb** on Rhapsody.
+<u>Five more machines now put the cursor exactly where you point.</u> A mouse in a browser sends a position; most of these guests only understand motion, which is why a cursor used to crawl behind your hand and pile up in a corner. [AIX](https://kernelhive.madekivi.fi/os/aix432) and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees — a real feedback loop rather than arithmetic and hope. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody), [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) and [BeOS](https://kernelhive.madekivi.fi/os/beos) have no such chip, so instead the emulator writes the coordinate straight into the place each operating system keeps its own pointer, and nudges it awake. On all five the cursor is now 1:1: no chase, no drift, no corner.
 
 #### Quality improvements
 
-[Mac OS 9](https://kernelhive.madekivi.fi/os/macos9) used to wake up confused, because the emulator had never saved the machine's own clock; it now comes back exactly where you left it. [NeXTSTEP](https://kernelhive.madekivi.fi/os/nextstep) moved to a colour *NeXTstation*, and its double click works from a phone at last. [Windows 95](https://kernelhive.madekivi.fi/os/win95) drops off the chat network when it sits idle, and now dials back in by itself, with nothing to prod. The two *Alpha* machines share one build of their emulator, with a fix for mouse moves it had been quietly throwing away. And the museum keeps a written account of each week now, on its own About page — which is where you are reading this.
+The private machines handed out to signed-in visitors left everyone else on a blank front page; the museum now renders one hall for all and picks what you see by who you are. Clicks, not just movement, take the corrected route into AIX, so a button press lands where the cursor already is. AIX also had an invisible magnet — pass near a window's resize handle and the pointer stuck to it — which is gone. And the museum's own weekly test used to count cards on the collection page, quietly passing while the page was empty; it now checks the gallery really drew.
 
 #### Also this week
 
-- [AIX](https://kernelhive.madekivi.fi/os/aix432) brings **CDE**, the desktop nearly every Unix vendor settled on, running on the line that carried IBM's Unix into the POWER era
-- [超漢字](https://kernelhive.madekivi.fi/os/chokanji) files its documents in a 原紙箱, a 'master-paper box', around a kanji set built for scholarship rather than office work
-- Period sites now arrive as their most complete snapshot rather than their closest-dated one, so a 1997 page shows up with its pictures instead of grey boxes
-- [Windows 3.11](https://kernelhive.madekivi.fi/os/win311) reaches the archive in **Netscape 4.08** — a *1993* desktop on a 1998 web
-- [Windows XP](https://kernelhive.madekivi.fi/os/winxp) reads the same pages in **Internet Explorer 8**, five years of browser history apart
-- **Mosaic** could not read the archive's own search page until it was rebuilt in markup from Mosaic's own decade
-- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) joined the period web this week, on emulated *68040* hardware
-- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody) got **OmniWeb 3.0**, the NeXT-lineage browser, sitting on the desktop where you can find it
-- [OS/2 Warp](https://kernelhive.madekivi.fi/os/os2warp) chats through **ICQ/2 1.503i**, the OS/2 native build, speaking an older protocol nobody else here uses
-- The gallery installs onto a phone's home screen like an app, and its collection page pulls to refresh
-- The [SGI Indy](https://kernelhive.madekivi.fi/os/irix)'s browser stopped nagging on every launch: the setting that silences it is not the one you would guess
+- [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) installs from a 29-segment tape image, the way an *A3000UX* really did — roughly two hours of emulated restore
+- **OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it
+- [bootOS](https://kernelhive.madekivi.fi/os/bootos) keeps one file per floppy track, thirty-two at most; the museum snapshots the floppy, so a deleted game is gone only until the next reset
+- Type `enter` on bootOS and it takes a program as lines of hex; the 'Hello, world' from its own manual is the exhibit's demo button
+- [AIX](https://kernelhive.madekivi.fi/os/aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all
+- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does
+- [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue)'s cursor loop needed no new emulated hardware — the registers were already there, so no machine had to be rebuilt
+- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved
+- A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed
+- Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card
 
-*35,124 lines of code.*
+*7,484 lines of code.*
 
 ### Earlier weeks
 
+- [Week 4 · The doors open to everyone](docs/RELEASE-NOTES.md#week-4) · 2026-08-23 09:00 – 2026-08-30 09:00
 - [Week 3 · The museum gets its own internet](docs/RELEASE-NOTES.md#week-3) · 2026-08-16 09:00 – 2026-08-23 09:00
 - [Week 2 · Twenty-two machines in one week](docs/RELEASE-NOTES.md#week-2) · 2026-08-09 09:00 – 2026-08-16 09:00
 - [Week 1 · The museum opens its source](docs/RELEASE-NOTES.md#week-1) · 2026-08-07 14:37 – 2026-08-09 09:00

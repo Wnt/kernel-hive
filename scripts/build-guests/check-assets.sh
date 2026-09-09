@@ -95,10 +95,15 @@ ROWS=(
   # Stored content-addressed in the media archive; opt-file => fetched at build if absent.
   "opt-file|chokanji|超漢字/Chokanji-V + B-right/V + QEMU-CKJ media set (archive.org 'chokanji'; qemuckj/mc.img = pre-installed B-right/V)|${MEDIA_ARCHIVE_ROOT:-/data/media-archive}/blobs/b8/b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|sha256:b8fd99a928d5564e53b58d2b8853b05f799a3fc32ba09cee0714a66c675039df|preservation-source"
   "req-file|mpf2|Multitech MPF-II Monitor + BASIC ROM|$ASSET_STAGING/mpf2/mpf_ii.rom|sha1:92378b0db561632b58a9b36a85f8fb00796198bb|preservation-source"
+  "req-file|a1000|Kickstart v1.2 r33.180 (A500-A1000-A2000) ROM|/data/vms/sandbox/a1000/media/Kickstart v1.2 r33.180 (1986-10)(Commodore)(A500-A1000-A2000)[!].rom|sha256:87cddb1f499e32758de20145e73031a84bab299e3f6e5c8487e76d02b2ee9d16|preservation-source"
+  "req-file|a1000|Amiga 1000 ROM Bootstrap (1985)|/data/vms/sandbox/a1000/media/Amiga 1000 ROM Bootstrap (1985)(Commodore)(A1000)[!].rom|sha256:c67d47d0ff4a4cd29104e96fe7920a2ec13dff4f7f0fbcf7be645e2ae493262c|preservation-source"
+  "req-file|a1000|Workbench v1.2 rev 33.56 Disk 1 (Workbench).adf|/data/vms/sandbox/a1000/media/Workbench v1.2 rev 33.56 (1987)(Commodore)(A500)(Disk 1 of 2)(Workbench).adf|sha256:4dfd92a4589346f157593d1a3098966b43e2298c46b749c689b9dc457480be4c|preservation-source"
+  "req-file|a1000|Workbench v1.2 rev 33.56 Disk 2 (GB)(Extras).adf|/data/vms/sandbox/a1000/media/Workbench v1.2 rev 33.56 (1987)(Commodore)(A500)(GB)(Disk 2 of 2)(Extras).adf|sha256:7edba9fcbffacde7f1bf94920b76c57e2002ae07b877f26de152ae96c631ba69|preservation-source"
   # -- freely fetchable, pinned (the builder fetches + verifies if absent) -------
   # Debian non-free spectrum-roms; its usr/share/doc/spectrum-roms/copyright carries
   # Amstrad's 1999 emulator permission. zxspectrum.sh extracts 48.rom from it.
   "opt-file|zxspectrum|Sinclair ZX Spectrum 48K ROM, in Debian's spectrum-roms package (fetched by zxspectrum.sh from deb.debian.org if absent)|$ASSET_STAGING/zxspectrum/spectrum-roms_20081224-5_all.deb|sha256:8d25dd300a0c86b4459e152de3bc657dca894b167e6a6419eb195d9669bfe950|freely-fetchable-pinned"
+  "opt-file|ubuntu|Ubuntu 4.10 Warty Warthog live CD ISO (fetched by ubuntu.sh from old-releases.ubuntu.com if absent)|$ASSET_STAGING/ubuntu/warty-release-live-i386.iso|sha256:189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013|freely-fetchable-pinned"
   # -- repo-tracked assets ------------------------------------------------------
   # NOTE: cosmo.zip/jill.zip/Winamp tarball are no longer shipped in the repo
   # (removed pre-publication, see docs/guests/freedos.md + docs/guests/winxp.md).
@@ -110,6 +115,14 @@ ROWS=(
   "repo|win311|GALLERY.GRP|$ASSETS/win311/GALLERY.GRP||repo"
   "repo|apple2|linapple kiosk patch|$ASSETS/apple2/linapple-kiosk.patch||repo"
   "repo|amigaos|AROS icons/backdrop|$ASSETS/amigaos/icons/Games.info||repo"
+  # -- a3000: preservation-source media staged outside GALLERY_ROOT/ASSET_STAGING
+  # (kept alongside the a3000 sandbox that composed the golden, never committed;
+  # see docs/lab/ASSETS-MANIFEST.md and docs/lab/A3000-WAVE.md) --------------
+  "req-file|a3000|A3000 Kickstart 2.04 r37.175 ROM|/data/vms/sandbox/a3000/media/Kickstart v2.04 r37.175 (1991-05)(Commodore)(A3000).rom|sha256:563f948af19c09daed1f06b8760221ff4b2789c1690cdcfbce2c941157af23d1|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 1 of 4 (Workbench) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 1 of 4)(Workbench).adf|sha256:ac6b2529b2896474401ff51c4fcf79464a5f53331b6ad872f0bb721a0a63b8ab|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 2 of 4 (Extras) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 2 of 4)(Extras).adf|sha256:3da86648e602f4e0916663d2b4893011423837b2f2b6885e421310338412c02a|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 3 of 4 (Fonts) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 3 of 4)(Fonts).adf|sha256:c04f0ed8016ff2aa458c977722ede02f5e607cdb206a384ae61b081fd694702e|preservation-source"
+  "req-file|a3000|Workbench 2.04 Disk 4 of 4 (Install) ADF|/data/vms/sandbox/a3000/media/Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 4 of 4)(Install).adf|sha256:c98c97be15f52e25610ee2d4a1fe99807ba9fe11aa81fa0c81fd37cab725bcdd|preservation-source"
   "repo|toaruos|Desktop launchers|$ASSETS/toaruos/Desktop/4_mines.launcher||repo"
   # -- abandonware-URL: verified if the cache survives, refetched otherwise ----
   "opt-file|msdos-win1|MS-DOS 6.22 Disk1|$GALLERY_ROOT/MSDOSWin1/.build-work/dl/Disk1.img|sha256:b88030401122d234ea6aafba3cfed7de2b7b1782700a67be5498edca6f9fec5d|abandonware-URL"
@@ -130,8 +143,71 @@ ROWS=(
   "opt-file|haiku|Haiku R1/beta5 ISO|$GALLERY_ROOT/Haiku/haiku.iso|sha256:22ae312a38e98083718b6984186e753d15806bd6ea44542144fdcef42c4dcb69|freely-fetchable-pinned"
   "opt-file|android-x86|Android-x86 9.0-r2 ISO|$GALLERY_ROOT/Android/android-x86-9.0-r2.iso|sha256:91cedb534ba095a0c9b3eceede4147967fd27beea9bba640776f787dc3555021|freely-fetchable-pinned"
   "opt-file|templeos|TempleOS ISO|$GALLERY_ROOT/TempleOS/TempleOS.ISO|sha256:5d0fc944e5d89c155c0fc17c148646715bc1db6fa5750c0b913772cfec19ba26|freely-fetchable-pinned"
+  # bootOS (Oscar Toledo G., BSD-2): bootos.sh re-fetches both from raw.githubusercontent.com
+  # at a pinned commit if absent. osall.img also carries five third-party boot-sector
+  # programs under their own licences -- staged locally, never committed.
+  "opt-file|bootos|bootOS 512-byte boot sector (os.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/os.img|sha256:35e1231cf29f8750566a97dfb628b2bbe2c24a2f7d7518d7a94103f9976d3df8|freely-fetchable-pinned"
+  "opt-file|bootos|bootOS 360K floppy with 19 boot-sector programs (osall.img, nanochess/bootOS @329b75e6)|$ASSET_STAGING/bootos/osall.img|sha256:20927188a96cca1cc41bd43a24186cd6fb3e68a4f82fdaf7c2e59c9bfd874653|freely-fetchable-pinned"
   "opt-file|helenos|HelenOS 0.14.1 ISO|$GALLERY_ROOT/HelenOS/HelenOS-0.14.1-ia32.iso|sha256:1b15da0459cbfe28a6d3058675c2c20a4b03584cfb4d034c0ccb17b521791ccb|freely-fetchable-pinned"
+  # Debian GNU/Linux 2.2 "potato" (DFSG-free, redistributable install media):
+  # debian22.sh copies from /data/assets-staging/debian22 (staged from
+  # archive.org / archive.debian.org) if present, else re-fetches and pins.
+  "opt-file|debian22|Debian 2.2 potato i386 CD1 (archive.org Debian-GNULinux-2.2-arch-i386-CD)|$ASSET_STAGING/debian22/debian-2.2-i386-cd1.iso|sha256:2b1d2b18a14ea1f62302aeb98caf1a7b9191a87c3591a42d8bbf0fe5ef1abf1f|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato navigator-smotif-477 (non-free; Netscape Navigator 4.77 static-Motif binary)|$ASSET_STAGING/debian22/deb/navigator-smotif-477_4.77-2.deb|sha256:4935309549c9b712b3dfcb0134d37eee70e2920759644fea4cadc4e70ca9c783|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato navigator-base-477 (non-free; Netscape Navigator 4.77 base files)|$ASSET_STAGING/debian22/deb/navigator-base-477_4.77-2.deb|sha256:954c48ee1c7c002c3a44ace1f81fe821d0bb73cb075f966132f91f000a95fc4d|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato netscape-base-477 (non-free; Netscape 4.77 shared base)|$ASSET_STAGING/debian22/deb/netscape-base-477_4.77-2.deb|sha256:6f4502e549583572adc937eec737abcc3fa701f18b18d87645a5f35bc1354f21|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato netscape-base-4 (contrib; Netscape 4.x wrapper (/usr/lib/netscape/base-4/wrapper))|$ASSET_STAGING/debian22/deb/netscape-base-4_4.77-1.deb|sha256:dfc02893ab29f107102d8cd9887cd42784366c02894c70f5ddacd66e3b87f739|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato libstdc++2.9-glibc2.1 (main/oldlibs; libstdc++-libc6.1-1.so.2 that navigator-smotif.real links)|$ASSET_STAGING/debian22/deb/libstdc++2.9-glibc2.1_2.91.66-4.deb|sha256:1e71b4caa8d408dde0d3669e474905844e45c2bfc121e96840f0bf2437c6d1bd|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato hdparm 3.6-1 (archive.debian.org dists/potato/main/binary-i386/admin; not on CD1)|$ASSET_STAGING/debian22/hdparm.deb|sha256:3e0551105e370f916354c6685f848988a664f01a2ba31ab842512ee33b1b20a9|freely-fetchable-pinned"
+  "opt-file|debian22|Debian 2.2 potato i386 base2_2.tgz (archive.debian.org dists/potato/main/disks-i386)|$ASSET_STAGING/debian22/base2_2.tgz|sha256:2f53ecb6a1508be95d5351e468b0197e8dca2a58ecf24c8fc1e07765b9817585|freely-fetchable-pinned"
+  # PC/GEOS Ensemble (GeoWorks Ensemble lineage, bluewaysw open-source build,
+  # Apache-2.0): pcgeos.sh re-fetches from the CI-latest release tag if absent
+  # (a moving tag; this hash is the pin). Composed onto the fleet FreeDOS 1.3 disk.
+  "opt-file|pcgeos|PC/GEOS Ensemble build (pcgeos-ensemble_nc.zip, bluewaysw/pcgeos CI-latest)|$ASSET_STAGING/pcgeos/pcgeos-ensemble_nc.zip|sha256:77587fb5b61783f65031296ddfa147273f4d398e00c40f5e5e9bfeaf37dc2bb2|freely-fetchable-pinned"
+  # Slackware Linux 3.4 (1997, kernel 2.0.30): slackware.sh composes the root fs
+  # host-side from the mirror .tgz set (128 files); pins recorded in
+  # scripts/build-guests/tiles/slackware/MANIFEST.sha256.
+  "opt-file|slackware|Slackware 3.4 install set manifest (128 pinned files, mirrors.slackware.com/slackware/slackware-3.4)|$ASSET_STAGING/slackware/MANIFEST.sha256|sha256:f74ddc25f891b658f2083e71ac9849c990007c7e64cfd1691a3ce8bb83fc89be|freely-fetchable-pinned"
+  # NetBSD 1.4.1 i386 (1999, BSD-2): netbsd14.sh re-fetches boot.fs + the 13
+  # binary sets from archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/
+  # if absent; sets.iso is composed locally from the tgz sets.
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 install floppy (boot.fs)|$ASSET_STAGING/netbsd14/boot.fs|sha256:5bbe8a5e9a28851d549a52506f0f94b21e7b962a863c6a13c6ce314e6ceb2e85|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 base.tgz|$ASSET_STAGING/netbsd14/base.tgz|sha256:342bb4631f237b2c22e5c8682b9cfeb63a39c38aa617e9f9020a709212a3e930|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 comp.tgz|$ASSET_STAGING/netbsd14/comp.tgz|sha256:8af3d8253275667c4b1bb4401182a83cee90b450911d9b697e6d2055e7877232|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 etc.tgz|$ASSET_STAGING/netbsd14/etc.tgz|sha256:8641cdbc4dc91cc77bcc4905ffdcf98be9ab400c52266474bfea406b80d38f93|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 games.tgz|$ASSET_STAGING/netbsd14/games.tgz|sha256:70f88300bff7df7df455a5f77851c30f7d0fe30f7c86909cc298c79ceae5b052|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 kern.tgz|$ASSET_STAGING/netbsd14/kern.tgz|sha256:7e57e4080f9d67666ed95c88e309243745f7e96676c579e6c1131c12e8928924|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 man.tgz|$ASSET_STAGING/netbsd14/man.tgz|sha256:e45806509cdce23efbecd57f6889d257e0fe4faf898146f8679957a05bf8d8c5|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 misc.tgz|$ASSET_STAGING/netbsd14/misc.tgz|sha256:9e27078392c728438732916e6ae695e66905d4570d987a9a3ed66ffb6ba47ae3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 text.tgz|$ASSET_STAGING/netbsd14/text.tgz|sha256:60f2befdff6554c74ce8b601ccf67347164a26d183747b4a06bd0de2e1435af3|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xbase.tgz|$ASSET_STAGING/netbsd14/xbase.tgz|sha256:8501d77e1869487c9853fc358443a799d40145405a4d1ee59179be9b15ae73fd|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcomp.tgz|$ASSET_STAGING/netbsd14/xcomp.tgz|sha256:68134c7da74431f2d640a89acaf953b32cd267c3a93877f9cb421f360c12985c|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xcontrib.tgz|$ASSET_STAGING/netbsd14/xcontrib.tgz|sha256:b7d429bae3636c28d92627e7688b2a00908c3efa0668cabe1d46df09e1c193ff|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xfont.tgz|$ASSET_STAGING/netbsd14/xfont.tgz|sha256:edf9bf393678b0351399550f9025fccbd97d3d8d27ccc30ffc665ad9bfcb5e3b|freely-fetchable-pinned"
+  "opt-file|netbsd14|NetBSD 1.4.1 i386 xserver.tgz|$ASSET_STAGING/netbsd14/xserver.tgz|sha256:e4d98777ba2d95471f53ab751a6181c92f3cb2def641a1729cfa138317bdf462|freely-fetchable-pinned"
   "opt-file|reactos|ReactOS 0.4.14 live ISO|$GALLERY_ROOT/ReactOS/ReactOS.iso|sha256:9b39db9d930c919060379c8b3f1406d5cc8821e019fc3ccecf6e2dce9d1d0c7e|freely-fetchable-pinned"
+  # OpenBSD 7.9 amd64 (officially-free, ISC/BSD): openbsd.sh re-fetches all 13
+  # release files from the fu-berlin mirror if absent, verified against the
+  # literal SHA-256s measured on labhost 2026-09-02 (see docs/lab/OPENBSD-WAVE.md).
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install CD (cd79.iso)|$ASSET_STAGING/openbsd79/cd79.iso|sha256:da6eed49185e7d4e5199e4fb15252d53a377e4a7dad572838705bfebfb7ac0ab|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC kernel (bsd)|$ASSET_STAGING/openbsd79/bsd|sha256:5d576c453f78a48dbb20f9e7d26eeacabb2a4e0b814e5cb578c52489a6ab1030|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 GENERIC.MP kernel (bsd.mp)|$ASSET_STAGING/openbsd79/bsd.mp|sha256:869351281e616b2eea8cade78f1081babd88d646e89f57acf2938eaa54734793|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 ramdisk installer kernel (bsd.rd)|$ASSET_STAGING/openbsd79/bsd.rd|sha256:6f0974bf92e28e2a97594987cfd1db135fc2fb4aea00f3f3e35ca6f70448f034|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 base set (base79.tgz)|$ASSET_STAGING/openbsd79/base79.tgz|sha256:923d2e03f06408d50d4848334398c6d04b5514dcac7917badfc178a0eef248de|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 man set (man79.tgz)|$ASSET_STAGING/openbsd79/man79.tgz|sha256:7a5e66facf678b41b6b4722b073c357d1eea27facaf4610701ffbec1c80751af|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xbase set (xbase79.tgz)|$ASSET_STAGING/openbsd79/xbase79.tgz|sha256:9418643106bdd17bdf1fad19e2dd9af789c42d5a184999696af23c6e71b94edb|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xfont set (xfont79.tgz)|$ASSET_STAGING/openbsd79/xfont79.tgz|sha256:72ca863adeff7c719f27bd5b74b98f4dd1ecd7980a44ec38fc368d807becf6a2|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xserv set (xserv79.tgz)|$ASSET_STAGING/openbsd79/xserv79.tgz|sha256:2983b33123226d3086290ea7e0497e93553abdf0ffd3bda633cfa47e8b8f7be7|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 xshare set (xshare79.tgz)|$ASSET_STAGING/openbsd79/xshare79.tgz|sha256:4a16fb91da827ddd5ef8cea43f3d22753ac02137144bd23bdd7fd91e8ab186a6|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256 manifest|$ASSET_STAGING/openbsd79/SHA256|sha256:50bec66f28426a22b9c9436f6a87cf3e7029e636bb915ba1d0db80d638881b87|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 release SHA256.sig|$ASSET_STAGING/openbsd79/SHA256.sig|sha256:99db2ba3d63cddeeb9a1166319e48bf4b22224c48bbdc4deff8ecadc0f7b2786|freely-fetchable-pinned"
+  "opt-file|openbsd|OpenBSD 7.9 amd64 install notes (INSTALL.amd64)|$ASSET_STAGING/openbsd79/INSTALL.amd64|sha256:28c272da41fa8d6f9ff1399ec4b7748368438c86e4a516e302cad1f16e657807|freely-fetchable-pinned"
+  "opt-file|pcbsd|PC-BSD 1.5.1 CD1 (archive.org pcbsd-1.5.1-x-86-cd-1)|$GALLERY_ROOT/PCBSD/pcbsd.iso|sha256:69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3|freely-fetchable-pinned"
+  # ravynOS 0.6.1 is the LAST FreeBSD-based build; upstream deleted every FreeBSD-era
+  # release (v0.4.x-v0.6.1) from GitHub and SourceForge when it restarted on Darwin/XNU,
+  # so the only supply is volunteer mirrors (nomadlogic / NTNU / Clarkson). This hash was
+  # measured locally AND matches the checksum from the now-deleted release page.
+  "opt-file|ravynos|ravynOS 0.6.1 amd64 live ISO (BSD; UEFI-only)|$ASSET_STAGING/ravynos/ravynOS_0.6.1_amd64.iso|sha256:e7a2b90e8d87c073857bce6f65ec5023542ec76d4f694b55f49af981c4ff9516|freely-fetchable-pinned"
   # ZX81 ROM, second revision. NOT covered by the 1986 Amstrad permission --
   # Amstrad bought the Spectrum and QL rights only; Nine Stations Networks Ltd wrote
   # and still holds the ZX80/ZX81 ROM copyright. Preservation source, private.
@@ -228,6 +304,28 @@ ROWS=(
   # mirrors.apple2.org.za is the only source, so the pin is the whole defence.
   "opt-file|apple2|Apple GEOS deskTop mouse HDV, zipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos-mouse.hdv.zip|sha256:64b7bef2440e2f0424586a893c641b566901403ad3ce6b3b5adaab573ae23e35|abandonware-URL"
   "opt-file|apple2|Apple GEOS deskTop ProDOS image geos.hdv, unzipped (fetched + verified in-guest)|$ASSET_STAGING/apple2/geos.hdv|sha256:5aba89dda3450abf17b8cc05d9de98149abe0bb072e5b01cc29b7fff995fc681|abandonware-URL"
+  # -- apple2e: host-native MAME sibling of apple2 above. Three source images
+  # compose the /HIVE ProDOS volume via a2kit (scripts/build-guests/tiles/apple2e.sh);
+  # rows are opt-file because the builder re-fetches+re-verifies if absent.
+  "opt-file|apple2e|ProDOS 2.4.2 (John Brooks, carries BASIC.SYSTEM) install disk|$ASSET_STAGING/apple2e/media/ProDOS_2_4_2.dsk|sha256:d1e6fab8d9a25acf6e10ffa15e4120a616898c03613ab87a8e12882b12102543|abandonware-URL"
+  "opt-file|apple2e|AppleWorks 3.0 (Claris) all-in-one program image|$ASSET_STAGING/apple2e/media/AppleWorks30.2mg|sha256:ea624d6b6fe6fb932fdd0de3035a4714cd3700e3fee7da8ac28b8540dc14b469|abandonware-URL"
+  "opt-file|apple2e|Dazzle Draw 1.2 (Broderbund-1988) ProDOS disk|$ASSET_STAGING/apple2e/media/dazzledraw_v12_broderbund_1988.dsk|sha256:291f54945a1c946ba7985093ce686d01f5d74c7173cf84b0108c0839be0e6191|abandonware-URL"
+  # -- samcoupe: host-native MAME SAM Coupe. Three source disks compose the 800K
+  # MGT boot floppy hive.mgt via lib/mgtfs.py + a MAME typing pass
+  # (scripts/build-guests/tiles/samcoupe.sh); opt-file because the builder
+  # re-fetches and re-verifies anything absent.
+  "opt-file|samcoupe|SAMDOS 2.0 system disk (the DOS the hive disk boots)|$ASSET_STAGING/samcoupe/media/SAMDOSVersion2.0.dsk|sha256:7e4de8ae3aef8bbe913ac55ddef320b45f67f8a4fa2778ee3f0391d1e39dfe60|abandonware-URL"
+  "opt-file|samcoupe|5-in-1 Pack (Revelation, 1992) -- Manic Miner, Splat!, Mr. Pac (.sad)|$ASSET_STAGING/samcoupe/media/5in1_ManicMiner_Splat_MrPac_SnakeMania_Craft.sad|sha256:fdec2e69715dcaaed0241d876838a732fa6e8d6095eb0df947177300c7cfde67|abandonware-URL"
+  "opt-file|samcoupe|The Secretary (A. N. Stevens, 1992) word processor disk|$ASSET_STAGING/samcoupe/media/TheSecretary.dsk|sha256:8597f1138ddca18a135b797f404376c296462cb31d987ff70853b00e232a607a|abandonware-URL"
+  # -- atari800xl: five pinned zips compose the MyPicoDos boot disk hive.atr
+  # (scripts/build-guests/tiles/atari800xl.sh). opt-file because the builder
+  # re-fetches + re-verifies anything missing. The Last Word 3.2 is the author's
+  # own freeware release; the four Fandal game zips are abandonware in wide
+  # preservation circulation. NO title bits are ever committed to this repo.
+  "opt-file|atari800xl|Dropzone (1984) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/dropzone.zip|sha256:b8af400e4d5a6135645d52bb04995ad1955f7eb02700a57197f9c0a4c8149bfb|abandonware-URL"
+  "opt-file|atari800xl|River Raid (1984, Activision) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/river_raid.zip|sha256:9db57d32ff2a43a736f6afbda5a15ba38426383104ce8d2948973f57d03dda52|abandonware-URL"
+  "opt-file|atari800xl|Star Raiders (1979, Atari) XEX, zipped (a8.fandal.cz)|$ASSET_STAGING/atari800xl/media/star_raiders.zip|sha256:46d084e428ac9b85be0f0e5fda8f1af28bc4157db528547fc57c73e3102f3e3d|abandonware-URL"
+  "opt-file|atari800xl|The Last Word 3.2 (Jonathan Halliday, freeware) disk set|$ASSET_STAGING/atari800xl/media/LW32.zip|sha256:d97fc6f4ff412f92e391e253b30bca164e6fcfa5e84e9628d2e5896299f01d4b|freely-fetchable-pinned"
   # -- indyr4400: DERIVED from labhost's own irix checkpoint, not downloaded. The
   # ext4 container's hash is not reproducible (mkfs stamps a random UUID), so
   # this row is presence-only; the inner disk.raw hash is in ASSETS-MANIFEST §0.
@@ -260,6 +358,9 @@ ROWS=(
   #     (the six build-mame-*.sh products bbcb/dragon/kc85/mpf2/oricatmos/zx81,
   #     plus irix's separately-built sgi; 68-122 MB each) are BUILD ARTIFACTS, not
   #     media: losing one costs a chroot rebuild, not the station. No rows.
+  # suse64.sh re-fetches CD1 from archive.org if absent; the row is here so a
+  # staged copy is hash-checked before a build spends time on it.
+  "opt-file|suse64|SuSE Linux 6.4 i386 install CD1 (archive.org suse-linux-6.4)|$ASSET_STAGING/suse64/suse-linux-6.4-cd1.iso|sha256:5a835e4bba03485f17f31d6b8204881a77c1206571b27e8300c889e8bf721a33|freely-fetchable-pinned"
 )
 
 # ---- impl ---------------------------------------------------------------------

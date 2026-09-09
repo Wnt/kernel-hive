@@ -52,7 +52,8 @@
 #   labctl shot  <tile> [out.png] screendump -> PNG (default /tmp/<tile>.png)
 #   labctl type  <tile> "<text>"  type text into the guest (no Enter; --verify
 #                                 also screendumps afterwards)
-#   labctl key   <tile> <qcode..> send one key chord (e.g. ctrl c ; or: ret)
+#   labctl key   <tile> <qcode..> send one key chord (e.g. ctrl c ; or: ret ;
+#                                 or +-separated: ctrl+esc, ctrl+alt+delete)
 #   labctl sh    <tile> "<cmd>"   type a shell line + Enter (BLIND — no capture)
 #   labctl exec  <tile> "<cmd>"   REAL exec w/ captured stdout+exit (ssh tiles);
 #                                 errors with alternatives where unavailable
@@ -131,7 +132,11 @@ def cmd_ls(argv):
                 c.get("warpd_port") or "-",
                 c.get("ssh_port") or "-",
                 c.get("exec_port")
-                or ("serial" if c.get("exec_kind") in ("serial_e", "serialcon_e", "serial_getty", "serial_shell") else "-"),
+                or (
+                    "serial"
+                    if c.get("exec_kind") in ("serial_e", "serialcon_e", "serial_getty", "serial_shell")
+                    else "-"
+                ),
                 c.get("console", "?"),
                 g,
                 svc_state(name),

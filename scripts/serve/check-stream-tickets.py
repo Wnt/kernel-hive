@@ -79,7 +79,13 @@ def verify(key: bytes, ticket_path: str, tile: str) -> tuple[bool, str]:
     """Re-run streamhost's check (see streamhost/src/session_ticket.rs)."""
     if not ticket_path.startswith("/wt/"):
         return False, "no ticket in path"
-    parts = ticket_path[len("/wt/") :].split(".")
+    # The trace id rides the ticket as a QUERY STRING, and the HMAC does not
+    # cover it — `session_ticket.rs::verify` splits it off before verifying, so
+    # this must too. Omitting the split folded the traceparent into the
+    # signature and reported all 71 stations as `bad signature` on a fleet that
+    # was streaming perfectly: a false alarm on the one script AGENTS.md sends
+    # an operator to when a station will not connect.
+    parts = ticket_path[len("/wt/") :].split("?", 1)[0].split(".")
     if len(parts) != 3:
         return False, "malformed ticket"
     exp, nonce, sig = parts

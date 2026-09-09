@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const [,, hash, shot] = process.argv;
+const b = await chromium.connectOverCDP('http://127.0.0.1:9333');
+const page = b.contexts()[0].pages().find(p => p.url().includes('instana.io'));
+await page.bringToFront();
+await page.goto(new URL(page.url()).origin + '/' + hash, { waitUntil:'domcontentloaded' });
+await page.waitForTimeout(13000);
+const skip = new Set(['Skip to main content','IBM','Instana','Trial','Home','Websites & mobile apps','Applications','Gen AI observability','Platforms','Infrastructure','Custom dashboards','Logs','Synthetic monitoring','Analytics','Vulnerabilities','Events','Automation','Service levels','Settings','AI gateway','Agents & collectors','Account & billing','More','Tenant unit','Kernel Hive','Buy now']);
+const lines = await page.evaluate((s) => document.body.innerText.split('\n').map(x=>x.trim()).filter(x=>x&&!s.includes(x)).slice(0,40), [...skip]);
+console.log(lines.join('\n'));
+await page.screenshot({ path: shot });
+await b.close();

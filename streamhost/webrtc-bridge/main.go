@@ -48,6 +48,7 @@ var tileRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 type options struct {
 	socketPath string
+	inputDir   string
 	httpAddr   string
 	udpPort    uint
 	publicIP   string
@@ -69,6 +70,7 @@ type platform struct {
 	videoCodec webrtc.RTPCodecCapability
 	audioCodec webrtc.RTPCodecCapability
 	mtu        uint16
+	inputDir   string
 	nextSSRC   atomic.Uint32
 	hubsMu     sync.RWMutex
 	hubs       map[string]*hub
@@ -102,14 +104,22 @@ type peerSession struct {
 	connected  bool
 	closed     bool
 	closeOnce  sync.Once
+	// INPUT PLANE: this peer's connection to the daemon's per-tile input socket.
+	// Dialed lazily on the first DataChannel message and closed with the peer.
+	// The daemon verifies the ticket (first reliable frame); the bridge only
+	// forwards. `inputDown` latches a dial/write failure so it is logged once.
+	inputMu   sync.Mutex
+	inputConn net.Conn
+	inputDown bool
 }
 
 func main() {
 	var o options
 	flag.StringVar(&o.socketPath, "socket", "/run/osgallery-webrtc/feeds.sock", "shared Unix socket for all tile feeds")
+	flag.StringVar(&o.inputDir, "input-dir", "", "directory holding each tile's daemon input socket (input-<tile>.sock); default: the feed socket's directory")
 	flag.StringVar(&o.httpAddr, "http", "127.0.0.1:18080", "HTTP offer/health listen address")
 	flag.UintVar(&o.udpPort, "udp-port", 55950, "shared fixed ICE UDP port")
-	flag.StringVar(&o.publicIP, "public-ip", "", "optional 1:1-NAT candidate IP")
+	flag.StringVar(&o.publicIP, "public-ip", "", "optional public address ADDED as a second host candidate on -udp-port (the LAN host candidate is kept)")
 	flag.UintVar(&o.mtu, "mtu", 1188, "RTP packetizer MTU")
 	flag.StringVar(&o.profile, "profile-level-id", "64001f", "platform H.264 SDP profile-level-id")
 	flag.Parse()
@@ -132,10 +142,15 @@ func main() {
 		MimeType: webrtc.MimeTypeOpus, ClockRate: 48000, Channels: 2,
 		SDPFmtpLine: "minptime=10;useinbandfec=0",
 	}
+	inputDir := o.inputDir
+	if inputDir == "" {
+		inputDir = filepath.Dir(o.socketPath)
+	}
 	p := &platform{
 		videoCodec: videoCodec,
 		audioCodec: audioCodec,
 		mtu:        uint16(o.mtu),
+		inputDir:   inputDir,
 		hubs:       make(map[string]*hub),
 	}
 	p.nextSSRC.Store(0x95000000)
@@ -169,18 +184,50 @@ func mustAPI(o options, video, audio webrtc.RTPCodecCapability) *webrtc.API {
 	))
 	registry := &interceptor.Registry{}
 	must(webrtc.RegisterDefaultInterceptors(mediaEngine, registry))
-	settings := webrtc.SettingEngine{}
 	udpConn, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4zero, Port: int(o.udpPort)})
 	must(err)
-	settings.SetICEUDPMux(ice.NewUDPMuxDefault(ice.UDPMuxParams{UDPConn: udpConn}))
-	if o.publicIP != "" {
-		settings.SetNAT1To1IPs([]string{o.publicIP}, webrtc.ICECandidateTypeHost)
-	}
+	settings, err := iceSettings(udpConn, o.publicIP)
+	must(err)
 	return webrtc.NewAPI(
 		webrtc.WithMediaEngine(mediaEngine),
 		webrtc.WithInterceptorRegistry(registry),
 		webrtc.WithSettingEngine(settings),
 	)
+}
+
+// iceSettings puts every peer on ONE UDP socket (the mux) and, when a public
+// address is given, advertises it as a SECOND host candidate on that same port.
+//
+// Why host+append and not the two obvious alternatives:
+//   - host+replace (what SetNAT1To1IPs(…, ICECandidateTypeHost) did) drops the
+//     LAN address from the SDP, so a visitor on the box's own LAN — the
+//     Firefox-Android proof in docs/WEBRTC-PLATFORM.md — is offered only the
+//     public address and hairpins through the edge or fails outright.
+//   - srflx (ICECandidateTypeSrflx) keeps the LAN candidate but pion gathers a
+//     mapped srflx candidate on a NEW ephemeral socket, not on the mux
+//     (ice/v4 gather.go gatherCandidatesSrflxMapped → listenUDPInPortRange),
+//     so the SDP advertises public:<random port> — a port the edge does not
+//     forward. Remote visitors would fail exactly as they did with no flag.
+//
+// Host+append is the one mode that keeps both addresses on the forwarded
+// port: pion's UDP-mux gatherer (gatherCandidatesLocalUDPMux →
+// applyHostRewriteForUDPMux) appends the external IPs to the mux listener's
+// own address and emits one host candidate per address, all on udpConn's port.
+func iceSettings(udpConn *net.UDPConn, publicIP string) (webrtc.SettingEngine, error) {
+	settings := webrtc.SettingEngine{}
+	settings.SetICEUDPMux(ice.NewUDPMuxDefault(ice.UDPMuxParams{UDPConn: udpConn}))
+	if publicIP == "" {
+		return settings, nil
+	}
+	if net.ParseIP(publicIP) == nil {
+		return settings, fmt.Errorf("-public-ip %q is not an IP address", publicIP)
+	}
+	err := settings.SetICEAddressRewriteRules(webrtc.ICEAddressRewriteRule{
+		External:        []string{publicIP},
+		AsCandidateType: webrtc.ICECandidateTypeHost,
+		Mode:            webrtc.ICEAddressRewriteAppend,
+	})
+	return settings, err
 }
 
 func listenUnix(path string) (*net.UnixListener, error) {
@@ -423,6 +470,7 @@ func (s *peerSession) close() {
 		delete(s.hub.sessions, s)
 		s.hub.sessionsMu.Unlock()
 		s.hub.peers.Add(-1)
+		s.closeInput()
 		if s.pc != nil {
 			go func() { _ = s.pc.Close() }()
 		}
@@ -501,6 +549,19 @@ func (p *platform) handleOffer(api *webrtc.API) http.HandlerFunc {
 		}
 		session := &peerSession{hub: h, pc: pc, videoTrack: videoTrack, audioTrack: audioTrack}
 		h.registerSession(session)
+		// INPUT: the SPA opens two DataChannels on its offer. `input-rel` carries
+		// the unreliable move class, `input` the reliable buttons/keys/wheel with
+		// the ticket as its first message. Forward every message to the daemon's
+		// per-tile input socket, tagged by channel; the daemon verifies + injects.
+		pc.OnDataChannel(func(dc *webrtc.DataChannel) {
+			channel, ok := inputChannelTag(dc.Label())
+			if !ok {
+				return
+			}
+			dc.OnMessage(func(msg webrtc.DataChannelMessage) {
+				session.forwardInput(channel, msg.Data)
+			})
+		})
 		pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 			log.Printf("peer tile=%s state=%s playout-delay-ext=%d", tile, state, session.extID.Load())
 			switch state {

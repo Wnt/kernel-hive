@@ -1,0 +1,278 @@
+ctlsock: the homing overshoot does not die at the guest's clamp — it sits in
+the DEVICE's accumulator and cancels the very next travel
+
+Applies AFTER mame-ctlsock-open-loop-gain.patch (same file, same branch).
+
+THE BUG. The open-loop first-MOVEA branch homes and travels in one breath:
+
+	move_paced(-(18 * m_move_step), -(18 * m_move_step));   // 2160 counts
+	move_paced_travel_px(x, y);
+
+with the standing comment "the overshoot must die against the guest's edge
+clamp before the real move starts". It does not. The clamp that stops the
+ARROW lives in the mouse card's firmware, several stages downstream of the
+accumulator that nets our counts. On the Apple II Mouse Card
+(src/devices/bus/a2bus/mouse.cpp, update_axis()):
+
+	m_count[AXIS] += diff;        // signed, unbounded, NETS
+	m_last[AXIS]   = new_m;
+	if (m_count[AXIS]) { toggle CLK; m_count[AXIS] -= sgn; }   // ONE per read
+
+m_count drains one unit per MCU port-B read. A 2160-count slam therefore
+parks m_count at roughly -2000 for as long as the drain takes, and the travel
+we append microseconds later is added to that number, not to the arrow. The
+arrow moves by the NET, and the net is still leftward, so the first target's
+whole travel is spent unwinding a slam that had already reached the corner.
+An open loop's only origin is its belief, so the deficit never clears: every
+later target inherits it exactly.
+
+MEASURED (apple2e enhanced, Apple II Mouse Card slot 4, Dazzle Draw canvas,
+golden.sta, PTR_MOD=256, SCREEN=1024x768, GAIN 1.547/1.674, arrow tip located
+in the framebuffer, x>=10 and 72<=y<640):
+
+  (1) There is no debt once the queue has drained. Home with a paced
+      MOVE -1200 -1200, settle, then step +50 counts per axis:
+
+	counts   50  100  150  200  250  300  350
+	tip x    82  163  243  324  404  485  565     (81,80,81,80,81,80)
+	tip y    92  180  268  356  444  532  620     (88 flat)
+
+      The FIRST +50 moves the arrow. Zero counts are consumed before motion,
+      and the response is dead linear. Homing itself is not the problem.
+
+  (2) The slam and the travel back to back lose the travel ENTIRELY, at every
+      slam size; a settle between them lands it exactly. Pre-homed to the
+      corner each time, then MOVE -slam, [gap], MOVE 194 119:
+
+	slam    gap=none        gap=settle
+	 700    no arrow        (300, 204)
+	1200    no arrow        (304, 204)
+	2160    no arrow        (300, 204)
+
+  (3) It is the device accumulator netting, not a module window merge. The
+      same back-to-back pair issued in the INTERIOR, nowhere near a clamp
+      (from tip (603,408), MOVE -300 -200 then MOVE 194 119) lands at
+      (446, 272) — the arithmetic net, -106 counts * 1.547 = -164 px, to
+      within 10 px. Nothing is lost when there is no clamp to hide it: the
+      counts net, and at the corner the net is invisible.
+
+  (4) Whole-run confirmation through MOVEA, pre-homed, five targets:
+
+	command          issuedX  issuedY   tip        err
+	MOVEA 300 200      2354     2279    none        -        (2160 slam + 194)
+	MOVEA 700 500       259      180    (406,300)  (-294,-200)
+	MOVEA 150 600       356       60    ( 10,408)  (-140,-192)
+	MOVEA 900 100       485      299    none        -
+	MOVEA 300 200       389       60    (137,112)  (-163, -88)
+
+      Every issued count total is exactly right for the belief's delta, and
+      every landing is exactly right for a pointer whose true origin is the
+      corner while the belief thinks it is at the first target. The scale was
+      never wrong. The origin was, by precisely the first target's travel.
+
+THE FIX, two parts, both in the same branch.
+
+  Size the slam through the gain instead of in raw counts. 18 * m_move_step
+  is 2160 counts on this tile — 3300 px of travel to cross 1024 — so the
+  overshoot, and hence the debt, is an order of magnitude larger than the
+  surface. ceil(screen / gain) + one window's margin is the smallest slam
+  that still reaches the corner from anywhere: 662 + 120 on X, 459 + 120 on
+  Y here. This bounds the debt; it does not remove it, because the arrow may
+  start anywhere.
+
+  Defer the travel until the slam has drained. A new pending-home slot holds
+  the target; drain_move() releases it as paced travel once the queue is
+  empty AND MAME_CTL_HOME_SETTLE ms have passed since the last issued count.
+  That is measurement (2)'s settle, made part of the branch. It costs
+  the home settle once per session (or per state load), on the first MOVEA
+  only — every later target takes the belief branch and is unaffected.
+
+MAME_CTL_HOME_SETTLE   EMULATED milliseconds to let the guest's own mouse
+                       accumulator drain after the homing slam before the
+                       first target's travel is issued -- milliseconds, like
+                       MAME_CTL_MOVE_WINDOW and MAME_CTL_KEY_HOLD next to it.
+                       0 restores today's behaviour (slam and travel enqueued
+                       together).                                     [750]
+
+A restore is a new session for this branch: reseed_after_restore() now clears
+m_fl_valid, so the first MOVEA after a LOADST homes and settles again instead
+of stating a delta from a belief the golden's arrow never shared; and
+drop_paced_state() clears both the held travel and m_last_issue, because
+emulated time runs BACKWARDS across a state load and the quiet test would
+otherwise be measuring against an instant in the future.
+
+MEASURED WITH THE FIX (apple2e enhanced, Dazzle Draw canvas, golden.sta copy,
+HOME_SETTLE=750, GAIN 1.547/1.674). The origin error is GONE: the first MOVEA
+after the home now lands, and so does every target after it.
+
+  MOVEA        issuedX issuedY  tip        err     (fresh session, homed)
+  300 200        976     698    (302,196)  (+2,-4)
+  700 500        259     180    (706,496)  (+6,-4)
+  150 600        356      60    (150,600)  ( 0, 0)
+  850 150        452     269    (852,148)  (+2,-2)
+  300 200        356      30    (293,200)  (-7, 0)
+
+Against the pre-fix run of the same five targets -- landings 150 to 290 px
+short, two of them off the canvas entirely -- this is the whole of the origin
+deficit removed. A click proves the pointer is usable: MOVEA 293 22 onto the
+Tools menu, DOWN1, and the menu drops open with the arrow on it (rig frame
+fx_click_down.png).
+
+A restore behaves: after LOADST of a golden copy mid-session, STAT shows
+bel=0,0 and the next MOVEA issues the full sized slam again (976,698 -- the
+same counts as the session's first) and lands at (305,204), +5,+4. The
+m_fl_valid clear is doing exactly what it is there for.
+
+WHAT IS STILL OPEN. A SECOND lap of the same five targets in the same session
+-- no re-home, every target taken by the belief branch -- drifted:
+
+  300 200 (+5,+4)  700 500 (+13,+8)  150 600 (+4,+12)
+  850 150 (+6,+14) 300 200 (-4,+12)
+
+worst 13 px on X and 14 on Y. That is not the origin bug (the landings track
+the belief, and the belief tracks the targets); it is per-move quantization in
+an open loop with no reading to correct against, accumulating because nothing
+ever re-anchors. So apple2e's stream.pointer stays transport=none: this patch
+is necessary for a pointer contract on this machine and is not yet sufficient.
+The next step is a periodic re-home (the same branch, on a quiet timer) or a
+fractional-count carry in the open-loop branch, measured over several laps.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -124,6 +124,22 @@
+       MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
+       MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
+       MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
++      MAME_CTL_HOME_SETTLE   EMULATED ms of quiet the open-loop homing slam is
++                             given to drain out of the GUEST's own pointer
++                             accumulator before the first target's travel is
++                             issued. The edge clamp that stops the arrow can
++                             sit downstream of an accumulator that NETS our
++                             counts (Apple II Mouse Card, a2bus/mouse.cpp
++                             update_axis(): `m_count += diff`, drained one
++                             unit per MCU port-B read), so travel appended to
++                             a still-unwinding slam is spent cancelling it
++                             instead of moving the arrow -- measured on
++                             apple2e as the whole of the first target's
++                             travel, at every slam size. Paid ONCE per
++                             session (and once per state load); every later
++                             target takes the belief branch. 0 restores the
++                             old behaviour: slam and travel enqueued
++                             together.                             [750]
+       MAME_CTL_QUAD_ITEMS    "<px>,<py>,<pc>" save-item suffixes of
+                              the device's quadrature EMISSION state
+                              (ST ikbd: m_mouse_px,m_mouse_py,
+@@ -403,6 +419,9 @@
+ 		// knobs (see file header)
+ 		m_move_step = env_long("MAME_CTL_MOVE_STEP", 120);
+ 		m_move_window = double(env_long("MAME_CTL_MOVE_WINDOW", 40)) / 1e3;
++		m_home_settle = double(env_long("MAME_CTL_HOME_SETTLE", 750)) / 1e3;
++		if (!(m_home_settle >= 0.0) || m_home_settle > 10.0)
++			m_home_settle = 0.75;
+ 		m_key_hold = double(env_long("MAME_CTL_KEY_HOLD", 100)) / 1e3;
+ 		m_key_gap = double(env_long("MAME_CTL_KEY_GAP", 50)) / 1e3;
+ 		if (char const *e = std::getenv("MAME_CTL_KEY_EXCL"); e && *e)
+@@ -1236,6 +1255,13 @@
+ 		// match: deterministic 1.0, the first big epoch re-learns
+ 		m_gx = m_gx0;
+ 		m_gy = m_gy0;
++		// ...and the OPEN-LOOP belief does not survive either. A restore
++		// rewrites the device's own accumulators and puts the arrow back
++		// wherever the golden parked it; the last stated target describes a
++		// session that no longer exists. Invalidate it so the next MOVEA
++		// re-homes (and re-settles) instead of stating a delta from a
++		// fiction.
++		m_fl_valid = false;
+ 		// deterministic button state: all up (streamhost resets its button
+ 		// diff on reconnect for the same reason; goldens park buttons-up)
+ 		for (ioport_field *f : m_btn_field)
+@@ -1283,6 +1309,13 @@
+ 			reply_err(s, "busy", why);
+ 		m_syncs.clear();
+ 		m_win_t0 = -1.0;
++		// a held post-home travel belongs to the cancelled session
++		m_home_pend = false;
++		// emulated time can run BACKWARDS across a state load (the golden's
++		// timestamp is earlier than the session's), which would leave the
++		// quiet test measuring against a future instant for as long as the
++		// session had run. -1 means "no count has been issued yet".
++		m_last_issue = -1.0;
+ 		m_kdown_at.clear();
+ 		m_kup_at.clear();
+ 		m_excl_down.clear();
+@@ -1519,6 +1552,24 @@
+ 
+ 	void drain_move()
+ 	{
++		// A homing slam does NOT die against the guest's edge clamp: on this
++		// class of device the clamp is in the card's firmware, downstream of
++		// an accumulator that NETS our counts and drains one unit per read
++		// (a2bus/mouse.cpp update_axis()). Travel appended to a still
++		// unwinding slam is spent cancelling it, not moving the arrow.
++		// So hold the first target's travel until the queue is empty AND the
++		// guest has had HOME_SETTLE of quiet to finish draining, then issue
++		// it against a real, settled corner.
++		if (m_home_pend && m_mq.empty()
++				&& (m_last_issue < 0.0
++					|| (emu_now() - m_last_issue) >= m_home_settle))
++		{
++			m_home_pend = false;
++			long const hx = m_home_x, hy = m_home_y;
++			m_home_x = 0;
++			m_home_y = 0;
++			move_paced_travel_px(hx, hy);
++		}
+ 		if (m_mq.empty())
+ 			return;
+ 		double const now = emu_now();
+@@ -1952,13 +2003,33 @@
+ 			{
+ 				// no origin yet: home into the top-left clamp first, like the
+ 				// streamhost sink's one-time slam, then move as if from (0,0).
+-				// TWO queue entries on purpose — the overshoot must die
+-				// against the guest's edge clamp before the real move starts;
+-				// and the slam is a whole number of windows so its tail can
+-				// never merge into the real move's first window (measured in
+-				// the Lua sim harness: 2048 % 120 = 8 px short, permanently)
+-				move_paced(-(18 * m_move_step), -(18 * m_move_step));
+-				move_paced_travel_px(x, y);
++				//
++				// Size the slam in PIXELS, through the gain. A flat
++				// 18 * m_move_step is 2160 counts — over 3300 px of travel to
++				// cross a 1024 px surface — so the overshoot, and with it the
++				// debt left sitting in the guest's accumulator, is an order of
++				// magnitude larger than it needs to be. One screen plus one
++				// window's margin reaches the corner from anywhere, and is
++				// still a whole number of windows' worth of budget so its tail
++				// cannot merge into the travel's first window.
++				long const sx = long(std::ceil(double(m_surf_w) / m_gx)) + m_move_step;
++				long const sy = long(std::ceil(double(m_surf_h) / m_gy)) + m_move_step;
++				move_paced(-sx, -sy);
++				// ...and do NOT enqueue the travel behind it. Our queue going
++				// empty is not the guest's accumulator going empty: the slam
++				// keeps unwinding inside the device long after we stop
++				// issuing, and travel netted into it never reaches the arrow.
++				// Park the target and let drain_move() release it once the
++				// device has had HOME_SETTLE of quiet. Once per session.
++				m_home_x = x;
++				m_home_y = y;
++				m_home_pend = true;
++				if (m_home_settle <= 0.0)
++				{
++					// opt-out: the old slam-and-travel-together behaviour
++					m_home_pend = false;
++					move_paced_travel_px(x, y);
++				}
+ 			}
+ 			else
+ 			{
+@@ -3240,6 +3311,10 @@
+ 	bool m_quad_active = false;
+ 	long m_qd_prev_pc = -1;
+ 	double m_last_issue = -1.0;              // emu time of the last issued count
++	double m_home_settle = 0.75;             // MAME_CTL_HOME_SETTLE (ms env)
++	bool m_home_pend = false;                // first-MOVEA travel held back
++	long m_home_x = 0;                       // until the homing slam has
++	long m_home_y = 0;                       // drained out of the GUEST
+ 	long m_pend_x = 0, m_pend_y = 0;         // issued, not yet emission-counted
+ 	u64 m_corr = 0;                          // settle-corrector re-issues, cumulative
+ 	bool m_fl_valid = false;

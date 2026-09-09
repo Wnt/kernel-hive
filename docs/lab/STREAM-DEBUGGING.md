@@ -10,20 +10,64 @@ happened an hour ago is usually already on disk.
 
 ---
 
-## 1. The three places evidence lives
+## 1. The places evidence lives
 
 | Plane | Where | Covers |
 |---|---|---|
-| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | What the BROWSER saw: quality tier, loss, RTT, freezes, decoder state. Rolling ~36 h. |
-| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | What the SERVER did: tier decisions, encoder reconfigs, session lifecycle, input. |
+| **Log plane** | `lab:/data/vms/streamhost/serve/logs.db`, or `POST /auth/logs/search` | Every producer's records — browser, serving plane, station daemon — with severity and, where a span was open, `traceId`/`spanId`. 7 days. |
+| **Client telemetry** | `lab:/data/vms/streamhost/serve/clientlog.jsonl` | The same browser events as the log plane, as flat JSONL. Rolling ~36 h. **Being retired** — see §1.1. |
+| **Station daemon** | `ssh lab 'journalctl -u streamhost@<station>'` | Everything the daemon printed. The subset at WARN and above is also in the log plane, correlated. |
 | **Live overlay** | the SPA, **Ctrl/Cmd+N** | The same client state as the log, live. Ask the operator for a screenshot. |
 
 **The client plane is the one people forget, and it is usually the decisive
 one.** The server cannot see most of what the browser knows (§3).
 
+### 1.1 Start here now: the log plane, and the pivot
+
+The instruction that used to open this document — *start with
+`clientlog.jsonl`, not a repro* — is still right about where to start and wrong
+about the file. The same events now land in `logs.db` **carrying the trace
+context that was open when they happened**, which turns the two questions this
+document exists to answer into one query each:
+
+```sh
+# "What did EVERY plane say during this trace?" — the pivot. `id` is the trace
+# id from a slow span, or off the `traceresponse` header of the request itself.
+ssh lab 'curl -sk -X POST https://127.0.0.1:8443/auth/logs/trace \
+  -H "Content-Type: application/json" -H "Cookie: osg_session=$TOK" \
+  -d "{\"id\":\"<trace id>\"}"'
+
+# "What went wrong for anybody in the last hour?" — severity is a RANGE.
+#   {"minSeverity":"WARN","sinceMs":<now-3600000>,"limit":200}
+# Filter further with service (kernel-hive-spa | -serve | -daemon), instance
+# (the station or the box), session, build, traceId, or `contains` on the body.
+```
+
+Reads are **admin-only** and live under `/auth/logs/*`, exactly like
+`/auth/traces/*`; ingest is open, so a visitor can report the error that broke
+their visit without holding an admin session. Straight SQL against
+`/data/vms/streamhost/serve/logs.db` works too and is often faster to iterate
+on — the schema is in `scripts/serve/logs_schema.py`.
+
+The reverse direction is the one that was impossible before: take a
+`traceId` out of a log row, open it in `/admin/observability`, and read the
+flame graph the record was emitted inside.
+
+**What is NOT here yet**, so you know when to fall back to the file: the
+pre-bundle bootstrap error handler in `spa/index.html` still posts only to
+`/clientlog` (it runs before any module loads and has no span to name), and
+`clientlog.jsonl` is still being written in parallel for one deploy. Until both
+are settled, a client error from the very first moments of a page load is in the
+file and not in the store.
+
 ---
 
-## 2. Client telemetry: `clientlog.jsonl`
+## 2. Client telemetry: `clientlog.jsonl` (being retired)
+
+**This file is on its way out.** Everything below is still true and still works;
+it is documented because the file is still written and still holds the ~36 hours
+before the log plane landed. New investigations should start at §1.1 — the same
+events, with severity and a trace id, and a query surface that is not `grep`.
 
 Written by `POST /clientlog` in `scripts/serve/osgallery-https-server.py`.
 Untokened, and open to **every** session — on the public listener the visitor's
@@ -35,6 +79,7 @@ involved anywhere. One JSON object per line:
 | **`clientTs`** | **Millisecond epoch, stamped in the BROWSER at the moment the event happened** (`logClientEvent`, `clientDebug.ts`). **Use this for every timing question.** |
 | `srvTs` | Server receive time, epoch *seconds*. This is when the BATCH arrived, not when the event happened. |
 | `ip`, `sessionId`, `tile`, `event`, `detail` | Source, 8-hex per page load, station id, event name, payload. |
+| `ua`, `build` | The user agent and the **bundle the tab is running** (`<branch>@<short-sha>`), both on the **first event of a batch only**. `build` is what answers "is this session even running the code I am reading?" — see [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3. |
 
 **Timing must be read from `clientTs`, never from `srvTs`.** Events are batched
 and flushed every ~5 s, so a whole batch shares one `srvTs` — sorting or
@@ -200,6 +245,247 @@ Two causes, both fixed 2026-08-17 (see `abr.rs`), both worth re-checking:
   a keyframe; tier 0 has no bitrate ceiling (CQP, no VBV), so a big station's
   heartbeat IDR spikes the ping. RTT smoothing is now asymmetric (rise m=16,
   fall m=4) and an RTT-only breach must persist 4 s, not 1.5 s.
+- **the very first `T`-line of the session reads `loss45`–`loss87`** and the
+  downshift lands ~4 s after `connect` — the join, not the link. See the next
+  signature; fixed 2026-09-02 in `transport/mod.rs` + `abr.rs`.
+
+### Loss on a link that is not losing anything
+The client has no packet counter. Its `lossPct` is **frame_id holes**
+(`spa/src/three/streamClient/videoDecode.ts` `feedVideoAU`), and that percentage
+is what it reports back in `T_STATS` for `abr.rs` to steer the ladder with. Until
+2026-09-02 the id on the wire was the ENCODER's, which is wrong for one session
+in three ways, all of which read as loss:
+
+- **session start** — the relay sends the primed cached keyframe, then the join
+  gate discards every mid-GOP delta until the first broadcast key (measured on
+  freedos: primed 423, first relayed 453). One AU, then a 29-frame hole.
+- **ABR tier change** — `encode/worker.rs` sets `frame_id = 0` on every reopen,
+  so the id space rewinds under a session that lost nothing.
+- **a second viewer** — their join keyframe and input burst make the relay skip
+  AUs for the FIRST viewer, and the `KIND_PARAMS` subtype-2 skip credit is only
+  1 Hz, far too coarse for the client's 100 ms accounting ticks. The operator's
+  win95 tab read 93–96 % "loss" this way while RTT stayed 11–14 ms.
+
+**The steady-state cycle is the same fault, on a long-lived tab.** Two viewers
+of win95, same second, 2026-09-02 19:30:12-18 UTC:
+
+```
+19:30:13 18e85073  fps20 dec10.3/q0 rtt7.9/fl8.1/ex0 loss0.0/w0.0n70  dr4
+19:30:18 5905d5cc  fps2  dec2.4/q0 rtt16.0/fl16.9/ex9 loss93.8/w93.8n48 dr163
+```
+
+B is typing, so the shared encoder runs at 20 fps; A is idle and is relayed ~2
+fps of it, so ~90 % of the ENCODER's ids never reach A and A reports 93.8 %
+"loss" with `framesDropped` 4→163 in six seconds. `worst_loss` is a MAX across
+sessions and the tier is GLOBAL, so A's arithmetic downshifts the station for
+everyone — including a clean observer tab reporting `loss0.0` and `rtt 8-9 ms`
+on every line. That is the whole `path0→1→0→1→0→1→0` cycle; the daemon's own
+`[abr] DOWN why=` said `loss/backlog` every time and never `rtt`, and
+`SH_ABR_BACKLOG_DOWNSHIFT` is unset so the skip trigger was inert.
+
+The wire now carries a **session-local** id (`transport/mod.rs` `out_id`) that
+counts the AUs THIS session was actually sent, so a hole the client sees is a
+hole the wire made. The skip counter is unchanged and still reported — it feeds
+the HUD and the server-authoritative ABR backlog signal — it simply no longer has
+to race the frames it explains. `abr.rs` additionally ignores reported loss for
+the first 4 s / 20 reports of a session (`warming_up`) and requires the CURRENT
+report to agree with the smoothed value before a downshift (`loss_congested`), so
+one bad interval cannot trip the 1.5 s breach on its decay tail.
+
+Two more pieces of hysteresis went in with it:
+
+- **the persistence window is PER SESSION** (`SessionState::congested_since`). It
+  was one global window, which a churning set of sessions filled between them: A
+  breaches 0.8 s and leaves, B connects and breaches 0.8 s, and the global window
+  — never reset while *somebody* was congested each tick — satisfied the 1.5 s
+  BREACH though no single viewer ever had a sustained problem.
+- **futile-cycle damping** (`breach_need`). A downshift that an upshift undoes
+  within 45 s did not fix anything, so the next breach must hold twice as long,
+  doubling per cycle, capped at 12 s and forgotten after 5 minutes of a still
+  ladder. Each cycle costs every viewer of the station an encoder reopen and a
+  fresh IDR, so the controller gets more sceptical every time it is proven wrong.
+  `[abr] DOWN`/`UP` now print `futile=N`.
+
+### `loss…` on the FIRST T-line of every session (fixed 2026-09-02)
+The signature: the first `stats` row after every connect *and every reconnect*
+reads `loss86.7/w86.7n30` (or `w50.0n12`, `w71.4n7`…), and the next row reads
+`loss0`. It is not the network — a 4 ms LAN produced it on all six stations of a
+sim run.
+
+**Why it happened.** Video AUs ride *reliable* QUIC uni-streams, so a `frame_id`
+gap is almost never packet loss. On subscribe the daemon sends its freshest
+**cached** key and then discards every AU until the next real IDR
+(`transport/mod.rs`, the `JoinGate`; measured on freedos: primed `423`, first
+broadcast `453`). Those 29 ids were never sent to this session, but the client
+billed them as loss — which (a) seeded `sOverall` low so the 2 s dwell tripped
+`spotty` a few seconds after connect, and (b) went to the server in `T_STATS`,
+so the server ABR downshifted T0→T1 about 4 s in and the ladder then oscillated
+on the 25 s dwell.
+
+**What the client does now** (`spa/src/three/streamClient/lossLedger.ts`): a gap
+is *pending*, not missed. It is billed only after `REORDER_GRACE_MS` with no
+arrival, never inside the join window (the hole between AU #1 and AU #2), and
+the whole pending set is dropped when the encoder restarts `frame_id` at 0
+(`encode/worker.rs`). Server-intentional skips are credited **retroactively**
+across the 3 s reporting window (`skipCredit.ts`), because the daemon's
+cumulative skip count arrives at 1 Hz while the gaps it explains appeared on
+100 ms ticks up to a second earlier — the forward-only spend could never cancel
+a burst.
+
+### A second viewer makes the first viewer's client report 95 % loss
+Same root cause as above, different trigger. With two active viewers on one
+station the daemon's backlog gate and broadcast `Lagged` both skip AUs, and
+per-AU uni-streams complete out of order much more often. Before the ledger the
+first viewer read `loss93.3` → `loss96.0/w96.0n50` with three `frame watchdog
+latched` WARNs at RTT 11-14 ms. If you see this again, check
+`skipped_frames` in the vitals lane: if it is climbing, the daemon is skipping
+on purpose and the credit is doing its job; if it is flat, the gaps are real.
+
+### `ping-timeout: tile stopped responding to liveness pings` on a LAN
+The type-9 RTT ping is a **datagram** — droppable — raced against a
+`setTimeout` on a main thread that six decoders can starve, and the ABR loop
+fires one every 100 ms. Three "consecutive" timeouts could therefore be banked
+~800 ms into a single hiccup (or a `loadvm` pause), and the hook rebuilt a
+perfectly healthy transport. Since 2026-09-02 (`streamClient/liveness.ts`) the
+ping is serialised (one in flight), and unanswered pings alone only produce a
+**soft** `spotty`. The session is dropped only when the server has *also* been
+completely silent — no uni-stream, no datagram — for `SILENCE_MS`. Hard closes
+(`wt.closed` resolve/reject) are untouched and still instant.
+
+### `webrtc-state pc=failed ice=failed signaling=stable` = no reachable candidate (fixed 2026-09-08)
+The WebRTC fallback (Safari 17, Firefox-Android, anything without WebTransport
+or WebCodecs) negotiates fine — `webrtc-offer`, `webrtc-track kind=video`,
+`ice=checking` — and then every attempt dies `pc=failed ice=failed` with the
+bridge journal reading `peer tile=… state=connecting → failed → closed`. The
+session is remote (the row's UA plus `candidate=prflx`, or the visitor is on
+cellular). Nothing is wrong with the media: the bridge's SDP answer carried no
+address the visitor could reach. Two causes, both live until 2026-09-08:
+the bridge listened on `55950`, outside the edge's DNAT range `54080-54200`,
+and it offered only the box's LAN host candidates (no `-public-ip`). It now
+listens on `54200` and appends the public address as a second host candidate
+(`docs/WEBRTC-PLATFORM.md` §Remote visitors). Check, in this order:
+`ssh lab 'ss -lun | grep 54200'`; `ssh lab 'cat /etc/osgallery-webrtc/bridge.env'`
+(must hold the address `kernelhive.madekivi.fi` resolves to); then a working
+session's `webrtc-stats` row must read `remote=host@<public>:54200`
+(`remote=host@?:54200` on Safari, which withholds the address). A LAN
+visitor failing the same way with `remote=` empty is a different fault — the
+bridge is down or the tile has no feed (`journalctl -u osgallery-webrtc-bridge`).
+
+### A walk-in fallback session that streams video but eats input (fixed 2026-09-08)
+The video is live — `webrtc-stats media=live framesDecoded=…` climbs — but the
+guest never reacts to the trackpad or keyboard. This is the fallback carrying
+video only, the state before the WebRTC input plane landed. A repaired session
+carries INPUT too, over two DataChannels (`docs/WEBRTC-PLATFORM.md` §Input path).
+Read the plane end to end:
+
+- **Client** (`clientcmd.sh evallog <sid>` or the client log): a healthy session
+  logs `webrtc-input open label=input-rel` and `webrtc-input open label=input
+  ticket=present` shortly after `webrtc-state pc=connected`. No `open label=input`
+  row ⇒ the reliable channel never opened (no input at all, and no ticket sent).
+- **Bridge** (`journalctl -u osgallery-webrtc-bridge`): `webrtc-input: peer input
+  connected tile=<tile>` on the first message. `no daemon input socket tile=<tile>`
+  means the station's daemon has no input listener — an old daemon, or the bridge
+  runtime dir is missing; video is unaffected, input is dropped.
+- **Daemon** (`journalctl -u streamhost@<cell>`): `[webrtc-input] ingress
+  listening at …` at boot, then `[webrtc-input] session admitted tile=<tile>` when
+  the ticket verifies. `[webrtc-input] REJECTED reason=…` is a bad/expired ticket
+  — the peer gets video but injects nothing (the ticket rule, working). After
+  admission the ordinary `[input]` counters and `input.first_edge` span advance
+  exactly as on WebTransport, because it is the same `input::handle`.
+
+The proof is always the framebuffer, never these rows: `labctl shot <cell> <png>`
+before and after driving the tab.
+
+### Safari 26: `datagrams.writable` is undefined — `createWritable()` (fixed 2026-09-08)
+A `session-start` row with `wt:true vd:true rtc:true` on an iOS/iPadOS Safari
+UA (`iPhone OS 18_7 … Version/26.6.1 Mobile Safari`), then, on every attempt:
+
+```
+connect        transport ok, codec=(default), wire=v3, maxUdpPayload=1200, mtud=false
+wt-close       connect failed: TypeError: undefined is not an object (evaluating 't.datagrams.writable.getWriter')
+connect-retry  attempt=1/4 live=false restore=false why=connect: TypeError: undefined is not an object …
+…
+connect-giveup timed out negotiating tile stream (poster fallback) attempts=4
+```
+
+with every `stats` row at `rx0.0M fps0`. The handshake is fine — `transport ok`
+is written after `wt.ready` settled — and the throw is ours. The W3C
+WebTransport spec moved the write side of datagrams off the duplex stream:
+`WebTransportDatagramDuplexStream` has `readable` and `createWritable(options)`
+(returning a `WebTransportDatagramsWritable`, which owns `sendGroup`/`sendOrder`
+and `outgoingMaxAge`/`outgoingHighWaterMark`); the legacy `writable` attribute
+is gone. Chromium 150 still ships only the legacy shape; Safari 26 ships only
+the spec shape. `streamClient/datagramWriter.ts` now feature-detects
+(`createWritable` when it is a function, else `writable`) and the `connect` row
+says which took: `dgApi=createWritable dgMaxAgeOn=writable` on Safari,
+`dgApi=writable dgMaxAgeOn=duplex` on Chromium. The same session type also
+logged a bare `unhandled-rejection WebTransportError` with an empty stack: a
+`closed` promise rejecting before connect() reached the line that attaches its
+handler (a refused `ready` rejects `closed` too). It is absorbed at
+construction now.
+
+A walk-in that hits this is ALSO the session the plane could not see until the
+same day: the walk-in shape skipped `initClientDebug()` and gate.py refused
+`GET /clientcmd` for the role, so `clientcmd.sh sessions` never listed the
+guest. Both are fixed together (`clientcmd-admin-security.md`).
+
+### Safari 17: `ReferenceError: Can't find variable: WebTransport` (fixed 2026-09-08)
+A `station-open` row with `wt:false vd:true rtc:true` on a Safari 17 UA
+(`Macintosh … Version/17.14 Safari/605.1.15` — an iPad "requesting desktop
+site" reads the same), then four `connect-retry … why=connect: ReferenceError:
+Can't find variable: WebTransport`, `wt-close`, `connect-giveup` (session
+d5af8bdf, walk-in on win311). Not a Safari 26 sibling: this browser has the
+decoder and no transport, and the fallback selection asked only about the
+decoder, so it took the primary path. `streamTransportSelect.ts` now sends any
+browser lacking either API to the WebRTC fallback; the row's new `transport`
+field says which path was chosen (`webrtc-fallback` here), and the stage
+reads `LIVE · WebRTC fallback` only once `framesDecoded` advances
+(`docs/WEBRTC-PLATFORM.md`).
+
+### "Spotty connection" on a session that never connected
+`updateBannerImpl` used to score a client with no RTT sample and no frames: the
+scorer's unknown → 250 ms default makes `latRaw` 0, `overall` 0, and after the
+2 s dwell the banner accuses a link that does not exist (measured on reactos,
+whose WebTransport handshake never completed: "Spotty connection" at +6.0 s,
+interleaved with "Reconnecting to tile… (attempt N)"). The EWMAs are now seeded
+only once an RTT sample **and** a frame have both landed (`scoring.ts`
+`scorerReady`), and the banner stays quiet until then.
+
+### "Spotty connection" over a fully painted, IDLE desktop
+`T1 fps0 rx0.0M loss0.0/w0.0n12 rtt7.8 dr10 tier0ch spotty` (nt4). Loss is zero
+and RTT is 8 ms on the same line, so the accusation cannot be about the network.
+It was the bandwidth term: `bwRaw` is derived from `decodeQueueSize` and the
+paint-freeze detector, and an idle guest emits no AUs at all, so a queue snapshot
+left over from the connect burst kept scoring pressure against a decoder nobody
+was asking anything of. `rawScores` now takes `received` and scores an idle
+interval a clean 100.
+
+### "Spotty connection" on a tab full of tiles
+`dec1209.0/q16`, `dec1158.1/q18`, `dec1059.4/q14` on the first T-lines of a
+six-tile run on one Intel Mac — about a second of decode latency with 14-18 AUs
+queued. `bwRaw = 100 - (q-1)*25` floors at 0, and the old
+`overall = min(lat, loss, bw)` turned that into "Spotty connection" inside 2 s
+with `loss0.0` and `rtt8` beside it. That is **device** load, and the
+`useDevicePressure` relabel could not catch it: `PressureObserver` is
+Chrome-desktop-only, so `deviceUnderLoad` stays false on most machines that
+actually struggle.
+
+`overallRaw` is now `min(latRaw, lossRaw)` — the banner's score is the NETWORK's
+score, and nothing about the local decoder can make the client blame the link.
+The device story is still told: `abr.ts` dwells on `sBandwidth` separately (same
+60/75 thresholds, same 2 s hysteresis) and raises a distinct banner state,
+`'device-load'`, which `bannerCopy.ts` renders as **"Device under load"**. A bad
+network still outranks it.
+
+### The first attempt after a restore is always abandoned
+`Reconnecting to restored tile…`, then the ladder walks 250/500/1000/2000 ms and
+the flow is still in `stream.recover` ~17 s after the click. The first
+post-restore attempt was spending `RELIVE_KEYFRAME_WAIT_MS` (3 s) because the
+station *had* been live — but `loadvm` stops the guest and swaps its RAM, so
+frame #1 legitimately takes longer. A restore now gets the cold budget
+(`retryBudget.ts` `keyframeWaitMs`) and does **not** `markWarm()`, which also
+stops `dropStaleSession('stream-stalled')` firing against a guest that is simply
+still being restored.
 
 ### Station "freezes" while in use
 Look for `rx0.0M fps0` in consecutive `stats` rows with healthy `rtt` and zero
@@ -400,6 +686,33 @@ floor it should be approaching, not 10 s).
 the same millisecond, after a telemetry silence gap, is the reliable
 **"this machine just woke up"** marker.
 
+### `ping-timeout` on a healthy transport, right after a mouse move
+Three missed liveness pings in 1.8 s and a hard reconnect, with the daemon
+logging nothing but `SESSION_ENDED` and a normal `[encode]` line. Until
+2026-09-02 the type-9 echo shared the datagram RECEIVE loop with
+`input::handle`, whose first act is `idle::wake_for_input()` — on an
+idle-auto-paused guest that takes the pauser lock and issues a QMP `cont` over a
+fresh socket with 2 s read AND 2 s write timeouts (`idle.rs qmp_execute`). One
+input record could hold the loop for seconds whenever the QMP socket was busy
+(another transient client, an out-of-band driver's wake lease, the reconciler),
+and every ping queued behind it. win95 lost the echo for >1.8 s at 18:39:03 and
+18:43:41 UTC on 2026-09-02 that way. The datagram plane is now its own module
+(`transport/datagram.rs`) and the receive loop only demuxes: it echoes, folds a
+report, or hands the record to a channel. A slow guest now delays input, and
+nothing else.
+
+### The station is active and healthy and no session ever arrives
+`streamhost@<id>` active and encoding, `check-stream-tickets.py` says the ticket
+is accepted, `/signal/<id>.json` returns a valid path — and the daemon journal
+has no `[transport] SESSION` line at all, while the browser logs "WebTransport
+ready has not settled after 3000ms" then `Opening handshake failed`. The packets
+never reach the box: a **public** visitor's UDP goes through the edge, whose
+nftables DNAT covers `54080-54200` only, so a station outside that range is
+invisible to the gallery and perfect on the LAN. It bit slots 131-134 on
+2026-08-09 and `reactos` (which sat on the legacy port 4433) until 2026-09-02.
+UDP port is `54000 + slot`; `stations-registry.py validate` fails any production
+station outside the range. See [PUBLIC-GALLERY.md](../PUBLIC-GALLERY.md).
+
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct
 behaviour 60 s after the last session ends; the real question is why the session
@@ -424,6 +737,17 @@ report it.
   then restarts it mid-boot, compounding the failure.
 - A station is per-station canaried: `--canary <tile>`, verify, then `--promote`.
   `--rollback <tile>` swaps back atomically.
+- **The complaint may be about a bundle you no longer ship.** The gallery is an
+  installable PWA, and its service worker keeps one HTML shell for offline use.
+  Before this was fixed the shell cache was named by a constant nobody ever
+  bumped, so a client could hold an old shell indefinitely; the cache is now
+  named after the build id and every deploy retires the previous one. Either
+  way, **check the build before you reproduce anything**: `build` on the first
+  event of the session's `clientlog` batch, or the `builds` facet /
+  `build` filter on the trace store. Two live builds in one window means
+  somebody is on a shell the box no longer serves. The full differential —
+  including how to tell "ran an old shell" from "its beacons were blocked"
+  using only our own data — is [`docs/ANALYTICS.md`](../ANALYTICS.md) §8.3.
 
 ## An observer holding QMP stops sessions negotiating (2026-08-30)
 

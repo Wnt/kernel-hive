@@ -4,7 +4,9 @@
 //  `guest.frame.next` -> `transport.frame.next` stops at the daemon's own
 //  transport send; this module closes it with `client.frame.receive` /
 //  `client.frame.decode` / `client.frame.paint`, siblings of the two daemon
-//  spans above under the same `input.dispatch`.
+//  spans above under the same `input.dispatch` — AND it closes the trace's own
+//  ROOT, because `input.edge`'s duration is defined as the edge → painted-pixel
+//  round trip and the paint happens here.
 //  ---------------------------------------------------------------------------
 //  HOW THE CLIENT LEARNS WHICH FRAME ANSWERED ITS INPUT. This tab cannot know
 //  on its own — WebCodecs hands back a `frame.timestamp` (the AU's capture
@@ -30,9 +32,10 @@
 //  passes through `noteReceived`/`noteDecodeSubmit` — no allocation beyond
 //  the entry, no hex encoding, no span. A span is only ever built for a frame
 //  that BOTH finished painting AND was marked, which is bounded by the input
-//  side's own `SAMPLE_N` (`inputTrace.ts`) — never per frame.
+//  side's own qualifying-edge rule (`inputTrace.ts`) — never per frame.
 // ============================================================================
 import { emitSpan } from '../../analytics/trace';
+import { settleEdge } from './inputTrace';
 
 interface FrameTiming {
   receiveMs: number;
@@ -146,6 +149,15 @@ function maybeEmit(frameId: number): void {
     m.traceId, m.spanId, 'client.frame.paint',
     t.decodeEndMs, Math.max(0, t.paintEndMs - t.decodeEndMs), attrs,
   );
+  // AND THE ROOT'S OWN DURATION. `input.edge` was left OPEN when the edge was
+  // sampled precisely so it could be closed HERE, at the paint — so the root of
+  // an input trace measures the visitor-facing edge → painted-pixel round trip
+  // rather than the millisecond it took to hand a record to a stream writer.
+  // Both ends are `performance.now()` readings from THIS tab, which is why the
+  // number needs no clock agreement between the two machines
+  // (`inputTrace.ts::settleEdge`). A no-op when the mark outlived its edge
+  // entry, in which case the rest of the trace is unaffected.
+  settleEdge(m.traceId, t.paintEndMs);
   timings.delete(frameId);
   marks.delete(frameId);
 }

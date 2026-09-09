@@ -13,9 +13,10 @@ from pathlib import Path
 from .constants import RENDER_DIR, REPO
 from .drift import cmd_drift
 from .facts_live import cmd_facts_live
-from .generate import atomic_write, check_gate_lists, cmd_generate, cmd_new, generated
+from .generate import atomic_write, check_gate_lists, cmd_generate, generated
 from .loading import RegistryError, is_x11_runtime, load
 from .render import rendered
+from .scaffold import cmd_new, cmd_new_like
 from .validate_rules import validate
 
 
@@ -171,11 +172,35 @@ def main() -> int:
     emit.add_argument("name", help="e.g. gallery-manifest.json, index.json, scripts/serve/tiles.json")
     explain = sub.add_parser("explain")
     explain.add_argument("id")
-    new = sub.add_parser("new", help="scaffold an inert candidate tile")
+    new = sub.add_parser(
+        "new",
+        help="scaffold an inert candidate tile: registry row, builder, guest doc, cold-boot arm, "
+        "poster prose + placeholder hero, and (tier 1) station launcher + env fixture",
+    )
     new.add_argument("id")
-    new.add_argument("--tier", type=int, choices=(1, 2, 3), required=True)
-    new.add_argument("--archetype", required=True)
+    new.add_argument("--tier", type=int, choices=(1, 2, 3), required=False)
+    new.add_argument("--archetype", required=False)
     new.add_argument("--slot", required=True, help="auto or an explicit non-negative slot")
+    new.add_argument(
+        "--like",
+        metavar="STATION_ID",
+        help="clone an existing sibling station's registry row, launcher and env fixture "
+        "instead of the bare Tier N template; --tier/--archetype default to the sibling's",
+    )
+    new.add_argument(
+        "--tuple",
+        dest="tuple_arg",
+        metavar="BODY,MONITOR,KEYBOARD,MOUSE",
+        help="with --like: the new station's SPA scene hardware tuple. REQUIRED — a copied "
+        "tuple fails spa/src/scene/machines.test.ts, which every wave of 2026-09-03 "
+        "discovered at push time. `new --like` prints free combinations when it refuses.",
+    )
+    new.add_argument(
+        "--production",
+        action="store_true",
+        help="with --like: scaffold straight to lifecycle=production, enabled=true "
+        "(default is candidate/disabled, same as the bare template path)",
+    )
     ns = ap.parse_args()
     try:
         command = "check" if ns.check else ns.command
@@ -217,6 +242,12 @@ def main() -> int:
         if command == "explain":
             return cmd_explain(ns.id)
         if command == "new":
+            if ns.like:
+                return cmd_new_like(ns.id, ns.like, ns.slot, ns.production, ns.tuple_arg)
+            if ns.tuple_arg:
+                raise RegistryError("new: --tuple applies to the --like scaffold only")
+            if ns.tier is None or ns.archetype is None:
+                raise RegistryError("new: --tier and --archetype are required unless --like is given")
             return cmd_new(ns.id, ns.tier, ns.archetype, ns.slot)
         ap.print_help()
         return 2

@@ -1,0 +1,25 @@
+[Unit]
+# The daemon's spooled spans, carried into the trace store. Hand-run for its
+# whole life like the forwarder, with the same consequence: a station's spans
+# sat in /data/vms/streamhost/stations/<id>/traces/ until somebody remembered,
+# and /admin/observability showed a hole where the daemon should be.
+Description=kernel-hive: ship spooled daemon spans into the trace store
+Documentation=file:///data/kernel-hive/docs/ANALYTICS.md
+After=network.target osgallery-https.service
+# Nothing to carry on a box with no station tree.
+ConditionPathIsDirectory=/data/vms/streamhost/stations
+
+[Service]
+Type=oneshot
+# Must run as root ON the box: root wrote the spool files, and a run that cannot
+# unlink a shipped batch re-ships it forever (see the module docstring).
+ExecStart=/usr/bin/python3 /data/kernel-hive/scripts/observability/trace-ship.py --apply
+# A failure here is a real one and is meant to be red: the collector was down,
+# or this ran somewhere it cannot delete what it shipped. Nothing is lost by it
+# — a batch that fails to ship is left where it is and retried next tick.
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

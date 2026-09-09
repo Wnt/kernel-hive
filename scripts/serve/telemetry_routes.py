@@ -27,9 +27,12 @@ from __future__ import annotations
 import json
 from urllib.parse import parse_qs, urlparse
 
+import eum_proxy
 import linecov
+import logs
 import probes
 import traces
+import vitals
 from static_files import MIME
 
 import analytics
@@ -45,6 +48,17 @@ def _bad_origin(handler, public_origin: str) -> bool:
 
 def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) -> bool:
     """Answer one of the analytics routes. Returns True when it did."""
+    # /eum — the Instana beacon proxy. Answered before the method split
+    # because it owns EVERY method on its path: falling through on a GET would
+    # hand the SPA fallback back to a vendor agent, which is a worse answer
+    # than a 405. Its own module carries the origin check, the fence and the
+    # queue; see eum_proxy.py for the whole posture. It is NOT one of the four
+    # routes this file's docstring is about — it stores nothing here, reads no
+    # identity, and is deletable with the rest of the Instana integration.
+    if path == eum_proxy.PATH:
+        eum_proxy.dispatch(handler, method, public_origin)
+        return True
+
     if method == "POST":
         # POST /analytics — one tab's feature-reach / flow / error counters.
         if path == "/analytics":
@@ -74,6 +88,40 @@ def dispatch(handler, path: str, method: str, stores: dict, public_origin: str) 
                 return True
             n = stores["traces"].record(obj) if isinstance(obj, dict) else 0
             handler._send(200, json.dumps({"ok": True, "spans": n}), MIME[".json"], cache=False)
+            return True
+
+        # POST /logs — severity-bearing records from any of the three
+        # producers: this plane's own sink, a station daemon's spool (shipped
+        # by trace-ship.py), and the browser. Open for exactly the reason
+        # /traces is: a tab has to be able to report the error that just broke
+        # its visit without holding the admin session needed to READ one back.
+        # Reads live behind /auth/logs/* (serve/logs_read.py).
+        if path == "/logs":
+            if _bad_origin(handler, public_origin):
+                return True
+            obj, err = handler._read_json_body(logs.BODY_MAX)
+            if err:
+                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+                return True
+            n = stores["logs"].record(obj) if isinstance(obj, dict) else 0
+            handler._send(200, json.dumps({"ok": True, "logs": n}), MIME[".json"], cache=False)
+            return True
+
+        # POST /vitals — one tab's stream-health SAMPLES, on a fixed cadence
+        # rather than on an event. Open for exactly the reason /logs and
+        # /traces are, and here the argument is at its strongest: the visitor
+        # whose picture is breaking up is the one whose numbers are worth
+        # having, and they hold no admin session. Reads live behind
+        # /auth/vitals/* (serve/vitals_read.py).
+        if path == "/vitals":
+            if _bad_origin(handler, public_origin):
+                return True
+            obj, err = handler._read_json_body(vitals.BODY_MAX)
+            if err:
+                handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
+                return True
+            n = stores["vitals"].record(obj) if isinstance(obj, dict) else 0
+            handler._send(200, json.dumps({"ok": True, "samples": n}), MIME[".json"], cache=False)
             return True
         return False
 

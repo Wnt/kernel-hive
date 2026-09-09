@@ -1,0 +1,39 @@
+Section "Files"
+    RgbPath   "/usr/X11R6/lib/X11/rgb"
+    FontPath  "/usr/X11R6/lib/X11/fonts/misc/"
+    FontPath  "/usr/X11R6/lib/X11/fonts/75dpi/"
+EndSection
+Section "ServerFlags"
+EndSection
+Section "Keyboard"
+    Protocol  "Standard"
+    XkbRules  "xfree86"
+    XkbModel  "pc104"
+    XkbLayout "us"
+EndSection
+Section "Pointer"
+    Protocol "PS/2"
+    Device   "/dev/psaux"
+EndSection
+Section "Monitor"
+    Identifier "mon"
+    HorizSync  30-80
+    VertRefresh 50-100
+    Modeline "1024x768" 65 1024 1032 1176 1344 768 771 777 806 -hsync -vsync
+EndSection
+Section "Device"
+    Identifier "cirrus"
+    Chipset "clgd5446"
+    VideoRam 4096
+    Option "no_bitblt"
+EndSection
+Section "Screen"
+    Driver "svga"
+    Device "cirrus"
+    Monitor "mon"
+    DefaultColorDepth 16
+    Subsection "Display"
+        Depth 16
+        Modes "1024x768"
+    EndSubsection
+EndSection

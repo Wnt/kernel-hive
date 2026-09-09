@@ -1,0 +1,213 @@
+ctlsock: an open loop cannot LEARN a gain — seed it (MAME_CTL_GAIN_X/Y)
+
+Applies AFTER mame-ctlsock-move-step-cap.patch (same file, later hunks).
+
+THE BUG. MOVEA has two modes. Closed loop (MAME_CTL_CURSOR_ITEMS set) reads
+the guest's cursor registers every window and re-derives the error from the
+truth, so a wrong counts->px gain costs convergence SPEED and nothing else.
+Open loop — every machine with no readable cursor register, which is every
+MAME tile outside the SGI — has no reading at all: movea_target()'s degraded
+branch states each target as a DELTA and hands it straight to the paced queue
+
+	move_paced_travel(x - px, y - py);          // PIXELS, issued as COUNTS
+
+while the belief that computed `px` moves in px through the gain
+(move_rel(): `m_bx += dx * m_gx`). The two only agree when the gain is 1.0,
+and 1.0 is exactly what the module has: m_gx/m_gy are LEARNED, learn_gain()
+is called only from observe(), and observe() runs only in the closed loop. So
+in open loop the gain is 1.0 forever and MOVEA issues Delta-px counts at a
+guest whose ratio is not 1.
+
+Measured on apple2e (Apple //e enhanced, Apple II Mouse Card in slot 4,
+Dazzle Draw canvas, MAME_CTL_PTR_MOD=256): 1.547 guest px per count on X,
+1.674 on Y. A 1.0 gain therefore issues ~65% of the counts a target needs and
+the belief believes it arrived — MOVEA under-shoots ~35-40% and every
+subsequent relative target inherits the error, because the belief is the only
+origin an open loop has. MAME_CTL_CAL_X/Y does not help: it calibrates the
+CURSOR REGISTER reading and is inert without one.
+
+THE FIX, three parts.
+
+  MAME_CTL_GAIN_X / MAME_CTL_GAIN_Y   guest px per mouse count, float,
+  default 1.0 (today's behaviour). Seeds m_gx/m_gy at setup, and a state load
+  reseeds to the SEED rather than to 1.0 — the reseed comment's reasoning
+  ("the learned gain describes the guest screen the session was ON") is about
+  a LEARNED value; a measured constant of the machine survives a restore.
+
+  A px->counts converter for the open-loop branch (px_to_counts /
+  move_paced_travel_px): counts = round(Delta-px / gain), with a one-count
+  floor so a sub-gain residue still moves. The belief then integrates
+  counts * gain, both sides live in px, and a restated target re-derives
+  whatever the rounding left.
+
+  The queued-remainder clamp simulation in the same branch converted nothing:
+  it added queue entries' COUNTS to a PX belief. Same gain, applied.
+
+Every default is 1.0, so a station that does not set the knobs builds and
+behaves exactly as before.
+
+MAME_CTL_SCREEN already exists (WxH clamp surface, default 1288x1024) and is
+what a station must set to its published MAME_SHM_SIZE geometry; apple2e's
+fixture now does. No new knob for that.
+
+MEASURED after this patch, apple2e/Dazzle Draw, GAIN_X=1.547 GAIN_Y=1.674,
+SCREEN=1024x768, arrow tip located in the framebuffer: the SCALE is now right --
+two INTERIOR targets 600 px apart (no clamp between them) land at 0.988x of
+commanded on X and 0.940x on Y, refining the seeds to 1.529/1.573. The ORIGIN
+is still wrong, and this patch does not fix it: the same degraded branch homes
+with a hardcoded `18 * m_move_step` COUNT slam, and after it the first target
+lands ~147 px short on X and ~85 px short on Y -- the guest owes back part of
+the overshoot before the arrow moves again -- and an open loop's only origin is
+its own belief, so the deficit never clears. Five targets (300,200) (700,500)
+(150,600) (900,100) (300,200) landed -289,-180 and -148,-88 where the arrow was
+locatable at all. NEXT: size that slam in PIXELS through the gain, not in raw
+counts, and re-measure.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -165,6 +165,25 @@
+                              issued-but-unobserved px estimate; < 1
+                              so a gain over-estimate self-clears    [0.5]
+       MAME_CTL_SCREEN        WxH clamp surface + HELLO       [1288x1024]
++                             Set it to the station's published surface --
++                             the launcher's MAME_SHM_SIZE -- or the belief
++                             and every MOVEA target clamp against a screen
++                             the guest does not have.
++      MAME_CTL_GAIN_X/Y      per-axis OPEN-LOOP gain seed, guest px per
++                             mouse count, float. The learner (observe() ->
++                             learn_gain) only runs in the CLOSED loop, so
++                             without cursor items the gain stays at its
++                             seed forever and 1.0 makes open-loop MOVEA
++                             issue Delta-px counts at a guest whose ratio
++                             is nothing like 1 -- the apple2e Apple II
++                             Mouse Card measures 1.547 px/count on X and
++                             1.674 on Y, i.e. a 1.0 seed under-issues by
++                             ~40%. Seeded here, open-loop MOVEA issues
++                             Delta-px / gain and the belief integrates
++                             counts * gain, so both live in px and a
++                             restated target re-derives the remainder.
++                             A reseed (state load) returns to the SEED,
++                             not to 1.0.                        [1.0/1.0]
+       MAME_CTL_STAT_PERIOD   EV STATS / heartbeat period, wall s    [15]
+       MAME_CTL_TRACE         1 => single-line engine trace on stderr
+                              ("CTLTRACE <wall ms> <emu s> ..."; debug
+@@ -433,6 +452,18 @@
+ 		m_gain_margin = env_double("MAME_CTL_GAIN_MARGIN", 1.10);
+ 		if (m_gain_margin < 1.0 || m_gain_margin > 2.0)
+ 			m_gain_margin = 1.10;
++		// Open-loop gain seed. learn_gain() runs only from observe(), which
++		// only runs in the closed loop, so on a machine with no cursor items
++		// the gain NEVER moves off this value -- and 1.0 is a fiction on
++		// every guest whose driver applies its own counts->px ratio.
++		m_gx0 = env_double("MAME_CTL_GAIN_X", 1.0);
++		m_gy0 = env_double("MAME_CTL_GAIN_Y", 1.0);
++		if (!(m_gx0 > 0.01) || m_gx0 > 100.0)
++			m_gx0 = 1.0;
++		if (!(m_gy0 > 0.01) || m_gy0 > 100.0)
++			m_gy0 = 1.0;
++		m_gx = m_gx0;
++		m_gy = m_gy0;
+ 		m_dead = env_long("MAME_CTL_DEADBAND", 2);
+ 		if (m_dead < 0 || m_dead > 64)
+ 			m_dead = 2;
+@@ -1203,8 +1234,8 @@
+ 		// the learned gain describes the guest screen the session was ON
+ 		// (chooser accel vs desktop 1:1), which the restored state need not
+ 		// match: deterministic 1.0, the first big epoch re-learns
+-		m_gx = 1.0;
+-		m_gy = 1.0;
++		m_gx = m_gx0;
++		m_gy = m_gy0;
+ 		// deterministic button state: all up (streamhost resets its button
+ 		// diff on reconnect for the same reason; goldens park buttons-up)
+ 		for (ioport_field *f : m_btn_field)
+@@ -1216,8 +1247,9 @@
+ 		drop_paced_state("dropped by state load");
+ 		m_machine.natkeyboard().set_in_use(true);
+ 		++m_reseeds;
+-		trace("reseed n=%s mx=%d my=%d B=%d,%d gain=1.00,1.00",
+-				std::to_string(m_reseeds), int(m_mx), int(m_my), int(m_bx), int(m_by));
++		trace("reseed n=%s mx=%d my=%d B=%d,%d gain=%.3f,%.3f",
++				std::to_string(m_reseeds), int(m_mx), int(m_my), int(m_bx), int(m_by),
++				m_gx, m_gy);
+ 	}
+ 
+ 	void drop_paced_state(char const *why)
+@@ -1391,6 +1423,29 @@
+ 		m_mq.back().travel = true;
+ 	}
+ 
++	// Open-loop MOVEA speaks PIXELS on the wire and COUNTS to the device.
++	// The closed loop converts through step_counts(); open loop had no
++	// converter at all and issued Delta-px as counts, which is only correct
++	// on a guest whose ratio happens to be 1.0. MAME_CTL_GAIN_X/Y supplies
++	// the ratio; the belief integrates counts * gain in move_rel(), so both
++	// sides stay in px and a restated target re-derives what is left.
++	static long px_to_counts(long dpx, double g)
++	{
++		if (dpx == 0)
++			return 0;
++		long c = long(std::llround(double(dpx) / g));
++		if (c == 0)
++			c = (dpx > 0) ? 1 : -1;  // sub-gain residue: one count is the
++			                         // smallest motion the wire can express
++		return c;
++	}
++
++	// px delta -> paced travel, per axis gain.
++	void move_paced_travel_px(long dpx, long dpy)
++	{
++		move_paced_travel(px_to_counts(dpx, m_gx), px_to_counts(dpy, m_gy));
++	}
++
+ 	long clamp_budget(long pend, long used) const
+ 	{
+ 		long const room = m_move_step - used;
+@@ -1903,7 +1958,7 @@
+ 				// never merge into the real move's first window (measured in
+ 				// the Lua sim harness: 2048 % 120 = 8 px short, permanently)
+ 				move_paced(-(18 * m_move_step), -(18 * m_move_step));
+-				move_paced_travel(x, y);
++				move_paced_travel_px(x, y);
+ 			}
+ 			else
+ 			{
+@@ -1935,13 +1990,17 @@
+ 					else
+ 						++it;
+ 				}
+-				long px = clamp_px_x(m_bx + m_pend_x), py = clamp_px_y(m_by + m_pend_y);
++				// m_bx/m_by and the clamp are PX; m_pend and the queue hold
++				// COUNTS -- convert, or the simulated origin is off by the
++				// gain on every station whose ratio is not 1.0.
++				long px = clamp_px_x(m_bx + long(std::llround(double(m_pend_x) * m_gx)));
++				long py = clamp_px_y(m_by + long(std::llround(double(m_pend_y) * m_gy)));
+ 				for (move_entry const &e : m_mq)
+ 				{
+-					px = clamp_px_x(px + e.x);
+-					py = clamp_px_y(py + e.y);
++					px = clamp_px_x(px + long(std::llround(double(e.x) * m_gx)));
++					py = clamp_px_y(py + long(std::llround(double(e.y) * m_gy)));
+ 				}
+-				move_paced_travel(x - px, y - py);
++				move_paced_travel_px(x - px, y - py);
+ 			}
+ 			m_flx = x;
+ 			m_fly = y;
+@@ -2037,7 +2096,7 @@
+ 				// the closed loop died with targets still queued: apply them
+ 				// open-loop so neither the motion nor the buttons behind it
+ 				// are ever dropped
+-				move_paced_travel(a.x - m_flx, a.y - m_fly);
++				move_paced_travel_px(a.x - m_flx, a.y - m_fly);
+ 				m_flx = a.x;
+ 				m_fly = a.y;
+ 				m_fl_valid = true;
+@@ -3173,6 +3232,7 @@
+ 	long m_cs_last_dx = 0, m_cs_last_dy = 0;
+ 	double m_rest_t = -1.0;              // next at-rest observation, emu time
+ 	double m_gx = 1.0, m_gy = 1.0;       // learned counts->px gain per axis
++	double m_gx0 = 1.0, m_gy0 = 1.0;     // MAME_CTL_GAIN_X/Y open-loop seed
+ 	double m_gain_margin = 1.10;         // MAME_CTL_GAIN_MARGIN (user rule)
+ 	std::deque<defer_entry> m_aq;
+ 	long m_flx = 0, m_fly = 0;               // open-loop fallback origin

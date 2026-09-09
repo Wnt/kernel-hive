@@ -1,0 +1,21 @@
+[Unit]
+Description=kernel-hive: periodic Instana forward (every 5 min)
+Documentation=file:///data/kernel-hive/docs/lab/INSTANA-VIEW-INVENTORY.md
+
+[Timer]
+# Five minutes is chosen against the forwarder's own quiet window (QUIET_MS,
+# 3.5 min since 2026-09-01: the two-minute daemon carrier period plus margin —
+# see instana_backlog.py for the split-send it fixes). A trace becomes eligible
+# well within one tick, so the worst-case age of data in the tenant is roughly
+# one interval plus the quiet window, and a view read at any moment is minutes
+# old rather than days old.
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+# Single-flight is systemd's, not ours: a oneshot unit cannot overlap itself and
+# a tick that arrives while the previous run is still going is DROPPED, not
+# queued. Persistent= is deliberately absent — a missed window is not worth
+# catching up on at boot, and the ingest watermark means nothing was lost by it.
+
+[Install]
+WantedBy=timers.target

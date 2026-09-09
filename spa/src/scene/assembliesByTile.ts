@@ -1,4 +1,4 @@
-// ============================================================================
+// =====================================================================  },
 //  ASSEMBLIES_BY_TILE — split out of machines.ts (ts-src 600-line hard cap).
 //  ---------------------------------------------------------------------------
 //  Isolating this table also removes a recurring merge hazard: every new
@@ -6,7 +6,7 @@
 //  branches conflicted here on every merge while it lived inside the far
 //  busier machines.ts. See machines.ts for MachineModel/MODELS, the
 //  AssemblyKind/Assembly types, and assemblyForTile/hasIntegratedKeyboard.
-// ============================================================================
+// =====================================================================  },
 
 import type { Assembly } from './machines';
 
@@ -465,6 +465,119 @@ export const ASSEMBLIES_BY_TILE = {
   aix432: {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // ravynos: the newest station in the hall, and the only one whose silhouette
+  // is an argument. ravynOS is FreeBSD on a commodity 2025 x86-64 PC that has
+  // been dressed as a Mac — so the parts are deliberately mixed. modernD is the
+  // plain minimal modern tower (its only other user, serenityos, sits under
+  // lcdB, so modernD|lcdC is this station's alone), lcdC the big flat panel
+  // that reads as a modern desktop display, and keyboardG the compact board the
+  // Apple-family stations (macos, macos9) carry — the one borrowed part, for
+  // the machine whose whole point is borrowed clothes. The mouse is the
+  // ordinary modern paramMouseE and NOT the one-button paramMouseF that marks
+  // the real Apple hardware here: this is a PC, and the exhibit says so.
+  ravynos: {
+    kind: 'towerSetup', body: 'modernD', monitor: 'lcdC',
+    keyboard: 'keyboardG', mouse: 'paramMouseE',
+  },
+  // amix: the Amiga 3000 is a low desktop box, not a tower — the machine
+  // Commodore sold as the A3000UX workstation. Same pizzaBoxD shell as
+  // amigaos35's sibling A-series entries, under the ordinary crtC: this one
+  // drives an A2410 board at 1024x768 in colour, so it is NOT the mono
+  // setup its chipset X server would imply.
+  amix: {
+    kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // bootos: 8088-compatible on purpose, so the exhibit is an XT-class desktop
+  // box — pizzaBoxA, the same wide beige case msdoswin1 sits in, but under
+  // crtA rather than msdoswin1's green-mono crtD (bootOS boots in colour VGA
+  // text mode) with the keyboardD XT board. NO mouse: bootOS reads the BIOS
+  // keyboard and nothing else, and the station has no pointer device, so the
+  // desk is honest about it. pizzaBoxA|crtA|keyboardD|none is unique.
+  bootos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
+    keyboard: 'keyboardD',
+  },
+  // pcgeos: a 386-class beige desktop box under a colour VGA CRT, with the
+  // PS/2 mouse the desktop is built around (CTMOUSE + genmouse.geo, relative).
+  // Same wide beige case family as bootos, but a mouse and the 101-key board.
+  pcgeos: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // redhat62: a beige ATX tower of 2000 under a 17-inch colour CRT, with the
+  // PS/2 mouse and 104-key board a Pentium-class PC of the year came with.
+  // Same tower/CRT family as win98se; the registry archetype is beige-tower-crt.
+  // pcbsd: a 2008 office mini-tower under a 4:3 LCD, PS/2 keyboard and a plain
+  // two-button PS/2 mouse (pointer motion is absolute through the guest's X via
+  // x11warp; FreeBSD 6.3's X never moved on a USB tablet). Distinct from reactos.
+  pcbsd: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdC',
+    keyboard: 'keyboardF', mouse: 'paramMouseD',
+  },
+  // ubuntu: a 2004 beige-and-black minitower under a CRT — the ShipIt-CD PC
+  // Warty was posted to. USB tablet in the guest, so a mouse on the desk.
+  ubuntu: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtD',
+    keyboard: 'keyboardF', mouse: 'paramMouseE',
+  },
+  // slackware: a 1997 beige mini-tower under a colour SVGA CRT, with the
+  // serial mouse the X server is told about (relative). Same tower family as
+  // tinycore, the other small-Linux desktop in the hall.
+  slackware: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
+  // netbsd14: a 1999 beige PC clone under a colour SVGA CRT — same case family
+  // as pcgeos, with the PS/2 mouse and 101-key board the X server is driven by.
+  netbsd14: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  // openbsd: a 2020s small-form-factor amd64 box, but on a wider flat panel than
+  // alpine's desk (same case family, distinct signature) — USB tablet pointer,
+  // 101-key board.
+  redhat62: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseC',
+  },
+  openbsd: {
+    kind: 'pizzaBox', body: 'pizzaBoxE', monitor: 'lcdC',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
+  },
+  // freebsd411: a 2005 beige Pentium-4-era mini-tower under a colour SVGA CRT,
+  // with the PS/2 mouse and 101-key board KDE 3.3.2 on XFree86 4.4.0 is driven
+  // by — a tower, not the flat 1990 desktop case pcgeos sits in.
+  freebsd411: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  debian22: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'paramCrt',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
+  suse64: {
+    kind: 'towerSetup', body: 'towerA', monitor: 'crtA',
+    keyboard: 'keyboardB', mouse: 'paramMouseC',
+  },
+  apple2e: {
+    kind: 'homeMicro', body: 'eightBitWedgeA', monitor: 'homeCrtD',
+    mouse: 'paramMouseD',
+  },
+  samcoupe: {
+    kind: 'homeMicro', body: 'amstradCpc', monitor: 'homeCrtD',
+    },
+  atari800xl: {
+    kind: 'homeMicro', body: 'c64A', monitor: 'homeCrtC',
+  },
+  a1000: {
+    kind: 'towerSetup', body: 'pizzaBoxB', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
+  a3000: {
+    kind: 'towerSetup', body: 'paramTower', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
 } as const satisfies Record<string, Assembly>;
 

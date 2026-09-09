@@ -12,7 +12,8 @@
 // never a fixed-interval hammer.
 
 import { humanDelay } from './rng.mjs';
-import { openStation, waitForVideo, typeHumanPace, wanderPointer } from './stationOpen.mjs';
+import { openStation, waitForVideo, typeHumanPace, traceFigureEight, suppressBootVideo } from './stationOpen.mjs';
+import { openEditor, keyboardSelect, randomClicks, pickFunnyLine } from './editorDemo.mjs';
 import { armVirtualAuthenticator } from './webauthn.mjs';
 
 const WALKIN_OS_IDS = ['win311', 'os2warp', 'rhapsody'];
@@ -193,11 +194,18 @@ export async function journeyWalkin(page, ctx) {
   const videoResult = await waitForVideo(page, 25000);
   if (videoResult.ok) {
     await humanDelay(rng, 800, 2000);
+    // Trace a figure-8 across the live stream: a continuous glide of real
+    // pointer events into the station, which is both the thing worth watching
+    // and a dense run of input.dispatch spans on the trace plane — far more
+    // signal than the odd random poke. A couple of unhurried loops, then a
+    // short type so the keyboard plane sees traffic too.
+    await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+    await humanDelay(rng, 400, 1000);
     const line = TYPING_LINES[Math.floor(rng() * TYPING_LINES.length)];
     await typeHumanPace(page, line, { baseMs: 150, jitter: 70 });
     await page.keyboard.press('Enter').catch(() => {});
-    await wanderPointer(page, 1 + Math.floor(rng() * 2));
-    await humanDelay(rng, 1000, 3000);
+    await traceFigureEight(page, { loops: 1 + Math.floor(rng() * 2), periodMs: 3000 });
+    await humanDelay(rng, 800, 2000);
   }
 
   // Leave via the UI control, which triggers releaseWalkin() on unmount —
@@ -213,45 +221,126 @@ export async function journeyWalkin(page, ctx) {
   };
 }
 
+/** Restore a station to its golden snapshot through the REAL UI control, gated
+ *  by ctx.safety.resetGate (--allow-resets / --reset-max / --reset-min-interval).
+ *  Returns true iff a reset actually fired. Shared by journeyStation and
+ *  journeyEditor so both produce the SAME station.restore telemetry.
+ *
+ *  DRIVEN THROUGH THE UI, NOT A BARE fetch(). The client-side station.restore /
+ *  station.restore.toRestoredMs telemetry (the click-to-picture-back latency the
+ *  operator wants to measure — useRestoreFlow.ts) fires ONLY from
+ *  restoreToGolden(), wired to StageMenu.tsx's "Restore to golden snapshot"
+ *  button. A raw POST /restore/<id> still resets the host but never runs that
+ *  hook, so no span is produced. Open the ☰ menu, click the real button. */
+async function restoreToGolden(page, station, { safety, manifest, log }) {
+  if (!safety.resetGate.eligible(station)) return false;
+  try {
+    await page.getByRole('button', { name: 'Controls' }).click({ timeout: 5000 });
+    const restoreBtn = page.getByRole('button', { name: /Restore to golden snapshot/ });
+    await restoreBtn.waitFor({ state: 'visible', timeout: 5000 });
+    const clickedAt = Date.now();
+    await restoreBtn.click({ timeout: 5000 });
+    safety.resetGate.record(station);
+    manifest?.reset(station);
+    log?.(`reset ${station}: clicked "Restore to golden snapshot"`);
+    // The click starts a reconnect (connecting -> live); wait for the picture
+    // to actually come back, which is what a real visitor watches for.
+    const back = await waitForVideo(page, 45000);
+    log?.(`reset ${station}: video back after restore = ${back.ok}`);
+    // The DOM's video going live is NOT the moment useRestoreFlow.ts settles
+    // (settle('ok'), which closes and buffers the span). Measured live, the
+    // flow can still be mid-recover ~17s after the click, well after readyState
+    // reported live pixels. Floor the dwell from the CLICK, not from
+    // video-back, so the tab is not reused before the span finishes buffering.
+    const minSettleMs = 20000;
+    const elapsed = Date.now() - clickedAt;
+    if (elapsed < minSettleMs) await page.waitForTimeout(minSettleMs - elapsed);
+    return true;
+  } catch (e) {
+    log?.(`reset ${station} failed: ${e}`);
+    return false;
+  }
+}
+
 /** Open a live pool station from the full grid and interact — requires an
  *  invited (viewer/admin) session via --storage-state; the walk-in role
  *  cannot reach "/". Optionally fires a golden reset, gated by ctx.safety. */
 export async function journeyStation(page, ctx) {
   const { galleryUrl, stations, rng, safety, manifest, log } = ctx;
   const station = stations[Math.floor(rng() * stations.length)];
-  await page.goto(galleryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${galleryUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await humanDelay(rng, 1000, 3000);
   const result = await openStation(page, station, { waitMs: 30000 });
   if (!result.ok) return { ok: false, detail: result.why, station };
   log?.(`opened ${station} live`);
 
   await humanDelay(rng, 1000, 2500);
-  await wanderPointer(page, 1 + Math.floor(rng() * 3));
+  await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+  await humanDelay(rng, 400, 1000);
   if (rng() < 0.6) {
     const line = TYPING_LINES[Math.floor(rng() * TYPING_LINES.length)];
     await typeHumanPace(page, line, { baseMs: 140, jitter: 60 });
   }
   await humanDelay(rng, 1500, 5000);
 
-  let resetTriggered = false;
-  if (safety.resetGate.eligible(station) && rng() < 0.15) {
-    try {
-      const resp = await page.evaluate(async (id) => {
-        const r = await fetch(`/restore/${id}`, { method: 'POST', credentials: 'same-origin' });
-        return { status: r.status, ok: r.ok };
-      }, station);
-      safety.resetGate.record(station);
-      resetTriggered = true;
-      manifest?.reset(station);
-      log?.(`reset ${station}: HTTP ${resp.status}`);
-      await humanDelay(rng, 2000, 5000);
-    } catch (e) {
-      log?.(`reset ${station} failed: ${e}`);
-    }
-  }
+  // Resets are gated by exactly three caps — --allow-resets, --reset-max and
+  // --reset-min-interval — all enforced inside restoreToGolden via
+  // safety.resetGate.eligible(). No extra coin-flip here: a 4th undocumented
+  // `rng() < 0.15` used to make a reset "armed" but silently never fire, which
+  // is indistinguishable from broken and defeats the operator's ask for
+  // station.restore telemetry.
+  const resetTriggered = await restoreToGolden(page, station, ctx);
 
   await humanDelay(rng, 500, 2000);
   return { ok: true, detail: `interacted with ${station}${resetTriggered ? ' (reset)' : ''}`, station, resetTriggered };
+}
+
+/** Credentialed editor demo (requires --storage-state or --invite, like
+ *  journeyStation). Each visitor gets a DISTINCT station by visitorId, so a
+ *  6-visitor run drives 6 different machines. Per station: reset to golden,
+ *  open a text editor with the keyboard, type a funny line, select it with the
+ *  keyboard, click a few random spots, and finish with a figure-8. Keys and
+ *  clicks are what light up the input.dispatch.* trace plane (bare motion does
+ *  not), so this is the journey that exercises the keyboard and click planes. */
+export async function journeyEditor(page, ctx) {
+  const { galleryUrl, stations, rng, visitorId, log } = ctx;
+  // Distinct station per visitor (round-robins if visitors > stations).
+  const station = stations[(visitorId - 1) % stations.length];
+  await page.goto(`${galleryUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  // Skip the boot-video overlay so the demo lands on the live desktop rather
+  // than acting behind a boot clip — set before the station route mounts.
+  await suppressBootVideo(page, station);
+  await humanDelay(rng, 800, 2000);
+  const opened = await openStation(page, station, { waitMs: 30000 });
+  if (!opened.ok) return { ok: false, detail: opened.why, station };
+  log?.(`opened ${station} live`);
+
+  // Start from a clean desktop, as asked — reset to golden first, then let the
+  // picture settle before driving the Start menu.
+  const resetTriggered = await restoreToGolden(page, station, ctx);
+  await humanDelay(rng, 1000, 2000);
+
+  // Open a text editor with the keyboard and type a funny line into it.
+  const ed = await openEditor(page, station, { log: (m) => log?.(m) });
+  if (!ed.ok) return { ok: false, detail: ed.why, station, resetTriggered };
+  const line = pickFunnyLine(rng);
+  await typeHumanPace(page, line, { baseMs: 150, jitter: 70 });
+  await humanDelay(rng, 600, 1400);
+
+  // Select the line with the keyboard, click a few random spots, then a figure-8.
+  await keyboardSelect(page, rng);
+  await humanDelay(rng, 400, 900);
+  await randomClicks(page, rng, { n: 3 + Math.floor(rng() * 3) });
+  await humanDelay(rng, 400, 900);
+  await traceFigureEight(page, { loops: 2 + Math.floor(rng() * 2), periodMs: 3500 });
+  await humanDelay(rng, 600, 1500);
+
+  return {
+    ok: true,
+    detail: `editor demo on ${station}${resetTriggered ? ' (reset first)' : ''}: typed "${line}"`,
+    station,
+    resetTriggered,
+  };
 }
 
 export const JOURNEYS = {
@@ -259,4 +348,5 @@ export const JOURNEYS = {
   poster: journeyPoster,
   walkin: journeyWalkin,
   station: journeyStation,
+  editor: journeyEditor,
 };

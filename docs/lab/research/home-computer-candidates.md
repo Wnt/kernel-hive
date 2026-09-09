@@ -1,21 +1,31 @@
 # Home-computer candidates: Commodore, the Britons, and the GDR
 
-Status: **research, 2026-08-08 — one machine has since been built.** This is the
-feasibility study behind an operator-proposed expansion of the lineup, in the
-form [`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects.
+Status: **research, 2026-08-08 — most of the wishlist has since been built.**
+This is the feasibility study behind an operator-proposed expansion of the
+lineup, in the form [`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1
+expects.
 
-**Built since:** the **VIC-20** (§4.1) is live as the production station `vic20`
-(slot 85, udp 54085) — see [`docs/guests/vic20.md`](../../guests/vic20.md). It
-was taken first because it is the cheapest item in the whole study: `xvic` is
-already in the frozen bridge seed (VICE is built from source there for the `c64`
-station and `make install` ships the entire family), VICE bundles the Commodore
-ROMs, and an unexpanded VIC-20 needs no media at all — so it required no staged
-asset, no checksum gate and no new emulator build, only a launcher, a checkpoint and
-a registry entry. §2's "VICE covers the whole Commodore 8-bit wishlist" claim is
-now proven rather than predicted. Two costs the study did not predict are
-recorded in the guest doc: VICE segfaults when its stdout is not a terminal, and
-the base's installed VIC20 ROM set is missing its BASIC ROM. Everything else
-below remains unbuilt.
+**Built since:** the registry now carries stations for the **VIC-20**
+(`vic20`), **PET 2001** (`pet2001`), **CBM 8032** (`cbm8032`), **CBM 610**
+(`cbm2`), **Commodore 128** (`c128`), **Plus/4** (`plus4`), **Dragon 32**
+(`dragon32`), **Oric Atmos** (`oricatmos`), **BBC Micro Model B** (`bbcmicro`),
+**ARM Evaluation System** (`armeval`), **ZX81** (`zx81`), **ZX Spectrum 48K**
+(`zxspectrum`), **Sinclair QL** (`sinclairql`), **KC 85/4** (`kc854`),
+**Atari 800XL** (`atari800xl`), **Amiga 1000** (`a1000`) and **Amiga 3000**
+(`a3000`) — see each machine's `docs/guests/<id>.md` and the per-family notes
+below for what changed since this was written. The VIC-20 was taken first
+because it was the cheapest item in the whole study: `xvic` is already in the
+frozen bridge seed (VICE is built from source there for the `c64` station and
+`make install` ships the entire family), VICE bundles the Commodore ROMs, and
+an unexpanded VIC-20 needs no media at all — so it required no staged asset,
+no checksum gate and no new emulator build, only a launcher, a checkpoint and
+a registry entry. §2's "VICE covers the whole Commodore 8-bit wishlist" claim
+is proven rather than predicted. Two costs the study did not predict are
+recorded in the `vic20` guest doc: VICE segfaults when its stdout is not a
+terminal, and the base's installed VIC20 ROM set is missing its BASIC ROM.
+The Amigas are noted in §4.4; still unbuilt from this study: the KIM-1
+(§4.1), the 264-line siblings C16/C116 (§4.3), A2000/A4000 (§4.4), the
+Archimedes desktop (§4.7), and the GDR siblings beyond KC 85/4 (§4.9).
 
 Companion study for the minicomputer end of the same wishlist:
 [`pdp11-add.md`](pdp11-add.md).
@@ -109,8 +119,8 @@ on labhost (MAME 0.276), not from memory.
 | Machine | Year | Driver / emulator | Notes |
 |---|---|---|---|
 | **KIM-1** | 1976 | MAME `kim1` | **No video at all**: six seven-segment LEDs and a hex keypad, which MAME renders as an artwork panel. A superb, genuinely strange exhibit — and the correct starting point for "everything Commodore", since MOS Technology's KIM-1 is what Commodore bought its way into. Keyboard-only, hex keypad → needs a `keyMap`. Pairs with the GDR **LC 80** (§4.9). |
-| **PET 2001** | 1977 | MAME `pet2001`, `pet20018`; VICE `xpet` | The chiclet-keyboard original with the built-in cassette. Green phosphor, 40 columns. |
-| **PET 2001-N / -B, CBM 3032, 4032 "Fat 40", 8032, 8296** | 1979–84 | `pet2001n`, `pet2001b`, `cbm3032`, `cbm4032f`, `cbm8032`, `cbm8296` (+ `_de`, `_se`, `_fr` regional sets) | The business line. `cbm8032` at 80 columns is the most "office computer" of them; the `_se`/`_de` sets show how far the regional ROM story goes. One station (`cbm8032`) plus placard coverage of the family is the sane call. |
+| **PET 2001** | 1977 | MAME `pet2001`, `pet20018`; VICE `xpet` | The chiclet-keyboard original with the built-in cassette. Green phosphor, 40 columns. **BUILT → `pet2001`.** |
+| **PET 2001-N / -B, CBM 3032, 4032 "Fat 40", 8032, 8296** | 1979–84 | `pet2001n`, `pet2001b`, `cbm3032`, `cbm4032f`, `cbm8032`, `cbm8296` (+ `_de`, `_se`, `_fr` regional sets) | The business line. `cbm8032` at 80 columns is the most "office computer" of them; the `_se`/`_de` sets show how far the regional ROM story goes. One station (`cbm8032`) plus placard coverage of the family is the sane call. **BUILT → `cbm8032`** (and the CBM-II line as `cbm2` / Commodore CBM 610); the rest of the family is still placard-only. |
 | **VIC-20 (NTSC)** | 1980 | MAME `vic20`; VICE `xvic` | The first computer to sell a million. 22 columns, 5 KB. |
 | **VC-20 / VIC-20 (PAL)** | 1981 | MAME `vic20p` | Same machine, European timing. Cosmetic in the stream → placard. |
 | **VIC-1001 (Japan)** | 1980 | MAME `vic1001` | **Different charset ROM (katakana) and key legends** → a defensible separate station under §3, and a striking one. |
@@ -124,7 +134,7 @@ on labhost (MAME 0.276), not from memory.
 | C64C / C64G | 1986/87 | `c64c`, `c64cp`, `c64g` | Same machine, wedge case (and later the 8580 SID's subtly different sound). **Scene asset or poster, not a station** (§3). |
 | C64 SE / VIC-64S, C64 JP | 1983 | `c64_se`, `c64_jp` | Regional ROM variants; placard unless the Swedish keyboard is wanted as its own exhibit. |
 | SX-64 Executive | 1984 | `sx64`, `sx64p` | The luggable with the built-in 5" CRT and drive. Visually unique → a good *scene* piece, and a plausible station if the exhibit shows it as a portable. |
-| **C128** | 1985 | `c128`, `c128p`, `c128d`, `c128dcr`, `c128_de`, `c128_se`; VICE `x128` | **The strongest single candidate in the Commodore set.** Three machines in one box: native C128 mode with the VDC's 80-column RGBI output, C64 mode, and **CP/M on the Z80**. An exhibit that boots CP/M on a Commodore tells a story no other station in the lineup tells. |
+| **C128** | 1985 | `c128`, `c128p`, `c128d`, `c128dcr`, `c128_de`, `c128_se`; VICE `x128` | **The strongest single candidate in the Commodore set.** Three machines in one box: native C128 mode with the VDC's 80-column RGBI output, C64 mode, and **CP/M on the Z80**. An exhibit that boots CP/M on a Commodore tells a story no other station in the lineup tells. **BUILT → `c128`.** |
 
 ### 4.3 The 264 line — C16, C116, Plus/4
 
@@ -132,7 +142,7 @@ on labhost (MAME 0.276), not from memory.
 |---|---|---|---|
 | **C16** | 1984 | `c16`, `c16p`, `c16_hu` | The budget machine aimed at the Sinclair/Spectrum end of the market. |
 | **C116** | 1984 | `c116` | Rubber-keyed, Europe-only (chiefly Germany and Hungary) — the rarest of the three and the one a visitor will never have seen. |
-| **Plus/4** | 1984 | `plus4`, `plus4p`; VICE `xplus4` | Built-in "3-plus-1" office software in ROM: word processor, spreadsheet, database, graphing. **That ROM software is the exhibit** — it is what makes the Plus/4 more than a failed C64. |
+| **Plus/4** | 1984 | `plus4`, `plus4p`; VICE `xplus4` | Built-in "3-plus-1" office software in ROM: word processor, spreadsheet, database, graphing. **That ROM software is the exhibit** — it is what makes the Plus/4 more than a failed C64. **BUILT → `plus4`**; C16/C116 remain placard-only. |
 
 The story is worth getting right on the placard, because it explains the whole
 line: the 264 family was developed as a cheap, TED-based answer to the low end,
@@ -162,6 +172,14 @@ supported model.
 Recommendation: **A1000 first** (best story, cheapest media), **A4000 second**
 (best desktop), A3000 optional, A2000 as a poster.
 
+**Built 2026-09-09:** `a1000` (Kickstart 1.2 + Workbench 1.2 from floppy, live
+in 45 minutes) and `a3000` (Kickstart 2.04 + Workbench 2.04 on a host-composed
+hardfile, live in 57 minutes), both host-native FS-UAE stations on the
+`amigaos35` pattern — `docs/lab/A1000-WAVE.md`, `docs/lab/A3000-WAVE.md`. The
+A4000 was already on the board as `amigaos35`'s hardware, which is why the
+A3000 took its place. The A1000's Kickstart-from-floppy boot is still OPEN
+(reset-loops in FS-UAE 3.2.35; findings in the a1000 guest doc).
+
 ### 4.5 Dragon 32
 
 MAME `dragon32` / `dragon64` (also `dragon200`, `dragon200e` for the Spanish
@@ -169,6 +187,8 @@ machines); specialist alternative **XRoar**, which is actively maintained with
 SDL2. Welsh-built, 6809-based, near-compatible with the Tandy CoCo, Microsoft
 Extended Color BASIC in ROM. ROMs are preservation-class: Dragon Data is long
 gone, the BASIC lineage is Microsoft's. Tier 2, cheap.
+
+**BUILT → `dragon32`.**
 
 ### 4.6 Oric-1 and Oric Atmos
 
@@ -178,16 +198,18 @@ keyboard and was a substantial success in France, where the machine has a
 living scene to this day. One station (Atmos) plus a placard covering the Oric-1
 is the efficient split.
 
+**BUILT → `oricatmos`**; the Oric-1 stays placard-only.
+
 ### 4.7 Acorn — BBC Micro, Electron, and the ARM story
 
 This family carries the single best narrative in the entire wishlist, and
 labhost's MAME can already tell all three acts of it:
 
-| Act | Machine | Driver |
-|---|---|---|
-| 1. The machine that taught Britain to program | **BBC Micro Model B** | `bbcb` (also `bbca`, `bbcbp`, `bbcm` Master 128, `bbcmc` Master Compact, `electron`) |
-| 2. **The first ARM product ever sold** | **ARM Evaluation System** — an ARM 2nd processor on the BBC Micro's Tube | `bbc_tube_arm` (a Tube co-processor option on the `bbcb`/`bbcm` drivers), plus `bbcmarm` "BBC Master (ARM Evaluation)" and `aa500` "Acorn A500 Development System" |
-| 3. The ARM desktop | **Archimedes A310**, RISC OS | `aa310` (also `aa305`, `aa440`, `aa3000`, `aa4`, `aa5000`) |
+| Act | Machine | Driver | Status |
+|---|---|---|---|
+| 1. The machine that taught Britain to program | **BBC Micro Model B** | `bbcb` (also `bbca`, `bbcbp`, `bbcm` Master 128, `bbcmc` Master Compact, `electron`) | **BUILT → `bbcmicro`** |
+| 2. **The first ARM product ever sold** | **ARM Evaluation System** — an ARM 2nd processor on the BBC Micro's Tube | `bbc_tube_arm` (a Tube co-processor option on the `bbcb`/`bbcm` drivers), plus `bbcmarm` "BBC Master (ARM Evaluation)" and `aa500` "Acorn A500 Development System" | **BUILT → `armeval`** |
+| 3. The ARM desktop | **Archimedes A310**, RISC OS | `aa310` (also `aa305`, `aa440`, `aa3000`, `aa4`, `aa5000`) | unbuilt — `riscos` is a static showcase poster, not a streaming Archimedes station |
 
 The anecdote the wishlist asks for is real and well documented: the first ARM
 silicon arrived on **26 April 1985**, worked first time, and the ammeter in
@@ -214,11 +236,11 @@ and hashes, do not redistribute.
 
 | Machine | Year | Driver | Notes |
 |---|---|---|---|
-| **ZX80** | 1980 | `zx80` | 1 KB, black-and-white, and the display *blanks while it computes* — the exhibit is the flicker. |
-| **ZX81** | 1981 | `zx81` | SLOW/FAST modes, the machine that put a computer in a British newsagent. |
-| **ZX Spectrum 48K** | 1982 | `spectrum` | The rubber keyboard and attribute clash. The icon. |
-| Spectrum 128 / +2 / +3 | 1985–87 | `spec128`, `specpls2`, `specpls3` | The Amstrad-era machines — a neat link to the existing `amstradcpc` station, since Amstrad bought Sinclair's computer business in 1986. |
-| **Sinclair QL** | 1984 | `ql` (+ `ql_se`, `ql_de`, `ql_fr`, `ql_es`, `ql_it`, `ql_us`, …) | 68008, Microdrives, QDOS, SuperBASIC, and a bundled office suite. Alternatives: sQLux, Q-emuLator. |
+| **ZX80** | 1980 | `zx80` | 1 KB, black-and-white, and the display *blanks while it computes* — the exhibit is the flicker. Still unbuilt. |
+| **ZX81** | 1981 | `zx81` | SLOW/FAST modes, the machine that put a computer in a British newsagent. **BUILT → `zx81`.** |
+| **ZX Spectrum 48K** | 1982 | `spectrum` | The rubber keyboard and attribute clash. The icon. **BUILT → `zxspectrum`.** |
+| Spectrum 128 / +2 / +3 | 1985–87 | `spec128`, `specpls2`, `specpls3` | The Amstrad-era machines — a neat link to the existing `amstradcpc` station, since Amstrad bought Sinclair's computer business in 1986. Still unbuilt. |
+| **Sinclair QL** | 1984 | `ql` (+ `ql_se`, `ql_de`, `ql_fr`, `ql_es`, `ql_it`, `ql_us`, …) | 68008, Microdrives, QDOS, SuperBASIC, and a bundled office suite. Alternatives: sQLux, Q-emuLator. **BUILT → `sinclairql`.** |
 
 **The Sinclair ROMs are the cleanest licensing story on the British side.**
 Amstrad, which owns the Sinclair ROM copyrights, has long permitted
@@ -245,12 +267,12 @@ educational-computer landscape is present:
 
 | Machine | Year | Driver | Notes |
 |---|---|---|---|
-| **KC 85/2 (HC 900)** | 1984 | `kc85_2` | VEB Mikroelektronik "Wilhelm Pieck" Mühlhausen. The wishlist's named machine. |
-| **KC 85/3, /4, /5** | 1986–89 | `kc85_3`, `kc85_4`, `kc85_5` | CAOS, the module slots, colour. The /4 is the canonical one to exhibit. |
-| **KC 87 / Z9001** | 1984–87 | `kc87_10`, `kc87_11`, `kc87_20`, `kc87_21` | Robotron Dresden's line — a *different* machine from the Mühlhausen KC 85s despite the shared "KC". Worth saying so on the placard, since the naming confuses everyone. |
-| **Z1013** | 1985 | `z1013`, `z1013a2`, `z1013k69`, `z1013k76` | A kit computer sold to citizens over the counter, with a membrane keypad. The most socially interesting of the set. |
-| **LC 80** | 1984 | `lc80`, `lc80_2`, `lc80e` | "Lerncomputer": seven-segment display and a hex keypad — the GDR's answer to the KIM-1, and its natural exhibit partner. |
-| **BIC A5105** | 1989 | `a5105` | Robotron's education machine, arriving just in time for the country to end. |
+| **KC 85/2 (HC 900)** | 1984 | `kc85_2` | VEB Mikroelektronik "Wilhelm Pieck" Mühlhausen. The wishlist's named machine. Still unbuilt (the /4 was picked instead, below). |
+| **KC 85/3, /4, /5** | 1986–89 | `kc85_3`, `kc85_4`, `kc85_5` | CAOS, the module slots, colour. The /4 is the canonical one to exhibit. **BUILT → `kc854`.** |
+| **KC 87 / Z9001** | 1984–87 | `kc87_10`, `kc87_11`, `kc87_20`, `kc87_21` | Robotron Dresden's line — a *different* machine from the Mühlhausen KC 85s despite the shared "KC". Worth saying so on the placard, since the naming confuses everyone. Still unbuilt. |
+| **Z1013** | 1985 | `z1013`, `z1013a2`, `z1013k69`, `z1013k76` | A kit computer sold to citizens over the counter, with a membrane keypad. The most socially interesting of the set. Still unbuilt. |
+| **LC 80** | 1984 | `lc80`, `lc80_2`, `lc80e` | "Lerncomputer": seven-segment display and a hex keypad — the GDR's answer to the KIM-1, and its natural exhibit partner. Still unbuilt. |
+| **BIC A5105** | 1989 | `a5105` | Robotron's education machine, arriving just in time for the country to end. Still unbuilt. |
 
 Alternative emulator: **KCemu** (KC 85 series plus Z1013, LC 80 and A5105 —
 essentially this whole table). ROMs are preservation-class: the manufacturers
@@ -259,7 +281,8 @@ provenance, hash locally, do not redistribute.
 
 **Recommendation:** two stations — **KC 85/4** (the colour, module-slot machine)
 and **LC 80** (paired with the KIM-1, one exhibit on each side of the Wall) —
-with Z1013, KC 87 and A5105 as placard/poster coverage.
+with Z1013, KC 87 and A5105 as placard/poster coverage. **KC 85/4 shipped as
+`kc854`**; LC 80 and the KIM-1 pairing are still unbuilt.
 
 ## 5. The engineering leverage: one parameterised builder
 
@@ -332,14 +355,14 @@ arm, and — if wanted — a boot video. Slots 125+ are free, with gaps at 85–
 
 Each phase is independently shippable and ends with a green quality gate.
 
-| Phase | Stations | Why this order |
-|---|---|---|
-| **0** | Nothing new — build `mame-bridge.sh` / `vice-bridge.sh` and prove them by **rebuilding an existing station** | The abstraction gets proven against a known-good fixture before it is trusted with new machines. |
-| **1 — the stories** | **C128** (CP/M on a Commodore), **BBC Micro + ARM Evaluation System**, **ZX Spectrum 48K**, **Amiga 1000** | Four exhibits, four narratives a visitor can be told in one sentence each. Highest value per gigabyte. |
-| **2 — the origins** | **KIM-1**, **PET 2001/CBM 8032**, **VIC-20**, **LC 80** | The pre-64 Commodore arc, and the KIM-1/LC-80 pairing across the Wall. |
-| **3 — the Britons** | **Archimedes A310**, **Oric Atmos**, **Dragon 32**, **Sinclair QL**, **ZX81** | Depends on settling the Archimedes emulator question first. |
-| **4 — the misfires and the GDR** | **Plus/4** (+ C16/C116 as posters), **KC 85/4**, **Z1013** | The most niche, and the most fun to write placards for. |
-| **5 — regional and cosmetic** | **VIC-1001**, **VIC-20 SE**; C64C / SX-64 / A2000 as **scene assets and posters** | Only after §3's policy is agreed, and only if memory allows. |
+| Phase | Stations | Why this order | Status |
+|---|---|---|---|
+| **0** | Nothing new — build `mame-bridge.sh` / `vice-bridge.sh` and prove them by **rebuilding an existing station** | The abstraction gets proven against a known-good fixture before it is trusted with new machines. | done |
+| **1 — the stories** | **C128** (CP/M on a Commodore), **BBC Micro + ARM Evaluation System**, **ZX Spectrum 48K**, **Amiga 1000** | Four exhibits, four narratives a visitor can be told in one sentence each. Highest value per gigabyte. | **BUILT** — `c128`, `bbcmicro`, `armeval`, `zxspectrum`, `a1000` |
+| **2 — the origins** | **KIM-1**, **PET 2001/CBM 8032**, **VIC-20**, **LC 80** | The pre-64 Commodore arc, and the KIM-1/LC-80 pairing across the Wall. | partly built — `pet2001`, `cbm8032`, `vic20` shipped; KIM-1 and LC 80 still open |
+| **3 — the Britons** | **Archimedes A310**, **Oric Atmos**, **Dragon 32**, **Sinclair QL**, **ZX81** | Depends on settling the Archimedes emulator question first. | partly built — `oricatmos`, `dragon32`, `sinclairql`, `zx81` shipped; Archimedes still open (§4.7) |
+| **4 — the misfires and the GDR** | **Plus/4** (+ C16/C116 as posters), **KC 85/4**, **Z1013** | The most niche, and the most fun to write placards for. | partly built — `plus4`, `kc854` shipped; C16/C116, Z1013 still placard-only |
+| **5 — regional and cosmetic** | **VIC-1001**, **VIC-20 SE**; C64C / SX-64 / A2000 as **scene assets and posters** | Only after §3's policy is agreed, and only if memory allows. | still open |
 
 ## 8. Open questions for the operator
 

@@ -141,5 +141,14 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
             if not demo.get("label", "").strip() or not demo.get("runCommand", "").strip():
                 fail(errors, row, "demoProgram needs a non-empty label and runCommand")
             lines = demo.get("lines", [])
-            if not lines or any(not isinstance(line, str) or not line.strip() for line in lines):
-                fail(errors, row, "demoProgram.lines must be a non-empty list of non-blank strings")
+            # An EMPTY string is a legal line: the typist sends a bare ENTER for it,
+            # which is how bootOS's `enter` command is told the hex listing is over.
+            # Whitespace-only lines are still refused -- they type as nothing but
+            # look like content in the registry.
+            if not lines or any(not isinstance(line, str) or (line != "" and not line.strip()) for line in lines):
+                fail(
+                    errors,
+                    row,
+                    "demoProgram.lines must be a non-empty list of strings, each either "
+                    "non-blank or exactly '' (a bare ENTER)",
+                )

@@ -19,26 +19,25 @@
 //    - a message that is nothing but numbers degenerates to a near-empty
 //      fingerprint, so the source is always mixed in.
 //
-//  NEVER THE STACK, NEVER THE URL. What travels here is the fingerprint, a
-//  truncated message and the flow. The full stack, the href and the IP stay on
-//  the /clientlog lane, which is a short rolling window that prunes itself by
-//  age. This lane is a DURABLE aggregate, and a durable aggregate must not be
-//  the place a visitor's browsing history accidentally lives forever.
+//  NO STACK IN THE COUNTER ROW — because a counter row is a COUNT, not because
+//  a stack is unwelcome. This lane's durable table is keyed by
+//  (day, fingerprint, flow, step, class) and holds an `n`; a stack is per
+//  occurrence and would have nowhere to live in it that was not a lie about
+//  which occurrence it came from. So the stack goes where per-occurrence data
+//  goes: onto the TRACE, as the OTel `exception` event this function also
+//  writes (since 2026-09-01 it carries `exception.stacktrace` in full), and
+//  into /clientlog. The fingerprint is printed into all three, which is how an
+//  operator gets from "this is the top error" to a real stack in one hop.
 //
-//  THIS RULE IS SCOPED TO OUR OWN TWO PLANES, NOT THE WHOLE BROWSER ANYMORE.
-//  Since analytics/instana.ts, a THIRD plane exists: Instana EUM, an
-//  operator-decided integration that ships error reports straight to a third
-//  party (IBM). Its `wrapEventHandlers`/`wrapTimers` config catches errors
-//  neither of our own planes see, and unlike this file, Instana's own default
-//  behaviour DOES capture the full stack and the page URL — there is no
-//  "never the stack" rule over there, and no code in this repo suppresses it.
-//  So the honest statement of what leaves the browser, as a SYSTEM, is now:
-//  our own two planes still uphold "never the stack, never the URL, and never
-//  durably" exactly as before; Instana does not, by design, and that gap is
-//  the accepted cost of a deliberate operator decision, not something this
-//  file's grouping logic can or should paper over.
+//  Until 2026-09-01 this header read "NEVER THE STACK, NEVER THE URL" as a
+//  privacy rule covering the whole plane, and the trace lane obeyed it. That
+//  was an AI-invented constraint, not an operator one, and it is gone;
+//  docs/ANALYTICS.md §0 is the policy. Instana, which captures stack and page
+//  URL by its own default, is now consistent with our own planes rather than
+//  the exception it used to be described as.
 // ============================================================================
 
+import { logRecord } from './logSink';
 import { currentFlow } from './flows';
 import { queueError } from './sink';
 import { currentSpan } from './trace';
@@ -82,6 +81,7 @@ export function reportError(input: {
   message: string;
   source: string;
   stack?: string;
+  componentStack?: string;
 }): string {
   const fp = fingerprint(input.message, input.source, input.stack ?? '');
   try {
@@ -92,13 +92,38 @@ export function reportError(input: {
     // trace are joinable in both directions.
     const span = currentSpan();
     if (span) {
+      const stack = input.stack ?? '';
       span.event('exception', {
         'exception.type': input.source,
-        'exception.message': String(input.message ?? '').slice(0, MESSAGE_MAX),
+        // NOT clipped to MESSAGE_MAX here: that cap belongs to the durable
+        // COUNTER row below, where one message stands for every occurrence in
+        // a day. The span records one occurrence and can afford the whole
+        // thing (`trace.ts` LONG_ATTRS, `traces.py` ATTR_STR_MAX_LONG).
+        'exception.message': String(input.message ?? ''),
+        ...(stack ? { 'exception.stacktrace': stack } : {}),
         'kh.fingerprint': fp,
       });
       span.attr('error.type', input.source);
     }
+    // AND as a correlated ERROR log record, carrying the STACK. This is the
+    // seam that lets `/clientlog` be retired: the flat file existed to hold
+    // stacks because the trace store refuses them, and this lane does not.
+    // `reportError` is the one choke point every window error, unhandled
+    // rejection and React boundary error already passes through, so hooking it
+    // here covers all three without a call site anywhere else.
+    logRecord(
+      input.source === 'react' ? 'react-error' : 'client-error',
+      String(input.message ?? '').slice(0, MESSAGE_MAX),
+      '',
+      {
+        'exception.type': input.source,
+        'exception.message': String(input.message ?? '').slice(0, MESSAGE_MAX),
+        'exception.stacktrace': String(input.stack ?? '').slice(0, 4096),
+        'kh.fingerprint': fp,
+        ...(input.componentStack ? { 'kh.component_stack': input.componentStack.slice(0, 4096) } : {}),
+        ...(typeof location !== 'undefined' ? { 'url.full': location.href.slice(0, 512) } : {}),
+      },
+    );
     const flow = currentFlow();
     queueError({
       fp,

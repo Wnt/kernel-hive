@@ -53,6 +53,7 @@
 import { APP_METRICS, APP_PROBES } from './app.ts';
 import { FLEET_FLOWS, FLEET_METRICS, FLEET_PROBES } from './fleet.ts';
 import { STATION_FLOWS, STATION_METRICS, STATION_PROBES } from './station.ts';
+import { STREAM_EVENT_METRICS, STREAM_EVENT_PROBES } from './stream.ts';
 import { WALKIN_FLOWS, WALKIN_METRICS, WALKIN_PROBES } from './walkin.ts';
 
 // Only what is imported THROUGH this index. The per-area files take their
@@ -64,6 +65,7 @@ export const PROBES = {
   ...APP_PROBES,
   ...FLEET_PROBES,
   ...STATION_PROBES,
+  ...STREAM_EVENT_PROBES,
   ...WALKIN_PROBES,
 } as const;
 
@@ -84,6 +86,7 @@ export const METRICS = {
   ...APP_METRICS,
   ...FLEET_METRICS,
   ...STATION_METRICS,
+  ...STREAM_EVENT_METRICS,
   ...WALKIN_METRICS,
 } as const;
 

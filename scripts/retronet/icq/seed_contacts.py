@@ -112,6 +112,13 @@ def live_stations(roster: dict, have: set[str]) -> list[dict]:
     A station whose account exists but is not yet finalized (roster onboarded=false)
     is deliberately excluded, so it stays out of everyone's cross-list until it is
     truly live.
+
+    An AIM station takes part on its `uin` like everyone else — that is the whole
+    point of the numeric proxy retronet-aim-bridge holds for it. The ICQ clients
+    cross-list a UIN they can render, the bridge carries what arrives there to
+    the AIM client, and only the AIM station's OWN list is untouched by this pass
+    (AIM 1.0.414 predates SSI, so its list is client-local and baked into the
+    golden). See docs/lab/retronet/ICQ-STATION-win311.md.
     """
     return [s for s in roster["stations"] if s.get("onboarded") and s["uin"] in have]
 

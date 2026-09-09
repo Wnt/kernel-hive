@@ -18,6 +18,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { autoGrid, parseGridSpec, parseScreenSpec } from './grid.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolveInviteCode } from './invite.mjs';
 
@@ -87,7 +88,9 @@ CORE PARAMETERS
   --mix <spec>             Journey weights, e.g. "exhibits=40,poster=15,
                             walkin=35,station=10". Unknown/zero-weight
                             journeys are dropped. See JOURNEYS below.
-  --gallery-url <url>      Default https://kernelhive.madekivi.fi
+  --gallery-url <url>      Default https://kernelhive.madekivi.fi. May carry a
+                            staging-slot path (…/staging/<session>); auth stays
+                            at the origin.
 
 SAFETY SWITCHES (all default to the safe side)
   --allow-resets           Arm the golden-reset journey (POST /restore/<id>).
@@ -159,11 +162,34 @@ JOURNEYS (what --mix names)
              occasionally a golden reset, gated by --allow-resets/--reset-max/
              --reset-min-interval exactly like every other reset in this tool.
              Requires --storage-state or --invite.
+  editor     Like "station", but a scripted demo: each visitor gets a DISTINCT
+             station (by visitor number, so --visitors 6 drives 6 machines),
+             resets it to golden, opens a text editor with the keyboard
+             (Ctrl+Esc -> R -> notepad on Windows guests), types a funny line,
+             selects it with the keyboard, clicks a few random spots, and ends
+             with a figure-8. Keys and clicks are what populate the
+             input.dispatch.* trace plane. Requires --storage-state or --invite;
+             editor-open recipe today covers win95/98se/2000/xp/nt4/reactos.
 
 OTHER
   --headed        Run headed instead of headless (debugging). Works on
                   labhost's shared X display (DISPLAY=:1, xdesk.service) same
-                  as any other Playwright tool here.
+                  as any other Playwright tool here, and on your own desktop
+                  (e.g. a Mac) when run from a session inside the GUI.
+  --tile          Lay the headed windows out as a non-overlapping grid instead
+                  of stacking them. Needs --headed. The grid auto-sizes to hold
+                  --concurrency (6 -> 3x2). The window fills the tile (viewport
+                  follows the window, so pages render at the tile size).
+  --grid <CxR>    Force the grid shape, e.g. 3x2. Default: auto from concurrency.
+  --screen <WxH>  Usable desktop area in POINTS (not pixels — a 2880x1800
+                  Retina panel is 1440x900 points). Default 1440x900, a 15"
+                  MacBook Pro's default mode. Shrink it to leave room for a Dock.
+  --tile-gap <px>  Gap between and around windows. Default 8.
+  --tile-top <px>  Top inset for the menu bar. Default 28.
+  --burst         Start every visitor at once (still bounded by --concurrency)
+                  instead of spreading arrivals over --duration, so all the
+                  tiled windows are on screen together. Less realistic; use it
+                  when the point is to WATCH the grid.
   --browser <name> 'chromium' (Playwright's bundled build, default) or
                    'chrome' (the system Chrome, channel:'chrome'). Both were
                    verified live to expose VideoDecoder, WebTransport and
@@ -176,6 +202,20 @@ OTHER
                   always lands in the already-gitignored spot. Pass a path
                   explicitly and it is honoured exactly as given, relative to
                   your current working directory.
+  --shots-dir <d> Turn on the CONNECTION-BANNER WATCH and photograph it.
+                  Every visitor's tab is sampled 4x/s for the connection
+                  banner ("Spotty connection", "Device under load",
+                  "Reconnecting…", the exit-reason lines), the phase overlay
+                  ("Reconnecting to tile… (attempt N)", "Restoring tile…",
+                  "Waiting for desktop…") and the device/stall chips; every
+                  TRANSITION is logged and photographed, plus one shot every
+                  5s regardless, into <d> as
+                  <visitor>-<station>-<elapsed ms>-<state>.png. The full
+                  timeline also lands in the run manifest (bannerTimeline).
+                  Without this flag nothing is watched and nothing is
+                  photographed — the tool behaves exactly as before.
+  --banner-watch  Watch and LOG the banner transitions (same observer as
+                  --shots-dir) without writing any screenshots.
   --seed <n>      Seed the RNG for reproducible runs.
   --help          This.
 `;
@@ -215,7 +255,10 @@ export function parseArgs(argv) {
     'force-walkin',
     'dry-run',
     'headed',
+    'tile',
+    'burst',
     'invite-refresh',
+    'banner-watch',
     'help',
   ]);
   for (let i = 0; i < argv.length; i++) {
@@ -245,7 +288,11 @@ export function parseArgs(argv) {
   // main() redeems it — parseArgs stays synchronous and network-free, the
   // invite POST happens later in visitor-sim.mjs.
   const hasStorageState = args.has('storage-state') || args.has('invite');
-  const allowedJourneys = ['exhibits', 'poster', 'walkin', 'station'];
+  const allowedJourneys = ['exhibits', 'poster', 'walkin', 'station', 'editor'];
+  // Journeys that open a live pool station from the full grid — unreachable by
+  // the walk-in role, so they need an invited session (--storage-state/--invite).
+  // These are also the only journeys that can fire a golden reset.
+  const CREDENTIALED = ['station', 'editor'];
 
   const stationsRaw = args.get('stations');
   if (!stationsRaw) {
@@ -305,9 +352,11 @@ export function parseArgs(argv) {
     : 'exhibits=45,poster=20,walkin=35';
   const mix = parseMix(args.get('mix') ?? defaultMix, allowedJourneys);
   if (mix.walkin && walkinMax === 0) delete mix.walkin;
-  if (mix.station && !hasStorageState) {
+  const credInMix = CREDENTIALED.filter((j) => mix[j]);
+  if (credInMix.length > 0 && !hasStorageState) {
     throw new Error(
-      '--mix includes "station" but neither --storage-state nor --invite was given — that journey needs an invited session.',
+      `--mix includes ${credInMix.map((j) => `"${j}"`).join('/')} but neither --storage-state nor --invite was ` +
+        'given — that journey opens a live pool station and needs an invited session.',
     );
   }
   if (Object.keys(mix).length === 0) throw new Error('--mix resolved to no usable journeys — check --walkin-max/--storage-state/--invite');
@@ -317,13 +366,33 @@ export function parseArgs(argv) {
   // reset budget no matter how --allow-resets/--reset-max are set. Say that
   // now rather than let it arm silently; visitor-sim.mjs's printPlan repeats
   // this in the printed plan so it shows up even under --dry-run.
-  const resetsCanFire = allowResets && !!mix.station;
-  const resetsArmedButUnusable = allowResets && !mix.station;
+  const resetCapableInMix = !!mix.station || !!mix.editor;
+  const resetsCanFire = allowResets && resetCapableInMix;
+  const resetsArmedButUnusable = allowResets && !resetCapableInMix;
 
   const browser = args.get('browser') ?? 'chromium';
   if (!['chromium', 'chrome'].includes(browser)) {
     throw new Error(`--browser must be "chromium" or "chrome", got "${browser}"`);
   }
+
+  // Window tiling. Only meaningful with real windows, so it requires --headed;
+  // a grid in a headless run would silently do nothing. The grid defaults to
+  // the smallest square-ish layout that holds `concurrency` (so 6 -> 3x2), and
+  // every dimension is a flag so the layout can be tuned without touching code.
+  const tile = !!args.get('tile');
+  if (tile && !args.get('headed')) {
+    throw new Error('--tile positions real browser windows, so it needs --headed. Add --headed or drop --tile.');
+  }
+  const grid = args.has('grid') ? parseGridSpec(args.get('grid')) : autoGrid(concurrency);
+  const screen = parseScreenSpec(args.get('screen') ?? '1440x900');
+  const gap = args.has('tile-gap') ? Number(args.get('tile-gap')) : 8;
+  if (!Number.isInteger(gap) || gap < 0) throw new Error('--tile-gap must be a non-negative integer');
+  const tileTop = args.has('tile-top') ? Number(args.get('tile-top')) : 28;
+  if (!Number.isInteger(tileTop) || tileTop < 0) throw new Error('--tile-top must be a non-negative integer');
+  // --burst starts every visitor at once (bounded by the semaphore) instead of
+  // spreading arrivals over --duration, so all `concurrency` windows are up
+  // together — which is the whole point of watching a tiled grid.
+  const burst = !!args.get('burst');
 
   const invite = args.has('invite')
     ? {
@@ -358,8 +427,20 @@ export function parseArgs(argv) {
     browser,
     dryRun: !!args.get('dry-run'),
     headed: !!args.get('headed'),
+    tile,
+    grid,
+    screen,
+    tileGap: gap,
+    tileTop,
+    burst,
     outDir: args.get('out-dir') ?? DEFAULT_OUT_DIR,
     seed: args.has('seed') ? Number(args.get('seed')) : null,
+    // The banner watch is OFF unless asked for: it injects a 4 Hz sampler into
+    // every tab, and this tool's whole point is that its traffic looks like a
+    // visitor's. --shots-dir implies it (photographing nothing would be a
+    // no-op flag), --banner-watch is the log-only half.
+    shotsDir: args.get('shots-dir') ?? null,
+    bannerWatch: !!args.get('banner-watch') || args.has('shots-dir'),
   };
 
   // inviteCode is intentionally NOT attached to `config` — see the comment

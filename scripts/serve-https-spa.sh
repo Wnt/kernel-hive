@@ -68,6 +68,7 @@ SRV_PY="$SERVE_DIR/osgallery-https-server.py"
 CLIENTCMD_SH="$SERVE_DIR/clientcmd.sh"
 CA_SH="$SERVE_DIR/gen-local-ca.sh"
 RESET_SH="$SERVE_DIR/reset-tile.sh"
+DARKLAUNCH_PY="$SERVE_DIR/darklaunch-station.py"
 PIDFILE="/run/osgallery-https.pid"
 LOGFILE="/var/log/osgallery-https.log"
 
@@ -91,7 +92,11 @@ build() {
   (
     cd "$SPA_WEB"
     export VITE_INSTANA_WEBSITE_KEY="${INSTANA_WEBSITE_KEY:-}"
-    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:-}"
+    # The bundle gets the beacon proxy's FIRST-PARTY PATH, never the tenant URL
+    # (docs/ANALYTICS.md §8.3). `:+` not `:-`: an unset upstream still exports
+    # EMPTY, so index.html's no-url no-op is reached rather than a
+    # contributor's build pointing at a proxy they do not run.
+    export VITE_INSTANA_EUM_REPORTING_URL="${INSTANA_EUM_REPORTING_URL:+/eum}"
     npm run build
   )
   [ -f "$DIST/index.html" ] || {
@@ -101,11 +106,90 @@ build() {
   msg "built -> $DIST"
 }
 
+# ---------------------------------------------------------------------------
+# THE SILENT-TELEMETRY TRAP, and the guard that closes it.
+#
+# `build()` above is the ONLY place that exports VITE_INSTANA_* into `vite
+# build`. A bare `npm run build` in spa/ — which every quality-gate run, every
+# `npm test && npm run build`, and every contributor without registry/local.env
+# does — leaves the percent-delimited placeholders unsubstituted, and
+# spa/index.html's bootstrap then takes its documented no-key path: no ineum
+# stub, no vendor script tag, ZERO telemetry.
+#
+# `deploy()` does NOT rebuild. It publishes whatever dist/ happens to be there.
+# So "run the gate, then deploy" silently ships a bundle with Instana entirely
+# disabled — which happened on 2026-09-01 and cost a full debugging cycle
+# chasing missing beacons that were never sent.
+#
+# The keyless build stays legal: a contributor with no local.env must still be
+# able to build and deploy their own gallery. What must never happen is a
+# keyless dist being published by a machine that HAS the key — that is always
+# an accident, and the fix is always the same one command. So the guard asks
+# both questions, not one.
+dist_placeholder_names() {
+  # The VITE_ placeholder names still unsubstituted in the built index.html,
+  # one per line. Built with a character class rather than a literal so this
+  # very script never becomes substitution text (spa/index.html's own comments
+  # take the same precaution, for the same reason).
+  #
+  # The `|| true` is load-bearing under `set -euo pipefail`: grep exits 1 when
+  # it matches NOTHING, which is the GOOD case here, and an unguarded failure
+  # inside `$(...)` on the right of an assignment kills the script — silently,
+  # with no output at all, right before the deploy it was meant to guard.
+  # Measured, not imagined: that is exactly how the first cut of this function
+  # behaved on a correctly-built dist.
+  { grep -o "%VITE[_A-Z0-9]*%" "$DIST/index.html" 2>/dev/null || true; } | sort -u
+}
+
+check_dist_is_publishable() {
+  local placeholders newer
+  placeholders="$(dist_placeholder_names)"
+
+  if [ -n "$placeholders" ] && [ -n "${INSTANA_WEBSITE_KEY:-}" ]; then
+    msg "ERROR: refusing to deploy — this dist was built WITHOUT the Instana key,"
+    msg "       but this machine HAS one (registry/local.env). Publishing it would"
+    msg "       silently disable ALL browser telemetry on the live gallery."
+    msg "       Unsubstituted placeholders in $DIST/index.html:"
+    while IFS= read -r ph; do printf '         %s\n' "$ph" >&2; done <<<"$placeholders"
+    msg "       A bare 'npm run build' in spa/ does this — only '$0 build'"
+    msg "       exports the VITE_INSTANA_* vars. Rebuild and retry:"
+    msg "         $0 build && $0 deploy"
+    exit 1
+  fi
+
+  if [ -n "$placeholders" ]; then
+    # No key configured: the documented no-key fallback. Legal, but never silent.
+    msg "NOTE: keyless build (no INSTANA_WEBSITE_KEY in registry/local.env)."
+    msg "      The deployed SPA will send no Instana beacons — this is the"
+    msg "      documented fallback, not a fault. Unsubstituted: $(echo "$placeholders" | tr '\n' ' ')"
+  fi
+
+  # Staleness: a dist older than the sources it was built from is the same
+  # class of mistake wearing different clothes (deploying yesterday's bundle
+  # and reading today's behaviour into it). Scoped to what vite actually
+  # consumes, so an unrelated docs edit never blocks a deploy.
+  newer="$(find "$SPA_WEB/src" "$SPA_WEB/index.html" "$SPA_WEB/package.json" \
+    "$SPA_WEB/vite.config.ts" -newer "$DIST/index.html" -print -quit 2>/dev/null || true)"
+  if [ -n "$newer" ]; then
+    if [ -n "${ALLOW_STALE_DIST:-}" ]; then
+      msg "WARNING: $DIST is older than the SPA sources (e.g. $newer)."
+      msg "         Deploying anyway — ALLOW_STALE_DIST is set."
+    else
+      msg "ERROR: refusing to deploy — $DIST is older than the SPA sources."
+      msg "       Newer than the build: $newer"
+      msg "       Rebuild first:  $0 build"
+      msg "       To publish an intentionally older bundle: ALLOW_STALE_DIST=1 $0 deploy"
+      exit 1
+    fi
+  fi
+}
+
 deploy() {
   [ -f "$DIST/index.html" ] || {
     msg "ERROR: no built dist; run '$0 build' first"
     exit 1
   }
+  check_dist_is_publishable
   # scripts/dev/stage.sh builds a preview into this SAME dist/ with
   # vite base=/staging/<name>/, so a deploy that follows a stage ships a bundle
   # whose asset paths AND router basename point at the staging path — the live
@@ -202,6 +286,10 @@ deploy() {
   # it exists to prevent is someone reaching for `rm auth-state.json` there.
   $SSH "cat > $SERVE_DIR/reset-auth.sh && chmod +x $SERVE_DIR/reset-auth.sh" <"$REPO/scripts/serve/reset-auth.sh"
   $SSH "cat > $SERVE_DIR/check-stream-tickets.py" <"$REPO/scripts/serve/check-stream-tickets.py"
+  # The dark-launch tool travels WITH the serving plane because publish_manifests
+  # calls it on every publish (see reapply_darklaunch). Its docstring has always
+  # said "run ON THE BOX"; until now nothing put it there.
+  $SSH "cat > $DARKLAUNCH_PY" <"$REPO/scripts/dev/darklaunch-station.py"
   $SSH "cat > $SERVE_DIR/pen-trace.py" <"$REPO/scripts/serve/pen-trace.py"
   $SSH "cat > $SERVE_DIR/key-trace.py" <"$REPO/scripts/serve/key-trace.py"
   publish_manifests
@@ -214,12 +302,10 @@ deploy() {
 # self-hosted at $WEBROOT/vendor/instana-eum.min.js — spa/index.html's
 # bootstrap loads it from that path, never from IBM's CDN directly, and it is
 # NEVER committed to this public repo (gitignored on the box the same way
-# scripts/serve/pki/ is; see .gitignore). Every existing published document in
-# this script (tiles.json, gallery-manifest.json, …) is rendered FROM the
-# repo, so this is the one exception — it is fetched from a third party at
-# deploy time instead — and it must not be allowed to fail SILENTLY: an
-# operator who thinks Instana is live but is actually serving a 404 for
-# /vendor/instana-eum.min.js would only find out from a support ticket.
+# scripts/serve/pki/ is). Every other document this script publishes is
+# rendered FROM the repo; this one is fetched from a third party at deploy
+# time, and it must not fail SILENTLY — an operator who thinks Instana is live
+# while serving a 404 for the agent finds out from a support ticket.
 publish_instana_agent() {
   if [ -z "${INSTANA_EUM_SCRIPT_URL:-}" ]; then
     msg "INSTANA_EUM_SCRIPT_URL unset — Instana EUM not configured, skipping vendor fetch"
@@ -239,97 +325,24 @@ publish_instana_agent() {
     msg "WARNING: failed to fetch the Instana EUM agent — /vendor/instana-eum.min.js was NOT updated." >&2
     msg "         Instana EUM will be broken (404) until this is retried: '$0 all' or rerun deploy." >&2
   fi
+  # THE BEACON PROXY'S ONE UPSTREAM — the other half of the same artifact: the
+  # bundle posts to our own /eum and scripts/serve/eum_proxy.py forwards here.
+  # A file, not a unit Environment= line: the unit is committed to a PUBLIC
+  # repo and the tenant URL is not. Read once per process — changing it needs a
+  # restart. docs/ANALYTICS.md §8.3.
+  local up="$SERVE_DIR/instana-eum-upstream.txt"
+  if [ -n "${INSTANA_EUM_REPORTING_URL:-}" ] &&
+    printf '%s\n' "$INSTANA_EUM_REPORTING_URL" | $SSH "cat > $up && chmod 600 $up"; then
+    msg "published the EUM beacon proxy upstream"
+  else
+    msg "WARNING: no EUM beacon-proxy upstream — POST /eum will 404, beacons dropped." >&2
+  fi
 }
 
-# Upload this build's JS source maps to Instana, so its stack-trace
-# translation (docs/lab/… — see the offline Instana docs' "JavaScript stack
-# trace translation" section) can turn a beacon's minified frame back into a
-# real file/line. Runs from THIS machine (no $SSH — dist/ already exists
-# locally after build()); never touches the box.
-#
-# WHY UPLOAD AS WELL AS SERVE THE MAP PUBLICLY: since vite.config.ts's
-# `sourcemap: true` and deploy()'s dropped --exclude, the map IS now public —
-# `sourceMappingURL` points at it and a browser can fetch it (only the app
-# shell at '/' is passkey-gated; `/assets/*` is unauthenticated — see
-# docs/PUBLIC-GALLERY.md). That serves a human with devtools open, which is
-# the case this upload does NOT cover: Instana's own automatic retrieval
-# (GET the JS, read `sourceMappingURL`, GET the map) depends on its crawler
-# actually reaching us and on timing relative to the next deploy, and IBM's
-# own docs describe upload as the reliable path for a private website even
-# when the asset itself is reachable ("Automatic JavaScript source maps
-# retrieval does not work for customers who monitor private websites...
-# Instana provides a way to upload... source-mapping files for private
-# websites"). So this pushes the map straight to Instana's private
-# per-website store, deterministically, on every deploy — a second delivery
-# path for a second consumer, not a duplicate of the public one above.
-#
-# THE PAIRING KEY IS THE JS FILE'S URL, NOT A VERSION. Instana's Web REST API
-# associates one uploaded map with the exact URL a stack-trace frame will
-# name (`-F 'url=...'`), not with any release/version string — there is no
-# separate "release" identifier in this mechanism. Vite's content hash in
-# each asset's filename (index-<hash>.js) already makes that URL unique per
-# build, which is exactly the property this pairing needs.
-#
-# CREDENTIALS: the PERSONAL API TOKEN (INSTANA_API_TOKEN_FILE), never the
-# agent key — this is a Web REST (config) call, not ingest. Read from the
-# gitignored file path only; never printed, never baked into any built file.
-#
-# INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID names an Instana "File Upload
-# Configuration" — a per-website bucket the source maps upload API needs. IBM's
-# docs only ever show it created BY HAND in the UI (website's Configuration
-# tab -> JS Stack Trace Translation -> File Download Configurations -> Add
-# Configuration); this file's own comment right above INSTANA_WEBSITE_KEY
-# already used the equivalent config REST endpoint once (creating the website
-# itself), and the same POST shape works to create this too — see
-# registry/local.env.example for the one-time command.
-publish_instana_sourcemaps() {
-  if [ -z "${INSTANA_API_BASE:-}" ] || [ -z "${INSTANA_WEBSITE_KEY:-}" ] ||
-    [ -z "${INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID:-}" ] || [ -z "${INSTANA_API_TOKEN_FILE:-}" ]; then
-    msg "Instana source-map upload not fully configured (need INSTANA_API_BASE, INSTANA_WEBSITE_KEY,"
-    msg "INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID, INSTANA_API_TOKEN_FILE) — skipping upload, maps stay unpublished only"
-    return 0
-  fi
-  local token_file="$REPO/$INSTANA_API_TOKEN_FILE"
-  [ -f "$token_file" ] || {
-    msg "WARNING: INSTANA_API_TOKEN_FILE=$INSTANA_API_TOKEN_FILE not found — skipping source-map upload" >&2
-    return 0
-  }
-  [ -z "${SH_GALLERY_HOST:-}" ] && {
-    msg "WARNING: SH_GALLERY_HOST unset — cannot form the public asset URLs maps must be keyed to; skipping upload" >&2
-    return 0
-  }
-  local token maps_found=0 failed=0
-  token="$(cat "$token_file")"
-  for map in "$DIST"/assets/*.js.map; do
-    [ -f "$map" ] || continue
-    maps_found=$((maps_found + 1))
-    local js_name js_url resp http_code
-    js_name="$(basename "$map" .map)"
-    js_url="https://$SH_GALLERY_HOST/assets/$js_name"
-    resp="$(curl -sS -L -X PUT \
-      -o /dev/null -w '%{http_code}' \
-      "$INSTANA_API_BASE/api/website-monitoring/config/$INSTANA_WEBSITE_KEY/sourcemap-upload/$INSTANA_SOURCEMAP_UPLOAD_CONFIG_ID/form" \
-      -H "authorization: apiToken $token" \
-      -F "url=$js_url" \
-      -F "sourceMap=@$map" || echo '000')"
-    http_code="$resp"
-    if [ "$http_code" = "200" ]; then
-      msg "uploaded source map for $js_url"
-    else
-      failed=$((failed + 1))
-      msg "WARNING: source-map upload for $js_url failed (HTTP $http_code)" >&2
-    fi
-  done
-  if [ "$maps_found" = 0 ]; then
-    msg "WARNING: no .map files in $DIST/assets — was the build made with sourcemaps enabled (vite.config.ts)?" >&2
-  elif [ "$failed" -gt 0 ]; then
-    # LOUD, not silent, same standard as publish_instana_agent: the deploy
-    # continues (Instana keeps translating against the PREVIOUS build's maps,
-    # a fine fallback — stale-but-present beats none), but this must be
-    # impossible to miss.
-    msg "WARNING: $failed of $maps_found source-map upload(s) failed — Instana stack traces for this build may show minified frames." >&2
-  fi
-}
+# publish_instana_sourcemaps() lives in scripts/serve/instana-sourcemaps.sh —
+# serve-https-spa.sh was at its 600-line hard cap and could take no new line.
+# shellcheck disable=SC1091
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/serve/instana-sourcemaps.sh"
 
 # Republish the boot-replay assets (/boot/<id>/boot.mp4 … + /boot/index.json).
 # They are baked ON labhost (scripts/coldboot/, staging /data/vms/streamhost/
@@ -350,6 +363,32 @@ publish_boot() {
 
 # Publish the two registry-generated runtime JSON documents with atomic per-file
 # replacement. This is independent of deploy(): ordinary new stations need no Vite build.
+# Re-overlay every declared dark launch onto the two documents publish_manifests
+# has just rewritten from the registry.
+#
+# THE INCIDENT. Both documents are rendered whole from the registry, so
+# publishing them dropped every row a dark launch had added — and a dark launch
+# is how a wave shows the operator an install at /os/<id> before the station is
+# a registry row. Every landing therefore took down every OTHER wave in flight
+# (seven of them, on pcbsd's landing, 2026-09-03), silently, and each of those
+# waves had to notice and re-run `publish` itself. The workaround was a line in
+# the landing checklist; this is the fix, and it is here rather than in the
+# landing tool because ANY publish wipes them, not only a landing's.
+#
+# The declarations in serve/darklaunch.d/ now carry the rows they added, so the
+# re-overlay needs no rig and no wave session. Never fatal: a gallery that is
+# published but missing an overlay is a degraded dark launch, not a broken
+# gallery, and the message says which station to re-publish.
+reapply_darklaunch() {
+  $SSH "set -e; \
+    [ -d $SERVE_DIR/darklaunch.d ] || exit 0; \
+    tool=$DARKLAUNCH_PY; \
+    [ -f \"\$tool\" ] || tool=$BOX_REPO/scripts/dev/darklaunch-station.py; \
+    [ -f \"\$tool\" ] || { echo '[serve-https] WARNING: no darklaunch-station.py on the box; overlays NOT restored' >&2; exit 0; }; \
+    python3 \"\$tool\" reapply --serve-root $SERVE_DIR" ||
+    msg "WARNING: dark-launch re-overlay failed — /os/<id> views of in-flight waves may be gone" >&2
+}
+
 publish_manifests() {
   # None of these has a committed copy to go stale: render them now, from the
   # registry, and publish those bytes. A registry that no longer validates fails
@@ -381,6 +420,7 @@ publish_manifests() {
   # box copy simply had no entry, which reads as `unknown osId` at reset time.
   $SSH "set -e; tmp=$SERVE_DIR/golden-manifest.json.tmp; cat > \"\$tmp\"; mv \"\$tmp\" $SERVE_DIR/golden-manifest.json" <"$GOLDEN_MANIFEST_SRC"
   msg "published tiles.json + webroot/gallery-manifest.json + webroot/poster-docs.json + webroot/fleet-table.json + golden-manifest.json"
+  reapply_darklaunch
 }
 
 cert() {

@@ -1,0 +1,39 @@
+# ~/.micq/micqrc — the netbsd14 station's mICQ 0.4.12 account.
+# __PASS__ is substituted from registry/local.env RETRONET_ICQ_NETBSD14_PASS.
+# 'format 1' marks current syntax; without it mICQ opens with
+# "Warning: Deprecated syntax found in rc file!" on the exhibit screen.
+format 1
+
+[Connection]
+type icq8 auto
+version 8
+server 10.99.0.2
+port 5190
+uin 17600
+password __PASS__
+status 0
+
+[General]
+s5_use 0
+auto_away 0
+Screen_Width 78
+verbose 0
+set auto       off
+set autosave   off
+set color      on
+set funny      off
+set log        off
+set uinprompt  off
+set silent     off
+color scheme   0
+
+# The contact group. Without a [Group] for the connection mICQ synthesises one
+# and reports "Deprecated syntax found in rc file!" on the exhibit screen.
+[Group]
+server icq8 17600
+label "contacts-icq8-17600"
+id 1
+entry 0 10000
+
+[Contacts]
+     10000 HiveBot

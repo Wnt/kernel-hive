@@ -3,6 +3,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   consumeRetry, retryLimit, MAX_COLD_ATTEMPTS, MAX_RELIVE_ATTEMPTS,
+  keyframeWaitMs,
+  KEYFRAME_WAIT_MS,
+  RELIVE_KEYFRAME_WAIT_MS,
 } from './retryBudget';
 
 describe('retryLimit', () => {
@@ -37,5 +40,25 @@ describe('consumeRetry', () => {
 
   it('treats a negative/garbage counter as a fresh ladder', () => {
     expect(consumeRetry(-3, false).attempt).toBe(1);
+  });
+});
+
+describe('keyframeWaitMs — what THIS attempt may wait for frame #1', () => {
+  it('gives a cold connect the full budget', () => {
+    expect(keyframeWaitMs({ restore: false, live: false })).toBe(KEYFRAME_WAIT_MS);
+  });
+
+  it('gives a proven-live reconnect the short one', () => {
+    expect(keyframeWaitMs({ restore: false, live: true })).toBe(RELIVE_KEYFRAME_WAIT_MS);
+  });
+
+  it('treats a RESTORE as cold even though the station was live', () => {
+    // The 2026-09-02 sim reading: the first post-restore attempt was abandoned
+    // at RELIVE_KEYFRAME_WAIT_MS (3 s) every single time, and the ladder then
+    // spent 250/500/1000/2000 ms of restore backoff on top — "still mid
+    // stream.recover up to ~17 s after the click". loadvm is simply slower.
+    const restore = keyframeWaitMs({ restore: true, live: true });
+    expect(restore).toBeGreaterThan(RELIVE_KEYFRAME_WAIT_MS);
+    expect(restore).toBe(keyframeWaitMs({ restore: true, live: false }));
   });
 });

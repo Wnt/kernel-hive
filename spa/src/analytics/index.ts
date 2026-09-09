@@ -23,11 +23,13 @@
 //  than a fourth meaning bolted onto one of the first two.
 // ============================================================================
 
+import { BUILD_ID } from './build';
 import { PROBES, type ProbeId } from './catalogue';
 import { clientClass, gradeFor, installIntentWitness, type Intent } from './intent';
 import { configureSink, queueProbe } from './sink';
 import { installErrorCapture } from './errors';
-import { configureTracer, traceHeaders, type WireSpan } from './trace';
+import { configureTracer, requeueSpans, type WireSpan } from './trace';
+import { postTelemetry } from './beacon';
 
 // Only what CALL SITES use. `fingerprint`, `witnessHumanEdge` and the flush are
 // exported by their own modules for the tests and the operator plane;
@@ -77,11 +79,29 @@ function queueProbeGrade(id: string, grade: Intent): void {
  * stranger at the walk-in signup door has no session, so every flush would 401
  * and re-queue forever.
  */
-export function initAnalytics(opts: { sessionId: string; allowed: boolean }): void {
+export function initAnalytics(opts: {
+  sessionId: string;
+  allowed: boolean;
+  /** The signed-in account, when there is one. Stamped on the span that enters
+   *  each trace as the OTel `enduser.id` / `user.name` / `enduser.role`
+   *  attributes — see `trace.ts`'s `identity`, and docs/ANALYTICS.md §0 for
+   *  why this plane carries identity at all. */
+  user?: { id: string; name: string; role: string };
+}): void {
   try {
     installIntentWitness();
     configureSink({ sessionId: opts.sessionId, allowed: opts.allowed, clientClass });
-    configureTracer({ enabled: opts.allowed, emit: (spans) => postSpans(opts.sessionId, spans) });
+    configureTracer({
+      enabled: opts.allowed,
+      emit: (spans, final) => postSpans(opts.sessionId, spans, final),
+      identity: opts.user
+        ? {
+            'enduser.id': opts.user.id,
+            'enduser.role': opts.user.role,
+            ...(opts.user.name ? { 'user.name': opts.user.name } : {}),
+          }
+        : undefined,
+    });
     if (opts.allowed) installErrorCapture();
   } catch { /* a gallery that loads beats a gallery that measures */ }
 }
@@ -98,7 +118,7 @@ export function initAnalytics(opts: { sessionId: string; allowed: boolean }): vo
  * for all of them, and OTLP itself groups spans under one Resource for exactly
  * this reason (serve/traces.py re-expands it on export).
  */
-function postSpans(sessionId: string, spans: WireSpan[]): void {
+function postSpans(sessionId: string, spans: WireSpan[], final = false): void {
   try {
     if (!spans.length) return;
     const body = JSON.stringify({
@@ -106,20 +126,32 @@ function postSpans(sessionId: string, spans: WireSpan[]): void {
         'service.name': 'kernel-hive-spa',
         'session.id': sessionId,
         'kh.class': clientClass(),
+        // WHICH BUNDLE THIS CLIENT IS RUNNING — a RESOURCE attribute, not a
+        // per-span one: it is identical for every span a tab will ever emit,
+        // which is exactly what a Resource is for. serve/traces.py stores it on
+        // the trace row and traces_otlp.py exports it as `service.version`.
+        // Before this existed the only place a build id was recorded was a
+        // vendor beacon's `kh.bundle` meta, so "was that phone on an old
+        // shell?" was unanswerable without the vendor — see
+        // docs/ANALYTICS.md §"Which bundle was this client running".
+        'kh.bundle': BUILD_ID,
       },
       spans,
     });
-    void fetch('/traces', {
-      method: 'POST',
-      keepalive: true,
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', ...traceHeaders() },
-      body,
-      // No fold-back on failure, unlike the counters. A dropped counter is a
-      // number that reads slightly low forever; a dropped span is one trace
-      // missing from a window that expires in days anyway, and re-queueing
-      // kilobytes of spans through a flaky link is how a tab's memory grows
-      // until the visitor notices the thing that was supposed to be invisible.
-    }).catch(() => {});
+    // NO `traceparent`: see sink.ts. `/traces` is not even traced server-side
+    // (tracing_http.py's allowlist refuses the telemetry ingest on purpose), so
+    // the header could only ever have been a parent nothing recorded.
+    //
+    // `keepalive` ONLY on the final flush, and the batch is KEPT when there was
+    // no answer — both of those are `analytics/beacon.ts`, and both were bought
+    // by the same measured fault. This route used to post every batch with
+    // `keepalive: true` and drop it on failure; a document's keepalive
+    // allowance is 64 KiB spent once, so a tab went silent on `/traces`,
+    // `/analytics`, `/clientlog` and `/logs` in the same second, permanently,
+    // while the daemon's half of every input trace kept landing without its
+    // root. 38% of `input.dispatch` spans over 24 h were orphaned that way.
+    void postTelemetry('/traces', body, { final }).then((result) => {
+      if (result === 'failed') requeueSpans(spans);
+    });
   } catch { /* never throw */ }
 }

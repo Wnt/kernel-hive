@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "amix",
+  "images": [
+    {
+      "commonsFile": "File:Amiga3000UX.jpg",
+      "alt": "A 1990s home desk with an Amiga 3000UX desktop computer in the centre, its front badge reading 'Commodore AMIGA 3000UX', a telephone handset resting on the case, a Commodore Amiga keyboard in front of it and a colour monitor to the right",
+      "caption": "An Amiga 3000UX in domestic service, photographed in 1994. The badge on the front panel is the whole difference: the UX was the Unix SKU, sold with a larger hard disk, more memory and AMIX on tape, and this is the machine this station emulates.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amiga 3000 Front Enhanced.jpg",
+      "alt": "The front of a Commodore Amiga 3000 desktop computer, a low beige case with two 3.5-inch floppy slots, power and hard-disk indicator lights, and a Commodore 1950 monitor standing on top of it",
+      "caption": "The Amiga 3000 desktop case, with the Commodore 1950 multisync monitor it was sold beside. That monitor mattered for Unix: AMIX ran the OPEN LOOK desktop at a 31 kHz scan rate the earlier 1084 could not display.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amiga 3000 (medley).JPG",
+      "alt": "An Amiga 3000 seen from a three-quarter angle on a desk, with a keyboard resting on top of the case, an external floppy drive to the left and a flat-panel monitor behind it showing a 3D modelling program",
+      "caption": "The same case from an angle. Commodore built the A3000 for the desk rather than the living room — SCSI on the motherboard, Zorro III expansion and a flicker fixer — and it was that specification, not the Amiga's games reputation, that made a Unix port plausible.",
+      "role": "photo"
+    },
+    {
+      "commonsFile": "File:Amiga 3000T motherboard without annotations.jpg",
+      "alt": "An Amiga 3000T motherboard photographed from above, showing the Motorola 68030 and 68882 chips, the Amiga custom chips Agnus, Denise, Paula and Fat Buster, rows of memory sockets, Zorro III expansion connectors and the rear port cluster",
+      "caption": "An A3000 family motherboard, in the tower variant. The 68030 and its 68882 floating-point companion sit near the middle of the board; the 68030's memory management unit is the part that made this an AT&T System V machine rather than a home computer, because without it Unix cannot run at all.",
+      "role": "photo"
+    }
+  ]
+}

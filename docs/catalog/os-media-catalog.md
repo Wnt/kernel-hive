@@ -2,8 +2,8 @@
 
 A **verified installation-media + boot-recipe catalog** for candidate operating
 systems that could join the OS gallery. The current roster is registry-derived;
-`python3 scripts/stations-registry.py count` currently reports **39 lineup entries:
-37 production streamhost tiles and 2 showcase posters**. For each candidate OS it records
+`python3 scripts/stations-registry.py count` currently reports **92 lineup entries:
+90 production streamhost tiles and 2 showcase posters**. For each candidate OS it records
 **where the install media lives**, its **licensing posture**, the **format**,
 whether a **ROM** is needed, an approximate **size**, an **effort/feasibility/
 museum-value** score, the exact **boot recipe** (QEMU flags or emulator command),
@@ -144,31 +144,32 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 
 | OS | license | why | MV |
 |---|---|---|---|
-| **FreeBSD 15.1** (+ NetBSD 10.1, OpenBSD 7.9) | officially-free | fills the gallery's total **BSD gap**; KVM-fast; OpenBSD ships fvwm in base | 5/4/4 |
+| **FreeBSD 15.1** (+ NetBSD 10.1, OpenBSD 7.9) | officially-free | fills the gallery's total **BSD gap**; KVM-fast; OpenBSD ships fvwm in base. **OpenBSD 7.9 BUILT → `openbsd`** (exact version match); FreeBSD/NetBSD shipped as older exhibits instead (`freebsd411` = FreeBSD 4.11, `netbsd14` = NetBSD 1.4.1) — the modern 15.1/10.1 releases this row proposed are still unbuilt | 5/4/4 |
 | **A2 / Bluebottle Oberon** | officially-free | **live-boots** Wirth's zooming-tile GUI from ISO, no install | 5 |
 | **Sculpt OS 26.04** (Genode) | officially-free | the "museum isn't only retro" tile; 35 MiB image, capability microkernel GUI | 4 |
 | **Minix 3.3.0** | officially-free | Tanenbaum, "the OS that provoked Linus"; console-only but trivial | 5 |
 | **Syllable Desktop** (Live CD) | officially-free | independent BeOS-like desktop, boots straight to GUI | 4 |
-| **PC/GEOS Ensemble** (bluewaysw) | officially-free (Apache-2.0) | true multitasking GUI on a 286; unzip onto a FreeDOS disk | 5 |
+| **PC/GEOS Ensemble** (bluewaysw) | officially-free (Apache-2.0) | true multitasking GUI on a 286; unzip onto a FreeDOS disk. **BUILT → `pcgeos`**, live 2026-09-02 | 5 |
 | **OpenGEM 7** (DR GEM) | officially-free (GPL-2.0) | the Atari-ST-look GUI Apple sued DRI over; pairs with GEOS | 4 |
 | **CP/M-86 1.1** | permissive (2022 CP/M license) | "the OS before DOS" on real PC hardware; boots as a floppy | 4 |
 | **LibreELEC / Kodi** | officially-free (GPL) | easiest whole "TV OS" tile; instantly recognizable 10-foot UI | 4 |
-| **OpenVMS x86 9.2-3** | officially-free (VSI Community) | DEC/VMS lineage; **text** Guest Console works-known (CDE needs bridge) | 5 |
-| **Windows NT 4.0 SP6a** | preservation | classic Explorer shell on the NT kernel; prebuilt VM = near-trivial | 4 |
-| **BeOS R5 PE** | preservation (PE was freeware) | "the original behind Haiku" | 5 |
+| **OpenVMS x86 9.2-3** | officially-free (VSI Community) | DEC/VMS lineage; **text** Guest Console works-known (CDE needs bridge). **BUILT → `openvms`** | 5 |
+| **Windows NT 4.0 SP6a** | preservation | classic Explorer shell on the NT kernel; prebuilt VM = near-trivial. **BUILT → `nt4`** | 4 |
+| **BeOS R5 PE** | preservation (PE was freeware) | "the original behind Haiku". **BUILT → `beos`** | 5 |
+| **Debian GNU/Linux 2.2 "potato"** | officially-free (DFSG) | GNOME 1.0 desktop, kernel 2.2.19; a full Linux distro tile, air-gapped like `redstar2`. **BUILT → `debian22`** | 4 |
 | **MeeGo 1.2 Netbook** | preservation (LF/Intel/Nokia) | Sailfish's ancestor; one 864 MB x86 image boots to the Netbook UX | 5 |
 
 ### Wave 1b — Native, works-known, a bit more choreography (medium effort)
 
 | OS | regime | note | MV |
 |---|---|---|---|
-| **Classic Mac OS 7.5.3 / 7.1 / 8.1** | native m68k (TCG) | top-3 museum draw; needs a Quadra 800 ROM | 5/5/4 |
-| **Mac OS 9.2.2** | native PPC (TCG) | **no external ROM** (OpenBIOS); platinum-era Mac | 4 |
-| **HP-UX 11i v1 (11.11)** | native HPPA (TCG) | boots to a **full CDE desktop** over the Artist framebuffer, no bridge | 5 |
-| **SunOS 4.1.4 / Solaris 1.1.2** | native SPARC (TCG) | pre-CDE OpenWindows/OpenLook; complements the Solaris 10 tile (`-vga cg3`!) | 5 |
+| **Classic Mac OS 7.5.3 / 7.1 / 8.1** | native m68k (TCG) | top-3 museum draw; needs a Quadra 800 ROM. **7.5.3 BUILT → `macos753`**; 7.1/8.1 still unbuilt | 5/5/4 |
+| **Mac OS 9.2.2** | native PPC (TCG) | **no external ROM** (OpenBIOS); platinum-era Mac. **BUILT → `macos9`** | 4 |
+| **HP-UX 11i v1 (11.11)** | native HPPA (TCG) | boots to a **full CDE desktop** over the Artist framebuffer, no bridge. **BUILT → `hpuxvue`** | 5 |
+| **SunOS 4.1.4 / Solaris 1.1.2** | native SPARC (TCG) | pre-CDE OpenWindows/OpenLook; complements the Solaris 10 tile (`-vga cg3`!). **SunOS 4.1.4 BUILT → `sunos414`** | 5 |
 | **UnixWare 7.1.4 / SCO OpenServer 5.0.7** | native x86 | "literally AT&T System V" with a Motif/CDE desktop; UnixWare has a free eval | 4 |
-| **Windows NT 3.51** | native x86 (isapc) | the museum jewel: last Program-Manager-shell OS | 4 |
-| **NeXTSTEP 3.3 (x86)** | native x86 | birthplace of the Web; fussy install choreography | 5 |
+| **Windows NT 3.51** | native x86 (isapc) | the museum jewel: last Program-Manager-shell OS. **BUILT → `nt351`** | 4 |
+| **NeXTSTEP 3.3 (x86)** | native x86 | birthplace of the Web; fussy install choreography. **BUILT → `nextstep`** | 5 |
 | **Palm/HP webOS** | native x86 (vmdk→qcow2) | the SDK "emulator" is an x86 webOS VM; boots the Luna cards UI | 5 |
 | **BlackBerry 10 sim** | native x86 (vmdk→qcow2) | QNX-based → pairs with the existing QNX 6.5 tile | 4 |
 | **Android TV x86** | native x86 (software GL) | reuse the existing Android tile's GL recipe | 3 |
@@ -181,11 +182,11 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 - **C64 + GEOS 2.0** — ✅ **LIVE** (reference tile).
 - **Atari ST + GEM (EmuTOS)** — ✅ **LIVE** (`atarist` tile). 100% GPLv2, zero proprietary ROM; `hatari` in base.
 - **Apple IIe + GEOS** — ✅ **LIVE** (`apple2` tile, LinApple). Apple II GEOS is official freeware.
-- **Atari 8-bit + Atari BASIC (AltirraOS)** — trivial, no ROM, no disk; the iconic blue READY screen.
+- **Atari 8-bit + Atari BASIC (AltirraOS)** — trivial, no ROM, no disk; the iconic blue READY screen. **BUILT → `atari800xl`** (host-native MAME, not this bridge route).
 - **Amstrad CPC + Locomotive BASIC** — `cap32` in base; ROMs redistributable by permission.
 
 **Heritage / serial (one SIMH/Hercules/dps8m/KLH10+x3270 bridge unlocks all seven — all MV 5):**
-- **2.11BSD** on SIMH pdp11 — ready RP06 kit, boots to login in one command (easiest).
+- **2.11BSD** on SIMH pdp11 — ready RP06 kit, boots to login in one command (easiest). **BUILT → `pdp11`**.
 - **Multics MR12.8** on dps8m — pre-cold-booted QuickStart, `telnet 6180`.
 - **IBM MVS 3.8j / TK5** on Hercules — public-domain turnkey; the **only 3270 tile** (green ISPF); needs x3270.
 - **TOPS-20 Panda** on KLH10 — prebuilt Linux binaries, runs out of the box.
@@ -193,7 +194,8 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 - **ITS** on SIMH/KLH10 — must build from source; the EMACS/Lisp-Machine ancestor.
 
 **Other bridge wins:**
-- **IRIX 6.5.22 via MAME** (MV 5) — **headline correction: no longer a dead-end.** MAME's Indy/Indigo2 driver now reaches a full graphical **4Dwm** desktop with `xl24` graphics. Long install; MAME-in-a-Linux-tile.
+- **IRIX 6.5.22 via MAME** (MV 5) — **BUILT → `irix`.** MAME's Indy/Indigo2 driver reaches a full graphical **4Dwm** desktop with `xl24` graphics; live on retronet.
+- **Tru64 / Digital UNIX (Alpha)** — **BUILT → `tru64`**, no bridge needed: qemu-system-alpha `clipper` has no SRM firmware, but the lab's es40 fork (`docs/lab/ES40-FORK-BRIEF.md`) emulates the ES40 platform directly and boots it.
 - **NeXTcube (m68k)** via **Previous** (MV 5) — the actual magnesium cube Berners-Lee wrote the Web on; QEMU has no NeXT machine.
 - **CP/M-80** via z80pack **Altair 8800 front panel** (MV 5) — the blinking-lights money shot.
 - **Inferno** hosted `emu` (MV 4) — the *cheapest* bridge (one ELF binary); complements 9front.
@@ -210,7 +212,6 @@ Ship these first; they reuse existing tile recipes and fill glaring gaps.
 
 - **Windows Me** — same 9x/Explorer story as the existing Win98 tile, worst KVM stability. Skip.
 - **Windows Vista / Windows 7** — signature **Aero Glass is GPU/WDDM-gated** so it renders as Aero Basic on this no-GPU host; media contested-commercial. Lean skip (Win7 only if you want the XP→7→11 progression).
-- **Tru64 / Digital UNIX (Alpha)** — **dead-end**: qemu-system-alpha `clipper` has no SRM firmware, so nothing boots; only commercial serial/headless emulators run it.
 - **Symbian UIQ** — **dead-end**: EKA2L1 refuses UIQ; only the fragile legacy Windows SDK emulator, nested in a Windows guest.
 - **Windows Phone 7/8** — **dead-end**: WP8 is Hyper-V/XDE-locked (video over an RDP-like channel, no plain framebuffer); WP7 marginally more tractable.
 - **Openmoko** — borderline dead-end: mainline QEMU has no neo/gta machine; only the un-buildable ~2008 fork. postmarketOS-on-FreeRunner is the modern stand-in.
@@ -232,12 +233,18 @@ opened / gated / re-verify.
 |---|---|---|---|---|---|---|---|---|
 | FreeBSD 15.1-RELEASE amd64 | https://download.freebsd.org/releases/amd64/amd64/ISO-IMAGES/15.1/ (✓) | officially-free (BSD-2) | ISO / qcow2 | none | ~1.2 GB ISO | small | works-known | 5 |
 | NetBSD 10.1 amd64 | https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/installation/cdrom/ (✓) | officially-free (BSD-2) | ISO | none | ~500 MB | small | works-known | 4 |
+| OpenBSD 7.9 amd64 | https://cdn.openbsd.org/pub/OpenBSD/7.9/amd64/install79.iso (✓); mirror used for the build: https://ftp.spline.inf.fu-berlin.de/pub/OpenBSD/7.9/amd64/ (cdn.openbsd.org measured 0.8 MB/s from labhost vs 59 MB/s at fu-berlin) | officially-free (ISC/BSD) | ISO + 12 release sets, unattended autoinstall(8) over loopback HTTP (`openbsd.sh`) | none | ~800 MB | small | works-known (station `openbsd`: KVM, `pc-i440fx-11.0`, `-cpu host`, 1024 MB, 2 vCPU, `-vga none -device VGA,edid=on,xres=1024,yres=768`, one virtio qcow2 4 GiB, `virtio-net-pci`/SLIRP, `-usb -device usb-tablet`, AC97 — fvwm desktop, root/kernelhive, no sshd) | 4 |
+| NetBSD 1.4.1 i386 (1999) | http://archive.netbsd.org/pub/NetBSD-archive/NetBSD-1.4.1/i386/ (✓, fetched + hashed: boot.fs + 13 binary sets) | officially-free (BSD-2) | boot floppy + 13 tgz sets → sets.iso | none | 62 106 331 B (59.2 MiB) | small | works-known (station `netbsd14`: KVM, `pc-i440fx-11.0`, cirrus, XFree86 3.3.3.1) | 4 |
 | OpenBSD 7.9 amd64 | https://cdn.openbsd.org/pub/OpenBSD/7.9/amd64/install79.iso (✓) | officially-free (ISC/BSD) | ISO | none | ~800 MB | small | works-known | 4 |
 | Minix 3.3.0 i386 | http://iso.linuxquestions.org/minix/minix-3.3.0/ (~ — official minix3.org has a TLS altname bug) | officially-free (BSD-3) | ISO (bz2) | none | ~280 MB | trivial | works-known | 5 |
 | Oberon A2 / Bluebottle | https://sourceforge.net/projects/a2oberon/files/ (✓ `A2_Rev-6498_serial-trace.iso`) | officially-free (ETH) | live ISO | none | ~120–165 MB | trivial | works-known | 5 |
 | Genode / Sculpt OS 26.04 | https://genode.org/files/sculpt/sculpt-26-04.img (✓, sha256 listed) | officially-free (AGPLv3+) | raw img | none | 35 MiB | trivial | works-known | 4 |
 | Inferno | https://github.com/inferno-os/inferno-os (✓) | officially-free (GPLv2/MIT) | source → hosted `emu` | none | ~200 MB tree | small | needs-bridge (light) | 4 |
 | Syllable Desktop (AtheOS) | https://archive.org/details/SyllableDesktop0.6.6LiveCD.i586 (✓) | officially-free (GPL) | Live CD ISO | none | ~65–97 MB | small | works-known | 4 |
+| bootOS (Óscar Toledo G., 2019 — an OS in one 512-byte boot sector) | https://github.com/nanochess/bootOS — `os.img` + `osall.img` fetched from raw.githubusercontent.com at commit `329b75e60d04e89616bc1844578098df43d4f432` (✓, fetched + hashed: os.img `35e1231c…`, osall.img `20927188…`) | officially-free (BSD-2-Clause) for bootOS and Toledo's programs; `osall.img` also bundles five third-party boot-sector programs (bootSlide, tetranglix, snake, bootMine, sokoban) under their own licences — staged locally, never committed | 360K raw floppy → qcow2 (`bootos.sh`) | none (SeaBIOS) | 512 B + 368 640 B | trivial | works-known (station `bootos`: KVM, `pc-i440fx-11.0`, 64 MB, `-vga std`, BIOS 80x25 text, keyboard-only) | 5 |
+| ravynOS 0.6.1 “Hyperpop Hyena” (amd64) | http://ftp.nvg.ntnu.no/pub/mirrors2/mirrors.nomadlogic.org/www/releases/0.6.1/ravynOS_0.6.1_amd64.iso (✓, fetched + hashed); mirrors https://mirrors.nomadlogic.org/ravynOS/releases/0.6.1/ and https://mirror.clarkson.edu/ravynos/releases/0.6.1/ (both ✓). **The GitHub release and the SourceForge mirror are both 404 — deleted upstream, not moved** | officially-free (BSD; ISO tooling BSD-3-Clause) | live ISO (UEFI-only) | none | 762 972 160 B (728 MiB) | small | works-known (station `ravynos`) | 5 |
+| PC-BSD 1.5.1 "Edison" (FreeBSD 6.3-RELEASE + KDE 3.5.8, i386, Apr 2008) | https://archive.org/download/pcbsd-1.5.1-x-86-cd-1/PCBSD1.5.1-x86-CD1.iso (✓, fetched + hashed, sha256 `69aa17171e0afe45735c3bb16a398319fa82b3f30a3e1aa3a5d6f25ac4bee0a3`) | officially-free (BSD base; KDE components GPL) | ISO (CD1 only needed) | none | 688 930 816 B (657 MiB) | medium (graphical Qt installer, no unattended path) | works-known, assisted install (station `pcbsd`) | 4 |
+| FreeBSD 4.11-RELEASE i386 disc1-kde | http://ftp-archive.freebsd.org/pub/FreeBSD-Archive/old-releases/i386/ISO-IMAGES/4.11/4.11-RELEASE-i386-disc1-kde.iso (✓, fetched + hashed; https fails — certificate name mismatch) | officially-free (BSD-2) | ISO | none | 663 328 768 B | small | works-known (station `freebsd411`) | 5 |
 
 **bridgeNeeded:** only **Inferno**, and it is the lightest kind — build/run the
 hosted `emu` binary full-screen inside a normal captured x86 Linux tile
@@ -245,17 +252,22 @@ hosted `emu` binary full-screen inside a normal captured x86 Linux tile
 native x86 `-display dbus,p2p=on`.
 
 Notable recipes / gotchas:
+- **NetBSD 1.4.1**: curses `sysinst` (assisted, not automated) — Install → wd0 whole disk, default sizes → source CD-ROM `cd0`, dir `/i386/binary/sets` → select all 13 sets incl. X → reboot; XFree86 3.3.3.1 ships in the sets, configure `XF86Config` after first boot.
 - **FreeBSD**: `qemu-system-x86_64 -enable-kvm -M q35 -cpu host -smp 2 -m 4096 -drive if=virtio,format=qcow2,file=freebsd.qcow2 -cdrom FreeBSD-15.1-...-disc1.iso -boot d -vga std -netdev user,id=n0 -device virtio-net,netdev=n0 -display dbus,p2p=on`. No live GUI — `bsdinstall` is text; reach X post-install (`pkg install xorg twm xterm`, `.xinitrc`+`startx`). With `-vga std` use the Xorg `scfb`/`vesa` path.
 - **OpenBSD** is best-in-family for a light-WM tile: **fvwm ships in base Xenocara**, so `startx` needs zero extra packages. NetBSD: select the **X sets** at install (easy to miss) → `startx` gives ctwm.
+- **OpenBSD unattended install**: boot `cd79.iso` to the `bsd.rd` `(I)nstall … (A)utoinstall` prompt, type `a`, then at `Response file location?` point it at a response file served over **loopback HTTP** (`http://10.0.2.2:8079/install.conf` from the guest, `python3 -m http.server 8079 --bind 127.0.0.1` on the host) — the whole disk layout, set selection and site tarball (`site79.tgz`, carrying the desktop config) come from that one file, no further keystrokes. **Pointer gotcha**: `usb-tablet` attaches as `ums0`/`wsmouse1`, and Xorg's wscons autoconfig registers it twice — once directly, once through the `/dev/wsmouse` mux, which has no calibration range and clamps the absolute pointer to the bottom-right corner. Fix with one `xorg.conf.d` `InputClass`: `Option "Ignore" "true"` for `/dev/wsmouse[0-9]*`, plus explicit `MinX`/`MaxX`/`MinY`/`MaxY` 0..32767 on the `/dev/wsmouse` mux device.
 - **A2 Oberon** and **Syllable Live CD** boot straight to a desktop (no install). A2 needs a **3-button mouse** (middle-click "interclick" is core). Do NOT confuse A2 with the *book* Project Oberon (RISC5 CPU → separate emulator bridge).
 - **Sculpt**: `-M q35 -cpu Skylake-Client` matters; boots to the "Leitzentrale" config GUI (looks most alive after a couple of clicks).
+- **ravynOS 0.6.1**: a FreeBSD-15 base wearing a clean-room Cocoa stack (AppKit, Foundation, CoreGraphics, Onyx2D, CoreText) and the macOS layout (`/Applications`, `/Library`, `/System`, `/Users`, `/Volumes`). **UEFI is mandatory** — legacy BIOS dies at `mountroot>`, so an OVMF pflash pair (readonly `OVMF_CODE_4M.fd` + a per-station writable `OVMF_VARS_4M.fd`) is required — and the machine must be **`pc-q35-11.0`**: i440fx + OVMF gives a black screen with a white rectangle (upstream #433). `-enable-kvm -cpu host` (**SSE4.2 is a hard requirement**), 4096 MB, 4 cores, `-vga std`. There is **no GPU driver at all**: since 0.5.1 WindowServer paints straight into the framebuffer OVMF's EFI GOP hands it, so no OpenGL, no DRM/KMS, no virtio-gpu/qxl, and **no in-guest resolution change** — the canvas is whatever OVMF sets (1280×800 on this host). **Input must be USB** (`qemu-xhci` + `usb-kbd` + `usb-tablet`); the release notes name PS/2 and virtio input as lag sources, and upstream calls the QEMU tablet the preferred mouse for KVM/QEMU VMs. NIC `virtio-net-pci` (`vtnet(4)`), `e1000` as fallback. Boots live to a LoginWindow — log in as **`liveuser` with no password** (stated in the upstream release notes) — landing on WindowServer + SystemUIServer's global menu bar + Dock.app + Terminal.app 0.9.2. Be sober about the payload: **Filer (the file manager) and the graphical installer are commented out of the 0.6.x build and do not ship, and there is no web browser** — it is a convincing shell of a Mac desktop over a BSD, not a usable Mac. Escape hatches: Cmd-Shift-Q quits WindowServer, Alt-F2 gives a console. **Why this exact build:** ravynOS 0.6.1 shipped 2025-10-25; on 2025-10-29 lead developer Zoë Knox opened Discussion #529 (“It's decision time. Please read.”) and the project abandoned FreeBSD to restart on Apple's real Darwin/XNU kernel, after which **every FreeBSD-era release, v0.4.x–v0.6.1, was deleted from GitHub releases and from SourceForge**. 0.6.1 is the last FreeBSD-based ravynOS and survives only on volunteer mirrors; the current official artifact (tag `demo-vm`, v0.7.1) is console-only with no GUI, so the Mac-like desktop exists only in the deleted line. The published GitHub checksum was captured before the deletion and **matches our locally measured `e7a2b90e8d87c073857bce6f65ec5023542ec76d4f694b55f49af981c4ff9516`** — with the release page gone, that agreement is the only integrity anchor left. Ignore the wiki's Virtualization page, which still warns of “no graphics under virtual machines”: the 0.6.x release notes supersede it. Known upstream limits: one display only, no global display coordinates, no OpenGL, USB 3.0 unsupported. Details: `../guests/ravynos.md`.
 - Minix is **console-only** (text VGA still scans out); its value is historical. Minix/Syllable/A2/Inferno projects are all dormant but still boot. Licensing is 100% clean across this family.
+- **FreeBSD 4.11**: the archive's `https://ftp-archive.freebsd.org` certificate does not match the hostname — fetch over plain `http` instead, don't "fix" it by ignoring TLS. `disc1-kde` is the one-disc variant that carries base + XFree86 4.3.0 + KDE 3.3.2 packages together; `disc1-gnome` and the miniinst discs are separate media and won't have KDE on the CD for the in-installer package step.
 
 ## 2. DOS-hosted GUIs + CP/M
 
 | OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
 |---|---|---|---|---|---|---|---|---|
-| PC/GEOS Ensemble (bluewaysw) | https://github.com/bluewaysw/pcgeos/releases/download/CI-latest/pcgeos-ensemble_nc.zip (✓) | officially-free (Apache-2.0) | DOS app folder (zip) | none | 10.9 MB | small | works-known | 5 |
+| PC/GEOS Ensemble (bluewaysw) — station `pcgeos` | https://github.com/bluewaysw/pcgeos/releases/download/CI-latest/pcgeos-ensemble_nc.zip (✓, measured 10932546 bytes) | officially-free (Apache-2.0) | DOS app folder (zip) | none | 10.9 MB | small | works-known | 5 |
+| Slackware Linux 3.4 (1997, kernel 2.0.30) — station `slackware` | https://mirrors.slackware.com/slackware/slackware-3.4/ (✓, 128 files, 54 251 183 bytes of .tgz + kernel/bootdsk/rootdsk) | officially-free (GPL/BSD-ish, per-package) | mirror .tgz set, composed host-side | none | ~55 MB | small | works-known | 4 — boot-loader trap: 1997 LILO wedges at `LI` under SeaBIOS, and QEMU `-kernel` hangs this zImage, so boot is GRUB2 `linux16` from a `grub-mkrescue` ISO around the pinned zImage; X trap: XFree86 3.3.1 on QEMU's cirrus (CL-GD5446) needs `Option "no_bitblt"` or the fvwm95 desktop never paints |
 | DR GEM — OpenGEM 7 RC3 | https://archive.org/download/opengem7-rc-3/OPENGEM7-RC3.zip (✓) | officially-free (GPL-2.0) | DOS installer (zip) | none | 2.2 MB | small | works-known | 4 |
 | CP/M-86 1.1 | https://github.com/tsupplis/cpm86-kernel (✓); hubs cpm.z80.de, seasip.info/Cpm | permissive (2022 CP/M) | bootable floppy IMG | none | ~1.44 MB | small | works-known | 4 |
 | CP/M-80 2.2 (Z80/8080) | z80pack https://github.com/udo-munk/z80pack (✓); RunCPM https://github.com/MockbaTheBorg/RunCPM (✓) | officially-free | emulator + .dsk | none | <5 MB | medium | needs-bridge | 5 |
@@ -325,15 +337,18 @@ Notable recipes / gotchas:
 | AIX 7.2 (POWER8 pseries) | archive.org `AIX_CD-ROM_Collection`; prebuilt https://worthdoingbadly.com/aixqemu/ (✓) | contested-commercial | install DVD ISOs / qcow2 | **none** (SLOF) | ~4–6 GB | large | needs-bridge (serial) | 4 |
 | UnixWare 7.1.4 / SCO OpenServer 5.0.7 | https://archive.org/details/UnixWare71 ; https://archive.org/details/OpenServer5.0.7Hw10Jun051800 (✓) | mixed (UW has free eval) | install ISO | none | UW ~3.5 GB / OSR ~277 MB | medium | works-known | 4 |
 | SunOS 4.1.4 / Solaris 1.1.2 (SPARC) | https://winworldpc.com/product/sun-solaris/1x ; https://fsck.technology/software/Sun%20Microsystems/SunOS%20Install%20Media/ (✓) | contested-commercial | install CD ISO | none (OpenBIOS) | ~500 MB–1 GB | medium | works-known | 5 |
-| Tru64 UNIX / Digital UNIX (Alpha) | no boot path on free tooling (✓ verdict) | contested-commercial | — | SRM (the blocker) | n/a | impractical | **dead-end** | 4 |
+| Tru64 UNIX / Digital UNIX (Alpha) | no boot path via QEMU's `clipper` machine (✓ verdict); es40 fork boots it instead | contested-commercial | — | SRM (the QEMU blocker, bypassed by es40) | n/a | shipped | **BUILT → `tru64`** | 4 |
+| **Amiga UNIX (AMIX) 2.1** (Amiga 3000, 68030+MMU+68882) | https://www.amigaunix.com/ (✓ — boot + root ADFs and the 29-segment installation tape) | contested-commercial (Commodore's licensed AT&T **SVR4**) | 2 install ADFs + a tape image, restored to an RDB disk | **Kickstart 2.04 r37.175 (A3000)**, archive.org `commodore-amiga-firmware` | ~105 MB packed / ~152 MB unpacked; 2 GB installed | medium | works-known (host-native FS-UAE, **LIVE as `amix`**) | 5 |
+| **AmigaOS Workbench 2.04** (Amiga 3000, 68030+68882) | archive.org `commodore-amiga-operating-systems-workbench` (✓ — four TOSEC ADFs: Workbench/Extras/Fonts/Install) | preservation-source (Commodore) | 4 install ADFs, composed host-side onto a 256 MiB FFS hardfile | **Kickstart 2.04 r37.175 (A3000)**, archive.org `commodore-amiga-firmware` (same dump `amix` stages) | ~3.5 MB packed; 256 MB hardfile | small | works-known (host-native FS-UAE, station `a3000`) | 5 |
 | IRIX 6.5.22 (SGI/MIPS) | https://winworldpc.com/product/irix/65 + /6522 (✓); guide https://sgi.neocities.org/installguide | contested-commercial | 6–8 CD ISOs → MAME CHD | **Indy PROM** (MAME romset) | ~3–4 GB | large | needs-bridge | 5 |
+| SuSE Linux 6.4 i386 (2000, kernel 2.2.14, XFree86 3.3.6, KDE 1.1.2) — station `suse64` | https://archive.org/download/suse-linux-6.4/suse-linux-6.4-cd1.iso (✓, measured 663029760 bytes; CD1 of the six-CD retail set, only CD used) | contested-commercial | install CD ISO (YaST2 graphical installer) | none | 663 MB (CD1) | medium | works-known | 4 |
 
 **bridgeNeeded:** three — **IRIX** (MAME `indy_4610`/`indigo2_4415` in a Linux
 tile), **OpenVMS CDE** (DECwindows pushed over X11 to an X server in a captured
 Linux guest; the text Guest Console itself needs no bridge), **AIX** (pseries has
 no usable framebuffer → SLOF serial VTY only → serial-terminal bridge). HP-UX,
 SunOS, UnixWare/SCO produce a graphical tile with **no bridge**. Tru64 needs no
-bridge because it can't boot at all.
+bridge either — it runs on the es40 fork's own ES40 platform emulation, not QEMU.
 
 Notable recipes / gotchas:
 - **HP-UX** (best value/effort, MV 5): `qemu-system-hppa -machine B160L -smp cpus=4 -accel tcg,thread=multi -boot d -drive if=scsi,bus=0,index=6,file=hpux.qcow2,format=qcow2 -m 512 -d nochain -cdrom mcoe.1_5.iso -net nic,model=tulip -net user`. Reaches a **full CDE desktop** over the built-in Artist framebuffer. Gotchas: copy `/etc/nsswitch.files`→`/etc/nsswitch.conf` or CDE login hangs; **do NOT exceed 1280×1024** (crash / dtwm mouse can't reach y≥1146); grow filesystems with `lvextend`+`extendfs`; no OpenGL; PA-RISC 1.1 (32-bit) media only, max 11.11. Verified writeup: virtuallyfun.com (Oct 2025, qemu 10.1).
@@ -341,7 +356,9 @@ Notable recipes / gotchas:
 - **UnixWare/SCO**: `-M pc -cpu pentium3` (modern CPU features confuse the installers), IDE HDD before CDROM, `pcnet` NIC (GUI DHCP broken — `dhcpc -i <iface>` manually), `kbm.wheel=no` in DEFBOOTSTR. Genuine x86 VGA Motif/CDE tile. UnixWare 7.1.4 has an official free 90-day eval.
 - **OpenVMS**: `qemu-system-x86_64 -machine q35 -accel kvm -cpu host -m 8G -smp 2 -bios OVMF.fd ...`; at the EFI shell `MAP FS*` then `FS0:\efi\vms\vms_bootmgr`. 9.2-3's VGA Guest Console is **text-only**; CDE runs but has no local-VGA path (VSI won't add one). Download links appear only **after** registering/approval.
 - **AIX**: `qemu-system-ppc64 -cpu POWER8 -machine pseries -m 4096 -serial mon:stdio ... -nographic`. **AIX 7.1 will NOT boot** (no virtio) — must be 7.2 TL3 SP1+. `fsck64` can hang boot (workaround: replace `/sbin/helpers/jfs2/fsck64` with `exit 0`). CDE **not achievable** under QEMU.
-- **Tru64 DEAD-END** (well-sourced): qemu-system-alpha `clipper` uses `palcode-clipper`, which implements neither SRM firmware callbacks nor the SRM CLI → no bootloader can load a kernel. Only commercial Windows-hosted AlphaVM/es40 boot it, serial/headless. Park.
+- **Tru64 BUILT → `tru64`**: qemu-system-alpha `clipper` uses `palcode-clipper`, which implements neither SRM firmware callbacks nor the SRM CLI → no bootloader can load a kernel via mainline QEMU. The lab's own fork of es40 (`docs/lab/ES40-FORK-BRIEF.md`) emulates the ES40 platform natively and boots it; the station is live.
+- **AMIX 2.1** (MV 5, shipped as `amix`): **FS-UAE 3.2.35** with `amiga_model = A3000` — the 68030 MMU and 68882 the AMIX kernel needs. Not a QEMU tile at all: the emulator runs host-native under a pinned Xvfb, captured with `SH_CAPTURE=x11`. Four traps, each of which costs real time. (1) UAE presents a host directory as a SCSI tape, but **only** through a hand-written `index.tape` listing the segments in `seglist` order — its directory-scan fallback has an inverted filename test (`src/scsitape.cpp`) and reads the tape as **empty with no error**. (2) FS-UAE's config layer knows nothing about tapes, so the drive goes in as a raw UAE passthrough: `uae_uaehf1 = tape4,ro,TAPE:<host-dir>,0,0,0,512,0,,scsi4`. (3) The AMIX installer **hardcodes SCSI ID 4 = tape and ID 6 = target disk**; a disk anywhere else is simply not found. (4) Bind a key for the boot→root floppy swap (`keyboard_key_f10 = action_drive_0_insert_floppy_1`) or the install stops waiting for a hand. Answer **`ufs`** (the default is `s5`) and package set **(2) "Everything on the tape"** — the set that guarantees `Xcore`/`Xbasic`/`olcore`. `mkfs` on the 2 GB root is ~20 min and the tape restore ~2 h under emulation. The desktop is **OPEN LOOK**, not Motif — the only one in the lineup — and it is **monochrome 640×512**: AMIX's Amiga-chipset X server is depth 1 StaticGray, and colour X on AMIX means a colour graphics board (A2410 / Resolver / 1600GX). FS-UAE 3.2.35 *compiles* the A2410 TMS34010 core but never calls it — the symbol table says supported and the framebuffer says otherwise — so colour needs a different emulator build, not a config change. See [`../guests/amix.md`](../guests/amix.md).
+- **SuSE Linux 6.4** (MV 4, station `suse64`): native x86 QEMU, `pc-i440fx-11.0`, KVM at runtime with `noapic` for the SMP kernel; INSTALL under `-accel tcg -cpu pentium3` (the 2.2 IDE PIO path is a KVM exit per outw, 70 KiB/s), 256 MB, 1 vCPU, `-vga cirrus`, one 1.5 GiB IDE qcow2, `ne2k_pci` on SLIRP, CD1 for the install (`-boot d`); CD2 only for `suse/kde2/kbase.rpm` (KDE 1.1.2 base). YaST2 graphical installer (640x480 framebuffer) (English, us keyboard, CD source, one swap + one ext2 `/`, default + KDE package selection, LILO to MBR, root password set, eth0 DHCP). Post-install: `/etc/XF86Config` SVGA server on cirrus at 1024x768x16, tty1 autologin into `startx` → KDE 1.1.2, `xhost +10.0.2.2` so the host X11-warp bridge can reach the guest's X server (`SH_X11WARP_DISPLAY=127.0.0.1:80` over `127.0.0.1:6080→10.0.2.15:6000`). Bake `golden` with the station device set (no `-cdrom` once installed). See `docs/lab/SUSE64-WAVE.md` for the full allocation ledger.
 - **IRIX headline correction**: the old "no working GUI emulation" verdict held for QEMU (incomplete SGI) and gxemul (console only) — but **MAME now installs and runs IRIX 5.3/6.5.22 to a real 4Dwm desktop** with `xl24` 24-bit graphics + TUN/TAP net. `./mame64 indy_4610 -gio64_gfx xl24 -hard1 irix65.chd` (Indigo2: `indigo2_4415 -gio64_gfx xl24 -gio64_exp0 xl24`). Long, choreographed install (fx partitioning, PROM vars); MIPS-in-MAME is slow. Upgraded **dead-end → needs-bridge**.
 
 ## 6. Open / x86-bootable mobile OSes
@@ -401,6 +418,10 @@ Notable recipes / gotchas (inside the Linux tile; outer QEMU = `-device virtio-v
   MAME sets the ROM is in `tk2000.zip`, while split sets use `mpf2.zip`.
 - **Amstrad CPC**: `cap32 --fullscreen` → the yellow-on-blue Locomotive BASIC `Ready` prompt. Keep the unaltered Amstrad copyright string to stay within the granted permission.
 - **Licensing is unusually clean**: C64 and Apple II GEOS are **official freeware** (not abandonware; source at github.com/mist64/geos); Atari needs zero proprietary ROMs; only the small Apple //e ROM is copyrighted-and-unlicensed (bundled/preservation-hosted). VICE 3.10 (2025-12-24) is current.
+- **apple2e (host-native sibling, 2026-09-08)**: a second, period-typical Apple //e station next to the LinApple-bridge `apple2` row above — ProDOS 2.4.2 + AppleWorks 3.0 + Dazzle Draw 1.2 behind a one-keypress `STARTUP` menu, on MAME's `apple2ee` driver (`-sl7 cffa2 -hard1 hive.hdv`), no bridge. See `docs/lab/APPLE2E-WAVE.md` for the wave ledger and `scripts/build-guests/tiles/apple2e.sh` for the media builder; Angry Birds (8-Bit Shack) is a planned fourth entry, not yet staged — its free-download mirror is currently unreachable.
+- **atari800xl (host-native, 2026-09-08)**: an Atari 800XL (PAL) on MAME's `a800xlp` driver with a 1050 drive (default `-sio` slot, never passed explicitly — see the wave ledger's own wall — with `-flop1 hive.atr -flop2 hive2.atr`), no bridge — the successor to the "Atari 800/XL + Atari BASIC" row above, which assumed atari800-in-a-bridge and a bare BASIC prompt. The boot disk is a **MyDOS SINGLE-density ATR whose boot sectors are MyPicoDos 4.06N** (HiassofT), so the machine powers on into a file menu: River Raid, Star Raiders and The Last Word 3.2 (80-column word processor, freeware), all on D1:; Dropzone is on a second single-density drive, `hive2.atr` (D2:, `-flop2`, currently unreachable — see `docs/lab/ATARI800XL-WAVE.md`). Boulder Dash was dropped (golden4 stream, 2026-09-08): the only clean XEX source found reboots the machine on load. An `XBASIC.XEX` stub back to Atari BASIC was also removed (golden5 stream, 2026-09-08): it never reached a BASIC READY prompt across three fix attempts — a menu entry that does nothing does not ship. Sources are pinned by sha256 in `scripts/build-guests/tiles/atari800xl.sh`; the wave ledger is `docs/lab/ATARI800XL-WAVE.md`. **Neither a double-density nor an enhanced-density image works** — MAME's emulated 1050 (`src/devices/bus/a800/atari1050.cpp`) only implements single and double density, and enhanced density (the obvious "fit more titles" choice, and a real 1050 CAN read it) boots to a correctly-drawn menu but fails every XEX load partway through, so build single density (90 KB is the hard per-drive ceiling) and split overflow onto a second drive; titles distributed only as bootable ATRs (Yoomp!, Rescue on Fractalus!) still cannot go on the menu at all.
+
+- **samcoupe (host-native, 2026-09-08)**: the SAM Coupé (Miles Gordon Technology, 1989) on MAME's `samcoupe` driver, no bridge. Media is one composed 800K MGT floppy (`-flop1 hive.mgt`): SAMDOS 2.0 boots it and auto-runs a SAM BASIC `auto` menu with Manic Miner, Mr. Pac, Splat! and The Secretary (word processor) on keys 1-4 and SAM BASIC on B. Licensing is ordinary abandonware-URL: SAMDOS from worldofsam.org, the games from the archive.org MGT Champion Collection, The Secretary from `ftp.nvg.ntnu.no`. There is no Linux tool that writes a SAMDOS filesystem, so `scripts/build-guests/lib/mgtfs.py` composes the disk and MAME types the BASIC menu in; see `docs/lab/SAMCOUPE-WAVE.md` for the wave ledger and the menu key table.
 
 ## 8. Heritage / serial-console (all need the bridge)
 
@@ -533,23 +554,24 @@ Notable recipe / gotchas (station `chokanji`, LIVE):
 
 ## Coverage vs the current registry lineup
 
-Current streamhost tiles: Windows 1.0/3.11/95/98/2000/XP, MS-DOS (Win 1.0 and
-MS-DOS share the one `msdoswin1` tile), FreeDOS,
-OS/2 Warp 4, Solaris 10 x86 (CDE), 9front, Haiku, AROS, ReactOS, QNX 6.5, Alpine,
-TinyCore, Android (phone), postmarketOS, Sailfish, KolibriOS, SerenityOS, ToaruOS,
-TempleOS, HelenOS — plus the four bridge tiles **C64+GEOS, Atari ST, Apple IIe,
-Amiga** (all live). Non-streamhost exhibits: RISC OS + Windows 11 (both currently
-dead) and macOS (showcase poster; guest deleted 2026-07-14).
+The registry is now 92 lineup entries: 90 production streamhost tiles and 2
+showcase posters (macOS, RISC OS — both static, no live guest). Most of the
+BSD/UNIX/DOS-GUI/classic-Mac/NT/home-computer/minicomputer candidates this
+catalog originally scoped are built; run
+`python3 scripts/stations-registry.py count` for the live count instead of
+trusting a number in this doc.
 
-Biggest gaps this catalog fills:
-- **Zero BSD** today → FreeBSD/NetBSD/OpenBSD (Wave 1).
-- **No non-Windows DOS GUI** → PC/GEOS + DR-GEM (Wave 1).
-- **No pre-CDE / non-Solaris commercial UNIX** → HP-UX (CDE!), SunOS/OpenLook, UnixWare (SysV), IRIX (4Dwm, now reachable).
-- **No classic Mac / Be / NeXT** → Mac OS 7.5.3/9.2.2, BeOS R5, NeXTSTEP.
-- **Missing NT rungs** → NT 3.51 (Program Manager) + NT 4.0.
+Remaining gaps this catalog identified and has not yet filled:
+- **No pre-CDE non-Solaris commercial UNIX beyond what shipped** → UnixWare/SCO
+  (HP-UX, SunOS 4.1.4 and IRIX all shipped as `hpuxvue`, `sunos414`, `irix`).
 - **No TV/watch OS** → LibreELEC, Pebble, Android TV.
-- **No pre-iPhone smartphone era** → Symbian S60, BlackBerry 10/pre-10, Palm OS, Windows Mobile/CE, webOS, MeeGo/Maemo.
-- **No mainframe / minicomputer / teletype wing** → MVS 3.8j (3270), Multics, TOPS-20, ITS, PDP-11 UNIX v6/v7/2.11BSD, CP/M-80 (Altair).
+- **No pre-iPhone smartphone era** → Symbian S60, BlackBerry 10/pre-10, Palm OS,
+  Windows Mobile/CE, webOS, MeeGo/Maemo.
+- **No mainframe / minicomputer / teletype wing** → MVS 3.8j (3270), Multics,
+  TOPS-20, ITS, Research UNIX v6/v7, CP/M-80 (Altair). (PDP-11 2.11BSD shipped
+  as `pdp11`; these six do not.)
+- **No FM Towns, Magic Cap, DESQview/X** — see the backlog table in
+  `docs/lab/ADD-NEW-OS-PLAYBOOK.md` §1 for the current unbuilt candidate list.
 
 Deliberate "original vs recreation" pairings (add only intentionally): BeOS↔Haiku,
 Inferno/serial-UNIX↔9front, A2↔(book Project Oberon RISC5), BB10↔QNX,
@@ -557,7 +579,9 @@ Maemo/Openmoko↔postmarketOS, Fire OS↔Android.
 
 ## Dead-ends (can't build on free tooling)
 
-- **Tru64 / Digital UNIX (Alpha)** — qemu-system-alpha `clipper` has no SRM firmware; nothing boots. Commercial emulators are serial/headless only.
+Tru64 was on this list; it shipped as `tru64` via the lab's es40 fork
+(`docs/lab/ES40-FORK-BRIEF.md`) and is no longer a dead-end.
+
 - **Symbian UIQ** — EKA2L1 refuses UIQ; only the fragile legacy Windows SDK emulator nested in Windows.
 - **Windows Phone 7/8** — WP8 is Hyper-V/XDE-locked (no plain framebuffer); WP7 barely tractable.
 - **Openmoko** — mainline QEMU has no neo/gta machine; only the un-buildable ~2008 fork.
@@ -577,3 +601,15 @@ content is folded in and verified here.
 Research produced 2026-07-08 by 10 parallel OS-family research agents +
 synthesis; see `streamhost/docs/BRIDGE.md` and `docs/guests/c64.md` for the
 proven bridge implementation.*
+
+## 12. Linux distributions — native QEMU-x86
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| Ubuntu 4.10 "Warty Warthog" (first Ubuntu, Oct 2004, GNOME 2.8) | http://old-releases.ubuntu.com/releases/4.10/warty-release-live-i386.iso (✓, sha256 `189746859b539c37d978b107589610aa49a7415f7c089d22667867a918591013`, 674 152 448 bytes) | GPL/various (open-source) | live CD ISO, no install | none | 643 MB | small | **works-known (station `ubuntu`)** | 5 |
+
+## 13. Amiga 1000 — host-native FS-UAE, floppy boot
+
+| OS | media URL (verified?) | license | format | ROM | size | effort | feasibility | MV |
+|---|---|---|---|---|---|---|---|---|
+| Workbench 1.2 rev 33.56 (1987, Commodore, A500 Disk 1+2 GB Extras) on an Amiga 1000 | archive.org item `commodore-amiga-operating-systems-workbench` (verified, sha256 4dfd92a4589346f157593d1a3098966b43e2298c46b749c689b9dc457480be4c / 7edba9fcbffacde7f1bf94920b76c57e2002ae07b877f26de152ae96c631ba69, 901120 bytes each) | proprietary (Commodore); private preservation exhibit, not committed | two ADFs, floppy boot, no HDF/installer | Kickstart v1.2 r33.180 (1986-10, A500/A1000/A2000), sha256 87cddb1f499e32758de20145e73031a84bab299e3f6e5c8487e76d02b2ee9d16, 262144 bytes | small | works-known (**BUILT → `a1000`**, shipped 2026-09-09 alongside `a3000`) | see docs/lab/A1000-WAVE.md |

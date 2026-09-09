@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "a3000",
+  "era_year": 1990,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 78,
+        "prelude": "",
+        "value": {
+          "key": "a3000",
+          "script": "tiles/a3000.sh",
+          "outputDir": "A3000",
+          "class": "graphical",
+          "estimated": "~2m",
+          "automation": "full",
+          "produces": "a3000-system.hdf golden master (Workbench 2.04 composed host-side from the four ADFs with xdftool; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/a3000",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54189,
+      "notes": "HOST-NATIVE, no X: FS-UAE (github.com/Wnt/fs-uae, branch kernel-hive/integrated) runs on the host headless (no DISPLAY, no GL). Frames publish into SH_SHM_PATH (drawshm-format shm), keys and the absolute pointer (mousehack) ride the ctlsock (SH_MAMECTL_SOCK) with the shared streamhost/stations/fsuae-native/amiga.keymap, audio into SH_AUDIO_FIFO. No QEMU/QMP, no guest Linux, no exec channel, no Xvfb/XTEST. Reset=relaunch: fresh work disk(s) copied from disk/*.golden on every launch, cold boot, no statefile. Launcher stations/fsuae-native/x11-runtime.sh (shared with a1000/a3000; amigaos35/amix stay on the Xvfb+XTEST path, rule 13)."
+    }
+  },
+  "render": {
+    "signalOrder": 82,
+    "stationsManifestOrder": 80,
+    "stationsManifestPrelude": "\n# a3000 — host-native FS-UAE (A3000 model, 68030, ECS, Kickstart 2.04) -> Workbench 2.04 from a host-composed FFS hardfile; shm capture, ctlsock input, no X.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 92,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top",
+    "goldenOrder": 80
+  },
+  "stationDir": "a3000",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54189,
+    "fps": 50,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "mousehack",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 189
+  },
+  "guestDoc": "docs/guests/a3000.md",
+  "credentialsRef": "guest/a3000",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "a3000",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":89",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/a3000/a3000_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/a3000/fb.shm",
+      "SH_PORT": "54189",
+      "SH_FPS": "50",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/a3000/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/a3000/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "bringUpOrder": 92,
+    "x11": {
+      "display": ":89",
+      "geometry": "640x512x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/fsuae-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "a3000",
+        "--udp",
+        "54189",
+        "--x11",
+        "--x11-display",
+        ":89",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "50",
+        "--x11-runtime-file",
+        "$T/fsuae-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/fsuae-native/amiga.keymap",
+        "--env-append-file",
+        "$T/a3000/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/fsuae-native/amiga.keymap",
+        "streamhost/stations/a3000/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#5B7FA6",
+    "eraLabel": "1990 · Amiga 3000 — Workbench 2.04"
+  },
+  "museum": {
+    "id": "a3000",
+    "displayName": "Amiga 3000",
+    "year": 1990,
+    "lineage": "Commodore Amiga / AmigaOS",
+    "arch": "Motorola 68030 @ 16 MHz + 68882 FPU, ECS chipset, 2 MB chip + 8 MB fast RAM",
+    "ramMB": 10,
+    "era": "1990s",
+    "accent": "#5B7FA6",
+    "eraSoftware": [
+      "Workbench 2.04",
+      "AmigaDOS 2.0 Shell",
+      "the Preferences editors",
+      "Commodities Exchange",
+      "ARexx",
+      "Installer"
+    ],
+    "periodBrowser": "none — this machine predates the web, and the exhibit is not networked",
+    "iconicApps": [
+      "the grey-and-blue Workbench 2.0 desktop",
+      "AmigaDOS 2.0 Shell",
+      "the Prefs drawer",
+      "the ASL file requester"
+    ],
+    "blurb": "Commodore's 1990 flagship: a 68030 with its memory management unit fitted, a floating-point unit, SCSI on the motherboard and a flicker fixer, in a low desktop case. It booted Workbench 2.04 — the rewrite that gave AmigaOS its grey three-dimensional look, a usable Shell and a standard Installer — and, as the Amiga 3000UX, the same machine ran Amiga UNIX, the amix exhibit next door.",
+    "notes": "Host-native without X: FS-UAE (fork github.com/Wnt/fs-uae, branch kernel-hive/integrated; A3000 model, 68030 + 68882, ECS, Kickstart 2.04 r37.175 A3000 ROM) runs headless, publishing shm frames and taking ctlsock keys/pointer directly -- no Xvfb, no XTEST. Media: the KS 2.04 A3000 ROM (the one amix already stages) + the four Workbench 2.04 rev 37.67 ADFs from archive.org (preservation-class, never committed), composed host-side with amitools xdftool into an FFS hardfile as amigaos35 does for 3.1. Reset = relaunch: a cold boot of a fresh work HDF copied from the golden. Between amiga (A500 / 1.3) and amigaos35 (A4000 / 3.5) in the lineup, and the machine amix (Amiga UNIX) shares. See docs/guests/a3000.md."
+  },
+  "emulator": {
+    "family": "FS-UAE",
+    "version": "3.2.35",
+    "source": "github.com/Wnt/fs-uae, branch kernel-hive/integrated (build-fsuae-native.sh)",
+    "driver": "A3000"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "a3000",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Workbench 2.04 desktop (grey 2.0 look, 640x256 PAL in a 720x568 window) booted from the host-composed FFS hardfile: Ram Disk + System disk icons, no windows open, no first-boot keymap prompt (the floppy's startup-sequence runs one; the HDF's does not). resetMode=relaunch with no statefile: every launch copies disk/a3000-system.hdf.golden to work/ and cold-boots. MEASURED 2026-09-09 (golden stream, station launcher on :85): desktop present at the FIRST 5s capture after launch (frame boot-5s.png), byte-identical to the 10s/15s/20s/25s/30s captures — boot-to-desktop is <=5s, no visible settle. Pointer PASS: xdotool mousemove --sync + mousedown/sleep 0.15/mouseup twice 200ms apart (XTEST abs, as the daemon drives it) double-clicked the System disk icon and opened its window (frame dblclick.png). Keyboard PASS: the System drawer has no Shell icon (Fountain/AddMonitor/BindMonitor/Setmap/Format/DiskCopy/RexxMast/NoFastMem/FixFonts only) — used the Workbench menu's Execute Command... instead (RMB mousedown 3, drag to the Workbench title then down the menu with intermediate frames confirming the highlighted item before mouseup on 'Execute Command...', frame execdlg.png); xdotool type --delay 60 'dir' + Return typed correctly (frame typed.png) and the Output Window listed env/Clipboards/T (frame dirout.png). Reset PASS: kill -TERM on $BASE/mame.pid + relaunch returned the pristine desktop (System and Output windows both gone) within 8s, frame byte-identical to the original boot desktop (frame reset-8s.png)."
+  },
+  "notes": [
+    "a3000 wave 2026-09-09 (docs/lab/A3000-WAVE.md): scaffolded from amigaos35; slot 189, Xvfb :89"
+  ]
+}

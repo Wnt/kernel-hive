@@ -22,9 +22,35 @@ make station-registry-check
 ```
 
 The command reserves `slot` and UDP `54000+slot`, writes a schema-valid disabled
-candidate entry, copies the matching builder template, and stubs the guest doc
-and cold-boot arm. Disabled means it does not enter the streamhost, signaling,
-reset, or UI lineups while its TODOs remain. The paved path is now **scaffold →
+candidate entry, copies the matching builder template, stubs the guest doc
+and cold-boot arm, writes PLACEHOLDER poster prose (`registry/posters/<id>.md`)
+with a 1024x768 placeholder hero (`spa/public/posters/<id>/desktop.webp`), and for
+tier 1 scaffolds `streamhost/stations/<id>/qemu-streamhost.sh` and
+`station.env.fixture` (loadvm golden, TODO media/devices) — so validate is green
+the moment the entry is flipped to production. Disabled means it does not enter the streamhost, signaling,
+reset, or UI lineups while its TODOs remain.
+
+If the new station is a close relative of one already in the museum (same
+archetype, same device family), scaffold from the sibling instead of the bare
+Tier N template:
+
+```bash
+python3 scripts/stations-registry.py new <osId> \
+  --like <siblingId> --production --slot auto
+make station-registry-check
+```
+
+`--like` deep-copies the sibling's registry row, `qemu-streamhost.sh` and
+`station.env.fixture`, rewrites every id/path/port that names the sibling, and
+reassigns every render-order field (`signalOrder`, `stationsManifestOrder`,
+`bindingOrder`, `goldenOrder`, `actionMapOrder`, `bringUpOrder`, the build row's
+`order`/`defaultOrder`) to a free slot past the current max — the scaffold
+that hand-copying a sibling used to get wrong. `--production` writes
+`lifecycle: production, enabled: true` straight away (default, as with the bare
+template, is `candidate`/disabled); `--tier`/`--archetype` are inferred from the
+sibling and can be omitted. `museum`/`spa` prose is carried over prefixed
+`TODO(<sib>): ` so validate stays green while the text is still the sibling's.
+The paved path is now **scaffold →
 fill → verify**: builders use [`scripts/lib/labqmp.py`](../../scripts/lib/labqmp.py)
 for build-time QMP console/input, and clone-only checkpoint proof uses
 [`scripts/lib/checkpoint-verify.sh`](../../scripts/lib/checkpoint-verify.sh).
@@ -34,13 +60,309 @@ window. Develop and validate against a clone or scratch output first. Never
 experiment against a live writable guest disk, and never use `/mnt/poc` as an
 input or output.
 
+## 0. The 10-minute procedure
+
+**This section IS the procedure.** Target: viewable at `/os/<id>` in 5 minutes,
+fully featured (listed, golden, poster, type-in demo, **absolute pointer,
+retronet web plane, and an IM client signed in — all in the FIRST golden
+bake**) in 10. "Fully featured" grew after the 2026-09-03 nine-station wave: a
+station that ships with a relative pointer and no retronet needs a second and
+third golden re-bake later — each one is a full device-set change (a new NIC or
+a new pointer backend), so a new checkpoint and a new restore proof — which
+measured ~2 h per station across that wave. The fix is to complete the device
+set from minute 0: tap NIC (retronet) + slirp `restrict=on` (x11warp) + the
+guest's own video/pointer devices, all present before the FIRST `savevm
+golden`. Sections 1–8 below are the reference — open one only when a step here
+fails or needs its reasoning, or the station is a harder tier than this spine
+covers. Operator rules that make this legal: move fast, operator validates; a
+restoring golden is enough proof; the framebuffer is the only proof a guest
+reacted. Staff each stream deliberately
+(AGENTS.md rule 12): `haiku-low` for mechanical rows/links/regenerate, `sonnet-low`
+or `sonnet` for a builder or a doc from proven facts, Opus/Fable for the `golden`
+stream of an unfamiliar guest, for any bring-up that misbehaves, and for the
+poster's prose — a cheaper model that misreads the brief costs a whole 4-minute
+stream, which is the one thing this plan cannot afford.
+
+**Measure the run, never estimate it.** The clock starts at the operator's
+message. After landing, run `scripts/dev/session-timeline.py` on the session
+transcript (`ls -t ~/.claude/projects/<repo-slug>/*.jsonl | head -1`) and put the
+measured milestones in the wave brief; the pcgeos run was reported from memory as
+15/25/35 min and measured as 6/14/18.
+
+### The two retros this procedure comes from
+
+**bootos (2026-09-02, 45 min)** — one coordinator + 4 agents, nothing waited on
+the operator. The sinks and their fixes:
+
+| Sink (bootos) | Cost | Fix in this procedure |
+|---|---|---|
+| Reading playbook + sibling entries before touching anything | ~6 min | Read this section; one sibling entry, `grep` not read |
+| Scaffold leaves validate failures (no poster md, no hero webp, demoProgram rules) | ~5 min | Scaffold `--like <sibling> --production` validates on the spot |
+| Golden stream: key-pacing bisect | ~7 min | SKIP. Ship the fleet floor **40/40** for QEMU keyboard stations; measure only if characters drop |
+| Golden stream: audio proof ceremony | ~4 min | SKIP. Declare `stream.audio`; operator hears it |
+| Guest doc with ~15 TODO placeholders filled at integration from agent reports | ~4 min | One owner per file (below) |
+| Separate TS+Python gate run, then the pre-push gate ran the same stages | ~5 min | Push; the pre-push gate IS the gate |
+| Hand-rolled single-station emit, `current` symlink by hand, `manifests` failing inside `labrun` | ~6 min | `scripts/dev/station-up.sh <id>` |
+| One cross-stream fact copied wrong by 3 streams (360K vs 720K in 4 files) | ~3 min | The ledger states measured facts (`stat -c %s` the image), never copies from a README |
+| Merge conflict in the registry blurb | ~1 min | Only the spa stream edits visitor-facing prose |
+
+**pcgeos (2026-09-02, viewable 6 min · live station 14 · featured 18)** — same
+shape, and the transcript says where the 21 minutes went: **67% coordinator
+model time, 24% tools, 10% waiting on agents.** The tools and the agents were
+fast; the coordinator reading and writing was the cost.
+
+| Sink (pcgeos) | Cost | Fix in this procedure |
+|---|---|---|
+| Hand-writing a 100-line registry entry + launcher + fixture that were the freedos ones with paths swapped; two failed scaffold runs (`--archetype` wants a SPA archetype, not a station; duplicate `bringUpOrder`) | ~4 min | `stations-registry.py new <id> --like <sibling> --production` — copies the sibling, auto-assigns every render order, validates immediately |
+| Publishing the smoke rig by hand: `kh-claim` syntax, hand-written `stream.env`, hand-run daemon, guessing which manifest file to derive the entry from | ~3 min after the guest had booted | `scripts/dev/smoke-rig.sh <id> --like <sibling>` — one command, prints `/os/<id>` |
+| Two streams owned `docs/guests/<id>.md`; a bad conflict resolution dropped the prose | ~1 min | One owner per file: the golden stream writes its facts into the fixture comments and its report; the docs stream runs AFTER golden (it takes 2.5 min; spa is the long pole anyway) |
+| Two pushes to main, two gates, two box-deploys because the spa stream finished 3 min after the others | ~2.5 min | The coordinator ships the hero from its own smoke frame in the ledger commit; spa polish lands in one push with everything else or in the next wave |
+| `station-up.sh` gave up 14 s before the daemon printed LISTENING; rerun | ~1 min | station-up polls up to 60 s |
+| `labctl key ctrl-esc` / `ctrl+esc` / `ctrl-escape`: three failed guesses | ~1 min | qcodes are space- or `+`-separated: `labctl key <id> ctrl esc`; the error now says so |
+| `here.sh` printed 60 claim lines, 50 of them stale, paid for on every turn | model time | stale claims are folded into one summary line |
+| Memory notes + a long final report written serially after the station was featured | ~2 min | Off the clock: hand the retro to a `sonnet-low` agent with the transcript and `session-timeline.py` |
+| 99 s idle "waiting for agents" | ~1.5 min | Use the wait: draft the framebuffer-proof commands and the report while streams run |
+
+### Minute 0–3: spine (you, alone)
+
+```bash
+scripts/dev/wt.sh new <id> --from origin/main            # full stack + KH_SESSION=<id>
+scripts/dev/wave.sh alloc <id> --retronet --x11warp      # ONE atomic claim: slot/UDP/VMID,
+                                                           # x11warp display :<slot-100> (loopback 6<slot-100>),
+                                                           # retronet 10.99.0.N + MAC + tap <id>rn0 + chain
+                                                           # <ID>RN-IN + ICQ UIN <slot>00 — appends local.env,
+                                                           # re-renders DHCP, prints the ledger row + .wave.env
+# stage media: fetch, hash, keep the byte size — it is a ledger fact
+ssh lab 'mkdir -p /data/assets-staging/<id> && cd /data/assets-staging/<id> && sha256sum * > MANIFEST.sha256 && stat -c "%n %s" *'
+# smoke boot in YOUR sandbox with the sibling's device set PLUS the tap NIC + x11warp slirp line
+# from .wave.env (vom-reference.md names the emulator/machine; os-media-catalog.md may already hold
+# the recipe — pcgeos's was there). Launch exactly as the sibling's launcher does (dbus display,
+# -qmp unix:<sandbox>/smoke/qmp.sock, namespaced -name), then:
+python3 scripts/dev/qmp-type.py --qmp smoke/qmp.sock 'dir\n' && qmp screendump smoke/frame.png
+# PUBLISH THE SMOKE RIG NOW — this is the 5-minute target: operator watches /os/<id>
+scripts/dev/smoke-rig.sh <id> --like <sibling>            # claims slot/port/vmid, stream.env, daemon, dark-launch
+python3 scripts/stations-registry.py new <id> --like <sibling> --production --slot auto   # validates on the spot
+scripts/retronet/rn-onboard.sh <id> --address 10.99.0.N --mac <mac> --uin <uin> \
+  --planes web,icq --apply     # rn-tapnet.sh from the template, launcher netdev lines, registry
+                                 # retronet block, ICQ account, docs/lab/retronet/STATION-<id>.md
+```
+
+Then the ledger commit on branch `<id>`: `docs/lab/<ID>-WAVE.md` with the allocation
+table (slot/UDP/VMID/display/retronet address+MAC+UIN as printed by `wave.sh alloc`,
+render orders as assigned, device set, measured media size, upstream pin), the
+scaffolded entry with only the fields that differ from the sibling edited (media,
+museum, spa, reset fixture), the launcher and fixture (tap NIC + slirp
+`restrict=on` + x11warp already wired), **and the hero**
+(`spa/public/posters/<id>/desktop.webp` from the smoke frame — a 4:3 upscale is
+fine; the spa stream replaces it if it does better), and the stream table below.
+Commit, push (recipe below). Do not fix validate failures by hand for more than
+one minute — leave the field as the scaffold wrote it and assign it to a stream.
+
+### Minute 3–7: 3–4 parallel streams off the ledger, each with a 4-minute stop
+
+Each: `scripts/dev/wt.sh new <id>-<stream> --from <id>`, commit on its branch, push,
+report the branch. **Hard stop at 4 minutes** — report what is proven and what is
+not; the coordinator ships what exists. **One owner per file**: the table names it;
+a stream that needs a fact from another stream's file reads it from the ledger or
+waits for that stream's report — it never edits the file.
+
+| Stream | Owns | Skips by default |
+|---|---|---|
+| `build` | `scripts/build-guests/tiles/<id>.sh` (pinned fetch, SHA-256, compose disk, framebuffer-verify boot); RUN it so the pristine output exists; `check-assets.sh`, `ASSETS-MANIFEST.md`, `os-media-catalog.md` rows | No bisecting machine types — use the device set from the ledger |
+| `golden` | bake `golden` on a sandbox clone with the **complete** device set from `.wave.env` (tap NIC + slirp `restrict=on` + x11warp, wired by `rn-onboard.sh` in the spine): one `loadvm` restore proof, one `scripts/dev/x11warp-probe.py` two-target warp+readback proof, `scripts/retronet/rn-verify.sh <id>` green, an IM client signed in and visible in the scene (`docs/lab/retronet/ICQ-CLIENTS.md` has the proven client per era/OSCAR-vs-legacy-door); stage the disk into the station dir; `bootrec-tiles.conf` arm; registry `runtime`/`reset`/`operator`/`retronet` truth; the checkpoint facts go into `station.env.fixture` comments and its report — NOT the guest doc | Pacing bisect (ship 40/40), audio proof (declare it), reset-N-times loops |
+| `spa` | `registry/posters/<id>.md`, a better hero + extra frames, `keyboardProfiles.ts`, `assembliesByTile.ts`, `machineIdentity.ts`, `museum`/`spa`/`demoProgram`; the only stream that edits visitor-facing prose | Playtesting the demo beyond one `labctl type` + `shot` |
+| `docs` (start when `golden` reports) | `docs/guests/<id>.md` including §Checkpoint from golden's report, `GUEST-TIERS.md`, release-notes JSON, `docs/README.md` index | — |
+
+The GUI wizard an IM client needs (server host/port, screen name, password) is
+driven the same way any keyboard-only GUI is driven on these guests:
+`x11warp-probe.py --warp X Y --click --qmp <sock>` places the X pointer where
+`XQueryPointer` confirms it landed, then a button-only QMP event clicks there —
+never a QMP `abs` move, which several of these window managers ignore. A
+wizard that cannot be reached this way (freebsd411/Kopete 0.9.1, 2026-09-03) is
+an OPEN item for the stream to report, not a wall to grind on inside the
+4-minute stop.
+
+**When a stream hits a wall (netbsd14, 2026-09-03: the installed kernel hung in
+the ISA probe after `lpt0`, and the golden agent bisected it one reboot at a
+time), the stream STOPS and reports the frame; the coordinator races it** —
+OPERATING-RULES §13: theories written down, one cheap agent per theory on its
+own `scripts/dev/rig-clone.sh new <id> <theory> [-- qemu args]` clone, 3-minute
+stops, `rig-clone.sh keep <id> <winner>`. Inside every stream, waits are
+`scripts/dev/fb-wait.py --qmp <sock> --settle S` / `--change` on the box, never
+`sleep N` then look: the boot prompt's 5-second window and a 40-second stare at
+a hang are the same mistake. Three more pitfalls from that run: the golden brief
+carried install + X config + bake in one agent — split it at the first
+framebuffer that differs from the sibling's; `/data/assets-staging` is a
+different mount inside CT950 than on labhost, so give a stream the measured
+hashes and sizes inline instead of a path; and a stream that reports "hard stop
+reached" after two minutes has stopped early — resume it with the missing facts
+rather than redoing its work.
+
+**When the station needs a real OS install (debian22, 2026-09-03: 93 active
+minutes, nine concurrent waves), time the installer's FIRST disk write in the
+spine.** A Linux 2.2 guest kernel writes the emulated IDE disk in 16-bit PIO
+under KVM at ~27 KB/s (one VM exit per `outw`); its `mke2fs` never finishes and
+two golden agents burned their budgets on it before racing. The route that
+works, from minute 3: compose the root filesystem ON THE HOST (`mke2fs -I 128`,
+the release's base tarball, `dpkg-deb -x` a Depends closure of the desktop
+packages from the ISO, boot the CD kernel with `root=/dev/hda1`) — recipe
+`scripts/build-guests/tiles/debian22.sh`; the XFree86 3.3.x trap list is in
+`docs/guests/debian22.md` §Install recipe — hand it to the next 1990s Linux/BSD
+stream before it boots anything. Give such a golden stream one agent and a
+30-minute stop, not two racing agents with 4-minute stops.
+
+Facts flow one way: a stream that *measures* a fact corrects the ledger in its own
+commit and says so in its report; nobody copies a number from a README. While the
+streams run, the coordinator is not idle: it prepares the framebuffer-proof
+commands, the merge order and the report skeleton.
+
+### Minute 7–10: integrate and ship (you)
+
+```bash
+# merge the stream branches into <id> (ledger is a union; generated files: regenerate, never hand-merge)
+git merge --no-edit origin/<id>-build origin/<id>-golden origin/<id>-spa origin/<id>-docs
+# the whole landing window as one command, run from the /data sandbox worktree:
+# wave.sh land begin -> fetch+merge main -> rebuild the two SPA tables at the lineup
+# position (spa-scene-rows.py <id>, never a union) -> validate+generate -> vitest ->
+# push main (pre-push gate is the gate) -> box-deploy --apply -> stop unit, park the
+# old disk, copy in --golden -> smoke-rig --down -> station-up.sh -> re-home claims
+# from $KH_SESSION to the station session -> proofs (labctl shot; x11warp-probe
+# two-target; rn-verify.sh) -> SPA build+deploy -> re-arm every OTHER wave's
+# darklaunch.d overlay -> wave.sh land end
+scripts/dev/station-land.sh <id> --golden /data/vms/sandbox/<id>-golden/disk.qcow2
+```
+
+`station-land.sh` prints what each step did and stops at the first failure with
+a rollback line (launcher + disk are one unit). It IS the landing lock —
+`wave.sh land begin` blocks until any other wave's window is free instead of a
+person relaying "ready to land" → "go" → "landed"; `wave.sh land status` shows
+who holds it and since when.
+
+Land main **once**. If one stream is late, ship without it and let it land in the
+next wave; a second `station-land.sh` run costs ~2.5 minutes.
+
+Done means: `/os/<id>` shows the real station with an **absolute** pointer, on
+the **retronet web plane**, with an **IM client signed in** — the station-land
+proofs (`labctl shot`, the x11warp two-target readback, `rn-verify.sh`) are what
+prove it, not a log line — the grid lists it, the smoke rig is down and the
+stream sandboxes are removed (`wt.sh rm <id>-<stream>`; the claims for
+slot/port/VMID/display/retronet pass to the station session), and the report
+names the checks above with measured times from `session-timeline.py`.
+**The IM proof is not "signed in once" — it is "signed in AGAIN after a
+reset"**: `labctl reset <id>` (`loadvm golden`) restores the checkpoint with
+the OLD TCP socket, which the server has already dropped, so the client must
+notice and reconnect, not just sit on stale state. Proof = TWO things:
+`labctl reset`, wait up to 4 min AWAKE (hold a wake lease; an idle-paused guest
+never counts the seconds), then `labctl shot` shows the client online (not
+"signed off" or a login dialog) AND a NEW `login successful uin=<uin>` line
+dated after the reset in the gateway's ICQ journal (CT 951; `rn-verify.sh <id>
+--icq <uin> --since <reset-ts>`). The frame alone lies: suse64's GtkICQ showed
+"Online" for minutes while the gateway answered every packet NOT_CONNECTED.
+The same reconnect fires in steady state: an idle-paused station sends no
+keepalives, the gateway reaps its session, and the client must re-login on
+wake (debian22's GnomeICU did, unaided, in ~2 min).
+Measured: Gaim 0.59.9 reconnects at ~3 min by itself, Kopete 0.12 at ~1 min,
+mICQ 0.4.12 at ~70 s; Gaim 1.0 and GtkICQ 0.60 never (autorecon plugin /
+restart wrapper needed); micq 0.4.3 exits, so an exit-driven loop works.
+Tear-down is part of done.
+
+### Push recipe (3 lines)
+
+1. `SKIP_GATE=1` ONLY on feature branches (`<id>`, `<id>-*`); never on `main`.
+2. `GIT_SSH_COMMAND="ssh -i /home/wnt/.ssh/id_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20" git push -u origin <branch>`
+3. Push `main` from a `/data` worktree (`/data/vms/sandbox/<name>/repo`, `git push origin HEAD:main`), never the shared clone — the box-state gate needs it.
+
+### What NOT to skip
+
+The golden must restore once (`loadvm golden` on the exact device set); the
+launcher must be the one the golden was baked with; addresses stay placeholders
+(`192.0.2.10`, `labhost`); every claim goes through `kh-claim`; the framebuffer
+is the proof, not a log line.
+
+### Several waves at once: the tools (2026-09-03, nine stations, then tooled)
+
+Nine station waves ran in parallel on one box (pcbsd, ubuntu, slackware,
+netbsd14, redhat62, openbsd, freebsd411, debian22, suse64) behind one
+coordinator session that did nothing but relay traps and run two single-run
+fleet steps (see [`WAVE-COORDINATION.md`](WAVE-COORDINATION.md)). What that
+run cost — ~150 coordinator messages over ~9 hours of allocation bookkeeping,
+landing serialisation and status sweeps, most of it mechanical — is now three
+tools instead of a person. A wave session runs itself:
+
+- **`scripts/dev/wave.sh alloc <id> [--retronet] [--x11warp]`** replaces
+  hand-assigned slots. It is the single atomic claim for everything a wave
+  shares (slot/UDP/VMID, the X-warp display, and with `--retronet` the
+  10.99.0.N address, MAC, tap, chain and ICQ UIN), appends the BOX-side
+  `local.env` rows and re-renders retronet DHCP in one call, and refuses
+  loudly if anything is already held — two waves starting in the same minute
+  can no longer collide on `--slot auto`.
+- **`scripts/dev/wave.sh land begin/end/status`** replaces the "ready to
+  land" → "go" → "landed" relay with a `kh-claim` FIFO queue on the box: a
+  wave blocks (bounded poll, never a guessed sleep) until the landing window
+  is free, and a stuck window past N minutes prints a chase hint on its own.
+  `station-land.sh` calls `begin`/`end` around the whole window, so a wave
+  never runs `box-deploy --apply` — the one command that reverts every OTHER
+  wave's uncommitted live edits — outside a window it actually holds.
+- **`scripts/dev/station-land.sh <id> [--golden …] [--merge …]`** is the
+  window itself: fetch+merge main, gate, push, deploy, golden swap,
+  `station-up`, claim re-homing, proofs, SPA deploy, and re-arming every OTHER
+  wave's `darklaunch.d` overlay (the SPA-deploy trap) — one command instead of
+  the eight hand-run steps that used to cost 5–25 minutes per landing, most of
+  it the pre-push gate re-run (shfmt, ruff, the scene tests) and hand-resolving
+  the four append-only shared files (`assembliesByTile.ts`,
+  `machineIdentity.ts`, `release-notes*.json`, `bootrec-tiles.conf`). Its
+  `spa-scene-rows.py <id>` rebuilds the two SPA tables from main's table plus
+  this station's row **re-inserted at its lineup position** — never a union,
+  which is what used to double a row. The scene test then wants a **distinct
+  hardware tuple** (body|monitor|keyboard|mouse) per station: `new --like`
+  refuses (or takes `--tuple`) when a copy would keep the sibling's.
+
+What still needs a human, because the tools cannot decide it: the **load
+rule** (operator) — saturating the cores is fine, 1-min load above 50 means
+scale down; each wave holds at most three guests, a race is three runners and
+the losers die on the first frame, nothing hung is left spinning — and
+**cross-wave relay** of a finding that applies to a sibling wave (two KDE 3
+installs, three XFree86 3.3.6-on-cirrus desktops told each other directly in
+2026-09-03; the tools do not read each other's frames for you). See
+[`OPERATING-RULES.md` §14](OPERATING-RULES.md#14-parallel-waves) for the
+reasoning behind the load rule and the landing lock, and
+[`WAVE-COORDINATION.md`](WAVE-COORDINATION.md) for the message protocol
+reduced to what the tools cannot do (the resume-after-usage-limit recipe
+included). [`WAVE-TEMPLATE.md`](WAVE-TEMPLATE.md) is the wave-brief skeleton
+every wave copies.
+
+Facts every 1990s guest wave paid for once and should not pay again:
+
+| Wall | Measured cause | Fix |
+|---|---|---|
+| Linux 2.2 / FreeBSD 4.x install crawls (70 KB/s CD or disk) | 16-bit PIO is a KVM exit per `outw`; no KVM-side flag helps | Install under `-accel tcg` (~20x faster), bake the golden under the shipped launcher; FreeBSD 4.11 has no busmaster DMA on PIIX3, so its station disk lives on `lsi53c895a` (sym) |
+| Installed Linux 2.2 loops `hda: lost interrupt`, keyboard "not present" | anaconda / YaST install the **SMP** kernel on `-smp 2`; IO-APIC routing on i440fx with `acpi=off` drops IRQs under both accels | Boot the **UP** kernel (`noapic` also works); with `hdparm -d1` PIIX DMA runs 58–70 MB/s under KVM, so the station stays KVM |
+| OpenBSD 7.9 drops key releases under X | `-smp 2` on the i440fx IOAPIC loses keyboard IRQs | `-smp 1` (or `acpi=off`); pick one vCPU first for any 1990s guest |
+| `mke2fs` of a 4 GiB root takes 17 min | same PIO path | 1.5–2 GiB disk, or compose the root filesystem on the host (`mke2fs -I 128 -O none -d <tree>`; 2.2 rejects 256-byte inodes) and boot the CD kernel |
+| A FreeBSD 4.11 station's NIC is silent after `loadvm` (ifconfig fine, ARP sent, nothing on the tap) | `rl(4)` (rtl8139) never re-initialises after a vmstate restore; `ifconfig down/up` and QMP `set_link` do not help | use `e1000` (`em(4)` is in 4.11 GENERIC); prove with tcpdump on the tap AFTER a `loadvm`, not with `ifconfig` |
+| `-kernel <2.2 bzImage>` hangs at "Booting from ROM" | both accels | boot from a boot loader on the disk; `sendkey spc` (not shift) stops LILO's timeout |
+| xterm text does not paint on XF86_SVGA + cirrus 5446 | BitBLT path | `Option "no_bitblt"` (depth 8 and 16 proven) |
+| Typed characters drop under XFree86 over QMP | 40/40 key pacing floor | 60/60 measured on wscons+X (netbsd14); measure, ship the number |
+| Pixel-diff pointer proof passes a pointer that never moved | X root cursor parked at screen centre after startx | take the reference frame after moving to a corner; prove two targets |
+| `stations-registry.py new --like` left `operator.labctl.dir` on the sibling | slash-anchored rewrite | fixed 2026-09-03; the scaffold test covers the bare dir |
+| x11warp's slirp NIC hands the guest a default route via 10.0.2.2 (the host stack), which fights the tap's own DHCP route | the guest chooses whichever NIC answered last | `restrict=on` on the x11warp `-netdev user` (hostfwd still works); the tap's DHCP lease/resolv.conf must win. Pre-DHCP guests keep the retronet reservation anyway — it is the uniqueness ledger, not a live lease |
+| `RETRONET_DHCP_RESERVATIONS` edited in local.env is not live for the next boot | `install-dhcp.sh` has not re-rendered `/etc/retronet/dhcp.env` in CT 951 yet | `wave.sh alloc --retronet` re-renders it as part of the atomic append; a guest that boots before the render leases the pool's `.101` instead of its reservation |
+| First retronet launch dies with no MAC | the launcher reads `RN_<ID>_MAC` from the BOX-side `/data/kernel-hive/registry/local.env`, not a CT-side copy | `rn-onboard.sh` writes it to the right side; check the BOX file, not CT951's, when a launch fails on the NIC |
+| `qmp-type.py` types Enter/Tab instead of the literal characters `\n`/`\t` | the tool decodes `unicode_escape` by contract, so a typed `printf 'a\nb'` or heredoc line lands as one line | write guest config with `sh -c '{ echo l1; echo l2; } > f'`, type `\\` for a literal backslash, or use `qmp-type.py --raw` |
+| A keyboard-only GUI wizard (IM client server/screen-name/password) cannot be reached with QMP `abs` events on these guests | several window managers ignore an absolute QMP move | `x11warp-probe.py --warp X Y --click --qmp <sock>`: warp the X pointer (readback via `XQueryPointer`), then send a button-only QMP event — the click lands where X thinks the pointer is |
+| A station with no viewer answers no TCP on its X display when probed | idle-pause stops the guest (QMP `stop` / SIGSTOP) after ~2 min | probe with a wake lease, or view `/os/<id>` live; the daemon log line is `[idle] driver active but guest paused -> resumed` |
+| A landed station's claims (tap, chain, retronet address, slot/port/vmid) are still held by the wave session | claims are not transferred automatically | `station-land.sh` re-homes them from `$KH_SESSION` to the station session; the next `kh-claim` on the wave session would otherwise say "not yours" |
+| An unproven `rn-tapnet.sh` committed anyway gets deployed fleet-wide | `box-sync-pairs-retronet.sh` is one glob loop over every committed `rn-tapnet.sh`, not a hand-maintained row per station | commit a station's `rn-tapnet.sh` only once that station is proven (openbsd, 2026-09-03, deliberately withheld it) |
+| Host ping to a retronet address "succeeds" or "fails" and neither proves the station is on the plane | containment: the tap is not routed to the host | the real check (`rn-verify.sh`): tap UP with master `vmbr-rn`, the systemd unit active, the tap named in the launcher/env, the reservation rendered in CT 951's `dhcp.env`, and the MAC seen on the bridge fdb while the guest is awake |
+| An IM client that was signed in when the golden was captured shows signed OFF (or a login dialog) after `labctl reset` | `loadvm golden` restores the checkpoint with the OLD TCP socket, already dropped by the server; the client must notice and reconnect, not sit on stale state | Gaim 0.59.9 (redhat62) signs off and does not retry — needs a watchdog; micq (slackware) with a watchdog and mICQ 0.4.12 (netbsd14) both re-log in within ~70 s unassisted. Proof is `labctl reset` → wait up to 90 s awake → `labctl shot` shows the client online, not "signed in once" at bake time |
+
 ## 1. Current scope and candidate backlog
 
 `registry/stations/` is the source of truth for the current lineup. Each entry has
 an explicit `lifecycle`; `streamhost/stations-manifest.sh` is generated from its
 production entries rather than maintained as an independent inventory. At the
 current registry revision, `python3 scripts/stations-registry.py count` reports
-**39 lineup entries: 37 streamhost production stations and 2 showcase posters**.
+**92 lineup entries: 90 streamhost production stations and 2 showcase posters**.
 Use that command for the current roster count and `labctl ls` for observed live
 service state; do not copy the number into another inventory.
 
@@ -81,16 +403,27 @@ Difficulty tiers used below:
 - **Tier 4 — research:** emulator incompatibility, bespoke kernel/device work,
   or a platform whose streaming path has not yet been designed.
 
-The planned/recovery set is:
+`nextstep`, `win11`, `winxp` and `sailfishos` — all once listed here as
+recovery work — are now live production stations; see their guest docs
+([`nextstep.md`](../guests/nextstep.md), [`win11.md`](../guests/win11.md),
+[`winxp.md`](../guests/winxp.md), [`sailfish.md`](../guests/sailfish.md)) for
+what shipped. `macos` and `riscos` remain the two showcase posters — static,
+no live guest — not full streaming stations.
+
+The actual unbuilt backlog is:
 
 | OS / exhibit | State and blocker | Rough tier |
 |---|---|---|
-| `macos` | Showcase poster. The proven Sequoia VM 925 and VNC/WebSocket bridge were deleted; recreation needs Apple-compatible OpenCore/QEMU work, substantial disk space, and a new streamhost-era capture path. Tahoe is not viable without working accelerated graphics on this host. | **4** |
-| `nextstep` | Not live and not in the UI lineup. The builder reaches device detection, but NeXTSTEP 3.3 loses IDE/SCSI I/O under current QEMU; the likely paths are a QEMU 0.9 sidecar or Previous plus a licensed NeXT ROM. The ISO is also not staged. | **4** |
-| `riscos` | Showcase poster. Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but it needs a streamhost-compatible captured-Linux/RPCEmu bridge and a new checkpoint. | **3** |
-| `win11` | Showcase poster. VM 900 was deleted with the legacy RDP/neko path. Re-entry needs user-supplied licensed media plus a supported UEFI/TPM guest and streamhost/RDP capture design. | **3–4** |
-| `winxp` | Fully registered and previously built, but currently inactive. A clean rebuild is blocked on the operator's licensed XP SP3 ISO, product key, and administrator password; the consumed ISO has no recorded hash. | **3** |
-| `sailfishos` | Fully registered and previously built, but currently inactive. A clean two-stage rebuild needs an account/EULA-gated Sailfish SDK emulator VDI; the source VDI was not retained. | **3** |
+| `macos` (showcase poster only) | The proven Sequoia VM 925 and VNC/WebSocket bridge were deleted; recreation needs Apple-compatible OpenCore/QEMU work, substantial disk space, and a new streamhost-era capture path. Tahoe is not viable without working accelerated graphics on this host. | **4** |
+| `riscos` (showcase poster only) | Its former RPCEmu/neko backend was retired. ROOL media and a builder exist, but a streaming Archimedes/RISC OS station needs a streamhost-compatible captured-Linux/RPCEmu (or Arculator) bridge and a new checkpoint — see `docs/lab/research/home-computer-candidates.md` §4.7. | **3** |
+| FM Towns / Towns System Software 2.1 | Not started. Runs on the Tsugaru backend, host-native Tier 3; media sourcing (Towns system discs) is the main cost. See `docs/catalog/candidates-90s-desktops.md` §3. | **3** |
+| Magic Cap 3.1 (General Magic) | Not started. VOM files it as a hosted (non-emulated) OS; the host binary, runtime requirements and licensing posture are all unverified — establish that before scheduling build work. See `docs/catalog/candidates-90s-desktops.md` §2. | **4** |
+| UnixWare 7.1.4 / SCO OpenServer 5.0.7 | Not started. Native x86 KVM, no bridge, UnixWare has an official free 90-day eval; low novelty (another Motif desktop) so it keeps losing to higher-value work. See `docs/catalog/candidates-90s-desktops.md` §5. | **2** |
+| DESQview/X 2.1 | Not started. DOS multitasker hosting X11 clients, trivial x86 install; deferred because PC/GEOS covered the "DOS-hosted GUI" slot first. See `docs/catalog/candidates-90s-desktops.md` "Also considered". | **2** |
+| Mainframe/minicomputer kiosk — Multics, MVS 3.8j, TOPS-20, ITS, Research UNIX v6/v7, CP/M-80 | Not started. One SIMH/Hercules/dps8m/KLH10+x3270 bridge unlocks the first five; CP/M-80 wants z80pack's Altair front panel instead. See `docs/catalog/os-media-catalog.md` "Wave 2". | **2–3** |
+| NetBSD/alpha 10.1 (on the w2kalpha ES40 machine) | Not started. Best-supported second-OS candidate for that machine, no licence question, free verified media; treat as infrastructure proof before Tru64/OpenVMS. See `docs/lab/research/alpha-second-os-candidates.md` §2. | **2** |
+| OpenVMS Alpha 8.4-2L1/2L2 | Escalate to the operator, not to a build — the Alpha community licence has been gone since March 2025; only archived-kit or clock-rollback paths remain. See `docs/lab/research/alpha-second-os-candidates.md` §3.2 and §5. | **3–4** |
+| Mobile/TV images — Symbian S60, BlackBerry 10/pre-10, Palm OS, Windows Mobile/CE, webOS, MeeGo/Maemo, LibreELEC, Pebble, Android TV | Not started; see the gap list in `docs/catalog/os-media-catalog.md` "Coverage vs the current registry lineup". | **3–4** |
 
 `amiga500` is not a missing candidate: it is the active production station
 `amiga`, a Debian kiosk running FS-UAE with Kickstart/Workbench. It is distinct
@@ -99,14 +432,9 @@ awaiting conversion — read it to understand FS-UAE's media and settings, but
 build new emulator stations host-native (the nine converted MAME stations are
 the template).
 
-Candidate details and the live bridge distinction are recorded in the existing
-guest notes: [`macos.md`](../guests/macos.md),
-[`nextstep.md`](../guests/nextstep.md),
-[`riscos.md`](../guests/riscos.md), [`win11.md`](../guests/win11.md),
-[`winxp.md`](../guests/winxp.md), [`sailfish.md`](../guests/sailfish.md),
-and [`amiga500.md`](../guests/amiga500.md). These notes include historical
-neko-era material; the canonical registry and a current read-only `labctl ls`
-result take precedence for lineup and live status respectively.
+[`amiga500.md`](../guests/amiga500.md) includes historical neko-era material;
+the canonical registry and a current read-only `labctl ls` result take
+precedence for lineup and live status respectively.
 
 [`docs/guests/UNDOCUMENTED.md`](../guests/UNDOCUMENTED.md) is a documentation
 gap list, not a candidate list: its rows are already-live stations. At the time of
@@ -374,6 +702,24 @@ standard clone-only proof on labhost:
 scripts/lib/checkpoint-verify.sh <stationDir> --capture
 scripts/lib/checkpoint-verify.sh <stationDir>
 ```
+
+**The fast first bake (brand-new Tier-1 station).** `checkpoint-verify.sh` has
+no cold-boot-plus-fixed-settle mode (only `--capture`, driven by the station's
+`bootrec-tiles.conf` ready metadata, which a new station does not have yet).
+For the very first golden, boot the sandbox clone, wait a fixed settle you
+chose by eye, then drive QMP/HMP by hand on the clone's monitor socket:
+
+```bash
+Q=scripts/lib/labqmp.py; S=<clone-qmp-socket>
+python3 $Q $S stop
+python3 $Q $S savevm golden
+python3 $Q $S querysnap                 # 'info snapshots' — the golden tag must be listed
+python3 $Q $S loadvm golden
+python3 $Q $S screendump /tmp/golden-restore.ppm   # the framebuffer is the proof
+```
+
+Then wire up `bootrec-tiles.conf` and run the standard proof above; the
+recapture path (`checkpoint-guard recapture`) is for live stations only.
 
 The helper uses the station's `bootrec-tiles.conf` disk/port/ready metadata, copies
 every writable disk under a namespaced `/data/vms/sandbox/golden-verify-*`
@@ -689,6 +1035,7 @@ the registry whenever something needs them:
 | `tiles.json` | Every streamhost row's `id`, `stream.udpPort`, `stationDir`-derived certificate-hash path, and `render.signalOrder`. The live `SIGNAL_CONFIG`. |
 | `golden-manifest.json` | Production `id` and `reset`, ordered by `render.goldenOrder`. The reset allow-list `reset-tile.sh` reads. |
 | `gallery-action-map.json` | `operator.actionMap`, ordered by `render.actionMapOrder`. |
+| `fleet-table.json` | The `/fleet` view's runtime source: per-station emulator, machine, capture, pointer, pacing, golden and exec detail. Fetched by `spa/src/data/fleetTable.ts`; nothing is bundled. |
 | `mock-manifest.json` | `museum` for entries that have `render.mockManifestOrder`. |
 | `index.json` | The aggregate of every entry — `runtime.stationEnv` merged with the station's `station.env.fixture` — excluding generator-only `render` data. |
 
@@ -922,6 +1269,11 @@ framebuffer, input, and golden round-trip gates before registration is deployed.
 ### 7.2 Supervised station deployment
 
 Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
+(steps 5–8 below are ONE command once the tree is deployed:
+`scripts/dev/station-up.sh <stationDir>` — it emits the single station, links the
+fleet binary, starts the unit, publishes the five runtime documents, runs
+`labctl gen`, shoots a frame and checks signal / manifests / `POST /restore`;
+re-running it on a live station is safe.)
 
 1. finish `registry/stations/<osId>.json` and any hand-managed builder, guest doc,
    launcher, `station.env.fixture`, or coldboot sidecar; prepare the gitignored
@@ -930,21 +1282,31 @@ Follow Phase 5 of `MASTER-REPRODUCE.md` for repository-to-box sync. In outline:
 3. sync the tracked tree, including the registry, generated streamhost/serve/UI
    files, generated labctl declarations, and hand-managed tracked sidecars;
 4. emit with pinned machine types into scratch and pass `verify-emit`;
-5. emit/deploy the new station directory;
+5. emit/deploy the new station directory — `bash streamhost/stations-manifest.sh --only <stationDir> --pin-machine` emits just that one station (the flag is repeatable; the fixture preflight still runs fleet-wide);
 6. launch only its `qemu-streamhost.sh`, wait for `qmp.sock`, then start
    `streamhost@<stationDir>`;
-7. publish the **three** runtime documents with
-   `scripts/serve-https-spa.sh manifests` (or atomically copy generated
-   `emit tiles.json` to the live `SIGNAL_CONFIG` path, `emit
-   gallery-manifest.json` to the live webroot, and `emit golden-manifest.json`
-   beside the HTTPS server).
-   **Do not skip the third.** Its keys are the allow-list for
-   `POST /restore/<osId>` (`_restore_osids()` in
-   `scripts/serve/osgallery-https-server.py`), so a station missing from the
-   live copy streams perfectly while its "reset to golden" button returns
-   `404 unknown osId` — a failure that looks like a broken station and is not.
-   This doc said "the two runtime documents" until 2026-08-09 and that is
-   exactly how the Commodore wave shipped with dead reset buttons;
+7. publish the **five** runtime documents with
+   `scripts/serve-https-spa.sh manifests`. That one command writes
+   `tiles.json` to the live `SIGNAL_CONFIG` path and `gallery-manifest.json`,
+   `poster-docs.json` and `fleet-table.json` into the webroot, plus
+   `golden-manifest.json` beside the HTTPS server — **use it rather than
+   hand-copying**, precisely because the count keeps growing.
+   Two of the five fail in ways that do not look like a missing document:
+   - `golden-manifest.json` keys are the allow-list for `POST /restore/<osId>`
+     (`_restore_osids()` in `scripts/serve/osgallery-https-server.py`), so a
+     station missing from the live copy streams perfectly while its "reset to
+     golden" button returns `404 unknown osId`;
+   - `fleet-table.json` is what `/fleet` fetches at runtime
+     (`spa/src/data/fleetTable.ts`); nothing about it is bundled, so a station
+     missing from the live copy is simply absent from the fleet table while the
+     main grid shows it correctly.
+   **This line is load-bearing and has been wrong twice.** It said "the two
+   runtime documents" until 2026-08-09, which is exactly how the Commodore wave
+   shipped with dead reset buttons; it then said "three" until 2026-09-02, by
+   which time `poster-docs.json` and `fleet-table.json` had joined the set — a
+   ravynos deploy that hand-copied the three named here published a station that
+   was invisible in `/fleet`. If you add a runtime document, fix this step, the
+   rendered-artifact table in §6, and the `msg` line in `serve-https-spa.sh`;
 8. run `labctl gen` so the generated declarations are checked against the live
    runtime and observed state is added;
 9. do not rebuild the UI for a station that uses an existing archetype; a new

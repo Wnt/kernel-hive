@@ -40,7 +40,8 @@ export type Family =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
-  | 'zxspectrum' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
+  | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
+  | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
   | 'classicmac';
 
@@ -267,13 +268,17 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
   helenos: 'generic', serenityos: 'generic', toaruos: 'generic', kolibrios: 'generic',
-  tinycore: 'generic', redstar2: 'generic', redstar3: 'generic', postmarketos: 'generic',
+  tinycore: 'generic', redstar2: 'generic',
+  debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
+  redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
+  ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
+  suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
@@ -287,10 +292,41 @@ export const OS_FAMILY: Record<string, Family> = {
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
+  // ravynOS 0.6.1. Command chords are the project's stated design goal, but the
+  // classicmac family would be wrong here on both counts: its rows are Finder
+  // verbs (⌘O open, ⌘N new folder, ⌘. cancel) and the 0.6.x build ships no file
+  // manager and no browser, so they would be buttons with nothing to act on;
+  // and the one Command chord that certainly works, ⌘⇧Q, quits the WindowServer
+  // and takes the desktop away with no Filer left to restart it. What a visitor
+  // can actually use is Terminal.app over a FreeBSD 15 userland with zsh, which
+  // is what the generic Unix rows are for. Revisit if the Filer ever ships.
+  ravynos: 'generic',
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
   freedos: 'dos', msdoswin1: 'dos',
+  // bootOS: a bare `$` prompt over BIOS int 16h; the dos rows lead with
+  // Ctrl+Alt+Del, which is the way home from a boot-sector game.
+  bootos: 'dos',
+  // PC/GEOS: a full GUI over DOS, but its chords are its own (Ctrl+Esc for the
+  // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
+  // stays the honest common ground until a GEOS profile is worth writing.
+  pcgeos: 'dos',
+  openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
+  // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
+  // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
+  // Unix rows are the honest common ground, at the fleet's pacing floor.
+  redhat62: 'generic',
+  // PC-BSD 1.5.1 is KDE 3.5 on X.org: a standard PC-104 board, Alt+F1 for the
+  // K menu, Alt+F2 run, Ctrl+Esc the process table. No dedicated KDE profile yet;
+  // 'generic' is the honest PC-104 common ground.
+  pcbsd: 'generic',
+  // NetBSD 1.4.1 under XFree86 3.3.3.1 / ctwm: an xterm, so the generic Unix rows.
+  netbsd14: 'generic',
+  // FreeBSD 4.11 under KDE 3.3.2: a full 101-key PC board driving XFree86, but
+  // KDE 3's chords (Alt+F2 run, Ctrl+Esc process table) are its own, so it takes
+  // the generic Unix rows like netbsd14 until a KDE profile is worth writing.
+  freebsd411: 'generic',
   os2warp: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
@@ -299,6 +335,9 @@ export const OS_FAMILY: Record<string, Family> = {
   irix: 'generic',
   indyr4400: 'generic',
   ninefront: 'plan9',
+  // Slackware 3.4: fvwm95 over XFree86 with xterm/bash — a PC keyboard driving
+  // a Unix shell, so the generic Unix rows apply.
+  slackware: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',
@@ -366,12 +405,27 @@ export const OS_FAMILY: Record<string, Family> = {
   // ARM supervisor rather than BASIC, so the rows are its four commands.
   armeval: 'armeval',
   apple2: 'appleii',
+  // apple2e is the same //e keyboard on MAME's apple2ee: Open/Closed Apple ride
+  // on the Alt keysyms the ctlsock keymap binds to the driver's Apple keys.
+  apple2e: 'appleii',
   atarist: 'atarist',
-  amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga',
+  amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
+  // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
+  // (the profile already carries Ctrl, which the Unix shell needs).
+  amix: 'amiga',
   // The ZX Spectrum needs a profile of its own and could not borrow one: its
   // 40-key matrix has no punctuation, no cursor keys and no Ctrl, and its two
   // shifts do different jobs from a PC's.
   zxspectrum: 'zxspectrum',
+  // The SAM Coupé runs Spectrum software but does NOT take the Spectrum's
+  // profile — see the samcoupe block in keyboardProfiles.data.exotic.ts for
+  // why a full keyboard with the wrong labels needs its own family.
+  samcoupe: 'samcoupe',
+  // Atari 800XL. NOT the atarist family (a different machine, a different
+  // matrix) and not generic: the arrow keys on this station are the joystick,
+  // and the menu's cursor keys are CTRL chords on punctuation. See the
+  // atari800xl block in keyboardProfiles.data.exotic.ts.
+  atari800xl: 'atari800xl',
   // Xerox 6085 under Dwarf/Draco. The only profile in this file whose base rows
   // are entirely machine-specific verbs; see the Level-V block above for why it
   // is built from a per-machine binding table rather than a fixed key set.

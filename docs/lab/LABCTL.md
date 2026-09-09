@@ -94,10 +94,30 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   unwatched station is idle-paused, so it compares one paused frame with itself and
   passes. Measured on six stations: `changed_fraction 0.0`, exit 0, while
   `labctl health` reported `paused (idle-paused)`.
+- **A probe with no visitor attached is driving a frozen guest unless it holds
+  a wake lease.** `labctl` itself takes one for the lifetime of any command
+  (`scripts/lib/guest_wake.py`'s `WakeLease`), so its own channels are covered
+  — but a hand-written probe against a station's raw socket (a QMP connection,
+  an x11warp loopback forward) is not, and idle auto-pause (60 s after the
+  last browser session) answers every one of those with silence rather than an
+  error: a paused guest's QMP still acks, and a paused guest's X server
+  answers no TCP at all. `scripts/dev/qmp-type.py` and
+  `scripts/dev/x11warp-probe.py --click` take the lease for you; anything else
+  should either hold `guest_wake.WakeLease(station)` for its own duration or
+  keep a real `/os/<id>` view open so the daemon never lets the guest idle.
+  See [`INPUT-DEBUGGING.md`](INPUT-DEBUGGING.md#the-idle-pause-trap-on-an-x11warp-probe-and-driving-a-gui-wizard-through-it).
 - **`labctl shot` on a stopped station exits 2 and writes no file.** That is
   correct fail-closed behaviour, not a broken station — start the station first.
 - **`labctl reset`** is `loadvm golden`, and refuses stations without a checkpoint
   snapshot (`serenityos`, `toaruos`, `sailfishos`).
+- **`qmp-type.py` eats backslash escapes, so never type a `printf` format into a
+  guest.** `\n` is Enter and `\012` is swallowed too, so `printf "%s\n" …` put a
+  literal `n` in the file one run and submitted a half-typed command the next —
+  on freebsd411 that silently wrote `kopeterc`, a `.desktop` launcher and an
+  autostart file as one broken line each, and cost a bring-up window before
+  anyone looked at the bytes. Write multi-line files with a
+  `{ echo …; echo …; } > file` group instead, and remember many of these guests
+  run **csh** as root's shell: wrap the whole thing in `sh -c '…'`.
 - **Restoring and recapturing are different halves, and agents confuse them.**
   `labctl reset <station>` RESTORES the checkpoint; `ssh lab 'checkpoint-guard
   recapture <station>'` RECAPTURES it — the only safe way to replace a `golden`

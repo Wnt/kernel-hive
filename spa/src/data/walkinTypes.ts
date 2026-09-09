@@ -7,7 +7,10 @@
 export type WalkinAccess = 'closed' | 'invited' | 'open';
 export type WalkinPool = { os: string; free: number; size: number };
 export type WalkinState = { access: WalkinAccess; pools: WalkinPool[]; notice?: string };
-export type WalkinClaim = { clone: string; signalEndpoint: string; ttlSeconds: number };
+/** `resumed`: the broker handed back the clone this account ALREADY held (a
+ *  reload, a back-navigation); `ttlSeconds` is then what was left, not a fresh
+ *  session. Ledger §7. */
+export type WalkinClaim = { clone: string; signalEndpoint: string; ttlSeconds: number; resumed?: boolean };
 export type WalkinQueued = { queued: true; position: number };
 export type WalkinAdminStatus = {
   access: WalkinAccess; envFloor: WalkinAccess;

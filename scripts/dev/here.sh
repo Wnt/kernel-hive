@@ -69,7 +69,18 @@ d="$("$boxrepo/scripts/host/box-install.sh" --repo "$boxrepo" --json 2>/dev/null
 [ -z "$d" ] || printf 'live vs checkout: %s\n' "$(printf '%s' "$d" | sed 's/.*"same"/same/; s/,"apply.*//; s/"//g')"
 
 hr "who else is here"
-labctl who 2>/dev/null | sed 's/^/  /' || kh-claim ls
+who_out="$(labctl who 2>/dev/null)"
+if [ -n "$who_out" ]; then
+  # held/live/dead claims print in full; stale sandboxes are routine churn —
+  # fold them into one summary line so this section stays scannable.
+  printf '%s\n' "$who_out" | awk '
+    /^  stale / { stale++; next }
+    { print }
+    END { if (stale) printf "  + %d stale claims (kh-claim ls --all | grep stale)\n", stale }
+  ' | sed 's/^/  /'
+else
+  kh-claim ls | sed 's/^/  /'
+fi
 mapfile -t st < <(ls -d "$sandbox"/*/ 2>/dev/null)
 printf '  sandboxes: %s dir(s) under %s   (scripts/dev/wt.sh ls · labctl who)\n' "${#st[@]}" "$sandbox"
 if [ -d /data/vms/streamhost/serve/webroot/staging ]; then

@@ -1,9 +1,16 @@
 # Adding the Xerox machines: Alto, Star, Daybreak/ViewPoint
 
-Status: **research, 2026-08-09.** Nothing is built, no registry entry exists, no
-slot is claimed. This is the feasibility study
-[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expects before a
-candidate enters the backlog.
+Status: **research, 2026-08-09 — built since.** All three Xerox stations now
+exist in the registry: `alto`, `star` and `daybreak` — see
+`registry/stations/alto.json`, `registry/stations/star.json` and
+`registry/stations/daybreak.json`, and their guest docs
+[`docs/guests/alto.md`](../../guests/alto.md),
+[`docs/guests/star.md`](../../guests/star.md) and
+[`docs/guests/daybreak.md`](../../guests/daybreak.md) for what actually
+shipped. This is the feasibility study
+[`ADD-NEW-OS-PLAYBOOK.md`](../ADD-NEW-OS-PLAYBOOK.md) §1 expected before the
+candidate entered the backlog; it is left below as the original recon record,
+not updated line-by-line against the final build.
 
 Scope: Alto I, Alto II, the Star (8010 "Dandelion") / Pilot, and the Daybreak
 (6085) / ViewPoint / GlobalView. **All three sections are complete.**

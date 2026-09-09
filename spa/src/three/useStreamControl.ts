@@ -19,10 +19,10 @@
 
 import type {
   StreamBannerState,
-  StreamClient,
   StreamExitReason,
   StreamMetrics,
 } from './streamClient';
+import type { StreamInputClient } from './streamInputClient';
 import { isComposedChar, isMacPlatform } from './composeKey';
 import {
   codeToScancode,
@@ -131,7 +131,7 @@ const BOOT_DISMISS_DELAY_MS = 1200; // let the desktop paint before we tap keys
 const STATS_REPORT_MS = 100;
 
 export function createStreamController(
-  client: StreamClient,
+  client: StreamInputClient,
   config: StreamControllerConfig,
 ): {
   handle: StreamControlHandle;

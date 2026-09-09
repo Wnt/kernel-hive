@@ -6,6 +6,7 @@ against a commercial one on the same traces.
     scripts/observability/instana-forward.py --dry-run    # show exactly what WOULD leave
     scripts/observability/instana-forward.py --once
     scripts/observability/instana-forward.py --follow --interval 60
+    scripts/observability/instana-forward.py --scheduled  # what the timer runs
     scripts/observability/instana-forward.py --via-agent   # force the local Instana host agent
     scripts/observability/instana-forward.py --via-saas    # force direct-to-SaaS
 
@@ -31,13 +32,15 @@ of over the internet to a third party. Direct-to-SaaS remains a legitimate,
 fully supported fallback for a box with no agent installed, or to compare the
 two paths deliberately.
 
-THIS SENDS DATA TO A THIRD PARTY. Nothing else in this repo does. The stores it
-reads are already scrubbed at intake — `traces.py` refuses `exception.stacktrace`
-and every other free-text field, so a stack, a typed string or a credential
-handle cannot be in the database to be forwarded — but "already scrubbed" is a
-property worth re-stating at the boundary rather than assumed. `--dry-run`
-exists so the exact bytes can be read before any of them are sent, and it is the
-recommended first run.
+THIS SENDS DATA TO A THIRD PARTY. Nothing else in this repo does, and what it
+sends is deliberately RICH: stacks, URLs and the account identity on a trace are
+exactly what the operator asked Instana to be fed (docs/ANALYTICS.md §0). What
+cannot be in the store to forward is a CREDENTIAL — `traces.py` refuses those by
+name and by shape at intake — and that is the one property worth re-stating at
+the boundary rather than assumed. (Before 2026-09-01 the store also refused
+stacks and identity; this comment used to describe that as the guarantee. It was
+an AI-invented rule, not an operator one.) `--dry-run` exists so the exact bytes
+can be read before any of them are sent, and it is the recommended first run.
 
 INSTANA ONLY BUILDS A TRACE FROM AN ENTRY SPAN — confirmed empirically on
 2026-08-31, and it is the difference between "ingested" and "visible". Spans of
@@ -113,8 +116,22 @@ into it, and the two failure modes look identical from the outside (a 401) until
 somebody has read this paragraph.
 
 OFF UNLESS CONFIGURED. No endpoint in registry/local.env means this does
-nothing, loudly. It is never wired into a timer or the serving plane by this
-commit; forwarding is a thing somebody runs, or arms deliberately.
+nothing, loudly. That is still true when a timer is what runs it: `--scheduled`
+turns "nothing is configured here" into a logged no-op and exit 0, because a
+box with no Instana tenant must not accumulate a failed unit every five
+minutes, while every OTHER failure still exits non-zero and shows up red.
+
+RUN ON A TIMER SINCE 2026-09-01, and that changed a fact this file used to
+state. It was hand-run for its whole life, so every Instana view fed by it was
+stale by default — a measurement doc was written from a tenant nobody had
+forwarded to in days. `scripts/observability/kh-instana-forward.{service,timer}`
+is the schedule; systemd gives the single-flight guarantee (a oneshot unit
+cannot overlap itself, and a timer that fires while the last run is still going
+is skipped, not queued), the watermark survives restarts because it is a file
+under /data, and each run prints its watermark and backlog so staleness is
+visible in `journalctl -u kh-instana-forward`. Arming it is an operator
+decision, spelled out in docs/lab/INSTANA-VIEW-INVENTORY.md §2 — landing this
+file does not start anything.
 
 WHAT IT SENDS. Traces as OTLP/JSON (`traces_otlp.py` — the same export the admin
 UI offers, so what Instana sees and what the operator sees cannot disagree) and
@@ -128,10 +145,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import socket
-import sqlite3
 import sys
 import time
 import urllib.error
@@ -143,25 +158,46 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "serve"))
 sys.path.insert(0, str(HERE))
 
-import traces  # noqa: E402
+import tail_sampler  # noqa: E402
+import telemetry_paths  # noqa: E402
 import traces_otlp  # noqa: E402
+from instana_backlog import backlog_count, pending_traces, read_state, resume_seq, write_state  # noqa: E402
+from instana_batch import drain  # noqa: E402
+from instana_config import load_env  # noqa: E402
 from instana_destination import DEFAULT_AGENT_ENDPOINT, Destination, choose_destination, scheme_problem  # noqa: E402
+from instana_logs import forward_logs  # noqa: E402
+from instana_metrics import forward_metrics  # noqa: E402
+from instana_vitals import forward_vitals  # noqa: E402
 
 DEFAULT_TRACES_DB = Path("/data/vms/streamhost/serve/traces.db")
 DEFAULT_ANALYTICS_DB = Path("/data/vms/streamhost/serve/analytics.db")
+DEFAULT_LOGS_DB = Path("/data/vms/streamhost/serve/logs.db")
+DEFAULT_VITALS_DB = Path("/data/vms/streamhost/serve/vitals.db")
 DEFAULT_TOKEN = ROOT / "scripts" / "serve" / "pki" / "instana.token"
 #: Where the watermark lives, so a re-run does not re-send what already went.
 DEFAULT_STATE = Path("/data/vms/streamhost/serve/instana-forward.state.json")
 
-#: Traces per request. Instana's acceptor, like every OTLP endpoint, has a body
-#: limit; a private gallery never approaches it, but a first run against a
-#: fortnight of history would.
-BATCH = 100
+#: Traces read from the store per PAGE. NOT "traces per request": how many go
+#: in one POST is a span-count and body-byte question, and lives in
+#: instana_batch.py with the measurements behind it. This is only how much of
+#: the backlog one sqlite pass pulls into memory before it is cut into
+#: requests; 500 is the store's own `search()` ceiling, so it is one page.
+#:
+#: The comment that used to stand here said Instana's body limit was one "a
+#: private gallery never approaches". That was measured false on 2026-09-01: a
+#: 100-trace batch carried 16,226 spans (9.6 MB) because ONE trace held 16,139
+#: of them, and the agent closed the connection on it twice in a row.
+PAGE_TRACES = 500
 
-#: Destination selection (agent-vs-SaaS, the loopback http exception, the
-#: DEFAULT_AGENT_ENDPOINT/Destination types) lives in instana_destination.py —
-#: split out so it is unit-testable without a trace store, a socket, or a real
-#: Instana tenant. See scripts/test_instana_destination.py.
+#: THREE THINGS LIVE BESIDE THIS FILE, not in it, each split out so it is
+#: unit-testable without a socket or a real Instana tenant — and, latterly,
+#: because this file reached its line budget:
+#:   instana_destination.py  agent-vs-SaaS choice, the loopback http exception
+#:   instana_backlog.py      the watermark: WHICH traces have not been sent
+#:   instana_batch.py        HOW MUCH goes in one request, and how many a run makes
+#:   instana_metrics.py      analytics.db counters rendered as OTLP histograms
+#: The one with a correctness argument in it is instana_backlog.py; read
+#: `pending_traces()` there before touching anything about ordering.
 
 
 class Config:
@@ -187,6 +223,8 @@ class Config:
         self.token_file = Path(env.get("INSTANA_TOKEN_FILE") or DEFAULT_TOKEN)
         self.traces_db = Path(env.get("TRACES_DB") or DEFAULT_TRACES_DB)
         self.analytics_db = Path(env.get("ANALYTICS_DB") or DEFAULT_ANALYTICS_DB)
+        self.logs_db = Path(env.get("LOGS_DB") or DEFAULT_LOGS_DB)
+        self.vitals_db = Path(env.get("VITALS_DB") or DEFAULT_VITALS_DB)
         self.state = Path(env.get("INSTANA_STATE") or DEFAULT_STATE)
         # Which client classes to forward. Defaulting to everything is right for
         # a COMPARISON — the point is to see the same population in both UIs —
@@ -198,6 +236,20 @@ class Config:
         # a broken exporter rather than a missing field. Defaults to the box's
         # own hostname; override for a deployment where that is not stable.
         self.host_id = env.get("INSTANA_HOST_ID") or socket.gethostname()
+        # WHETHER OUR OWN POLLING PLANE IS FORWARDED AT ALL. Off by default
+        # since 2026-09-01, and the switch is one variable because the
+        # preferred mechanism may start working: Instana's documented way to
+        # say "machine chatter, hide it by default but keep it" is a
+        # `synthetic` span annotation, which `traces_otlp.py` DOES export and
+        # which is NOT honoured over OTLP ingest — measured, five spellings,
+        # all still visible in Analytics -> Calls (telemetry_paths.py has the
+        # experiment). Until it is, a trace made entirely of `/clientcmd`,
+        # `/clientlog`, `/analytics` and `/usage` calls does not leave the box:
+        # they were 896 calls in an hour and buried everything a person would
+        # want to look at. Set INSTANA_FORWARD_TELEMETRY=1 to send them again.
+        # Nothing about this reduces what traces.db keeps or what
+        # /admin/observability shows.
+        self.forward_telemetry = (env.get("INSTANA_FORWARD_TELEMETRY") or "").strip().lower() in ("1", "true", "yes")
         self.classes = tuple(
             c.strip() for c in (env.get("INSTANA_CLASSES") or "human,probe,unknown").split(",") if c.strip()
         )
@@ -269,63 +321,6 @@ class Config:
         return h
 
 
-def load_env() -> dict:
-    """registry/local.env, then the real environment on top."""
-    env = {}
-    path = ROOT / "registry" / "local.env"
-    try:
-        for line in path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            k, v = line.split("=", 1)
-            env[k.strip()] = v.strip().strip("\"'")
-    except OSError:
-        pass
-    # INSTANA_* plus the two store paths this reads. The store paths matter
-    # because they are how anyone tests this against a fixture instead of the
-    # live databases — filtering them out made `Config` claim to honour an
-    # override it never saw, which is worse than not offering one.
-    passthrough = ("TRACES_DB", "ANALYTICS_DB")
-    env.update({k: v for k, v in os.environ.items() if k.startswith("INSTANA_") or k in passthrough})
-    return env
-
-
-def read_state(path: Path) -> dict:
-    try:
-        return json.loads(path.read_text())
-    except (OSError, ValueError):
-        return {}
-
-
-def write_state(path: Path, state: dict) -> None:
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state, indent=2))
-        tmp.replace(path)
-    except OSError as e:
-        sys.stderr.write(f"instana-forward: cannot persist watermark ({e}) — next run may resend\n")
-
-
-def pending_traces(cfg: Config, after_ms: int, limit: int) -> list[dict]:
-    """Finished traces newer than the watermark, oldest first.
-
-    Ordered OLDEST first, unlike the UI: a forwarder is catching up, and
-    advancing the watermark past a trace it has not sent is how a gap appears
-    that nothing will ever go back for.
-    """
-    store = traces.TraceStore(cfg.traces_db)
-    try:
-        rows = []
-        for klass in cfg.classes:
-            rows += store.search(klass=klass, since_ms=after_ms + 1, limit=limit)["traces"]
-        rows.sort(key=lambda r: r["startedMs"])
-        return [t for t in (store.trace(r["traceId"]) for r in rows[:limit]) if t]
-    finally:
-        store.close()
-
-
 def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) -> tuple[bool, str]:
     url = f"{dest.endpoint}{path}"
     body = json.dumps(doc, separators=(",", ":")).encode()
@@ -360,115 +355,116 @@ def post(cfg: Config, dest: Destination, path: str, doc: dict, dry_run: bool) ->
 
 
 def forward_traces(cfg: Config, dest: Destination, dry_run: bool, verbose: bool) -> int:
-    state = read_state(cfg.state)
-    after = int(state.get("lastTraceStartedMs") or 0)
-    batch = pending_traces(cfg, after, BATCH)
-    if not batch:
-        print(f"traces [{dest.name}]: nothing new")
-        return 0
-    # host.id: stamped by US only on the SaaS leg, which has no other way to
-    # learn the host. The agent leg supplies host identity itself (IBM's
-    # docs: sending to the local agent means host.id is not needed, and
-    # sending it anyway to the direct SaaS backend IS needed) — passing
-    # host_id=None here is that difference made explicit, not an omission.
-    doc = traces_otlp.export(batch, host_id=cfg.host_id if dest.stamp_host_id else None)
-    spans = sum(len(t.get("spans", [])) for t in batch)
-    if verbose or dry_run:
-        print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
-    print(f"traces [{dest.name}]: {len(batch)} trace(s), {spans} span(s) -> {detail}")
-    if ok and not dry_run:
-        state["lastTraceStartedMs"] = max(t["startedMs"] for t in batch)
-        write_state(cfg.state, state)
-    return 0 if ok else 1
+    """Ship the backlog until it is empty or the run budget says stop.
 
-
-def metric_histograms(cfg: Config, since_day: str) -> dict:
-    """Our bucketed metrics as OTLP histograms.
-
-    The bucket BOUNDARIES are our ladder, unchanged. Re-bucketing to something
-    prettier would make Instana's histogram disagree with our own report, and
-    the entire reason this exists is to compare the two on identical data.
-
-    A caveat worth carrying: the counters have no per-sample timestamps, only a
-    day bucket. So each day's histogram is emitted with that day's end as its
-    time, which is honest at day resolution and would be a lie at any finer one.
+    A RUN IS NOT A BATCH. It used to be: one page of 100 traces left the box and
+    the process exited, which on a five-minute timer is 20 traces a minute
+    against a store taking 23 a minute. The pipeline could not catch up from any
+    backlog, ever, and sat 991 traces behind. See instana_batch.drain().
     """
-    db = sqlite3.connect(f"file:{cfg.analytics_db}?mode=ro", uri=True)
-    try:
-        rows = db.execute(
-            "SELECT day,metric,bucket,class,SUM(n) FROM metric WHERE day>=? AND class IN "
-            f"({','.join('?' * len(cfg.classes))}) GROUP BY day,metric,bucket,class",
-            (since_day, *cfg.classes),
-        ).fetchall()
-    finally:
-        db.close()
+    state = read_state(cfg.state)
+    after = resume_seq(cfg, state)
+    first_seq = after
+    # THE TAIL DECISION — a VENDOR-VIEW decision, not a capacity one: our own
+    # store keeps every action. `tail_sampler.py` has the reasoning, the
+    # derivation of "slow", and why QUIET_MS already IS a tail sampler's buffer.
+    sampler = tail_sampler.TailSampler(cfg.state.with_suffix(".tail.json"))
 
-    by_key: dict[tuple, dict] = {}
-    for day, metric, bucket, klass, n in rows:
-        by_key.setdefault((day, metric, klass), {})[bucket] = n
+    def fetch(seq):
+        return pending_traces(cfg, seq, PAGE_TRACES)
 
-    points = []
-    for (day, metric, klass), buckets in sorted(by_key.items()):
-        edges = sorted((b for b in buckets if b != "inf"), key=int)
-        counts = [buckets.get(e, 0) for e in edges] + [buckets.get("inf", 0)]
-        total = sum(counts)
-        end_ns = str(int(time.mktime(time.strptime(day, "%Y-%m-%d")) + 86400) * 1_000_000_000)
-        points.append(
-            {
-                "metric": metric,
-                "point": {
-                    "startTimeUnixNano": str(int(time.mktime(time.strptime(day, "%Y-%m-%d"))) * 1_000_000_000),
-                    "timeUnixNano": end_ns,
-                    "count": str(total),
-                    "explicitBounds": [float(e) for e in edges],
-                    "bucketCounts": [str(c) for c in counts],
-                    "attributes": traces_otlp._attrs({"kh.class": klass}),
-                },
-            }
+    def ship(chunk):
+        # THE TELEMETRY FILTER, HERE AND NOT IN `fetch`, deliberately. `drain()`
+        # stops on an empty page (`if not page: break`), so filtering upstream
+        # of it would stall the run on a page of pure polling and re-fetch the
+        # same page forever. Filtering inside `ship` keeps the page non-empty,
+        # so the watermark still advances past what was dropped and the run
+        # still drains — the two properties this pipeline is not allowed to
+        # lose. A chunk that filters down to nothing skips the POST rather than
+        # sending an empty document.
+        kept, dropped = chunk, 0
+        if not cfg.forward_telemetry:
+            kept = [t for t in chunk if not telemetry_paths.is_telemetry_only_trace(t)]
+            dropped = len(chunk) - len(kept)
+        if dropped:
+            print(
+                f"traces [{dest.name}]: {dropped} telemetry-only trace(s) held back "
+                f"(INSTANA_FORWARD_TELEMETRY=1 to send them)"
+            )
+        if not kept:
+            return True, "nothing to send (all telemetry-only)"
+        chunk = kept
+        # Beside the telemetry filter and for the same structural reason: in
+        # `ship`, never in `fetch`, so the page stays non-empty and the run
+        # still drains past what was dropped.
+        chunk, tail = tail_sampler.apply(sampler, chunk)
+        if tail["dropped"]:
+            print(
+                f"traces [{dest.name}]: tail sampling kept {tail['error']} errored, "
+                f"{tail['slow']} slow (>= {sampler.slow_ms()} ms), {tail['random']} random; "
+                f"dropped {tail['dropped']}"
+            )
+        if not chunk:
+            return True, "nothing to send (all sampled out)"
+        # `host.id` is gated on the destination — the agent supplies host
+        # identity itself and a second, differently-derived one would be a
+        # claim we cannot back. `host.name` is not gated: it is the box's own
+        # hostname, true on either leg, and it is also what identifies the ONE
+        # serving-plane process as a `service.instance.id`.
+        doc = traces_otlp.export(
+            chunk,
+            host_id=cfg.host_id if dest.stamp_host_id else None,
+            host_name=cfg.host_id,
         )
+        if verbose or dry_run:
+            print(json.dumps(doc, indent=2)[:4000])
+        ok, detail = post(cfg, dest, "/v1/traces", doc, dry_run)
+        spans = sum(len(t.get("spans", [])) for t in chunk)
+        print(f"traces [{dest.name}]: {len(chunk)} trace(s), {spans} span(s) -> {detail}")
+        return ok, detail
 
-    grouped: dict[str, list] = {}
-    for p in points:
-        grouped.setdefault(p["metric"], []).append(p["point"])
-    return (
-        {
-            "resourceMetrics": [
-                {
-                    "resource": {"attributes": traces_otlp._attrs({"service.name": "kernel-hive-spa"})},
-                    "scopeMetrics": [
-                        {
-                            "scope": {"name": "kernel-hive"},
-                            "metrics": [
-                                {
-                                    "name": name,
-                                    "unit": "ms" if name.endswith("Ms") else ("%" if name.endswith("Pct") else "1"),
-                                    "histogram": {"aggregationTemporality": 2, "dataPoints": pts},
-                                }
-                                for name, pts in sorted(grouped.items())
-                            ],
-                        }
-                    ],
-                }
-            ]
-        }
-        if grouped
-        else {}
-    )
+    def advance(seq):
+        # Persisted after EVERY successful request, not once at the end of the
+        # run. A run that is killed by the systemd timeout, or that dies on its
+        # ninth request, must not re-send its first eight — and must not skip
+        # them either. The watermark is the only thing that makes a partial run
+        # a partial success rather than a rollback.
+        if dry_run:
+            return
+        state["lastIngestSeq"] = seq
+        # Dropped rather than carried forward: it was only ever a courtesy for a
+        # human reading the file, and a run now advances the watermark several
+        # times without ever computing a max(startedMs). A stale field that
+        # looks authoritative is worse than an absent one — it is the exact
+        # field whose misuse as a watermark lost half of every trace until
+        # 2026-09-01.
+        state.pop("lastTraceStartedMs", None)
+        state["lastForwardedMs"] = int(time.time() * 1000)
+        write_state(cfg.state, state)
 
-
-def forward_metrics(cfg: Config, dest: Destination, dry_run: bool, verbose: bool, days: int) -> int:
-    since = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
-    doc = metric_histograms(cfg, since)
-    if not doc:
-        print(f"metrics [{dest.name}]: nothing to send")
-        return 0
-    n = sum(len(m["histogram"]["dataPoints"]) for m in doc["resourceMetrics"][0]["scopeMetrics"][0]["metrics"])
-    if verbose or dry_run:
-        print(json.dumps(doc, indent=2)[:4000])
-    ok, detail = post(cfg, dest, "/v1/metrics", doc, dry_run)
-    print(f"metrics [{dest.name}]: {n} data point(s) -> {detail}")
-    return 0 if ok else 1
+    stat = drain(after, fetch, ship, advance)
+    behind = backlog_count(cfg, stat["seq"])
+    if stat["requests"] == 0 and stat["ok"]:
+        # Say enough that STALENESS is visible in the journal. A timer whose
+        # only output is "nothing new" cannot be told apart from a timer that
+        # has been failing to see anything for a week.
+        age = ""
+        last = state.get("lastForwardedMs")
+        if last:
+            age = f", last forwarded {int((time.time() * 1000 - last) / 1000)}s ago"
+        print(f"traces [{dest.name}]: nothing new (watermark seq {after}{age})")
+    else:
+        print(
+            f"traces [{dest.name}]: run done — {stat['traces']} trace(s), {stat['spans']} span(s) in "
+            f"{stat['requests']} request(s), seq {first_seq}->{stat['seq']}, stopped: {stat['stop']}"
+        )
+    if stat["dropped_spans"]:
+        print(f"traces [{dest.name}]: DROPPED {stat['dropped_spans']} span(s) too large to ship — see stderr")
+    # The backlog line is unconditional, including on a caught-up run printing
+    # "backlog: 0". A number that only appears when it is bad is a number nobody
+    # learns to read, and "0" is the baseline that makes "991" mean something.
+    print(f"traces [{dest.name}]: backlog: {behind} trace(s) behind")
+    return 0 if stat["ok"] else 1
 
 
 def main() -> int:
@@ -481,10 +477,19 @@ def main() -> int:
     ap.add_argument("--metric-days", type=int, default=2)
     ap.add_argument("--no-metrics", action="store_true")
     ap.add_argument("--no-traces", action="store_true")
+    ap.add_argument("--no-logs", action="store_true")
+    ap.add_argument("--no-vitals", action="store_true")
     ap.add_argument("-v", "--verbose", action="store_true", help="print the OTLP document")
     ap.add_argument("--via-agent", action="store_true", help="force the local Instana host agent (127.0.0.1)")
     ap.add_argument("--via-saas", action="store_true", help="force direct-to-SaaS (INSTANA_ENDPOINT)")
+    ap.add_argument(
+        "--scheduled",
+        action="store_true",
+        help="timer mode: one pass, and an UNCONFIGURED box is a logged no-op rather than a failure",
+    )
     args = ap.parse_args()
+    if args.scheduled:
+        args.once = True
 
     cfg = Config(load_env())
     dest, dest_problems = choose_destination(cfg.agent_endpoint, cfg.endpoint, args.via_agent, args.via_saas)
@@ -514,6 +519,12 @@ def main() -> int:
         print("\nNOT READY:")
         for p in problems:
             print(f"  - {p}")
+        if args.scheduled:
+            # A timer on a box with no tenant configured is not a fault to
+            # alert on; it is this feature being off. Say so once per run and
+            # leave the unit green — every other failure below still reddens it.
+            print("scheduled run: nothing configured here, doing nothing (this is not an error)")
+            return 0
         # A dry run is still useful without a live/configured destination: it
         # shows the operator exactly what the payload would be before they go
         # and arrange one. Only non-ENDPOINT problems (missing trace store, a
@@ -560,8 +571,24 @@ def main() -> int:
     while True:
         if not args.no_traces:
             rc |= forward_traces(cfg, dest, args.dry_run, args.verbose)
+        # AFTER the traces, deliberately. Instana links a log to a call it
+        # already holds; shipping the log first means the correlation is
+        # resolved against a trace that has not landed, and the docs are silent
+        # on whether a late-arriving trace back-fills. Ordering costs nothing
+        # and removes the question. (A missing log store is not a failure — a
+        # box that has not deployed this pillar yet still forwards traces.)
+        if not args.no_logs and cfg.logs_db.exists():
+            rc |= forward_logs(cfg, dest, post, args.dry_run, args.verbose)
         if not args.no_metrics:
-            rc |= forward_metrics(cfg, dest, args.dry_run, args.verbose, args.metric_days)
+            rc |= forward_metrics(cfg, dest, post, args.dry_run, args.verbose, args.metric_days)
+        # STREAM VITALS, and this leg is the reason `kh-instana-vitals.timer`
+        # exists beside the five-minute one. Instana stamps a metric point at
+        # INGEST (0307:98), so a five-minute batch of five-second samples would
+        # land as sixty points at one instant — resolution destroyed, silently.
+        # The timer runs this leg alone (`--no-traces --no-logs --no-metrics`)
+        # every 10 s; see instana_vitals.py for the whole argument.
+        if not args.no_vitals and cfg.vitals_db.exists():
+            rc |= forward_vitals(cfg, dest, post, args.dry_run, args.verbose)
         if not args.follow:
             return rc
         time.sleep(max(10, args.interval))

@@ -22,6 +22,32 @@
 //  fetch patch — see the Instana section below, which is exactly that race,
 //  worked out empirically rather than assumed.
 //
+//  THE HEADER NAMES THIS CALL'S OWN SPAN, AND THE ORDER ENFORCES IT. The
+//  client span is created BEFORE the header is built, and the header is built
+//  from that span's ids. Until 2026-09-01 it was the other way round —
+//  `traceHeaders()` first, span afterwards — which meant the outgoing
+//  `traceparent` never named the client span, because `traceHeaders()` reads
+//  `currentSpan()` and `childOfActive()` does not push. Two failures, neither
+//  visible from inside this file: inside an open flow the server's entry span
+//  was parented on the FLOW ROOT and came out a SIBLING of
+//  `http.client.request` (the RPC edge simply absent from the flame graph);
+//  with no active span, the header carried a freshly minted trace id owned by
+//  no span at all while the client span carried a different one — two
+//  unrelated traces per call. The fix is here and not in the active-span model
+//  on purpose: making `childOfActive()` push would put a span that lives
+//  across an `await` on a synchronous LIFO stack with no async context, and
+//  every span opened by unrelated code during the request would be re-parented
+//  under a fetch. `trace.ts`'s `traceparentOf()` carries the same note.
+//
+//  THE RETURN LEG. A traced response names its own server span back to us:
+//  `traceresponse` (W3C Trace Context Level 2 — ours) preferred, falling back
+//  to `Server-Timing: intid;desc=<trace-id>` (the token Instana's EUM agent
+//  parses — the vendor bridge). The id lands on the client span as
+//  `kh.backend.trace_id`, which is what lets /admin/observability jump from a
+//  click to the server trace with no vendor in the loop, and is mirrored to
+//  Instana as a `backendTraceId` because doing so is one call and free.
+//  Same-origin only, so no `Access-Control-Expose-Headers` question arises.
+//
 //  SAME-ORIGIN ONLY. `url.origin === window.location.origin`, checked before
 //  anything else. A trace id is not a secret, but it is a correlation handle
 //  for THIS box's own telemetry store, and it has no business leaving it —
@@ -39,12 +65,17 @@
 //  `instana.ts`'s `IGNORE_URL_PATTERNS` rather than declaring a second list —
 //  that module's own header explains why a second list drifts from the
 //  first, and the paths are the same paths (/traces, /analytics, /coverage,
-//  /clientlog, /usage, /clientcmd) regardless of which plane is asking. The
-//  header (propagation) still goes out to those endpoints — two of them
-//  already set it by hand (index.ts, sink.ts) precisely so the SERVER's trace
-//  of a `/traces` POST joins the browser trace that produced it; only the
-//  CLIENT-SIDE span is skipped, because a span about sending a span is the
-//  feedback loop both plane budgets (128 beacons/10s) exist to prevent.
+//  /clientlog, /usage, /clientcmd) regardless of which plane is asking. A span
+//  about sending a span is the feedback loop both plane budgets (128
+//  beacons/10s) exist to prevent.
+//
+//  AND NO HEADER EITHER, as of 2026-09-01. Those paths used to propagate from
+//  the ambient span anyway, which named a parent we had already decided not to
+//  record — the serving plane traces four of the six — and left every
+//  `serve.clientcmd`/`serve.clientlog`/`serve.analytics`/`serve.usage` entry
+//  span permanently rootless. No span, no header, and the server roots its own
+//  trace: see `outboundTraceparent` for the whole argument, including why the
+//  server span is kept rather than suppressed with an unsampled flag.
 //
 //  NEVER BREAKS THE REQUEST. Every enhancement — the header, the span — is
 //  computed inside its own try/catch and falls back to calling the ORIGINAL
@@ -53,8 +84,8 @@
 //  every network call the app makes, so a bug in it is not a missing metric,
 //  it is a broken gallery.
 //
-//  THE INSTANA COLLISION, MEASURED NOT GUESSED. Both this patch and Instana's
-//  agent (instana.ts, `enableW3CHeaders: true`) want to own the outbound
+//  THE INSTANA COLLISION, MEASURED NOT GUESSED — AND NOW DESIGNED OUT.
+//  This patch and Instana's agent both used to want the outbound
 //  `traceparent` header, and reasoning from Instana's minified source alone
 //  is exactly the trap TRACE-CONTEXT.md §4 already fell into once ("asserted
 //  nowhere IBM or Instana publishes"). So this was run, not read: the real
@@ -69,39 +100,32 @@
 //      MORE RECENTLY wraps the other and executes FIRST, calling inward
 //      toward whichever patched EARLIER, which sits closer to the real
 //      network call and therefore has the LAST WORD.
-//    * So: if THIS patch installs before Instana's agent has loaded (the
-//      common case — this module is imported synchronously at the top of
-//      main.tsx; Instana's agent is a separately-fetched, non-parser-inserted
-//      `<script>` and therefore genuinely async per the HTML spec, `defer`
-//      notwithstanding, per spa/index.html's own comment on that tag), THIS
-//      patch ends up innermost. Instana's outer wrapper appends its headers
-//      first; this patch then runs `Headers.set('traceparent', ours)`
-//      afterward and OVERWRITES whatever Instana put there — verified: the
-//      wire header is our clean single value, Instana's X-INSTANA-*/
-//      tracestate headers are untouched beside it.
-//    * If the order is reversed — Instana's agent finishes loading and
-//      patches first — this patch becomes OUTER, sets the header first, and
-//      Instana's INNER `.append` then turns it into
-//      `"<ours>, 00-...-03"` — two comma-joined values in one header. That is
-//      not a valid single `traceparent` (§1), so both this box's parser
-//      (`scripts/serve/tracecontext.py`) and Instana's own backend treat it
-//      as malformed and start a fresh trace for that one call — exactly the
-//      "malformed → new trace, never refuse the work" rule TRACE-CONTEXT.md
-//      §1 already states. The request itself is never broken either way.
-//    * So the two orders differ only in whether ONE call's join survives, not
-//      in whether anything breaks. This module is installed as the very
-//      first import evaluated by main.tsx specifically to bias toward the
-//      winning order, but does not chase a hard guarantee (e.g. an inline
-//      `<script>` ahead of Instana's own bootstrap in index.html) — that
-//      would mean re-implementing trace-id minting and span buffering
-//      outside this module in raw HTML-inline JS, a second implementation of
-//      exactly the kind this module exists to stop having. A best-effort win
-//      that degrades to "no join, still no breakage" was judged the better
-//      trade.
+//    * So the outcome depended on a LOAD RACE. This patch innermost (the
+//      common case): our `Headers.set` runs last and wins, one clean value.
+//      Reversed: Instana's inner `.append` turns our header into
+//      `"<ours>, 00-...-03"`, two comma-joined values that are not a valid
+//      single `traceparent` (§1), so this box's parser
+//      (`scripts/serve/tracecontext.py`) and Instana's backend both treat it
+//      as malformed and start a fresh trace for that ONE call. The request is
+//      never broken either way; only the join is lost, and only sometimes.
+//
+//  The race is gone as of the `enableW3CHeaders: false` change in
+//  spa/index.html (read that call's own note for why the flag had to move):
+//  the agent's header injector only emits `traceparent`/`tracestate` when
+//  that flag is on. With it off it adds its `X-INSTANA-*` headers and nothing
+//  else, our server ignores those, and THIS MODULE OWNS `traceparent`
+//  OUTRIGHT — in both install orders, with no race left to bias against.
+//  The finding above is kept because it is the evidence, and because it is
+//  what to re-measure if anyone ever turns the flag back on.
+//
+//  Nothing about the RETURN leg changed: `Server-Timing: intid` is still what
+//  Instana's own agent reads off the response to correlate an xhr beacon, on
+//  a code path that never consults `enableW3CHeaders`. Verified on the wire
+//  with scripts/visitor-sim/beacon-probe.mjs, before and after the flip.
 // ============================================================================
 
-import { IGNORE_URL_PATTERNS } from './instana';
-import { childOfActive, traceHeaders } from './trace';
+import { IGNORE_URL_PATTERNS, reportBackendTrace } from './instana';
+import { childOfActive, traceparentOf, type Span } from './trace';
 
 let installed = false;
 
@@ -157,6 +181,117 @@ function resolveSameOrigin(input: RequestInfo | URL): URL | null {
   }
 }
 
+/** The backend trace id this response advertises, or null.
+ *
+ *  TWO readers, ONE preference order, both same-origin only (no
+ *  `Access-Control-Expose-Headers` anywhere: a cross-origin response is never
+ *  read here because a cross-origin request never gets this far — see
+ *  `resolveSameOrigin`):
+ *
+ *   * `traceresponse` — W3C Trace Context Level 2's response header, and OUR
+ *     plane's mechanism. Preferred because it carries the SPAN id as well as
+ *     the trace id, and because it is a standard rather than a vendor's
+ *     parsing convention.
+ *   * `Server-Timing: intid;desc=<trace-id>` — the same trace id, in the token
+ *     Instana's EUM agent parses. Read as a fallback so a response from a
+ *     layer that emits only the vendor bridge still correlates.
+ *
+ *  Returns the TRACE id in both cases: that is the handle
+ *  `/admin/observability` opens a trace by, and the only shape Instana accepts
+ *  as a `backendTraceId`. */
+function backendTraceIdOf(res: Response): string | null {
+  try {
+    const tr = res.headers.get('traceresponse');
+    if (tr) {
+      const parts = tr.trim().split('-');
+      if (parts.length === 4 && /^[0-9a-f]{32}$/.test(parts[1])) return parts[1];
+    }
+    const timing = res.headers.get('server-timing');
+    if (timing) {
+      const hit = /(?:^|,)\s*intid\s*;\s*desc\s*=\s*"?([0-9a-f]{32})"?/i.exec(timing);
+      if (hit) return hit[1].toLowerCase();
+    }
+  } catch { /* a header we cannot read is a header we do not have */ }
+  return null;
+}
+
+/** Record the server's trace id on OUR client span, and mirror it to the
+ *  vendor. The attribute is what makes the jump work in our own UI — Instana
+ *  is the free side effect, not the mechanism.
+ *
+ *  `kh.backend.trace_id` is 20 characters and its value 32, so it survives
+ *  `scripts/serve/traces.py`'s intake unaltered (key ≤ 64, not refused as a
+ *  credential, value ≤ `ATTR_STR_MAX` = 2048) — an attribute the store
+ *  silently truncated would be worse than none, because it would look right in
+ *  the tab and be un-joinable in the store. */
+function recordBackendTrace(span: Span, res: Response, path: string): void {
+  const backend = backendTraceIdOf(res);
+  if (!backend) return;
+  span.attr('kh.backend.trace_id', backend);
+  reportBackendTrace('kh.http.backend', backend, { 'url.path': path });
+}
+
+/** The header value to send, and the ONE rule about where it comes from:
+ *  IT NAMES THE SPAN WE JUST OPENED, OR THERE IS NO HEADER.
+ *
+ *  Nothing else will do, and both alternatives have now been tried and
+ *  measured on the live store. `traceHeaders()` — read `currentSpan()` — was
+ *  the original, and it named the FLOW ROOT inside a flow (the server span
+ *  came out a SIBLING of `http.client.request`, the RPC edge simply absent)
+ *  and minted a fresh trace id owned by no span outside one. It was fixed for
+ *  the span-bearing case in 64769b75 and left as a FALLBACK here, which kept
+ *  the second half of the bug alive in two places:
+ *
+ *    * an EXCLUDED TELEMETRY PATH opens no span deliberately (a span about
+ *      sending a span is the feedback loop the beacon budget exists to
+ *      prevent), and the fallback still propagated for it — so
+ *      `serve.clientcmd` was parented on an id we had already decided never
+ *      to record;
+ *    * a NON-EXCLUDED path whose span came back NOOP — `MAX_OPEN` exhausted,
+ *      or the tracer off for a signed-out tab — fell through to the same
+ *      fallback, which is how one seven-hour tab pointed 6,678 polls at a
+ *      single flow-root id that was never written.
+ *
+ *  So the fallback is gone. `null` means the request goes out with no
+ *  `traceparent` and the serving plane cleanly ROOTS ITS OWN TRACE — a
+ *  one-span `serve.clientcmd` trace that is complete and readable, instead of
+ *  a child of a parent that will never arrive. The server span is deliberately
+ *  NOT suppressed (which sending `-00` would do, via `tracing_http.begin`'s
+ *  unsampled-parent NOOP): its latency and status are the only record that
+ *  route has, and losing them to fix a parent id would be a worse trade than
+ *  the bug. */
+function outboundTraceparent(span: Span | null): string | null {
+  return traceparentOf(span);
+}
+
+/** The attributes an exit span owes, in CURRENT OpenTelemetry HTTP semantic
+ *  convention names — `http.request.method`, `url.path`, `url.scheme`,
+ *  `server.address`, `server.port`. Our plane is the product, so it speaks the
+ *  stable conventions; the previous-generation spellings Instana's documented
+ *  list still uses (`http.method`, `http.target`, `http.host`, `net.peer.*`)
+ *  are derived at the EXPORT boundary in `scripts/serve/otlp_semconv.py`, never
+ *  here — a vendor's vocabulary has no business inside the tab.
+ *
+ *  STILL NEVER THE QUERY STRING. `url.pathname` only, and the three parts added
+ *  here are a scheme, a host and a port — none of which can carry one. The
+ *  server rebuilds a query-free `http.url` out of exactly these, which is what
+ *  populates Instana's call-detail pane without reintroducing what
+ *  `traces.py`'s BANNED_ATTRS exists to keep out.
+ *
+ *  `server.port` is the EFFECTIVE port: `URL.port` is empty for the scheme's
+ *  default, and a consumer reading "no port" cannot tell that from "port not
+ *  recorded". */
+function clientAttrs(method: string, url: URL): Record<string, string | number> {
+  const scheme = url.protocol.replace(/:$/, '');
+  return {
+    'http.request.method': method,
+    'url.path': url.pathname,
+    'url.scheme': scheme,
+    'server.address': url.hostname,
+    'server.port': Number(url.port) || (scheme === 'https' ? 443 : 80),
+  };
+}
+
 function tracedFetch(
   original: typeof fetch,
   input: RequestInfo | URL,
@@ -167,19 +302,12 @@ function tracedFetch(
 
   const path = url.pathname; // NEVER url.search — see module header.
   const method = requestMethod(input, init);
-  let finalInit = init;
-  try {
-    if (!existingTraceparent(input, init)) {
-      const { traceparent } = traceHeaders();
-      if (traceparent) finalInit = withTraceparent(init, input, traceparent);
-    }
-  } catch {
-    finalInit = init; // the request still goes out, just unpropagated
-  }
+  const excluded = isExcludedPath(path);
 
-  if (isExcludedPath(path)) return original(input, finalInit);
-
-  let span: ReturnType<typeof childOfActive> | null;
+  // SPAN FIRST, HEADER SECOND. The order is the whole point: the header has to
+  // name the span, so the span has to exist. An excluded telemetry path opens
+  // no span and still propagates, from the active span, exactly as before.
+  let span: Span | null = null;
   try {
     // DEFECT 5 FIX. This used to be named `` `HTTP ${method}` `` — e.g.
     // "HTTP GET" — which is exactly what every unit test in this file still
@@ -194,16 +322,30 @@ function tracedFetch(
     // in the store — this is why. Fixed name, method as an attribute
     // (already carried in `http.request.method` below) rather than in the
     // name, so the name satisfies NAME_RE regardless of verb.
-    span = childOfActive('http.client.request', { 'http.request.method': method, 'url.path': path }, 'client');
+    if (!excluded) {
+      span = childOfActive('http.client.request', clientAttrs(method, url), 'client');
+    }
   } catch {
     span = null;
   }
+
+  let finalInit = init;
+  try {
+    if (!existingTraceparent(input, init)) {
+      const traceparent = outboundTraceparent(span);
+      if (traceparent) finalInit = withTraceparent(init, input, traceparent);
+    }
+  } catch {
+    finalInit = init; // the request still goes out, just unpropagated
+  }
+
   if (!span) return original(input, finalInit);
 
   const liveSpan = span;
   return original(input, finalInit).then(
     (res) => {
       try {
+        recordBackendTrace(liveSpan, res, path);
         liveSpan.end(res.ok ? 'ok' : 'error', { 'http.response.status_code': res.status });
       } catch { /* the response is still handed back regardless */ }
       return res;

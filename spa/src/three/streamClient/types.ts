@@ -60,6 +60,15 @@ export interface StreamhostSignal {
 export type StreamBannerState =
   | 'good'
   | 'spotty'
+  /**
+   * THIS DEVICE cannot keep up — the decoder queue is backing up or the picture
+   * is freezing while the network scores clean. A separate state because the
+   * words matter: telling a visitor on a 4 ms LAN that their connection is
+   * "spotty" because their laptop is decoding six streams is simply false, and
+   * `PressureObserver` (useDevicePressure.ts) is Chrome-desktop-only, so the
+   * relabel it was supposed to provide never fired on the machines that need it.
+   */
+  | 'device-load'
   | 'reconnecting'
   | 'decoder-failed'
   | 'decoder-unsupported';

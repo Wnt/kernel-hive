@@ -243,7 +243,9 @@ canvas { display: block; touch-action: none; }
 
 .grid-view-inner {
   max-width: 1360px; margin: 0 auto;
-  padding: 84px 24px 48px;   /* top clears the fixed app bar */
+  /* top clears the absolutely positioned app bar: its MEASURED height
+     (useAppbarHeight -> --appbar-h) plus a gap, never a guessed row count */
+  padding: calc(var(--appbar-h, 60px) + 24px) 24px 48px;
 }
 .grid-empty {
   display: flex; align-items: center; justify-content: center; height: 60vh;
@@ -453,7 +455,16 @@ canvas { display: block; touch-action: none; }
 /* ---- Responsive tuning ---- */
 @media (max-width: 640px) {
   .appbar-tag { display: none; }
-  .grid-view-inner { padding: 96px 14px 40px; }
+  .grid-view-inner { padding: calc(var(--appbar-h, 100px) + 16px) 14px 40px; }
+  /* compact bar: the badge shares the title row, the tabs get a row of their
+     own that scrolls sideways instead of wrapping into a third */
+  .appbar { padding: 10px 14px; gap: 6px 10px; }
+  .appbar-brand { flex: 1 1 auto; gap: 10px; }
+  .appbar-actions { flex: 1 1 100%; margin-left: 0; gap: 6px; }
+  .appbar-actions .identity-badge { order: -1; margin-left: auto; }
+  .appbar-seg { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .appbar-seg::-webkit-scrollbar { display: none; }
+  .appbar-seg a { white-space: nowrap; padding: 6px 10px; }
   .card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .era-name { font-size: 21px; }
   .era-toggle .era-sub { flex-basis: 100%; }

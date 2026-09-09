@@ -8,22 +8,23 @@
 // — as early in OUR OWN bundle as we control — is a deliberate best-effort
 // rather than a hard guarantee against Instana's separately-loaded agent.
 import { installKhFetchPropagation } from './analytics/khFetch';
-import { joinPageLoadTraceFromMeta } from './analytics/trace';
+import { readPageLoadTraceFromMeta } from './analytics/pageLoadLink';
 
 installKhFetchPropagation();
-joinPageLoadTraceFromMeta();
+readPageLoadTraceFromMeta();
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { loadSession, type Session } from './data/session';
-import { isWalkinPath, walkinShape } from './walkin/route';
+import { isWalkinPath } from './walkin/route';
 import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
 import { initAnalytics, reportError } from './analytics';
+import { BUILD_ID } from './analytics/build';
 import { configureInstana, configureInstanaIdentity } from './analytics/instana';
 import './index.css';
 
@@ -74,10 +75,19 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
       // COUNT so a fault that happens four hundred times is one row that says
       // so. The fingerprint is printed into neither by accident — it is how an
       // operator gets from the top row of the report back to a real stack.
-      reportError({ message: input.message, source: 'react', stack: input.stack });
+      reportError({
+        message: input.message,
+        source: 'react',
+        stack: input.stack,
+        componentStack: input.componentStack,
+      });
       if (window.__kernelHiveReportError) {
         window.__kernelHiveReportError(input);
       } else {
+        // `keepalive` stays HERE, and only here in this file: a React render
+        // fault can be the last thing that happens before the tab is torn
+        // down, and this is one small body, not a repeating flush. Everything
+        // that flushes on a timer gave `keepalive` up — analytics/beacon.ts.
         void fetch('/clientlog', {
           method: 'POST',
           keepalive: true,
@@ -88,6 +98,9 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBounda
             ua: navigator.userAgent,
             clientTs: Date.now(),
             sessionId: window.__kernelHiveErrorSessionId || 'unknown',
+            // Same reason the inline reporter in index.html carries it: a
+            // client error is only actionable once you know which build threw.
+            build: BUILD_ID,
           }),
         }).catch(() => {});
       }
@@ -131,8 +144,8 @@ exposeKeyRecorder();
 // to produce nothing at all because every log call hung off a stream that had
 // already failed to start. This also starts the /clientcmd poller, so every
 // tab is reachable for debugging, not just one with a working station open.
-// …but NOT for a walk-in visitor: the operator poller is a gallery surface a
-// walk-in is fenced out of, and a walk-in has no operator to be reached by.
+// Walk-in accounts included, since 2026-09-08: the poller is the READ half of
+// the client-debug plane and gate.py admits it for the role (see mount()).
 
 // The session is resolved BEFORE the first render, and the whole app hangs off
 // the answer. Waiting costs one cheap same-origin request; not waiting is what
@@ -163,6 +176,11 @@ function mount(session: Session) {
     // every raw event, so a trace and the event tail behind it join on it.
     sessionId: clientSessionId(),
     allowed: !signedOutAtTheDoor,
+    // WHO, when there is a who. The gallery has named invited accounts and
+    // pseudonymous walk-in handles, and both are wanted on the trace —
+    // "which account hit this" is the first question a report opens with.
+    // Omitted entirely for `anon`, which is a UI shape and not a person.
+    user: session.role === 'anon' || !session.id ? undefined : session,
   });
   // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
   // `allowed` gate as the plane above — a build with no website key configured
@@ -176,9 +194,14 @@ function mount(session: Session) {
     configureInstana(clientSessionId());
     configureInstanaIdentity(session);
   }
-  if (!walkinShape(session.role, window.location.pathname, import.meta.env.BASE_URL)) {
-    initClientDebug();
-  }
+  // Telemetry's first row and the operator poller ride the SAME answer again —
+  // every signed-in tab, walk-in accounts INCLUDED. Until 2026-09-08 the
+  // walk-in shape skipped this, so a stranger whose stream never painted was
+  // the one session `clientcmd.sh sessions` could not list and `eval` could
+  // not reach; gate.py now admits `GET /clientcmd` for the role alongside the
+  // `/clientlog` sink it always allowed. Only the signed-out stranger at the
+  // door stays quiet, for the reason above.
+  if (!signedOutAtTheDoor) initClientDebug(session.role);
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
@@ -211,12 +234,20 @@ void loadSession().then(mount);
 // first paint or the stream handshake; failure is silent (an uninstalled app is
 // a fine fallback). See sw.js for the deliberately network-first, no-app-cache
 // policy that keeps a box deploy visible on the next load.
+//
+// THE `?build=` IS LOAD-BEARING, not a cache-buster habit. The worker names its
+// shell cache after it, so a new bundle means a new script URL, which means a
+// new worker, whose activate deletes every earlier shell — including the
+// `kh-shell-v1` entry a client installed months ago and could otherwise keep
+// serving itself an old HTML shell from forever. The scope is unaffected: a
+// registration's scope comes from the script's PATH, and the query string is
+// not part of it. sw.js has the whole story.
 if (
   'serviceWorker' in navigator
   && import.meta.env.PROD
   && !window.location.pathname.startsWith('/staging/')
 ) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register(`/sw.js?build=${encodeURIComponent(BUILD_ID)}`).catch(() => {});
   });
 }

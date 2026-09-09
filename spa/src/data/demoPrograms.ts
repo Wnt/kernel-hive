@@ -46,6 +46,19 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "bootos": {
+    "label": "Type in a hello-world program",
+    "lines": [
+      "enter",
+      "bb 17 7c 8a 07 84 c0 74 0c 53 b4 0e bb 0f 00 cd",
+      "10 5b 43 eb ee cd 20 48 65 6c 6c 6f 2c 20 77 6f",
+      "72 6c 64 0d 0a 00",
+      "",
+      "hello"
+    ],
+    "runCommand": "hello",
+    "perCharMs": 80
+  },
   "cbm8032": {
     "label": "Type in a demo program",
     "lines": [
@@ -57,6 +70,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 170
+  },
+  "debian22": {
+    "label": "Ask potato who it is",
+    "lines": [
+      "cat /etc/debian_version",
+      "uname -sr",
+      "dpkg -l | grep -c '^ii'"
+    ],
+    "runCommand": "dpkg -l | grep -c '^ii'",
+    "perCharMs": 60
   },
   "dragon32": {
     "label": "Type in a demo program",
@@ -71,6 +94,16 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 170
+  },
+  "freebsd411": {
+    "label": "Type a few commands into the root Konsole",
+    "lines": [
+      "uname -a",
+      "ls /usr/local/bin | head",
+      "kcalc &"
+    ],
+    "runCommand": "kcalc &",
+    "perCharMs": 80
   },
   "mpf2": {
     "label": "Type in a demo program",
@@ -88,6 +121,26 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "netbsd14": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xcalc &"
+    ],
+    "runCommand": "xcalc &",
+    "perCharMs": 120
+  },
+  "openbsd": {
+    "label": "Type a few commands into the xterm",
+    "lines": [
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "xlogo &"
+    ],
+    "runCommand": "xlogo &",
+    "perCharMs": 100
+  },
   "oricatmos": {
     "label": "Type in a demo program",
     "lines": [
@@ -102,6 +155,17 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 160
   },
+  "pcbsd": {
+    "label": "Ask the FreeBSD 6.3 kernel who it is, in Konsole",
+    "lines": [
+      "# PC-BSD 1.5.1 \"Edison\" - FreeBSD 6.3 with KDE 3.5.8 on top",
+      "uname -a",
+      "sysctl hw.model hw.physmem",
+      "ls /Programs"
+    ],
+    "runCommand": "cat /etc/pcbsd-release",
+    "perCharMs": 60
+  },
   "pet2001": {
     "label": "Type in a demo program",
     "lines": [
@@ -112,6 +176,21 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run",
     "perCharMs": 180
+  },
+  "samcoupe": {
+    "label": "Type in a demo program (press B for SAM BASIC first)",
+    "lines": [
+      "NEW",
+      "10 MODE 4",
+      "20 PAPER 0: PEN 15: CLS",
+      "30 FOR r=4 TO 80 STEP 4",
+      "40 LET c=(r DIV 4) MOD 15: PEN c+1",
+      "50 CIRCLE 128,88,r",
+      "60 NEXT r",
+      "70 PEN 15: PRINT AT 0,6;\"SAM COUPE 1989\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
   },
   "sinclairql": {
     "label": "Draw a rose in SuperBASIC",
@@ -134,6 +213,26 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "RUN",
     "perCharMs": 400
+  },
+  "slackware": {
+    "label": "Ask the kernel who it is",
+    "lines": [
+      "uname -a",
+      "cat /proc/version"
+    ],
+    "runCommand": "uname -a",
+    "perCharMs": 80
+  },
+  "suse64": {
+    "label": "Type a few commands into the konsole",
+    "lines": [
+      "cat /etc/SuSE-release",
+      "uname -a",
+      "ls /usr/X11R6/bin | head",
+      "df -h /"
+    ],
+    "runCommand": "df -h /",
+    "perCharMs": 80
   },
   "vic20": {
     "label": "Type in a demo program",

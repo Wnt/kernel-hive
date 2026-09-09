@@ -27,6 +27,8 @@ The hardware matched the ambition. Eight screen modes, from teletext to 640×256
 
 The machine exactly as it wakes up, in MODE 7: white teletext characters on black, and a prompt that expects you to type a program.
 
+Those characters are drawn by an SAA5050, the chip that decoded Ceefax and Oracle pages inside British television sets. Acorn bought it from Mullard, the British arm of Philips — which by then also owned Signetics, the American firm whose 2513 character generator lettered the Apple II in this hall. The SAA5050 keeps only five rows of dots per glyph in its ROM and rounds the diagonals as it stretches them to a twenty-line cell, which is why MODE 7 text looks smoother than the machine's own bitmap modes while costing a single kilobyte of memory.
+
 `BBC Computer 32K` is the memory count. `Acorn DFS` means the disc filing system is fitted — this is the school configuration, a Model B with the Acorn disc interface, not the bare cassette machine. `BASIC` is the language currently selected from the sideways ROM sockets. The `>` is BBC BASIC waiting.
 
 Two things are worth knowing before you type. **CAPS LOCK is on** — the operating system switches it on at reset, because BASIC's keywords must be upper case, so unshifted letters arrive as capitals. And this keyboard is not a PC's: `"` lives on Shift+2 and `=` on Shift+`-`, as on any British machine of the period. The exhibit translates for you.

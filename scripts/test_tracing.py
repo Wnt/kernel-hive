@@ -48,9 +48,19 @@ class FakeHandler:
         #: Run INSIDE the traced verb, so a test can open children the way a
         #: route body does — under the request span the wrapper just opened.
         self._hook = hook
+        #: Everything `send_header` was given, in order — the return-leg
+        #: headers are asserted off this rather than off a socket.
+        self.sent_headers = []
+        self.ended = False
 
     def send_response(self, code, message=None):
         self.replied = code
+
+    def send_header(self, key, value):
+        self.sent_headers.append((key, value))
+
+    def end_headers(self):
+        self.ended = True
 
     def do_GET(self):
         if self._hook:
@@ -58,6 +68,7 @@ class FakeHandler:
         if self._boom:
             raise self._boom
         self.send_response(self._status)
+        self.end_headers()
         return "answered"
 
     def do_POST(self):
@@ -144,6 +155,83 @@ class ContextTest(Base):
 
 
 # ---------------------------------------------------------------------------
+# the telemetry paths, and the contract that stopped them being orphan factories
+# ---------------------------------------------------------------------------
+
+
+class TelemetryPathTest(Base):
+    """What this layer must do with (and without) an inbound header on the
+    paths the tab treats as telemetry.
+
+    THE CONTRACT, chosen 2026-09-01 and pinned here. The browser no longer
+    sends `traceparent` on `/traces`, `/analytics`, `/coverage`, `/clientlog`,
+    `/usage` or `/clientcmd`: it opens no client span for them (a span about
+    sending a span is the feedback loop the beacon budget exists to prevent),
+    so there is no span a header could honestly name, and naming the ambient
+    one instead is what left 1,590 `serve.clientcmd` entry spans permanently
+    rootless in a single six-hour window.
+
+    The server side of that decision is what these tests fix in place:
+
+      * the four telemetry paths the allowlist DOES trace keep their span, and
+        with no inbound parent it is a clean ROOT. The alternative considered
+        was sending `-00` from the tab, which `begin()` turns into NOOP (see
+        `ContextTest`) — that would have suppressed the span entirely and
+        thrown away the only latency and status record those routes have,
+        which is a worse trade than the bug;
+      * the telemetry INGEST (`/traces`, `/coverage`) stays untraced no matter
+        what a caller puts on the wire — a stray header may not conjure a span
+        on a route the allowlist refuses;
+      * an inbound parent is still HONOURED where one arrives. This layer
+        never second-guesses a caller (contract §1/§8); "do not name a span
+        you will not record" is a rule about the SENDER, and
+        `TraceStore.orphans()` is how a sender that breaks it is caught.
+    """
+
+    TRACED = ("/clientcmd", "/analytics", "/clientlog", "/usage")
+    INGEST = ("/traces", "/coverage")
+
+    def test_a_traced_telemetry_path_with_no_parent_is_a_clean_root(self):
+        for path in self.TRACED:
+            with self.subTest(path=path):
+                tracing.reset_for_tests()
+                tracing.bind(self.store)
+                h = FakeHandler(path=path)
+                self.assertEqual(h.do_GET(), "answered")
+                tracing.flush()
+        rows = self.store.search()["traces"]
+        self.assertEqual(len(rows), len(self.TRACED))
+        for row in rows:
+            doc = self.store.trace(row["traceId"])
+            self.assertEqual(len(doc["spans"]), 1)
+            self.assertIsNone(doc["spans"][0]["parentId"])
+
+    def test_the_telemetry_ingest_is_untraced_however_it_is_called(self):
+        for path in self.INGEST:
+            with self.subTest(path=path):
+                self.assertIsNone(tracing_http.route_of(path))
+                h = FakeHandler(path=path, headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+                self.assertEqual(h.do_GET(), "answered")
+        tracing.flush()
+        self.assertEqual(self.store.search()["total"], 0)
+
+    def test_an_untraced_route_emits_no_return_leg_headers(self):
+        h = FakeHandler(path="/traces", headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        names = [k.lower() for k, _ in h.sent_headers]
+        self.assertNotIn("traceresponse", names)
+        self.assertNotIn("server-timing", names)
+
+    def test_an_inbound_parent_on_a_telemetry_path_is_still_honoured(self):
+        # The sender owns the invariant; this layer owns "never invent one".
+        h = FakeHandler(path="/clientcmd", headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        doc = self.stored(TRACE)
+        self.assertIsNotNone(doc)
+        self.assertEqual(doc["spans"][0]["parentId"], SPAN)
+
+
+# ---------------------------------------------------------------------------
 # routing — the allowlist, and what it deliberately excludes
 # ---------------------------------------------------------------------------
 
@@ -227,16 +315,22 @@ class ShapeTest(Base):
         self.assertEqual(span["status"], "error")
         self.assertEqual(span["attributes"]["error.type"], "ValueError")
 
-    def test_an_exception_event_carries_no_message_and_no_stack(self):
-        # The type is a policy fact; the message is arbitrary server text that
-        # can quote a path, a header or a body. traces.py refuses the stack at
-        # intake and this refuses the message at the source.
-        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=ValueError("secret ticket abc123"))
+    def test_an_exception_event_carries_the_type_the_message_and_the_stack(self):
+        # All three since 2026-09-01 (docs/ANALYTICS.md §0). Until then this
+        # emitted the type alone, so a server fault's span said `ValueError`
+        # and every diagnosis began by going elsewhere for the traceback.
+        # The store is admin-only to read; what may never appear in a span is a
+        # CREDENTIAL, which traces.py refuses by attribute name and shape.
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=ValueError("no such station"))
         with self.assertRaises(ValueError):
             h.do_GET()
         events = self.stored(TRACE)["spans"][0]["events"]
         self.assertEqual([e["n"] for e in events], ["exception"])
-        self.assertEqual(events[0]["a"], {"exception.type": "ValueError"})
+        attrs = events[0]["a"]
+        self.assertEqual(attrs["exception.type"], "ValueError")
+        self.assertEqual(attrs["exception.message"], "no such station")
+        self.assertIn("ValueError", attrs["exception.stacktrace"])
+        self.assertIn("Traceback", attrs["exception.stacktrace"])
 
     def test_nested_children_nest(self):
         def body():
@@ -317,6 +411,89 @@ class RaisingStoreTest(unittest.TestCase):
         h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"}, boom=KeyError("k"))
         with self.assertRaises(KeyError):
             h.do_GET()
+
+
+# ---------------------------------------------------------------------------
+# the return leg: traceresponse + Server-Timing
+# ---------------------------------------------------------------------------
+
+
+class ResponseHeaderTest(Base):
+    """A response has to name the span that answered it, or the browser can
+    only ever guess whether the id it SENT was the id the server used (it is
+    not, whenever the inbound header was malformed or absent). Two headers,
+    one span: `traceresponse` is ours, `Server-Timing: intid` is what Instana's
+    EUM agent parses into `backendTraceId`."""
+
+    def headers_of(self, handler):
+        return {k.lower(): v for k, v in handler.sent_headers}
+
+    def test_a_traced_response_names_its_own_span_in_both_headers(self):
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        doc = self.stored(TRACE)
+        root = doc["spans"][0]
+        sent = self.headers_of(h)
+        self.assertEqual(sent["traceresponse"], f"00-{TRACE}-{root['spanId']}-01")
+        self.assertEqual(sent["server-timing"], f"intid;desc={TRACE}")
+
+    def test_the_ids_are_the_response_span_not_the_inbound_parent(self):
+        """The whole point: the caller learns the id of the span the SERVER
+        opened. Echoing the inbound span id back would be indistinguishable
+        from working, and useless."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        sent = self.headers_of(h)
+        self.assertNotIn(SPAN, sent["traceresponse"])
+
+    def test_an_untraced_route_emits_neither_header(self):
+        h = FakeHandler(path="/assets/app-abcdef01.js")
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_an_unsampled_parent_emits_neither_header(self):
+        """Unsampled in means nothing out, headers included — there is no span
+        to name, and naming one anyway would advertise a trace the store will
+        never hold."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-00"})
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_tracing_unbound_emits_neither_header(self):
+        tracing.reset_for_tests()  # no store: every span is NOOP
+        h = FakeHandler()
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_a_keepalive_connection_does_not_leak_ids_onto_the_next_response(self):
+        """One handler instance serves many requests. The stash is per
+        response, so an untraced second request on the same connection must
+        come back bare."""
+        h = FakeHandler(headers={"traceparent": f"00-{TRACE}-{SPAN}-01"})
+        h.do_GET()
+        self.assertIn("traceresponse", self.headers_of(h))
+        h.sent_headers = []
+        h.path = "/assets/app-abcdef01.js"
+        h.do_GET()
+        self.assertEqual(self.headers_of(h), {})
+
+    def test_a_response_still_closes_its_headers_when_the_stash_is_garbage(self):
+        """`end_headers` is on the path of every reply this server makes. It
+        may never fail because of a telemetry header."""
+        h = FakeHandler()
+        h._kh_trace_response = "not a dict"
+        h.end_headers()
+        self.assertTrue(h.ended)
+
+    def test_the_ids_are_well_formed_for_a_freshly_minted_trace(self):
+        h = FakeHandler()
+        h.do_GET()
+        sent = self.headers_of(h)
+        self.assertRegex(sent["traceresponse"], r"^00-[0-9a-f]{32}-[0-9a-f]{16}-01$")
+        self.assertRegex(sent["server-timing"], r"^intid;desc=[0-9a-f]{32}$")
+        # Instana silently DROPS a backendTraceId that is not 16 or 32 hex, so
+        # the length is the feature, not an incidental property of the format.
+        self.assertEqual(len(sent["server-timing"].split("=", 1)[1]), 32)
 
 
 if __name__ == "__main__":

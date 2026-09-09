@@ -1,115 +1,146 @@
-# Retronet ICQ fleet onboarding — coordinator contract
+# Onboarding a station onto the retronet ICQ plane
 
-**Status: BUILDING.** Bring six more stations onto the ICQ gateway, cross-list
-them all in each other's contact lists, and make the bot appear by **name**, not
-a number. Parent: [`RETRONET-BRIEF.md`](../RETRONET-BRIEF.md) §5; the pathfinder
-recipe is [`ICQ-STATION.md`](ICQ-STATION.md) (win98se, being finalized on the
-bridge); server is [`GATEWAY.md`](GATEWAY.md); bot is [`BOT.md`](BOT.md).
+**Status: ROUTINE.** This was a six-station coordinator contract in August 2026;
+by 2026-09-03 the plane carried sixteen stations and the expensive parts had all
+become mechanical. It is now a procedure, and most of it is one command.
 
-## Targets + difficulty tiers
+The A–D difficulty tiers that older docs cite were that contract's planning
+device and are retired: every station in them is live, each with its own
+`ICQ-STATION-*.md` or `STATION-*.md` record, and `scripts/retronet/icq/roster.json`
+is the single source for who holds which UIN.
 
-The gating fact (proven on win98se): **OSCAR can't traverse slirp** — every ICQ
-station needs the win98se-style **bridged NIC** (tap on `vmbr-rn`, real IP,
-containment-fenced), then client install, persona sign-in, clean golden. Per
-station = ONE opus agent doing network-then-install-then-golden (splitting them
-would collide on the same live golden).
+Parent: [`RETRONET-BRIEF.md`](../RETRONET-BRIEF.md) §5. The server is
+[`GATEWAY.md`](GATEWAY.md); the bot is [`BOT.md`](BOT.md); **which client this
+guest's era can run, and how to drive it, is [`ICQ-CLIENTS.md`](ICQ-CLIENTS.md)**
+— read that before anything else, because the client decides the shape of the
+whole bring-up.
 
-| Station | Client | Tier / why | UIN |
-|---|---|---|---|
-| **win2000** | ICQ 2000b (already sourced) | **A** — clean copy of win98se; rtl8139 netdev | `20000` |
-| **nt4** | ICQ 2000b | **A** — clean copy; pcnet netdev; peak-1996 era | `40000` |
-| **win95** | ICQ 2000b | **B** — its NIC also carries the **warpnet** pointer agent; the bridge swap must carry that across (do after A proves the plain path) | `95000` |
-| **solaris** | climm 0.6.4 (OSCAR, formerly micq) — **sourced**, build from source | **C** — gcc 3.4.3 confirmed on-box (`/usr/sfw/bin/gcc`); still needs the bridge swap (e1000 → tap on vmbr-rn) | `30000` |
-| **tru64** | **Gaim 0.59.9** (OSCAR, GTK+1.2 desktop client) — LIVE since 2026-08-22; onboarded on climm 0.6.4, which stays installed as the rollback | **C** — media sourcing is **not** a blocker (native Compaq C already built Lynx on this guest); already on a real veth, needs rehoming onto vmbr-rn | `64000` |
-| **macos753** | Mac ICQ/AIM (OSCAR) — media TBD | **D** — has **no NIC** (device-set change → cold rebuild) + MacTCP; hardest | `75300` |
+## The one command
 
-(Existing: bot `10000` = **HiveBot**, win98se persona `98980`.) Each station's
-install agent creates its UIN server-side (`rn-tool.py user-set <uin> <pass>`,
-SQLite-safe) and stores the password in `registry/local.env` as
-`RETRONET_ICQ_<STATION>_PASS`. Every account is opened for unattended contacts
-(`rn-tool.py user-open <uin>`) — the [authRequired gotcha](BOT.md).
+```sh
+scripts/retronet/rn-onboard.sh <id> \
+  --address 10.99.0.N --mac <mac> --uin <uin> --client <key> [--static] [--apply]
+```
 
-## The cross-list roster + the named bot
+From one allocation row it writes `streamhost/stations/<id>/rn-tapnet.sh` from
+the single template, prints the launcher netdev lines, writes the registry
+`retronet` block, creates the account server-side, appends the roster row with
+`onboarded: false`, and scaffolds `docs/lab/retronet/STATION-<id>.md` with the
+proof checklist. **Dry-run by default**; `--apply` writes.
 
-**Every ICQ station carries every *other* ICQ station + HiveBot in its contact
-list.** As the fleet grows the roster is the single source; adding a station is
-one row, then re-run the seeder.
+It does three things you must not work around:
 
-- **HiveBot by name — DONE (server side).** ICQ 2000b keeps its contact list
-  **client-local** (not server SSI), but the *name* it shows a UIN comes from the
-  server's ICQ directory, fetched on add-by-UIN. So `10000`'s directory nickname
-  is set to `HiveBot` (`rn-tool.py nick`), and a client-faithful ICQ Meta query
-  proves a client receives it. A contact added *before* its nickname was set (the
-  bot on the existing win98se golden) needs a one-time in-client rename; every
-  station onboarded from here shows the name natively. See
-  [`CONTACT-SEEDER.md`](CONTACT-SEEDER.md).
+- **It refuses to commit a real MAC or a real address.** The allocated MAC goes
+  to the BOX-side `/data/kernel-hive/registry/local.env` as `RN_<ID>_MAC` in a
+  single append; git gets the scrubbed `02:00:00:00:00:<octet>`, which the
+  launcher and `rn-tapnet.sh` read the real value over at boot. Every rendered
+  byte is re-checked before it is written, so the refusal cannot be bypassed by
+  a template edit.
+- **It does not allocate.** Address, MAC and UIN come from `wave.sh alloc`,
+  which holds the plane's uniqueness ledger. Passing your own is how two
+  stations end up on one address.
+- **It does not flip `onboarded`.** That word means "a frame shows this client
+  signed in", and the fleet-wide cross-list is gated on it.
 
-## Contact-seeding automation — BUILT: `scripts/retronet/icq/`
+Everything it prints under "next" is genuinely not automatable: the NIC model is
+a per-guest judgement, and the golden must then be **cold-baked** on the finished
+device set.
 
-The reusable tool is landed and its server-side mechanics proven; full write-up
-is [`CONTACT-SEEDER.md`](CONTACT-SEEDER.md). `roster.json` is the single source
-(`seed_contacts.py roster`), the flow is **roster-driven, idempotent**:
+## What "on the plane" means, and what it costs
 
-1. Station offline: `labctl reset` from golden (live pass backs the golden up first).
-2. Seed the client's contact list. **Method chosen for ICQ 2000b: drive the
-   client's own Add-Contact flow** over the exec channel + framebuffer — its
-   local store is a proprietary per-UIN binary DB with no safe reference to edit,
-   and the client itself fetches the nickname + registers the buddies. The
-   `icq2000b` input macro is calibrated on the live client (the tool refuses
-   `--apply` until it is). Unix (**climm** dotfiles — an ICQ client, name from the
-   server directory) and Mac (**Mac AIM 2.01.617** prefs — an AIM client, so a
-   client-local alias) seeders are designed, deferred until those stations onboard.
-3. Recapture the golden with the fuller list baked in (safe savevm order).
+The gating fact, proven on win98se and never contradicted since: **OSCAR cannot
+traverse slirp**. So every ICQ station needs a bridged tap on `vmbr-rn` — and so
+does the pre-OSCAR v4/v5 UDP door, which is reachable only from a bridged guest.
+That is a **device-set change**, and a device set and a vmstate are one
+combination: adding the NIC invalidates `loadvm` on the existing golden.
 
-Idempotency reads the server's `clientSideBuddyList` shadow (skip contacts
-already added). Adding a station later = one `roster.json` row + re-run. **This
-tool does NOT mutate a live station during its build** — win98se is owned by the
-swap agent, the others aren't onboarded yet — it is built + proven on the live
-gateway / a golden backup / dry-run, then applied per station as they come online.
+**Do the retronet NIC, the `restrict=on` slirp pointer NIC and the absolute
+pointer in the FIRST golden bake.** The 2026-09-03 wave did them in three phases
+and paid a full golden re-bake per station per phase — about two hours each,
+entirely avoidably. The complete device set for a modern station is:
 
-## Waves (sequenced, not blind-parallel)
+```
+-netdev tap,id=rn0,ifname=<id>rn0,script=no,downscript=no \
+-device rtl8139,netdev=rn0,mac="$RN_<ID>_MAC" \
+-netdev user,id=n0,restrict=on,hostfwd=tcp:127.0.0.1:<port>-10.0.2.15:6000 \
+-device <era-appropriate>,netdev=n0
+```
 
-- **Now (independent, no live-station risk):**
-  - **Media (sonnet ×2):** Unix OSCAR client (solaris + tru64/Alpha) and Mac
-    OSCAR client (macos753). Windows reuses win98se's ICQ 2000b.
-  - **Contact tool (opus ×1):** design + build the roster-driven seeder + set
-    HiveBot's server nickname; prove mechanics on a copy.
-- **On win98se recipe proven (imminent — it lands `ICQ-STATION.md`):** fan the
-  **Tier-A** bring-ups **win2000 + nt4** (opus, one per station), then **win95**
-  (Tier B) once the plain path is proven.
-- **On Unix media landed:** **solaris**, then **tru64** (opus).
-- **After a NIC-add design:** **macos753** (opus) — flagged as materially
-  different (device-set change + cold rebuild).
-- **Finally:** run the contact seeder across all onboarded stations, recapture
-  goldens with the full roster + HiveBot.
+Three things about it that each cost somebody an hour:
 
-## Guardrails (every stream)
+- **`restrict=on` is containment, not tidiness.** Without it slirp hands the
+  guest a default route via 10.0.2.2 and the guest reaches whatever labhost's own
+  stack can. `hostfwd` (host → guest) keeps working under it.
+- **The tap's lease must win over slirp's.** On the guests measured so far it
+  does on its own, because dhclient rewrites `resolv.conf` per lease and the
+  tap's is the later one — but check it rather than assume it.
+- **Two IDENTICAL NIC models make the guest's interface numbering a coin toss**
+  that a `loadvm` cannot re-litigate. Use two different drivers, or accept that
+  `eth0`/`eth1` may swap on you.
 
-- Own worktree (`wt.sh new`); land on `main` yourself. Per-station agents work a
-  **live** station directly (operator-authorised, no VM clones) — **back up its
-  golden first**; process control via `ssh lab`/`labrun`; kills via clone-guard.
-- Follow the win98se recipe (`ICQ-STATION.md`) for the bridge swap; do not
-  re-derive it. Prove UDP+ICMP + containment (guest reaches `10.99.0.2`, NOT the
-  LAN/gallery/internet) exactly as win98se does.
-- **Addressing is DHCP, not per-guest static** (as of the win98se DHCP conversion).
-  Set the guest to obtain IP *and* DNS automatically + no proxy, and add ONE
-  `mac=ip` line to `registry/local.env` `RETRONET_DHCP_RESERVATIONS` +
-  `install-dhcp.sh --apply` on the gateway. That alone gives the station the
-  **seamless web** (type a URL, it renders — no proxy) plus a stable IP for
-  exec-over-bridge, and keeps containment (DHCP hands out **no default gateway**).
-  Recipe: [`ICQ-STATION.md`](ICQ-STATION.md) §Seamless web. (win2000/nt4/solaris
-  finish on static; the coordinator retrofits them to DHCP + unique MACs later.)
-- **Unique MAC per station (required).** Every QEMU guest defaults to
-  `52:54:00:12:34:56`; two on `vmbr-rn` collide at L2 — the bridge FDB flaps, so
-  exec/ICQ break whenever both are active — and it defeats per-MAC DHCP. Assign
-  `52:54:00:52:4e:<last-IP-octet>` (win98se `.10`→…0a, win2000 `.11`→…0b, nt4
-  `.12`→…0c, win95 `.13`→…0d, solaris `.14`→…0e, tru64 `.15`→…0f; macos753's OUI
-  is forced to Apple, so `08:00:07:00:00:10`). The MAC lives in the golden
-  vmstate — `loadvm` restores it regardless of a launcher `mac=` — so bake it via
-  a **cold boot**, then recapture. Real MAC → `local.env`, placeholder in the
-  registry. **Retrofit owed:** win98se / win2000 / solaris were baked on the
-  default MAC; they need a cold re-bake (a dedicated fleet MAC pass).
-- No raw host mounts except through `chroot-guard run-private` or with the
-  `mount-guard-ok` escape set.
-- Green-before-done for languages touched, or report **BLOCKED**. Report
-  concisely; detail in your station/tool doc. Don't edit `docs/README.md`.
+## The order of operations
+
+1. **`wave.sh alloc <id> --retronet`** — address, MAC, tap, chain, UIN, and the
+   `RETRONET_DHCP_RESERVATIONS` pair, all in one atomic claim.
+2. **Render the DHCP ledger.** A reservation edited into `local.env` is **not
+   live** until `scripts/retronet/web/install-dhcp.sh` re-writes
+   `/etc/retronet/dhcp.env` in CT 951. The first guest of the 2026-09-03 wave
+   leased a pool address on exactly this gap — and a pool address also escapes an
+   IP-scoped guard chain, which is why the template hooks the chain on the MAC
+   too.
+   **Reserve even for a guest that has no DHCP client** (`--static`): the
+   reservation hands such a guest nothing, and exists purely as the plane's
+   uniqueness ledger.
+3. **`rn-onboard.sh <id> … --apply`**, then add the printed netdev lines to the
+   launcher.
+4. **Install and configure the client** — [`ICQ-CLIENTS.md`](ICQ-CLIENTS.md).
+5. **Cold-bake the golden** on the finished device set, with the client signed
+   in and HiveBot listed, and restore-prove it on a fresh emulator process under
+   the production launcher args.
+6. **Prove it survives a restore** — the step below.
+7. **Land it**: `rn-verify.sh <id>`, flip `onboarded`, and the coordinator's
+   single fleet-wide `seed_contacts.py ssi --apply`.
+
+## The proof that decides whether the exhibit works
+
+Every visitor arrives through `loadvm golden`. A restored vmstate carries a TCP
+socket the gateway forgot hours ago, so **"signed in when we baked it" is not
+"signed in when a visitor looks at it"** — and the client's own window will tell
+you it is, wrongly: after a reset, `suse64`'s GtkICQ showed its list **Online**
+while CT 951 rejected every packet from it as `unknown session, NOT_CONNECTED`.
+
+The proof is a **new** gateway journal line dated after the reset, **and** a
+frame:
+
+```sh
+ssh lab 'labctl reset <id>'
+python3 scripts/dev/fb-wait.py --settle …          # awake, then ~90 s for the redial
+ssh lab '/data/kernel-hive/scripts/retronet/rn-verify.sh --since "@<reset epoch>" <id>'
+ssh lab 'labctl shot <id>'
+```
+
+Measured outcomes so far are in [`ICQ-CLIENTS.md`](ICQ-CLIENTS.md)'s reconnect
+column. A client that fails this does not land until it has one of: its own
+auto-reconnect, a plugin that turns it on, or a guest-side restart wrapper.
+
+## HiveBot appears by NAME, not a number
+
+The greeter is UIN `10000`, and what a client shows for it comes from the
+server's ICQ directory nickname (`rn-tool.py nick 10000 HiveBot`), fetched on
+add-by-UIN — so every station onboarded since that was set shows the name
+natively. An SSI-aware client gets HiveBot from the server-side roster on its
+first login with nothing added by hand; a v4/v5 client is not SSI-aware and its
+contact list is a guest-side file that a seeder run cannot reach.
+`roster.json` is the single source for both halves — adding a station is ONE
+row, which `rn-onboard.sh` writes.
+
+## Guardrails
+
+- Own worktree (`wt.sh new`); land through `station-land.sh`, which serialises
+  the landing window so no coordinator has to.
+- **Commit a station's `rn-tapnet.sh` only with a proven station** — the
+  box-sync pairs glob deploys every committed one.
+- Prove containment from inside the guest exactly as the station doc template
+  lists it. Host `ping` toward the guest is not a check: containment means
+  labhost-initiated traffic is precisely what IS allowed.
+- Green-before-done for the languages you touch, or report **BLOCKED**.

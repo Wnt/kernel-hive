@@ -28,6 +28,8 @@ So the public deployment has two planes that reach labhost by different routes:
                      ▼                                          ▼
   ┌──────────────────────────── labhost (the box) ────────────────────────────┐
   │  wg0 10.66.0.3 ──► streamhost@<tile> udp/54xxx   (QUIC, ticket-gated)      │
+  │              ──► osgallery-webrtc-bridge udp/54200 (ICE, every tile; the  │
+  │                  WebRTC fallback for Safari 17 / no-WebCodecs browsers)   │
   │  forwarder-agent ──► 127.0.0.1:8081  the PUBLIC listener (session-gated)   │
   │                      127.0.0.1:8443  the LAN listener (unchanged, open)    │
   └───────────────────────────────────────────────────────────────────────────┘
@@ -332,7 +334,12 @@ UDP relay.
 
 - **Browser support** is whatever WebTransport + WebCodecs support is: Chrome
   and Chromium-family everywhere, Firefox desktop. Firefox-Android has no
-  `VideoDecoder` and gets the existing banner. Safari is untested here.
+  `VideoDecoder` and gets the existing banner. Safari 26 (iOS/iPadOS 18.7+)
+  has WebTransport + WebCodecs and streams since 2026-09-08 — it implements
+  only the spec's `datagrams.createWritable()`, not the legacy `writable`
+  Chromium still carries (`STREAM-DEBUGGING.md` §5, "Safari 26"). Safari 17
+  has WebCodecs but no WebTransport and takes the native WebRTC fallback
+  (`WEBRTC-PLATFORM.md`), as does any browser lacking either API.
 - **One relay hop** of added latency for public visitors (~4.5 ms labhost↔edge, plus
   the visitor's own path to Helsinki). LAN visitors are unaffected — they still
   talk to the station directly.
@@ -346,7 +353,13 @@ UDP relay.
   the daemon never saw a single session: service active, ticket accepted,
   `/signal/<id>.json` returning a valid path, and nothing in the journal.
   `check-stream-tickets.py` cannot see this — it validates the ticket, not the
-  path the packets take. `stations-registry.py` now fails validation for any
+  path the packets take. It bit one more on 2026-09-02: `reactos` was carrying a
+  `legacyPortException` on the pre-slot port 4433 in the belief that "the edge
+  carries its own rule for them". It does not — the hole is a RANGE — so every
+  public visitor got `Opening handshake failed` against a station that looked
+  perfect from labhost. It now sits on its slot port like everything else, and
+  the exception (and with it the escape hatch) is gone.
+  `stations-registry.py` now fails validation for any
   production station whose `udpPort` falls outside `ports.publicRelayLow..High` in
   `registry/registry-v1.json`, which is the source of truth these three places
   must agree on: that key, `UDP_RELAY_PORT_RANGE` in the forwarder repo's

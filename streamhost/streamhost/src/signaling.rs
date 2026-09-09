@@ -54,7 +54,11 @@ pub fn spawn_http(cfg: Arc<Config>, port: u16) {
                     }
                 }
             }
-            Err(e) => eprintln!("[signaling] could not bind {bind}: {e}"),
+            Err(e) => crate::sh_log!(
+                crate::trace::Level::Error,
+                None,
+                "[signaling] could not bind {bind}: {e}"
+            ),
         }
     });
 }

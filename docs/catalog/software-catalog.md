@@ -144,6 +144,33 @@ Use `-vga cirrus` for authentic Win9x drivers; `-device sb16` (DOS-era) or `-dev
 
 **Excluded (still copyrighted, no free release):** Turrican II (→ Hurrican), Lemmings (→ Pingus, no AROS port), Another World, Shadow of the Beast, Sensible Soccer, Cannon Fodder, Worms; Deluxe Paint (→ Personal Paint); Directory Opus Magellan (still sold). Skip heavy AGA demos (Nexus 7, Rink a Dink Redux) — need cycle-exact timing.
 
+### Amiga UNIX (AMIX) 2.1 — the OPEN LOOK desktop (station `amix`)
+
+The Amiga's Unix road not taken, and a different family from everything above:
+`amix` is not AmigaOS at all but Commodore's licensed **AT&T System V Release 4**
+for the *Amiga 3000UX*, with **OPEN LOOK** — Sun and AT&T's answer to Motif — as
+its desktop. Nothing in the AROS/Icaros table runs here and nothing here runs
+there. The exhibit ships what came on the tape, because almost nothing else was
+ever ported: this is a 1992 SVR4 desktop, not a software library.
+
+| Title | Type | Source | Legal | Install | Why |
+|---|---|---|---|---|---|
+| **olwm** + the OPEN LOOK File Manager, Calculator and `props` | desktop | on the AMIX 2.1 tape (`olcore`) | preservation-source (Commodore/AT&T) | package set (2) at install time | The reason the station exists: the only OPEN LOOK desktop in the lineup, and visibly not Motif — pushpins, bevelled buttons, the menu-button drag |
+| X11R4 clients — `xterm`, `xclock`, `xdpyinfo`, `xkill` | system | on the tape (`Xcore`, `Xbasic`) | as above | as above | The fixture's xterm is the exhibit's proof frame; `xdpyinfo` is also how the depth-1 StaticGray screen was established |
+| **GNU Emacs** | creative | on the tape (`emacs`) | GPL, shipped by Commodore | as above | The one piece of software here a modern visitor recognises instantly, in its 1992 X build |
+| SVR4 `sysadm` | system | on the tape (`sysadm`) | preservation-source | as above | The curses admin front end every SVR4 shipped — worth a look beside `hpuxvue`'s SAM and `aix432`'s SMIT |
+| `uucp` + `cnews` | network | on the tape (`uucp`) | preservation-source | as above | What 1992 networking on this machine actually WAS. There is no period browser: the web had not reached Unix desktops, and the station is host-only today |
+
+⚠️ **Monochrome.** The Amiga-chipset X server is 640×512 depth 1, so nothing here
+is a colour showcase; colour needed an A2410/Resolver/1600GX board and no
+emulator this lab has drives one. ⚠️ **Do not plan a pointer-heavy title** until
+the station's pointer is 1:1 — AMIX reads the emulated mouse hardware, not the
+UAE mousehack that makes `amigaos35` absolute (`docs/guests/amix.md`).
+
+**Excluded (nothing to port):** every AROS/Icaros title above, and the AmigaOS
+demoscene productions — an SVR4 kernel runs no AmigaOS binary, and the A3000UX
+had essentially no third-party software market of its own.
+
 ---
 
 ## BSD — NetBSD / OpenBSD

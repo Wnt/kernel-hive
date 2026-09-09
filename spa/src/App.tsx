@@ -14,6 +14,8 @@ import WalkinLanding from './walkin/WalkinLanding';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
 import { WalkinChrome } from './walkin/WalkinChrome';
+import { IdentityBadge } from './ui/IdentityBadge';
+import { useAppbarHeight } from './ui/useAppbarHeight';
 import { useMuseum } from './state/store';
 import { bindingFromManifest, type OSBinding } from './three/archetypeRegistry';
 import { MUSEUM_NAME, MUSEUM_TAGLINES } from './config';
@@ -52,6 +54,7 @@ export default function App() {
   const openPoster = useCallback((osId: string) => setPosterId(osId), []);
 
   const appRootRef = useRef<HTMLDivElement>(null);
+  const appbarRef = useAppbarHeight();
 
   // NOTE: the opened grid stream owns Escape itself (StreamView forwards it to
   // the guest). App-level Esc handling here would steal Escape from the guest, so
@@ -59,7 +62,7 @@ export default function App() {
 
   // ---- shared top bar: title + Grid/3D toggle + app-level Fullscreen ----
   const TopBar = (
-    <header className="appbar">
+    <header className="appbar" ref={appbarRef}>
       <div className="appbar-brand">
         <h1>{MUSEUM_NAME}</h1>
         <span className="appbar-tag" aria-hidden="true">
@@ -69,6 +72,7 @@ export default function App() {
         </span>
       </div>
       <div className="appbar-actions">
+        <IdentityBadge />
         {/* The navigation is the role fence made visible. A walk-in is refused
             /museum, /fleet and /about at the gate (gate.py WALKIN_PATHS), and a
             link that 302s the visitor back to where they started teaches them

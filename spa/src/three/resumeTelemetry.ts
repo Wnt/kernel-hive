@@ -138,10 +138,15 @@ export function resumeTelemetry(stationAttrs?: Attrs): ResumeTelemetry {
       flow = null;
       route = null;
       f.step('firstFrame');
-      f.ok();
       // Disjoint by construction: exactly one is stopped, the other abandoned.
       // A resume judged neither way — the picture came back before anything
       // decided — is the live case, which is what it was.
+      //
+      // Stopped BEFORE `f.ok()`, for the reason spelled out in
+      // connectTelemetry.firstFrame: a stopped timing lands as a span event on
+      // the innermost span still open, and the span this measurement belongs
+      // on is `session.resume` — this flow's root. Close the flow first and
+      // the event has nowhere honest to go.
       if (r === 'reconnect') {
         tr?.stop();
         t?.abandon();
@@ -149,6 +154,7 @@ export function resumeTelemetry(stationAttrs?: Attrs): ResumeTelemetry {
         t?.stop();
         tr?.abandon();
       }
+      f.ok();
     },
     end() {
       if (ended) return;

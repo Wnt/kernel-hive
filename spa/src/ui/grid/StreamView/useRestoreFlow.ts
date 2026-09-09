@@ -56,8 +56,11 @@ export function useRestoreFlow({
     pending.current = null;
     if (outcome === 'ok') {
       p.flow.step('restored');
-      p.flow.ok();
+      // Clock stopped before the flow closes, so the measurement lands as a
+      // span event on `station.restore` itself rather than on whatever happens
+      // to be open outside it — see analytics/metrics.ts `reportTiming`.
       p.ms.stop();
+      p.flow.ok();
     } else if (outcome === 'fail') {
       p.flow.fail(reason);
       p.ms.abandon();

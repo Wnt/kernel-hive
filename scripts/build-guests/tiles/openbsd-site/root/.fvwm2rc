@@ -1,0 +1,55 @@
+# Kernel Hive 'openbsd' — fvwm 2.2.5 (OpenBSD base Xenocara). Left/right click the
+# desktop for the applications menu; middle click lists windows.
+DeskTopSize 1x1
+EdgeScroll 0 0
+Style "*" TitleAtTop, BorderWidth 5, HandleWidth 5, Icon unknown1.xpm, RandomPlacement, SmartPlacement
+Style "Fvwm*" NoTitle, Sticky, WindowListSkip
+Style "xclock" NoTitle, Sticky, WindowListSkip
+Style "xeyes"  NoTitle, Sticky, WindowListSkip
+HilightColor white steelblue
+MenuStyle white steelblue grey -adobe-helvetica-bold-r-*-*-14-* fvwm
+
+AddToMenu RootMenu "OpenBSD 7.9 — fvwm" Title
++ "xterm         terminal"       Exec exec xterm -fa monospace -fs 11
++ "xcalc         calculator"     Exec exec xcalc
++ "xclock        clock"          Exec exec xclock -update 1
++ "xeyes         eyes"           Exec exec xeyes
++ "xedit         text editor"    Exec exec xedit
++ "xman          manual browser" Exec exec xman
++ "xload         system load"    Exec exec xload
++ "xlogo         X logo"         Exec exec xlogo
++ "bitmap        bitmap editor"  Exec exec bitmap
++ "xconsole      console log"    Exec exec xconsole
++ "" Nop
++ "Windows"                      Popup Window-Ops
++ "Restart fvwm"                 Restart fvwm
++ "" Nop
++ "Exit fvwm"                    Quit
+
+AddToMenu Window-Ops "Window Ops" Title
++ "Move"      Move
++ "Resize"    Resize
++ "Raise"     Raise
++ "Lower"     Lower
++ "(De)Iconify" Iconify
++ "(Un)Stick" Stick
++ "" Nop
++ "Close"     Close
++ "Destroy"   Destroy
+
+Mouse 1 R A Menu RootMenu Nop
+Mouse 2 R A WindowList
+Mouse 3 R A Menu RootMenu Nop
+Mouse 0 1 A Menu Window-Ops Close
+Mouse 0 2 A Close
+Mouse 0 4 A Iconify
+Mouse 1 T A Move-or-Raise
+Mouse 1 FS A Resize-or-Raise
+Mouse 2 FST A Move-or-Raise
+
+AddToFunc Move-or-Raise "I" Raise
++ "M" Move
++ "D" Lower
+AddToFunc Resize-or-Raise "I" Raise
++ "M" Resize
++ "D" Lower

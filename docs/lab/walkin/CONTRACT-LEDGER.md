@@ -67,7 +67,7 @@ lives under `/auth/` because it is an admin control.
 |---|---|---|---|---|
 | `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}` |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | walkin, viewer, admin | `{"os":"os2warp"}` | `{"clone":"walkin-os2warp-3","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}` |
+| `/walkin/claim` | POST | walkin, viewer, admin | `{"os":"os2warp"}` | `{"clone":"walkin-os2warp-3","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
 | `/walkin/manifest.json` | GET | walkin | — | §5.3 of the brief — allowlisted exhibition fields, one `signalEndpoint` |
@@ -417,7 +417,7 @@ fails `npx knip`.
 export type WalkinAccess = 'closed' | 'invited' | 'open';
 export type WalkinPool = { os: string; free: number; size: number };
 export type WalkinState = { access: WalkinAccess; pools: WalkinPool[]; notice?: string };
-export type WalkinClaim = { clone: string; signalEndpoint: string; ttlSeconds: number };
+export type WalkinClaim = { clone: string; signalEndpoint: string; ttlSeconds: number; resumed?: boolean };
 export type WalkinQueued = { queued: true; position: number };
 export type WalkinAdminStatus = {
   access: WalkinAccess; envFloor: WalkinAccess;

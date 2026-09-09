@@ -239,3 +239,33 @@ def pending_after_resume(waves, done):
         if rest:
             out.append(rest)
     return out
+
+
+def completion_report(rolled, live_count, skips):
+    """The lines that state what a rollout actually COVERED, not merely what it did.
+
+    "rollout complete: 70 station(s)" is true and useless: from outside, a run
+    that skipped four stations is indistinguishable from one scoped to seventy
+    on purpose. That is how a station goes quietly off-fleet — amix sat alone on
+    its own bring-up binary from the day it landed, skipped for a kh-claim, with
+    nothing saying so. ADD-NEW-OS-PLAYBOOK.md 7.2.1 lists "the station is
+    running an old binary" as trap #1, and a silent skip is how it gets set.
+
+    The skip is also NOT stable, which is what makes saying it load-bearing
+    rather than tidy. A station-allocation claim carries no pid, so kh-claim
+    ages it from `held` to `stale` on a 12 h timer: a station is skipped when
+    any same-named claim was TOUCHED within 12 h of the run. Coverage therefore
+    turns on unrelated recent activity, and the same station may roll fine
+    tomorrow with nothing fixed — which reads as an intermittent mystery rather
+    than a rule unless the run says what it left out and why.
+
+    Returned as data rather than printed so the accounting is testable: the
+    thing worth pinning is that a skipped station is always named and never
+    silently folded into the total.
+    """
+    lines = [f"rollout complete: {rolled} of {live_count} live station(s)"]
+    if skips:
+        lines.append(f"{len(skips)} station(s) NOT rolled — each still on its previous binary:")
+        lines.extend(f"  {station:<14} {reason}" for station, reason in sorted(skips.items()))
+        lines.append("re-run for these once the reason clears; a skip is deferred work, not done work.")
+    return lines

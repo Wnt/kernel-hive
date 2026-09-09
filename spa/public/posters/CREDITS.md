@@ -10,7 +10,7 @@ mechanically against the Commons API by `scripts/tools/fetch-poster-gallery.py`,
 which refuses any license outside a fixed free-license allowlist. Re-check the
 shipped set at any time with `make poster-gallery-verify`.
 
-**209 images across 47 exhibits.** 102 of them are share-alike
+**240 images across 53 exhibits.** 120 of them are share-alike
 (CC BY-SA): if you redistribute a modified version of one of those images, you
 must license the modification under the same terms. The images are not combined
 with the source code and do not affect the MIT license of the code itself.
@@ -19,7 +19,7 @@ Period advertisements and sales posters are essentially never freely licensed.
 None are redistributed here; where one is relevant it is referenced as an
 outbound link only (2 such link(s) below).
 
-License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-SA 2.0 (23), Public domain (21), CC BY 3.0 (20), CC0 (20), CC BY 4.0 (11), CC BY-SA 2.5 (6).
+License breakdown: CC BY-SA 3.0 (45), CC BY-SA 4.0 (41), CC BY 2.0 (32), Public domain (32), CC BY-SA 2.0 (27), CC0 (23), CC BY 3.0 (21), CC BY 4.0 (12), CC BY-SA 2.5 (7).
 
 ## aix432
 
@@ -49,6 +49,15 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `03-2019-08-04-commodore-amiga-personal-computer.webp` | Maksym Kozlenko | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:2019-08-04_Commodore_Amiga_personal_computer.jpg) |
 | `04-commodore-amiga-500-retromadrid-2018.webp` | AUIC Oficial | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Commodore_Amiga_500_(RetroMadrid_2018).jpg) |
 | `05-amiga-500.webp` | Wikideas1 Original:dark_igorek | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [Commons](https://commons.wikimedia.org/wiki/File:Amiga_500.webp) |
+
+## amix
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-amiga3000ux.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Amiga3000UX.jpg) |
+| `02-amiga-3000-front-enhanced.webp` | "Joe Smith" (Uploader of original was Joeinwap at en.wikipedia (Changes made by Ubcule)) | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Amiga_3000_Front_Enhanced.jpg) |
+| `03-amiga-3000-medley.webp` | Giovanni Cardona | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Amiga_3000_(medley).JPG) |
+| `04-amiga-3000t-motherboard-without-annotations.webp` | Podstawko | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Amiga_3000T_motherboard_without_annotations.jpg) |
 
 ## amstradcpc
 
@@ -104,6 +113,17 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `02-acorn-bbc-model-b-retrosystems-2010.webp` | Soupmeister | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Acorn_BBC_Model_B_-_Retrosystems_2010.jpg) |
 | `03-bbc-micro-model-b-rear-ports.webp` | Barney Livingston | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:BBC_Micro_Model_B_rear_ports.jpg) |
 | `04-model-b-with-arm7tdmi-coprocessor-7020151809.webp` | Trevor Johnson from Bristol, UK | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Model_B_with_ARM7TDMI_coprocessor_(7020151809).jpg) |
+
+## beos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-bebox-face.webp` | Josh Carlson | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0) | [Commons](https://commons.wikimedia.org/wiki/File:Bebox_Face.jpg) |
+| `02-prototype-bebox-386486580.webp` | Alex Dawson from Perth, Australia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Prototype_BeBox_(386486580).jpg) |
+| `03-production-bebox-in-use-386488165.webp` | Alex Dawson from Perth, Australia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Production_BeBox_in_use_(386488165).jpg) |
+| `04-expansion-board-from-production-bebox-386487921.webp` | Alex Dawson from Perth, Australia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Expansion_board_from_production_BeBox_(386487921).jpg) |
+| `05-jlgassee.webp` | Γλωσσολαλιά | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:JLGassee.jpg) |
+| `06-serial-number-of-production-bebox-386487382.webp` | Alex Dawson from Perth, Australia | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Serial_number_of_production_BeBox_(386487382).jpg) |
 
 ## c128
 
@@ -168,6 +188,16 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `04-dragon-32-computer-at-play-expo-2013.webp` | Rept0n1x | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_computer_at_Play_Expo_2013.JPG) |
 | `05-dragon-32-top-view.webp` | Miguel Durán | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Dragon_32_top_view.jpg) |
 
+## hpuxvue
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-hp-hp9000-b180-workstation-02.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_02.jpg) |
+| `02-hp-hp9000-b180-workstation-34.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_34.jpg) |
+| `03-hp-hp9000-b180-workstation-54.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_54.jpg) |
+| `04-hp-hp9000-b180-workstation-22.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_22.jpg) |
+| `05-hp-hp9000-b180-workstation-25.webp` | Thomas Schanz | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:HP-HP9000-B180-Workstation_25.jpg) |
+
 ## indyr4400
 
 | Image | Author | License | Source |
@@ -223,6 +253,17 @@ License breakdown: CC BY-SA 4.0 (40), CC BY-SA 3.0 (33), CC BY 2.0 (30), CC BY-S
 | `04-ibm-5170-pc-at-8861873514.webp` | htomari | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_5170_(PC_AT)_(8861873514).jpg) |
 | `05-ibm-personal-computer-xt-with-5153-color-monitor-53998049768.webp` | Ethan Long | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_Personal_Computer_XT_with_5153_Color_Monitor_(53998049768).jpg) |
 | `06-ibm-model-f-122-key-keyboard.webp` | Themavery | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:IBM_Model_F_122-key_Keyboard.jpg) |
+
+## newsos
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-sony-news.webp` | Mike Chapman | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_news.jpg) |
+| `02-sony-news-nws-3710-01.webp` | SupremeDalek | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_01.JPG) |
+| `03-sony-news-nws-3710-03.webp` | SupremeDalek | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_03.JPG) |
+| `04-sony-news-nws-3710-05.webp` | SupremeDalek | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_05.JPG) |
+| `05-sony-news-nws-3710-06.webp` | SupremeDalek | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_06.JPG) |
+| `06-sony-news-nws-3710-10.webp` | SupremeDalek | [Public domain](https://en.wikipedia.org/wiki/Public_domain) | [Commons](https://commons.wikimedia.org/wiki/File:Sony_NeWS_NWS-3710_10.JPG) |
 
 ## nextstep
 
@@ -340,6 +381,16 @@ Period advertising, referenced by outbound link only (not redistributed here):
 | `02-pinephone-beta-edition.webp` | Funeral | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:PinePhone_Beta_Edition.png) |
 | `03-nokia-n900-1.webp` | User:Ilya Voyager | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Nokia_N900-1.jpg) |
 | `04-nokia-n900.webp` | Georgy90 | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Nokia_N900.JPG) |
+
+## rhapsody
+
+| Image | Author | License | Source |
+|---|---|---|---|
+| `01-power-macintosh-9600-350.webp` | Gona.eu | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Power_Macintosh_9600_350.jpg) |
+| `02-power-macintosh-9500-150.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Power_Macintosh_9500_150.jpg) |
+| `03-power-mac-8500-4055398.webp` | cogdogblog | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [Commons](https://commons.wikimedia.org/wiki/File:Power_Mac_8500_(4055398).jpg) |
+| `04-power-macintosh-8500-logic-board.webp` | Stephen Edmonds | [CC BY-SA 2.5](https://creativecommons.org/licenses/by-sa/2.5) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Power_Macintosh_8500_-_logic_board.jpg) |
+| `05-power-macintosh-8600-250.webp` | Unknown | [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/) ⚖️ | [Commons](https://commons.wikimedia.org/wiki/File:Power_Macintosh_8600_250.jpg) |
 
 ## riscos
 

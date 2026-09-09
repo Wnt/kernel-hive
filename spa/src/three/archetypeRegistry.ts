@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (72 of the 74
+//    - transport   : how its LIVE framebuffer texture is obtained (90 of the 92
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 72 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 90 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -201,6 +201,24 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   macos9:      { osId: 'macos9', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#9a9ad1', eraLabel: '2001 · Mac OS 9.2.2 — Power Mac G4', pointerRel: true },
   amigaos35:   { osId: 'amigaos35', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC4444', eraLabel: '1999 · AmigaOS 3.5 (AWeb II)' }, // ideal: Amiga big-box tower
   aix432:      { osId: 'aix432', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#2f6ea8', eraLabel: '1999 · IBM RS/6000 — AIX 4.3.3 / CDE', pointerRel: false },
+  ravynos:     { osId: 'ravynos', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#64748b', eraLabel: '2025 · ravynOS 0.6.1' }, // ideal: any 2020s PC — the point is that it is not a Mac
+  amix:        { osId: 'amix', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A8B99', eraLabel: '1992 · Amiga UNIX (AMIX) 2.1' }, // ideal: Amiga 3000 desktop box
+  bootos:      { osId: 'bootos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#8ecae6', eraLabel: '2019 · 512-byte boot-sector OS' },
+  pcgeos:      { osId: 'pcgeos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#e08a3c', eraLabel: '1993 · GeoWorks Ensemble', pointerRel: false },
+  pcbsd:       { osId: 'pcbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#2f6fba', eraLabel: '2008 · PC-BSD 1.5.1' },
+  ubuntu:      { osId: 'ubuntu', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#dd4814', eraLabel: '2004 · Ubuntu 4.10 Warty Warthog' },
+  slackware:   { osId: 'slackware', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#008080', eraLabel: '1997 · Slackware 3.4 — fvwm95', pointerRel: false },
+  netbsd14:    { osId: 'netbsd14', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#f26522', eraLabel: '1999 · NetBSD 1.4.1 — XFree86 3.3.3.1', pointerRel: false },
+  redhat62:    { osId: 'redhat62', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#cc0000', eraLabel: '2000 · Red Hat Linux 6.2 — GNOME 1.0', pointerRel: false },
+  openbsd:     { osId: 'openbsd', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#f2c94c', eraLabel: '2026 · OpenBSD 7.9 — fvwm', pointerRel: false },
+  freebsd411:  { osId: 'freebsd411', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#ab2b28', eraLabel: '2005 · FreeBSD 4.11 — KDE 3.3.2', pointerRel: false },
+  debian22:    { osId: 'debian22', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#d70a53', eraLabel: '2000 · Debian GNU/Linux 2.2', pointerRel: false },
+  suse64:      { osId: 'suse64', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#6ea339', eraLabel: '2000 · SuSE Linux 6.4', pointerRel: false },
+  apple2e:     { osId: 'apple2e', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7C8B5E', eraLabel: '1985 · Apple //e — ProDOS' },
+  samcoupe:    { osId: 'samcoupe', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3B6EA5', eraLabel: '1989 · SAM Coupé — SAMDOS + SAM BASIC' },
+  atari800xl:  { osId: 'atari800xl', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C8A45A', eraLabel: '1983 · Atari 800XL — MyPicoDos + Atari BASIC' },
+  a1000:       { osId: 'a1000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#1E5BB8', eraLabel: '1985 · Amiga 1000 — Kickstart 1.2 / Workbench 1.2' }, // ideal: Amiga 1000 desktop case with the monitor on top and the keyboard garage
+  a3000:       { osId: 'a3000', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '1990 · Amiga 3000 — Workbench 2.04' }, // ideal: Amiga 3000 desktop case (the low, wide one) with the monitor on top
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

@@ -21,9 +21,22 @@ data lands inside that window, which is why §6 orders the fixable rows by cost
 rather than by how interesting they sound.
 
 **This is a living document.** Rewrite rows as things land; never append a dated
-annex that contradicts the table. Live-tenant observations carry their date
-because trial data ages out from under them — the classification is the durable
-part, the hit counts are not.
+annex that contradicts the table.
+
+**Every number below is a POINT-IN-TIME OBSERVATION, not a standing fact.**
+Unless a row says otherwise it was read from the live tenant on **2026-08-31
+~22:05 UTC, against the fleet as deployed at `main@4d031882`**, and it may
+already be wrong — the durable part of a row is its CLASSIFICATION, the count
+is evidence for that classification on one day. Two things move these numbers
+without anybody editing this file: the trial window ages data out from under
+them, and until 2026-09-01 the only path that fed half of them was run by hand
+(§2), so a "0 in 24 h" could as easily mean "nobody forwarded" as "nothing
+happened. That exact confusion has already been read back as current fact once:
+the Custom-events row's "0 CUSTOM/24 h, the served bundle contains zero
+occurrences of `reportEvent`" was true of the bundle deployed on 2026-08-31 and
+was contradicted by a later run that observed **16 CUSTOM beacons**, once the
+SPA carrying that call had been deployed. **Re-read before quoting; do not cite
+a count in a measurement doc without repeating the measurement.**
 
 ## 1. How each row is classified
 
@@ -43,15 +56,183 @@ what fixing it costs:
 
 | # | Path | Carries | Runs |
 |---|---|---|---|
-| 1 | **Browser EUM agent** → IBM SaaS, direct from each visitor's tab | page loads, page transitions, HTTP calls, resource loads, JS errors, sessions, identity, geo/browser/OS | continuously, every visit |
-| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table | **by hand only**, never on a timer |
+| 1 | **Browser EUM agent** → **`POST /eum` on our own origin** → `scripts/serve/eum_proxy.py` → IBM SaaS | page loads, page transitions, HTTP calls, resource loads, JS errors, sessions, identity, geo/browser/OS | continuously, every visit |
+| 2 | **`instana-forward.py`** → host-agent loopback (`127.0.0.1:4318`) or SaaS | OTel spans from `traces.db` **and** metric histograms from `analytics.db`'s `metric` table — **minus** traces made entirely of our own polling, §4.8 | `kh-instana-forward.timer`, every 5 min, **once the operator enables it** (§2.1). A trace is held until it has been quiet for `QUIET_MS` = 3.5 min, which is derived from row 2b's period and is why the tenant is minutes behind rather than seconds |
+| 2b | **`trace-ship.py`** → the box's own `/traces` | the daemon's spooled spans, out of `stations/<id>/traces/` and into `traces.db`, so path 2 has anything to forward | `kh-trace-ship.timer`, every 2 min, same enable step. **This period is load-bearing for row 2**: until 2026-09-01 the quiet window was shorter than it, so a trace could be forwarded before its daemon half had been carried in and then forwarded again — 7 of 117 mixed traces over an 8-hour window, and Instana mis-correlates a late arrival |
 | 3 | **`scripts/serve-https-spa.sh`** → Instana Web REST API, from the deploy machine | built SPA **source maps** (`PUT …/sourcemap-upload/…`), and republishing the pinned EUM agent JS self-hosted | every SPA deploy |
 | 4 | **IBM's host agent on labhost** → SaaS, IBM's own binary | host, process, LXC and agent infrastructure data | continuously, and **not this repo's to switch off** |
 
-Path 2 surprises twice: it is manual, so **any view it feeds is stale by
-default**, and it forwards metrics as well as spans — so `analytics.db` is not
-purely local, contrary to how §8's "third telemetry plane" framing reads at a
-glance. Path 3 is not mentioned in §8.1/§8.2 at all.
+Path 2 forwards metrics as well as spans, so `analytics.db` is not purely local,
+contrary to how §8's "third telemetry plane" framing reads at a glance. Path 3
+is not mentioned in §8.1/§8.2 at all.
+
+**Path 1 stopped being direct on 2026-09-01, and §2.2 is why.** Both hops of
+the browser half are now first-party: the agent SCRIPT was already self-hosted
+at `/vendor/instana-eum.min.js`, and the BEACON now posts to our own origin.
+
+### 2.2 The beacon proxy — why path 1 goes through us
+
+**The measurement that forced it.** The operator's phone runs a private-DNS
+ad/tracker blocker (Blockada). One real PWA visit from it produced a complete
+record in **our own** plane — `/clientlog`, `/analytics`, `/traces`, every one
+of them first-party — and **zero Instana beacons**. Nothing was broken: the
+blocker refuses to resolve the vendor's reporting host, and a beacon with no
+resolvable destination is never sent. So the Websites view was not merely
+missing a visit; it was systematically missing the kind of visitor who blocks
+trackers, which is a bias rather than a gap.
+
+`scripts/serve/eum_proxy.py` closes it. `ineum('reportingUrl', …)` now names
+`<origin>/eum` instead of the tenant's host (`scripts/serve-https-spa.sh`
+substitutes the path, so the tenant URL never enters the bundle at all), and
+that route forwards the beacon body verbatim to the tenant from the box.
+
+**Security posture**, in one line each — the module's own docstring carries the
+reasoning:
+
+- **Not an open proxy.** The destination is one line in a box-side file
+  (`serve/instana-eum-upstream.txt`, published from `registry/local.env` at
+  deploy time). No part of a request can name, hint at or influence a
+  destination.
+- **POST only**, 128 KiB body cap, `Content-Length` framing only, Content-Type
+  restricted to the two the agent can produce, no client header passed
+  through, **no redirect followed** (the opener has no redirect handler).
+- **Gated exactly like `/traces`** — `gate.WALKIN_PATHS`, not `OPEN_PATHS`. An
+  invited session or a walk-in, never an anonymous stranger. **This costs the
+  beacons a signed-out visitor at the /login or /walkin door used to send**,
+  which went straight to the vendor with no fence of ours in the way; Instana's
+  coverage now begins where our own plane's always has.
+- **Origin checked leniently** — a present-and-wrong Origin is refused, an
+  absent one is not. `sendBeacon` lives in a vendor bundle and engines differ
+  on whether a same-origin POST carries `Origin`; a strict check is how
+  `/vendor/`'s 401 (§7b) deleted every visitor's telemetry once already.
+- **Never traced.** `/eum` is absent from `tracing_http.route_of()`'s allowlist
+  and present in the SPA's `KH_TELEMETRY_PATHS`, so neither side can make a
+  beacon about a beacon.
+
+**The upstream call does not happen on the request thread**, and that is the
+decision most likely to have bitten. The serving plane is a
+`ThreadingHTTPServer`, so a synchronous forward would not block other requests
+— it would hold THIS one open for as long as IBM took, spawning a thread per
+beacon. The failure that matters is not occasional slowness; it is Instana
+being unreachable, which is the very scenario this route exists to survive. So
+the request thread reads the body, enqueues and answers 200; one background
+worker drains a bounded queue and drops the oldest batch when it is full,
+counting and logging every drop. A dead vendor costs one thread and some
+telemetry, never a slow gallery. Our 200 therefore means **queued**, not
+delivered — which is exactly why `beacon-probe.mjs --instana-check` exists.
+
+### 2.3 The geography trade-off — the mechanism works, the input does not
+
+**GEOGRAPHY IS A REAL, CURRENT LOSS. It is stated first because it is the one
+thing the proxy costs.** Instana derives Country/Subdivision and the Geography
+map from the beacon request's SOURCE IP; the beacon body carries no IP at all
+("The JavaScript agent does not have access to IP addresses", `0250:1729`).
+Before the proxy the browser connected to IBM directly and IBM read the real
+address. Now IBM reads the box's egress address, so **every beacon is
+geolocated to labhost, not to the visitor**.
+
+**The documented fix is implemented and IBM honours it.** `0250:1614-1622`, on
+proxying the SaaS endpoints: "Make sure that Instana servers are aware of the
+user IPs. Send an X-FORWARDED-FOR header … with the user's IP. Alternatively …
+`X-REALER-IP` (not `X-REAL-IP`)". `0025:2446-2456`: "The EUM acceptor in the
+backend relies on the `x-forwarded-for` header in incoming requests to
+determine the client's IP address." `eum_proxy.py` sends both, and that the
+acceptor reads them was **proved, not assumed**: an early run forwarded
+`X-Forwarded-For: 127.0.0.1` and the beacon came back from the tenant
+geolocated to `127.0.0.0`, with country, city and coordinates empty. The header
+plumbing is correct.
+
+**What is broken is one hop upstream of us, and it is not in this repo.**
+Measured on the live public listener, 2026-09-01: EVERY request arrives
+carrying `X-Forwarded-For: 127.0.0.1`. The edge terminates TLS on a VPS and
+tunnels to labhost, and labhost's own Caddy — the last hop, the one that writes
+the header — sees only the tunnel's loopback peer. The visitor's real address
+therefore never reaches the serving plane at all, and has not for as long as
+that topology has existed. A side finding worth its own line:
+**`auth/routes._client_ip` has been rate-limiting on a constant `127.0.0.1`**
+for the same reason.
+
+So `_visitor_ip` refuses to assert loopback, RFC1918, CGNAT, link-local or ULA
+addresses — an address we cannot vouch for produces no assertion rather than a
+false one — and the connection speaks instead. **Measured after that change:
+`userIp=88.192.35.0 country=FI city=Turku`**, which is the box's household, and
+identical to what §4.1 recorded before the proxy existed *because this lab's
+visitors have so far all been on that connection*. The facets are populated and
+will silently be wrong for the first genuinely remote visitor.
+
+**The fix is one commit in another repo.** The edge (Wnt/forwarder) must set
+`X-Forwarded-For` from the real peer while it is still known, and labhost's
+Caddy must append rather than overwrite. The moment a routable address appears
+in that header, `_visitor_ip` forwards it and geography comes back with no
+change on this side.
+
+**Browser/OS did NOT collapse**, because the same class of problem has a
+different answer: Instana reads those from the request `User-Agent`, which we
+forward verbatim from the visitor's own request. Proved in the same run:
+`browser=HeadlessChrome os=Linux`. Forwarding the IP without the UA would have
+traded one collapsed dimension for another.
+
+**Which `X-Forwarded-For` entry, and why it is not the one the auth plane
+picks.** `auth/routes._client_ip` takes the LEFTMOST entry, correctly, for a
+rate-limit key and a log line. That is the wrong entry to assert to a third
+party: a client may send its own `X-Forwarded-For` and our edge appends, so the
+leftmost is attacker-chosen and would let any visitor place themselves anywhere
+on the map. The proxy takes the RIGHTMOST — the hop our own edge added.
+
+**Worth keeping in proportion.** §5 already classed geo as POPULATED BUT
+UNINFORMATIVE: every beacon resolved to one city, because this gallery is one
+household and its invited guests. The capability lost is therefore small, and
+it is written down at this length anyway because losing a working thing
+silently is the failure this repo keeps writing rules about.
+
+**It is temporary and deletable.** It exists only because the Instana
+integration does. When Instana goes, `eum_proxy.py`, its route row, its gate
+entry, its upstream file, its `KH_TELEMETRY_PATHS` entry and
+`publish_instana_upstream` go in one commit, and `ineum('reportingUrl', …)`
+goes with the rest of the bootstrap. Nothing else depends on it — and note
+what the incident that caused it already proved: **our own plane never needed
+any of this**, because it was first-party from its first line.
+
+**Path 2 was manual until 2026-09-01, and that is the health warning on every
+count in this document.** Any view it feeds was stale by default — including
+while the observations in §4 were being taken. It carried a second, quieter
+fault: the watermark was the highest `started_ms` it had shipped, so a trace
+whose browser half flushed after a run (up to a `sink.ts` 20 s interval later,
+carrying an EARLIER start time) was never selected again, and those spans were
+lost for good. That is a direct cause of orphaned calls with no parent in the
+tenant, and it means **span and call counts read before 2026-09-01 are floors,
+not measurements.** Both are fixed: the watermark is now the store's ingest
+sequence (`traces.py`'s `ingest_seq`), and the two carriers run on timers.
+
+### 2.1 Arming the two timers — the operator's step
+
+Landing the code does not start anything (AGENTS.md rule 11). `box-deploy.sh
+--apply` installs the four unit files; enabling them is a deliberate act,
+because path 2 is the one thing in this repo that sends data to a third party.
+
+```sh
+scripts/dev/box-deploy.sh --apply                       # installs the units + daemon-reload
+ssh lab 'systemctl restart osgallery-https'             # picks up traces.py's ingest_seq column
+ssh lab 'systemctl enable --now kh-trace-ship.timer kh-instana-forward.timer'
+ssh lab 'systemctl list-timers kh-*'                    # next/last fire times
+ssh lab 'journalctl -u kh-instana-forward -n 40 --no-pager'   # watermark + backlog per run
+```
+
+The restart is a **separate decision and not a precondition** — the serving
+plane is long-running, so between the deploy and a restart the old code keeps
+writing trace rows with no ingest sequence, and rather than leave that as a
+caveat somebody has to remember, `TraceStore` sweeps any unsequenced row to the
+head of the order every time the store is opened (which the forwarder does on
+every run). The restart just stops that healing being needed. A first run is
+worth doing by hand — `--dry-run` shows the exact bytes, `--once` sends them —
+before the timer is armed.
+
+Turning it back off: `ssh lab 'systemctl disable --now kh-instana-forward.timer
+kh-trace-ship.timer'`. Clearing `INSTANA_ENDPOINT` in `registry/local.env` also
+works for the egress half alone — `--scheduled` treats an unconfigured box as a
+logged no-op with exit 0, so an unarmed feature never presents as a failing
+unit. Nothing needs restarting for either change; the timers are independent of
+the serving plane.
 
 **Never sent:** `probes.json` (the Rust feature-reach counters),
 `clientlog.jsonl`, `usage-stats.json`, and every log line this system produces.
@@ -60,7 +241,9 @@ tree; journald keeps logs on the box.
 
 **Filtered on purpose, in the tab only.** The browser agent ignores our own
 telemetry endpoints (`/traces`, `/analytics`, `/coverage`, `/clientlog`,
-`/usage`, `/clientcmd`) so Instana never reports a beacon about a beacon. The
+`/usage`, `/clientcmd`, and `/eum` itself) so Instana never reports a beacon
+about a beacon — the last of those closes a loop that would otherwise be
+self-sustaining rather than merely noisy. The
 Python plane still opens `server` spans for `/clientcmd` and `/clientlog` and
 path 2 forwards them: on 2026-08-31 they were the **largest single family of
 traces in the tenant** (74 + 8 of a 200-trace sample). Circular monitoring is
@@ -79,14 +262,21 @@ closed in the browser and open on the server.
    automatically as BATCH / SHELL / DATABASE / HTTP / MESSAGING / RPC
    (`0251:639`). We declare nothing; what Instana shows is what our span names
    happen to make.
-3. **Geo works because we do not proxy visitors** — it is derived from the
-   visitor IP against MaxMind (`0250-monitoring-websites.md:236-240`).
+3. **Geo is derived from the visitor IP against MaxMind**
+   (`0250-monitoring-websites.md:236-240`) — never from anything in the beacon
+   body. Since 2026-09-01 we proxy the beacon (§2.2), and **geo now reports the
+   BOX's location, not the visitor's**: the documented `X-Forwarded-For` escape
+   is implemented and honoured by IBM, but the real client IP never reaches the
+   serving plane, because labhost's Caddy writes `127.0.0.1` into that header.
+   The whole finding, with the evidence and the one-hop fix, is §2.3.
 
 ## 4. The inventory
 
-Counts are **24-hour windows read 2026-08-31 ~22:05 UTC** unless stated. Read
-§7 before quoting any of them: a 7-day window returns *fewer* rows than a
-1-hour one.
+Counts are **24-hour windows read 2026-08-31 ~22:05 UTC**, fleet at
+`main@4d031882`, unless a row states otherwise. They are observations of that
+moment and several are known to have moved since — read the point-in-time
+warning in §1's preamble and §7's window caveat (a 7-day window returns *fewer*
+rows than a 1-hour one) before quoting any of them anywhere.
 
 ### 4.1 Website Monitoring — the richest surface we have
 
@@ -107,8 +297,8 @@ RESOURCELOAD, HTTPREQUEST, ERROR, CUSTOM, PAGE_CHANGE`.
 | Users / Impacted Users | real account id **and display name** on 10 of 14 page transitions and 200 of 200 HTTP calls — never on a page load | **POPULATED** | small: the page-load gap is the bootstrap race above |
 | JS errors | **0 ERROR/24 h**, though `wrapEventHandlers` and `wrapTimers` are both ON — deliberately, because a WebGL/RAF/pointer app throws where `window.onerror` never looks | **EMPTY** — and we cannot tell "nothing threw" from "nothing arrives" | ~zero: provoke one error on staging and look |
 | ↳ unminified stacks | source maps uploaded every deploy (path 3) | **POPULATED BUT UNEXERCISED** — with 0 error beacons the upload has never been read | — |
-| Custom events | **0 CUSTOM/24 h.** `inputTrace.ts` does call `ineum('reportEvent','kh.input.sampled', …)`, in commit `4d031882` — **not deployed**; the served bundle contains zero occurrences of `reportEvent` | **EMPTY, FIXABLE** | one SPA rebuild + deploy of already-written code |
-| Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24` | **POPULATED BUT UNINFORMATIVE** — §5 | — |
+| Custom events | **POPULATED since the SPA carrying it was deployed.** 0 CUSTOM/24 h on 2026-08-31 because `inputTrace.ts`'s `ineum('reportEvent','kh.input.sampled', …)` (commit `4d031882`) was written but not yet in the served bundle; a later run observed **16 CUSTOM beacons**. The 2026-08-31 reading and its "the served bundle contains zero occurrences of `reportEvent`" are both **superseded** — kept here only because that pair of figures was quoted as current fact after it stopped being true | **POPULATED** | — (done: the deploy) |
+| Geo / browser / OS | every beacon: **the same one city**, Chrome or HeadlessChrome, Mac OS X, `4g`; visitor IP truncated to `/24`. Since the beacon proxy, browser/OS comes from the `User-Agent` we forward (verified intact) and **geo is the box's location, not the visitor's** — the client IP never reaches us to forward (§2.3) | **POPULATED BUT UNINFORMATIVE**, and geo is now also **WRONG for any remote visitor** — §2.3, §5 | one commit in the edge repo (§2.3) |
 | Human vs. our own probe fleet | **6 of 15 page loads were `HeadlessChrome`** — this lab's own browser probes, counted as visitors | **POPULATED BUT WRONG** — our plane separates this with its client-class dimension (`ANALYTICS.md` §9); Instana structurally cannot | medium, and no clean vendor answer: a `meta` flag plus manual Analyze filtering, which still does not fix Smart Alerts or Impacted Users |
 
 **A budget worth knowing before loading this surface up:** 128 beacons/10 s,
@@ -119,9 +309,9 @@ monitoring is filtered rather than tolerated.
 
 | View | Us | Class | Cost to fix |
 |---|---|---|---|
-| Services | exactly 3: `kernel-hive-spa` (openTelemetry), `kernel-hive-serve` (openTelemetry + pythonRuntimePlatform), and one literally named **`Unspecified`** | **POPULATED, and a third of it is wrong** | see the next row |
+| Services | exactly 3: `kernel-hive-spa` (openTelemetry), `kernel-hive-serve` (openTelemetry + pythonRuntimePlatform), and one literally named **`Unspecified`**. Each now reports its real `telemetry.sdk.language`, its own `service.version` and a `service.instance.id` — §4.8; the daemon used to be exported as `webjs` | **POPULATED, and a third of it is wrong** | see the next row |
 | ↳ the `Unspecified` third | **96 `input.edge` traces in 24 h, all `Unspecified`**, carrying 145 calls. Both fixes are **in source and not in the running binary**: `trace/mod.rs:338` stamps `kh.service: kernel-hive-daemon`, `trace_session.rs:223` makes `input.dispatch` `Kind::Server`. Our own store proves the fleet predates them — every stored `input.dispatch` is still `internal` and no span anywhere carries `kh.service: kernel-hive-daemon` | **EMPTY, FIXABLE — the top row here** | the expensive one: `cargo build --release`, canary, risk-ordered `fleet_rollout.py` promotion, then `trace-ship.py` and `instana-forward.py` by hand. Converts a whole third of the traces from an unattributable bucket into a named service |
-| Traces / trace view | 200 traces/24 h: `input.edge` 96, `serve.clientcmd` 74, `serve.page` 8, `serve.clientlog` 8, `serve.kh.deploy-hint` 7, `serve.signal` 3, `serve.walkin.state` 3, `serve.restore` 1 | **POPULATED** | — |
+| Traces / trace view | 200 traces/24 h: `input.edge` 96, `serve.clientcmd` 74, `serve.page` 8, `serve.clientlog` 8, `serve.kh.deploy-hint` 7, `serve.signal` 3, `serve.walkin.state` 3, `serve.restore` 1. **The `serve.clientcmd`/`serve.clientlog` share of that no longer arrives** — those are the telemetry plane talking to itself and are held back at the forwarder (§4.8). Do not read their absence as a broken exporter | **POPULATED** | — |
 | **Endpoints** | **13 endpoints exist** — `serve.clientcmd`, `serve.analytics`, `input.edge`, `http.client.request` … one per span name, confirmed by grouping calls on `endpoint.name` | **POPULATED — but named after our span names, not HTTP routes** | small-to-medium if route-level endpoints are wanted: give entry spans an `http.route`. Judge whether span names are good enough FIRST — they may be better than routes here |
 | Calls / latency per service | `kernel-hive-serve` 43→99 calls/h at 1.3 ms mean; `Unspecified` 145 calls at 2.6-4.2 ms; **`kernel-hive-spa` 6 calls** | **POPULATED** | — |
 | Service map / dependencies | three services, one of them `Unspecified`; no database, no queue, no third-party call, no second host | **POPULATED BUT UNINFORMATIVE** — §5 | — |
@@ -199,11 +389,172 @@ area, and none of it needs a decision.
 | Prometheus, JMX, Java/.NET trace SDKs | no JVM, no CLR, no Prometheus |
 | Custom dashboards | not a data need — a UI over the rows above; anything POPULATED can be dashboarded today |
 
+### 4.8 What Instana is told about each service — the resource pane, and what is hidden
+
+**Landed 2026-09-01 on branch `otlp-fidelity`. Everything in this section was
+read off the live tenant that day, and the point-in-time warning in §1 applies.**
+
+Three complaints from the operator, reading a real trace in the tenant, and what
+each turned out to be.
+
+#### The resource pane: three services, three languages, three build ids
+
+`traces_otlp.export()` was reporting `telemetry.sdk.language` as
+`"python" if service.endswith("-serve") else "webjs"` — a two-way guess, and the
+Rust daemon does not end in `-serve`. **Every daemon span left the box claiming
+to be browser JavaScript** (275 of them in a six-hour sample). `service.version`
+existed only for the browser, so "which build produced this span" was
+unanswerable for two thirds of the system.
+
+What one live trace's resource attributes looked like before and after
+(`3e75c400…`, a `win311` session, exported on the box):
+
+| Resource attribute | `kernel-hive-spa` | `kernel-hive-serve` | `kernel-hive-daemon` |
+|---|---|---|---|
+| `telemetry.sdk.language` **before** | `webjs` | `python` | **`webjs`** ← the defect |
+| `telemetry.sdk.language` **after** | `webjs` | `python` | **`rust`** |
+| `service.version` **before** | `main@95ee4750` | *absent* | *absent* |
+| `service.version` **after** | `main@95ee4750` | `95ee4750adb3…` | `45388f8620…` |
+| `service.instance.id` **after** | the tab's session id | the box | **the station** (`win311`) |
+| `host.name` **after** | `labhost` | `labhost` | `labhost` |
+
+The language table is now data (`scripts/serve/otlp_resource.py`), and a service
+nobody has declared reports **no** language rather than being guessed into one.
+
+**Each build id comes from that plane's own source of truth**, because the three
+ship on three cadences and there is no single "version of Kernel Hive":
+
+| Service | Source | Failure mode |
+|---|---|---|
+| `kernel-hive-spa` | the batch's `build` envelope — the bundle the tab was running | omitted when the batch named none |
+| `kernel-hive-serve` | `/data/vms/streamhost/.deployed-rev`, the sha `box-install.sh` last **wrote** (not `origin/main`, not the checkout's HEAD) | omitted off-box and when the marker is half-written |
+| `kernel-hive-daemon` | `stations/<id>/current` → `streamhost-<gitsha>`, **per station**, because `build-deploy.sh --canary` exists precisely so one station can differ | omitted when the artifact link is NEWER than the span — a canary swap between the span and the forward must not be claimed for it |
+
+Nothing is ever exported as `"unknown"`. A consumer grouping by version must not
+be handed a placeholder it cannot tell from a release name.
+
+#### The attribute bridge: we speak current semconv, Instana's list is the old one
+
+This plane instruments with the **current** OpenTelemetry HTTP conventions
+(`http.request.method`, `url.path`, `http.response.status_code`,
+`server.address`). Instana's documented list of consumed span attributes
+(`0307-opentelemetry-signals.md`) is the **previous** generation
+(`http.method`, `http.target`, `http.status_code`, `http.host`, `net.peer.*`).
+One later page (`0311`, service mapping) does list `url.path`, so support for
+the newer spelling is partial and undocumented rather than absent.
+
+**The decision: add, never replace, and only at the export boundary.** Our plane
+is the product; Instana is a temporary consumer being evaluated against it.
+Renaming our attributes to suit it would break our own UI, our own facets and
+every doc that names them. `scripts/serve/otlp_semconv.py` derives the old
+spellings on the way out and both go on the wire.
+
+| Instana consumes | We emit | Decision |
+|---|---|---|
+| `http.method` | `http.request.method` | derived at export |
+| `http.target` | `url.path` | derived at export |
+| `http.status_code` | `http.response.status_code` | derived at export |
+| `http.host` | `server.address` | derived at export (either span kind) |
+| `net.peer.name`, `net.peer.port` | `server.address`, `server.port` | derived **on exit spans only** — on an entry span `server.address` is *our* authority, and calling it the peer names the wrong machine |
+| `http.scheme` | `url.scheme` | derived at export; `khFetch.ts` now sets the source |
+| `http.route` | `http.route` | already correct — same name in both generations |
+| `http.url` | — | **rebuilt from scheme + authority + path.** Query-free by construction: `traces.py` BANNED_ATTRS refuses `url.full` and `url.query` at intake, so there is no query string in the store to leak |
+| `peer.service` | — | added on the two exit spans whose callee is known by construction: `http.client.request` → `kernel-hive-serve` (khFetch is same-origin-only), `input.edge` → `kernel-hive-daemon`. This is what draws the edge on a service map |
+| `service.name`, `session.id`, `host.id` | same | already emitted |
+| `service.instance.id`, `host.name`, `service.version` | — | **added** (see the table above) |
+| `telemetry.sdk.language` | same | **fixed** (see above) |
+| `http.user_agent` | — | **gap.** The serving plane does not put the UA on a span, so it cannot be derived. Owned by `tracing_http.py` |
+| `db.*`, `messaging.*`, `rpc.*` | — | **N/A and deliberately empty.** There is no database call, queue or RPC framework in a trace here; inventing one to light up a pane would be a fabricated fact |
+| `process.pid`, `container.*` | — | not emitted: the exporter runs in a different process from the producers and does not know their pids |
+
+**What the query-string ban costs, stated plainly.** Instana's call-detail pane
+gets a `http.url` with no query on it. Anyone wanting to know which parameters a
+call carried will not find them there and must use `http.route` and `kh.station`
+instead. That is the intended trade for a gallery whose query strings can carry
+station ids and ticket-shaped values.
+
+#### Analytics → Calls is no longer buried under our own polling
+
+**What the operator saw:** 896 calls in the last hour, and the visible rows
+almost entirely `serve.clientcmd`, `serve.clientlog` and `serve.analytics`.
+
+**We caused it, and it is worth owning.** Those polls used to propagate a
+`traceparent` from whatever span happened to be active, so each hid inside
+somebody else's trace and never appeared as a call. The orphaned-parent fix
+(`khFetch.ts`'s `outboundTraceparent`: an excluded telemetry path names no
+parent, the server roots its own trace) made each poll a correct one-span root
+trace. **The data got more honest and the view got noisier.**
+
+**The native mechanism was tried first, and it does not work over OTLP.**
+Instana marks a call Synthetic when a span is "annotated with `synthetic` with
+the value true" and hides Synthetic calls from Unbounded Analytics by default
+(`0251-monitoring-applications.md`, "Synthetic call rules"). That is exactly the
+wanted behaviour — hidden, not deleted. IBM's wording is *"which can be achieved
+with any of the Instana tracing SDKs"*, and OTLP is not one of their SDKs.
+
+> **Measured 2026-09-01.** Five otherwise-identical `SERVER`-kind spans were
+> posted to the agent's OTLP receiver as service `kernel-hive-synprobe`: a
+> control, and four spellings — `synthetic` as a boolean, `synthetic` as the
+> string `"true"`, `instana.synthetic`, and `sdk.custom.tags.synthetic`. **All
+> five, control included, appeared in the default Analytics → Calls view.** A
+> real `serve.clientcmd` span confirmed to carry `synthetic: true` on the wire
+> was likewise still listed. The flag is not honoured on this ingest path.
+
+**So the fallback runs, and it is one variable.** `instana-forward.py` holds
+back a trace made **entirely** of telemetry-plane entry spans. It is a
+whole-trace test, never a per-span trim: these polls are one-span traces by
+construction, and a trace that somehow held both a poll and real work ships
+intact rather than shipping with a hole. The run prints what it held back:
+
+```
+traces [agent]: 5 telemetry-only trace(s) held back (INSTANA_FORWARD_TELEMETRY=1 to send them)
+traces [agent]: 12 trace(s), 18 span(s) -> 200 OK
+```
+
+**Which routes.** `scripts/serve/telemetry_paths.py` is the server-side source of
+truth, mirrored from the SPA's `KH_TELEMETRY_PATHS` and pinned to it by a test so
+the two cannot drift: `/traces`, `/analytics`, `/coverage`, `/clientlog`,
+`/usage`, `/clientcmd`, `/eum`. The match is **exact**, not a prefix, and that is
+what settles the boundary cases:
+
+| Route | Hidden? | Why |
+|---|---|---|
+| `/clientcmd`, `/clientlog`, `/analytics`, `/usage` | **yes** | ingest. A tab posting on a timer; nobody waits, nobody reads the latency, and these were essentially the whole call list |
+| `/traces`, `/coverage` | **yes** | same, and not traced server-side today anyway |
+| `/eum` | **yes** | the vendor's OWN beacons, proxied first-party (§2.2). Plumbing by the same argument, and doubly so: it is the delivery of a measurement, not a thing measured. Listed for the day it is traced |
+| `/analytics/report.json`, `/coverage/report.json`, `/usage/stations.json` | **no** | reads. Somebody has `/admin` open, or the fleet table is merging usage on a visitor's path, and the report query is one of the heaviest things this server does. Exact matching is what keeps these visible while their parents are hidden |
+| `/signal/{station}.json` (`serve.signal`) | **no** | not telemetry. It is the first thing that happens when a visitor opens a machine; if it is slow, the gallery is slow |
+| `/kh/deploy-hint` | **no** | GitHub's webhook and the Actions ping, not a tab polling. No visitor is behind it, but it is the *trigger* of a deploy, and it arrives in bursts around a push rather than as steady chatter |
+
+**Nothing was deleted, and nothing about this reduces what we record.** These
+spans stay first-class in `traces.db` and in `/admin/observability`; only what
+leaves the box for Instana changed. The `synthetic` attribute is still exported,
+because it is the correct annotation and costs one attribute — the day IBM
+honours it over OTLP, unsetting the variable is the whole change.
+
+**To see the hidden calls again**, in order of effort:
+
+1. `INSTANA_FORWARD_TELEMETRY=1` in `registry/local.env`, then wait for the next
+   `kh-instana-forward` tick. This is the switch; it sends them again from that
+   moment on. It does **not** backfill — the watermark has already passed the
+   ones held back, and by design nothing rescans.
+2. In the Instana UI, **Hidden calls → Synthetic calls** in the Analytics
+   sidebar. Worth knowing about, and today it changes nothing for us: the spans
+   are held back before they reach the tenant, precisely because that switch was
+   measured not to work over OTLP. If the measurement above is ever re-run and
+   comes out differently, this becomes the right control and step 1 becomes
+   permanent.
+3. `/admin/observability` — which never hid them, and is the honest answer to
+   "what did the telemetry plane actually do".
+
 ## 5. Populated and still uninformative — the rows we never rebuild
 
 - **Geo, city, country, connection type.** Every beacon resolves to the same
   single city — this gallery is one household and its invited guests, so a world
-  map is decoration. `/admin/observability` should not grow one.
+  map is decoration. `/admin/observability` should not grow one. (Since the
+  beacon proxy it is the BOX's city, not the visitor's — §2.3. It reads the
+  same today only because every visitor so far has been on the box's own
+  connection. This row is why nobody should spend much on fixing it.)
 - **Browser/OS breakdown.** Two entries, one of which is our own headless probe
   fleet.
 - **The service map.** Three nodes, one of them `Unspecified`, and it becomes a
@@ -222,9 +573,9 @@ aggregate half.
 
 ## 6. The EMPTY-FIXABLE queue, cheapest first
 
-1. **Deploy the SPA.** Ships the custom-event call (`reportEvent`) that is
-   committed and unshipped, and — with the small bootstrap change below — the
-   page name and join keys on page-load beacons. **Cost: one rebuild + deploy.**
+1. ~~**Deploy the SPA.**~~ **DONE.** The custom-event call (`reportEvent`) is
+   shipped and CUSTOM beacons now arrive (§4.1). The bootstrap change in row 2
+   still wants a deploy of its own.
 2. **Move page name, `kh.sessionId` and `kh.bundle` into the inline bootstrap.**
    Today 14 of 15 page loads are unnamed and unjoinable. **Cost: a small SPA
    change**, riding the same deploy.
@@ -235,9 +586,11 @@ aggregate half.
    systemd drop-in and a restart**, plus checking kernel ≥5.10 / glibc ≥2.26.
    The only row where a vendor can tell us something we did not tell it first.
 5. **Rebuild and roll the daemon** so `input.edge` stops being `Unspecified`.
-   **Cost: build + canary + a risk-ordered fleet promotion + two hand-run
-   scripts** — the most expensive row, and the one that finally puts the
-   input→pixel flame graph in front of a commercial APM.
+   **Cost: build + canary + a risk-ordered fleet promotion** — the most
+   expensive row, and the one that finally puts the input→pixel flame graph in
+   front of a commercial APM. It used to end in "and then two hand-run
+   scripts"; since 2026-09-01 the two carriers are on timers (§2.1), so the
+   fresh spans reach the tenant on their own within ~7 minutes of the rollout.
 6. Then, if the trial still has days: one Application Perspective and one SLO
    (operator UI, minutes each).
 
@@ -260,6 +613,120 @@ aggregate half.
   new` sandbox has **no Instana token**. Read it from the shared clone at
   `/home/wnt/kernel-hive/scripts/serve/pki/instana.token`; the credential is not
   missing.
+
+## 7a. `backendTraceId` — how a beacon joins a backend trace, from the agent's own bytes
+
+This is the mechanism every RUM↔trace row in §4 depends on, and **the vendor's
+documentation of it is wrong twice over**, so the authority here is the pinned
+agent build, read out of the self-hosted
+`/data/vms/streamhost/serve/webroot/vendor/instana-eum.min.js` (v1.8.1), and
+beacons captured off the wire with `scripts/visitor-sim/beacon-probe.mjs`.
+
+The two contradicting doc passages, both in `0250-monitoring-websites.md`:
+
+> (a) "If `enableW3CHeaders` is enabled … First, extract the **tracestate**
+> value from the current page's metadata traceparent and use it. If you cannot
+> retrieve tracestate, a 16-character long string … is generated."
+>
+> (b) "the Instana website monitoring script … parses the traceparent and
+> extracts the **parent-id** as backendTraceId."
+
+Neither is a usable spec. What the agent actually does, at init, in this order:
+
+```
+backendTraceId = <whatever ineum('traceId', …) set>
+              || <the 'intid' Server-Timing entry on the NAVIGATION timing entry>
+if (enableW3CHeaders && <meta name="traceparent"> parses)
+    backendTraceId = the meta's PARENT-ID          // 16 hex — the SPAN id
+```
+
+Three consequences worth more than either doc passage:
+
+1. **`tracestate` is never read.** The whole shipped bundle contains exactly one
+   occurrence of the string, inside the function that *writes* request headers.
+   Passage (a) is fiction for this build: injecting a
+   `<meta name="tracestate" content="in=…">`, or sending a `tracestate` response
+   header, changes nothing at all. Do not spend a day on it, as was nearly spent.
+2. **`ineum('traceId', …)` is not "ignored when W3C headers are on"** — it *is*
+   honoured, and then unconditionally overwritten two lines later by the meta
+   tag. Same outcome, different reason, and the difference matters if you are
+   trying to reason about a future agent build.
+3. **Passage (b) is right, and that is the bug.** Our traces are keyed by the
+   32-hex TRACE id — `SELECT COUNT(*) FROM span WHERE length(trace_id)=16`
+   returns 0, and structurally always will — so a page-load beacon carrying a
+   16-hex span id resolves to nothing, forever. Measured before the fix:
+   `ty pl` with `bt=7a0c8fb357f0a61f`, against a page whose meta traceparent was
+   `00-cefd3b7a93434c60151ea2ee6c2ad496-7a0c8fb357f0a61f-01`. Zero rows.
+
+**The fix is `ineum('enableW3CHeaders', false)`** in spa/index.html's bootstrap,
+which lets the `Server-Timing: intid;desc=<32-hex trace id>` fallback win — a
+header `scripts/serve/tracing_http.py` already emits on the very response that
+served the document. After: `ty pl` carries
+`bt=38ab72035bb1f7894e6ecb7ba49020a5`, the meta's trace id, resolving to that
+page load's own `serve.page` span.
+
+**XHR correlation does not depend on that flag**, which is the thing the docs
+make you fear changing. An `xhr` beacon's `bt` comes from the RESOURCE timing
+entry's `Server-Timing: intid`, on a code path that never consults it — verified
+unchanged across the flip in the same captures. The flag governs only whether
+the agent *also* appends `traceparent`/`tracestate` to outbound requests, which
+for us was pure harm: those appends collided with `khFetch`'s own real
+`traceparent` (see that module's "THE INSTANA COLLISION"). A beacon whose `bt`
+is absent entirely — `gallery-manifest.json`, `boot/index.json` — is correct, not
+a fault: those routes are outside the tracing allowlist, so there is no server
+span and no `Server-Timing` to read.
+
+**Nothing on our side was added for the vendor.** The meta tag, `traceresponse`
+and `Server-Timing` are all pre-existing parts of our own trace-context plane
+(`docs/lab/TRACE-CONTEXT.md` §4, §8). The fix removed a vendor flag; it did not
+introduce a dependency on vendor behaviour.
+
+### Re-measuring this
+
+`scripts/visitor-sim/beacon-probe.mjs` drives one real credentialed page load,
+captures every beacon POST to the vendor's reporting host, and resolves each
+`bt` against `traces.db` itself. It exits non-zero when a page-load beacon
+carries no `bt`, when any `bt` resolves to nothing, or when an outbound
+`traceparent` arrives comma-joined. Run it after ANY change to the traceparent
+meta injection, the `Server-Timing` header, the `ineum(...)` bootstrap, or the
+pinned agent version:
+
+```sh
+cd scripts/visitor-sim && node beacon-probe.mjs          # public gallery
+node beacon-probe.mjs --url https://<SH_HOST_IP>:8443 --insecure   # the LAN origin
+```
+
+It needs a credentialed session (the gallery answers 401 to an anonymous `/`);
+`docs/lab/VISITOR-SIM.md` covers making one.
+
+## 7b. The trap that silently ships ZERO telemetry
+
+**A bare `npm run build` in `spa/` produces a bundle with Instana entirely
+disabled, and `serve-https-spa.sh deploy` does not rebuild.** Only
+`serve-https-spa.sh build` exports `VITE_INSTANA_WEBSITE_KEY` /
+`VITE_INSTANA_EUM_REPORTING_URL` (from `registry/local.env`) around its `vite
+build`. Without them Vite leaves the raw placeholders in the emitted HTML and
+`spa/index.html`'s bootstrap takes its documented no-key path: no `ineum` stub,
+no vendor script tag, no beacon at all.
+
+So the sequence **"run the quality gate, then deploy"** — and the gate runs
+`npm run build` — publishes a keyless bundle over a keyed deployment, with no
+error anywhere. That happened on 2026-09-01 and cost a full debugging cycle
+chasing beacons that were never sent, while every server-side header was
+provably correct.
+
+`deploy` now refuses this (`check_dist_is_publishable` in
+`scripts/serve-https-spa.sh`), on two independent questions:
+
+| Condition | Behaviour |
+|---|---|
+| `dist/index.html` still holds a `%VITE_…%` placeholder **and** `INSTANA_WEBSITE_KEY` is set here | **refuses**, naming the placeholders and the one command that fixes it |
+| placeholders present, **no** key configured | deploys, with a loud NOTE. The keyless build is a documented, legitimate fallback for a contributor without `registry/local.env` — it just may never be published *silently* by a machine that has the key |
+| `dist/` older than `spa/src`, `index.html`, `package.json` or `vite.config.ts` | **refuses**; `ALLOW_STALE_DIST=1` overrides for a deliberate rollback |
+
+**The correct incantation remains `serve-https-spa.sh build && serve-https-spa.sh
+deploy`.** If you ran `npm run build` for any reason — a gate, a type check, a
+test — you must rebuild through the script before deploying.
 
 ## 8. Two things in this repo that these measurements contradict
 
@@ -311,12 +778,16 @@ curl -s -H "authorization: apiToken $TOKEN" "$BASE/api/settings/slo"
 website, a perspective, an SLO or a synthetic test changes the tenant. This
 inventory is a reading exercise.
 
-## 10. Tally, as of 2026-08-31
+## 10. Tally
+
+Classifications, current; the counts they were derived from are the 2026-08-31
+point-in-time readings (§1). One row has moved since that date: Custom events,
+from EMPTY, FIXABLE to POPULATED, once the SPA carrying `reportEvent` shipped.
 
 | Class | Rows | Where |
 |---|---|---|
-| POPULATED | 20 | §4.1 (9), §4.2 (6), §4.3 (5) |
-| EMPTY, FIXABLE | 9 | §4.1 (3), §4.2 (2), §4.3 (1), §4.5 (3) |
+| POPULATED | 21 | §4.1 (10), §4.2 (6), §4.3 (5) |
+| EMPTY, FIXABLE | 8 | §4.1 (2), §4.2 (2), §4.3 (1), §4.5 (3) |
 | POPULATED BUT UNINFORMATIVE | 5 | geo, browser/OS, the service map, the unexercised source maps, the forwarded metric histograms |
 | N/A | 14 | Synthetics, adaptive thresholds, the emulator sensor gap, Docker, vSphere, and §4.7's ten surfaces |
 | EMPTY, nothing to fix yet | 2 | ERROR beacons (until one is provoked), log collection |

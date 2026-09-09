@@ -107,10 +107,18 @@ export async function typeDemoProgram({
   const charMs = perCharMs === DEMO_PER_CHAR_MS ? (program.perCharMs ?? perCharMs) : perCharMs;
   for (const line of program.lines) {
     if (cancelled()) return false;
-    handle.typeText(applyKeyboard(line, keyboard));
-    // Long enough for the whole line to have actually reached the guest.
-    await sleep(Math.max(delayMs, line.length * charMs));
-    if (cancelled()) return false;
+    // An EMPTY line is a bare ENTER: nothing to type, so no per-line pace
+    // either -- the ENTER below is the whole line. bootOS's `enter` command
+    // reads hex lines until it gets one, and the registry validator admits
+    // exactly '' for it (never whitespace, which would type as nothing but
+    // read as content).
+    if (line.length > 0) {
+      if (!(await typePaced(applyKeyboard(line, keyboard), handle, charMs, sleep, cancelled))) return false;
+      // The line has reached the guest chunk by chunk; the inter-line pace is
+      // what is left.
+      await sleep(delayMs);
+      if (cancelled()) return false;
+    }
     // ENTER commits the line; give the guest time to tokenise it before the
     // next character arrives.
     handle.typeText('\n');
@@ -118,7 +126,36 @@ export async function typeDemoProgram({
   }
   if (cancelled()) return false;
   // No newline: the visitor supplies it.
-  handle.typeText(applyKeyboard(program.runCommand, keyboard));
-  await sleep(program.runCommand.length * charMs);
+  return typePaced(applyKeyboard(program.runCommand, keyboard), handle, charMs, sleep, cancelled);
+}
+
+/**
+ * Characters a single typeText() call may carry: ONE.
+ *
+ * Measured on samcoupe with the daemon's mamesock wire trace (2026-09-08): an
+ * 8-character call reaches the MAME ctlsock module as sixteen-plus edges
+ * written back to back, and the module's hold/gap pacing is per FIELD, so
+ * different keys go down in the same emulated frame -- up to an 8-key chord --
+ * and a ROM that scans its own matrix keeps one of them. Exclusive-scan mode
+ * (MAME_CTL_KEY_EXCL) serialises ordinary keys but exempts Shift, so a shifted
+ * character can still overlap the unshifted one before it. One character per
+ * call, with the station's per-character wait between calls, leaves every
+ * edge -- Shift's release included -- applied before the next press.
+ */
+export const DEMO_CHUNK_CHARS = 1;
+
+async function typePaced(
+  text: string,
+  handle: DemoTypist,
+  charMs: number,
+  sleep: (ms: number) => Promise<void>,
+  cancelled: () => boolean,
+): Promise<boolean> {
+  for (let i = 0; i < text.length; i += DEMO_CHUNK_CHARS) {
+    if (cancelled()) return false;
+    const chunk = text.slice(i, i + DEMO_CHUNK_CHARS);
+    handle.typeText(chunk);
+    await sleep(chunk.length * charMs);
+  }
   return true;
 }

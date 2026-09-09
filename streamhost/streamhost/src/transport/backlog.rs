@@ -50,9 +50,11 @@ const REKEY_MIN_INTERVAL: Duration = Duration::from_millis(500);
 ///   * ack of 0 — the client reports `last_frame_id=0` until its very first
 ///     received AU, which would read as a huge spurious backlog on any station
 ///     whose frame counter has advanced;
-///   * a wrapped/"ahead" diff — `frame_id` restarts at 0 on every encoder
-///     reopen (ABR tier change, geometry change), so for ~1 report interval
-///     the client acks old-epoch ids that make `sent - acked` meaningless.
+///   * a wrapped/"ahead" diff — the guard is kept for a genuine u32 wrap and
+///     for a client that acks an id it cannot have seen. Since 2026-09-02 both
+///     halves live in the SESSION-LOCAL id space (transport/mod.rs `out_id`), so
+///     an encoder reopen (ABR tier change, geometry change) no longer rewinds one
+///     side of the subtraction to 0 while the other keeps counting.
 pub(super) fn session_backlog(
     client_ack: Option<(u32, Instant)>,
     last_sent_id: u32,

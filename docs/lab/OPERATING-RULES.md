@@ -177,3 +177,107 @@ touches deployed files, put it on the box: `scripts/dev/box-deploy.sh --apply`
 installs from the commit. Restarts are a separate decision —
 `build-deploy.sh` / `systemctl restart streamhost@<x>` /
 `serve-https-spa.sh deploy`.
+
+## 13. A wall is raced, and nothing waits on a guess
+
+Two sinks ate the netbsd14 bring-up (2026-09-03) and every install before it:
+an agent that **sleeps a guessed number of seconds** before looking (too short:
+look again; too long: the 5-second boot prompt has passed, or 40 s were spent
+staring at a hang recognisable after 5), and an agent that meets a wall with
+several plausible causes and **bisects them serially** — reboot, wait, look,
+change one thing, repeat — at a full boot plus a guessed wait per theory.
+
+- **Wait on the framebuffer, never on the clock.** `scripts/dev/fb-wait.py
+  --settle S` returns the moment the screen has stopped changing (a menu is up,
+  a hang is a hang, X finished painting); `--change` the moment it moved (the
+  key landed, the prompt appeared). Cursor blink is ignored. On the box, unix
+  socket; `labctl wait-for` for units, files and commands.
+- **Race a wall; do not bisect it.** When a step fails for an unknown reason
+  with more than one plausible cause, the coordinator writes the theories down
+  (one line each: what to change, what the framebuffer must show), and starts
+  one **cheap** agent per theory (`sonnet-low`, `qwen-low`), each on its own
+  clone of the rig: `scripts/dev/rig-clone.sh new <id> <theory> [-- qemu args]`
+  (0.6 s, a sparse copy, no claims, no publish). Each agent has a 3-minute
+  stop and reports a frame. The first framebuffer proof wins:
+  `rig-clone.sh keep <id> <winner>` kills the others through `clone-guard`;
+  `down <id> --all --rm` is the teardown (rule 9). The winner's change goes
+  into the ledger; the losers' frames go into the guest doc as ruled-out causes.
+- **Escalate, don't grind.** If every theory loses, the next round is one
+  capable agent (Opus/Fable) given ALL the losing frames — not the same cheap
+  agents with new guesses, and never the original agent continuing serially.
+  Capable models are for writing the theory list and for the round after the
+  race fails; cheap ones are for running it.
+- **This is not only for speedruns.** Every install, every debugging session
+  and every unknown failure in this project runs this way: measured waits,
+  parallel theories on clones, a kill for every loser. Serial trial-and-error
+  on the one rig is the pitfall, not a fallback.
+
+## 14. Parallel waves
+
+The 2026-09-03 nine-station run (`docs/lab/ADD-NEW-OS-PLAYBOOK.md` §0
+"Several waves at once") proved parallel new-station waves work, and also
+that a human coordinator relaying shared state does not scale past a handful
+of waves: ~150 messages over ~9 hours for allocation, landing serialisation
+and status sweeps, most of it mechanical. `scripts/dev/wave.sh` and
+`scripts/dev/station-land.sh` turn the mechanical part into tools; this
+section is the reasoning a wave session needs to trust them instead of
+falling back to a person.
+
+### The load rule
+
+**Saturating the cores is fine; 1-min load above 50 means scale down.**
+Measured 2026-09-03: fleet baseline is ~8 cores, and each concurrent install
+adds one full vCPU — load in the 30s–50s range across nine simultaneous
+waves was never an I/O-wait problem, it was arithmetic. The rule exists
+because a box at load 50+ starts queueing everyone's QMP round-trips and
+`fb-wait.py` polls, which turns "wait on the framebuffer" (rule 14 above)
+into "wait on the scheduler" — the exact failure mode rule 14 exists to
+avoid. **Each wave holds at most three guests.** A theory race under rule 14
+is three runners; the losers die on the first frame rather than idling.
+Nothing hung is left spinning — a forgotten smoke rig at 91% of a core for
+55 minutes (netbsd14, 2026-09-03) is not "using capacity", it is a guest
+nobody is looking at; kill it the minute its verdict is in.
+
+### The landing lock
+
+**One wave lands `main` at a time.** `box-deploy.sh --apply` installs the
+whole checkout, so a wave running it while another wave has uncommitted live
+edits on the box reverts that wave's work — an incident that happened more
+than once before the lock existed. `scripts/dev/wave.sh land begin <id>`
+claims the window as a `kh-claim` resource with a FIFO queue file on the
+box: it blocks with a bounded poll (never a guessed sleep) until the window
+is free, and prints who holds it and since when so a stuck window gets a
+chase instead of silence. `land end <id>` releases it; `land status` lists
+the holder and the queue. `station-land.sh` wraps `begin`/`end` around the
+whole landing sequence, so the lock is automatic for any wave that uses it —
+the manual "ready to land" → "go" → "landed" relay is what this replaces,
+not an alternative to it.
+
+Two things the lock does not remove, because they are not mechanical:
+**before "ready", not inside the window**, a wave still owes its own
+pre-push gate run (merge main, `stations-registry.py validate && generate`,
+the language stages the branch touches) — a window spent re-running the gate
+is a window nobody else can land in, and ten of slackware's fifteen window
+minutes were exactly that. And **every landing wipes every other wave's
+dark-launch overlay** (`darklaunch.d`) because an SPA deploy publishes one
+bundle for the whole fleet; `station-land.sh` re-arms the others
+automatically until the root fix (preserving `darklaunch.d` across a bundle
+publish) lands, but a wave watching `/os/<id>` mid-development should expect
+to see it drop after a sibling's landing and know why.
+
+### Commit a station's `rn-tapnet.sh` only with a proven station
+
+`scripts/lib/box-sync-pairs-retronet.sh` deploys every committed
+`rn-tapnet.sh` fleet-wide with one glob loop — there is no per-station
+opt-in once the file is in the repo. A tap script for a station that has
+not proven its retronet plane (no golden, no `rn-verify.sh` pass) is
+therefore not a draft sitting harmlessly in the tree: the next `box-deploy
+--apply`, run by any wave, wires it into the live network. openbsd
+(2026-09-03) hit this: its wave closed with findings and an OPEN retronet
+plane, and `rn-onboard.sh`'s dry-run-by-default plus this rule are why its
+`rn-tapnet.sh` was written to the wave's own worktree and never committed.
+The same reasoning applies one level up: don't commit the registry
+`retronet` block with `onboarded:true`, or an ICQ account server-side,
+before the station that owns them is proven — `rn-onboard.sh --apply`
+writes `onboarded:false` for exactly this reason, and only `rn-verify.sh`
+flips it.

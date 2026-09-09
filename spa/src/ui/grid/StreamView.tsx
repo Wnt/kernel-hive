@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usesWebRtcFallback } from '../../three/streamTransportSelect';
 import type { OSBinding } from '../../three/archetypeRegistry';
 import { useLiveStream } from '../../three/useLiveStream';
 import type { StreamControlHandle, StreamControlState, StreamStats } from '../../three/useStreamControl';
@@ -77,11 +78,10 @@ export default function StreamView({
   const streamable = transport === 'streamhost';
   const isStreamhost = transport === 'streamhost';
   // streamhost stations CAN render through a DIRECT visible <canvas> (paint-on-decode)
-  // — gated to Firefox (faster there); Chrome keeps its lower-latency overlay
-  // <video>. WebCodecs-less Firefox uses the native WebRTC MediaStream fallback,
-  // which must stay on a real <video>. See env.isFirefoxEngine.
-  const directCanvas = isStreamhost && isFirefoxEngine && typeof VideoDecoder !== 'undefined';
-  const nativeWebRtcFallback = isStreamhost && typeof VideoDecoder === 'undefined';
+  // — gated to Firefox (faster there); Chrome keeps its lower-latency overlay <video>.
+  // The WebRTC fallback (streamTransportSelect.ts) must stay on a real <video>.
+  const nativeWebRtcFallback = isStreamhost && usesWebRtcFallback();
+  const directCanvas = isStreamhost && isFirefoxEngine && !nativeWebRtcFallback;
   // The EXHIBIT is a touchscreen device (android / postmarketOS / Sailfish), so
   // a pointer press should behave like a finger on its glass. This is NOT a
   // statement about the VISITOR's hardware — for that see env.isTouchDevice().
@@ -380,6 +380,7 @@ export default function StreamView({
   const restoreReconnect = expectedReconnect === 'restore';
   const showBanner = restoreReconnect
     || bannerState === 'spotty'
+    || bannerState === 'device-load'
     || bannerState === 'reconnecting'
     || bannerState === 'decoder-unsupported';
   const decoderUnsupported = bannerState === 'decoder-unsupported';

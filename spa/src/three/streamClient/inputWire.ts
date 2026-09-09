@@ -32,7 +32,7 @@ import { reach } from '../../analytics';
 import {
   ICLASS_BUTTON, ICLASS_KEY, ICLASS_WHEEL, T_BUTTON, T_HINT, T_KEY, T_MOVE_ABS, T_MOVE_REL, T_WHEEL,
 } from './constants';
-import { maybeSampleEdge, traceSuffix, withSuffix, keyClass } from './inputTrace';
+import { maybeSampleEdge, traceSuffix, withSuffix, keyClass, writeTraced } from './inputTrace';
 
 /** The parts of StreamClient these encoders touch. */
 export interface StreamClientLike {
@@ -139,8 +139,16 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     const py = y != null ? clampU16(y) : c.lastAbsY;
     // SAMPLED per-input tracing (docs/lab/TRACE-CONTEXT.md, inputTrace.ts):
     // the browser's decision, made once per qualifying edge (key or click —
-    // never a pointer-move sample). `span` is null on the other N-1 edges and
-    // costs nothing beyond the counter check inside `maybeSampleEdge`.
+    // never a pointer-move sample). `span` is null on an untraced edge and
+    // costs nothing beyond the rate check inside `maybeSampleEdge`.
+    //
+    // DELIBERATELY NOT ENDED HERE. `input.edge` is the ROOT of this action's
+    // trace and its duration is the visitor-facing edge → painted-pixel round
+    // trip, so it is closed by `inputTrace::settleEdge` when the daemon names
+    // the frame that answered it — or by that module's timeout when nothing
+    // ever does. Ending it here is what made every input trace's root report
+    // 0–1 ms of local enqueue for something a visitor waited a quarter of a
+    // second for.
     const span = maybeSampleEdge('input.edge', {
       'kh.input.class': 'click',
       'kh.station': c.stationId ?? 'unknown',
@@ -148,8 +156,8 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     if (px == null || py == null) {
       const bare = new Uint8Array(3);
       bare[0] = T_BUTTON; bare[1] = button & 0xff; bare[2] = down ? 1 : 0;
-      c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(bare, 3, traceSuffix(span)) : bare);
-      span?.end('ok');
+      const rec = span ? withSuffix(bare, 3, traceSuffix(span)) : bare;
+      writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
       return;
     }
     const b = new Uint8Array(11);
@@ -159,8 +167,8 @@ export function sendButtonImpl(c: StreamClientLike, button: number, down: boolea
     dv.setUint16(5, py, true);
     dv.setUint32(7, c.nextCseq(), true);
     c.lastAbsX = px; c.lastAbsY = py;
-    c.writeReliableClass(ICLASS_BUTTON, span ? withSuffix(b, 11, traceSuffix(span)) : b);
-    span?.end('ok');
+    const rec = span ? withSuffix(b, 11, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_BUTTON, rec); });
   }
 export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: boolean) {
     if (down) countKeystroke(keycode);
@@ -175,8 +183,8 @@ export function sendKeyScancodeImpl(c: StreamClientLike, keycode: number, down: 
       'kh.key.class': keyClass(keycode),
       'kh.station': c.stationId ?? 'unknown',
     });
-    c.writeReliableClass(ICLASS_KEY, span ? withSuffix(b, 4, traceSuffix(span)) : b);
-    span?.end('ok');
+    const rec = span ? withSuffix(b, 4, traceSuffix(span)) : b;
+    writeTraced(span, 'stream', () => { c.writeReliableClass(ICLASS_KEY, rec); });
   }
 export function sendWheelImpl(c: StreamClientLike, dx: number, dy: number) {
     const b = new Uint8Array(5); b[0] = T_WHEEL;

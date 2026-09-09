@@ -13,6 +13,8 @@ The Apple II arrived in 1977 as one of the machines that moved personal computin
 
 GEOS achieved that transformation through disciplined engineering rather than abundant resources. Its deskTop file manager, geoWrite, geoPaint, desk accessories, fonts, and printer support operated within the narrow memory and disk bandwidth of an eight-bit computer. On an enhanced Apple //e with 128 KB, the interface depended on compact code and careful swapping between floppy disks.
 
+The 1977 Apple II put its letters on screen through a Signetics 2513, the character-generator ROM that also lettered the Apple I and the Lear Siegler ADM-3A terminal: 64 glyphs in a 5×7 dot matrix, upper case only, which is why so much early Apple II software shouts in capitals. The enhanced //e in this exhibit carries Apple's own character ROM with lower case instead — and GEOS ignores the character generator altogether. Every letter on its desktop is painted into the high-resolution bitmap by software, in fonts of its own.
+
 ## Significance
 
 Apple GEOS demonstrates that a graphical desktop is not defined by processor speed alone. Pull-down menus, overlapping concepts of documents and applications, movable pointers, and direct manipulation could be made useful on a machine with less memory than a modest modern image file. At its peak, Berkeley Softworks claimed, GEOS was the third most popular operating system in the world by units shipped, behind only MS-DOS and Mac OS. For owners who could not replace an Apple II with a Macintosh, GEOS extended familiar hardware into the emerging world of desktop publishing and graphical productivity.

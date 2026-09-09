@@ -1,9 +1,10 @@
 # NeXTSTEP 3.3 on a COLOR NeXT machine (Previous, headless)
 
 **Status:** ADOPTED — the live `nextstep` station has run this configuration since
-2026-08-25. Originally proven in sandbox `/data/vms/sandbox/prev-color/` — a colour NeXTSTEP 3.3
-Workspace, 1120x832, reached with **zero input**, captured from the IFB1 shm export.
-Nothing in this doc has been applied to the live `nextstep` station.
+2026-08-25 (`nMachineType = 2`, `bColor = TRUE`, `bTurbo = FALSE`, `bNBIC = FALSE`,
+memory banks `8/8/8/8`; see `docs/guests/nextstep.md` §3). Originally proven in
+sandbox `/data/vms/sandbox/prev-color/` — a colour NeXTSTEP 3.3 Workspace,
+1120x832, reached with **zero input**, captured from the IFB1 shm export.
 
 **Recommendation: non-Turbo NeXTstation Color, 32 MB.** One-line change of intent
 against today's station (`nMachineType 1 -> 2`, `bColor FALSE -> TRUE`,

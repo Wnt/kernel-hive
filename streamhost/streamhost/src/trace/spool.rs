@@ -44,6 +44,42 @@ pub fn spool_dir(tile: &str) -> PathBuf {
     }
 }
 
+/// Log spool directory: the sibling of `traces/`, beside it under the station's
+/// published runtime artifacts, so ONE shipper walks both. `SH_LOG_DIR`
+/// overrides it for a sandbox run.
+pub fn log_spool_dir(tile: &str) -> PathBuf {
+    match std::env::var("SH_LOG_DIR") {
+        Ok(s) if !s.trim().is_empty() => PathBuf::from(s.trim()),
+        _ => PathBuf::from(format!("/data/vms/streamhost/stations/{tile}/logs")),
+    }
+}
+
+/// One batch body, exactly as `POST /logs` accepts it.
+///
+/// Unlike the span batch, this one CAN name its resource honestly: a log record
+/// is a fact about this process, so `service.instance.id` is the station and
+/// `service.name` is the daemon. `session.id` stays `"unknown"` for the same
+/// reason it does above — the tab's analytics session is not something this
+/// process can know, and a per-record `sid` is the seam if it ever becomes one.
+pub fn log_batch(tile: &str, records: &[String]) -> String {
+    let mut s = String::with_capacity(128 + records.iter().map(|x| x.len() + 1).sum::<usize>());
+    s.push_str("{\"resource\":{\"service.name\":\"kernel-hive-daemon\",\"service.instance.id\":\"");
+    // The tile name is a registry id (`^[a-z0-9-]+$`, enforced by
+    // stations-registry.py), so it needs no escaping — but it is escaped
+    // anyway, because "the caller always passes a safe value" is the assumption
+    // that eventually is not true.
+    crate::trace::push_str_json_pub(&mut s, tile);
+    s.push_str("\",\"session.id\":\"unknown\"},\"logs\":[");
+    for (i, rec) in records.iter().enumerate() {
+        if i > 0 {
+            s.push(',');
+        }
+        s.push_str(rec);
+    }
+    s.push_str("]}\n");
+    s
+}
+
 /// One batch body, exactly as `POST /traces` accepts it.
 ///
 /// `session.id` is deliberately `"unknown"`. That field is the TAB's analytics

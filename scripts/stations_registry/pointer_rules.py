@@ -86,7 +86,13 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # the guest's own answer back. The ledger must show the loopback forward
     # that publishes that server -- without it the daemon has nothing to talk to
     # -- and must NOT claim a tablet the machine cannot have.
-    "x11-warp-absolute": ({"x11warp"}, ("10.0.2.15:6000",), ("usb-tablet",)),
+    # amix: the same actuator/sensor pair, reached through the `x11test` sink
+    # with SH_X11TEST_MOTION=warp -- FS-UAE has no D-Bus edge path, so buttons
+    # and keys stay on XTEST into the host Xvfb while motion goes to the
+    # guest's X11R4 server over the launcher's loopback-only slirp redirect
+    # (the patched uae_slirp_redir; stock 3.2.35 drops the option). The ledger
+    # token is the same: without the redirect the daemon has nothing to warp.
+    "x11-warp-absolute": ({"x11warp", "x11test"}, ("10.0.2.15:6000",), ("usb-tablet",)),
 }
 # `pointer_mode` in the labctl matrix is the daemon's own backend -> abs/rel/
 # warpd/none projection (InputBackend::pointer_mode()); labctl's `abs x y` and

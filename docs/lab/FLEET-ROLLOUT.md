@@ -305,6 +305,18 @@ registry station whose name it borrows. The six live walk-in port claims were
 skipping `os2warp` and `win311` from every rollout by name collision alone, so
 clone identities are masked out before a claim is matched.
 
+**A clone only picks up a new daemon binary on respawn.** Each pool member
+launches its streamhost daemon from `stations/<os>/current` (`box-deploy.sh`'s
+own install target) exactly like a real station, but a running clone process
+keeps running the binary it was spawned with — it is never restarted in place
+the way a fleet rollout restarts a station's `systemctl` unit. A rollout that
+touches `stations/<os>/current` therefore proves nothing on the walk-in plane
+until the live clones are recycled: stop the clone units (or otherwise kill
+them through `clone-guard`, per rule 5) and let the broker refill the pool from
+the golden — the fresh members come up under the newly installed binary. This
+was the shape of the proof done on 2026-09-08: install, recycle the walk-in
+cells, then re-claim to confirm the new binary is what a visitor actually gets.
+
 ## Wave order: a mistake should be cheap
 
 Wave 1 is a single station — `SAFE_TILE` (`helenos`), which is already

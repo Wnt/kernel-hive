@@ -35,7 +35,6 @@ import os
 import sys
 import threading
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 from . import claims, reaper
@@ -64,33 +63,20 @@ except ImportError:  # pragma: no cover - import shape only
     from serve import tracing
 
 
-TTL_SECONDS = 20 * 60
-IDLE_SECONDS = 3 * 60
-EXTENSION_SECONDS = 10 * 60
-ACTIVE_SESSION_CAP = 6
-CLOSE_REASON_TTL = "WALKIN_TTL"
-CLOSE_REASON_IDLE = "WALKIN_IDLE"
-CLOSE_REASON_CLOSED = "WALKIN_CLOSED"
-CLOSE_MEMORY = 15 * 60  # how long a closed session's reason stays answerable
-SESSION_END_TYPE = "session-end"  # ledger §3.3
-
-
-def session_end_message(reason: str) -> dict:
-    """The ledger §3.3 wire shape. One function so every road emits it alike."""
-    return {"type": SESSION_END_TYPE, "reason": reason}
-
-
-@dataclass
-class Session:
-    identity: str
-    station: str
-    user_id: str
-    started_at: float
-    expires_at: float
-    last_input_at: float
-
-    def ttl_left(self, now: float) -> int:
-        return max(0, int(self.expires_at - now))
+from .session import (  # noqa: F401 -- re-exported: tests and the reaper read them off the broker
+    ACTIVE_SESSION_CAP,
+    CLOSE_MEMORY,
+    CLOSE_REASON_CLOSED,
+    CLOSE_REASON_IDLE,
+    CLOSE_REASON_TTL,
+    EXTENSION_SECONDS,
+    IDLE_SECONDS,
+    SESSION_END_TYPE,
+    TTL_SECONDS,
+    Session,
+    claim_body,
+    session_end_message,
+)
 
 
 class Broker(Warming):
@@ -292,9 +278,23 @@ class Broker(Warming):
             spec = self.specs.get(station)
             if not spec or not spec.enabled:
                 raise BrokerError(f"no walk-in pool for {station!r}")
+            now = self._now()
             existing = self._session_of(user_id)
+            stale = None
+            if existing and existing.station == station and existing.ttl_left(now) > 0:
+                # A reload or back-navigation: hand back the machine they hold,
+                # clock where it was (a reload buys nobody a longer turn). The
+                # old "you already have X -- release it first" refusal stranded
+                # a reloaded page on "session ended" (spa/walkin/playPhase.ts).
+                hit("walkin.claim.resumed")
+                self._dequeue(user_id)
+                return claim_body(existing, now, resumed=True)
             if existing:
-                raise BrokerError(f"you already have {existing.identity} — release it first")
+                # One clone per account (brief §4): another machine, or one whose
+                # clock ran out, retires the old clone first (destroyed below,
+                # outside the lock). A used clone is never re-listed.
+                member = self._members.get(existing.identity)
+                stale = self._end(member, "") if member else None
             # Both exits below are the same finding — "somebody wanted a machine
             # and had to wait" — and the queue is the same machinery either way,
             # so they are one probe. A pool of three on a private museum may
@@ -306,7 +306,6 @@ class Broker(Warming):
             if not free:
                 hit("walkin.claim.queued")
                 return self._enqueue(user_id, station)
-            now = self._now()
             free.session = Session(
                 identity=free.identity,
                 station=station,
@@ -317,6 +316,10 @@ class Broker(Warming):
             )
             self._dequeue(user_id)
             clone, identity = free.clone, free.identity
+            granted = claim_body(free.session, now)
+        if stale is not None:
+            self._destroy([stale])
+            self._kick_refill()
         # Outside the lock: a resume is a wake lease plus QMP round trips plus a
         # verify, and it holds up every other visitor's `/walkin/state` if it is
         # done in here. The member is already marked as this visitor's, so
@@ -333,11 +336,7 @@ class Broker(Warming):
                 hit("walkin.claim.resumeFailed")
                 self._abandon(identity, user_id)
                 raise BrokerError(f"{identity} would not resume: {exc}") from exc
-        return {
-            "clone": identity,
-            "signalEndpoint": f"/signal/{identity}.json",
-            "ttlSeconds": TTL_SECONDS,
-        }
+        return granted
 
     def _abandon(self, identity: str, user_id: str) -> None:
         """A clone that was handed out and then failed to wake. It is not the

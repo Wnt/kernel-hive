@@ -17,36 +17,57 @@ const KIND_AUDIO: u8 = 2;
 // frame-trace mark (return-path tracing, see `spawn_frame_mark` below).
 const KIND_PARAMS: u8 = 3;
 
-pub(super) async fn send_au(conn: &wtransport::Connection, au: &crate::encode::Au) -> Result<()> {
-    let vt = super::video_trace();
+/// Relay one access unit to ONE session.
+///
+/// `wire_id` is the SESSION-LOCAL frame id (transport/mod.rs `out_id`), NOT the
+/// encoder's `au.frame_id`. The encoder id is shared by every viewer of the
+/// station and restarts at 0 on every reopen (ABR tier change / geometry change,
+/// encode/worker.rs), and the relay legitimately withholds AUs from an individual
+/// session (join gate, backlog skip, ring overrun) — so the encoder id arrives at
+/// a client with holes and rewinds that are indistinguishable from packet loss.
+/// The session-local id has neither: it counts the AUs THIS session was actually
+/// sent, so a gap the client sees is a gap the wire made.
+/// The kind=1 wire record, pure: `[1 | frame_id u32 | au_type u8 | capture_ts u32
+/// | AnnexB]`. Split out so the one field the client's loss accounting depends on
+/// is testable without a Connection.
+fn frame_video_au(au: &crate::encode::Au, wire_id: u32) -> Vec<u8> {
     let mut buf = Vec::with_capacity(10 + au.data.len());
     buf.push(KIND_VIDEO);
-    buf.extend_from_slice(&au.frame_id.to_le_bytes());
+    buf.extend_from_slice(&wire_id.to_le_bytes());
     buf.push(if au.is_key { 1 } else { 0 });
     buf.extend_from_slice(&au.capture_ts_us.to_le_bytes());
     buf.extend_from_slice(&au.data);
+    buf
+}
+
+pub(super) async fn send_au(
+    conn: &wtransport::Connection,
+    au: &crate::encode::Au,
+    wire_id: u32,
+) -> Result<()> {
+    let vt = super::video_trace();
+    let buf = frame_video_au(au, wire_id);
     if vt {
-        eprintln!("[vtrace] send_au f={} opening uni", au.frame_id);
+        eprintln!(
+            "[vtrace] send_au f={wire_id} (enc {}) opening uni",
+            au.frame_id
+        );
     }
     let pending = conn.open_uni().await?;
     if vt {
-        eprintln!(
-            "[vtrace] send_au f={} open_uni ok, awaiting grant",
-            au.frame_id
-        );
+        eprintln!("[vtrace] send_au f={wire_id} open_uni ok, awaiting grant");
     }
     let mut stream = pending.await?;
     if vt {
         eprintln!(
-            "[vtrace] send_au f={} stream granted, writing {}",
-            au.frame_id,
+            "[vtrace] send_au f={wire_id} stream granted, writing {}",
             buf.len()
         );
     }
     stream.write_all(&buf).await?;
     stream.finish().await?;
     if vt {
-        eprintln!("[vtrace] send_au f={} finished", au.frame_id);
+        eprintln!("[vtrace] send_au f={wire_id} finished");
     }
     Ok(())
 }
@@ -199,4 +220,51 @@ pub(super) fn spawn_frame_mark(
         let _ = stream.write_all(&buf).await;
         let _ = stream.finish().await;
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    fn au(frame_id: u32, is_key: bool) -> crate::encode::Au {
+        crate::encode::Au {
+            data: Arc::new(vec![0u8, 0, 0, 1, 0x65]),
+            is_key,
+            capture_ts_us: 7,
+            frame_id,
+            encode_us: 0,
+        }
+    }
+
+    /// THE WIRE CONTRACT the client's loss accounting rests on: the frame id in
+    /// the record is the SESSION's id, never the encoder's. The encoder id is
+    /// shared across viewers and restarts at 0 on every reopen; if it reached the
+    /// client, every join gap, backlog skip and ABR tier step would read as
+    /// packet loss (spa videoDecode.ts feedVideoAU counts frame_id holes).
+    #[test]
+    fn the_wire_carries_the_session_id_not_the_encoder_id() {
+        let b = frame_video_au(&au(453, true), 1);
+        assert_eq!(b[0], KIND_VIDEO);
+        assert_eq!(u32::from_le_bytes([b[1], b[2], b[3], b[4]]), 1);
+        assert_eq!(b[5], 1, "key flag");
+        assert_eq!(u32::from_le_bytes([b[6], b[7], b[8], b[9]]), 7);
+        assert_eq!(&b[10..], &[0u8, 0, 0, 1, 0x65]);
+    }
+
+    /// A session that is relayed AUs 423 then 453 (the freedos join measurement:
+    /// a primed cached key, then the first broadcast key after the join gate
+    /// discarded the mid-GOP deltas) puts 0 then 1 on the wire — no hole for the
+    /// client to read as a 29-frame loss.
+    #[test]
+    fn a_join_gap_in_encoder_ids_is_contiguous_on_the_wire() {
+        let ids: Vec<u32> = [(423u32, 0u32), (453, 1)]
+            .iter()
+            .map(|(enc, wire)| {
+                let b = frame_video_au(&au(*enc, true), *wire);
+                u32::from_le_bytes([b[1], b[2], b[3], b[4]])
+            })
+            .collect();
+        assert_eq!(ids, vec![0, 1]);
+    }
 }

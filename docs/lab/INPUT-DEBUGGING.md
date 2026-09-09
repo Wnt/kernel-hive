@@ -64,6 +64,81 @@ expires by itself (`LEASE_TTL`, 90 s), so the worst case is one station running
 90 s longer than it had to — **idle auto-pause is not weakened**, which matters:
 it is worth about 10% of a core per station, continuously.
 
+## The idle-pause trap on an x11warp probe, and driving a GUI wizard through it
+
+The wake-lease machinery above covers the daemon's own input paths
+(`labctl`, `qmp-type.py`) because they call `guest_wake` themselves. A raw
+X11 probe against an x11warp station's loopback forward does **not**, and it
+fails differently: **a paused guest answers no TCP at all.** The forward is
+alive, but the guest's own X server sits inside frozen vCPUs, so the connect
+either hangs or the browser's own X client reports "stopped working" — not a
+refusal, not an auth error, just silence. That reads exactly like a dead X
+server or a wrong port, and it is neither: it is the same idle-auto-pause every
+station gets 60 s after its last visitor. The daemon says so in its own log the
+moment a driven input wakes it back up:
+
+```
+[idle] driver active but guest paused -> resumed
+```
+
+**Probe it awake, don't guess.** Either hold a `guest_wake.WakeLease` for the
+duration (`scripts/dev/x11warp-probe.py --station <id> ...` does this
+automatically whenever `--click` is given, because that is the QMP half that
+knows the station name; the bare X11 warp+readback half has no station
+concept and connects regardless of pause state, which is exactly why a
+mismatch there can mean "paused", not "pointer broken" — check `labctl health
+<id>` first), or keep a real `/os/<id>` browser tab open in another window so
+streamhost never lets the guest go idle while you work it. `labctl health
+<station>` reporting `QEMU state: paused (idle-paused)` is the tell.
+
+## Driving a keyboard-only guest's GUI wizard: warp, read back, then click
+
+Several install-time wizards (an ICQ client's server-address dialog, a
+network-settings applet) live behind a form a visitor would normally click
+into, and the exhibit or the guest has no working absolute pointer of its own
+— that is *why* it needs driving instead of just typing. The technique three
+waves independently reinvented (each earning its own ruff pass on a slightly
+different copy — see `scripts/dev/x11warp-probe.py`'s header for the exact
+commits) is:
+
+1. **Warp** the X pointer to the widget's coordinates (`XWarpPointer`) over
+   the raw X11 wire against the station's loopback forward.
+2. **Read it back** (`XQueryPointer`) and confirm the guest's own X server
+   agrees — a warp that silently failed (auth, a stale connection, the guest
+   still paused) must never be followed by a click aimed at nothing.
+3. **Only then** send a **button-only** QMP `input-send-event` (press,
+   release — no motion in the same event) so the click lands exactly where
+   the confirmed warp put the pointer, through the same PS/2 path every other
+   click on the station uses.
+
+```
+python3 scripts/dev/x11warp-probe.py --display 127.0.0.1:84 \
+  --warp 220,140 --click --qmp /data/vms/streamhost/stations/<id>/qmp.sock \
+  --station <id> --shot
+```
+
+This is the general form of the "confirmed position is not a held position"
+property discussed below for `sunos414`'s production sink — the probe gets the
+weaker, sufficient guarantee (warp, confirm, click, all inside one short
+synchronous script) rather than the sink's continuous exclusion, which is
+correct for a one-shot install driver and would be wrong for live production
+input. `--shot` closes the loop with a `labctl shot`: a readback matching the
+warp target is not proof the cursor is *visible* there (rule 9 — the
+framebuffer is the only proof a guest reacted).
+
+## Input on the WebRTC fallback (Safari 17, Firefox-Android)
+
+A browser with no WebTransport or WebCodecs takes the native-decoder WebRTC
+fallback, and its input travels a different CARRIER from every other station —
+two WebRTC DataChannels through the Pion bridge to a per-tile daemon socket, not
+QUIC. The RECORDS are identical (same `inputWire.ts` encoders, same
+`input::handle`), so everything below about pointer paths, the button allowlist
+and pacing applies unchanged once a record reaches the daemon. When a fallback
+session streams video but eats input, debug the carrier first:
+`docs/lab/STREAM-DEBUGGING.md` ("A walk-in fallback session that streams video
+but eats input") and `docs/WEBRTC-PLATFORM.md` §Input path (the `webrtc-input`
+rows and the ticket rule).
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the
@@ -221,6 +296,19 @@ place on a station reporting itself healthy is the failure this machinery exists
 to prevent.** The worse-looking behaviour is the safer one. A safe version would
 have to engage only when the sink is down AND no edge is armed, with an explicit
 handoff rather than two live movers — a deliberate design, not a patch.
+
+**The same loop has a second consumer, with the edge on a different wire.**
+`amix` (host-native FS-UAE, `SH_INPUT_BACKEND=x11test` with
+`SH_X11TEST_MOTION=warp`) reaches its AMIX X11R4 server the same way — a
+loopback-only slirp redirect, WarpPointer, QueryPointer — but its buttons and
+keys ride XTEST into the host Xvfb, because FS-UAE has no D-Bus edge path. The
+exclusion is unchanged: the `x11test` pacer holds each button edge on the warp
+sink's gate (`x11_warp::wait_settled`), injects, flushes, then `edge_done()`.
+The single-injector rule is the same too, and easier to break there: an
+`xdotool mousemove` on the station's Xvfb IS a second mover (FS-UAE turns host
+motion into accelerated relative deltas the guest applies), so hand-driving the
+live display invalidates the readback. See
+[`../guests/amix.md`](../guests/amix.md).
 
 And be precise about what a success means. An ack can report ACCEPTANCE or
 APPLICATION and they are not the same claim: on the mgactl wire `MOVEA` acks in
@@ -492,6 +580,24 @@ Two things to know before trusting a result:
   Netscape repainted between frames. It says which cluster defeated it, and
   `--at X,Y` learns from a box at a position the caller already knows, which is
   the normal path on a busy exhibit.
+
+Two more lessons from `amix`, where the oracle was the guest X server itself:
+
+- **An exact readback is not an exact exhibit.** Every `XQueryPointer` on amix
+  matched its warp target to the pixel, and the sprite in the captured frame
+  was still off by up to 45 px at the far edge — FS-UAE's auto zoom was
+  rendering the Amiga display *with its border* scaled into the 640×512
+  window (host = 0.93·guest + 22 in x), so the guest was right and the
+  CAPTURE was not 1:1 with it. The visitor clicks in capture space. Check the
+  sprite in the frame against the readback at more than one point, and fix
+  the scaling at the emulator (`zoom = 640x512`), never by rescaling clicks.
+- **Exact matching needs a glyph learned over a solid background.** A cursor
+  learned over a dithered root carries the dither's black/white pixels in its
+  mask wherever the sprite happened to coincide with them, so it will not
+  match at any other phase of the pattern; it returns `NOTFOUND` (honestly).
+  Learn each glyph over a flat area (an xterm, a window header), or measure by
+  differencing against a frame whose pointer sits elsewhere and reading the
+  bounding box.
 
 Validated on `aix432`, the one station with an independent oracle: against the
 Matrox hardware-cursor registers it located the sprite **pixel-exact (±0) in

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { selectClientTransport, usesWebRtcFallback } from './streamTransportSelect';
 import { StreamClient } from './streamClient';
 import {
   createStreamController,
@@ -8,8 +9,8 @@ import {
 import { setDebugTile, clearDebugTile, logClientEvent } from './clientDebug';
 import { attachSessionResume } from './streamClient/sessionResume';
 import {
-  consumeRetry, retryLimit,
-  KEYFRAME_WAIT_MS, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
+  consumeRetry, retryLimit, RETRY_REASON_NO_KEYFRAME,
+  keyframeWaitMs, RELIVE_KEYFRAME_WAIT_MS, RETRY_BACKOFF_MS, RESTORE_BACKOFF_MS,
 } from './streamClient/retryBudget';
 import { isVisible } from './streamClient/resumeSignals';
 import { isPausedSink, type VideoSinkProbe } from './streamClient/videoResume';
@@ -109,7 +110,6 @@ export function useStreamhostSession(
     let controller: ReturnType<typeof createStreamController> | null = null;
     let canvas: HTMLCanvasElement | null = document.createElement('canvas');
     let ctx: CanvasRenderingContext2D | null = canvas.getContext('2d');
-    let fallbackAudio: HTMLAudioElement | null = null;
     let captureTrack: CanvasCaptureMediaStreamTrack | null = null;
     let firstFrame = true;
     let drawImageErrLogged = false; // log a drawImage() throw ONCE (never swallow silently)
@@ -140,7 +140,7 @@ export function useStreamhostSession(
     const tel = sessionTelemetry({
       getKeyframeMs: () => client?.getMetrics().enc?.keyframeMs ?? null,
       stationAttrs: stationAttrsRef.current,
-      clientTransport: typeof VideoDecoder === 'undefined' ? 'webrtc-fallback' : 'webtransport',
+      clientTransport: selectClientTransport(),
     });
 
     const clearTimers = () => {
@@ -287,10 +287,6 @@ export function useStreamhostSession(
       captureTrack = null;
       setStream(null);
       setExpectedReconnect(null);
-      if (fallbackAudio) {
-        try { fallbackAudio.pause(); fallbackAudio.srcObject = null; } catch { /* noop */ }
-        fallbackAudio = null;
-      }
       canvas = null; ctx = null;
     };
 
@@ -307,7 +303,7 @@ export function useStreamhostSession(
       // console is the one place the operator cannot look.
       console.warn(`[streamhost] ${signalEndpoint} reconnect attempt ${attempt} — ${why}`);
       logClientEvent('connect-retry', `attempt=${attempt}/${v.limit} live=${liveReached} restore=${expectedRestore} why=${why}`);
-      tel.retry();
+      tel.retry({ attempt, limit: v.limit, reason: why, live: liveReached, restore: expectedRestore, exhausted: v.exhausted });
       if (v.exhausted) {
         fail(liveReached
           ? 'lost the connection to this tile — tap Reconnect to try again'
@@ -381,10 +377,11 @@ export function useStreamhostSession(
       });
       client = nextClient;
       // A reconnect to a station that has already painted is WARM: the daemon
-      // forces an IDR on subscribe on top of priming its freshest cached key,
-      // so this attempt is judged on transport-ready rather than waiting for a
-      // first frame that may never come. Cold connects stay untouched.
-      if (liveReached) nextClient.markWarm();
+      // forces an IDR on subscribe on top of priming its freshest cached key, so
+      // this attempt is judged on transport-ready, not on a first frame that may
+      // never come. Cold connects — and a RESTORE, cold however live the station
+      // was (retryBudget.ts) — stay untouched.
+      if (liveReached && !expectedRestore) nextClient.markWarm();
 
       if (wantControl) {
         controller = createStreamController(client, {
@@ -413,10 +410,8 @@ export function useStreamhostSession(
       }
 
       setPhase('connecting');
-      setMessage(expectedRestore
-        ? 'Reconnecting to restored tile…'
-        : attempt === 0 && !liveReached
-          ? 'Connecting to tile…'
+      setMessage(expectedRestore ? 'Reconnecting to restored tile…'
+        : attempt === 0 && !liveReached ? 'Connecting to tile…'
           : `Reconnecting to tile… (attempt ${Math.max(1, attempt)})`);
 
       // Keyframe watchdog: the transport can be connected yet an idle station sends
@@ -431,22 +426,24 @@ export function useStreamhostSession(
         // dead one from here. Say which it is, and give the sink's own resume
         // path a fresh budget rather than tearing down a working stream.
         if (isPausedSink(sinkProbeRef.current?.() ?? null, isVisible())) {
-          logClientEvent('sink-stalled', `paused sink, transport healthy — not retrying ep=${signalEndpoint}`);
+          tel.sinkPaused(signalEndpoint, isVisible());
           watchdog = window.setTimeout(rearm, RELIVE_KEYFRAME_WAIT_MS);
           return;
         }
-        scheduleRetry('no keyframe within budget');
+        scheduleRetry(RETRY_REASON_NO_KEYFRAME);
       };
-      watchdog = window.setTimeout(rearm, liveReached ? RELIVE_KEYFRAME_WAIT_MS : KEYFRAME_WAIT_MS);
+      watchdog = window.setTimeout(rearm, keyframeWaitMs({ restore: expectedRestore, live: liveReached }));
 
       nextClient.connect().catch((e) => {
         if (client === nextClient) scheduleRetry(`connect failed: ${(e as Error).message}`);
       });
     };
 
-    // WebCodecs-less fallback (feature-detected). `tel` used to go UNCALLED
-    // here, leaving the connect funnel/cost blind for this path;
-    // `stream.recover` stays unwired (needs per-frame paint).
+    // ONE selection for every start (first, restore, reconnect): streamTransportSelect.ts.
+    const startSelected = () => { if (usesWebRtcFallback()) void startWebRtcFallback(); else startAttempt(); };
+
+    // WebRTC fallback (feature-detected). `tel` used to go UNCALLED here, leaving
+    // the connect funnel blind; `stream.recover` stays unwired (needs per-frame paint).
     const startWebRtcFallback = async () => {
       if (cancelled) return;
       tel.transport();
@@ -461,19 +458,9 @@ export function useStreamhostSession(
           if (w > 0 && h > 0) {
             resolution.w = w; resolution.h = h;
           }
-
-          if (fallbackAudio) {
-            try { fallbackAudio.pause(); fallbackAudio.srcObject = null; } catch { /* noop */ }
-          }
-          // The visible stream <video> is muted for autoplay parity with every
-          // other path. Play the same MediaStream through a dedicated audio
-          // element so the bridge's Opus track is usable after the station-opening
-          // user gesture. A blocked autoplay is harmless and video stays live.
-          fallbackAudio = document.createElement('audio');
-          fallbackAudio.autoplay = true;
-          fallbackAudio.srcObject = mediaStream;
-          void fallbackAudio.play().catch(() => { /* browser may require another gesture */ });
-
+          // Audio (the bridge's Opus track) is attached inside the fallback
+          // client itself now — it owns the MediaStream lifecycle and the
+          // control handle's setAudioEnabled, so the hook only presents video.
           setStream(mediaStream);
         },
         onState: (state, error, snapshot) => {
@@ -489,6 +476,7 @@ export function useStreamhostSession(
             tel.firstFrame();
             setPhase('live');
             setMessage('LIVE · WebRTC fallback');
+            controller?.notifyConnected();
           } else if (state === 'reconnecting') {
             setPhase('connecting');
             setMessage(`Reconnecting WebRTC… (attempt ${Math.max(1, snapshot.reconnectAttempt)})`);
@@ -506,6 +494,19 @@ export function useStreamhostSession(
         },
       });
       fallback = next;
+      // The fallback now carries an INPUT plane too (two DataChannels, same
+      // wire as WebTransport — webRtcFallbackInput.ts). Build the SAME control
+      // handle the WebTransport path builds, over the fallback's input client,
+      // so useStreamControl / OnScreenKeyboard / keySender need no branch.
+      if (wantControl) {
+        controller = createStreamController(next.inputClient(osId ?? null), {
+          getResolution: () => resolution,
+          osId,
+          jitterBufferTargetMs: jitterMs,
+          autoJitter,
+        });
+        if (!cancelled) setControl(controller.handle);
+      }
       try {
         const configured = await next.connect(signalEndpoint);
         if (cancelled || fallback !== next) return;
@@ -543,8 +544,7 @@ export function useStreamhostSession(
       setMessage('Reconnecting to restored tile…');
       // First post-restore signal fetch is immediate. Only a genuinely not-yet-
       // ready host uses the short restore-specific retry sequence above.
-      if (typeof VideoDecoder === 'undefined') void startWebRtcFallback();
-      else startAttempt();
+      startSelected();
     };
 
     // ---- RESUME FAST PATH (streamClient/sessionResume.ts) -------------------
@@ -569,13 +569,12 @@ export function useStreamhostSession(
       clearTimers();
       teardownAttempt();
       attempt = 0; // a visitor gesture buys a whole fresh ladder
-      startAttempt();
+      startSelected();
     };
 
     setPhase('starting');
     setMessage('Connecting to tile…');
-    if (typeof VideoDecoder === 'undefined') void startWebRtcFallback();
-    else startAttempt();
+    startSelected();
 
     return () => {
       detachResume();

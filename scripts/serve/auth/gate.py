@@ -200,6 +200,15 @@ WALKIN_PATHS = frozenset(
         # work for the visitor whose stream is broken (STREAM-DEBUGGING.md), and
         # a walk-in is exactly the session nobody can reach any other way.
         "/clientlog",
+        # The command POLL — the READ half of the client-debug plane
+        # (clientcmd-admin-security.md). Polling confers no authority: a tab
+        # only acts on a command addressed to it, and the enqueue half,
+        # /clientcmd/admin, stays box-side and BLOCKED for every public role.
+        # Without this a walk-in whose stream never painted logged rows but
+        # could not be listed by `clientcmd.sh sessions` or answer an `eval` —
+        # the iPad walk-in of 2026-09-08, whose Safari bug the plane existed
+        # to inspect, was the one session it could not reach.
+        "/clientcmd",
         "/usage",
         # Feature-reach counters. A walk-in exercises a DIFFERENT set of the UI
         # than an invited visitor does — the whole walk-in plane, and none of
@@ -207,10 +216,24 @@ WALKIN_PATHS = frozenset(
         # built for strangers look unused. It carries no identity to leak
         # (serve/analytics.py stores none) and the report it feeds is read-only.
         "/analytics",
+        # Stream-health SAMPLES in, nothing out. Listed for the reason
+        # `/clientlog` is listed, only more sharply: a walk-in on a station
+        # whose picture is breaking up is the single session whose vitals are
+        # worth having, and it is the session nobody can reach any other way.
+        # Reads are admin-only behind /auth/vitals/*, so this grants a stranger
+        # the ability to report on their own stream and to see nothing.
+        "/vitals",
         # Span INGEST only. Reading a trace back needs an admin session and a
         # different route entirely (/auth/traces/*), so a walk-in can report the
         # journey that just failed them and can see nothing.
         "/traces",
+        # The Instana EUM beacon proxy (serve/eum_proxy.py). Listed HERE and
+        # deliberately NOT in OPEN_PATHS above: it is a telemetry INGEST, so it
+        # gets exactly the fence /traces and /analytics already have — an
+        # invited session or a walk-in, never an anonymous stranger. Widening
+        # it to open would make a route that writes into a third-party tenant
+        # reachable by anyone who can reach the login page.
+        "/eum",
     }
 )
 # Prefixes: the SPA bundle, the museum's own art, and the poster heroes —
@@ -220,7 +243,13 @@ WALKIN_PATHS = frozenset(
 # already reaches it before this allowlist is even consulted. A stranger's
 # tab needs the telemetry agent exactly as much as an invited one does — a
 # walk-in session is not exempt from the outage this fixes.
-WALKIN_PREFIXES = ("/assets/", "/posters/", "/walkin/play/", "/fonts/")
+#
+# /staging/ is a per-session PREVIEW of the same bundle (scripts/dev/stage.sh):
+# static files only (static_files.py), every API call it makes is root-relative
+# and fenced by this same allowlist. Listed so a walk-in guest can review a
+# fix on the staged UI before it lands — the iPad Safari session of 2026-09-08
+# was a walk-in, and the staged bundle carrying its fix answered 401 to it.
+WALKIN_PREFIXES = ("/assets/", "/posters/", "/walkin/play/", "/fonts/", "/staging/")
 
 # The exhibition fields, named to KEEP (brief §5.3). Built as an allowlist so a
 # field added to the registry later is invisible to walk-ins until somebody

@@ -288,6 +288,7 @@ describe('FlameGraph and TraceDetail render what the layout says', () => {
     const trace: Trace = {
       traceId: 'a'.repeat(32), sessionId: 'sess-1', class: 'human', name: 'station.connect',
       startedMs: 0, durMs: 240_000, spanCount: 9, errorCount: 1, status: 'error',
+      build: 'main@abc1234',
       spans: [bad, orphan, root, kid],
     };
     const html = renderToStaticMarkup(createElement(TraceDetail, { trace, onSelectSession: () => {} }));
@@ -307,7 +308,8 @@ describe('FlameGraph and TraceDetail render what the layout says', () => {
       const spans = Array.from({ length: count }, (_, i) =>
         span({ name: `s${i}`, parentId: null, startedMs: i * 10, durMs: 5 }));
       const trace: Trace = { traceId: 'b'.repeat(32), sessionId: 's', class: 'probe', name: 's0',
-        startedMs: 0, durMs: count * 10, spanCount: count, errorCount: 0, status: 'unset', spans };
+        startedMs: 0, durMs: count * 10, spanCount: count, errorCount: 0, status: 'unset',
+        build: 'main@abc1234', spans };
       const html = renderToStaticMarkup(createElement(TraceDetail, { trace }));
       expect((html.match(/role="treeitem"/g) ?? []).length).toBe(count);
     }

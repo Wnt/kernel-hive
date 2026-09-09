@@ -13,14 +13,17 @@
 import type { StreamClient } from '../streamClient';
 import { logClientEvent } from '../clientDebug';
 import { clampU16 } from './format';
-import { ewma, rawScores } from './scoring';
-import { bankServerSkips, spendSkipCredit } from './skipCredit';
+import { ewma, rawScores, scorerReady } from './scoring';
+import { bankServerSkips, spendSkipCreditOverWindow } from './skipCredit';
 import { formatStatsLine } from './telemetry';
+import { dueForVitals } from './vitals';
+import { sampleVitals } from './vitalsSample';
 import {
   T_STATS, FRAME_STALL_MS, FIRST_FRAME_GRACE_MS,
   MIN_SESSION_STALE_MS, MAX_SESSION_STALE_MS, MAX_SILENT_STALL_REBUILDS,
 } from './constants';
 import { latchSoftwareDecode } from './softwareDecodeLatch';
+import { noteDecoderRebuild, noteStallLatched } from './analyticsEvents';
 
 /** Rolling window the REPORTED loss percentage is measured over (ms). */
 const LOSS_WINDOW_MS = 3000;
@@ -60,13 +63,14 @@ export function tickStatsImpl(this: StreamClient): void {
   this.decodeTimeSum = 0;
   this.decodeCountInterval = 0;
 
-  // ---- L-1: discount server-known egress skips from this interval's gap misses ----
-  // (see skipCredit.ts) — corrects lossPct, which drives BOTH the 'spotty' banner
-  // AND the loss_pct the server ABR reads back, WITHOUT touching the decode gate
-  // (auGate.noteGap): a skip really does drop references, so deltas still wait for
-  // the next key; only the LOSS ACCOUNTING is corrected. No-op on a LAN (no skips).
-  bankServerSkips(this, this.serverStats?.skippedFrames);
-  this.missedInterval = spendSkipCredit(this, this.missedInterval);
+  // ---- roll the frame_id ledger (lossLedger.ts) ----
+  // A gap is not a miss until it has failed to fill itself in for
+  // REORDER_GRACE_MS, is never a miss inside the daemon's join window, and is
+  // discarded wholesale when the encoder restarts frame_id at 0.
+  this.lossLedger.settle(now);
+  const iv = this.lossLedger.takeInterval();
+  this.receivedInterval = iv.received;
+  this.missedInterval = iv.missed;
 
   // ---- REPORTED loss: a rolling window with a MINIMUM DENOMINATOR ----
   // A percentage over one ~100 ms tick is meaningless on a low-fps station: at
@@ -83,13 +87,29 @@ export function tickStatsImpl(this: StreamClient): void {
   while (this.lossWindow.length && this.lossWindow[0].at < now - LOSS_WINDOW_MS) {
     this.lossWindow.shift();
   }
+  // ---- L-1: discount server-known egress skips (see skipCredit.ts) ----
+  // RETROACTIVELY, across the whole window: the server's cumulative skip count
+  // arrives at 1 Hz but the gaps it explains appeared on 100 ms ticks up to a
+  // second earlier, so a forward-only spend could never cancel a burst — which
+  // is exactly the shape a second viewer on the same station produces. This
+  // corrects lossPct, which drives BOTH the 'spotty' banner AND the loss_pct the
+  // server ABR reads back, WITHOUT touching the decode gate (auGate.noteGap): a
+  // skip really does drop references, so deltas still wait for the next key.
+  bankServerSkips(this, this.serverStats?.skippedFrames);
+  const credited = spendSkipCreditOverWindow(this, this.lossWindow);
+  if (credited > 0) this.lossLedger.creditServerSkips(credited);
+  this.framesDropped = this.lossLedger.droppedTotal;
+
   let wRecv = 0;
   let wMissed = 0;
   for (const w of this.lossWindow) { wRecv += w.recv; wMissed += w.missed; }
   const wTotal = wRecv + wMissed;
   this.lossPct = wTotal >= LOSS_MIN_FRAMES ? (wMissed * 100) / wTotal : 0;
-  const missedThisInterval = this.missedInterval;
-  const receivedThisInterval = this.receivedInterval;
+  // Read the current interval back OUT of the window: the retroactive credit
+  // above may have cancelled part of it.
+  const cur = this.lossWindow[this.lossWindow.length - 1];
+  const missedThisInterval = cur ? cur.missed : 0;
+  const receivedThisInterval = cur ? cur.recv : 0;
   this.receivedInterval = 0;
   this.missedInterval = 0;
 
@@ -119,6 +139,10 @@ export function tickStatsImpl(this: StreamClient): void {
   const decodeQueue = this.videoDecoder ? (this.videoDecoder.decodeQueueSize || 0) : 0;
 
   // ---- el scorer (Section 2.3) — raw per-interval scores (see scoring.ts) ----
+  // NOT before there is something to score. The "unknown → worst" defaults are
+  // for a live session whose sample went missing, not for one that has never
+  // had a sample — see scoring.ts scorerReady().
+  const canScore = scorerReady({ hasRtt: this.lastRtt != null, framesSeen: this.lastFrameId >= 0 });
   const rttMs = this.lastRtt ?? 250; // unknown → worst
   const { latRaw, lossRaw, bwRaw, overallRaw } = rawScores({
     rttMs,
@@ -126,9 +150,13 @@ export function tickStatsImpl(this: StreamClient): void {
     freeze: freezeThisInterval,
     missed: missedThisInterval,
     decodeQueue,
+    received: receivedThisInterval,
   });
 
-  if (!this.scoreInit) {
+  if (!canScore) {
+    // leave the EWMAs untouched (and uninitialised) — the first real sample
+    // seeds them, so a connecting session cannot poison its own baseline.
+  } else if (!this.scoreInit) {
     this.scoreInit = true;
     this.sLatency = latRaw; this.sLoss = lossRaw; this.sBandwidth = bwRaw; this.sOverall = overallRaw;
   } else {
@@ -163,6 +191,16 @@ export function tickStatsImpl(this: StreamClient): void {
     !!this.wt && !this.disposed && decodeRef > 0
     && (now - decodeRef > FRAME_STALL_MS);
   if (stalledNow && !this.frameStalled) {
+    // THE LATCH EDGE ONLY. A stall that lasts a minute is one event, not six
+    // hundred ticks of one — the analytics plane counts episodes, and a level
+    // reported per tick would make the count a function of how long the tab
+    // stayed open rather than of how often stations freeze.
+    noteStallLatched({
+      thresholdMs: FRAME_STALL_MS,
+      sinceLastPaintMs: now - decodeRef,
+      hadDecodeError: !!this.lastDecodeError,
+      stationId: this.stationId,
+    });
     logClientEvent(
       'stall',
       `frame watchdog latched (> ${FRAME_STALL_MS}ms no decoded frame)${this.lastDecodeError ? `; last decoder error: ${this.lastDecodeError}` : ''}`,
@@ -197,6 +235,7 @@ export function tickStatsImpl(this: StreamClient): void {
     latchSoftwareDecode();
     this.hwFellBack = true;
     this.hwDecodeOk = false;
+    noteDecoderRebuild(this.stallRebuildsWithoutOutput, MAX_SILENT_STALL_REBUILDS, this.stationId);
     logClientEvent('stall', `decoder rebuild ${this.stallRebuildsWithoutOutput}/${MAX_SILENT_STALL_REBUILDS} (silent stall: AUs arriving, no output) — demoting to software decode`);
     try { this.videoDecoder?.close(); } catch { /* noop */ }
     this.videoDecoder = null;
@@ -226,6 +265,16 @@ export function tickStatsImpl(this: StreamClient): void {
 
   // ---- banner state machine (Section 2.6) ----
   this.updateBanner(now);
+
+  // ---- continuous vitals sample -> the time-series lane ----
+  // ITS OWN CLOCK, faster than the log line below (1 s against 5 s), because
+  // the two answer different questions. The log line is prose for a human
+  // reading clientlog.jsonl after a session died; this is a series something
+  // can plot and threshold, and at 5 s an ABR downshift and the recovery from
+  // it can both fall between two samples. Both survive: every existing
+  // stream-debugging runbook greps for the log line, and removing it to
+  // celebrate the new lane would break those on the day it is least proven.
+  if (dueForVitals(now)) sampleVitals(this, now, decodeQueue);
 
   // ---- periodic telemetry sample -> server-side rolling log ----
   // The overlay's diagnostics live ONLY in the browser, so a session that dies
@@ -261,22 +310,34 @@ export function tickStatsImpl(this: StreamClient): void {
   // ---- fire the feedback datagram + a fresh RTT ping ----
   this.sendStats(decodeQueue, missedThisInterval);
   this.freezeInInterval = false;
-  void this.pingRtt(600).catch(() => { /* noop */ });
+  // LONGER DEADLINE WHILE THE TILE IS DEMONSTRABLY ALIVE. A missing echo next to
+  // AUs that arrived milliseconds ago is a starved main thread (or a daemon
+  // paused for a loadvm), not a dead link, and the 600 ms race against a
+  // setTimeout on that same starved loop is exactly what manufactured the
+  // 2026-09-02 ping-timeouts. Pings are serialised (transport.ts), so a longer
+  // deadline costs cadence only while something is actually wrong.
+  const serverRecent = (this.msSinceServerData(now) ?? Infinity) < 1000;
+  void this.pingRtt(serverRecent ? 1500 : 600).catch(() => { /* noop */ });
 }
 
 export function updateBannerImpl(this: StreamClient, now: number) {
   // Terminal browser capability failure: preserve the explicit fallback until
   // the user leaves. Generic scoring must not turn it back into "good".
   if (this.banner === 'decoder-unsupported') return;
-  // Hard reconnecting: QUIC loss or 3 consecutive ping timeouts.
-  if (this.transportDown || this.consecutivePingTimeouts >= 3) {
+  // Hard reconnecting: a transport that reported closed, or a link that has gone
+  // COMPLETELY silent while its pings went unanswered (streamClient/liveness.ts).
+  // Unanswered pings ALONE are no longer enough: the echo is a droppable
+  // datagram raced against a setTimeout on a main thread six decoders can
+  // starve, so on a 12 ms LAN the old rule rebuilt healthy transports.
+  const live = this.liveness(now);
+  if (this.transportDown || live === 'lost') {
     this.banner = 'reconnecting';
     // Soft liveness loss (pings gone but the transport hasn't reported closed):
     // tag it 'ping-timeout' so the UI can distinguish it from a hard close. A
     // real transport close already set 'transport-down'/'server-finished' — don't
     // clobber that more-specific reason.
-    if (this.consecutivePingTimeouts >= 3 && !this.transportDown) this.exitReason = 'ping-timeout';
-    this.belowSince = 0; this.aboveSince = 0;
+    if (live === 'lost' && !this.transportDown) this.exitReason = 'ping-timeout';
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
     return;
   }
   // Explicit local-decoder failure (≥3 consecutive configure/decode failures,
@@ -285,19 +346,41 @@ export function updateBannerImpl(this: StreamClient, now: number) {
   // frame (the output callback resets the latch).
   if (this.decoderFailed) {
     this.banner = 'decoder-failed';
-    this.belowSince = 0; this.aboveSince = 0;
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
     return;
   }
   // Coming out of reconnecting/decoder-failed: fall back to good until the
   // EWMA proves spotty.
   if (this.banner === 'reconnecting' || this.banner === 'decoder-failed') this.banner = 'good';
+  // SOFT liveness state: strikes are banked but the server is still sending.
+  // Say 'spotty' — which is honest, and reversible the moment a ping answers —
+  // instead of tearing a working transport down.
+  if (live === 'suspect') {
+    this.banner = 'spotty';
+    this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0;
+    return;
+  }
+  // A session that has never had an RTT sample AND a frame cannot be judged.
+  // The connect ladder owns the UI until then ('Connecting to tile…').
+  if (!this.scoreInit) { this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0; return; }
   const o = this.sOverall;
   if (o < 60) { this.belowSince = this.belowSince || now; this.aboveSince = 0; }
   else if (o > 75) { this.aboveSince = this.aboveSince || now; this.belowSince = 0; }
-  else { this.belowSince = 0; this.aboveSince = 0; }
+  else { this.belowSince = 0; this.aboveSince = 0; this.deviceBelowSince = 0; }
   // Let the 2s dwell be the hysteresis (never threshold a raw sample).
-  if (this.belowSince && now - this.belowSince >= 2000) this.banner = 'spotty';
-  else if (this.aboveSince && now - this.aboveSince >= 2000) this.banner = 'good';
+  if (this.belowSince && now - this.belowSince >= 2000) { this.banner = 'spotty'; return; }
+  // THE NETWORK IS FINE. Is this DEVICE? `sBandwidth` is the decode-queue /
+  // paint-freeze score (scoring.ts), which is about the machine in front of the
+  // visitor, so it gets its own dwell and its own word — never "Spotty
+  // connection". Same 60/75 thresholds and 2 s dwell as the network banner.
+  if (this.sBandwidth < 60) { this.deviceBelowSince = this.deviceBelowSince || now; }
+  else if (this.sBandwidth > 75) { this.deviceBelowSince = 0; }
+  if (this.deviceBelowSince && now - this.deviceBelowSince >= 2000) {
+    this.banner = 'device-load';
+    return;
+  }
+  if (this.aboveSince && now - this.aboveSince >= 2000) this.banner = 'good';
+  else if (this.banner === 'spotty' || this.banner === 'device-load') this.banner = 'good';
 }
 
 /** Emit the fixed 29-byte T_STATS feedback datagram (Section 3.1). */

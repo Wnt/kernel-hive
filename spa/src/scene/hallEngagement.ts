@@ -107,13 +107,16 @@ export function noteHallOpen(tileId: string): void {
     if (!episode) return;
     if (tileId) episode.opened.add(tileId);
     episode.flow.step('open');
-    episode.flow.ok();
     if (episode.toFirstStation) {
       // Entering the hall to opening the FIRST machine. Visible time only: a
       // hall left open in a background tab is not a visitor deliberating.
+      //
+      // Stopped before `ok()` closes the flow, so the measurement lands as a
+      // span event on `hall.navigate` — analytics/metrics.ts `reportTiming`.
       episode.toFirstStation.stop();
       episode.toFirstStation = null;
     }
+    episode.flow.ok();
   } catch { /* noop */ }
 }
 

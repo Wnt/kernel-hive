@@ -20,6 +20,10 @@
 # COLD=1 for a forced cold boot (bakes the MAC + DHCP lease into the new golden).
 set -euo pipefail
 R="${RIG_DIR:-/data/vms/sandbox/win311-rn/rig}"
+# The tap+guard script comes from a checkout, not from a hard-coded sandbox:
+# the bring-up sandbox this rig was written in is long gone, and pointing at a
+# deleted peer's worktree is how a rig stops booting months later.
+REPO_DIR="${REPO_DIR:-/data/kernel-hive}"
 RN_LOCAL_ENV="${RN_LOCAL_ENV:-/data/kernel-hive/registry/local.env}"
 MAC="02:00:00:00:00:1b"
 if [ -r "$RN_LOCAL_ENV" ]; then
@@ -31,7 +35,7 @@ BIOS=/data/vms/streamhost/firmware/bios-256k-int16if.bin
   echo "rig: missing $BIOS (the INT16h freeze fix) — refusing to cold-boot without it" >&2
   exit 1
 }
-bash /data/vms/sandbox/win311-rn/repo/streamhost/stations/win311/rn-tapnet.sh up
+bash "$REPO_DIR/streamhost/stations/win311/rn-tapnet.sh" up
 LOADVM=""
 if [ "${COLD:-0}" != 1 ]; then
   qemu-img snapshot -l "$R/win311-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden"

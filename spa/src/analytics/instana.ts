@@ -102,7 +102,26 @@ export const SECRET_PATTERNS: RegExp[] = [/traceparent/i, /ticket/i];
 // consumer each — `IGNORE_URL_PATTERNS` for `khFetch.ts`'s pathname test,
 // `INSTANA_IGNORE_URL_PATTERNS` for a full URL — so passing one where the
 // other belongs reads wrong at the call site rather than merely misbehaving.
-export const KH_TELEMETRY_PATHS = ['/traces', '/analytics', '/coverage', '/clientlog', '/usage', '/clientcmd'] as const;
+// `/eum` is the odd one out and belongs here anyway: it is not OUR telemetry,
+// it is the FIRST-PARTY path the vendor's own beacons now post to
+// (scripts/serve/eum_proxy.py forwards them to Instana, so a visitor behind a
+// DNS-level tracker blocker is no longer silently unmeasured). Excluding it is
+// load-bearing rather than cosmetic — without it the agent's wrapped fetch/XHR
+// would beacon the delivery of a beacon, and each beacon would manufacture the
+// next one. The server side of the same loop is closed by `/eum` being absent
+// from `tracing_http.route_of()`'s allowlist, so the route opens no span
+// either. It goes when Instana goes; nothing else in this list does.
+export const KH_TELEMETRY_PATHS = [
+  '/traces',
+  '/logs',
+  '/vitals',
+  '/analytics',
+  '/coverage',
+  '/clientlog',
+  '/usage',
+  '/clientcmd',
+  '/eum',
+] as const;
 
 /** Escape a literal path for embedding in a RegExp source string. None of
  *  the paths above contain regex metacharacters today, but a future
@@ -169,8 +188,9 @@ export function configureInstana(sessionId: string): void {
   // autoPageDetection on at the same time would give Instana two mechanisms
   // naming the same transition — its own URL-change heuristic and our
   // explicit call — which structurally cannot agree on timing or on name
-  // (ours is a route PATTERN; autoPageDetection's own default is closer to
-  // the raw path/title) and would double the page-transition beacon count
+  // (ours is a pattern-derived, registry-BOUNDED name; autoPageDetection's
+  // own default is the raw path or title, which is bounded by nothing)
+  // and would double the page-transition beacon count
   // for no gain. Explicit-and-ours was chosen over explicit-and-Instana's
   // specifically because our router already knows the pattern/param split
   // this whole integration wants (§ the cardinality rule in navigation.ts),
@@ -283,10 +303,13 @@ export function configureInstana(sessionId: string): void {
  */
 export function configureInstanaIdentity(session: Session): void {
   if (session.role === 'anon' || !session.id) return;
-  // No email anywhere in this auth system by design — passkeys only, no
-  // typed identity at all (scripts/serve/auth/walkin.py: "no name, no email,
-  // nothing typed: the only identity is the credential") — so that argument
-  // is omitted rather than padded with an empty string.
+  // The third argument (email) is omitted because THERE IS NO EMAIL — passkeys
+  // only, nothing typed at signup (scripts/serve/auth/walkin.py: "no name, no
+  // email, nothing typed: the only identity is the credential"). That is a fact
+  // about the auth system, NOT a privacy limit: docs/ANALYTICS.md §0 wants
+  // identity in both planes, and the id and display name above are sent in
+  // full. If accounts ever gain an email, pass it here. Never pad the argument
+  // with an empty string — a placeholder identity is worse than none.
   ineum('user', session.id, session.name || undefined);
 }
 
@@ -317,4 +340,54 @@ export function tagInstanaStation(attrs: { [key: string]: string | number | bool
     const value = attrs[key];
     if (value !== undefined) ineum('meta', key, String(value));
   }
+}
+
+// -- the EUM↔backend join ----------------------------------------------------
+
+/** Exactly what the vendor bundle accepts for `backendTraceId` — 16 or 32 hex
+ *  characters, nothing else, and a value of any other length is dropped
+ *  SILENTLY (no console warning, no beacon field, no error): the join simply
+ *  never appears in the Websites view, which is indistinguishable from never
+ *  having tried.
+ *
+ *  It lives in this module, not in the two that use it, because it is a fact
+ *  about the VENDOR — the same class of fact as `SECRET_PATTERNS` and
+ *  `IGNORE_URL_PATTERNS` above. It was previously declared inside
+ *  `three/streamClient/inputTrace.ts`, which was fine while exactly one caller
+ *  needed it and became a second opinion the moment `khFetch.ts` did. */
+export const BACKEND_TRACE_ID_RE = /^[0-9a-f]{16}$|^[0-9a-f]{32}$/i;
+
+/** Attributes per `reportEvent` `meta` object. The vendor's own default is 25
+ *  (`maxMetadataKeys`); no caller here comes close, but the cap is enforced
+ *  rather than trusted to stay true by inspection. */
+const META_MAX_KEYS = 25;
+
+/**
+ * Point one Instana custom event at a backend trace WE minted.
+ *
+ * This is the whole vendor bridge, in both directions it exists in: an input
+ * edge we sampled (`inputTrace.ts`) and an HTTP response whose server trace id
+ * we read back off `traceresponse`/`Server-Timing` (`khFetch.ts`). Everything
+ * our own plane needs is already recorded as a span before this is called —
+ * this only mirrors the id to the vendor, so a no-op here costs nothing but
+ * the vendor's own view.
+ *
+ * Refuses a malformed id rather than sending it: see `BACKEND_TRACE_ID_RE`.
+ * A NOOP span's empty trace id (tracing off) is exactly that case.
+ */
+export function reportBackendTrace(eventName: string, backendTraceId: string, meta: Record<string, string>): void {
+  if (!BACKEND_TRACE_ID_RE.test(backendTraceId)) return;
+  const capped: Record<string, string> = {};
+  let n = 0;
+  for (const [k, v] of Object.entries(meta)) {
+    if (n >= META_MAX_KEYS) break;
+    capped[k] = v;
+    n += 1;
+  }
+  ineum('reportEvent', eventName, {
+    timestamp: Date.now(),
+    backendTraceId,
+    meta: capped,
+    maxMetadataKeys: META_MAX_KEYS,
+  });
 }

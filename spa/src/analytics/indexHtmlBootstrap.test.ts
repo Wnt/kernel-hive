@@ -60,6 +60,9 @@ interface RunOptions {
   buildId?: string;
   declaredClass?: string;
   webdriver?: boolean;
+  /** The path the visitor landed on — what the bootstrap's ROUTES/STATION_ID
+   *  copy turns into the FIRST beacon's page name. */
+  pathname?: string;
 }
 
 const PLACEHOLDER = (name: string) => `%${name}%`;
@@ -91,7 +94,7 @@ function runBootstrap(opts: RunOptions = {}): unknown[][] {
   const sandbox: Record<string, unknown> = {
     navigator: { webdriver: opts.webdriver === true },
     document: { createElement: () => ({}), head: { appendChild: () => {} } },
-    location: { pathname: '/' },
+    location: { pathname: opts.pathname ?? '/' },
   };
   if (opts.declaredClass !== undefined) sandbox.__khClientClass = opts.declaredClass;
   sandbox.window = sandbox;
@@ -223,5 +226,67 @@ describe('index.html bootstrap — ineum(meta, key, value) call shape', () => {
       expect(typeof call[1]).toBe('string');
       expect(typeof call[2]).toBe('string');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+//  The page NAME of the very first beacon of every visit.
+//
+//  Operator decision 2026-09-01 (docs/ANALYTICS.md): the page name is the
+//  CONCRETE STATION, with the route pattern kept beside it as meta. This block
+//  runs the SHIPPED bootstrap, so it is evidence about spa/index.html itself —
+//  scripts/test_page_naming_in_sync.py separately pins that copy equal to
+//  analytics/navigation.ts's, which is what every SUBSEQUENT transition uses.
+// ---------------------------------------------------------------------------
+
+const CONFIGURED = { key: 'k', reportingUrl: 'https://example.com/eum' };
+
+function pageNameFor(pathname: string): unknown[][] {
+  return runBootstrap({ ...CONFIGURED, pathname });
+}
+
+describe('index.html bootstrap — the initial page name', () => {
+  it('names the station, not the route pattern, and keeps the pattern as meta', () => {
+    const calls = pageNameFor('/os/beos');
+    expect(calls).toContainEqual(['page', '/os/beos']);
+    expect(calls).toContainEqual(['meta', 'kh.route.pattern', '/os/:osId']);
+    expect(calls).toContainEqual(['meta', 'kh.route.param.osId', 'beos']);
+  });
+
+  it('sets the page name LAST, after its meta', () => {
+    // The vendor's own API reference: "make sure to change the page name last
+    // as this immediately triggers the transition". Meta set after `page`
+    // belongs to the NEXT transition, not this one.
+    const calls = pageNameFor('/os/win95');
+    const page = calls.findIndex((c) => c[0] === 'page');
+    const pattern = calls.findIndex((c) => c[1] === 'kh.route.pattern');
+    const param = calls.findIndex((c) => c[1] === 'kh.route.param.osId');
+    expect(pattern).toBeGreaterThanOrEqual(0);
+    expect(pattern).toBeLessThan(page);
+    expect(param).toBeLessThan(page);
+  });
+
+  it('names all three clones of a poolSize-3 walk-in exhibit the same page', () => {
+    // The clone (`walkin-win311-1`) is only ever named inside the claim's
+    // signalEndpoint; the URL carries the EXHIBIT id. Three clones, one page.
+    expect(pageNameFor('/walkin/play/win311')).toContainEqual(['page', '/walkin/play/win311']);
+  });
+
+  it('keeps a station-less route exactly as it was', () => {
+    expect(pageNameFor('/fleet')).toContainEqual(['page', '/fleet']);
+    expect(pageNameFor('/')).toContainEqual(['page', '/']);
+  });
+
+  it('degrades to the old pattern-only name when the id is not a plausible station', () => {
+    // The cardinality bound: a crawler or a typo can never mint a page name.
+    for (const junk of ['%2e%2e', 'Win95', '1win', 'aaaaaaaaaaaaaaaaaaaaaaaa']) {
+      const calls = pageNameFor(`/os/${junk}`);
+      expect(calls).toContainEqual(['page', '/os/:osId']);
+    }
+  });
+
+  it('names a wholly unmatched path the catch-all bucket, never the raw path', () => {
+    const calls = pageNameFor('/nope/nope/nope/nope');
+    expect(calls).toContainEqual(['page', '*']);
   });
 });

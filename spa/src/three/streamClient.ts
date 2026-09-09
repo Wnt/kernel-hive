@@ -52,6 +52,8 @@
 // ============================================================================
 
 import { AudioPlayer } from './streamClient/audioPlayer';
+import { beginVitals } from './streamClient/vitals';
+import { BUILD_ID } from '../analytics/build';
 import {
   moveWireSnapshotImpl, noteMoveWireImpl, sendButtonImpl, sendKeyScancodeImpl,
   sendMoveAbsImpl, sendMoveRelImpl, sendRehomeHintImpl, sendWheelImpl,
@@ -65,6 +67,7 @@ import {
   handleStreamImpl,
   dropStaleSessionImpl,
   disposeImpl,
+  pingRttImpl,
 } from './streamClient/transport';
 import {
   handleParamsStreamImpl,
@@ -78,9 +81,10 @@ import {
 } from './streamClient/videoDecode';
 import { tickStatsImpl, updateBannerImpl, sendStatsImpl } from './streamClient/abr';
 import { VideoAuGate } from './streamClient/auGate';
+import { LossLedger } from './streamClient/lossLedger';
+import { livenessVerdict, type LivenessVerdict } from './streamClient/liveness';
 import { StreamTelemetry } from './streamClient/telemetry';
 import {
-  T_PING,
   IS_FIREFOX,
   IS_FIREFOX_ANDROID,
   NO_VIDEO_DEADLINE_MS,
@@ -150,6 +154,12 @@ export class StreamClient {
   lastAbsY: number | null = null;
   lastRtt: number | null = null;
   consecutivePingTimeouts = 0;
+  /** Exactly one liveness ping may be outstanding — see pingRtt(). */
+  pingInFlight = false;
+  /** performance.now() of the last byte of ANY kind from the server (uni-stream
+   *  or datagram). The liveness verdict is judged on this, not on the echo of a
+   *  datagram the path is allowed to drop (streamClient/liveness.ts). */
+  lastServerDataAt = 0;
 
   fCount = 0;
   fT = 0;
@@ -205,6 +215,9 @@ export class StreamClient {
   /** gap→keyframe decode gate: armed on frame_id gaps, cleared by key AUs
    *  (freeze on the last clean frame instead of painting broken references). */
   auGate = new VideoAuGate();
+  /** Frame_id gap accounting: what a gap is ALLOWED to mean (lossLedger.ts).
+   *  Owns the join window, the reorder grace and the encoder-reopen reset. */
+  lossLedger = new LossLedger();
   missedInterval = 0;
   receivedInterval = 0;
   lossPct = 0;
@@ -233,6 +246,10 @@ export class StreamClient {
   freezeInInterval = false;
   frozen = false;
   lastDecodeOutAt = 0;
+  /** Capture stamp (server µs epoch) of the last DECODED frame — the video
+   *  operand of the A/V skew vital, against `audioPlayer.vitals().tsUs` off
+   *  the same clock. Raw u32; the wrap is vitalsSample.ts's problem. */
+  lastVideoTsUs: number | null = null;
   /** last silent-stall decoder rebuild (rate limit for the self-heal). */
   lastStallRebuildAt = 0;
   /** Consecutive silent-stall decoder rebuilds that produced no output since.
@@ -248,6 +265,8 @@ export class StreamClient {
 
   // ---- client-local `el` scorer (Section 2.3) EWMA state ----
   scoreInit = false;
+  /** dwell start for the DEVICE banner ('device-load'), sibling of belowSince. */
+  deviceBelowSince = 0;
   sLatency = 100;
   sLoss = 100;
   sBandwidth = 100;
@@ -338,6 +357,10 @@ export class StreamClient {
     this.stationId = cfg.osId ?? null;
     // onError mirrors the original inline `this.stats.lastError = …` writes.
     this.audioPlayer = new AudioPlayer((msg) => { this.stats.lastError = msg; });
+    // Name this session's vitals producer BEFORE anything can sample one. The
+    // station id becomes the OTLP `service.instance.id`, i.e. the field that
+    // makes this exhibit its own entity (docs/ANALYTICS.md §8.6).
+    beginVitals(this.stationId ?? 'unknown', BUILD_ID);
     // Feature detection, deliberately not a browser/UA check. This also catches
     // Firefox for Android, where WebTransport exists but VideoDecoder does not.
     if (typeof VideoDecoder === 'undefined') {
@@ -496,32 +519,22 @@ export class StreamClient {
     sendKeyScancodeImpl(this, keycode, down);
   }
   sendWheel(dx: number, dy: number) { sendWheelImpl(this, dx, dy); }
-  /** Send an RTT ping datagram and resolve the round-trip in ms (or null). */
-  async pingRtt(timeoutMs = 500): Promise<number | null> {
-    if (!this.dgWriter || this.disposed) return null;
-    const seq = this.pingSeq++ >>> 0;
-    const b = new Uint8Array(5); b[0] = T_PING;
-    new DataView(b.buffer).setUint32(1, seq, true);
-    const t0 = performance.now();
-    const echoed = new Promise<number>((res) => this.pingWaiters.set(seq, res));
-    this.writeDatagram(b);
-    const t1 = await Promise.race([
-      echoed,
-      new Promise<number>((r) => setTimeout(() => r(-1), timeoutMs)),
-    ]);
-    this.pingWaiters.delete(seq);
-    if (t1 > 0) {
-      this.lastRtt = t1 - t0;
-      this.consecutivePingTimeouts = 0;
-      return this.lastRtt;
-    }
-    // 3 consecutive type-9 timeouts ⇒ treat the link as gone (Section 2.6).
-    this.consecutivePingTimeouts++;
-    if (this.consecutivePingTimeouts >= 3 && !this.transportDown) {
-      this.dropStaleSession('ping-timeout', 'tile stopped responding to liveness pings');
-    }
-    return null;
+  /** ms since the last byte of any kind from the server, or null if none ever. */
+  msSinceServerData(now = performance.now()): number | null {
+    return this.lastServerDataAt > 0 ? now - this.lastServerDataAt : null;
   }
+
+  /** 'ok' | 'suspect' | 'lost' — see streamClient/liveness.ts. */
+  liveness(now = performance.now()): LivenessVerdict {
+    return livenessVerdict({
+      consecutiveTimeouts: this.consecutivePingTimeouts,
+      msSinceServerData: this.msSinceServerData(now),
+    });
+  }
+
+  /** Send a liveness/RTT ping datagram; resolves the round-trip in ms (or null).
+   *  Serialised and never fatal on its own — streamClient/transport.ts. */
+  pingRtt(timeoutMs = 500): Promise<number | null> { return pingRttImpl.call(this, timeoutMs); }
 
   dropStaleSession(reason: 'ping-timeout' | 'stream-stalled', detail: string): void {
     dropStaleSessionImpl.call(this, reason, detail);

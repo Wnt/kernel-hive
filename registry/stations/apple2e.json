@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "apple2e",
+  "era_year": 1985,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 75,
+        "prelude": "",
+        "value": {
+          "key": "apple2e",
+          "script": "tiles/apple2.sh",
+          "outputDir": "bridge/apple2",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "tiles/apple2 overlay + golden (Apple //e → GEOS)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/apple2e",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54185,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/apple2e/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 78,
+    "stationsManifestOrder": 76,
+    "stationsManifestPrelude": "\n# apple2e (VMID 217) — TODO one line; scaffolded from apple2.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 88,
+    "bindingPrelude": "",
+    "goldenOrder": 76
+  },
+  "stationDir": "apple2e",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54185,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "mamesock",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 185
+  },
+  "guestDoc": "docs/guests/apple2e.md",
+  "credentialsRef": "guest/apple2e",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "apple2e",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":73",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/apple2e/apple2e_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/apple2e/fb.shm",
+      "SH_PORT": "54185",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/apple2e/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/apple2e/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 185,
+    "bringUpOrder": 88,
+    "x11": {
+      "display": ":73",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "apple2e",
+        "--udp",
+        "54185",
+        "--x11",
+        "--x11-display",
+        ":73",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/apple2e/apple2e.keymap",
+        "--env-append-file",
+        "$T/apple2e/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/apple2e/apple2e.keymap",
+        "streamhost/stations/apple2e/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#7C8B5E",
+    "eraLabel": "1985 · Apple //e — ProDOS"
+  },
+  "museum": {
+    "id": "apple2e",
+    "displayName": "Apple //e",
+    "year": 1985,
+    "lineage": "Apple II / ProDOS",
+    "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#7C8B5E",
+    "eraSoftware": [
+      "ProDOS 8",
+      "Applesoft BASIC",
+      "AppleWorks",
+      "Dazzle Draw",
+      "Angry Birds (8-Bit Shack, 2023)"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "AppleWorks",
+      "Dazzle Draw",
+      "Applesoft BASIC",
+      "Angry Birds"
+    ],
+    "blurb": "The Apple II most people actually used: ProDOS, a 40-column boot menu, AppleWorks in 80 columns and Dazzle Draw in double hi-res on a 128 KB //e — plus a 2023 Angry Birds for the same machine.",
+    "notes": "Host-native station: MAME 0.289's apple2ee runs on the host (drawshm frames, ctlsock keys + mouse card, FIFO audio). Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) whose STARTUP program is a one-key selector: AppleWorks, Dazzle Draw, Angry Birds, BASIC prompt. Sibling of apple2 (GEOS); the pair shows the same hardware as it was used and as it was later persuaded to look."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/apple2e.sh",
+    "driver": "apple2ee"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "apple2e",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "STILL AN OPEN ITEM -- ships keyboard-only (stream.pointer.transport stays \"none\"), but the ORIGIN BUG IS FIXED. MEASURED on live rigs 2026-09-08 (pointer streams). Three mechanisms were found and fixed in the station's MAME binary. (1) A DIFFERENCING WINDOW: a2bus/mouse.cpp update_axis() differences successive reads of the 8-bit a2mse_x/_y field inside +-0x80, so ONE write over 127 counts is read as motion the OTHER WAY (MOVE 127 -> +197 px; MOVE 130/160/200/255 -> the arrow ran LEFT into the clamp). mame-ctlsock-move-step-cap.patch caps the pacing budget at m_ptr_mod/2 - 1 for a narrow accumulator. (2) AN OPEN LOOP CANNOT LEARN A GAIN: with no cursor items MOVEA runs open-loop and learn_gain() is only reached from the closed loop, so m_gx/m_gy stayed at 1.0 and MOVEA issued Delta-px as counts. mame-ctlsock-open-loop-gain.patch adds MAME_CTL_GAIN_X/Y (px per count) and converts that branch. With GAIN_X=1.547 GAIN_Y=1.674 and MAME_CTL_SCREEN=1024x768 the scale is right. (3) THE HOMING SLAM DID NOT DIE AT THE GUEST'S CLAMP: that clamp is in the mouse card's firmware, downstream of an accumulator that NETS our counts and drains one per MCU read, so the 2160-count slam parked it near -2000 and the first target's travel was spent unwinding the slam -- the arrow never left the corner while the belief moved on, and every later target inherited the deficit exactly (pre-fix landings: 150-290 px short, two targets off the canvas). mame-ctlsock-home-drain.patch sizes the slam through the gain and holds the first target's travel until the move queue is empty and the guest has had MAME_CTL_HOME_SETTLE ms of quiet (750 in the fixture), once per session and once per state load. LANDING TABLE with the fix, five targets from a fresh homed session: (300,200) +2,-4 | (700,500) +6,-4 | (150,600) 0,0 | (850,150) +2,-2 | (300,200) -7,0. A click works (MOVEA onto the Tools menu + DOWN1 drops the menu open). A mid-session LOADST re-homes correctly: bel=0,0 and the next MOVEA re-issues the full slam and lands +5,+4. (4) THE BELIEF ROUNDED EVERY PACER CHUNK: move_rel() booked llround(counts * gain) per issued chunk and the pacer hands out chunks of a FIXED size (120 counts), so the same residue was dropped every window (+0.36 px of phantom travel per window on X). mame-ctlsock-count-carry.patch carries the sub-pixel remainder instead and resets it at every home and restore; a SECOND carry on the px->counts conversion was built, measured and REJECTED (it double-corrects, because the belief already integrates the counts actually issued -- three laps drifted -3..-40 px monotone). THREE-LAP TABLE with all four fixes, one session from a golden copy: LAP 1 (300,200) +2,0 | (700,500) +6,0 | (150,600) 0,+4 | (850,150) +2,+2 | (300,200) -6,0 -- worst 6 px, INSIDE the bar and the best this station has measured. LAP 2 (700,500) +2,+4 | (150,600) -7,+12 | (850,150) -16,+14 | (300,200) -24,+12. LAP 3 (700,500) -23,+16 | (150,600) -33,+20 | (850,150) -31,+14 | (300,200) -39,+8. A return to (300,200) after a 30-move random walk landed -17,+12. The click still works at the end of all of it. WHY IT IS STILL OPEN, AND WHAT CHANGED: the residual drift is NOT arithmetic. The belief integrates exactly now (STAT reads bel=300,200 while the arrow is 39 px away) and the drift has a FIXED DIRECTION (bottom-left), not a fixed sign per direction of travel, so it survives a closed loop of targets whose net displacement is zero -- which no gain error and no rounding residue can do. The guest is LOSING COUNTS; the suspect is the same 8-bit differencing window: the step cap bounds one WRITE at 127 counts, but two paced writes landing between the same pair of MCU port-B reads SUM at the device, and 240 folded into +-0x80 reads as -16. The old rounding bias was a positive error partly cancelling this negative one, which is why the pre-carry second lap looked better (worst 14, all positive). NEXT: pace against the card's read rate rather than a fixed window, or re-anchor periodically (MAME_CTL_REHOME_PX, shipped OFF by default with the carry patch). MAME_CTL_CAL_X/Y is inert here -- it calibrates a cursor-REGISTER reading that does not exist on this machine.",
+    "keyboard": "verified on the live rig 2026-09-08 (golden stream): the generated keymap drives the whole visitor path -- [1] into AppleWorks 3.0 (its GETTING STARTED date prompt, then Return to the Main Menu), [2] into Dazzle Draw 1.2 (title, Space to the launcher panel, Return to the canvas), [B] to BASIC. 40/40 ms pacing, no MAME_CTL_KEY_EXCL, no dropped or duplicated characters observed. Rollover/overlap not stress-tested.",
+    "fixture": "Apple //e (enhanced) ProDOS boot menu -- a tokenized Applesoft STARTUP program on the /HIVE volume (CFFA 2.0, slot 7) offers [1] AppleWorks 3.0, [2] Dazzle Draw 1.2 and [B] BASIC. Apple II Mouse Card in slot 4. MAME 0.289 apple2ee running HOST-NATIVE (drawshm). Cold boot reaches the menu in 2.6 s; the golden savestate restores it in 0.5 s (MEASURED, golden stream 2026-09-08). Reset is a relaunch that restores sta/apple2ee/golden.sta (the MAME savestate captured at the menu 2026-09-08); the restore was proven frame-identical to the cold boot both in-process and across a relaunch."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2 on 2026-09-08; TODO: media, museum, spa",
+    "native stream (2026-09-08): pointer.transport is 'none' ON PURPOSE despite the Apple II Mouse Card being wired at the emulator layer (MAME_CTL_PTR_TAGS/_BTN_NAMES/_MOD in station.env.fixture, mame-ctlsock-ptr-tags.patch) -- InputBackend::MameSock::pointer_mode() in streamhost/streamhost/src/config/backends.rs hardcodes 'abs' for every mamesock station, and the mouse card has no absolute cursor readout (dead-reckoning relative only, unlike newsos's Newport VC2 registers), so this station cannot honestly claim an SPA pointer contract yet. Surfacing a relative mamesock pointer_mode is a daemon change outside this stream; report it to whoever owns spa/backends next."
+  ]
+}

@@ -21,6 +21,16 @@ that command is addressed to it (station, and optionally `args.sessionId`). The
 poller belongs to the TAB — it starts when the SPA boots and keeps running after
 a station closes, so a visitor stuck on a blank grid is reachable too.
 
+**Walk-in accounts are in "any authenticated session", since 2026-09-08.** The
+`walkin` role is an allowlist (`gate.py` `WALKIN_PATHS`), and `/clientcmd` was
+not on it while `/clientlog` was; the SPA's walk-in shape skipped
+`initClientDebug()` as well. So a walk-in guest wrote no `session-start` row,
+did not appear in `clientcmd.sh sessions` and could not answer an `eval` — on
+the one day it mattered, the iPad whose Safari never got video was signed in
+as a walk-in and invisible. Both halves now report and poll for every
+signed-in tab; `/clientcmd/admin` stays box-side and blocked for every public
+role, walk-ins included.
+
 **`POST /clientcmd/admin` — the enqueue. Box-side only.** This is the half that
 ISSUES commands, including arbitrary-JS `eval`. It is listed in
 `gate.BLOCKED_PREFIXES`, so the public listener returns a flat 404; on the LAN

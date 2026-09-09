@@ -1,0 +1,44 @@
+1  REM  HIVE STARTUP MENU -- APPLE //e STATION
+2  REM  @BIRDS@ IS SUBSTITUTED BY tiles/apple2e.sh:
+3  REM  1 WHEN AN ANGRY BIRDS DISK IS STAGED, ELSE 0.
+4  REM  EVERY PRINTED LINE FITS THE //e'S 40 COLUMNS.
+5  BF = @BIRDS@
+10  HOME
+20  PRINT "  =================================="
+30  PRINT "     APPLE //e  --  PRODOS  MENU"
+40  PRINT "  =================================="
+50  PRINT
+60  PRINT "    [1]  AppleWorks 3.0"
+70  PRINT "    [2]  Dazzle Draw 1.2"
+80  IF BF THEN  PRINT "    [3]  Angry Birds"
+90  PRINT "    [B]  BASIC prompt"
+100  PRINT
+110  PRINT "  =================================="
+120  PRINT "   RESET returns to this menu."
+130  PRINT "   From BASIC: RUN STARTUP"
+140  PRINT "  =================================="
+150  PRINT
+160  IF BF THEN  PRINT "  CHOOSE 1, 2, 3 OR B: ";: GOTO 180
+170  PRINT "  CHOOSE 1, 2 OR B: ";
+180  GET K$
+190  IF K$ = "1" THEN  GOTO 300
+200  IF K$ = "2" THEN  GOTO 400
+210  IF K$ = "3" THEN  IF BF THEN  GOTO 500
+220  IF K$ = "B" OR K$ = "b" THEN  GOTO 600
+230  GOTO 160
+300  PRINT K$
+310  PRINT  CHR$ (4);"PREFIX /HIVE/AW"
+320  PRINT  CHR$ (4);"-APLWORKS.SYSTEM"
+330  GOTO 160
+400  PRINT K$
+410  PRINT  CHR$ (4);"PREFIX /HIVE/DAZZLE"
+420  PRINT  CHR$ (4);"-DD.SYSTEM"
+430  GOTO 160
+500  PRINT K$
+510  PRINT  CHR$ (4);"PREFIX /HIVE/BIRDS"
+520  PRINT  CHR$ (4);"-ANGRY.BIRDS"
+530  GOTO 160
+600  PRINT K$
+610  HOME
+620  PRINT "TYPE RUN STARTUP TO RETURN TO THE MENU."
+630  END

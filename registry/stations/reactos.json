@@ -61,14 +61,14 @@
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
-      "udp_port": 4433,
+      "udp_port": 54106,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     }
   },
   "render": {
     "signalOrder": 0,
     "stationsManifestOrder": 2,
-    "stationsManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 4433. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
+    "stationsManifestPrelude": "\n# reactos (VMID 106) — NT-era LiveCD + golden fixture. UDP 54106. VERBATIM\n#   LAUNCHER: boots the LiveCD (-boot d) with reactos-golden.qcow2 attached\n#   solely to hold the savevm 'golden' snapshot (no -snapshot, no floppy —\n#   matches the baked device set). Golden store canonical at\n#   /data/gallery-guests/ReactOS/ (old /data/reactos-golden whitelisted).\n",
     "bringUpGroup": 0,
     "bindingOrder": 20,
     "bindingPrelude": "",
@@ -79,7 +79,7 @@
   "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
-    "udpPort": 4433,
+    "udpPort": 54106,
     "fps": 30,
     "audio": true,
     "touch": false,
@@ -95,7 +95,6 @@
         0
       ]
     },
-    "legacyPortException": true,
     "slot": 106
   },
   "guestDoc": "docs/guests/reactos.md",
@@ -104,7 +103,7 @@
     "stationEnv": {
       "SH_STATION": "reactos",
       "SH_QMP": "/data/vms/streamhost/stations/reactos/qmp.sock",
-      "SH_PORT": "4433",
+      "SH_PORT": "54106",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
@@ -125,7 +124,7 @@
         "--vmid",
         "106",
         "--udp",
-        "4433",
+        "54106",
         "--pointer",
         "abs",
         "--abs-pace-ms",

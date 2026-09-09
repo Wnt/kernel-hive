@@ -108,6 +108,15 @@ struct SessionState {
     /// "unknown" the client sends before its first ping resolves. Used only to
     /// seed the conservative start tier; None until a real sample arrives.
     first_real_rtt: Option<f32>,
+    // ---- L-5 LOSS WARM-UP (2026-09-02) ----
+    /// When the session registered. With `reports`, the two halves of the
+    /// warm-up window: see `warming_up`.
+    created: Instant,
+    /// Reports folded for this session (the ~100 ms T_STATS cadence).
+    reports: u32,
+    /// L-6: when THIS session first entered the congested region, or None. The
+    /// persistence window is per session on purpose — see `evaluate`.
+    congested_since: Option<Instant>,
 }
 
 impl SessionState {
@@ -128,7 +137,35 @@ impl SessionState {
             prev_server_skips: 0,
             skip_rate_ewma: 0.0,
             first_real_rtt: None,
+            created: Instant::now(),
+            reports: 0,
+            congested_since: None,
         }
+    }
+
+    /// L-5: is this session still inside the loss WARM-UP window?
+    ///
+    /// A freshly-connected client's first loss samples are not a measurement of
+    /// the network. Its `lossPct` is a ratio over a 3 s window with a 10-frame
+    /// minimum denominator, so the first intervals are the smallest, noisiest
+    /// ratios the session will ever produce, and anything the SERVER withholds
+    /// while the session is joining lands in exactly those intervals. Until
+    /// 2026-09-02 the join-gate discard alone made every connect on this LAN
+    /// open with a 45-87 % first-interval loss reading; `fold` then SEEDED the
+    /// smoothed loss with that first sample, so `loss_pct_ewma` started at ~86,
+    /// took ~2.1 s (m=8) to decay under DOWN_LOSS_PCT, and satisfied the 1.5 s
+    /// BREACH on the way down. That is the T0->T1 downshift ~4 s after every
+    /// connect, and (with UP_HOLD + the 25 s dwell) the T0<->T1 limit cycle
+    /// behind it.
+    ///
+    /// BOTH halves must pass: enough reports that the ratio has a denominator,
+    /// and enough wall-clock that the client's own 3 s loss window has rolled
+    /// over the join. Only the LOSS signal is held off — RTT growth and the
+    /// server's own skip counter are trustworthy from the first sample and keep
+    /// their existing sensitivity, so a genuinely bad path still downshifts
+    /// during warm-up.
+    fn warming_up(&self, now: Instant) -> bool {
+        self.reports < LOSS_WARMUP_REPORTS || now.duration_since(self.created) < LOSS_WARMUP
     }
 }
 
@@ -142,9 +179,6 @@ struct Inner {
     tier: u8,
     /// Wall-clock of the last tier change; the DWELL gate is measured from here.
     last_restart: Instant,
-    /// When the network first entered the CONGESTED region (loss/rtt breach); the
-    /// breach must persist BREACH_MS from here before a downshift is taken.
-    down_since: Option<Instant>,
     /// When the network first entered the fully-HEALTHY region; an upshift requires
     /// UP_HOLD sustained from here.
     up_since: Option<Instant>,
@@ -154,6 +188,10 @@ struct Inner {
     /// L-3: when the current idle->active spell began (for the seed's RTT-wait
     /// timeout); None while no sessions are active.
     active_since: Option<Instant>,
+    /// L-6: consecutive DOWN->UP cycles the ladder has been proven wrong by, and
+    /// when the last DOWNshift was taken. See `breach_need`.
+    futile_cycles: u32,
+    last_down_at: Option<Instant>,
 }
 
 // ---- Decision thresholds (asymmetric hysteresis: DOWN >> UP => wide dead-band) --
@@ -187,6 +225,24 @@ const BREACH: Duration = Duration::from_millis(1500);
 const RTT_BREACH: Duration = Duration::from_secs(4);
 /// A healthy window must persist this long before stepping the tier back up.
 const UP_HOLD: Duration = Duration::from_secs(8);
+/// L-6 futile-cycle damping: a DOWN that a UP undoes within this window taught
+/// the ladder nothing — the link was never the problem. Sized just over the
+/// 25 s dwell + 8 s UP_HOLD that such a cycle takes to complete.
+const CYCLE_WINDOW: Duration = Duration::from_secs(45);
+/// L-6: however many futile cycles have been seen, a breach never has to hold
+/// longer than this. A genuinely degrading link must still be caught.
+const MAX_BREACH: Duration = Duration::from_secs(12);
+/// L-6: how long the ladder must sit still before the futile-cycle memory is
+/// forgotten (the link may genuinely have changed).
+const CYCLE_FORGET: Duration = Duration::from_secs(300);
+/// L-5 loss WARM-UP: wall-clock a session must be connected before its reported
+/// loss is allowed to move the ladder. Longer than the client's own 3 s loss
+/// window (spa abr.ts LOSS_WINDOW_MS) so the join can no longer be inside it.
+const LOSS_WARMUP: Duration = Duration::from_secs(4);
+/// L-5 loss WARM-UP, second half: reports the session must have folded (~100 ms
+/// cadence). Guards against a client whose reports are sparse satisfying the
+/// wall-clock half with two samples.
+const LOSS_WARMUP_REPORTS: u32 = 20;
 /// L-1 backlog trigger (armed by SH_ABR_BACKLOG_DOWNSHIFT): downshift when the
 /// smoothed per-report egress SKIP count (the relay dropping non-key AUs while a
 /// session runs past its backlog bound) stays at/above this. On a LAN the gate
@@ -195,6 +251,60 @@ const DOWN_SKIP_RATE: f32 = 1.5;
 /// ... and only treat the link healthy-enough to UPSHIFT once skipping is back
 /// at/below this (asymmetric dead-band, like the loss/rtt thresholds above).
 const UP_SKIP_RATE: f32 = 0.3;
+
+/// Pure LOSS contribution to the CONGESTED decision (L-5), split out so the
+/// threshold logic is unit-testable without an Abr/EncoderOut.
+///
+/// Both the SMOOTHED loss and the loss the client is reporting RIGHT NOW must be
+/// at/above the threshold. The EWMA alone cannot tell a link that is losing
+/// frames from one that lost a burst and recovered: at m=8 a single 90 % sample
+/// stays above 5 % for ~2.1 s, which is longer than BREACH, so one bad interval
+/// used to be sufficient on its own. Requiring the current report to agree makes
+/// the persistence window mean what it says — the breach must still be TRUE when
+/// it expires — while a sustained loss (which keeps reporting high) is unchanged.
+fn loss_congested(loss_ewma: f32, loss_now: f32) -> bool {
+    loss_ewma >= DOWN_LOSS_PCT && loss_now >= DOWN_LOSS_PCT
+}
+
+/// The per-session CONGESTED verdict and the breach it must hold, pure (L-6).
+///
+/// `None` = this session is not congested. `Some((why, need))` = it is, and the
+/// condition must persist `need` before it may move the ladder. Loss and backlog
+/// are not self-inflicted and keep the short BREACH; an RTT-only breach must hold
+/// for RTT_BREACH (see that constant).
+fn session_breach(
+    loss_ewma: f32,
+    loss_now: f32,
+    rtt_excess: f32,
+    skip_rate: f32,
+    armed: bool,
+) -> Option<(&'static str, Duration)> {
+    if loss_congested(loss_ewma, loss_now) || skip_congested(skip_rate, armed) {
+        Some(("loss/backlog", BREACH))
+    } else if rtt_excess >= DOWN_RTT_EXCESS_MS {
+        Some(("rtt", RTT_BREACH))
+    } else {
+        None
+    }
+}
+
+/// L-6 futile-cycle damping: how long a breach must hold after `futile` pointless
+/// down/up cycles. Doubles per cycle, capped at MAX_BREACH.
+///
+/// WHY: a downshift the ladder reverses 25 s later did not fix anything — if it
+/// had, the link would not have read healthy again the moment the tier changed.
+/// win95 rode `path0->1->0->1->0->1->0`, six changes in four minutes, on an 8 ms
+/// link (2026-09-02). Each cycle costs every viewer of the station an encoder
+/// reopen and a fresh IDR, so the controller must get more sceptical each time it
+/// is proven wrong, and forget again (CYCLE_FORGET) once the ladder settles.
+fn breach_need(base: Duration, futile: u32) -> Duration {
+    let scaled = base * (1u32 << futile.min(3));
+    if scaled > MAX_BREACH {
+        MAX_BREACH
+    } else {
+        scaled
+    }
+}
 
 /// Pure backlog-signal contribution to the CONGESTED decision (L-1), split out so
 /// the threshold logic is unit-testable without an Abr/EncoderOut. `armed` is
@@ -246,10 +356,11 @@ impl Abr {
                 sessions: HashMap::new(),
                 tier: 0,
                 last_restart: now,
-                down_since: None,
                 up_since: None,
                 start_seeded: false,
                 active_since: None,
+                futile_cycles: 0,
+                last_down_at: None,
             }),
             next_id: AtomicU64::new(1),
             cfg,
@@ -344,29 +455,66 @@ impl Abr {
         // consulted — a slow decoder on a busy client is not a network problem.
         let stale_cutoff = Duration::from_secs(3);
         let mut worst_loss = 0.0f32; // smoothed loss %, max across sessions
+        let mut worst_loss_now = 0.0f32; // loss % in the LATEST report, max across sessions
         let mut worst_excess = 0.0f32; // RTT above path floor (ms), max across sessions
         let mut worst_skip = 0.0f32; // smoothed egress-skip rate, max across sessions (L-1)
         let mut worst_first_rtt: Option<f32> = None; // highest first-real-RTT (L-3 seed)
         let mut n_active = 0u32;
-        for s in g.sessions.values() {
+        // L-6: the sustained breach, if any, of the session that owns it.
+        let mut sustained_breach: Option<&'static str> = None;
+        let armed = self.cfg.abr_backlog_downshift;
+        let futile = g.futile_cycles;
+        for s in g.sessions.values_mut() {
             if now.duration_since(s.stale) > stale_cutoff || !s.init {
                 continue;
             }
             n_active += 1;
-            worst_loss = worst_loss.max(s.loss_pct_ewma);
-            worst_excess = worst_excess.max((s.rtt_ewma - s.rtt_floor).max(0.0));
+            let excess = (s.rtt_ewma - s.rtt_floor).max(0.0);
+            // L-5: a session inside its loss warm-up contributes NO loss (its
+            // `loss_pct_ewma` is pinned at 0 by `fold`, and its raw report is
+            // ignored here for the same reason).
+            let (loss_ewma, loss_now) = if s.warming_up(now) {
+                (0.0, 0.0)
+            } else {
+                (s.loss_pct_ewma, s.last.loss_pct_x10 as f32 / 10.0)
+            };
+            worst_loss = worst_loss.max(loss_ewma);
+            worst_loss_now = worst_loss_now.max(loss_now);
+            worst_excess = worst_excess.max(excess);
             worst_skip = worst_skip.max(s.skip_rate_ewma);
             if let Some(fr) = s.first_real_rtt {
                 worst_first_rtt = Some(worst_first_rtt.map_or(fr, |w| w.max(fr)));
+            }
+            // PERSISTENCE IS PER SESSION (L-6, 2026-09-02). It used to be one
+            // global window, which a CHURNING set of sessions could fill between
+            // them: session A breaches for 0.8 s and leaves, session B connects and
+            // breaches for 0.8 s, and the global `down_since` — never reset while
+            // *somebody* was congested each tick — satisfied the 1.5 s BREACH
+            // without any single viewer ever having a sustained problem. On a busy
+            // station that is most ticks. A breach now belongs to the session that
+            // is having it, and dies with it.
+            match session_breach(loss_ewma, loss_now, excess, s.skip_rate_ewma, armed) {
+                Some((why, base)) => {
+                    let since = *s.congested_since.get_or_insert(now);
+                    if now.duration_since(since) >= breach_need(base, futile) {
+                        sustained_breach = Some(why);
+                    }
+                }
+                None => s.congested_since = None,
             }
         }
         if n_active == 0 {
             // No active viewers: reset transient windows + the L-3 start seed, leave
             // the tier as-is.
             g.up_since = None;
-            g.down_since = None;
             g.start_seeded = false;
             g.active_since = None;
+            // The ladder is idle; forget the futile-cycle memory once it has sat
+            // still long enough that the link may genuinely have changed (L-6).
+            if now.duration_since(g.last_restart) >= CYCLE_FORGET {
+                g.futile_cycles = 0;
+                g.last_down_at = None;
+            }
             return;
         }
 
@@ -396,15 +544,13 @@ impl Abr {
         }
 
         // Asymmetric hysteresis with a wide dead-band (req 4). CONGESTED requires a
-        // clearly-bad network; HEALTHY requires a clearly-good one; in between we
-        // HOLD. On a LAN worst_loss~0 and worst_excess~0 => always HEALTHY, so a
-        // station at tier 0 never moves.
-        let armed = self.cfg.abr_backlog_downshift;
-        // Split by signal: loss/backlog are not self-inflicted and keep the short
-        // BREACH; an RTT-only breach must hold for RTT_BREACH (see its comment).
-        let fast_congested = worst_loss >= DOWN_LOSS_PCT || skip_congested(worst_skip, armed);
-        let rtt_congested = worst_excess >= DOWN_RTT_EXCESS_MS;
-        let congested = fast_congested || rtt_congested;
+        // clearly-bad network AND a session that has held it (the loop above);
+        // HEALTHY requires a clearly-good one; in between we HOLD. On a LAN
+        // worst_loss~0 and worst_excess~0 => always HEALTHY, so a station at tier 0
+        // never moves.
+        let congested = g.sessions.values().any(|s| {
+            s.init && now.duration_since(s.stale) <= stale_cutoff && s.congested_since.is_some()
+        });
         // A session still skipping is not healthy-enough to upshift (L-1 veto).
         let healthy = worst_loss <= UP_LOSS_PCT
             && worst_excess <= UP_RTT_EXCESS_MS
@@ -423,29 +569,19 @@ impl Abr {
 
         if congested {
             g.up_since = None;
-            // PERSISTENCE: the breach must hold for BREACH before it counts (req 2).
-            if g.down_since.is_none() {
-                g.down_since = Some(now);
-            }
-            let need = if fast_congested { BREACH } else { RTT_BREACH };
-            let sustained = g
-                .down_since
-                .map(|t| now.duration_since(t) >= need)
-                .unwrap_or(false);
-            if sustained && cur < MAX_TIER && can_change_down {
-                let why = if fast_congested {
-                    "loss/backlog"
-                } else {
-                    "rtt"
-                };
-                crate::probes::probe!(ABR_TIER_DOWN);
-                eprintln!(
-                    "[abr] DOWN why={why} loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
-                );
-                self.apply_tier(&mut g, cur + 1, now);
+            // PERSISTENCE (req 2) is the per-session window computed above: some ONE
+            // session must have held its own breach for `breach_need`.
+            if let Some(why) = sustained_breach {
+                if cur < MAX_TIER && can_change_down {
+                    crate::probes::probe!(ABR_TIER_DOWN);
+                    eprintln!(
+                        "[abr] DOWN why={why} loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} futile={futile} sessions={n_active}"
+                    );
+                    g.last_down_at = Some(now);
+                    self.apply_tier(&mut g, cur + 1, now);
+                }
             }
         } else if healthy {
-            g.down_since = None;
             if g.up_since.is_none() {
                 g.up_since = Some(now);
             }
@@ -454,16 +590,29 @@ impl Abr {
                 .map(|t| now.duration_since(t) >= UP_HOLD)
                 .unwrap_or(false);
             if sustained && cur > 0 && can_change_up {
+                // L-6: an UP that undoes a recent DOWN is the ladder being told the
+                // downshift was pointless. Remember it, so the next breach has to
+                // work harder; forget it once the ladder has sat still.
+                match g.last_down_at {
+                    Some(t) if now.duration_since(t) <= CYCLE_WINDOW => {
+                        g.futile_cycles = g.futile_cycles.saturating_add(1);
+                    }
+                    Some(t) if now.duration_since(t) >= CYCLE_FORGET => {
+                        g.futile_cycles = 0;
+                        g.last_down_at = None;
+                    }
+                    _ => {}
+                }
                 crate::probes::probe!(ABR_TIER_UP);
                 eprintln!(
-                    "[abr] UP loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} sessions={n_active}"
+                    "[abr] UP loss={worst_loss:.1}% rtt_excess={worst_excess:.0}ms skip={worst_skip:.2} futile={} sessions={n_active}",
+                    g.futile_cycles
                 );
                 self.apply_tier(&mut g, cur - 1, now);
             }
         } else {
             // Dead-band: neither clearly bad nor clearly good — hold and reset both
             // sustain windows so a metric hovering at a boundary cannot accumulate.
-            g.down_since = None;
             g.up_since = None;
         }
     }
@@ -474,7 +623,6 @@ impl Abr {
         g.tier = target;
         g.last_restart = now; // arm the dwell gate
         g.up_since = None;
-        g.down_since = None;
         self.enc.request_tier(target);
     }
 }
@@ -484,6 +632,9 @@ impl Abr {
 /// is driven by decode_queue / freeze (NOT recv/cap) to honor the museum caveat.
 fn fold(s: &mut SessionState, server_skips: u64) {
     let r = s.last;
+    s.reports = s.reports.saturating_add(1);
+    // L-5: the reported loss is not evidence yet (see `SessionState::warming_up`).
+    let warming = s.warming_up(Instant::now());
     let rtt = if r.rtt_ms == 0xFFFF {
         250.0
     } else {
@@ -527,7 +678,10 @@ fn fold(s: &mut SessionState, server_skips: u64) {
         s.bw_ewma = bw;
         s.rtt_ewma = rtt;
         s.overall_ewma = overall_raw;
-        s.loss_pct_ewma = loss_pct;
+        // NOT seeded from the first sample: the first samples of a session are
+        // exactly the ones the join makes wrong (L-5). Starting at 0 costs a
+        // genuinely lossy path only the EWMA's own rise time.
+        s.loss_pct_ewma = 0.0;
         s.rtt_floor = rtt;
         // Seed the skip baseline so the first interval's delta is 0, not the whole
         // pre-connect cumulative count.
@@ -552,8 +706,14 @@ fn fold(s: &mut SessionState, server_skips: u64) {
         s.rtt_ewma = lw(s.rtt_ewma, rtt, m);
 
         // ---- NETWORK-decision signals ----
-        // Smoothed loss %, reacts a touch faster than the HUD score (m=8).
-        s.loss_pct_ewma = lw(s.loss_pct_ewma, loss_pct, 8.0);
+        // Smoothed loss %, reacts a touch faster than the HUD score (m=8). Held
+        // at 0 through the warm-up so nothing the join produced can be smoothed
+        // into the window that outlives it (L-5).
+        s.loss_pct_ewma = if warming {
+            0.0
+        } else {
+            lw(s.loss_pct_ewma, loss_pct, 8.0)
+        };
         // RTT floor: snap DOWN to any new minimum immediately, but decay UP only
         // very slowly (0.1%/sample). A LAN floor stays ~1 ms; a WAN client's
         // steady baseline is learned so only true queueing growth reads as excess,
@@ -574,122 +734,5 @@ fn fold(s: &mut SessionState, server_skips: u64) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The L-1 backlog trigger is fully inert unless SH_ABR_BACKLOG_DOWNSHIFT is
-    /// armed — so a bare deploy keeps the loss/rtt-only tier decision (no LAN change).
-    #[test]
-    fn skip_trigger_is_inert_when_disarmed() {
-        assert!(!skip_congested(100.0, false));
-        assert!(!skip_blocks_upshift(100.0, false));
-    }
-
-    /// Armed thresholds: congested at/above DOWN_SKIP_RATE; the up-veto trips just
-    /// above UP_SKIP_RATE (asymmetric dead-band).
-    #[test]
-    fn skip_trigger_thresholds_when_armed() {
-        assert!(!skip_congested(DOWN_SKIP_RATE - 0.1, true));
-        assert!(skip_congested(DOWN_SKIP_RATE, true));
-        assert!(!skip_blocks_upshift(UP_SKIP_RATE, true));
-        assert!(skip_blocks_upshift(UP_SKIP_RATE + 0.1, true));
-    }
-
-    /// L-3 conservative start: default (threshold 0) never moves off tier 0; a LAN
-    /// sub-ms RTT stays 0; a WAN RTT opens at tier 1 (>= threshold) or 2 (>= 2x).
-    #[test]
-    fn start_tier_from_rtt() {
-        assert_eq!(start_tier_for_rtt(500.0, 0), 0); // disabled → always 0
-        assert_eq!(start_tier_for_rtt(0.6, 120), 0); // LAN
-        assert_eq!(start_tier_for_rtt(119.0, 120), 0); // just under
-        assert_eq!(start_tier_for_rtt(120.0, 120), 1);
-        assert_eq!(start_tier_for_rtt(239.0, 120), 1);
-        assert_eq!(start_tier_for_rtt(240.0, 120), 2);
-    }
-
-    /// ASYMMETRIC RTT SMOOTHING: a keyframe-burst transient must not leave a
-    /// tail. A short spike is absorbed within a few samples of the link
-    /// recovering (m=4 falling), so it cannot hold the excess above
-    /// DOWN_RTT_EXCESS_MS long enough to satisfy RTT_BREACH.
-    #[test]
-    fn rtt_spike_decays_without_a_tail() {
-        let mut s = SessionState::new();
-        let mut r = Report {
-            rtt_ms: 3,
-            ..Report::default()
-        };
-        fold(&mut s, 0);
-        for _ in 0..40 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        let floor = s.rtt_floor;
-        // A burst: ten samples of badly-queued pings.
-        r.rtt_ms = 400;
-        for _ in 0..10 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(s.rtt_ewma - floor > DOWN_RTT_EXCESS_MS, "spike registers");
-        // The link recovers; the excess must collapse fast, not linger.
-        r.rtt_ms = 3;
-        for _ in 0..15 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(
-            s.rtt_ewma - s.rtt_floor < DOWN_RTT_EXCESS_MS,
-            "excess must not linger after recovery: ewma={} floor={}",
-            s.rtt_ewma,
-            s.rtt_floor
-        );
-    }
-
-    /// Sustained bufferbloat must STILL trip: rising is slow (m=16) but a path
-    /// that holds RTT high keeps feeding high samples, so the excess accumulates.
-    #[test]
-    fn sustained_rtt_growth_still_trips() {
-        let mut s = SessionState::new();
-        let mut r = Report {
-            rtt_ms: 20,
-            ..Report::default()
-        };
-        fold(&mut s, 0);
-        for _ in 0..60 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        r.rtt_ms = 300;
-        for _ in 0..60 {
-            s.last = r;
-            fold(&mut s, 0);
-        }
-        assert!(
-            s.rtt_ewma - s.rtt_floor >= DOWN_RTT_EXCESS_MS,
-            "genuine bufferbloat must still read as congested: ewma={} floor={}",
-            s.rtt_ewma,
-            s.rtt_floor
-        );
-    }
-
-    /// The smoothed skip rate: first fold seeds the baseline (delta 0, not the whole
-    /// pre-connect count); sustained skipping lifts it above the up-veto; a quiet
-    /// spell decays it back toward zero (so it can't pin the tier low forever).
-    #[test]
-    fn fold_smooths_server_skip_delta() {
-        let mut s = SessionState::new();
-        fold(&mut s, 1000);
-        assert_eq!(s.skip_rate_ewma, 0.0);
-        assert_eq!(s.prev_server_skips, 1000);
-        for _ in 0..64 {
-            let n = s.prev_server_skips + 3;
-            fold(&mut s, n);
-        }
-        assert!(s.skip_rate_ewma > UP_SKIP_RATE, "rate={}", s.skip_rate_ewma);
-        for _ in 0..64 {
-            let n = s.prev_server_skips;
-            fold(&mut s, n);
-        }
-        assert!(s.skip_rate_ewma < UP_SKIP_RATE, "rate={}", s.skip_rate_ewma);
-    }
-}
+#[path = "abr_tests.rs"]
+mod tests;

@@ -13,6 +13,10 @@ import type { StreamClient } from '../streamClient';
 import { ByteReader } from './byteReader';
 import { fetchSignal } from './signal';
 import { logClientEvent, flushNow } from '../clientDebug';
+import { noteTransportClosed } from './analyticsEvents';
+import { setTransportFacts, clearTransportFacts } from './transportFacts';
+import { openDatagramWriter, type DatagramDuplexLike } from './datagramWriter';
+import { endVitals } from './vitals';
 
 /** How long WebTransport may sit in `ready` before we record the silence as
  *  evidence. Chrome gives up on a blackholed QUIC handshake at its own idle
@@ -37,6 +41,7 @@ import {
 export async function connectImpl(this: StreamClient): Promise<void> {
   this.wtReady = false;
   this.transportDown = false;
+  this.lastServerDataAt = 0;
   this.exitReason = null;
   this.consecutivePingTimeouts = 0;
   // Missing WebCodecs is terminal. Do not fetch signaling, open WebTransport,
@@ -104,6 +109,14 @@ export async function connectImpl(this: StreamClient): Promise<void> {
       congestionControl: 'low-latency',
     });
     this.wt = wt;
+    // `closed` REJECTS whenever `ready` rejects, and the real closed-handler is
+    // attached only at the END of this function — so a refused handshake, or a
+    // throw anywhere between `ready` settling and that handler (Safari 26's
+    // missing `datagrams.writable` was one), left `closed` rejecting with
+    // nobody listening: iOS Safari session 37ec6b3c logged a bare
+    // `unhandled-rejection WebTransportError` with an empty stack. Absorb it
+    // here; the handler below still sees the same promise and does its work.
+    void wt.closed.catch(() => { /* reported by the handler below or by the connect catch */ });
     // FIREFOX DELIVERY-RACE FIX (primary): attach the incoming uni-stream +
     // datagram readers BEFORE awaiting `ready`. Firefox 151 PERMANENTLY stops
     // surfacing server-opened incoming uni-streams to JS when any arrive
@@ -140,18 +153,26 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     if (this.disposed) { try { wt.close(); } catch { /* noop */ } return; }
     this.wtReady = true;
     this.sessionReadyAt = performance.now();
+    // The outgoing datagram writer, on whichever datagram API this browser
+    // has (`datagramWriter.ts`: spec `createWritable()` on Safari 26, legacy
+    // `writable` on Chromium). Opened BEFORE the facts and the `connect` row
+    // so both can say which shape was used — and so a UA with neither fails
+    // here, inside the try, as a connect failure that names the cause.
+    const dgOpened = openDatagramWriter(wt.datagrams as DatagramDuplexLike);
+    this.dgWriter = dgOpened.writer;
+    // The transport hop's own identity and characteristics, for the sampled
+    // `input.wire` span (`transportFacts.ts`). Recorded here, once `ready`
+    // has settled, because before that there is no connection to describe and
+    // `getStats()` has nothing to report. Never throws: a UA without
+    // `getStats` records that fact and carries the endpoint alone.
+    try { setTransportFacts(sig.url, wt, () => this.lastRtt, dgOpened.facts); } catch { /* instrumentation never breaks a connect */ }
     this.armNoVideoTelemetry();
     // Belt-and-braces: if a session still comes up poisoned (the pre-ready
     // attach lost an unknown variant of the race), detect + rebuild it.
     if (IS_FIREFOX) this.armFfStallWatchdog(wt);
 
     this.setState(true, '-');
-    logClientEvent('connect', `transport ok, codec=${sig.video?.codec ?? '(default)'}, wire=v${sig.wireVersion}, maxUdpPayload=${this.serverMaxUdpPayloadSize ?? 'unknown'}, mtud=${this.serverMtuDiscovery ?? 'unknown'}`);
-    this.dgWriter = wt.datagrams.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>;
-    // Expire move datagrams stuck in the send queue for >100 ms instead of
-    // delivering stale pointer positions late (bufferbloat guard). Spec'd but
-    // not implemented everywhere — never let the assignment throw.
-    try { wt.datagrams.outgoingMaxAge = 100; } catch { /* unsupported UA */ }
+    logClientEvent('connect', `transport ok, codec=${sig.video?.codec ?? '(default)'}, wire=v${sig.wireVersion}, maxUdpPayload=${this.serverMaxUdpPayloadSize ?? 'unknown'}, mtud=${this.serverMtuDiscovery ?? 'unknown'}, dgApi=${dgOpened.facts.api}, dgMaxAgeOn=${dgOpened.facts.maxAgeOn}`);
 
     // Reliable input: PER-TYPE QUIC streams (HOL avoidance). Open ONE client-
     // opened unidirectional reliable stream per input CLASS, each led by its
@@ -181,14 +202,70 @@ export async function connectImpl(this: StreamClient): Promise<void> {
     // `this.wt === wt` guards a session we already replaced ourselves (poisoned-
     // session rebuild) from reporting its own teardown as a drop.
     void wt.closed
-      .then(() => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'server-finished'; logClientEvent('wt-close', 'clean close (server-finished)'); this.setState(false, 'session closed'); } })
-      .catch((e) => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'transport-down'; logClientEvent('wt-close', `transport error: ${String(e)}`); this.setState(false, `closed: ${String(e)}`); } });
+      .then(() => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'server-finished'; noteTransportClosed('server-finished', this.stationId); logClientEvent('wt-close', 'clean close (server-finished)'); this.setState(false, 'session closed'); } })
+      .catch((e) => { if (!this.disposed && this.wt === wt && !this.transportDown) { this.wtReady = false; this.transportDown = true; this.exitReason = 'transport-down'; noteTransportClosed('transport-down', this.stationId); logClientEvent('wt-close', `transport error: ${String(e)}`); this.setState(false, `closed: ${String(e)}`); } });
   } catch (e) {
+    // A session that reached `ready` and then failed in this function is ours
+    // to close: dispose() only closes a transport it saw `wtReady` for, and
+    // the line below clears that. Without this, Safari's four failed attempts
+    // each left a live QUIC session open behind the poster.
+    if (this.wtReady && this.wt) { try { this.wt.close(); } catch { /* already gone */ } }
     this.wtReady = false;
     this.stats.lastError = `connect: ${String(e)}`;
     this.exitReason = 'transport-down';
+    // The THIRD term a WebTransport session can end on, and the one with no
+    // session to close: connect() threw before `ready` ever settled. Named
+    // apart from 'transport-down' because they are different faults — one is a
+    // link that died, the other is a link that never opened.
+    noteTransportClosed('connect-failed', this.stationId);
     logClientEvent('wt-close', `connect failed: ${String(e)}`);
     this.setState(false, this.stats.lastError);
+  }
+}
+
+// ---- liveness / RTT ping (type-9 datagram) --------------------------------
+/**
+ * SERIALISED: the ABR loop asks every 100 ms but a ping waits `timeoutMs`, so
+ * the old code kept up to six in flight and could bank three "consecutive
+ * timeouts" ~800 ms into a single hiccup. One at a time makes a strike mean a
+ * whole ping interval, and makes the strike count a real elapsed time.
+ */
+export async function pingRttImpl(this: StreamClient, timeoutMs = 500): Promise<number | null> {
+  if (!this.dgWriter || this.disposed || this.pingInFlight) return null;
+  this.pingInFlight = true;
+  try {
+    const seq = this.pingSeq++ >>> 0;
+    const b = new Uint8Array(5); b[0] = T_PING;
+    new DataView(b.buffer).setUint32(1, seq, true);
+    const t0 = performance.now();
+    const echoed = new Promise<number>((res) => this.pingWaiters.set(seq, res));
+    this.writeDatagram(b);
+    const t1 = await Promise.race([
+      echoed,
+      new Promise<number>((r) => setTimeout(() => r(-1), timeoutMs)),
+    ]);
+    this.pingWaiters.delete(seq);
+    if (t1 > 0) {
+      this.lastRtt = t1 - t0;
+      this.consecutivePingTimeouts = 0;
+      return this.lastRtt;
+    }
+    // A LOST ECHO IS NOT A LOST TILE. The ping is a datagram (droppable) raced
+    // against a setTimeout on a main thread that six decoders can starve, so
+    // strikes alone never tear the transport down any more — the session is
+    // dropped only once the server has also gone COMPLETELY silent for
+    // liveness.SILENCE_MS. Real hard closes still land instantly via
+    // `transportDown` (transport.ts wt.closed).
+    this.consecutivePingTimeouts++;
+    if (!this.transportDown && this.liveness() === 'lost') {
+      this.dropStaleSession(
+        'ping-timeout',
+        `tile silent for ${Math.round(this.msSinceServerData() ?? 0)}ms (${this.consecutivePingTimeouts} unanswered pings)`,
+      );
+    }
+    return null;
+  } finally {
+    this.pingInFlight = false;
   }
 }
 
@@ -200,6 +277,8 @@ export async function readDatagramsImpl(this: StreamClient, wt: WebTransport) {
       const { value, done } = await r.read();
       if (done || this.disposed || this.wt !== wt) break;
       this.datagramsSeen++;
+      // PROOF OF LIFE (liveness.ts): any datagram at all, echo or not.
+      this.lastServerDataAt = performance.now();
       if (value && value.length >= 5 && value[0] === T_PING) {
         const seq = (value[1] | (value[2] << 8) | (value[3] << 16) | (value[4] << 24)) >>> 0;
         const w = this.pingWaiters.get(seq);
@@ -220,6 +299,8 @@ export async function readIncomingStreamsImpl(this: StreamClient, wt: WebTranspo
       this.uniStreamsSeen++;
       this.totalUniStreamsSeen++;
       this.lastUniStreamAt = performance.now();
+      // PROOF OF LIFE (liveness.ts): a stream arriving outranks a lost echo.
+      this.lastServerDataAt = this.lastUniStreamAt;
       // Each stream is handled independently so a slow audio stream can't stall
       // per-frame video streams (and vice-versa).
       void this.handleStream(value as unknown as ReadableStream<Uint8Array>);
@@ -334,6 +415,13 @@ export function disposeImpl(this: StreamClient): void {
   // capture BEFORE wtReady is cleared — it decides whether close() is safe
   const wtReadyForClose = this.wtReady;
   this.wtReady = false;
+  // Stop the transport-stats poll and forget this connection, so a reconnect's
+  // spans never carry the previous connection's RTT or id (transportFacts.ts).
+  clearTransportFacts();
+  // Flush the last vitals samples and forget this station's envelope. The
+  // final minute before a session is torn down is the minute an investigation
+  // wants most, and without this it dies in the tab with the client.
+  endVitals();
   if (this.ffStallTimer) { clearInterval(this.ffStallTimer); this.ffStallTimer = 0; }
   if (this.noVideoTimer) { clearTimeout(this.noVideoTimer); this.noVideoTimer = 0; }
   if (this.lifecycleHooksInstalled) {

@@ -54,15 +54,17 @@ class BatchesTest(unittest.TestCase):
         (self.root / "helenos").mkdir()
         self.assertEqual(SHIP.batches(self.root), [])
 
-    def test_span_count_reads_the_batch(self):
+    def test_record_count_reads_the_batch(self):
+        # `span_count` became `record_count(path, key)` when the shipper gained
+        # a second lane: the same spool carrier now moves log batches too.
         p = spool(self.root, "helenos", "a.json", spans=3)
-        self.assertEqual(SHIP.span_count(p), 3)
+        self.assertEqual(SHIP.record_count(p, "spans"), 3)
 
     def test_an_unreadable_batch_counts_zero_rather_than_raising(self):
         d = self.root / "helenos" / "traces"
         d.mkdir(parents=True)
         (d / "b.json").write_text("{not json")
-        self.assertEqual(SHIP.span_count(d / "b.json"), 0)
+        self.assertEqual(SHIP.record_count(d / "b.json", "spans"), 0)
 
 
 class PlanTest(unittest.TestCase):

@@ -28,6 +28,13 @@ floating-point processor built into the CPU package. It is the machine most
 people picture when they picture a PDP-11 — two tall cabinets, a magenta
 console panel, washing-machine disk drives, and a room full of terminals.
 
+Those terminals were, as often as not, Lear Siegler ADM-3As: a "dumb terminal"
+whose every character came from one Signetics 2513 generator chip, 64 glyphs in
+a 5×7 dot matrix, upper case unless the optional lower-case ROM was fitted — the
+same part that lettered the Apple II in this hall. The ADM-3A printed its arrows
+on the H, J, K and L keys, and vi, written on one at Berkeley in 1976, still
+moves the cursor with them.
+
 ## Significance
 
 In 1969 Ken Thompson had written the beginnings of an operating system on a

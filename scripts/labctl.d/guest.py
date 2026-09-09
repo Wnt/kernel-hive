@@ -152,12 +152,23 @@ def cmd_key(argv):
             "'labctl type %s \"<text>\"' does POST for you."
             % (name, " ".join(sorted(X11_KEY_CODES)), name, x11_cmd_file(c, name), name)
         )
-    keys = argv[1:]
+    # Chords may be space- or "+"-separated (e.g. `ctrl esc` and `ctrl+esc`
+    # are the same chord) — qcodes never contain "+", so split every argument
+    # on it before sending.
+    keys = [q for arg in argv[1:] for q in arg.split("+") if q]
+    key_hint = (
+        "qcodes are space- or +-separated: e.g. labctl key <tile> ctrl esc | "
+        "ctrl+alt+delete | ret ; names: esc, ret, tab, spc, bs, up/down/left/right, "
+        "f1..f12, ctrl, alt, shift, meta_l"
+    )
     hold_ms, gap_ms = key_pacing(c, name)
     if hold_ms is None and gap_ms is None:
         r = cdrv(c["qmp"], "key", *keys)
         if r.returncode != 0:
-            die("key failed: %s" % r.stderr.strip())
+            msg = r.stderr.strip()
+            if "does not accept value" in msg:
+                msg = "%s\n%s" % (msg, key_hint)
+            die("key failed: %s" % msg)
     else:
         # One chord: the hold is what matters (the emulator must sample the
         # port while the key is down). The gap still applies after it, so a
@@ -167,7 +178,10 @@ def cmd_key(argv):
             if gap_ms:
                 time.sleep(gap_ms / 1000.0)
         except (OSError, RuntimeError) as exc:
-            die("key failed: %s" % exc)
+            msg = str(exc)
+            if "does not accept value" in msg:
+                msg = "%s\n%s" % (msg, key_hint)
+            die("key failed: %s" % msg)
     print("ok: sent key chord [%s] to %s" % (" ".join(keys), argv[0]))
 
 
@@ -412,8 +426,20 @@ def cmd_reset(argv):
         # failure and stays loud.
         sock = ctl_sock(c, name)
         tile_dir = c.get("dir", os.path.join(TILES_DIR, name))
-        state = read_env(os.path.join(tile_dir, "station.env")).get("IRIX_STATE")
+        env = read_env(os.path.join(tile_dir, "station.env"))
+        state = env.get("IRIX_STATE")
+        # The mame-native launcher's own checkpoint: `-state golden` from
+        # sta/<driver>/golden.sta whenever MAME_NATIVE_CHECKPOINT is not 0 —
+        # the same in-process LOADST that serve/reset-tile.sh now prefers.
+        if not state and env.get("MAME_NATIVE_DRIVER") and env.get("MAME_NATIVE_CHECKPOINT", "1") != "0":
+            if os.path.isfile(os.path.join(tile_dir, "sta", env["MAME_NATIVE_DRIVER"], "golden.sta")):
+                state = "golden"
         if sock and state:
+            # An idle-paused (SIGSTOPped) emulator never acks: thaw it and take
+            # the wake lease first, exactly as `labctl mctl` does — otherwise
+            # this waits the full LOADST timeout before falling back (measured
+            # 76 s on a paused atari800xl, 2026-09-08).
+            ensure_running(c, name)
             r = mctl_run(sock, verb="LOADST " + state, timeout=60)
             if r.returncode == 0:
                 print("ok: %s restored to '%s' savestate (mamectl LOADST)" % (name, state))

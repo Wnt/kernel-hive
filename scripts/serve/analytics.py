@@ -13,11 +13,17 @@ are what get pruned — so a probe reached twice in 2026 still reads 2 in 2028,
 long after every raw event is gone. The raw JSONL beside it is a debugging
 convenience with a short window, not the record.
 
-NO IDENTITIES, BY CONSTRUCTION. Unlike usage.py this plane has no per-person
-half at all: no user id is accepted, none is stored, and there is nothing for a
-future careless render to leak. That is not squeamishness, it is what makes the
-aggregate safe to keep forever — the only durable privacy guarantee is the data
-you never wrote down. "Which feature is dead" never needed to know who.
+NO IDENTITIES HERE — BECAUSE OF THE TABLE SHAPE, NOT A POLICY. Every row in
+this file is a COUNT keyed by (day, thing, class): `n` for 20_000 visits and `n`
+for one are the same column, so there is no row a person could be attached to
+without changing what the number means. "Which feature is dead" never needed to
+know who. The plane that DOES answer "who did this, and in what order" is
+traces.py, deliberately and richly (docs/ANALYTICS.md §0) — identity is not
+missing from this lab, it is in the store built to carry it.
+
+Until 2026-09-01 this paragraph instead claimed a privacy guarantee ("the only
+durable privacy guarantee is the data you never wrote down") and later sessions
+reasoned from it as if the operator had asked for it. They had not.
 
 THE CLASS DIMENSION IS LOAD-BEARING. This lab drives its own SPA with a fleet
 of browser probes (scripts/e2e/*.mjs). They click and type for real, so every

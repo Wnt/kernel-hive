@@ -252,7 +252,7 @@ are there to be read about.
 |---|---|
 | `signalEndpoint` / `transport` for every station **except the visitor's own clone** | These are the interactive surface. A walk-in gets exactly one of them, minted by the claim |
 | Station liveness — running / paused / stopped / wedged | Not in the manifest today, and it stays out of the walk-in plane. Pool availability for the three playable OSes is the only status a walk-in sees |
-| `/fleet`, `/admin`, `/clientcmd*` (already refused for everyone public) | Operator surfaces |
+| `/fleet`, `/admin`, `/clientcmd/admin` (already refused for everyone public) | Operator surfaces. `GET /clientcmd` (the poll) and `POST /clientlog` ARE served, since 2026-09-08: a walk-in tab reports and is reachable by `clientcmd.sh sessions`/`eval` like any signed-in tab (`clientcmd-admin-security.md`) |
 | `/museum` (3D hall) | Its tiles are live surfaces, not stills. Out of scope for v1 |
 | Any station whose registry carries `listing.state=hidden` | Dark-launched exhibits are not public yet, walk-ins included |
 

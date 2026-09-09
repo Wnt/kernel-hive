@@ -73,3 +73,44 @@ def header_of(handler) -> str | None:
         return handler.headers.get(HEADER)
     except Exception:
         return None
+
+
+#: W3C Trace Context Level 2's RESPONSE header. Same four fields as
+#: `traceparent`, same spelling, opposite direction: it names the span the
+#: server actually recorded for THIS response, so the caller can link its own
+#: client span to the server trace instead of only hoping the id it sent was
+#: honoured. This is OUR plane's mechanism and it is a real standard.
+RESPONSE_HEADER = "traceresponse"
+
+#: The vendor bridge, and nothing more. Instana's website-monitoring agent
+#: parses `Server-Timing: intid;desc=<trace-id>` off a response and sets that
+#: value as the beacon's `backendTraceId` — the one documented, non-invasive
+#: way to make an EUM beacon point at a backend trace we minted ourselves. It
+#: costs one header and buys vendor correlation for free; nothing in this repo
+#: reads it (the browser prefers `traceresponse`, above), and removing it would
+#: cost only the Instana join.
+SERVER_TIMING_HEADER = "Server-Timing"
+
+_TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")
+_SPAN_ID_RE = re.compile(r"^[0-9a-f]{16}$")
+
+
+def response_headers(trace_id: str, span_id: str, sampled: bool = True) -> dict:
+    """The two response headers that carry THIS response's trace back, or `{}`.
+
+    `{}` for anything that is not a pair of well-formed ids — a NOOP span (id
+    `""`, which is what every span is when tracing is unbound) most of all.
+    Emitting `intid;desc=` with an empty or malformed value would not merely be
+    useless: Instana silently drops a `backendTraceId` that is not 16 or 32
+    lowercase hex, so a bad value is indistinguishable from no value on their
+    side and pure noise on ours. Same rule as `parse()`: never raise, and never
+    emit a shape a reader would have to guess about.
+    """
+    if not isinstance(trace_id, str) or not isinstance(span_id, str):
+        return {}
+    if not _TRACE_ID_RE.match(trace_id) or not _SPAN_ID_RE.match(span_id):
+        return {}
+    return {
+        RESPONSE_HEADER: format(trace_id, span_id, sampled),
+        SERVER_TIMING_HEADER: f"intid;desc={trace_id}",
+    }

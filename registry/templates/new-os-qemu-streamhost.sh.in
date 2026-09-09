@@ -1,0 +1,44 @@
+#!/bin/bash
+# Launch station '@@OS_ID@@' QEMU with the streamhost display wiring (scaffolded, tier @@TIER@@).
+# Modelled on streamhost/stations/templeos/qemu-streamhost.sh:
+#   * Runs WITHOUT -snapshot so `savevm golden` PERSISTS inside state.qcow2.
+#   * If a 'golden' snapshot exists, boots STRAIGHT INTO it (-loadvm golden -S).
+#   * NEVER delete state.qcow2 -- it IS the golden snapshot. Create-if-missing only.
+#   * `loadvm golden` requires the SAME device set every launch: change devices only
+#     together with a recapture (checkpoint-guard recapture @@OS_ID@@).
+# Kill only by pidfile.
+set -e
+BASE=/data/vms/streamhost/stations/@@OS_ID@@
+STATE="$BASE/state.qcow2"
+[ -f "$BASE/qemu.pid" ] && kill "$(cat "$BASE/qemu.pid")" 2>/dev/null || true
+sleep 0.3
+rm -f "$BASE/qmp.sock" "$BASE/qemu.pid" "$BASE/serial.sock"
+# create-if-missing: the golden 'savevm' snapshot lives INSIDE this qcow2; never clobber.
+[ -f "$STATE" ] || qemu-img create -q -f qcow2 "$STATE" 2G
+# Boot straight into the fixture if the golden snapshot is already present.
+LOADVM=""
+qemu-img snapshot -l "$STATE" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+# streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
+export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
+# shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
+nohup qemu-system-x86_64 \
+  -name streamhost-@@OS_ID@@ \
+  -enable-kvm -m 1024 -smp 1 \
+  -machine pc-i440fx-11.0 -cpu host \
+  -rtc base=localtime \
+  -cdrom /data/gallery-guests/TODO/@@OS_ID@@.iso -boot d \
+  -drive file="$STATE",if=ide,format=qcow2 \
+  -vga std \
+  -display dbus,p2p=on \
+  $LOADVM \
+  -chardev socket,id=ser0,path=$BASE/serial.sock,server=on,wait=off \
+  -serial chardev:ser0 \
+  -qmp unix:$BASE/qmp.sock,server=on,wait=off \
+  -pidfile $BASE/qemu.pid \
+  >"$BASE/qemu.log" 2>&1 &
+# TODO: media (-cdrom/-drive), machine/memory, pointer device and any extra devices.
+for i in $(seq 1 40); do
+  [ -S "$BASE/qmp.sock" ] && [ -f "$BASE/qemu.pid" ] && break
+  sleep 0.5
+done
+echo "station @@OS_ID@@ qemu pid=$(cat $BASE/qemu.pid 2>/dev/null) qmp=$BASE/qmp.sock udp=@@UDP_PORT@@ loadvm='${LOADVM:-<none: cold boot>}'"

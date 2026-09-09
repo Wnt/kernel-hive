@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "atari800xl",
+  "era_year": 1983,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 77,
+        "prelude": "",
+        "value": {
+          "key": "atari800xl",
+          "script": "tiles/atari800xl.sh",
+          "outputDir": "native/atari800xl",
+          "class": "retro",
+          "estimated": "~3-5m",
+          "automation": "full",
+          "produces": "atari800xl boot disk (game/app menu ATR) + golden savestate (MAME a800xlp)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/atari800xl",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54186,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/atari800xl/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 80,
+    "stationsManifestOrder": 78,
+    "stationsManifestPrelude": "\n# atari800xl (slot 186) — Atari 800XL, host-native MAME a800xlp, boot menu of period software; atari800xl wave 2026-09-08.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 90,
+    "bindingPrelude": "",
+    "goldenOrder": 78
+  },
+  "stationDir": "atari800xl",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54186,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 186
+  },
+  "guestDoc": "docs/guests/atari800xl.md",
+  "credentialsRef": "guest/atari800xl",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "atari800xl",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":74",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/atari800xl/atari800xl_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/atari800xl/fb.shm",
+      "SH_PORT": "54186",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/atari800xl/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/atari800xl/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 186,
+    "bringUpOrder": 90,
+    "x11": {
+      "display": ":74",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "atari800xl",
+        "--udp",
+        "54186",
+        "--x11",
+        "--x11-display",
+        ":74",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/atari800xl/atari800xl.keymap",
+        "--env-append-file",
+        "$T/atari800xl/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/atari800xl/atari800xl.keymap",
+        "streamhost/stations/atari800xl/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#C8A45A",
+    "eraLabel": "1983 · Atari 800XL — MyPicoDos + Atari BASIC"
+  },
+  "museum": {
+    "id": "atari800xl",
+    "displayName": "Atari 800XL",
+    "year": 1983,
+    "lineage": "Atari 8-bit / Atari BASIC + DOS",
+    "arch": "MOS 6502C, 1.77 MHz (PAL), 64 KB; ANTIC/GTIA/POKEY",
+    "ramMB": 0,
+    "ramKB": 64,
+    "era": "1980s",
+    "accent": "#C8A45A",
+    "eraSoftware": [
+      "MyDOS + MyPicoDos 4.06N",
+      "Atari BASIC rev C (the machine's built-in language, ROM-resident)",
+      "Star Raiders (Atari, 1979)",
+      "River Raid (Activision, 1984)",
+      "The Last Word 3.2 (Jonathan Halliday)"
+    ],
+    "periodBrowser": "none — pre-web 8-bit era",
+    "iconicApps": [
+      "Star Raiders",
+      "River Raid",
+      "The Last Word"
+    ],
+    "blurb": "The Atari 8-bit most people owned: a 64 KB 800XL with Atari BASIC in ROM, a 1050 disk drive on the SIO bus and a joystick on port 1. The disk boots straight into a menu — Star Raiders, River Raid and The Last Word word processor.",
+    "notes": "Host-native station: MAME 0.289's a800xlp driver (Atari 800XL, PAL) runs on the host — drawshm frames, ctlsock keys, FIFO audio, no QEMU and no guest OS. -flop1 is hive.atr, a 90 KB single-density MyDOS disk composed on the host by scripts/build-guests/tiles/atari800xl.sh; its boot sector is MyPicoDos 4.06N, whose boot screen IS the file menu (RETURN loads the highlighted entry, ~15 s per title). Keyboard-only exhibit (pointer transport none), like apple2e, with a CX40 joystick on -ctrl1 driven from the host arrow keys and Left Alt as fire; F1/F2/F3 are the Start/Select/Option console keys. Menu navigation is the PC arrow keys directly (MyPicoDos reads the joystick port the arrow keys are mapped to, no CTRL chord needed — measured, golden stream). The menu ships three titles (Star Raiders, River Raid, The Last Word); XBASIC.XEX (an exit to Atari BASIC) was removed 2026-09-08 — it never reached a BASIC READY prompt. See docs/lab/ATARI800XL-WAVE.md."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/atari800xl.sh",
+    "driver": "a800xlp"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "atari800xl",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A — keyboard-only exhibit (pointer transport none); see the wave brief's OPEN items",
+    "keyboard": "VERIFIED by the golden5 stream 2026-09-08, 40/40 ms pacing (MAME_CTL_KEY_HOLD/GAP): menu-highlight navigation (:ctrl1:joy:JOY P1 Up/Down) and RETURN-to-load are both PROVEN on the shipped disk -- LASTWORD.XEX (default highlight, RETURN reaches The Last Word's splash), RIVRRAID.XEX and STARRAID.XEX all load and show their first screen on frames. XBASIC.XEX was REMOVED from the menu this stream (never reached a BASIC READY prompt, three DOSINI/DOSVEC fixes tried by golden4, none clean -- see docs/lab/ATARI800XL-WAVE.md). STILL OPEN: the D2: drive-select key does not switch drives, so Dropzone is unreachable.",
+    "fixture": "Atari 800XL, MAME 0.289 a800xlp running HOST-NATIVE (drawshm). MyPicoDos 4.06N boot menu on D1: (hive.atr, SINGLE density) lists LASTWORD.XEX, LW.CFG, RIVRRAID.XEX, STARRAID.XEX (alphabetical, four entries -- XBASIC.XEX was removed 2026-09-08, golden5 stream, it never reached a BASIC READY prompt); highlight starts on LASTWORD.XEX, a proven title. DROPZONE.XEX sits unreachable on a second single-density drive hive2.atr (D2:, -flop2 -- the drive-select key does not switch drives). Cold boot: directory fully painted by ~19 s. Reset is a relaunch that restores sta/a800xlp/golden.sta (rebaked 2026-09-08, quiet-sio stream, on the four-entry menu); the restore is PIXEL-IDENTICAL to the pre-capture frame. Menu navigation and RETURN-to-load are both PROVEN (see reset.keyboard); Dropzone remains open. QUIET SIO: the golden also carries SOUNDR=0 ($0041) so a MyPicoDos load no longer drives the speaker on every SIO frame (the XL OS's authentic 'beep concert' during a load) -- silenced by operator choice, reversible by recapturing the golden without the poke (streamhost/stations/atari800xl/quiet-sio.lua, docs/lab/ATARI800XL-WAVE.md)."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2 on 2026-09-08 (--like apple2, registry-to-native.py --engine=mame); the native shape is apple2e's",
+    "spine 2026-09-08: device set a800xlp (Atari 800XL PAL — a130xe is MACHINE_NOT_WORKING in 0.289, a800xl NTSC is the same driver), -sio a1050 (`-flop1..4` .atr/.xfd), -ctrl1 joy (CX40 joystick on port 1, driven from the keyboard's arrow keys + a fire key through keymap override rows), cartslot empty (built-in BASIC)",
+    "golden5 stream 2026-09-08: XBASIC.XEX removed from the menu -- RETURN on it never reached a BASIC READY prompt (three DOSINI/DOSVEC fixes tried by golden4, all worse than or equal to a plain return-to-menu), so it does not ship. demoProgram and keyboard.charMap/SH_KEY_MAP were added only to type into that XBASIC prompt and are removed with it -- the '=' key mapping (host `]` -> guest `=`) is now unproven and unshipped; see docs/lab/ATARI800XL-WAVE.md OPEN items."
+  ]
+}

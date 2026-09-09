@@ -4,6 +4,37 @@ Every week, newest first.
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 
+<a id="week-5"></a>
+
+## Week 5 · The mouse finally lands · 2026-08-30 09:00 – 2026-09-06 09:00
+
+### New stations
+
+Three machines arrived. [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) is the Amiga's road not taken: Commodore licensed AT&T's **System V Release 4**, put **OPEN LOOK** on it instead of Motif, and sold it on the *Amiga 3000UX* to almost nobody. It boots from the real 1992 installation tape onto an emulated *68030*, and runs in colour on the **A2410**, a card most owners never bought. Its cursor lands exactly where you point, by a route no other machine here uses: the museum reaches inside the guest's own X server and moves the pointer there. [ravynOS](https://kernelhive.madekivi.fi/os/ravynos) also joined. At the other extreme, [bootOS](https://kernelhive.madekivi.fi/os/bootos) is an entire operating system in **512 bytes**, the one sector a PC reads to start up: a prompt, a filesystem and a hex loader, written by Óscar Toledo G. in two evenings in 2019. Its floppy carries nineteen more one-sector programs — chess, a Doom, a BASIC, a Flappy Bird — and you run one by typing its name. That makes 75 machines, 71 of them open to visitors.
+
+### Major features
+
+<u>Five more machines now put the cursor exactly where you point.</u> A mouse in a browser sends a position; most of these guests only understand motion, which is why a cursor used to crawl behind your hand and pile up in a corner. [AIX](https://kernelhive.madekivi.fi/os/aix432) and [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue) closed that by letting the emulator read the cursor back out of the graphics chip's own registers and steer until it agrees — a real feedback loop rather than arithmetic and hope. [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody), [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) and [BeOS](https://kernelhive.madekivi.fi/os/beos) have no such chip, so instead the emulator writes the coordinate straight into the place each operating system keeps its own pointer, and nudges it awake. On all five the cursor is now 1:1: no chase, no drift, no corner.
+
+### Quality improvements
+
+The private machines handed out to signed-in visitors left everyone else on a blank front page; the museum now renders one hall for all and picks what you see by who you are. Clicks, not just movement, take the corrected route into AIX, so a button press lands where the cursor already is. AIX also had an invisible magnet — pass near a window's resize handle and the pointer stuck to it — which is gone. And the museum's own weekly test used to count cards on the collection page, quietly passing while the page was empty; it now checks the gallery really drew.
+
+### Also this week
+
+- [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) installs from a 29-segment tape image, the way an *A3000UX* really did — roughly two hours of emulated restore
+- **OPEN LOOK** is the desktop Sun and AT&T backed against **Motif**; Amiga UNIX is the only machine here that runs it
+- [bootOS](https://kernelhive.madekivi.fi/os/bootos) keeps one file per floppy track, thirty-two at most; the museum snapshots the floppy, so a deleted game is gone only until the next reset
+- Type `enter` on bootOS and it takes a program as lines of hex; the 'Hello, world' from its own manual is the exhibit's demo button
+- [AIX](https://kernelhive.madekivi.fi/os/aix432)'s graphics card had to be identified from a driver's file name before its cursor could be read back at all
+- [Mac OS 7.5.3](https://kernelhive.madekivi.fi/os/macos753) keeps its pointer in low memory, and the museum writes it there the same way the system's own mouse driver does
+- [HP-UX](https://kernelhive.madekivi.fi/os/hpuxvue)'s cursor loop needed no new emulated hardware — the registers were already there, so no machine had to be rebuilt
+- [Rhapsody](https://kernelhive.madekivi.fi/os/rhapsody)'s pointer lives at an address belonging to one saved disk, so the emulator checks it before every write and refuses if it moved
+- A new tool finds the cursor in a captured frame, which is how each of these loops was proved rather than assumed
+- Amiga UNIX seemed stuck in monochrome because a search tool had been silently skipping the one file that proved the emulator could drive its colour card
+
+*7,484 lines of code.*
+
 <a id="week-4"></a>
 
 ## Week 4 · The doors open to everyone · 2026-08-23 09:00 – 2026-08-30 09:00

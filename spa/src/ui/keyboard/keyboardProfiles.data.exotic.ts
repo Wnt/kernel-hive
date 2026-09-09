@@ -16,8 +16,9 @@ import {
 
 export type ExoticFamily =
   | 'kc854' | 'sinclairql' | 'bbcmicro' | 'armeval' | 'alto' | 'appleii'
-  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'xerox-dwarf'
-  | 'xerox-star';
+  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'samcoupe'
+  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'atari800xl'
+  | 'xerox-dwarf' | 'xerox-star';
 
 export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   // KC 85/4 — a GERMAN keyboard with an East German operating system, and the
@@ -312,6 +313,51 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   //
   // The two latches stay as well: held across a key the visitor types on the
   // QWERTY row, they reach every remaining combination the exhibit has.
+  // SAM Coupé. It could NOT take the zxspectrum family even though the machine
+  // runs Spectrum software: MGT gave the SAM a full 72-key board with real
+  // cursor keys, punctuation and a top row of function keys, so nothing the
+  // Spectrum profile exists to solve (no arrows, no Ctrl, two shifts doing
+  // different jobs) is true here. What IS unfindable is the naming: the SAM's
+  // own modifier keys are CNTRL and SYMBOL and EDIT, and the ctlsock keymap
+  // (streamhost/stations/samcoupe/samcoupe.keymap, dumped from the driver)
+  // puts them on host keys whose labels say something else entirely —
+  // CNTRL is Left Alt (0x38), SYMBOL is Left Ctrl (0x1d), EDIT is Right Alt
+  // (0xe038). A visitor pressing the key marked Ctrl gets SYMBOL.
+  //
+  // INV is the SAM's inverse-video key and lives on the host's '/' (0x35), so
+  // it is sent as that keysym rather than as a character: typing '/' on this
+  // machine reaches the matrix as INV, not as a slash (the slash is SHIFT and
+  // the '-' key). DELETE is Backspace, which is the SAM's own name for it.
+  //
+  // The function row runs F0..F9, not F1..F10 — the SAM numbers from zero, and
+  // the keymap wires the SAM's F0 to host F10 (0x44). fkeyRow() cannot express
+  // that off-by-one, so the row is written out.
+  samcoupe: {
+    family: 'samcoupe',
+    rows: [[
+      latch('sc-cntrl', 'CNTRL', XK.Alt_L, 'CNTRL — the SAM’s own control key (host Left Alt)'),
+      latch('sc-symbol', 'SYMBOL', XK.Control_L, 'SYMBOL — the second symbols on the keys (host Left Ctrl)'),
+      latch('sc-edit', 'EDIT', XK.Alt_R, 'EDIT — recalls a BASIC line for editing (host Right Alt)'),
+      tap('sc-inv', 'INV', 0x2f, { hint: 'INV — inverse video' }),
+      tap('sc-del', 'DELETE', XK.BackSpace, { hint: 'DELETE — the SAM’s backspace' }),
+      tap('sc-ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+    moreRows: [[
+      tap('sc-f0', 'F0', F(10), { hint: 'F0 — the SAM numbers its function keys from zero' }),
+      tap('sc-f1', 'F1', F(1)),
+      tap('sc-f2', 'F2', F(2)),
+      tap('sc-f3', 'F3', F(3)),
+      tap('sc-f4', 'F4', F(4)),
+      tap('sc-f5', 'F5', F(5)),
+      tap('sc-f6', 'F6', F(6)),
+      tap('sc-f7', 'F7', F(7)),
+      tap('sc-f8', 'F8', F(8)),
+      tap('sc-f9', 'F9', F(9)),
+      tap('sc-esc', 'ESC', XK.Escape, { hint: 'ESC — breaks out of a running BASIC program' }),
+    ]],
+  },
+
   zxspectrum: {
     family: 'zxspectrum',
     rows: [[
@@ -350,6 +396,56 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
       sym('sp-open', '(', '8'),
       sym('sp-close', ')', '9'),
       sym('sp-pound', '£', 'x'),
+    ]],
+  },
+
+  // Atari 800XL. The only exhibit here whose ARROW KEYS ARE NOT ARROWS: the
+  // station's generated keymap (streamhost/stations/atari800xl/atari800xl.keymap,
+  // dumped from the a800xlp driver) wires the four host arrow scancodes to
+  // :ctrl1:joy:JOY — the CX40 joystick in port 1 — because that is MAME's own
+  // default for this driver and it is what every game on the disk wants. Left
+  // Alt (0x38) is P1 Button 1, overridden there because the joystick's default
+  // KEYCODE_LCONTROL collided with the keyboard matrix's own Ctrl field.
+  //
+  // Which leaves the machine with no cursor keys at all, and that is historically
+  // exact: an Atari 8-bit has none. Moving the bar on the MyPicoDos boot menu is
+  // CTRL held across one of four punctuation keys, the way the Atari's own keycaps
+  // print them — CTRL+`-` up, CTRL+`=` down, CTRL+`+` left, CTRL+`*` right. Those
+  // four Atari keys sit on host scancodes 0x1a/0x1b/0x28/0x2b, which a US host
+  // labels `[` `]` `'` `\\`, so the chords below send those keysyms: the label is
+  // what the Atari prints, the keysym is the host key that reaches it. Without
+  // these buttons a phone visitor cannot move the menu bar at all.
+  //
+  // START / SELECT / OPTION are the three console keys beside the keyboard, on
+  // the :console port, and the keymap puts them on F1-F3. The Atari key (the
+  // inverse-video key with the fuji on it) is Right Ctrl. BREAK is deliberately
+  // ABSENT: the driver exposes it, but the generated keymap has no row for it,
+  // so a button would be silent.
+  atari800xl: {
+    family: 'atari800xl',
+    rows: [
+      [
+        ...ARROWS,
+        tap('a8-fire', 'FIRE', XK.Alt_L, { hint: 'Joystick 1 fire — the arrows above ARE the joystick' }),
+        tap('a8-ret', '\u23ce', XK.Return),
+      ],
+      [
+        chord('a8-cur-up', 'CTRL \u2013', XK.Control_L, 0x5b, 'CTRL+\u2013 \u2014 the Atari\u2019s cursor up; moves the menu bar'),
+        chord('a8-cur-down', 'CTRL =', XK.Control_L, 0x5d, 'CTRL+= \u2014 the Atari\u2019s cursor down; moves the menu bar'),
+        tap('a8-start', 'START', F(1), { hint: 'START \u2014 the console key beside the keyboard' }),
+        tap('a8-select', 'SELECT', F(2), { hint: 'SELECT \u2014 console key' }),
+        tap('a8-option', 'OPTION', F(3), { hint: 'OPTION \u2014 console key; held at power-on it disables BASIC' }),
+        tap('a8-esc', 'ESC', XK.Escape, { hint: 'ESC \u2014 leaves a MyPicoDos sub-directory' }),
+      ],
+    ],
+    moreRows: [[
+      chord('a8-cur-left', 'CTRL +', XK.Control_L, 0x27, 'CTRL++ \u2014 the Atari\u2019s cursor left'),
+      chord('a8-cur-right', 'CTRL *', XK.Control_L, 0x5c, 'CTRL+* \u2014 the Atari\u2019s cursor right'),
+      tap('a8-atari', 'Atari', XK.Control_R, { hint: 'The Atari (fuji) key \u2014 inverse video' }),
+      tap('a8-del', 'BackS', XK.BackSpace, { repeat: true, hint: 'BACK S / DELETE' }),
+      tap('a8-tab', 'Tab', XK.Tab),
+      tap('a8-caps', 'Caps', XK.Caps_Lock, { hint: 'LOWR / CAPS \u2014 this machine boots in CAPITALS' }),
+      tap('a8-space', 'Space', 0x20, { repeat: true }),
     ]],
   },
 

@@ -29,6 +29,11 @@ _CLIENTLOG_FIELDS = (
     ("sessionId", "sessionId"),
     ("tile", "tile"),
     ("ua", "ua"),
+    # WHICH BUNDLE the tab was running. Rides the FIRST event of a batch only,
+    # exactly like `ua` (spa/src/three/clientDebug.ts). Recorded because the UA
+    # alone could not answer "was this client on the shell we deployed?" — the
+    # dead end that cost a debugging cycle on 2026-09-01; see docs/ANALYTICS.md.
+    ("build", "build"),
     ("event", "event"),
     ("detail", "detail"),
     ("message", "message"),
