@@ -28,6 +28,9 @@ class LiveAndPosterTests(unittest.TestCase):
     def test_is_live_requires_production_and_streamhost(self):
         self.assertTrue(lib.is_live(_row("a", 1990)))
         self.assertFalse(lib.is_live(_row("a", 1990, lifecycle="showcase")))
+        hidden = _row("a", 1990)
+        hidden["listing"] = {"state": "hidden"}
+        self.assertFalse(lib.is_live(hidden))
         self.assertFalse(lib.is_live(_row("a", 1990, transport="bridge")))
 
     def test_is_poster_is_the_showcase_lifecycle(self):

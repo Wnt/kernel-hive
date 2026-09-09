@@ -101,6 +101,10 @@ def is_poster(row: dict[str, Any]) -> bool:
 def is_live(row: dict[str, Any]) -> bool:
     """A streamed, currently-backed station — matches the "streamhost
     production tiles" figure `stations-registry.py count` prints."""
+    if row.get("listing", {}).get("state") == "hidden":
+        # Deactivated or dark-launched: the gallery does not list it, so a
+        # README grid must not link it either (medley, 2026-09-09).
+        return False
     return row.get("lifecycle") == "production" and row.get("stream", {}).get("transport") == "streamhost"
 
 

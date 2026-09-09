@@ -1,6 +1,6 @@
 # Kernel Hive
 
-**A living computer museum. Ninety-odd machines, from 1970 to today, running
+**A living computer museum. Operating systems from 1970 to today, running
 right now — and you can move their mice.**
 
 <a href="https://kernelhive.madekivi.fi">
@@ -106,11 +106,10 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/daybreak"><img src="spa/public/posters/daybreak/desktop.webp" width="150" alt="Xerox 6085"></a><br><sub>Xerox 6085 · 1985</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/armeval"><img src="spa/public/posters/armeval/desktop.webp" width="150" alt="Acorn ARM Evaluation System"></a><br><sub>Acorn ARM Evaluation System · 1986</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/amiga"><img src="spa/public/posters/amiga/desktop.webp" width="150" alt="Amiga 500"></a><br><sub>Amiga 500 · 1987</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="150" alt="Interlisp Medley"></a><br><sub>Interlisp Medley · 1987</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/apple2"><img src="spa/public/posters/apple2/desktop.webp" width="150" alt="Apple II"></a><br><sub>Apple II · 1988</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/kc854"><img src="spa/public/posters/kc854/desktop.webp" width="150" alt="KC 85/4"></a><br><sub>KC 85/4 · 1988</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="150" alt="SAM Coupé"></a><br><sub>SAM Coupé · 1989</sub></td>
 </tr>
 </table>
@@ -147,11 +146,10 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/slackware"><img src="spa/public/posters/slackware/desktop.webp" width="150" alt="Slackware 3.4"></a><br><sub>Slackware 3.4 · 1997</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/rhapsody"><img src="spa/public/posters/rhapsody/desktop.webp" width="150" alt="Rhapsody DR2"></a><br><sub>Rhapsody DR2 · 1998</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/aix432"><img src="spa/public/posters/aix432/desktop.webp" width="150" alt="IBM RS/6000 — AIX 4.3.3"></a><br><sub>IBM RS/6000 — AIX 4.3.3 · 1999</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/amigaos35"><img src="spa/public/posters/amigaos35/desktop.webp" width="150" alt="AmigaOS 3.5"></a><br><sub>AmigaOS 3.5 · 1999</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/netbsd14"><img src="spa/public/posters/netbsd14/desktop.webp" width="150" alt="NetBSD 1.4.1"></a><br><sub>NetBSD 1.4.1 · 1999</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/w2kalpha"><img src="spa/public/posters/w2kalpha/desktop.webp" width="150" alt="Windows 2000 for Alpha"></a><br><sub>Windows 2000 for Alpha · 1999</sub></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/w2kalpha"><img src="spa/public/posters/w2kalpha/desktop.webp" width="150" alt="Windows 2000 for Alpha"></a><br><sub>Windows 2000 for Alpha · 1999</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/win98se"><img src="spa/public/posters/win98se/desktop.webp" width="150" alt="Windows 98 SE"></a><br><sub>Windows 98 SE · 1999</sub></td>
 </tr>
 </table>
@@ -178,7 +176,6 @@ straight into the running system.
 <tr>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/freebsd411"><img src="spa/public/posters/freebsd411/desktop.webp" width="150" alt="FreeBSD 4.11"></a><br><sub>FreeBSD 4.11 · 2005</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/helenos"><img src="spa/public/posters/helenos/desktop.webp" width="150" alt="HelenOS"></a><br><sub>HelenOS · 2006</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/android"><img src="spa/public/posters/android/desktop.webp" width="150" alt="Android"></a><br><sub>Android · 2008</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/pcbsd"><img src="spa/public/posters/pcbsd/desktop.webp" width="150" alt="PC-BSD 1.5.1"></a><br><sub>PC-BSD 1.5.1 · 2008</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/redstar2"><img src="spa/public/posters/redstar2/desktop.webp" width="150" alt="Red Star OS 2.0"></a><br><sub>Red Star OS 2.0 · 2009</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/tinycore"><img src="spa/public/posters/tinycore/desktop.webp" width="150" alt="Tiny Core Linux"></a><br><sub>Tiny Core Linux · 2009</sub></td>
@@ -193,21 +190,20 @@ straight into the running system.
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/ninefront"><img src="spa/public/posters/ninefront/desktop.webp" width="150" alt="9front (Plan 9)"></a><br><sub>9front (Plan 9) · 2011</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/toaruos"><img src="spa/public/posters/toaruos/desktop.webp" width="150" alt="ToaruOS"></a><br><sub>ToaruOS · 2011</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/redstar3"><img src="spa/public/posters/redstar3/desktop.webp" width="150" alt="Red Star OS 3.0 Desktop"></a><br><sub>Red Star OS 3.0 Desktop · 2013</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/sailfishos"><img src="spa/public/posters/sailfishos/desktop.webp" width="150" alt="Sailfish OS"></a><br><sub>Sailfish OS · 2013</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/templeos"><img src="spa/public/posters/templeos/desktop.webp" width="150" alt="TempleOS"></a><br><sub>TempleOS · 2013</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/serenityos"><img src="spa/public/posters/serenityos/desktop.webp" width="150" alt="SerenityOS"></a><br><sub>SerenityOS · 2018</sub></td>
 </tr>
 <tr>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/postmarketos"><img src="spa/public/posters/postmarketos/desktop.webp" width="150" alt="postmarketOS"></a><br><sub>postmarketOS · 2017</sub></td>
-<td align="center"><a href="https://kernelhive.madekivi.fi/os/serenityos"><img src="spa/public/posters/serenityos/desktop.webp" width="150" alt="SerenityOS"></a><br><sub>SerenityOS · 2018</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/bootos"><img src="spa/public/posters/bootos/desktop.webp" width="150" alt="bootOS"></a><br><sub>bootOS · 2019</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/win11"><img src="spa/public/posters/win11/desktop.webp" width="150" alt="Windows 11"></a><br><sub>Windows 11 · 2021</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/aros"><img src="spa/public/posters/aros/desktop.webp" width="150" alt="AROS"></a><br><sub>AROS · 2024</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/haiku"><img src="spa/public/posters/haiku/desktop.webp" width="150" alt="Haiku R1/beta5"></a><br><sub>Haiku R1/beta5 · 2024</sub></td>
-</tr>
-<tr>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/openvms"><img src="spa/public/posters/openvms/desktop.webp" width="150" alt="OpenVMS x86-64 9.2"></a><br><sub>OpenVMS x86-64 9.2 · 2024</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/reactos"><img src="spa/public/posters/reactos/desktop.webp" width="150" alt="ReactOS 0.4.14"></a><br><sub>ReactOS 0.4.14 · 2024</sub></td>
+</tr>
+<tr>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/ravynos"><img src="spa/public/posters/ravynos/desktop.webp" width="150" alt="ravynOS"></a><br><sub>ravynOS · 2025</sub></td>
+<td align="center"><a href="https://kernelhive.madekivi.fi/os/sculpt"><img src="spa/public/posters/sculpt/desktop.webp" width="150" alt="Genode Sculpt OS"></a><br><sub>Genode Sculpt OS · 2025</sub></td>
 <td align="center"><a href="https://kernelhive.madekivi.fi/os/openbsd"><img src="spa/public/posters/openbsd/desktop.webp" width="150" alt="OpenBSD 7.9"></a><br><sub>OpenBSD 7.9 · 2026</sub></td>
 </tr>
 </table>
@@ -223,6 +219,8 @@ Backends retired; the SPA renders a static placard rather than dialing a dead se
 </tr>
 </table>
 <!-- lineup:end -->
+
+
 
 
 
