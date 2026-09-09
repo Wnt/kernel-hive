@@ -116,16 +116,28 @@ OUT="${3:-/data/vms/streamhost/assets/$STATION/mame-native/$NATIVE_SUBTARGET}"
 ROMS="$(dirname "$OUT")/roms"
 UPSTREAM="${MAME_GIT_URL:-https://github.com/mamedev/mame.git}"
 JOBS="${JOBS:-$(nproc)}"
-MAME_TAG=mame0289
-MAME_BASE=f34f02505e32c1993c6a782b6814232cbfc74e36
+# PIN: tag mame0289 == the commit every MAME station ships, UNLESS a stanza
+# overrides it. A stanza sets NATIVE_MAME_TAG + NATIVE_MAME_BASE together
+# (never one without the other) when the fleet pin cannot boot its machine —
+# domainos is the first: 0.289's DN3500 Normal-mode keyboard self-test hangs
+# forever (docs/lab/DOMAINOS-WAVE.md "wall 1"), 0.276 boots fine. Every
+# station that does not set these gets exactly the fleet pin, byte-identical
+# to before this override existed.
+MAME_TAG="${NATIVE_MAME_TAG:-mame0289}"
+MAME_BASE="${NATIVE_MAME_BASE:-f34f02505e32c1993c6a782b6814232cbfc74e36}"
 PATCHDIR="$HERE/../patches"
 # mame-kiosk-no-ui: a station streams the guest's framebuffer and NOTHING
 # else — no savestate popmessage, no FPS overlay, no menus (env-gated on
 # MAME_NO_UI, which the shared launcher sets).
+# A stanza pinned to a different MAME_TAG needs its own base-patch variants
+# (same behaviour, different hunk context — see the *-0276.patch headers for
+# why a straight reuse of the 0289 hunks cannot apply) via NATIVE_BASE_PATCHES;
+# every other station keeps this exact trio, unchanged.
+if [ -z "${NATIVE_BASE_PATCHES+set}" ]; then
+  NATIVE_BASE_PATCHES=(mame-ctlsock.patch mame-drawshm.patch mame-kiosk-no-ui.patch)
+fi
 PATCHES=(
-  mame-ctlsock.patch
-  mame-drawshm.patch
-  mame-kiosk-no-ui.patch
+  "${NATIVE_BASE_PATCHES[@]}"
   "${NATIVE_EXTRA_PATCHES[@]}"
 )
 for p in "${PATCHES[@]}"; do
@@ -142,6 +154,17 @@ if [ ! -d mame/.git ]; then
   git clone -q --filter=blob:none "$UPSTREAM" mame
 fi
 cd mame
+# A station whose stanza overrides NATIVE_MAME_TAG gets its own WORK dir by
+# convention (callers pass one, e.g. BUILD-native-domainos), but the default
+# WORK dir is keyed on $STATION alone — so if this station's own tag ever
+# changes, or a tree gets reused across a manual experiment, refuse to build
+# an incremental rebuild against build objects (kept on purpose, "git clean
+# -fd" NOT "-x") left over from a DIFFERENT MAME version rather than silently
+# mixing object files across tags.
+if EXISTING_TAG="$(git describe --tags --exact-match 2>/dev/null)"; then
+  [ "$EXISTING_TAG" = "$MAME_TAG" ] ||
+    die "$WORK/mame is checked out at $EXISTING_TAG, not $MAME_TAG — remove it or pass a different work-dir (stale build objects from a different MAME version must not be reused)"
+fi
 git fetch -q --tags origin
 git checkout -q "$MAME_TAG"
 git reset -q --hard "$MAME_TAG"

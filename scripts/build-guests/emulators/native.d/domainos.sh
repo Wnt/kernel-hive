@@ -5,18 +5,32 @@
 # driver registers its state, so the shared launcher's SAVEST/LOADST
 # checkpoint applies — the golden stream owns the verdict).
 #
-# The DN3500's default layout (apollo_15i.lay, view "Apollo (1024x800)")
-# paints the 1024x800 raster PLUS a 44 px strip of function-key legends and
-# LEDs under it — a MAME artefact, not the machine. The layout's own
-# "XGA Screen (1024x768)" view is the bare raster, so the station publishes
-# that view at the fleet's 1024x768 surface (MEASURED 2026-09-09: the
-# default view snapshots at 1024x844; `-view xga` is NOT accepted as a
-# short name — the full view name is required).
+# The DN3500's default layout view paints the raster PLUS a function-key
+# legend/LED strip under it — a MAME artefact, not the machine (MEASURED
+# 2026-09-09: the DEFAULT view, no -view given, snapshots at 1024x844, not
+# the 1024x800 the layout's own name implies). The layout's
+# "XGA Screen (1024x768)" view name is NOT honoured by the drawshm target
+# (docs/lab/DOMAINOS-WAVE.md, "the recipe that reaches the desktop") — the
+# view the shm target actually draws is "Screen 0 Standard (4:3)", the bare
+# raster with no legend strip, which is what the station publishes at the
+# fleet's 1024x768 surface.
 
 NATIVE_DRIVER=dn3500
 NATIVE_SUBTARGET=domainos
 NATIVE_SOURCES=src/mame/apollo/apollo.cpp
 NATIVE_GEOM=1024x768
+# MAME 0.289 (the fleet pin) cannot boot this machine in Normal mode: the
+# ROM's KEYBOARD self-test spins forever polling the SIO, on a pristine
+# unpatched 0.289 build, in every graphics mode tried, for 220 s — bisected
+# by sampling the 68030 PC and swapping diserial.cpp/DUART hunks between
+# 0.276 and 0.289 without finding the exact regressing change (a 68030 core
+# or device difference somewhere in that range). Stock 0.276 boots Normal
+# mode fine, so this station pins to it instead of the fleet tag. Do NOT
+# "fix" this back to the fleet default without re-proving Normal-mode boot
+# on 0.289 first (docs/lab/DOMAINOS-WAVE.md "wall 1").
+NATIVE_MAME_TAG=mame0276
+NATIVE_MAME_BASE=758c8a169a44f0ce3abfd28e8b5c44cc49148eba
+NATIVE_BASE_PATCHES=(mame-ctlsock-0276.patch mame-drawshm-0276.patch mame-kiosk-no-ui-0276.patch)
 # Device set per docs/lab/DOMAINOS-WAVE.md, confirmed on stock 0.276
 # -listslots/-listmedia (2026-09-09): isa1 = OMTI 8621 ESDI/floppy
 # controller (winchester1 = -disk1 <awd>), isa2 = Archive SC-499 cartridge
@@ -24,7 +38,7 @@ NATIVE_GEOM=1024x768
 # 3C505 EtherLink Plus (Domain/OS TCP/IP; the retronet tap is OPEN). All
 # three are the driver's defaults — set explicitly so a MAME default change
 # can never silently drop one, exactly as samcoupe does for its drives.
-NATIVE_MAME_ARGS=(-isa1 wdc -isa2 ctape -isa3 3c505 -view "XGA Screen (1024x768)")
+NATIVE_MAME_ARGS=(-isa1 wdc -isa2 ctape -isa3 3c505 -view "Screen 0 Standard (4:3)")
 # Pointer: the Apollo mouse hangs off the keyboard (apollo_kbd.cpp):
 # :kbd:mouse1 buttons ("Left/Right/Center mouse button"), :kbd:mouse2/3 =
 # IPT_MOUSE_X/Y as 8-bit fields the keyboard device DIFFERENCES per sample
