@@ -67,6 +67,16 @@ guest has no install, no golden bake and no device-set race.
 - **validate enums**: `stream.pointer.method` for this route is `x11-xtest`
   (not a new name), `network.status` is `none`; `demoProgram.perCharMs` must
   be ≥ hold+gap (80 at 40/40).
+- **Idle auto-pause eats a hand-driven proof.** With no visitor attached the
+  daemon SIGSTOPs maiko after 60 s (`[idle] no sessions for 60s -> guest
+  paused`, `State: T`), so an `xdotool type` on `:91` changes nothing and a
+  naive proof reads as "keyboard dead". Hold the wake lease first
+  (`touch /run/streamhost/wake/medley.lease`, TTL 90 s) and wait for
+  `State: S` — same trap as the QMP stations' "probe with a wake lease" row,
+  now proven on an X-client station too.
+- **`maiko` refuses a bare positional sysout** when run outside
+  `run-medley`: it wants `LDESRCESYSOUT` in the environment (the usage text
+  says so). Both the launcher and the builder export it.
 - **Release asset naming**: the tarball is
   `medley-full-linux-x86_64-<rel>.tgz` where `<rel>` already starts with
   `medley-…` — the filename does NOT repeat the prefix. A guessed URL 404s.
@@ -79,14 +89,36 @@ SH_X11TEST_KEYS=1`, `xvfb_alloc --display <slot-100>`, reap by
 
 ## Landing
 
-See the report; `station-land.sh medley` output is pasted there.
+`scripts/dev/station-land.sh medley` (no `--golden`: the "golden" is the
+release sysout in `assets/medley`), run detached with its log polled
+(`/data/vms/sandbox/medley/land.log`). First attempt stopped at step 4: the
+tileWiring visitor-copy test rejected the word "emulated" in the blurb;
+reworded, retested, relaunched. Second attempt: window taken at once (no
+queue), main fast-forwarded to `8a6450aa` (merge of origin/main `f757e84c`),
+gate green (eslint+knip, vitest, shfmt+shellcheck on 3 files, size budget,
+generated drift, box state), `box-deploy --apply`, smoke rig withdrawn,
+`station-up` (`re-emitted with --pin-machine`, unit active, LISTENING udp/54191,
+5 runtime docs carry `medley`, `POST /restore/medley -> 200`), 11 claims
+re-homed, SPA built with the Instana key and deployed, `sculpt`'s
+dark-launch overlay re-applied, window released. `== LANDED medley` at
+18:34 UTC.
 
 ## Proofs (rule 9)
 
 - `smoke/f2.png`, `f30.png` — boot ≤2 s, stable scene.
 - `smoke/typed.png` — keyboard.
 - `smoke/p1.png`, `p2.png` + xdotool readback — pointer two targets.
-- Relaunch proof on the real launcher: see the report.
+- Launcher relaunch proof on a rig on `:91` (`rig/launch1.png`,
+  `dirty.png`, `launch2.png`): launch1 == launch2 pixel-identical, dirty
+  differs at the Exec prompt; second launch reaped the first through
+  `/proc/<pid>/exe`; ~6 s wall.
+- Landed station: `medley-up.png` / `medley-landed.png` (labctl shot) show
+  the Exec with the time-of-day greeting.
+- Live station keys + pointer under a wake lease (`live/typed2.png`):
+  `(+ 40 2)` → `42` in the Exec; `xdotool getmouselocation` 900,700 exact.
+- Live `labctl reset medley`: new maiko pid (3823782 → 3855955), pristine
+  Exec back; the only pixels that differ from the pre-reset frame are the
+  greet's greeting ("Good evening." → "Hi.") and the status-bar clock.
 - `rn-verify.sh`: not applicable (no network plane; reservation only).
 - IM: not applicable.
 
@@ -101,15 +133,33 @@ See the report; `station-land.sh medley` output is pasted there.
 
 ## Measured timeline
 
-Filled from `session-timeline.py` in the report.
+From file mtimes and git timestamps (the fork's transcript is the
+coordinator's, so `session-timeline.py` measures the parent, not this wave).
+Clock zero = `wave.sh alloc` (18:13:39 UTC); the coordinator's fork spawn was
+~2 min earlier.
 
 | Milestone | Wall clock (UTC) | Minute |
 |---|---|---|
-| `wave.sh alloc` / ledger | 18:13 | 0 |
-| smoke frame (Exec up) | 18:19 | 6 |
-| `/os/medley` viewable | 18:22 | 9 |
+| `wave.sh alloc` / `.wave.env` | 18:13:39 | 0 |
+| smoke frame: Exec up on `:91` (`f2.png`) | 18:15:38 | 2 |
+| keyboard + two-target pointer proofs (`typed.png`, `p2.png`) | 18:21:57 | 8 |
+| `/os/medley` published (smoke rig `signaling.json`) | 18:23:08 | 9.5 |
 | `/os/medley` interactive (x11test flags) | 18:24 | 11 |
+| ledger + everything committed (`869f3d80`) | 18:31:36 | 18 |
+| main pushed (`8a6450aa`) | 18:32:35 | 19 |
+| `station-up` shot / `== LANDED` | 18:34:10 / 18:34:18 | 21 |
+| live reset + wake-lease proofs done | 18:38 | 25 |
 
 ## Teardown
 
-See the report.
+- Smoke rig: withdrawn by `station-land` (`smoke-rig.sh --down`); its maiko,
+  Xvfb and the placeholder-QMP python were killed by pidfile beforehand.
+- Rig dir `/data/vms/sandbox/medley/rig` removed.
+- No stream sandboxes were created (single-session wave).
+- Check: a `/proc/*/exe` sweep for `assets/medley` or `sandbox/medley` finds
+  exactly one process, the station's maiko (pid 3855955 after the reset);
+  `kh-claim ls` shows every medley claim held by session `medley`, the
+  station session.
+- Media staged at `/data/vms/sandbox/medley/media/` (tarball + unpacked copy,
+  185 MB + 400 MB) and the build dir `build/` are kept as the wave's
+  provenance; delete with the sandbox.

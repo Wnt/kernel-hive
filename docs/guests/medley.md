@@ -53,11 +53,17 @@ through 60 s. **Boot ≤ 2 s.**
 
 `resetMode=relaunch`, no statefile: kill by `mame.pid`, `rm -rf work/`,
 relaunch the release sysout. Fixture = the default greet scene: white root,
-the `Exec (XCL)` listener top-left with the greet transcript ending in `Hi.`
-and the `2>` prompt, the Medley logo top-right, the black status line across
-the top.
+the `Exec (XCL)` listener top-left with the greet transcript ending in a
+time-of-day greeting (`Hi.` / `Good evening.` — MEDLEYDIR-INIT picks it, so
+two resets can differ by that one line) and the `2>` prompt, the Medley logo
+top-right, the black status line across the top.
 
-## Input proofs (framebuffer, 2026-09-09, smoke rig on `:91`)
+## Input proofs (framebuffer, 2026-09-09)
+
+Live station, wake lease held: `(+ 40 2)` typed over XTEST returned `42` in
+the Exec (`live/typed2.png`); pointer readback 900,700 exact; `labctl reset`
+gave a new pid and the pristine Exec (only the greeting and clock differ).
+Earlier, on the smoke rig on `:91`:
 
 - **Pointer PASS**: `xdotool mousemove 200 300` and `900 700` read back
   exactly; the click at 200,300 gave the Exec keyboard focus.
@@ -69,11 +75,17 @@ the top.
 
 ## Driving it by hand
 
-There is no QMP and no exec channel. With no visitor attached:
+There is no QMP and no exec channel. With no visitor attached the daemon
+SIGSTOPs maiko after 60 s idle, so **hold the wake lease first** or every
+keystroke silently queues (measured 2026-09-09: a typed form changed nothing
+until the lease was held):
 
 ```bash
-ssh lab 'DISPLAY=:91 xdotool mousemove 200 300 click 1 type "(+ 40 2)"; DISPLAY=:91 xdotool key Return'
+ssh lab 'touch /run/streamhost/wake/medley.lease   # TTL 90 s; re-touch for longer work
+         grep State /proc/$(cat /data/vms/streamhost/stations/medley/mame.pid)/status   # want S, not T
+         DISPLAY=:91 xdotool mousemove 200 300 click 1 type "(+ 40 2)"; DISPLAY=:91 xdotool key Return'
 ssh lab 'labctl shot medley'      # reads the X root
+ssh lab 'labctl reset medley'     # relaunch: new pid, pristine Exec in ~3 s
 ```
 
 Never inject while a session is attached — the daemon is the single injector
