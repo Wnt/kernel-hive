@@ -85,7 +85,27 @@ scripted replay of the clicks (Network → Wired, ram fs → Use), not a rebake.
 ## Landing
 
 `scripts/dev/station-land.sh sculpt --golden /data/vms/sandbox/sculpt/bake/disk.qcow2`
-— output pasted below by the landing run.
+(window taken 18:58Z, released 19:00Z): fetch+merge clean, scene rows rebuilt,
+validate + vitest green, pre-push gate green (eslint/knip, vitest, ruff, shfmt/
+shellcheck ×4, size budget, drift, box state), **main pushed `cb79c525`**,
+`box-deploy --apply` (452 same), golden swapped in (old disk parked as
+`disk.qcow2.pre-20260909-185833`), smoke rig down, `station-up.sh` → unit
+active, LISTENING udp/54190, first frame 1024x768 in 1.9 s, claims re-homed.
+
+**Step 11 then FAILED on a false negative:** `station-land.sh` ran
+`rn-verify.sh` on CT950, where `ip link`/systemd/`pct` see nothing, so it
+printed `tap=none unit=inactive reservation=0` for a station that was up. The
+same check on labhost: `tap=UP master=vmbr-rn unit=active env-rn=3
+reservation=1 OK`. Fixed at the root in this wave (`station-land.sh` now calls
+the deployed copy through `ssh lab`). The failure also skipped step 12 (SPA
+build + deploy) and left the smoke rig's dark-launch overlay masking the
+registry row as "sculpt (smoke rig)"; both were finished by hand: overlay
+withdrawn, manifests republished, SPA built + deployed in a second landing
+window, other waves' overlays re-applied.
+
+Live proofs after landing: `labctl reset sculpt` → `loadvm golden` restored in
+3.4 s and `labctl shot` shows the bake scene (`sculpt-after-reset.png`); a
+`/proc/*/cwd` sweep finds no QEMU left under `/data/vms/sandbox/sculpt/`.
 
 ## Proofs (the framebuffer is the only proof — rule 9)
 
@@ -93,14 +113,17 @@ scripted replay of the clicks (Network → Wired, ram fs → Use), not a rebake.
 - Scale + two-target readback: `bake/m1..m8.ppm` with `cursor-locate.py find`
   (711,533 → 811,533 → 811,633 → edge → 523,333 → 543,333 → 543,313 → 544,314).
 - Network: `bake/r1.png` (Network panel "Wired 10.99.0.38/24"), gateway journal
-  `retronet-dhcp 52:54:00:52:4e:26 -> OFFER/ACK 10.99.0.38` (MAC is the
-  scheme value, not a real hardware address), `bridge fdb` count 1.
+  `retronet-dhcp <station MAC> -> OFFER/ACK 10.99.0.38` (the MAC stays in the
+  box-side local.env, rule 1), `bridge fdb` count 1.
 - Golden + restore: `bake/g0.ppm` (bake frame, pointer 700,450) vs `bake/g1.ppm`
   after kill → `-loadvm golden -S` → `cont`: diff bbox `None`; `g2.ppm` pointer
   at 800,450 after +100 units.
 
 ## OPEN items
 
+- **`fdb=0` in rn-verify** after landing: reported, not gated — the daemon
+  idle-pauses the guest, so the L2 entry ages out; it was 1 during the bake
+  right after the DHCP ACK.
 - **Retronet web plane, browser half:** the guest is ON the plane (reservation
   taken, L2 seen), but a browser is a depot package fetched from
   `depot.genode.org`, which the contained plane cannot serve. Next step: mirror
