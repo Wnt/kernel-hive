@@ -82,9 +82,10 @@ const DEMO_PROGRAMS = {
     "perCharMs": 60
   },
   "domainos": {
-    "label": "TODO(spa): a DM shell demo once the Display Manager is reachable",
+    "label": "Type a Display Manager command — `cp` runs a program in a new pad",
     "lines": [
-      "date"
+      "cp /com/pst",
+      "cp /com/sh"
     ],
     "runCommand": "",
     "perCharMs": 380

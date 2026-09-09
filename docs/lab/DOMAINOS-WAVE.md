@@ -208,7 +208,41 @@ harmless artefact, which is exactly how this nearly shipped.
 - ctlsock commands take a sequence prefix (`1 STAT`). The binary **ignores
   SIGTERM**; kill by pidfile with SIGKILL after a `/proc/<pid>/exe` check.
 
+## The state it landed in (2026-09-10)
+
+Everything is on `main` and deployed: the 0.276 binary with the full patch
+stack, the post-CALENDAR station disk, the golden checkpoint, the poster, the
+docs, the registry entry. `streamhost@domainos` is active, and these were proven
+on the framebuffer at landing:
+
+- the launcher brings the station up **at the Display Manager desktop** from the
+  golden (`domainos-up.png`);
+- `POST /restore/domainos` restarts the service and it comes back to the
+  **identical desktop** (`after-reset.png`) with the disk re-copied from the
+  immutable template.
+
+**The listing is HIDDEN**, because it does not reliably STAY there — see open
+item 0. Drop `listing.state: hidden` from `registry/stations/domainos.json`
+when that is understood; nothing else is waiting on it.
+
 ## Still open
+
+0. **The desktop does not stay up — THE ONE THING BLOCKING THE LISTING.** Twice
+   the guest was found back at the boot ROM printing `>REBOOTING` /
+   `SALVAGING BOOT VOL.`: once minutes after a good post-reset frame and a
+   `labctl type domainos "cp /com/pst"`, and once on the first launch before the
+   immutable-disk template existed. **No service restart appears in the journal
+   either time** — the unit ran continuously across it — so the machine is being
+   reset from inside, not relaunched. What is known: the idle-pause SIGSTOPs the
+   emulator and the daemon logs `[idle] driver active but guest paused ->
+   resumed`; the input-router shows `mamesock accepted=0` throughout, so the
+   typed keys did not travel that path (labctl writes the mamectl socket
+   directly). Next steps, cheapest first: reproduce on a sandbox rig by
+   SIGSTOP/SIGCONT of a `-state golden` launch with NO typing (does an
+   idle-pause cycle alone do it?); then with typing and no pause; and read
+   `mame.log` across the transition for a MAME-side reset. Suspect the
+   interaction between a SIGSTOPped emulator and the Apollo boot ROM's
+   watchdog/timer before suspecting the DM.
 
 1. **Pointer** — §6 above, with the exact next step.
 1b. **The fast in-process reset** — off for this station, and the cause is

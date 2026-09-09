@@ -185,9 +185,10 @@
     "pointer OPEN: the emulated Apollo keyboard never leaves compatibility mode, so its mouse ports are never sampled — next step is making Domain/OS send 0xFF 0x01 (docs/guests/domainos.md)"
   ],
   "demoProgram": {
-    "label": "TODO(spa): a DM shell demo once the Display Manager is reachable",
+    "label": "Type a Display Manager command — `cp` runs a program in a new pad",
     "lines": [
-      "date"
+      "cp /com/pst",
+      "cp /com/sh"
     ],
     "runCommand": "",
     "perCharMs": 380
@@ -203,5 +204,10 @@
       "*": "\"",
       "~": "`"
     }
+  },
+  "listing": {
+    "state": "hidden",
+    "reason": "The station reaches its Display Manager scene from the golden and survives a reset (both proven on the framebuffer 2026-09-10), but it does not STAY there: twice the guest was found back at the boot ROM salvaging its boot volume, once after a labctl type and once shortly after a restart, with no service restart in the journal either time. Until that is understood the exhibit can show a boot transcript instead of a desktop, so it stays off the floor. Everything else — binary, disk, checkpoint, poster, docs — is landed and deployed; drop this block when the desktop is proven stable across an idle-pause cycle and a type-in demo. See docs/lab/DOMAINOS-WAVE.md.",
+    "since": "2026-09-10"
   }
 }
