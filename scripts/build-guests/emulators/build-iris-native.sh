@@ -103,9 +103,15 @@ say "building iris ${SHA:0:7} features=$IRIS_FEATURES"
 # ---- build -----------------------------------------------------------------
 (
   cd "$WORK"
-  # The box exports a SHARED CARGO_TARGET_DIR; keep this build's artifacts local
-  # so two concurrent emulator builds cannot fight over one target tree.
-  unset CARGO_TARGET_DIR
+  # Keep this build's artifacts local so two concurrent emulator builds cannot
+  # fight over one target tree. NOTE: `unset CARGO_TARGET_DIR` is NOT enough on
+  # this box -- /root/.cargo/config.toml sets `[build] target-dir` to the shared
+  # streamhost tree, and a config value applies precisely when the env var is
+  # absent. It has to be SET, because the env wins over the config file.
+  # (scripts/build-guests/tiles/indyr4400.sh's build_iris_native unsets it and
+  # then installs from ./target/release/iris, which on this box is a path that
+  # does not exist.)
+  export CARGO_TARGET_DIR="$WORK/target"
   # rustup reads the fork's pinned rust-toolchain.toml from this directory and
   # installs the dated nightly if it is missing. Record what it resolved to.
   say "toolchain: $(rustc --version) (pin: $(grep -oP 'channel\s*=\s*"\K[^"]+' rust-toolchain.toml))"
@@ -122,7 +128,10 @@ BIN="$WORK/target/release/iris"
 # The frame plane is the reason this builder exists; a binary without it would
 # start, log nothing unusual, and stream a black screen forever. Assert the
 # symbol is in there before installing it.
-strings -a "$BIN" | grep -q '^IRIS_SHM_PATH$' ||
+# Substring, not a whole-line match: rustc packs string literals end to end with
+# no NUL between them, so IRIS_SHM_PATH shares a `strings` line with its
+# neighbours and `grep -x` finds nothing in a binary that has it.
+strings -a "$BIN" | grep -q 'IRIS_SHM_PATH' ||
   die "$BIN has no IRIS_SHM_PATH knob — that is upstream, not the fork"
 
 install -d -m 0755 "$(dirname "$OUT")"
