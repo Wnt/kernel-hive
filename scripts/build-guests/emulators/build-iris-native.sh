@@ -60,13 +60,33 @@
 # rustup honours it automatically from the checkout; this script only records
 # which one it actually used.
 #
-# FEATURES: lightning,rex-jit,chd,jitv2.
-#   jitv2   the measured 4x CPU win (a fixed workload: 8.4 s -> 1.95 s) and it
-#           boots IRIX; the old 43d2715 wedge is gone.
+# FEATURES: lightning,rex-jit,chd. NOT jitv2 — see below.
 #   chd     the disk backend the golden bake needs.
-#   The set is part of the provenance triple: iris's own snapshot.toml records
-#   the cargo feature list and REFUSES a restore that does not match it, so
-#   changing this line invalidates every golden.
+#
+# WHY jitv2 IS OFF, measured 2026-09-10 on the iris-land rig. jitv2 buys a 4x
+# CPU win on a fixed workload (8.4 s -> 1.95 s) and it boots IRIX, which is why
+# the pin bump took it. It also MISCOMPILES the IRIX desktop: with jitv2 on,
+# `/usr/bin/X11/4Dwm` and `/usr/sbin/fm` both die with SIGSEGV within a second,
+# every time, while csh/ps/ls/xwsh/toolchest run fine. The guest says so itself
+# in /var/adm/SYSLOG:
+#     Xsession: demos: wait4wm: window manager failed to start
+#     Xsession: demos: 1193 Segmentation fault - core dumped
+# `wait4wm` then gives up and the Xsession never starts the file manager that
+# draws the desktop, so a cold boot stops at a bare Toolchest over a flat root
+# with no icon column. That scene was written up as "the golden's content is
+# open, and the bake needs a person"; it was never a bake problem. Same commit
+# (8cbb689), same disk, same launcher, jitv2 dropped: the cold boot reaches the
+# full Indigo Magic Desktop unattended, and the 4Dwm popup menus that composited
+# BLACK — filed as an Iris compositor gap — render correctly too.
+# The cost is smaller than the 4x suggests, because an idle IRIX desktop is not
+# the fixed workload: iris idles at 310 % here against 325 % with jitv2, the
+# pointer still lands 8/8 at 0 px, and RESET is 325 ms.
+# Narrowing WHICH jitv2 opcode path miscompiles is the bounded next task, and
+# the way back is this one line.
+#
+# This is part of the provenance triple: iris's own snapshot records the cargo
+# feature list and REFUSES a restore that does not match it, so changing this
+# line invalidates every golden (`CKPT` prints the list it is holding you to).
 #
 # HYGIENE: touches only its own work dir and the output path. No chroot, no
 # mounts, no station directory, no kills. Idempotent; --force re-clones.
@@ -91,7 +111,7 @@ IRIS_FORK_BRANCH="${IRIS_FORK_BRANCH:-kh-native}"
 IRIS_REPO="$IRIS_FORK_URL"
 # Bump deliberately, never by drift: the binary is one third of every checkpoint.
 IRIS_COMMIT="${IRIS_COMMIT:-$IRIS_FORK_BRANCH}"
-IRIS_FEATURES="${IRIS_FEATURES:-lightning,rex-jit,chd,jitv2}"
+IRIS_FEATURES="${IRIS_FEATURES:-lightning,rex-jit,chd}"
 
 OUT="${1:-/data/vms/streamhost/assets/indyr4400/iris}"
 WORK="${2:-/data/vms/sandbox/iris-native-build}"
@@ -160,7 +180,13 @@ BIN="$WORK/target/release/iris"
 # Substring, not a whole-line match: rustc packs string literals end to end with
 # no NUL between them, so IRIS_SHM_PATH shares a `strings` line with its
 # neighbours and `grep -x` finds nothing in a binary that has it.
-strings -a "$BIN" | grep -q 'IRIS_SHM_PATH' ||
+# NOT `strings … | grep -q`: under `set -o pipefail` (line 103) grep -q exits on
+# the first match, SIGPIPEs strings, and the PIPELINE then reports strings'
+# failure — so the guard fires on a binary that HAS the knob. It is a race, so
+# it passes on a small binary and fails on a big one under load: this build died
+# on it 2026-09-10 having compiled cleanly for 8m22s. `grep -c` reads to EOF, so
+# nothing gets a SIGPIPE and the count is the answer.
+[ "$(strings -a "$BIN" | grep -c 'IRIS_SHM_PATH')" -gt 0 ] ||
   die "$BIN has no IRIS_SHM_PATH knob — that is upstream, not the fork"
 
 install -d -m 0755 "$(dirname "$OUT")"

@@ -577,28 +577,47 @@ neither.
   is the clock*), but the VICE wave's lesson is that a blocking audio sink on
   the emulation thread becomes the clock and cost 76 % of the machine's speed —
   on the lineup's most expensive emulator that is not a cheap experiment.
-- **A cold boot does not reach the full Indigo Magic Desktop, and the golden
-  must be baked at one that does.** On the integration rig, `demos` logs in, the
-  Toolchest docks upper-left and a console window opens bottom-left — and there
-  it stops, with 4Dwm's busy cursor and **no icon column down the right edge**,
-  unchanged for ten minutes of framebuffer polling. The fixture text and the
-  MIGRATION-WAVE reject criteria both describe the icon column, so *this scene is
-  not the exhibit*. It does not block the conversion — every mechanism below was
-  proven against it, and a checkpoint is content-agnostic — but the operator's
-  golden recapture has to reach the real desktop first, and what the session is
-  waiting on is **not yet diagnosed**. The obvious next step is a theory race
-  (rule 14) on `rig-clone.sh` clones: a `demos` session start script blocking on
-  a name lookup with no network is the first theory, the fresh COW overlay
-  losing per-user desktop state the second.
-- **A 4Dwm popup menu composites BLACK.** Pressing the Toolchest's *System*
-  entry opens its pane and 4Dwm tracks the pointer into it correctly — and the
-  pane's pixels are black in the published frame, after 6 s and after a hover.
-  This is **not** a conversion regression: `shmpub` calls the same
-  `SwCompositor::compose_pixels` as the windowed path in
-  `iris-gui/src/framebuffer.rs`, and that function does handle the popup plane
-  (`compositor.rs`, "Priority: cursor → popup → overlay → main pixel"), so the
-  gap is in what Iris puts in that plane, on both paths equally. It is still
-  visitor-visible and it is the first thing to fix after the cutover.
+- **`jitv2` miscompiles the IRIX desktop — it is OFF, and that is what the
+  station ships.** This one bullet replaces the two that stood here before ("a
+  cold boot does not reach the full Indigo Magic Desktop, and the bake needs a
+  person" and "a 4Dwm popup menu composites BLACK"). Neither was what it looked
+  like. With `jitv2` in the feature set, `/usr/bin/X11/4Dwm` and `/usr/sbin/fm`
+  both take SIGSEGV within a second of exec, reproducibly, from a shell, while
+  `csh`, `ps`, `ls`, `egrep`, `xwsh` and `toolchest` all run fine. The guest
+  says so itself, and it was in `/var/adm/SYSLOG` the whole time:
+
+  ```
+  Xsession: demos: wait4wm: window manager failed to start
+  Xsession: demos: 1193 Segmentation fault - core dumped
+  ```
+
+  `wait4wm` gives up, the Xsession never reaches the step that starts the file
+  manager, and what is left on screen is a bare Toolchest and a console window
+  over a flat blue root with no icon column — the scene that was written up as
+  an undiagnosed golden-content gap. It was never a bake problem, and no amount
+  of driving the pointer would have fixed it. The black popup panes were the
+  same bug: 4Dwm was the thing being miscompiled, not Iris's compositor.
+
+  Measured 2026-09-10 on the `iris-land` rig, same fork commit `8cbb689`, same
+  disk, same launcher, `jitv2` dropped from the cargo features:
+
+  | | jitv2 on | jitv2 off (shipped) |
+  |---|---|---|
+  | cold boot → Indigo Magic Desktop | never (stops at the Toolchest) | **unattended**, ~6 min |
+  | 4Dwm / fm | SIGSEGV on exec | run |
+  | 4Dwm popup pane | black | **renders** |
+  | `iris` CPU, idle desktop | 325 % | 310 % |
+  | pointer, 8 targets | 8/8 at 0 px | 8/8 at 0 px |
+  | `RESET` | 387 ms | 325 ms |
+
+  The 4x jitv2 number (8.4 s → 1.95 s) is real but it is a fixed CPU workload;
+  an idle desktop is not that workload, which is why turning it off costs
+  nothing visible here. The feature list is part of the provenance triple —
+  `CKPT` prints it (`features=chd,lightning,opcodefusion,rex-jit,tlbvmap`) and a
+  restore that does not match is refused — so this is not a knob to flip under a
+  baked golden. **Still open:** which jitv2 opcode path miscompiles. That is a
+  bounded next task against `src/jitv2/`, and it is worth an upstream report;
+  the way back is one line in `build-iris-native.sh`.
 - **Iris's own `--ci-socket` costs the frame plane, so the exec channel is off.**
   Measured 2026-09-10 on the integration rig: with the ci socket armed, the Indy
   ran **ten minutes at ~200 % CPU and published no frame at all**; with it empty,
@@ -638,8 +657,11 @@ deployed by `box-deploy`. Run it inside the landing lock
 (`scripts/dev/wave.sh land begin indyr4400`), and never while another wave has
 uncommitted live edits on the box.
 
-**Expected outage: 12–20 minutes**, almost all of it the golden bake. The
-mechanical part is under two minutes.
+**Expected outage: 12–20 minutes**, almost all of it the cold boot to the
+desktop. The mechanical part is under two minutes. Build the assets BEFORE
+stopping the bridge — the tile builder and `fetch-assets` touch only
+`assets/indyr4400` and `/data/gallery-guests`, never the running station, so
+steps 2 and 3 belong outside the outage window and shorten it by minutes.
 
 ### What the visitor sees, step by step
 
@@ -671,6 +693,15 @@ scripts/dev/box-deploy.sh --apply
 # 3. stage the assets: the host-native binary, the container rootfs skeleton,
 #    and the plain raw IRIX disk the kiosk's ext4 wrapper used to hold
 ssh lab 'bash /data/kernel-hive/scripts/build-guests/tiles/indyr4400.sh'
+#    THEN EMIT. box-deploy does NOT install a station launcher: there is no
+#    box-install pair row for indyr4400, and the plan prints `new 0` while the
+#    station dir still holds the bridge's qemu-streamhost.sh. x11-runtime.sh,
+#    nspawn-inner.sh, kh-reset.sh, ctl.py, indy.keymap and station.env all reach
+#    the box through the registry row's runtime.x11 emitArgs/auxFiles, and
+#    station-up.sh is the one command that runs that emit. --no-start because
+#    step 4 starts it deliberately cold, and --no-restore because there is no
+#    golden to restore to yet.
+scripts/dev/station-up.sh --no-start --no-restore indyr4400
 ssh lab 'bash /data/vms/streamhost/stations/indyr4400/fetch-assets.sh --convert'
 
 # 4. first start is a COLD BOOT on purpose: there is no golden yet, and the
@@ -681,17 +712,27 @@ ssh lab 'python3 /data/kernel-hive/scripts/dev/fb-wait.py \
   --shm /data/vms/streamhost/stations/indyr4400/run/fb.shm \
   --change --settle 25 --timeout 900'          # the IRIX visual login panel
 
-# 5. bake the scene: log in as `demos`, and REACH THE REAL DESKTOP — Toolchest
-#    upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right
-#    edge, nothing else open. See "Known gaps": a cold boot has NOT been seen to
-#    get there on its own, so this step is the one that needs a person.
-#    ctl.py --type is PIPELINED at zero spacing — the browser's shape, and the
-#    only kind of typing claim that is evidence. $'...\n' so the shell, not the
-#    client, makes the real newline: ctl.py interprets no escapes.
+# 5. bake the scene: log in as `demos`. With jitv2 off (see "Known gaps") the
+#    session reaches the full Indigo Magic Desktop on its own — Toolchest
+#    upper-left, the camera/Start.Demos/buttonfly/buttonflyAudio/fsn/demos/
+#    dumpster/Welcome_to_SGI icon column down the right edge, textured
+#    background, nothing else open. This step no longer needs a person; it
+#    needed one only while a miscompiled 4Dwm was killing the session.
+#    CLICK the login, do not type it: the `demos` icon then the Log In button.
+#    It is the visitor's own route and it has no typing race in it at all.
 ssh lab "python3 /data/vms/streamhost/stations/indyr4400/ctl.py \
-  /data/vms/streamhost/stations/indyr4400/run/ctl.sock --type \$'demos\n'"
-#    ... then drive the pointer with the same client until the scene is right:
-#      ctl.py <sock> 'MOVEA 640 512' DOWN1 UP1
+  /data/vms/streamhost/stations/indyr4400/run/ctl.sock 'MOVEA 626 270' DOWN1 UP1"
+ssh lab "python3 /data/vms/streamhost/stations/indyr4400/ctl.py \
+  /data/vms/streamhost/stations/indyr4400/run/ctl.sock 'MOVEA 837 822' DOWN1 UP1"
+#    then WAIT ON THE FRAMEBUFFER for the desktop to finish painting, never on
+#    a guessed sleep (rule 14). It settles ~30 s after the click.
+ssh lab 'python3 /data/kernel-hive/scripts/dev/fb-wait.py \
+  --shm /data/vms/streamhost/stations/indyr4400/run/fb.shm \
+  --change --settle 35 --timeout 300'
+#    If typing is ever needed instead, ctl.py --type is PIPELINED at zero
+#    spacing — the browser's shape, and the only kind of typing claim that is
+#    evidence. $'...\n' so the shell, not the client, makes the real newline:
+#    ctl.py interprets no escapes.
 
 # 6. capture the golden, through the station's own control socket. This IS the
 #    documented equivalent of `checkpoint-guard recapture` for this runtime:
