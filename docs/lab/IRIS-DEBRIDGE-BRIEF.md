@@ -886,6 +886,31 @@ restores) and `41` (the frame after `kill -9` and a cold start). The rig itself
 is torn down; the frames are not committed because the repo is public and they
 are 1280x1024 captures of a licensed IRIX install.
 
+**And where the CUTOVER's frames are** (2026-09-10), on the same terms — not
+committed, public repo, licensed install:
+
+- `/data/vms/sandbox/iris-land/rig/proof/` — the jitv2 diagnosis in order:
+  `03-after-login` (the stuck scene, reproduced by CLICKING the login, which is
+  what ruled out "the login was typed too fast"), `05-ps-demos` (the whole
+  `demos` session — `toolchest`, `imdmonitor`, `csh`, `fam`, and no window
+  manager at all), `13-syslog-tail` (`wait4wm: window manager failed to start`
+  followed by `Segmentation fault - core dumped`), `14-4dwm-fg`
+  (`/usr/bin/X11/4Dwm` → `Segmentation fault (core dumped)`, on demand, from a
+  shell); then on the binary rebuilt without jitv2, `21-nj-desktop` (the full
+  Indigo Magic Desktop from an unattended cold boot), `22-toolchest-menu` (the
+  popup that used to composite black, legible) and `30`/`33`/`34` (golden,
+  dirtied, byte-identical after `RESET`).
+- `/data/vms/sandbox/iris-land/proof-station/` — the same sequence on the LIVE
+  station during the outage, ending at `30-after-restart`.
+- `/data/vms/sandbox/iris-land/proof-browser/` and `proof-browser-cold/` — the
+  visitor-side proof, and the ones that actually count: every pixel was decoded
+  by a real Chrome from the public gallery rather than read out of the station's
+  own mapping. `01-streaming`, `03-toolchest-menu` (opened with `page.mouse`),
+  `11-typed` (`uname -aRs` answering `IRIX IRIS 6.5 6.5.22f 10070055 IP22`),
+  `23-after-reset` (the SPA's own *Restore to golden snapshot*).
+  `proof-browser-cold/` is the same run against an idle-PAUSED station — the
+  arrival a real visitor gets.
+
 ### The three planes, as built
 
 | Plane | Contract | Where it landed | Proof |
