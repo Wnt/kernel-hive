@@ -99,7 +99,9 @@ die() {
 assert_bridge() {
   case "$BRIDGE" in
     vmbr-wi) : ;;
-    wibr1[5-9][0-9] | wibr200) : ;;
+    # The pool's own window is slots 256-511 (its own edge relay range,
+    # 54256-54511), so the cell names are wibr256..wibr511 and nothing else.
+    wibr25[6-9] | wibr2[6-9][0-9] | wibr[34][0-9][0-9] | wibr50[0-9] | wibr51[01]) : ;;
     *) die "refusing bridge '$BRIDGE': a walk-in tap joins its clone's cell (wibr<slot>) or vmbr-wi, nothing else" ;;
   esac
 }
