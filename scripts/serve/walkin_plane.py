@@ -17,7 +17,9 @@ Three things it holds that the server should not have to know:
     `/walkin/` prefix, but `/walkin`, `/walkin/play/<os>` and `/walkin/exhibits`
     are CLIENT-side routes that must fall through to the SPA index — PREFLIGHT
     §B4 warns against reserving the prefix for exactly this reason: it would 404
-    the visitor's own landing page.
+    the visitor's own landing page. The set of API paths is READ FROM
+    `walkin.routes.PATHS` and is not restated here; see the comment on `API`
+    for the day that distinction cost.
   * **Whose clone is whose.** A walk-in's one interactive surface is their own
     clone's signaling document, so the fence has to be told which one that is.
 
@@ -40,8 +42,13 @@ from walkin import routes as walkin_routes
 
 # The pool, or None on a box with no walk-in registry.
 BROKER = None
-# The broker's four routes. Everything else under /walkin/ is the SPA's.
-API = ("/walkin/state", "/walkin/claim", "/walkin/release", "/walkin/reset")
+# The broker's routes, TAKEN FROM the module that answers them — never a second
+# copy. This was a hand-kept tuple of four until 2026-09-11, when `/walkin/engage`
+# landed with a handler and a gate entry and no line here, and 404ed on the live
+# box for every visitor. A list that must agree with another list eventually
+# does not; this one cannot disagree, because there is only one.
+# Everything else under /walkin/ is the SPA's.
+API = walkin_routes.PATHS
 
 
 def start(auth):
