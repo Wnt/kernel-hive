@@ -86,9 +86,13 @@ export function LandingTop() {
     hero.take(os);
   }, [hero]);
 
+  // "Give me a machine" means the one they were on, when there was one. A
+  // visitor whose machine went back to the pool is asking for THAT machine —
+  // claiming with no station here is what used to hand them a different OS for
+  // pressing the page's own recovery button (landing/heroSession.resumeTarget).
   const takeAny = useCallback(() => {
     hero.notePresence();
-    hero.take(null);
+    hero.take(hero.resume);
   }, [hero]);
 
   const scrollToCollection = useCallback(() => {
@@ -151,7 +155,9 @@ export function LandingTop() {
                       disabled={hero.busy || closed}
                       onClick={takeAny}
                     >
-                      {hero.busy ? 'Finding you a machine…' : 'Give me a machine'}
+                      {hero.busy
+                        ? 'Finding you a machine…'
+                        : hero.resume === null ? 'Give me a machine' : 'Bring it back'}
                     </button>
                   )}
                   <button type="button" className="landing-btn landing-btn--quiet landing-btn--big" onClick={scrollToCollection}>
@@ -160,7 +166,11 @@ export function LandingTop() {
                 </>
               )}
             {hero.remainingSeconds !== null && hero.budgetSeconds !== null && (
-              <Countdown remainingSeconds={hero.remainingSeconds} budgetSeconds={hero.budgetSeconds} />
+              <Countdown
+                remainingSeconds={hero.remainingSeconds}
+                budgetSeconds={hero.budgetSeconds}
+                engaged={hero.engaged}
+              />
             )}
           </div>
 

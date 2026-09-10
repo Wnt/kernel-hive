@@ -12,7 +12,7 @@ import {
   type HeroRunState,
   type MediaSize,
 } from './heroStatus';
-import { heroBlockedLine } from './heroPolicy';
+import { GRACE_WARN_SECONDS, MEANINGFUL_EVENTS, heroBlockedLine } from './heroPolicy';
 import { stationCopy } from './stations';
 import { ConversionGate } from './gate/ConversionGate';
 import type { HeroSession } from './useHeroSession';
@@ -91,9 +91,19 @@ function useDecodedSize(ref: React.RefObject<HTMLElement | null>, clone: string 
   return size;
 }
 
-/** A trusted press or key on the stage — the thing that stops the aggressive
- *  release. Untrusted events are ignored: a dispatched click is software, and
- *  "somebody is here" is a fact about a person. */
+/**
+ * A trusted press, tap or key ON THE MACHINE — the visitor DRIVING it.
+ *
+ * The event set is `heroPolicy.MEANINGFUL_EVENTS` and is not repeated here,
+ * because it is now load-bearing twice over: it stops the un-engaged release,
+ * and it starts the visitor's free minute. What it must never include is a
+ * pointer merely crossing the picture — the machine sits directly under the
+ * headline, so a mouse travelling to the scrollbar passes over it on nearly
+ * every visit.
+ *
+ * Untrusted events are ignored: a dispatched click is software, and both
+ * "somebody is here" and "their minute has started" are facts about a person.
+ */
 function useStageInput(ref: React.RefObject<HTMLElement | null>, note: () => void, live: boolean) {
   useEffect(() => {
     if (!live) return;
@@ -101,26 +111,32 @@ function useStageInput(ref: React.RefObject<HTMLElement | null>, note: () => voi
     if (!el) return;
     const onEdge = (event: Event) => { if (event.isTrusted) note(); };
     const opts = { capture: true, passive: true } as const;
-    for (const type of ['pointerdown', 'touchstart', 'wheel'] as const) {
-      el.addEventListener(type, onEdge, opts);
-    }
     // Keys never reach the stage element — StreamView forwards them to the
-    // guest from the window — so they are counted at the window instead, minus
-    // anything typed into a real form field further down the page.
+    // guest from the window — so they are listened for at the window instead,
+    // minus anything typed into a real form field further down the page.
     const onKey = (event: KeyboardEvent) => {
       if (!event.isTrusted) return;
       const focused = document.activeElement?.tagName ?? '';
       if (focused === 'INPUT' || focused === 'TEXTAREA' || focused === 'SELECT') return;
       note();
     };
+    const onStage = MEANINGFUL_EVENTS.filter((type) => type !== 'keydown');
+    for (const type of onStage) el.addEventListener(type, onEdge, opts);
     window.addEventListener('keydown', onKey, opts);
     return () => {
-      for (const type of ['pointerdown', 'touchstart', 'wheel'] as const) {
-        el.removeEventListener(type, onEdge, opts);
-      }
+      for (const type of onStage) el.removeEventListener(type, onEdge, opts);
       window.removeEventListener('keydown', onKey, opts);
     };
   }, [ref, note, live]);
+}
+
+/** What the button over a still picture offers to do. A machine that stopped is
+ *  brought BACK — the same station, never a re-roll (heroSession.resumeTarget);
+ *  a queue is retried; and only a visitor who has never had one is offered
+ *  whatever the museum picks. */
+function resumeLabel(state: HeroRunState, resume: string | null): string {
+  if (state === 'queued') return 'Try again';
+  return resume === null ? 'Start a machine' : 'Bring it back';
 }
 
 function runStateOf(hero: HeroSession, size: MediaSize | null): HeroRunState {
@@ -200,15 +216,19 @@ export function HeroStage({
             {poster && <img className="landing-stage__shot" src={poster} alt={`${copy.name} on screen`} />}
             <div className="landing-stage__veil">
               <p className="landing-stage__veil-line">
-                {hero.playable ? heroCaption(state, copy.name, stop) : heroBlockedLine(hero.caps)}
+                {hero.playable ? heroCaption(state, copy.name, stop, hero.engaged) : heroBlockedLine(hero.caps)}
               </p>
               {hero.playable && state !== 'connecting' && (
                 <button
                   type="button"
                   className="landing-btn landing-btn--primary"
-                  onClick={() => { hero.notePresence(); hero.take(null); }}
+                  // `hero.resume`, never null: the machine the visitor was on
+                  // comes back, and a DIFFERENT one only ever comes from a
+                  // switcher chip. Claiming with no station here is what used
+                  // to hand a visitor a new OS for pressing "take it back".
+                  onClick={() => { hero.notePresence(); hero.take(hero.resume); }}
                 >
-                  {state === 'queued' ? 'Try another machine' : 'Start a machine'}
+                  {resumeLabel(state, hero.resume)}
                 </button>
               )}
             </div>
@@ -228,10 +248,12 @@ export function HeroStage({
       </div>
 
       <p className="landing-caption">
-        {hero.playable ? heroCaption(state, station ? copy.name : null, stop) : POSTER_FALLBACK_CAPTION}
-        {state === 'running' && !hero.driven && hero.graceLeft > 0 && (
+        {hero.playable
+          ? heroCaption(state, station ? copy.name : null, stop, hero.engaged)
+          : POSTER_FALLBACK_CAPTION}
+        {state === 'running' && !hero.engaged && hero.graceLeft > 0 && hero.graceLeft <= GRACE_WARN_SECONDS && (
           <span className="landing-caption__grace">
-            {' '}Touch it within {hero.graceLeft}s or it goes back to the pool for the next visitor.
+            {' '}Still there? Touch it within {hero.graceLeft}s or it goes back to the pool for the next visitor.
           </span>
         )}
       </p>

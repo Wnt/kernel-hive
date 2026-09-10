@@ -23,6 +23,26 @@ import { chromium } from 'playwright';
 //   anon    `?walkin=anon` forces the fixture's 60-second budget: the countdown
 //           must mirror it down to zero and the wall must arrive over the stage
 //           with both ways through it.
+//   engage  THE ENGAGEMENT RULE, which exists because of two bugs an operator
+//           hit on the live site and neither of which any unit test can see:
+//           the free minute started at the CLAIM (so it burned while they read
+//           the page), and the machine handed back by the idle watchdog came
+//           back as a DIFFERENT OS. So this mode drives a real browser and
+//           asserts, in this order: moving the mouse across the canvas for
+//           forty seconds does not start the countdown and does not release
+//           the cell; ONE CLICK does start it; and the station id never
+//           changes unless a chip is pressed — including across the recovery
+//           button, which used to re-roll it. `recover` is the slow sibling:
+//           it waits out the whole un-engaged window and then presses the way
+//           back, which is the exact sequence that changed the visitor's OS;
+//           `resume` proves the same thing in seconds by backgrounding the tab
+//           (an un-engaged cell goes back instantly when hidden), which is what
+//           makes it cheap enough to run on every change.
+//           The countdown half needs a plane
+//           that implements `POST /walkin/engage`; against one that does not
+//           (a box that has not been deployed yet), pass `?walkin=anon` and
+//           the SPA's own fixture stands in, which is the same code path a
+//           staged build has always used.
 //
 // Run from ~/e2e on CT950 (see the node_modules note in this directory's
 // README), against a staged slot or the live origin:
@@ -30,7 +50,7 @@ import { chromium } from 'playwright';
 
 const BASE = process.argv[2];
 const MODE = process.argv[3] ?? 'live';
-if (!BASE) { console.error('usage: landing-hero-probe.mjs <base-url> [live|switch|nocaps|anon]'); process.exit(2); }
+if (!BASE) { console.error('usage: landing-hero-probe.mjs <base-url> [live|switch|nocaps|anon|engage|recover|resume]'); process.exit(2); }
 
 const browser = await chromium.launch({ args: ['--no-sandbox', '--ignore-certificate-errors'] });
 const page = await (await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } })).newPage();
@@ -69,8 +89,10 @@ const read = () => page.evaluate(() => {
       return el ? `${el.tagName}.${el.className}` : null;
     })(),
     veil: q('.landing-stage__veil-line')?.textContent?.slice(0, 60) ?? null,
-    countdown: q('.landing-countdown__value')?.textContent ?? null,
-    wall: q('.landing-gate__title')?.textContent ?? null,
+    countdown: q('.gate-countdown-clock')?.textContent ?? null,
+    clockLabel: q('.gate-countdown-label')?.textContent ?? null,
+    wall: q('.gate-title')?.textContent ?? null,
+    caption: q('.landing-caption')?.textContent?.slice(0, 160) ?? null,
     cta: [...document.querySelectorAll('.landing-hero__cta .landing-btn')]
       .map((e) => `${e.className.includes('primary') ? 'PRIMARY' : 'quiet'}:${e.textContent}`),
     cards: document.querySelectorAll('.os-card').length,
@@ -80,7 +102,19 @@ const read = () => page.evaluate(() => {
 });
 
 const fail = [];
-await page.goto(MODE === 'anon' ? `${BASE}?walkin=anon` : BASE, { waitUntil: 'domcontentloaded' });
+// A plane without `/walkin/engage` answers 404 and the SPA falls through to its
+// own fixture (walkin/api.ts `notBuiltYet`) — which is exactly the state of a
+// box that has not been deployed yet. Making that explicit here means the
+// engage run proves the same code path whether or not the server half is live.
+const stubEngage = process.env.HERO_STUB_ENGAGE === '1'
+  && (MODE === 'engage' || MODE === 'recover' || MODE === 'resume');
+if (stubEngage) {
+  await page.route('**/walkin/engage', (route) => route.fulfill({
+    status: 404, contentType: 'application/json', body: '{"error":"no such endpoint"}',
+  }));
+}
+const anonMode = MODE === 'anon' || stubEngage;
+await page.goto(anonMode ? `${BASE}?walkin=anon` : BASE, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(MODE === 'nocaps' ? 6000 : 12000);
 const first = await read();
 console.log('LOAD  ', JSON.stringify(first));
@@ -129,9 +163,164 @@ if (MODE === 'switch') {
   if (calls.length > 0) fail.push('pressing the machine already on screen spent a claim');
 }
 
+if (MODE === 'engage') {
+  const stationOf = (r) => r.strip[r.strip.length - 1] ?? null;
+  const box = await page.locator('.landing-stage').boundingBox();
+  const started = stationOf(first);
+  console.log('STATION', started, 'clock', first.countdown, first.clockLabel);
+  if (!started) fail.push('the strip never named a station');
+
+  // ---- 1. forty seconds of MOUSEMOVE, which must cost nothing -------------
+  for (let i = 0; i < 40; i += 1) {
+    await page.mouse.move(
+      box.x + box.width * (0.25 + 0.5 * Math.random()),
+      box.y + box.height * (0.25 + 0.5 * Math.random()),
+      { steps: 4 },
+    );
+    await page.waitForTimeout(950);
+  }
+  const moved = await read();
+  console.log('MOVED ', JSON.stringify(moved), JSON.stringify(calls));
+  if (stationOf(moved) !== started) fail.push(`the station changed by itself: ${started} -> ${stationOf(moved)}`);
+  if (!moved.streaming) fail.push('the machine was taken away while the visitor was moving the mouse over it');
+  if (calls.some((c) => c.includes('release'))) fail.push('a mousemove-only visit released its cell');
+  if (moved.countdown !== first.countdown) {
+    fail.push(`moving the mouse spent the budget: ${first.countdown} -> ${moved.countdown}`);
+  }
+  if (moved.countdown && !/starts when you touch it/i.test(moved.clockLabel ?? '')) {
+    fail.push(`the clock does not say it has not started (${moved.clockLabel})`);
+  }
+
+  // ---- 2. ONE CLICK, which must start it ---------------------------------
+  calls.length = 0;
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.8);
+  await page.waitForTimeout(6000);
+  const clicked = await read();
+  console.log('CLICK ', JSON.stringify(clicked), JSON.stringify(calls));
+  if (!calls.some((c) => c.includes('engage'))) fail.push('the first click did not report engagement');
+  if (stationOf(clicked) !== started) fail.push(`clicking the machine changed it: ${started} -> ${stationOf(clicked)}`);
+  if (moved.countdown && clicked.countdown === moved.countdown) {
+    fail.push(`the click did not start the countdown (stuck at ${clicked.countdown})`);
+  }
+  if (clicked.countdown && /starts when you touch it/i.test(clicked.clockLabel ?? '')) {
+    fail.push('the clock still says it has not started, after a click');
+  }
+
+  // ---- 3. the recovery button brings back the SAME machine ---------------
+  calls.length = 0;
+  await page.evaluate(() => {
+    // Take the machine away the way the page's own watchdog does, without
+    // waiting out the un-engaged window: press the stage's exit affordance.
+    document.querySelector('.sv-exit, .sv-back, [data-sv-exit]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+  });
+  await page.waitForTimeout(1500);
+  const veil = page.locator('.landing-stage__veil .landing-btn').first();
+  if (await veil.count()) {
+    console.log('PRESS ', await veil.textContent());
+    await veil.click();
+    await page.waitForTimeout(9000);
+    const back = await read();
+    console.log('BACK  ', JSON.stringify(back), JSON.stringify(calls));
+    if (stationOf(back) !== started) {
+      fail.push(`the recovery button re-rolled the station: ${started} -> ${stationOf(back)}`);
+    }
+    const claimed = calls.find((c) => c.includes('claim'));
+    if (!claimed) fail.push('the recovery button claimed nothing');
+  } else {
+    console.log('BACK   (no stop affordance on this build — skipped)');
+  }
+}
+
+if (MODE === 'recover') {
+  // The other half of the same bug, and the slow one: wait out the whole
+  // un-engaged window with nothing but mouse movement, then press the page's
+  // own way back. It used to hand over a DIFFERENT operating system — measured
+  // twice on the live site, os2warp -> win311 and win311 -> rhapsody.
+  const stationOf = (r) => r.strip[r.strip.length - 1] ?? null;
+  const started = stationOf(first);
+  const box = await page.locator('.landing-stage').boundingBox();
+  console.log('STATION', started);
+  let releasedAt = null;
+  for (let i = 0; i < 115 && releasedAt === null; i += 1) {
+    await page.mouse.move(
+      box.x + box.width * (0.25 + 0.5 * Math.random()),
+      box.y + box.height * (0.25 + 0.5 * Math.random()),
+      { steps: 4 },
+    );
+    await page.waitForTimeout(950);
+    if (calls.some((c) => c.includes('release'))) releasedAt = i;
+  }
+  const stopped = await read();
+  console.log('STOP  ', releasedAt, JSON.stringify(stopped));
+  if (releasedAt === null) fail.push('an untouched cell was never handed back — the pool is not protected');
+  else if (releasedAt < 60) fail.push(`the machine was taken away after only ${releasedAt}s of reading`);
+  if (stationOf(stopped) !== started) fail.push('the stopped stage stopped naming the visitor\'s machine');
+
+  calls.length = 0;
+  // Pressed by COORDINATE, not by locator: `locator.click()` scrolls the
+  // element into view first, and the landing bar is sticky, so its own scroll
+  // can park the button underneath the header and then refuse to click it.
+  // A mouse click at a point is what a visitor does anyway.
+  const veil = page.locator('.landing-stage__veil .landing-btn').first();
+  const vb = await veil.boundingBox();
+  console.log('PRESS ', await veil.textContent(), JSON.stringify(vb));
+  await page.mouse.click(vb.x + vb.width / 2, vb.y + vb.height / 2);
+  await page.waitForTimeout(12_000);
+  const back = await read();
+  console.log('BACK  ', JSON.stringify(back), JSON.stringify(calls));
+  if (stationOf(back) !== started) {
+    fail.push(`the way back re-rolled the station: ${started} -> ${stationOf(back)}`);
+  }
+  if (!back.streaming) fail.push('the machine did not come back');
+}
+
+if (MODE === 'resume') {
+  // The re-roll itself, in seconds rather than in minutes. `releaseDue` hands
+  // an un-engaged cell back the INSTANT the tab is hidden — no grace at all,
+  // by policy — so backgrounding the tab reaches the same stopped state the
+  // slow `recover` run reaches, while the visitor's budget is barely touched.
+  // What is being proved is the one thing that changed: what the way back
+  // ASKS FOR. It used to ask for nothing and be answered at random.
+  const stationOf = (r) => r.strip[r.strip.length - 1] ?? null;
+  const started = stationOf(first);
+  console.log('STATION', started);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(600);
+  const stopped = await read();
+  console.log('STOP  ', JSON.stringify(stopped), JSON.stringify(calls));
+  if (!calls.some((c) => c.includes('release'))) fail.push('a hidden, untouched tab kept its cell');
+  if (stationOf(stopped) !== started) fail.push('the stopped stage stopped naming the visitor\'s machine');
+
+  calls.length = 0;
+  const veil = page.locator('.landing-stage__veil .landing-btn').first();
+  const vb = await veil.boundingBox();
+  console.log('PRESS ', await veil.textContent());
+  await page.mouse.click(vb.x + vb.width / 2, vb.y + vb.height / 2);
+  await page.waitForTimeout(12_000);
+  const back = await read();
+  console.log('BACK  ', JSON.stringify(back), JSON.stringify(calls));
+  if (stationOf(back) !== started) fail.push(`the way back re-rolled the station: ${started} -> ${stationOf(back)}`);
+  if (!back.streaming) fail.push('the machine did not come back');
+  if (!back.picture || back.picture.startsWith('0x')) fail.push(`the machine that came back never painted (${back.picture})`);
+}
+
 if (MODE === 'anon') {
   if (!first.countdown) fail.push('no countdown for an anonymous visitor');
-  for (let i = 0; i < 7 && !(await read()).wall; i += 1) await page.waitForTimeout(10_000);
+  // The budget does not start until the visitor touches the machine, so the
+  // wall never arrives for a page nobody clicks. One click, then wait it out.
+  const stage = await page.locator('.landing-stage').boundingBox();
+  if (stage) await page.mouse.click(stage.x + stage.width * 0.5, stage.y + stage.height * 0.8);
+  for (let i = 0; i < 9 && !(await read()).wall; i += 1) await page.waitForTimeout(10_000);
   const walled = await read();
   console.log('WALL  ', JSON.stringify(walled));
   if (!walled.wall) fail.push('the budget ran out and no wall appeared');

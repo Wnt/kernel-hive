@@ -18,11 +18,17 @@ import './gate.css';
 export function Countdown({
   remainingSeconds,
   budgetSeconds,
+  engaged = true,
 }: {
   remainingSeconds: number;
   budgetSeconds: number;
+  /** Has the visitor touched the machine yet? Until they have, the clock is not
+   *  running (the server does not start it until `POST /walkin/engage`), so the
+   *  pill says what it is waiting for instead of counting down a number that
+   *  will not move. The wall renders this frozen at zero and never passes it. */
+  engaged?: boolean;
 }): JSX.Element {
-  const tier = urgencyTier(remainingSeconds, budgetSeconds);
+  const tier = engaged ? urgencyTier(remainingSeconds, budgetSeconds) : 'calm';
   return (
     <div
       className={`gate-countdown gate-countdown--${tier}`}
@@ -32,7 +38,7 @@ export function Countdown({
       aria-hidden="true"
     >
       <span className="gate-countdown-clock">{formatClock(remainingSeconds)}</span>
-      <span className="gate-countdown-label">free minute</span>
+      <span className="gate-countdown-label">{engaged ? 'free minute' : 'starts when you touch it'}</span>
     </div>
   );
 }

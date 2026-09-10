@@ -8,14 +8,28 @@ about a stranger goes through it:
 
     ttl_for(user)          -> float | None   how long this caller may hold a clone
     refuse(user)           -> str            "" or WALKIN_ANON_BUDGET
-    grant(user, station)   -> float | None   start the clock; the TTL to claim with
+    grant(user, station)   -> float | None   record the claim; the TTL to claim with
     granted(user, body)    -> None           a clone was handed over
+    engage(user)           -> dict | None    the visitor TOUCHED it; the clock starts
     stopped(user)          -> None           the clock stops (release, queue, failure)
     adopt(broker, user)    -> dict | None    reattach the machine held for a new account
     block(user)            -> dict | None    the `anon` doc for GET /walkin/state
     cookie(user)           -> str            a Set-Cookie, once, for a new visitor
 
 Two orderings in here are load-bearing and neither is obvious.
+
+**The clock starts at the visitor's FIRST TOUCH, not at the claim.** A minute
+that began while a stranger was still reading the headline is a minute they
+never had, so `grant()` only records the claim and `engage()` — the one verb
+`POST /walkin/engage` calls, and only for a real press, tap or key on the guest
+— is what sets it running. Everything below about ordering still holds, because
+a visitor who HAS engaged starts spending the moment they are handed their next
+machine; for one who has not, there is no deadline to race yet.
+
+The cost of that move is that the budget no longer bounds a claim, so
+`enforce()` gained a second job: releasing a hold nobody ever touched
+(`anon.UNENGAGED_SECONDS`). Without it a crawler holds one of twenty-four cells
+until the 20-minute session TTL, which is the pool gone.
 
 **The clock starts BEFORE the claim, not after.** `broker._claim` stamps
 `expires_at` under its lock and only then resumes the guest, which can take
@@ -120,7 +134,7 @@ class AnonPlane:
         """None means "no cap" — an ordinary walk-in keeps the 1200s TTL."""
         if not anon.is_anon(user):
             return None
-        return float(self.budget.remaining(anon.anon_id_of(user)))
+        return float(self.budget.claim_ttl(anon.anon_id_of(user), self._now()))
 
     def refuse(self, user) -> str:
         """The reason to turn this caller away, or "". Only ever the budget:
@@ -131,10 +145,49 @@ class AnonPlane:
         return REASON_BUDGET if self.budget.expired(anon.anon_id_of(user)) else ""
 
     def grant(self, user, station: str = "") -> float | None:
-        """Start the clock and answer the TTL the claim should be made with."""
+        """Record the claim and answer the TTL it should be made with.
+
+        For a visitor already spending, that is their remaining minute, exactly
+        as before. For one who has not touched a machine yet it is the
+        un-engaged window on top of it — the longest this visit can last —
+        because their minute has not started and nothing else would bound the
+        hold (`anon.begin`).
+        """
         if not anon.is_anon(user):
             return None
         return float(self.budget.begin(anon.anon_id_of(user), now=self._now()))
+
+    def engage(self, broker, user) -> dict | None:
+        """The visitor touched the machine: start their minute, and say so.
+
+        Two things move, and the second is what keeps the contract's promise
+        that a browser cannot outlive the budget by holding a socket open. The
+        clock starts; and the session, which was built long enough to survive
+        an un-touched visit, is cut back to the minute that is now running
+        (`walkin/holds.py retime`). From here the ledger's deadline and the
+        session's are the same instant, which is the ordering this module's
+        header requires — `enforce()` runs before `tick()`, so the freeze
+        always lands first.
+
+        Answers the fresh `anon` block rather than nothing, so the page that
+        reports the first press learns its own remaining seconds in that reply
+        instead of waiting up to a poll interval to find out whether the clock
+        it has started is the clock the server is keeping.
+        """
+        if not anon.is_anon(user):
+            return None
+        vid = anon.anon_id_of(user)
+        left = self.budget.engage(vid, self._now())
+        hit("walkin.anon.engaged")
+        own = None
+        try:
+            own = broker.own_of(str(user.get("id", ""))) or {}
+            clone = str(own.get("clone", "") or "")
+            if clone:
+                broker.retime(str(user.get("id", "")), clone, left)
+        except Exception as exc:  # noqa: BLE001 — the clock started; the TTL is a backstop
+            sys.stderr.write(f"[auth] could not retime {own or vid} at first touch: {type(exc).__name__}: {exc}\n")
+        return self.budget.block(vid, self._now())
 
     def granted(self, user, body: dict) -> None:
         """A claim came back. A queue position is not a machine, so the clock
@@ -227,6 +280,19 @@ class AnonPlane:
                 frozen.append(identity)
                 if self.tickets is not None:
                     self.tickets.revoke_clone(identity)
+        for vid, clone in self.budget.unengaged(now):
+            # NOT a freeze and NOT a reserve: nothing happened on this machine,
+            # so there is no work to keep and no wall to put in front of it.
+            # The cell goes back to the pool and the visitor keeps their whole
+            # minute — if they turn out to be there after all, the page asks
+            # for the SAME station again (landing/heroSession.ts resumeTarget)
+            # and they get a fresh copy of it, which is the honest answer.
+            try:
+                broker.release(anon.user_for(vid)["id"], clone)
+                hit("walkin.anon.unengaged")
+            except Exception as exc:  # noqa: BLE001 — a stuck cell must not stop the pass
+                sys.stderr.write(f"[auth] could not release un-engaged {clone}: {type(exc).__name__}: {exc}\n")
+            self.budget.settle(vid, now)
         for vid in self.budget.lapsed_holds(now):
             # The broker's own TTL destroys the clone; all this forgets is the
             # association, so a later claim does not chase a machine that is gone.
@@ -235,8 +301,17 @@ class AnonPlane:
         return frozen
 
     def next_deadline(self) -> float | None:
-        """The earliest instant `enforce` will have work to do."""
-        return self.budget.next_deadline(self._now())
+        """The earliest instant `enforce` will have work to do.
+
+        Both of its jobs count: a minute running out and an un-engaged hold
+        falling due. The walk-in watchdog sleeps on this number, so a deadline
+        left out of it is a deadline enforced up to a flat fifteen-second tick
+        late — which for the wall would be a quarter of the budget given away,
+        and for the pool a cell held past the window that exists to recycle it.
+        """
+        now = self._now()
+        due = [d for d in (self.budget.next_deadline(now), self.budget.next_unengaged(now)) if d is not None]
+        return min(due) if due else None
 
     def drop_all(self) -> int:
         """The switch went to Closed. See `AnonBudget.drop_all`."""

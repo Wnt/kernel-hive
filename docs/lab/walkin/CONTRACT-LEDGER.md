@@ -67,7 +67,8 @@ lives under `/auth/` because it is an admin control.
 |---|---|---|---|---|
 | `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4 |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = their REMAINING budget (§3.4), never a fresh 60. |
+| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = the longest their visit can still last (§3.4): their REMAINING budget once their clock is running, and the un-engaged window on top of it before it is. Never a fresh 60. |
+| `/walkin/engage` | POST | **anon**, walkin, viewer, admin | `{"clone":"…"}` — must be the caller's own | `{"ok":true}` plus `"anon":{…}` for an anonymous caller. **The visitor touched the machine** (2026-09-10): starts their budget clock, cuts the session back to it, and restamps the broker's idle window — the first production caller `Broker.note_input` has ever had. A clone that is not the caller's is refused **403** `walkin_not_yours`. Idempotent: the second call finds the clock already running. |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
 | `/walkin/manifest.json` | GET | walkin | — | §5.3 of the brief — allowlisted exhibition fields, one `signalEndpoint` |
@@ -159,7 +160,9 @@ anything.
 |---|---|
 | Role | `anon` — synthesized per request, never stored, never granted by an admin |
 | Identity | cookie `osg_anon`, `HttpOnly; Secure; SameSite=Lax; Path=/`, 30 days |
-| Budget | **60 seconds of connected time per VISITOR**, not per session |
+| Budget | **60 seconds of connected time per VISITOR**, not per session, **counted from their first meaningful input** |
+| What starts the clock | `POST /walkin/engage` — a real pointer press, tap or key **on the guest**. Never a mousemove, wheel, scroll or focus |
+| Un-engaged release | **120 s** server-side (`anon.UNENGAGED_SECONDS`), **100 s** in the browser (`landing/heroPolicy.ts UNENGAGED_GRACE_MS`) — the page hands its own cell back first, the server is the backstop |
 | Hold after exhaustion | 120 seconds, on their last clone |
 | Broker user id | `anon:<visitor id>` — the pool needs no role model |
 | Refusal | 403 `{"error":"WALKIN_ANON_BUDGET","reason":…,"anon":{…}}` |
@@ -168,13 +171,28 @@ anything.
 anon = {                    // GET /walkin/state, present ONLY for role==='anon'
   budgetSeconds: number,    // 60
   remainingSeconds: number, // counts DOWN across switches, reloads and back-nav
+                            // — but only once `engaged`; before that it stands
+                            // still at the full budget
   expired: boolean,
+  engaged: boolean,         // has this visitor ever touched a machine?
+
   heldClone?: string,       // their reserved machine, while the hold lasts
   heldSeconds?: number,
 }
 ```
 
-Four rules the implementation may not trade away:
+Seven rules the implementation may not trade away:
+
+0. **The clock starts at the first TOUCH, not at the claim.** The landing page
+   auto-claims on load, so counting from the claim spends a stranger's minute
+   while they are still reading the headline — measured on the live site
+   2026-09-10: a claim at 0.9 s and 17 seconds gone before anything was touched.
+   The browser reports the first meaningful input (press, tap or key on the
+   guest — never a pointer crossing the picture) to `POST /walkin/engage`, and
+   the server starts the clock. The client reports an EVENT and never a
+   duration. Engagement is a fact about the VISITOR, so it survives a switch:
+   the second machine starts spending immediately, or switching would be a way
+   to hold cells for free. The price of this rule is rule 5.
 
 1. **The budget is the VISITOR's, not the session's.** It carries across station
    switches, reloads and back-navigation. Switching is still `release` +
@@ -182,16 +200,37 @@ Four rules the implementation may not trade away:
    naturally. If it reset, a stranger could hop the pool forever and never be
    asked to convert.
 2. **The server is authoritative.** The client countdown mirrors
-   `remainingSeconds`; it is never the source of truth. The claim's
-   `ttlSeconds` IS the remaining budget, and the session's `expires_at` is
-   built from it.
+   `remainingSeconds`; it is never the source of truth, and it does not tick at
+   all until the server says `engaged` (the page holds it at the full budget
+   and says the clock starts on first touch). A claim's `ttlSeconds` is the
+   longest the visit can still last — the remaining budget for a visitor
+   already spending, and the un-engaged window plus that budget for one who has
+   not started — and `/walkin/engage` cuts the session back to the budget the
+   instant the clock starts, so a media ticket can never outlive the wall
+   (§3.3).
 3. **The wall stops the GUEST, not the UI.** At zero the clone is paused over
    its last frame and reserved; an already-open WebTransport session is never
    re-ticketed, so a stopped machine is the only thing that makes holding the
    socket useless. Registering (`/walkin/signup`) promotes the visitor to
    `walkin`, and their next claim reattaches that same clone with
    `"resumed":true` and the ordinary 1200 s TTL.
-4. **The switch reaches strangers.** `access` gates them exactly as it gates a
+4. **A station never changes under the visitor.** A different machine comes from
+   the visitor pressing a switcher chip and from nothing else. Every route back
+   onto a machine — the recovery button on a stopped stage, the hero's own call
+   to action — re-claims THE SAME station id
+   (`landing/heroSession.ts resumeTarget`). Random is for ARRIVAL, where the
+   visitor has chosen nothing yet; a claim with no `os` after they have is the
+   bug an operator reported as "the station I was interacting with also changed
+   unexpectedly from one OS to another". What comes back is a fresh clone of
+   that station — the pool never recycles a used one — and the copy must say so
+   rather than imply their work survived.
+5. **An un-engaged cell goes back to the pool.** The cost of rule 0: with no
+   clock running, nothing else bounds a claim, and every page load takes one of
+   24 cells. So a hold nobody has touched is released — by the browser at 100 s,
+   by the server at 120 s — without freezing anything, without reserving
+   anything and without spending a second of the visitor's budget. A backgrounded
+   tab that was never touched is released at once, with no grace at all.
+6. **The switch reaches strangers.** `access` gates them exactly as it gates a
    walk-in account — `open` admits, `invited` and `closed` refuse — and dropping
    to Closed clears the budget ledger along with the sessions. A stranger has no
    session row, so forgetting the ledger IS how the kill switch reaches them.

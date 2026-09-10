@@ -31,6 +31,12 @@ export type WalkinAnonBudget = {
   budgetSeconds: number;
   remainingSeconds: number;
   expired: boolean;
+  /** Whether the minute has STARTED — that is, whether the visitor has ever
+   *  touched a machine (`POST /walkin/engage`). Until they have,
+   *  `remainingSeconds` stands still at the full budget and the page says the
+   *  minute starts when they touch it. Optional so a broker that predates the
+   *  engagement rule keeps answering this client correctly. */
+  engaged?: boolean;
   /** Reserved for 120s after exhaustion, so registering resumes THE SAME machine. */
   heldClone?: string;
 };

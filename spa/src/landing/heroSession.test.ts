@@ -7,6 +7,7 @@ import {
   liveStation,
   phaseAfterHeroClaim,
   phaseAfterHeroClaimError,
+  resumeTarget,
   stationOfClaim,
   stationOfClone,
   switchPlan,
@@ -156,6 +157,38 @@ describe('heldClone', () => {
     ] as HeroPhase[]) {
       expect(heldClone(phase)).toBeNull();
       expect(liveStation(phase)).toBeNull();
+    }
+  });
+});
+
+describe('resumeTarget', () => {
+  it('asks for the SAME station the visitor was on', () => {
+    // The operator's second bug: a machine handed back by the page's own
+    // watchdog used to come back as a different OS, because every route back
+    // claimed with no `os` and the server picks one at random.
+    expect(resumeTarget({ kind: 'stopped', station: 'os2warp', reason: 'never-driven' })).toBe('os2warp');
+    expect(resumeTarget({ kind: 'stopped', station: 'win311', reason: 'hidden' })).toBe('win311');
+    expect(resumeTarget({ kind: 'stopped', station: 'rhapsody', reason: 'left' })).toBe('rhapsody');
+    expect(resumeTarget(live('win311', 'walkin-win311-1'))).toBe('win311');
+  });
+
+  it('retries the machine that was queued, not a different one', () => {
+    expect(resumeTarget({ kind: 'queued', want: 'os2warp', position: 2 })).toBe('os2warp');
+  });
+
+  it('is random ONLY on arrival, where nothing has been chosen yet', () => {
+    expect(resumeTarget({ kind: 'idle' })).toBeNull();
+    expect(resumeTarget({ kind: 'refused', code: 'error', message: 'x' })).toBeNull();
+    expect(resumeTarget({ kind: 'claiming', want: null })).toBeNull();
+  });
+
+  it('never invents a station change on its own', () => {
+    // The whole rule, in one assertion: whatever the page was showing is what
+    // it asks for back. A different station can only ever come from `take(os)`
+    // with an os the visitor pressed.
+    for (const station of ['win311', 'os2warp', 'rhapsody']) {
+      const stopped = { kind: 'stopped', station, reason: 'never-driven' } as HeroPhase;
+      expect(switchPlan(stopped, resumeTarget(stopped))).toEqual([{ op: 'claim', os: station }]);
     }
   });
 });

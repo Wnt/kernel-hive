@@ -106,17 +106,28 @@ export function statusCells(f: StatusFacts): string[] {
  * and the difference is the only thing that tells a visitor whether to start
  * typing yet.
  */
-export function heroCaption(state: HeroRunState, station: string | null, stop?: StopReason): string {
+export function heroCaption(
+  state: HeroRunState,
+  station: string | null,
+  stop?: StopReason,
+  engaged = true,
+): string {
   const name = station ?? 'this machine';
   switch (state) {
     case 'running':
-      return `Your keys and your mouse are going straight into ${name}. Nothing is recorded, and the next visitor gets a clean copy.`;
+      // Before the first touch the promise is the same and the price is not:
+      // the clock does not start until the visitor puts a hand on the machine,
+      // and a page that does not say so is a page that starts spending a
+      // minute somebody is still reading their way towards.
+      return engaged
+        ? `Your keys and your mouse are going straight into ${name}. Nothing is recorded, and the next visitor gets a clean copy.`
+        : `Your input goes straight into ${name}. Your clock does not start until you click or type. Look as long as you like first.`;
     case 'connecting':
       return `Waking ${name} up. The picture is live the moment it appears — no plugin, no download.`;
     case 'queued':
-      return 'Every copy of that machine is in use this second. Pick another one, or wait a moment and try again.';
+      return 'Every copy of that machine is in use right now. Wait a moment and try again, or pick another from the row below.';
     case 'stopped':
-      return stoppedLine(stop);
+      return stoppedLine(stop, name);
     case 'poster':
       return 'A still, not a stream — this browser cannot receive a live picture.';
   }
@@ -142,13 +153,17 @@ export const POSTER_FALLBACK_CAPTION =
  * that assumes something broke and reloads — which is the one thing that would
  * make the pool worse rather than better.
  */
-function stoppedLine(stop: StopReason | undefined): string {
+function stoppedLine(stop: StopReason | undefined, name: string): string {
+  // A machine that comes back is a FRESH copy — the pool never recycles a used
+  // clone — so none of these may imply the visitor's work survived. Saying
+  // "the same machine" and then handing them a clean desktop is the one lie
+  // this page could tell that a visitor would actually notice.
   switch (stop) {
     case 'never-driven':
-      return 'Nothing was clicked, so the machine went back to the pool for the next visitor. Take another one — it is one press.';
+      return `Still there? Nothing was clicked or typed, so ${name} went back to the pool for the next visitor. Bring it back whenever you like. It will be a clean copy, and your clock still has not started.`;
     case 'hidden':
-      return 'This tab went into the background, so the machine was handed back rather than held for nobody. Take another whenever you like.';
+      return `This tab went to the background, so ${name} went back to the pool instead of being held for nobody. Bring it back whenever you like. It will be a clean copy.`;
     default:
-      return 'This machine has been handed back to the pool. Take another whenever you like.';
+      return `${name} has gone back to the pool. Bring it back whenever you like. It will be a clean copy.`;
   }
 }

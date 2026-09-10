@@ -26,12 +26,13 @@ decorative instead of real:
     `ticket_ttl_for` answers 0 from that instant on; a pause that then fails is
     not survivable and the session is destroyed outright rather than left
     running behind a wall.
-  * **The idle reap must not eat the hold.** `last_input_at` has no production
-    writer (`Broker.note_input` is called by nothing), so the 180-second "idle"
-    window is really a second, shorter TTL counted from the claim. A hold set at
-    T+60 would be reaped at T+180 by that clock instead of by its own. Freezing
-    therefore restamps `last_input_at`, which is the only honest thing to do
-    with it: the visitor is not idle, they are stopped.
+  * **The idle reap must not eat the hold.** `last_input_at` is written by
+    `POST /walkin/engage` (`walkin/routes.py::_engage`) and by nothing else, so
+    for a visitor who never touches the guest the 180-second "idle" window is
+    still a second, shorter TTL counted from the claim. A hold set at T+60 would
+    be reaped at T+180 by that clock instead of by its own. Freezing therefore
+    restamps `last_input_at`, which is the only honest thing to do with it: the
+    visitor is not idle, they are stopped.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ from __future__ import annotations
 import sys
 
 from .session import CLOSE_REASON_TTL, claim_body, session_end_message
+from .warm import BrokerError
 
 
 class Holding:
@@ -148,6 +150,31 @@ class Holding:
         if ended:
             return ended
         return session_end_message(frozen_reason if self.is_frozen(identity) else CLOSE_REASON_TTL)
+
+    def retime(self, user_id: str, identity: str, ttl: float) -> int:
+        """Cut this session's remaining life to `ttl` seconds. Never lengthens it.
+
+        The anonymous budget needs it and nothing else does. A stranger's claim
+        is built with the longest their visit could last — the un-touched window
+        plus their minute — because at claim time their minute has not started
+        (`auth/anon.py begin`). The instant they touch the guest it HAS started,
+        and the session has to shrink to it: `ticket_ttl_for` caps a media
+        ticket at the session's remaining seconds, so a session outliving the
+        budget is a reconnect window outliving the wall, which the landing
+        contract forbids in as many words.
+
+        **It can only ever shorten**, and that is a fence rather than a detail:
+        the caller is `POST /walkin/engage`, which any visitor can send as often
+        as they like. A re-arm that could push `expires_at` out would be a
+        browser voting itself more time.
+        """
+        with self._lock:
+            member = self._members.get(identity)
+            if not member or not member.session or member.session.user_id != user_id:
+                raise BrokerError(f"{identity} is not yours")
+            now = self._now()
+            member.session.expires_at = min(member.session.expires_at, now + max(0.0, float(ttl)))
+            return member.session.ttl_left(now)
 
     def ticket_ttl_for(self, identity: str, default: int) -> int:
         """How long a media-plane ticket for this clone may live.

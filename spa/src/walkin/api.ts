@@ -120,6 +120,25 @@ export function resetWalkin(clone: string): Promise<WalkinClaim | WalkinQueued> 
   );
 }
 
+/**
+ * Tell the server the visitor has TOUCHED this machine.
+ *
+ * The one thing that starts an anonymous visitor's free minute
+ * (LANDING-REDESIGN-CONTRACT.md, "The anonymous budget"). It reports an EVENT
+ * and never a duration: the clock, the deadline and the wall all stay on the
+ * server, so the worst a hostile client can do by lying is start its own minute
+ * early. Not sending it at all is the case that matters, and the answer to that
+ * is the un-engaged sweep rather than anything here.
+ *
+ * Fire-and-forget by design — the caller is a pointerdown on a live guest and
+ * must not wait on a round trip to keep typing.
+ */
+export function engageWalkin(clone: string): Promise<void> {
+  return withFixture('/walkin/engage', async () => { await call('/walkin/engage', { clone }); }, () => {
+    walkinFixture.engage(clone);
+  });
+}
+
 export function releaseWalkin(clone: string): Promise<void> {
   return withFixture('/walkin/release', async () => { await call('/walkin/release', { clone }); }, () => {
     walkinFixture.release(clone);

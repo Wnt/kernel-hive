@@ -191,6 +191,7 @@ WALKIN_PATHS = frozenset(
         "/walkin/state",
         "/walkin/signup",
         "/walkin/claim",
+        "/walkin/engage",
         "/walkin/release",
         "/walkin/reset",
         "/walkin/manifest.json",
@@ -294,6 +295,14 @@ WALKIN_MANIFEST_FIELDS = (
 #   /walkin/claim, /walkin/release   drive a machine, and switch machines.
 #                                    Switching IS release+claim (contract §
 #                                    "Switching stations"), so both are needed.
+#   /walkin/engage                   report the first touch ON THEIR OWN clone.
+#                                    A stranger's minute does not start until
+#                                    this arrives, so refusing it here would
+#                                    leave every anonymous visitor's clock
+#                                    stopped and every cell held to the window.
+#                                    It names a clone the broker checks against
+#                                    the caller's own session and can do nothing
+#                                    to anyone else's.
 #   /clientlog, /vitals              WRITE-ONLY ingests whose read-back is
 #                                    admin-only (see their entries above). The
 #                                    hero stream on the landing page is the most
@@ -312,6 +321,7 @@ WALKIN_MANIFEST_FIELDS = (
 ANON_PATHS = frozenset(
     {
         "/walkin/claim",
+        "/walkin/engage",
         "/walkin/release",
         "/clientlog",
         "/vitals",

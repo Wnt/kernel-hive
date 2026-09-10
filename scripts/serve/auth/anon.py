@@ -15,6 +15,15 @@ Three facts hold the design up.
     back-navigation. If switching machines reset the clock, a stranger could hop
     the pool forever and never convert; trying all three has to cost the same
     minute as staying on one, and the wall says so.
+  * **The clock starts when the visitor TOUCHES the machine, not when the page
+    takes one.** A stranger who is still reading the headline is not spending
+    anything, and a minute that began before they knew there was a minute is a
+    minute they never got. `engage()` is the only thing that starts it, and the
+    only thing that may call `engage()` is a real pointer press, tap or key on
+    the guest (`POST /walkin/engage`, `landing/heroPolicy.ts MEANINGFUL_EVENTS`)
+    — never a mouse merely crossing the picture. Once a visitor has engaged the
+    fact is theirs for good, so switching stations resumes the clock at once
+    rather than buying a second free look.
   * **The identity is a cookie and nothing else.** No account, no PII, no store
     row — an anonymous visitor is a random id in `osg_anon` and a record in RAM.
     Losing it (a private window, a cleared jar) buys another minute, and that is
@@ -48,6 +57,27 @@ COOKIE_NAME = "osg_anon"
 #: clock: a visitor who claims, leaves the tab and comes back an hour later
 #: still has whatever they had left.
 BUDGET_SECONDS = 60
+
+#: How long a claimed machine may sit UN-ENGAGED before the pool takes it back.
+#:
+#: This is the price of moving the clock to first touch. The budget used to be
+#: the thing that bounded a claim — sixty seconds after the page took a cell it
+#: was spent, whoever was or was not there — and with the clock no longer
+#: running for a visitor who has not touched anything, nothing else would ever
+#: end the hold of a crawler, a preloaded link or a tab opened and forgotten.
+#: Twenty-four cells, one per page load, is not a pool that survives that.
+#:
+#: Two minutes is chosen against the two populations it has to separate. A
+#: person reading everything above the fold — headline, lede, the caption under
+#: the machine, the three switcher chips — spends well under a minute doing it,
+#: so this is a slow reader's whole visit plus margin before their machine is
+#: ever at risk. Anything that is NOT a person never touches the guest at all,
+#: and gets its cell recycled inside two minutes rather than holding it until
+#: the 20-minute session TTL. It is deliberately LONGER than the browser's own
+#: un-engaged release (`landing/heroPolicy.ts UNENGAGED_GRACE_MS`, 100s): the
+#: page hands its own cell back first, and this is the backstop for a client
+#: that will not, which is exactly the client that cannot be trusted to.
+UNENGAGED_SECONDS = 120
 
 #: How long their last machine stays reserved after the budget is spent, so
 #: that registering a passkey resumes THAT machine rather than a fresh one.
@@ -144,14 +174,31 @@ def anon_id_of(user) -> str:
 class _Visit:
     """One anonymous visitor's ledger row."""
 
-    __slots__ = ("spent", "since", "clone", "held_clone", "held_station", "held_until", "touched")
+    __slots__ = (
+        "spent",
+        "since",
+        "clone",
+        "claimed_at",
+        "engaged",
+        "held_clone",
+        "held_station",
+        "held_until",
+        "touched",
+    )
 
     def __init__(self, now: float):
         # Connected seconds already banked, and the start of the interval that
-        # is running right now (None when they hold nothing).
+        # is running right now (None when the clock is not running — which is
+        # either "holds nothing" or "holds one and has not touched it yet").
         self.spent = 0.0
         self.since: float | None = None
         self.clone = ""
+        # When the clone they hold was handed over, and whether this visitor
+        # has ever touched a machine. `engaged` is sticky for the life of the
+        # record: it is a fact about the PERSON, so a switch does not buy a
+        # second un-touched grace, and the clock resumes on the next claim.
+        self.claimed_at = 0.0
+        self.engaged = False
         # What is being kept for them after the wall.
         self.held_clone = ""
         self.held_station = ""
@@ -166,11 +213,25 @@ class AnonBudget:
     is banked connected time and `since` is the interval in flight. A deadline
     alone cannot survive a release — the visitor stops the clock when they hand
     a machine back, and starts it again on the next claim with what is left.
+
+    `since` is also the answer to "is this visitor spending anything?", and
+    since the clock now starts at `engage()` rather than at the claim, a held
+    machine with `since is None` is the ordinary state of somebody who has just
+    arrived. That state has its own bound — `claimed_at + unengaged_secs`,
+    swept by `unengaged()` — because it is the only one the budget no longer
+    ends by itself.
     """
 
-    def __init__(self, budget: int = BUDGET_SECONDS, hold: int = HOLD_SECONDS, now=time.time):
+    def __init__(
+        self,
+        budget: int = BUDGET_SECONDS,
+        hold: int = HOLD_SECONDS,
+        unengaged: int = UNENGAGED_SECONDS,
+        now=time.time,
+    ):
         self.budget = int(budget)
         self.hold_secs = int(hold)
+        self.unengaged_secs = int(unengaged)
         self._now = now
         self._lock = threading.Lock()
         self._visits: dict[str, _Visit] = {}
@@ -191,12 +252,26 @@ class AnonBudget:
         return visit.spent + running
 
     def begin(self, visitor: str, clone: str = "", now: float | None = None) -> int:
-        """Start (or continue) burning budget, and answer what was granted.
+        """Record a claim, and answer the TTL that claim should be made with.
 
         Called on every granted claim. A visitor who switches stations settles
         the interval they were running and opens a new one against the SAME
         remainder — which is the whole reason the clock is here and not on the
         session.
+
+        **It does not start the clock for a visitor who has never touched a
+        machine.** That is the whole engagement rule: arriving costs nothing,
+        and `engage()` is what starts the minute. A visitor who HAS engaged
+        before is spending from the instant they are handed the next machine —
+        otherwise switching stations would be a way to hold cells for free.
+
+        The number it returns is therefore not the budget. It is the longest
+        this visit can honestly last, and it is what the session is built with:
+        the remaining minute for somebody already spending it, and the
+        un-engaged window PLUS that minute for somebody who has not started.
+        Both bounds are enforced ahead of it — `AnonPlane.enforce` freezes at
+        the wall and releases an un-engaged hold at `unengaged_secs` — so this
+        TTL is the backstop under both, never the thing that ends a visit.
         """
         now = self._now() if now is None else now
         with self._lock:
@@ -207,10 +282,78 @@ class AnonBudget:
             if left <= 0:
                 visit.since = None
                 visit.clone = ""
+                visit.claimed_at = 0.0
                 return 0
-            visit.since = now
             visit.clone = clone
+            visit.claimed_at = now
+            visit.since = now if visit.engaged else None
+            return self._claim_ttl(visit, left)
+
+    def _claim_ttl(self, visit: _Visit, left: int) -> int:
+        """The rule in `begin`'s docstring, in one place so `claim_ttl` cannot
+        drift from what a claim was actually built with."""
+        return left if visit.engaged else left + self.unengaged_secs
+
+    def claim_ttl(self, visitor: str, now: float | None = None) -> int:
+        """What `begin` would grant, without recording anything."""
+        now = self._now() if now is None else now
+        with self._lock:
+            visit = self._visits.get(visitor)
+            if visit is None:
+                return self.budget + self.unengaged_secs
+            left = int(max(0, self.budget - self._used(visit, now)))
+            return self._claim_ttl(visit, left) if left > 0 else 0
+
+    def engage(self, visitor: str, now: float | None = None) -> int:
+        """The visitor touched the machine. Start the minute; answer what is left.
+
+        Idempotent, and cheap enough to call on every input if a caller ever
+        wants to: the second call finds the clock already running and changes
+        nothing. It is the ONE writer of `engaged`, and `engaged` is what the
+        un-engaged sweep reads, so a client that never sends this signal is a
+        client whose cell goes back — which is the correct answer for a client
+        that is not a person.
+
+        Engaging while holding nothing is still recorded. A visitor who pressed
+        a key a moment before the page handed its cell back has demonstrably
+        arrived, and their next claim should start spending immediately rather
+        than opening a fresh two-minute window.
+        """
+        now = self._now() if now is None else now
+        with self._lock:
+            visit = self._visits.setdefault(visitor, _Visit(now))
+            visit.engaged = True
+            visit.touched = now
+            left = int(max(0, self.budget - self._used(visit, now)))
+            if left > 0 and visit.clone and visit.since is None:
+                visit.since = now
             return left
+
+    def engaged(self, visitor: str) -> bool:
+        """Has this visitor ever touched a machine? The `anon` block's own word."""
+        if not visitor:
+            return False
+        with self._lock:
+            visit = self._visits.get(visitor)
+            return bool(visit and visit.engaged)
+
+    def unengaged(self, now: float | None = None) -> list[tuple[str, str]]:
+        """`(visitor, clone)` for every hold that has never been touched and is
+        past its window — the cells the pool is owed back."""
+        now = self._now() if now is None else now
+        with self._lock:
+            return [
+                (vid, v.clone)
+                for vid, v in self._visits.items()
+                if v.clone and not v.engaged and now - v.claimed_at >= self.unengaged_secs
+            ]
+
+    def next_unengaged(self, now: float | None = None) -> float | None:
+        """When the earliest un-engaged hold falls due, or None if there is none."""
+        now = self._now() if now is None else now
+        with self._lock:
+            due = [v.claimed_at + self.unengaged_secs for v in self._visits.values() if v.clone and not v.engaged]
+        return min(due) if due else None
 
     def settle(self, visitor: str, now: float | None = None) -> None:
         """Stop the clock — a release, a switch, or the wall. Idempotent."""
@@ -227,7 +370,11 @@ class AnonBudget:
         if visit.since is not None:
             visit.spent += max(0.0, now - visit.since)
             visit.since = None
+        # The claim goes with the clone: `unengaged()` sweeps holds, and a
+        # visitor holding nothing has nothing for it to take. `engaged` does
+        # NOT go — it is the person, not the machine.
         visit.clone = ""
+        visit.claimed_at = 0.0
 
     def expired(self, visitor: str, now: float | None = None) -> bool:
         return bool(visitor) and self.remaining(visitor, now) <= 0
@@ -313,7 +460,17 @@ class AnonBudget:
         """
         now = self._now() if now is None else now
         left = self.remaining(visitor, now)
-        out = {"budgetSeconds": self.budget, "remainingSeconds": left, "expired": left <= 0}
+        out = {
+            "budgetSeconds": self.budget,
+            "remainingSeconds": left,
+            "expired": left <= 0,
+            # Whether the minute has STARTED. The page needs this to know
+            # whether to tick its mirror down or hold it at sixty and say the
+            # minute starts on first touch — and it has to come from here,
+            # because the server is the authority on the clock and the client
+            # would otherwise be guessing from its own input handlers.
+            "engaged": self.engaged(visitor),
+        }
         hold = self.held(visitor, now)
         if hold:
             out["heldClone"] = hold["clone"]
@@ -332,7 +489,11 @@ class AnonBudget:
         budget record IS their session — clearing it is what stops a stranger
         from surviving the kill switch that just took every walk-in down."""
         with self._lock:
-            count = sum(1 for v in self._visits.values() if v.since is not None or v.held_clone)
+            # A visitor holding a cell counts whether or not their clock is
+            # running: since the minute starts at first touch, "claimed but not
+            # yet touched" is the ordinary state of somebody who is on the page
+            # right now, and the kill switch is exactly what has to reach them.
+            count = sum(1 for v in self._visits.values() if v.since is not None or v.clone or v.held_clone)
             self._visits.clear()
             return count
 
@@ -343,7 +504,7 @@ class AnonBudget:
             stale = [
                 v
                 for v, r in self._visits.items()
-                if r.since is None and not r.held_clone and now - r.touched > _FORGET_AFTER
+                if r.since is None and not r.clone and not r.held_clone and now - r.touched > _FORGET_AFTER
             ]
             for visitor in stale:
                 del self._visits[visitor]

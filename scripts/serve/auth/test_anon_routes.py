@@ -43,6 +43,7 @@ class PoolDouble:
         self.sessions: dict[str, dict] = {}  # user -> {clone, station, expires}
         self.frozen: set[str] = set()
         self.paused: list[str] = []
+        self.inputs: list[str] = []
         self.serial = 0
 
     # -- the surface the routes use ---------------------------------------
@@ -90,6 +91,20 @@ class PoolDouble:
     def own_of(self, user_id):
         held = self.sessions.get(user_id)
         return None if not held else {"station": held["station"], "clone": held["clone"]}
+
+    def retime(self, user_id, identity, ttl):
+        held = self.sessions.get(user_id)
+        if not held or held["clone"] != identity:
+            raise RuntimeError(f"{identity} is not yours")
+        held["expires"] = min(held["expires"], self.clock() + max(0.0, float(ttl)))
+        return int(max(0, held["expires"] - self.clock()))
+
+    def note_input(self, clone):
+        # The real broker restamps `last_input_at`, which is what keeps a
+        # driven session out of the 180-second idle reap. Recorded rather than
+        # simulated: what these tests care about is that the route calls it at
+        # all, since until `/walkin/engage` existed nothing in production did.
+        self.inputs.append(clone)
 
     def freeze(self, user_id, hold_secs):
         held = self.sessions.get(user_id)
@@ -193,12 +208,28 @@ class AnonRouteCase(unittest.TestCase):
     def stranger(self, vid="v1"):
         return f"{anon.COOKIE_NAME}={vid}"
 
+    def touch(self, clone, vid="v1"):
+        """What the browser sends on the visitor's first real press or key.
+
+        Every test below that ticks the clock expecting it to cost something
+        goes through here, because since 2026-09-10 a claim on its own spends
+        nothing — the minute starts at the first touch (`test_anon.py
+        TestEngagement`, and `TestEngageRoute` at the bottom of this file).
+        """
+        return self.call("/walkin/engage", "POST", {"clone": clone}, self.stranger(vid))
+
 
 class TestAnonClaim(AnonRouteCase):
     def test_a_stranger_claims_with_no_passkey_at_all(self):
         out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
         self.assertEqual(out["station"], "os2warp")
-        self.assertEqual(out["ttlSeconds"], 60)
+        # The session TTL, not the countdown: the visitor's minute has not
+        # started (nothing has been touched), so this is the longest the visit
+        # could possibly last — two minutes to touch it plus the minute itself.
+        # `/walkin/state` is where the visitor's actual clock is read, and it
+        # still says sixty.
+        self.assertEqual(out["ttlSeconds"], 180)
+        self.assertEqual(self.call("/walkin/state", cookies=self.stranger()).json["anon"]["remainingSeconds"], 60)
         self.assertTrue(out["clone"].startswith("walkin-os2warp-"))
 
     def test_os_is_optional_and_the_station_comes_back(self):
@@ -232,6 +263,7 @@ class TestAnonClaim(AnonRouteCase):
 class TestBudgetOverTheWire(AnonRouteCase):
     def drive(self, secs, os_name="os2warp", vid="v1"):
         out = self.call("/walkin/claim", "POST", {"os": os_name}, self.stranger(vid)).json
+        self.touch(out["clone"], vid)
         self.clock.tick(secs)
         return out
 
@@ -262,7 +294,7 @@ class TestBudgetOverTheWire(AnonRouteCase):
     def test_the_state_doc_carries_the_countdown_for_a_stranger(self):
         self.drive(15)
         block = self.call("/walkin/state", cookies=self.stranger()).json["anon"]
-        self.assertEqual(block, {"budgetSeconds": 60, "remainingSeconds": 45, "expired": False})
+        self.assertEqual(block, {"budgetSeconds": 60, "remainingSeconds": 45, "expired": False, "engaged": True})
 
     def test_the_state_doc_has_no_anon_block_for_an_account(self):
         doc = self.call("/walkin/state", user={"id": "w1", "role": "walkin"}).json
@@ -273,15 +305,108 @@ class TestBudgetOverTheWire(AnonRouteCase):
         self.assertEqual(out["ttlSeconds"], 1200)
 
 
+class TestEngageRoute(AnonRouteCase):
+    """`POST /walkin/engage` — the one signal that starts a stranger's minute.
+
+    Reported by the operator as two bugs with one cause: "the 1 minute should
+    only start after I have interacted with the machine in a meaningful way
+    like first click or keyboard entry", and a station that changed underneath
+    them. Both came of counting from the CLAIM, which the landing page makes on
+    load. The browser half decides what counts as a touch
+    (`landing/heroPolicy.ts MEANINGFUL_EVENTS`); this half decides what a touch
+    is worth, and refuses to take the browser's word for anything else.
+    """
+
+    def test_the_minute_does_not_start_until_the_visitor_touches_it(self):
+        self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger())
+        self.clock.tick(45)
+        block = self.call("/walkin/state", cookies=self.stranger()).json["anon"]
+        self.assertEqual(block["remainingSeconds"], 60, "reading the page costs nothing")
+        self.assertFalse(block["engaged"])
+
+    def test_a_touch_starts_it_and_the_reply_carries_the_clock(self):
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.clock.tick(45)
+        answer = self.touch(out["clone"]).json
+        self.assertTrue(answer["ok"])
+        self.assertEqual(
+            answer["anon"], {"budgetSeconds": 60, "remainingSeconds": 60, "expired": False, "engaged": True}
+        )
+        self.clock.tick(10)
+        self.assertEqual(self.call("/walkin/state", cookies=self.stranger()).json["anon"]["remainingSeconds"], 50)
+
+    def test_the_session_is_cut_back_to_the_minute_that_just_started(self):
+        # Otherwise a reconnect ticket outlives the wall: `ticket_ttl_for` caps
+        # at the session's remaining seconds, and the session was built long
+        # enough to survive a visit nobody ever touched.
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.assertEqual(out["ttlSeconds"], 180)
+        self.touch(out["clone"])
+        again = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.assertTrue(again["resumed"])
+        self.assertEqual(again["ttlSeconds"], 60)
+
+    def test_it_is_the_first_production_writer_of_the_idle_clock(self):
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.touch(out["clone"])
+        self.assertEqual(self.pool.inputs, [out["clone"]])
+
+    def test_a_clone_that_is_not_yours_is_refused(self):
+        mine = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger("v1")).json
+        theirs = self.call("/walkin/claim", "POST", {"os": "win311"}, self.stranger("v2")).json
+        handler = self.call("/walkin/engage", "POST", {"clone": theirs["clone"]}, self.stranger("v1"))
+        self.assertEqual(handler.status, 403)
+        self.assertEqual(self.pool.inputs, [], "nobody's idle clock was restamped")
+        self.assertFalse(self.call("/walkin/state", cookies=self.stranger("v1")).json["anon"]["engaged"])
+        self.assertTrue(mine["clone"] and theirs["clone"])
+
+    def test_engaging_with_no_clone_at_all_is_refused(self):
+        self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger())
+        self.assertEqual(self.call("/walkin/engage", "POST", {}, self.stranger()).status, 403)
+
+    def test_an_untouched_cell_goes_back_to_the_pool(self):
+        # The price of starting the clock at first touch: nothing else would
+        # ever end the hold of a crawler, and there are 24 cells in the museum.
+        before = dict(self.pool.free)
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.assertEqual(self.pool.free["os2warp"], before["os2warp"] - 1)
+        self.clock.tick(119)
+        self.plane.enforce(self.pool)
+        self.assertEqual(self.pool.free["os2warp"], before["os2warp"] - 1, "not yet")
+        self.clock.tick(2)
+        self.plane.enforce(self.pool)
+        self.assertEqual(self.pool.free, before, "the cell is back")
+        self.assertNotIn(out["clone"], self.pool.frozen, "nothing to freeze: nothing happened")
+        self.assertEqual(
+            self.call("/walkin/state", cookies=self.stranger()).json["anon"]["remainingSeconds"],
+            60,
+            "and they keep their whole minute",
+        )
+
+    def test_a_touched_cell_is_never_swept(self):
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.touch(out["clone"])
+        self.clock.tick(59)
+        self.plane.enforce(self.pool)
+        self.assertEqual(self.pool.own_of(anon.user_for("v1")["id"])["clone"], out["clone"], "still theirs")
+        self.assertNotIn(out["clone"], self.pool.frozen)
+
+    def test_the_watchdog_wakes_for_the_sweep(self):
+        self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger())
+        self.assertEqual(self.plane.next_deadline(), self.clock() + 120)
+
+
 class TestExhaustion(AnonRouteCase):
     def spend(self, vid="v1"):
         out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger(vid)).json
+        self.touch(out["clone"], vid)
         self.clock.tick(60)
         self.plane.enforce(self.pool)
         return out
 
     def test_the_wall_lands_at_the_deadline_and_not_before(self):
-        self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger())
+        out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger()).json
+        self.touch(out["clone"])
         self.clock.tick(59)
         self.assertEqual(self.plane.enforce(self.pool), [])
         self.clock.tick(1)
@@ -320,9 +445,11 @@ class TestExhaustion(AnonRouteCase):
         self.assertNotIn("heldClone", self.call("/walkin/state", cookies=self.stranger()).json["anon"])
 
     def test_one_visitors_wall_does_not_touch_another(self):
-        self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger("v1"))
+        first = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger("v1")).json
+        self.touch(first["clone"], "v1")
         self.clock.tick(30)
-        self.call("/walkin/claim", "POST", {"os": "win311"}, self.stranger("v2"))
+        second = self.call("/walkin/claim", "POST", {"os": "win311"}, self.stranger("v2")).json
+        self.touch(second["clone"], "v2")
         self.clock.tick(30)
         self.assertEqual(len(self.plane.enforce(self.pool)), 1, "only v1 is out of time")
         self.assertEqual(self.call("/walkin/state", cookies=self.stranger("v2")).json["anon"]["remainingSeconds"], 30)
@@ -333,6 +460,7 @@ class TestConversion(AnonRouteCase):
 
     def wall(self, vid="v1"):
         out = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger(vid)).json
+        self.touch(out["clone"], vid)
         self.clock.tick(60)
         self.plane.enforce(self.pool)
         return out
