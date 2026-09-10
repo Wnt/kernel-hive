@@ -57,6 +57,23 @@ let hooked = false;
 /** Depth of the synthetic-input bracket (see withSyntheticInput). */
 let synthetic = 0;
 
+// Set once from main.tsx, the same `fullTelemetry` answer /analytics and
+// /traces already ride — gate.py refuses `/usage` to the anonymous role by
+// name, right beside them (test_anon.py's
+// `test_the_surfaces_a_walk_in_earned_by_registering_stay_earned`). Counting
+// still happens locally either way (a tally is pure bookkeeping, no network),
+// only the SEND is gated: `flushUsage` drops a disallowed batch rather than
+// queuing it forever, the same "an HTTP refusal is a settled answer" call
+// already made a few lines down for a box that is briefly unreachable.
+// Defaults to FALSE for the same reason `clientDebug.ts`'s `telemetryAllowed`
+// does — a caller that never opts in never sends.
+let usageAllowed = false;
+
+/** Enable (or, on the anonymous role, leave disabled) the /usage sink. */
+export function setUsageAllowed(allowed: boolean): void {
+  usageAllowed = allowed;
+}
+
 function bump(field: keyof Tally): void {
   try {
     if (synthetic > 0) return;
@@ -131,6 +148,10 @@ export function flushUsage(final = false): void {
     if (!pending.size) return;
     const batch = pending;
     pending = new Map();
+    // Refused for the anonymous role — see `usageAllowed`'s own comment.
+    // Dropped rather than sent, same direction as a settled HTTP refusal
+    // below: gate.py was always going to 401 this one.
+    if (!usageAllowed) return;
     const stations: Record<string, Tally> = {};
     for (const [tile, tally] of batch) stations[tile] = tally;
     // Only a NETWORK failure folds the batch back. An HTTP refusal (a
@@ -168,4 +189,5 @@ export function __usageReset(): void {
   pending = new Map();
   if (flushTimer) { clearInterval(flushTimer); flushTimer = 0; }
   hooked = false;
+  usageAllowed = false;
 }

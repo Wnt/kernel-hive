@@ -29,6 +29,11 @@ declare global {
      *  configured (a real website key was baked in). Absent otherwise — every
      *  call below must tolerate that. */
     ineum?: IneumFn;
+    /** Also installed by the index.html bootstrap, and also only on a
+     *  configured build — see `armInstanaAgent` below for why the actual
+     *  agent fetch waits for this module to call it instead of firing
+     *  unconditionally alongside `ineum`. */
+    __khArmInstanaAgent?: () => void;
   }
 }
 
@@ -166,6 +171,33 @@ export const IGNORE_URL_PATTERNS: RegExp[] = KH_TELEMETRY_PATHS.map(
 export const INSTANA_IGNORE_URL_PATTERNS: RegExp[] = KH_TELEMETRY_PATHS.map(
   (path) => new RegExp(`^https?://[^/]+${escapeForRegExp(path)}\\b`),
 );
+
+/**
+ * Fetch the vendor agent itself — the one call in this module that produces
+ * network traffic rather than queuing onto the `ineum` stub. Split out of
+ * `spa/index.html`'s bootstrap (which still queues `reportingUrl`/`key`/
+ * `trackSessions`/`ignoreUrls`/`page`/the two role-independent `meta`s
+ * unconditionally, exactly as before — none of that costs a request) because
+ * the agent fetch is the one part gate.py can refuse: `/eum` is not in
+ * `ANON_PATHS`, on purpose, beside `/traces` and `/clientcmd`. Call this from
+ * `main.tsx` gated by the SAME `fullTelemetry` answer `configureInstana`
+ * uses, once the role is known — never unconditionally, and never from
+ * index.html, which cannot know the role this early (no session exists yet
+ * on a visitor's very first request, invited or anonymous alike).
+ *
+ * Idempotent by construction: `window.__khArmInstanaAgent` appends the vendor
+ * `<script>` tag once and this function is a thin, guarded call to it, same
+ * shape as `ineum()` above — silently absent on an unconfigured build, and
+ * `mount()` only ever calls it once per document anyway.
+ */
+export function armInstanaAgent(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    window.__khArmInstanaAgent?.();
+  } catch {
+    /* never throw */
+  }
+}
 
 /**
  * Everything that does not depend on WHO the visitor is, MINUS what defect

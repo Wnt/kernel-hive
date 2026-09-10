@@ -134,6 +134,18 @@ export function useManifest() {
       // allowlist projection, which is public and carries every exhibition row.
       const exhibits = await loadWalkinExhibits();
       if (cancelled) return;
+      if (exhibits.length === 0) {
+        // BOTH doors came back empty. That is no longer an expected refusal
+        // recovered a line later — it is the museum showing nothing to
+        // anybody, gallery visitor or walk-in, and `loadGalleryManifest`
+        // deliberately does not log for exactly this reason: it cannot tell
+        // "refused, and about to recover" from "genuinely broken" by itself.
+        // This is the one place that knows both outcomes, so this is where
+        // the loud log belongs.
+        console.error(
+          "[gallery-manifest] no lineup from the gallery manifest or the walk-in projection — publish it with 'serve-https-spa.sh manifests'",
+        );
+      }
       setVMs(exhibits.map(exhibitVm));
     })();
     return () => { cancelled = true; };

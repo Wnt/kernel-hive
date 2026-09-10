@@ -112,7 +112,19 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
 // answer to "what is in the museum" that goes stale silently (it is why a
 // registry edit used to need a Vite build to show up), and the origin that would
 // have served the fallback is the same one that just failed to serve the
-// manifest. An empty lineup is the honest, loud failure.
+// manifest. An empty lineup is the honest failure.
+//
+// SILENT AT THIS LEVEL, ON PURPOSE (changed from an unconditional
+// `console.error` here). This function cannot tell "genuinely broken" from
+// "refused a role this gate was never going to serve" — an anonymous visitor's
+// `/gallery-manifest.json` 401s on the public listener EVERY time, by design
+// (useManifest.ts's own comment on the LAN/public ambiguity), and it always
+// recovers through the walk-in projection. Logging here reported that
+// recovery as a red error on every anonymous landing, which is a lie in the
+// console: it is an expected refusal this module hands back as an empty
+// lineup, not a fault. The one caller (useManifest.ts) is where the OUTCOME —
+// recovered, or genuinely empty — is known, and that is where the loud log
+// belongs now.
 export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<RuntimeVMManifestEntry[]> {
   try {
     // RUNTIME_BASE is '/' live and '/staging/<session>/' for a staged UI, whose
@@ -122,9 +134,7 @@ export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<R
     const runtime = validateGalleryManifest(await response.json());
     if (!runtime) throw new Error('schema validation failed');
     return runtime.entries;
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : 'unknown error';
-    console.error(`[gallery-manifest] no lineup (${reason}) — publish it with 'serve-https-spa.sh manifests'`);
+  } catch {
     return [];
   }
 }
