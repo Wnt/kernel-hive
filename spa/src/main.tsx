@@ -23,10 +23,11 @@ import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
+import { setUsageAllowed } from './three/usageStats';
 import { configureLogSink } from './analytics/logSink';
 import { initAnalytics, reportError } from './analytics';
 import { BUILD_ID } from './analytics/build';
-import { configureInstana, configureInstanaIdentity } from './analytics/instana';
+import { armInstanaAgent, configureInstana, configureInstanaIdentity } from './analytics/instana';
 import './index.css';
 
 type ErrorReporterInput = {
@@ -204,17 +205,26 @@ function mount(session: Session) {
   // not `/clientlog`'s broader answer above — see `setTelemetryAllowed`'s own
   // header in clientDebug.ts for why the two sinks stopped sharing one switch.
   configureLogSink({ allowed: fullTelemetry, sessionId: clientSessionId() });
+  // The usage scoreboard (three/usageStats.ts) rides the same answer — /usage
+  // sits in the same "not granted" set as /analytics and /traces. Counting
+  // itself still happens locally for every role; only the send is gated.
+  setUsageAllowed(fullTelemetry);
   // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
   // `fullTelemetry` gate as the plane above — a build with no website key
   // configured makes every call inside a no-op regardless, but neither a
   // signed-out stranger at the walk-in door nor an anonymous visitor anywhere
   // else must be handed to Instana just because their build happens to be
   // configured (`/eum` sits in the same "not granted" set as `/traces`).
-  // configureInstana sets the pseudonymous identity; configureInstanaIdentity
-  // immediately upgrades it to the real account when one exists (see that
-  // function's header for why both calls are needed and why nothing here
-  // calls `ineum('terminateSession')`).
+  // `armInstanaAgent` is the one call here that used to fire unconditionally
+  // from index.html's own bootstrap, before role was knowable at all — see
+  // its own header for why the agent FETCH specifically had to move here
+  // while everything else it needs stays queued from index.html. configureInstana
+  // sets the pseudonymous identity; configureInstanaIdentity immediately
+  // upgrades it to the real account when one exists (see that function's
+  // header for why both calls are needed and why nothing here calls
+  // `ineum('terminateSession')`).
   if (fullTelemetry) {
+    armInstanaAgent();
     configureInstana(clientSessionId());
     configureInstanaIdentity(session);
   }

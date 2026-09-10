@@ -1,7 +1,11 @@
 // Unit coverage for the runtime gallery-manifest loader/validator. The lineup
 // is fetched, never bundled, so the contract under test is: a valid runtime
 // document wins, and every failure (HTTP, schema, network) returns an EMPTY
-// lineup without throwing — loudly, with nothing stale substituted in.
+// lineup without throwing and without logging — nothing stale substituted in,
+// and no console.error either, on purpose: this function cannot tell an
+// expected refusal (an anonymous visitor's manifest fetch, always 401 on the
+// public listener) from a genuine break, and useManifest.ts is where that
+// outcome is actually known and where the loud log now lives.
 // Mirrors scripts/test-gallery-manifest.mjs (kept as the framework-free
 // `npm run test:manifest` sibling check against the rendered document).
 import { describe, expect, it, vi } from 'vitest';
@@ -101,27 +105,34 @@ describe('loadGalleryManifest', () => {
     expect(fetcher).toHaveBeenCalledWith('/gallery-manifest.json', { cache: 'no-cache' });
   });
 
-  it('returns an empty lineup on HTTP failure (no throw)', async () => {
+  it('returns an empty lineup on HTTP failure, without logging (no throw)', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => new Response('nope', { status: 404 }));
     expect(rows).toEqual([]);
-    expect(error).toHaveBeenCalled();
+    // NOT logged here — an HTTP failure is exactly what an anonymous
+    // visitor's request produces on the public listener, every time, and
+    // useManifest.ts recovers it through the walk-in projection. Logging at
+    // this level reported that recovery as a red console.error on every
+    // anonymous landing.
+    expect(error).not.toHaveBeenCalled();
     error.mockRestore();
   });
 
-  it('returns an empty lineup on invalid schema (no throw)', async () => {
+  it('returns an empty lineup on invalid schema, without logging (no throw)', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => new Response(JSON.stringify({ nope: true }), { status: 200 }));
     expect(rows).toEqual([]);
+    expect(error).not.toHaveBeenCalled();
     error.mockRestore();
   });
 
-  it('returns an empty lineup when the fetch itself rejects', async () => {
+  it('returns an empty lineup when the fetch itself rejects, without logging', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const rows = await loadGalleryManifest(async () => {
       throw new Error('network down');
     });
     expect(rows).toEqual([]);
+    expect(error).not.toHaveBeenCalled();
     error.mockRestore();
   });
 });

@@ -68,7 +68,13 @@ assert.equal(request.init.cache, 'no-cache');
 assert(runtimeRows.some((entry) => entry.id === 'manifest-only-proof'), 'fetched-only row must enter lineup');
 
 // No bundled lineup to fall back on: a failed fetch or a rejected document must
-// yield an EMPTY gallery, loudly, rather than a stale one that looks fine.
+// yield an EMPTY gallery — SILENTLY at this level. loadGalleryManifest cannot
+// tell an expected refusal (an anonymous visitor's fetch, always 401 on the
+// public listener) from a genuine break, and logging here reported the
+// former as a red console.error on every anonymous landing even though
+// useManifest.ts goes on to recover it through the walk-in projection. The
+// loud log now lives there, once the OUTCOME — recovered, or genuinely
+// empty — is actually known.
 const errors = [];
 const originalError = console.error;
 console.error = (message) => errors.push(String(message));
@@ -83,7 +89,7 @@ try {
 } finally {
   console.error = originalError;
 }
-assert.equal(errors.length, 2, 'a missing lineup must emit visible telemetry');
+assert.equal(errors.length, 0, 'loadGalleryManifest must not log — the caller decides once the outcome is known');
 
 if (process.argv.includes('--built')) {
   const assetsDir = new URL('../dist/assets/', import.meta.url);
