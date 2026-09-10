@@ -131,6 +131,21 @@
           ]
         }
       ]
+    },
+    {
+      "repo": "Wnt/iris",
+      "what": "Iris patches for the SGI Indy R4400 station (indyr4400) \u2014 the three host-native planes upstream has no equivalent of",
+      "branches": [
+        {
+          "name": "kh-native",
+          "what": "IFB1 shm frame publisher on the no-window branch, a mamectl/1 input listener, and the snapshot stack exposed as reset verbs \u2014 plus a dated-nightly toolchain pin",
+          "pinnedBy": [
+            "scripts/build-guests/emulators/build-iris-native.sh"
+          ],
+          "pinNote": "the builder's IRIS_COMMIT is the pin; there is no submodule for this fork. Upstream (techomancer/iris, BSD-3) pins `channel = \"nightly\"` with no date, so the fork's rust-toolchain.toml carries the dated pin as well \u2014 the compiler is part of the checkpoint triple (golden + binary + device set are ONE combination), not an incidental build detail."
+        }
+      ],
+      "excludes": []
     }
   ],
   "_notInScope": {
