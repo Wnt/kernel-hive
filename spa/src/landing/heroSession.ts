@@ -112,6 +112,42 @@ export function isBusy(phase: HeroPhase): boolean {
   return phase.kind === 'claiming';
 }
 
+/**
+ * Which machine does "give it back" ask for?
+ *
+ * THE SECOND BUG THE OPERATOR REPORTED, and it lives entirely in this one
+ * answer: "the station I was interacting with also changed unexpectedly from
+ * one OS to another." Every way back onto a machine used to claim with no `os`,
+ * which the server answers with a uniformly random station — so the page's own
+ * recovery affordance re-rolled the exhibit. Measured on the live site: a cell
+ * claimed as os2warp, released untouched, and one press of "Start a machine"
+ * later the visitor was on win311.
+ *
+ * Random on ARRIVAL is the feature — a stranger who has never chosen anything
+ * gets whatever the museum feels like showing them, which is why `idle` and
+ * `refused` answer null. Random on RECOVERY is the bug: the visitor had a
+ * machine, it went away for a reason that was not their doing, and the one
+ * thing they want is that machine. A station may change only when they press a
+ * chip and say so.
+ *
+ * `queued` keeps its `want` for the same reason: "try again" means try THAT
+ * one again. Trying a different one is what the switcher is for.
+ */
+export function resumeTarget(phase: HeroPhase): string | null {
+  switch (phase.kind) {
+    case 'live':
+      return phase.station;
+    case 'stopped':
+      return phase.station;
+    case 'claiming':
+      return phase.want;
+    case 'queued':
+      return phase.want;
+    default:
+      return null;
+  }
+}
+
 export type SwitchStep =
   | { op: 'release'; clone: string }
   | { op: 'claim'; os: string | null };

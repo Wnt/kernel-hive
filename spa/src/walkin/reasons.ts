@@ -11,7 +11,7 @@
 
 /** The broker→client codes (§3.1) plus the auth-side HTTP body error.
  *  WALKIN_ANON_BUDGET is the landing redesign's addition (LANDING-REDESIGN-
- *  CONTRACT.md "the anonymous budget"): a signed-out stranger's free minute is
+ *  CONTRACT.md "the anonymous budget"): a signed-out stranger's intro time is
  *  gone. The conversion gate (landing/gate/) renders its own richer copy for
  *  that moment; this entry is the one-line fallback for anywhere else the code
  *  surfaces. */
@@ -23,11 +23,11 @@ export type WalkinReason = 'WALKIN_CLOSED' | 'WALKIN_TTL' | 'WALKIN_IDLE' | 'WAL
 export const WALKIN_CLOSED_COPY = 'Walk-in access is currently closed.';
 
 /** The wall's headline, in the conversion gate (landing/gate/ConversionGate.tsx).
- *  That wall is where a visitor actually meets the end of the free minute, so it
+ *  That wall is where a visitor actually meets the end of the intro time, so it
  *  gets warm, fixed words. walkinReasonCopy below is the SYSTEM fallback for
  *  anywhere else the code surfaces, and follows this module's own convention of
  *  naming the window ("Your 20 minutes are up."). The two differ on purpose. */
-export const WALKIN_ANON_BUDGET_COPY = 'Your free minute is up.';
+export const WALKIN_ANON_BUDGET_COPY = 'Your intro time is up.';
 
 // No code is a substring of another, so the scan order below carries no meaning.
 const REASON_CODES: readonly WalkinReason[] = [
@@ -81,17 +81,17 @@ export function walkinReasonCopy(
         retryable: true,
       };
     // The conversion wall. This is the ONLY code whose copy is not an apology:
-    // the visitor did not lose a session, they reached the end of the free
-    // sample, and the machine they were driving is still sitting there. Not
+    // the visitor did not lose a session, they reached the end of the intro
+    // time, and the machine they were driving is still sitting there. Not
     // retryable on purpose — another claim is refused with this same code until
     // they register, and offering a button that cannot work is how a wall reads
     // as a bug.
     case 'WALKIN_ANON_BUDGET':
       return {
-        title: `That was your ${budgetSeconds} seconds.`,
+        title: `Your ${budgetSeconds} seconds of intro time are up.`,
         detail:
-          'The machine is still running, exactly as you left it. Create a passkey and you pick it back up where '
-          + 'it is — no email, no password, about five seconds.',
+          'The machine is still here, exactly as you left it. Register with a passkey and you pick it up where '
+          + 'it is. No email, no password.',
         retryable: false,
       };
   }

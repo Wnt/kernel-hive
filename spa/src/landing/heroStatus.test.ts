@@ -68,18 +68,43 @@ describe('heroCaption', () => {
   it('says WHY the machine went away, per reason', () => {
     // A visitor who is not told the page took the machine back assumes it
     // broke, and reloads — the one reaction that makes the pool worse.
-    expect(heroCaption('stopped', 'win311', 'never-driven')).toMatch(/nothing was clicked/i);
+    expect(heroCaption('stopped', 'win311', 'never-driven')).toMatch(/still there\?/i);
     expect(heroCaption('stopped', 'win311', 'hidden')).toMatch(/background/i);
-    expect(heroCaption('stopped', 'win311', 'left')).toMatch(/handed back/i);
-    expect(heroCaption('stopped', 'win311')).toMatch(/handed back/i);
+    expect(heroCaption('stopped', 'win311', 'left')).toMatch(/gone back to the pool/i);
+    expect(heroCaption('stopped', 'win311')).toMatch(/gone back to the pool/i);
+  });
+
+  it('names the machine it is offering back, not "another one"', () => {
+    // The second half of the operator's bug: the page used to say "take
+    // another" and then hand the visitor a different OS. It now offers back
+    // the machine they were on, so the sentence has to name it.
+    for (const stop of ['never-driven', 'hidden', 'left'] as const) {
+      expect(heroCaption('stopped', 'win311', stop)).toContain('win311');
+    }
+  });
+
+  it('never promises the visitor their work survived', () => {
+    // The pool never recycles a used clone, so a machine that comes back is a
+    // FRESH copy. Saying "the same machine" and handing over a clean desktop
+    // is the one lie on this page a visitor would actually notice.
+    for (const stop of ['never-driven', 'hidden', 'left'] as const) {
+      expect(heroCaption('stopped', 'win311', stop)).toMatch(/clean copy/i);
+    }
   });
 
   it('never says "disconnected" or leaves a stopped stage wordless', () => {
     for (const stop of ['never-driven', 'hidden', 'left'] as const) {
       const line = heroCaption('stopped', 'win311', stop);
       expect(line).not.toMatch(/disconnect/i);
-      expect(line).toMatch(/take another/i);
+      expect(line).toMatch(/bring it back/i);
     }
+  });
+
+  it('does not start counting a minute the visitor has not started', () => {
+    const waiting = heroCaption('running', 'win311', undefined, false);
+    expect(waiting).toMatch(/intro time does not start until you click or type/i);
+    expect(heroCaption('running', 'win311', undefined, true))
+      .not.toMatch(/intro time does not start until you click or type/i);
   });
 
   it('always has words, for every state', () => {

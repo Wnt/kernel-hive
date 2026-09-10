@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import {
-  canResumeHeldClone,
-  formatClock,
-  HELD_CLONE_WINDOW_SECONDS,
-  shouldShowWall,
-  urgencyTier,
-} from './budget';
+import { formatClock, shouldShowWall, urgencyTier } from './budget';
 
-// The conversion gate's whole contract in numbers: what colour the countdown
-// wears, when the wall appears, and how long the visitor's machine is still
-// theirs to walk back into. If a case here breaks, the wall showed too early,
-// too late, or promised a machine that was already gone.
+// The conversion gate's contract in numbers: what colour the countdown wears
+// and when the wall appears. If a case here breaks, the wall showed too early
+// or too late.
+//
+// A third rule used to live here — how long the visitor's machine was still
+// theirs to walk back into — and it went with the footnote that was the only
+// thing reading it. The 120-second hold is still real and still the server's
+// (CONTRACT-LEDGER §3.4); the wall simply no longer makes a promise about it
+// that it times in the browser.
 
 describe('urgencyTier', () => {
   it('is calm for most of the minute', () => {
@@ -77,21 +76,5 @@ describe('shouldShowWall', () => {
 
   it('stays down for an ordinary in-progress minute', () => {
     expect(shouldShowWall(59, false)).toBe(false);
-  });
-});
-
-describe('canResumeHeldClone', () => {
-  it('holds the constant the copy is written against', () => {
-    expect(HELD_CLONE_WINDOW_SECONDS).toBe(120);
-  });
-
-  it('is resumable for the whole hold window', () => {
-    expect(canResumeHeldClone(0)).toBe(true);
-    expect(canResumeHeldClone(119)).toBe(true);
-  });
-
-  it('closes at exactly the window, not after it', () => {
-    expect(canResumeHeldClone(120)).toBe(false);
-    expect(canResumeHeldClone(121)).toBe(false);
   });
 });

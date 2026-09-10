@@ -47,17 +47,29 @@ function state(): WalkinState {
   };
 }
 
-// The preview budget ticks down in real time from the first look, so both the
-// countdown and the wall at zero can be seen without editing anything. Uses the
-// same clock the real one will: elapsed wall time, recomputed per poll, never
-// accumulated.
+// The preview budget ticks down in real time, so both the countdown and the
+// wall at zero can be seen without editing anything. Uses the same clock the
+// real one does: elapsed wall time, recomputed per poll, never accumulated —
+// and, since 2026-09-10, started by the visitor's FIRST TOUCH rather than by
+// the page load. A preview that started counting on arrival would show the
+// exact behaviour the engagement rule exists to remove.
 const ANON_BUDGET_SECONDS = 60;
-const anonStartedAt = Date.now();
+let anonEngagedAt: number | null = null;
 
 function anonBudget(): WalkinAnonBudget {
-  const spent = Math.floor((Date.now() - anonStartedAt) / 1000);
+  const spent = anonEngagedAt === null ? 0 : Math.floor((Date.now() - anonEngagedAt) / 1000);
   const remainingSeconds = Math.max(0, ANON_BUDGET_SECONDS - spent);
-  return { budgetSeconds: ANON_BUDGET_SECONDS, remainingSeconds, expired: remainingSeconds <= 0 };
+  return {
+    budgetSeconds: ANON_BUDGET_SECONDS,
+    remainingSeconds,
+    expired: remainingSeconds <= 0,
+    engaged: anonEngagedAt !== null,
+  };
+}
+
+/** The visitor touched the machine — the preview's half of `/walkin/engage`. */
+function engage(_clone: string): void {
+  if (anonEngagedAt === null) anonEngagedAt = Date.now();
 }
 
 function claim(os?: string): WalkinClaim | WalkinQueued {
@@ -106,4 +118,4 @@ function forced(): boolean {
   return query() !== '';
 }
 
-export const walkinFixture = { state, claim, reset, release, forced };
+export const walkinFixture = { state, claim, engage, reset, release, forced };

@@ -117,6 +117,21 @@ PROBES: dict[str, ServerProbe] = {
         "driving a real machine, which is the whole point of the landing redesign",
         consumes="auth.gate.anon",
     ),
+    "walkin.anon.engaged": ServerProbe(
+        area="walkin",
+        owner="scripts/serve/auth/anon_plane.py",
+        what="a stranger actually TOUCHED the machine the landing page handed them, which is the moment their "
+        "minute starts; read against walkin.play.held it is the share of auto-claimed cells that reach a person "
+        "at all, and a low one says the pool is being spent on nobody",
+    ),
+    "walkin.anon.unengaged": ServerProbe(
+        area="walkin",
+        owner="scripts/serve/auth/anon_plane.py",
+        what="a cell was taken back because nobody ever touched it — the crawler-and-forgotten-tab reclaim that "
+        "pays for starting the clock at first touch; a zero here with a busy pool means the browsers are handing "
+        "their own cells back first, which is the intended order",
+        consumes="walkin.anon.engaged",
+    ),
     "walkin.anon.wall": ServerProbe(
         area="walkin",
         owner="scripts/serve/auth/anon_plane.py",

@@ -23,16 +23,17 @@ describe('reason codes', () => {
   });
 
   it('renders the conversion wall for a spent anonymous budget', () => {
-    // Not an apology and not retryable: the visitor reached the end of the free
-    // sample, another claim is refused with this same code until they register,
-    // and a button that cannot work makes a wall read as a bug.
+    // Not an apology and not retryable: the visitor reached the end of their
+    // intro time, another claim is refused with this same code until they
+    // register, and a button that cannot work makes a wall read as a bug.
     const copy = walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 60 });
-    expect(copy.title).toBe('That was your 60 seconds.');
+    expect(copy.title).toBe('Your 60 seconds of intro time are up.');
     expect(copy.retryable).toBe(false);
-    expect(copy.detail).toContain('still running');
+    expect(copy.detail).toContain('still here');
     // The number follows the server, so a retuned budget cannot make it lie.
-    expect(walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 90 }).title).toBe('That was your 90 seconds.');
-    expect(walkinReasonCopy('WALKIN_ANON_BUDGET').title).toBe('That was your 60 seconds.');
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 90 }).title)
+      .toBe('Your 90 seconds of intro time are up.');
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET').title).toBe('Your 60 seconds of intro time are up.');
   });
 
   it('finds the budget code on the refusal body the server actually sends', () => {

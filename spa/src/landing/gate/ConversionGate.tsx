@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import { Countdown } from './Countdown';
-import { canResumeHeldClone, shouldShowWall } from './budget';
+import { shouldShowWall } from './budget';
 import { isClosedError } from '../../walkin/api';
 import { supportsPasskeys, walkinSignIn, walkinSignup } from '../../walkin/passkey';
 import { WALKIN_ANON_BUDGET_COPY, WALKIN_CLOSED_COPY } from '../../walkin/reasons';
 import './gate.css';
 
 // The conversion gate — the wall a signed-out stranger hits at the end of
-// their free minute (LANDING-REDESIGN-CONTRACT.md "the goal": drive a real
+// their intro time (LANDING-REDESIGN-CONTRACT.md "the goal": drive a real
 // machine inside one second, hit a 60-second wall that converts). It renders
 // OVER the frozen last frame the landing page leaves on screen — this
 // component paints only the scrim and the placard on top of it, never the
@@ -46,27 +46,6 @@ export function ConversionGate(props: {
   // is the visitor's reward, so it appears only once there is a real handle to
   // show, never optimistically.
   const [justRegistered, setJustRegistered] = useState<string | null>(null);
-
-  // How long the wall has been up, in whole seconds — timed by the browser,
-  // because these props carry no expiry timestamp to read one back from. It
-  // answers "should the copy still promise the SAME machine" (budget.ts
-  // `canResumeHeldClone`, the broker's 120s hold); it does not decide whether
-  // the hold exists, only whether it is still worth promising.
-  const [secondsSinceExpiry, setSecondsSinceExpiry] = useState(0);
-  const shownAtRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (!visible) {
-      shownAtRef.current = null;
-      setSecondsSinceExpiry(0);
-      return;
-    }
-    if (shownAtRef.current === null) shownAtRef.current = Date.now();
-    const tick = () => setSecondsSinceExpiry(Math.floor((Date.now() - (shownAtRef.current as number)) / 1000));
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [visible]);
-  const resumeWindowOpen = canResumeHeldClone(secondsSinceExpiry);
 
   // The frame is the strongest asset on the page; the wall arriving on top of
   // it should still move keyboard focus onto itself, the way any modal must.
@@ -132,15 +111,14 @@ export function ConversionGate(props: {
         ) : (
           <>
             <p className="gate-lede">
-              Your {stationTitle} didn&rsquo;t go anywhere — it&rsquo;s frozen right behind this, exactly where
-              you left it.
+              but your {stationTitle} station is still here, exactly as you left it.
             </p>
 
             {capable ? (
               <>
                 <p className="gate-copy">
-                  Make a passkey and it is yours to come back to: no form, no password, nothing to remember.
-                  Your device makes the key — we never see a name or an email.
+                  We kindly ask you to register with The Kernel Hive. All it takes is a passkey. This is how we
+                  keep bot traffic out.
                 </p>
                 <div className="gate-actions">
                   <button
@@ -149,7 +127,7 @@ export function ConversionGate(props: {
                     disabled={busy}
                     onClick={() => { void register(); }}
                   >
-                    {ceremony === 'register' ? 'Waiting for your device…' : 'Create my passkey'}
+                    {ceremony === 'register' ? 'Waiting for your device…' : 'Register'}
                   </button>
                   <button
                     type="button"
@@ -160,11 +138,6 @@ export function ConversionGate(props: {
                     {ceremony === 'signin' ? 'Waiting for your device…' : 'Sign in'}
                   </button>
                 </div>
-                <p className="gate-footnote">
-                  {resumeWindowOpen
-                    ? 'Either one, and you land right back on this machine.'
-                    : 'This machine has gone back to the pool by now — the next one is a tap away.'}
-                </p>
               </>
             ) : (
               <p className="gate-copy">

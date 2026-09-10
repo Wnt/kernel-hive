@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FIRST_INPUT_GRACE_MS,
+  GRACE_WARN_SECONDS,
   HIDDEN_GRACE_MS,
+  MEANINGFUL_EVENTS,
+  UNENGAGED_GRACE_MS,
+  budgetRunning,
   graceSecondsLeft,
   heroBlockedLine,
   heroPlayable,
+  isMeaningful,
   mirroredRemaining,
   releaseDue,
   shouldAutoClaim,
@@ -12,57 +16,142 @@ import {
   type HoldFacts,
 } from './heroPolicy';
 
-// The rules that decide whether one of eight cells is spent on somebody who is
-// not there. Every case below is a way the landing page can quietly hold a
-// machine for a crawler.
+// The rules that decide whether one of twenty-four cells is spent on somebody
+// who is not there, and — since the operator reported both as one bug — when a
+// stranger's intro time starts. Every case below is either a way the landing
+// page quietly holds a machine for a crawler, or a way it quietly spends a
+// visitor's minute on a headline they were still reading.
 
 const T0 = 1_700_000_000_000;
 const hold = (over: Partial<HoldFacts> = {}): HoldFacts => ({
   now: T0,
   claimedAt: T0,
-  lastInputAt: null,
+  engagedAt: null,
+  lastPresenceAt: null,
   hiddenSince: null,
   ...over,
 });
 
+describe('MEANINGFUL_EVENTS', () => {
+  // The operator's own line: "the 1 minute should only start after I have
+  // interacted with the machine in a meaningful way like first click or
+  // keyboard entry. just moving the mouse over the display canvas should not
+  // start it." This is that sentence, as a list.
+  it('counts a press, a tap and a key', () => {
+    expect(isMeaningful('pointerdown')).toBe(true);
+    expect(isMeaningful('mousedown')).toBe(true);
+    expect(isMeaningful('touchstart')).toBe(true);
+    expect(isMeaningful('keydown')).toBe(true);
+  });
+
+  it('does NOT count a mouse merely crossing the machine', () => {
+    for (const type of ['mousemove', 'pointermove', 'pointerover', 'mouseover', 'mouseenter']) {
+      expect(isMeaningful(type)).toBe(false);
+    }
+  });
+
+  it('does not count reading past it either', () => {
+    // `wheel` was on this list once. Scrolling down to the collection below the
+    // fold passes over the machine on the way, which would start a minute the
+    // visitor never asked for.
+    for (const type of ['wheel', 'scroll', 'focus', 'keyup', 'mouseup', 'pointerup']) {
+      expect(isMeaningful(type)).toBe(false);
+    }
+  });
+
+  it('is the whole list, so nothing is counted that is not written down', () => {
+    expect([...MEANINGFUL_EVENTS]).toEqual(['pointerdown', 'mousedown', 'touchstart', 'keydown']);
+  });
+});
+
+describe('budgetRunning', () => {
+  it('does not run before the visitor has touched the machine', () => {
+    expect(budgetRunning({ holding: true, engaged: false })).toBe(false);
+  });
+
+  it('runs once they have', () => {
+    expect(budgetRunning({ holding: true, engaged: true })).toBe(true);
+  });
+
+  it('stops while they hold nothing, however engaged they are', () => {
+    // Sixty seconds of CONNECTED time: between a release and the next claim
+    // the visitor is spending nothing.
+    expect(budgetRunning({ holding: false, engaged: true })).toBe(false);
+  });
+});
+
 describe('releaseDue', () => {
   it('holds a fresh, visible, untouched cell inside the grace', () => {
-    expect(releaseDue(hold({ now: T0 + FIRST_INPUT_GRACE_MS - 1 }))).toBeNull();
+    expect(releaseDue(hold({ now: T0 + UNENGAGED_GRACE_MS - 1 }))).toBeNull();
   });
 
-  it('releases an untouched cell the moment the grace runs out', () => {
-    expect(releaseDue(hold({ now: T0 + FIRST_INPUT_GRACE_MS }))).toBe('never-driven');
+  it('keeps a machine through a slow read of the whole page', () => {
+    // THE REGRESSION. At fifteen seconds this returned 'never-driven' while
+    // the visitor was still reading the lede, and the only way back re-rolled
+    // the station — the two bugs the operator reported, in one line.
+    expect(releaseDue(hold({ now: T0 + 45_000 }))).toBeNull();
   });
 
-  it('releases a never-driven cell IMMEDIATELY when the tab is hidden', () => {
+  it('does not count a mouse crossing the picture as being there', () => {
+    // There is no `mousemove` fact in HoldFacts at all, and that is the point:
+    // the only way to be engaged is an event from MEANINGFUL_EVENTS, so a
+    // pointer wandering over the stage cannot postpone anything.
+    expect(releaseDue(hold({ now: T0 + UNENGAGED_GRACE_MS }))).toBe('never-driven');
+  });
+
+  it('releases an un-engaged cell the moment the grace runs out', () => {
+    expect(releaseDue(hold({ now: T0 + UNENGAGED_GRACE_MS }))).toBe('never-driven');
+  });
+
+  it('lets a press anywhere on the hero buy the whole window again', () => {
+    // Pressing a switcher chip proves a person is here. It proves nothing about
+    // the guest, so it is not engagement — but taking their machine away
+    // ninety seconds after they chose it would be absurd.
+    const pressed = { lastPresenceAt: T0 + 90_000 };
+    expect(releaseDue(hold({ ...pressed, now: T0 + 90_000 + UNENGAGED_GRACE_MS - 1 }))).toBeNull();
+    expect(releaseDue(hold({ ...pressed, now: T0 + 90_000 + UNENGAGED_GRACE_MS }))).toBe('never-driven');
+  });
+
+  it('releases a never-engaged cell IMMEDIATELY when the tab is hidden', () => {
     // The strongest signal there is: claimed and instantly backgrounded is a
     // crawler or a middle-click, and neither will ever look at the frame.
     expect(releaseDue(hold({ hiddenSince: T0, now: T0 + 1 }))).toBe('hidden');
   });
 
-  it('never releases a visible cell the visitor has driven', () => {
+  it('never releases a visible cell the visitor has engaged with', () => {
     // From here the broker's TTL and idle windows own the session; a second,
     // shorter client rule would end sessions the server believes are alive.
-    expect(releaseDue(hold({ lastInputAt: T0, now: T0 + 10 * 60_000 }))).toBeNull();
+    expect(releaseDue(hold({ engagedAt: T0, now: T0 + 10 * 60_000 }))).toBeNull();
   });
 
-  it('gives a driven cell the longer grace when the tab goes hidden', () => {
-    const driven = { lastInputAt: T0 + 1_000, hiddenSince: T0 + 2_000 };
+  it('gives an engaged cell the longer grace when the tab goes hidden', () => {
+    const driven = { engagedAt: T0 + 1_000, hiddenSince: T0 + 2_000 };
     expect(releaseDue(hold({ ...driven, now: T0 + 2_000 + HIDDEN_GRACE_MS - 1 }))).toBeNull();
     expect(releaseDue(hold({ ...driven, now: T0 + 2_000 + HIDDEN_GRACE_MS }))).toBe('hidden');
   });
 
-  it('gives a hidden, never-driven cell no benefit of the doubt at all', () => {
-    expect(HIDDEN_GRACE_MS).toBeGreaterThan(FIRST_INPUT_GRACE_MS);
+  it('gives a hidden, never-engaged cell no benefit of the doubt at all', () => {
     expect(releaseDue(hold({ hiddenSince: T0, now: T0 }))).toBe('hidden');
   });
 });
 
 describe('graceSecondsLeft', () => {
   it('counts down from the grace and never goes negative', () => {
-    expect(graceSecondsLeft({ now: T0, claimedAt: T0 })).toBe(FIRST_INPUT_GRACE_MS / 1000);
-    expect(graceSecondsLeft({ now: T0 + 14_200, claimedAt: T0 })).toBe(1);
-    expect(graceSecondsLeft({ now: T0 + 99_000, claimedAt: T0 })).toBe(0);
+    const base = { claimedAt: T0, lastPresenceAt: null };
+    expect(graceSecondsLeft({ ...base, now: T0 })).toBe(UNENGAGED_GRACE_MS / 1000);
+    expect(graceSecondsLeft({ ...base, now: T0 + UNENGAGED_GRACE_MS - 800 })).toBe(1);
+    expect(graceSecondsLeft({ ...base, now: T0 + 10 * UNENGAGED_GRACE_MS })).toBe(0);
+  });
+
+  it('restarts from the last press on the page', () => {
+    expect(graceSecondsLeft({ claimedAt: T0, lastPresenceAt: T0 + 50_000, now: T0 + 50_000 }))
+      .toBe(UNENGAGED_GRACE_MS / 1000);
+  });
+
+  it('warns late enough to be a warning', () => {
+    // A caption that says "touch it or it goes back" for a hundred seconds is
+    // furniture the visitor stops reading.
+    expect(GRACE_WARN_SECONDS).toBeLessThan(UNENGAGED_GRACE_MS / 1000 / 2);
   });
 });
 

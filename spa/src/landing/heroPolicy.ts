@@ -17,19 +17,78 @@ import { accessAllows } from '../walkin/sessionEnd';
 //  is there. Both halves are pure functions here, tested next door, because
 //  both are timing rules — the class of rule that is impossible to eyeball and
 //  trivial to get backwards.
+//
+//  WHAT COUNTS AS "SOMEBODY IS THERE" changed on 2026-09-10, and it is the
+//  reason for most of this file. The visitor's intro time used to start when
+//  the page took a machine, so a stranger reading the headline was already
+//  spending it — measured on the live site: seventeen seconds gone before
+//  anything was touched. Now the minute starts at the first MEANINGFUL input,
+//  the server keeps that clock (`POST /walkin/engage`), and the cost of the
+//  change is that a claim no longer bounds itself. That cost is paid here, by
+//  a longer release for a machine nobody has engaged with.
 // ============================================================================
 
-/** How long a freshly claimed cell may go untouched before it goes back. */
-export const FIRST_INPUT_GRACE_MS = 15_000;
+/**
+ * The events that mean a person is DRIVING the machine, and the whole list.
+ *
+ * The line is deliberately where the operator drew it: "the 1 minute should
+ * only start after I have interacted with the machine in a meaningful way like
+ * first click or keyboard entry. just moving the mouse over the display canvas
+ * should not start it." A pointer crossing the picture is a cursor moving over
+ * a poster; it is also, on this page, the single most likely thing to happen by
+ * accident, because the machine sits under the headline the visitor is reading.
+ *
+ * So: presses, taps and keys. NOT `mousemove`/`pointermove` (crossing it),
+ * NOT `wheel` or `scroll` (reading past it — `wheel` was on this list until it
+ * was noticed that scrolling to the collection below the fold starts a minute
+ * the visitor never asked for), NOT `focus`/`mouseover`/`pointerover` (arriving
+ * near it). `mousedown` rides beside `pointerdown` for the browsers that never
+ * got Pointer Events; both firing for one press is harmless, since the first
+ * touch is the only one that decides anything.
+ */
+export const MEANINGFUL_EVENTS = ['pointerdown', 'mousedown', 'touchstart', 'keydown'] as const;
+
+/** Whether a DOM event type is one the visitor's minute may start on. */
+export function isMeaningful(type: string): boolean {
+  return (MEANINGFUL_EVENTS as readonly string[]).includes(type);
+}
 
 /**
- * How long a cell the visitor HAS driven may sit in a hidden tab.
+ * How long a claimed cell may go UN-ENGAGED before it goes back.
  *
- * Longer than the first-input grace on purpose: someone who has already typed
- * at the guest and then switches tabs for twenty seconds is a visitor, not a
- * crawler, and taking their machine away mid-thought is a worse failure than
- * holding a cell for half a minute. Someone who never touched it gets no such
- * benefit of the doubt — see `hidden` in releaseDue().
+ * The old number was fifteen seconds, and it was right for the world it was
+ * written in: the budget was already burning, so a cell nobody had touched in
+ * fifteen seconds was a cell being wasted twice over. With the clock no longer
+ * running until first touch, the same fifteen seconds became the bug the
+ * operator reported — the machine was taken away from a visitor who was still
+ * reading, and the only way back re-rolled the station.
+ *
+ * A hundred seconds is chosen against what a person actually does above the
+ * fold: read a headline, a five-line lede and the caption under the machine,
+ * glance at three switcher chips, and reach for the mouse. That is well under a
+ * minute even read slowly, so this is a whole unhurried visit plus margin. It
+ * is under the SERVER's own window (`auth/anon.py UNENGAGED_SECONDS`, 120s) on
+ * purpose, so the tab that can hand its own cell back does — the server's sweep
+ * is the backstop for the client that never will, which is exactly the client
+ * that is not a person.
+ */
+export const UNENGAGED_GRACE_MS = 100_000;
+
+/** How near the un-engaged release the caption starts saying so. A warning that
+ *  runs for a hundred seconds is furniture; one that appears at the end is a
+ *  warning. */
+export const GRACE_WARN_SECONDS = 30;
+
+/**
+ * How long a cell the visitor HAS engaged with may sit in a hidden tab.
+ *
+ * Someone who has already typed at the guest and then switches tabs for twenty
+ * seconds is a visitor, not a crawler, and taking their machine away
+ * mid-thought is a worse failure than holding a cell for half a minute. Someone
+ * who never touched it gets no such benefit of the doubt — see `hidden` in
+ * releaseDue(). It is shorter than the un-engaged window and that is not a
+ * contradiction: their minute is RUNNING, so holding the cell is spending their
+ * budget on a tab they cannot see.
  */
 export const HIDDEN_GRACE_MS = 30_000;
 
@@ -37,46 +96,76 @@ export interface HoldFacts {
   now: number;
   /** When the broker handed this cell over. */
   claimedAt: number;
-  /** The last TRUSTED pointer/key/touch on the stage; null ⇒ never driven. */
-  lastInputAt: number | null;
+  /** The first MEANINGFUL input on the machine; null ⇒ never engaged. Sticky
+   *  for the visit, exactly like the server's own `engaged` — engagement is a
+   *  fact about the person, so it is not re-earned for each machine they try. */
+  engagedAt: number | null;
+  /** The last trusted press ANYWHERE on the hero — a switcher chip, the call to
+   *  action. Not engagement (it says nothing about the guest), but it is proof a
+   *  person is on the page, so it pushes the un-engaged release out rather than
+   *  cancelling it. */
+  lastPresenceAt: number | null;
   /** When the tab went hidden; null ⇒ visible. */
   hiddenSince: number | null;
+}
+
+/** When the un-engaged clock started running: the claim, or the last time the
+ *  visitor proved they were here, whichever is later. */
+function untouchedSince(f: Pick<HoldFacts, 'claimedAt' | 'lastPresenceAt'>): number {
+  return Math.max(f.claimedAt, f.lastPresenceAt ?? 0);
 }
 
 /** Why the hero is handing its cell back, or null to keep holding. */
 export type ReleaseReason = 'never-driven' | 'hidden';
 
 /**
+ * Is the visitor's minute running right now?
+ *
+ * Both halves are required and neither is enough. The budget is sixty seconds
+ * of CONNECTED time, so a visitor holding no machine spends nothing; and since
+ * 2026-09-10 it is sixty seconds of connected time AFTER THE FIRST TOUCH, so a
+ * visitor who has not engaged spends nothing either. The server keeps the
+ * authoritative clock and this only decides whether the mirror ticks — but a
+ * mirror that ticks when the server's number is standing still runs away from
+ * it and then snaps back on the next poll, which reads as a broken countdown.
+ */
+export function budgetRunning(f: { holding: boolean; engaged: boolean }): boolean {
+  return f.holding && f.engaged;
+}
+
+/**
  * Should this held cell go back to the pool right now?
  *
  * Order matters, and it is the order of how sure we are that nobody is there:
  *
- *   1. Never driven AND the tab is hidden — the strongest signal there is. A
+ *   1. Never engaged AND the tab is hidden — the strongest signal there is. A
  *      page that was claimed and immediately backgrounded was opened by
  *      software or by a person who has already moved on. No grace at all.
- *   2. Never driven, visible, past the grace — the crawler case, and the
- *      "opened in a tab to read later" case. 15 seconds is long enough for a
- *      real person to find the machine with their mouse and short enough that
- *      eight cells are not held by nobody.
- *   3. Driven, but hidden past the longer grace — a real visitor who left.
+ *   2. Never engaged, visible, past the grace — the crawler case, and the
+ *      "opened in a tab to read later" case. A hundred seconds is long enough
+ *      for a real person to read the page and reach for the mouse, and short
+ *      enough that twenty-four cells are not held by nobody. A press anywhere
+ *      on the hero pushes it out again; it does not cancel it, because a
+ *      visitor who pressed one chip and left is still a visitor who left.
+ *   3. Engaged, but hidden past the longer grace — a real visitor who left.
  *
- *  A visible, driven cell is never released here: from that point it is the
+ *  A visible, engaged cell is never released here: from that point it is the
  *  broker's TTL and idle windows that own the session (walkin/sessionEnd.ts),
  *  and a second, shorter client-side rule would only end sessions the server
  *  believes are alive.
  */
 export function releaseDue(f: HoldFacts): ReleaseReason | null {
-  const driven = f.lastInputAt !== null;
+  const engaged = f.engagedAt !== null;
   const hidden = f.hiddenSince !== null;
-  if (!driven && hidden) return 'hidden';
-  if (!driven && f.now - f.claimedAt >= FIRST_INPUT_GRACE_MS) return 'never-driven';
-  if (driven && hidden && f.now - (f.hiddenSince as number) >= HIDDEN_GRACE_MS) return 'hidden';
+  if (!engaged && hidden) return 'hidden';
+  if (!engaged && f.now - untouchedSince(f) >= UNENGAGED_GRACE_MS) return 'never-driven';
+  if (engaged && hidden && f.now - (f.hiddenSince as number) >= HIDDEN_GRACE_MS) return 'hidden';
   return null;
 }
 
-/** Seconds left before an undriven cell is handed back — the caption's number. */
-export function graceSecondsLeft(f: Pick<HoldFacts, 'now' | 'claimedAt'>): number {
-  return Math.max(0, Math.ceil((FIRST_INPUT_GRACE_MS - (f.now - f.claimedAt)) / 1000));
+/** Seconds left before an un-engaged cell is handed back — the caption's number. */
+export function graceSecondsLeft(f: Pick<HoldFacts, 'now' | 'claimedAt' | 'lastPresenceAt'>): number {
+  return Math.max(0, Math.ceil((UNENGAGED_GRACE_MS - (f.now - untouchedSince(f))) / 1000));
 }
 
 // ---------------------------------------------------------------------------

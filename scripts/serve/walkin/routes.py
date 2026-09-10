@@ -1,4 +1,4 @@
-"""The server side of `/walkin/state|claim|release|reset` (contract ledger §3).
+"""The server side of `/walkin/state|claim|engage|release|reset` (ledger §3).
 
 **This module does not decide who may call it.** Lane 2 owns the walk-in role,
 the access switch and the ticket gate in `scripts/serve/auth/`; by the time
@@ -131,6 +131,8 @@ def dispatch(handler, path: str, method: str, broker, user, access: str, budget=
     try:
         if path == "/walkin/claim":
             _reply(handler, 200, _claim(broker, user, uid, body, budget), cookie)
+        elif path == "/walkin/engage":
+            _reply(handler, 200, _engage(broker, user, uid, body, budget), cookie)
         elif path == "/walkin/release":
             out = broker.release(uid, str(body.get("clone", "")))
             if budget is not None:
@@ -181,6 +183,44 @@ def _claim(broker, user, uid: str, body: dict, budget) -> dict:
         raise
     if budget is not None:
         budget.granted(user, out)
+    return out
+
+
+def _engage(broker, user, uid: str, body: dict, budget) -> dict:
+    """The visitor touched their machine — the one signal that starts a minute.
+
+    It exists because the two clocks that bound a walk-in were both counted
+    from the CLAIM, and a page that claims on load spends them on a stranger who
+    is still reading the headline. So the browser reports the first real press,
+    tap or key ON THE GUEST (`landing/heroPolicy.ts MEANINGFUL_EVENTS` — never a
+    mouse crossing the picture), and this is where that lands.
+
+    Two clocks move, and they are deliberately different clocks:
+
+      * `Broker.note_input` restamps the session's idle window. It has had no
+        production caller since it was written, which is why `holds.py` records
+        that the "idle" reap was really a second TTL counted from the claim.
+        This is that caller: from here on an idle walk-in is one who has stopped
+        driving, which is what the number was always supposed to mean.
+      * `budget.engage` starts the anonymous minute. It is the ONLY thing that
+        does, and the server keeps the clock — the page reports an event, never
+        a duration, and cannot report itself more time.
+
+    OWNERSHIP IS CHECKED, and not as ceremony: `note_input` names a clone and
+    takes no user, so an unchecked route would let any caller hold any
+    stranger's session out of the idle reap. The broker's own answer to "which
+    clone is this caller's" is the only one trusted here — never the body's.
+    """
+    clone = str(body.get("clone", "") or "").strip()
+    own = broker.own_of(uid) or {}
+    if not clone or clone != str(own.get("clone", "") or ""):
+        raise Refused("walkin_not_yours", {})
+    broker.note_input(clone)
+    out = {"ok": True}
+    if budget is not None:
+        block = budget.engage(broker, user)
+        if block is not None:
+            out["anon"] = block
     return out
 
 

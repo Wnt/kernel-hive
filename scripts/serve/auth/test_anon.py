@@ -44,7 +44,20 @@ class Clock:
 class TestBudget(unittest.TestCase):
     def setUp(self):
         self.clock = Clock()
-        self.budget = AnonBudget(budget=60, hold=120, now=self.clock)
+        self.budget = AnonBudget(budget=60, hold=120, unengaged=120, now=self.clock)
+
+    def drive(self, visitor: str, clone: str) -> int:
+        """Take a machine AND touch it — which together is what spends a minute.
+
+        Every test in this class is about what DRIVING costs, and since the
+        clock moved to first touch (`TestEngagement`) a claim on its own costs
+        nothing. Folding the two calls into one helper keeps that rule in the
+        one class that tests it, instead of sprinkling an `engage()` through
+        arithmetic that is not about engagement at all.
+        """
+        granted = self.budget.begin(visitor, clone)
+        self.budget.engage(visitor)
+        return granted
 
     def test_a_new_visitor_has_the_whole_minute(self):
         self.assertEqual(self.budget.remaining("v1"), 60)
@@ -53,12 +66,12 @@ class TestBudget(unittest.TestCase):
     def test_the_clock_only_runs_while_they_hold_a_machine(self):
         self.clock.tick(3600)  # an hour of looking at the landing page
         self.assertEqual(self.budget.remaining("v1"), 60)
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(10)
         self.assertEqual(self.budget.remaining("v1"), 50)
 
     def test_a_release_stops_the_clock(self):
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(10)
         self.budget.settle("v1")
         self.clock.tick(600)
@@ -67,31 +80,31 @@ class TestBudget(unittest.TestCase):
     def test_the_budget_carries_across_a_station_switch(self):
         # THE HEADLINE. Trying all three machines has to cost the same minute as
         # staying on one, or a stranger hops the pool forever and never converts.
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(20)
         self.budget.settle("v1")  # release
-        granted = self.budget.begin("v1", "walkin-win311-1")  # claim another
+        granted = self.drive("v1", "walkin-win311-1")  # claim another
         self.assertEqual(granted, 40)
         self.clock.tick(20)
         self.budget.settle("v1")
-        self.assertEqual(self.budget.begin("v1", "walkin-rhapsody-1"), 20)
+        self.assertEqual(self.drive("v1", "walkin-rhapsody-1"), 20)
 
     def test_the_budget_carries_across_a_reload(self):
         # A reload re-claims without releasing; the clock must not restart.
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(25)
-        self.assertEqual(self.budget.begin("v1", "walkin-os2warp-1"), 35)
+        self.assertEqual(self.drive("v1", "walkin-os2warp-1"), 35)
         self.clock.tick(5)
         self.assertEqual(self.budget.remaining("v1"), 30)
 
     def test_two_visitors_do_not_share_a_clock(self):
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(40)
         self.assertEqual(self.budget.remaining("v1"), 20)
         self.assertEqual(self.budget.remaining("v2"), 60)
 
     def test_it_runs_out_at_exactly_sixty(self):
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(59)
         self.assertFalse(self.budget.expired("v1"))
         self.clock.tick(1)
@@ -99,25 +112,129 @@ class TestBudget(unittest.TestCase):
         self.assertEqual(self.budget.remaining("v1"), 0)
 
     def test_it_never_goes_negative_or_hands_back_a_fresh_minute(self):
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.clock.tick(6000)
         self.assertEqual(self.budget.remaining("v1"), 0)
-        self.assertEqual(self.budget.begin("v1", "walkin-win311-1"), 0)
+        self.assertEqual(self.drive("v1", "walkin-win311-1"), 0)
 
     def test_the_deadline_is_what_the_watchdog_sleeps_on(self):
         self.assertIsNone(self.budget.next_deadline())
-        self.budget.begin("v1", "walkin-os2warp-1")
+        self.drive("v1", "walkin-os2warp-1")
         self.assertEqual(self.budget.next_deadline(), 1060.0)
         self.clock.tick(30)
-        self.budget.begin("v2", "walkin-win311-1")
+        self.drive("v2", "walkin-win311-1")
         self.assertEqual(self.budget.next_deadline(), 1060.0, "the earlier of the two")
+
+    def test_an_untouched_claim_is_due_on_its_own_clock(self):
+        # A visitor who has not touched anything has no wall coming — there is
+        # no minute running to end. What they DO have is a cell, and the sweep
+        # that takes it back is the deadline the watchdog has to wake for.
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.assertIsNone(self.budget.next_deadline(), "no clock, no wall")
+        self.assertEqual(self.budget.next_unengaged(), 1120.0)
+        self.budget.engage("v1")
+        self.assertEqual(self.budget.next_deadline(), 1060.0)
+        self.assertIsNone(self.budget.next_unengaged(), "a touched machine is never swept")
+
+
+class TestEngagement(unittest.TestCase):
+    """The minute starts when the visitor touches the machine — not when the
+    page takes one.
+
+    This is the rule an operator reported as a bug in the plainest possible
+    terms: "the 1 minute should only start after I have interacted with the
+    machine in a meaningful way like first click or keyboard entry. just moving
+    the mouse over the display canvas should not start it." The landing page
+    auto-claims on load, so under the old rule a stranger reading the headline
+    had already spent a quarter of their minute — measured, on the live site:
+    a claim at 0.9s and a page that had burned 17 seconds before anybody
+    touched anything.
+
+    What the browser may say is "somebody touched it", never "and it has been
+    N seconds" — so every number here is still the server's.
+    """
+
+    def setUp(self):
+        self.clock = Clock()
+        self.budget = AnonBudget(budget=60, hold=120, unengaged=120, now=self.clock)
+
+    def test_claiming_a_machine_spends_nothing(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.clock.tick(300)  # five minutes of reading the page
+        self.assertEqual(self.budget.remaining("v1"), 60)
+        self.assertFalse(self.budget.expired("v1"))
+
+    def test_the_first_touch_starts_it(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.clock.tick(30)
+        self.budget.engage("v1")
+        self.clock.tick(10)
+        self.assertEqual(self.budget.remaining("v1"), 50, "ten seconds of driving, not forty")
+
+    def test_touching_it_again_does_not_restart_anything(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.engage("v1")
+        self.clock.tick(20)
+        self.budget.engage("v1")
+        self.budget.engage("v1")
+        self.clock.tick(10)
+        self.assertEqual(self.budget.remaining("v1"), 30)
+
+    def test_engagement_is_a_fact_about_the_person_not_the_machine(self):
+        # Otherwise switching stations would buy a fresh un-touched window
+        # every time, and a visitor could hold the pool for as long as they
+        # kept pressing chips.
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.engage("v1")
+        self.clock.tick(20)
+        self.budget.settle("v1")  # release
+        self.budget.begin("v1", "walkin-win311-1")  # claim another
+        self.clock.tick(10)
+        self.assertEqual(self.budget.remaining("v1"), 30, "the new machine spends from the first second")
+        self.assertEqual(self.budget.unengaged(), [], "and is never swept as untouched")
+
+    def test_an_untouched_machine_goes_back_to_the_pool(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.clock.tick(119)
+        self.assertEqual(self.budget.unengaged(), [])
+        self.clock.tick(1)
+        self.assertEqual(self.budget.unengaged(), [("v1", "walkin-os2warp-1")])
+
+    def test_a_touched_machine_is_never_swept(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.engage("v1")
+        self.clock.tick(6000)
+        self.assertEqual(self.budget.unengaged(), [], "the wall ends this visit, not the sweep")
+
+    def test_a_visitor_holding_nothing_is_not_swept(self):
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.settle("v1")
+        self.clock.tick(600)
+        self.assertEqual(self.budget.unengaged(), [])
+
+    def test_the_claim_ttl_covers_the_whole_visit_and_no_more(self):
+        # The session is built with this number, so it has to outlast both
+        # bounds enforced ahead of it — the un-touched sweep and the wall.
+        self.assertEqual(self.budget.claim_ttl("v1"), 180, "two minutes to touch it, plus the minute")
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.engage("v1")
+        self.clock.tick(20)
+        self.assertEqual(self.budget.claim_ttl("v1"), 40, "once spending, exactly what is left")
+
+    def test_the_state_block_says_whether_the_clock_is_running(self):
+        self.assertFalse(self.budget.block("v1")["engaged"])
+        self.budget.begin("v1", "walkin-os2warp-1")
+        self.assertFalse(self.budget.block("v1")["engaged"], "claimed is not touched")
+        self.budget.engage("v1")
+        self.assertTrue(self.budget.block("v1")["engaged"])
 
 
 class TestHold(unittest.TestCase):
     def setUp(self):
         self.clock = Clock()
-        self.budget = AnonBudget(budget=60, hold=120, now=self.clock)
+        self.budget = AnonBudget(budget=60, hold=120, unengaged=120, now=self.clock)
         self.budget.begin("v1", "walkin-os2warp-1")
+        self.budget.engage("v1")
         self.clock.tick(60)
 
     def test_exhaustion_reserves_the_machine_they_were_driving(self):
