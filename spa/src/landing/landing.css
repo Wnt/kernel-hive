@@ -95,7 +95,6 @@
 }
 .landing-hero__headline em { font-style: italic; color: var(--accent-ink); }
 .landing-hero__lede { margin: 0; max-width: 42ch; font-size: 15.5px; line-height: 1.58; color: var(--ink-soft); }
-.landing-hero__cta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .landing-hero__meter { margin: 0; font: 13px/1.5 var(--font-mono); color: var(--ink-muted); }
 .landing-hero__meter strong { color: var(--accent-ink); font-size: 15px; }
 .landing-hero__note { margin: 0; max-width: 44ch; font-size: 12.5px; line-height: 1.55; color: var(--ink-muted); }
@@ -120,9 +119,6 @@
 .landing-btn:disabled { opacity: 0.55; cursor: default; }
 .landing-btn--primary { background: var(--accent); color: #fdfbf5; }
 .landing-btn--primary:not(:disabled):hover { filter: brightness(1.08); }
-.landing-btn--quiet { background: var(--paper-raised); color: var(--ink); border-color: var(--line); }
-.landing-btn--quiet:not(:disabled):hover { border-color: var(--accent-line); color: var(--accent-ink); }
-.landing-btn--big { padding: 13px 22px; font-size: 15px; border-radius: 13px; }
 .landing-btn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
 
 /* ---- the machine -------------------------------------------------------- */
