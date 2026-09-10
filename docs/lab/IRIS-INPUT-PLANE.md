@@ -80,7 +80,16 @@ the first line begins `HELLO mamectl/1 ` within 1 s; `MOVEA` acks on **accept**
 and reports completion asynchronously as `EV MOVEA seq=… x=… y=… rounds=… ms=…`;
 button edges ack when the edge **applies**, and are deferred behind an in-flight
 MOVEA so a click can never fire at the pointer's old position; `EV ` lines are
-never acks; buttons are `DOWN1`=left, `DOWN2`=right, `DOWN3`=middle.
+never acks; buttons are `DOWN1`=left, `DOWN2`=right, `DOWN3`=middle. `MOVEP`
+acks when its delta is fully **drained**, which is what makes it the verb you
+calibrate counts->pixels with — paired with `CUR`, which reads the cursor with
+no engine side effect at all (every `MOVEA` runs a convergence, so `MOVEA` can
+never be its own reader).
+
+Nothing the engine thread does blocks on someone else's pace: it is the single
+applier for keys, buttons and the pointer, so `MOVEP` bleeds from a queue rather
+than sleeping inside the verb, and every reply write carries a 2 s timeout — a
+client that stops reading gets a dropped ack, not a stalled emulator.
 
 ## The pointer: closed loop against VC2
 
@@ -156,6 +165,12 @@ every row against a running binary's `KEYDUMP`, which prints that same table, so
 the map and the binary cannot drift. A name the binary does not know is a hard
 error in the generator, not a silently dropped key.
 
+Verified 2026-09-10 against the built fork binary: all 102 names resolve through
+`KEYDUMP`, and the committed file is byte-identical to what the generator
+produces against that binary. The check needs no guest — the control socket is
+up before the machine starts — so it costs about five seconds and belongs in
+every rebuild.
+
 Caps Lock (XT `0x3A`) is **deliberately absent**: `map_keycode_set1` has no
 `CapsLock` arm and would drop the byte silently. Case comes from a real Shift,
 which every SPA burst already sends.
@@ -177,6 +192,8 @@ black.
 | MOVEA convergence | 0–7 rounds, 4–306 ms |
 | learned pointer gain at the 4Dwm desktop | 1.93x / 1.93x |
 | a 6-character line, pipelined at zero spacing | 12 edges, all acked, 462 ms (= 6 x 40/40) |
+| that line at the IRIX login box | `demos` + Enter logged in; the desktop came up |
+| keymap rows resolving through `KEYDUMP` | 102 / 102 |
 
 For scale, the bridge measured 285–383 ms and the MAME `irix` station 68 ms for
 the same "single pointer move -> framebuffer"
@@ -189,7 +206,18 @@ publisher removes (no GL, no X, one memcpy into shm). A 96x96 `XGetImage` costs
 0.20 ms and a full-window one 36.7 ms, so the reader is not the number; the
 compositor present is.
 
-### Open, and handed to stream A
+### Still to confirm
+
+The `cursor_x_adjust` term reached its shipped default *after* the measurement
+run. On the running binary of the day the loop steered `reg + cal_x` alone and
+the glyph landed 5 px right of every commanded pixel; commanding `x - 5` put the
+glyph **exactly on the pixel at 5 of 7 targets**, which is what fixes the
+constant at 5 and is why the module now adds it. The equivalent run on the
+shipped default — same seven targets, no hand offset — has not been taken: the
+box allows one Iris at a time and the slot went to streams A and B. It is one
+15-minute run, and `finalproof.py` in the `iris-c` rig is written and waiting.
+
+## Open, and handed to stream A
 
 The composited frame places the cursor **glyph** on the commanded pixel exactly
 (0 px) at 5 of 7 targets, and 10–14 px low in **Y** at the other two — while the
