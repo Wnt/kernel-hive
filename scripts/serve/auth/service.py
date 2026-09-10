@@ -87,11 +87,17 @@ class AuthService:
         # The walk-in plane's auth half (walkin.py). Imported here rather than
         # at module scope because it imports back for AuthError and the shared
         # helpers; the switch is a satellite of this service, not a peer.
+        from .anon_plane import AnonPlane
         from .tickets import WalkinTickets
         from .walkin import WalkinService
 
         self.walkin_tickets = WalkinTickets()
-        self.walkin = WalkinService(self.store, self.ceremonies, tickets=self.walkin_tickets)
+        # The anonymous plane: a stranger's sixty seconds, before there is any
+        # account to attach them to. It holds no store rows on purpose (see
+        # auth/anon.py), so it is constructed here and never migrated; the
+        # switch is handed it so a drop to Closed takes strangers down too.
+        self.anon = AnonPlane()
+        self.walkin = WalkinService(self.store, self.ceremonies, tickets=self.walkin_tickets, anon=self.anon)
 
     # ---- bootstrap ---------------------------------------------------------
 

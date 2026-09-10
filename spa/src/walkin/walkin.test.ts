@@ -22,6 +22,30 @@ describe('reason codes', () => {
     expect(walkinReasonCopy('WALKIN_TTL', { ttlSeconds: 600 }).title).toBe('Your 10 minutes are up.');
   });
 
+  it('renders the conversion wall for a spent anonymous budget', () => {
+    // Not an apology and not retryable: the visitor reached the end of the free
+    // sample, another claim is refused with this same code until they register,
+    // and a button that cannot work makes a wall read as a bug.
+    const copy = walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 60 });
+    expect(copy.title).toBe('That was your 60 seconds.');
+    expect(copy.retryable).toBe(false);
+    expect(copy.detail).toContain('still running');
+    // The number follows the server, so a retuned budget cannot make it lie.
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 90 }).title).toBe('That was your 90 seconds.');
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET').title).toBe('That was your 60 seconds.');
+  });
+
+  it('finds the budget code on the refusal body the server actually sends', () => {
+    expect(parseWalkinReason('WALKIN_ANON_BUDGET')).toBe('WALKIN_ANON_BUDGET');
+    expect(parseWalkinReason(JSON.stringify({ error: 'WALKIN_ANON_BUDGET', reason: 'WALKIN_ANON_BUDGET' })))
+      .toBe('WALKIN_ANON_BUDGET');
+    // The 410 the media plane answers once the clone is frozen.
+    expect(parseWalkinReason(JSON.stringify({ type: 'session-end', reason: 'WALKIN_ANON_BUDGET' })))
+      .toBe('WALKIN_ANON_BUDGET');
+    // No code is a substring of another, so the older codes are unaffected.
+    expect(parseWalkinReason('WALKIN_TTL')).toBe('WALKIN_TTL');
+  });
+
   it('finds a code whichever road it arrived by, and nothing else', () => {
     expect(parseWalkinReason('WALKIN_TTL')).toBe('WALKIN_TTL');
     expect(parseWalkinReason('session closed: walkin_closed')).toBe('WALKIN_CLOSED');

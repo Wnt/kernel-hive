@@ -62,11 +62,14 @@ def _lower_of(a: str, b: str) -> str:
 class WalkinService:
     """Policy for the walk-in role. One per AuthService; safe from any thread."""
 
-    def __init__(self, store, ceremonies, tickets=None, broker=None, env=None, manifest_path=None):
+    def __init__(self, store, ceremonies, tickets=None, broker=None, env=None, manifest_path=None, anon=None):
         self.store = store
         self.ceremonies = ceremonies
         self.tickets = tickets
         self.broker = broker
+        # The anonymous budget ledger (auth/anon_plane.py), or None on a plane
+        # built before it existed. Held for exactly one reason: the teardown.
+        self.anon = anon
         self._env = env
         # The rendered gallery manifest, projected per request. Resolved from
         # WEBROOT — the serving unit already sets it (serve/config.py) — so the
@@ -164,6 +167,13 @@ class WalkinService:
         #    browser sessions behind them so the cookies are dead too.
         self._call_broker("close_sessions", REASON_CLOSED, failed=failed)
         dropped = self._drop_walkin_sessions()
+        # A STRANGER HAS NO SESSION ROW TO DROP. Their identity is a cookie and
+        # their session is a record in the budget ledger, so forgetting the
+        # ledger is the only way the kill switch reaches them — and it has to,
+        # or the switch would have created the one class of visitor it cannot
+        # stop. Their clones die in step 4 with everyone else's.
+        if self.anon is not None:
+            dropped += self.anon.drop_all()
         # 4. Empty the pool.
         self._call_broker("kill_all_clones", failed=failed)
         if failed:

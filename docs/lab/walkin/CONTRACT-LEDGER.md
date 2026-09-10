@@ -65,9 +65,9 @@ lives under `/auth/` because it is an admin control.
 
 | Route | Method | Role | Request | Response |
 |---|---|---|---|---|
-| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}` |
+| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4 |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | walkin, viewer, admin | `{"os":"os2warp"}` | `{"clone":"walkin-os2warp-3","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). |
+| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = their REMAINING budget (§3.4), never a fresh 60. |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
 | `/walkin/manifest.json` | GET | walkin | — | §5.3 of the brief — allowlisted exhibition fields, one `signalEndpoint` |
@@ -119,6 +119,7 @@ simultaneous signups cannot both become `bold-turing`.
 | `WALKIN_TTL` | Session hit its TTL | broker |
 | `WALKIN_IDLE` | No input for the idle window | broker |
 | `walkin_closed` | HTTP body error on a refused claim/signup | auth |
+| `WALKIN_ANON_BUDGET` | An anonymous visitor's 60 seconds are spent (§3.4). Emitted as the HTTP body error **and** `reason` on a 403 from `/walkin/claim`, and as the §3.3 message on a 410 from `/signal/<clone>.json` once their clone is frozen | auth |
 
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
@@ -133,9 +134,67 @@ channel as the session ends, and also as the transport close reason:
 The SPA prefers the broker's code over anything it inferred itself, so a visitor
 is never told "connection lost" when the honest answer is the clock.
 
-**Ticket revocation is gateway-side only.** A ticket already in a browser stays
-cryptographically valid until its ≤300 s expiry — streamhost's verifier is not
-ours. What actually ends a session is killing the clone, step 4 of the teardown.
+**Ticket revocation is gateway-side only, and the TTL is capped by the session.**
+A ticket already in a browser stays cryptographically valid until it expires —
+streamhost's verifier is not ours, and it checks a ticket exactly once, before
+`req.accept()`. Two consequences, and the second was added on 2026-09-10:
+
+* What ends a session that is ALREADY connected is killing the clone (step 4 of
+  the teardown) or stopping its vCPUs (§3.4) — never the ticket.
+* What stops a NEW session being opened is the ticket, so its TTL may not
+  outlive the session it belongs to. `serve_tile` re-mints on every signalling
+  fetch, so the flat 300 s was never a bound on play time; a walk-in ticket is
+  now `min(300, seconds left on the session)`, and **0** for a clone frozen
+  behind the conversion wall — which `/signal/<clone>.json` answers as a 410
+  carrying the §3.3 message rather than a document with no usable ticket in it.
+
+### 3.4 The anonymous visitor
+
+Frozen 2026-09-10 by [`LANDING-REDESIGN-CONTRACT.md`](LANDING-REDESIGN-CONTRACT.md),
+which inverted the funnel: a stranger drives a real machine first and converts
+at the wall, rather than being asked for a passkey before they may touch
+anything.
+
+| Thing | Value |
+|---|---|
+| Role | `anon` — synthesized per request, never stored, never granted by an admin |
+| Identity | cookie `osg_anon`, `HttpOnly; Secure; SameSite=Lax; Path=/`, 30 days |
+| Budget | **60 seconds of connected time per VISITOR**, not per session |
+| Hold after exhaustion | 120 seconds, on their last clone |
+| Broker user id | `anon:<visitor id>` — the pool needs no role model |
+| Refusal | 403 `{"error":"WALKIN_ANON_BUDGET","reason":…,"anon":{…}}` |
+
+```ts
+anon = {                    // GET /walkin/state, present ONLY for role==='anon'
+  budgetSeconds: number,    // 60
+  remainingSeconds: number, // counts DOWN across switches, reloads and back-nav
+  expired: boolean,
+  heldClone?: string,       // their reserved machine, while the hold lasts
+  heldSeconds?: number,
+}
+```
+
+Four rules the implementation may not trade away:
+
+1. **The budget is the VISITOR's, not the session's.** It carries across station
+   switches, reloads and back-navigation. Switching is still `release` +
+   `claim` (no new endpoint); the clock lives on the cookie, so it survives
+   naturally. If it reset, a stranger could hop the pool forever and never be
+   asked to convert.
+2. **The server is authoritative.** The client countdown mirrors
+   `remainingSeconds`; it is never the source of truth. The claim's
+   `ttlSeconds` IS the remaining budget, and the session's `expires_at` is
+   built from it.
+3. **The wall stops the GUEST, not the UI.** At zero the clone is paused over
+   its last frame and reserved; an already-open WebTransport session is never
+   re-ticketed, so a stopped machine is the only thing that makes holding the
+   socket useless. Registering (`/walkin/signup`) promotes the visitor to
+   `walkin`, and their next claim reattaches that same clone with
+   `"resumed":true` and the ordinary 1200 s TTL.
+4. **The switch reaches strangers.** `access` gates them exactly as it gates a
+   walk-in account — `open` admits, `invited` and `closed` refuse — and dropping
+   to Closed clears the budget ledger along with the sessions. A stranger has no
+   session row, so forgetting the ledger IS how the kill switch reaches them.
 
 **`/usage/stations.json` is denied to walk-ins** (it enumerates per-station
 activity); `/usage` and `/clientlog` are allowed.
@@ -155,6 +214,13 @@ walkin: {
   audit:    [ { at, admin, from, to } ]
 }
 ```
+
+**The anonymous budget is deliberately NOT in here.** It lives in memory
+(`auth/anon.py`), so a restart of the serving unit forgets every stranger's
+clock — a handful of visitors get a fresh minute and nobody loses work. That is
+the opposite trade from this file, where a forgotten passkey is an account that
+cannot be recovered, and it is the right one: the alternative is a persistent
+per-visitor record for people who have deliberately not given us an identity.
 
 ### 4.2 Env floor
 

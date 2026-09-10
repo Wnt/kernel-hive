@@ -606,6 +606,17 @@
     }
   },
   "serverProbes": {
+    "auth.gate.anon": {
+      "area": "auth",
+      "owner": "scripts/serve/auth/gate.py",
+      "what": "the ANONYMOUS allowlist was consulted — a stranger with no account at all is being fenced, which is the inverted funnel actually carrying traffic"
+    },
+    "auth.gate.anonOwn": {
+      "area": "auth",
+      "owner": "scripts/serve/auth/gate.py",
+      "what": "a stranger was allowed at their OWN clone's signaling or webrtc path — somebody with no account is driving a real machine, which is the whole point of the landing redesign",
+      "consumes": "auth.gate.anon"
+    },
     "auth.gate.blocked": {
       "area": "auth",
       "owner": "scripts/serve/auth/gate.py",
@@ -642,6 +653,16 @@
       "area": "signal",
       "owner": "scripts/serve/signal_route.py",
       "what": "a station's own signaling.json named an identity DIFFERENT from the endpoint key the document was fetched under, so the ticket was signed over the daemon's name and not the key. This exact divergence locked `solaris` and `aros` out of every session for four hours on 2026-08-05; a non-zero here means a station is mis-named RIGHT NOW and the fallback is the only thing hiding it"
+    },
+    "walkin.anon.converted": {
+      "area": "walkin",
+      "owner": "scripts/serve/auth/anon_plane.py",
+      "what": "a held machine was handed to an account a stranger had just registered — the conversion the wall exists to produce, counted where it actually happens"
+    },
+    "walkin.anon.wall": {
+      "area": "walkin",
+      "owner": "scripts/serve/auth/anon_plane.py",
+      "what": "a stranger's sixty seconds ran out and their machine was frozen behind the conversion wall; a zero means nobody has ever reached the end of the budget"
     },
     "walkin.claim.queued": {
       "area": "walkin",
