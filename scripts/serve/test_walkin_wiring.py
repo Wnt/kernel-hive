@@ -31,6 +31,7 @@ import importlib.util
 import json
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -122,7 +123,18 @@ class WalkinWiring(unittest.TestCase):
         import walkin_plane  # noqa: PLC0415
 
         cls.plane = walkin_plane
-        cls.broker = walkin_plane.start(cls.auth)
+        # `start()` returns None and always has since the plane's bring-up moved
+        # off the startup path (a slow constructor there was the whole museum
+        # refusing connections on :8443). So the test waits for the watchdog
+        # thread to publish the broker, exactly as the serving process does.
+        # Reading its return value instead is why this file had been erroring in
+        # setUpClass — and an integration test nobody can run is how three files
+        # that had to agree about `/walkin/engage` got away with two.
+        walkin_plane.start(cls.auth)
+        deadline = time.time() + 30
+        while walkin_plane.BROKER is None and time.time() < deadline:
+            time.sleep(0.05)
+        cls.broker = walkin_plane.BROKER
         assert cls.broker is not None, "the broker did not start against the real registry"
 
         # The one fake: a pool member with no hypervisor behind it. Everything
@@ -174,11 +186,17 @@ class WalkinWiring(unittest.TestCase):
 
     # ---- the driver --------------------------------------------------------
 
-    def get(self, path, role=None, method="GET", body=None, accept="application/json"):
+    def get(self, path, role=None, method="GET", body=None, accept="application/json", cookie=None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
         headers = {"Accept": accept, "Origin": ORIGIN}
         if role:
             headers["Cookie"] = f"osg_session={self.tokens[role]}"
+        elif cookie:
+            # A STRANGER. `osg_anon` is Secure, so nothing that stores cookies
+            # by the rules will keep it over plain HTTP to a loopback port —
+            # it is carried by hand here for the same reason it has to be
+            # carried by hand in curl against the box.
+            headers["Cookie"] = cookie
         payload = None
         if body is not None:
             payload = json.dumps(body)
@@ -272,6 +290,75 @@ class WalkinWiring(unittest.TestCase):
         status, state, _ = self.get("/walkin/state", role="viewer")
         self.assertEqual(state["access"], "closed")
         self.assertEqual(state["closeReason"], "WALKIN_CLOSED")
+
+    # ---- 5. the visitor's first touch -------------------------------------
+    #
+    # `/walkin/engage` is the route that starts an anonymous visitor's intro
+    # time, and it is the reason this file was repaired: the handler existed
+    # (walkin/routes.py), the gate admitted it (auth/gate.py) and the
+    # DISPATCHER did not list it (walkin_plane.API), so every call 404ed on the
+    # live box. Three files had to agree and two of them did. Every test below
+    # therefore goes over real HTTP, through walkin_plane.dispatch, because
+    # that is the layer the unit tests entered underneath.
+
+    def anon_cookie(self):
+        """A stranger's identity, minted the way a browser gets one."""
+        _, _, resp = self.get("/walkin/state")
+        raw = resp.getheader("Set-Cookie") or ""
+        self.assertIn("osg_anon=", raw, "the state route plants a stranger's cookie")
+        return raw.split(";")[0]
+
+    def test_engage_reaches_the_broker_at_all(self):
+        # The regression, at its plainest: not a 404. A path the dispatcher
+        # does not list falls through to the SPA catch-all, which answers the
+        # index with a 200 for a browser and a 404 for a JSON fetch — either
+        # way the broker never sees it.
+        status, body, _ = self.get(
+            "/walkin/engage", role="viewer", method="POST", body={"clone": "walkin-os2warp-nope"}
+        )
+        self.assertNotEqual(status, 404, f"/walkin/engage is not routed to the broker at all: {body}")
+        self.assertEqual(status, 403, body)
+        self.assertEqual(body["error"], "walkin_not_yours")
+
+    def test_a_stranger_engages_their_own_clone(self):
+        cookie = self.anon_cookie()
+        status, claim, _ = self.get("/walkin/claim", method="POST", body={}, cookie=cookie)
+        self.assertEqual(status, 200, claim)
+        status, out, _ = self.get("/walkin/engage", method="POST", body={"clone": claim["clone"]}, cookie=cookie)
+        self.assertEqual(status, 200, out)
+        self.assertTrue(out["ok"])
+        # The clock the server keeps, and the only proof it started.
+        self.assertTrue(out["anon"]["engaged"], out)
+        status, state, _ = self.get("/walkin/state", cookie=cookie)
+        self.assertTrue(state["anon"]["engaged"], state)
+
+    def test_a_stranger_may_not_engage_somebody_elses_clone(self):
+        mine = self.anon_cookie()
+        theirs = self.anon_cookie()
+        self.assertNotEqual(mine, theirs, "two strangers, two identities")
+        status, claim, _ = self.get("/walkin/claim", method="POST", body={}, cookie=theirs)
+        self.assertEqual(status, 200, claim)
+        status, refused, _ = self.get("/walkin/engage", method="POST", body={"clone": claim["clone"]}, cookie=mine)
+        self.assertEqual(status, 403, refused)
+        self.assertEqual(refused["error"], "walkin_not_yours")
+        # And the victim's own clock did not start on a stranger's say-so.
+        status, state, _ = self.get("/walkin/state", cookie=theirs)
+        self.assertFalse(state["anon"]["engaged"], state)
+
+    def test_engaging_nothing_is_refused_rather_than_ignored(self):
+        cookie = self.anon_cookie()
+        self.get("/walkin/claim", method="POST", body={}, cookie=cookie)
+        status, refused, _ = self.get("/walkin/engage", method="POST", body={}, cookie=cookie)
+        self.assertEqual(status, 403, refused)
+
+    def test_every_broker_path_is_actually_routed(self):
+        # The class of bug, not the instance. Each of these must reach the
+        # broker — proved by getting the broker's OWN refusal rather than the
+        # SPA catch-all's 404.
+        for path in self.plane.API:
+            method = "GET" if path.endswith("/state") else "POST"
+            status, body, _ = self.get(path, role="viewer", method=method, body={} if method == "POST" else None)
+            self.assertNotEqual(status, 404, f"{path} never reaches walkin.routes.dispatch: {body}")
 
 
 if __name__ == "__main__":

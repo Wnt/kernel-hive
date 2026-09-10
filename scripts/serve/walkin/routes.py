@@ -21,6 +21,31 @@ PREFIX = "/walkin/"
 BODY_CAP = 16 * 1024
 JSON_TYPE = "application/json"
 
+# ---------------------------------------------------------------------------
+#  THE API, BY EXACT PATH — and the one place it is written down.
+#
+#  `dispatch` claims the whole `/walkin/` prefix, but `/walkin`,
+#  `/walkin/play/<os>` and `/walkin/exhibits` are CLIENT-side routes that must
+#  fall through to the SPA index, so something upstream has to know which paths
+#  are ours. That something is `serve/walkin_plane.py`, and until 2026-09-11 it
+#  kept its OWN tuple of four paths. `/walkin/engage` shipped with a handler
+#  below and an entry in `auth/gate.py`'s anonymous allowlist, and 404ed on the
+#  live box for every visitor, because the third list was never updated. Three
+#  files had to agree and two of them did.
+#
+#  So there is one list now, it lives beside the handlers it names, and
+#  `walkin_plane.API` is assigned FROM it rather than repeating it. The guard in
+#  `dispatch` reads it too, which is what keeps it from becoming decorative: a
+#  path missing here is refused here as well, so it cannot half-work.
+# ---------------------------------------------------------------------------
+
+#: Read with GET.
+GET_PATHS = ("/walkin/state",)
+#: Written with POST. Everything that changes a visitor's hold on a clone.
+POST_PATHS = ("/walkin/claim", "/walkin/engage", "/walkin/release", "/walkin/reset")
+#: Every exact path this module answers. `walkin_plane.API` is this tuple.
+PATHS = GET_PATHS + POST_PATHS
+
 
 class Refused(Exception):
     """A claim turned away for a reason the SPA renders its own copy for.
@@ -89,6 +114,13 @@ def dispatch(handler, path: str, method: str, broker, user, access: str, budget=
     """
     if not path.startswith(PREFIX):
         return False
+    if path not in PATHS:
+        # Not ours. In the serving process this is unreachable — `walkin_plane`
+        # filters on the same tuple before calling — and that is the point: the
+        # two layers cannot disagree about what the API is, because they are
+        # reading the same list.
+        _reply(handler, 404, {"error": "no such endpoint"})
+        return True
     broker.access = access
     cookie = budget.cookie(user) if budget is not None else ""
 
@@ -140,7 +172,7 @@ def dispatch(handler, path: str, method: str, broker, user, access: str, budget=
             _reply(handler, 200, out, cookie)
         elif path == "/walkin/reset":
             _reply(handler, 200, broker.reset(uid, str(body.get("clone", ""))), cookie)
-        else:
+        else:  # pragma: no cover - PATHS and the chain above are checked in step
             _reply(handler, 404, {"error": "no such endpoint"})
     except Refused as exc:
         # The code is repeated as `reason` because the SPA scans for the frozen
