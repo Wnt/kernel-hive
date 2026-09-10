@@ -707,11 +707,14 @@ is accepted, `/signal/<id>.json` returns a valid path — and the daemon journal
 has no `[transport] SESSION` line at all, while the browser logs "WebTransport
 ready has not settled after 3000ms" then `Opening handshake failed`. The packets
 never reach the box: a **public** visitor's UDP goes through the edge, whose
-nftables DNAT covers `54080-54200` only, so a station outside that range is
-invisible to the gallery and perfect on the LAN. It bit slots 131-134 on
-2026-08-09 and `reactos` (which sat on the legacy port 4433) until 2026-09-02.
-UDP port is `54000 + slot`; `stations-registry.py validate` fails any production
-station outside the range. See [PUBLIC-GALLERY.md](../PUBLIC-GALLERY.md).
+nftables DNAT covers `54080-54511` only (widened from `54080-54200` on
+2026-09-10; the top of it, 256-511, is the walk-in clone pool's own window,
+not the production lineup's — `54080-54255` is a production station's real
+range), so a station outside that range is invisible to the gallery and
+perfect on the LAN. It bit slots 131-134 on 2026-08-09 and `reactos` (which
+sat on the legacy port 4433) until 2026-09-02. UDP port is `54000 + slot`;
+`stations-registry.py validate` fails any production station outside the
+range. See [PUBLIC-GALLERY.md](../PUBLIC-GALLERY.md).
 
 ### Guest paused mid-session
 Check `SESSION_ENDED` *before* the `[idle]` pause line. The pause is correct

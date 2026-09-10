@@ -65,9 +65,9 @@ lives under `/auth/` because it is an admin control.
 
 | Route | Method | Role | Request | Response |
 |---|---|---|---|---|
-| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}` |
+| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4 |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | walkin, viewer, admin | `{"os":"os2warp"}` | `{"clone":"walkin-os2warp-3","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). |
+| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = their REMAINING budget (§3.4), never a fresh 60. |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
 | `/walkin/manifest.json` | GET | walkin | — | §5.3 of the brief — allowlisted exhibition fields, one `signalEndpoint` |
@@ -119,6 +119,7 @@ simultaneous signups cannot both become `bold-turing`.
 | `WALKIN_TTL` | Session hit its TTL | broker |
 | `WALKIN_IDLE` | No input for the idle window | broker |
 | `walkin_closed` | HTTP body error on a refused claim/signup | auth |
+| `WALKIN_ANON_BUDGET` | An anonymous visitor's 60 seconds are spent (§3.4). Emitted as the HTTP body error **and** `reason` on a 403 from `/walkin/claim`, and as the §3.3 message on a 410 from `/signal/<clone>.json` once their clone is frozen | auth |
 
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
@@ -133,9 +134,67 @@ channel as the session ends, and also as the transport close reason:
 The SPA prefers the broker's code over anything it inferred itself, so a visitor
 is never told "connection lost" when the honest answer is the clock.
 
-**Ticket revocation is gateway-side only.** A ticket already in a browser stays
-cryptographically valid until its ≤300 s expiry — streamhost's verifier is not
-ours. What actually ends a session is killing the clone, step 4 of the teardown.
+**Ticket revocation is gateway-side only, and the TTL is capped by the session.**
+A ticket already in a browser stays cryptographically valid until it expires —
+streamhost's verifier is not ours, and it checks a ticket exactly once, before
+`req.accept()`. Two consequences, and the second was added on 2026-09-10:
+
+* What ends a session that is ALREADY connected is killing the clone (step 4 of
+  the teardown) or stopping its vCPUs (§3.4) — never the ticket.
+* What stops a NEW session being opened is the ticket, so its TTL may not
+  outlive the session it belongs to. `serve_tile` re-mints on every signalling
+  fetch, so the flat 300 s was never a bound on play time; a walk-in ticket is
+  now `min(300, seconds left on the session)`, and **0** for a clone frozen
+  behind the conversion wall — which `/signal/<clone>.json` answers as a 410
+  carrying the §3.3 message rather than a document with no usable ticket in it.
+
+### 3.4 The anonymous visitor
+
+Frozen 2026-09-10 by [`LANDING-REDESIGN-CONTRACT.md`](LANDING-REDESIGN-CONTRACT.md),
+which inverted the funnel: a stranger drives a real machine first and converts
+at the wall, rather than being asked for a passkey before they may touch
+anything.
+
+| Thing | Value |
+|---|---|
+| Role | `anon` — synthesized per request, never stored, never granted by an admin |
+| Identity | cookie `osg_anon`, `HttpOnly; Secure; SameSite=Lax; Path=/`, 30 days |
+| Budget | **60 seconds of connected time per VISITOR**, not per session |
+| Hold after exhaustion | 120 seconds, on their last clone |
+| Broker user id | `anon:<visitor id>` — the pool needs no role model |
+| Refusal | 403 `{"error":"WALKIN_ANON_BUDGET","reason":…,"anon":{…}}` |
+
+```ts
+anon = {                    // GET /walkin/state, present ONLY for role==='anon'
+  budgetSeconds: number,    // 60
+  remainingSeconds: number, // counts DOWN across switches, reloads and back-nav
+  expired: boolean,
+  heldClone?: string,       // their reserved machine, while the hold lasts
+  heldSeconds?: number,
+}
+```
+
+Four rules the implementation may not trade away:
+
+1. **The budget is the VISITOR's, not the session's.** It carries across station
+   switches, reloads and back-navigation. Switching is still `release` +
+   `claim` (no new endpoint); the clock lives on the cookie, so it survives
+   naturally. If it reset, a stranger could hop the pool forever and never be
+   asked to convert.
+2. **The server is authoritative.** The client countdown mirrors
+   `remainingSeconds`; it is never the source of truth. The claim's
+   `ttlSeconds` IS the remaining budget, and the session's `expires_at` is
+   built from it.
+3. **The wall stops the GUEST, not the UI.** At zero the clone is paused over
+   its last frame and reserved; an already-open WebTransport session is never
+   re-ticketed, so a stopped machine is the only thing that makes holding the
+   socket useless. Registering (`/walkin/signup`) promotes the visitor to
+   `walkin`, and their next claim reattaches that same clone with
+   `"resumed":true` and the ordinary 1200 s TTL.
+4. **The switch reaches strangers.** `access` gates them exactly as it gates a
+   walk-in account — `open` admits, `invited` and `closed` refuse — and dropping
+   to Closed clears the budget ledger along with the sessions. A stranger has no
+   session row, so forgetting the ledger IS how the kill switch reaches them.
 
 **`/usage/stations.json` is denied to walk-ins** (it enumerates per-station
 activity); `/usage` and `/clientlog` are allowed.
@@ -155,6 +214,13 @@ walkin: {
   audit:    [ { at, admin, from, to } ]
 }
 ```
+
+**The anonymous budget is deliberately NOT in here.** It lives in memory
+(`auth/anon.py`), so a restart of the serving unit forgets every stranger's
+clock — a handful of visitors get a fresh minute and nobody loses work. That is
+the opposite trade from this file, where a forgotten passkey is an account that
+cannot be recovered, and it is the right one: the alternative is a persistent
+per-visitor record for people who have deliberately not given us an identity.
 
 ### 4.2 Env floor
 
@@ -188,11 +254,11 @@ that module is on `main`, lane 2 rebases — it does not create the module.
 | Sandbox root | `/data/vms/walkin/<identity>/` | — |
 | Tap | `wi-<os>-<n>` (≤15 chars, kernel limit) | `wi-os2warp-3` |
 | systemd | `walkin.slice`, `walkin-clone@<identity>.service` | — |
-| Slot | claimed from **152–200** via `kh-claim` | — |
-| UDP port | `54000 + slot` | slot 152 → 54152 |
-| Cell bridge | `wibr<slot>` — the clone's own L2 domain (§5.4, §6) | `wibr152` |
-| Cell netns | `wicell<slot>` — the cell's NAT namespace | `wicell152` |
-| Cell peer | `10.99.0.<slot-100>` — what the gateway sees (§6) | slot 152 → `10.99.0.52` |
+| Slot | claimed from **256–511** via `kh-claim` — the pool's OWN edge relay window, separate from production territory (`scripts/serve/walkin/naming.py`) | — |
+| UDP port | `54000 + slot` | slot 256 → 54256 |
+| Cell bridge | `wibr<slot>` — the clone's own L2 domain (§5.4, §6) | `wibr256` |
+| Cell netns | `wicell<slot>` — the cell's NAT namespace | `wicell256` |
+| Cell peer | `10.99.0.<52 + slot - 256>` — what the gateway sees (§6); refused past `.100`, a 49-slot ceiling narrower than the slot range itself | slot 256 → `10.99.0.52` |
 | Clone MAC | **not settable** — see §5.4 | — |
 
 Slots, taps and IPs are claimed with `kh-claim` under `$KH_SESSION`. Never
@@ -306,11 +372,55 @@ replaced; the facts stand, and the design leans on them:
   The wire identity is accepted as a fact of the golden and contained by
   topology instead.
 
-`poolSize` is therefore a real knob, **3 per station** as shipped (schema cap
-8). The remaining ceiling is honest and bounded: CPU (three resumed TCG guests
-per station), the 49-slot claim range, and the visitor-facing
-`ACTIVE_SESSION_CAP` — not the network. Growing a pool still never needs a
-per-station walk-in golden, and no golden was recaptured for any of this.
+`poolSize` is therefore a real knob: **3 per station as shipped**, raised to
+**8 per station** (schema cap, unchanged) on 2026-09-10. The remaining ceiling
+is honest and bounded: CPU (eight resumed TCG guests per station once
+`ACTIVE_SESSION_CAP` — raised to 24 the same day, matching the pool — lets that
+many run at once) and the claim range, **not the network**. Growing a pool
+still never needs a per-station walk-in golden, and no golden was recaptured
+for any of this.
+
+**The claim range moved off the fleet's own numbering entirely for the
+2026-09-10 raise, rather than being re-cut again.** It was already the 152–170
+block this section originally described as 152–200: that first cut came when
+the production fleet needed slots back (see `aix432.json`'s own scaffold
+comment), and by the time poolSize needed to grow, 171–193 were live
+stations too — the old block had nowhere left to grow into, short 5 of the
+24 slots the raise needed, with production on every side of it. A same-day
+operator decision (`Wnt/forwarder` `deploy/site.env` `UDP_RELAY_PORT_RANGE`,
+commit 530c9f3, CI-deployed to the edge's nftables) widened the edge relay
+window instead of re-cutting again — 54080–54200 to 54080–54511 — and gave
+the walk-in pool its **own** window, wholly separate from production
+territory: `scripts/serve/walkin/naming.py`'s `SLOT_MIN`/`SLOT_MAX` are now
+256–511 (256 slots, 10x the 24 needed), and the OLD 152–170 reservation is
+**vacated back to the production fleet**, which badly needed it —
+`scripts/stations_registry/generate.py`'s `slot_refusal` no longer reserves
+it, and now refuses a production `--slot auto` that would wander into
+256–511 instead. `scripts/test_stations_registry_slots.py` asserts the two
+territories stay disjoint against the real registry, not a fixture.
+
+**The slot range is not the pool's real ceiling — the peer IP is.** Every
+clone's SNAT peer must stay inside the reserved `10.99.0.52`–`.100` block
+(§6), which is 49 addresses; `naming.cell_peer_ip` computes `52 + slot -
+SLOT_MIN` and refuses past `.100` rather than silently wrapping the octet or
+colliding with a baked station address above it, so the pool's real ceiling
+is **49 concurrently held slots**, not the 256-slot width of
+`SLOT_MIN..SLOT_MAX`. `scripts/retronet/walkin-net/wi-clonecell.sh` mirrors
+this exact formula and ceiling (`WALKIN_PEER_BASE`) — it is what actually
+programs the SNAT rule on the box, so the two must never disagree.
+
+**Migration.** The nine clones running under the old scheme at slots 152–160
+(bridges `wibr152`–`wibr160`, cells `wicell152`–`wicell160`) are orphaned by
+this move, not migrated: the broker's own `naming.py` no longer recognises
+those slots as its own the moment it restarts on this change, so `reap_orphan_dirs`,
+`reap_orphan_taps` and `reap_orphan_cells` (`scripts/serve/walkin/reaper.py`)
+sweep them on the next tick exactly as they sweep any other orphan — none of
+the three ever gate on `naming.SLOT_MIN`/`SLOT_MAX`, only on the kernel's own
+interface list and the claim registry, so a slot outside today's window is
+swept the same as one inside it. `wi-clonecell.sh`'s own `SLOT_MIN` is
+deliberately left at 152 (wider than `WALKIN_PEER_BASE`) so `down`/`verify`
+can still reach these during the sweep; only `cell_up` — which never targets
+them again — enforces the peer-IP ceiling.
 
 ### 5.5 The pool's lock is never held over a clone's life
 
@@ -467,10 +577,11 @@ watching them decay in station-specific ways:
 The wave ends **deployed on the production URL at Invited only**, so enabling is
 one click. Everything a switch position cannot change must be true first:
 
-1. **Edge relay range verified live** — `udp 54080-54200` DNAT on the edge VPS
-   actually covers slots 152–200. Verified against the edge, not read off a doc:
-   slots 131–134 once shipped broken while looking perfectly healthy against a
-   `54130` cap ([`../../PUBLIC-GALLERY.md`](../../PUBLIC-GALLERY.md)).
+1. **Edge relay range verified live** — `udp 54080-54511` DNAT on the edge VPS
+   actually covers the pool's window (256–511, port 54256-54511). Verified
+   against the edge, not read off a doc: slots 131–134 once shipped broken
+   while looking perfectly healthy against a `54130` cap
+   ([`../../PUBLIC-GALLERY.md`](../../PUBLIC-GALLERY.md)).
 2. Serving plane deployed **and restarted** — new routes do not travel without it.
 3. `auth-state.json` migrated in place on the live file (§4.1).
 4. Service worker not serving a stale shell over the new routes (the SPA is an

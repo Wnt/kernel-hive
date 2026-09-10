@@ -116,7 +116,17 @@ opened. This is lane 2's file.
 
 ---
 
-## 1. Edge relay range — **VERIFIED GOOD, no change needed**
+## 1. Edge relay range — **VERIFIED GOOD, no change needed** (2026-08-25 finding; range since widened, see update below)
+
+> **Update, 2026-09-10:** the range below is no longer current. The edge now
+> DNATs `udp 54080–54511` (`Wnt/forwarder` `deploy/site.env`
+> `UDP_RELAY_PORT_RANGE`, commit 530c9f3), widened specifically to give the
+> walk-in pool its own window (256–511) separate from production territory —
+> `docs/lab/walkin/CONTRACT-LEDGER.md` §5.4. Re-verified against the live edge
+> with the same probe method this section documents: `54201`, `54255`,
+> `54300`, `54511` all now arrive; `54079` and (a port past the new ceiling)
+> stay silent. The method and the 2026-08-25 result below are kept as the
+> record of what was true then, not as the current state.
 
 **Finding: the live edge DNATs exactly `udp 54080–54200`. Walk-in slots 152–200
 (ports 54152–54200) all arrive. Item 1 is clear; the plan does not change.**
@@ -409,7 +419,7 @@ There is also an **opt-in** range check that ties this file to item 1 without
 becoming a fourth place the range is declared:
 
 ```sh
-ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py --relay-range 54080-54200'
+ssh lab 'python3 /data/vms/streamhost/serve/check-stream-tickets.py --relay-range 54080-54511'
 ```
 
 Any tile whose `udpPort` falls outside is reported as a failure. Pass the range

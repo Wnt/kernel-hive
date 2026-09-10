@@ -14,11 +14,30 @@ import os
 import re
 from pathlib import Path
 
-# Ledger §5.1 / brief §9 decision 6. Production stations end at 151; the edge
-# relay DNAT window ends at 54200, which is what caps the range at 200.
-SLOT_MIN = 152
-SLOT_MAX = 170
+# Ledger §5.1 / brief §9 decision 6, re-cut 2026-09-10 for the poolSize 3->8
+# raise (docs/lab/walkin/CONTRACT-LEDGER.md §5.4). Until this date the walk-in
+# pool shared the low end of the production fleet's own numbering (152-170,
+# re-cut down from an original 152-200 when the fleet ran short of slots --
+# registry/stations/aix432.json's scaffold comment records that cut) and had
+# no room left to grow into: production filled 171-193 solid in between, and
+# 194-199 was the last free sliver below the edge's old relay ceiling.
+#
+# The edge relay DNAT window itself was widened instead (Wnt/forwarder
+# deploy/site.env UDP_RELAY_PORT_RANGE, commit 530c9f3 -- a separate repo,
+# CI-deployed to the edge's own nftables; verified against the live edge with
+# the same probe method as docs/lab/walkin/PREFLIGHT.md, not read off a doc).
+# The pool now gets its OWN window, wholly separate from production
+# territory, so the two can never collide again and neither has to be re-cut
+# to grow the other. 152-170 is vacated back to the production fleet, which
+# badly needed it (scripts/stations_registry/generate.py:slot_refusal no
+# longer reserves it); production stations must now stay below SLOT_MIN
+# (enforced there too, so a `--slot auto` cannot wander into this window).
+SLOT_MIN = 256
+SLOT_MAX = 511
 UDP_PORT_BASE = 54000
+# 200 remains the WebRTC bridge's PERMANENT ICE port (ports.webrtcBridgeUdp)
+# regardless of the window move -- it sits well below SLOT_MIN and is refused
+# independently, by exact port match, in slot_refusal.
 
 # Clones never run in the production VMID range; clone-guard refuses < 900.
 VMID_BASE = 9000
@@ -90,8 +109,16 @@ def clone_mac(slot: int) -> str:
     from saved device state, so a clone is whatever its golden was baked as
     (ledger §5.3). Anything that starts calling this to build a command line is
     about to create a machine whose command line disagrees with its own vmstate.
+
+    Encodes `slot - SLOT_MIN`, not the raw slot, in the last octet: SLOT_MAX -
+    SLOT_MIN + 1 is exactly 256 by construction, so the offset always fits one
+    byte with no overflow across the whole window. A raw slot >= 256 (every
+    slot since the 2026-09-10 window move, naming.py's header comment) would
+    have formatted as 3+ hex digits (`{256:02x}` is `"100"`) -- not a MAC
+    octet, and a silent one: nothing calls this today (see above), so nothing
+    would have caught it before "a future per-plane golden" did.
     """
-    return f"02:00:00:00:57:{check_slot(slot):02x}"
+    return f"02:00:00:00:57:{check_slot(slot) - SLOT_MIN:02x}"
 
 
 def cell_bridge(slot: int) -> str:
@@ -110,16 +137,38 @@ def cell_netns(slot: int) -> str:
     return f"wicell{check_slot(slot)}"
 
 
-def cell_peer_ip(slot: int) -> str:
-    """The address the GATEWAY sees for this clone: 10.99.0.<slot-100>.
+#: `cell_peer_ip`'s addresses stay inside the reserved 10.99.0.52-.100 block
+#: (ledger §6) regardless of where SLOT_MIN sits, which bounds the pool to
+#: this many CONCURRENTLY HELD slots -- not the width of SLOT_MIN..SLOT_MAX.
+PEER_IP_CEILING = 100 - 52 + 1  # 49
 
-    Slots 152-200 map onto .52-.100, a range reserved in ledger §6 — clear of
-    the gateway (.2), every baked station address, and the containment-proof
-    addresses (.240/.241). The guest never sees this number: inside the cell it
-    still holds the address its golden was captured with, and the cell's SNAT
-    is what makes both facts true at once.
+
+def cell_peer_ip(slot: int) -> str:
+    """The address the GATEWAY sees for this clone: 10.99.0.<52 + slot - SLOT_MIN>.
+
+    Slots SLOT_MIN..SLOT_MIN+48 map onto .52-.100, a range reserved in ledger
+    §6 — clear of the gateway (.2), every baked station address, and the
+    containment-proof addresses (.240/.241). The guest never sees this number:
+    inside the cell it still holds the address its golden was captured with,
+    and the cell's SNAT is what makes both facts true at once.
+
+    This is the pool's REAL ceiling as of the 2026-09-10 window move: SLOT_MIN
+    and SLOT_MAX span 256 slots, but only the first 49 have a safe peer
+    address, so a 50th CONCURRENTLY CLAIMED slot refuses here rather than
+    silently wrapping the octet or colliding with a baked address above .100.
+    scripts/retronet/walkin-net/wi-clonecell.sh mirrors this exact formula
+    and this exact ceiling (its own WALKIN_PEER_BASE) — it is what actually
+    programs the SNAT rule, so the two must never disagree.
     """
-    return f"10.99.0.{check_slot(slot) - 100}"
+    offset = 52 + (check_slot(slot) - SLOT_MIN)
+    if offset > 100:
+        raise NameError_(
+            f"slot {slot} would need peer 10.99.0.{offset}, past the reserved "
+            "10.99.0.52-.100 block (ledger §6) -- the walk-in pool's peer-IP "
+            f"ceiling is {PEER_IP_CEILING} concurrently held slots, not the width "
+            "of SLOT_MIN..SLOT_MAX"
+        )
+    return f"10.99.0.{offset}"
 
 
 def clone_root(ident: str) -> Path:

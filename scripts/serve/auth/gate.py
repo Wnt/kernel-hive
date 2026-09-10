@@ -51,15 +51,16 @@ except ImportError:  # pragma: no cover - import shape only
 # The rest of `/walkin/*` (claim, release, reset, manifest) needs a session and
 # is deliberately NOT here (PREFLIGHT.md B4).
 #
-# NOT open, and it is a deliberate open decision rather than an oversight:
-# `/walkin` itself, the landing PAGE. A signed-out browser asking for it is
-# redirected to /login like any other page, so the sign-up flow is unreachable
-# to a stranger until somebody adds "/walkin" to this set. That is the same
-# decision as whether the gallery links it at all, and it is the operator's;
-# at Invited — where the wave ships — it changes nothing, because signup is
-# 403 there anyway.
+# `/` is open, and it is THE inversion of the funnel (LANDING-REDESIGN-CONTRACT).
+# It used to redirect a session-less browser to /login, which meant the first
+# thing the museum ever showed a stranger was a form asking them to make a
+# passkey for a machine they had not seen. The landing page is now the front
+# door for everyone — stranger, walk-in and invited — and a front door that 302s
+# is not one. What it publishes is the app shell: the same bundle /assets/
+# already serves unauthenticated, and every route it CALLS is still fenced.
 OPEN_PATHS = frozenset(
     {
+        "/",
         "/healthz",
         "/login",
         "/link",
@@ -277,6 +278,68 @@ WALKIN_MANIFEST_FIELDS = (
 )
 
 
+# ---- the anonymous visitor -------------------------------------------------
+#
+# A stranger with NO account at all, driving a real machine on their sixty-second
+# budget (auth/anon.py). Their fence is the tightest one here: an allowlist with
+# no prefixes whatsoever, holding only the routes the landing page cannot work
+# without. It is deliberately NOT `WALKIN_PATHS`, which has grown to cover a
+# signed-up walk-in's whole plane — the account page, the staged-bundle preview,
+# the command poll, the EUM beacon proxy. Every one of those is defensible for
+# somebody who registered and is defensible for nobody who has not, and the
+# comment on `/eum` above already said so out loud: "an invited session or a
+# walk-in, never an anonymous stranger."
+#
+# What a stranger gets, and why each one is here:
+#   /walkin/claim, /walkin/release   drive a machine, and switch machines.
+#                                    Switching IS release+claim (contract §
+#                                    "Switching stations"), so both are needed.
+#   /clientlog, /vitals              WRITE-ONLY ingests whose read-back is
+#                                    admin-only (see their entries above). The
+#                                    hero stream on the landing page is the most
+#                                    breakage-prone session in the museum and the
+#                                    one nobody can reach any other way; without
+#                                    these, a stranger's broken stream is
+#                                    invisible to STREAM-DEBUGGING.md.
+# Everything else a stranger touches — the landing page, the bundle, the
+# posters, /walkin/state, /walkin/signup, the manifest projection — is in
+# OPEN_PATHS/OPEN_PREFIXES already and needed no widening at all.
+#
+# NOT granted, each on purpose: /walkin/reset (a fresh machine is not something
+# a sixty-second visitor needs; switching covers it), /account (they have none),
+# /clientcmd (the debug poll), /usage, /analytics, /traces, /eum, /staging/,
+# /walkin/play/, and every admin surface.
+ANON_PATHS = frozenset(
+    {
+        "/walkin/claim",
+        "/walkin/release",
+        "/clientlog",
+        "/vitals",
+    }
+)
+
+
+def anon_allows(path: str, own_signal: str | None = None) -> bool:
+    """Whether an anonymous stranger may reach `path`.
+
+    Same shape as `walkin_allows` and the same one interactive surface — their
+    OWN clone's signaling document and the webrtc offer under it — over a much
+    shorter allowlist. There are no prefixes: a stranger reaches no directory of
+    ours except the ones already public to the whole internet.
+    """
+    hit("auth.gate.anon")
+    if is_blocked(path):
+        return False
+    if own_signal and (path == own_signal or path.startswith(_webrtc_prefix(own_signal))):
+        hit("auth.gate.anonOwn")
+        return True
+    if path.startswith("/signal/") or path.startswith("/webrtc/"):
+        return False
+    if is_open(path):
+        return True
+    return path in ANON_PATHS
+
+
 def walkin_allows(path: str, own_signal: str | None = None) -> bool:
     """Whether a `walkin` session may reach `path`.
 
@@ -326,6 +389,10 @@ def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
     span = tracing.current()
     role = (user or {}).get("role") or "anonymous"
     span.attr("kh.auth.role", role)
+    if user and user.get("role") == "anon":
+        allowed = anon_allows(path, own_signal)
+        span.attr("kh.auth.decision", "allow" if allowed else "deny")
+        return allowed
     if user and user.get("role") == "walkin":
         allowed = walkin_allows(path, own_signal)
         span.attr("kh.auth.decision", "allow" if allowed else "deny")
@@ -343,7 +410,14 @@ def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
 
 def landing_for(user: dict | None) -> str:
     """Where to send a browser that was refused an HTML page. A walk-in belongs
-    on the walk-in landing page, not on the invited plane's login screen."""
+    on the walk-in landing page, not on the invited plane's login screen.
+
+    A STRANGER is deliberately not special-cased here, even though `/` is now
+    their front door: this redirect only ever fires for a GATED page, and the
+    honest answer to "you asked for /admin signed out" is still the login form.
+    A stranger reaching the museum asks for `/`, which is open, and never
+    arrives here at all.
+    """
     return "/walkin" if user and user.get("role") == "walkin" else "/login"
 
 

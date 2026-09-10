@@ -42,6 +42,36 @@ def bind_walkin(broker, tickets=None) -> None:
     WALKIN_TICKETS = tickets
 
 
+def _walkin_ticket_ttl(identity: str) -> int:
+    """How long a ticket for this CLONE may live, in seconds.
+
+    A walk-in ticket is re-minted on EVERY fetch of this document — every
+    connect, reconnect and transport fallback — so a fixed five-minute TTL is
+    not a bound on how long anybody plays; it is a bound on how long one
+    handshake window stays open. That was fine when the shortest session was
+    twenty minutes and is not fine now that a stranger's is sixty seconds: a
+    reconnect at T+59 would buy a five-minute window on the far side of a wall
+    they had already hit.
+
+    So the broker caps it at what is LEFT on the session that owns the clone,
+    and answers 0 for a clone frozen behind the conversion wall — no reconnect,
+    no second tab, no other browser. A clone with no session at all is a warm
+    pool member nobody holds and keeps the default.
+
+    Fails OPEN, deliberately: a broker that cannot answer must not stop the
+    museum streaming, and the ticket is not the only thing standing there — the
+    guest's vCPUs are stopped at the wall (`walkin/holds.py`), which is what
+    makes an already-open socket useless whatever the ticket says.
+    """
+    if BROKER is None:
+        return tickets.DEFAULT_TTL_SECS
+    try:
+        return int(BROKER.ticket_ttl_for(identity, tickets.DEFAULT_TTL_SECS))
+    except Exception as exc:  # noqa: BLE001 — reported; today's TTL is the fallback
+        sys.stderr.write(f"[serve] walk-in ticket TTL unavailable for {identity}: {exc}\n")
+        return tickets.DEFAULT_TTL_SECS
+
+
 def _pool_rows() -> dict:
     """`{identity: {udpPort, hashFile}}` for the live pool members, or `{}`."""
     if BROKER is None:
@@ -166,10 +196,41 @@ def serve_tile(handler, tile, stream_key):
         # walk-in path takes the registry lock and expires old nonces; the
         # station path is a stateless HMAC. Only the KIND is recorded — the
         # ticket is a credential and never goes in a span.
+        walkin_clone = WALKIN_TICKETS is not None and tile in _pool_rows()
+        walkin_ttl = _walkin_ticket_ttl(tile) if walkin_clone else 0
+        if walkin_clone and walkin_ttl <= 0:
+            # The session that owned this clone is over — its budget ran out and
+            # the machine is stopped behind the conversion wall. Answering with a
+            # signalling document and no usable ticket would read to the client
+            # as "connection lost", which is the lie the §3.3 codes exist to
+            # prevent, so this takes the same 410 road a reaped clone takes.
+            # Imported HERE, not at module scope, and the reason is a deploy
+            # shape rather than taste. This file is a box-sync PAIR
+            # (scripts/lib/box-sync-pairs.sh) while `auth/` ships wholesale from
+            # scripts/serve-https-spa.sh — two different mechanisms. A pairs-only
+            # deploy would otherwise land a signal_route.py that imports a module
+            # the box has not been given yet, and an ImportError here does not
+            # degrade a feature: it stops the serving unit, which takes the LAN
+            # gallery down with the public one. That is PREFLIGHT's B1 failure
+            # shape, and it cannot happen to a name resolved inside a branch that
+            # a plane without the anonymous budget never reaches.
+            from auth.anon import REASON_BUDGET
+
+            ended = (
+                BROKER.wall_message(tile, REASON_BUDGET)
+                if BROKER is not None
+                else {"type": "session-end", "reason": REASON_BUDGET}
+            )
+            return handler._send(410, json.dumps({**ended, "tile": tile}), MIME[".json"], cache=False)
         with tracing.child("serve.ticket.mint", {"kh.station": ticket_tile}) as mintspan:
-            if WALKIN_TICKETS is not None and tile in _pool_rows():
+            if walkin_clone:
                 mintspan.attr("kh.ticket.kind", "walkin")
-                body["path"] = WALKIN_TICKETS.mint(stream_key, ticket_tile)
+                # The TTL is an attribute because "the ticket was short" is the
+                # only externally visible sign that a budget is being enforced,
+                # and a trace is where an operator asks why a session would not
+                # reconnect. The ticket itself is a credential and never appears.
+                mintspan.attr("kh.ticket.ttlSeconds", walkin_ttl)
+                body["path"] = WALKIN_TICKETS.mint(stream_key, ticket_tile, walkin_ttl)
             else:
                 mintspan.attr("kh.ticket.kind", "station")
                 body["path"] = tickets.mint(stream_key, ticket_tile)

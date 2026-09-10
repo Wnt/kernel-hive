@@ -13,7 +13,11 @@ from dataclasses import dataclass
 TTL_SECONDS = 20 * 60
 IDLE_SECONDS = 3 * 60
 EXTENSION_SECONDS = 10 * 60
-ACTIVE_SESSION_CAP = 6
+# Matches the pool's total warm capacity (3 stations x poolSize 8, raised
+# 2026-09-10 alongside poolSize from a cap of 6). At this value the cap stops
+# being the backstop that ever refuses a visitor a free member on its own --
+# concurrent TCG load on the box is the real ceiling below it, not this number.
+ACTIVE_SESSION_CAP = 24
 CLOSE_REASON_TTL = "WALKIN_TTL"
 CLOSE_REASON_IDLE = "WALKIN_IDLE"
 CLOSE_REASON_CLOSED = "WALKIN_CLOSED"
@@ -41,9 +45,13 @@ class Session:
 
 def claim_body(session: Session, now: float, resumed: bool = False) -> dict:
     """The §3 claim body. `resumed` marks a re-attach to a clone the visitor
-    already held -- the TTL is what was LEFT on it, never a fresh one."""
+    already held -- the TTL is what was LEFT on it, never a fresh one.
+
+    `station` is here because `os` is OPTIONAL on a claim: a visitor who asks
+    for a random machine has no other way to learn which one they got."""
     out = {
         "clone": session.identity,
+        "station": session.station,
         "signalEndpoint": f"/signal/{session.identity}.json",
         "ttlSeconds": session.ttl_left(now),
     }

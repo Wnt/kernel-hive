@@ -37,7 +37,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import claims, reaper
+from . import claims, holds, reaper
 from . import clone as clone_mod
 from . import spec as spec_mod
 from .warm import BrokerError, Member, Warming
@@ -79,7 +79,7 @@ from .session import (  # noqa: F401 -- re-exported: tests and the reaper read t
 )
 
 
-class Broker(Warming):
+class Broker(holds.Holding, Warming):
     """One instance per serving process. Thread-safe; `tick` is the watchdog.
 
     **The lock discipline, which is load-bearing.** Everything a request handler
@@ -255,21 +255,22 @@ class Broker(Warming):
 
     # -- the lifecycle ---------------------------------------------------
 
-    def claim(self, user_id: str, station: str) -> dict:
+    def claim(self, user_id: str, station: str, ttl: float | None = None) -> dict:
         """Traced wrapper around `_claim`: THE OUTCOME is the finding — got a
         machine, joined a queue, or refused — and each answers a different
         question about the pool's size. The user id is never recorded (a
         walk-in is an anonymous stranger); the clone identity is, and
-        `walkin-<os>-<n>` names no one."""
+        `walkin-<os>-<n>` names no one. `ttl` overrides the session length and
+        is computed by the AUTH layer, so this package still knows no roles."""
         with tracing.child("walkin.claim", {"kh.station": station}) as span:
-            out = self._claim(user_id, station)
+            out = self._claim(user_id, station, ttl)
             if out.get("queued"):
                 span.end("ok", {"kh.walkin.outcome": "queued", "kh.walkin.queuePosition": out.get("position") or 0})
             else:
                 span.end("ok", {"kh.walkin.outcome": "granted", "kh.clone": out.get("clone") or ""})
             return out
 
-    def _claim(self, user_id: str, station: str) -> dict:
+    def _claim(self, user_id: str, station: str, ttl: float | None = None) -> dict:
         with self._lock:
             if self.access == "closed":
                 raise BrokerError("walkin_closed")
@@ -311,7 +312,7 @@ class Broker(Warming):
                 station=station,
                 user_id=user_id,
                 started_at=now,
-                expires_at=now + TTL_SECONDS,
+                expires_at=now + (TTL_SECONDS if ttl is None else max(0.0, float(ttl))),
                 last_input_at=now,
             )
             self._dequeue(user_id)

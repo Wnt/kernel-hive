@@ -180,17 +180,28 @@ class SchemaExtensionTests(unittest.TestCase):
 
 
 class NamingTests(unittest.TestCase):
-    def test_slot_range_is_the_ledger_range(self):
-        self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (152, 170))
+    def test_slot_range_is_the_pools_own_window(self):
+        # 2026-09-10: the walk-in pool moved off the low end of the production
+        # fleet's own numbering (its old 152-170 reservation) onto its OWN
+        # edge relay window, 256-511 -- see naming.py's header comment.
+        self.assertEqual((naming.SLOT_MIN, naming.SLOT_MAX), (256, 511))
         with self.assertRaises(naming.NameError_):
-            naming.check_slot(151)
+            naming.check_slot(255)
         with self.assertRaises(naming.NameError_):
-            naming.check_slot(201)
+            naming.check_slot(512)
+        self.assertEqual(naming.check_slot(256), 256)
+        self.assertEqual(naming.check_slot(511), 511)
+        # The pool's OLD reservation is vacated: it is ordinary production
+        # territory again, not a walk-in slot.
+        with self.assertRaises(naming.NameError_):
+            naming.check_slot(152)
+        with self.assertRaises(naming.NameError_):
+            naming.check_slot(170)
 
     def test_port_and_identity(self):
-        self.assertEqual(naming.udp_port(152), 54152)
+        self.assertEqual(naming.udp_port(256), 54256)
         self.assertEqual(naming.identity("os2warp", 3), "walkin-os2warp-3")
-        self.assertEqual(naming.clone_mac(152), "02:00:00:00:57:98")
+        self.assertEqual(naming.clone_mac(256), "02:00:00:00:57:00")
 
     def test_tap_name_respects_the_kernel_limit(self):
         with self.assertRaises(naming.NameError_):
@@ -205,33 +216,47 @@ class NamingTests(unittest.TestCase):
             naming.cell_bridge(naming.SLOT_MIN - 1)
 
     def test_the_peer_range_is_clear_of_every_reserved_address(self):
-        # Each reserved slot maps to its own peer address, and none of those may
-        # collide with the gateway (.2), a baked station address (.19/.22/.27)
-        # or the containment-proof addresses (.240/.241). Bounds come from the
-        # constants, not literals: the reservation gets re-cut when the station
-        # fleet needs slots back, and a literal here silently rots.
-        peers = {naming.cell_peer_ip(s) for s in range(naming.SLOT_MIN, naming.SLOT_MAX + 1)}
-        self.assertEqual(len(peers), naming.SLOT_MAX - naming.SLOT_MIN + 1)
+        # Each of the pool's first 49 slots maps to its own peer address, and
+        # none of those may collide with the gateway (.2), a baked station
+        # address (.19/.22/.27) or the containment-proof addresses
+        # (.240/.241). Bounds come from the constants, not literals.
+        safe_slots = range(naming.SLOT_MIN, naming.SLOT_MIN + naming.PEER_IP_CEILING)
+        peers = {naming.cell_peer_ip(s) for s in safe_slots}
+        self.assertEqual(len(peers), naming.PEER_IP_CEILING)
         reserved = {f"10.99.0.{n}" for n in (1, 2, 19, 22, 24, 25, 27, 240, 241)}
         self.assertFalse(peers & reserved)
+
+    def test_the_peer_ip_ceiling_is_49_slots_not_the_windows_width(self):
+        # scripts/retronet/walkin-net/wi-clonecell.sh mirrors this exact
+        # formula and ceiling -- it is what actually programs the SNAT rule,
+        # so a slot this refuses must never reach `cell_up` believing it has
+        # a safe peer.
+        self.assertEqual(naming.PEER_IP_CEILING, 49)
+        last_safe = naming.SLOT_MIN + naming.PEER_IP_CEILING - 1
+        self.assertEqual(naming.cell_peer_ip(last_safe), "10.99.0.100")
+        with self.assertRaises(naming.NameError_):
+            naming.cell_peer_ip(last_safe + 1)
+        # Still well inside SLOT_MIN..SLOT_MAX -- the slot itself is fine,
+        # only the peer address is refused.
+        naming.check_slot(last_safe + 1)
 
 
 class BinaryPinTests(unittest.TestCase):
     def test_a_bare_name_asserts_the_launcher_s_own_binary(self):
         spec = a_spec(binary="qemu-system-x86_64")  # what os2warp's launcher runs
         base = derive.read_launcher(spec, REPO)
-        derive.derive_argv(base, derive.plan_for(spec, 1, 152), spec)
+        derive.derive_argv(base, derive.plan_for(spec, 1, 256), spec)
 
     def test_a_bare_name_that_disagrees_is_refused_rather_than_substituted(self):
         spec = a_spec(binary="qemu-system-i386")
         base = derive.read_launcher(spec, REPO)
         with self.assertRaises(derive.InvariantError):
-            derive.derive_argv(base, derive.plan_for(spec, 1, 152), spec)
+            derive.derive_argv(base, derive.plan_for(spec, 1, 256), spec)
 
     def test_a_missing_pinned_binary_is_refused_rather_than_swapped(self):
         spec = a_spec(overrides={**SPEC_DOC["overrides"], "binary": "/opt/qemu-nowhere/bin/qemu-system-i386"})
         base = derive.read_launcher(spec, REPO)
-        plan = derive.plan_for(spec, 1, 152)
+        plan = derive.plan_for(spec, 1, 256)
         with self.assertRaises(launcher.LauncherError):
             derive.derive_argv(base, plan, spec)
 
@@ -437,7 +462,7 @@ class DeriveTests(unittest.TestCase):
     def setUp(self):
         self.spec = a_spec()
         self.base = derive.read_launcher(self.spec, REPO)
-        self.plan = derive.plan_for(self.spec, 1, 152)
+        self.plan = derive.plan_for(self.spec, 1, 256)
         self.argv = derive.derive_argv(self.base, self.plan, self.spec)
 
     def test_command_line_is_re_rooted_into_the_clone(self):
@@ -493,7 +518,7 @@ class Win311DerivationTests(unittest.TestCase):
             self.skipTest("win311 has not landed yet")
         self.spec = spec_mod.load_spec(path)
         self.base = derive.read_launcher(self.spec, REPO)
-        self.plan = derive.plan_for(self.spec, 1, 152)
+        self.plan = derive.plan_for(self.spec, 1, 256)
         self.argv = derive.derive_argv(self.base, self.plan, self.spec)
 
     def test_both_goldens_land_in_the_clone_under_their_own_names(self):
@@ -527,14 +552,14 @@ class Win311DerivationTests(unittest.TestCase):
         doc["seed"] = {"disks": [doc["seed"]["disks"][0]], "readOnly": True}
         one_disk = spec_mod.parse_spec(doc, "test")
         with self.assertRaises(derive.InvariantError):
-            derive.derive_argv(self.base, derive.plan_for(one_disk, 1, 152), one_disk)
+            derive.derive_argv(self.base, derive.plan_for(one_disk, 1, 256), one_disk)
 
     def test_netdev_id_is_an_assertion_not_a_rename(self):
         doc = json.loads((REPO / "registry" / "walkin" / "win311.json").read_text())
         doc["overrides"]["netdev"]["id"] = "n7"
         renamed = spec_mod.parse_spec(doc, "test")
         with self.assertRaises(deviceset.DeviceSetError):
-            derive.derive_argv(self.base, derive.plan_for(renamed, 1, 152), renamed)
+            derive.derive_argv(self.base, derive.plan_for(renamed, 1, 256), renamed)
 
 
 if __name__ == "__main__":

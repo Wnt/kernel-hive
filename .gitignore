@@ -149,6 +149,14 @@ scripts/serve/clientlog.jsonl*
 scripts/serve/clientcmd.json
 scripts/serve/clientcmd-audit.jsonl
 scripts/serve/usage-stats.json*
+# The SQLite stores beside them (analytics, coverage, logs, traces, vitals) and
+# their WAL sidecars. Same rule, and they were the ones actually biting: running
+# the canonical test gate — `python3 -m unittest discover -s scripts` — creates
+# all five in whatever checkout it ran in, so every agent's tree came back dirty
+# from the command that is supposed to tell them it is clean.
+scripts/serve/*.db
+scripts/serve/*.db-shm
+scripts/serve/*.db-wal
 
 # scripts/dev/fleet_rollout.py resume journals — local run state, never shared
 .fleet-rollout/

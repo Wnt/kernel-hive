@@ -18,7 +18,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from . import claims
+from . import claims, naming
 
 KH_CLAIM = Path(__file__).resolve().parents[2] / "lib" / "kh-claim.sh"
 
@@ -54,17 +54,18 @@ class SlotClaimTests(unittest.TestCase):
         self.addCleanup(lambda: [h.release() for h in held])
         slots = [h.slot for h in held]
         self.assertEqual(len(set(slots)), 3, f"duplicate slot handed out: {slots}")
-        self.assertEqual(slots, [152, 153, 154])
+        self.assertEqual(slots, [naming.SLOT_MIN, naming.SLOT_MIN + 1, naming.SLOT_MIN + 2])
 
     def test_the_claim_registry_agrees_with_what_was_handed_out(self):
         held = [claims.claim_slot(f"walkin-os2warp-{n}") for n in (1, 2)]
         self.addCleanup(lambda: [h.release() for h in held])
         recorded = {row["name"] for row in claims.mine(claims.SLOT_CLASS)}
-        self.assertEqual(recorded, {"152", "153"})
+        self.assertEqual(recorded, {str(naming.SLOT_MIN), str(naming.SLOT_MIN + 1)})
         ports = {row["name"] for row in claims.mine(claims.PORT_CLASS)}
-        self.assertEqual(ports, {"54152", "54153"})
+        self.assertEqual(ports, {str(naming.udp_port(naming.SLOT_MIN)), str(naming.udp_port(naming.SLOT_MIN + 1))})
 
     def test_an_exclusive_take_refuses_a_claim_this_session_already_holds(self):
+        # A generic kh-claim mechanism, not walk-in-specific -- any name works.
         first = claims.take(claims.SLOT_CLASS, 152, "clone A", exclusive=True)
         self.addCleanup(first.release)
         with self.assertRaises(claims.ClaimError):
@@ -79,20 +80,32 @@ class SlotClaimTests(unittest.TestCase):
 
     def test_a_released_slot_comes_back(self):
         first = claims.claim_slot("walkin-os2warp-1")
-        self.assertEqual(first.slot, 152)
+        self.assertEqual(first.slot, naming.SLOT_MIN)
         first.release()
         second = claims.claim_slot("walkin-os2warp-2")
         self.addCleanup(second.release)
-        self.assertEqual(second.slot, 152)
+        self.assertEqual(second.slot, naming.SLOT_MIN)
 
     def test_the_pool_ceiling_is_reported_rather_than_wrapped(self):
+        # The real window is 256 slots wide (naming.SLOT_MIN..SLOT_MAX) --
+        # exhausting it for real would work but is 256 needless kh-claim
+        # subprocess spawns. Patch a tiny window for just this test so the
+        # REAL code path (claim_slot walking naming.SLOT_MIN..SLOT_MAX) is
+        # still what runs, just over 3 slots instead of 256.
+        real_min, real_max = naming.SLOT_MIN, naming.SLOT_MAX
+        naming.SLOT_MIN, naming.SLOT_MAX = 700, 702
+
+        def _restore():
+            naming.SLOT_MIN, naming.SLOT_MAX = real_min, real_max
+
+        self.addCleanup(_restore)
         held = []
         self.addCleanup(lambda: [h.release() for h in held])
-        for n in range(152, 171):
+        for n in range(3):
             held.append(claims.claim_slot(f"walkin-os2warp-{n}"))
         with self.assertRaises(claims.ClaimError) as caught:
             claims.claim_slot("walkin-os2warp-one-too-many")
-        self.assertIn("152-170", str(caught.exception))
+        self.assertIn("700-702", str(caught.exception))
 
     def test_a_missing_session_is_refused_rather_than_defaulted(self):
         os.environ.pop("KH_SESSION")

@@ -121,6 +121,20 @@ its own before/after, not to zero.
 
 ## Scripts
 
+- `landing-hero-probe.mjs` — does `/` hand a stranger a live machine? Four
+  modes (`live` / `switch` / `nocaps` / `anon`) covering the landing page's four
+  states. It is the ONLY gate those components have: the SPA's vitest runs under
+  plain Node with no jsdom, so `spa/src/landing/*.tsx` cannot be render-tested
+  in this repo and only the pure modules beside them (`heroSession`,
+  `heroPolicy`, `heroStatus`) have unit tests. It asserts exactly ONE claim per
+  page load (a remount used to spend two cells out of a pool of eight), that a
+  switch RELEASES before it CLAIMS, that pressing the machine already on screen
+  spends nothing, that an unplayable browser claims nothing at all, and — via
+  `elementFromPoint`, because the regression was a paint-order bug — that the
+  poster's honest line is in front of the poster rather than behind it. Run from
+  `~/e2e` (see the node_modules note above):
+  `node landing-hero-probe.mjs https://<lab>:8443/staging/<slot>/ switch`
+
 - `walkin-shape-probe.mjs` / `walkin-scope-probe.mjs` — the merged grid renders
   the right museum for the right visitor. Take a staged bundle's URL and use its
   `?role=` preview lever (staged/dev builds only — `spa/src/data/session.ts`):

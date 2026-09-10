@@ -1922,12 +1922,12 @@ asserting the order.
 
 ### Walk-in clones report as the exhibit
 
-The walk-in pool is `walkin-<station>-1/-2/-3` (poolSize 3). The clone id never
-reaches the page dimension: `/walkin/play/:os` carries the **exhibit** id, and
-the clone is named only inside the claim's `signalEndpoint` (§5.3 — a walk-in is
-never handed another station's signaling document). Three clones of one exhibit
-are one page, which is the analytically correct answer: they are the same
-software on the same golden.
+The walk-in pool is `walkin-<station>-1` through `-8` (poolSize 8). The clone id
+never reaches the page dimension: `/walkin/play/:os` carries the **exhibit**
+id, and the clone is named only inside the claim's `signalEndpoint` (§5.3 — a
+walk-in is never handed another station's signaling document). Eight clones of
+one exhibit are one page, which is the analytically correct answer: they are
+the same software on the same golden.
 
 `/walkin/play/win311` stays distinct from `/os/win311`, also deliberately. A
 private clone with a reset button and a queue is a different product from the

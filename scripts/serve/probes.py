@@ -104,6 +104,31 @@ PROBES: dict[str, ServerProbe] = {
         "plane grants, so this is the plane being USED rather than merely reachable",
         consumes="auth.gate.walkin",
     ),
+    "auth.gate.anon": ServerProbe(
+        area="auth",
+        owner="scripts/serve/auth/gate.py",
+        what="the ANONYMOUS allowlist was consulted — a stranger with no account at all is being fenced, which is "
+        "the inverted funnel actually carrying traffic",
+    ),
+    "auth.gate.anonOwn": ServerProbe(
+        area="auth",
+        owner="scripts/serve/auth/gate.py",
+        what="a stranger was allowed at their OWN clone's signaling or webrtc path — somebody with no account is "
+        "driving a real machine, which is the whole point of the landing redesign",
+        consumes="auth.gate.anon",
+    ),
+    "walkin.anon.wall": ServerProbe(
+        area="walkin",
+        owner="scripts/serve/auth/anon_plane.py",
+        what="a stranger's sixty seconds ran out and their machine was frozen behind the conversion wall; a zero "
+        "means nobody has ever reached the end of the budget",
+    ),
+    "walkin.anon.converted": ServerProbe(
+        area="walkin",
+        owner="scripts/serve/auth/anon_plane.py",
+        what="a held machine was handed to an account a stranger had just registered — the conversion the wall "
+        "exists to produce, counted where it actually happens",
+    ),
     "auth.gate.blocked": ServerProbe(
         area="auth",
         owner="scripts/serve/auth/gate.py",

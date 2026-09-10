@@ -283,12 +283,18 @@ class H(BaseHTTPRequestHandler):
             return False
         if gate.is_open(path):
             return True
-        user = AUTH.user_for_token(auth_routes.session_token(self))
+        session_user = AUTH.user_for_token(auth_routes.session_token(self))
+        # A caller with NO session is no longer automatically nobody: since the
+        # landing redesign a stranger may be driving a machine on a sixty-second
+        # budget, and `visitor_for` turns their cookie into a synthetic
+        # `role='anon'` user (walkin_plane.py). Everything below is unchanged for
+        # everyone else.
+        user = walkin_plane.visitor_for(AUTH, self, session_user)
         # Signed in is enough for an INVITED session — that is what gate.allows
-        # returns for every role but one, and the invited plane is unchanged. A
-        # walk-in is the exception: an anonymous stranger's fence is an
-        # allowlist whose one interactive surface is their OWN clone, so the
-        # gate is told which clone that is.
+        # returns for every role but two, and the invited plane is unchanged. A
+        # walk-in and a stranger are the exceptions: their fence is an allowlist
+        # whose one interactive surface is their OWN clone, so the gate is told
+        # which clone that is.
         if user and gate.allows(path, user, walkin_plane.own_signal(user)):
             return True
         if gate.wants_html(self.headers.get("Accept")):
@@ -296,12 +302,15 @@ class H(BaseHTTPRequestHandler):
             # on, not a bare 401 — and for a walk-in that page is the walk-in
             # landing, never the invited plane's login screen.
             self.send_response(302)
-            self.send_header("Location", gate.landing_for(user))
+            self.send_header("Location", gate.landing_for(session_user))
             self.send_header("Content-Length", "0")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return False
-        code, message = (403, "not yours") if user else (401, "sign in first")
+        # `session_user`, NOT `user`: a synthetic anonymous visitor is not a
+        # signed-in one, and answering 403 to a caller who has never signed in
+        # would tell every unauthenticated fetch in the SPA the wrong thing.
+        code, message = (403, "not yours") if session_user else (401, "sign in first")
         self._send(code, json.dumps({"error": message}), MIME[".json"], cache=False)
         return False
 
