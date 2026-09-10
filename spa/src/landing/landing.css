@@ -259,52 +259,6 @@
 }
 .landing-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
-/* ============================================================================
-   THE CONVERSION GATE — countdown and wall.
-   ---------------------------------------------------------------------------
-   ⚠ These two blocks belong to landing/gate/, which is a STUB awaiting the
-   parallel stream's components. If theirs arrive with a stylesheet of their
-   own, delete from here to the end of this section along with the stub.
-   ========================================================================= */
-.landing-countdown { display: inline-flex; align-items: center; gap: 8px; font: 12px var(--font-mono); color: var(--ink-muted); }
-.landing-countdown__bar {
-  width: 74px; height: 5px; border-radius: 999px; overflow: hidden;
-  background: var(--tint-3);
-}
-.landing-countdown__fill {
-  display: block; width: 100%; height: 100%; transform-origin: 0 50%;
-  background: var(--accent); transition: transform 0.9s linear;
-}
-.landing-countdown__value { font-size: 14px; font-weight: 700; color: var(--ink-soft); }
-.landing-countdown--low .landing-countdown__value { color: var(--danger); }
-.landing-countdown--low .landing-countdown__fill { background: var(--danger); }
-@media (prefers-reduced-motion: reduce) {
-  .landing-countdown__fill { transition: none; }
-}
-
-/* The wall goes OVER the picture, deliberately: the frame the visitor was just
-   driving is the strongest argument this page has, so it stays visible behind
-   the offer rather than being replaced by a form. */
-.landing-gate {
-  position: absolute; inset: 0; z-index: 70;
-  display: grid; place-items: center; padding: clamp(14px, 3vw, 28px);
-  background: rgba(10, 9, 7, 0.55);
-  backdrop-filter: blur(3px);
-}
-.landing-gate__card {
-  width: min(100%, 460px); padding: clamp(18px, 3vw, 28px);
-  border-radius: 16px; border: 1px solid var(--line);
-  background: var(--paper-raised); box-shadow: var(--shadow-2);
-}
-.landing-gate__kicker {
-  margin: 0 0 6px; font: 700 10px var(--font-mono);
-  letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-ink);
-}
-.landing-gate__title { margin: 0 0 10px; font-size: clamp(20px, 2.6vw, 27px); font-weight: 800; letter-spacing: -0.02em; }
-.landing-gate__body { margin: 0 0 14px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
-.landing-gate__error { margin: 0 0 12px; font-size: 13px; color: var(--danger); }
-.landing-gate__actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
 /* ---- narrow ------------------------------------------------------------- */
 @media (max-width: 980px) {
   .landing-hero { grid-template-columns: minmax(0, 1fr); }

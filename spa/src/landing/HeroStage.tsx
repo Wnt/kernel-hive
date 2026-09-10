@@ -14,7 +14,7 @@ import {
 } from './heroStatus';
 import { heroBlockedLine } from './heroPolicy';
 import { stationCopy } from './stations';
-import { ConversionGate } from './gate';
+import { ConversionGate } from './gate/ConversionGate';
 import type { HeroSession } from './useHeroSession';
 
 // ============================================================================

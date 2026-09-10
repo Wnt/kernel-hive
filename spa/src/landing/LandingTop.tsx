@@ -8,7 +8,7 @@ import { WALKIN_CLOSED_COPY } from '../walkin/reasons';
 import { LandingHeader } from './LandingHeader';
 import { HeroStage } from './HeroStage';
 import { StationSwitcher } from './StationSwitcher';
-import { Countdown } from './gate';
+import { Countdown } from './gate/Countdown';
 import { useHeroSession } from './useHeroSession';
 import { HERO_STATIONS } from './stations';
 

@@ -45,7 +45,11 @@
   outline: none; /* focused programmatically on open; the panel itself has no visible ring */
 }
 
-.gate-title { margin: 14px 0 10px; font: 700 clamp(22px, 4vw, 27px)/1.15 Georgia, serif; color: var(--ink); }
+/* Matches .landing-hero__headline: the wall is the same page, mid-sentence. */
+.gate-title {
+  margin: 14px 0 10px; color: var(--ink);
+  font: 800 clamp(22px, 4vw, 27px)/1.15 var(--font-ui); letter-spacing: -0.02em;
+}
 
 .gate-lede { margin: 0 0 16px; color: var(--ink-soft); font-size: 15px; line-height: 1.55; }
 .gate-copy { margin: 0 0 18px; color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 46ch; }
