@@ -94,10 +94,20 @@ export function fetchWalkinState(): Promise<WalkinState> {
   return withFixture('/walkin/state', () => call<WalkinState>('/walkin/state'), () => walkinFixture.state());
 }
 
-export function claimWalkin(os: string): Promise<WalkinClaim | WalkinQueued> {
+/**
+ * Claim a clone. `os` is OPTIONAL — omitting it asks the server to pick a
+ * station uniformly at random among the enabled pools with free capacity, and
+ * that is how the landing page hands a stranger "a machine", singular, with
+ * nothing to choose first (LANDING-REDESIGN-CONTRACT.md, "Server contract").
+ *
+ * The body omits the key entirely rather than sending `{"os": null}` or
+ * `{"os": ""}`: the contract says the field is absent, and a broker that
+ * validates its input is right to refuse a null where it expected a station id.
+ */
+export function claimWalkin(os?: string): Promise<WalkinClaim | WalkinQueued> {
   return withFixture(
     '/walkin/claim',
-    () => call<WalkinClaim | WalkinQueued>('/walkin/claim', { os }),
+    () => call<WalkinClaim | WalkinQueued>('/walkin/claim', os === undefined ? {} : { os }),
     () => walkinFixture.claim(os),
   );
 }

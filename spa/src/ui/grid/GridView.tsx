@@ -111,9 +111,32 @@ export interface GridViewProps {
   onOpenPlacard?: (osId: string) => void;
   /** Walk-in only: force the scope (the `/walkin/exhibits` route enters at `all`). */
   initialScope?: WalkinScope;
+  /**
+   * Full-bleed content above the card grid, INSIDE this component's scroll box
+   * — the landing page's live hero (landing/LandingTop.tsx).
+   *
+   * It is a slot rather than a sibling because `.grid-view` is the page's one
+   * scroll container (`position: absolute; inset: 0; overflow-y: auto`): a hero
+   * rendered outside it would either need a second scroller, or this one would
+   * have to stop being absolute and take its scroll restore, its pull-to-
+   * refresh and its era folding with it. One scroller, one scroll position,
+   * one place the visitor's spot is remembered.
+   *
+   * Supplying a header ALSO changes two behaviours, and both are the same fact:
+   * a page with a header owns the visitor's first interaction, and this grid is
+   * no longer the whole page.
+   *
+   *   * The filter is NOT autofocused. Above the fold there is a live guest
+   *     that every keystroke is forwarded to; focusing a text box on mount
+   *     would silently eat the visitor's first sentence into a search field.
+   *   * Pull-to-refresh is off. It arms at scrollTop 0, which is now the hero,
+   *     so a stray downward drag on a phone would reload the document — and a
+   *     reload drops the machine the visitor is holding.
+   */
+  header?: React.ReactNode;
 }
 
-export default function GridView({ onOpenPlacard, initialScope = 'playable' }: GridViewProps = {}) {
+export default function GridView({ onOpenPlacard, initialScope = 'playable', header }: GridViewProps = {}) {
   const vms = useMuseum((s) => s.listedVms);
   const gridRef = useRef<HTMLDivElement>(null);
   // Preserve query parameters across navigation into a station.
@@ -137,7 +160,7 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable' }: G
   const pull = usePullToRefresh(
     gridRef,
     useCallback(() => { window.location.reload(); }, []),
-    vms.length > 0,
+    vms.length > 0 && !header,
   );
 
   // PWA install affordance for the footer. A standalone/installed app hides it;
@@ -229,8 +252,9 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable' }: G
   // input pops the on-screen keyboard over the collection you came to look at.
   // GridView owns the '/' route alone, so nothing else is competing for focus.
   useEffect(() => {
+    if (header) return;
     if (window.matchMedia?.('(pointer: fine)').matches) filterRef.current?.focus();
-  }, []);
+  }, [header]);
 
   // Escape empties the filter from anywhere on the grid. It is free here: the
   // Escape the rest of the app protects belongs to an opened station's
@@ -281,8 +305,13 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable' }: G
   if (vms.length === 0) {
     // The catalog is static and non-empty, so an empty list only ever means the
     // one-off mount effect hasn't populated the store yet.
+    // The header renders here too, and that is load-bearing rather than tidy:
+    // on the landing page the header IS the page, so a manifest that is slow —
+    // or, for a signed-out stranger, refused — must not take the running
+    // machine down with it.
     return (
       <div className="grid-view">
+        {header}
         <div className="grid-empty">Loading the collection…</div>
       </div>
     );
@@ -311,6 +340,7 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable' }: G
           ↻
         </span>
       </div>
+      {header}
       <div className="grid-view-inner">
         {/* The walk-in scope switch. "Machines you can play" is the default
             because it is what the visitor came for; "The whole museum" is the
