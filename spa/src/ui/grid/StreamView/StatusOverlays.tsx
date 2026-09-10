@@ -1,10 +1,19 @@
 import type { StreamBannerState } from '../../../three/streamClient';
 import { S } from './styles';
+import { DOCK_FLOW, useChromeDock } from '../../chromeDock';
+import { DockedNotice } from '../../DockedChrome';
 
 // The stage's floating status layer: the fullscreen hint toast, the click-to-resume
 // affordance, the fullscreen-rejection toast, the GFN-style connection banner, and
 // the distinct device/stall chip stack. All decisions are computed by the
 // orchestrator and passed in; this stays a pure presentational component.
+//
+// THE TWO THAT CAN APPEAR OVER A HEALTHY PICTURE — the connection banner and the
+// device/stall chips — dock out of the stage when there is a dock (the landing
+// page's mini canvas, which shows the guest and nothing on top of it). The other
+// three stay: the hint toast and the click-to-resume are fullscreen-only, and in
+// fullscreen the stage IS the screen; the tap-to-resume is the one control that
+// can clear a black rectangle, and it has to be where the black rectangle is.
 export function StatusOverlays({
   hint, fs, mouseCapture, escToGuest,
   showResume, pointerLocked, acquireLock,
@@ -38,6 +47,11 @@ export function StatusOverlays({
   decoderErrShort: string;
   onReconnect: () => void;
 }) {
+  // Merged over a docked notice's own style so it stops floating; null (no
+  // change at all) whenever the chrome is in the stage, which is every view
+  // but the landing page's canvas and every moment of browser fullscreen.
+  const flow = useChromeDock()?.controls ? DOCK_FLOW : null;
+
   return (
     <>
       {/* FULLSCREEN HINT TOAST — brief, auto-dismissing. */}
@@ -99,12 +113,14 @@ export function StatusOverlays({
           'reconnecting' = transport closed, or unanswered pings AND total silence.
           EWMA windows are the hysteresis, so a single dropped frame never flashes. */}
       {showBanner && (
+        <DockedNotice order={5}>
         <div style={{
           ...S.banner,
           ...(restoreReconnect || bannerState === 'reconnecting' || decoderUnsupported
             ? S.bannerReconnecting
             : bannerIsDevice ? S.bannerDevice : S.bannerSpotty),
           ...(decoderUnsupported ? S.bannerDecoderUnsupported : {}),
+          ...flow,
         }}>
           <span style={{
             ...S.bannerDot,
@@ -120,6 +136,7 @@ export function StatusOverlays({
             </button>
           )}
         </div>
+        </DockedNotice>
       )}
 
       {/* DISTINCT DEVICE/STALL CHIPS (Items 4 + 6) — a top-right stack kept
@@ -128,7 +145,8 @@ export function StatusOverlays({
           read-only PressureObserver+getBattery signals; the frame-stall chip is
           the idle-frame watchdog (orthogonal to the RTT-ping liveness). */}
       {(deviceUnderLoad || lowBattery || (frameStalled && !restoreReconnect) || decoderFailed) && (
-        <div style={S.chipStack}>
+        <DockedNotice order={6}>
+        <div style={{ ...S.chipStack, ...flow }}>
           {decoderFailed ? (
             // Explicit decoder-failure chip: suppresses the generic stall chip
             // (the stall watchdog also latches when the decoder never paints).
@@ -151,6 +169,7 @@ export function StatusOverlays({
             </span>
           )}
         </div>
+        </DockedNotice>
       )}
     </>
   );

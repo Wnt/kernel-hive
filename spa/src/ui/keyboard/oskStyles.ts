@@ -6,7 +6,7 @@
 // Class-hook contract (fixed): .osk-sheet .osk-inline .osk-row .osk-row-scroll
 // .osk-util .osk-key (.latched .armed .pressed .wide) .osk-more .osk-abc
 // .osk-abc-input .osk-tabs .osk-tabgroup .osk-tab(.active) .osk-qrow
-// .osk-shift(.once .caps) .osk-sec. The sheet's height is a constant derived
+// .osk-shift(.once .caps) .osk-sec .osk-docked. The sheet's height is a constant derived
 // from the QWERTY row count (see .osk-sheet) and does NOT vary by layer, so
 // there is no per-layer hook to key off.
 //
@@ -54,6 +54,14 @@ export const OSK_CSS = `
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
   background: rgba(251,249,243,0.96); border-top: 1px solid var(--line);
 }
+/* A ROW NEVER SHRINKS. Both row types scroll on their x-axis, and a scroll
+   container's automatic minimum size is ZERO — so under a height-clamped sheet
+   the rows collapsed instead of the sheet scrolling, and 44px keys were clipped
+   down to a ~14px sliver that showed the top of each cap and none of its label.
+   Measured on an Android phone at 400px: .osk-qrow 14.3px tall around a 44px
+   key, every letter blank. The sheet's own overflow-y:auto is the valve that
+   is supposed to absorb a short viewport; this is what lets it. */
+.osk-row, .osk-qrow { flex: 0 0 auto; }
 .osk-row { display: flex; align-items: stretch; min-width: 0; }
 /* Wide rows (F1..F12, 9-key NAV) scroll INSIDE their own container (repo rule);
    keys never shrink below touch-target size. */
@@ -110,7 +118,12 @@ export const OSK_CSS = `
 }
 .osk-qrow::-webkit-scrollbar { display: none; }
 .osk-qrow .osk-key {
-  position: relative; flex: 1 1 0; min-width: 26px; padding: 4px 2px;
+  /* 24px, not 26: the bottom glyph row is TWELVE keys (⇧ + 7 letters + , . /
+     + ⌫) and at a 400px phone — the width this was all reviewed at — 26px
+     floors it at 367px inside a 354px row, so it overflowed and the ⌫ was
+     sliced in half at the scroll edge. 24px floors the same row at 343px and
+     it fits; the scroll fallback still catches genuinely narrow phones. */
+  position: relative; flex: 1 1 0; min-width: 24px; padding: 4px 2px;
 }
 .osk-qrow .osk-key.wide { flex: 3 1 0; }
 /* 3-state Shift: once = armed-for-next-glyph, caps = sticky. */
@@ -133,6 +146,15 @@ export const OSK_CSS = `
   box-shadow: 0 6px 20px rgba(20,16,10,0.18);
 }
 .osk-inline .osk-abc-input { width: 100%; background: var(--paper-sunken); box-shadow: none; }
+/* ---- DOCKED (the landing page's mini canvas): the keyboard is not flown over
+   the bottom of a full-screen view, it IS the region below the picture. So it
+   takes its full natural height — the clamp exists to stop a sheet eating a
+   phone's whole screen, and here there is nothing to eat — and the free-text
+   input sits in flow above the keys rather than dodging an IME that cannot
+   reach it. ---- */
+.osk-sheet.osk-docked { max-height: none; border-radius: 0 0 12px 12px; }
+.osk-abc.osk-docked { position: static; margin-bottom: 6px; }
+
 /* ---- landscape condensation: base rows only, tighter targets. The height
    formula is unchanged — only its inputs shrink, so the sheet still measures
    exactly one QWERTY and still never moves between layers. Scoped to
@@ -145,6 +167,7 @@ export const OSK_CSS = `
        the clamp forces it to scroll internally. */
     max-height: 70%;
   }
+  .osk-sheet.osk-docked { max-height: none; }
   .osk-sheet .osk-more { display: none; }
 }
 `;

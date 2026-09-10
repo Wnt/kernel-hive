@@ -201,6 +201,28 @@
 .landing-caption { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink-muted); }
 .landing-caption__grace { color: var(--warn); }
 
+/* ---- the machine's controls, under the machine -------------------------- */
+/* The mini canvas shows the guest's picture and nothing laid on top of it, so
+   every control StreamView would float in a stage corner portals into this row
+   instead and the keyboard opens into the region below it (ui/chromeDock.tsx).
+   Reading order is set by each control's `order`, because portals land in
+   whatever order they happen to mount.
+   `position: relative` + a z-index above the stage is for the ☰ dropdown, which
+   hangs out of the row and must not be painted over by what follows it. Both
+   nodes are always in the DOM and empty most of the time — `:empty` keeps them
+   from spending one of the column's 9px gaps on nothing. */
+.landing-dock {
+  position: relative; z-index: 3;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.landing-keys { position: relative; z-index: 2; }
+.landing-dock:empty, .landing-keys:empty { display: none; }
+/* The keyboard is a panel below the picture here, not a sheet flown over the
+   bottom of a full-screen view: give it the gallery's own edges. */
+.landing-keys .osk-sheet, .landing-keys .osk-inline {
+  border: 1px solid var(--line); border-radius: 12px;
+}
+
 /* ---- the switcher ------------------------------------------------------- */
 .landing-switch {
   display: grid; gap: 12px;
