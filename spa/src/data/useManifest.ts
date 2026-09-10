@@ -97,7 +97,27 @@ export function useManifest() {
       }
       const [manifest, boot] = await Promise.all([loadGalleryManifest(), fetchBootIndex()]);
       if (cancelled) return;
-      setVMs(storedLineup(manifest).map((vm) => withBoot(vm, boot)));
+      const lineup = storedLineup(manifest);
+      if (lineup.length > 0) {
+        setVMs(lineup.map((vm) => withBoot(vm, boot)));
+        return;
+      }
+      // Nothing came back, so ask through the walk-in door before giving up.
+      //
+      // `walkinShape` cannot answer this one from the role: a STRANGER is
+      // `role: 'anon'` on both planes, and the two planes disagree about what
+      // that means. On the public listener `/gallery-manifest.json` is gated
+      // and 401s — the landing page is open to strangers now, so this is the
+      // ordinary case, not an edge one. On the unauthenticated LAN origin the
+      // very same role reads the fleet manifest perfectly well. Testing the
+      // role would fix the museum's front door and empty the LAN grid.
+      //
+      // Refusal is the signal, so we let the fetch answer instead: an empty
+      // lineup falls through to `/walkin/manifest.json`, the server's own
+      // allowlist projection, which is public and carries every exhibition row.
+      const exhibits = await loadWalkinExhibits();
+      if (cancelled) return;
+      setVMs(exhibits.map(exhibitVm));
     })();
     return () => { cancelled = true; };
   }, [setVMs, walkin]);
