@@ -292,7 +292,10 @@
 }
 @media (max-width: 640px) {
   .landing-bar__tag { display: none; }
-  .landing-bar__jump span { display: none; }
+  /* The narrow bar drops the button's words in favour of its chip — but only
+     where there IS a chip. A device with no chord to name (a phone) keeps the
+     words, so the button is never an empty pill. */
+  .landing-bar__kbd + span { display: none; }
   .landing-chip__shot { width: 52px; height: 44px; }
   .landing-hero__lede { font-size: 14.5px; }
 }
