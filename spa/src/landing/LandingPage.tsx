@@ -3,14 +3,15 @@ import { LandingTop } from './LandingTop';
 import './landing.css';
 
 // ============================================================================
-//  landing/LandingPage — `/`, the museum's front door, for EVERYONE.
+//  landing/LandingPage — `/`, the museum's front door for a STRANGER.
 //  ---------------------------------------------------------------------------
-//  One page for a stranger, a walk-in and an invited visitor. The differences
-//  between them are two, and both come from the server rather than from a
-//  branch here: an anonymous caller's `/walkin/state` carries an `anon` budget,
-//  which is what puts a countdown on the page and a wall at the end of it, and
-//  a signed-in caller's does not. Everything else — the running machine, the
-//  switcher, the collection — is identical, because it should be.
+//  App.tsx mounts this route element only when role 'anon' — nobody the
+//  server vouches for, on either listener (App.tsx ->
+//  landing/heroAudience.ts's showsLandingHero()). `admin`, `viewer` and
+//  `walkin` get `/` exactly as it rendered before this page existed: the
+//  plain grid behind the app's own TopBar. A conversion pitch and a
+//  free-minute countdown are for someone who does not have a seat yet;
+//  everyone who does gets the museum, not the funnel.
 //
 //  ABOVE THE FOLD is one live machine (LandingTop → HeroStage). BELOW it is the
 //  existing GridView, grouped by decade off `museum.era` with its own fold
