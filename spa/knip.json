@@ -3,7 +3,9 @@
   "entry": [
     "index.html",
     "src/analytics/coverage.ts",
-    "vite-plugins/coverage.ts"
+    "vite-plugins/coverage.ts",
+    "src/landing/gate/Countdown.tsx",
+    "src/landing/gate/ConversionGate.tsx"
   ],
   "project": [
     "src/**/*.{ts,tsx}"

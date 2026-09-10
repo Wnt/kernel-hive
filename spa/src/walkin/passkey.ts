@@ -1,12 +1,13 @@
 // One-tap passkey signup for a walk-in account (CONTRACT-LEDGER §3,
-// `POST /walkin/signup`).
+// `POST /walkin/signup`) and — `walkinSignIn` below — signing back in on a
+// passkey the visitor already made, for the landing page's conversion gate.
 //
-// The ceremony itself is the one the gallery already runs for invited accounts
+// Both ceremonies are the ones the gallery already runs elsewhere
 // (scripts/serve/authui/common.js): the server hands out options, the browser
-// creates a discoverable credential, the credential goes back. This is that
-// code in TypeScript, kept deliberately field-by-field rather than using
-// PublicKeyCredential.toJSON(), which browsers this gallery must work on still
-// lack. The server tolerates extra fields, so this is the conservative
+// creates or offers a discoverable credential, the credential goes back. This
+// is that code in TypeScript, kept deliberately field-by-field rather than
+// using PublicKeyCredential.toJSON(), which browsers this gallery must work on
+// still lack. The server tolerates extra fields, so this is the conservative
 // direction to be wrong in.
 //
 // ASSUMPTION, and the only one in this lane (lane 2 owns the server half):
@@ -123,6 +124,73 @@ export async function walkinSignup(): Promise<WalkinAccount> {
       },
     },
   });
+}
+
+// The server's options for navigator.credentials.get — the sign-in half of
+// the same wire shape as RawCreationOptions above, still base64url-encoded.
+type RawRequestOptions = Omit<PublicKeyCredentialRequestOptions, 'challenge' | 'allowCredentials'> & {
+  challenge: string;
+  allowCredentials?: { id: string; type: 'public-key'; transports?: AuthenticatorTransport[] }[];
+};
+
+type LoginBeginResponse = { ceremonyId: string; publicKey: RawRequestOptions };
+type LoginFinishResponse = { ok: boolean; user: { id: string; name: string; role: string } };
+
+/**
+ * Sign in with a passkey this browser already holds for the gallery — a
+ * DISCOVERABLE credential, so the browser offers whatever key it has and no
+ * username is ever asked (docs/PUBLIC-GALLERY.md; server side:
+ * scripts/serve/auth/passkeys.py `begin_authentication`, "No allowCredentials").
+ *
+ * This is NOT a new endpoint: it is the same ceremony the sign-in button on
+ * /login already runs (scripts/serve/authui/login.js `$('signin')`,
+ * scripts/serve/authui/common.js `getCredential`) —
+ * `/auth/login/begin` + `navigator.credentials.get` + `/auth/login/finish`.
+ * `/auth/` is an open prefix (scripts/serve/auth/gate.py `OPEN_PREFIXES`), so a
+ * signed-out stranger can already reach it; the conversion gate (landing/
+ * gate/ConversionGate.tsx) is simply the first caller from inside the SPA
+ * itself rather than the static /login page.
+ *
+ * Unlike `walkinSignup`, this has no 404 stand-in: `/auth/login/*` is not part
+ * of a lane still landing, it is the gallery's existing sign-in, already
+ * deployed everywhere `/login` works. A 404 here is a real bug, not a build
+ * still in flight.
+ */
+export async function walkinSignIn(): Promise<WalkinAccount> {
+  if (!supportsPasskeys()) throw new Error('This browser has no passkey support.');
+  const { ceremonyId, publicKey } = await post<LoginBeginResponse>('/auth/login/begin', {});
+  const options: PublicKeyCredentialRequestOptions = {
+    ...publicKey,
+    challenge: b64urlToBytes(publicKey.challenge),
+    allowCredentials: (publicKey.allowCredentials ?? []).map((entry) => ({
+      ...entry,
+      id: b64urlToBytes(entry.id),
+    })),
+  };
+  const credential = (await navigator.credentials.get({ publicKey: options })) as PublicKeyCredential | null;
+  if (!credential) throw new Error('No passkey was offered.');
+  const assertion = credential.response as AuthenticatorAssertionResponse;
+  const response: { clientDataJSON: string; authenticatorData: string; signature: string; userHandle?: string } = {
+    clientDataJSON: bytesToB64url(assertion.clientDataJSON),
+    authenticatorData: bytesToB64url(assertion.authenticatorData),
+    signature: bytesToB64url(assertion.signature),
+  };
+  // Only present for a resident/discoverable credential, which is exactly the
+  // case this gallery relies on (no username field) — but the server needs it
+  // to tell WHICH account answered, so it is sent whenever the browser gives it.
+  if (assertion.userHandle) response.userHandle = bytesToB64url(assertion.userHandle);
+  const { user } = await post<LoginFinishResponse>('/auth/login/finish', {
+    ceremonyId,
+    credential: {
+      id: credential.id,
+      rawId: bytesToB64url(credential.rawId),
+      type: credential.type,
+      authenticatorAttachment: credential.authenticatorAttachment ?? undefined,
+      clientExtensionResults: credential.getClientExtensionResults(),
+      response,
+    },
+  });
+  return { handle: user.name, role: user.role };
 }
 
 /** Who the browser is signed in as, if anyone (the existing /auth/state). */

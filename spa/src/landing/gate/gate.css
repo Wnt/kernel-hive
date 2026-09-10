@@ -1,0 +1,91 @@
+/* ============================================================================
+   LANDING GATE — the anonymous countdown and the conversion wall it ends in
+   (spa/src/landing/gate/Countdown.tsx, ConversionGate.tsx).
+
+   Same museum, same tokens as index.css (MUSEUM DAYLIGHT) — one theme, no
+   dark-mode branch. The one deliberately dark surface is the SCRIM, and it is
+   dark for the same reason a guest picture is dark in walkin.css: it sits over
+   a picture of a screen, and a screen that is off (or paused) is black, not
+   chrome. Mobile first: the panel reads at 360px wide with no horizontal
+   scroll, tap targets stay >=44px.
+   ============================================================================ */
+
+/* ---- the countdown — reused ticking (Countdown.tsx) and frozen at zero
+   (inside the wall below) ---- */
+.gate-countdown {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  font-family: var(--font-mono);
+}
+.gate-countdown-clock { font-size: 15px; font-weight: 700; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.gate-countdown-label {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted);
+}
+.gate-countdown--attentive .gate-countdown-clock { color: var(--warn); }
+.gate-countdown--urgent .gate-countdown-clock { color: var(--danger); }
+
+/* ---- the wall ---- */
+/* Covers the frozen last frame, not replaces it: the scrim is translucent on
+   purpose (LANDING-REDESIGN-CONTRACT.md "the frame the visitor was just
+   driving is the strongest thing we have"), so the machine stays visible
+   behind the placard the whole time the visitor reads it. */
+.gate-scrim {
+  position: absolute; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(5, 6, 10, 0.78);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+
+.gate-panel {
+  width: min(440px, 100%);
+  max-height: 100%; overflow-y: auto;
+  padding: 26px 26px 24px;
+  border-radius: 16px; border: 1px solid var(--line-strong);
+  background: var(--paper-raised); box-shadow: var(--shadow-2);
+  outline: none; /* focused programmatically on open; the panel itself has no visible ring */
+}
+
+.gate-title { margin: 14px 0 10px; font: 700 clamp(22px, 4vw, 27px)/1.15 Georgia, serif; color: var(--ink); }
+
+.gate-lede { margin: 0 0 16px; color: var(--ink-soft); font-size: 15px; line-height: 1.55; }
+.gate-copy { margin: 0 0 18px; color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 46ch; }
+
+.gate-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.gate-btn {
+  appearance: none; cursor: pointer; font: 600 14px/1 var(--font-ui);
+  min-height: 44px; padding: 12px 18px; border-radius: 10px;
+  border: 1px solid var(--accent-line); color: var(--paper-raised);
+  background: var(--accent-ink);
+}
+.gate-btn:hover { background: var(--accent); }
+.gate-btn:disabled { opacity: 0.5; cursor: default; }
+.gate-btn--quiet { color: var(--ink-soft); background: var(--paper); border-color: var(--line); }
+.gate-btn--quiet:hover { color: var(--accent-ink); background: var(--tint-1); }
+
+.gate-footnote { margin: 12px 0 0; color: var(--ink-muted); font-size: 12.5px; }
+
+.gate-link { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
+.gate-link:hover { color: var(--ink); }
+
+.gate-error {
+  margin: 16px 0 0; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
+  background: color-mix(in srgb, var(--danger) 8%, var(--paper-raised));
+  color: var(--danger); font-size: 13px;
+}
+
+/* ---- the registered beat: a handle handed over, not an ID assigned ---- */
+.gate-welcome-kicker {
+  margin: 0; color: var(--ink-muted); font: 700 11px/1 var(--font-mono);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.gate-welcome-handle {
+  margin: 8px 0 14px; font: 700 28px/1.15 var(--font-mono); color: var(--accent-ink);
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .gate-panel { padding: 22px 18px 20px; border-radius: 12px; }
+  .gate-actions { flex-direction: column; }
+  .gate-actions .gate-btn { width: 100%; }
+}

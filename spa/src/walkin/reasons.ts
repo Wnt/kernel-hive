@@ -9,15 +9,26 @@
 // stream-level copy (StreamView/exitReason.ts) is only ever the fallback for a
 // drop that carries no walk-in code at all.
 
-/** The broker→client codes (§3.1) plus the auth-side HTTP body error. */
-export type WalkinReason = 'WALKIN_CLOSED' | 'WALKIN_TTL' | 'WALKIN_IDLE';
+/** The broker→client codes (§3.1) plus the auth-side HTTP body error.
+ *  WALKIN_ANON_BUDGET is the landing redesign's addition (LANDING-REDESIGN-
+ *  CONTRACT.md "the anonymous budget"): a signed-out stranger's free minute is
+ *  gone. The conversion gate (landing/gate/) renders its own richer copy for
+ *  that moment; this entry is the one-line fallback for anywhere else the code
+ *  surfaces. */
+export type WalkinReason = 'WALKIN_CLOSED' | 'WALKIN_TTL' | 'WALKIN_IDLE' | 'WALKIN_ANON_BUDGET';
 
 /** The frozen closed-state sentence (§7). Used by the landing page AND by a
  *  live session dropped with WALKIN_CLOSED — deliberately the same words, so
  *  the two ways of meeting a shut door read as one fact. */
 export const WALKIN_CLOSED_COPY = 'Walk-in access is currently closed.';
 
-const REASON_CODES: readonly WalkinReason[] = ['WALKIN_CLOSED', 'WALKIN_TTL', 'WALKIN_IDLE'];
+/** Same idea, for the anonymous budget: the conversion gate's own headline
+ *  (landing/gate/ConversionGate.tsx) AND this module's one-line fallback use
+ *  the same four words, so "your free minute is up" reads as one fact
+ *  wherever a visitor meets it. */
+export const WALKIN_ANON_BUDGET_COPY = 'Your free minute is up.';
+
+const REASON_CODES: readonly WalkinReason[] = ['WALKIN_CLOSED', 'WALKIN_TTL', 'WALKIN_IDLE', 'WALKIN_ANON_BUDGET'];
 
 /** Headline + detail for a reason code. */
 export interface WalkinReasonCopy {
@@ -59,6 +70,16 @@ export function walkinReasonCopy(
         detail:
           'Nothing was typed or clicked, so the machine was handed back to the pool. Claim another one to carry on.',
         retryable: true,
+      };
+    case 'WALKIN_ANON_BUDGET':
+      return {
+        title: WALKIN_ANON_BUDGET_COPY,
+        detail:
+          'A look around is free once, with no account. Make a passkey and the machine you were just driving is still here.',
+        // Not retryable: unlike a TTL or an idle timeout, a fresh claim is
+        // refused outright until the visitor registers or signs in — there is
+        // no "try again" for an anonymous budget that is already spent.
+        retryable: false,
       };
   }
 }
