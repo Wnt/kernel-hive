@@ -12,7 +12,7 @@ import { useManifest } from './data/useManifest';
 import { useSession } from './data/SessionContext';
 import { posterFor } from './data/posterIndex';
 import LandingPage from './landing/LandingPage';
-import { showsLandingHero } from './landing/heroAudience';
+import { showsLandingHero, useWalkinPlaneAvailable } from './landing/heroAudience';
 import { exhibitViewFor } from './ui/grid/exhibitAccess';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
@@ -35,6 +35,11 @@ export default function App() {
 
   const { role } = useSession();
   const walkin = role === 'walkin';
+  // The role question and the availability question, required together —
+  // see heroAudience.ts. Disabled for every role showsLandingHero already
+  // refuses, so only a stranger's tab ever spends the extra GET.
+  const walkinPlaneAvailable = useWalkinPlaneAvailable(role === 'anon');
+  const showHero = showsLandingHero(role) && walkinPlaneAvailable;
 
   const vms = useMuseum((s) => s.vms);
 
@@ -108,23 +113,28 @@ export default function App() {
         {/* ---------- DEFAULT: the landing hero for a stranger, the plain
             grid for everyone else ----------
             A live, driveable machine above the fold and the decade-grouped
-            collection below it (landing/LandingPage.tsx) — but ONLY for role
-            'anon' (landing/heroAudience.ts's showsLandingHero()), the
-            visitor the hero exists to convert. It replaces the three static
-            poster cards a stranger used to get at /walkin, which told
-            nobody what this museum is because it asked them to press
-            something before anything moved.
+            collection below it (landing/LandingPage.tsx) — but only for role
+            'anon' ON AN ORIGIN WHERE THE WALK-IN PLANE ACTUALLY EXISTS
+            (heroAudience.ts's showsLandingHero() + useWalkinPlaneAvailable(),
+            required together as `showHero` above). The LAN origin resolves
+            `anon` too (no /auth/* there at all) but has no broker behind
+            `/walkin/state` — a capability check, not a hostname test, so a
+            LAN visitor still gets a hero on the very first frame and settles
+            on the grid the instant the check confirms there is nothing to
+            claim, rather than a machine that 404s the moment it is touched.
+            It replaces the three static poster cards a stranger used to get
+            at /walkin, which told nobody what this museum is because it
+            asked them to press something before anything moved.
 
             `admin`, `viewer` and `walkin` get `/` exactly as it rendered
             before this session (`git show d9476c3e:spa/src/App.tsx`): the
             plain grid behind the shared TopBar. A conversion pitch and a
             free-minute countdown are noise to a visitor who already has a
-            seat — see heroAudience.ts for the four-role decision and its
-            test. */}
+            seat — see heroAudience.ts for the full decision and its test. */}
         <Route
           path="/"
           element={
-            showsLandingHero(role)
+            showHero
               ? <LandingPage onOpenPlacard={openPoster} />
               : <>{TopBar}<GridView onOpenPlacard={openPoster} /></>
           }
