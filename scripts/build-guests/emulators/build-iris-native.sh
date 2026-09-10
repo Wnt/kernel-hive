@@ -30,6 +30,28 @@
 # is behaviourally identical to upstream at $IRIS_COMMIT and the live station
 # can keep running off it until cutover.
 #
+# THE ENV THE STATION MUST SET (measured on the iris-a rig, 2026-09-10):
+#
+#   IRIS_SHM_PATH=<station>/run/fb.shm   frames; unset = no frame plane at all
+#   IRIS_SHM_GEOMETRY=1280x1024          REQUIRED. The VC2 decode settles at
+#                                        1282x1024 and the registry declares
+#                                        1280x1024; the consumer has no crop
+#                                        knob, so the crop is decided here.
+#                                        The two discarded columns are real
+#                                        right-edge overscan, NOT black padding.
+#   IRIS_CTL_SOCK=<station>/run/ctl.sock input (mamectl/1)
+#   SH_SHM_DAMAGE=0                      station-side: the producer publishes a
+#                                        REAL scanline band, so the daemon must
+#                                        not re-derive one
+#
+# And the flag: --no-window, NOT --ci. --ci also swaps the SCC serial backends
+# and redirects every overlay=true disk to /tmp/iris-ci-<pid>-scsiN.overlay,
+# which makes EVERY launch a cold first boot -- on IRIX that is the ~7-minute
+# autoconfig relink and the reboot after it, every single time. Measured: 247 s
+# from the relink notice to the graphical login on the first launch, and 0 s on
+# the next one once the COW overlay was station-local. The ci control socket is
+# still available alongside --no-window by naming it with --ci-socket.
+#
 # THE TOOLCHAIN IS PINNED ON THE FORK, NOT HERE. Upstream's rust-toolchain.toml
 # says `channel = "nightly"` with no date — a MOVING input, and in this lab the
 # emulator binary is one third of every checkpoint (golden + binary + device set
