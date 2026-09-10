@@ -1,4 +1,4 @@
-import type { WalkinClaim, WalkinPool, WalkinQueued, WalkinState } from '../data/walkinTypes';
+import type { WalkinAnonBudget, WalkinClaim, WalkinPool, WalkinQueued, WalkinState } from '../data/walkinTypes';
 
 // LOCAL DEVELOPMENT FIXTURE for the walk-in plane.
 //
@@ -35,24 +35,59 @@ function state(): WalkinState {
       notice: 'The walk-in machines are off while the lab is being worked on.',
     };
   }
-  return { access: forced === 'invited' ? 'invited' : 'open', pools: [...pools.values()] };
+  return {
+    access: forced === 'invited' ? 'invited' : 'open',
+    pools: [...pools.values()],
+    // `?walkin=anon` previews the ANONYMOUS visitor: the 60-second budget, the
+    // countdown mirroring it and the wall at zero. There is no other way to
+    // look at that state on a staged build, which has no auth plane behind it
+    // and therefore reads every visitor as already signed in. Same lever, same
+    // rule as the states above: this tab's rendering, nothing else.
+    anon: forced === 'anon' ? anonBudget() : undefined,
+  };
 }
 
-function claim(os: string): WalkinClaim | WalkinQueued {
+// The preview budget ticks down in real time from the first look, so both the
+// countdown and the wall at zero can be seen without editing anything. Uses the
+// same clock the real one will: elapsed wall time, recomputed per poll, never
+// accumulated.
+const ANON_BUDGET_SECONDS = 60;
+const anonStartedAt = Date.now();
+
+function anonBudget(): WalkinAnonBudget {
+  const spent = Math.floor((Date.now() - anonStartedAt) / 1000);
+  const remainingSeconds = Math.max(0, ANON_BUDGET_SECONDS - spent);
+  return { budgetSeconds: ANON_BUDGET_SECONDS, remainingSeconds, expired: remainingSeconds <= 0 };
+}
+
+function claim(os?: string): WalkinClaim | WalkinQueued {
   if (query() === 'queued') return { queued: true, position: 2 };
-  const pool = pools.get(os);
+  // No `os` ⇒ the server picks, uniformly, among the pools with free capacity.
+  // The fixture picks the same way so the landing page's random-station path is
+  // the one being looked at, not a hard-wired first entry that would hide a
+  // switcher that never changes anything.
+  const station = os ?? randomFreeStation();
+  if (station === null) return { queued: true, position: 1 };
+  const pool = pools.get(station);
   if (pool && pool.free === 0) return { queued: true, position: 1 };
   if (pool) pool.free = Math.max(0, pool.free - 1);
   return {
     // The clone identity form is frozen in §5.1: walkin-<os>-<n>.
-    clone: `walkin-${os}-1`,
+    clone: `walkin-${station}-1`,
+    station,
     // With no broker there is no per-clone signaling document, so the fixture
     // points at the STATION's own endpoint — the same document the invited
     // gallery streams. That makes the play surface real to look at on a staged
     // build; the live plane replaces it with the clone's own endpoint.
-    signalEndpoint: `/signal/${os}.json`,
+    signalEndpoint: `/signal/${station}.json`,
     ttlSeconds: 1200,
   };
+}
+
+function randomFreeStation(): string | null {
+  const free = [...pools.values()].filter((pool) => pool.free > 0);
+  if (free.length === 0) return null;
+  return free[Math.floor(Math.random() * free.length)].os;
 }
 
 function reset(clone: string): WalkinClaim | WalkinQueued {

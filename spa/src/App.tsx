@@ -10,7 +10,7 @@ import { AdminPage } from './admin/AdminPage';
 import { ObservabilityPage } from './admin/observability/ObservabilityPage';
 import { useManifest } from './data/useManifest';
 import { useSession } from './data/SessionContext';
-import WalkinLanding from './walkin/WalkinLanding';
+import LandingPage from './landing/LandingPage';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
 import { WalkinChrome } from './walkin/WalkinChrome';
@@ -102,11 +102,19 @@ export default function App() {
   return (
     <div className="app-root" ref={appRootRef}>
       <Routes>
-        {/* ---------- DEFAULT: 2D grid ---------- */}
-        <Route
-          path="/"
-          element={<>{TopBar}<GridView onOpenPlacard={openPoster} /></>}
-        />
+        {/* ---------- DEFAULT: the landing page, for EVERY visitor ----------
+            A live, driveable machine above the fold and the decade-grouped
+            collection below it (landing/LandingPage.tsx). It replaces two
+            surfaces at once: the bare grid an invited visitor used to land on,
+            and the three static poster cards a stranger used to get at
+            /walkin. Neither told anybody what this museum is, because both
+            asked them to press something before anything moved.
+
+            The shared TopBar is deliberately NOT rendered here — the landing
+            page carries its own bar, whose job is a first-time visitor rather
+            than a Grid/3D/Fleet switch for somebody who already knows the
+            place. Every other route keeps the bar exactly as it was. */}
+        <Route path="/" element={<LandingPage onOpenPlacard={openPoster} />} />
 
         {/* ---------- Full-viewport live stream of one station (deep-linkable) ---------- */}
         {/* A walk-in never streams a museum STATION — their live surface is
@@ -156,10 +164,13 @@ export default function App() {
             `/walkin/exhibits` is kept — it is a published path and the walk-in
             landing links to it — but for an ACCOUNT it is now just the grid at
             its wider scope, not a separate listing to maintain. */}
-        <Route
-          path="/walkin"
-          element={walkin ? <Navigate to="/" replace /> : <WalkinChrome><WalkinLanding /></WalkinChrome>}
-        />
+        {/* `/walkin` is now `/` for everyone. It stays as a REDIRECT because
+            it is a published path — the one printed on the door — and a
+            bookmark that 404s is a visitor lost for good. The role split it
+            used to carry is gone with the landing page it split: a stranger
+            and a walk-in account get the same front door now, and the server's
+            `anon` budget is what tells them apart. */}
+        <Route path="/walkin" element={<Navigate to="/" replace />} />
         <Route
           path="/walkin/exhibits"
           element={
