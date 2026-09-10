@@ -61,10 +61,9 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # and the pointer-mode knob that arms the loop inside the container. The
     # ledger reads the LAUNCHER, not the fixture, so those are what can be
     # checked -- the fixture then chooses vc2 or the shipped rel fallback.
-    # x11warp is NOT an option here
-    # and must not be re-litigated: that sink carries motion only, and buttons
-    # and keys on a host-native station have no second channel to ride (the
-    # `amix` rollback, 2026-09-09).
+    # x11warp is NOT an option here and must not be re-litigated: that sink
+    # carries motion only, and buttons and keys on a host-native station have no
+    # second channel to ride (the `amix` rollback, 2026-09-09).
     "iris-vc2-closedloop": (
         {"mamesock"},
         ("--setenv=IRIS_CTL_SOCK", "--setenv=IRIS_PTR_MODE"),
