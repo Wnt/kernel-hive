@@ -23,6 +23,7 @@ import { SessionProvider } from './data/SessionContext';
 import { exposePointerRecorder, installPointerRecorder } from './input/pointerRecorder';
 import { exposeKeyRecorder } from './input/keyRecorder';
 import { clientSessionId, initClientDebug, setTelemetryAllowed } from './three/clientDebug';
+import { configureLogSink } from './analytics/logSink';
 import { initAnalytics, reportError } from './analytics';
 import { BUILD_ID } from './analytics/build';
 import { configureInstana, configureInstanaIdentity } from './analytics/instana';
@@ -143,9 +144,11 @@ exposeKeyRecorder();
 // on a blank grid — is the session whose telemetry matters most, and it used
 // to produce nothing at all because every log call hung off a stream that had
 // already failed to start. This also starts the /clientcmd poller, so every
-// tab is reachable for debugging, not just one with a working station open.
-// Walk-in accounts included, since 2026-09-08: the poller is the READ half of
-// the client-debug plane and gate.py admits it for the role (see mount()).
+// SIGNED-IN tab is reachable for debugging, not just one with a working
+// station open. Walk-in accounts included, since 2026-09-08: the poller is
+// the READ half of the client-debug plane and gate.py admits it for that
+// role (see mount()). The anonymous role is the one exception — see
+// `fullTelemetry` in mount().
 
 // The session is resolved BEFORE the first render, and the whole app hangs off
 // the answer. Waiting costs one cheap same-origin request; not waiting is what
@@ -155,10 +158,11 @@ exposeKeyRecorder();
 function mount(session: Session) {
   // Two different questions, and conflating them is what the old path test did.
   //
-  // TELEMETRY (/clientlog) is allowed to any SESSION, walk-in accounts included
-  // — gate.py puts it in WALKIN_PATHS so a stranger's broken stream is still
-  // debuggable. It is also open on the ungated LAN listener and on a staging
-  // preview, where the role reads `anon` because there is no auth plane to ask;
+  // TELEMETRY (/clientlog) is allowed to any SESSION, walk-in accounts AND the
+  // anonymous role included — gate.py puts it in WALKIN_PATHS and ANON_PATHS
+  // so a stranger's broken stream is still debuggable, however they arrived.
+  // It is also open on the ungated LAN listener and on a staging preview,
+  // where the role reads `anon` because there is no auth plane to ask;
   // silencing those would take telemetry away from the two places the lab
   // actually debugs from. The ONE caller that must stay quiet is the signed-out
   // stranger on the /walkin signup door: they have no session, so every flush
@@ -166,42 +170,65 @@ function mount(session: Session) {
   const signedOutAtTheDoor = session.role === 'anon'
     && isWalkinPath(window.location.pathname, import.meta.env.BASE_URL);
   setTelemetryAllowed(!signedOutAtTheDoor);
-  // The feature-reach plane rides the SAME answer, not a second policy: it is
-  // the identical question (may this tab talk to the box at all), and two
-  // separate gates would drift the first time one of them was tightened.
-  // A walk-in signed IN is deliberately included — the walk-in plane is a whole
-  // surface built for strangers, and leaving it out would make it look unused.
+
+  // The FULLER telemetry surface — feature-reach counters (/analytics), spans
+  // (/traces), the correlated log lane (/logs) and Instana EUM (/eum) — is a
+  // NARROWER question than the one above, and conflating the two is the
+  // anon-role recurrence of the exact bug class this file's header already
+  // names for /gallery-manifest.json and /boot/index.json (walkin/route.ts).
+  // gate.py grants an anonymous stranger `/clientlog` and `/vitals` by name
+  // (ANON_PATHS) and refuses everything else here: `/clientcmd`, `/usage`,
+  // `/analytics`, `/traces` and `/eum` are enumerated right beside it as "NOT
+  // granted, each on purpose", and test_anon.py's
+  // `test_the_surfaces_a_walk_in_earned_by_registering_stay_earned` locks
+  // /traces and /eum specifically to "a walk-in earns this by registering, a
+  // stranger never does". So the gate for all four is `role !== 'anon'`, not
+  // `!signedOutAtTheDoor` — and it is a strict NARROWING of it: every role
+  // that is not `anon` makes `signedOutAtTheDoor` false by construction too,
+  // so nothing a walk-in or an invited session could already reach changes
+  // here. Only the anonymous visitor AWAY from the walk-in door — the case
+  // `signedOutAtTheDoor` was never written to cover — loses anything.
+  const fullTelemetry = session.role !== 'anon';
   initAnalytics({
     // clientDebug's id, not a second one: /clientlog stamps this same value on
     // every raw event, so a trace and the event tail behind it join on it.
     sessionId: clientSessionId(),
-    allowed: !signedOutAtTheDoor,
+    allowed: fullTelemetry,
     // WHO, when there is a who. The gallery has named invited accounts and
     // pseudonymous walk-in handles, and both are wanted on the trace —
     // "which account hit this" is the first question a report opens with.
     // Omitted entirely for `anon`, which is a UI shape and not a person.
     user: session.role === 'anon' || !session.id ? undefined : session,
   });
+  // The correlated log lane (docs/ANALYTICS.md §8.5) rides `fullTelemetry`,
+  // not `/clientlog`'s broader answer above — see `setTelemetryAllowed`'s own
+  // header in clientDebug.ts for why the two sinks stopped sharing one switch.
+  configureLogSink({ allowed: fullTelemetry, sessionId: clientSessionId() });
   // Instana EUM (analytics/instana.ts) rides the SAME session id and the SAME
-  // `allowed` gate as the plane above — a build with no website key configured
-  // makes every call inside a no-op regardless, but a signed-out stranger at
-  // the walk-in door must never be handed to Instana just because their build
-  // happens to be configured. configureInstana sets the pseudonymous identity;
-  // configureInstanaIdentity immediately upgrades it to the real account when
-  // one exists (see that function's header for why both calls are needed and
-  // why nothing here calls `ineum('terminateSession')`).
-  if (!signedOutAtTheDoor) {
+  // `fullTelemetry` gate as the plane above — a build with no website key
+  // configured makes every call inside a no-op regardless, but neither a
+  // signed-out stranger at the walk-in door nor an anonymous visitor anywhere
+  // else must be handed to Instana just because their build happens to be
+  // configured (`/eum` sits in the same "not granted" set as `/traces`).
+  // configureInstana sets the pseudonymous identity; configureInstanaIdentity
+  // immediately upgrades it to the real account when one exists (see that
+  // function's header for why both calls are needed and why nothing here
+  // calls `ineum('terminateSession')`).
+  if (fullTelemetry) {
     configureInstana(clientSessionId());
     configureInstanaIdentity(session);
   }
-  // Telemetry's first row and the operator poller ride the SAME answer again —
-  // every signed-in tab, walk-in accounts INCLUDED. Until 2026-09-08 the
-  // walk-in shape skipped this, so a stranger whose stream never painted was
-  // the one session `clientcmd.sh sessions` could not list and `eval` could
-  // not reach; gate.py now admits `GET /clientcmd` for the role alongside the
-  // `/clientlog` sink it always allowed. Only the signed-out stranger at the
-  // door stays quiet, for the reason above.
-  if (!signedOutAtTheDoor) initClientDebug(session.role);
+  // Telemetry's first row (/clientlog) and the operator poller (/clientcmd) no
+  // longer ride the same answer. Until 2026-09-08 the walk-in shape skipped
+  // both, so a stranger whose stream never painted was the one session
+  // `clientcmd.sh sessions` could not list and `eval` could not reach; gate.py
+  // now admits `GET /clientcmd` for a REGISTERED walk-in alongside the
+  // `/clientlog` sink it always allowed. It does not admit it for the
+  // anonymous role, so `poll: fullTelemetry` is the difference:
+  // `initClientDebug` still logs `session-start` to `/clientlog` for every
+  // non-door session, walk-in and anon alike, and starts the `/clientcmd`
+  // poll only for the sessions gate.py will actually answer.
+  if (!signedOutAtTheDoor) initClientDebug(session.role, { poll: fullTelemetry });
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
