@@ -4,7 +4,14 @@ import type { OSBinding } from '../three/archetypeRegistry';
 import type { EnrichedVM } from '../types';
 import type { WalkinClaim } from '../data/walkinTypes';
 import { posterFor } from '../data/posterIndex';
-import { heroCaption, pickMediaSize, statusCells, type HeroRunState, type MediaSize } from './heroStatus';
+import {
+  POSTER_FALLBACK_CAPTION,
+  heroCaption,
+  pickMediaSize,
+  statusCells,
+  type HeroRunState,
+  type MediaSize,
+} from './heroStatus';
 import { heroBlockedLine } from './heroPolicy';
 import { stationCopy } from './stations';
 import { ConversionGate } from './gate';
@@ -151,8 +158,7 @@ export function HeroStage({
   useStageInput(stageRef, hero.noteInput, claim !== null);
 
   const state = runStateOf(hero, size);
-  const stoppedFor = phase.kind === 'stopped' ? phase.station : null;
-  const shown = station ?? stoppedFor ?? POSTER_STATION;
+  const shown = station ?? POSTER_STATION;
   const copy = stationCopy(shown);
   const poster = posterFor(shown)?.hero;
   const stop = phase.kind === 'stopped' ? phase.reason : undefined;
@@ -218,7 +224,7 @@ export function HeroStage({
       </div>
 
       <p className="landing-caption">
-        {hero.playable ? heroCaption(state, station ? copy.name : null, stop) : heroBlockedLine(hero.caps)}
+        {hero.playable ? heroCaption(state, station ? copy.name : null, stop) : POSTER_FALLBACK_CAPTION}
         {state === 'running' && !hero.driven && hero.graceLeft > 0 && (
           <span className="landing-caption__grace">
             {' '}Touch it within {hero.graceLeft}s or it goes back to the pool for the next visitor.

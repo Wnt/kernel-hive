@@ -32,6 +32,8 @@ export function LandingTop() {
   const listed = useMuseum((s) => s.listedVms);
   const vm = useMuseum((s) => s.vms.find((entry) => entry.id === hero.station));
 
+  const running = hero.phase.kind === 'live';
+  const exhibits = listed.length > 0 ? `See all ${listed.length} exhibits` : 'See the collection';
   const pools = hero.state?.pools ?? [];
   const free = pools.reduce((n, pool) => n + pool.free, 0);
   const size = pools.reduce((n, pool) => n + pool.size, 0);
@@ -121,20 +123,35 @@ export function LandingTop() {
             gets a pristine one.
           </p>
 
+          {/* The primary action is whatever the visitor does NOT already have.
+              With no machine on screen that is a machine; with one running it
+              is the rest of the museum — and the accent has to move with it,
+              or a page whose hero succeeded is a page with no call to action
+              on it at all. */}
           <div className="landing-hero__cta">
-            {hero.playable && hero.phase.kind !== 'live' && (
-              <button
-                type="button"
-                className="landing-btn landing-btn--primary landing-btn--big"
-                disabled={hero.busy || closed}
-                onClick={() => hero.take(null)}
-              >
-                {hero.busy ? 'Finding you a machine…' : 'Give me a machine'}
-              </button>
-            )}
-            <button type="button" className="landing-btn landing-btn--quiet landing-btn--big" onClick={scrollToCollection}>
-              See all {listed.length > 0 ? listed.length : ''} exhibits
-            </button>
+            {running
+              ? (
+                <button type="button" className="landing-btn landing-btn--primary landing-btn--big" onClick={scrollToCollection}>
+                  {exhibits}
+                </button>
+              )
+              : (
+                <>
+                  {hero.playable && (
+                    <button
+                      type="button"
+                      className="landing-btn landing-btn--primary landing-btn--big"
+                      disabled={hero.busy || closed}
+                      onClick={() => hero.take(null)}
+                    >
+                      {hero.busy ? 'Finding you a machine…' : 'Give me a machine'}
+                    </button>
+                  )}
+                  <button type="button" className="landing-btn landing-btn--quiet landing-btn--big" onClick={scrollToCollection}>
+                    {exhibits}
+                  </button>
+                </>
+              )}
             {hero.remainingSeconds !== null && hero.budgetSeconds !== null && (
               <Countdown remainingSeconds={hero.remainingSeconds} budgetSeconds={hero.budgetSeconds} />
             )}

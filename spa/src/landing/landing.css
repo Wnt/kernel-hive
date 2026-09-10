@@ -166,13 +166,28 @@
   box-shadow: var(--shadow-2), 0 0 0 1px color-mix(in srgb, var(--station-accent, var(--accent)) 22%, transparent);
 }
 
-.landing-stage__poster { position: absolute; inset: 0; display: grid; }
+/* One cell, two stacked children. The explicit row is not decoration: with an
+   auto row the 4:3 image sizes the row from its own aspect ratio and overflows
+   the stage's clamped height by ~30px. */
+.landing-stage__poster {
+  position: absolute; inset: 0;
+  display: grid; grid-template-areas: 'plate'; grid-template-rows: minmax(0, 1fr);
+}
 .landing-stage__shot {
-  grid-area: 1 / 1; width: 100%; height: 100%; object-fit: cover;
+  grid-area: plate; width: 100%; height: 100%; object-fit: cover;
   filter: saturate(0.82) brightness(0.62);
 }
+/* POSITIONED, and that is the whole reason this rule has a comment. A `filter`
+   other than `none` gives the <img> above a stacking context, which moves it
+   out of the in-flow block layer and into the z-index:0 layer — ABOVE a plain
+   block sibling however late it appears in the DOM. Painted that way the veil
+   and its sentence were behind the picture and invisible, which a staged
+   browser probe caught on 2026-09-10 and no amount of reading the JSX would
+   have. Giving the veil a position and a z-index puts both children in the
+   same layer, where tree order decides and the later one wins. */
 .landing-stage__veil {
-  grid-area: 1 / 1; display: flex; flex-direction: column; gap: 14px;
+  grid-area: plate; position: relative; z-index: 1;
+  display: flex; flex-direction: column; gap: 14px;
   align-items: center; justify-content: center; text-align: center;
   padding: clamp(18px, 4vw, 40px);
   background: linear-gradient(180deg, rgba(5, 6, 10, 0.35), rgba(5, 6, 10, 0.72));

@@ -45,6 +45,10 @@ function selectedStation(phase: HeroPhase): string | null {
   if (phase.kind === 'live') return phase.station;
   if (phase.kind === 'claiming') return phase.want;
   if (phase.kind === 'queued') return phase.want;
+  // A machine the page handed back is still the one on the poster, so it stays
+  // selected: a switcher that deselects everything reads as a switcher that
+  // lost track of what it is showing.
+  if (phase.kind === 'stopped') return phase.station;
   return null;
 }
 

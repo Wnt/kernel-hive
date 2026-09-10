@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { heroCaption, pickMediaSize, runStateLabel, statusCells } from './heroStatus';
+import { POSTER_FALLBACK_CAPTION, heroCaption, pickMediaSize, runStateLabel, statusCells } from './heroStatus';
 
 describe('pickMediaSize', () => {
   it('takes the first element that has actually decoded something', () => {
@@ -39,6 +39,16 @@ describe('statusCells', () => {
       expect(runStateLabel(state)).not.toBe('RUNNING');
     }
     expect(runStateLabel('running')).toBe('RUNNING');
+  });
+});
+
+describe('POSTER_FALLBACK_CAPTION', () => {
+  it('does not repeat the capability sentence printed across the poster', () => {
+    expect(POSTER_FALLBACK_CAPTION).not.toMatch(/WebRTC|WebTransport|browser/i);
+  });
+
+  it('says what this visitor can still do instead', () => {
+    expect(POSTER_FALLBACK_CAPTION).toMatch(/collection|placard/i);
   });
 });
 

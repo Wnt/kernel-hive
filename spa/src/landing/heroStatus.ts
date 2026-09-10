@@ -123,6 +123,18 @@ export function heroCaption(state: HeroRunState, station: string | null, stop?: 
 }
 
 /**
+ * The line UNDER the stage when the picture is a still.
+ *
+ * Deliberately not the capability sentence again: that one is already printed
+ * across the poster itself (heroPolicy.heroBlockedLine), and a page that says
+ * the same thing twice in two type sizes reads as an error page. This is the
+ * other half of the answer — what this visitor CAN do here — because a browser
+ * that cannot stream can still read every placard in the museum.
+ */
+export const POSTER_FALLBACK_CAPTION =
+  'The collection below is all still here: every exhibit has its placard, its photographs and the story of what it was for.';
+
+/**
  * Why the machine went away, in the visitor's terms.
  *
  * Never "disconnected" and never a blank stage: two of the three reasons are

@@ -77,7 +77,10 @@ function beaconRelease(clone: string): void {
 
 export interface HeroSession {
   phase: HeroPhase;
-  /** The station on screen, or null. */
+  /** The station this hero is ABOUT: the one streaming, or — after the page
+   *  handed a cell back — the one it was. Kept through a stop so the strip, the
+   *  poster and the switcher all keep naming the same machine instead of
+   *  reverting to a default the visitor never chose. */
   station: string | null;
   /** Live pool status + access + the anonymous budget, straight from the plane. */
   state: WalkinState | null;
@@ -145,13 +148,16 @@ export function useHeroSession(): HeroSession {
   useEffect(() => { polledAtRef.current = Date.now(); }, [state]);
   const [nowTick, setNowTick] = useState(() => Date.now());
 
+  const holding = heldClone(phase) !== null;
   const anon = state?.anon;
   // A signed-in visitor has no countdown, so nothing on this page changes every
   // second for them and the tick must not re-render the hero. Held in a ref so
   // the watchdog interval below can read it without re-subscribing.
   const hasClockRef = useRef(false);
   hasClockRef.current = state?.anon !== undefined;
-  const remainingSeconds = anon ? mirroredRemaining(anon.remainingSeconds, polledAtRef.current, nowTick) : null;
+  const remainingSeconds = anon
+    ? mirroredRemaining(anon.remainingSeconds, polledAtRef.current, nowTick, holding)
+    : null;
   const expired = anon ? anon.expired || remainingSeconds === 0 : false;
 
   /** Release whatever is held, without changing the phase. */
@@ -299,7 +305,7 @@ export function useHeroSession(): HeroSession {
 
   return {
     phase,
-    station: liveStation(phase),
+    station: liveStation(phase) ?? (phase.kind === 'stopped' ? phase.station : null),
     state,
     remainingSeconds,
     budgetSeconds: anon?.budgetSeconds ?? null,

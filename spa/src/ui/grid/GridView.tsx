@@ -106,6 +106,20 @@ function writeFoldState(state: FoldState): void {
 // load (including a direct /os/:osId deep-link) still starts at the top.
 let savedScrollTop: number | null = null;
 
+/**
+ * The header's stable identity across this component's two return shapes.
+ *
+ * Not cosmetic, and it cost a live machine to find: the loading branch below
+ * renders the header as child 0 and the loaded branch renders it as child 1
+ * (after the pull-to-refresh affordance), so unkeyed reconciliation matched it
+ * against a DIFFERENT element the moment the manifest arrived and REMOUNTED the
+ * whole subtree. On the landing page that subtree is a claimed machine and a
+ * live stream: a browser probe against the staged build (2026-09-10) saw two
+ * claims and two connects on one page load. One key, and the header survives
+ * the transition it has no reason to notice.
+ */
+const HEADER_KEY = 'grid-view-header';
+
 export interface GridViewProps {
   /** Walk-in only: open the read-only placard for an exhibit nobody may drive. */
   onOpenPlacard?: (osId: string) => void;
@@ -311,7 +325,7 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable', hea
     // machine down with it.
     return (
       <div className="grid-view">
-        {header}
+        <div className="grid-view-header" key={HEADER_KEY}>{header}</div>
         <div className="grid-empty">Loading the collection…</div>
       </div>
     );
@@ -340,7 +354,7 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable', hea
           ↻
         </span>
       </div>
-      {header}
+      <div className="grid-view-header" key={HEADER_KEY}>{header}</div>
       <div className="grid-view-inner">
         {/* The walk-in scope switch. "Machines you can play" is the default
             because it is what the visitor came for; "The whole museum" is the

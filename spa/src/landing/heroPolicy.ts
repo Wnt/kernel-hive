@@ -180,8 +180,22 @@ export function shouldAutoClaim(f: AutoClaimFacts): boolean {
  * since that poll, which means a poll landing late, early or out of order snaps
  * the display to the truth instead of drifting away from it. Clamped at zero —
  * a negative countdown is a number no visitor should ever be shown.
+ *
+ * `connected` is not a refinement, it is the definition. The budget is sixty
+ * seconds of CONNECTED time, so a visitor holding no machine is spending
+ * nothing and their clock must stand still. Ticking it down anyway would run
+ * the display away from the server between polls and then jump it back up on
+ * the next one — which is exactly what a staged probe saw when the page's own
+ * idle-release handed the machine back at fifteen seconds and the countdown
+ * kept counting.
  */
-export function mirroredRemaining(serverSeconds: number, polledAt: number, now: number): number {
-  const elapsed = Math.floor(Math.max(0, now - polledAt) / 1000);
-  return Math.max(0, Math.floor(serverSeconds) - elapsed);
+export function mirroredRemaining(
+  serverSeconds: number,
+  polledAt: number,
+  now: number,
+  connected = true,
+): number {
+  const floor = Math.max(0, Math.floor(serverSeconds));
+  if (!connected) return floor;
+  return Math.max(0, floor - Math.floor(Math.max(0, now - polledAt) / 1000));
 }

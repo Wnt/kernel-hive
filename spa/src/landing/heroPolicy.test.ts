@@ -171,4 +171,16 @@ describe('mirroredRemaining', () => {
   it('ignores a clock that ran backwards between polls', () => {
     expect(mirroredRemaining(30, T0, T0 - 5_000)).toBe(30);
   });
+
+  it('STANDS STILL while the visitor holds no machine', () => {
+    // The budget is sixty seconds of CONNECTED time. A disconnected visitor is
+    // spending nothing, and a clock that ran anyway would sprint away from the
+    // server between polls and jump back up on the next one.
+    expect(mirroredRemaining(45, T0, T0 + 30_000, false)).toBe(45);
+    expect(mirroredRemaining(45, T0, T0 + 30_000, true)).toBe(15);
+  });
+
+  it('still refuses to render a negative number when disconnected', () => {
+    expect(mirroredRemaining(-4, T0, T0, false)).toBe(0);
+  });
 });
