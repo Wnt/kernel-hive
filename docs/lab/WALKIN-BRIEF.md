@@ -1,10 +1,23 @@
 # Walk-in brief — three stations for anyone on the web
 
-**Status: PLANNING, P0 complete.** Nothing in this brief is built. It exists so
-the epic has one agreed shape before the first branch is cut. The lineup, the
-network plane and the emulator posture are settled ([§3](#3-which-three-oses),
-[§6](#6-security-model)); every P0 decision is recorded in
-[§9](#9-decisions). P1 is ready to cut.
+**Status: BUILT AND LIVE.** This brief is the design record, not a plan — read
+it for *why* the walk-in plane is shaped the way it is, and read the code and
+[`walkin/CONTRACT-LEDGER.md`](walkin/CONTRACT-LEDGER.md) for what it does now.
+The plane is `scripts/serve/walkin/` plus `scripts/serve/auth/walkin.py`, the
+network plane is [`walkin/NETWORK-PLANE.md`](walkin/NETWORK-PLANE.md) (live
+since 2026-08-25), and all three stations are enabled.
+
+Two things in the sections below are now **out of date, deliberately left in
+place** because the reasoning still explains the shape:
+
+- **§9 decision 6's slot range.** The pool no longer borrows slots from the
+  middle of station territory. It has its own UDP window, 54256-54511, so
+  growing the pool can never collide with a live station again — see
+  [`walkin/LANDING-REDESIGN-CONTRACT.md`](walkin/LANDING-REDESIGN-CONTRACT.md)
+  and `scripts/serve/walkin/naming.py`, which is the only source of truth.
+- **"register an account, then play."** That order is inverted. A stranger now
+  drives a real machine for 60 seconds with no account at all, and the passkey
+  is what they do *after* the machine has already earned it.
 
 The epic: let **anyone on the internet register an account and play with three
 stations** — no invite, no operator in the loop. Today the public gallery is
