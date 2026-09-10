@@ -201,8 +201,8 @@
   },
   "emulator": {
     "family": "Iris",
-    "version": "1e05210",
-    "source": "scripts/build-guests/tiles/indyr4400.sh (github.com/techomancer/iris main)",
+    "version": "0540991",
+    "source": "scripts/build-guests/tiles/indyr4400.sh (github.com/techomancer/iris main, features lightning,rex-jit,chd,jitv2)",
     "driver": "SGI Indy R4400"
   },
   "ui": "desktop",

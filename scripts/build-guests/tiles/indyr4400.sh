@@ -95,7 +95,14 @@ BRIDGE_BASE="${BRIDGE_BASE:-$(bridge_base_for "$SUITE")}" # env override wins
 # cannot silently reuse the wrong-ABI one that is already sitting in ASSET_DIR.
 IRIS_BIN="${ASSET_DIR}/iris-${SUITE}" # ABI-matched binary, built by --build-iris
 IRIS_REPO="https://github.com/techomancer/iris"
-IRIS_COMMIT="1e05210" # pinned; features lightning,rex-jit,chd
+IRIS_COMMIT="0540991" # pinned (main 2026-09-08). Upstream now pins a NIGHTLY toolchain in
+# rust-toolchain.toml, which rustup fetches inside the chroot on first build.
+# Bumped from 1e05210 on 2026-09-09 and measured on clones against the old pin and
+# the MAME irix station — docs/guests/indyr4400.md "Upstream bump 2026-09-09".
+# jitv2 is ON: at 0540991 it boots IRIX clean (the 43d2715 wedge is gone) and runs
+# a fixed CPU workload 4.2x faster than the interpreter, level with MAME's DRC.
+# It does NOT touch the pointer lag, which is the bridge path, not the core.
+IRIS_FEATURES="lightning,rex-jit,chd,jitv2"
 CHROOT="/data/vms/sandbox/indyr4400-${SUITE}"
 
 FORCE=0
@@ -228,7 +235,7 @@ build_iris_native() {
     cd "$CHROOT/build"
     git checkout "$IRIS_COMMIT"
     unset CARGO_TARGET_DIR # the box sets a shared target dir; keep ours local
-    cargo build --release --features lightning,rex-jit,chd
+    cargo build --release --features ${IRIS_FEATURES}
   )
   install -d -m 0755 "$ASSET_DIR"
   install -m 0755 "$CHROOT/build/target/release/iris" "$IRIS_BIN"
@@ -259,7 +266,7 @@ build_iris_chroot() {
     set -e
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq build-essential pkg-config libasound2-dev curl ca-certificates git
+    apt-get install -y -qq build-essential pkg-config libasound2-dev curl ca-certificates git cmake clang
     curl -sSf https://sh.rustup.rs -o /tmp/ru.sh
     sh /tmp/ru.sh -y --default-toolchain none --profile minimal'
   chroot "$CHROOT" /bin/bash -lc "
@@ -268,7 +275,7 @@ build_iris_chroot() {
     unset CARGO_TARGET_DIR   # the box sets a shared target dir; keep ours local
     git clone ${IRIS_REPO} /build
     cd /build && git checkout ${IRIS_COMMIT}
-    cargo build --release --features lightning,rex-jit,chd"
+    cargo build --release --features ${IRIS_FEATURES}"
   install -d -m 0755 "$ASSET_DIR"
   install -m 0755 "$CHROOT/build/target/release/iris" "$IRIS_BIN"
   chroot_guard_umount_all "$CHROOT" || {
