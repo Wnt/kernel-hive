@@ -203,7 +203,11 @@ export function HeroStage({
                 {hero.playable ? heroCaption(state, copy.name, stop) : heroBlockedLine(hero.caps)}
               </p>
               {hero.playable && state !== 'connecting' && (
-                <button type="button" className="landing-btn landing-btn--primary" onClick={() => hero.take(null)}>
+                <button
+                  type="button"
+                  className="landing-btn landing-btn--primary"
+                  onClick={() => { hero.notePresence(); hero.take(null); }}
+                >
                   {state === 'queued' ? 'Try another machine' : 'Start a machine'}
                 </button>
               )}

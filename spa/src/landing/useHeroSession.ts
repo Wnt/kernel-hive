@@ -98,8 +98,11 @@ export interface HeroSession {
   busy: boolean;
   /** Take a machine: a station id, or null for "whichever the server picks". */
   take: (os: string | null) => void;
-  /** A trusted pointer/key on the stage. Stops the aggressive release. */
+  /** A trusted pointer/key on the stage — input into the guest itself. */
   noteInput: () => void;
+  /** A trusted press anywhere on the hero (a chip, the call to action). Proves
+   *  a person is here, which is all the aggressive release ever asked. */
+  notePresence: () => void;
   /** Give the machine back on purpose. */
   stop: () => void;
 }
@@ -177,8 +180,14 @@ export function useHeroSession(): HeroSession {
     telRef.current?.claiming({ reset: attemptsRef.current > 0 });
     attemptsRef.current += 1;
     setPhase({ kind: 'claiming', want: os });
-    setDriven(false);
-    lastInputRef.current = null;
+    // NOTE what is deliberately NOT reset here: `lastInputRef`. Presence is a
+    // fact about the PERSON, not about the cell, so a visitor who has already
+    // shown they are there does not have to prove it again for every machine
+    // they try. Resetting it made the page take a machine away from somebody
+    // who had pressed a chip twelve seconds earlier and was reading the
+    // desktop it gave them — which a switch probe caught on the staged build,
+    // and which no amount of clicking around by hand would have, because a
+    // hand always clicks the guest next.
 
     void (async () => {
       for (const step of steps) {
@@ -233,13 +242,25 @@ export function useHeroSession(): HeroSession {
   }, [playable, state, role, anon, take]);
 
   // ---- the visitor's own input --------------------------------------------
-  const noteInput = useCallback(() => {
+  /** Somebody is here. Satisfies the never-driven release and nothing else. */
+  const notePresence = useCallback(() => {
     lastInputRef.current = Date.now();
-    // The end of `walkin.play.toPlayableMs`: a clone that paints perfectly and
-    // is never touched is one the pool spent for nothing.
-    telRef.current?.drove();
     setDriven(true);
   }, []);
+
+  /**
+   * A deliberate input INTO THE GUEST — narrower than presence, and kept
+   * separate for one reason: `drove()` is the end of
+   * `walkin.play.toPlayableMs`, "the first moment the machine is demonstrably
+   * usable rather than merely painted" (walkin/playTelemetry.ts). A press on a
+   * switcher chip proves a person is on the page; it proves nothing about the
+   * guest, and feeding it to that metric would report a machine as usable
+   * before anybody had touched it.
+   */
+  const noteInput = useCallback(() => {
+    notePresence();
+    telRef.current?.drove();
+  }, [notePresence]);
 
   /** Hand the machine back and say so. The stage's own exit affordance, which
    *  on this page has nowhere to go BACK to — leaving is releasing. */
@@ -317,6 +338,7 @@ export function useHeroSession(): HeroSession {
     busy: isBusy(phase),
     take,
     noteInput,
+    notePresence,
     stop,
   };
 }

@@ -81,7 +81,14 @@ export function LandingTop() {
 
   const pick = useCallback((os: string) => {
     telRef.current?.chose();
+    // Pressing a chip is a person, whether or not it changes the machine.
+    hero.notePresence();
     hero.take(os);
+  }, [hero]);
+
+  const takeAny = useCallback(() => {
+    hero.notePresence();
+    hero.take(null);
   }, [hero]);
 
   const scrollToCollection = useCallback(() => {
@@ -142,7 +149,7 @@ export function LandingTop() {
                       type="button"
                       className="landing-btn landing-btn--primary landing-btn--big"
                       disabled={hero.busy || closed}
-                      onClick={() => hero.take(null)}
+                      onClick={takeAny}
                     >
                       {hero.busy ? 'Finding you a machine…' : 'Give me a machine'}
                     </button>
