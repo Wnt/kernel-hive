@@ -254,11 +254,11 @@ that module is on `main`, lane 2 rebases — it does not create the module.
 | Sandbox root | `/data/vms/walkin/<identity>/` | — |
 | Tap | `wi-<os>-<n>` (≤15 chars, kernel limit) | `wi-os2warp-3` |
 | systemd | `walkin.slice`, `walkin-clone@<identity>.service` | — |
-| Slot | claimed from **152–200** via `kh-claim` | — |
-| UDP port | `54000 + slot` | slot 152 → 54152 |
-| Cell bridge | `wibr<slot>` — the clone's own L2 domain (§5.4, §6) | `wibr152` |
-| Cell netns | `wicell<slot>` — the cell's NAT namespace | `wicell152` |
-| Cell peer | `10.99.0.<slot-100>` — what the gateway sees (§6) | slot 152 → `10.99.0.52` |
+| Slot | claimed from **256–511** via `kh-claim` — the pool's OWN edge relay window, separate from production territory (`scripts/serve/walkin/naming.py`) | — |
+| UDP port | `54000 + slot` | slot 256 → 54256 |
+| Cell bridge | `wibr<slot>` — the clone's own L2 domain (§5.4, §6) | `wibr256` |
+| Cell netns | `wicell<slot>` — the cell's NAT namespace | `wicell256` |
+| Cell peer | `10.99.0.<52 + slot - 256>` — what the gateway sees (§6); refused past `.100`, a 49-slot ceiling narrower than the slot range itself | slot 256 → `10.99.0.52` |
 | Clone MAC | **not settable** — see §5.4 | — |
 
 Slots, taps and IPs are claimed with `kh-claim` under `$KH_SESSION`. Never
@@ -372,11 +372,55 @@ replaced; the facts stand, and the design leans on them:
   The wire identity is accepted as a fact of the golden and contained by
   topology instead.
 
-`poolSize` is therefore a real knob, **3 per station** as shipped (schema cap
-8). The remaining ceiling is honest and bounded: CPU (three resumed TCG guests
-per station), the 49-slot claim range, and the visitor-facing
-`ACTIVE_SESSION_CAP` — not the network. Growing a pool still never needs a
-per-station walk-in golden, and no golden was recaptured for any of this.
+`poolSize` is therefore a real knob: **3 per station as shipped**, raised to
+**8 per station** (schema cap, unchanged) on 2026-09-10. The remaining ceiling
+is honest and bounded: CPU (eight resumed TCG guests per station once
+`ACTIVE_SESSION_CAP` — raised to 24 the same day, matching the pool — lets that
+many run at once) and the claim range, **not the network**. Growing a pool
+still never needs a per-station walk-in golden, and no golden was recaptured
+for any of this.
+
+**The claim range moved off the fleet's own numbering entirely for the
+2026-09-10 raise, rather than being re-cut again.** It was already the 152–170
+block this section originally described as 152–200: that first cut came when
+the production fleet needed slots back (see `aix432.json`'s own scaffold
+comment), and by the time poolSize needed to grow, 171–193 were live
+stations too — the old block had nowhere left to grow into, short 5 of the
+24 slots the raise needed, with production on every side of it. A same-day
+operator decision (`Wnt/forwarder` `deploy/site.env` `UDP_RELAY_PORT_RANGE`,
+commit 530c9f3, CI-deployed to the edge's nftables) widened the edge relay
+window instead of re-cutting again — 54080–54200 to 54080–54511 — and gave
+the walk-in pool its **own** window, wholly separate from production
+territory: `scripts/serve/walkin/naming.py`'s `SLOT_MIN`/`SLOT_MAX` are now
+256–511 (256 slots, 10x the 24 needed), and the OLD 152–170 reservation is
+**vacated back to the production fleet**, which badly needed it —
+`scripts/stations_registry/generate.py`'s `slot_refusal` no longer reserves
+it, and now refuses a production `--slot auto` that would wander into
+256–511 instead. `scripts/test_stations_registry_slots.py` asserts the two
+territories stay disjoint against the real registry, not a fixture.
+
+**The slot range is not the pool's real ceiling — the peer IP is.** Every
+clone's SNAT peer must stay inside the reserved `10.99.0.52`–`.100` block
+(§6), which is 49 addresses; `naming.cell_peer_ip` computes `52 + slot -
+SLOT_MIN` and refuses past `.100` rather than silently wrapping the octet or
+colliding with a baked station address above it, so the pool's real ceiling
+is **49 concurrently held slots**, not the 256-slot width of
+`SLOT_MIN..SLOT_MAX`. `scripts/retronet/walkin-net/wi-clonecell.sh` mirrors
+this exact formula and ceiling (`WALKIN_PEER_BASE`) — it is what actually
+programs the SNAT rule on the box, so the two must never disagree.
+
+**Migration.** The nine clones running under the old scheme at slots 152–160
+(bridges `wibr152`–`wibr160`, cells `wicell152`–`wicell160`) are orphaned by
+this move, not migrated: the broker's own `naming.py` no longer recognises
+those slots as its own the moment it restarts on this change, so `reap_orphan_dirs`,
+`reap_orphan_taps` and `reap_orphan_cells` (`scripts/serve/walkin/reaper.py`)
+sweep them on the next tick exactly as they sweep any other orphan — none of
+the three ever gate on `naming.SLOT_MIN`/`SLOT_MAX`, only on the kernel's own
+interface list and the claim registry, so a slot outside today's window is
+swept the same as one inside it. `wi-clonecell.sh`'s own `SLOT_MIN` is
+deliberately left at 152 (wider than `WALKIN_PEER_BASE`) so `down`/`verify`
+can still reach these during the sweep; only `cell_up` — which never targets
+them again — enforces the peer-IP ceiling.
 
 ### 5.5 The pool's lock is never held over a clone's life
 
@@ -533,10 +577,11 @@ watching them decay in station-specific ways:
 The wave ends **deployed on the production URL at Invited only**, so enabling is
 one click. Everything a switch position cannot change must be true first:
 
-1. **Edge relay range verified live** — `udp 54080-54200` DNAT on the edge VPS
-   actually covers slots 152–200. Verified against the edge, not read off a doc:
-   slots 131–134 once shipped broken while looking perfectly healthy against a
-   `54130` cap ([`../../PUBLIC-GALLERY.md`](../../PUBLIC-GALLERY.md)).
+1. **Edge relay range verified live** — `udp 54080-54511` DNAT on the edge VPS
+   actually covers the pool's window (256–511, port 54256-54511). Verified
+   against the edge, not read off a doc: slots 131–134 once shipped broken
+   while looking perfectly healthy against a `54130` cap
+   ([`../../PUBLIC-GALLERY.md`](../../PUBLIC-GALLERY.md)).
 2. Serving plane deployed **and restarted** — new routes do not travel without it.
 3. `auth-state.json` migrated in place on the live file (§4.1).
 4. Service worker not serving a stale shell over the new routes (the SPA is an

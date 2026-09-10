@@ -37,7 +37,7 @@ set -u
 # MUST equal ports.publicRelayLow-publicRelayHigh in registry/registry-v1.json.
 # scripts/stations-registry.py asserts these agree, because the failure mode when
 # they drift is invisible: every check on labhost stays green.
-RELAY_RANGE_DEFAULT="54080-54200"
+RELAY_RANGE_DEFAULT="54080-54511"
 RELAY_PEER_DEFAULT="10.66.0.3"
 NFT_PERSIST="/etc/nftables.conf"
 

@@ -183,7 +183,8 @@ class SlotClaim:
 
 
 def claim_slot(identity: str, preferred: int | None = None) -> SlotClaim:
-    """Take one free slot in 152-200, with its UDP port, or raise.
+    """Take one free slot in `naming.SLOT_MIN`-`naming.SLOT_MAX`, with its UDP
+    port, or raise.
 
     `preferred` re-takes a specific slot (a respawn keeping its own number, so a
     visitor's reconnect does not chase a moving port); it is still a take, not a

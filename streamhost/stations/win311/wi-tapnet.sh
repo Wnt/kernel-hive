@@ -152,7 +152,8 @@ verify_rules() {
   grep -qx -- "-A $IN_CHAIN -j DROP" <<<"$s" || return 1
 }
 
-# With poolSize 3 the siblings are real now — three cells, one shared chain.
+# With poolSize > 1 the siblings are real (poolSize 8 as of 2026-09-10) — up to
+# eight cells, one shared chain, found by glob below rather than a count.
 # The chain is per-STATION, and a containment script that assumes
 # it is alone is one policy change away from unhooking a live guard. Only the
 # last win311 tap to leave removes it.

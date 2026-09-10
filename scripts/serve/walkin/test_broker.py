@@ -262,7 +262,7 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(len(entries), 2)
         for name, row in entries.items():
             self.assertTrue(name.startswith("walkin-os2warp-"))
-            self.assertGreaterEqual(row["udpPort"], 54152)
+            self.assertGreaterEqual(row["udpPort"], naming.udp_port(naming.SLOT_MIN))
 
 
 class OrphanTapTests(unittest.TestCase):
@@ -372,7 +372,8 @@ class StrayClaimTests(unittest.TestCase):
     def test_a_claim_with_no_clone_behind_it_is_handed_back(self):
         claims.claim_slot("walkin-os2warp-1")
         released = self.broker.release_stray_claims()
-        self.assertEqual(sorted(released), ["port/54152", "walkin-slot/152"])
+        expect = [f"port/{naming.udp_port(naming.SLOT_MIN)}", f"walkin-slot/{naming.SLOT_MIN}"]
+        self.assertEqual(sorted(released), sorted(expect))
         self.assertEqual(claims.mine(claims.SLOT_CLASS), [])
 
     def test_a_claim_whose_clone_is_still_on_disk_is_left_alone(self):

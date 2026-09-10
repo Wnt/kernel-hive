@@ -18,9 +18,11 @@
 #     share an FDB. The clone's tap is the only guest port on it.
 #   * A NAT namespace (`wicell<slot>`) joins that cell to vmbr-wi through a veth
 #     pair. On the way out, the guest's baked source address is SNATed to a
-#     UNIQUE per-slot peer address (10.99.0.<slot-100>, so slots 152-200 map to
-#     .52-.100 — reserved in ledger §6). The guest keeps believing it is .19;
-#     the gateway sees a distinct peer per clone. CT 952 is NOT modified at all.
+#     UNIQUE per-slot peer address (10.99.0.<52 + slot - WALKIN_PEER_BASE>, so
+#     the pool's own window maps onto .52-.100 — reserved in ledger §6, and
+#     the real ceiling on concurrently held slots: 49, not SLOT_MIN..SLOT_MAX's
+#     width). The guest keeps believing it is .19; the gateway sees a distinct
+#     peer per clone. CT 952 is NOT modified at all.
 #   * Inside the cell, the namespace answers ARP for exactly one address — the
 #     gateway, 10.99.0.2 — via a pneigh proxy entry. Nothing else resolves, so
 #     the fleet's addresses fail exactly as they fail on the flat plane.
@@ -60,8 +62,18 @@ set -uo pipefail
 
 GW="${WI_GATEWAY_IP:-10.99.0.2}"
 WI_BRIDGE="${WI_BRIDGE:-vmbr-wi}"
+# SLOT_MIN stays low on purpose: `down`/`verify` must still reach the pool's
+# pre-2026-09-10 slots (152-170, its old shared reservation) while the fleet's
+# reaper sweeps the clones orphaned by the move to WALKIN_PEER_BASE below. A
+# fresh cell is never built below the new pool window again, so only
+# WALKIN_PEER_BASE needs to track where the broker's naming.py actually is.
 SLOT_MIN=152
-SLOT_MAX=200
+SLOT_MAX=511
+# Mirrors scripts/serve/walkin/naming.py's SLOT_MIN -- the pool's OWN edge
+# relay window as of the 2026-09-10 move (Wnt/forwarder commit 530c9f3). The
+# two must never disagree: this is what actually programs the SNAT peer
+# address on the box, naming.py's copy is what the broker reports it as.
+WALKIN_PEER_BASE=256
 
 die() {
   echo "wi-clonecell: $*" >&2
@@ -82,12 +94,19 @@ check_ip() {
   [ "$1" != "$GW" ] || die "guest ip may not be the gateway"
 }
 
-names() { # slot -> BR NS VI VO PEER
+names() { # slot -> BR NS VI VO PEER PEER_OCTET
   BR="wibr$1"
   NS="wicell$1"
   VI="wiv$1i"
   VO="wiv$1o"
-  PEER="10.99.0.$(($1 - 100))"
+  # Mirrors naming.py's cell_peer_ip: offset 52 + (slot - WALKIN_PEER_BASE),
+  # meant to land in the reserved 10.99.0.52-.100 block (ledger §6). NOT
+  # bounds-checked here -- `names` also serves `down`/`ls` for slots below
+  # WALKIN_PEER_BASE (migration orphans), where PEER is unused or
+  # display-only. `cell_up` is what actually programs this address, and it
+  # checks PEER_OCTET before using it.
+  PEER_OCTET=$((52 + $1 - WALKIN_PEER_BASE))
+  PEER="10.99.0.$PEER_OCTET"
 }
 
 nsx() { ip netns exec "$NS" "$@"; }
@@ -104,6 +123,11 @@ cell_up() {
   check_slot "$slot"
   check_ip "$gip"
   names "$slot"
+  { [ "$PEER_OCTET" -ge 52 ] && [ "$PEER_OCTET" -le 100 ]; } ||
+    die "slot $slot needs peer $PEER, past the reserved 10.99.0.52-.100 block
+  (ledger §6) -- the walk-in pool's peer-IP ceiling is 49 concurrently held
+  slots from WALKIN_PEER_BASE ($WALKIN_PEER_BASE), not the width of
+  SLOT_MIN..SLOT_MAX"
   [ "$(id -u)" = 0 ] || die "must run as root on labhost"
   ip link show "$WI_BRIDGE" >/dev/null 2>&1 || die "$WI_BRIDGE absent — provision-walkin-net.sh --apply first"
   # Rebuild from scratch rather than reconcile: a cell is per-clone and
