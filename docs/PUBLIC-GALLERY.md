@@ -22,7 +22,7 @@ So the public deployment has two planes that reach labhost by different routes:
   ┌──────────────────────── vm-control (the edge VPS) ─────────────────────────┐
   │  HAProxy :443 ──SNI──► Caddy (LE cert, /ask-gated) ──► forwarder :7080     │
   │                                                             │              │
-  │  nftables: udp 54080-54200 ──dnat──► 10.66.0.3 (same port)   │              │
+  │  nftables: udp 54080-54511 ──dnat──► 10.66.0.3 (same port)   │              │
   └──────────────────┬──────────────────────────────────────────┼──────────────┘
       WireGuard      │ (peer dials OUT, PersistentKeepalive)     │ yamux/wss
                      ▼                                          ▼
@@ -304,7 +304,9 @@ Edge side is the forwarder's own deploy, and its config has two homes.
 Non-secret keys — `UDP_RELAY_PORT_RANGE` above all — live in that repo's
 `deploy/site.env`, tracked in git: change it with one commit on `main` and CI
 redeploys, no shell on the edge (that is how the range was widened to 54200 on
-2026-08-09). Secrets and box-local values (`UDP_RELAY_PEER_IP`,
+2026-08-09, then to 54511 on 2026-09-10 to give the walk-in clone pool its own
+window — `scripts/serve/walkin/naming.py`, `docs/lab/walkin/CONTRACT-LEDGER.md`
+§5.4). Secrets and box-local values (`UDP_RELAY_PEER_IP`,
 `UDP_RELAY_PEER_PUBKEY`, the WireGuard private key, the agent token) stay in
 `/etc/forwarder/forwarder.env` on the edge; `site.env` is sourced after it and
 wins for the keys it sets. The tunnel itself is one entry in
@@ -344,8 +346,12 @@ UDP relay.
   the visitor's own path to Helsinki). LAN visitors are unaffected — they still
   talk to the station directly.
 - **The relay range is a firewall hole** to one host's ports, bounded by
-  nftables to `54080-54200` and the single WireGuard peer. It carries no auth of
-  its own; the ticket gate behind it is what makes that acceptable.
+  nftables to `54080-54511` and the single WireGuard peer. It carries no auth of
+  its own; the ticket gate behind it is what makes that acceptable. Since
+  2026-09-10 the top of it (256-511, port 54256-54511) is the walk-in clone
+  pool's own window, not the production lineup's —
+  `scripts/serve/walkin/naming.py` — so the lineup's own effective cap is
+  `54080-54255`, one slot below where the pool begins.
 - **A station outside that range is invisible to the public gallery and looks
   healthy from labhost.** UDP port is `54000 + slot`, so the range is also a cap
   on the lineup. When the edge was capped at `54130`, slots 131-134

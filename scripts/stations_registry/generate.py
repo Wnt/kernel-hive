@@ -39,6 +39,11 @@ def slot_refusal(globals_doc: dict, value: int) -> str | None:
     straight into the walk-in clone pool's reservation and then past the edge's
     relay window. Both were invisible until promotion failed, which is why this
     refuses at scaffold time for an explicit --slot too.
+
+    Since 2026-09-10 the walk-in pool owns its OWN window (256-511, a separate
+    edge relay range from production's) rather than sharing the low end of
+    the fleet's own numbering, so this refusal now also keeps a production
+    `--slot auto` from wandering INTO that window as it widens.
     """
     if WALKIN_SLOT_MIN <= value <= WALKIN_SLOT_MAX:
         return (

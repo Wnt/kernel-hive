@@ -99,10 +99,12 @@ permanent false-LIVE or infinite connecting state.
 
 A remote browser (the operator's iPad on cellular, any visitor outside the
 LAN) reaches the bridge through the same hole the WebTransport stations use:
-the edge VPS DNATs UDP `54080-54200` to the box unchanged
-(`docs/PUBLIC-GALLERY.md`, registry `ports.publicRelayLow..High`). The bridge
-therefore listens on **54200**, the top of that range, reserved for it in
-registry `ports.webrtcBridgeUdp` so no station is ever allocated slot 200
+the edge VPS DNATs UDP `54080-54511` to the box unchanged
+(`docs/PUBLIC-GALLERY.md`, registry `ports.publicRelayLow..High` — widened
+from `54080-54200` on 2026-09-10 to give the walk-in clone pool its own
+window at the top of it, 256-511 / 54256-54511). The bridge listens on
+**54200**, well inside that range, reserved for it in registry
+`ports.webrtcBridgeUdp` so no station is ever allocated slot 200
 (`stations_registry.generate.slot_refusal`, `validate_rules`, `wave.sh alloc`
 all refuse it; `kh-claim who port 54200` names the owner on the box).
 
