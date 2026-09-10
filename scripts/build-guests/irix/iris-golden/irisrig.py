@@ -54,10 +54,9 @@ TIMEOUT = 15.0
 class Monitor:
     """Iris's interactive monitor console over TCP. Line in, text out.
 
-    The console has no reply framing — it streams until it goes quiet — so
-    every call reads until `idle` seconds pass with no bytes, bounded by
-    `deadline`. That is the protocol, not a shortcut: `rex fbdump` writes
-    18 MB before it prints anything.
+    The console has no reply framing — it streams until it goes quiet — so every
+    call reads until `idle` seconds pass with no bytes, bounded by `deadline`.
+    That is the protocol, not a shortcut: `rex fbdump` writes 18 MB first.
     """
 
     def __init__(self, addr, timeout=TIMEOUT):
@@ -93,11 +92,8 @@ class Monitor:
 
 
 class Mctl:
-    """mamectl/1 line client — the same wire `/root/mctl.py` speaks.
-
-    Kept here rather than imported so the harness stays self-contained on a
-    rig that has no box copy of mctl.py.
-    """
+    """mamectl/1 line client — the same wire `/root/mctl.py` speaks. Kept here
+    rather than imported so the harness works on a rig with no box mctl.py."""
 
     def __init__(self, path, timeout=TIMEOUT):
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)

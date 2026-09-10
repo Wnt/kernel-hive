@@ -68,6 +68,19 @@ def keep(rig, src, name):
     return dst
 
 
+def dirty_with_keys(mon, text="kernelhive"):
+    """Dirty the framebuffer through the KEYBOARD.
+
+    The pointer is deliberately not used here. Iris's `Ps2::push_mouse_input`
+    reaches the guest — the bytes drain and the i8042 ports read enabled — but
+    IRIX's X server does not move the VC2 hardware cursor for them, so a click
+    proves nothing today. That plane belongs to stream C; the reset plane's
+    proofs must not depend on it, and a key edge is just as good a "did the
+    machine react" probe: it lands in a focused widget and repaints it.
+    """
+    mon.cmd(f"ps2 type {text}", idle=0.4, deadline=20.0)
+
+
 def slam_and_click(mon, x, y, settle=0.15):
     """Put the pointer at roughly (x, y) and click.
 
@@ -173,8 +186,8 @@ def phase_prove(rig, args):
     a = fb.dump("restoreA")
     out.update(restore1_ok=ok1, restore1_text=t1, restore1_ms=round(ms1), md5_restore1=a["md5"])
 
-    # B — dirty the screen: click the Toolchest open.
-    slam_and_click(mon, args.toolchest_x, args.toolchest_y)
+    # B — dirty the screen.
+    dirty(mon, args)
     changed, dirty_digest, waited = fb.change(a["md5"], deadline=args.input_deadline)
     d = fb.dump("dirty")
     out.update(
@@ -196,9 +209,9 @@ def phase_prove(rig, args):
     )
 
     # D — input live IMMEDIATELY after the restore. No settle, no warmup: the
-    # click goes in as soon as the verb acks. An ack from the emulation thread
+    # input goes in as soon as the verb acks. An ack from the emulation thread
     # plus a framebuffer change is the proof; either alone is not.
-    slam_and_click(mon, args.toolchest_x, args.toolchest_y)
+    dirty(mon, args)
     live, live_digest, live_wait = fb.change(b["md5"], deadline=args.input_deadline)
     live_shot = fb.dump("liveafter")
     out.update(
@@ -297,6 +310,13 @@ def phase_prov(rig, args):
     )
 
 
+def dirty(mon, args):
+    if args.dirty_with == "click":
+        slam_and_click(mon, args.toolchest_x, args.toolchest_y)
+    else:
+        dirty_with_keys(mon)
+
+
 PHASES = {"boot": phase_boot, "bake": phase_bake, "prove": phase_prove, "cold": phase_cold, "prov": phase_prov}
 
 
@@ -311,6 +331,7 @@ def main():
     ap.add_argument("--input-deadline", type=float, default=45.0)
     ap.add_argument("--toolchest-x", type=int, default=40)
     ap.add_argument("--toolchest-y", type=int, default=1010)
+    ap.add_argument("--dirty-with", choices=("keys", "click"), default="keys")
     ap.add_argument("phase", choices=sorted(PHASES))
     a = ap.parse_args()
     rig = Rig(a.rig, a.bin, a.monitor_port)
