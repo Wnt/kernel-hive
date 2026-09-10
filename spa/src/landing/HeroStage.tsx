@@ -15,6 +15,7 @@ import {
 import { GRACE_WARN_SECONDS, MEANINGFUL_EVENTS, heroBlockedLine } from './heroPolicy';
 import { stationCopy } from './stations';
 import { ConversionGate } from './gate/ConversionGate';
+import { ChromeDockContext } from '../ui/chromeDock';
 import type { HeroSession } from './useHeroSession';
 
 // ============================================================================
@@ -33,6 +34,17 @@ import type { HeroSession } from './useHeroSession';
 //  frame on screen. The only difference here is cosmetic: display name,
 //  archetype, accent and era label come from the manifest row when we have
 //  one, so the hero says "Windows 3.11" rather than "win311".
+//
+//  WHY THE CANVAS IS EMPTY. StreamView floats its chrome in the picture's own
+//  corners, which is right when the picture is the whole screen and wrong here:
+//  a 44px pill laid on a 400x300 rendering of a 1024x768 desktop covers a tenth
+//  of the exhibit, and the on-screen keyboard — a sibling below the stage —
+//  took its whole height out of a fixed 4:3 box and squeezed the guest into a
+//  letterbox slit. So this page hands StreamView two nodes BELOW the canvas
+//  (ui/chromeDock) and every control portals itself into one of them. The
+//  canvas shows the guest and nothing on top of it, and the picture does not
+//  move when the keyboard opens. The one thing still laid over it is the
+//  conversion wall, which is meant to cover the frozen frame.
 //
 //  WHY THE ELEMENT IS MEMOISED. This subtree re-renders once a second (the
 //  countdown, the grace clock). StreamView is the heaviest component in the
@@ -167,6 +179,13 @@ export function HeroStage({
   onSignedIn: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
+  // Callback refs, not useRef: the dock nodes have to be STATE, or the chrome
+  // renders once against a null dock before finding its home. They are mounted
+  // in the same commit as the canvas and long before a claim comes back, so a
+  // control has never yet been painted in the stage on the way past.
+  const [controlsEl, setControlsEl] = useState<HTMLDivElement | null>(null);
+  const [keysEl, setKeysEl] = useState<HTMLDivElement | null>(null);
+  const dock = useMemo(() => ({ controls: controlsEl, keys: keysEl }), [controlsEl, keysEl]);
   const phase = hero.phase;
   const claim = phase.kind === 'live' ? phase.claim : null;
   const station = hero.station;
@@ -197,6 +216,7 @@ export function HeroStage({
   }, [station, claim, vm, hero.stop]);
 
   return (
+    <ChromeDockContext.Provider value={dock}>
     <div className="landing-hero__machine">
       <div className="landing-strip" role="status">
         {statusCells({ state, size, lineage: vm?.lineage, station: station ?? undefined })
@@ -257,6 +277,13 @@ export function HeroStage({
           </span>
         )}
       </p>
+
+      {/* Everything StreamView would otherwise float on the picture: the back
+          and ☰ buttons, the right-click arm, the keyboard opener, and the
+          connection/device notices. Both nodes collapse when empty. */}
+      <div className="landing-dock" ref={setControlsEl} />
+      <div className="landing-keys" ref={setKeysEl} />
     </div>
+    </ChromeDockContext.Provider>
   );
 }

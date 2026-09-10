@@ -13,9 +13,12 @@ import { reach } from '../analytics';
 type BootIndexEntry = NonNullable<VMManifestEntry['bootVideo']>;
 async function fetchBootIndex(): Promise<Record<string, BootIndexEntry>> {
   try {
-    // Fetched on every manifest load for every visitor; the videos it indexes
-    // only ever play on a station that has one. boot.video.played is the
-    // consumer, and the gap between the two is the question.
+    // Fetched on every SUCCESSFUL manifest load (a non-empty gallery lineup —
+    // see the one call site, below); the videos it indexes only ever play on a
+    // station from that lineup, never on a walk-in exhibit placard, so a load
+    // that fell through to the walk-in door never had a use for this and no
+    // longer asks. boot.video.played is the consumer, and the gap between the
+    // two is the question.
     reach('boot.index.fetch', 'auto');
     const r = await fetch('/boot/index.json', { cache: 'no-cache' });
     if (!r.ok) return {};
@@ -95,10 +98,24 @@ export function useManifest() {
         setVMs(exhibits.map(exhibitVm));
         return;
       }
-      const [manifest, boot] = await Promise.all([loadGalleryManifest(), fetchBootIndex()]);
+      const manifest = await loadGalleryManifest();
       if (cancelled) return;
       const lineup = storedLineup(manifest);
       if (lineup.length > 0) {
+        // Boot-video enrichment is fetched ONLY here, once there is a lineup to
+        // enrich — `boot` is used nowhere but the `withBoot` merge below, so
+        // firing it alongside the manifest (as `Promise.all`, until this fix)
+        // spent a request whenever the manifest fell through instead. That was
+        // not a hypothetical: on the public listener an anonymous visitor's
+        // `/gallery-manifest.json` is refused (`walkinShape` cannot know that in
+        // advance — see the comment below), so this fetch used to fire and 401
+        // on every anonymous landing too, adding noise beside the manifest's
+        // own refusal for no gain — its result was always discarded a few lines
+        // down. Sequencing it after a non-empty lineup costs the ordinary
+        // invited visitor one extra same-origin round trip; the alternative
+        // was a fetch nobody used, addressed to a role that cannot use it.
+        const boot = await fetchBootIndex();
+        if (cancelled) return;
         setVMs(lineup.map((vm) => withBoot(vm, boot)));
         return;
       }

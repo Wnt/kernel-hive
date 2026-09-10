@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { S } from './styles';
+import { DockedControl } from '../../DockedChrome';
 import type { DemoState } from './useDemoProgram';
 
 // ---------------------------------------------------------------------------
@@ -15,19 +16,22 @@ import type { DemoState } from './useDemoProgram';
 //  button (KeyboardToggleBadge, bottom-right, mirroring the right-click badge
 //  on the opposite corner) — a keyboard-having desktop keeps it in the menu.
 //
-//  It lives INSIDE .sv-stage on purpose. That is safe because guest input is
-//  bound to the <video>/<canvas> element itself, and the pinch/gesture layer
-//  ignores anything whose target is not the picture (useStreamInput) — a press
-//  on these buttons can never reach the guest. The stopPropagation handlers
-//  below are belt-and-braces for that contract, as on TouchControlBadge.
+//  It lives INSIDE .sv-stage when the picture fills the view. That is safe
+//  because guest input is bound to the <video>/<canvas> element itself, and the
+//  pinch/gesture layer ignores anything whose target is not the picture
+//  (useStreamInput) — a press on these buttons can never reach the guest. The
+//  stopPropagation in DockedControl is belt-and-braces for that contract.
+//
+//  On the landing page's mini canvas it does NOT live in the stage: both
+//  clusters portal into the control row under the picture (chromeDock), because
+//  a 44px button pinned to the corner of a 400px-wide exhibit is sitting on the
+//  thing the visitor came to look at. The dropdown panel is positioned against
+//  its own wrapper, so it still hangs from the ☰ either way.
 //
 //  Desktop and touch share one menu. It carries no touch-only rows: the touch
 //  model now follows the device on its own (input/pointerModeAuto), the gesture
 //  legend shows itself once, and a stats overlay is a ⌘/Ctrl+N thing.
 // ---------------------------------------------------------------------------
-
-// Keep the guest from ever seeing a press meant for the menu.
-const swallow = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
 export function StageMenu({
   dotColor, statusLabel, streamable, transport, fs, mobile,
@@ -76,19 +80,13 @@ export function StageMenu({
 
   return (
     <>
-      <div style={S.backWrap} onPointerDown={swallow} onPointerUp={swallow} onPointerMove={swallow}>
+      <DockedControl order={1} corner={S.backWrap}>
         <button style={S.menuBtn} onClick={run(exit)} title="Back to the gallery" aria-label="Back to the gallery">
           ←
         </button>
-      </div>
+      </DockedControl>
 
-      <div
-        ref={wrapRef}
-        style={S.menuWrap}
-        onPointerDown={swallow}
-        onPointerUp={swallow}
-        onPointerMove={swallow}
-      >
+      <DockedControl order={2} corner={S.menuWrap} elRef={wrapRef}>
       {posterAvailable && onOpenPoster && (
         <button
           style={S.menuBtn}
@@ -183,7 +181,7 @@ export function StageMenu({
           </button>
         </div>
       )}
-      </div>
+      </DockedControl>
     </>
   );
 }

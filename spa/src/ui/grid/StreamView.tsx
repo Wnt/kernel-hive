@@ -6,7 +6,7 @@ import type { StreamControlHandle, StreamControlState, StreamStats } from '../..
 import type { StreamBannerState, StreamExitReason } from '../../three/streamClient';
 import { useMuseum } from '../../state/store';
 import { keyboardLockApi } from './StreamView/keyboardLock';
-import { currentFullscreenElement, leaveFullscreen } from './StreamView/fullscreen';
+import { currentFullscreenElement, leaveFullscreen } from '../fullscreen';
 import { isFirefoxEngine } from './StreamView/env';
 import { exitReasonCopy } from './StreamView/exitReason';
 import { useDevicePressure } from './StreamView/useDevicePressure';

@@ -16,18 +16,23 @@
 //                               also target one sessionId through args.sessionId.
 //                               Only the BOX can enqueue (loopback + operator
 //                               token); no UI session has a path to issue one.
-//  EVERY session polls and every session logs — deliberately. The visitor whose
-//  stream never came up is exactly the one worth reaching, and gating the poll
-//  on an admin session made those sessions invisible and unreachable. Reaching
-//  them is safe because the issuing side is box-side only: a tab can RECEIVE a
-//  command, never send one.
+//  EVERY SIGNED-IN session polls and every session logs — deliberately. The
+//  visitor whose stream never came up is exactly the one worth reaching, and
+//  gating the poll on an admin session made those sessions invisible and
+//  unreachable. Reaching them is safe because the issuing side is box-side
+//  only: a tab can RECEIVE a command, never send one.
+//  ONE exception: gate.py's `ANON_PATHS` does not include `/clientcmd` (a
+//  stranger gets LESS than a registered walk-in, never more — test_anon.py),
+//  so `main.tsx` passes `{ poll: false }` for that role and only the POLL is
+//  withheld; `session-start` still reaches `/clientlog` (see
+//  `setTelemetryAllowed`).
 //  This module NEVER throws into the app: telemetry is best-effort diagnostics
 //  (clientlog.jsonl on labhost), not a dependency.
 //  It is intentionally free of any streamClient import (streamClient imports
 //  US) and free of React.
 // ============================================================================
 
-import { configureLogSink, logRecord } from '../analytics/logSink';
+import { logRecord } from '../analytics/logSink';
 import { postTelemetry } from '../analytics/beacon';
 import { getAdminToken } from './adminAuth';
 import { describeEnvironment, setBootRole } from './clientEnvironment';
@@ -134,20 +139,28 @@ export function isVerboseDebug(): boolean { return verbose; }
 // answers 401 to a session that has none.
 let telemetryAllowed = false;
 
-/** Enable the /clientlog sink for this document. See `logClientEvent`. */
+/** Enable the /clientlog sink for this document. See `logClientEvent`.
+ *
+ *  Used to also configure the `/logs` sink here ("one switch for both
+ *  lanes"), on the theory that anything allowed `/clientlog` is allowed
+ *  `/logs`. That stopped being true once `role: 'anon'` existed: gate.py's
+ *  `ANON_PATHS` grants `/clientlog` (and `/vitals`) to a stranger by name but
+ *  not `/logs`, so the shared switch armed a POST gate.py was always going to
+ *  401. `main.tsx` now calls `configureLogSink` itself with its own answer, so
+ *  this function is back to doing only what its name says. */
 export function setTelemetryAllowed(allowed: boolean): void {
   telemetryAllowed = allowed;
-  configureLogSink({ allowed, sessionId }); // one switch for both lanes
 }
 /** Queue one telemetry event (batched; flushed every 5s / 1s verbose). Never throws. */
 export function logClientEvent(event: string, detail: string): void {
-  // Who may POST /clientlog, per gate.py: any session, walk-in accounts
-  // INCLUDED — `/clientlog` is in `WALKIN_PATHS` on purpose, because debugging a
-  // broken stream has to work for the visitor whose stream is broken, and a
-  // walk-in is exactly the session nobody can reach any other way
-  // (STREAM-DEBUGGING.md). What must not queue is a SIGNED-OUT caller: the
-  // stranger standing on the /walkin signup door has no session yet, so every
-  // flush would 401 every 5s and be re-queued, forever.
+  // Who may POST /clientlog, per gate.py: any session, walk-in accounts AND
+  // the anonymous `role: 'anon'` visitor INCLUDED — `/clientlog` is in both
+  // `WALKIN_PATHS` and `ANON_PATHS` on purpose, because a walk-in or a
+  // stranger driving the landing page's hero exhibit is exactly the session
+  // nobody can reach any other way (STREAM-DEBUGGING.md). What must not queue
+  // is a SIGNED-OUT caller: the stranger standing on the /walkin signup door
+  // has no session yet, so every flush would 401 every 5s and be re-queued,
+  // forever.
   //
   // This used to be a path test, which got both halves wrong once a walk-in
   // could be anywhere: it dropped a walk-in's stream telemetry on
@@ -309,13 +322,15 @@ export function clearDebugTile(tile?: string, owner?: DebugTileOwner): void {
  * station is chosen and before anything can fail, and the command poller runs
  * for the lifetime of the tab. Idempotent: safe to call more than once.
  */
-export function initClientDebug(role?: string): void {
+export function initClientDebug(role?: string, opts: { poll?: boolean } = {}): void {
   if (bootLogged) return;
   bootLogged = true;
   setBootRole(role);
   try {
     logClientEvent('session-start', describeEnvironment(null));
-    startPoller();
+    // `poll: false` for the anonymous role — see this file's header. Only the
+    // poll is withheld; `session-start` above still reaches `/clientlog`.
+    if (opts.poll !== false) startPoller();
   } catch { /* telemetry must never break app startup */ }
 }
 

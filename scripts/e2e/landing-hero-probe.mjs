@@ -20,29 +20,32 @@ import { chromium } from 'playwright';
 //           claim NOTHING, show the poster, and print the honest line ON the
 //           poster — `filter` on the <img> gives it a stacking context, so the
 //           veil needs a position or the sentence paints behind the picture.
-//   anon    `?walkin=anon` forces the fixture's 60-second budget: the countdown
-//           must mirror it down to zero and the wall must arrive over the stage
-//           with both ways through it.
+//   anon    `?walkin=anon` forces the fixture's 60-second budget: the wall must
+//           arrive over the stage with both ways through it, and its clock must
+//           read 0:00. The HERO carries no clock — a visitor gets no warning
+//           that their intro time is running out, they meet the wall, and that
+//           is the operator's decision (see LandingTop). The budget starts at
+//           the first touch, so this mode clicks the machine once and waits.
 //   engage  THE ENGAGEMENT RULE, which exists because of two bugs an operator
 //           hit on the live site and neither of which any unit test can see:
-//           the free minute started at the CLAIM (so it burned while they read
+//           the intro time started at the CLAIM (so it burned while they read
 //           the page), and the machine handed back by the idle watchdog came
 //           back as a DIFFERENT OS. So this mode drives a real browser and
-//           asserts, in this order: moving the mouse across the canvas for
-//           forty seconds does not start the countdown and does not release
-//           the cell; ONE CLICK does start it; and the station id never
-//           changes unless a chip is pressed — including across the recovery
-//           button, which used to re-roll it. `recover` is the slow sibling:
-//           it waits out the whole un-engaged window and then presses the way
-//           back, which is the exact sequence that changed the visitor's OS;
-//           `resume` proves the same thing in seconds by backgrounding the tab
-//           (an un-engaged cell goes back instantly when hidden), which is what
+//           asserts, in order: forty seconds of moving the mouse across the
+//           canvas neither starts the clock nor releases the cell nor changes
+//           the station; ONE CLICK starts it; and the wall then arrives a
+//           minute after the CLICK rather than a minute after the load — which,
+//           with no clock on the hero any more, is the observable that says
+//           where the minute began. It needs a plane that implements
+//           `POST /walkin/engage`; against one that does not (a box not yet
+//           deployed), set HERO_STUB_ENGAGE=1 and the SPA's own fixture stands
+//           in, which is the same code path a staged build has always used.
+//   recover the slow sibling: wait out the whole un-engaged window and then
+//           press the way back, which is the exact sequence that changed the
+//           visitor's OS.
+//   resume  the same proof in seconds, by backgrounding the tab — an
+//           un-engaged cell goes back instantly when hidden — which is what
 //           makes it cheap enough to run on every change.
-//           The countdown half needs a plane
-//           that implements `POST /walkin/engage`; against one that does not
-//           (a box that has not been deployed yet), pass `?walkin=anon` and
-//           the SPA's own fixture stands in, which is the same code path a
-//           staged build has always used.
 //
 // Run from ~/e2e on CT950 (see the node_modules note in this directory's
 // README), against a staged slot or the live origin:
@@ -89,12 +92,15 @@ const read = () => page.evaluate(() => {
       return el ? `${el.tagName}.${el.className}` : null;
     })(),
     veil: q('.landing-stage__veil-line')?.textContent?.slice(0, 60) ?? null,
+    // The wall's clock and headline. `.landing-countdown__value` and
+    // `.landing-gate__title` used to be read here and have matched nothing for
+    // some time — the component renders gate-* classes, checked in a browser.
     countdown: q('.gate-countdown-clock')?.textContent ?? null,
     clockLabel: q('.gate-countdown-label')?.textContent ?? null,
     wall: q('.gate-title')?.textContent ?? null,
+    // The caption under the stage. With no clock on the hero this is where the
+    // page says whether the visitor's intro time has started.
     caption: q('.landing-caption')?.textContent?.slice(0, 160) ?? null,
-    cta: [...document.querySelectorAll('.landing-hero__cta .landing-btn')]
-      .map((e) => `${e.className.includes('primary') ? 'PRIMARY' : 'quiet'}:${e.textContent}`),
     cards: document.querySelectorAll('.os-card').length,
     stuck: document.body.innerText.includes('Loading the collection'),
     focused: document.activeElement?.className ?? '',
@@ -170,7 +176,7 @@ if (MODE === 'engage') {
   const stationOf = (r) => r.strip[r.strip.length - 1] ?? null;
   const box = await page.locator('.landing-stage').boundingBox();
   const started = stationOf(first);
-  console.log('STATION', started, 'clock', first.countdown, first.clockLabel);
+  console.log('STATION', started, 'caption', first.caption);
   if (!started) fail.push('the strip never named a station');
 
   // ---- 1. forty seconds of MOUSEMOVE, which must cost nothing -------------
@@ -187,29 +193,38 @@ if (MODE === 'engage') {
   if (stationOf(moved) !== started) fail.push(`the station changed by itself: ${started} -> ${stationOf(moved)}`);
   if (!moved.streaming) fail.push('the machine was taken away while the visitor was moving the mouse over it');
   if (calls.some((c) => c.includes('release'))) fail.push('a mousemove-only visit released its cell');
-  if (moved.countdown !== first.countdown) {
-    fail.push(`moving the mouse spent the budget: ${first.countdown} -> ${moved.countdown}`);
+  if (calls.some((c) => c.includes('engage'))) fail.push('moving the mouse reported engagement');
+  if (!/does not start until you click or type/i.test(moved.caption ?? '')) {
+    fail.push(`the caption does not say the clock is still stopped (${moved.caption})`);
   }
-  if (moved.countdown && !/starts when you touch it/i.test(moved.clockLabel ?? '')) {
-    fail.push(`the clock does not say it has not started (${moved.clockLabel})`);
-  }
+  if (moved.wall) fail.push('the wall arrived for a visitor who never touched the machine');
 
   // ---- 2. ONE CLICK, which must start it ---------------------------------
   calls.length = 0;
+  const clickedAt = Date.now();
   await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.8);
   await page.waitForTimeout(6000);
   const clicked = await read();
   console.log('CLICK ', JSON.stringify(clicked), JSON.stringify(calls));
   if (!calls.some((c) => c.includes('engage'))) fail.push('the first click did not report engagement');
   if (stationOf(clicked) !== started) fail.push(`clicking the machine changed it: ${started} -> ${stationOf(clicked)}`);
-  if (moved.countdown && clicked.countdown === moved.countdown) {
-    fail.push(`the click did not start the countdown (stuck at ${clicked.countdown})`);
+  if (/does not start until you click or type/i.test(clicked.caption ?? '')) {
+    fail.push('the caption still says the clock is stopped, after a click');
   }
-  if (clicked.countdown && /starts when you touch it/i.test(clicked.clockLabel ?? '')) {
-    fail.push('the clock still says it has not started, after a click');
-  }
+  if (clicked.wall) fail.push('the wall arrived within seconds of the first touch');
 
-  // ---- 3. the recovery button brings back the SAME machine ---------------
+  // ---- 3. the wall lands a minute after the CLICK, not after the load -----
+  // The decisive one. With the hero clock gone, WHEN the wall arrives is the
+  // only thing left that says where the minute began — and under the old rule
+  // it would already have arrived, forty seconds ago, unpressed.
+  for (let i = 0; i < 9 && !(await read()).wall; i += 1) await page.waitForTimeout(8000);
+  const walled = await read();
+  const sinceClick = Math.round((Date.now() - clickedAt) / 1000);
+  console.log('WALL  ', `${sinceClick}s after the click:`, JSON.stringify(walled));
+  if (!walled.wall) fail.push('the intro time never ran out, even after the visitor engaged');
+  else if (sinceClick < 45) fail.push(`the wall arrived only ${sinceClick}s after the first touch`);
+
+  // ---- 4. the recovery button brings back the SAME machine ---------------
   calls.length = 0;
   await page.evaluate(() => {
     // Take the machine away the way the page's own watchdog does, without
@@ -318,8 +333,7 @@ if (MODE === 'resume') {
 }
 
 if (MODE === 'anon') {
-  if (!first.countdown) fail.push('no countdown for an anonymous visitor');
-  // The budget does not start until the visitor touches the machine, so the
+  // The intro time does not start until the visitor touches the machine, so the
   // wall never arrives for a page nobody clicks. One click, then wait it out.
   const stage = await page.locator('.landing-stage').boundingBox();
   if (stage) await page.mouse.click(stage.x + stage.width * 0.5, stage.y + stage.height * 0.8);

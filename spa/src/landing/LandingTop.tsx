@@ -8,7 +8,6 @@ import { WALKIN_CLOSED_COPY } from '../walkin/reasons';
 import { LandingHeader } from './LandingHeader';
 import { HeroStage } from './HeroStage';
 import { StationSwitcher } from './StationSwitcher';
-import { Countdown } from './gate/Countdown';
 import { useHeroSession } from './useHeroSession';
 import { HERO_STATIONS } from './stations';
 
@@ -17,13 +16,17 @@ import { HERO_STATIONS } from './stations';
 //  ---------------------------------------------------------------------------
 //  It is a component of its own, and not a block inside LandingPage, for a
 //  reason that is entirely about cost: this subtree re-renders once a second
-//  (the countdown, the release grace clock), and the 96-card collection below
-//  it must not. Keeping the clock inside this component means React re-renders
-//  THIS and leaves GridView's element — created once per LandingPage render —
-//  untouched.
+//  (the release grace clock, and the budget the wall reads), and the collection
+//  below it must not. Keeping the clock inside this component means React
+//  re-renders THIS and leaves GridView's element — created once per LandingPage
+//  render — untouched.
 //
 //  The reading order is the order of the promise: what this is, that it is
 //  already running, that it is yours, and only then what it costs to stay.
+//
+//  THERE IS NO CLOCK IN THE HERO, and that is a decision, not an oversight. A
+//  visitor gets no warning that their intro time is running out; they meet the
+//  wall, which carries the countdown. Do not add one back.
 // ============================================================================
 
 export function LandingTop() {
@@ -32,8 +35,6 @@ export function LandingTop() {
   const listed = useMuseum((s) => s.listedVms);
   const vm = useMuseum((s) => s.vms.find((entry) => entry.id === hero.station));
 
-  const running = hero.phase.kind === 'live';
-  const exhibits = listed.length > 0 ? `See all ${listed.length} exhibits` : 'See the collection';
   const pools = hero.state?.pools ?? [];
   const free = pools.reduce((n, pool) => n + pool.free, 0);
   const size = pools.reduce((n, pool) => n + pool.size, 0);
@@ -86,19 +87,6 @@ export function LandingTop() {
     hero.take(os);
   }, [hero]);
 
-  // "Give me a machine" means the one they were on, when there was one. A
-  // visitor whose machine went back to the pool is asking for THAT machine —
-  // claiming with no station here is what used to hand them a different OS for
-  // pressing the page's own recovery button (landing/heroSession.resumeTarget).
-  const takeAny = useCallback(() => {
-    hero.notePresence();
-    hero.take(hero.resume);
-  }, [hero]);
-
-  const scrollToCollection = useCallback(() => {
-    document.querySelector('.era-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   // A visitor who has just converted holds the SAME cell (the broker reserves
   // it for 120s and answers the next claim `resumed`), but their ROLE has
   // changed on the server and this document resolved its role once, before
@@ -124,55 +112,13 @@ export function LandingTop() {
         <div className="landing-hero__pitch">
           <h1 className="landing-hero__headline">
             It is already running.<br />
-            <em>Go on, click it.</em>
+            <em>Try it out!</em>
           </h1>
           <p className="landing-hero__lede">
-            Every exhibit in this museum is a real operating system on real emulated hardware, in
-            one rack, streamed to this tab. The machine beside this text is a private copy of one
-            of them, and it is yours right now — your mouse and your keyboard go straight into the
-            guest. No install, no plugin, no account. Break anything you like: the next visitor
-            gets a pristine one.
+            All exhibits in The Kernel Hive are real operating systems and machines running on
+            emulated hardware, streamed to your browser with low latency. Your input goes straight
+            into the guest. Break anything you like: the next visitor gets a pristine one.
           </p>
-
-          {/* The primary action is whatever the visitor does NOT already have.
-              With no machine on screen that is a machine; with one running it
-              is the rest of the museum — and the accent has to move with it,
-              or a page whose hero succeeded is a page with no call to action
-              on it at all. */}
-          <div className="landing-hero__cta">
-            {running
-              ? (
-                <button type="button" className="landing-btn landing-btn--primary landing-btn--big" onClick={scrollToCollection}>
-                  {exhibits}
-                </button>
-              )
-              : (
-                <>
-                  {hero.playable && (
-                    <button
-                      type="button"
-                      className="landing-btn landing-btn--primary landing-btn--big"
-                      disabled={hero.busy || closed}
-                      onClick={takeAny}
-                    >
-                      {hero.busy
-                        ? 'Finding you a machine…'
-                        : hero.resume === null ? 'Give me a machine' : 'Bring it back'}
-                    </button>
-                  )}
-                  <button type="button" className="landing-btn landing-btn--quiet landing-btn--big" onClick={scrollToCollection}>
-                    {exhibits}
-                  </button>
-                </>
-              )}
-            {hero.remainingSeconds !== null && hero.budgetSeconds !== null && (
-              <Countdown
-                remainingSeconds={hero.remainingSeconds}
-                budgetSeconds={hero.budgetSeconds}
-                engaged={hero.engaged}
-              />
-            )}
-          </div>
 
           {closed
             ? (
@@ -184,15 +130,14 @@ export function LandingTop() {
             )
             : (
               <p className="landing-hero__meter">
-                <strong>{free}</strong> of {size || HERO_STATIONS.length * 3} drivable machines free
-                right now, across {HERO_STATIONS.length} stations.
+                <strong>{free}</strong> of {size || HERO_STATIONS.length * 3} guest stations are
+                free right now.
               </p>
             )}
 
           <p className="landing-hero__note">
-            Staying longer than a minute costs a passkey, and a passkey is all it costs: your
-            device makes one key for this museum and nothing else. No name, no email, no password —
-            you get a handle like <code>bold-turing</code>, and that is the whole account.
+            Staying past the intro time only costs a passkey registration. No name, no email, no
+            password.
           </p>
         </div>
 

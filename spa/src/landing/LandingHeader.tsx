@@ -1,8 +1,9 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { MUSEUM_NAME } from '../config';
 import { useSession } from '../data/SessionContext';
 import { IdentityBadge } from '../ui/IdentityBadge';
+import { jumpChord } from './jumpChord';
 
 // ============================================================================
 //  landing/LandingHeader — the one bar above the machine.
@@ -12,6 +13,10 @@ import { IdentityBadge } from '../ui/IdentityBadge';
 //  reused here on purpose — it carries a Grid/3D/Fleet segmented control that
 //  is a tool for somebody who already knows the place, and this page's whole
 //  job is the first ten seconds of somebody who does not.
+//
+//  THE CHORD IS NOT ALWAYS ⌘K, and on a phone there is no chord at all — see
+//  jumpChord.ts. The listener below accepts Meta OR Ctrl and always has; only
+//  the chip that advertises it was hard-coded to a Mac.
 //
 //  ⌘K, AND THE ONE THING THAT MAKES IT DELICATE. While a machine is live,
 //  EVERY keydown on this page is forwarded to the guest in the capture phase
@@ -37,9 +42,21 @@ function focusCollectionFilter(): void {
   input.select();
 }
 
+/** What this device can be told about the shortcut. Read once: neither answer
+ *  changes without a reload that would remount the header anyway. */
+function chordForThisDevice(): string | null {
+  if (typeof navigator === 'undefined') return null;
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  return jumpChord({
+    platform: nav.userAgentData?.platform || nav.platform || nav.userAgent || '',
+    coarsePrimary: !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches,
+  });
+}
+
 export function LandingHeader({ exhibitCount }: { exhibitCount: number }) {
   const { role } = useSession();
   const jump = useCallback(() => { focusCollectionFilter(); }, []);
+  const chord = useMemo(chordForThisDevice, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -61,7 +78,7 @@ export function LandingHeader({ exhibitCount }: { exhibitCount: number }) {
       </Link>
       <nav className="landing-bar__nav">
         <button type="button" className="landing-bar__jump" onClick={jump}>
-          <kbd className="landing-bar__kbd">⌘K</kbd>
+          {chord && <kbd className="landing-bar__kbd">{chord}</kbd>}
           <span>jump to any of {exhibitCount > 0 ? exhibitCount : 'the exhibits'}</span>
         </button>
         <Link className="landing-bar__link" to="/about">About</Link>
