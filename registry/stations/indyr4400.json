@@ -183,7 +183,7 @@
   "emulator": {
     "family": "Iris",
     "version": "fork Wnt/iris, branch kh-native @ 8cbb689 (upstream base techomancer/iris@0540991)",
-    "source": "scripts/build-guests/emulators/build-iris-native.sh (features lightning,rex-jit,chd,jitv2; toolchain nightly-2026-08-02 pinned on the fork); scripts/build-guests/tiles/indyr4400.sh stages it beside the container rootfs",
+    "source": "scripts/build-guests/emulators/build-iris-native.sh (features lightning,rex-jit,chd \u2014 jitv2 is DELIBERATELY OFF: it miscompiles 4Dwm and fm into SIGSEGV, which is what kept the desktop's icon column off the cold boot, see docs/guests/indyr4400.md Known gaps; toolchain nightly-2026-08-02 pinned on the fork); scripts/build-guests/tiles/indyr4400.sh stages it beside the container rootfs",
     "driver": "SGI Indy R4400"
   },
   "ui": "desktop",
@@ -193,9 +193,9 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in the museum's fork of Iris, HOST-NATIVE at 1280x1024: no kiosk, no QEMU, no X server, no window. Reset is an in-process restore of the IRIS_STATE snapshot over the station's one mamectl/1 socket (LOADST golden, measured 0.19-1.6 s), with a ~7-minute cold boot as the loud bounded fallback after two launches that restore and never ack. Converted from the QEMU bridge on 2026-09-10; the bridge's loadvm-golden checkpoint is retired with the kiosk that held it. mouse/keyboard UNVERIFIED until the real-browser probe clears them."
+    "mouse": "verified",
+    "keyboard": "verified",
+    "fixture": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in the museum's fork of Iris, HOST-NATIVE at 1280x1024: no kiosk, no QEMU, no X server, no window. The scene is the Toolchest docked upper-left and the camera / Start.Demos / buttonfly / buttonflyAudio / fsn / demos / dumpster / Welcome_to_SGI icon column down the right edge over the textured background, nothing else open. Reset is an in-process restore of the IRIS_STATE snapshot over the station's one mamectl/1 socket (LOADST golden, measured 0.31-1.3 s), with a cold boot as the loud bounded fallback after two launches that restore and never ack. Converted from the QEMU bridge on 2026-09-10; the bridge's loadvm-golden checkpoint is retired with the kiosk that held it. mouse/keyboard verified 2026-09-10 from a real Chrome against the public gallery: 5/5 pointer targets within 1 px judged by the guest's own VC2 cursor, a Toolchest menu opened and drag-navigated, `uname -aRs` typed with no dropped characters, and the SPA's own 'Restore to golden snapshot' bringing the scene back with the pointer live 1 px from target."
   },
   "migrationExceptions": []
 }

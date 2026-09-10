@@ -32,16 +32,20 @@ Slot 136, UDP 54136, archetype `beige-tower-crt`. VMID label 239 survives as
 inert bookkeeping — there is no QEMU. The ssh/exec port 5839 is **retired**: it
 forwarded into the kiosk, and the kiosk is gone.
 
-> **Reading this before the conversion lands?** The host-native design below is
-> what the station becomes; `scripts/dev/box-deploy.sh --status` and
-> `ssh lab 'labctl ls'` are the authority on what is running right now. The
-> bridge-era facts that stayed true are kept in place below rather than in an
-> annex — [§*What the bridge era cost*](#what-the-bridge-era-cost).
+**The cutover happened on 2026-09-10.** The station serves host-native Iris in
+an nspawn container; the bridge is gone from the serving path and survives only
+as the parked rollback pair in the station dir. The tile was offline 06:11:11Z →
+06:19:43Z (8 min 32 s), visibly booting and then baking until 06:35Z, and every
+reset since is an in-process restore. `scripts/dev/box-deploy.sh --status` and
+`ssh lab 'labctl ls'` remain the authority on what is running right now. The
+bridge-era facts that stayed true are kept in place below rather than in an
+annex — [§*What the bridge era cost*](#what-the-bridge-era-cost).
 
 ## Acceptance criteria
 
 - Iris fork `Wnt/iris`, branch pinned in the builder, features
-  `lightning,rex-jit,chd,jitv2`, BSD-3. The upstream base is `0540991`.
+  `lightning,rex-jit,chd` — **not `jitv2`**, which miscompiles 4Dwm and fm (see
+  [§*Known gaps*](#known-gaps)). BSD-3. The upstream base is `0540991`.
 - IRIX 6.5.22, MIPS R4400, 256 MB (`banks = [128, 128, 0, 0]`), XL 24-bit.
 - **No QEMU, no QMP, no guest Debian, no X server.** `iris` runs on the host
   with no `DISPLAY` set and zero X11 fds (`ls -l /proc/<pid>/fd`) — the same
@@ -282,10 +286,22 @@ was still painting, and reported 0/7 with a bounding box 655 px wide.
 Button edges land too: `DOWN1` on the Toolchest's *System* entry raised it and
 opened its menu pane (47 713 pixels changed), and `UP1` closed it.
 
-**Still open:** the same proof driven from a real browser through `page.mouse`,
-which is what clears the registry's `reset.mouse` / `reset.keyboard`
-`UNVERIFIED`. Nothing about the mechanism is in doubt; the browser leg has not
-been run.
+**The browser leg is now run**, 2026-09-10, against the live station through the
+public gallery in a real Chrome — which is what cleared the registry's
+`reset.mouse` / `reset.keyboard`. Five targets moved with `page.mouse.move` and
+read back with `CUR`, i.e. judged by the guest's own VC2 cursor and not by the
+thing that sent them: `300,200` and `640,512` and `1100,300` exact, `980,760`
+and `200,900` one pixel low in y. A `mouse.down` on the Toolchest opened the
+*Desktop* menu, a drag to *Open Unix Shell* launched a winterm, `uname -aRs`
+typed into it with no dropped characters, and the SPA's own **↺ Restore to
+golden snapshot** put the scene back with the pointer live 1 px from target.
+
+**One trap for anyone writing the next such probe.** The stream is a 5:4 picture
+in whatever box the layout gives it, so it is letterboxed, and mapping guest
+coordinates across the *element's* width lands tens of pixels out — the first run
+of this probe pressed the Toolchest at guest x≈5 instead of x=52 and read a
+340 px error. Compute the `object-fit: contain` rect first. The station was
+never wrong; the probe was.
 
 ## Reset and checkpoint
 
@@ -457,7 +473,7 @@ was measured live through `ctl.sock` and `fb.shm`.
 
 | | Iris `1e05210` (then live) | Iris `0540991` interp | Iris `0540991` jitv2 | MAME `irix` (R4600, DRC, throttled) |
 |---|---|---|---|---|
-| boots IRIX to the desktop | yes | yes | **yes** (the `43d2715` jitv2 wedge is gone) | yes |
+| boots IRIX to the desktop | yes | yes | **NO — see below** | yes |
 | fixed CPU work, HOST wall-clock (100 k-iteration awk loop, 3 runs) | 8.4 s | 8.1–10.2 s | **1.95–2.04 s** | 1.60 s |
 | single pointer move → framebuffer, median of 5 | 361 ms | 285 ms | 383 ms | **68 ms** |
 | pointer stream (60 events @ 20 ms), lag after the last event | 216 ms | 224 ms | 397 ms | ~0 ms (settled before the last ack) |
@@ -467,9 +483,16 @@ Three conclusions:
 
 - **The interpreter did not get faster.** A like-for-like bump is neutral on CPU
   and on the pointer.
-- **jitv2 is now usable and is a 4x CPU win** — level with MAME, whose DRC is
-  throttled to real-Indy speed. It costs a continuously busy compile thread and
-  ~360 MB more RSS.
+- **jitv2 is a 4x CPU win on this workload and it is still not shippable.**
+  Level with MAME, whose DRC is throttled to real-Indy speed, at the cost of a
+  continuously busy compile thread and ~360 MB more RSS. **Corrected 2026-09-10:
+  the "boots IRIX to the desktop" row above was scored on a bare Toolchest over
+  a flat root, because that is what a jitv2 build reaches — 4Dwm and fm both
+  SIGSEGV, so the session never starts the file manager. The old `43d2715` wedge
+  is indeed gone; what replaced it is quieter and was mistaken for the exhibit.
+  The lesson is that "boots to the desktop" has to be scored against the
+  fixture's own description of the scene, not against "X is up and something is
+  painted".** The station ships without jitv2 — [§*Known gaps*](#known-gaps).
 - **The pointer lag is not the emulator core.** Every Iris build sat at
   250–400 ms and MAME at ~70 ms, because the station was a **bridge**: QEMU PS/2
   → guest X → winit → Iris → llvmpipe → dbus capture, versus MAME's host-native
@@ -628,9 +651,6 @@ neither.
   serial exec channel; `labctl exec` has nothing to offer here. Everything an
   operator needs is on the `mamectl/1` socket instead. Narrowing which of the
   two it is, is a bounded next task.
-- **`reset.mouse` / `reset.keyboard` are `UNVERIFIED` in the registry**: proven
-  by framebuffer, not yet through the real UI in a browser. Stream C's
-  `e2e-live` probe is what clears them.
 - **Two upstream defects found while reading Iris**, both worth a PR to
   `techomancer/iris`: `save_screenshot` writes the blue byte as the PNG's red
   channel, and the refresh loop sleeps the frame remainder **twice**, so a

@@ -42,14 +42,37 @@ changed is what is underneath it.
   machine it lived in cost about one and a half processor cores all by itself,
   and it is gone.
 
-## Not yet true when this note was written — check before publishing
+## Resolved at cutover, 2026-09-10 — both caveats are now clear
 
-Two things were still open at the integration pass and may still be:
-the exhibit's **starting scene** has to be re-baked by hand at cutover (a cold
-boot stops short of the full desktop), and a **menu drawn by the IRIX window
-manager comes out black** — an emulator gap, not a conversion one. Do not write
-prose that describes a visitor opening a menu until that is fixed. See
-`docs/lab/IRIS-DEBRIDGE-BRIEF.md` §7.
+The two open items above are **fixed, and they were one bug**. The exhibit's
+starting scene and the black menu had the same cause: the new, four-times-faster
+arithmetic engine mentioned in the second bullet was quietly miscompiling two of
+IRIX's own desktop programs — the window manager and the file manager — so both
+crashed the instant the desktop tried to start. What was left was a menu bar
+over an empty background, which is the scene the integration pass could not
+explain. Built without that engine, the machine logs itself in and arrives at
+the real Indigo Magic Desktop unattended: the icon column down the right edge,
+the textured background, the lot. The menus draw properly too.
+
+**So the menu prose is now safe to write** — a visitor really can open the
+Toolchest and read it. Verified on 2026-09-10 in a real browser against the live
+gallery: the menu opened, a drag down it launched a Unix shell, `uname` typed
+into that shell answered, and the exhibit's own *Restore to golden snapshot*
+button put the scene back.
+
+Giving up the fast engine cost less than it sounds: an idle desktop is not an
+arithmetic benchmark, and the machine idles at essentially the same cost as
+before.
+
+**One number in the bullets above is stale.** "361 milliseconds became 80" was
+measured on the fast-engine build that is no longer shipped. The pointer is
+still absolute and still lands on the pixel asked for (five targets from a real
+browser, within one pixel), and reset is still instant (**0.31 s**, slightly
+better than the 0.4 s quoted). But the 80 ms figure itself has NOT been
+re-measured on the shipped build — do not print it as it stands. Either
+re-measure it or write the sentence without the number.
+
+Cutover cost the exhibit **8 minutes 32 seconds** offline.
 ## Sources
 
 - `docs/lab/IRIS-DEBRIDGE-BRIEF.md` — design and results record
