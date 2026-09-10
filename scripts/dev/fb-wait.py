@@ -38,6 +38,14 @@ exact hashing reported "last change at 120.1s" on a screen that was frozen.
 A paused guest never changes: this tool does NOT hold a wake lease (it must not
 resume a station somebody paused); use it on rigs and clones (SH_IDLE_PAUSE_SECS=0)
 or check `query-status` first.
+
+HOST-NATIVE STATIONS HAVE NO QMP. `--shm <fb.shm>` reads the same IFB1 mapping
+the daemon does (scripts/shmshot.py's reader, seqlock and all) instead of asking
+QEMU for a screendump, so MAME-, VICE-, Previous-, FS-UAE- and Iris-native rigs
+wait on their framebuffer the same way every QEMU guest already does. The file
+not existing yet is not an error: the publisher creates it with its first frame,
+so `--shm` simply keeps polling — which makes "wait until the emulator draws
+anything at all" the same call as "wait until it settles".
 """
 
 from __future__ import annotations
@@ -85,6 +93,24 @@ class Qmp:
         return Image.open(path).convert("RGB")
 
 
+class Shm:
+    """The IFB1 mapping a host-native station publishes — the daemon's own source."""
+
+    def __init__(self, path: str):
+        self.path = path
+
+    def screendump(self, _tmp: str):
+        from PIL import Image
+
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+        import shmshot  # noqa: PLC0415  (deliberate: one reader, not a second copy)
+
+        if not os.path.exists(self.path) or os.path.getsize(self.path) < 64:
+            return None  # the publisher has not created it yet — keep polling
+        w, h, stride, pixels = shmshot.read_frame(self.path)
+        return Image.frombytes("RGB", (w, h), shmshot.to_rgb(w, h, stride, pixels))
+
+
 def differs(a, b, tolerance: int) -> bool:
     """True when more than `tolerance` pixels differ (cursor blink stays below it)."""
     from PIL import ImageChops
@@ -99,7 +125,8 @@ def differs(a, b, tolerance: int) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--qmp", required=True, help="QMP unix socket of the guest")
+    ap.add_argument("--qmp", help="QMP unix socket of the guest")
+    ap.add_argument("--shm", help="IFB1 framebuffer mapping of a host-native station")
     ap.add_argument("--settle", type=float, default=None, metavar="S", help="return once unchanged for S seconds")
     ap.add_argument("--change", action="store_true", help="return once the frame differs from the first one")
     ap.add_argument("--timeout", type=float, default=120.0, metavar="T")
@@ -111,8 +138,10 @@ def main() -> int:
     a = ap.parse_args()
     if a.settle is None and not a.change:
         ap.error("give --settle S and/or --change")
+    if bool(a.qmp) == bool(a.shm):
+        ap.error("give exactly one of --qmp and --shm")
 
-    q = Qmp(a.qmp)
+    q = Shm(a.shm) if a.shm else Qmp(a.qmp)
     fd, ppm = tempfile.mkstemp(prefix="fb-wait-", suffix=".ppm")
     os.close(fd)
     t0 = time.monotonic()
@@ -124,6 +153,11 @@ def main() -> int:
         while True:
             frame = q.screendump(ppm)
             now = time.monotonic() - t0
+            if frame is None:  # --shm: nothing published yet
+                if now >= a.timeout:
+                    break
+                time.sleep(a.interval)
+                continue
             if first is None:
                 first = last = frame
             elif differs(frame, last, a.tolerance):

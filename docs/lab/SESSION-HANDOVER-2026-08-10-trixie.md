@@ -318,7 +318,7 @@ binary md5 match, service active, framebuffer at the golden desktop).
 
 | Lever | Result |
 |---|---|
-| `jitv2` + `idle-pause` @`43d2715` | **IRIX never boots.** Bare blue root, `REX3 GO` frozen. `IRIS_NO_IDLE=1` does not save it |
+| `jitv2` + `idle-pause` @`43d2715` | **IRIX never boots.** Bare blue root, `REX3 GO` frozen. `IRIS_NO_IDLE=1` does not save it. **Superseded 2026-09-09:** jitv2 @`0540991` (no idle-pause) boots clean and is a 4x CPU win — `docs/guests/indyr4400.md` "Upstream bump" |
 | `-smp 4 → 8` | **Tile down.** vCPU count is part of the `golden` vmstate, so `-loadvm golden` fails and systemd restart-loops |
 | Pin bump to `43d2715` alone | Boots clean, **no win** — 23.65 vs 25.82 MIPS, neutral-to-slightly-worse |
 

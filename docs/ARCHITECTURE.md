@@ -19,12 +19,12 @@ flowchart TD
 
   subgraph F2[Front B emulator bridge 28 stations]
     B1[qemu-system running a Debian kiosk] --> B2[Xorg root window no window manager]
-    B2 --> B3[One full screen emulator VICE MAME hatari FS-UAE SIMH Iris]
-    B3 --> B4[The vintage machine C64 Atari ST PDP-11 Alto SGI Indy]
+    B2 --> B3[One full screen emulator hatari FS-UAE SIMH Caprice32 LinApple ContrAlto]
+    B3 --> B4[The vintage machine Atari ST PDP-11 Amiga 1200 Alto Star]
   end
 
-  subgraph F3[Front C host native 1 station irix]
-    C1[MAME on the host CPU with video none]
+  subgraph F3[Front C host native]
+    C1[One emulator on the host CPU publishing its own framebuffer MAME VICE es40 Previous FS-UAE Iris LisaEm maiko]
   end
 
   A1 -->|dbus display scanout of the guest framebuffer| S
@@ -65,9 +65,15 @@ from:
   exactly how a migrated station can render a black screen while every log, exit
   code and assertion reports success.
 
-Front C inverts the usual assumption in the other direction: `irix` has **no
-QEMU and no QMP at all**, because MAME's SGI Indy emulation kernel-panics under
-a KVM vCPU. A fourth front, `openvms`, runs *two* sibling VMs where the captured
+Front C inverts the usual assumption in the other direction: it has **no QEMU
+and no QMP at all** — the emulator runs on the host and publishes its own
+framebuffer. `irix` was the first, because MAME's SGI Indy emulation
+kernel-panics under a KVM vCPU; the rest of the front is there by choice, since
+host-native measured at ~69 % of a kiosk's cost. The gallery's **two** SGI Indys
+are both on it: `irix` (MAME, R4600) and `indyr4400` (Iris, R4400), the latter
+converted out of Front B in 2026-09 because the bridge, not the emulator, was
+what put 250–400 ms between a pointer move and the picture
+([`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md)). A fourth front, `openvms`, runs *two* sibling VMs where the captured
 one does nothing but serve X. The full taxonomy is in
 [`GUEST-TIERS.md`](GUEST-TIERS.md).
 

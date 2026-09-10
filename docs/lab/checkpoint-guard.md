@@ -275,17 +275,32 @@ checkpoint is an internal qcow2 snapshot labelled `golden`.
   paired with a CHD copied inside a `PAUSE` window, plus a provenance md5 binding both
   to the emulator binary. `scripts/build-guests/irix/irix-savestate/capture-checkpoint.sh`
   is the tool for that path.
+- **Iris snapshot directories** (`indyr4400`, once it is host-native). The checkpoint is
+  `saves/<name>/` — a manifest, per-device state, the COW overlay's dirty-sector set, and
+  RAM/framebuffer chunks in a shared content-addressable store — captured and restored
+  *in-process* by the emulator through its `mamectl/1` socket (`SAVEST` / `LOADST` /
+  `RESET`). There is no QMP monitor and no qcow2 label for the guard to reach, the CAS
+  store is shared between snapshots so no single file *is* the checkpoint, and the
+  provenance that binds state to binary lives in the snapshot's own
+  `kh-provenance.toml`, checked by the emulator on every restore. The tooling for that
+  path is `scripts/build-guests/irix/iris-golden/` (`prove-reset.py`, `irisrig.py`).
 - **`SH_RESET_MODE=restart`** — the boot artifact *is* the reset source; there is no
   checkpoint to recapture.
 - **`SH_RESET_MODE=pve-rollback`** — a PVE snapshot, not a qcow2 label.
 - **A launcher running QEMU with `-snapshot`** — guest writes never reach the qcow2.
 - **An unidentifiable runtime.** A guard that guesses the runtime is worse than no guard.
 
-Both savestate paths are file-based, which means a *better* guard is possible for them
+The savestate paths are file-based, which means a *better* guard is possible for them
 than for QEMU: write the new state under a temp name, prove it, then `mv` it over the
 old one — an atomic rename, with no window at all. That is the shape any future
 extension should take. It is not in this guard because it could not be proven tonight
 without touching `w2kalpha` and `tru64`, which other streams own.
+
+Iris is the first runtime to ship that shape rather than describe it: its `SAVEST`
+captures into `saves/<name>.new`, stamps the sidecar, then renames `<name>` to
+`<name>.prev` and `<name>.new` into place, so a crash mid-capture leaves the old
+checkpoint untouched and a bad bake is one `mv` from being undone. A guard extension
+for the other savestate stations has a working precedent to copy now.
 
 ## Proof
 

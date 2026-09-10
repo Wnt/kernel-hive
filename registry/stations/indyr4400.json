@@ -13,11 +13,11 @@
         "value": {
           "key": "indyr4400",
           "script": "tiles/indyr4400.sh",
-          "outputDir": "bridge/indyr4400",
+          "outputDir": "assets/indyr4400",
           "class": "retro",
-          "estimated": "~25-35m",
+          "estimated": "~20m",
           "automation": "full",
-          "produces": "tiles/indyr4400 overlay + golden (Iris SGI Indy R4400 -> IRIX 6.5.22)",
+          "produces": "host-native Iris binary + nspawn rootfs skeleton + the read-only IRIX 6.5.22 disk asset (SGI Indy R4400; no kiosk, no QEMU)",
           "flags": []
         },
         "defaultOrder": {
@@ -30,18 +30,18 @@
   "operator": {
     "labctl": {
       "dir": "/data/vms/streamhost/stations/indyr4400",
-      "qmp": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
-      "pointer_mode": "rel",
+      "qmp": null,
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
-      "ssh_port": 5839,
-      "exec_port": 5839,
-      "exec_kind": "ssh",
-      "exec_user": "root",
-      "exec_key": "/data/vms/bridge/bridge_key",
-      "console": "fb",
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
       "udp_port": 54136,
-      "notes": "exec: labctl exec indyr4400 \"<cmd>\" (ssh root@:5839, key bridge_key) — reaches the Debian kiosk, NOT the emulated SGI Indy. The Indy itself is driven only through the framebuffer + PS/2. Pointer is RELATIVE: Iris grabs the pointer on the first left click inside its window and feeds the emulated Indy PS/2 deltas; Right-Ctrl releases the grab."
+      "notes": "HOST-NATIVE since the 2026-09 de-bridging (docs/lab/IRIS-DEBRIDGE-LEDGER.md): the museum's fork of Iris runs on the host inside a systemd-nspawn container -- no captured Debian, no QEMU, no QMP, no X server, no window. Frames IFB1 shm, input mamectl/1, audio off. `labctl exec` has no ssh channel here: the bridge era's port 5839 reached the Debian kiosk, not the emulated Indy, and the kiosk is gone. The machine's own exec is Iris's ci socket at /data/vms/streamhost/stations/indyr4400/run/iris-ci.sock (serial-send / wait-serial / serial-read). It carries ONLY the exec channel: the reset verbs ride the station's one mamectl/1 socket at run/ctl.sock, with the pointer and the keys. Iris's monitor console listens on IRIS_MONITOR_ADDR (127.0.0.1:18136 here; upstream hardcodes 8888) inside the container's private netns: reach it with `nsenter -t $(cat /data/vms/streamhost/stations/indyr4400/mame.pid) -n`, never from the host directly. Pointer is ABSOLUTE through a closed loop against Iris's VC2 hardware-cursor registers -- the mechanism the MAME `irix` sibling already runs against this same IRIX 6.5 X server. See docs/guests/indyr4400.md."
     }
   },
   "render": {
@@ -50,7 +50,7 @@
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "stationsManifestPrelude": "\n# indyr4400 (VMID 239) — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); Iris is\n#   userspace Rust and runs as an ordinary KVM bridge tile. ssh 5839. The 6.3 GB\n#   IRIX disk is a READ-ONLY virtio asset, staged by tiles/indyr4400/fetch-assets.sh.\n",
+    "stationsManifestPrelude": "\n# indyr4400 — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22, HOST-NATIVE.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); this one\n#   is userspace Rust, de-bridged in 2026-09 and now running on the host inside a\n#   systemd-nspawn container with no QEMU, no kiosk and no X. The 6.3 GB IRIX disk\n#   is a READ-ONLY asset staged by stations/indyr4400/fetch-assets.sh.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -60,11 +60,12 @@
     "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "iris-vc2-closedloop",
+      "absolute": true,
       "present": true,
-      "device": "ps2",
+      "device": "vc2-hardware-cursor",
       "scale": 1.0,
       "offset": [
         0,
@@ -78,100 +79,78 @@
   "runtime": {
     "stationEnv": {
       "SH_STATION": "indyr4400",
-      "SH_QMP": "/data/vms/streamhost/stations/indyr4400/qmp.sock",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":94",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/indyr4400/indyr4400_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/indyr4400/run/fb.shm",
       "SH_PORT": "54136",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_POINTER": "rel",
+      "SH_INPUT_BACKEND": "mamesock",
       "SH_AUDIO": "off",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/indyr4400/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/indyr4400/signaling.json",
       "SH_CERT_ROTATE_DAYS": "10"
     },
-    "vmidLabel": 239,
-    "qemu": {
-      "mode": "verbatim",
+    "bringUpOrder": 58,
+    "x11": {
+      "display": ":94",
+      "geometry": "1280x1024x32",
+      "capture": "shm",
+      "shmPath": "/data/vms/streamhost/stations/indyr4400/run/fb.shm",
+      "launcher": "streamhost/stations/indyr4400/x11-runtime.sh",
+      "resetMode": "relaunch",
       "emitArgs": [
         "--tile",
         "indyr4400",
-        "--vmid",
-        "239",
         "--udp",
         "54136",
+        "--x11",
+        "--x11-display",
+        ":94",
+        "--capture",
+        "shm",
         "--pointer",
-        "rel",
+        "abs",
+        "--input-backend",
+        "mamesock",
         "--audio",
         "off",
         "--fps",
         "30",
-        "--launcher-file",
-        "$T/indyr4400/qemu-streamhost.sh",
+        "--x11-runtime-file",
+        "$T/indyr4400/x11-runtime.sh",
+        "--aux-file",
+        "$T/indyr4400/nspawn-inner.sh",
         "--aux-file",
         "$T/indyr4400/fetch-assets.sh",
+        "--aux-file",
+        "$T/indyr4400/kh-reset.sh",
+        "--aux-file",
+        "$T/indyr4400/indy.keymap",
+        "--aux-file",
+        "$T/indyr4400/ctl.py",
         "--env-append-file",
         "$T/indyr4400/station.env.fixture"
       ],
-      "deviceSetId": "indyr4400-current",
-      "launcher": "streamhost/stations/indyr4400/qemu-streamhost.sh",
-      "envFixture": "streamhost/stations/indyr4400/station.env.fixture",
       "auxFiles": [
-        "streamhost/stations/indyr4400/fetch-assets.sh"
-      ],
-      "binary": "qemu-system-x86_64",
-      "accel": "kvm",
-      "cpu": "host",
-      "memoryMB": 2048,
-      "smp": 4,
-      "vga": "std",
-      "machine": "pc-i440fx-11.0",
-      "deviceSetSummary": [
-        "-name streamhost-indyr4400",
-        "-enable-kvm -m 2048 -smp 4 -machine pc-i440fx-11.0,vmport=off -cpu host",
-        "-rtc base=localtime",
-        "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-        "-drive file=\"$IRIXDISK\",if=virtio,format=raw,readonly=on",
-        "-vga std",
-        "-display dbus,p2p=on",
-        "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
-        "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-        "-pidfile $BASE/qemu.pid"
-      ],
-      "sourceDeviceSet": {
-        "binary": "qemu-system-x86_64",
-        "machine": "pc-i440fx-11.0",
-        "accel": "kvm",
-        "cpu": "host",
-        "memoryMB": 2048,
-        "smp": 4,
-        "vga": "std",
-        "deviceSetSummary": [
-          "-name streamhost-indyr4400",
-          "-enable-kvm -m 2048 -smp 4 -machine pc-i440fx-11.0,vmport=off -cpu host",
-          "-rtc base=localtime",
-          "-drive file=\"$OVERLAY\",if=ide,format=qcow2 -boot c",
-          "-drive file=\"$IRIXDISK\",if=virtio,format=raw,readonly=on",
-          "-vga std",
-          "-display dbus,p2p=on",
-          "-netdev user,id=n0,hostfwd=tcp:127.0.0.1:5839-:22 -device e1000,netdev=n0",
-          "-qmp unix:$BASE/qmp.sock,server=on,wait=off",
-          "-pidfile $BASE/qemu.pid"
-        ]
-      },
-      "launcherParity": {
-        "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0 with vmport=off, matching the tracked launcher and the golden bake"
-      }
-    },
-    "bringUpOrder": 58
+        "streamhost/stations/indyr4400/nspawn-inner.sh",
+        "streamhost/stations/indyr4400/fetch-assets.sh",
+        "streamhost/stations/indyr4400/kh-reset.sh",
+        "streamhost/stations/indyr4400/indy.keymap",
+        "streamhost/stations/indyr4400/ctl.py",
+        "streamhost/stations/indyr4400/station.env.fixture"
+      ]
+    }
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3E6E9E",
-    "eraLabel": "1993 · SGI Indy R4400 — IRIX 6.5",
-    "pointerRel": true
+    "eraLabel": "1993 · SGI Indy R4400 — IRIX 6.5"
   },
   "museum": {
     "id": "indyr4400",
@@ -197,24 +176,24 @@
       "File System Navigator"
     ],
     "blurb": "The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 — the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo² and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5 — a different processor inside, and the reason the two sit side by side.",
-    "notes": "Live streamhost tile. Emulator-in-captured-Linux BRIDGE tile: a captured Debian 12 kiosk runs Iris (techomancer/iris, BSD-3), a userspace Rust SGI Indy emulator, booting IRIX 6.5.22 on a 1280x1024 X root captured 1:1. The DELIBERATE pair to the irix tile: same museum machine, different silicon (R4400 vs R4600) and a different emulator, and unlike MAME — which kernel-panics under a KVM vCPU and forced the irix tile bare-metal — Iris runs happily inside KVM, so this one is an ordinary bridge tile with QEMU pointer, keyboard and loadvm-golden reset. Pointer is RELATIVE (Pointer Lock): Iris grabs on first click and feeds PS/2 deltas. Audio and networking are off in this phase. archetype beige-tower-crt. See streamhost/docs/BRIDGE.md and docs/guests/indyr4400.md."
+    "notes": "Live streamhost station, HOST-NATIVE since the 2026-09 de-bridging (rule 13). Iris (github.com/techomancer/iris, BSD-3; the museum runs a fork), a userspace Rust SGI Indy emulator, runs directly on the host inside a systemd-nspawn container and publishes its own framebuffer and input planes -- there is no captured Debian kiosk, no QEMU, no X server and no window left in the path. It was a bridge until then, and the conversion is why: one pointer move took 361 ms to reach the framebuffer through QEMU PS/2 -> guest X -> winit -> llvmpipe -> dbus, against 68 ms for the host-native MAME `irix` sibling. The DELIBERATE pair to that station: same museum machine, different silicon (R4400 vs R4600) and a different emulator. Pointer is absolute through a closed loop on Iris's VC2 hardware-cursor registers; audio and networking are still off. archetype beige-tower-crt. See docs/guests/indyr4400.md."
   },
   "emulator": {
     "family": "Iris",
-    "version": "1e05210",
-    "source": "scripts/build-guests/tiles/indyr4400.sh (github.com/techomancer/iris main)",
+    "version": "fork Wnt/iris, branch kh-native @ 8cbb689 (upstream base techomancer/iris@0540991)",
+    "source": "scripts/build-guests/emulators/build-iris-native.sh (features lightning,rex-jit,chd,jitv2; toolchain nightly-2026-08-02 pinned on the fork); scripts/build-guests/tiles/indyr4400.sh stages it beside the container rootfs",
     "driver": "SGI Indy R4400"
   },
   "ui": "desktop",
   "reset": {
     "stationDir": "indyr4400",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
-    "resetMode": "loadvm",
-    "snapshot": "golden",
+    "resetMode": "relaunch",
+    "snapshot": null,
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "SGI Indy (MIPS R4400) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in Iris, 1280x1024 1:1. Emulator-bridge tile added 2026-08-10."
+    "fixture": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in the museum's fork of Iris, HOST-NATIVE at 1280x1024: no kiosk, no QEMU, no X server, no window. Reset is an in-process restore of the IRIS_STATE snapshot over the station's one mamectl/1 socket (LOADST golden, measured 0.19-1.6 s), with a ~7-minute cold boot as the loud bounded fallback after two launches that restore and never ack. Converted from the QEMU bridge on 2026-09-10; the bridge's loadvm-golden checkpoint is retired with the kiosk that held it. mouse/keyboard UNVERIFIED until the real-browser probe clears them."
   },
   "migrationExceptions": []
 }
