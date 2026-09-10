@@ -3,7 +3,6 @@ import type { StreamControlHandle } from '../../../three/useStreamControl';
 import type { ArmMode } from '../../../input/touchGestures';
 import { autoModel, isPrecisePointer } from '../../../input/pointerModeAuto';
 import { useTouchGestures, type TouchBadgeState, type TouchGestureController } from './useTouchGestures';
-import { coachSeen, markCoachSeen } from './coachmark';
 import { isTouchDevice } from './env';
 import type { PresentAspect } from '../presentAspect';
 import type { GestureState, Vec2 } from './types';
@@ -30,6 +29,12 @@ import type { GestureState, Vec2 } from './types';
 //
 //  Using the ⋯ menu's toggle PINS the model: an explicit choice is never undone
 //  by the auto rule. The pin lasts for this stream (a new station remounts the hook).
+//
+//  There is no gesture legend. There was one — a sheet that covered the whole
+//  machine on a phone's first visit — and it is gone on purpose: the vocabulary
+//  it taught is the one the surface demonstrates the moment a finger lands on
+//  it, and a modal between a visitor and a running computer is a worse first
+//  second than any legend is a better one.
 // ---------------------------------------------------------------------------
 
 export interface TouchControl {
@@ -50,12 +55,6 @@ export interface TouchControl {
   penHoverRef: RefObject<number>;
   /** paste clipboard text into the guest — MUST be called from a user gesture. */
   paste: () => void;
-  /** the touch-help coachmark is showing (auto once, or re-opened from the ⋯ menu). */
-  helpOpen: boolean;
-  /** re-open the touch-help coachmark (⋯ menu). */
-  showHelp: () => void;
-  /** dismiss the coachmark + persist the seen-flag. */
-  dismissHelp: () => void;
 }
 
 export function useTouchControl({
@@ -95,11 +94,6 @@ export function useTouchControl({
     stageRef, presentAspect,
   });
   const { controller } = gestures;
-
-  // Coachmark: auto-show once (first live station), re-openable from the ⋯ menu.
-  const [helpOpen, setHelpOpen] = useState(() => !coachSeen());
-  const showHelp = useCallback(() => setHelpOpen(true), []);
-  const dismissHelp = useCallback(() => { markCoachSeen(); setHelpOpen(false); }, []);
 
   // ONE writer for the model, so the ref and the React state can never disagree
   // (the ref is what the event handlers read, and they read it mid-event).
@@ -172,8 +166,5 @@ export function useTouchControl({
     heldRef,
     penHoverRef,
     paste,
-    helpOpen,
-    showHelp,
-    dismissHelp,
   };
 }
