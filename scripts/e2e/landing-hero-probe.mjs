@@ -20,9 +20,11 @@ import { chromium } from 'playwright';
 //           claim NOTHING, show the poster, and print the honest line ON the
 //           poster — `filter` on the <img> gives it a stacking context, so the
 //           veil needs a position or the sentence paints behind the picture.
-//   anon    `?walkin=anon` forces the fixture's 60-second budget: the countdown
-//           must mirror it down to zero and the wall must arrive over the stage
-//           with both ways through it.
+//   anon    `?walkin=anon` forces the fixture's 60-second budget: the wall must
+//           arrive over the stage with both ways through it, and its clock must
+//           read 0:00. The HERO carries no clock — a visitor gets no warning
+//           that their intro time is running out, they meet the wall, and that
+//           is the operator's decision (see LandingTop).
 //
 // Run from ~/e2e on CT950 (see the node_modules note in this directory's
 // README), against a staged slot or the live origin:
@@ -69,10 +71,10 @@ const read = () => page.evaluate(() => {
       return el ? `${el.tagName}.${el.className}` : null;
     })(),
     veil: q('.landing-stage__veil-line')?.textContent?.slice(0, 60) ?? null,
-    countdown: q('.landing-countdown__value')?.textContent ?? null,
+    // The wall's clock. `.landing-countdown__value` used to be read here and
+    // has matched nothing for some time — the component renders gate-* classes.
+    countdown: q('.gate-countdown-clock')?.textContent ?? null,
     wall: q('.landing-gate__title')?.textContent ?? null,
-    cta: [...document.querySelectorAll('.landing-hero__cta .landing-btn')]
-      .map((e) => `${e.className.includes('primary') ? 'PRIMARY' : 'quiet'}:${e.textContent}`),
     cards: document.querySelectorAll('.os-card').length,
     stuck: document.body.innerText.includes('Loading the collection'),
     focused: document.activeElement?.className ?? '',
@@ -130,7 +132,6 @@ if (MODE === 'switch') {
 }
 
 if (MODE === 'anon') {
-  if (!first.countdown) fail.push('no countdown for an anonymous visitor');
   for (let i = 0; i < 7 && !(await read()).wall; i += 1) await page.waitForTimeout(10_000);
   const walled = await read();
   console.log('WALL  ', JSON.stringify(walled));

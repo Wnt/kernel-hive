@@ -5,7 +5,7 @@
    (the correctness rule) stays enforced. */
 import { useCallback, useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { StreamControlHandle } from '../../../three/useStreamControl';
-import { currentFullscreenElement, enterFullscreen, leaveFullscreen } from './fullscreen';
+import { currentFullscreenElement, enterFullscreen, leaveFullscreen } from '../../fullscreen';
 import { lockAllSystemKeys, unlockSystemKeys } from './keyboardLock';
 import { MAX_LOCK_DELTA } from './env';
 import type { Vec2 } from './types';

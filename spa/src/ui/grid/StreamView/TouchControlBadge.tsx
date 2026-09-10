@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { ArmMode } from '../../../input/touchGestures';
 import type { TouchBadgeState } from './useTouchGestures';
+import { DockedControl } from '../../DockedChrome';
 
 // ---------------------------------------------------------------------------
 //  TouchControlBadge (T-1) — the always-visible "what will my next tap do?"
@@ -10,6 +11,11 @@ import type { TouchBadgeState } from './useTouchGestures';
 //  double-tap → double-click still work with nothing armed; the toggle is for
 //  users who can't hold a long-press or want an explicit, deliberate action.
 //
+//  WHERE it sits is chromeDock's call, not this file's: the stage's bottom-left
+//  when the picture fills the view, and the control row under the canvas when
+//  the picture is the landing page's mini display, which shows the guest and
+//  nothing laid on top of it.
+//
 //  It arms the STYLUS too, and there it is not a convenience but the only route
 //  to a right-button DRAG: the S-Pen barrel exposes no pointer-button bit on this
 //  device and Android eats its press outright during a drag, so the barrel can
@@ -18,7 +24,7 @@ import type { TouchBadgeState } from './useTouchGestures';
 //  IRIX root menu) needs to be dragged onto an item.
 // ---------------------------------------------------------------------------
 
-const WRAP: CSSProperties = {
+const CORNER: CSSProperties = {
   position: 'absolute',
   left: 'max(10px, env(safe-area-inset-left))',
   bottom: 'max(10px, env(safe-area-inset-bottom))',
@@ -37,9 +43,6 @@ const ON: CSSProperties = {
   background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--paper-raised)',
 };
 
-// Keep the badge from ever leaking a tap into the guest pointer forwarder.
-const swallow = (e: { stopPropagation: () => void }) => e.stopPropagation();
-
 export function TouchControlBadge({
   state,
   onArm,
@@ -51,17 +54,17 @@ export function TouchControlBadge({
   const toggle = (mode: ArmMode) => () => onArm(armMode === mode ? 'none' : mode);
 
   return (
-    <div style={WRAP} onPointerDown={swallow}>
+    <DockedControl order={3} corner={CORNER}>
       <button
         type="button"
         style={armMode === 'right-click' ? { ...BTN, ...ON } : BTN}
         aria-pressed={armMode === 'right-click'}
-        onPointerDown={swallow}
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={toggle('right-click')}
         title="Arm a one-shot right-click for your next tap or pen stroke — hold and drag it to use a spring-loaded menu"
       >
         {armMode === 'right-click' ? '⊕ Right-click · armed' : '⊕ Right-click'}
       </button>
-    </div>
+    </DockedControl>
   );
 }

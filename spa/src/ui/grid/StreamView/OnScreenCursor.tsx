@@ -136,8 +136,12 @@ export function OnScreenCursor({
   }, [cursorRef, heldRef, control, gestureRef, onPan, presentAspect]);
 
   return (
-    <div ref={wrapRef} style={WRAP}>
-      <div ref={dotRef} style={{ ...DOT, opacity: 0 }}>
+    // Classed, though every style here is inline: this is the one thing that is
+    // ALLOWED to paint on the guest's picture, and an audit of what covers the
+    // exhibit (scripts/e2e/landing-chrome-probe.mjs) has to be able to say so
+    // by name rather than by guessing at an anonymous div.
+    <div ref={wrapRef} className="sv-cursor" style={WRAP}>
+      <div ref={dotRef} className="sv-cursor__dot" style={{ ...DOT, opacity: 0 }}>
         <div style={H_ARM} />
         <div style={{ ...H_ARM, left: 2.5 }} />
         <div style={V_ARM} />

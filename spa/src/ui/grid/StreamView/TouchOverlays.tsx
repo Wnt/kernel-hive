@@ -4,7 +4,6 @@ import type { GestureState } from './types';
 import type { TouchControl } from './useTouchControl';
 import type { PresentAspect } from '../presentAspect';
 import { TouchControlBadge } from './TouchControlBadge';
-import { Coachmark } from './Coachmark';
 import { OnScreenCursor } from './OnScreenCursor';
 
 // ---------------------------------------------------------------------------
@@ -13,7 +12,6 @@ import { OnScreenCursor } from './OnScreenCursor';
 //    - DIRECT (absolute): the armed-state badge (one-shot right-click arm).
 //    - TRACKPAD (relative): abs stations get the OnScreenCursor sprite (T-3);
 //      rel stations need none (the guest draws its own cursor).
-//  The one-time coachmark is always present.
 // ---------------------------------------------------------------------------
 
 export function TouchOverlays({
@@ -43,7 +41,6 @@ export function TouchOverlays({
           long-press, but a hold is how you take hold of something — it is the
           drag gesture — so the two could not share a still finger. */}
       <TouchControlBadge state={touch.badge} onArm={touch.setArm} />
-      <Coachmark open={touch.helpOpen} onClose={touch.dismissHelp} trackpad={trackpad} />
       {absTrackpad && (
         <OnScreenCursor
           cursorRef={touch.cursorRef}

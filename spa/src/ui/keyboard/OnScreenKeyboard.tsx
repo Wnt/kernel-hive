@@ -11,6 +11,16 @@
 //      DIRECT child of .sv-root through the fragment — the sheet must not
 //      wrap it, or the IME-dodging absolute positioning would break).
 //
+//  WHERE IT OPENS is chromeDock's call. Sibling-below-the-stage is right when
+//  the root is the viewport: the picture gives up height it has to spare. It is
+//  wrong inside the landing page's fixed 4:3 canvas, where the same layout took
+//  the height out of the guest and squeezed a whole desktop into a letterbox
+//  slit — and squeezed the KEYS with it, since a .osk-qrow scrolls on its
+//  x-axis and a scroll container has no automatic minimum height, so the rows
+//  collapsed under a clamped sheet and clipped every keycap's label away. Given
+//  a dock, the keyboard opens BELOW the canvas at its natural size and the
+//  picture never moves.
+//
 //  Key buttons fire on pointerdown with preventDefault — they steal no focus
 //  and never summon the IME. Send semantics live in keySender (latch one-shot,
 //  danger two-tap arm, tap-repeat); free-text mutation-diff in freeTextDiff.
@@ -27,6 +37,8 @@ import { diffProxyValue } from './freeTextDiff';
 import { hapticTap } from './haptics';
 import { DANGER_ARM_MS, LONGPRESS_MS, PROXY_SENTINEL } from './oskConstants';
 import { OSK_CSS } from './oskStyles';
+import { useChromeDock } from '../chromeDock';
+import { DockedKeys } from '../DockedChrome';
 import { reach } from '../../analytics';
 import { composeTelemetry, type ComposeTelemetry } from './composeTelemetry';
 
@@ -362,11 +374,17 @@ export function OnScreenKeyboard({
     ];
   };
 
+  // Docked, the keyboard is a region below the canvas rather than a sheet flown
+  // over the bottom of a full-screen view — so the free-text input sits in flow
+  // above the keys instead of dodging an IME that cannot reach it there.
+  const docked = useChromeDock()?.keys != null;
+  const dockCls = docked ? ' osk-docked' : '';
+
   return (
-    <>
+    <DockedKeys>
       <style>{OSK_CSS}</style>
       {variant === 'sheet' && abcOpen && (
-        <div className="osk-abc">
+        <div className={`osk-abc${dockCls}`}>
           <input
             ref={abcRef}
             className="osk-abc-input"
@@ -387,7 +405,7 @@ export function OnScreenKeyboard({
       )}
       {/* No per-layer height hook: the sheet is a constant QWERTY-tall region
           (oskStyles), so switching layers never moves it. */}
-      <div className={variant === 'sheet' ? 'osk-sheet' : 'osk-inline'}>
+      <div className={(variant === 'sheet' ? 'osk-sheet' : 'osk-inline') + dockCls}>
         {variant === 'sheet' && (
           <LayerTabs
             layer={layer}
@@ -422,6 +440,6 @@ export function OnScreenKeyboard({
           qwertyBody(layer === 'abc' ? ABC_ROWS : SYM_ROWS)
         )}
       </div>
-    </>
+    </DockedKeys>
   );
 }
