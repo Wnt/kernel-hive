@@ -11,6 +11,7 @@ import { ObservabilityPage } from './admin/observability/ObservabilityPage';
 import { useManifest } from './data/useManifest';
 import { useSession } from './data/SessionContext';
 import LandingPage from './landing/LandingPage';
+import { showsLandingHero } from './landing/heroAudience';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
 import { WalkinChrome } from './walkin/WalkinChrome';
@@ -102,19 +103,30 @@ export default function App() {
   return (
     <div className="app-root" ref={appRootRef}>
       <Routes>
-        {/* ---------- DEFAULT: the landing page, for EVERY visitor ----------
+        {/* ---------- DEFAULT: the landing hero for a stranger, the plain
+            grid for everyone else ----------
             A live, driveable machine above the fold and the decade-grouped
-            collection below it (landing/LandingPage.tsx). It replaces two
-            surfaces at once: the bare grid an invited visitor used to land on,
-            and the three static poster cards a stranger used to get at
-            /walkin. Neither told anybody what this museum is, because both
-            asked them to press something before anything moved.
+            collection below it (landing/LandingPage.tsx) — but ONLY for role
+            'anon' (landing/heroAudience.ts's showsLandingHero()), the
+            visitor the hero exists to convert. It replaces the three static
+            poster cards a stranger used to get at /walkin, which told
+            nobody what this museum is because it asked them to press
+            something before anything moved.
 
-            The shared TopBar is deliberately NOT rendered here — the landing
-            page carries its own bar, whose job is a first-time visitor rather
-            than a Grid/3D/Fleet switch for somebody who already knows the
-            place. Every other route keeps the bar exactly as it was. */}
-        <Route path="/" element={<LandingPage onOpenPlacard={openPoster} />} />
+            `admin`, `viewer` and `walkin` get `/` exactly as it rendered
+            before this session (`git show d9476c3e:spa/src/App.tsx`): the
+            plain grid behind the shared TopBar. A conversion pitch and a
+            free-minute countdown are noise to a visitor who already has a
+            seat — see heroAudience.ts for the four-role decision and its
+            test. */}
+        <Route
+          path="/"
+          element={
+            showsLandingHero(role)
+              ? <LandingPage onOpenPlacard={openPoster} />
+              : <>{TopBar}<GridView onOpenPlacard={openPoster} /></>
+          }
+        />
 
         {/* ---------- Full-viewport live stream of one station (deep-linkable) ---------- */}
         {/* A walk-in never streams a museum STATION — their live surface is
