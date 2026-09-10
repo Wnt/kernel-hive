@@ -106,8 +106,11 @@ const fail = [];
 // own fixture (walkin/api.ts `notBuiltYet`) — which is exactly the state of a
 // box that has not been deployed yet. Making that explicit here means the
 // engage run proves the same code path whether or not the server half is live.
-const stubEngage = process.env.HERO_STUB_ENGAGE === '1'
-  && (MODE === 'engage' || MODE === 'recover' || MODE === 'resume');
+// `anon` is the FIXTURE preview by definition — it forces /walkin/state to the
+// local stub — so its engagement has to be stubbed too, or the preview clock
+// would wait on a server whose answer it is not reading anyway.
+const stubEngage = MODE === 'anon'
+  || (process.env.HERO_STUB_ENGAGE === '1' && ['engage', 'recover', 'resume'].includes(MODE));
 if (stubEngage) {
   await page.route('**/walkin/engage', (route) => route.fulfill({
     status: 404, contentType: 'application/json', body: '{"error":"no such endpoint"}',

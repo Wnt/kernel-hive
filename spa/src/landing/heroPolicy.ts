@@ -19,7 +19,7 @@ import { accessAllows } from '../walkin/sessionEnd';
 //  trivial to get backwards.
 //
 //  WHAT COUNTS AS "SOMEBODY IS THERE" changed on 2026-09-10, and it is the
-//  reason for most of this file. The visitor's free minute used to start when
+//  reason for most of this file. The visitor's intro time used to start when
 //  the page took a machine, so a stranger reading the headline was already
 //  spending it — measured on the live site: seventeen seconds gone before
 //  anything was touched. Now the minute starts at the first MEANINGFUL input,

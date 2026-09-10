@@ -121,7 +121,7 @@ export function heroCaption(
       // minute somebody is still reading their way towards.
       return engaged
         ? `Your keys and your mouse are going straight into ${name}. Nothing is recorded, and the next visitor gets a clean copy.`
-        : `Your input goes straight into ${name}. Your clock does not start until you click or type. Look as long as you like first.`;
+        : `Your input goes straight into ${name}. Your intro time does not start until you click or type. Look as long as you like first.`;
     case 'connecting':
       return `Waking ${name} up. The picture is live the moment it appears — no plugin, no download.`;
     case 'queued':
@@ -160,7 +160,7 @@ function stoppedLine(stop: StopReason | undefined, name: string): string {
   // this page could tell that a visitor would actually notice.
   switch (stop) {
     case 'never-driven':
-      return `Still there? Nothing was clicked or typed, so ${name} went back to the pool for the next visitor. Bring it back whenever you like. It will be a clean copy, and your clock still has not started.`;
+      return `Still there? Nothing was clicked or typed, so ${name} went back to the pool for the next visitor. Bring it back whenever you like. It will be a clean copy, and your intro time has not started.`;
     case 'hidden':
       return `This tab went to the background, so ${name} went back to the pool instead of being held for nobody. Bring it back whenever you like. It will be a clean copy.`;
     default:

@@ -18,7 +18,7 @@ import {
 
 // The rules that decide whether one of twenty-four cells is spent on somebody
 // who is not there, and — since the operator reported both as one bug — when a
-// stranger's free minute starts. Every case below is either a way the landing
+// stranger's intro time starts. Every case below is either a way the landing
 // page quietly holds a machine for a crawler, or a way it quietly spends a
 // visitor's minute on a headline they were still reading.
 

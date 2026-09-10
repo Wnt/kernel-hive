@@ -96,7 +96,7 @@ function useDecodedSize(ref: React.RefObject<HTMLElement | null>, clone: string 
  *
  * The event set is `heroPolicy.MEANINGFUL_EVENTS` and is not repeated here,
  * because it is now load-bearing twice over: it stops the un-engaged release,
- * and it starts the visitor's free minute. What it must never include is a
+ * and it starts the visitor's intro time. What it must never include is a
  * pointer merely crossing the picture — the machine sits directly under the
  * headline, so a mouse travelling to the scrollbar passes over it on nearly
  * every visit.

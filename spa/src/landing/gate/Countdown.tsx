@@ -6,7 +6,7 @@ import './gate.css';
 // "Countdown mirrors the server's remainingSeconds"). This component holds no
 // clock of its own and starts no timer: every second it paints is whatever
 // `remainingSeconds` the caller last got back from /walkin/state. The server
-// is the authority on the visitor's free minute; this is a display of it, not
+// is the authority on the visitor's intro time; this is a display of it, not
 // a second vote.
 //
 // The one thing it decides for itself is COLOUR — calm -> attentive -> urgent
@@ -38,7 +38,7 @@ export function Countdown({
       aria-hidden="true"
     >
       <span className="gate-countdown-clock">{formatClock(remainingSeconds)}</span>
-      <span className="gate-countdown-label">{engaged ? 'free minute' : 'starts when you touch it'}</span>
+      <span className="gate-countdown-label">{engaged ? 'intro time' : 'starts when you touch it'}</span>
     </div>
   );
 }

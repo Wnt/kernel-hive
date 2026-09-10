@@ -102,9 +102,9 @@ describe('heroCaption', () => {
 
   it('does not start counting a minute the visitor has not started', () => {
     const waiting = heroCaption('running', 'win311', undefined, false);
-    expect(waiting).toMatch(/does not start until you click or type/i);
+    expect(waiting).toMatch(/intro time does not start until you click or type/i);
     expect(heroCaption('running', 'win311', undefined, true))
-      .not.toMatch(/does not start until you click or type/i);
+      .not.toMatch(/intro time does not start until you click or type/i);
   });
 
   it('always has words, for every state', () => {

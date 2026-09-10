@@ -38,7 +38,7 @@ export function formatClock(seconds: number): string {
 }
 
 /**
- * Show the wall once the visitor's free minute is gone.
+ * Show the wall once the visitor's intro time is gone.
  *
  * `expired` is the server's own word (`WalkinState.anon.expired`) and is
  * always right eventually, but a visitor who watches the countdown hit 0:00
@@ -49,23 +49,4 @@ export function formatClock(seconds: number): string {
  */
 export function shouldShowWall(remainingSeconds: number, expired: boolean): boolean {
   return expired || remainingSeconds <= 0;
-}
-
-/** How long the broker holds an exhausted visitor's last clone
- *  (LANDING-REDESIGN-CONTRACT.md "hold their last clone reserved for 120s")
- *  so that registering — or signing in — resumes the SAME machine instead of
- *  a fresh one. */
-export const HELD_CLONE_WINDOW_SECONDS = 120;
-
-/**
- * Whether registering or signing in RIGHT NOW still lands the visitor back on
- * the machine they were just driving. `secondsSinceExpiry` is how long the
- * wall has been up for THIS visitor — a client-timed approximation, since the
- * gate's props carry no expiry timestamp. It answers "should the copy still
- * promise the same machine", never "does the hold exist" — that fact belongs
- * to the server (`WalkinState.anon.heldClone`) and this function does not
- * invent it.
- */
-export function canResumeHeldClone(secondsSinceExpiry: number): boolean {
-  return secondsSinceExpiry < HELD_CLONE_WINDOW_SECONDS;
 }

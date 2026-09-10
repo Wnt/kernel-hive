@@ -123,7 +123,7 @@ export function resetWalkin(clone: string): Promise<WalkinClaim | WalkinQueued> 
 /**
  * Tell the server the visitor has TOUCHED this machine.
  *
- * The one thing that starts an anonymous visitor's free minute
+ * The one thing that starts an anonymous visitor's intro time
  * (LANDING-REDESIGN-CONTRACT.md, "The anonymous budget"). It reports an EVENT
  * and never a duration: the clock, the deadline and the wall all stay on the
  * server, so the worst a hostile client can do by lying is start its own minute
