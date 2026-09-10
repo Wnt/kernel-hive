@@ -878,6 +878,14 @@ integrated launcher inside its nspawn container. Frames were read out of the
 published IFB1 mapping with the daemon's own reader (`scripts/shmshot.py`);
 waits were `fb-wait.py --shm`, never a sleep.
 
+**Where the frames are.** `/data/vms/sandbox/iris-int/rig/proof/` — 41 files, and
+the load-bearing ones are `01` (the IRIX autoconfig relink console), `03` (the
+visual login panel), `11` (the `demos` session), `21`/`23` (the Toolchest menu,
+black), `30`-`34` (the golden scene, dirtied, and the three byte-identical
+restores) and `41` (the frame after `kill -9` and a cold start). The rig itself
+is torn down; the frames are not committed because the repo is public and they
+are 1280x1024 captures of a licensed IRIX install.
+
 ### The three planes, as built
 
 | Plane | Contract | Where it landed | Proof |
