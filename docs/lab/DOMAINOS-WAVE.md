@@ -227,22 +227,40 @@ when that is understood; nothing else is waiting on it.
 
 ## Still open
 
-0. **The desktop does not stay up — THE ONE THING BLOCKING THE LISTING.** Twice
-   the guest was found back at the boot ROM printing `>REBOOTING` /
-   `SALVAGING BOOT VOL.`: once minutes after a good post-reset frame and a
-   `labctl type domainos "cp /com/pst"`, and once on the first launch before the
-   immutable-disk template existed. **No service restart appears in the journal
-   either time** — the unit ran continuously across it — so the machine is being
-   reset from inside, not relaunched. What is known: the idle-pause SIGSTOPs the
-   emulator and the daemon logs `[idle] driver active but guest paused ->
-   resumed`; the input-router shows `mamesock accepted=0` throughout, so the
-   typed keys did not travel that path (labctl writes the mamectl socket
-   directly). Next steps, cheapest first: reproduce on a sandbox rig by
-   SIGSTOP/SIGCONT of a `-state golden` launch with NO typing (does an
-   idle-pause cycle alone do it?); then with typing and no pause; and read
-   `mame.log` across the transition for a MAME-side reset. Suspect the
-   interaction between a SIGSTOPped emulator and the Apollo boot ROM's
-   watchdog/timer before suspecting the DM.
+0. **The desktop does not stay up UNDER THE DAEMON — the one thing blocking the
+   listing.** The station loads the golden (`mame.log`'s heartbeat shows the
+   emulated clock jump ~300 s at start, so the state genuinely restores) and
+   reaches the Display Manager — then, within a minute or two, the guest is
+   found back at the boot ROM printing `>REBOOTING` / `SALVAGING BOOT VOL.` and
+   cold-booting to the `login:` bar. Frames keep publishing throughout, so it is
+   the machine resetting, not a frozen stream.
+
+   **Ruled out, each by test, not by argument:**
+   - *Disk drift* — fixed by the immutable disk template (wall 8); the guest
+     still resets with a byte-fresh copy every start.
+   - *The idle-pause SIGSTOP* — `SH_IDLE_PAUSE_SECS=0` live, restart, watched
+     3 minutes: still resets.
+   - *The standby pause* — `MAME_NATIVE_STANDBY_DELAY_S=0` as well, restart,
+     watched 3 minutes: still resets.
+   - *Typing* — it happens with no input at all.
+   - *A service restart* — none in the journal across any of it.
+
+   **The strongest remaining lead, and it is a sharp one.** A sandbox rig
+   launched exactly the same way (`-state golden`, same binary, same disk copy)
+   sat at the desktop for MINUTES and survived repeated `LOADST`s and typing.
+   The one thing the station has that the rig did not is **the daemon connected
+   to the ctlsock** — and the station's `mame.log` carries a line the rig's does
+   not: `ctlsock: MOVEA unsupported (no cursor items); interpreting MOVEA as
+   open-loop relative from the last target`. The daemon homes the pointer on
+   connect, so it is writing the Apollo keyboard's mouse ports (`:kbd:mouse2/3`)
+   right after the restore.
+
+   **Next test, cheap and decisive:** bring up a sandbox rig with `-state
+   golden`, leave it alone and confirm it survives 5 minutes; then connect and
+   issue the same homing `MOVEA` the daemon issues, and watch for the reset. If
+   that reproduces it, the fix is to stop the daemon homing a pointer this
+   station does not have (`stream.pointer.transport` is already `none` — find
+   why the homing still runs) rather than anything in the Apollo driver.
 
 1. **Pointer** — §6 above, with the exact next step.
 1b. **The fast in-process reset** — off for this station, and the cause is
