@@ -6,12 +6,16 @@ import './landing.css';
 //  landing/LandingPage — `/`, the museum's front door for a STRANGER.
 //  ---------------------------------------------------------------------------
 //  App.tsx mounts this route element only when role 'anon' — nobody the
-//  server vouches for, on either listener (App.tsx ->
-//  landing/heroAudience.ts's showsLandingHero()). `admin`, `viewer` and
-//  `walkin` get `/` exactly as it rendered before this page existed: the
-//  plain grid behind the app's own TopBar. A conversion pitch and a
-//  free-minute countdown are for someone who does not have a seat yet;
-//  everyone who does gets the museum, not the funnel.
+//  server vouches for — AND the walk-in plane actually answers on this
+//  origin (App.tsx's `showHero`, from heroAudience.ts's showsLandingHero()
+//  and useWalkinPlaneAvailable()). `role: 'anon'` alone is not enough: it
+//  also covers a LAN visitor, where there is no broker behind
+//  `/walkin/state` at all, and this page's entire pitch is a machine that
+//  origin can never actually claim. `admin`, `viewer` and `walkin` get `/`
+//  exactly as it rendered before this page existed: the plain grid behind
+//  the app's own TopBar. A conversion pitch and a free-minute countdown are
+//  for someone who does not have a seat yet, on an origin that can seat
+//  them; everyone else gets the museum, not the funnel.
 //
 //  ABOVE THE FOLD is one live machine (LandingTop → HeroStage). BELOW it is the
 //  existing GridView, grouped by decade off `museum.era` with its own fold
