@@ -10,8 +10,10 @@ import { AdminPage } from './admin/AdminPage';
 import { ObservabilityPage } from './admin/observability/ObservabilityPage';
 import { useManifest } from './data/useManifest';
 import { useSession } from './data/SessionContext';
+import { posterFor } from './data/posterIndex';
 import LandingPage from './landing/LandingPage';
 import { showsLandingHero } from './landing/heroAudience';
+import { exhibitViewFor } from './ui/grid/exhibitAccess';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
 import { WalkinChrome } from './walkin/WalkinChrome';
@@ -129,17 +131,16 @@ export default function App() {
         />
 
         {/* ---------- Full-viewport live stream of one station (deep-linkable) ---------- */}
-        {/* A walk-in never streams a museum STATION — their live surface is
-            their own clone at /walkin/play/<os>, and /signal/<station>.json is
-            refused to them at the gate. Sending them to their own grid beats
-            mounting a stream that can only fail to connect. */}
+        {/* Not every visitor gets the stream: a `showcase` exhibit has no live
+            station behind it for ANYONE, and a walk-in/anonymous stranger's
+            only interactive surface is their own claimed clone, never the
+            shared museum tile — /signal/<station>.json is refused to both at
+            the gate. OsStreamRoute resolves which of stream/notes/stub this
+            session gets (grid/exhibitAccess.ts's exhibitViewFor) once the
+            manifest has answered which transport this osId is. */}
         <Route
           path="/os/:osId"
-          element={
-            walkin
-              ? <Navigate to="/" replace />
-              : <OsStreamRoute onOpenPoster={openPoster} posterOpen={posterId !== null} />
-          }
+          element={<OsStreamRoute onOpenPoster={openPoster} posterOpen={posterId !== null} />}
         />
 
         {/* ---------- operator fleet table: tier / emulator / kiosk / I/O paths per station ---------- */}
@@ -212,6 +213,11 @@ function MuseumRedirect() {
 // Full-viewport live stream of a single station, deep-linked at /os/:osId. StreamView
 // auto-connects on mount (useLiveStream starts whenever streamable), so loading
 // /os/<id> directly powers on + streams that station with no extra side-effect.
+// Not every visitor gets that: exhibitViewFor (grid/exhibitAccess.ts) decides
+// stream vs notes vs stub per role + transport, and 'notes' renders the SAME
+// ExhibitPoster the (i) button opens as an overlay — here it IS the route's
+// content instead, so /os/<id> stays a real, reloadable address rather than a
+// dead end or a redirect that throws the URL away.
 function OsStreamRoute({
   onOpenPoster,
   posterOpen,
@@ -222,26 +228,34 @@ function OsStreamRoute({
   const { osId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { role } = useSession();
   const vms = useMuseum((s) => s.vms);
   const vm = vms.find((entry) => entry.id === osId);
   if (vms.length === 0) return <div className="grid-empty">Loading the collection…</div>;
   if (!vm) return <Navigate to="/" replace />; // unknown / missing osId → grid
+
+  const backOut = () => {
+    if (
+      typeof location.state === 'object'
+      && location.state !== null
+      && (location.state as { fromMuseum?: boolean }).fromMuseum
+    ) {
+      navigate(-1);
+    } else {
+      navigate({ pathname: '/', search: location.search });
+    }
+  };
+
+  if (exhibitViewFor(role, vm.transport, posterFor(vm.id) !== undefined) === 'notes') {
+    return <ExhibitPoster osId={vm.id} vm={vm} onClose={backOut} />;
+  }
+
   const binding = bindingFromManifest(vm);
   return (
     <OsStreamSession
       key={`${location.key}:${osId}`}               // snapshot state once per history entry
       os={binding}
-      onExit={() => {
-        if (
-          typeof location.state === 'object'
-          && location.state !== null
-          && (location.state as { fromMuseum?: boolean }).fromMuseum
-        ) {
-          navigate(-1);
-        } else {
-          navigate({ pathname: '/', search: location.search });
-        }
-      }}
+      onExit={backOut}
       onOpenPoster={() => onOpenPoster(vm.id)}
       posterOpen={posterOpen}
     />
