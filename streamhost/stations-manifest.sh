@@ -784,12 +784,13 @@ emit alto \
 #   is a READ-ONLY asset staged by stations/indyr4400/fetch-assets.sh.
 emit indyr4400 \
   --tile indyr4400 --udp 54136 --x11 --x11-display :94 --capture shm \
-  --pointer abs --input-backend mamesock --audio off --fps 30 \
-  --x11-runtime-file "$T/indyr4400/x11-runtime.sh" --aux-file \
-  "$T/indyr4400/nspawn-inner.sh" --aux-file "$T/indyr4400/fetch-assets.sh" \
-  --aux-file "$T/indyr4400/kh-reset.sh" --aux-file \
-  "$T/indyr4400/indy.keymap" --aux-file "$T/indyr4400/ctl.py" \
-  --env-append-file "$T/indyr4400/station.env.fixture"
+  --shm-path /data/vms/streamhost/stations/indyr4400/run/fb.shm --pointer \
+  abs --input-backend mamesock --audio off --fps 30 --x11-runtime-file \
+  "$T/indyr4400/x11-runtime.sh" --aux-file "$T/indyr4400/nspawn-inner.sh" \
+  --aux-file "$T/indyr4400/fetch-assets.sh" --aux-file \
+  "$T/indyr4400/kh-reset.sh" --aux-file "$T/indyr4400/indy.keymap" \
+  --aux-file "$T/indyr4400/ctl.py" --env-append-file \
+  "$T/indyr4400/station.env.fixture"
 
 # star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 "Dandelion"
 #   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has

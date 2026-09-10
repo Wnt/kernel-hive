@@ -50,7 +50,7 @@
     "goldenOrder": 52,
     "bringUpGroup": 6,
     "signalOrder": 54,
-    "stationsManifestPrelude": "\n# indyr4400 — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22, HOST-NATIVE.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); this one\n#   is userspace Rust, de-bridged in 2026-09 and now running on the host inside a\n#   systemd-nspawn container with no QEMU, no kiosk and no X. The 6.3 GB IRIX disk\n#   is a READ-ONLY asset staged by stations/indyr4400/fetch-assets.sh.\n",
+    "stationsManifestPrelude": "\n# indyr4400 \u2014 Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22, HOST-NATIVE.\n#   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's\n#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); this one\n#   is userspace Rust, de-bridged in 2026-09 and now running on the host inside a\n#   systemd-nspawn container with no QEMU, no kiosk and no X. The 6.3 GB IRIX disk\n#   is a READ-ONLY asset staged by stations/indyr4400/fetch-assets.sh.\n",
     "bindingPrelude": ""
   },
   "stream": {
@@ -113,6 +113,8 @@
         ":94",
         "--capture",
         "shm",
+        "--shm-path",
+        "/data/vms/streamhost/stations/indyr4400/run/fb.shm",
         "--pointer",
         "abs",
         "--input-backend",
@@ -150,7 +152,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3E6E9E",
-    "eraLabel": "1993 · SGI Indy R4400 — IRIX 6.5"
+    "eraLabel": "1993 \u00b7 SGI Indy R4400 \u2014 IRIX 6.5"
   },
   "museum": {
     "id": "indyr4400",
@@ -175,7 +177,7 @@
       "the SGI toolchest",
       "File System Navigator"
     ],
-    "blurb": "The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 — the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo² and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5 — a different processor inside, and the reason the two sit side by side.",
+    "blurb": "The other Indy. SGI sold the 1993 pizza-box in several MIPS grades, and this is the R4400 \u2014 the faster, larger-cache sibling of the R4600 next to it in the hall, and the chip SGI put in the Indigo\u00b2 and the Challenge servers. Same blue case, same 24-bit XL graphics, same IRIX 6.5 \u2014 a different processor inside, and the reason the two sit side by side.",
     "notes": "Live streamhost station, HOST-NATIVE since the 2026-09 de-bridging (rule 13). Iris (github.com/techomancer/iris, BSD-3; the museum runs a fork), a userspace Rust SGI Indy emulator, runs directly on the host inside a systemd-nspawn container and publishes its own framebuffer and input planes -- there is no captured Debian kiosk, no QEMU, no X server and no window left in the path. It was a bridge until then, and the conversion is why: one pointer move took 361 ms to reach the framebuffer through QEMU PS/2 -> guest X -> winit -> llvmpipe -> dbus, against 68 ms for the host-native MAME `irix` sibling. The DELIBERATE pair to that station: same museum machine, different silicon (R4400 vs R4600) and a different emulator. Pointer is absolute through a closed loop on Iris's VC2 hardware-cursor registers; audio and networking are still off. archetype beige-tower-crt. See docs/guests/indyr4400.md."
   },
   "emulator": {

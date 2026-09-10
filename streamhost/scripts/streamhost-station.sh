@@ -31,7 +31,7 @@
 #       [--vga std|cirrus|vmware|qxl|virtio|none] [--extra "raw qemu args"] \
 #       [--fps 60] [--disk /path/tile.qcow2 | --disk-raw "raw media args"] \
 #       [--accel kvm|tcg] [--launcher-file path | --pve-vmid id] \
-#       [--env-append-file path] \
+#       [--env-append-file path] [--shm-path /abs/path/fb.shm] \
 #       [--aux-file path]... [--out-root dir] [--pin-machine] [--install]
 #
 # Outputs under <out-root>/<tile>/ (default /data/vms/streamhost/stations/<tile>/):
@@ -151,6 +151,12 @@ PVE_VMID=""
 # (MAME -video none: no window and no X server at all). Default x11.
 X11=0
 X11_CAPTURE="x11"
+# Empty = "the station dir's own fb.shm". Set by --shm-path when the mapping has
+# to live somewhere else, which for a CONTAINED station is the normal case: the
+# publisher creates the mapping by temp-file-and-rename, so it needs a WRITABLE
+# DIRECTORY, and a station dir holding signaling.json and the cert hash is never
+# bound into the payload's namespace. See docs/lab/IRIS-DEBRIDGE-LEDGER.md.
+X11_SHM_PATH=""
 X11_DISPLAY=":40"
 X11_RUNTIME_FILE=""
 ENV_APPEND_FILE=""
@@ -347,6 +353,10 @@ while [ $# -gt 0 ]; do
       X11_CAPTURE="$2"
       shift 2
       ;; # x11 (grab the Xvfb root) | shm (map the emulator's published frame)
+    --shm-path)
+      X11_SHM_PATH="$2"
+      shift 2
+      ;; # where the emulator publishes IFB1; default <station dir>/fb.shm
     --x11-runtime-file)
       X11_RUNTIME_FILE="$2"
       shift 2
@@ -423,8 +433,15 @@ if [ "$X11" = 1 ]; then
   # One variable so the x11 emit stays BYTE-IDENTICAL (no stray blank line) while
   # the shm emit gains exactly one line.
   X11_PATHS="SH_X11_CMD_FILE=${BASE}/${TILE}_cmd"
+  # The registry declares this as runtime.x11.shmPath and the validator already
+  # holds stationEnv to it (validate_rules.py). Until --shm-path existed the
+  # emitter hardcoded ${BASE}/fb.shm, so a row could declare run/fb.shm, pass
+  # the gate, and be emitted with a DIFFERENT path — silently, because
+  # station.env is written on the box and no drift gate reads it. indyr4400 is
+  # the row that found it: ${BASE} is not bound into its container at all, so
+  # the emitted path was one the publisher could not create.
   [ "$X11_CAPTURE" = shm ] && X11_PATHS="${X11_PATHS}
-SH_SHM_PATH=${BASE}/fb.shm"
+SH_SHM_PATH=${X11_SHM_PATH:-${BASE}/fb.shm}"
   cat >"${BASE_OUT}/station.env" <<EOF
 # streamhost per-tile config for '${TILE}' (x11 runtime). Consumed by streamhost@${TILE}.service.
 # NON-QEMU tile: an emulator managed by x11-runtime.sh, not a QEMU VM; NO SH_QMP.
