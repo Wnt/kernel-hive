@@ -240,6 +240,35 @@ case "$RESETMODE" in
       INPROC="$(sed -n 's/^SH_MAME_RESET_INPROCESS=//p' "$TDIR/station.env" | tail -1)"
       EPID="$(cat "$TDIR/mame.pid" 2>/dev/null || true)"
       ESTATE="$(awk '{print $3}' "/proc/${EPID:-0}/stat" 2>/dev/null || true)"
+      # THE SAME FAST PATH FOR A NON-MAME mamectl STATION. Every condition
+      # above this line is MAME's file layout — a driver name and a
+      # `sta/<driver>/golden.sta` on disk — which a station whose emulator
+      # keeps its checkpoints in its own format cannot satisfy, so `indyr4400`
+      # (host-native Iris) would always have paid the full service restart:
+      # ~30 s of container teardown, startup restore and first frame, against
+      # a measured 0.19-0.25 s for the in-process rewind.
+      #
+      # `SH_RESET_INPROCESS_CHECKPOINT=<name>` in station.env is that station
+      # saying "my control socket serves LOADST <name> and it is the reset".
+      # The emulator owns the existence check — it answers ERR if the snapshot
+      # is missing or its provenance does not match the running binary — so
+      # there is nothing to stat here. Every other guard is shared with the
+      # MAME path: a real socket, mctl.py present, and an emulator that is not
+      # SIGSTOPped (an idle-paused one would never ack).
+      #
+      # The stale-pixel hazard that made `domainos` opt out does not apply:
+      # this station's frame publisher republishes a whole frame
+      # unconditionally after every restore (Iris fork, `shmpub` FBSYNC hook),
+      # which is the fix domainos's driver lacks.
+      KHCP="$(sed -n 's/^SH_RESET_INPROCESS_CHECKPOINT=//p' "$TDIR/station.env" | tail -1)"
+      if [ "${INPROC:-1}" != 0 ] && [ -n "$KHCP" ] && [ -S "${CTL:-/nonexistent}" ] &&
+        [ -f /root/mctl.py ] && [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then
+        if OUT="$(python3 /root/mctl.py "$CTL" --timeout 60 LOADST "$KHCP" 2>&1)"; then
+          echo "reset $OSID: OK (mamectl LOADST $KHCP on $TILEDIR, in-process)"
+          exit 0
+        fi
+        echo "reset $OSID: mamectl LOADST $KHCP failed on $TILEDIR (${OUT//$'\n'/ }) — falling back to a service restart" >&2
+      fi
       if [ "${INPROC:-1}" != 0 ] && [ -S "${CTL:-/nonexistent}" ] && [ -n "$DRV" ] && [ "${CKPT:-1}" = 1 ] &&
         [ -f "$TDIR/sta/$DRV/golden.sta" ] && [ -f /root/mctl.py ] &&
         [ -n "$ESTATE" ] && [ "$ESTATE" != T ] && [ "$ESTATE" != t ]; then

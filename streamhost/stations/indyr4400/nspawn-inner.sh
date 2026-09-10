@@ -15,14 +15,14 @@
 #
 # TWO MODES, the same as the launcher's:
 #
-#   shm  no X server, no DISPLAY, no window. `--ci` WITHOUT `--ci-display` is
-#        Iris's own no-window branch and — unlike `--headless`, which omits
-#        REX3 entirely and has no framebuffer at all (src/machine.rs:516) —
-#        it keeps REX3 alive, which is the whole point. The fork's frame and
-#        input planes gate on IRIS_SHM_PATH / IRIS_CTL_SOCK, not on --ci, so
-#        those knobs are what actually arm them; --ci-socket additionally gives
-#        stream D its restore verbs and replaces the bridge era's two-hop
-#        ssh-into-kiosk-then-telnet exec channel with serial-send/wait-serial.
+#   shm  no X server, no DISPLAY, no window. `--no-window` is the fork's own
+#        flag and it changes NOTHING but the window -- unlike `--headless`,
+#        which omits REX3 entirely and has no framebuffer at all
+#        (src/machine.rs:516), and unlike `--ci`, which is a MODE (see below).
+#        The fork's frame and input planes gate on IRIS_SHM_PATH /
+#        IRIS_CTL_SOCK, so those knobs are what actually arm them; --ci-socket
+#        adds Iris's own exec channel and replaces the bridge era's two-hop
+#        ssh-into-kiosk-then-telnet with serial-send/wait-serial.
 #
 #   x11  a pinned Xvfb and Iris as an ordinary winit window on it. THE WINIT
 #        FOCUS TRAP travels with this mode: there is no window manager, so
@@ -62,18 +62,22 @@ if [ "$CAPTURE" = shm ]; then
   # the publisher never creates its mapping and the station looks like a dead
   # frame plane. `--no-window` changes nothing but the window (config.rs).
   #
-  # The ci CONTROL SOCKET still needs --ci today (main.rs starts the server on
-  # `ci_enabled`), so stream D's reset verbs ride along; if that pairing ever
-  # costs the frame plane again, the fix is upstream in the fork -- gate
-  # `ci::start_server` on --ci-socket being present, not on the mode.
-  # --ci IS OPT-IN, and IRIS_CI_SOCK is the switch, because the two planes are
-  # in tension until the fork decouples them (see above): --ci is what starts
-  # the control server, and --ci is also what was measured to leave REX3's
-  # screen at 0x0. Empty IRIS_CI_SOCK = frames only, which is what ships until
-  # the reset verbs can be had without the mode.
+  # THE TENSION IS GONE, and this is the one line that records it. Until the
+  # fork's integration the ci control socket could only be had with --ci,
+  # because `main` started the server on `ci_enabled` -- so a station could have
+  # the exec channel or a frame plane, not both. `Cli::apply` now sets
+  # `ci_server` from --ci-socket ALONE (src/config.rs), so naming a socket asks
+  # for the control plane and nothing else: no serial swap, no per-pid /tmp COW
+  # redirect, and REX3 keeps its decoded geometry.
+  #
+  # The RESET verbs do not ride this socket at all -- they are on the station's
+  # one mamectl/1 socket with the input verbs (src/kh_ctl.rs). This one is
+  # Iris's own JSON-lines channel: serial-send / wait-serial, which is how the
+  # golden gets baked and how an operator types into the guest without a
+  # browser. Empty = not started, and the station works without it.
   if [ -n "${IRIS_CI_SOCK:-}" ]; then
     exec "$BIN" --config "$CFG" --noaudio --no-window \
-      --ci --ci-socket "$IRIS_CI_SOCK"
+      --ci-socket "$IRIS_CI_SOCK"
   fi
   exec "$BIN" --config "$CFG" --noaudio --no-window
 fi

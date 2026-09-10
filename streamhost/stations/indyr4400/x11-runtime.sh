@@ -71,12 +71,19 @@
 # COW file to /tmp/iris-ci-<pid>-scsiN.overlay in ci mode (src/machine.rs:472)
 # and a 6.3 GB disk's COW in a tmpfs is RAM.
 #
-# RESET = RELAUNCH. `SH_RESET_MODE=relaunch` restarts the unit, whose
-# ExecStartPre lands back here: the container is killed, work/ is wiped and the
-# machine is restored from IRIS_STATE (stream D's in-process ci_rollback, ~42 ms
-# measured on the emulator's own CHANGELOG) or, with IRIS_STATE empty, cold
-# booted. A cold boot is ~7 minutes (PROM -> IRIX autoconfig relink -> login)
-# and it says so loudly in the log, because it is a visibly degraded exhibit.
+# RESET, TWO WAYS. The cheap one is in-process: `reset-tile.sh`'s relaunch
+# branch sends `LOADST golden` down the station's ONE mamectl/1 socket and the
+# emulator rewinds itself in 0.19-1.6 s without this script running at all. The
+# expensive one is a unit restart, whose ExecStartPre lands back here: the
+# container is killed, work/ is wiped and the machine is restored from
+# IRIS_STATE at startup (4.1-5.9 s) or, with IRIS_STATE empty, cold booted.
+# A cold boot is ~7 minutes (PROM -> IRIX autoconfig relink -> login) and it
+# says so loudly in the log, because it is a visibly degraded exhibit.
+#
+# work/ IS WIPED AND state/ IS NOT. The snapshots are the one thing a relaunch
+# must not destroy, and `saves/<name>` is resolved against the emulator's CWD
+# (/work) — so /work/saves is a symlink to the persistent /state bind. Getting
+# this wrong deletes the golden with the reset that was meant to restore it.
 #
 # PIDFILE CONTRACT (ensure/stop-station-x11.sh, idle.rs):
 #   mame.pid    Iris's HOST-visible pid — the daemon SIGSTOP/SIGCONTs it and
@@ -89,7 +96,14 @@
 #   SH_STATION SH_CAPTURE SH_X11_DISPLAY SH_SHM_PATH SH_MAMECTL_SOCK
 #   SH_MAMESOCK_KEYMAP SH_IDLE_PAUSE_PIDFILE SH_IDLE_PAUSE_SECS
 #   IRIS_ASSETS IRIS_BIN IRIS_DISK IRIS_GEOM IRIS_MEM_BANKS IRIS_STATE
-#   IRIS_PTR_MODE IRIS_UID_BASE IRIS_STANDBY_DELAY_S IRIS_BASE (rig override)
+#   IRIS_CI_SOCK IRIS_PTR_MODE IRIS_UID_BASE IRIS_STANDBY_DELAY_S
+#   IRIS_MONITOR_ADDR KH_PROVENANCE IRIS_BASE (rig override)
+# The emulator geometry knobs are NOT separate keys: IRIS_SHM_GEOMETRY (the
+# published crop) and IRIS_CTL_SCREEN (the pointer clamp + the HELLO banner)
+# both come from IRIS_GEOM, so the frame the daemon maps, the surface the
+# browser clamps to and the rectangle the registry declares cannot drift apart.
+# VC2 decodes 1282x1024 on this machine — two columns of real right-edge
+# overscan — and 1280x1024 is what the station publishes.
 # See docs/lab/IRIS-DEBRIDGE-LEDGER.md for the values and who owns each one.
 # =============================================================================
 set -euo pipefail
@@ -112,8 +126,25 @@ MACHINE="kh-$TILE"
 WORK="$BASE/work"
 RUN="$BASE/run"
 X11DIR="$BASE/x11"
+# THE CHECKPOINT DOES NOT LIVE IN work/. `Machine::save_snapshot` resolves
+# `saves/<name>` against the PROCESS CWD, which is /work — and work/ is wiped on
+# every launch, which is the reset. A golden written there would be destroyed by
+# the next restart, i.e. by the very thing that is supposed to restore it. So the
+# snapshots (and the shared CAS chunk store under `saves/.cas`) live in their own
+# persistent directory and /work/saves is a symlink to it, exactly as
+# /work/disk.raw is a symlink to the read-only asset.
+STATE_DIR="$BASE/state"
 SHM="${SH_SHM_PATH:-$RUN/fb.shm}"
 CTL="${SH_MAMECTL_SOCK:-$RUN/ctl.sock}"
+# The monitor console binds a HARDCODED 127.0.0.1:8888 upstream, which is a
+# process-wide singleton: a rig beside the station silently loses it. Inside
+# --private-network this is the container's own loopback, so the port is
+# private, but naming it keeps a rig launched with the same script honest.
+MONITOR="${IRIS_MONITOR_ADDR:-127.0.0.1:18136}"
+# strict = refuse a checkpoint captured by a different binary. Golden + binary
+# + device set are ONE combination (rule 6); `warn` is for a DELIBERATE binary
+# bump whose state is known good, and it says so in the log.
+PROVENANCE="${KH_PROVENANCE:-strict}"
 # No default: an EMPTY IRIS_CI_SOCK means "no --ci", and a `:-` default would
 # quietly turn that back on (nspawn-inner.sh keys the mode off this value).
 CISOCK="${IRIS_CI_SOCK-}"
@@ -124,6 +155,8 @@ NPIDFILE="$BASE/nspawn.pid"
 LOG="$BASE/iris.log"
 INNER="$BASE/nspawn-inner.sh"
 [ -f "$INNER" ] || INNER="$(dirname "$(readlink -f "$0")")/nspawn-inner.sh"
+RESET="$BASE/kh-reset.sh"
+[ -f "$RESET" ] || RESET="$(dirname "$(readlink -f "$0")")/kh-reset.sh"
 
 say() { printf 'iris[%s]: %s\n' "$TILE" "$*"; }
 die() {
@@ -137,6 +170,7 @@ die() {
 [ -d "$ROOTFS/usr" ] && [ -f "$ROOTFS/etc/os-release" ] ||
   die "no container rootfs skeleton at $ROOTFS — run scripts/build-guests/tiles/indyr4400.sh --rootfs"
 [ -f "$INNER" ] || die "missing $INNER (it travels as an emit --aux-file)"
+[ -f "$RESET" ] || die "missing $RESET (it travels as an emit --aux-file)"
 case "$CAPTURE" in
   shm)
     # The mamectl/1 keymap is stream C's file and the daemon needs it the moment
@@ -196,12 +230,32 @@ reap_previous ||
   die "previous iris still alive after SIGKILL: $(station_emu_pids | tr '\n' ' ')— refusing to start a second one into one mapping"
 rm -f "$PIDFILE" "$XPIDFILE" "$NPIDFILE"
 
+# --- restore or cold boot, decided by the failure ledger --------------------
+# `kh_reset_preflight` (stations/indyr4400/kh-reset.sh) sets KH_STATE to the
+# checkpoint name, or to empty when there is no checkpoint or when two
+# consecutive launches restored one and never acked a verb. Iris has no
+# `--restore` flag, so a bad checkpoint would otherwise wedge the station in a
+# restore loop that looks exactly like a boot loop. IRIS_STATE from station.env
+# is the operator's override: setting it empty forces a cold boot.
+KH_STATION_DIR="$BASE" KH_CHECKPOINT="${STATE:-golden}" KH_SAVES_DIR="$STATE_DIR"
+export KH_STATION_DIR KH_CHECKPOINT KH_SAVES_DIR
+# shellcheck source=/dev/null
+. "$RESET"
+if [ -n "$STATE" ]; then
+  kh_reset_preflight
+  STATE="$KH_STATE"
+fi
+
 # --- pristine per-launch state, owned by the container's root ----------------
 # work/ is wiped every launch: that IS the reset. run/ is recreated so a stale
 # socket can never be mistaken for a live one.
 rm -rf "$WORK" "$RUN" "$X11DIR"
-mkdir -p "$WORK/tmp" "$RUN" "$X11DIR"
+mkdir -p "$WORK/tmp" "$RUN" "$X11DIR" "$STATE_DIR"
 ln -sfn "$DISK" "$WORK/disk.raw"
+# /work/saves -> the persistent state dir. Dangling from the host's point of
+# view (the target is a container path) and correct from inside, the same shape
+# the disk symlink above uses. Iris writes saves/<name>/ and saves/.cas here.
+ln -sfn /state "$WORK/saves"
 cat >"$WORK/iris.toml" <<TOML
 # iris.toml — written fresh by x11-runtime.sh on every launch; edit the
 # launcher, not this file. disk.raw is a SYMLINK to the read-only asset and
@@ -222,9 +276,13 @@ TOML
 # copy into work/ with the container's ownership (medley's trap, verbatim).
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$WORK/nspawn-inner.sh"
 chown -R "$UIDBASE:$UIDBASE" "$WORK" "$RUN" "$X11DIR"
+# NOT -R on the state dir: it holds the golden and a 100+ MB chunk store, and
+# re-chowning it on every launch would cost a full tree walk for nothing. Only
+# the directory itself has to be enterable and writable by the container's root.
+chown "$UIDBASE:$UIDBASE" "$STATE_DIR"
 chmod 1777 "$X11DIR"
 
-BINDS=(--bind="$WORK:/work" --bind="$RUN")
+BINDS=(--bind="$WORK:/work" --bind="$RUN" --bind="$STATE_DIR:/state")
 if [ "$CAPTURE" = shm ]; then
   # THE MAPPING LIVES IN run/, NOT IN THE STATION DIR, and that is not a matter
   # of taste. The fork's publisher creates a mapping by writing a temp file
@@ -260,8 +318,11 @@ nohup systemd-nspawn \
   "${BINDS[@]}" \
   --setenv=SH_CAPTURE="$CAPTURE" --setenv=SH_X11_DISPLAY="$DISP" \
   --setenv=IRIS_BIN="$BIN" --setenv=IRIS_GEOM="$GEOM" \
-  --setenv=IRIS_SHM_PATH="$SHM" --setenv=IRIS_CTL_SOCK="$CTL" \
+  --setenv=IRIS_SHM_PATH="$SHM" --setenv=IRIS_SHM_GEOMETRY="$GEOM" \
+  --setenv=IRIS_CTL_SOCK="$CTL" --setenv=IRIS_CTL_SCREEN="$GEOM" \
   --setenv=IRIS_CI_SOCK="$CISOCK" --setenv=IRIS_STATE="$STATE" \
+  --setenv=IRIS_CI_OVERLAY_DIR=/work --setenv=IRIS_MONITOR_ADDR="$MONITOR" \
+  --setenv=KH_PROVENANCE="$PROVENANCE" \
   --setenv=IRIS_PTR_MODE="$PTR_MODE" --setenv=IRIS_WORK=/work \
   --setenv=HOME=/work --setenv=LIBGL_ALWAYS_SOFTWARE=1 --setenv=GALLIUM_DRIVER=llvmpipe \
   --kill-signal=SIGTERM --console=pipe \
@@ -336,6 +397,12 @@ else
 fi
 
 say "pid=$IPID nspawn=$(cat "$NPIDFILE") uidbase=$UIDBASE capture=$CAPTURE geom=$GEOM ptr=$PTR_MODE state=${STATE:-<none: COLD BOOT, ~7 min through PROM + IRIX autoconfig — the exhibit is degraded until it reaches the login>}"
+
+# A restore that produced a frame has still not proven the guest SERVICES its
+# queue — a restored MIPS with a dead i8042 repaints happily and takes no input
+# (docs/lab/research/iris-reset-plane.md). Clear the failure ledger only once a
+# verb comes back ACKED on the control socket.
+if [ -n "$STATE" ]; then kh_reset_confirm 180; fi
 
 # --- standby: freeze once the scene has settled. The daemon owns the steady
 # state through SH_IDLE_PAUSE_PIDFILE and SIGCONTs on the first session; without

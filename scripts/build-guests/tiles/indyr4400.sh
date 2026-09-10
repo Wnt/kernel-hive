@@ -117,8 +117,11 @@ fi
 if [ "$DO_ROOTFS" -eq 1 ]; then
   log "nspawn rootfs skeleton (read-only; the host's /usr is bound in at launch)"
   RF="$OUT/rootfs"
-  mkdir -p "$RF"/{usr,etc/fonts,etc/alternatives,tmp/.X11-unix,var/tmp,run,proc,sys,dev,root,work} \
-    "$RF$OUT" "$RF$STATION/run" "$RF$ASSET_DIR"
+  # /state is the PERSISTENT snapshot store (the golden and its CAS chunk
+  # store). It is a separate mount point from /work precisely because /work is
+  # wiped on every launch — see the launcher's STATE_DIR comment.
+  mkdir -p "$RF"/{usr,etc/fonts,etc/alternatives,tmp/.X11-unix,var/tmp,run,proc,sys,dev,root,work,state} \
+    "$RF$OUT" "$RF$STATION/run" "$RF$STATION/state" "$RF$ASSET_DIR"
   for l in bin sbin lib lib64; do [ -e "$RF/$l" ] || ln -s "usr/$l" "$RF/$l"; done
   : >"$RF/etc/ld.so.cache"
   : >"$RF/etc/localtime"

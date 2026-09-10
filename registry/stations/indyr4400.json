@@ -41,7 +41,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54136,
-      "notes": "HOST-NATIVE since the 2026-09 de-bridging (docs/lab/IRIS-DEBRIDGE-LEDGER.md): the museum's fork of Iris runs on the host inside a systemd-nspawn container -- no captured Debian, no QEMU, no QMP, no X server, no window. Frames IFB1 shm, input mamectl/1, audio off. `labctl exec` has no ssh channel here: the bridge era's port 5839 reached the Debian kiosk, not the emulated Indy, and the kiosk is gone. The machine's own exec is Iris's ci socket at /data/vms/streamhost/stations/indyr4400/run/iris-ci.sock (serial-send / wait-serial / serial-read), which also carries the reset verbs. Iris's monitor console is a hardcoded 127.0.0.1:8888 listener and lives inside the container's private netns: reach it with `nsenter -t $(cat /data/vms/streamhost/stations/indyr4400/mame.pid) -n`, never from the host directly. Pointer is ABSOLUTE through a closed loop against Iris's VC2 hardware-cursor registers -- the mechanism the MAME `irix` sibling already runs against this same IRIX 6.5 X server. See docs/guests/indyr4400.md."
+      "notes": "HOST-NATIVE since the 2026-09 de-bridging (docs/lab/IRIS-DEBRIDGE-LEDGER.md): the museum's fork of Iris runs on the host inside a systemd-nspawn container -- no captured Debian, no QEMU, no QMP, no X server, no window. Frames IFB1 shm, input mamectl/1, audio off. `labctl exec` has no ssh channel here: the bridge era's port 5839 reached the Debian kiosk, not the emulated Indy, and the kiosk is gone. The machine's own exec is Iris's ci socket at /data/vms/streamhost/stations/indyr4400/run/iris-ci.sock (serial-send / wait-serial / serial-read). It carries ONLY the exec channel: the reset verbs ride the station's one mamectl/1 socket at run/ctl.sock, with the pointer and the keys. Iris's monitor console listens on IRIS_MONITOR_ADDR (127.0.0.1:18136 here; upstream hardcodes 8888) inside the container's private netns: reach it with `nsenter -t $(cat /data/vms/streamhost/stations/indyr4400/mame.pid) -n`, never from the host directly. Pointer is ABSOLUTE through a closed loop against Iris's VC2 hardware-cursor registers -- the mechanism the MAME `irix` sibling already runs against this same IRIX 6.5 X server. See docs/guests/indyr4400.md."
     }
   },
   "render": {
@@ -127,12 +127,21 @@
         "$T/indyr4400/nspawn-inner.sh",
         "--aux-file",
         "$T/indyr4400/fetch-assets.sh",
+        "--aux-file",
+        "$T/indyr4400/kh-reset.sh",
+        "--aux-file",
+        "$T/indyr4400/indy.keymap",
+        "--aux-file",
+        "$T/indyr4400/ctl.py",
         "--env-append-file",
         "$T/indyr4400/station.env.fixture"
       ],
       "auxFiles": [
         "streamhost/stations/indyr4400/nspawn-inner.sh",
         "streamhost/stations/indyr4400/fetch-assets.sh",
+        "streamhost/stations/indyr4400/kh-reset.sh",
+        "streamhost/stations/indyr4400/indy.keymap",
+        "streamhost/stations/indyr4400/ctl.py",
         "streamhost/stations/indyr4400/station.env.fixture"
       ]
     }
@@ -171,8 +180,8 @@
   },
   "emulator": {
     "family": "Iris",
-    "version": "fork Wnt/iris, branch kernel-hive/integrated (upstream base techomancer/iris@0540991)",
-    "source": "scripts/build-guests/tiles/indyr4400.sh (host-native staging; the fork build is scripts/build-guests/emulators/build-iris-native.sh)",
+    "version": "fork Wnt/iris, branch kh-native @ 8cbb689 (upstream base techomancer/iris@0540991)",
+    "source": "scripts/build-guests/emulators/build-iris-native.sh (features lightning,rex-jit,chd,jitv2; toolchain nightly-2026-08-02 pinned on the fork); scripts/build-guests/tiles/indyr4400.sh stages it beside the container rootfs",
     "driver": "SGI Indy R4400"
   },
   "ui": "desktop",
@@ -184,7 +193,7 @@
     "snapshot": null,
     "mouse": "UNVERIFIED",
     "keyboard": "UNVERIFIED",
-    "fixture": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in the museum's fork of Iris, HOST-NATIVE at 1280x1024: no kiosk, no QEMU, no X server, no window. Reset is an in-process restore of the IRIS_STATE snapshot through Iris's own ci socket (its CHANGELOG measures ci_rollback at ~42 ms), with a ~7-minute cold boot as the loud bounded fallback. Converted from the QEMU bridge on 2026-09-09; the bridge's loadvm-golden checkpoint is retired with the kiosk that held it. mouse/keyboard UNVERIFIED until the real-browser probe clears them."
+    "fixture": "SGI Indy (MIPS R4400, 256 MB, XL 24-bit) IRIX 6.5.22 on the Indigo Magic Desktop (4Dwm, demos session) in the museum's fork of Iris, HOST-NATIVE at 1280x1024: no kiosk, no QEMU, no X server, no window. Reset is an in-process restore of the IRIS_STATE snapshot over the station's one mamectl/1 socket (LOADST golden, measured 0.19-1.6 s), with a ~7-minute cold boot as the loud bounded fallback after two launches that restore and never ack. Converted from the QEMU bridge on 2026-09-10; the bridge's loadvm-golden checkpoint is retired with the kiosk that held it. mouse/keyboard UNVERIFIED until the real-browser probe clears them."
   },
   "migrationExceptions": []
 }

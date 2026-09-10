@@ -166,11 +166,13 @@ extracted from a copy of `irix`'s seed CHD. They were a *tier*-contrast pair
 until 2026-09; `indyr4400` is now Tier 3 as well, and the measurement that
 forced the conversion — every Iris build 250–400 ms from a pointer move to the
 framebuffer against MAME's 68 ms, all of it bridge overhead — is in
-[`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md). The table below
-still shows `indyr4400` as `rel`, which is the transport it shipped on the
-bridge and the deliberate fallback if the conversion's closed-loop absolute
-pointer does not converge; `irix` reached `abs` against the same IRIX X server
-by the same VC2 mechanism, so the row may yet move. `irix` is host-native
+[`lab/IRIS-DEBRIDGE-BRIEF.md`](lab/IRIS-DEBRIDGE-BRIEF.md). The pair now
+converges on the pointer too: `indyr4400` shipped `rel` on the bridge and the
+conversion's closed loop against Iris's own VC2 hardware-cursor registers
+converged, so the row reads `abs` by the same mechanism `irix` reaches it with
+against the same IRIX X server. `rel` remains the documented fallback, not the
+declared state — the registry admits no unproven `abs` on a `mamesock`
+backend. `irix` is host-native
 for a different reason again: MAME's SGI Indy emulation **kernel-panics under a
 KVM vCPU**, a constraint rather than a preference. The CPU consequence of the
 pairing is in [`OVERHEAD.md`](OVERHEAD.md#cpu); the short version is that
@@ -254,7 +256,7 @@ missing feature.
 | `haiku` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | ssh |
 | `helenos` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `hpuxvue` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | off | 30 | — |
-| `indyr4400` | 3 host-native | Iris/host | `iris-mamesock` | rel | — | off | 30 | serial_e |
+| `indyr4400` | 3 host-native | Iris/host | `iris-vc2-closedloop` | abs | — | off | 30 | — |
 | `irix` | 3 host-native | MAME/host | `mame-ioport` | abs | — | on | 30 | serial_e |
 | `kc854` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `kolibrios` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |

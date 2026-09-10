@@ -2,15 +2,25 @@
 # kh-reset.sh — the reset/checkpoint half of the host-native `indyr4400`
 # launcher. SOURCE this from `x11-runtime.sh`; it is not executable on its own.
 #
-# Stream D owns this file; stream B owns the launcher that sources it. The
-# seam is four functions and nothing else:
+# Stream D owns this file; stream B owns the launcher that sources it. After
+# the 2026-09-10 integration the seam is TWO functions:
 #
-#   kh_reset_env        export the emulator knobs (call before exec'ing iris)
 #   kh_reset_preflight  decide restore-vs-cold-boot; enforce the bounded
-#                       fallback; must run BEFORE kh_reset_env
+#                       fallback. Sets KH_STATE, which the launcher passes to
+#                       the container as IRIS_STATE.
 #   kh_reset_confirm    background watcher that clears the failure ledger once
 #                       the emulator answers a verb (call after launching)
-#   kh_reset_sweep      refuse to start while a previous emulator survives
+#
+# Two functions are gone and it is worth saying why, because their absence
+# looks like an omission:
+#   kh_reset_env    the emulator knobs are NOT exported into the launcher's
+#                   environment any more. The payload runs inside a container
+#                   and only sees what `systemd-nspawn --setenv` hands it, so
+#                   the launcher states them there — one list, one place.
+#   kh_reset_sweep  x11-runtime.sh's `reap_previous` already refuses to start
+#                   over a survivor, scoped to the station's own asset dir and
+#                   sweeping the nspawn supervisor too. Two sweeps racing each
+#                   other's SIGKILL is worse than one.
 #
 # ---------------------------------------------------------------------------
 # WHY A LEDGER
@@ -42,53 +52,23 @@
 : "${KH_RESTORE_FAIL_LIMIT:=2}"
 
 KH_LEDGER="${KH_STATION_DIR}/kh-restore-attempts"
-KH_CTL_SOCK="${KH_STATION_DIR}/ctl.sock"
-# Iris resolves `saves/<name>` relative to its PROCESS CWD, so the launcher
-# MUST cd here before exec'ing the binary. Stated once, used by both halves.
-KH_WORKDIR="${KH_STATION_DIR}/iris"
+# The station has ONE control socket and it lives in run/, not in the station
+# dir: the station dir holds the cert hash and signaling.json and is never bound
+# into the container, while run/ is (docs/lab/IRIS-DEBRIDGE-LEDGER.md).
+KH_CTL_SOCK="${KH_CTL_SOCK:-${KH_STATION_DIR}/run/ctl.sock}"
+# Iris resolves `saves/<name>` relative to its PROCESS CWD, which is /work — and
+# work/ is wiped on every launch. So the snapshots live in a PERSISTENT dir that
+# /work/saves symlinks to, and this is the host-side view of it. Reading the
+# checkpoint from anywhere else is how a launcher decides to restore a golden
+# the last relaunch already deleted.
+KH_SAVES_DIR="${KH_SAVES_DIR:-${KH_STATION_DIR}/state}"
 
 kh_log() { echo "kh-reset[${SH_STATION}]: $*" >&2; }
-
-# --- refuse to start over a survivor ---------------------------------------
-# `systemctl restart` does not kill the previous emulator, and a SIGSTOPped
-# standby never runs to handle SIGTERM: SIGCONT, then TERM, then KILL, and
-# resolve processes by /proc/<pid>/exe — never a cmdline grep, which on this
-# box matches the caller's own ssh (AGENTS.md rule 5).
-kh_reset_sweep() {
-  local pid exe survivors=0
-  for pid in /proc/[0-9]*; do
-    pid="${pid#/proc/}"
-    exe="$(readlink -f "/proc/${pid}/exe" 2>/dev/null)" || continue
-    case "$exe" in
-      "${KH_ASSET_DIR}"/*) ;;
-      *) continue ;;
-    esac
-    kh_log "sweeping surviving emulator pid=${pid} exe=${exe}"
-    kill -CONT "$pid" 2>/dev/null || true
-    kill -TERM "$pid" 2>/dev/null || true
-    local i
-    for i in $(seq 1 40); do
-      [ -d "/proc/${pid}" ] || break
-      sleep 0.25
-    done
-    if [ -d "/proc/${pid}" ]; then
-      kill -KILL "$pid" 2>/dev/null || true
-      sleep 0.5
-    fi
-    [ -d "/proc/${pid}" ] && survivors=$((survivors + 1))
-  done
-  if [ "$survivors" -gt 0 ]; then
-    kh_log "REFUSING TO START: ${survivors} emulator(s) survived the sweep — two"
-    kh_log "  emulators into one framebuffer mapping is the failure this refuses."
-    return 1
-  fi
-  return 0
-}
 
 # --- decide restore vs cold boot -------------------------------------------
 kh_reset_preflight() {
   KH_STATE=""
-  local snap="${KH_WORKDIR}/saves/${KH_CHECKPOINT}"
+  local snap="${KH_SAVES_DIR}/${KH_CHECKPOINT}"
   if [ ! -f "${snap}/snapshot.toml" ]; then
     kh_log "no checkpoint at ${snap} — COLD BOOT (~7 min: PROM, IRIX autoconfig, login)"
     return 0
@@ -108,23 +88,6 @@ kh_reset_preflight() {
   echo $((fails + 1)) >"$KH_LEDGER"
   kh_log "restoring checkpoint '${KH_CHECKPOINT}' at startup (attempt $((fails + 1)))"
   return 0
-}
-
-# --- the knobs the emulator reads ------------------------------------------
-kh_reset_env() {
-  export IRIS_STATE="${KH_STATE-}"
-  export IRIS_KH_CTL_SOCK="$KH_CTL_SOCK"
-  # Keep the COW overlay station-local and PERSISTENT. Without this, `--ci`
-  # redirects it to /tmp/iris-ci-<pid>-scsiN.overlay: every guest write is
-  # thrown away on restart and multi-GB of dirty sectors land on the host's
-  # tmpfs. The 6.3 GB read-only asset is never touched either way.
-  export IRIS_CI_OVERLAY_DIR="$KH_WORKDIR"
-  # The monitor console is a hardcoded loopback singleton upstream; give this
-  # station its own address so a second Iris process on the box cannot steal it.
-  export IRIS_MONITOR_ADDR="${KH_MONITOR_ADDR:-127.0.0.1:18136}"
-  # Strict provenance: refuse a checkpoint captured by a different binary.
-  export KH_PROVENANCE="${KH_PROVENANCE:-strict}"
-  mkdir -p "$KH_WORKDIR"
 }
 
 # --- clear the ledger once the emulator is really answering ----------------
