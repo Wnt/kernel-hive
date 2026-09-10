@@ -6,6 +6,7 @@
 
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
+  armInstanaAgent,
   configureInstana,
   configureInstanaIdentity,
   IGNORE_URL_PATTERNS,
@@ -29,6 +30,31 @@ function installIneum(): { calls: Call[] } {
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
   __resetIntent();
+});
+
+describe('armInstanaAgent', () => {
+  it('is a silent no-op with no window at all (SSR-shaped tooling, tests)', () => {
+    expect(() => armInstanaAgent()).not.toThrow();
+  });
+
+  it('is a silent no-op when index.html never installed the arm function (unconfigured build)', () => {
+    (globalThis as { window?: unknown }).window = {};
+    expect(() => armInstanaAgent()).not.toThrow();
+  });
+
+  it('calls window.__khArmInstanaAgent when index.html installed it', () => {
+    let called = 0;
+    (globalThis as { window?: unknown }).window = { __khArmInstanaAgent: () => { called += 1; } };
+    armInstanaAgent();
+    expect(called).toBe(1);
+  });
+
+  it('never throws into the app even if the installed function does', () => {
+    (globalThis as { window?: unknown }).window = {
+      __khArmInstanaAgent: () => { throw new Error('vendor script tag rejected'); },
+    };
+    expect(() => armInstanaAgent()).not.toThrow();
+  });
 });
 
 describe('configureInstana', () => {

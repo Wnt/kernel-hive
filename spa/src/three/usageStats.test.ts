@@ -4,7 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setDebugTile, clearDebugTile } from './clientDebug';
 import {
-  __usageReset, __usageTallies, countClick, countKeystroke, flushUsage, withSyntheticInput,
+  __usageReset, __usageTallies, countClick, countKeystroke, flushUsage, setUsageAllowed,
+  withSyntheticInput,
 } from './usageStats';
 
 const SHIFT_L = 0x2a;
@@ -17,6 +18,10 @@ function openStation(tile: string) {
 describe('usage counters', () => {
   beforeEach(() => {
     __usageReset();
+    // Every existing test here predates the anonymous role and exercises the
+    // ordinary (send-allowed) case; `setUsageAllowed` gets its own dedicated
+    // tests below, which set it explicitly rather than relying on this default.
+    setUsageAllowed(true);
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('{}', { status: 200 }))));
   });
   afterEach(() => {
@@ -108,5 +113,31 @@ describe('usage counters', () => {
     countClick();
     await new Promise((r) => setTimeout(r, 0));
     expect(__usageTallies().win95.clicks).toBe(2);
+  });
+
+  it('still counts locally for a role /usage refuses, but never sends', () => {
+    // gate.py refuses /usage to the anonymous role by name, beside /clientcmd,
+    // /analytics, /traces and /eum — main.tsx never calls setUsageAllowed(true)
+    // for that role. Counting is pure bookkeeping (no network) so it still
+    // happens; only the send is withheld.
+    setUsageAllowed(false);
+    openStation('win95');
+    countClick();
+    countKeystroke(ENTER);
+    expect(__usageTallies()).toEqual({ win95: { clicks: 1, keys: 1 } });
+    flushUsage();
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
+  });
+
+  it('drops a refused batch rather than queuing it forever', () => {
+    setUsageAllowed(false);
+    openStation('win95');
+    countClick();
+    flushUsage();
+    // Gone, not retried: gate.py was always going to 401 this one, the same
+    // "an HTTP refusal is a settled answer" call already made for a box that
+    // is briefly unreachable.
+    expect(__usageTallies()).toEqual({});
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
   });
 });

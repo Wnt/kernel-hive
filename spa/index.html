@@ -405,11 +405,36 @@
         // public repo. scripts/serve-https-spa.sh's deploy() fetches the pinned
         // build from VITE_INSTANA_EUM_SCRIPT_URL and publishes it to the
         // webroot at deploy time (gitignored on disk, same as pki/).
-        var agent = document.createElement('script');
-        agent.defer = true;
-        agent.crossOrigin = 'anonymous';
-        agent.src = '/vendor/instana-eum.min.js';
-        document.head.appendChild(agent);
+        //
+        // NOT APPENDED HERE. Every `ineum(...)` call above queues onto the stub
+        // above and costs nothing until the real agent drains it — but FETCHING
+        // the agent is the one thing this bootstrap does that produces a beacon,
+        // on a schedule this document does not control, and gate.py refuses
+        // `/eum` for both the signed-out stranger at the walk-in door and the
+        // anonymous role loose on the rest of the site (main.tsx's
+        // `fullTelemetry`). Neither is knowable this early: no session exists
+        // yet on a visitor's very first request, invited or anonymous alike —
+        // this is the same "role is not synchronously knowable" wall
+        // useManifest.ts already documents for /gallery-manifest.json. So the
+        // fetch waits for `main.tsx`, which calls `window.__khArmInstanaAgent`
+        // once `loadSession()` has answered (`analytics/instana.ts`'s
+        // `armInstanaAgent`). Exposed as a global rather than queued some other
+        // way because a later-evaluated module has no other channel back into
+        // this pre-React script. A build with no key/url never reaches this
+        // line at all (the guard at the top of this IIFE already returned), so
+        // the function is simply absent then — every caller must tolerate that,
+        // same as every `ineum` call above already does.
+        window.__khArmInstanaAgent = function () {
+          try {
+            var agent = document.createElement('script');
+            agent.defer = true;
+            agent.crossOrigin = 'anonymous';
+            agent.src = '/vendor/instana-eum.min.js';
+            document.head.appendChild(agent);
+          } catch (e7) {
+            // Best effort — a page that cannot arm the agent still has to render.
+          }
+        };
       })();
     </script>
     <meta name="mobile-web-app-capable" content="yes" />
