@@ -776,16 +776,18 @@ emit alto \
   "$T/alto/qemu-streamhost.sh" --env-append-file \
   "$T/alto/station.env.fixture"
 
-# indyr4400 (VMID 239) — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22.
+# indyr4400 — Iris -> SGI Indy (MIPS R4400) -> IRIX 6.5.22, HOST-NATIVE.
 #   The SECOND SGI Indy in the lineup and the other emulator: 'irix' is MAME's
-#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); Iris is
-#   userspace Rust and runs as an ordinary KVM bridge tile. ssh 5839. The 6.3 GB
-#   IRIX disk is a READ-ONLY virtio asset, staged by tiles/indyr4400/fetch-assets.sh.
+#   R4600 indy_4610 running BARE-METAL (MAME panics under a KVM vCPU); this one
+#   is userspace Rust, de-bridged in 2026-09 and now running on the host inside a
+#   systemd-nspawn container with no QEMU, no kiosk and no X. The 6.3 GB IRIX disk
+#   is a READ-ONLY asset staged by stations/indyr4400/fetch-assets.sh.
 emit indyr4400 \
-  --tile indyr4400 --vmid 239 --udp 54136 --pointer rel --audio off --fps 30 \
-  --launcher-file "$T/indyr4400/qemu-streamhost.sh" --aux-file \
-  "$T/indyr4400/fetch-assets.sh" --env-append-file \
-  "$T/indyr4400/station.env.fixture"
+  --tile indyr4400 --udp 54136 --x11 --x11-display :94 --capture shm \
+  --pointer abs --input-backend mamesock --audio off --fps 30 \
+  --x11-runtime-file "$T/indyr4400/x11-runtime.sh" --aux-file \
+  "$T/indyr4400/nspawn-inner.sh" --aux-file "$T/indyr4400/fetch-assets.sh" \
+  --env-append-file "$T/indyr4400/station.env.fixture"
 
 # star (VMID 240) — Darkstar (C#/mono 6.8) -> Xerox 8010 "Dandelion"
 #   -> Pilot + ViewPoint 2.0, logged on. ssh 5840. Silent exhibit (the 8010 has
