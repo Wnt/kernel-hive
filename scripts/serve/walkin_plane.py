@@ -82,7 +82,17 @@ def _bring_up(auth):
     # needs the same registry the switch's teardown uses. Bound here rather than
     # at construction because `AuthService` builds both and neither may depend
     # on the other's order.
-    auth.anon.bind_tickets(auth.walkin_tickets)
+    #
+    # Tolerated when absent, like the broker itself (ledger §3.1): this file is
+    # a box-sync PAIR and `auth/` ships wholesale from a different script, so a
+    # half-deploy can put a new walkin_plane.py in front of an auth package that
+    # has never heard of the anonymous budget. Raising here would kill the
+    # watchdog thread — and with it every TTL, every reap and the whole pool —
+    # over a feature that simply is not installed yet.
+    if getattr(auth, "anon", None) is not None:
+        auth.anon.bind_tickets(auth.walkin_tickets)
+    else:
+        sys.stderr.write("[serve] walk-in: no anonymous plane in this auth package — strangers are not served\n")
     # The switch survives a restart (it is in auth-state.json); the pool does
     # not. Restore both from the stored position, so a restart at Invited comes
     # back with a WARM pool rather than one that only fills after the next admin

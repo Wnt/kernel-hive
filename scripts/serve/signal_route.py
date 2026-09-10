@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 from auth import tickets
-from auth.anon import REASON_BUDGET
 from config import PUBLIC_HOST, SIGNAL_CONFIG, SIGNAL_HOST
 from probes import hit
 from static_files import MIME
@@ -205,6 +204,18 @@ def serve_tile(handler, tile, stream_key):
             # signalling document and no usable ticket would read to the client
             # as "connection lost", which is the lie the §3.3 codes exist to
             # prevent, so this takes the same 410 road a reaped clone takes.
+            # Imported HERE, not at module scope, and the reason is a deploy
+            # shape rather than taste. This file is a box-sync PAIR
+            # (scripts/lib/box-sync-pairs.sh) while `auth/` ships wholesale from
+            # scripts/serve-https-spa.sh — two different mechanisms. A pairs-only
+            # deploy would otherwise land a signal_route.py that imports a module
+            # the box has not been given yet, and an ImportError here does not
+            # degrade a feature: it stops the serving unit, which takes the LAN
+            # gallery down with the public one. That is PREFLIGHT's B1 failure
+            # shape, and it cannot happen to a name resolved inside a branch that
+            # a plane without the anonymous budget never reaches.
+            from auth.anon import REASON_BUDGET
+
             ended = (
                 BROKER.wall_message(tile, REASON_BUDGET)
                 if BROKER is not None
