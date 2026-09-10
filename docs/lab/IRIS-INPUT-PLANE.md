@@ -20,7 +20,9 @@ live bridge keeps running off the same source until cutover, and the rollback is
 
 ```sh
 SH_INPUT_BACKEND=mamesock
-SH_MAMECTL_SOCK=/data/vms/streamhost/stations/indyr4400/ctl.sock
+# run/, NOT the station dir: the station dir holds the cert hash and
+# signaling.json and is never bound into the container.
+SH_MAMECTL_SOCK=/data/vms/streamhost/stations/indyr4400/run/ctl.sock
 SH_MAMESOCK_KEYMAP=/data/vms/streamhost/stations/indyr4400/indy.keymap
 # Leave SH_MAMESOCK_PTR_GRID UNSET: this server states targets in screen pixels,
 # as nextstep does. The grid mode is for guests with no hardware cursor.
@@ -31,8 +33,10 @@ SH_KEY_MIN_GAP_MS=40
 and on the launcher's side of the emulator:
 
 ```sh
-IRIS_CTL_SOCK=/data/vms/streamhost/stations/indyr4400/ctl.sock
+IRIS_CTL_SOCK=/data/vms/streamhost/stations/indyr4400/run/ctl.sock
 IRIS_CTL_SCREEN=1280x1024      # clamp surface + the HELLO banner's screen=
+                               # (the launcher derives it from IRIS_GEOM, so it
+                               # cannot drift from the published crop)
 IRIS_CTL_KEY_HOLD=40
 IRIS_CTL_KEY_GAP=40
 ```
@@ -71,9 +75,24 @@ behaviour, which the browser already drives through Pointer Lock.
 `CLICK1..3`/`DCLICK1` · `KEY <0|1> kbd <name>` · `KEYDUMP` · `PING` · `CUR` ·
 `STAT` · `SYNC`.
 
-`PAUSE RESUME RESET SAVEST LOADST FBSYNC EXIT` answer **`ERR badverb` on
-purpose**: they belong to the reset plane (`kh-native-reset`, stream D), and a
-half-wired station should be loud rather than silently `OK`.
+`SAVEST LOADST RESET FBSYNC CKPT` are **served on this same socket** since the
+2026-09-10 integration: this module owns the socket and `src/kh_ctl.rs` owns
+those verbs, joined through the merge hook `kh_ctl` documents at its module top,
+and applied on THIS module's engine thread so an `OK` still means "everything
+ahead of this line has been applied, and so has this". It has to be one socket:
+`mame_sock.rs` connects a station to exactly one `SH_MAMECTL_SOCK` and
+`scripts/serve/reset-tile.sh` sends `LOADST golden` down the same one the
+browser's pointer rides. `caps=` advertises them; `STAT` counts them as `life=`.
+
+`PAUSE RESUME EXIT` still answer **`ERR badverb` on purpose**: the daemon
+freezes this station with SIGSTOP through `SH_IDLE_PAUSE_PIDFILE` and stops it
+with the unit, so a station that thought otherwise should be loud rather than
+silently `OK`.
+
+**A restore rewinds the guest under the positioner**, so `LOADST`/`RESET` drop
+this module's flight state, learned gain, queued clicks and button mask and
+re-seed from the registers. Steering by a gain learned before the rewind would
+chase a cursor that jumped.
 
 Wire details the daemon holds the module to, all satisfied:
 the first line begins `HELLO mamectl/1 ` within 1 s; `MOVEA` acks on **accept**
@@ -206,16 +225,25 @@ publisher removes (no GL, no X, one memcpy into shm). A 96x96 `XGetImage` costs
 0.20 ms and a full-window one 36.7 ms, so the reader is not the number; the
 compositor present is.
 
-### Still to confirm
+### Confirmed on the shipped defaults, 2026-09-10
 
-The `cursor_x_adjust` term reached its shipped default *after* the measurement
-run. On the running binary of the day the loop steered `reg + cal_x` alone and
-the glyph landed 5 px right of every commanded pixel; commanding `x - 5` put the
-glyph **exactly on the pixel at 5 of 7 targets**, which is what fixes the
-constant at 5 and is why the module now adds it. The equivalent run on the
-shipped default — same seven targets, no hand offset — has not been taken: the
-box allows one Iris at a time and the slot went to streams A and B. It is one
-15-minute run, and `finalproof.py` in the `iris-c` rig is written and waiting.
+The run this section was waiting for has been taken, on the integrated binary
+and the integrated launcher inside the station's container, with **no hand
+offsets anywhere**: eight targets, and the arrow glyph landed on the commanded
+pixel at **all eight (0 px)**, with the VC2 register reading the commanded pixel
+exactly at all eight as well. Convergence 4–16 rounds, median 246 ms.
+`cursor_x_adjust` read back as 5, cached, exactly as designed.
+
+Two things that run taught, both about MEASURING rather than about the plane:
+
+* **Difference against a plate inside a window around the commanded pixel**, not
+  against the whole screen. The first attempt reported 0/7 with a bounding box
+  655 px wide, because the desktop was still painting; the pointer was fine and
+  the frame was the liar. A ±48 px window makes the answer immune to it.
+* **Never sweep the keymap into a live desktop.** Driving all 102 rows as real
+  press/release pairs at the 4Dwm desktop logged the `demos` session out — 102
+  rows include Escape, the function keys and every modifier. Sweep at the login
+  panel, or use `KEYDUMP`, which needs no guest at all.
 
 ## Open, and handed to stream A
 

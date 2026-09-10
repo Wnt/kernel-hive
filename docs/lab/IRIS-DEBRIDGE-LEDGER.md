@@ -34,8 +34,9 @@ assets `$ASSETS = /data/vms/streamhost/assets/indyr4400`.
 | `/data/gallery-guests/IrisIndy/irix65-r4400-disk.raw` | `streamhost/stations/indyr4400/fetch-assets.sh` | the 6 291 456 000-byte IRIX 6.5.22 disk, **a plain immutable file**, bound read-only. The bridge era's ext4 wrapper existed only so a QEMU guest could mount it; host-native, Iris opens the file directly and the wrapper is retired |
 | `$BASE/run/fb.shm` | the emulator (`IRIS_SHM_PATH`) | **moved out of `$BASE` 2026-09-10.** The publisher creates the mapping by temp-file-and-rename, which needs a writable DIRECTORY; `$BASE` is never bound into the container (cert hash, `signaling.json`). `run/` already is, so the mapping joins the sockets there. Declared as `runtime.x11.shmPath`; the launcher does NOT pre-create it |
 | `$BASE/run/ctl.sock` | the emulator (`IRIS_CTL_SOCK`) | `mamectl/1`. `$BASE/run` is a bound directory, not `$BASE` itself — the station dir holds `station.env`, `signaling.json` and the cert hash and is never exposed to the payload |
-| `$BASE/run/iris-ci.sock` | the emulator (`IRIS_CI_SOCK`) | stream D's restore verbs / the exec channel |
-| `$BASE/work` | the launcher, wiped every launch | `iris.toml`, `nvram.bin`, the disk COW overlay, logs. The **only** writable bind |
+| `$BASE/run/iris-ci.sock` | nobody, as shipped | Iris's own JSON-lines exec channel. **`IRIS_CI_SOCK` is EMPTY on the station**: measured 2026-09-10, arming it publishes no frame at all (~200 % CPU, ten minutes, nothing) — the ci SCC backend travels with the socket, not with `--ci`. The reset verbs never rode it; they are on `ctl.sock` |
+| `$BASE/work` | the launcher, wiped every launch | `iris.toml`, `nvram.bin`, the disk COW overlay, logs. `/work/saves` is a SYMLINK to `/state` |
+| `$BASE/state` | the emulator (`SAVEST`), **never wiped** | the checkpoints and the shared CAS chunk store. Bound at `/state`. It exists because `saves/<name>` resolves against the process CWD (`/work`) and `work/` is wiped on every launch — a golden written there would be deleted by the next relaunch, i.e. by the thing meant to restore it |
 | `$BASE/x11` | interim only | the container's Xvfb socket dir; the host gets `/tmp/.X11-unix/X94 -> $BASE/x11/X94` |
 | `$BASE/indy.keymap` | **stream C** | `SH_MAMESOCK_KEYMAP`, the `nextstep.keymap` shape |
 | `$BASE/mame.pid` | the launcher | the emulator's HOST pid — the daemon's freezer and the reap-by-exe path |
@@ -52,7 +53,11 @@ thing that sets them. **Unset knob = loud failure, never a fallback.**
 | `IRIS_BIN` | fixture | the binary the launcher execs |
 | `IRIS_SHM_PATH` | launcher (shm mode only) | IFB1 mapping; its presence on the no-window branch is what installs the `Renderer` (stream A). The binary must be run with **`--no-window`, never `--ci`** — measured 2026-09-10: under `--ci` the Indy ran twelve minutes at 107 % CPU with `screen.width == 0`, so `present()` is never called and nothing is ever published |
 | `IRIS_CTL_SOCK` | launcher | the `mamectl/1` listener (stream C) |
-| `IRIS_CI_SOCK` | launcher | Iris's own JSON-lines ci socket (`--ci-socket`). **THIS IS ALSO THE `--ci` SWITCH**: set → the control server starts and REX3's screen stays 0x0 (no frames); empty → `--no-window` only, and frames. No `:-` default anywhere. Frames win until the fork gates `ci::start_server` on `--ci-socket` rather than on the mode — stream A/D |
+| `IRIS_CI_SOCK` | launcher | Iris's own JSON-lines ci socket (`--ci-socket`). The fork now gates `ci::start_server` on the SOCKET rather than the mode, so `--ci`'s COW-overlay redirect and serial swap are no longer implied — but **the frame plane still dies when the socket is armed** (measured 2026-09-10: ten minutes, ~200 % CPU, no frame; empty → first frame in 19 s). Ships EMPTY. No `:-` default anywhere |
+| `IRIS_SHM_GEOMETRY` | launcher, from `IRIS_GEOM` | the published crop. **REQUIRED**: VC2 decodes 1282x1024 and the registry declares 1280x1024, and the consumer has no crop knob |
+| `IRIS_CTL_SCREEN` | launcher, from `IRIS_GEOM` | the pointer clamp and the HELLO banner's `screen=`. Same source as the crop, so the frame, the clamp and the registry cannot drift |
+| `IRIS_MONITOR_ADDR` | launcher | the monitor console (upstream hardcodes `127.0.0.1:8888`, a process-wide singleton). Inside `--private-network` this is the container's own loopback |
+| `KH_PROVENANCE` | launcher | `strict` = refuse a checkpoint captured by a different binary (rule 6) |
 | `IRIS_PTR_MODE` | launcher | `vc2` arms stream C's closed absolute loop; `rel` is the shipped fallback. **This string is the pointer method's device-ledger token** (`scripts/stations_registry/pointer_rules.py`) — without it in the launcher the registry gate fails, which is the point: the declaration cannot outrun the mechanism |
 | `IRIS_STATE` | fixture | the snapshot the launcher restores; **empty forces a cold boot** (~7 min), exactly as `IRIX_STATE=` does on the `irix` sibling |
 | `IRIS_WORK` | launcher | the writable dir inside the container (`/work`) |
@@ -105,9 +110,12 @@ user` namespaces, `uid_map = 0 2031616 65536`, `CapBnd 0x15808dff` (no
 IRIX disk → read-only filesystem, `ip link` → `lo` only, `ps -e` → `sd-stubinit`
 and `iris` only, `/work` → writable.
 
-### One open defect, for stream A
+### The open defect, closed
 
-**The mapping is published 1282x1024, not 1280x1024.** Columns 1280 and 1281 are
-pure black in every frame — `shmpub` takes `screen.width`, which carries two
-padding columns. The registry declares `1280x1024x32`, and there is no crop knob
-on either side, so the fix belongs in the publisher: clamp to the visible width.
+**The mapping was published 1282x1024, not 1280x1024.** Fixed in the publisher,
+where it belongs: `IRIS_SHM_GEOMETRY` crops to the declared rectangle, and the
+launcher derives it from `IRIS_GEOM` so it cannot be set independently. Verified
+on the integration rig 2026-09-10 — `Rex3: Resolution changed to 1282x1024
+cursor_x_adjust=5` followed by `iris: shm first geometry 1280x1024 (stride
+5120)`, and a mapping of exactly 5 242 944 bytes. The two dropped columns are
+real right-edge overscan, not black padding.

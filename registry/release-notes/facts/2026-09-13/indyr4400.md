@@ -23,15 +23,33 @@ changed is what is underneath it.
   the machine and not the emulator. Running directly, that readout is never
   drawn at all.
 
+- **The pointer became absolute.** It used to be click-to-grab: the browser had
+  to capture your mouse, and Right-Ctrl gave it back. Now the arrow simply goes
+  where you put it — the exhibit reads the emulated machine's own cursor
+  hardware and steers until the two agree. Measured on eight targets across the
+  screen, the arrow landed on the exact pixel asked for, eight times out of
+  eight.
+- **The number the conversion was after: 361 milliseconds became 80.** Its
+  neighbour, the machine that started the argument, sits at 68. A stream of
+  pointer movement now settles 60 milliseconds after the last one instead of
+  216–397.
+- **And a reset that used to be unthinkable is now instant.** Putting the
+  exhibit back to its starting scene takes **four tenths of a second**, because
+  the emulator rewinds itself in place instead of the whole machine restarting.
+  The saved scene is 9 MB, where the old one was three quarters of a gigabyte.
+- The machine also got **cheaper to run**, which is not the kind of thing
+  visitors see but is why more machines can share one museum: the virtual
+  machine it lived in cost about one and a half processor cores all by itself,
+  and it is gone.
+
 ## Not yet true when this note was written — check before publishing
 
-The conversion's own measurements were still open: the landed pointer latency,
-the CPU the station costs now, and whether the pointer ended up absolute
-(click anywhere) or relative (click-to-grab, as it shipped). See
-`docs/lab/IRIS-DEBRIDGE-BRIEF.md` §7, which is the ledger those numbers land in.
-**Do not publish a latency figure from this note** — the 68 ms above is the
-*neighbouring* station's measurement and the target, not this one's result.
-
+Two things were still open at the integration pass and may still be:
+the exhibit's **starting scene** has to be re-baked by hand at cutover (a cold
+boot stops short of the full desktop), and a **menu drawn by the IRIX window
+manager comes out black** — an emulator gap, not a conversion one. Do not write
+prose that describes a visitor opening a menu until that is fixed. See
+`docs/lab/IRIS-DEBRIDGE-BRIEF.md` §7.
 ## Sources
 
 - `docs/lab/IRIS-DEBRIDGE-BRIEF.md` — design and results record

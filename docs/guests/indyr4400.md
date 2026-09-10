@@ -107,12 +107,19 @@ Two traps that outlived the chroot:
   labhost's stable is 1.97.0. The builder fetches the nightly toolchain. A
   floating nightly is a moving input under rule 6, where the binary is half of
   every checkpoint, so **the fork pins a dated nightly and records it**.
-- `unset CARGO_TARGET_DIR` before building: the box sets a shared one.
+- **`CARGO_TARGET_DIR` must be SET, not unset** — and this is backwards from
+  what it looks like. `/root/.cargo/config.toml` on the box puts `[build]
+  target-dir` in the shared streamhost tree, and a config value applies
+  precisely when the env var is ABSENT. So `unset CARGO_TARGET_DIR` hands the
+  build to the shared tree and then installs from `./target/release/iris`, a
+  path that does not exist. The builder sets it to its own work dir.
 
-Measured build cost: *(to be measured by stream A — the bridge-era chroot build
-was 6 m 30 s for one feature set, and the 2026-09-09 perf wave measured ~19 min
-cold for two feature sets including the toolchain fetch; neither is a trixie
-host-build number.)*
+Measured build cost, on labhost (trixie, `nice -n 19 cargo build --release -j 4`,
+features `lightning,rex-jit,chd,jitv2`, toolchain already resident): **8 m 00 s**
+cold, **5 m 05 s** for an incremental rebuild after a source change (2026-09-10).
+For scale, the bridge-era chroot build was 6 m 30 s for one feature set plus a
+debootstrap, and the 2026-09-09 perf wave paid ~19 min cold for two feature sets
+including the toolchain fetch. The chroot is gone with the kiosk.
 
 ## Design: the three planes
 
@@ -157,9 +164,23 @@ emulator instead of the machine.
 
 Geometry: the framebuffer is 2048x1024 words, stride 2048, with the visible
 sub-rect decoded from VC2 timings — `1282` is a **decoded value, not a
-literal**. Published geometry: *(to be measured by stream A, together with the
-one-time decision whether the publisher crops the 2 overscan columns or the
-registry's geometry moves. It is not left to the daemon.)*
+literal**. Measured on the integration rig 2026-09-10, from Iris's own log:
+
+```
+Rex3: Resolution changed to 1282x1024 cursor_x_adjust=5
+iris: shm first geometry 1280x1024 (stride 5120)
+```
+
+**Published geometry is 1280x1024, pinned, and the crop is decided in the
+publisher.** `IRIS_SHM_GEOMETRY=1280x1024` — set by the launcher from
+`IRIS_GEOM`, never separately — drops the 2 columns VC2 decodes beyond the
+nominal width. They are real right-edge overscan, not black padding. The
+consumer has no crop knob, so the decision cannot live on the daemon's side; and
+because the same `IRIS_GEOM` also feeds `IRIS_CTL_SCREEN`, the rectangle the
+publisher writes, the surface the browser clamps a pointer to and the geometry
+the registry declares cannot drift apart. The mapping is `64 + 1280*1024*4 =
+5 242 944` bytes, which is the check: a station publishing 1282 would be
+5 251 136.
 
 ### Input — `mamectl/1`, spoken verbatim
 
@@ -189,9 +210,21 @@ not count what it sent**.
 Pacing floors: `SH_KEY_MIN_HOLD_MS` / `SH_KEY_MIN_GAP_MS` are 40/40 in the
 fixture, and on this path the daemon's own gate does not run — the launcher
 derives the emulator module's floors from them. Measured floors against IRIX,
-and `SH_BTN_MIN_HOLD_MS`: *(to be measured by stream C, swept with a **pipelined**
-sender at zero spacing — `scripts/dev/key-replay.py`, never an acking client,
-which paces the edges for you and hides the bug perfectly.)*
+and `SH_BTN_MIN_HOLD_MS`: 40/40 holds. Measured on the integration rig
+2026-09-10 with a **pipelined** sender — one `write()` of every edge at zero
+spacing, never an acking client, which paces the edges for you and hides the bug
+perfectly. `demos` typed at the IRIX visual login: **10 edges, 10 acked, 375 ms**
+(= 5 characters x 40/40), and the login went through. All **102 keymap rows
+driven through the live socket, 0 rejected**. `SH_BTN_MIN_HOLD_MS=60` is still a
+floor rather than a measurement — no double-click sweep against IRIX's own
+verdict has been taken.
+
+**Do not sweep the keymap into a live desktop.** Driving all 102 rows as real
+press/release pairs at the 4Dwm desktop logged the `demos` session out on the
+integration rig — 102 rows include Escape, the function keys and every modifier,
+and a desktop is a program that reacts to them. Sweep at the login panel, or use
+`KEYDUMP`, which needs no guest at all and is why the generator can verify the
+map before the machine boots.
 
 ## Pointer
 
@@ -223,11 +256,36 @@ compose x11warp motion with ctlsock edges — that is exactly why `amix` was
 rolled back on 2026-09-09. If the VC2 loop does not converge, the fallback is
 **stay `rel`**, not x11warp.
 
-Landed transport, and the proof: *(to be measured by stream C — the bar is the
-`nextstep` one: `scripts/dev/cursor-locate.py` finds the IRIX arrow at the
-commanded pixel for ≥6 targets at **0 px**, one of them after a reset, plus the
-same proof driven from a real browser through `page.mouse`. That browser run is
-also what clears the registry's `reset.mouse` / `reset.keyboard` `UNVERIFIED`.)*
+**Landed: absolute, and it converges on the shipped defaults.** Measured on the
+integration rig 2026-09-10, at the `demos` session's 4Dwm desktop, with no hand
+offsets anywhere — `IRIS_CTL_CAL_X/_Y = -31`, deadband 1, and the compositor's
+own `cursor_x_adjust = 5` read once and cached:
+
+| target | glyph origin in the published frame | delta | rounds |
+|---|---|---|---|
+| 300,200 | 300,200 | **0,0** | 8 |
+| 980,760 | 980,760 | **0,0** | 16 |
+| 64,900 | 64,900 | **0,0** | 6 |
+| 640,512 | 640,512 | **0,0** | 5 |
+| 1200,140 | 1200,140 | **0,0** | 5 |
+| 500,500 | 500,500 | **0,0** | 6 |
+| 880,300 | 880,300 | **0,0** | 4 |
+| 120,60 | 120,60 | **0,0** | 6 |
+
+**8 of 8 at 0 px**, and the VC2 register read back the commanded pixel exactly at
+all eight. Convergence median 246 ms, max 653 ms. The glyph was located by
+differencing each frame against a plate inside a ±48 px window around the
+commanded pixel, which is what makes the answer immune to the rest of the screen
+repainting — the first attempt at this measurement was ruined by a desktop that
+was still painting, and reported 0/7 with a bounding box 655 px wide.
+
+Button edges land too: `DOWN1` on the Toolchest's *System* entry raised it and
+opened its menu pane (47 713 pixels changed), and `UP1` closed it.
+
+**Still open:** the same proof driven from a real browser through `page.mouse`,
+which is what clears the registry's `reset.mouse` / `reset.keyboard`
+`UNVERIFIED`. Nothing about the mechanism is in doubt; the browser leg has not
+been run.
 
 ## Reset and checkpoint
 
@@ -268,9 +326,41 @@ follows the shape that doc names for savestate paths: **write the new state
 under a temp name, prove it restores, then `mv` it over the old one** — never
 delete the old golden first.
 
-Restore wall clock, and the byte-identical two-capture proof:
-*(to be measured by stream D, on the shm file — the bridge era took the same
-proof off a QEMU `screendump`, see below.)*
+**Restore wall clock, and the byte-identical proof.** Measured on the
+integration rig 2026-09-10, every verb sent down the station's ONE `mamectl/1`
+socket and every frame read out of the published IFB1 mapping with the daemon's
+own reader (`scripts/shmshot.py`):
+
+| | |
+|---|---|
+| `SAVEST golden` (256 MB RAM + the COW overlay) | **2 035 ms** |
+| `LOADST golden`, from disk | **1 274 ms** |
+| `LOADST golden`, via the in-memory rollback checkpoint | **536 ms** |
+| `RESET` (rollback) | **387 ms** |
+| `kill -9` → a cold start with a live restored guest | **10.9 s** |
+| checkpoint on disk | **9.2 MB** per snapshot + **124 MB** shared CAS chunk store |
+
+The frames, by md5 of the published RGB:
+
+* scene at `SAVEST` time `6870865dce1489d143f52087ce4a56be`
+* dirtied (menu opened) `a0538fb71bca963f13bd0d1c9c3b03ff` — different, as it must be
+* after `LOADST` from disk `6870865d…` — **byte-identical to the scene**
+* after `LOADST` via rollback `6870865d…` — byte-identical
+* after `RESET` `6870865d…` — byte-identical
+* after `kill -9` and a **fresh process** restoring at startup `6870865d…` —
+  byte-identical, and `ImageChops.difference` against the saved scene returns a
+  bounding box of `None`, i.e. not one pixel differs
+
+**Input is live immediately after a restore**, which is the whole reason the
+i8042 interrupt-edge fix exists: a `MOVEA` acked 5 ms after the restore and
+`CUR` read back the restored cursor position. The startup restore waited on a
+real milestone rather than a clock — *"guest reached VC2 mode decode in
+4 695 ms — restoring 'golden'"* — and the failure ledger cleared itself one
+second later, when the checkpoint plane acked a verb.
+
+`.dirty` is **not** a carrier: after `kill -9` there was no
+`disk.raw.overlay.dirty` at all, and the restore was still exact — the snapshot
+carries the overlay and its dirty-sector set inside itself.
 
 ## Containment
 
@@ -288,8 +378,20 @@ landed station combines nspawn with `shm` capture, and `--private-network` hides
 Iris's own listeners — the monitor console, a future retronet `pcap` bridge —
 from the host, so the netns has to be designed rather than bolted on.
 
-Landed shape, and the namespace audit that proved it: *(to be recorded by
-stream B.)*
+**Landed: nspawn, and it is the first station in the lineup that combines a
+container with `shm` capture.** The namespace audit, read off the live payload:
+private `pid mnt net ipc uts user`; `uid_map = 0 <base> 65536`; `CapBnd`
+without `CAP_SYS_ADMIN`; `NoNewPrivs 1`; `Seccomp 2`. At the payload's own
+bounding set: `mount` → permission denied, `/root` and the IRIX disk →
+read-only filesystem, `ip link` → `lo` only, `ps -e` → `sd-stubinit` and `iris`
+only, `/work` → writable.
+
+The netns was designed rather than bolted on, and the two things that fall out
+of it are worth stating: Iris's monitor console (`IRIS_MONITOR_ADDR`, upstream a
+hardcoded `127.0.0.1:8888` singleton) is reachable only from inside — `nsenter
+-t $(cat …/mame.pid) -n` — which is a feature; and there are exactly three
+things bound read-write, `run/` for the sockets and the mapping, `work/` for the
+per-launch scratch, and `state/` for the checkpoints.
 
 ## Idle auto-pause
 
@@ -307,14 +409,35 @@ forever, silently.
 
 | | |
 |---|---|
-| `iris` on the host | *(to be measured by stream A — the bridge measured it in-guest at ~320 % CPU / RSS ~530 MB interpreter, ~360 % / ~890 MB jitv2)* |
+| `iris` on the host | **325 % CPU**, RSS **812 MB**, at a settled desktop with nothing driving it — measured over a 60 s window from `/proc/<pid>/stat`, 2026-09-10 |
 | station QEMU | **none** — the bridge's QEMU cost ~150 % CPU and ~1.15 GB RSS, and deleting it is the conversion's structural saving |
-| golden / snapshot store | *(to be measured by stream D — the bridge's `overlay.qcow2` was 702 MB with a 1.1 GiB vmstate inside it)* |
+| golden / snapshot store | **9.2 MB** per snapshot + **124 MB** shared CAS chunk store — against the bridge's `overlay.qcow2` at 702 MB with a 1.1 GiB vmstate inside it |
 | asset | 6.4 GB apparent / ~500 MB allocated (sparse) — unchanged |
+| published frames | **25.7 Hz** while the cursor sweeps; **0.1 Hz** at a settled desktop |
 
-The spike measured host-native at ~69 % of a kiosk's cost, so banking roughly
-the QEMU's 150 % is the expectation. **It is an inference, not a measurement**,
-until stream A takes it.
+**The saving is the QEMU, and it is now a measurement rather than an
+inference.** The emulator itself did not get cheaper — 325 % host-native against
+the bridge's 320 % (interpreter) / 360 % (jitv2) in-guest is the same machine
+doing the same work — but the ~150 % the station's QEMU cost is simply gone,
+along with its 1.15 GB. The station went from roughly 510 % to 325 % for a
+better exhibit.
+
+The frame numbers are worth reading together with that. An idle Indy publishes
+**one frame every ten seconds**, because the publisher compares each composited
+row against its own shadow and writes nothing when nothing moved — so a station
+nobody is looking at costs the encoder nothing at all. Under a moving pointer it
+publishes at the emulator's own cadence.
+
+**A frame-rate measurement that lied, and why.** Driving the pointer +4/-4 px
+alternately reported 6.2 Hz and looked like a stuck refresh gate — the very
+symptom of a known suspicion, that a cursor-only move does not mark the
+framebuffer dirty and therefore rides the 6-frame idle heartbeat. It is not
+true on this build: `Vc2::write_reg` sets the VC2 dirty flag on every cursor
+register write and `should_render` consumes it as `palette_dirty`. The 6.2 Hz
+was the *publisher being right*: an oscillating cursor is usually back where it
+started by the time the next composite runs, so there is genuinely nothing to
+publish. A monotonic sweep over the same interval measures **25.7 Hz**. No
+change to the refresh gate is needed, and none was made.
 
 ## The measurement that started the conversion (2026-09-09)
 
@@ -454,10 +577,38 @@ neither.
   is the clock*), but the VICE wave's lesson is that a blocking audio sink on
   the emulation thread becomes the clock and cost 76 % of the machine's speed —
   on the lineup's most expensive emulator that is not a cheap experiment.
-- **The published width is not yet pinned.** The visible rect is whatever VC2
-  decodes; `1282x1024` is a value seen in Iris's own logs, not a constant. The
-  16-row HUD can no longer leak in (separate texture), so only the 2 overscan
-  columns are open. *(Decided and measured by stream A.)*
+- **A cold boot does not reach the full Indigo Magic Desktop, and the golden
+  must be baked at one that does.** On the integration rig, `demos` logs in, the
+  Toolchest docks upper-left and a console window opens bottom-left — and there
+  it stops, with 4Dwm's busy cursor and **no icon column down the right edge**,
+  unchanged for ten minutes of framebuffer polling. The fixture text and the
+  MIGRATION-WAVE reject criteria both describe the icon column, so *this scene is
+  not the exhibit*. It does not block the conversion — every mechanism below was
+  proven against it, and a checkpoint is content-agnostic — but the operator's
+  golden recapture has to reach the real desktop first, and what the session is
+  waiting on is **not yet diagnosed**. The obvious next step is a theory race
+  (rule 14) on `rig-clone.sh` clones: a `demos` session start script blocking on
+  a name lookup with no network is the first theory, the fresh COW overlay
+  losing per-user desktop state the second.
+- **A 4Dwm popup menu composites BLACK.** Pressing the Toolchest's *System*
+  entry opens its pane and 4Dwm tracks the pointer into it correctly — and the
+  pane's pixels are black in the published frame, after 6 s and after a hover.
+  This is **not** a conversion regression: `shmpub` calls the same
+  `SwCompositor::compose_pixels` as the windowed path in
+  `iris-gui/src/framebuffer.rs`, and that function does handle the popup plane
+  (`compositor.rs`, "Priority: cursor → popup → overlay → main pixel"), so the
+  gap is in what Iris puts in that plane, on both paths equally. It is still
+  visitor-visible and it is the first thing to fix after the cutover.
+- **Iris's own `--ci-socket` costs the frame plane, so the exec channel is off.**
+  Measured 2026-09-10 on the integration rig: with the ci socket armed, the Indy
+  ran **ten minutes at ~200 % CPU and published no frame at all**; with it empty,
+  the first frame landed **19 s** after launch. The cause is not `--ci` the mode
+  — the fork already un-welded those — it is that the ci SCC backend and
+  `Ioc::new_ci` travel with the *socket*, and one of them is what REX3 does not
+  survive. The station therefore ships with `IRIS_CI_SOCK` empty and has no
+  serial exec channel; `labctl exec` has nothing to offer here. Everything an
+  operator needs is on the `mamectl/1` socket instead. Narrowing which of the
+  two it is, is a bounded next task.
 - **`reset.mouse` / `reset.keyboard` are `UNVERIFIED` in the registry**: proven
   by framebuffer, not yet through the real UI in a browser. Stream C's
   `e2e-live` probe is what clears them.
@@ -478,3 +629,117 @@ only ever read via a copy at asset-build time.
 Full de-bridge rollback (kiosk back, one move each way):
 [`../lab/DEBRIDGE-ROLLBACK.md`](../lab/DEBRIDGE-ROLLBACK.md) and
 `scripts/debridge-convert/`.
+
+## Cutover runbook
+
+The station is **live and active**. This is a scheduled outage, not a bring-up,
+and it is one command away: everything below is landed, proven on a rig, and
+deployed by `box-deploy`. Run it inside the landing lock
+(`scripts/dev/wave.sh land begin indyr4400`), and never while another wave has
+uncommitted live edits on the box.
+
+**Expected outage: 12–20 minutes**, almost all of it the golden bake. The
+mechanical part is under two minutes.
+
+### What the visitor sees, step by step
+
+| step | the exhibit |
+|---|---|
+| 1 stop | the tile goes offline; the SPA shows the station as unavailable |
+| 2 deploy | still offline (nothing is running) |
+| 3 assets | still offline; the 6.3 GB disk is unwrapped once, ~1 min |
+| 4 start, cold | **live within ~20 s**, and it is the IRIX boot: PROM, then the autoconfig relink console, then the visual login. ~5 minutes of a machine visibly booting — degraded, but honest, and the log says so |
+| 5 bake | a visitor sees the `demos` session come up and a desktop being reached |
+| 6 SAVEST | no visible change; the checkpoint is captured under the live scene |
+| 7 restart | **~11 s offline**, then the baked desktop, and every reset from here is 0.2–1.6 s |
+
+### The commands
+
+```sh
+# 0. take the landing window, and park the rollback pair first
+scripts/dev/wave.sh land begin indyr4400
+ssh lab 'cd /data/vms/streamhost/stations/indyr4400 && \
+  cp -a qemu-streamhost.sh qemu-streamhost.sh.debridged-bak 2>/dev/null; ls -la *.debridged-bak'
+
+# 1. stop the bridge
+ssh lab 'systemctl stop streamhost@indyr4400 && labctl ls | grep indyr4400'
+
+# 2. deploy the pushed commit (a push is NOT a deploy — rule 11)
+scripts/dev/box-deploy.sh                 # read the plan first
+scripts/dev/box-deploy.sh --apply
+
+# 3. stage the assets: the host-native binary, the container rootfs skeleton,
+#    and the plain raw IRIX disk the kiosk's ext4 wrapper used to hold
+ssh lab 'bash /data/kernel-hive/scripts/build-guests/tiles/indyr4400.sh'
+ssh lab 'bash /data/vms/streamhost/stations/indyr4400/fetch-assets.sh --convert'
+
+# 4. first start is a COLD BOOT on purpose: there is no golden yet, and the
+#    launcher's ledger will say so. ~5 min to the visual login.
+ssh lab 'sed -i "s/^IRIS_STATE=.*/IRIS_STATE=/" /data/vms/streamhost/stations/indyr4400/station.env'
+ssh lab 'systemctl start streamhost@indyr4400'
+ssh lab 'python3 /data/kernel-hive/scripts/dev/fb-wait.py \
+  --shm /data/vms/streamhost/stations/indyr4400/run/fb.shm \
+  --change --settle 25 --timeout 900'          # the IRIX visual login panel
+
+# 5. bake the scene: log in as `demos`, and REACH THE REAL DESKTOP — Toolchest
+#    upper-left, the camera/Start Demos/buttonfly/fsn icon column down the right
+#    edge, nothing else open. See "Known gaps": a cold boot has NOT been seen to
+#    get there on its own, so this step is the one that needs a person.
+#    ctl.py --type is PIPELINED at zero spacing — the browser's shape, and the
+#    only kind of typing claim that is evidence. $'...\n' so the shell, not the
+#    client, makes the real newline: ctl.py interprets no escapes.
+ssh lab "python3 /data/vms/streamhost/stations/indyr4400/ctl.py \
+  /data/vms/streamhost/stations/indyr4400/run/ctl.sock --type \$'demos\n'"
+#    ... then drive the pointer with the same client until the scene is right:
+#      ctl.py <sock> 'MOVEA 640 512' DOWN1 UP1
+
+# 6. capture the golden, through the station's own control socket. This IS the
+#    documented equivalent of `checkpoint-guard recapture` for this runtime:
+#    the guard covers QEMU vmstate and refuses savestate runtimes by design, and
+#    SAVEST implements the shape it names — write under a temp name, rename over
+#    the old one, keep `golden.prev`. It never deletes the old golden first.
+#    ONE VERB PER CALL with mctl.py — it takes a single verb line and silently
+#    folds anything after it into that verb's arguments, so `SAVEST golden CKPT
+#    golden` runs SAVEST and never CKPT. Use --stdin for a sequence.
+ssh lab 'printf "SAVEST golden\nCKPT golden\n" | \
+  python3 /root/mctl.py /data/vms/streamhost/stations/indyr4400/run/ctl.sock \
+  --timeout 120 --stdin'
+#    CKPT must answer `present=1 prov=ok`. Then PROVE the restore before trusting
+#    it — dirty the screen, restore, and compare the frames:
+ssh lab 'python3 /root/mctl.py /data/vms/streamhost/stations/indyr4400/run/ctl.sock \
+  --timeout 120 --stdin <<< "LOADST golden"'
+
+# 7. arm the restore path and restart onto it
+ssh lab 'sed -i "s/^IRIS_STATE=$/IRIS_STATE=golden/" /data/vms/streamhost/stations/indyr4400/station.env'
+ssh lab 'systemctl restart streamhost@indyr4400'
+ssh lab 'grep KH-RESET /data/vms/streamhost/stations/indyr4400/iris.log | tail -3'
+
+# 8. release the window
+scripts/dev/wave.sh land end indyr4400
+```
+
+### Checks that say it worked
+
+```sh
+ssh lab 'ls -l /data/vms/streamhost/stations/indyr4400/run/fb.shm'   # 5242944 bytes = 1280x1024x32 + header
+ssh lab 'printf "PING\nSTAT\nCKPT golden\n" | python3 /root/mctl.py .../run/ctl.sock --timeout 10 --stdin'
+ssh lab 'readlink /proc/$(cat /data/vms/streamhost/stations/indyr4400/mame.pid)/exe'
+ssh lab 'ls -l /proc/$(cat .../mame.pid)/fd | grep -c X11'           # must be 0
+```
+
+and the one that actually matters: open `/os/indyr4400`, move the pointer, and
+watch the arrow land where you put it.
+
+### Rolling back
+
+The bridge is one move each way and **the launcher and the disk roll back
+together or not at all**: put `qemu-streamhost.sh` back from
+`qemu-streamhost.sh.debridged-bak`, restore the registry row, `box-deploy.sh
+--apply`, `systemctl restart streamhost@indyr4400`. The kiosk overlay is kept as
+`overlay.qcow2.debridged-bak` until the operator retires it. Full procedure:
+[`../lab/DEBRIDGE-ROLLBACK.md`](../lab/DEBRIDGE-ROLLBACK.md).
+
+**Do not roll the binary back under a golden baked by the other one.** The
+checkpoint refuses it (`KH_PROVENANCE=strict` compares the binary's BLAKE3 and
+says so), which is the guard working — golden + binary + device set are ONE
+combination.

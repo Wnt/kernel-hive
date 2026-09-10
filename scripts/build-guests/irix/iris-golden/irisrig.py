@@ -13,12 +13,20 @@ Channels, and why there are three of them:
             rigs on one host would silently share it). Carries `rex fbdump`
             — the raw 2048x1024 VRAM planes plus a correct 24-bit PNG — and
             `ps2 type` / `ps2 mouse` / `ps2 status`.
-  ci        JSON-lines unix socket from `--ci` (`--ci-socket`). Carries
-            `start`, `serial-send`, `wait-serial`, snapshot verbs.
-  kh-ctl    `mamectl/1` unix socket from the fork's reset plane
-            (`IRIS_KH_CTL_SOCK`): SAVEST / LOADST / RESET / FBSYNC / CKPT.
-            Identical wire to MAME's ctlsock, so `/root/mctl.py`,
-            `reset-tile.sh` and the daemon all speak it unchanged.
+  ci        JSON-lines unix socket from `--ci-socket`. Carries `start`,
+            `serial-send`, `wait-serial`. OFF BY DEFAULT since 2026-09-10:
+            measured on the integration rig, arming it costs the FRAME plane
+            (REX3 stays undrawn, ~200 % CPU, no frame in ten minutes), because
+            the ci SCC backend travels with the socket and not with `--ci`.
+            `--ci-sock` turns it on for a bake that needs to type into the
+            guest over the serial line and knows it is trading the picture for
+            it.
+  ctl       `mamectl/1` unix socket, `IRIS_CTL_SOCK`. ONE socket for all of it:
+            MOVEA / DOWNn / KEY from the input plane AND SAVEST / LOADST /
+            RESET / FBSYNC / CKPT from the reset plane, since they were merged
+            on 2026-09-10. Identical wire to MAME's ctlsock, so `/root/mctl.py`,
+            `reset-tile.sh` and the daemon all speak it unchanged. There is no
+            `IRIS_KH_CTL_SOCK` any more.
 
 The framebuffer channel here is `rex fbdump`, NOT the station's IFB1 shm
 mapping: this harness has to work before stream A's publisher exists, and the
@@ -245,7 +253,7 @@ class Rig:
     `pkill -f`, never a cmdline grep).
     """
 
-    def __init__(self, rigdir, binary, monitor_port, state=None):
+    def __init__(self, rigdir, binary, monitor_port, state=None, ci=False):
         self.dir = os.path.abspath(rigdir)
         self.binary = os.path.abspath(binary)
         self.monitor_addr = f"127.0.0.1:{monitor_port}"
@@ -254,11 +262,17 @@ class Rig:
         self.pidfile = os.path.join(self.dir, "iris.pid")
         self.log = os.path.join(self.dir, "iris.log")
         self.state = state
+        self.ci = ci
 
     def env(self):
         e = dict(os.environ)
         e["IRIS_MONITOR_ADDR"] = self.monitor_addr
-        e["IRIS_KH_CTL_SOCK"] = self.ctl_sock
+        # ONE socket: the input plane binds it and routes the reset verbs to
+        # kh_ctl (iris fork, src/ctlsock.rs). IRIS_KH_CTL_SOCK is gone, and a
+        # rig that still set it got no listener at all — every Mctl() below
+        # would have failed to connect.
+        e["IRIS_CTL_SOCK"] = self.ctl_sock
+        e["IRIS_CTL_SCREEN"] = "1280x1024"
         # The station's COW overlay must be deliberate and station-local: --ci
         # otherwise redirects it to /tmp/iris-ci-<pid>-scsiN.overlay, which
         # throws away every guest write on restart (machine.rs, gated by this
@@ -273,15 +287,19 @@ class Rig:
         for s in (self.ci_sock, self.ctl_sock):
             if os.path.exists(s):
                 os.unlink(s)
+        # --no-window, NEVER --ci. `--ci` is a MODE: it swaps the SCC serial
+        # backends and redirects every overlay=true disk to a throwaway
+        # /tmp/iris-ci-<pid>-scsiN.overlay, which makes every launch a cold
+        # first boot — on IRIX, the ~7-minute autoconfig relink, every time.
         cmd = [
             self.binary,
             "--config",
             os.path.join(self.dir, "iris.toml"),
             "--noaudio",
-            "--ci",
-            "--ci-socket",
-            self.ci_sock,
+            "--no-window",
         ]
+        if self.ci:
+            cmd += ["--ci-socket", self.ci_sock]
         with open(self.log, "ab") as lf:
             lf.write(("\n=== {}: {}\n".format(time.strftime("%FT%TZ", time.gmtime()), " ".join(cmd))).encode())
             p = subprocess.Popen(
@@ -340,7 +358,7 @@ class Rig:
     def wait_sockets(self, deadline=60.0):
         t0 = time.monotonic()
         while time.monotonic() - t0 < deadline:
-            if os.path.exists(self.ci_sock) and os.path.exists(self.ctl_sock):
+            if os.path.exists(self.ctl_sock) and (not self.ci or os.path.exists(self.ci_sock)):
                 try:
                     m = Monitor(self.monitor_addr, timeout=3.0)
                     m.close()
@@ -357,8 +375,20 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--rig", required=True)
     ap.add_argument("--bin", required=True)
-    ap.add_argument("--monitor-port", type=int, default=18888)
+    # NO DEFAULT. The monitor console is a process-wide singleton on a
+    # loopback port (upstream hardcodes 8888), so a default is a silent
+    # collision: a second rig would talk to the FIRST rig's console and every
+    # answer would look plausible. Name a port you have claimed
+    # (`kh-claim take port <n>`), the way every other shared value on this box
+    # is taken (AGENTS.md rule 7).
+    ap.add_argument("--monitor-port", type=int, required=True)
     ap.add_argument("--state", default="")
+    ap.add_argument(
+        "--ci-sock",
+        action="store_true",
+        help="arm Iris's ci socket. OFF by default: measured 2026-09-10, arming "
+        "it costs the frame plane entirely (no frame in ten minutes at ~200 %% CPU).",
+    )
     sub = ap.add_subparsers(dest="action", required=True)
     sub.add_parser("start")
     sub.add_parser("stop").add_argument("--hard", action="store_true")
@@ -368,7 +398,7 @@ def main():
     v.add_argument("line", nargs="+")
     a = ap.parse_args()
 
-    rig = Rig(a.rig, a.bin, a.monitor_port, a.state or None)
+    rig = Rig(a.rig, a.bin, a.monitor_port, a.state or None, ci=a.ci_sock)
     if a.action == "start":
         pid = rig.start()
         ok, waited = rig.wait_sockets()

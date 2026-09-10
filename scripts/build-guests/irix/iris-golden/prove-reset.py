@@ -48,7 +48,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import contextlib
 
-from irisrig import Ci, Framebuffer, Mctl, Monitor, Rig  # noqa: E402
+from irisrig import Framebuffer, Mctl, Monitor, Rig  # noqa: E402
 
 
 def record(rig, phase, **fields):
@@ -120,9 +120,10 @@ def phase_boot(rig, args):
     ok, waited = rig.wait_sockets(deadline=90.0)
     if not ok:
         return record(rig, "boot", ok=False, why="sockets never appeared", waited_s=round(waited, 1), log=rig.log)
-    # --ci does not autostart the CPU: the harness owns the first instruction.
-    ci = Ci(rig.ci_sock)
-    ci.cmd("start")
+    # NO `ci.cmd("start")`. That was needed only under `--ci`, which does not
+    # autostart the CPU — and `--ci` is gone from this rig because it costs the
+    # frame plane (irisrig.py, measured 2026-09-10). Without the mode the CPU
+    # autostarts, exactly as it does on the station.
     mon = Monitor(rig.monitor_addr)
     fb = Framebuffer(mon, os.path.join(rig.dir, "fb"))
     settled, digest, waited = fb.settle(seconds=args.settle, deadline=args.boot_deadline)
@@ -324,7 +325,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--rig", required=True)
     ap.add_argument("--bin", required=True)
-    ap.add_argument("--monitor-port", type=int, default=18888)
+    # Required, not defaulted — the console is a loopback singleton and a shared
+    # default is a silent collision between two rigs (irisrig.py).
+    ap.add_argument("--monitor-port", type=int, required=True)
     ap.add_argument("--name", default="golden")
     ap.add_argument("--settle", type=float, default=6.0)
     ap.add_argument("--boot-deadline", type=float, default=900.0)

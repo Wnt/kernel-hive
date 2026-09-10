@@ -871,48 +871,86 @@ runners on `rig-clone.sh` clones.
 
 ## 7. Landing record
 
-**Empty on purpose.** Every cell below is a measurement, and a measurement is
-written here only once a stream has taken it on a framebuffer or a clock — never
-inferred, never carried over from the bridge era, never copied from a sibling
-station. `(to be measured by <stream>)` is the correct value until then; an
-agent that fills a cell states the command it ran.
+Filled 2026-09-10 by the integration pass. Every number below was taken on a rig
+under `/data/vms/sandbox/iris-int/`, never on the live station, against the
+INTEGRATED binary (`Wnt/iris@kh-native` with the reset plane merged) and the
+integrated launcher inside its nspawn container. Frames were read out of the
+published IFB1 mapping with the daemon's own reader (`scripts/shmshot.py`);
+waits were `fb-wait.py --shm`, never a sleep.
 
 ### The three planes, as built
 
 | Plane | Contract | Where it landed | Proof |
 |---|---|---|---|
-| Frames | IFB1 shm at `IRIS_SHM_PATH`, producer dirty rect, `SH_SHM_DAMAGE=0` | *(stream A)* | *(to be measured by stream A: `fb-wait.py --out` render + `cursor-locate.py` hit)* |
-| Input | `mamectl/1` on `IRIS_CTL_SOCK`, single injector | *(stream C)* | *(to be measured by stream C: ≥6 targets at 0 px, one of them after a reset)* |
+| Frames | IFB1 shm at `IRIS_SHM_PATH`, cropped by `IRIS_SHM_GEOMETRY`, producer damage, `SH_SHM_DAMAGE` at the daemon default | `src/shmpub.rs` (stream A) | first frame **19 s** after launch; the IRIX autoconfig console, the visual login panel and the `demos` desktop all published at **1280x1024**, mapping exactly `5 242 944` bytes; `rig/proof/01,03,11` |
+| Input | `mamectl/1` on `IRIS_CTL_SOCK`, single injector | `src/ctlsock.rs` (stream C) | **8/8 targets with the glyph on the commanded pixel, 0 px**, on the shipped defaults; 102/102 keymap rows acked through the live socket; `demos` typed pipelined at zero spacing (10 edges, 375 ms) logged in; `DOWN1` opened a Toolchest menu |
 | Audio | none — `SH_AUDIO=off` by decision (§5 q4) | — | — |
-| Reset | `ci_rollback` behind `SH_RESET_MODE=relaunch` | *(stream D)* | *(to be measured by stream D: two captures either side of a dirtying run, byte-identical)* |
+| Reset | `SAVEST`/`LOADST`/`RESET` on THAT SAME socket | `src/kh_ctl.rs` (stream D), merged into ctlsock 2026-09-10 | three restores **byte-identical** to the captured scene with a dirtied frame between them, input live 5 ms after; `kill -9` + a fresh process restored the same frame with **zero** differing pixels |
+| Exec | none — `IRIS_CI_SOCK` empty | — | arming it published **no frame in ten minutes at ~200 % CPU**; see §6 |
 
 ### Numbers this conversion claimed, and what it actually got
 
-| | Bridge, measured 2026-09-09 | Host-native |
+| | Bridge, measured 2026-09-09 | Host-native, measured 2026-09-10 |
 |---|---|---|
-| one pointer move → framebuffer, median of 5 | 361 ms (`1e05210`), 285 ms (`0540991` interp), 383 ms (jitv2) | *(to be measured by stream C)* — the `irix`/`nextstep` class, ~68 ms, is the expectation, not a result |
-| pointer stream, lag after last event | 216 / 224 / 397 ms | *(to be measured by stream C)* |
-| fixed CPU work, host wall clock | 8.4 s / 8.1–10.2 s / 1.95 s | *(to be measured by stream A)* |
-| `iris` CPU, idle desktop | 320 % interp, 360 % jitv2 | *(to be measured by stream A)* |
+| one pointer move → framebuffer, median | 361 ms (`1e05210`), 285 ms (`0540991` interp), 383 ms (jitv2) | **80 ms** (n=12, 76–112) |
+| pointer stream (60 events @ 20 ms), lag after last event | 216 / 224 / 397 ms | **60 ms** (n=3, 59–64) |
+| absolute pointer accuracy | none — the station shipped `rel` | **8/8 targets at 0 px**, convergence median 246 ms |
+| fixed CPU work, host wall clock | 8.4 s / 8.1–10.2 s / 1.95 s | **not re-measured** — the channel that measured it was the kiosk's SCC telnet, which is gone, and the binary and feature set are unchanged from the 1.95 s jitv2 row |
+| `iris` CPU, idle desktop | 320 % interp, 360 % jitv2 | **325 %** (RSS 812 MB) |
 | station QEMU CPU | ~150 % | **0 — there is no QEMU** |
-| reset wall clock | `loadvm golden`, *(never timed on the bridge)* | *(to be measured by stream D, against the ~7 min cold boot)* |
-| published frame rate | ~30 Hz (an emulator artifact — the refresh loop sleeps the frame remainder twice, §Stream A commit 6) | *(to be measured by stream A)* |
-| emulated width actually published | 1282 decoded, clipped to 1280 by the X root | *(to be measured by stream A — VC2's decoded rect, and the crop decision it forces)* |
+| reset wall clock | `loadvm golden`, never timed | **387 ms** `RESET`, **536 ms** `LOADST` via rollback, **1 274 ms** from disk, **2 035 ms** `SAVEST`; against a ~5 min cold boot |
+| `kill -9` → live restored station | — | **10.9 s** |
+| checkpoint on disk | `overlay.qcow2` 702 MB + 1.1 GiB vmstate | **9.2 MB** per snapshot + **124 MB** shared CAS |
+| published frame rate | ~30 Hz | **25.7 Hz** under a sweeping cursor, **0.1 Hz** idle |
+| emulated width actually published | 1282 decoded, clipped to 1280 by the X root | **1282 decoded** (`cursor_x_adjust=5`), **1280 published** — cropped in the publisher, by `IRIS_SHM_GEOMETRY`, from `IRIS_GEOM` |
+| cold boot to the visual login | ~7 min | **~5 min** |
+| build | chroot, ~19 min cold for two feature sets | trixie host build, **8 m 00 s** cold / **5 m 05 s** incremental |
+
+Read the pointer row against the goal, which was the `irix`/`nextstep` class at
+~68 ms: **80 ms**, a 4.5x improvement on the live station, and the remainder is
+the emulator's own ~30 Hz composite cadence rather than anything the conversion
+added.
 
 ### Decisions taken, with the evidence
 
 | Question (§5) | Decision | Taken by | Evidence |
 |---|---|---|---|
-| Containment shape | *(operator)* | | |
-| Pointer: absolute or `rel` | *(stream C, one bake)* | | |
+| Containment shape | **nspawn**, and it is the lineup's first nspawn + `shm` station | stream B, integration-proven | the namespace audit in [`../guests/indyr4400.md`](../guests/indyr4400.md) §Containment; three writable binds and nothing else |
+| Pointer: absolute or `rel` | **absolute**, `iris-vc2-closedloop` | stream C, integration-proven | 8/8 targets at 0 px on the shipped defaults, VC2 register exact at all eight |
 | Retronet | out of scope for this conversion | this brief | §5 q3 — a conversion that also changes the network is two changes sharing one rollback |
 | Audio | stay `SH_AUDIO=off` | this brief | §5 q4 — the VICE wave's blocking-sink lesson |
+| Iris's ci exec socket | **off** | integration | arming it costs the frame plane entirely (measured; §6) |
+| One socket or two | **one** — the reset verbs join the input listener | integration | `mame_sock.rs` gives a station exactly one `SH_MAMECTL_SOCK`, and `reset-tile.sh` sends `LOADST golden` down it |
 
 ### Walls, raced
 
-One row per wall, per rule 14: the theories, the runner each got, and which
-framebuffer proof won. *(empty — no wall hit yet)*
+| Wall | Theories | How it was settled | Cost |
+|---|---|---|---|
+| No frame published in 10 minutes at ~200 % CPU on the first integrated launch | (a) the merged fork broke the publisher; (b) `--ci-socket` costs the frame plane even without `--ci`; (c) the container's binds | ONE decisive test rather than a bisect — the only variable that differs from stream B's proven configuration is `IRIS_CI_SOCK`, so it was emptied: **first frame in 19 s**. (b). | ~25 min |
+| `0/7` targets and a 655 px bounding box on the first pointer measurement | (a) the pointer really is off; (b) the plate was contaminated | The engine's own `EV MOVEA` reported the commanded pixel every time while the bbox did not, so the frame was the suspect, not the pointer: re-measured against a plate inside a ±48 px window → **8/8 at 0 px**. | ~10 min |
+| 6.2 Hz published frame rate, matching the known "cursor-only moves do not mark the framebuffer dirty" suspicion | (a) the refresh gate; (b) the measurement | `Vc2::write_reg` does set the dirty flag and `should_render` consumes it, so the gate was exonerated by reading it; the oscillating ±4 px test was putting the cursor back where it started. Monotonic sweep → **25.7 Hz**. **No change to the refresh gate.** | ~10 min |
 
 ### Timeline
 
-Measured from git and box timestamps, never estimated. *(empty)*
+Measured from git and box timestamps.
+
+| | |
+|---|---|
+| fork merge committed (`Wnt/iris@kh-native`) | 8cbb689 |
+| first integrated build, trixie | 8 m 00 s |
+| rig cold boot → IRIX visual login | ~5 min |
+| login → `demos` desktop | ~90 s |
+| full proof run (pointer, click, reset, kill -9, latency, CPU, frame rate) | ~50 min of wall clock, most of it IRIX booting |
+
+### What is NOT proven, and is the operator's to close
+
+1. **The golden's CONTENT.** A cold boot reaches the `demos` session's Toolchest
+   and a console window and stops there — no icon column, unchanged over ten
+   minutes of polling. The fixture and the reject criteria both describe the
+   icon column, so the bake step in the cutover runbook needs a person, and
+   what the session is waiting on is undiagnosed. Every mechanism here is
+   content-agnostic; this is a scene, not a design.
+2. **The browser leg.** `reset.mouse` / `reset.keyboard` stay `UNVERIFIED`:
+   proven on the framebuffer, not yet through the real SPA.
+3. **A 4Dwm popup menu composites black** — Iris's own gap, on the windowed path
+   too (same `compose_pixels`), and visitor-visible.

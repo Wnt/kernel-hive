@@ -96,15 +96,23 @@ install -d -m 0755 "$OUT" "$STATION"
 
 # ---- the emulator ------------------------------------------------------------
 if [ "$DO_IRIS" -eq 1 ]; then
-  if [ -x "$IRIS_BUILDER" ]; then
-    log "building the fork through $IRIS_BUILDER"
-    IRIS_OUT="$IRIS_BIN" bash "$IRIS_BUILDER"
-  elif [ -n "$IRIS_SRC_BIN" ]; then
+  # IRIS_SRC_BIN FIRST, and deliberately: an explicitly named binary is a
+  # decision, and a rebuild is a default. A rig proving a build it has in hand
+  # must not be sent back to the network for a different one.
+  if [ -n "$IRIS_SRC_BIN" ]; then
     log "staging a pre-built binary from $IRIS_SRC_BIN"
     [ -x "$IRIS_SRC_BIN" ] || die "IRIS_SRC_BIN is not an executable: $IRIS_SRC_BIN"
     install -m 0755 "$IRIS_SRC_BIN" "$IRIS_BIN"
+  elif [ -x "$IRIS_BUILDER" ]; then
+    log "building the fork through $IRIS_BUILDER"
+    # POSITIONAL, not IRIS_OUT: build-iris-native.sh takes its output path as
+    # $1 and has no IRIX_OUT knob at all, so the env form silently built into
+    # the builder's OWN default -- /data/vms/streamhost/assets/indyr4400/iris,
+    # i.e. THE LIVE STATION'S BINARY -- whenever OUT was overridden for a rig.
+    # Its work dir is namespaced for the same reason (concurrent agents).
+    bash "$IRIS_BUILDER" "$IRIS_BIN" "${IRIS_WORK_DIR:-/data/vms/sandbox/iris-native-build}"
   else
-    die "no $IRIS_BUILDER and no IRIS_SRC_BIN — nothing to stage as the emulator"
+    die "no IRIS_SRC_BIN and no $IRIS_BUILDER — nothing to stage as the emulator"
   fi
   # The binary is half of every checkpoint (rule 6: golden + binary + device set
   # are ONE combination), so record which one this is where a restore guard can

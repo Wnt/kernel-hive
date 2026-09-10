@@ -34,11 +34,18 @@ costs, and the cold boot it replaces by two orders of magnitude.
 `scripts/serve/reset-tile.sh`'s `relaunch` branch all drive it unchanged — the
 production box client was used for every verb in this record.
 
-**They ride their own socket, not the `ci` one.** That matters for the
-integration: stream B's ledger records that `IRIS_CI_SOCK` being set makes the
-ci server start and no frames publish. The reset plane is unaffected either
-way, and when stream C's input listener lands it takes these verbs over through
-the two-function merge hook at the top of `src/kh_ctl.rs`.
+**They ride the station's ONE socket** since the 2026-09-10 integration: stream
+C's `src/ctlsock.rs` owns `IRIS_CTL_SOCK` and routes these verbs here through
+the two-function merge hook at the top of `src/kh_ctl.rs`, applying them on its
+engine thread. `IRIS_KH_CTL_SOCK` and this module's standalone listener are
+gone — they existed only so this plane could be proven before the input plane
+landed. It has to be one socket because `mame_sock.rs` gives a station exactly
+one `SH_MAMECTL_SOCK` and `reset-tile.sh` sends `LOADST golden` down it.
+
+The ledger's warning about `IRIS_CI_SOCK` survived the integration and got
+worse: arming Iris's ci socket costs the FRAME plane outright (measured
+2026-09-10 — ten minutes, ~200 % CPU, no frame published; empty, first frame in
+19 s), so the station ships with it empty and this plane never needed it.
 
 `LOADST <name>` prefers Iris's in-memory rollback checkpoint when it describes
 the same snapshot and the disk otherwise, so the station's existing
@@ -82,10 +89,14 @@ then restores. It is a fact about guest execution, not a guessed duration
 
 ## Traps for whoever works on this next
 
-- **`saves/<name>` is relative to the process CWD.** `Machine::save_snapshot`
-  and `load_snapshot` both resolve it that way, so the launcher must `cd` to
-  the station's work directory before exec'ing the binary. `CKPT` reports the
-  cwd it is using for exactly this reason.
+- **`saves/<name>` is relative to the process CWD, and the CWD is wiped.**
+  `Machine::save_snapshot` and `load_snapshot` both resolve it that way, so the
+  launcher `cd`s to the station's work directory — and that directory is
+  destroyed and recreated on every launch, because wiping it IS the reset. A
+  golden written there would be deleted by the next relaunch, i.e. by the thing
+  meant to restore it. The station therefore keeps its snapshots in a separate
+  persistent directory bound at `/state`, with `/work/saves` a symlink to it.
+  `CKPT` reports the cwd it is using for exactly this reason.
 - **`--ci` redirects a `overlay = true` disk to `/tmp/iris-ci-<pid>-scsiN.overlay`.**
   For a station that throws away every guest write on restart and puts
   multi-GB of dirty sectors on the host's tmpfs. `IRIS_CI_OVERLAY_DIR` (fork)
@@ -112,11 +123,12 @@ then restores. It is a fact about guest execution, not a guessed duration
 - **The emulated width is 1282x1024**, decoded by VC2 — two overscan columns
   over the nominal 1280. Stream A has to decide once whether the publisher
   crops them or the registry's geometry moves.
-- **`Ps2::push_mouse_input` reaches the guest but IRIX does not move the
-  pointer for it.** The bytes drain, the i8042 ports read enabled, and the VC2
-  cursor registers do not change. Every proof in this record is therefore
-  driven by the keyboard. The pointer is stream C's plane; this is the first
-  thing it should reproduce.
+- ~~`Ps2::push_mouse_input` reaches the guest but IRIX does not move the
+  pointer for it.~~ **REFUTED 2026-09-10.** It does, and the difference was this
+  rig, not the guest: `push_mouse_input` returns early and silently unless the
+  controller is running and the i8042 AUX disable bit is clear, and this rig had
+  no `input_ready()` check to notice. Stream C's plane converges on the VC2
+  registers from the same function.
 
 ## What is proven, and what is not
 
@@ -128,9 +140,23 @@ after a restore and after a startup restore; `RESET` landing the same frame;
 sidecar in sight; and a forged provenance sidecar refused with the rule-6
 message, then restoring again once repaired.
 
-**Not proven: the checkpoint's CONTENT.** The bridge-era golden is the Indigo
-Magic desktop of the `demos` session; the rig's checkpoint is the IRIX visual
-login screen, because reaching the desktop needs a pointer click on the `demos`
-icon and the pointer does not work yet. The golden must be recaptured — from a
-`demos` desktop, with the shipping binary — once stream C's input plane lands.
-That is a recapture, not a redesign: every mechanism above is content-agnostic.
+**Re-proven on the integrated build, 2026-09-10**, with the input plane merged
+in and every verb on the one socket: three restores byte-identical to the
+captured scene with a dirtied frame between them, input acked 5 ms after a
+restore, `RESET` landing the same frame, and a `kill -9` followed by a cold
+start restoring that frame with **zero** differing pixels and no `.dirty`
+sidecar anywhere. Measured there: `SAVEST` 2 035 ms, `LOADST` 1 274 ms from disk
+and 536 ms via the rollback checkpoint, `RESET` 387 ms, `kill -9` to a live
+restored station 10.9 s, checkpoint 9.2 MB + a 124 MB shared CAS store.
+
+**`Ps2::push_mouse_input` DOES move the VC2 cursor** — the trap below said the
+opposite, and it was this rig's missing `input_ready()` gate rather than the
+guest: with stream C's plane merged, `MOVEA` converges on eight of eight targets
+at 0 px. The trap as written is retired.
+
+**Still not proven: the checkpoint's CONTENT.** The bridge-era golden is the
+Indigo Magic desktop of the `demos` session, and a cold boot on the integration
+rig reaches the Toolchest and a console window and stops there, with no icon
+column, unchanged over ten minutes. The golden must be baked from a real desktop
+at cutover. That is a scene, not a redesign: every mechanism above is
+content-agnostic.

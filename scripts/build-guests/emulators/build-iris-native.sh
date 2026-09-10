@@ -73,7 +73,8 @@
 #
 # Usage:
 #   build-iris-native.sh [output-binary] [work-dir]
-#   IRIS_COMMIT=<sha> ...   # override the pin (records what it built)
+#   IRIS_COMMIT=<sha> ...   # build one commit instead of the pinned branch
+#                           # (records what it built either way)
 #   FORCE=1 ...             # re-clone instead of fetching into an existing tree
 #   JOBS=8 ...              # cap parallelism
 # Concurrent agents: pass your own work-dir; the default is stable on purpose so
@@ -81,9 +82,15 @@
 # =============================================================================
 set -euo pipefail
 
-IRIS_REPO="${IRIS_REPO:-https://github.com/Wnt/iris}"
-# Pinned. The fork branch kh-native; bump deliberately, never by drift.
-IRIS_COMMIT="${IRIS_COMMIT:-kh-native}"
+# THE HOUSE PIN SHAPE, and not a matter of taste: `<PREFIX>FORK_URL` +
+# `<PREFIX>FORK_BRANCH` is what scripts/release_notes_pins.py scans for, and its
+# drift gate fails a fork that registry/release-notes/sources.json declares but
+# no build file pins. `IRIS_COMMIT` was also a lie: it holds a BRANCH.
+IRIS_FORK_URL="${IRIS_FORK_URL:-https://github.com/Wnt/iris}"
+IRIS_FORK_BRANCH="${IRIS_FORK_BRANCH:-kh-native}"
+IRIS_REPO="$IRIS_FORK_URL"
+# Bump deliberately, never by drift: the binary is one third of every checkpoint.
+IRIS_COMMIT="${IRIS_COMMIT:-$IRIS_FORK_BRANCH}"
 IRIS_FEATURES="${IRIS_FEATURES:-lightning,rex-jit,chd,jitv2}"
 
 OUT="${1:-/data/vms/streamhost/assets/indyr4400/iris}"

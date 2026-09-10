@@ -142,7 +142,7 @@
           "pinnedBy": [
             "scripts/build-guests/emulators/build-iris-native.sh"
           ],
-          "pinNote": "the builder's IRIS_COMMIT is the pin; there is no submodule for this fork. Upstream (techomancer/iris, BSD-3) pins `channel = \"nightly\"` with no date, so the fork's rust-toolchain.toml carries the dated pin as well \u2014 the compiler is part of the checkpoint triple (golden + binary + device set are ONE combination), not an incidental build detail."
+          "pinNote": "the builder's IRIS_FORK_URL/IRIS_FORK_BRANCH pair is the pin; there is no submodule for this fork. Upstream (techomancer/iris, BSD-3) pins `channel = \"nightly\"` with no date, so the fork's rust-toolchain.toml carries the dated pin as well \u2014 the compiler is part of the checkpoint triple (golden + binary + device set are ONE combination), not an incidental build detail."
         }
       ],
       "excludes": []

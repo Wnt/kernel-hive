@@ -268,12 +268,12 @@ class GatherTest(unittest.TestCase):
 
 
 class DeclarationTest(unittest.TestCase):
-    def test_the_committed_declaration_parses_and_covers_the_five_forks(self):
+    def test_the_committed_declaration_parses_and_covers_every_fork(self):
         loaded = FORKS.load_sources(REPO_ROOT)
         self.assertEqual(sorted(loaded.our_authors), ["Wnt", "jonni-reaktor"])
         self.assertEqual(
             sorted({t.repo for t in loaded.targets}),
-            ["Wnt/es40", "Wnt/fs-uae", "Wnt/mame", "Wnt/qemu", "Wnt/vice"],
+            ["Wnt/es40", "Wnt/fs-uae", "Wnt/iris", "Wnt/mame", "Wnt/qemu", "Wnt/vice"],
         )
         self.assertIn(("Wnt/mame", "irix"), [(t.repo, t.branch) for t in loaded.targets])
         self.assertIn(("Wnt/mame", "mpf2"), [(t.repo, t.branch) for t in loaded.targets])
