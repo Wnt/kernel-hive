@@ -41,9 +41,13 @@ class Session:
 
 def claim_body(session: Session, now: float, resumed: bool = False) -> dict:
     """The §3 claim body. `resumed` marks a re-attach to a clone the visitor
-    already held -- the TTL is what was LEFT on it, never a fresh one."""
+    already held -- the TTL is what was LEFT on it, never a fresh one.
+
+    `station` is here because `os` is OPTIONAL on a claim: a visitor who asks
+    for a random machine has no other way to learn which one they got."""
     out = {
         "clone": session.identity,
+        "station": session.station,
         "signalEndpoint": f"/signal/{session.identity}.json",
         "ttlSeconds": session.ttl_left(now),
     }

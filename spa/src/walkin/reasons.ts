@@ -22,13 +22,20 @@ export type WalkinReason = 'WALKIN_CLOSED' | 'WALKIN_TTL' | 'WALKIN_IDLE' | 'WAL
  *  the two ways of meeting a shut door read as one fact. */
 export const WALKIN_CLOSED_COPY = 'Walk-in access is currently closed.';
 
-/** Same idea, for the anonymous budget: the conversion gate's own headline
- *  (landing/gate/ConversionGate.tsx) AND this module's one-line fallback use
- *  the same four words, so "your free minute is up" reads as one fact
- *  wherever a visitor meets it. */
+/** The wall's headline, in the conversion gate (landing/gate/ConversionGate.tsx).
+ *  That wall is where a visitor actually meets the end of the free minute, so it
+ *  gets warm, fixed words. walkinReasonCopy below is the SYSTEM fallback for
+ *  anywhere else the code surfaces, and follows this module's own convention of
+ *  naming the window ("Your 20 minutes are up."). The two differ on purpose. */
 export const WALKIN_ANON_BUDGET_COPY = 'Your free minute is up.';
 
-const REASON_CODES: readonly WalkinReason[] = ['WALKIN_CLOSED', 'WALKIN_TTL', 'WALKIN_IDLE', 'WALKIN_ANON_BUDGET'];
+// No code is a substring of another, so the scan order below carries no meaning.
+const REASON_CODES: readonly WalkinReason[] = [
+  'WALKIN_CLOSED',
+  'WALKIN_TTL',
+  'WALKIN_IDLE',
+  'WALKIN_ANON_BUDGET',
+];
 
 /** Headline + detail for a reason code. */
 export interface WalkinReasonCopy {
@@ -39,16 +46,18 @@ export interface WalkinReasonCopy {
 }
 
 /**
- * Copy for one code. `ttlSeconds` / `idleSeconds` are the numbers the broker
- * actually ran with, so the sentence stays true if the windows are retuned;
- * the ledger's defaults (1200s TTL, 180s idle) are the fallback.
+ * Copy for one code. `ttlSeconds` / `idleSeconds` / `budgetSeconds` are the
+ * numbers the SERVER actually ran with, so the sentence stays true if the
+ * windows are retuned; the ledger's defaults (1200s TTL, 180s idle, 60s
+ * anonymous budget) are the fallback.
  */
 export function walkinReasonCopy(
   reason: WalkinReason,
-  windows: { ttlSeconds?: number; idleSeconds?: number } = {},
+  windows: { ttlSeconds?: number; idleSeconds?: number; budgetSeconds?: number } = {},
 ): WalkinReasonCopy {
   const ttlMinutes = Math.max(1, Math.round((windows.ttlSeconds ?? 1200) / 60));
   const idleMinutes = Math.max(1, Math.round((windows.idleSeconds ?? 180) / 60));
+  const budgetSeconds = Math.max(1, Math.round(windows.budgetSeconds ?? 60));
   switch (reason) {
     case 'WALKIN_CLOSED':
       return {
@@ -71,14 +80,18 @@ export function walkinReasonCopy(
           'Nothing was typed or clicked, so the machine was handed back to the pool. Claim another one to carry on.',
         retryable: true,
       };
+    // The conversion wall. This is the ONLY code whose copy is not an apology:
+    // the visitor did not lose a session, they reached the end of the free
+    // sample, and the machine they were driving is still sitting there. Not
+    // retryable on purpose — another claim is refused with this same code until
+    // they register, and offering a button that cannot work is how a wall reads
+    // as a bug.
     case 'WALKIN_ANON_BUDGET':
       return {
-        title: WALKIN_ANON_BUDGET_COPY,
+        title: `That was your ${budgetSeconds} seconds.`,
         detail:
-          'A look around is free once, with no account. Make a passkey and the machine you were just driving is still here.',
-        // Not retryable: unlike a TTL or an idle timeout, a fresh claim is
-        // refused outright until the visitor registers or signs in — there is
-        // no "try again" for an anonymous budget that is already spent.
+          'The machine is still running, exactly as you left it. Create a passkey and you pick it back up where '
+          + 'it is — no email, no password, about five seconds.',
         retryable: false,
       };
   }
