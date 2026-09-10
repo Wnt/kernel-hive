@@ -559,7 +559,11 @@ def validate() -> tuple[dict[str, Any], list[dict[str, Any]]]:
                 }
             )
             if capture == "shm":
-                expected_env["SH_SHM_PATH"] = f"/data/vms/streamhost/stations/{tile_dir}/fb.shm"
+                pfx = f"/data/vms/streamhost/stations/{tile_dir}/"
+                shm = x11cfg.get("shmPath") or f"{pfx}fb.shm"
+                if not shm.startswith(pfx):
+                    fail(errors, row, f"x11.shmPath {shm!r} is outside {pfx}")
+                expected_env["SH_SHM_PATH"] = shm
             if "SH_QMP" in env:
                 fail(errors, row, "x11 tile must not emit SH_QMP (no QEMU/QMP)")
         for key, value in expected_env.items():

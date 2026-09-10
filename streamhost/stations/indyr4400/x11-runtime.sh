@@ -112,9 +112,11 @@ MACHINE="kh-$TILE"
 WORK="$BASE/work"
 RUN="$BASE/run"
 X11DIR="$BASE/x11"
-SHM="${SH_SHM_PATH:-$BASE/fb.shm}"
+SHM="${SH_SHM_PATH:-$RUN/fb.shm}"
 CTL="${SH_MAMECTL_SOCK:-$RUN/ctl.sock}"
-CISOCK="${IRIS_CI_SOCK:-$RUN/iris-ci.sock}"
+# No default: an EMPTY IRIS_CI_SOCK means "no --ci", and a `:-` default would
+# quietly turn that back on (nspawn-inner.sh keys the mode off this value).
+CISOCK="${IRIS_CI_SOCK-}"
 KEYMAP="${SH_MAMESOCK_KEYMAP:-$BASE/indy.keymap}"
 PIDFILE="$BASE/mame.pid"
 XPIDFILE="$BASE/xvfb.pid"
@@ -224,13 +226,18 @@ chmod 1777 "$X11DIR"
 
 BINDS=(--bind="$WORK:/work" --bind="$RUN")
 if [ "$CAPTURE" = shm ]; then
-  # The mapping is a FILE bind at its host path, created here (the emulator
-  # cannot create a file in a directory on a root ExecStartPre path) and handed
-  # over by owner. Empty at launch: ensure-station-x11.sh proves liveness with
-  # `[ -s "$SHM" ]`, which is exactly "the producer has published a frame".
-  : >"$SHM"
-  chown "$UIDBASE:$UIDBASE" "$SHM"
-  BINDS+=(--bind="$SHM" --bind="$WORK/tmp:/tmp")
+  # THE MAPPING LIVES IN run/, NOT IN THE STATION DIR, and that is not a matter
+  # of taste. The fork's publisher creates a mapping by writing a temp file
+  # BESIDE the target and renaming over it (shmpub.rs Mapping::create), so that
+  # a consumer holding the old inode keeps a valid mapping across a geometry
+  # change. A rename needs a writable DIRECTORY -- binding the file alone into
+  # a --read-only root gives the publisher a writable file inside a read-only
+  # parent and it dies with `IRIS_SHM_PATH=...: Read-only file system (os error
+  # 30)` after REX3 is already up. run/ is bound read-write at its host path and
+  # owned by the container's root, so the mapping simply joins the two sockets
+  # there. The station dir itself must NOT be handed over: it holds the cert
+  # hash and signaling.json.
+  BINDS+=(--bind="$WORK/tmp:/tmp")
 else
   BINDS+=(--bind="$X11DIR:/tmp/.X11-unix")
 fi
@@ -299,12 +306,25 @@ done
 echo "$IPID" >"$PIDFILE"
 
 if [ "$CAPTURE" = shm ]; then
-  for _ in $(seq 1 480); do
+  # The publisher CREATES this file; it does not exist until the first frame
+  # lands, so this wait is "a frame has been published", not "the file grew".
+  # THE BUDGET FOLLOWS IRIS_STATE, and getting this wrong looks exactly like a
+  # broken publisher: a restore is drawing inside a couple of seconds and 120 s
+  # means something is wrong, but a COLD boot draws NOTHING until IRIX has been
+  # through PROM and the autoconfig relink and started its X server -- five to
+  # seven minutes in which a 120 s watchdog kills a perfectly healthy machine.
+  FRAME_TRIES=480
+  FRAME_BUDGET="120 s"
+  if [ -z "$STATE" ]; then
+    FRAME_TRIES=3600
+    FRAME_BUDGET="15 min (cold boot)"
+  fi
+  for _ in $(seq 1 "$FRAME_TRIES"); do
     [ -s "$SHM" ] && break
     alive_or_die
     sleep 0.25
   done
-  [ -s "$SHM" ] || die "no frame published to $SHM after 120 s — the fork's IRIS_SHM_PATH publisher is the only thing that writes it"
+  [ -s "$SHM" ] || die "no frame published to $SHM after $FRAME_BUDGET — the fork's IRIS_SHM_PATH publisher is the only thing that writes it"
 else
   XV=""
   for d in /proc/[0-9]*; do

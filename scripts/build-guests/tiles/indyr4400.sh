@@ -122,12 +122,11 @@ if [ "$DO_ROOTFS" -eq 1 ]; then
   for l in bin sbin lib lib64; do [ -e "$RF/$l" ] || ln -s "usr/$l" "$RF/$l"; done
   : >"$RF/etc/ld.so.cache"
   : >"$RF/etc/localtime"
-  # The THREE FILE binds (the emulator binary, the framebuffer mapping and the
-  # disk) need their mount points to be files, not directories — nspawn will not
+  # The TWO FILE binds (the emulator binary and the IRIX disk) need their mount
+  # points to be files, not directories — nspawn will not
   # turn one into the other, and a read-only root cannot create either. Missing
   # any one of them is `Failed to create mount point ...: Read-only file system`
   # and a container that dies before Iris ever runs.
-  : >"$RF$STATION/fb.shm"
   : >"$RF$DISK"
   : >"$RF$IRIS_BIN"
   [ -f "$RF/etc/os-release" ] || cp /etc/os-release "$RF/etc/os-release"

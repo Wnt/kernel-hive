@@ -83,7 +83,7 @@
       "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":94",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/indyr4400/indyr4400_cmd",
-      "SH_SHM_PATH": "/data/vms/streamhost/stations/indyr4400/fb.shm",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/indyr4400/run/fb.shm",
       "SH_PORT": "54136",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
@@ -100,6 +100,7 @@
       "display": ":94",
       "geometry": "1280x1024x32",
       "capture": "shm",
+      "shmPath": "/data/vms/streamhost/stations/indyr4400/run/fb.shm",
       "launcher": "streamhost/stations/indyr4400/x11-runtime.sh",
       "resetMode": "relaunch",
       "emitArgs": [

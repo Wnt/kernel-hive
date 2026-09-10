@@ -333,6 +333,10 @@
                 "shm"
               ]
             },
+            "shmPath": {
+              "description": "Where the emulator publishes its IFB1 mapping, when the default /data/vms/streamhost/stations/<dir>/fb.shm will not do. A CONTAINED station needs this: the station dir holds the cert hash and signaling.json and is never bound into the container, and a publisher that creates its mapping by temp-file-and-rename needs a writable DIRECTORY, not a writable file. Must stay inside the station's own subtree (validate_rules.py) so it can never name another station's mapping.",
+              "type": "string"
+            },
             "emitArgs": {
               "type": "array",
               "items": {

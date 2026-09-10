@@ -54,7 +54,28 @@ if [ "$CAPTURE" = shm ]; then
   # Belt and braces: a stray DISPLAY would let winit open a window on someone
   # else's server and the daemon would map an empty file forever.
   unset DISPLAY
-  exec "$BIN" --config "$CFG" --noaudio --ci --ci-socket "${IRIS_CI_SOCK:?}"
+  # --no-window, NOT --ci. Both skip the host window, but --ci is a MODE: it
+  # swaps the SCC serial backends and redirects every overlay=true disk to a
+  # throwaway /tmp/iris-ci-<pid>-scsiN.overlay. Measured on the smoke rig
+  # 2026-09-10: under --ci the Indy ran for twelve minutes at 107 % CPU and
+  # REX3's screen stayed 0x0 -- `present()` is never called at zero width, so
+  # the publisher never creates its mapping and the station looks like a dead
+  # frame plane. `--no-window` changes nothing but the window (config.rs).
+  #
+  # The ci CONTROL SOCKET still needs --ci today (main.rs starts the server on
+  # `ci_enabled`), so stream D's reset verbs ride along; if that pairing ever
+  # costs the frame plane again, the fix is upstream in the fork -- gate
+  # `ci::start_server` on --ci-socket being present, not on the mode.
+  # --ci IS OPT-IN, and IRIS_CI_SOCK is the switch, because the two planes are
+  # in tension until the fork decouples them (see above): --ci is what starts
+  # the control server, and --ci is also what was measured to leave REX3's
+  # screen at 0x0. Empty IRIS_CI_SOCK = frames only, which is what ships until
+  # the reset verbs can be had without the mode.
+  if [ -n "${IRIS_CI_SOCK:-}" ]; then
+    exec "$BIN" --config "$CFG" --noaudio --no-window \
+      --ci --ci-socket "$IRIS_CI_SOCK"
+  fi
+  exec "$BIN" --config "$CFG" --noaudio --no-window
 fi
 
 DISP="${SH_X11_DISPLAY:?}"
