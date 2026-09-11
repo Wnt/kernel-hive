@@ -251,6 +251,56 @@ class BrokerTests(unittest.TestCase):
         # signaling document for a machine that no longer exists.
         self.assertEqual(self.broker.session_end_for_clone(clone), {"type": "session-end", "reason": "WALKIN_TTL"})
 
+    def test_the_reaped_visitor_keeps_a_read_on_the_clone_they_lost(self):
+        """The 410 seam (`auth/gate.py`, `test_gate_open_paths.py`).
+
+        The reap clears `own_of`, so the fence has nothing to match the
+        visitor's own `/signal/<clone>.json` against and answers 401 — ahead of
+        the 410 `session-end` document that would tell a stranger their intro
+        time is up and to register. `ended_signal_of` is what the fence matches
+        instead, and it is one document wide.
+        """
+        clone = self.broker.claim("u1", "os2warp")["clone"]
+        self.assertIsNone(self.broker.ended_signal_of("u1"), "nothing is owed while the session lives")
+        self.clock[0] += broker_mod.TTL_SECONDS + 1
+        self.broker.tick()
+        self.assertIsNone(self.broker.own_of("u1"), "the reap really did clear the holding")
+        self.assertEqual(self.broker.ended_signal_of("u1"), f"/signal/{clone}.json")
+
+    def test_the_idle_reap_leaves_the_same_read(self):
+        clone = self.broker.claim("u1", "os2warp")["clone"]
+        self.clock[0] += broker_mod.IDLE_SECONDS + 1
+        self.broker.tick()
+        self.assertEqual(self.broker.ended_signal_of("u1"), f"/signal/{clone}.json")
+
+    def test_the_kill_switch_leaves_no_read_at_all(self):
+        """`WALKIN_CLOSED` is withheld on purpose.
+
+        A class of visitor that keeps a surface across the operator's kill
+        switch is exactly what the switch exists to make impossible — so the
+        plane being shut is the one close reason that answers nobody, even
+        though the document itself would only say "closed".
+        """
+        self.broker.claim("u1", "os2warp")
+        self.broker.set_access("closed")
+        self.assertEqual(self.broker.close_reason("u1"), "WALKIN_CLOSED")
+        self.assertIsNone(self.broker.ended_signal_of("u1"))
+
+    def test_a_visitor_who_simply_left_keeps_no_read(self):
+        """A release is not a verdict: there is nothing to explain, so the
+        stranger gets the ordinary 404 rather than a lingering surface."""
+        clone = self.broker.claim("u1", "os2warp")["clone"]
+        self.broker.release("u1", clone)
+        self.assertIsNone(self.broker.ended_signal_of("u1"))
+
+    def test_the_read_is_never_another_visitor_s_clone(self):
+        mine = self.broker.claim("u1", "os2warp")["clone"]
+        self.broker.claim("u2", "os2warp")
+        self.clock[0] += broker_mod.TTL_SECONDS + 1
+        self.broker.tick()
+        self.assertEqual(self.broker.ended_signal_of("u1"), f"/signal/{mine}.json")
+        self.assertNotEqual(self.broker.ended_signal_of("u2"), f"/signal/{mine}.json")
+
     def test_a_visitor_who_simply_left_gets_no_reason(self):
         clone = self.broker.claim("u1", "os2warp")["clone"]
         self.broker.release("u1", clone)

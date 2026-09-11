@@ -2,8 +2,15 @@
 # wi-warm-arp — repair a fresh clone's STALE ARP entry for the gateway, before
 # the visitor ever sees the browser.
 #
-# THIS IS THE HELPER THE BROKER CALLS. After a clone's tap is up and isolated,
-# and before the clone is handed to a visitor:
+# THE BROKER NO LONGER CALLS THIS. Production clones live in per-clone L2 cells
+# (ledger §6) and are primed by `wi-clonecell prime`, which speaks the gateway's
+# ARP from inside the cell; this one pings from CT 952 across `vmbr-wi`, where a
+# celled clone has no presence at all, so against one it can only time out. It
+# stays for what IS on the flat bridge: the containment harness's throwaway
+# namespaces and a bring-up rig. Pointing the broker back at it is the
+# 2026-08-25 regression that left every clone unprimed until 2026-09-11.
+#
+# For anything still attached to `vmbr-wi` DIRECTLY:
 #
 #     /usr/local/sbin/wi-warm-arp <clone-ip> [--wait SECS] [--vmid 952]
 #

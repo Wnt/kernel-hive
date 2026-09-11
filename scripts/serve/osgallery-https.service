@@ -51,15 +51,20 @@ Environment=STREAM_KEY_FILE=/data/vms/streamhost/serve/pki/stream-ticket.key
 # each side's `kh-claim ls --mine` lists the other's live claims.
 Environment=KH_SESSION=osgallery-walkin
 Environment=WALKIN_OPEN=1
-# The walk-in plane's ARP-priming helper (ledger §6), installed by
-# scripts/retronet/walkin-net/provision-walkin-net.sh. The broker fills `{ip}`
-# in and runs it while the clone is still unclaimed; exit 0 means the gateway
-# got an ICMP reply, so the visitor's FIRST page load will work. Without it the
-# broker falls back to its own inline `pct exec` template, which is the shape
-# of the helper rather than the helper — the real one also drops the gateway's
-# stale neighbour entry before EVERY attempt, which is what makes a clone
-# primed after a reset and not only the first one.
-Environment=WALKIN_ARP_PRIME=/usr/local/sbin/wi-warm-arp {ip} --wait 20
+# NO WALKIN_ARP_PRIME OVERRIDE HERE, DELIBERATELY. The walk-in plane's
+# ARP-priming command lives with the code that runs it —
+# `scripts/serve/walkin/clone.py::ARP_PRIME_CMD`, which is `wi-clonecell prime`
+# — and an override here can only be a second copy to get wrong. It was one:
+# this unit pinned `wi-warm-arp` (the FLAT-plane ancestor) from 2026-08-25,
+# when per-clone L2 cells landed the same evening and the unit was not swept.
+# `wi-warm-arp` asks CT 952 to ping the clone across `vmbr-wi`, and a clone in
+# a cell is not on `vmbr-wi` at all — the NAT namespace terminates L2 — so it
+# broadcast into the dark for 20 s, five times, and every clone was handed to a
+# visitor unprimed with a dead first page load (ledger §6). Measured
+# 2026-09-11: `wi-warm-arp` rc=1 after 24.1 s and 19 unanswered ARP requests;
+# `wi-clonecell prime` rc=0 in 0.1 s on the same guest, and 128-133 s of every
+# clone build was being burned in the doomed one.
+# Set this ONLY to override the default for a bring-up, and delete it after.
 EnvironmentFile=-/run/osgallery-https.env
 # The project's own virtualenv, NOT /usr/bin/python3: the WebAuthn library is
 # pinned by scripts/serve/requirements.txt and installed by sync-venv.sh, so the

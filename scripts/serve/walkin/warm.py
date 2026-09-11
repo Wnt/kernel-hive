@@ -147,9 +147,14 @@ class Warming:
             # address clones directly reintroduces the second monitor this
             # ordering is protecting against.
             if not built.prime_network():
+                # The helper's OWN words, not just the verdict. This line said
+                # only "not primed" for 17 days while the reason — the unit
+                # pinning the flat-plane `wi-warm-arp` at a clone inside a cell
+                # — was being discarded by a shell redirect in the template.
+                why = built.prime_error or "no diagnosis from the helper"
                 sys.stderr.write(
                     f"[walkin] {built.identity}: network not primed — the visitor's first page load "
-                    "will fail until the gateway ARPs it (ledger §6)\n"
+                    f"will fail until the gateway ARPs it (ledger §6): {why}\n"
                 )
             if self._daemon:
                 clone_mod.spawn_daemon(built)

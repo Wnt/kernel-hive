@@ -33,13 +33,16 @@ export GOLDEN_MANIFEST="${GOLDEN_MANIFEST:-$SERVE/golden-manifest.json}"
 # admin toggle.
 export KH_SESSION="${KH_SESSION:-osgallery-walkin}"
 export WALKIN_OPEN="${WALKIN_OPEN:-1}"
-# The plane's ARP-priming helper (ledger §6), a command template the broker
-# fills `{ip}` into. Installed by scripts/retronet/walkin-net/provision-walkin-net.sh.
-# NOTE the two steps: a literal `{ip}` inside a ${VAR:-default} is mis-parsed by
-# the shell's brace matching and arrives as `{ip --wait 20}`, which the broker
-# then rejects with KeyError('ip --wait 20').
-_arp_default='/usr/local/sbin/wi-warm-arp {ip} --wait 20'
-export WALKIN_ARP_PRIME="${WALKIN_ARP_PRIME:-$_arp_default}"
+# NO DEFAULT FOR WALKIN_ARP_PRIME HERE, DELIBERATELY — see the matching note in
+# osgallery-https.service. The command template lives with the code that runs
+# it (`scripts/serve/walkin/clone.py::ARP_PRIME_CMD` = `wi-clonecell prime`);
+# this file used to carry a second copy pinned to the flat-plane ancestor
+# `wi-warm-arp`, and because the tmpfs EnvironmentFile below is loaded LAST it
+# beat both the unit and the code default. That is what kept every walk-in
+# clone unprimed from 2026-08-25 to 2026-09-11.
+# It stays an OVERRIDE hook for a bring-up: export it and it is passed through.
+# It must never be passed through EMPTY — `clone.py` reads a blank template as
+# "do not prime at all" — so the printf below is conditional, not unconditional.
 
 if systemctl cat "$UNIT" >/dev/null 2>&1; then
   # Supervised path: hand this restart's overrides to systemd through a tmpfs
@@ -59,7 +62,9 @@ if systemctl cat "$UNIT" >/dev/null 2>&1; then
     printf 'GOLDEN_MANIFEST=%s\n' "$GOLDEN_MANIFEST"
     printf 'KH_SESSION=%s\n' "$KH_SESSION"
     printf 'WALKIN_OPEN=%s\n' "$WALKIN_OPEN"
-    printf 'WALKIN_ARP_PRIME=%s\n' "$WALKIN_ARP_PRIME"
+    # Only when an operator actually set one: an empty line here would reach the
+    # broker as "priming is disabled", which is worse than the stale value was.
+    [ -n "${WALKIN_ARP_PRIME:-}" ] && printf 'WALKIN_ARP_PRIME=%s\n' "$WALKIN_ARP_PRIME"
   } >"$RUN_ENV"
   systemctl restart "$UNIT"
   sleep 1

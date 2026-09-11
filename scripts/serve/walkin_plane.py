@@ -208,6 +208,21 @@ def own_signal(user) -> str | None:
     return own["signalEndpoint"] if own else None
 
 
+def ended_signal(user) -> str | None:
+    """The signalling document of the clone this visitor JUST LOST, for
+    `gate.allows` — the 410 seam, and the only thing a stranger may still read
+    once their intro time is gone. Same two roles, same one surface, one
+    document wide: never the webrtc offer, never anyone else's clone, and never
+    after the operator's kill switch (`Broker.ended_signal_of`)."""
+    if BROKER is None or not user or user.get("role") not in ("walkin", "anon"):
+        return None
+    try:
+        return BROKER.ended_signal_of(str(user.get("id", "")))
+    except Exception as exc:  # noqa: BLE001 — a broken pool must not 500 the gate
+        sys.stderr.write(f"[serve] walk-in ended_signal_of failed: {type(exc).__name__}: {exc}\n")
+        return None
+
+
 def visitor_for(auth, handler, user):
     """Who this request is, once "nobody yet" is a legitimate answer.
 

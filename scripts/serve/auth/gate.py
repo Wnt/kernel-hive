@@ -329,7 +329,7 @@ ANON_PATHS = frozenset(
 )
 
 
-def anon_allows(path: str, own_signal: str | None = None) -> bool:
+def anon_allows(path: str, own_signal: str | None = None, ended_signal: str | None = None) -> bool:
     """Whether an anonymous stranger may reach `path`.
 
     Same shape as `walkin_allows` and the same one interactive surface — their
@@ -343,6 +343,16 @@ def anon_allows(path: str, own_signal: str | None = None) -> bool:
     if own_signal and (path == own_signal or path.startswith(_webrtc_prefix(own_signal))):
         hit("auth.gate.anonOwn")
         return True
+    if ended_signal and path == ended_signal:
+        # READ-ONLY, and one document wide. The reap clears `own_signal`, so
+        # without this the stranger whose intro time just ran out is refused
+        # 401 on their own clone and never reaches the 410 `session-end`
+        # document that would tell them to register — the conversion moment the
+        # whole walk-in plane exists for. Matched EXACTLY, never as a prefix:
+        # the webrtc offer under it stays refused, because a session that has
+        # ended may explain itself and may not negotiate media.
+        hit("auth.gate.anonEnded")
+        return True
     if path.startswith("/signal/") or path.startswith("/webrtc/"):
         return False
     if is_open(path):
@@ -350,7 +360,7 @@ def anon_allows(path: str, own_signal: str | None = None) -> bool:
     return path in ANON_PATHS
 
 
-def walkin_allows(path: str, own_signal: str | None = None) -> bool:
+def walkin_allows(path: str, own_signal: str | None = None, ended_signal: str | None = None) -> bool:
     """Whether a `walkin` session may reach `path`.
 
     `own_signal` is the signaling path of the visitor's OWN clone, minted by
@@ -372,6 +382,11 @@ def walkin_allows(path: str, own_signal: str | None = None) -> bool:
     if own_signal and path.startswith(_webrtc_prefix(own_signal)):
         hit("auth.gate.walkinOwn")
         return True
+    if ended_signal and path == ended_signal:
+        # The 410 seam, exactly as in `anon_allows`: one document, read-only,
+        # never the webrtc prefix beside it.
+        hit("auth.gate.walkinEnded")
+        return True
     if path.startswith("/signal/") or path.startswith("/webrtc/"):
         return False
     if is_open(path):
@@ -385,7 +400,7 @@ def _webrtc_prefix(own_signal: str) -> str:
     return f"/webrtc/{clone}/"
 
 
-def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
+def allows(path: str, user: dict | None, own_signal: str | None = None, ended_signal: str | None = None) -> bool:
     """The role fence. Non-walk-in sessions keep the behaviour they had:
     signed in is enough for everything this listener still serves."""
     # ATTRIBUTES ON THE REQUEST SPAN, NOT A CHILD SPAN OF THEIR OWN. This
@@ -400,11 +415,11 @@ def allows(path: str, user: dict | None, own_signal: str | None = None) -> bool:
     role = (user or {}).get("role") or "anonymous"
     span.attr("kh.auth.role", role)
     if user and user.get("role") == "anon":
-        allowed = anon_allows(path, own_signal)
+        allowed = anon_allows(path, own_signal, ended_signal)
         span.attr("kh.auth.decision", "allow" if allowed else "deny")
         return allowed
     if user and user.get("role") == "walkin":
-        allowed = walkin_allows(path, own_signal)
+        allowed = walkin_allows(path, own_signal, ended_signal)
         span.attr("kh.auth.decision", "allow" if allowed else "deny")
         return allowed
     # Reached only for a GATED path on the PUBLIC listener — `is_open` has

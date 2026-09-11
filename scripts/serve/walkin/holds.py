@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import sys
 
-from .session import CLOSE_REASON_TTL, claim_body, session_end_message
+from .session import CLOSE_REASON_CLOSED, CLOSE_REASON_TTL, claim_body, session_end_message
 from .warm import BrokerError
 
 
@@ -135,6 +135,30 @@ class Holding:
                     f"[walkin] {identity} would not resume for its new owner: {type(exc).__name__}: {exc}\n"
                 )
         return body
+
+    def ended_signal_of(self, user_id: str) -> str | None:
+        """The signalling path of the clone this visitor JUST LOST, or None.
+
+        The wall above needs a machine still standing; this is the same moment
+        when there is none — the reap already took it. The plane still owes the
+        stranger the honest answer, the 410 `session-end` document
+        `signal_route.py` builds. But the role fence runs FIRST and matches only
+        `own_of`, which the reap has cleared, so a stranger was refused 401 on
+        their own clone and the SPA rendered it as "Reconnecting (1/6…4/6)" —
+        measured 2026-09-11 04:14:39Z on walkin-rhapsody-2. A signed-in visitor
+        never saw it: `gate.allows` lets every other role through unconditionally.
+
+        One document wide, read-only: their own just-ended clone, for
+        `CLOSE_MEMORY`, matched exactly by `auth/gate.py` so the webrtc offer
+        beside it stays refused. `WALKIN_CLOSED` is withheld — a class of
+        visitor that keeps a surface across the operator's kill switch is what
+        the switch exists to make impossible.
+        """
+        with self._lock:
+            entry = self._closes.get(user_id)
+            if not entry or len(entry) < 3 or entry[0] == CLOSE_REASON_CLOSED:
+                return None
+            return f"/signal/{entry[2]}.json"
 
     def wall_message(self, identity: str, frozen_reason: str) -> dict:
         """The §3.3 message for a clone that has stopped answering, or None.

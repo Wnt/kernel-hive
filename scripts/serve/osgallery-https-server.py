@@ -88,7 +88,8 @@ Env (all optional except paths):
   WALKIN_REPO    repo root the launcher paths resolve against (default /data/kernel-hive)
   WALKIN_TICK_SECS pool watchdog interval in seconds               (default 15)
   WALKIN_OPEN    walk-in env FLOOR; unset/0 = closed whatever the switch says
-  WALKIN_ARP_PRIME the plane's ARP-priming helper, a `{ip}` command template
+  WALKIN_ARP_PRIME override the plane's ARP-priming template (default: clone.py's
+                 `wi-clonecell prime`); NEVER set it empty — that disables priming
 
 The route bodies live beside their config/globals in dedicated modules
 (static_files.py, webrtc.py, clientlog.py, clientcmd.py, restore.py,
@@ -295,7 +296,11 @@ class H(BaseHTTPRequestHandler):
         # walk-in and a stranger are the exceptions: their fence is an allowlist
         # whose one interactive surface is their OWN clone, so the gate is told
         # which clone that is.
-        if user and gate.allows(path, user, walkin_plane.own_signal(user)):
+        # `ended_signal` is the 410 seam: the reap that ends a stranger's intro
+        # time also clears `own_signal`, so without it the fence refuses them
+        # their own clone 401 and the "your time is up — register" document is
+        # unreachable for the only role that needs it.
+        if user and gate.allows(path, user, walkin_plane.own_signal(user), walkin_plane.ended_signal(user)):
             return True
         if gate.wants_html(self.headers.get("Accept")):
             # A browser typing the hostname in should land on a page it can act
