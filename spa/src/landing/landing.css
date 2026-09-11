@@ -148,18 +148,29 @@
   .landing-strip__cell--running::after { animation: none; }
 }
 
-/* The stage is the positioned box StreamView fills (its root is
-   `position: absolute; inset: 0; z-index: 40`). `isolation` gives it a
-   stacking context of its own so that z-index stays inside the picture and
+/* The display: ONE frame around the picture AND its control strip, so a
+   visitor sees a machine with two controls rather than a picture with a
+   separate button bar floating below the caption (HeroStage.tsx). `isolation`
+   gives it a stacking context of its own so the picture's z-index:40 (its
+   root is `position: absolute; inset: 0; z-index: 40`) stays inside it and
    cannot paint over the sticky bar; real browser fullscreen escapes to the top
-   layer regardless, so cinema mode is unaffected. */
-.landing-stage {
+   layer regardless, so cinema mode is unaffected. `overflow: hidden` +
+   `border-radius` round the stage's and dock's square corners into one
+   rounded rect; `.landing-stage` still carries its own `position: relative` —
+   it is StreamView's positioning root, not this wrapper. */
+.landing-display {
   position: relative; isolation: isolate; z-index: 1;
-  aspect-ratio: 4 / 3; width: 100%; max-height: min(70vh, 640px);
+  display: flex; flex-direction: column;
   overflow: hidden; border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--station-accent, var(--accent)) 45%, var(--line-strong));
-  background: #05060a;
   box-shadow: var(--shadow-2), 0 0 0 1px color-mix(in srgb, var(--station-accent, var(--accent)) 22%, transparent);
+}
+
+.landing-stage {
+  position: relative;
+  aspect-ratio: 4 / 3; width: 100%; max-height: min(70vh, 640px);
+  overflow: hidden;
+  background: #05060a;
 }
 
 /* One cell, two stacked children. The explicit row is not decoration: with an
@@ -197,22 +208,28 @@
 .landing-caption { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink-muted); }
 .landing-caption__grace { color: var(--warn); }
 
-/* ---- the machine's controls, under the machine -------------------------- */
-/* The mini canvas shows the guest's picture and nothing laid on top of it, so
-   every control StreamView would float in a stage corner portals into this row
-   instead and the keyboard opens into the region below it (ui/chromeDock.tsx).
-   Reading order is set by each control's `order`, because portals land in
-   whatever order they happen to mount.
-   `position: relative` + a z-index above the stage is for the ☰ dropdown, which
-   hangs out of the row and must not be painted over by what follows it. Both
-   nodes are always in the DOM and empty most of the time — `:empty` keeps them
-   from spending one of the column's 9px gaps on nothing. */
+/* ---- the machine's controls: a bezel strip against the glass ------------ */
+/* Only the right-click arm and keyboard opener land here (plus the connection
+   banner / device-stall chips, unchanged): StageMenu renders neither the back
+   nor the ☰ button while docked at all (StageMenu.tsx), so this is never a
+   4-button row, always these two — reading as the display's own controls
+   rather than a detached button bar. The hairline + the sunken "strip" tone
+   (the token index.css reserves for wells/strips) read as a bezel; sitting
+   inside `.landing-display` with no gap of its own, its bottom corners are
+   rounded to match the picture's by that wrapper's overflow:hidden. Reading
+   order is set by each control's `order`, because portals land in whatever
+   order they happen to mount. `:empty` keeps an unpopulated strip from adding
+   a seam under the picture for nothing. */
 .landing-dock {
   position: relative; z-index: 3;
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--paper-sunken);
 }
+.landing-dock:empty { display: none; }
 .landing-keys { position: relative; z-index: 2; }
-.landing-dock:empty, .landing-keys:empty { display: none; }
+.landing-keys:empty { display: none; }
 /* The keyboard is a panel below the picture here, not a sheet flown over the
    bottom of a full-screen view: give it the gallery's own edges. */
 .landing-keys .osk-sheet, .landing-keys .osk-inline {

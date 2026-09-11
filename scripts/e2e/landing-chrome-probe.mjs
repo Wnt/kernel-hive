@@ -3,30 +3,46 @@ import { chromium } from 'playwright';
 // landing-chrome-probe — is the mini display canvas CLEAN, and does the
 // on-screen keyboard open BELOW it?
 //
-// Four questions no unit test in this repo can answer (vitest here is plain
-// Node, no jsdom), each of which was a real defect found on an Android phone:
+// Five questions no unit test in this repo can answer (vitest here is plain
+// Node, no jsdom):
 //
 //   1. the touch-instructions sheet must not exist anywhere any more;
 //   2. NOTHING may paint on top of the guest's picture inside `.landing-stage`
 //      — proven two ways, by bounding-box intersection over every descendant
 //      AND by a hit-test grid, because an overlay with pointer-events:none is
 //      invisible to the second and an off-screen box is invisible to neither;
-//   3. the ⊕ Right-click and ⌨ Keyboard controls sit BELOW the stage;
+//   3. the back ← and ☰ menu buttons must not exist ANYWHERE on the mini
+//      display (there is nowhere to go back to, and the menu's contents are
+//      full-station chrome — StageMenu.tsx), while ⊕ Right-click and
+//      ⌨ Keyboard must exist, sit below the stage, above the caption, and
+//      tight against the stage's own bottom edge — the display and its two
+//      controls read as one object, not a picture with a detached button bar;
 //   4. opening the keyboard must not resize the picture, and every keycap's
 //      LABEL must be inside its key and inside every clipping ancestor — the
 //      blank-keycap defect was a label clipped by a crushed row, and only the
-//      label's own painted rect can see that.
+//      label's own painted rect can see that;
+//   5. the FULL station view (/os/:osId) must still show both the back and
+//      the ☰ menu button — StageMenu only suppresses itself where
+//      `useChromeDock()` is non-null, which is the landing page alone.
 //
 // The picture rect, not the stage rect, is the reference for (2): the stage's
 // letterbox mat is not the guest's screen.
 //
 // Run from a directory that resolves `playwright` (see scripts/e2e/README.md):
-//   node landing-chrome-probe.mjs https://<lab>:8443/staging/<slot>/ 400
+//   node landing-chrome-probe.mjs https://<lab>:8443/staging/<slot>/ 400 tag [stationUrl]
+//
+// `stationUrl` (optional, question 5) is a full `/os/<id>` URL. On a
+// staging/dev bundle, append `?role=viewer` (or `admin`) to force the
+// session role client-side (data/session.ts's `forcedRole` — a UI-shape
+// lever, never a real escalation: every fetch the shape then makes is still
+// authorized server-side) so the route renders StreamView rather than the
+// exhibit notes an anonymous caller would otherwise get.
 
 const BASE = process.argv[2];
 const WIDTH = Number(process.argv[3] ?? 400);
 const TAG = process.argv[4] ?? `w${WIDTH}`;
-if (!BASE) { console.error('usage: landing-chrome-probe.mjs <base-url> [width] [tag]'); process.exit(2); }
+const STATION_URL = process.argv[5] ?? null;
+if (!BASE) { console.error('usage: landing-chrome-probe.mjs <base-url> [width] [tag] [stationUrl]'); process.exit(2); }
 
 const MOBILE = WIDTH < 700;
 const browser = await chromium.launch({ args: ['--no-sandbox', '--ignore-certificate-errors'] });
@@ -40,6 +56,27 @@ const ctx = await browser.newContext({
     ? 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36'
     : undefined,
 });
+// This origin's /walkin/state may have no real broker behind it yet (lane 1/2
+// build the server halves separately from this UI — walkin/api.ts's own header
+// comment). heroAudience.ts's walkinPlaneAvailable() check is DELIBERATELY
+// independent of walkin/api.ts's fixture fallback (see its header comment), so
+// an unmocked miss flips the hero off within a second of load and leaves the
+// plain grid — nothing this probe exists to check would even be on the page.
+// MOCK_WALKIN_STATE=1 answers that ONE check with real JSON so the hero stays
+// up; /walkin/claim is left alone and still 404s for real when there is no
+// broker, which is what sends the fixture's own claim() (walkin/fixture.ts) to
+// the STATION's OWN `/signal/<id>.json` — a genuine live picture, never a
+// fabricated one.
+if (process.env.MOCK_WALKIN_STATE === '1') {
+  await ctx.route('**/walkin/state', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      access: 'open',
+      pools: [{ os: 'win311', free: 2, size: 3 }, { os: 'os2warp', free: 2, size: 3 }, { os: 'rhapsody', free: 1, size: 3 }],
+    }),
+  }));
+}
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
@@ -113,12 +150,34 @@ const measure = () => page.evaluate(() => {
   const sheet = /Touch controls/i.test(body) || /glide the crosshair/i.test(body)
     || [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Got it');
 
-  // (3) the controls, found by their label. Which of them EXIST depends on the
-  // width — a desktop has no touch badges and keeps the keyboard in the ☰ menu
-  // — so the caller asserts on the ones it finds, plus the rule that none of
-  // them may live inside the canvas.
-  const btn = (re) => [...document.querySelectorAll('button')].find((b) => re.test((b.textContent ?? '').trim()));
-  const ctl = (el) => (el ? { rect: r(el), inStage: stage.contains(el) } : null);
+  // (3) the controls, found by their label: back/menu must be ABSENT on this
+  // page at every width now (StageMenu.tsx renders nothing while docked);
+  // right-click/keyboard must be PRESENT at every width. `ctl()` reuses the
+  // same area() the stage-descendant scan above uses, against the CONTROL's
+  // own box, plus the gap to the stage and the caption — "adjacent, above the
+  // caption, never on the picture" as geometry, not just "found or not".
+  // Excludes the on-screen keyboard: its own left-arrow key (keyboardProfiles.ts
+  // `tap('left', '←', ...)`) renders the SAME glyph as StageMenu's back button,
+  // so a bare textContent match would call the keyboard's Left key "back" the
+  // moment the sheet is open.
+  const oskForBtn = q('.osk-sheet') ?? q('.osk-inline');
+  const btn = (re) => [...document.querySelectorAll('button')]
+    .find((b) => !(oskForBtn && oskForBtn.contains(b)) && re.test((b.textContent ?? '').trim()));
+  const captionEl = q('.landing-caption');
+  const captionR = captionEl ? r(captionEl) : null;
+  const dockEl = q('.landing-dock');
+  const dockR = dockEl ? r(dockEl) : null;
+  const ctl = (el) => {
+    if (!el) return null;
+    const box = el.getBoundingClientRect();
+    return {
+      rect: r(el),
+      inStage: stage.contains(el),
+      overlapPic: Math.round(area(box, picR)),
+      gapBelowStage: +(box.top - stageR.bottom).toFixed(1),
+      aboveCaption: captionR ? box.bottom <= captionR.y + 1 : null,
+    };
+  };
   const buttonsInStage = [...stage.querySelectorAll('button')]
     .filter((b) => !/gate-/.test(typeof b.className === 'string' ? b.className : ''))
     .map(name);
@@ -164,6 +223,8 @@ const measure = () => page.evaluate(() => {
   return {
     stage: r(stage),
     picture: pic ? r(pic) : null,
+    caption: captionR,
+    dock: dockR,
     decoded: pic && pic.tagName === 'VIDEO' ? `${pic.videoWidth}x${pic.videoHeight}` : (pic ? `${pic.width}x${pic.height}` : null),
     streaming: !!stage.querySelector('.sv-root'),
     sheet,
@@ -198,11 +259,20 @@ for (let i = 0; i < 24; i += 1) {
   await page.waitForTimeout(1000);
 }
 const closed = await measure();
+// Checked BEFORE anything dereferences `.over`/`.caps`: a `{fatal}` result
+// (no `.landing-stage` at all — e.g. the hero never mounted) carries none of
+// the other fields, and this used to crash on the next line instead of
+// reporting the honest FAIL.
+if (closed.fatal) {
+  console.log(`FAIL ${closed.fatal}`);
+  await shot('fatal');
+  await browser.close();
+  process.exit(1);
+}
 console.log(`\n== ${TAG} · keyboard CLOSED ==`);
 console.log(JSON.stringify({ ...closed, over: closed.over.map((o) => `${o.owner || '?'}:${o.el}`), caps: `${closed.caps.length} caps` }, null, 1));
 await shot('closed');
 
-if (closed.fatal) { console.log(`FAIL ${closed.fatal}`); process.exit(1); }
 if (!closed.streaming || !closed.decoded || closed.decoded.startsWith('0x')) {
   fail.push(`no live picture to judge (streaming=${closed.streaming} decoded=${closed.decoded})`);
 }
@@ -229,24 +299,39 @@ if (strayHits.length) fail.push(`hit-test finds non-picture on top: ${strayHits.
 if (closed.buttonsInStage.length) {
   fail.push(`${closed.buttonsInStage.length} button(s) inside .landing-stage: ${closed.buttonsInStage.join(' | ')}`);
 }
-// Then each control this width actually offers. A desktop has no touch badges
-// and keeps the keyboard behind ☰, so those two are asserted only if present;
-// the back escape and the menu exist at every width.
-const CONTROLS = [
-  ['back ←', closed.back, true],
-  ['menu ☰', closed.menu, true],
-  ['⊕ Right-click', closed.rightClick, MOBILE],
-  ['⌨ Keyboard', closed.keyboardBtn, MOBILE],
-];
-for (const [what, c, required] of CONTROLS) {
-  if (!c) { if (required) fail.push(`no ${what} control found at all`); continue; }
+// back/menu must be ABSENT from the mini display at EVERY width now (removed,
+// not merely hidden); right-click/keyboard must be PRESENT at every width —
+// neither depends on MOBILE any more once the page is docked.
+for (const [what, c] of [['back ←', closed.back], ['menu ☰', closed.menu]]) {
+  if (c) fail.push(`${what} is still present on the mini display (must be removed, not just hidden)`);
+}
+const ADJACENT_MAX = 60; // px: generous for padding/border, tight vs. "under the caption"
+for (const [what, c] of [['⊕ Right-click', closed.rightClick], ['⌨ Keyboard', closed.keyboardBtn]]) {
+  if (!c) { fail.push(`no ${what} control found at all`); continue; }
   if (c.inStage) fail.push(`the ${what} control is INSIDE .landing-stage`);
-  if (c.rect.y < closed.stage.b - 1) fail.push(`the ${what} control is not below the stage (top ${c.rect.y} < stage bottom ${closed.stage.b})`);
+  if (c.overlapPic > 0) fail.push(`the ${what} control overlaps the picture by ${c.overlapPic}px²`);
+  if (c.gapBelowStage < -1) fail.push(`the ${what} control is not below the stage (gap ${c.gapBelowStage}px)`);
+  if (c.gapBelowStage > ADJACENT_MAX) fail.push(`the ${what} control is not adjacent to the canvas (gap ${c.gapBelowStage}px > ${ADJACENT_MAX}px)`);
+  if (c.aboveCaption === false) fail.push(`the ${what} control is not above the caption`);
+}
+// The control ROW itself, not just its buttons (which carry their own
+// padding): it must be the very next thing after the stage — 0-4px, a
+// hairline border and nothing else — for the two to read as one object
+// (landing.css's `.landing-display`), and it must end above the caption.
+if (!closed.dock) fail.push('no .landing-dock control row found at all');
+else {
+  const dockGap = +(closed.dock.y - closed.stage.b).toFixed(1);
+  if (dockGap < -1 || dockGap > 4) fail.push(`the control row is not tight against the canvas (gap ${dockGap}px)`);
+  if (closed.caption && closed.dock.b > closed.caption.y + 1) {
+    fail.push(`the control row is not above the caption (row bottom ${closed.dock.b} > caption top ${closed.caption.y})`);
+  }
 }
 
 // (4) ------------------------------------------------------------------------
-// Open the keyboard the way THIS width offers it: a dedicated control on a
-// phone, the ☰ menu's row on a desktop. Both must land below the canvas.
+// Open the keyboard: a dedicated control, always, now that the mini display
+// never routes it through ☰ (StageMenu renders nothing here — the ☰ click is
+// dead weight kept only as a defensive fallback, never expected to fire).
+// Either way it must land below the canvas.
 const clickText = (re) => page.evaluate((src) => {
   const b = [...document.querySelectorAll('button')].find((x) => new RegExp(src, 'i').test((x.textContent ?? '').trim()));
   if (!b) return false;
@@ -262,6 +347,7 @@ else if (await clickText(/^☰$/)) {
   if (await clickText(/Keyboard/)) route = 'menu';
 }
 console.log(`OPEN  keyboard opened via: ${route ?? 'NOTHING'}`);
+if (route === 'menu') fail.push('keyboard opened via the ☰ menu — that menu must not exist on the mini display');
 if (!route) fail.push('found no way to open the keyboard at this width');
 if (route) {
   await page.waitForTimeout(1200);
@@ -302,6 +388,34 @@ if (route) {
   await page.waitForTimeout(400);
   const ab = await measure();
   console.log(`AB    rows-allowed-to-shrink: clipped=${ab.caps.filter((c) => c.clippedBy).length}/${ab.caps.length} minRowH=${Math.min(...ab.caps.map((c) => c.rowH))} minKeyH=${Math.min(...ab.caps.map((c) => c.keyH))}`);
+}
+
+// (5) ------------------------------------------------------------------------
+// The full station view is a SEPARATE mounting of the same StreamView/StageMenu
+// (no ChromeDockContext.Provider around it — see StageMenu.tsx / chromeDock.ts),
+// so this is not "the same assertion at another URL": it is the regression
+// check that (3) above did not reach past the docked page.
+if (STATION_URL) {
+  const spage = await ctx.newPage();
+  const serrors = [];
+  spage.on('pageerror', (e) => serrors.push(`pageerror: ${e.message}`));
+  await spage.goto(STATION_URL, { waitUntil: 'domcontentloaded' });
+  await spage.waitForTimeout(4000);
+  const sm = await spage.evaluate(() => {
+    const btn = (re) => [...document.querySelectorAll('button')].find((b) => re.test((b.textContent ?? '').trim()));
+    return { back: !!btn(/^←$/), menu: !!btn(/^☰$/) };
+  });
+  console.log(`\n== station ${STATION_URL} ==`);
+  console.log(JSON.stringify(sm));
+  shots.push(await (async () => {
+    const p = `${process.env.HOME}/e2e/shots/chrome-station-${Date.now()}.png`;
+    await spage.screenshot({ path: p, fullPage: false });
+    return p;
+  })());
+  if (!sm.back) fail.push('station view (/os/:osId): no back ← button found — regression from the docked-page change');
+  if (!sm.menu) fail.push('station view (/os/:osId): no ☰ menu button found — regression from the docked-page change');
+  if (serrors.length) fail.push(`station view: ${serrors.length} console/page error(s): ${serrors.join(' | ')}`);
+  await spage.close();
 }
 
 console.log(`\nSHOTS ${JSON.stringify(shots)}`);

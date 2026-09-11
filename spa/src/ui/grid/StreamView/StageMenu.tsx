@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { S } from './styles';
 import { DockedControl } from '../../DockedChrome';
+import { useChromeDock } from '../../chromeDock';
 import type { DemoState } from './useDemoProgram';
 
 // ---------------------------------------------------------------------------
@@ -22,11 +23,15 @@ import type { DemoState } from './useDemoProgram';
 //  (useStreamInput) — a press on these buttons can never reach the guest. The
 //  stopPropagation in DockedControl is belt-and-braces for that contract.
 //
-//  On the landing page's mini canvas it does NOT live in the stage: both
-//  clusters portal into the control row under the picture (chromeDock), because
-//  a 44px button pinned to the corner of a 400px-wide exhibit is sitting on the
-//  thing the visitor came to look at. The dropdown panel is positioned against
-//  its own wrapper, so it still hangs from the ☰ either way.
+//  ON THE LANDING PAGE'S MINI CANVAS THIS COMPONENT RENDERS NOTHING. There is
+//  nowhere for "back" to go on a page that is not a station, and every ☰ item
+//  (restore, demo, fullscreen, reload) is full-station chrome the mini display
+//  never offers — the mobile keyboard toggle is the one exception, and it is
+//  KeyboardToggleBadge's own row placement, not a menu item, so it is unaffected.
+//  `useChromeDock()` is exactly "is there a dock", i.e. "is this the landing
+//  page" (chromeDock.ts): every other mounting of StreamView (the full station
+//  view, walk-in play) has no dock and keeps both buttons, floating in their
+//  stage corners exactly as always.
 //
 //  Desktop and touch share one menu. It carries no touch-only rows: the touch
 //  model now follows the device on its own (input/pointerModeAuto), the gesture
@@ -62,6 +67,9 @@ export function StageMenu({
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // See the header comment: non-null only on the landing page's mini display,
+  // where this whole component renders nothing.
+  const docked = useChromeDock() != null;
 
   // Outside press closes. Escape deliberately does NOT: it belongs to the guest
   // (holding it is also the fullscreen-exit gesture), and stealing it here would
@@ -77,6 +85,8 @@ export function StageMenu({
 
   const run = (fn: () => void) => () => { fn(); setOpen(false); };
   const item = (enabled: boolean) => (enabled ? S.menuItem : { ...S.menuItem, ...S.menuItemOff });
+
+  if (docked) return null;
 
   return (
     <>
