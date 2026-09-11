@@ -10,7 +10,7 @@ public listener (see osgallery-https-server.py). Layout:
     routes.py    the /auth/* HTTP surface
     tickets.py   short-lived stream tickets for streamhost's media-plane gate
     walkin.py    the walk-in role, self-registration and the access switch
-    anon.py      the anonymous visitor: a cookie and a 60-second budget
+    anon.py      the anonymous visitor: a cookie and a 5-minute budget
     anon_plane.py  that budget, bound to the verbs the walk-in routes call
     handles/     the <adj>-<pioneer> handle generator and its wordlists
 """

@@ -92,8 +92,8 @@ class AuthService:
         from .walkin import WalkinService
 
         self.walkin_tickets = WalkinTickets()
-        # The anonymous plane: a stranger's sixty seconds, before there is any
-        # account to attach them to. It holds no store rows on purpose (see
+        # The anonymous plane: a stranger's intro-time budget, before there is
+        # any account to attach them to. It holds no store rows on purpose (see
         # auth/anon.py), so it is constructed here and never migrated; the
         # switch is handed it so a drop to Closed takes strangers down too.
         self.anon = AnonPlane()

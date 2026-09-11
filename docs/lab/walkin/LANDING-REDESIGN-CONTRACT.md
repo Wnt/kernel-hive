@@ -7,7 +7,7 @@ with the coordinator instead of diverging.
 ## The goal
 
 A random stranger lands, sees a **real machine already running**, drives it with
-mouse and keyboard inside one second, and hits a 60-second wall that converts
+mouse and keyboard inside one second, and hits a 5-minute wall that converts
 into a passkey. Today the funnel is backwards: `WalkinLanding.play()` forces
 passkey signup BEFORE the visitor may touch anything. We invert it.
 
@@ -28,7 +28,7 @@ WalkinState = {
   pools: { os: string, free: number, size: number }[],
   notice?: string,
   anon?: {                       // present ONLY when the caller is role==='anon'
-    budgetSeconds: number,       // 60
+    budgetSeconds: number,       // 300
     remainingSeconds: number,    // counts DOWN across switches and reloads
     expired: boolean,
     heldClone?: string,          // reserved for 120s after exhaustion
@@ -43,8 +43,8 @@ WalkinState = {
   `{ clone, signalEndpoint, ttlSeconds, resumed? }`.
 - **An anonymous caller may claim with no passkey.** This is the inversion.
 - For an anonymous caller `ttlSeconds` is the longest the visit can still last:
-  their REMAINING budget (<= 60) once the clock is running, and the un-engaged
-  window on top of it before it is. Never a fresh 60. The media-plane ticket TTL
+  their REMAINING budget (<= 300) once the clock is running, and the un-engaged
+  window on top of it before it is. Never a fresh 300. The media-plane ticket TTL
   must match the budget — the browser must not be able to outlive it by holding
   a socket open — which `POST /walkin/engage` enforces by cutting the session
   back to the budget the moment the clock starts.
@@ -68,14 +68,14 @@ POST /walkin/engage  {clone}    -> {"ok": true, "anon"?: {…}}
   the page does not have to wait a poll interval to learn its own clock.
 
 ### The anonymous budget
-- **60 seconds of connected time, per anonymous visitor, not per session,
-  counted from their first meaningful input.** The clock does not start when the
-  page takes a machine. It starts when the visitor touches one — an operator
-  reported the difference as a bug, and it was measured on the live site:
-  seventeen seconds of a stranger's minute gone before anything was touched,
-  because the page auto-claims on load and the visitor was reading. Until then
-  `remainingSeconds` stands still at 60, `engaged` is false, and the page says
-  the clock starts on first touch.
+- **300 seconds (5 minutes) of connected time, per anonymous visitor, not per
+  session, counted from their first meaningful input.** The clock does not
+  start when the page takes a machine. It starts when the visitor touches one
+  — an operator reported the difference as a bug, and it was measured on the
+  live site: seventeen seconds of a stranger's minute gone before anything was
+  touched, because the page auto-claims on load and the visitor was reading.
+  Until then `remainingSeconds` stands still at 300, `engaged` is false, and
+  the page says the clock starts on first touch.
   It carries across station switches, reloads and back-navigation.
 - Server-authoritative, keyed on the anonymous visitor cookie. The client
   countdown is a MIRROR of the server's number, never the source of truth.

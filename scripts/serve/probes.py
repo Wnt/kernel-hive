@@ -135,7 +135,7 @@ PROBES: dict[str, ServerProbe] = {
     "walkin.anon.wall": ServerProbe(
         area="walkin",
         owner="scripts/serve/auth/anon_plane.py",
-        what="a stranger's sixty seconds ran out and their machine was frozen behind the conversion wall; a zero "
+        what="a stranger's intro time ran out and their machine was frozen behind the conversion wall; a zero "
         "means nobody has ever reached the end of the budget",
     ),
     "walkin.anon.converted": ServerProbe(

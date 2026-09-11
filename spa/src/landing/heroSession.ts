@@ -1,5 +1,6 @@
 import type { WalkinClaim, WalkinQueued } from '../data/walkinTypes';
 import { isClosedError, isQueued, WalkinApiError } from '../walkin/api';
+import { WALKIN_ANON_BUDGET_COPY } from '../walkin/reasons';
 import type { ReleaseReason } from './heroPolicy';
 
 // ============================================================================
@@ -85,7 +86,11 @@ function isBudgetError(error: unknown): boolean {
 /** What the hero becomes after the claim THREW. */
 export function phaseAfterHeroClaimError(error: unknown): HeroPhase {
   if (isBudgetError(error)) {
-    return { kind: 'refused', code: 'budget', message: 'Your minute is up.' };
+    // The SAME fixed sentence the conversion gate itself renders
+    // (gate/ConversionGate.tsx), not a second copy of it — a duration-bearing
+    // restatement here ("Your N seconds/minutes are up.") would have to keep
+    // pace with `auth/anon.py BUDGET_SECONDS` a second time for no reason.
+    return { kind: 'refused', code: 'budget', message: WALKIN_ANON_BUDGET_COPY };
   }
   if (isClosedError(error)) {
     return { kind: 'refused', code: 'closed', message: 'Walk-in access is currently closed.' };
@@ -162,8 +167,8 @@ export type SwitchStep =
  *
  *   * Switching to the station already on screen returns NO steps. The obvious
  *     implementation releases and re-claims, which on the anonymous plane spends
- *     part of a 60-second budget to arrive back where you already were, and on
- *     any plane throws away the visitor's work in that guest.
+ *     part of the visitor's intro-time budget to arrive back where you already
+ *     were, and on any plane throws away the visitor's work in that guest.
  *   * A release always precedes its claim. One clone per account (ledger §7):
  *     claiming first means the broker retires the cell you are watching, and the
  *     frame the visitor was driving goes away before its replacement exists.

@@ -45,9 +45,10 @@ same instant is fine, because the watchdog runs `enforce()` before `tick()`
 
 **The wall is driven by a deadline, not by a poll.** `enforce()` is called by
 the walk-in watchdog, which sleeps until the earliest budget runs out rather
-than on the flat 15-second tick — see `walkin_plane._watchdog`. A minute
-enforced by a quarter-minute tick is a minute plus up to fifteen seconds, which
-on a sixty-second budget is a quarter of the feature given away.
+than on the flat 15-second tick — see `walkin_plane._watchdog`. A budget
+enforced by a quarter-minute tick is the budget plus up to fifteen seconds
+given away for free — a real fraction of a short intro, whatever it is
+currently tuned to.
 """
 
 from __future__ import annotations
