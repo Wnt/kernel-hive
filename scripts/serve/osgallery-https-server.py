@@ -286,8 +286,8 @@ class H(BaseHTTPRequestHandler):
             return True
         session_user = AUTH.user_for_token(auth_routes.session_token(self))
         # A caller with NO session is no longer automatically nobody: since the
-        # landing redesign a stranger may be driving a machine on a sixty-second
-        # budget, and `visitor_for` turns their cookie into a synthetic
+        # landing redesign a stranger may be driving a machine on an anonymous
+        # intro-time budget, and `visitor_for` turns their cookie into a synthetic
         # `role='anon'` user (walkin_plane.py). Everything below is unchanged for
         # everyone else.
         user = walkin_plane.visitor_for(AUTH, self, session_user)

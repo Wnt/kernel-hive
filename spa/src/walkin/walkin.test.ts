@@ -26,14 +26,19 @@ describe('reason codes', () => {
     // Not an apology and not retryable: the visitor reached the end of their
     // intro time, another claim is refused with this same code until they
     // register, and a button that cannot work makes a wall read as a bug.
-    const copy = walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 60 });
-    expect(copy.title).toBe('Your 60 seconds of intro time are up.');
+    const copy = walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 300 });
+    expect(copy.title).toBe('Your 5 minutes of intro time are up.');
     expect(copy.retryable).toBe(false);
     expect(copy.detail).toContain('still here');
-    // The number follows the server, so a retuned budget cannot make it lie.
-    expect(walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 90 }).title)
-      .toBe('Your 90 seconds of intro time are up.');
-    expect(walkinReasonCopy('WALKIN_ANON_BUDGET').title).toBe('Your 60 seconds of intro time are up.');
+    // The number follows the server, so a retuned budget cannot make it lie —
+    // and it reads as MINUTES, this module's own convention elsewhere
+    // ('Your 20 minutes are up.', 'Ended after 3 minutes idle.'), not seconds.
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET', { budgetSeconds: 600 }).title)
+      .toBe('Your 10 minutes of intro time are up.');
+    // No windows at all ⇒ the system fallback. `WalkinPlay.tsx`'s `EndedCard`
+    // is the one production caller that never passes `budgetSeconds` — this
+    // has to match the live server's default or that surface lies.
+    expect(walkinReasonCopy('WALKIN_ANON_BUDGET').title).toBe('Your 5 minutes of intro time are up.');
   });
 
   it('finds the budget code on the refusal body the server actually sends', () => {

@@ -262,8 +262,8 @@ describe('mirroredRemaining', () => {
   });
 
   it('STANDS STILL while the visitor holds no machine', () => {
-    // The budget is sixty seconds of CONNECTED time. A disconnected visitor is
-    // spending nothing, and a clock that ran anyway would sprint away from the
+    // The budget is CONNECTED time. A disconnected visitor is spending
+    // nothing, and a clock that ran anyway would sprint away from the
     // server between polls and jump back up on the next one.
     expect(mirroredRemaining(45, T0, T0 + 30_000, false)).toBe(45);
     expect(mirroredRemaining(45, T0, T0 + 30_000, true)).toBe(15);

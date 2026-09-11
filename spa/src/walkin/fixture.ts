@@ -38,11 +38,12 @@ function state(): WalkinState {
   return {
     access: forced === 'invited' ? 'invited' : 'open',
     pools: [...pools.values()],
-    // `?walkin=anon` previews the ANONYMOUS visitor: the 60-second budget, the
-    // countdown mirroring it and the wall at zero. There is no other way to
-    // look at that state on a staged build, which has no auth plane behind it
-    // and therefore reads every visitor as already signed in. Same lever, same
-    // rule as the states above: this tab's rendering, nothing else.
+    // `?walkin=anon` previews the ANONYMOUS visitor: the intro-time budget
+    // (`auth/anon.py BUDGET_SECONDS`), the countdown mirroring it and the wall
+    // at zero. There is no other way to look at that state on a staged build,
+    // which has no auth plane behind it and therefore reads every visitor as
+    // already signed in. Same lever, same rule as the states above: this
+    // tab's rendering, nothing else.
     anon: forced === 'anon' ? anonBudget() : undefined,
   };
 }
@@ -53,7 +54,7 @@ function state(): WalkinState {
 // and, since 2026-09-10, started by the visitor's FIRST TOUCH rather than by
 // the page load. A preview that started counting on arrival would show the
 // exact behaviour the engagement rule exists to remove.
-const ANON_BUDGET_SECONDS = 60;
+const ANON_BUDGET_SECONDS = 300;
 let anonEngagedAt: number | null = null;
 
 function anonBudget(): WalkinAnonBudget {

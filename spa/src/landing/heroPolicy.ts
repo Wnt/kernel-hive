@@ -121,10 +121,10 @@ export type ReleaseReason = 'never-driven' | 'hidden';
 /**
  * Is the visitor's minute running right now?
  *
- * Both halves are required and neither is enough. The budget is sixty seconds
- * of CONNECTED time, so a visitor holding no machine spends nothing; and since
- * 2026-09-10 it is sixty seconds of connected time AFTER THE FIRST TOUCH, so a
- * visitor who has not engaged spends nothing either. The server keeps the
+ * Both halves are required and neither is enough. The budget is CONNECTED
+ * time, so a visitor holding no machine spends nothing; and since 2026-09-10
+ * it is connected time AFTER THE FIRST TOUCH, so a visitor who has not
+ * engaged spends nothing either. The server keeps the
  * authoritative clock and this only decides whether the mirror ticks — but a
  * mirror that ticks when the server's number is standing still runs away from
  * it and then snaps back on the next poll, which reads as a broken countdown.
@@ -243,7 +243,7 @@ export interface AutoClaimFacts {
  *   * `access` known and allowing this role — asking a closed door for a
  *     machine gets a refusal that the page then has to explain, and the door
  *     being shut is not an error to show a stranger.
- *   * not expired — an anonymous visitor whose 60 seconds are gone gets the
+ *   * not expired — an anonymous visitor whose intro time is gone gets the
  *     wall, not another claim the server will refuse.
  *   * `attempts === 0` — auto means ONCE. A page that re-claims on its own after
  *     a failure is a page that hammers the broker from a tab nobody is reading;
@@ -270,9 +270,9 @@ export function shouldAutoClaim(f: AutoClaimFacts): boolean {
  * the display to the truth instead of drifting away from it. Clamped at zero —
  * a negative countdown is a number no visitor should ever be shown.
  *
- * `connected` is not a refinement, it is the definition. The budget is sixty
- * seconds of CONNECTED time, so a visitor holding no machine is spending
- * nothing and their clock must stand still. Ticking it down anyway would run
+ * `connected` is not a refinement, it is the definition. The budget is
+ * CONNECTED time, so a visitor holding no machine is spending nothing and
+ * their clock must stand still. Ticking it down anyway would run
  * the display away from the server between polls and then jump it back up on
  * the next one — which is exactly what a staged probe saw when the page's own
  * idle-release handed the machine back at fifteen seconds and the countdown

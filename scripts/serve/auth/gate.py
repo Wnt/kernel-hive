@@ -281,8 +281,8 @@ WALKIN_MANIFEST_FIELDS = (
 
 # ---- the anonymous visitor -------------------------------------------------
 #
-# A stranger with NO account at all, driving a real machine on their sixty-second
-# budget (auth/anon.py). Their fence is the tightest one here: an allowlist with
+# A stranger with NO account at all, driving a real machine on their intro-time
+# budget (auth/anon.py BUDGET_SECONDS). Their fence is the tightest one here: an allowlist with
 # no prefixes whatsoever, holding only the routes the landing page cannot work
 # without. It is deliberately NOT `WALKIN_PATHS`, which has grown to cover a
 # signed-up walk-in's whole plane — the account page, the staged-bundle preview,
@@ -296,7 +296,7 @@ WALKIN_MANIFEST_FIELDS = (
 #                                    Switching IS release+claim (contract §
 #                                    "Switching stations"), so both are needed.
 #   /walkin/engage                   report the first touch ON THEIR OWN clone.
-#                                    A stranger's minute does not start until
+#                                    A stranger's intro time does not start until
 #                                    this arrives, so refusing it here would
 #                                    leave every anonymous visitor's clock
 #                                    stopped and every cell held to the window.
@@ -315,7 +315,7 @@ WALKIN_MANIFEST_FIELDS = (
 # OPEN_PATHS/OPEN_PREFIXES already and needed no widening at all.
 #
 # NOT granted, each on purpose: /walkin/reset (a fresh machine is not something
-# a sixty-second visitor needs; switching covers it), /account (they have none),
+# an anonymous visitor needs; switching covers it), /account (they have none),
 # /clientcmd (the debug poll), /usage, /analytics, /traces, /eum, /staging/,
 # /walkin/play/, and every admin surface.
 ANON_PATHS = frozenset(

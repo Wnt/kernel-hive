@@ -456,10 +456,12 @@ class Broker(holds.Holding, Warming):
                     hit("walkin.reap.ttl")
                     ended.append((member.identity, CLOSE_REASON_TTL))
                     retired.append(self._end(member, CLOSE_REASON_TTL))
-                elif session and now - session.last_input_at >= IDLE_SECONDS:
+                elif session and not session.idle_exempt and now - session.last_input_at >= IDLE_SECONDS:
                     # The idle window is three minutes and the TTL is twenty, so
                     # the idle reap should be the COMMON one; if it is not, the
                     # 3-minute window is not doing what it was added to do.
+                    # `idle_exempt` (session.py): the anonymous budget's own
+                    # deadline ends it instead, once retimed past this window.
                     hit("walkin.reap.idle")
                     ended.append((member.identity, CLOSE_REASON_IDLE))
                     retired.append(self._end(member, CLOSE_REASON_IDLE))

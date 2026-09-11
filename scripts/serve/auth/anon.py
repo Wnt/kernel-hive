@@ -1,4 +1,4 @@
-"""The anonymous visitor: a cookie, a 60-second budget, and one held machine.
+"""The anonymous visitor: a cookie, a 5-minute budget, and one held machine.
 
 The funnel used to run backwards. A stranger reaching the museum was asked for a
 passkey BEFORE they were allowed to touch anything, which is the wrong order for
@@ -10,15 +10,15 @@ browser can edit.
 
 Three facts hold the design up.
 
-  * **The budget belongs to the VISITOR, not to the session.** Sixty seconds of
+  * **The budget belongs to the VISITOR, not to the session.** Five minutes of
     connected time, carried across station switches, reloads and
     back-navigation. If switching machines reset the clock, a stranger could hop
     the pool forever and never convert; trying all three has to cost the same
-    minute as staying on one, and the wall says so.
+    budget as staying on one, and the wall says so.
   * **The clock starts when the visitor TOUCHES the machine, not when the page
     takes one.** A stranger who is still reading the headline is not spending
-    anything, and a minute that began before they knew there was a minute is a
-    minute they never got. `engage()` is the only thing that starts it, and the
+    anything, and a budget that began before they knew there was one is time
+    they never got. `engage()` is the only thing that starts it, and the
     only thing that may call `engage()` is a real pointer press, tap or key on
     the guest (`POST /walkin/engage`, `landing/heroPolicy.ts MEANINGFUL_EVENTS`)
     — never a mouse merely crossing the picture. Once a visitor has engaged the
@@ -26,10 +26,10 @@ Three facts hold the design up.
     rather than buying a second free look.
   * **The identity is a cookie and nothing else.** No account, no PII, no store
     row — an anonymous visitor is a random id in `osg_anon` and a record in RAM.
-    Losing it (a private window, a cleared jar) buys another minute, and that is
-    an accepted cost: the alternative is fingerprinting a museum visitor, which
-    this lab will not do. Rate limits and the pool's own size are what bound
-    abuse, exactly as they do for signup.
+    Losing it (a private window, a cleared jar) buys another full budget, and
+    that is an accepted cost: the alternative is fingerprinting a museum
+    visitor, which this lab will not do. Rate limits and the pool's own size
+    are what bound abuse, exactly as they do for signup.
   * **Exhaustion RESERVES rather than recycles.** The wall is worth crossing
     only if what is behind it is still there: the machine the visitor was just
     driving, with their work on it. So the last clone is held for two minutes
@@ -56,7 +56,7 @@ COOKIE_NAME = "osg_anon"
 #: How long a stranger may drive before the wall. Connected time, not wall
 #: clock: a visitor who claims, leaves the tab and comes back an hour later
 #: still has whatever they had left.
-BUDGET_SECONDS = 60
+BUDGET_SECONDS = 300
 
 #: How long a claimed machine may sit UN-ENGAGED before the pool takes it back.
 #:
@@ -465,8 +465,8 @@ class AnonBudget:
             "remainingSeconds": left,
             "expired": left <= 0,
             # Whether the minute has STARTED. The page needs this to know
-            # whether to tick its mirror down or hold it at sixty and say the
-            # minute starts on first touch — and it has to come from here,
+            # whether to tick its mirror down or hold it at the full budget and
+            # say the minute starts on first touch — and it has to come from here,
             # because the server is the authority on the clock and the client
             # would otherwise be guessing from its own input handlers.
             "engaged": self.engaged(visitor),

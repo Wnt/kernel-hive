@@ -49,9 +49,10 @@ def _walkin_ticket_ttl(identity: str) -> int:
     connect, reconnect and transport fallback — so a fixed five-minute TTL is
     not a bound on how long anybody plays; it is a bound on how long one
     handshake window stays open. That was fine when the shortest session was
-    twenty minutes and is not fine now that a stranger's is sixty seconds: a
-    reconnect at T+59 would buy a five-minute window on the far side of a wall
-    they had already hit.
+    twenty minutes and is not fine now that a stranger's is a few minutes: a
+    reconnect made just before the wall would buy a fresh five-minute window
+    on the far side of it, on a machine the visitor had already been asked to
+    register for.
 
     So the broker caps it at what is LEFT on the session that owns the clone,
     and answers 0 for a clone frozen behind the conversion wall — no reconnect,

@@ -38,6 +38,16 @@ class Session:
     started_at: float
     expires_at: float
     last_input_at: float
+    # Set once, by `Holding.retime` (walkin/holds.py), the instant an anonymous
+    # visitor's budget clock starts. From there this session's whole remaining
+    # life IS the anonymous budget — `AnonPlane.enforce` already polices it,
+    # every tick, ahead of `Broker.tick` itself, freezing rather than
+    # destroying at the exact deadline. The ordinary idle window is a second,
+    # SHORTER bound with nothing keeping it fresh once `engage()` has fired its
+    # one signal (`note_input` has no other caller), which was harmless only
+    # while the budget stayed under it. `expires_at` is still an unconditional
+    # backstop either way, so this never leaves a session unbounded.
+    idle_exempt: bool = False
 
     def ttl_left(self, now: float) -> int:
         return max(0, int(self.expires_at - now))
