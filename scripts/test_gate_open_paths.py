@@ -79,3 +79,62 @@ class TestEveryPathIndexHtmlReferencesIsOpen(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheEndedSessionSeam(unittest.TestCase):
+    """The 410 seam: a stranger whose intro time ran out may READ the verdict.
+
+    The reap that ends a walk-in session also clears `own_of`, so the fence had
+    nothing to match their own `/signal/<clone>.json` against and refused it
+    401 — ahead of the `signal_route.py` branch that answers 410 `session-end`
+    / `WALKIN_ANON_BUDGET`. That made the conversion moment unreachable for the
+    only role it was written for: a signed-in visitor never saw it, because
+    `allows()` lets every other role through unconditionally. Measured on the
+    public gallery 2026-09-11 04:14:39Z (walkin-rhapsody-2, three 401s after a
+    WALKIN_TTL reap, rendered to the visitor as "Reconnecting (1/6…4/6)").
+
+    The seam is one document wide. Everything below the first test is a
+    negative, because widening this fence is how a stranger reaches a machine.
+    """
+
+    OWN = "/signal/walkin-os2warp-4.json"
+    OTHER = "/signal/walkin-win311-9.json"
+
+    def roles(self):
+        return ({"role": "anon", "id": "anon:v1"}, {"role": "walkin", "id": "u1"})
+
+    def test_the_visitor_may_read_the_clone_they_just_lost(self):
+        for user in self.roles():
+            self.assertTrue(gate.allows(self.OWN, user, None, self.OWN), user["role"])
+
+    def test_a_live_holding_is_unchanged(self):
+        for user in self.roles():
+            self.assertTrue(gate.allows(self.OWN, user, self.OWN, None), user["role"])
+            self.assertTrue(gate.allows("/webrtc/walkin-os2warp-4/offer", user, self.OWN, None))
+
+    def test_an_ended_session_may_not_reach_anyone_else_s_clone(self):
+        for user in self.roles():
+            self.assertFalse(gate.allows(self.OTHER, user, None, self.OWN), user["role"])
+
+    def test_an_ended_session_may_not_negotiate_media(self):
+        """Explaining itself is a read; the webrtc offer under it is not.
+
+        Matched EXACTLY in the fence rather than as a prefix, which is the whole
+        difference between "your time is up" and a second turn on the machine.
+        """
+        for user in self.roles():
+            for path in (
+                "/webrtc/walkin-os2warp-4/offer",
+                "/webrtc/walkin-os2warp-4/",
+                "/webrtc/walkin-os2warp-4/candidate",
+            ):
+                self.assertFalse(gate.allows(path, user, None, self.OWN), f"{user['role']} {path}")
+
+    def test_an_ended_session_may_not_enumerate_the_fleet(self):
+        for user in self.roles():
+            self.assertFalse(gate.allows("/signal/index.json", user, None, self.OWN))
+            self.assertFalse(gate.allows("/signal/win95.json", user, None, self.OWN))
+
+    def test_with_no_ended_session_a_stranger_reaches_no_signal_at_all(self):
+        for user in self.roles():
+            self.assertFalse(gate.allows(self.OWN, user, None, None), user["role"])

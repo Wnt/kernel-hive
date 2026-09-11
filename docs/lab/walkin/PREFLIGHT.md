@@ -233,15 +233,17 @@ reads `N MATCH, k DARKLAUNCH, 0 need attention`; `restart-https.sh` prints
 on the box returns `{"access":"invited",…}` rather than HTML (HTML means the
 route does not exist and the SPA index fallback answered — go back to B1).
 
-**The network plane is a prerequisite of step 4, not of step 1.** The serving
-unit now names lane 6's helper —
-`Environment=WALKIN_ARP_PRIME=/usr/local/sbin/wi-warm-arp {ip} --wait 20` — and
-the broker runs it while a clone is still unclaimed. It exists only after
-`scripts/retronet/walkin-net/provision-walkin-net.sh` has run, so before the
-restart:
+**The network plane is a prerequisite of step 4, not of step 1.** The broker
+primes each clone while it is still unclaimed, with the command template in
+`scripts/serve/walkin/clone.py::ARP_PRIME_CMD` — `wi-clonecell prime <slot>
+<ip>`, the PER-CELL helper. Neither the unit nor `restart-https.sh` overrides
+it any more: both used to pin `wi-warm-arp`, the flat-plane ancestor, which
+cannot reach a clone inside a cell and left every clone unprimed for 17 days.
+The helper exists only after `scripts/retronet/walkin-net/provision-walkin-net.sh`
+has run, so before the restart:
 
 ```sh
-ssh lab 'test -x /usr/local/sbin/wi-warm-arp && pct status 952'
+ssh lab 'test -x /usr/local/sbin/wi-clonecell && pct status 952'
 ```
 
 **Good looks like:** the helper is executable and CT 952 is `status: running`.

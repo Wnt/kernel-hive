@@ -291,6 +291,79 @@ class WalkinWiring(unittest.TestCase):
         self.assertEqual(state["access"], "closed")
         self.assertEqual(state["closeReason"], "WALKIN_CLOSED")
 
+    def _reap_by_ttl(self):
+        """Run the watchdog with its clock wound past the TTL, then put it back.
+
+        The TTL is twenty minutes and a test may not wait for it, but the reap
+        has to be the REAL one: `set_access("closed")` ends sessions too and is
+        the one reason that must NOT leave a readable verdict, so closing the
+        plane would prove the opposite of what this is for.
+        """
+        from walkin import broker as walkin_broker  # noqa: PLC0415
+
+        real = self.broker._now
+        orphans = self.broker.reap_orphans
+        # `tick` also sweeps orphan clone DIRECTORIES, which goes through
+        # `clone-guard` — not installed under a test interpreter, and not what
+        # this is exercising. The session half of the tick is the real one.
+        self.broker.reap_orphans = lambda: []
+        self.broker._now = lambda: real() + walkin_broker.TTL_SECONDS + 1
+        try:
+            self.broker.tick()
+        finally:
+            self.broker._now = real
+            self.broker.reap_orphans = orphans
+
+    def test_a_reaped_stranger_is_told_their_time_is_up_not_that_the_link_died(self):
+        """The conversion moment, end to end over real HTTP.
+
+        The whole walk-in redesign exists to turn a stranger into a passkey at
+        the instant their intro time ends, and the 410 `session-end` document
+        is how it asks. It was unreachable for exactly that visitor: the reap
+        clears `own_of`, so the fence refused their own clone 401 BEFORE
+        `signal_route` could answer, and the SPA rendered the refusal as
+        "Reconnecting (1/6…4/6)". Measured on the public gallery 2026-09-11
+        04:14:39Z (walkin-rhapsody-2).
+
+        `test_a_claim_is_served_by_signal_route_and_ends_with_a_410` did not
+        catch it and could not: it asks as a signed-in `viewer`, and
+        `gate.allows` lets every role but `anon`/`walkin` through
+        unconditionally. This one asks as the stranger.
+        """
+        cookie = self.anon_cookie()
+        status, claim, _ = self.get("/walkin/claim", method="POST", body={}, cookie=cookie)
+        self.assertEqual(status, 200, claim)
+        endpoint = claim["signalEndpoint"]
+
+        status, doc, _ = self.get(endpoint, cookie=cookie)
+        self.assertEqual(status, 200, doc)
+
+        self._reap_by_ttl()
+
+        status, gone, _ = self.get(endpoint, cookie=cookie)
+        self.assertEqual(status, 410, f"a reaped stranger must be told why, not refused: {gone}")
+        self.assertEqual(gone["type"], "session-end")
+        self.assertEqual(gone["reason"], "WALKIN_TTL")
+
+    def test_the_reaped_stranger_s_read_is_one_document_wide(self):
+        """The negatives, through the real listener rather than the fence alone."""
+        cookie = self.anon_cookie()
+        status, claim, _ = self.get("/walkin/claim", method="POST", body={}, cookie=cookie)
+        self.assertEqual(status, 200, claim)
+        clone = claim["clone"]
+        self._reap_by_ttl()
+
+        # Their own clone: explained.
+        self.assertEqual(self.get(f"/signal/{clone}.json", cookie=cookie)[0], 410)
+        # A different stranger may not read it.
+        other = self.anon_cookie()
+        self.assertEqual(self.get(f"/signal/{clone}.json", cookie=other)[0], 401)
+        # Nor may they negotiate media on the machine they no longer hold.
+        self.assertEqual(self.get(f"/webrtc/{clone}/offer", method="POST", body={}, cookie=cookie)[0], 401)
+        # Nor read a production station, nor enumerate the fleet.
+        self.assertEqual(self.get("/signal/os2warp.json", cookie=cookie)[0], 401)
+        self.assertEqual(self.get("/signal/index.json", cookie=cookie)[0], 401)
+
     # ---- 5. the visitor's first touch -------------------------------------
     #
     # `/walkin/engage` is the route that starts an anonymous visitor's intro
@@ -302,11 +375,25 @@ class WalkinWiring(unittest.TestCase):
     # that is the layer the unit tests entered underneath.
 
     def anon_cookie(self):
-        """A stranger's identity, minted the way a browser gets one."""
-        _, _, resp = self.get("/walkin/state")
+        """A stranger's identity, minted the way a browser gets one.
+
+        A READ no longer mints one. `GET /walkin/state` is a poll and the
+        landing page fires two of them at once on a cold jar, so each minted its
+        own id and planted it — and whichever response landed last won the jar,
+        orphaning the id `POST /walkin/claim` had just bound a clone against.
+        The visitor was then a stranger to their own machine and the fence
+        answered 401 on their own signalling document. So only a WRITE plants an
+        identity, and the first write is where a test gets one. The clone is
+        handed straight back, so the caller starts where it used to: an
+        identity, and nothing held.
+        """
+        status, claim, resp = self.get("/walkin/claim", method="POST", body={})
+        self.assertEqual(status, 200, claim)
         raw = resp.getheader("Set-Cookie") or ""
-        self.assertIn("osg_anon=", raw, "the state route plants a stranger's cookie")
-        return raw.split(";")[0]
+        self.assertIn("osg_anon=", raw, "the claim route plants a stranger's cookie")
+        cookie = raw.split(";")[0]
+        self.get("/walkin/release", method="POST", body={"clone": claim["clone"]}, cookie=cookie)
+        return cookie
 
     def test_engage_reaches_the_broker_at_all(self):
         # The regression, at its plainest: not a 404. A path the dispatcher

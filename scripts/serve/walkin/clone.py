@@ -60,7 +60,11 @@ STATIONS_ROOT = Path(os.environ.get("WALKIN_STATIONS_ROOT", "/data/vms/streamhos
 # the namespace in the same breath.
 ARP_PRIME_CMD = os.environ.get(
     "WALKIN_ARP_PRIME",
-    "{clonecell} prime {slot} {ip} --wait 4 >/dev/null 2>&1",
+    # NO `>/dev/null 2>&1`: `_run` captures both streams anyway, so the redirect
+    # only discarded the helper's own diagnosis — which is why the unit pinning
+    # flat-plane `wi-warm-arp` at a celled clone survived 17 days behind a log
+    # line that never said why. `prime_error` carries it.
+    "{clonecell} prime {slot} {ip} --wait 4",
 )
 # The per-clone L2 cell (ledger §6) lives in `cell.py`: own bridge, NAT
 # namespace, unique peer on vmbr-wi — what lets identical machines share a plane.
@@ -106,6 +110,8 @@ class Clone:
     unit: str = ""
     daemon_unit: str = ""
     primed: bool = False
+    #: Why the last prime failed, for the caller's log line. "" when it did not.
+    prime_error: str = ""
     extras: dict = field(default_factory=dict)
 
     @property
@@ -345,6 +351,11 @@ class Clone:
         ip = self.guest_ip()
         if not ARP_PRIME_CMD or not ip:
             self.primed = False
+            self.prime_error = (
+                "WALKIN_ARP_PRIME is empty — priming is disabled"
+                if not ARP_PRIME_CMD
+                else f"no guest ip for {self.spec.station} (its wi-tapnet.sh names no WI_TAP_GUEST_IP)"
+            )
             return False
         command = ARP_PRIME_CMD.format(
             ip=ip, tap=self.plan.tap, identity=self.identity, slot=self.plan.slot, clonecell=cell.CLONECELL
@@ -355,9 +366,12 @@ class Clone:
                 wake.wake(conn.execute, self.identity)
                 time.sleep(settle)  # the guest's stack has to see the link first
                 for _ in range(attempts):
-                    if _run(["bash", "-lc", command], check=False).returncode == 0:
+                    proc = _run(["bash", "-lc", command], check=False)
+                    if proc.returncode == 0:
                         self.primed = True
+                        self.prime_error = ""
                         break
+                    self.prime_error = " ".join(((proc.stderr or "") + " " + (proc.stdout or "")).split())[:300]
                     time.sleep(1.0)
             finally:
                 if was_stopped:

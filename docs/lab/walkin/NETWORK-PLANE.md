@@ -28,16 +28,16 @@ correctly and did nothing.
                         │
       ┌─────────────────┼──────────────────┬─────────  … one per clone, 9 total
       │                 │                  │
-  veth952i0         wiv152o (isolated) wiv153o (isolated)
+  veth952i0         wiv256o (isolated) wiv257o (isolated)
       │                 │                  │
   ┌───┴────────┐   ┌────┴─────────┐   ┌────┴─────────┐
-  │  CT 952    │   │ wicell152    │   │ wicell153    │    NAT netns: SNAT the
+  │  CT 952    │   │ wicell256    │   │ wicell257    │    NAT netns: SNAT the
   │ walkin-gw  │   │ peer .52     │   │ peer .53     │    baked guest address
-  │ 10.99.0.2  │   │ FWD → .2 only│   │ FWD → .2 only│    to 10.99.0.<slot-100>
+  │ 10.99.0.2  │   │ FWD → .2 only│   │ FWD → .2 only│    to 10.99.0.<slot-204>
   └────────────┘   └────┬─────────┘   └────┬─────────┘
-   DNS 53 · 3128        │ wiv152i          │ wiv153i
+   DNS 53 · 3128        │ wiv256i          │ wiv257i
    origin 80 · search   │                  │
-   no OSCAR · no sshd   wibr152 (cell)     wibr153 (cell)     one bridge per
+   no OSCAR · no sshd   wibr256 (cell)     wibr257 (cell)     one bridge per
    corpus read-only     │                  │                  clone: identical
                         wi-os2warp-1       wi-os2warp-2       MACs never share
                         │                  │                  an FDB
@@ -216,7 +216,7 @@ at once with no rule anywhere to blame.
 One call builds everything a clone's identical wire identity needs: the cell
 bridge `wibr<slot>` (hardened like `vmbr-wi`), the NAT namespace `wicell<slot>`
 with its two veth legs, the `wi-isolate`d outer port on `vmbr-wi`, the SNAT to
-peer `10.99.0.<slot-100>`, and the fail-closed FORWARD/INPUT rules. The broker
+peer `10.99.0.<slot-204>`, and the fail-closed FORWARD/INPUT rules. The broker
 runs `up` before the station's `wi-tapnet.sh` (whose `WI_TAP_BRIDGE` is then
 the cell bridge) and `down` after it; a leaked cell blocks its slot the way a
 leaked tap blocks its pool index, so the broker's watchdog sweeps orphan cells
