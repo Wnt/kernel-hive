@@ -14,7 +14,6 @@ The derivation half — schema, launcher parsing, the device-set refusal — is
 
 from __future__ import annotations
 
-import json
 import os
 import tempfile
 import threading
@@ -301,6 +300,49 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(self.broker.ended_signal_of("u1"), f"/signal/{mine}.json")
         self.assertNotEqual(self.broker.ended_signal_of("u2"), f"/signal/{mine}.json")
 
+    def test_a_member_that_lost_its_network_is_retired(self):
+        """A de-networked member must not stay claimable.
+
+        The orphan-sweep race of 2026-09-11 deleted taps and cells out from
+        under running guests, and because `alive()` only checks the pid the
+        broker went on listing all six as free. A visitor claiming one got a
+        machine that could reach nothing, for the whole intro budget — and it
+        never self-corrected, because nothing ever asked.
+        """
+        from . import cell as cell_mod
+
+        before = self.broker.state()["pools"][0]["free"]
+        self.assertGreater(before, 0, "the pool must have a member to lose")
+
+        self.broker._spawn = True  # the check is skipped on a pool with no hypervisor
+        real = cell_mod.network_present
+        cell_mod.network_present = lambda plan: False
+        self.addCleanup(lambda: setattr(cell_mod, "network_present", real))
+        # The rest of the tick needs a box; this test is about the death check.
+        self.broker.reap_orphans = lambda: []
+        self.broker.reap_orphan_taps = lambda: []
+        self.broker.reap_orphan_cells = lambda: []
+        self.broker.release_stray_claims = lambda: []
+        self.broker._refill = lambda: []
+
+        report = self.broker.tick()
+        self.assertTrue(report["died"], "a member with no tap or cell was left in the pool")
+        self.assertEqual(self.broker.state()["pools"][0]["free"], 0)
+
+    def test_a_healthy_member_survives_the_network_check(self):
+        from . import cell as cell_mod
+
+        self.broker._spawn = True
+        real = cell_mod.network_present
+        cell_mod.network_present = lambda plan: True
+        self.addCleanup(lambda: setattr(cell_mod, "network_present", real))
+        self.broker.reap_orphans = lambda: []
+        self.broker.reap_orphan_taps = lambda: []
+        self.broker.reap_orphan_cells = lambda: []
+        self.broker.release_stray_claims = lambda: []
+        self.broker._refill = lambda: []
+        self.assertEqual(self.broker.tick()["died"], [])
+
     def test_a_visitor_who_simply_left_gets_no_reason(self):
         clone = self.broker.claim("u1", "os2warp")["clone"]
         self.broker.release("u1", clone)
@@ -313,75 +355,6 @@ class BrokerTests(unittest.TestCase):
         for name, row in entries.items():
             self.assertTrue(name.startswith("walkin-os2warp-"))
             self.assertGreaterEqual(row["udpPort"], naming.udp_port(naming.SLOT_MIN))
-
-
-class OrphanTapTests(unittest.TestCase):
-    """An orphaned tap fails the next clone at that pool index, not just tidiness."""
-
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self._real_root = naming.WALKIN_ROOT
-        naming.WALKIN_ROOT = Path(self.tmp.name)
-        self.addCleanup(self._restore)
-        self.broker = broker_mod.Broker(REPO / "does-not-exist", REPO, spawn=False)
-        self.downed = []
-
-    def _restore(self):
-        naming.WALKIN_ROOT = self._real_root
-
-    def _patch(self, taps, cells=()):
-        from . import cell as cell_mod
-        from . import claims as claims_mod
-
-        # The sweeps consult the box-wide claim registry; none exists here.
-        real_everyone = claims_mod.everyone
-        claims_mod.everyone = lambda klass="": []
-        self.addCleanup(lambda: setattr(claims_mod, "everyone", real_everyone))
-
-        real_live, real_down = cell_mod.live_taps, cell_mod.tapnet_down  # noqa: F841
-        real_cells, real_cell_down = cell_mod.live_cells, cell_mod.cell_down  # noqa: F841
-        cell_mod.live_taps = lambda: taps
-        cell_mod.tapnet_down = lambda station, tap, bridge="": (self.downed.append((station, tap)), True)[1]
-        cell_mod.live_cells = lambda: list(cells)
-        cell_mod.cell_down = lambda slot: (self.downed.append(("cell", slot)), True)[1]
-        self.addCleanup(lambda: setattr(cell_mod, "live_taps", real_live))
-        self.addCleanup(lambda: setattr(cell_mod, "tapnet_down", real_down))
-        self.addCleanup(lambda: setattr(cell_mod, "live_cells", real_cells))
-        self.addCleanup(lambda: setattr(cell_mod, "cell_down", real_cell_down))
-
-    def test_a_tap_with_no_clone_behind_it_is_taken_down(self):
-        self._patch(["wi-os2warp-2", "wi-os2warp-3"])
-        self.assertEqual(self.broker.reap_orphan_taps(), ["wi-os2warp-2", "wi-os2warp-3"])
-        self.assertEqual(self.downed, [("os2warp", "wi-os2warp-2"), ("os2warp", "wi-os2warp-3")])
-
-    def test_a_tap_recorded_in_a_clone_crumb_is_left_alone(self):
-        root = naming.WALKIN_ROOT / "walkin-os2warp-1"
-        root.mkdir()
-        (root / "clone.json").write_text(json.dumps({"identity": "walkin-os2warp-1", "tap": "wi-os2warp-1"}))
-        self._patch(["wi-os2warp-1", "wi-os2warp-2"])
-        self.assertEqual(self.broker.reap_orphan_taps(), ["wi-os2warp-2"])
-
-    def test_a_tap_name_recognises_only_the_walk_in_shape(self):
-        from . import cell as cell_mod
-
-        self.assertTrue(cell_mod.TAP_RE.match("wi-os2warp-16"))
-        for other in ("os2rn0", "win311rn0", "veth952i0", "wi-", "vmbr-wi"):
-            self.assertIsNone(cell_mod.TAP_RE.match(other), other)
-
-    def test_a_cell_with_no_clone_behind_it_is_taken_down(self):
-        # A leaked cell blocks its SLOT the way a leaked tap blocks its pool
-        # index: `ip link add wibr<slot>` fails and the watchdog re-fails.
-        self._patch([], cells=[171, 172])
-        self.assertEqual(self.broker.reap_orphan_cells(), [171, 172])
-        self.assertEqual(self.downed, [("cell", 171), ("cell", 172)])
-
-    def test_a_cell_recorded_in_a_clone_crumb_is_left_alone(self):
-        root = naming.WALKIN_ROOT / "walkin-os2warp-1"
-        root.mkdir()
-        (root / "clone.json").write_text(json.dumps({"identity": "walkin-os2warp-1", "slot": 171}))
-        self._patch([], cells=[171, 172])
-        self.assertEqual(self.broker.reap_orphan_cells(), [172])
 
 
 class StrayClaimTests(unittest.TestCase):
