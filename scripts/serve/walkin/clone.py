@@ -60,10 +60,12 @@ STATIONS_ROOT = Path(os.environ.get("WALKIN_STATIONS_ROOT", "/data/vms/streamhos
 # the namespace in the same breath.
 ARP_PRIME_CMD = os.environ.get(
     "WALKIN_ARP_PRIME",
-    # NO `>/dev/null 2>&1`: `_run` captures both streams anyway, so the redirect
-    # only discarded the helper's own diagnosis — which is why the unit pinning
-    # flat-plane `wi-warm-arp` at a celled clone survived 17 days behind a log
-    # line that never said why. `prime_error` carries it.
+    # NO `>/dev/null 2>&1`: `_run` captures both streams, so the redirect only
+    # discarded the helper's diagnosis — which is why the unit pinning flat-plane
+    # `wi-warm-arp` at a celled clone survived 17 days behind a log line that
+    # never said why. Run with `bash -c`, NOT `-lc`: the unit has no HOME, so a
+    # login shell took `~` from passwd and sourced root's dotfiles, whose
+    # `. "$HOME/.cargo/env"` became `. /.cargo/env` — two errors in every line.
     "{clonecell} prime {slot} {ip} --wait 4",
 )
 # The per-clone L2 cell (ledger §6) lives in `cell.py`: own bridge, NAT
@@ -319,43 +321,41 @@ class Clone:
         found = re.search(r"WI_TAP_GUEST_IP:-([0-9][0-9.]+)", text)
         return found.group(1) if found else ""
 
-    def prime_network(self, attempts: int = 5, settle: float = 2.0) -> bool:
+    def prime_network(self, attempts: int = 5, settle: float = 0.5) -> bool:
         """Repair the clone's ARP cache before any visitor touches it.
 
-        Not renumbering the walk-in plane has exactly one cost, measured by lane
-        8 on the real bridge: a golden carries a WARM ARP CACHE from its retronet
-        capture, so it believes `10.99.0.2` lives at CT 951's MAC — which does
-        not exist on `vmbr-wi`. The clone's FIRST outbound flow is 100% lost
-        until it hears the real gateway's ARP, after which it works permanently.
-        Left alone, every walk-in visitor's first page load dies.
+        A golden carries a WARM ARP CACHE from its retronet capture, so it
+        believes `10.99.0.2` lives at CT 951's MAC — an address on no walk-in
+        segment — and its first outbound flow is lost until it hears the real
+        gateway's ARP. `wi-clonecell prime` speaks that ARP from inside the
+        clone's OWN cell and takes the guest's reply as proof (ledger §6); CT
+        952 cannot, since the cell's NAT namespace terminates L2.
 
-        The repair is one ping FROM the gateway TO the clone. Two things follow
-        that are easy to get wrong:
+        Two things are easy to get wrong:
+        * **The guest must be RUNNING to answer.** A pool member sits
+          `-loadvm golden -S` and a stopped vCPU processes no frames, so this
+          resumes under a wake lease and restores the pause it found. A
+          restored guest answers ~0.26 s after `cont`; a short `settle` costs
+          only a retry.
+        * **A missing tap or cell is not a slow guest.** Retrying one is 27 s
+          of stall that cannot succeed — and on 2026-09-11 that stall re-phased
+          the builder into the next orphan sweep and made the next victim. It
+          fails at once now, naming the half that is gone.
 
-        * **The guest must be RUNNING to hear it.** A pool member sits
-          `-loadvm golden -S`, and a stopped vCPU processes no frames at all —
-          the first version of this ran the ping against a paused guest and
-          reported failure for a plane that was working. So it resumes under a
-          wake lease, primes, and restores the pause it found.
-        * **The ping's exit code IS the proof.** A reply means the L2 path
-          works and the clone has now seen the gateway's ARP. Nothing else here
-          needs checking, and a screendump would prove less.
-
-        It happens while the member is unclaimed, so the visitor never waits for
-        it — that is the warm pool paying in advance. A member that cannot be
-        primed is still returned: a dead first page load is worse than a working
-        one and far better than no machine at all, and the caller logs it.
+        Done while the member is unclaimed, so the visitor never waits; one
+        that cannot be primed is still returned, and the caller logs why.
         """
         if self.spec.netdev.type != "tap":
             return True  # no bridge, no stale neighbour to repair
         ip = self.guest_ip()
         if not ARP_PRIME_CMD or not ip:
             self.primed = False
-            self.prime_error = (
-                "WALKIN_ARP_PRIME is empty — priming is disabled"
-                if not ARP_PRIME_CMD
-                else f"no guest ip for {self.spec.station} (its wi-tapnet.sh names no WI_TAP_GUEST_IP)"
-            )
+            missing = "WALKIN_ARP_PRIME is empty (priming disabled)" if not ARP_PRIME_CMD else "no guest ip"
+            self.prime_error = f"{missing} for {self.spec.station}"
+            return False
+        if gone := cell.missing_half(self.plan):
+            self.primed = False
+            self.prime_error = f"{gone} is gone — nothing to prime"
             return False
         command = ARP_PRIME_CMD.format(
             ip=ip, tap=self.plan.tap, identity=self.identity, slot=self.plan.slot, clonecell=cell.CLONECELL
@@ -366,7 +366,7 @@ class Clone:
                 wake.wake(conn.execute, self.identity)
                 time.sleep(settle)  # the guest's stack has to see the link first
                 for _ in range(attempts):
-                    proc = _run(["bash", "-lc", command], check=False)
+                    proc = _run(["bash", "-c", command], check=False)  # `-c`: see ARP_PRIME_CMD
                     if proc.returncode == 0:
                         self.primed = True
                         self.prime_error = ""

@@ -70,6 +70,20 @@ def reap_orphan_taps(known: set) -> list:
     Scanned from `/sys/class/net` rather than from any record we keep,
     because the leaked ones are by definition the ones nothing recorded.
     """
+    # THE KERNEL IS READ FIRST, AND THAT ORDER IS THE WHOLE CORRECTNESS OF THIS
+    # SWEEP. Building `known` costs ~2.9 s (`kh-claim ls --json` walks every
+    # claim dir on the box), and a clone is built in ~3.2 s. Read the kernel
+    # last and the snapshot describes a world ~2.9 s older than the interfaces
+    # it is judging: a tap brought up inside that window is live in
+    # /sys/class/net and absent from `known`, so the sweep deletes it out from
+    # under a RUNNING guest. Measured 2026-09-11 — six of twenty-four pool
+    # members were left with no network interface at all, QEMU alive, still
+    # listed free and handed to visitors; `alive()` only checks the pid, so
+    # nothing ever noticed. Read the kernel FIRST and both races are safe: an
+    # interface created after this line is not in `live` and cannot be reaped,
+    # and one already in `live` had its claim taken before it existed, so a
+    # snapshot taken afterwards is guaranteed to contain it.
+    live = cell.live_taps()
     known = set(known)
     try:
         for entry in naming.WALKIN_ROOT.iterdir():
@@ -85,7 +99,7 @@ def reap_orphan_taps(known: set) -> list:
         sys.stderr.write(f"[walkin] cannot read the claim registry ({exc}); skipping the tap sweep\n")
         return []
     reaped = []
-    for tap in cell.live_taps():
+    for tap in live:
         if tap in known:
             continue
         station = cell.TAP_RE.match(tap).group("station")
@@ -93,6 +107,11 @@ def reap_orphan_taps(known: set) -> list:
             reaped.append(tap)
         else:
             sys.stderr.write(f"[walkin] orphan tap {tap} would not go down; the next clone at that index will fail\n")
+    if reaped:
+        # A SUCCESSFUL reap used to be silent, and that is why the race above
+        # cost six pool members before anyone could see it: the only trace was
+        # a prime failing later for a reason that read as the guest's fault.
+        sys.stderr.write(f"[walkin] orphan tap sweep removed {', '.join(reaped)}\n")
     return reaped
 
 
@@ -140,6 +159,9 @@ def reap_orphan_cells(known_slots: set) -> list:
     keyed by SLOT, a leaked one makes the next claim of that slot unbuildable —
     `ip link add wibr<slot>` fails and the watchdog re-fails every tick.
     """
+    # Kernel first — see `reap_orphan_taps` for why the other order deletes the
+    # cell of a clone that is still being built.
+    live = cell.live_cells()
     known_slots = set(known_slots)
     try:
         for entry in naming.WALKIN_ROOT.iterdir():
@@ -155,7 +177,7 @@ def reap_orphan_cells(known_slots: set) -> list:
         sys.stderr.write(f"[walkin] cannot read the claim registry ({exc}); skipping the cell sweep\n")
         return []
     reaped = []
-    for slot in cell.live_cells():
+    for slot in live:
         if slot in known_slots:
             continue
         if cell.cell_down(slot):
@@ -164,6 +186,8 @@ def reap_orphan_cells(known_slots: set) -> list:
             sys.stderr.write(
                 f"[walkin] orphan cell wibr{slot} would not go down; the next claim of slot {slot} will fail\n"
             )
+    if reaped:
+        sys.stderr.write(f"[walkin] orphan cell sweep removed {', '.join(f'wibr{s}' for s in reaped)}\n")
     return reaped
 
 

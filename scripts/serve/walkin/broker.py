@@ -37,7 +37,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import claims, holds, reaper
+from . import cell, claims, holds, reaper
 from . import clone as clone_mod
 from . import spec as spec_mod
 from .warm import BrokerError, Member, Warming
@@ -465,10 +465,10 @@ class Broker(holds.Holding, Warming):
                     hit("walkin.reap.idle")
                     ended.append((member.identity, CLOSE_REASON_IDLE))
                     retired.append(self._end(member, CLOSE_REASON_IDLE))
-                elif not member.clone.alive():
+                elif not member.clone.alive() or (self._spawn and not cell.network_present(member.clone.plan)):
                     hit("walkin.reap.died")
-                    # A pool member whose QEMU died is not a pool member. It is a
-                    # directory and a claim, and both have to go back.
+                    # A member whose QEMU died — or whose tap or cell was deleted
+                    # under it (cell.network_present) — is not a pool member.
                     died.append(member.identity)
                     retired.append(self._end(member, ""))
             self._closes = {u: v for u, v in self._closes.items() if now - v[1] < CLOSE_MEMORY}
