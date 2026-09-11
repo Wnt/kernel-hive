@@ -246,12 +246,28 @@ class TestAnonClaim(AnonRouteCase):
         self.assertEqual({self.routes.random_station(self.pool) for _ in range(50)}, {"rhapsody"})
 
     def test_a_first_visit_plants_the_cookie_once(self):
-        first = self.call("/walkin/state")
+        first = self.call("/walkin/claim", "POST", {"os": "os2warp"})
         self.assertIn(f"{anon.COOKIE_NAME}=", first.set_cookie)
         for attr in ("HttpOnly", "Secure", "SameSite=Lax", "Path=/"):
             self.assertIn(attr, first.set_cookie)
-        again = self.call("/walkin/state", cookies=self.stranger())
+        again = self.call("/walkin/claim", "POST", {"os": "os2warp"}, self.stranger())
         self.assertEqual(again.set_cookie, "", "a visitor who already has one is not re-stamped")
+
+    def test_a_read_only_poll_never_mints_an_identity(self):
+        """The cold-jar race behind the 401s of 2026-09-11 04:23:36.
+
+        The landing page fires two `GET /walkin/state` polls concurrently
+        before any cookie exists. While a read planted one, each minted its own
+        id and the last response to land won the jar — orphaning the identity
+        the claim had just bound the clone to, which `gate.anon_allows` then
+        refused, answering 401 on the visitor's OWN signalling document.
+        """
+        self.assertEqual(self.call("/walkin/state").set_cookie, "")
+        self.assertEqual(self.call("/walkin/state").set_cookie, "")
+        # The write still plants exactly one, and it is the one that holds the
+        # clone: a claim and its signalling fetch can no longer disagree.
+        claim = self.call("/walkin/claim", "POST", {"os": "os2warp"})
+        self.assertIn(f"{anon.COOKIE_NAME}=", claim.set_cookie)
 
     def test_a_cookie_from_a_hostile_client_is_not_taken_as_an_identity(self):
         handler = RecordingHandler(cookies=f"{anon.COOKIE_NAME}=../../etc/passwd")

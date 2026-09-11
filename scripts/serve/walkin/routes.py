@@ -122,7 +122,17 @@ def dispatch(handler, path: str, method: str, broker, user, access: str, budget=
         _reply(handler, 404, {"error": "no such endpoint"})
         return True
     broker.access = access
-    cookie = budget.cookie(user) if budget is not None else ""
+    # The anonymous identity is planted ONLY by a request that BINDS something.
+    # A read binds nothing, and the landing page fires TWO `GET /walkin/state`
+    # polls concurrently on a cold jar: while the read stamped a cookie too,
+    # each poll minted its OWN id and whichever response landed last won the
+    # jar. That orphaned the id `POST /walkin/claim` had just recorded the
+    # clone against, so `gate.anon_allows` no longer recognised the caller as
+    # its holder and answered 401 on the visitor's own signalling document —
+    # measured on the public gallery 2026-09-11 04:23:36 (walkin-os2warp-4:
+    # granted, then five 401s and a `connect-giveup`, and the visitor's next
+    # claim worked instantly). A read must never manufacture an identity.
+    cookie = budget.cookie(user) if (budget is not None and method == "POST") else ""
 
     if path == "/walkin/state" and method == "GET":
         doc = broker.state()
