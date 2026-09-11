@@ -43,7 +43,7 @@ sha2 = "0.11"
 base64 = "0.23"
 time = { version = "0.3", features = ["formatting"] }
 # audio (guest PCM over dbus -> Opus low-latency)
-opus = "0.3"
+opus = "0.4"
 # in-process H.264 (libx264) — replaces the ffmpeg child + pipe-drain AU detection.
 # Pinned EXACT: x264-sys 0.2.3 is a thin -sys crate whose build.rs runs bindgen at
 # BUILD TIME against the SYSTEM <x264.h> (its data/x264.h is just
@@ -59,7 +59,7 @@ x264-sys = "=0.2.3"
 # Bundled Google libyuv conversion kernels. The crate statically builds libyuv
 # and runtime-dispatches C/SSE/AVX2 (and architecture equivalents), so deployment
 # does not depend on a host libyuv package or a single compile-time CPU target.
-yuv-sys = "=0.3.14"
+yuv-sys = "=0.3.15"
 # runtime + misc
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
