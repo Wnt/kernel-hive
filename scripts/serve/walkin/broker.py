@@ -583,9 +583,7 @@ class Broker(holds.Holding, Warming):
         """
         session = member.session
         if session and reason:
-            # The CLONE too: after a reap `own_of` is None, so the fence cannot
-            # match `/signal/<clone>.json` and refuses 401 — ahead of the 410
-            # this memory serves. `holds.Holding.ended_signal_of` reads it back.
+            # The CLONE too; `holds.Holding.ended_signal_of` says why.
             self._closes[session.user_id] = (reason, self._now(), member.identity)
             self._ended[member.identity] = (reason, self._now())
         member.session = None
