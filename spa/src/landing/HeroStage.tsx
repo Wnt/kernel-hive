@@ -40,10 +40,13 @@ import type { HeroSession } from './useHeroSession';
 //  a 44px pill laid on a 400x300 rendering of a 1024x768 desktop covers a tenth
 //  of the exhibit, and the on-screen keyboard — a sibling below the stage —
 //  took its whole height out of a fixed 4:3 box and squeezed the guest into a
-//  letterbox slit. So this page hands StreamView two nodes BELOW the canvas
-//  (ui/chromeDock) and every control portals itself into one of them. The
-//  canvas shows the guest and nothing on top of it, and the picture does not
-//  move when the keyboard opens. The one thing still laid over it is the
+//  letterbox slit. So this page hands StreamView two nodes (ui/chromeDock) and
+//  every control portals into one of them: the right-click arm and keyboard
+//  opener into a strip directly under the canvas (.landing-display — StageMenu
+//  renders nothing here, so its back and ☰ buttons never reach this page at
+//  all), the keyboard sheet into its own region below the caption. The canvas
+//  shows the guest and nothing on top of it, and the picture does not move
+//  when the keyboard opens. The one thing still laid over it is the
 //  conversion wall, which is meant to cover the frozen frame.
 //
 //  WHY THE ELEMENT IS MEMOISED. This subtree re-renders once a second (the
@@ -230,41 +233,54 @@ export function HeroStage({
           ))}
       </div>
 
-      <div className="landing-stage" ref={stageRef} style={{ ['--station-accent' as string]: copy.accent }}>
-        {stream ?? (
-          <div className="landing-stage__poster">
-            {poster && <img className="landing-stage__shot" src={poster} alt={`${copy.name} on screen`} />}
-            <div className="landing-stage__veil">
-              <p className="landing-stage__veil-line">
-                {hero.playable ? heroCaption(state, copy.name, stop, hero.engaged) : heroBlockedLine(hero.caps)}
-              </p>
-              {hero.playable && state !== 'connecting' && (
-                <button
-                  type="button"
-                  className="landing-btn landing-btn--primary"
-                  // `hero.resume`, never null: the machine the visitor was on
-                  // comes back, and a DIFFERENT one only ever comes from a
-                  // switcher chip. Claiming with no station here is what used
-                  // to hand a visitor a new OS for pressing "take it back".
-                  onClick={() => { hero.notePresence(); hero.take(hero.resume); }}
-                >
-                  {resumeLabel(state, hero.resume)}
-                </button>
-              )}
+      {/* The display: the picture and its own control strip, framed as ONE
+          unit (landing.css) so a visitor sees a machine with two controls
+          rather than a picture and a separate button bar below the caption. */}
+      <div className="landing-display" style={{ ['--station-accent' as string]: copy.accent }}>
+        <div className="landing-stage" ref={stageRef}>
+          {stream ?? (
+            <div className="landing-stage__poster">
+              {poster && <img className="landing-stage__shot" src={poster} alt={`${copy.name} on screen`} />}
+              <div className="landing-stage__veil">
+                <p className="landing-stage__veil-line">
+                  {hero.playable ? heroCaption(state, copy.name, stop, hero.engaged) : heroBlockedLine(hero.caps)}
+                </p>
+                {hero.playable && state !== 'connecting' && (
+                  <button
+                    type="button"
+                    className="landing-btn landing-btn--primary"
+                    // `hero.resume`, never null: the machine the visitor was on
+                    // comes back, and a DIFFERENT one only ever comes from a
+                    // switcher chip. Claiming with no station here is what used
+                    // to hand a visitor a new OS for pressing "take it back".
+                    onClick={() => { hero.notePresence(); hero.take(hero.resume); }}
+                  >
+                    {resumeLabel(state, hero.resume)}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {hero.remainingSeconds !== null && hero.budgetSeconds !== null && (
-          <ConversionGate
-            remainingSeconds={hero.remainingSeconds}
-            budgetSeconds={hero.budgetSeconds}
-            expired={hero.expired}
-            stationTitle={copy.name}
-            onRegistered={onRegistered}
-            onSignedIn={onSignedIn}
-          />
-        )}
+          {hero.remainingSeconds !== null && hero.budgetSeconds !== null && (
+            <ConversionGate
+              remainingSeconds={hero.remainingSeconds}
+              budgetSeconds={hero.budgetSeconds}
+              expired={hero.expired}
+              stationTitle={copy.name}
+              onRegistered={onRegistered}
+              onSignedIn={onSignedIn}
+            />
+          )}
+        </div>
+
+        {/* The right-click arm and keyboard opener only: StageMenu renders
+            neither the back nor the ☰ button while docked (nowhere to go
+            back to, and the ☰ panel is full-station chrome), so those two
+            never reach this row. The connection/device notices StreamView
+            would otherwise float on the picture still land here too.
+            Collapses when empty. */}
+        <div className="landing-dock" ref={setControlsEl} />
       </div>
 
       <p className="landing-caption">
@@ -278,10 +294,9 @@ export function HeroStage({
         )}
       </p>
 
-      {/* Everything StreamView would otherwise float on the picture: the back
-          and ☰ buttons, the right-click arm, the keyboard opener, and the
-          connection/device notices. Both nodes collapse when empty. */}
-      <div className="landing-dock" ref={setControlsEl} />
+      {/* The keyboard sheet: its own region below the caption, so opening it
+          never moves the picture above (ui/chromeDock.tsx). Collapses when
+          empty. */}
       <div className="landing-keys" ref={setKeysEl} />
     </div>
     </ChromeDockContext.Provider>

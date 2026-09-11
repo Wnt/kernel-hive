@@ -7,6 +7,7 @@ import type { StreamBannerState, StreamExitReason } from '../../three/streamClie
 import { useMuseum } from '../../state/store';
 import { keyboardLockApi } from './StreamView/keyboardLock';
 import { currentFullscreenElement, leaveFullscreen } from '../fullscreen';
+import { useChromeDock } from '../chromeDock';
 import { isFirefoxEngine } from './StreamView/env';
 import { exitReasonCopy } from './StreamView/exitReason';
 import { useDevicePressure } from './StreamView/useDevicePressure';
@@ -94,6 +95,8 @@ export default function StreamView({
   // MOBILE LAYOUT gate (device, not station archetype): three fixed regions —
   // thin bar / maximized stage / collapsible keyboard sheet.
   const mobile = useMobileLayout();
+  // The landing mini display (chromeDock.ts) — ☰ never mounts there (StageMenu).
+  const docked = useChromeDock() != null;
 
   // coldBoot: frame the connect as a CRT power-on (PowerOnOverlay) instead of a
   // spinner. bootVideo: same-origin recorded power-on clip (BootVideoOverlay),
@@ -560,10 +563,9 @@ export default function StreamView({
           onReconnect={reconnectNow}
         />
 
-        {/* TOUCH affordances — mobile + live only: the one-shot right-click badge
-            (T-1), one-time coachmark, and the trackpad cursor sprite (T-3). Which
-            show depends on the touch model. */}
-        {mobile && mediaLive && (
+        {/* TOUCH affordances — mobile or the landing mini display, live only:
+            the one-shot right-click badge (T-1) and the trackpad sprite (T-3). */}
+        {(mobile || docked) && mediaLive && (
           <TouchOverlays
             touch={touch}
             gestureRef={gestureRef}
@@ -574,12 +576,10 @@ export default function StreamView({
           />
         )}
 
-        {/* On-screen-keyboard opener — mobile's always-on bottom-right badge,
-            mirroring TouchControlBadge's right-click arm on the bottom-left.
-            Hidden once the keyboard is open: closing it is the keyboard
-            sheet's own job (onRequestClose below), so the badge would just be
-            a second, redundant "on" toggle sitting over the sheet. */}
-        {mobile && streamable && !oskOpen && (
+        {/* On-screen-keyboard opener: mobile's bottom-right badge, or (docked)
+            the landing mini display's row — mirrors the right-click arm.
+            Hidden once open: closing it is the keyboard sheet's own job. */}
+        {(mobile || docked) && streamable && !oskOpen && (
           <KeyboardToggleBadge onOpen={() => setOskOpen(true)} />
         )}
       </div>
