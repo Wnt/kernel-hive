@@ -40,8 +40,8 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from . import cell, naming
 from . import clone as clone_mod
-from . import naming
 from . import spec as spec_mod
 
 if TYPE_CHECKING:  # the session is the POLICY half's; a member merely carries one
@@ -147,15 +147,28 @@ class Warming:
             # address clones directly reintroduces the second monitor this
             # ordering is protecting against.
             if not built.prime_network():
-                # The helper's OWN words, not just the verdict. This line said
-                # only "not primed" for 17 days while the reason — the unit
-                # pinning the flat-plane `wi-warm-arp` at a clone inside a cell
-                # — was being discarded by a shell redirect in the template.
+                # TWO DIFFERENT FACTS, AND THEY USED TO SHARE ONE SENTENCE. Both
+                # carry the helper's own words — this line said only "not primed"
+                # for 17 days while a shell redirect discarded the reason.
                 why = built.prime_error or "no diagnosis from the helper"
-                sys.stderr.write(
-                    f"[walkin] {built.identity}: network not primed — the visitor's first page load "
-                    f"will fail until the gateway ARPs it (ledger §6): {why}\n"
-                )
+                if cell.missing_half(built.plan):
+                    # EXPECTED and self-correcting: the member has lost a tap or
+                    # a cell, the watchdog retires it on its next tick
+                    # (`cell.network_present`) and the pool builds a
+                    # replacement. Nothing here is owed a visitor-facing alarm.
+                    sys.stderr.write(f"[walkin] {built.identity}: {why}; retiring it for rebuild\n")
+                else:
+                    # NOT expected, and not recoverable. Measured 2026-09-11: an
+                    # unprimed os2warp guest emitted ZERO ARP frames in 500 s and
+                    # never painted a page, and rhapsody behaved identically over
+                    # 330 s — those stacks do not revalidate a stale neighbour at
+                    # all, so this is the whole session, not a slow first fetch.
+                    # (win311's MS TCP/IP-32 needs no prime and self-repairs in
+                    # ~87 ms — ledger §6 has the per-stack table.)
+                    sys.stderr.write(
+                        f"[walkin] {built.identity}: network not primed — on a golden that does not "
+                        f"revalidate, this visitor's session has no network at all (ledger §6): {why}\n"
+                    )
             if self._daemon:
                 clone_mod.spawn_daemon(built)
         return Member(clone=built, born_at=self._now())

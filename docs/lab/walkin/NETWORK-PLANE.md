@@ -248,12 +248,28 @@ Production clones live in cells and are primed by `wi-clonecell prime`;
 containment harness's throwaway namespaces, a bring-up rig on the flat bridge —
 and its two measured lessons carry over unchanged:
 
-**This is the one real cost of not renumbering, and it hits every station.** A
-golden restores with a warm ARP cache from its retronet capture, so the guest
-already believes `10.99.0.2` lives at **CT 951's** MAC — an address that does not
-exist on `vmbr-wi`. Measured (lane 8): 100% loss from clone to gateway until CT
-952 pinged the clone, then 0% immediately and permanently. Inbound was fine
-throughout, because *receiving* the gateway's ARP is what repairs the entry.
+**This is the one real cost of not renumbering, and it is PER STACK, not per
+plane.** A golden restores with a warm ARP cache from its retronet capture, so
+the guest believes `10.99.0.2` lives at **CT 951's** MAC — an address that
+exists on no walk-in segment. Inbound is fine throughout, because *receiving*
+the gateway's ARP is what repairs the entry.
+
+**The guest does not recover on its own.** This used to read "until it hears the
+gateway's ARP", which invites the reasonable assumption that a stale neighbour
+is revalidated after some timeout and the visitor merely waits. Measured
+2026-09-11, and it is not so:
+
+| golden | stale entry on restore? | unprimed |
+|---|---|---|
+| `os2warp` (OS/2 MPTN) | yes | **never paints.** Zero ARP frames from the guest in 500 s; SYNs at t+0.18/7.3/36.6 s all to CT 951's MAC, then silence. 49 forced probes over 490 s — every reply still to the dead MAC |
+| `rhapsody` (Rhapsody DR2) | yes | same: 22 forced probes over 330 s, zero ARP |
+| `win311` (MS TCP/IP-32) | **no** | self-resolves by broadcast ARP in ~87 ms; priming it costs 0.09 s and buys nothing |
+
+So for a BSD-lineage golden the failure lasts the whole session the plane can
+issue — with WebExplorer showing no error page, just a stalled document and an
+ICQ window reading OFFLINE. Probe any NEW pool OS before assuming either row:
+the prime is cheap enough to run for all of them, but the *warning* when it
+fails only means something for a stack that cannot repair itself.
 
 So the fix is to make the gateway talk first — and **a ping alone is not
 enough**. Every clone of a station carries its golden's MAC (`loadvm` restores

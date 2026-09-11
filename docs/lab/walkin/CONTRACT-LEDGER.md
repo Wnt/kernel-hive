@@ -527,13 +527,18 @@ The live retronet gateway CT 951 is **not modified at all**.
 measured by lane 8 on the real plane: a golden carries a **warm ARP cache from
 its retronet capture**, so `10.99.0.2` resolves to CT 951's MAC — which exists
 on no walk-in segment. The clone's *first* outbound flow fails until it hears
-the gateway's ARP, which repairs the entry permanently. Inside a cell the
+the gateway's ARP, which repairs the entry permanently — and on an os2warp or
+rhapsody golden it never hears one unprompted, so unprimed is not "slow", it is
+dead for the whole session (measured 2026-09-11; `NETWORK-PLANE.md` has the
+per-stack table). Inside a cell the
 gateway's own ARP cannot reach the guest (the NAT namespace terminates L2), so
 **the cell speaks first**: `wi-clonecell prime` broadcasts the gateway's ARP
 from the cell's inner leg, takes the guest's ARP reply as proof the repair
 landed, and pins the guest's MAC in the namespace in the same motion. The
 plane provides the helper; the broker calls it, with the guest resumed under a
-wake lease. This hits every station, not one. (`wi-warm-arp`, the flat-plane
+wake lease. This is per STACK, not per station: win311's MS TCP/IP-32 carries no
+stale entry and self-repairs in ~87 ms, while os2warp and rhapsody never
+revalidate at all. (`wi-warm-arp`, the flat-plane
 ancestor that had CT 952 ping the clone, remains for the plane's own tooling.)
 
 `streamhost/stations/win311/rn-tapnet.sh` (landed 2026-08-25) is the reference

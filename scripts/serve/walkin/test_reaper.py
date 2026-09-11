@@ -18,6 +18,8 @@ still reach anything at all.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -168,3 +170,58 @@ class CloneNetworkHealthTests(unittest.TestCase):
     def test_a_missing_cell_is_not_healthy(self):
         self._up("wi-os2warp-3")
         self.assertFalse(self.cell.network_present(self.plan))
+
+
+class PrimeFailureMessageTests(unittest.TestCase):
+    """What a failed prime is allowed to CLAIM.
+
+    One sentence used to cover two different facts, and only one of them was
+    true. A member that has lost its tap or cell is EXPECTED and self-correcting
+    — the watchdog retires it and the pool rebuilds — so telling an operator
+    "the visitor's first page load will fail" on every one of those is the noise
+    that hid a real 17-day fault once already. A guest that genuinely did not
+    answer is neither expected nor recoverable: measured 2026-09-11, an unprimed
+    os2warp emitted zero ARP frames in 500 s and never painted a page.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        real_root = naming.WALKIN_ROOT
+        naming.WALKIN_ROOT = Path(self.tmp.name)
+        self.addCleanup(lambda: setattr(naming, "WALKIN_ROOT", real_root))
+
+    def _stderr_for(self, missing_half: str) -> str:
+        from . import cell as cell_mod
+
+        real = cell_mod.missing_half
+        cell_mod.missing_half = lambda plan: missing_half
+        self.addCleanup(lambda: setattr(cell_mod, "missing_half", real))
+
+        broker = broker_mod.Broker(REPO / "does-not-exist", REPO, spawn=False)
+        broker._spawn, broker._daemon = True, False
+        plan = SimpleNamespace(tap="wi-os2warp-3", slot=258, identity="walkin-os2warp-3")
+        clone = SimpleNamespace(
+            plan=plan,
+            identity="walkin-os2warp-3",
+            prime_error="wi-clonecell: 10.99.0.19 never answered the cell's gateway ARP in 4s.",
+            spawn=lambda: None,
+            wait_ready=lambda: "paused",
+            prime_network=lambda: False,
+        )
+        buf = io.StringIO()
+        with contextlib.redirect_stderr(buf):
+            broker._bring_up(clone)
+        return buf.getvalue()
+
+    def test_a_lost_tap_is_reported_as_a_rebuild_not_a_visitor_failure(self):
+        out = self._stderr_for("wi-os2warp-3")
+        self.assertIn("retiring it for rebuild", out)
+        self.assertNotIn("has no network at all", out)
+        self.assertIn("wi-clonecell", out, "the helper's own words survive either way")
+
+    def test_a_guest_that_did_not_answer_is_still_reported_loudly(self):
+        out = self._stderr_for("")
+        self.assertIn("has no network at all", out)
+        self.assertNotIn("retiring it for rebuild", out)
+        self.assertIn("wi-clonecell", out)
