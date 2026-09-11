@@ -1,6 +1,7 @@
-// Pure logic behind the conversion gate — the 60-second free look a
-// signed-out stranger gets and the wall at zero that turns it into a passkey
-// (docs/lab/walkin/LANDING-REDESIGN-CONTRACT.md "the anonymous budget"). No
+// Pure logic behind the conversion gate — the free look a signed-out
+// stranger gets (`auth/anon.py BUDGET_SECONDS`) and the wall at zero that
+// turns it into a passkey (docs/lab/walkin/LANDING-REDESIGN-CONTRACT.md "the
+// anonymous budget"). No
 // DOM, no fetch, no Date.now(): every number this module returns is a
 // DISPLAY or a DECISION over a number the caller already has, never a second
 // clock racing the server's. That is what keeps it testable under plain Node
@@ -12,11 +13,11 @@
  *  budget drains (tokens: --ink-muted -> --warn -> --danger, AGENTS.md — no
  *  colour outside that set). Boundaries are FRACTIONS of the budget, not
  *  fixed seconds, so a retuned budget keeps the same feel: the last sixth of
- *  the minute reads urgent, the last half reads at least attentive. */
+ *  it reads urgent, the last half reads at least attentive. */
 export type UrgencyTier = 'calm' | 'attentive' | 'urgent';
 
-const URGENT_FRACTION = 1 / 6; // last 10s of a 60s budget
-const ATTENTIVE_FRACTION = 1 / 2; // last 30s of a 60s budget
+const URGENT_FRACTION = 1 / 6; // the last sixth of the budget, whatever it is
+const ATTENTIVE_FRACTION = 1 / 2; // the last half of the budget
 
 export function urgencyTier(remainingSeconds: number, budgetSeconds: number): UrgencyTier {
   if (remainingSeconds <= 0 || budgetSeconds <= 0) return 'urgent';

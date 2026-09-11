@@ -9,7 +9,7 @@ import './gate.css';
 
 // The conversion gate — the wall a signed-out stranger hits at the end of
 // their intro time (LANDING-REDESIGN-CONTRACT.md "the goal": drive a real
-// machine inside one second, hit a 60-second wall that converts). It renders
+// machine inside one second, hit a wall that converts). It renders
 // OVER the frozen last frame the landing page leaves on screen — this
 // component paints only the scrim and the placard on top of it, never the
 // frame itself, so "your machine is still here" is a fact the visitor can see

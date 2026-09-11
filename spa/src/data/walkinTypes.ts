@@ -15,10 +15,11 @@
 export type WalkinAccess = 'closed' | 'invited' | 'open';
 export type WalkinPool = { os: string; free: number; size: number };
 /**
- * The anonymous visitor's budget — 60 seconds of CONNECTED time, per visitor
- * and not per session, carried across station switches, reloads and
- * back-navigation (docs/lab/walkin/LANDING-REDESIGN-CONTRACT.md, "The
- * anonymous budget").
+ * The anonymous visitor's budget — CONNECTED time, per visitor and not per
+ * session, carried across station switches, reloads and back-navigation
+ * (docs/lab/walkin/LANDING-REDESIGN-CONTRACT.md, "The anonymous budget").
+ * `budgetSeconds` is whatever the server is currently tuned to
+ * (`auth/anon.py BUDGET_SECONDS`) — never assume a value here.
  *
  * Present on `/walkin/state` ONLY when the caller is `role === 'anon'`. It is
  * server-authoritative and keyed on the anonymous visitor cookie: the landing

@@ -67,7 +67,7 @@ lives under `/auth/` because it is an admin control.
 |---|---|---|---|---|
 | `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4 |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = the longest their visit can still last (§3.4): their REMAINING budget once their clock is running, and the un-engaged window on top of it before it is. Never a fresh 60. |
+| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = the longest their visit can still last (§3.4): their REMAINING budget once their clock is running, and the un-engaged window on top of it before it is. Never a fresh 300. |
 | `/walkin/engage` | POST | **anon**, walkin, viewer, admin | `{"clone":"…"}` — must be the caller's own | `{"ok":true}` plus `"anon":{…}` for an anonymous caller. **The visitor touched the machine** (2026-09-10): starts their budget clock, cuts the session back to it, and restamps the broker's idle window — the first production caller `Broker.note_input` has ever had. A clone that is not the caller's is refused **403** `walkin_not_yours`. Idempotent: the second call finds the clock already running. |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
@@ -120,7 +120,7 @@ simultaneous signups cannot both become `bold-turing`.
 | `WALKIN_TTL` | Session hit its TTL | broker |
 | `WALKIN_IDLE` | No input for the idle window | broker |
 | `walkin_closed` | HTTP body error on a refused claim/signup | auth |
-| `WALKIN_ANON_BUDGET` | An anonymous visitor's 60 seconds are spent (§3.4). Emitted as the HTTP body error **and** `reason` on a 403 from `/walkin/claim`, and as the §3.3 message on a 410 from `/signal/<clone>.json` once their clone is frozen | auth |
+| `WALKIN_ANON_BUDGET` | An anonymous visitor's 5 minutes are spent (§3.4). Emitted as the HTTP body error **and** `reason` on a 403 from `/walkin/claim`, and as the §3.3 message on a 410 from `/signal/<clone>.json` once their clone is frozen | auth |
 
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
@@ -160,7 +160,7 @@ anything.
 |---|---|
 | Role | `anon` — synthesized per request, never stored, never granted by an admin |
 | Identity | cookie `osg_anon`, `HttpOnly; Secure; SameSite=Lax; Path=/`, 30 days |
-| Budget | **60 seconds of connected time per VISITOR**, not per session, **counted from their first meaningful input** |
+| Budget | **300 seconds (5 minutes) of connected time per VISITOR**, not per session, **counted from their first meaningful input** |
 | What starts the clock | `POST /walkin/engage` — a real pointer press, tap or key **on the guest**. Never a mousemove, wheel, scroll or focus |
 | Un-engaged release | **120 s** server-side (`anon.UNENGAGED_SECONDS`), **100 s** in the browser (`landing/heroPolicy.ts UNENGAGED_GRACE_MS`) — the page hands its own cell back first, the server is the backstop |
 | Hold after exhaustion | 120 seconds, on their last clone |
@@ -169,7 +169,7 @@ anything.
 
 ```ts
 anon = {                    // GET /walkin/state, present ONLY for role==='anon'
-  budgetSeconds: number,    // 60
+  budgetSeconds: number,    // 300
   remainingSeconds: number, // counts DOWN across switches, reloads and back-nav
                             // — but only once `engaged`; before that it stands
                             // still at the full budget

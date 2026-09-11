@@ -127,6 +127,58 @@ class TestThreadedTtl(HoldCase):
         self.assertEqual(out["ttlSeconds"], 0)
 
 
+# ---- retime: engagement cutting the claim back to the running budget ------
+
+
+class TestRetime(HoldCase):
+    def test_retime_only_ever_shortens(self):
+        out = self.broker.claim("anon:v1", "os2warp", ttl=60)
+        self.assertEqual(self.broker.retime("anon:v1", out["clone"], 90), 60, "a longer ttl must not re-arm it")
+        self.assertEqual(self.broker.retime("anon:v1", out["clone"], 30), 30)
+
+    def test_retime_refuses_someone_elses_clone(self):
+        out = self.broker.claim("anon:v1", "os2warp", ttl=60)
+        with self.assertRaises(broker_mod.BrokerError):
+            self.broker.retime("anon:v2", out["clone"], 30)
+
+    def test_a_budget_longer_than_the_idle_window_survives_it(self):
+        # THE TEST THIS CLASS EXISTS FOR. Before the 2026-09 intro-time change
+        # the anonymous budget (60s) was always shorter than the ordinary idle
+        # window (`broker_mod.IDLE_SECONDS`, 180s), so `Broker.tick`'s idle
+        # branch was mathematically unreachable for an engaged anon session:
+        # its own TTL always expired first. A budget longer than the idle
+        # window inverts that — and nothing else ever restamps
+        # `last_input_at` for this session (`note_input`'s one caller is
+        # `POST /walkin/engage`, fired once per clone,
+        # `landing/useHeroSession.ts noteInput`) — so without `idle_exempt` a
+        # visitor who kept driving for the whole five minutes would be cut off
+        # at three, told they had gone idle while they had not. 420 is a
+        # claim's un-engaged ceiling (300s budget + 120s un-engaged window,
+        # `auth/anon.py AnonBudget.begin`); 300 is what engaging retimes it to.
+        out = self.broker.claim("anon:v1", "os2warp", ttl=420)
+        self.broker.retime("anon:v1", out["clone"], 300)
+        self.clock[0] += broker_mod.IDLE_SECONDS + 1
+        self.assertEqual(self.broker.tick()["ended"], [], "idle reap must not fire on a retimed session")
+        self.assertFalse(self.clone_named(out["clone"]).destroyed)
+
+    def test_the_retimed_ttl_still_ends_it(self):
+        # idle_exempt is not a free pass: the TTL `retime` set is still an
+        # unconditional backstop and ends the session on its own.
+        out = self.broker.claim("anon:v1", "os2warp", ttl=420)
+        self.broker.retime("anon:v1", out["clone"], 300)
+        self.clock[0] += 301
+        report = self.broker.tick()
+        self.assertEqual([code for _, code in report["ended"]], [broker_mod.CLOSE_REASON_TTL])
+
+    def test_an_ordinary_session_still_idle_reaps(self):
+        # idle_exempt is opt-in via retime, never a default: an ordinary
+        # walk-in claim (never retimed) keeps today's behaviour exactly.
+        self.broker.claim("u1", "os2warp")
+        self.clock[0] += broker_mod.IDLE_SECONDS + 1
+        report = self.broker.tick()
+        self.assertEqual([code for _, code in report["ended"]], [broker_mod.CLOSE_REASON_IDLE])
+
+
 # ---- the ticket cannot outlive the session --------------------------------
 
 

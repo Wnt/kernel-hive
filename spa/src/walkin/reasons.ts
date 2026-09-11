@@ -48,8 +48,10 @@ export interface WalkinReasonCopy {
 /**
  * Copy for one code. `ttlSeconds` / `idleSeconds` / `budgetSeconds` are the
  * numbers the SERVER actually ran with, so the sentence stays true if the
- * windows are retuned; the ledger's defaults (1200s TTL, 180s idle, 60s
- * anonymous budget) are the fallback.
+ * windows are retuned; the ledger's defaults (1200s TTL, 180s idle, 300s
+ * anonymous budget) are the fallback — the one production caller with no
+ * budget window of its own to pass (`WalkinPlay.tsx`'s `EndedCard`) relies on
+ * this default matching the live server's.
  */
 export function walkinReasonCopy(
   reason: WalkinReason,
@@ -57,7 +59,7 @@ export function walkinReasonCopy(
 ): WalkinReasonCopy {
   const ttlMinutes = Math.max(1, Math.round((windows.ttlSeconds ?? 1200) / 60));
   const idleMinutes = Math.max(1, Math.round((windows.idleSeconds ?? 180) / 60));
-  const budgetSeconds = Math.max(1, Math.round(windows.budgetSeconds ?? 60));
+  const budgetMinutes = Math.max(1, Math.round((windows.budgetSeconds ?? 300) / 60));
   switch (reason) {
     case 'WALKIN_CLOSED':
       return {
@@ -88,7 +90,7 @@ export function walkinReasonCopy(
     // as a bug.
     case 'WALKIN_ANON_BUDGET':
       return {
-        title: `Your ${budgetSeconds} seconds of intro time are up.`,
+        title: `Your ${budgetMinutes} minutes of intro time are up.`,
         detail:
           'The machine is still here, exactly as you left it. Register with a passkey and you pick it up where '
           + 'it is. No email, no password.',

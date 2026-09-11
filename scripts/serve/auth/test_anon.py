@@ -411,7 +411,10 @@ class TestSwitchReachesStrangers(WalkinCase):
         svc.anon.budget.begin("v2", "walkin-win311-1")
         out = svc.walkin.set_access(self.admin(svc), "closed")
         self.assertGreaterEqual(out["disconnected"], 2)
-        self.assertEqual(svc.anon.budget.remaining("v1"), 60, "forgotten, not merely stopped")
+        # The service's own default, not a literal — this is the one test that
+        # would otherwise silently pin BUDGET_SECONDS at whatever it was the
+        # day this test was written.
+        self.assertEqual(svc.anon.budget.remaining("v1"), anon.BUDGET_SECONDS, "forgotten, not merely stopped")
 
     def test_the_env_floor_lowers_a_stranger_too(self):
         svc = self.service(env={"WALKIN_OPEN": "0"})

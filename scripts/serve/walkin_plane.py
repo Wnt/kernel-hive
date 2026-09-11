@@ -124,11 +124,12 @@ def _watchdog(auth):
     does not queue behind it.
 
     **It sleeps to the next DEADLINE, not to a flat tick**, and that is the
-    difference between a sixty-second budget and a sixty-to-seventy-five-second
-    one. `WALKIN_TICK_SECS` is 15: a twenty-minute walk-in TTL does not care, but
-    a stranger's minute enforced on that grid gives away a quarter of itself. So
-    the sleep is `min(tick, whatever is due soonest)` and the anonymous wall
-    lands within one pass of the instant it is owed.
+    difference between a budget and that same budget plus up to fifteen more
+    seconds given away for free. `WALKIN_TICK_SECS` is 15: a twenty-minute
+    walk-in TTL does not care, but a short anonymous budget enforced on that
+    grid gives away a real slice of itself. So the sleep is `min(tick, whatever
+    is due soonest)` and the anonymous wall lands within one pass of the
+    instant it is owed.
 
     The order inside the loop matters as much as the sleep. `enforce` runs
     FIRST: it freezes an expired stranger's machine and pushes the session's own

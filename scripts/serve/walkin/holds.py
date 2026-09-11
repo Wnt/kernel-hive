@@ -4,7 +4,7 @@ The pool's founding invariant is that **a clone is never handed to a second
 visitor** — a session ends, the machine is destroyed, the next visitor's comes
 off the golden. This module does not weaken that. It adds the one case where a
 machine outlives the session that was on it *for the same human*: the anonymous
-stranger who has just run out of their sixty seconds and is being asked to make
+stranger who has just run out of their five minutes and is being asked to make
 a passkey.
 
 Recycling their clone at that moment would make the ask hollow. The strongest
@@ -28,11 +28,13 @@ decorative instead of real:
     running behind a wall.
   * **The idle reap must not eat the hold.** `last_input_at` is written by
     `POST /walkin/engage` (`walkin/routes.py::_engage`) and by nothing else, so
-    for a visitor who never touches the guest the 180-second "idle" window is
-    still a second, shorter TTL counted from the claim. A hold set at T+60 would
-    be reaped at T+180 by that clock instead of by its own. Freezing therefore
-    restamps `last_input_at`, which is the only honest thing to do with it: the
-    visitor is not idle, they are stopped.
+    without a restamp at freeze time the ordinary 180-second idle window would
+    still be counting from whenever the visitor last engaged — which, once a
+    budget can run longer than three minutes, is well before the wall itself
+    (`retime`, below, exempts the same session from that window the instant it
+    starts spending; freezing is the second half, for the moment it stops).
+    Freezing therefore restamps `last_input_at`, which is the only honest thing
+    to do with it: the visitor is not idle, they are stopped.
 """
 
 from __future__ import annotations
@@ -167,6 +169,16 @@ class Holding:
         the caller is `POST /walkin/engage`, which any visitor can send as often
         as they like. A re-arm that could push `expires_at` out would be a
         browser voting itself more time.
+
+        **It also takes this session out of the ordinary idle reap**
+        (`session.idle_exempt`, `Broker.tick`). `note_input` — the only thing
+        that keeps the idle window's clock current — has exactly one caller,
+        this session's own `POST /walkin/engage`, and that fires once per clone
+        (`landing/useHeroSession.ts noteInput`). A budget under three minutes
+        never noticed, because its own deadline always arrived first; one over
+        three minutes would otherwise be cut short by a window nothing is
+        refreshing, while the visitor is still driving. `expires_at` — set
+        above, never lengthened — remains the backstop regardless.
         """
         with self._lock:
             member = self._members.get(identity)
@@ -174,6 +186,7 @@ class Holding:
                 raise BrokerError(f"{identity} is not yours")
             now = self._now()
             member.session.expires_at = min(member.session.expires_at, now + max(0.0, float(ttl)))
+            member.session.idle_exempt = True
             return member.session.ttl_left(now)
 
     def ticket_ttl_for(self, identity: str, default: int) -> int:
@@ -182,8 +195,9 @@ class Holding:
         The rule, and it is stricter than the one it replaces: **a walk-in
         ticket never outlives the session it belongs to.** `serve_tile` re-mints
         on every signalling fetch, so a fixed five-minute ticket let a reconnect
-        at T+59 buy five more minutes of connect window past a sixty-second
-        budget. Capping at the session's own remaining seconds closes that, and
+        made just before the budget ran out buy a fresh five-minute connect
+        window on the far side of it — most of a visit stolen back from the
+        wall. Capping at the session's own remaining seconds closes that, and
         a frozen session caps at zero — no reconnect, no second tab, no other
         browser.
 
@@ -202,7 +216,7 @@ class Holding:
     def next_expiry(self) -> float | None:
         """The earliest instant any live session ends, or None.
 
-        The watchdog sleeps on this so a sixty-second budget is not enforced by
+        The watchdog sleeps on this so the anonymous budget is not enforced by
         a fifteen-second tick. Sweeps the frozen map on the way past, which is
         the only place it needs sweeping.
         """
