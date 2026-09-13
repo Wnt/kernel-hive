@@ -313,6 +313,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // Visi On: a graphical desktop over PC-DOS 2.00, but it takes over the machine
+  // almost completely and its own commands live on the mouse-driven strip along
+  // the bottom (HELP CLOSE OPEN FULL FRAME OPTIONS TRANSFER STOP), not on chords.
+  // The dos rows' Ctrl+Alt+Del is the honest common ground, as with pcgeos.
+  vision: 'dos',
   openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
   // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
   // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic

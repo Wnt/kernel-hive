@@ -245,7 +245,7 @@ do_compose() {
   mkdir -p "$OUT/rom"
   cp "$MEDIA"/pce/rom/*.rom "$OUT/rom/"
   write_pce_cfg >"$OUT/pce.cfg"
-  log "staged: $DISK (hd0.pbi + $(ls "$DISK"/*.psi | wc -l) .psi disks), $OUT/rom, $OUT/pce.cfg"
+  log "staged: $DISK (hd0.pbi + $(find "$DISK" -name "*.psi" | wc -l) .psi disks), $OUT/rom, $OUT/pce.cfg"
 }
 
 # The 5160 the station emulates. Kept in the builder rather than committed as a
