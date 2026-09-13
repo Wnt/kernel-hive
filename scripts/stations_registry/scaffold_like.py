@@ -278,6 +278,7 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
         bool(sib_launcher_rel) and not (sib_dir / sib_launcher).is_file() and (REPO / sib_launcher_rel).is_file()
     )
     launcher_path = None if shared_launcher else station_dir / sib_launcher
+
     # A sibling may carry station-local debug tooling (golden-bake.sh, qmp.py,
     # shot.sh, sk.py — win98se has all four) referenced by runtime.qemu.auxFiles.
     # The row's text was already rewritten sib->os_id (including these paths),
@@ -301,10 +302,8 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     # _rewrite_like_text (apple2e.keymap -> apple2gs.keymap).
     new_aux_rel = _aux_of(row)
     aux_names = [Path(p).name for p in sib_aux_rel]
-    if len(new_aux_rel) == len(sib_aux_rel):
-        aux_dest_names = [Path(p).name for p in new_aux_rel]
-    else:
-        aux_dest_names = list(aux_names)
+    same_shape = len(new_aux_rel) == len(sib_aux_rel)
+    aux_dest_names = [Path(p).name for p in new_aux_rel] if same_shape else list(aux_names)
     aux_paths = [station_dir / name for name in aux_dest_names]
     like_paths = tuple(
         p
