@@ -321,7 +321,7 @@ tools instead of a person. A wave session runs itself:
   wave's `darklaunch.d` overlay (the SPA-deploy trap) — one command instead of
   the eight hand-run steps that used to cost 5–25 minutes per landing, most of
   it the pre-push gate re-run (shfmt, ruff, the scene tests) and hand-resolving
-  the four append-only shared files (`assembliesByTile.ts`,
+  the four append-only shared files (`assembliesByTile.ts` — since 2026-09-13 its rows live in `assembliesByTile.<n>.ts` shards of 40 that `spa-scene-rows.py` rebuilds, so the 600-line cap is never hit again,
   `machineIdentity.ts`, `release-notes*.json`, `bootrec-tiles.conf`). Its
   `spa-scene-rows.py <id>` rebuilds the two SPA tables from main's table plus
   this station's row **re-inserted at its lineup position** — never a union,

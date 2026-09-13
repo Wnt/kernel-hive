@@ -39,6 +39,12 @@ GENERATED = [
     # position (scripts/dev/spa-scene-rows.py), so these are restored too.
     "spa/src/scene/assembliesByTile.ts",
     "spa/src/scene/machineIdentity.ts",
+    # ...and the rows land in the tables' shards (2026-09-13), so those too.
+    *sorted(
+        str(p.relative_to(REPO))
+        for p in (REPO / "spa/src/scene").glob("*.[0-9]*.ts")
+        if p.name.startswith(("assembliesByTile.", "machineIdentity."))
+    ),
 ]
 
 #: distinct from freedos's pizzaBoxB|crtA|keyboardA|paramMouseA — a copied tuple
@@ -101,8 +107,14 @@ class NewLikeTest(unittest.TestCase):
         # The two SPA scene rows are part of the scaffold now: without them the
         # entry is a lineup member with no hardware binding, which is exactly
         # the red push every wave of 2026-09-03 discovered at push time.
-        for rel in ("spa/src/scene/assembliesByTile.ts", "spa/src/scene/machineIdentity.ts"):
-            self.assertIn(f"  {NEW_ID}: {{", (REPO / rel).read_text(), rel)
+        # (rows live in the tables' shards since 2026-09-13 — read through the parser)
+        from stations_registry.spa_scene import ASSEMBLIES_CONST, IDENTITY_CONST, read_table
+
+        for rel, const in (
+            ("spa/src/scene/assembliesByTile.ts", ASSEMBLIES_CONST),
+            ("spa/src/scene/machineIdentity.ts", IDENTITY_CONST),
+        ):
+            self.assertIn(NEW_ID, read_table(rel, const).blocks, rel)
 
     def test_like_refuses_to_inherit_the_siblings_hardware_tuple(self) -> None:
         refused = _run("new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto")

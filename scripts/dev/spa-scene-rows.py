@@ -20,7 +20,10 @@ only at push time, in vitest, inside somebody's landing window; nine waves paid
 for them on 2026-09-03.
 
 So a landing does not merge these files, it rebuilds them: take main's table,
-insert this station's row at its lineup index, write. That is idempotent by
+insert this station's row at its lineup index, write. Since 2026-09-13 the rows
+live in SHARDS (`assembliesByTile.1.ts`, `.2.ts`, … spread by the index file)
+of at most SHARD_ROWS each, so the 600-line ts-src cap is never reached again;
+the rebuild writes the index and every shard and deletes surplus ones. That is idempotent by
 construction — running it twice produces the same bytes — which is what makes
 it safe to put in `scripts/dev/station-land.sh` and in the `--like` scaffold.
 
@@ -30,6 +33,13 @@ it safe to put in `scripts/dev/station-land.sh` and in the `--like` scaffold.
                      keeps only THIS station's row).
     --like SIBLING   when the station has no row yet, copy SIBLING's, which is
                      the only template that is guaranteed to type-check.
+    --row-from REF   when the working tree lost the station's row (you took
+                     main's sharded tables over your branch's single-file ones),
+                     read the row from REF — normally `origin/<id>` — so a
+                     tuple and an identity finish you already chose survive.
+                     Merge-main recipe for a branch scaffolded before the split:
+                       git checkout origin/main -- spa/src/scene/assembliesByTile.ts spa/src/scene/machineIdentity.ts
+                       scripts/dev/spa-scene-rows.py <id> --base-ref origin/main --row-from <your branch> --apply
     --tuple B,M,K,Mo overwrite body,monitor,keyboard,mouse (use `none` to omit a
                      part). Required with --like: an inherited tuple is a
                      guaranteed test failure.
@@ -89,11 +99,16 @@ def apply_tuple(block: str, parts: dict[str, str]) -> str:
     return "".join(line for line in block.splitlines(keepends=True) if line.strip())
 
 
-def source_row(rel: str, const: str, os_id: str, like: str | None) -> str:
-    """This station's existing row, or a copy of the sibling's, keyed to it."""
+def source_row(rel: str, const: str, os_id: str, like: str | None, row_from: str | None = None) -> str:
+    """This station's existing row, or its row at --row-from REF, or a copy of the sibling's."""
     table = read_table(rel, const)
     if os_id in table.blocks:
         return table.blocks[os_id]
+    if row_from:
+        at_ref = read_table_at(rel, const, row_from)
+        if os_id in at_ref.blocks:
+            return at_ref.blocks[os_id]
+        raise RegistryError(f"{rel}: no row for {os_id!r} at {row_from} either")
     if like is None:
         raise RegistryError(
             f"{rel}: no row for {os_id!r} and no --like SIBLING to copy one from. "
@@ -113,9 +128,17 @@ def rebuilt(rel: str, const: str, os_id: str, row: str, order: list[str], base_r
     return base
 
 
-def report(path: Path, before: str, after: str, apply: bool) -> bool:
-    """Print the change; return True when the file is (or would be) modified."""
+def report(path: Path, before: str, after: str | None, apply: bool) -> bool:
+    """Print the change; return True when the file is (or would be) modified.
+
+    `after is None` means the shard is surplus (the layout shrank) and is deleted.
+    """
     rel = path.relative_to(REPO)
+    if after is None:
+        print(f"  {rel}: surplus shard — removed")
+        if apply:
+            path.unlink()
+        return True
     if before == after:
         print(f"  {rel}: unchanged")
         return False
@@ -127,7 +150,7 @@ def report(path: Path, before: str, after: str, apply: bool) -> bool:
     if lines >= SIZE_WARN_LINES:
         print(
             f"  NOTE {rel} is now {lines} lines against a 600-line ts-src hard cap "
-            "— split the table before the next wave lands, not during one."
+            f"— lower SHARD_ROWS in stations_registry/spa_scene.py (rows per shard)."
         )
     if apply:
         path.write_text(after, encoding="utf-8")
@@ -141,6 +164,11 @@ def main() -> int:
     ap.add_argument("--like", help="sibling station id to copy a missing row from")
     ap.add_argument("--tuple", dest="tuple_arg", help="body,monitor,keyboard,mouse (`none` omits a part)")
     ap.add_argument("--base-ref", help="rebuild on top of this ref's tables (e.g. origin/main)")
+    ap.add_argument(
+        "--row-from",
+        help="take this station's existing row from REF's tables (e.g. its own branch) when the "
+        "working tree no longer has it — the merge-main recipe after the 2026-09-13 shard split",
+    )
     ap.add_argument("--apply", action="store_true", help="write the rebuilt tables")
     ap.add_argument("--check", action="store_true", help="exit 1 if a rebuild would change anything")
     args = ap.parse_args()
@@ -165,7 +193,7 @@ def main() -> int:
     print(f"spa-scene-rows {args.id}: lineup index {order.index(args.id)} of {len(order)}")
     changed = False
     for rel, const in TABLES:
-        row = source_row(rel, const, args.id, args.like)
+        row = source_row(rel, const, args.id, args.like, args.row_from)
         if parts and const == ASSEMBLIES_CONST:
             row = apply_tuple(row, parts)
         table = rebuilt(rel, const, args.id, row, order, args.base_ref)
@@ -178,10 +206,10 @@ def main() -> int:
                     "DISTINCT body|monitor|keyboard|mouse per station — pass --tuple with parts this "
                     f"station actually had ({tuple_of(row)} is the copy)."
                 )
-        after = table.render(order)
-        path = REPO / rel
-        before = path.read_text(encoding="utf-8") if path.is_file() else ""
-        changed |= report(path, before, after, args.apply)
+        for out_rel, after in table.render_files(order, rel).items():
+            path = REPO / out_rel
+            before = path.read_text(encoding="utf-8") if path.is_file() else ""
+            changed |= report(path, before, after, args.apply)
 
     if args.check and changed:
         print("spa-scene-rows: --check FAILED (rebuild differs from the working tree)", file=sys.stderr)
