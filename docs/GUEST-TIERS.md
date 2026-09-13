@@ -100,10 +100,10 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji freedos
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji
   freebsd411 freedos
-  haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
+  haiku helenos hpuxvue kolibrios macos753 macos9 minix2 msdoswin1 ninefront nt351 nt4
   os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
@@ -265,6 +265,7 @@ missing feature.
 | `macos753` | 1 direct-QEMU | tcg | `qemu-adb-relative` | rel | — | on | 30 | — |
 | `macos9` | 1 direct-QEMU | tcg | `qemu-usb-hid-relative` | rel | — | off | 30 | — |
 | `medley` | 3 host-native | maiko/host (X client under Xvfb) | `x11-xtest` | abs | — | off | 25 | — |
+| `minix2` | 1 direct-QEMU | kvm | `none` | none | — | on | 30 | — |
 | `mpf2` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `msdoswin1` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 60 | — |
 | `netbsd14` | 1 direct-QEMU | kvm | `x11warp` | abs | — | on | 30 | — |

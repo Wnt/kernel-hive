@@ -97,6 +97,10 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  minix2: {
+    kind: 'pizzaBox', body: 'towerE', monitor: 'crtF',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
   // macsys1 — the Macintosh 128K is an ALL-IN-ONE: the 9-inch tube, the 68000 and
   // the floppy drive are one beige box, so the assembly carries NO separate body.
   // compactA alone is the machine (scaffolded as compactA|compactA, which put two

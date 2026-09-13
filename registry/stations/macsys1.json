@@ -39,13 +39,13 @@
     }
   },
   "render": {
-    "signalOrder": 88,
-    "stationsManifestOrder": 86,
+    "signalOrder": 89,
+    "stationsManifestOrder": 87,
     "stationsManifestPrelude": "\n# macsys1 (VMID 199) — Macintosh 128K, System 1.0 / Finder 1.0 (1984), host-native MAME mac128k.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 102,
+    "bindingOrder": 103,
     "bindingPrelude": "",
-    "goldenOrder": 86
+    "goldenOrder": 87
   },
   "stationDir": "macsys1",
   "lifecycle": "production",
@@ -92,7 +92,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 199,
-    "bringUpOrder": 102,
+    "bringUpOrder": 103,
     "x11": {
       "display": ":73",
       "geometry": "1024x768x32",

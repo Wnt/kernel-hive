@@ -137,6 +137,11 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
+  // TODO(minix2): exhibit finish copied from freedos — set the real era cues.
+  minix2: {
+    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
+    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+  },
   // TODO(macsys1): exhibit finish copied from apple2e — set the real era cues.
   macsys1: {
     caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
