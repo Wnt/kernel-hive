@@ -954,12 +954,126 @@ provenance on branch `origin/vision-ptyb` (`movemouse.py` + the `pce.cfg` serial
 swap); nothing from it is on `vision-deliver`.
 
 
+## POINTER 1:1 pass (Claude Opus 5, 2026-09-13, ~14:40-16:00Z)
+
+**The sync-alias clamp made every delta land. It did not make the guest cursor
+and the host pointer agree on where they are.** One corner slam does, and with it
+the station meets the wave's 1:1 bar: five targets, two laps, **0 px error on all
+ten**, plus a click that opens a window.
+
+Rig: a copy of the deployed launcher (`SH_STATION=visionc294`,
+`VISION_BASE=/data/vms/sandbox/vision-ptr2/copyA`, the real
+`/data/vms/streamhost/assets/vision` bound read-only, display `:294`, claim
+`display/294`). The live `streamhost@vision` was never touched.
+
+### 1. The deployed binary really does carry the clamp
+
+`objdump -d` of `/data/vms/streamhost/assets/vision/rootfs/opt/pce/bin/pce-ibmpc`
+over `chr_mouse_add_packet` shows `$0xffffff88` (-120) and `$0x78` (120) in the
+msys branch, alongside the untouched `$0xffffff81 / $0x7f` (-127/127) of the
+other protocols. The fix of §POINTER DELIVERY is on the box, not just in git.
+
+### 2. The residual error was an OFFSET, not a scale, and it is 40 px
+
+Straight out of the launcher's own `calibrate_pointer` walk, with the host
+pointer parked at XTEST (140,140), the guest arrow's 22x36 sprite sat at bbox
+origin (130,180) — hotspot (140,**180**). Scale was already perfect; the station
+was 40 px out in Y and would have been some other number on the next boot,
+because Visi On owns its cursor and sees only Mouse Systems *deltas*. Equal
+deltas preserve an offset forever; §LISTING pass 3.1 saw the same thing and
+called it "there is no absolute correspondence to declare".
+
+### 3. A clamp removes what a delta cannot: the corner slam
+
+Two REAL absolute moves — `mousemove 1279 799`, then `mousemove 0 0`. The second
+delivers a delta of (-1279,-799), larger than any possible guest cursor
+coordinate, so the guest arrow bottoms out at ITS (0,0) in the same instant the
+host pointer bottoms out at its own. Measured, frames `h1-br/h2-tl/h3-40/h4-140`:
+
+| step | host XTEST | guest sprite bbox origin | hotspot error |
+| ---- | ---------- | ------------------------ | ------------- |
+| after the calibration walk | (140,140) | (130,180) | (0,**+40**) |
+| slam bottom-right | (1279,799) | (1276,792) — clamped | — |
+| slam top-left | (0,0) | (0,0) — clamped | **(0,0)** |
+| then | (40,40) | (30,40) | (0,0) |
+| then | (140,40) | (130,40) | (0,0) |
+
+It has to be two absolute moves and not a relative overshoot: a clamped X pointer
+emits no further `MotionNotify`, which is exactly why the daemon's own
+`HOME_DELTA = -8192` slam was a no-op here (§LISTING pass 3.3).
+
+This is now `home_pointer()` in `streamhost/stations/vision/vision-inner.sh`,
+run once after `calibrate_pointer`, parking the pointer at the screen centre.
+
+### 4. The proof: five targets, two laps, 0 px
+
+Targets on the published 1280x800 surface, returning to the centre between each
+(so lap 2 is a genuine re-approach, not a continuation). Readback is
+`scripts/dev/fb-diff-bbox.py --split`, which reports the EXACT 22x36 sprite bbox
+rather than an estimate. Sprite geometry from §3: hotspot = bbox origin + (10,0),
+centroid = hotspot + (0.5,17.5).
+
+| target | lap 1 sprite bbox | lap 2 sprite bbox | hotspot error, both laps |
+| ------ | ----------------- | ----------------- | ------------------------ |
+| (20,20)     | (10,20)   | (10,20)   | **0,0** |
+| (1240,20)   | (1230,20) | (1230,20) | **0,0** |
+| (20,760)    | (10,760)  | (10,760)  | **0,0** |
+| (1240,760)  | (1230,760)| (1230,760)| **0,0** |
+| (640,400)   | (630,400) | (630,400) | **0,0** |
+
+Both laps are **byte-identical** frames (`cmp`), so there is no drift at all
+between them, and this run is on the RESET PATH: a cold relaunch of the launcher
+whose `vision-inner.sh` does the homing itself, with no hand-driven slam
+anywhere. Frames `/data/vms/sandbox/vision-ptr2/final/L{1,2}-<x>-<y>.png`.
+At (20,760) the sprite's own cluster merges with the HELP button's repaint (Visi
+On reacts to the hover), so that row's bbox is the merged region; the position is
+confirmed by the lap-1/lap-2 byte-identity and by the click proof below.
+
+`scripts/dev/cursor-locate-cv.py check` agrees on the centre target —
+`centroid=(641.0,418.0) want=(640.5,417.5) err=(+0.5,+0.5) score=1.0000` — and
+reports **AMBIGUOUS (score 0.0154, second 0.0154, an exact tie)** on the four
+corner targets. That is a real limitation of the tool worth writing down: its
+XOR-consistency cost compares a hypothesised sprite region against the same
+columns ±36 rows away, and Visi On's background is a *periodic* fine dither, so
+over a large uniform patch of it every candidate position ties. Use it where the
+cursor sits on or near real content; use `fb-diff-bbox.py --split` (or `learn`'s
+own two-frame differencing) where it sits on open desktop. A `--near X,Y` search
+window would fix it and is the obvious next 10 lines in that file.
+
+### 5. Click proof
+
+`mousemove 60 778` (HELP in the command strip) + `click 1`:
+`cursor-locate-cv.py react` reports `changed_pixels=30418 bbox=(0,712,1279,795)
+REACTED`, and the frame reads **"Select what you need help with."** above the
+command strip. Frames `/data/vms/sandbox/vision-ptr2/final/c{0-aim,1-click}.png`.
+
+### 6. What changed
+
+One file: `vision-inner.sh` gains `home_pointer()`. No daemon change, no new
+backend, no device-set change, no new patch. `SH_INPUT_BACKEND=x11test`,
+`SH_X11TEST_ABS=1`, `pointerRel: false`, `mouse_div_x=2 / mouse_div_y=4` all
+stand. Registry `reset.mouse` now carries the numbers above instead of "OPEN".
+
+### 7. A launcher trap found on the way (still OPEN)
+
+A relaunch of the rig sat in `reap_previous` for **8 minutes** and never started
+the new container: `systemd-nspawn --kill-signal=SIGTERM` delivers SIGTERM to
+pid 2, which is `bash /work/inner.sh` blocked in `wait "$PCEPID"` — bash defers
+the signal until `wait` returns, so the container logs "Trying to halt container.
+Send SIGTERM again" and stays up, and the launcher's own reap ladder blocked in a
+`$(station_emu_pids)` command substitution. Killing the launcher, then PCE, then
+the nspawn by verified `/proc/<pid>/exe` cleared it and the next launch reached
+the desktop in ~2 minutes. This is the same OPEN item as the "~3 min reap" below,
+one level deeper: the cure is a `trap` in `vision-inner.sh` that forwards SIGTERM
+to PCE, so the container dies on the first signal.
+
+
 ## OPEN items
 
 | Item | Next command |
 | ---- | ------------ |
-| ~~Pointer~~ — **CLOSED** by the sync-alias clamp (§POINTER DELIVERY pass): 31/31 moves land, every edge recovers, click opens a window | — |
-| The launcher's own `relaunch` reap takes ~3 min, long enough that a caller with a 2-minute timeout kills it mid-reap and orphans a `pce-ibmpc` (observed once, §LISTING pass 1) | measure `time streamhost/stations/vision/x11-runtime.sh` and shorten `reap_previous`'s 40x0.25 s ladder |
+| ~~Pointer~~ — **CLOSED and 1:1**: the sync-alias clamp (§POINTER DELIVERY) plus `home_pointer()`'s corner slam (§POINTER 1:1 pass) — five targets, two laps, 0 px error on all ten, click opens a window | — |
+| The launcher's `relaunch` reap takes ~3 min and can hang indefinitely: nspawn's SIGTERM reaches `bash inner.sh` blocked in `wait`, which defers it (§POINTER 1:1 pass 7). Observed 8 min with no new container | add `trap 'kill -TERM $PCEPID' TERM` around the `wait` in `vision-inner.sh`, then re-time `x11-runtime.sh` |
 | `SH_KEY_MIN_HOLD_MS=120` / `SH_KEY_MIN_GAP_MS=120` was never bisected downward — it is what worked first, not a measured floor | bisect on a copy |
 | `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but never started | §Publish — now moot if the station lists |
 

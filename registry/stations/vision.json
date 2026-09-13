@@ -62,7 +62,7 @@
       "method": "x11-xtest",
       "absolute": true,
       "present": true,
-      "device": "Mouse Systems-protocol serial mouse on COM1, fed by PCE's x11 terminal from the host X pointer + the 83-key XT keyboard over XTEST keys",
+      "device": "Mouse Systems-protocol serial mouse on COM1, fed by PCE's x11 terminal from the host X pointer (the station's pce-x11-nograb + pce-msys-sync-alias patches), homed once at launch by a corner slam so absolute XTEST lands 1:1 on Visi On's own cursor; 83-key XT keyboard over XTEST keys",
       "scale": 1.0,
       "offset": [
         0,
@@ -176,8 +176,8 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "OPEN — see docs/lab/VISION-WAVE.md §Pointer",
-    "keyboard": "OPEN — see docs/lab/VISION-WAVE.md §Keyboard",
+    "mouse": "PROVEN 2026-09-13: absolute XTEST on the 1280x800 Xvfb root lands on Visi On's arrow with 0 px error. Five targets (20,20) (1240,20) (20,760) (1240,760) (640,400), TWO laps returning to centre between each, all ten frames: guest arrow sprite (22x36, XOR) bbox origin = (x-10, y) exactly, centroid = (x+0.5, y+17.5) exactly, i.e. hotspot == the requested XTEST pixel, err 0/0 px on both axes and no drift between lap 1 and lap 2. Scale 1.000 px per XTEST px on both axes (mouse_div_x=2 / mouse_div_y=4 cancels PCE's fx=2/fy=4 aspect fit). Two things make it absolute: pce-msys-sync-alias.patch (a dx of -127..-121 or wire dy of 121..127 aliases the Mouse Systems sync byte 0x80..0x87 and Visi On drops that packet, so large leftward moves used to vanish and the arrow ratcheted into a corner) so no delta is ever lost, and vision-inner.sh's home_pointer() corner slam ((w-1,h-1) then (0,0)) which clamps guest and host cursor together at (0,0) and zeros the constant offset Visi On's delta-only mouse would otherwise keep (measured (0,+40) px without it). Click proof: XTEST click on HELP in the command strip prints 'Select what you need help with.'; click on OPEN then Archives opens the Help window. Measured with scripts/dev/fb-diff-bbox.py --split (exact 22x36 sprite readback) and scripts/dev/cursor-locate-cv.py check (centre target: err (+0.5,+0.5), score 1.0000).",
+    "keyboard": "PROVEN 2026-09-13: VISION typed over XTEST at SH_KEY_MIN_HOLD_MS=120 / SH_KEY_MIN_GAP_MS=120 launches Visi On from the C:\\> prompt with no dropped or doubled character, on the race rig and on the station launcher. 120/120 is what worked first, NOT a measured floor — nobody has bisected downward.",
     "fixture": "Visi On 1.0 at rest: the stippled Visi On desktop with the Services window open on Archives, its `start install remove Printing` menu line, and the command strip along the bottom (HELP CLOSE OPEN FULL FRAME OPTIONS TRANSFER STOP). resetMode=relaunch with no save state — PCE's ibmpc has none: the launcher copies hd0.pbi (Visi On installed) and VOAPP1/2.psi fresh from assets/vision/disk, cold-boots the 5160, and vision-inner.sh types VISION at the C:\\> prompt once the screen settles."
   },
   "notes": [
