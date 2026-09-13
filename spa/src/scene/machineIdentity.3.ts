@@ -108,9 +108,8 @@ export const EXHIBIT_IDENTITIES_3 = {
     badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
     kit: 'workstation',
   },
-  // TODO(vision): exhibit finish copied from lisa — set the real era cues.
   vision: {
-    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
-    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
+    caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
+    badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office80',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

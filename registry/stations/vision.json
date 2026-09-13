@@ -129,7 +129,7 @@
     }
   },
   "spa": {
-    "archetypeId": "beige-desktop-crt",
+    "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#7FB069",
     "eraLabel": "1983 · Visi On 1.0"

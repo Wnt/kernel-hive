@@ -1186,11 +1186,11 @@ emit domainos \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/domainos/domainos.keymap" \
   --env-append-file "$T/domainos/station.env.fixture"
 
-# vision (VMID 152) — TODO one line; scaffolded from lisa.
+# vision (VMID 194) — VisiCorp Visi On 1.0 on an IBM 5160 XT under PCE, sandboxed in systemd-nspawn.
 emit vision \
-  --tile vision --udp 54152 --x11 --x11-display :93 --capture x11 --pointer \
+  --tile vision --udp 54194 --x11 --x11-display :94 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/vision/x11-runtime.sh" --aux-file "$T/vision/lisa-inner.sh" \
+  "$T/vision/x11-runtime.sh" --aux-file "$T/vision/vision-inner.sh" \
   --env-append-file "$T/vision/station.env.fixture"
 
 # ---------------------------------------------------------------------------
