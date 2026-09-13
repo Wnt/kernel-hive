@@ -77,6 +77,10 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  fmtowns: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
   oberon: {
     kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtD',
     keyboard: 'keyboardA', mouse: 'paramMouseA',

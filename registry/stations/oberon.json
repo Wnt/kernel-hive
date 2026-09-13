@@ -66,7 +66,7 @@
     "stationsManifestOrder": 84,
     "stationsManifestPrelude": "\n# oberon (VMID 195) — ETH Oberon System 3 / PC Native 2.3.6 (13 May 1999).\n#   VERBATIM LAUNCHER: disk.qcow2 (asig/native-oberon installed image, raw->qcow2)\n#   is the ONLY persistent block device (the empty floppy is qcow2 so savevm accepts it) and holds the savevm 'golden' vmstate. -vga std\n#   VESA 1280x1024x8, sb16 -> dbus audiodev, PS/2 relative pointer (dbus-rel),\n#   one ne2k_pci NIC (slirp restrict=on until the retronet plane is proven).\n",
     "bringUpGroup": 4,
-    "bindingOrder": 97,
+    "bindingOrder": 98,
     "bindingPrelude": "",
     "mockManifestOrder": 4,
     "goldenOrder": 84,
@@ -190,7 +190,7 @@
         "reason": "registry source pins pc-i440fx-11.0,acpi=off, -vga std, IDE disk + empty floppy, sb16, one ne2k_pci; the launcher swaps only the NIC backend (slirp restrict=on -> tap) when rn-tapnet.sh ships"
       }
     },
-    "bringUpOrder": 97
+    "bringUpOrder": 98
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",
