@@ -277,6 +277,20 @@ one-time cold core — pin it per station and let the cache warm once; check
 
 Bare-metal/Proxmox host provisioning one-shots live under [`provision/`](#directories) below (`provision/hw-acceptance.sh`, `provision/pve-zfs-pool.sh`, `provision/pve-macos-vm.sh`, `provision/pve-win11-vm.sh`, `provision/preserve-guest-images.sh`, `provision/build-pve-qemu-fastpoll.sh`, `provision/build-seabios-int16if.sh`, `provision/provision-dev-ct.sh`).
 
+## Framebuffer proof tools
+
+Rule 9: the framebuffer is the only proof a guest reacted — these turn a
+screenshot into a fact instead of an eyeball. Full detail and examples:
+[`docs/lab/INPUT-DEBUGGING.md`](../docs/lab/INPUT-DEBUGGING.md#finding-the-pointer-in-a-frame-without-a-human-looking-at-it).
+
+| tool | use when |
+|------|----------|
+| `dev/cursor-locate.py` | DEFAULT pointer locator — hard-edged sprite, exact match, no guessing (`learn`/`find`/`track`/`check`) |
+| `dev/cursor-locate-cv.py` | The cursor is XOR/INVERTING (`cursor-locate.py learn` says AMBIGUOUS everywhere) — same verbs, needs OpenCV |
+| `dev/fb-react.py` | "Did the guest react at all" — masked, counted pixel diff between two frames, gates a race runner |
+| `dev/fb-diff-bbox.py` | Bounding box of what changed between two frames, split into old/new cursor clusters — the XOR-cursor readback tool |
+| `dev/cv-venv.sh` | Builds/checks the per-host OpenCV venv `cursor-locate-cv.py` needs (`/data/vms/tools/cv-venv/$(hostname)`) — run once per host, never installs OpenCV into a system python |
+
 ## Scene-v2 agent toolbox
 
 Future scene-v2 briefs should use these wrappers instead of rebuilding raw

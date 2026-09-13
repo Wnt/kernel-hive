@@ -34,20 +34,20 @@ report/commit that added this file.
 
 REQUIRES A VENV -- OpenCV is installed nowhere on labhost's or CT950's system
 python, and it must stay that way (AGENTS.md rule: no apt/pip into a system
-python). Build the venv on the side that will RUN this tool (labhost and
-CT950 have different pythons; /data is shared so the same venv path is
-visible from both):
-
-    python3 -m venv /data/vms/sandbox/<slot>/cv-venv
-    /data/vms/sandbox/<slot>/cv-venv/bin/pip install opencv-python-headless numpy pillow
+python). `scripts/dev/cv-venv.sh` builds a per-host venv at
+`/data/vms/tools/cv-venv/$(hostname)` (labhost and CT950 have different
+pythons; /data/vms is shared and durable, so the same path rule resolves on
+both). Run `scripts/dev/cv-venv.sh` once per host before using this tool.
+This script then bootstraps ITSELF into that venv -- run it with plain
+`python3` from either host's system python and it re-execs into the venv
+python automatically. If the venv is missing it prints
+`run scripts/dev/cv-venv.sh first` and exits 2.
 
 Example:
 
-    ssh lab '/data/vms/sandbox/vision-list/cv-venv/bin/python3 \\
-        /data/vms/sandbox/vision-list/repo/scripts/dev/cursor-locate-cv.py \\
+    ssh lab 'python3 /data/vms/sandbox/vision-list/repo/scripts/dev/cursor-locate-cv.py \\
         learn s-000.png s-x1.png --out cursor.npz'
-    ssh lab '/data/vms/sandbox/vision-list/cv-venv/bin/python3 \\
-        /data/vms/sandbox/vision-list/repo/scripts/dev/cursor-locate-cv.py \\
+    ssh lab 'python3 /data/vms/sandbox/vision-list/repo/scripts/dev/cursor-locate-cv.py \\
         find cursor.npz s-x2.png'
 
     learn A.png B.png --out T.npz     two frames differing ONLY by cursor
@@ -65,21 +65,25 @@ Example:
 from __future__ import annotations
 
 import argparse
+import os
+import platform
 import sys
 from pathlib import Path
 
 try:
     import cv2
-except ImportError as exc:  # pragma: no cover - environment guard
-    raise SystemExit(
-        "cursor-locate-cv: this tool needs OpenCV, which is not on the system "
-        "python (by design -- AGENTS.md forbids installing it there). Build a "
-        "venv on the side that will run this: "
-        "`python3 -m venv /data/vms/sandbox/<slot>/cv-venv && "
-        "/data/vms/sandbox/<slot>/cv-venv/bin/pip install "
-        "opencv-python-headless numpy pillow`, then run this script with "
-        "that venv's python3."
-    ) from exc
+except ImportError:
+    # Not on the system python (by design -- AGENTS.md forbids installing
+    # OpenCV there). Re-exec into this host's per-host venv, built by
+    # scripts/dev/cv-venv.sh at /data/vms/tools/cv-venv/$(hostname) -- the
+    # same path rule that script uses, so no per-caller configuration is
+    # needed. Keeps the CLI unchanged: `python3 cursor-locate-cv.py ...`
+    # just works once the venv exists.
+    venv_python = Path("/data/vms/tools/cv-venv") / platform.node() / "bin" / "python3"
+    if not venv_python.is_file():
+        print("run scripts/dev/cv-venv.sh first", file=sys.stderr)
+        raise SystemExit(2) from None
+    os.execv(str(venv_python), [str(venv_python), *sys.argv])
 
 import numpy as np
 from PIL import Image

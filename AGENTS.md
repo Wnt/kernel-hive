@@ -90,7 +90,7 @@ arbitrary. Do not re-expand this file; put the detail there.
 | What a word means (station, seed, checkpoint, scene…) | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
 | Understand how any of this works | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — tiers, I/O paths, costs |
 | Drive a guest / run a command in one | [`docs/lab/LABCTL.md`](docs/lab/LABCTL.md); start with `labctl facts <tile>` |
-| Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) |
+| Debug pointer, tap, drag, double-click | [`docs/lab/INPUT-DEBUGGING.md`](docs/lab/INPUT-DEBUGGING.md) — `cursor-locate.py` for an exact sprite, `cursor-locate-cv.py`/`fb-react.py` for an XOR cursor or "did the guest react" |
 | Debug keys vanishing or scrambling | [`ADD-NEW-OS-PLAYBOOK.md` §5.1](docs/lab/ADD-NEW-OS-PLAYBOOK.md#51-keyboard-only-exhibits--pacing-layout-and-the-type-in-demo) |
 | Debug ANY streaming complaint | [`docs/lab/STREAM-DEBUGGING.md`](docs/lab/STREAM-DEBUGGING.md) — start with the log plane, not a repro |
 | Recapture a checkpoint | [`docs/lab/checkpoint-guard.md`](docs/lab/checkpoint-guard.md) |

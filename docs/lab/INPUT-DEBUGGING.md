@@ -575,9 +575,35 @@ position looks "changed" and `cursor-locate.py` returns `AMBIGUOUS` everywhere
 (hit on `vision`, VisiCorp Visi On 1.0 — see `docs/lab/VISION-WAVE.md` Sec 4).
 Reach for `scripts/dev/cursor-locate-cv.py` instead — same `learn`/`find`/`check`
 verbs plus `react` (did the guest change independent of cursor motion), built on
-OpenCV in a venv (`cv-venv/bin/pip install opencv-python-headless numpy pillow`,
-never the system python). `cursor-locate.py` stays the default for every
-hard-edged sprite; the OpenCV tool is strictly the XOR-cursor fallback.
+OpenCV, which lives nowhere in labhost's or CT950's system python and never
+will. Run `scripts/dev/cv-venv.sh` once per host first — it creates (or checks)
+a per-host venv at `/data/vms/tools/cv-venv/$(hostname)` (labhost and CT950
+have different pythons; `/data/vms` is shared and durable, unlike a sandbox
+`wt.sh rm` deletes). After that, run `cursor-locate-cv.py` with plain
+`python3` from either host: it tries `import cv2`, and on failure `execv`s
+itself into that same per-host venv path, so the tool's CLI never changes. No
+venv yet → it prints `run scripts/dev/cv-venv.sh first` and exits 2.
+`cursor-locate.py` stays the default for every hard-edged sprite; the OpenCV
+tool is strictly the XOR-cursor fallback.
+
+**`scripts/dev/fb-react.py`** answers a narrower question than either locator:
+not "where is the cursor" but "did the guest change at all", with a mask for
+regions you don't care about (the cursor itself, a ticking clock) so a click
+that moves a few hundred pixels isn't lost in noise, or mistaken for one that
+didn't happen. Needs only numpy/PIL, no venv:
+
+```bash
+python3 scripts/dev/fb-react.py react before.png after.png --mask 0,0,32,32 --min-count 50
+```
+
+**`scripts/dev/fb-diff-bbox.py`** is the XOR-cursor readback tool: two frames
+taken at two pointer positions differ in exactly two places (old position,
+new position), and `--split` reports both clusters instead of one bbox over
+both:
+
+```bash
+python3 scripts/dev/fb-diff-bbox.py before.png after.png --split
+```
 
 Two things to know before trusting a result:
 
