@@ -137,9 +137,8 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
-  // TODO(xenix): exhibit finish copied from freedos — set the real era cues.
   xenix: {
-    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
-    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+    caseTint: '#cfc7b4', accentTint: '#4f8a8b', tintMix: 0.34,
+    badge: 'SCO XENIX 386', spec: '80386 • SYSTEM V/386 2.3.4', kit: 'office90',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

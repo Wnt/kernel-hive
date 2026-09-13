@@ -264,6 +264,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "xenix": {
+    "label": "Look around a 1989 Unix",
+    "lines": [
+      "uname -a",
+      "who",
+      "ls /usr"
+    ],
+    "runCommand": "ls -l /unix",
+    "perCharMs": 80
+  },
   "zxspectrum": {
     "label": "Type in a demo program (one key = one keyword)",
     "lines": [

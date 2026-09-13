@@ -97,8 +97,10 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // A 1989 ISA AT-class box under a plain VGA monitor: the same beige PC as
+  // freedos, distinguished by the taller towerE body (freedos is pizzaBoxB).
   xenix: {
-    kind: 'pizzaBox', body: 'towerE', monitor: 'crtA',
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtA',
     keyboard: 'keyboardA', mouse: 'paramMouseA',
   },
 } as const satisfies Record<string, Assembly>;

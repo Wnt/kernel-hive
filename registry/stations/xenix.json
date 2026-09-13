@@ -177,33 +177,35 @@
   "spa": {
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
-    "accentColor": "#5fa85f",
-    "eraLabel": "TODO(freedos): 1994 · DOS era",
+    "accentColor": "#4f8a8b",
+    "eraLabel": "1989 · Unix on the PC",
     "pointerRel": true
   },
   "museum": {
     "id": "xenix",
-    "displayName": "TODO(freedos): FreeDOS",
-    "year": 1994,
-    "lineage": "TODO(freedos): MS-DOS compatible, open source",
+    "displayName": "SCO Xenix 386",
+    "year": 1989,
+    "lineage": "Microsoft's Unix (AT&T V7 → System V), sold to SCO in 1987",
     "arch": "i386",
-    "ramMB": 64,
-    "notes": "TODO(freedos): The living continuation of the DOS command line, still shipping today.",
-    "accent": "#5fa85f",
-    "era": "1990s",
+    "ramMB": 16,
+    "notes": "Microsoft sold Unix before it sold DOS. Xenix was the most-installed Unix of the 1980s; Multiscreen (Alt+F1..F4) is where Linux's virtual consoles come from.",
+    "accent": "#4f8a8b",
+    "era": "1980s",
     "eraSoftware": [
-      "EDIT",
-      "FDISK",
-      "4DOS",
-      "Arachne browser"
+      "sh / csh",
+      "vi",
+      "Multiscreen (Alt+F1..F4)",
+      "SCO business shell",
+      "uucp"
     ],
-    "periodBrowser": "Arachne / Lynx (DOS)",
+    "periodBrowser": "none (SCO TCP/IP was a separate product)",
     "iconicApps": [
-      "Rogue",
-      "Nibbles",
-      "DOOM (shareware)"
+      "vi",
+      "uucp",
+      "nroff",
+      "Microsoft C for Xenix"
     ],
-    "blurb": "TODO(freedos): The DOS command prompt that never died — C:\\> is still alive and well."
+    "blurb": "Microsoft's own Unix, grown up on the 386 — and the reason your Linux box switches consoles with Alt+F2."
   },
   "emulator": {
     "family": "QEMU",
@@ -224,5 +226,15 @@
   "migrationExceptions": [],
   "notes": [
     "scaffolded from freedos on 2026-09-13; TODO: media, museum, spa"
-  ]
+  ],
+  "demoProgram": {
+    "label": "Look around a 1989 Unix",
+    "lines": [
+      "uname -a",
+      "who",
+      "ls /usr"
+    ],
+    "runCommand": "ls -l /unix",
+    "perCharMs": 80
+  }
 }
