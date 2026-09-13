@@ -19,7 +19,7 @@ taken by `station-land.sh`). See `WAVE-COORDINATION.md`.
 | sibling (`--like`) | `freedos` |
 | hardware tuple | `towerE|crtA|keyboardA|paramMouseA` (DISTINCT from freedos's `pizzaBoxB|crtA|keyboardA|paramMouseA`) |
 | render orders | as scaffolded by `stations-registry.py new --like` — never hand-edited |
-| device set | `qemu-system-i386 -machine isapc -cpu 486 -m 16 -vga std`, one IDE disk with an EXPLICIT CHS geometry, SB16 (ISA) audio, no NIC, TCG (no `-enable-kvm`) |
+| device set | `qemu-system-i386 -machine isapc -cpu 486 **-enable-kvm** -m 16 -vga std`, one IDE disk at `/data/gallery-guests/Xenix/xenix.qcow2` with AUTO geometry, SB16 (ISA) audio, no NIC. **KVM is load-bearing — under TCG this guest cannot exec anything (see Wall 3).** |
 | media | staged by the `xenix-media` agent under labhost `/data/assets-staging/xenix/`; URL + sha256 + byte size in that dir's `SOURCES.md` and in `scripts/build-guests/tiles/xenix.sh` |
 
 `wave.sh alloc` refused slot 199 on the first call — `macsys1` had claimed it
@@ -34,13 +34,18 @@ assumes:
 - `-machine isapc` — no PCI bus at all. The Xenix kernel probes AT/ISA
   hardware; a PCI IDE controller it cannot see is a disk it cannot boot from.
 - `-cpu 486` — Xenix 386 dislikes Pentium+ feature bits.
-- **TCG is the default, KVM is a theory** — 386-era protected-mode code has
-  bitten KVM before, and a text console on 16 MB of emulated 486 is not a
-  performance problem. KVM is raced as a clone, never assumed.
-- **Explicit CHS** (`cyls=,heads=,secs=`) on a disk **≤ 504 MB**. The Xenix
-  boot block and divvy table are written against the geometry the installer
-  saw; boot the same image with QEMU's auto-derived geometry and the boot
-  block reads garbage. This is the single most likely wall on this station.
+- **`-enable-kvm`, NOT TCG.** This is the whole station. Under `-accel tcg`
+  the kernel boots and then *every* `exec` in the guest dies with
+  `no stack space` — proven on two independently-built systems (see Wall 3).
+  Under KVM the same disk reaches a root shell in about 25 s. The wave doc's
+  original reasoning ("TCG is the safe default, KVM is a theory") was exactly
+  backwards for this guest.
+- **Auto geometry.** The guest's own device table reports
+  `%disk 0x01F0-0x01F7 36 - type=W0 unit=0 cyls=253 hds=16 secs=63` — QEMU's
+  auto-derived geometry is what Xenix sees and it is correct. Do NOT put
+  `cyls=/heads=/secs=` on the `-drive` (QEMU 11 rejects those for qcow2; they
+  belong on `-device ide-hd`), and do not "restore" the explicit CHS this doc
+  used to demand — it was a theory, never a measurement.
 - No NIC — see Retronet.
 
 ## Retronet — OPEN, and why
@@ -141,7 +146,89 @@ labhost `/data/assets-staging/xenix/alt/extracted-pcjs-386-2.3.4h/` —
 `N1-BOOT.img`/`N2.img` are `typ=386GT rel=2.3.4h`, and that kernel runs on the
 same QEMU hardware all the way to `init` (`frame-gt2.png`).
 
-### Wall 3 — OPEN: `no stack space`, because the kernel sees no hard disk
+### Wall 3 — SOLVED: `no stack space` is a QEMU **TCG** defect, not our media
+
+**The fix is one flag: `-enable-kvm`.** Everything below the fix is the record
+of how the earlier diagnosis went wrong; read it before you re-theorise.
+
+Under `-accel tcg` (`isapc`, `-cpu 486`, `-m 16`) the Xenix 2.3.4 kernel boots,
+prints its banner, and then init loops forever:
+
+```
+No single-user login present
+Entering System Maintenance Mode
+-: no stack space
+```
+
+`-: no stack space` is the Bourne shell's `growstak()` failing — i.e. `sbrk`
+failing for *every* process. It is reproduced identically on the install floppy
+AND on a pre-installed 125 MiB Xenix 2.3.4 disk built by someone else years ago
+(there it reads `-sh: no stack space` right after a successful `root` login).
+Two independently produced systems, one symptom, so it is the emulator, not the
+media. Switching the same disk to `-enable-kvm` — nothing else changed —
+reaches `#` (frames `/data/vms/sandbox/xenix/bake/c4-shell.png`,
+`r2-typed.png`).
+
+**Facts established while getting there (all on the framebuffer):**
+
+- **The `Boot :` prompt DOES honour arguments.** The previous lead concluded it
+  ignores them; it does not. `nswap=500` in the boot string changes the banner
+  to `nswap = 500` (`smoke/w1-s2.png`). The boot string is a live lever.
+- **The missing `%disk` line was a red herring.** The floppy's own
+  `/etc/default/boot`, readable straight out of the image, is:
+  ```
+  DEFBOOTSTR=fd(64)xenix root=fd(64) swap=ram(0) pipe=ram(1) swplo=0 nswap=1000 ronly
+  UPDATE=fd(64)xenix root=fd(64) swap=ram(0) pipe=ram(1) swplo=0 nswap=1000 ronly prompt="Insert Update volume 1 and press <RETURN> "
+  # nswap and swplo are set in the hd driver
+  INSTALL=fd(64)xenix root=hd(40) swap=hd(41) pipe=hd(40) swplo=0 nswap=0
+  ```
+  so the banner's `swapdev 31/0` is **ram(0)**, a RAM disk — major 31 is `ram`,
+  not `hd`. The kernel was never waiting on a hard disk.
+- **N2 is not a root filesystem** (it holds `./usr/sys/h/init.h` and friends), so
+  there was no N1→N2 swap to miss.
+- **There is no third media set.** `Xenix386 2.3.4.rar` inside the staged
+  archive.org RAR extracts to an N1 **byte-identical** to the PCjs 386GT N1
+  (md5 `f8e95b51f04a9808fd9fd2e967e1f771`). A runner also extracted
+  `SCO_Xenix_SLS_Including_Y2k.rar`, `Xenix386_ports.rar` and
+  `SCO_Xenix386_Streams_RT_and_TCPIP_RT.rar`: every boot-shaped volume in them is
+  `typ=386PS` (MCA) or `typ=286AT`. No AT-class 386 N1 exists on this box.
+- Ruled out by sweep, all identical under TCG: `-m 2/3/4/8/16`, `-machine pc`
+  (acpi=off) vs `isapc`, `-cpu 486`, `-cpu pentium` (`-cpu 386` is not a model in
+  this QEMU), hard disk present vs absent, floppy drive type forced, boot strings
+  with `nswap=500/1000`, without `ronly`, with `root=fd(60)`. Only `nswap=0`
+  differed (the kernel stops after the banner with no loop) — also a dead end.
+
+### The disk the station ships
+
+A **pre-installed** SCO Xenix 386 2.3.4 disk, which skips the N1+B1+X1..X4 floppy
+install entirely:
+
+- `https://archive.org/download/sco-xenix-386-master/SCO%20Xenix%20386%20Master.zip`
+  (item `sco-xenix-386-master`), sha256
+  `cd5756f07e1ef3b099ff29609c89c2f09baa9aae59d287ba486f2bbd4426545f`,
+  326,021,752 bytes.
+- Member `Master/Xenix Master-disk1.vdi` (VirtualBox VDI, 125 MiB virtual,
+  133,169,152 bytes) → `qemu-img convert -O qcow2` →
+  `/data/gallery-guests/Xenix/xenix.qcow2`.
+- Serial `oli560966` in the kernel banner; `root` has no password; `/usr` carries
+  `lotus`, `vpix`, `games`, `mud`, `sysadm`.
+- The install floppies stay staged on labhost for provenance; nothing was
+  installed by us.
+
+### Baking the golden (what was actually run)
+
+1. Boot the converted disk with the final device set; the first boot finds the
+   root filesystem dirty (the image was captured mid-run by its author) and asks
+   `Proceed with cleaning (y/n)?` — answer `y`, let fsck finish.
+2. Press RETURN at `(or give root password for system maintenance):` (no
+   password) → `Entering System Maintenance Mode`, RETURN again at `TERM = (ansi)`
+   → `#`.
+3. `sync; /etc/haltsys` → `** Safe to Power Off **`. Kill QEMU.
+4. Cold boot again — **no fsck this time**, straight to `#` in ~25 s. That is the
+   state the golden captures.
+5. QMP `savevm golden` on the running guest.
+
+### Superseded diagnosis (kept so nobody re-runs it)
 
 The 386GT kernel reaches `Entering System Maintenance Mode` and then loops
 `-: no stack space` forever (`frame-gt2.png`, `sweep-mem8.png`). The early
@@ -204,14 +291,24 @@ hard disk from the prompt.
 
 | Proof | State | Frame |
 |---|---|---|
-| first framebuffer | PASS | `frame-boot3.png` — `XENIX System V` / `Boot :` |
-| kernel boots, device table | PASS | `ban-2.png` — `SysV release 2.3.4 91/03/22 for i80386` |
-| multi-user / root shell | **FAIL (wall 3)** | `frame-gt2.png` |
-| golden `savevm` + `loadvm` restore | NOT REACHED | — |
-| typed-text keyboard proof | NOT REACHED | — |
+| first framebuffer | PASS | `smoke/frame-boot3.png` — `XENIX System V` / `Boot :` |
+| kernel boots, device table | PASS | `bake/c2-kernel.png` — `SysV release 2.3.4 91/03/22 for i80386 Serial Number: oli560966`, `%disk … cyls=253 hds=16 secs=63` |
+| root shell | PASS | `bake/c4-shell.png` — `Entering System Maintenance Mode` / `TERM = (ansi)` / `#` |
+| clean cold boot (no fsck) | PASS | `bake/c4-shell.png` (after `sync; /etc/haltsys` in `bake/b6-halt.png`) |
+| golden `savevm` + `loadvm` restore | PASS | `bake/r1-restored.png` — `loadvm golden -S` + `cont` returns to the same `#` |
+| typed-text keyboard proof | PASS | `bake/r2-typed.png` — `uname -a; who am i; ls /usr` typed after the restore, output on screen (`machine=i80386`, `serial#=560966`, the `/usr` listing) |
 | pointer | N/A — text console, `pointer: none` | — |
 
-**This station is NOT landed and must not be.** There is no golden, so
-`station-land.sh` has nothing to copy in; the registry row, launcher, fixture,
-poster and scene rows are all committed and green on branch `xenix` for the next
-session to finish from wall 3.
+Frames live under `/data/vms/sandbox/xenix/bake/` (golden) and
+`/data/vms/sandbox/xenix/smoke/` (the floppy walls).
+
+## Traps worth carrying to other stations
+
+- **`unar` exists inside CT950** (`/usr/bin/unar`); labhost has no `unrar` and
+  its `7z` reports "Unsupported Method" on RAR3. Copy the archive under
+  `/data/vms/...` first — CT950's `/data/assets-staging` is **not** labhost's.
+- **TCG is not always the conservative choice.** For a 386-era protected-mode
+  guest, TCG can be the thing that is broken. Race `-enable-kvm` early; it costs
+  one boot.
+- A pre-installed disk from archive.org beat six floppy theories. Playbook §0
+  already says to prefer one — this wave is the evidence.
