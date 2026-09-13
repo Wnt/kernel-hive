@@ -145,4 +145,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d8d5cc', accentTint: '#3f7fbf', tintMix: 0.30,
     badge: 'Apple IIGS', spec: '65C816 • GS/OS 6', kit: 'eightBit',
   },
+  // TODO(minix2): exhibit finish copied from freedos — set the real era cues.
+  minix2: {
+    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
+    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

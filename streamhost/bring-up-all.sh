@@ -43,7 +43,7 @@ TILES=(
   aros helenos kolibrios ninefront bootos pcgeos netbsd14 freebsd411
   android solaris redstar3
   win2000 winxp nt4 nt351 openvms win11
-  win311 win95 win98se freedos msdoswin1 os2warp suse64 oberon magiccap
+  win311 win95 win98se freedos msdoswin1 os2warp suse64 oberon magiccap minix2
   qnx sailfishos templeos serenityos postmarketos sculpt
   c64 atarist apple2 amiga redstar2 amstradcpc mpf2 vic20 plus4 c128 pet2001 cbm8032 cbm2 pdp11 gt40 decos zxspectrum zx81 bbcmicro dragon32 oricatmos kc854 sinclairql nextstep armeval indyr4400 alto star daybreak ubuntu redhat62 debian22 apple2e samcoupe atari800xl domainos fmtowns apple2gs
   irix w2kalpha tru64 macos753 hpuxvue newsos sunos414 aux

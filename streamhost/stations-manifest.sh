@@ -1226,13 +1226,11 @@ emit vision \
   "$T/vision/x11-runtime.sh" --aux-file "$T/vision/vision-inner.sh" \
   --env-append-file "$T/vision/station.env.fixture"
 
-# apple2gs (VMID 185) — TODO one line; scaffolded from apple2e.
-emit apple2gs \
-  --tile apple2gs --udp 54204 --x11 --x11-display :73 --capture shm \
-  --pointer none --input-backend mamesock --audio on --fps 60 \
-  --x11-runtime-file "$T/mame-native/x11-runtime.sh" --aux-file \
-  "$T/apple2gs/apple2gs.keymap" --env-append-file \
-  "$T/apple2gs/station.env.fixture"
+# minix2 (VMID 201) — Minix 2.0.4 text console; the teaching microkernel with /usr/src on screen.
+emit minix2 \
+  --tile minix2 --vmid 201 --udp 54201 --pointer none --audio on --fps 30 \
+  --launcher-file "$T/minix2/qemu-streamhost.sh" --env-append-file \
+  "$T/minix2/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)

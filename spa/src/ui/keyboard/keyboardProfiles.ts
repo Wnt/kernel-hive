@@ -278,6 +278,11 @@ export const OS_FAMILY: Record<string, Family> = {
   openvms: 'generic',
   ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
+  // Minix 2.0.4: an 80x25 console at a root ash prompt with no pointer and no X.
+  // The linux-tty rows are exactly the vocabulary a visitor needs to walk /usr/src
+  // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
+  // implements all three signals. No Minix-specific chord set exists to profile.
+  minix2: 'linux-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
