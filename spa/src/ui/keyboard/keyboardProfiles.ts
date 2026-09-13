@@ -290,6 +290,9 @@ export const OS_FAMILY: Record<string, Family> = {
   aux: 'classicmac', // A/UX runs the Finder as its shell — Command chords, as macos753
   rhapsody: 'generic', // Platinum Finder over NeXT Workspace — install phase; revisit once the desktop is up
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
+  perq: 'generic', // POS G.7 is a character shell on a 1983 Three Rivers PERQ — no
+  //                   modifier-chord vocabulary of its own, and the Kriz tablet
+  //                   carries what a modern chord would: plain keys only
   lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
