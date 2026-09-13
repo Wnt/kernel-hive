@@ -435,6 +435,16 @@ grep ctlsock /data/vms/sandbox/fmtowns-ptr/rigD/mame.log   # gate: btns=1 axes=1
 python3 /data/vms/sandbox/fmtowns-ptr/movea_five.py /data/vms/sandbox/fmtowns-ptr/rigD chain
 ```
 
+**Build trap, measured 2026-09-13:** `build-mame-native.sh fmtowns` at
+`JOBS=4` was **OOM-killed** on this box — `Error 137` on
+`emumem_hedw1/2/3.o` and `emumem_hem.cpp`, which are MAME's most
+memory-hungry translation units, with the `formats` target killed alongside
+them. The box has 24 GB and four of those compiling at once do not fit next
+to the running fleet. Build this station with **`JOBS=2`**, and never leave
+`JOBS` unset (the default is `nproc`, 10 here). ccache carries the already-
+built objects across the retry, so a re-run is cheap. Check
+`grep -c Killed build.log` before trusting a build that "finished".
+
 `movea_five.py` sends `MOVEA` — the verb `streamhost/streamhost/src/mame_sock.rs`
 actually sends for a visitor pixel, unscaled and uncalibrated (routed backends
 return before `calibrated_abs()`, so `SH_CURSOR_OFF_*` never reaches this
