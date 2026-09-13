@@ -228,7 +228,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   magiccap:    { osId: 'magiccap', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3a7fc9', eraLabel: '1995 · Magic Cap for Windows (pre-release)', bootVideo: '/boot/win98se/boot.mp4' },
   perq:        { osId: 'perq', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7FA8C9', eraLabel: '1986 · POS G.7 (Three Rivers PERQ 1, portrait display)' }, // ideal: Apple Lisa 2 one-piece
   vision:      { osId: 'vision', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#7FB069', eraLabel: '1983 · Visi On 1.0', pointerRel: false }, // ideal: IBM PC XT 5160 with a mono CRT and the VisiCorp M1 mouse
-  os213:       { osId: 'os213', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#3a6ea5', eraLabel: 'TODO(nt351): 1995 · Windows NT 3.51', pointerRel: true },
+  os213:       { osId: 'os213', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#2d4f8e', eraLabel: '1990 · OS/2 1.3 Presentation Manager', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
