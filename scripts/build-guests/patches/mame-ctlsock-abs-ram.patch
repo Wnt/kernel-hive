@@ -1,0 +1,301 @@
+ctlsock: an absolute pointer needs no counts — state it in the guest's own RAM
+
+Applies AFTER mame-ctlsock-open-loop-gain.patch (same file, later hunks).
+
+THE WALL. A quadrature-mouse machine gives the module nothing to read, so
+MOVEA degrades to open-loop dead reckoning: issue Delta-px/gain counts and
+believe you arrived. That can never be 1:1, for two reasons that no amount of
+gain tuning removes.
+
+  1. The gain is not a constant. The Macintosh ROM's mouse task applies its
+     own ACCELERATION curve at VBL, so one count is worth ~1 guest px when the
+     counts trickle and ~2 when they arrive in a burst. MEASURED on macsys1
+     (mac128k, golden.sta, MAME_CTL_PTR_MOD=256): MOVEP 30 20 from RawMouse
+     (15,15) landed RawMouse at (70,53) — 1.83 px/count across, 1.90 down,
+     while the wave's own bulk-travel measurement read 1.98. One number
+     cannot describe both.
+  2. A LETTERBOX puts the guest's origin somewhere other than the surface's.
+     mac128k's 512x342 raster is drawn 2x inside the published 1024x768
+     surface as 1024x684 with a 42 px band top and bottom, so the guest's
+     (0,0) is published (0,42) — and an open loop that homes by slamming into
+     its own belief's corner lands every target 42 px low, with the bottom
+     84 px of the coordinate space unreachable. macsys1 shipped
+     stream.pointer.transport=none for exactly this.
+
+THE FIX. The guest OS keeps the pointer in RAM, and RAM is addressable from
+the module. State the visitor's pixel there and nudge the OS to republish it:
+no counts are issued, so neither acceleration nor accumulator drift can exist,
+and the letterbox is one explicit rectangle instead of a homing ritual.
+
+On a Macintosh the globals are the documented low-memory ones — MTemp $828,
+RawMouse $82C, Mouse $830 (Point is {v,h}, big-endian) — plus the documented
+republish idiom CrsrNew $8CE := CrsrCouple $8CF, which is how the Toolbox is
+told the position changed outside the mouse interrupt. Nothing here is
+Mac-specific in the CODE: the addresses, the Point order and the flag are all
+env, so any guest whose pointer lives in RAM binds the same way.
+
+  MAME_CTL_ABS_RAM    cpu=<tag>,pts=<addr>+<addr>...,order=vh|hv,
+                      flag=<addr>,flagsrc=<addr>   (unset => nothing changes)
+  MAME_CTL_ABS_RECT   x,y,w,h — the published rect the raster occupies
+                      (the letterbox; default = the whole surface)
+  MAME_CTL_ABS_GEOM   WxH — the raster's size in GUEST px (default = the rect)
+
+MOVEA then short-circuits the whole dead-reckoning engine before it can issue
+a single count, and keeps the belief in step so a fallback (an unresolvable
+address space) is not left believing an origin it never reached.
+
+Three diagnostic verbs come with it — PEEK/POKEW/POKEB on the same space —
+because an absolute binding must be DERIVED, not guessed: move the pointer
+with MOVEP, read the candidate globals, keep the address that tracked. That
+is exactly how the three Mac addresses above were confirmed, on the rig, in
+one pass.
+
+MEASURED on the macsys1 rig (golden.sta, the fleet binary + this patch),
+MAME_CTL_ABS_RECT=0,42,1024,684 MAME_CTL_ABS_GEOM=512x342:
+
+  five targets x two laps, exact-match sprite readback on the published
+  1024x768 surface — (26,68) (998,68) (26,694) (998,694) (512,384) —
+  WORST |err| = 0 px, both laps identical.
+  RawMouse readback at the same five: exactly the commanded guest pixel,
+  (+0,+0) on every one.
+
+Every default is unset, so a station that does not set the knobs builds and
+behaves exactly as before.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -479,6 +479,69 @@
+ 			m_btn_name[2] = "Middle Button";
+ 		}
+ 		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
++		// ABS-RAM binding (see the member block). Three env strings, all
++		// optional; unset, nothing below runs and the module behaves exactly
++		// as before on every existing station.
++		//   MAME_CTL_ABS_RAM   cpu=<tag>,pts=<hex>+<hex>...,order=vh|hv,
++		//                      flag=<hex>,flagsrc=<hex>
++		//   MAME_CTL_ABS_RECT  x,y,w,h  published rect the raster occupies
++		//                      (the LETTERBOX: a 512x342 Mac raster drawn 2x
++		//                      inside a 1024x768 surface is "0,42,1024,684")
++		//   MAME_CTL_ABS_GEOM  WxH      guest raster size in guest px
++		{
++			std::string const spec = env_str("MAME_CTL_ABS_RAM");
++			if (!spec.empty())
++			{
++				size_t p = 0;
++				while (p <= spec.size())
++				{
++					size_t const c = spec.find(',', p);
++					std::string kv = spec.substr(p, (c == std::string::npos) ? std::string::npos : c - p);
++					p = (c == std::string::npos) ? spec.size() + 1 : c + 1;
++					size_t const eq = kv.find('=');
++					if (eq == std::string::npos)
++						continue;
++					std::string const k = kv.substr(0, eq), v = kv.substr(eq + 1);
++					if (k == "cpu")
++						m_absram_cpu = v;
++					else if (k == "order")
++						m_absram_vfirst = (v != "hv");
++					else if (k == "flag")
++						m_absram_flag = std::strtol(v.c_str(), nullptr, 0);
++					else if (k == "flagsrc")
++						m_absram_flagsrc = std::strtol(v.c_str(), nullptr, 0);
++					else if (k == "pts")
++					{
++						size_t q = 0;
++						while (q <= v.size())
++						{
++							size_t const pl = v.find('+', q);
++							std::string const one = v.substr(q, (pl == std::string::npos) ? std::string::npos : pl - q);
++							q = (pl == std::string::npos) ? v.size() + 1 : pl + 1;
++							if (!one.empty())
++								m_absram_pts.push_back(std::strtol(one.c_str(), nullptr, 0));
++						}
++					}
++				}
++				m_absram = !m_absram_pts.empty();
++			}
++			if (m_absram)
++			{
++				long rx = 0, ry = 0, rw = 0, rh = 0;
++				if (std::sscanf(env_str("MAME_CTL_ABS_RECT").c_str(), "%ld,%ld,%ld,%ld",
++						&rx, &ry, &rw, &rh) == 4 && rw > 0 && rh > 0)
++				{
++					m_absram_rx = rx; m_absram_ry = ry;
++					m_absram_rw = rw; m_absram_rh = rh;
++				}
++				long gw = 0, gh = 0;
++				if (std::sscanf(env_str("MAME_CTL_ABS_GEOM").c_str(), "%ldx%ld", &gw, &gh) == 2
++						&& gw > 0 && gh > 0)
++				{
++					m_absram_gw = gw; m_absram_gh = gh;
++				}
++			}
++		}
+ 		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
+ 		m_tail_path = env_str("MAME_CTL_CMD_FILE");
+ 		m_trace = env_long("MAME_CTL_TRACE", 0) != 0;
+@@ -2046,6 +2109,72 @@
+ 		target_reset();
+ 	}
+ 
++	// Resolve the CPU's program space once, lazily: the device tree only
++	// exists after the machine reaches RUNNING, which is after setup().
++	address_space *absram_space()
++	{
++		if (!m_absram_tried)
++		{
++			m_absram_tried = true;
++			device_t *dev = m_machine.root_device().subdevice(m_absram_cpu.c_str());
++			device_memory_interface *mem = nullptr;
++			if (dev && dev->interface(mem) && mem->has_space(AS_PROGRAM))
++				m_absram_space = &mem->space(AS_PROGRAM);
++			else
++				std::fprintf(stderr, "ctlsock: ABS_RAM cpu '%s' has no program space;"
++						" falling back to the open loop\n", m_absram_cpu.c_str());
++		}
++		return m_absram_space;
++	}
++
++	// Map a PUBLISHED surface pixel to the guest pixel drawn there. The
++	// letterbox rect and the raster geometry are the whole transform: an
++	// integer-scaled raster means a visitor pixel and a guest pixel are the
++	// same thing, and the residual is the scale factor's own rounding.
++	void absram_map(long sx, long sy, long &gx, long &gy) const
++	{
++		long const rw = m_absram_rw > 0 ? m_absram_rw : m_surf_w;
++		long const rh = m_absram_rh > 0 ? m_absram_rh : m_surf_h;
++		long const gw = m_absram_gw > 0 ? m_absram_gw : rw;
++		long const gh = m_absram_gh > 0 ? m_absram_gh : rh;
++		gx = ((sx - m_absram_rx) * gw) / rw;
++		gy = ((sy - m_absram_ry) * gh) / rh;
++		gx = std::max(0L, std::min(gw - 1, gx));
++		gy = std::max(0L, std::min(gh - 1, gy));
++	}
++
++	// State the point in every configured Point global, then poke the
++	// republish flag. On a Macintosh that is MTemp/RawMouse/Mouse plus
++	// CrsrNew := CrsrCouple, which is the documented way to move the arrow
++	// from outside the mouse interrupt: the VBL cursor task picks it up on
++	// the next tick and redraws, and the quadrature accumulator is never
++	// touched, so nothing can drift and nothing can accelerate.
++	bool absram_move(long sx, long sy)
++	{
++		address_space *sp = absram_space();
++		if (!sp)
++			return false;
++		long gx = 0, gy = 0;
++		absram_map(sx, sy, gx, gy);
++		uint16_t const a = uint16_t(m_absram_vfirst ? gy : gx);
++		uint16_t const b = uint16_t(m_absram_vfirst ? gx : gy);
++		for (long addr : m_absram_pts)
++		{
++			sp->write_word(offs_t(addr), a);
++			sp->write_word(offs_t(addr + 2), b);
++		}
++		if (m_absram_flag >= 0)
++		{
++			uint8_t v = 0xff;
++			if (m_absram_flagsrc >= 0)
++				v = sp->read_byte(offs_t(m_absram_flagsrc));
++			sp->write_byte(offs_t(m_absram_flag), v);
++		}
++		++m_c_absram;
++		trace("absram tgt=%d,%d guest=%d,%d", int(sx), int(sy), int(gx), int(gy));
++		return true;
++	}
++
+ 	void movea_target(long x, long y, std::string seq, ack_ref const &ack)
+ 	{
+ 		x = std::max(0L, std::min(m_surf_w - 1, x));
+@@ -2054,6 +2183,18 @@
+ 		reply_ok(ack);  // MOVEA acks on target-accept; completion is EV MOVEA
+ 		trace("verb MOVEA seq=%s tgt=%d,%d", seq, int(x), int(y));
+ 
++		// ABS-RAM short-circuits the whole dead-reckoning engine: there is
++		// nothing to reckon when the pointer can be STATED. Keep the belief
++		// in step so a later fallback (space unresolvable) is not left
++		// believing an origin it never reached.
++		if (m_absram && absram_move(x, y))
++		{
++			m_bx = double(x);
++			m_by = double(y);
++			m_fl_valid = true;
++			return;
++		}
++
+ 		if (!m_movea_ok)
+ 		{
+ 			// Degraded mode (cursor items unavailable/unconfigured): each
+@@ -3010,6 +3151,45 @@
+ 			reply_ok(ack, util::string_format("mtime=%.6f paused=%d",
+ 					emu_now(), m_machine.paused() ? 1 : 0));
+ 		}
++		else if (verb == "PEEK" || verb == "POKEW" || verb == "POKEB")
++		{
++			// Guest-RAM probe/poke on the ABS_RAM cpu's program space. This
++			// is how an absolute-pointer binding is DERIVED rather than
++			// guessed: move the pointer, read the candidate globals, keep
++			// the address that tracked. Host-only socket, no guest reach.
++			hist_apply(ack);
++			address_space *sp = absram_space();
++			if (!sp)
++			{
++				reply_err(ack, "nospace", m_absram_cpu);
++			}
++			else
++			{
++				long addr = 0, val = 0;
++				if (!parse_two_longs(rest, addr, val))
++				{
++					reply_err(ack, "badarg", verb + " <addr> <len|value>");
++				}
++				else if (verb == "PEEK")
++				{
++					std::string out;
++					long const n = std::max(1L, std::min(64L, val));
++					for (long i = 0; i < n; ++i)
++						out += util::string_format("%02x", sp->read_byte(offs_t(addr + i)));
++					reply_ok(ack, out);
++				}
++				else if (verb == "POKEW")
++				{
++					sp->write_word(offs_t(addr), uint16_t(val));
++					reply_ok(ack);
++				}
++				else
++				{
++					sp->write_byte(offs_t(addr), uint8_t(val));
++					reply_ok(ack);
++				}
++			}
++		}
+ 		else if (verb == "ITEM")
+ 		{
+ 			// Read any save item by name suffix. A diagnostic, and a
+@@ -3402,6 +3582,26 @@
+ 	double m_rest_t = -1.0;              // next at-rest observation, emu time
+ 	double m_gx = 1.0, m_gy = 1.0;       // learned counts->px gain per axis
+ 	double m_gx0 = 1.0, m_gy0 = 1.0;     // MAME_CTL_GAIN_X/Y open-loop seed
++
++	// ---- ABS-RAM: absolute pointer written into the GUEST's own cursor
++	// globals. A quadrature-mouse machine has no host-readable cursor
++	// register and its driver applies its own (often ACCELERATED) counts->px
++	// curve, so no open loop can be 1:1. But the guest OS keeps the pointer
++	// in RAM, and RAM is addressable from here: state the visitor's pixel
++	// there directly and nudge the OS to republish it. Zero counts are
++	// issued, so acceleration and accumulator drift cannot exist.
++	bool m_absram = false;                // MAME_CTL_ABS_RAM configured
++	bool m_absram_tried = false;          // space resolution attempted
++	address_space *m_absram_space = nullptr;
++	std::string m_absram_cpu = "maincpu";
++	std::vector<long> m_absram_pts;       // Point addresses, all written
++	bool m_absram_vfirst = true;          // Point is {v,h} (Mac) vs {h,v}
++	long m_absram_flag = -1;              // byte poked to republish (CrsrNew)
++	long m_absram_flagsrc = -1;           // byte copied into it (CrsrCouple)
++	long m_absram_rx = 0, m_absram_ry = 0;    // published rect of the raster
++	long m_absram_rw = 0, m_absram_rh = 0;
++	long m_absram_gw = 0, m_absram_gh = 0;    // guest raster size, guest px
++	uint64_t m_c_absram = 0;
+ 	double m_gain_margin = 1.10;         // MAME_CTL_GAIN_MARGIN (user rule)
+ 	std::deque<defer_entry> m_aq;
+ 	long m_flx = 0, m_fly = 0;               // open-loop fallback origin

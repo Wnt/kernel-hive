@@ -48,7 +48,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/oberon",
       "qmp": "/data/vms/streamhost/stations/oberon/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -58,7 +58,7 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54195,
-      "notes": "no exec channel: drive via QMP keys/rel mouse and read the framebuffer. Pointer is RELATIVE PS/2 through the daemon's abs->rel bridge (1.5 px per unit measured, even steps land on integer pixels). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; recapture only via checkpoint-guard."
+      "notes": "no exec channel: drive via QMP keys and the ramabs pointer socket, and read the framebuffer. Pointer is ABSOLUTE 1:1 via kh-ramabs writing Oberon's own (y,x) coordinate at 0x140160 (layout point32le_yx) — SINGLE INJECTOR: while ptr.sock is connected nothing else may push motion or a button edge. Three mouse buttons are the whole UI (middle executes the command word under the pointer). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; the empty qcow2 floppy carries its half of the same snapshot, so both files move together. Binary is /opt/qemu-oberon; recapture only via checkpoint-guard, then re-derive KH_RAMABS_ADDR with scripts/dev/oberon-ramabs-derive.py."
     }
   },
   "render": {
@@ -81,13 +81,13 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "backend": "dbus-rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "backend": "ramabs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "ps2",
-      "scale": 0.6667,
+      "scale": 1.0,
       "offset": [
         0,
         0
@@ -197,7 +197,7 @@
     "transport": "streamhost",
     "accentColor": "#3d6fb4",
     "eraLabel": "1999 · ETH Native Oberon",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "oberon",
@@ -230,16 +230,16 @@
   "emulator": {
     "family": "QEMU",
     "version": "11.0.2",
-    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+    "source": "/opt/qemu-oberon — fork c5449c80 (github.com/Wnt/qemu, branch kernel-hive) plus the point32le_yx / point16le_yup layouts added to qemu-patch 0007 kh-ramabs; machine type pc-i440fx-11.0"
   },
   "ui": "desktop",
   "reset": {
     "stationDir": "oberon",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "PASS",
+    "mouse": "PASS 1:1 absolute: kh-ramabs writes Native Oberon's own pointer coordinate (two LONGINTs at guest-physical 0x140160, order y-then-x with y counted up from the bottom -- layout point32le_yx) and nudges PS/2 by one unit to republish it. Five targets (20,20) (1250,20) (20,1000) (1250,1000) (640,512) on the 1280x1024 surface, TWO laps with a move to (300,700) between every target: the guest's own words and the device's read-back are EXACT at all ten, and the sprite located in the framebuffer is within 1 px (worst |dx|,|dy| = 1,1 -- the diff locator's own background-dependent edge column, not pointer error). A middle click at (855,630) on System.Directory opened a Directory viewer. Nudge stays at 1 unit = 1 px: Oberon accelerates to 1.5 px/unit at 6 units and up.",
     "keyboard": "PASS",
     "fixture": "ETH Oberon System 3 / PC Native 2.3.6 Gadgets desktop at 1280x1024: System.Log over System.Tool in the right track, empty user track, arrow pointer at (600,510)."
   },

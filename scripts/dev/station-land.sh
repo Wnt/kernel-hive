@@ -14,6 +14,15 @@
 #   usage: scripts/dev/station-land.sh <id> [options]
 #     --dry-run             print every step and run NOTHING. Start here.
 #     --golden PATH         swap this staged qcow2 in as the station disk
+#     --golden-extra DEV=PATH
+#                            also swap a NON-disk device the golden snapshot
+#                            spans (repeatable) — e.g. a floppy qcow2 that
+#                            carries half of `savevm golden`'s state, DEV
+#                            being the filename in the station's own dir
+#                            (oberon: --golden-extra floppy0.qcow2=/data/....).
+#                            Parked and copied the same way as --golden, under
+#                            --golden's ONLY: without a main --golden this
+#                            flag has no unit stop / rollback anchor.
 #     --merge BRANCH        merge this branch too (repeatable)
 #     --x11warp HOST:N      prove the absolute pointer through this X display
 #     --station-session S   claim owner after landing (default: station-<id>)
@@ -51,6 +60,7 @@ no_spa=0
 no_push=0
 keep_window=0
 declare -a merges=()
+declare -a golden_extra=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --dry-run) dry=1 ;;
@@ -59,6 +69,10 @@ while [ "$#" -gt 0 ]; do
     --keep-window) keep_window=1 ;;
     --golden)
       golden="$2"
+      shift
+      ;;
+    --golden-extra)
+      golden_extra+=("$2")
       shift
       ;;
     --merge)
@@ -144,6 +158,16 @@ if [ -n "$golden" ]; then
   case "$golden" in /*) ;; *) fail "--golden must be an absolute path ON THE BOX" ;; esac
   say "golden         : $golden  (parks the live disk as disk.qcow2.pre-$tag)"
 fi
+if [ ${#golden_extra[@]} -gt 0 ]; then
+  [ -n "$golden" ] || fail "--golden-extra needs --golden too (it rides the same stop/park/rollback)"
+  for extra in "${golden_extra[@]}"; do
+    case "$extra" in
+      *=/*) ;;
+      *) fail "--golden-extra must be DEV=/absolute/path/on/the/box, got '$extra'" ;;
+    esac
+    say "golden extra   : ${extra%%=*}  <-  ${extra#*=}  (parks as ${extra%%=*}.pre-$tag)"
+  done
+fi
 [ ${#merges[@]} -gt 0 ] && say "extra merges   : ${merges[*]}"
 
 # ---- 1 the landing window ----------------------------------------------------
@@ -221,13 +245,36 @@ if [ -z "$golden" ]; then
 else
   live="$BOX_STATIONS/$id/disk.qcow2"
   parked="$live.pre-$tag"
-  rollback_hint="systemctl stop streamhost@$id; mv $parked $live; systemctl start streamhost@$id"
+  # checkpoint + binary + device set are ONE combination (AGENTS.md rule 6):
+  # a golden's `savevm` can span more than the main disk (oberon's floppy
+  # qcow2 carries half the snapshot, or `loadvm` fails "Snapshot 'golden'
+  # does not exist in one or more devices"), so every --golden-extra device
+  # parks/copies in the SAME stop, and rolls back in the SAME line.
+  rollback_hint="systemctl stop streamhost@$id; mv $parked $live"
+  for extra in "${golden_extra[@]}"; do
+    dev="${extra%%=*}"
+    rollback_hint="$rollback_hint; mv $BOX_STATIONS/$id/$dev.pre-$tag $BOX_STATIONS/$id/$dev"
+  done
+  rollback_hint="$rollback_hint; systemctl start streamhost@$id"
   say "stop unit, park $live -> $parked, copy $golden in"
   run ssh -n "$LAB" "systemctl stop streamhost@$id" || fail "could not stop streamhost@$id"
   run ssh -n "$LAB" "test -f '$golden'" || fail "$golden is not a file on the box"
   run ssh -n "$LAB" "if [ -f '$live' ]; then mv '$live' '$parked'; fi" || fail "could not park the live disk"
   run ssh -n "$LAB" "cp --reflink=auto '$golden' '$live'" || fail "could not install the staged golden"
   say "parked disk kept at $parked — delete it only after the framebuffer proof"
+  for extra in "${golden_extra[@]}"; do
+    dev="${extra%%=*}"
+    extra_file="${extra#*=}"
+    extra_live="$BOX_STATIONS/$id/$dev"
+    extra_parked="$extra_live.pre-$tag"
+    say "extra device $dev: park $extra_live -> $extra_parked, copy $extra_file in"
+    run ssh -n "$LAB" "test -f '$extra_file'" || fail "$extra_file is not a file on the box"
+    run ssh -n "$LAB" "if [ -f '$extra_live' ]; then mv '$extra_live' '$extra_parked'; fi" ||
+      fail "could not park $extra_live"
+    run ssh -n "$LAB" "cp --reflink=auto '$extra_file' '$extra_live'" ||
+      fail "could not install the staged extra device $dev"
+    say "parked $dev kept at $extra_parked — delete it only after the framebuffer proof"
+  done
 fi
 
 # ---- 8 take the smoke rig down ----------------------------------------------
@@ -366,5 +413,11 @@ fi
 
 printf '\n== LANDED %s\n' "$id"
 say "commit  : $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
-[ -n "$golden" ] && say "rollback: mv $BOX_STATIONS/$id/disk.qcow2.pre-$tag $BOX_STATIONS/$id/disk.qcow2 (with the matching launcher commit)"
-say "next    : open /os/$id, look at the framebuffer, then delete the parked disk"
+if [ -n "$golden" ]; then
+  say "rollback: mv $BOX_STATIONS/$id/disk.qcow2.pre-$tag $BOX_STATIONS/$id/disk.qcow2 (with the matching launcher commit)"
+  for extra in "${golden_extra[@]}"; do
+    dev="${extra%%=*}"
+    say "rollback: mv $BOX_STATIONS/$id/$dev.pre-$tag $BOX_STATIONS/$id/$dev"
+  done
+fi
+say "next    : open /os/$id, look at the framebuffer, then delete the parked disk(s)"

@@ -1241,7 +1241,7 @@ emit xenix \
 # macsys1 (VMID 199) — Macintosh 128K, System 1.0 / Finder 1.0 (1984), host-native MAME mac128k.
 emit macsys1 \
   --tile macsys1 --udp 54199 --x11 --x11-display :73 --capture shm --pointer \
-  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  abs --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/macsys1/macsys1.keymap" \
   --env-append-file "$T/macsys1/station.env.fixture"
 
