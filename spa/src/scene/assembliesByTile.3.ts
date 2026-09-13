@@ -97,4 +97,8 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  xenix: {
+    kind: 'pizzaBox', body: 'towerE', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;

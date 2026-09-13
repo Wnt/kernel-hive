@@ -171,6 +171,7 @@ MANIFEST=(
   "oberon         |tiles/oberon.sh                                       |OBERON            |fast        |~1m                          |full                         |oberon.qcow2 (Native Oberon 2.3.6 installed IDE image, asig/native-oberon, converted raw->qcow2)"
   "perq           |tiles/perq.sh                                         |PERQ              |graphical   |~8m                          |none                         |assets/perq (PERQemu 0.9.5 release tree + the debootstrap trixie container rootfs, uid-shifted to 2359296) and assets/perq/perqemu/Disks/g7.prqm (POS G.7 system disk; cold-boot reset)"
   "vision         |tiles/vision.sh                                       |VisiOn            |graphical   |~25m                         |none                         |assets/vision (the sandbox rootfs with PCE built from the pinned hampa.ch tarball under /opt/pce, pce.cfg, the XT ROMs) and assets/vision/disk (hd0.pbi with Visi On installed + VOAPP1/2.psi, the copy-protected key disks; cold-boot reset)"
+  "xenix          |tiles/freedos.sh                                      |FreeDOS           |retro       |~10-15m                      |full*                        |freedos.qcow2 (games+Arachne)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

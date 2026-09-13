@@ -1748,6 +1748,24 @@
       "udp_port": 54094,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "xenix": {
+      "dir": "/data/vms/streamhost/stations/xenix",
+      "qmp": "/data/vms/streamhost/stations/xenix/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54202,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    },
     "zx81": {
       "dir": "/data/vms/streamhost/stations/zx81",
       "qmp": null,

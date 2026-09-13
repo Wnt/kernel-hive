@@ -300,6 +300,9 @@ const POSTER_INDEX = {
   "winxp": {
     "hero": "/posters/winxp/desktop.webp"
   },
+  "xenix": {
+    "hero": "/posters/xenix/desktop.webp"
+  },
   "zx81": {
     "hero": "/posters/zx81/desktop.webp"
   },
