@@ -248,3 +248,71 @@ Both floppies ship `444`; the desktop comes up unchanged.
 | the MacPaint/MacWrite demo | the Write/Paint volume is mounted and visible on the desktop, but no `demoProgram` drives a double-click into MacPaint yet | needs the pointer offset above first |
 | retronet / IM | permanently out of scope — a 1984 Macintosh has no TCP/IP | — |
 | `mackbd_m0120` romset | not staged; not needed (`-verifyroms mac128k` passes, and MAME resolves the keypad's ROM from `mackbd_m0110`'s file) | only if a keypad demo is wanted |
+
+## Landing — 2026-09-13
+
+`scripts/dev/station-land.sh macsys1` from `/data/vms/sandbox/macsys1/repo`.
+Steps 1-11 green; step 12 blocked by a defect that arrived on `main` from another
+wave (below). Landed commit on `main`: box `.deployed-rev = main@467cff7d`.
+
+| Step | Result |
+|---|---|
+| 2 merge `origin/main` | conflicts in the two SPA scene shards + three generated files. Resolved by the WAVE-COMMON recipe: `git checkout origin/main --` the generated files and the shards, `spa-scene-rows.py macsys1 --base-ref origin/main --row-from macsys1 --apply`, `stations-registry.py render`. **Also had to reassign every render order**: `minix2` had landed first and taken `bringUpOrder/bindingOrder 102`, so macsys1 moved to 103/103/89/87/87. `spa-scene-rows.py` then has to run AGAIN, because the lineup index moved. |
+| 5 push, 6 box-deploy | green — `main@467cff7d`, 3 rows installed |
+| 9 station-up | **failed the first time**, see below; green on the retry |
+| 10 claims | re-homed to `macsys1`: display `:99`, port 54199, sandbox, slot 199, vmid 199 |
+| 11 proof | `/data/vms/sandbox/macsys1/macsys1-landed.png` — the Finder 1.0 desktop, both volumes, through the real `streamhost@macsys1` unit |
+| 12 SPA build | **RED, and not this station's fault** — see below |
+
+### Wall 3 — a golden-bake rig leaves the station dir dirty and orphans MAMEs
+
+`systemctl start streamhost@macsys1` failed with
+`start-pre operation timed out. Terminating.` after 90 s, twice, and the journal
+named nothing. The cause: **for a MAME-native station the golden-bake rig IS the
+station dir**, so the hand-launched bake had left `ctl.sock`, `fb.shm` and
+`mame.pid` in `/data/vms/streamhost/stations/macsys1`. The shared launcher's own
+reaper (`station_emu_pids`, the second-publisher guard) then sat waiting on a
+publisher that was not going to answer. Worse: MAME is `nohup`'d, so each timed-out
+attempt **orphaned a live MAME** — two of them, about two cores — that `systemctl
+stop` could not reach.
+
+It is NOT the port (54199 was free; `ss -ulpnH | grep 54199`), and it is not the
+minix2 shape (no smoke daemon was ever started here). Diagnosis and fix:
+
+```
+for p in /proc/[0-9]*; do readlink "$p/exe"; done | grep macsys1   # find orphans
+kill -9 <pid>                                                      # by /proc/<pid>/exe, never a name
+rm -f /data/vms/streamhost/stations/macsys1/{fb.shm,ctl.sock,mame.pid,afifo-holder.pid}
+systemctl reset-failed streamhost@macsys1 && systemctl start streamhost@macsys1
+```
+
+→ started in 7 s. **Take your own bake rig's sockets down before `station-land`,
+not just its process.**
+
+(A red herring on the way: `. station.env` from an interactive shell dies with
+`syntax error near unexpected token '('` on the unquoted `SH_FIXTURE_DESC` prose.
+systemd's `EnvironmentFile` parser is not a shell and does not care; only a
+hand `source` does. Parse it with `shlex.quote` if you need it in a shell.)
+
+### Blocked: step 12, SPA build — `applegs` family, from the apple2gs wave
+
+```
+src/ui/keyboard/keyboardProfiles.data.exotic.ts:247:3 TS2353
+  'applegs' does not exist in type 'Record<ExoticFamily, KeyboardProfile>'
+src/ui/keyboard/keyboardProfiles.ts:454:3 TS2322
+  Type '"applegs"' is not assignable to type 'Family'
+```
+
+The new keyboard family was added to the data table and to the tile→family map but
+**not to the `ExoticFamily` union**. This is on `main` and blocks step 12 for every
+station in the wave, so the deployed SPA bundle does not yet carry any of tonight's
+scene rows even though the registry rows are deployed. Fix belongs to the apple2gs
+lead; macsys1's own `classicmac128` family is complete and compiles.
+
+**macsys1's remaining landing step is exactly one command, once that is fixed:**
+
+```
+cd /data/vms/sandbox/macsys1/repo && scripts/dev/station-land.sh macsys1
+```
+
+(it is idempotent — it will no-op steps 2-11 and run 12-14).
