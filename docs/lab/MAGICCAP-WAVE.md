@@ -117,10 +117,13 @@ not raced — it is a single-token misuse, not an ambiguous failure.
 ## Landing
 
 Not yet run through `station-land.sh`. The station lead's golden and both
-disks currently live under `/data/vms/sandbox/magiccap/smoke/` (see §Proofs);
-promoting them to `/data/vms/streamhost/assets/magiccap/` (the path this
-station's launcher and fixture assume) is the next step before a
-`station-land.sh magiccap --golden <staged.qcow2>` pass — OPEN, see below.
+disks were promoted this session: `/data/vms/sandbox/magiccap/smoke/disk-c.qcow2`
+(carries the re-baked `golden`, past the first-run name-card gate) and
+`disk-d.qcow2` are copied to `/data/vms/streamhost/assets/magiccap/magiccap-c.qcow2`
+and `magiccap-d.qcow2` (the path `qemu-streamhost.sh` assumes), `qemu-img
+snapshot -l` on the promoted copy confirms `golden` at `2026-09-13 09:57:15`.
+The sandbox copy is kept as the `--golden` argument for
+`station-land.sh magiccap --golden /data/vms/sandbox/magiccap/smoke/disk-c.qcow2`.
 
 ## Proofs (measured by the station lead, frames on labhost)
 
@@ -145,37 +148,68 @@ station's launcher and fixture assume) is the next step before a
   `/data/vms/sandbox/magiccap/smoke/ptB/cur.png`.
 - **Click opens a desk object**: a click at (478,262) on the desk's datebook
   made Magic Cap react — it opened the first-run "Filling out your name card"
-  card. Frame: `/data/vms/sandbox/magiccap/smoke/obj/cur.png`. (This same
-  modal is the first-run gate recorded as OPEN item 1 below.)
+  card. Frame: `/data/vms/sandbox/magiccap/smoke/obj/cur.png`.
 - **WIN.INI trap, confirmed with a frame**:
   `/data/vms/sandbox/magiccap/smoke/f-boot2.png` shows the resulting "Cannot
   find the file 's'" dialog.
-- **Keyboard**: not measured this session — OPEN.
+- **First-run name-card gate cleared and golden re-baked** (this session):
+  relaunched `-loadvm golden -S` + `cont`, clicked the datebook (478,262) to
+  raise the "Filling out your name card" modal
+  (`/data/vms/sandbox/magiccap/smoke/click1.png`), clicked "fill out" at
+  (356,222) (`click2.png`), then walked the resulting 5-step "Add your card"
+  wizard: step 1 click the name-card collection (`click3.png`), step 2 "next"
+  (`click4.png`), step 3 "new" (`click5.png`), step 4 "person" (`click6.png`),
+  the Name dialog's first-name field — **this is the keyboard proof**: typed
+  `Visitor` via `qmp-type.py`, landed correctly in the field
+  (`/data/vms/sandbox/magiccap/smoke/typed/cur.png`), clicked "done"
+  (`click8.png`), step 5 "done" (`click9.png`), landing back on the Desk
+  (`click9.png`). Confirmed the gate is gone: the Notebook opens directly on
+  click (`click10.png`) and the Datebook opens directly on click
+  (`click12.png`), no modal either time. `savevm golden` recaptured the same
+  tag at `2026-09-13 09:57:15` (overwriting the earlier pre-gate golden),
+  `info snapshots` confirms only the one loadable `golden` tag.
+- **Restore proof, post-recapture**: process killed by `/proc/<pid>/exe`
+  (never `pkill -f` — this session's own ssh command line contains the
+  strings "magiccap" and "qemu" and would have matched itself), relaunched
+  `-loadvm golden -S` + `cont`, came back to the identical Magic Cap desk
+  (`/data/vms/sandbox/magiccap/smoke/restore2.png`), and a click on the
+  datebook opens it directly with no modal
+  (`/data/vms/sandbox/magiccap/smoke/restore3.png`) — the gate stays cleared
+  across a restore.
+- **Keyboard**: measured this session (see above) — `Visitor` typed cleanly
+  into the Name dialog's first-name field at the fleet floor gap (qmp-type.py
+  default 0.12 s/key).
+
+### Mouse-move trap (new this session)
+
+`qmp-type.py --mouse DX DY` issues HMP `mouse_move`, which on this station's
+QEMU 11.0.2 build is a no-op against the `usb-tablet` absolute device: three
+consecutive calls with different targets produced byte-identical screendumps
+(cursor never moved). The working path is the QMP protocol-level
+`input-send-event` with `abs` axis events scaled `round(px / 640 * 32767)` /
+`round(py / 480 * 32767)`, then separate `btn` down/up events for a click —
+this is what produced every click/type frame in this session
+(`/tmp/qclick.py` on labhost, ad hoc). The wave doc's earlier "two-target
+readback" proof (commanded (120,140) → drawn (119,141)) must have used this
+same abs-event path, not the HMP helper's `--mouse` flag; worth fixing in
+`qmp-type.py` itself so future stations do not lose time on this.
 
 ## OPEN items
 
 - **Magic Cap 3.1 is not sourceable** (see §Media) — operator must source
   `MagicCAP-USA.exe` from a login-gated forum account before this station can
   ship the real 3.1 simulator instead of the 1995 pre-release.
-- **First-run name-card gate**: the golden restores to the desk, but the
-  first click on most desk objects raises Magic Cap's modal "Filling out your
-  name card" card. Its close box dismisses it, but it returns on the next
-  object click, so the desk is not yet fully interactive for a visitor. Next
-  step: relaunch `/data/vms/sandbox/magiccap/smoke/launch-smoke.sh`, `cont`,
-  click "fill out" at (356,222) in the 640x480 frame, complete the card once,
-  then recapture golden.
-- **Keyboard**: not measured this session.
+- **First-run name-card gate — CLEARED this session**: the "Add your card"
+  wizard was completed once against the golden and `savevm golden` recaptured
+  past it; restore-proven (see §Proofs). No longer open.
+- **Keyboard — measured this session** (see §Proofs). No longer open.
 - **`/os/magiccap` smoke rig not published** — `smoke-rig.sh` has not been
   run for this station.
 - x11warp display `:97` is claimed but **unused** — this is a `dbus,p2p=on`
   display-plane guest, not an x11warp station (see §Sandbox).
-- **Disk promotion**: the smoke rig's disks
-  (`/data/vms/sandbox/magiccap/smoke/disk-c.qcow2`, 1.05 GB, carries golden;
-  `/data/vms/sandbox/magiccap/smoke/disk-d.qcow2`, 408 MB — both cloned from
-  win98se) have NOT been promoted to `/data/vms/streamhost/assets/magiccap/`,
-  which is the path `qemu-streamhost.sh` and `scripts/build-guests/tiles/
-  magiccap.sh` assume. Confirm and correct those paths (or promote the disks
-  to match) before this station goes live.
+- **Disk promotion — DONE this session**: promoted to
+  `/data/vms/streamhost/assets/magiccap/{magiccap-c,magiccap-d}.qcow2` (see
+  §Landing). The sandbox smoke copy is kept for `station-land.sh --golden`.
 - **Cosmetic**: the C: image still carries win98se's inherited desktop icons
   (ICQ, Opera, AOL) alongside Magic Cap.
 - `docs/guests/magiccap.md` is a scaffold stub; needs the lead's measured
