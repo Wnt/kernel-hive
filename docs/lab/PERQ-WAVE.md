@@ -401,6 +401,37 @@ accent uid base — the release tree can be shared read-only, but the
 uid-shifted rootfs cannot), then boot once on a rig and capture the
 Accent/Lisp listener frame for `spa/public/posters/accent/desktop.webp`.
 
+## §Idle freezer
+
+Landed, then fixed live: `station-land.sh` brought `streamhost@perq` up, but
+`journalctl` showed `[idle] pause failed (pid 752234 cmdline does not contain
+"assets/perq/rootfs/usr/bin/mono-sgen" — stale pidfile, refusing); will retry`
+every 5s once the idle grace elapsed with no viewer connected — the exact
+§Cost risk ("never run this station unfrozen and unattended") realized on the
+live unit. Root cause: `SH_IDLE_PAUSE_PROC_MATCH` in `station.env.fixture` was
+copied from a fleet pattern that checks `/proc/<pid>/cmdline` against a HOST
+rootfs path, but PERQemu's cmdline inside the nspawn is `mono
+/work/perq/PERQemu.exe /work/perq/boot.scr` — the host path never appears
+there (`streamhost/src/idle.rs`'s `signal_pidfile()`/`pid_is_stopped()` do a
+literal substring match). Same shape as the two launcher bugs §Builder already
+documents for `x11-runtime.sh`'s own pid resolution; this is the daemon-side
+idle-pause match that needed the identical fix and was missed. Fixed to
+`/work/perq/PERQemu.exe` (commit `256587d9`), pushed straight to main (bash
++ docs only, gate green, no scene-table touch) and box-deployed.
+
+Proof after the fix, on the live unit (restarted, fresh PERQemu pid 865749,
+`station.env`'s `SH_IDLE_PAUSE_SECS=60` + `SH_IDLE_PAUSE_WARMUP_SECS=180`,
+no viewer connected the whole time):
+
+```
+07:39:38 State:	T (stopped)
+```
+
+`grep State /proc/865749/status` confirmed `T (stopped)` and stayed there;
+`SIGCONT` on the next viewer connection is the daemon's own resume path
+(untested this stream — the freezer engaging is what was at risk, per the
+brief). **The station is left frozen, not running unattended at ~200% CPU.**
+
 ## Teardown
 
 The first lead's container (nspawn 2528279, mono 2528371, Xvfb 2528377) was
