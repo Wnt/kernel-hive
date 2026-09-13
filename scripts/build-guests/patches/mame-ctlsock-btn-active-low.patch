@@ -1,0 +1,92 @@
+MAME ctlsock: honor IP_ACTIVE_LOW button ioports.
+
+WHY
+
+mame-ctlsock-ptr-tags.patch lets the module bind its click engine to any
+machine's button ioport by NAME (MAME_CTL_BTN_NAMES), but set_button() always
+called set_value(1) for "pressed" -- correct for the SGI Indy's hle_ps2_mouse
+buttons (IP_ACTIVE_HIGH) and for every station this shipped on so far, wrong
+for anything whose buttons are IP_ACTIVE_LOW.
+
+The FM Towns MSX-protocol mouse is exactly that:
+bus/msx/ctrl/mouse.cpp:17-18
+
+    PORT_BIT(0x10, IP_ACTIVE_LOW, IPT_BUTTON1)
+    PORT_BIT(0x20, IP_ACTIVE_LOW, IPT_BUTTON2)
+
+so set_value(1) writes the RELEASED state. The observable, measured on
+fmtowns 2026-09-13, is a second liar's paradox on top of the ptr-tags one:
+DOWN1 acks OK, STAT shows no error, and the guest desktop shows no reaction
+at all -- not even the icon-select highlight a real click produces -- because
+every click this module ever sent was, from the guest's point of view, a
+button that was never pressed.
+
+WHAT IT ADDS
+
+  MAME_CTL_BTN_ACTIVE_LOW   "<btn1>,<btn2>,<btn3>" -- "1" inverts that
+                            button's polarity in set_button(), "0" or empty
+                            leaves it alone. Unset reproduces the previous
+                            behaviour byte for byte (every m_btn_active_low
+                            entry defaults false), so every existing caller
+                            (irix) is untouched.
+
+CONTAINMENT
+
+  * Applies AFTER mame-ctlsock-ptr-tags.patch (it edits that patch's own new
+    lines: the button-name env parsing block and the m_btn_field array
+    declaration) and touches nothing else.
+  * No save items added or removed -- the savestate signature is unchanged.
+
+MEASURED ON FMTOWNS (2026-09-13, lab box, fmtownsftv + the ptr-tags fix)
+
+Before: MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2," bound cleanly
+(setup btns=1), but DOWN1 / CLICK1 / DCLICK1 on the TownsGEAR and
+"Command Mode" desktop icons produced NO visible change on the framebuffer
+across 4 attempts (single click, double click, and a bare press held with
+no release). After, with MAME_CTL_BTN_ACTIVE_LOW="1,1,": same DOWN1/CLICK1
+sequence against "Command Mode" -- STILL no visible reaction. So this patch
+is verified to compile and to invert the polarity as designed (STAT/DOWN1
+accepted, no regression on the proven pointer-motion path), but it did NOT
+by itself unblock the fmtowns click -- something else in the click path
+(guest-side button-scan timing, or a machine-specific gate this station's
+GUI applies before it will read the MSX pad's button bits) remains open.
+See docs/lab/FMTOWNS-WAVE.md SS Pointer for the next steps.
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -416,6 +416,19 @@ public:
+ 			m_btn_name[1] = "Right Button";
+ 			m_btn_name[2] = "Middle Button";
+ 		}
++		// MAME_CTL_BTN_ACTIVE_LOW="1,1,0": some buses (the MSX mouse's
++		// BUTTONS port, bus/msx/ctrl/mouse.cpp) define their button bits
++		// IP_ACTIVE_LOW, so set_value(1) is RELEASED, not pressed -- a
++		// click that acks OK and presses nothing (measured on fmtowns
++		// 2026-09-13: DOWN1 held with no visible effect on the
++		// framebuffer). Default false reproduces prior behaviour exactly.
++		{
++			std::string a, b, c;
++			split3(env_str("MAME_CTL_BTN_ACTIVE_LOW"), a, b, c);
++			m_btn_active_low[0] = (a == "1");
++			m_btn_active_low[1] = (b == "1");
++			m_btn_active_low[2] = (c == "1");
++		}
+ 		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
+ 		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
+ 		m_tail_path = env_str("MAME_CTL_CMD_FILE");
+@@ -1736,6 +1749,8 @@ private:
+ 		ioport_field *const f = m_btn_field[btn];
+ 		if (!f)
+ 			return;
++		if (m_btn_active_low[btn])
++			val = val ? 0 : 1;
+ 		f->set_value(u32(val));
+ 		if (m_btn_port)
+ 			m_btn_port->frame_update();  // V6: applied immediately mid-frame
+@@ -3108,6 +3123,7 @@ private:
+ 	ioport_port *m_x_port = nullptr;
+ 	ioport_port *m_y_port = nullptr;
+ 	ioport_field *m_btn_field[3] = { nullptr, nullptr, nullptr };
++	bool m_btn_active_low[3] = { false, false, false };   // MAME_CTL_BTN_ACTIVE_LOW
+ 	ioport_field *m_x_field = nullptr;
+ 	ioport_field *m_y_field = nullptr;
+ 	std::unordered_map<std::string, ioport_port *> m_port_cache;

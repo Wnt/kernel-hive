@@ -32,7 +32,25 @@ NATIVE_GEOM=1024x768
 # other stations), so the build-time boot gate below proves only the
 # no-disc system screen, not the booted desktop.
 NATIVE_MAME_ARGS=(-pad1 townspad -pad2 mouse)
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch)
+# mame-ctlsock-ptr-tags.patch: fmtowns's mouse is an MSX general-purpose-port
+# device (bus/msx/ctrl/mouse.cpp), tagged :pad2:mouse:BUTTONS/MOUSE_X/MOUSE_Y
+# -- NOT the SGI Indy's hle_ps2_mouse the fleet ctlsock module hardcodes, so
+# without this patch the module's own setup line prints "btns=0 axes=0" and
+# every MOVE/MOVEA/CLICK is acked into a null field (docs/lab/FMTOWNS-WAVE.md
+# SS Pointer, measured on the live station 2026-09-13). Also carries the
+# type-based Mouse-X/Y binding fix (KEYDUMP measured the field names as
+# "Mouse X 2"/"Mouse Y 2" on pad2, not the module's hardcoded "Mouse X"/
+# "Mouse Y", so axes stayed 0 until this landed too).
+#
+# mame-ctlsock-btn-active-low.patch: the same MSX mouse's BUTTONS port is
+# IP_ACTIVE_LOW (bus/msx/ctrl/mouse.cpp:17-18), so the module's set_value(1)
+# for "pressed" was writing RELEASED -- MAME_CTL_BTN_ACTIVE_LOW inverts it.
+#
+# The rig's exact env for both (measured 2026-09-13; see station.env.fixture
+# once this ships): MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,
+# :pad2:mouse:MOUSE_Y" MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2,"
+# MAME_CTL_BTN_ACTIVE_LOW="1,1,".
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch mame-ctlsock-btn-active-low.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
