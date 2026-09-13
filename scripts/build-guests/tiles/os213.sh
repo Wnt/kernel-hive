@@ -16,7 +16,10 @@ OS_ID="os213"
 STAGING="${STAGING:-/data/assets-staging/$OS_ID}"
 
 log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
-die() { log "ERROR: $*"; exit 1; }
+die() {
+  log "ERROR: $*"
+  exit 1
+}
 
 # --- pinned media -------------------------------------------------------------
 # IBM OS/2 1.30.2 Standard Edition, 10 x 1.44 MB floppy images, 7z archive.

@@ -115,6 +115,46 @@ No 9p/virtfs/smb/`fat:` host drive, no `-netdev user` hostfwd, no guest-reachabl
 QMP/monitor, no virtio-serial host channel. Launcher line:
 `streamhost/stations/os213/qemu-streamhost.sh`.
 
+## Landing — NOT DONE in this wave's budget
+
+`station-land.sh` was NOT run. Everything except the guest disk is committed,
+pushed and green on branch `os213`; the install was still running at the lead's
+120-minute stop. **Do not land an enabled production `os213` until a golden
+exists** — the registry row is `lifecycle: production, enabled: true`, so landing
+it without a disk at `/data/vms/streamhost/stations/os213/os213-golden.qcow2`
+would put a dead tile in the gallery.
+
+### Exact resume path
+
+The install rig is alive and resumable; the guest has never been relaunched.
+
+| Thing | Where |
+|---|---|
+| install target disk | `/data/vms/sandbox/os213/smoke/os213-install.qcow2` |
+| running guest | `/data/vms/sandbox/os213/smoke/qemu.pid`, launched by `launch-smoke.sh` (`FD=` / `BOOT=` env vars) |
+| floppies | `/data/vms/sandbox/os213/smoke/floppies/*.img` |
+| step helper (labhost only) | `smoke/step.sh <name> <settle> <timeout> <keys...>` |
+| floppy swap helper (labhost only) | `smoke/swap.sh <Disk0N|DriverN>` — QMP `blockdev-change-medium`, never a relaunch |
+| published page | `/os/os213`, dark-launched; **re-run `smoke/run-daemon.sh` after ANY guest relaunch** or the page goes dead |
+
+Then: finish the install, reboot `BOOT=c` with fd0 ejected, reach the PM Desktop
+Manager, `savevm golden`, restore-prove it, and run the three proofs (restore,
+typed `ver`/`dir`, `fb-react.py` motion + click). After that:
+
+```
+scripts/dev/station-land.sh os213 --golden /data/vms/sandbox/os213/smoke/os213-install.qcow2
+```
+
+### Install trap found at the panel, not after the reboot
+
+The IBM 1.3 SE installer offers a **"Minimum System Configuration"** panel whose
+default action is Enter — "no configuration options were selected". Taking it can
+leave the guest at a bare `[C:\]` with no Desktop Manager, which would cost the
+whole install to discover after the reboot. Disk space is not a constraint here
+(500 MB target, OS/2 1.3 SE needs a fraction), so **press Esc, go back, and select
+the graphical system and its tools with the Spacebar.** Record the exact option
+list in `docs/guests/os213.md` §Install recipe.
+
 ## Measured timeline
 
 Filled from `scripts/dev/session-timeline.py` after landing.
