@@ -104,6 +104,21 @@ const DEMO_PROGRAMS = {
     "runCommand": "run",
     "perCharMs": 170
   },
+  "fmtowns": {
+    "label": "Type in a demo program (press B for SAM BASIC first)",
+    "lines": [
+      "NEW",
+      "10 MODE 4",
+      "20 PAPER 0: PEN 15: CLS",
+      "30 FOR r=4 TO 80 STEP 4",
+      "40 LET c=(r DIV 4) MOD 15: PEN c+1",
+      "50 CIRCLE 128,88,r",
+      "60 NEXT r",
+      "70 PEN 15: PRINT AT 0,6;\"SAM COUPE 1989\""
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
   "freebsd411": {
     "label": "Type a few commands into the root Konsole",
     "lines": [

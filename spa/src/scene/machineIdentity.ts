@@ -567,6 +567,11 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
     kit: 'workstation',
   },
+  // TODO(fmtowns): exhibit finish copied from samcoupe — set the real era cues.
+  fmtowns: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {
