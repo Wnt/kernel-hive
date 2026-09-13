@@ -37,7 +37,7 @@ import type { KeyAction, KeyDef, KeyRow, MacroStep } from './keyTypes';
 import { XK } from '../../three/useStreamControl';
 
 export type Family =
-  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
+  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
@@ -310,6 +310,12 @@ export const OS_FAMILY: Record<string, Family> = {
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
   freedos: 'dos', msdoswin1: 'dos',
+  // SCO Xenix 386 2.3.4: a System V text console, so the linux-tty rows' job
+  // exactly (^C/^D/^Z on a PC-101 board) — plus the one thing that IS the
+  // exhibit, Multiscreen: Alt+F1..Alt+F4 switch between four independent
+  // console sessions. Those are chords, not taps, so they get their own row
+  // rather than relying on a visitor latching Alt before an F-key.
+  xenix: 'xenix',
   // bootOS: a bare `$` prompt over BIOS int 16h; the dos rows lead with
   // Ctrl+Alt+Del, which is the way home from a boot-sector game.
   bootos: 'dos',

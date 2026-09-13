@@ -1751,7 +1751,7 @@
     "xenix": {
       "dir": "/data/vms/streamhost/stations/xenix",
       "qmp": "/data/vms/streamhost/stations/xenix/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,

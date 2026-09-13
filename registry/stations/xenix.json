@@ -178,32 +178,34 @@
   "spa": {
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
-    "accentColor": "#5fa85f",
-    "eraLabel": "TODO(freedos): 1994 · DOS era"
+    "accentColor": "#4f8a8b",
+    "eraLabel": "1989 · Unix on the PC"
   },
   "museum": {
     "id": "xenix",
-    "displayName": "TODO(freedos): FreeDOS",
-    "year": 1994,
-    "lineage": "TODO(freedos): MS-DOS compatible, open source",
+    "displayName": "SCO Xenix 386",
+    "year": 1989,
+    "lineage": "Microsoft's Unix (AT&T V7 → System V), sold to SCO in 1987",
     "arch": "i386",
-    "ramMB": 64,
-    "notes": "TODO(freedos): The living continuation of the DOS command line, still shipping today.",
-    "accent": "#5fa85f",
-    "era": "1990s",
+    "ramMB": 16,
+    "notes": "Microsoft sold Unix before it sold DOS. Xenix was the most-installed Unix of the 1980s; Multiscreen (Alt+F1..F4) is where Linux's virtual consoles come from.",
+    "accent": "#4f8a8b",
+    "era": "1980s",
     "eraSoftware": [
-      "EDIT",
-      "FDISK",
-      "4DOS",
-      "Arachne browser"
+      "sh / csh",
+      "vi",
+      "Multiscreen (Alt+F1..F4)",
+      "SCO business shell",
+      "uucp"
     ],
-    "periodBrowser": "Arachne / Lynx (DOS)",
+    "periodBrowser": "none (SCO TCP/IP was a separate product)",
     "iconicApps": [
-      "Rogue",
-      "Nibbles",
-      "DOOM (shareware)"
+      "vi",
+      "uucp",
+      "nroff",
+      "Microsoft C for Xenix"
     ],
-    "blurb": "TODO(freedos): The DOS command prompt that never died — C:\\> is still alive and well."
+    "blurb": "Microsoft's own Unix, grown up on the 386 — and the reason your Linux box switches consoles with Alt+F2."
   },
   "emulator": {
     "family": "QEMU",
@@ -227,5 +229,15 @@
     "Boot media trap: SCO Xenix floppies carry no 0x55AA signature at offset 510 and the boot sector compares a 14-byte filename string at 0x1F8 that runs THROUGH 0x1FE/0x1FF. Patch both bytes: 55 AA at 510 AND 0x0e -> 0x06 at offset 121 (the compare length).",
     "Media trap: WinWorld 386 2.3.4q is a MIXED set (Installation = typ=386PS MicroChannel, utilities = typ=n386 2.3.4h). The 386PS kernel panics with TRAP 8 under QEMU. Use the PCjs typ=386GT rel=2.3.4h N1/N2 floppies, which boot to init.",
     "retronet OPEN: SCO TCP/IP for Xenix is a separate product; no NIC in the device set and no rn-tapnet.sh committed (AGENTS.md rule 15)."
-  ]
+  ],
+  "demoProgram": {
+    "label": "Look around a 1989 Unix",
+    "lines": [
+      "uname -a",
+      "who",
+      "ls /usr"
+    ],
+    "runCommand": "ls -l /unix",
+    "perCharMs": 80
+  }
 }

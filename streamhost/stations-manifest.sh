@@ -1228,7 +1228,7 @@ emit vision \
 
 # xenix (VMID 95) — TODO one line; scaffolded from freedos.
 emit xenix \
-  --tile xenix --vmid 202 --udp 54202 --pointer rel --audio on --fps 30 \
+  --tile xenix --vmid 202 --udp 54202 --pointer none --audio on --fps 30 \
   --launcher-file "$T/xenix/qemu-streamhost.sh" --env-append-file \
   "$T/xenix/station.env.fixture"
 
