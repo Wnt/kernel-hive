@@ -110,6 +110,6 @@ export const EXHIBIT_IDENTITIES_3 = {
   },
   vision: {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
-    badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office80',
+    badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

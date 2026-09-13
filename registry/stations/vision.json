@@ -132,7 +132,8 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#7FB069",
-    "eraLabel": "1983 · Visi On 1.0"
+    "eraLabel": "1983 · Visi On 1.0",
+    "pointerRel": false
   },
   "museum": {
     "id": "vision",
@@ -156,7 +157,7 @@
       "Visi On Graph"
     ],
     "blurb": "VisiCorp shipped Visi On in December 1983 and beat both the Macintosh and Windows to the IBM PC: overlapping windows, a mouse, pull-down menus and a Services window that installs and launches applications, all running on an 8088 with a CGA card and 640 KB. It cost $1,795 plus a hard disk and a mouse nobody had yet, it ran only VisiCorp's own three programs, and it sold almost nothing — but the command strip along the bottom of this screen (HELP, CLOSE, OPEN, FULL, FRAME, OPTIONS, TRANSFER, STOP) is the graphical desktop arriving on the PC a full year early.",
-    "notes": "Live streamhost station, HOST-NATIVE and SANDBOXED from birth: PCE (Hampa Hug, GPLv2+) emulates an IBM 5160 XT inside a systemd-nspawn container with private PID/mount/net/IPC/UTS/user namespaces (host uid base 2162688, --volatile=overlay over a debootstrap minbase trixie rootfs, --private-network, capabilities dropped, @mount filtered, --no-new-privileges; the operator's host-application rule after the medley incident), on a pinned 1280x800 Xvfb; the daemon captures the X root and drives XTEST. The Xvfb root IS PCE's window (CGA 640x200 at scale 2 with 4/3 aspect correction = 1280x800 exactly). Visi On's copy protection makes VOAPP1 a key disk that must sit in A: at every start, which is why the station ships PCE .psi images converted from the TransCopy .TC dumps rather than plain sector images. Reset = relaunch: fresh disk copies and a cold boot of the XT, then VISION typed at the C:\\> prompt. No network of any kind. See docs/lab/VISION-WAVE.md and docs/guests/vision.md."
+    "notes": "Live streamhost station, HOST-NATIVE and SANDBOXED from birth: PCE (Hampa Hug, GPLv2+) emulates an IBM 5160 XT inside a systemd-nspawn container with private PID/mount/net/IPC/UTS/user namespaces (host uid base 2162688, --volatile=overlay over a debootstrap minbase trixie rootfs, --private-network, capabilities dropped, @mount filtered, --no-new-privileges; the operator's host-application rule after the medley incident), on a pinned 1280x800 Xvfb; the daemon captures the X root and drives XTEST. The Xvfb root IS PCE's window (CGA 640x200 at scale 2 with 4/3 aspect correction = 1280x800 exactly). Visi On's copy protection makes VOAPP1 a key disk that must sit in A: at every start, which is why the station ships PCE .psi images converted from the TransCopy .TC dumps rather than plain sector images. Reset = relaunch: fresh disk copies and a cold boot of the XT, then VISION typed at the C:\\> prompt. No network of any kind. spa.pointerRel is false: the emulated mouse is Mouse Systems-relative hardware, but the no-grab patch's mouse_div_x=2/mouse_div_y=4 makes the browser's x11test-abs injection land 1:1 on the guest cursor, and the router requires pointerRel=false for that backend (validator: type=4 relative injection bypasses the router entirely). See docs/lab/VISION-WAVE.md and docs/guests/vision.md."
   },
   "emulator": {
     "family": "PCE",
