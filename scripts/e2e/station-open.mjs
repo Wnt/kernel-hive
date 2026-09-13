@@ -72,6 +72,77 @@ export function galleryUrl() {
 }
 
 /**
+ * Redeem an invite into a Playwright storageState, so a probe can carry an
+ * `admin`/`viewer` session instead of `anon`. Same route as
+ * scripts/visitor-sim/lib/invite.mjs and readme-demo-capture.mjs's signIn().
+ *
+ * WHY THIS EXISTS (landed 2026-09-13, docs/lab/OPERATING-RULES.md rule 11 —
+ * fix a broken lab tool in the same session that found it broken). Since
+ * `os route: an exhibit nobody (or not this role) can drive shows its notes`
+ * (5bcfc039, 2026-09-10), `grid/exhibitAccess.ts`'s `exhibitViewFor` renders
+ * `/os/:osId` as the ExhibitPoster ("notes") for ANY role that is not
+ * `admin`/`viewer` — and every station has a poster (measured 0/96 missing),
+ * so an unauthenticated browser gets notes, never the stream, full stop. A
+ * probe launched with no session therefore cannot reach live video no matter
+ * how healthy the station is: `open-check.mjs` used to read this as "no live
+ * video within wait window" after the full 45s poll, which is what the
+ * previous verifier's crash report actually was — the timeout raced a
+ * separate, session-independent problem (Chrome dying on the shared `:1`
+ * desktop) that made the SAME missing-auth failure look like two different
+ * bugs across runs.
+ *
+ * THE ARCHITECTURAL WALL. `scripts/serve/static_files.py`'s own comment says
+ * it plainly: "on the ungated LAN listener auth_routes.dispatch never runs,
+ * so /auth/state and every /walkin/* path fall through to the SPA fallback".
+ * `GALLERY_URL=https://<lab>:8443` (docs/PUBLIC-GALLERY.md: `127.0.0.1:8443`,
+ * "the LAN listener (unchanged, open)") therefore has NO auth plane to sign
+ * into at all — `/auth/invite/enter` 404s there. The gated listener
+ * (`127.0.0.1:8081` on labhost) is loopback-only and unreachable from CT950.
+ * The one gated origin CT950 CAN reach is the public gallery
+ * (`https://kernelhive.madekivi.fi`, the one committable domain — rule 1),
+ * which is exactly the origin readme-demo-capture.mjs already signs into.
+ *
+ * So: a probe that must SEE the stream (not just prove the click navigates)
+ * needs BOTH an INVITE code (path to one, e.g. the box's mode-600
+ * `pki/sim-invite.code`, or read from `SIM_INVITE_PATH` — see
+ * `docs/PUBLIC-GALLERY.md`) AND `GALLERY_URL` pointed at the public origin,
+ * not the bare LAN one. `open-check.mjs INVITE=<path> node open-check.mjs …`
+ * does this automatically when GALLERY_URL is left at its public default.
+ */
+export async function signIn(browser, code, statePath) {
+  const ctx = await browser.newContext({ ignoreHTTPSErrors: true });
+  const origin = new URL(galleryUrl()).origin;
+  try {
+    // Every state-changing auth route requires `Origin: <gallery origin>`
+    // (scripts/serve/auth/routes.py's own header: "that SameSite alone is
+    // not the whole answer") — omit it and redemption 403s as "not valid",
+    // which reads exactly like a bad/expired code and is not one.
+    const resp = await ctx.request.post(`${origin}/auth/invite/enter`, {
+      data: { code },
+      headers: { 'content-type': 'application/json', origin },
+    });
+    if (!resp.ok()) throw new Error(`invite redemption failed: HTTP ${resp.status()}`);
+    await ctx.storageState({ path: statePath });
+  } finally {
+    await ctx.close();
+  }
+  return statePath;
+}
+
+/** Resolve an INVITE env var (a path to the code, or the literal code) the
+ *  same way readme-demo-capture.mjs does — never printed either way. */
+export function inviteCode() {
+  const v = process.env.INVITE;
+  if (!v) return null;
+  try {
+    if (fs.statSync(v).isFile()) return fs.readFileSync(v, 'utf8').trim();
+  } catch {
+    /* not a path — fall through to the literal */
+  }
+  return v.trim();
+}
+
+/**
  * Open a station and wait for its stream to be live.
  * @returns {Promise<{ok:boolean, why:string, video:object|null, cardCount:number, url:string}>}
  */
@@ -90,8 +161,27 @@ export async function openStation(page, base, id, opts = {}) {
     } catch {
       return { ok: false, why: 'grid never rendered a card', video: null, cardCount: 0, url: page.url() };
     }
-    const cards = page.locator(`a.os-card[href$="${target}"]`);
-    const cardCount = await cards.count();
+    let cards = page.locator(`a.os-card[href$="${target}"]`);
+    let cardCount = await cards.count();
+    // GRID FOLDING. GridView.tsx: "Era sections FOLD. Only the two decades
+    // the collection is thickest in open [by default]" — a card in a
+    // collapsed decade is not in the DOM at all, so a station outside the
+    // default-open eras reads as "0 cards" and that is not a station fault
+    // (macsys1, reported as "0 cards" against a stale registry read, is
+    // really this: its era is folded shut on a fresh load). "A filter run
+    // OVERRIDES the fold entirely while it is active" — so typing the id
+    // into `.grid-filter-input` forces every matching era open, same as a
+    // visitor would by searching for the machine they want.
+    if (cardCount === 0) {
+      const filterBox = page.locator('.grid-filter-input');
+      if (await filterBox.count()) {
+        await filterBox.fill(id);
+        await page.waitForTimeout(300); // filter re-render, no fixed-length wait on anything else
+        cards = page.locator(`a.os-card[href$="${target}"]`);
+        cardCount = await cards.count();
+        log(`0 cards before filtering; ${cardCount} after typing "${id}" into the filter (era was likely folded)`);
+      }
+    }
     if (cardCount !== 1) {
       return {
         ok: false,
