@@ -40,7 +40,17 @@ NATIVE_MAME_ARGS=()
 # register, so MOVEA runs OPEN-LOOP: the same gain/step-cap/home-drain/
 # count-carry corrections the Apple II Mouse Card needed apply here for the
 # same reason — an 8-bit delta field that the guest's VIA nets and drains.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
+# ...but the open loop is NOT what ships. A 68000 Mac's ROM accelerates the
+# mouse at VBL (MEASURED on the rig: 1.83 px/count when the counts trickle,
+# ~1.98 in a burst), so no single gain is 1:1, and the 512x342 raster is
+# LETTERBOXED 2x inside the 1024x768 surface (1024x684 at y=42) so the open
+# loop's homing corner is not the guest's origin. mame-ctlsock-abs-ram.patch
+# replaces both problems with an absolute WRITE into the Mac's own documented
+# low-memory pointer globals (MTemp $828 / RawMouse $82C / Mouse $830, plus
+# CrsrNew $8CE := CrsrCouple $8CF) through the published-rect transform. Zero
+# counts are issued. The open-loop stack stays in the build as the fallback
+# the module uses if the address space cannot be resolved.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch mame-ctlsock-abs-ram.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {

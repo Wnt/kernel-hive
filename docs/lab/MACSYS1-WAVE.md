@@ -181,25 +181,102 @@ Frames in `/data/vms/sandbox/macsys1/frames/`.
 | 7 | `KEY` down/up Command + `o  O` | 1900 px changed inside the icon label — characters rendered | `k1.png` |
 | 8 | Relaunch from golden with both floppies mode 444 | identical desktop, no locked-disk dialog | `04-golden-ro.png` |
 
-### Pointer — the ONE open item is a constant offset, not drift
+### Pointer — ABSOLUTE, 0 px, by writing the Mac's own cursor globals
 
-Unlike apple2e (whose arrow walks off over three laps), this station's landings do
-not drift: worst error 8 px across four targets, and a click selects what it is
-aimed at. What it has instead is a **constant +42 px Y offset**, and it is
-geometric, not arithmetic: the 512x342 raster is letterboxed into the published
-1024x768 surface as **1024x684**, with a 42 px black band top and bottom. The
-guest's cursor origin therefore sits at published `y=42`, while the ctlsock
-module's belief origin — the corner its homing slam clamps into — is published
-`y=0`. Every landing is 42 px below the module's target (the table above was aimed
-with the offset pre-subtracted), and the bottom ~84 px of the module's coordinate
-space is unreachable.
+The open loop was never going to be 1:1 here, for two independent reasons, and
+the golden bake only saw one of them.
 
-The station ships `stream.pointer.transport = none` until that is carried properly.
-**NEXT:** set `stream.pointer.offset = [0, -42]` in the registry row (the field
-already exists), redeploy, and re-run the four-target table aiming at **raw**
-surface coordinates; prove it from the real SPA on CT950, not from the rig.
-Every letterboxed MAME-native station has this shape — `apple2e` (560x192) and
-`fmtowns` included — so the fix is probably fleet-wide, not per-station.
+1. **The gain is not a constant.** The Macintosh ROM accelerates the mouse at
+   VBL. MEASURED on the rig from the Mac's own `RawMouse`: `MOVEP 30 20` from
+   (15,15) landed (70,53) — **1.83 px/count across, 1.90 down** — while the
+   bake's bulk-travel measurement read **1.98**. One seeded gain cannot
+   describe both, so an open loop's error depends on how the counts arrive.
+2. **The letterbox.** The 512x342 raster is drawn 2x inside the published
+   1024x768 surface as **1024x684 at y=42**, so the guest's origin is published
+   (0,42) while the module's homing slam clamps into published (0,0). Every
+   landing was 42 px low and the bottom 84 px were unreachable. The bake's
+   four-target table was aimed with that 42 pre-subtracted by hand, which is
+   why it looked like an 8 px problem.
+
+`stream.pointer.offset = [0,-42]` was the bake's proposed fix and it is a dead
+end: **nothing reads that field** — not the daemon, not the SPA. The daemon
+forwards the browser's surface pixel to `MOVEA` untouched (`mame_sock.rs`;
+`--cursor-off-*` applies only to the D-Bus paths). The field is kept in the row
+as documentation of the geometry, not as a control.
+
+**What ships instead** (`scripts/build-guests/patches/mame-ctlsock-abs-ram.patch`,
+in `native.d/macsys1.sh`'s patch stack): the ctlsock module writes the visitor's
+pixel straight into the Macintosh's own documented low-memory pointer globals
+and nudges the Toolbox to republish it. **No mouse counts are issued at all**,
+so acceleration and accumulator drift are both out of the picture, and the
+letterbox is one explicit rectangle.
+
+```
+MAME_CTL_ABS_RAM=cpu=maincpu,pts=0x828+0x82c+0x830,order=vh,flag=0x8ce,flagsrc=0x8cf
+MAME_CTL_ABS_RECT=0,42,1024,684      # the published rect the raster occupies
+MAME_CTL_ABS_GEOM=512x342            # the raster, in guest px
+```
+
+`$828` MTemp, `$82C` RawMouse, `$830` Mouse — `Point` is `{v,h}`, big-endian,
+so the vertical word is written first. `$8CE` CrsrNew := `$8CF` CrsrCouple is
+the documented idiom for "the position changed outside the mouse interrupt";
+the VBL cursor task redraws on the next tick. The three addresses were not
+guessed: the patch ships `PEEK`/`POKEW`/`POKEB` on the CPU's program space, and
+one `MOVEP 30 20` with a `PEEK` either side confirmed all three globals track
+the mouse together (`000f000f000f000f000f000f` → `003500460035004600350046`).
+
+#### The proof
+
+Rig = a sandbox copy of the station dir (`/data/vms/sandbox/macsys1-ptr/rig`)
+off `golden.sta`, running the fleet binary with this patch. Frames in that dir.
+
+Five targets on the published 1024x768 surface, **two laps**, read back by
+exact masked-sprite match (the template is derived by overlaying the same
+sprite at two commanded points, so mask and colours are exact — no correlation,
+no threshold):
+
+| target | lap 1 match | lap 2 match | err |
+|---|---|---|---|
+| (26,68) | (2,44) | (2,44) | 0,0 |
+| (998,68) | (974,44) | (974,44) | 0,0 |
+| (26,694) | (2,670) | (2,670) | 0,0 |
+| (998,694) | (974,670) | (974,670) | 0,0 |
+| (512,384) | (488,360) | (488,360) | 0,0 |
+
+**WORST |err| = 0 px**, and the two laps are byte-identical frames.
+
+The guest's own register agrees, which is the half a picture cannot show —
+`PEEK 0x82C` after each `MOVEA`:
+
+| target (published) | expected guest px | RawMouse | err |
+|---|---|---|---|
+| (26,68) | (13,13) | (13,13) | +0,+0 |
+| (998,68) | (499,13) | (499,13) | +0,+0 |
+| (26,694) | (13,326) | (13,326) | +0,+0 |
+| (998,694) | (499,326) | (499,326) | +0,+0 |
+| (512,384) | (256,171) | (256,171) | +0,+0 |
+| (0,42) | (0,0) | (2,1) | +2,+1 |
+| (1023,725) | (511,341) | (509,339) | −2,−2 |
+
+The last two rows are the **Mac's own `CrsrPin`** clamping the cursor a couple
+of pixels inside the raster edge — the guest pinning its own cursor, not the
+transport missing. Every interior target is exact.
+
+Click still lands where it is aimed: one `CLICK1` at published (900,122)
+changed 6940 px (the Finder reacted).
+
+Earlier, a first pass measured the *absolute* sprite bounding box by diffing
+settled frames rather than by exact match, at the extreme corners
+(20,62) (1000,62) (20,704) (1000,704) (512,384): worst 2 px, both laps
+identical. That method's residual is the sprite's own edge dither against the
+50% desktop pattern, not pointer error — but it is the corner evidence the
+exact-match table cannot give (a 48x48 neighbourhood does not fit there).
+
+**Fleet note:** the rect/geom transform is not Mac-specific and neither is the
+patch — `MAME_CTL_ABS_RAM` binds any guest whose pointer lives in RAM by env
+alone. Every letterboxed MAME-native station (`apple2e` 560x192, `fmtowns`)
+has the same origin defect; the finding is written up for the next one in
+`docs/lab/INPUT-DEBUGGING.md` § "A letterboxed MAME-native station".
 
 ### Keyboard — two traps in the field names
 
@@ -243,8 +320,8 @@ Both floppies ship `444`; the desktop comes up unchanged.
 
 | Item | Why | Exact next command |
 |---|---|---|
-| absolute pointer | constant +42 px letterbox offset (above); landings otherwise within 8 px and clicks land | set `stream.pointer.offset=[0,-42]`, redeploy, re-run the four-target table on raw surface coords from the real SPA |
+| ~~absolute pointer~~ | **DONE** — absolute via the guest's own cursor globals, 0 px over five targets x two laps (above) | — |
 | audio | `stream.audio` is declared and the FIFO is wired; the Mac's 1984 sound is a boot chime and Finder beeps — not proven on this pass | operator validates by ear |
-| the MacPaint/MacWrite demo | the Write/Paint volume is mounted and visible on the desktop, but no `demoProgram` drives a double-click into MacPaint yet | needs the pointer offset above first |
+| the MacPaint/MacWrite demo | the Write/Paint volume is mounted and visible on the desktop, but no `demoProgram` drives a double-click into MacPaint yet | unblocked now: the pointer is absolute, so a `DCLICK1` at the Write/Paint icon's published pixel is all it needs |
 | retronet / IM | permanently out of scope — a 1984 Macintosh has no TCP/IP | — |
 | `mackbd_m0120` romset | not staged; not needed (`-verifyroms mac128k` passes, and MAME resolves the keypad's ROM from `mackbd_m0110`'s file) | only if a keypad demo is wanted |

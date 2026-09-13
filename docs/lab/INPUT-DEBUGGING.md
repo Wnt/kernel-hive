@@ -543,6 +543,31 @@ worth keeping in mind: a synthetic pen is not a real one. It reproduced the
 transport behaviour faithfully but not the exact wobble/timing distribution of a
 hand-held stylus, so a green probe is necessary, not sufficient.
 
+## A letterboxed MAME-native station: the offset nobody reads
+
+A MAME-native station publishes the fleet surface (usually 1024x768) and lets
+MAME letterbox the guest's raster inside it at an integer scale. `macsys1`'s
+Mac 128K is 512x342, drawn 2x as **1024x684 with a 42 px black band top and
+bottom** — so the guest's own (0,0) is published **(0,42)**, and the bottom
+84 px of the module's coordinate space addresses nothing at all. An open-loop
+`MOVEA` homes by slamming into the corner *its belief* calls the origin, which
+is published y=0, so every landing sits 42 px below where the visitor pointed.
+`apple2e` (560x192) and `fmtowns` have the same shape.
+
+**`stream.pointer.offset` in the registry row does not fix this, because
+nothing reads it.** Grep before you spend an afternoon on it: the field is
+written by the scaffolder (`scripts/stations_registry/scaffold.py`) and
+consumed by no daemon, no SPA module and no launcher. The daemon's own
+`--cursor-off-x/y` / `--cursor-scale` are real, but they are applied only on
+the D-Bus paths (`input.rs`); a routed backend — `mamesock` included — hands
+`InputRouter::try_move` the browser's surface pixel and `mame_sock.rs` puts
+that number straight on the wire as `MOVEA x y`.
+
+The control that DOES exist is in the module, and it is explicit:
+`MAME_CTL_ABS_RECT=x,y,w,h` (the published rectangle the raster occupies) with
+`MAME_CTL_ABS_GEOM=WxH` (the raster's size in guest px). See
+`mame-ctlsock-abs-ram.patch` and `streamhost/stations/macsys1/station.env.fixture`.
+
 ## Finding the pointer in a frame, without a human looking at it
 
 `scripts/dev/cursor-locate.py` turns a framebuffer capture into pointer
