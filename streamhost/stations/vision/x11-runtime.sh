@@ -121,10 +121,31 @@ is_descendant_of() {
   done
   return 1
 }
+# WHY THIS HAS A FAST PATH. The reap ladder below calls station_emu_pids up to 40
+# times, and the loop underneath readlink()s /proc/<pid>/exe for EVERY process on
+# labhost -- a box that routinely runs 100+ guests. Measured 2026-09-13: a
+# relaunch spent minutes there, long enough that `labctl reset vision` returned a
+# frozen frame to the visitor and the coordinator filed it as "reset is broken".
+# Two short-circuits fix it without weakening rule 5 (resolve by /proc/<pid>/exe,
+# never a cmdline grep):
+#   1. the pid we recorded at launch, verified by exe AND descent, is almost
+#      always the answer -- check it first, O(1);
+#   2. if the nspawn pid is gone there can be no container process left: PCE runs
+#      inside that nspawn's PID namespace, which is torn down with its pid 1.
 station_emu_pids() {
   local d p exe np
   np="$(cat "$NSPAWN_PIDFILE" 2>/dev/null || true)"
   [ -n "$np" ] || return 0
+  kill -0 "$np" 2>/dev/null || return 0
+  p="$(cat "$PIDFILE" 2>/dev/null || true)"
+  if [ -n "$p" ]; then
+    exe="$(readlink "/proc/$p/exe" 2>/dev/null || true)"
+    exe="${exe% (deleted)}"
+    if [ "$exe" = /opt/pce/bin/pce-ibmpc ] && is_descendant_of "$p" "$np"; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  fi
   for d in /proc/[0-9]*; do
     [ -d "$d" ] || continue
     p="${d#/proc/}"

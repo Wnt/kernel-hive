@@ -56,6 +56,28 @@ def validate_json_schema(value: Any, schema: dict[str, Any], where: str, errors:
             validate_json_schema(item, schema["items"], f"{where}[{index}]", errors)
 
 
+def validate_museum_period_browser(row: dict[str, Any], museum: dict[str, Any], errors: list[str]) -> None:
+    """`museum.periodBrowser` must be present and a string -- never null, never absent.
+
+    The SPA's parseEntry (spa/src/data/galleryManifest.ts) does
+    `typeof entry.periodBrowser === 'string'` with no null case: an entry
+    carrying `periodBrowser: null` (or missing it) parses as garbage, not as
+    "no browser". A station with no period browser says so in prose --
+    `"periodBrowser": "none -- pre-web 8-bit era"` -- never `null`.
+    """
+    if "periodBrowser" not in museum:
+        fail(errors, row, "museum missing periodBrowser")
+        return
+    value = museum["periodBrowser"]
+    if not isinstance(value, str) or not value.strip():
+        fail(
+            errors,
+            row,
+            f"museum.periodBrowser must be a non-empty string, got {value!r} "
+            "(use prose like 'none -- pre-web' for a station with no browser, never null)",
+        )
+
+
 def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None:
     lifecycle = {"production", "experiment", "showcase", "candidate"}
     transports = {"streamhost", "showcase"}
@@ -109,6 +131,7 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
                 for key in ("id", "displayName", "year", "lineage", "arch", "accent"):
                     if key not in museum:
                         fail(errors, row, f"museum missing {key}")
+                validate_museum_period_browser(row, museum, errors)
                 continue
             qemu = runtime.get("qemu", {})
             for key in ("mode", "deviceSetId", "deviceSetSummary"):
@@ -136,6 +159,7 @@ def validate_schema_shape(rows: list[dict[str, Any]], errors: list[str]) -> None
         for key in ("id", "displayName", "year", "lineage", "arch", "accent"):
             if key not in museum:
                 fail(errors, row, f"museum missing {key}")
+        validate_museum_period_browser(row, museum, errors)
         demo = row.get("demoProgram")
         if demo is not None:
             if not demo.get("label", "").strip() or not demo.get("runCommand", "").strip():

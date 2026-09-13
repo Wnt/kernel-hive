@@ -24,6 +24,26 @@
 # is SLIRP `restrict=on` — no route to labhost or the world. When
 # rn-tapnet.sh exists next to this file the NIC moves to the tap `oberonrn0`
 # on the offline retronet bridge (10.99.0.42, no router option).
+#
+# POINTER: ABSOLUTE, by writing Native Oberon's OWN pointer coordinate.
+#   Oberon reads a plain PS/2 mouse -- no USB, no vmmouse, no hardware cursor on
+#   -vga std -- but its Input module keeps the pointer as TWO LONGINTs at
+#   guest-physical KH_RAMABS_ADDR, in the order (y, x), with y counted UP from
+#   the bottom of the screen (Oberon display coordinates). That is layout
+#   `point32le_yx` -- transposed AND flipped relative to every other guest in
+#   this museum, which is why it is its own layout rather than a flag.
+#   `-device kh-ramabs` writes the commanded pixel there and injects ONE 1-unit
+#   PS/2 nudge to make Oberon republish it. 1 unit = 1 px below Oberon's
+#   acceleration threshold (6 units and up it is 1.5 px/unit), hotspot (0,0).
+#   Needs the kh-ramabs build (OBERON_QEMU, default /opt/qemu-oberon) -- BINARY
+#   AND GOLDEN ARE ONE UNIT: the golden is baked under that binary and the
+#   ADDRESS IS BOUND TO THE GOLDEN (re-bake => re-derive with
+#   scripts/dev/oberon-ramabs-derive.py). FAIL CLOSED: no KH_RAMABS_ADDR => no
+#   device and the relative path; a stale address is refused by the device's
+#   connect-time write probe instead of corrupting guest memory.
+#   SINGLE INJECTOR: while ptr.sock is connected nothing else -- no abs->rel
+#   bridge, no QMP input-send-event, no labctl pointer helper -- may push motion
+#   or a button edge at this mouse.
 set -e
 SDIR=/data/vms/streamhost/stations/oberon
 B="$(dirname "$0")"
@@ -39,6 +59,14 @@ if [ -f "$B/rn-tapnet.sh" ]; then
   NETDEV="-netdev tap,id=n0,ifname=oberonrn0,script=no,downscript=no"
   NICMAC=",mac=$RN_OBERON_MAC"
 fi
+PTR_ARGS=()
+if [ -n "${KH_RAMABS_ADDR:-}" ]; then
+  rm -f "$SDIR/ptr.sock"
+  PTR_ARGS=(
+    -chardev "socket,id=ptr0,path=$SDIR/ptr.sock,server=on,wait=off"
+    -device "kh-ramabs,chardev=ptr0,addr=$KH_RAMABS_ADDR,layout=point32le_yx,width=1280,height=1024,nudge-units=1,nudge-px=1,trace=${PTR_TRACE:-off}"
+  )
+fi
 [ -f "$SDIR/qemu.pid" ] && kill "$(cat "$SDIR/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$SDIR/qmp.sock" "$SDIR/qemu.pid"
@@ -48,7 +76,8 @@ export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
 qemu-img snapshot -l "$SDIR/disk.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # shellcheck disable=SC2086 # $LOADVM / $NETDEV must word-split
-nohup qemu-system-x86_64 \
+nohup "${OBERON_QEMU:-/opt/qemu-oberon/bin/qemu-system-x86_64}" \
+  -L "${OBERON_QEMU_DATA:-/opt/qemu-oberon/share/qemu}" \
   -name streamhost-oberon \
   -enable-kvm -m 64 -smp 1 \
   -machine pc-i440fx-11.0,acpi=off -cpu host \
@@ -61,6 +90,7 @@ nohup qemu-system-x86_64 \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   $NETDEV -device ne2k_pci,netdev=n0${NICMAC:-} \
+  "${PTR_ARGS[@]}" \
   -qmp unix:$SDIR/qmp.sock,server=on,wait=off \
   -pidfile $SDIR/qemu.pid \
   >"$SDIR/qemu.log" 2>&1 &

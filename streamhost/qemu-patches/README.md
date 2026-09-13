@@ -33,8 +33,8 @@ fix had to touch all three profiles at once. Splitting that fix back into three
 independently applicable — worse than naming what the thing actually is:
 
 * **`kh-ramabs` (`0007`) is ONE shared device patch** carrying per-guest
-  *layouts* (`point16le`, `macpoint16be`, `point32le`) and *publish modes*
-  (`crsrnew`). Adding a guest to it is not a new patch.
+  *layouts* (`point16le`, `macpoint16be`, `point32le`, `point32le_yx`,
+  `point16le_yup`, `point16le_yup_yx`) and *publish modes* (`crsrnew`). Adding a guest to it is not a new patch.
 * **`0008` (artist) is a genuinely independent per-station patch** — a different
   file (`hw/display/artist.c`), a different device, no shared state.
 
