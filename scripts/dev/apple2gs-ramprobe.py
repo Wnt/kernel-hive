@@ -11,7 +11,9 @@ The $xxC000-$xxCFFF window is the IIGS soft-switch/IO shadow: reading it
 through the CPU program space has SIDE EFFECTS (it is how the guest talks to
 its own hardware), so the sweep skips it and the diff treats it as unknown.
 """
-import socket, sys, struct
+import socket
+import struct
+import sys
 
 IO_LO, IO_HI = 0xC000, 0xD000   # skipped, per bank
 
@@ -39,11 +41,15 @@ def snap(sock, out, bank):
         if not r.startswith("OK") or len(hexs) != 128:
             raise RuntimeError(f"PEEK {off:04x} -> {r!r}")
         buf[off:off+64] = bytes.fromhex(hexs)
-    open(out, "wb").write(bytes(buf))
+    with open(out, "wb") as fh:
+        fh.write(bytes(buf))
     print(f"wrote {out} bank ${bank:02x} (IO window ${IO_LO:04x}-${IO_HI-1:04x} skipped)")
 
 def diff(a, b, bank, ax, ay, bx, by):
-    A = open(a, "rb").read(); B = open(b, "rb").read()
+    with open(a, "rb") as fh:
+        A = fh.read()
+    with open(b, "rb") as fh:
+        B = fh.read()
     ax, ay, bx, by = int(ax), int(ay), int(bx), int(by)
     print(f"# bank ${int(bank,0):02x}: A=({ax},{ay}) B=({bx},{by})")
     for enc, fmt in (("LE", "<H"), ("BE", ">H")):

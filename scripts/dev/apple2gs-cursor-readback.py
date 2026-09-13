@@ -8,9 +8,14 @@ position: the two changed clusters are "where it was" and "where it is", and
 the previous position is known, so the other cluster is the answer.  Hotspot =
 top-left of the changed cluster (the arrow's tip).
 """
-import sys, time
+import sys
+import time
+
 sys.path.insert(0, "/data/vms/sandbox/apple2gs-ptr/repo/scripts")
-import shmshot, numpy as np
+
+import numpy as np
+
+import shmshot
 
 SHM = "/data/vms/sandbox/apple2gs-ptr/rig1/fb.shm"
 
