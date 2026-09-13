@@ -97,12 +97,12 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
-  apple2gs: {
-    kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD',
-    mouse: 'paramMouseD',
-  },
   minix2: {
     kind: 'pizzaBox', body: 'towerE', monitor: 'crtF',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  apple2gs: {
+    kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD',
+    mouse: 'paramMouseD',
   },
 } as const satisfies Record<string, Assembly>;

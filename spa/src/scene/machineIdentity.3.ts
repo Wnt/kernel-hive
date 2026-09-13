@@ -137,6 +137,11 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
+  // TODO(minix2): exhibit finish copied from freedos — set the real era cues.
+  minix2: {
+    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
+    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+  },
   // The IIGS is the first Apple in PLATINUM — the warm beige of the //e was
   // dropped for a pale cool grey, and the GS wears it a year before the Mac II
   // does. The accent is the Apple six-colour stripe reduced to one hue, which
@@ -144,10 +149,5 @@ export const EXHIBIT_IDENTITIES_3 = {
   apple2gs: {
     caseTint: '#d8d5cc', accentTint: '#3f7fbf', tintMix: 0.30,
     badge: 'Apple IIGS', spec: '65C816 • GS/OS 6', kit: 'eightBit',
-  },
-  // TODO(minix2): exhibit finish copied from freedos — set the real era cues.
-  minix2: {
-    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
-    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

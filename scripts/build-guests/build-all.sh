@@ -171,6 +171,7 @@ MANIFEST=(
   "oberon         |tiles/oberon.sh                                       |OBERON            |fast        |~1m                          |full                         |oberon.qcow2 (Native Oberon 2.3.6 installed IDE image, asig/native-oberon, converted raw->qcow2)"
   "perq           |tiles/perq.sh                                         |PERQ              |graphical   |~8m                          |none                         |assets/perq (PERQemu 0.9.5 release tree + the debootstrap trixie container rootfs, uid-shifted to 2359296) and assets/perq/perqemu/Disks/g7.prqm (POS G.7 system disk; cold-boot reset)"
   "vision         |tiles/vision.sh                                       |VisiOn            |graphical   |~25m                         |none                         |assets/vision (the sandbox rootfs with PCE built from the pinned hampa.ch tarball under /opt/pce, pce.cfg, the XT ROMs) and assets/vision/disk (hd0.pbi with Visi On installed + VOAPP1/2.psi, the copy-protected key disks; cold-boot reset)"
+  "apple2gs       |tiles/apple2.sh                                       |bridge/apple2     |retro       |~3-5m                        |full                         |tiles/apple2 overlay + golden (Apple //e → GEOS)"
   "minix2         |tiles/minix2.sh                                       |Minix2            |retro       |~3m                          |full                         |minix2.qcow2 (pre-installed Minix 2.0.4, /usr/src)"
 )
 
