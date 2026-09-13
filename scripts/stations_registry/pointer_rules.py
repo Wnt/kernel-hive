@@ -41,6 +41,20 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     "gallery-hid": ({"gallery-hid"}, ("gallery-hid-pci",), ()),
     "warpd-agent": ({"warpd"}, (), ("usb-tablet",)),
     "mame-ioport": ({"mamecmd", "mamesock"}, (), ()),
+    # macsys1: a MAME-native station whose pointer is neither a device nor a
+    # closed loop. A Macintosh 128K's mouse is a quadrature encoder read through
+    # the VIA -- 8-bit delta ioports, no hardware cursor to read back, and a ROM
+    # that ACCELERATES the deltas at VBL (MEASURED 1.83 px/count trickling,
+    # ~1.98 in a burst), so no gain is 1:1 and no register can correct one.
+    # What is exact is the guest's OWN pointer state: the ctlsock module writes
+    # the visitor's pixel into the documented low-memory globals (MTemp $828,
+    # RawMouse $82C, Mouse $830) and sets CrsrNew $8CE := CrsrCouple $8CF so the
+    # VBL cursor task republishes it. Zero mouse counts are issued. This is the
+    # `qemu-guestram-abswrite` idea (rhapsody) carried to MAME, and `absolute:
+    # true` is earned the same way -- by reading the guest's own coordinate back
+    # after every write. No ledger token: a MAME-native station has no device
+    # line to carry one, the binding lives in the fixture's MAME_CTL_ABS_RAM.
+    "mame-guestram-abswrite": ({"mamesock"}, (), ()),
     "x11-xtest": ({"x11test"}, (), ()),
     "simh-light-pen": ({"dbus-abs"}, ("usb-tablet",), ()),
     # nextstep: Previous emulates a SummaGraphics MM 1201 digitiser on the NeXT's
