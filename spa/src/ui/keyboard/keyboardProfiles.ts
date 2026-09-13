@@ -313,6 +313,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // ETH Native Oberon 2.3.6. Oberon has no chords at all: its verbs are mouse
+  // clicks and interclicks on command words, and the keyboard only ever feeds
+  // text to the caret. The generic rows are the honest floor until there is
+  // something Oberon-specific worth a profile.
+  oberon: 'generic',
   openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
   // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
   // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic

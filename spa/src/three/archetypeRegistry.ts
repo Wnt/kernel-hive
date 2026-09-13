@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (95 of the 97
+//    - transport   : how its LIVE framebuffer texture is obtained (96 of the 98
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 95 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 96 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -224,6 +224,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   lisa:        { osId: 'lisa', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B9A27A', eraLabel: '1984 · Lisa Office System 3.1' }, // ideal: Apple Lisa 2 one-piece
   domainos:    { osId: 'domainos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A6A55', eraLabel: '1989 · Apollo DN3500 — Domain/OS SR10.4.1' },
   fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC3D33', eraLabel: '1995 · Towns OS V2.1 L51 — FM TOWNS (1989)' },
+  oberon:      { osId: 'oberon', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#3d6fb4', eraLabel: '1999 · ETH Native Oberon', pointerRel: true },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

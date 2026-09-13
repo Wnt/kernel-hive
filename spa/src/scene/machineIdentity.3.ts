@@ -117,4 +117,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     badge: 'FM TOWNS II', spec: '486SX-33 • TOWNS OS V2.1 L51 • 1994',
     kit: 'office90',
   },
+  oberon: {
+    caseTint: '#cfc9ba', accentTint: '#3d6fb4', tintMix: 0.3,
+    badge: 'ETH NATIVE OBERON', spec: 'i386 • Native Oberon 2.3.6 • 1999',
+    kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

@@ -81,4 +81,8 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerE', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseB',
   },
+  oberon: {
+    kind: 'pizzaBox', body: 'pizzaBoxA', monitor: 'crtD',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
 } as const satisfies Record<string, Assembly>;
