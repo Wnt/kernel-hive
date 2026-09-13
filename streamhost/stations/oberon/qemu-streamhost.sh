@@ -12,7 +12,8 @@
 # pc-i440fx-11.0 acpi=off, KVM, -cpu host, 64 MB, 1 vCPU (a 1999 kernel; rule
 # of thumb from the wall table: one vCPU first), -vga std (Bochs VBE 2.0 LFB,
 # what Oberon's Display.VESA driver expects), IDE disk index 0, one empty
-# 1.44 MB floppy (Oberon's Diskette driver probes the FDC at boot), PS/2
+# 1.44 MB floppy as QCOW2 not raw (savevm refuses a writable RAW drive:
+# "Device 'floppy0' is writable but does not support snapshots"), PS/2
 # keyboard + PS/2 mouse (RELATIVE; measured 1.5 px per unit, see the fixture),
 # sb16 over the dbus audiodev (Oberon's Sound driver is SB16), ONE ne2k_pci
 # NIC (the guest's NetNe2000pci driver — Native Oberon's own TCP/IP).
@@ -41,7 +42,7 @@ fi
 [ -f "$SDIR/qemu.pid" ] && kill "$(cat "$SDIR/qemu.pid")" 2>/dev/null || true
 sleep 0.3
 rm -f "$SDIR/qmp.sock" "$SDIR/qemu.pid"
-[ -f "$SDIR/floppy-empty.img" ] || dd if=/dev/zero of="$SDIR/floppy-empty.img" bs=1024 count=1440 status=none
+[ -f "$SDIR/floppy-empty.qcow2" ] || qemu-img create -f qcow2 "$SDIR/floppy-empty.qcow2" 1440k >/dev/null
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
@@ -53,7 +54,7 @@ nohup qemu-system-x86_64 \
   -machine pc-i440fx-11.0,acpi=off -cpu host \
   -rtc base=localtime \
   -drive file=$SDIR/disk.qcow2,format=qcow2,if=ide,index=0 \
-  -drive file=$SDIR/floppy-empty.img,format=raw,if=floppy,index=0 \
+  -drive file=$SDIR/floppy-empty.qcow2,format=qcow2,if=floppy,index=0 \
   -boot c \
   $LOADVM \
   -vga std \
