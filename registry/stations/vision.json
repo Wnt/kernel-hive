@@ -182,10 +182,5 @@
   },
   "notes": [
     "scaffolded from lisa on 2026-09-13; PCE-in-nspawn won the race against MAME ibm5160 (docs/lab/VISION-WAVE.md §Race)"
-  ],
-  "listing": {
-    "state": "hidden",
-    "since": "2026-09-13",
-    "reason": "Pointer unproven: PCE forwards mouse motion only while it holds an X pointer grab, which a headless Xvfb station cannot hold, and Visi On stops at its \"Calibrate the mouse\" splash until the mouse moves - so the desktop is not reachable by a visitor yet. Boot, the copy-protected key disk, the keyboard and the sandbox audit all PASS from the station launcher. docs/lab/VISION-WAVE.md section Pointer has the race results and the exact next command; promote by dropping this block."
-  }
+  ]
 }
