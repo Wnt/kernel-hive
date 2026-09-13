@@ -166,6 +166,7 @@ MANIFEST=(
   "sculpt         |tiles/serenityos.sh                                   |SerenityOS        |heavy       |~20-60m                      |full                         |_disk_image + Kernel (compiled)"
   "lisa           |tiles/lisa.sh                                         |Lisa              |graphical   |~10m                         |none                         |assets/lisa (LisaEm 2.0 + GTK closure + Rev H ROM + config template) and disk/lisa-profile.dc42.golden (LOS 3.1 ProFile image; cold-boot reset)"
   "domainos       |tiles/domainos.sh                                     |native/domainos   |workstation |~30m                         |partial                      |Apollo DN3500 boot ROMs + Domain/OS SR10.4.1 winchester image staged; golden savestate at the Display Manager (OPEN — see DOMAINOS-WAVE.md)"
+  "magiccap       |tiles/magiccap.sh                                     |MagicCap          |retro       |~10-15m                      |1-click                      |magiccap-c.qcow2 + magiccap-d.qcow2 (win98se base + Magic Cap composed onto C:)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

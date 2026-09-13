@@ -567,6 +567,11 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
     kit: 'workstation',
   },
+  // TODO(magiccap): exhibit finish copied from win98se — set the real era cues.
+  magiccap: {
+    caseTint: '#bda47f', accentTint: '#687174', tintMix: 0.4,
+    badge: 'MMX ATX', spec: 'MULTIMEDIA • 1998', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

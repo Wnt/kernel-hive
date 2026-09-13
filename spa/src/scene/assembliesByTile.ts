@@ -595,5 +595,9 @@ export const ASSEMBLIES_BY_TILE = {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  magiccap: {
+    kind: 'towerSetup', body: 'pizzaBoxB', monitor: 'crtC',
+    keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
 } as const satisfies Record<string, Assembly>;
 

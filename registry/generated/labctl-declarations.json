@@ -776,6 +776,24 @@
       "udp_port": 54150,
       "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
     },
+    "magiccap": {
+      "dir": "/data/vms/streamhost/stations/magiccap",
+      "qmp": "/data/vms/streamhost/stations/magiccap/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": 7788,
+      "exec_host": "10.99.0.10",
+      "exec_kind": "warpd_e",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54197,
+      "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.10:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/ICQ-STATION.md, EXEC-CHANNEL.md"
+    },
     "medley": {
       "dir": "/data/vms/streamhost/stations/medley",
       "qmp": null,
