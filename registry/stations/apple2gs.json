@@ -133,41 +133,41 @@
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
-    "accentColor": "#7C8B5E",
-    "eraLabel": "TODO(apple2e): 1985 · Apple //e — ProDOS"
+    "accentColor": "#3F7FBF",
+    "eraLabel": "1986 · Apple IIGS — GS/OS 6.0.1"
   },
   "museum": {
     "id": "apple2gs",
-    "displayName": "TODO(apple2e): Apple //e",
-    "year": 1985,
-    "lineage": "TODO(apple2e): Apple II / ProDOS",
-    "arch": "MOS 65C02 (Apple //e enhanced), 1 MHz, 128 KB",
-    "ramMB": 0,
-    "ramKB": 128,
+    "displayName": "Apple IIGS",
+    "year": 1986,
+    "lineage": "Apple II / GS/OS",
+    "arch": "WDC 65C816, 2.8 MHz, 1 MB",
+    "ramMB": 1,
+    "ramKB": 0,
     "era": "1980s",
-    "accent": "#7C8B5E",
+    "accent": "#3F7FBF",
     "eraSoftware": [
-      "ProDOS 8",
-      "Applesoft BASIC",
-      "AppleWorks",
-      "Dazzle Draw",
-      "Angry Birds (8-Bit Shack, 2023)"
+      "GS/OS System 6.0.1",
+      "Finder 6.0.1",
+      "Control Panel (Super Hi-Res)",
+      "Teach",
+      "Desk accessories (NDAs)"
     ],
-    "periodBrowser": "none — pre-web 8-bit era",
+    "periodBrowser": "none — no TCP/IP stack on this exhibit (Marinetti is a wave of its own)",
     "iconicApps": [
-      "AppleWorks",
-      "Dazzle Draw",
-      "Applesoft BASIC",
-      "Angry Birds"
+      "Finder",
+      "Control Panel",
+      "Teach",
+      "Desk accessories"
     ],
-    "blurb": "TODO(apple2e): The Apple II most people actually used: ProDOS, a 40-column boot menu, AppleWorks in 80 columns and Dazzle Draw in double hi-res on a 128 KB //e — plus a 2023 Angry Birds for the same machine.",
-    "notes": "TODO(apple2e): Host-native station: MAME 0.289's apple2ee runs on the host (drawshm frames, ctlsock keys + mouse card, FIFO audio). Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) whose STARTUP program is a one-key selector: AppleWorks, Dazzle Draw, Angry Birds, BASIC prompt. Sibling of apple2 (GEOS); the pair shows the same hardware as it was used and as it was later persuaded to look."
+    "blurb": "A colour icon desktop on a 65C816 — the Apple II family's last and strangest machine. GS/OS 6.0.1 boots into the Finder in 4096-colour Super Hi-Res, six months before the Macintosh got colour at all, on hardware that still runs every Apple II disk in the hall.",
+    "notes": "Host-native station: MAME 0.289's apple2gs (ROM 3, 1 MB) runs on the host — drawshm frames, ctlsock keys and mouse through the macadb HLE, FIFO audio. Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) straight into the GS/OS 6.0.1 Finder. Third member of the Apple II group with apple2 (GEOS) and apple2e (ProDOS): the same 1977 bus and the same floppies, shown as text, as a monochrome bolt-on desktop, and finally in colour. Pointer is the two-button ADB mouse (8-bit relative axes, MAME_CTL_PTR_MOD=256) — gains unmeasured, so the station ships keyboard-first and stream.pointer.transport stays 'none' until a two-target Finder readback proves it."
   },
   "emulator": {
     "family": "MAME",
     "version": "0.289",
-    "source": "scripts/build-guests/emulators/native.d/apple2e.sh",
-    "driver": "apple2ee"
+    "source": "scripts/build-guests/emulators/native.d/apple2gs.sh",
+    "driver": "apple2gs"
   },
   "ui": "desktop",
   "reset": {

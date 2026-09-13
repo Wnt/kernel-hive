@@ -233,6 +233,29 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
     ]],
   },
 
+  // Apple IIGS under GS/OS 6.0.1. NOT the `appleii` family: that profile's
+  // moreRow is a Ctrl+Reset macro aimed at LinApple's //e, and its two latches
+  // are labelled Open/Closed Apple, which is the joystick-button pair on an
+  // 8-bit //e. On the GS the same two keys are on an ADB Extended keyboard and
+  // do Macintosh work — Open Apple IS Command in the Finder, and the second
+  // modifier is Option, not Closed Apple. The rows below are the ones a Finder
+  // visitor needs and no more; the ⌘-chord row (⌘O/⌘W/⌘Q) is deliberately NOT
+  // shipped yet, the way `atarist` withheld Help, because this station's
+  // ctlsock keymap is still the //e's generated file against `:X0` ports and
+  // the real one is regenerated against `:macadb:KEY0..KEY7`. Ship the chords
+  // once that keymap exists and a typed proof shows the modifier reaching ADB.
+  applegs: {
+    family: 'applegs',
+    rows: [[
+      latch('open-apple', '⌘', XK.Alt_L, 'Open Apple — Command in the Finder'),
+      latch('option', '⌥', XK.Alt_R, 'Option'),
+      latch('shift', 'Shift', XK.Shift_L),
+      tap('esc', 'Esc', XK.Escape),
+      tap('ret', '⏎', XK.Return),
+      ...ARROWS,
+    ]],
+  },
+
   atarist: {
     family: 'atarist',
     rows: [[
