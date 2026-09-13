@@ -167,7 +167,7 @@ do_rootfs() {
   # race): stock PCE's x11 terminal forwards mouse motion only while it holds
   # an X pointer grab, which a headless Xvfb station can never take. Applies
   # cleanly to the pinned tarball with -p1.
-  local patch="$SCRIPT_DIR/patches/vision/pce-x11-nograb.patch"
+  local patch="$SCRIPT_DIR/../patches/vision/pce-x11-nograb.patch"
   [ -f "$patch" ] || die "missing pointer patch: $patch"
   patch -p1 -d "$tmp/src/$PCE_SRC" <"$patch" || die "pointer patch failed to apply to $PCE_SRC"
   systemd-nspawn -q -D "$tmp" sh -c "
