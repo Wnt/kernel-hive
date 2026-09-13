@@ -189,7 +189,7 @@ Editor (changed=94050).
 has one scalar, this guest needs x=1.0 and y=0.5, so either axis can be right
 but not both. A real 1:1 pointer here has to be absolute.
 
-### Absolute via `kh-ramabs`: the input variable is `0x253ca`, `point16le_yup_yx`
+### Absolute via `kh-ramabs`: the input variable is `0x253ca`, `point16le_yx`
 
 **Proven on the rig 2026-09-13, NOT cut over.** Full table, the probe/sweep
 discrimination and the re-derive command are in `docs/guests/os213.md`
@@ -231,15 +231,18 @@ bake must re-derive.
 
 ### Remaining to cut the station over
 
-1. Build `/opt/qemu-os213` from the fork tip carrying the table-driven `0007`
-   (`point16le_yup_yx`) — **not** `/opt/qemu-beos`, whose goldens belong to
-   beos and pcgeos. `/opt/qemu-oberon` already carries the layouts and can be
-   used to re-prove without a build.
+1. Add the one missing row to `0007`'s layout table — os213 is int16,
+   little-endian, **y-first and y-DOWN**, a combination the table does not
+   carry (`macpoint16be` is big-endian, `point32le_yx` is int32,
+   `point16le_yup_yx` counts y up):
+   `{ "point16le_yx", KH_LAYOUT_POINT16LE_YX, 2, false, true, false }`.
+   Then build `/opt/qemu-os213` — **not** `/opt/qemu-beos`, whose goldens
+   belong to beos and pcgeos.
 2. Cold re-bake the golden under that binary, re-derive `0x253ca` against it,
    re-run the two-lap sweep (re-measure the `20,20` target with
    `scripts/dev/cursor-locate-cv.py`, not the naive locator) plus one click
    that reacts.
-3. Launcher → `/opt/qemu-os213` + `-device kh-ramabs,addr=…,layout=point16le_yup_yx,width=640,height=480,nudge-units=1,nudge-px=1`,
+3. Launcher → `/opt/qemu-os213` + `-device kh-ramabs,addr=…,layout=point16le_yx,width=640,height=480,nudge-units=1,nudge-px=1`,
    `SH_INPUT_BACKEND=ramabs`, registry `stream.pointer` abs + `reset.mouse`
    sentence, then `station-land.sh os213 --golden …`.
 
