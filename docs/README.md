@@ -117,6 +117,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/ninefront.md](guests/ninefront.md) | 9front (Plan 9 fork) station — warpd agent on :57793. |
 | [guests/openbsd.md](guests/openbsd.md) | OpenBSD 7.9 amd64 station — unattended autoinstall over loopback HTTP, fvwm from base Xenocara, usb-tablet InputClass pointer fix. |
 | [guests/os2warp.md](guests/os2warp.md) | OS/2 Warp 4 station (TCG-only; KVM triple-faults). |
+| [guests/os213.md](guests/os213.md) | IBM OS/2 1.30.2 Standard Edition (1990) — Presentation Manager's Desktop Manager shell, host-native TCG on `-machine isapc` (no PCI, no USB); PS/2 relative pointer only, no network (OS/2 1.3 has no bundled TCP/IP stack). |
 | [guests/pcbsd.md](guests/pcbsd.md) | PC-BSD 1.5.1 "Edison" — FreeBSD 6.3 + KDE 3.5.8 desktop BSD, assisted GUI install. |
 | [guests/pcgeos.md](guests/pcgeos.md) | PC/GEOS Ensemble — GeoWorks lineage, bluewaysw open-source build on FreeDOS 1.3; disk-as-qcow2 golden. |
 | [guests/qnx.md](guests/qnx.md) | QNX 6.5 station. |
