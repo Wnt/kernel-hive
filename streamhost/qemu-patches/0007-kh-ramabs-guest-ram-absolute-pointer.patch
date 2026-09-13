@@ -2,7 +2,7 @@ Index: b/hw/misc/kh-ramabs.c
 ===================================================================
 --- /dev/null
 +++ b/hw/misc/kh-ramabs.c
-@@ -0,0 +1,1057 @@
+@@ -0,0 +1,1116 @@
 +/*
 + * kh-ramabs — absolute pointer by writing the guest's OWN pointer coordinate.
 + *
@@ -121,10 +121,13 @@ Index: b/hw/misc/kh-ramabs.c
 + * THREE INDEPENDENT AXES, and no two guests here agree on all of them, so read
 + * the table rather than assuming one convention with variants:
 + *
-+ *   layout          width  byte order  field order   guest
-+ *   point16le       int16  little      x then y      Rhapsody DR2
-+ *   macpoint16be    int16  BIG         Y THEN X      classic Mac OS
-+ *   point32le       int32  little      x then y      BeOS R5
++ *   layout            width  byte order  field order  y axis   guest
++ *   point16le         int16  little      x then y     down     Rhapsody DR2
++ *   macpoint16be      int16  BIG         Y THEN X     down     classic Mac OS
++ *   point32le         int32  little      x then y     down     BeOS R5
++ *   point32le_yx      int32  little      Y THEN X     down     Native Oberon (Input)
++ *   point16le_yup     int16  little      x then y     UP       Oberon display coords
++ *   point16le_yup_yx  int16  little      Y THEN X     UP       Oberon display coords
 + *
 + * `macpoint16be` is the odd one out on BOTH byte order and field order: a Mac
 + * `Point` is documented as { short v; short h; } -- VERTICAL FIRST -- on a
@@ -136,7 +139,38 @@ Index: b/hw/misc/kh-ramabs.c
 +    KH_LAYOUT_POINT16LE = 0,   /* int16 x, int16 y -- little-endian          */
 +    KH_LAYOUT_MACPOINT16BE,    /* int16 v, int16 h -- BIG-endian, V FIRST    */
 +    KH_LAYOUT_POINT32LE,       /* int32 x, int32 y -- little-endian          */
++    KH_LAYOUT_POINT32LE_YX,    /* int32 y, int32 x -- little-endian, Y FIRST */
++    KH_LAYOUT_POINT16LE_YUP,   /* int16 x, int16 y -- LE, Y COUNTED UP       */
++    KH_LAYOUT_POINT16LE_YUP_YX,/* int16 y, int16 x -- LE, Y FIRST and UP     */
 +} KhLayout;
++
++/*
++ * The three axes above, decoded once. A layout is (element width, field order,
++ * byte order, y direction) and NOT a single convention with variants: Native
++ * Oberon disagrees with every other guest here on two of the four at once --
++ * its Input module keeps the mouse as two LONGINTs in the order (y, x), and its
++ * display coordinate system counts Y UP from the bottom of the screen, so a
++ * coordinate that is merely transposed, or merely flipped, tracks plausibly and
++ * lands wrong. `height` (already a property, for the on-screen sanity check)
++ * is what a y-up layout is measured against: y_guest = height - 1 - y_screen.
++ */
++typedef struct {
++    const char *name;
++    KhLayout id;
++    int esz;        /* 2 or 4 bytes per coordinate */
++    bool be;        /* big-endian                  */
++    bool yfirst;    /* the y coordinate is stored FIRST */
++    bool yup;       /* y counts up from the bottom of the screen */
++} KhLayoutDef;
++
++static const KhLayoutDef kh_layouts[] = {
++    { "point16le",        KH_LAYOUT_POINT16LE,        2, false, false, false },
++    { "macpoint16be",     KH_LAYOUT_MACPOINT16BE,     2, true,  true,  false },
++    { "point32le",        KH_LAYOUT_POINT32LE,        4, false, false, false },
++    { "point32le_yx",     KH_LAYOUT_POINT32LE_YX,     4, false, true,  false },
++    { "point16le_yup",    KH_LAYOUT_POINT16LE_YUP,    2, false, false, true  },
++    { "point16le_yup_yx", KH_LAYOUT_POINT16LE_YUP_YX, 2, false, true,  true  },
++};
 +
 +/* How the guest is made to ACT on a coordinate we wrote. */
 +typedef enum {
@@ -178,6 +212,7 @@ Index: b/hw/misc/kh-ramabs.c
 +
 +    /* --- derived ------------------------------------------------------ */
 +    KhLayout layout_id;
++    const KhLayoutDef *ldef;   /* decoded layout: width, order, endianness, y */
 +    /*
 +     * A publish is on the wire: written and injected, not yet read back. ONE at
 +     * a time, always. The daemon streams targets at pointer rates and every
@@ -242,23 +277,39 @@ Index: b/hw/misc/kh-ramabs.c
 +/* A point is 4 bytes everywhere except point32le, where it is 8. */
 +static size_t kh_pt_bytes(KhRamAbsState *s)
 +{
-+    return s->layout_id == KH_LAYOUT_POINT32LE ? 8 : 4;
++    return 2 * (size_t)s->ldef->esz;
++}
++
++/* Screen y <-> the guest's own y. Involutive, so one helper does both ways. */
++static int kh_yconv(KhRamAbsState *s, int y)
++{
++    return s->ldef->yup ? (int)s->height - 1 - y : y;
 +}
 +
 +static void kh_rd_pt(KhRamAbsState *s, hwaddr off, int *x, int *y)
 +{
 +    uint8_t b[8];
 +
++    const KhLayoutDef *L = s->ldef;
++    int a, c;
++
 +    cpu_physical_memory_read(s->addr + off, b, kh_pt_bytes(s));
-+    if (s->layout_id == KH_LAYOUT_POINT32LE) {
-+        *x = (int32_t)ldl_le_p(b);
-+        *y = (int32_t)ldl_le_p(b + 4);
-+    } else if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
-+        *y = (int16_t)lduw_be_p(b);          /* VERTICAL FIRST, big-endian */
-+        *x = (int16_t)lduw_be_p(b + 2);
++    if (L->esz == 4) {
++        a = (int32_t)ldl_le_p(b);
++        c = (int32_t)ldl_le_p(b + 4);
++    } else if (L->be) {
++        a = (int16_t)lduw_be_p(b);
++        c = (int16_t)lduw_be_p(b + 2);
 +    } else {
-+        *x = (int16_t)lduw_le_p(b);
-+        *y = (int16_t)lduw_le_p(b + 2);
++        a = (int16_t)lduw_le_p(b);
++        c = (int16_t)lduw_le_p(b + 2);
++    }
++    if (L->yfirst) {
++        *y = kh_yconv(s, a);
++        *x = c;
++    } else {
++        *x = a;
++        *y = kh_yconv(s, c);
 +    }
 +}
 +
@@ -266,15 +317,20 @@ Index: b/hw/misc/kh-ramabs.c
 +{
 +    uint8_t b[8];
 +
-+    if (s->layout_id == KH_LAYOUT_POINT32LE) {
-+        stl_le_p(b, (uint32_t)(int32_t)x);
-+        stl_le_p(b + 4, (uint32_t)(int32_t)y);
-+    } else if (s->layout_id == KH_LAYOUT_MACPOINT16BE) {
-+        stw_be_p(b, (uint16_t)(int16_t)y);
-+        stw_be_p(b + 2, (uint16_t)(int16_t)x);
++    const KhLayoutDef *L = s->ldef;
++    int gy = kh_yconv(s, y);
++    int a = L->yfirst ? gy : x;
++    int c = L->yfirst ? x : gy;
++
++    if (L->esz == 4) {
++        stl_le_p(b, (uint32_t)(int32_t)a);
++        stl_le_p(b + 4, (uint32_t)(int32_t)c);
++    } else if (L->be) {
++        stw_be_p(b, (uint16_t)(int16_t)a);
++        stw_be_p(b + 2, (uint16_t)(int16_t)c);
 +    } else {
-+        stw_le_p(b, (uint16_t)(int16_t)x);
-+        stw_le_p(b + 2, (uint16_t)(int16_t)y);
++        stw_le_p(b, (uint16_t)(int16_t)a);
++        stw_le_p(b + 2, (uint16_t)(int16_t)c);
 +    }
 +    cpu_physical_memory_write(s->addr + off, b, kh_pt_bytes(s));
 +}
@@ -958,15 +1014,18 @@ Index: b/hw/misc/kh-ramabs.c
 +                   "guest's own pointer coordinate>");
 +        return;
 +    }
-+    if (strcmp(s->layout, "point16le") == 0) {
-+        s->layout_id = KH_LAYOUT_POINT16LE;
-+    } else if (strcmp(s->layout, "macpoint16be") == 0) {
-+        s->layout_id = KH_LAYOUT_MACPOINT16BE;
-+    } else if (strcmp(s->layout, "point32le") == 0) {
-+        s->layout_id = KH_LAYOUT_POINT32LE;
-+    } else {
-+        error_setg(errp, "kh-ramabs: unknown layout=%s "
-+                   "(have: point16le, macpoint16be, point32le)", s->layout);
++    s->ldef = NULL;
++    for (size_t i = 0; i < ARRAY_SIZE(kh_layouts); i++) {
++        if (strcmp(s->layout, kh_layouts[i].name) == 0) {
++            s->ldef = &kh_layouts[i];
++            s->layout_id = kh_layouts[i].id;
++            break;
++        }
++    }
++    if (!s->ldef) {
++        error_setg(errp, "kh-ramabs: unknown layout=%s (have: point16le, "
++                   "macpoint16be, point32le, point32le_yx, point16le_yup, "
++                   "point16le_yup_yx)", s->layout);
 +        return;
 +    }
 +    if (strcmp(s->publish, "nudge") == 0) {

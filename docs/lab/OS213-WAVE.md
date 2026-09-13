@@ -157,22 +157,72 @@ combination).
 | **keyboard** — two Down keys move the Group-Main selection | `smoke/kbd-before.png` → `kbd-after.png` | `fb-react react` → **changed=5270 bbox=256,171-479,254 REACTION** |
 | **pointer motion** (PS/2 relative) | `smoke/ptr-before.png` → `ptr-moved.png` | `fb-react react` → **changed=102 REACTION** |
 | pointer motion, clamped 100 px steps | `smoke/ptr-click-item.png` → `ptr2-on.png` | **changed=33 REACTION** |
-| pointer **click** | `smoke/ptr2-on.png` → `ptr2-click.png` | **changed=0 NO-REACTION — OPEN** |
+| pointer **click** (single, selects a Group-Main item) | `race/clickfix/e5-on.png` → `e5-qmpclick.png` | **changed=3631 REACTION** |
+| pointer **double-click** (opens the OS/2 System Editor) | `race/clickfix/e5-qmpclick.png` → `e5-dbl.png` | **changed=94050 REACTION** |
 
-### OPEN: the pointer moves but clicks do not land
+### RESOLVED: clicks were never broken — the harness was aiming wrong
 
-Motion is proven three ways; a left click and a double-click on a Group-Main
-list item both produce **zero** changed pixels. Deltas were clamped to 100 px
-per event after the `vision` station's Mouse-Systems sync-byte lesson, which did
-not change the click result. Leads for the next session, cheapest first:
+Second pass, 2026-09-13 evening (Opus). All three leads were run; the first
+two settled it.
 
-1. Confirm the guest actually has a mouse driver: this is a pre-installed image
-   nobody here configured — check `CONFIG.SYS` for `DEVICE=...MOUSE.SYS` /
-   `POINTDD.SYS` and the `DEVINFO` line. If it has none, PM draws a pointer that
-   nothing is listening behind, which fits the evidence exactly.
-2. Locate the cursor for real with `scripts/dev/cursor-locate-cv.py` before
-   clicking — every click so far assumed a position derived from relative moves.
-3. Try the HMP `mouse_button` path rather than QMP `input-send-event` `btn`.
+1. **`CONFIG.SYS` has the whole mouse stack.** Read straight out of the qcow2
+   with a `grep -a` for `PROTSHELL` and a `dd` around the hit — no mount, no
+   `qemu-nbd`, no guest login needed:
+   `DEVICE=C:\OS2\POINTDD.SYS`, `DEVICE=C:\OS2\MSPS201.SYS`,
+   `DEVICE=C:\OS2\MOUSE.SYS TYPE=MSPS2$`, `DEVICE=C:\OS2\PMDD.SYS`.
+   The "no driver behind the pointer" theory is dead.
+2. **Locating the cursor for real found the bug.** OS/2 1.3's driver uses the
+   classic **2:1 horizontal:vertical mickey ratio** — measured 1.02 px/unit in
+   x and **0.50 px/unit** in y, with a further acceleration bend above ~1 unit
+   per event (20 x `rel x=+10` gives 0.885 px/unit). Every click in the first
+   bake was aimed with deltas that assumed 1:1, so the pointer sat roughly
+   twice as far down the screen as the harness believed and the clicks landed
+   on empty desktop.
+3. **HMP `mouse_button` was never needed.** QMP `input-send-event` `btn` and
+   HMP `mouse_button 1`/`0` both deliver the button.
+
+With single-unit events and the y count doubled, a single click moves the
+Group-Main selection (changed=3631) and a double click opens the OS/2 System
+Editor (changed=94050).
+
+**Consequence for the station: `SH_CURSOR_SCALE` cannot fix this.** The daemon
+has one scalar, this guest needs x=1.0 and y=0.5, so either axis can be right
+but not both. A real 1:1 pointer here has to be absolute.
+
+### OPEN: absolute via `kh-ramabs` — address derived, write probe not yet verified
+
+Rig: `/data/vms/sandbox/os213-ptr/ramabs/` on `/opt/qemu-beos/bin/qemu-system-x86_64`
+(11.0.2, the fork that carries `-device kh-ramabs`). It accepts
+`-enable-kvm -machine isapc -cpu 486` unchanged and cold-boots this disk to the
+PM Desktop Manager; a fresh `golden` was baked there (VM_SIZE 3.21 MiB,
+VM_CLOCK 00:28.220). `scripts/dev/os213-ramabs-derive.py` bias-searches all
+16 MB of guest RAM against five located pointer positions.
+
+The pointer is stored as an **`int16` x,y pair with bias (0,0)** — the guest
+holds the exact screen pixel. Candidates, and what happened:
+
+| Address | Layout | Result |
+|---|---|---|
+| `0x0019514` | `point16le` | `verified=no probefail=1` |
+| `0x010fe20` | `point16le` | `verified=no probefail=1` |
+| `0x010fe24` | `point16le` | untested |
+| `0x010c624` | x with **inverted** y (`bias=(0,479)`, PM's bottom-left origin) | untested, needs an inverted-y layout |
+| `0x0024ea0` `0x0024eb0` `0x00253b0` `0x00253ca` | y-then-x order | untested, `point16le` cannot address them |
+
+Two traps recorded for the next session:
+
+1. **The PM pointer is XOR-drawn and leaves trails.** Fast 1-unit motion
+   leaves dashed diagonal residue over the desktop; a "largest changed blob"
+   locator latches onto the trail and reports the pointer frozen. Settle and
+   re-reference after each move, or use `scripts/dev/cursor-locate-cv.py`
+   (`cursor-locate.py` returns AMBIGUOUS everywhere on this sprite — measured).
+2. **Derive against the same boot the golden is captured from.** Addresses do
+   not survive a re-bake (`docs/lab/BEOS-ABSOLUTE-POINTER.md` §3).
+
+Exactly next: `ssh lab 'python3 /tmp/ramtest.py 0x10fe24'`, then the
+inverted-y and y-then-x candidates. Binary + golden move together (rule 6):
+cutting the station over to `/opt/qemu-beos` means a cold re-bake under that
+binary and a fresh restore proof.
 
 ## Landing
 

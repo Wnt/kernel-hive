@@ -154,13 +154,110 @@ ZERO members and the boot gate then dies `Required files are missing`. Unzip
 
 ## Open items
 
-- **`ctlsock: setup btns=1 axes=1`** on every launch, with all three
-  `:macadb:MOUSE0/1/2` tags bound. Whether `axes=1` is a count of axis PAIRS or
-  a sign that only one axis bound is not established — it was not chased,
-  because the pointer is open anyway. Read it before the first MOVEA
-  measurement.
-- **Pointer**: gains unmeasured. The fixture ships the neutral 1.0/1.0, NOT
-  apple2e's 1.547/1.674 — a copied gain is a guess, and this is a different
-  ADB path with a different `PORT_SENSITIVITY`. `stream.pointer.transport`
-  stays `none` until a two-target readback on the Finder desktop proves it.
 - **Retronet**: OPEN (above).
+- **Pointer**: still OPEN, but no longer unmeasured — see §Pointer below.
+
+## Pointer — measured 2026-09-13 (pointer stream, Opus)
+
+Rig: `/data/vms/sandbox/apple2gs-ptr/rig1`, the deployed station binary and
+ROMs, the station's own `golden.sta`, ctlsock armed, `-video shm`. The station
+still **ships keyboard-only** and `stream.pointer.transport` stays `none`. What
+changed is that the four things that were guesses are now numbers, and one of
+them was actively wrong in the fixture.
+
+### 1. `setup btns=1 axes=1` was never a problem
+
+Those two fields are C++ **bools** in the module's setup printf:
+
+```
+(m_btn_field[0] != nullptr), (m_x_field && m_y_field)
+```
+
+`btns=1 axes=1` therefore reads "button 0 is bound AND both axes are bound" —
+exactly the wanted state. The wave's open question is closed; there was never
+a half-bound axis. (`movea=0` on the same line IS meaningful: no
+`MAME_CTL_CURSOR_ITEMS`, so MOVEA is open-loop.)
+
+### 2. The ADB wire is 7-bit signed — the fixture's step was three times too big
+
+`macadb_device::adb_talk()`, register 0:
+
+```c
+m_buffer[0] = (BIT(~m_lastbutton, 0) << 7) | (mouseY & 0x7f);
+m_buffer[1] = (BIT(~m_lastbutton, 1) << 7) | (mouseX & 0x7f);
+```
+
+The accumulated delta is masked to **7 bits, signed**. Any per-poll delta
+outside `-64..+63` arrives at the guest with the wrong sign and the wrong
+magnitude. `adb_accummouse()`'s own wrap guard is the upstream sign-flip bug
+(`if (diff > 0x80) diff = 0x100-diff;`) and does not rescue it.
+
+Measured: `MOVE 100 0` from the golden arrow at published (84,105) moved the
+arrow **LEFT** to the raster's left clamp — 100 as a 7-bit signed value is
+−28. With `MAME_CTL_MOVE_STEP=32` the same axis moves right, linearly.
+
+The module's inherited default is `MAME_CTL_MOVE_STEP=120`, so **every** step
+this station issued before today was sign-flipped. The fixture now carries
+`MAME_CTL_MOVE_STEP=48` with the 40 ms window (the GS polls ADB faster than
+one window, so one step is one poll's delta).
+
+This is the concrete reason a //e pointer configuration cannot be copied onto
+the GS: it is not a different sensitivity, it is a different wire.
+
+### 3. Gain: one ADB count is exactly one SHR pixel
+
+With the step inside the wire the response is dead linear. `MOVE 32 0` steps
+on the Finder desktop moved the arrow 47 published px per step (1.47 px per
+count). The 640-px-wide SHR raster occupies published columns **47..976**
+(930 px), and 930/640 = **1.4531** published px per guest px. Y: published
+rows **53..717** (665 px) over 200 lines = **3.325**. So the guest itself
+moves the cursor 1:1 with the ADB count and the only scale is MAME's aspect
+correction. The fixture now ships `MAME_CTL_GAIN_X=1.4531`,
+`MAME_CTL_GAIN_Y=3.325` (was the neutral 1.0/1.0).
+
+### 4. Why 1:1 is still NOT claimable: the published surface is not the guest surface
+
+The published 1024x768 carries the aspect-corrected 640x200 raster **inset by
+~47 px on X and ~53 px on Y** — the blue SHR border. The guest cursor cannot
+enter that border, so the phase-2 contract's corner targets (20,20) and
+(1000,740) are physically unreachable, and an open loop anchored on the
+module's own (0,0) belief starts 47/53 px out before any gain error. This is
+the same class of finding `macsys1` reported (published cursor origin offset
+from belief origin) and it is a **geometry** decision, not a gain one: either
+the belief carries the origin (an open-loop analogue of `MAME_CTL_CAL_X/Y`,
+which today only offsets a closed-loop *reading*), or the station publishes
+only the active raster. Neither was changed in this pass.
+
+### 5. The closed loop is one small module patch away — and needs no new device
+
+`ITEM m_megaii_ram` resolves: **size=1 count=131072**. That is the whole of
+the Mega II "slow RAM", banks **$E0/$E1**, which is where GS/OS keeps its
+toolbox globals — and `save_item_handle` already has `read_at(i)`. So the
+closed-loop sensor the MOVEA V7 engine wants is reachable by widening
+`MAME_CTL_CURSOR_ITEMS` from a bare save-item suffix to
+`suffix@offset[:width]` (plus a multiplicative scale next to `CAL_X/Y`, since
+a guest-pixel reading has to be scaled by 1.4531/3.325 to become a published
+pixel). `macadb/0/m_lastmousex` also resolves, if the device's own last
+sample is ever wanted.
+
+Finding the offset is a two-position RAM diff. **MAME's `-autoboot_script`
+silently does nothing in this build** — no Lua output, no error, tried with
+both `emu.add_machine_frame_notifier` and `emu.register_frame_done` — so that
+diff has to come from a module verb (a `MEMDUMP <suffix> <off> <len> <path>`
+diagnostic), not from Lua. That is the next commit on this branch.
+
+### 6. Two traps for whoever picks this up
+
+- **Raw `MOVE` is not a measurement tool here.** The home-drain branch walks
+  the accumulator back to zero once the queue is quiet; macadb consumes each
+  delta once and does not net like the //e's a2bus mouse card, so that drain
+  physically walks the arrow back to where it started. A step table taken with
+  plain `MOVE` and `MAME_CTL_HOME_SETTLE=750` reads "moves, moves, snaps back,
+  then never moves again". Measure with MOVEA, or with `HOME_SETTLE=0` and one
+  step at a time.
+- **The arrow flickers in the shm capture.** GS/OS erases and redraws the
+  software cursor every VBL, so single frames legitimately show the arrow at
+  the new position, at a stale position, or not at all. Any locator on this
+  station must sample several frames and take the stable cluster — a one-shot
+  `screendump` diff will report motion that did not happen and stillness that
+  did.
