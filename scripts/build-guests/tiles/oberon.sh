@@ -120,12 +120,15 @@ fi
 # (3) VERIFY on the station device set (streamhost/stations/oberon/qemu-streamhost.sh)
 if [ "$VERIFY" = 1 ]; then
   [ -f "$FBWAIT" ] || die "missing $FBWAIT"
-  [ -f "$WORK/floppy-empty.img" ] || dd if=/dev/zero of="$WORK/floppy-empty.img" bs=1024 count=1440 status=none
+  # qcow2, not raw: the station device set uses a qcow2 empty floppy because
+  # `savevm` refuses a writable RAW drive (see docs/lab/OBERON-WAVE.md wall 2),
+  # and a verify boot that does not match the station's device set proves less.
+  [ -f "$WORK/floppy-empty.qcow2" ] || qemu-img create -f qcow2 "$WORK/floppy-empty.qcow2" 1440k >/dev/null
   rm -f "$QMPSOCK" "$PIDFILE"
   qemu-system-x86_64 -name build-oberon -enable-kvm -m 64 -smp 1 \
     -machine pc-i440fx-11.0,acpi=off -cpu host -rtc base=localtime \
     -drive "file=$OUT_PATH,format=qcow2,if=ide,index=0,snapshot=on" \
-    -drive "file=$WORK/floppy-empty.img,format=raw,if=floppy,index=0" \
+    -drive "file=$WORK/floppy-empty.qcow2,format=qcow2,if=floppy,index=0" \
     -boot c -vga std -display none \
     -netdev user,id=n0,restrict=on -device ne2k_pci,netdev=n0 \
     -qmp "unix:$QMPSOCK,server=on,wait=off" -pidfile "$PIDFILE" -daemonize

@@ -131,6 +131,34 @@ menu: Script.Open, Compiler.Compile, System.Directory, NetSystem.Tool,
 Desktops.OpenDoc, …), the whole left user track empty flat grey, arrow
 pointer parked at (600,510).
 
+### Tooling proven end to end
+
+`scripts/build-guests/tiles/oberon.sh --force` was run on labhost start to
+finish: it re-fetched the 83,886,080-byte image from the pinned URL, matched
+the pinned sha256 and byte size, converted raw -> qcow2 into
+`/data/gallery-guests/OBERON/oberon.qcow2`, then BOOTED that output on the
+station device set with `-display none` and `fb-wait.py --settle 6`. The
+framebuffer **settled after 9.5 s with its last change at 3.3 s** — which is
+where the fixture's "boots in 3.3 s" number comes from — and the assertion
+passed: 1280x1024, 6 distinct colours, not blank. Artifact:
+`/data/gallery-guests/OBERON/verify-desktop.png`.
+
+`scripts/dev/smoke-rig.sh oberon --like freedos --slot 195` published the
+guest at `/os/oberon`, dark-launched (`listed: false`). CAVEAT WORTH KNOWING:
+`--like` copies the SIBLING's manifest row, so `/os/oberon` first came up
+labelled "oberon (smoke rig), 1994, DOS era" with freedos's blurb and app
+list. The row was replaced with one built from this station's own
+`registry/stations/oberon.json` museum block via
+`darklaunch-station.py publish oberon --entry <file>`. Check the label on any
+smoke rig before handing the URL to the operator.
+
+`spa/src/ui/keyboard/keyboardProfiles.ts` needs an `OS_FAMILY` entry for
+every production streamhost station — it is test-enforced against the
+registry in two places, so a new station without one fails `npm test`.
+`oberon` is `generic`, and that is the honest answer rather than a
+placeholder: Oberon has no chord set at all. Its verbs are clicks and
+interclicks on command words; the keyboard only ever feeds text to the caret.
+
 ## §Sandbox — this station's reach is the emulator, and nothing past it
 
 Verdict: **emulated machine under the fleet QEMU.** The visitor's reach ends
@@ -188,6 +216,15 @@ because nothing outside the emulator runs on this guest's behalf.
    assume the upstream README's checksum wall reproduces here.
 3. **IM plane** — n/a. No IM client exists for Native Oberon; UIN 19500 is
    allocated but unused.
+4. **Audio is declared, not proven.** `sb16` is in the device set over the
+   dbus audiodev because Oberon's own Sound driver is SB16, but nothing on
+   this station has made a sound yet. Next step: drive `Sound` from the
+   System.Tool and listen on the stream, or drop `audio: true` from the
+   registry row.
+5. **Cursor template bank covers the grey desktop only.** Teach
+   `cursor-locate.py` the black-on-white variant (`learn A.ppm B.ppm --at X,Y`
+   with both frames inside a text viewer) so a pointer check over System.Log
+   stops reading as NOTFOUND.
 
 ## Measured timeline
 
@@ -196,8 +233,27 @@ landing; `session-timeline.py` is for the coordinator's own transcript.
 
 ## Teardown (part of "done" — rule 8)
 
-The dead predecessor's bake QEMU (pid 2530962) was killed by `/proc/<pid>/exe`
-and replaced with this wave's own bake rig at
-`/data/vms/sandbox/oberon/bake/` (`launch-bake.sh`). Landing (commit, push,
-`box-deploy --apply`, claim re-homing) is the station lead's to run after
-this doc lands.
+Every process this wave started, and the check that proved it gone:
+
+| Released | How | Proof |
+|---|---|---|
+| the dead predecessor's bake QEMU, pid 2530962 | `kill` after asserting `readlink /proc/2530962/exe` = `/usr/bin/qemu-system-x86_64` — never `pkill -f` (rule 5) | `[ -d /proc/2530962 ]` false |
+| this wave's own bake QEMU, pid 3122688, `/data/vms/sandbox/oberon/bake/` | same `/proc/<pid>/exe` check | `[ -d /proc/3122688 ]` false |
+| the dead predecessor's smoke daemon, pid 2409477 | superseded by `smoke-rig.sh`, which kills and restarts the daemon itself | new daemon pid 3388302 |
+| the tile builder's verify QEMU | the builder's own `trap stop_qemu EXIT` | builder exited 0 |
+
+A scan of `/proc/*/cmdline` for `oberon` afterwards finds exactly one
+emulator left, pid 3383244 `-name oberon-smoke`, which is **deliberate**: it
+is the guest behind `/os/oberon`, waiting for the operator to drive it. Take
+it down with
+`scripts/dev/smoke-rig.sh oberon --down` — WITHOUT `--release-claims`, because
+slot 195, port 54195 and VMID 195 pass to the real station.
+
+Still held, on purpose: the `kh-claim` claims on slot/195, port/54195 and
+vmid/195 under session `oberon`, and the retronet allocation (10.99.0.42, tap
+`oberonrn0`, chain `OBERONRN-IN`, UIN 19500) — all of which the station
+inherits. `ssh lab 'labctl who'` shows them.
+
+Landing (`station-land.sh` under the landing lock, then
+`scripts/dev/box-deploy.sh --apply`) is the coordinator's to run: a push is
+not a deploy (rule 11).
