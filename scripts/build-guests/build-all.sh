@@ -169,6 +169,7 @@ MANIFEST=(
   "fmtowns        |tiles/fmtowns.sh                                      |native/fmtowns    |retro       |~5-10m                       |full                         |Towns System Software V2.1 L51 CD as CHD + fmtowns rompath staged by hash (MAME fmtowns host-native); ROM/CD bits fetched by URL+sha256, never committed"
   "magiccap       |tiles/magiccap.sh                                     |MagicCap          |retro       |~10-15m                      |1-click                      |magiccap-c.qcow2 + magiccap-d.qcow2 (win98se base + Magic Cap composed onto C:)"
   "oberon         |tiles/oberon.sh                                       |OBERON            |fast        |~1m                          |full                         |oberon.qcow2 (Native Oberon 2.3.6 installed IDE image, asig/native-oberon, converted raw->qcow2)"
+  "perq           |tiles/perq.sh                                         |PERQ              |graphical   |~8m                          |none                         |assets/perq (PERQemu 0.9.5 release tree + the debootstrap trixie container rootfs, uid-shifted to 2359296) and assets/perq/perqemu/Disks/g7.prqm (POS G.7 system disk; cold-boot reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

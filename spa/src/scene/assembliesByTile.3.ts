@@ -77,10 +77,6 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerA', monitor: 'crtE',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
-  perq: {
-    kind: 'pizzaBox', body: 'towerC', monitor: 'crtF',
-    keyboard: 'keyboardA', mouse: 'paramMouseC',
-  },
   fmtowns: {
     kind: 'towerSetup', body: 'towerE', monitor: 'crtC',
     keyboard: 'keyboardA', mouse: 'paramMouseB',
@@ -92,5 +88,9 @@ export const ASSEMBLIES_BY_TILE_3 = {
   magiccap: {
     kind: 'towerSetup', body: 'pizzaBoxB', monitor: 'crtC',
     keyboard: 'keyboardB', mouse: 'paramMouseB',
+  },
+  perq: {
+    kind: 'towerSetup', body: 'towerC', monitor: 'crtF',
+    keyboard: 'keyboardD', mouse: 'paramMouseB',
   },
 } as const satisfies Record<string, Assembly>;

@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (97 of the 99
+//    - transport   : how its LIVE framebuffer texture is obtained (98 of the 100
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 97 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 98 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -226,6 +226,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC3D33', eraLabel: '1995 · Towns OS V2.1 L51 — FM TOWNS (1989)' },
   oberon:      { osId: 'oberon', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#3d6fb4', eraLabel: '1999 · ETH Native Oberon', pointerRel: true },
   magiccap:    { osId: 'magiccap', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3a7fc9', eraLabel: '1995 · Magic Cap for Windows (pre-release)', bootVideo: '/boot/win98se/boot.mp4' },
+  perq:        { osId: 'perq', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7FA8C9', eraLabel: '1986 · POS G.7 (Three Rivers PERQ 1, portrait display)' }, // ideal: Apple Lisa 2 one-piece
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

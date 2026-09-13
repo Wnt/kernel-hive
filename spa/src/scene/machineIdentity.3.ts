@@ -97,8 +97,8 @@ export const EXHIBIT_IDENTITIES_3 = {
   },
   // TODO(lisa): exhibit finish copied from amix — set the real era cues.
   lisa: {
-    caseTint: '#d6d2c4', accentTint: '#8fa39b', tintMix: 0.38,
-    badge: 'PERQ 1A', spec: '16K bit-slice • POS G.7', kit: 'lab80',
+    caseTint: '#cfc7b4', accentTint: '#7a8b99', tintMix: 0.42,
+    badge: 'A3000UX', spec: '68030 • SVR4', kit: 'office90',
   },
   // domainos: Apollo DN3500 workstation, beige case like the other Unix towers
   // on the floor; the brown accent is the DM's pad0000 title bar, the machine's
@@ -107,10 +107,6 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#c9c2ae', accentTint: '#8b5a2b', tintMix: 0.35,
     badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
     kit: 'workstation',
-  },
-  perq: {
-    caseTint: '#d6d2c4', accentTint: '#8fa39b', tintMix: 0.38,
-    badge: 'PERQ 1A', spec: '16K bit-slice • POS G.7', kit: 'lab80',
   },
   // fmtowns: MAME's fmtownsftv — the FM Towns II FreshTV, Fujitsu's 486SX-33
   // CD-ROM desktop (src/mame/fujitsu/fmtowns.cpp: COMP(1994, fmtownsftv, ...,
@@ -132,5 +128,9 @@ export const EXHIBIT_IDENTITIES_3 = {
   magiccap: {
     caseTint: '#c9c2ae', accentTint: '#3a7fc9', tintMix: 0.35,
     badge: 'GENERAL MAGIC PC', spec: 'MAGIC CAP • 1995', kit: 'office90',
+  },
+  perq: {
+    caseTint: '#d6d2c4', accentTint: '#7fa8c9', tintMix: 0.38,
+    badge: 'PERQ 1A', spec: '16K bit-slice • POS G.7', kit: 'workstation',
   },
 } as const satisfies Record<string, ExhibitIdentity>;
