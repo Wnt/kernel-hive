@@ -343,6 +343,9 @@ export const OS_FAMILY: Record<string, Family> = {
   // the generic Unix rows like netbsd14 until a KDE profile is worth writing.
   freebsd411: 'generic',
   os2warp: 'os2',
+  // OS/2 1.3 Presentation Manager: the same OS/2 chord set as Warp — a plain
+  // 101-key PC board, Ctrl+Esc for the task list, Alt+Esc to cycle windows.
+  os213: 'os2',
   solaris: 'suncde',
   // IRIX 6.5 under 4Dwm. Motif-derived like CDE, but the suncde profile's rows
   // are CDE's own (Help on F1, the CDE edit chords) rather than Indigo Magic's,

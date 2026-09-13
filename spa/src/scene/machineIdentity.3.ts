@@ -137,9 +137,10 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
-  // TODO(os213): exhibit finish copied from nt351 — set the real era cues.
+  // OS/2 1.3 on an ISA i486 of 1990: IBM's own warm off-white plastics, an
+  // IBM-blue accent for the Presentation Manager title bars, VGA-era office kit.
   os213: {
-    caseTint: '#b6aa91', accentTint: '#656a6b', tintMix: 0.32,
-    badge: 'PENTIUM WS', spec: 'PRO • 1995', kit: 'office90',
+    caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
+    badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
 } as const satisfies Record<string, ExhibitIdentity>;
