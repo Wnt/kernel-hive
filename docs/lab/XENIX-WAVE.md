@@ -178,21 +178,25 @@ rule 14 was unavailable, not skipped:
 | `-machine pc` vs `isapc` | `gtpc-3.png` | identical; still no `%hd` |
 | `-cpu 486` (both above) | — | the 386PS TRAP 8 is media, not CPU |
 
+**Tried and ruled out:** overriding the devices at the `Boot :` prompt.
+`qmp-type.py --qmp <sock> 'fd(64)xenix root=fd(64) swap=fd(64) pipe=fd(64)\n'`
+boots exactly as the bare `\n` does and loops `no stack space` unchanged
+(`sw-final.png`) — this loader either ignores the extra words or the devices are
+compiled into the kernel, so the swap device cannot be moved off the missing
+hard disk from the prompt.
+
 **Next commands, in order, for whoever picks this up:**
 
-1. Override the swap device at the `Boot :` prompt instead of fighting the
-   driver — Xenix accepts a boot string there:
-   `python3 scripts/dev/qmp-type.py --qmp <sock> 'fd(64)xenix swap=fd(64) nswap=0\n'`
-   then `fb-wait.py --change`. If the shell comes up, the wall is swap, not the
-   disk driver, and the install can proceed onto a `divvy`'d disk afterwards.
-2. If that fails, the 386GT boot floppy simply has no `hd` driver linked in —
+1. The 386GT boot floppy simply has no `hd` driver linked in —
    PCjs's own page warns this set's boot "is still being debugged". Get a third
    set: extract `Xenix386 2.3.4.rar` out of the already-staged
    `/data/assets-staging/xenix/sco-xenix-386-and-extras.rar`, which needs an
    `unrar` labhost does not have (its `7z` reports "Unsupported Method" on
    RAR3/PPMd). Check the extracted `N01`'s label for `typ=n386` — an AT-class
-   boot floppy is what this station has never had.
-3. Only then bake the golden. The device set in the launcher is the one every
+   boot floppy is what this station has never had. That archive also carries
+   `xenix serials.txt`; the WinWorld set's own serial is `ING008637` /
+   activation `mgzxcszg` (2-user licence), in its `serial.txt`.
+2. Only then bake the golden. The device set in the launcher is the one every
    frame above was taken with; a change to it is a new checkpoint and a new
    restore proof (rule 6).
 
