@@ -112,4 +112,25 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6d2c4', accentTint: '#8fa39b', tintMix: 0.38,
     badge: 'PERQ 1A', spec: '16K bit-slice • POS G.7', kit: 'lab80',
   },
+  // fmtowns: MAME's fmtownsftv — the FM Towns II FreshTV, Fujitsu's 486SX-33
+  // CD-ROM desktop (src/mame/fujitsu/fmtowns.cpp: COMP(1994, fmtownsftv, ...,
+  // "FM-Towns II FreshTV"), 6 MB RAM). Pale warm-grey Japanese consumer-PC
+  // case; the accent is the TownsMENU desktop's own deep teal ground.
+  fmtowns: {
+    caseTint: '#d6d0c4', accentTint: '#1f6b76', tintMix: 0.40,
+    badge: 'FM TOWNS II', spec: '486SX-33 • TOWNS OS V2.1 L51 • 1994',
+    kit: 'office90',
+  },
+  oberon: {
+    caseTint: '#cfc9ba', accentTint: '#3d6fb4', tintMix: 0.3,
+    badge: 'ETH NATIVE OBERON', spec: 'i386 • Native Oberon 2.3.6 • 1999',
+    kit: 'workstation',
+  },
+  // magiccap: a win98se-class beige tower running General Magic's Magic Cap
+  // for Windows (pre-release build 327, 1995) as a hosted Windows app, not a
+  // native OS. Registry accent is Magic Cap's own desktop blue.
+  magiccap: {
+    caseTint: '#c9c2ae', accentTint: '#3a7fc9', tintMix: 0.35,
+    badge: 'GENERAL MAGIC PC', spec: 'MAGIC CAP • 1995', kit: 'office90',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

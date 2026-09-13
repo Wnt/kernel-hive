@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "fmtowns",
+  "era_year": 1995,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 82,
+        "prelude": "",
+        "value": {
+          "key": "fmtowns",
+          "script": "tiles/fmtowns.sh",
+          "outputDir": "native/fmtowns",
+          "class": "retro",
+          "estimated": "~5-10m",
+          "automation": "full",
+          "produces": "Towns System Software V2.1 L51 CD as CHD + fmtowns rompath staged by hash (MAME fmtowns host-native); ROM/CD bits fetched by URL+sha256, never committed",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/fmtowns",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54196,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/fmtowns/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 86,
+    "stationsManifestOrder": 84,
+    "stationsManifestPrelude": "\n# fmtowns (VMID 196) — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 97,
+    "bindingPrelude": "",
+    "goldenOrder": 84
+  },
+  "stationDir": "fmtowns",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54196,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 196
+  },
+  "guestDoc": "docs/guests/fmtowns.md",
+  "credentialsRef": "guest/fmtowns",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "fmtowns",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":96",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/fmtowns/fmtowns_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/fmtowns/fb.shm",
+      "SH_PORT": "54196",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/fmtowns/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/fmtowns/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": "=:[,+:=,*:+,%3A:',\":],/:_,_:{,(:*,):(,&:^,':&,~:)"
+    },
+    "vmidLabel": 196,
+    "bringUpOrder": 97,
+    "x11": {
+      "display": ":96",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "fmtowns",
+        "--udp",
+        "54196",
+        "--x11",
+        "--x11-display",
+        ":96",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/fmtowns/fmtowns.keymap",
+        "--env-append-file",
+        "$T/fmtowns/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/fmtowns/fmtowns.keymap",
+        "streamhost/stations/fmtowns/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#CC3D33",
+    "eraLabel": "1995 · Towns OS V2.1 L51 — FM TOWNS (1989)"
+  },
+  "museum": {
+    "id": "fmtowns",
+    "displayName": "FM TOWNS",
+    "year": 1995,
+    "lineage": "Fujitsu FM TOWNS / Towns OS (TownsMENU)",
+    "arch": "Intel 80386/486-class (FM TOWNS II), 4-6 MB, Towns sprite/CD-ROM chipset",
+    "ramMB": 6,
+    "ramKB": 0,
+    "era": "1990s",
+    "accent": "#CC3D33",
+    "eraSoftware": [
+      "TownsMENU",
+      "Towns System Software V2.1 L51",
+      "MS-DOS (Towns)",
+      "CD-DA player"
+    ],
+    "periodBrowser": "none — Towns OS V2.1 L51 ships no TCP/IP stack by default",
+    "iconicApps": [
+      "TownsMENU",
+      "CDプレーヤー",
+      "電卓",
+      "Free Software Collection"
+    ],
+    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS — sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
+    "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk — the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/fmtowns.sh",
+    "driver": "fmtowns"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "fmtowns",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "OPEN — Towns mouse on -pad2 (MSX-protocol mouse, genuinely relative: KEYDUMP shows MOUSE_X/MOUSE_Y axis fields, no absolute port); generic ctlsock MOVEA/CLICK1 produced no observable cursor movement (docs/lab/FMTOWNS-WAVE.md Still open #1)",
+    "keyboard": "PROVEN — real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
+    "fixture": "PROVEN — Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from samcoupe on 2026-09-13 (fmtowns wave, docs/lab/FMTOWNS-WAVE.md)",
+    "native build + real CHD + generated keymap + keyboard proof + golden restore proven 2026-09-13; /os/fmtowns publish and the pointer are OPEN, see listing.reason"
+  ],
+  "keyboard": {
+    "charMap": {
+      "=": "[",
+      "+": "=",
+      "*": "+",
+      ":": "'",
+      "\"": "]",
+      "/": "_",
+      "_": "{",
+      "(": "*",
+      ")": "(",
+      "&": "^",
+      "'": "&",
+      "~": ")"
+    }
+  },
+  "listing": {
+    "state": "hidden",
+    "reason": "Native build, real CHD, generated keymap, keyboard proof (Ctrl+Esc opens the guest's own Task List dialog) and golden-save/restore (pixel-identical, 5.2s) are all proven on the framebuffer 2026-09-13, and /os/fmtowns is dark-launched and rendering the TownsMENU desktop. Hidden for ONE reason: the pointer is unproven end-to-end. UPDATE 2026-09-13 (fmtowns-ptr stream, sandbox only, not yet deployed to this live station): the axes=0 root cause is FIXED and MEASURED (setup now reads btns=1 axes=1, via mame-ctlsock-ptr-tags.patch with a type-based Mouse-X/Y binding fix layered on top -- the module's field-name match was hardcoded to \"Mouse X\"/\"Mouse Y\" but pad2's fields are named \"Mouse X 2\"/\"Mouse Y 2\"), and relative cursor MOTION is proven precisely on the framebuffer across four distinct icon targets in one session (docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13\"). A SECOND bug was found and fixed (the MSX mouse's BUTTONS port is IP_ACTIVE_LOW, mame-ctlsock-btn-active-low.patch inverts it) but CLICK still produces no visible guest reaction after the fix -- still open, candidates listed in the wave doc. Flip listing.state to listed and stream.pointer.transport off 'none' only once a click that opens something is proven on the framebuffer, then land both patches + the native.d/fmtowns.sh opt-in + the station.env.fixture MAME_CTL_* lines on this live station and rebuild/redeploy. See docs/lab/FMTOWNS-WAVE.md SS Pointer.",
+    "since": "2026-09-13"
+  }
+}

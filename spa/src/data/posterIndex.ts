@@ -93,6 +93,9 @@ const POSTER_INDEX = {
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
   },
+  "fmtowns": {
+    "hero": "/posters/fmtowns/desktop.webp"
+  },
   "freebsd411": {
     "hero": "/posters/freebsd411/desktop.webp"
   },
@@ -135,6 +138,9 @@ const POSTER_INDEX = {
   "macos9": {
     "hero": "/posters/macos9/desktop.webp"
   },
+  "magiccap": {
+    "hero": "/posters/magiccap/desktop.webp"
+  },
   "medley": {
     "hero": "/posters/medley/desktop.webp"
   },
@@ -161,6 +167,9 @@ const POSTER_INDEX = {
   },
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
+  },
+  "oberon": {
+    "hero": "/posters/oberon/desktop.webp"
   },
   "openbsd": {
     "hero": "/posters/openbsd/desktop.webp"
