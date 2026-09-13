@@ -223,7 +223,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04', pointerRel: true },
   lisa:        { osId: 'lisa', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B9A27A', eraLabel: '1984 · Lisa Office System 3.1' }, // ideal: Apple Lisa 2 one-piece
   domainos:    { osId: 'domainos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A6A55', eraLabel: '1989 · Apollo DN3500 — Domain/OS SR10.4.1' },
-  fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#C0392B', eraLabel: '1995 · FM TOWNS — Towns OS V2.1 L51' },
+  fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC3D33', eraLabel: '1995 · Towns OS V2.1 L51 — FM TOWNS (1989)' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
