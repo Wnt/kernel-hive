@@ -137,9 +137,12 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
-  // TODO(apple2gs): exhibit finish copied from apple2e — set the real era cues.
+  // The IIGS is the first Apple in PLATINUM — the warm beige of the //e was
+  // dropped for a pale cool grey, and the GS wears it a year before the Mac II
+  // does. The accent is the Apple six-colour stripe reduced to one hue, which
+  // is the point of the exhibit: this is the 8-bit family's first colour desktop.
   apple2gs: {
-    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
-    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+    caseTint: '#d8d5cc', accentTint: '#3f7fbf', tintMix: 0.30,
+    badge: 'Apple IIGS', spec: '65C816 • GS/OS 6', kit: 'eightBit',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

@@ -436,6 +436,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // apple2e is the same //e keyboard on MAME's apple2ee: Open/Closed Apple ride
   // on the Alt keysyms the ctlsock keymap binds to the driver's Apple keys.
   apple2e: 'appleii',
+  // apple2gs is an ADB machine running a Finder, so it does NOT take the
+  // 8-bit `appleii` rows — see the applegs block in
+  // keyboardProfiles.data.exotic.ts for why Open Apple changes job here.
+  apple2gs: 'applegs',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
