@@ -165,7 +165,7 @@ sensor existed.
  		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
  		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
  		m_tail_path = env_str("MAME_CTL_CMD_FILE");
-@@ -885,27 +954,25 @@
+@@ -885,35 +954,39 @@
  		natural_keyboard &nat = m_machine.natkeyboard();
  		nat.set_in_use(true);
  
@@ -199,8 +199,30 @@ sensor existed.
 +					if (!m_btn_name[i].empty() && (n == m_btn_name[i]))
 +						m_btn_field[i] = &f;
  			}
- 		if (m_x_port)
- 			for (ioport_field &f : m_x_port->fields())
+-		if (m_x_port)
+-			for (ioport_field &f : m_x_port->fields())
+-				if (f.name() == "Mouse X")
+-					m_x_field = &f;
+-		if (m_y_port)
+-			for (ioport_field &f : m_y_port->fields())
+-				if (f.name() == "Mouse Y")
+-					m_y_field = &f;
++		// Match by INPUT TYPE, not display name: IPT_MOUSE_X/Y is the same
++		// on every driver, but MAME appends a player-index suffix to the
++		// NAME ("Mouse X 2" for a port-2 mouse -- fmtowns's :pad2:mouse), so
++		// a literal "Mouse X" match silently fails on any player-2+ mouse.
++		// Measured on fmtowns 2026-09-13: the field is named "Mouse X 2",
++		// not "Mouse X" -- setup logged axes=0 despite the TAG matching.
++		if (m_x_port)
++			for (ioport_field &f : m_x_port->fields())
++				if (f.type() == IPT_MOUSE_X)
++					m_x_field = &f;
++		if (m_y_port)
++			for (ioport_field &f : m_y_port->fields())
++				if (f.type() == IPT_MOUSE_Y)
++					m_y_field = &f;
+ 
+ 		// MOVEA's SENSOR: raw handles onto the hardware-cursor registers
 @@ -1192,8 +1259,8 @@
  		m_ay += std::abs(dy);
  		m_cum_ax += std::abs(dx);
