@@ -150,15 +150,21 @@ def main():
         declared = declarations[t]
         d = os.path.join(TILES_DIR, t)
         env = read_env(os.path.join(d, "station.env"))
-        launcher = ""
-        lp = os.path.join(d, "qemu-streamhost.sh")
-        with contextlib.suppress(OSError), open(lp) as f:
-            launcher = f.read()
         pointer = pointer_mode(env)
         # x11 runtime stations (SH_CAPTURE=x11, IRIX/issue #20) have no QEMU/QMP: no
         # SH_QMP in station.env, no qmp.sock, no snapshot to probe. Reflect that as a
         # null qmp + null golden instead of synthesizing a dead socket path.
         is_x11 = env.get("SH_STATION_RUNTIME") == "x11" or env.get("SH_CAPTURE") == "x11"
+        # The QEMU launcher is the live source of hostfwd ports ONLY for a QEMU
+        # station. A host-native (x11) station's launcher is x11-runtime.sh; a
+        # qemu-streamhost.sh beside it is a parked rollback pair (indyr4400 after
+        # the 2026-09 de-bridging) whose ssh hostfwd is NOT live — reading it made
+        # `labctl gen` refuse fleet-wide and blocked four landings on 2026-09-13.
+        launcher = ""
+        if not is_x11:
+            lp = os.path.join(d, "qemu-streamhost.sh")
+            with contextlib.suppress(OSError), open(lp) as f:
+                launcher = f.read()
         qmp = None if is_x11 else env.get("SH_QMP", os.path.join(d, "qmp.sock"))
         # warpd channel address the daemon dials (SH_WARPD_ADDR): tcp host:port
         # OR "unix:<path>" (serial-chardev agents like win311 speak COM1 —
