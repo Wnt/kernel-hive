@@ -209,12 +209,12 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3a7fc9",
-    "eraLabel": "1995 · Magic Cap for Windows (pre-release build 327)",
+    "eraLabel": "1995 · Magic Cap for Windows (pre-release)",
     "bootVideo": "/boot/win98se/boot.mp4"
   },
   "museum": {
     "id": "magiccap",
-    "displayName": "Magic Cap for Windows (pre-release build 327)",
+    "displayName": "Magic Cap for Windows",
     "year": 1995,
     "lineage": "General Magic Magic Cap — communicator desktop OS, hosted here as a Windows application on Windows 98 SE",
     "arch": "i386",
@@ -237,7 +237,7 @@
       "Telephone",
       "File Cabinet"
     ],
-    "blurb": "General Magic's Magic Cap communicator desktop, run here as the 1995 pre-release Windows simulator (build 327): a desk room with a clock, In and Out message trays, a telephone, a notepad, a datebook, and a file cabinet, with a Hallway door to other rooms."
+    "blurb": "General Magic's Magic Cap communicator desktop, run here as the 1995 pre-release Windows simulator (build 327 — the retail Magic Cap 3.1 simulator is not sourceable, see docs/lab/MAGICCAP-WAVE.md): a desk room with a clock, In and Out message trays, a telephone, a notepad, a datebook, and a file cabinet, with a Hallway door to other rooms."
   },
   "emulator": {
     "family": "QEMU",

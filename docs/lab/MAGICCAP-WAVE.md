@@ -104,44 +104,83 @@ removes the inherited win98se "Mirabilis ICQ" autostart. Frame:
 | Stream | Owns | Model | Status |
 |---|---|---|---|
 | `build` | `scripts/build-guests/tiles/magiccap.sh` (fetch+verify+compose), registry row, streamhost launcher/fixture, this doc | Sonnet 5 (repo-side agent) | done this wave |
-| `golden` | bake + restore proof + framebuffer proofs, owned entirely by the station lead on the box | Opus (station lead) | **[PLACEHOLDER — lead fills in: golden bake result, frame paths, restore proof]** |
-| `spa` | poster, hero, scene rows (`assembliesByTile.ts`/`machineIdentity.ts`) | Sonnet 5 (repo-side agent, via `spa-scene-rows.py --row-from`) | landed this wave |
+| `golden` | bake + restore proof + framebuffer proofs, owned entirely by the station lead on the box | Opus (station lead) | **golden baked and restore-proven this wave** — see §Proofs |
+| `spa` | poster, hero, scene rows (`assembliesByTile.ts`/`machineIdentity.ts`) | Sonnet 5 (repo-side agent, via `spa-scene-rows.py --row-from`) | landed this wave; hero (`spa/public/posters/magiccap/desktop.webp`, 1024x768) supplied by the station lead from the restore frame, confirmed NOT overwritten by the scaffold's placeholder |
 | `docs` | `docs/guests/magiccap.md` | scaffold stub only — **[PLACEHOLDER — needs the lead's measured facts before this is more than a stub]** |
 
 ## Walls hit
 
-None recorded by the repo-side stream. **[PLACEHOLDER — the station lead
-records any bring-up walls hit during the bake here, with the theories raced
-and the framebuffer evidence, per rule 14.]**
+None recorded that needed a raced theory. The one boot-time surprise (the
+WIN.INI `run=` trap, see above) was diagnosed directly from the framebuffer,
+not raced — it is a single-token misuse, not an ambiguous failure.
 
 ## Landing
 
-Not yet landed to a `station-up.sh`/`station-land.sh` pass. **[PLACEHOLDER —
-paste `station-land.sh magiccap --golden <staged.qcow2>` output here once the
-lead's golden is staged.]**
+Not yet run through `station-land.sh`. The station lead's golden and both
+disks currently live under `/data/vms/sandbox/magiccap/smoke/` (see §Proofs);
+promoting them to `/data/vms/streamhost/assets/magiccap/` (the path this
+station's launcher and fixture assume) is the next step before a
+`station-land.sh magiccap --golden <staged.qcow2>` pass — OPEN, see below.
 
-## Proofs
+## Proofs (measured by the station lead, frames on labhost)
 
-**[PLACEHOLDER — station lead fills in, per the wave template's proof list:
-`labctl shot magiccap` before/after a key send, restore-from-golden proof,
-and anything else rule 9 (the framebuffer is the only proof) requires. Do not
-invent frame paths or proof results here — this section is empty until the
-lead reports them.]**
+- **Cold boot, no manual step**: Magic Cap splash then the expected "Your
+  modem isn't setup correctly" dialog (no modem is configured — expected and
+  harmless) — `/data/vms/sandbox/magiccap/smoke/f-desk.png`. Timings: Win98
+  splash settled 138.8 s after power-on; the Magic Cap dialog settled a
+  further 63.4 s after that.
+- **Desk view, autostarted from the HKLM Run key**: `/data/vms/sandbox/magiccap/smoke/desk2/cur.png` — 640x480, matches the fixture description above.
+- **`savevm golden` succeeded**: vmstate 130 MiB, tag `golden`, captured
+  2026-09-13 09:37:17, stored inside `disk-c.qcow2` (the same qcow2-carries-
+  the-snapshot mechanism every streamhost tile uses). `info snapshots` also
+  lists a stale, non-loadable partial `icqinstalled` snapshot on `ide0-hd1`,
+  inherited from the win98se base disk — harmless, not used.
+- **Restore proof**: process killed, relaunched with `-loadvm golden -S` +
+  `cont`, came back to the identical Magic Cap desk —
+  `/data/vms/sandbox/magiccap/smoke/restore/cur.png`.
+- **Pointer, two-target readback** (`qemu-usb-tablet`, absolute): commanded
+  (120,140) → cursor drawn at (119,141); commanded (520,360) → drawn at
+  (520,361). ±1 px, no drift. Frames:
+  `/data/vms/sandbox/magiccap/smoke/ptA/cur.png`,
+  `/data/vms/sandbox/magiccap/smoke/ptB/cur.png`.
+- **Click opens a desk object**: a click at (478,262) on the desk's datebook
+  made Magic Cap react — it opened the first-run "Filling out your name card"
+  card. Frame: `/data/vms/sandbox/magiccap/smoke/obj/cur.png`. (This same
+  modal is the first-run gate recorded as OPEN item 1 below.)
+- **WIN.INI trap, confirmed with a frame**:
+  `/data/vms/sandbox/magiccap/smoke/f-boot2.png` shows the resulting "Cannot
+  find the file 's'" dialog.
+- **Keyboard**: not measured this session — OPEN.
 
 ## OPEN items
 
 - **Magic Cap 3.1 is not sourceable** (see §Media) — operator must source
   `MagicCAP-USA.exe` from a login-gated forum account before this station can
   ship the real 3.1 simulator instead of the 1995 pre-release.
-- Golden bake, restore proof, and keyboard/pointer proofs are the station
-  lead's open work — see the placeholders above.
+- **First-run name-card gate**: the golden restores to the desk, but the
+  first click on most desk objects raises Magic Cap's modal "Filling out your
+  name card" card. Its close box dismisses it, but it returns on the next
+  object click, so the desk is not yet fully interactive for a visitor. Next
+  step: relaunch `/data/vms/sandbox/magiccap/smoke/launch-smoke.sh`, `cont`,
+  click "fill out" at (356,222) in the 640x480 frame, complete the card once,
+  then recapture golden.
+- **Keyboard**: not measured this session.
+- **`/os/magiccap` smoke rig not published** — `smoke-rig.sh` has not been
+  run for this station.
+- x11warp display `:97` is claimed but **unused** — this is a `dbus,p2p=on`
+  display-plane guest, not an x11warp station (see §Sandbox).
+- **Disk promotion**: the smoke rig's disks
+  (`/data/vms/sandbox/magiccap/smoke/disk-c.qcow2`, 1.05 GB, carries golden;
+  `/data/vms/sandbox/magiccap/smoke/disk-d.qcow2`, 408 MB — both cloned from
+  win98se) have NOT been promoted to `/data/vms/streamhost/assets/magiccap/`,
+  which is the path `qemu-streamhost.sh` and `scripts/build-guests/tiles/
+  magiccap.sh` assume. Confirm and correct those paths (or promote the disks
+  to match) before this station goes live.
+- **Cosmetic**: the C: image still carries win98se's inherited desktop icons
+  (ICQ, Opera, AOL) alongside Magic Cap.
 - `docs/guests/magiccap.md` is a scaffold stub; needs the lead's measured
   facts (the same shape as `docs/guests/win9x.md` but for the Magic Cap
   fixture specifically) before promotion.
-- Disk paths in `qemu-streamhost.sh` (`magiccap-c.qcow2` / `magiccap-d.qcow2`
-  under `/data/vms/streamhost/assets/magiccap/`) are inferred from the
-  win98se pattern, not yet confirmed against where the lead's bake actually
-  wrote them — confirm and correct before this station goes live.
 
 ## Measured timeline
 

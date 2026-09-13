@@ -46,9 +46,13 @@
 set -e
 B=/data/vms/streamhost/stations/magiccap
 # Disk paths: inferred from the win98se pattern (asset dir named for the
-# station, same C:/D: split). Not yet confirmed by the station lead — if the
-# actual bake places these elsewhere, update KVM/GAMES below and say so in the
-# handoff; nothing else in this launcher depends on the exact path.
+# station, same C:/D: split). CONFIRMED OPEN by the station lead: the golden
+# bake actually lives at /data/vms/sandbox/magiccap/smoke/{disk-c,disk-d}.qcow2
+# (disk-c.qcow2 1.05 GB carries the golden vmstate; disk-d.qcow2 408 MB) and
+# has NOT been promoted to the path below yet — see docs/lab/MAGICCAP-WAVE.md
+# §OPEN items "Disk promotion". Update KVM/GAMES here (or promote the disks to
+# match) before this station is landed; nothing else in this launcher depends
+# on the exact path.
 KVM=/data/vms/streamhost/assets/magiccap/magiccap-c.qcow2
 GAMES=/data/vms/streamhost/assets/magiccap/magiccap-d.qcow2
 [ -f "$B/qemu.pid" ] && kill "$(cat "$B/qemu.pid")" 2>/dev/null || true

@@ -280,6 +280,7 @@ export const OS_FAMILY: Record<string, Family> = {
   alpine: 'linux-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
+  magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
