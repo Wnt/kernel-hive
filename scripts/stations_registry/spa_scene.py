@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,7 +45,28 @@ TUPLE_PARTS = ("body", "monitor", "keyboard", "mouse")
 #: discovers it mid-landing, the way box-sync-pairs.sh was discovered.
 SIZE_WARN_LINES = 560
 
+#: SHARDS. The 600-line cap was reached at 96 stations (2026-09-13, five waves
+#: blocked on push at once), so a table is no longer one literal: the index
+#: file (`assembliesByTile.ts`) spreads `<CONST>_1`, `<CONST>_2`, … imported
+#: from `assembliesByTile.1.ts`, `.2.ts`, … — each shard holding at most
+#: SHARD_ROWS rows in lineup order. Key order through object spread is
+#: insertion order, so `Object.keys(ASSEMBLIES_BY_TILE)` is still the lineup.
+#: Rows live ONLY in shards; the index keeps its hand-written prose and code.
+SHARD_ROWS = 40
+
 _ENTRY_RE = re.compile(r"^  ([A-Za-z_][A-Za-z0-9_]*): \{")
+_SPREAD_RE = re.compile(r"^  \.\.\.([A-Za-z_][A-Za-z0-9_]*)_(\d+),\s*$")
+_SHARD_IMPORT_RE = re.compile(r"^import \{ ([A-Za-z_][A-Za-z0-9_]*)_(\d+) \} from '\./([A-Za-z0-9_]+)\.\2';\s*$")
+
+
+def shard_rel(rel: str, n: int) -> str:
+    """`spa/src/scene/assembliesByTile.ts`, 2 -> `spa/src/scene/assembliesByTile.2.ts`."""
+    return rel[: -len(".ts")] + f".{n}.ts"
+
+
+def shard_count(text: str, const: str) -> int:
+    """How many shards an index file spreads (0 = legacy single-literal table)."""
+    return sum(1 for line in text.splitlines() if (m := _SPREAD_RE.match(line)) and m.group(1) == const)
 
 
 @dataclass
@@ -57,6 +79,8 @@ class SceneTable:
     blocks: dict[str, str]
     tail_pending: str
     tail: str
+    #: index-file text when the table is sharded (rows come from the shards)
+    index_text: str | None = None
 
     def label(self) -> str:
         """Repo-relative name where possible; the bare path for a synthetic table."""
@@ -74,6 +98,83 @@ class SceneTable:
             raise RegistryError(f"{self.path.name}: rows with no place in the given order: {missing}")
         body = "".join(self.blocks[i] for i in order if i in self.blocks)
         return self.head + body + self.tail_pending + self.tail
+
+    def render_files(self, order: list[str], rel: str) -> dict[str, str | None]:
+        """The sharded form: {rel: text} for the index and every shard, None = delete.
+
+        Always sharded on write — a legacy single-literal table is converted the
+        first time it is rebuilt. The index keeps everything it had except the
+        shard import run (regenerated in place, or inserted after the last
+        import) and the literal body (replaced by one spread per shard). The
+        number of shards follows the row count; a shard that would be empty is
+        deleted (None) so `git status` shows the shrink.
+        """
+        missing = [i for i in self.blocks if i not in order]
+        if missing:
+            raise RegistryError(f"{self.path.name}: rows with no place in the given order: {missing}")
+        ids = [i for i in order if i in self.blocks]
+        base = Path(rel).name[: -len(".ts")]
+        chunks = [ids[i : i + SHARD_ROWS] for i in range(0, len(ids), SHARD_ROWS)] or [[]]
+        out: dict[str, str | None] = {}
+        imports = "".join(f"import {{ {self.const}_{n} }} from './{base}.{n}';\n" for n in range(1, len(chunks) + 1))
+        spreads = "".join(f"  ...{self.const}_{n},\n" for n in range(1, len(chunks) + 1))
+        out[rel] = _render_index(
+            self.index_text if self.index_text is not None else self.head + self.tail, self.const, imports, spreads
+        )
+        for n, chunk in enumerate(chunks, start=1):
+            rows = "".join(self.blocks[i] for i in chunk)
+            out[shard_rel(rel, n)] = _shard_text(self.const, base, n, len(chunks), rows)
+        # surplus shards from a previous, larger layout
+        n = len(chunks) + 1
+        while (REPO / shard_rel(rel, n)).is_file():
+            out[shard_rel(rel, n)] = None
+            n += 1
+        return out
+
+
+def _shard_text(const: str, base: str, n: int, total: int, rows: str) -> str:
+    type_import = {
+        ASSEMBLIES_CONST: "import type { Assembly } from './machines';",
+        IDENTITY_CONST: "import type { ExhibitIdentity } from './machineIdentity';",
+    }.get(const, "")
+    value_type = {ASSEMBLIES_CONST: "Assembly", IDENTITY_CONST: "ExhibitIdentity"}.get(const, "unknown")
+    return (
+        f"// GENERATED shard {n}/{total} of {const} — rows in registry lineup order, written by\n"
+        f"// scripts/dev/spa-scene-rows.py (the index is ./{base}.ts). Edit a ROW here if you must;\n"
+        f"// never the layout, and never add a row by hand — the rebuild places it.\n"
+        f"{type_import}\n\n"
+        f"export const {const}_{n} = {{\n{rows}}} as const satisfies Record<string, {value_type}>;\n"
+    )
+
+
+def _render_index(text: str, const: str, imports: str, spreads: str) -> str:
+    lines = text.splitlines(keepends=True)
+    kept: list[str] = []
+    run_at: int | None = None
+    last_import: int | None = None
+    for line in lines:
+        m = _SHARD_IMPORT_RE.match(line)
+        if m and m.group(1) == const:
+            if run_at is None:
+                run_at = len(kept)
+            continue
+        if line.startswith("import ") and run_at is None:
+            last_import = len(kept)
+        kept.append(line)
+    if run_at is None:
+        run_at = (last_import + 1) if last_import is not None else 0
+        kept.insert(run_at, imports)
+    else:
+        kept.insert(run_at, imports)
+    text = "".join(kept)
+    open_re = re.compile(rf"^export const {re.escape(const)}\b.*\{{\s*$", re.M)
+    m = open_re.search(text)
+    if m is None:
+        raise RegistryError(f"index for {const}: no `export const {const} = {{` line")
+    close = text.find("\n}", m.end() - 1)
+    if close < 0:
+        raise RegistryError(f"index for {const}: literal never closed at column 0")
+    return text[: m.end()] + "\n" + spreads + text[close + 1 :]
 
 
 def parse_table(text: str, const: str, path: Path) -> SceneTable:
@@ -119,19 +220,44 @@ def parse_table(text: str, const: str, path: Path) -> SceneTable:
     return SceneTable(path, const, head, blocks, "".join(pending), tail)
 
 
+def _assemble(rel: str, const: str, index_text: str, shard_text: Callable[[str], str]) -> SceneTable:
+    """Legacy single literal, or the index + its shards merged into ONE ordered table."""
+    path = REPO / rel
+    n = shard_count(index_text, const)
+    if n == 0:
+        return parse_table(index_text, const, path)
+    blocks: dict[str, str] = {}
+    for k in range(1, n + 1):
+        shard = parse_table(shard_text(shard_rel(rel, k)), f"{const}_{k}", REPO / shard_rel(rel, k))
+        for key, block in shard.blocks.items():
+            if key in blocks:
+                raise RegistryError(f"{rel}: row {key!r} appears in more than one shard")
+            blocks[key] = block
+        if shard.tail_pending.strip():
+            raise RegistryError(f"{shard_rel(rel, k)}: stray text after the last row: {shard.tail_pending.strip()!r}")
+    table = parse_table(index_text, const, path)
+    return SceneTable(path, const, table.head, blocks, "", table.tail, index_text=index_text)
+
+
 def read_table(rel: str, const: str, *, text: str | None = None) -> SceneTable:
     path = REPO / rel
-    if text is None:
-        if not path.is_file():
-            raise RegistryError(f"{rel}: not in this checkout")
-        text = path.read_text(encoding="utf-8")
-    return parse_table(text, const, path)
+    if text is not None:
+        return parse_table(text, const, path)
+    if not path.is_file():
+        raise RegistryError(f"{rel}: not in this checkout")
+
+    def shard_text(shard: str) -> str:
+        p = REPO / shard
+        if not p.is_file():
+            raise RegistryError(f"{shard}: the index spreads it but it is not in this checkout")
+        return p.read_text(encoding="utf-8")
+
+    return _assemble(rel, const, path.read_text(encoding="utf-8"), shard_text)
 
 
-def read_table_at(rel: str, const: str, ref: str) -> SceneTable:
-    """The same table as it stands at a git ref — the `rebuild from main` half."""
+def _git_show(ref: str, rel: str) -> str:
     try:
-        text = subprocess.run(
+        return subprocess.run(
             ["git", "-C", str(REPO), "show", f"{ref}:{rel}"],
             check=True,
             capture_output=True,
@@ -139,7 +265,11 @@ def read_table_at(rel: str, const: str, ref: str) -> SceneTable:
         ).stdout
     except subprocess.CalledProcessError as exc:
         raise RegistryError(f"git show {ref}:{rel} failed: {exc.stderr.strip()}") from exc
-    return parse_table(text, const, REPO / rel)
+
+
+def read_table_at(rel: str, const: str, ref: str) -> SceneTable:
+    """The same table as it stands at a git ref — the `rebuild from main` half."""
+    return _assemble(rel, const, _git_show(ref, rel), lambda shard: _git_show(ref, shard))
 
 
 def lineup_ids() -> list[str]:
