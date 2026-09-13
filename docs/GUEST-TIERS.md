@@ -100,16 +100,16 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji freedos
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji
   freebsd411 freedos
-  haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
+  haiku helenos hpuxvue kolibrios macos753 macos9 minix2 msdoswin1 ninefront nt351 nt4
   os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   pdp11 star`
-- **Tier 3 (26)** — `a1000 amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
+- **Tier 3 (27)** — `a1000 amigaos35 amix apple2gs armeval bbcmicro c128 c64 cbm2 cbm8032
   dragon32 indyr4400 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001
   plus4 sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
@@ -232,6 +232,7 @@ missing feature.
 | `amstradcpc` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | on | 60 | ssh |
 | `android` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | on | 30 | — |
 | `apple2` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
+| `apple2gs` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `armeval` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `aros` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `atari800xl` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
@@ -265,6 +266,7 @@ missing feature.
 | `macos753` | 1 direct-QEMU | tcg | `qemu-adb-relative` | rel | — | on | 30 | — |
 | `macos9` | 1 direct-QEMU | tcg | `qemu-usb-hid-relative` | rel | — | off | 30 | — |
 | `medley` | 3 host-native | maiko/host (X client under Xvfb) | `x11-xtest` | abs | — | off | 25 | — |
+| `minix2` | 1 direct-QEMU | kvm | `none` | none | — | on | 30 | — |
 | `mpf2` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `msdoswin1` | 1 direct-QEMU | kvm | `qemu-ps2-relative` | rel | — | on | 60 | — |
 | `netbsd14` | 1 direct-QEMU | kvm | `x11warp` | abs | — | on | 30 | — |

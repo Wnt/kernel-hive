@@ -137,6 +137,24 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
+  // TODO(minix2): exhibit finish copied from freedos — set the real era cues.
+  minix2: {
+    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
+    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+  },
+  // TODO(macsys1): exhibit finish copied from apple2e — set the real era cues.
+  macsys1: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
+  // The IIGS is the first Apple in PLATINUM — the warm beige of the //e was
+  // dropped for a pale cool grey, and the GS wears it a year before the Mac II
+  // does. The accent is the Apple six-colour stripe reduced to one hue, which
+  // is the point of the exhibit: this is the 8-bit family's first colour desktop.
+  apple2gs: {
+    caseTint: '#d8d5cc', accentTint: '#3f7fbf', tintMix: 0.30,
+    badge: 'Apple IIGS', spec: '65C816 • GS/OS 6', kit: 'eightBit',
+  },
   xenix: {
     caseTint: '#cfc7b4', accentTint: '#4f8a8b', tintMix: 0.34,
     badge: 'SCO XENIX 386', spec: '80386 • SYSTEM V/386 2.3.4', kit: 'office90',

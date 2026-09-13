@@ -289,28 +289,28 @@ the [`irix` branch README](https://github.com/Wnt/mame/tree/irix),
 The museum keeps a written account of every week. The latest one:
 
 <!-- release-notes:start -->
-### Week 5 · Nine Unixes in one night · 2026-08-30 09:00 – 2026-09-06 09:00
+### Week 6 · The Lisa and seven more · 2026-09-06 09:00 – 2026-09-13 09:00
 
 #### Screenshots
 
 <table>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/slackware"><img src="spa/public/posters/slackware/desktop.webp" width="200" alt="Slackware 3.4"></a><br><sub>Slackware 3.4</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/netbsd14"><img src="spa/public/posters/netbsd14/desktop.webp" width="200" alt="NetBSD 1.4.1"></a><br><sub>NetBSD 1.4.1</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/redhat62"><img src="spa/public/posters/redhat62/desktop.webp" width="200" alt="Red Hat Linux 6.2"></a><br><sub>Red Hat Linux 6.2</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/debian22"><img src="spa/public/posters/debian22/desktop.webp" width="200" alt="Debian GNU/Linux 2.2"></a><br><sub>Debian GNU/Linux 2.2</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/lisa"><img src="spa/public/posters/lisa/desktop.webp" width="200" alt="Lisa Office System 3.1"></a><br><sub>Lisa Office System 3.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/apple2e"><img src="spa/public/posters/apple2e/desktop.webp" width="200" alt="Apple //e"></a><br><sub>Apple //e</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/atari800xl"><img src="spa/public/posters/atari800xl/desktop.webp" width="200" alt="Atari 800XL"></a><br><sub>Atari 800XL</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="spa/public/posters/samcoupe/desktop.webp" width="200" alt="SAM Coupé"></a><br><sub>SAM Coupé</sub></td>
 </tr>
 <tr>
-<td><a href="https://kernelhive.madekivi.fi/os/suse64"><img src="spa/public/posters/suse64/desktop.webp" width="200" alt="SuSE Linux 6.4"></a><br><sub>SuSE Linux 6.4</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/ubuntu"><img src="spa/public/posters/ubuntu/desktop.webp" width="200" alt="Ubuntu 4.10 Warty Warthog"></a><br><sub>Ubuntu 4.10 Warty Warthog</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/freebsd411"><img src="spa/public/posters/freebsd411/desktop.webp" width="200" alt="FreeBSD 4.11"></a><br><sub>FreeBSD 4.11</sub></td>
-<td><a href="https://kernelhive.madekivi.fi/os/pcbsd"><img src="spa/public/posters/pcbsd/desktop.webp" width="200" alt="PC-BSD 1.5.1"></a><br><sub>PC-BSD 1.5.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/a1000"><img src="spa/public/posters/a1000/desktop.webp" width="200" alt="Amiga 1000"></a><br><sub>Amiga 1000</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/a3000"><img src="spa/public/posters/a3000/desktop.webp" width="200" alt="Amiga 3000"></a><br><sub>Amiga 3000</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/medley"><img src="spa/public/posters/medley/desktop.webp" width="200" alt="Interlisp Medley"></a><br><sub>Interlisp Medley</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/sculpt"><img src="spa/public/posters/sculpt/desktop.webp" width="200" alt="Genode Sculpt OS"></a><br><sub>Genode Sculpt OS</sub></td>
 </tr>
 </table>
 
-<u>Nine Unix and Linux machines arrived in a single night.</u> [Slackware 3.4](https://kernelhive.madekivi.fi/os/slackware) brings 1997's **fvwm95**, the desktop that made a Unix workstation look like Windows 95; [NetBSD 1.4.1](https://kernelhive.madekivi.fi/os/netbsd14) follows from 1999. The year 2000 gives three at once — [Red Hat Linux 6.2 "Zoot"](https://kernelhive.madekivi.fi/os/redhat62) with **GNOME 1.0**, [Debian 2.2 "potato"](https://kernelhive.madekivi.fi/os/debian22), and [SuSE Linux 6.4](https://kernelhive.madekivi.fi/os/suse64) with **KDE 1**, from the last spring SuSE spelled itself with a small u. [Ubuntu 4.10 "Warty Warthog"](https://kernelhive.madekivi.fi/os/ubuntu) is the very first Ubuntu, running off its live CD, so every reset returns to the same instant. [FreeBSD 4.11](https://kernelhive.madekivi.fi/os/freebsd411) closes the 4.x line with the full **KDE 3.3.2**; [PC-BSD 1.5.1](https://kernelhive.madekivi.fi/os/pcbsd) is FreeBSD made point-and-click; [OpenBSD 7.9](https://kernelhive.madekivi.fi/os/openbsd) stands at the modern end. Earlier in the week came [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix), Commodore's *System V Release 4* with **OPEN LOOK**, in colour on the **A2410** card most owners never bought; [ravynOS](https://kernelhive.madekivi.fi/os/ravynos); [PC/GEOS Ensemble](https://kernelhive.madekivi.fi/os/pcgeos), a 1990 desktop in *640 KB on a 286*; and [bootOS](https://kernelhive.madekivi.fi/os/bootos), a whole operating system in *512 bytes*. That makes 87 machines, 85 of them open to visitors.
+<u>[Apple Lisa](https://kernelhive.madekivi.fi/os/lisa) arrives — the machine that had the Macintosh's ideas a year early, in *1984*.</u> **Lisa Office System 3.1** hands you all seven Lisa tools, from **LisaWrite** to **LisaProject**, on a document-centric desktop where a new page is torn off a stationery pad. Four home computers follow: [Apple //e](https://kernelhive.madekivi.fi/os/apple2e), booting **ProDOS 8** to a one-key menu for **AppleWorks** and **Dazzle Draw**; [Atari 800XL](https://kernelhive.madekivi.fi/os/atari800xl), with **The Last Word**, **River Raid** and **Star Raiders** waiting on a **MyPicoDos** menu; [SAM Coupé](https://kernelhive.madekivi.fi/os/samcoupe), Britain's *1989* answer to the *ZX Spectrum*, carrying **Manic Miner**, **Mr. Pac**, **Splat!** and a period word processor on one floppy; and two Amigas, the *1985* [Amiga 1000](https://kernelhive.madekivi.fi/os/a1000) with **Workbench 1.2** and the *1990* [Amiga 3000](https://kernelhive.madekivi.fi/os/a3000) with **Workbench 2.04**. Two more have nothing emulated underneath them at all: [Interlisp Medley](https://kernelhive.madekivi.fi/os/medley), Xerox PARC's *1987* Lisp desktop where every window on screen is a live object, and [Genode Sculpt OS](https://kernelhive.madekivi.fi/os/sculpt), a microkernel desktop that draws itself as a graph of its own parts you can rewire while it runs. Ninety-seven machines now.
 
-Read [week 5 in full](docs/RELEASE-NOTES.md#week-5), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
+Read [week 6 in full](docs/RELEASE-NOTES.md#week-6), and every earlier week, in the [full archive](docs/RELEASE-NOTES.md).
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 <!-- release-notes:end -->

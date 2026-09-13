@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (100 of the 102
+//    - transport   : how its LIVE framebuffer texture is obtained (103 of the 105
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 100 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 103 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -228,6 +228,9 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   magiccap:    { osId: 'magiccap', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3a7fc9', eraLabel: '1995 · Magic Cap for Windows (pre-release)', bootVideo: '/boot/win98se/boot.mp4' },
   perq:        { osId: 'perq', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7FA8C9', eraLabel: '1986 · POS G.7 (Three Rivers PERQ 1, portrait display)' }, // ideal: Apple Lisa 2 one-piece
   vision:      { osId: 'vision', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#7FB069', eraLabel: '1983 · Visi On 1.0', pointerRel: false }, // ideal: IBM PC XT 5160 with a mono CRT and the VisiCorp M1 mouse
+  minix2:      { osId: 'minix2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1997 · Tanenbaum\'s teaching microkernel', pointerRel: false },
+  macsys1:     { osId: 'macsys1', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#8C8274', eraLabel: '1984 · Macintosh 128K — System 1.0' },
+  apple2gs:    { osId: 'apple2gs', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1986 · Apple IIGS — GS/OS 6.0.1' },
   xenix:       { osId: 'xenix', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#4f8a8b', eraLabel: '1989 · Unix on the PC' },
 };
 

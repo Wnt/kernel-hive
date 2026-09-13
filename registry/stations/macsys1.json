@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "macsys1",
+  "era_year": 1984,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 83,
+        "prelude": "",
+        "value": {
+          "key": "macsys1",
+          "script": "tiles/macsys1.sh",
+          "outputDir": "assets/macsys1",
+          "class": "retro",
+          "estimated": "~25-40m",
+          "automation": "full",
+          "produces": "host-native MAME mac128 binary + rompath + 400K media (Macintosh System 1.0 / Finder 1.0)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/macsys1",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54199,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/macsys1/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 89,
+    "stationsManifestOrder": 87,
+    "stationsManifestPrelude": "\n# macsys1 (VMID 199) — Macintosh 128K, System 1.0 / Finder 1.0 (1984), host-native MAME mac128k.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 103,
+    "bindingPrelude": "",
+    "goldenOrder": 87
+  },
+  "stationDir": "macsys1",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54199,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "mamesock",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 199
+  },
+  "guestDoc": "docs/guests/macsys1.md",
+  "credentialsRef": "guest/macsys1",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "macsys1",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":73",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/macsys1/macsys1_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/macsys1/fb.shm",
+      "SH_PORT": "54199",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/macsys1/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/macsys1/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 199,
+    "bringUpOrder": 103,
+    "x11": {
+      "display": ":73",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "macsys1",
+        "--udp",
+        "54199",
+        "--x11",
+        "--x11-display",
+        ":73",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/macsys1/macsys1.keymap",
+        "--env-append-file",
+        "$T/macsys1/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/macsys1/macsys1.keymap",
+        "streamhost/stations/macsys1/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "apple-studio",
+    "transport": "streamhost",
+    "accentColor": "#8C8274",
+    "eraLabel": "1984 · Macintosh 128K — System 1.0"
+  },
+  "museum": {
+    "id": "macsys1",
+    "displayName": "Macintosh System 1.0",
+    "year": 1984,
+    "lineage": "Apple Macintosh / classic Mac OS",
+    "arch": "Motorola 68000, 7.8336 MHz, 128 KB RAM, 512x342 1-bit",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#8C8274",
+    "eraSoftware": [
+      "System Software 1.0 (0.97)",
+      "Finder 1.0",
+      "MacPaint 1.0",
+      "MacWrite 1.0"
+    ],
+    "periodBrowser": "none — pre-network 1984 machine, no TCP/IP",
+    "iconicApps": [
+      "Finder",
+      "MacPaint",
+      "MacWrite"
+    ],
+    "blurb": "The Macintosh exactly as it shipped in January 1984: System 1.0 and Finder 1.0 on a 128 KB Mac, 512x342 in one bit, a flat MFS floppy whose folders are a Finder illusion, one application at a time — and MacWrite 1.0 and MacPaint 1.0 on the second 400 KB disk to show what 72 dpi was for.",
+    "notes": "Host-native station: MAME 0.289's mac128k runs on the host (drawshm frames, ctlsock keys + the VIA quadrature mouse on :MOUSE0/:MOUSE1/:MOUSE2, FIFO audio) — no bridge kiosk, no nspawn container, no guest OS to exec into. -flop1 is the original January 1984 Macintosh System Disk (System 1.0, version string 0.97, with Finder 1.0); -flop2 is the companion Write/Paint disk carrying MacWrite 1.0 and MacPaint 1.0, so both volumes mount as icons on the desktop. No hard disk and no network exist on this machine: MFS is flat (folders live only in the Finder's Desktop file) and AppleTalk is still a year away, so retronet is permanently out of scope. Earliest point of the classic Mac OS lineage in the hall — macos753 (System 7.5.3) and macos9 are the same Finder, twelve and fifteen years on; lisa is the sibling one year earlier, the same desktop at four times the price."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/macsys1.sh",
+    "driver": "mac128k"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "macsys1",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "MEASURED 2026-09-13 on the real fleet binary (sha256 583d07a0...). The Mac 128K has NO ADB: the quadrature mouse is read through the VIA and exposed by the driver's `macplus` input map as three TOP-LEVEL ioports (src/mame/apple/mac128.cpp:1403-1411) -- :MOUSE0 (IPT_BUTTON1, PORT_NAME \"Mouse Button\"), :MOUSE1 (IPT_MOUSE_X, 0xff), :MOUSE2 (IPT_MOUSE_Y, 0xff). With MAME_CTL_PTR_TAGS/BTN_NAMES set, ctlsock reports 'setup btns=1 axes=1 movea=0' -- movea=0 is the EXPECTED apple2e-style degraded mode (no host-readable cursor register, so MOVEA is open-loop dead reckoning). GAIN MEASURED by two calibration moves from the homed origin: MOVE 100 0 displaced the arrow 396 published px, MOVE 0 100 displaced it 396 px -- 3.96 px/count on BOTH axes (the Mac's 512x342 raster at the 2x integer scale the 1024x768 surface letterboxes to 1024x684). Four-target MOVEA readback with GAIN_X=GAIN_Y=3.96, errors from fb-react.py bounding boxes: (300,200) -4,+4 | (700,500) 0,+8 | (150,600) -6,+8 | (850,150) +2,+2 -- worst 8 px. A CLICK WORKS: MOVEA onto the System Disk icon + CLICK1 inverted it (13604 px changed) and deselected Write/Paint. THE ONE OPEN ITEM IS A CONSTANT Y OFFSET, not drift: the 512x342 raster is letterboxed into 1024x768 as 1024x684 with a 42 px black band top and bottom, so the guest's cursor origin sits at published y=42 while the ctlsock module's belief origin is published y=0. Every landing is therefore 42 px BELOW the module's target (the four-target table above was aimed with that offset pre-subtracted), and the bottom ~84 px of the module's coordinate space is unreachable. Ships transport=none until that offset is carried in stream.pointer.offset and proven end-to-end from the real SPA. NEXT: set stream.pointer.offset=[0,-42] (or MAME_CTL_SCREEN to the letterboxed region) and re-run the four-target table aiming at raw surface coordinates.",
+    "keyboard": "MEASURED 2026-09-13 on the real fleet binary. The Macintosh keyboard is its own emulated device since MAME 0.221 -- an Intel 8021 MCU (romset mackbd_m0110, ip8021h_2173.bin, 1 KB) that debounces and clocks keycodes to the VIA over a synchronous serial line, NOT a CPU-scanned matrix, so MAME_CTL_KEY_EXCL is not expected and is not set; the station ships the fleet floor 40/40 ms. scripts/dev/mame-keymap.py --tags ':' generated 71 keys from KEYDUMP. TRAP: the mac128k default slot chain puts an M0120 numeric keypad IN FRONT of the keyboard, so every key field lives at ':kbd:pad:kbd:us:ROWn' (the keypad's own keys are at ':kbd:pad:ROWn') -- a keymap generated with the verb's default ':kbd:' tag filter finds nothing. SECOND TRAP: MAME's field names carry the shifted legend with DOUBLE spaces ('o  O', '1  !'), so a KEY verb spelled 'O' is rejected 'ERR noport'. PROOF: KEY down/up on ':kbd:pad:kbd:us:P2 Command' + ':kbd:pad:kbd:us:ROW5 o  O' produced 1900 changed pixels inside the selected icon's label -- the characters appeared on the framebuffer. (Finder 1.0 had put the label in rename mode from the preceding click, so the keystrokes landed as text rather than as the Command-O shortcut; the proof that keys REACH the guest and are RENDERED stands either way. That the rename was possible at all is why both floppies now ship mode 444 -- see the fixture.)",
+    "fixture": "Macintosh 128K at the Finder 1.0 desktop with BOTH 400K volumes mounted -- 'System Disk' (System Software 1.0 / Finder 1.0, January 1984) in the internal drive and 'Write/Paint' (MacPaint 1.0 + MacWrite 1.0) in the external -- plus the Trash and the Apple/File/Edit/View/Special menu bar, drawn at 512x342 1-bit and letterboxed at the 2x integer scale (1024x684) inside the published 1024x768 surface by MAME 0.289's mac128k running HOST-NATIVE (drawshm). MEASURED 2026-09-13: a cold boot takes ~37 s of wall time to the desktop ('Welcome to Macintosh.' at ~12 s), the golden savestate (63068 bytes, written in 27 ms) restores it in 2.4 s across a relaunch, and the restored frame is the cold-boot desktop. Reset is a relaunch with -state golden. BOTH DiskCopy 4.2 images are installed mode 444 (write-protected) on purpose: Finder 1.0 lets a click on an icon's label rename the volume, which a writable image would persist across every visitor."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2e on 2026-09-13 (macsys1 wave); see docs/lab/MACSYS1-WAVE.md"
+  ]
+}

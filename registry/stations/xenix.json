@@ -56,7 +56,7 @@
     "stationsManifestOrder": 86,
     "stationsManifestPrelude": "\n# xenix (VMID 95) — TODO one line; scaffolded from freedos.\n",
     "bringUpGroup": 4,
-    "bindingOrder": 102,
+    "bindingOrder": 105,
     "bindingPrelude": "",
     "mockManifestOrder": 5,
     "goldenOrder": 86,
@@ -173,7 +173,7 @@
         "reason": "registry source pins -machine isapc -cpu 486 under TCG, the 1989-era device set the golden was baked with; the launcher runs exactly these arguments"
       }
     },
-    "bringUpOrder": 102
+    "bringUpOrder": 105
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",

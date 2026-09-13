@@ -37,6 +37,17 @@ _LIKE_REWRITE_PATTERNS = [
     # the sibling (slackware's station-up, 2026-09-03).
     (r"/data/vms/streamhost/stations/{sib}(?![a-z0-9])", "/data/vms/streamhost/stations/{new}"),
     (r"stations/{sib}/", "stations/{new}/"),
+    # A host-native sibling's fixture points at its own asset tree and at a
+    # binary NAMED after its MAME subtarget (assets/apple2e/mame-native/apple2e);
+    # without these the scaffolded fixture ran the SIBLING's binary, ROMs and
+    # disk image (apple2gs --like apple2e, 2026-09-13).
+    (r"assets/{sib}/", "assets/{new}/"),
+    (r"mame-native/{sib}(?![a-z0-9])", "mame-native/{new}"),
+    # A sibling's station-local aux file is often NAMED after the sibling
+    # (apple2e/apple2e.keymap). The directory pattern above rewrites only the
+    # dir, so the row kept pointing at ".../apple2gs/apple2e.keymap" and the
+    # scaffold failed its own validate (apple2gs --like apple2e, 2026-09-13).
+    (r"(?<=/){sib}\.(keymap|env|ini|cfg)\b", "{new}.\\1"),
     (r"-name streamhost-{sib}", "-name streamhost-{new}"),
     (r"\$T/{sib}/", "$T/{new}/"),
     (r"guests/{sib}\.md", "guests/{new}.md"),
@@ -267,15 +278,33 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
         bool(sib_launcher_rel) and not (sib_dir / sib_launcher).is_file() and (REPO / sib_launcher_rel).is_file()
     )
     launcher_path = None if shared_launcher else station_dir / sib_launcher
+
     # A sibling may carry station-local debug tooling (golden-bake.sh, qmp.py,
     # shot.sh, sk.py — win98se has all four) referenced by runtime.qemu.auxFiles.
     # The row's text was already rewritten sib->os_id (including these paths),
     # so validate expects them under the NEW station dir; without copying them
     # here the scaffold writes a row that fails its own validate on the first
     # run (win98se --like magiccap, 2026-09-13).
-    sib_aux_rel = sib.get("runtime", {}).get("qemu", {}).get("auxFiles", []) or []
+    # Both runtimes carry an auxFiles list and validate checks BOTH (a
+    # host-native x11-runtime station like apple2e keeps its keymap under
+    # runtime.x11.auxFiles, not runtime.qemu's) — reading only the qemu list
+    # copied nothing and the scaffold failed its own validate (apple2gs
+    # --like apple2e, 2026-09-13).
+    def _aux_of(node: dict) -> list[str]:
+        runtime_node = node.get("runtime", {})
+        return list(runtime_node.get("qemu", {}).get("auxFiles", []) or []) + list(
+            runtime_node.get("x11", {}).get("auxFiles", []) or []
+        )
+
+    sib_aux_rel = _aux_of(sib)
+    # SOURCE basenames come from the sibling; DESTINATION basenames come from the
+    # REWRITTEN row, because an aux file named after the sibling is renamed by
+    # _rewrite_like_text (apple2e.keymap -> apple2gs.keymap).
+    new_aux_rel = _aux_of(row)
     aux_names = [Path(p).name for p in sib_aux_rel]
-    aux_paths = [station_dir / name for name in aux_names]
+    same_shape = len(new_aux_rel) == len(sib_aux_rel)
+    aux_dest_names = [Path(p).name for p in new_aux_rel] if same_shape else list(aux_names)
+    aux_paths = [station_dir / name for name in aux_dest_names]
     like_paths = tuple(
         p
         for p in (
