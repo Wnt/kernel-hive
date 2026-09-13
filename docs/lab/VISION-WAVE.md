@@ -50,35 +50,242 @@ raced from minute 0, one `sonnet` runner each, on their own dirs under
 
 | Theory | Runner | Where | Result | Frame |
 |---|---|---|---|---|
-| A. MAME `ibm5160` host-native (fleet tier, `--like samcoupe`) | sonnet | `/data/vms/sandbox/vision/race/mame/` | pending | |
-| B. PCE `pce-ibmpc` in systemd-nspawn (VOM-proven, `--like lisa`) | sonnet | `/data/vms/sandbox/vision/race/pce/` | pending | |
+| A. MAME `ibm5160` host-native (fleet tier, `--like samcoupe`) | sonnet | `/data/vms/sandbox/vision/race/mame/` | **LOST** — BIOS and PC-DOS 2.00 boot to `C:\>` and the keyboard works over the ctlsock, but Visi On is unreachable | `/data/vms/sandbox/vision/race/mame/frames/` |
+| B. PCE `pce-ibmpc` in systemd-nspawn (VOM-proven, `--like lisa`) | sonnet | `/data/vms/sandbox/vision/race/pce/` | **WON** — Visi On desktop on the framebuffer 20 minutes in | `/data/vms/sandbox/vision/race/pce/frames/24-desktop.png` |
 
-### Race verdict
+### Race verdict — PCE, and the reason is the copy protection
 
-Pending.
+MAME lost on the key disk, not on the machine. Its `ibm5160` boots PC-DOS 2.00
+fine with `-isa1 cga -isa2 com -isa3 fdc_xt -isa4 hdc -isa2:com:serport0
+msystems_mouse` (romsets `ibm5160` + `isa_hdc` + `kb_pcxt83`), and the keyboard
+was proven through the ctlsock. But the VisiCorp disks are protected with
+**variable sectors per track (9-16/track) and no data address mark**, MAME has
+no TransCopy or PSI loader, and both raw and IMD conversions of `VOAPP1.TC` are
+rejected by the drive. There is no route to Visi On on MAME without a flux
+image MAME will accept (HFE is the thing to try if anyone revisits this).
+
+PCE reads TransCopy directly and its `psi` tool converts `.TC` to `.psi`, which
+keeps the protection *and* is writable — the one format that satisfies both the
+key-disk check and PCE's write-back on eject. That single capability decided the
+race. PCE is a stock X11 host application, so the station runs it inside a
+systemd-nspawn container under the operator's host-application rule.
+
+`/data/vms/sandbox/vision/race/mame/` is kept as provenance. Runner A also built
+`psi` and `pce-img` for Linux from the pinned tarball under
+`race/mame/pce-build/`; `pce-img convert -i hd0.pbi -o hd0.img` yields a raw
+306x4x17 image if a raw disk is ever wanted.
+
+## The station
+
+| | |
+|---|---|
+| launcher | `streamhost/stations/vision/x11-runtime.sh` + `vision-inner.sh` (the lisa/medley contained shape) |
+| tile builder | `scripts/build-guests/tiles/vision.sh` — `--fetch` / `--unpack` / `--rootfs` / `--compose` |
+| rootfs | `debootstrap --variant=minbase trixie` + X and build packages, PCE compiled inside it into `/opt/pce`, whole tree uid-shifted once to 2162688 |
+| root geometry | **1280x800** — PCE draws CGA 640x200 at `scale = 2` with its 4/3 aspect correction, which is exactly 1280x800, so the Xvfb root **IS** the PCE window: root coordinates are window coordinates, no crop and no offset |
+| reset | `relaunch` — PCE's ibmpc has no save state. Every launch copies `hd0.pbi`, `VOAPP1.psi` and `VOAPP2.psi` fresh from `assets/vision/disk` into the writable `work/` bind and cold-boots the 5160 |
+
+### Traps (each one cost time)
+
+1. **PCE starts STOPPED at its monitor prompt.** `pce-ibmpc` comes up at
+   CS:IP = F000:FFF0 with `type 'h' for help` and executes nothing until the
+   monitor is told `g`. A launcher that skips this waits forever for a DOS
+   prompt that is never coming. `vision-inner.sh` writes `g` to the monitor FIFO
+   before it does anything else.
+2. **`--bind-ro` on the media breaks the guest.** PCE writes `.psi` floppies back
+   on eject and Visi On writes to C:; a read-only media bind makes the guest see
+   a dead drive. Every disk image lives in the ONE writable `work/` bind.
+3. **The host X symlink must point at the socket FILE**, `x11/X<n>`, not at the
+   directory. A directory symlink silently leaves the daemon with no display.
+4. **`/proc/<pid>/exe` reads as the CONTAINER path here**, `/opt/pce/bin/pce-ibmpc`
+   — *not* as a host path the way lisa's LisaEm does, because PCE lives inside
+   the rootfs rather than in a bound-in assets dir. A bare path match would
+   therefore match any other PCE on the box, so the launcher matches the exe AND
+   requires the process to be a descendant of this launch's nspawn pid.
+   `SH_IDLE_PAUSE_PROC_MATCH` is `/opt/pce/bin/pce-ibmpc` for the same reason.
+5. **A naive "screen settled" check fires on the blank POST screen.** The 5160
+   spends its first seconds in memory count with nothing on the CGA, two samples
+   match, and the launcher types `VISION` into the BIOS. Measured on this
+   station's first launch: PC-DOS reached `C:\>` perfectly and the keystrokes had
+   already been thrown away. `fb_settle` now requires the screen to have CHANGED
+   from t=0 first, and then to hold across three consecutive samples.
+6. **The rootfs needs `x11-apps`.** `vision-inner.sh` polls the framebuffer with
+   `xwd` rather than sleeping a guessed number of seconds, and a race runner lost
+   its whole proof window on 2026-09-13 to a rootfs that had no `xwd` and no
+   `convert`.
+
+### Installing Visi On (how `hd0.pbi` was made, and how to remake it)
+
+`hd0.pbi` is the PCE XT bundle's own 10 MB PC-DOS 2.00 image (hampa.ch, inside
+`pce-20250420-cc0c583c-ibm-xt-pcdos-2.00.zip`, hashed in the tile builder) with
+Visi On 1.0 installed onto it once, by hand, on the race rig of 2026-09-13. The
+builder stages that image rather than replaying the install, because VINSTALL is
+an interactive full-screen installer with a mid-run disk swap. To rebuild it from
+the hashed inputs:
+
+1. Convert the TransCopy disks: `psi -i VOAPP1.TC -o VOAPP1.psi` (and `VOAPP2`).
+2. Boot the 5160 with the stock `hd0.pbi` in 0x80, `VOAPP1.psi` in A:,
+   `VOAPP2.psi` in B:, and `g` at the monitor.
+3. At `C:\>` type `A:VINSTALL`.
+4. Answer the installer: VisiCorp mouse **Model M1**, on **COM1**; acknowledge the
+   write-protect prompt with a space; let it copy.
+5. When it asks for disk 2, swap through the PCE monitor FIFO:
+   `di 0 /work/VOAPP2.psi`. When it asks for disk 1 back: `di 0 /work/VOAPP1.psi`.
+   (The monitor writes the `.psi` back on each eject — this is why the images are
+   in the writable bind.)
+6. `VISION` at `C:\>` to confirm, then keep the resulting `hd0.pbi`.
 
 ## Sandbox
 
-Pending the verdict. If A wins: emulated machine under the fleet MAME, the
-visitor's reach ends at the emulated 5160 — the launcher line goes here. If B
-wins: PCE is a stock host application and runs under the full nspawn contract
-(uid base 2162688, `--private-network`, `--volatile=overlay`, capability drop,
-`~@mount` filter, Xvfb inside); the audit block from the running rig goes here.
+**Verdict: host application, full nspawn contract.** PCE is a stock X11
+application — it opens a window and reads X input, with no headless mode and no
+shm export — so it is not a fleet-QEMU or fleet-MAME tier station. It runs inside
+a systemd-nspawn container with private PID, mount, network, IPC, UTS and user
+namespaces, `--volatile=overlay` over a read-only debootstrap rootfs,
+`--private-network` (lo only), the wave's capability drop list,
+`--no-new-privileges=yes` and `--system-call-filter=~@mount`. Nothing of labhost
+is bound in except this station's own assets, read-only; the one writable bind is
+the station's `work/`. The container's uid 0 is host uid **2162688**.
+
+The nspawn line is in `streamhost/stations/vision/x11-runtime.sh`.
+
+Audit below is from **this station's own launcher**, not from the race rig:
+`SH_STATION=vision SH_X11_DISPLAY=:94 VISION_BASE=/data/vms/sandbox/vision/stationtest ./x11-runtime.sh`,
+payload pid 3687162 (the pce-ibmpc host pid from the pidfile), 2026-09-13T06:29Z.
+
+```
+PAYLOAD PID=3687162  exe=/opt/pce/bin/pce-ibmpc
+--- namespaces (all six must differ) ---
+pid  host=pid:[4026531836]  payload=pid:[4026536834]
+mnt  host=mnt:[4026531832]  payload=mnt:[4026536831]
+net  host=net:[4026531833]  payload=net:[4026536835]
+user host=user:[4026531837] payload=user:[4026536830]
+ipc  host=ipc:[4026531839]  payload=ipc:[4026536833]
+uts  host=uts:[4026531838]  payload=uts:[4026536832]
+--- status ---
+Uid:	2162688	2162688	2162688	2162688
+CapEff:	0000000015808dff
+NoNewPrivs:	1
+--- ps -e ---
+    PID TTY          TIME CMD
+      1 ?        00:00:00 (sd-stubinit)
+      2 ?        00:00:00 bash
+      5 ?        00:00:00 Xvfb
+     14 ?        00:00:02 pce-ibmpc
+     46 ?        00:00:00 ps
+--- ip link ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+--- ls /dev ---
+char  core  fd  full  fuse  mqueue  net  null  ptmx  pts  random  shm
+stderr  stdin  stdout  tty  urandom  zero
+--- mount attempt (must fail) ---
+mount: /mnt: permission denied.
+rc=32
+```
+
+All six namespaces differ from the host's. The payload runs as host uid 2162688
+with `NoNewPrivs: 1`. Only the nspawn init stub, the inner script, Xvfb and
+pce-ibmpc exist in the container's PID namespace. The only interface is `lo`.
+`/dev` is nspawn's minimal set — no disks, no host devices. Mounting a tmpfs as
+the container's own root, with `CAP_SYS_ADMIN` dropped from the bounding set,
+is refused.
 
 ## Proofs (framebuffer only — rule 9)
 
-Pending.
+From **this station's own launcher**, not the race rig:
+
+| Proof | Verdict | Frame |
+|---|---|---|
+| Cold boot: the 5160 posts and PC-DOS 2.00 reaches `C:\>` with AUTOEXEC run (`PROMPT $P$G`, `PATH C:\;C:\DOS`) | **PASS** | `/data/vms/sandbox/vision/frames/01-station-launch.png` |
+| Visi On 1.0 starts and the copy-protection check on the VOAPP1 key disk passes — the Applications Manager splash, `COPYRIGHT 1983 VISICORP / VERSION 1.0` | **PASS** | `/data/vms/sandbox/vision/frames/02-station-vision-desktop.png` |
+| Keyboard: `VISION` typed over XTEST at 120 ms/char is received without a dropped or doubled character (it is what launched Visi On above) | **PASS** | same frame |
+| Sandbox audit from the running station | **PASS** | §Sandbox above |
+| The Visi On desktop itself — Services window on Archives, the `start install remove Printing` menu line, the HELP/CLOSE/OPEN/FULL/FRAME/OPTIONS/TRANSFER/STOP command strip | **PASS on the race rig**, not yet from the station launcher | `/data/vms/sandbox/vision/frames/00-live-desktop.png` (the hero) |
+| Pointer: two-target readback | **FAIL — OPEN**, see §Pointer | — |
+
+The gap between the last two rows is one thing, and it is the pointer: Visi On
+stops at **"Calibrate the mouse. See the Setup Guide for detailed instructions."**
+and does not reach the desktop until the mouse has been moved. The race rig got
+past it by taking an X pointer grab by hand. So on this station the pointer is not
+a refinement — it is what stands between the splash and the desktop.
+
+## Pointer — OPEN, and it is the blocker
+
+**The mechanism.** PCE's x11 terminal converts host pointer movement into Mouse
+Systems packets on the emulated 8250, and Visi On drives that 8250 itself (there
+is no DOS mouse driver anywhere in this station). But `xt_event_motion()` in
+`src/drivers/video/x11.c` opens with `if (xt->grab == 0) { return; }` — with no X
+pointer grab, every motion event is dropped. When grabbed it accumulates
+`x_root` deltas and warps the pointer back to screen centre each event, which is
+what makes the grab necessary in the first place and what fights XTEST.
+`xt_event_button_press()` likewise swallows the first click to take a grab. A
+headless Xvfb station cannot hold a grab the way a person at a keyboard can.
+
+Raced per rule 14, two `sonnet` runners, 20 minutes each.
+
+| Theory | Result |
+|---|---|
+| **A — patch PCE's x11 terminal to forward motion with no grab** (`race/ptrA/`) | **CLOSEST.** A 2-hunk patch (`/data/vms/sandbox/vision/race/ptrA/pce-x11-nograb.patch`) applies cleanly to the pristine tarball, builds clean, and changes behaviour: Visi On advanced past the calibration splash into the Services desktop with no click and no grab, which pristine PCE cannot do. But the readback is over-driven — absolute XTEST jumps drove the guest cursor to the right edge and pinned it there. NOT a proven pointer. |
+| **B — drive the mouse through the serial port instead of the terminal** (`race/ptrB/`) | **PLUMBING PROVEN, pointer not.** `serial { driver = "pty:symlink=/work/com1.pty" }` initialises (`char-pty: /dev/pts/0`), PCE holds the master and the symlink is the slave, so host-written bytes land on the guest's COM1 RX. PCE's own encoder at `char-mouse.c:132-148` is ground truth for the Mouse Systems framing (byte0 `0x80` + active-low buttons, dy negated, two dx/dy samples per packet). No byte writer was built and no frame was captured. |
+| B2 — re-assert the grab from PCE's monitor | **DEAD as documented.** `emu.term.grab` appears in the monitor's `hm` help but has no entry in `pc_set_msg`'s `set_msg_list[]` (`msg.c:298-318`), and `trm_set_msg_trm` (`terminal.c:201-218`) exact-matches only `term.escape`/`term.screenshot`. Unrelated but real and useful: `emu.serport.driver` / `emu.serport.file` DO work, so serial 0's driver can be hot-swapped at runtime. |
+
+**The next move, in order.** Theory A's amplification is almost certainly the
+`scale = 2` mismatch: the patch diffs window pixels, while the emulator's mouse
+space is the native CGA resolution, so every delta is doubled. Rerun theory A
+with `terminal { mouse_div_x = 2 mouse_div_y = 2 }` (or halve the deltas in the
+patch), seeding the position from a known XTEST point and discarding the first
+event, then read back two targets with `scripts/dev/cursor-locate.py`. If that
+lands, the station ships `x11-xtest` with a closed-loop absolute pointer — the
+emulated mouse is relative with mul/div 1, so feeding XTEST deltas 1:1 makes an
+XTEST root coordinate the pixel the guest arrow reaches. If it does not, theory
+B's pty path is proven plumbing and needs only a byte writer plus `x11-apps` in
+the rootfs for capture.
+
+Until one of them reads back two targets, `listing.state` stays **hidden**.
+
+## Keyboard
+
+XTEST through the fleet `x11test` backend, into the sandboxed display. Proven:
+`VISION` typed at **120 ms hold / 120 ms gap** launched Visi On with no dropped or
+doubled character, on the race rig and again on the station launcher.
+
+`SH_KEY_MIN_HOLD_MS=120` / `SH_KEY_MIN_GAP_MS=120` is therefore what ships, and it
+is **not a measured floor** — nobody bisected downward, so the real minimum may be
+much lower. Say so rather than implying 120/120 was chosen.
 
 ## OPEN items
 
-Pending.
+| Item | Next command |
+|---|---|
+| **Pointer (blocker)** — no two-target readback; Visi On stops at the calibration splash without it | Rerun theory A with `mouse_div_x/y = 2`: `scripts/dev/rig-clone.sh new vision ptr-scale`, apply `race/ptrA/pce-x11-nograb.patch`, then `python3 scripts/dev/cursor-locate.py` on two targets |
+| The Visi On **desktop** has not been reached from the station launcher (only the splash), because it needs the pointer | follows the pointer |
+| `/os/vision` dark-launch not published | `scripts/dev/smoke-rig.sh vision --like lisa` |
+| The tile builder's `--rootfs` and `--compose` stages are written but have not been run end to end; the rootfs recipe was validated by reproducing the race rootfs + `x11-apps` under `--private-users`, not by a full rebuild | `ssh lab 'scripts/build-guests/tiles/vision.sh --rootfs'` |
+| `spa/src/scene/assembliesByTile.ts` is at 603 lines against the 600-line ts-src cap (`machineIdentity.ts` at 588) | split the table before the next wave lands, not during one |
 
 ## Measured timeline
 
 | Milestone | Wall clock (UTC) | Minute |
 |---|---|---|
 | `wave.sh alloc` | 2026-09-13T05:13:46Z | 0 |
+| race B: Visi On desktop on the framebuffer | 2026-09-13T05:33Z | 20 |
+| replacement lead (Opus) resumes the stack | 2026-09-13T06:05Z | 51 |
+| station launcher cold-boots PC-DOS 2.00 to `C:\>` | 2026-09-13T06:29Z | 75 |
+| station launcher reaches the Visi On 1.0 splash (key disk accepted) | 2026-09-13T06:30Z | 76 |
 
 ## Teardown
 
-Pending.
+| Resource | Released | Check |
+|---|---|---|
+| race runner A's MAME (pid 1462964) | yes | `readlink /proc/1462964/exe` returns nothing |
+| race runner ptrA's container, Xvfb :195 and its `/tmp/.X11-unix/X195` symlink | yes, by the runner | runner verified by exact pid |
+| race runner ptrB's container, Xvfb :196, plus one orphaned pce-ibmpc | yes, by the runner | runner verified absent from `ps` |
+| the winning race rig — nspawn 2591998 / pce-ibmpc 2592146, Xvfb :194 | **see below** | |
+| this station's test launch — nspawn 3686893 / pce-ibmpc 3687162, Xvfb :94 | **see below** | |
+
+Both remaining rigs are killed by `/proc/<pid>/exe` (never `pkill -f`) once the
+pointer work no longer needs them. The race rig is the only place the Visi On
+*desktop* has ever been reached, so it is worth keeping alive until theory A's
+rerun lands; `/data/vms/sandbox/vision/race/mame/` and `race/ptrA/` are kept on
+disk as provenance either way.

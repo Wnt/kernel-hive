@@ -11,13 +11,21 @@
 #              OS Museum, which was reference only) — idempotent, hash-gated
 #   --unpack   unpack the archives into $MEDIA (raw 360K PC-DOS images, the
 #              TransCopy .TC Visi On disks, the PCE XT ROMs + hd0.pbi)
-#   --compose  build the station disk set for the WINNING emulator route
-#              (see the race verdict in docs/lab/VISION-WAVE.md §Race):
-#              convert the TransCopy key disk with PCE's `psi` (the copy
-#              protection lives on the flux; a plain-sector export loses it),
-#              install Visi On once (A:VINSTALL, disk swap) and freeze the
-#              result as the golden disk pair
-#   (default)  all three
+#   --rootfs   build the nspawn sandbox rootfs at $OUT/rootfs: debootstrap
+#              --variant=minbase trixie + the X and build packages, then PCE
+#              itself compiled from the pinned tarball INSIDE that rootfs into
+#              /opt/pce, then the whole tree uid-shifted ONCE to $UID_BASE so
+#              the launcher can run --private-users-ownership=off
+#   --compose  build the station disk set: convert the TransCopy .TC disks with
+#              PCE's own `psi` (the copy protection lives in the flux; a plain
+#              sector export loses it), stage the pce.cfg and the pristine
+#              hd0.pbi with Visi On installed
+#   (default)  all four
+#
+# PCE won the race against MAME's ibm5160 (docs/lab/VISION-WAVE.md §Race). PCE
+# is a stock X11 host application, so the station runs it inside a systemd-nspawn
+# container under the operator's host-application rule — hence --rootfs, which
+# has no equivalent in a fleet-QEMU or host-native-MAME tile builder.
 #
 # Never commits media: the gallery is private, the repo is public (rule 1 —
 # only URLs and hashes live here).
@@ -26,8 +34,25 @@ set -euo pipefail
 
 OS_ID=vision
 STAGE="${STAGE:-/data/assets-staging/$OS_ID}"
-MEDIA="${MEDIA:-/data/vms/streamhost/assets/$OS_ID/media}"
+OUT="${OUT:-/data/vms/streamhost/assets/$OS_ID}"
+MEDIA="${MEDIA:-$OUT/media}"
+DISK="${DISK:-$OUT/disk}"
+ROOTFS="${ROOTFS:-$OUT/rootfs}"
+# The container's uid 0 maps to this host uid. Distinct per sandboxed station
+# (wave contract 2026-09-13: vision 2162688) and a multiple of 65536 so the
+# 65536-uid range never overlaps another station's.
+UID_BASE="${UID_BASE:-2162688}"
+PCE_SRC=pce-20250420-cc0c583c
+SUITE="${SUITE:-trixie}"
+MIRROR="${MIRROR:-http://deb.debian.org/debian}"
 UA="Mozilla/5.0 (X11; Linux x86_64) kernel-hive-lab/1.0"
+
+# Everything the sandbox needs at RUN time and at BUILD time. x11-apps is not
+# decoration: vision-inner.sh polls the framebuffer with xwd to wait for the
+# screen to settle instead of sleeping a guessed number of seconds, and a race
+# runner lost its proof window on 2026-09-13 to a rootfs that had no xwd.
+RUNTIME_PKGS="xvfb x11-utils x11-xkb-utils x11-apps xauth xdotool libx11-6 libxext6 python3"
+BUILD_PKGS="build-essential libx11-dev libxext-dev pkgconf make"
 
 log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
 die() {
@@ -102,21 +127,217 @@ do_unpack() {
   log "unpacked: $(find "$MEDIA/tc" -name '*.TC' | wc -l) TransCopy disks, $(find "$MEDIA/pcdos" -name '*.img' | wc -l) PC-DOS images, PCE ROMs + hd0.pbi, MAME roms"
 }
 
+# --- the sandbox rootfs -------------------------------------------------------
+# Built ONCE and shipped as a station asset. The launcher runs it with
+# --volatile=overlay, so nothing a visitor does ever reaches these bytes; the
+# only writable thing in the container is the station's own work/ bind.
+#
+# The uid shift happens HERE, once, not at every launch: nspawn's
+# --private-users-ownership=chown would walk the whole tree on every start.
+# Shifted once at build time, the launcher passes
+# --private-users-ownership=off and starts instantly.
+#
+# PCE is compiled INSIDE the rootfs (via systemd-nspawn, not chroot — a chroot
+# here would need chroot-guard and buys nothing), so the binary links against
+# the trixie libraries it will actually run against.
+do_rootfs() {
+  command -v debootstrap >/dev/null || die "debootstrap not installed"
+  command -v systemd-nspawn >/dev/null || die "systemd-nspawn not installed"
+  [ "$(id -u)" = 0 ] || die "--rootfs needs root (debootstrap + the uid shift)"
+  verify "$STAGE/$PCE_SRC.tar.gz" 1113043 32a37f01bb9cabaa9cc5b5e0f72268755f3211430c57f83871da67c5aedd7117 ||
+    die "$PCE_SRC.tar.gz missing or wrong in $STAGE — run --fetch"
+
+  local tmp="$ROOTFS.staging"
+  rm -rf "$tmp"
+  mkdir -p "$(dirname "$tmp")"
+  log "debootstrap --variant=minbase $SUITE (this is the slow part, ~3 min)"
+  debootstrap --variant=minbase "$SUITE" "$tmp" "$MIRROR" >/dev/null
+
+  log "installing runtime + build packages"
+  # shellcheck disable=SC2086
+  systemd-nspawn -q -D "$tmp" --resolv-conf=copy-host \
+    env DEBIAN_FRONTEND=noninteractive sh -c \
+    "apt-get -qq update && apt-get -qq install -y --no-install-recommends $RUNTIME_PKGS $BUILD_PKGS" >/dev/null
+
+  log "building PCE $PCE_SRC inside the rootfs -> /opt/pce"
+  mkdir -p "$tmp/src"
+  tar -C "$tmp/src" -xzf "$STAGE/$PCE_SRC.tar.gz"
+  systemd-nspawn -q -D "$tmp" sh -c "
+    set -e
+    cd /src/$PCE_SRC
+    ./configure --prefix=/opt/pce --enable-ibmpc --enable-x11 \
+      --disable-sdl --enable-char-pty >/dev/null
+    make -j\"\${JOBS:-4}\" >/dev/null
+    make install >/dev/null
+  " || die "PCE build failed inside the rootfs"
+  [ -x "$tmp/opt/pce/bin/pce-ibmpc" ] || die "no /opt/pce/bin/pce-ibmpc after make install"
+  [ -x "$tmp/opt/pce/bin/psi" ] || die "no /opt/pce/bin/psi after make install"
+
+  # the build tree is not shipped: it is the only writable-looking thing a
+  # visitor could ever see, and it is 40 MB of C we do not need at run time
+  rm -rf "$tmp/src" "$tmp/var/cache/apt/archives"/*.deb
+
+  log "uid-shifting the tree to base $UID_BASE (once, so the launcher can use ownership=off)"
+  # every uid/gid u becomes u + UID_BASE; nspawn's --private-users=$UID_BASE:65536
+  # then maps them back to 0..65535 inside the container
+  find "$tmp" -xdev \( -type d -o -type f -o -type l \) -print0 |
+    xargs -0 -r -n 200 stat -c '%u %g %n' |
+    while read -r u g n; do
+      chown -h "$((u + UID_BASE)):$((g + UID_BASE))" "$n"
+    done
+  rm -rf "$ROOTFS"
+  mv "$tmp" "$ROOTFS"
+  log "rootfs at $ROOTFS ($(du -sh "$ROOTFS" | cut -f1), uid base $UID_BASE, pce-ibmpc + psi in /opt/pce/bin)"
+}
+
+# --- the disk set and the config ----------------------------------------------
+# Three artefacts, and they are ONE combination with the launcher (rule 6):
+#   disk/hd0.pbi      the 10 MB XT fixed disk with PC-DOS 2.00 and Visi On 1.0
+#                     installed (provenance below)
+#   disk/VOAPP1.psi   the Application Manager KEY DISK, in A: at every start
+#   disk/VOAPP2.psi   Application Manager disk 2, in B:
+#   pce.cfg           the 5160 machine description
+#
+# WHY .psi AND NOT A SECTOR IMAGE. Visi On 1.0 is copy protected and VOAPP1 is
+# the key disk: the check reads track data a plain sector image cannot carry.
+# The WinWorld dumps are TransCopy (.TC), which PCE reads but cannot write back
+# on eject; PCE's own `psi` converts .TC to .psi, which keeps the protection AND
+# is writable. Converting to .img here would boot to a "not an original disk"
+# refusal — this is the trap that costs an afternoon.
 do_compose() {
-  # Filled in from the race verdict (docs/lab/VISION-WAVE.md §Race) — the
-  # emulator-specific disk composition. Until then the smoke rig under
-  # /data/vms/sandbox/vision/race/<theory>/ is the reference.
-  die "--compose: pending the race verdict (docs/lab/VISION-WAVE.md §Race)"
+  [ -d "$MEDIA/tc" ] || die "no unpacked media at $MEDIA — run --unpack"
+  local PSI="$ROOTFS/opt/pce/bin/psi"
+  [ -x "$PSI" ] || die "no psi at $PSI — run --rootfs"
+  mkdir -p "$DISK"
+
+  log "converting the TransCopy disks to PCE .psi (the protection lives in the flux)"
+  local f base
+  for f in "$MEDIA"/tc/*.TC; do
+    base="$(basename "$f" .TC)"
+    "$PSI" -i "$f" -o "$DISK/$base.psi" || die "psi failed on $f"
+  done
+  for f in VOAPP1 VOAPP2; do
+    [ -s "$DISK/$f.psi" ] || die "no $DISK/$f.psi after conversion"
+  done
+
+  # --- the installed hard disk -------------------------------------------------
+  # PROVENANCE. hd0.pbi is the PCE XT bundle's own 10 MB PC-DOS 2.00 image
+  # (hampa.ch, inside pce-20250420-cc0c583c-ibm-xt-pcdos-2.00.zip, hashed above)
+  # with Visi On 1.0 installed onto it ONCE, by hand, on the race rig of
+  # 2026-09-13. The install is not replayed here because VINSTALL is an
+  # interactive full-screen installer with a mid-run disk swap; the exact
+  # keystrokes and the monitor commands that drive it are written down in
+  # docs/lab/VISION-WAVE.md §Installing Visi On, so the disk can be rebuilt from
+  # the hashed inputs by hand in about ten minutes. The installed image is a
+  # station asset under /data (never committed — rule 1, the gallery is private).
+  local INSTALLED="${INSTALLED_HD:-$STAGE/hd0-visi-on-installed.pbi}"
+  if [ -f "$INSTALLED" ]; then
+    cp --reflink=auto "$INSTALLED" "$DISK/hd0.pbi"
+    log "staged the installed hard disk from $INSTALLED"
+  elif [ -f "$DISK/hd0.pbi" ]; then
+    log "keeping the existing $DISK/hd0.pbi"
+  else
+    die "no installed hard disk: put it at $INSTALLED (see docs/lab/VISION-WAVE.md §Installing Visi On) or set INSTALLED_HD"
+  fi
+  [ "$(stat -c %s "$DISK/hd0.pbi")" -gt 900000 ] || die "$DISK/hd0.pbi looks truncated"
+
+  # --- the machine -------------------------------------------------------------
+  mkdir -p "$OUT/rom"
+  cp "$MEDIA"/pce/rom/*.rom "$OUT/rom/"
+  write_pce_cfg >"$OUT/pce.cfg"
+  log "staged: $DISK (hd0.pbi + $(ls "$DISK"/*.psi | wc -l) .psi disks), $OUT/rom, $OUT/pce.cfg"
+}
+
+# The 5160 the station emulates. Kept in the builder rather than committed as a
+# separate file so the ROM paths and the /work disk paths can never drift from
+# what x11-runtime.sh copies into place.
+#   boot = 128  -> boot the FIXED DISK, not A:. Visi On's key disk lives in A:
+#                  permanently, and an XT would otherwise try to boot from it.
+#   cpu.speed=1 -> a real 4.77 MHz 8088. Visi On is timing-fragile and misbehaves
+#                  on anything faster; this is the only throttle worth touching.
+#   scale = 2   -> with PCE's 4/3 aspect correction, CGA 640x200 becomes exactly
+#                  1280x800, which is the Xvfb root. Change one, change both.
+#   serial mouse -> Mouse Systems protocol on COM1. Visi On drives the 8250
+#                  itself; there is no DOS mouse driver anywhere in this station.
+write_pce_cfg() {
+  cat <<'CFG'
+# vision station — IBM 5160 XT for VisiCorp Visi On 1.0.
+# Generated by scripts/build-guests/tiles/vision.sh; do not hand-edit the copy
+# under /data/vms/streamhost/assets/vision — edit the builder.
+# @ASSETS@ is substituted by x11-runtime.sh when it copies this into the
+# launch's work/ dir: the assets are bound into the container at their own HOST
+# path (so /proc/<pid>/exe of the sandboxed PCE reads as a host path and the
+# daemon's SH_IDLE_PAUSE_PROC_MATCH keeps working), and that path is not known
+# until launch. The disk paths below are NOT substituted — /work is the one
+# writable bind and is always mounted there.
+system {
+	model = "5160"
+	boot = 128
+	rtc  = 1
+	memtest = 0
+	floppy_disk_drives = 2
+	patch_bios_init  = 0
+	patch_bios_int19 = 0
+}
+
+cpu {
+	model = "8088"
+	speed = 1
+}
+
+load { format = "binary" address = 0xfe000 file = "@ASSETS@/rom/ibm-xt-1982-11-08.rom" }
+load { format = "binary" address = 0xf6000 file = "@ASSETS@/rom/ibm-basic-1.10.rom" }
+load { format = "binary" address = 0xc8000 file = "@ASSETS@/rom/ibm-hdc-1985.rom" }
+
+ram { address = 0 size = 640K }
+rom { address = 0xf6000 size = 40K }
+rom { address = 0xc8000 size = 32K }
+
+terminal {
+	driver = "x11"
+	scale = 2
+	mouse_mul_x = 1
+	mouse_div_x = 1
+	mouse_mul_y = 1
+	mouse_div_y = 1
+}
+
+video {
+	device = "cga"
+	font   = 0
+	blink  = 30
+}
+
+serial {
+	uart      = "8250"
+	address   = 0x3f8
+	irq       = 4
+	multichar = 1
+	driver = "mouse:protocol=msys:xmul=1:xdiv=1:ymul=1:ydiv=1"
+}
+
+fdc { address = 0x3f0 irq = 6 drive0 = 0x00 drive1 = 0x01 accurate = 1 }
+hdc { address = 0x320 irq = 5 drive0 = 0x80 switches = 0b00000000 }
+
+# Every image lives in the WRITABLE /work bind, never in a --bind-ro: PCE writes
+# .psi floppies back on eject and Visi On writes to C:. A read-only media bind
+# makes the guest see a dead drive (docs/lab/VISION-WAVE.md §Traps).
+disk { drive = 0x00 type = "auto" optional = 1 file = "/work/VOAPP1.psi" }
+disk { drive = 0x01 type = "auto" optional = 1 file = "/work/VOAPP2.psi" }
+disk { drive = 0x80 type = "auto" optional = 1 file = "/work/hd0.pbi" }
+CFG
 }
 
 case "${1:-all}" in
   --fetch) do_fetch ;;
   --unpack) do_unpack ;;
+  --rootfs) do_rootfs ;;
   --compose) do_compose ;;
   all)
     do_fetch
     do_unpack
+    do_rootfs
     do_compose
     ;;
-  *) die "usage: $0 [--fetch|--unpack|--compose]" ;;
+  *) die "usage: $0 [--fetch|--unpack|--rootfs|--compose]" ;;
 esac

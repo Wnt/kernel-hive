@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "vision",
+  "era_year": 1983,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 82,
+        "prelude": "",
+        "value": {
+          "key": "vision",
+          "script": "tiles/vision.sh",
+          "outputDir": "VisiOn",
+          "class": "graphical",
+          "estimated": "~25m",
+          "automation": "none",
+          "produces": "assets/vision (the sandbox rootfs with PCE built from the pinned hampa.ch tarball under /opt/pce, pce.cfg, the XT ROMs) and assets/vision/disk (hd0.pbi with Visi On installed + VOAPP1/2.psi, the copy-protected key disks; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/vision",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54194,
+      "notes": "HOST-NATIVE, SANDBOXED: PCE (hampa.ch, GPL) pce-ibmpc runs inside a systemd-nspawn container with private PID/mount/net/IPC/UTS/user namespaces (host uid base 2162688, --volatile=overlay over a debootstrap minbase trixie rootfs, --private-network, capabilities dropped, @mount filtered, --no-new-privileges; the operator's host-application rule after the medley incident) an IBM 5160 XT (8088 @ 4.77 MHz, 640 KB, CGA, two 360 KB floppies, 10 MB XT fixed disk, Mouse Systems serial mouse on COM1) booting PC-DOS 2.00 into VisiCorp Visi On 1.0, inside a pinned 1280x800 Xvfb on :94; the daemon captures the X root (SH_CAPTURE=x11). PCE's x11 terminal draws CGA at scale 2 with its 4/3 aspect correction, so 640x200 becomes exactly 1280x800 and the Xvfb root IS the PCE window — root coordinates are window coordinates, no crop, no offset. No QEMU/QMP, no exec channel, no network (Visi On on PC-DOS 2.00 has no TCP/IP stack; the container has lo only). Keys: XTEST. COPY PROTECTION: VOAPP1.psi is the key disk and must be in A: whenever Visi On starts; it ships as PCE's own .psi (converted from the TransCopy .TC dump with PCE's psi tool) because the protection lives in the flux. Reset=relaunch: fresh copies of hd0.pbi + VOAPP1/2.psi from assets/vision/disk and a cold boot of the XT; vision-inner.sh types VISION at the C:\\> prompt. PCE's monitor is on FIFOs under the station's work/ (mon.in / mon.out) for disk swaps (`di 0 /work/VOAPP2.psi`). Drive it with xdotool on DISPLAY=:94 from labrun, or `labctl shot vision`. See docs/lab/VISION-WAVE.md."
+    }
+  },
+  "render": {
+    "signalOrder": 86,
+    "stationsManifestOrder": 84,
+    "stationsManifestPrelude": "\n# vision (VMID 194) — VisiCorp Visi On 1.0 on an IBM 5160 XT under PCE, sandboxed in systemd-nspawn.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 97,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: IBM PC XT 5160 with a mono CRT and the VisiCorp M1 mouse",
+    "goldenOrder": 84
+  },
+  "stationDir": "vision",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54194,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "Mouse Systems-protocol serial mouse on COM1, fed by PCE's x11 terminal from the host X pointer + the 83-key XT keyboard over XTEST keys",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 194
+  },
+  "guestDoc": "docs/guests/vision.md",
+  "credentialsRef": "guest/vision",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "vision",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":94",
+      "SH_PORT": "54194",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/vision/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/vision/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/vision/vision_cmd"
+    },
+    "bringUpOrder": 97,
+    "x11": {
+      "display": ":94",
+      "geometry": "1280x800x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/vision/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "vision",
+        "--udp",
+        "54194",
+        "--x11",
+        "--x11-display",
+        ":94",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/vision/x11-runtime.sh",
+        "--aux-file",
+        "$T/vision/vision-inner.sh",
+        "--env-append-file",
+        "$T/vision/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/vision/vision-inner.sh",
+        "streamhost/stations/vision/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-desktop-crt",
+    "transport": "streamhost",
+    "accentColor": "#7FB069",
+    "eraLabel": "1983 · Visi On 1.0"
+  },
+  "museum": {
+    "id": "vision",
+    "displayName": "Visi On 1.0",
+    "year": 1983,
+    "lineage": "VisiCorp Visi On (IBM PC XT)",
+    "arch": "Intel 8088 @ 4.77 MHz, 640 KB RAM, CGA 640x200 mono graphics, 10 MB XT fixed disk, Mouse Systems serial mouse on COM1",
+    "ramMB": 1,
+    "era": "1980s",
+    "accent": "#7FB069",
+    "eraSoftware": [
+      "Visi On Application Manager — the Services window that installs and starts every Visi On program",
+      "Visi On Calc, Visi On Graph and Visi On Word — the three applications VisiCorp shipped for it",
+      "PC-DOS 2.00, which Visi On boots from and then almost entirely replaces"
+    ],
+    "periodBrowser": "none — December 1983, a decade before the web, and Visi On has no network stack at all",
+    "iconicApps": [
+      "Visi On Application Manager",
+      "Visi On Calc",
+      "Visi On Word",
+      "Visi On Graph"
+    ],
+    "blurb": "VisiCorp shipped Visi On in December 1983 and beat both the Macintosh and Windows to the IBM PC: overlapping windows, a mouse, pull-down menus and a Services window that installs and launches applications, all running on an 8088 with a CGA card and 640 KB. It cost $1,795 plus a hard disk and a mouse nobody had yet, it ran only VisiCorp's own three programs, and it sold almost nothing — but the command strip along the bottom of this screen (HELP, CLOSE, OPEN, FULL, FRAME, OPTIONS, TRANSFER, STOP) is the graphical desktop arriving on the PC a full year early.",
+    "notes": "Live streamhost station, HOST-NATIVE and SANDBOXED from birth: PCE (Hampa Hug, GPLv2+) emulates an IBM 5160 XT inside a systemd-nspawn container with private PID/mount/net/IPC/UTS/user namespaces (host uid base 2162688, --volatile=overlay over a debootstrap minbase trixie rootfs, --private-network, capabilities dropped, @mount filtered, --no-new-privileges; the operator's host-application rule after the medley incident), on a pinned 1280x800 Xvfb; the daemon captures the X root and drives XTEST. The Xvfb root IS PCE's window (CGA 640x200 at scale 2 with 4/3 aspect correction = 1280x800 exactly). Visi On's copy protection makes VOAPP1 a key disk that must sit in A: at every start, which is why the station ships PCE .psi images converted from the TransCopy .TC dumps rather than plain sector images. Reset = relaunch: fresh disk copies and a cold boot of the XT, then VISION typed at the C:\\> prompt. No network of any kind. See docs/lab/VISION-WAVE.md and docs/guests/vision.md."
+  },
+  "emulator": {
+    "family": "PCE",
+    "version": "20250420-cc0c583c (hampa.ch git snapshot), built from source inside the station's own sandbox rootfs",
+    "source": "scripts/build-guests/tiles/vision.sh (http://www.hampa.ch/pub/pce/pre/pce-20250420-cc0c583c/)",
+    "driver": "pce-ibmpc, system model 5160 (IBM PC XT), boot=128, CGA, 8250 on COM1 with a Mouse Systems mouse"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "No network device of any kind. Visi On runs on PC-DOS 2.00 (1983) and has no TCP/IP stack, PCE's 5160 has no emulated NIC configured, and the container runs with --private-network so the only interface inside is lo. No retronet reservation was taken — it would be meaningless here."
+  },
+  "reset": {
+    "stationDir": "vision",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "OPEN — see docs/lab/VISION-WAVE.md §Pointer",
+    "keyboard": "OPEN — see docs/lab/VISION-WAVE.md §Keyboard",
+    "fixture": "Visi On 1.0 at rest: the stippled Visi On desktop with the Services window open on Archives, its `start install remove Printing` menu line, and the command strip along the bottom (HELP CLOSE OPEN FULL FRAME OPTIONS TRANSFER STOP). resetMode=relaunch with no save state — PCE's ibmpc has none: the launcher copies hd0.pbi (Visi On installed) and VOAPP1/2.psi fresh from assets/vision/disk, cold-boots the 5160, and vision-inner.sh types VISION at the C:\\> prompt once the screen settles."
+  },
+  "notes": [
+    "scaffolded from lisa on 2026-09-13; PCE-in-nspawn won the race against MAME ibm5160 (docs/lab/VISION-WAVE.md §Race)"
+  ],
+  "listing": {
+    "state": "hidden",
+    "since": "2026-09-13",
+    "reason": "Pointer unproven: PCE forwards mouse motion only while it holds an X pointer grab, which a headless Xvfb station cannot hold, and Visi On stops at its \"Calibrate the mouse\" splash until the mouse moves - so the desktop is not reachable by a visitor yet. Boot, the copy-protected key disk, the keyboard and the sandbox audit all PASS from the station launcher. docs/lab/VISION-WAVE.md section Pointer has the race results and the exact next command; promote by dropping this block."
+  }
+}

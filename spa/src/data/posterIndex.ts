@@ -264,6 +264,9 @@ const POSTER_INDEX = {
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
   },
+  "vision": {
+    "hero": "/posters/vision/desktop.webp"
+  },
   "w2kalpha": {
     "hero": "/posters/w2kalpha/dxdiag.webp"
   },
