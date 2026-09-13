@@ -1261,12 +1261,13 @@ emit apple2gs \
 #   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the
 #   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.
 # DISPLAY: -device isa-vga; PM runs VGA 640x480x16.
-# POINTER: QEMU PS/2 RELATIVE. isapc has NO USB, so usb-tablet and every absolute
-#   route are unavailable; this is the machine's only transport, not a shortcut.
+# POINTER: ABSOLUTE via kh-ramabs writing PM's own pointer coordinate at
+#   0x253ca (layout point16le_yx). isapc has NO USB, so usb-tablet is
+#   unavailable -- kh-ramabs writes the guest's own RAM variable instead.
 # NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and
 #   has no rn-tapnet.sh (rule 15).
 emit os213 \
-  --tile os213 --vmid 203 --udp 54203 --pointer rel --audio on --fps 30 \
+  --tile os213 --vmid 203 --udp 54203 --pointer abs --audio on --fps 30 \
   --launcher-file "$T/os213/qemu-streamhost.sh" --env-append-file \
   "$T/os213/station.env.fixture"
 

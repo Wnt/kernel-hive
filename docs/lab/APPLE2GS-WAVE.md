@@ -155,7 +155,7 @@ ZERO members and the boot gate then dies `Required files are missing`. Unzip
 ## Open items
 
 - **Retronet**: OPEN (above).
-- **Pointer**: still OPEN, but no longer unmeasured — see §Pointer below.
+- **Pointer**: still OPEN. Position sensor FOUND (`$E1/00E9`), write path REFUTED, read-loop patch is the next step — see §Pointer and §7-§10 below.
 
 ## Pointer — measured 2026-09-13 (pointer stream, Opus)
 
@@ -261,3 +261,145 @@ diagnostic), not from Lua. That is the next commit on this branch.
   station must sample several frames and take the stable cluster — a one-shot
   `screendump` diff will report motion that did not happen and stillness that
   did.
+
+## Pointer, second pass — 2026-09-13 evening (abs-ram, Opus)
+
+Binary: the fleet chain **plus** `mame-ctlsock-abs-ram.patch` (authored on the
+macsys1 stream, landed on main in 655a8f11), added as the last link of
+`native.d/apple2gs.sh`. Chain order, verified applying cleanly:
+`ptr-tags -> move-step-cap -> open-loop-gain -> home-drain -> count-carry ->
+abs-ram`. Built to `/data/vms/sandbox/apple2gs-ptr/build/apple2gs` (the live
+station binary was not touched); the builder's smoke gate passed at 786432 lit
+pixels. The patch brings `PEEK` / `POKEW` / `POKEB` on a named CPU's program
+space, which is what everything below is measured with.
+
+### 7. The GS cursor position IS in guest RAM — at `$E1/00E9`
+
+Derived by two-position RAM diff (`scripts/dev/apple2gs-ramprobe.py snap` over
+a whole bank, 1024 `PEEK`s, **1.6 s per bank**; positions read back with
+`scripts/dev/apple2gs-cursor-readback.py`):
+
+| address | meaning |
+|---|---|
+| `$E1/00E9` | cursor **X**, 16-bit little-endian, in GUEST px (0..639) |
+| `$E1/00EB` | cursor **Y**, 16-bit little-endian, in GUEST px (0..199) |
+
+and four `{v,h}` Point copies in bank `$00` that track it exactly:
+`$00/085A`, `$00/1956`, `$00/195A`, and `$00/1962` (the last one lags by one
+count — a "previous position" record). Nothing else in banks `$00`, `$01`,
+`$E0`, `$E1` tracks the pointer; the sweep covered 16-bit LE **and** BE and
+raw bytes, matching on both absolute value and delta.
+
+`$E1/00E9` is an exact, live, guest-pixel readback of where the arrow is. Two
+independent checks agreed with the framebuffer locator to within the locator's
+own rounding (±2 px published, i.e. well under one guest pixel).
+
+### 8. …but WRITING it does not move the arrow: the accumulator is elsewhere
+
+MEASURED, in this order:
+
+1. `POKEW $E1/00E9` (and `$00EB`): the values **stick**, and the arrow does
+   **not** move. No redraw is triggered by the position alone.
+2. Poke, then nudge one ADB count (`MOVEP 1 0`): the arrow **does** move — and
+   `$E1/00E9` comes back holding *old position + 1*, not *poked position + 1*.
+   Every one of the five copies above was overwritten the same way.
+3. The ADB microcontroller is not hiding it either. `MAME_CTL_ABS_RAM=cpu=adbmicro`
+   (no `pts=`, so `PEEK` retargets without arming the abs path) and a diff of
+   its whole 256-byte internal RAM across a large move changes exactly three
+   bytes — `$12`, `$FA`, `$FB` — none of them a 16-bit coordinate.
+
+So on this machine the five RAM copies are **outputs**, published each poll
+from an accumulator that is neither in banks `$00/$01/$E0/$E1` nor in the ADB
+micro's RAM. The macsys1 write route therefore does **not** transfer to the
+GS as-is, and `stream.pointer.transport` stays `none`.
+
+### 9. The exact next step
+
+The READ loop, not the write loop. `$E1/00E9` is the sensor the MOVEA V7
+engine has been missing, and it is addressable as a save item today:
+`m_megaii_ram` is `size=1 count=131072` covering `$E0/$E1`, so
+`$E1/00E9` is **byte offset `0x100E9`** inside it. Implement §5's
+`MAME_CTL_CURSOR_ITEMS=suffix@offset[:width]` (little-endian, width 2) plus a
+scale beside `CAL_X/Y`, then bind:
+
+```
+MAME_CTL_CURSOR_ITEMS=m_megaii_ram@0x100E9:2,m_megaii_ram@0x100EB:2
+MAME_CTL_CAL_X=47   MAME_CTL_CAL_SX=1.4531
+MAME_CTL_CAL_Y=53   MAME_CTL_CAL_SY=3.325
+```
+
+Resolution bound, stated up front so nobody calls it a failure: one ADB count
+is one guest pixel, so the loop can only land on guest-pixel centres —
+**±0.73 px on X and ±1.66 px on Y** in published pixels. That is inside the
+phase-2 ≤2 px bar, but only just on Y, and no amount of tuning beats it.
+
+### 10. The five-target contract has to be clamped on this station
+
+The raster lives at published x 47..976, y 53..717. The contract's
+(20,20) (1000,20) (20,740) (1000,740) are all in the SHR **border** and are
+physically unreachable by the guest cursor. The set to prove here is
+**(50,56) (973,56) (50,714) (973,714) (512,384)**, and `reset.mouse` must say
+so rather than quietly reporting a corner the guest can never occupy.
+
+## 11. LANDED — the read loop works, 1:1 absolute (2026-09-13 evening, Opus)
+
+§9's next step, implemented and proven. `mame-ctlsock-ram-cursor.patch` is the
+last link of `native.d/apple2gs.sh` (after `abs-ram`, which stays for its
+`PEEK`/`POKEW` probe verbs) and does two things, both env-only:
+
+- a `MAME_CTL_CURSOR_ITEMS` entry may be `suffix@offset[:width]` — a
+  little-endian integer of `width` bytes (default 2) at a byte offset inside a
+  byte-sized save item. `save_item_handle` carries the window; a window that
+  cannot be read **drops the handle** with a log line, so MOVEA degrades to
+  open loop exactly as an unresolved suffix does rather than becoming a silent
+  zero sensor.
+- `MAME_CTL_CAL_SX` / `MAME_CTL_CAL_SY`, a scale beside `CAL_X`/`CAL_Y`:
+  `published = CAL + reading * CAL_S`. Default 1.0, so irix is unchanged.
+
+Binding, in the fixture:
+
+```
+MAME_CTL_CURSOR_ITEMS=m_megaii_ram@0x100E9:2,m_megaii_ram@0x100EB:2
+MAME_CTL_CAL_X=47   MAME_CTL_CAL_SX=1.4531
+MAME_CTL_CAL_Y=53   MAME_CTL_CAL_SY=3.325
+MAME_CTL_MOVE_STEP=48  MAME_CTL_MOVE_WINDOW=40  MAME_CTL_HOME_SETTLE=0
+```
+
+`ctlsock: cursor window m_megaii_ram@0x100E9:2 -> item count=131072 off=65769
+w=2` and `setup … movea=1` on every launch.
+
+### The five targets, twice, on the new golden
+
+| target | landed | err | module's own reading |
+|---|---|---|---|
+| (50,56) | (51,57) | +1,+1 | converged −1,0 |
+| (973,56) | (972,57) | −1,+1 | converged +2,0 |
+| (50,714) | (51,715) | +1,+1 | converged −1,−1 |
+| (973,714) | (972,715) | −1,+1 | converged +2,−1 |
+| (512,384) | (513,386) | +1,+2 | converged −1,−2 |
+
+Lap 2 identical to lap 1, and identical again after a relaunch restoring the
+recaptured golden. Worst |err| = 1 px X, 2 px Y. **Resolution bound: ±0.73 px
+X, ±1.66 px Y** — one ADB count is one guest pixel, so the loop lands on
+guest-pixel centres and the 2 px on Y is the bound, not drift. Click: `MOVEA
+105 60` + `DOWN1` drops the File menu (41769 changed px), `UP1` closes it.
+
+### The locator trap that cost most of the time
+
+The arrow is **black with a one-guest-pixel white outline**, and the Finder
+menu bar has a **black top border**. A changed-cluster bounding box therefore
+reads ~1 guest px up and left of the real hotspot on the dithered desktop
+(a constant −3 px on Y that looks exactly like a calibration error), and near
+the top of the raster the menu-bar border masquerades as the tip. The pointer
+was 1:1 the whole time; the first three "failing" tables were the locator.
+The rule that works: median of 9 frames, then inside the changed cluster take
+the topmost **narrow** row (1–4 px of black) that **widens** below it, with a
+fall-back to the topmost narrow row for a cursor clipped at the raster edge.
+`/data/vms/sandbox/apple2gs-ptr/tiploc.py` on the rig.
+
+### Rollback
+
+Binary + golden + fixture are ONE unit. To undo: restore the pre-landing
+`mame-native/apple2gs` binary and `stations/apple2gs/sta/apple2gs/golden.sta`
+together, and revert the fixture's pointer block; the registry entry then
+returns to `transport: none`.

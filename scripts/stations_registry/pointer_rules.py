@@ -55,6 +55,19 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # after every write. No ledger token: a MAME-native station has no device
     # line to carry one, the binding lives in the fixture's MAME_CTL_ABS_RAM.
     "mame-guestram-abswrite": ({"mamesock"}, (), ()),
+    # apple2gs: the same guest RAM, READ instead of written. The IIGS keeps its
+    # cursor at $E1/00E9 (X) and $E1/00EB (Y), 16-bit LE, in GUEST pixels --
+    # but those words are OUTPUTS: poking them sticks and never redraws, and
+    # the next ADB poll republishes them from an accumulator that is in neither
+    # banks $00/$01/$E0/$E1 nor the ADB micro's RAM (MEASURED 2026-09-13). So
+    # the abswrite route does not transfer; the READ loop does. MOVEA reads
+    # those two words through a save-item WINDOW (`m_megaii_ram@0x100E9:2`,
+    # mame-ctlsock-ram-cursor.patch) and scales the guest pixel to the
+    # published one with MAME_CTL_CAL_X/SX and CAL_Y/SY. `absolute: true` is
+    # earned the way irix earns it -- by reading the guest's own coordinate
+    # back after every step -- and is bounded by one ADB count == one guest
+    # pixel: +-0.73 px on X, +-1.66 px on Y in published pixels.
+    "mame-guestram-readloop": ({"mamesock"}, (), ()),
     "x11-xtest": ({"x11test"}, (), ()),
     "simh-light-pen": ({"dbus-abs"}, ("usb-tablet",), ()),
     # nextstep: Previous emulates a SummaGraphics MM 1201 digitiser on the NeXT's

@@ -236,6 +236,7 @@
                 "qemu-artist-closedloop",
                 "qemu-guestram-abswrite",
                 "mame-guestram-abswrite",
+                "mame-guestram-readloop",
                 "x11-warp-absolute"
               ]
             },

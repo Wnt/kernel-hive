@@ -1,0 +1,221 @@
+ctlsock: when the only cursor register is guest RAM, READ it — a window into a save item
+
+Applies AFTER mame-ctlsock-abs-ram.patch (same file, later hunks). Env-only:
+unset, every existing station builds and behaves byte for byte as before.
+
+THE WALL (apple2gs, MEASURED 2026-09-13 — docs/lab/APPLE2GS-WAVE.md §7-§9).
+The Apple IIGS keeps its cursor position in guest RAM, at $E1/00E9 (X) and
+$E1/00EB (Y), 16-bit little-endian, in GUEST pixels. That is a perfect live
+sensor — and the macsys1 WRITE route does not work on it: poking those words
+sticks but never redraws, and the next ADB poll republishes them from an
+accumulator that is in neither banks $00/$01/$E0/$E1 nor the ADB micro's own
+256 bytes. The five RAM copies are OUTPUTS. So the GS cannot be driven
+absolutely; it can only be driven closed-loop, and for that MOVEA needs to
+READ $E1/00E9 every window.
+
+It nearly could already. `m_megaii_ram` is a registered save item — size=1,
+count=131072, covering banks $E0/$E1 — so $E1/00E9 is byte offset 0x100E9
+inside an item the module can already resolve. What was missing was the
+ability to address INSIDE an item, and to convert a GUEST-pixel reading into
+a PUBLISHED one.
+
+THE FIX, two small pieces:
+
+  1. A cursor item may now be `suffix@offset[:width]` — a little-endian
+     integer of `width` bytes (default 2) at byte `offset` in a byte-sized
+     save item. `save_item_handle` carries the window (win_off/win_w) and
+     read() assembles it; width 0 is the historical path, untouched. A window
+     that cannot be read (wrong element size, past the end) DROPS the handle
+     with a log line rather than becoming a silent zero sensor, so MOVEA
+     degrades to open loop the same way an unresolved suffix does.
+
+  2. MAME_CTL_CAL_SX / MAME_CTL_CAL_SY, a multiplicative scale beside the
+     existing CAL_X/CAL_Y offset: published = CAL + reading * CAL_S. A
+     cursor register that already reads in published pixels (irix's VC2)
+     defaults to 1.0 and is unchanged; the GS's guest-pixel reading becomes
+     published via 47 + gx*1.4531 and 53 + gy*3.325 — the measured inset and
+     aspect scale of the 640x200 SHR raster inside the 1024x768 surface.
+
+Nothing else changes: the MOVEA V7 engine, its gain learning, the pacing
+window and the give-up cap all run exactly as they do on irix, now against a
+reading instead of a belief.
+
+MEASURED on apple2gs (rig1 restored from the golden, five targets x two laps
+on the published surface, cursor readback via $E1/00E9): see
+docs/lab/APPLE2GS-WAVE.md §11. The loop can only land on guest-pixel centres
+— one ADB count is one guest pixel — so its resolution bound is +/-0.73 px on
+X and +/-1.66 px on Y in published pixels.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -119,9 +119,24 @@
+                              hardware-cursor X,Y[,ENABLE] registers; on
+                              the irix tile:
+                                :vc2/0/m_cursor_x,:vc2/0/m_cursor_y,:vc2/0/m_enable_cursor
++                             Each entry may instead be a RAM WINDOW,
++                             `suffix@offset[:width]`, reading a
++                             little-endian integer of `width` bytes
++                             (default 2) at byte `offset` inside a
++                             byte-sized item -- the route for a machine
++                             whose only cursor register is the guest
++                             OS's own RAM copy. On apple2gs:
++                               m_megaii_ram@0x100E9:2,m_megaii_ram@0x100EB:2
++                             ($E1/00E9 and $E1/00EB, cursor X/Y in guest
++                             pixels; m_megaii_ram covers banks $E0/$E1.)
+                              ABSENT => MOVEA degrades to open-loop
+                              dead reckoning, latest-wins over the queue
+       MAME_CTL_CAL_X/Y       cursor register -> pixel calibration  [-31]
++      MAME_CTL_CAL_SX/SY     cursor register -> pixel SCALE       [1.0]
++                             published = CAL + reading * CAL_S, so a
++                             reading in GUEST pixels becomes a published
++                             one (apple2gs: 47 + gx*1.4531,
++                             53 + gy*3.325)
+       MAME_CTL_MOVE_STEP     pacing budget, counts per window      [120]
+       MAME_CTL_MOVE_WINDOW   pacing window, EMULATED ms             [40]
+       MAME_CTL_HOME_SETTLE   EMULATED ms of quiet the open-loop homing slam is
+@@ -371,10 +386,38 @@
+ 	void *base = nullptr;
+ 	u32 size = 0;
+ 	u32 count = 1;
++	// RAM-WINDOW mode (apple2gs). `win_w != 0` turns this handle from "read
++	// element 0 of a save item" into "read a little-endian integer of
++	// `win_w` BYTES at byte offset `win_off` inside a byte-sized save item".
++	// A machine whose cursor lives in guest RAM rather than in a cursor
++	// register still has a save item covering that RAM (the GS's
++	// `m_megaii_ram` is size=1 count=131072 over banks $E0/$E1), so the
++	// closed loop needs no new device and no new address space -- only the
++	// ability to address INSIDE an item. Zero width = the historical
++	// behaviour, byte for byte.
++	u32 win_off = 0;
++	u32 win_w = 0;
+ 
+ 	bool ok() const { return base != nullptr; }
+ 
+-	s64 read() const { return read_at(0); }
++	s64 read() const { return win_w ? read_le(win_off, win_w) : read_at(0); }
++
++	// Little-endian assemble out of a byte-element item. Anything else -- a
++	// wider element type, a window that runs off the end -- reads 0, which
++	// the caller sees as a cursor parked at the origin rather than as a
++	// pointer into whatever follows the item in memory.
++	s64 read_le(u32 off, u32 w) const
++	{
++		if (!base || size != 1 || w == 0 || w > 8)
++			return 0;
++		if (u64(off) + u64(w) > u64(count))
++			return 0;
++		u8 const *const p = reinterpret_cast<u8 const *>(base) + off;
++		u64 v = 0;
++		for (u32 k = 0; k < w; k++)
++			v |= u64(p[k]) << (8 * k);
++		return s64(v);
++	}
+ 
+ 	s64 read_at(u32 i) const
+ 	{
+@@ -442,6 +485,18 @@
+ 			m_key_excl = e;
+ 		m_cal_x = env_long("MAME_CTL_CAL_X", -31);
+ 		m_cal_y = env_long("MAME_CTL_CAL_Y", -31);
++		// A reading taken in GUEST pixels (the RAM-window route) is not a
++		// published pixel: MAME's aspect correction scales the raster and
++		// insets it inside the published surface. CAL_S{X,Y} is that scale
++		// and CAL_{X,Y} the inset, so published = cal + guest * scale.
++		// Default 1.0 = a register that already reads in published pixels
++		// (irix's VC2), unchanged.
++		m_cal_sx = env_double("MAME_CTL_CAL_SX", 1.0);
++		m_cal_sy = env_double("MAME_CTL_CAL_SY", 1.0);
++		if (m_cal_sx <= 0.0)
++			m_cal_sx = 1.0;
++		if (m_cal_sy <= 0.0)
++			m_cal_sy = 1.0;
+ 		m_movea_tries = int(env_long("MAME_CTL_MOVEA_TRIES", 40));
+ 		m_stat_period = std::chrono::seconds(env_long("MAME_CTL_STAT_PERIOD", 15));
+ 		m_ptr_suffix = env_str("MAME_CTL_PTR_PORTS");
+@@ -1180,11 +1235,11 @@
+ 					se = m_cursor_items.substr(c2 + 1);
+ 			}
+ 			if (!sx.empty())
+-				m_cur_x = find_item(sx);
++				m_cur_x = find_item_spec(sx);
+ 			if (!sy.empty())
+-				m_cur_y = find_item(sy);
++				m_cur_y = find_item_spec(sy);
+ 			if (!se.empty())
+-				m_cur_en = find_item(se);
++				m_cur_en = find_item_spec(se);
+ 		}
+ 		if (!m_swap_items.empty())
+ 		{
+@@ -1258,6 +1313,51 @@
+ 		std::fflush(stderr);
+ 	}
+ 
++	// A cursor-item SPEC: `suffix` (an ordinary save item, historical) or
++	// `suffix@offset[:width]` -- a little-endian integer of `width` bytes
++	// (default 2) at byte `offset` inside a byte-sized save item. The offset
++	// accepts 0x hex, because a guest-RAM address is always written that way:
++	//   m_megaii_ram@0x100E9:2   == $E1/00E9, the Apple IIGS cursor X
++	// The '@' is unambiguous: every save-item path is built from device tags
++	// and member names, neither of which can contain one.
++	save_item_handle find_item_spec(std::string const &spec) const
++	{
++		size_t const at = spec.find('@');
++		if (at == std::string::npos)
++			return find_item(spec);
++		std::string const suffix = spec.substr(0, at);
++		std::string rest = spec.substr(at + 1);
++		u32 width = 2;
++		size_t const colon = rest.find(':');
++		if (colon != std::string::npos)
++		{
++			width = u32(std::strtoul(rest.c_str() + colon + 1, nullptr, 0));
++			rest = rest.substr(0, colon);
++		}
++		u32 const off = u32(std::strtoul(rest.c_str(), nullptr, 0));
++		save_item_handle h = find_item(suffix);
++		if (!h.ok())
++			return h;
++		if (h.size != 1 || width == 0 || width > 8
++				|| u64(off) + u64(width) > u64(h.count))
++		{
++			// a window that cannot be read is NOT a silent zero sensor: drop
++			// the handle so MOVEA announces its open-loop degradation the
++			// same way an unresolved suffix does.
++			std::fprintf(stderr,
++					"ctlsock: cursor window %s unusable (item size=%u count=%u, off=%u w=%u)\n",
++					spec.c_str(), h.size, h.count, off, width);
++			std::fflush(stderr);
++			return save_item_handle();
++		}
++		h.win_off = off;
++		h.win_w = width;
++		std::fprintf(stderr, "ctlsock: cursor window %s -> item count=%u off=%u w=%u\n",
++				spec.c_str(), h.count, off, width);
++		std::fflush(stderr);
++		return h;
++	}
++
+ 	save_item_handle find_item(std::string const &suffix) const
+ 	{
+ 		save_item_handle h;
+@@ -2081,8 +2181,8 @@
+ 	{
+ 		if (!m_cur_x.ok() || !m_cur_y.ok())
+ 			return false;
+-		rpx = long(m_cur_x.read()) + m_cal_x;
+-		rpy = long(m_cur_y.read()) + m_cal_y;
++		rpx = long(std::lround(double(m_cur_x.read()) * m_cal_sx)) + m_cal_x;
++		rpy = long(std::lround(double(m_cur_y.read()) * m_cal_sy)) + m_cal_y;
+ 		trusted = !m_cur_en.ok() || m_cur_en.read() != 0;
+ 		return true;
+ 	}
+@@ -3492,6 +3592,8 @@
+ 	double m_key_gap = 0.05;
+ 	long m_cal_x = -31;
+ 	long m_cal_y = -31;
++	double m_cal_sx = 1.0;
++	double m_cal_sy = 1.0;
+ 	int m_movea_tries = 40;
+ 	long m_surf_w = 1288;
+ 	long m_surf_h = 1024;

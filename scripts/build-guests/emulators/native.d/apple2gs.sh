@@ -25,7 +25,27 @@ NATIVE_MAME_ARGS=(-sl7 cffa2)
 # so the whole apple2e correction stack applies unchanged in the same order:
 # ptr-tags -> move-step-cap -> open-loop-gain -> home-drain -> count-carry.
 # The station fixture carries the MEASURED gains; see docs/lab/APPLE2GS-WAVE.md.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
+# ABS-RAM (last in the chain, authored on macsys1): the GS's ADB mouse is a
+# relative device whose counts the Toolbox re-scales, and the SHR raster is
+# LETTERBOXED inside the 1024x768 surface (published x 47..976, y 53..717), so
+# no open loop can be 1:1 -- a dead-reckoned home is 47/53 px out before any
+# gain error. abs-ram states the visitor's pixel in the guest's own cursor
+# globals over the CPU program space instead, and brings the PEEK/POKEW/POKEB
+# probe verbs the binding has to be DERIVED with. Env-only: unset, the binary
+# behaves exactly as the open-loop chain did.
+# RAM-CURSOR (last in the chain, authored here): the GS's cursor position IS
+# readable -- $E1/00E9 (X) and $E1/00EB (Y), 16-bit LE, guest px -- but it is
+# an OUTPUT: poking it sticks and never redraws, and the next ADB poll
+# republishes it from an accumulator that is nowhere in banks $00/$01/$E0/$E1
+# nor in the ADB micro's RAM. So the macsys1 abs-ram WRITE route does not
+# transfer; the READ loop does. mame-ctlsock-ram-cursor.patch lets a
+# MAME_CTL_CURSOR_ITEMS entry address INSIDE a save item
+# (`m_megaii_ram@0x100E9:2` -- m_megaii_ram is size=1 count=131072 over
+# $E0/$E1) and adds MAME_CTL_CAL_SX/SY so a GUEST-pixel reading becomes a
+# PUBLISHED one (47 + gx*1.4531, 53 + gy*3.325). abs-ram stays in the chain
+# for its PEEK/POKEW/POKEB probe verbs, which is what the binding was derived
+# with. Both are env-only.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch mame-ctlsock-abs-ram.patch mame-ctlsock-ram-cursor.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {

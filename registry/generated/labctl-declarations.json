@@ -221,7 +221,7 @@
     "apple2gs": {
       "dir": "/data/vms/streamhost/stations/apple2gs",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -1103,7 +1103,7 @@
     "os213": {
       "dir": "/data/vms/streamhost/stations/os213",
       "qmp": "/data/vms/streamhost/stations/os213/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -1116,7 +1116,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54203,
-      "notes": "PS/2 RELATIVE pointer only — -machine isapc has no USB, so usb-tablet and every absolute route are unavailable. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer."
+      "notes": "PS/2 mouse, ABSOLUTE 1:1 via kh-ramabs writing OS/2 1.3 Presentation Manager's own pointer coordinate at 0x253ca (layout point16le_yx) -- isapc has no USB, so usb-tablet is unavailable, but kh-ramabs writes the guest's own RAM variable instead of relying on a device. SINGLE INJECTOR: while ptr.sock is connected nothing else -- no QMP input-send-event, no labctl pointer helper -- may push motion or a button edge at this mouse. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer. Binary is /opt/qemu-os213; the golden is baked under it and the address is bound to that golden -- re-derive with docs/guests/os213.md §Pointer's recipe after any re-bake."
     },
     "os2warp": {
       "dir": "/data/vms/streamhost/stations/os2warp",
