@@ -135,6 +135,46 @@ the hashed inputs:
    in the writable bind.)
 6. `VISION` at `C:\>` to confirm, then keep the resulting `hd0.pbi`.
 
+## Builder — `scripts/build-guests/tiles/vision.sh` run end to end
+
+Run by the BUILD+PUBLISH stream (Claude Sonnet 5), into a throwaway output —
+`STAGE=/data/assets-staging/vision OUT=/data/vms/sandbox/vision-build/out
+MEDIA=$OUT/media DISK=$OUT/disk ROOTFS=$OUT/rootfs UID_BASE=2162688
+INSTALLED_HD=/data/vms/sandbox/vision/race/pce/work/hd0.pbi` — never touching
+the previously-proven race rig or the real `/data/vms/streamhost/assets/vision`
+until every stage had passed:
+
+| Stage | Result | Wall clock |
+|---|---|---|
+| `--fetch` | all 9 sources already staged by the media agent, hash-verified, `MANIFEST.sha256` rewritten | 1.4 s |
+| `--unpack` | 10 TransCopy disks, 2 PC-DOS images, PCE ROMs + `hd0.pbi`, MAME ROMs; every size assertion passed | 12.8 s |
+| `--rootfs` | `debootstrap --variant=minbase trixie`, runtime+build packages, PCE built from the pinned tarball into `/opt/pce`, uid-shifted once to 2162688 | 3m46.7s (root, on labhost) |
+| `--compose` | 10 `.TC` disks converted to `.psi` with the freshly-built `psi`; `hd0.pbi` staged from the proven race rig's installed disk (provenance: `race/pce/work/hd0.pbi`, made by hand per §Installing Visi On on 2026-09-13); `pce.cfg` + ROMs staged | 1.4 s |
+
+**One builder bug fixed at the root.** `do_rootfs`'s `./configure` line passed
+`--enable-x11` and `--disable-sdl`, neither of which exists in PCE's autoconf
+script (confirmed by extracting the pinned tarball and reading
+`configure --help`: X11 is `--with-x`, SDL is `--without-sdl`; the bogus names
+only ever produced two silent `configure: WARNING: unrecognized options`
+lines and worked by accident because X11 auto-detects against `libx11-dev` and
+SDL auto-detects absent with no SDL dev package installed). Fixed to
+`--enable-ibmpc --with-x --without-sdl --enable-char-pty`; re-run and
+`shellcheck`/`shfmt -d` both clean on the changed file.
+
+**Boot proof of the throwaway output itself** was queued behind the wave's
+one-`pce-ibmpc`-at-a-time rule (the `vision-ptr` stream was mid-flight on its
+own rig at `/data/vms/sandbox/vision-ptr/`, investigating the pointer) rather
+than raced or killed. See §Publish for whether it landed before this stream's
+own stop; if not, the exact next command is
+`VISION_ASSETS=/data/vms/sandbox/vision-build/out VISION_BASE=/data/vms/sandbox/vision-build/proof SH_STATION=vision SH_X11_DISPLAY=:195 streamhost/stations/vision/x11-runtime.sh`
+once `pgrep -f '^/opt/pce/bin/pce-ibmpc '` on labhost is empty.
+
+The `--rootfs` and `--compose` stages are proven by their own exit codes and
+output-shape assertions (the builder's own `verify`/size checks on every
+staged file, `[ -x .../pce-ibmpc ]`, `[ -x .../psi ]`, the `.psi`/`hd0.pbi`
+existence and size checks in `--compose`); the framebuffer proof of the
+throwaway output is the one piece still gated on the shared PCE slot.
+
 ## Sandbox
 
 **Verdict: host application, full nspawn contract.** PCE is a stock X11
@@ -254,15 +294,75 @@ doubled character, on the race rig and again on the station launcher.
 is **not a measured floor** — nobody bisected downward, so the real minimum may be
 much lower. Say so rather than implying 120/120 was chosen.
 
+## Publish — `/os/vision` dark-launch, QUEUED (not yet started)
+
+Prepared by the BUILD+PUBLISH stream but **not yet started**, in observance of
+the wave's "one `pce-ibmpc` at a time, coordinate by waiting, never by killing
+theirs" rule: at the time this stream hit its own stop, `vision-ptr`'s own rig
+(`/data/vms/sandbox/vision-ptr/`, nspawn `--machine=vision-ptr-rig`,
+`pce-ibmpc pid 4138822`) had been running continuously for 7+ minutes
+investigating the pointer, and `ps -eo pid,args | grep pce-ibmpc` never went
+empty during this stream's 60-minute window.
+
+`smoke-rig.sh` was read and, like `fmtowns` and `oberon`, is the wrong tool for
+a contained x11 station by construction (it assumes a QMP socket at step 0).
+The documented route (`docs/lab/FMTOWNS-WAVE.md` §Publish) is
+`darklaunch-station.py publish` against the STATION'S OWN rig dir, since for a
+sandboxed-x11 station "the rig IS the station dir" the same way it is for
+MAME-native. Everything up to actually starting `pce-ibmpc` is done:
+
+1. **Real assets staged** at `/data/vms/streamhost/assets/vision` — `rsync`'d
+   from this stream's own proven builder output
+   (`/data/vms/sandbox/vision-build/out/{rootfs,disk,rom,pce.cfg}`, §Builder),
+   not from the race rig's hand-built copy. `rootfs` 545 M, uid base 2162688
+   throughout (`ls -la` shows the shifted ownership).
+2. **`station.env` emitted** for real, via
+   `bash streamhost/stations-manifest.sh --only vision --pin-machine` run from
+   this stream's own sandbox checkout (not `/data/kernel-hive`, which is not
+   yet at a deployed rev carrying `vision` — `station-up.sh` needs that and so
+   could not be used pre-merge). Wrote
+   `/data/vms/streamhost/stations/vision/{station.env,x11-runtime.sh,ROLLBACK.md}`;
+   `SH_HOST_IP`/`SH_ADVERTISE_HOST` came out as the real `192.168.1.126` from
+   `registry/local.env`, not the repo's scrubbed placeholder.
+3. **Binary symlink created**:
+   `/usr/local/lib/streamhost/stations/vision/current` → the same
+   `streamhost-ccdc999d28a9df0af200cc19b5c0ee0c89c42323` binary `lisa` runs
+   (no code change on this branch touches the daemon, so any fleet binary
+   already on the box is correct).
+4. **The manifest-entry trap, avoided.** `darklaunch-station.py`'s `--like`
+   copies the sibling's row with `dict(sibling)` and only overrides
+   `id`/`displayName`/`order`/`listed`/`signalEndpoint` — every other field
+   (`accent`, `archetypeId`, `arch`, `blurb`, `eraSoftware`, `notes`, …) would
+   stay **lisa's**, the exact trap the oberon lead hit. Built vision's own
+   entry instead, from `registry/stations/vision.json`'s own `museum`/`spa`
+   blocks, at `/data/vms/sandbox/vision-build/vision-entry.json`, for
+   `darklaunch-station.py publish vision --rig /data/vms/streamhost/stations/vision --entry /data/vms/sandbox/vision-build/vision-entry.json`.
+
+**Exact next commands, once `ssh lab "pgrep -f '^/opt/pce/bin/pce-ibmpc '"` is
+empty:**
+
+```
+ssh lab 'systemctl start streamhost@vision && systemctl is-active streamhost@vision'
+ssh lab 'ss -lunp | grep 54194'                                    # UDP listening
+python3 scripts/dev/darklaunch-station.py publish vision \
+  --rig /data/vms/streamhost/stations/vision \
+  --entry /data/vms/sandbox/vision-build/vision-entry.json          # run ON the box
+curl -sk https://<box>:8443/os/vision -o /dev/null -w '%{http_code}\n'
+python3 scripts/dev/fb-wait.py --settle 3 vision                    # or: labctl shot vision
+```
+
+Withdraw with `scripts/dev/darklaunch-station.py withdraw vision`, then
+`systemctl stop streamhost@vision` — leave the station RUNNING for the
+operator otherwise, per the brief ("leave only the dark launch up").
+
 ## OPEN items
 
 | Item | Next command |
 |---|---|
 | **Pointer (blocker)** — no two-target readback; Visi On stops at the calibration splash without it | Rerun theory A with `mouse_div_x/y = 2`: `scripts/dev/rig-clone.sh new vision ptr-scale`, apply `race/ptrA/pce-x11-nograb.patch`, then `python3 scripts/dev/cursor-locate.py` on two targets |
 | The Visi On **desktop** has not been reached from the station launcher (only the splash), because it needs the pointer | follows the pointer |
-| `/os/vision` dark-launch not published | `scripts/dev/smoke-rig.sh vision --like lisa` |
-| The tile builder's `--rootfs` and `--compose` stages are written but have not been run end to end; the rootfs recipe was validated by reproducing the race rootfs + `x11-apps` under `--private-users`, not by a full rebuild | `ssh lab 'scripts/build-guests/tiles/vision.sh --rootfs'` |
-| `spa/src/scene/assembliesByTile.ts` is at 603 lines against the 600-line ts-src cap (`machineIdentity.ts` at 588) | split the table before the next wave lands, not during one |
+| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not yet started — queued behind the wave's one-`pce-ibmpc`-at-a-time rule | see §Publish for the exact commands once `ssh lab "pgrep -f '^/opt/pce/bin/pce-ibmpc '"` is empty |
+| `spa/src/scene/assembliesByTile.ts` line count | 24 lines on this branch — the 600-line cap this doc previously flagged was a pre-shard measurement; `origin/main` has already sharded the scene tables (`.1.ts`/`.2.ts`/`.3.ts`), so this is resolved by the merge-main step, not by this stream |
 
 ## Measured timeline
 
