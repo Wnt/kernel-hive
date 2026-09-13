@@ -76,7 +76,9 @@ describe('the query has to survive being typed five different ways', () => {
   });
 
   it('dos finds the DOS machines, including the one that spells it FreeDOS', () => {
-    expect(hits('dos')).toEqual(['freedos', 'win311', 'msdoswin1', 'pcgeos', 'atari800xl']);
+    // fmtowns matches on its eraSoftware entry "MS-DOS 6.2 for FM TOWNS"
+    // (Towns OS's kernel) — a real hit, not noise.
+    expect(hits('dos')).toEqual(['freedos', 'win311', 'msdoswin1', 'pcgeos', 'atari800xl', 'fmtowns']);
   });
 });
 

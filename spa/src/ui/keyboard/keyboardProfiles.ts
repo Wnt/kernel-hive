@@ -314,6 +314,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // ETH Native Oberon 2.3.6. Oberon has no chords at all: its verbs are mouse
+  // clicks and interclicks on command words, and the keyboard only ever feeds
+  // text to the caret. The generic rows are the honest floor until there is
+  // something Oberon-specific worth a profile.
+  oberon: 'generic',
   openbsd: 'generic', // fvwm/xterm: plain X11 desktop, no OS-specific chord set
   // Red Hat Linux 6.2: GNOME 1.0 under Enlightenment on XFree86 3.3.6, a US
   // PC keyboard. No GNOME-1-specific chord set worth a profile; the generic
@@ -345,6 +350,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // only thing unusual about it (carried by keyboards.ts charMap, not this
   // OSK chord set) — no DM-specific chords to profile, so generic Unix rows.
   domainos: 'generic',
+  // Fujitsu FM TOWNS, Towns OS V2.1 L51: TownsMENU is a mouse-driven icon
+  // desktop over a JIS keyboard (SH_KEY_MAP handles the JIS punctuation
+  // shift table in keyboards.ts) — no TownsMENU-specific chord set has been
+  // built yet (the pointer is OPEN, docs/lab/FMTOWNS-WAVE.md), so generic.
+  fmtowns: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',

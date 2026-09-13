@@ -93,6 +93,9 @@ const POSTER_INDEX = {
   "dragon32": {
     "hero": "/posters/dragon32/desktop.webp"
   },
+  "fmtowns": {
+    "hero": "/posters/fmtowns/desktop.webp"
+  },
   "freebsd411": {
     "hero": "/posters/freebsd411/desktop.webp"
   },
@@ -164,6 +167,9 @@ const POSTER_INDEX = {
   },
   "nt4": {
     "hero": "/posters/nt4/desktop.webp"
+  },
+  "oberon": {
+    "hero": "/posters/oberon/desktop.webp"
   },
   "openbsd": {
     "hero": "/posters/openbsd/desktop.webp"

@@ -65,7 +65,7 @@
     "stationsManifestOrder": 84,
     "stationsManifestPrelude": "\n# magiccap (VMID 197) — General Magic's Magic Cap for Windows, pre-release build 327, run as a Windows application inside the win98se-class guest.\n",
     "bringUpGroup": 4,
-    "bindingOrder": 97,
+    "bindingOrder": 99,
     "bindingPrelude": "",
     "goldenOrder": 84,
     "actionMapOrder": 49
@@ -203,7 +203,7 @@
         "reason": "registry source pins pc-i440fx-11.0,acpi=on, matching the running/golden-compatible QEMU 11 machine"
       }
     },
-    "bringUpOrder": 97
+    "bringUpOrder": 99
   },
   "spa": {
     "archetypeId": "beige-tower-crt",
