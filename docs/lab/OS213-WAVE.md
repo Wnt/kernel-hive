@@ -176,8 +176,32 @@ not change the click result. Leads for the next session, cheapest first:
 
 ## Landing
 
-Landed from `/data/vms/sandbox/os213/repo` via `scripts/dev/station-land.sh os213
---golden /data/vms/sandbox/os213/smoke/os213-golden.qcow2`.
+`station-land.sh os213 --golden .../os213-golden.qcow2` got through the push to
+main and `box-deploy`, then **FAILED at step 9, station-up**: `streamhost@os213`
+restart-looped 29 times on
+`Could not open '/data/vms/streamhost/stations/os213/os213-golden.qcow2'`.
+
+**Cause, and a trap for every `--like` scaffold:** `station-land.sh` stages the
+golden as `$D/disk.qcow2` (parking the old one as `disk.qcow2.pre-<ts>`). The
+`nt351` sibling this launcher was copied from predates that convention and names
+its disk `nt351-golden.qcow2`, so the rewritten copy looked for a file the
+landing script never creates. **Check the staged disk NAME against your
+launcher before landing, not after.** Fixed in `18a60cff`.
+
+The re-push then hit the **box-state gate**, for a second trap worth knowing:
+`emit --pin-machine` rewrites machine-type literals **inside comments too**. A
+fallback machine type spelled out in a launcher comment came back rewritten in
+the emitted copy, so the live file matched neither the box checkout nor the
+working tree and the gate refused the push. Fix: do not spell a machine-type
+literal in a launcher comment (the comment now says so), and restore the live
+emitted row to the box checkout before pushing.
+
+Sequence that worked: fix → push main → `box-deploy.sh --apply` → `station-up.sh
+os213` green → SPA `build` + `deploy`.
+
+**LIVE**: `/data/vms/sandbox/os213/os213-up.png` — the PM Desktop Manager on the
+real station, unit active, `NRestarts=0`, all 5 runtime manifests carry `os213`,
+`POST /restore/os213 -> 200`.
 
 ## One rig dir = one owner (a mistake, published)
 
