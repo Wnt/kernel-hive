@@ -1188,9 +1188,9 @@ emit domainos \
 
 # perq (VMID 198) — TODO one line; scaffolded from lisa.
 emit perq \
-  --tile perq --udp 54198 --x11 --x11-display :93 --capture x11 --pointer \
+  --tile perq --udp 54198 --x11 --x11-display :98 --capture x11 --pointer \
   abs --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/perq/x11-runtime.sh" --aux-file "$T/perq/lisa-inner.sh" \
+  "$T/perq/x11-runtime.sh" --aux-file "$T/perq/perq-inner.sh" \
   --env-append-file "$T/perq/station.env.fixture"
 
 # ---------------------------------------------------------------------------
