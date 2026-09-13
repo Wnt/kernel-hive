@@ -173,8 +173,8 @@ do_rootfs() {
   systemd-nspawn -q -D "$tmp" sh -c "
     set -e
     cd /src/$PCE_SRC
-    ./configure --prefix=/opt/pce --enable-ibmpc --enable-x11 \
-      --disable-sdl --enable-char-pty >/dev/null
+    ./configure --prefix=/opt/pce --enable-ibmpc --with-x \
+      --without-sdl --enable-char-pty >/dev/null
     make -j\"\${JOBS:-4}\" >/dev/null
     make install >/dev/null
   " || die "PCE build failed inside the rootfs"
