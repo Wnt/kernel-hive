@@ -94,6 +94,18 @@ needs a mouse-driven POS program on the framebuffer; **OPEN**.
   vanishes), sends the two Returns, and waits on the framebuffer between each.
   An empty name logs in as **Guest** with no password prompt; `user` is not an
   account.
+- **Reset-to-scene, measured end to end on the rig** (`x11-runtime.sh` start →
+  POS shell on the framebuffer → emulator SIGSTOPped at it, labhost at load
+  ~60): **119 s**, of which 25 s is the settle margin below. Frame:
+  `/data/vms/sandbox/perq-ptr/frames/h-reset-scene.png` — `sys:User>Guest>` in
+  the status line, the `>` prompt, the arrow resting at (384, 524).
+  Three earlier shapes for the final wait all froze the station one repaint
+  SHORT of the prompt and are recorded in the launcher: `xdotool -display` is
+  not a flag (the error was swallowed and the launcher reported a scene it had
+  never reached); a hash of the WHOLE root never settles once the status-line
+  clock starts, so the crop is load-bearing; and counting repaints is brittle
+  because POS paints `Initializing for user`, `Reading profile file` and the
+  prompt with ~20 s gaps. Waiting for 25 s of quiet is what actually works.
 - **Login, measured by hand on the rig:** disk-mount screen at ~20 s from
   power-on, `>` shell prompt at ~50 s from power-on (`Reading profile file
   >Default.Profile` to prompt is ~20 s of that).

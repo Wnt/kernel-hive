@@ -260,10 +260,15 @@ echo "perq[$TILE]: pid=$MPID xvfb=${XV:-?} nspawn=$(cat "$NSPAWN_PIDFILE") displ
 # same `sleep 2` guess measurably cost two of ten pointer readbacks on this
 # machine. `cksum` of the raw xwd dump is the cheapest settle test that needs
 # nothing but x11-utils, which this launcher already requires for xwininfo.
+# The dump is CROPPED past the POS status line before it is hashed: once a user
+# is logged in, that line carries a clock that ticks every second, so a hash of
+# the whole root NEVER settles and every wait runs to its timeout. Rows 0..31
+# are the black band above the PERQ window plus that status line; rows 1036..
+# are the 24 dead lines at the bottom.
 fb_settle() { # fb_settle <stable-seconds> <timeout-seconds>
   local want="$1" limit="$2" last="" same=0 i=0 now
   while [ "$i" -lt "$limit" ]; do
-    now="$(xwd -root -silent -display "$DISP" 2>/dev/null | cksum)" || now=""
+    now="$(xwd -root -silent -display "$DISP" 2>/dev/null | convert xwd:- -crop 768x1004+0+32 +repage ppm:- 2>/dev/null | cksum)" || now=""
     if [ -n "$now" ] && [ "$now" = "$last" ]; then
       same=$((same + 1))
       [ "$same" -ge "$want" ] && return 0
@@ -273,6 +278,17 @@ fb_settle() { # fb_settle <stable-seconds> <timeout-seconds>
     last="$now"
     i=$((i + 1))
     sleep 1
+  done
+  return 1
+}
+fb_hash() { xwd -root -silent -display "$DISP" 2>/dev/null | convert xwd:- -crop 768x1004+0+32 +repage ppm:- 2>/dev/null | cksum; }
+fb_change() { # fb_change <timeout-seconds>: return once the page repaints
+  local limit="$1" base i=0
+  base="$(fb_hash)"
+  while [ "$i" -lt "$limit" ]; do
+    sleep 1
+    [ "$(fb_hash)" != "$base" ] && return 0
+    i=$((i + 1))
   done
   return 1
 }
@@ -287,11 +303,26 @@ bring_to_scene() {
   # so focus is PointerRoot: the pointer must be inside the PERQ window or the
   # Returns go to the root and vanish. It also leaves the cursor mid-page,
   # which is where the hero frame has it.
-  xdotool -display "$DISP" mousemove "${PERQ_SCENE_PTR_X:-384}" "${PERQ_SCENE_PTR_Y:-524}" 2>/dev/null || true
-  xdotool -display "$DISP" key --delay 120 Return 2>/dev/null || true # date prompt: accept the default
+  # xdotool has NO global -display flag: `xdotool -display :98 key Return` is an
+  # unknown command, and with the error swallowed the launcher reported a scene
+  # it had never reached (measured). It reads $DISPLAY, so set it.
+  export DISPLAY="$DISP"
+  xdotool mousemove "${PERQ_SCENE_PTR_X:-384}" "${PERQ_SCENE_PTR_Y:-524}" || true
+  xdotool key --delay 120 Return || true # date prompt: accept the default
   fb_settle 4 60 || true
-  xdotool -display "$DISP" key --delay 120 Return 2>/dev/null || true # name prompt: empty name logs in as Guest
-  fb_settle 8 120 || true
+  xdotool key --delay 120 Return || true # name prompt: empty name logs in as Guest
+  # TWO repaints follow, ~20 s apart on this machine: `Initializing for user:
+  # Guest / Reading profile file >Default.Profile`, and only then the `>` shell
+  # prompt. A settle alone fires in the quiet gap BETWEEN them and freezes the
+  # station mid-login (measured) — wait for each repaint, then settle.
+  # THREE repaints follow, and the gaps between them are long: `Initializing for
+  # user: Guest`, `Reading profile file >Default.Profile`, and ~20 s later the
+  # `>` shell prompt. Counting them is brittle — measured, both a `settle 8` and
+  # a count of two repaints froze the station one paint short of the prompt. So
+  # wait for the whole login to go quiet for longer than its longest internal
+  # gap. The clock in the status line is cropped out of the hash, so "quiet"
+  # here really is quiet.
+  fb_settle 25 180 || true
   t1="$(date +%s)"
   echo "perq[$TILE]: scene — POS shell reached $((t1 - t0)) s after the window appeared"
 }
