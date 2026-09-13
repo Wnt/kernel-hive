@@ -416,13 +416,111 @@ Withdraw with `scripts/dev/darklaunch-station.py withdraw vision`, then
 `systemctl stop streamhost@vision` — leave the station RUNNING for the
 operator otherwise, per the brief ("leave only the dark launch up").
 
+## FINISH+LANDING pass (Claude Sonnet 5, 2026-09-13, ~06:52-08:10Z)
+
+Merged `origin/vision-ptr` and `origin/vision-build` (clean octopus merge, no
+conflicts). Did NOT merge `origin/vision-spa` wholesale — it branched before
+the scene-table sharding and before oberon/fmtowns landed, so a full merge
+would have reverted both; ported only its museum-voice poster prose into
+`registry/posters/vision.md` (was still the scaffold placeholder) by hand,
+updated to the measured scene (Services window on Archives, the
+HELP/CLOSE/OPEN/FULL/FRAME/OPTIONS/TRANSFER/STOP strip).
+
+Two correctness bugs the brief's assumptions did not anticipate, found by
+running the real thing rather than trusting the prior streams' reports:
+
+1. **`spa.pointerRel: true` is wrong, not right.** `stations-registry.py
+   generate` refuses it: the `x11test` backend + `pointerRel=true` lets a
+   type=4 DIRECT relative pointer record bypass the router entirely (two
+   injectors, neither aware of the other — see the validator's own message).
+   The vision-spa draft's own conditional applies now that the identity
+   mapping is proven: `pointerRel: false`, documented in `museum.notes`.
+2. **`machineIdentity.3.ts` had `kit: 'office80'`**, not a valid `StationKit`
+   (`'office90'` is) — vitest never checks the enum, only `npx tsc -b` catches
+   it. Fixed.
+
+**Then three real bring-up bugs, found by actually running the builder and the
+launcher against production assets** (the previous streams' "run end to end"
+passes used throwaway output dirs and never exercised this path):
+
+3. `tiles/vision.sh`'s patch path resolved to
+   `scripts/build-guests/tiles/patches/vision/...`; the patch is committed one
+   level up at `scripts/build-guests/patches/vision/...`. Every real
+   `--rootfs` run died immediately with "missing pointer patch". Fixed
+   (`$SCRIPT_DIR/../patches/...`).
+4. The script's arg handling is a plain `case "$1" in`, not a flag loop —
+   `--rootfs --compose` silently runs only `--rootfs`. Each stage needs its
+   own invocation. Not changed (out of scope for this pass); noted here so the
+   next person doesn't lose time to it.
+5. **`do_compose` staged `rom/`, `disk/` and `$OUT` itself under root's ambient
+   umask** (0700/0400 on labhost's non-interactive ssh shells), not the
+   0755/0644 every sibling station's `assets/` tree uses. The container reads
+   `$OUT` read-only as host uid 2162688, never as real root, so an unreadable
+   bind mount silently yielded PCE's `*** loading failed` on all three ROMs at
+   the monitor prompt — the station never booted past `type 'h' for help'`
+   until this was found. Fixed with an explicit `chmod -R a+rX` at the end of
+   `do_compose`; applied live to the real assets (no rebuild needed) and
+   verified — the 5160 now boots, PC-DOS 2.00 reaches `C:\>`
+   (`frames/proof-01-boot.png`), `VISION` typed reaches the copy-protected
+   splash (`frames/proof-04-splash.png`, calibration cursor visible).
+
+**A sixth bug, not yet fixed: `vision-inner.sh`'s `fb_settle` still fires too
+early.** Trap #5 above claims this was fixed, but on this pass's fresh launch
+the log shows `screen settled` 4 seconds after `g` and `VISION` typed
+immediately after — into a screen that had not yet run AUTOEXEC.BAT. The
+keystrokes evaporated (measured: the C:\> prompt sat untouched at
+`frames/proof-02-now.png`, taken 3 minutes later, with no `VISION` text on it
+at all) while DOS finished booting on its own underneath. Typing `VISION`
+**by hand** over the same XTEST path (`xdotool type --window <id> --delay 120
+VISION`) worked cleanly and reached the splash immediately
+(`frames/proof-03-typed.png` → `frames/proof-04-splash.png`), so the keyboard
+path itself is fine — only the launcher's own auto-type timing is broken
+again. **Next: replace the "changed-then-held" heuristic with something that
+recognizes the actual C:\> prompt bytes** (e.g. wait for the `PATH` line
+AUTOEXEC prints, which is content the launcher already controls), not another
+guessed threshold.
+
+**Pointer two-target readback: attempted, NOT resolved, and the reason is now
+understood.** Converted the vision-ptr rig's `vptr-A/B/C/D` frames to PPM and
+ran `cursor-locate.py learn` — it found two well-formed 18x40 sprite templates
+(272/720 opaque pixels each, not degenerate) but `find` returned `AMBIGUOUS`
+matches at effectively every coordinate in the frame (a 24.7 MB match list).
+Diffing the two learned templates' RGB payloads at identical mask geometry
+showed why: **the same mask (identical shape, same opaque-pixel positions)
+carries DIFFERENT colours between the old-position and new-position capture.**
+That is the signature of an **XOR/inverting cursor**, not a fixed-colour
+sprite — PCE's arrow inverts whatever is underneath it rather than blitting
+constant pixels, so over the desktop's large uniform-white background the
+identical inverted pattern reproduces at *every* position over that
+background, and `cursor-locate.py`'s exact-match premise (a hard-edged sprite
+with fixed, content-independent pixels) does not hold for this cursor. A
+follow-up attempt to move it further with `xdotool mousemove --sync` (four
+incremental absolute moves toward the lower-right, then a click) produced NO
+visible motion at all on the calibration screen
+(`frames/proof-05-afterptr.png` is pixel-identical to `proof-04-splash.png`)
+in the time this pass had left to look into it — unlike the vision-ptr rig's
+own successful moves, which is itself worth investigating (a stale window
+focus? the click consuming the first motion event the way stock PCE's
+`xt_event_button_press` does, per the mechanism section above?). **Pointer
+stays OPEN. `listing.state` stays hidden — this pass narrows the puzzle
+(the XOR-cursor readback problem is now a specific, falsifiable claim rather
+than "cursor-locate.py fails"), it does not close it.**
+
+`/os/vision` dark-launch was **not published this pass** — the remaining
+budget went to the bring-up bugs above (a broken boot blocks everything
+downstream of it, including the framebuffer proof of any publish) rather than
+publishing a station that only reaches the calibration splash. §Publish's
+exact commands are unchanged and still the next step once the pointer or an
+explicit decision to publish hidden-behind-splash is made.
+
 ## OPEN items
 
 | Item | Next command |
 |---|---|
-| **Pointer** — direction proven (mouse_div_x=2/div_y=4 gives the 1:1 identity mapping, desktop reached), exact `cursor-locate.py` two-target readback not yet run | `scripts/dev/cursor-locate.py learn /data/vms/sandbox/vision-ptr/rig/vptr-A.png /data/vms/sandbox/vision-ptr/rig/vptr-B.png`, then `find` on two fresh targets |
-| The Visi On **desktop** has not been reached from the station launcher (only the splash), because it needs the pointer | follows the pointer |
-| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not yet started — queued behind the wave's one-`pce-ibmpc`-at-a-time rule | see §Publish for the exact commands once `ssh lab "pgrep -f '^/opt/pce/bin/pce-ibmpc '"` is empty |
+| **Pointer** — desktop reached once by the race rig with a hand-driven grab, XOR-cursor readback problem now understood (see above), not yet solved | investigate why `xdotool mousemove --sync` produced no motion on this pass's live rig; if solved, `cursor-locate.py` needs an XOR-aware match mode (compare against `frame XOR sprite-shape`, not fixed RGB) or a `--hotspot`-anchored `check` against the commanded position instead of a blind `find` |
+| `vision-inner.sh`'s `fb_settle` fires on an intermediate screen, not the true `C:\>` prompt — the auto-typed `VISION` is lost | replace the "changed then held" heuristic with a content match on the `PATH` line AUTOEXEC prints |
+| The Visi On **desktop** has not been reached from the station launcher itself (only the splash, and only by hand-typing over the broken auto-type) | follows the two items above |
+| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not started | see §Publish; blocked behind the pointer/fb_settle items, not behind the one-`pce-ibmpc`-at-a-time rule (that rig is torn down) |
 | `spa/src/scene/assembliesByTile.ts` line count | 24 lines on this branch — the 600-line cap this doc previously flagged was a pre-shard measurement; `origin/main` has already sharded the scene tables (`.1.ts`/`.2.ts`/`.3.ts`), so this is resolved by the merge-main step, not by this stream |
 
 ## Measured timeline
