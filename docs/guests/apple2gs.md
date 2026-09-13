@@ -56,18 +56,63 @@ scaffold's initial copy of the //e's `:X0..` keymap was wrong for this driver
 and was replaced. Pacing is the fleet floor, **`SH_KEY_MIN_HOLD_MS=40`**,
 **`SH_KEY_MIN_GAP_MS=40`**, same as `apple2e`.
 
-## Pointer — OPEN
-`stream.pointer.transport` stays `"none"`. The GS's input is the `macadb` HLE
-device: `:macadb:MOUSE0` (buttons — the GS mouse reports **two** buttons,
-unlike the //e card's one), `:macadb:MOUSE1` (X) and `:macadb:MOUSE2` (Y),
-both 8-bit analog ioports (`mask="255"`, `PORT_SENSITIVITY(100)`), so
-**`MAME_CTL_PTR_MOD=256`** follows the same way it does on `apple2e`. Unlike
-`apple2e`, gains are **not measured** — the fixture ships the neutral
-`1.0`/`1.0`, not a copied number, because this is a different ADB path with a
-different sensitivity setting and a copied gain would be a guess.
-`ctlsock: setup btns=1 axes=1` is seen on every launch with all three
-`:macadb:` tags bound, but whether `axes=1` counts axis pairs or signals only
-one axis bound was not chased — read it before the first `MOVEA` measurement.
+## Pointer — 1:1 absolute (closed loop on the guest's cursor words)
+`stream.pointer.transport` is `"abs"`, method `mame-guestram-readloop`, since
+2026-09-13. The GS's input is the `macadb` HLE device: `:macadb:MOUSE0`
+(buttons — the GS mouse reports **two**, unlike the //e card's one),
+`:macadb:MOUSE1` (X) and `:macadb:MOUSE2` (Y), both 8-bit analog ioports
+(`mask="255"`), so **`MAME_CTL_PTR_MOD=256`**. `ctlsock: setup btns=1 axes=1`
+is not a count — both fields are C++ bools, and that line means "button 0
+bound AND both axes bound".
+
+**The wire is 7-bit signed.** `macadb_device::adb_talk()` packs the
+accumulated delta as `(button << 7) | (mouse & 0x7f)`, so any per-poll delta
+outside `-64..+63` reaches the guest sign-flipped: a 100-count step lands as
+−28 and the arrow walks the wrong way. `MAME_CTL_MOVE_STEP=48` is mandatory;
+the module's inherited default of 120 is always wrong here.
+
+**The cursor position is in guest RAM — and it is an output.** `$E1/00E9` (X)
+and `$E1/00EB` (Y) are 16-bit little-endian **guest** pixels that track the
+arrow exactly. Poking them sticks but never redraws, and the next ADB poll
+republishes them from an accumulator that is in neither banks
+`$00/$01/$E0/$E1` nor the ADB micro's 256 bytes — so the `macsys1`
+absolute-**write** route (`MAME_CTL_ABS_RAM`) does not work on this machine.
+The **read** loop does.
+
+**How the module addresses it.** `mame-ctlsock-ram-cursor.patch` (last in this
+station's chain) lets a `MAME_CTL_CURSOR_ITEMS` entry be
+`suffix@offset[:width]` — a little-endian integer *inside* a byte-sized save
+item. `m_megaii_ram` is `size=1 count=131072` over banks `$E0/$E1`, so
+`$E1/00E9` is byte `0x100E9`. `MAME_CTL_CAL_SX`/`CAL_SY` (new, beside
+`CAL_X`/`CAL_Y`) turn the guest-pixel reading into a published one:
+`published = CAL + guest * CAL_S`, here `47 + gx*1.4531` and `53 + gy*3.325`.
+
+**The raster is letterboxed.** The 640x200 SHR raster occupies published
+`x 47..976`, `y 53..717`; everything outside is SHR border the guest cursor
+can never enter, so the fleet's usual corner targets `(20,20)`/`(1000,740)`
+are not satisfiable on this station and the proven set is the reachable one.
+
+**Proof** (rig restored from the golden, five targets x two laps, arrow tip
+located on the framebuffer as the median of 9 frames — the GS cursor is XORed
+in per VBL, so no single frame is evidence):
+
+| target | landed | err |
+|---|---|---|
+| (50,56) | (51,57) | +1,+1 |
+| (973,56) | (972,57) | −1,+1 |
+| (50,714) | (51,715) | +1,+1 |
+| (973,714) | (972,715) | −1,+1 |
+| (512,384) | (513,386) | +1,+2 |
+
+Lap 2 was byte-identical to lap 1. **Resolution bound:** one ADB count is
+exactly one guest pixel, so the loop can only land on guest-pixel centres —
+±0.73 px on X and ±1.66 px on Y in published pixels. The 2 px on Y *is* that
+bound, not drift. A click reacts: `MOVEA 105 60` + `DOWN1` drops the Finder's
+File menu (41769 changed pixels), `UP1` closes it.
+
+**Binary, golden and fixture move together** (AGENTS.md rule 6): the golden
+was recaptured on the ram-cursor binary. Rolling the pointer back means
+putting all three back.
 
 ## Retronet — OPEN, deliberately
 No in-guest TCP/IP stack, browser and IM client for GS/OS 6.0.1 was judged

@@ -340,3 +340,66 @@ The raster lives at published x 47..976, y 53..717. The contract's
 physically unreachable by the guest cursor. The set to prove here is
 **(50,56) (973,56) (50,714) (973,714) (512,384)**, and `reset.mouse` must say
 so rather than quietly reporting a corner the guest can never occupy.
+
+## 11. LANDED — the read loop works, 1:1 absolute (2026-09-13 evening, Opus)
+
+§9's next step, implemented and proven. `mame-ctlsock-ram-cursor.patch` is the
+last link of `native.d/apple2gs.sh` (after `abs-ram`, which stays for its
+`PEEK`/`POKEW` probe verbs) and does two things, both env-only:
+
+- a `MAME_CTL_CURSOR_ITEMS` entry may be `suffix@offset[:width]` — a
+  little-endian integer of `width` bytes (default 2) at a byte offset inside a
+  byte-sized save item. `save_item_handle` carries the window; a window that
+  cannot be read **drops the handle** with a log line, so MOVEA degrades to
+  open loop exactly as an unresolved suffix does rather than becoming a silent
+  zero sensor.
+- `MAME_CTL_CAL_SX` / `MAME_CTL_CAL_SY`, a scale beside `CAL_X`/`CAL_Y`:
+  `published = CAL + reading * CAL_S`. Default 1.0, so irix is unchanged.
+
+Binding, in the fixture:
+
+```
+MAME_CTL_CURSOR_ITEMS=m_megaii_ram@0x100E9:2,m_megaii_ram@0x100EB:2
+MAME_CTL_CAL_X=47   MAME_CTL_CAL_SX=1.4531
+MAME_CTL_CAL_Y=53   MAME_CTL_CAL_SY=3.325
+MAME_CTL_MOVE_STEP=48  MAME_CTL_MOVE_WINDOW=40  MAME_CTL_HOME_SETTLE=0
+```
+
+`ctlsock: cursor window m_megaii_ram@0x100E9:2 -> item count=131072 off=65769
+w=2` and `setup … movea=1` on every launch.
+
+### The five targets, twice, on the new golden
+
+| target | landed | err | module's own reading |
+|---|---|---|---|
+| (50,56) | (51,57) | +1,+1 | converged −1,0 |
+| (973,56) | (972,57) | −1,+1 | converged +2,0 |
+| (50,714) | (51,715) | +1,+1 | converged −1,−1 |
+| (973,714) | (972,715) | −1,+1 | converged +2,−1 |
+| (512,384) | (513,386) | +1,+2 | converged −1,−2 |
+
+Lap 2 identical to lap 1, and identical again after a relaunch restoring the
+recaptured golden. Worst |err| = 1 px X, 2 px Y. **Resolution bound: ±0.73 px
+X, ±1.66 px Y** — one ADB count is one guest pixel, so the loop lands on
+guest-pixel centres and the 2 px on Y is the bound, not drift. Click: `MOVEA
+105 60` + `DOWN1` drops the File menu (41769 changed px), `UP1` closes it.
+
+### The locator trap that cost most of the time
+
+The arrow is **black with a one-guest-pixel white outline**, and the Finder
+menu bar has a **black top border**. A changed-cluster bounding box therefore
+reads ~1 guest px up and left of the real hotspot on the dithered desktop
+(a constant −3 px on Y that looks exactly like a calibration error), and near
+the top of the raster the menu-bar border masquerades as the tip. The pointer
+was 1:1 the whole time; the first three "failing" tables were the locator.
+The rule that works: median of 9 frames, then inside the changed cluster take
+the topmost **narrow** row (1–4 px of black) that **widens** below it, with a
+fall-back to the topmost narrow row for a cursor clipped at the raster edge.
+`/data/vms/sandbox/apple2gs-ptr/tiploc.py` on the rig.
+
+### Rollback
+
+Binary + golden + fixture are ONE unit. To undo: restore the pre-landing
+`mame-native/apple2gs` binary and `stations/apple2gs/sta/apple2gs/golden.sta`
+together, and revert the fixture's pointer block; the registry entry then
+returns to `transport: none`.
