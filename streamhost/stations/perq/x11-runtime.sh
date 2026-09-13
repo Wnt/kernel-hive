@@ -91,6 +91,14 @@ MONO="$ROOTFS/usr/bin/mono-sgen"
 
 # --- reap by /proc/<pid>/exe: this station's sandboxed mono, then its nspawn ---
 station_emu_pids() {
+  # MEASURED 2026-09-13: an exact `$exe = $MONO` (the host ROOTFS path) never
+  # matches. systemd-nspawn's --directory pivots into a NEW mount namespace,
+  # so /proc/<pid>/exe read from the host's own namespace cannot be resolved
+  # back through the container's (now-disconnected) vfsmount tree — the
+  # kernel falls back to the bare in-namespace path ("/usr/bin/mono-sgen"),
+  # not the host-visible one the launcher's own header claims. Match on the
+  # basename instead, scoped by the cmdline this launcher itself sets
+  # (/work/perq/PERQemu.exe) so a sibling station's mono is never picked up.
   local d p exe
   for d in /proc/[0-9]*; do
     [ -d "$d" ] || continue
@@ -98,7 +106,11 @@ station_emu_pids() {
     [ "$p" = "$$" ] && continue
     exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
     exe="${exe% (deleted)}"
-    [ "$exe" = "$MONO" ] && printf '%s\n' "$p"
+    case "$exe" in
+      "$MONO" | */mono-sgen | mono-sgen) ;;
+      *) continue ;;
+    esac
+    grep -aqF '/work/perq/PERQemu.exe' "/proc/$p/cmdline" 2>/dev/null && printf '%s\n' "$p"
   done
 }
 station_nspawn_pid() {
@@ -182,7 +194,7 @@ for _ in $(seq 1 120); do
   }
   MPID="$(station_emu_pids | head -1)"
   if [ -n "$MPID" ] && [ -S "$SOCKDIR/X${DISP#:}" ] &&
-    xwininfo -root -tree -display "$DISP" 2>/dev/null | grep -q '"PERQ"'; then
+    xwininfo -root -tree -display "$DISP" 2>/dev/null | grep -q '"PERQ '; then
     break
   fi
   sleep 0.5

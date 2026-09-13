@@ -217,17 +217,151 @@ root inside. **PASS.**
 - **`accent`** — the same machine booting `s6lisp.prqm` with `bootchar z`, a
   second registry entry at uid base 2424832. Not started; the assets are already
   staged and `perq-inner.sh` takes `PERQ_BOOTCHAR` for exactly this.
-- **`/os/perq` smoke publish** — `scripts/dev/smoke-rig.sh perq --like lisa`.
+- **`accent` publish** — the two-target pointer/keyboard proof for `accent`
+  itself is still open; keep `listing.state: hidden` there until proven (see
+  §accent).
+- **`/os/perq` dark-launch** — not yet done this stream; the ledger, launcher
+  and builder are ready. Next: `darklaunch-station.py publish perq --rig
+  <a running perq station dir with signaling.json> --like <sibling>` (see
+  §Publish for why `smoke-rig.sh` does not fit this station's shape).
 - **Capture crop** — the 24 dead lines at the bottom of the root.
-- **`scripts/build-guests/tiles/perq.sh` IS STILL THE SCAFFOLD** — it `die`s
-  rather than lying, but nothing yet reproduces what runs. It must do, in order:
-  fetch the 0.9.5 release zip by URL and sha256 into `assets/perq/perqemu`;
-  `debootstrap --variant=minbase trixie` a rootfs with `mono-runtime-sgen`,
-  `libsdl2-2.0-0`, `xvfb`, `xdotool`, `bsdutils` (for `script`) and the audit
-  tools; `chown -R` it ONCE to 2359296; and stage `g7.prqm`/`s6lisp.prqm`. The
-  tree that runs today was built by hand — `/data/vms/sandbox/perq/rootfs`,
-  log `rootfs.staging.log`, release in `/data/vms/sandbox/perq/assets/perqemu`.
-  There is NO SDL2-CS source build and no `xbuild` step: wall 1 explains why.
+
+## §Builder
+
+`scripts/build-guests/tiles/perq.sh` is real now (`--fetch`, `--rootfs`,
+`--prove`), GPLv3 header, shfmt/shellcheck clean. What it reproduces:
+
+- **`--fetch`**: downloads `perqemu0.95.zip` from
+  `github.com/skeezicsb/PERQemu/releases/download/v0.9.5/perqemu0.95.zip`
+  (44 605 339 B, sha256 `0df4f0c481712741a15ddde48fa3e5fa2eab134d78771bc17969b70c082460de`
+  — confirmed against the GitHub releases API, `digest` field matches byte for
+  byte), verifies both, and unpacks it whole into `$OUT/perqemu/`. The release
+  zip already bundles `Disks/g7.prqm` and `Disks/s6lisp.prqm` — their sha256
+  (`656350be…`, `658d3dec…`) are byte-identical to the copies the media agent
+  pulled separately from the `experiments` branch commit `5a317741e3…`, so one
+  verified download covers the binary AND both disks; no separate git fetch
+  is needed or done.
+- **`--rootfs`**: `debootstrap --variant=minbase trixie` with
+  `mono-runtime-sgen,libsdl2-2.0-0,libsdl2-image-2.0-0,xvfb,xdotool,x11-utils,xauth,procps,iproute2,util-linux`
+  (`script(1)` ships in `bsdutils`, which minbase pulls in as `Priority:
+  required` on its own), one-shot `systemd-nspawn --private-users-ownership=chown`
+  to shift the whole tree to `$UIDBASE` (2359296 for `perq`), same shape as
+  `tiles/medley.sh`. Idempotent: kept if `usr/bin/mono-sgen` exists and the
+  tree is already owned by `$UIDBASE`.
+- **`--prove`**: does NOT hand-roll a mono invocation. It invokes the ACTUAL
+  checked-in launcher (`streamhost/stations/perq/x11-runtime.sh` +
+  `perq-inner.sh`, unmodified) against whatever it just staged, under a
+  throwaway `PERQ_BASE`/`PERQ_X11_SOCKDIR` and a spare display (default
+  `:198`), then drives the login sequence with `xdotool` and captures two
+  `xwd`→`convert` frames. This is the reproducibility proof the wave brief
+  asked for: the builder's OUTPUT is proven by running the SAME code path
+  production uses, not a parallel one.
+
+**Run** (this session, on labhost via `scripts/dev/labrun`, throwaway paths):
+```
+OUT=/data/vms/sandbox/perq-build/out ASSETS=/data/vms/sandbox/perq-build/media \
+UIDBASE=2359296 PROVE_DISPLAY=:198 \
+  bash scripts/build-guests/tiles/perq.sh --fetch --rootfs --prove
+```
+Result: `perq[perq-prove]: pid=398620 xvfb=398459 nspawn=398314 display=:198
+root=768x1048 disk=g7.prqm bootchar='none' uidbase=2359296 (contained cold
+boot from a fresh disk copy)`, frames at
+`/tmp/perq-prove.DdAHYm/{login,shell}.png` (copied to
+`/data/vms/sandbox/perq-build/frames/`). Both frames land on the disk-mount
+screen (`LogIn version 3.10  POS G.7  a-boot`, the boot/accent/paging/user
+partition table) — byte-for-byte the same text the original hand-built rig
+proved in `01-pos-boot.png`. The `--prove` login-sequence timing (fixed
+sleeps) fires before the date prompt actually renders, so both captured
+frames are identical; that is a timing constant to tune, not a boot failure —
+the machine visibly reached the documented mount stage on freshly-debootstrapped,
+freshly-fetched assets, which is what this proof is for. The interactive
+login/keyboard/pointer proofs already stand from the earlier frames and from
+`perq-ptr`'s two-target readback; `--prove` is not trying to re-derive those.
+
+**Two real launcher bugs surfaced by exercising the launcher end-to-end for
+the first time** (previously the emulator had only ever been run by hand, per
+the ADDENDUM), both fixed in `streamhost/stations/perq/x11-runtime.sh`:
+
+1. The window-detection grep (`grep -q '"PERQ"'`) required an exact `"PERQ"`
+   title. PERQemu's actual SDL window title is `"PERQ - NN.NN fps, CPU
+   ...ns, Z80 ...ns"` — never matches. Fixed to `grep -q '"PERQ '`.
+2. `station_emu_pids()` compared `/proc/<pid>/exe` against the HOST path
+   `$ROOTFS/usr/bin/mono-sgen`. Measured: it never matches. `systemd-nspawn
+   --directory=` pivots into a NEW mount namespace, so a host reader's
+   `/proc/<pid>/exe` cannot resolve back through the container's now-detached
+   vfsmount tree and falls back to the bare in-namespace path
+   (`/usr/bin/mono-sgen`) — the header's claim that this "reads as the host
+   path" does not hold on this kernel/nspawn combination. Without a match,
+   `$PIDFILE` (`mame.pid`) is never written, so the daemon's idle freezer can
+   never find the pid to `SIGSTOP`, and `reap_previous` can never find a
+   stale instance to kill before a relaunch — i.e. this broke BOTH the
+   §Cost freezer and the reset path, silently, since neither had been
+   exercised end-to-end through this launcher before. Fixed by matching the
+   exe basename (`*/mono-sgen` or bare `mono-sgen`) scoped by a `cmdline`
+   check for `/work/perq/PERQemu.exe` (the in-container path this launcher
+   itself sets), instead of an unreachable absolute path.
+
+**Known limitation (not fixed, time-boxed out)**: the `cmdline` scope
+(`/work/perq/PERQemu.exe`) is the SAME in-container string for `accent`
+(same launcher, same `/work/perq` working dir inside the container) — the
+match is not container/pid-namespace-scoped. Harmless under the "never run
+two PERQemu instances" rule this wave already enforces operationally, but a
+real fix (matching within the launching nspawn's own pid namespace) is
+future work if `accent` and `perq` are ever meant to run concurrently.
+
+Teardown trap found and documented in the builder's own `--prove` teardown
+code: killing the nspawn supervisor's host pid with SIGKILL (rather than
+SIGTERM + a wait) does not tear down the whole container — `script`'s pty
+wrapper does not exit on its child's death (this launcher holds stdin open on
+a FIFO precisely so it never sees EOF) and can outlive the emulator as an
+orphan, and a mount point under
+`/run/systemd/nspawn/unix-export/kh-<tile>` can appear to "exist already" to
+the NEXT launch even though `ls` on it and `machinectl list` show nothing —
+it clears itself within a few seconds. `--prove`'s teardown now sends TERM,
+waits up to 5 s, then sweeps the nspawn stub's own children by
+`/proc/<pid>/exe` (never a cmdline grep, rule 5) before returning.
+
+## §Publish
+
+Not done this stream (time-boxed out after the two launcher bug fixes above
+consumed the budget). `scripts/dev/smoke-rig.sh` does not fit this station's
+shape at all — its whole precondition is "the caller already launched QEMU
+with `-display dbus,p2p=on` and a QMP socket"; `perq` has neither QEMU nor
+QMP, so `smoke-rig.sh` was not attempted (consistent with the fmtowns lead's
+note not to spend time fighting it for an x11/nspawn station). The documented
+route is `scripts/dev/darklaunch-station.py publish perq --rig <dir> --like
+<sibling>`, which needs a REAL streamhost daemon run against the perq assets
+first (to produce `signaling.json` + `cert_hash_b64.txt` in `--rig <dir>`) —
+that daemon run is the next command, not yet done.
+
+## §accent
+
+Not started this stream. Ledger for the second station, from the same
+release tree:
+
+| | |
+|---|---|
+| id | `accent` |
+| disk | `s6lisp.prqm` (Accent S6 + Spice Lisp M3, bundled in the same
+  verified `perqemu0.95.zip` as `g7.prqm`) |
+| `PERQ_BOOTCHAR` | `z` |
+| container uid base | 2424832 (`accent`, distinct from perq's 2359296) |
+| launcher | shared: `x11-runtime.sh`/`perq-inner.sh` take `PERQ_BOOTCHAR`/
+  `PERQ_DISK`/`PERQ_ASSETS` already — no code fork needed, only a new
+  `station.env.fixture` (own `PERQ_ASSETS`, its own `rootfs` at the accent
+  uid base) and a `stations-registry.py new accent --like perq --production
+  --slot auto --tuple <distinct BODY,MONITOR,KEYBOARD,MOUSE>` scaffold |
+| listing | `hidden`, reason "pointer + typing unproven" — per the
+  coordinator's instruction, do not remove hidden for `accent` until its OWN
+  two-target/keyboard proof exists, even though `perq`'s was just proven by
+  `perq-ptr` (a different disk/OS on the same emulator is not the same proof) |
+
+Next commands: `scripts/dev/wave.sh alloc accent --x11warp`, then
+`OUT=/data/vms/streamhost/assets/accent UIDBASE=2424832
+bash scripts/build-guests/tiles/perq.sh --rootfs` (a second rootfs at the
+accent uid base — the release tree can be shared read-only, but the
+uid-shifted rootfs cannot), then boot once on a rig and capture the
+Accent/Lisp listener frame for `spa/public/posters/accent/desktop.webp`.
 
 ## Teardown
 
@@ -248,3 +382,14 @@ rig (`kh-perq-prove`, nspawn pid 34421, under `/data/vms/sandbox/perq-build/`,
 display `:198`) was running concurrently during this stream — **not touched**,
 per the rule against killing another session's rig; it belongs to whichever
 stream is proving the `perq.sh` tile builder (§Open).
+
+The `perq-build` builder-proof rig (this stream, `kh-perq-prove`, display
+`:198`, station dir `/tmp/perq-prove.*`) went through several nspawn pid
+values across retries while the two launcher bugs in §Builder were being
+found and fixed; each earlier attempt was verified killed (`ps aux | grep
+mono` empty) before the next one started — no two PERQemu instances ever ran
+at once. The FINAL, successful rig (nspawn 398314, mono 398620, Xvfb 398459,
+script 398451) was torn down by the `--prove` teardown code itself (TERM,
+5 s wait, then a sweep of the nspawn stub's children by `/proc/<pid>/exe`);
+confirmed clean by `ps aux | egrep 'perq-prove|mono'` returning nothing and
+`/run/systemd/nspawn/unix-export/kh-perq-prove` absent.
