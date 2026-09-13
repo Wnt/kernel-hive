@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "id": "perq",
+  "era_year": 1983,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 82,
+        "prelude": "",
+        "value": {
+          "key": "perq",
+          "script": "tiles/perq.sh",
+          "outputDir": "PERQ",
+          "class": "graphical",
+          "estimated": "~8m",
+          "automation": "none",
+          "produces": "assets/perq (PERQemu 0.9.5 release tree + the debootstrap trixie container rootfs, uid-shifted to 2359296) and assets/perq/perqemu/Disks/g7.prqm (POS G.7 system disk; cold-boot reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/perq",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54198,
+      "notes": "HOST-NATIVE, SANDBOXED: PERQemu 0.9.5 (C# on Mono, SDL2; github.com/skeezicsb/PERQemu, GPLv3) emulates a Three Rivers PERQ-1A (16K CPU, 2 MB, CIO+OIO, 768x1024 portrait display, Kriz tablet, 14-inch Shugart) running POS G.7 — inside a systemd-nspawn container with private PID/mount/net/user/ipc/uts namespaces (host uid range 2359296+, read-only debootstrap trixie rootfs, only work/ and the X socket dir writable, capabilities dropped, @mount filtered; the operator's host-application rule after the medley incident). Xvfb :98 at 768x1048 lives INSIDE the container; the daemon captures the X root (SH_CAPTURE=x11). No QEMU/QMP, no exec channel, no network. LOGIN: user `guest`, empty password, at the `Please enter your name:` prompt (press Return first to accept the default date). KEYS: XTEST, proven drop-free at 80 ms/char. POINTER: PASS — XTEST absolute, the Kriz tablet is absolute and PERQemu maps the host pointer 1:1 onto it; two-target readback in docs/lab/PERQ-WAVE.md §Pointer. PERQemu NEEDS A TTY: its CLI GetLine() is the emulator's clock, so perq-inner.sh runs mono under script(1) with an explicit stty size; without it the machine never ticks (docs/lab/PERQ-WAVE.md §Walls). Reset=relaunch: fresh copy of Disks/g7.prqm + cold boot, shell in ~45 s; PERQemu 0.9.5 has no save state. Drive it with xdotool on DISPLAY=:98 from labrun, or `labctl shot perq`."
+    }
+  },
+  "render": {
+    "signalOrder": 86,
+    "stationsManifestOrder": 84,
+    "stationsManifestPrelude": "\n# perq (VMID 198) — TODO one line; scaffolded from lisa.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 100,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: Apple Lisa 2 one-piece",
+    "goldenOrder": 84
+  },
+  "stationDir": "perq",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54198,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "x11test",
+      "method": "x11-xtest",
+      "absolute": true,
+      "present": true,
+      "device": "host X pointer over XTEST (root coordinates are Kriz-tablet pixels; PERQemu maps the host pointer 1:1 onto the Kriz tablet, absolute, no offset/scale) + POS keyboard over XTEST keys. Two-target readback (2026-09-13): commanded root (200,300) -> sprite origin (200,299); commanded root (600,800) -> sprite origin (600,799). 1:1 identity, measured with a 2 s settle after each XTEST warp (an immediate screendump missed the move; PERQemu's console-clocked poll loop needs a tick to pick up the new position).",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 198
+  },
+  "guestDoc": "docs/guests/perq.md",
+  "credentialsRef": "guest/perq",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "perq",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":98",
+      "SH_PORT": "54198",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/perq/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/perq/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/perq/perq_cmd"
+    },
+    "bringUpOrder": 100,
+    "x11": {
+      "display": ":98",
+      "geometry": "768x1048x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/perq/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "perq",
+        "--udp",
+        "54198",
+        "--x11",
+        "--x11-display",
+        ":98",
+        "--capture",
+        "x11",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/perq/x11-runtime.sh",
+        "--aux-file",
+        "$T/perq/perq-inner.sh",
+        "--env-append-file",
+        "$T/perq/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/perq/perq-inner.sh",
+        "streamhost/stations/perq/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#7FA8C9",
+    "eraLabel": "1986 · POS G.7 (Three Rivers PERQ 1, portrait display)"
+  },
+  "museum": {
+    "id": "perq",
+    "displayName": "PERQ POS G.7",
+    "year": 1986,
+    "lineage": "Three Rivers Computer Corporation, Pittsburgh (PERQ, 1979-1980) — sold in the UK as the ICL PERQ from 1981",
+    "arch": "Three Rivers PERQ-1A: writable-microcode 16K bit-slice CPU, 2 MB RAM, 768x1024 portrait bitmapped display, RasterOp hardware, Kriz tablet, 24 MB 14-inch Shugart disk",
+    "ramMB": 2,
+    "era": "1980s",
+    "accent": "#7FA8C9",
+    "eraSoftware": [
+      "POS (PERQ Operating System) G.7 and its Pascal environment",
+      "the PERQ Pascal compiler, linker and the POS shell",
+      "Accent S6 and Spice Lisp, the CMU research system the same machine also boots"
+    ],
+    "periodBrowser": "none — a decade before the web; the PERQ's network was 10 Mbit Ethernet on the OIO board into a CMU research campus",
+    "iconicApps": [
+      "the POS shell",
+      "PERQ Pascal",
+      "the PERQ Editor"
+    ],
+    "blurb": "The first commercial workstation with a bitmapped display and a pointing device — Pittsburgh, 1980, a year before the Xerox Star. Its 16-bit CPU has no fixed instruction set: writable microcode makes it a Pascal machine, and so is POS.",
+    "notes": "Live streamhost station, HOST-NATIVE and CONTAINED: PERQemu 0.9.5 (J. Dersch and S. Boondoggle, GPLv3) runs on Mono inside a systemd-nspawn sandbox with an Xvfb of its own; the daemon captures the X root and drives XTEST. The PERQ's portrait screen is 768x1024 and the root is 768x1048 — PERQemu shrinks its window below any root exactly 1024 lines tall, so the extra 24 lines buy a full-size, non-panning display. Reset = relaunch from a pristine copy of the POS G.7 disk; PERQemu 0.9.5 has no save state, and a cold boot to the shell takes about 45 s. See docs/guests/perq.md and docs/lab/PERQ-WAVE.md."
+  },
+  "emulator": {
+    "family": "PERQemu",
+    "version": "0.9.5 (upstream release zip, run on Debian trixie mono-runtime-sgen inside the station's container)",
+    "source": "scripts/build-guests/tiles/perq.sh (github.com/skeezicsb/PERQemu release 0.9.5)",
+    "driver": "PERQ-1A, CIO + OIO, portrait display, Kriz tablet, 14-inch Shugart (PERQemu `configure` script in perq-inner.sh)"
+  },
+  "ui": "text-console",
+  "network": {
+    "status": "none",
+    "note": "No network: the OIO board's Ethernet is configured in PERQemu but has no host side, and the container has --private-network (lo only). POS G.7 has no TCP/IP stack. No retronet reservation is held."
+  },
+  "reset": {
+    "stationDir": "perq",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PASS (2026-09-13) — XTEST absolute (SH_INPUT_BACKEND=x11test) against the PERQ's absolute Kriz tablet, two-target readback by the perq-ptr stream: commanded root (200,300) -> sprite origin (200,299); commanded root (600,800) -> sprite origin (600,799). 1:1 identity, no offset/scale, measured with a 2 s settle after each XTEST warp (PERQemu's console-clocked poll loop needs a tick to pick up the new pointer position). POS draws its own arrow cursor sprite directly on the character console, no graphical tool needed. See docs/lab/PERQ-WAVE.md §Pointer.",
+    "keyboard": "PASS (2026-09-13) — XTEST keys reach POS through the PERQemu SDL window on :98, drop-free at 80 ms/char: Return accepted the boot date prompt, `guest` typed 4/4 characters at the `Please enter your name:` prompt and an empty password logged in to the POS shell. Frames 02-after-return / 04-shell / 06-guest / 07-shell in docs/lab/PERQ-WAVE.md.",
+    "fixture": "POS G.7 at its shell prompt: the a-boot banner and disk partition table (boot/accent/paging/user), the login transcript, the `sys:User>Guest>` status line with the running clock, and the `>` prompt. resetMode=relaunch with no state: the launcher copies Disks/g7.prqm fresh into the container's work/ and cold-boots PERQemu; the login prompt is up ~20 s after power-on and the shell ~45 s. PERQemu 0.9.5 has NO save state, so there is no checkpoint to recapture — the pristine disk plus the boot script IS the golden."
+  },
+  "notes": [
+    "landed 2026-09-13 by the replacement lead (Opus); pointer proven by the perq-ptr stream's two-target readback (docs/lab/PERQ-WAVE.md §Pointer) — listed."
+  ]
+}

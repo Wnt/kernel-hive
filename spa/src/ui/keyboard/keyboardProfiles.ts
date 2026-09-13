@@ -280,6 +280,7 @@ export const OS_FAMILY: Record<string, Family> = {
   alpine: 'linux-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
+  magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
   nt4: 'windows', // Explorer shell — Win95-era shortcuts apply
   win11: 'windows', // Same Explorer shortcut family; Fluent chrome, not new chords
   w2kalpha: 'windows', // W2K RC2 on Alpha — the same NT 5.0 Explorer shell as win2000
@@ -290,6 +291,9 @@ export const OS_FAMILY: Record<string, Family> = {
   aux: 'classicmac', // A/UX runs the Finder as its shell — Command chords, as macos753
   rhapsody: 'generic', // Platinum Finder over NeXT Workspace — install phase; revisit once the desktop is up
   tru64: 'suncde', // CDE desktop — the same CDE chord set the Solaris profile carries
+  perq: 'generic', // POS G.7 is a character shell on a 1983 Three Rivers PERQ — no
+  //                   modifier-chord vocabulary of its own, and the Kriz tablet
+  //                   carries what a modern chord would: plain keys only
   lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
@@ -313,6 +317,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // Express menu, F1 help) rather than Windows 3.x's, so the dos rows' Ctrl+Alt+Del
   // stays the honest common ground until a GEOS profile is worth writing.
   pcgeos: 'dos',
+  // ETH Native Oberon 2.3.6. Oberon has no chords at all: its verbs are mouse
+  // clicks and interclicks on command words, and the keyboard only ever feeds
+  // text to the caret. The generic rows are the honest floor until there is
+  // something Oberon-specific worth a profile.
+  oberon: 'generic',
   // Visi On: a graphical desktop over PC-DOS 2.00, but it takes over the machine
   // almost completely and its own commands live on the mouse-driven strip along
   // the bottom (HELP CLOSE OPEN FULL FRAME OPTIONS TRANSFER STOP), not on chords.
@@ -349,6 +358,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // only thing unusual about it (carried by keyboards.ts charMap, not this
   // OSK chord set) — no DM-specific chords to profile, so generic Unix rows.
   domainos: 'generic',
+  // Fujitsu FM TOWNS, Towns OS V2.1 L51: TownsMENU is a mouse-driven icon
+  // desktop over a JIS keyboard (SH_KEY_MAP handles the JIS punctuation
+  // shift table in keyboards.ts) — no TownsMENU-specific chord set has been
+  // built yet (the pointer is OPEN, docs/lab/FMTOWNS-WAVE.md), so generic.
+  fmtowns: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',

@@ -542,6 +542,24 @@
       "udp_port": 54130,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/dragon32/sta."
     },
+    "fmtowns": {
+      "dir": "/data/vms/streamhost/stations/fmtowns",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54196,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/fmtowns/sta."
+    },
     "freebsd411": {
       "dir": "/data/vms/streamhost/stations/freebsd411",
       "qmp": "/data/vms/streamhost/stations/freebsd411/qmp.sock",
@@ -776,6 +794,24 @@
       "udp_port": 54150,
       "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
     },
+    "magiccap": {
+      "dir": "/data/vms/streamhost/stations/magiccap",
+      "qmp": "/data/vms/streamhost/stations/magiccap/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": 7788,
+      "exec_host": "10.99.0.10",
+      "exec_kind": "warpd_e",
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54197,
+      "notes": "exec: labctl exec win98se \"<cmd>\" runs a command through COMMAND.COM in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.10:7788 (n0 is a tap on vmbr-rn, NOT slirp — no hostfwd). It is RUNNING inside the golden and restarts from the StartUp folder on a cold boot. No stderr (COMMAND.COM has no 2>&1). NEVER launch a full-screen DOS box: it wedges the display driver until loadvm golden. See docs/lab/retronet/ICQ-STATION.md, EXEC-CHANNEL.md"
+    },
     "medley": {
       "dir": "/data/vms/streamhost/stations/medley",
       "qmp": null,
@@ -938,6 +974,24 @@
       "udp_port": 54089,
       "notes": "exec: labctl exec nt4 \"<cmd>\" runs a command through cmd.exe in the guest and captures its stdout (exec_kind warpd_e, host client /root/gexec.py, GEXEC_HOST=exec_host). The agent is C:\\WARPNET.EXE (streamhost/guest-agents/win9x/warpnet.c built -DWARP_PORT=7788), binding 0.0.0.0:7788; reached DIRECTLY over the retronet bridge at the guest IP 10.99.0.12:7788 (n0 is a tap on vmbr-rn, NOT slirp -- no hostfwd). It is RUNNING inside the golden and restarts from the All Users StartUp folder on a cold boot. Also true absolute vmmouse pointer. See docs/lab/retronet/ICQ-STATION-NT4.md."
     },
+    "oberon": {
+      "dir": "/data/vms/streamhost/stations/oberon",
+      "qmp": "/data/vms/streamhost/stations/oberon/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54195,
+      "notes": "no exec channel: drive via QMP keys/rel mouse and read the framebuffer. Pointer is RELATIVE PS/2 through the daemon's abs->rel bridge (1.5 px per unit measured, even steps land on integer pixels). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; recapture only via checkpoint-guard."
+    },
     "openbsd": {
       "dir": "/data/vms/streamhost/stations/openbsd",
       "qmp": "/data/vms/streamhost/stations/openbsd/qmp.sock",
@@ -1063,6 +1117,24 @@
       "console": "fb",
       "udp_port": 54115,
       "notes": "exec: labctl exec pdp11 \"<cmd>\" (ssh root@:5827, key bridge_key) reaches the Debian KIOSK, not the PDP-11. The simulated machine is driven only through its console: type into the tile, or read /tmp/pdp11-console.log in the kiosk for the full transcript."
+    },
+    "perq": {
+      "dir": "/data/vms/streamhost/stations/perq",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54198,
+      "notes": "HOST-NATIVE, SANDBOXED: PERQemu 0.9.5 (C# on Mono, SDL2; github.com/skeezicsb/PERQemu, GPLv3) emulates a Three Rivers PERQ-1A (16K CPU, 2 MB, CIO+OIO, 768x1024 portrait display, Kriz tablet, 14-inch Shugart) running POS G.7 — inside a systemd-nspawn container with private PID/mount/net/user/ipc/uts namespaces (host uid range 2359296+, read-only debootstrap trixie rootfs, only work/ and the X socket dir writable, capabilities dropped, @mount filtered; the operator's host-application rule after the medley incident). Xvfb :98 at 768x1048 lives INSIDE the container; the daemon captures the X root (SH_CAPTURE=x11). No QEMU/QMP, no exec channel, no network. LOGIN: user `guest`, empty password, at the `Please enter your name:` prompt (press Return first to accept the default date). KEYS: XTEST, proven drop-free at 80 ms/char. POINTER: PASS — XTEST absolute, the Kriz tablet is absolute and PERQemu maps the host pointer 1:1 onto it; two-target readback in docs/lab/PERQ-WAVE.md §Pointer. PERQemu NEEDS A TTY: its CLI GetLine() is the emulator's clock, so perq-inner.sh runs mono under script(1) with an explicit stty size; without it the machine never ticks (docs/lab/PERQ-WAVE.md §Walls). Reset=relaunch: fresh copy of Disks/g7.prqm + cold boot, shell in ~45 s; PERQemu 0.9.5 has no save state. Drive it with xdotool on DISPLAY=:98 from labrun, or `labctl shot perq`."
     },
     "pet2001": {
       "dir": "/data/vms/streamhost/stations/pet2001",

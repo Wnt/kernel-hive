@@ -39,14 +39,14 @@
     }
   },
   "render": {
-    "signalOrder": 86,
-    "stationsManifestOrder": 84,
+    "signalOrder": 87,
+    "stationsManifestOrder": 85,
     "stationsManifestPrelude": "\n# vision (VMID 194) — VisiCorp Visi On 1.0 on an IBM 5160 XT under PCE, sandboxed in systemd-nspawn.\n",
     "bringUpGroup": 8,
-    "bindingOrder": 97,
+    "bindingOrder": 101,
     "bindingPrelude": "",
     "bindingComment": "ideal: IBM PC XT 5160 with a mono CRT and the VisiCorp M1 mouse",
-    "goldenOrder": 84
+    "goldenOrder": 85
   },
   "stationDir": "vision",
   "lifecycle": "production",
@@ -90,7 +90,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/vision/vision_cmd"
     },
-    "bringUpOrder": 97,
+    "bringUpOrder": 101,
     "x11": {
       "display": ":94",
       "geometry": "1280x800x24",

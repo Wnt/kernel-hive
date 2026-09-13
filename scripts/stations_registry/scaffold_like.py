@@ -244,6 +244,9 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     row["notes"] = [f"scaffolded from {sib_id} on {date.today().isoformat()}; TODO: media, museum, spa"]
 
     registry_path = TILES / f"{os_id}.json"
+    # A sibling may share a family guest doc (win98se -> docs/guests/win9x.md);
+    # the new station always gets its own stub, never the shared file.
+    row["guestDoc"] = f"docs/guests/{os_id}.md"
     guest_path = REPO / row["guestDoc"]
     coldboot_path = REPO / "scripts/coldboot" / f"{os_id}-bootrec-arm.sh"
     poster_path = POSTERS / f"{os_id}.md"
@@ -264,6 +267,15 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
         bool(sib_launcher_rel) and not (sib_dir / sib_launcher).is_file() and (REPO / sib_launcher_rel).is_file()
     )
     launcher_path = None if shared_launcher else station_dir / sib_launcher
+    # A sibling may carry station-local debug tooling (golden-bake.sh, qmp.py,
+    # shot.sh, sk.py — win98se has all four) referenced by runtime.qemu.auxFiles.
+    # The row's text was already rewritten sib->os_id (including these paths),
+    # so validate expects them under the NEW station dir; without copying them
+    # here the scaffold writes a row that fails its own validate on the first
+    # run (win98se --like magiccap, 2026-09-13).
+    sib_aux_rel = sib.get("runtime", {}).get("qemu", {}).get("auxFiles", []) or []
+    aux_names = [Path(p).name for p in sib_aux_rel]
+    aux_paths = [station_dir / name for name in aux_names]
     like_paths = tuple(
         p
         for p in (
@@ -275,13 +287,18 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
             builder_path,
             launcher_path,
             fixture_path,
+            *aux_paths,
         )
         if p is not None
     )
     for path in like_paths:
         if path.exists():
             raise RegistryError(f"refusing to overwrite existing {path.relative_to(REPO)}")
-    for src in ([] if shared_launcher else [sib_dir / sib_launcher]) + [sib_dir / "station.env.fixture"]:
+    for src in (
+        ([] if shared_launcher else [sib_dir / sib_launcher])
+        + [sib_dir / "station.env.fixture"]
+        + [sib_dir / name for name in aux_names]
+    ):
         if not src.is_file():
             raise RegistryError(f"sibling {sib_id!r} is missing {src.relative_to(REPO)}")
 
@@ -308,12 +325,18 @@ def cmd_new_like(os_id: str, sib_id: str, slot_arg: str, production: bool, tuple
     )
     if launcher_path is not None:
         scaffold_files[launcher_path] = launcher_text.encode()
+    for aux_path, name in zip(aux_paths, aux_names):
+        aux_text = _rewrite_like_text((sib_dir / name).read_text(), sib_id, os_id)
+        scaffold_files[aux_path] = aux_text.encode()
     try:
         for path, data in scaffold_files.items():
             atomic_write(path, data)
         os.chmod(builder_path, 0o755)
         if launcher_path is not None:
             os.chmod(launcher_path, 0o755)
+        for aux_path, name in zip(aux_paths, aux_names):
+            if name.endswith(".sh"):
+                os.chmod(aux_path, 0o755)
         # BEFORE cmd_generate(): generate runs validate(), and validate now fails
         # on a lineup entry with no scene rows. The rows depend only on the
         # registry file that is already written, so this is the right order, not
