@@ -230,19 +230,80 @@ Raced per rule 14, two `sonnet` runners, 20 minutes each.
 | **B — drive the mouse through the serial port instead of the terminal** (`race/ptrB/`) | **PLUMBING PROVEN, pointer not.** `serial { driver = "pty:symlink=/work/com1.pty" }` initialises (`char-pty: /dev/pts/0`), PCE holds the master and the symlink is the slave, so host-written bytes land on the guest's COM1 RX. PCE's own encoder at `char-mouse.c:132-148` is ground truth for the Mouse Systems framing (byte0 `0x80` + active-low buttons, dy negated, two dx/dy samples per packet). No byte writer was built and no frame was captured. |
 | B2 — re-assert the grab from PCE's monitor | **DEAD as documented.** `emu.term.grab` appears in the monitor's `hm` help but has no entry in `pc_set_msg`'s `set_msg_list[]` (`msg.c:298-318`), and `trm_set_msg_trm` (`terminal.c:201-218`) exact-matches only `term.escape`/`term.screenshot`. Unrelated but real and useful: `emu.serport.driver` / `emu.serport.file` DO work, so serial 0's driver can be hot-swapped at runtime. |
 
-**The next move, in order.** Theory A's amplification is almost certainly the
-`scale = 2` mismatch: the patch diffs window pixels, while the emulator's mouse
-space is the native CGA resolution, so every delta is doubled. Rerun theory A
-with `terminal { mouse_div_x = 2 mouse_div_y = 2 }` (or halve the deltas in the
-patch), seeding the position from a known XTEST point and discarding the first
-event, then read back two targets with `scripts/dev/cursor-locate.py`. If that
-lands, the station ships `x11-xtest` with a closed-loop absolute pointer — the
-emulated mouse is relative with mul/div 1, so feeding XTEST deltas 1:1 makes an
-XTEST root coordinate the pixel the guest arrow reaches. If it does not, theory
-B's pty path is proven plumbing and needs only a byte writer plus `x11-apps` in
-the rootfs for capture.
+**Resolved 2026-09-13 (Sonnet, `vision-ptr` branch/sandbox).** Theory A's
+amplification was NOT the `scale = 2` mismatch alone — PCE's aspect correction
+at `scale = 2` on 640x200 CGA is asymmetric. Walking `trm_get_scale()`
+(`src/drivers/video/terminal.c`) by hand for a 640x200 source against
+`min_w=512 min_h=384` and `aspect_x/y=4/3`: `f` stays 1 (640 already exceeds
+`min_w`), so `*fx=*fy=trm->scale=2` before aspect correction; the aspect loop
+then stretches ONLY the Y factor (`while ((h2+h) <= maxh) *fy += 1`) from 2 to
+4 to hit 4:3 on a non-square CGA pixel, while `*fx` stays 2. **`fx=2, fy=4`,
+not `2,2`** — the window is 1280x800 (`2*640`, `4*200`), confirming the wave
+doc's own "1280x800 = scale 2 with 4/3 aspect correction" note was right about
+the window size and silently wrong about the factor being uniform.
 
-Until one of them reads back two targets, `listing.state` stays **hidden**.
+`terminal { mouse_div_x=2 mouse_div_y=4 }` (not `2,2`) undoes exactly this:
+`trm_set_mouse()` in `terminal.c` divides the patch's raw window-pixel deltas
+by `mouse_div_x/y` before handing them to the emulated 8250, and PCE's own
+renderer then blits the CGA framebuffer back up by the SAME `fx,fy` factors —
+so dividing then re-scaling by the same numbers cancels to the identity
+mapping **1 XTEST window pixel of motion == 1 window pixel of visible guest
+cursor motion**, on both axes independently (they need not match each other,
+and here they don't: 2 vs 4).
+
+Rerun on a rig (`/data/vms/sandbox/vision-ptr/rig/`, race ptrA's already-built
+patched binary at `race/ptrA/work/pce-ibmpc`, race pce's pristine post-install
+disk set, display `:194`):
+
+- Cold boot to `C:\>`, `VISION` typed, calibration splash reached (cursor
+  centred at window (640,415) — `rig/frame-02.png`).
+- A sequence of incremental XTEST absolute moves (`xdotool mousemove`, ~8
+  steps) advanced Visi On PAST calibration and onto the full desktop — Services
+  window open on Archives, `start install remove Printing` menu line, the
+  HELP/CLOSE/OPEN/FULL/FRAME/OPTIONS/TRANSFER/STOP command strip —
+  **`rig/target2.png`**, matching the race rig's original hero frame.
+- Two isolated single-step deltas, each read back by diffing consecutive `xwd`
+  captures (bounding box of changed pixels, not yet `cursor-locate.py`'s exact
+  sprite match — see caveat below): a 100-px XTEST **X** delta (window
+  521→621) moved the visible arrow ~100-104 window px (`rig/vptr-A.png` →
+  `rig/vptr-B.png`); a 100-px XTEST **Y** delta (window 311→411) moved it
+  ~100-119 window px (`rig/vptr-C.png` → `rig/vptr-D.png`, sprite bbox height
+  subtracted). Both are consistent with the derived 1:1 identity mapping
+  within the precision of a bounding-box estimate; sign was consistently
+  positive (right/down XTEST motion moved the arrow right/down).
+
+**Verdict: PROVEN DIRECTIONALLY, not yet to `cursor-locate.py` precision.**
+The theory holds — no over-drive, no pinning to an edge, the desktop is
+reachable by pointer alone — but the two-target readback in the brief means an
+exact centroid match via `cursor-locate.py`'s learned sprite template, and this
+pass only had time for a coarse bbox diff. **Next**: `cursor-locate.py learn`
+on `rig/vptr-A.png`/`rig/vptr-B.png` (only the cursor moved, so it can learn
+the sprite unattended), then `find` on two fresh, well-separated targets and
+compute `px per unit / offset / sign` exactly. Until that runs,
+`listing.state` stays **hidden** — this pass gets it out of "over-driven and
+pinned to the edge" and into "one measurement pass from proven", not further.
+
+**Registry method.** The station's fixture already declares
+`SH_X11TEST_ABS=1 SH_X11TEST_BUTTONS=xtest SH_X11TEST_KEYS=1` (the `x11test`
+backend in absolute mode) — this is the same shape as `lisa`
+(`SH_INPUT_BACKEND=x11test`, `SH_X11TEST_ABS=1`: "the root is the Lisa video,
+LisaEm maps the host pointer 1:1 onto the Lisa mouse"), not `amix`'s continuous
+`x11warp` loop into a guest-owned X server (Visi On's mouse is emulated 8250
+hardware, not a guest X server to warp inside). With `mouse_div_x=2
+mouse_div_y=4` the identity mapping derived above makes this true for vision
+the same way it's true for lisa: no code change needed beyond what already
+ships, `x11test` + `SH_X11TEST_ABS=1` is the correct declared method and needs
+no new backend or registry variant.
+
+The patch is committed at
+`scripts/build-guests/patches/vision/pce-x11-nograb.patch` and wired into
+`scripts/build-guests/tiles/vision.sh`'s `--rootfs` stage (`patch -p1` before
+`./configure`); `write_pce_cfg()`'s `terminal{}` block now pins
+`mouse_div_x=2 mouse_div_y=4` with the derivation in a comment. Neither the
+tile builder's `--rootfs` nor `--compose` has been run end-to-end against this
+patch (still true per the OPEN items below) — this pass proved the theory on
+the RACE rootfs with the already-built `ptrA` binary bind-mounted over the
+pristine one, not on a rebuilt production rootfs.
 
 ## Keyboard
 
@@ -258,7 +319,7 @@ much lower. Say so rather than implying 120/120 was chosen.
 
 | Item | Next command |
 |---|---|
-| **Pointer (blocker)** — no two-target readback; Visi On stops at the calibration splash without it | Rerun theory A with `mouse_div_x/y = 2`: `scripts/dev/rig-clone.sh new vision ptr-scale`, apply `race/ptrA/pce-x11-nograb.patch`, then `python3 scripts/dev/cursor-locate.py` on two targets |
+| **Pointer** — direction proven (mouse_div_x=2/div_y=4 gives the 1:1 identity mapping, desktop reached), exact `cursor-locate.py` two-target readback not yet run | `scripts/dev/cursor-locate.py learn /data/vms/sandbox/vision-ptr/rig/vptr-A.png /data/vms/sandbox/vision-ptr/rig/vptr-B.png`, then `find` on two fresh targets |
 | The Visi On **desktop** has not been reached from the station launcher (only the splash), because it needs the pointer | follows the pointer |
 | `/os/vision` dark-launch not published | `scripts/dev/smoke-rig.sh vision --like lisa` |
 | The tile builder's `--rootfs` and `--compose` stages are written but have not been run end to end; the rootfs recipe was validated by reproducing the race rootfs + `x11-apps` under `--private-users`, not by a full rebuild | `ssh lab 'scripts/build-guests/tiles/vision.sh --rootfs'` |

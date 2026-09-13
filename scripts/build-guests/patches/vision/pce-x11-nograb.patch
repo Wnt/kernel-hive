@@ -1,0 +1,78 @@
+# vision station — PCE x11 terminal, no-grab pointer forwarding.
+#
+# Stock PCE (src/drivers/video/x11.c) forwards mouse motion to the emulated
+# serial mouse ONLY while it holds an X pointer grab (xt_event_motion() opens
+# with `if (xt->grab == 0) { return; }`), and takes that grab only on the
+# guest's first click (xt_event_button_press()). A headless Xvfb station has
+# nobody to click and hold a grab, so stock PCE never sees a mouse move and
+# Visi On never gets past "Calibrate the mouse."
+#
+# This patch removes the grab requirement from both handlers: button presses
+# always update xt->button and reach the guest, and motion accumulates the
+# delta between successive X MotionNotify events (using the FIRST event only
+# to seed a reference point, per the `have_pos` static) rather than the
+# grabbed path's warp-to-centre trick, which needs a grab to make sense at
+# all. Applies cleanly to the pinned pce-20250420-cc0c583c tarball with `patch
+# -p1`.
+#
+# The result is raw WINDOW-PIXEL deltas fed into trm_set_mouse(), which is
+# scaled by the terminal's own mouse_mul_x/div_x/mul_y/div_y (already a config
+# knob in src/lib/initerm.c — no code change needed for that half). Vision's
+# pce.cfg pins mouse_div_x=2 mouse_div_y=4 to undo the terminal's own scale:
+# see docs/lab/VISION-WAVE.md §Pointer for the derivation (PCE's aspect
+# correction gives an asymmetric 2x horizontal / 4x vertical window-to-CGA
+# factor at 1280x800, not the uniform x2 `scale = 2` suggests).
+#
+# Race provenance: theory A of the pointer race, docs/lab/VISION-WAVE.md
+# §Pointer, applied+built clean under /data/vms/sandbox/vision/race/ptrA/.
+#
+--- a/src/drivers/video/x11.c
++++ b/src/drivers/video/x11.c
+@@ -694,11 +694,6 @@
+ {
+ 	XButtonEvent *evt = (XButtonEvent *) event;
+ 
+-	if (xt->grab == 0) {
+-		xt_grab_mouse (xt, 1);
+-		return;
+-	}
+-
+ 	if (evt->button == Button1) {
+ 		xt->button |= 1;
+ 	}
+@@ -737,12 +732,33 @@
+ 	int          dx, dy;
+ 	XMotionEvent *evt;
+ 
++	evt = (XMotionEvent *) event;
++
+ 	if (xt->grab == 0) {
++		static int have_pos = 0;
++
++		if (have_pos == 0) {
++			xt->mse_x = evt->x;
++			xt->mse_y = evt->y;
++			have_pos = 1;
++			return;
++		}
++
++		dx = evt->x - xt->mse_x;
++		dy = evt->y - xt->mse_y;
++
++		if ((dx == 0) && (dy == 0)) {
++			return;
++		}
++
++		trm_set_mouse (&xt->trm, dx, dy, xt->button);
++
++		xt->mse_x = evt->x;
++		xt->mse_y = evt->y;
++
+ 		return;
+ 	}
+ 
+-	evt = (XMotionEvent *) event;
+-
+ 	cx = xt->display_w / 2;
+ 	cy = xt->display_h / 2;
+ 

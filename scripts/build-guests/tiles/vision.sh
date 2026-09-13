@@ -32,6 +32,7 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OS_ID=vision
 STAGE="${STAGE:-/data/assets-staging/$OS_ID}"
 OUT="${OUT:-/data/vms/streamhost/assets/$OS_ID}"
@@ -162,6 +163,13 @@ do_rootfs() {
   log "building PCE $PCE_SRC inside the rootfs -> /opt/pce"
   mkdir -p "$tmp/src"
   tar -C "$tmp/src" -xzf "$STAGE/$PCE_SRC.tar.gz"
+  # Pointer patch (docs/lab/VISION-WAVE.md §Pointer, theory A of the pointer
+  # race): stock PCE's x11 terminal forwards mouse motion only while it holds
+  # an X pointer grab, which a headless Xvfb station can never take. Applies
+  # cleanly to the pinned tarball with -p1.
+  local patch="$SCRIPT_DIR/patches/vision/pce-x11-nograb.patch"
+  [ -f "$patch" ] || die "missing pointer patch: $patch"
+  patch -p1 -d "$tmp/src/$PCE_SRC" <"$patch" || die "pointer patch failed to apply to $PCE_SRC"
   systemd-nspawn -q -D "$tmp" sh -c "
     set -e
     cd /src/$PCE_SRC
@@ -296,10 +304,18 @@ rom { address = 0xc8000 size = 32K }
 terminal {
 	driver = "x11"
 	scale = 2
+	# The pointer patch (docs/lab/VISION-WAVE.md §Pointer) forwards raw
+	# WINDOW-PIXEL motion deltas with no grab; these divide them back down to
+	# CGA-pixel deltas so 1 CGA pixel of guest cursor motion == 1 CGA pixel of
+	# XTEST motion. PCE's own aspect correction at `scale = 2` on 640x200 CGA
+	# is asymmetric: fx=2 (1280/640) but fy=4 (800/200), NOT the uniform x2 the
+	# scale name suggests (trm_get_scale() in terminal.c stretches the Y axis
+	# alone to hit the 4:3 aspect ratio, since CGA pixels are not square).
+	# Measured/derived, not guessed — see the wave doc for the arithmetic.
 	mouse_mul_x = 1
-	mouse_div_x = 1
+	mouse_div_x = 2
 	mouse_mul_y = 1
-	mouse_div_y = 1
+	mouse_div_y = 4
 }
 
 video {
