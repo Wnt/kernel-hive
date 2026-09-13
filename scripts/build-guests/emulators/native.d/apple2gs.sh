@@ -37,9 +37,15 @@ native_stage_roms() {
     apple2gs a2cffa2
 }
 
-# Power-on with no bootable media attached is the GS's own "Check startup
-# device" screen: the colour Apple IIGS banner over the 640x200 super-hi-res
-# surface, far brighter than the //e's sparse text band.
+# Power-on with no bootable media attached fills the ENTIRE published surface:
+# the GS's super-hi-res desktop is a solid blue raster behind the "Check startup
+# device!" line, so unlike the //e's sparse text band this machine lights every
+# pixel. MEASURED 2026-09-13: 786432 lit pixels = 1024*768, the whole surface.
+# A copied floor of 1000 would therefore pass on almost any failure; the floor
+# here is most of the raster. The real scene proof (the GS/OS 6.0.1 Finder
+# desktop from the CFFA 2.0 volume) is a separate framebuffer capture in the
+# wave's own rig -- docs/lab/APPLE2GS-WAVE.md -- not this build-time gate,
+# because the gate runs with no -hard1 media.
 native_boot_gate() {
-  native_gate_nonblack "$1" "$2" "$3" 1000 10
+  native_gate_nonblack "$1" "$2" "$3" 700000 10
 }

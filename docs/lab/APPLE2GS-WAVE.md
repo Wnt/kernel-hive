@@ -101,13 +101,64 @@ sibling — this is the second wave in two days to hit this class
 | `golden` (lead) | native build, smoke boot, dark launch, golden bake + framebuffer proofs | Opus | in progress |
 | `docs` (after golden) | `docs/guests/apple2gs.md`, `GUEST-TIERS.md`, release-notes facts | `sonnet-low` | queued |
 
+## Proven on the framebuffer
+
+All frames on labhost, all at the published 1024x768:
+
+| Proof | Frame | Measured |
+|---|---|---|
+| build boot gate (no media) | `/data/vms/sandbox/apple2gs/build/work/gate/fb.shm` | 786432 lit pixels — the GS's power-on raster fills the WHOLE surface, so the copied `native_gate_nonblack` floor of 1000 is meaningless here; the floor that means something is "the full raster", and the scene proof is the rig capture below, not this gate |
+| GS/OS 6.0.1 boots | `/data/vms/sandbox/apple2gs/rig1/frame.png` | "Welcome to the IIGs / System 6.0.1" splash at 30 emulated s |
+| **Finder desktop, cold boot** | `/data/vms/sandbox/apple2gs/rig3/finder.png` | HARDDISK volume + Trash + the full Finder menu bar, settled **33.8 s** after power-on (throttled, real time) |
+| **golden restore** | `/data/vms/sandbox/apple2gs/rig3/restored.png` | `SAVEST golden` = 474700 B in **152 ms**; relaunch with `-state golden` gives a framebuffer **byte-identical** to `finder.png` (`ImageChops.difference` bbox `None`) — `apple2gs`'s `MACHINE_SUPPORTS_SAVE` is real |
+| keymap | `streamhost/stations/apple2gs/apple2gs.keymap` | 96 keys dumped from the running machine's own `KEYDUMP` over `:macadb:` (125 fields seen). NOT apple2e's — the scaffold's copy was the //e's `:X0..` matrix |
+
+The hero `spa/public/posters/apple2gs/desktop.webp` is the restored Finder
+frame, not a placeholder.
+
 ## Walls hit
 
-(filled as they happen — each one: the step, what the framebuffer showed, the
-theories raced on `rig-clone.sh` clones, which won, and the frame that proved it)
+**The splash stall that did not reproduce.** The first ctlsock rig (`rig2`:
+throttled, `-sound none`, ctlsock armed) stopped dead on the "Welcome to the
+IIGs" splash with its progress bar half filled and did not move for 88 emulated
+seconds — `fb-wait.py --tolerance 5 --settle 20` reported `last change at 0.0s`,
+so this was a real freeze and not the default tolerance hiding a crawling
+progress bar (checking that was worth the one command: a 400-pixel tolerance
+does hide a progress-bar tick).
+
+Four theories were raced on their own rigs (`theory.sh`, one MAME per theory,
+90 emulated seconds each, all four in parallel at load 29):
+
+| Theory | Result |
+|---|---|
+| `base` — a straight repeat, sound on | **Finder desktop** |
+| `raw` — 2mg header stripped to a raw `.hdv` (`dd bs=64 skip=1`) | **Finder desktop** — so MAME's `cffa2` parses the `.2mg` header itself; the strip is unnecessary |
+| `ram8` — `-ramsize 8M` (default is 2M) | **Finder desktop** — RAM was not it |
+| `sl2` — CFFA 2.0 in slot 2 instead of 7 | **"Check startup device!"** — the GS boots slot 7; keep `-sl7 cffa2` |
+| `ctrlnosnd` — control: `-sound none`, the one flag `rig2` had | **Finder desktop** — so `-sound none` was not it either |
+
+So the stall is **NOT reproduced in five subsequent boots**, including one with
+the exact flag suspected. The shipping configuration (throttled, sound on,
+ctlsock armed — `rig3`) reached the Finder in 33.8 s on the first try and its
+golden restores byte-identically. Recorded as an unexplained one-off rather
+than a fix, because nothing was fixed: if a station ever hangs on that splash,
+the first thing to know is that it is intermittent and a relaunch clears it.
+
+**`-hard1` must come AFTER the slot option.** `apple2gs -hard1 x -sl7 cffa2`
+dies with `Error: unknown option: -hard1` — MAME only learns the option once
+the slot device is on the command line. Cost one whole 4-way race round.
+
+**`stage-romset.py` hashes LOOSE FILES.** A romset staged as a `.zip` stages
+ZERO members and the boot gate then dies `Required files are missing`. Unzip
+`-j` into the staging dir. (Relayed to the `macsys1` lead mid-wave.)
 
 ## Open items
 
+- **`ctlsock: setup btns=1 axes=1`** on every launch, with all three
+  `:macadb:MOUSE0/1/2` tags bound. Whether `axes=1` is a count of axis PAIRS or
+  a sign that only one axis bound is not established — it was not chased,
+  because the pointer is open anyway. Read it before the first MOVEA
+  measurement.
 - **Pointer**: gains unmeasured. The fixture ships the neutral 1.0/1.0, NOT
   apple2e's 1.547/1.674 — a copied gain is a guess, and this is a different
   ADB path with a different `PORT_SENSITIVITY`. `stream.pointer.transport`
