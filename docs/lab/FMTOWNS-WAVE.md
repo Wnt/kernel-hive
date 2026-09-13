@@ -424,22 +424,61 @@ locator so the positions are indicative, the *belief* column is exact:
 The belief tracks the target to ~2 px every time; the arrow does not follow it,
 because the belief integrates counts x 5.825 and the guest moves 4.36.
 
-**Exact next steps, in order.**
+**3. There is NO chunk size at which the gain is a constant — the curve has no
+linear region.** MEASURED (`/data/vms/sandbox/fmtowns-ptr/thresh.py rigD`,
+each row homed to the clamp first, the travel split into `reps` identical
+`MOVE N 0` / `MOVE 0 N` chunks with a 1 s gap):
 
-1. Find the acceleration threshold: from the clamp, single `MOVE N 0` for
-   N = 5, 10, 15, 20, 25, 30, 40 and fit px/N. Stop at the largest N whose
-   px/N still equals the small-N rate.
-2. Pin the pacer's step cap to that N (`MAME_CTL_PTR_MOD` = 2N, since
-   move-step-cap takes half the modulus) and set `MAME_CTL_GAIN_X/Y` to the
-   rate measured at that cap — X and Y separately, Y from its own ramp.
-3. Shrink `MAME_CTL_MOVE_WINDOW` so a full-width sweep still takes well under
-   a second at the smaller cap (931 px / 4.36 = 214 counts = 11 chunks of 20).
-4. Re-run the five-target two-lap proof with the *exact* locator, not the blob
-   one, then land fixture + binary together and re-bake the golden.
+| axis | chunk N | reps | px travelled | px/count | px per chunk |
+|---|---|---|---|---|---|
+| x | 5 | 8 | 61 | **1.525** | 7.6 |
+| x | 10 | 6 | 157 | **2.617** | 26.2 |
+| x | 15 | 5 | 262 | **3.493** | 52.4 |
+| x | 20 | 5 | 436 | **4.360** | 87.2 |
+| x | 25 | 4 | 495 | **4.950** | 123.8 |
+| x | 30 | 3 | 480 | **5.333** | 160.0 |
+| x | 40 | 2 | 466 | **5.825** | 233.0 |
+| y | 10 | 5 | 132 | **2.640** | 26.4 |
+| y | 20 | 4 | 351 | **4.388** | 87.8 |
+| y | 30 | 3 | 483 | **5.367** | 161.0 |
 
-**Use `/data/vms/sandbox/fmtowns-ptr/ramp2.py <rig>`** for 1 and 2 and
-`locate_five.py` for 4; `movea_five.py`'s blob picker is not trustworthy on
-this station and its numbers should not be quoted again.
+px/count climbs monotonically from 1.53 to 5.83 and never flattens; X and Y
+share the same curve to within 1%. Note what this explains: stream #3's
+"5.825 / 5.367" are exactly the N=40 (x) and N=30 (y) rows — correct numbers
+for the chunk size they happened to be measured at, and wrong for any other.
+For a FIXED chunk size the motion is perfectly linear and reversible (the
+20-count ramp retraces 497 → 410 → 323 → 236 → 148 → 61 exactly), so this is
+a transfer function of the per-poll delta, not jitter.
+
+**WHY THAT KILLS THE OPEN-LOOP CHAIN ON THIS STATION.** `open-loop-gain`
+converts px to counts with ONE gain. Pin the pacer's step cap at N and the
+gain at g(N) and the bulk of a travel is right — but the LAST chunk of any
+travel is a remainder r < N, and it moves at g(r), not g(N). With a cap of 20
+and a remainder of 5 that is (4.36 - 1.53) x 5 = **14 px of undershoot** on a
+single target, every time, and an open loop has no way to see it. A 2 px
+five-target proof is unreachable this way at any cap.
+
+**THE ROUTE IS THE WRITE PATH, not the open loop.** Take macsys1's proven
+`mame-ctlsock-abs-ram.patch` (`MAME_CTL_ABS_RAM=cpu=...,pts=...,order=...,
+flag=...`, `ABS_RECT=61,48,931,702`, `ABS_GEOM=<Towns raster>`): poke Towns
+OS's own cursor globals and nudge one count so the OS republishes. A write
+does not care what the driver's acceleration curve is. Find the globals with
+the module's PEEK/POKEW on the running guest by diffing two known cursor
+positions. Rebase `mame-ctlsock-screen-origin.patch` on top of macsys1's
+ctlsock hunks — the raster origin is still needed, because `ABS_RECT` and the
+belief anchor both live in surface coordinates.
+
+The six open-loop patches stay in the stanza for now (they are inert-ish and
+harmless), but `MAME_CTL_GAIN_X/Y` must NOT be shipped in the fixture: no
+single value is right.
+
+**Tools.** `/data/vms/sandbox/fmtowns-ptr/ramp2.py <rig>` (ramps + gain fit),
+`thresh.py <rig>` (the curve above), `locate_five.py <rig> <tag>` (five-target
+with an exact template). `movea_five.py`'s blob picker is NOT trustworthy on
+this station — it returns the union bbox of the old and new sprite when they
+do not overlap, and nothing when they do; its numbers must not be quoted
+again. The reliable locator is the one in `ramp2.py`: diff two frames, take
+the connected component that is NOT at the previously-known position.
 
 ### Pointer stream 2026-09-13 #3 (fmtowns-ptr, Opus) — THE RASTER IS LETTERBOXED
 
