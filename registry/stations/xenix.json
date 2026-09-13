@@ -128,7 +128,7 @@
       "envFixture": "streamhost/stations/xenix/station.env.fixture",
       "binary": "qemu-system-i386",
       "machine": "isapc",
-      "accel": "tcg",
+      "accel": "kvm",
       "cpu": "486",
       "memoryMB": 16,
       "smp": 1,
@@ -149,7 +149,7 @@
       "sourceDeviceSet": {
         "binary": "qemu-system-i386",
         "machine": "isapc",
-        "accel": "tcg",
+        "accel": "kvm",
         "cpu": "486",
         "memoryMB": 16,
         "smp": 1,
@@ -170,7 +170,7 @@
       },
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "registry source pins -machine isapc -cpu 486 under TCG, the 1989-era device set the golden was baked with; the launcher runs exactly these arguments"
+        "reason": "registry source pins -machine isapc -cpu 486 -enable-kvm, the 1989-era device set the golden was baked with; the launcher runs exactly these arguments (KVM is load-bearing -- every exec dies under TCG)"
       }
     },
     "bringUpOrder": 105
@@ -225,7 +225,7 @@
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from freedos on 2026-09-13, then re-pointed at a 1989 ISA PC: qemu-system-i386 -machine isapc -cpu 486 -m 16, TCG, no NIC, pointer none.",
+    "scaffolded from freedos on 2026-09-13, then re-pointed at a 1989 ISA PC: qemu-system-i386 -machine isapc -cpu 486 -m 16, -enable-kvm (load-bearing -- every exec dies under TCG), no NIC, pointer none.",
     "Boot media trap: SCO Xenix floppies carry no 0x55AA signature at offset 510 and the boot sector compares a 14-byte filename string at 0x1F8 that runs THROUGH 0x1FE/0x1FF. Patch both bytes: 55 AA at 510 AND 0x0e -> 0x06 at offset 121 (the compare length).",
     "Media trap: WinWorld 386 2.3.4q is a MIXED set (Installation = typ=386PS MicroChannel, utilities = typ=n386 2.3.4h). The 386PS kernel panics with TRAP 8 under QEMU. Use the PCjs typ=386GT rel=2.3.4h N1/N2 floppies, which boot to init.",
     "retronet OPEN: SCO TCP/IP for Xenix is a separate product; no NIC in the device set and no rn-tapnet.sh committed (AGENTS.md rule 15)."
