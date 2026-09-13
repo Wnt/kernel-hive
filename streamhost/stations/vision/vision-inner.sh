@@ -209,10 +209,30 @@ type_vision() {
 }
 
 # calibrate_pointer: walk the X pointer across the PCE window so Visi On sees
-# mouse motion and leaves its "Calibrate the mouse." splash for the desktop. The
-# walk is incremental because the no-grab patch reads the DELTA between
+# mouse motion and leaves its "Calibrate the mouse." splash for the desktop, and
+# then HOME the guest cursor onto the host pointer so absolute XTEST is 1:1.
+#
+# The walk is incremental because the no-grab patch reads the DELTA between
 # successive MotionNotify events and spends the first event seeding its
 # reference point (docs/lab/VISION-WAVE.md §Pointer).
+#
+# WHY THE HOMING SLAM, AND WHY IT IS EXACT. Visi On owns its own cursor and sees
+# only Mouse Systems DELTAS, so the guest cursor and the host X pointer differ by
+# a constant offset that depends on where the guest cursor happened to be when
+# the emulator came up (measured 2026-09-13: (0,+40) px straight out of the
+# calibration walk above — 40 px of error, twenty times the 2-px bar). Deltas
+# alone can never remove that offset: both cursors move by the same amount.
+# A CLAMP can. Slam the host pointer into the bottom-right corner and then into
+# the top-left: the second move delivers a delta of (-1279,-799), larger than any
+# possible guest cursor coordinate, so the guest cursor bottoms out at ITS (0,0)
+# at the same moment the host pointer bottoms out at its own. The offset is zero
+# from that instant, and stays zero, because the sync-alias clamp
+# (patches/vision/pce-msys-sync-alias.patch) means no delta is ever dropped again.
+# Measured after this homing: five targets, two laps, 0 px error on all ten.
+#
+# The slam must be two REAL moves, not a relative overshoot: a clamped X pointer
+# emits no further MotionNotify, so an 8192-px relative slam delivers only the
+# first few hundred pixels (docs/lab/VISION-WAVE.md §LISTING pass 3.3).
 calibrate_pointer() {
   local x y
   xdotool mousemove --sync 640 400 || return 1
@@ -222,6 +242,20 @@ calibrate_pointer() {
   for ((x = 640; x >= 140; x -= 20)); do
     xdotool mousemove --sync "$x" 140 || return 1
   done
+  return 0
+}
+
+# home_pointer: zero the guest-vs-host cursor offset by clamping both at (0,0).
+# Runs after the desktop is up; see calibrate_pointer's comment for the why.
+home_pointer() {
+  local w h
+  w="${GEOM%x*}"
+  h="${GEOM#*x}"
+  xdotool mousemove --sync $((w - 1)) $((h - 1)) || return 1
+  xdotool mousemove --sync 0 0 || return 1
+  # park in the middle so the first visitor does not start on a command-strip
+  # button, and so the arrow is visible in the station's rest frame
+  xdotool mousemove --sync $((w / 2)) $((h / 2)) || return 1
   return 0
 }
 
@@ -257,6 +291,11 @@ if [ "${VISION_AUTOSTART:-1}" = 1 ]; then
     if calibrate_pointer; then
       fb_settle 30 || true
       log "calibration walk done, ink=$(fb_ink)"
+      if home_pointer; then
+        log "pointer homed at (0,0) — guest cursor now tracks absolute XTEST 1:1"
+      else
+        log "pointer homing failed — absolute XTEST will carry a constant offset"
+      fi
     else
       log "calibration walk failed"
     fi
