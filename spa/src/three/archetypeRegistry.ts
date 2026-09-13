@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (100 of the 102
+//    - transport   : how its LIVE framebuffer texture is obtained (101 of the 103
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 100 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 101 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -229,6 +229,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   perq:        { osId: 'perq', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7FA8C9', eraLabel: '1986 · POS G.7 (Three Rivers PERQ 1, portrait display)' }, // ideal: Apple Lisa 2 one-piece
   vision:      { osId: 'vision', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#7FB069', eraLabel: '1983 · Visi On 1.0', pointerRel: false }, // ideal: IBM PC XT 5160 with a mono CRT and the VisiCorp M1 mouse
   minix2:      { osId: 'minix2', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#c8a24a', eraLabel: '1997 · Tanenbaum\'s teaching microkernel', pointerRel: false },
+  macsys1:     { osId: 'macsys1', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#8C8274', eraLabel: '1984 · Macintosh 128K — System 1.0' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */
