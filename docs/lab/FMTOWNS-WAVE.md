@@ -106,8 +106,11 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
 
 ## Still open
 
-1. **Pointer** — MOTION PROVEN 2026-09-13 (Sonnet, fmtowns-ptr stream), CLICK
-   still open. Two bugs, both root-caused and fixed on the framebuffer: (1)
+1. **Pointer** — MOTION *and* CLICK PROVEN 2026-09-13 (motion: Sonnet,
+   `fmtowns-ptr`; click: Opus, `fmtowns-list`). NOT YET SHIPPED: the deployed
+   binary is still the pre-patch build, so `stream.pointer` is `none` and the
+   station stays `hidden` until the rebuild+redeploy in
+   "Pointer stream 2026-09-13 #2" runs. Historical account below. Two bugs, both root-caused and fixed on the framebuffer: (1)
    the ctlsock module never bound the FM Towns mouse's axis fields — fixed,
    `axes=1` measured, four-target precise relative motion proven; (2) the
    mouse's BUTTONS port is `IP_ACTIVE_LOW` and the module's click engine
@@ -329,6 +332,119 @@ copied in, golden `.sta` copied in, never the original), binary
 `/data/vms/sandbox/fmtowns-ptr/build/mame-fmtownsftv-ptr` (built through
 `build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
 build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
+
+### Pointer stream 2026-09-13 #2 (fmtowns-list, Opus) — CLICK PROVEN
+
+The click was never broken. **Every earlier "no reaction" was a click on a
+TownsMENU desktop icon, and a single click on an icon in this GUI draws
+nothing at all** — no hover highlight, no selection box, zero pixels. The
+previous two streams aimed at the only targets in the shell that are silent
+by design, and read the silence as a broken button.
+
+Proven on a click that TownsMENU *does* draw: clicking inside an inactive
+window's client area **activates and raises it** (title bar flips to the
+active blue, the other window is sent behind and loses its bar). Alternating
+clicks between the `ドライブ選択` window and the `Q:TOWNSSYSTEM` window flipped
+the activation **8 times out of 8**, measured with `scripts/dev/fb-react.py`
+(masked pixel diff, the on-screen clock excluded), never judged by eye:
+
+| Attempt | Verbs | changed px | bbox | Frames (`/data/vms/sandbox/fmtowns-list/rigB/frames/`) |
+|---|---|---|---|---|
+| icon click, CLICK1 | `CLICK1` on TownsGEAR | **0** | — | `01-on-towngear.png` → `02-click1.png` |
+| icon click, 400 ms hold | `DOWN1` … 400 ms … `UP1` | **0** | — | `02` → `03-down` → `04-up` |
+| icon click, double 120 ms / 250 ms | `DOWN1 UP1` ×2 | **0** | — | `05-dc120.png`, `06-dc250.png` |
+| right button on an icon | `CLICK2` | **0** | — | `08-click2.png` |
+| **window activation, 1500 ms hold** | `MOVE -40 -20` then `DOWN1` … 1500 ms … `UP1` | **31 079** | `135,123-930,629` | `22-dragend.png` → `23-hold1500.png` |
+| window activation, 100 ms hold | `MOVE ±55 ±15`, `DOWN1` … 100 ms … `UP1` | **31 161** | same | `30a/30b`, `31a/31b` |
+| window activation, 250 ms hold | same | **32 961** | same | `32a/32b`, `33a/33b` |
+| window activation, 600 ms hold | same | **32 961** | same | `34a/34b`, `35a/35b` |
+| window activation, 1200 ms hold | same | **32 961** | same | `36a/36b`, `37a/37b` |
+
+**Measured hold/gap**: 100 ms — the shortest tried — already lands, and every
+longer hold lands identically, so there is no minimum-hold problem and
+`CLICK1`'s default 10 down / 6 up frames (~167 ms at 60 Hz) is comfortably
+above it. No `SH_BTN_MIN_HOLD_MS` knob is needed for this station. Motion
+remains ~6 px per count on both axes, positive sign, chunked under 127 counts
+per `MOVE` (re-confirmed here: a 4-count move moved the cursor sprite 22×26 px
+at `401,391`).
+
+**Instrumented proof that the press reaches the guest** (this is what closed
+the argument, and it is the reason the station now has a diagnostic patch):
+`scripts/build-guests/patches/kh-fmtowns-padport-debug.patch` logs, from inside
+`towns_padport_r`, every change of the pad-2 byte and of `m_towns_pad_mask`.
+On the running rig:
+
+```
+khpad2: raw=f0 res=70 mask=2f      # idle: both buttons released (IP_ACTIVE_LOW: 1 = up)
+khpad2: raw=f0 res=30 mask=0f      # the guest strobing pin 8 (mask bit 5) to clock the 4 nibbles
+… after DOWN1 …
+khpad2: raw=e0 res=60 mask=2f      # bit 4 LOW = button 1 PRESSED, as the guest reads it
+khpad2: raw=e0 res=20 mask=0f
+```
+
+`mask=2f`/`0f` both have bits 2 and 3 set, so `towns_padport_r`'s
+`bitswap<3>(m_towns_pad_mask, 5, 3, 2) << 4` never gates bits 4/5 off — the
+pad-mask theory is falsified by measurement, not by argument.
+
+**`mame-ctlsock-btn-active-low.patch` is a misdiagnosis and is now OUT of the
+stanza.** MAME applies `IP_ACTIVE_LOW` itself: `ioport_port::read()` ends with
+`result ^= m_live->defvalue`, and for an active-low field the defvalue bit *is*
+the mask, so `ioport_field::set_value(1)` already produces the pressed (logic 0)
+level — confirmed by the `raw=e0` line above with `MAME_CTL_BTN_ACTIVE_LOW`
+**unset**. With the env set, the module inverts a polarity MAME has already
+inverted and every click becomes a guaranteed no-op; a control run
+(sonnet runner, rig `rigA`) measured exactly that: `changed=0` on every verb.
+The patch file stays in the tree (it is committed on `main` and is a correct,
+env-gated no-op by default) but `native.d/fmtowns.sh` no longer applies it and
+the fixture must never set `MAME_CTL_BTN_ACTIVE_LOW`.
+
+**`KEYDUMP :pad2`** (sonnet runner, rebuilt binary) — for the record, the
+third `???` row is the port's `PORT_BIT(0xcf, IP_ACTIVE_LOW, IPT_UNUSED)`
+filler, not a gate:
+
+```
+:pad2:mouse:BUTTONS | ???
+:pad2:mouse:BUTTONS | P2 Button 1 | KEYCODE_A
+:pad2:mouse:BUTTONS | P2 Button 2 | KEYCODE_S
+:pad2:mouse:MOUSE_X | Mouse X 2 | MOUSECODE_2_UNKNOWN_RELATIVE
+:pad2:mouse:MOUSE_Y | Mouse Y 2 | MOUSECODE_2_UNKNOWN_RELATIVE
+OK 5
+```
+
+**Savestate covenant**: the ctlsock setup line on the proving binary is
+`ctlsock: setup btns=1 axes=1 movea=0 devxy=0 swap=0 sig=1ebe131a entries=3330`
+— `sig=` and `entries=` are **unchanged** from the deployed pre-patch binary's
+line, so the existing golden `.sta` is NOT orphaned by the pointer patch and
+rule 6 needs no recapture when it ships.
+
+**Also proven in passing**: a held button plus motion **drags** — the
+`Q:TOWNSSYSTEM` window was dragged across the desktop by `DOWN1` + two
+`MOVE 20 10` steps (`20-a.png` → `21-drag.png`, 323 px changed along a 191×79
+track). So press, hold, drag and release are all live.
+
+**STILL NOT SHIPPED — the exact next command.** The deployed station binary at
+`/data/vms/streamhost/assets/fmtowns/mame-native/fmtowns` is still the PRE-patch
+build (`btns=0 axes=0`), so `stream.pointer` stays `none` and `listing.state`
+stays `hidden` until it is replaced. Everything needed is now proven; what
+remains is mechanical, in this order:
+
+```
+# 1. clean rebuild, no diagnostic patch (the stanza above is already correct)
+ssh lab 'cd /data/vms/sandbox/fmtowns-list/repo && JOBS=4 nice -n 10 \
+  scripts/build-guests/emulators/build-mame-native.sh fmtowns \
+  /data/vms/sandbox/fmtowns-list/build2 /data/vms/sandbox/fmtowns-list/build2/fmtowns'
+# 2. keep the old binary, install the new one
+ssh lab 'cd /data/vms/streamhost/assets/fmtowns/mame-native && \
+  cp -a fmtowns fmtowns.pre-20260913 && cp /data/vms/sandbox/fmtowns-list/build2/fmtowns fmtowns'
+# 3. fixture: add to streamhost/stations/fmtowns/station.env.fixture
+#    MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,:pad2:mouse:MOUSE_Y"
+#    MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2,"
+#    (and NOT MAME_CTL_BTN_ACTIVE_LOW)
+# 4. registry/stations/fmtowns.json: stream.pointer -> the fleet relative
+#    mamesock declaration, listing.state -> listed
+# 5. scripts/dev/station-land.sh fmtowns ; then confirm the live line reads
+#    `ctlsock: setup btns=1 axes=1 ... sig=1ebe131a` (sig unchanged => keep the golden)
+```
 
 ## Publish — `/os/fmtowns` is dark-launched
 

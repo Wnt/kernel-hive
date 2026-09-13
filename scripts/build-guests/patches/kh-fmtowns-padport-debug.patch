@@ -1,0 +1,25 @@
+--- a/src/mame/fujitsu/fmtowns.cpp
++++ b/src/mame/fujitsu/fmtowns.cpp
+@@ -914,7 +914,21 @@
+ 	// Tatsujin Ou expects it to read as zero to navigate menus.
+ 	// Unclear whether it always reads as zero, or it's affected by something undocumented.
+ 	unsigned const pad = BIT(offset, 1);
+-	return m_pad_ports[pad]->read() & (0x0f | (bitswap<3>(m_towns_pad_mask, pad + 4, (pad * 2) + 1, pad * 2) << 4));
++	uint8_t const raw = m_pad_ports[pad]->read();
++	uint8_t const res = raw & (0x0f | (bitswap<3>(m_towns_pad_mask, pad + 4, (pad * 2) + 1, pad * 2) << 4));
++	// KH DEBUG (fmtowns click stream): report every change of the pad-2 top
++	// nibble or of the pad mask, so a host-side button write can be traced
++	// all the way to what the guest actually reads.
++	if (pad == 1)
++	{
++		static uint8_t kh_last_raw = 0xff, kh_last_res = 0xff, kh_last_mask = 0xff;
++		if (raw != kh_last_raw || res != kh_last_res || m_towns_pad_mask != kh_last_mask)
++		{
++			kh_last_raw = raw; kh_last_res = res; kh_last_mask = m_towns_pad_mask;
++			osd_printf_info("khpad2: raw=%02x res=%02x mask=%02x\n", raw, res, m_towns_pad_mask);
++		}
++	}
++	return res;
+ }
+ 
+ void towns_state::towns_pad_mask_w(uint8_t data)

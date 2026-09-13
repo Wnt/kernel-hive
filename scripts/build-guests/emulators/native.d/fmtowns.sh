@@ -42,15 +42,23 @@ NATIVE_MAME_ARGS=(-pad1 townspad -pad2 mouse)
 # "Mouse X 2"/"Mouse Y 2" on pad2, not the module's hardcoded "Mouse X"/
 # "Mouse Y", so axes stayed 0 until this landed too).
 #
-# mame-ctlsock-btn-active-low.patch: the same MSX mouse's BUTTONS port is
-# IP_ACTIVE_LOW (bus/msx/ctrl/mouse.cpp:17-18), so the module's set_value(1)
-# for "pressed" was writing RELEASED -- MAME_CTL_BTN_ACTIVE_LOW inverts it.
+# mame-ctlsock-btn-active-low.patch is DELIBERATELY NOT HERE, and
+# MAME_CTL_BTN_ACTIVE_LOW must stay unset for this station. It was written on
+# the theory that the MSX mouse's IP_ACTIVE_LOW BUTTONS port needed the module
+# to invert set_value() -- it does not. MAME already applies the polarity
+# itself: ioport_port::read() ends with `result ^= m_live->defvalue`, and for
+# an IP_ACTIVE_LOW field the defvalue bit IS the mask, so set_value(1) already
+# produces the electrically-pressed (logic 0) level. Setting the env inverts a
+# polarity MAME handles and turns every click into a guaranteed no-op.
+# MEASURED 2026-09-13 with kh-fmtowns-padport-debug.patch: with the env unset,
+# DOWN1 takes the byte the GUEST reads from raw=f0 to raw=e0 (bit 4 low =
+# button 1 pressed), through the driver's own pad mask (mask=2f/0f, so bits
+# 4 and 5 are ungated). See docs/lab/FMTOWNS-WAVE.md SS Pointer.
 #
-# The rig's exact env for both (measured 2026-09-13; see station.env.fixture
-# once this ships): MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,
-# :pad2:mouse:MOUSE_Y" MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2,"
-# MAME_CTL_BTN_ACTIVE_LOW="1,1,".
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch mame-ctlsock-btn-active-low.patch)
+# The rig's exact pointer env (measured 2026-09-13):
+# MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,:pad2:mouse:MOUSE_Y"
+# MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2,"
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
