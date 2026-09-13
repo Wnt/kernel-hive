@@ -1,11 +1,11 @@
 ---
 title: SCO Xenix System V/386 2.3.4
-subtitle: 1989 · Microsoft's own Unix — for most of the 1980s, the most-installed Unix in the world
+subtitle: Microsoft's own Unix — and for most of the 1980s, the most-installed Unix in the world
 hero: /posters/xenix/desktop.webp
 images:
   - src: /posters/xenix/desktop.webp
-    alt: PLACEHOLDER hero for xenix — replaced with the station's real console frame
-    caption: PLACEHOLDER — replaced with the real Xenix console frame.
+    alt: The Xenix boot prompt on a black 80x25 text console — SeaBIOS's version line and "Booting from Floppy...", then "XENIX System V", then "Boot" and a colon prompt with the cursor waiting
+    caption: Where a 1989 PC Unix starts: the Xenix boot loader's colon prompt, waiting for a kernel name. Press Enter and it loads /xenix.
 ---
 ## Origins
 
@@ -15,7 +15,7 @@ It was not a side project. The first port shipped in January 1981 for the Zilog 
 
 Microsoft had a porting partner in Santa Cruz, California — the **Santa Cruz Operation**, SCO — and after the Bell System breakup in 1984 AT&T began selling System V itself. Microsoft's interest moved to OS/2, the system it was building with IBM, and in **1987** it handed Xenix to SCO outright in a deal that left Microsoft holding just under 20% of the company. SCO then did the thing Microsoft had decided not to do: it ported Xenix to the **80386**. **Xenix System V Release 2.3.1** added i386, SCSI and TCP/IP support, and was the first 32-bit operating system you could buy for the x86.
 
-**2.3.4** — the release this exhibit runs — is the last of that line, the end of a product that began at AT&T in 1979 and stopped being Microsoft's in 1987.
+**2.3.4** — the release this exhibit runs — is the last of that line. Its own kernel banner dates it precisely: *SysV release 2.3.4 91/09/25 for i80386*. A product that began with an AT&T licence at the end of the 1970s, stopped being Microsoft's in 1987, and stopped entirely in 1991.
 
 ## Significance
 
@@ -30,6 +30,8 @@ Stand this next to `msdoswin1` and the shape of the decade is clear. In 1985 Mic
 ## What you're looking at
 
 A plain ISA-bus AT-class PC — an **80386-compatible CPU**, 16 MB of memory, standard VGA, one IDE hard disk — booting SCO Xenix System V/386 2.3.4 from that disk to a **login:** prompt. There is no PCI bus and no PCI anything, because this system predates the bus by years and probes for hardware the way a 1989 kernel does: by asking the ISA card slots.
+
+The kernel announces itself before the login prompt does — *XENIX is a registered trademark of Microsoft Corporation*, then the release line and a table of the hardware it found: the 80387 FPU, the floppy controller, two serial ports, the parallel port, the VGA console. It is the only machine in this hall whose boot banner names Microsoft and means Unix.
 
 There is **no mouse**. A Xenix console is 80 columns by 25 rows of text, and everything here is done by typing. `uname -a` names the machine and the release; `who` shows who is logged in on which console; `ls /usr` shows the shape of a System V filesystem — `bin`, `lib`, `spool`, `tmp` — laid out the way every Unix laid it out before anyone thought to argue about it.
 
