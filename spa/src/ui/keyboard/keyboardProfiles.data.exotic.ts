@@ -18,7 +18,7 @@ export type ExoticFamily =
   | 'kc854' | 'sinclairql' | 'bbcmicro' | 'armeval' | 'alto' | 'appleii'
   | 'atarist' | 'classicmac' | 'classicmac128' | 'amiga' | 'zxspectrum' | 'samcoupe'
   | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'atari800xl'
-  | 'xerox-dwarf' | 'xerox-star';
+  | 'xerox-dwarf' | 'xerox-star' | 'applegs';
 
 export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
   // KC 85/4 — a GERMAN keyboard with an East German operating system, and the

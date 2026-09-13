@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128';
+  | 'classicmac' | 'classicmac128' | 'applegs';
 
 // ---- row builders ---------------------------------------------------------
 
