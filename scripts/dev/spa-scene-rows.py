@@ -33,6 +33,13 @@ it safe to put in `scripts/dev/station-land.sh` and in the `--like` scaffold.
                      keeps only THIS station's row).
     --like SIBLING   when the station has no row yet, copy SIBLING's, which is
                      the only template that is guaranteed to type-check.
+    --row-from REF   when the working tree lost the station's row (you took
+                     main's sharded tables over your branch's single-file ones),
+                     read the row from REF — normally `origin/<id>` — so a
+                     tuple and an identity finish you already chose survive.
+                     Merge-main recipe for a branch scaffolded before the split:
+                       git checkout origin/main -- spa/src/scene/assembliesByTile.ts spa/src/scene/machineIdentity.ts
+                       scripts/dev/spa-scene-rows.py <id> --base-ref origin/main --row-from <your branch> --apply
     --tuple B,M,K,Mo overwrite body,monitor,keyboard,mouse (use `none` to omit a
                      part). Required with --like: an inherited tuple is a
                      guaranteed test failure.
@@ -92,11 +99,16 @@ def apply_tuple(block: str, parts: dict[str, str]) -> str:
     return "".join(line for line in block.splitlines(keepends=True) if line.strip())
 
 
-def source_row(rel: str, const: str, os_id: str, like: str | None) -> str:
-    """This station's existing row, or a copy of the sibling's, keyed to it."""
+def source_row(rel: str, const: str, os_id: str, like: str | None, row_from: str | None = None) -> str:
+    """This station's existing row, or its row at --row-from REF, or a copy of the sibling's."""
     table = read_table(rel, const)
     if os_id in table.blocks:
         return table.blocks[os_id]
+    if row_from:
+        at_ref = read_table_at(rel, const, row_from)
+        if os_id in at_ref.blocks:
+            return at_ref.blocks[os_id]
+        raise RegistryError(f"{rel}: no row for {os_id!r} at {row_from} either")
     if like is None:
         raise RegistryError(
             f"{rel}: no row for {os_id!r} and no --like SIBLING to copy one from. "
@@ -152,6 +164,11 @@ def main() -> int:
     ap.add_argument("--like", help="sibling station id to copy a missing row from")
     ap.add_argument("--tuple", dest="tuple_arg", help="body,monitor,keyboard,mouse (`none` omits a part)")
     ap.add_argument("--base-ref", help="rebuild on top of this ref's tables (e.g. origin/main)")
+    ap.add_argument(
+        "--row-from",
+        help="take this station's existing row from REF's tables (e.g. its own branch) when the "
+        "working tree no longer has it — the merge-main recipe after the 2026-09-13 shard split",
+    )
     ap.add_argument("--apply", action="store_true", help="write the rebuilt tables")
     ap.add_argument("--check", action="store_true", help="exit 1 if a rebuild would change anything")
     args = ap.parse_args()
@@ -176,7 +193,7 @@ def main() -> int:
     print(f"spa-scene-rows {args.id}: lineup index {order.index(args.id)} of {len(order)}")
     changed = False
     for rel, const in TABLES:
-        row = source_row(rel, const, args.id, args.like)
+        row = source_row(rel, const, args.id, args.like, args.row_from)
         if parts and const == ASSEMBLIES_CONST:
             row = apply_tuple(row, parts)
         table = rebuilt(rel, const, args.id, row, order, args.base_ref)
