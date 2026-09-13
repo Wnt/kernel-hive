@@ -567,6 +567,11 @@ export const EXHIBIT_IDENTITIES = {
     badge: 'APOLLO DN3500', spec: '68030 • DOMAIN/OS SR10.4.1 • 1989',
     kit: 'workstation',
   },
+  // TODO(oberon): exhibit finish copied from freedos — set the real era cues.
+  oberon: {
+    caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
+    badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
+  },
 } as const satisfies Record<keyof typeof ASSEMBLIES_BY_TILE, ExhibitIdentity>;
 
 const FALLBACK_IDENTITY: ExhibitIdentity = {

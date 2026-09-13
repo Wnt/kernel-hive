@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "id": "oberon",
+  "era_year": 1999,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 82,
+        "prelude": "",
+        "value": {
+          "key": "oberon",
+          "script": "tiles/oberon.sh",
+          "outputDir": "OBERON",
+          "class": "fast",
+          "estimated": "~1m",
+          "automation": "full",
+          "produces": "oberon.qcow2 (Native Oberon 2.3.6 installed IDE image, asig/native-oberon, converted raw->qcow2)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "oberon",
+      "value": {
+        "os": "ETH Oberon System 3 / PC Native 2.3.6",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            200,
+            300
+          ],
+          "b": [
+            900,
+            100
+          ]
+        },
+        "kbd": "type:Kernel Hive",
+        "kbd_reset": "",
+        "kbd_note": "Gadgets text desktop: LEFT click sets the caret in a text viewer (System.Log top right), typed characters echo there; MIDDLE click on a command word executes it.",
+        "audio_trigger": "tone",
+        "note": "sb16 declared; PS/2 RELATIVE pointer at 1.5 px/unit (dbus-rel bridge, SH_CURSOR_SCALE 0.6667)",
+        "accel": "kvm"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/oberon",
+      "qmp": "/data/vms/streamhost/stations/oberon/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54195,
+      "notes": "no exec channel: drive via QMP keys/rel mouse and read the framebuffer. Pointer is RELATIVE PS/2 through the daemon's abs->rel bridge (1.5 px per unit measured, even steps land on integer pixels). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; recapture only via checkpoint-guard."
+    }
+  },
+  "render": {
+    "signalOrder": 86,
+    "stationsManifestOrder": 84,
+    "stationsManifestPrelude": "\n# oberon (VMID 195) — ETH Oberon System 3 / PC Native 2.3.6 (13 May 1999).\n#   VERBATIM LAUNCHER: disk.qcow2 (asig/native-oberon installed image, raw->qcow2)\n#   is the ONLY block device and holds the savevm 'golden' vmstate. -vga std\n#   VESA 1280x1024x8, sb16 -> dbus audiodev, PS/2 relative pointer (dbus-rel),\n#   one ne2k_pci NIC (slirp restrict=on until the retronet plane is proven).\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 97,
+    "bindingPrelude": "",
+    "mockManifestOrder": 4,
+    "goldenOrder": 84,
+    "actionMapOrder": 49
+  },
+  "stationDir": "oberon",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54195,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "rel",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 0.6667,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 195
+  },
+  "guestDoc": "docs/guests/oberon.md",
+  "credentialsRef": "guest/oberon",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "oberon",
+      "SH_QMP": "/data/vms/streamhost/stations/oberon/qmp.sock",
+      "SH_PORT": "54195",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/oberon/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/oberon/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 195,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "oberon",
+        "--vmid",
+        "195",
+        "--udp",
+        "54195",
+        "--pointer",
+        "rel",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "0.6667",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/oberon/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/oberon/station.env.fixture"
+      ],
+      "deviceSetId": "oberon-ps2rel-vesa1280",
+      "launcher": "streamhost/stations/oberon/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/oberon/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-oberon",
+        "-enable-kvm -m 64 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off -cpu host",
+        "-rtc base=localtime",
+        "-drive file=/data/vms/streamhost/stations/oberon/disk.qcow2,format=qcow2,if=ide,index=0",
+        "-drive file=/data/vms/streamhost/stations/oberon/floppy-empty.img,format=raw,if=floppy,index=0",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-netdev user,id=n0,restrict=on -device ne2k_pci,netdev=n0",
+        "-qmp unix:/data/vms/streamhost/stations/oberon/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/oberon/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,acpi=off",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 64,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-oberon",
+          "-enable-kvm -m 64 -smp 1",
+          "-machine pc-i440fx-11.0,acpi=off -cpu host",
+          "-rtc base=localtime",
+          "-drive file=/data/vms/streamhost/stations/oberon/disk.qcow2,format=qcow2,if=ide,index=0",
+          "-drive file=/data/vms/streamhost/stations/oberon/floppy-empty.img,format=raw,if=floppy,index=0",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-netdev user,id=n0,restrict=on -device ne2k_pci,netdev=n0",
+          "-qmp unix:/data/vms/streamhost/stations/oberon/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/oberon/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,acpi=off, -vga std, IDE disk + empty floppy, sb16, one ne2k_pci; the launcher swaps only the NIC backend (slirp restrict=on -> tap) when rn-tapnet.sh ships"
+      }
+    },
+    "bringUpOrder": 97
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#3d6fb4",
+    "eraLabel": "1999 · ETH Native Oberon",
+    "pointerRel": true
+  },
+  "museum": {
+    "id": "oberon",
+    "displayName": "ETH Native Oberon 2.3.6",
+    "year": 1999,
+    "lineage": "Oberon (Ceres, 1987) → Oberon System 3 / Gadgets → Native Oberon (PC, 1996–2003) → Bluebottle / A2",
+    "arch": "i386, on bare PC hardware (no host OS)",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#3d6fb4",
+    "eraSoftware": [
+      "System 3 Gadgets",
+      "Oberon compiler",
+      "Edit / Script text editors",
+      "Desktops",
+      "NetSystem (own TCP/IP)",
+      "Backup / Partition tools"
+    ],
+    "periodBrowser": "HTMLDocs / Desktops.OpenDoc (text-mode Oberon web viewer)",
+    "iconicApps": [
+      "Compiler.Compile",
+      "Script.Open",
+      "Desktops.OpenDoc",
+      "System.Directory",
+      "Hello.Mod"
+    ],
+    "blurb": "Niklaus Wirth and Jürg Gutknecht's Oberon: an entire operating system, compiler and tiling text desktop written by two people, where every word on screen is a command you execute with the middle mouse button — here as ETH's 1999 Native Oberon on a bare PC.",
+    "notes": "Live streamhost station. Native Oberon 2.3.6 boots from its own IDE partition (no host OS) into the System 3 Gadgets desktop at 1280x1024; the System.Tool text on the right is the menu: middle-click any command word (Ctrl+click on a two-button mouse) to run it, left-click to place the caret and type. Relative PS/2 pointer through the daemon's rel bridge (1.5 px per unit measured). disk.qcow2 is the single block device and carries the golden vmstate."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "oberon",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "ETH Oberon System 3 / PC Native 2.3.6 Gadgets desktop at 1280x1024: System.Log over System.Tool in the right track, empty user track, arrow pointer at (640,512)."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from freedos on 2026-09-13; TODO: media, museum, spa"
+  ]
+}
