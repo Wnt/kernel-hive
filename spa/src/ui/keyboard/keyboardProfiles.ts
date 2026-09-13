@@ -344,6 +344,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // only thing unusual about it (carried by keyboards.ts charMap, not this
   // OSK chord set) — no DM-specific chords to profile, so generic Unix rows.
   domainos: 'generic',
+  // Fujitsu FM TOWNS, Towns OS V2.1 L51: TownsMENU is a mouse-driven icon
+  // desktop over a JIS keyboard (SH_KEY_MAP handles the JIS punctuation
+  // shift table in keyboards.ts) — no TownsMENU-specific chord set has been
+  // built yet (the pointer is OPEN, docs/lab/FMTOWNS-WAVE.md), so generic.
+  fmtowns: 'generic',
   android: 'android',
   c64: 'c64',
   plus4: 'plus4',
