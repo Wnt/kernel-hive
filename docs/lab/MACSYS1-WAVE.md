@@ -160,3 +160,91 @@ is regenerated from the built binary with `scripts/dev/mame-keymap.py` against a
 |---|---|---|
 | retronet / IM plane | Permanently out of scope: 1984 Macintosh, no TCP/IP stack exists for System 1.0 | — |
 | `mackbd_m0120` (numeric keypad romset) | Not staged; not in the default `mac128k` slot config and `-verifyroms mac128k` passes without it | only if a keypad demo is ever wanted |
+
+## Golden bake — proofs (all on the framebuffer, real fleet binary)
+
+Binary `sha256 583d07a0efc3167b2ad1b31cd734c8961e909e7005f959eb0c4a01eb64f7567b`
+(`SUBTARGET=mac128`, driver `mac128k`, MAME `mame0289`). Rig = the station dir
+`/data/vms/streamhost/stations/macsys1` (for a MAME-native station the rig IS the
+station dir — `smoke-rig.sh` drops every `MAME_NATIVE_*` line and the shared
+`x11-runtime.sh` hardcodes `BASE=/data/vms/streamhost/stations/$SH_STATION`).
+Frames in `/data/vms/sandbox/macsys1/frames/`.
+
+| # | What | Result | Frame |
+|---|---|---|---|
+| 1 | Cold boot on the fleet binary via drawshm | Finder 1.0 desktop, both volumes mounted | `02-desktop.png` |
+| 2 | `SAVEST golden` | `OK ms=27 bytes=63068 paused=0` → `sta/mac128k/golden.sta` | — |
+| 3 | Relaunch with `-state golden` | **2.4 s wall** to the identical desktop (cold boot is ~37 s) | `03-restore.png` |
+| 4 | Pointer gain, `MOVE 100 0` / `MOVE 0 100` | 396 published px each → **3.96 px/count on both axes** | `p0/p1/p2.png` |
+| 5 | Four-target `MOVEA` readback @ gain 3.96 | (300,200) −4,+4 · (700,500) 0,+8 · (150,600) −6,+8 · (850,150) +2,+2 — **worst 8 px** | `t-*.png` |
+| 6 | `MOVEA` onto the System Disk icon + `CLICK1` | icon inverted, Write/Paint deselected — 13604 px changed | `c2.png` |
+| 7 | `KEY` down/up Command + `o  O` | 1900 px changed inside the icon label — characters rendered | `k1.png` |
+| 8 | Relaunch from golden with both floppies mode 444 | identical desktop, no locked-disk dialog | `04-golden-ro.png` |
+
+### Pointer — the ONE open item is a constant offset, not drift
+
+Unlike apple2e (whose arrow walks off over three laps), this station's landings do
+not drift: worst error 8 px across four targets, and a click selects what it is
+aimed at. What it has instead is a **constant +42 px Y offset**, and it is
+geometric, not arithmetic: the 512x342 raster is letterboxed into the published
+1024x768 surface as **1024x684**, with a 42 px black band top and bottom. The
+guest's cursor origin therefore sits at published `y=42`, while the ctlsock
+module's belief origin — the corner its homing slam clamps into — is published
+`y=0`. Every landing is 42 px below the module's target (the table above was aimed
+with the offset pre-subtracted), and the bottom ~84 px of the module's coordinate
+space is unreachable.
+
+The station ships `stream.pointer.transport = none` until that is carried properly.
+**NEXT:** set `stream.pointer.offset = [0, -42]` in the registry row (the field
+already exists), redeploy, and re-run the four-target table aiming at **raw**
+surface coordinates; prove it from the real SPA on CT950, not from the rig.
+Every letterboxed MAME-native station has this shape — `apple2e` (560x192) and
+`fmtowns` included — so the fix is probably fleet-wide, not per-station.
+
+### Keyboard — two traps in the field names
+
+1. `mac128k`'s default slot chain puts an **M0120 numeric keypad in front of the
+   keyboard**, so every key field lives at `:kbd:pad:kbd:us:ROWn` and the keypad's
+   own keys at `:kbd:pad:ROWn`. `mame-keymap.py`'s default `--tags :kbd:` filter
+   finds nothing useful; **use `--tags ':'`**. 71 keys mapped, 22 unmatched (the
+   three `:MOUSE*` ports and the keypad).
+2. MAME's field names carry the shifted legend with **double spaces** — `o  O`,
+   `1  !`. A `KEY` verb spelled `O` is rejected `ERR noport`. The generated keymap
+   has them right; hand-typed ctlsock verbs must copy the field name verbatim.
+
+### Media integrity — a smoke rig that mounts staging media MUTATES it
+
+The first smoke boot passed `/data/assets-staging/macsys1/*.dc42` straight to
+`-flop1`/`-flop2`. Finder 1.0 wrote to the Write/Paint volume, and its sha256
+stopped matching the media agent's `MANIFEST.sha256`
+(`4733d46b…` → `9ac7dc2a…`). Both images were re-fetched from the origin
+(`https://earlymacintosh.org/disk_images/Finder%201.0.zip`), reinstalled into
+`/data/vms/streamhost/assets/macsys1/media/` **and** back into the staging dir,
+`MANIFEST.sha256` regenerated, and both copies set **mode 444** in both places.
+Both now hash exactly as the manifest says.
+
+**Rule for every future MAME/QEMU smoke rig: never hand staging media to a guest
+that can write to it.** Copy it first, or mount it read-only.
+
+Write-protection is also the right answer for the exhibit itself, not just for
+provenance: Finder 1.0 renames a volume from a single click on its icon label, so
+a writable image would carry the first visitor's typo to every visitor after them.
+Both floppies ship `444`; the desktop comes up unchanged.
+
+## Streams
+
+| Stream | Owns | Model | Status |
+|---|---|---|---|
+| lead (spine + build + golden) | native.d stanza, fixture, registry, this doc | Opus | done |
+| `macsys1-media` | `/data/assets-staging/macsys1/` + `SOURCES.md` + `MANIFEST.sha256` | — | done |
+| `macsys1-spa` | poster, hero, scene tuple, `classicmac128` keyboard family | — | merged (fast-forward) |
+
+## Open items
+
+| Item | Why | Exact next command |
+|---|---|---|
+| absolute pointer | constant +42 px letterbox offset (above); landings otherwise within 8 px and clicks land | set `stream.pointer.offset=[0,-42]`, redeploy, re-run the four-target table on raw surface coords from the real SPA |
+| audio | `stream.audio` is declared and the FIFO is wired; the Mac's 1984 sound is a boot chime and Finder beeps — not proven on this pass | operator validates by ear |
+| the MacPaint/MacWrite demo | the Write/Paint volume is mounted and visible on the desktop, but no `demoProgram` drives a double-click into MacPaint yet | needs the pointer offset above first |
+| retronet / IM | permanently out of scope — a 1984 Macintosh has no TCP/IP | — |
+| `mackbd_m0120` romset | not staged; not needed (`-verifyroms mac128k` passes, and MAME resolves the keypad's ROM from `mackbd_m0110`'s file) | only if a keypad demo is wanted |
