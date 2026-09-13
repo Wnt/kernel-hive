@@ -97,8 +97,14 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  // macsys1 — the Macintosh 128K is an ALL-IN-ONE: the 9-inch tube, the 68000 and
+  // the floppy drive are one beige box, so the assembly carries NO separate body.
+  // compactA alone is the machine (scaffolded as compactA|compactA, which put two
+  // screen-bearing models in one assembly and failed the one-screen invariant).
+  // keyboardG is the smallest board in the kit, the honest silhouette for the tiny
+  // M0110; paramMouseF is the one-button mouse.
   macsys1: {
-    kind: 'homeMicro', body: 'compactA', monitor: 'compactA',
+    kind: 'homeMicro', monitor: 'compactA',
     mouse: 'paramMouseF',
     keyboard: 'keyboardG',
   },

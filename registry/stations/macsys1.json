@@ -158,8 +158,8 @@
       "MacPaint",
       "MacWrite"
     ],
-    "blurb": "TODO(macsys1-spa): The Macintosh as it shipped in January 1984 — System 1.0 and Finder 1.0 on a 128 KB Mac, with MacPaint 1.0 and MacWrite 1.0 on the second 400K floppy.",
-    "notes": "TODO(macsys1-spa): Host-native station: MAME 0.289's mac128k runs on the host (drawshm frames, ctlsock keys + quadrature mouse, FIFO audio). Boots the original January 1984 System Disk in -flop1 with the companion Write/Paint disk in -flop2."
+    "blurb": "The Macintosh exactly as it shipped in January 1984: System 1.0 and Finder 1.0 on a 128 KB Mac, 512x342 in one bit, a flat MFS floppy whose folders are a Finder illusion, one application at a time — and MacWrite 1.0 and MacPaint 1.0 on the second 400 KB disk to show what 72 dpi was for.",
+    "notes": "Host-native station: MAME 0.289's mac128k runs on the host (drawshm frames, ctlsock keys + the VIA quadrature mouse on :MOUSE0/:MOUSE1/:MOUSE2, FIFO audio) — no bridge kiosk, no nspawn container, no guest OS to exec into. -flop1 is the original January 1984 Macintosh System Disk (System 1.0, version string 0.97, with Finder 1.0); -flop2 is the companion Write/Paint disk carrying MacWrite 1.0 and MacPaint 1.0, so both volumes mount as icons on the desktop. No hard disk and no network exist on this machine: MFS is flat (folders live only in the Finder's Desktop file) and AppleTalk is still a year away, so retronet is permanently out of scope. Earliest point of the classic Mac OS lineage in the hall — macos753 (System 7.5.3) and macos9 are the same Finder, twelve and fifteen years on; lisa is the sibling one year earlier, the same desktop at four times the price."
   },
   "emulator": {
     "family": "MAME",
