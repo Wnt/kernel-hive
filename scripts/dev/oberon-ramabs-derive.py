@@ -60,10 +60,13 @@ class Q:
             sy = max(-step, min(step, dy))
             dx -= sx
             dy -= sy
-            self.cmd("input-send-event", events=[
-                {"type": "rel", "data": {"axis": "x", "value": sx}},
-                {"type": "rel", "data": {"axis": "y", "value": sy}},
-            ])
+            self.cmd(
+                "input-send-event",
+                events=[
+                    {"type": "rel", "data": {"axis": "x", "value": sx}},
+                    {"type": "rel", "data": {"axis": "y", "value": sy}},
+                ],
+            )
             time.sleep(0.01)
 
     def shot(self, p):
@@ -73,7 +76,7 @@ class Q:
         self.cmd("pmemsave", val=0, size=RAM, filename=p)
 
 
-HOME = (900, 300)   # where the reference frame's pointer is parked -- NOT a proof target
+HOME = (900, 300)  # where the reference frame's pointer is parked -- NOT a proof target
 
 
 def locator(rig, q=None):
@@ -88,16 +91,16 @@ def locator(rig, q=None):
     IS the pointer."""
     ref_path = os.path.join(rig, "ref.ppm")
     if q is not None:
-        q.rel(-2000, -2000)                       # pin to (0,0)
+        q.rel(-2000, -2000)  # pin to (0,0)
         q.rel(HOME[0] * 2 // 3, HOME[1] * 2 // 3)  # 1.5 px/unit above the guest's
-        time.sleep(0.6)                            # acceleration threshold
+        time.sleep(0.6)  # acceleration threshold
         q.shot(ref_path)
     ref = np.asarray(Image.open(ref_path).convert("RGB")).astype(int)
 
     def locate(p):
         a = np.asarray(Image.open(p).convert("RGB")).astype(int)
         d = np.abs(a - ref).sum(2) > 0
-        d[HOME[1] - 4:HOME[1] + 32, HOME[0] - 4:HOME[0] + 32] = False
+        d[HOME[1] - 4 : HOME[1] + 32, HOME[0] - 4 : HOME[0] + 32] = False
         ys, xs = np.nonzero(d)
         return (int(xs.min()), int(ys.min())) if len(xs) else None
 
@@ -112,7 +115,6 @@ def scan(rig, dt, esz, expected, tol):
     drawn or not depending on the background it sits over, so xs.min() is one
     pixel left of the guest's x over some backgrounds (that is what made the
     first pair search return zero hits while the coordinate was plainly there)."""
-    n = None
     base = np.fromfile(f"{rig}/m0.bin", dtype=dt).astype(np.int32)
     bias = base - expected[0]
     ok = np.abs(bias) < 4096
@@ -150,15 +152,15 @@ def derive(rig, height=1024, width=1280):
         print(f"i{w}: x-words {len(X)} y-words {len(Y)} yup-words {len(U)}", flush=True)
         for a in sorted(X):
             if a + esz in Y:
-                print(f"CAND addr=0x{a:08x} layout=point{w}le bias={X[a]},{Y[a+esz]}", flush=True)
+                print(f"CAND addr=0x{a:08x} layout=point{w}le bias={X[a]},{Y[a + esz]}", flush=True)
             if a + esz in U:
-                print(f"CAND addr=0x{a:08x} layout=point{w}le_yup bias={X[a]},{U[a+esz]}", flush=True)
+                print(f"CAND addr=0x{a:08x} layout=point{w}le_yup bias={X[a]},{U[a + esz]}", flush=True)
         for a in sorted(Y):
             if a + esz in X:
-                print(f"CAND addr=0x{a:08x} layout=point{w}le_yx bias={Y[a]},{X[a+esz]}", flush=True)
+                print(f"CAND addr=0x{a:08x} layout=point{w}le_yx bias={Y[a]},{X[a + esz]}", flush=True)
         for a in sorted(U):
             if a + esz in X:
-                print(f"CAND addr=0x{a:08x} layout=point{w}le_yup_yx bias={U[a]},{X[a+esz]}", flush=True)
+                print(f"CAND addr=0x{a:08x} layout=point{w}le_yup_yx bias={U[a]},{X[a + esz]}", flush=True)
 
 
 TARGETS = [(20, 20), (1250, 20), (20, 1000), (1250, 1000), (640, 512)]
@@ -170,11 +172,12 @@ def test(rig, cands, layout=None, width=1280, height=1024):
         ptr = os.path.join(rig, "ptr.sock")
         if os.path.exists(ptr):
             os.remove(ptr)
-        extra = (f"-chardev socket,id=ptr0,path={ptr},server=on,wait=off "
-                 f"-device kh-ramabs,chardev=ptr0,addr={addr},layout={layout},"
-                 f"width={width},height={height},nudge-units=1,nudge-px=1")
-        subprocess.run([os.path.join(rig, "launch.sh")],
-                       env=dict(os.environ, EXTRA=extra), capture_output=True)
+        extra = (
+            f"-chardev socket,id=ptr0,path={ptr},server=on,wait=off "
+            f"-device kh-ramabs,chardev=ptr0,addr={addr},layout={layout},"
+            f"width={width},height={height},nudge-units=1,nudge-px=1"
+        )
+        subprocess.run([os.path.join(rig, "launch.sh")], env=dict(os.environ, EXTRA=extra), capture_output=True)
         time.sleep(2.0)
         q = Q(rig)
         q.cmd("cont")
