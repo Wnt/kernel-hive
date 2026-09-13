@@ -1206,21 +1206,125 @@ namespace, which no process in a `--private-users` sandbox can ever satisfy.
 Adding file capabilities to `/opt/criu/bin/criu` does not help (and cannot: the
 same `capable()` check).
 
-### 4. What the next pass should try, in order
+### 4. Second pass (Claude Opus 5, 2026-09-13, ~16:00-17:00Z) — three walls down, one left
 
-1. **Put the user namespace inside the dump set.** The reason criu cannot win
-   from either side is that the container's userns was created by nspawn,
-   outside the payload. If *the scene itself* creates a nested user namespace
-   (`unshare -U --map-root-user` around the Xvfb+PCE pair), criu restoring from
-   the host userns owns that namespace and creates it itself — which is the
-   configuration criu actually supports. This is the cheapest theory and it does
-   not weaken the sandbox at all.
-2. Drive the restore with `criu restore --unprivileged` (criu ≥ 3.18's
-   userns-aware path) and see which of the two EPERMs it skips.
-3. Only if both fail: an operator decision on relaxing the container (adding
-   CAP_CHECKPOINT_RESTORE/CAP_SYS_PTRACE and the mount syscalls *inside the
-   userns*) — which still would not clear §3's `capable()` checks, so it is
-   probably not even a fix.
+The three theories were tried in order on `rigA` with **no sandbox capability,
+seccomp or sysctl relaxed**. Two of the three worked and moved the failure
+three stages later; the pass ends on a fourth wall that is a different kernel
+check from either of §3's.
+
+**Theory B works, and it subsumes theory C.** `criu restore --unprivileged`
+clears *both* EPERMs in §3's second row at once — criu 4.1.1's unprivileged
+path neither raises the hard `RLIMIT_NOFILE` nor uses `SO_SNDBUFFORCE`. No
+sysctl and no `LimitNOFILE` change was needed. Run from inside the container
+user namespace (`nsenter -t <leader> -U -m -p -u -i -n`), the restore now gets
+all the way to forking the payload:
+
+```
+(00.016657) Forking task with 404 pid (flags 0x10000000)
+(00.017291) Error (criu/namespaces.c:1203): Unable to write into uid_map: Operation not permitted
+```
+
+**Theory A is unnecessary, and would not have helped.** The user namespace is
+*already* inside the dump set — `userns-9.img` is in the golden image — because
+criu dumps from the host user namespace and therefore *owns* nspawn's. The map
+it records is host-relative (`lower_first = 2162688`, `count = 65536`), which is
+why a restore running inside the container cannot write it: container root may
+only map 0..65535. Rewriting that one field to an identity map
+(`rigA/fix-userns.py`, 26 → 20 bytes of `UsernsEntry`) makes the `uid_map`
+write succeed and is transparent — container uid 0 is host 2162688 either way.
+A scene-created nested `unshare -U` namespace would have produced the same
+host-relative map and needed the same rewrite.
+
+**The wall that remains is `fsopen("proc")`, and it is not about user-namespace
+ancestry.** With the map rewritten, the restore reaches:
+
+```
+(00.018403)    404: Calling restore_sid() for init
+(00.018484)    404: Error (criu/util.c:1620): Unable to open the proc file system: Operation not permitted
+(00.019747) Error (criu/cr-restore.c:1262): 404 killed by signal 9: Killed
+```
+
+`criu/util.c:1620` is `mount_detached_fs()`'s `fsopen()`, not a plain `open()`.
+A direct probe settles that the directory is readable from everywhere and the
+new mount API is the only thing failing — all four of these print OK in the
+container's mount namespace:
+
+```
+nsenter -t $L -m -p -- ls /proc                                     # host userns
+nsenter -t $L -m -p -- unshare -U --map-root-user ls /proc          # new userns under host
+nsenter -t $L -U -m -p -- ls /proc                                  # container userns
+nsenter -t $L -U -m -p -- unshare -U --map-root-user ls /proc       # nested under container
+```
+
+Creating a *new procfs superblock* is the privileged part: it wants
+CAP_SYS_ADMIN over the user namespace that owns the container's **pid**
+namespace — nspawn's. criu's restored init is in a user namespace criu cloned
+(`flags 0x10000000`), which never owns that pid namespace no matter whose child
+it is. So the fix is not a better user namespace; it is **no user namespace in
+the image at all**, so the payload is restored into criu's own.
+
+**That needs the dump to run inside the container user namespace, and seccomp
+blocks it.** Dumping with `nsenter -U` fails before it starts:
+
+```
+Error (compel/src/lib/ptrace.c:27): suspending seccomp failed: Operation not permitted
+Error (compel/src/lib/infect.c:418): Unable to detach from 404: No such process
+```
+
+`PTRACE_O_SUSPEND_SECCOMP` is a `capable(CAP_SYS_ADMIN)` check against the
+**init** user namespace — the same class of check as §3 — and criu only needs
+it because the payload carries a filter, which it carries because the container
+is launched with `--system-call-filter='~@mount'`. `--unprivileged` does not
+skip it.
+
+Stripping the namespace from the image by hand got one step further and then
+stopped: dropping `user_ns_id` (field 10) from `ids-{404,409,418}.img` and
+deleting `userns-9.img` (`rigA/strip-userns.py`) still clones a user namespace,
+because the decision is driven by the inventory's `root_ids` (which records
+`user_ns_id = 7` against the tasks' `9`), leaving `No userns-0.img image` and
+`Error (criu/protobuf.c:72): Unexpected EOF on (empty-image)`.
+
+**BLOCKED, and it is an operator decision from here**, because every remaining
+route touches the sandbox contract or the image format:
+
+1. Launch the container without `--system-call-filter='~@mount'` so the
+   in-userns dump can suspend a filter that is not there, and dump *and* restore
+   with `nsenter -U … --unprivileged`. This is the one route with no image
+   surgery, and it costs exactly one seccomp filter — the container keeps its
+   private users, private network, dropped capabilities and `NoNewPrivileges`.
+   Worth pricing against what `~@mount` actually buys inside a userns whose
+   `CAP_SYS_ADMIN` is already dropped.
+2. Finish the image surgery: rewrite the inventory's `root_ids.user_ns_id` to
+   match, so criu restores into its own user namespace. Cheap to try, but it is
+   hand-editing criu's on-disk format, and rule 6's "image + binary + device set
+   are ONE combination" would grow a fourth member — the editor script.
+3. Give the payload `CAP_CHECKPOINT_RESTORE`: does **not** help. Every check
+   hit in this pass and the last is `capable()` against the init user
+   namespace, which no `--private-users` task can satisfy.
+
+**The live station is unchanged.** It still ships `SH_RESET_MODE=relaunch` and
+the honest number is still §7's 117 s. Nothing in this pass was landed beyond
+this document and the three rig scripts.
+
+**Does this route work for `perq`?** Not as it stands, and for the same reason:
+`perq` runs Mono under `systemd-nspawn` with the same `--private-users` and the
+same seccomp filter, so its dump would also have to run from the host user
+namespace, record nspawn's map, and fail the identical `fsopen("proc")` on
+restore. Route 1 above would unblock both stations at once — which is the
+argument for pricing it rather than solving `vision` alone. `perq` has the
+harder payload on top of that (a TTY it uses as its clock, §PERQ), so `vision`
+stays the right place to prove the route.
+
+### 4b. Where the harness is
+
+`rigA/crest.sh` drives the whole thing by hand — `up` (prep `/work` from the
+golden and start the container in `VISION_RESTORE=1` mode), `cold` (a real cold
+boot to produce a fresh scene), `dumpu`, `try` (restore outside the userns),
+`tryu` (restore inside it), `down`. `rigA/fix-userns.py` and
+`rigA/strip-userns.py` are the two image editors. The container it launches is
+byte-for-byte the production `nspawn` line, capability drops and
+`--system-call-filter` included.
 
 ### 5. Where the work is
 
