@@ -569,6 +569,16 @@ The corollary is that it must be pointed at **screendumps** (QMP `screendump`,
 PPM), never at the H.264 stream — the encoder's ringing breaks the exact match
 and it will honestly tell you it found nothing.
 
+**When the cursor is XOR/INVERTING, not blitted**, the exact-match premise above
+does not hold: the sprite's pixels depend on the background, so every candidate
+position looks "changed" and `cursor-locate.py` returns `AMBIGUOUS` everywhere
+(hit on `vision`, VisiCorp Visi On 1.0 — see `docs/lab/VISION-WAVE.md` Sec 4).
+Reach for `scripts/dev/cursor-locate-cv.py` instead — same `learn`/`find`/`check`
+verbs plus `react` (did the guest change independent of cursor motion), built on
+OpenCV in a venv (`cv-venv/bin/pip install opencv-python-headless numpy pillow`,
+never the system python). `cursor-locate.py` stays the default for every
+hard-edged sprite; the OpenCV tool is strictly the XOR-cursor fallback.
+
 Two things to know before trusting a result:
 
 - **It reports the sprite ORIGIN, not the pointer.** The guest draws the sprite

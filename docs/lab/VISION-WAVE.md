@@ -670,12 +670,173 @@ refuses `true` with the `x11test` backend, §FINISH+LANDING pass); the declared
 method is `x11test` + `SH_X11TEST_ABS=1`, which is correct for the geometry and
 unproven end to end on the station.
 
+## LISTING pass (Claude Opus 5, 2026-09-13, ~11:00-12:35Z)
+
+Sandbox `/data/vms/sandbox/vision-list`, branch `vision-list`. Every measurement
+below is from a **copy** of the deployed launcher — `SH_STATION=visionc194`,
+`VISION_BASE=/data/vms/sandbox/vision-list/copyA`, `VISION_ASSETS` the real
+`/data/vms/streamhost/assets/vision` bound read-only, display `:194` — never on
+the live unit (rule 4). The live `streamhost@vision` and its `pce-ibmpc`
+(pid 1952397) were left alone throughout.
+
+### 1. The calibration walk DOES reach the desktop — twice, unattended
+
+§LAUNCHER FINAL pass 3 recorded the walk completing with the framebuffer
+unchanged at ink 524. **That no longer reproduces.** Two consecutive cold
+launches of the copy, both unattended, both ending on the Visi On desktop:
+
+| Launch                    | Xvfb up  | `C:\>` prompt | splash (ink 524) | desktop (ink **3427**) |
+| ------------------------- | -------- | ------------- | ---------------- | ---------------------- |
+| first                     | 11:04:56 | 11:05:11      | 11:05:13         | 11:06:33               |
+| second (`relaunch` path)  | 11:29:56 | 11:30:00      | 11:30:03         | 11:31:23               |
+
+97 s and 87 s from Xvfb to the desktop. The live unit's own log carries the same
+three lines from its landing launch (`calibration walk done, ink=3427` at
+08:18:03), so the deployed station reached the desktop too. **Ink 3427, not the
+4570 of §1's table** — the desktop with the arrow parked where the walk leaves
+it. Treat 3427 as the desktop's measured ink on this launcher.
+
+**Relaunch proof.** The second launch above is `x11-runtime.sh` re-run over a
+live container: it reaped the previous nspawn + `pce-ibmpc`, cleared the
+`unix-export` mount and cold-booted again with no intervention. Wall clock for
+the launcher script itself: **3 m 0.5 s** (`time` on the whole invocation),
+of which the reap is the slow part — long enough that a caller with a 2-minute
+timeout will kill the launcher mid-reap and leave an orphaned `pce-ibmpc`
+(observed once; cleaned up by exe). Worth a look, not a blocker.
+
+### 2. Pointer scale: exactly 1.000 window px per XTEST px, both axes
+
+Two-target readback on the desktop, `xdotool mousemove --sync` from the host,
+2 s settle, `import -window root`, arrow located by the changed-region diff:
+
+| XTEST move            | arrow centroid            | delta         | px per XTEST px |
+| --------------------- | ------------------------- | ------------- | --------------- |
+| (300,200) → (800,200) | (300.5,257.5) → (800.5,257.5) | **+500.0 x** | **1.000**       |
+| (800,200) → (800,600) | (800.5,257.5) → (800.5,657.5) | **+400.0 y** | **1.000**       |
+
+and four consecutive +100 px X steps, each landing exactly +100.0
+(700.5 → 800.5 → 900.5 → 1000.5 → 1100.5). Frames
+`/data/vms/sandbox/vision-list/frames/{p0-300x200,p1-800x200,p2-800x600,s-000,s-x1..s-x4}.png`.
+`mouse_div_x=2 / mouse_div_y=4` is confirmed correct, and the §Pointer
+derivation of the identity mapping holds.
+
+### 3. …but the mapping is RELATIVE, it drifts, and it WEDGES — so the station stays hidden
+
+Three measurements, in order, that together close the listing question:
+
+1. **The offset is not constant.** On the first boot XTEST (300,200) put the
+   arrow's bbox origin at (290,240); on the second boot XTEST (240,140) put it
+   at (230,160). Same launcher, same assets — a different offset, because Visi
+   On owns its own cursor and sees only Mouse Systems *deltas*. There is no
+   absolute correspondence to declare.
+2. **It wedges at an edge and never comes back.** After ~15 moves, some of which
+   drove the arrow into the bottom command strip and past the bottom of the
+   screen, the arrow pinned at bbox (1276,792) — the bottom-right corner — and
+   **no** subsequent motion moved it again: not absolute XTEST
+   (`mousemove --sync 640 400`, `740 500`), not relative XTEST
+   (`mousemove_relative 100 0`, `0 100`). Frames `z-abs1/z-abs2/z-rel1/z-rel2.png`
+   are pixel-identical to each other and to `r-home.png`. This is the same
+   symptom §Pointer's theory A called "over-driven and pinned to the edge"; it
+   is reachable by an ordinary visitor in under a minute.
+3. **The daemon's own recovery cannot fix it.** `SH_X11TEST_ABS=1` sends true
+   absolute XTEST and nothing else (`x11_input.rs:283`); dropping it selects the
+   reckoner path, whose `HOME_DELTA = -8192` slam exists precisely to re-home a
+   relative guest after a clamp. Simulated exactly — 41 chunks of
+   `mousemove_relative -200 -200`, then the target as chunked deltas
+   (`/data/vms/sandbox/vision-list/reckon.sh`) — and the guest arrow did not move
+   at all (`r-home` → `r-400x300` → `r-home2` → `r-900x500`: *no change*, four
+   frames, all identical). The reason is structural: **once the host X pointer
+   clamps at (0,0) the X server emits no further MotionNotify**, so only the
+   first ~600 px of the 8192-px slam is ever delivered to PCE. The homing slam
+   is a no-op on an Xvfb root this size, and neither `SH_X11TEST_ABS=1` nor
+   `SH_X11TEST_ABS=0` has a recovery path for this station.
+4. **Closed-loop aiming does not converge either.** Three iterations of
+   locate-then-correct with `cursor-locate-cv.py` (below) on a fresh boot:
+   a correction of (-140,+170) XTEST moved the arrow (-62,+131); the next,
+   (-78,+39), moved it (-6,**-42**) — the wrong way on Y. So the 1.000 factor
+   of §2 holds for clean, well-separated moves in mid-screen and *not* in
+   general; something (packet-rate clamping on the 1200-baud Mouse Systems
+   link, or Visi On's own cursor handling near a window edge) is eating and
+   inverting deltas.
+
+**Listing verdict: `listing.state` stays hidden, and the reason has changed.**
+It is no longer "the desktop is not reachable" — the launcher reaches it every
+time, unattended. It is that a visitor's pointer works for a few seconds, then
+sticks in a corner with no way back, and no setting in the fixture or the
+daemon recovers it. The registry row is unchanged by this pass.
+
+### 4. The tool the operator asked for: `scripts/dev/cursor-locate-cv.py`
+
+OpenCV, in a venv on `/data` (`/data/vms/sandbox/vision-list/cv-venv`, built on
+labhost; nothing was installed into any system python). Verbs `learn` / `find` /
+`check` / `react`, same CLI shape as `cursor-locate.py`, which stays the default
+for hard-edged sprites.
+
+It solves the XOR-cursor readback that §"4. The readback" says `cursor-locate.py`
+cannot do. Note that the obvious method does **not** work here and the file says
+so: matching the learned mask against a Laplacian/Canny edge image, or against
+the frame and its inverse, is swamped by Visi On's dithered background (peaks
+300+ px away, scores 0.02-0.39 with no separation). What works is a
+**consistency cost**: un-invert the hypothesised sprite region and require it to
+agree with the same columns both above *and* below the sprite's own height — a
+wrong hypothesis conflicts with real page content in at least one direction.
+Unique global minimum on every test frame.
+
+Acceptance against this pass's frames, ground truth from the bbox diff:
+
+```
+learn s-000.png s-x1.png      -> learned a 22x36 mask
+find  s-x2.png -> origin=(890,596)  centroid=(901.0,614.0)  score=1.0000 FOUND
+find  s-x3.png -> origin=(990,596)  centroid=(1001.0,614.0) score=1.0000 FOUND
+find  s-x4.png -> origin=(1090,596) centroid=(1101.0,614.0) score=1.0000 FOUND
+find  s-y5.png -> origin=(1090,692) centroid=(1101.0,710.0) score=0.0303 FOUND
+check ... --expect 900.5,613.5 / 1000.5,613.5 / 1100.5,613.5 / 1100.5,709.5
+      -> OK err=(+0.5,+0.5) on all four
+react s-x2.png s-x3.png --ignore-bbox 880,590,1020,640
+      -> changed_pixels=0 NO REACTION      (cursor-only change, correctly ignored)
+```
+
+`scripts/dev/fb-diff-bbox.py` ships alongside it as the 60-second version: diff
+two frames, report the changed bbox, `--split` separates the old and new cursor
+clusters along whichever axis has the wider gap. It is what produced the ground
+truth above.
+
+### 5. Click proof — NOT obtained
+
+The click itself was never delivered to a known target: the aim loop of §3.4 did
+not converge, so `mousedown 1 / mouseup 1` fired at an unknown arrow position and
+`react` reported `changed_pixels=0`. No click proof exists for this station. It
+is downstream of the pointer, not independent of it.
+
+### 6. What the next pass should do
+
+The pointer is not a calibration problem any more; it is a **delivery** problem
+in PCE's patched `xt_event_motion()`. Two concrete leads, in order:
+
+1. **Instrument the patch.** Build a copy of `pce-x11-nograb.patch` that logs
+   every accepted delta and every packet handed to `trm_set_mouse()`, run the
+   §3.2 wedge sequence and read where the deltas stop — at the X event, at the
+   `mouse_div` truncation, or in the 8250 encoder. That distinguishes "PCE stops
+   forwarding" from "Visi On stops consuming" in one run, and everything else
+   depends on which it is.
+2. **Theory B, now worth building** (§Pointer): PCE's `char-pty` serial driver is
+   already proven to initialise, and `char-mouse.c:132-148` is ground truth for
+   the Mouse Systems framing. A host-side byte writer on `/work/com1.pty` bypasses
+   the X terminal, the grab, `mouse_div` and the patch entirely — a ~40-line
+   script, and if it drives the arrow it is also the station's shipping pointer
+   path (an `SH_INPUT_BACKEND` that writes deltas to a fifo, sibling to
+   `x11warp`). No byte writer was ever built; that is the cheapest untried thing
+   on this station.
+
+Do **not** spend another pass on absolute-vs-relative fixture flags. Both were
+measured this pass and neither recovers a wedged cursor.
+
 ## OPEN items
 
 | Item                                                                                                                                                                                                                                                                 | Next command                                                                                                                                                                                                                            |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pointer (the blocker)** — `xdotool mousemove` moves nothing on the station launcher, while it moved the guest arrow on the vision-ptr rig. Binary and config are both proven correct (§LAUNCHER FINAL pass 3), so the difference is in how the motion is delivered | `ssh lab 'DISPLAY=:94 xdotool mousemove --sync 100 100 mousemove --sync 900 600'` against a running station, then a frame; if that moves the arrow, the bug is in `calibrate_pointer`'s first no-op step, not in PCE                    |
-| The Visi On **desktop** is not reachable from the station launcher (the splash is)                                                                                                                                                                                   | follows the pointer                                                                                                                                                                                                                     |
+| **Pointer (the blocker)** — the arrow tracks XTEST at exactly 1.000 px/px for clean mid-screen moves, then WEDGES in a corner with no recovery from either fixture mode (§LISTING pass 3)                                  | instrument `pce-x11-nograb.patch` to log every accepted delta and every `trm_set_mouse()` packet, run the §LISTING-pass-3.2 wedge sequence, and read where the deltas stop; then build theory B's byte writer on `/work/com1.pty` |
+| The Visi On **desktop** IS reachable — the launcher's calibration walk lands on it every launch, unattended (ink 3427); what a visitor cannot do is keep the pointer alive                                                        | follows the pointer |
 | Two-target readback                                                                                                                                                                                                                                                  | bounding-box diff of the changed region at two well-separated positions, operator validates by eye — NOT `cursor-locate.py` (XOR cursor, §LAUNCHER FINAL pass 4)                                                                        |
 | `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not started                                                                                                                                                           | §Publish; and `scripts/dev/station-land.sh vision` for the landing, which this pass did not reach                                                                                                                                       |
 | The landing itself                                                                                                                                                                                                                                                   | `git push origin vision` is done; `scripts/dev/station-land.sh vision` next (no qcow2 golden — pass what `lisa` passed), then `box-deploy.sh --apply`, `systemctl is-active streamhost@vision`, `labctl shot vision`, `curl /os/vision` |
