@@ -253,6 +253,18 @@ do_compose() {
   mkdir -p "$OUT/rom"
   cp "$MEDIA"/pce/rom/*.rom "$OUT/rom/"
   write_pce_cfg >"$OUT/pce.cfg"
+
+  # The container reads $OUT read-only as host uid $VISION_UID_BASE (2162688),
+  # not as root -- a caller with a restrictive umask (root's non-interactive
+  # ssh shells default to one) leaves the disk/rom files at 0400/0600 root-only,
+  # which the sandbox cannot read at all ("*** loading failed", measured
+  # 2026-09-13). Every sibling station's assets/ tree is world-readable
+  # (0755 dirs, 0644 files under root:root, e.g. lisa/medley); match that
+  # regardless of the caller's umask rather than depending on it.
+  chmod a+rx "$OUT"
+  chmod -R a+rX "$OUT/rom" "$DISK"
+  chmod a+r "$OUT/pce.cfg"
+
   log "staged: $DISK (hd0.pbi + $(find "$DISK" -name "*.psi" | wc -l) .psi disks), $OUT/rom, $OUT/pce.cfg"
 }
 
