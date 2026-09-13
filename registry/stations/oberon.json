@@ -48,7 +48,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/oberon",
       "qmp": "/data/vms/streamhost/stations/oberon/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -197,7 +197,7 @@
     "transport": "streamhost",
     "accentColor": "#3d6fb4",
     "eraLabel": "1999 · ETH Native Oberon",
-    "pointerRel": true
+    "pointerRel": false
   },
   "museum": {
     "id": "oberon",
