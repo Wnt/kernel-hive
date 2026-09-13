@@ -143,6 +143,15 @@ root inside. **PASS.**
   staged and `perq-inner.sh` takes `PERQ_BOOTCHAR` for exactly this.
 - **`/os/perq` smoke publish** — `scripts/dev/smoke-rig.sh perq --like lisa`.
 - **Capture crop** — the 24 dead lines at the bottom of the root.
+- **`scripts/build-guests/tiles/perq.sh` IS STILL THE SCAFFOLD** — it `die`s
+  rather than lying, but nothing yet reproduces what runs. It must do, in order:
+  fetch the 0.9.5 release zip by URL and sha256 into `assets/perq/perqemu`;
+  `debootstrap --variant=minbase trixie` a rootfs with `mono-runtime-sgen`,
+  `libsdl2-2.0-0`, `xvfb`, `xdotool`, `bsdutils` (for `script`) and the audit
+  tools; `chown -R` it ONCE to 2359296; and stage `g7.prqm`/`s6lisp.prqm`. The
+  tree that runs today was built by hand — `/data/vms/sandbox/perq/rootfs`,
+  log `rootfs.staging.log`, release in `/data/vms/sandbox/perq/assets/perqemu`.
+  There is NO SDL2-CS source build and no `xbuild` step: wall 1 explains why.
 
 ## Teardown
 
