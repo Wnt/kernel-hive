@@ -67,9 +67,9 @@ NATIVE_MAME_ARGS=(-pad1 townspad -pad2 mouse)
 # open-loop-gain's MAME_CTL_GAIN_X/Y; the first-target home slam parks counts
 # in the device accumulator, which is home-drain; and a fixed-size pacer chunk
 # rounds the same residue every window, which is count-carry.
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch \
-  mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch \
-  mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch \
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch
+  mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch
+  mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch
   mame-ctlsock-screen-origin.patch)
 NATIVE_SKIP_WARNINGS=1
 
