@@ -134,8 +134,8 @@
   "spa": {
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
-    "accentColor": "#C0392B",
-    "eraLabel": "1995 · FM TOWNS — Towns OS V2.1 L51"
+    "accentColor": "#CC3D33",
+    "eraLabel": "1995 · Towns OS V2.1 L51 — FM TOWNS (1989)"
   },
   "museum": {
     "id": "fmtowns",
@@ -146,20 +146,21 @@
     "ramMB": 6,
     "ramKB": 0,
     "era": "1990s",
-    "accent": "#C0392B",
+    "accent": "#CC3D33",
     "eraSoftware": [
-      "Towns OS V2.1 L51 (1995)",
       "TownsMENU",
-      "Towns System Software CD utilities",
-      "MS-DOS 6.2 for FM TOWNS (kernel under Towns OS)"
+      "Towns System Software V2.1 L51",
+      "MS-DOS (Towns)",
+      "CD-DA player"
     ],
     "periodBrowser": "none — Towns OS V2.1 L51 ships no TCP/IP stack by default",
     "iconicApps": [
       "TownsMENU",
-      "TownsGEAR",
-      "EUPHONY audio player"
+      "CDプレーヤー",
+      "電卓",
+      "Free Software Collection"
     ],
-    "blurb": "Fujitsu's 1989 CD-ROM-first home computer, a Japanese 386 whose operating system boots from the CD it shipped with. Towns OS V2.1 L51 comes up in TownsMENU, an icon desktop over MS-DOS with the CD-ROM as the boot volume — a multimedia machine years before the PC caught up.",
+    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS — sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
     "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk — the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
   },
   "emulator": {

@@ -78,6 +78,7 @@ export const ASSEMBLIES_BY_TILE_3 = {
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
   fmtowns: {
-    kind: 'homeMicro', body: 'towerE', monitor: 'crtC',
-    },
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtC',
+    keyboard: 'keyboardA', mouse: 'paramMouseB',
+  },
 } as const satisfies Record<string, Assembly>;
