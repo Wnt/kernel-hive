@@ -145,15 +145,45 @@ typed `ver`/`dir`, `fb-react.py` motion + click). After that:
 scripts/dev/station-land.sh os213 --golden /data/vms/sandbox/os213/smoke/os213-install.qcow2
 ```
 
-### Install trap found at the panel, not after the reboot
+### The "Minimum System Configuration" panel — a scare, resolved on evidence
 
-The IBM 1.3 SE installer offers a **"Minimum System Configuration"** panel whose
-default action is Enter — "no configuration options were selected". Taking it can
-leave the guest at a bare `[C:\]` with no Desktop Manager, which would cost the
-whole install to discover after the reboot. Disk space is not a constraint here
-(500 MB target, OS/2 1.3 SE needs a fraction), so **press Esc, go back, and select
-the graphical system and its tools with the Spacebar.** Record the exact option
-list in `docs/guests/os213.md` §Install recipe.
+The IBM 1.3 SE installer shows a **"Minimum System Configuration"** panel whose
+default action is Enter: *"No configuration options were selected."* The lead read
+that frame and told the install agent to press Esc and go back — worried that a
+minimum install would land at a bare `[C:\]` with no Desktop Manager, which is the
+whole exhibit, and would only be discovered after the reboot.
+
+**That worry was wrong, and the agent had already checked.** The previous panel's
+full option list is exactly nine entries:
+
+> Country Information · Documentation · Fonts · High Performance File System ·
+> Optional System Utilities · OS/2 DOS Environment · Picture Utilities ·
+> Serial Device Support · Serviceability and Diagnostic Aids
+
+There is **no Presentation Manager entry, no Desktop Manager entry and no tutorial
+entry** in it. In OS/2 1.3 SE, PM and the Desktop Manager are the *base system*;
+this panel only offers add-ons on top of it. "Minimum System Configuration" means
+"no add-ons", not "no GUI". HPFS is on the list and we deliberately do **not** want
+it (the station is FAT). So taking the minimum costs Documentation, extra Fonts,
+Picture Utilities and the DOS box — none of which is the exhibit — and costs
+nothing graphical. Frame: `smoke/shots/s10.png`.
+
+Two lessons, both cheap to reuse:
+
+- **Read the panel the warning refers to before acting on the warning.** The scary
+  wording was on the confirmation panel; the fact that settled it was on the panel
+  before it.
+- A lead peeking at a runner's framebuffer sees a frame that is already ~20 s old
+  by the time the message lands. Peek to decide whether to *keep going*, not to
+  steer a keypress — the runner holds the QMP socket and the current frame.
+
+### Display adapter and mouse
+
+The installer detects **"IBM PS/2 Display Adapter"** — that is OS/2 1.3's name for
+the VGA-class adapter and is correct for `-device isa-vga`; answer 1, *"Yes — no
+other display adapters are attached"*. At the mouse panel the answer is the **PS/2
+mouse**: `-machine isapc` has no USB at all, so PS/2 relative is the only pointer
+transport this machine has.
 
 ## Measured timeline
 
