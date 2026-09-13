@@ -28,9 +28,12 @@
 # PERQ's 768x1024 portrait screen at (0,0) plus the 24 lines PERQemu insists
 # on) and why stdin must NOT be a TTY.
 #
-# RESET = RELAUNCH: kill the container (nspawn pid verified through
-# /proc/<pid>/exe), copy the pristine disk image fresh and cold-boot. POS G.7
-# reaches its shell prompt ~40 s after power-on. PERQemu has no save state.
+# RESET = RELAUNCH, AND THE RELAUNCH DRIVES THE LOGIN. PERQemu 0.9.5 has no
+# save state and CRIU cannot checkpoint this container (docs/guests/perq.md
+# §Reset carries the failing criu output), so reset = kill the container, copy
+# the pristine disk fresh, cold-boot, and then answer POS's date and name
+# prompts from the launcher so the station lands on the GOLDEN SCENE — the POS
+# shell — instead of a login prompt nobody answers. See bring_to_scene below.
 #
 # Per-station knobs (station.env, the systemd EnvironmentFile):
 #   SH_STATION            station id == station dir name
@@ -43,7 +46,9 @@
 #   PERQ_ROOTFS           override for the container tree (default $ASSETS/rootfs)
 #   PERQ_BASE             override for $BASE on a rig (unset in production)
 #   PERQ_X11_SOCKDIR      host dir bound over /tmp/.X11-unix (default /run/streamhost/x11/$TILE)
-#   PERQ_STANDBY_DELAY_S  settle before the standby freeze (default 120)
+#   PERQ_SCENE            "off" skips the login drive + standby (bring-up rigs)
+#   PERQ_SCENE_PTR_X/_Y   where the cursor rests on the scene (default 384,524)
+#   PERQ_STANDBY_DELAY_S  settle after the scene before the freeze (default 5)
 #   SH_IDLE_PAUSE_PIDFILE/_SECS  the daemon's freezer; also arms standby here
 # =============================================================================
 set -euo pipefail
@@ -90,27 +95,53 @@ MONO="$ROOTFS/usr/bin/mono-sgen"
 }
 
 # --- reap by /proc/<pid>/exe: this station's sandboxed mono, then its nspawn ---
+# Every process descended from $1, host-wide, by walking ppid in /proc/<pid>/stat.
+# This is what scopes the reaper to THIS launch's own container.
+station_descendants() {
+  # The ppid table is read ONCE (`ps` is one fork) and walked in awk. MEASURED:
+  # a fork-per-ancestor-step version (one awk per hop, up to 12 hops per pid,
+  # ~3000 pids, called 40x by reap_previous) never returned on a box at load 60
+  # and wedged the launch for minutes. Parsing /proc/<pid>/stat by hand is the
+  # other trap — comm may contain spaces and parentheses.
+  local root="$1"
+  ps -eo pid=,ppid= | awk -v root="$root" '
+    { ppid[$1] = $2 }
+    END {
+      for (p in ppid) {
+        q = p
+        for (h = 0; h < 24; h++) {
+          q = ppid[q]
+          if (q == root) { print p; break }
+          if (q <= 1) break
+        }
+      }
+    }
+  '
+}
 station_emu_pids() {
   # MEASURED 2026-09-13: an exact `$exe = $MONO` (the host ROOTFS path) never
   # matches. systemd-nspawn's --directory pivots into a NEW mount namespace,
   # so /proc/<pid>/exe read from the host's own namespace cannot be resolved
   # back through the container's (now-disconnected) vfsmount tree — the
   # kernel falls back to the bare in-namespace path ("/usr/bin/mono-sgen"),
-  # not the host-visible one the launcher's own header claims. Match on the
-  # basename instead, scoped by the cmdline this launcher itself sets
-  # (/work/perq/PERQemu.exe) so a sibling station's mono is never picked up.
-  local d p exe
-  for d in /proc/[0-9]*; do
-    [ -d "$d" ] || continue
-    p="${d#/proc/}"
-    [ "$p" = "$$" ] && continue
+  # not the host-visible one the launcher's own header claims. So match the
+  # exe BASENAME, and scope it by DESCENT from this launch's own nspawn pid.
+  #
+  # The scope is not hygiene. The earlier version scoped by a cmdline grep for
+  # /work/perq/PERQemu.exe — the in-container path, which is byte-identical for
+  # `accent`, for a bring-up rig and for the live station. MEASURED the same
+  # day: a rig launched at 14:49 and the live station's own relaunch at 14:54
+  # each reaped the OTHER's PERQemu; the live station was left with a running
+  # mono whose PERQ had powered off, publishing 200% CPU of uninitialised
+  # video RAM to visitors. A pid-descent scope cannot do that.
+  local n p exe
+  n="$(cat "$NSPAWN_PIDFILE" 2>/dev/null || true)"
+  case "$n" in '' | *[!0-9]*) return 0 ;; esac
+  for p in $(station_descendants "$n"); do
     exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
-    exe="${exe% (deleted)}"
-    case "$exe" in
-      "$MONO" | */mono-sgen | mono-sgen) ;;
-      *) continue ;;
+    case "${exe% (deleted)}" in
+      "$MONO" | */mono-sgen | mono-sgen) printf '%s\n' "$p" ;;
     esac
-    grep -aqF '/work/perq/PERQemu.exe' "/proc/$p/cmdline" 2>/dev/null && printf '%s\n' "$p"
   done
 }
 station_nspawn_pid() {
@@ -122,14 +153,16 @@ station_nspawn_pid() {
   echo "$p"
 }
 reap_previous() {
-  local p
-  if p="$(station_nspawn_pid)"; then
-    kill -TERM "$p" 2>/dev/null || true
-  fi
+  local p n
+  # The emulator first, the supervisor second: station_emu_pids resolves its
+  # scope THROUGH the nspawn pid, so killing the supervisor first would leave
+  # the reaper blind to the mono it is meant to reap.
+  n="$(station_nspawn_pid || true)"
   for p in $(station_emu_pids); do
     kill -CONT "$p" 2>/dev/null || true
     kill -TERM "$p" 2>/dev/null || true
   done
+  [ -n "$n" ] && kill -TERM "$n" 2>/dev/null || true
   for _ in $(seq 1 40); do
     [ -z "$(station_emu_pids)" ] && ! station_nspawn_pid >/dev/null && return 0
     sleep 0.25
@@ -214,14 +247,96 @@ done
 [ -n "$XV" ] && echo "$XV" >"$XPIDFILE"
 echo "perq[$TILE]: pid=$MPID xvfb=${XV:-?} nspawn=$(cat "$NSPAWN_PIDFILE") display=$DISP root=$GEOM disk=$DISK bootchar='${BOOTCHAR:-none}' uidbase=$UIDBASE (contained cold boot from a fresh disk copy)"
 
-# --- standby: freeze at the scene once the boot has settled --------------------
-if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
+# --- the scene, then standby --------------------------------------------------
+# RESET IS A RELAUNCH and a relaunch is a COLD BOOT: POS G.7 comes up at
+# `Enter time as HH:MM or full date:` and then `Please enter your name:`, and
+# NOTHING answers either one. Before this block a reset therefore handed the
+# next visitor a login prompt, not the exhibit — the golden scene is the POS
+# shell (`sys:User>Guest>` in the status line, the `>` prompt, the arrow
+# cursor on the page), which is also the hero frame. So the launcher drives the
+# two Returns itself and only then freezes.
+#
+# Every wait here is on the FRAMEBUFFER, never a fixed sleep (rule 14): the
+# same `sleep 2` guess measurably cost two of ten pointer readbacks on this
+# machine. `cksum` of the raw xwd dump is the cheapest settle test that needs
+# nothing but x11-utils, which this launcher already requires for xwininfo.
+# The dump is CROPPED past the POS status line before it is hashed: once a user
+# is logged in, that line carries a clock that ticks every second, so a hash of
+# the whole root NEVER settles and every wait runs to its timeout. Rows 0..31
+# are the black band above the PERQ window plus that status line; rows 1036..
+# are the 24 dead lines at the bottom.
+fb_settle() { # fb_settle <stable-seconds> <timeout-seconds>
+  local want="$1" limit="$2" last="" same=0 i=0 now
+  while [ "$i" -lt "$limit" ]; do
+    now="$(xwd -root -silent -display "$DISP" 2>/dev/null | convert xwd:- -crop 768x1004+0+32 +repage ppm:- 2>/dev/null | cksum)" || now=""
+    if [ -n "$now" ] && [ "$now" = "$last" ]; then
+      same=$((same + 1))
+      [ "$same" -ge "$want" ] && return 0
+    else
+      same=0
+    fi
+    last="$now"
+    i=$((i + 1))
+    sleep 1
+  done
+  return 1
+}
+fb_hash() { xwd -root -silent -display "$DISP" 2>/dev/null | convert xwd:- -crop 768x1004+0+32 +repage ppm:- 2>/dev/null | cksum; }
+fb_change() { # fb_change <timeout-seconds>: return once the page repaints
+  local limit="$1" base i=0
+  base="$(fb_hash)"
+  while [ "$i" -lt "$limit" ]; do
+    sleep 1
+    [ "$(fb_hash)" != "$base" ] && return 0
+    i=$((i + 1))
+  done
+  return 1
+}
+bring_to_scene() {
+  local t0 t1
+  t0="$(date +%s)"
+  fb_settle 6 180 || {
+    echo "perq[$TILE]: scene — the boot never settled; leaving the guest where it is" >&2
+    return 1
+  }
+  # XTEST delivers to the FOCUSED window and there is no window manager here,
+  # so focus is PointerRoot: the pointer must be inside the PERQ window or the
+  # Returns go to the root and vanish. It also leaves the cursor mid-page,
+  # which is where the hero frame has it.
+  # xdotool has NO global -display flag: `xdotool -display :98 key Return` is an
+  # unknown command, and with the error swallowed the launcher reported a scene
+  # it had never reached (measured). It reads $DISPLAY, so set it.
+  export DISPLAY="$DISP"
+  xdotool mousemove "${PERQ_SCENE_PTR_X:-384}" "${PERQ_SCENE_PTR_Y:-524}" || true
+  xdotool key --delay 120 Return || true # date prompt: accept the default
+  fb_settle 4 60 || true
+  xdotool key --delay 120 Return || true # name prompt: empty name logs in as Guest
+  # TWO repaints follow, ~20 s apart on this machine: `Initializing for user:
+  # Guest / Reading profile file >Default.Profile`, and only then the `>` shell
+  # prompt. A settle alone fires in the quiet gap BETWEEN them and freezes the
+  # station mid-login (measured) — wait for each repaint, then settle.
+  # THREE repaints follow, and the gaps between them are long: `Initializing for
+  # user: Guest`, `Reading profile file >Default.Profile`, and ~20 s later the
+  # `>` shell prompt. Counting them is brittle — measured, both a `settle 8` and
+  # a count of two repaints froze the station one paint short of the prompt. So
+  # wait for the whole login to go quiet for longer than its longest internal
+  # gap. The clock in the status line is cropped out of the hash, so "quiet"
+  # here really is quiet.
+  fb_settle 25 180 || true
+  t1="$(date +%s)"
+  echo "perq[$TILE]: scene — POS shell reached $((t1 - t0)) s after the window appeared"
+}
+if [ "${PERQ_SCENE:-on}" != off ]; then
   (
-    sleep "${PERQ_STANDBY_DELAY_S:-120}"
-    p="$(cat "$PIDFILE" 2>/dev/null || true)"
-    [ -n "$p" ] || exit 0
-    [ "$(readlink "/proc/$p/exe" 2>/dev/null)" = "$MONO" ] || exit 0
-    kill -STOP "$p" 2>/dev/null &&
-      echo "perq[$TILE]: standby — frozen at the scene (pid $p; first session wakes it)"
+    bring_to_scene || true
+    # standby: freeze AT THE SCENE, not at whatever the boot happened to reach.
+    if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
+      sleep "${PERQ_STANDBY_DELAY_S:-5}"
+      p="$(cat "$PIDFILE" 2>/dev/null || true)"
+      [ -n "$p" ] || exit 0
+      case "$(readlink "/proc/$p/exe" 2>/dev/null)" in "$MONO" | */mono-sgen | mono-sgen) ;; *) exit 0 ;; esac
+      kill -STOP "$p" 2>/dev/null &&
+        echo "perq[$TILE]: standby — frozen at the scene (pid $p; first session wakes it)"
+    fi
   ) &
 fi
