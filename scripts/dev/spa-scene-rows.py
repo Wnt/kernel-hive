@@ -20,7 +20,10 @@ only at push time, in vitest, inside somebody's landing window; nine waves paid
 for them on 2026-09-03.
 
 So a landing does not merge these files, it rebuilds them: take main's table,
-insert this station's row at its lineup index, write. That is idempotent by
+insert this station's row at its lineup index, write. Since 2026-09-13 the rows
+live in SHARDS (`assembliesByTile.1.ts`, `.2.ts`, … spread by the index file)
+of at most SHARD_ROWS each, so the 600-line ts-src cap is never reached again;
+the rebuild writes the index and every shard and deletes surplus ones. That is idempotent by
 construction — running it twice produces the same bytes — which is what makes
 it safe to put in `scripts/dev/station-land.sh` and in the `--like` scaffold.
 
@@ -113,9 +116,17 @@ def rebuilt(rel: str, const: str, os_id: str, row: str, order: list[str], base_r
     return base
 
 
-def report(path: Path, before: str, after: str, apply: bool) -> bool:
-    """Print the change; return True when the file is (or would be) modified."""
+def report(path: Path, before: str, after: str | None, apply: bool) -> bool:
+    """Print the change; return True when the file is (or would be) modified.
+
+    `after is None` means the shard is surplus (the layout shrank) and is deleted.
+    """
     rel = path.relative_to(REPO)
+    if after is None:
+        print(f"  {rel}: surplus shard — removed")
+        if apply:
+            path.unlink()
+        return True
     if before == after:
         print(f"  {rel}: unchanged")
         return False
@@ -127,7 +138,7 @@ def report(path: Path, before: str, after: str, apply: bool) -> bool:
     if lines >= SIZE_WARN_LINES:
         print(
             f"  NOTE {rel} is now {lines} lines against a 600-line ts-src hard cap "
-            "— split the table before the next wave lands, not during one."
+            f"— lower SHARD_ROWS in stations_registry/spa_scene.py (rows per shard)."
         )
     if apply:
         path.write_text(after, encoding="utf-8")
@@ -178,10 +189,10 @@ def main() -> int:
                     "DISTINCT body|monitor|keyboard|mouse per station — pass --tuple with parts this "
                     f"station actually had ({tuple_of(row)} is the copy)."
                 )
-        after = table.render(order)
-        path = REPO / rel
-        before = path.read_text(encoding="utf-8") if path.is_file() else ""
-        changed |= report(path, before, after, args.apply)
+        for out_rel, after in table.render_files(order, rel).items():
+            path = REPO / out_rel
+            before = path.read_text(encoding="utf-8") if path.is_file() else ""
+            changed |= report(path, before, after, args.apply)
 
     if args.check and changed:
         print("spa-scene-rows: --check FAILED (rebuild differs from the working tree)", file=sys.stderr)
