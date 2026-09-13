@@ -1031,7 +1031,7 @@
     "oberon": {
       "dir": "/data/vms/streamhost/stations/oberon",
       "qmp": "/data/vms/streamhost/stations/oberon/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -1044,7 +1044,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54195,
-      "notes": "no exec channel: drive via QMP keys/rel mouse and read the framebuffer. Pointer is RELATIVE PS/2 through the daemon's abs->rel bridge (1.5 px per unit measured, even steps land on integer pixels). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; recapture only via checkpoint-guard."
+      "notes": "no exec channel: drive via QMP keys and the ramabs pointer socket, and read the framebuffer. Pointer is ABSOLUTE 1:1 via kh-ramabs writing Oberon's own (y,x) coordinate at 0x140160 (layout point32le_yx) — SINGLE INJECTOR: while ptr.sock is connected nothing else may push motion or a button edge. Three mouse buttons are the whole UI (middle executes the command word under the pointer). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; the empty qcow2 floppy carries its half of the same snapshot, so both files move together. Binary is /opt/qemu-oberon; recapture only via checkpoint-guard, then re-derive KH_RAMABS_ADDR with scripts/dev/oberon-ramabs-derive.py."
     },
     "openbsd": {
       "dir": "/data/vms/streamhost/stations/openbsd",
