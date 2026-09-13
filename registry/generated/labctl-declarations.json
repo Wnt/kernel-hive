@@ -812,6 +812,24 @@
       "udp_port": 54150,
       "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
     },
+    "macsys1": {
+      "dir": "/data/vms/streamhost/stations/macsys1",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54199,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/macsys1/sta."
+    },
     "magiccap": {
       "dir": "/data/vms/streamhost/stations/magiccap",
       "qmp": "/data/vms/streamhost/stations/magiccap/qmp.sock",

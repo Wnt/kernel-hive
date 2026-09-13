@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac';
+  | 'classicmac' | 'classicmac128';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -302,6 +302,13 @@ export const OS_FAMILY: Record<string, Family> = {
   lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
+  // macsys1 gets its OWN family, not classicmac: the Macintosh 128K's M0110
+  // keyboard has NO arrow keys (they arrive on the M0110A in 1986), no Esc, no
+  // Ctrl and no function keys, so classicmac's base row would put five dead
+  // buttons on a 1984 exhibit. System 1.0 has no command line either, so the
+  // Command chords are the whole keyboard vocabulary — and Undo/Cut/Copy/Paste
+  // on ⌘Z/⌘X/⌘C/⌘V are the ones this machine introduced to the world.
+  macsys1: 'classicmac128',
   // ravynOS 0.6.1. Command chords are the project's stated design goal, but the
   // classicmac family would be wrong here on both counts: its rows are Finder
   // verbs (⌘O open, ⌘N new folder, ⌘. cancel) and the 0.6.x build ships no file

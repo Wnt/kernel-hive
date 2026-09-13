@@ -129,6 +129,54 @@ Revisit only if someone ports or finds a Minix 2 client worth showing.
 | `minix2-spa` | poster prose, hero, scene rows | (coordinator's) | merged at landing if it exists |
 | `minix2-docs` | `docs/guests/minix2.md`, `GUEST-TIERS.md`, release-notes facts | sonnet-low | branch `minix2-docs` |
 
+### 3. LANDING TRAP — the smoke daemon still owns the UDP port
+
+`station-land.sh` step 8 decides whether a smoke rig is up by looking for its
+**qmp.sock**. This lead had already killed the smoke QEMU (to quiesce the qcow2
+before copying the golden), so the socket was gone, step 8 said *"no smoke rig
+socket for this session — nothing to take down"*, and the smoke **daemon** —
+which is a separate process and the thing that actually binds udp/54201 — was
+left running. `streamhost@minix2` then restart-looped 17 times on
+
+```
+Error: Address already in use (os error 98)
+```
+
+and the landing aborted at step 9 with a healthy guest and a dead unit. The
+diagnosis is one command, and it is the only honest one (never a cmdline grep):
+
+```sh
+ssh lab 'ss -ulpnH | grep 54201'          # -> pid
+ssh lab 'readlink /proc/<pid>/exe'        # -> .../streamhost-<sha>  = the smoke daemon
+```
+
+Fix: kill that pid, `smoke-rig.sh <id> --down`, then re-run `station-up.sh <id>`
+(the rest of the landing had already succeeded, so re-running the whole
+`station-land.sh` was not needed). **Take the smoke rig down BEFORE you kill its
+QEMU**, and this cannot happen.
+
+## Landed
+
+`station-land.sh minix2 --golden /data/vms/sandbox/minix2/smoke/minix2.qcow2`
+pushed `main@c6ba8757` and box-deployed it; `station-up.sh minix2` then brought
+the unit up green after the port was freed.
+
+| Proof | Frame | Result |
+|---|---|---|
+| live station restores the golden | `f11-landed.png` | PASS — fixture on screen |
+| `labctl reset minix2` (`loadvm golden`) on the LIVE station | `f12-live-reset.png` | PASS — fixture returned |
+| live keyboard through the shipped `dbus-abs` input path | `f13-live-key.png` | PASS — all 20 characters landed |
+| the exhibit itself, live | `f14-live-ls.png` | `ls /usr/src/kernel` prints `proc.c clock.c tty.c keyboard.c main.c memory.c …` |
+
+`gallery-manifest.json` carries minix2 (103 entries); all five runtime docs
+published; SPA rebuilt and deployed; `darklaunch-station.py reapply` re-armed
+os213's overlay afterwards.
+
+Note for a future pass: `labctl type minix2` reports *"tile declares no
+pacing"* and sends unpaced QMP keys. Nothing dropped at that rate on this guest
+— Minix 2 buffers the AT keyboard properly — so the fleet floor is a ceiling
+here, not a requirement.
+
 ## Teardown
 
 The smoke rig (`smoke-rig.sh minix2 --down`) and its QEMU are taken down by

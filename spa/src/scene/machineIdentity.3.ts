@@ -142,6 +142,11 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b6ad98', accentTint: '#625f58', tintMix: 0.32,
     badge: '486 DX2', spec: 'DOS • 1994', kit: 'office90',
   },
+  // TODO(macsys1): exhibit finish copied from apple2e — set the real era cues.
+  macsys1: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
   // The IIGS is the first Apple in PLATINUM — the warm beige of the //e was
   // dropped for a pale cool grey, and the GS wears it a year before the Mac II
   // does. The accent is the Apple six-colour stripe reduced to one hue, which

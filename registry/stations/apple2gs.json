@@ -39,13 +39,13 @@
     }
   },
   "render": {
-    "signalOrder": 89,
-    "stationsManifestOrder": 87,
+    "signalOrder": 90,
+    "stationsManifestOrder": 88,
     "stationsManifestPrelude": "\n# apple2gs (VMID 185) — TODO one line; scaffolded from apple2e.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 103,
+    "bindingOrder": 104,
     "bindingPrelude": "",
-    "goldenOrder": 87
+    "goldenOrder": 88
   },
   "stationDir": "apple2gs",
   "lifecycle": "production",
@@ -92,7 +92,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 204,
-    "bringUpOrder": 103,
+    "bringUpOrder": 104,
     "x11": {
       "display": ":73",
       "geometry": "1024x768x32",
