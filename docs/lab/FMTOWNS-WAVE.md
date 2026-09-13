@@ -106,7 +106,10 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
 
 ## Still open
 
-1. **Pointer** — MOTION *and* CLICK PROVEN 2026-09-13 (motion: Sonnet,
+1. **Pointer** — MOTION *and* CLICK PROVEN 2026-09-13; 1:1 ABSOLUTE still
+   OPEN, but the wall is now understood and the fix is committed (stream #3
+   below: the raster is letterboxed at 931x702+61+48 and the guest pointer
+   cannot leave that box) (motion: Sonnet,
    `fmtowns-ptr`; click: Opus, `fmtowns-list`). NOT YET SHIPPED: the deployed
    binary is still the pre-patch build, so `stream.pointer` is `none` and the
    station stays `hidden` until the rebuild+redeploy in
@@ -332,6 +335,121 @@ copied in, golden `.sta` copied in, never the original), binary
 `/data/vms/sandbox/fmtowns-ptr/build/mame-fmtownsftv-ptr` (built through
 `build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
 build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
+
+### Pointer stream 2026-09-13 #3 (fmtowns-ptr, Opus) — THE RASTER IS LETTERBOXED
+
+The 1:1 absolute wall was never pacing, never the gain and never the
+signed-byte wrap. **The FM Towns raster does not fill the published
+surface.** MEASURED on a live rig (`np.any(frame > 8)` over the whole
+1024x768 shm frame): every non-black pixel lies in
+
+	cols 61..991   rows 48..749      = 931 x 702, origin (61,48)
+
+and the guest's own pointer cannot leave that box. Slam the mouse into the
+top-left clamp with fifteen `MOVE -100 -100` and the cursor sprite parks at
+exactly `(61,48)`; fifteen more change nothing. The right clamp is `x0=991`,
+the bottom `y0=749`.
+
+Every number in the previous stream's five-target table was that box:
+
+| target | landed | err | what it actually was |
+|---|---|---|---|
+| (20,20) | (61,48) | 50 | the raster's top-left clamp |
+| (1000,20) | (991,70) | 51 | the raster's right clamp |
+| (20,740) | (61,749) | 42 | the raster's left/bottom clamp |
+| (1000,740) | (991,746) | 11 | the raster's bottom-right clamp |
+| (512,384) | (435,315) | 103 | inherited border debt + a 9% gain error |
+
+Four of the five targets were **outside the guest's reachable area**, so the
+proof was asking the cursor to stand where there is no picture. Lap 2 being
+bit-identical to lap 1 is the signature of a clamp, not of drift — and an
+open loop, whose only origin is its belief, then carries the border's width
+forward into every later target. That is the 103 px centre miss.
+
+**Measured constants (2026-09-13, three independent rigs under
+`/data/vms/sandbox/fmtowns-ptr/`, pre-chain binary, golden `.sta`):**
+
+| Quantity | Value | How |
+|---|---|---|
+| raster box in the published surface | `931x702+61+48` | non-black bounds of the shm frame |
+| GAIN_X | **5.825 px/count**, residual 0 | x0 = 61 @ 0 counts, 294 @ 40, 527 @ 80 (`rigB/frames/xramp-*.png`) |
+| GAIN_Y | **5.367 px/count**, residual 0 | y0 = 209 @ 30, 370 @ 60, 531 @ 90, 692 @ 120, +161 px per +30 counts (`rigB/frames/yramp-*.png`) |
+| single-`MOVE` wrap cliff | **N = 128**, hard | N=127 moves ~927 px; N=128/130/160/200/255 move **zero** px (`rigB/frames/wrap-*.png`). `bus/msx/ctrl/mouse.cpp` packs each poll's delta into a signed byte |
+| inter-chunk pacing floor | **between 50 and 150 ms** | 400 counts as 10x40: @50 ms lands x0=583 (~78% of the counts lost); @150/300/600 ms all reach the 991 clamp (`rigB/frames/gap-*.png`) |
+| pacing as a cure for the corner error | **none** | rigC ran the five targets at 40 counts/250 ms, 40/400 and 20/400: the first two are bit-identical to the baseline, the third is worse and no longer even deterministic (`rigC/P1.log`, `P2.log`, `P3.log`) |
+
+**The fix, landed in this repo, not yet built into the deployed binary.**
+Two commits on `fmtowns-ptr`:
+
+1. `native.d/fmtowns.sh` opts the station into the apple2e open-loop
+   absolute chain — `mame-ctlsock-move-step-cap.patch` (cap the pacer at the
+   device's differencing window), `-open-loop-gain.patch`
+   (`MAME_CTL_GAIN_X/Y`, because an open loop cannot learn a gain and was
+   running at 1.0), `-home-drain.patch` (let the homing slam drain out of the
+   guest's accumulator before the first target travels) and
+   `-count-carry.patch` (integrate counts x gain in floating point so a
+   fixed-size pacer chunk stops dropping the same residue every window).
+   The station previously applied only `ptr-tags`, so `MOVEA` was a 1.0-gain
+   dead reckoner on a 5.8 px/count machine.
+2. `mame-ctlsock-screen-origin.patch` — new, written here. `MAME_CTL_SCREEN`
+   accepts an X-geometry tail `WxH+X+Y`; `clamp_px_x/y` then clamp to
+   `[X, X+W-1]`/`[Y, Y+H-1]`, `movea_target()` clamps through them instead of
+   its own 0-based pair, and every site that anchors the belief at "the
+   top-left clamp" after a homing slam anchors at `(X,Y)`. Default `+0+0` is
+   byte-identical for every other station and no save item is touched, so the
+   golden is not orphaned.
+
+**The station's pointer env then becomes** (none of it is in the fixture yet
+— it pairs with the rebuilt binary and must land with it):
+
+```
+MAME_CTL_SCREEN=931x702+61+48
+MAME_CTL_GAIN_X=5.825
+MAME_CTL_GAIN_Y=5.367
+MAME_CTL_PTR_MOD=256      # move-step-cap then caps the pacer at 127 counts,
+                          # one below the measured wrap cliff. Safe on a
+                          # 16-bit field: the device reduces mod 256 anyway.
+MAME_CTL_MOVE_WINDOW=150  # the measured pacing floor, not the 40 ms default
+```
+
+**NOT PROVEN IN THIS STREAM: the five-target table itself.** The build of the
+six-patch binary (`build-mame-native.sh fmtowns`, work dir
+`/data/vms/sandbox/fmtowns-ptr/work`, output
+`/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain`) did not finish inside
+the stream's 90-minute stop — the clone plus the layout-compression phase ate
+most of it. `stream.pointer` therefore stays as it is and the station stays
+`hidden`.
+
+**Exact next commands, in order** (no discovery left):
+
+```
+cd /data/vms/sandbox/fmtowns-ptr/repo
+JOBS=4 scripts/build-guests/emulators/build-mame-native.sh fmtowns \
+  /data/vms/sandbox/fmtowns-ptr/work /data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain
+# the work dir is already cloned and patched, so this run skips the clone
+BIN=/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain \
+MAME_CTL_SCREEN=931x702+61+48 MAME_CTL_PTR_MOD=256 \
+MAME_CTL_GAIN_X=5.825 MAME_CTL_GAIN_Y=5.367 \
+  /data/vms/sandbox/fmtowns-ptr/launchD.sh
+grep ctlsock /data/vms/sandbox/fmtowns-ptr/rigD/mame.log   # gate: btns=1 axes=1
+python3 /data/vms/sandbox/fmtowns-ptr/movea_five.py /data/vms/sandbox/fmtowns-ptr/rigD chain
+```
+
+`movea_five.py` sends `MOVEA` — the verb `streamhost/streamhost/src/mame_sock.rs`
+actually sends for a visitor pixel, unscaled and uncalibrated (routed backends
+return before `calibrated_abs()`, so `SH_CURSOR_OFF_*` never reaches this
+path — the origin has to live in the module, which is why the patch exists).
+Use targets INSIDE the raster: `(80,70) (960,70) (80,720) (960,720) (512,384)`.
+
+**Two traps for whoever runs it.** (1) The blob locator in `five_target.py`
+and `movea_five.py` picks "the largest changed blob not within a few px of
+the previous position"; when a move is small the new and old sprites overlap
+and it picks nothing, and when the cursor is pinned in a corner further
+motion in that direction changes no pixels at all and it reports a false
+"no movement". Judge a null result against `STAT`'s `bel=` before believing
+it. (2) The cursor sprite is 16x27 and its measured origin IS the belief
+coordinate (the home slam puts belief and sprite origin at the same
+`(61,48)`), so no hotspot offset is needed.
 
 ### Pointer stream 2026-09-13 #2 (fmtowns-list, Opus) — CLICK PROVEN
 
