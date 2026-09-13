@@ -16,7 +16,7 @@ import {
 
 export type ExoticFamily =
   | 'kc854' | 'sinclairql' | 'bbcmicro' | 'armeval' | 'alto' | 'appleii'
-  | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'samcoupe'
+  | 'atarist' | 'classicmac' | 'classicmac128' | 'amiga' | 'zxspectrum' | 'samcoupe'
   | 'atarist' | 'classicmac' | 'amiga' | 'zxspectrum' | 'atari800xl'
   | 'xerox-dwarf' | 'xerox-star';
 
@@ -276,6 +276,37 @@ export const PROFILES_EXOTIC: Record<ExoticFamily, KeyboardProfile> = {
       chord('cmd-q', '⌘Q', XK.Super_L, 'q'.charCodeAt(0), 'Quit the application'),
       chord('cmd-n', '⌘N', XK.Super_L, 'n'.charCodeAt(0), 'New folder'),
       chord('cmd-period', '⌘.', XK.Super_L, '.'.charCodeAt(0), 'Cancel'),
+    ]],
+  },
+
+  // Macintosh 128K, System 1.0 (macsys1). The M0110 keyboard of January 1984 has
+  // no arrow keys, no Esc, no Ctrl and no function keys — the cursor is moved with
+  // the mouse and nothing else — so this family is classicmac minus those five
+  // buttons rather than a reuse of it. Tab and Backspace take their place: they are
+  // the two non-printing keys the M0110 does have and that Finder 1.0 and MacWrite
+  // actually bind. ⌘ is Super_L for the same reason as classicmac (the browser
+  // swallows Meta; Super_L reaches the guest as the Command scancode).
+  //
+  // The moreRows chords are the Edit menu this machine shipped: ⌘Z ⌘X ⌘C ⌘V are
+  // Apple's 1984 assignment and the reason every desktop since uses them.
+  classicmac128: {
+    family: 'classicmac128',
+    rows: [[
+      latch('cmd', '⌘', XK.Super_L, 'Command'),
+      latch('opt', '⌥', XK.Alt_L, 'Option'),
+      latch('shift', 'Shift', XK.Shift_L),
+      tap('tab', 'Tab', XK.Tab),
+      tap('bsp', '⌫', XK.BackSpace, { hint: 'Backspace — the 128K has no forward Delete' }),
+      tap('ret', '⏎', XK.Return),
+    ]],
+    moreRows: [[
+      chord('cmd-o', '⌘O', XK.Super_L, 'o'.charCodeAt(0), 'Open the selected icon'),
+      chord('cmd-w', '⌘W', XK.Super_L, 'w'.charCodeAt(0), 'Close window'),
+      chord('cmd-z', '⌘Z', XK.Super_L, 'z'.charCodeAt(0), 'Undo'),
+      chord('cmd-x', '⌘X', XK.Super_L, 'x'.charCodeAt(0), 'Cut'),
+      chord('cmd-c', '⌘C', XK.Super_L, 'c'.charCodeAt(0), 'Copy'),
+      chord('cmd-v', '⌘V', XK.Super_L, 'v'.charCodeAt(0), 'Paste'),
+      chord('cmd-q', '⌘Q', XK.Super_L, 'q'.charCodeAt(0), 'Quit the application'),
     ]],
   },
 
