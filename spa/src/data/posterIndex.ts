@@ -183,6 +183,9 @@ const POSTER_INDEX = {
   "pdp11": {
     "hero": "/posters/pdp11/desktop.webp"
   },
+  "perq": {
+    "hero": "/posters/perq/desktop.webp"
+  },
   "pet2001": {
     "hero": "/posters/pet2001/desktop.webp"
   },
