@@ -1089,9 +1089,45 @@ read it as "reset now completes, deterministically, and here is the number."**
 Measured relaunches, each proved on the framebuffer by ink (the Services/Archives
 desktop is ~467 000 lit pixels of 1 024 000; the splash is ~72 000):
 
-| relaunch | launcher returns | desktop on the framebuffer |
-| -------- | ---------------- | -------------------------- |
-| see the measured table in the landing commit | | |
+| relaunch | launcher returns | desktop on the framebuffer | total |
+| -------- | ---------------- | -------------------------- | ----- |
+| 1 | 40.1 s | ink 526 328 after 48 s | **117.3 s** |
+| 2 | 59.0 s | ink 471 928 after 36 s | **118.4 s** |
+| 3 | 39.6 s | ink 471 928 after 52 s | **116.0 s** |
+
+Three consecutive relaunches, every one reaching the Services/Archives desktop
+unattended, spread 2.4 s. Before the fixes the same call took 182 s on a good day
+and 8 minutes on a bad one. `/data/vms/sandbox/vision-ptr2/relaunch-test.sh` is
+the harness.
+
+### 8. The homing has to wait for the guest to go QUIET
+
+The first three relaunches above exposed a second-order bug in §3's slam, and it
+is worth knowing on any station that drives an emulated serial mouse: **a homing
+slam issued while the guest is still painting is silently wrong.** Measured, all
+three relaunches: a slam right after the calibration walk left a fresh
+**(+120,+140) px** offset — XTEST (20,20) put the arrow's hotspot at (140,160) —
+while the identical slam issued once the machine had gone quiet was exact. The
+cause is the same 8250 the pointer rides on: Visi On is busy drawing, it is not
+draining the UART, PCE's mouse FIFO drops packets, and a dropped packet destroys
+the one property the slam depends on — that the guest receives *more* leftward
+motion than it can absorb.
+
+`vision-inner.sh` now has `fb_quiet 5 120`: the framebuffer must be byte-identical
+for **5 consecutive seconds** before homing (`fb_settle`'s "same twice" is not
+enough — Visi On paints in bursts with lulls between them), and `home_pointer()`
+slams twice, a second apart. An ink threshold does NOT work as the gate and was
+tried: `fb_ink` reads 3427 both mid-paint and on the finished desktop.
+
+Re-proved on two fresh relaunches after that change — five targets, two laps,
+every hotspot exactly on the requested XTEST pixel, click on HELP `REACTED`:
+
+```
+lap1 (20,20)    bbox=(10,20)-(31,55)      lap2 (20,20)    bbox=(10,20)-(31,55)
+lap1 (1240,20)  bbox=(1230,20)-(1251,55)  lap2 (1240,20)  bbox=(1230,20)-(1251,55)
+lap1 (1240,760) bbox=(1230,760)-(1251,795) lap2 (1240,760) bbox=(1230,760)-(1251,795)
+lap1 (640,400)  bbox=(630,400)-(651,435)  lap2 (640,400)  bbox=(630,400)-(651,435)
+```
 
 **`labctl facts vision`'s "could not resolve a boot disk" is cosmetic and not
 this bug**: `labctl facts lisa` and `labctl facts perq` print the identical

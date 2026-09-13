@@ -268,14 +268,49 @@ calibrate_pointer() {
   return 0
 }
 
+# fb_quiet: block until the framebuffer has been UNCHANGED for $1 consecutive
+# seconds (default 5), giving up after $2 (default 120). fb_settle's "same twice"
+# is not enough here: Visi On paints the Services desktop in bursts with pauses
+# between them, so a 2-second lull looks settled while the 8088 is still drawing.
+#
+# WHY THIS GATES THE HOMING. Measured 2026-09-13, three relaunches running: a
+# homing slam issued right after the calibration walk left a fresh (+120,+140)
+# offset, while the same slam issued once the machine had gone quiet was exact.
+# The guest is busy repainting, its 8250 is not being drained, and PCE's mouse
+# FIFO drops packets -- and a dropped packet breaks the whole point of the slam,
+# which is that the guest receives MORE leftward motion than it can absorb. Home
+# the pointer when the 8088 has nothing else to do.
+fb_quiet() {
+  local want="${1:-5}" max="${2:-120}" prev="" cur="" same=0 i
+  for ((i = 0; i < max; i++)); do
+    cur="$(fb_hash)"
+    if [ "$cur" = "$prev" ]; then
+      same=$((same + 1))
+      [ "$same" -ge "$want" ] && return 0
+    else
+      same=0
+    fi
+    prev="$cur"
+    sleep 1
+  done
+  return 1
+}
+
 # home_pointer: zero the guest-vs-host cursor offset by clamping both at (0,0).
-# Runs after the desktop is up; see calibrate_pointer's comment for the why.
+# Runs after the desktop is PAINTED (wait_desktop above); see calibrate_pointer's
+# comment for why a clamp is the only thing that can remove the offset.
 home_pointer() {
   local w h
   w="${GEOM%x*}"
   h="${GEOM#*x}"
-  xdotool mousemove --sync $((w - 1)) $((h - 1)) || return 1
-  xdotool mousemove --sync 0 0 || return 1
+  # twice: the first slam also flushes whatever the guest was mid-way through
+  # consuming, the second is the one that is guaranteed to clamp both cursors
+  # at (0,0) with an idle 8088 draining the 8250.
+  for _ in 1 2; do
+    xdotool mousemove --sync $((w - 1)) $((h - 1)) || return 1
+    xdotool mousemove --sync 0 0 || return 1
+    sleep 1
+  done
   # park in the middle so the first visitor does not start on a command-strip
   # button, and so the arrow is visible in the station's rest frame
   xdotool mousemove --sync $((w / 2)) $((h / 2)) || return 1
@@ -314,6 +349,8 @@ if [ "${VISION_AUTOSTART:-1}" = 1 ]; then
     if calibrate_pointer; then
       fb_settle 30 || true
       log "calibration walk done, ink=$(fb_ink)"
+      fb_quiet 5 120 && log "framebuffer quiet — homing the pointer" ||
+        log "framebuffer never went quiet in 120 s — homing anyway"
       if home_pointer; then
         log "pointer homed at (0,0) — guest cursor now tracks absolute XTEST 1:1"
       else
