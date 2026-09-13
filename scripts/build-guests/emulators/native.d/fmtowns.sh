@@ -67,10 +67,25 @@ NATIVE_MAME_ARGS=(-pad1 townspad -pad2 mouse)
 # open-loop-gain's MAME_CTL_GAIN_X/Y; the first-target home slam parks counts
 # in the device accumulator, which is home-drain; and a fixed-size pacer chunk
 # rounds the same residue every window, which is count-carry.
+#
+# ...but the open loop is NOT what ships here either. MEASURED 2026-09-13 on
+# the rig (docs/lab/FMTOWNS-WAVE.md SS Pointer stream #4): the Towns OS mouse
+# driver's counts->px transfer is NONLINEAR and has no linear region — px per
+# count climbs monotonically from 1.53 at a 5-count poll to 5.83 at 40, X and
+# Y on the same curve. open-loop-gain assumes ONE gain, so the last (short)
+# chunk of every travel moves at a different rate than the bulk and a 2 px
+# five-target proof is unreachable at any pacer cap. mame-ctlsock-abs-ram.patch
+# (macsys1's route) replaces the whole dead-reckoning engine with an absolute
+# WRITE into Towns OS's own cursor globals through the published-rect
+# transform: zero counts are issued, so the acceleration curve cannot apply.
+# It is applied LAST so its hunks land on top of screen-origin's. The
+# open-loop stack stays in the build as the fallback the module uses if the
+# address space cannot be resolved -- but MAME_CTL_GAIN_X/Y must NOT be set in
+# the fixture: no single value is right on this curve.
 NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch
   mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch
   mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch
-  mame-ctlsock-screen-origin.patch)
+  mame-ctlsock-screen-origin.patch mame-ctlsock-abs-ram.patch mame-ctlsock-abs-ram-nudge.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {

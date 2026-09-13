@@ -336,6 +336,90 @@ copied in, golden `.sta` copied in, never the original), binary
 `build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
 build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
 
+### Pointer stream 2026-09-13 #5 (fmtowns-ptr, Opus) — THE WRITE ROUTE LANDS, AND ONLY ONE OF THE THREE MIRRORS MAY BE WRITTEN
+
+Stream #4's verdict was right: the open loop is dead here, and macsys1's
+`mame-ctlsock-abs-ram.patch` is the route. Two things had to be found on the
+rig before it worked, and the second is the one that would have shipped a
+broken exhibit.
+
+**1. Towns OS keeps the cursor in THREE mirrored words — and they are not
+interchangeable.** Found by sweeping the first 4 MB of the 386 program space
+with the patch's own `PEEK` at five known cursor positions and keeping every
+16-bit offset whose value is an affine function of the sprite's published X
+(or Y) with an rms under 2 (`/data/vms/sandbox/fmtowns-ptr/discover.py`):
+
+| addr | holds | slope vs published px |
+|---|---|---|
+| `0x11623c` / `0x11623e` | **the authoritative position** — poke it and the driver propagates | 0.686 / 0.683 |
+| `0x0a2034` / `0x0a2036` | a copy the driver rewrites every poll | same |
+| `0x116240` / `0x116242` | the **erase** position — the rect the next poll restores | same |
+
+`order=hv` (X first, little-endian 16-bit words, 2 bytes apart).
+
+The slopes ARE the geometry: 931 x 0.686 = 639, 702 x 0.683 = 479, so the
+Towns raster is **640x480** drawn into the letterbox `931x702+61+48`. The
+scale is NON-INTEGER (931/640 = 1.4547), which is why the arrow breaks into a
+dozen 1-2 px connected components on the published surface and why neither a
+blob picker nor a naive exact template is a stable locator here.
+
+**2. Towns OS redraws the cursor only on a NON-ZERO poll delta.** MEASURED:
+`POKEW 0x11623c 400` / `POKEW 0x11623e 300` read back 400,300 and changed
+**0 published pixels**; the same poke followed by `MOVE 1 0` redrew the arrow
+and left the word at exactly **401** — the acceleration curve that kills the
+open loop is 1.00 unit/count at n=1. Hence
+`mame-ctlsock-abs-ram-nudge.patch`: `MAME_CTL_ABS_RAM=...,nudge=1` writes the
+position pre-biased by the nudge and then issues that one count, so the
+driver's own increment lands on the commanded pixel and does the repaint. At
+gx < nudge the sign flips so the biased value can never go negative. Default
+0 — macsys1 is byte-for-byte unchanged.
+
+**3. THE TRAP: writing all three mirrors leaves the old arrow on screen.**
+The first binding wrote all three (`pts=0x0a2034+0x11623c+0x116240`). Every
+target was exact in the guest's own word — and the desktop filled up with
+stale arrows, because the poll's sequence is *restore the rect at `0x116240`,
+then draw at the new position*. Clobbering `0x116240` sends the erase to the
+place we are about to draw, so the previous arrow is never removed. MEASURED
+on a clean `LOADST golden` for each poke set:
+
+| poked | result |
+|---|---|
+| `0x0a2034` only | the poke is OVERWRITTEN on the next poll — a copy, not the source |
+| `0x116240` only | same, overwritten — and the erase misfires |
+| **`0x11623c` only** | all three vars follow to the new value, **old arrow erased**, 294 px changed total |
+| `0x11623c` + `0x116240` | new position exact, **old arrow NOT erased** |
+
+So the shipped binding writes **one** address. `pts=0x11623c`, nothing else.
+
+#### The proof (rig `/data/vms/sandbox/fmtowns-ptr/rigE`, `LOADST golden`, frames in `rigE/frames/p8-*`)
+
+```
+MAME_CTL_ABS_RAM=cpu=maincpu,pts=0x11623c,order=hv,nudge=1
+MAME_CTL_ABS_RECT=61,48,931,702
+MAME_CTL_ABS_GEOM=640x480
+```
+
+Five targets, two laps, the arrow re-parked at (512,140) between every one so
+each reading is an independent diff, plus the guest's own word through `PEEK`:
+
+| target | lap 1 err | lap 2 err | guest word | expected |
+|---|---|---|---|---|
+| (80,70) | 0,3 | 0,3 | (13,15) | (13,15) |
+| (960,70) | 0,0 | 0,0 | (618,15) | (618,15) |
+| (80,720) | 0,0 | 0,0 | (13,459) | (13,459) |
+| (960,720) | 0,0 | 0,0 | (618,459) | (618,459) |
+| (512,384) | 0,0 | 0,0 | (310,229) | (310,229) |
+
+**The guest's own cursor word is EXACT on all ten** — the commanded published
+pixel maps to the commanded guest pixel with no residual at all. The 3 px on
+(80,70) is the LOCATOR, not the pointer: the arrow's tip there sits on the
+TownsMENU bar in the same colour, so the top three rows of the sprite do not
+appear in the diff. It is identical in both laps, which is what a locator
+artifact looks like and what pointer error does not.
+
+The changed-pixel count per target is a flat 145-244 across both laps (erase +
+draw), with no accumulation — the trail defect above is gone.
+
 ### Pointer stream 2026-09-13 #4 (fmtowns-ptr, Opus) — THE GAIN IS NOT A CONSTANT
 
 Two facts landed here, one of which invalidates a measured number in stream #3.
