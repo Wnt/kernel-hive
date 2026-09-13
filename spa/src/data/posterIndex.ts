@@ -180,6 +180,9 @@ const POSTER_INDEX = {
   "oricatmos": {
     "hero": "/posters/oricatmos/desktop.webp"
   },
+  "os213": {
+    "hero": "/posters/os213/desktop.webp"
+  },
   "os2warp": {
     "hero": "/posters/os2warp/desktop.webp"
   },

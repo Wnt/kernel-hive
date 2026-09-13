@@ -1046,6 +1046,24 @@
       "udp_port": 54131,
       "notes": "HOST-NATIVE (de-bridged 2026-08-12): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/oricatmos/sta."
     },
+    "os213": {
+      "dir": "/data/vms/streamhost/stations/os213",
+      "qmp": "/data/vms/streamhost/stations/os213/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54203,
+      "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
+    },
     "os2warp": {
       "dir": "/data/vms/streamhost/stations/os2warp",
       "qmp": "/data/vms/streamhost/stations/os2warp/qmp.sock",

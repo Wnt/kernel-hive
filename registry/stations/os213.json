@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "id": "os213",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 83,
+        "prelude": "",
+        "value": {
+          "key": "os213",
+          "script": "tiles/nt351.sh",
+          "outputDir": "Nt351",
+          "class": "installed",
+          "estimated": "~15-30m",
+          "automation": "partial",
+          "produces": "nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "os213",
+      "value": {
+        "os": "Windows NT Workstation 3.51",
+        "win": "qemu",
+        "mouse": {
+          "a": [
+            120,
+            360
+          ],
+          "b": [
+            480,
+            150
+          ]
+        },
+        "kbd": "ctrl+Escape",
+        "kbd_reset": "Escape",
+        "kbd_note": "Ctrl+Esc opens Task List in the Program Manager shell; keyboard, click, and drag are framebuffer-verified.",
+        "audio_trigger": "tone",
+        "note": "1024x768x65536-color (16bpp) accelerated Cirrus desktop; requires /opt/qemu-cirrusfix. PS/2 relative mouse is driven through daemon abs coordinates with edge re-homing and calibrated cursor_scale."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/os213",
+      "qmp": "/data/vms/streamhost/stations/os213/qmp.sock",
+      "pointer_mode": "rel",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54203,
+      "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
+    }
+  },
+  "render": {
+    "signalOrder": 88,
+    "stationsManifestOrder": 86,
+    "stationsManifestPrelude": "\n# os213 (VMID 83) — TODO one line; scaffolded from nt351.\n",
+    "bringUpGroup": 3,
+    "bindingOrder": 102,
+    "bindingPrelude": "",
+    "goldenOrder": 86,
+    "actionMapOrder": 50
+  },
+  "stationDir": "os213",
+  "lifecycle": "production",
+  "display": {
+    "width": 1024,
+    "height": 768,
+    "bitsPerPixel": 16,
+    "colors": 65536
+  },
+  "notes": [
+    "scaffolded from nt351 on 2026-09-13; TODO: media, museum, spa"
+  ],
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54203,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "dbus-rel",
+      "method": "qemu-ps2-relative",
+      "absolute": false,
+      "present": true,
+      "device": "ps2",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 203
+  },
+  "guestDoc": "docs/guests/os213.md",
+  "credentialsRef": "guest/os213",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "os213",
+      "SH_QMP": "/data/vms/streamhost/stations/os213/qmp.sock",
+      "SH_PORT": "54203",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_INPUT_BACKEND": "dbus-rel",
+      "SH_CURSOR_SCALE": "1.0",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/os213/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/os213/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 203,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "os213",
+        "--vmid",
+        "203",
+        "--udp",
+        "54203",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "dbus-rel",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/os213/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/os213/station.env.fixture"
+      ],
+      "deviceSetId": "os213-current",
+      "launcher": "streamhost/stations/os213/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/os213/station.env.fixture",
+      "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+      "machine": "isapc",
+      "accel": "tcg",
+      "cpu": "486",
+      "memoryMB": 64,
+      "smp": 1,
+      "vga": "isa-cirrus-vga",
+      "deviceSetSummary": [
+        "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
+        "-name streamhost-os213",
+        "-accel tcg -m 64 -smp 1",
+        "-machine isapc -cpu 486",
+        "-rtc base=localtime",
+        "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
+        "-device isa-cirrus-vga,global-vmstate=on",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
+        "$LOADVM",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off",
+        "-pidfile $D/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+        "machine": "isapc",
+        "accel": "tcg",
+        "cpu": "486",
+        "memoryMB": 64,
+        "smp": 1,
+        "vga": "isa-cirrus-vga",
+        "deviceSetSummary": [
+          "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
+          "-name streamhost-os213",
+          "-accel tcg -m 64 -smp 1",
+          "-machine isapc -cpu 486",
+          "-rtc base=localtime",
+          "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
+          "-device isa-cirrus-vga,global-vmstate=on",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
+          "$LOADVM",
+          "-qmp unix:$D/qmp.sock,server=on,wait=off",
+          "-pidfile $D/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher equals the live launcher; the golden was baked with the same guest-visible device set and the pinned Cirrus ROP1-fix QEMU"
+      }
+    },
+    "bringUpOrder": 102
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#3a6ea5",
+    "eraLabel": "TODO(nt351): 1995 · Windows NT 3.51"
+  },
+  "museum": {
+    "id": "os213",
+    "displayName": "TODO(nt351): Windows NT 3.51",
+    "year": 1995,
+    "lineage": "TODO(nt351): Windows NT 3.x",
+    "arch": "i386",
+    "ramMB": 64,
+    "era": "1990s",
+    "accent": "#3a6ea5",
+    "eraSoftware": [
+      "Program Manager",
+      "File Manager",
+      "Control Panel",
+      "Paintbrush"
+    ],
+    "periodBrowser": "Internet Explorer 2 / early Netscape",
+    "iconicApps": [
+      "Program Manager",
+      "File Manager",
+      "Minesweeper"
+    ],
+    "blurb": "TODO(nt351): The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": null,
+    "source": "/opt/qemu-cirrusfix: pve QEMU + 0004-cirrus-blt-rop1-fill patch; version not recorded (docs/guests/os213.md)"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "os213",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "PASS",
+    "keyboard": "PASS",
+    "fixture": "Windows NT 3.51 Program Manager at accelerated Cirrus 1024x768x65536 colors (16bpp) with the Main group maximized and focused; screensaver off, caret blink slowest, mouse tracking speed slowest, pointer parked lower-right."
+  },
+  "migrationExceptions": []
+}
