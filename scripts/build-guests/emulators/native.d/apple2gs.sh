@@ -25,7 +25,15 @@ NATIVE_MAME_ARGS=(-sl7 cffa2)
 # so the whole apple2e correction stack applies unchanged in the same order:
 # ptr-tags -> move-step-cap -> open-loop-gain -> home-drain -> count-carry.
 # The station fixture carries the MEASURED gains; see docs/lab/APPLE2GS-WAVE.md.
-NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
+# ABS-RAM (last in the chain, authored on macsys1): the GS's ADB mouse is a
+# relative device whose counts the Toolbox re-scales, and the SHR raster is
+# LETTERBOXED inside the 1024x768 surface (published x 47..976, y 53..717), so
+# no open loop can be 1:1 -- a dead-reckoned home is 47/53 px out before any
+# gain error. abs-ram states the visitor's pixel in the guest's own cursor
+# globals over the CPU program space instead, and brings the PEEK/POKEW/POKEB
+# probe verbs the binding has to be DERIVED with. Env-only: unset, the binary
+# behaves exactly as the open-loop chain did.
+NATIVE_EXTRA_PATCHES=(mame-ctlsock-ptr-tags.patch mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch mame-ctlsock-abs-ram.patch)
 NATIVE_SKIP_WARNINGS=0
 
 native_stage_roms() {
