@@ -336,6 +336,111 @@ copied in, golden `.sta` copied in, never the original), binary
 `build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
 build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
 
+### Pointer stream 2026-09-13 #4 (fmtowns-ptr, Opus) — THE GAIN IS NOT A CONSTANT
+
+Two facts landed here, one of which invalidates a measured number in stream #3.
+
+**1. The chain binary builds and runs; the ctlsock gate passes.** Built on
+LABHOST (not CT950 — see the build note below), ten patches:
+
+	mame-ctlsock mame-drawshm mame-kiosk-no-ui mame-irix-skip-warnings
+	mame-ctlsock-ptr-tags mame-ctlsock-move-step-cap
+	mame-ctlsock-open-loop-gain mame-ctlsock-home-drain
+	mame-ctlsock-count-carry mame-ctlsock-screen-origin
+
+`/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain`, sha256
+`1d2900f26816d8bc6f1e7bc42066492f086318fcadee001e10b3723257106d03`.
+`ctlsock: setup btns=1 axes=1 movea=0 devxy=0 swap=0 sig=1ebe131a entries=3330`
+and `HELLO ... screen=931x702` — the `WxH+X+Y` parse works and the belief
+anchors at `(61,48)` (`STAT bel=61,48` straight after a restore).
+
+**BUILD NOTE, costs an hour if you miss it.** `build-mame-native.sh` must run
+on **labhost**, never inside CT950. CT950 has an empty ccache (the hot 32 GiB
+one is `/data/vms/sandbox/trixie-chroot/ccache`, root-on-labhost), its g++ is
+13.3 against labhost's 14.2 so the cache could not be hit anyway, and its
+memory limit OOM-kills the `emumem_hedw*` TUs — which is what the earlier
+"use JOBS=2" commit actually saw. On labhost with the hot cache, `JOBS=8`
+finished the whole chain in **6 minutes**. Wipe `work/mame/build` first if a
+CT950 attempt left objects there: g++-13 objects must not be linked by g++-14.
+
+**2. The 5.825 / 5.367 px-per-count gains of stream #3 are WRONG, and so is
+its `x0 = 294 @ 40 counts` ramp.** They were read with the diff-blob locator,
+which returns the union bounding box of the old and the new sprite whenever
+the two do not overlap — so it reported the *left* edge of a two-sprite union,
+not the cursor. MEASURED here with a locator that cannot make that mistake
+(both blobs are found, and the one that is NOT at the previously-known
+position is the cursor), from the top-left clamp, and confirmed by walking the
+ramp back down and retracing the same six positions exactly:
+
+| counts issued as 20-count MOVEs | sprite x |
+|---|---|
+| 0 | 61 |
+| 20 | 148 |
+| 40 | 236 |
+| 60 | 323 |
+| 80 | 410 |
+| 100 | 497 |
+
+87, 88, 87, 87, 87 px per 20 counts — **4.36 px/count**, dead linear, and the
+descent retraces 497 → 410 → 323 → 236 → 148 → 61 exactly. Meanwhile the
+belief, running on GAIN_X 5.825, read 61 → 177 → 294 → 410 → 527 → 643: the
+module thought it was at 643 when the arrow was at 497.
+
+**But issue the SAME travel in bigger chunks and the rate changes.** Same rig,
+same binary, same window, only the chunk size differs:
+
+| chunk | counts | sprite x | px/count |
+|---|---|---|---|
+| 20-count MOVEs | 100 | 672 → *(4.36)* | **4.36** |
+| 50-count MOVEs | 50 | 367 | 6.12 |
+| 50-count MOVEs | 100 | 672 | **6.11** |
+| 50-count MOVEs | 150 | 985 (clamped) | — |
+
+and on Y, 40-count MOVEs give 48 → 282 → 516 → 749(clamped): **5.85 px/count**
+against the 20-count rate. **The Towns OS mouse driver accelerates**: px per
+count is a function of the per-poll delta, not a constant. That is why every
+open-loop gain fitted on this station has disagreed with the next one — each
+was fitted at a different chunk size.
+
+**What this means for the chain.** `open-loop-gain` assumes ONE gain. It is
+correct only if every chunk the pacer issues is the same size *and below the
+acceleration threshold*. So the station's knob is not just `MAME_CTL_GAIN_X/Y`
+— it is the pacer's step cap, which must be pinned below the threshold, and
+the gain then measured AT that cap. `MAME_CTL_PTR_MOD=256` caps at 127, far
+above it, which is why the five-target run still failed.
+
+**Five-target run on the chain binary (targets inside the raster, gains
+5.825/5.367, PTR_MOD 256, MOVE_WINDOW 150)** — lap 2, read with the blob
+locator so the positions are indicative, the *belief* column is exact:
+
+| target | belief after | verdict |
+|---|---|---|
+| (80,70) | 78,69 | belief right, arrow short |
+| (960,70) | 958,74 | " |
+| (80,720) | 78,718 | " |
+| (960,720) | 958,724 | " |
+| (512,384) | 509,386 | " |
+
+The belief tracks the target to ~2 px every time; the arrow does not follow it,
+because the belief integrates counts x 5.825 and the guest moves 4.36.
+
+**Exact next steps, in order.**
+
+1. Find the acceleration threshold: from the clamp, single `MOVE N 0` for
+   N = 5, 10, 15, 20, 25, 30, 40 and fit px/N. Stop at the largest N whose
+   px/N still equals the small-N rate.
+2. Pin the pacer's step cap to that N (`MAME_CTL_PTR_MOD` = 2N, since
+   move-step-cap takes half the modulus) and set `MAME_CTL_GAIN_X/Y` to the
+   rate measured at that cap — X and Y separately, Y from its own ramp.
+3. Shrink `MAME_CTL_MOVE_WINDOW` so a full-width sweep still takes well under
+   a second at the smaller cap (931 px / 4.36 = 214 counts = 11 chunks of 20).
+4. Re-run the five-target two-lap proof with the *exact* locator, not the blob
+   one, then land fixture + binary together and re-bake the golden.
+
+**Use `/data/vms/sandbox/fmtowns-ptr/ramp2.py <rig>`** for 1 and 2 and
+`locate_five.py` for 4; `movea_five.py`'s blob picker is not trustworthy on
+this station and its numbers should not be quoted again.
+
 ### Pointer stream 2026-09-13 #3 (fmtowns-ptr, Opus) — THE RASTER IS LETTERBOXED
 
 The 1:1 absolute wall was never pacing, never the gain and never the
