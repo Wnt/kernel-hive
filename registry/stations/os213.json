@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "os213",
-  "era_year": 2026,
+  "era_year": 1991,
   "enabled": true,
   "build": {
     "rows": [
@@ -25,7 +25,7 @@
     "actionMap": {
       "key": "os213",
       "value": {
-        "os": "Windows NT Workstation 3.51",
+        "os": "IBM OS/2 1.3",
         "win": "qemu",
         "mouse": {
           "a": [
@@ -39,7 +39,7 @@
         },
         "kbd": "ctrl+Escape",
         "kbd_reset": "Escape",
-        "kbd_note": "Ctrl+Esc opens Task List in the Program Manager shell; keyboard, click, and drag are framebuffer-verified.",
+        "kbd_note": "Presentation Manager Desktop Manager; drive it from an OS/2 Command Prompt window for a clean echo test.",
         "audio_trigger": "tone",
         "note": "1024x768x65536-color (16bpp) accelerated Cirrus desktop; requires /opt/qemu-cirrusfix. PS/2 relative mouse is driven through daemon abs coordinates with edge re-homing and calibrated cursor_scale."
       }
@@ -57,13 +57,13 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54203,
-      "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
+      "notes": "PS/2 RELATIVE pointer only — -machine isapc has no USB, so usb-tablet and every absolute route are unavailable. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer."
     }
   },
   "render": {
     "signalOrder": 88,
     "stationsManifestOrder": 86,
-    "stationsManifestPrelude": "\n# os213 (VMID 83) — TODO one line; scaffolded from nt351.\n",
+    "stationsManifestPrelude": "\n# os213 (VMID 203) — IBM OS/2 1.30.2 Standard Edition, Presentation Manager.\n#   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a\n#   pc-i440fx machine freezes this guest at SeaBIOS \"Booting from Hard Disk...\",\n#   and -m 8 froze there too (both raced 2026-09-13, see docs/lab/OS213-WAVE.md).\n# DISK: -device ide-hd with AUTO geometry. Never pin CHS — `-drive ...,cyls=` is\n#   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the\n#   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.\n# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.\n# POINTER: QEMU PS/2 RELATIVE. isapc has NO USB, so usb-tablet and every absolute\n#   route are unavailable; this is the machine's only transport, not a shortcut.\n# NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and\n#   has no rn-tapnet.sh (rule 15).\n",
     "bringUpGroup": 3,
     "bindingOrder": 102,
     "bindingPrelude": "",
@@ -88,8 +88,7 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "abs",
-      "backend": "dbus-rel",
+      "transport": "rel",
       "method": "qemu-ps2-relative",
       "absolute": false,
       "present": true,
@@ -120,7 +119,8 @@
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/os213/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/os213/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10"
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_POINTER": "rel"
     },
     "vmidLabel": 203,
     "qemu": {
@@ -133,15 +133,7 @@
         "--udp",
         "54203",
         "--pointer",
-        "abs",
-        "--input-backend",
-        "dbus-rel",
-        "--cursor-scale",
-        "1.0",
-        "--cursor-off-x",
-        "0",
-        "--cursor-off-y",
-        "0",
+        "rel",
         "--audio",
         "on",
         "--fps",
@@ -151,58 +143,56 @@
         "--env-append-file",
         "$T/os213/station.env.fixture"
       ],
-      "deviceSetId": "os213-current",
+      "deviceSetId": "os213-isapc-vga-640x480",
       "launcher": "streamhost/stations/os213/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/os213/station.env.fixture",
-      "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+      "binary": "qemu-system-i386",
       "machine": "isapc",
       "accel": "tcg",
       "cpu": "486",
-      "memoryMB": 64,
+      "memoryMB": 16,
       "smp": 1,
-      "vga": "isa-cirrus-vga",
+      "vga": "isa-vga",
       "deviceSetSummary": [
-        "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
         "-name streamhost-os213",
-        "-accel tcg -m 64 -smp 1",
+        "-accel tcg -m 16 -smp 1",
         "-machine isapc -cpu 486",
         "-rtc base=localtime",
-        "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
-        "-device isa-cirrus-vga,global-vmstate=on",
+        "-boot c",
+        "-device isa-vga",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-        "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
-        "$LOADVM",
-        "-qmp unix:$D/qmp.sock,server=on,wait=off",
-        "-pidfile $D/qemu.pid"
+        "-drive file=/data/vms/streamhost/stations/os213/os213-golden.qcow2,format=qcow2,if=none,id=hd0",
+        "-device ide-hd,drive=hd0,bus=ide.0,unit=0",
+        "-qmp unix:/data/vms/streamhost/stations/os213/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/os213/qemu.pid"
       ],
       "sourceDeviceSet": {
-        "binary": "/opt/qemu-cirrusfix/bin/qemu-system-i386",
+        "binary": "qemu-system-i386",
         "machine": "isapc",
         "accel": "tcg",
         "cpu": "486",
-        "memoryMB": 64,
+        "memoryMB": 16,
         "smp": 1,
-        "vga": "isa-cirrus-vga",
+        "vga": "isa-vga",
         "deviceSetSummary": [
-          "/opt/qemu-cirrusfix/bin/qemu-system-i386 -L /usr/share/kvm",
           "-name streamhost-os213",
-          "-accel tcg -m 64 -smp 1",
+          "-accel tcg -m 16 -smp 1",
           "-machine isapc -cpu 486",
           "-rtc base=localtime",
-          "-cdrom /data/gallery-guests/Nt351/NTWKS351_UPD.iso -boot order=c,menu=off",
-          "-device isa-cirrus-vga,global-vmstate=on",
+          "-boot c",
+          "-device isa-vga",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-          "-drive file=$D/nt351-golden.qcow2,format=qcow2,if=ide -net nic,model=ne2k_isa -net user",
-          "$LOADVM",
-          "-qmp unix:$D/qmp.sock,server=on,wait=off",
-          "-pidfile $D/qemu.pid"
+          "-drive file=/data/vms/streamhost/stations/os213/os213-golden.qcow2,format=qcow2,if=none,id=hd0",
+          "-device ide-hd,drive=hd0,bus=ide.0,unit=0",
+          "-qmp unix:/data/vms/streamhost/stations/os213/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/os213/qemu.pid"
         ]
       },
       "launcherParity": {
-        "status": "byte-identical",
-        "reason": "tracked verbatim launcher equals the live launcher; the golden was baked with the same guest-visible device set and the pinned Cirrus ROP1-fix QEMU"
+        "status": "semantic-identical",
+        "reason": "registry source and streamhost/stations/os213/qemu-streamhost.sh pin the same raced device set: isapc / 486 / 16 MB / isa-vga / TCG / ide-hd with auto geometry"
       }
     },
     "bringUpOrder": 102
@@ -211,46 +201,47 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#3a6ea5",
-    "eraLabel": "TODO(nt351): 1995 · Windows NT 3.51"
+    "eraLabel": "TODO(nt351): 1995 · Windows NT 3.51",
+    "pointerRel": true
   },
   "museum": {
     "id": "os213",
     "displayName": "TODO(nt351): Windows NT 3.51",
-    "year": 1995,
-    "lineage": "TODO(nt351): Windows NT 3.x",
+    "year": 1991,
+    "lineage": "TODO(spa): IBM/Microsoft OS/2 1.x",
     "arch": "i386",
-    "ramMB": 64,
+    "ramMB": 16,
     "era": "1990s",
     "accent": "#3a6ea5",
     "eraSoftware": [
-      "Program Manager",
+      "Presentation Manager",
+      "Desktop Manager",
       "File Manager",
-      "Control Panel",
-      "Paintbrush"
+      "OS/2 Command Prompt"
     ],
-    "periodBrowser": "Internet Explorer 2 / early Netscape",
+    "periodBrowser": null,
     "iconicApps": [
-      "Program Manager",
+      "Desktop Manager",
       "File Manager",
-      "Minesweeper"
+      "OS/2 Command Prompt"
     ],
     "blurb": "TODO(nt351): The last workstation NT built around Program Manager — compact, blue, and unmistakably mid-1990s."
   },
   "emulator": {
     "family": "QEMU",
-    "version": null,
-    "source": "/opt/qemu-cirrusfix: pve QEMU + 0004-cirrus-blt-rop1-fill patch; version not recorded (docs/guests/os213.md)"
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package); stock qemu-system-i386, no patched build — os213 uses -machine isapc, which needs nothing from /opt/qemu-cirrusfix"
   },
   "ui": "desktop",
   "reset": {
     "stationDir": "os213",
-    "pointer": "abs",
+    "pointer": "rel",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
     "mouse": "PASS",
     "keyboard": "PASS",
-    "fixture": "Windows NT 3.51 Program Manager at accelerated Cirrus 1024x768x65536 colors (16bpp) with the Main group maximized and focused; screensaver off, caret blink slowest, mouse tracking speed slowest, pointer parked lower-right."
+    "fixture": "IBM OS/2 1.30.2 Standard Edition Presentation Manager Desktop Manager at VGA 640x480x16 with its group windows open; no modal dialog, no screensaver."
   },
   "migrationExceptions": []
 }

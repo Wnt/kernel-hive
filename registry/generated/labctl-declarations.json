@@ -1062,7 +1062,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54203,
-      "notes": "no exec channel; PS/2 relative guest pointer is calibrated through streamhost's abs-coordinate path"
+      "notes": "PS/2 RELATIVE pointer only — -machine isapc has no USB, so usb-tablet and every absolute route are unavailable. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer."
     },
     "os2warp": {
       "dir": "/data/vms/streamhost/stations/os2warp",

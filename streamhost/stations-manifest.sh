@@ -1226,10 +1226,20 @@ emit vision \
   "$T/vision/x11-runtime.sh" --aux-file "$T/vision/vision-inner.sh" \
   --env-append-file "$T/vision/station.env.fixture"
 
-# os213 (VMID 83) — TODO one line; scaffolded from nt351.
+# os213 (VMID 203) — IBM OS/2 1.30.2 Standard Edition, Presentation Manager.
+#   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a
+#   pc-i440fx machine freezes this guest at SeaBIOS "Booting from Hard Disk...",
+#   and -m 8 froze there too (both raced 2026-09-13, see docs/lab/OS213-WAVE.md).
+# DISK: -device ide-hd with AUTO geometry. Never pin CHS — `-drive ...,cyls=` is
+#   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the
+#   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.
+# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.
+# POINTER: QEMU PS/2 RELATIVE. isapc has NO USB, so usb-tablet and every absolute
+#   route are unavailable; this is the machine's only transport, not a shortcut.
+# NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and
+#   has no rn-tapnet.sh (rule 15).
 emit os213 \
-  --tile os213 --vmid 203 --udp 54203 --pointer abs --input-backend dbus-rel \
-  --cursor-scale 1.0 --cursor-off-x 0 --cursor-off-y 0 --audio on --fps 30 \
+  --tile os213 --vmid 203 --udp 54203 --pointer rel --audio on --fps 30 \
   --launcher-file "$T/os213/qemu-streamhost.sh" --env-append-file \
   "$T/os213/station.env.fixture"
 
