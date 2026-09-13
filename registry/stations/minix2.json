@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "id": "minix2",
+  "era_year": 1997,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 83,
+        "prelude": "",
+        "value": {
+          "key": "minix2",
+          "script": "tiles/minix2.sh",
+          "outputDir": "Minix2",
+          "class": "retro",
+          "estimated": "~3m",
+          "automation": "full",
+          "produces": "minix2.qcow2 (pre-installed Minix 2.0.4, /usr/src)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "minix2",
+      "value": {
+        "os": "Minix 2.0.4",
+        "win": "qemu",
+        "mouse": null,
+        "kbd": "type:ls /usr/src/kernel\r",
+        "kbd_reset": "",
+        "kbd_note": "Minix 2 text console at a root '#' shell: every typed char echoes immediately. Non-destructive probe: `ls /usr/src/kernel`. The fixture is a logged-in root shell, so no login is needed.",
+        "audio_trigger": "bell",
+        "note": "PC speaker only; text mode -> mouse N/A"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/minix2",
+      "qmp": "/data/vms/streamhost/stations/minix2/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54201,
+      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) \u2014 Minix 2 has no in-guest network in this device set"
+    }
+  },
+  "render": {
+    "signalOrder": 88,
+    "stationsManifestOrder": 86,
+    "stationsManifestPrelude": "\n# minix2 (VMID 201) \u2014 Minix 2.0.4 text console; the teaching microkernel with /usr/src on screen.\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 102,
+    "bindingPrelude": "",
+    "mockManifestOrder": 5,
+    "goldenOrder": 86,
+    "actionMapOrder": 50
+  },
+  "stationDir": "minix2",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54201,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 201
+  },
+  "guestDoc": "docs/guests/minix2.md",
+  "credentialsRef": "guest/minix2",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "minix2",
+      "SH_QMP": "/data/vms/streamhost/stations/minix2/qmp.sock",
+      "SH_PORT": "54201",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_POINTER": "none",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/minix2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/minix2/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 201,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "minix2",
+        "--vmid",
+        "201",
+        "--udp",
+        "54201",
+        "--pointer",
+        "none",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/minix2/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/minix2/station.env.fixture"
+      ],
+      "deviceSetId": "minix2-current",
+      "launcher": "streamhost/stations/minix2/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/minix2/station.env.fixture",
+      "binary": "qemu-system-x86_64",
+      "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+      "accel": "kvm",
+      "cpu": "host",
+      "memoryMB": 32,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "-name streamhost-minix2",
+        "-enable-kvm -m 32 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-rtc base=localtime",
+        "-boot c",
+        "-vga std",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+        "-drive file=/data/vms/streamhost/stations/minix2/disk.qcow2,format=qcow2,if=none,id=hd0",
+        "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=200,heads=16,secs=32",
+        "-qmp unix:/data/vms/streamhost/stations/minix2/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/minix2/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-x86_64",
+        "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
+        "accel": "kvm",
+        "cpu": "host",
+        "memoryMB": 32,
+        "smp": 1,
+        "vga": "std",
+        "deviceSetSummary": [
+          "-name streamhost-minix2",
+          "-enable-kvm -m 32 -smp 1",
+          "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+          "-rtc base=localtime",
+          "-boot c",
+          "-vga std",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
+          "-drive file=/data/vms/streamhost/stations/minix2/disk.qcow2,format=qcow2,if=none,id=hd0",
+          "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=200,heads=16,secs=32",
+          "-qmp unix:/data/vms/streamhost/stations/minix2/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/minix2/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing and the explicit CHS 200/16/32 IDE geometry the pre-installed Minix image requires"
+      }
+    },
+    "bringUpOrder": 102
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#c8a24a",
+    "eraLabel": "1997 \u00b7 teaching microkernel",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "minix2",
+    "displayName": "Minix 2.0.4",
+    "year": 1997,
+    "lineage": "Tanenbaum microkernel UNIX; the system Linux was written to replace",
+    "arch": "i386",
+    "ramMB": 32,
+    "notes": "The whole operating system is on the disk as source. /usr/src holds kernel, mm, fs and inet \u2014 a few thousand lines you can read end to end.",
+    "accent": "#c8a24a",
+    "era": "1990s",
+    "eraSoftware": [
+      "ash",
+      "elle",
+      "mined",
+      "ACK C compiler",
+      "make"
+    ],
+    "periodBrowser": null,
+    "iconicApps": [
+      "/usr/src/kernel/proc.c",
+      "mined",
+      "ACK cc"
+    ],
+    "blurb": "A whole UNIX you can read: Minix 2 ships its own source in /usr/src, which is exactly why it became the most-read operating system of its decade."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "text-console",
+  "reset": {
+    "stationDir": "minix2",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "Minix 2.0.4 logged in as root (no password) at the '#' shell, screen showing `uname -a` (Minix minix 2 0.4 i686) and `ls /usr/src` (LICENSE boot etc inet lib tmp / Makefile commands fs kernel mm tools). Text console, no pointer surface. Golden baked 2026-09-13 on /data/vms/sandbox/minix2/smoke/rig.sh, restore-proven with `loadvm golden` (a typed echo line vanished and the fixture returned); keyboard proven at the fleet floor 40/40 by typing `echo KEYBOARD PROOF minix2 2026-09-13` and reading the echo back off the framebuffer."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "landed 2026-09-13 from the woodhull pre-installed Minix 2.0.4 image; retronet OPEN (no browser exists for Minix 2)",
+    "IDE geometry MUST be cyls=200,heads=16,secs=32 \u2014 the disk image is a 50 MB raw with that CHS in its partition table"
+  ],
+  "demoProgram": {
+    "label": "Read the kernel that taught the 90s",
+    "lines": [
+      "ls /usr/src/kernel",
+      "head -20 /usr/src/kernel/proc.c"
+    ],
+    "runCommand": "ls /usr/src/kernel",
+    "perCharMs": 80
+  }
+}

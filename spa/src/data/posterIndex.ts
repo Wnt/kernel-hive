@@ -144,6 +144,9 @@ const POSTER_INDEX = {
   "medley": {
     "hero": "/posters/medley/desktop.webp"
   },
+  "minix2": {
+    "hero": "/posters/minix2/desktop.webp"
+  },
   "mpf2": {
     "hero": "/posters/mpf2/desktop.webp"
   },

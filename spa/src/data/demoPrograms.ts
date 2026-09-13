@@ -123,6 +123,15 @@ const DEMO_PROGRAMS = {
     "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
     "perCharMs": 80
   },
+  "minix2": {
+    "label": "Read the kernel that taught the 90s",
+    "lines": [
+      "ls /usr/src/kernel",
+      "head -20 /usr/src/kernel/proc.c"
+    ],
+    "runCommand": "ls /usr/src/kernel",
+    "perCharMs": 80
+  },
   "mpf2": {
     "label": "Type in a demo program",
     "lines": [
