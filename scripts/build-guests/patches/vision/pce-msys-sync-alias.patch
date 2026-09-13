@@ -1,0 +1,57 @@
+# vision station — PCE Mouse Systems encoder: never emit a delta byte that
+# aliases the protocol's own sync byte.
+#
+# THE BUG, measured on this station 2026-09-13 with an instrumented PCE build.
+# A Mouse Systems packet is 5 bytes: a sync/button byte 1000 0LMR (0x80..0x87)
+# followed by two signed 8-bit (dx, dy) pairs. PCE's encoder
+# (chr_mouse_add_packet_msys) clamps each component to -127..127 and keeps the
+# remainder in the accumulator for the next packet — which is correct chunking,
+# and it is NOT where the vision pointer failed. The failure is one step later:
+# a dx of -127..-121 encodes as the bytes 0x81..0x87, byte-for-byte identical to
+# a sync byte, and the wire dy byte (PCE writes ~v+1, i.e. -dy) does the same for
+# dy in 121..127. Visi On 1.0's built-in 8250 mouse driver resynchronises on that
+# pattern, so every packet carrying such a delta is thrown away.
+#
+# Because PCE's chunker emits exactly -127 for the FIRST chunk of any leftward
+# move longer than 127 guest units, every large leftward move was silently lost
+# while every large rightward move landed. The arrow therefore ratcheted to the
+# right edge of the screen and could never be brought back — the "wedge" of
+# docs/lab/VISION-WAVE.md §LISTING pass 3, reproduced and then eliminated by this
+# one-line-per-axis change.
+#
+# MEASUREMENT (instrumented build, 31-move wedge sequence including the bottom
+# command strip and all four screen edges, frames under
+# /data/vms/sandbox/vision-deliver/frames/):
+#   before: moves 8, 9, 26, 29 produced NO framebuffer change; each had emitted a
+#           dx byte in 0x81..0x87. The arrow pinned at x=1274 from move 15 on and
+#           only y ever moved again.
+#   after:  all 31 moves produce motion and the arrow tracks the requested
+#           absolute XTEST coordinate at every one, corners included
+#           (XTEST (0,0) -> arrow bbox origin (0,0); (900,600) -> (890,596)).
+#
+# Clamping one unit short (-120 / +120) costs nothing: the residual stays in the
+# accumulator and is emitted by the very next packet, so a long move takes one
+# more 5-byte packet and lands at the same place.
+--- a/src/drivers/char/char-mouse.c
++++ b/src/drivers/char/char-mouse.c
+@@ -145,10 +145,18 @@
+ 	chr_mouse_add_val (drv, v);
+ 
+ 	for (i = 0; i < 2; i++) {
+-		v = chr_mouse_get_val (&drv->dx, -127, 127);
++		/* A Mouse Systems sync byte is 1000 0LMR (0x80..0x87), and the
++		 * delta bytes are signed 8-bit, so the deltas ALIAS the sync
++		 * pattern: dx in -127..-121 encodes as 0x81..0x87, and the wire
++		 * dy byte (-dy) does the same for dy in 121..127. A driver that
++		 * resynchronises on (b & 0xf8) == 0x80 -- Visi On 1.0 does --
++		 * throws such a packet away. Clamp one unit short of the alias
++		 * range: the remainder stays in the accumulator and rides the
++		 * next packet, so motion is deferred, never lost. */
++		v = chr_mouse_get_val (&drv->dx, -120, 127);
+ 		chr_mouse_add_val (drv, v);
+ 
+-		v = chr_mouse_get_val (&drv->dy, -127, 127);
++		v = chr_mouse_get_val (&drv->dy, -127, 120);
+ 		chr_mouse_add_val (drv, ~v + 1);
+ 	}
+ }

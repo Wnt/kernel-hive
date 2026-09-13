@@ -167,9 +167,16 @@ do_rootfs() {
   # race): stock PCE's x11 terminal forwards mouse motion only while it holds
   # an X pointer grab, which a headless Xvfb station can never take. Applies
   # cleanly to the pinned tarball with -p1.
-  local patch="$SCRIPT_DIR/../patches/vision/pce-x11-nograb.patch"
-  [ -f "$patch" ] || die "missing pointer patch: $patch"
-  patch -p1 -d "$tmp/src/$PCE_SRC" <"$patch" || die "pointer patch failed to apply to $PCE_SRC"
+  # Mouse Systems sync-alias patch (VISION-WAVE.md §POINTER DELIVERY pass): a dx
+  # of -127..-121 encodes as a byte identical to the protocol's own sync byte, so
+  # Visi On's driver throws the packet away — which is why every large LEFTWARD
+  # move was lost and the arrow ratcheted into the right edge and wedged there.
+  local pt
+  for pt in pce-x11-nograb.patch pce-msys-sync-alias.patch; do
+    local patch="$SCRIPT_DIR/../patches/vision/$pt"
+    [ -f "$patch" ] || die "missing pointer patch: $patch"
+    patch -p1 -d "$tmp/src/$PCE_SRC" <"$patch" || die "$pt failed to apply to $PCE_SRC"
+  done
   systemd-nspawn -q -D "$tmp" sh -c "
     set -e
     cd /src/$PCE_SRC

@@ -831,15 +831,137 @@ in PCE's patched `xt_event_motion()`. Two concrete leads, in order:
 Do **not** spend another pass on absolute-vs-relative fixture flags. Both were
 measured this pass and neither recovers a wedged cursor.
 
+## POINTER DELIVERY pass (Claude Opus 5, 2026-09-13, ~14:20-15:40Z)
+
+**The wedge is a protocol bug in PCE's Mouse Systems encoder, and it is fixed.**
+One clamp per axis. The arrow now tracks XTEST absolutely across a 31-move
+sequence that includes every screen edge, both bottom corners and the command
+strip, and a click opens a real Visi On window.
+
+Sandbox `/data/vms/sandbox/vision-deliver`, branch `vision-deliver`. Every
+measurement is from a **copy** of the deployed launcher (`SH_STATION=visionc194`,
+`VISION_BASE=/data/vms/sandbox/vision-deliver/copyA`, the real
+`/data/vms/streamhost/assets/vision` bound read-only, display `:194`). The live
+`streamhost@vision` and its `pce-ibmpc` (pid 1952397) were never touched.
+
+### 1. The instrumented build said the delivery path is perfect
+
+An instrumented PCE (`PCE_MOUSE_LOG=<file>`, log lines at the patched
+`xt_event_motion()`, at `trm_set_mouse()`, at `chr_mouse_set_drv()`, at every
+emitted Mouse Systems pair and at every `chr_mouse_read()`) was built from the
+`ptrA` tree and bind-mounted over `/opt/pce/bin/pce-ibmpc` in a copy of the
+station. Its log during the wedge sequence is unambiguous:
+
+```
+MOVE 10 -> 800,200
+X_MOTION evt=(800,200) delta=(500,0) but=0
+TRM_SET_MOUSE scaled=(250,0) rem=(0,0) but=0
+CHR_SET_DRV in=(250,0) acc=(250,0) but=0->0
+MSYS_PKT pair=0 emit=(127,0) residual=(123,0) hdr_but=0
+MSYS_PKT pair=1 emit=(123,0) residual=(0,0) hdr_but=0
+```
+
+Every X delta reaches the encoder; `mouse_div_x=2 / mouse_div_y=4` divides
+exactly; **the chunking the coordinator's theory suspected already exists and
+already works** — `chr_mouse_get_val()` clamps each component to ±127 and
+*subtracts what it emitted from the accumulator*, so a 500-px move becomes
+127 + 123 in the two pairs of one packet and nothing wraps and nothing is lost.
+Not one `MSYS_PKT_DROP` (buffer full) line appeared in the whole run. **PCE does
+not stop forwarding. Visi On stops consuming.**
+
+### 2. Why Visi On stops consuming: the delta bytes alias the sync byte
+
+A Mouse Systems packet is `1000 0LMR` followed by two signed 8-bit `(dx, dy)`
+pairs. The sync byte is therefore **0x80..0x87** — and a *signed delta byte* can
+be exactly that: `dx` in `-127..-121` encodes as `0x81..0x87`, and PCE's wire
+`dy` byte (it writes `~v + 1`, i.e. `-dy`) does the same for `dy` in `121..127`.
+Visi On 1.0's built-in 8250 driver resynchronises on that pattern, so any packet
+carrying such a delta is thrown away.
+
+PCE's chunker emits **exactly -127** for the first chunk of any leftward move
+longer than 127 guest units. So every large LEFTWARD move was silently lost and
+every large RIGHTWARD move landed. The arrow ratcheted right and could never come
+back — that is the whole of §LISTING pass 3's "wedge", and it also explains its
+two puzzles: why Y kept working (`dy` never reached ±121 in those runs) and why
+closed-loop corrections came back non-linear (a correction was delivered or
+eaten depending purely on whether its first chunk was -127).
+
+Measured correlation over the 31-move sequence, before the fix — the four moves
+that produced **no framebuffer change at all** are exactly the four whose
+emitted `dx` byte landed in `0x81..0x87`:
+
+| move | requested | emitted pairs | alias byte | framebuffer |
+| ---- | --------- | ------------- | ---------- | ----------- |
+| 8    | 900,300 → 640,400 | (-127,25) (-3,0) | **0x81** | **no change** |
+| 9    | → 300,200 | (-127,-50) (-43,0) | **0x81** | **no change** |
+| 10   | → 800,200 | (127,0) (123,0) | — | moved +500 px |
+| 26   | → 200,600 | (-127,50) (-93,0) | **0x81** | **no change** |
+| 29   | → 400,200 | (-127,0) (-123,0) | **0x81 0x85** | **no change** |
+
+From move 15 the arrow sat at bbox x = 1270..1279 and only ever moved in Y again.
+
+### 3. The fix: clamp one unit short of the alias range
+
+`scripts/build-guests/patches/vision/pce-msys-sync-alias.patch` —
+`chr_mouse_get_val (&drv->dx, **-120**, 127)` and
+`chr_mouse_get_val (&drv->dy, -127, **120**)`. The residual stays in the
+accumulator and rides the next packet, so a long move costs one extra 5-byte
+packet and lands in the same place. Wired into `tiles/vision.sh --rootfs` after
+the no-grab patch; both apply `-p1` to the pinned tarball (dry-run verified).
+
+**Re-run of the identical 31-move wedge sequence on a fresh cold launch of the
+same copy, with the fixed binary** (`/data/vms/sandbox/vision-deliver/frames/`,
+`wedge.sh` is the script):
+
+- **31 of 31 moves produce motion.** The single exception is move 14, a 15-px
+  nudge at a cursor already clamped against the bottom of the screen.
+- **The arrow tracks the requested absolute XTEST coordinate at every move**,
+  corners included: XTEST `(0,0)` → arrow bbox origin `(0,0)`; `(640,0)` →
+  `(630,4)`; `(0,400)` → `(0,404)`; `(900,600)` → `(890,596)`; `(1279,795)` →
+  the bottom-right. Scale stays 1.000 px per XTEST px on both axes.
+- **It recovers from every edge**, including the bottom command strip and both
+  bottom corners, and is still controllable at move 31. No wedge.
+
+### 4. Click proof
+
+Two clicks through plain XTEST on the same run, each at a named target:
+
+| action | frames | reaction |
+| ------ | ------ | -------- |
+| `mousemove 60 778` (HELP in the command strip) + `click 1` | `frames/c0-aim.png` → `frames/c1-click.png` | changed bbox `(0,712)-(1279,795)`, 1280x84 — Visi On prints **"Select what you need help with."** |
+| `mousemove 320 778` (OPEN) + `click 1`, then `mousemove 110 340` (Archives) + `click 1` | `frames/d0-open.png` → `frames/d1-archives.png` | changed bbox `(0,160)-(1279,799)` — a **Help window opens**, titled `Help`, with the OPEN help text and its own `overview see back contents quit.` command line |
+
+So the station now answers a pointer the way a visitor would use it: aim at a
+word, press the button, get a window.
+
+### 5. What ships
+
+The **XTEST path**, unchanged in shape: `SH_INPUT_BACKEND=x11test`,
+`SH_X11TEST_ABS=1`, `pointerRel: false`, `mouse_div_x=2 / mouse_div_y=4`. No new
+transport, no new backend, no daemon change — only the two PCE patches in the
+rootfs. `listing.state` is **removed**: the station is listed.
+
+### 6. Theory B, raced and NOT shipped
+
+Per rule 14 a `sonnet` runner built the pty byte writer (§LISTING pass 6.2) on
+display `:195` at the same time. It works: `serial { driver =
+"pty:symlink=/work/com1.pty" }` plus a Mouse Systems encoder run inside the
+container's namespaces moved the arrow and survived a 34-move edge sequence. It
+is **not** what ships — it needs a new transport, a writer process inside the
+container and a pacing/drain fix, and its own click proof failed — whereas the
+one-clamp fix makes the path the station already declares correct. Kept as
+provenance on branch `origin/vision-ptyb` (`movemouse.py` + the `pce.cfg` serial
+swap); nothing from it is on `vision-deliver`.
+
+
 ## OPEN items
 
-| Item                                                                                                                                                                                                                                                                 | Next command                                                                                                                                                                                                                            |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pointer (the blocker)** — the arrow tracks XTEST at exactly 1.000 px/px for clean mid-screen moves, then WEDGES in a corner with no recovery from either fixture mode (§LISTING pass 3)                                  | instrument `pce-x11-nograb.patch` to log every accepted delta and every `trm_set_mouse()` packet, run the §LISTING-pass-3.2 wedge sequence, and read where the deltas stop; then build theory B's byte writer on `/work/com1.pty` |
-| The Visi On **desktop** IS reachable — the launcher's calibration walk lands on it every launch, unattended (ink 3427); what a visitor cannot do is keep the pointer alive                                                        | follows the pointer |
-| Two-target readback                                                                                                                                                                                                                                                  | bounding-box diff of the changed region at two well-separated positions, operator validates by eye — NOT `cursor-locate.py` (XOR cursor, §LAUNCHER FINAL pass 4)                                                                        |
-| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not started                                                                                                                                                           | §Publish; and `scripts/dev/station-land.sh vision` for the landing, which this pass did not reach                                                                                                                                       |
-| The landing itself                                                                                                                                                                                                                                                   | `git push origin vision` is done; `scripts/dev/station-land.sh vision` next (no qcow2 golden — pass what `lisa` passed), then `box-deploy.sh --apply`, `systemctl is-active streamhost@vision`, `labctl shot vision`, `curl /os/vision` |
+| Item | Next command |
+| ---- | ------------ |
+| ~~Pointer~~ — **CLOSED** by the sync-alias clamp (§POINTER DELIVERY pass): 31/31 moves land, every edge recovers, click opens a window | — |
+| The launcher's own `relaunch` reap takes ~3 min, long enough that a caller with a 2-minute timeout kills it mid-reap and orphans a `pce-ibmpc` (observed once, §LISTING pass 1) | measure `time streamhost/stations/vision/x11-runtime.sh` and shorten `reap_previous`'s 40x0.25 s ladder |
+| `SH_KEY_MIN_HOLD_MS=120` / `SH_KEY_MIN_GAP_MS=120` was never bisected downward — it is what worked first, not a measured floor | bisect on a copy |
+| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but never started | §Publish — now moot if the station lists |
 
 ## Measured timeline
 
