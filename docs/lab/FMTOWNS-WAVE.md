@@ -106,39 +106,178 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
 
 ## Still open
 
-1. **Pointer** — the Towns mouse is on `-pad2 mouse` (driver default). `KEYDUMP`
-   over the real ctlsock shows the port as `:pad2:mouse:MOUSE_X` /
-   `:pad2:mouse:MOUSE_Y` (relative axis fields) and `:pad2:mouse:BUTTONS` — no
-   absolute-position port exists on this device (an MSX-protocol mouse is
-   inherently relative). `MOVEA`+`CLICK1` through the generic ctlsock open-loop
-   path produced NO observable cursor movement on the framebuffer in ~10 minutes
-   of testing (matches domainos's wall 6 exactly: "the pointer never leaves
-   compatibility mode"). Registry `stream.pointer.transport` stays `none`
-   (ship keyboard-only, exactly the domainos precedent) — this is a DELIBERATE
-   decision pending the pointer proof, not an oversight.
-   **Exact next step:** trace what `pad2:mouse` actually needs (relative deltas
-   fed continuously, not an absolute MOVEA target — likely a `MOVE`/`MOVEP`
-   verb with small relative steps timed to the guest's own poll rate; read
-   `src/mame/fujitsu/fmtowns.cpp`'s mouse port handler first) on a throwaway
-   clone, never the live station.
-2. **`/os/fmtowns` publish** — `scripts/dev/smoke-rig.sh` is QMP-shaped (it
-   expects a QEMU guest's `-display dbus,p2p=on` + `qmp.sock`, and a released
-   daemon binary at `/usr/local/lib/streamhost/stations/<like>/current` whose
-   `--like` stream.env it rewrites); it has no `SH_CAPTURE=shm`/ctlsock path,
-   so it does not fit a MAME-native rig directly (same gap `station-up.sh` has:
-   it requires the branch already landed on labhost's main checkout).
-   **Exact next step:** either (a) land this branch via `station-land.sh` and
-   run `scripts/dev/station-up.sh fmtowns` from the deployed main checkout (the
-   normal path every prior MAME-native station used, per this wave's siblings'
-   docs), or (b) if a pre-land dark-launch preview is wanted, extend
-   `smoke-rig.sh` with an `SH_CAPTURE=shm` branch — that is a shared-tool
-   change out of this stream's scope, flag it to the coordinator rather than
-   hand-rolling it in this station's own tree.
+1. **Pointer** — ROOT CAUSE FOUND 2026-09-13 (replacement lead, Opus), see
+   §Pointer below. It was never a pacing or a protocol problem: the fleet
+   ctlsock module never BOUND the FM Towns mouse's axis fields at all, so every
+   pointer verb was a silent no-op. Status: see §Pointer for the race result.
+
+2. **`/os/fmtowns` publish** — **DONE 2026-09-13**, dark-launched. See
+   §Publish below.
+
 3. **Command Mode / MS-DOS prompt, TownsGEAR and the other TOWNSSYSTEM icons**
    — not opened (no proven pointer, and no keyboard-only launch path found for
    icons; `Ctrl+Esc`'s Task List / Sidework dialogs are the only reachable
    non-desktop screens without a pointer). OPEN for a future stream once
    pointer lands.
+
+## Pointer — the root cause, and the race for the proof
+
+The previous stream recorded "MOVEA + CLICK1 produce no cursor movement" and
+read it as the domainos wall ("the pointer never leaves compatibility mode").
+It is not that wall. Read in this order:
+
+1. `src/mame/fujitsu/fmtowns.cpp:2626` —
+   `MSX_GENERAL_PURPOSE_PORT(config, m_pad_ports[1], msx_general_purpose_port_devices, "mouse")`.
+   `-pad2 mouse` is an **MSX-protocol mouse**, not a PS/2 one.
+2. `src/devices/bus/msx/ctrl/mouse.cpp` — its ioports are tagged `BUTTONS`,
+   `MOUSE_X`, `MOUSE_Y` (both axes `PORT_BIT(0xffff, 0, IPT_MOUSE_X/Y)`,
+   so the accumulator modulus is the default 65536). The device is purely
+   relative: on each pin-8 strobe it computes `m_data = (previous - current)`
+   per axis and packs each into a **signed byte** — so the guest sees a delta
+   whose SIGN is inverted relative to the accumulator's direction, and any
+   step larger than 127 counts between two polls is truncated.
+3. `scripts/build-guests/emulators/mamectl/src/osd/modules/ctlsock/ctlsock.cpp`
+   (~line 920-950) — the fleet ctlsock binds its pointer engine by matching
+   ioport tags ending `<MAME_CTL_PTR_PORTS>:mouse_buttons` / `:mouse_x_axis` /
+   `:mouse_y_axis`, and button fields named `Left Button` / `Right Button` /
+   `Middle Button`. **Those are the SGI Indy's `hle_ps2_mouse` names and no
+   other machine in MAME has them.** `MAME_CTL_PTR_PORTS` only prefixes them;
+   the `:mouse_x_axis` half is hardcoded.
+
+So on `fmtownsftv`, `m_x_port`/`m_y_port` never resolve, `m_x_field`/`m_y_field`
+stay `nullptr`, and `move_rel()` (ctlsock.cpp:1229) returns on its first line.
+Every `MOVE`/`MOVEP`/`MOVEA`/`CLICK` is acked and discarded. The module prints
+its own verdict at setup (ctlsock.cpp:1041) as `axes=0`.
+
+This also **falsifies theory B by construction**: the daemon's rel-readback
+bridge (`streamhost/streamhost/src/rel_bridge.rs`, the `SH_REL_*` route from
+`docs/lab/SCULPT-WAVE.md`) converts an absolute target into relative motion and
+then hands it to the input backend — and for `backend() == "mamesock"`
+(`streamhost/streamhost/src/input.rs:702`) that motion goes out as the same
+ctlsock relative verb, into the same unbound fields. No amount of pacing or
+readback on the daemon side can reach a field the emulator never bound. Theory
+B was retired on that reading rather than on a rig, which is the cheap half of
+rule 14: falsify from the source when the source is decisive.
+
+**The fix already exists in this repo, unapplied:**
+`scripts/build-guests/patches/mame-ctlsock-ptr-tags.patch` adds exactly the
+three knobs this needs — `MAME_CTL_PTR_TAGS` (`"<btn>,<x>,<y>"` tag suffixes,
+replacing the hardcoded construction wholesale), `MAME_CTL_BTN_NAMES`, and
+`MAME_CTL_PTR_MOD` (accumulator modulus = 1 + the axis field's mask). It was
+written for the Atari ST's `:ikbd:MOUSEX`/`MOUSEY`, which is the same shape of
+wall. `scripts/build-guests/emulators/build-mame-native.sh` deliberately keeps
+it out of the default patch set ("the spike-only pointer patches (ptr-tags,
+st-fastmouse) are NOT here"); a station opts in through `NATIVE_EXTRA_PATCHES`
+in its `native.d/<id>.sh` stanza, which `fmtowns.sh` already uses for
+`mame-irix-skip-warnings.patch`.
+
+**MEASURED, on the running station (2026-09-13, not inferred from source):**
+`/data/vms/streamhost/stations/fmtowns/mame.log` line 5, printed by the live
+dark-launched station's own ctlsock at setup:
+
+```
+ctlsock: setup btns=0 axes=0 movea=0 devxy=0 swap=0 sig=1ebe131a entries=3330
+```
+
+`btns=0 axes=0` on a machine that plainly HAS a mouse (`-pad2 mouse`) is the
+whole bug in one line, and the later heartbeats say the rest:
+`conns=1 cmds=4` — commands arrive and are counted, and
+
+```
+ctlsock: MOVEA unsupported (no cursor items); interpreting MOVEA as open-loop
+relative from the last target
+```
+
+— it then dead-reckons into two null pointers. That is exactly the liar's
+paradox the ptr-tags patch's own rationale describes: "the module logs commands
+arriving, the socket acks every one, and the cursor does not move a pixel."
+
+**Race result (rule 14): NOT WON inside the 20-minute stop.** The theory-A
+runner (sonnet) could not get a throwaway rig to `machine_phase::RUNNING` at
+all: `ctlsock: init … phase=1` and `listening`, then nothing — no `setup` line,
+a framebuffer frozen at 10 705 nonzero bytes, and every ctlsock verb timing out
+because `tick()` early-returns while `!m_setup_done`. **Cause, found afterwards
+from the live station's dir:** the rig's `-inipath $BASE` pointed at a fresh
+empty directory, and `native.d/fmtowns.sh` sets `NATIVE_SKIP_WARNINGS=1`, which
+needs the station's `ui.ini` — present at
+`/data/vms/streamhost/stations/fmtowns/ui.ini`, absent in the rig. Every
+machine in `fujitsu/fmtowns.cpp` is `MACHINE_NOT_WORKING`, so without that knob
+MAME sits on its red warning panel waiting for a key, pre-RUNNING, forever.
+**Any future fmtowns rig must copy the station's `ui.ini` into its `$BASE`.**
+This cost the race its whole budget and is the single most useful thing the
+runner found.
+
+**Exact next step (one stream, no discovery left):**
+1. `cp /data/vms/streamhost/stations/fmtowns/ui.ini $BASE/` in the rig — or
+   just pass `-inipath /data/vms/streamhost/stations/fmtowns`.
+2. Add `mame-ctlsock-ptr-tags.patch` to `NATIVE_EXTRA_PATCHES` in
+   `scripts/build-guests/emulators/native.d/fmtowns.sh` and rebuild through
+   `build-mame-native.sh` (ccache is wired there — never hand-run `make`).
+3. Launch with (tags to be confirmed by `KEYDUMP :pad2:` against the rebuilt
+   binary, which is the first thing to run):
+   `MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,:pad2:mouse:MOUSE_Y"`,
+   `MAME_CTL_BTN_NAMES` from the same dump, `MAME_CTL_PTR_MOD` left at its
+   65536 default (both MSX axes are `PORT_BIT(0xffff)`).
+4. Confirm the setup line now reads `axes=1 btns>=1` — that is the gate; if it
+   still says 0, the tags are wrong and nothing downstream matters.
+5. Then `MOVE dx dy` in steps well under 127 counts, paced by
+   `MAME_CTL_MOVE_STEP`/`MAME_CTL_MOVE_WINDOW` so the guest polls between them,
+   **trying BOTH SIGNS** — `mouse.cpp` computes `(previous - current)`, so the
+   delta the guest sees is inverted with respect to the accumulator.
+
+Until `axes=1` is measured, `stream.pointer.transport` stays `none` and
+`listing.state` stays `hidden`. The station ships keyboard-only, exactly the
+domainos precedent — but unlike domainos this is now a KNOWN, located,
+already-written fix rather than a wall.
+
+## Publish — `/os/fmtowns` is dark-launched
+
+`scripts/dev/smoke-rig.sh` was not extended, because for a MAME-native station
+it is the wrong tool by construction, and reading it said so:
+
+- it fails loudly at step 0 without a real `qmp.sock`, hardcodes
+  `SH_INPUT_BACKEND=dbus-rel`, and its `--like` sibling-env copy loop whitelists
+  only `SH_*=*`, so every `MAME_NATIVE_*` line from the sibling fixture is
+  silently dropped into its `*) continue` case;
+- and the shared MAME-native launcher `streamhost/stations/mame-native/x11-runtime.sh`
+  hardcodes `BASE=/data/vms/streamhost/stations/$SH_STATION`. It can never be
+  pointed at a sandbox rig dir. **For a MAME-native station the rig IS the
+  station dir** — which for fmtowns was already true, since the golden, ROMs,
+  CHD and keymap were installed there by the previous stream.
+
+`docs/lab/ADD-NEW-OS-PLAYBOOK.md` line 380 already documents this trap. The
+documented route was used instead, with no code change:
+
+```
+scripts/dev/darklaunch-station.py publish fmtowns \
+  --rig /data/vms/streamhost/stations/fmtowns --like atari800xl \
+  --display-name "FM TOWNS (dark launch)"
+→ declared darklaunch … published fmtowns: udp 54196 /os/fmtowns
+```
+
+with `station.env` written into the station dir from the registry's
+`runtime.stationEnv` + the committed fixture (real host IP in place of the
+repo's scrubbed placeholder), the shared `x11-runtime.sh` copied in and run (it
+reaped the stale MAME by `/proc/<pid>/exe`, never a name match, and relaunched
+with `-state golden`), and the generic streamhost daemon borrowed from
+`atari800xl`'s `current` symlink.
+
+| Check | Result |
+|---|---|
+| `curl -sk https://<box>:8443/os/fmtowns` | `200` |
+| `…/signal/fmtowns.json` | real row — `cert_hash_b64`, udp 54196, WebRTC offer URL |
+| Framebuffer (rule 9), captured fresh from the running rig via `fb-wait.py --shm … --settle 3` | TownsMENU desktop: ドライブ選択 window, Q:TOWNSSYSTEM folder open with TownsGEAR / TownsStaff / FM-OASYS icons, guest clock `2026.09.13(日) 08:47` — `/data/vms/sandbox/fmtowns/frames/dark-launch-awake.png` |
+
+Running, deliberately LEFT UP for the operator: MAME pid in
+`/data/vms/streamhost/stations/fmtowns/mame.pid`, daemon pid in
+`daemon.pid`, log `daemon.log`. MAME self-pauses on the daemon's idle grace
+(SIGSTOP after 60 s, SIGCONT on connect) — expected fleet behaviour. Withdraw
+with `scripts/dev/darklaunch-station.py withdraw fmtowns`, then kill the daemon
+and MAME by `/proc/<pid>/exe`.
+
+**Left open for a shared-tooling stream (not this station's to fix alone):**
+`smoke-rig.sh` drops `MAME_NATIVE_*` on a `--like` copy and hardcodes
+`dbus-rel`. Every future host-native wave hits both.
 
 ## Teardown
 
@@ -156,6 +295,30 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
   next real launch (via `station-up.sh` after landing) removes and recreates
   them itself, same as any other station's `reap_previous`.
 - Race sandboxes (`/data/vms/sandbox/fmtowns/race/{mame,tsugaru}/`) left on
-  disk as provenance, per brief; the race's own MAME instance (pid 2545230)
-  was already gone (no `/proc/2545230`) by the time this stream started —
-  no action needed there.
+  disk as provenance, per brief.
+- **Correction 2026-09-13 (replacement lead):** the race's MAME instance
+  pid 2545230 was NOT gone — it was still running 12 hours later, burning a
+  core. `readlink -f /proc/2545230/exe` =
+  `/data/vms/sandbox/fmtowns/race/mame/mame-native/fmtowns`, which is how it
+  was identified and killed (SIGTERM, then SIGKILL when it did not exit;
+  `ls /proc/2545230` → `DEAD_AFTER_KILL`). The lesson is rule 8's: the check
+  that proves a release is `ls /proc/<pid>`, run AFTER the kill — not an
+  assumption that a rig "was already gone".
+
+## Teardown — this stream (replacement lead, Opus, 2026-09-13)
+
+Rule 8: what was released, and the check that proved it.
+
+| Released | Check |
+|---|---|
+| Leftover race MAME pid 2545230 (`/data/vms/sandbox/fmtowns/race/mame/mame-native/fmtowns`), running ~12 h after the previous stream declared it gone, holding a core | `readlink -f /proc/2545230/exe` matched the race dir before the kill; SIGTERM, then SIGKILL when it did not exit; `ls /proc/2545230` → gone |
+| Theory-A rig pid 3197436 (the fleet binary, `race/ptr-tags/run/mame.pid`) | `readlink -f /proc/3197436/exe` matched the fleet binary; SIGTERM then SIGKILL; `/proc/3197436` absent |
+
+Still running ON PURPOSE — the `/os/fmtowns` dark launch is the deliverable, not
+litter: MAME `/data/vms/streamhost/stations/fmtowns/mame.pid`, daemon
+`daemon.pid`. Withdraw + kill as in §Publish when the operator is done watching.
+
+`race/{mame,tsugaru,ptr-tags}/` are left on disk as provenance. Note that
+`race/ptr-tags/` holds a COPY of the golden savestate, not the original.
+No claims were taken or dropped by this stream: slot 196 / UDP 54196 / VMID 196
+/ display :96 were already held by session `fmtowns` and still are.
