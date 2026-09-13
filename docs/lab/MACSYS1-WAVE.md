@@ -164,6 +164,8 @@ is regenerated from the built binary with `scripts/dev/mame-keymap.py` against a
 ## Golden bake — proofs (all on the framebuffer, real fleet binary)
 
 Binary `sha256 583d07a0efc3167b2ad1b31cd734c8961e909e7005f959eb0c4a01eb64f7567b`
+(superseded 2026-09-13 by `b0417e954a26b1f0603467f161f24deb4ebbd072ea0434fa14e780501f9347bb`,
+the same tree plus `mame-ctlsock-abs-ram.patch` — see §Pointer)
 (`SUBTARGET=mac128`, driver `mac128k`, MAME `mame0289`). Rig = the station dir
 `/data/vms/streamhost/stations/macsys1` (for a MAME-native station the rig IS the
 station dir — `smoke-rig.sh` drops every `MAME_NATIVE_*` line and the shared
@@ -272,7 +274,55 @@ identical. That method's residual is the sprite's own edge dither against the
 50% desktop pattern, not pointer error — but it is the corner evidence the
 exact-match table cannot give (a 48x48 neighbourhood does not fit there).
 
-**Fleet note:** the rect/geom transform is not Mac-specific and neither is the
+#### Proven again on the LIVE station, after the landing
+
+The rig proof is the design proof; this is the one the visitor gets. Deployed
+binary `sha256 b0417e95…` (the fleet binary + `mame-ctlsock-abs-ram.patch`),
+live `station.env`, driven through the station's own `ctl.sock` while holding a
+`guest_wake.WakeLease` — and `assert`ed still RUNNING at the end, because a
+frozen emulator acks every verb and moves nothing:
+
+| target | lap 1 err | lap 2 err | RawMouse | expected |
+|---|---|---|---|---|
+| (26,68) | 0,0 | 0,0 | (13,13) | (13,13) |
+| (998,68) | 0,0 | 0,0 | (499,13) | (499,13) |
+| (26,694) | 0,0 | 0,0 | (13,326) | (13,326) |
+| (998,694) | 0,0 | 0,0 | (499,326) | (499,326) |
+| (512,384) | 0,0 | 0,0 | (256,171) | (256,171) |
+
+**A trap that cost a full false proof:** the first live run reported
+"WORST |err| = 0 px" from an emulator that was **SIGSTOPped** by the idle
+freezer. The ctlsock module answers HELLO from a buffered socket, the frames
+never change, and a locator that learns its template from two *unmoved* frames
+learns a 0-pixel mask that matches everywhere. `/proc/<pid>/stat` state `T` is
+the tell. Hold the lease, `SIGCONT` if it is already frozen, and re-assert at
+the end (`docs/lab/INPUT-DEBUGGING.md` § "is the guest awake?").
+
+The second trap: `station-up` does not replace a RUNNING emulator. After the
+binary swap `/proc/<pid>/exe` read `…/mac128 (deleted)` — the old binary, still
+mapped. `systemctl restart streamhost@macsys1` is what picks up a new one.
+
+#### Golden — recaptured on the new binary
+
+Rule 6: checkpoint + binary + device set are ONE combination, and the binary
+changed. `checkpoint-guard` refuses `SH_RESET_MODE=relaunch`, so the capture
+used the module's own verbs in the atomic-rename shape the guard documents:
+`MOVEA 26 68` → `PAUSE` → `SAVEST goldennew` → `RESUME`, then
+`mv goldennew.sta golden.sta` (previous parked at
+`/data/vms/sandbox/macsys1-ptr/golden.sta.rollback`).
+
+**`SAVEST` without `PAUSE` first is not a capture.** The bare verb answered
+`ERR busy save deferred (pending anonymous timers)` and still left a 49184-byte
+file on disk — a short savestate that nothing rejected. Inside a `PAUSE` window
+it wrote 63152 bytes in 27 ms.
+
+Restore proven on the framebuffer: relaunch restores the identical Finder 1.0
+desktop, and the daemon's reset path — an in-process `LOADST golden` — answered
+`OK ms=12` (0.014 s wall) and put back a screen 7320 dirtied pixels had changed.
+The 412 px that differ from the pre-dirty frame are the arrow and its saved
+background at the top-left; the scene is the same.
+
+**Fleet note:****Fleet note:** the rect/geom transform is not Mac-specific and neither is the
 patch — `MAME_CTL_ABS_RAM` binds any guest whose pointer lives in RAM by env
 alone. Every letterboxed MAME-native station (`apple2e` 560x192, `fmtowns`)
 has the same origin defect; the finding is written up for the next one in
