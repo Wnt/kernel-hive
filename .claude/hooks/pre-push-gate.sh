@@ -260,6 +260,14 @@ elif ! have npx; then
 else
   stage "TS/JS lint (eslint + knip)" "cd spa && npx eslint . --max-warnings=0 && npx knip" \
     bash -c 'cd spa && npx eslint . --max-warnings=0 && npx knip'
+  # eslint does not type-check (it parses, it does not resolve types), and
+  # vitest only type-checks the files it imports through a running test — an
+  # `applegs` keyboard family missing from the ExoticFamily/Family unions
+  # passed both and only broke at landing, inside `serve-https-spa.sh build`'s
+  # `tsc -b`. `-b` reuses spa's composite build info (tsconfig*.tsbuildinfo),
+  # so a clean tree is a fast no-op recheck, not a cold compile.
+  stage "TS type-check (tsc -b)" "cd spa && npx tsc -b --noEmit" \
+    bash -c 'cd spa && npx tsc -b --noEmit'
   # spa.yml runs vitest too, and this hook did not: on 2026-09-03 nine station
   # waves each pushed a scene row copied from a sibling, main went red twice on
   # machines.test.ts (duplicate hardware signatures, lineup order) and

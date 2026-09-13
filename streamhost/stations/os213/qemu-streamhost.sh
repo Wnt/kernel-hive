@@ -28,9 +28,24 @@
 #   and pinning the Microsoft image's descriptor geometry (310/16/63) made the
 #   boot WORSE, not better. FAT, under the OS/2 1.3 504 MB CHS ceiling.
 # DISPLAY: `-device isa-vga`; PM runs VGA 640x480x16.
-# POINTER: QEMU PS/2 RELATIVE (`qemu-ps2-relative`, the freedos/nt351 pattern).
-#   isapc has no USB at all, so `usb-tablet` — and with it any absolute route —
-#   is unavailable. OS/2 1.3 ships the PS/2 mouse driver and uses it.
+# POINTER: ABSOLUTE, by writing the guest's OWN Presentation Manager pointer
+#   coordinate (2026-09-13 cutover). isapc has no USB at all, so `usb-tablet`
+#   is unavailable — but OS/2 1.3's PM mouse stack keeps its pointer as an
+#   int16 pair in Y-THEN-X order, little-endian, y-DOWN (layout
+#   `point16le_yx`) at guest-physical `0x253ca`. `-device kh-ramabs` writes
+#   the commanded pixel there and injects ONE PS/2 unit to make PM republish
+#   it. Needs the kh-ramabs build (OS213_QEMU, default /opt/qemu-os213) —
+#   BINARY AND GOLDEN ARE ONE UNIT: the golden is baked under that binary and
+#   the ADDRESS IS BOUND TO THE GOLDEN (re-bake => re-derive with
+#   docs/guests/os213.md §Pointer's re-derive recipe). FAIL CLOSED: no
+#   KH_RAMABS_ADDR => no device and the relative path; a stale address is
+#   refused by the device's connect-time write probe instead of corrupting
+#   guest memory. SINGLE INJECTOR: while ptr.sock is connected nothing else —
+#   no QMP input-send-event, no labctl pointer helper — may push motion or a
+#   button edge at this mouse. The 2:1 mickey ratio (docs/guests/os213.md
+#   §The 2:1 mickey ratio) is why a rescaled relative pointer could never be
+#   1:1 here; kh-ramabs sidesteps it entirely by writing the position, not
+#   dead-reckoning it.
 # NETWORK: NONE. OS/2 1.3 has no bundled TCP/IP stack (IBM TCP/IP for OS/2 1.3
 #   was a separate product), so this station is NOT on the retronet and has no
 #   rn-tapnet.sh (rule 15 — never commit a tap script for an unproven station).
@@ -55,8 +70,16 @@ LOADVM=""
 qemu-img snapshot -l "$D/disk.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
+PTR_ARGS=()
+if [ -n "${KH_RAMABS_ADDR:-}" ]; then
+  rm -f "$D/ptr.sock"
+  PTR_ARGS=(
+    -chardev "socket,id=ptr0,path=$D/ptr.sock,server=on,wait=off"
+    -device "kh-ramabs,chardev=ptr0,addr=$KH_RAMABS_ADDR,layout=point16le_yx,width=640,height=480,nudge-units=1,nudge-px=1,trace=${PTR_TRACE:-off}"
+  )
+fi
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
-nohup qemu-system-i386 \
+nohup "${OS213_QEMU:-/opt/qemu-os213/bin/qemu-system-x86_64}" \
   -name streamhost-os213 \
   -enable-kvm -m 16 -smp 1 \
   -machine isapc -cpu 486 \
@@ -68,6 +91,7 @@ nohup qemu-system-i386 \
   -drive file=$D/disk.qcow2,format=qcow2,if=none,id=hd0 \
   -device ide-hd,drive=hd0,bus=ide.0,unit=0 \
   $LOADVM \
+  "${PTR_ARGS[@]}" \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
   >"$D/qemu.log" 2>&1 &

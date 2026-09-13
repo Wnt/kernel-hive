@@ -129,6 +129,64 @@ class RefusalTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("absolute path", result.stderr)
 
+    def test_it_refuses_golden_extra_without_golden(self) -> None:
+        """--golden-extra rides the main swap's stop/park/rollback; it has no unit on its own."""
+        result = land(STATION, "--dry-run", "--golden-extra", "floppy0.qcow2=/data/staged/f.qcow2")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--golden-extra needs --golden", result.stderr)
+
+    def test_it_refuses_a_malformed_golden_extra(self) -> None:
+        result = land(STATION, "--dry-run", "--golden", "/data/staged/x.qcow2", "--golden-extra", "no-equals-sign")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("DEV=/absolute/path", result.stderr)
+
+
+class GoldenExtraTest(unittest.TestCase):
+    """A golden snapshot spanning more than the main disk (oberon: a floppy qcow2)."""
+
+    def test_it_parks_and_copies_each_extra_device_after_the_main_disk(self) -> None:
+        result = land(
+            STATION,
+            "--dry-run",
+            "--golden",
+            "/data/staged/x.qcow2",
+            "--golden-extra",
+            "floppy0.qcow2=/data/staged/f.qcow2",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        out = result.stdout
+        main_copy = out.index("cp --reflink=auto '/data/staged/x.qcow2'")
+        extra_park = out.index("floppy0.qcow2' '")
+        extra_copy = out.index("cp --reflink=auto '/data/staged/f.qcow2'")
+        self.assertLess(main_copy, extra_park)
+        self.assertLess(extra_park, extra_copy)
+
+    def test_the_rollback_hint_names_every_extra_device(self) -> None:
+        result = land(
+            STATION,
+            "--dry-run",
+            "--golden",
+            "/data/staged/x.qcow2",
+            "--golden-extra",
+            "floppy0.qcow2=/data/staged/f.qcow2",
+        )
+        self.assertIn("floppy0.qcow2.pre-", result.stdout)
+
+    def test_multiple_extras_are_repeatable(self) -> None:
+        result = land(
+            STATION,
+            "--dry-run",
+            "--golden",
+            "/data/staged/x.qcow2",
+            "--golden-extra",
+            "floppy0.qcow2=/data/staged/f0.qcow2",
+            "--golden-extra",
+            "floppy1.qcow2=/data/staged/f1.qcow2",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("floppy0.qcow2", result.stdout)
+        self.assertIn("floppy1.qcow2", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

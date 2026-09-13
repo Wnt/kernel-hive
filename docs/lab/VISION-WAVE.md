@@ -1096,7 +1096,10 @@ desktop is ~467 000 lit pixels of 1 024 000; the splash is ~72 000):
 | 3 | 39.6 s | ink 471 928 after 52 s | **116.0 s** |
 
 Three consecutive relaunches, every one reaching the Services/Archives desktop
-unattended, spread 2.4 s. Before the fixes the same call took 182 s on a good day
+unattended, spread 2.4 s. And on the LIVE station after landing, the visitor's
+own path: **`labctl reset vision` returns in 18 s and the Services/Archives
+desktop is on the framebuffer, pointer homed, 118 s after the call**
+(`/data/vms/sandbox/vision-ptr2/live-reset.png`). Before the fixes the same call took 182 s on a good day
 and 8 minutes on a bad one. `/data/vms/sandbox/vision-ptr2/relaunch-test.sh` is
 the harness.
 

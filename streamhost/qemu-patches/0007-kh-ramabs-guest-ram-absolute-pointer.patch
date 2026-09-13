@@ -2,7 +2,7 @@ Index: b/hw/misc/kh-ramabs.c
 ===================================================================
 --- /dev/null
 +++ b/hw/misc/kh-ramabs.c
-@@ -0,0 +1,1116 @@
+@@ -0,0 +1,1119 @@
 +/*
 + * kh-ramabs — absolute pointer by writing the guest's OWN pointer coordinate.
 + *
@@ -128,6 +128,7 @@ Index: b/hw/misc/kh-ramabs.c
 + *   point32le_yx      int32  little      Y THEN X     down     Native Oberon (Input)
 + *   point16le_yup     int16  little      x then y     UP       Oberon display coords
 + *   point16le_yup_yx  int16  little      Y THEN X     UP       Oberon display coords
++ *   point16le_yx      int16  little      Y THEN X     down     Microsoft OS/2 1.3 PM
 + *
 + * `macpoint16be` is the odd one out on BOTH byte order and field order: a Mac
 + * `Point` is documented as { short v; short h; } -- VERTICAL FIRST -- on a
@@ -142,6 +143,7 @@ Index: b/hw/misc/kh-ramabs.c
 +    KH_LAYOUT_POINT32LE_YX,    /* int32 y, int32 x -- little-endian, Y FIRST */
 +    KH_LAYOUT_POINT16LE_YUP,   /* int16 x, int16 y -- LE, Y COUNTED UP       */
 +    KH_LAYOUT_POINT16LE_YUP_YX,/* int16 y, int16 x -- LE, Y FIRST and UP     */
++    KH_LAYOUT_POINT16LE_YX,     /* int16 y, int16 x -- little-endian, Y FIRST*/
 +} KhLayout;
 +
 +/*
@@ -170,6 +172,7 @@ Index: b/hw/misc/kh-ramabs.c
 +    { "point32le_yx",     KH_LAYOUT_POINT32LE_YX,     4, false, true,  false },
 +    { "point16le_yup",    KH_LAYOUT_POINT16LE_YUP,    2, false, false, true  },
 +    { "point16le_yup_yx", KH_LAYOUT_POINT16LE_YUP_YX, 2, false, true,  true  },
++    { "point16le_yx",     KH_LAYOUT_POINT16LE_YX,     2, false, true,  false },
 +};
 +
 +/* How the guest is made to ACT on a coordinate we wrote. */
@@ -1025,7 +1028,7 @@ Index: b/hw/misc/kh-ramabs.c
 +    if (!s->ldef) {
 +        error_setg(errp, "kh-ramabs: unknown layout=%s (have: point16le, "
 +                   "macpoint16be, point32le, point32le_yx, point16le_yup, "
-+                   "point16le_yup_yx)", s->layout);
++                   "point16le_yup_yx, point16le_yx)", s->layout);
 +        return;
 +    }
 +    if (strcmp(s->publish, "nudge") == 0) {

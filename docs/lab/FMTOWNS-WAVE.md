@@ -106,7 +106,10 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
 
 ## Still open
 
-1. **Pointer** — MOTION *and* CLICK PROVEN 2026-09-13 (motion: Sonnet,
+1. **Pointer** — MOTION *and* CLICK PROVEN 2026-09-13; 1:1 ABSOLUTE still
+   OPEN, but the wall is now understood and the fix is committed (stream #3
+   below: the raster is letterboxed at 931x702+61+48 and the guest pointer
+   cannot leave that box) (motion: Sonnet,
    `fmtowns-ptr`; click: Opus, `fmtowns-list`). NOT YET SHIPPED: the deployed
    binary is still the pre-patch build, so `stream.pointer` is `none` and the
    station stays `hidden` until the rebuild+redeploy in
@@ -332,6 +335,275 @@ copied in, golden `.sta` copied in, never the original), binary
 `/data/vms/sandbox/fmtowns-ptr/build/mame-fmtownsftv-ptr` (built through
 `build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
 build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
+
+### Pointer stream 2026-09-13 #4 (fmtowns-ptr, Opus) — THE GAIN IS NOT A CONSTANT
+
+Two facts landed here, one of which invalidates a measured number in stream #3.
+
+**1. The chain binary builds and runs; the ctlsock gate passes.** Built on
+LABHOST (not CT950 — see the build note below), ten patches:
+
+	mame-ctlsock mame-drawshm mame-kiosk-no-ui mame-irix-skip-warnings
+	mame-ctlsock-ptr-tags mame-ctlsock-move-step-cap
+	mame-ctlsock-open-loop-gain mame-ctlsock-home-drain
+	mame-ctlsock-count-carry mame-ctlsock-screen-origin
+
+`/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain`, sha256
+`1d2900f26816d8bc6f1e7bc42066492f086318fcadee001e10b3723257106d03`.
+`ctlsock: setup btns=1 axes=1 movea=0 devxy=0 swap=0 sig=1ebe131a entries=3330`
+and `HELLO ... screen=931x702` — the `WxH+X+Y` parse works and the belief
+anchors at `(61,48)` (`STAT bel=61,48` straight after a restore).
+
+**BUILD NOTE, costs an hour if you miss it.** `build-mame-native.sh` must run
+on **labhost**, never inside CT950. CT950 has an empty ccache (the hot 32 GiB
+one is `/data/vms/sandbox/trixie-chroot/ccache`, root-on-labhost), its g++ is
+13.3 against labhost's 14.2 so the cache could not be hit anyway, and its
+memory limit OOM-kills the `emumem_hedw*` TUs — which is what the earlier
+"use JOBS=2" commit actually saw. On labhost with the hot cache, `JOBS=8`
+finished the whole chain in **6 minutes**. Wipe `work/mame/build` first if a
+CT950 attempt left objects there: g++-13 objects must not be linked by g++-14.
+
+**2. The 5.825 / 5.367 px-per-count gains of stream #3 are WRONG, and so is
+its `x0 = 294 @ 40 counts` ramp.** They were read with the diff-blob locator,
+which returns the union bounding box of the old and the new sprite whenever
+the two do not overlap — so it reported the *left* edge of a two-sprite union,
+not the cursor. MEASURED here with a locator that cannot make that mistake
+(both blobs are found, and the one that is NOT at the previously-known
+position is the cursor), from the top-left clamp, and confirmed by walking the
+ramp back down and retracing the same six positions exactly:
+
+| counts issued as 20-count MOVEs | sprite x |
+|---|---|
+| 0 | 61 |
+| 20 | 148 |
+| 40 | 236 |
+| 60 | 323 |
+| 80 | 410 |
+| 100 | 497 |
+
+87, 88, 87, 87, 87 px per 20 counts — **4.36 px/count**, dead linear, and the
+descent retraces 497 → 410 → 323 → 236 → 148 → 61 exactly. Meanwhile the
+belief, running on GAIN_X 5.825, read 61 → 177 → 294 → 410 → 527 → 643: the
+module thought it was at 643 when the arrow was at 497.
+
+**But issue the SAME travel in bigger chunks and the rate changes.** Same rig,
+same binary, same window, only the chunk size differs:
+
+| chunk | counts | sprite x | px/count |
+|---|---|---|---|
+| 20-count MOVEs | 100 | 672 → *(4.36)* | **4.36** |
+| 50-count MOVEs | 50 | 367 | 6.12 |
+| 50-count MOVEs | 100 | 672 | **6.11** |
+| 50-count MOVEs | 150 | 985 (clamped) | — |
+
+and on Y, 40-count MOVEs give 48 → 282 → 516 → 749(clamped): **5.85 px/count**
+against the 20-count rate. **The Towns OS mouse driver accelerates**: px per
+count is a function of the per-poll delta, not a constant. That is why every
+open-loop gain fitted on this station has disagreed with the next one — each
+was fitted at a different chunk size.
+
+**What this means for the chain.** `open-loop-gain` assumes ONE gain. It is
+correct only if every chunk the pacer issues is the same size *and below the
+acceleration threshold*. So the station's knob is not just `MAME_CTL_GAIN_X/Y`
+— it is the pacer's step cap, which must be pinned below the threshold, and
+the gain then measured AT that cap. `MAME_CTL_PTR_MOD=256` caps at 127, far
+above it, which is why the five-target run still failed.
+
+**Five-target run on the chain binary (targets inside the raster, gains
+5.825/5.367, PTR_MOD 256, MOVE_WINDOW 150)** — lap 2, read with the blob
+locator so the positions are indicative, the *belief* column is exact:
+
+| target | belief after | verdict |
+|---|---|---|
+| (80,70) | 78,69 | belief right, arrow short |
+| (960,70) | 958,74 | " |
+| (80,720) | 78,718 | " |
+| (960,720) | 958,724 | " |
+| (512,384) | 509,386 | " |
+
+The belief tracks the target to ~2 px every time; the arrow does not follow it,
+because the belief integrates counts x 5.825 and the guest moves 4.36.
+
+**3. There is NO chunk size at which the gain is a constant — the curve has no
+linear region.** MEASURED (`/data/vms/sandbox/fmtowns-ptr/thresh.py rigD`,
+each row homed to the clamp first, the travel split into `reps` identical
+`MOVE N 0` / `MOVE 0 N` chunks with a 1 s gap):
+
+| axis | chunk N | reps | px travelled | px/count | px per chunk |
+|---|---|---|---|---|---|
+| x | 5 | 8 | 61 | **1.525** | 7.6 |
+| x | 10 | 6 | 157 | **2.617** | 26.2 |
+| x | 15 | 5 | 262 | **3.493** | 52.4 |
+| x | 20 | 5 | 436 | **4.360** | 87.2 |
+| x | 25 | 4 | 495 | **4.950** | 123.8 |
+| x | 30 | 3 | 480 | **5.333** | 160.0 |
+| x | 40 | 2 | 466 | **5.825** | 233.0 |
+| y | 10 | 5 | 132 | **2.640** | 26.4 |
+| y | 20 | 4 | 351 | **4.388** | 87.8 |
+| y | 30 | 3 | 483 | **5.367** | 161.0 |
+
+px/count climbs monotonically from 1.53 to 5.83 and never flattens; X and Y
+share the same curve to within 1%. Note what this explains: stream #3's
+"5.825 / 5.367" are exactly the N=40 (x) and N=30 (y) rows — correct numbers
+for the chunk size they happened to be measured at, and wrong for any other.
+For a FIXED chunk size the motion is perfectly linear and reversible (the
+20-count ramp retraces 497 → 410 → 323 → 236 → 148 → 61 exactly), so this is
+a transfer function of the per-poll delta, not jitter.
+
+**WHY THAT KILLS THE OPEN-LOOP CHAIN ON THIS STATION.** `open-loop-gain`
+converts px to counts with ONE gain. Pin the pacer's step cap at N and the
+gain at g(N) and the bulk of a travel is right — but the LAST chunk of any
+travel is a remainder r < N, and it moves at g(r), not g(N). With a cap of 20
+and a remainder of 5 that is (4.36 - 1.53) x 5 = **14 px of undershoot** on a
+single target, every time, and an open loop has no way to see it. A 2 px
+five-target proof is unreachable this way at any cap.
+
+**THE ROUTE IS THE WRITE PATH, not the open loop.** Take macsys1's proven
+`mame-ctlsock-abs-ram.patch` (`MAME_CTL_ABS_RAM=cpu=...,pts=...,order=...,
+flag=...`, `ABS_RECT=61,48,931,702`, `ABS_GEOM=<Towns raster>`): poke Towns
+OS's own cursor globals and nudge one count so the OS republishes. A write
+does not care what the driver's acceleration curve is. Find the globals with
+the module's PEEK/POKEW on the running guest by diffing two known cursor
+positions. Rebase `mame-ctlsock-screen-origin.patch` on top of macsys1's
+ctlsock hunks — the raster origin is still needed, because `ABS_RECT` and the
+belief anchor both live in surface coordinates.
+
+The six open-loop patches stay in the stanza for now (they are inert-ish and
+harmless), but `MAME_CTL_GAIN_X/Y` must NOT be shipped in the fixture: no
+single value is right.
+
+**Tools.** `/data/vms/sandbox/fmtowns-ptr/ramp2.py <rig>` (ramps + gain fit),
+`thresh.py <rig>` (the curve above), `locate_five.py <rig> <tag>` (five-target
+with an exact template). `movea_five.py`'s blob picker is NOT trustworthy on
+this station — it returns the union bbox of the old and new sprite when they
+do not overlap, and nothing when they do; its numbers must not be quoted
+again. The reliable locator is the one in `ramp2.py`: diff two frames, take
+the connected component that is NOT at the previously-known position.
+
+### Pointer stream 2026-09-13 #3 (fmtowns-ptr, Opus) — THE RASTER IS LETTERBOXED
+
+The 1:1 absolute wall was never pacing, never the gain and never the
+signed-byte wrap. **The FM Towns raster does not fill the published
+surface.** MEASURED on a live rig (`np.any(frame > 8)` over the whole
+1024x768 shm frame): every non-black pixel lies in
+
+	cols 61..991   rows 48..749      = 931 x 702, origin (61,48)
+
+and the guest's own pointer cannot leave that box. Slam the mouse into the
+top-left clamp with fifteen `MOVE -100 -100` and the cursor sprite parks at
+exactly `(61,48)`; fifteen more change nothing. The right clamp is `x0=991`,
+the bottom `y0=749`.
+
+Every number in the previous stream's five-target table was that box:
+
+| target | landed | err | what it actually was |
+|---|---|---|---|
+| (20,20) | (61,48) | 50 | the raster's top-left clamp |
+| (1000,20) | (991,70) | 51 | the raster's right clamp |
+| (20,740) | (61,749) | 42 | the raster's left/bottom clamp |
+| (1000,740) | (991,746) | 11 | the raster's bottom-right clamp |
+| (512,384) | (435,315) | 103 | inherited border debt + a 9% gain error |
+
+Four of the five targets were **outside the guest's reachable area**, so the
+proof was asking the cursor to stand where there is no picture. Lap 2 being
+bit-identical to lap 1 is the signature of a clamp, not of drift — and an
+open loop, whose only origin is its belief, then carries the border's width
+forward into every later target. That is the 103 px centre miss.
+
+**Measured constants (2026-09-13, three independent rigs under
+`/data/vms/sandbox/fmtowns-ptr/`, pre-chain binary, golden `.sta`):**
+
+| Quantity | Value | How |
+|---|---|---|
+| raster box in the published surface | `931x702+61+48` | non-black bounds of the shm frame |
+| GAIN_X | **5.825 px/count**, residual 0 | x0 = 61 @ 0 counts, 294 @ 40, 527 @ 80 (`rigB/frames/xramp-*.png`) |
+| GAIN_Y | **5.367 px/count**, residual 0 | y0 = 209 @ 30, 370 @ 60, 531 @ 90, 692 @ 120, +161 px per +30 counts (`rigB/frames/yramp-*.png`) |
+| single-`MOVE` wrap cliff | **N = 128**, hard | N=127 moves ~927 px; N=128/130/160/200/255 move **zero** px (`rigB/frames/wrap-*.png`). `bus/msx/ctrl/mouse.cpp` packs each poll's delta into a signed byte |
+| inter-chunk pacing floor | **between 50 and 150 ms** | 400 counts as 10x40: @50 ms lands x0=583 (~78% of the counts lost); @150/300/600 ms all reach the 991 clamp (`rigB/frames/gap-*.png`) |
+| pacing as a cure for the corner error | **none** | rigC ran the five targets at 40 counts/250 ms, 40/400 and 20/400: the first two are bit-identical to the baseline, the third is worse and no longer even deterministic (`rigC/P1.log`, `P2.log`, `P3.log`) |
+
+**The fix, landed in this repo, not yet built into the deployed binary.**
+Two commits on `fmtowns-ptr`:
+
+1. `native.d/fmtowns.sh` opts the station into the apple2e open-loop
+   absolute chain — `mame-ctlsock-move-step-cap.patch` (cap the pacer at the
+   device's differencing window), `-open-loop-gain.patch`
+   (`MAME_CTL_GAIN_X/Y`, because an open loop cannot learn a gain and was
+   running at 1.0), `-home-drain.patch` (let the homing slam drain out of the
+   guest's accumulator before the first target travels) and
+   `-count-carry.patch` (integrate counts x gain in floating point so a
+   fixed-size pacer chunk stops dropping the same residue every window).
+   The station previously applied only `ptr-tags`, so `MOVEA` was a 1.0-gain
+   dead reckoner on a 5.8 px/count machine.
+2. `mame-ctlsock-screen-origin.patch` — new, written here. `MAME_CTL_SCREEN`
+   accepts an X-geometry tail `WxH+X+Y`; `clamp_px_x/y` then clamp to
+   `[X, X+W-1]`/`[Y, Y+H-1]`, `movea_target()` clamps through them instead of
+   its own 0-based pair, and every site that anchors the belief at "the
+   top-left clamp" after a homing slam anchors at `(X,Y)`. Default `+0+0` is
+   byte-identical for every other station and no save item is touched, so the
+   golden is not orphaned.
+
+**The station's pointer env then becomes** (none of it is in the fixture yet
+— it pairs with the rebuilt binary and must land with it):
+
+```
+MAME_CTL_SCREEN=931x702+61+48
+MAME_CTL_GAIN_X=5.825
+MAME_CTL_GAIN_Y=5.367
+MAME_CTL_PTR_MOD=256      # move-step-cap then caps the pacer at 127 counts,
+                          # one below the measured wrap cliff. Safe on a
+                          # 16-bit field: the device reduces mod 256 anyway.
+MAME_CTL_MOVE_WINDOW=150  # the measured pacing floor, not the 40 ms default
+```
+
+**NOT PROVEN IN THIS STREAM: the five-target table itself.** The build of the
+six-patch binary (`build-mame-native.sh fmtowns`, work dir
+`/data/vms/sandbox/fmtowns-ptr/work`, output
+`/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain`) did not finish inside
+the stream's 90-minute stop — the clone plus the layout-compression phase ate
+most of it. `stream.pointer` therefore stays as it is and the station stays
+`hidden`.
+
+**Exact next commands, in order** (no discovery left):
+
+```
+cd /data/vms/sandbox/fmtowns-ptr/repo
+JOBS=4 scripts/build-guests/emulators/build-mame-native.sh fmtowns \
+  /data/vms/sandbox/fmtowns-ptr/work /data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain
+# the work dir is already cloned and patched, so this run skips the clone
+BIN=/data/vms/sandbox/fmtowns-ptr/build/fmtowns-chain \
+MAME_CTL_SCREEN=931x702+61+48 MAME_CTL_PTR_MOD=256 \
+MAME_CTL_GAIN_X=5.825 MAME_CTL_GAIN_Y=5.367 \
+  /data/vms/sandbox/fmtowns-ptr/launchD.sh
+grep ctlsock /data/vms/sandbox/fmtowns-ptr/rigD/mame.log   # gate: btns=1 axes=1
+python3 /data/vms/sandbox/fmtowns-ptr/movea_five.py /data/vms/sandbox/fmtowns-ptr/rigD chain
+```
+
+**Build trap, measured 2026-09-13:** `build-mame-native.sh fmtowns` at
+`JOBS=4` was **OOM-killed** on this box — `Error 137` on
+`emumem_hedw1/2/3.o` and `emumem_hem.cpp`, which are MAME's most
+memory-hungry translation units, with the `formats` target killed alongside
+them. The box has 24 GB and four of those compiling at once do not fit next
+to the running fleet. Build this station with **`JOBS=2`**, and never leave
+`JOBS` unset (the default is `nproc`, 10 here). ccache carries the already-
+built objects across the retry, so a re-run is cheap. Check
+`grep -c Killed build.log` before trusting a build that "finished".
+
+`movea_five.py` sends `MOVEA` — the verb `streamhost/streamhost/src/mame_sock.rs`
+actually sends for a visitor pixel, unscaled and uncalibrated (routed backends
+return before `calibrated_abs()`, so `SH_CURSOR_OFF_*` never reaches this
+path — the origin has to live in the module, which is why the patch exists).
+Use targets INSIDE the raster: `(80,70) (960,70) (80,720) (960,720) (512,384)`.
+
+**Two traps for whoever runs it.** (1) The blob locator in `five_target.py`
+and `movea_five.py` picks "the largest changed blob not within a few px of
+the previous position"; when a move is small the new and old sprites overlap
+and it picks nothing, and when the cursor is pinned in a corner further
+motion in that direction changes no pixels at all and it reports a false
+"no movement". Judge a null result against `STAT`'s `bel=` before believing
+it. (2) The cursor sprite is 16x27 and its measured origin IS the belief
+coordinate (the home slam puts belief and sprite origin at the same
+`(61,48)`), so no hotspot offset is needed.
 
 ### Pointer stream 2026-09-13 #2 (fmtowns-list, Opus) — CLICK PROVEN
 

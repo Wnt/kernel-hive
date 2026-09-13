@@ -189,40 +189,84 @@ Editor (changed=94050).
 has one scalar, this guest needs x=1.0 and y=0.5, so either axis can be right
 but not both. A real 1:1 pointer here has to be absolute.
 
-### OPEN: absolute via `kh-ramabs` — address derived, write probe not yet verified
+### Absolute via `kh-ramabs`: the input variable is `0x253ca`, `point16le_yx`
 
-Rig: `/data/vms/sandbox/os213-ptr/ramabs/` on `/opt/qemu-beos/bin/qemu-system-x86_64`
-(11.0.2, the fork that carries `-device kh-ramabs`). It accepts
-`-enable-kvm -machine isapc -cpu 486` unchanged and cold-boots this disk to the
-PM Desktop Manager; a fresh `golden` was baked there (VM_SIZE 3.21 MiB,
-VM_CLOCK 00:28.220). `scripts/dev/os213-ramabs-derive.py` bias-searches all
-16 MB of guest RAM against five located pointer positions.
+**Proven on the rig 2026-09-13, NOT cut over.** Full table, the probe/sweep
+discrimination and the re-derive command are in `docs/guests/os213.md`
+§Pointer. What belongs here is the method and the three things that cost time.
 
-The pointer is stored as an **`int16` x,y pair with bias (0,0)** — the guest
-holds the exact screen pixel. Candidates, and what happened:
+Rig `/data/vms/sandbox/os213-ptr/ramabs/` (`launch.sh` now honours `$QEMU_BIN`
+and `COLD=1`). Harnesses: `/tmp/ramstat.py` (one QEMU start per candidate,
+prints `STAT` + the device's own log line) and `/tmp/ramsweep.py` (five
+targets, two laps, sensor + framebuffer per target).
 
-| Address | Layout | Result |
-|---|---|---|
-| `0x0019514` | `point16le` | `verified=no probefail=1` |
-| `0x010fe20` | `point16le` | `verified=no probefail=1` |
-| `0x010fe24` | `point16le` | untested |
-| `0x010c624` | x with **inverted** y (`bias=(0,479)`, PM's bottom-left origin) | untested, needs an inverted-y layout |
-| `0x0024ea0` `0x0024eb0` `0x00253b0` `0x00253ca` | y-then-x order | untested, `point16le` cannot address them |
+**1. The one-stage bias search returns ZERO candidates on this guest.** The PM
+arrow is XOR-drawn and the "densest changed 22x14 window, then bbox minimum"
+locator is off by up to 6 px in x and 14 px in y on some samples — measured
+against the RAM afterwards. An exact-bias search over six samples then matches
+nothing at all, not even at 4-of-6. The fix is two-stage
+(`scripts/dev/os213-ramabs-scan.py`): only ~2000 of 8.4M int16 slots change
+while the pointer moves, so enumerate those, read the pointer's TRUE positions
+out of them, and re-run the family search against that truth vector. Every
+family then resolves at once — x/y, y-then-x, inverted-y, doubled-y, int32.
+(The oberon wave hit the same wall and solved it with a ±1 tolerance per word;
+either works, and the RAM-as-truth version also hands you the hotspot.)
 
-Two traps recorded for the next session:
+**2. The connect-time write probe is necessary but NOT sufficient here.**
+Three addresses pass it (`0x24ea0`, `0x24eb0`, `0x253ca`) and only `0x253ca`
+steers the pointer: `0x24ea0` sweeps to `converged=0 gaveup=21`. This is the
+first station where `BEOS-ABSOLUTE-POINTER.md` §3's "if more than one
+verifies, stop and escalate" resolves by measurement rather than escalation —
+the sweep's `converged`/`gaveup` counters break the tie. Never ship on a probe
+pass alone.
 
-1. **The PM pointer is XOR-drawn and leaves trails.** Fast 1-unit motion
-   leaves dashed diagonal residue over the desktop; a "largest changed blob"
-   locator latches onto the trail and reports the pointer frozen. Settle and
-   re-reference after each move, or use `scripts/dev/cursor-locate-cv.py`
-   (`cursor-locate.py` returns AMBIGUOUS everywhere on this sprite — measured).
-2. **Derive against the same boot the golden is captured from.** Addresses do
-   not survive a re-bake (`docs/lab/BEOS-ABSOLUTE-POINTER.md` §3).
+**3. A failed candidate announces itself at the station's relative gain.**
+Every read-only copy ends the probe at `313,243` when the device wanted
+`320,239`: x drifting -1 per try, y +0.5 per try, i.e. the 2:1 mickey ratio
+applied to the probe's own 1-unit diagonal nudge with the write ignored.
 
-Exactly next: `ssh lab 'python3 /tmp/ramtest.py 0x10fe24'`, then the
-inverted-y and y-then-x candidates. Binary + golden move together (rule 6):
-cutting the station over to `/opt/qemu-beos` means a cold re-bake under that
-binary and a fresh restore proof.
+**Addresses are bound to one bake.** These are the `os213-ptr/ramabs` golden's
+(baked 2026-09-13 under `/opt/qemu-beos`, `VM_CLOCK 00:28.220`). The cutover
+bake must re-derive.
+
+### Cut over — DONE 2026-09-13
+
+1. Landed the one missing row in `0007`'s layout table — os213 is int16,
+   little-endian, **y-first and y-DOWN**, a combination the table did not
+   carry (`macpoint16be` is big-endian, `point32le_yx` is int32,
+   `point16le_yup_yx` counts y up):
+   `{ "point16le_yx", KH_LAYOUT_POINT16LE_YX, 2, false, true, false }`
+   (plus the enum value and the `unknown layout=` error string). Regenerated
+   the patch file from a fork checkout the way oberon did — copied
+   `oberon-ptr/qemu-src` (already at fork `c5449c80` with the shared table),
+   added the row, rebuilt `/opt/qemu-os213` (`--target-list=x86_64-softmmu`,
+   same flags as `/opt/qemu-oberon`) — **not** `/opt/qemu-beos`, whose
+   goldens belong to beos and pcgeos. `github.com/Wnt/qemu` itself was
+   **not** pushed this session (same gap oberon left open at `822255c3`);
+   the loose `.patch` file in this repo is what's authoritative and it
+   applies cleanly (verified: the regenerated whole-file hunk reproduces the
+   exact `hw/misc/kh-ramabs.c` that was compiled).
+2. Cold re-baked the golden under `/opt/qemu-os213` at the PM Desktop
+   Manager (`savevm golden`, VM_CLOCK `0000:00:28.925`), then re-derived:
+   `derive2.py`'s one-stage search still returns zero here (wall 1, expected),
+   the two-stage `os213-ramabs-scan.py scan` found the same `0x253ca`/
+   `0x253cc` pair unmoved, and the `point16le_yx` sweep against the new
+   binary converged 22/22, sensor-exact 10/10, `gaveup=0`. A click at the
+   commanded pixel (235,211, "OS/2 Window" icon) selected it,
+   `changed=3542`. Framebuffer proofs at
+   `/data/vms/sandbox/os213-ptr/ramabs/cutover-cold.png`,
+   `/tmp/click_before.png`, `/tmp/click_after.png` (copied off the rig).
+3. Launcher (`streamhost/stations/os213/qemu-streamhost.sh`) now runs
+   `${OS213_QEMU:-/opt/qemu-os213/bin/qemu-system-x86_64}` and, when
+   `KH_RAMABS_ADDR` is set, adds
+   `-device kh-ramabs,addr=$KH_RAMABS_ADDR,layout=point16le_yx,width=640,height=480,nudge-units=1,nudge-px=1`.
+   Fixture sets `SH_INPUT_BACKEND=ramabs`, `KH_RAMABS_ADDR=0x253ca`.
+   Registry `stream.pointer` is `abs`/`qemu-guestram-abswrite`,
+   `spa.pointerRel=false`, `operator.labctl.pointer_mode=abs`, and
+   `reset.mouse` carries the proof sentence with the numbers above. Golden
+   handed to `station-land.sh os213 --golden
+   /data/vms/sandbox/os213-ptr/ramabs/disk.qcow2`. See
+   `streamhost/stations/os213/ROLLBACK.md` for the one-line fallback.
 
 ## Landing
 
