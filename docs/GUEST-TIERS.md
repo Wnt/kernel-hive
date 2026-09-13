@@ -109,7 +109,7 @@ the schema but used by no station**.
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
   pdp11 star`
-- **Tier 3 (26)** — `a1000 amigaos35 amix armeval bbcmicro c128 c64 cbm2 cbm8032
+- **Tier 3 (27)** — `a1000 amigaos35 amix apple2gs armeval bbcmicro c128 c64 cbm2 cbm8032
   dragon32 indyr4400 irix kc854 medley mpf2 newsos nextstep oricatmos pet2001
   plus4 sinclairql tru64 vic20 w2kalpha zx81 zxspectrum`
 - **Tier 4 (1)** — `openvms` · **Tier 5 (2)** — `macos riscos`
@@ -232,6 +232,7 @@ missing feature.
 | `amstradcpc` | 2 bridge | bookworm | `qemu-ps2-relative` | rel | — | on | 60 | ssh |
 | `android` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | yes | on | 30 | — |
 | `apple2` | 2 bridge | bookworm | `qemu-usb-tablet` | abs | — | on | 60 | ssh |
+| `apple2gs` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `armeval` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `aros` | 1 direct-QEMU | kvm | `qemu-usb-tablet` | abs | — | on | 30 | — |
 | `atari800xl` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
