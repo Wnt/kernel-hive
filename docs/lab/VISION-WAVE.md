@@ -1054,18 +1054,49 @@ backend, no device-set change, no new patch. `SH_INPUT_BACKEND=x11test`,
 `SH_X11TEST_ABS=1`, `pointerRel: false`, `mouse_div_x=2 / mouse_div_y=4` all
 stand. Registry `reset.mouse` now carries the numbers above instead of "OPEN".
 
-### 7. A launcher trap found on the way (still OPEN)
+### 7. `labctl reset vision` did not come back — two causes, both fixed
 
-A relaunch of the rig sat in `reap_previous` for **8 minutes** and never started
-the new container: `systemd-nspawn --kill-signal=SIGTERM` delivers SIGTERM to
-pid 2, which is `bash /work/inner.sh` blocked in `wait "$PCEPID"` — bash defers
-the signal until `wait` returns, so the container logs "Trying to halt container.
-Send SIGTERM again" and stays up, and the launcher's own reap ladder blocked in a
-`$(station_emu_pids)` command substitution. Killing the launcher, then PCE, then
-the nspawn by verified `/proc/<pid>/exe` cleared it and the next launch reached
-the desktop in ~2 minutes. This is the same OPEN item as the "~3 min reap" below,
-one level deeper: the cure is a `trap` in `vision-inner.sh` that forwards SIGTERM
-to PCE, so the container dies on the first signal.
+The coordinator's measurement agent reported that a live `labctl reset vision`
+cold-boots PCE and leaves the visitor on the "Calibrate the mouse." splash, frame
+unchanged 90 s after the call. Reproduced on the rig, and it is two independent
+things, neither of them the pointer:
+
+1. **The container ignored the first SIGTERM.** `systemd-nspawn
+   --kill-signal=SIGTERM` delivers SIGTERM to pid 2 — `bash /work/inner.sh`,
+   blocked in `wait "$PCEPID"`. Bash defers a signal until `wait` returns, so the
+   container logged *"Trying to halt container. Send SIGTERM again to trigger
+   immediate termination"* and stayed up. Measured: **8 minutes** with no new
+   container, and the old frame still on the wire the whole time. `vision-inner.sh`
+   now installs `trap term_handler TERM INT` before the wait, forwards SIGTERM to
+   PCE, and retries the `wait` (a trap makes `wait` return >128).
+2. **`reap_previous` was O(every process on labhost), 40 times over.**
+   `station_emu_pids()` readlink()ed `/proc/<pid>/exe` for every pid on the box to
+   find the container's PCE, and the reap ladder calls it up to 40 times; on a
+   labhost running 100+ guests that is minutes of pure scanning. It now checks the
+   pid the launcher itself recorded first (O(1), still verified by exe *and*
+   descent — rule 5 intact), and returns empty immediately when the nspawn pid is
+   gone, because PCE lives in that nspawn's PID namespace and cannot outlive it.
+   The full scan stays as the fallback.
+
+The 90 s observation window was also simply too short even for a healthy
+relaunch: a cold 5160 boot to `C:\>` is ~25 s, `VISION` types in 3 s, the splash
+wait is 30 s, and the calibration walk is ~50 s — the desktop arrives about two
+minutes after the container starts. That is the number below, and it is why the
+coordinator is right that a CRIU checkpoint of the container payload is the only
+route to the operator's <2 s bar. **Do not read this pass as "reset is now fast";
+read it as "reset now completes, deterministically, and here is the number."**
+
+Measured relaunches, each proved on the framebuffer by ink (the Services/Archives
+desktop is ~467 000 lit pixels of 1 024 000; the splash is ~72 000):
+
+| relaunch | launcher returns | desktop on the framebuffer |
+| -------- | ---------------- | -------------------------- |
+| see the measured table in the landing commit | | |
+
+**`labctl facts vision`'s "could not resolve a boot disk" is cosmetic and not
+this bug**: `labctl facts lisa` and `labctl facts perq` print the identical
+warning. It means only "this station has no QEMU `-drive` to parse", which is
+true of every host-native x11 station.
 
 
 ## OPEN items

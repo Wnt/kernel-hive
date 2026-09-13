@@ -79,7 +79,30 @@ log "starting pce-ibmpc"
 /opt/pce/bin/pce-ibmpc -c "$WORK/pce.cfg" <mon.in >mon.out 2>&1 &
 PCEPID=$!
 echo "$PCEPID" >pce.pid
-trap 'kill -TERM "$PCEPID" "$XPID" 2>/dev/null; exit 0' TERM INT
+# --- die on the FIRST SIGTERM -------------------------------------------------
+# systemd-nspawn --kill-signal=SIGTERM delivers SIGTERM to pid 2, which is this
+# script, and a plain `kill -TERM $PCEPID` is NOT enough: PCE installs its own
+# signal handlers (SIGINT drops it into its monitor) and does not die on SIGTERM.
+# Measured 2026-09-13: the container logged "Trying to halt container. Send
+# SIGTERM again to trigger immediate termination" and stayed up for EIGHT MINUTES
+# while x11-runtime.sh's reap_previous waited it out — reset on this station is
+# `relaunch`, so that is a visitor staring at a frozen frame after
+# `labctl reset vision`. Escalate to SIGKILL after a grace second. There is
+# nothing to lose: PCE's ibmpc has no save state, the disk images are copied
+# fresh from the pristine set on every launch, and .psi write-back on eject is
+# irrelevant to a machine being torn down.
+term_handler() {
+  log "SIGTERM — stopping pce-ibmpc (pid $PCEPID)"
+  kill -TERM "$PCEPID" 2>/dev/null || true
+  for _ in 1 2 3 4; do
+    kill -0 "$PCEPID" 2>/dev/null || break
+    sleep 0.25
+  done
+  kill -KILL "$PCEPID" 2>/dev/null || true
+  kill -TERM "$XPID" 2>/dev/null || true
+  exit 0
+}
+trap term_handler TERM INT
 
 # --- PCE's window, and the input focus ---------------------------------------
 PCEWIN=""
@@ -302,6 +325,11 @@ if [ "${VISION_AUTOSTART:-1}" = 1 ]; then
   fi
 fi
 
-wait "$PCEPID" || true
+# `wait` returns >128 when a trap fires; loop until PCE is actually gone.
+while kill -0 "$PCEPID" 2>/dev/null; do
+  wait "$PCEPID" && break
+  rc=$?
+  [ "$rc" -gt 128 ] || break
+done
 log "pce-ibmpc exited"
 kill -TERM "$XPID" 2>/dev/null || true
