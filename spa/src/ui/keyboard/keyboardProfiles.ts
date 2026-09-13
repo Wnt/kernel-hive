@@ -274,8 +274,6 @@ export const OS_FAMILY: Record<string, Family> = {
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
   beos: 'generic',
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
-  fmtowns: 'generic', // Towns OS V2.1 L51 — TownsMENU is an icon launcher, and the Towns keyboard is a
-  //                     Japanese layout (変換/無変換/カナ, and no US-ANSI chord set). No PC chord family applies.
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile
   openvms: 'generic',
   ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
