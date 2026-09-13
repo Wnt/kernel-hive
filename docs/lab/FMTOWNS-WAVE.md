@@ -322,3 +322,82 @@ litter: MAME `/data/vms/streamhost/stations/fmtowns/mame.pid`, daemon
 `race/ptr-tags/` holds a COPY of the golden savestate, not the original.
 No claims were taken or dropped by this stream: slot 196 / UDP 54196 / VMID 196
 / display :96 were already held by session `fmtowns` and still are.
+
+## Landed 2026-09-13 (LANDING stream, Sonnet)
+
+`fmtowns` is on `main` and deployed. `streamhost@fmtowns` is `active`
+(unit main PID owns MAME as a child, not a hand-launched rig), `/os/fmtowns`
+returns 200, `/signal/fmtowns.json` carries a real cert hash + UDP 54196 +
+WebRTC offer URL, and `gallery-manifest.json` lists `fmtowns` with
+`listed: false` (hidden, per `listing.state`). Framebuffer proof after landing
+(`labctl shot fmtowns`) is pixel-identical to the pre-landing dark-launch
+frame: TownsMENU desktop, ドライブ選択 window, Q:TOWNSSYSTEM open with
+TownsGEAR/TownsStaff/FM-OASYS icons.
+
+Poster/registry prose merged from the `fmtowns-spa` branch (poster stream):
+kept its museum-voice poster wholesale, but rewrote "What you're looking at"
+to the golden scene actually proven rather than the drafts' generic
+click-an-icon paragraphs (no pointer is proven, so "click the CD player" is
+not an action this exhibit can offer yet). `museum`/`spa` fields (blurb,
+accent, eraSoftware, iconicApps, archetype, eraLabel) came from the drafts;
+the lead's `ramMB` (6, measured from the real `fmtownsftv` driver) and
+`machineIdentity` row (also driver-measured: FreshTV II, 486SX-33, 1994, teal
+TownsMENU-ground accent) were kept over the drafts' pre-golden guesses.
+`spa.pointerRel: true` from the drafts was dropped — `validate` refuses it for
+a `mamesock` backend with `stream.pointer.present: false`; the field doesn't
+apply until the pointer patch (§Pointer) lands. `assembliesByTile`/
+`machineIdentity` tuple fixed via `spa-scene-rows.py --tuple` (towerSetup, not
+homeMicro — the FM TOWNS has a detached keyboard; keyboard/mouse fields were
+missing entirely in the scaffolded row).
+
+**`station-land.sh` did not complete unattended** — two blockers, both fixed
+in-session rather than parked:
+
+1. **Duplicate `keyboardProfiles.ts` row.** My merge-resolution added a
+   `fmtowns:` entry near `chokanji` without noticing the lead had already
+   added one (with a better, measured comment) further down the file. `tsc`
+   caught it (TS1117) at the SPA-build step of landing. Fixed by dropping
+   mine; a follow-up commit already on `main` (`a74c3f2e`) did the same
+   independently.
+2. **Step 9 (`station-up.sh`) failed: "no 'LISTENING udp/' line in the
+   journal ... after 60s".** Two STALE fmtowns processes from the earlier
+   dark-launch (MAME pid 3492009, daemon pid 3577164 — the ones the previous
+   stream deliberately left running) still held UDP 54196 and the shared
+   `ctl.sock`/`fb.shm`, so the freshly started `streamhost@fmtowns` unit could
+   not bind and never printed its `LISTENING` line. Fixed by resolving both
+   PIDs via `/proc/<pid>/exe` (not a cmdline grep, rule 5), confirming the exe
+   matched the real fleet binaries, `kill -TERM` then verifying `/proc/<pid>`
+   gone, clearing the stale `ctl.sock`/`fb.shm`/`*.pid` files, and
+   `systemctl restart streamhost@fmtowns` — journal then showed `LISTENING
+   udp/54196` within seconds. `station-land.sh` had already released the
+   landing window at the point of failure (no other wave was landing
+   concurrently, so re-running its remaining steps by hand was safe); steps 6
+   (box-deploy), 7 (no golden swap needed — the MAME savestate golden was
+   already installed), 8 (no smoke-rig socket, nothing to take down), 9
+   (station-up, completed by hand as above), 11 (framebuffer proof), 12 (SPA
+   build+deploy) and re-arming the dark-launch overlays (automatic, via
+   `publish_manifests`/`serve-https-spa.sh deploy`) were all still carried out.
+   Also had to `darklaunch-station.py withdraw fmtowns` BEFORE any of this —
+   the running dark-launch declaration was an `atari800xl --like` copy
+   (wrong OS metadata entirely) still overlaying `tiles.json`/
+   `gallery-manifest.json`, which would have fought the real registry entry.
+3. **Unrelated fleet-tooling blocker, fixed at its root because it blocked
+   this landing's proof:** `scripts/gen_tiles_json.py` (which `labctl shot`
+   depends on via `/data/vms/streamhost/stations.json`) refused fleet-wide
+   with `declared/live mismatch indyr4400.ssh_port`. Cause: a **stale
+   `qemu-streamhost.sh`** left in `indyr4400`'s station dir from before its
+   2026-09-10 de-bridging to host-native nspawn (two backup copies of the
+   same file already sit beside it — `.bak-preperf`, `.debridged-bak` — this
+   one was just never renamed out of the live filename). Its
+   `hostfwd=tcp:127.0.0.1:5839-:22` line made `gen_tiles_json.py` observe a
+   live `ssh_port` the registry no longer declares (indyr4400 is host-native
+   now, no QEMU, no SSH). Renamed it to
+   `qemu-streamhost.sh.dead-post-debridge-fmtowns-landing-20260913`
+   (`indyr4400`'s own launcher/registry are untouched — the file was dead
+   weight, never read by anything with `x11-runtime.sh` as the live
+   launcher). `gen_tiles_json.py` then wrote clean for all 96 tiles.
+
+Teardown for this stream: nothing new was left running — `streamhost@fmtowns`
+is the real production unit (systemd-managed, not a hand-launched rig), the
+station-dir MAME + daemon it manages are the same one the wave doc's
+`§Publish` frame was taken from. No sandbox rigs were started by this stream.
