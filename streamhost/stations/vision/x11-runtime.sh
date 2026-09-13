@@ -207,8 +207,21 @@ done
 # @ASSETS@ -> this station's asset path: the ROM `load` lines need an absolute
 # path inside the container, and the assets are bound at their own host path.
 sed "s|@ASSETS@|$ASSETS|g" "$ASSETS/pce.cfg" >"$WORK/pce.cfg"
+# THEORY B (docs/lab/VISION-WAVE.md §Pointer): drive the mouse by writing
+# Mouse Systems bytes straight to COM1's pty, bypassing PCE's X11 terminal
+# mouse path (which tracks 1:1 then wedges in a corner). Swap the serial
+# driver from the x11-terminal-fed "mouse:protocol=msys" to a bare pty; the
+# symlink lands on the host at $WORK/com1.pty but points into the
+# CONTAINER's devpts, so the writer must run inside the sandbox's mount
+# namespace (see movemouse.py + the nsenter wrapper below).
+sed -i 's|driver = "mouse:protocol=msys[^"]*"|driver = "pty:symlink=/work/com1.pty"|' "$WORK/pce.cfg"
+grep -q 'pty:symlink=/work/com1.pty' "$WORK/pce.cfg" || {
+  echo "vision[$TILE]: THEORY B — failed to patch pce.cfg serial driver" >&2
+  exit 1
+}
 cp "$INNER" "$WORK/inner.sh"
-chmod 755 "$WORK/inner.sh"
+cp "$(dirname "$0")/movemouse.py" "$WORK/movemouse.py"
+chmod 755 "$WORK/inner.sh" "$WORK/movemouse.py"
 chown -R "$UIDBASE:$UIDBASE" "$WORK" "$X11DIR"
 chmod 1777 "$X11DIR"
 
