@@ -1,0 +1,167 @@
+ctlsock: a letterboxed raster has its own clamp box — MAME_CTL_SCREEN WxH+X+Y
+
+Applies AFTER mame-ctlsock-count-carry.patch (same file, last of the chain).
+
+THE BUG, measured on fmtowns (MAME fmtownsftv, Towns OS V2.1 L51, 2026-09-13).
+The station publishes a 1024x768 surface, but the FM Towns raster inside that
+shm frame occupies only cols 61..991 and rows 48..749 — 931x702, letterboxed,
+everything outside it black. The guest's own pointer cannot leave that box:
+slamming the mouse into the top-left clamp parks the cursor sprite at exactly
+(61,48), and no number of further negative counts moves it.
+
+The module did not know. clamp_px_x/y clamped the belief to [0, m_surf_w-1],
+the open-loop homing slam anchored the belief at (0,0), and movea_target()
+accepted any target on the published surface. So a five-target proof that
+aims at the corners of the SURFACE — (20,20), (1000,20), (20,740), (1000,740)
+— measured errors of 42-51 px that no amount of pacing or gain correction
+could move, because the guest was at its clamp and the belief was 41 px to
+the left and 28 px above it. Worse, an open loop has only its belief: the
+first corner target poisons every later one. The centre target, visited after
+two corners, missed by 103 px.
+
+	target        landed     err     what it actually was
+	(20,20)      (61,48)      50     the raster's top-left clamp
+	(1000,20)    (991,70)     51     the raster's right clamp
+	(20,740)     (61,749)     42     the raster's left/bottom clamp
+	(1000,740)   (991,746)    11     the raster's bottom-right clamp
+	(512,384)    (435,315)   103     inherited border debt + a 9% gain error
+
+Lap two was bit-identical to lap one, which is the signature of a clamp, not
+of jitter.
+
+THE FIX. MAME_CTL_SCREEN gains an optional X-geometry tail: WxH+X+Y, where
++X+Y is the raster's origin inside the published surface (fmtowns:
+931x702+61+48). clamp_px_x/y then clamp to [X, X+W-1] and [Y, Y+H-1];
+movea_target() clamps its target through the same two functions instead of
+its own open-coded 0-based pair; and every site that anchors the belief at
+the "top-left clamp" after a homing slam — the restore reseed, drain_move()'s
+release of the held first target, and the MAME_CTL_REHOME_PX re-anchor —
+anchors at (X,Y). The two travel-from-the-clamp calls subtract the origin,
+because the travel is a DELTA from the anchor and the target is absolute.
+
+Default is +0+0 on every other station: identical behaviour, byte for byte.
+No save item is touched, so a golden savestate is not orphaned.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -180,7 +180,17 @@
+       MAME_CTL_INFL_DECAY    per-window geometric decay of the
+                              issued-but-unobserved px estimate; < 1
+                              so a gain over-estimate self-clears    [0.5]
+-      MAME_CTL_SCREEN        WxH clamp surface + HELLO       [1288x1024]
++      MAME_CTL_SCREEN        WxH[+X+Y] clamp surface + HELLO  [1288x1024]
++                             The optional +X+Y is the RASTER ORIGIN inside
++                             the published surface: a machine whose video
++                             is letterboxed in the shm frame (fmtowns:
++                             931x702+61+48 inside 1024x768) has a guest
++                             pointer that cannot leave that box, so the
++                             belief must clamp -- and the homing slam must
++                             anchor -- at the box, not at 0,0. Without it
++                             every target aimed into the black border
++                             poisons the open loop by the border's width,
++                             permanently.
+                              Set it to the station's published surface --
+                              the launcher's MAME_SHM_SIZE -- or the belief
+                              and every MOVEA target clamp against a screen
+@@ -524,6 +534,20 @@
+ 				m_surf_w = w;
+ 				m_surf_h = h;
+ 			}
++			// X-geometry tail: WxH+X+Y names the raster's origin inside the
++			// published surface. Both offsets must be present and >= 0.
++			char const *const p1 = xp ? std::strchr(xp, '+') : nullptr;
++			char const *const p2 = p1 ? std::strchr(p1 + 1, '+') : nullptr;
++			if (p1 && p2)
++			{
++				long const ox = std::strtol(p1 + 1, nullptr, 10);
++				long const oy = std::strtol(p2 + 1, nullptr, 10);
++				if (ox >= 0 && oy >= 0)
++				{
++					m_surf_x = ox;
++					m_surf_y = oy;
++				}
++			}
+ 		}
+ 
+ 		std::string const sock = env_str("MAME_CTL_SOCK");
+@@ -1268,8 +1292,8 @@
+ 			}
+ 			else
+ 			{
+-				m_bx = 0;
+-				m_by = 0;
++				m_bx = m_surf_x;
++				m_by = m_surf_y;
+ 			}
+ 			m_bias_x = 0;
+ 			m_bias_y = 0;
+@@ -1632,11 +1656,12 @@
+ 			m_home_x = 0;
+ 			m_home_y = 0;
+ 			// The slam has drained: the guest IS at the clamp, whatever the
+-			// belief accumulated on the way there.
+-			m_bx = 0;
+-			m_by = 0;
++			// belief accumulated on the way there. The clamp is the RASTER's
++			// top-left corner (MAME_CTL_SCREEN's +X+Y), not the surface's.
++			m_bx = m_surf_x;
++			m_by = m_surf_y;
+ 			reset_open_loop_carry();
+-			move_paced_travel_px(hx, hy);
++			move_paced_travel_px(hx - m_surf_x, hy - m_surf_y);
+ 		}
+ 		if (m_mq.empty())
+ 			return;
+@@ -2009,8 +2034,10 @@
+ 	// are recoverable from git; do not reintroduce a control path that
+ 	// issues counts from a belief rather than from the reading.
+ 
+-	long clamp_px_x(long v) const { return std::max(0L, std::min(m_surf_w - 1, v)); }
+-	long clamp_px_y(long v) const { return std::max(0L, std::min(m_surf_h - 1, v)); }
++	long clamp_px_x(long v) const
++	{ return std::max(m_surf_x, std::min(m_surf_x + m_surf_w - 1, v)); }
++	long clamp_px_y(long v) const
++	{ return std::max(m_surf_y, std::min(m_surf_y + m_surf_h - 1, v)); }
+ 
+ 	// pixel-space reading; trusted only while the cursor is displayed (a
+ 	// hidden cursor's registers do not track the pointer)
+@@ -2048,8 +2075,8 @@
+ 
+ 	void movea_target(long x, long y, std::string seq, ack_ref const &ack)
+ 	{
+-		x = std::max(0L, std::min(m_surf_w - 1, x));
+-		y = std::max(0L, std::min(m_surf_h - 1, y));
++		x = clamp_px_x(x);
++		y = clamp_px_y(y);
+ 		hist_apply(ack);
+ 		reply_ok(ack);  // MOVEA acks on target-accept; completion is EV MOVEA
+ 		trace("verb MOVEA seq=%s tgt=%d,%d", seq, int(x), int(y));
+@@ -2097,7 +2124,7 @@
+ 				{
+ 					// opt-out: the old slam-and-travel-together behaviour
+ 					m_home_pend = false;
+-					move_paced_travel_px(x, y);
++					move_paced_travel_px(x - m_surf_x, y - m_surf_y);
+ 				}
+ 			}
+ 			else if (m_rehome_px > 0 && m_home_trav >= double(m_rehome_px)
+@@ -2115,8 +2142,8 @@
+ 				long const sx = long(std::ceil(double(m_surf_w) / m_gx)) + m_move_step;
+ 				long const sy = long(std::ceil(double(m_surf_h) / m_gy)) + m_move_step;
+ 				reset_open_loop_carry();
+-				m_bx = 0;
+-				m_by = 0;
++				m_bx = m_surf_x;
++				m_by = m_surf_y;
+ 				move_paced(-sx, -sy);
+ 				m_home_x = x;
+ 				m_home_y = y;
+@@ -3315,6 +3342,8 @@
+ 	int m_movea_tries = 40;
+ 	long m_surf_w = 1288;
+ 	long m_surf_h = 1024;
++	long m_surf_x = 0;                       // MAME_CTL_SCREEN raster origin
++	long m_surf_y = 0;                       // inside the published surface
+ 	std::chrono::seconds m_stat_period{ 15 };
+ 	std::string m_ptr_suffix;
+ 	std::string m_tag_btn, m_tag_x, m_tag_y;   // resolved pointer ioport tags

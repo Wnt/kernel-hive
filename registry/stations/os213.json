@@ -47,7 +47,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/os213",
       "qmp": "/data/vms/streamhost/stations/os213/qmp.sock",
-      "pointer_mode": "rel",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -57,13 +57,13 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54203,
-      "notes": "PS/2 RELATIVE pointer only — -machine isapc has no USB, so usb-tablet and every absolute route are unavailable. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer."
+      "notes": "PS/2 mouse, ABSOLUTE 1:1 via kh-ramabs writing OS/2 1.3 Presentation Manager's own pointer coordinate at 0x253ca (layout point16le_yx) -- isapc has no USB, so usb-tablet is unavailable, but kh-ramabs writes the guest's own RAM variable instead of relying on a device. SINGLE INJECTOR: while ptr.sock is connected nothing else -- no QMP input-send-event, no labctl pointer helper -- may push motion or a button edge at this mouse. No exec channel and no network at all (OS/2 1.3 ships no TCP/IP stack): use `labctl sh` (blind) or the framebuffer. Binary is /opt/qemu-os213; the golden is baked under it and the address is bound to that golden -- re-derive with docs/guests/os213.md \u00a7Pointer's recipe after any re-bake."
     }
   },
   "render": {
     "signalOrder": 91,
     "stationsManifestOrder": 89,
-    "stationsManifestPrelude": "\n# os213 (VMID 203) — IBM OS/2 1.30.2 Standard Edition, Presentation Manager.\n#   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a\n#   pc-i440fx machine freezes this guest at SeaBIOS \"Booting from Hard Disk...\",\n#   and -m 8 froze there too (both raced 2026-09-13, see docs/lab/OS213-WAVE.md).\n# DISK: -device ide-hd with AUTO geometry. Never pin CHS — `-drive ...,cyls=` is\n#   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the\n#   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.\n# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.\n# POINTER: QEMU PS/2 RELATIVE. isapc has NO USB, so usb-tablet and every absolute\n#   route are unavailable; this is the machine's only transport, not a shortcut.\n# NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and\n#   has no rn-tapnet.sh (rule 15).\n",
+    "stationsManifestPrelude": "\n# os213 (VMID 203) \u2014 IBM OS/2 1.30.2 Standard Edition, Presentation Manager.\n#   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a\n#   pc-i440fx machine freezes this guest at SeaBIOS \"Booting from Hard Disk...\",\n#   and -m 8 froze there too (both raced 2026-09-13, see docs/lab/OS213-WAVE.md).\n# DISK: -device ide-hd with AUTO geometry. Never pin CHS \u2014 `-drive ...,cyls=` is\n#   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the\n#   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.\n# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.\n# POINTER: ABSOLUTE via kh-ramabs writing PM's own pointer coordinate at\n#   0x253ca (layout point16le_yx). isapc has NO USB, so usb-tablet is\n#   unavailable -- kh-ramabs writes the guest's own RAM variable instead.\n# NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and\n#   has no rn-tapnet.sh (rule 15).\n",
     "bringUpGroup": 3,
     "bindingOrder": 106,
     "bindingPrelude": "",
@@ -88,16 +88,17 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "rel",
-      "method": "qemu-ps2-relative",
-      "absolute": false,
+      "transport": "abs",
+      "method": "qemu-guestram-abswrite",
+      "absolute": true,
       "present": true,
       "device": "ps2",
       "scale": 1.0,
       "offset": [
         0,
         0
-      ]
+      ],
+      "backend": "ramabs"
     },
     "slot": 203
   },
@@ -111,16 +112,13 @@
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
-      "SH_INPUT_BACKEND": "dbus-rel",
-      "SH_CURSOR_SCALE": "1.0",
       "SH_CURSOR_OFF_X": "0",
       "SH_CURSOR_OFF_Y": "0",
       "SH_AUDIO": "on",
       "SH_AUDIO_BITRATE": "96000",
       "SH_HASH_FILE": "/data/vms/streamhost/stations/os213/cert_hash_b64.txt",
       "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/os213/signaling.json",
-      "SH_CERT_ROTATE_DAYS": "10",
-      "SH_POINTER": "rel"
+      "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 203,
     "qemu": {
@@ -133,7 +131,7 @@
         "--udp",
         "54203",
         "--pointer",
-        "rel",
+        "abs",
         "--audio",
         "on",
         "--fps",
@@ -201,8 +199,8 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#2d4f8e",
-    "eraLabel": "1990 · OS/2 1.3 Presentation Manager",
-    "pointerRel": true
+    "eraLabel": "1990 \u00b7 OS/2 1.3 Presentation Manager",
+    "pointerRel": false
   },
   "museum": {
     "id": "os213",
@@ -225,9 +223,9 @@
       "Presentation Manager",
       "OS/2 Command Prompt"
     ],
-    "blurb": "The last operating system IBM and Microsoft shipped together — Presentation Manager on a 16-bit protected-mode kernel, six months after Windows 3.0 ended the partnership.",
+    "blurb": "The last operating system IBM and Microsoft shipped together \u2014 Presentation Manager on a 16-bit protected-mode kernel, six months after Windows 3.0 ended the partnership.",
     "notes": "Microsoft OS/2 1.30.1 under the fleet QEMU on an ISA i486 (-machine isapc) with 16 MB, VGA 640x480x16 and a PS/2 relative mouse, accelerated with KVM. No network: OS/2 1.3 has no bundled TCP/IP stack, so retronet is OPEN. Archetype: beige-ibm-pc.",
-    "periodBrowser": "none — 1990, and OS/2 1.3 has no bundled TCP/IP stack; IBM TCP/IP for OS/2 was a separate product"
+    "periodBrowser": "none \u2014 1990, and OS/2 1.3 has no bundled TCP/IP stack; IBM TCP/IP for OS/2 was a separate product"
   },
   "emulator": {
     "family": "QEMU",
@@ -237,13 +235,13 @@
   "ui": "desktop",
   "reset": {
     "stationDir": "os213",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "PARTIAL",
+    "mouse": "PASS 1:1 absolute: kh-ramabs writes OS/2 1.3 Presentation Manager's own pointer coordinate (int16 pair at guest-physical 0x253ca, order y-then-x, little-endian, y-DOWN -- layout point16le_yx) and nudges PS/2 by one unit to republish it. Five targets (20,20) (619,20) (20,459) (320,240) (619,459) on the 640x480 surface, TWO laps with a park at (600,460) between every target: the guest's own word (STAT sensor) is exact at all ten, converged=22 gaveup=0. A left click on the commanded pixel (235,211, the Group-Main \"OS/2 Window\" icon) selected it, changed=3542 bbox 256,205-479,254. Nudge stays at 1 unit = 1 px, below OS/2's 2:1 mickey acceleration threshold.",
     "keyboard": "PASS",
-    "fixture": "IBM OS/2 1.30.2 Standard Edition Presentation Manager Desktop Manager at VGA 640x480x16 with its group windows open; no modal dialog, no screensaver."
+    "fixture": "IBM OS/2 1.30.2 Standard Edition Presentation Manager Desktop Manager at VGA 640x480x16 with its group windows open; no modal dialog, no screensaver. Re-baked 2026-09-13 under /opt/qemu-os213 (the kh-ramabs build)."
   },
   "migrationExceptions": []
 }
