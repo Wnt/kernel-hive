@@ -1,9 +1,10 @@
 # fmtowns — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU)
 
-Status: **fmtowns wave in flight** (2026-09-13) — see
+Status: **native, keyboard, and golden restore proven on the framebuffer**
+(2026-09-13); `/os/fmtowns` publish and the pointer are still open — see
 [`docs/lab/FMTOWNS-WAVE.md`](../lab/FMTOWNS-WAVE.md) for the ledger, the race
-and what is proven. This file is the station's operating manual; every number
-in it is measured or marked OPEN.
+and every proof frame. This file is the station's operating manual; every
+number in it is measured or marked OPEN.
 
 ## Identity and source
 
@@ -38,12 +39,30 @@ in it is measured or marked OPEN.
 
 ## Golden, input, reset
 
-- Reset = relaunch restoring the golden save state (`MAME_NATIVE_CHECKPOINT=1`;
-  the driver registers 109 `save_item`s). Restore proof: OPEN until the wave
-  doc's §Proofs names the frames.
-- Keyboard: ctlsock `KEY` path, fleet floor 80/80 ms + `MAME_CTL_KEY_EXCL=:kbd_`
-  copied from samcoupe; proof OPEN.
-- Pointer: the Towns mouse is an MSX-protocol mouse on the second pad port;
-  transport OPEN (relative device — see the wave doc §Still open).
+- Reset = relaunch restoring the golden save state (`MAME_NATIVE_CHECKPOINT=1`).
+  Measured: `SAVEST` at the settled TownsMENU desktop took 334 ms and wrote
+  797 714 bytes to `sta/fmtownsftv/golden.sta`; a FRESH process relaunched with
+  `-state golden` against the real station dir settled in 5.2 s (CD mount
+  included) to a frame pixel-identical to the capture except a 1×9 px sliver
+  at the on-screen clock glyph (the guest reads real wall-clock time). Proof
+  frames: `docs/lab/FMTOWNS-WAVE.md` §Proofs.
+- Keyboard: real ctlsock `KEY` path through the generated
+  `fmtowns.keymap` (79 of 146 dumped fields matched; `mame-keymap.py` against
+  the live rig). Proven: `Ctrl`+`Esc` (`:key3 Ctrl` + `:key1 ESC`) opens the
+  guest's own タスクリスト (Task List) dialog; pressed again from there it opens
+  a DIFFERENT dialog (サイドワークリスト), proving each keypress is read live,
+  not a cached/looping frame. Fleet floor pacing (80/80 ms hold/gap) inherited
+  from the samcoupe fixture; no dropped/duplicated characters observed in this
+  station's limited test (no full sentence typed yet — the desktop has no
+  reachable text field without a working pointer).
+- Pointer: the Towns mouse is `-pad2 mouse`, an MSX-protocol mouse — genuinely
+  RELATIVE (KEYDUMP shows `:pad2:mouse:MOUSE_X`/`MOUSE_Y` axis fields, no
+  absolute port). The generic ctlsock `MOVEA`/`CLICK1` open-loop path produced
+  no observable cursor movement in ~10 minutes of testing. **OPEN** — same
+  wall as domainos's pointer (§Still open in the wave doc has the exact next
+  command). `stream.pointer.transport` stays `none`, a deliberate ship
+  decision, not an oversight.
 - Credentials: none (`guest/fmtowns` is a placeholder reference).
-- Rollback: the station is new; `listing.state: hidden` until the proofs land.
+- Rollback: `/os/fmtowns` is not yet published (`smoke-rig.sh` is QMP-shaped
+  and does not fit a MAME-native/shm-capture rig — wave doc §Still open item
+  2 has the exact next step); `listing.state: hidden` until that lands.

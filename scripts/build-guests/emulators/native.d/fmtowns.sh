@@ -37,19 +37,32 @@ NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
   local roms="$1"
-  # FMTOWNS_ROM_STAGING must point at a FLAT directory holding every member
-  # of the MAME 0.272 fmtowns.7z romset (extracted, not the .7z itself) —
-  # stage-romset.py matches by sha1 regardless of filename case/suffix.
+  # The media-staged pre-extracted fmt_*.rom names (5 canonical filenames)
+  # are a MIX of base-fmtowns and Towns II member hashes — no single machine
+  # matches all 5 by sha1. /data/assets-staging/fmtowns/roms/fmtowns.7z is
+  # the WHOLE MAME 0.272 merged romset (every variant + all five
+  # mytowns*.rom serial ROMs); extracting THAT flat gives fmtownsftv a
+  # complete sha1 match (race-proven 2026-09-13, including the 32-byte
+  # mytownsftv.rom). Extract into our own work dir every build — cheap
+  # (~4.6 MB unpacked) and keeps this stanza independent of any race
+  # sandbox's leftover directory.
+  local flat="$WORK/roms-flat"
+  if [ ! -f "$flat/mytownsftv.rom" ]; then
+    mkdir -p "$flat"
+    7z x -y -o"$flat" "${FMTOWNS_ROMSET_7Z:-/data/assets-staging/fmtowns/roms/fmtowns.7z}" >/dev/null
+  fi
   python3 "$HERE/../../debridge-convert/stage-romset.py" \
-    "$OUT" fmtownsftv "${FMTOWNS_ROM_STAGING:-/data/vms/sandbox/fmtowns/race/mame/roms-flat}" "$roms" \
+    "$OUT" fmtownsftv "${FMTOWNS_ROM_STAGING:-$flat}" "$roms" \
     fmtownsftv
 }
 
-# Power-on with no CD-ROM attached is the FM Towns system/boot-selector
-# screen (a text banner over the machine's native palette, not black) —
-# floor measured on this build's gate run, ~half the measured lit-pixel
-# count per the brief's convention (see the race report for the exact
-# number substituted here once measured).
+# Power-on with no CD-ROM attached is the FM Towns boot-selector screen
+# (the paperclip/dog/pencil "FM TOWNS" logo banner over black, plus a
+# Japanese "disk error" line bottom-left once the boot device probe fails
+# with no media attached) — MEASURED on this build's gate run (2026-09-13,
+# fmtownsftv, full romset staged, -str 8): 50291 lit pixels of 786432
+# total. Floor set to 25000, ~half the measured count per the brief's
+# convention (samcoupe's stanza comment).
 native_boot_gate() {
-  native_gate_nonblack "$1" "$2" "$3" 1 8
+  native_gate_nonblack "$1" "$2" "$3" 25000 8
 }

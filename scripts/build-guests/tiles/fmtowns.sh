@@ -7,9 +7,18 @@
 #   $INSTALL_DIR/townsos-v21l51.chd   the Towns System Software V2.1 L51 CD
 #                                      (the BOOT VOLUME — the Towns boots from
 #                                      CD into TownsMENU, nothing is installed)
-#   $ROM_STAGE/FMT_*.ROM               the five Fujitsu system ROMs, hash-gated,
-#                                      which native.d/fmtowns.sh's stage-romset
-#                                      step matches to MAME's romset by sha1
+#   $ROM_STAGE/fmtowns.7z             the WHOLE MAME 0.272 merged fmtowns
+#                                      romset (every variant + all five
+#                                      32-byte mytowns*.rom serial ROMs),
+#                                      hash-gated. native.d/fmtowns.sh's
+#                                      native_stage_roms extracts THIS flat
+#                                      and matches members to the fmtownsftv
+#                                      machine by sha1 — a partial 5-file
+#                                      pre-stage was tried first (race,
+#                                      2026-09-13) and turned out to mix
+#                                      base-fmtowns and Towns-II member
+#                                      hashes, matching no single machine
+#                                      completely; see docs/lab/FMTOWNS-WAVE.md.
 #
 # Everything is fetched by URL + sha256 (the gallery is private, so the bits
 # stay under /data and are never committed — only URL, size and hash live in
@@ -38,25 +47,18 @@ GATE=1
 [[ "${1:-}" == "--no-gate" ]] && GATE=0
 
 # ---- sources: URL + sha256 + byte size (measured, ledger facts) --------------
-# The five Fujitsu system ROMs, as the MAME 0.272 merged romset's mess/fmtowns.7z
-# (archive.org item mame-0.272-romset-complete-merged). Only the five canonical
-# files are used; the archive's regional variants (fmt_*_a.rom, mytowns*.rom
-# boot-select bytes) are left alone. MEASURED 2026-09-13.
+# The WHOLE MAME 0.272 merged romset's mess/fmtowns.7z (archive.org item
+# mame-0.272-romset-complete-merged) — 20 members: every regional variant
+# (fmt_*_a.rom, fmt_*_0.rom, fmthr_sys.rom) plus all five 32-byte
+# mytowns*.rom boot-select ROMs. Staged as one archive and extracted flat at
+# BUILD time by native.d/fmtowns.sh's native_stage_roms (stage-romset.py
+# matches members to the chosen machine by sha1) — the five canonical
+# fmt_*.rom names alone are NOT a complete set for any one machine (proven
+# in the race, 2026-09-13: they mix base-fmtowns's fmt_sys/fmt_dos with the
+# Towns II generation's fmt_f20/fmt_dic/fmt_fnt). MEASURED 2026-09-13.
 ROMS_URL="https://archive.org/download/mame-0.272-romset-complete-merged/mess/fmtowns.7z"
 ROMS_SHA256="5856826ef6475ebdf383982d47219bc6b3890cb6071d456ae6d3079c4e5081ac" # 967043 bytes
 ROMS_ARCHIVE="fmtowns.7z"
-# name:sha256 — FMT_SYS is the Model 1/2 system ROM (MAME base `fmtowns` set,
-# sha1 15d9cc70), the other four are the Towns II generation's (sha1
-# 7564020d / 57fd1464 / 1920711c / a216482e). No single MAME machine matches
-# all five by hash — see native.d/fmtowns.sh for how the rompath is assembled
-# and docs/lab/FMTOWNS-WAVE.md for the measured sha1 table.
-ROM_FILES=(
-  "FMT_SYS.ROM:7d4e89355e3575ae062516ece72f56160cd91f54e9bff74f9c438c883a2f7b9a" # 262144
-  "FMT_DOS.ROM:b760d991c087c25a7e18e52f1af4bfd601f6abe8f4ebadac51f34742374cf17f" # 524288
-  "FMT_F20.ROM:dca1f314ae2f5dc937706624990b8521016ee2231558f6cbe169bbc305efb774" # 524288
-  "FMT_DIC.ROM:fdec9c3b4be58426623b3266bc6f246673134c427c8683332c24381f522ecdc7" # 524288
-  "FMT_FNT.ROM:aa9e9565d3047c51ee418712be8daa391b0d8f21f92fc02e4616e3523ca50b9d" # 262144
-)
 # Towns System Software V2.1 L51 (Fujitsu, 1995) — the bootable CD. archive.org
 # item neo_kobe_fujitsu_fm_towns_2016-02-25-repack_20200803, path "Fujitsu FM
 # Towns/[OS] Towns System Software v2.1 L51 (Fujitsu)/[OS] Towns System Software
@@ -69,16 +71,23 @@ CD_ARCHIVE="towns-sysv21-l51-cd.7z"
 CD_IMG_SHA256="5adbae1b5e32cf9ed285f07b9ad94701f18cdc6d483fbb3ba47b5cd0dd50f8ab" # 593767104 bytes, MODE1/2352 + 8 audio tracks
 CD_IMG="towns-sysv21-l51-cd.img"
 CD_CUE="towns-sysv21-l51-cd.cue"
-# The composed CHD's sha256; empty = not yet pinned (pin it from the first
-# compose, then a chdman version drift shows up here instead of on the glass).
-CHD_SHA256="${CHD_SHA256:-}"
+# The composed CHD's sha256, pinned from the real compose (2026-09-13,
+# chdman 0.276 on labhost, cdlz/cdzl/cdfl, final ratio 34.0%) — matches the
+# race sandbox's compose exactly (same chdman, same inputs), so this is a
+# reproducible build, not a one-off measurement. A chdman version drift shows
+# up here instead of on the glass.
+CHD_SHA256="${CHD_SHA256:-fde4fa2bc8ede2d260e9baf0dc7e832b0682222fa04fc480dace923445a00c4d}" # 210349963 bytes
 
 log() { printf '[build:%s] %s\n' "$OS_ID" "$*" >&2; }
 die() {
   log "ERROR: $*"
   exit 1
 }
-door() { ssh lab "$@"; } # the one door; /data is the same mount on both sides
+# shellcheck disable=SC2029 # intentional: /data is the same mount on both
+# sides, so client-side expansion of a local path variable (chdman's -i/-o
+# args) is exactly what every call site below wants — there is no remote-only
+# variable this would need to defer.
+door() { ssh lab "$@"; } # the one door
 
 fetch_pinned() {
   local url="$1" sha="$2" dest="$3"
@@ -103,19 +112,7 @@ fetch_pinned() {
 mkdir -p "$ROM_STAGE" "$CD_STAGE" "$WORK"
 fetch_pinned "$ROMS_URL" "$ROMS_SHA256" "$ROM_STAGE/$ROMS_ARCHIVE"
 fetch_pinned "$CD_URL" "$CD_SHA256" "$CD_STAGE/$CD_ARCHIVE"
-
-# ---- ROMs: the five Fujitsu files, each hash-gated ----------------------------
-log "unpacking the ROM archive"
-(cd "$ROM_STAGE" && 7z x -y -o. "$ROMS_ARCHIVE" >/dev/null) || die "7z failed on $ROMS_ARCHIVE"
-for spec in "${ROM_FILES[@]}"; do
-  name="${spec%%:*}" sha="${spec#*:}"
-  f="$(find "$ROM_STAGE" -iname "$name" -type f | head -1)"
-  [[ -n "$f" ]] || die "ROM $name not in $ROMS_ARCHIVE"
-  got="$(sha256sum "$f" | awk '{print $1}')"
-  [[ "$got" == "$sha" ]] || die "ROM $name sha256 $got != $sha"
-  [[ "$f" == "$ROM_STAGE/$name" ]] || cp -f "$f" "$ROM_STAGE/$name"
-  log "ROM $name $(stat -c %s "$ROM_STAGE/$name") bytes OK"
-done
+log "ROM archive staged at $ROM_STAGE/$ROMS_ARCHIVE ($(stat -c %s "$ROM_STAGE/$ROMS_ARCHIVE") bytes) — extraction + sha1 matching happens at build time in native.d/fmtowns.sh"
 
 # ---- the CD: CloneCD image → our own cue → CHD -------------------------------
 log "unpacking the CD archive"

@@ -175,13 +175,14 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "OPEN — Towns mouse on -pad2 (MSX-protocol mouse, relative); pointer proof owed by the golden stream (docs/lab/FMTOWNS-WAVE.md)",
-    "keyboard": "OPEN — ctlsock KEY path through the generated fmtowns.keymap; proof owed (docs/lab/FMTOWNS-WAVE.md)",
-    "fixture": "Towns OS V2.1 L51 TownsMENU desktop booted from the System Software CD (docs/lab/FMTOWNS-WAVE.md)"
+    "mouse": "OPEN — Towns mouse on -pad2 (MSX-protocol mouse, genuinely relative: KEYDUMP shows MOUSE_X/MOUSE_Y axis fields, no absolute port); generic ctlsock MOVEA/CLICK1 produced no observable cursor movement (docs/lab/FMTOWNS-WAVE.md Still open #1)",
+    "keyboard": "PROVEN — real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
+    "fixture": "PROVEN — Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from samcoupe on 2026-09-13 (fmtowns wave, docs/lab/FMTOWNS-WAVE.md)"
+    "scaffolded from samcoupe on 2026-09-13 (fmtowns wave, docs/lab/FMTOWNS-WAVE.md)",
+    "native build + real CHD + generated keymap + keyboard proof + golden restore proven 2026-09-13; /os/fmtowns publish and the pointer are OPEN, see listing.reason"
   ],
   "keyboard": {
     "charMap": {
@@ -198,5 +199,10 @@
       "'": "&",
       "~": ")"
     }
+  },
+  "listing": {
+    "state": "hidden",
+    "reason": "Native build, real CHD, generated keymap, keyboard proof (Ctrl+Esc opens the guest's own Task List dialog) and golden-save/restore (pixel-identical, 5.2s) are all proven on the framebuffer 2026-09-13. NOT yet published to /os/fmtowns: scripts/dev/smoke-rig.sh is QMP-shaped (expects a QEMU guest's qmp.sock + a released daemon binary) and does not fit a MAME-native/shm-capture rig; station-up.sh requires this branch already landed on labhost's main checkout. Pointer transport is also OPEN (the Towns mouse on -pad2 is genuinely relative, no absolute port; the generic ctlsock MOVEA/CLICK1 path produced no observable cursor movement). Drop this block once the branch lands and station-up.sh fmtowns has published /os/fmtowns. See docs/lab/FMTOWNS-WAVE.md.",
+    "since": "2026-09-13"
   }
 }
