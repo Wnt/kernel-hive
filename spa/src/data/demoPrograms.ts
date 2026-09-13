@@ -124,13 +124,14 @@ const DEMO_PROGRAMS = {
     "perCharMs": 80
   },
   "minix2": {
-    "label": "Read the kernel that taught the 90s",
+    "label": "Read the operating system's own source",
     "lines": [
+      "ls /usr/src",
       "ls /usr/src/kernel",
-      "head -20 /usr/src/kernel/proc.c"
+      "head -40 /usr/src/kernel/proc.c"
     ],
-    "runCommand": "ls /usr/src/kernel",
-    "perCharMs": 80
+    "runCommand": "head -40 /usr/src/kernel/proc.c",
+    "perCharMs": 40
   },
   "mpf2": {
     "label": "Type in a demo program",

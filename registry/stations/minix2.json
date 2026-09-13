@@ -180,33 +180,36 @@
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#c8a24a",
-    "eraLabel": "1997 \u00b7 teaching microkernel",
+    "eraLabel": "1997 \u00b7 Tanenbaum's teaching microkernel",
     "pointerRel": false
   },
   "museum": {
     "id": "minix2",
     "displayName": "Minix 2.0.4",
     "year": 1997,
-    "lineage": "Tanenbaum microkernel UNIX; the system Linux was written to replace",
-    "arch": "i386",
+    "lineage": "UNIX V7 \u2192 Minix 1.0 (Tanenbaum, 1987) \u2192 Minix 2.0 POSIX (1997) \u2192 2.0.4 (2003) \u2192 Minix 3",
+    "arch": "i386 (Minix 2 also builds 16-bit for an 8088)",
     "ramMB": 32,
-    "notes": "The whole operating system is on the disk as source. /usr/src holds kernel, mm, fs and inet \u2014 a few thousand lines you can read end to end.",
+    "notes": "Live streamhost station, text console only \u2014 no pointer, no network. The exhibit is /usr/src: the complete source of the running operating system, in the shape Tanenbaum wrote it to be read in one term \u2014 kernel/, mm/ (memory manager), fs/ (file system) and inet/ (networking), each an ordinary user process talking to the others by fixed-size messages. proc.c is where the message passing itself lives. Minix 2.0.4 (November 2003) is the last of the POSIX-conformant 2.0 line that shipped with the textbook's second edition in 1997.",
     "accent": "#c8a24a",
     "era": "1990s",
     "eraSoftware": [
-      "ash",
+      "ash (the shell)",
+      "mined (the book's editor)",
       "elle",
-      "mined",
-      "ACK C compiler",
-      "make"
+      "ACK \u2014 the Amsterdam Compiler Kit",
+      "make",
+      "man"
     ],
-    "periodBrowser": null,
+    "periodBrowser": "none \u2014 Minix 2 ships TCP/IP in /usr/src/inet, but no browser is in the distribution",
     "iconicApps": [
       "/usr/src/kernel/proc.c",
+      "/usr/src/mm",
+      "/usr/src/fs",
       "mined",
       "ACK cc"
     ],
-    "blurb": "A whole UNIX you can read: Minix 2 ships its own source in /usr/src, which is exactly why it became the most-read operating system of its decade."
+    "blurb": "A whole UNIX small enough to read: Minix 2 keeps its own source in /usr/src, a microkernel written so a student could get through all of it in a term. It is the system Linus Torvalds was running in 1991 when he decided to write his own \u2014 and the one Tanenbaum used to argue, in public, that he shouldn't have."
   },
   "emulator": {
     "family": "QEMU",
@@ -230,12 +233,13 @@
     "IDE geometry MUST be cyls=200,heads=16,secs=32 \u2014 the disk image is a 50 MB raw with that CHS in its partition table"
   ],
   "demoProgram": {
-    "label": "Read the kernel that taught the 90s",
+    "label": "Read the operating system's own source",
     "lines": [
+      "ls /usr/src",
       "ls /usr/src/kernel",
-      "head -20 /usr/src/kernel/proc.c"
+      "head -40 /usr/src/kernel/proc.c"
     ],
-    "runCommand": "ls /usr/src/kernel",
-    "perCharMs": 80
+    "runCommand": "head -40 /usr/src/kernel/proc.c",
+    "perCharMs": 40
   }
 }
