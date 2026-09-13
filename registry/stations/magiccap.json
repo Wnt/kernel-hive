@@ -247,11 +247,11 @@
   "ui": "desktop",
   "reset": {
     "stationDir": "magiccap",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "PASS",
+    "mouse": "Verified 2026-09-13 on a clone (usb-tablet abs via QMP input-send-event, 640x480 surface): five targets, two laps — (20,20)->(20,19), (620,20)->(619,19), (20,460)->(20,459), (620,460)->(619,459), (320,240)->(320,240); worst error 1.41 px; laps byte-identical; click at (478,262) opened the Datebook (fb-react changed=92423).",
     "keyboard": "PASS",
     "fixture": "Windows 98 SE desktop; focused editor; Start-menu closed."
   },
