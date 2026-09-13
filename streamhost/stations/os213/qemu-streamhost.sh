@@ -7,12 +7,18 @@
 # OS/2 2.x/Warp. Installed here from the 10-disk IBM SE floppy set onto a FAT
 # hard disk; see docs/lab/OS213-WAVE.md and docs/guests/os213.md.
 #
-# MACHINE: `-machine isapc -cpu 486`, TCG. OS/2 1.x predates PCI entirely, and
-#   `-machine pc-i440fx-11.0` freezes this guest at SeaBIOS's "Booting from Hard
-#   Disk..." (raced 2026-09-13, theory `pcimachine`). isapc has no KVM path, so
-#   this station runs under TCG — fine, OS/2 1.3 is tiny.
-# RAM: 16 MB. OS/2 1.x panics above ~16-32 MB in some builds, and `-m 8` also
-#   froze at SeaBIOS in the race (theory `ramsize`).
+# ACCELERATOR: `-enable-kvm`, and this is THE load-bearing flag. Under
+#   `-accel tcg` this guest dies at a truncated `TRAP` a moment after the boot
+#   banner — reproduced on TWO independently produced OS/2 1.3 systems (this
+#   Microsoft 1.30.1 image, and a complete IBM 1.30.2 SE floppy install, which
+#   trapped at the installer's own first reboot). Changing ONLY the accelerator
+#   fixes it: KVM reaches the PM Desktop Manager in ~20 s. Same QEMU TCG defect
+#   the `xenix` station hit the same night. Do NOT "simplify" this back to TCG.
+# MACHINE: `-machine isapc -cpu 486`. OS/2 1.x predates PCI entirely. QEMU
+#   accepts `-enable-kvm` with `isapc` without complaint; `-machine pc,acpi=off`
+#   + `-vga std` also works under KVM (raced, theory `kvmpc`) and is the fallback
+#   if isapc ever regresses.
+# RAM: 16 MB, the size the source image was produced with.
 # DISK: plain `-device ide-hd` with AUTO geometry. Do NOT pin CHS. `-drive
 #   file=...,cyls=` is rejected outright by QEMU 11 ("Block format 'qcow2' does
 #   not support the option 'cyls'") — geometry only goes on the ide-hd device —
@@ -44,7 +50,7 @@ export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-i386 \
   -name streamhost-os213 \
-  -accel tcg -m 16 -smp 1 \
+  -enable-kvm -m 16 -smp 1 \
   -machine isapc -cpu 486 \
   -rtc base=localtime \
   -boot c \

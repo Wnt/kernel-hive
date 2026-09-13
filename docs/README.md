@@ -111,6 +111,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/kolibrios.md](guests/kolibrios.md) | KolibriOS station — absolute-pointer notes (live 2026-07-13). |
 | [guests/macos.md](guests/macos.md) | Historical macOS OpenCore/Sequoia recipe; current station is a showcase poster. |
 | [guests/medley.md](guests/medley.md) | Interlisp Medley (1987, Xerox PARC Lisp environment) — host-native maiko VM as an X client under Xvfb, x11 capture + XTEST; the first station with no emulated machine; no network plane. |
+| [guests/minix2.md](guests/minix2.md) | Minix 2.0.4 (2001) — text-console-only QEMU station, boots straight to a root shell in `/usr/src`; the exhibit is the kernel source tree itself; no pointer, no retronet (no period browser/IM). |
 | [guests/msdos-win1.md](guests/msdos-win1.md) | MS-DOS + Windows 1.0 station. |
 | [guests/netbsd14.md](guests/netbsd14.md) | NetBSD 1.4.1 i386 (1999) — XFree86 3.3 desktop, absolute pointer through the guest's X server (x11warp). |
 | [guests/nextstep.md](guests/nextstep.md) | NeXTSTEP R&D notes — NOT LIVE, install blocked. |
@@ -134,6 +135,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/win11.md](guests/win11.md) | Windows 11 unattended install + the RDP-bridge exhibit (VM 900 since deleted — showcase-only). |
 | [guests/win9x.md](guests/win9x.md) | Windows 95/98 (+ the Win 3.11 material) — KVM recipe & root-cause, perf tuning, as-built image manifests. |
 | [guests/winxp.md](guests/winxp.md) | Windows XP Pro SP3 seed build. |
+| [guests/xenix.md](guests/xenix.md) | SCO Xenix System V/386 2.3.4 (1989) — text-console-only QEMU station, pre-installed disk, KVM required (every exec dies under TCG); Multiscreen (Alt-F1..Alt-F4) is the exhibit; no pointer, retronet OPEN (SCO TCP/IP was a separate product). |
 | [guests/UNDOCUMENTED.md](guests/UNDOCUMENTED.md) | Stub index for the stations without a dedicated doc (build-script + manifest pointers). |
 
 ## catalog/ — what the museum holds and could hold

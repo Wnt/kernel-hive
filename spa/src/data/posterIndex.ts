@@ -39,6 +39,9 @@ const POSTER_INDEX = {
   "apple2e": {
     "hero": "/posters/apple2e/desktop.webp"
   },
+  "apple2gs": {
+    "hero": "/posters/apple2gs/desktop.webp"
+  },
   "armeval": {
     "hero": "/posters/armeval/desktop.webp"
   },
@@ -138,11 +141,17 @@ const POSTER_INDEX = {
   "macos9": {
     "hero": "/posters/macos9/desktop.webp"
   },
+  "macsys1": {
+    "hero": "/posters/macsys1/desktop.webp"
+  },
   "magiccap": {
     "hero": "/posters/magiccap/desktop.webp"
   },
   "medley": {
     "hero": "/posters/medley/desktop.webp"
+  },
+  "minix2": {
+    "hero": "/posters/minix2/desktop.webp"
   },
   "mpf2": {
     "hero": "/posters/mpf2/desktop.webp"
@@ -302,6 +311,9 @@ const POSTER_INDEX = {
   },
   "winxp": {
     "hero": "/posters/winxp/desktop.webp"
+  },
+  "xenix": {
+    "hero": "/posters/xenix/desktop.webp"
   },
   "zx81": {
     "hero": "/posters/zx81/desktop.webp"

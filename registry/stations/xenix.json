@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "id": "xenix",
+  "era_year": 1989,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 83,
+        "prelude": "",
+        "value": {
+          "key": "xenix",
+          "script": "tiles/freedos.sh",
+          "outputDir": "FreeDOS",
+          "class": "retro",
+          "estimated": "~10-15m",
+          "automation": "full*",
+          "produces": "freedos.qcow2 (games+Arachne)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "actionMap": {
+      "key": "xenix",
+      "value": {
+        "os": "FreeDOS 1.3",
+        "win": "qemu",
+        "mouse": null,
+        "kbd": "type:dir\r",
+        "kbd_reset": "",
+        "kbd_note": "DOS text: at a C:\\ prompt a typed char echoes. NOTE this tile boots to a 'Pick a game' single-key menu that consumes a keypress and LAUNCHES -> for a clean echo test drive it to a command prompt first; default here is a soft 'dir' which is destructive to the menu.",
+        "audio_trigger": "tone",
+        "note": "SB16; text mode -> mouse N/A"
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/xenix",
+      "qmp": "/data/vms/streamhost/stations/xenix/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54202,
+      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+    }
+  },
+  "render": {
+    "signalOrder": 88,
+    "stationsManifestOrder": 86,
+    "stationsManifestPrelude": "\n# xenix (VMID 95) — TODO one line; scaffolded from freedos.\n",
+    "bringUpGroup": 4,
+    "bindingOrder": 105,
+    "bindingPrelude": "",
+    "mockManifestOrder": 5,
+    "goldenOrder": 86,
+    "actionMapOrder": 50
+  },
+  "stationDir": "xenix",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54202,
+    "fps": 30,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "disabled",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ps2-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 202
+  },
+  "guestDoc": "docs/guests/xenix.md",
+  "credentialsRef": "guest/xenix",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "xenix",
+      "SH_QMP": "/data/vms/streamhost/stations/xenix/qmp.sock",
+      "SH_PORT": "54202",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO": "on",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/xenix/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/xenix/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_INPUT_BACKEND": "disabled"
+    },
+    "vmidLabel": 202,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "xenix",
+        "--vmid",
+        "202",
+        "--udp",
+        "54202",
+        "--pointer",
+        "none",
+        "--audio",
+        "on",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/xenix/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/xenix/station.env.fixture"
+      ],
+      "deviceSetId": "xenix-current",
+      "launcher": "streamhost/stations/xenix/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/xenix/station.env.fixture",
+      "binary": "qemu-system-i386",
+      "machine": "isapc",
+      "accel": "kvm",
+      "cpu": "486",
+      "memoryMB": 16,
+      "smp": 1,
+      "vga": "isa-vga",
+      "deviceSetSummary": [
+        "-name streamhost-xenix",
+        "-m 16 -smp 1",
+        "-machine isapc -cpu 486",
+        "-rtc base=localtime",
+        "-boot c",
+        "-device isa-vga",
+        "-display dbus,p2p=on,audiodev=snd0",
+        "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+        "-drive file=/data/gallery-guests/Xenix/xenix.qcow2,format=qcow2,if=ide,index=0,media=disk",
+        "-qmp unix:/data/vms/streamhost/stations/xenix/qmp.sock,server=on,wait=off",
+        "-pidfile /data/vms/streamhost/stations/xenix/qemu.pid"
+      ],
+      "sourceDeviceSet": {
+        "binary": "qemu-system-i386",
+        "machine": "isapc",
+        "accel": "kvm",
+        "cpu": "486",
+        "memoryMB": 16,
+        "smp": 1,
+        "vga": "isa-vga",
+        "deviceSetSummary": [
+          "-name streamhost-xenix",
+          "-m 16 -smp 1",
+          "-machine isapc -cpu 486",
+          "-rtc base=localtime",
+          "-boot c",
+          "-device isa-vga",
+          "-display dbus,p2p=on,audiodev=snd0",
+          "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
+          "-drive file=/data/gallery-guests/Xenix/xenix.qcow2,format=qcow2,if=ide,index=0,media=disk",
+          "-qmp unix:/data/vms/streamhost/stations/xenix/qmp.sock,server=on,wait=off",
+          "-pidfile /data/vms/streamhost/stations/xenix/qemu.pid"
+        ]
+      },
+      "launcherParity": {
+        "status": "semantic-identical",
+        "reason": "registry source pins -machine isapc -cpu 486 -enable-kvm, the 1989-era device set the golden was baked with; the launcher runs exactly these arguments (KVM is load-bearing -- every exec dies under TCG)"
+      }
+    },
+    "bringUpOrder": 105
+  },
+  "spa": {
+    "archetypeId": "beige-ibm-pc",
+    "transport": "streamhost",
+    "accentColor": "#4f8a8b",
+    "eraLabel": "1989 · Unix on the PC"
+  },
+  "museum": {
+    "id": "xenix",
+    "displayName": "SCO Xenix 386",
+    "year": 1989,
+    "lineage": "Microsoft's Unix (AT&T V7 → System V), sold to SCO in 1987",
+    "arch": "i386",
+    "ramMB": 16,
+    "notes": "Microsoft sold Unix before it sold DOS. Xenix was the most-installed Unix of the 1980s; Multiscreen (Alt+F1..F4) is where Linux's virtual consoles come from.",
+    "accent": "#4f8a8b",
+    "era": "1980s",
+    "eraSoftware": [
+      "sh / csh",
+      "vi",
+      "Multiscreen (Alt+F1..F4)",
+      "SCO business shell",
+      "uucp"
+    ],
+    "periodBrowser": "none (SCO TCP/IP was a separate product)",
+    "iconicApps": [
+      "vi",
+      "uucp",
+      "nroff",
+      "Microsoft C for Xenix"
+    ],
+    "blurb": "Microsoft's own Unix, grown up on the 386 — and the reason your Linux box switches consoles with Alt+F2."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "pve-qemu-kvm 11.0.2-1 (host package; machine types pc-*-11.0)"
+  },
+  "ui": "text-console",
+  "reset": {
+    "stationDir": "xenix",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "SKIP",
+    "keyboard": "PASS",
+    "fixture": "SCO Xenix 386 2.3.4 text console at a logged-in root shell on Multiscreen tty01; no pointer surface."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from freedos on 2026-09-13, then re-pointed at a 1989 ISA PC: qemu-system-i386 -machine isapc -cpu 486 -m 16, -enable-kvm (load-bearing -- every exec dies under TCG), no NIC, pointer none.",
+    "Boot media trap: SCO Xenix floppies carry no 0x55AA signature at offset 510 and the boot sector compares a 14-byte filename string at 0x1F8 that runs THROUGH 0x1FE/0x1FF. Patch both bytes: 55 AA at 510 AND 0x0e -> 0x06 at offset 121 (the compare length).",
+    "Media trap: WinWorld 386 2.3.4q is a MIXED set (Installation = typ=386PS MicroChannel, utilities = typ=n386 2.3.4h). The 386PS kernel panics with TRAP 8 under QEMU. Use the PCjs typ=386GT rel=2.3.4h N1/N2 floppies, which boot to init.",
+    "retronet OPEN: SCO TCP/IP for Xenix is a separate product; no NIC in the device set and no rn-tapnet.sh committed (AGENTS.md rule 15)."
+  ],
+  "demoProgram": {
+    "label": "Look around a 1989 Unix",
+    "lines": [
+      "uname -a",
+      "who",
+      "ls /usr"
+    ],
+    "runCommand": "ls -l /unix",
+    "perCharMs": 80
+  }
+}

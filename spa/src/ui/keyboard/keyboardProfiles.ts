@@ -37,13 +37,13 @@ import type { KeyAction, KeyDef, KeyRow, MacroStep } from './keyTypes';
 import { XK } from '../../three/useStreamControl';
 
 export type Family =
-  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
+  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'appleii' | 'atarist' | 'amiga'
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac';
+  | 'classicmac' | 'classicmac128' | 'applegs';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -278,6 +278,11 @@ export const OS_FAMILY: Record<string, Family> = {
   openvms: 'generic',
   ubuntu: 'generic', // Ubuntu 4.10 live CD, GNOME 2.8 — Alt+F2 Run dialog; no shell chord set to profile
   alpine: 'linux-tty',
+  // Minix 2.0.4: an 80x25 console at a root ash prompt with no pointer and no X.
+  // The linux-tty rows are exactly the vocabulary a visitor needs to walk /usr/src
+  // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
+  // implements all three signals. No Minix-specific chord set exists to profile.
+  minix2: 'linux-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
@@ -297,6 +302,13 @@ export const OS_FAMILY: Record<string, Family> = {
   lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
+  // macsys1 gets its OWN family, not classicmac: the Macintosh 128K's M0110
+  // keyboard has NO arrow keys (they arrive on the M0110A in 1986), no Esc, no
+  // Ctrl and no function keys, so classicmac's base row would put five dead
+  // buttons on a 1984 exhibit. System 1.0 has no command line either, so the
+  // Command chords are the whole keyboard vocabulary — and Undo/Cut/Copy/Paste
+  // on ⌘Z/⌘X/⌘C/⌘V are the ones this machine introduced to the world.
+  macsys1: 'classicmac128',
   // ravynOS 0.6.1. Command chords are the project's stated design goal, but the
   // classicmac family would be wrong here on both counts: its rows are Finder
   // verbs (⌘O open, ⌘N new folder, ⌘. cancel) and the 0.6.x build ships no file
@@ -310,6 +322,12 @@ export const OS_FAMILY: Record<string, Family> = {
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
   freedos: 'dos', msdoswin1: 'dos',
+  // SCO Xenix 386 2.3.4: a System V text console, so the linux-tty rows' job
+  // exactly (^C/^D/^Z on a PC-101 board) — plus the one thing that IS the
+  // exhibit, Multiscreen: Alt+F1..Alt+F4 switch between four independent
+  // console sessions. Those are chords, not taps, so they get their own row
+  // rather than relying on a visitor latching Alt before an F-key.
+  xenix: 'xenix',
   // bootOS: a bare `$` prompt over BIOS int 16h; the dos rows lead with
   // Ctrl+Alt+Del, which is the way home from a boot-sector game.
   bootos: 'dos',
@@ -439,6 +457,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // apple2e is the same //e keyboard on MAME's apple2ee: Open/Closed Apple ride
   // on the Alt keysyms the ctlsock keymap binds to the driver's Apple keys.
   apple2e: 'appleii',
+  // apple2gs is an ADB machine running a Finder, so it does NOT take the
+  // 8-bit `appleii` rows — see the applegs block in
+  // keyboardProfiles.data.exotic.ts for why Open Apple changes job here.
+  apple2gs: 'applegs',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard

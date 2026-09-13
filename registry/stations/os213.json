@@ -6,7 +6,7 @@
   "build": {
     "rows": [
       {
-        "order": 83,
+        "order": 84,
         "prelude": "",
         "value": {
           "key": "os213",
@@ -25,7 +25,7 @@
     "actionMap": {
       "key": "os213",
       "value": {
-        "os": "IBM OS/2 1.3",
+        "os": "Microsoft OS/2 1.3",
         "win": "qemu",
         "mouse": {
           "a": [
@@ -61,14 +61,14 @@
     }
   },
   "render": {
-    "signalOrder": 88,
-    "stationsManifestOrder": 86,
+    "signalOrder": 91,
+    "stationsManifestOrder": 89,
     "stationsManifestPrelude": "\n# os213 (VMID 203) — IBM OS/2 1.30.2 Standard Edition, Presentation Manager.\n#   *** TCG ONLY *** -machine isapc -cpu 486 -m 16. OS/2 1.x predates PCI: a\n#   pc-i440fx machine freezes this guest at SeaBIOS \"Booting from Hard Disk...\",\n#   and -m 8 froze there too (both raced 2026-09-13, see docs/lab/OS213-WAVE.md).\n# DISK: -device ide-hd with AUTO geometry. Never pin CHS — `-drive ...,cyls=` is\n#   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the\n#   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.\n# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.\n# POINTER: QEMU PS/2 RELATIVE. isapc has NO USB, so usb-tablet and every absolute\n#   route are unavailable; this is the machine's only transport, not a shortcut.\n# NETWORK: none. OS/2 1.3 ships no TCP/IP stack, so os213 is off the retronet and\n#   has no rn-tapnet.sh (rule 15).\n",
     "bringUpGroup": 3,
-    "bindingOrder": 102,
+    "bindingOrder": 106,
     "bindingPrelude": "",
-    "goldenOrder": 86,
-    "actionMapOrder": 50
+    "goldenOrder": 89,
+    "actionMapOrder": 51
   },
   "stationDir": "os213",
   "lifecycle": "production",
@@ -148,14 +148,14 @@
       "envFixture": "streamhost/stations/os213/station.env.fixture",
       "binary": "qemu-system-i386",
       "machine": "isapc",
-      "accel": "tcg",
+      "accel": "kvm",
       "cpu": "486",
       "memoryMB": 16,
       "smp": 1,
       "vga": "isa-vga",
       "deviceSetSummary": [
         "-name streamhost-os213",
-        "-accel tcg -m 16 -smp 1",
+        "-enable-kvm -m 16 -smp 1",
         "-machine isapc -cpu 486",
         "-rtc base=localtime",
         "-boot c",
@@ -170,14 +170,14 @@
       "sourceDeviceSet": {
         "binary": "qemu-system-i386",
         "machine": "isapc",
-        "accel": "tcg",
+        "accel": "kvm",
         "cpu": "486",
         "memoryMB": 16,
         "smp": 1,
         "vga": "isa-vga",
         "deviceSetSummary": [
           "-name streamhost-os213",
-          "-accel tcg -m 16 -smp 1",
+          "-enable-kvm -m 16 -smp 1",
           "-machine isapc -cpu 486",
           "-rtc base=localtime",
           "-boot c",
@@ -195,7 +195,7 @@
         "reason": "registry source and streamhost/stations/os213/qemu-streamhost.sh pin the same raced device set: isapc / 486 / 16 MB / isa-vga / TCG / ide-hd with auto geometry"
       }
     },
-    "bringUpOrder": 102
+    "bringUpOrder": 106
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",
@@ -226,13 +226,13 @@
       "OS/2 Command Prompt"
     ],
     "blurb": "The last operating system IBM and Microsoft shipped together — Presentation Manager on a 16-bit protected-mode kernel, six months after Windows 3.0 ended the partnership.",
-    "notes": "IBM OS/2 1.30.2 Standard Edition under the fleet QEMU on an ISA i486 (-machine isapc) with 16 MB, VGA 640x480x16 and a PS/2 relative mouse. No network: OS/2 1.3 has no bundled TCP/IP stack, so retronet is OPEN. Archetype: beige-ibm-pc.",
+    "notes": "Microsoft OS/2 1.30.1 under the fleet QEMU on an ISA i486 (-machine isapc) with 16 MB, VGA 640x480x16 and a PS/2 relative mouse, accelerated with KVM. No network: OS/2 1.3 has no bundled TCP/IP stack, so retronet is OPEN. Archetype: beige-ibm-pc.",
     "periodBrowser": "none — 1990, and OS/2 1.3 has no bundled TCP/IP stack; IBM TCP/IP for OS/2 was a separate product"
   },
   "emulator": {
     "family": "QEMU",
     "version": "11.0.2",
-    "source": "pve-qemu-kvm 11.0.2-1 (host package); stock qemu-system-i386, no patched build — os213 uses -machine isapc, which needs nothing from /opt/qemu-cirrusfix"
+    "source": "pve-qemu-kvm 11.0.2-1 (host package); stock qemu-system-i386 with KVM. TCG is a WRONG answer for this guest: under -accel tcg OS/2 1.3 traps just after the boot banner on two independently produced systems."
   },
   "ui": "desktop",
   "reset": {
@@ -241,7 +241,7 @@
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "PASS",
+    "mouse": "PARTIAL",
     "keyboard": "PASS",
     "fixture": "IBM OS/2 1.30.2 Standard Edition Presentation Manager Desktop Manager at VGA 640x480x16 with its group windows open; no modal dialog, no screensaver."
   },

@@ -14,7 +14,7 @@ import {
 } from './keyboardProfiles';
 
 export type PcFamily =
-  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2'
+  | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
   | 'pet' | 'petbusiness' | 'zx81' | 'dragon';
 
@@ -25,6 +25,30 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
     family: 'linux-tty',
     rows: [NAV, MODS],
     moreRows: [
+      [
+        ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
+        ctrlChar('ctrl-d', '^D', 'd', 'EOF / logout'),
+        ctrlChar('ctrl-z', '^Z', 'z', 'Suspend'),
+        ch('|'), ch('-'), ch('/'),
+      ],
+      fkeyRow(1, 12),
+    ],
+  },
+
+  // SCO Xenix 386 2.3.4 — the linux-tty rows (this is the System V console the
+  // Linux one was modelled on) plus Multiscreen, the feature the exhibit is
+  // here to show: Alt+F1..Alt+F4 are four independent login sessions on one
+  // console. Four screens because the station's golden runs four getties.
+  xenix: {
+    family: 'xenix',
+    rows: [NAV, MODS],
+    moreRows: [
+      [
+        chord('alt-f1', 'Alt+F1', XK.Alt_L, F(1), 'Multiscreen 1'),
+        chord('alt-f2', 'Alt+F2', XK.Alt_L, F(2), 'Multiscreen 2'),
+        chord('alt-f3', 'Alt+F3', XK.Alt_L, F(3), 'Multiscreen 3'),
+        chord('alt-f4', 'Alt+F4', XK.Alt_L, F(4), 'Multiscreen 4'),
+      ],
       [
         ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
         ctrlChar('ctrl-d', '^D', 'd', 'EOF / logout'),

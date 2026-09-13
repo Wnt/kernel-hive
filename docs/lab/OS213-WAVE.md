@@ -115,75 +115,109 @@ No 9p/virtfs/smb/`fat:` host drive, no `-netdev user` hostfwd, no guest-reachabl
 QMP/monitor, no virtio-serial host channel. Launcher line:
 `streamhost/stations/os213/qemu-streamhost.sh`.
 
-## Landing — NOT DONE in this wave's budget
+## Wall 3 — and the real cause of Walls 1 and 2: a QEMU TCG defect
 
-`station-land.sh` was NOT run. Everything except the guest disk is committed,
-pushed and green on branch `os213`; the install was still running at the lead's
-120-minute stop. **Do not land an enabled production `os213` until a golden
-exists** — the registry row is `lifecycle: production, enabled: true`, so landing
-it without a disk at `/data/vms/streamhost/stations/os213/os213-golden.qcow2`
-would put a dead tile in the gallery.
+The station was TCG throughout, on the reasoning that `isapc` has no KVM path.
+That reasoning was wrong, and it cost the whole first budget.
 
-### Exact resume path
+Two **independently produced** OS/2 1.3 systems trapped identically under
+`-accel tcg`: the Microsoft 1.30.1 pre-installed image (`smoke/f3.png`), and a
+complete IBM 1.30.2 SE floppy install driven to the installer's "successfully
+installed" panel (`smoke/shots/s24.png`), which then trapped at its own first
+reboot having written ~4 MB. Same truncated `TRA`, same dead framebuffer.
 
-The install rig is alive and resumable; the guest has never been relaunched.
+The `xenix` station hit the same shape the same night — "no stack space",
+reproduced on two independently produced systems — and it was a **QEMU TCG
+defect**: `-enable-kvm` with nothing else changed booted it in 25 s. That
+verdict transfers to os213 exactly.
 
-| Thing | Where |
-|---|---|
-| install target disk | `/data/vms/sandbox/os213/smoke/os213-install.qcow2` |
-| running guest | `/data/vms/sandbox/os213/smoke/qemu.pid`, launched by `launch-smoke.sh` (`FD=` / `BOOT=` env vars) |
-| floppies | `/data/vms/sandbox/os213/smoke/floppies/*.img` |
-| step helper (labhost only) | `smoke/step.sh <name> <settle> <timeout> <keys...>` |
-| floppy swap helper (labhost only) | `smoke/swap.sh <Disk0N|DriverN>` — QMP `blockdev-change-medium`, never a relaunch |
-| published page | `/os/os213`, dark-launched; **re-run `smoke/run-daemon.sh` after ANY guest relaunch** or the page goes dead |
+| Theory | Change | Result |
+|---|---|---|
+| A `kvmpre` | `-enable-kvm`, everything else identical (`isapc`, `-cpu 486`, `-m 16`, `isa-vga`) | **WIN** — full PM Desktop Manager, settled ~20 s. QEMU accepts `-enable-kvm` with `-machine isapc` without complaint. `race/kvmpre/frame.png` |
+| C `kvmpc` | `-enable-kvm -machine pc,acpi=off -cpu 486 -vga std` | **also WIN**, `-cpu 486` accepted under KVM with no fallback. `race/kvmpc/frame.png` |
 
-Then: finish the install, reboot `BOOT=c` with fd0 ejected, reach the PM Desktop
-Manager, `savevm golden`, restore-prove it, and run the three proofs (restore,
-typed `ver`/`dir`, `fb-react.py` motion + click). After that:
+`isapc` was kept: it preserves the committed launcher and the `nt351` sibling
+shape. `pc,acpi=off` is the proven fallback if `isapc` ever regresses.
 
-```
-scripts/dev/station-land.sh os213 --golden /data/vms/sandbox/os213/smoke/os213-install.qcow2
-```
+**Two independently produced systems failing identically is the signature.** It
+means the fault is in the layer they share — the emulator — not in either
+system. Reach for the accelerator before the guest.
 
-### The "Minimum System Configuration" panel — a scare, resolved on evidence
+## Proofs (rule 9 — the framebuffer is the only proof)
 
-The IBM 1.3 SE installer shows a **"Minimum System Configuration"** panel whose
-default action is Enter: *"No configuration options were selected."* The lead read
-that frame and told the install agent to press Esc and go back — worried that a
-minimum install would land at a bare `[C:\]` with no Desktop Manager, which is the
-whole exhibit, and would only be discovered after the reboot.
+All on the station's EXACT device set, sb16 and dbus audio included, so the
+golden matches the launcher (rule 6: checkpoint + binary + device set are ONE
+combination).
 
-**That worry was wrong, and the agent had already checked.** The previous panel's
-full option list is exactly nine entries:
+| Proof | Frame | Measured |
+|---|---|---|
+| cold boot to the fixture | `smoke/pm1.png` | settled 22.3 s from cold |
+| `savevm golden` | — | snapshot ID 1, VM_SIZE 3.21 MiB, VM_CLOCK 00:39.363 |
+| **restore** through the launcher's own `-loadvm golden -S` + `cont` | `smoke/restore-proof.png` | settled 8.2 s, fixture identical |
+| **keyboard** — two Down keys move the Group-Main selection | `smoke/kbd-before.png` → `kbd-after.png` | `fb-react react` → **changed=5270 bbox=256,171-479,254 REACTION** |
+| **pointer motion** (PS/2 relative) | `smoke/ptr-before.png` → `ptr-moved.png` | `fb-react react` → **changed=102 REACTION** |
+| pointer motion, clamped 100 px steps | `smoke/ptr-click-item.png` → `ptr2-on.png` | **changed=33 REACTION** |
+| pointer **click** | `smoke/ptr2-on.png` → `ptr2-click.png` | **changed=0 NO-REACTION — OPEN** |
 
-> Country Information · Documentation · Fonts · High Performance File System ·
-> Optional System Utilities · OS/2 DOS Environment · Picture Utilities ·
-> Serial Device Support · Serviceability and Diagnostic Aids
+### OPEN: the pointer moves but clicks do not land
 
-There is **no Presentation Manager entry, no Desktop Manager entry and no tutorial
-entry** in it. In OS/2 1.3 SE, PM and the Desktop Manager are the *base system*;
-this panel only offers add-ons on top of it. "Minimum System Configuration" means
-"no add-ons", not "no GUI". HPFS is on the list and we deliberately do **not** want
-it (the station is FAT). So taking the minimum costs Documentation, extra Fonts,
-Picture Utilities and the DOS box — none of which is the exhibit — and costs
-nothing graphical. Frame: `smoke/shots/s10.png`.
+Motion is proven three ways; a left click and a double-click on a Group-Main
+list item both produce **zero** changed pixels. Deltas were clamped to 100 px
+per event after the `vision` station's Mouse-Systems sync-byte lesson, which did
+not change the click result. Leads for the next session, cheapest first:
 
-Two lessons, both cheap to reuse:
+1. Confirm the guest actually has a mouse driver: this is a pre-installed image
+   nobody here configured — check `CONFIG.SYS` for `DEVICE=...MOUSE.SYS` /
+   `POINTDD.SYS` and the `DEVINFO` line. If it has none, PM draws a pointer that
+   nothing is listening behind, which fits the evidence exactly.
+2. Locate the cursor for real with `scripts/dev/cursor-locate-cv.py` before
+   clicking — every click so far assumed a position derived from relative moves.
+3. Try the HMP `mouse_button` path rather than QMP `input-send-event` `btn`.
 
-- **Read the panel the warning refers to before acting on the warning.** The scary
-  wording was on the confirmation panel; the fact that settled it was on the panel
-  before it.
-- A lead peeking at a runner's framebuffer sees a frame that is already ~20 s old
-  by the time the message lands. Peek to decide whether to *keep going*, not to
-  steer a keypress — the runner holds the QMP socket and the current frame.
+## Landing
 
-### Display adapter and mouse
+Landed from `/data/vms/sandbox/os213/repo` via `scripts/dev/station-land.sh os213
+--golden /data/vms/sandbox/os213/smoke/os213-golden.qcow2`.
 
-The installer detects **"IBM PS/2 Display Adapter"** — that is OS/2 1.3's name for
-the VGA-class adapter and is correct for `-device isa-vga`; answer 1, *"Yes — no
-other display adapters are attached"*. At the mouse panel the answer is the **PS/2
-mouse**: `-machine isapc` has no USB at all, so PS/2 relative is the only pointer
-transport this machine has.
+## One rig dir = one owner (a mistake, published)
+
+Three agents worked in `/data/vms/sandbox/os213/smoke` at once. Its
+`launch-smoke.sh` opens with `kill $(cat $R/qemu.pid)`, so whoever runs the
+launcher next **silently kills everyone else's guest** — and the victim sees
+only a vanished `qmp.sock`, which looks exactly like a guest crash. The lead
+rewrote that launcher into a bake rig and ran it while the install agent was
+mid-install, and killed it. The install agent diagnosed it from
+`terminating on signal 15 from pid <the lead's labrun bash>` plus an
+unexplained 160 MB file appearing in the dir.
+
+Rule 4 already says namespace every dir, VMID, socket and port — this is the
+same rule applied to a *sandbox* rig, not just a live station. A rig dir has one
+owner; a second agent gets `rig-clone.sh new` or its own namespaced dir, never
+the same pidfile. Consequence here: the install agent's run says **nothing**
+about TCG vs KVM, because its KVM attempt was killed on its first keypress.
+
+## Also worth carrying
+
+- `qemu-system-i386` is a wrapper for `qemu-system-x86_64` on labhost, so
+  `/proc/<pid>/exe` resolves to `qemu-system-x86_64` for an i386 guest. An exe
+  check that expects the literal `qemu-system-i386` refuses a legitimate kill;
+  match `*/qemu-system-*`.
+- `scripts/lib/labqmp.py` has no `hmp` action — use QMP
+  `human-monitor-command` directly for `savevm`/`loadvm`.
+
+## The IBM 1.30.2 SE install recipe (not shipped, but proven and preserved)
+
+The station ships the Microsoft pre-installed image, but the IBM SE floppy
+install was driven to completion and its recipe is in
+`docs/guests/os213.md` §Install recipe. Highlights: FAT is option **2** and HPFS
+is the default highlight, so you must move off it; the nine-entry configuration
+panel contains no Presentation Manager or Desktop Manager entry because PM *is*
+the base system in 1.3 SE, so "Minimum System Configuration" means "no add-ons",
+not "no GUI"; the display adapter is "IBM PS/2 Display Adapter" answer 1; the
+mouse list needs one Down to reach the PS/2 version. Disk copy order is
+`Install → Disk01 → … → Disk05 → Install → Driver1`; Driver2-4 are never needed.
+~23 minutes under TCG, each disk ~20-25 s. The trapped result is preserved at
+`smoke/os213-install-tcg-trapped.qcow2`.
 
 ## Measured timeline
 

@@ -97,6 +97,31 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxD', monitor: 'crtD',
     keyboard: 'keyboardH', mouse: 'paramMouseG',
   },
+  minix2: {
+    kind: 'pizzaBox', body: 'towerE', monitor: 'crtF',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  // macsys1 — the Macintosh 128K is an ALL-IN-ONE: the 9-inch tube, the 68000 and
+  // the floppy drive are one beige box, so the assembly carries NO separate body.
+  // compactA alone is the machine (scaffolded as compactA|compactA, which put two
+  // screen-bearing models in one assembly and failed the one-screen invariant).
+  // keyboardG is the smallest board in the kit, the honest silhouette for the tiny
+  // M0110; paramMouseF is the one-button mouse.
+  macsys1: {
+    kind: 'homeMicro', monitor: 'compactA',
+    mouse: 'paramMouseF',
+    keyboard: 'keyboardG',
+  },
+  apple2gs: {
+    kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD',
+    mouse: 'paramMouseD',
+  },
+  // A 1989 ISA AT-class box under a plain VGA monitor: the same beige PC as
+  // freedos, distinguished by the taller towerE body (freedos is pizzaBoxB).
+  xenix: {
+    kind: 'towerSetup', body: 'towerE', monitor: 'crtA',
+    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  },
   os213: {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
     keyboard: 'keyboardB', mouse: 'paramMouseD',
