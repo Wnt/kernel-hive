@@ -210,6 +210,44 @@ All six namespaces differ, the payload runs as the mapped uid 2359296 with
 the only interface is `lo`, `/dev` has no disks, and mount is refused even as
 root inside. **PASS.**
 
+**Live unit** (2026-09-13, post-landing; payload = PERQemu's host pid 752234,
+read from `station.env`'s `SH_IDLE_PAUSE_PIDFILE` = `mame.pid`, which the
+tile builder's launcher now writes correctly — §Builder's second launcher bug):
+
+```
+--- ns ---
+pid  host=pid:[4026531836]  payload=pid:[4026536910]
+mnt  host=mnt:[4026531832]  payload=mnt:[4026536907]
+net  host=net:[4026531833]  payload=net:[4026536911]
+user host=user:[4026531837] payload=user:[4026536906]
+ipc  host=ipc:[4026531839]  payload=ipc:[4026536909]
+uts  host=uts:[4026531838]  payload=uts:[4026536908]
+--- status ---
+Uid:	2359296	2359296	2359296	2359296
+CapEff:	0000000015808dff
+NoNewPrivs:	1
+--- ps ---
+    PID TTY          TIME CMD
+      1 ?        00:00:00 (sd-stubinit)
+      2 ?        00:00:00 script
+      5 ?        00:00:18 Xvfb
+     32 pts/0    00:12:31 mono
+     73 ?        00:00:00 ps
+--- ip link ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+--- ls /dev ---
+char core fd full fuse mqueue net null ptmx pts random shm stderr stdin stdout tty urandom zero
+--- mount attempt ---
+mount: /mnt: permission denied.
+rc=32
+```
+
+Same result as the rig: all six namespaces differ, Uid 2359296, `NoNewPrivs=1`,
+only `sd-stubinit` + `script` + Xvfb + `mono` (+ the `ps` that took the
+snapshot) in the container's own process table, `lo` only, no disks under
+`/dev`, mount refused. **PASS on the live unit.**
+
 ## Open
 
 - **Pointer buttons** — untested (see §Pointer). Only motion has a two-target
