@@ -229,22 +229,44 @@ applied to the probe's own 1-unit diagonal nudge with the write ignored.
 (baked 2026-09-13 under `/opt/qemu-beos`, `VM_CLOCK 00:28.220`). The cutover
 bake must re-derive.
 
-### Remaining to cut the station over
+### Cut over — DONE 2026-09-13
 
-1. Add the one missing row to `0007`'s layout table — os213 is int16,
-   little-endian, **y-first and y-DOWN**, a combination the table does not
+1. Landed the one missing row in `0007`'s layout table — os213 is int16,
+   little-endian, **y-first and y-DOWN**, a combination the table did not
    carry (`macpoint16be` is big-endian, `point32le_yx` is int32,
    `point16le_yup_yx` counts y up):
-   `{ "point16le_yx", KH_LAYOUT_POINT16LE_YX, 2, false, true, false }`.
-   Then build `/opt/qemu-os213` — **not** `/opt/qemu-beos`, whose goldens
-   belong to beos and pcgeos.
-2. Cold re-bake the golden under that binary, re-derive `0x253ca` against it,
-   re-run the two-lap sweep (re-measure the `20,20` target with
-   `scripts/dev/cursor-locate-cv.py`, not the naive locator) plus one click
-   that reacts.
-3. Launcher → `/opt/qemu-os213` + `-device kh-ramabs,addr=…,layout=point16le_yx,width=640,height=480,nudge-units=1,nudge-px=1`,
-   `SH_INPUT_BACKEND=ramabs`, registry `stream.pointer` abs + `reset.mouse`
-   sentence, then `station-land.sh os213 --golden …`.
+   `{ "point16le_yx", KH_LAYOUT_POINT16LE_YX, 2, false, true, false }`
+   (plus the enum value and the `unknown layout=` error string). Regenerated
+   the patch file from a fork checkout the way oberon did — copied
+   `oberon-ptr/qemu-src` (already at fork `c5449c80` with the shared table),
+   added the row, rebuilt `/opt/qemu-os213` (`--target-list=x86_64-softmmu`,
+   same flags as `/opt/qemu-oberon`) — **not** `/opt/qemu-beos`, whose
+   goldens belong to beos and pcgeos. `github.com/Wnt/qemu` itself was
+   **not** pushed this session (same gap oberon left open at `822255c3`);
+   the loose `.patch` file in this repo is what's authoritative and it
+   applies cleanly (verified: the regenerated whole-file hunk reproduces the
+   exact `hw/misc/kh-ramabs.c` that was compiled).
+2. Cold re-baked the golden under `/opt/qemu-os213` at the PM Desktop
+   Manager (`savevm golden`, VM_CLOCK `0000:00:28.925`), then re-derived:
+   `derive2.py`'s one-stage search still returns zero here (wall 1, expected),
+   the two-stage `os213-ramabs-scan.py scan` found the same `0x253ca`/
+   `0x253cc` pair unmoved, and the `point16le_yx` sweep against the new
+   binary converged 22/22, sensor-exact 10/10, `gaveup=0`. A click at the
+   commanded pixel (235,211, "OS/2 Window" icon) selected it,
+   `changed=3542`. Framebuffer proofs at
+   `/data/vms/sandbox/os213-ptr/ramabs/cutover-cold.png`,
+   `/tmp/click_before.png`, `/tmp/click_after.png` (copied off the rig).
+3. Launcher (`streamhost/stations/os213/qemu-streamhost.sh`) now runs
+   `${OS213_QEMU:-/opt/qemu-os213/bin/qemu-system-x86_64}` and, when
+   `KH_RAMABS_ADDR` is set, adds
+   `-device kh-ramabs,addr=$KH_RAMABS_ADDR,layout=point16le_yx,width=640,height=480,nudge-units=1,nudge-px=1`.
+   Fixture sets `SH_INPUT_BACKEND=ramabs`, `KH_RAMABS_ADDR=0x253ca`.
+   Registry `stream.pointer` is `abs`/`qemu-guestram-abswrite`,
+   `spa.pointerRel=false`, `operator.labctl.pointer_mode=abs`, and
+   `reset.mouse` carries the proof sentence with the numbers above. Golden
+   handed to `station-land.sh os213 --golden
+   /data/vms/sandbox/os213-ptr/ramabs/disk.qcow2`. See
+   `streamhost/stations/os213/ROLLBACK.md` for the one-line fallback.
 
 ## Landing
 
