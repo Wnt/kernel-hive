@@ -88,7 +88,15 @@ needs a mouse-driven POS program on the framebuffer; **OPEN**.
   name:`, and before `bring_to_scene` in
   [`streamhost/stations/perq/x11-runtime.sh`](../../streamhost/stations/perq/x11-runtime.sh)
   nothing answered either, so every reset handed the next visitor a half-booted
-  login rather than the exhibit. The launcher now moves the pointer into the
+  login rather than the exhibit. Proven on the LIVE unit after landing:
+  `/data/vms/sandbox/perq-ptr/frames/j-live-scene.png`.
+
+  **A noise frame is not a dead station.** `labctl shot perq` during the first
+  ~40 s of a relaunch returns a dense stripe pattern — the PERQ's uninitialised
+  video RAM before POS clears the screen. It looks exactly like a wedged
+  station and it is not one; check `xwininfo -root -tree -display :98` for the
+  window title's live fps figure before concluding anything from a black-and-
+  white frame. The launcher now moves the pointer into the
   window (XTEST delivers to the FOCUSED window and there is no window manager,
   so focus is PointerRoot — a Return sent with the pointer over the root
   vanishes), sends the two Returns, and waits on the framebuffer between each.
