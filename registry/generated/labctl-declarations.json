@@ -218,6 +218,24 @@
       "udp_port": 54185,
       "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/apple2e/sta."
     },
+    "apple2gs": {
+      "dir": "/data/vms/streamhost/stations/apple2gs",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54204,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/apple2gs/sta."
+    },
     "armeval": {
       "dir": "/data/vms/streamhost/stations/armeval",
       "qmp": null,

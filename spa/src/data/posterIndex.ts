@@ -39,6 +39,9 @@ const POSTER_INDEX = {
   "apple2e": {
     "hero": "/posters/apple2e/desktop.webp"
   },
+  "apple2gs": {
+    "hero": "/posters/apple2gs/desktop.webp"
+  },
   "armeval": {
     "hero": "/posters/armeval/desktop.webp"
   },
