@@ -154,3 +154,40 @@ class LiveTreeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ShardTest(unittest.TestCase):
+    """2026-09-13: five waves blocked on the 600-line cap at once; rows now live in shards."""
+
+    def test_render_files_shards_rows_and_reads_back_the_same_table(self) -> None:
+        from stations_registry import spa_scene
+
+        parsed = table()
+        files = parsed.render_files(["alpha", "beta", "gamma"], "spa/src/scene/x.ts")
+        self.assertEqual(sorted(files), ["spa/src/scene/x.1.ts", "spa/src/scene/x.ts"])
+        index = files["spa/src/scene/x.ts"]
+        self.assertIn("import { ASSEMBLIES_BY_TILE_1 } from './x.1';", index)
+        self.assertIn("  ...ASSEMBLIES_BY_TILE_1,\n} as const", index)
+        self.assertNotIn("alpha: {", index)
+        shard = files["spa/src/scene/x.1.ts"]
+        self.assertIn("export const ASSEMBLIES_BY_TILE_1 = {", shard)
+        self.assertLess(shard.index("beta carries prose"), shard.index("beta: {"))
+        self.assertEqual(spa_scene.shard_count(index, ASSEMBLIES_CONST), 1)
+        merged = spa_scene._assemble("spa/src/scene/x.ts", ASSEMBLIES_CONST, index, lambda rel: files[rel])
+        self.assertEqual(merged.ids(), ["alpha", "beta", "gamma"])
+        # rendering the merged table again is byte-identical: the landing contract
+        self.assertEqual(merged.render_files(["alpha", "beta", "gamma"], "spa/src/scene/x.ts"), files)
+
+    def test_shards_split_at_shard_rows(self) -> None:
+        from stations_registry import spa_scene
+
+        parsed = table()
+        old = spa_scene.SHARD_ROWS
+        spa_scene.SHARD_ROWS = 2
+        try:
+            files = parsed.render_files(["alpha", "beta", "gamma"], "spa/src/scene/x.ts")
+        finally:
+            spa_scene.SHARD_ROWS = old
+        self.assertIn("spa/src/scene/x.2.ts", files)
+        self.assertIn("gamma: {", files["spa/src/scene/x.2.ts"])
+        self.assertNotIn("gamma: {", files["spa/src/scene/x.1.ts"])
