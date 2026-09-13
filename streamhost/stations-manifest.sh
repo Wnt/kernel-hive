@@ -1186,10 +1186,15 @@ emit domainos \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/domainos/domainos.keymap" \
   --env-append-file "$T/domainos/station.env.fixture"
 
-# oberon (VMID 95) — TODO one line; scaffolded from freedos.
+# oberon (VMID 195) — ETH Oberon System 3 / PC Native 2.3.6 (13 May 1999).
+#   VERBATIM LAUNCHER: disk.qcow2 (asig/native-oberon installed image, raw->qcow2)
+#   is the ONLY persistent block device (the empty floppy is qcow2 so savevm accepts it) and holds the savevm 'golden' vmstate. -vga std
+#   VESA 1280x1024x8, sb16 -> dbus audiodev, PS/2 relative pointer (dbus-rel),
+#   one ne2k_pci NIC (slirp restrict=on until the retronet plane is proven).
 emit oberon \
-  --tile oberon --vmid 195 --udp 54195 --pointer rel --audio on --fps 30 \
-  --launcher-file "$T/oberon/qemu-streamhost.sh" --env-append-file \
+  --tile oberon --vmid 195 --udp 54195 --pointer rel --input-backend \
+  dbus-rel --cursor-scale 0.6667 --audio on --fps 30 --launcher-file \
+  "$T/oberon/qemu-streamhost.sh" --env-append-file \
   "$T/oberon/station.env.fixture"
 
 # ---------------------------------------------------------------------------

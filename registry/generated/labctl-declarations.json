@@ -954,7 +954,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54195,
-      "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
+      "notes": "no exec channel: drive via QMP keys/rel mouse and read the framebuffer. Pointer is RELATIVE PS/2 through the daemon's abs->rel bridge (1.5 px per unit measured, even steps land on integer pixels). disk.qcow2 is the ONLY block device and carries the 'golden' vmstate; recapture only via checkpoint-guard."
     },
     "openbsd": {
       "dir": "/data/vms/streamhost/stations/openbsd",

@@ -166,7 +166,7 @@ MANIFEST=(
   "sculpt         |tiles/serenityos.sh                                   |SerenityOS        |heavy       |~20-60m                      |full                         |_disk_image + Kernel (compiled)"
   "lisa           |tiles/lisa.sh                                         |Lisa              |graphical   |~10m                         |none                         |assets/lisa (LisaEm 2.0 + GTK closure + Rev H ROM + config template) and disk/lisa-profile.dc42.golden (LOS 3.1 ProFile image; cold-boot reset)"
   "domainos       |tiles/domainos.sh                                     |native/domainos   |workstation |~30m                         |partial                      |Apollo DN3500 boot ROMs + Domain/OS SR10.4.1 winchester image staged; golden savestate at the Display Manager (OPEN — see DOMAINOS-WAVE.md)"
-  "oberon         |tiles/freedos.sh                                      |FreeDOS           |retro       |~10-15m                      |full*                        |freedos.qcow2 (games+Arachne)"
+  "oberon         |tiles/oberon.sh                                       |OBERON            |fast        |~1m                          |full                         |oberon.qcow2 (Native Oberon 2.3.6 installed IDE image, asig/native-oberon, converted raw->qcow2)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
