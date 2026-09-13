@@ -281,11 +281,18 @@ much lower. Say so rather than implying 120/120 was chosen.
 | race runner A's MAME (pid 1462964) | yes | `readlink /proc/1462964/exe` returns nothing |
 | race runner ptrA's container, Xvfb :195 and its `/tmp/.X11-unix/X195` symlink | yes, by the runner | runner verified by exact pid |
 | race runner ptrB's container, Xvfb :196, plus one orphaned pce-ibmpc | yes, by the runner | runner verified absent from `ps` |
-| the winning race rig — nspawn 2591998 / pce-ibmpc 2592146, Xvfb :194 | **see below** | |
-| this station's test launch — nspawn 3686893 / pce-ibmpc 3687162, Xvfb :94 | **see below** | |
+| the winning race rig — nspawn 2591998 / pce-ibmpc 2592146, Xvfb :194 | yes | `readlink /proc/2591998/exe` and `/proc/2592146/exe` both return nothing |
+| this station's test launch — nspawn 3686893 / pce-ibmpc 3687162, Xvfb :94 | yes | same check on both pids returns nothing |
+| a second run of the losing MAME theory (pid 3540488) | yes | `readlink /proc/3540488/exe` returns nothing |
+| X socket symlinks `/tmp/.X11-unix/X94` and `X194` | yes | both `No such file or directory` |
 
-Both remaining rigs are killed by `/proc/<pid>/exe` (never `pkill -f`) once the
-pointer work no longer needs them. The race rig is the only place the Visi On
-*desktop* has ever been reached, so it is worth keeping alive until theory A's
-rerun lands; `/data/vms/sandbox/vision/race/mame/` and `race/ptrA/` are kept on
-disk as provenance either way.
+Everything was killed by `/proc/<pid>/exe`, never `pkill -f`. Final sweep: no
+process on the box has an exe under `race/mame`, `stationtest`, `sandbox/vision`
+or any `pce` path. labhost 1-minute load went 55 → 31 across the teardown.
+
+Kept on disk as provenance, costing nothing: `race/mame/` (including the `psi`
+and `pce-img` Linux builds), `race/pce/` (the winning rig's media, rootfs and the
+installed `hd0.pbi`), `race/ptrA/` (the no-grab patch) and `race/ptrB/` (the
+proven pty serial config). The Visi On *desktop* frame that the race rig reached
+is preserved at `/data/vms/sandbox/vision/frames/00-live-desktop.png` and is the
+station's hero.
