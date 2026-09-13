@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "id": "macsys1",
+  "era_year": 1984,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 83,
+        "prelude": "",
+        "value": {
+          "key": "macsys1",
+          "script": "tiles/macsys1.sh",
+          "outputDir": "assets/macsys1",
+          "class": "retro",
+          "estimated": "~25-40m",
+          "automation": "full",
+          "produces": "host-native MAME mac128 binary + rompath + 400K media (Macintosh System 1.0 / Finder 1.0)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/macsys1",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54199,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/macsys1/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 88,
+    "stationsManifestOrder": 86,
+    "stationsManifestPrelude": "\n# macsys1 (VMID 199) — Macintosh 128K, System 1.0 / Finder 1.0 (1984), host-native MAME mac128k.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 102,
+    "bindingPrelude": "",
+    "goldenOrder": 86
+  },
+  "stationDir": "macsys1",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54199,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "mamesock",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 199
+  },
+  "guestDoc": "docs/guests/macsys1.md",
+  "credentialsRef": "guest/macsys1",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "macsys1",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":73",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/macsys1/macsys1_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/macsys1/fb.shm",
+      "SH_PORT": "54199",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/macsys1/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/macsys1/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 199,
+    "bringUpOrder": 102,
+    "x11": {
+      "display": ":73",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "macsys1",
+        "--udp",
+        "54199",
+        "--x11",
+        "--x11-display",
+        ":73",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/macsys1/macsys1.keymap",
+        "--env-append-file",
+        "$T/macsys1/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/macsys1/macsys1.keymap",
+        "streamhost/stations/macsys1/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "apple-studio",
+    "transport": "streamhost",
+    "accentColor": "#8C8274",
+    "eraLabel": "1984 · Macintosh 128K — System 1.0"
+  },
+  "museum": {
+    "id": "macsys1",
+    "displayName": "Macintosh System 1.0",
+    "year": 1984,
+    "lineage": "Apple Macintosh / classic Mac OS",
+    "arch": "Motorola 68000, 7.8336 MHz, 128 KB RAM, 512x342 1-bit",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#8C8274",
+    "eraSoftware": [
+      "System Software 1.0 (0.97)",
+      "Finder 1.0",
+      "MacPaint 1.0",
+      "MacWrite 1.0"
+    ],
+    "periodBrowser": "none — pre-network 1984 machine, no TCP/IP",
+    "iconicApps": [
+      "Finder",
+      "MacPaint",
+      "MacWrite"
+    ],
+    "blurb": "TODO(macsys1-spa): The Macintosh as it shipped in January 1984 — System 1.0 and Finder 1.0 on a 128 KB Mac, with MacPaint 1.0 and MacWrite 1.0 on the second 400K floppy.",
+    "notes": "TODO(macsys1-spa): Host-native station: MAME 0.289's mac128k runs on the host (drawshm frames, ctlsock keys + quadrature mouse, FIFO audio). Boots the original January 1984 System Disk in -flop1 with the companion Write/Paint disk in -flop2."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/macsys1.sh",
+    "driver": "mac128k"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "macsys1",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "TODO(macsys1): quadrature mouse on :MOUSE0/:MOUSE1/:MOUSE2 via MAME_CTL_PTR_TAGS — measured in the golden bake, see docs/lab/MACSYS1-WAVE.md.",
+    "keyboard": "TODO(macsys1): M0110 keyboard (i8021 MCU, mackbd_m0110 romset) driven through the generated ctlsock keymap at the fleet floor 40/40 ms — measured in the golden bake.",
+    "fixture": "TODO(macsys1): Macintosh 128K at the Finder 1.0 desktop with the System Disk and Write/Paint volumes mounted — measured in the golden bake."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2e on 2026-09-13 (macsys1 wave); see docs/lab/MACSYS1-WAVE.md"
+  ]
+}

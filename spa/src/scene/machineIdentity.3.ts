@@ -137,4 +137,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#d6cdb6', accentTint: '#7FB069', tintMix: 0.38,
     badge: 'IBM 5160', spec: '8088 • Visi On', kit: 'office90',
   },
+  // TODO(macsys1): exhibit finish copied from apple2e — set the real era cues.
+  macsys1: {
+    caseTint: '#c4ad7f', accentTint: '#66715d', tintMix: 0.42,
+    badge: 'EDU MICRO', spec: '8-BIT • 1988', kit: 'eightBit',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;
