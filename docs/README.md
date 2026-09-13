@@ -134,6 +134,7 @@ Reproducible builders live in `scripts/build-guests/tiles/<os>.sh`.
 | [guests/win11.md](guests/win11.md) | Windows 11 unattended install + the RDP-bridge exhibit (VM 900 since deleted — showcase-only). |
 | [guests/win9x.md](guests/win9x.md) | Windows 95/98 (+ the Win 3.11 material) — KVM recipe & root-cause, perf tuning, as-built image manifests. |
 | [guests/winxp.md](guests/winxp.md) | Windows XP Pro SP3 seed build. |
+| [guests/xenix.md](guests/xenix.md) | SCO Xenix System V/386 2.3.4 (1989) — text-console-only QEMU station, pre-installed disk, KVM required (every exec dies under TCG); Multiscreen (Alt-F1..Alt-F4) is the exhibit; no pointer, retronet OPEN (SCO TCP/IP was a separate product). |
 | [guests/UNDOCUMENTED.md](guests/UNDOCUMENTED.md) | Stub index for the stations without a dedicated doc (build-script + manifest pointers). |
 
 ## catalog/ — what the museum holds and could hold
