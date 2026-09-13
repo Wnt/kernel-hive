@@ -59,9 +59,34 @@ Raced per rule 14 / OPERATING-RULES §13, four theories, one clone each:
 | Theory | Change | Runner | Result |
 |---|---|---|---|
 | A (lead) | explicit CHS `cyls=310,heads=16,secs=63` on `-device ide-hd` | lead (Opus) | REGRESSION — boot stalls earlier, at SeaBIOS `Booting from Hard Disk...`, no OS/2 banner at all. `-drive …,cyls=` is rejected outright by QEMU 11 (`Block format 'qcow2' does not support the option 'cyls'`); the geometry must go on `-device ide-hd`. Auto-geometry gets further than the descriptor's 310/16/63. |
-| B | `-machine pc-i440fx-11.0,acpi=off,usb=off -cpu 486 -vga std` instead of `isapc`/`isa-vga` | sonnet | see §Race results |
-| C | RAM/CPU sweep: `-m 8`, `-m 16 -cpu pentium`, `-m 4`, `-m 12` | sonnet | see §Race results |
-| D | IBM 1.30.2 SE `Install.img` boots where the MS Server image traps (image, not device set) | sonnet | see §Race results |
+| B | `-machine pc-i440fx-11.0,acpi=off,usb=off -cpu 486 -vga std` instead of `isapc`/`isa-vga` | sonnet | FAIL — two boots, both frozen at SeaBIOS `Booting from Hard Disk...`, never reaching the OS/2 banner. Frame `race/pcimachine/frame3.png`. |
+| C | RAM/CPU sweep: `-m 8`, `-m 16 -cpu pentium`, `-m 4`, `-m 12` | sonnet | FAIL — only `-m 8` reached before its stop; same SeaBIOS freeze. Frames `race/ramsize/frame-C1.png`, `frame-C1c.png`. |
+| D | IBM 1.30.2 SE `Install.img` boots where the MS Server image traps (image, not device set) | sonnet | **WON** — `IBM Operating System/2 Installation Version 1.30` welcome screen, framebuffer settled 5.2 s after launch. Frame `race/ibmfloppy/frame.png`. |
+
+| E | OS/2 1.x "CPU too fast" timing bug: `-icount shift=6/8/4/10` | sonnet | FAIL — `shift=6` reaches the identical truncated `TRA` wedge and stays frozen through ~120 s of wall clock. This is **not** the CPU-speed bug. Frame `race/icount/frame-E1.png`. |
+
+**Verdict: the IMAGE was the problem, not the device set.** `isapc` + `-cpu 486` + `-m 16`
++ auto disk geometry is correct; the Microsoft 1.30.1 Server preinstalled qcow2 is simply
+unbootable for us and is abandoned. The station installs from the IBM 1.30.2 SE floppy set.
+
+Two traps worth carrying to other waves:
+
+1. `-drive file=…,format=qcow2,cyls=310,heads=16,secs=63` is rejected outright by QEMU 11
+   — `Block format 'qcow2' does not support the option 'cyls'`. Disk geometry only goes on
+   `-device ide-hd`. And pinning it there was still *worse* than letting QEMU auto-detect.
+2. Theories B and C cloned the rig **while theory A's CHS line was in `launch-smoke.sh`**,
+   so both inherited a known-bad flag and their SeaBIOS freezes are partly the lead's
+   regression rather than their own theory. When racing, freeze the base rig before
+   `rig-clone.sh new`, or hand each runner the exact baseline device set in its brief.
+3. `rig-clone.sh`'s generated `launch.sh` duplicated `${RIG_EXTRA}` for this rig, so extra
+   args landed on the QEMU command line twice (harmless here — reported for a later fix).
+
+### Wall 2 — the install itself
+
+The IBM SE set is 10 x 1.44 MB (`Install`, `Disk01`-`Disk05`, `Driver1`-`Driver4`). Run as
+ONE agent (Opus) with a 45-minute stop, swapping media over QMP
+`blockdev-change-medium` on the `fd0` backend and waiting on `fb-wait.py --change` /
+`--settle` — never a relaunch per disk, never a guessed `sleep`.
 
 ## Streams
 
