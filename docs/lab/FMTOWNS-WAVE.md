@@ -106,10 +106,15 @@ dir `/data/vms/streamhost/stations/fmtowns/`.
 
 ## Still open
 
-1. **Pointer** — ROOT CAUSE FOUND 2026-09-13 (replacement lead, Opus), see
-   §Pointer below. It was never a pacing or a protocol problem: the fleet
-   ctlsock module never BOUND the FM Towns mouse's axis fields at all, so every
-   pointer verb was a silent no-op. Status: see §Pointer for the race result.
+1. **Pointer** — MOTION PROVEN 2026-09-13 (Sonnet, fmtowns-ptr stream), CLICK
+   still open. Two bugs, both root-caused and fixed on the framebuffer: (1)
+   the ctlsock module never bound the FM Towns mouse's axis fields — fixed,
+   `axes=1` measured, four-target precise relative motion proven; (2) the
+   mouse's BUTTONS port is `IP_ACTIVE_LOW` and the module's click engine
+   always wrote the active-HIGH polarity — fixed and verified to bind and not
+   regress motion, but a click still produces no visible guest reaction. See
+   §Pointer, "Pointer stream 2026-09-13" for the full account, the four
+   proven targets, and the click candidates for the next stream.
 
 2. **`/os/fmtowns` publish** — **DONE 2026-09-13**, dark-launched. See
    §Publish below.
@@ -229,6 +234,101 @@ Until `axes=1` is measured, `stream.pointer.transport` stays `none` and
 `listing.state` stays `hidden`. The station ships keyboard-only, exactly the
 domainos precedent — but unlike domainos this is now a KNOWN, located,
 already-written fix rather than a wall.
+
+### Pointer stream 2026-09-13 (fmtowns-ptr, Sonnet) — motion PROVEN, click OPEN
+
+Worked in its own sandbox/branch, `/data/vms/sandbox/fmtowns-ptr/`, never
+touching the live station dir. Two bugs found and fixed, both root-caused on
+the framebuffer, not guessed.
+
+**Bug 1 (the one this doc already located): `axes=0` despite matching tags.**
+`MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,:pad2:mouse:MOUSE_Y"`
+bound `m_x_port`/`m_y_port` correctly (confirmed by `KEYDUMP :pad2` against the
+rebuilt binary: those exact tags exist), but `setup()` still logged
+`axes=0` — because the ptr-tags patch's field-NAME match for the axes was left
+hardcoded to `"Mouse X"` / `"Mouse Y"` (only the BUTTON names were made a
+knob). MAME appends a player-index suffix to a generic input-type's display
+name for any port beyond the first, so pad2's fields are named
+`"Mouse X 2"` / `"Mouse Y 2"`, not `"Mouse X"` — the literal match silently
+never fired. **Fix**: match by `f.type() == IPT_MOUSE_X` / `IPT_MOUSE_Y`
+instead of by name (that enum is the one thing the patch's own header already
+claimed was universal — it was the NAME assumption that broke, not the type
+one). Landed as an extended hunk in `mame-ctlsock-ptr-tags.patch` itself.
+**Measured after the fix**: `ctlsock: setup btns=1 axes=1 movea=0 devxy=0
+swap=0 sig=1ebe131a entries=3330` — signature `sig=` and `entries=` UNCHANGED
+from the pre-fix line, so the golden savestate is not orphaned by this patch
+(no save items touched, per its own covenant).
+
+**Pointer motion — PROVEN on the framebuffer, four distinct targets, one
+session, from the real golden `.sta`:**
+
+| Step | Verb | Landed on (visual) | Frame |
+|---|---|---|---|
+| start (restored `-state golden`, no input sent) | — | cursor over "テキスト編集", the position baked into the golden save | `sandbox/fmtowns-ptr/frames/00-settled.png` |
+| 1 | `MOVE 50 50` | bottom-right of the TOWNSSYSTEM window, empty space | `01-move5050.png` |
+| 2 | `MOVE -67 -51` | dead center of the **TownsGEAR** icon | `02-move2.png` |
+| 3 | `MOVE 24 25` | dead center of the **エンターテイメント** icon | `05-move3.png` |
+| 4 | `MOVE 5 23` then `MOVE 3 -13` | dead center of the **コマンド モード** icon | `07-move5.png` |
+
+Scale measured at roughly **6 px of cursor travel per count**, both axes,
+**positive-sign, not inverted** (a positive MOVE dx moves the cursor right,
+positive dy moves it down — `mouse.cpp`'s `previous - current` differencing
+does NOT flip the sign the caller sees, at least not at this binding). Small
+steps (all four moves above are ≤ 82 counts) landed exactly where aimed, on
+the first try, every time. **The >127-count truncation this doc already
+warned about is real and was reproduced**: a single `MOVE 149 162` (after a
+fresh `LOADST`-equivalent restore) landed the cursor only ~65 px away instead
+of the ~900 px four smaller moves of comparable total magnitude produced —
+consistent with `mouse.cpp` packing each axis into a signed byte and the
+149/162 counts wrapping. **Practical rule for any future move-issuing code
+here: always chunk under 127 counts per `MOVE`, never send a raw pixel-to-count
+translation of a big target in one shot.**
+
+**Click — bug 2 found, fix landed, effect still NOT proven.** `CLICK1`,
+`DCLICK1`, and a bare `DOWN1` held for a full framebuffer capture all
+produced **zero visible change** on four different targets (TownsGEAR twice,
+Command Mode twice) — not even the icon-select highlight a real click
+produces, regardless of button field binding (`btns=1`, confirmed bound to
+`:pad2:mouse:BUTTONS` field `"P2 Button 1"` via the same `KEYDUMP`). Read the
+device source rather than guess further: `bus/msx/ctrl/mouse.cpp:17-18`
+defines both buttons `IP_ACTIVE_LOW` —
+
+    PORT_BIT(0x10, IP_ACTIVE_LOW, IPT_BUTTON1)
+    PORT_BIT(0x20, IP_ACTIVE_LOW, IPT_BUTTON2)
+
+— so `set_button()`'s `set_value(1)` for "pressed" (correct for the Indy's
+`IP_ACTIVE_HIGH` PS/2 buttons, the only button polarity this module ever
+served before today) was writing the RELEASED state for every click this
+station ever attempted. Fixed with a new patch, `mame-ctlsock-btn-active-low.patch`
+(`MAME_CTL_BTN_ACTIVE_LOW="1,1,"` for fmtowns), which compiles clean, binds,
+and does not regress the pointer-motion path — but re-running the exact same
+four click attempts with the fix loaded **still produced no visible reaction**.
+The bug this doc set out to fix (`axes=0`) is closed; a SECOND, still-open bug
+sits between "the button ioport now carries the correct logic level" and "the
+guest's icon-select code notices." Candidates for the next stream, cheapest
+first: (a) the FM Towns MSX-mouse driver may only sample `BUTTONS` at the same
+strobe moment it samples `MOUSE_X`/`MOUSE_Y`, and `set_button()`/`set_value()`
+outside that strobe may never be seen — try holding the button down across a
+`MOVE` rather than a bare click; (b) `TownsMENU`'s icon click may require the
+button transition to happen while the position is exactly settled for more
+than one frame (there is no settle delay in `btn_click()`'s default 10/6-frame
+timing) — try a longer hold; (c) confirm with `KEYDUMP :pad2` whether there
+is a THIRD, unnamed field on the `BUTTONS` port (this stream's dump showed one
+row printed as `???` with no name and no default-key token) that gates the
+other two.
+
+`stream.pointer.transport` stays `none`, `registry/stations/fmtowns.json`'s
+`listing.state` stays `hidden` — motion is real and precise, but a pointer a
+visitor cannot click with is not a shippable pointer contract. This is a
+strictly smaller wall than the one this stream started with: one located,
+reproducible bug, on a device whose motion is now fully worked out.
+
+Sandbox rig (torn down after this stream, kept on disk for the next one):
+`/data/vms/sandbox/fmtowns-ptr/rig/` (station's `ui.ini`/`fmtowns.keymap`
+copied in, golden `.sta` copied in, never the original), binary
+`/data/vms/sandbox/fmtowns-ptr/build/mame-fmtownsftv-ptr` (built through
+`build-mame-native.sh fmtowns`, ccache 99.9% hit on the full 6-patch clean
+build), frames under `/data/vms/sandbox/fmtowns-ptr/frames/`.
 
 ## Publish — `/os/fmtowns` is dark-launched
 
