@@ -91,6 +91,21 @@ reason `resetMode` is `relaunch` and not a snapshot restore.
    tall yields a 768x1000 window that **pans**. The root is 768x1048; the PERQ is
    the top 1024 lines and the bottom 24 stay black. A capture crop knob is open.
 
+## Cost: PERQemu idles at 200% of a core
+
+Measured 2026-09-13 on the rig: with POS sitting at its shell prompt and nothing
+happening, `mono` holds **~202% CPU** — two busy threads, the CPU/microcode loop
+and the CLI's `HighResolutionTimer` spin (`rate limit None` in the settings, and
+`GetLine` polls rather than blocks). It does not settle. Two instances at once
+put labhost's 1-minute load over 50, which is what the load rule exists for.
+
+The fleet answer is the daemon's freezer, and the launcher already arms it:
+`SH_IDLE_PAUSE_PIDFILE` + `SH_IDLE_PAUSE_SECS`, plus a `PERQ_STANDBY_DELAY_S`
+(default 120 s) SIGSTOP on the pid in `mame.pid` once the boot has settled —
+the same shape medley uses. **Never run this station unfrozen and unattended**,
+and never run two. Whether `rate limit CPUSpeed` in `.PERQemu_cfg` would also
+cap it while a visitor is connected is untested, and worth a measurement.
+
 ## §Sandbox
 
 Verdict: **host application → systemd-nspawn**, on the lisa/medley shape. The
