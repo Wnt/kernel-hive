@@ -25,7 +25,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/fmtowns",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -41,7 +41,7 @@
   "render": {
     "signalOrder": 86,
     "stationsManifestOrder": 84,
-    "stationsManifestPrelude": "\n# fmtowns (VMID 196) — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.\n",
+    "stationsManifestPrelude": "\n# fmtowns (VMID 196) \u2014 Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.\n",
     "bringUpGroup": 6,
     "bindingOrder": 97,
     "bindingPrelude": "",
@@ -56,11 +56,11 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "none",
-      "method": "none",
-      "absolute": false,
-      "present": false,
-      "device": "ioport-keyboard",
+      "transport": "abs",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "ctlsock-msx-mouse",
       "scale": 1.0,
       "offset": [
         0,
@@ -111,7 +111,7 @@
         "--capture",
         "shm",
         "--pointer",
-        "none",
+        "abs",
         "--input-backend",
         "mamesock",
         "--audio",
@@ -135,7 +135,7 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#CC3D33",
-    "eraLabel": "1995 · Towns OS V2.1 L51 — FM TOWNS (1989)"
+    "eraLabel": "1995 \u00b7 Towns OS V2.1 L51 \u2014 FM TOWNS (1989)"
   },
   "museum": {
     "id": "fmtowns",
@@ -153,15 +153,15 @@
       "MS-DOS (Towns)",
       "CD-DA player"
     ],
-    "periodBrowser": "none — Towns OS V2.1 L51 ships no TCP/IP stack by default",
+    "periodBrowser": "none \u2014 Towns OS V2.1 L51 ships no TCP/IP stack by default",
     "iconicApps": [
       "TownsMENU",
-      "CDプレーヤー",
-      "電卓",
+      "CD\u30d7\u30ec\u30fc\u30e4\u30fc",
+      "\u96fb\u5353",
       "Free Software Collection"
     ],
-    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS — sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
-    "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk — the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
+    "blurb": "Fujitsu shipped a CD-ROM drive as standard in a consumer PC in 1989, years early. Towns OS is its icon-first Japanese desktop on DOS \u2014 sprites, 16.7M-colour modes, Red Book soundtracks, sold in one country.",
+    "notes": "Host-native station: MAME's fmtowns-family driver runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no installed guest disk \u2014 the Towns System Software V2.1 L51 CD is the boot volume (-cdrom, a CHD composed by scripts/build-guests/tiles/fmtowns.sh from the bin/cue). Towns mouse on the second pad port (-pad2 mouse). See docs/lab/FMTOWNS-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -172,18 +172,18 @@
   "ui": "desktop",
   "reset": {
     "stationDir": "fmtowns",
-    "pointer": "none",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "OPEN — Towns mouse on -pad2 (MSX-protocol mouse, genuinely relative: KEYDUMP shows MOUSE_X/MOUSE_Y axis fields, no absolute port); generic ctlsock MOVEA/CLICK1 produced no observable cursor movement (docs/lab/FMTOWNS-WAVE.md Still open #1)",
-    "keyboard": "PROVEN — real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
-    "fixture": "PROVEN — Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
+    "mouse": "PROVEN 2026-09-13 -- Towns mouse on -pad2 (MSX-protocol mouse, genuinely relative: mame-ctlsock-ptr-tags.patch + type-based Mouse-X/Y binding fix binds :pad2:mouse:BUTTONS/MOUSE_X/MOUSE_Y, ctlsock setup reads btns=1 axes=1 sig=1ebe131a entries=3330 unchanged from pre-patch (golden not orphaned). Motion measured ~6 px/count both axes, positive sign, chunked under 127 counts/MOVE (SH_REL_MAX_STEP=100). Window activation click proven 8/8 (>31000 changed px, fb-react.py masked diff) and drag proven (323 px changed, 191x79 track); a single click on a desktop icon draws nothing by design in this shell. See docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13 #2\".",
+    "keyboard": "PROVEN \u2014 real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
+    "fixture": "PROVEN \u2014 Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
   },
   "migrationExceptions": [],
   "notes": [
     "scaffolded from samcoupe on 2026-09-13 (fmtowns wave, docs/lab/FMTOWNS-WAVE.md)",
-    "native build + real CHD + generated keymap + keyboard proof + golden restore proven 2026-09-13; /os/fmtowns publish and the pointer are OPEN, see listing.reason"
+    "native build + real CHD + generated keymap + keyboard proof + golden restore + pointer (click/drag/motion) all proven 2026-09-13; /os/fmtowns dark-launched then landed; listed"
   ],
   "keyboard": {
     "charMap": {
@@ -200,10 +200,5 @@
       "'": "&",
       "~": ")"
     }
-  },
-  "listing": {
-    "state": "hidden",
-    "reason": "Native build, real CHD, generated keymap, keyboard proof (Ctrl+Esc opens the guest's own Task List dialog) and golden-save/restore (pixel-identical, 5.2s) are all proven on the framebuffer 2026-09-13, and /os/fmtowns is dark-launched and rendering the TownsMENU desktop. Hidden for ONE reason: the pointer is unproven end-to-end. UPDATE 2026-09-13 (fmtowns-ptr stream, sandbox only, not yet deployed to this live station): the axes=0 root cause is FIXED and MEASURED (setup now reads btns=1 axes=1, via mame-ctlsock-ptr-tags.patch with a type-based Mouse-X/Y binding fix layered on top -- the module's field-name match was hardcoded to \"Mouse X\"/\"Mouse Y\" but pad2's fields are named \"Mouse X 2\"/\"Mouse Y 2\"), and relative cursor MOTION is proven precisely on the framebuffer across four distinct icon targets in one session (docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13\"). A SECOND bug was found and fixed (the MSX mouse's BUTTONS port is IP_ACTIVE_LOW, mame-ctlsock-btn-active-low.patch inverts it) but CLICK still produces no visible guest reaction after the fix -- still open, candidates listed in the wave doc. Flip listing.state to listed and stream.pointer.transport off 'none' only once a click that opens something is proven on the framebuffer, then land both patches + the native.d/fmtowns.sh opt-in + the station.env.fixture MAME_CTL_* lines on this live station and rebuild/redeploy. See docs/lab/FMTOWNS-WAVE.md SS Pointer.",
-    "since": "2026-09-13"
   }
 }

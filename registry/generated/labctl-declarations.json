@@ -545,7 +545,7 @@
     "fmtowns": {
       "dir": "/data/vms/streamhost/stations/fmtowns",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,

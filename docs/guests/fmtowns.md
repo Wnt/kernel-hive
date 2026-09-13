@@ -1,10 +1,12 @@
 # fmtowns — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU)
 
-Status: **native, keyboard, and golden restore proven on the framebuffer**
-(2026-09-13); `/os/fmtowns` publish and the pointer are still open — see
-[`docs/lab/FMTOWNS-WAVE.md`](../lab/FMTOWNS-WAVE.md) for the ledger, the race
-and every proof frame. This file is the station's operating manual; every
-number in it is measured or marked OPEN.
+Status: **native, keyboard, golden restore, pointer (click/drag/motion) and
+`/os/fmtowns` publish all proven on the framebuffer** (2026-09-13); the
+station is landed and listed. Command Mode / MS-DOS prompt and the other
+TOWNSSYSTEM icons are still not opened (no keyboard-only launch path found for
+them). See [`docs/lab/FMTOWNS-WAVE.md`](../lab/FMTOWNS-WAVE.md) for the
+ledger, the race and every proof frame. This file is the station's operating
+manual; every number in it is measured or marked OPEN.
 
 ## Identity and source
 
@@ -55,14 +57,32 @@ number in it is measured or marked OPEN.
   from the samcoupe fixture; no dropped/duplicated characters observed in this
   station's limited test (no full sentence typed yet — the desktop has no
   reachable text field without a working pointer).
-- Pointer: the Towns mouse is `-pad2 mouse`, an MSX-protocol mouse — genuinely
-  RELATIVE (KEYDUMP shows `:pad2:mouse:MOUSE_X`/`MOUSE_Y` axis fields, no
-  absolute port). The generic ctlsock `MOVEA`/`CLICK1` open-loop path produced
-  no observable cursor movement in ~10 minutes of testing. **OPEN** — same
-  wall as domainos's pointer (§Still open in the wave doc has the exact next
-  command). `stream.pointer.transport` stays `none`, a deliberate ship
-  decision, not an oversight.
+- Pointer: the Towns mouse is `-pad2 mouse`, an MSX-protocol mouse
+  (`bus/msx/ctrl/mouse.cpp`) — genuinely RELATIVE, tagged
+  `:pad2:mouse:BUTTONS`/`MOUSE_X`/`MOUSE_Y`, NOT the SGI Indy's
+  `hle_ps2_mouse` the fleet ctlsock module hardcodes. **PROVEN 2026-09-13**:
+  `mame-ctlsock-ptr-tags.patch` (with a type-based Mouse-X/Y binding fix
+  layered on top — pad2's fields are named `Mouse X 2`/`Mouse Y 2`, not the
+  module's hardcoded `Mouse X`/`Mouse Y`) binds the fields; ctlsock setup now
+  reads `btns=1 axes=1 movea=0 devxy=0 swap=0 sig=1ebe131a entries=3330` —
+  `sig=`/`entries=` unchanged from the pre-patch binary, so the golden `.sta`
+  is not orphaned (rule 6). `mame-ctlsock-btn-active-low.patch` is
+  DELIBERATELY not applied and `MAME_CTL_BTN_ACTIVE_LOW` must stay unset: MAME
+  already applies the MSX BUTTONS port's `IP_ACTIVE_LOW` itself, so setting
+  the env inverts an already-inverted polarity and turns every click into a
+  no-op (measured with `kh-fmtowns-padport-debug.patch`: `DOWN1` takes the
+  guest-read byte from `raw=f0` to `raw=e0`, bit 4 low = pressed, with the env
+  UNSET). Motion measured ~6 px/count on both axes, positive sign, truncated
+  to a signed byte per poll so a single `MOVE` must stay under 127 counts
+  (`SH_REL_MAX_STEP=100` in the fixture). Click: a plain click on a desktop
+  icon draws NOTHING by TownsMENU's own design (no hover/selection feedback);
+  clicking inside an inactive window's client area activates/raises it —
+  proven 8/8 alternating clicks between two windows (>31 000 changed px,
+  `fb-react.py` masked diff, 100 ms hold already lands). Drag proven too (a
+  held button + `MOVE` steps dragged a window 191×79 px). See
+  `docs/lab/FMTOWNS-WAVE.md` §Pointer, "Pointer stream 2026-09-13 #2".
 - Credentials: none (`guest/fmtowns` is a placeholder reference).
-- Rollback: `/os/fmtowns` is not yet published (`smoke-rig.sh` is QMP-shaped
-  and does not fit a MAME-native/shm-capture rig — wave doc §Still open item
-  2 has the exact next step); `listing.state: hidden` until that lands.
+- Rollback: `/os/fmtowns` is dark-launched and then landed via
+  `scripts/dev/darklaunch-station.py` (`smoke-rig.sh` does not fit a
+  MAME-native/shm-capture rig — see the wave doc's §Publish for why); the
+  station is `listing.state`-free (listed) since 2026-09-13.

@@ -1189,7 +1189,7 @@ emit domainos \
 # fmtowns (VMID 196) — Fujitsu FM TOWNS, Towns OS V2.1 L51 (TownsMENU) from the System Software CD, host-native MAME.
 emit fmtowns \
   --tile fmtowns --udp 54196 --x11 --x11-display :96 --capture shm --pointer \
-  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  abs --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
   "$T/mame-native/x11-runtime.sh" --aux-file "$T/fmtowns/fmtowns.keymap" \
   --env-append-file "$T/fmtowns/station.env.fixture"
 

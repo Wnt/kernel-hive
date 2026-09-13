@@ -29,7 +29,7 @@ Towns OS V2.1 L51, the 1995 release, running on FM TOWNS hardware. **The desktop
 
 The station comes up on **TownsMENU** with a ドライブ選択 (drive-select) window open over the desktop and the CD's own Q:TOWNSSYSTEM folder already showing its contents — TownsGEAR, TownsStaff and FM-OASYS among the icons on the boot disc. Nothing is installed on top of it; this is the System Software CD's own utility folder, exactly as a 1995 owner would have found it straight off the boot disc.
 
-The pointer is not wired up on this exhibit yet — the FM TOWNS mouse talks to the machine over a path the museum's tooling has not proven a route through — so the way in for now is the keyboard. **Ctrl+Esc** opens the guest's own タスクリスト (Task List) dialog; press it again and a different one appears, サイドワークリスト, Towns OS's own list of accessories (Control Panel, calculator, CD player, schedule). Each keypress reaches the guest live — the second dialog is not the first one redrawn, it is the shell answering a different question.
+The mouse works — click a window to bring it to the front and drag it across the desktop, though a plain click on a desktop icon draws nothing by TownsMENU's own design — and the keyboard reaches the guest too: **Ctrl+Esc** opens the guest's own タスクリスト (Task List) dialog; press it again and a different one appears, サイドワークリスト, Towns OS's own list of accessories (Control Panel, calculator, CD player, schedule). Each keypress reaches the guest live — the second dialog is not the first one redrawn, it is the shell answering a different question.
 
 ## Legacy
 
