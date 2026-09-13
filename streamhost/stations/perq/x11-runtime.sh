@@ -98,20 +98,25 @@ MONO="$ROOTFS/usr/bin/mono-sgen"
 # Every process descended from $1, host-wide, by walking ppid in /proc/<pid>/stat.
 # This is what scopes the reaper to THIS launch's own container.
 station_descendants() {
-  local root="$1" d p pp
-  for d in /proc/[0-9]*; do
-    p="${d#/proc/}"
-    pp="$p"
-    for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
-      pp="$(awk '{print $4}' "/proc/$pp/stat" 2>/dev/null)" || break
-      [ -z "$pp" ] && break
-      [ "$pp" = "$root" ] && {
-        printf '%s\n' "$p"
-        break
+  # The ppid table is read ONCE (`ps` is one fork) and walked in awk. MEASURED:
+  # a fork-per-ancestor-step version (one awk per hop, up to 12 hops per pid,
+  # ~3000 pids, called 40x by reap_previous) never returned on a box at load 60
+  # and wedged the launch for minutes. Parsing /proc/<pid>/stat by hand is the
+  # other trap — comm may contain spaces and parentheses.
+  local root="$1"
+  ps -eo pid=,ppid= | awk -v root="$root" '
+    { ppid[$1] = $2 }
+    END {
+      for (p in ppid) {
+        q = p
+        for (h = 0; h < 24; h++) {
+          q = ppid[q]
+          if (q == root) { print p; break }
+          if (q <= 1) break
+        }
       }
-      [ "$pp" -le 1 ] 2>/dev/null && break
-    done
-  done
+    }
+  '
 }
 station_emu_pids() {
   # MEASURED 2026-09-13: an exact `$exe = $MONO` (the host ROOTFS path) never
