@@ -2,8 +2,9 @@
 
 Station `perq`: PERQemu 0.9.5 on Mono, in a systemd-nspawn sandbox, showing
 **POS G.7** — the native operating system of the first commercial graphical
-workstation. Listed **hidden**: the boot, the login and the keyboard are proven
-on the framebuffer; the pointer is not.
+workstation. Boot, login, keyboard and pointer are all proven on the
+framebuffer — the `listing.state: hidden` block is removed as of the
+`perq-ptr` stream's two-target pointer readback below.
 
 ## Ledger
 
@@ -38,11 +39,70 @@ Frames under `/data/vms/sandbox/perq/frames/` (rig, display `:98`):
 **Keyboard**: PASS. XTEST via `xdotool type --delay 80` on `:98`, drop-free.
 Not measured below 80 ms.
 
-**Pointer**: OPEN. The Kriz tablet is absolute and PERQemu maps the host pointer
-onto it, so `x11-xtest` 1:1 is the right method and it is wired — but POS's login
-shell is a character console with no cursor to aim at, so there is no two-target
-readback. Next command: bring a graphical POS tool up, then
-`python3 scripts/dev/cursor-locate.py` on two commanded targets.
+**Pointer**: PASS (`perq-ptr` stream, 2026-09-13) — see §Pointer below.
+
+## §Pointer
+
+The premise in the earlier draft of this doc — "POS's login shell is a
+character console with no cursor to aim at" — was wrong, and cost nothing to
+disprove: POS draws its own arrow-shaped mouse pointer sprite directly on the
+character console, with no graphical program needed. It is visible in the
+existing hero frame `spa/public/posters/perq/desktop.webp` (the arrow at
+roughly (390, 530)) and in every frame from `Reading profile file
+>Default.Profile` onward — the golden scene already shows the cursor.
+
+Rig: `/data/vms/sandbox/perq-ptr/rig/` (own `base/`, `x11/` socket dir, display
+`:199`), same read-only `rootfs`/release tree as the lead's rig
+(`/data/vms/sandbox/perq/rootfs`, `/data/vms/sandbox/perq/media/perqemu0.95`),
+uid base 2359296. Booted POS G.7 fresh (`g7.prqm`), logged in as `guest` with
+an empty password exactly as documented above.
+
+**Method**: `xdotool mousemove X Y` on `DISPLAY=:199` (XTEST absolute motion
+against the X root, the same call the daemon's `x11test` backend makes) reaches
+PERQemu — no XI2/raw-motion workaround was needed, unlike the wall this brief
+warned about. The one trap: **PERQemu's SDL window is clocked by the CLI's
+`GetLine()` poll loop (see §Walls #3), so a screendump taken immediately after
+the warp can show the pointer BEFORE PERQemu has polled the new position** —
+measured directly: a `mousemove 600 800` frame grabbed with 0 delay was
+byte-identical to the prior frame at (200,300) even though `xdotool
+getmouselocation` already reported the X server's root pointer at 600,800. A
+**2 s settle** after each warp was enough in every trial; the daemon's own
+input path already settles on its render cadence so this is a rig-only
+caveat, not a production risk.
+
+**Two-target readback**, root 768x1048, frames under
+`/data/vms/sandbox/perq-ptr/rig/frames/`:
+
+| target (root px) | frame | cursor sprite bbox (top-left) | offset from target |
+|---|---|---|---|
+| (200, 300) | `08-target-200-300.png` | (200, 299) – (215, 314) | (0, -1) |
+| (600, 800) | `09-target-600-800.png` | (600, 799) – (615, 814) | (0, -1) |
+
+Measured with a 60×60 crop around each commanded point, diffed against the
+prior frame (`np.any(a != b, axis=2)`, bounding box of the changed pixels) —
+`scripts/dev/cursor-locate.py`'s automatic two-frame `learn` was tried first
+and rejected the pair as **AMBIGUOUS**: the status-line clock (`HH:MM:SS`,
+ticking every second) and a 1-pixel window-border column both changed between
+frames and either bridged into the cursor's bounding box or matched as their
+own spurious templates. Cropping the top 30 rows and left 12 columns before
+`learn`/`find` still produced one AMBIGUOUS background-colour template; the
+manual crop-and-diff above is what actually isolated the sprite. A future
+pass could feed `cursor-locate.py --at X,Y` (which skips its own bbox search)
+instead — untried here, time-boxed out.
+
+**Mapping: 1:1 identity, no offset, no scale.** The sprite's top-left lands
+within 1 px (y) of the commanded root coordinate at both ends of the screen —
+this is despite the PERQ window sitting at `768x1024+0+12` inside the
+768x1048 root (§Walls #4): X delivers window-relative motion from a
+root-absolute XTEST warp automatically, so no offset compensation is needed
+at the fixture level. `stream.pointer.offset` stays `[0, 0]`,
+`stream.pointer.scale` stays `1.0`.
+
+**Fixture**: `streamhost/stations/perq/station.env.fixture` already carried
+`SH_X11TEST_ABS=1`, `SH_X11TEST_BUTTONS=xtest`, `SH_X11TEST_KEYS=1` (copied
+from the `lisa` shape at scaffold time) — no change needed there. Buttons are
+untested: POS's shell prompt has nothing to click that shows on the
+framebuffer, and no button-holding-a-widget scene exists yet (see Open).
 
 **Boot time**: login prompt ~20 s after power-on, shell ~45 s. PERQemu 0.9.5 has
 **no save state** (checked: `Settings` offers autosave of media only, there is no
@@ -152,7 +212,8 @@ root inside. **PASS.**
 
 ## Open
 
-- **Pointer** — the two-target readback (above). This is what `hidden` is waiting on.
+- **Pointer buttons** — untested (see §Pointer). Only motion has a two-target
+  proof; no click target exists on the framebuffer yet.
 - **`accent`** — the same machine booting `s6lisp.prqm` with `bootchar z`, a
   second registry entry at uid base 2424832. Not started; the assets are already
   staged and `perq-inner.sh` takes `PERQ_BOOTCHAR` for exactly this.
@@ -174,3 +235,16 @@ The first lead's container (nspawn 2528279, mono 2528371, Xvfb 2528377) was
 killed by exe and its stale `/run/systemd/nspawn/unix-export/kh-perq` cleared.
 The rig documented here is `/data/vms/sandbox/perq/smoke`; kill it with the
 launcher's own reaper or by `/proc/<pid>/exe` = `/data/vms/sandbox/perq/rootfs/usr/bin/mono-sgen`.
+
+The `perq-ptr` pointer-proof rig (`/data/vms/sandbox/perq-ptr/rig/`, display
+`:199`, its own container `kh-perq-ptr`) was torn down after the two-target
+readback: `mono` (pid 3969991), `Xvfb` (3969884), `script` (3969877), the
+`sd-stubinit` PID 2 (3969831) and `systemd-nspawn` (3969817) all killed by
+signal (TERM first, KILL where TERM did not land — matches §Sandbox's report
+that this build sometimes ignores TERM), confirmed by `/proc/<pid>` gone for
+all five and `machinectl list` reporting `No machines.`. The host symlink
+`/tmp/.X11-unix/X199` and the rig's `work/` were removed. A second, unrelated
+rig (`kh-perq-prove`, nspawn pid 34421, under `/data/vms/sandbox/perq-build/`,
+display `:198`) was running concurrently during this stream — **not touched**,
+per the rule against killing another session's rig; it belongs to whichever
+stream is proving the `perq.sh` tile builder (§Open).
