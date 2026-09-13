@@ -1138,6 +1138,106 @@ warning. It means only "this station has no QEMU `-drive` to parse", which is
 true of every host-native x11 station.
 
 
+## CRIU RESET pass (Claude Opus 5, 2026-09-13, ~15:40-17:15Z) — HALF PROVEN
+
+The operator's bar is a golden scene back in under 2 s; the measured relaunch is
+117 s and PCE has no save state, so the only route is a host-level checkpoint.
+Recon (Claude Sonnet 5, 2026-09-13) closed the first question for good:
+**`pce-ibmpc` has no snapshot facility of any kind.** `src/arch/ibmpc/msg.c:299`
+is the complete `emu.*` message table — `emu.config.save` writes the *config
+text*, not state; `src/lib/monitor.c:837`/`:688`'s `save`/`load` move a raw
+memory range only; the only `snapshot.c` in the tree is
+`src/arch/spectrum/snapshot.c`, wired to the ZX Spectrum backend alone. So:
+criu, or nothing.
+
+### 1. The payload has to be a subtree whose root is NOT pid 2
+
+`systemd-nspawn --as-pid2` makes `vision-inner.sh` pid 2 in *every* container,
+so a payload dumped at pid 2 can never be restored into a fresh one — criu
+places the exact pids it dumped and pid 2 is already the restoring shell. The
+rig therefore has pid 2 burn a block of ~400 pids and then re-run the same file
+as a child, "the scene", which lands at pid 404. The scene owns all three
+dumpable things: the bash that holds PCE's monitor FIFO on fd 9, Xvfb, and
+pce-ibmpc. (Without the fd-9 holder in the set, the FIFO has an external peer.)
+
+### 2. The dump WORKS — 0.18 s, sandbox contract intact
+
+This refutes the parallel finding from `perq` that criu cannot see into an
+nspawn `--private-users` sandbox. The trick is **which namespaces you join**:
+
+```
+nsenter -t <pce host pid> -m -p -u -i -n -- \
+  /opt/criu/bin/criu.sh dump -t 404 -D /work/img -o dump.log -v4 \
+  --shell-job --file-locks --leave-stopped --manage-cgroups=ignore
+```
+
+`-m -p -u -i -n` and **not** `-U`: criu stays in the host user namespace, so it
+keeps real CAP_SYS_ADMIN/CAP_SYS_PTRACE and carries none of the container's
+seccomp filter, while `-m` puts it in the container's mount namespace where
+`/opt/criu` (staged into the rootfs, 26 KB of binary + libs, host and rootfs are
+both trixie) and `/proc` show the container's own view. **Exit 0, 0.18 s, 22.7 MB
+of image** (`pages-2.img` 11.8 MB, `pages-3.img` 10.1 MB) for Xvfb + pce-ibmpc +
+the scene bash at the homed Services/Archives desktop.
+
+One thing had to change first, and it is the trap worth carrying to any other
+nspawn station: **the scene's stdio must point inside the container's own mount
+namespace.** `--console=pipe` hands pid 2 the launcher's fds — stdout is
+`$BASE/pce.log` on the host — and criu refuses what it cannot resolve:
+`Error (criu/files-reg.c:1790): Can't lookup mount=59 for fd=1
+path=…/rigA/pce.log`. Redirecting the scene to `/work/scene.log` (and tailing it
+from pid 2 so `pce.log` still carries everything) was the entire fix.
+
+### 3. The RESTORE is blocked, and it is two kernel checks, not a criu bug
+
+Restoring the same image into a fresh container fails in both possible places,
+and the wall is that **criu must be in the initial user namespace for some
+operations and in the container's for others**:
+
+| criu runs… | first hard failure |
+| ---------- | ------------------ |
+| outside the userns (`nsenter -m -p -u -i -n`) | restored task 404: `Error (criu/util.c:1620): Unable to open the proc file system: Operation not permitted`, then `404 killed by signal 9` |
+| inside the userns (`nsenter -U -m -p -u -i -n`, CapEff `000001ffffffffff`) | `Error (criu/util.c:1533): rlimit: Can't setup RLIMIT_NOFILE for self: Operation not permitted` and `Error (criu/sockets.c:483): Unable to set socket SO_SNDBUFFORCE/SO_RCVBUFFORCE: Operation not permitted` |
+
+The second row is not a missing capability — the shell has the **full** effective
+and bounding set inside the container userns. Raising a *hard* rlimit goes
+through `capable(CAP_SYS_RESOURCE)` and `SO_SNDBUFFORCE` through
+`capable(CAP_NET_ADMIN)`, and `capable()` is checked against the **init** user
+namespace, which no process in a `--private-users` sandbox can ever satisfy.
+Adding file capabilities to `/opt/criu/bin/criu` does not help (and cannot: the
+same `capable()` check).
+
+### 4. What the next pass should try, in order
+
+1. **Put the user namespace inside the dump set.** The reason criu cannot win
+   from either side is that the container's userns was created by nspawn,
+   outside the payload. If *the scene itself* creates a nested user namespace
+   (`unshare -U --map-root-user` around the Xvfb+PCE pair), criu restoring from
+   the host userns owns that namespace and creates it itself — which is the
+   configuration criu actually supports. This is the cheapest theory and it does
+   not weaken the sandbox at all.
+2. Drive the restore with `criu restore --unprivileged` (criu ≥ 3.18's
+   userns-aware path) and see which of the two EPERMs it skips.
+3. Only if both fail: an operator decision on relaxing the container (adding
+   CAP_CHECKPOINT_RESTORE/CAP_SYS_PTRACE and the mount syscalls *inside the
+   userns*) — which still would not clear §3's `capable()` checks, so it is
+   probably not even a fix.
+
+### 5. Where the work is
+
+`/data/vms/sandbox/vision-reset/rigA/` — `launch.sh` (display `:296`, machine
+`vision-visionr296`, `VISION_STATE_DIR=…/rigA/state`), the modified
+`x11-runtime.sh` (restore-eligibility gate, paired disk set, `container_leader`,
+the nsenter restore) and `vision-inner.sh` (pid burn, scene re-exec, the
+`VISION_RESTORE` wait). The golden checkpoint is `rigA/state/golden/` —
+`img/` plus the paired `hd0.pbi`/`VOAPP{1,2}.psi`/`mon.out`/`scene.log`/
+`xvfb.log` and `provenance.md5`. **None of it is landed**: the station still
+ships `SH_RESET_MODE=relaunch` with a cold boot, unchanged. `criu` is staged in
+the shared rootfs at `/opt/criu` (inert — nothing on the live station executes
+it).
+
+**The honest number stands at 117 s** (§7's table); nothing in this pass changed
+the live station.
+
 ## OPEN items
 
 | Item | Next command |
