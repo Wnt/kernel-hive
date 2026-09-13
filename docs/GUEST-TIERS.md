@@ -100,11 +100,11 @@ the schema but used by no station**.
 
 ## Membership
 
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji freedos
-- **Tier 1 (42)** — `aix432 alpine android aros aux beos bootos chokanji
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji freedos
+- **Tier 1 (43)** — `aix432 alpine android aros aux beos bootos chokanji
   freebsd411 freedos
   haiku helenos hpuxvue kolibrios macos753 macos9 msdoswin1 ninefront nt351 nt4
-  os2warp postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
+  os2warp os213 postmarketos qnx ravynos reactos redhat62 redstar2 redstar3 rhapsody
   sailfishos sculpt serenityos solaris sunos414 suse64 templeos tinycore toaruos win11
   win2000 win311 win95 win98se winxp`
 - **Tier 2 (10)** — `alto amiga amstradcpc apple2 atarist daybreak decos gt40
@@ -116,9 +116,9 @@ the schema but used by no station**.
 
 ## Sub-structure worth knowing
 
-**Tier 1 is not homogeneous.** Eleven stations are TCG-interpreted rather than
-KVM-accelerated — `aix432 aux beos hpuxvue macos753 macos9 nt351 os2warp
-rhapsody sunos414 win311` — so they carry an interpretation layer the other 29
+**Tier 1 is not homogeneous.** Twelve stations are TCG-interpreted rather than
+KVM-accelerated — `aix432 aux beos hpuxvue macos753 macos9 nt351 os2warp os213
+rhapsody sunos414 win311` — so they carry an interpretation layer the other 31
 do not. Every foreign-architecture guest is necessarily in that list (PowerPC,
 PA-RISC, m68k, SPARC); the rest are x86 guests too old for KVM. Counting
 `openvms` as a QEMU station the split is 30 KVM / 11 TCG out of 41; counting it
@@ -203,7 +203,7 @@ Generated from `registry/stations/*.json` and `registry/bridge-suites.json` — 
 same files the daemon and the UI read. Regenerate rather than hand-edit.
 
 Pointer methods across the 75 production tiles: `qemu-usb-tablet` 24, **none
-19**, `qemu-ps2-relative` 8, `warpd-agent` 5, `mame-ioport` 4,
+19**, `qemu-ps2-relative` 9, `warpd-agent` 5, `mame-ioport` 4,
 `qemu-guestram-abswrite` 3, `x11-warp-absolute` 2, `qemu-vmmouse` 2, and one
 each of `gallery-hid`, `simh-light-pen`, `qemu-mga-closedloop`,
 `qemu-artist-closedloop`, `qemu-usb-hid-relative`, `qemu-usb-mouse-relative`, `qemu-adb-relative`,
@@ -277,6 +277,7 @@ missing feature.
 | `openvms` | 4 two-QEMU | kvm x2 | `qemu-usb-tablet` | abs | — | off | 30 | — |
 | `oricatmos` | 3 host-native | MAME/host | `none` | none | — | on | 60 | — |
 | `os2warp` | 1 direct-QEMU | tcg | `warpd-agent` | warpd | — | on | 30 | — |
+| `os213` | 1 direct-QEMU | tcg | `qemu-ps2-relative` | rel | — | on | 30 | — |
 | `pcbsd` | 1 direct-QEMU | kvm | `qemu-x11warp` | abs | — | on | 30 | — |
 | `pcgeos` | 1 direct-QEMU | kvm | `qemu-guestram-abswrite` | abs | ramabs | on | 30 | — |
 | `pdp11` | 2 bridge | trixie | `none` | none | — | on | 60 | ssh |
