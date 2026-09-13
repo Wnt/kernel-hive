@@ -162,7 +162,7 @@
         "-device isa-vga",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-        "-drive file=/data/vms/streamhost/stations/os213/os213-golden.qcow2,format=qcow2,if=none,id=hd0",
+        "-drive file=/data/vms/streamhost/stations/os213/disk.qcow2,format=qcow2,if=none,id=hd0",
         "-device ide-hd,drive=hd0,bus=ide.0,unit=0",
         "-qmp unix:/data/vms/streamhost/stations/os213/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/os213/qemu.pid"
@@ -184,7 +184,7 @@
           "-device isa-vga",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0",
-          "-drive file=/data/vms/streamhost/stations/os213/os213-golden.qcow2,format=qcow2,if=none,id=hd0",
+          "-drive file=/data/vms/streamhost/stations/os213/disk.qcow2,format=qcow2,if=none,id=hd0",
           "-device ide-hd,drive=hd0,bus=ide.0,unit=0",
           "-qmp unix:/data/vms/streamhost/stations/os213/qmp.sock,server=on,wait=off",
           "-pidfile /data/vms/streamhost/stations/os213/qemu.pid"

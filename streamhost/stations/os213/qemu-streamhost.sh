@@ -15,9 +15,12 @@
 #   fixes it: KVM reaches the PM Desktop Manager in ~20 s. Same QEMU TCG defect
 #   the `xenix` station hit the same night. Do NOT "simplify" this back to TCG.
 # MACHINE: `-machine isapc -cpu 486`. OS/2 1.x predates PCI entirely. QEMU
-#   accepts `-enable-kvm` with `isapc` without complaint; `-machine pc,acpi=off`
-#   + `-vga std` also works under KVM (raced, theory `kvmpc`) and is the fallback
-#   if isapc ever regresses.
+#   accepts `-enable-kvm` with `isapc` without complaint. The standard i440fx
+#   machine with ACPI off, plus `-vga std`, also works under KVM (raced, theory
+#   `kvmpc`) and is the fallback if isapc ever regresses. NOTE: do not spell that
+#   fallback out as a literal machine string in this comment — `emit --pin-machine`
+#   rewrites any machine-type literal it finds, comments included, and the
+#   resulting source/emitted mismatch trips the push gate's box-state check.
 # RAM: 16 MB, the size the source image was produced with.
 # DISK: plain `-device ide-hd` with AUTO geometry. Do NOT pin CHS. `-drive
 #   file=...,cyls=` is rejected outright by QEMU 11 ("Block format 'qcow2' does
@@ -33,6 +36,11 @@
 #   rn-tapnet.sh (rule 15 — never commit a tap script for an unproven station).
 #
 # GOLDEN FIXTURE MODE (resetMode=loadvm, see GOLDEN.md):
+#   * The disk is staged by station-land.sh as $D/disk.qcow2 — that name is the
+#     fleet convention the landing script parks and restores (disk.qcow2.pre-*).
+#     Do NOT rename it to <id>-golden.qcow2: the nt351 sibling this launcher was
+#     scaffolded from predates that convention, and the mismatch cost os213 a
+#     failed station-up (29 restart attempts, "Could not open ...").
 #   * Boots the persistent station-LOCAL golden qcow2 (NO -snapshot) so QMP
 #     savevm/loadvm can create and restore the live "golden" reset point IN it.
 #   * If a 'golden' snapshot exists, boots STRAIGHT INTO it (-loadvm golden) so
@@ -44,7 +52,7 @@ D=/data/vms/streamhost/stations/os213
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
 LOADVM=""
-qemu-img snapshot -l "$D/os213-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+qemu-img snapshot -l "$D/disk.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
@@ -57,7 +65,7 @@ nohup qemu-system-i386 \
   -device isa-vga \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
-  -drive file=$D/os213-golden.qcow2,format=qcow2,if=none,id=hd0 \
+  -drive file=$D/disk.qcow2,format=qcow2,if=none,id=hd0 \
   -device ide-hd,drive=hd0,bus=ide.0,unit=0 \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
