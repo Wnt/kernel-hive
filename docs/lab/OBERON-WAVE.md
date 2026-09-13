@@ -69,32 +69,32 @@ combination (rule 6) — the device set id is `oberon-ps2rel-vesa1280-fdqcow`.
 
 ## Proofs (the framebuffer is the only proof — rule 9)
 
-**Pointer — `qemu-ps2-relative` / `dbus-rel` backend.** Native Oberon reads a
-plain PS/2 mouse; there is no absolute path on this guest (no USB, no
-vmmouse). Measured with QMP `input-send-event` rel deltas and
-`scripts/dev/cursor-locate.py` (exact sprite match, template `ad99772d9f10`,
-learned with `--at`):
+**Pointer — ABSOLUTE 1:1 since 2026-09-13 (`kh-ramabs`).** Full detail, the
+address, the three read-only copies and the proof table are in
+`docs/guests/oberon.md` §Pointer; the derivation tool is
+`scripts/dev/oberon-ramabs-derive.py`. The three things that made this station
+different from every other ramabs guest:
 
-- Scale: exactly **1.5 px per PS/2 unit**, both axes, no acceleration. Pinned
-  at (0,0), twelve `rel -126 -126` reports; 400 units landed on exactly
-  (600,600).
-- Target A: pin, then +200/+200 units → cursor-locate reports `300 300` —
-  exact.
-- Target B: pin, then +100/+600 units → cursor-locate reports `150 900` —
-  exact.
-- Golden home: pin, then +400/+340 units → `600 510` — exact.
-- Fixture: `SH_INPUT_BACKEND=dbus-rel`, `SH_CURSOR_SCALE=0.6667` (reciprocal
-  of 1.5), `SH_REL_MAX_STEP=126`, `SH_REL_QUANTUM=0`, `SH_REL_HOME_ON=reset`,
-  `SH_REL_HOME_TO=600,510`.
+1. **Oberon's coordinate is stored `(y, x)`, and its y counts UP from the bottom
+   of the screen.** Two independent inversions at once, so it needed its own
+   kh-ramabs layout (`point32le_yx` + the y-up conversion against `height`), not
+   a flag on an existing one.
+2. **A pair search over RAM found nothing**, twice, while the coordinate was
+   plainly there — because the diff locator's `xs.min()` is one pixel left of
+   the guest's x over some backgrounds (Oberon draws the arrow against whatever
+   it sits over). The search that works is **per word, independently, with a
+   ±1 tolerance on x**, pairing the survivors afterwards. That single pixel is
+   the difference between "this guest has no readable coordinate" and a landed
+   station.
+3. **The nudge has to stay under Oberon's acceleration threshold.** 1–4 units
+   move 1–4 px; 6 units and up move 1.5 px per unit. The first probe attempt
+   used 2 units/3 px and failed verification by exactly 1 px on both axes. The
+   same fact retro-condemns the old relative fixture: `SH_CURSOR_SCALE=0.6667`
+   was measured with 126-unit steps and was simply wrong for small ones.
 
-**Trap worth recording**: `cursor-locate.py` returned NOTFOUND for the same
-pointer parked at (960,60) inside the white System.Log viewer, while a crop
-of that same frame clearly shows the arrow there. Oberon renders its cursor
-against the background it sits over — blue arrow on the grey desktop,
-black-on-white inside a text viewer — so the exact-match template bank needs
-**one template per background**. A NOTFOUND over a light viewer is a bank
-gap, not a pointer failure. Frames: `/data/vms/sandbox/oberon/bake/tgtC.ppm`,
-`tgtC-crop.png`.
+The pre-abs relative numbers, kept because they are the rollback path: PS/2
+relative, exactly 1.5 px per unit at 126-unit steps, `SH_CURSOR_SCALE=0.6667`,
+`SH_REL_MAX_STEP=126`, `SH_REL_HOME_TO=600,510`.
 
 **Three-button UI is a hard requirement.** Oberon's whole interface is the
 three mouse buttons and their interclicks: LEFT sets the caret, MIDDLE
@@ -224,7 +224,14 @@ because nothing outside the emulator runs on this guest's behalf.
 5. **Cursor template bank covers the grey desktop only.** Teach
    `cursor-locate.py` the black-on-white variant (`learn A.ppm B.ppm --at X,Y`
    with both frames inside a text viewer) so a pointer check over System.Log
-   stops reading as NOTFOUND.
+   stops reading as NOTFOUND. The pointer tooling works around this today with
+   a diff locator (`oberon-ramabs-derive.py`), which needs no template bank but
+   carries a ±1 px edge-column error of its own.
+6. **`/opt/qemu-beos` still has the old kh-ramabs.** The `point32le_yx` /
+   `point16le_yup*` layouts are in patch `0007` and in `/opt/qemu-oberon`; the
+   published fork `github.com/Wnt/qemu` and the `third_party/qemu-kernel-hive`
+   submodule have NOT been bumped. Next step: apply the regenerated `0007` to a
+   fork checkout, push, bump the submodule.
 
 ## Measured timeline
 

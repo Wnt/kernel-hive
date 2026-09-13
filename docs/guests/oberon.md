@@ -40,6 +40,11 @@ an emulated machine rather than a stock host application).
 - Builder: `scripts/build-guests/tiles/oberon.sh` — converts the raw
   ready-made image to `disk.qcow2` (order 82, `class: fast`, `~1m`,
   `automation: full`).
+- Binary: **`/opt/qemu-oberon`** — fork `c5449c80` (`github.com/Wnt/qemu`,
+  branch `kernel-hive`) plus the `point32le_yx` / `point16le_yup` /
+  `point16le_yup_yx` layouts added to qemu-patch `0007` (`kh-ramabs`). Its own
+  build on purpose: `/opt/qemu-beos` carries beos' and pcgeos' goldens, and a
+  per-station binary has a blast radius of one station.
 - Launcher: `streamhost/stations/oberon/qemu-streamhost.sh`. Device set id
   **`oberon-ps2rel-vesa1280-fdqcow`** (golden + binary + device set are ONE
   combination — rule 6):
@@ -62,33 +67,75 @@ an emulated machine rather than a stock host application).
 
 ## §Pointer
 
-**PS/2 relative, through the daemon's rel bridge (`dbus-rel` backend).**
-Native Oberon reads a plain PS/2 mouse — there is no absolute path on this
-guest (no USB, no vmmouse). Measured with QMP `input-send-event` rel deltas
-and `scripts/dev/cursor-locate.py` (exact sprite match):
+**ABSOLUTE, 1:1, by writing Native Oberon's own coordinate (`kh-ramabs`).**
+Since 2026-09-13. Oberon reads a plain PS/2 mouse — no USB, no vmmouse, no
+hardware cursor on `-vga std` — but its **Input module keeps the pointer as two
+LONGINTs in guest RAM**, and that coordinate can simply be written
+(`docs/lab/BEOS-ABSOLUTE-POINTER.md` is the general recipe;
+`scripts/dev/oberon-ramabs-derive.py` is this station's).
 
-- Scale: exactly **1.5 px per PS/2 unit**, both axes, no acceleration
-  (pinned at (0,0), 400 units → (600,600) exactly).
-- Two-target readback, both exact: +200/+200 from pin → `300 300`;
-  +100/+600 from pin → `150 900`.
-- Golden home: +400/+340 from pin → `600 510`.
-- Fixture: `SH_INPUT_BACKEND=dbus-rel`, `SH_CURSOR_SCALE=0.6667`,
-  `SH_REL_MAX_STEP=126`, `SH_REL_QUANTUM=0`, `SH_REL_HOME_ON=reset`,
-  `SH_REL_HOME_TO=600,510`.
+**The layout is this guest's own, on two axes at once.** The pair is stored
+**y first, then x**, and Oberon's display coordinate system counts **y UP from
+the bottom of the screen**. Neither is how any other ramabs guest stores it, so
+it is its own layout, `point32le_yx` + the y-up conversion against `height`,
+rather than a flag on an existing one — a coordinate that is merely transposed,
+or merely flipped, tracks plausibly and lands wrong.
 
-**Trap:** the exact-match cursor template is background-dependent — Oberon
-draws its cursor as blue-on-grey over the desktop but black-on-white inside
-a text viewer, so `cursor-locate.py` needs one template per background or it
-reports NOTFOUND over a light viewer even though the pointer is plainly
-there in the frame (`bake/tgtC.ppm`, `tgtC-crop.png`).
+- Address: **`0x00140160`**, bound to the 2026-09-13 golden. The two LONGINTs
+  after it are `1023` and `1279` — the screen bounds — which is what identifies
+  the record as the Input module's own mouse state rather than a copy.
+- Three read-only copies track it exactly and are NOT the input:
+  `0x0011fff8` and `0x00120572` as `(x, y-up)` int16, `0x0011ffbc` as
+  `(y-up, x)` int16. Only kh-ramabs' connect-time write probe separates them,
+  and exactly one verified.
+- Publish: one **1-unit** PS/2 nudge.
 
-**Three buttons are the whole UI, and the SPA must carry all three.** LEFT
-sets the caret in a text viewer, MIDDLE executes the command word under the
-pointer (this is how every menu item in System.Tool runs), RIGHT selects. A
-pointer with no middle button reaches half the system at most. Proven:
-pin + walk 570/420 units → (855,630), the word `System.Directory` in
-System.Tool; one middle click opened a new `Directory` viewer
-(`bake/mid.ppm`, `mid-crop.png`).
+**Oberon accelerates, and the threshold is what the nudge has to stay under.**
+Measured on the golden: 1, 2, 3, 4 units move exactly 1, 2, 3, 4 px; **6 units
+and up move 1.5 px per unit**. A 2-unit/3-px nudge fails the connect probe by
+1 px on both axes. It is also why the old dead-reckoning fixture
+(`SH_CURSOR_SCALE=0.6667`, derived from 126-unit steps) was correct only for
+large steps and drifted on small ones — the reason to be absolute here is
+accuracy, not just latency.
+
+**Proof (2026-09-13).** Five targets on the real 1280x1024 surface —
+(20,20) (1250,20) (20,1000) (1250,1000) (640,512) — in **two laps**, with a move
+to (300,700) between every target so no lap is a no-op. Three observers at each:
+commanded, the device's `STAT pos=` read-back, and the sprite located in a QMP
+screendump.
+
+| commanded | guest RAM / device | located in the framebuffer | error |
+|---|---|---|---|
+| 20,20 | 20,20 | 20,20 | 0,0 |
+| 1250,20 | 1250,20 | 1249,21 | -1,+1 |
+| 20,1000 | 20,1000 | 20,1000 | 0,0 |
+| 1250,1000 | 1250,1000 | 1249,1000 | -1,0 |
+| 640,512 | 640,512 | 640,512 | 0,0 |
+
+Identical on both laps; worst |dx|,|dy| = **1,1**. The ±1 is the **locator's**
+own background-dependent edge column, not pointer error: the guest's own words
+are exact at all ten. Frames `rig/p1*.ppm` (lap 1) and `rig/p2*.ppm` (lap 2),
+table in `rig/proof.json`.
+
+**A click that reacts:** MOVEA (855,630) — the word `System.Directory` in
+System.Tool — then `DOWN2`/`UP2`. A `Directory` viewer opened; the frame diff
+bbox is (640,512,1279,924). Frames `rig/pre-click.ppm`, `rig/post-click.ppm`.
+
+**Three buttons are the whole UI, and the SPA must carry all three.** LEFT sets
+the caret in a text viewer, MIDDLE executes the command word under the pointer
+(this is how every menu item in System.Tool runs), RIGHT selects. A pointer with
+no middle button reaches half the system at most.
+
+**Trap:** the exact-match cursor template is background-dependent — Oberon draws
+its cursor blue-on-grey over the desktop but black-on-white inside a text
+viewer, so `cursor-locate.py` needs one template per background or it reports
+NOTFOUND over a light viewer. The derive/prove tooling uses a **diff** locator
+against a reference frame with the pointer parked at (900,300) for exactly that
+reason, and masks only the 32x32 box around the parked sprite — a corner
+reference would have to mask the very pixels the five-target proof reads.
+
+**Rollback** is not one line: the relative fixture, the pre-abs golden and the
+host `pve-qemu-kvm` binary are one unit. See `ROLLBACK.md` in the station dir.
 
 ## §Keyboard
 
@@ -108,8 +155,11 @@ issue found on this driver.
   empty floppy QCOW2 (`floppy-empty.qcow2`, created on demand by the
   launcher with `qemu-img create -f qcow2 ... 1440k`) — a device-set change,
   captured in the device set id above.
-- **Proven:** `savevm golden` took **0.107 s**, wrote a **3.51 MiB** vmstate
-  (snapshot id 1, tag `golden`, VM_CLOCK 00:26.046). Restore proof: QEMU
+- **Re-baked 2026-09-13 under `/opt/qemu-oberon`** (binary and golden are one
+  unit; the pointer address is bound to this bake): `savevm golden` took
+  **0.152 s** and wrote a **3.54 MiB** vmstate (tag `golden`, VM_CLOCK
+  00:01:21.846), pointer parked at (600,510). The pre-abs golden's numbers,
+  under the host `pve-qemu-kvm`, were 0.107 s / 3.51 MiB. Restore proof: QEMU
   killed by `/proc/<pid>/exe`, relaunched `-loadvm golden -S`, `cont` —
   **0.296 s** to running, screendump pixel-identical to the pre-`savevm`
   frame (`ImageChops.difference(...).getbbox() is None`), cursor back at
