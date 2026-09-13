@@ -1,0 +1,98 @@
+ctlsock: ABS_RAM nudge=<n> — republish the stated pointer on drivers that
+redraw only on a non-zero poll delta
+
+Applies AFTER mame-ctlsock-abs-ram.patch (same file, same members).
+
+mame-ctlsock-abs-ram.patch states the visitor's pixel in the guest's own
+cursor globals and, on a Macintosh, pokes the documented CrsrNew := CrsrCouple
+byte so the VBL cursor task repaints. Not every guest has such a flag.
+
+MEASURED on the fmtowns rig (fmtownsftv, Towns OS V2.1 L51, golden.sta,
+2026-09-13), after locating Towns OS's three mirrored cursor words by a
+five-position PEEK sweep of the first 4 MB of the 386 program space:
+
+  POKEW 0xa2034 400 / POKEW 0xa2036 300 (and the two mirrors) ->
+      the words READ BACK 400,300 and the published surface changed
+      0 pixels. The driver never compares its position against what is
+      drawn; it only repaints when a poll carries a delta.
+  the same poke followed by MOVE 1 0 ->
+      508 published pixels changed (the arrow moved) and the word read
+      back 401 — exactly +1. The acceleration curve that makes an open
+      loop impossible on this station (1.53 px/count at a 5-count poll
+      rising to 5.83 at 40) is 1.00 unit/count at n=1.
+
+So: write the position pre-biased by n, then issue n counts, and the driver's
+own increment lands on the commanded pixel while doing the repaint for us.
+At gx < n the bias would go negative, so the sign flips and the count is
+issued the other way — same arithmetic, same single repaint.
+
+  MAME_CTL_ABS_RAM=...,nudge=<n>     default 0 = unchanged, pure write
+
+Unset, this is a no-op: every station already shipping ABS_RAM (macsys1)
+behaves byte-for-byte as before.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -520,6 +520,8 @@
+ 						m_absram_flag = std::strtol(v.c_str(), nullptr, 0);
+ 					else if (k == "flagsrc")
+ 						m_absram_flagsrc = std::strtol(v.c_str(), nullptr, 0);
++					else if (k == "nudge")
++						m_absram_nudge = std::strtol(v.c_str(), nullptr, 0);
+ 					else if (k == "pts")
+ 					{
+ 						size_t q = 0;
+@@ -2183,13 +2185,34 @@
+ 			return false;
+ 		long gx = 0, gy = 0;
+ 		absram_map(sx, sy, gx, gy);
+-		uint16_t const a = uint16_t(m_absram_vfirst ? gy : gx);
+-		uint16_t const b = uint16_t(m_absram_vfirst ? gx : gy);
++		// A guest whose driver only REDRAWS the cursor when a poll carries a
++		// non-zero delta needs one count to republish the stated position (see
++		// the member comment). Pre-bias the horizontal word by the nudge so the
++		// count the driver adds lands exactly on the commanded pixel; flip the
++		// sign at the left edge so the biased value can never go negative.
++		long nx = gx;
++		long nudge = m_absram_nudge;
++		if (nudge != 0)
++		{
++			if (gx - nudge >= 0)
++			{
++				nx = gx - nudge;
++			}
++			else
++			{
++				nx = gx + nudge;
++				nudge = -nudge;
++			}
++		}
++		uint16_t const a = uint16_t(m_absram_vfirst ? gy : nx);
++		uint16_t const b = uint16_t(m_absram_vfirst ? nx : gy);
+ 		for (long addr : m_absram_pts)
+ 		{
+ 			sp->write_word(offs_t(addr), a);
+ 			sp->write_word(offs_t(addr + 2), b);
+ 		}
++		if (nudge != 0)
++			move_rel(nudge, 0);
+ 		if (m_absram_flag >= 0)
+ 		{
+ 			uint8_t v = 0xff;
+@@ -3627,6 +3650,16 @@
+ 	bool m_absram_vfirst = true;          // Point is {v,h} (Mac) vs {h,v}
+ 	long m_absram_flag = -1;              // byte poked to republish (CrsrNew)
+ 	long m_absram_flagsrc = -1;           // byte copied into it (CrsrCouple)
++	// MAME_CTL_ABS_RAM nudge=<n>: counts issued AFTER the write, for a guest
++	// driver that redraws the cursor only when a poll carries a NON-ZERO
++	// delta. Towns OS V2.1 is such a driver -- MEASURED on the fmtowns rig:
++	// POKEW of the position words alone changed 0 published pixels and the
++	// words kept the poked value; POKEW + MOVE 1 0 redrew the arrow and left
++	// the word at exactly value+1 (the acceleration curve that rules out an
++	// open loop is 1.00 unit/count at n=1), so pre-biasing by the nudge lands
++	// on the commanded pixel exactly. Default 0 = the pure-write behaviour
++	// macsys1 ships, and no existing station changes.
++	long m_absram_nudge = 0;
+ 	long m_absram_rx = 0, m_absram_ry = 0;    // published rect of the raster
+ 	long m_absram_rw = 0, m_absram_rh = 0;
+ 	long m_absram_gw = 0, m_absram_gh = 0;    // guest raster size, guest px
