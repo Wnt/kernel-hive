@@ -110,24 +110,84 @@ xdotool windowfocus "$PCEWIN" 2>/dev/null || true
 xdotool set_window --name "pce-ibmpc" "$PCEWIN" 2>/dev/null || true
 log "pce-ibmpc pid $PCEPID window $PCEWIN focused; root $GEOM on $DISP"
 
-# --- wait for the screen to settle, then start Visi On -----------------------
-# fb_settle <max-seconds>: returns when the screen has FIRST CHANGED from what
-# it showed at t=0 and has then been identical across three consecutive samples
-# a second apart. No fixed sleeps (rule 14).
+# --- wait for the C:\> prompt by CONTENT, then start Visi On -----------------
+# Two measurements make this section work, both taken on this station on
+# 2026-09-13 and both reproducible with the commands in the wave doc:
 #
-# Both halves are load-bearing. Requiring a change first is what stops this
-# returning instantly on the blank power-on screen — the 5160 spends its first
-# seconds in POST with nothing on the CGA, two samples match, and a naive
-# settle fires and types VISION into the BIOS. That happened on the first launch
-# of this station (2026-09-13): PC-DOS reached C:\> perfectly and the VISION
-# keystrokes had already been thrown away during memory count. Three samples
-# rather than two covers the blinking cursor landing on the same phase twice.
+#   INK. The fraction of non-black subpixels in the X root separates every
+#   screen this boot passes through, with an order of magnitude between the
+#   neighbours: the PC-DOS prompt sits at 39/10000, the prompt with VISION typed
+#   at 47, the Visi On splash at 701, the Visi On desktop at 4570. So "has Visi
+#   On started" is a measurement, not a guess.
+#
+#   BLINK. The prompt is the only screen here that oscillates: PC-DOS's cursor
+#   blinks, so consecutive captures at the prompt alternate between exactly two
+#   frames, forever (45 one-second captures produced exactly two hashes,
+#   half-period ~2.5 s). A "settled screen" test can therefore NEVER be right on
+#   this station, in either direction — it fires on the static POST screen and
+#   it can never fire on the prompt. Two such heuristics were tried before this
+#   one and both typed VISION into a screen that was not the prompt (the
+#   keystrokes evaporated; the C:\> prompt sat untouched three minutes later).
+#
+# The prompt test is BOTH signals: the frame blinks between exactly two states
+# AND both states carry prompt-band ink. And because no screen test is worth
+# trusting alone, the whole thing is a RETRY loop closed on the ink measurement:
+# if the splash has not appeared a few seconds after VISION was typed, the
+# keystrokes went somewhere else and it types again. Typing VISION at a DOS
+# prompt that is already busy is harmless — the worst case is a "Bad command"
+# line and another attempt.
+INK_PROMPT_LO=25 # the C:\> prompt measures 39; leave room for the typed line
+INK_PROMPT_HI=120
+INK_STARTED=200 # the Visi On splash measures 701, the desktop 4570
+
+# fb_hash / fb_ink: one capture of the X root, hashed / measured. Ink is the
+# fraction of non-zero bytes in the xwd payload, x10000. The rootfs carries no
+# ImageMagick (it needs x11-apps for xwd and nothing more), so python3 does it.
+fb_hash() { xwd -root -silent 2>/dev/null | sha256sum | cut -d' ' -f1; }
+fb_ink() {
+  xwd -root -silent 2>/dev/null | python3 -c 'import sys
+d = sys.stdin.buffer.read()[4096:]
+print(0 if not d else int(10000 * (len(d) - d.count(0)) / len(d)))'
+}
+
+# wait_dos_prompt <max-seconds>: blinking, in the prompt ink band.
+wait_dos_prompt() {
+  local max="${1:-180}" t0 h last ink i
+  local -a runs=()
+  t0="$(date +%s)"
+  last="$(fb_hash)"
+  runs=("$last")
+  while [ $(($(date +%s) - t0)) -lt "$max" ]; do
+    sleep 0.5
+    h="$(fb_hash)"
+    [ "$h" = "$last" ] && continue
+    last="$h"
+    runs+=("$h")
+    i="${#runs[@]}"
+    [ "$i" -ge 5 ] || continue
+    # a-b-a-b-a: two distinct frames, four changes between them
+    [ "${runs[i - 1]}" = "${runs[i - 3]}" ] && [ "${runs[i - 1]}" = "${runs[i - 5]}" ] &&
+      [ "${runs[i - 2]}" = "${runs[i - 4]}" ] && [ "${runs[i - 1]}" != "${runs[i - 2]}" ] || continue
+    ink="$(fb_ink)"
+    if [ "$ink" -ge "$INK_PROMPT_LO" ] && [ "$ink" -le "$INK_PROMPT_HI" ]; then
+      log "blinking text screen, ink=$ink — this is the C:\\> prompt"
+      return 0
+    fi
+    log "blink seen but ink=$ink is outside the prompt band — not the prompt yet"
+    runs=("$h")
+  done
+  return 1
+}
+
+# fb_settle <max-seconds>: two identical captures a second apart, after at least
+# one change. Only used AFTER Visi On has started, where the screen really does
+# go static — never to find the prompt, which never settles.
 fb_settle() {
   local max="${1:-60}" first="" prev="" cur="" same=0 changed=0 i
-  first="$(xwd -root -silent | sha256sum | cut -d' ' -f1)"
+  first="$(fb_hash)"
   for ((i = 0; i < max; i++)); do
     sleep 1
-    cur="$(xwd -root -silent | sha256sum | cut -d' ' -f1)"
+    cur="$(fb_hash)"
     [ "$cur" = "$first" ] || changed=1
     if [ "$cur" = "$prev" ]; then
       same=$((same + 1))
@@ -140,19 +200,67 @@ fb_settle() {
   return 1
 }
 
-if [ "${VISION_AUTOSTART:-1}" = 1 ]; then
-  if fb_settle 90; then
-    log "screen settled — assuming the C:\\> prompt; starting Visi On"
-  else
-    log "screen never settled in 90 s; starting Visi On anyway"
-  fi
-  # VOAPP1 (the key disk) is already in A:. Visi On refuses to start without it.
-  # 120 ms per key is the measured drop-free pacing for PCE's 8088 keyboard
-  # scan (docs/lab/VISION-WAVE.md §Keyboard).
+# type_vision: one attempt. 120 ms per key is the measured drop-free pacing for
+# PCE's 8088 keyboard scan (docs/lab/VISION-WAVE.md §Keyboard). VOAPP1 (the key
+# disk) is already in A: — Visi On refuses to start without it.
+type_vision() {
   xdotool type --window "$PCEWIN" --delay 120 'VISION'
   xdotool key --window "$PCEWIN" Return
-  log "typed VISION"
-  fb_settle 120 && log "Visi On desktop settled" || log "Visi On desktop did not settle in 120 s"
+}
+
+# calibrate_pointer: walk the X pointer across the PCE window so Visi On sees
+# mouse motion and leaves its "Calibrate the mouse." splash for the desktop. The
+# walk is incremental because the no-grab patch reads the DELTA between
+# successive MotionNotify events and spends the first event seeding its
+# reference point (docs/lab/VISION-WAVE.md §Pointer).
+calibrate_pointer() {
+  local x y
+  xdotool mousemove --sync 640 400 || return 1
+  for ((y = 400; y >= 140; y -= 20)); do
+    xdotool mousemove --sync 640 "$y" || return 1
+  done
+  for ((x = 640; x >= 140; x -= 20)); do
+    xdotool mousemove --sync "$x" 140 || return 1
+  done
+  return 0
+}
+
+if [ "${VISION_AUTOSTART:-1}" = 1 ]; then
+  started=0
+  for attempt in 1 2 3 4 5; do
+    if ! wait_dos_prompt 180; then
+      log "attempt $attempt: no blinking prompt in 180 s"
+      continue
+    fi
+    log "attempt $attempt: typing VISION"
+    type_vision
+    # Visi On is up when the ink crosses out of the text-screen band.
+    for _ in $(seq 1 20); do
+      sleep 1
+      ink="$(fb_ink)"
+      if [ "$ink" -ge "$INK_STARTED" ]; then
+        started=1
+        break
+      fi
+    done
+    [ "$started" = 1 ] && break
+    log "attempt $attempt: no Visi On after 20 s (ink=$ink) — the keystrokes went nowhere; retrying"
+  done
+  if [ "$started" = 1 ]; then
+    log "Visi On started (ink=$ink)"
+  else
+    log "Visi On never started after 5 attempts (ink=$ink)"
+  fi
+
+  if [ "$started" = 1 ] && [ "${VISION_CALIBRATE:-1}" = 1 ]; then
+    fb_settle 30 && log "splash settled" || log "splash did not settle"
+    if calibrate_pointer; then
+      fb_settle 30 || true
+      log "calibration walk done, ink=$(fb_ink)"
+    else
+      log "calibration walk failed"
+    fi
+  fi
 fi
 
 wait "$PCEPID" || true

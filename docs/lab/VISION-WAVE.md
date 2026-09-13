@@ -15,16 +15,16 @@ raced from minute 0, one `sonnet` runner each, on their own dirs under
 
 ## Ledger — from `wave.sh alloc vision --x11warp`
 
-| Field | Value |
-|---|---|
-| slot / UDP port / VMID | 194 / 54194 / 194 |
-| x11warp display | `:94` (loopback `127.0.0.1:6094`) — allocated; unused unless the winner is an X11-captured sandbox |
-| retronet | **none** — skipped on purpose: Visi On has no TCP/IP stack (PC-DOS 2.00, 1983) |
-| ICQ UIN | none |
-| sibling (`--like`) | see §Race verdict |
-| render orders | as scaffolded by `stations-registry.py new` — never hand-edited |
-| device set | IBM 5160 XT: 8088 @ 4.77 MHz, 640 KB, CGA, two 360 KB floppies, 10 MB XT fixed disk (306/4/17), serial card on COM1 carrying a Mouse Systems-protocol serial mouse (the "VisiCorp mouse Model M1"), 83-key XT keyboard |
-| media | see `scripts/build-guests/tiles/vision.sh` (URL + sha256 + byte size per file); staged by the `vision-media` agent under `/data/assets-staging/vision/` |
+| Field                  | Value                                                                                                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| slot / UDP port / VMID | 194 / 54194 / 194                                                                                                                                                                                                      |
+| x11warp display        | `:94` (loopback `127.0.0.1:6094`) — allocated; unused unless the winner is an X11-captured sandbox                                                                                                                     |
+| retronet               | **none** — skipped on purpose: Visi On has no TCP/IP stack (PC-DOS 2.00, 1983)                                                                                                                                         |
+| ICQ UIN                | none                                                                                                                                                                                                                   |
+| sibling (`--like`)     | see §Race verdict                                                                                                                                                                                                      |
+| render orders          | as scaffolded by `stations-registry.py new` — never hand-edited                                                                                                                                                        |
+| device set             | IBM 5160 XT: 8088 @ 4.77 MHz, 640 KB, CGA, two 360 KB floppies, 10 MB XT fixed disk (306/4/17), serial card on COM1 carrying a Mouse Systems-protocol serial mouse (the "VisiCorp mouse Model M1"), 83-key XT keyboard |
+| media                  | see `scripts/build-guests/tiles/vision.sh` (URL + sha256 + byte size per file); staged by the `vision-media` agent under `/data/assets-staging/vision/`                                                                |
 
 ### Facts that shape the station (from the VOM readme + the 0.289 source, verified)
 
@@ -44,14 +44,14 @@ raced from minute 0, one `sonnet` runner each, on their own dirs under
   Systems HLE mouse (`src/devices/bus/rs232/rs232.cpp`).
 - PCE (VOM's shape, rewritten): `system { model = "5160" boot = 128 }` boots
   C: directly so the key disk can stay in A:; `serial { driver =
-  "mouse:protocol=msys" }` on 0x3f8/IRQ4; `terminal { driver = "x11" }`.
+"mouse:protocol=msys" }` on 0x3f8/IRQ4; `terminal { driver = "x11" }`.
 
 ## Race — rule 14
 
-| Theory | Runner | Where | Result | Frame |
-|---|---|---|---|---|
-| A. MAME `ibm5160` host-native (fleet tier, `--like samcoupe`) | sonnet | `/data/vms/sandbox/vision/race/mame/` | **LOST** — BIOS and PC-DOS 2.00 boot to `C:\>` and the keyboard works over the ctlsock, but Visi On is unreachable | `/data/vms/sandbox/vision/race/mame/frames/` |
-| B. PCE `pce-ibmpc` in systemd-nspawn (VOM-proven, `--like lisa`) | sonnet | `/data/vms/sandbox/vision/race/pce/` | **WON** — Visi On desktop on the framebuffer 20 minutes in | `/data/vms/sandbox/vision/race/pce/frames/24-desktop.png` |
+| Theory                                                           | Runner | Where                                 | Result                                                                                                             | Frame                                                     |
+| ---------------------------------------------------------------- | ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| A. MAME `ibm5160` host-native (fleet tier, `--like samcoupe`)    | sonnet | `/data/vms/sandbox/vision/race/mame/` | **LOST** — BIOS and PC-DOS 2.00 boot to `C:\>` and the keyboard works over the ctlsock, but Visi On is unreachable | `/data/vms/sandbox/vision/race/mame/frames/`              |
+| B. PCE `pce-ibmpc` in systemd-nspawn (VOM-proven, `--like lisa`) | sonnet | `/data/vms/sandbox/vision/race/pce/`  | **WON** — Visi On desktop on the framebuffer 20 minutes in                                                         | `/data/vms/sandbox/vision/race/pce/frames/24-desktop.png` |
 
 ### Race verdict — PCE, and the reason is the copy protection
 
@@ -65,7 +65,7 @@ rejected by the drive. There is no route to Visi On on MAME without a flux
 image MAME will accept (HFE is the thing to try if anyone revisits this).
 
 PCE reads TransCopy directly and its `psi` tool converts `.TC` to `.psi`, which
-keeps the protection *and* is writable — the one format that satisfies both the
+keeps the protection _and_ is writable — the one format that satisfies both the
 key-disk check and PCE's write-back on eject. That single capability decided the
 race. PCE is a stock X11 host application, so the station runs it inside a
 systemd-nspawn container under the operator's host-application rule.
@@ -77,13 +77,13 @@ systemd-nspawn container under the operator's host-application rule.
 
 ## The station
 
-| | |
-|---|---|
-| launcher | `streamhost/stations/vision/x11-runtime.sh` + `vision-inner.sh` (the lisa/medley contained shape) |
-| tile builder | `scripts/build-guests/tiles/vision.sh` — `--fetch` / `--unpack` / `--rootfs` / `--compose` |
-| rootfs | `debootstrap --variant=minbase trixie` + X and build packages, PCE compiled inside it into `/opt/pce`, whole tree uid-shifted once to 2162688 |
+|               |                                                                                                                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| launcher      | `streamhost/stations/vision/x11-runtime.sh` + `vision-inner.sh` (the lisa/medley contained shape)                                                                                                                     |
+| tile builder  | `scripts/build-guests/tiles/vision.sh` — `--fetch` / `--unpack` / `--rootfs` / `--compose`                                                                                                                            |
+| rootfs        | `debootstrap --variant=minbase trixie` + X and build packages, PCE compiled inside it into `/opt/pce`, whole tree uid-shifted once to 2162688                                                                         |
 | root geometry | **1280x800** — PCE draws CGA 640x200 at `scale = 2` with its 4/3 aspect correction, which is exactly 1280x800, so the Xvfb root **IS** the PCE window: root coordinates are window coordinates, no crop and no offset |
-| reset | `relaunch` — PCE's ibmpc has no save state. Every launch copies `hd0.pbi`, `VOAPP1.psi` and `VOAPP2.psi` fresh from `assets/vision/disk` into the writable `work/` bind and cold-boots the 5160 |
+| reset         | `relaunch` — PCE's ibmpc has no save state. Every launch copies `hd0.pbi`, `VOAPP1.psi` and `VOAPP2.psi` fresh from `assets/vision/disk` into the writable `work/` bind and cold-boots the 5160                       |
 
 ### Traps (each one cost time)
 
@@ -98,7 +98,7 @@ systemd-nspawn container under the operator's host-application rule.
 3. **The host X symlink must point at the socket FILE**, `x11/X<n>`, not at the
    directory. A directory symlink silently leaves the daemon with no display.
 4. **`/proc/<pid>/exe` reads as the CONTAINER path here**, `/opt/pce/bin/pce-ibmpc`
-   — *not* as a host path the way lisa's LisaEm does, because PCE lives inside
+   — _not_ as a host path the way lisa's LisaEm does, because PCE lives inside
    the rootfs rather than in a bound-in assets dir. A bare path match would
    therefore match any other PCE on the box, so the launcher matches the exe AND
    requires the process to be a descendant of this launch's nspawn pid.
@@ -144,12 +144,12 @@ INSTALLED_HD=/data/vms/sandbox/vision/race/pce/work/hd0.pbi` — never touching
 the previously-proven race rig or the real `/data/vms/streamhost/assets/vision`
 until every stage had passed:
 
-| Stage | Result | Wall clock |
-|---|---|---|
-| `--fetch` | all 9 sources already staged by the media agent, hash-verified, `MANIFEST.sha256` rewritten | 1.4 s |
-| `--unpack` | 10 TransCopy disks, 2 PC-DOS images, PCE ROMs + `hd0.pbi`, MAME ROMs; every size assertion passed | 12.8 s |
-| `--rootfs` | `debootstrap --variant=minbase trixie`, runtime+build packages, PCE built from the pinned tarball into `/opt/pce`, uid-shifted once to 2162688 | 3m46.7s (root, on labhost) |
-| `--compose` | 10 `.TC` disks converted to `.psi` with the freshly-built `psi`; `hd0.pbi` staged from the proven race rig's installed disk (provenance: `race/pce/work/hd0.pbi`, made by hand per §Installing Visi On on 2026-09-13); `pce.cfg` + ROMs staged | 1.4 s |
+| Stage       | Result                                                                                                                                                                                                                                         | Wall clock                 |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `--fetch`   | all 9 sources already staged by the media agent, hash-verified, `MANIFEST.sha256` rewritten                                                                                                                                                    | 1.4 s                      |
+| `--unpack`  | 10 TransCopy disks, 2 PC-DOS images, PCE ROMs + `hd0.pbi`, MAME ROMs; every size assertion passed                                                                                                                                              | 12.8 s                     |
+| `--rootfs`  | `debootstrap --variant=minbase trixie`, runtime+build packages, PCE built from the pinned tarball into `/opt/pce`, uid-shifted once to 2162688                                                                                                 | 3m46.7s (root, on labhost) |
+| `--compose` | 10 `.TC` disks converted to `.psi` with the freshly-built `psi`; `hd0.pbi` staged from the proven race rig's installed disk (provenance: `race/pce/work/hd0.pbi`, made by hand per §Installing Visi On on 2026-09-13); `pce.cfg` + ROMs staged | 1.4 s                      |
 
 **One builder bug fixed at the root.** `do_rootfs`'s `./configure` line passed
 `--enable-x11` and `--disable-sdl`, neither of which exists in PCE's autoconf
@@ -189,33 +189,36 @@ the station's `work/`. The container's uid 0 is host uid **2162688**.
 
 The nspawn line is in `streamhost/stations/vision/x11-runtime.sh`.
 
-Audit below is from **this station's own launcher**, not from the race rig:
-`SH_STATION=vision SH_X11_DISPLAY=:94 VISION_BASE=/data/vms/sandbox/vision/stationtest ./x11-runtime.sh`,
-payload pid 3687162 (the pce-ibmpc host pid from the pidfile), 2026-09-13T06:29Z.
+Audit below is from **this station's own launcher**, re-run on the LAUNCHER
+FINAL pass against the production assets (`/data/vms/streamhost/assets/vision`),
+payload pid 1775392 (the pce-ibmpc host pid from the pidfile), 2026-09-13T08:04Z.
+The production rootfs is `--variant=minbase` and carries neither `procps` nor
+`iproute2`, so the process list and the interface list are read from `/proc`
+inside the container instead of from `ps -e` / `ip link` — same facts, one fewer
+package in a sandbox that does not need it.
 
 ```
-PAYLOAD PID=3687162  exe=/opt/pce/bin/pce-ibmpc
+PAYLOAD PID=1775392  exe=/opt/pce/bin/pce-ibmpc
 --- namespaces (all six must differ) ---
-pid  host=pid:[4026531836]  payload=pid:[4026536834]
-mnt  host=mnt:[4026531832]  payload=mnt:[4026536831]
-net  host=net:[4026531833]  payload=net:[4026536835]
-user host=user:[4026531837] payload=user:[4026536830]
-ipc  host=ipc:[4026531839]  payload=ipc:[4026536833]
-uts  host=uts:[4026531838]  payload=uts:[4026536832]
+pid  host=pid:[4026531836]       payload=pid:[4026536986]
+mnt  host=mnt:[4026531832]       payload=mnt:[4026536983]
+net  host=net:[4026531833]       payload=net:[4026536987]
+user host=user:[4026531837]      payload=user:[4026536982]
+ipc  host=ipc:[4026531839]       payload=ipc:[4026536985]
+uts  host=uts:[4026531838]       payload=uts:[4026536984]
 --- status ---
 Uid:	2162688	2162688	2162688	2162688
 CapEff:	0000000015808dff
 NoNewPrivs:	1
---- ps -e ---
-    PID TTY          TIME CMD
-      1 ?        00:00:00 (sd-stubinit)
-      2 ?        00:00:00 bash
-      5 ?        00:00:00 Xvfb
-     14 ?        00:00:02 pce-ibmpc
-     46 ?        00:00:00 ps
---- ip link ---
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+--- processes in the container (/proc, no procps in a minbase rootfs) ---
+     1 (sd-stubinit)
+     2 /bin/bash /work/inner.sh
+     5 Xvfb :94 -screen 0 1280x800x24 -nolisten tcp -noreset -ac
+    14 /opt/pce/bin/pce-ibmpc -c /work/pce.cfg
+--- interfaces (/proc/net/dev) ---
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets ...
+    lo:       0       0    0    0    0     0          0         0        0       0 ...
 --- ls /dev ---
 char  core  fd  full  fuse  mqueue  net  null  ptmx  pts  random  shm
 stderr  stdin  stdout  tty  urandom  zero
@@ -235,14 +238,14 @@ is refused.
 
 From **this station's own launcher**, not the race rig:
 
-| Proof | Verdict | Frame |
-|---|---|---|
-| Cold boot: the 5160 posts and PC-DOS 2.00 reaches `C:\>` with AUTOEXEC run (`PROMPT $P$G`, `PATH C:\;C:\DOS`) | **PASS** | `/data/vms/sandbox/vision/frames/01-station-launch.png` |
-| Visi On 1.0 starts and the copy-protection check on the VOAPP1 key disk passes — the Applications Manager splash, `COPYRIGHT 1983 VISICORP / VERSION 1.0` | **PASS** | `/data/vms/sandbox/vision/frames/02-station-vision-desktop.png` |
-| Keyboard: `VISION` typed over XTEST at 120 ms/char is received without a dropped or doubled character (it is what launched Visi On above) | **PASS** | same frame |
-| Sandbox audit from the running station | **PASS** | §Sandbox above |
+| Proof                                                                                                                                                                       | Verdict                                                     | Frame                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| Cold boot: the 5160 posts and PC-DOS 2.00 reaches `C:\>` with AUTOEXEC run (`PROMPT $P$G`, `PATH C:\;C:\DOS`)                                                               | **PASS**                                                    | `/data/vms/sandbox/vision/frames/01-station-launch.png`          |
+| Visi On 1.0 starts and the copy-protection check on the VOAPP1 key disk passes — the Applications Manager splash, `COPYRIGHT 1983 VISICORP / VERSION 1.0`                   | **PASS**                                                    | `/data/vms/sandbox/vision/frames/02-station-vision-desktop.png`  |
+| Keyboard: `VISION` typed over XTEST at 120 ms/char is received without a dropped or doubled character (it is what launched Visi On above)                                   | **PASS**                                                    | same frame                                                       |
+| Sandbox audit from the running station                                                                                                                                      | **PASS**                                                    | §Sandbox above                                                   |
 | The Visi On desktop itself — Services window on Archives, the `start install remove Printing` menu line, the HELP/CLOSE/OPEN/FULL/FRAME/OPTIONS/TRANSFER/STOP command strip | **PASS on the race rig**, not yet from the station launcher | `/data/vms/sandbox/vision/frames/00-live-desktop.png` (the hero) |
-| Pointer: two-target readback | **FAIL — OPEN**, see §Pointer | — |
+| Pointer: two-target readback                                                                                                                                                | **FAIL — OPEN**, see §Pointer                               | —                                                                |
 
 The gap between the last two rows is one thing, and it is the pointer: Visi On
 stops at **"Calibrate the mouse. See the Setup Guide for detailed instructions."**
@@ -264,11 +267,11 @@ headless Xvfb station cannot hold a grab the way a person at a keyboard can.
 
 Raced per rule 14, two `sonnet` runners, 20 minutes each.
 
-| Theory | Result |
-|---|---|
-| **A — patch PCE's x11 terminal to forward motion with no grab** (`race/ptrA/`) | **CLOSEST.** A 2-hunk patch (`/data/vms/sandbox/vision/race/ptrA/pce-x11-nograb.patch`) applies cleanly to the pristine tarball, builds clean, and changes behaviour: Visi On advanced past the calibration splash into the Services desktop with no click and no grab, which pristine PCE cannot do. But the readback is over-driven — absolute XTEST jumps drove the guest cursor to the right edge and pinned it there. NOT a proven pointer. |
+| Theory                                                                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A — patch PCE's x11 terminal to forward motion with no grab** (`race/ptrA/`)         | **CLOSEST.** A 2-hunk patch (`/data/vms/sandbox/vision/race/ptrA/pce-x11-nograb.patch`) applies cleanly to the pristine tarball, builds clean, and changes behaviour: Visi On advanced past the calibration splash into the Services desktop with no click and no grab, which pristine PCE cannot do. But the readback is over-driven — absolute XTEST jumps drove the guest cursor to the right edge and pinned it there. NOT a proven pointer.              |
 | **B — drive the mouse through the serial port instead of the terminal** (`race/ptrB/`) | **PLUMBING PROVEN, pointer not.** `serial { driver = "pty:symlink=/work/com1.pty" }` initialises (`char-pty: /dev/pts/0`), PCE holds the master and the symlink is the slave, so host-written bytes land on the guest's COM1 RX. PCE's own encoder at `char-mouse.c:132-148` is ground truth for the Mouse Systems framing (byte0 `0x80` + active-low buttons, dy negated, two dx/dy samples per packet). No byte writer was built and no frame was captured. |
-| B2 — re-assert the grab from PCE's monitor | **DEAD as documented.** `emu.term.grab` appears in the monitor's `hm` help but has no entry in `pc_set_msg`'s `set_msg_list[]` (`msg.c:298-318`), and `trm_set_msg_trm` (`terminal.c:201-218`) exact-matches only `term.escape`/`term.screenshot`. Unrelated but real and useful: `emu.serport.driver` / `emu.serport.file` DO work, so serial 0's driver can be hot-swapped at runtime. |
+| B2 — re-assert the grab from PCE's monitor                                             | **DEAD as documented.** `emu.term.grab` appears in the monitor's `hm` help but has no entry in `pc_set_msg`'s `set_msg_list[]` (`msg.c:298-318`), and `trm_set_msg_trm` (`terminal.c:201-218`) exact-matches only `term.escape`/`term.screenshot`. Unrelated but real and useful: `emu.serport.driver` / `emu.serport.file` DO work, so serial 0's driver can be hot-swapped at runtime.                                                                      |
 
 **Resolved 2026-09-13 (Sonnet, `vision-ptr` branch/sandbox).** Theory A's
 amplification was NOT the `scale = 2` mismatch alone — PCE's aspect correction
@@ -430,7 +433,7 @@ Two correctness bugs the brief's assumptions did not anticipate, found by
 running the real thing rather than trusting the prior streams' reports:
 
 1. **`spa.pointerRel: true` is wrong, not right.** `stations-registry.py
-   generate` refuses it: the `x11test` backend + `pointerRel=true` lets a
+generate` refuses it: the `x11test` backend + `pointerRel=true` lets a
    type=4 DIRECT relative pointer record bypass the router entirely (two
    injectors, neither aware of the other — see the validator's own message).
    The vision-spa draft's own conditional applies now that the identity
@@ -491,7 +494,7 @@ carries DIFFERENT colours between the old-position and new-position capture.**
 That is the signature of an **XOR/inverting cursor**, not a fixed-colour
 sprite — PCE's arrow inverts whatever is underneath it rather than blitting
 constant pixels, so over the desktop's large uniform-white background the
-identical inverted pattern reproduces at *every* position over that
+identical inverted pattern reproduces at _every_ position over that
 background, and `cursor-locate.py`'s exact-match premise (a hard-edged sprite
 with fixed, content-independent pixels) does not hold for this cursor. A
 follow-up attempt to move it further with `xdotool mousemove --sync` (four
@@ -513,37 +516,191 @@ publishing a station that only reaches the calibration splash. §Publish's
 exact commands are unchanged and still the next step once the pointer or an
 explicit decision to publish hidden-behind-splash is made.
 
+## LAUNCHER FINAL pass (Claude Opus 5, 2026-09-13, ~07:30-09:00Z)
+
+The station now reaches the Visi On 1.0 splash **on the first attempt of a cold
+launch, with nobody at the keyboard**. Two real bring-up bugs behind that, both
+fixed at the root; the pointer is unchanged and still OPEN.
+
+### 1. The auto-type: why every "settled screen" test was doomed
+
+Three settle heuristics have now typed `VISION` into a screen that was not the
+prompt. The measurement that ends the argument, taken on this station on
+2026-09-13 with 45 one-second `xwd` captures at the prompt:
+
+> **The C:\\> prompt produces exactly TWO distinct frames, alternating forever**
+> (half-period ~2.5 s). It is the PC-DOS cursor blinking.
+
+So a settle test cannot work in either direction: it fires on the _static_ POST
+screen and it can _never_ fire on the prompt. Every previous version of
+`fb_settle` was measuring the wrong property of the right screen.
+
+But blink alone is not enough either, and the log of the first fixed launch says
+why in its own words — the 5160's POST screen **also** blinks:
+
+```
+08:02:08 blink seen but ink=0 is outside the prompt band — not the prompt yet
+08:02:10 blink seen but ink=0 is outside the prompt band — not the prompt yet
+08:02:12 blink seen but ink=0 is outside the prompt band — not the prompt yet
+08:02:15 blink seen but ink=2 is outside the prompt band — not the prompt yet
+08:02:18 blinking text screen, ink=45 — this is the C:\> prompt
+08:02:18 attempt 1: typing VISION
+08:02:20 Visi On started (ink=524)
+```
+
+The second signal is **ink**: the fraction of non-black subpixels in the X root,
+x10000. Every screen this boot passes through is an order of magnitude from its
+neighbours, so "which screen is this" is a measurement rather than a guess:
+
+| Screen                                                       | ink       |
+| ------------------------------------------------------------ | --------- |
+| POST / memory count (blinking cursor on black)               | 0-2       |
+| PC-DOS 2.00 `C:\>` prompt                                    | **39-45** |
+| the prompt with `VISION` typed on it                         | 47-52     |
+| Visi On Applications Manager splash (`Calibrate the mouse.`) | **524**   |
+| the Visi On desktop (Services window)                        | 4570      |
+
+`vision-inner.sh`'s `wait_dos_prompt` therefore requires BOTH: the frame
+alternating a-b-a-b-a between exactly two states (four consecutive changes — a
+one-shot transition between two static screens cannot fake it) AND both states
+carrying ink in the prompt band (25..120). It measures ink with `python3` on the
+raw `xwd` bytes, because the minbase rootfs carries `x11-apps` for `xwd` and no
+ImageMagick.
+
+And because no screen test deserves to be trusted alone, the whole thing is a
+**retry loop closed on the ink measurement**: after typing, it watches for ink to
+cross 200; if the splash has not appeared within 20 s the keystrokes went
+somewhere else and it waits for the prompt and types again, up to five times.
+Typing `VISION` at a DOS prompt that is already busy is harmless — worst case a
+`Bad command` line and another attempt. Measured cold launch: prompt found at
+**15 s**, splash at **17 s**, first attempt, no retry needed.
+
+`fb_settle` survives, but only for use _after_ Visi On has started, where the
+screen genuinely does go static. It is never used to find the prompt.
+
+### 2. The relaunch bug: nspawn's leftover unix-export mount
+
+`reset = relaunch` on this station, so the second launch is the common case —
+and it died, every time:
+
+```
+vision[vision]: the sandbox died at launch — tail of pce.log:
+Mount point '/run/systemd/nspawn/unix-export/vision-vision' exists already, refusing.
+```
+
+`systemd-nspawn` mounts a per-machine tmpfs under
+`/run/systemd/nspawn/unix-export/<machine>` and refuses to start if one is
+already there. Its teardown is **asynchronous**: it lands a beat after the
+container's pids are gone, so `reap_previous` returns true while the mount is
+still up, and the relaunch loses the race with the launch it just killed.
+`x11-runtime.sh` now waits up to 10 s for that path to disappear after reaping
+and then clears it by force (`umount` + `rmdir`), failing loudly if it will not
+go.
+
+**Do not rename `$MACHINE`.** A cosmetic rename of the nspawn machine from
+`vision-vision` to `kh-vision` was tried in the same pass and every container
+under the new name was SIGTERMed within seconds of starting ("Trying to halt
+container"), three times running, while `vision-vision` containers under
+otherwise identical launches survived indefinitely. Something on the box reaps
+`kh-*` machines it does not recognise. The rename was reverted; whatever the
+sweeper is, it is not this station's to fight, and the name is cosmetic.
+
+### 3. The pointer on the station launcher: still OPEN, one theory eliminated
+
+`vision-inner.sh` now runs `calibrate_pointer` after the splash — an incremental
+walk of `xdotool mousemove --sync` steps (incremental because the no-grab patch
+reads the DELTA between successive MotionNotify events and spends the first
+seeding its reference). On the clean cold launch above the walk completed and the
+framebuffer **did not change at all**: ink stayed at 524 across the whole walk and
+for 60 s after it, and the arrow stayed exactly where the splash drew it at
+window (640,415). This reproduces the FINISH pass's result on a fresh rootfs and
+a fresh boot.
+
+**The "the rebuilt binary is not the patched one" theory is dead.** The
+production binary carries the patch's own function-local static as a symbol:
+
+```
+$ nm /data/vms/streamhost/assets/vision/rootfs/opt/pce/bin/pce-ibmpc | grep have_pos
+00000000000b6e20 b have_pos.1          # the patched no-grab motion handler
+$ nm /data/vms/sandbox/vision/race/pce/rootfs/opt/pce/bin/pce-ibmpc | grep have_pos
+                                        # (nothing — the pristine build)
+```
+
+`nm | grep have_pos` on the two builds is a one-line check that the shipped PCE
+is the patched one, and the production asset passes it. `pce.cfg` in the
+production assets likewise carries `mouse_div_x = 2` / `mouse_div_y = 4`.
+
+So the difference between the vision-ptr rig (where `xdotool mousemove` moved the
+guest arrow) and the station launcher (where it does not) is **not the binary and
+not the config**. What is left, untested, and in priority order:
+
+1. the walk runs INSIDE the container while the rig's ran from the host — same
+   display either way, but a different X client with a different connection;
+2. XTEST motion generates no `MotionNotify` at all if the pointer is already at
+   the requested coordinate (the walk's first `mousemove 640 400` may be a no-op,
+   and the patch discards the first real event as its seed, so the first TWO
+   steps can vanish);
+3. the rig may have had a button press first, which stock PCE needs and the
+   patched build may still need to arm something.
+
+The cheap test for (1) and (2) is one command against a running station:
+`ssh lab 'DISPLAY=:94 xdotool mousemove --sync 100 100 mousemove --sync 900 600'`
+then a frame — a single large two-step move, from the host, with no click.
+
+### 4. The readback, and why `cursor-locate.py` does not apply here
+
+Recorded so nobody spends another pass on it: Visi On's arrow is an **XOR
+cursor** — it inverts what is under it rather than blitting fixed pixels, proven
+by the FINISH pass's two learned templates having identical masks and different
+RGB payloads. `scripts/dev/cursor-locate.py` matches a hard-edged sprite with
+content-independent pixels and returns AMBIGUOUS at every coordinate over a
+uniform background, and no parameter changes that. **The two-target readback for
+this station is a bounding-box diff of the changed region between two captures at
+well-separated positions**, as the vision-ptr rig did, and the operator validates
+by eye — that is the standing rule for an eyeballable check. The wave doc says
+this rather than leaving a future pass to rediscover it.
+
+### 5. Listing verdict
+
+`listing.state` stays **hidden**. The station cold-boots, reaches the Visi On 1.0
+splash unattended and deterministically, and is sandboxed to the contract — but a
+visitor's pointer does nothing, and the desktop behind the calibration screen is
+not reachable from the station launcher. `pointerRel` is `false` (the generator
+refuses `true` with the `x11test` backend, §FINISH+LANDING pass); the declared
+method is `x11test` + `SH_X11TEST_ABS=1`, which is correct for the geometry and
+unproven end to end on the station.
+
 ## OPEN items
 
-| Item | Next command |
-|---|---|
-| **Pointer** — desktop reached once by the race rig with a hand-driven grab, XOR-cursor readback problem now understood (see above), not yet solved | investigate why `xdotool mousemove --sync` produced no motion on this pass's live rig; if solved, `cursor-locate.py` needs an XOR-aware match mode (compare against `frame XOR sprite-shape`, not fixed RGB) or a `--hotspot`-anchored `check` against the commanded position instead of a blind `find` |
-| `vision-inner.sh`'s `fb_settle` fires on an intermediate screen, not the true `C:\>` prompt — the auto-typed `VISION` is lost | replace the "changed then held" heuristic with a content match on the `PATH` line AUTOEXEC prints |
-| The Visi On **desktop** has not been reached from the station launcher itself (only the splash, and only by hand-typing over the broken auto-type) | follows the two items above |
-| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not started | see §Publish; blocked behind the pointer/fb_settle items, not behind the one-`pce-ibmpc`-at-a-time rule (that rig is torn down) |
-| `spa/src/scene/assembliesByTile.ts` line count | 24 lines on this branch — the 600-line cap this doc previously flagged was a pre-shard measurement; `origin/main` has already sharded the scene tables (`.1.ts`/`.2.ts`/`.3.ts`), so this is resolved by the merge-main step, not by this stream |
+| Item                                                                                                                                                                                                                                                                 | Next command                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pointer (the blocker)** — `xdotool mousemove` moves nothing on the station launcher, while it moved the guest arrow on the vision-ptr rig. Binary and config are both proven correct (§LAUNCHER FINAL pass 3), so the difference is in how the motion is delivered | `ssh lab 'DISPLAY=:94 xdotool mousemove --sync 100 100 mousemove --sync 900 600'` against a running station, then a frame; if that moves the arrow, the bug is in `calibrate_pointer`'s first no-op step, not in PCE                    |
+| The Visi On **desktop** is not reachable from the station launcher (the splash is)                                                                                                                                                                                   | follows the pointer                                                                                                                                                                                                                     |
+| Two-target readback                                                                                                                                                                                                                                                  | bounding-box diff of the changed region at two well-separated positions, operator validates by eye — NOT `cursor-locate.py` (XOR cursor, §LAUNCHER FINAL pass 4)                                                                        |
+| `/os/vision` dark-launch prepared (real assets, `station.env`, binary symlink, entry JSON) but not started                                                                                                                                                           | §Publish; and `scripts/dev/station-land.sh vision` for the landing, which this pass did not reach                                                                                                                                       |
+| The landing itself                                                                                                                                                                                                                                                   | `git push origin vision` is done; `scripts/dev/station-land.sh vision` next (no qcow2 golden — pass what `lisa` passed), then `box-deploy.sh --apply`, `systemctl is-active streamhost@vision`, `labctl shot vision`, `curl /os/vision` |
 
 ## Measured timeline
 
-| Milestone | Wall clock (UTC) | Minute |
-|---|---|---|
-| `wave.sh alloc` | 2026-09-13T05:13:46Z | 0 |
-| race B: Visi On desktop on the framebuffer | 2026-09-13T05:33Z | 20 |
-| replacement lead (Opus) resumes the stack | 2026-09-13T06:05Z | 51 |
-| station launcher cold-boots PC-DOS 2.00 to `C:\>` | 2026-09-13T06:29Z | 75 |
-| station launcher reaches the Visi On 1.0 splash (key disk accepted) | 2026-09-13T06:30Z | 76 |
+| Milestone                                                           | Wall clock (UTC)     | Minute |
+| ------------------------------------------------------------------- | -------------------- | ------ |
+| `wave.sh alloc`                                                     | 2026-09-13T05:13:46Z | 0      |
+| race B: Visi On desktop on the framebuffer                          | 2026-09-13T05:33Z    | 20     |
+| replacement lead (Opus) resumes the stack                           | 2026-09-13T06:05Z    | 51     |
+| station launcher cold-boots PC-DOS 2.00 to `C:\>`                   | 2026-09-13T06:29Z    | 75     |
+| station launcher reaches the Visi On 1.0 splash (key disk accepted) | 2026-09-13T06:30Z    | 76     |
 
 ## Teardown
 
-| Resource | Released | Check |
-|---|---|---|
-| race runner A's MAME (pid 1462964) | yes | `readlink /proc/1462964/exe` returns nothing |
-| race runner ptrA's container, Xvfb :195 and its `/tmp/.X11-unix/X195` symlink | yes, by the runner | runner verified by exact pid |
-| race runner ptrB's container, Xvfb :196, plus one orphaned pce-ibmpc | yes, by the runner | runner verified absent from `ps` |
-| the winning race rig — nspawn 2591998 / pce-ibmpc 2592146, Xvfb :194 | yes | `readlink /proc/2591998/exe` and `/proc/2592146/exe` both return nothing |
-| this station's test launch — nspawn 3686893 / pce-ibmpc 3687162, Xvfb :94 | yes | same check on both pids returns nothing |
-| a second run of the losing MAME theory (pid 3540488) | yes | `readlink /proc/3540488/exe` returns nothing |
-| X socket symlinks `/tmp/.X11-unix/X94` and `X194` | yes | both `No such file or directory` |
+| Resource                                                                      | Released           | Check                                                                    |
+| ----------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------ |
+| race runner A's MAME (pid 1462964)                                            | yes                | `readlink /proc/1462964/exe` returns nothing                             |
+| race runner ptrA's container, Xvfb :195 and its `/tmp/.X11-unix/X195` symlink | yes, by the runner | runner verified by exact pid                                             |
+| race runner ptrB's container, Xvfb :196, plus one orphaned pce-ibmpc          | yes, by the runner | runner verified absent from `ps`                                         |
+| the winning race rig — nspawn 2591998 / pce-ibmpc 2592146, Xvfb :194          | yes                | `readlink /proc/2591998/exe` and `/proc/2592146/exe` both return nothing |
+| this station's test launch — nspawn 3686893 / pce-ibmpc 3687162, Xvfb :94     | yes                | same check on both pids returns nothing                                  |
+| a second run of the losing MAME theory (pid 3540488)                          | yes                | `readlink /proc/3540488/exe` returns nothing                             |
+| X socket symlinks `/tmp/.X11-unix/X94` and `X194`                             | yes                | both `No such file or directory`                                         |
 
 Everything was killed by `/proc/<pid>/exe`, never `pkill -f`. Final sweep: no
 process on the box has an exe under `race/mame`, `stationtest`, `sandbox/vision`
@@ -552,6 +709,6 @@ or any `pce` path. labhost 1-minute load went 55 → 31 across the teardown.
 Kept on disk as provenance, costing nothing: `race/mame/` (including the `psi`
 and `pce-img` Linux builds), `race/pce/` (the winning rig's media, rootfs and the
 installed `hd0.pbi`), `race/ptrA/` (the no-grab patch) and `race/ptrB/` (the
-proven pty serial config). The Visi On *desktop* frame that the race rig reached
+proven pty serial config). The Visi On _desktop_ frame that the race rig reached
 is preserved at `/data/vms/sandbox/vision/frames/00-live-desktop.png` and is the
 station's hero.
