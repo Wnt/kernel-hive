@@ -4,6 +4,60 @@ Every week, newest first.
 
 Every machine named here is live at [kernelhive.madekivi.fi](https://kernelhive.madekivi.fi).
 
+<a id="week-6"></a>
+
+## Week 6 · The Lisa and seven more · 2026-09-06 09:00 – 2026-09-13 09:00
+
+### Screenshots
+
+<table>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/lisa"><img src="../spa/public/posters/lisa/desktop.webp" width="200" alt="Lisa Office System 3.1"></a><br><sub>Lisa Office System 3.1</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/apple2e"><img src="../spa/public/posters/apple2e/desktop.webp" width="200" alt="Apple //e"></a><br><sub>Apple //e</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/atari800xl"><img src="../spa/public/posters/atari800xl/desktop.webp" width="200" alt="Atari 800XL"></a><br><sub>Atari 800XL</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/samcoupe"><img src="../spa/public/posters/samcoupe/desktop.webp" width="200" alt="SAM Coupé"></a><br><sub>SAM Coupé</sub></td>
+</tr>
+<tr>
+<td><a href="https://kernelhive.madekivi.fi/os/a1000"><img src="../spa/public/posters/a1000/desktop.webp" width="200" alt="Amiga 1000"></a><br><sub>Amiga 1000</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/a3000"><img src="../spa/public/posters/a3000/desktop.webp" width="200" alt="Amiga 3000"></a><br><sub>Amiga 3000</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/medley"><img src="../spa/public/posters/medley/desktop.webp" width="200" alt="Interlisp Medley"></a><br><sub>Interlisp Medley</sub></td>
+<td><a href="https://kernelhive.madekivi.fi/os/sculpt"><img src="../spa/public/posters/sculpt/desktop.webp" width="200" alt="Genode Sculpt OS"></a><br><sub>Genode Sculpt OS</sub></td>
+</tr>
+</table>
+
+### New stations
+
+<u>[Apple Lisa](https://kernelhive.madekivi.fi/os/lisa) arrives — the machine that had the Macintosh's ideas a year early, in *1984*.</u> **Lisa Office System 3.1** hands you all seven Lisa tools, from **LisaWrite** to **LisaProject**, on a document-centric desktop where a new page is torn off a stationery pad. Four home computers follow: [Apple //e](https://kernelhive.madekivi.fi/os/apple2e), booting **ProDOS 8** to a one-key menu for **AppleWorks** and **Dazzle Draw**; [Atari 800XL](https://kernelhive.madekivi.fi/os/atari800xl), with **The Last Word**, **River Raid** and **Star Raiders** waiting on a **MyPicoDos** menu; [SAM Coupé](https://kernelhive.madekivi.fi/os/samcoupe), Britain's *1989* answer to the *ZX Spectrum*, carrying **Manic Miner**, **Mr. Pac**, **Splat!** and a period word processor on one floppy; and two Amigas, the *1985* [Amiga 1000](https://kernelhive.madekivi.fi/os/a1000) with **Workbench 1.2** and the *1990* [Amiga 3000](https://kernelhive.madekivi.fi/os/a3000) with **Workbench 2.04**. Two more have nothing emulated underneath them at all: [Interlisp Medley](https://kernelhive.madekivi.fi/os/medley), Xerox PARC's *1987* Lisp desktop where every window on screen is a live object, and [Genode Sculpt OS](https://kernelhive.madekivi.fi/os/sculpt), a microkernel desktop that draws itself as a graph of its own parts you can rewire while it runs. Ninety-seven machines now.
+
+### Major features
+
+The *1993* [SGI Indy](https://kernelhive.madekivi.fi/os/indyr4400) came out of the virtual machine it had been living inside. Its pointer used to trail a quarter of a second behind your hand and had to capture your mouse before it worked at all; now the arrow simply goes where you put it, landing on the pixel asked for, and handing the machine back to its opening desktop takes under half a second instead of restarting everything. The two Amigas run the same way, on a rebuilt **FS-UAE** that passes its picture and its mouse straight to the gallery with no screen in between. The front door changed too: the first thing a visitor meets is a machine already running, and a stranger now gets five minutes at the controls, not one, before being asked for anything. **Safari 26** joined the fast lane too, on the same low-latency path the other browsers have had for months.
+
+### Quality improvements
+
+[SAM Coupé](https://kernelhive.madekivi.fi/os/samcoupe)'s type-in demo kept arriving scrambled, because the museum was pressing keys faster than a *1989* keyboard could be scanned and whole words landed as chords; it types its **BASIC** listing out perfectly now. One [Atari 800XL](https://kernelhive.madekivi.fi/os/atari800xl) game rebooted the machine every time it was chosen, so it was dropped. Many machines now rewind to their opening scene in about four tenths of a second, where a reset used to mean restarting the emulator and waiting sixteen.
+
+### Also this week
+
+- [Apple //e](https://kernelhive.madekivi.fi/os/apple2e)'s menu is a tokenized **Applesoft** program on the boot disk — the autoexec **ProDOS** really used, doing the job it did in *1985*
+- **Dazzle Draw**, on the //e's menu, coaxed sixteen colours out of a machine built for six — the paint program people bought an *Apple II* for
+- Its mouse card is wired in for **Dazzle Draw**, but the cursor does not track yet, so the //e opens keyboard-only until that is solved
+- [Atari 800XL](https://kernelhive.madekivi.fi/os/atari800xl)'s menu is read off the joystick port rather than the keyboard — the arrow keys you already have move the highlight
+- [SAM Coupé](https://kernelhive.madekivi.fi/os/samcoupe) puts half its punctuation somewhere else than a US board, so every character of its demo listing had to be re-mapped by hand
+- The SAM's boot menu is a **SAM BASIC** program **SAMDOS** loads the moment it finds it, and a reset is back at it in under two seconds
+- [Amiga 1000](https://kernelhive.madekivi.fi/os/a1000) has no **Kickstart** in *ROM* at all: a write-once store is filled from a floppy at every power-up, exactly as the real machine did it
+- [Amiga 3000](https://kernelhive.madekivi.fi/os/a3000) shares its *Kickstart 2.04* chip dump with [Amiga UNIX](https://kernelhive.madekivi.fi/os/amix) — the same hardware, two very different systems on it
+- [Apple Lisa](https://kernelhive.madekivi.fi/os/lisa)'s boot *ROM* had to be assembled from an emulator's own romset halves: the obvious archive download turned out to be a bad dump
+- The Lisa's pixels are one and a half times taller than they are wide, and the exhibit draws them at that proportion, so the desktop is the shape it was
+- A *1984* Lisa has no networking of any kind, which makes it the rare machine here with nothing to dial — and a reset is a true cold boot
+- [Interlisp Medley](https://kernelhive.madekivi.fi/os/medley) reaches its **Exec** prompt two seconds after you open it, and runs walled off from the museum's own computer
+- [Genode Sculpt OS](https://kernelhive.madekivi.fi/os/sculpt) rests with its **+** menu open, so switching on sound or a clock visibly grows the running machine on screen
+- The [SGI Indy](https://kernelhive.madekivi.fi/os/indyr4400)'s emulator used to paint its own little status readout over the top of the screen; running directly, it is never drawn
+- Apollo's *1989* **Domain/OS** is booting behind the scenes, driven entirely by function keys — its mouse is the last thing between it and the floor
+- Two more period write-ups were checked line by line against primary sources, turning up the chip that drew text on both an early *Apple II* and the *BBC Micro*
+
+*26,726 lines of code.*
+
 <a id="week-5"></a>
 
 ## Week 5 · Nine Unixes in one night · 2026-08-30 09:00 – 2026-09-06 09:00
