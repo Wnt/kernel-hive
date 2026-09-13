@@ -58,7 +58,18 @@ NATIVE_MAME_ARGS=(-pad1 townspad -pad2 mouse)
 # The rig's exact pointer env (measured 2026-09-13):
 # MAME_CTL_PTR_TAGS=":pad2:mouse:BUTTONS,:pad2:mouse:MOUSE_X,:pad2:mouse:MOUSE_Y"
 # MAME_CTL_BTN_NAMES="P2 Button 1,P2 Button 2,"
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch)
+# The apple2e open-loop absolute chain (move-step-cap -> open-loop-gain ->
+# home-drain -> count-carry) turns MOVEA from a 1.0-gain dead reckoner into a
+# seeded open loop. fmtowns needs every link: the MSX mouse packs each poll's
+# delta into a SIGNED BYTE (bus/msx/ctrl/mouse.cpp), which is exactly the
+# narrow differencing window move-step-cap exists for (MAME_CTL_PTR_MOD=256
+# caps the pacer at 128 counts); the guest px/count is ~5.3, not 1.0, which is
+# open-loop-gain's MAME_CTL_GAIN_X/Y; the first-target home slam parks counts
+# in the device accumulator, which is home-drain; and a fixed-size pacer chunk
+# rounds the same residue every window, which is count-carry.
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch \
+  mame-ctlsock-move-step-cap.patch mame-ctlsock-open-loop-gain.patch \
+  mame-ctlsock-home-drain.patch mame-ctlsock-count-carry.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
