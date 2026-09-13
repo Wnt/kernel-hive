@@ -242,6 +242,10 @@ git merge --no-edit origin/<id>-build origin/<id>-golden origin/<id>-spa origin/
 # two-target; rn-verify.sh) -> SPA build+deploy -> re-arm every OTHER wave's
 # darklaunch.d overlay -> wave.sh land end
 scripts/dev/station-land.sh <id> --golden /data/vms/sandbox/<id>-golden/disk.qcow2
+# a golden whose `savevm` spans more than the main disk (a floppy qcow2 carrying
+# half the snapshot, e.g. oberon) needs every such device swapped in the SAME
+# stop, or `loadvm golden` fails "does not exist in one or more devices" — add
+# `--golden-extra <device-filename>=/absolute/staged/path` per extra device.
 ```
 
 `station-land.sh` prints what each step did and stops at the first failure with

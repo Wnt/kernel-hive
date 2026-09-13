@@ -44,6 +44,11 @@ Run from the repo root. These are exactly what `.github/workflows/quality.yml`
 # 1. per-language lint — only for the languages you touched
 #    TS/JS (spa/):
 ( cd spa && npx eslint . --max-warnings=0 && npx knip )
+#    TS/JS type-check — eslint parses but does not resolve types, and vitest
+#    only type-checks what a test happens to import; this is what caught the
+#    `applegs` keyboard-family union break at landing instead of at push.
+#    `-b` reuses spa/tsconfig.tsbuildinfo, so a clean tree is a fast recheck:
+( cd spa && npx tsc -b --noEmit )
 #    Rust (streamhost/):
 ( cd streamhost && cargo fmt --all --check && cargo clippy --all-targets -- -D warnings )
 #    Python (scripts/):
