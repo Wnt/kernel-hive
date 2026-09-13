@@ -223,7 +223,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   sculpt:      { osId: 'sculpt', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#4a90c2', eraLabel: '2025 · Genode Sculpt 25.04', pointerRel: true },
   lisa:        { osId: 'lisa', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#B9A27A', eraLabel: '1984 · Lisa Office System 3.1' }, // ideal: Apple Lisa 2 one-piece
   domainos:    { osId: 'domainos', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#7A6A55', eraLabel: '1989 · Apollo DN3500 — Domain/OS SR10.4.1' },
-  fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC3D33', eraLabel: '1995 · Towns OS V2.1 L51 — FM TOWNS (1989)' },
+  fmtowns:     { osId: 'fmtowns', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#CC3D33', eraLabel: '1995 · Towns OS V2.1 L51 — FM TOWNS (1989)', pointerRel: false },
   oberon:      { osId: 'oberon', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#3d6fb4', eraLabel: '1999 · ETH Native Oberon', pointerRel: false },
   magiccap:    { osId: 'magiccap', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3a7fc9', eraLabel: '1995 · Magic Cap for Windows (pre-release)', bootVideo: '/boot/win98se/boot.mp4' },
   perq:        { osId: 'perq', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#7FA8C9', eraLabel: '1986 · POS G.7 (Three Rivers PERQ 1, portrait display)' }, // ideal: Apple Lisa 2 one-piece

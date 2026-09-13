@@ -57,16 +57,16 @@
     "touch": false,
     "pointer": {
       "transport": "abs",
-      "method": "mame-ioport",
+      "backend": "mamesock",
+      "method": "mame-guestram-abswrite",
       "absolute": true,
       "present": true,
-      "device": "ctlsock-msx-mouse",
+      "device": "msx-mouse-hle",
       "scale": 1.0,
       "offset": [
         0,
         0
-      ],
-      "backend": "mamesock"
+      ]
     },
     "slot": 196
   },
@@ -135,7 +135,8 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#CC3D33",
-    "eraLabel": "1995 \u00b7 Towns OS V2.1 L51 \u2014 FM TOWNS (1989)"
+    "eraLabel": "1995 \u00b7 Towns OS V2.1 L51 \u2014 FM TOWNS (1989)",
+    "pointerRel": false
   },
   "museum": {
     "id": "fmtowns",
@@ -176,7 +177,7 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "PROVEN 2026-09-13 -- Towns mouse on -pad2 (MSX-protocol mouse, genuinely relative: mame-ctlsock-ptr-tags.patch + type-based Mouse-X/Y binding fix binds :pad2:mouse:BUTTONS/MOUSE_X/MOUSE_Y, ctlsock setup reads btns=1 axes=1 sig=1ebe131a entries=3330 unchanged from pre-patch (golden not orphaned). Motion measured ~6 px/count both axes, positive sign, chunked under 127 counts/MOVE (SH_REL_MAX_STEP=100). Window activation click proven 8/8 (>31000 changed px, fb-react.py masked diff) and drag proven (323 px changed, 191x79 track); a single click on a desktop icon draws nothing by design in this shell. See docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13 #2\".",
+    "mouse": "PROVEN 2026-09-13 absolute, write route (docs/lab/FMTOWNS-WAVE.md SS Pointer, \"Pointer stream 2026-09-13 #5\"): Towns OS keeps the guest cursor position in THREE mirrored 16-bit little-endian words 2 bytes apart (order=hv) -- 0x11623c is the AUTHORITATIVE position (poke it and the driver propagates it and repaints), 0x0a2034 is a copy the driver overwrites on the next poll, and 0x116240 is the ERASE position the next poll restores before drawing -- writing anything but 0x11623c alone leaves a trail of stale arrows on screen. Towns OS only redraws on a NON-ZERO poll delta, so the module writes the position pre-biased by a 1-count nudge and then issues that one count (MAME_CTL_ABS_RAM=cpu=maincpu,pts=0x11623c,order=hv,nudge=1); no MAME_CTL_GAIN_X/Y -- must never be set on this station, the acceleration curve this route bypasses. The 640x480 Towns raster is letterboxed 931x702+61+48 on the published surface (MAME_CTL_ABS_RECT=61,48,931,702, MAME_CTL_ABS_GEOM=640x480). Five targets (80,70) (960,70) (80,720) (960,720) (512,384), TWO laps, arrow re-parked between every reading: the guest's own cursor word is EXACT on all ten (0 residual); worst locator error 3 px on (80,70) in both laps identically, which is the TownsMENU bar hiding the arrow tip, not pointer error. Click/drag/window-activation proven separately in \"Pointer stream 2026-09-13 #2\" (see reset.fixture / docs/lab/FMTOWNS-WAVE.md); a plain click on a desktop icon draws nothing by TownsMENU's own design.",
     "keyboard": "PROVEN \u2014 real ctlsock KEY path through the generated fmtowns.keymap (79/146 fields matched); Ctrl+Esc opens the guest's own Task List dialog, pressed again opens a different dialog, proving live input (docs/lab/FMTOWNS-WAVE.md Proofs)",
     "fixture": "PROVEN \u2014 Towns OS V2.1 L51 TownsMENU desktop booted cold from the System Software CD, golden savestate captured and restore-proven pixel-identical (docs/lab/FMTOWNS-WAVE.md Proofs)"
   },
