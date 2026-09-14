@@ -195,9 +195,15 @@ L2 and never touches these chains — the retronet reaching the retronet.
   twice on the framebuffer, byte-copy backup kept as `os2.qcow2.cpg-bak-*`).
   Tap-native + DHCP + MAC `52:54:00:52:4e:13`, captured with WebExplorer open on
   `http://www.xerox.com/` and warpd live. `labctl reset os2warp` = `loadvm golden`.
-  **Home page changed 2026-09-14** from `http://spacejam.com/index.html`: that
-  corpus host is missing its nav bitmap `img/nf-planets.gif`, so a visitor
-  landed on a near-black page. `www.xerox.com` was chosen after a corpus
+  **Home page changed 2026-09-14** from `http://spacejam.com/index.html`. The
+  reason first given for the move was wrong and is corrected here: spacejam's
+  nav bitmap `img/nf-planets.gif` IS mirrored and does render. Two real reasons
+  stand. Its navigation is a dead end — `bin/index.map`, the server-side imagemap
+  behind the planet map, is 180 bytes of the 1996 server's own
+  `<TITLE>Imagemap Error</TITLE>`, captured by the crawler, so every click lands
+  on an error page. And the whole site is 20 files behind a splash carrying three
+  bitmaps, which is a thin thing to open a walk-in visitor on.
+  `www.xerox.com` was chosen after a corpus
   asset-completeness scan (809 hosts, every `<img src>`/`background=`/`input
   type=image`/CSS `url()`) came back 45/45 present, plain tables, no JS, no
   frames — the best-scoring host WebExplorer (no JS, no frames) can render.
@@ -295,7 +301,10 @@ ssh lab 'bash /data/vms/sandbox/.../repo/scripts/dev/os2-retronet-stack.sh show 
   failed install left. Harmless — WebExplorer's `[viewers]` handles the corpus's
   `text/html`, GIF and JPEG internally — but a richer corpus type would need them.
 - `spacejam.com` was the home page until 2026-09-14; it is **no longer used**
-  because its nav bitmap `img/nf-planets.gif` is missing from the corpus
-  (near-black landing page). The home page is now `http://www.xerox.com/`, the
+  because its navigation is a dead end (the mirrored `bin/index.map` is the era
+  server's own "Imagemap Error" page, so every click on the planet map fails) and
+  because three bitmaps is a thin front door. It is NOT missing assets — an
+  earlier claim to that effect was a misread directory listing. The home page is
+  now `http://www.xerox.com/`, the
   top scorer (45/45 bitmaps present) of a full corpus asset-completeness scan —
   see "Golden lineage" above.

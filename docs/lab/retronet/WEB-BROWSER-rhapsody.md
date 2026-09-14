@@ -8,8 +8,11 @@ gateway's **`:80` origin door with no proxy**. Framebuffer proof: **Wired
 News**, images and all, at `http://www.wired.com/`.
 
 The home page was originally the 1996 Space Jam page
-(`http://spacejam.com/index.cgi`); a 2026-09-14 corpus-completeness audit
-moved every OmniWeb-capable station off pages with missing assets, and
+(`http://spacejam.com/index.cgi`). That page renders fine — its assets are all
+mirrored — but its navigation is a dead end: the captured `bin/index.map` is the
+1996 server's own "Imagemap Error" text, so every click on the planet map fails,
+and three bitmaps is a thin front door for a walk-in visitor. A 2026-09-14
+corpus-completeness audit (`scripts/retronet/web/corpus_completeness.py`) then
 ranked candidates for rhapsody as `www.apple.com` (14/14 bitmaps, imagemap
 nav, thematically exact for a 1998 Apple OS) ahead of `www.wired.com`
 (29/30, richer). **apple.com was tried first and rendered perfectly**, but
