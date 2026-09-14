@@ -88,6 +88,32 @@ OPEN_PATHS = frozenset(
         "/walkin/signup",
         "/walkin/signup/begin",
         "/walkin/signup/finish",
+        # The museum's own lineup, and the boot-replay index that annotates it.
+        # Operator's call, 2026-09-14: "just publish the full json, its contents
+        # is not a secret."
+        #
+        # It is not. `gallery-manifest.json` is stamped PUBLIC DATA ONLY by its
+        # own generator (`stations-registry.py generate`) and is rendered from
+        # `registry/stations/*.json`, every row of which is committed to a
+        # public GitHub repo. What it carries is placards: names, years,
+        # lineage, blurbs, era software. The one field that looks like an
+        # address, `signalEndpoint`, is the PATH `/signal/<id>.json` — and that
+        # document, which holds the cert hash and the ticket material, stays
+        # gated. A path is not a key.
+        #
+        # Gating it bought nothing and cost something real: an anonymous
+        # visitor's landing page fetched it, was refused, and recovered through
+        # `/walkin/manifest.json` — so every stranger's first load carried a red
+        # 401 in the console for a refusal that was expected, and the museum
+        # kept two documents answering "what is in the collection".
+        #
+        # Soft-hidden stations (`listed: false` — the dark-launched ones) are
+        # still not ON DISPLAY: they carry that flag in the manifest and the SPA
+        # filters them out of the grid client-side, exactly as it always has.
+        # They were never secret either — a soft hide is "not in the lineup yet",
+        # and such a station must stay resolvable at its own URL by design.
+        "/gallery-manifest.json",
+        "/boot/index.json",
     }
 )
 # /ui/ is the sign-in and people-management page bundle. It is open in full,
@@ -113,7 +139,11 @@ OPEN_PATHS = frozenset(
 # ever produced. It is a public, unmodified third-party script (nothing of
 # ours, nothing secret) that is already downloadable straight from IBM, so
 # publishing it here leaks nothing that gating it would have protected.
-OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/")
+# /boot/ holds the boot-replay videos the index above names, plus their posters
+# and thumbnail sprites. Publishing the index while gating the media it points
+# at would list films nobody may watch; these are recordings of a guest booting,
+# the same picture the landing page already streams live to strangers.
+OPEN_PREFIXES = ("/auth/", "/ui/", "/assets/", "/posters/", "/vendor/", "/boot/")
 
 # Refused outright on this listener: the command ENQUEUE. Nothing a browser can
 # reach may issue a command to the server side. `clientcmd.sh` posts to

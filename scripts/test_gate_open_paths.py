@@ -39,11 +39,48 @@ class TestVendorIsOpen(unittest.TestCase):
         self.assertTrue(gate.walkin_allows("/vendor/instana-eum.min.js"))
 
 
+class TestTheLineupIsPublic(unittest.TestCase):
+    """Operator's call 2026-09-14: the museum's own catalogue is not a secret.
+
+    It is generated from registry/stations/*.json, every row of which is in a
+    public repo, and its generator stamps it PUBLIC DATA ONLY. Gating it only
+    ever produced a 401 in every stranger's console for a refusal the page
+    expected and recovered from.
+    """
+
+    def test_the_lineup_and_its_boot_index_are_open(self):
+        self.assertTrue(gate.is_open("/gallery-manifest.json"))
+        self.assertTrue(gate.is_open("/boot/index.json"))
+
+    def test_the_boot_replay_media_is_open_too(self):
+        # Publishing an index of films nobody may watch would be the worse half
+        # of a fix: these are recordings of a guest booting, the same picture
+        # the landing page already streams live to a stranger.
+        self.assertTrue(gate.is_open("/boot/haiku/boot.mp4"))
+        self.assertTrue(gate.is_open("/boot/haiku/poster.jpg"))
+
+    def test_the_signalling_document_it_names_stays_gated(self):
+        # The manifest carries the PATH /signal/<id>.json. That document holds
+        # the cert hash and ticket material; a path is not a key.
+        self.assertFalse(gate.is_open("/signal/freedos.json"))
+        self.assertFalse(gate.is_open("/signal/os2warp.json"))
+
+    def test_the_operator_surfaces_stay_gated(self):
+        for path in ("/tiles.json", "/fleet", "/admin", "/clientcmd"):
+            with self.subTest(path=path):
+                self.assertFalse(gate.is_open(path))
+
+
 class TestTheGateStillBites(unittest.TestCase):
     """Prove the fix did not widen the fence beyond /vendor/."""
 
     def test_a_genuinely_gated_surface_is_still_gated(self):
-        for path in ("/fleet", "/fleet-table.json", "/admin", "/clientcmd", "/gallery-manifest.json"):
+        # `/gallery-manifest.json` was in this list until 2026-09-14 and is
+        # deliberately no longer: the operator published the lineup, which is
+        # placard data out of a public repo. What is left here is the OPERATOR's
+        # surface — the fleet's internals, the admin page, the command door —
+        # and none of that is exhibition data.
+        for path in ("/fleet", "/fleet-table.json", "/admin", "/clientcmd", "/tiles.json"):
             self.assertFalse(gate.is_open(path), path)
 
     def test_the_command_enqueue_is_still_blocked_outright(self):

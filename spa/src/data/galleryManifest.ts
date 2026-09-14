@@ -116,15 +116,16 @@ export function validateGalleryManifest(value: unknown): GalleryManifest | null 
 //
 // SILENT AT THIS LEVEL, ON PURPOSE (changed from an unconditional
 // `console.error` here). This function cannot tell "genuinely broken" from
-// "refused a role this gate was never going to serve" — an anonymous visitor's
-// `/gallery-manifest.json` 401s on the public listener EVERY time, by design
-// (useManifest.ts's own comment on the LAN/public ambiguity), and it always
-// recovers through the walk-in projection. Logging here reported that
-// recovery as a red error on every anonymous landing, which is a lie in the
-// console: it is an expected refusal this module hands back as an empty
-// lineup, not a fault. The one caller (useManifest.ts) is where the OUTCOME —
-// recovered, or genuinely empty — is known, and that is where the loud log
-// belongs now.
+// "refused", and the one caller (useManifest.ts) is where the OUTCOME —
+// recovered through the walk-in door, or genuinely empty — is known, so that is
+// where the loud log belongs.
+//
+// The refusal this used to be written around is GONE as of 2026-09-14:
+// `/gallery-manifest.json` is open (gate.py OPEN_PATHS — it is public data,
+// stamped so by its own generator and rendered from a public repo), so an
+// anonymous visitor now reads the lineup on the first ask instead of being
+// refused and recovering through the projection. The fallback below stays as a
+// genuine fallback rather than the ordinary path.
 export async function loadGalleryManifest(fetcher: FetchLike = fetch): Promise<RuntimeVMManifestEntry[]> {
   try {
     // RUNTIME_BASE is '/' live and '/staging/<session>/' for a staged UI, whose

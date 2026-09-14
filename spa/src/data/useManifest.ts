@@ -121,17 +121,20 @@ export function useManifest() {
       }
       // Nothing came back, so ask through the walk-in door before giving up.
       //
-      // `walkinShape` cannot answer this one from the role: a STRANGER is
-      // `role: 'anon'` on both planes, and the two planes disagree about what
-      // that means. On the public listener `/gallery-manifest.json` is gated
-      // and 401s — the landing page is open to strangers now, so this is the
-      // ordinary case, not an edge one. On the unauthenticated LAN origin the
-      // very same role reads the fleet manifest perfectly well. Testing the
-      // role would fix the museum's front door and empty the LAN grid.
+      // This used to be the ORDINARY path for a stranger, because
+      // `/gallery-manifest.json` was gated and a stranger is `role: 'anon'` on
+      // both planes — the public listener refused them while the LAN listener
+      // served the same role happily, so the role could not decide it and the
+      // refusal itself was used as the signal. Since 2026-09-14 the manifest is
+      // public (gate.py: it is placard data, rendered from a public repo), so
+      // the ask above now succeeds for everybody and this is a real fallback
+      // again: the museum's lineup failing to load at all.
       //
-      // Refusal is the signal, so we let the fetch answer instead: an empty
-      // lineup falls through to `/walkin/manifest.json`, the server's own
-      // allowlist projection, which is public and carries every exhibition row.
+      // `/walkin/manifest.json` still exists and is still worth asking. It is
+      // no longer a second CATALOGUE — it is the walk-in's own clone: the same
+      // exhibition rows, plus `signalEndpoint`/`transport`/`clone` for the one
+      // station this visitor holds, which is per-session state no public file
+      // can carry.
       const exhibits = await loadWalkinExhibits();
       if (cancelled) return;
       if (exhibits.length === 0) {
