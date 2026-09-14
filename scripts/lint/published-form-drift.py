@@ -57,24 +57,33 @@ the pointer being content-addressed, removes the class.
 
     python3 scripts/lint/published-form-drift.py [--fork PATH] [--offline]
 
-KNOWN STATE (2026-08-30), so a reader does not re-derive it
+KNOWN STATE (2026-09-14), so a reader does not re-derive it
 -----------------------------------------------------------
-* This check REPORTS REAL DRIFT right now and that is expected, not a bug to
-  chase: the published branch is ahead of both the submodule gitlink and
-  `rhapsody.qemuBuild.forkCommit`. Reconciling those pointers belongs to the
-  deploy stream, as part of a fork reconciliation currently blocked on a device
-  fix. Leave them alone; the report is doing its job by naming them.
+* This check is CLEAN, and a DRIFT line from it is now news. The 2026-08-30
+  state it used to warn about -- the published branch ahead of the gitlink, left
+  alone on purpose -- was reconciled on 2026-09-14, in the other direction from
+  the one anyone expected: the RECIPE had moved and the fork had not. `oberon`
+  and `os213` each added a `layout=` to `0007` on 2026-09-13, four in all plus a
+  table-driven rewrite of the decode, and neither bring-up pushed the fork. The
+  fix was to publish the series' tree (`Wnt/qemu@kernel-hive` 72825889) and bump
+  the gitlink to it, proven by building m68k and i386 and realizing the exact
+  `-device kh-ramabs` lines macos753 and rhapsody ship.
+* DECIDE WHICH SIDE MOVED BEFORE RECONCILING. Both directions have now
+  happened, and this report cannot tell them apart -- it says the two disagree,
+  not who changed. `git log` on the patch file and `git log` on the fork branch
+  do, and regenerating whichever side is cheaper to regenerate drops whatever
+  the other side gained.
+* Each station's `qemuBuild.forkCommit` stays at the commit its DEPLOYED binary
+  was built from (c5449c80 for all eight) and is deliberately NOT bumped with
+  the gitlink: it is provenance for an artifact on disk, beside a
+  `binarySha256` measured from that same artifact. Ancestry is all this check
+  asks of it, and c5449c80 is still an ancestor.
 * WHERE THE CONTAINMENT LEG CAN ACTUALLY DECIDE (measured, all three
   checkouts). The CT950 checkout `/home/wnt/kernel-hive` HAS the submodule
   initialised, so the leg decides there. The box checkout `/data/kernel-hive`
   does NOT: that path holds an unpacked tree with no `.git`. And a `wt.sh`
   worktree inherits the box clone as its superproject, so the leg SKIPs in a
   worktree — pass `--fork` or `KH_QEMU_FORK` there.
-* This check REPORTS REAL DRIFT right now and that is expected, not a bug to
-  chase: the published branch is ahead of the submodule gitlink. Reconciling
-  the fork pointers belongs to the deploy stream, inside a fork reconciliation
-  currently blocked on a device fix. Leave them alone; the report is doing its
-  job by naming them.
 """
 
 from __future__ import annotations

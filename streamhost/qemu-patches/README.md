@@ -34,7 +34,8 @@ independently applicable — worse than naming what the thing actually is:
 
 * **`kh-ramabs` (`0007`) is ONE shared device patch** carrying per-guest
   *layouts* (`point16le`, `macpoint16be`, `point32le`, `point32le_yx`,
-  `point16le_yup`, `point16le_yup_yx`) and *publish modes* (`crsrnew`). Adding a guest to it is not a new patch.
+  `point16le_yup`, `point16le_yup_yx`, `point16le_yx`) and *publish modes*
+  (`crsrnew`). Adding a guest to it is not a new patch.
 * **`0008` (artist) is a genuinely independent per-station patch** — a different
   file (`hw/display/artist.c`), a different device, no shared state.
 
@@ -75,12 +76,24 @@ commit counts or subjects.
 Never edit the fork's checked-out tree directly and call that the source of
 truth — the patch files are.
 
+**Steps 2 and 3 are part of editing a patch, not a follow-up.** They have now
+been skipped once in each direction. On 2026-08-30 the FORK moved under the
+series: one agent pushed the fork and a second regenerated a patch and found the
+fork had moved underneath. On 2026-09-13 the SERIES moved under the fork: the
+`oberon` and `os213` bring-ups each added a `layout=` to `0007` — four layouts
+and a table-driven rewrite of the decode — and landed them in the patch file
+only, so `Wnt/qemu@kernel-hive` stayed at the 2026-08-30 tree while the recipe
+grew. Reconciled 2026-09-14 by pushing the series' tree as `72825889` and
+bumping the gitlink; nothing was lost, because the diff proved the fork carried
+no content the patch lacked. **Decide which side moved from the git history on
+both sides before you reconcile** — regenerating whichever side is easier to
+regenerate silently drops whatever the other side actually gained.
+
 **Two representations of one artifact drift, and this pair drifts INVISIBLY.**
-On 2026-08-30 one agent pushed the fork from the series and a second regenerated
-a patch and found the fork had moved underneath. `git apply` of a file-creating
-patch fails only once the file exists, so there was no symptom at all until a
-build attempt. Before you regenerate a patch, push the fork, or trust a recorded
-`forkCommit`, run the check that answers it without building:
+`git apply` of a file-creating patch fails only once the file exists, so in both
+cases there was no symptom at all until a build attempt. Before you regenerate a
+patch, push the fork, or trust a recorded `forkCommit`, run the check that
+answers it without building:
 
 ```sh
 python3 scripts/lint/published-form-drift.py          # ls-remote + reverse-apply
