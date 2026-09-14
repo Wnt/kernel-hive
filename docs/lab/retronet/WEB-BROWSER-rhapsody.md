@@ -1,12 +1,26 @@
 # rhapsody's web browser — OmniWeb 3.0, as-built
 
-**Status: PROVEN on a bring-up rig, not yet in the golden.** `rhapsody` (Apple
-Rhapsody 5.1 DR2 for Intel, 1998) now has a real graphical web browser —
-**OmniWeb 3.0 final (July 1999)** — installed into `/Local/Applications`,
-launchable from an icon in the open `guest` home window, and rendering the
-local web corpus through the retronet gateway's **`:80` origin door with no
-proxy**. Framebuffer proof: the 1996 Space Jam page, images and all, at
-`http://spacejam.com/index.cgi`.
+**Status: LIVE in the golden.** `rhapsody` (Apple Rhapsody 5.1 DR2 for Intel,
+1998) has a real graphical web browser — **OmniWeb 3.0 final (July 1999)** —
+installed into `/Local/Applications`, launchable from an icon in the open
+`guest` home window, and rendering the local web corpus through the retronet
+gateway's **`:80` origin door with no proxy**. Framebuffer proof: **Wired
+News**, images and all, at `http://www.wired.com/`.
+
+The home page was originally the 1996 Space Jam page
+(`http://spacejam.com/index.cgi`); a 2026-09-14 corpus-completeness audit
+moved every OmniWeb-capable station off pages with missing assets, and
+ranked candidates for rhapsody as `www.apple.com` (14/14 bitmaps, imagemap
+nav, thematically exact for a 1998 Apple OS) ahead of `www.wired.com`
+(29/30, richer). **apple.com was tried first and rendered perfectly**, but
+its homepage's "Hot News Headlines" ticker (`home/images/ticker.gif`) is a
+looping ~37-frame animated GIF, so the framebuffer never settles —
+`checkpoint-guard recapture` refuses to bake a golden it cannot prove is
+idle-stable (`docs/lab/checkpoint-guard.md`'s idle-framebuffer SSIM gate).
+`wired.com`'s homepage has no animation (verified against every `.gif` it
+references), settles byte-identical across repeat screendumps, and is what
+the golden and the walk-in seed actually carry. See
+`rhapsody-install-browser.sh`'s `HOMEPAGE` default.
 
 The network half of this station is [`WEB-STATION-rhapsody.md`](WEB-STATION-rhapsody.md);
 the guest's own history is [`docs/guests/rhapsody.md`](../../guests/rhapsody.md).
@@ -152,10 +166,11 @@ a serial login is not in the console session's Mach bootstrap namespace.
 OmniWeb's `OWF` framework implements `hostHeaderStringForURL:` — it sends a
 `Host:` header — so the gateway's origin door can select the corpus site from
 the request the way the Windows stations' browsers do. Confirmed end to end on
-the framebuffer: with only `HomePage = http://spacejam.com/index.html` set and
-no proxy anywhere, OmniWeb resolved `spacejam.com` through the wildcard DNS,
-followed the redirect to `/index.cgi` and rendered the 1996 page with its
-images.
+the framebuffer: with only `HomePage` set and no proxy anywhere, OmniWeb
+resolves the configured host through the wildcard DNS and renders it. First
+proven against `http://spacejam.com/index.html` (redirected to `/index.cgi`,
+1996 page with its images); the mechanism is address-agnostic and now serves
+`http://www.wired.com/` the same way (see the corpus-completeness note above).
 
 This is the **opposite** of the os2warp result
 ([`WEB-STATION-os2warp.md`](WEB-STATION-os2warp.md)), where IBM WebExplorer 1.2
@@ -187,7 +202,11 @@ re-running it is a no-op that still verifies: the extraction is skipped when the
 inner executable is already in place, and the copy is skipped when the home
 bundle is already a real directory. `--homepage` is the parameter that carries
 the corpus address, so Stream B's addressing plugs straight in; it defaults to
-the fleet landmark `http://spacejam.com/index.html`.
+**`http://www.wired.com/`** (was `http://spacejam.com/index.html` until
+2026-09-14). `www.apple.com` scored higher on the corpus-completeness audit
+(14/14 vs. 29/30) and was tried first, but its animated ticker GIF fails
+`checkpoint-guard`'s idle-stability gate — see the note at the top of this
+doc — so `www.wired.com` is what actually ships.
 
 The checks cover the payload device and its gzip magic, both executables, the
 **i386 slice**, the bundled licence, the **absence of the beta expiry string**,
@@ -213,19 +232,57 @@ a symlink*, its ownership, all three preference keys, and free disk space.
   reports `Mach-O executable i386` for the inner binary.
 - It launches from the home-window icon and renders **`http://spacejam.com`
   from the retronet corpus, with images**, through the `:80` origin door with no
-  proxy. This is the framebuffer proof.
-- The GIF plugin works (the Space Jam page is entirely GIFs).
+  proxy. This was the original framebuffer proof; the golden's home page is
+  now `http://www.wired.com/` (2026-09-14), applied directly to the live
+  station and proven on its own framebuffer (below), then baked with
+  `checkpoint-guard recapture rhapsody` and mirrored into the walk-in seed.
+- The GIF plugin works (the Space Jam page is entirely GIFs; `www.apple.com`
+  and `www.wired.com` both render their GIF/JPEG imagemap nav and photos
+  identically — apple.com was the one animated GIF that mattered, see above).
 - Pointer dead reckoning at **0.15 s pacing** lands clicks on the exact pixel;
   at 0.05 s the DR2 PS/2 driver sign-flips and the cursor bolts to a corner.
   Anything driving this desktop by pointer must pace at ~150 ms, and should
   prefer `send-key ret` for modal panels with a default button.
 
+**2026-09-14, changing the live station's home page — two things worth
+recording for the next agent who touches this station's scene:**
+
+- **`ptr.sock` (kh-ramabs) is single-client.** While `streamhost@rhapsody` is
+  running, its daemon holds the only connection to `ptr.sock`; a second
+  connect() call is accepted by the kernel but never gets a `HELLO` — it just
+  hangs. There is no supported way to drive the live pointer as an
+  unprivileged agent through the public gallery either: `/auth/invite/issue`
+  hard-refuses any role but `viewer` (`scripts/serve/auth/operator_routes.py`),
+  and a `viewer` session gets the live video with no input rights. The route
+  that actually works, matching this doc's own "no defaults path to an
+  autolaunched app with an open window": `systemctl stop streamhost@rhapsody`
+  (kills daemon + guest cleanly), then run `qemu-streamhost.sh` **by hand** —
+  it recreates the exact same `qmp.sock`/`ptr.sock`/`serial.sock`/pidfile
+  under the station dir, so it is now the sole client, curate the scene over
+  those sockets, `checkpoint-guard recapture rhapsody`, then
+  `systemctl start streamhost@rhapsody` — `ensure-station-qemu.sh` finds the
+  still-running qemu and only starts the daemon, which reattaches with no
+  second boot.
+- **`checkpoint-guard rollback` cannot resolve this station's disk path while
+  it is stopped.** Its stopped-guest fallback statically scrapes
+  `-drive file=...` out of the launcher, and `qemu-streamhost.sh` writes that
+  line as `-drive file=$D/rhapsody-golden.qcow2,...` — a shell variable the
+  static parse does not expand, so `rollback` refuses with *"launcher
+  references disk '$D/rhapsody-golden.qcow2', which does not exist"*. Only
+  matters if a `recapture` run is abandoned and needs undoing with the guest
+  down; while the guest is running, `recapture`/`status` ask the live QMP
+  (`query-block`) instead and never hit this path. Workaround used here: since
+  `golden` itself is never touched until the final promote (guaranteed by the
+  tool), a stuck `captured`-state journal can be cleared by hand once the
+  backup's sha256 is confirmed against the still-live `golden` — no rollback
+  needed. Not fixed in this pass; a real fix is teaching the launcher-scrape
+  fallback to resolve `$D`-style vars, or having `qemu-streamhost.sh` spell
+  the path literally.
+
 **Not proven / left open:**
 
-- Nothing was done to the **live station** and no golden was baked. The
-  coordinator owns that.
-- HTTPS, CSS, frames beyond the corpus, and any page heavier than the 1996
-  corpus are untested. OmniWeb 3.0 is an IE4/Netscape4-era engine.
+- HTTPS, CSS, frames beyond the corpus, and any page heavier than the corpus
+  are untested. OmniWeb 3.0 is an IE4/Netscape4-era engine.
 - Audio, downloads, Gopher plugin, and the mailto plugin are untested.
 - The Dock remains un-scripted (see above); the exhibit relies on the home-window
   icon and the baked-open window instead.
