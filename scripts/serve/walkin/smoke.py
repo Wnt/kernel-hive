@@ -85,6 +85,29 @@ def wreck(clone, frames: Path) -> Path:
     return clone.screenshot(frames / "3-wrecked.ppm")
 
 
+def live_tap_names(spec) -> list:
+    """The tap names this smoke could pick that ALREADY exist on the box.
+
+    `WALKIN_ROOT` namespaces the clone tree, and the pool index is chosen from
+    the members found under it — so a smoke run in an empty sandbox root always
+    starts at index 1. `overrides.netdev.ifnamePattern` then renders that index
+    into `wi-<station>-1`, and an interface name is ONE GLOBAL NAMESPACE shared
+    with the live pool. Measured 2026-09-14: rhapsody's pool is numbered 2..9 so
+    a sandbox build took `wi-rhapsody-1` harmlessly, but win311's is numbered
+    1..8, where the very same run would have wanted a LIVE visitor's interface.
+
+    So ask the kernel, which is the only thing that knows, exactly as
+    `claims.claim_slot` asks it about `wibr<slot>`: the ledger and the sandbox
+    root can both be empty while the interface is real.
+    """
+    names = []
+    for index in range(1, spec.pool_size + 1):
+        tap = naming.tap_name(spec.station, index, spec.netdev.ifname_pattern)
+        if Path("/sys/class/net", tap).exists():
+            names.append(tap)
+    return names
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--spec", required=True, help="a walk-in station JSON (a sandbox fixture is fine)")
@@ -101,6 +124,19 @@ def main(argv=None) -> int:
         return 2
 
     spec = load_spec(Path(args.spec))
+    taken = live_tap_names(spec)
+    if taken:
+        # Rule 7, in the one place WALKIN_ROOT does not reach: a tap name is a
+        # shared thing in a single global namespace. Fail loudly rather than
+        # build onto a name a live visitor's cell already answers to.
+        _say(
+            "REFUSED",
+            f"{', '.join(taken)} already exist in the kernel — the live {spec.station} "
+            "pool holds an index this smoke could pick. WALKIN_ROOT namespaces the "
+            "TREE, not the TAP. Smoke a station whose live pool is down, or a "
+            "sandbox spec with its own ifnamePattern.",
+        )
+        return 2
     frames = naming.WALKIN_ROOT / FRAME_DIR_NAME
     frames.mkdir(parents=True, exist_ok=True)
     fleet_before = station_pids()
