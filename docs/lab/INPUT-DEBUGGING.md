@@ -9,6 +9,88 @@ Input bugs in the gallery are reported as "it feels wrong", and the cause is
 almost never where it feels like it is. This is the order to look, the tools
 that answer each question, and the traps that have cost real sessions.
 
+## Driving a live station without stopping it
+
+**You do not have to take an exhibit off the air to drive it.** Every absolute
+pointer backend — `ramabs`, `mgactl`, `artistctl` — reaches its guest over
+`ptr.sock`, a QEMU *chardev* owned by the guest's own device and single-client
+by design; each launcher says so in a comment, "SINGLE INJECTOR (BINDING)". The
+running daemon is that one client, and a second `connect()` does not fail, it
+**hangs with no HELLO**. Until 2026-09-14 the only way past that was
+`systemctl stop streamhost@<x>`, re-running `qemu-streamhost.sh` by hand on the
+same sockets, driving, recapturing, and starting the unit again — which is what
+every scene change, pointer measurement and input-debugging session paid, with
+the station dark throughout and a hand-rolled launcher running beside a live
+golden.
+
+The fix was not to hand out a second connection to the guest. **The daemon
+already multiplexes** — N browser sessions and the Safari WebRTC fallback all
+feed one `input::handle` pipeline and one `InputRouter`, which serialises onto
+that single `ptr.sock` connection. So an agent becomes one more client of the
+pipeline, never of the socket:
+
+```bash
+ssh lab 'python3 /data/vms/sandbox/<x>/repo/scripts/dev/station-drive.py os213 \
+         --reason "curate the scene" --ttl 300 -- \
+         move 400 300 click 400 300 key down type "dir"'
+ssh lab '… station-drive.py os213 --who'     # who is driving, since when, until when
+```
+
+Because your records travel the browser's own path, everything the browser gets
+applies to you too: the daemon-wide abs→rel bridge, `cseq` ordering, the carried
+click position, per-tile key pacing, the button allowlist, the telemetry below.
+A pointer you measure this way is the pointer a visitor has. That is the point
+of the shape, and it is also its limit — see "what it does not cover".
+
+**The drive lease.** Nothing is injected until the daemon grants one, and it is
+deliberately unlike a wake lease:
+
+- **It names a holder.** `--holder`, defaulting to `$KH_SESSION`; a request with
+  no holder is refused. `--reason` is recorded with it.
+- **One at a time.** A second driver is refused and *told who holds it and until
+  when*, rather than quietly sharing the pointer — rule 8, "it exists" is not
+  "it is mine".
+- **It expires on its own**, clamped to 15 minutes. The daemon enforces the
+  deadline and drops the client at it, so an agent that dies mid-drive does not
+  leave a live exhibit held.
+- **It is auditable while held**: `[drive] GRANTED/REFUSED/RELEASED/EXPIRED`
+  lines in the station's journal, and a `drive-<tile>.lease.json` beside the
+  socket that `--who` reads.
+
+**It does not repeat the WakeLease trap.** `guest_wake.WakeLease` keeps a guest
+awake by *adding a QMP client*, so an observer can itself cause the stall it is
+watching for (below). A drive lease adds no client to anything: it holds the
+daemon's own `idle::SessionGuard` — the same bookkeeping a browser session holds
+— so the guest stays awake for the drive by being **counted**, not by being
+poked.
+
+**The fence is the filesystem, and the public plane is untouched.** The ingress
+is a mode-0600 socket in a 0700 root-owned runtime directory: reachable only by
+root on labhost, which is `ssh lab`, the one door. Root there could already stop
+the unit and run the launcher by hand — **the capability is one root already
+had; what is new is that using it no longer takes the station down.** Nothing in
+`gate.py`, the invite roles, the anonymous budget or the walk-in fences changes,
+and no visitor path reaches it. `SH_DRIVE_INGRESS=0` switches it off per
+station.
+
+**The lease fences other DRIVERS, not visitors.** It is exclusive against a
+second agent, and deliberately not against the public: a visitor already on
+`/os/<id>` keeps their session, and both of you then feed the same pipeline and
+the same guest cursor. So you will fight each other for the pointer, and the
+station's own telemetry cannot tell your records from theirs. Check
+`labctl health <station>` for `Client sessions` before you take a lease on a
+listed exhibit; a station with a visitor on it is one to leave alone, exactly as
+it was before this existed.
+
+**What it does not cover.** It drives a guest; it does not reconfigure one.
+Anything that changes the **device set** or the launcher's arguments still needs
+the stop-and-relaunch route, because `loadvm golden` requires the same device
+set (rule 6). It is not a checkpoint tool either: driving a live station leaves
+the scene changed until the next reset, and `checkpoint-guard recapture` is
+still the only way to make a change survive one. And it proves nothing by
+itself — the exit code says what was *sent*. **Rule 9 is unchanged: the
+framebuffer is the only evidence the guest reacted.**
+
 ## Check this first: is the guest awake?
 
 **A paused guest accepts every input event and reacts to none of them.** It is

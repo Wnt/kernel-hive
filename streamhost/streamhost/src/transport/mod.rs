@@ -180,6 +180,22 @@ pub async fn serve(
         pauser.clone(),
     );
 
+    // OPERATOR DRIVE ingress (drive_ingress.rs): a root-only Unix socket that
+    // lets an agent drive this station's pointer and keyboard WITHOUT stopping
+    // the daemon — the wall that used to force `systemctl stop` + a hand-run
+    // launcher for every scene change on a kh-ramabs/mgactl/artistctl station,
+    // whose `ptr.sock` is single-client by design. It feeds this SAME pipeline,
+    // so the daemon remains the single injector; what it adds is an expiring,
+    // auditable, one-at-a-time DRIVE LEASE in front of it.
+    crate::drive_ingress::spawn(
+        cfg.clone(),
+        cap.clone(),
+        mouse.clone(),
+        input_router.clone(),
+        key_reap_tx.clone(),
+        pauser.clone(),
+    );
+
     // Outer loop: (re)generate cert, (re)bind endpoint, serve until the rotation
     // deadline, then rebuild on the same UDP port.
     loop {

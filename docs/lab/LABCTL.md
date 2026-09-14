@@ -72,11 +72,24 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
    `streamhost/guest-agents/`.
 3. **QMP console driver** — `/root/cdrv.py`, what `labctl sh/type/key/shot`
    call. QMP send-key types uppercase and symbols correctly where the browser
-   path mangles them.
-4. **Screendump is the output channel** for GUI/no-network guests. Install and
+   path mangles them. It is keyboard and screendump only: on a `ramabs` /
+   `mgactl` / `artistctl` station QMP cannot move the pointer at all, because
+   the guest's pointer lives in guest RAM and the daemon owns the single
+   `ptr.sock` connection that writes it.
+4. **`station-drive.py` — the live station's own pointer and keyboard, with the
+   daemon still running.** `scripts/dev/station-drive.py <station> --reason …`
+   takes an expiring, one-at-a-time, audited **drive lease** from the daemon and
+   feeds records into the SAME pipeline the browser feeds, so the pointer you
+   drive is the pointer a visitor has. This is the channel to reach for when
+   curating a scene, measuring a pointer or reproducing an input complaint —
+   and it replaces the old "stop the unit and re-run the launcher by hand"
+   route, which is now only for changing a **device set**. `--who` says who is
+   driving. See
+   [`INPUT-DEBUGGING.md`](INPUT-DEBUGGING.md#driving-a-live-station-without-stopping-it).
+5. **Screendump is the output channel** for GUI/no-network guests. Install and
    automation agents MUST verify via real framebuffer screenshots, never disk or
    log inference.
-5. **SLIRP tricks** — the guest reaches the host at `10.0.2.2`. Serve files from
+6. **SLIRP tricks** — the guest reaches the host at `10.0.2.2`. Serve files from
    labhost with a one-shot python http.server and fetch in-guest, starting the
    server and the guest fetch in ONE atomic ssh command (backgrounded servers
    die between sessions). Adding a hostfwd to an EXISTING `-netdev user` is
@@ -105,6 +118,9 @@ degrades to null with a `warning:` naming the missing path, never a failed call.
   `scripts/dev/x11warp-probe.py --click` take the lease for you; anything else
   should either hold `guest_wake.WakeLease(station)` for its own duration or
   keep a real `/os/<id>` view open so the daemon never lets the guest idle.
+  **`station-drive.py` needs no wake lease** — its drive lease holds the
+  daemon's own session guard, so the guest is kept awake by being counted as a
+  session rather than by a second QMP client poking it.
   See [`INPUT-DEBUGGING.md`](INPUT-DEBUGGING.md#the-idle-pause-trap-on-an-x11warp-probe-and-driving-a-gui-wizard-through-it).
 - **`labctl shot` on a stopped station exits 2 and writes no file.** That is
   correct fail-closed behaviour, not a broken station — start the station first.
