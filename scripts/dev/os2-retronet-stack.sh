@@ -361,7 +361,7 @@ NewsCFGFile=C:\MPTN\ETC\news.cfg
 NewsSIGFile=C:\MPTN\ETC\news.sig
 
 [network]
-HomePage=http://spacejam.com/index.html
+HomePage=http://www.xerox.com/
 AutoLoad=Yes
 Email=
 Proxy=http://10.99.0.2:3128/

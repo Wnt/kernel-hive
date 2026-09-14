@@ -25,7 +25,7 @@ installed at all.
 | Tap | `os2rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/os2warp/rn-tapnet.sh up`, called from the launcher on every start (chain `OS2RN-IN`, scoped to the guest IP) |
 | Guest IP | **DHCP** — `retronet-dhcp` reserves `RN_OS2WARP_MAC -> 10.99.0.19/24`, DNS `10.99.0.2`, **and NO router option**, so the guest never forms a default route |
 | Stack | IBM **MPTS/NDIS** (`PROTMAN.OS2` + `MACS\PCNTND.OS2`) + **MPTN TCP/IP** (`SOCKETS.SYS`, `AFOS2.SYS`, `AFINET.SYS`, `IFNDIS.SYS`), DHCP client `DHCPSTRT`/`DHCPCD` |
-| Browser | **IBM WebExplorer** `C:\TCPIP\BIN\EXPLORE.EXE`, via the gateway's **proxy door `10.99.0.2:3128`** (it has no `Host:` header — see below). Home page `http://spacejam.com/index.html`, `AutoLoad=Yes` |
+| Browser | **IBM WebExplorer** `C:\TCPIP\BIN\EXPLORE.EXE`, via the gateway's **proxy door `10.99.0.2:3128`** (it has no `Host:` header — see below). Home page `http://www.xerox.com/`, `AutoLoad=Yes` |
 | Pointer / exec | warpd agent on a **COM1 unix-socket serial chardev** — *not* on the netdev, so the slirp->tap swap cost nothing on the pointer path. There is no exec channel |
 | Launcher | `streamhost/stations/os2warp/qemu-streamhost.sh` (TCG, `-cpu pentium`, `pc-i440fx-11.0,acpi=off,usb=off`, `-vga std -global VGA.vgamem_mb=2`, sb16, 1024x768x64k via IBM GENGRADD) |
 
@@ -130,7 +130,7 @@ blank browser.
 `os2-retronet-stack.sh` now writes the complete `EXPLORE.INI` — `[viewers]`
 reproduced verbatim as WebExplorer itself writes it on a clean exit, plus
 `Proxy=http://10.99.0.2:3128/`, `EnableProxy=Yes`,
-`HomePage=http://spacejam.com/index.html`, `AutoLoad=Yes`, and a 944x700 window
+`HomePage=http://www.xerox.com/`, `AutoLoad=Yes`, and a 944x700 window
 so the desktop stays visible around it. A rebuilt image needs no GUI pass.
 
 Earlier failures worth not re-deriving: `EXPLORE.EXE` first died with
@@ -188,12 +188,28 @@ L2 and never touches these chains — the retronet reaching the retronet.
 
 ## Golden lineage & rollback (FULL paths)
 
-- **LIVE golden:** internal snapshot **`golden`** (ID 1, 247 MiB, 2026-08-23
-  14:04) in `/data/gallery-guests/OS2Warp/os2.qcow2`
-  (sha256 `ac409758fdcd5eaa5d0bc5daa2980da0394f20f27188b314245b4f73cf5691f7`).
-  Tap-native + DHCP + MAC `52:54:00:52:4e:13`, baked by a **cold** boot, captured
-  with WebExplorer open on `http://spacejam.com/index.html` and warpd live.
-  `labctl reset os2warp` = `loadvm golden`.
+- **LIVE golden:** internal snapshot **`golden`** (ID 3, 246 MiB, 2026-09-14
+  12:18) in `/data/gallery-guests/OS2Warp/os2.qcow2`
+  (sha256 `c7c48120eed8e639234bd98cfd73ffd42a43c78e06a3247f033961f25a94b43a`),
+  recaptured via `checkpoint-guard recapture os2warp` (staged, restore-proven
+  twice on the framebuffer, byte-copy backup kept as `os2.qcow2.cpg-bak-*`).
+  Tap-native + DHCP + MAC `52:54:00:52:4e:13`, captured with WebExplorer open on
+  `http://www.xerox.com/` and warpd live. `labctl reset os2warp` = `loadvm golden`.
+  **Home page changed 2026-09-14** from `http://spacejam.com/index.html`: that
+  corpus host is missing its nav bitmap `img/nf-planets.gif`, so a visitor
+  landed on a near-black page. `www.xerox.com` was chosen after a corpus
+  asset-completeness scan (809 hosts, every `<img src>`/`background=`/`input
+  type=image`/CSS `url()`) came back 45/45 present, plain tables, no JS, no
+  frames — the best-scoring host WebExplorer (no JS, no frames) can render.
+  `connectix.com` (25/25), `weather.com` (79/79, but table nesting depth 4) and
+  `winzip.com` (18/18) were the fallbacks in that order, unneeded once xerox.com
+  rendered cleanly on a bring-up-rig framebuffer proof.
+- **Full-disk byte-copy backup of the pre-homepage-change golden** (spacejam.com,
+  QEMU stopped, SHA256-verified):
+  `/data/gallery-guests/OS2Warp/pre-homepage-change-20260914/os2.qcow2`
+  (sha256 `4618ecc5651af247310c82aa36f3a16036e329f64fa7dbe5c7087f9e6a22aa83`), plus
+  `checkpoint-guard`'s own kept backup `os2.qcow2.cpg-bak-20260914T091742Z`
+  beside the live disk. Either is the rollback for the 2026-09-14 home-page swap.
 - **Full-disk byte-copy backup of the pre-retronet golden** (QEMU stopped,
   SHA256-verified): `/data/gallery-guests/OS2Warp/golden-backup-prern-20260823/`
   — `os2.qcow2` `8696845e21b8b34870a6b6107c70bc2d9c4ca93ce4bdc913766df5b645efad49`,
@@ -278,6 +294,8 @@ ssh lab 'bash /data/vms/sandbox/.../repo/scripts/dev/os2-retronet-stack.sh show 
 - `mailcap` / `extmap` still carry only the single `application/rsu` entry the
   failed install left. Harmless — WebExplorer's `[viewers]` handles the corpus's
   `text/html`, GIF and JPEG internally — but a richer corpus type would need them.
-- `spacejam.com/` (no path) serves `index.cgi` first, which WebExplorer has no
-  viewer for; the home page is therefore the explicit `/index.html`. That is a
-  corpus/proxy content-type quirk, not a station fault.
+- `spacejam.com` was the home page until 2026-09-14; it is **no longer used**
+  because its nav bitmap `img/nf-planets.gif` is missing from the corpus
+  (near-black landing page). The home page is now `http://www.xerox.com/`, the
+  top scorer (45/45 bitmaps present) of a full corpus asset-completeness scan —
+  see "Golden lineage" above.
