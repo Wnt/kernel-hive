@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """corpus-completeness -- score how much of each corpus landing page can actually DRAW.
 
-WHY. A station's home page was picked for being iconic, and the corpus held a hollow
-mirror of it: `spacejam.com`'s index meta-refreshes to a page whose entire navigation
-bitmap (`img/nf-planets.gif`) was never mirrored, so two walk-in stations opened on a
-near-black screen for weeks. Nothing reported it -- the page was HTTP 200, the site
-directory existed, and only a human looking at the framebuffer could tell. `www.ibm.com`
-(61% of its bitmaps), `home.microsoft.com` (43%), `www.mtv.com` (11%) fail the same way.
+WHY. A station's home page gets picked for being iconic, and the corpus turns out to
+hold a hollow mirror of it: `www.ibm.com` has 61% of the bitmaps its landing page asks
+for, `home.microsoft.com` 43%, `www.mtv.com` 11%. Every layer below the framebuffer
+calls that success -- HTTP 200, the host directory exists, no proxy miss for the page --
+so the first time anyone finds out is when a visitor is looking at a gutted page.
 
 So this answers one question, per host: **of every bitmap the landing page asks for,
 how many does the corpus actually hold?** Menus, banners, spacers, nav bars and
@@ -56,6 +55,9 @@ ASSET_PATTERNS = (
 )
 FRAME_SRC = r"<frame[^>]+?src\s*=\s*[\"']?([^\"'>\s]+)"
 MAX_FRAMES = 8
+#: `<a href=MAP><img ... ismap>` -- a server-side imagemap, whose target is what
+#: a click actually fetches.
+ISMAP_LINK = r"<a[^>]+?href\s*=\s*[\"']?([^\"'>\s]+)[^>]*>\s*<img[^>]*?\bismap"
 
 
 def read_text(path):
@@ -73,6 +75,54 @@ def landing_page(host_dir):
         if os.path.isfile(candidate):
             return candidate
     return None
+
+
+def follow_refresh(host_dir, path, text, hops=2):
+    """Follow `<meta http-equiv=refresh>` to the page the visitor actually lands on.
+
+    spacejam.com is the reason: its index.html is a 470-byte splash that bounces
+    to index.cgi after 25 seconds, so scoring the index alone scores a page with
+    one image on it and calls the site whole. What a visitor sits in front of is
+    the destination, so that is what gets scored.
+    """
+    for _ in range(hops):
+        match = re.search(
+            r'<meta[^>]+http-equiv\s*=\s*["\']?refresh["\']?[^>]*?'
+            r'content\s*=\s*["\']?[^"\'>]*?url\s*=\s*([^"\'>\s;]+)',
+            text,
+            re.I,
+        )
+        if not match:
+            return path, text
+        target = os.path.join(host_dir, match.group(1).split("?")[0].lstrip("/"))
+        if os.path.isdir(target):
+            target = os.path.join(target, "index.html")
+        nxt = read_text(target)
+        if not nxt or target == path:
+            return path, text
+        path, text = target, nxt
+    return path, text
+
+
+def is_error_document(path):
+    """A file that EXISTS but is the era server's own error page, captured under
+    the asset's name.
+
+    spacejam.com/bin/index.map is 180 bytes of `<TITLE>Imagemap Error</TITLE>`:
+    the crawler asked a 1996 CGI imagemap for a path with no coordinates and
+    mirrored what came back. The bitmap it belongs to renders perfectly, the
+    file is present, nothing is a 404 — and every click on that navigation lands
+    on an error page. Presence is not the same as content, and only this check
+    can tell the difference.
+    """
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(400)
+    except OSError:
+        return False
+    if len(head) > 350 or head.lstrip()[:1] != b"<":
+        return False
+    return b"error" in head.lower()
 
 
 def resolve(host, ref):
@@ -137,6 +187,7 @@ def score_host(root, host):
     text = read_text(index)
     if not text:
         return None
+    index, text = follow_refresh(host_dir, index, text)
 
     pages = [(host, text)]
     frames = re.findall(FRAME_SRC, text, re.I)
@@ -151,7 +202,7 @@ def score_host(root, host):
         if frame_text:
             pages.append((target[0], frame_text))
 
-    total = broken = ads = 0
+    total = broken = ads = stubs = 0
     missing = []
     for page_host, page_text in pages:
         for ref in asset_refs(page_text):
@@ -169,6 +220,19 @@ def score_host(root, host):
             else:
                 broken += 1
 
+    # A present file that is really an error page. Counted apart from `broken`:
+    # the page DRAWS, so completeness is honest at 100%, and what is wrong is one
+    # click deep. The ismap targets are where the era web put them.
+    # `ismap` sits on the IMG, and the URL that is actually fetched sits on the
+    # A that wraps it -- the 1996 idiom, and the shape spacejam.com uses.
+    for ref in re.findall(ISMAP_LINK, text, re.I):
+        target = resolve(host, ref)
+        if not target:
+            continue
+        path = os.path.join(root, target[0], target[1].lstrip("/"))
+        if os.path.isfile(path) and is_error_document(path):
+            stubs += 1
+
     flags, table_depth = demands(text)
     title = re.search(r"<title[^>]*>(.*?)</title>", text, re.S | re.I)
     return {
@@ -176,6 +240,7 @@ def score_host(root, host):
         "assets": total,
         "broken": broken,
         "ad_misses": ads,
+        "error_docs": stubs,
         "complete_pct": round(100 * (1 - broken / total), 1) if total else 100.0,
         "frames": len(frames),
         "table_depth": table_depth,
@@ -223,9 +288,10 @@ def main(argv=None):
     for row in rows[: args.top]:
         flags = ",".join(row["demands"]) or "plain html"
         depth = f" tables{row['table_depth']}" if row["table_depth"] > 2 else ""
+        stub = f" [{row['error_docs']} dead imagemap]" if row["error_docs"] else ""
         print(
             f"{row['host']:<30}{row['complete_pct']:6.1f}%{row['assets']:9}"
-            f"{row['broken']:6}{row['ad_misses']:5}  {flags}{depth}"
+            f"{row['broken']:6}{row['ad_misses']:5}  {flags}{depth}{stub}"
         )
     return 0
 

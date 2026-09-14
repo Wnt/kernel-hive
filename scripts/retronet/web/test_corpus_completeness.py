@@ -115,5 +115,87 @@ class ScoreHostTest(unittest.TestCase):
         self.assertIsNotNone(cc.score_host(self.root, "jp.example"))
 
 
+class FollowsWhereTheVisitorActuallyLandsTest(unittest.TestCase):
+    """spacejam.com's shape: a splash that bounces to the real page."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = self._tmp.name
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_a_meta_refresh_splash_is_scored_at_its_destination(self):
+        write(
+            self.root,
+            "splash.example",
+            "index.html",
+            '<meta http-equiv="REFRESH" content="25; URL=index.cgi"><img src=\'splash.jpg\'>',
+        )
+        write(self.root, "splash.example", "splash.jpg", "JPEG")
+        write(self.root, "splash.example", "index.cgi", "<img src='nav.gif'><img src='gone.gif'>")
+        write(self.root, "splash.example", "nav.gif", "GIF89a")
+        row = cc.score_host(self.root, "splash.example")
+        # Scored the destination (two bitmaps, one missing), not the one-image splash.
+        self.assertEqual(row["assets"], 2)
+        self.assertEqual(row["broken"], 1)
+
+    def test_a_refresh_to_a_page_we_do_not_have_keeps_the_splash(self):
+        write(
+            self.root,
+            "dead.example",
+            "index.html",
+            "<meta http-equiv=refresh content='0; url=/nowhere.html'><img src='a.gif'>",
+        )
+        write(self.root, "dead.example", "a.gif", "GIF89a")
+        row = cc.score_host(self.root, "dead.example")
+        self.assertEqual(row["assets"], 1)
+        self.assertEqual(row["broken"], 0)
+
+    def test_a_refresh_loop_terminates(self):
+        write(self.root, "loop.example", "index.html", "<meta http-equiv=refresh content='0; url=index.html'>")
+        self.assertIsNotNone(cc.score_host(self.root, "loop.example"))
+
+
+class PresentIsNotTheSameAsRealTest(unittest.TestCase):
+    """The captured-error-page trap: the file exists and is the server's error text."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = self._tmp.name
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_a_captured_imagemap_error_is_reported(self):
+        write(
+            self.root,
+            "ismap.example",
+            "index.html",
+            "<a href='bin/index.map'><img src='nav.gif' ismap></a>",
+        )
+        write(self.root, "ismap.example", "nav.gif", "GIF89a")
+        write(
+            self.root,
+            "ismap.example",
+            "bin/index.map",
+            "<TITLE>Imagemap Error</TITLE><H1>Imagemap Error</H1>Your client did not send any coordinates.",
+        )
+        row = cc.score_host(self.root, "ismap.example")
+        # The page DRAWS whole -- the defect is one click deep, so it is its own count.
+        self.assertEqual(row["complete_pct"], 100.0)
+        self.assertEqual(row["error_docs"], 1)
+
+    def test_a_real_map_file_is_not_flagged(self):
+        write(self.root, "good.example", "index.html", "<a href='m.map'><img src='n.gif' ismap></a>")
+        write(self.root, "good.example", "n.gif", "GIF89a")
+        write(self.root, "good.example", "m.map", "default /index.html\nrect /a.html 0,0 10,10")
+        row = cc.score_host(self.root, "good.example")
+        self.assertEqual(row["error_docs"], 0)
+
+    def test_a_long_html_page_is_not_mistaken_for_an_error_stub(self):
+        write(self.root, "big.example", "index.html", "<a href='p.html'><img src='n.gif' ismap></a>")
+        write(self.root, "big.example", "n.gif", "GIF89a")
+        write(self.root, "big.example", "p.html", "<html>" + ("<p>error handling in 1996</p>" * 40))
+        row = cc.score_host(self.root, "big.example")
+        self.assertEqual(row["error_docs"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

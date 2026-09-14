@@ -21,16 +21,34 @@ across every document of a `<frameset>` — and resolves each against the corpus
 **Ad-server misses are counted separately and never held against a site**: a dead
 doubleclick slot is what that page looked like in 1998 anyway.
 
-## The incident this exists for
+## Two ways a site lies about being whole
 
-`os2warp` and `rhapsody` both homed to `spacejam.com`. Its `index.html` is a 470-byte
-splash that meta-refreshes to `index.cgi`, and that page's *entire* navigation — the
-planet map `img/nf-planets.gif` — was never mirrored, nor was the `bin/index.map`
-server-side imagemap behind it. The whole site is 20 files. Two walk-in stations, the
-ones anonymous visitors land on first, opened on a black page with a credits icon.
-Nobody noticed for weeks, because nothing below the framebuffer could tell.
+**1. The mirror is missing its bitmaps.** `www.ibm.com` holds 61% of what its landing
+page asks for, `home.microsoft.com` 43%, `www.mtv.com` 11%. The page is HTTP 200, the
+host directory is there, the proxy logs no miss for the page itself — and a visitor is
+looking at a gutted screen. That is what the percentage column measures.
 
-Rule 9 is the general form of this: **the framebuffer is the only proof**. This scorer
+**2. The file is there and is not what it says it is.** `spacejam.com` — which
+`os2warp` and `rhapsody` both used to home to — scores a clean 100%: its splash
+meta-refreshes to `index.cgi`, and every bitmap that page wants, the planet navigation
+`img/nf-planets.gif` included, is mirrored and draws. The defect is one click deep.
+`bin/index.map`, the server-side imagemap behind that navigation, is 180 bytes of
+
+```
+<TITLE>Imagemap Error</TITLE><H1>Imagemap Error</H1>Your client did not send any coordinates.
+```
+
+— the crawler asked a 1996 CGI imagemap for a path with no coordinates and faithfully
+mirrored what came back. So the front page looks perfect and the navigation is a dead
+end. The scorer reports these as `[N dead imagemap]` beside the percentage, separately,
+because the page genuinely does draw.
+
+**Two lessons this file exists to carry.** Presence is not content — a mirrored file can
+be an error document. And score the page the VISITOR lands on: the scorer follows
+`<meta http-equiv=refresh>`, because scoring spacejam's 470-byte splash instead of its
+destination reports one image and calls the site whole.
+
+Rule 9 is the general form of both: **the framebuffer is the only proof**. This scorer
 is the cheap pre-filter that stops you spending a bring-up on a hollow site — it is not
 a substitute for looking.
 
@@ -49,6 +67,9 @@ Iconic and hollow — do not use without re-pressing first:
 | `www.altavista.com` | 57% | assets are under a bare-IP host |
 | `www.ibm.com` | 61% | the natural `os2warp` home page |
 | `www.sega.com` | 0% | its one image |
+
+`spacejam.com` is NOT in this table — it is complete. Its problem is the dead imagemap
+above.
 
 Whole, and rich enough to look like a real page (`--top` reports the current list;
 these were the standouts):
