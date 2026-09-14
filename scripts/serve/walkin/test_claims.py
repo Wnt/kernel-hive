@@ -17,6 +17,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from . import claims, naming
 
@@ -106,6 +107,40 @@ class SlotClaimTests(unittest.TestCase):
         with self.assertRaises(claims.ClaimError) as caught:
             claims.claim_slot("walkin-os2warp-one-too-many")
         self.assertIn("700-702", str(caught.exception))
+
+    def test_a_running_unclaimed_slot_is_never_handed_out(self):
+        """The 2026-09-14 incident, in one assertion.
+
+        The ledger has NO claim at all for `naming.SLOT_MIN` — exactly the
+        state a leaked claim behind a live clone would leave — but the kernel
+        (`cell.live_cells`) says a `wibr<slot>` cell is running there. The
+        allocator must skip it and hand out the next slot instead, whatever
+        the (empty) ledger says.
+        """
+        with mock.patch.object(claims.cell, "live_cells", return_value=[naming.SLOT_MIN]):
+            held = claims.claim_slot("walkin-os2warp-1")
+        self.addCleanup(held.release)
+        self.assertNotEqual(held.slot, naming.SLOT_MIN)
+        self.assertEqual(held.slot, naming.SLOT_MIN + 1)
+
+    def test_a_slot_that_goes_live_mid_claim_is_given_back(self):
+        """The narrower race: the cell appears AFTER the pre-loop snapshot but
+        before the take lands. The post-take re-check must still catch it and
+        release both claims rather than keep a slot the kernel now disputes."""
+        calls = {"n": 0}
+
+        def live_cells():
+            calls["n"] += 1
+            # Empty on the pre-loop snapshot; live by the post-take re-check.
+            return [] if calls["n"] == 1 else [naming.SLOT_MIN]
+
+        with mock.patch.object(claims.cell, "live_cells", side_effect=live_cells):
+            held = claims.claim_slot("walkin-os2warp-1")
+        self.addCleanup(held.release)
+        self.assertEqual(held.slot, naming.SLOT_MIN + 1)
+        # The refused slot must be given back, not left claimed-but-idle.
+        recorded = {row["name"] for row in claims.mine(claims.SLOT_CLASS)}
+        self.assertEqual(recorded, {str(naming.SLOT_MIN + 1)})
 
     def test_a_missing_session_is_refused_rather_than_defaulted(self):
         os.environ.pop("KH_SESSION")

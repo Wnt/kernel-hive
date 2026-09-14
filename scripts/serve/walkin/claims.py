@@ -36,7 +36,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import naming
+from . import cell, naming
 
 SLOT_CLASS = "walkin-slot"
 PORT_CLASS = "port"
@@ -189,11 +189,36 @@ def claim_slot(identity: str, preferred: int | None = None) -> SlotClaim:
     `preferred` re-takes a specific slot (a respawn keeping its own number, so a
     visitor's reconnect does not chase a moving port); it is still a take, not a
     check, so a preferred slot someone else holds fails like any other.
+
+    **The ledger is asked, and so is the machine.** `kh-claim` arbitrates
+    correctly between two callers that both hold a claim — but a slot whose
+    running clone lost its claim (a stray release, an outage, a broker that
+    built outside this module) looks EMPTY to the ledger while a real guest
+    sits on it. Measured 2026-09-14: a station agent's own walk-in tooling,
+    pointed at a redirected `WALKIN_ROOT`, asked for a slot in this exact
+    range, found `walkin-slot/259` unclaimed, and was handed the number a LIVE
+    production `walkin-os2warp-4` was already running on — the clone was never
+    touched only because the agent noticed and released before building
+    anything. `cell.live_cells()` reads `wibr<slot>` bridges straight from the
+    kernel, which exists for as long as the clone's network cell does,
+    independent of which `WALKIN_ROOT` claimed it or whether its claim
+    survived. A slot the kernel says is live is refused here whatever the
+    ledger says — read once before the loop (the common case resolves on the
+    first free slot, so a snapshot per candidate would mostly cost time for no
+    benefit), and read AGAIN right after a successful take, closing the
+    narrow window between that snapshot and the claim actually landing.
     """
     candidates = [preferred] if preferred else range(naming.SLOT_MIN, naming.SLOT_MAX + 1)
     reasons = set()
+    live_at_start = set(cell.live_cells())
     for slot in candidates:
         naming.check_slot(slot)
+        if slot in live_at_start:
+            reasons.add(
+                f"slot {slot} already carries a live cell (wibr{slot}) in the kernel "
+                "— the ledger may not know, the machine is not lying"
+            )
+            continue
         got, why = try_take(SLOT_CLASS, slot, claim_purpose(identity), exclusive=True)
         if not got:
             reasons.add(why)
@@ -202,6 +227,17 @@ def claim_slot(identity: str, preferred: int | None = None) -> SlotClaim:
         if not port:
             got.release()
             reasons.add(why)
+            continue
+        if slot in cell.live_cells():
+            # Grew live between the snapshot above and this claim landing.
+            # Give both claims straight back — never hand out a slot a guest
+            # is already running on because we won a race against the ledger.
+            got.release()
+            port.release()
+            reasons.add(
+                f"slot {slot} grew a live cell (wibr{slot}) while being claimed "
+                "— refusing rather than double-booking it"
+            )
             continue
         return SlotClaim(slot=slot, claims=(got, port))
     if len(reasons) == 1:
