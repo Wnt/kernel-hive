@@ -67,6 +67,11 @@ is the rule and not a preference.
 
 ## Browsers that have actually rendered the corpus
 
+**Which sites are whole enough to be worth rendering is a different question**, and it
+is answered by [`CORPUS-COMPLETENESS.md`](CORPUS-COMPLETENESS.md) — a mirror can hold a
+site's HTML and none of the bitmaps that make it look like a page. Check there before
+picking any home page or demo URL.
+
 **Read this before spending an agent on browser recon.** Every row below put
 `http://search.retronet/` — the AltaVista-styled search page — on a station's
 framebuffer. The `periodBrowser` field in the registry is curated metadata and
