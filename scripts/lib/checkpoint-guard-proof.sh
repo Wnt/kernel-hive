@@ -13,9 +13,10 @@
 # ---- declared exclusion rectangles ---------------------------------------------
 # The idle-stability check (cpg_reference) is what stops a half-drawn golden, and
 # it stays. But a period-correct scene can be stable everywhere EXCEPT one region
-# that animates forever -- www.apple.com's 1998 homepage carries a ~37-frame
-# animated GIF ticker, which is why `rhapsody` had to settle for www.wired.com
-# instead of the thematically exact page. A MASK narrows the area compared.
+# that animates forever -- www.apple.com's 1998 homepage carries a 37-frame
+# animated GIF ticker, which is why `rhapsody` could not bake the thematically
+# exact page at all and shipped www.wired.com until this existed. A MASK narrows
+# the area compared.
 #
 # It never widens what is allowed to move: the masked pixels are CROPPED OUT and
 # not compared, rather than blanked in both frames -- blanking would make the

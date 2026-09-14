@@ -4,7 +4,8 @@
 WHAT THESE PIN. checkpoint-guard will not bake a checkpoint whose idle
 framebuffer moves, which is right and is what stops a half-drawn golden -- but it
 made period-correct scenes unbakeable (www.apple.com's 1998 homepage carries a
-~37-frame animated GIF ticker, so `rhapsody` had to settle for www.wired.com).
+37-frame animated GIF ticker, which kept `rhapsody` on www.wired.com until this
+existed; it now declares that ticker and its golden is apple.com).
 CPG_MASK excludes a DECLARED region. The danger in that idea is obvious: an
 exemption nobody can see, or one that quietly buys slack for the rest of the
 frame, turns the check into theatre. So:

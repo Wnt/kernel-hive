@@ -1,6 +1,9 @@
 # rhapsody on the retronet web plane — the bridge as-built
 
-**Status: wired, awaiting the cold re-bake.** `rhapsody` (Apple Rhapsody 5.1
+**Status: LIVE.** The cold re-bake this doc was written ahead of has long since
+happened — the golden carries the `tulip` NIC and the static addressing below,
+and the station has been re-baked several times since (most recently 2026-09-14,
+onto the `www.apple.com` scene). `rhapsody` (Apple Rhapsody 5.1
 Developer Release 2 for Intel, 1998) is on the retronet over a **real bridged
 NIC** on `vmbr-rn`, with a **unique MAC**, **static** addressing, and no default
 route. Read [`ICQ-STATION.md`](ICQ-STATION.md) for the shared bridge/containment
@@ -190,11 +193,14 @@ re-bake, from the restored checkpoint, on the wire (`tcpdump -i rhaprn0`):
 10.99.0.2.80 > 10.99.0.22.1062: HTTP/1.0 200 OK
 ```
 
-The golden was re-baked again on 2026-09-14 (browser home page only — the
-network layer above is untouched): OmniWeb 3.0 now opens on
-`http://www.wired.com/` instead of the 1996 Space Jam page. See
-[`WEB-BROWSER-rhapsody.md`](WEB-BROWSER-rhapsody.md) for why (corpus
-completeness) and the framebuffer proof.
+The golden was re-baked twice more on 2026-09-14 (browser home page only —
+the network layer above is untouched throughout): first off the 1996 Space
+Jam page onto `http://www.wired.com/`, then again onto
+**`http://www.apple.com/`**, which is what OmniWeb 3.0 now opens on. The
+second move needed a `checkpoint-guard` declared mask rectangle over
+apple.com's looping "Hot News Headlines" ticker GIF, landed the same day. See
+[`WEB-BROWSER-rhapsody.md`](WEB-BROWSER-rhapsody.md) for the corpus-completeness
+ranking, the mask, and the framebuffer proof.
 
 ## Operating notes — three things that look like faults and are not
 

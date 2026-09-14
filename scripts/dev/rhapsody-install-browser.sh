@@ -35,9 +35,13 @@
 # Idempotent: re-running on an already-installed guest re-asserts the
 # configuration and still runs every check.
 #
-#   rhapsody-install-browser.sh image   <out.img> [payload.gnutar.gz]
-#   rhapsody-install-browser.sh install <rig-dir> [--homepage URL] [--no-home-icon]
-#   rhapsody-install-browser.sh verify  <rig-dir> [--homepage URL]
+#   rhapsody-install-browser.sh image    <out.img> [payload.gnutar.gz]
+#   rhapsody-install-browser.sh install  <rig-dir> [--homepage URL] [--no-home-icon]
+#   rhapsody-install-browser.sh verify   <rig-dir> [--homepage URL]
+#   rhapsody-install-browser.sh homepage <rig-dir> [--homepage URL]
+#
+# `install` needs the raw payload disk attached and is a BRING-UP operation;
+# `homepage` is the live-station one, and needs only the serial getty.
 #
 # <rig-dir> holds serial.sock + serial-exec.passwd (a bring-up rig, or the
 # station dir /data/vms/streamhost/stations/rhapsody).
@@ -56,7 +60,7 @@ APP_DIR="/Local/Applications/OmniWeb.app"
 GUEST_HOME="/Local/Users/guest"
 HOME_APP="$GUEST_HOME/OmniWeb.app"
 PAYLOAD_DEV="/dev/rhd1a"
-HOMEPAGE="http://www.wired.com/"
+HOMEPAGE="http://www.apple.com/"
 HOME_ICON=1
 
 die() {
@@ -207,6 +211,34 @@ do_verify() {
   [ "$FAILED" = 0 ] || exit 1
 }
 
+# Change ONLY the home page on a guest that already has the browser.
+#
+# WHY THIS IS NOT `install --homepage`: do_install opens by asserting the guest
+# can read the raw payload disk, and a LIVE station does not have one -- its
+# device set is the production one, and the golden and the device set are ONE
+# combination (rule 6). So on a live station `install` dies before it ever
+# reaches the three `defaults write` calls, and there was no supported way to do
+# the one thing a corpus re-point actually needs. This is it.
+#
+# It does not touch the bundle, the home-window copy, or LaunchPaths' target.
+# AND IT DOES NOT MOVE AN ALREADY-OPEN WINDOW: OmniWeb reads HomePage when the
+# process starts and caches it for the life of the process -- measured
+# 2026-09-14, where clicking Home after a write still went to the OLD page. This
+# sets what the NEXT launch shows; the open window in the golden is curated by
+# hand and baked. See docs/lab/retronet/WEB-BROWSER-rhapsody.md.
+do_homepage() {
+  echo "rhapsody-browser: setting the home page in $RIG"
+  gx "su guest -c 'defaults write OmniWeb HomePage $HOMEPAGE'" >/dev/null
+  gx "su guest -c 'defaults write OmniWeb ShowHomePage YES'" >/dev/null
+  echo "  home page: $HOMEPAGE   (gateway :80 origin door, no proxy)"
+  check "prefs      HomePage = $HOMEPAGE" \
+    "su guest -c 'defaults read OmniWeb HomePage' | grep -q '$HOMEPAGE'"
+  check "prefs      ShowHomePage = YES" \
+    "su guest -c 'defaults read OmniWeb ShowHomePage' | grep -q YES"
+  echo "rhapsody-browser: $PASS ok, $FAILED failed"
+  [ "$FAILED" = 0 ] || exit 1
+}
+
 MODE="${1:-}"
 shift || true
 case "$MODE" in
@@ -214,7 +246,7 @@ case "$MODE" in
     do_image "${1:-}" "${2:-}"
     exit 0
     ;;
-  install | verify) ;;
+  install | verify | homepage) ;;
   *)
     sed -n '/^#   rhapsody-install-browser/,/^#$/p' "${BASH_SOURCE[0]}" | sed 's/^# \?//'
     exit 2
@@ -251,4 +283,5 @@ export PYTHONPATH="$LABCTL_D${PYTHONPATH:+:$PYTHONPATH}"
 case "$MODE" in
   install) do_install ;;
   verify) do_verify ;;
+  homepage) do_homepage ;;
 esac
