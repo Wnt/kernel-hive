@@ -182,14 +182,19 @@ and re-bake the `golden` snapshot from the settled desktop.
 
 That recipe was replayed onto the production disk on 2026-08-23 and the golden
 re-baked from it, so the station's live checkpoint **is** a retronet member: it
-restores with `en0` at `10.99.0.22`, no default route, and OmniWeb 3.0 open on
-the Space Jam corpus page. Verified after the re-bake, from the restored
-checkpoint, on the wire (`tcpdump -i rhaprn0`):
+restores with `en0` at `10.99.0.22` and no default route. Verified after that
+re-bake, from the restored checkpoint, on the wire (`tcpdump -i rhaprn0`):
 
 ```
 10.99.0.22.1062 > 10.99.0.2.80: GET /index.cgi HTTP/1.0 / Host: spacejam.com
 10.99.0.2.80 > 10.99.0.22.1062: HTTP/1.0 200 OK
 ```
+
+The golden was re-baked again on 2026-09-14 (browser home page only — the
+network layer above is untouched): OmniWeb 3.0 now opens on
+`http://www.wired.com/` instead of the 1996 Space Jam page. See
+[`WEB-BROWSER-rhapsody.md`](WEB-BROWSER-rhapsody.md) for why (corpus
+completeness) and the framebuffer proof.
 
 ## Operating notes — three things that look like faults and are not
 

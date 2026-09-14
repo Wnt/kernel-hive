@@ -56,7 +56,7 @@ APP_DIR="/Local/Applications/OmniWeb.app"
 GUEST_HOME="/Local/Users/guest"
 HOME_APP="$GUEST_HOME/OmniWeb.app"
 PAYLOAD_DEV="/dev/rhd1a"
-HOMEPAGE="http://spacejam.com/index.html"
+HOMEPAGE="http://www.wired.com/"
 HOME_ICON=1
 
 die() {
