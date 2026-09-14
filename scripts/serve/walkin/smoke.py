@@ -12,6 +12,27 @@ guest reacted** (rule 9); the log lines are navigation, not evidence.
 
 It refuses to run without `WALKIN_ROOT` pointed somewhere that is not the
 production walk-in tree, so a smoke run can never reap live pool members.
+
+**`WALKIN_ROOT` namespaces the TREE. It does not namespace the TAP.** The pool
+index is chosen from the members present under `WALKIN_ROOT`, so a smoke run in
+an empty sandbox root always picks index 1 — but `overrides.netdev
+.ifnamePattern` renders that index into `wi-<station>-1`, and a network
+interface name is a single global namespace shared with the live pool. If
+production happens to hold index 1 for that station, a sandbox smoke and a LIVE
+cell want the same interface name. Measured 2026-09-14: the rhapsody pool is
+numbered 2..9, so a sandbox build took `wi-rhapsody-1` harmlessly — but the
+win311 pool is numbered 1..8, where the same run would have collided with a
+live cell. So before smoking a station, check which indices the live pool holds
+(`ls /data/vms/walkin | grep <station>`), and treat a leftover `wi-<station>-N`
+as yours to remove only after confirming no live clone.json names it.
+
+Two smaller things that cost time in that same run, both shapes of this tool
+rather than faults: `set_access("open")` returns immediately because `warm.py`
+builds UNLOCKED in a background thread and a TCG restore takes minutes, so
+reading `broker._members` on the next line raises `StopIteration` — a driver
+must poll `pools()`; and a build failure is reported only as a `[walkin] ... did
+not build` line on **stderr**, so a caller that swallows stderr sees a pool that
+silently never fills.
 """
 
 from __future__ import annotations
