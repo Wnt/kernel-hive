@@ -4,8 +4,8 @@
 retronet **web plane** over a real bridged NIC on `vmbr-rn`, on **DHCP**, with a
 **unique MAC**, and browses the museum corpus in **Netscape Navigator 4.08
 (16-bit)** — no proxy configured, no live internet reachable. Open the station,
-run Netscape from the Internet group, and `home.netscape.com` (July 9 1997)
-renders from the corpus.
+run Netscape from the Internet group, and `www.mrshowbiz.com` renders from the
+corpus — logo, nav buttons, headlines, photo, poll widget, "Document: Done".
 
 This is the win98se/win95 pattern ([`ICQ-STATION.md`](ICQ-STATION.md),
 [`WEB-STATION-win95.md`](WEB-STATION-win95.md)) replicated on WfW 3.11; read
@@ -46,8 +46,46 @@ self-verifying, CRLF-preserving) is the whole in-guest prep:
 2. `SYSTEM.INI [DNS] DNSServers=` → `10.99.0.2`, `DomainName=` → `retronet.lab`
    (TCP/IP-32 prefers static `[DNS]` entries over the lease).
 3. Home pages onto corpus-archived sites: Netscape 4.08 `prefs.js`
-   `browser.startup.homepage` → `http://home.netscape.com/`; Navigator Gold's
-   `NETSCAPE.INI` the same; IE3's `IEXPLORE.INI` → `http://home.microsoft.com/`.
+   `browser.startup.homepage` → `http://www.mrshowbiz.com/`; Navigator Gold's
+   `NETSCAPE.INI` and IE3's `IEXPLORE.INI` are meant to carry the same value
+   (`scripts/dev/win311-retronet-stack.sh prep` writes all three from a stopped
+   disk) — see "Open item" below for why the 2026-09-14 live edit only reached
+   two of the three on disk. The choice converged on `www.mrshowbiz.com`
+   (76/76 bitmaps mirrored, 28 KB, no redirect/refresh scripts) after a
+   render-and-stability bake-off against the corpus completeness scoring:
+   `home.netscape.com` (Netscape's old default) is 100% complete but thin at
+   only 19 bitmaps; `home.microsoft.com` (IE3's old default) is just 43%
+   complete — 42 of 74 bitmaps missing, the reason IE3's home had to move too;
+   `www.weather.com` (79/79 bitmaps, the first choice) painted beautifully in
+   both browsers but carries a 6-frame animated GIF ad
+   (`image.weather.com/cobrand/abcnews/weatherheadlines.gif`) that never
+   settles, so `checkpoint-guard`'s idle-framebuffer-stability gate (two shots
+   3 s apart must be near-identical) refused every capture attempt; the scroll
+   position never moved that ad off-screen, and Netscape 4.x has no
+   right-click "stop animation". `www.fortunecity.com` (92/92 bitmaps, the
+   second choice) is worse: its homepage auto-navigates to an ad-server
+   redirect a few seconds after load and lands on the corpus's own "not in the
+   museum" 404. `www.mrshowbiz.com` (the fourth-ranked candidate) painted
+   fully in both Netscape 4.08 and IE3 on the live station — logo, nav
+   buttons, headlines, a photo, a poll widget, "Document: Done" — and two
+   framebuffer shots 3 s apart came back byte-identical, letting
+   `checkpoint-guard recapture win311` promote the scene as the new golden
+   (restore-proven via `CPG_DIRTY_CMD` sending Alt+F to Netscape — win311 has
+   no exec channel, so typing alone never dirtied the idle framebuffer).
+
+   **Open item:** the live edit (Netscape's Preferences dialog and IE3's
+   Options dialog, driven over QMP `send-key` — win311 has no exec channel and
+   no working pointer path from outside the daemon) updated Netscape 4.08's
+   `prefs.js` on disk and IE3's in-memory start page (captured correctly into
+   the new golden's RAM, so IE3 opens on `www.mrshowbiz.com` for as long as
+   this checkpoint keeps getting restored by `loadvm`), but IE3's own
+   `WINDOWS/IEXPLORE.INI` `Home Page=` line and Navigator Gold's
+   `NETSCAPE/NETSCAPE.INI` `Home Page=` line were never touched — the browsers'
+   "Use Current Page" actions did not flush to those files before the capture.
+   A future cold re-bake (which reads `WINDOWS/IEXPLORE.INI` and
+   `NETSCAPE/NETSCAPE.INI` from a stopped disk) will now write the right value,
+   since the script's constants are fixed; a from-disk IE3 relaunch on THIS
+   golden before that re-bake would still read the stale `home.microsoft.com`.
 
 ## The wiring, at a glance
 
@@ -58,7 +96,7 @@ self-verifying, CRLF-preserving) is the whole in-guest prep:
 | Tap | `win311rn0`, persistent, enslaved to `vmbr-rn`, created + guarded by `streamhost/stations/win311/rn-tapnet.sh up` from the launcher on every start (chain `WIN311RN-IN`, scoped to the guest IP) |
 | Guest IP | **DHCP** — `retronet-dhcp` reserves `RN_WIN311_MAC → 10.99.0.27/24`, DNS `10.99.0.2`, **NO router option**. Proven in-guest: `ipconfig /all` shows the MAC, the lease, DNS `10.99.0.2` and an **empty Default Gateway** |
 | Stack | MS TCP/IP-32 (wolverine) over RTL8029 NDIS3 (`PCIND$`), DHCP client `vdhcp.386` — all pre-existing |
-| Browser | **Netscape Navigator 4.08 (16-bit)**, `C:\Netscape\Comm\Program\netscape.exe`, home `http://home.netscape.com/`, **no proxy** — the wildcard DNS + `:80` origin serve the corpus by `Host` |
+| Browser | **Netscape Navigator 4.08 (16-bit)**, `C:\Netscape\Comm\Program\netscape.exe`, home `http://www.mrshowbiz.com/`, **no proxy** — the wildcard DNS + `:80` origin serve the corpus by `Host` |
 | Pointer / exec | warpd agent (`AGENT.EXE`) on the **COM1 unix-socket serial chardev** — *not* on the netdev, so the swap cost the pointer nothing. Verified live after restore (warpd `M` verbs move the cursor). There is no exec channel |
 | Launcher | `streamhost/stations/win311/qemu-streamhost.sh` (TCG, `-cpu pentium`, `pc-i440fx-11.0`, patched SeaBIOS, `-vga std`, sb16, two golden qcow2s) |
 

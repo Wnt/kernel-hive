@@ -20,11 +20,25 @@
 #      -> retronet.lab. TCP/IP-32's resolver prefers the static [DNS] entries
 #      over the lease, so they must point at the gateway's wildcard DNS.
 #   3. Home pages onto corpus-archived sites (era browsers need real pages, and
-#      the wildcard DNS makes any name resolve — but only archived hosts render):
+#      the wildcard DNS makes any name resolve — but only archived hosts render).
+#      All three point at www.mrshowbiz.com (76/76 bitmaps mirrored, 28 KB, no
+#      redirect/refresh scripts) — chosen over home.netscape.com (100% complete
+#      but thin at 19 bitmaps), home.microsoft.com (only 43% complete, 42 of 74
+#      bitmaps missing, and was IE3's old default), www.weather.com (79/79
+#      bitmaps and renders beautifully in both browsers, but carries a 6-frame
+#      animated GIF ad — abcnews.com/weatherheadlines.gif — that never settles,
+#      so checkpoint-guard's idle-framebuffer-stability gate refuses every
+#      capture), and www.fortunecity.com (92/92 bitmaps, but its homepage
+#      auto-navigates to an ad-server redirect a few seconds after load, landing
+#      on the corpus's own "not in the museum" 404 — worse than weather.com's
+#      cosmetic flaw). Render proven on the LIVE station in both Netscape 4.08
+#      and IE3 — full logo, nav buttons, headlines, photo, poll widget,
+#      "Document: Done", and two framebuffer shots 3s apart byte-identical — see
+#      docs/lab/retronet/WEB-STATION-win311.md:
 #        Netscape 4.08 (the exhibit): browser.startup.homepage
-#          http://home.netscape.com/  in C:\Netscape\Users\jj\prefs.js
+#          http://www.mrshowbiz.com/  in C:\Netscape\Users\jj\prefs.js
 #        Navigator Gold 3 (C:\NETSCAPE\NETSCAPE.INI [Main] Home Page) — same.
-#        IE3 (C:\WINDOWS\IEXPLORE.INI [Main] Home Page) http://home.microsoft.com/
+#        IE3 (C:\WINDOWS\IEXPLORE.INI [Main] Home Page) — same.
 #      NCSA Mosaic is left alone: it sends no Host: header, so the seamless
 #      no-proxy web cannot serve it (same class of fault as os2warp's
 #      WebExplorer — see docs/lab/retronet/WEB-STATION-os2warp.md).
@@ -121,26 +135,26 @@ if os.path.exists(p):
     b = open(p, "rb").read()
     nb = re.sub(
         rb"(?mi)^Home Page=.*?(\r?)$",
-        rb"Home Page=http://home.netscape.com/\1",
+        rb"Home Page=http://www.mrshowbiz.com/\1",
         b,
     )
     if mode == "prep" and nb != b:
         open(p, "wb").write(nb)
-    ok = b"Home Page=http://home.netscape.com/" in (nb if mode == "prep" else b)
-    checks.append((ok, "NETSCAPE/NETSCAPE.INI: Home Page -> home.netscape.com"))
+    ok = b"Home Page=http://www.mrshowbiz.com/" in (nb if mode == "prep" else b)
+    checks.append((ok, "NETSCAPE/NETSCAPE.INI: Home Page -> www.mrshowbiz.com"))
 p = os.path.join(root, "WINDOWS/IEXPLORE.INI")
 if os.path.exists(p):
     b = open(p, "rb").read()
     nb = re.sub(
         rb"(?mi)^Home Page=.*?(\r?)$",
-        rb"Home Page=http://home.microsoft.com/\1",
+        rb"Home Page=http://www.mrshowbiz.com/\1",
         b,
         count=1,
     )
     if mode == "prep" and nb != b:
         open(p, "wb").write(nb)
-    ok = b"Home Page=http://home.microsoft.com/" in (nb if mode == "prep" else b)
-    checks.append((ok, "WINDOWS/IEXPLORE.INI: Home Page -> home.microsoft.com"))
+    ok = b"Home Page=http://www.mrshowbiz.com/" in (nb if mode == "prep" else b)
+    checks.append((ok, "WINDOWS/IEXPLORE.INI: Home Page -> www.mrshowbiz.com"))
 # Netscape 4.08 (the exhibit): prefs.js of the one profile.
 p = os.path.join(root, "Netscape/Users/jj/prefs.js")
 for cand in ("Netscape/Users/jj/prefs.js", "NETSCAPE.1/USERS/JJ/PREFS.JS"):
@@ -150,7 +164,7 @@ for cand in ("Netscape/Users/jj/prefs.js", "NETSCAPE.1/USERS/JJ/PREFS.JS"):
         break
 if os.path.exists(p):
     b = open(p, "rb").read()
-    want = b'user_pref("browser.startup.homepage", "http://home.netscape.com/");'
+    want = b'user_pref("browser.startup.homepage", "http://www.mrshowbiz.com/");'
     if re.search(rb'user_pref\("browser\.startup\.homepage",', b):
         nb = re.sub(
             rb'user_pref\("browser\.startup\.homepage",[^\r\n]*\);',
@@ -162,7 +176,7 @@ if os.path.exists(p):
     if mode == "prep" and nb != b:
         open(p, "wb").write(nb)
     ok = want in (nb if mode == "prep" else b)
-    checks.append((ok, f"{p[len(root):]}: homepage -> home.netscape.com"))
+    checks.append((ok, f"{p[len(root):]}: homepage -> www.mrshowbiz.com"))
     # no proxy: network.proxy.type must not force a proxy (absent = direct).
     bad = re.search(rb'user_pref\("network\.proxy\.type", [12]\)', b)
     checks.append((not bad, f"{p[len(root):]}: no proxy pref forced"))
