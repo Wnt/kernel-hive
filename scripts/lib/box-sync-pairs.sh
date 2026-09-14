@@ -167,6 +167,15 @@ box_sync_load_pairs() {
   # guard refuses to run at all (it will not delete a checkpoint it cannot prove).
   box_sync_add_pair checkpoint-guard-proof scripts/lib/checkpoint-guard-proof.sh \
     /usr/local/lib/checkpoint-guard-proof.sh exact repo
+  # ...and its third half, which knows WHICH disks hold the checkpoint. The guard
+  # refuses to run without it rather than guess what it would be overwriting.
+  box_sync_add_pair checkpoint-guard-disks scripts/lib/checkpoint-guard-disks.sh \
+    /usr/local/lib/checkpoint-guard-disks.sh exact repo
+  # The DECLARED exclusion rectangles (CPG_MASK). Without it a masked station's
+  # comparison cannot run at all, and the guard refuses rather than compare
+  # something else -- so it travels with the halves that call it.
+  box_sync_add_pair cpg-mask scripts/lib/cpg-mask.py \
+    /usr/local/lib/cpg-mask.py exact repo
   # checkpoint-guard drives QMP through labqmp, so labqmp has to reach the box too:
   # the guard runs on labhost (the station qmp.sock files are root-only there).
   box_sync_add_pair labqmp scripts/lib/labqmp.py /usr/local/lib/labqmp.py exact repo

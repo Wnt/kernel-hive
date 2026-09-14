@@ -10,6 +10,108 @@
 # guard's _cpg_qmp / _cpg_log / _cpg_err and its CPG_* settings. It is a
 # box-sync pair for the same reason the guard is (see box-sync-pairs.sh).
 
+# ---- declared exclusion rectangles ---------------------------------------------
+# The idle-stability check (cpg_reference) is what stops a half-drawn golden, and
+# it stays. But a period-correct scene can be stable everywhere EXCEPT one region
+# that animates forever -- www.apple.com's 1998 homepage carries a ~37-frame
+# animated GIF ticker, which is why `rhapsody` had to settle for www.wired.com
+# instead of the thematically exact page. A MASK narrows the area compared.
+#
+# It never widens what is allowed to move: the masked pixels are CROPPED OUT and
+# not compared, rather than blanked in both frames -- blanking would make the
+# region match perfectly and inflate a whole-frame SSIM, buying slack for the
+# rest of the picture. The remaining area faces the same CPG_SSIM_MIN as always.
+# Rules, reasoning and the declaration form: scripts/lib/cpg-mask.py.
+CPG_MASK="${CPG_MASK:-}"
+CPG_MASK_MAX_FRACTION="${CPG_MASK_MAX_FRACTION:-0.25}"
+CPG_MASK_RECORD_NAME=".checkpoint-mask.json"
+
+_cpg_mask_py() {
+  local here candidate
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  for candidate in "$here/cpg-mask.py" /usr/local/lib/cpg-mask.py \
+    /data/kernel-hive/scripts/lib/cpg-mask.py; do
+    [ -f "$candidate" ] && {
+      printf '%s' "$candidate"
+      return 0
+    }
+  done
+  _cpg_err "cpg-mask.py not found beside the guard, in /usr/local/lib or /data/kernel-hive"
+  return 2
+}
+
+# Resolve the station's mask and REFUSE a bad one before anything is captured.
+# DECLARED, never inferred: there is deliberately no "ignore whatever moves"
+# mode, which would delete this check rather than narrow it. station.env is the
+# declared home (it is deployed from the committed fixture, so the exemption is
+# reviewable); $CPG_MASK is the ad-hoc override for clone work, and the two are
+# told apart everywhere the mask is shown so nobody mistakes an experiment for a
+# declaration.
+cpg_mask_load() {
+  CPG_MASK_DECL=""
+  CPG_MASK_SOURCE=""
+  if [ -n "$CPG_MASK" ]; then
+    CPG_MASK_DECL="$CPG_MASK"
+    CPG_MASK_SOURCE="env (ad-hoc)"
+  elif [ -f "$ST_DIR/station.env" ]; then
+    CPG_MASK_DECL="$(sed -n 's/^[[:space:]]*CPG_MASK=["'"'"']\{0,1\}\(.*\)$/\1/p' \
+      "$ST_DIR/station.env" | head -1 | sed 's/["'"'"']*[[:space:]]*$//')"
+    [ -n "$CPG_MASK_DECL" ] && CPG_MASK_SOURCE="station.env (declared)"
+  fi
+  [ -n "$CPG_MASK_DECL" ] || return 0
+  local py
+  py="$(_cpg_mask_py)" || return $?
+  python3 "$py" --max-fraction "$CPG_MASK_MAX_FRACTION" \
+    validate --mask "$CPG_MASK_DECL" >/dev/null || return 5
+  _cpg_log "MASK ACTIVE from $CPG_MASK_SOURCE — these rectangles are EXCLUDED from every framebuffer comparison in this run:"
+  python3 "$py" describe --mask "$CPG_MASK_DECL" >&2
+  _cpg_log "the rest of the frame is held to the SAME threshold ($CPG_SSIM_MIN)."
+}
+
+# Everything the mask is, as one JSON line for the journal and the record.
+cpg_mask_json() {
+  [ -n "${CPG_MASK_DECL:-}" ] || {
+    printf 'null'
+    return 0
+  }
+  local py rects
+  py="$(_cpg_mask_py)" || return $?
+  rects="$(python3 "$py" validate --mask "$CPG_MASK_DECL" 2>/dev/null)" || rects='[]'
+  printf '{"source": "%s", "declaration": "%s", "rects": %s}' \
+    "$CPG_MASK_SOURCE" "$(printf '%s' "$CPG_MASK_DECL" | sed 's/["\\]/\\&/g')" "$rects"
+}
+
+# Record the mask NEXT TO THE CHECKPOINT, not only in the run journal: `prune`
+# consumes the journal, and an exemption that disappears with the paperwork is an
+# invisible exemption. Written on promote; REMOVED by a maskless recapture, so it
+# can never over-claim for a golden baked without one.
+cpg_mask_record() {
+  local rec="$ST_DIR/$CPG_MASK_RECORD_NAME"
+  if [ -z "${CPG_MASK_DECL:-}" ]; then
+    rm -f "$rec"
+    return 0
+  fi
+  printf '{"label": "%s", "ts": "%s", "session": "%s", "ssim_min": "%s", "mask": %s}\n' \
+    "$CPG_LABEL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${KH_SESSION:-unknown}" \
+    "$CPG_SSIM_MIN" "$(cpg_mask_json)" >"$rec"
+  _cpg_log "MASK RECORDED with the checkpoint: $rec"
+}
+
+# What `checkpoint-guard status` prints. Loud on purpose.
+cpg_mask_status() {
+  local rec="$ST_DIR/$CPG_MASK_RECORD_NAME"
+  if [ -n "${CPG_MASK_DECL:-}" ]; then
+    printf 'mask       ACTIVE, from %s\n' "$CPG_MASK_SOURCE"
+    python3 "$(_cpg_mask_py)" describe --mask "$CPG_MASK_DECL" 2>/dev/null
+  else
+    printf 'mask       none declared (full-frame stability check)\n'
+  fi
+  if [ -f "$rec" ]; then
+    printf 'mask-baked THIS CHECKPOINT WAS BAKED WITH A REGION EXCLUDED:\n'
+    sed 's/^/    /' "$rec"
+  fi
+}
+
 # ---- framebuffer comparison ----------------------------------------------------
 # Byte-identical first, then SSIM >= CPG_SSIM_MIN — the same two-step and threshold
 # checkpoint-verify.sh uses. A pure byte compare refuses on every text-mode station with
@@ -21,6 +123,25 @@ _cpg_same() {
   if cmp -s "$1" "$2"; then
     CPG_LAST_SSIM="1.0 (byte-identical)"
     return 0
+  fi
+  # With a mask, the comparison is the area-weighted mean of ffmpeg's OWN SSIM
+  # over the tiles left after the declared rectangles are cropped away -- the
+  # same engine and the same threshold, applied to a smaller area.
+  if [ -n "${CPG_MASK_DECL:-}" ]; then
+    local out rc py
+    py="$(_cpg_mask_py)" || exit 2
+    out="$(python3 "$py" --max-fraction "$CPG_MASK_MAX_FRACTION" \
+      check "$1" "$2" --mask "$CPG_MASK_DECL" --min "$CPG_SSIM_MIN" 2>&1)"
+    rc=$?
+    CPG_LAST_SSIM="$(printf '%s' "$out" | tail -1)"
+    # rc 0 = same, 1 = different. ANYTHING ELSE is a broken comparison, and a
+    # broken comparison must not be read as "the framebuffer moved" -- that is
+    # exactly the reading that would let an unproven restore through.
+    if [ "$rc" -gt 1 ]; then
+      _cpg_err "the masked framebuffer comparison FAILED to run (exit $rc): $out. Refusing to guess whether these frames match. Nothing of '$CPG_LABEL' has been deleted; finish with 'checkpoint-guard resume $STATION' or clear with 'prune'."
+      exit 7
+    fi
+    return "$rc"
   fi
   local ssim
   ssim="$(ffmpeg -hide_banner -nostats -i "$1" -i "$2" \
@@ -45,7 +166,7 @@ cpg_reference() {
   _cpg_qmp shot "$second" >/dev/null
   if ! _cpg_same "$ref" "$second"; then
     rm -f "$second"
-    _cpg_err "this station's idle framebuffer is not stable (two shots ${CPG_IDLE_SECONDS}s apart differ, SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN), so no comparison could prove a restore. Park the scene (hide the clock, settle the animation) and re-run. Nothing has been captured or deleted."
+    _cpg_err "this station's idle framebuffer is not stable (two shots ${CPG_IDLE_SECONDS}s apart differ, SSIM ${CPG_LAST_SSIM:-?} < $CPG_SSIM_MIN${CPG_MASK_DECL:+, WITH the declared mask already excluded}), so no comparison could prove a restore. Park the scene (hide the clock, settle the animation), or -- if one known region animates forever and the rest of the scene is genuinely still -- declare it with CPG_MASK (scripts/lib/cpg-mask.py). Nothing has been captured or deleted."
     return 7
   fi
   rm -f "$second"

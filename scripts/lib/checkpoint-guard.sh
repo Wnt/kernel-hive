@@ -82,40 +82,34 @@ _cpg_qmp() {
   python3 "$lq" "$ST_QMP" "$@"
 }
 
-# The launcher with comments stripped: a prose line saying "runs WITHOUT -snapshot"
-# must not be read as a -snapshot flag.
-_cpg_launcher_code() {
-  sed -e 's/[[:space:]]#.*$//' -e '/^[[:space:]]*#/d' "$ST_LAUNCHER"
-}
-
-# Exact snapshot-TAG match, never `grep -qw` (wrong for the reason above). Getting this
-# wrong here is catastrophic: resume would believe `golden` was already promoted, delete
-# the staging label, and leave the station with no checkpoint at all.
-_cpg_have_label() {
-  local first
-  first="$(printf '%s' "$ST_DISKS" | head -1)"
-  qemu-img snapshot -l "$first" 2>/dev/null | awk -v t="$1" '$2 == t { found = 1 } END { exit !found }'
-}
 _cpg_status() { _cpg_qmp status 2>/dev/null | tr -d '"' | tail -1; }
 
-# The framebuffer proof (rule 9) lives in a sibling; same discovery as labqmp.py,
-# so the guard behaves identically run from the repo or from /usr/local/bin.
-_cpg_source_proof() {
-  local here candidate
+# The framebuffer proof (rule 9) and the launcher/disk resolution each live in a
+# sibling half; same discovery as labqmp.py, so the guard behaves identically run
+# from the repo or from /usr/local/bin. Missing either one is a REFUSAL: without
+# the proof there is no framebuffer evidence, and without the disks the guard does
+# not know what it would be deleting.
+_cpg_source_halves() {
+  local half here candidate found
   here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  for candidate in "$here/checkpoint-guard-proof.sh" \
-    /usr/local/lib/checkpoint-guard-proof.sh \
-    /data/kernel-hive/scripts/lib/checkpoint-guard-proof.sh; do
-    if [ -f "$candidate" ]; then
-      # shellcheck source=/dev/null
-      . "$candidate"
-      return 0
+  for half in checkpoint-guard-proof.sh checkpoint-guard-disks.sh; do
+    found=""
+    for candidate in "$here/$half" "/usr/local/lib/$half" \
+      "/data/kernel-hive/scripts/lib/$half"; do
+      if [ -f "$candidate" ]; then
+        # shellcheck source=/dev/null
+        . "$candidate"
+        found=1
+        break
+      fi
+    done
+    if [ -z "$found" ]; then
+      _cpg_err "$half not found — REFUSING: a guard that cannot prove a restore, or cannot tell which disks hold the checkpoint, must not delete one."
+      exit 2
     fi
   done
-  _cpg_err "checkpoint-guard-proof.sh not found — REFUSING: without it there is no framebuffer proof, and a guard that cannot prove a restore must not delete a checkpoint."
-  exit 2
 }
-_cpg_source_proof
+_cpg_source_halves
 
 # ---- wake lease ----------------------------------------------------------------
 # streamhost re-asserts a believed idle pause every 60 s; without the lease that lands
@@ -211,34 +205,8 @@ cpg_resolve() {
     return 5
   fi
 
-  # savevm writes the vmstate into the first qcow2 and a snapshot record into every
-  # other one, so ALL of them must be backed up for the backup to be a rollback
-  # target rather than a souvenir.
-  #
-  # Ask the RUNNING QEMU, not the launcher: most stations build the disk path from a
-  # shell variable, which no static parse can resolve. The launcher scrape is only the
-  # fallback for a stopped station, where status/prune/rollback still must work.
-  ST_DISKS=""
-  if [ -S "$ST_QMP" ]; then
-    ST_DISKS="$(_cpg_qmp blocks qcow2 2>/dev/null | grep -E '^/' | sort -u)"
-  fi
-  if [ -z "$ST_DISKS" ]; then
-    ST_DISKS="$(_cpg_launcher_code |
-      grep -Eho '(-drive[[:space:]]+file=|-hda[[:space:]]+)[^ ,]+' |
-      sed -E 's/^(-drive[[:space:]]+file=|-hda[[:space:]]+)//' | grep -E '\.qcow2$' | sort -u)"
-  fi
-  if [ -z "$ST_DISKS" ]; then
-    _cpg_err "could not determine which qcow2 holds '$STATION' checkpoint — query-block returned nothing and $ST_LAUNCHER names no literal qcow2. REFUSING: without the disk there is nothing to back up."
-    return 5
-  fi
-  local d
-  while read -r d; do
-    [ -n "$d" ] || continue
-    if [ ! -f "$d" ]; then
-      _cpg_err "launcher references disk '$d', which does not exist"
-      return 5
-    fi
-  done <<<"$ST_DISKS"
+  cpg_resolve_disks || return $?
+  cpg_mask_load || return $?
   return 0
 }
 
@@ -253,6 +221,7 @@ cpg_journal_write() {
     printf '  "label": "%s",\n  "staging_label": "%s",\n' "$CPG_LABEL" "$CPG_STAGING_LABEL"
     printf '  "session": "%s",\n  "ts": "%s",\n' \
       "${KH_SESSION:-unknown}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '  "mask": %s,\n' "$(cpg_mask_json)"
     printf '  "backups": ['
     while read -r line; do
       [ -n "$line" ] || continue
@@ -388,6 +357,7 @@ cpg_finish() {
   _cpg_qmp delvm "$CPG_STAGING_LABEL" >/dev/null 2>&1
   cpg_journal_write "done"
   rm -f "$ST_DIR"/.cpg-*.ppm "$ST_DIR"/.cpg-*.ppm.b
+  cpg_mask_record
   _cpg_log "DONE — '$CPG_LABEL' is the new checkpoint, restore-proven on the framebuffer, guest running."
   _cpg_log "backup KEPT (remove it only once you are happy): checkpoint-guard prune $STATION"
   sed -n 's/.*"backup": "\([^"]*\)".*/  backup: \1/p' "$ST_JOURNAL" >&2
@@ -543,6 +513,7 @@ cpg_status() {
   cpg_resolve "${1:-}" || return $?
   printf 'station    %s (%s)\n' "$STATION" "$ST_KIND"
   printf 'journal    %s\n' "$(cpg_journal_state)"
+  cpg_mask_status
   local d b
   while read -r d; do
     [ -n "$d" ] || continue
