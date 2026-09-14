@@ -228,6 +228,19 @@ pub fn lease_path(dir: &std::path::Path, tile: &str) -> PathBuf {
     dir.join(format!("drive-{tile}.lease.json"))
 }
 
+/// Set a path's mode and FAIL if it did not take — see the call sites in `spawn`.
+fn harden(path: &std::path::Path, mode: u32) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode))?;
+    let got = std::fs::metadata(path)?.permissions().mode() & 0o777;
+    if got != mode {
+        return Err(std::io::Error::other(format!(
+            "mode is {got:04o} after asking for {mode:04o}"
+        )));
+    }
+    Ok(())
+}
+
 /// Per-station lease cell. A std Mutex: every critical section is a compare and a
 /// clone, never an await, so the lease can also be consulted from a drop.
 type Cell = Arc<StdMutex<Option<Lease>>>;
@@ -252,9 +265,20 @@ pub fn spawn(
             eprintln!("[drive] cannot create {}: {e}", dir.display());
             return;
         }
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700));
+        // The permission call IS the fence, so its result is load-bearing. A
+        // swallowed error here leaves the directory at whatever create_dir_all
+        // and the umask produced (0755, typically) and the socket below
+        // reachable by every local user — an input channel into a live guest,
+        // failing OPEN and saying nothing. Everything else here that fences
+        // fails closed (gate.py's default-deny, clone-guard); so does this. A
+        // station with no drive ingress still works; a world-reachable one is
+        // not a station anyone should be running.
+        if let Err(e) = harden(&dir, 0o700) {
+            eprintln!(
+                "[drive] cannot secure {} (0700): {e} — ingress OFF",
+                dir.display()
+            );
+            return;
         }
         let path = dir.join(format!("drive-{}.sock", cfg.tile));
         let _ = tokio::fs::remove_file(&path).await;
@@ -266,9 +290,15 @@ pub fn spawn(
                 return;
             }
         };
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+        if let Err(e) = harden(&path, 0o600) {
+            // Unlink it: a bound socket nobody could lock down is precisely the
+            // thing that must not be left lying in the runtime directory.
+            let _ = tokio::fs::remove_file(&path).await;
+            eprintln!(
+                "[drive] cannot secure {} (0600): {e} — ingress OFF",
+                path.display()
+            );
+            return;
         }
         eprintln!(
             "[drive] operator drive ingress listening at {}",
@@ -604,5 +634,31 @@ mod tests {
         unsafe { std::env::set_var("SH_DRIVE_DIR", "") };
         assert!(socket_dir().is_none());
         unsafe { std::env::remove_var("SH_DRIVE_DIR") };
+    }
+
+    // ---- the filesystem fence ------------------------------------------
+    // This ingress types into a LIVE guest, and its only fence is the mode on
+    // the socket and its directory. So the mode is verified after it is set,
+    // never assumed from a call that returned.
+
+    #[test]
+    fn harden_sets_the_mode_it_was_asked_for() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("kh-drive-h-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        harden(&dir, 0o700).unwrap();
+        let mode = std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o700, "the fence must actually be 0700 on disk");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn harden_fails_on_a_path_that_is_not_there() {
+        // The call site treats an error as "ingress OFF" — so it must BE an
+        // error, not a silently ignored no-op.
+        let missing = std::env::temp_dir().join(format!("kh-drive-none-{}", std::process::id()));
+        let _ = std::fs::remove_file(&missing);
+        assert!(harden(&missing, 0o600).is_err());
     }
 }
