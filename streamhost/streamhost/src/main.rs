@@ -17,6 +17,7 @@ mod capture;
 mod cert;
 mod clock;
 mod config;
+mod drive_ingress;
 mod encode;
 mod idle;
 mod input;

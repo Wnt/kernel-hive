@@ -250,22 +250,19 @@ a symlink*, its ownership, all three preference keys, and free disk space.
 **2026-09-14, changing the live station's home page — two things worth
 recording for the next agent who touches this station's scene:**
 
-- **`ptr.sock` (kh-ramabs) is single-client.** While `streamhost@rhapsody` is
-  running, its daemon holds the only connection to `ptr.sock`; a second
-  connect() call is accepted by the kernel but never gets a `HELLO` — it just
-  hangs. There is no supported way to drive the live pointer as an
-  unprivileged agent through the public gallery either: `/auth/invite/issue`
-  hard-refuses any role but `viewer` (`scripts/serve/auth/operator_routes.py`),
-  and a `viewer` session gets the live video with no input rights. The route
-  that actually works, matching this doc's own "no defaults path to an
-  autolaunched app with an open window": `systemctl stop streamhost@rhapsody`
-  (kills daemon + guest cleanly), then run `qemu-streamhost.sh` **by hand** —
-  it recreates the exact same `qmp.sock`/`ptr.sock`/`serial.sock`/pidfile
-  under the station dir, so it is now the sole client, curate the scene over
-  those sockets, `checkpoint-guard recapture rhapsody`, then
-  `systemctl start streamhost@rhapsody` — `ensure-station-qemu.sh` finds the
-  still-running qemu and only starts the daemon, which reattaches with no
-  second boot.
+- **`ptr.sock` (kh-ramabs) is single-client, and that is still true — but it is
+  no longer a reason to stop the station.** While `streamhost@rhapsody` runs,
+  its daemon holds the only connection to `ptr.sock`; a second `connect()` is
+  accepted by the kernel and never gets a `HELLO`, so it just hangs. What this
+  session did about it — stop the unit, re-run `qemu-streamhost.sh` by hand on
+  the same sockets, curate, recapture, start the unit again — **was the only
+  route on 2026-09-14 and is not the route any more.** Drive the live station
+  through the daemon instead, with `scripts/dev/station-drive.py`: the daemon
+  stays the single injector and an expiring drive lease puts your records on
+  the same pipeline a visitor's browser uses, with the exhibit never off the
+  air. See [`../INPUT-DEBUGGING.md`](../INPUT-DEBUGGING.md#driving-a-live-station-without-stopping-it).
+  The stop-and-hand-run route survives only for work the ingress cannot do at
+  all: changing the **device set** or the launcher's own arguments.
 - **`checkpoint-guard rollback` cannot resolve this station's disk path while
   it is stopped.** Its stopped-guest fallback statically scrapes
   `-drive file=...` out of the launcher, and `qemu-streamhost.sh` writes that
