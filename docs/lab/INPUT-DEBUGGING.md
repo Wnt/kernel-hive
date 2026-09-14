@@ -73,6 +73,15 @@ had; what is new is that using it no longer takes the station down.** Nothing in
 and no visitor path reaches it. `SH_DRIVE_INGRESS=0` switches it off per
 station.
 
+**The lease fences other DRIVERS, not visitors.** It is exclusive against a
+second agent, and deliberately not against the public: a visitor already on
+`/os/<id>` keeps their session, and both of you then feed the same pipeline and
+the same guest cursor. So you will fight each other for the pointer, and the
+station's own telemetry cannot tell your records from theirs. Check
+`labctl health <station>` for `Client sessions` before you take a lease on a
+listed exhibit; a station with a visitor on it is one to leave alone, exactly as
+it was before this existed.
+
 **What it does not cover.** It drives a guest; it does not reconfigure one.
 Anything that changes the **device set** or the launcher's arguments still needs
 the stop-and-relaunch route, because `loadvm golden` requires the same device
