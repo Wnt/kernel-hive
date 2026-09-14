@@ -128,6 +128,11 @@ const ROUTES: readonly string[] = [
   '/museum2',
   '/walkin',
   '/walkin/exhibits',
+  // Ordered AFTER the exhibits listing above: matching here is first-wins, and
+  // the pinned-station route would otherwise swallow it. It reports as the
+  // EXHIBIT id (win311), never a clone — the same rule the play route below
+  // follows, so a pool of eight stays one page rather than eight.
+  '/walkin/:os',
   '/walkin/play/:os',
 ];
 

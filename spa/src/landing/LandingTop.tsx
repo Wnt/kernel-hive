@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMuseum } from '../state/store';
 import { useSession } from '../data/SessionContext';
 import { accessAllows } from '../walkin/sessionEnd';
@@ -10,6 +11,7 @@ import { HeroStage } from './HeroStage';
 import { StationSwitcher } from './StationSwitcher';
 import { useHeroSession } from './useHeroSession';
 import { HERO_STATIONS } from './stations';
+import { urlCorrection } from './stationUrl';
 
 // ============================================================================
 //  landing/LandingTop — everything above the fold.
@@ -29,9 +31,23 @@ import { HERO_STATIONS } from './stations';
 //  wall, which carries the countdown. Do not add one back.
 // ============================================================================
 
-export function LandingTop() {
-  const hero = useHeroSession();
+export function LandingTop({ pinned = null }: { pinned?: string | null }) {
+  const hero = useHeroSession(pinned);
   const { role } = useSession();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // ---- the address bar names the machine (landing/stationUrl.ts) ----------
+  // `/` claims whichever station the broker has, so without this a refresh was
+  // a different machine every time. The moment one is actually on screen the
+  // URL becomes `/walkin/<station>`, which is what the next load claims.
+  // REPLACE, never push: the visitor did not navigate here, and a push would
+  // cost them a back press per station they tried.
+  const correction = urlCorrection(location.pathname, hero.station);
+  useEffect(() => {
+    if (correction === null) return;
+    navigate({ pathname: correction, search: location.search }, { replace: true });
+  }, [correction, navigate, location.search]);
   const listed = useMuseum((s) => s.listedVms);
   const vm = useMuseum((s) => s.vms.find((entry) => entry.id === hero.station));
 

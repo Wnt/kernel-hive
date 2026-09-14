@@ -119,7 +119,19 @@ export interface HeroSession {
   stop: () => void;
 }
 
-export function useHeroSession(): HeroSession {
+/**
+ * @param pinned The station this page's ADDRESS asks for (`/walkin/<os>`), or
+ *   null for `/` — "whichever the broker has". It changes exactly one thing:
+ *   which machine the auto-claim asks for. Everything downstream — the switch,
+ *   the release watchdog, the visitor's minute — is identical either way,
+ *   because a pinned claim is the same act as pressing that station's chip.
+ *
+ *   A pinned station whose pool is FULL is left to refuse honestly rather than
+ *   falling back to another machine: the visitor followed an address naming
+ *   this one, and silently seating them somewhere else is how a shared link
+ *   stops meaning anything. The switcher is right there.
+ */
+export function useHeroSession(pinned: string | null = null): HeroSession {
   const { role } = useSession();
   const { state } = useWalkinPools();
   const [phase, setPhase] = useState<HeroPhase>({ kind: 'idle' });
@@ -280,8 +292,8 @@ export function useHeroSession(): HeroSession {
       busy: isBusy(phaseRef.current),
       attempts: attemptsRef.current,
     });
-    if (ok) take(null);
-  }, [playable, state, role, anon, take]);
+    if (ok) take(pinned);
+  }, [playable, state, role, anon, take, pinned]);
 
   // ---- the visitor's own input --------------------------------------------
   /** Somebody is here. Pushes the un-engaged release out and nothing else — in

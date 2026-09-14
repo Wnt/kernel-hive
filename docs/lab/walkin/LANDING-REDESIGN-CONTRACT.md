@@ -18,6 +18,11 @@ passkey signup BEFORE the visitor may touch anything. We invert it.
 - `scripts/serve/auth/gate.py`: `/` joins `OPEN_PATHS`. A session-less stranger
   must render the landing page, NOT a 302 to `/login`.
 - `/walkin` keeps working (redirect it to `/`), so no bookmark breaks.
+- `/walkin/<station>` is the landing page pinned to one machine — what `/`
+  rewrites itself to once the broker has answered, and a shareable address for
+  a single station. Open in `gate.py` per station (`WALKIN_LANDING_STATIONS`);
+  nothing deeper is, so `/walkin/play/<os>` and the broker API stay gated. See
+  "Never re-roll the station".
 
 ## Server contract
 
@@ -123,6 +128,21 @@ press of the recovery button later the visitor was on `win311`.
 - Random on **arrival** is the feature and stays.
 - Random on **recovery** is the bug. Every recovery claim names the station that
   was on screen (`landing/heroSession.ts resumeTarget`, tested).
+- Random on **reload** was the same bug wearing a different hat, and the URL is
+  what fixes it. A refresh, a restored tab and a shared link were all arrivals
+  as far as the page was concerned, so each one rolled a new machine and took
+  away the one the visitor was using. **The station now lives in the address**:
+  the moment a machine is on screen the page replaces `/` with
+  `/walkin/<station>` (`landing/stationUrl.ts`, REPLACE not push — the visitor
+  never navigated), and that address claims that station on the way back in.
+  `/walkin/<station>` is therefore a real, shareable, reloadable address for one
+  machine, and it is open to a signed-out stranger in `gate.py`
+  (`WALKIN_LANDING_STATIONS`, pinned to `registry/walkin/*.json` by a test) for
+  the same reason `/` is.
+- A pinned station whose pool is FULL refuses honestly rather than seating the
+  visitor somewhere else: they followed an address naming that machine, and the
+  switcher is one press away. An address naming a station we do not serve falls
+  back to the broker's pick (`pinnedStation()`).
 - What comes back is a **fresh clone** of that station — the pool never recycles
   a used one — so the copy says "a clean copy" and never implies the visitor's
   work survived.

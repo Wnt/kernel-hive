@@ -162,8 +162,39 @@ def is_blocked(path: str) -> bool:
     return False
 
 
+#: The per-station landing addresses, `/walkin/<station>`.
+#:
+#: `/` claims whichever machine the broker has (`routes.py`: "a station picked
+#: uniformly at random among enabled pools"), so the front door used to be a
+#: DIFFERENT station on every load — a refresh handed the visitor a machine they
+#: had not chosen and took away the one they were using. The landing page now
+#: rewrites itself to this address as soon as a machine is on screen, and this
+#: address claims that station on the way back in (spa/src/landing/stationUrl.ts).
+#:
+#: They are open for exactly the reason `/` is: a stranger arrives signed out by
+#: definition, and an address that 302s to /login is not a front door. What they
+#: publish is the app shell and nothing else — the same bytes `/` already serves
+#: to the same caller. Every route the page then CALLS stays fenced, `/walkin/play/<os>`
+#: and `/walkin/claim` included, which is why this is a per-station exact match
+#: and not a `/walkin/` prefix.
+#:
+#: Kept as a literal, and pinned to registry/walkin/*.json by test_gate_walkin.py
+#: so enabling a fourth station cannot quietly leave its landing page behind a
+#: login form.
+WALKIN_LANDING_STATIONS = frozenset({"os2warp", "rhapsody", "win311"})
+
+_WALKIN_LANDING_PREFIX = "/walkin/"
+
+
+def is_walkin_landing(path: str) -> bool:
+    """`/walkin/<station>` for a station the door offers, and nothing deeper."""
+    if not path.startswith(_WALKIN_LANDING_PREFIX):
+        return False
+    return path[len(_WALKIN_LANDING_PREFIX) :] in WALKIN_LANDING_STATIONS
+
+
 def is_open(path: str) -> bool:
-    return path in OPEN_PATHS or path.startswith(OPEN_PREFIXES)
+    return path in OPEN_PATHS or path.startswith(OPEN_PREFIXES) or is_walkin_landing(path)
 
 
 def wants_html(accept_header: str | None) -> bool:

@@ -313,7 +313,9 @@
           var ROUTES = [
             '/', '/os/:osId', '/fleet', '/about', '/admin/walkin',
             '/admin/observability', '/museum', '/museum2', '/walkin',
-            '/walkin/exhibits', '/walkin/play/:os',
+            // The pinned-station route is ordered after the exhibits listing:
+            // first match wins below, and it would otherwise swallow it.
+            '/walkin/exhibits', '/walkin/:os', '/walkin/play/:os',
           ];
           var STATION_ID = /^[a-z][a-z0-9]{1,15}$/;
           var segs = (location.pathname || '/').split('/').filter(Boolean);

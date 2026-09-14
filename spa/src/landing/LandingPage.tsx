@@ -41,10 +41,12 @@ import './landing.css';
 //       therefore silently correct the moment the real routes exist.
 // ============================================================================
 
-export default function LandingPage({ onOpenPlacard }: { onOpenPlacard?: (osId: string) => void }) {
+export default function LandingPage(
+  { onOpenPlacard, pinned = null }: { onOpenPlacard?: (osId: string) => void; pinned?: string | null },
+) {
   return (
     <div className="landing">
-      <GridView header={<LandingTop />} onOpenPlacard={onOpenPlacard} />
+      <GridView header={<LandingTop pinned={pinned} />} onOpenPlacard={onOpenPlacard} />
     </div>
   );
 }

@@ -13,6 +13,8 @@ import { useSession } from './data/SessionContext';
 import { posterFor } from './data/posterIndex';
 import LandingPage from './landing/LandingPage';
 import { showsLandingHero, useWalkinPlaneAvailable } from './landing/heroAudience';
+import { pinnedStation } from './landing/stationUrl';
+import { WALKIN_OS_IDS } from './walkin/fixture';
 import { exhibitViewFor } from './ui/grid/exhibitAccess';
 import WalkinPlay from './walkin/WalkinPlay';
 import WalkinExhibits from './walkin/WalkinExhibits';
@@ -204,6 +206,27 @@ export default function App() {
         />
         <Route path="/walkin/play/:os" element={<div className="walkin-root"><WalkinPlay /></div>} />
 
+        {/* ---------- `/walkin/<station>` — the landing page, pinned ----------
+            `/` claims whichever machine the broker has, which made the front
+            door a DIFFERENT station on every load: a refresh, a restored tab
+            or the visitor's own back button handed them a machine they had not
+            chosen and took away the one they were using. So the first claim
+            publishes itself here (landing/stationUrl.ts rewrites `/` to this
+            address, REPLACE not push) and this address claims that station on
+            the way back in.
+
+            It is the landing page, not a third surface: same hero, same
+            switcher, same grid below the fold — the param only decides which
+            machine the auto-claim asks for. `/walkin/exhibits` keeps winning
+            over this route because React Router ranks a static segment above a
+            dynamic one, and an unknown station id falls back to the broker's
+            pick rather than rendering a refusal (pinnedStation()).
+
+            Without the hero — a signed-in viewer, or a LAN origin with no
+            broker behind /walkin/state — there is no claim to pin, so the
+            address means the surface that DOES seat an account: /walkin/play. */}
+        <Route path="/walkin/:os" element={<PinnedWalkin showHero={showHero} onOpenPlacard={openPoster} />} />
+
         {/* ---------- unknown path → grid ---------- */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -213,6 +236,18 @@ export default function App() {
       )}
     </div>
   );
+}
+
+/** `/walkin/<station>`: the landing page with the auto-claim pinned to one
+ *  machine, or — for anyone the hero is not for — the account's own play
+ *  surface for that same station. */
+function PinnedWalkin(
+  { showHero, onOpenPlacard }: { showHero: boolean; onOpenPlacard?: (osId: string) => void },
+) {
+  const { os } = useParams();
+  const pinned = pinnedStation(os, WALKIN_OS_IDS);
+  if (!showHero) return <Navigate to={`/walkin/play/${os}`} replace />;
+  return <LandingPage onOpenPlacard={onOpenPlacard} pinned={pinned} />;
 }
 
 function MuseumRedirect() {
