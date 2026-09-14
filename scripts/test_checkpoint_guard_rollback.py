@@ -48,14 +48,30 @@ def sh(script: str, env: dict[str, str], cwd: str) -> subprocess.CompletedProces
 class GuardFixture:
     """A stations root holding one stopped, qcow2-backed fake station."""
 
-    def __init__(self, tmp: str, backups: list[dict] | None):
+    def __init__(self, tmp: str, backups: list[dict] | None, shell_var: bool = False):
         self.root = Path(tmp) / "stations"
         self.dir = self.root / "faketile"
         self.dir.mkdir(parents=True)
         self.disk = self.dir / "faketile-golden.qcow2"
         self.disk.write_bytes(b"CURRENT-DISK-CONTENT")
         (self.dir / "station.env").write_text("SH_RESET_MODE=loadvm\n")
-        (self.dir / "qemu-streamhost.sh").write_text(f"#!/bin/bash\nqemu-system-x86_64 -drive file={self.disk} -m 64\n")
+        # `shell_var` writes the launcher the way EVERY REAL STATION writes it:
+        # a `D=<stationdir>` assignment and `-drive file=$D/...` below it. There
+        # is no qmp.sock in this fixture either way, so the launcher scrape is
+        # the only thing that can name the disk -- which is the stopped-guest
+        # path that `rollback` exists for.
+        if shell_var:
+            launcher = (
+                "#!/bin/bash\n"
+                f"D={self.dir}\n"
+                'rm -f "$D/qmp.sock"\n'
+                "qemu-system-x86_64 -m 64 \\\n"
+                "  -drive file=$D/faketile-golden.qcow2,format=qcow2,if=ide,index=0 \\\n"
+                "  -qmp unix:$D/qmp.sock,server=on,wait=off\n"
+            )
+        else:
+            launcher = f"#!/bin/bash\nqemu-system-x86_64 -drive file={self.disk} -m 64\n"
+        (self.dir / "qemu-streamhost.sh").write_text(launcher)
         self.journal = self.dir / ".checkpoint-guard.json"
         self.write_journal(backups)
 
@@ -213,6 +229,62 @@ class ResumeKeepsTheBackupRows(unittest.TestCase):
             body.index("cpg_journal_write"),
             "the load must precede any journal rewrite, or the rows are gone",
         )
+
+
+class StoppedGuestRollsBack(unittest.TestCase):
+    """THE SECOND DEFECT. `rollback` refused exactly when it was needed.
+
+    The disks of a STOPPED station can only come from the launcher text, and
+    every station launcher builds the path from a shell variable:
+
+        D=/data/vms/streamhost/stations/rhapsody
+        -drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0
+
+    The scrape did not expand `$D`, so cpg_resolve refused with "launcher
+    references disk '$D/...', which does not exist" -- and it refused for
+    `rollback`, `status` and `prune`, the three subcommands whose entire reason
+    to exist is a station whose guest is DOWN. Measured against the pre-fix
+    /usr/local/bin/checkpoint-guard on a sandbox rig, 2026-09-14: exit 5.
+    """
+
+    def test_resolve_expands_the_launchers_own_variable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = GuardFixture(tmp, backups=None, shell_var=True)
+            r = sh('cpg_resolve faketile && printf "%s" "$ST_DISKS"', f.env(), tmp)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(r.stdout.strip(), str(f.disk))
+
+    def test_stopped_guest_rolls_back(self) -> None:
+        """The acceptance case: guest down, launcher uses $D, rollback works."""
+        with tempfile.TemporaryDirectory() as tmp:
+            f = GuardFixture(tmp, backups=None, shell_var=True)
+            row = f.add_backup()
+            f.write_journal([row])
+            env = {**f.env(), "CPG_ROLLBACK_CONFIRM": "1"}
+            r = sh("cpg_rollback faketile", env, tmp)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("ROLLED BACK 1 disk", r.stderr)
+            self.assertEqual(f.disk.read_bytes(), b"PRE-RECAPTURE-DISK")
+
+    def test_an_unresolvable_variable_refuses_and_names_it(self) -> None:
+        """Only a LITERAL absolute assignment counts; otherwise refuse loudly."""
+        with tempfile.TemporaryDirectory() as tmp:
+            f = GuardFixture(tmp, backups=None, shell_var=True)
+            launcher = f.dir / "qemu-streamhost.sh"
+            launcher.write_text(launcher.read_text().replace(f"D={f.dir}", "D=$(dirname $0)"))
+            r = sh("cpg_resolve faketile", f.env(), tmp)
+            self.assertNotEqual(r.returncode, 0, "a guessed disk path is worse than a refusal")
+            self.assertIn("REFUSED", r.stderr)
+            self.assertIn("shell variable", r.stderr)
+
+    def test_two_different_assignments_are_ambiguous_and_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            f = GuardFixture(tmp, backups=None, shell_var=True)
+            launcher = f.dir / "qemu-streamhost.sh"
+            launcher.write_text(launcher.read_text() + "D=/somewhere/else\n")
+            r = sh("cpg_resolve faketile", f.env(), tmp)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("REFUSED", r.stderr)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,18 @@
 (labhost), kept **byte-identical** via the box-sync pair table. It runs on labhost as
 root: the station `qmp.sock` files are root-only there.
 
+It is one tool in three files, each answering one question, all four rows in the
+pair table and all deployed together — the guard refuses to run if any is missing,
+because a guard that cannot prove a restore, or cannot tell which disks hold the
+checkpoint, must not delete one:
+
+| File | Answers |
+|---|---|
+| `scripts/lib/checkpoint-guard.sh` | what is safe to delete, and when |
+| `scripts/lib/checkpoint-guard-proof.sh` | does this checkpoint actually restore (rule 9) |
+| `scripts/lib/checkpoint-guard-disks.sh` | which files hold this station's checkpoint |
+| `scripts/lib/cpg-mask.py` | which pixels a declared mask excludes from the comparison |
+
 This is the tool named by AGENTS.md's rule *"Never retire a golden before its
 replacement is proven"*, in the same idiom as [`clone-guard`](clone-guard.md) and
 `chroot-guard`: an operation that has already caused damage gets wrapped once,
@@ -69,7 +81,7 @@ and without deleting anything.
 Knobs, all env: `CPG_LABEL` (default `golden`), `CPG_STAGING_LABEL` (default
 `cpg-staging`), `CPG_DIRTY_TEXT`, `CPG_SSIM_MIN` (default `0.999`), `CPG_IDLE_SECONDS`,
 `CPG_SETTLE`, `CPG_STATIONS_ROOT` (point it at a sandbox to exercise the guard on a
-clone).
+clone), `CPG_MASK` and `CPG_MASK_MAX_FRACTION` (below).
 
 ## What it guarantees
 
@@ -142,11 +154,37 @@ file and then refuses, touching nothing.
 
 ### Which disk it backs up, and how it knows
 
-It asks the running QEMU (`query-block`), not the launcher. Most stations build the disk
-path from a shell variable (`-drive file="$DISK"`), which no static parse can resolve —
-`win95` is one. The launcher scrape is only the fallback for a stopped station, and it
-reads the launcher with comments stripped, so a prose line like `# runs WITHOUT
--snapshot` is not mistaken for a flag.
+It asks the running QEMU (`query-block`), not the launcher: that resolves whatever
+the process actually opened, whatever shell variables built the path. The launcher
+scrape is only the fallback for a **stopped** station, and it reads the launcher
+with comments stripped, so a prose line like `# runs WITHOUT -snapshot` is not
+mistaken for a flag.
+
+**The scrape used to fail exactly when it mattered (fixed 2026-09-14).** Nearly
+every station launcher writes
+
+```sh
+D=/data/vms/streamhost/stations/rhapsody
+...
+  -drive file=$D/rhapsody-golden.qcow2,format=qcow2,if=ide,index=0 \
+```
+
+and the scrape did not expand `$D`. So for a stopped station it produced the
+literal string `$D/rhapsody-golden.qcow2`, which of course does not exist, and
+`cpg_resolve` refused with *"launcher references disk '$D/...', which does not
+exist"* — for `rollback`, `status` and `prune`, the three subcommands whose whole
+reason to exist is a station whose guest is **down**. `rollback` therefore failed
+in precisely the situation you reach for it in.
+
+`_cpg_expand_leading_var` now resolves a leading `$VAR/` or `${VAR}/` against the
+launcher's **own** assignment of that name — and only a *literal absolute* one. A
+value built by `$(...)` or a backtick is not statically knowable, and a name
+assigned two different literals is ambiguous; in both cases the token is left
+untouched and the guard refuses loudly, naming the variable, rather than guessing
+which disk holds a checkpoint. Requiring the `/` after the name is what keeps
+`$D/` from matching inside `$DISK/`.
+`scripts/test_checkpoint_guard_rollback.py` pins the stopped-guest rollback and
+both refusals.
 
 ### Why the staging label is not `golden-new`
 
@@ -197,6 +235,78 @@ it does is discarded by the `loadvm` that immediately follows — so it is free 
 be loud. If it is set and the framebuffer *still* does not move, the guard
 refuses exactly as before: the hook adds a way to succeed, never a way to skip
 the proof.
+
+## Masking a region that never idles
+
+The idle-stability check in `cpg_reference` — two shots `CPG_IDLE_SECONDS` apart
+must agree — is what stops a half-drawn golden, and it stays. But it made a whole
+class of **period-correct scenes unbakeable**. `www.apple.com`'s 1998 homepage
+carries a ~37-frame animated GIF ticker (`home/images/ticker.gif`), so that
+framebuffer *never* idles: the guard reported `SSIM ~0.996 < 0.999` and refused,
+correctly and repeatedly, and `rhapsody` had to settle for `www.wired.com`
+instead of the thematically exact Apple page.
+
+A **mask** declares rectangles that are excluded from every framebuffer
+comparison in the run, so a scene that is stable everywhere except a known
+animating region can still be proven stable.
+
+```sh
+# in the station's station.env (the declared home — it is deployed from the
+# committed fixture, so the exemption is reviewable):
+CPG_MASK="632,214,120x60 home/images/ticker.gif, a 37-frame animated GIF that cannot be parked"
+```
+
+Entries are separated by `;`; each is `X,Y,WxH` followed by whitespace and a
+free-text **reason**. Coordinates are guest pixels in that station's own
+framebuffer. `$CPG_MASK` in the environment overrides `station.env` for clone
+work, and the two are labelled `env (ad-hoc)` versus `station.env (declared)`
+everywhere the mask is shown, so nobody mistakes an experiment for a declaration.
+
+Four properties are what make this an exemption you can trust, and each of them
+is a refusal rather than a convention:
+
+- **Declared, never inferred.** There is deliberately no "ignore whatever moves"
+  mode. That would not narrow the check, it would delete it.
+- **Every rectangle carries a reason,** and one without a readable reason is
+  refused. An exemption nobody can read the *why* of is how this check quietly
+  stops meaning anything.
+- **The rest of the frame faces the same threshold.** This is why `cpg-mask.py`
+  **crops** rather than blanks. Painting the masked region black in *both* frames
+  is the obvious implementation and it is wrong: the region then matches
+  perfectly and *inflates* a whole-frame SSIM, buying slack for the rest of the
+  picture — a mask over 6% of the screen would let the other 94% score 0.99894
+  and still "pass" at 0.999. Here the masked pixels are not compared at all, and
+  the reported number is the area-weighted mean of **ffmpeg's own SSIM** over the
+  tiles that remain: the same engine and the same bar, applied to a smaller area.
+- **A mask covering most of the screen is refused** — `CPG_MASK_MAX_FRACTION`,
+  default 0.25. Past that it is not a narrowed stability check, it is no
+  stability check.
+
+Two more refusals worth knowing: a rectangle that does not fit the station's
+current framebuffer is refused rather than clamped (the declaration was written
+for another resolution and would mask the wrong place), and anything that is not
+an actual comparison — a missing or failing `ffmpeg` — exits **>1**, never 1,
+because the proof half reads exit 1 as "the frames differ" and "differ" is
+precisely what licenses it to believe the framebuffer moved.
+
+**Where the mask shows up.** In the run log, in the journal's `mask` field, and —
+because `prune` consumes the journal and an exemption that disappears with the
+paperwork is an invisible exemption — in `<stationdir>/.checkpoint-mask.json`,
+written beside the checkpoint on promote and **removed** by a later maskless
+recapture so it can never over-claim. `checkpoint-guard status` prints it loudly:
+
+```
+mask       ACTIVE, from station.env (declared)
+    rect 90,32 180x96  -- boot-sector ticker, rewritten every CPU pass: ...
+mask-baked THIS CHECKPOINT WAS BAKED WITH A REGION EXCLUDED:
+    {"label": "golden", "ts": "...", "ssim_min": "0.999", "mask": {...}}
+```
+
+**The mask does not blind the check**, and that is measurable rather than
+asserted: on the proof rig, the same two frames scored **0.940672 (exit 1,
+refused)** with the mask moved off the animating region onto a static one, and
+**0.999638 (exit 0)** with the real declaration. Masking moves *where* the guard
+looks; it never changes *how hard* it looks.
 
 ### Why there is no built-in mouse wiggle
 
@@ -323,3 +433,20 @@ Run on a namespaced clone of `freedos` under `/data/vms/sandbox/golden-guard/sta
   still verified, and `resume` restored a proven `golden` in one step.
 - **`rollback`** — refused with the guest up; with it down, restored the pre-recapture
   disk, SHA256-verified it, and the station relaunched to a running guest.
+
+Re-proven 2026-09-14 for the mask and the stopped-guest rollback, on a sandbox rig
+under `/data/vms/sandbox/cpg-mask/rig/stations/` — a 512-byte boot-sector guest
+whose only moving parts are one 20x6-cell ticker rewritten every CPU pass (the
+stand-in for `ticker.gif`) and a separate block repainted on keypress, so
+`CPG_DIRTY_TEXT` can still move the framebuffer *outside* the mask:
+
+- **Without a mask, `recapture` refuses** — idle SSIM 0.945946 < 0.999, exit 7,
+  nothing captured or deleted.
+- **With the mask declared in `station.env`, it succeeds** — restore proven at
+  masked SSIM 0.999638 (6.1% excluded, 4 tiles) both before and after the
+  promote, guest running, mask recorded beside the checkpoint.
+- **The mask over the wrong region still refuses** — 0.940672, exit 1.
+- **A stopped guest rolls back** — the pre-fix `/usr/local/bin/checkpoint-guard`
+  refused at exit 5 on `$D/rig-golden.qcow2`; the fixed guard verified the
+  backup's SHA256, refused without `CPG_ROLLBACK_CONFIRM`, restored on confirm,
+  and the station relaunched to a running guest with a live framebuffer.
