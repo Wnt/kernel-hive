@@ -4,8 +4,9 @@
 1998) has a real graphical web browser — **OmniWeb 3.0 final (July 1999)** —
 installed into `/Local/Applications`, launchable from an icon in the open
 `guest` home window, and rendering the local web corpus through the retronet
-gateway's **`:80` origin door with no proxy**. Framebuffer proof: **Wired
-News**, images and all, at `http://www.wired.com/`.
+gateway's **`:80` origin door with no proxy**. Framebuffer proof: the 1998
+**"Apple / hello (again)" iMac homepage**, images and all, at
+`http://www.apple.com/`.
 
 The home page was originally the 1996 Space Jam page
 (`http://spacejam.com/index.cgi`). That page renders fine — its assets are all
@@ -15,18 +16,52 @@ and three bitmaps is a thin front door for a walk-in visitor. A 2026-09-14
 corpus-completeness audit (`scripts/retronet/web/corpus_completeness.py`) then
 ranked candidates for rhapsody as `www.apple.com` (14/14 bitmaps, imagemap
 nav, thematically exact for a 1998 Apple OS) ahead of `www.wired.com`
-(29/30, richer). **apple.com was tried first and rendered perfectly**, but
-its homepage's "Hot News Headlines" ticker (`home/images/ticker.gif`) is a
-looping ~37-frame animated GIF, so the framebuffer never settles —
-`checkpoint-guard recapture` refuses to bake a golden it cannot prove is
-idle-stable (`docs/lab/checkpoint-guard.md`'s idle-framebuffer SSIM gate).
-`wired.com`'s homepage has no animation (verified against every `.gif` it
-references), settles byte-identical across repeat screendumps, and is what
-the golden and the walk-in seed actually carry. See
-`rhapsody-install-browser.sh`'s `HOMEPAGE` default.
+(29/30, richer). apple.com was **always able to render** — it went briefly
+through `www.wired.com` as an intermediate home page on 2026-09-14 only
+because `home/images/ticker.gif`, apple.com's 37-frame looping "Hot News
+Headlines" GIF, has no stop frame and so never let the framebuffer idle:
+`checkpoint-guard recapture`'s idle-stability SSIM gate
+(`docs/lab/checkpoint-guard.md`) correctly refused to bake a golden it could
+not prove idle-stable. That is now solved with a **declared mask rectangle**
+(`CPG_MASK` in `streamhost/stations/rhapsody/station.env.fixture`, landed
+2026-09-14) that excludes exactly the ticker's `WIDTH=600 HEIGHT=25` extent
+plus a 2 px margin from the idle-diff — see "Why apple.com bakes now" below —
+so `www.apple.com` is what the golden and the walk-in seed actually carry.
+See `rhapsody-install-browser.sh`'s `HOMEPAGE` default.
 
 The network half of this station is [`WEB-STATION-rhapsody.md`](WEB-STATION-rhapsody.md);
 the guest's own history is [`docs/guests/rhapsody.md`](../../guests/rhapsody.md).
+
+## Why apple.com bakes now: the declared mask
+
+Re-measured on a namespaced sandbox clone on 2026-09-14. An **unmasked**
+`checkpoint-guard recapture` still refuses, correctly: **SSIM 0.996854 < 0.999,
+exit 7** ("nothing has been captured or deleted") — the ticker keeps the
+framebuffer moving and the gate is right to reject an unproven idle claim.
+
+What changed is `checkpoint-guard`'s declared mask rectangles (landed
+2026-09-14, see [`checkpoint-guard.md`](../checkpoint-guard.md)). rhapsody's
+`streamhost/stations/rhapsody/station.env.fixture` now carries:
+
+```
+CPG_MASK="175,489,604x29 home/images/ticker.gif, the 37-frame Hot News Headlines animated GIF on the 1998 www.apple.com homepage: it loops forever and cannot be parked"
+```
+
+With that declared, the same recapture **succeeds**: SSIM 1.000000 (masked
+2.5%, 4 tiles, worst tile 1.000000), exit 0, guest running, and a
+`.checkpoint-mask.json` is written beside the checkpoint.
+
+The rectangle is measured, not guessed. Unioning framebuffer diffs over a
+72-second window put all observed motion inside x 391..725, y 498..509 (the
+headline text band only); a separate scan of the rendered frame for the
+image's own extent put the ticker at x 177..776, y 491..514 — exactly the
+`WIDTH=600 HEIGHT=25` `index.html` declares for it. The declaration covers the
+whole image plus a 2 px margin, deliberately **not** just the band that moved
+in that window: the GIF cycles headlines of different lengths, so a later
+frame can use the full 600 px, and masking only the observed band would pass
+today and refuse later. 604x29 is 2.5% of the 1024x768 frame after the
+guard's 8 px outward snap — well inside `CPG_MASK_MAX_FRACTION` (0.25) — and
+the other 97.5% of the scene still faces the same 0.999 bar.
 
 ## The finding that started this
 
@@ -173,7 +208,7 @@ the framebuffer: with only `HomePage` set and no proxy anywhere, OmniWeb
 resolves the configured host through the wildcard DNS and renders it. First
 proven against `http://spacejam.com/index.html` (redirected to `/index.cgi`,
 1996 page with its images); the mechanism is address-agnostic and now serves
-`http://www.wired.com/` the same way (see the corpus-completeness note above).
+`http://www.apple.com/` the same way (see the mask note above).
 
 This is the **opposite** of the os2warp result
 ([`WEB-STATION-os2warp.md`](WEB-STATION-os2warp.md)), where IBM WebExplorer 1.2
@@ -193,10 +228,23 @@ supported route is the GUI, Preferences → Proxies.
 **17 checks**.
 
 ```
-rhapsody-install-browser.sh image   <out.img> [payload.gnutar.gz]
-rhapsody-install-browser.sh install <rig-dir> [--homepage URL] [--no-home-icon]
-rhapsody-install-browser.sh verify  <rig-dir> [--homepage URL]
+rhapsody-install-browser.sh image    <out.img> [payload.gnutar.gz]
+rhapsody-install-browser.sh install  <rig-dir> [--homepage URL] [--no-home-icon]
+rhapsody-install-browser.sh verify   <rig-dir> [--homepage URL]
+rhapsody-install-browser.sh homepage <rig-dir> [--homepage URL]
 ```
+
+**`homepage` is the live-station subcommand, and it exists because `install` is
+not one.** `do_install` opens by asserting the guest can read the raw payload
+disk, and a LIVE station has no payload disk — its device set is the production
+one, and the golden and the device set are one combination (rule 6). So
+`install --homepage` dies on a live station before it ever reaches the three
+`defaults write` calls, and re-pointing the corpus address had no supported
+route at all until `homepage` was added on 2026-09-14. It writes and verifies
+`HomePage` and `ShowHomePage` over the serial getty and touches nothing else.
+Run it under a held wake lease (`scripts/lib/guest_wake.py`'s `WakeLease`): it
+does four separate serial logins, and this station idle-auto-pauses after 60 s,
+which looks exactly like a dead getty.
 
 `image` fetches the pinned payload if absent, **asserts its sha256 and byte
 size**, and writes the raw 8 MiB payload disk. `install` drives the guest over
@@ -205,11 +253,11 @@ re-running it is a no-op that still verifies: the extraction is skipped when the
 inner executable is already in place, and the copy is skipped when the home
 bundle is already a real directory. `--homepage` is the parameter that carries
 the corpus address, so Stream B's addressing plugs straight in; it defaults to
-**`http://www.wired.com/`** (was `http://spacejam.com/index.html` until
-2026-09-14). `www.apple.com` scored higher on the corpus-completeness audit
-(14/14 vs. 29/30) and was tried first, but its animated ticker GIF fails
-`checkpoint-guard`'s idle-stability gate — see the note at the top of this
-doc — so `www.wired.com` is what actually ships.
+**`http://www.apple.com/`** (was `http://spacejam.com/index.html` before
+2026-09-14, and briefly `http://www.wired.com/` for part of that day while the
+ticker GIF's declared mask was being landed — see "Why apple.com bakes now"
+above). `www.apple.com` scored highest on the corpus-completeness audit
+(14/14 bitmaps) and is what actually ships.
 
 The checks cover the payload device and its gzip magic, both executables, the
 **i386 slice**, the bundled licence, the **absence of the beta expiry string**,
@@ -236,12 +284,12 @@ a symlink*, its ownership, all three preference keys, and free disk space.
 - It launches from the home-window icon and renders **`http://spacejam.com`
   from the retronet corpus, with images**, through the `:80` origin door with no
   proxy. This was the original framebuffer proof; the golden's home page is
-  now `http://www.wired.com/` (2026-09-14), applied directly to the live
+  now `http://www.apple.com/` (2026-09-14), applied directly to the live
   station and proven on its own framebuffer (below), then baked with
   `checkpoint-guard recapture rhapsody` and mirrored into the walk-in seed.
 - The GIF plugin works (the Space Jam page is entirely GIFs; `www.apple.com`
-  and `www.wired.com` both render their GIF/JPEG imagemap nav and photos
-  identically — apple.com was the one animated GIF that mattered, see above).
+  renders its GIF/JPEG imagemap nav and photos, including the one animated
+  GIF — the ticker — that needed the declared mask, see above).
 - Pointer dead reckoning at **0.15 s pacing** lands clicks on the exact pixel;
   at 0.05 s the DR2 PS/2 driver sign-flips and the cursor bolts to a corner.
   Anything driving this desktop by pointer must pace at ~150 ms, and should
@@ -278,6 +326,33 @@ recording for the next agent who touches this station's scene:**
   needed. Not fixed in this pass; a real fix is teaching the launcher-scrape
   fallback to resolve `$D`-style vars, or having `qemu-streamhost.sh` spell
   the path literally.
+
+**2026-09-14, measured on a namespaced sandbox clone while curating the
+apple.com home page — three traps for the next agent who touches this
+scene:**
+
+- **A running OmniWeb caches `HomePage` at launch and never re-reads it.**
+  Writing `defaults write OmniWeb HomePage <url>` and then clicking the
+  toolbar Home button navigated to the OLD value (spacejam), not the one just
+  written. `--homepage`/`defaults write` sets what the **next** launch will
+  use; changing the page in an **already-open** window means navigating it by
+  hand — click the Page address field, Edit menu → Select All, type the URL,
+  Enter. At 1024×768 the Home toolbar button is at **(286,134)** and the Page
+  address field at **(500,171)**.
+- **Re-numbering the guest's IP under a running OmniWeb wedges its request
+  queue.** `ifconfig en0 <new ip>` while OmniWeb had a page open left it
+  showing "HTTP Queued" forever; a `tcpdump` on the tap captured **zero**
+  packets from the guest afterward, even though the host could still ping the
+  guest and `curl -H 'Host: www.apple.com' http://10.99.0.2/` answered `200`
+  from the gateway side. The stack itself is fine — OmniWeb's queue is not.
+  `loadvm golden` is the reset; do not re-address this guest under a live
+  browser.
+- **The guest's serial getty prints nothing in response to a bare CR at its
+  login prompt** once something else has consumed that prompt.
+  `scripts/labctl.d/serialexec.py` opens every attempt with a CR and waits for
+  `login: `, so once the prompt is gone it reports "no login prompt" until the
+  getty's own 300 s login timeout fires and reprints it. Waiting out that
+  timeout, or a `loadvm`, restores the channel.
 
 **Not proven / left open:**
 

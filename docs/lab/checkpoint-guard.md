@@ -241,20 +241,41 @@ the proof.
 The idle-stability check in `cpg_reference` — two shots `CPG_IDLE_SECONDS` apart
 must agree — is what stops a half-drawn golden, and it stays. But it made a whole
 class of **period-correct scenes unbakeable**. `www.apple.com`'s 1998 homepage
-carries a ~37-frame animated GIF ticker (`home/images/ticker.gif`), so that
-framebuffer *never* idles: the guard reported `SSIM ~0.996 < 0.999` and refused,
-correctly and repeatedly, and `rhapsody` had to settle for `www.wired.com`
+carries a 37-frame animated GIF ticker (`home/images/ticker.gif`), so that
+framebuffer *never* idles: the guard reported `SSIM 0.996854 < 0.999` and
+refused, correctly and repeatedly, and `rhapsody` shipped `www.wired.com`
 instead of the thematically exact Apple page.
 
 A **mask** declares rectangles that are excluded from every framebuffer
 comparison in the run, so a scene that is stable everywhere except a known
-animating region can still be proven stable.
+animating region can still be proven stable. `rhapsody` is the worked example,
+and it is the real declaration, measured on that station's own framebuffer:
 
 ```sh
 # in the station's station.env (the declared home — it is deployed from the
 # committed fixture, so the exemption is reviewable):
-CPG_MASK="632,214,120x60 home/images/ticker.gif, a 37-frame animated GIF that cannot be parked"
+CPG_MASK="175,489,604x29 home/images/ticker.gif, the 37-frame Hot News Headlines animated GIF on the 1998 www.apple.com homepage: it loops forever and cannot be parked"
 ```
+
+With it declared, the recapture that refused at `0.996854` passes at
+**`SSIM 1.000000 (masked 2.5%, 4 tiles, worst tile 1.000000)`**.
+
+**Measure the rectangle; never guess it.** The number above came from two
+independent measurements that agree, and both are cheap:
+
+1. Union the framebuffer diffs over a window long enough to cover the
+   animation's whole cycle — for rhapsody, 72 s of screendumps put *all*
+   motion inside `x 391..725, y 498..509`.
+2. Find the animating element's own extent in the rendered frame. rhapsody's
+   ticker sits at `x 177..776, y 491..514`, which is exactly the
+   `WIDTH=600 HEIGHT=25` its page declares for the image.
+
+Then declare **the element, not the motion**, plus a small margin. Those two
+numbers are different on purpose: only the headline text band moved during the
+measurement, but the GIF cycles headlines of different lengths, so a later frame
+can use the image's full 600 px. A mask fitted to the observed band would pass
+today and refuse later, which is the worst of both worlds — an exemption that
+is simultaneously too clever and not durable.
 
 Entries are separated by `;`; each is `X,Y,WxH` followed by whitespace and a
 free-text **reason**. Coordinates are guest pixels in that station's own

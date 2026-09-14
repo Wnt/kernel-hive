@@ -5,9 +5,11 @@ WHY THIS EXISTS. checkpoint-guard refuses to bake a checkpoint whose idle
 framebuffer is not stable (two shots CPG_IDLE_SECONDS apart must agree), because
 without a stable reference "restored == reference" proves nothing. That check is
 correct and stays. But it makes a whole class of period-correct scenes
-unbakeable: www.apple.com's 1998 homepage carries a ~37-frame animated GIF
-ticker, so that framebuffer NEVER idles, and `rhapsody` had to settle for
-www.wired.com instead of the thematically exact page.
+unbakeable: www.apple.com's 1998 homepage carries a 37-frame animated GIF
+ticker, so that framebuffer NEVER idles, and `rhapsody` could not bake the
+thematically exact page at all -- it shipped www.wired.com instead until this
+existed. With the ticker declared, that same recapture goes from SSIM 0.996854
+(refused) to 1.000000 (masked 2.5%), and rhapsody's golden is apple.com.
 
 A mask lets a scene that is stable EVERYWHERE EXCEPT a known animating region be
 proven stable anyway. Four rules make that an exemption you can trust:
@@ -28,7 +30,7 @@ proven stable anyway. Four rules make that an exemption you can trust:
 
 DECLARATION FORM (one line, shell-quotable), in station.env or $CPG_MASK:
 
-    CPG_MASK="632,214,120x60 home/images/ticker.gif animates forever; 8,8,96x16 clock"
+    CPG_MASK="177,491,600x25 home/images/ticker.gif animates forever; 8,8,96x16 clock"
 
 entries separated by ';', each `X,Y,WxH` followed by whitespace and free-text
 reason. Coordinates are guest pixels in the station's own framebuffer, so a
