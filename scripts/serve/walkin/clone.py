@@ -109,12 +109,12 @@ class Clone:
     spec: StationSpec
     argv: list
     slot_claim: claims.SlotClaim
+    env: dict = field(default_factory=dict)  # the launcher's `export`s — README §1
     unit: str = ""
     daemon_unit: str = ""
     primed: bool = False
     #: Why the last prime failed, for the caller's log line. "" when it did not.
     prime_error: str = ""
-    extras: dict = field(default_factory=dict)
 
     @property
     def identity(self) -> str:
@@ -236,7 +236,7 @@ class Clone:
             f"--property=WorkingDirectory={self.plan.root}",
             f"--property=StandardOutput=append:{self.plan.logfile}",
             f"--property=StandardError=append:{self.plan.logfile}",
-            "--", *self.argv,
+            *[f"--setenv={k}={v}" for k, v in sorted(self.env.items())], "--", *self.argv,
         ]  # fmt: skip
         _run(cmd)
 
@@ -439,7 +439,7 @@ def build(spec: StationSpec, index: int, repo_root: Path, preferred_slot: int | 
         plan = derive.plan_for(spec, index, slot_claim.slot)
         base = derive.read_launcher(spec, repo_root)
         argv = derive.derive_argv(base, plan, spec)
-        clone = Clone(plan=plan, spec=spec, argv=argv, slot_claim=slot_claim)
+        clone = Clone(plan=plan, spec=spec, argv=argv, slot_claim=slot_claim, env=base.exports)
         clone.prepare()
         write_manifest(clone)
         return clone

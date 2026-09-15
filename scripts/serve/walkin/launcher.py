@@ -34,10 +34,10 @@ from __future__ import annotations
 
 import re
 import shlex
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-_ASSIGN = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*?)\s*(?:#.*)?$")
+_ASSIGN = re.compile(r"^\s*(?P<export>export\s+)?(?P<name>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*?)\s*(?:#.*)?$")
 _HAS_SUBST = re.compile(r"\$\(|`")
 _COMMAND_WORD = re.compile(r'^\s*(?:nohup\s+)?(?P<word>"[^"]+"|[^\s|;&]+)')
 _TAPNET = re.compile(r"(?:bash|sh)\s+(?P<path>\"?[^\"'\s]*tapnet[\w.-]*\.sh\"?)\s+(?P<verb>up|down)\b")
@@ -60,6 +60,11 @@ class Launcher:
     argv: list  # full argv, argv[0] == binary
     variables: dict
     tapnet: str = ""  # resolved path of the station's own tap script, if any
+    # Variables the launcher `export`s, i.e. the ones it means the EMULATOR to
+    # read from its environment rather than from its argv. A derivation that
+    # takes the argv and drops these runs a materially different emulator —
+    # see `_collect_variables`.
+    exports: dict = field(default_factory=dict)
 
 
 _VAR = re.compile(r"\$(?:\{(?P<braced>[A-Za-z_]\w*)(?:(?P<op>:?-)(?P<default>[^}]*))?\}|(?P<name>[A-Za-z_]\w*))")
@@ -87,20 +92,36 @@ def _expand(text: str, variables: dict, where: str) -> str:
     return _VAR.sub(sub, text)
 
 
-def _collect_variables(lines: list, presets: dict, where: str) -> dict:
+def _collect_variables(lines: list, presets: dict, where: str) -> tuple:
     """Plain assignments, in file order, with presets layered on top.
 
     Conditional and command-substituted assignments are deliberately skipped:
     we cannot evaluate `LOADVM="-loadvm golden -S"` guarded by a `grep`, and we
     must not pretend to. The broker supplies those as presets instead — which is
     also how it guarantees a pool member comes up on the golden, paused.
+
+    Returns `(variables, exports)`. The second is the half this module used to
+    throw away, and throwing it away is not cosmetic: a launcher `export`s the
+    settings it means the EMULATOR to read out of its environment, and the
+    broker READS a launcher rather than running it (see the module docstring),
+    so nothing else can carry them. rhapsody exports
+    `KH_I8259_LENIENT_CASCADE=1` — the opt-in for the i8259 patch WITHOUT WHICH
+    that guest's Mach kernel loses every slave-PIC interrupt the first time the
+    timer and a device completion coincide. A clone built from the argv alone
+    ran the right binary with the fix switched OFF, wedged the master PIC with
+    ISR2 permanently in service, and lost IRQ12 — the PS/2 mouse — for the rest
+    of the visitor's session. Measured 2026-09-15: `info pic` on a walk-in clone
+    read `pic0 irr=04 isr=04 / pic1 irr=90 isr=00`, the exact end state
+    docs/guests/rhapsody.md records, while the live station (which DOES get the
+    variable) has never once failed the same way.
     """
     seen: dict = {}
+    exported: set = set()
     for raw in lines:
         match = _ASSIGN.match(raw)
         if not match:
             continue
-        name, value = match.group(1), match.group(2)
+        name, value = match.group("name"), match.group("value")
         if _HAS_SUBST.search(value):
             continue
         try:
@@ -108,8 +129,12 @@ def _collect_variables(lines: list, presets: dict, where: str) -> dict:
         except (ValueError, LauncherError):
             continue
         seen[name] = words[0] if len(words) == 1 else " ".join(words)
+        if match.group("export"):
+            exported.add(name)
     seen.update(presets)
-    return seen
+    # Presets WIN over the file for expansion, so an exported name the caller
+    # also preset carries the caller's value here too — same rule, one place.
+    return seen, {name: seen[name] for name in sorted(exported) if name in seen}
 
 
 def _command_binary(line: str, variables: dict) -> str:
@@ -164,7 +189,7 @@ def parse(path, presets: dict | None = None, text: str | None = None) -> Launche
     where = str(path)
     body = text if text is not None else Path(path).read_text()
     lines = [ln for ln in body.splitlines() if not ln.lstrip().startswith("#")]
-    variables = _collect_variables(lines, dict(presets or {}), where)
+    variables, exports = _collect_variables(lines, dict(presets or {}), where)
 
     binary, command = _qemu_block(lines, variables, where)
     command = re.sub(r"^\s*nohup\s+", "", command)
@@ -192,4 +217,11 @@ def parse(path, presets: dict | None = None, text: str | None = None) -> Launche
             tapnet = _expand(found.group("path").strip('"'), variables, where)
             break
 
-    return Launcher(path=where, binary=_expand(binary, variables, where), argv=argv, variables=variables, tapnet=tapnet)
+    return Launcher(
+        path=where,
+        binary=_expand(binary, variables, where),
+        argv=argv,
+        variables=variables,
+        tapnet=tapnet,
+        exports=exports,
+    )

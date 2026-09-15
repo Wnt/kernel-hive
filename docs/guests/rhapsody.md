@@ -268,29 +268,78 @@ possible); and a click at a commanded pixel that raised a buried window and
 switched the active application, 265 062 pixels repainted.
 
 
-## The pointer on a walk-in clone
+## The walk-in clone ran this guest with the i8259 fix OFF
 
-`/` hands a visitor a private CLONE of this station, and the clone carries the
-same `-device kh-ramabs,addr=0x0050fdac`: the walk-in derivation re-roots both
-`ptr.sock` and the daemon's `SH_RAMABS_SOCK` into the clone's own directory, and
-`registry/walkin/rhapsody.json` pins `/opt/qemu-rhapsody/bin/qemu-system-i386`
-so the binary stays bound to the checkpoint (rule 6). Proven 2026-09-15 on a
-sandbox restore of the walk-in seed driven by the clone's exact command line,
-`-sandbox on,…` included: `verified=yes`, and the sprite lands on every
-commanded target.
+**The bug: "on Rhapsody the mouse cursor is not moving" on the landing page.**
+Root-caused 2026-09-15. The live station was never affected; only the walk-in
+CLONES were, and the cause is one missing environment variable.
 
-Two things about a clone that are **not** faults, and have both been chased:
+This station's launcher opts into its own QEMU patch with a shell `export`:
+
+```sh
+export KH_I8259_LENIENT_CASCADE=1
+```
+
+The walk-in broker **reads** a station launcher and rewrites its argv — it never
+executes it (`scripts/serve/walkin/README.md`). It carried the argv and dropped
+the exports, so every clone ran `/opt/qemu-rhapsody` — the right binary, pinned
+by `registry/walkin/rhapsody.json` — **with the patch switched off**, which is
+the one configuration this guest cannot survive.
+
+What that does, and why it looks like a pointer bug:
+
+1. The i8259 spurious-cascade race fires (frequent under QEMU, see "Root cause"
+   above) and leaves the master PIC with **ISR2 permanently in service**.
+2. From that moment **no slave-PIC interrupt can ever be delivered**. The doc
+   above tells this story about IDE (IRQ14/15). **The PS/2 mouse is IRQ12 — also
+   on the slave.**
+3. The guest keeps running: the timer is IRQ0 on the MASTER, so the desktop and
+   the OmniWeb ticker animate normally and the machine looks alive.
+4. `kh-ramabs` keeps working too, because a guest-RAM write needs no interrupt —
+   so the commanded coordinate at `0x0050fdac` tracks the visitor's mouse
+   exactly. But the publish nudge is a PS/2 event the guest can no longer take,
+   so the window server never repaints, the device gives up after 6 tries, and
+   **the only visible symptom on a static 1998 desktop is a frozen cursor.**
+
+Measured, on a clone and then reproduced causally on a sandbox rig that differed
+in nothing else:
+
+```
+pic0: irr=04 isr=04      <- master, ISR2 stuck in service
+pic1: irr=90 isr=00      <- slave: IRQ15 and IRQ12 pending, undeliverable
+kh-ramabs: gave up publishing 227,272 after 6 tries (guest holds 226,271)
+```
+
+`guest holds` is always the target plus the nudge — i.e. the write landed and the
+guest applied nothing. WITH the variable the same rig ran hundreds of moves with
+**zero** give-ups; the live station has logged zero since it was built.
+
+**Fix:** `launcher.py` now captures a launcher's `export`ed variables and
+`clone.py` passes them to the clone's unit with `--setenv`. Note `systemd-run`
+starts a unit from a CLEAN environment, so an export reaches a clone only if it
+is named there — and a missing one is silent, because the emulator just behaves
+as though nobody had opted in. All three walk-in stations were also missing
+`SH_DBUS_UPDATE_MS=4` this way; 64 station launchers export something.
+
+**The general lesson, which is not about rhapsody:** a clone that is built from a
+launcher's ARGV alone runs the station's binary with the station's CONFIGURATION
+missing. Anything a launcher says in its environment — an opt-in, a tuning knob,
+a workaround for a guest that cannot boot without it — is part of the machine,
+and a derivation that keeps only the command line is not running the same
+machine. It fails silently and it fails as a symptom in a different subsystem.
+
+Two clone behaviours that are **not** faults, and were both chased first:
 
 * **Four `ERR unverified-address` in the first lines of every clone's
-  `streamhost.log`.** A pool member is built `-loadvm golden -S` and stays
-  PAUSED until a visitor claims it, while its daemon connects to the control
-  object immediately — and the control object will not verify against a stopped
-  guest by design. Those four refusals are the daemon's connect-time reset
-  batch. Verification completes about 0.2 s after the claim resumes the guest
-  (measured at 0.20 s even after the member had sat paused for 240 s).
+  `streamhost.log`.** A pool member is `-loadvm golden -S` and stays PAUSED
+  until claimed, while its daemon connects to the control object immediately —
+  and the control object will not verify against a stopped guest by design.
+  Those four refusals are the daemon's connect-time reset batch. Verification
+  completes about 0.2 s after the claim resumes the guest (measured at 0.20 s
+  even after the member had sat paused for 240 s).
 * **`[input-router] ramabs accepted=0` on an idle pool member** means nobody has
-  driven it, not that input is broken. That counter is the one that separates
-  "the browser never sent the records" from "the device refused them" — see
+  driven it. That counter is what separates "the browser never sent the records"
+  from "the device refused them" — see
   [`../lab/INPUT-DEBUGGING.md`](../lab/INPUT-DEBUGGING.md) §"Is this the live
   station, or a walk-in clone?".
 

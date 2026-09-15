@@ -247,6 +247,21 @@ grid with no hero at all. Measured 2026-09-15: zero station chips and no
 pool clones on the public one. A probe pointed at the LAN origin reports "no
 walk-in" and that is a fact about the ORIGIN, not about the station.
 
+**A clone can run the station's BINARY with the station's CONFIGURATION
+missing**, and it then fails as a symptom in a different subsystem. The walk-in
+broker derives a clone's command line by READING the station launcher, so
+anything that launcher puts in the ENVIRONMENT rather than the argv must be
+carried on purpose. rhapsody's `export KH_I8259_LENIENT_CASCADE=1` was not, so
+clones ran the station's own patched QEMU with the patch off, wedged the master
+PIC with ISR2 in service, and lost IRQ12 — the PS/2 mouse — while the guest went
+on running happily on the master's timer.
+
+`info pic` is the cheap check whenever a guest is plainly alive but takes no
+mouse or keyboard: a stuck `isr` on the master with interrupts sitting pending
+in the slave's `irr` is not an input bug at all. And compare the emulator's real
+environment against its launcher's before believing anything else —
+`tr '\0' '\n' < /proc/<qemu-pid>/environ`.
+
 **The one number that splits the problem** is the router counter both planes
 print every 10 s:
 

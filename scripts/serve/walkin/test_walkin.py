@@ -290,6 +290,33 @@ class LauncherTests(unittest.TestCase):
     def test_finds_the_tap_script(self):
         self.assertTrue(self.parsed.tapnet.endswith("rn-tapnet.sh"))
 
+    def test_exported_variables_are_captured_not_dropped(self):
+        """A launcher `export`s what it means the EMULATOR to read. The broker
+        READS launchers instead of running them, so dropping these ran a clone
+        on the station's binary with the station's settings switched off."""
+        text = (
+            "D=/data/vms/streamhost/stations/x\n"
+            "export KH_I8259_LENIENT_CASCADE=1\n"
+            'export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"\n'
+            "PLAIN=not-exported\n"
+            "qemu-system-i386 -m 64 -pidfile $D/qemu.pid\n"
+        )
+        parsed = launcher.parse("x", text=text)
+        self.assertEqual(parsed.exports, {"KH_I8259_LENIENT_CASCADE": "1", "SH_DBUS_UPDATE_MS": "4"})
+        # A plain assignment is a shell local: it must NOT reach the emulator.
+        self.assertNotIn("PLAIN", parsed.exports)
+        self.assertEqual(parsed.variables["PLAIN"], "not-exported")
+
+    def test_rhapsody_carries_the_i8259_opt_in(self):
+        """The station this was found on, asserted by name. Without the opt-in
+        rhapsody's Mach kernel wedges the master PIC with ISR2 in service and
+        loses IRQ12 — the PS/2 mouse — for the rest of the session."""
+        parsed = launcher.parse(
+            REPO / "streamhost/stations/rhapsody/qemu-streamhost.sh",
+            presets={"B": str(REPO / "streamhost/stations/rhapsody"), "LOADVM": "-loadvm golden -S"},
+        )
+        self.assertEqual(parsed.exports.get("KH_I8259_LENIENT_CASCADE"), "1")
+
     def test_unresolvable_variable_is_loud(self):
         with self.assertRaises(launcher.LauncherError):
             launcher.parse("mem", text="qemu-system-x86_64 -m $MYSTERY\n")
