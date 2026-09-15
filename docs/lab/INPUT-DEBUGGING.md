@@ -221,6 +221,86 @@ session streams video but eats input, debug the carrier first:
 but eats input") and `docs/WEBRTC-PLATFORM.md` §Input path (the `webrtc-input`
 rows and the ticket rule).
 
+## Is this the live station, or a walk-in clone?
+
+The landing page (`/`) hands a stranger a private CLONE of one of three stations
+(`win311`, `os2warp`, `rhapsody`) — not the exhibit at `/os/<id>`. A complaint
+that names only the OS ("the cursor is not moving on Rhapsody") does not say
+which plane it came from, and the fix lives somewhere different for each. So
+establish the plane before reading any code: the clone is a separate guest, a
+separate daemon and a separate log.
+
+| | live station | walk-in clone |
+|---|---|---|
+| guest dir | `/data/vms/streamhost/stations/<id>/` | `/data/vms/walkin/walkin-<id>-<n>/` |
+| daemon log | `journalctl -u streamhost@<id>` | `/data/vms/walkin/walkin-<id>-<n>/streamhost.log` |
+| drive ingress | `drive-<id>.sock` | `drive-walkin-<id>-<n>.sock` |
+
+**A walk-in bug does not reproduce on the LAN origin, and the e2e README will
+send you there.** `scripts/e2e/README.md` says `GALLERY_URL` must be the lab's
+INTERNAL address — correct for a station probe, and exactly wrong here: the
+walk-in PLANE (broker + auth) only runs behind the PUBLIC listener
+(`spa/src/landing/heroAudience.ts`), so on the LAN origin `/walkin/state` never
+reaches a broker, `walkinPlaneAvailable` is false, and `/` renders the plain
+grid with no hero at all. Measured 2026-09-15: zero station chips and no
+`.landing-stage` in the DOM on the LAN origin; the hero renders and claims real
+pool clones on the public one. A probe pointed at the LAN origin reports "no
+walk-in" and that is a fact about the ORIGIN, not about the station.
+
+**A clone can run the station's BINARY with the station's CONFIGURATION
+missing**, and it then fails as a symptom in a different subsystem. The walk-in
+broker derives a clone's command line by READING the station launcher, so
+anything that launcher puts in the ENVIRONMENT rather than the argv must be
+carried on purpose. rhapsody's `export KH_I8259_LENIENT_CASCADE=1` was not, so
+clones ran the station's own patched QEMU with the patch off, wedged the master
+PIC with ISR2 in service, and lost IRQ12 — the PS/2 mouse — while the guest went
+on running happily on the master's timer.
+
+`info pic` is the cheap check whenever a guest is plainly alive but takes no
+mouse or keyboard: a stuck `isr` on the master with interrupts sitting pending
+in the slave's `irr` is not an input bug at all. And compare the emulator's real
+environment against its launcher's before believing anything else —
+`tr '\0' '\n' < /proc/<qemu-pid>/environ`.
+
+**The one number that splits the problem** is the router counter both planes
+print every 10 s:
+
+```
+[input-router] ramabs accepted=N coalesced=0 dropped=0 overflow=0 backend-down=0
+```
+
+`accepted` counts records that reached the sink, and it counts them on either
+plane. Drive the pointer and read it again: if it does NOT move, the records
+never arrived and the fault is in the SPA or the carrier; if it moves and the
+cursor does not, the fault is below the router — the sink, the control object or
+the guest. `scripts/dev/station-drive.py <tile>` drives either plane through the
+same pipeline the browser feeds without stealing the single injector, and a
+clone answers to its clone id (`station-drive.py walkin-rhapsody-12 …`).
+
+**Expect a burst of refusals at clone startup, and do not chase them.** A pool
+member is built `-loadvm golden -S` and stays PAUSED until a visitor claims it,
+while its daemon connects to the pointer control object immediately. On a
+backend that verifies itself against guest RAM (`ramabs`), verification cannot
+resolve against a stopped guest *by design* — `kh_tick` returns early while
+`!runstate_is_running()`, so a try is not even spent — so the daemon's
+connect-time reset batch is refused and EVERY clone's log opens with exactly:
+
+```
+[ramabs] connected, HELLO verified .../ptr.sock
+[ramabs] control object replied 1 ERR unverified-address
+[ramabs] control object replied 2 ERR unverified-address
+[ramabs] control object replied 3 ERR unverified-address
+[ramabs] control object replied 4 ERR unverified-address
+```
+
+That is the fail-closed path working, not a fault. Verification completes about
+0.2 s after the visitor's claim resumes the guest — measured on a rhapsody clone
+at 0.20 s even after the member had sat paused for 240 s — and the pointer works
+from there. The walk-in plane cannot prime this the way it primes ARP
+(`clone.prime_network()`), because `warm.py` holds an explicit invariant that
+priming must finish BEFORE `spawn_daemon()`: priming is a long QMP hold and
+QEMU's QMP chardev serves one monitor at a time.
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the

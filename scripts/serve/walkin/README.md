@@ -22,6 +22,21 @@ cannot route around it.
    it is also the incident [`clone-guard`](../../../docs/lab/clone-guard.md)
    exists for). `launcher.py` parses the text and `derive.py` rewrites the argv;
    neither module may ever gain a `subprocess` import, and a test enforces that.
+
+   **So the launcher's ENVIRONMENT has to be carried deliberately, and it was
+   not.** A launcher `export`s what it means the emulator to read out of its
+   environment, and reading the file instead of running it drops every one of
+   those. rhapsody exports `KH_I8259_LENIENT_CASCADE=1`, the opt-in for the QEMU
+   patch without which that guest's Mach kernel wedges the master PIC and loses
+   every slave interrupt — IRQ12, the PS/2 mouse, included. Clones therefore ran
+   the station's pinned binary with the station's fix DISABLED, and it surfaced
+   as "the mouse cursor is not moving on Rhapsody" on the landing page, three
+   subsystems away from the cause (`docs/guests/rhapsody.md` §"The walk-in clone
+   ran this guest with the i8259 fix OFF"). `launcher.parse` now returns
+   `exports` and `clone.spawn` passes them with `--setenv`; systemd-run starts a
+   unit from a CLEAN environment, so an export that is not named there does not
+   arrive and nothing complains. Pinning the BINARY is only half of rule 6 — the
+   same combination includes how that binary is configured.
 2. **A clone's disk is a reflink COPY of the seed, not a backing overlay.** An
    internal `savevm` snapshot is per-image and does not inherit through a qcow2
    backing chain, so `-loadvm golden` against an overlay fails with *"Snapshot
