@@ -200,7 +200,18 @@ this document was sufficient as-built and **nothing about it changed**.
   type guest paths as `C:\\\\dir\\\\file` when driving installs.
 - The savevm scene note in `station.env.fixture` used to describe a maximized
   Notepad; the live scene since the 2026-08-17 re-bake is the Program Manager +
-  Gallery Games desktop, and this bake reproduces that.
+  Gallery Games desktop. The 2026-09-14 `www.mrshowbiz.com` home-page recapture
+  (`6e8ea366`) left Netscape and IE3 both open on top of that desktop — the
+  agent that set the home pages via each browser's own dialog never closed
+  either window before calling `checkpoint-guard recapture`. Fixed 2026-09-15:
+  Alt+F4 (QMP `sendkey`) closes Netscape, then IE3 (the one is stacked behind
+  the other), back to a clean Program Manager with every group cascaded open
+  and no application window on top, then recapture. Not a guest autostart bug
+  — `WINDOWS/WIN.INI [windows]` `load=`/`run=` only names `AGENT.EXE` (the
+  warpd pointer agent) and `runonc16.exe` (stock RunOnce), no browser — so nothing
+  reintroduces the open window on its own; a future recapture just needs the
+  same close-both-windows step first if a browser was opened to verify or
+  change anything.
 
 ## Operating it
 
