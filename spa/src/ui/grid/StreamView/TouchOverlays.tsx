@@ -7,8 +7,9 @@ import { TouchControlBadge } from './TouchControlBadge';
 import { OnScreenCursor } from './OnScreenCursor';
 
 // ---------------------------------------------------------------------------
-//  TouchOverlays — the mobile stage's touch affordance stack, split out of
-//  StreamView (which is at its line budget). Mounted only while mobile + live.
+//  TouchOverlays — the touch stage's touch affordance stack, split out of
+//  StreamView (which is at its line budget). Mounted only while `touchChrome`
+//  (touchChromeGate.ts: mobile, or a touch-capable docked mini display) + live.
 //    - DIRECT (absolute): the armed-state badge (one-shot right-click arm).
 //    - TRACKPAD (relative): abs stations get the OnScreenCursor sprite (T-3);
 //      rel stations need none (the guest draws its own cursor).

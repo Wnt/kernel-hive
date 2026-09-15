@@ -8,7 +8,7 @@ import { useMuseum } from '../../state/store';
 import { keyboardLockApi } from './StreamView/keyboardLock';
 import { currentFullscreenElement, leaveFullscreen } from '../fullscreen';
 import { useChromeDock } from '../chromeDock';
-import { isFirefoxEngine } from './StreamView/env';
+import { isFirefoxEngine, isTouchDevice } from './StreamView/env';
 import { exitReasonCopy } from './StreamView/exitReason';
 import { useDevicePressure } from './StreamView/useDevicePressure';
 import { buildStreamhostRows } from './StreamView/buildStreamhostRows';
@@ -30,6 +30,7 @@ import { useFirstInput } from './StreamView/useFirstInput';
 import { usePinchZoom } from './StreamView/usePinchZoom';
 import { useTouchControl } from './StreamView/useTouchControl';
 import { TouchOverlays } from './StreamView/TouchOverlays';
+import { showsTouchChrome } from './StreamView/touchChromeGate';
 import { KeyboardToggleBadge } from './StreamView/KeyboardToggleBadge';
 import { useMobileLayout } from './StreamView/useMobileLayout';
 import { MOBILE_CSS } from './StreamView/mobileCss';
@@ -97,6 +98,7 @@ export default function StreamView({
   const mobile = useMobileLayout();
   // The landing mini display (chromeDock.ts) — ☰ never mounts there (StageMenu).
   const docked = useChromeDock() != null;
+  const touchChrome = showsTouchChrome({ mobile, docked, touchCapable: isTouchDevice() }); // touchChromeGate.ts
 
   // coldBoot: frame the connect as a CRT power-on (PowerOnOverlay) instead of a
   // spinner. bootVideo: same-origin recorded power-on clip (BootVideoOverlay),
@@ -563,9 +565,9 @@ export default function StreamView({
           onReconnect={reconnectNow}
         />
 
-        {/* TOUCH affordances — mobile or the landing mini display, live only:
-            the one-shot right-click badge (T-1) and the trackpad sprite (T-3). */}
-        {(mobile || docked) && mediaLive && (
+        {/* TOUCH affordances (touchChromeGate.ts), live only: the one-shot
+            right-click badge (T-1) and the trackpad sprite (T-3). */}
+        {touchChrome && mediaLive && (
           <TouchOverlays
             touch={touch}
             gestureRef={gestureRef}
@@ -576,10 +578,8 @@ export default function StreamView({
           />
         )}
 
-        {/* On-screen-keyboard opener: mobile's bottom-right badge, or (docked)
-            the landing mini display's row — mirrors the right-click arm.
-            Hidden once open: closing it is the keyboard sheet's own job. */}
-        {(mobile || docked) && streamable && !oskOpen && (
+        {/* On-screen-keyboard opener (same gate); hidden once open. */}
+        {touchChrome && streamable && !oskOpen && (
           <KeyboardToggleBadge onOpen={() => setOskOpen(true)} />
         )}
       </div>
