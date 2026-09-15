@@ -65,9 +65,9 @@ lives under `/auth/` because it is an admin control.
 
 | Route | Method | Role | Request | Response |
 |---|---|---|---|---|
-| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4 |
+| `/walkin/state` | GET | public | — | `{"access":"closed\|invited\|open","pools":[{"os":"os2warp","free":2,"size":3}],"notice":"…"}`, plus `"anon":{…}` for an anonymous caller — §3.4, plus `"holds":[{"os":"win311","clone":"walkin-win311-3","secondsLeft":241}]` when the caller holds frozen machines — §3.5. `holds` is omitted entirely when empty, never sent as `[]` |
 | `/walkin/signup` | POST | public | WebAuthn attestation | `{"handle":"bold-turing","role":"walkin"}` |
-| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock; a claim for a different `os` retires the held clone first (one clone per account). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = the longest their visit can still last (§3.4): their REMAINING budget once their clock is running, and the un-engaged window on top of it before it is. Never a fresh 300. |
+| `/walkin/claim` | POST | **anon**, walkin, viewer, admin | `{"os":"os2warp"}` — **`os` is OPTIONAL** | `{"clone":"walkin-os2warp-3","station":"os2warp","signalEndpoint":"/signal/walkin-os2warp-3.json","ttlSeconds":1200}` or `{"queued":true,"position":2}`. **Idempotent per account** (2026-09-08): a claim for the `os` the account already holds and is still DRIVING answers the SAME clone with `"resumed":true` and the TTL that is LEFT — a reload or back-navigation re-attaches, never restarts the clock. A claim for a different `os` **freezes** the held clone rather than retiring it, and reserves it for this same visitor — §3.5. A claim for an `os` this visitor already has FROZEN thaws that same clone (same qcow2, same vmstate, same screen), also answering `"resumed":true`, but with a FRESH TTL, never the remainder of the hold (§3.5). **`os` omitted** (2026-09-10) picks uniformly at random among enabled pools with free capacity, which is how a stranger gets a machine without knowing what to ask for; `station` is the id actually chosen and is present on every claim. **An anonymous caller needs no passkey** and gets `ttlSeconds` = the longest their visit can still last (§3.4): their REMAINING budget once their clock is running, and the un-engaged window on top of it before it is. Never a fresh 300. |
 | `/walkin/engage` | POST | **anon**, walkin, viewer, admin | `{"clone":"…"}` — must be the caller's own | `{"ok":true}` plus `"anon":{…}` for an anonymous caller. **The visitor touched the machine** (2026-09-10): starts their budget clock, cuts the session back to it, and restamps the broker's idle window — the first production caller `Broker.note_input` has ever had. A clone that is not the caller's is refused **403** `walkin_not_yours`. Idempotent: the second call finds the clock already running. |
 | `/walkin/release` | POST | owner | `{"clone":"…"}` | `{"ok":true}` |
 | `/walkin/reset` | POST | owner | `{"clone":"…"}` | same shape as claim |
@@ -125,6 +125,17 @@ simultaneous signups cannot both become `bold-turing`.
 `WALKIN_CLOSED` sits beside the existing `SESSION_REJECTED`; the SPA renders
 distinct copy per code (§7).
 
+**A hold lapsing is not a session ending, unless it is the one the visitor was
+looking at.** A frozen machine ends silently — no reason recorded — when the
+visitor is driving something else: only their *last-used* machine (§3.5) has a
+screen for `sessionEnd` to be about, so a Win 3.11 hold quietly expiring while
+its visitor drives OS/2 must never post "your session ended" over the OS/2
+frame that is running fine. The same silence applies to a hold retired for
+being over the `MAX_HOLDS_PER_VISITOR` ceiling. `Broker.tick` asks
+`holds.end_reason_for` before recording `WALKIN_TTL` against a frozen session,
+and eviction and conversion-time release (§3.5) end their holds with `""`
+directly.
+
 **How a reason code reaches the client.** The broker sends it on the signaling
 channel as the session ends, and also as the transport close reason:
 
@@ -163,7 +174,7 @@ anything.
 | Budget | **300 seconds (5 minutes) of connected time per VISITOR**, not per session, **counted from their first meaningful input** |
 | What starts the clock | `POST /walkin/engage` — a real pointer press, tap or key **on the guest**. Never a mousemove, wheel, scroll or focus |
 | Un-engaged release | **120 s** server-side (`anon.UNENGAGED_SECONDS`), **100 s** in the browser (`landing/heroPolicy.ts UNENGAGED_GRACE_MS`) — the page hands its own cell back first, the server is the backstop |
-| Hold after exhaustion | 120 seconds, on their last clone |
+| Hold after exhaustion | `HOLD_SECONDS` (5 minutes, `walkin/session.py`), on their last clone — the same window as the switch hold (§3.5); `auth/anon.py` imports it rather than keeping its own copy, which used to be 120 s |
 | Broker user id | `anon:<visitor id>` — the pool needs no role model |
 | Refusal | 403 `{"error":"WALKIN_ANON_BUDGET","reason":…,"anon":{…}}` |
 
@@ -209,11 +220,14 @@ Seven rules the implementation may not trade away:
    instant the clock starts, so a media ticket can never outlive the wall
    (§3.3).
 3. **The wall stops the GUEST, not the UI.** At zero the clone is paused over
-   its last frame and reserved; an already-open WebTransport session is never
-   re-ticketed, so a stopped machine is the only thing that makes holding the
-   socket useless. Registering (`/walkin/signup`) promotes the visitor to
-   `walkin`, and their next claim reattaches that same clone with
-   `"resumed":true` and the ordinary 1200 s TTL.
+   its last frame and reserved (this is the same freeze §3.5 uses for a
+   station switch, reached from a second direction); an already-open
+   WebTransport session is never re-ticketed, so a stopped machine is the only
+   thing that makes holding the socket useless. Registering (`/walkin/signup`)
+   promotes the visitor to `walkin`, and `reassign` (§3.5) hands them back
+   their LAST-USED machine — the one behind the wall, thawed — with
+   `"resumed":true` and the ordinary 1200 s TTL; any OTHER holds they were
+   carrying are released at the same instant rather than left to lapse.
 4. **A station never changes under the visitor.** A different machine comes from
    the visitor pressing a switcher chip and from nothing else. Every route back
    onto a machine — the recovery button on a stopped stage, the hero's own call
@@ -221,9 +235,12 @@ Seven rules the implementation may not trade away:
    (`landing/heroSession.ts resumeTarget`). Random is for ARRIVAL, where the
    visitor has chosen nothing yet; a claim with no `os` after they have is the
    bug an operator reported as "the station I was interacting with also changed
-   unexpectedly from one OS to another". What comes back is a fresh clone of
-   that station — the pool never recycles a used one — and the copy must say so
-   rather than imply their work survived.
+   unexpectedly from one OS to another". What comes back is the SAME clone,
+   thawed, if the switch hold (§3.5) on that station has not lapsed — their
+   vmstate exactly as they left it, `"resumed":true` — and only a fresh clone
+   off the golden once that hold is gone; the pool never hands a used clone to
+   anyone else, but it can still hand THIS visitor their own back. The copy
+   must say which one it got, never assume their work survived.
 5. **An un-engaged cell goes back to the pool.** The cost of rule 0: with no
    clock running, nothing else bounds a claim, and every page load takes one of
    24 cells. So a hold nobody has touched is released — by the browser at 100 s,
@@ -237,6 +254,96 @@ Seven rules the implementation may not trade away:
 
 **`/usage/stations.json` is denied to walk-ins** (it enumerates per-station
 activity); `/usage` and `/clientlog` are allowed.
+
+### 3.5 The switch hold
+
+Frozen 2026-09-15. Switching stations used to **destroy** the clone a visitor
+left, so coming back to Win 3.11 after a look at OS/2 got a fresh boot off the
+golden and the desktop they had arranged was gone. It now **freezes** that
+clone and reserves it for the same visitor instead. The rule changes from "one
+clone per account" to:
+
+> **One clone RUNNING per visitor, plus up to `MAX_HOLDS_PER_VISITOR` (2)
+> stopped ones.**
+
+The founding invariant is untouched by this: **a clone is still never handed
+to a second visitor**, and a used clone is still never re-listed to anyone
+else — a held clone still carries its `Session`, so it is not free, it is in
+no other visitor's claim, and it counts against both the pool's free number
+(`pools()[].free`) and `ACTIVE_SESSION_CAP`. What changed is only how long ONE
+visitor's own machine may outlive their attention on it — so the landing
+page's "N of M free" line cannot over-promise.
+
+**The window.** `walkin/session.py HOLD_SECONDS = 5 * 60` is the one
+definition; `auth/anon.py` imports it rather than keeping its own copy (it was
+120 s). The switch hold and the conversion-wall hold (§3.4) are deliberately
+the SAME number, because they are one promise to the visitor ("your machine
+waits ~5 minutes"), and a shorter wall hold meant a visitor who registered at
+4:30 into a switch hold could be handed a machine the reaper had already
+destroyed. It is approximate on purpose — the reaper enforces it on
+`Broker.tick`, so the real window is this plus a tick.
+
+**Freeze semantics, now reached from two directions** (a station switch, and
+the anonymous budget running out, §3.4): vCPUs are stopped via QMP; the ticket
+door shuts FIRST, under the broker lock, before any QMP round trip, and stays
+shut even if the pause itself fails (a clone that will not pause is destroyed
+rather than left running behind a wall); `last_input_at` is restamped so the
+180-second idle reaper does not eat the hold. That idle window is a SECOND,
+SHORTER clock — it applies only to the machine a visitor is actively DRIVING,
+and `POST /walkin/engage` is what keeps it fresh; freezing exempts the
+outgoing machine from it the instant it stops being driven.
+
+**The thaw.** A claim for a station this visitor already holds frozen wakes
+THAT clone — same qcow2, same vmstate, same screen — and answers the ordinary
+claim body (§3) with `"resumed": true`. It gets a FRESH TTL (or the anonymous
+budget's remaining seconds when one applies), never the remainder of the hold:
+the hold's clock measured how long the machine waits, not how long the
+visitor may drive it once they are back. A thaw is checked BEFORE the capacity
+check below — a machine the visitor already holds is not a draw on the pool.
+
+**The ceiling.** `MAX_HOLDS_PER_VISITOR = 2`, chosen because the landing page
+offers exactly three machines, so the ceiling covers the whole intended tour
+and is still a real bound against a client cycling stations to drain the pool
+(every hold is a slot, a UDP port, a tap, a VMID and a core no other visitor
+can be handed). Past the ceiling, the OLDEST hold is destroyed — ended with no
+reason (§3.3) — on the theory that the machine left longest ago is the one
+least likely to be revisited.
+
+**Ordering — "last used".** A visitor can now have several sessions, so
+"theirs" has three different answers, each with its own caller:
+`_active_of` (the machine they are DRIVING — the one session not frozen),
+`_last_used_of` (the active one if any, else the most recently frozen — what
+`own_of` and the conversion wall's `reassign` use), and `holds_of` (all their
+frozen machines, for the UI, §7). `Session.used_seq` is a monotonic counter
+bumped on every freeze, kept beside `used_at` because `used_at` is a clock
+reading and two can tie — a switch freezes the outgoing machine and the wall
+can freeze the incoming one inside the same instant the broker read once — and
+on a tie `max()` kept the FIRST it saw, which handed the conversion wall back
+the machine the visitor had left EARLIEST: the opposite of the promise. Caught
+by a unit test (`test_switching.py
+test_the_wall_hands_back_the_machine_they_were_on_not_an_older_hold`) before
+it reached a visitor.
+
+**Passkey conversion.** Registering inside the window resumes the LAST-USED
+machine (`holds.reassign`, via `auth/anon_plane.adopt`) — see rule 3 above.
+The visitor's OTHER holds are released immediately at conversion rather than
+left to lapse, so the pool gets those slots back at once instead of up to five
+minutes later.
+
+**An expired session is retired, not frozen** (`holds._leave_locked`).
+Freezing a session whose clock had already run out would hand it a fresh
+`HOLD_SECONDS` of life, making the switcher a button that resurrects a spent
+anonymous budget — so a session with no time left when the visitor leaves it
+is ended outright (no reason; the reaper's own code has already recorded one
+or is about to), never added to `frozen`.
+
+**Resource release.** When a hold lapses or is evicted, the ordinary reaper
+path destroys the clone and returns every resource it held — slot claim, UDP
+port claim, tap, cell, VMID, directory. `walkin/claims.py
+walkin_claims_held()` is the teardown check for this (rule 8): every walk-in
+slot and port claim the broker's session still holds, which should read empty
+once a hold's clones are gone. It moved there from `broker.py` on 2026-09-15,
+where it had no caller.
 
 ## 4. Persisted state
 
@@ -570,7 +677,8 @@ fails `npx knip`.
 ```ts
 export type WalkinAccess = 'closed' | 'invited' | 'open';
 export type WalkinPool = { os: string; free: number; size: number };
-export type WalkinState = { access: WalkinAccess; pools: WalkinPool[]; notice?: string };
+export type WalkinHold = { os: string; clone: string; secondsLeft: number };
+export type WalkinState = { access: WalkinAccess; pools: WalkinPool[]; notice?: string; holds?: WalkinHold[] };
 export type WalkinClaim = { clone: string; signalEndpoint: string; ttlSeconds: number; resumed?: boolean };
 export type WalkinQueued = { queued: true; position: number };
 export type WalkinAdminStatus = {
@@ -578,6 +686,14 @@ export type WalkinAdminStatus = {
   sessions: number; pools: WalkinPool[]; accounts: number;
 };
 ```
+
+**`holds` (§3.5)** is present only when the caller has frozen machines waiting
+for them, and is omitted entirely rather than sent as `[]` when there are
+none. The landing `StationSwitcher` chip and the grid's `OsCard` both read it
+the same way: a held machine is drawn as the visitor's own and waiting, with
+the time left, ticking down locally between the 15 s `/walkin/state` polls and
+re-synced to the server's `secondsLeft` on each one — never left to free-run
+past what the server actually still owes it.
 
 ## 7.1 Two things a visitor can trip
 

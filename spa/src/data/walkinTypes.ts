@@ -41,9 +41,35 @@ export type WalkinAnonBudget = {
   /** Reserved for 120s after exhaustion, so registering resumes THE SAME machine. */
   heldClone?: string;
 };
+/**
+ * One machine the caller froze by switching away from it — server-authoritative
+ * hold state, added for the switch-freezes-not-destroys change
+ * (docs/lab/walkin/… the walk-in reaper now parks a left-behind clone instead
+ * of killing it, so the visitor can come back to exactly what they left).
+ *
+ * `secondsLeft` is a SNAPSHOT at response time, not a source of truth the UI
+ * can free-run forever: `/walkin/state` is polled every 15s (usePools.ts), so
+ * a client that just decremented a local number between polls would drift out
+ * from under the reaper's own clock — especially across a backgrounded tab,
+ * where `setInterval` is throttled or paused outright and a naive counter
+ * would either freeze or, worse, catch up in one big jump that reads as a
+ * glitch. `useHolds` (walkin/useHolds.ts) resolves this by re-deriving an
+ * absolute deadline from each poll's `secondsLeft` and ticking wall-clock time
+ * against THAT, never against its own last-rendered number.
+ */
+export type WalkinHold = { os: string; clone: string; secondsLeft: number };
+
 export type WalkinState = {
   access: WalkinAccess; pools: WalkinPool[]; notice?: string;
   anon?: WalkinAnonBudget;
+  /**
+   * Present only for a caller who currently holds frozen machines; absent and
+   * `[]` mean the same thing (nothing held) and callers should treat them
+   * identically rather than branching on presence. The station the visitor is
+   * ACTIVELY driving is never in this list — only the ones they switched away
+   * from and that are still reserved for them.
+   */
+  holds?: WalkinHold[];
 };
 /** `resumed`: the broker handed back the clone this account ALREADY held (a
  *  reload, a back-navigation); `ttlSeconds` is then what was left, not a fresh

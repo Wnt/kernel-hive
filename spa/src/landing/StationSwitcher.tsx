@@ -3,6 +3,7 @@ import type { WalkinPool, WalkinState } from '../data/walkinTypes';
 import { posterFor } from '../data/posterIndex';
 import { HERO_STATIONS, stationCopy } from './stations';
 import type { HeroPhase } from './heroSession';
+import { formatHold, useHolds } from '../walkin/useHolds';
 
 // ============================================================================
 //  landing/StationSwitcher — three machines, one press apart.
@@ -23,6 +24,17 @@ import type { HeroPhase } from './heroSession';
 //  THE COUNTS ARE LIVE, and they are why a full pool does not read as a broken
 //  button: `2 of 3 free` says what pressing will get you, and `all busy` says,
 //  before the press, that it will not.
+//
+//  A CHIP YOU SWITCHED AWAY FROM IS NOT A CHIP YOU LOST. Switching used to
+//  destroy the machine you left; now the server freezes it and holds it for
+//  ~5 minutes (`WalkinHold`, walkinTypes.ts) so coming back resumes exactly
+//  what you left. That is invisible unless the UI says so — the specific
+//  complaint this landed to fix was that a held chip looked byte-for-byte
+//  identical to a chip nobody has ever touched, so a visitor switching
+//  between machines had no way to tell "still mine, waiting" from "gone,
+//  someone else could take it next". `landing-chip--held` plus the
+//  `landing-chip__state` slot reading `yours · 4:01` is that signal, ticked
+//  locally by `useHolds` (walkin/useHolds.ts) between the 15s polls.
 // ============================================================================
 
 function PoolPips({ pool }: { pool: WalkinPool | undefined }) {
@@ -64,6 +76,10 @@ export function StationSwitcher({
   onPick: (os: string) => void;
 }) {
   const selected = selectedStation(phase);
+  // `holds` never includes `selected` (the contract's own rule — the live
+  // station is not "held", it is driven), so there is no case to resolve
+  // where a chip would need to be both active and held at once.
+  const holds = useHolds(state?.holds);
   return (
     <div className="landing-switch" role="tablist" aria-label="Which machine to drive">
       {HERO_STATIONS.map((os) => {
@@ -71,13 +87,15 @@ export function StationSwitcher({
         const pool = poolFor(state, os);
         const active = selected === os;
         const shot = posterFor(os)?.hero;
+        const heldSeconds = holds[os];
+        const held = heldSeconds !== undefined;
         return (
           <button
             key={os}
             type="button"
             role="tab"
             aria-selected={active}
-            className={`landing-chip${active ? ' landing-chip--active' : ''}`}
+            className={`landing-chip${active ? ' landing-chip--active' : ''}${held ? ' landing-chip--held' : ''}`}
             style={{ ['--station-accent' as string]: copy.accent }}
             disabled={disabled && !active}
             onClick={() => onPick(os)}
@@ -88,9 +106,28 @@ export function StationSwitcher({
               <span className="landing-chip__meta">{copy.meta}</span>
               <PoolPips pool={pool} />
             </span>
-            <span className="landing-chip__state" aria-hidden="true">
-              {active ? 'on screen' : 'drive it'}
-            </span>
+            {/*
+              The non-held states (`on screen` / `drive it`) stay decorative —
+              `aria-selected` on the tab already says which one is live, and
+              this slot is just its visual echo. A hold is different: the
+              minutes left are the ONE fact this slot exists to carry, they
+              are not restated anywhere else on the chip, and a countdown that
+              only sighted visitors can see is exactly the kind of status a
+              screen-reader user would otherwise have to guess at. So the held
+              case drops aria-hidden and reads as real content — no aria-live,
+              since the value changes every second and re-announcing it that
+              often would spam anyone tabbing past it; it is read when the
+              chip is reached, same as everything else on it.
+            */}
+            {held ? (
+              <span className="landing-chip__state">
+                yours · {formatHold(heldSeconds)}
+              </span>
+            ) : (
+              <span className="landing-chip__state" aria-hidden="true">
+                {active ? 'on screen' : 'drive it'}
+              </span>
+            )}
           </button>
         );
       })}

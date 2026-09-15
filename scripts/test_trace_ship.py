@@ -6,17 +6,35 @@ so it is pinned here. The POST itself is not exercised: the collector is the
 serving plane's own route and has its own tests in scripts/test_traces.py.
 """
 
-import importlib.machinery
+import importlib.util
 import json
 import pathlib
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
-SHIP = importlib.machinery.SourceFileLoader(
-    "trace_ship_under_test",
-    str(pathlib.Path(__file__).resolve().parents[0] / "observability" / "trace-ship.py"),
-).load_module()
+
+def _load(name: str, path) -> object:
+    """Import a script by path, as `scripts/test_walkin_smoke_taps.py` does.
+
+    Was `SourceFileLoader(...).load_module()`, which Python 3.12 deprecates —
+    and the canonical gate runs under `-W error::DeprecationWarning`, so on
+    3.12 the deprecation WAS the failure: this module never imported and its
+    tests were reported as one loader error instead of running. `exec_module`
+    is the supported spelling and needs no package around the target, which is
+    why the hyphenated script names here were loaded this way to begin with.
+    """
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+SHIP = _load(
+    "trace_ship_under_test", str(pathlib.Path(__file__).resolve().parents[0] / "observability" / "trace-ship.py")
+)
 
 
 def spool(root, station, name, spans=1):

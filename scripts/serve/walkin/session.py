@@ -18,6 +18,34 @@ EXTENSION_SECONDS = 10 * 60
 # being the backstop that ever refuses a visitor a free member on its own --
 # concurrent TCG load on the box is the real ceiling below it, not this number.
 ACTIVE_SESSION_CAP = 24
+# ---------------------------------------------------------------------------
+#  THE HOLD WINDOW — "about five minutes", and the ONE place it is written.
+#
+#  A visitor who leaves a machine does not lose it: switching freezes it (vCPUs
+#  stopped, `walkin/holds.py`) and reserves it for THAT visitor for this long,
+#  so wandering from Win 3.11 to OS/2 and back finds the Win 3.11 desktop
+#  exactly as it was. The same number is the conversion wall's hold — the
+#  stranger who ran out of budget and is being asked to make a passkey gets
+#  their machine back if they register inside it — because they are the same
+#  promise from the visitor's side ("your machine waits ~5 minutes") and a
+#  visitor who registered at 4:30 into a hold must not find the wall opening
+#  onto a machine a SHORTER wall timer had already destroyed. `auth/anon.py`
+#  imports this rather than keeping the second copy it used to have (120 s).
+#
+#  Approximate on purpose: the reaper enforces it on `Broker.tick`, and the
+#  watchdog sleeps on `next_expiry`, so the real window is this plus a tick.
+HOLD_SECONDS = 5 * 60
+# How many FROZEN machines one visitor may reserve at once, on top of the one
+# they are driving. Two, because the landing page offers exactly three machines
+# (win311, os2warp, rhapsody) and the whole point is that a visitor may try all
+# three and find each as they left it — so the ceiling is "all of them" for the
+# intended tour and a real ceiling for anything beyond it. It is a RESOURCE
+# ceiling, not a policy nicety: every hold is a slot, a UDP port, a tap, a VMID
+# and a core that no other visitor can be handed, so an unbounded version of
+# this feature is a pool one crawler can empty by cycling stations. Over the
+# ceiling, the OLDEST hold is destroyed — the machine they left longest ago is
+# the one they are least likely to be coming back to.
+MAX_HOLDS_PER_VISITOR = 2
 CLOSE_REASON_TTL = "WALKIN_TTL"
 CLOSE_REASON_IDLE = "WALKIN_IDLE"
 CLOSE_REASON_CLOSED = "WALKIN_CLOSED"
@@ -48,6 +76,24 @@ class Session:
     # while the budget stayed under it. `expires_at` is still an unconditional
     # backstop either way, so this never leaves a session unbounded.
     idle_exempt: bool = False
+    # The last instant this session was the visitor's FOREGROUND machine: set
+    # when it is claimed or thawed, and again when it is frozen (the moment it
+    # stopped being in front of them). With several sessions per visitor it is
+    # the only ordering that answers "the last machine they were on" — which is
+    # what the conversion wall must hand back, and what decides which hold is
+    # evicted at the ceiling. `started_at` cannot: a thaw keeps the clone's
+    # original clock, and `last_input_at` is a liveness stamp the idle reaper
+    # owns.
+    used_at: float = 0.0
+    # The same ordering, made EXACT. `used_at` is a clock reading, and two of
+    # them can be equal: a switch freezes the outgoing machine and the wall can
+    # freeze the incoming one inside the same instant the broker read once. On
+    # a tie `max()` keeps the FIRST it saw, so the conversion wall handed back
+    # the machine the visitor had left EARLIEST — the opposite of the promise,
+    # and caught by `test_holds.test_the_wall_hands_back_the_machine_they_were
+    # _on_not_an_older_hold` before it ever reached a visitor. A counter the
+    # broker bumps on every freeze cannot tie, whatever the clock's resolution.
+    used_seq: int = 0
 
     def ttl_left(self, now: float) -> int:
         return max(0, int(self.expires_at - now))

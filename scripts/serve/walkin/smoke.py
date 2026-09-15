@@ -40,13 +40,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
 
 from . import broker as broker_mod
-from . import naming
+from . import claims, naming
 from .spec import load_spec
 
 FRAME_DIR_NAME = "frames"
@@ -189,8 +188,7 @@ def main(argv=None) -> int:
         _say("closed", f"{disconnected} session(s) disconnected, pool emptied")
         leftovers = [p.name for p in naming.WALKIN_ROOT.iterdir() if p.is_dir() and p.name.startswith("walkin-")]
         results["orphans"] = leftovers
-        held = subprocess.run(["kh-claim", "ls", "--mine"], capture_output=True, text=True, check=False).stdout
-        results["claims_left"] = [ln for ln in held.splitlines() if "walkin-slot" in ln or "port/541" in ln]
+        results["claims_left"] = claims.walkin_claims_held()
         results["fleet_unchanged"] = station_pids() == fleet_before
 
     print(json.dumps(results, indent=2))

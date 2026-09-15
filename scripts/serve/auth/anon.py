@@ -79,11 +79,32 @@ BUDGET_SECONDS = 300
 #: that will not, which is exactly the client that cannot be trusted to.
 UNENGAGED_SECONDS = 120
 
+
 #: How long their last machine stays reserved after the budget is spent, so
 #: that registering a passkey resumes THAT machine rather than a fresh one.
-#: Long enough for a passkey ceremony (Touch ID, a phone hand-off), short
-#: enough that a walked-away visitor does not hold a cell hostage.
-HOLD_SECONDS = 120
+#:
+#: NOT a number this module owns any more. It is the pool's hold window
+#: (`walkin/session.py HOLD_SECONDS`), imported rather than copied, and the two
+#: being one number is the fix for a real ordering hole rather than tidiness:
+#: switching machines also freezes the one you leave for that window, so a
+#: visitor who tried Win 3.11 at 0:00, moved to OS/2, hit the wall at 5:00 and
+#: registered at 6:00 would — under the old 120-second wall hold — be handed
+#: back a machine the reaper had already destroyed. One window, one promise:
+#: "your machine waits about five minutes", whichever way you left it.
+#:
+#: Read late and defensively for the same reason `anon_plane.walkin_ttl` is:
+#: `scripts/serve/` is importable as `serve.*` or flat depending on how the
+#: server was started, and a hard import here would make this module's shape
+#: depend on that.
+def _hold_seconds() -> int:
+    try:
+        from walkin.session import HOLD_SECONDS as _held
+    except ImportError:  # pragma: no cover - import shape only
+        from serve.walkin.session import HOLD_SECONDS as _held
+    return int(_held)
+
+
+HOLD_SECONDS = _hold_seconds()
 
 #: The refusal a spent visitor gets, distinct from every other walk-in code so
 #: the SPA can render the conversion wall rather than a generic error
