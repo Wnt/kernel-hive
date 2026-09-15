@@ -236,6 +236,17 @@ separate daemon and a separate log.
 | daemon log | `journalctl -u streamhost@<id>` | `/data/vms/walkin/walkin-<id>-<n>/streamhost.log` |
 | drive ingress | `drive-<id>.sock` | `drive-walkin-<id>-<n>.sock` |
 
+**A walk-in bug does not reproduce on the LAN origin, and the e2e README will
+send you there.** `scripts/e2e/README.md` says `GALLERY_URL` must be the lab's
+INTERNAL address — correct for a station probe, and exactly wrong here: the
+walk-in PLANE (broker + auth) only runs behind the PUBLIC listener
+(`spa/src/landing/heroAudience.ts`), so on the LAN origin `/walkin/state` never
+reaches a broker, `walkinPlaneAvailable` is false, and `/` renders the plain
+grid with no hero at all. Measured 2026-09-15: zero station chips and no
+`.landing-stage` in the DOM on the LAN origin; the hero renders and claims real
+pool clones on the public one. A probe pointed at the LAN origin reports "no
+walk-in" and that is a fact about the ORIGIN, not about the station.
+
 **The one number that splits the problem** is the router counter both planes
 print every 10 s:
 
