@@ -261,6 +261,16 @@
   border-color: color-mix(in srgb, var(--station-accent) 70%, var(--line-strong));
   box-shadow: var(--shadow-2), inset 3px 0 0 var(--station-accent);
 }
+/* A held chip is deliberately NOT the station's own accent (that means "this
+   is what's live") and not --warn (nothing is wrong) — --info, because a
+   frozen-and-waiting machine is a status to notice, not an alarm. Cannot
+   collide with --active: the contract guarantees a held station is never the
+   selected one. */
+.landing-chip--held {
+  border-color: color-mix(in srgb, var(--info) 55%, var(--line-strong));
+  box-shadow: var(--shadow-1), inset 3px 0 0 var(--info);
+}
+.landing-chip--held .landing-chip__state { color: var(--info); font-weight: 700; }
 .landing-chip__shot {
   width: 64px; height: 52px; flex: 0 0 auto; object-fit: cover;
   border-radius: 9px; background: #05060a; border: 1px solid var(--line);

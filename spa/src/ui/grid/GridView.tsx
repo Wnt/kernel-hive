@@ -9,6 +9,7 @@ import { useIsWalkin } from '../../data/SessionContext';
 import { visibleLineup, type WalkinScope } from './lineup';
 import { OsCard } from './OsCard';
 import { poolFor, useWalkinPools } from '../../walkin/usePools';
+import { useHolds } from '../../walkin/useHolds';
 
 // ============================================================================
 //  GridView — the plain 2D, keyboard-navigable card grid (DEFAULT view)
@@ -160,6 +161,10 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable', hea
   const [scope, setScope] = useState<WalkinScope>(initialScope);
   // Only a walk-in has pools, so only a walk-in starts the poll.
   const { state: poolState } = useWalkinPools(walkin);
+  // Same reasoning as pools: an invited session's grid never carries a
+  // `holds` block from the server (WalkinState), so `useHolds(undefined)`
+  // is a no-op there and the grid's cards render exactly as before.
+  const holds = useHolds(poolState?.holds);
 
   // The scope switch is the walk-in's only lineup control, and it narrows —
   // it never widens past what the projection already carries, because the
@@ -447,6 +452,7 @@ export default function GridView({ onOpenPlacard, initialScope = 'playable', hea
                       walkin={walkin}
                       search={search}
                       pool={poolFor(poolState, v.id)}
+                      held={holds[v.id]}
                       cardRef={(el) => { cardRefs.current[idx] = el; }}
                       onKeyDown={(e) => onGridKeyDown(e, idx)}
                       onOpenPlacard={onOpenPlacard}

@@ -1,4 +1,4 @@
-import type { WalkinAnonBudget, WalkinClaim, WalkinPool, WalkinQueued, WalkinState } from '../data/walkinTypes';
+import type { WalkinAnonBudget, WalkinClaim, WalkinHold, WalkinPool, WalkinQueued, WalkinState } from '../data/walkinTypes';
 
 // LOCAL DEVELOPMENT FIXTURE for the walk-in plane.
 //
@@ -45,6 +45,11 @@ function state(): WalkinState {
     // already signed in. Same lever, same rule as the states above: this
     // tab's rendering, nothing else.
     anon: forced === 'anon' ? anonBudget() : undefined,
+    // `?walkin=held` previews a visitor who switched away from a machine and
+    // has it frozen and waiting for them — the specific state this UI change
+    // exists to make legible (a held card used to look IDENTICAL to a fresh
+    // one). Same rule as `anon` above: real time, no persistence, one lever.
+    holds: forced === 'held' ? heldFixture() : undefined,
   };
 }
 
@@ -71,6 +76,25 @@ function anonBudget(): WalkinAnonBudget {
 /** The visitor touched the machine — the preview's half of `/walkin/engage`. */
 function engage(_clone: string): void {
   if (anonEngagedAt === null) anonEngagedAt = Date.now();
+}
+
+// A single frozen machine, ticking down from the same 5-minute hold window the
+// server (per the frozen contract) reserves — os2warp rather than the station
+// under test, so a preview of `landing-chip--held` never collides with the
+// chip a `?walkin=…` viewer is actually driving. Started lazily, on first
+// read, so the countdown a viewer sees always begins near the full window
+// rather than mid-flight if the fixture module happened to load earlier.
+const HOLD_SECONDS = 300;
+let heldStartedAt: number | null = null;
+
+function heldFixture(): WalkinHold[] {
+  if (heldStartedAt === null) heldStartedAt = Date.now();
+  const spent = Math.floor((Date.now() - heldStartedAt) / 1000);
+  const secondsLeft = Math.max(0, HOLD_SECONDS - spent);
+  // Once the window is gone the fixture's reaper equivalent: stop presenting
+  // it as held at all, same as the server excluding an expired hold.
+  if (secondsLeft <= 0) return [];
+  return [{ os: 'os2warp', clone: 'walkin-os2warp-2', secondsLeft }];
 }
 
 function claim(os?: string): WalkinClaim | WalkinQueued {

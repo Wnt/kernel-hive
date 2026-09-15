@@ -4,6 +4,7 @@ import { posterFor } from '../../data/posterIndex';
 import type { EnrichedVM } from '../../types';
 import type { WalkinPool } from '../../data/walkinTypes';
 import { cardTarget } from './lineup';
+import { formatHold } from '../../walkin/useHolds';
 
 // One card in the grid, for either visitor class.
 //
@@ -16,6 +17,14 @@ import { cardTarget } from './lineup';
 // The placard case is still an <a>, not a <button>, so the grid's roving
 // arrow-key navigation — which indexes HTMLAnchorElement refs — keeps working
 // across a mixed grid without learning about a second element type.
+//
+// A CLONE-TARGET CARD CAN ALSO BE HELD — the same "switch away and it's frozen
+// for you" state StationSwitcher.tsx draws as `landing-chip--held`. The grid
+// is the OTHER place a walk-in can see that station (GridView's card grid
+// isn't only the landing hero's three chips), so the same fact has to be
+// legible here too: a held card would otherwise show "Play it" over a pool
+// meter that already excludes it, which reads as an ordinary free machine,
+// not as the one this visitor is about to resume.
 
 /** "2 of 3 free", with the free slots also drawn as pips. The walk-in landing
  *  page draws the same meter: one lineup, one vocabulary. */
@@ -89,22 +98,34 @@ export interface OsCardProps {
   search: string;
   /** Live pool status for a walk-in's playable stations. */
   pool: WalkinPool | undefined;
+  /** Seconds left on THIS visitor's own hold on this station, if any — from
+   *  `useHolds`, ticking locally between GridView's 15s polls. Undefined
+   *  means "not held", same as an empty `holds` array; see walkinTypes.ts. */
+  held?: number;
   cardRef: (el: HTMLAnchorElement | null) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onOpenPlacard?: (osId: string) => void;
 }
 
-export function OsCard({ vm, walkin, search, pool, cardRef, onKeyDown, onOpenPlacard }: OsCardProps) {
+export function OsCard({ vm, walkin, search, pool, held, cardRef, onKeyDown, onOpenPlacard }: OsCardProps) {
   const target = cardTarget(vm.id, walkin);
   const placard = target.kind === 'placard';
+  const isHeld = target.kind === 'clone' && held !== undefined;
   const shared = {
     role: 'listitem' as const,
     ref: cardRef,
-    className: `os-card${placard ? ' os-card--placard' : ''}`,
+    className: `os-card${placard ? ' os-card--placard' : ''}${isHeld ? ' os-card--held' : ''}`,
     style: { ['--accent' as string]: vm.accent },
     onKeyDown,
+    // The held fact goes into the accessible name too, not only the visible
+    // tag: `aria-label` REPLACES a link's normal accessible name (the DOM
+    // content underneath is not additionally announced), so a screen-reader
+    // user tabbing the grid would otherwise never learn this card is theirs
+    // and waiting — the same gap StationSwitcher.tsx's chip had to fix.
     'aria-label': `${vm.displayName}, ${vm.year}. ${vm.blurb ?? ''} ${
-      placard ? 'On display — read the placard.' : 'Open live.'
+      placard ? 'On display — read the placard.'
+        : isHeld ? `Held for you, ${formatHold(held!)} left.`
+        : 'Open live.'
     }`,
   };
 
@@ -134,9 +155,19 @@ export function OsCard({ vm, walkin, search, pool, cardRef, onKeyDown, onOpenPla
       <CardBody vm={vm} />
       {target.kind === 'clone' && (
         <span className="os-card-foot">
-          <span className="walkin-tag walkin-tag--playable">
-            {pool?.free === 0 ? 'Join the queue' : 'Play it'}
-          </span>
+          {isHeld ? (
+            // Held wins over the ordinary playable tag outright: this is not
+            // "free to try", it is reserved, and the pool meter beside it
+            // already reads correctly with no changes (the server already
+            // excludes a held clone from `free` — it still owns its session).
+            <span className="walkin-tag walkin-tag--held">
+              Yours, waiting · {formatHold(held!)}
+            </span>
+          ) : (
+            <span className="walkin-tag walkin-tag--playable">
+              {pool?.free === 0 ? 'Join the queue' : 'Play it'}
+            </span>
+          )}
           <PoolMeter pool={pool} />
         </span>
       )}

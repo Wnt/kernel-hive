@@ -248,3 +248,16 @@ def claim_slot(identity: str, preferred: int | None = None) -> SlotClaim:
         f"no free walk-in slot in {naming.SLOT_MIN}-{naming.SLOT_MAX} for {identity} "
         "— the pool is at its ceiling, or a reap is overdue"
     )
+
+
+def walkin_claims_held() -> list:
+    """Every walk-in slot and port claim this session holds — the teardown check.
+
+    Rule 8's "the check that proved it", as one call: a hold that lapsed, a
+    clone that was destroyed and a pool that was emptied all have to show up
+    here as NOTHING LEFT, and `kh-claim ls --mine` is the only thing that knows.
+    Lived in `broker.py` until 2026-09-15, where it had no caller and was the
+    wrong layer; the walk-in smoke check is the caller it was written for.
+    """
+    proc = _run(["ls", "--mine"])
+    return [ln for ln in proc.stdout.splitlines() if SLOT_CLASS in ln or f"{PORT_CLASS}/54" in ln]

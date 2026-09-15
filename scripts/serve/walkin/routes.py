@@ -137,6 +137,14 @@ def dispatch(handler, path: str, method: str, broker, user, access: str, budget=
     if path == "/walkin/state" and method == "GET":
         doc = broker.state()
         if user:
+            # The visitor's own frozen machines, so the switcher can say "yours,
+            # waiting, 4:01 left" instead of drawing a held machine exactly like
+            # a free one — which was the whole complaint. Omitted when empty
+            # rather than sent as `[]`: a key that is only ever present when it
+            # means something cannot be read as meaning nothing.
+            held = broker.holds_of(user_id(user))
+            if held:
+                doc["holds"] = held
             ended = broker.session_end(user_id(user))
             if ended:
                 # Two spellings of one fact, because lane 4 scans whatever it is

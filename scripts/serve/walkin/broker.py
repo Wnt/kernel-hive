@@ -37,7 +37,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import cell, claims, holds, reaper
+from . import cell, holds, reaper
 from . import clone as clone_mod
 from . import spec as spec_mod
 from .warm import BrokerError, Member, Warming
@@ -280,8 +280,7 @@ class Broker(holds.Holding, Warming):
             if not spec or not spec.enabled:
                 raise BrokerError(f"no walk-in pool for {station!r}")
             now = self._now()
-            existing = self._session_of(user_id)
-            stale = None
+            existing = self._active_of(user_id)
             if existing and existing.station == station and existing.ttl_left(now) > 0:
                 # A reload or back-navigation: hand back the machine they hold,
                 # clock where it was (a reload buys nobody a longer turn). The
@@ -290,37 +289,49 @@ class Broker(holds.Holding, Warming):
                 hit("walkin.claim.resumed")
                 self._dequeue(user_id)
                 return claim_body(existing, now, resumed=True)
-            if existing:
-                # One clone per account (brief §4): another machine, or one whose
-                # clock ran out, retires the old clone first (destroyed below,
-                # outside the lock). A used clone is never re-listed.
-                member = self._members.get(existing.identity)
-                stale = self._end(member, "") if member else None
-            # Both exits below are the same finding — "somebody wanted a machine
-            # and had to wait" — and the queue is the same machinery either way,
-            # so they are one probe. A pool of three on a private museum may
-            # never reach either, and that is the answer worth having.
-            if self._active_count() >= ACTIVE_SESSION_CAP:
+            # SWITCHING NO LONGER DESTROYS THE MACHINE YOU LEAVE — it is frozen
+            # and reserved for this same visitor (`holds.py`), so the desktop
+            # they arranged is still there when they come back; and coming back
+            # inside the window wakes THAT clone rather than a fresh one off the
+            # golden, joining the ordinary resume path below, failure handler
+            # and all. Both QMP round trips happen outside the lock.
+            chill, stale = self._leave_locked(existing)
+            stale += self._evict_locked(user_id)
+            free = self._thaw_locked(user_id, station, ttl)
+            resumed = free is not None
+            # Over the cap, or no free member: the same finding — "somebody
+            # wanted a machine and had to wait" — and the same queue either
+            # way, so they are one probe. A thaw answers BEFORE both: a machine
+            # this visitor already holds is not a draw on the pool's capacity.
+            if free is None and self._active_count() < ACTIVE_SESSION_CAP:
+                free = next(
+                    (m for m in self._members.values() if m.clone.spec.station == station and not m.session), None
+                )
+            if free is None:
                 hit("walkin.claim.queued")
-                return self._enqueue(user_id, station)
-            free = next((m for m in self._members.values() if m.clone.spec.station == station and not m.session), None)
-            if not free:
-                hit("walkin.claim.queued")
-                return self._enqueue(user_id, station)
-            free.session = Session(
-                identity=free.identity,
-                station=station,
-                user_id=user_id,
-                started_at=now,
-                expires_at=now + (TTL_SECONDS if ttl is None else max(0.0, float(ttl))),
-                last_input_at=now,
-            )
-            self._dequeue(user_id)
-            clone, identity = free.clone, free.identity
-            granted = claim_body(free.session, now)
-        if stale is not None:
-            self._destroy([stale])
+                granted, clone, identity = self._enqueue(user_id, station), None, ""
+            else:
+                if free.session is None:
+                    free.session = Session(
+                        identity=free.identity,
+                        station=station,
+                        user_id=user_id,
+                        started_at=now,
+                        expires_at=now + (TTL_SECONDS if ttl is None else max(0.0, float(ttl))),
+                        last_input_at=now,
+                        used_at=now,
+                    )
+                self._dequeue(user_id)
+                clone, identity = free.clone, free.identity
+                granted = claim_body(free.session, now, resumed=resumed)
+        # Outside the lock, in this order: the machine being left stops, the
+        # ones over the ceiling go away, and only then does the new one wake.
+        self._settle_freeze(user_id, chill)
+        if stale:
+            self._destroy(stale)
             self._kick_refill()
+        if clone is None:
+            return granted
         # Outside the lock: a resume is a wake lease plus QMP round trips plus a
         # verify, and it holds up every other visitor's `/walkin/state` if it is
         # done in here. The member is already marked as this visitor's, so
@@ -414,7 +425,7 @@ class Broker(holds.Holding, Warming):
         projection marks playable. Read-only, so it is safe on the hot path.
         """
         with self._lock:
-            session = self._session_of(user_id)
+            session = self._last_used_of(user_id)
             if not session:
                 return None
             return {
@@ -454,8 +465,11 @@ class Broker(holds.Holding, Warming):
                 session = member.session
                 if session and now >= session.expires_at:
                     hit("walkin.reap.ttl")
-                    ended.append((member.identity, CLOSE_REASON_TTL))
-                    retired.append(self._end(member, CLOSE_REASON_TTL))
+                    # `end_reason_for` (holds.py): a HOLD lapsing behind a
+                    # visitor driving something else posts no session-end.
+                    reason = self.end_reason_for(session, CLOSE_REASON_TTL)
+                    ended.append((member.identity, reason))
+                    retired.append(self._end(member, reason))
                 elif session and not session.idle_exempt and now - session.last_input_at >= IDLE_SECONDS:
                     # The idle window is three minutes and the TTL is twenty, so
                     # the idle reap should be the COMMON one; if it is not, the
@@ -558,12 +572,6 @@ class Broker(holds.Holding, Warming):
     def _active_count(self) -> int:
         return sum(1 for m in self._members.values() if m.session)
 
-    def _session_of(self, user_id: str) -> Session | None:
-        for member in self._members.values():
-            if member.session and member.session.user_id == user_id:
-                return member.session
-        return None
-
     def _enqueue(self, user_id: str, station: str) -> dict:
         if not any(entry[0] == user_id for entry in self._queue):
             self._queue.append((user_id, station, self._now()))
@@ -590,11 +598,3 @@ class Broker(holds.Holding, Warming):
         self._members.pop(member.identity, None)
         self._retiring[member.identity] = member.clone
         return member.clone
-
-
-def slot_claims_held() -> list:
-    """Every walk-in slot claim this session holds — the teardown check."""
-    import subprocess
-
-    proc = subprocess.run([claims.kh_claim_bin(), "ls", "--mine"], capture_output=True, text=True, check=False)
-    return [ln for ln in proc.stdout.splitlines() if claims.SLOT_CLASS in ln or "port/54" in ln]

@@ -125,6 +125,13 @@
   background: var(--tint-1); border: 1px solid var(--line);
 }
 .walkin-tag--playable { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+/* Same station, same slot, different fact: this clone is frozen and reserved
+   for the visitor reading this card, not merely available to start. */
+.walkin-tag--held {
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 40%, var(--line));
+  background: color-mix(in srgb, var(--info) 10%, var(--tint-1));
+}
 /* Opens the gallery's own ExhibitPoster overlay — the full placard, not a
    summary written for walk-ins. */
 .walkin-placard-open {

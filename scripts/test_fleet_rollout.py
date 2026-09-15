@@ -7,14 +7,32 @@ Everything that touches the box (ssh, systemctl, the framebuffer probe) is
 deliberately outside these functions and is not exercised here.
 """
 
-import importlib.machinery
+import importlib.util
 import pathlib
+import sys
 import unittest
 
-ROLLOUT = importlib.machinery.SourceFileLoader(
-    "fleet_rollout_under_test",
-    str(pathlib.Path(__file__).resolve().parents[0] / "dev" / "fleet_rollout.py"),
-).load_module()
+
+def _load(name: str, path) -> object:
+    """Import a script by path, as `scripts/test_walkin_smoke_taps.py` does.
+
+    Was `SourceFileLoader(...).load_module()`, which Python 3.12 deprecates —
+    and the canonical gate runs under `-W error::DeprecationWarning`, so on
+    3.12 the deprecation WAS the failure: this module never imported and its
+    tests were reported as one loader error instead of running. `exec_module`
+    is the supported spelling and needs no package around the target, which is
+    why the hyphenated script names here were loaded this way to begin with.
+    """
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+ROLLOUT = _load(
+    "fleet_rollout_under_test", str(pathlib.Path(__file__).resolve().parents[0] / "dev" / "fleet_rollout.py")
+)
 
 
 def station(sid, reset="loadvm", ui="home-computer", binary=None, source="", retronet=False, backend="", udp=None):
