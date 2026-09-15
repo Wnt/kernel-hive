@@ -17,6 +17,7 @@ usage:
   os2-warpd-send.py <serial.sock> drag BTN X0 Y0 X1 Y1 [--steps N] [--step-ms MS]
   os2-warpd-send.py <serial.sock> dblclick BTN X Y
 """
+
 import socket
 import sys
 import time
