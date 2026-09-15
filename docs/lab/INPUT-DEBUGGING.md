@@ -221,6 +221,60 @@ session streams video but eats input, debug the carrier first:
 but eats input") and `docs/WEBRTC-PLATFORM.md` §Input path (the `webrtc-input`
 rows and the ticket rule).
 
+## Is this the live station, or a walk-in clone?
+
+The landing page (`/`) hands a stranger a private CLONE of one of three stations
+(`win311`, `os2warp`, `rhapsody`) — not the exhibit at `/os/<id>`. A complaint
+that names only the OS ("the cursor is not moving on Rhapsody") does not say
+which plane it came from, and the fix lives somewhere different for each. So
+establish the plane before reading any code: the clone is a separate guest, a
+separate daemon and a separate log.
+
+| | live station | walk-in clone |
+|---|---|---|
+| guest dir | `/data/vms/streamhost/stations/<id>/` | `/data/vms/walkin/walkin-<id>-<n>/` |
+| daemon log | `journalctl -u streamhost@<id>` | `/data/vms/walkin/walkin-<id>-<n>/streamhost.log` |
+| drive ingress | `drive-<id>.sock` | `drive-walkin-<id>-<n>.sock` |
+
+**The one number that splits the problem** is the router counter both planes
+print every 10 s:
+
+```
+[input-router] ramabs accepted=N coalesced=0 dropped=0 overflow=0 backend-down=0
+```
+
+`accepted` counts records that reached the sink, and it counts them on either
+plane. Drive the pointer and read it again: if it does NOT move, the records
+never arrived and the fault is in the SPA or the carrier; if it moves and the
+cursor does not, the fault is below the router — the sink, the control object or
+the guest. `scripts/dev/station-drive.py <tile>` drives either plane through the
+same pipeline the browser feeds without stealing the single injector, and a
+clone answers to its clone id (`station-drive.py walkin-rhapsody-12 …`).
+
+**Expect a burst of refusals at clone startup, and do not chase them.** A pool
+member is built `-loadvm golden -S` and stays PAUSED until a visitor claims it,
+while its daemon connects to the pointer control object immediately. On a
+backend that verifies itself against guest RAM (`ramabs`), verification cannot
+resolve against a stopped guest *by design* — `kh_tick` returns early while
+`!runstate_is_running()`, so a try is not even spent — so the daemon's
+connect-time reset batch is refused and EVERY clone's log opens with exactly:
+
+```
+[ramabs] connected, HELLO verified .../ptr.sock
+[ramabs] control object replied 1 ERR unverified-address
+[ramabs] control object replied 2 ERR unverified-address
+[ramabs] control object replied 3 ERR unverified-address
+[ramabs] control object replied 4 ERR unverified-address
+```
+
+That is the fail-closed path working, not a fault. Verification completes about
+0.2 s after the visitor's claim resumes the guest — measured on a rhapsody clone
+at 0.20 s even after the member had sat paused for 240 s — and the pointer works
+from there. The walk-in plane cannot prime this the way it primes ARP
+(`clone.prime_network()`), because `warm.py` holds an explicit invariant that
+priming must finish BEFORE `spawn_daemon()`: priming is a long QMP hold and
+QEMU's QMP chardev serves one monitor at a time.
+
 ## The trap that costs the most: which code path is this?
 
 A press arrives on **one of three** paths, and the choice is not made by the

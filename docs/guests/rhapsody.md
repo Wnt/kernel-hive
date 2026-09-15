@@ -268,6 +268,48 @@ possible); and a click at a commanded pixel that raised a buried window and
 switched the active application, 265 062 pixels repainted.
 
 
+## The pointer on a walk-in clone
+
+`/` hands a visitor a private CLONE of this station, and the clone carries the
+same `-device kh-ramabs,addr=0x0050fdac`: the walk-in derivation re-roots both
+`ptr.sock` and the daemon's `SH_RAMABS_SOCK` into the clone's own directory, and
+`registry/walkin/rhapsody.json` pins `/opt/qemu-rhapsody/bin/qemu-system-i386`
+so the binary stays bound to the checkpoint (rule 6). Proven 2026-09-15 on a
+sandbox restore of the walk-in seed driven by the clone's exact command line,
+`-sandbox on,…` included: `verified=yes`, and the sprite lands on every
+commanded target.
+
+Two things about a clone that are **not** faults, and have both been chased:
+
+* **Four `ERR unverified-address` in the first lines of every clone's
+  `streamhost.log`.** A pool member is built `-loadvm golden -S` and stays
+  PAUSED until a visitor claims it, while its daemon connects to the control
+  object immediately — and the control object will not verify against a stopped
+  guest by design. Those four refusals are the daemon's connect-time reset
+  batch. Verification completes about 0.2 s after the claim resumes the guest
+  (measured at 0.20 s even after the member had sat paused for 240 s).
+* **`[input-router] ramabs accepted=0` on an idle pool member** means nobody has
+  driven it, not that input is broken. That counter is the one that separates
+  "the browser never sent the records" from "the device refused them" — see
+  [`../lab/INPUT-DEBUGGING.md`](../lab/INPUT-DEBUGGING.md) §"Is this the live
+  station, or a walk-in clone?".
+
+## The glyph bank no longer matches this golden
+
+`tests/cursor-banks/rhapsody.json` was learned against the golden baked
+2026-08-23, and the pointer write-up says in terms that a re-bake invalidates
+it. A `checkpoint-guard recapture` landed on **2026-09-14**, and the bank now
+resolves nothing: `cursor-locate.py find` returns `NOTFOUND` at all four
+commanded targets on the current golden, where the 2026-08-30 proof matched the
+arrow at six widely separated ones including both screen edges.
+
+**A `NOTFOUND` from this bank is therefore no longer evidence** — it is a
+question about the templates, which is exactly the trap
+[`../lab/RHAPSODY-ABSOLUTE-POINTER.md`](../lab/RHAPSODY-ABSOLUTE-POINTER.md)
+§"The glyph bank" warns about. Re-learn it before using it as this station's
+oracle again. Until then prove motion with a frame diff instead: the
+changed-pixel bounding box brackets the commanded target.
+
 ## Golden, input, and rollback
 
 - `golden` baked 2026-08-18 on the station itself
