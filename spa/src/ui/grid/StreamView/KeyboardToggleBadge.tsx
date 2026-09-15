@@ -5,12 +5,15 @@ import { DockedControl } from '../../DockedChrome';
 //  KeyboardToggleBadge — the on-screen-keyboard opener. It sits in the stage's
 //  bottom-right corner whenever the keyboard is closed, mirroring
 //  TouchControlBadge (bottom-left, the right-click arm) on the opposite side —
-//  or, on the landing page's mini canvas, beside that same badge in the control
-//  row under the picture, which is where the keyboard opens too. Mobile-only:
-//  desktop keeps the keyboard toggle inline in the stage menu's dropdown,
-//  where a keyboard-having device does not need a dedicated always-on
-//  affordance. StreamView unmounts this once the keyboard opens — closing it
-//  is the keyboard sheet's own job, so there is no "on" state to render here.
+//  or, on a touch-capable landing page mini canvas, beside that same badge in
+//  the control row under the picture, which is where the keyboard opens too.
+//  Mounted only where a coarse pointer might need it (StreamView's touchChrome
+//  gate, touchChromeGate.ts): on the full station view a keyboard-having
+//  desktop visitor keeps the toggle inline in the stage menu's dropdown
+//  instead; on the desktop mini display a real keyboard already types straight
+//  into the guest, so neither this badge nor a menu item is needed there.
+//  StreamView unmounts this once the keyboard opens — closing it is the
+//  keyboard sheet's own job, so there is no "on" state to render here.
 // ---------------------------------------------------------------------------
 
 const CORNER: CSSProperties = {

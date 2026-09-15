@@ -28,9 +28,18 @@ export const isFirefoxEngine =
   typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent);
 
 // Coarse-pointer gate for the local pinch-zoom feature (Item 5) — a phone/tablet,
-// not a per-station archetype. TouchEvent presence + a coarse pointer.
+// not a per-station archetype. TouchEvent presence + a coarse pointer ANYWHERE
+// (not just the primary one — that is useMobileLayout's stricter gate), so an
+// S-Pen tablet with a fine primary pointer still counts: it has a coarse touch
+// surface available even though it does not get the mobile layout restructure.
+function isTouchCapable(i: { touch: boolean; anyCoarse: boolean }): boolean {
+  return i.touch && i.anyCoarse;
+}
+
 export function isTouchDevice(): boolean {
   if (typeof window === 'undefined') return false;
-  const coarse = !!window.matchMedia && window.matchMedia('(any-pointer:coarse)').matches;
-  return !!(window as unknown as { TouchEvent?: unknown }).TouchEvent && coarse;
+  return isTouchCapable({
+    touch: !!(window as unknown as { TouchEvent?: unknown }).TouchEvent,
+    anyCoarse: !!window.matchMedia && window.matchMedia('(any-pointer:coarse)').matches,
+  });
 }
