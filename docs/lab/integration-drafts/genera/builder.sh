@@ -4,7 +4,7 @@ set -euo pipefail
 WORK="${WORK:-/data/vms/build-genera}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/genera}"
 OG2VLM_REPO="${OG2VLM_REPO:-https://github.com/JMlisp/og2vlm.git}"
-OG2VLM_REF="${OG2VLM_REF:-master}"
+OG2VLM_REF="${OG2VLM_REF:-616d06c1a1c5de3a50762caa49160694afc65d37}"
 OPENGENERA_ARCHIVE="${OPENGENERA_ARCHIVE:-}"
 mkdir -p "$WORK" "$ASSETS"
 [ -n "$OPENGENERA_ARCHIVE" ] || { echo "set OPENGENERA_ARCHIVE to acquired opengenera2/VLM kit archive" >&2; exit 2; }
