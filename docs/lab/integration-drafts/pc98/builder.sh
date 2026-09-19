@@ -4,7 +4,7 @@ set -euo pipefail
 WORK="${WORK:-/data/vms/build-pc98}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/pc98}"
 NP2_REPO="${NP2_REPO:-https://github.com/piepacker/np2kai.git}"
-NP2_REF="${NP2_REF:-master}"
+NP2_REF="${NP2_REF:-28fe8af77e1e9d9f3f88434ca35b19ce0c21ae97}"
 BIOS_DIR="${BIOS_DIR:-}"
 DOS_MEDIA="${DOS_MEDIA:-}"
 WIN31_MEDIA="${WIN31_MEDIA:-}"
