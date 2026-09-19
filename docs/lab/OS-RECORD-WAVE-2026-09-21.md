@@ -173,6 +173,30 @@ Post to the sibling sessions when any of these is discovered:
 
 A fix discovered once should cost the wave once.
 
+## Upstream pins captured during prep
+
+These are immutable starting points captured on 2026-09-19. A worker may move a
+pin only when the pinned revision demonstrably fails on labhost, and should
+record the reason in the station wave doc.
+
+| Component | Commit |
+|---|---|
+| Arculator fallback | `c88f1f5fa6acf92d69fb3b5f932f60262c9ce3a7` |
+| CloudpilotEmu fallback | `dae0b272e86888e903defb39ce914e8d28284545` |
+| TK5/Hercules helper repo | `023dc1a434d4ec8d3c7fc8d7e87f0ec205fbab77` |
+| DPS8M | `83d7252b829f2bbc497b45ff0fc9a96d1335c347` |
+| WindEmu fallback | `c3e6c955425cf3607f7261a9a75a28b745219eb8` |
+| EKA2L1 | `bbbf621830e10ef7b3abb12a5518f9562e520b31` |
+| Open SIMH | `a1f57fa3738ed31148d31126ba1a7278ff845c6d` |
+| OG2VLM | `616d06c1a1c5de3a50762caa49160694afc65d37` |
+| webOS emulator archive repo | `e93a3b9aa15876a0c3a2fc17b4d67440d9eaba85` |
+| NP2kai | `28fe8af77e1e9d9f3f88434ca35b19ce0c21ae97` |
+| openMSX | `02a50c8805d21639188e081b173992f0fde0851d` |
+| PDP-10 ITS | `0f7d67997f9f5d30208e117e73272031e74f16b9` |
+
+The station draft builders for DPS8M, SIMH, OG2VLM, NP2kai, openMSX and ITS now
+default to these exact refs rather than `master`.
+
 ## Final fleet pass
 
 After the last station lands:
