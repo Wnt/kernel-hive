@@ -1,16 +1,8 @@
 # Retronet brief — a 90s internet inside the lab
 
-**Status: PLANNING.** Nothing in this brief is built. Decisions still owned by
-the operator are in [§10](#10-operator-decisions).
-
-The epic: give the 90s stations a **living internet of their era** — popular
-period web pages served in a form Netscape 2–4 and IE 3–5 can actually render,
-plus **ICQ, AIM, MSN Messenger and IRC that work station-to-station**, with a
-few simple chatbots as resident conversation partners. A joined station wakes
-**already signed in**: within ~30 seconds of a visitor opening it, a bot says
-hello and the client's desktop notification leads them to the era's instant
-messaging. All of it lab-local: **stations reach the gateway's local services
-and nothing else — there is no path to the real internet, the proxy included.**
+**Status: BUILT AND LIVE.** Retronet is the museum's isolated 1990s-style
+network. Supported machines can browse an archived 1998 web and use period
+chat services. It has no route to today's internet.
 
 Vocabulary is [`../GLOSSARY.md`](../GLOSSARY.md). The whole assembly — gateway,
 services, corpus, addressing — is the **retronet**.
@@ -37,10 +29,9 @@ services, corpus, addressing — is the **retronet**.
   launcher change is proven on a clone before the station adopts it.
 - **Era protocols end-to-end.** Real HTTP/1.0, real OSCAR, real IRC — the
   authenticity *is* the exhibit. Modernity lives only behind the gateway.
-- **Private-plane only.** The retronet serves the invited museum. Walk-in
-  clones ([`WALKIN-BRIEF.md`](WALKIN-BRIEF.md)) are excluded until that
-  combination is re-vetted (anonymous strangers + mirrored copyrighted pages +
-  open chat is three new problems, not zero).
+- **Private by construction.** Retronet is available to invited visitors and
+  supported walk-in clones ([`WALKIN-BRIEF.md`](WALKIN-BRIEF.md)). It is
+  isolated from today's internet.
 
 ## 2. What the fleet already has
 

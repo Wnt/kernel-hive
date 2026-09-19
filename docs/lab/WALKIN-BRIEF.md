@@ -16,7 +16,7 @@ place** because the reasoning still explains the shape:
   [`walkin/LANDING-REDESIGN-CONTRACT.md`](walkin/LANDING-REDESIGN-CONTRACT.md)
   and `scripts/serve/walkin/naming.py`, which is the only source of truth.
 - **"register an account, then play."** That order is inverted. A stranger now
-  drives a real machine for 60 seconds with no account at all, and the passkey
+  drives a real machine for five minutes with no account at all, and the passkey
   is what they do *after* the machine has already earned it.
 
 The epic: let **anyone on the internet register an account and play with three

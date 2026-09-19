@@ -46,7 +46,8 @@ with highly optimized round-trip latency.**
 - **A private 1990s internet.** Period browsers reach an archived 1998 web;
   ICQ, AIM and IRC connect the machines to each other and to a chatbot. No
   route to today. ([`docs/lab/RETRONET-BRIEF.md`](docs/lab/RETRONET-BRIEF.md))
-- **Walk-in machines.** Sign up with a passkey and get a private clone of
+- **Walk in before signing up.** A stranger gets five minutes at the controls
+  with no account at all. Register with a passkey to get a private clone of
   Windows 3.11, OS/2 Warp or Rhapsody, reaped after the visit.
   ([`docs/lab/WALKIN-BRIEF.md`](docs/lab/WALKIN-BRIEF.md))
 
@@ -54,10 +55,12 @@ with highly optimized round-trip latency.**
 
 **[kernelhive.madekivi.fi](https://kernelhive.madekivi.fi)**
 
-Walk in, register on the spot and get a private machine for the visit.
+No invitation or account is required to start: the front door puts a running
+machine in front of you and gives you five minutes at the controls. Register
+with a passkey for a private Windows 3.11, OS/2 Warp or Rhapsody clone.
 An invited account opens the whole floor: every live machine, its write-up,
-photographs of the real hardware, and the private 1990s internet. Sign-in is a
-passkey; there is no password. The public path — edge, gates, media plane — is
+photographs of the real hardware, and the private 1990s internet. Sign-in uses
+passkeys; there is no password. The public path — edge, gates, media plane — is
 [`docs/PUBLIC-GALLERY.md`](docs/PUBLIC-GALLERY.md).
 
 ## The lineup
