@@ -4,10 +4,11 @@ set -euo pipefail
 WORK="${WORK:-/data/vms/build-vax43bsd}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/vax43bsd}"
 SIMH_REPO="${SIMH_REPO:-https://github.com/open-simh/simh.git}"
+SIMH_REF="${SIMH_REF:-a1f57fa3738ed31148d31126ba1a7278ff845c6d}"
 BSD_MEDIA="${BSD_MEDIA:-}"   # directory containing 4.3BSD distribution files or a smoke-only installed disk
 mkdir -p "$WORK" "$ASSETS/bin" "$ASSETS/media"
 git clone "$SIMH_REPO" "$WORK/simh"
-( cd "$WORK/simh"; git rev-parse HEAD ) | tee "$WORK/simh.commit"
+( cd "$WORK/simh"; git checkout "$SIMH_REF"; git rev-parse HEAD ) | tee "$WORK/simh.commit"
 [ -n "$BSD_MEDIA" ] && cp -a "$BSD_MEDIA/." "$ASSETS/media/" || true
 cat >&2 <<'EOF'
 WORKER:
