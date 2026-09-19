@@ -4,7 +4,7 @@ set -euo pipefail
 WORK="${WORK:-/data/vms/build-msx2}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/msx2}"
 OPENMSX_REPO="${OPENMSX_REPO:-https://github.com/openMSX/openMSX.git}"
-OPENMSX_REF="${OPENMSX_REF:-master}"
+OPENMSX_REF="${OPENMSX_REF:-02a50c8805d21639188e081b173992f0fde0851d}"
 MACHINE_ROMS="${MACHINE_ROMS:-}"
 DOS2_ROM="${DOS2_ROM:-}"
 DOS2_DISK="${DOS2_DISK:-}"
