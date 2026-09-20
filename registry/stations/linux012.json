@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "linux012",
-  "era_year": 2026,
+  "era_year": 1992,
   "enabled": true,
   "build": {
     "rows": [
@@ -10,12 +10,12 @@
         "prelude": "",
         "value": {
           "key": "linux012",
-          "script": "tiles/minix2.sh",
-          "outputDir": "Minix2",
+          "script": "tiles/linux012.sh",
+          "outputDir": "Linux012",
           "class": "retro",
-          "estimated": "~3m",
+          "estimated": "~1m",
           "automation": "full",
-          "produces": "minix2.qcow2 (pre-installed Minix 2.0.4, /usr/src)",
+          "produces": "boot.qcow2 (1992 kernel floppy, ROOT_DEV retargeted to /dev/hd1) + hda.qcow2 (minix root filesystem + swap partition) + hdb.qcow2 (blank slave, required by hd.c)",
           "flags": []
         }
       }
@@ -25,14 +25,14 @@
     "actionMap": {
       "key": "linux012",
       "value": {
-        "os": "Minix 2.0.4",
+        "os": "Linux 0.12",
         "win": "qemu",
         "mouse": null,
-        "kbd": "type:ls /usr/src/kernel\r",
+        "kbd": "type:cat /etc/passwd\r",
         "kbd_reset": "",
-        "kbd_note": "Minix 2 text console at a root '#' shell: every typed char echoes immediately. Non-destructive probe: `ls /usr/src/kernel`. The fixture is a logged-in root shell, so no login is needed.",
+        "kbd_note": "Linux 0.12 text console at a root '[/usr/root]#' shell: every typed char echoes immediately. Non-destructive probe: `cat /etc/passwd`. The fixture is a logged-in root shell (root has no password in this root filesystem), so no login is needed.",
         "audio_trigger": "bell",
-        "note": "PC speaker only; text mode -> mouse N/A"
+        "note": "PC speaker only; Linux 0.12 has no mouse driver of any kind -> mouse N/A"
       }
     },
     "labctl": {
@@ -48,13 +48,13 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54205,
-      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) \u2014 Minix 2 has no in-guest network in this device set"
+      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) — Linux 0.12 predates every Linux networking stack (the first was 0.96b, mid-1992), so there is no in-guest network to reach"
     }
   },
   "render": {
     "signalOrder": 112,
     "stationsManifestOrder": 91,
-    "stationsManifestPrelude": "\n# linux012 (VMID 201) \u2014 TODO one line; scaffolded from minix2.\n",
+    "stationsManifestPrelude": "\n# linux012 (VMID 205) — Linux 0.12, January 1992: boots its original kernel floppy, roots from IDE.\n",
     "bringUpGroup": 4,
     "bindingOrder": 112,
     "bindingPrelude": "",
@@ -125,53 +125,59 @@
       "deviceSetId": "linux012-current",
       "launcher": "streamhost/stations/linux012/qemu-streamhost.sh",
       "envFixture": "streamhost/stations/linux012/station.env.fixture",
-      "binary": "qemu-system-x86_64",
+      "binary": "qemu-system-i386",
       "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
       "accel": "kvm",
-      "cpu": "host",
-      "memoryMB": 32,
+      "cpu": null,
+      "memoryMB": 16,
       "smp": 1,
       "vga": "std",
       "deviceSetSummary": [
         "-name streamhost-linux012",
-        "-enable-kvm -m 32 -smp 1",
-        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+        "-enable-kvm -m 16 -smp 1",
+        "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
         "-rtc base=localtime",
-        "-boot c",
+        "-boot a",
         "-vga std",
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
-        "-drive file=/data/vms/streamhost/stations/linux012/disk.qcow2,format=qcow2,if=none,id=hd0",
-        "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=200,heads=16,secs=32",
+        "-drive file=/data/vms/streamhost/stations/linux012/boot.qcow2,format=qcow2,if=floppy,index=0",
+        "-drive file=/data/vms/streamhost/stations/linux012/hda.qcow2,format=qcow2,if=none,id=hd0",
+        "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=64,heads=16,secs=32",
+        "-drive file=/data/vms/streamhost/stations/linux012/hdb.qcow2,format=qcow2,if=none,id=hd1",
+        "-device ide-hd,drive=hd1,bus=ide.0,unit=1,cyls=64,heads=16,secs=32",
         "-qmp unix:/data/vms/streamhost/stations/linux012/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/linux012/qemu.pid"
       ],
       "sourceDeviceSet": {
-        "binary": "qemu-system-x86_64",
+        "binary": "qemu-system-i386",
         "machine": "pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
         "accel": "kvm",
-        "cpu": "host",
-        "memoryMB": 32,
+        "cpu": null,
+        "memoryMB": 16,
         "smp": 1,
         "vga": "std",
         "deviceSetSummary": [
           "-name streamhost-linux012",
-          "-enable-kvm -m 32 -smp 1",
-          "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0 -cpu host",
+          "-enable-kvm -m 16 -smp 1",
+          "-machine pc-i440fx-11.0,acpi=off,pcspk-audiodev=snd0",
           "-rtc base=localtime",
-          "-boot c",
+          "-boot a",
           "-vga std",
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
-          "-drive file=/data/vms/streamhost/stations/linux012/disk.qcow2,format=qcow2,if=none,id=hd0",
-          "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=200,heads=16,secs=32",
+          "-drive file=/data/vms/streamhost/stations/linux012/boot.qcow2,format=qcow2,if=floppy,index=0",
+          "-drive file=/data/vms/streamhost/stations/linux012/hda.qcow2,format=qcow2,if=none,id=hd0",
+          "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=64,heads=16,secs=32",
+          "-drive file=/data/vms/streamhost/stations/linux012/hdb.qcow2,format=qcow2,if=none,id=hd1",
+          "-device ide-hd,drive=hd1,bus=ide.0,unit=1,cyls=64,heads=16,secs=32",
           "-qmp unix:/data/vms/streamhost/stations/linux012/qmp.sock,server=on,wait=off",
           "-pidfile /data/vms/streamhost/stations/linux012/qemu.pid"
         ]
       },
       "launcherParity": {
         "status": "semantic-identical",
-        "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing and the explicit CHS 200/16/32 IDE geometry the pre-installed Minix image requires"
+        "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing; no -cpu is passed (QEMU's i386/KVM default is what the golden was baked against), and both IDE disks carry the explicit CHS 64/16/32 that Linux 0.12's hd.c divides against"
       }
     },
     "bringUpOrder": 112
@@ -179,37 +185,37 @@
   "spa": {
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
-    "accentColor": "#c8a24a",
-    "eraLabel": "TODO(minix2): 1997 \u00b7 Tanenbaum's teaching microkernel",
+    "accentColor": "#d08b28",
+    "eraLabel": "1992 · the fourth month of Linux",
     "pointerRel": false
   },
   "museum": {
     "id": "linux012",
-    "displayName": "TODO(minix2): Minix 2.0.4",
-    "year": 1997,
-    "lineage": "TODO(minix2): UNIX V7 \u2192 Minix 1.0 (Tanenbaum, 1987) \u2192 Minix 2.0 POSIX (1997) \u2192 2.0.4 (2003) \u2192 Minix 3",
-    "arch": "i386 (Minix 2 also builds 16-bit for an 8088)",
-    "ramMB": 32,
-    "notes": "TODO(minix2): Live streamhost station, text console only \u2014 no pointer, no network. The exhibit is /usr/src: the complete source of the running operating system, in the shape Tanenbaum wrote it to be read in one term \u2014 kernel/, mm/ (memory manager), fs/ (file system) and inet/ (networking), each an ordinary user process talking to the others by fixed-size messages. proc.c is where the message passing itself lives. Minix 2.0.4 (November 2003) is the last of the POSIX-conformant 2.0 line that shipped with the textbook's second edition in 1997.",
-    "accent": "#c8a24a",
+    "displayName": "Linux 0.12",
+    "year": 1992,
+    "lineage": "UNIX V7 → MINIX (Tanenbaum, 1987) → Linux 0.01 (September 1991) → 0.11 (December 1991) → 0.12 (January 1992) → 0.95 → 0.99 → 1.0 (1994)",
+    "arch": "i386 — 80386 protected mode only, deliberately: 0.12 will not run on a 286",
+    "ramMB": 16,
+    "notes": "Live streamhost station, text console only — no pointer, no network, because Linux 0.12 has neither. The guest boots the original 1992 kernel floppy (bootimage-0.12-20040306) and mounts the original 1.4 MB minix root filesystem, moved onto an IDE partition because QEMU 11 cannot drive 0.12's floppy.c through a root-floppy read — which is Linus's own documented install path (RELNOTES-0.12 steps 4-7), not a modern shortcut. Partition 2 is a real swap area, so the kernel prints `Swap device ok: 1023 pages (4190208 bytes) swap-space` on every boot and 0.12's headline feature is genuinely running. Root has no password. The whole userland is 6 free blocks short of full, exactly as a 1.44 MB root floppy was.",
+    "accent": "#d08b28",
     "era": "1990s",
     "eraSoftware": [
-      "ash (the shell)",
-      "mined (the book's editor)",
-      "elle",
-      "ACK \u2014 the Amsterdam Compiler Kit",
-      "make",
-      "man"
+      "bash",
+      "vi",
+      "mkswap",
+      "GNU file utilities (ls, cp, mv, rm, chmod)",
+      "GNU text utilities (cat, head, tail, grep, sed, uniq, paste)",
+      "stty",
+      "more"
     ],
-    "periodBrowser": "none \u2014 Minix 2 ships TCP/IP in /usr/src/inet, but no browser is in the distribution",
+    "periodBrowser": "none — Linux had no networking stack of any kind until 0.96b in mid-1992",
     "iconicApps": [
-      "/usr/src/kernel/proc.c",
-      "/usr/src/mm",
-      "/usr/src/fs",
-      "mined",
-      "ACK cc"
+      "/etc/passwd",
+      "vi",
+      "mkswap",
+      "bash"
     ],
-    "blurb": "TODO(minix2): A whole UNIX small enough to read: Minix 2 keeps its own source in /usr/src, a microkernel written so a student could get through all of it in a term. It is the system Linus Torvalds was running in 1991 when he decided to write his own \u2014 and the one Tanenbaum used to argue, in public, that he shouldn't have."
+    "blurb": "Four months after Linus Torvalds posted that he was writing \"just a hobby, won't be big and professional like gnu\", this is what it had become: a kernel small enough to boot off one floppy, with a root filesystem that fits on another. Version 0.12 is the one that mattered. It added demand paging — the first Linux that could swap to disk, and so the first that ran comfortably on the 2 MB machines most people actually owned. And its release notes quietly changed the licence to the GNU copyleft, the decision that made everything after it possible. It was also the version on the screen in January 1992 while Andrew Tanenbaum was explaining on Usenet why it was obsolete."
   },
   "emulator": {
     "family": "QEMU",
@@ -229,16 +235,17 @@
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from minix2 on 2026-09-20; TODO: media, museum, spa"
+    "root filesystem moved from the 1992 root floppy onto an IDE partition; see docs/lab/LINUX012-WAVE.md for the seven configurations that proved the floppy path unusable under QEMU 11",
+    "hdb.qcow2 is blank on purpose and must not be removed: hd.c polls the status port before selecting a drive, and panics with no slave attached"
   ],
   "demoProgram": {
-    "label": "Read the operating system's own source",
+    "label": "Look around the fourth month of Linux",
     "lines": [
-      "ls /usr/src",
-      "ls /usr/src/kernel",
-      "head -40 /usr/src/kernel/proc.c"
+      "ls /",
+      "cat /etc/passwd",
+      "ls /usr/bin"
     ],
-    "runCommand": "head -40 /usr/src/kernel/proc.c",
+    "runCommand": "cat /etc/passwd",
     "perCharMs": 40
   }
 }
