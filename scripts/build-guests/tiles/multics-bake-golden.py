@@ -16,7 +16,7 @@ import os, pty, select, socket, subprocess, sys, time, shutil, signal
 
 DPS8 = "/data/assets-staging/multics/dps8m-r3.1.0/dps8"
 QS = "/data/assets-staging/multics/QuickStart_MR12.8"
-S = "/data/vms/sandbox/multics-work/bake"
+S = os.environ.get("MULTICS_BAKE_DIR", "/data/vms/sandbox/multics-live/bake")
 NEWPW = "multics"
 
 def reap():
@@ -111,19 +111,51 @@ s.close()
 pump(5)
 
 # --- clean shutdown at the operator console ---
-req("logout * * *"); pump(8)
-con("\033"); pump(15)          # give up the console so the Initializer can reap
+#
+# WALL W3, resolved: `shut` is a system_control request and needs the ESC ->
+# new `M-> ` -> settle handshake (system_control drops request text that
+# arrives in the same write as the attention ESC). `die` is NOT a
+# system_control request at all — once `shutdown complete` prints, Multics has
+# handed the console back to BCE, the bootload command environment, which owns
+# the console DIRECTLY and takes typed lines with no attention key. Sending
+# `die` through req() is what produced `system_control: Unknown request "die"`
+# in the first attempt: the ESC re-entered system_control, which was still the
+# console owner because the shutdown had not completed.
+req("logout * * *")
+pump(20)
+
 req("shut")
-ok = wait_for("shutdown complete", 300, "shutdown")
-pump(6)
-req("die"); pump(3)
+ok = wait_for("shutdown complete", 600, "shutdown")
+if not ok:
+    print(log[-3000:].decode("utf8", "replace"), flush=True)
+    p.kill()
+    sys.exit(1)
+
+# THE DISK IS ALREADY CONSISTENT HERE. `shutdown complete` is Multics'
+# own statement that every page has been flushed to the RA disk; `die` only
+# halts the CPU afterwards. So this is the success gate, and a simulator that
+# refuses to die is a cosmetic failure, not a dirty disk.
+pump(8)
+
+# BCE prompt looks like `bce (early) 1234.5:` / `bce (boot) ...` — raw line, no ESC.
+t0 = time.time()
+while time.time() - t0 < 120:
+    pump(0.5)
+    if b"bce (" in log[-4000:]:
+        break
+con("die\r")
+pump(5)
 con("y\r")
 t0 = time.time()
-while p.poll() is None and time.time() - t0 < 120:
+while p.poll() is None and time.time() - t0 < 60:
     pump(1)
-print("dps8 rc:", p.poll(), flush=True)
-if p.poll() is None:
-    p.kill(); print("KILLED - not clean", flush=True)
+rc = p.poll()
+print("dps8 rc:", rc, flush=True)
+if rc is None:
+    os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+    print("dps8 did not exit on die; SIGKILLed AFTER shutdown complete "
+          "(disk already flushed, see above)", flush=True)
 logf.close()
 print("=== tail ===")
-print(log[-1500:].decode("utf8", "replace"))
+print(log[-2500:].decode("utf8", "replace"))
+print("=== BAKE OK: shutdown complete reached ===")

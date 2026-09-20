@@ -149,13 +149,26 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
-  "multics": {
-    "label": "Type a Lisp form into the Exec (click in the Exec window first)",
+  "msx2": {
+    "label": "Type in a demo program (MSX-BASIC)",
     "lines": [
-      "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))",
-      "(mapcar #'fib '(1 2 3 4 5 6 7 8 9 10 11 12))"
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 FOR I=1 TO 20",
+      "40 PRINT \"MSX2 \";",
+      "50 NEXT I"
     ],
-    "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
+  "multics": {
+    "label": "Log in, then look around a 1969 timesharing system",
+    "lines": [
+      "login Repair",
+      "multics",
+      "who"
+    ],
+    "runCommand": "list",
     "perCharMs": 80
   },
   "netbsd14": {
@@ -269,6 +282,16 @@ const DEMO_PROGRAMS = {
       "df -h /"
     ],
     "runCommand": "df -h /",
+    "perCharMs": 80
+  },
+  "vax43bsd": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
     "perCharMs": 80
   },
   "vic20": {

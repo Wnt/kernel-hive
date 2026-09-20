@@ -1,108 +1,98 @@
 #!/bin/bash
 # =============================================================================
-# stations/multics/x11-runtime.sh — launcher for the Interlisp Medley station,
-# CONTAINED. Started by ensure-station-x11.sh inside the streamhost@medley
-# BindsTo scope.
+# stations/multics/x11-runtime.sh — launcher for the Multics station, CONTAINED.
+# Started by ensure-station-x11.sh inside the streamhost@multics BindsTo scope.
 #
-# THIS IS NOT AN EMULATED MACHINE. Medley is the Xerox D-machine Lisp
-# environment kept alive by the Interlisp project (github.com/Interlisp/medley,
-# MIT); `maiko` is its byte-code VM and renders the Lisp display into an X
-# window. The Lisp Exec a visitor types into can open files and spawn Unix
-# subprocesses (library UNIXCOMM), so on 2026-09-09 — when maiko ran as root on
-# labhost in the host namespaces — the station was one typed form away from a
-# root shell on the hypervisor and the operator deactivated it. Since then the
-# Lisp side runs inside a systemd-nspawn container (docs/guests/multics.md
-# §Security lists the requirements and the Exec-typed proofs):
+# Multics MR12.8 (Honeywell/Bull, the last release, 1992) on an emulated
+# DPS-8/M under the DPS8M simulator R3.1.0 (dps8m.gitlab.io, pinned in
+# assets/multics/MANIFEST.sha256). No QEMU, no MAME, no checkpoint: the exhibit
+# is a simulator process plus one terminal, and reset = relaunch from the
+# pristine baked root.dsk — MEASURED 0.126 s to reflink-copy 594 MB on
+# labhost's ZFS, which is why this station wants relaunch and not a golden.
 #
-#   * own PID/mount/IPC/UTS/user namespaces (--private-users: root inside is
-#     uid MEDLEY_UIDBASE outside); --private-network: only `lo`;
-#   * a throwaway root (--volatile=overlay over a minimal Debian tree built
-#     by scripts/build-guests/tiles/medley.sh); the Medley tree and maiko
-#     bound READ-ONLY at their host paths, `work/` the only writable bind;
-#   * CAP_SYS_ADMIN & friends dropped, mount syscalls filtered, no new privs.
+# CONTAINMENT (docs/lab/record-wave/HOST-APP-CONTAINER-CONTRACT.md, the proven
+# medley/vision/lisa/perq shape): DPS8M, Xvfb and the visitor's xterm all run
+# inside a systemd-nspawn container — own PID/mount/IPC/UTS/user namespaces,
+# --private-users so root inside is host uid MULTICS_UIDBASE, --private-network
+# so the FNP telnet line is reachable only from inside, --volatile=overlay
+# throwaway root over a minimal Debian tree, bin/ and media/ bound READ-ONLY at
+# their host paths, work/ the only writable bind, CAP_SYS_ADMIN & friends
+# dropped, mount syscalls filtered, no-new-privileges. The visitor logs in to
+# Multics as a real user with a known password, so the containment, not the
+# guest, is the security boundary.
 #
-# The station's own Xvfb runs INSIDE the container (nspawn-inner.sh). Its
-# socket directory is a host directory bound over the container's
-# /tmp/.X11-unix, and the host gets a symlink /tmp/.X11-unix/X<n> to that
-# socket — so the daemon's x11 capture (GetImage, no MIT-SHM), XTEST input,
-# `labctl shot` and xdotool all connect exactly as before. The X server is the
-# only thing the Lisp side can talk to, and only over the X protocol.
-#
-# RESET = RELAUNCH, as before: kill the pidfile-owned maiko (verified through
-# /proc/<pid>/exe — bound at the same path, the host sees the same exe path),
-# the stub init exits with it and takes Xvfb down, wipe work/, start again from
-# the pristine release sysout (~2 s to the Exec).
+# The X socket lives in a host directory bound over the container's
+# /tmp/.X11-unix, with /tmp/.X11-unix/X<n> on the host a symlink to it, so
+# capture (SH_CAPTURE=x11), XTEST input, `labctl shot` and xdotool are unchanged.
 #
 # Pidfile contract (ensure-station-x11.sh / stop-station-x11.sh, idle.rs):
-#   mame.pid   maiko's HOST-visible pid — the daemon SIGSTOP/SIGCONTs it
-#              (SH_IDLE_PAUSE_PROC_MATCH still matches its cmdline);
-#   xvfb.pid   the container's Xvfb, host pid;
-#   nspawn.pid the systemd-nspawn supervisor (not part of the old contract;
-#              reap_previous kills it too so a leaked container never lingers).
-#
-# Per-station knobs from station.env:
-#   SH_STATION, SH_X11_DISPLAY, MEDLEY_ASSETS, MEDLEY_GEOM, MEDLEY_SYSOUT,
-#   MEDLEY_GREET, MEDLEY_MEM, MEDLEY_STANDBY_DELAY_S — as before;
-#   MEDLEY_ROOTFS   the container tree (default $ASSETS/rootfs)
-#   MEDLEY_UIDBASE  first host uid of the container's uid range (default
-#                   1966080 = 30*65536, must be a multiple of 65536; CT 950/951's subuid range starts at 100000)
-#   MEDLEY_X11_SOCKDIR  host dir bound over the container's /tmp/.X11-unix
-#                   (default /run/streamhost/x11/$TILE)
+#   mame.pid   the DPS8M `dps8` HOST-visible pid — the daemon SIGSTOP/SIGCONTs it
+#   xvfb.pid   the container's Xvfb, host pid
+#   nspawn.pid the systemd-nspawn supervisor (reaped so no container lingers)
 # =============================================================================
 set -euo pipefail
 
 TILE="${SH_STATION:?SH_STATION not set — run under streamhost@<tile>}"
-BASE="${MEDLEY_BASE:-/data/vms/streamhost/stations/$TILE}"
-ASSETS="${MEDLEY_ASSETS:-/data/vms/streamhost/assets/$TILE}"
-GEOM="${MEDLEY_GEOM:-1024x768}"
+BASE="${MULTICS_BASE:-/data/vms/streamhost/stations/$TILE}"
+ASSETS="${MULTICS_ASSETS:-/data/vms/streamhost/assets/$TILE}"
+GEOM="${MULTICS_GEOM:-1024x768}"
 DISP="${SH_X11_DISPLAY:?SH_X11_DISPLAY not set}"
-MEM="${MEDLEY_MEM:-256}"
-SYSOUT="${MEDLEY_SYSOUT:-$ASSETS/medley/loadups/full.sysout}"
-GREET="${MEDLEY_GREET:-$ASSETS/medley/greetfiles/MEDLEYDIR-INIT}"
-ROOTFS="${MEDLEY_ROOTFS:-$ASSETS/rootfs}"
-UIDBASE="${MEDLEY_UIDBASE:-1966080}"
-SOCKDIR="${MEDLEY_X11_SOCKDIR:-/run/streamhost/x11/$TILE}"
-BIN="$ASSETS/maiko/linux.x86_64/ldex"
-INNER="$(dirname "$(readlink -f "$0")")/nspawn-inner.sh"
+PORT="${MULTICS_PORT:-6180}"
+ROOTFS="${MULTICS_ROOTFS:-$ASSETS/rootfs}"
+UIDBASE="${MULTICS_UIDBASE:-2555904}"
+SOCKDIR="${MULTICS_X11_SOCKDIR:-/run/streamhost/x11/$TILE}"
+SEED="${MULTICS_SEED_DISK:-$ASSETS/media/root.dsk}"
+BIN="$ASSETS/bin/dps8"
+HERE="$(dirname "$(readlink -f "$0")")"
+INNER="$HERE/nspawn-inner.sh"
+SHARED="$HERE/shared-terminal-runtime.sh"
 PIDFILE="$BASE/mame.pid" # the x11-runtime pidfile name, not a MAME claim
 XPIDFILE="$BASE/xvfb.pid"
 NPIDFILE="$BASE/nspawn.pid"
 XSOCK="/tmp/.X11-unix/X${DISP#:}"
 
 [ -x "$BIN" ] || {
-  echo "medley[$TILE]: no maiko at $BIN — run scripts/build-guests/tiles/medley.sh" >&2
+  echo "multics[$TILE]: no DPS8M simulator at $BIN" >&2
   exit 1
 }
-[ -f "$SYSOUT" ] || {
-  echo "medley[$TILE]: no sysout at $SYSOUT" >&2
+[ -f "$SEED" ] || {
+  echo "multics[$TILE]: no baked RPV at $SEED" >&2
   exit 1
 }
-[ -x "$ROOTFS/usr/bin/Xvfb" ] || {
-  echo "medley[$TILE]: no container rootfs at $ROOTFS — run scripts/build-guests/tiles/medley.sh --rootfs" >&2
+[ -f "$ASSETS/media/12.8MULTICS.tap" ] || {
+  echo "multics[$TILE]: no MR12.8 system tape at $ASSETS/media/12.8MULTICS.tap" >&2
   exit 1
 }
-[ -f "$INNER" ] || {
-  echo "medley[$TILE]: missing $INNER" >&2
+[ -x "$ROOTFS/usr/bin/xterm" ] || {
+  echo "multics[$TILE]: no container rootfs at $ROOTFS" >&2
   exit 1
 }
+for f in "$INNER" "$SHARED"; do
+  [ -f "$f" ] || {
+    echo "multics[$TILE]: missing $f" >&2
+    exit 1
+  }
+done
 
-# --- reap: maiko (by exe, scoped to this station's asset dir), then any
-# supervisor left over. SIGCONT before TERM (a SIGSTOPped VM never handles
-# TERM); refuse to start over a survivor.
+# --- reap: the simulator by exe (scoped to this station's asset dir, which is
+# bound at its host path inside the container so /proc/<pid>/exe agrees), then
+# any supervisor left over. SIGCONT before TERM — a SIGSTOPped simulator never
+# handles TERM. Refuse to start over a survivor.
+#
+# Resolve by /proc/<pid>/exe (AGENTS.md rule 5 — never a cmdline grep), but in
+# ONE fork instead of one `readlink` per pid. MEASURED 2026-09-20 on a loaded
+# box: the per-pid loop cost 13.4 s per scan at 1322 PIDs, the launcher calls it
+# once to reap and once per wait iteration, and the unit's 90 s start-pre
+# timeout then killed every restart. `find -lname` matches the same symlink
+# target, including a "... (deleted)" exe, in ~0.05 s.
 station_vm_pids() {
-  local d p exe
-  for d in /proc/[0-9]*; do
-    [ -d "$d" ] || continue
-    p="${d#/proc/}"
-    [ "$p" = "$$" ] && continue
-    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
-    exe="${exe% (deleted)}"
-    case "$exe" in
-      "$ASSETS"/maiko/*) printf '%s\n' "$p" ;;
-    esac
-  done
+  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$ASSETS/bin/*" \
+    -printf '%h\n' 2>/dev/null |
+    sed 's#^/proc/##' |
+    grep -E '^[0-9]+$' |
+    grep -vx "$$" || true
 }
-pidfile_alive() { # $1 pidfile $2 exe basename expected
+pidfile_alive() { # $1 pidfile $2 expected exe basename
   local p exe
   p="$(cat "$1" 2>/dev/null || true)"
   case "$p" in '' | *[!0-9]*) return 1 ;; esac
@@ -123,7 +113,6 @@ reap_previous() {
     kill -CONT "$p" 2>/dev/null || true
     kill -KILL "$p" 2>/dev/null || true
   done
-  # the supervisor follows its payload; give it a moment, then insist
   if p="$(pidfile_alive "$NPIDFILE" systemd-nspawn)"; then
     for _ in $(seq 1 20); do
       kill -0 "$p" 2>/dev/null || break
@@ -136,47 +125,44 @@ reap_previous() {
 }
 
 reap_previous || {
-  echo "medley[$TILE]: previous maiko still alive after SIGKILL:" \
+  echo "multics[$TILE]: previous simulator still alive after SIGKILL:" \
     "$(station_vm_pids | tr '\n' ' ')— refusing to start a second one" >&2
   exit 1
 }
 rm -f "$PIDFILE" "$XPIDFILE" "$NPIDFILE"
 
-# --- host side of the X socket: the dir the container's Xvfb writes into,
-# owned by the container's root; the display's canonical socket path on the
-# host is a symlink to it, so every X client on the host is unchanged.
+# --- host side of the X socket dir, owned by the container's root.
 mkdir -p "$SOCKDIR"
 chown "$UIDBASE:$UIDBASE" "$SOCKDIR"
 chmod 1777 "$SOCKDIR"
 rm -f "$SOCKDIR/X${DISP#:}"
 if [ -e "$XSOCK" ] && [ ! -L "$XSOCK" ]; then
-  echo "medley[$TILE]: $XSOCK exists and is not our symlink — display $DISP is someone else's" >&2
+  echo "multics[$TILE]: $XSOCK exists and is not our symlink — display $DISP is someone else's" >&2
   exit 1
 fi
 mkdir -p /tmp/.X11-unix
 ln -sfn "$SOCKDIR/X${DISP#:}" "$XSOCK"
 
-# --- pristine per-launch state: work/ is the only writable bind; the sysout
-# is opened read-only by maiko and SaveVM/LOGOUT would write LDEDESTSYSOUT,
-# which lives in work/ and is wiped on every launch.
+# --- pristine per-launch state. work/ is the only writable bind and holds the
+# ONLY disk the simulator ever attaches; the seed in media/ is mode 0444 and
+# bound read-only. THE SEED MUST HAVE BEEN BAKED FROM A GUEST THAT REACHED
+# `shutdown complete` at the operator console — that line is Multics' own
+# statement that every page has been flushed to the RPV. A simulator killed
+# mid-run leaves the RPV inconsistent and the next boot stops in BCE asking
+# questions no autoinput sheet answers, which from outside looks exactly like a
+# station that never boots.
+#
+# `cp --reflink=auto` is the point of this whole design: MEASURED 0.126 s for
+# the 594 MB RPV on labhost's ZFS, so a pristine copy per launch is free and
+# the station needs no checkpoint at all.
 rm -rf "$BASE/work"
 mkdir -p "$BASE/work"
-chown "$UIDBASE:$UIDBASE" "$BASE/work"
-# The inner script travels as an emit aux file (root-owned, 0600 in the
-# station dir), which the container's mapped root could neither read nor
-# execute — so it is copied into work/ with the container's ownership.
+cp --reflink=auto "$SEED" "$BASE/work/root.dsk"
+chown -R "$UIDBASE:$UIDBASE" "$BASE/work"
+chmod 0644 "$BASE/work/root.dsk"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$BASE/work/nspawn-inner.sh"
+install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$SHARED" "$BASE/work/shared-terminal-runtime.sh"
 
-# --- the container. --as-pid2: nspawn's stub init is PID 1 and reaps;
-# nspawn-inner.sh is PID 2, starts Xvfb and execs maiko, so maiko's exit ends
-# the container. --keep-unit: stays in the caller's (BindsTo) scope, so
-# `systemctl stop streamhost@<tile>` sweeps it. --private-users with a FIXED
-# base so work/ and the socket dir can be pre-owned; the tree itself was
-# shifted into that range ONCE by the builder (ownership=chown cannot be
-# combined with a volatile root), so ownership=off here. --volatile=overlay:
-# a tmpfs upper over the read-only tree, nothing persists. The Medley tree and
-# maiko are bound at their host paths so /proc/<pid>/exe and the cmdline the
-# idle freezer matches on read the same from the host.
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
   --machine="kh-$TILE" --uuid="$(printf '%032x' "$UIDBASE")" \
@@ -186,62 +172,144 @@ nohup systemd-nspawn \
   --drop-capability=CAP_SYS_ADMIN,CAP_SYS_MODULE,CAP_SYS_RAWIO,CAP_SYS_PTRACE,CAP_MKNOD,CAP_NET_ADMIN,CAP_NET_RAW,CAP_SYS_BOOT,CAP_SYS_TIME,CAP_AUDIT_WRITE,CAP_AUDIT_CONTROL,CAP_SYS_CHROOT,CAP_SETFCAP,CAP_LINUX_IMMUTABLE \
   --no-new-privileges=yes \
   --system-call-filter='~@mount' \
-  --bind-ro="$ASSETS/maiko" --bind-ro="$ASSETS/medley" \
+  --bind-ro="$ASSETS/bin" \
+  --bind-ro="$ASSETS/media" \
   --bind="$BASE/work:/work" \
   --bind="$SOCKDIR:/tmp/.X11-unix" \
-  --setenv=SH_X11_DISPLAY="$DISP" --setenv=MEDLEY_GEOM="$GEOM" \
-  --setenv=MEDLEY_MEM="$MEM" --setenv=MEDLEY_BIN="$BIN" \
-  --setenv=HOME=/work --setenv=LOGINDIR=/work \
-  --setenv=MEDLEYDIR="$ASSETS/medley" \
-  --setenv=LDEDESTSYSOUT=/work/lisp.virtualmem \
-  --setenv=LDEINIT="$GREET" --setenv=LDESRCESYSOUT="$SYSOUT" \
-  --setenv=LDEKBDTYPE=X \
+  --setenv=SH_X11_DISPLAY="$DISP" \
+  --setenv=MULTICS_ASSETS="$ASSETS" \
+  --setenv=MULTICS_GEOM="$GEOM" \
+  --setenv=MULTICS_READY_TIMEOUT_S="${MULTICS_READY_TIMEOUT_S:-420}" \
+  --setenv=MULTICS_PORT="$PORT" \
+  --setenv=MULTICS_COLS="${MULTICS_COLS:-80}" \
+  --setenv=MULTICS_ROWS="${MULTICS_ROWS:-24}" \
+  --setenv=MULTICS_FONTSIZE="${MULTICS_FONTSIZE:-14}" \
+  --setenv=MULTICS_XOFF="${MULTICS_XOFF:-+32+96}" \
+  --setenv=HOME=/work --setenv=TERM=vt100 \
   --kill-signal=SIGTERM --console=pipe \
   /work/nspawn-inner.sh \
-  >"$BASE/maiko.log" 2>&1 </dev/null &
+  >"$BASE/multics.log" 2>&1 </dev/null &
 echo $! >"$NPIDFILE"
 
-# maiko maps its window within ~1 s of exec; the Exec is drawn by ~2 s.
-MPID=""
-for _ in $(seq 1 60); do
+# Multics reaches its answering service in ~52 s from a clean RPV (MEASURED
+# 2026-09-20T08:58:32Z: TCP/6180 open at +4 s, `as_init_: Multics MR12.8;
+# Answering Service 17.0` at +52 s — the 48 s gap is finding 1 of the shared
+# runtime, and why the readiness gate is a console line and not a port probe).
+# Wait on the real things: the simulator pid, the X socket, and the visitor
+# window actually mapped — never on a guessed sleep.
+SPID=""
+for _ in $(seq 1 "${MULTICS_LAUNCH_TIMEOUT_S:-360}"); do
   kill -0 "$(cat "$NPIDFILE")" 2>/dev/null || {
-    echo "medley[$TILE]: container died at launch — tail of maiko.log:" >&2
-    tail -20 "$BASE/maiko.log" >&2
+    echo "multics[$TILE]: container died at launch — tail of multics.log:" >&2
+    tail -40 "$BASE/multics.log" >&2
     exit 1
   }
-  MPID="$(station_vm_pids | head -1)"
-  if [ -n "$MPID" ] && [ -S "$SOCKDIR/X${DISP#:}" ] &&
-    xwininfo -root -tree -display "$DISP" 2>/dev/null | grep -q "Medley Interlisp"; then
+  SPID="$(station_vm_pids | head -1)"
+  if [ -n "$SPID" ] && [ -S "$SOCKDIR/X${DISP#:}" ] &&
+    xwininfo -root -tree -display "$DISP" 2>/dev/null | grep -q "Multics console"; then
     break
   fi
-  sleep 0.5
+  SPID=""
+  sleep 1
 done
-[ -n "$MPID" ] || {
-  echo "medley[$TILE]: no maiko after 30 s — tail of maiko.log:" >&2
-  tail -20 "$BASE/maiko.log" >&2
+[ -n "$SPID" ] || {
+  echo "multics[$TILE]: no Multics terminal window — tail of multics.log:" >&2
+  tail -40 "$BASE/multics.log" >&2
+  tail -40 "$BASE/work/emulator.log" 2>/dev/null >&2 || true
   exit 1
 }
-echo "$MPID" >"$PIDFILE"
-# the container's Xvfb: same PID namespace as maiko, exe Xvfb
+
+# --- focus, and wake the getty. MEASURED 2026-09-20, and both halves are
+# required:
+#
+#  * No window manager runs in the container, so X input focus is PointerRoot
+#    and keystrokes reach the xterm only while the pointer happens to be over
+#    it. The daemon drives this station with XTEST keys and never moves a
+#    pointer (there is none in the exhibit), so without an explicit
+#    XSetInputFocus a visitor's typing would land on the root window and
+#    vanish. `xdotool windowfocus` pins it once, for good.
+#
+#  * The FNP does not hand a fresh connection to Multics on its own. MEASURED
+#    at byte level 2026-09-20: a raw socket to the FNP gets the telnet options
+#    and then the `HSLA Port (d.h000 ...)` prompt and stops there. ONE CR
+#    answers that prompt, the FNP replies `Attached to line d.h000` and only
+#    then does Multics print its own
+#    `Multics MR12.8: Installation and location (Channel d.h000)` banner and
+#    the login line. Without the CR the rest scene is the FNP's channel menu,
+#    which is plumbing and not the exhibit. This is a bring-up action by the
+#    launcher on the station's own display, not a hidden shortcut offered to
+#    the visitor.
+#
+# The CR is re-sent until the LOGIN BANNER is actually on the framebuffer —
+# the banner is the proof, not the keystroke. "Did the screen change" is too
+# weak here: the telnet chrome and the FNP's `HSLA Port` prompt arrive
+# asynchronously in the same window, and an early CR that reaches the line
+# before the FNP is listening is simply lost. So the gate is a lit-pixel count
+# taken after the window has settled, and the retry loop re-sends the CR until
+# the Multics banner is actually lit.
+export DISPLAY="$DISP"
+nlit() {
+  xwd -display "$DISP" -root -silent 2>/dev/null |
+    convert xwd:- -colorspace Gray -threshold 25% -format '%[fx:int(mean*w*h)]' info: 2>/dev/null || echo 0
+}
+WIN="$(xdotool search --name 'Multics console' 2>/dev/null | head -1 || true)"
+if [ -n "$WIN" ]; then
+  xdotool windowfocus "$WIN" 2>/dev/null || true
+  # Let the telnet chrome and the FNP's HSLA prompt finish arriving before the
+  # baseline is taken, or the baseline is a blank window and the chrome alone
+  # clears the threshold.
+  base=-1
+  prev=-1
+  same=0
+  for _ in $(seq 1 60); do
+    sleep 0.5
+    base="$(nlit)"
+    if [ "$base" -gt 0 ] && [ "$base" = "$prev" ]; then
+      same=$((same + 1))
+      [ "$same" -ge 4 ] && break
+    else
+      same=0
+    fi
+    prev="$base"
+  done
+  want=$((base + ${MULTICS_BANNER_LIT_PX:-1200}))
+  got="$base"
+  for _ in $(seq 1 "${MULTICS_GETTY_WAKE_TRIES:-20}"); do
+    xdotool key --clearmodifiers Return 2>/dev/null || true
+    for _ in 1 2 3 4 5 6 7 8; do
+      sleep 0.5
+      got="$(nlit)"
+      [ "$got" -ge "$want" ] && break 2
+    done
+  done
+  if [ "$got" -ge "$want" ]; then
+    echo "multics[$TILE]: login banner on the framebuffer ($base -> $got lit px)"
+  else
+    echo "multics[$TILE]: WARNING — no login banner (lit px $base -> $got, wanted $want); the rest scene may open black" >&2
+  fi
+fi
+
+echo "$SPID" >"$PIDFILE"
 XV=""
 for d in /proc/[0-9]*; do
   p="${d#/proc/}"
-  [ "$(readlink "/proc/$p/ns/pid" 2>/dev/null)" = "$(readlink "/proc/$MPID/ns/pid" 2>/dev/null)" ] || continue
+  [ "$(readlink "/proc/$p/ns/pid" 2>/dev/null)" = "$(readlink "/proc/$SPID/ns/pid" 2>/dev/null)" ] || continue
   case "$(readlink "/proc/$p/exe" 2>/dev/null)" in */Xvfb) XV="$p" ;; esac
 done
 [ -n "$XV" ] && echo "$XV" >"$XPIDFILE"
-echo "medley[$TILE]: pid=$MPID xvfb=${XV:-?} nspawn=$(cat "$NPIDFILE") display=$DISP geom=$GEOM sysout=$(basename "$SYSOUT") uidbase=$UIDBASE (contained relaunch, no statefile)"
+echo "multics[$TILE]: dps8=$SPID xvfb=${XV:-?} nspawn=$(cat "$NPIDFILE") display=$DISP geom=$GEOM fnp=$PORT uidbase=$UIDBASE (contained relaunch from the pristine baked RPV)"
 
-# Standby: freeze once the booted scene has settled; the daemon owns the
-# steady state via SH_IDLE_PAUSE_PIDFILE and SIGCONTs on the first session.
+# Standby: freeze the simulator once the login prompt has settled; the daemon
+# owns the steady state via SH_IDLE_PAUSE_PIDFILE and SIGCONTs on the first
+# session. A frozen DPS-8/M costs no core between visitors.
 if [ -n "${SH_IDLE_PAUSE_PIDFILE:-}" ] && [ "${SH_IDLE_PAUSE_SECS:-60}" != 0 ]; then
   (
-    sleep "${MEDLEY_STANDBY_DELAY_S:-30}"
+    sleep "${MULTICS_STANDBY_DELAY_S:-30}"
     p="$(cat "$PIDFILE" 2>/dev/null || true)"
     [ -n "$p" ] || exit 0
     exe="$(readlink "/proc/$p/exe" 2>/dev/null)"
     [ "${exe% (deleted)}" = "$BIN" ] || exit 0
     kill -STOP "$p" 2>/dev/null &&
-      echo "medley[$TILE]: standby — frozen at the Exec (pid $p; first session wakes it)"
+      echo "multics[$TILE]: standby — frozen at the Multics login (pid $p; first session wakes it)"
   ) &
 fi
