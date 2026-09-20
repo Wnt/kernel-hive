@@ -122,6 +122,16 @@ All under `/data/vms/sandbox/linux012-race/race/`:
 | keyboard, fleet floor 40/40, full line round-tripped | `golden/b1-keyproof.png` |
 | `loadvm golden` restore (typed line gone, fixture back) | `golden/b2-restore.png` |
 
+And on the LIVE station after landing, which is the proof that counts (the rig
+proves the guest, the station proves the launcher, the golden and the daemon
+together):
+
+| proof | frame |
+|---|---|
+| golden restored by the real launcher at first start | `linux012-race/live-check.png` |
+| live input — `ls /etc` typed through `labctl` and answered | `linux012-race/live-typed.png` |
+| live `labctl reset` — the typed line gone, fixture back | `linux012-race/live-reset.png` |
+
 ## Userland (measured in the guest)
 
 `/` → `bin dev etc root tmp usr` · `/bin` → `mkswap sh vi` · `/usr/bin` →
