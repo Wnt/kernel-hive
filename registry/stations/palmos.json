@@ -43,7 +43,7 @@
     "stationsManifestOrder": 90,
     "stationsManifestPrelude": "\n# palmos (slot 207) — Palm III, host-native MAME palmiii, Palm OS 3.3 (French); palmos wave 2026-09-20.\n",
     "bringUpGroup": 5,
-    "bindingOrder": 107,
+    "bindingOrder": 118,
     "bindingPrelude": "",
     "goldenOrder": 90,
     "actionMapOrder": 52
@@ -93,7 +93,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 207,
-    "bringUpOrder": 107,
+    "bringUpOrder": 118,
     "x11": {
       "display": ":207",
       "geometry": "160x220x32",
