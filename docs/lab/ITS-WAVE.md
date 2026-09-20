@@ -116,3 +116,11 @@ it.
 - Left on disk on purpose (cheap to keep, expensive to rebuild): the container
   root `/data/vms/streamhost/assets/its/rootfs` and the partial build tree
   `/data/vms/sandbox/its-work/build/its` (submodules checked out at the pin).
+
+## Do not merge this branch as-is
+
+The scaffolded registry row is `lifecycle: production, enabled: true` (that is
+what `new --like --production` writes, and flipping it to candidate/disabled
+fails `validate` because the generated SPA scene shards still carry the row).
+The branch is therefore **unmergeable by policy until the framebuffer proof
+above is green** — merging it would list an exhibit that has never booted.
