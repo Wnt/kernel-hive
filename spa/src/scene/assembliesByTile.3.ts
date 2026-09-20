@@ -126,8 +126,20 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
     keyboard: 'keyboardB', mouse: 'paramMouseD',
   },
-  its: {
-    kind: 'pizzaBox', body: 'towerE', monitor: 'crtC',
-    keyboard: 'keyboardA', mouse: 'paramMouseA',
+  msx2: {
+    kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD',
+    },
+  // cpm22 — the Kaypro II is an ALL-IN-ONE luggable: the 9" tube, the Z80
+  // and the two floppy drives are one steel case, so the assembly carries
+  // NO separate body, same shape as macsys1's compactA.
+  cpm22: { kind: 'homeMicro', monitor: 'compactA' },
+  // riscos3: a 1989 Acorn Archimedes 310 — a low beige base unit with the
+  // drive slot on the front, a separate keyboard and the three-button Acorn
+  // mouse RISC OS is built around, under a 14" colour multiscan CRT.
+  riscos3: {
+    kind: 'pizzaBox', body: 'pizzaBoxF', monitor: 'crtD',
+    keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
+  vax43bsd: { kind: 'towerSetup', body: 'towerE', monitor: 'terminalA' },
+  its: { kind: 'towerSetup', body: 'industrialBox', monitor: 'terminalA' },
 } as const satisfies Record<string, Assembly>;

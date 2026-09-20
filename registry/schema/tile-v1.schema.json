@@ -31,7 +31,7 @@
     },
     "era_year": {
       "type": "integer",
-      "minimum": 1970
+      "minimum": 1960
     },
     "stationDir": {
       "type": "string",
@@ -237,6 +237,7 @@
                 "qemu-guestram-abswrite",
                 "mame-guestram-abswrite",
                 "mame-guestram-readloop",
+                "mame-hwcursor-readloop",
                 "x11-warp-absolute"
               ]
             },

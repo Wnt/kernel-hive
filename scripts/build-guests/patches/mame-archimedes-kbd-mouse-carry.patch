@@ -1,0 +1,79 @@
+Archimedes keyboard: carry the mouse delta instead of truncating it.
+
+WHY
+
+src/devices/machine/archimedes_keyb.cpp emits the mouse as real quadrature.
+Its `update_mouse` timer runs at 4 kHz and, on any non-zero delta, advances
+the X (and Y) quadrature phase by exactly ONE step -- then assigns
+
+    m_mouse_x = x;      // x = m_mouse[0]->read(), the ioport position
+
+so every count beyond the first is DISCARDED. With a host mouse that is
+invisible: SDL never delivers more than a count or two per 250 us tick, so
+the sampled delta is almost always 1 and nothing is lost.
+
+A PROGRAMMATIC driver is the opposite shape. kernel-hive's ctlsock engine
+states a whole movement into the analog ioport and lets the device difference
+it, exactly as the SGI, ADB and MSX pointers do. MEASURED on riscos3
+2026-09-20, RISC OS 3.11 Desktop, MAME 0.289 aa310: a 600-count MOVE advanced
+the device's own m_mouse_x from 0 to 900 and moved the guest pointer ZERO
+pixels -- one quadrature step for the whole flight. Pacing the counts one per
+emulated millisecond does deliver them (the pointer moves, 1.493 VIDC cursor
+units per count), but it caps a MOVEA round at MAME_CTL_MOVE_STEP=1 count,
+and the closed loop then gives up long before it reaches a target on the far
+side of the screen: ten targets, ten `giveups`, worst error 332 px.
+
+WHAT IT CHANGES
+
+Two lines at the end of `update_mouse`: advance the recorded position by ONE
+unit per tick toward the sampled one rather than jumping to it, and keep the
+remainder for the next tick. The motion is delivered WHOLE, a few ticks later,
+at the device's own 4 kHz rate -- 4000 counts/s, far beyond any hand, and far
+beyond the ~1000/s an unpaced host mouse could ever produce. This is the same
+correction, for the same reason, as the fleet's mame-hle-ps2-mouse-carry.patch
+(SGI's 9-bit PS/2 report field).
+
+The int16_t difference is deliberate: the ioport is a 16-bit WRAPPING
+accumulator (PORT_BIT(0xffff, IPT_MOUSE_X)) and the engine's running total
+wraps in that space, so the direction has to be read from the SIGNED 16-bit
+difference, exactly as the upstream `int16_t dx = x - m_mouse_x` already does.
+
+CONTAINMENT
+
+  * Host-mouse behaviour is unchanged in practice: a per-tick delta of 1
+    takes the same path it always did.
+  * No save items are added, removed or renamed (m_mouse_x/m_mouse_y are
+    already saved), so the ctlsock module's savestate signature and every
+    golden baked against it are untouched.
+  * Touches one file and nothing else.
+
+MEASURED AFTER (riscos3, same rig): MAME_CTL_MOVE_STEP back at the fleet
+default, MOVEA converges on all five spread targets -- see
+docs/lab/RISCOS3-WAVE.md for the accuracy table.
+--- a/src/devices/machine/archimedes_keyb.cpp
++++ b/src/devices/machine/archimedes_keyb.cpp
+@@ -381,8 +381,22 @@
+ 		m_mouse_yphase &= 3;
+ 	}
+ 
+-	m_mouse_x = x;
+-	m_mouse_y = y;
++	// [kernel-hive] CARRY, DON'T TRUNCATE. Upstream assigns the sampled
++	// position here, so a delta of N counts arriving between two ticks emits
++	// exactly ONE quadrature step and throws N-1 away -- the guest's pointer
++	// then moves one unit no matter how far the mouse travelled. That is
++	// invisible with a real host mouse (which never delivers more than a
++	// count or two per 250 us tick) and fatal to a programmatic driver, which
++	// states a whole movement at once: kernel-hive's ctlsock engine issues a
++	// per-round budget and measured ZERO pointer motion for a 600-count move.
++	// Advance by ONE unit per tick instead and keep the remainder: the motion
++	// is delivered whole, a few ticks later, at the device's own 4 kHz rate
++	// (4000 counts/s, well beyond any hand). Same shape as the fleet's
++	// mame-hle-ps2-mouse-carry.patch. No save items change.
++	if (m_mouse_x != x)
++		m_mouse_x += (int16_t(x - m_mouse_x) > 0) ? 1 : -1;
++	if (m_mouse_y != y)
++		m_mouse_y += (int16_t(y - m_mouse_y) > 0) ? 1 : -1;
+ }
+ 
+ void archimedes_keyboard_device::leds_w(uint8_t data)

@@ -16,7 +16,7 @@ import {
 export type PcFamily =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'its';
+  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'its' | 'bsd-tty';
 
 export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
   generic: { family: 'generic', rows: [NAV, MODS], moreRows: [fkeyRow(1, 12)] },
@@ -58,6 +58,57 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
       MODS,
     ],
     moreRows: [NAV],
+  },
+
+  // 4.3BSD on a VAX-11/780, reached through one DZ11 terminal line. The
+  // control characters are not a power-user extra here, they are the ONLY way
+  // to do several ordinary things, so they sit in an ALWAYS-VISIBLE base row
+  // rather than behind "More": a key one tap away is a key a visitor never
+  // finds. MEASURED in the guest with `stty everything` (2026-09-20), not
+  // assumed from Linux habits:
+  //
+  //   intr ^C · eof ^D · kill ^U · werase ^W · susp ^Z · quit ^\ · stop ^S/^Q
+  //   erase ^? (DEL, not ^H — xterm runs with backarrowKey:false to match)
+  //
+  // ^D is the one that matters most: it is how a visitor LOGS OUT and hands
+  // the station back, and 4.3BSD offers no `exit` from the login shell that a
+  // 1986 visitor would have reached for first. Esc is here for vi, which is
+  // the editor on this machine and has no menus.
+  //
+  // Deliberately absent: ^] would escape to the telnet client (the station
+  // runs `telnet -E` so it cannot), and ^S/^Q flow control is a foot-gun that
+  // freezes the terminal with no visible cause. ^\ is offered because SIGQUIT
+  // is a real part of the 1986 vocabulary and it does not leave the exhibit.
+  'bsd-tty': {
+    family: 'bsd-tty',
+    rows: [
+      [
+        ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
+        ctrlChar('ctrl-d', '^D', 'd', 'End of file — and how you log out'),
+        ctrlChar('ctrl-u', '^U', 'u', 'Kill the whole line'),
+        ctrlChar('ctrl-z', '^Z', 'z', 'Suspend the job'),
+        tap('esc', 'Esc', XK.Escape, { hint: 'vi command mode' }),
+      ],
+      MODS,
+    ],
+    // NAV minus its own Esc, which is promoted to the base row above; the ids
+    // have to stay unique across the whole profile.
+    moreRows: [
+      [
+        tap('tab', 'Tab', XK.Tab),
+        tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+        tap('ret', '⏎', XK.Return),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        ...ARROWS,
+      ],
+      [
+        ctrlChar('ctrl-w', '^W', 'w', 'Erase the last word'),
+        ctrlChar('ctrl-r', '^R', 'r', 'Reprint the line'),
+        ctrlChar('ctrl-l', '^L', 'l', 'Redisplay (vi)'),
+        ctrlChar('ctrl-bslash', '^\\', '\\', 'Quit — SIGQUIT'),
+        ch('|'), ch('~'), ch('/'),
+      ],
+    ],
   },
 
   // SCO Xenix 386 2.3.4 — the linux-tty rows (this is the System V console the

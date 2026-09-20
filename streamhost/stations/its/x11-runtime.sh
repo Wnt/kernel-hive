@@ -49,7 +49,9 @@ UIDBASE="${ITS_UIDBASE:-2424832}"
 SOCKDIR="${ITS_X11_SOCKDIR:-/run/streamhost/x11/$TILE}"
 SEED="${ITS_SEED_DISK:-$TREE/out/simh/rp0.dsk}"
 BIN="$TREE/tools/simh/BIN/pdp10"
-INNER="$(dirname "$(readlink -f "$0")")/nspawn-inner.sh"
+HERE="$(dirname "$(readlink -f "$0")")"
+INNER="$HERE/nspawn-inner.sh"
+SHARED="$HERE/shared-terminal-runtime.sh"
 PIDFILE="$BASE/mame.pid" # the x11-runtime pidfile name, not a MAME claim
 XPIDFILE="$BASE/xvfb.pid"
 NPIDFILE="$BASE/nspawn.pid"
@@ -67,27 +69,29 @@ XSOCK="/tmp/.X11-unix/X${DISP#:}"
   echo "its[$TILE]: no container rootfs at $ROOTFS — run scripts/build-guests/tiles/its.sh --rootfs" >&2
   exit 1
 }
-[ -f "$INNER" ] || {
-  echo "its[$TILE]: missing $INNER" >&2
-  exit 1
-}
+for f in "$INNER" "$SHARED"; do
+  [ -f "$f" ] || {
+    echo "its[$TILE]: missing $f" >&2
+    exit 1
+  }
+done
 
 # --- reap: the simulator by exe (scoped to this station's asset tree, which
 # is bound at its host path inside the container so /proc/<pid>/exe agrees),
 # then any supervisor left over. SIGCONT before TERM — a SIGSTOPped simulator
 # never handles TERM. Refuse to start over a survivor.
+# Resolve by /proc/<pid>/exe (AGENTS.md rule 5 — never a cmdline grep), but in
+# ONE fork instead of one `readlink` per pid. MEASURED 2026-09-20 by vax43bsd
+# on a loaded box: the per-pid loop cost 13.4 s per scan at 1322 PIDs, the
+# launcher calls it once to reap and once per wait iteration, and the unit's
+# 90 s start-pre timeout then killed every restart. `find -lname` matches the
+# same symlink target, including a "... (deleted)" exe, in ~0.05 s.
 station_vm_pids() {
-  local d p exe
-  for d in /proc/[0-9]*; do
-    [ -d "$d" ] || continue
-    p="${d#/proc/}"
-    [ "$p" = "$$" ] && continue
-    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
-    exe="${exe% (deleted)}"
-    case "$exe" in
-      "$TREE"/tools/*) printf '%s\n' "$p" ;;
-    esac
-  done
+  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$TREE/tools/*" \
+    -printf '%h\n' 2>/dev/null |
+    sed 's#^/proc/##' |
+    grep -E '^[0-9]+$' |
+    grep -vx "$$" || true
 }
 pidfile_alive() { # $1 pidfile $2 expected exe basename
   local p exe
@@ -147,7 +151,9 @@ rm -rf "$BASE/work"
 mkdir -p "$BASE/work"
 cp --reflink=auto "$SEED" "$BASE/work/rp0.dsk"
 chown -R "$UIDBASE:$UIDBASE" "$BASE/work"
+chmod 0644 "$BASE/work/rp0.dsk"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$BASE/work/nspawn-inner.sh"
+install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$SHARED" "$BASE/work/shared-terminal-runtime.sh"
 
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
@@ -165,6 +171,10 @@ nohup systemd-nspawn \
   --setenv=ITS_TREE="$TREE" --setenv=ITS_PORT="$PORT" \
   --setenv=ITS_COLS="${ITS_COLS:-80}" --setenv=ITS_ROWS="${ITS_ROWS:-30}" \
   --setenv=ITS_FONTSIZE="${ITS_FONTSIZE:-21}" \
+  --setenv=ITS_XOFF="${ITS_XOFF:-+0+0}" \
+  --setenv=ITS_READY_CONSOLE_RE="${ITS_READY_CONSOLE_RE:-}" \
+  --setenv=ITS_READY_LOG_RE="${ITS_READY_LOG_RE:-KHBOOTREADY}" \
+  --setenv=ITS_READY_TIMEOUT_S="${ITS_READY_TIMEOUT_S:-300}" \
   --setenv=HOME=/work --setenv=TERM=vt100 \
   --kill-signal=SIGTERM --console=pipe \
   /work/nspawn-inner.sh \
@@ -192,9 +202,26 @@ done
 [ -n "$SPID" ] || {
   echo "its[$TILE]: no ITS terminal window — tail of its.log:" >&2
   tail -30 "$BASE/its.log" >&2
-  tail -30 "$BASE/work/console.log" 2>/dev/null >&2 || true
+  tail -40 "$BASE/work/emulator.log" 2>/dev/null >&2 || true
   exit 1
 }
+# --- pin X input focus. MEASURED by vax43bsd 2026-09-20 and it applies
+# verbatim here: no window manager runs in the container, so X input focus is
+# PointerRoot and keystrokes reach the xterm only while the pointer happens to
+# be over it. The daemon drives this station with XTEST KEYS ONLY (there is no
+# pointer in a 1967 timesharing exhibit — stream.pointer.present=false), and it
+# never moves a pointer, so without an explicit XSetInputFocus a visitor's ^Z
+# would land on the root window and vanish. `xdotool windowfocus` pins it once,
+# for good. This is a bring-up action on the station's own display, not a
+# shortcut offered to the visitor.
+export DISPLAY="$DISP"
+WIN="$(xdotool search --name 'MIT ITS' 2>/dev/null | head -1 || true)"
+if [ -n "$WIN" ]; then
+  xdotool windowfocus "$WIN" 2>/dev/null || true
+else
+  echo "its[$TILE]: WARNING — no window named 'MIT ITS' to focus; typing may vanish" >&2
+fi
+
 echo "$SPID" >"$PIDFILE"
 XV=""
 for d in /proc/[0-9]*; do

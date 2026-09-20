@@ -165,9 +165,33 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
     badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
-  // TODO(its): exhibit finish copied from medley — set the real era cues.
+  // TODO(msx2): exhibit finish copied from samcoupe — set the real era cues.
+  msx2: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
+  },
+  // cpm22: a Kaypro II luggable, 1982 -- the icon-blue steel case CP/M ran
+  // on before the IBM PC won the market. Registry accent is the CP/M green
+  // phosphor the 9" built-in monitor drew text in.
+  cpm22: {
+    caseTint: '#3b5b9e', accentTint: '#6b9d70', tintMix: 0.4,
+    badge: 'KAYPRO II', spec: 'Z80 2.5MHZ • 64K • 1982', kit: 'eightBit',
+  },
+  // riscos3: Acorn's own off-white plastic with the red-and-white Acorn
+  // roundel as the accent; the badge is what the case actually said.
+  riscos3: {
+    caseTint: '#dedacf', accentTint: '#c4262e', tintMix: 0.32,
+    badge: 'ARCHIMEDES 310', spec: 'ARM2 8MHZ • 4MB • 1992', kit: 'eightBit',
+  },
+  // A VAX-11/780 is a pair of DEC cabinets in the blue-grey the company used
+  // through the late 1970s, with a VT100 on the desk beside it -- not the
+  // magenta PDP-11 console this row was scaffolded from.
+  vax43bsd: {
+    caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
+    badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
+  },
   its: {
-    caseTint: '#d6cfbf', accentTint: '#b23a48', tintMix: 0.38,
-    badge: '1186', spec: 'MESA • LISP', kit: 'workstation',
+    caseTint: '#9aa0a6', accentTint: '#b23a48', tintMix: 0.38,
+    badge: 'PDP-10 (KS10)', spec: '256 KW • MIT ITS • 1967', kit: 'workstation',
   },
 } as const satisfies Record<string, ExhibitIdentity>;
