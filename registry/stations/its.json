@@ -142,7 +142,7 @@
     "displayName": "MIT ITS",
     "year": 1967,
     "lineage": "CTSS (MIT, 1961) → ITS on the AI Lab's PDP-6 (1967) → ITS on the PDP-10 → Emacs and the GNU project",
-    "arch": "DEC PDP-10 (KS10 model, 36-bit words) under SIMH — an RP06 disk pack holding the whole system, and a DZ11 terminal multiplexer with the visitor on line 0",
+    "arch": "DEC PDP-10 (KS10 model, 36-bit words) under SIMH — an RP06 disk pack holding the whole system, a Chaosnet interface the 1967 kernel refuses to boot without, and a DZ11 terminal multiplexer with the visitor on line 0",
     "ramMB": 1,
     "era": "1960s",
     "accent": "#B23A48",
@@ -167,7 +167,7 @@
   },
   "emulator": {
     "family": "simh",
-    "version": "SIMH PDP-10 (KS10) as vendored by PDP-10/its, submodule commit 4d38373206cd7c0ce8b94f5e16bd4429cb96430f",
+    "version": "SIMH PDP-10 (KS10) as vendored by PDP-10/its, submodule commit 4d38373206cd7c0ce8b94f5e16bd4429cb96430f; binary sha256 6173472cb707d9ed34654e5fdbde5c84b7e59011c3c2221fe58d86f8620b3e10",
     "source": "github.com/PDP-10/its pinned at 0f7d67997f9f5d30208e117e73272031e74f16b9, built with `make EMULATOR=simh` on labhost by scripts/build-guests/tiles/its.sh; the simulator binary and the assembled RP06 are hashed in assets/its/MANIFEST.sha256",
     "driver": "pdp10"
   },
@@ -183,19 +183,19 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — no pointing device. A DZ11 terminal line carries keystrokes only, and the exhibit publishes no pointer (stream.pointer.present=false).",
-    "keyboard": "PASS (2026-09-09) — live station under a wake lease: '(+ 40 2)' typed over XTEST returned 42 in the Exec (live/typed2.png); earlier on the smoke rig '(PLUS 40 2)' echoed byte-perfect. NOTE the idle auto-pause: with no visitor the daemon SIGSTOPs maiko after 60 s, so a hand-driven proof must hold /run/streamhost/wake/medley.lease first.",
-    "fixture": "Interlisp Medley booted from the release full.sysout with the MEDLEYDIR-INIT greet at 1024x768: white root; the black-on-white XCL 'Exec (XCL)' listener window at the top-left (+8+60, ~550x330) showing the greet transcript (a time-of-day greeting — 'Hi.' or 'Good evening.' — then the '2>' prompt); the Medley / INTERLISP / COMMON LISP logo window at the top-right; the black one-line status bar across the top (Pkg XCL-USER · Rdtbl XCL · Tty EXEC · Dir · VMem · Time). Reached ≤2 s after exec (measured 2026-09-09: f2.png == f30.png apart from the caret blink). resetMode=relaunch with no statefile: kill maiko by mame.pid, wipe work/ (LDEDESTSYSOUT lives there, so nothing a visitor SaveVM's survives), start the sysout again. The typed-in demo evaluates Common Lisp in the XCL Exec."
+    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb: on the smoke rig ':LISTF' typed over XTEST echoed byte-perfect at the DDT prompt and ITS answered 'DSK: 0; .FILE. (DIR) - NON-EXISTENT DIRECTORY' (shots/f3.png); ':LISTF SYS;' then printed the real 1977-1987 system directory with a '--More-- (Space=yes, Rubout=no)' pager (shots/f4.png). TRAP inherited from vax43bsd: no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up.",
+    "fixture": "One 80x31 xterm, DejaVu Sans Mono at -fs 14, measured 964x748 px inside the station's own container and placed +30+10 to centre it on an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. -fs 14 is the largest size at which 80 columns fit 1024 px (measured: 12.05 px per column, 24 px per row; the scaffold's -fs 21 measured 1440x1050 and clipped every line of ITS's own greeting). At rest it shows a live DDT session: 'DB ITS.1652. DDT.1549.', 'TTY 1', \"You're all alone, Fair share = 65%\", '(ITS does not know the date, so messages cannot be reviewed right now.)', 'Welcome to ITS!', the three how-to lines ending 'For the full info system, type :INFO and Enter.', and 'Happy hacking!' with the block cursor. Reached 32 s after the launcher starts (MEASURED 2026-09-20, launcher return to return). TWO THINGS THE LAUNCHER MUST DO or the scene is wrong: pin X input focus (no window manager runs), and type one ^Z — ITS does not greet a terminal that connects to a DZ line, because its boot chatter goes to the PDP-10 console and not to line 0, so without that keystroke the exhibit opens as an empty black terminal. Both are gated on lit pixels, not on the keystroke. resetMode=relaunch with no statefile: kill pdp10 by mame.pid, wipe work/, copy the pristine RP06 back in, start again (32 s). PROVEN 2026-09-20: ':LISTF SYS;' scrolled the screen to 49472 lit px, relaunch returned the greeting at 13586, and the seed's sha256 (7974e21b959164ebbe8125643b6932cc895111e268550119befcd6fce4401a90) was byte-identical before and after — the work copy diverges from it within one session, the seed never does."
   },
   "notes": [
     "Record wave 2026-09-20, Lane B (docs/lab/ITS-WAVE.md): built from source — there is no ITS distribution image to fetch, the build assembles the system by booting a PDP-10. Runs on the shared heritage-terminal runtime vax43bsd proved."
   ],
   "demoProgram": {
-    "label": "Type a Lisp form into the Exec (click in the Exec window first)",
+    "label": "You are at the DDT prompt — ITS's command processor is its debugger. Look around.",
     "lines": [
-      "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))",
-      "(mapcar #'fib '(1 2 3 4 5 6 7 8 9 10 11 12))"
+      "?",
+      ":LISTF SYS;"
     ],
-    "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
+    "runCommand": ":LISTF SYS;",
     "perCharMs": 80
   }
 }

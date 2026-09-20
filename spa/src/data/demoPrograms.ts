@@ -115,12 +115,12 @@ const DEMO_PROGRAMS = {
     "perCharMs": 80
   },
   "its": {
-    "label": "Type a Lisp form into the Exec (click in the Exec window first)",
+    "label": "You are at the DDT prompt — ITS's command processor is its debugger. Look around.",
     "lines": [
-      "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))",
-      "(mapcar #'fib '(1 2 3 4 5 6 7 8 9 10 11 12))"
+      "?",
+      ":LISTF SYS;"
     ],
-    "runCommand": "(format t \"~&Interlisp Medley, Xerox PARC 1987~%\")",
+    "runCommand": ":LISTF SYS;",
     "perCharMs": 80
   },
   "medley": {

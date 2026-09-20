@@ -169,11 +169,14 @@ nohup systemd-nspawn \
   --bind="$SOCKDIR:/tmp/.X11-unix" \
   --setenv=SH_X11_DISPLAY="$DISP" --setenv=ITS_GEOM="$GEOM" \
   --setenv=ITS_TREE="$TREE" --setenv=ITS_PORT="$PORT" \
-  --setenv=ITS_COLS="${ITS_COLS:-80}" --setenv=ITS_ROWS="${ITS_ROWS:-30}" \
-  --setenv=ITS_FONTSIZE="${ITS_FONTSIZE:-21}" \
-  --setenv=ITS_XOFF="${ITS_XOFF:-+0+0}" \
+  --setenv=ITS_COLS="${ITS_COLS:-80}" --setenv=ITS_ROWS="${ITS_ROWS:-31}" \
+  --setenv=ITS_FONTSIZE="${ITS_FONTSIZE:-14}" \
+  --setenv=ITS_XOFF="${ITS_XOFF:-+30+10}" \
   --setenv=ITS_READY_LOG_RE="${ITS_READY_LOG_RE:-SYSTEM JOB USING THIS CONSOLE}" \
-  --setenv=ITS_READY_TIMEOUT_S="${ITS_READY_TIMEOUT_S:-300}" \
+  --setenv=ITS_READY_TIMEOUT_S="${ITS_READY_TIMEOUT_S:-600}" \
+  --setenv=ITS_CHAOS_NODE="${ITS_CHAOS_NODE:-177002}" \
+  --setenv=ITS_CHAOS_PORT="${ITS_CHAOS_PORT:-44042}" \
+  --setenv=ITS_CHAOS_PEER_PORT="${ITS_CHAOS_PEER_PORT:-44041}" \
   --setenv=HOME=/work --setenv=TERM=vt100 \
   --kill-signal=SIGTERM --console=pipe \
   /work/nspawn-inner.sh \
@@ -184,7 +187,7 @@ echo $! >"$NPIDFILE"
 # answers. Wait on the real thing: the simulator pid, the X socket, and the
 # visitor window actually mapped.
 SPID=""
-for _ in $(seq 1 "${ITS_LAUNCH_TIMEOUT_S:-360}"); do
+for _ in $(seq 1 "${ITS_LAUNCH_TIMEOUT_S:-700}"); do
   kill -0 "$(cat "$NPIDFILE")" 2>/dev/null || {
     echo "its[$TILE]: container died at launch — tail of its.log:" >&2
     tail -30 "$BASE/its.log" >&2

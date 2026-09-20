@@ -1,126 +1,120 @@
 # ITS wave — MIT Incompatible Timesharing System on a SIMH PDP-10
 
-Issue #61 · Lane B (record wave 2026-09-21) · branch `its-work` (from `origin/its`)
+Issue #61 · Lane B (record wave 2026-09-21) · branch `its-live` (from `its-work`)
 
-**STATUS 2026-09-20T09:35Z: STOOD DOWN mid-build by the coordinator (labhost
-1-min load 116-139 against the documented cap of 50). Nothing was proven on a
-framebuffer; no guest ever ran. This file is the resume point.**
+**STATUS 2026-09-20: PROVEN ON THE FRAMEBUFFER.** The station boots, renders a
+live DDT session, takes XTEST keys, and resets deterministically without
+touching its seed. Current state lives in
+[`docs/guests/its.md`](../guests/its.md); this file is the wave record.
 
-## Allocation ledger (atomic, `wave.sh alloc its`, 2026-09-20T08:56Z)
+The earlier stand-down (load wall, nothing proven, no guest ever run) is
+resolved: the build completed and every open question below was answered by
+measurement.
+
+## Allocation ledger (atomic, `wave.sh alloc its`, 2026-09-20T12:14Z)
 
 | Station | Session | Slot / UDP / VMID | X display | retronet |
 |---|---|---|---|---|
-| its | its-work | 210 / 54210 / 210 | `:110` (claim `display/:110`) | — (none: terminal-only exhibit) |
+| its | its-live | 216 / 54216 / 216 | `:116` (claim `display/:116`) | — (none: terminal-only exhibit) |
 
-Claims were **released** at stand-down (see "Teardown" below); re-run
-`scripts/dev/wave.sh alloc its` on resume — it will re-take the same numbers if
-they are still free, and refuse loudly if not.
+Slot moved 210 → 216: the first attempt's numbers had been released at
+stand-down and taken by siblings in the meantime. Container uid base `2424832`
+(37×65536) — clear of medley 1966080, indyr4400 2031616, vision 2162688, perq
+2359296, vax43bsd 2490368, lisa 200000.
 
-Container uid base `2424832` (37*65536) — clear of medley 1966080, indyr4400
-2031616, vision 2162688, perq 2359296, lisa 200000.
+## Measured facts
 
-Scaffold: `stations-registry.py new its --like medley --production --slot 210
---tuple towerE,crtC,keyboardA,paramMouseA`. Sibling is medley because the
-containment shape (nspawn + inner Xvfb + X11 capture + relaunch reset) is
-identical; ITS itself is an emulated PDP-10, not a host Lisp VM.
-
-## Measured facts (real, from this run)
-
-| Fact | Value | How measured |
-|---|---|---|
-| upstream | `https://github.com/PDP-10/its.git` | clone on labhost 2026-09-20T08:57Z |
-| pinned commit | `0f7d67997f9f5d30208e117e73272031e74f16b9` | `git rev-parse HEAD` after `--recursive` clone (master at fetch time; identical to the prep-branch draft pin) |
-| SIMH inside it | commit `4d38373206cd7c0ce8b94f5e16bd4429cb96430f`, 2025-10-12 | printed by the SIMH makefile during the build |
-| emulator binary | `tools/simh/BIN/pdp10` (KS10, `VM_PDP10 USE_INT64`) | build log |
-| visitor terminal | DZ11 line 0 → TCP **10004**, from `out/simh/boot`: `set dz 8b lines=8` / `at -u dz0 10004` / `set rp0 rp06` / `at rp0 out/simh/rp0.dsk` / `b rp0` | read from the generated config |
-| writable medium | `out/simh/rp0.dsk`, RP06, 317132800 bytes while being written | `ls -la` at 09:08Z (the build was killed before the disk was final — **this is not a pin**) |
-| other build output | `minsys.tape` 799724 B, `minsrc.tape` 5016834 B, `reboot.tape` 6827116 B, `sources.tape` 92237900 B, `salv.tape` 113004 B, `dskdmp.tape` 64212 B | `ls -la out/simh` |
-| build deps missing on labhost | `expect`, `autoconf`, `automake`, `libncurses-dev`, `libsdl2-dev`, `pkg-config` | installed at 09:02Z; `gawk`/`tcsh`/`xterm` are still absent from labhost and are not needed (xterm lives in the container root) |
-| container root | `/data/vms/streamhost/assets/its/rootfs`, **364 MB**, uid 2424832 | `debootstrap --variant=minbase trixie` + xvfb, xterm, xauth, x11-utils, xdotool, telnet, netcat-openbsd, procps, iproute2, util-linux, libbsd0, ncurses-term, xfonts-base, fontconfig, fonts-dejavu-core; finished 09:07Z (**4 min**) and is ON DISK, ready to reuse |
-| `./start` | symlink to `build/simh/start`; its last line is `tools/simh/BIN/pdp10 out/simh/boot` | read from the tree |
-| DSKDMP dance | **not needed for `EMULATOR=simh`** — the generated config ends in `b rp0`, booting the installed disk directly. The `its` / ESC-G dialogue in the upstream README applies to the KLH10/KA10 paths | read from `out/simh/boot` |
-
-## Measured timeline (`date -u`)
-
-| T | Event |
+| Fact | Value |
 |---|---|
-| 08:55Z | session start, `here.sh` |
-| 08:56Z | `wt.sh new its-work`; `wave.sh alloc its` (first attempt lost slot 208 to multics mid-flight, retried → 210) |
-| 08:57Z | ITS clone+build started on labhost; container rootfs debootstrap started in parallel |
-| 09:02Z | build deps installed (the build had already started without `expect`; it did not need it before that point) |
-| 09:07Z | container rootfs **done** (364 MB) |
-| 09:08Z | SIMH `pdp10` built; ITS self-assembly running (the build boots ITS inside the simulator and assembles the sources there) |
-| 09:19Z | station runtime scripts written (outer launcher + inner script) |
-| 09:26Z | stand-down message; build killed at ~29 min, mid `rp0.dsk` (make deleted the partial disk) |
-| 09:35Z | committed, pushed, claims released |
+| upstream | `https://github.com/PDP-10/its.git` |
+| pinned commit | `0f7d67997f9f5d30208e117e73272031e74f16b9` |
+| vendored SIMH | submodule `4d38373206cd7c0ce8b94f5e16bd4429cb96430f` |
+| **`rp0.dsk`** | 317132800 B · `7974e21b959164ebbe8125643b6932cc895111e268550119befcd6fce4401a90` |
+| **`pdp10`** | 1548856 B · `6173472cb707d9ed34654e5fdbde5c84b7e59011c3c2221fe58d86f8620b3e10` |
+| build wall | **2 h 24 min** (12:18Z → 14:42Z) — see "the build is not 30 minutes" |
+| container root | `/data/vms/streamhost/assets/its/rootfs`, 364 MB, uid 2424832 (reused from the stood-down run; the tile's step 2 is idempotent) |
+| boot to live session | **32 s**, launcher return to return |
+| visitor terminal | 80x31 xterm, DejaVu Sans Mono `-fs 14` = 964x748 px, `+30+10` |
+| readiness token | `SYSTEM JOB USING THIS CONSOLE` on the PDP-10 console |
+| ITS version built | `DB ITS.1652. DDT.1549.` |
 
-## Runtime as written (committed, UNPROVEN)
+## The four things this wave learned
 
-`streamhost/stations/its/x11-runtime.sh` (outer) + `nspawn-inner.sh` (inner)
-follow the medley/vision containment shape and the record-wave contract:
+**1. The build is not 30 minutes.** The stood-down run's "~30 min" was an
+extrapolation from a run killed at 22 minutes, and it is wrong. The full
+`make EMULATOR=simh` took **2 h 24 min** on a box whose run queue sat between
+40 and 130 for most of it — the tile boots a PDP-10 and assembles ITS, Maclisp,
+Macsyma, Emacs and the INFO tree inside it, at a few MIPS. Budget hours, not
+minutes, and expect long silent stretches: the console goes quiet for ten
+minutes at a stretch while MIDAS runs. Check `/proc/<pid>/exe` and the disk
+mtime rather than the log to decide whether it is alive.
 
-- outer: reap-by-`/proc/<pid>/exe` scoped to `$ITS_TREE/tools/*`, refuse a
-  second survivor, recreate the host X socket dir + symlink, wipe `work/`,
-  `cp --reflink=auto` the pristine `rp0.dsk` in, then `systemd-nspawn
-  --as-pid2 --volatile=overlay --private-users --private-network`, tree bound
-  read-only, `work/` the only writable bind, caps dropped, `~@mount` filtered;
-  it returns only when the simulator pid, the X socket and a window titled
-  `MIT ITS` are all real. Standby SIGSTOPs the simulator after 30 s.
-- inner: Xvfb on `:110` → writes its OWN simh config in `/work` (so the
-  simulator attaches `/work/rp0.dsk`, never the read-only seed; Chaosnet/GT40/
-  VT52 lines dropped) → starts `pdp10` with the console going to
-  `/work/console.log` → **real TCP probe of 10004** → `exec xterm -e telnet`.
+**2. The DSKDMP dance DOES apply, and the earlier handoff said it did not.**
+That handoff read the generated `out/simh/boot`, saw it end in `b rp0`, and
+concluded ITS boots unattended under `EMULATOR=simh` and that the upstream
+README's `DSKDMP` / ESC-G dialogue belongs to the KLH10 path. Reading the
+config was not the same as booting it: `b rp0` loads DSKDMP, which prints
+` DSKDMP` and waits. Three variants were raced:
 
-This is also the answer to three of the five shared lane questions
-(Xvfb socket exposure, nspawn containment, process supervision) in the shape
-the medley station already proves in production; it is **not** yet committed to
-`docs/lab/record-wave/shared-terminal-runtime.sh` because the ITS run never got
-a frame to prove it with. mvs38 remains the pathfinder.
+| ini | result |
+|---|---|
+| `expect "DSKDMP" send "its\r"; go` | DSKDMP sits forever, no further output |
+| two rules, ESC-G on an `after=` timer | the ESC raced the filename: DSKDMP read `$`, then `Gits`, and answered `FNF` twice |
+| `expect "DSKDMP" send delay=200000 "its\r\033G"; go` | `Salvager 261`, then ITS in operation |
 
-## The wall (for the record: it is a load wall, not a technical one)
+Finding 3 of the shared runtime survives intact and is in fact the point: SIMH
+answers the dialogue itself from the ini, so there is still no pty/expect
+supervisor and the simulator stays the single supervised process.
 
-No technical wall was hit. The build was progressing normally — SIMH compiled,
-ITS was assembling itself — when the coordinator stood the station down because
-labhost's 1-min load was 116 (cap 50; `uptime` at 09:27Z read
-`138.98, 134.20, 111.96`). The ITS build is CPU-heavy for ~30 min by design: it
-boots a PDP-10 in a simulator and assembles the whole operating system inside
-it.
+**3. Chaosnet is load-bearing.** The first contained boot dropped the `ch`
+device on the grounds that an unreachable peer is pointless. ITS reached
+`Salvager 261` and then:
 
-## Next concrete step on resume
+```
+CHAOSNET INTERFACE NOT RESPONDING (CHECK THE BREAKER ON THE UNIBUS)
+BUGHALT.  FIND A WIZARD OR CONSIDER TAKING A CRASH DUMP.
+```
 
-1. `scripts/dev/wave.sh alloc its` (re-take 210 / 54210 / 210 and `display/:110`).
-2. `scripts/build-guests/tiles/its.sh` on a quiet box — the container root is
-   already built and the tile is idempotent, so this is the ~30 min ITS build
-   only. Record `rp0.dsk` size+SHA-256 from `assets/its/MANIFEST.sha256` into
-   the table above; that is the real media pin.
-3. Smoke boot in the sandbox (not as a station): run the inner script's
-   simulator line by hand against a copy of `rp0.dsk`, `nc -z` 10004, then the
-   xterm, and take the first frame. **This frame is the first proof.**
-4. `scripts/dev/smoke-rig.sh its --like medley` → `/os/its` for the operator.
-5. Then, in order: xterm geometry/font that fills 1024x768 (measure with
-   `xwininfo`, do not guess); Ctrl-Z login from the REAL browser; ESC/altmode
-   and Ctrl-\ through the on-screen keyboard; the rest scene (a logged-in DDT
-   session); reset proof (visible change → relaunch → scene returns, repeated
-   from a fresh process) plus `sha256sum` of the seed `rp0.dsk` before and
-   after to prove the seed is uncorrupted.
+The kernel wants the *interface*, not a peer. With `ch` enabled and its peer
+never answering, ITS boots and merely complains that it could not set the clock
+from the network. Both ports are container-private behind `--private-network`.
 
-## Teardown at stand-down
+**4. ITS does not greet a terminal that connects to a DZ line.** Its boot
+chatter goes to the PDP-10 console, not to line 0, so an exhibit that just
+opens a telnet client shows a black terminal. `^Z` is what opens a session —
+the upstream README's own instruction once the console banner has appeared — so
+the launcher types it once at bring-up, gated on lit pixels. This is the same
+class of problem as vax43bsd's getty CR, and the same fix.
 
-- Build process tree killed by session id resolved from `/proc/<pid>/stat`
-  (never a cmdline `pkill`); proof: a scan of every `/proc/<pid>/exe` for paths
-  under `/data/vms/sandbox/its-work/` or `/data/vms/streamhost/assets/its/`
-  returned `leftover=0`.
-- No guest, no smoke rig and no station service was ever started, so there was
-  nothing else to stop.
-- Claims released; see the report for the `kh-claim ls` check.
-- Left on disk on purpose (cheap to keep, expensive to rebuild): the container
-  root `/data/vms/streamhost/assets/its/rootfs` and the partial build tree
-  `/data/vms/sandbox/its-work/build/its` (submodules checked out at the pin).
+## Runtime
 
-## Do not merge this branch as-is
+`streamhost/stations/its/x11-runtime.sh` (outer, contained) +
+`nspawn-inner.sh` (prologue) + `shared-terminal-runtime.sh` (the lane's shared
+engine, byte-identical to `docs/lab/record-wave/shared-terminal-runtime.sh`,
+which vax43bsd proved end to end). The station's own copies of the medley
+containment logic were replaced by that engine rather than debugged cold. The
+outer launcher's per-PID `/proc/*/exe` loop was replaced with the single-fork
+`find -lname` form before it was ever run — vax43bsd measured the slow form at
+13.4 s per scan, enough to blow the unit's 90 s start-pre timeout.
 
-The scaffolded registry row is `lifecycle: production, enabled: true` (that is
-what `new --like --production` writes, and flipping it to candidate/disabled
-fails `validate` because the generated SPA scene shards still carry the row).
-The branch is therefore **unmergeable by policy until the framebuffer proof
-above is green** — merging it would list an exhibit that has never booted.
+## Proofs (framebuffer, 2026-09-20)
+
+| Proof | Result |
+|---|---|
+| rest scene | PASS — `DB ITS.1652. DDT.1549.` / `Welcome to ITS!` / `Happy hacking!` at a DDT prompt, nothing clipped |
+| keyboard | PASS — `:LISTF` over XTEST echoed byte-perfect, ITS answered; `:LISTF SYS;` printed the real system directory, 1977–1987 timestamps, behind a `--More--` pager |
+| deterministic reset | PASS — scrolled to 49472 lit px, relaunch returned the greeting at 13586 |
+| seed integrity | PASS — seed sha256 byte-identical before and after; the work copy diverges within one session, the seed never does |
+| pointer | N/A — the exhibit publishes none |
+
+## Open
+
+- **Emacs is unexercised.** The station's headline software is reachable
+  (`:EMACS`) but has never been run here, and a DZ line in ITS is a scrolling
+  printing terminal rather than an addressable screen, so a full-screen Emacs
+  may need `:TCTYP` set first. The on-screen keyboard already carries `^X`.
+- **The clock is wrong.** ITS cannot set its time (no Chaosnet peer answers) and
+  says so at boot. `:PDSET` would fix it per session; whether the exhibit should
+  do that at bring-up is a taste call nobody has made.
+- **Row count is cosmetic, and chosen for looks.** 80x31 fills the root; ITS
+  itself does not know or care. If Emacs is ever made to work, revisit.
