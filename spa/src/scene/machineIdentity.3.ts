@@ -218,4 +218,13 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#3f4147', accentTint: '#9aa07f', tintMix: 0.22,
     badge: 'PalmPilot Pro', spec: '1 MB • Palm OS 2.0 • 1997', kit: 'mobile',
   },
+  // macosx: the same graphite Power Mac G4 as macos9 — this exhibit is the
+  // OTHER system that shipped on that machine, and the pair is the point. The
+  // case tint is macos9's graphite; the accent is the registry's Aqua blue
+  // rather than the classic platinum-purple, because Aqua is what changed.
+  macosx: {
+    caseTint: '#9b9ca6', accentTint: '#5d8fc7', tintMix: 0.4,
+    badge: 'POWER MAC G4', spec: 'PowerPC G4 • MAC OS X 10.3 • 2003',
+    kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

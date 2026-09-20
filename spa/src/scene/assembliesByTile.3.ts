@@ -149,4 +149,12 @@ export const ASSEMBLIES_BY_TILE_3 = {
   its: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalB' },
   multics: { kind: 'towerSetup', body: 'industrialBox', monitor: 'terminalA' },
   palmos: { kind: 'phoneDock', body: 'palmPda' },
+  // macosx: the same graphite Power Mac G4 tower as macos9 (towerD) — one
+  // machine, two exhibits — but under a flat panel rather than macos9's big
+  // Studio Display CRT, because by 2003 the G4's desk had an LCD on it.
+  // keyboardG + the one-button paramMouseF are the Apple-family parts.
+  macosx: {
+    kind: 'towerSetup', body: 'towerD', monitor: 'lcdA',
+    keyboard: 'keyboardG', mouse: 'paramMouseF',
+  },
 } as const satisfies Record<string, Assembly>;

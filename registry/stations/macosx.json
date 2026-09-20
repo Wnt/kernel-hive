@@ -41,7 +41,7 @@
   },
   "render": {
     "stationsManifestOrder": 90,
-    "bindingOrder": 118,
+    "bindingOrder": 119,
     "goldenOrder": 90,
     "bringUpGroup": 8,
     "signalOrder": 92,
@@ -88,7 +88,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_INPUT_BACKEND": "dbus-abs"
     },
-    "bringUpOrder": 118,
+    "bringUpOrder": 119,
     "vmidLabel": 218,
     "qemu": {
       "mode": "verbatim",
