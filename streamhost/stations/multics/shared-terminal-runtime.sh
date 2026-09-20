@@ -1,0 +1,1 @@
+../../../docs/lab/record-wave/shared-terminal-runtime.sh

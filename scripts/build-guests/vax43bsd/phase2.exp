@@ -1,0 +1,48 @@
+EXPECT 240 Boot
+SEND ra(0,0)vmunix\n
+EXPECT 300 Automatic reboot failed
+EXPECT 60 #
+SEND cd /dev\n
+EXPECT 60 #
+SEND sh ./MAKEDEV ts0\n
+EXPECT 300 #
+SEND sh ./MAKEDEV dz0\n
+EXPECT 300 #
+SEND sync\n
+EXPECT 60 #
+SEND cd /\n
+EXPECT 60 #
+SEND newfs ra0h ra81\n
+EXPECT 1200 super-block backups
+EXPECT 600 #
+SEND mount /dev/ra0h /usr\n
+EXPECT 120 #
+SEND cd /usr\n
+EXPECT 60 #
+SEND mt rew\n
+EXPECT 300 #
+SEND mt fsf 3\n
+EXPECT 900 #
+SEND tar xpbf 20 /dev/rmt12\n
+EXPECT 2400 #
+SEND cd /\n
+EXPECT 60 #
+SEND chmod 755 / /usr\n
+EXPECT 60 #
+SEND sync\n
+EXPECT 60 #
+SEND umount /dev/ra0h\n
+EXPECT 300 #
+SEND fsck /dev/rra0h\n
+EXPECT 1200 Phase 5
+EXPECT 600 #
+SEND cd /etc\n
+EXPECT 60 #
+SEND cp fstab.ra81 fstab\n
+EXPECT 120 #
+SEND newfs ra0g ra81\n
+EXPECT 1800 super-block backups
+EXPECT 900 #
+SEND sync\n
+SEND sync\n
+EXPECT 120 #
