@@ -165,9 +165,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
     badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
-  // TODO(cpm22): exhibit finish copied from apple2gs — set the real era cues.
-  cpm22: {
-    caseTint: '#d8d5cc', accentTint: '#3f7fbf', tintMix: 0.30,
-    badge: 'Apple IIGS', spec: '65C816 • GS/OS 6', kit: 'eightBit',
+  // TODO(msx2): exhibit finish copied from samcoupe — set the real era cues.
+  msx2: {
+    caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
+    badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

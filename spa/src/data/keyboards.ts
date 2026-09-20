@@ -162,6 +162,9 @@ const KEYBOARDS = {
     },
     "letterCase": "upper-only"
   },
+  "msx2": {
+    "charMap": {}
+  },
   "pet2001": {
     "letterCase": "upper-only"
   },

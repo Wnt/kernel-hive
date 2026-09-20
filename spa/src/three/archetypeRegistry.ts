@@ -233,7 +233,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   apple2gs:    { osId: 'apple2gs', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1986 · Apple IIGS — GS/OS 6.0.1', pointerRel: false },
   xenix:       { osId: 'xenix', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#4f8a8b', eraLabel: '1989 · Unix on the PC' },
   os213:       { osId: 'os213', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#2d4f8e', eraLabel: '1990 · OS/2 1.3 Presentation Manager', pointerRel: false },
-  cpm22:       { osId: 'cpm22', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#6b9d70', eraLabel: '1982 · CP/M 2.2 (Kaypro II)' },
+  msx2:        { osId: 'msx2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#376ca8', eraLabel: '1987 · MSX2 (Philips NMS 8250) — MSX-BASIC + MSX-DOS 2' },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

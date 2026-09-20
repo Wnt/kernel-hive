@@ -938,6 +938,24 @@
       "udp_port": 54113,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "msx2": {
+      "dir": "/data/vms/streamhost/stations/msx2",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54211,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289's nms8250 (Philips NMS 8250, MSX2) runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (checkpoint TBD — see docs/lab/MSX2-WAVE.md)."
+    },
     "netbsd14": {
       "dir": "/data/vms/streamhost/stations/netbsd14",
       "qmp": "/data/vms/streamhost/stations/netbsd14/qmp.sock",

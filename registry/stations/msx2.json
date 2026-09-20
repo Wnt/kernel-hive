@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "id": "msx2",
+  "era_year": 1987,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 85,
+        "prelude": "",
+        "value": {
+          "key": "msx2",
+          "script": "tiles/msx2.sh",
+          "outputDir": "native/msx2",
+          "class": "retro",
+          "estimated": "~2-3m",
+          "automation": "full",
+          "produces": "MSX-DOS 2 boot disk staged (MAME nms8250, MSX2)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/msx2",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54211,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289's nms8250 (Philips NMS 8250, MSX2) runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (checkpoint TBD \u2014 see docs/lab/MSX2-WAVE.md)."
+    }
+  },
+  "render": {
+    "signalOrder": 92,
+    "stationsManifestOrder": 90,
+    "stationsManifestPrelude": "\n# msx2 \u2014 Philips NMS 8250 (MSX2), host-native MAME nms8250, MSX-DOS 2 on the internal floppy.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 107,
+    "bindingPrelude": "",
+    "goldenOrder": 90
+  },
+  "stationDir": "msx2",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54211,
+    "fps": 60,
+    "audio": true,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "ioport-keyboard",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ],
+      "backend": "mamesock"
+    },
+    "slot": 211
+  },
+  "guestDoc": "docs/guests/msx2.md",
+  "credentialsRef": "guest/msx2",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "msx2",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "on",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":75",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/msx2/msx2_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/msx2/fb.shm",
+      "SH_PORT": "54211",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/msx2/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/msx2/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_KEY_MAP": ""
+    },
+    "vmidLabel": 211,
+    "bringUpOrder": 107,
+    "x11": {
+      "display": ":75",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "msx2",
+        "--udp",
+        "54211",
+        "--x11",
+        "--x11-display",
+        ":75",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "on",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/msx2/msx2.keymap",
+        "--env-append-file",
+        "$T/msx2/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/msx2/msx2.keymap",
+        "streamhost/stations/msx2/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#376ca8",
+    "eraLabel": "1987 \u00b7 MSX2 (Philips NMS 8250) \u2014 MSX-BASIC + MSX-DOS 2"
+  },
+  "museum": {
+    "id": "msx2",
+    "displayName": "MSX2 \u2014 MSX-DOS 2",
+    "year": 1987,
+    "lineage": "MSX standard \u2192 MSX2 (Philips NMS 8250, 1987)",
+    "arch": "Zilog Z80A, 3.58 MHz, Yamaha V9938 VDP (MSX2 video)",
+    "ramMB": 0,
+    "ramKB": 128,
+    "era": "1980s",
+    "accent": "#376ca8",
+    "eraSoftware": [
+      "MSX-BASIC",
+      "MSX-DOS 2.2",
+      "disk tools"
+    ],
+    "periodBrowser": "none \u2014 pre-web 8-bit era",
+    "iconicApps": [
+      "MSX-BASIC",
+      "MSX-DOS 2"
+    ],
+    "blurb": "A home-computer standard instead of a single vendor machine \u2014 BASIC in ROM, cartridges, disks and MSX-DOS shared across machines from Sony, Panasonic, Philips and others.",
+    "notes": "Host-native station: MAME 0.289's nms8250 driver (Philips NMS 8250, ordinary MSX2 with one internal WD2793 floppy drive) runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no guest OS. -flop1 is the staged MSX-DOS 2 (English) system disk (file-hunter.com mirror, sha256 in docs/lab/MSX2-WAVE.md). Keyboard-only exhibit (pointer transport none), like samcoupe/apple2e. See docs/lab/MSX2-WAVE.md for the record-wave ledger."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/msx2.sh",
+    "driver": "nms8250"
+  },
+  "ui": "home-computer",
+  "reset": {
+    "stationDir": "msx2",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A - keyboard-only exhibit (pointer transport none)",
+    "keyboard": "PROVEN 2026-09-20 (landing stream, dark-launch rig, REAL BROWSER): the production path -- SH_INPUT_BACKEND=mamesock, SH_MAMESOCK_KEYMAP=msx2.keymap (mame-keymap.py, 88/102 fields matched), SH_KEY_MIN_HOLD_MS/GAP_MS=40/40, MAME_CTL_KEY_EXCL=:KEY (the 8255 PPI matrix IS host-CPU-scanned, like the SAM Coupe's) -- typed `PRINT 1+1` through the real SPA at /os/msx2, byte-perfect, Enter executed it, \"2\" printed, fresh \"Ok\" returned; daemon counters mamesock accepted=35 dropped=0 overflow=0 unmapped=0. MAME's natural-keyboard ctlsock verbs (POST/CODE) were also proven earlier (smoke stream) but are NOT the production path -- superseded by this measurement.",
+    "fixture": "Philips NMS 8250 (MSX2) cold boot to MSX-BASIC's \"Ok\" prompt on a solid blue SCREEN 0 field (\"MSX BASIC version 2.1 / Copyright 1986 by Microsoft / Disk BASIC version 1.0 / Ok\"). MEASURED 2026-09-20: same frame with the MSX-DOS 2 boot disk present in -flop1 -- the machine does not auto-boot into MSX-DOS 2 from this prompt; DOS2 needs its own cartridge ROM (the built-in disk ROM is DOS1, per the \"Disk BASIC version 1.0\" banner) and is explicitly OUT OF SCOPE for this wave (operator decision, see docs/lab/MSX2-WAVE.md). The shipped rest scene is MSX-BASIC 2.1 with the disk present. resetMode=relaunch (cold boot every time); no golden savestate baked (MACHINE_SUPPORTS_SAVE on msx/msx2.cpp unconfirmed, OPEN)."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "record wave 2026-09-20 (issue #60): scaffolded from samcoupe (host-native MAME pattern), NOT openMSX - MAME's nms8250 driver already matches the integration seed's exact machine choice (Philips NMS 8250) and needs no source build/PoC bridge, so it wins the AGENTS.md rule-13 race outright. See docs/lab/MSX2-WAVE.md."
+  ],
+  "demoProgram": {
+    "label": "Type in a demo program (MSX-BASIC)",
+    "lines": [
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 FOR I=1 TO 20",
+      "40 PRINT \"MSX2 \";",
+      "50 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
+  "keyboard": {
+    "charMap": {}
+  }
+}

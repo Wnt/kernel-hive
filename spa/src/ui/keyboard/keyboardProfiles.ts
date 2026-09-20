@@ -321,7 +321,11 @@ export const OS_FAMILY: Record<string, Family> = {
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
-  cpm22: 'generic', // CP/M A> prompt on a Kaypro II — no measured chord set yet; see docs/lab/CPM22-WAVE.md
+  // MSX2 (Philips NMS 8250): MSX-BASIC/MSX-DOS 2 prompt, an otherwise
+  // ordinary PC-ish key layout (the GRAPH/CODE/KANA/dead keys are cosmetic,
+  // not chords a visitor needs) — no dedicated profile until a real MSX
+  // keyboard matrix quirk shows up on the framebuffer.
+  msx2: 'generic',
   freedos: 'dos', msdoswin1: 'dos',
   // SCO Xenix 386 2.3.4: a System V text console, so the linux-tty rows' job
   // exactly (^C/^D/^Z on a PC-101 board) — plus the one thing that IS the

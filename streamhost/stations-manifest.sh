@@ -1271,12 +1271,12 @@ emit os213 \
   --launcher-file "$T/os213/qemu-streamhost.sh" --env-append-file \
   "$T/os213/station.env.fixture"
 
-# cpm22 (slot 206) -- CP/M 2.2 on a Kaypro II, host-native MAME kayproii; cpm22 wave 2026-09-20.
-emit cpm22 \
-  --tile cpm22 --udp 54206 --x11 --x11-display :73 --capture shm --pointer \
-  none --input-backend mamesock --audio off --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/cpm22/cpm22.keymap" \
-  --env-append-file "$T/cpm22/station.env.fixture"
+# msx2 — Philips NMS 8250 (MSX2), host-native MAME nms8250, MSX-DOS 2 on the internal floppy.
+emit msx2 \
+  --tile msx2 --udp 54211 --x11 --x11-display :75 --capture shm --pointer \
+  none --input-backend mamesock --audio on --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/msx2/msx2.keymap" \
+  --env-append-file "$T/msx2/station.env.fixture"
 
 # ---------------------------------------------------------------------------
 # Pre-seed steps the manifest performs (documented per tile above)
