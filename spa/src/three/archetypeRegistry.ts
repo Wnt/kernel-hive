@@ -233,7 +233,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   apple2gs:    { osId: 'apple2gs', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1986 · Apple IIGS — GS/OS 6.0.1', pointerRel: false },
   xenix:       { osId: 'xenix', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#4f8a8b', eraLabel: '1989 · Unix on the PC' },
   os213:       { osId: 'os213', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#2d4f8e', eraLabel: '1990 · OS/2 1.3 Presentation Manager', pointerRel: false },
-  riscos3:     { osId: 'riscos3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: 'TODO(apple2gs): 1986 · Apple IIGS — GS/OS 6.0.1', pointerRel: false },
+  riscos3:     { osId: 'riscos3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1992 · RISC OS 3.11', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

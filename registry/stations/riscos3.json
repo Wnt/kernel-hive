@@ -15,7 +15,7 @@
           "class": "retro",
           "estimated": "~3-5m",
           "automation": "full",
-          "produces": "tiles/apple2 overlay + golden (Apple //e → GEOS)",
+          "produces": "tiles/apple2 overlay + golden (Apple //e \u2192 GEOS)",
           "flags": []
         }
       }
@@ -25,7 +25,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/riscos3",
       "qmp": null,
-      "pointer_mode": "abs",
+      "pointer_mode": "none",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54213,
-      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/riscos3/sta."
+      "notes": "HOST-NATIVE (de-bridged from day one): MAME's aa310 (Archimedes 310, driver status=preliminary) runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, no audio in the first wave. Launcher stations/mame-native/x11-runtime.sh; MACHINE savestate is unsupported on this driver (listxml savestate=\"unsupported\"), so reset=relaunch cold-boots the romset again rather than restoring a checkpoint."
     }
   },
   "render": {
     "signalOrder": 92,
     "stationsManifestOrder": 90,
-    "stationsManifestPrelude": "\n# riscos3 (VMID 204) — TODO one line; scaffolded from apple2gs.\n",
+    "stationsManifestPrelude": "\n# riscos3 (VMID 204) \u2014 TODO one line; scaffolded from apple2gs.\n",
     "bringUpGroup": 6,
     "bindingOrder": 107,
     "bindingPrelude": "",
@@ -56,12 +56,12 @@
     "audio": true,
     "touch": false,
     "pointer": {
-      "transport": "abs",
+      "transport": "none",
       "backend": "mamesock",
-      "method": "mame-guestram-readloop",
-      "absolute": true,
-      "present": true,
-      "device": "adb-mouse-hle",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "archimedes-quadrature-mouse",
       "scale": 1.0,
       "offset": [
         0,
@@ -134,55 +134,55 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3F7FBF",
-    "eraLabel": "TODO(apple2gs): 1986 · Apple IIGS — GS/OS 6.0.1",
+    "eraLabel": "1992 \u00b7 RISC OS 3.11",
     "pointerRel": false
   },
   "museum": {
     "id": "riscos3",
-    "displayName": "TODO(apple2gs): Apple IIGS",
-    "year": 1986,
-    "lineage": "TODO(apple2gs): Apple II / GS/OS",
-    "arch": "WDC 65C816, 2.8 MHz, 1 MB",
-    "ramMB": 1,
+    "displayName": "RISC OS 3.11",
+    "year": 1992,
+    "lineage": "Acorn Arthur \u2192 RISC OS",
+    "arch": "ARM2, 8 MHz, 4 MB (Archimedes 310)",
+    "ramMB": 4,
     "ramKB": 0,
-    "era": "1980s",
+    "era": "1990s",
     "accent": "#3F7FBF",
     "eraSoftware": [
-      "GS/OS System 6.0.1",
-      "Finder 6.0.1",
-      "Control Panel (Super Hi-Res)",
-      "Teach",
-      "Desk accessories (NDAs)"
+      "Filer",
+      "!Draw",
+      "!Paint",
+      "!Edit",
+      "BASIC V"
     ],
-    "periodBrowser": "none — no TCP/IP stack on this exhibit (Marinetti is a wave of its own)",
+    "periodBrowser": "none \u2014 no networking on this exhibit in the first wave",
     "iconicApps": [
-      "Finder",
-      "Control Panel",
-      "Teach",
-      "Desk accessories"
+      "Filer",
+      "!Draw",
+      "!Paint"
     ],
-    "blurb": "TODO(apple2gs): A colour icon desktop on a 65C816 — the Apple II family's last and strangest machine. GS/OS 6.0.1 boots into the Finder in 4096-colour Super Hi-Res, six months before the Macintosh got colour at all, on hardware that still runs every Apple II disk in the hall.",
-    "notes": "TODO(apple2gs): Host-native station: MAME 0.289's apple2gs (ROM 3, 1 MB) runs on the host — drawshm frames, ctlsock keys and mouse through the macadb HLE, FIFO audio. Boots a ProDOS hard-disk volume (CFFA 2.0 in slot 7) straight into the GS/OS 6.0.1 Finder. Third member of the Apple II group with apple2 (GEOS) and apple2e (ProDOS): the same 1977 bus and the same floppies, shown as text, as a monochrome bolt-on desktop, and finally in colour. Pointer is the two-button ADB mouse (8-bit relative axes, MAME_CTL_PTR_MOD=256) — gains unmeasured, so the station ships keyboard-first and stream.pointer.transport stays 'none' until a two-target Finder readback proves it."
+    "blurb": "Acorn's native ARM desktop \u2014 the icon bar, the Filer and the windowed applications that turned the ARM chip from an in-house processor experiment into a personal computer platform, five years before ARM licensed its first outside core.",
+    "notes": "Host-native station: MAME 0.289's aa310 (Acorn Archimedes 310, driver status=preliminary) runs on the host \u2014 drawshm frames, ctlsock keys, no audio in the first wave. RISC OS 3.11 is ROM-resident (bios=311 on the aa310 romset); nothing is installed and there is no disk image. MEASURED 2026-09-20 with a system MAME 0.264 smoke test (same driver/romset metadata as the pinned 0.289): power-on reaches the RISC OS 3.11 Desktop \u2014 icon bar, pointer, mid-grey backdrop \u2014 after the preliminary-driver warning panel, which -skip_warnings removes for the exhibit. The Archimedes' own quadrature mouse ports (:keyboard:MOUSE.0/1/2) are UNMEASURED, so this station ships keyboard-first; stream.pointer.transport stays 'none' until a two-target Desktop click readback proves a binding."
   },
   "emulator": {
     "family": "MAME",
     "version": "0.289",
-    "source": "scripts/build-guests/emulators/native.d/apple2gs.sh",
-    "driver": "riscos3"
+    "source": "scripts/build-guests/emulators/native.d/riscos3.sh",
+    "driver": "aa310"
   },
   "ui": "desktop",
   "reset": {
     "stationDir": "riscos3",
-    "pointer": "abs",
+    "pointer": "none",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "1:1 ABSOLUTE, closed loop on the guest's own cursor words. MEASURED 2026-09-13 (pointer stream, rig restored from the new golden): the IIGS keeps its cursor at $E1/00E9 (X) and $E1/00EB (Y), 16-bit little-endian, in GUEST pixels -- a live readback, but an OUTPUT: poking it sticks and never redraws, and the next ADB poll republishes it from an accumulator that is in neither banks $00/$01/$E0/$E1 nor the ADB micro's 256 bytes, so the macsys1 abs-WRITE route does not work here. The READ loop does. mame-ctlsock-ram-cursor.patch lets MAME_CTL_CURSOR_ITEMS address INSIDE a save item (m_megaii_ram@0x100E9:2 -- m_megaii_ram is size=1 count=131072 over banks $E0/$E1, so $E1/00E9 is byte 0x100E9) and adds MAME_CTL_CAL_SX/SY so the guest pixel becomes the published one: x = 47 + gx*1.4531, y = 53 + gy*3.325, the measured inset and aspect scale of the 640x200 SHR raster inside the 1024x768 surface. THE RASTER IS LETTERBOXED: it occupies published x 47..976 and y 53..717, so the fleet's corner targets (20,20)/(1000,740) are SHR border the guest cursor can never occupy; the five proven here are the reachable set. FIVE TARGETS x TWO LAPS, arrow tip located on the framebuffer (median of 9 frames -- the GS cursor is XORed in per VBL): (50,56)->(51,57) | (973,56)->(972,57) | (50,714)->(51,715) | (973,714)->(972,715) | (512,384)->(513,386). WORST |err| = 1 px on X, 2 px on Y, and lap 2 was byte-identical to lap 1. RESOLUTION BOUND: one ADB count is exactly one guest pixel, so the loop can only land on guest-pixel centres -- +-0.73 px on X and +-1.66 px on Y in published pixels; the 2 px on Y IS that bound, not drift. A click reacts: MOVEA (105,60) + DOWN1 dropped the Finder's File menu open (41769 changed pixels) and UP1 closed it again. The ADB wire is 7-bit signed, so MAME_CTL_MOVE_STEP=48 is mandatory (120 sign-flips). Binary + golden + fixture are ONE unit: the golden was recaptured on the ram-cursor binary.",
-    "keyboard": "verified on the live rig 2026-09-08 (golden stream): the generated keymap drives the whole visitor path -- [1] into AppleWorks 3.0 (its GETTING STARTED date prompt, then Return to the Main Menu), [2] into Dazzle Draw 1.2 (title, Space to the launcher panel, Return to the canvas), [B] to BASIC. 40/40 ms pacing, no MAME_CTL_KEY_EXCL, no dropped or duplicated characters observed. Rollover/overlap not stress-tested.",
-    "fixture": "Apple //e (enhanced) ProDOS boot menu -- a tokenized Applesoft STARTUP program on the /HIVE volume (CFFA 2.0, slot 7) offers [1] AppleWorks 3.0, [2] Dazzle Draw 1.2 and [B] BASIC. Apple II Mouse Card in slot 4. MAME 0.289 apple2ee running HOST-NATIVE (drawshm). Cold boot reaches the menu in 2.6 s; the golden savestate restores it in 0.5 s (MEASURED, golden stream 2026-09-08). Reset is a relaunch that restores sta/apple2ee/golden.sta (the MAME savestate captured at the menu 2026-09-08); the restore was proven frame-identical to the cold boot both in-process and across a relaunch."
+    "mouse": "UNMEASURED. The aa310 driver exposes :keyboard:MOUSE.0 (X, 16-bit analog), :keyboard:MOUSE.1 (Y, 16-bit analog) and :keyboard:MOUSE.2 (buttons) \u2014 the Archimedes' own quadrature mouse, not an ADB/HLE chain like apple2gs. Do not assume the apple2gs gain/calibration chain applies. Station ships keyboard-only until a click readback is measured on the live rig.",
+    "keyboard": "UNMEASURED past the smoke boot. The aa310 keyboard is a CPU-scanned matrix on :keyboard:ROW.0..ROW.15, driven through the Archimedes keyboard MCU romset (acorn_0280,022-01_philips_8051ah-2.bin) \u2014 likely needs MAME_CTL_KEY_EXCL like the other scanned-matrix MAME stations (bbcmicro, atari800xl). A generated keymap (scripts/dev/mame-keymap.py against the live ctlsock) is still owed.",
+    "fixture": "RISC OS 3.11 Desktop at power-on: a mid-grey backdrop with the icon bar along the bottom (the floppy icon at :0, the Apps directory viewer icon, and the palette/Acorn icons at the right) and the pointer visible. MAME 0.289's aa310 running HOST-NATIVE (drawshm). MEASURED 2026-09-20 with a system MAME 0.264 smoke boot: reaches the Desktop in roughly 15 s after pressing a key past the preliminary-driver warning panel (which -skip_warnings removes for the exhibit itself). No disk is attached \u2014 RISC OS is entirely ROM-resident on this romset. Golden savestate is NOT available: aa310's MAME savestate support is listed 'unsupported', so reset is a cold-boot relaunch, not a checkpoint restore."
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from apple2gs on 2026-09-20; TODO: media, museum, spa"
+    "scaffolded from apple2gs on 2026-09-20 (slot/udp/vmid 213); driver is aa310, not apple2gs's driver \u2014 the sibling only supplied the registry row shape and the mame-native x11-runtime.sh launcher convention.",
+    "keyboard/pointer proof, golden bake and keymap are OPEN \u2014 see docs/lab/RISCOS3-WAVE.md"
   ]
 }
