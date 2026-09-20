@@ -34,16 +34,22 @@ mkdir -p "$WORK" /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix 2>/dev/null || true
 rm -f "/tmp/.X11-unix/X$N"
 
-Xvfb "$DISP" -screen 0 "${GEOM}x24" -nolisten tcp -noreset -ac   >"$WORK/xvfb.log" 2>&1 &
+Xvfb "$DISP" -screen 0 "${GEOM}x24" -nolisten tcp -noreset -ac >"$WORK/xvfb.log" 2>&1 &
 XPID=$!
 trap 'kill -TERM "$EPID" "$XPID" 2>/dev/null || true' EXIT TERM INT
 
 for _ in $(seq 1 120); do
   [ -S "/tmp/.X11-unix/X$N" ] && break
-  kill -0 "$XPID" 2>/dev/null || { cat "$WORK/xvfb.log"; exit 1; }
+  kill -0 "$XPID" 2>/dev/null || {
+    cat "$WORK/xvfb.log"
+    exit 1
+  }
   sleep .25
 done
-[ -S "/tmp/.X11-unix/X$N" ] || { echo "no X socket" >&2; exit 1; }
+[ -S "/tmp/.X11-unix/X$N" ] || {
+  echo "no X socket" >&2
+  exit 1
+}
 
 export DISPLAY="$DISP"
 
@@ -52,7 +58,7 @@ export DISPLAY="$DISP"
 bash -lc "exec $EMU_CMD" >"$WORK/emulator.log" 2>&1 &
 EPID=$!
 
-deadline=$(( $(date +%s) + TIMEOUT ))
+deadline=$(($(date +%s) + TIMEOUT))
 while ! nc -z 127.0.0.1 "$READY_PORT" 2>/dev/null; do
   kill -0 "$EPID" 2>/dev/null || {
     echo "hidden emulator exited before terminal became ready" >&2
