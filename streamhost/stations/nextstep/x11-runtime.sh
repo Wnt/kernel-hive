@@ -265,12 +265,13 @@ ensure_user() {
 # Resolve by /proc/<pid>/exe, NEVER by cmdline: a cmdline sweep matches this
 # very script and, over ssh, the session running it (AGENTS.md rule 5).
 reap() {
-  local d p e n=0
-  for d in /proc/[0-9]*; do
-    p="${d#/proc/}"
-    e="$(readlink "$d/exe" 2>/dev/null)" || continue
-    e="${e% (deleted)}"
-    [ "$e" = "$BIN" ] || continue
+  local p n=0
+  # One find over /proc/*/exe, never a readlink fork per PID: the per-PID form
+  # measured 13.4 s at 1322 PIDs under load and could not finish inside the
+  # unit's 90 s start-pre. Still /proc/<pid>/exe, never a cmdline grep.
+  for p in $(find /proc -mindepth 2 -maxdepth 2 -name exe \
+    \( -lname "$BIN" -o -lname "$BIN (deleted)" \) \
+    -printf '%h\n' 2>/dev/null | sed 's#^/proc/##' | grep -E '^[0-9]+$'); do
     # A standby emulator is SIGSTOPped and would never run to handle TERM.
     kill -CONT "$p" 2>/dev/null || true
     kill -TERM "$p" 2>/dev/null || true

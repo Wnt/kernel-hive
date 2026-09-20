@@ -16,6 +16,18 @@
 #   5 IDEMPOTENT  the holder re-running `land begin` succeeds instead of
 #                 deadlocking on itself; `land end` from a non-holder is refused
 #   6 STALE       a window older than the stale threshold is flagged, not stolen
+#   7 MIRROR      the kh-claim MIRROR of the landing window is a best-effort
+#                 sidecar (docs/lab comment: "the mkdir is the authority, and a
+#                 mirror that disagrees prints a warning naming both") — but
+#                 `land end` must not tell the operator RELEASED while that
+#                 mirror still shows the window held by someone else. This is
+#                 the second path by which a completed landing leaves the
+#                 window looking held: not station-land.sh re-homing it (fixed
+#                 in 76f4af5b), but queue.sh's own mirror_take/mirror_release
+#                 swallowing a REFUSED from kh-claim whenever the mirror was
+#                 already wedged onto a stale/other session — which is exactly
+#                 what a PRIOR occurrence of the first bug (or a hand release
+#                 of only one of the two locks) leaves behind.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -88,6 +100,37 @@ check "wave-e takes the now-free window" "ACQUIRED session=wave-e" "$(as wave-e 
 sed -i "s/^ts=.*/ts=$(($(date +%s) - 3600))/" "$STATE/holder/owner"
 check "an old window is flagged STALE" "STALE" "$(bash "$Q" "$STATE" try wave-f foxtrot)"
 check "and is still HELD, not handed over" "HELD session=wave-e" "$(bash "$Q" "$STATE" try wave-f foxtrot)"
+
+as wave-z land end echo --force >/dev/null 2>&1   # clear test 6's still-held window
+bash "$Q" "$STATE" drop wave-f foxtrot >/dev/null # and its queued waiter
+
+echo "== 7 MIRROR STAYS IN SYNC ACROSS take AND release"
+# Put a REAL kh-claim on PATH (the actual lib, not a stub) so mirror_take /
+# mirror_release in queue.sh exercise the genuine REFUSED/--force/--steal
+# semantics, against an isolated claims root — never /run/kh-claims.
+CLAIMS="$(mktemp -d)"
+BIN="$(mktemp -d)"
+ln -s "$HERE/../scripts/lib/kh-claim.sh" "$BIN/kh-claim"
+export PATH="$BIN:$PATH"
+export KH_CLAIMS_ROOT="$CLAIMS"
+trap 'rm -rf "$STATE" "$CLAIMS" "$BIN"' EXIT
+
+# Wedge the mirror onto a session that is neither the queue's next holder nor
+# ever going to release it — the state a leaked re-home (76f4af5b) or a
+# hand-fixed local lock (release_window only touching one side) leaves behind.
+KH_SESSION=ghost-station-session bash "$HERE/../scripts/lib/kh-claim.sh" \
+  take landing window --purpose "landing window: ghost-wave / golf" >/dev/null
+
+out="$(as wave-g land begin golf --timeout-min 1)"
+check "wave-g acquires the LOCAL window even though the mirror is wedged" \
+  "ACQUIRED session=wave-g id=golf" "$out"
+
+out="$(as wave-g land end golf)"
+check "wave-g's land end reports released" "RELEASED session=wave-g id=golf" "$out"
+
+mirror="$(KH_SESSION=wave-g bash "$HERE/../scripts/lib/kh-claim.sh" who landing window 2>&1)"
+check "the kh-claim MIRROR agrees the window is free, not still ghost-station-session" \
+  "unclaimed" "$mirror"
 
 echo
 if [ "$fails" = 0 ]; then
