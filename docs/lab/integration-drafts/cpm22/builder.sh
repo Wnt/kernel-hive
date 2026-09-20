@@ -9,7 +9,10 @@ WORDSTAR_DISK="${WORDSTAR_DISK:-}"
 MAME_BIN="${MAME_BIN:-mame}"
 mkdir -p "$WORK" "$ASSETS/roms" "$ASSETS/disks"
 [ -n "$ROM_SOURCE" ] && cp -f "$ROM_SOURCE" "$WORK/rom.source" || true
-[ -n "$SYSTEM_DISK" ] || { echo "set SYSTEM_DISK to bootable Kaypro CP/M 2.2 image" >&2; exit 2; }
+[ -n "$SYSTEM_DISK" ] || {
+  echo "set SYSTEM_DISK to bootable Kaypro CP/M 2.2 image" >&2
+  exit 2
+}
 cp -f "$SYSTEM_DISK" "$ASSETS/disks/system.img"
 [ -n "$WORDSTAR_DISK" ] && cp -f "$WORDSTAR_DISK" "$ASSETS/disks/wordstar.img"
 "$MAME_BIN" kaypro2 -listxml >"$WORK/kaypro2.xml"
