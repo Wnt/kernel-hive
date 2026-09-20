@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128' | 'applegs';
+  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -287,6 +287,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
   // implements all three signals. No Minix-specific chord set exists to profile.
   minix2: 'linux-tty',
+  // 4.3BSD on a VAX-11/780: one xterm on a DZ11 tty line, no pointer and no X.
+  // NOT linux-tty — that profile hides ^C/^D/^Z behind "More", and on a station
+  // whose entire vocabulary is control characters they have to be on the face
+  // of the keyboard. The row is built from the guest's own `stty everything`.
+  vax43bsd: 'bsd-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell

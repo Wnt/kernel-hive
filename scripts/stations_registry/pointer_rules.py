@@ -17,8 +17,12 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # keyboard-only station has NO pointer, but its KEYS ride that backend --
     # the MAME module acks pointer verbs as silent no-ops (btns=0 axes=0), and
     # the vicesock sink rejects them outright (there is no pointer verb).
+    # x11test joins them for the heritage-terminal lane (vax43bsd, and mvs38 /
+    # multics / its behind it): the exhibit is one xterm on a 1986 tty line, so
+    # there is genuinely no pointing device to model, but the station's keys are
+    # XTEST edges on its own Xvfb and that is the x11test sink.
     "none": (
-        {"disabled", "mamesock", "vicesock"},
+        {"disabled", "mamesock", "vicesock", "x11test"},
         (),
         ("usb-tablet", "vmmouse", "gallery-hid-pci"),
     ),

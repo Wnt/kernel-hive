@@ -1,0 +1,9 @@
+# boot and shut down cleanly — the pristine seed must be snapshotted from a
+# halted, fsck-clean disk or every visitor pays for a boot-time salvage.
+EXPECT 240 Boot
+SEND ra(0,0)vmunix\n
+EXPECT 900 login:
+SEND root\n
+EXPECT 120 #
+SEND sync; sync; /etc/halt\n
+EXPECT 180 halted

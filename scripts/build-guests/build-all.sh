@@ -179,6 +179,7 @@ MANIFEST=(
   "cpm22          |tiles/cpm22.sh                                        |native/cpm22      |retro       |~3-5m                                  |full                         |cpm22 CP/M 2.2 boot floppy (Kaypro II TOSEC) + WordStar 3.3 + golden savestate (MAME kayproii)"
   "msx2           |tiles/msx2.sh                                         |native/msx2       |retro       |~2-3m                                  |full                         |MSX-DOS 2 boot disk staged (MAME nms8250, MSX2)"
   "riscos3        |tiles/riscos3.sh                                      |native/riscos3    |retro       |~5m (ccache-warm MAME aa310 subtarget) |full                         |host-native MAME aa310 binary + verified A310/RISC OS 3.11 romset + golden savestate (Apps Filer window open on the Desktop)"
+  "vax43bsd       |tiles/vax43bsd.sh                                     |VAX43BSD          |terminal    |~25m                                   |full                         |assets/vax43bsd/{bin/vax780,media/{43.tap,bsd43-ra81.dsk,boot42},rootfs} — Open SIMH's VAX-11/780 simulator, the 4.3BSD distribution tape built from the TUHS files, an RA81 with 4.3BSD installed and HALTED CLEAN, and the container rootfs (relaunch reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters

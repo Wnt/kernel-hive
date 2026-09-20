@@ -140,4 +140,5 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'pizzaBoxF', monitor: 'crtD',
     keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
+  vax43bsd: { kind: 'towerSetup', body: 'towerE', monitor: 'terminalA' },
 } as const satisfies Record<string, Assembly>;
