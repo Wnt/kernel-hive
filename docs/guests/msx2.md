@@ -23,7 +23,7 @@ Status: **record wave 2026-09-20** (issue #60), host-native MAME station.
 | Asset | Source | Size | SHA-256 |
 |---|---|---|---|
 | `nms8250.zip` (BIOS/mainrom/subrom/diskrom, 4 members) | `archive.org/download/mame-0.264-roms-non-merged/…/nms8250.zip` | 63 457 B | `42905515ecc08f11f5927697c091465207816f8849dc6fe104d277ba2dd77a42` |
-| `MSX-DOS 2 (English).zip` → `MSX-DOS 2 (English).dsk` | `download.file-hunter.com/System Disks/Cartridges/ASCII/MSX-DOS2/` (the integration seed's own suggested mirror) | zip 63 118 B / disk 368 640 B | zip `561a6be5e433b516bdcbe96178b21801cb2fe22b8fa9ba53bef6e31386d5fa9b3`; disk `e00558f0fc420db00b5f7f72f6d38b3f53fd462da3e6169cd63120f43e4d5733` |
+| `MSX-DOS 2 (English).zip` → `MSX-DOS 2 (English).dsk` | `download.file-hunter.com/System Disks/Cartridges/ASCII/MSX-DOS2/` (the integration seed's own suggested mirror) | zip 63 118 B / disk 368 640 B | zip `561a6be5e433b516bdcbe96178b21801cb2fe22b8fa9ba53bef6e31386d5fa9b`; disk `e00558f0fc420db00b5f7f72f6d38b3f53fd462da3e6169cd63120f43e4d5733` |
 
 Disk size (368 640 B) matches MAME's own `msx2_flop` software-list entry for
 `msxdos2e`/`msxdos2j` (`mdos22de.dsk`, crc32 `9be0bfd1`) — the same bits, a

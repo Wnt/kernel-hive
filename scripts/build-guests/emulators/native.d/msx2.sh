@@ -36,11 +36,15 @@ native_stage_roms() {
 }
 
 # Power-on with no floppy (cold boot, no disk drive to error-loop on, unlike
-# the Atari SIO chain) reaches MSX-BASIC's "Ok" prompt directly — a mostly
-# black/blue text screen (V9938 default SCREEN 0/1 palette), so the lit-pixel
-# floor is measured against a light frame like the text-only stations, not
-# a busy one. Measured 2026-09-20 on this build at -str 6 (see build log);
-# floor is half the measured count per the fleet convention.
+# the Atari SIO chain) reaches MSX-BASIC's "Ok" prompt directly on a solid
+# blue SCREEN 0 field (V9938 default text-mode background) — a BUSY frame
+# like samcoupe's, not a text-on-black one, because the whole background is
+# above the >40 channel threshold. MEASURED 2026-09-20 on this build at
+# -str 6: 684126 lit pixels (of 786432 total); floor set to 340000, ~half
+# the measured count per the fleet convention. Smoke stream (same day)
+# confirmed the SAME frame reappears with the MSX-DOS 2 boot disk attached
+# via -flop1 — the machine still lands on MSX-BASIC's "Ok", not an
+# auto-boot into MSX-DOS 2 (see docs/lab/MSX2-WAVE.md, "rest scene").
 native_boot_gate() {
-  native_gate_nonblack "$1" "$2" "$3" 20000 6
+  native_gate_nonblack "$1" "$2" "$3" 340000 6
 }

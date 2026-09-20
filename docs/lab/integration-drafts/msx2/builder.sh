@@ -10,11 +10,22 @@ DOS2_ROM="${DOS2_ROM:-}"
 DOS2_DISK="${DOS2_DISK:-}"
 mkdir -p "$WORK" "$ASSETS/bin" "$ASSETS/share" "$ASSETS/media"
 git clone "$OPENMSX_REPO" "$WORK/openmsx"
-( cd "$WORK/openmsx"; git checkout "$OPENMSX_REF"; git rev-parse HEAD ) | tee "$WORK/openmsx.commit"
-( cd "$WORK/openmsx"; ./configure; make -j"$(nproc)" )
+(
+  cd "$WORK/openmsx"
+  git checkout "$OPENMSX_REF"
+  git rev-parse HEAD
+) | tee "$WORK/openmsx.commit"
+(
+  cd "$WORK/openmsx"
+  ./configure
+  make -j"$(nproc)"
+)
 # Exact install target varies by openMSX release; worker may replace this with DESTDIR install.
 OPENMSX_BIN="$(find "$WORK/openmsx" -type f -name openmsx -perm -111 -print -quit)"
-[ -n "$OPENMSX_BIN" ] || { echo "openmsx binary not found" >&2; exit 1; }
+[ -n "$OPENMSX_BIN" ] || {
+  echo "openmsx binary not found" >&2
+  exit 1
+}
 cp -f "$OPENMSX_BIN" "$ASSETS/bin/openmsx"
 [ -n "$MACHINE_ROMS" ] && cp -a "$MACHINE_ROMS/." "$ASSETS/media/"
 [ -n "$DOS2_ROM" ] && cp -f "$DOS2_ROM" "$ASSETS/media/msxdos2.rom"

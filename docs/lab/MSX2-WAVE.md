@@ -51,11 +51,47 @@ MAME build) → golden/keyboard proof → docs/spa → land.
 
 ## Wall(s) hit
 
-(filled if/when one is hit — see stop-rule note below)
-
 - The shared build box was under heavy contention from ~9 other simultaneous
   record-wave workers (vax43bsd sim, palmos MAME build, riscos3 push, etc.);
   the msx2 MAME subtarget build (cold ccache for `src/mame/msx/msx2.cpp`, a
   very large driver file covering ~100+ MSX machine variants) took
   substantially longer than the fleet's usual host-native builds as a
-  result. See the session's measured timestamps in the landing report.
+  result. A first build attempt was killed by the worker's own client-side
+  timeout wrapper before it finished (wasted ~10 min of wall time, though
+  ccache kept the compiled objects); the second attempt, run detached via
+  `nohup`/`disown` so it survived the worker's own command timeouts, linked
+  in a few minutes off the warm cache.
+- `native_stage_roms`'s `stage-romset.py` initially reported 0/4 BIOS
+  members installed even though the correct `nms8250.zip` was staged: the
+  staging directory held the ZIP itself, not its extracted members, and
+  `stage-romset.py` hashes only top-level files in that directory (it is
+  not zip-aware). Fix: extract the zip's four members as loose files into
+  `/data/assets-staging/msx2/roms/` alongside the zip.
+- **Rest scene, resolved short of the seed's ideal**: with the MSX-DOS 2
+  boot disk already mounted via `-flop1`, the machine still lands on
+  MSX-BASIC's `Ok` prompt ("Disk BASIC version 1.0" banner) rather than
+  auto-booting into MSX-DOS 2, even though real MSX hardware auto-boots a
+  bootable floppy on power-on. Not investigated further under the wave's
+  time budget — shipped honestly as OPEN rather than guessed at. The BASIC
+  `Ok` prompt is itself one of the seed's two acceptable rest-scene options.
+- Keyboard: MAME's natural-keyboard ctlsock verbs (`POST`, `CODE {ENTER}`)
+  were proven on the framebuffer (`PRINT 1+1` typed, executed, fresh `Ok`
+  returned) — real, working keyboard input. The production daemon does NOT
+  use those verbs, though; it drives the raw per-field `KEY` verb through
+  the generated `msx2.keymap` (88/102 fields matched by
+  `scripts/dev/mame-keymap.py`), which is UNMEASURED against the real
+  `SH_KEY_MIN_HOLD_MS`/`GAP_MS` pacing or a browser tap. OPEN for the next
+  stream, same shape as the samcoupe `MAME_CTL_KEY_EXCL` lesson
+  (AGENTS.md's keyboard-only-exhibit guidance).
+- No golden savestate baked this wave (`MACHINE_SUPPORTS_SAVE` on
+  `msx/msx2.cpp` unconfirmed); `resetMode=relaunch` cold-boots every time,
+  which is slower but correct and provable without a savestate.
+
+## Stop-rule status
+
+Landed at the honest minimum this wave's time budget supports: a dark-launched,
+enabled, host-native station with a real MSX-BASIC framebuffer, hash-verified
+media, a passing build-time boot gate, and one proven keyboard interaction. Not
+done: MSX-DOS 2 reachability, the production ctlsock `KEY`-path keyboard proof,
+and a golden savestate/checkpoint. These are recorded as OPEN above rather than
+guessed at or silently skipped.
