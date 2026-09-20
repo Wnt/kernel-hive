@@ -193,7 +193,7 @@
     "id": "linux012",
     "displayName": "Linux 0.12",
     "year": 1992,
-    "lineage": "UNIX V7 → MINIX (Tanenbaum, 1987) → Linux 0.01 (September 1991) → 0.11 (December 1991) → 0.12 (January 1992) → 0.95 → 0.99 → 1.0 (1994)",
+    "lineage": "MINIX (1987) → Linux 0.01 (Sept 1991) → 0.11 → 0.12 (Jan 1992) → 0.95 → 0.99 → 1.0 (1994)",
     "arch": "i386 — 80386 protected mode only, deliberately: 0.12 will not run on a 286",
     "ramMB": 16,
     "notes": "Live streamhost station, text console only — no pointer, no network, because Linux 0.12 has neither. The guest boots the original 1992 kernel floppy (bootimage-0.12-20040306) and mounts the original 1.4 MB minix root filesystem, moved onto an IDE partition because QEMU 11 cannot drive 0.12's floppy.c through a root-floppy read — which is Linus's own documented install path (RELNOTES-0.12 steps 4-7), not a modern shortcut. Partition 2 is a real swap area, so the kernel prints `Swap device ok: 1023 pages (4190208 bytes) swap-space` on every boot and 0.12's headline feature is genuinely running. Root has no password. The whole userland is 6 free blocks short of full, exactly as a 1.44 MB root floppy was.",
