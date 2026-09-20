@@ -41,6 +41,9 @@ set -uo pipefail
 root="${1:?sandbox root required}"
 name="${2:?sandbox name required}"
 d="$root/$name"
+# Where labrun leaves the script it ships; overridable so the selftest can
+# simulate the delivery chain without writing to /run.
+labrun_dir="${KH_LABRUN_DIR:-/run/kh-labrun}"
 
 # This scan's own ancestor chain (its sshd session and whatever spawned it) —
 # cheap, harmless self-protection for the rare case the remote side's own
@@ -62,7 +65,23 @@ for p in /proc/[0-9]*; do
     "$d" | "$d"/*)
       exe="$(readlink "$p/exe" 2>/dev/null)"
       case "$exe" in
-        */bash | */sh | */dash | */ssh | */sshd | */sshd-session) continue ;;
+        # The ssh transport is never the work rule 4 protects -- it IS this
+        # check's own passage to the box.
+        */ssh | */sshd | */sshd-session) continue ;;
+        # A shell is only excluded when it is demonstrably a labrun-shipped
+        # script: bash keeps the script it is executing on fd 255, and labrun
+        # leaves that script under /run/kh-labrun/<session>/. Excluding every
+        # shell instead would delete a sandbox out from under a running
+        # `bash build-mame-native.sh` -- a real 30-minute build observed on
+        # 2026-09-20 -- whenever it sat between compiler invocations with no
+        # non-shell child to give it away. Identity by fd, never a cmdline
+        # grep (AGENTS.md rule 5).
+        */bash | */sh | */dash)
+          script="$(readlink "$p/fd/255" 2>/dev/null)"
+          case "$script" in
+            "$labrun_dir"/*) continue ;;
+          esac
+          ;;
       esac
       echo "$pid $exe cwd=$cwd"
       ;;

@@ -95,17 +95,49 @@ mkdir -p "$D"
 # `sleep & wait` (rather than a bare `sleep 30`) stops bash from optimizing
 # the subshell into a tail-call exec of sleep itself, which would leave no
 # separate bash process to reproduce the false positive against.
-(
-  cd "$D" || exit 1
-  sleep 30 &
-  wait
-) &
+# The delivery-chain shell is simulated FAITHFULLY: labrun ships its script
+# into $KH_LABRUN_DIR and bash keeps the script it is executing on fd 255, so
+# that -- not "is a shell" -- is what identifies the check's own passage. A
+# shell running anything else (e.g. `bash build-mame-native.sh`, a real
+# 30-minute build seen 2026-09-20) must STILL be reported, or wt.sh rm would
+# delete a sandbox out from under it.
+export KH_LABRUN_DIR="$ROOT/.fake-labrun"
+mkdir -p "$KH_LABRUN_DIR"
+cat >"$KH_LABRUN_DIR/shipped.sh" <<'SHIP'
+cd "$1" || exit 1
+sleep 30 &
+wait
+SHIP
+bash "$KH_LABRUN_DIR/shipped.sh" "$D" &
 sleeper_pid=$!
 # wait for the child to actually fork and inherit cwd
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   [ -n "$(pgrep -P "$sleeper_pid" -x sleep 2>/dev/null)" ] && break
   sleep 0.2
 done
+
+# A SHELL DOING REAL WORK must still be reported. This is the safety half of
+# the fix: excluding every shell would hide a running build (`bash
+# build-mame-native.sh` sits for minutes between compiler invocations with no
+# non-shell child to give it away) and wt.sh rm would wipe its sandbox.
+cat >"$ROOT/real-build.sh" <<'BUILD'
+cd "$1" || exit 1
+sleep 30 &
+wait
+BUILD
+bash "$ROOT/real-build.sh" "$D" &
+build_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  [ -n "$(pgrep -P "$build_pid" -x sleep 2>/dev/null)" ] && break
+  sleep 0.2
+done
+build_out="$("$NEW_LIVE_PIDS" "$ROOT" "$NAME")"
+if echo "$build_out" | grep -Eq "^$build_pid "; then
+  ok "NEW scan reports a working shell ($build_pid) that is not a labrun script — sandbox is protected"
+else
+  bad "NEW scan hid a working shell ($build_pid) — wt.sh rm could delete a live build's sandbox"
+fi
+kill "$build_pid" 2>/dev/null || true
 
 old_out="$(old_scan "$ROOT" "$NAME")"
 new_out="$("$NEW_LIVE_PIDS" "$ROOT" "$NAME")"
