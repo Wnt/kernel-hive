@@ -16,7 +16,8 @@ import {
 export type PcFamily =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'zx81' | 'dragon';
+  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'its' | 'bsd-tty' | 'tn3270'
+  | 'multics';
 
 export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
   generic: { family: 'generic', rows: [NAV, MODS], moreRows: [fkeyRow(1, 12)] },
@@ -32,6 +33,208 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
         ch('|'), ch('-'), ch('/'),
       ],
       fkeyRow(1, 12),
+    ],
+  },
+
+  // MIT ITS on a PDP-10, reached through one DZ11 terminal line. Its verbs are
+  // control characters and the altmode, so they go in an ALWAYS-VISIBLE base
+  // row rather than moreRows: ^Z is how a visitor logs in at all, and a key
+  // that is one "More" tap away is a key a visitor never finds. Esc is the
+  // altmode — the 1960s name for the key, and what ITS documentation calls it.
+  //
+  // Deliberately absent: ^\ escapes to the SIMH simulator prompt and ^] to the
+  // telnet client. Both would take the visitor out of the exhibit and into the
+  // plumbing, so neither is offered here; the on-screen keyboard is the whole
+  // vocabulary of the station.
+  its: {
+    family: 'its',
+    rows: [
+      [
+        ctrlChar('ctrl-z', '^Z', 'z', 'Log in to ITS'),
+        tap('altmode', 'Altmode', XK.Escape, { hint: 'Esc — ITS calls it altmode' }),
+        ctrlChar('ctrl-x', '^X', 'x', 'Emacs prefix'),
+        ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
+        ctrlChar('ctrl-l', '^L', 'l', 'Redisplay'),
+      ],
+      MODS,
+    ],
+    moreRows: [NAV],
+  },
+
+  // 4.3BSD on a VAX-11/780, reached through one DZ11 terminal line. The
+  // control characters are not a power-user extra here, they are the ONLY way
+  // to do several ordinary things, so they sit in an ALWAYS-VISIBLE base row
+  // rather than behind "More": a key one tap away is a key a visitor never
+  // finds. MEASURED in the guest with `stty everything` (2026-09-20), not
+  // assumed from Linux habits:
+  //
+  //   intr ^C · eof ^D · kill ^U · werase ^W · susp ^Z · quit ^\ · stop ^S/^Q
+  //   erase ^? (DEL, not ^H — xterm runs with backarrowKey:false to match)
+  //
+  // ^D is the one that matters most: it is how a visitor LOGS OUT and hands
+  // the station back, and 4.3BSD offers no `exit` from the login shell that a
+  // 1986 visitor would have reached for first. Esc is here for vi, which is
+  // the editor on this machine and has no menus.
+  //
+  // Deliberately absent: ^] would escape to the telnet client (the station
+  // runs `telnet -E` so it cannot), and ^S/^Q flow control is a foot-gun that
+  // freezes the terminal with no visible cause. ^\ is offered because SIGQUIT
+  // is a real part of the 1986 vocabulary and it does not leave the exhibit.
+  'bsd-tty': {
+    family: 'bsd-tty',
+    rows: [
+      [
+        ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
+        ctrlChar('ctrl-d', '^D', 'd', 'End of file — and how you log out'),
+        ctrlChar('ctrl-u', '^U', 'u', 'Kill the whole line'),
+        ctrlChar('ctrl-z', '^Z', 'z', 'Suspend the job'),
+        tap('esc', 'Esc', XK.Escape, { hint: 'vi command mode' }),
+      ],
+      MODS,
+    ],
+    // NAV minus its own Esc, which is promoted to the base row above; the ids
+    // have to stay unique across the whole profile.
+    moreRows: [
+      [
+        tap('tab', 'Tab', XK.Tab),
+        tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+        tap('ret', '⏎', XK.Return),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        ...ARROWS,
+      ],
+      [
+        ctrlChar('ctrl-w', '^W', 'w', 'Erase the last word'),
+        ctrlChar('ctrl-r', '^R', 'r', 'Reprint the line'),
+        ctrlChar('ctrl-l', '^L', 'l', 'Redisplay (vi)'),
+        ctrlChar('ctrl-bslash', '^\\', '\\', 'Quit — SIGQUIT'),
+        ch('|'), ch('~'), ch('/'),
+      ],
+    ],
+  },
+
+  // IBM MVS 3.8j on a 3279 colour display, reached through x3270. A 3270 is NOT
+  // a glass teletype: it is a BLOCK-MODE terminal. Nothing a visitor types
+  // leaves the terminal until an ATTENTION IDENTIFIER key is pressed, and the
+  // AID keys ARE the interface — Enter, Clear, PA1..PA3 and PF1..PF24 are how
+  // you do everything on this machine. None of them exist on a modern
+  // keyboard, so a profile that only offered letters would leave a visitor
+  // typing into a screen that never answers.
+  //
+  // RESET is the key that saves the exhibit. A 3270 locks its keyboard and
+  // shows X SYSTEM / X-f the moment you type into a protected field or while
+  // the host is thinking, and until the keyboard is reset NOTHING a visitor
+  // does has any effect — the single most common way for a 3270 newcomer to
+  // conclude the machine is broken. It rides a base row for that reason.
+  //
+  // PF3 (End/Exit) and PF1 (Help) are on the base row because they are the
+  // only way out of an ISPF panel, and PF7/PF8 because a mainframe scrolls
+  // with function keys, never with the arrow keys — the arrows move the CURSOR
+  // inside the form and are in moreRows where they belong.
+  //
+  // THE HOST SIDE OF THIS TABLE IS COMMITTED, NOT INHERITED: every mapping
+  // below is written into the station's own x3270 keymap in
+  // streamhost/stations/mvs38/nspawn-inner.sh, so the two ends are one
+  // contract. The keysyms are chosen from what guestQuirks.keysymToScancode
+  // can actually resolve — XK_Pause, the key a desktop tn3270 client would use
+  // for Clear, is NOT in that table and would have shipped a silently dead
+  // button, so Clear rides Alt+C instead.
+  tn3270: {
+    family: 'tn3270',
+    rows: [
+      [
+        tap('enter', 'Enter', XK.Return, { hint: 'Send the screen to the host' }),
+        chord('clear', 'Clear', XK.Alt_L, 0x63, 'Clear the screen'),
+        tap('reset', 'Reset', XK.Escape, { hint: 'Unlock the keyboard after X SYSTEM' }),
+        chord('pa1', 'PA1', XK.Alt_L, 0x31, 'Program Attention 1 — the TSO interrupt'),
+        tap('eraseeof', 'Erase EOF', XK.End, { hint: 'Erase to the end of the field' }),
+        tap('tab', 'Tab', XK.Tab, { hint: 'Next input field' }),
+        chord('backtab', '⇤', XK.Shift_L, XK.Tab, 'Previous input field'),
+      ],
+      [
+        tap('pf1', 'PF1', F(1), { hint: 'Help' }),
+        tap('pf3', 'PF3', F(3), { hint: 'End / Exit' }),
+        tap('pf7', 'PF7', F(7), { hint: 'Scroll up' }),
+        tap('pf8', 'PF8', F(8), { hint: 'Scroll down' }),
+        tap('pf10', 'PF10', F(10), { hint: 'Scroll left' }),
+        tap('pf11', 'PF11', F(11), { hint: 'Scroll right' }),
+        tap('pf12', 'PF12', F(12), { hint: 'Retrieve the last command' }),
+      ],
+    ],
+    moreRows: [
+      [
+        tap('pf2', 'PF2', F(2)), tap('pf4', 'PF4', F(4)), tap('pf5', 'PF5', F(5)),
+        tap('pf6', 'PF6', F(6)), tap('pf9', 'PF9', F(9)),
+        chord('pa2', 'PA2', XK.Alt_L, 0x32), chord('pa3', 'PA3', XK.Alt_L, 0x33),
+      ],
+      [
+        // PF13..PF24 are Shift+PF1..PF12 on a real 3279 keyboard too.
+        chord('pf13', 'PF13', XK.Shift_L, F(1)), chord('pf14', 'PF14', XK.Shift_L, F(2)),
+        chord('pf15', 'PF15', XK.Shift_L, F(3)), chord('pf16', 'PF16', XK.Shift_L, F(4)),
+        chord('pf17', 'PF17', XK.Shift_L, F(5)), chord('pf18', 'PF18', XK.Shift_L, F(6)),
+      ],
+      [
+        chord('attn', 'Attn', XK.Alt_L, 0x61, 'Attention'),
+        chord('sysreq', 'SysReq', XK.Alt_L, 0x73, 'System Request'),
+        chord('eraseinput', 'Erase Inp', XK.Alt_L, 0x65, 'Erase every input field'),
+        chord('dup', 'Dup', XK.Alt_L, 0x64, 'Duplicate'),
+        chord('fieldmark', 'FldMrk', XK.Alt_L, 0x6d, 'Field Mark'),
+        tap('insert', 'Ins', XK.Insert, { hint: 'Insert mode on/off' }),
+        tap('del', 'Del', XK.Delete),
+      ],
+      [
+        tap('home', 'Home', XK.Home, { hint: 'First input field' }),
+        tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        ...ARROWS,
+      ],
+    ],
+  },
+
+  // Multics MR12.8 on a DPS-8/M, reached through one FNP terminal line.
+  //
+  // Multics predates every convention a PC keyboard is built around, so this
+  // profile is NOT bsd-tty with a different name. Every key below was proven
+  // on this station's own framebuffer 2026-09-20; nothing unverified is here,
+  // because a dead key is silent through the whole pipeline.
+  //
+  //   #  ERASE one character. Proven: `prinq#t_wd` reached Multics as
+  //      `print_wd`. Backspace does NOT erase on a Multics tty, so this key is
+  //      the only way a visitor can correct a typo, and it is a PRINTABLE
+  //      character rather than a control code.
+  //   @  KILL the whole line. Proven: `this is rubbish@date_time` ran
+  //      `date_time` alone.
+  //   ^C QUIT. Proven at a `More help?` prompt: Multics printed QUIT and the
+  //      prompt became `r 05:09 1.707 422 level 2`. Note what that means — on
+  //      Multics an interrupt does not cancel the program, it SUSPENDS it and
+  //      hands you a new command level. `release` throws that level away.
+  //   >  <  Multics pathnames are `>user_dir_dir>SysAdmin>Repair`. `>` is the
+  //      separator and `<` means the parent directory; there is no `/` here.
+  //
+  // Deliberately absent: ^D (not an end-of-file on a Multics tty — `logout` is
+  // how you leave, and it is in the type-in demo), ^S/^Q flow control (freezes
+  // the terminal with no visible cause), and any telnet escape (the station's
+  // bridge offers none, so there is nothing to fall out of the exhibit into).
+  multics: {
+    family: 'multics',
+    rows: [
+      [
+        ch('#'),
+        ch('@'),
+        ctrlChar('ctrl-c', '^C', 'c', 'QUIT — suspends, and gives you a new command level'),
+        ch('>'),
+        ch('<'),
+      ],
+      MODS,
+    ],
+    moreRows: [
+      [
+        tap('tab', 'Tab', XK.Tab),
+        tap('ret', '⏎', XK.Return),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        tap('esc', 'Esc', XK.Escape),
+        ...ARROWS,
+      ],
+      [ch('*'), ch('='), ch('"'), ch('-'), ch('_'), ch('.'), ch('$')],
     ],
   },
 

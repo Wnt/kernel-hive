@@ -48,15 +48,15 @@
       "exec_key": null,
       "console": "fb",
       "udp_port": 54205,
-      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) — Minix 2 has no in-guest network in this device set"
+      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) \u2014 Minix 2 has no in-guest network in this device set"
     }
   },
   "render": {
-    "signalOrder": 92,
-    "stationsManifestOrder": 90,
-    "stationsManifestPrelude": "\n# linux012 (VMID 201) — TODO one line; scaffolded from minix2.\n",
+    "signalOrder": 112,
+    "stationsManifestOrder": 91,
+    "stationsManifestPrelude": "\n# linux012 (VMID 201) \u2014 TODO one line; scaffolded from minix2.\n",
     "bringUpGroup": 4,
-    "bindingOrder": 107,
+    "bindingOrder": 112,
     "bindingPrelude": "",
     "mockManifestOrder": 6,
     "goldenOrder": 90,
@@ -174,34 +174,34 @@
         "reason": "registry source pins pc-i440fx-11.0,acpi=off with backend-only PC-speaker routing and the explicit CHS 200/16/32 IDE geometry the pre-installed Minix image requires"
       }
     },
-    "bringUpOrder": 107
+    "bringUpOrder": 112
   },
   "spa": {
     "archetypeId": "beige-ibm-pc",
     "transport": "streamhost",
     "accentColor": "#c8a24a",
-    "eraLabel": "TODO(minix2): 1997 · Tanenbaum's teaching microkernel",
+    "eraLabel": "TODO(minix2): 1997 \u00b7 Tanenbaum's teaching microkernel",
     "pointerRel": false
   },
   "museum": {
     "id": "linux012",
     "displayName": "TODO(minix2): Minix 2.0.4",
     "year": 1997,
-    "lineage": "TODO(minix2): UNIX V7 → Minix 1.0 (Tanenbaum, 1987) → Minix 2.0 POSIX (1997) → 2.0.4 (2003) → Minix 3",
+    "lineage": "TODO(minix2): UNIX V7 \u2192 Minix 1.0 (Tanenbaum, 1987) \u2192 Minix 2.0 POSIX (1997) \u2192 2.0.4 (2003) \u2192 Minix 3",
     "arch": "i386 (Minix 2 also builds 16-bit for an 8088)",
     "ramMB": 32,
-    "notes": "TODO(minix2): Live streamhost station, text console only — no pointer, no network. The exhibit is /usr/src: the complete source of the running operating system, in the shape Tanenbaum wrote it to be read in one term — kernel/, mm/ (memory manager), fs/ (file system) and inet/ (networking), each an ordinary user process talking to the others by fixed-size messages. proc.c is where the message passing itself lives. Minix 2.0.4 (November 2003) is the last of the POSIX-conformant 2.0 line that shipped with the textbook's second edition in 1997.",
+    "notes": "TODO(minix2): Live streamhost station, text console only \u2014 no pointer, no network. The exhibit is /usr/src: the complete source of the running operating system, in the shape Tanenbaum wrote it to be read in one term \u2014 kernel/, mm/ (memory manager), fs/ (file system) and inet/ (networking), each an ordinary user process talking to the others by fixed-size messages. proc.c is where the message passing itself lives. Minix 2.0.4 (November 2003) is the last of the POSIX-conformant 2.0 line that shipped with the textbook's second edition in 1997.",
     "accent": "#c8a24a",
     "era": "1990s",
     "eraSoftware": [
       "ash (the shell)",
       "mined (the book's editor)",
       "elle",
-      "ACK — the Amsterdam Compiler Kit",
+      "ACK \u2014 the Amsterdam Compiler Kit",
       "make",
       "man"
     ],
-    "periodBrowser": "none — Minix 2 ships TCP/IP in /usr/src/inet, but no browser is in the distribution",
+    "periodBrowser": "none \u2014 Minix 2 ships TCP/IP in /usr/src/inet, but no browser is in the distribution",
     "iconicApps": [
       "/usr/src/kernel/proc.c",
       "/usr/src/mm",
@@ -209,7 +209,7 @@
       "mined",
       "ACK cc"
     ],
-    "blurb": "TODO(minix2): A whole UNIX small enough to read: Minix 2 keeps its own source in /usr/src, a microkernel written so a student could get through all of it in a term. It is the system Linus Torvalds was running in 1991 when he decided to write his own — and the one Tanenbaum used to argue, in public, that he shouldn't have."
+    "blurb": "TODO(minix2): A whole UNIX small enough to read: Minix 2 keeps its own source in /usr/src, a microkernel written so a student could get through all of it in a term. It is the system Linus Torvalds was running in 1991 when he decided to write his own \u2014 and the one Tanenbaum used to argue, in public, that he shouldn't have."
   },
   "emulator": {
     "family": "QEMU",

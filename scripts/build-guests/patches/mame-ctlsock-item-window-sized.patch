@@ -1,0 +1,92 @@
+MAME ctlsock: let a cursor window address INSIDE a save item of any element
+size, not only a byte array.
+
+WHY
+
+mame-ctlsock-ram-cursor.patch gave MAME_CTL_CURSOR_ITEMS a RAM-window form,
+`suffix@offset[:width]`, so a machine whose cursor position is not its own
+save item can still feed the closed loop. It restricted the window to a
+BYTE-sized item, because the one machine it was authored for (apple2gs) reads
+its cursor out of `m_megaii_ram`, a u8 array.
+
+riscos3 (Acorn Archimedes 310, MAME driver aa310) has a real HARDWARE cursor
+and a real save item for it -- but the register is an ELEMENT of a wider
+array. src/devices/machine/acorn_vidc.cpp registers
+
+    save_pointer(NAME(m_crtc_regs), CRTC_VCER+1);      // u32[16]
+
+and draws the pointer sprite at `m_crtc_regs[CRTC_HCSR] - m_crtc_regs[CRTC_HBSR]`,
+`m_crtc_regs[CRTC_VCSR] - m_crtc_regs[CRTC_VBSR]` (acorn_vidc.cpp:516-523).
+CRTC_HCSR is index 6 and CRTC_VCSR index 14 of that array, i.e. BYTE offsets
+24 and 56, width 4. `find_item()` resolves `m_crtc_regs` fine, but the
+historical `read()` reads element 0 (the horizontal cycle register) and the
+ram-cursor window refused the item outright for having size=4 -- so the one
+machine in the fleet with a readable hardware cursor register could not read
+it, and MOVEA would have degraded to open-loop dead reckoning on a guest
+whose quadrature keyboard discards movement magnitude (archimedes_keyb.cpp's
+`update_mouse` advances the phase by ONE step per 4 kHz tick and then assigns
+`m_mouse_x = x`, dropping the rest). Open loop is not an option here.
+
+WHAT IT CHANGES
+
+Two bounds checks, both in the ram-cursor window path:
+
+  * `read_le()` no longer requires `size == 1`; it bounds the window against
+    the item's BYTE CAPACITY, `size * count`.
+  * `find_item_spec()`'s matching guard does the same.
+
+A byte-sized item has capacity == count, so apple2gs and every other existing
+caller behave BYTE FOR BYTE as before. Nothing outside the window path is
+touched, no save items are added or removed, and the savestate signature is
+unchanged -- the ctlsock module's covenant 1 is preserved.
+
+ENDIANNESS. The window assembles little-endian bytes, and MAME stores save
+items in host order, so a width-`size` window at a `size`-aligned offset reads
+exactly that array element on a little-endian host. Every host this fleet
+ships on is x86-64. A big-endian host would need the byte order flipped; that
+is out of scope and would be a new knob, not a silent behaviour change.
+
+MEASURED ON RISCOS3 (2026-09-20, lab box, aa310 + RISC OS 3.11, headless)
+
+Before: `ctlsock: cursor window m_crtc_regs@24:4 unusable (item size=4
+count=16, off=24 w=4)` and `movea=0`. After: the window resolves, `movea=1`,
+and MOVEA drives the RISC OS pointer against the VIDC cursor registers --
+see docs/lab/RISCOS3-WAVE.md for the five-target accuracy table.
+
+Applies AFTER mame-ctlsock-ram-cursor.patch (it edits that patch's own new
+lines) and touches nothing else.
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -359,9 +359,19 @@
+ 	// pointer into whatever follows the item in memory.
+ 	s64 read_le(u32 off, u32 w) const
+ 	{
+-		if (!base || size != 1 || w == 0 || w > 8)
++		// HOST-ENDIAN ELEMENTS, BYTE-ADDRESSED. A save item is an array of
++		// `count` elements of `size` bytes, so its byte capacity is
++		// size*count and a window is legal anywhere inside that -- the
++		// byte-item case (apple2gs's m_megaii_ram, size=1) is just the
++		// special case where capacity == count. Relaxing this is what lets
++		// a cursor register that lives at an INDEX of a wider array be read:
++		// the Acorn VIDC's cursor X/Y are m_crtc_regs[6] and [14] of a
++		// save_pointer'd u32[16], i.e. byte offsets 24 and 56, width 4.
++		// On a little-endian host (every host this ships on) a width-`size`
++		// window at a `size`-aligned offset reads exactly that element.
++		if (!base || size == 0 || w == 0 || w > 8)
+ 			return 0;
+-		if (u64(off) + u64(w) > u64(count))
++		if (u64(off) + u64(w) > u64(size) * u64(count))
+ 			return 0;
+ 		u8 const *const p = reinterpret_cast<u8 const *>(base) + off;
+ 		u64 v = 0;
+@@ -1211,8 +1221,8 @@
+ 		save_item_handle h = find_item(suffix);
+ 		if (!h.ok())
+ 			return h;
+-		if (h.size != 1 || width == 0 || width > 8
+-				|| u64(off) + u64(width) > u64(h.count))
++		if (h.size == 0 || width == 0 || width > 8
++				|| u64(off) + u64(width) > u64(h.size) * u64(h.count))
+ 		{
+ 			// a window that cannot be read is NOT a silent zero sensor: drop
+ 			// the handle so MOVEA announces its open-loop degradation the

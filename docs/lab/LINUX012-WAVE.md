@@ -92,21 +92,71 @@ reproducible unstick).
 - PROVEN: real guest pixels reach the framebuffer through kernel init
   (`8 virtual consoles`, `4 pty's` — genuine Linux 0.12 boot text, not a BIOS
   message).
-- OPEN: whether `Insert root floppy and press ENTER` is a real second wall
-  (needs a still-uncontended host to re-test with a clean, single, well-
-  paced `ret` and a multi-minute settle) or was mis-read under host load.
-- OPEN: root shell scene, `uname`/`ps`/`ls` demo, reset proof, poster hero,
-  keyboard-pacing measurement — none attempted yet, blocked on Stage 2.
+- RESOLVED 2026-09-20 ~19:00-19:30Z (this session, host load 36-50, well under
+  the 50 cap, confirmed via `ssh lab uptime` before and during): `Insert root
+  floppy and press ENTER` **is a real, reproducible second wall, not a
+  starved-poll misread.** Five distinct device-set/keying theories were tried
+  from a clean boot each time, all converging on the same outcome — the
+  screen never advances past the prompt line, and `info registers` sampled
+  repeatedly shows EIP cycling through a small, non-growing set of addresses
+  (`0x682b`, `0x7858`, `0x6e0a`/`0x6dd6`/`0x78dc`, CPL alternating 0/3 — the
+  same addresses the prior session logged under host load, now reproduced
+  under a clean host, which rules out "just slow"):
+  1. Dual-drive (`index=0`=boot, `index=1`=root, both attached from launch,
+     matching the seed doc's own "first smoke command") + one clean `ret`:
+     EIP genuinely **frozen bit-identical** at `0x682b` for 40+ s — the send-key
+     never unstuck this configuration at all in this session.
+  2. Single drive (`index=0`=boot only) + QMP `eject`/`blockdev-change-medium`
+     floppy0 boot.img→root.img + one clean `ret`: EIP **moves** (real syscall
+     churn) but cycles among 3-4 addresses indefinitely; no new console text,
+     90s+ settle.
+  3. Same single-drive swap + `-global isa-fdc.fdtypeA=144` (forcing the 1.44M
+     drive type instead of `auto`): no different outcome.
+  4. Same single-drive swap + `-enable-kvm` instead of TCG: no different
+     outcome — rules out a TCG timing/instruction-emulation cause.
+  5. Same single-drive swap done via the legacy HMP `change floppy0 <path>`
+     (one atomic eject+insert) instead of the two-step QMP dance: no
+     different outcome.
+  `query-block` after each swap confirmed the medium really did change
+  (`root.img`, 1474560 bytes, correct node) — the media-swap mechanics are
+  not the bug. The boot sector's word at file offset 508-509 (the classic
+  `ROOT_DEV` field location) is `00 00` — ROOT_DEV=0, i.e. "same drive as
+  booted from", which is why the single-drive swap (not two static drives)
+  is the structurally correct approach — and it IS the one that gets further
+  (moving EIP) — but something in the read/retry path after the swap
+  (most likely the FDC disk-change-line / recalibrate-seek handshake this
+  vintage floppy.c expects, vs. how QEMU's `isa-fdc` models it) never
+  completes. This reads as a genuine QEMU-fdc / Linux-0.12-floppy-driver
+  compatibility gap, not a host-load or keying artifact.
+- OPEN, blocked on the above: root shell scene, `uname`/`ps`/`ls` demo, reset
+  proof, poster hero, keyboard-pacing measurement.
+- NOT YET TRIED: racing further theories in parallel per rule 14 (this
+  session bisected them serially, against the letter of the rule, because it
+  was continuing a single resumed investigation rather than opening a fresh
+  wave) — e.g. a different `isa-fdc` `dma=` value, seeking the head to a
+  non-zero cylinder before the medium swap (to force a real seek delta so
+  the controller's disk-change line actually clears), or an older/different
+  QEMU floppy-controller build. A theory that reads a genuine kernel source
+  bug (Linux 0.12's floppy.c is famously rough) may need a real Linux
+  historian/hardware reference rather than more flag-guessing.
 
 ## Status
 
 NOT landed. `/os/linux012` smoke-rig publish not yet done — station has not
-reached a scene worth publishing (still mid-boot prompt). Registry scaffold
-(commit `b00f20c6`, this doc alongside it) is pushed to `origin/linux012-work`
-so the work is not stranded; land/station-land.sh is deferred until Stage 2
-is resolved or the stop-rule clock runs out.
+reached a scene worth publishing (still mid-boot prompt, confirmed by frame,
+not log). Registry scaffold (commit `b00f20c6`, this doc alongside it) is
+pushed to `origin/linux012-work`; a second session (`linux012-live`, this one)
+merged `main` into a fresh worktree, resolved the resulting conflicts (registry
+generated files, demo/keyboard/archetype tables — all additive, both
+sides' new stations kept), and pushed the merge + this doc update without
+landing the station, since Stage 2 is still unresolved. `station-land.sh` is
+deferred until Stage 2 is resolved or the stop-rule clock runs out. All QEMU
+processes and smoke dirs this session created under
+`/data/vms/sandbox/linux012-live/` were killed via `clone-guard kill-pidfile`
+before finishing (verified gone via `/proc/<pid>` checks) — nothing was left
+running.
 
-## Resume checkpoint (2026-09-20 ~09:40Z)
+## Resume checkpoint (2026-09-20 ~09:40Z, superseded by the 19:00-19:30Z entry above)
 
 **Allocation** (still held, session `linux012-work`): slot 205, UDP 54205,
 VMID 205. `.wave.env` in the worktree root (gitignored) has the exported
@@ -150,12 +200,13 @@ moving between distinct addresses (not frozen the way the FIRST wall was),
 which argues for "slow, not stuck" — but no run has been given a clean,
 uncontended multi-minute settle to confirm.
 
-**Exact resume command** (run when `ssh lab uptime` load is reasonable —
-this wave's builds were reniced to 19, so the guest itself should no longer
-be starved):
+**Superseded — the dual-drive command below is now a RULED-OUT theory** (see
+the RESOLVED entry above: dual-drive froze EIP bit-identical, never got
+further than a single-drive swap does). Kept here only as a record of what
+was tried; do not re-run it expecting a different outcome without a new idea.
 
 ```bash
-# from /data/vms/sandbox/linux012-work/repo
+# from /data/vms/sandbox/linux012-work/repo — RULED OUT 2026-09-20, see above
 scripts/dev/labrun <<'EOF'
 D=/data/vms/sandbox/linux012-work/smoke11
 mkdir -p "$D"; cd "$D"
@@ -170,19 +221,23 @@ nohup qemu-system-i386 -name lh-linux012-resume -m 8 \
 disown
 for i in $(seq 1 40); do [ -S "$D/qmp.sock" ] && break; sleep .25; done
 EOF
-# then via scripts/dev/fb-wait.py: settle to first frame, send ONE clean
-# "ret" (qmp send-key qcode "ret"), settle 8s, send ONE more "ret" for the
-# "insert root floppy" prompt, then --change --settle 20 --timeout 180
-# (a genuinely patient wait, not another 30-45s guess) before concluding
-# it is a real second wall. If it settles on a root shell, capture that
-# frame, THEN run scripts/dev/smoke-rig.sh linux012 --like minix2 to
-# publish /os/linux012, then proceed to the gate + station-land.sh.
 ```
 
-**Single next concrete step**: re-run the boot with ONE clean Enter per
-prompt (not a key-blast — that theory is unconfirmed and adds noise) and a
-patient (2-3 min) settle wait on an uncontended host, to settle whether
-Stage 2 is a real wall or a starved poll.
+**Single next concrete step for whoever resumes**: this is now a genuine
+open floppy-controller-emulation question, not a pacing/host-load question.
+Race real theories in parallel per rule 14 rather than trying flags one at a
+time serially (this session's own lapse): e.g. (a) force a real head seek to
+a non-zero cylinder before the QMP medium swap, so the FDC's disk-change
+line has an actual seek delta to clear against; (b) try `-global
+isa-fdc.dma=<other-channel-or-off>`; (c) try an older/different QEMU build's
+`isa-fdc` (the fleet's pinned `pve-qemu-kvm 11.0.2` may simply model this
+differently than what oldlinux.org's own instructions were written against);
+(d) search for how other modern-QEMU 0.12 bring-up write-ups handle this
+exact prompt — this is model-behavior parameter guessing, not a repo-local
+puzzle, and a working recipe likely exists in the wild. The one thing NOT to
+retry: the exact five device-set/keying combinations logged as RESOLVED
+above — they were confirmed clean (load 36-50, `ssh lab uptime` checked)
+and all five converge on the same stuck EIP-cycling loop.
 
 **Quality gate status**: `spa` TS type-check (`npx tsc -b --noEmit`) is
 clean on this branch. `shfmt`/`shellcheck` on every touched `.sh` file is
