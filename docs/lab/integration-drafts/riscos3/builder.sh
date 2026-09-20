@@ -6,12 +6,15 @@ OUT="${OUT:-/data/vms/build-riscos3}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/riscos3}"
 ROM_SOURCE="${ROM_SOURCE:-}"
 MAME_BIN="${MAME_BIN:-mame}"
-log(){ printf '[draft:%s] %s\n' "$OS_ID" "$*" >&2; }
-die(){ log "ERROR: $*"; exit 1; }
+log() { printf '[draft:%s] %s\n' "$OS_ID" "$*" >&2; }
+die() {
+  log "ERROR: $*"
+  exit 1
+}
 mkdir -p "$OUT/roms" "$ASSETS/roms"
 [ -n "$ROM_SOURCE" ] || die "set ROM_SOURCE to acquired RISC OS 3.11/A310 ROM archive"
 case "$ROM_SOURCE" in
-  http://*|https://*) curl -fL --retry 3 -o "$OUT/source-roms" "$ROM_SOURCE" ;;
+  http://* | https://*) curl -fL --retry 3 -o "$OUT/source-roms" "$ROM_SOURCE" ;;
   *) cp -f "$ROM_SOURCE" "$OUT/source-roms" ;;
 esac
 "$MAME_BIN" aa310 -listxml >"$OUT/aa310.xml"
