@@ -812,6 +812,24 @@
       "udp_port": 54150,
       "notes": "no exec channel: Mac OS 9 has no shell, no telnet and no serial console - the framebuffer is the only observation surface. NO NIC by operator scope (ordinary station, no retronet). Warm reset is BROKEN on -M mac99 (system_reset hangs at the exception vector, NIP=0x4): reset is loadvm golden, cold boot is a fresh QEMU process, never system_reset."
     },
+    "macosx": {
+      "dir": "/data/vms/streamhost/stations/macosx",
+      "qmp": "/data/vms/streamhost/stations/macosx/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54212,
+      "notes": "Mac OS X 10.3 Panther under TCG on mac99. NO NIC by operator scope. Absolute pointer via usb-tablet. Reset is loadvm golden; warm system_reset is not trusted on -M mac99 (see macos9)."
+    },
     "macsys1": {
       "dir": "/data/vms/streamhost/stations/macsys1",
       "qmp": null,

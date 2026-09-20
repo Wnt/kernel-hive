@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "id": "macosx",
+  "era_year": 2003,
+  "stationDir": "macosx",
+  "lifecycle": "candidate",
+  "enabled": false,
+  "build": {
+    "rows": []
+  },
+  "operator": {
+    "actionMap": {
+      "key": "macosx",
+      "value": {
+        "os": "Mac OS X 10.3 Panther (Power Mac G4 mac99)",
+        "win": "qemu",
+        "mouse": "aqua-desktop",
+        "kbd": "cmd:shift-1",
+        "kbd_reset": "Escape",
+        "kbd_note": "Aqua desktop: the Dock and the Finder menu bar are the cheapest visible key/click proofs; Terminal gives a real Unix shell one click away.",
+        "audio_trigger": null,
+        "validated": false,
+        "note": "TRUE ABSOLUTE pointer via -device usb-tablet (cursor_scale 1.0, offset 0,0): measured on the Panther installer framebuffer, abs events to (200,150) and (800,600) landed on those pixels and clicks activated the controls beneath them. Five-target sweep on the installed desktop is OPEN."
+      }
+    },
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/macosx",
+      "qmp": "/data/vms/streamhost/stations/macosx/qmp.sock",
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "fb",
+      "udp_port": 54212,
+      "notes": "Mac OS X 10.3 Panther under TCG on mac99. NO NIC by operator scope. Absolute pointer via usb-tablet. Reset is loadvm golden; warm system_reset is not trusted on -M mac99 (see macos9)."
+    }
+  },
+  "render": {
+    "stationsManifestOrder": 90,
+    "bindingOrder": 107,
+    "goldenOrder": 90,
+    "bringUpGroup": 8,
+    "signalOrder": 92,
+    "actionMapOrder": 52,
+    "stationsManifestPrelude": "\n# macosx (VMID 150) — TODO one line; scaffolded from macos9.\n",
+    "bindingPrelude": ""
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54212,
+    "fps": 30,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "dbus-abs",
+      "method": "qemu-usb-tablet",
+      "absolute": true,
+      "present": true,
+      "device": "usb-tablet",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 212
+  },
+  "guestDoc": "docs/guests/macosx.md",
+  "credentialsRef": "guest/macosx",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "macosx",
+      "SH_QMP": "/data/vms/streamhost/stations/macosx/qmp.sock",
+      "SH_PORT": "54212",
+      "SH_FPS": "30",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_CURSOR_OFF_X": "0",
+      "SH_CURSOR_OFF_Y": "0",
+      "SH_AUDIO": "off",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/macosx/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/macosx/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_INPUT_BACKEND": "dbus-abs"
+    },
+    "bringUpOrder": 107,
+    "vmidLabel": 212,
+    "qemu": {
+      "mode": "verbatim",
+      "emitArgs": [
+        "--tile",
+        "macosx",
+        "--vmid",
+        "212",
+        "--udp",
+        "54212",
+        "--pointer",
+        "abs",
+        "--cursor-scale",
+        "1.0",
+        "--cursor-off-x",
+        "0",
+        "--cursor-off-y",
+        "0",
+        "--audio",
+        "off",
+        "--fps",
+        "30",
+        "--launcher-file",
+        "$T/macosx/qemu-streamhost.sh",
+        "--env-append-file",
+        "$T/macosx/station.env.fixture"
+      ],
+      "deviceSetId": "macosx-mac99-pmu-g4-1024x768x32-usbtablet-nonic",
+      "launcher": "streamhost/stations/macosx/qemu-streamhost.sh",
+      "envFixture": "streamhost/stations/macosx/station.env.fixture",
+      "binary": "/opt/qemu-ppc/bin/qemu-system-ppc",
+      "machine": "mac99",
+      "accel": "tcg",
+      "cpu": "g4",
+      "memoryMB": 1024,
+      "smp": 1,
+      "vga": "std",
+      "deviceSetSummary": [
+        "/opt/qemu-ppc/bin/qemu-system-ppc",
+        "-name streamhost-macosx",
+        "-accel tcg -m 1024",
+        "-M mac99,via=pmu -cpu g4",
+        "-g 1024x768x32",
+        "-display dbus,p2p=on",
+        "-nic none (deliberate: no networking on this station)",
+        "-device usb-tablet (MEASURED absolute pointer; macos9 cannot do this)",
+        "-drive file=$D/macosx-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
+        "-loadvm golden -S (when the checkpoint exists)",
+        "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid",
+        "(built-in via=pmu USB keyboard; NO extra -device usb-kbd/usb-mouse)"
+      ],
+      "launcherParity": {
+        "status": "byte-identical",
+        "reason": "tracked verbatim launcher IS the deployed launcher; the golden was re-baked cold 2026-08-24 by checkpoint-guard with this exact device set on the standalone /opt/qemu-ppc build carrying the cpu/tb_env vmstate patch (fork 196124d) — a pre-patch golden wedges on every restore"
+      }
+    }
+  },
+  "reset": {
+    "stationDir": "macosx",
+    "pointer": "rel",
+    "touch": false,
+    "resetMode": "loadvm",
+    "snapshot": "golden",
+    "mouse": "UNVERIFIED",
+    "keyboard": "UNVERIFIED",
+    "fixture": "Quiet Mac OS 9.2.2 Finder desktop at 1024x768, millions of colors (Power Mac G4 mac99 under TCG): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected, Control Strip along the bottom, cursor parked dead-centre (512,384). Energy Saver sleep pinned to Never; Mouse tracking pinned to 'Very Slow' (the only non-accelerated setting, linear 0.18 px/unit) and double-click speed slowest so a click pair survives the stream; Setup Assistant quit and disarmed. Re-baked cold 2026-08-24 on the tb_env-patched fork binary and captured by checkpoint-guard; restore-proven by the strict protocol — fresh QEMU process, the guest's own menubar clock advancing across two ticks, then pointer motion consumed on the framebuffer (SSIM alone passes on a wedged guest and proves nothing)."
+  },
+  "spa": {
+    "archetypeId": "apple-studio",
+    "transport": "streamhost",
+    "accentColor": "#5d8fc7",
+    "eraLabel": "2003 · Mac OS X 10.3 Panther — Power Mac G4",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "macosx",
+    "displayName": "Mac OS X 10.3 Panther",
+    "year": 2003,
+    "lineage": "NeXTSTEP / Rhapsody -> Mac OS X",
+    "arch": "PowerPC G4 (QEMU mac99)",
+    "ramMB": 1024,
+    "era": "2000s",
+    "accent": "#5d8fc7",
+    "eraSoftware": [
+      "Finder",
+      "Dock",
+      "Terminal",
+      "System Preferences",
+      "TextEdit"
+    ],
+    "periodBrowser": "Safari 1.1 / Internet Explorer 5 for Mac",
+    "iconicApps": [
+      "Finder",
+      "Dock",
+      "Terminal",
+      "System Preferences"
+    ],
+    "blurb": "Aqua arrives: Apple’s NeXT-derived Unix foundation becomes the Macintosh, with protected memory, the Dock and a rebuilt Finder on the same PowerPC machine as the classic Mac OS it replaced.",
+    "notes": "Mac OS X 10.3 Panther on QEMU mac99 under TCG. 10.2 Jaguar was the first target and panics on this machine inside IOSCSIMultimediaCommandsDevice/IODVDStorageFamily (its ATAPI CD stack cannot drive the emulated optical device) — do not switch back. Unlike macos9 this guest drives QEMU’s usb-tablet natively, so the pointer is truly absolute. No networking, deliberately."
+  },
+  "emulator": {
+    "family": "QEMU",
+    "version": "11.0.2",
+    "source": "github.com/Wnt/qemu @ kernel-hive (11.0.2 + fast-poll + cpu/tb_env vmstate), built to /opt/qemu-ppc",
+    "driver": "mac99"
+  },
+  "ui": "desktop",
+  "network": {
+    "status": "none",
+    "note": "NO NIC AT ALL (-nic none, which suppresses QEMU's default user-mode sungem on mac99). Operator scope for this add: ordinary station first — no retronet, no networking. The guest's TCP/IP and AppleTalk control panels were never configured. The golden is baked with this device set; adding a NIC later means a cold re-bake (chokanji/macos753 pattern)."
+  },
+  "notes": [
+    "PAUSED BEFORE GOLDEN (wave 2026-09-20, labhost load rule). Media, release choice (Panther over Jaguar) and pointer transport (usb-tablet, true absolute) are MEASURED; the OS install itself was not run and no golden exists. Disabled candidate on purpose. See docs/lab/MACOSX-WAVE.md."
+  ]
+}

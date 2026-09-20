@@ -141,6 +141,9 @@ const POSTER_INDEX = {
   "macos9": {
     "hero": "/posters/macos9/desktop.webp"
   },
+  "macosx": {
+    "hero": "/posters/macosx/desktop.webp"
+  },
   "macsys1": {
     "hero": "/posters/macsys1/desktop.webp"
   },
