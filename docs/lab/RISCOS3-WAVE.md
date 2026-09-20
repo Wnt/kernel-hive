@@ -280,6 +280,31 @@ Filer window open in the top left — `!Alarm`, `!Calc`, `!Chars`, `!Configure`,
 `!Draw`, `!Edit`, `!Help`, `!Paint` — icon bar along the bottom, pointer parked
 on open backdrop.
 
+## Live proofs — on the deployed station, 2026-09-20 12:01 UTC
+
+Taken against `/data/vms/streamhost/stations/riscos3/` itself, not the rig.
+
+- **Rest scene**: `labctl shot riscos3` shows the golden Apps-window scene,
+  pointer parked on open backdrop, no rubber band.
+- **Pointer + Menu, live**: `MOVEA 650 480` then `CLICK3` dropped the Pinboard
+  menu at 513..795 x 420..719 — 54828 changed pixels, the menu's own bounding
+  box confirming the pointer position a second time. Moving away afterwards
+  changed 4919 px (menu-entry highlight tracking plus the sprite), not a
+  desktop repaint.
+- **Reset**, through the production path `POST /restore/riscos3`:
+  **0.92 s warm** (the daemon's in-process `LOADST`) and **12 s from standby**
+  (the launcher relaunch after the freezer). A visitor always gets the warm
+  path: an idle station is `SIGSTOP`ped, the daemon `SIGCONT`s it on connect,
+  and the reset button then runs in-process.
+- **Deterministic**: two consecutive resets are **byte-identical outside the
+  arrow sprite** (0 px).
+
+**A STANDBY STATION CANNOT ANSWER `ctl.sock` AT ALL.** `SH_IDLE_PAUSE_SECS=60`
+`SIGSTOP`s the emulator, and a stopped process never runs to ack — `mctl-probe`
+just reports `timeout waiting for line`, which reads exactly like a dead
+socket. Every direct-ctlsock probe of a live station in this wave hit it.
+`kill -CONT` the pidfile's process first, or go through the daemon.
+
 ## Sandbox verdict
 
 **No container.** `riscos3` is an EMULATED MACHINE under a per-station MAME
@@ -304,6 +329,17 @@ streamhost/stations/mame-native/x11-runtime.sh
       station — rule 15.
 - [ ] **A demo.** No `demoPrograms` row yet. `!Draw` one Select-click from the
       golden scene is the obvious one.
+- [ ] **The relaunch reset parks the arrow in the corner.** After the
+      LAUNCHER path (service start, or a reset taken while the emulator is
+      frozen) the arrow ends at the raster's top-left (118,43) instead of the
+      golden's (513,420); the rest of the scene is byte-identical. The ioport
+      analog fields carry no save entries, so they revert to 0 across a
+      restore while the device's `m_mouse_x/y` hold the restored counter — the
+      post-restore transient the ctlsock module's `reseed_after_restore`
+      exists to absorb, now VISIBLE because the carry patch delivers the whole
+      delta instead of dropping it. Harmless (the closed loop corrects on the
+      first visitor move, and the warm reset a visitor actually gets is
+      exact), but it should be seeded rather than walked.
 - [ ] **Upstream the two patches.** Both
       `mame-archimedes-kbd-mouse-carry` and the `item-window-sized` relaxation
       are general corrections, not station hacks; the carry one is arguably an
