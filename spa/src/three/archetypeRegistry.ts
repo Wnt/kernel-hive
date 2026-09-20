@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (112 of the 114
+//    - transport   : how its LIVE framebuffer texture is obtained (113 of the 115
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 112 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 113 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -241,6 +241,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   linux012:    { osId: 'linux012', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#d08b28', eraLabel: '1992 · the fourth month of Linux', pointerRel: false },
   its:         { osId: 'its', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#B23A48', eraLabel: '1967 · MIT ITS — the AI Lab\'s PDP-10 timesharing system' }, // ideal: a DEC PDP-10 (KA10/KS10) cabinet row with a Model 33 Teletype or a VT52 beside it — the MIT AI Lab machine room on Tech Square, ninth floor
   multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
+  macosx:      { osId: 'macosx', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#5d8fc7', eraLabel: '2003 · Mac OS X 10.3 Panther — Power Mac G4', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

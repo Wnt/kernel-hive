@@ -1,17 +1,20 @@
 # macosx wave — Mac OS X on PowerPC (issue #50, record wave 2026-09-21, Lane C)
 
-**STATUS: PAUSED BEFORE INSTALL, by coordinator instruction** (labhost 1-min
-load 116 against the documented cap of 50 — see `docs/lab/OPERATING-RULES.md`
-"The load rule"). Nothing here is landed, nothing is live. This file is written
-so the stream can be *resumed* rather than restarted: every fact below was
-measured on a framebuffer or with `stat`/`sha256sum`, and the two expensive
-questions this station was expected to burn an hour on are already answered.
+**STATUS: RESUMED 2026-09-20T17:39Z (session `macosx-live`), INSTALLING.** The
+first stream stood down before the install; this file now carries both streams'
+measurements. Every fact below was measured on a framebuffer or with
+`stat`/`sha256sum`.
 
 ## Allocation ledger
 
 | Station | Session | Slot / UDP / VMID | X-warp | retronet (addr / tap / chain / UIN) |
 |---|---|---|---|---|
-| macosx | macosx-work | 212 / 54212 / 212 | — | — |
+| macosx | macosx-live | 218 / 54218 / 218 | — | — |
+
+The first stream's 212 / 54212 / 212 were RELEASED and 212 had been taken by
+another wave by the time this one resumed; `scripts/dev/wave.sh alloc macosx`
+handed out **218** and the registry entry, the launcher echo and this ledger
+were rewritten to it. That is exactly the landmine the first stream documented.
 
 No `--retronet` and no `--x11warp` were taken: the integration seed scopes the
 first release as an ordinary offline station, and OS X drives QEMU's tablet
@@ -103,6 +106,55 @@ the stream was paused first. The two points above agree with 1:1 at offset 0 to
 within the arrow glyph, which is why the fixture ships `SH_CURSOR_SCALE=1.0`
 and `SH_CURSOR_OFF_{X,Y}=0` as the starting hypothesis to be *verified*, not as
 a measured constant.
+
+## THE INSTALL WALL, and the one-line fix (measured 2026-09-20)
+
+The Panther installer reaches **Select a Destination**, shows the freshly
+partitioned `Macintosh HD`, and refuses it:
+
+> You cannot install Mac OS X on this volume. You cannot start up your computer
+> using this volume.
+
+This is NOT a bad partition map, and three expensive theories were killed on the
+framebuffer before the real cause was found — record them so nobody re-buys them:
+
+* **NOT the disk size.** The refusal reproduced identically on a 12 GB and on a
+  6 GB qcow2. (The e-maculation wiki's "max bootable disk is 8 GB" is real
+  folklore but it is not this symptom.)
+* **NOT the "Install Mac OS 9 Disk Drivers" checkbox.** It reproduced with the
+  box unticked AND ticked.
+* **NOT a malformed map.** Dumped straight off the qcow2 with
+  `qemu-img dd -f qcow2 -O raw bs=512 count=64` and decoded: a textbook Apple
+  Partition Map — `Apple_partition_map`, two `Apple_Driver43`, two
+  `Apple_Driver_ATA`, `Apple_FWDriver`, `Apple_Driver_IOKit`, `Apple_Patches`,
+  then `Apple_HFS` at block 263968. Nothing missing.
+
+**THE FIX: restart QEMU after partitioning, boot the CD again, and walk to
+Select a Destination on the SECOND boot.** The installer decides a volume's
+bootability from state it captured when the installer environment booted, so a
+disk that was blank at boot stays "not bootable" for that whole session no
+matter what Disk Utility does to it afterwards. On the second boot the same
+volume shows the green install arrow and "Installing this software requires
+3.0GB of space".
+
+So the destination step is a **two-boot procedure**, and the first boot exists
+only to run Disk Utility. Budget two CD boots (~3.5 min each under TCG).
+
+## Install settings that were actually used
+
+* Disk: **6 GB qcow2**, one partition, **Mac OS Extended (non-journaled)**,
+  named `Macintosh HD`, "Install Mac OS 9 Disk Drivers" left ticked (it is the
+  Disk Utility default and it costs ~1 MB).
+* **Customize** at Installation Type, everything off except the forced
+  *Essential System Software* (925 MB) and *BSD Subsystem* (225 MB). Dropped:
+  Additional Applications, Printer Drivers, Additional Speech Voices, Fonts,
+  Language Translations, X11. **Space Required falls 3.0 GB -> 1.1 GB**, and
+  with it the Easy Install pane's demand for *Mac OS X Install Disc 2* — so
+  **disc 1 alone is enough**, which was the first stream's open question.
+  Trap: Printer Drivers and Fonts start as PARTIAL ticks ("-"), so the first
+  click SELECTS them (Printer Drivers jumps to 1.1 GB). Click them twice.
+* **Skip the "Checking your installation disc" pass** — it reads the whole
+  679 MB ISO under TCG for nothing. The Skip button is at the Continue position.
 
 ## Frozen device set (complete, before any `savevm golden`)
 

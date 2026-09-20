@@ -1,5 +1,5 @@
 #!/bin/bash
-# Launch station 'macosx' (slot 212) QEMU with the streamhost display wiring.
+# Launch station 'macosx' (slot 218) QEMU with the streamhost display wiring.
 # Kill only by pidfile.
 #
 # Mac OS X 10.3 Panther on a PowerPC G4 "mac99" — the museum's first Mac OS X
@@ -77,4 +77,4 @@ for _ in $(seq 1 40); do
   [ -S "$D/qmp.sock" ] && [ -f "$D/qemu.pid" ] && break
   sleep 0.5
 done
-echo "station macosx qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54212 loadvm='${LOADVM:-<none: cold boot>}' (checkpoint, no -snapshot)"
+echo "station macosx qemu pid=$(cat "$D/qemu.pid" 2>/dev/null) qmp=$D/qmp.sock udp=54218 loadvm='${LOADVM:-<none: cold boot>}' (checkpoint, no -snapshot)"

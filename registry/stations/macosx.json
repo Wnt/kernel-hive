@@ -3,8 +3,8 @@
   "id": "macosx",
   "era_year": 2003,
   "stationDir": "macosx",
-  "lifecycle": "candidate",
-  "enabled": false,
+  "lifecycle": "production",
+  "enabled": true,
   "build": {
     "rows": []
   },
@@ -35,23 +35,23 @@
       "exec_user": null,
       "exec_key": null,
       "console": "fb",
-      "udp_port": 54212,
+      "udp_port": 54218,
       "notes": "Mac OS X 10.3 Panther under TCG on mac99. NO NIC by operator scope. Absolute pointer via usb-tablet. Reset is loadvm golden; warm system_reset is not trusted on -M mac99 (see macos9)."
     }
   },
   "render": {
     "stationsManifestOrder": 90,
-    "bindingOrder": 107,
+    "bindingOrder": 118,
     "goldenOrder": 90,
     "bringUpGroup": 8,
     "signalOrder": 92,
     "actionMapOrder": 52,
-    "stationsManifestPrelude": "\n# macosx (VMID 150) — TODO one line; scaffolded from macos9.\n",
+    "stationsManifestPrelude": "\n# macosx (VMID 218) — Mac OS X 10.3 Panther on a PowerPC G4 mac99 under TCG,\n# on the standalone /opt/qemu-ppc fork build. True absolute pointer (usb-tablet).\n",
     "bindingPrelude": ""
   },
   "stream": {
     "transport": "streamhost",
-    "udpPort": 54212,
+    "udpPort": 54218,
     "fps": 30,
     "audio": false,
     "touch": false,
@@ -68,7 +68,7 @@
         0
       ]
     },
-    "slot": 212
+    "slot": 218
   },
   "guestDoc": "docs/guests/macosx.md",
   "credentialsRef": "guest/macosx",
@@ -76,7 +76,7 @@
     "stationEnv": {
       "SH_STATION": "macosx",
       "SH_QMP": "/data/vms/streamhost/stations/macosx/qmp.sock",
-      "SH_PORT": "54212",
+      "SH_PORT": "54218",
       "SH_FPS": "30",
       "SH_HOST_IP": "192.0.2.10",
       "SH_ADVERTISE_HOST": "192.0.2.10",
@@ -88,17 +88,17 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_INPUT_BACKEND": "dbus-abs"
     },
-    "bringUpOrder": 107,
-    "vmidLabel": 212,
+    "bringUpOrder": 118,
+    "vmidLabel": 218,
     "qemu": {
       "mode": "verbatim",
       "emitArgs": [
         "--tile",
         "macosx",
         "--vmid",
-        "212",
+        "218",
         "--udp",
-        "54212",
+        "54218",
         "--pointer",
         "abs",
         "--cursor-scale",
@@ -142,13 +142,13 @@
       ],
       "launcherParity": {
         "status": "byte-identical",
-        "reason": "tracked verbatim launcher IS the deployed launcher; the golden was re-baked cold 2026-08-24 by checkpoint-guard with this exact device set on the standalone /opt/qemu-ppc build carrying the cpu/tb_env vmstate patch (fork 196124d) — a pre-patch golden wedges on every restore"
+        "reason": "the tracked verbatim launcher IS the deployed launcher; the golden was baked 2026-09-20 with this exact device set on the standalone /opt/qemu-ppc build carrying the cpu/tb_env vmstate patch — a pre-patch binary resumes a PowerPC checkpoint with the timebase jumped forward, so any binary change means a cold re-bake"
       }
     }
   },
   "reset": {
     "stationDir": "macosx",
-    "pointer": "rel",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",

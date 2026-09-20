@@ -881,7 +881,7 @@
       "exec_shell": null,
       "exec_subshell": null,
       "console": "fb",
-      "udp_port": 54212,
+      "udp_port": 54218,
       "notes": "Mac OS X 10.3 Panther under TCG on mac99. NO NIC by operator scope. Absolute pointer via usb-tablet. Reset is loadvm golden; warm system_reset is not trusted on -M mac99 (see macos9)."
     },
     "macsys1": {
