@@ -22,8 +22,13 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
   same boot disk produced a byte-correct-sized but LOGICALLY misordered
   image that never got past "Please place your diskette into Drive" —
   measured 2026-09-20, see the builder's header comment), plus the
-  `kayproii` + `kaypro10kbd` ROM sets (BIOS + chargen + the keyboard's own
-  Intel 8049 MCU dump, a separate MAME device romset this driver requires).
+  `kayproii` + `kayproiikbd` ROM sets (BIOS + chargen + the keyboard's own
+  Intel i8048 MCU dump `kaypro_ii-ins8048.bin`, a separate MAME device
+  romset this driver requires — CORRECTED 2026-09-20: an earlier stock
+  MAME 0.276 smoke test used `kaypro10kbd`/`m5l8049.bin`, but the
+  fleet-pinned 0.289 tree resolves this driver's keyboard through a
+  DIFFERENT device; always trust `-listxml` on the binary that will
+  actually run).
 - Canonical output: `/data/vms/streamhost/assets/cpm22/mame-native/kayproii`
   (binary), `/data/vms/streamhost/assets/cpm22/media/{cpm22-boot.td0,wordstar33.imd}`,
   `/data/vms/streamhost/assets/cpm22/roms/`.
@@ -39,14 +44,18 @@ Status: **production** (Tier 1, host-native MAME `kayproii`) — cpm22 wave, 202
 
 - Reset mode: `relaunch`, restoring the golden savestate captured at the
   `A>` prompt (`kayproii` ships `MACHINE_SUPPORTS_SAVE`).
-- Keyboard proof: MEASURED 2026-09-20 on a stock MAME 0.276 system package
-  (NOT the fleet-pinned 0.289 native binary) — a scripted `DIR\n` through
-  MAME's natural-keyboard path re-ran the directory listing from the `A>`
-  prompt cleanly. NOT yet proven on the fleet binary, from the real browser,
-  or under sustained/rapid typing; the Kaypro II keyboard is HLE'd via an
-  Intel 8049 MCU (`kaypro10kbd` device), not a CPU-scanned matrix the driver
-  polls directly, so whether `MAME_CTL_KEY_EXCL` is needed is OPEN — measure
-  before shipping the type-in demo (fleet MAME-keyboard rule).
+- Keyboard proof: MEASURED 2026-09-20 against the ACTUAL fleet-pinned 0.289
+  native binary (sandbox rig) — `DIR` sent via `POST`+`CODE {ENTER}` re-ran
+  the directory listing from the `A>` prompt cleanly, no dropped/duplicated
+  characters, at `SH_KEY_MIN_HOLD_MS`/`GAP` = 80/80 ms and no
+  `MAME_CTL_KEY_EXCL`; the Kaypro II keyboard is HLE'd via an Intel i8048
+  MCU (`kayproiikbd` device), not a CPU-scanned matrix the driver polls
+  directly. The real-browser proof (from the deployed station) is the
+  authority on whether EXCL is needed under a production SPA burst.
+- Golden savestate: `sta/kayproii/golden.sta`, 14338 bytes, sha256
+  `bba86537a6a02963ddecdd908e6ed22cc02708852310a4716c1bff54f4ae4bd5` —
+  captured at the settled `A>` prompt, restore-proven pixel-identical
+  (`PIL.ImageChops.difference` bbox `None`) on a fresh process relaunch.
 - Pointer: N/A — keyboard-only exhibit, no mouse port on this machine.
 - Cold-boot zero-input state: the CP/M `A>` prompt with the boot disk's
   directory listing, green phosphor text on black, 560x240 native MAME

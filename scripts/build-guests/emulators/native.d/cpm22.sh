@@ -47,11 +47,14 @@ native_stage_roms() {
 # Power-on with no floppy attached is the "* KAYPRO II *  Please place your
 # diskette into Drive" banner, green text on a black field — text-only, so
 # the lit-pixel floor is set low like the other text-console MAME stations
-# (apple2e/mpf2), not the SAM Coupé's solid-colour floor. MEASURED 2026-09-20
-# on a stock MAME 0.276 package (bios=149c): that banner alone already lights
-# well above a few thousand px on the 560x240 raster; keep the fleet's
-# conservative floor of 4000 lit pixels the same as the other 80-column
-# text-console conversions.
+# (apple2e/mpf2), not the SAM Coupé's solid-colour floor. An early smoke
+# proof on a STOCK MAME 0.276 system package (bios=149c) measured "well
+# above a few thousand" lit px, but that ran at the driver's native
+# 560x240 raster, not this station's published 1024x768 drawshm surface.
+# MEASURED 2026-09-20 against the ACTUAL fleet-pinned mame0289 binary at
+# the real 1024x768 geometry (2 short lines of text on an otherwise black
+# field): 3163 lit px. Floor set to 2500 — comfortably below the measured
+# banner, comfortably above zero/garbage.
 native_boot_gate() {
-  native_gate_nonblack "$1" "$2" "$3" 4000 6
+  native_gate_nonblack "$1" "$2" "$3" 2500 6
 }

@@ -1,14 +1,18 @@
 #!/bin/bash
-# *** KNOWN-STALE 2026-09-20: this script's KBD_MCU_* block fetches
+# FIXED 2026-09-20: this script's KBD_MCU_* block used to fetch
 # kaypro10kbd.zip/m5l8049.bin, which is WRONG for the fleet-pinned mame0289
-# binary (native.d/cpm22.sh already carries the fix, see its comment) — the
+# binary (native.d/cpm22.sh carries the same fix, see its comment) — the
 # 0.289 tree wants kayproiikbd.zip/kaypro_ii-ins8048.bin instead (1024
 # bytes, CRC f65e1ca5, sha1 7919385fe8badbb610b793a3f5e4077982094aaa).
-# docs/lab/CPM22-WAVE.md has the resume step: source that exact ROM (a
-# fetch attempt from archive.org's "mame-bios-devices" zip-in-zip member
-# was in progress at handoff and had not yet succeeded) and update
-# KBD_MCU_URL/KBD_MCU_SHA256 + the two kaypro10kbd path references below to
-# kayproiikbd/kaypro_ii-ins8048.bin before the next build. ***
+# Sourced from archive.org item "mame-roms-split" ("MAME 0.280 ROMs
+# (split)"), which serves each romset as a plain file (no zip-in-zip
+# view_archive.php path, unlike the "mame-bios-devices" mega-zip that 503'd
+# and then 404'd on the exact member path at the first attempt) —
+# kayproiikbd.zip there hashes sha256
+# 5a9825ca30f2b86f65d91b788378e592ce1c6c0a8f879b279de08b24fc2d8956
+# (sha1 32ce9c4f80ea90776a06dbb8a367342b111cc3ec, matching the item's own
+# metadata), and its one member `kaypro_ii-ins8048.bin` verifies against the
+# sha1/CRC above. ***
 #
 # Stage the cpm22 station's media and ROMs: a Kaypro II CP/M 2.2 boot floppy
 # and a WordStar 3.3 application floppy (Teledisk/ImageDisk preservation
@@ -50,7 +54,14 @@ ROM_DIR="${ROM_DIR:-/data/assets-staging/$OS_ID/roms}"
 INSTALL_DIR="${INSTALL_DIR:-/data/vms/streamhost/assets/$OS_ID/media}"
 ROM_INSTALL_DIR="${ROM_INSTALL_DIR:-/data/vms/streamhost/assets/$OS_ID/roms}"
 WORK="${WORK:-/data/vms/build-cpm22-media}"
-MAME="${MAME:-/usr/games/mame}"
+# The boot gate below must run the SAME binary that ships (the fleet-pinned
+# mame0289 host-native build, scripts/build-guests/emulators/native.d/
+# cpm22.sh), not a stock Debian MAME system package -- a stock 0.276
+# package resolves this driver's keyboard through a DIFFERENT device
+# (kaypro10kbd/m5l8049.bin) than 0.289 does (kayproiikbd/
+# kaypro_ii-ins8048.bin), so a gate against the wrong binary would prove
+# nothing about what actually ships (docs/lab/CPM22-WAVE.md).
+MAME="${MAME:-/data/vms/streamhost/assets/$OS_ID/mame-native/kayproii}"
 GATE=1
 [[ "${1:-}" == "--no-gate" || "${2:-}" == "--no-gate" ]] && GATE=0
 
@@ -101,13 +112,19 @@ ROM_149C_URL="http://www.retroarchive.org/maslin/roms/kaypro/81-149c.rom"
 ROM_149C_SHA256="5231e5dd0f6fb64a8ec50951269c248e00875906e391d044918e212d14b08f55"
 ROM_146A_URL="http://www.retroarchive.org/maslin/roms/kaypro/81-146a.rom"
 ROM_146A_SHA256="cde431c9e506edf11261f7e7d52fd60b1a43fe2d9ea0d3e06f271d4cab4884fa"
-# The Kaypro 10/II keyboard's Intel 8049 MCU dump, a SEPARATE MAME device
-# romset (kaypro10kbd) this driver's keyboard connector needs alongside its
-# own kayproii.zip -- MEASURED 2026-09-20: MAME refuses to run without it
-# ("m5l8049.bin NOT FOUND (tried in kaypro10kbd kayproii)"). TorrentZipped
-# member from the Internet Archive's "MAME 0.266 ROMs (bios-devices)" set.
-KBD_MCU_URL="https://archive.org/download/bittorrent-e7d4d1eecb938d69888495adb9d931d538f90572/MAME%200.266%20ROMs%20%28bios-devices%29%2Fkaypro10kbd.zip"
-KBD_MCU_SHA256="b3572b3446dada53257a6af0e8b8304e66cb31a5dc1b38c4a5994339fb569c22"
+# The Kaypro II keyboard's Intel i8048 MCU dump, a SEPARATE MAME device
+# romset (kayproiikbd, devices/bus/keytronic/keytronic_l2207.cpp) this
+# driver's keyboard connector needs alongside its own kayproii.zip --
+# MEASURED 2026-09-20 against the actual fleet-pinned mame0289 binary:
+# MAME refuses to run without it ("kaypro_ii-ins8048.bin NOT FOUND (tried
+# in kayproiikbd kayproii)"). A STOCK MAME 0.276 system package resolves
+# this keyboard through a DIFFERENT device (kaypro10kbd/m5l8049.bin) --
+# that is a smoke-test artifact only, never what ships; trust -listxml on
+# the binary that will actually run. TorrentZipped member from the
+# Internet Archive's "MAME 0.280 ROMs (split)" set (mame-roms-split item),
+# which serves each romset as a plain downloadable file.
+KBD_MCU_URL="https://archive.org/download/mame-roms-split/MAME%20ROMs%20%28split%29/kayproiikbd.zip"
+KBD_MCU_SHA256="5a9825ca30f2b86f65d91b788378e592ce1c6c0a8f879b279de08b24fc2d8956"
 
 mkdir -p "$STAGE_DIR" "$ROM_DIR" "$WORK"
 
@@ -126,9 +143,9 @@ cp -f "$WS_IMD" "$STAGE_DIR/wordstar33.imd"
 
 fetch_pinned "$ROM_149C_URL" "$ROM_149C_SHA256" "$ROM_DIR/81-149c.rom"
 fetch_pinned "$ROM_146A_URL" "$ROM_146A_SHA256" "$ROM_DIR/81-146a.rom"
-fetch_pinned "$KBD_MCU_URL" "$KBD_MCU_SHA256" "$WORK/kaypro10kbd.zip"
-unzip -oq "$WORK/kaypro10kbd.zip" -d "$WORK/kbd-extract"
-cp -f "$WORK/kbd-extract/m5l8049.bin" "$ROM_DIR/m5l8049.bin"
+fetch_pinned "$KBD_MCU_URL" "$KBD_MCU_SHA256" "$WORK/kayproiikbd.zip"
+unzip -oq "$WORK/kayproiikbd.zip" -d "$WORK/kbd-extract"
+cp -f "$WORK/kbd-extract/kaypro_ii-ins8048.bin" "$ROM_DIR/kaypro_ii-ins8048.bin"
 
 (cd "$STAGE_DIR" && sha256sum -- *.td0 *.imd >MANIFEST.sha256) || true
 (cd "$ROM_DIR" && sha256sum -- *.rom *.bin >MANIFEST.sha256) || true
@@ -137,10 +154,10 @@ cp -f "$WORK/kbd-extract/m5l8049.bin" "$ROM_DIR/m5l8049.bin"
 if [[ "$GATE" == 1 ]]; then
   log "boot gate: cold-booting the CP/M boot disk and checking the frame"
   ROMPATH="$WORK/roms"
-  mkdir -p "$ROMPATH/kayproii" "$ROMPATH/kaypro10kbd" "$WORK/proof"
+  mkdir -p "$ROMPATH/kayproii" "$ROMPATH/kayproiikbd" "$WORK/proof"
   cp -f "$ROM_DIR/81-149c.rom" "$ROMPATH/kayproii/81-149c.u47"
   cp -f "$ROM_DIR/81-146a.rom" "$ROMPATH/kayproii/81-146.u43"
-  cp -f "$ROM_DIR/m5l8049.bin" "$ROMPATH/kaypro10kbd/m5l8049.bin"
+  cp -f "$ROM_DIR/kaypro_ii-ins8048.bin" "$ROMPATH/kayproiikbd/kaypro_ii-ins8048.bin"
   cat >"$WORK/boot-gate.lua" <<'LUAEOF'
 local function snap() manager.machine.video:snapshot() end
 emu.wait(6)
@@ -148,7 +165,7 @@ snap()
 LUAEOF
   rm -rf "$WORK/snap"
   MAME_BIN="$MAME"
-  [[ -x "$MAME_BIN" ]] || die "$MAME_BIN not found (spine stages the labhost package binary)"
+  [[ -x "$MAME_BIN" ]] || die "$MAME_BIN not found -- run build-mame-native.sh cpm22 first (native.d/cpm22.sh)"
   (cd "$WORK" && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$MAME_BIN" kayproii -bios 149c \
     -rompath "$ROMPATH" -homepath . -cfg_directory ./cfg -nvram_directory ./nvram -inipath . \
     -snapshot_directory ./snap -flop1 "$STAGE_DIR/cpm22-boot.td0" -skip_gameinfo -video soft \
