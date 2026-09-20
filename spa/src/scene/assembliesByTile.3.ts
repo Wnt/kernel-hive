@@ -129,4 +129,8 @@ export const ASSEMBLIES_BY_TILE_3 = {
   msx2: {
     kind: 'homeMicro', body: 'pizzaBoxB', monitor: 'homeCrtD',
     },
+  // cpm22 — the Kaypro II is an ALL-IN-ONE luggable: the 9" tube, the Z80
+  // and the two floppy drives are one steel case, so the assembly carries
+  // NO separate body, same shape as macsys1's compactA.
+  cpm22: { kind: 'homeMicro', monitor: 'compactA' },
 } as const satisfies Record<string, Assembly>;

@@ -267,6 +267,10 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
+  // cpm22: the Kaypro II's keyboard (dumped via mame-keymap.py) is a plain
+  // ASCII typewriter layout — arrows, Ctrl, Caps Lock, a numeric keypad —
+  // with nothing a PC keyboard lacks, so no dedicated family is needed.
+  cpm22: 'generic',
   helenos: 'generic', serenityos: 'generic', sculpt: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic',
   debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set

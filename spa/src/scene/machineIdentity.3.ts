@@ -170,4 +170,11 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cdc7b6', accentTint: '#2b2a29', tintMix: 0.46,
     badge: 'SAM COUPE', spec: '8-BIT • 1989', kit: 'eightBit',
   },
+  // cpm22: a Kaypro II luggable, 1982 -- the icon-blue steel case CP/M ran
+  // on before the IBM PC won the market. Registry accent is the CP/M green
+  // phosphor the 9" built-in monitor drew text in.
+  cpm22: {
+    caseTint: '#3b5b9e', accentTint: '#6b9d70', tintMix: 0.4,
+    badge: 'KAYPRO II', spec: 'Z80 2.5MHZ • 64K • 1982', kit: 'eightBit',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

@@ -43,7 +43,7 @@
     "stationsManifestOrder": 90,
     "stationsManifestPrelude": "\n# cpm22 (slot 206) -- CP/M 2.2 on a Kaypro II, host-native MAME kayproii; cpm22 wave 2026-09-20.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 107,
+    "bindingOrder": 108,
     "bindingPrelude": "",
     "goldenOrder": 90
   },
@@ -91,7 +91,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 206,
-    "bringUpOrder": 107,
+    "bringUpOrder": 108,
     "x11": {
       "display": ":73",
       "geometry": "1024x768x32",
