@@ -172,8 +172,7 @@ nohup systemd-nspawn \
   --setenv=ITS_COLS="${ITS_COLS:-80}" --setenv=ITS_ROWS="${ITS_ROWS:-30}" \
   --setenv=ITS_FONTSIZE="${ITS_FONTSIZE:-21}" \
   --setenv=ITS_XOFF="${ITS_XOFF:-+0+0}" \
-  --setenv=ITS_READY_CONSOLE_RE="${ITS_READY_CONSOLE_RE:-}" \
-  --setenv=ITS_READY_LOG_RE="${ITS_READY_LOG_RE:-KHBOOTREADY}" \
+  --setenv=ITS_READY_LOG_RE="${ITS_READY_LOG_RE:-SYSTEM JOB USING THIS CONSOLE}" \
   --setenv=ITS_READY_TIMEOUT_S="${ITS_READY_TIMEOUT_S:-300}" \
   --setenv=HOME=/work --setenv=TERM=vt100 \
   --kill-signal=SIGTERM --console=pipe \
@@ -214,10 +213,60 @@ done
 # would land on the root window and vanish. `xdotool windowfocus` pins it once,
 # for good. This is a bring-up action on the station's own display, not a
 # shortcut offered to the visitor.
+#
+# --- and then open the session. ITS does not greet a terminal that connects to
+# a DZ line: the system's own boot chatter goes to the PDP-10 CONSOLE, not to
+# line 0, so a visitor who arrives after bring-up would be looking at an empty
+# black terminal with no way to tell a working exhibit from a broken one. ^Z is
+# what opens a session on ITS — it is the documented way to log in, the first
+# thing the upstream README tells a human to type once
+# 'SYSTEM JOB USING THIS CONSOLE' has appeared — so the launcher types it once
+# here, on the station's own display, to bring the rest scene up to a live DDT
+# prompt. It stays on the on-screen keyboard as well, because a visitor who
+# logs out or wants a second job needs it.
+#
+# The gate is LIT PIXELS, not the keystroke: an early ^Z that reaches the line
+# before ITS is listening is simply lost, and "did the screen change" is too
+# weak because telnet's own chrome arrives asynchronously in the same window.
+# Baseline settles first, then ^Z is re-sent until the DDT banner is actually
+# on the framebuffer.
 export DISPLAY="$DISP"
+nlit() {
+  xwd -display "$DISP" -root -silent 2>/dev/null |
+    convert xwd:- -colorspace Gray -threshold 25% -format '%[fx:int(mean*w*h)]' info: 2>/dev/null || echo 0
+}
 WIN="$(xdotool search --name 'MIT ITS' 2>/dev/null | head -1 || true)"
 if [ -n "$WIN" ]; then
   xdotool windowfocus "$WIN" 2>/dev/null || true
+  base=-1
+  prev=-1
+  same=0
+  for _ in $(seq 1 60); do
+    sleep 0.5
+    base="$(nlit)"
+    if [ "$base" -gt 0 ] && [ "$base" = "$prev" ]; then
+      same=$((same + 1))
+      [ "$same" -ge 4 ] && break
+    else
+      same=0
+    fi
+    prev="$base"
+  done
+  want=$((base + ${ITS_LOGIN_LIT_PX:-400}))
+  got="$base"
+  for _ in $(seq 1 "${ITS_LOGIN_TRIES:-20}"); do
+    xdotool key --clearmodifiers ctrl+z 2>/dev/null || true
+    for _ in 1 2 3 4 5 6 7 8; do
+      sleep 0.5
+      got="$(nlit)"
+      [ "$got" -ge "$want" ] && break 2
+    done
+  done
+  if [ "$got" -ge "$want" ]; then
+    echo "its[$TILE]: ITS session open on the framebuffer ($base -> $got lit px)"
+  else
+    echo "its[$TILE]: WARNING — no ITS session banner (lit px $base -> $got, wanted $want); the rest scene may open black" >&2
+  fi
 else
   echo "its[$TILE]: WARNING — no window named 'MIT ITS' to focus; typing may vanish" >&2
 fi

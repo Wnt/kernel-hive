@@ -48,11 +48,21 @@ XOFF="${ITS_XOFF:-+0+0}"
 #   everything else left at the generated config's defaults; no Chaosnet, no
 #   GT40 and no second VT52 — this station publishes exactly ONE terminal.
 #
-# The `expect` rule is finding 3 of the shared runtime: SIMH answers for
-# itself from the ini file, so no pty/expect supervisor sits between the
-# container's init and the simulator, and it hands finding 1 its readiness
-# token for free. ITS_READY_CONSOLE_RE is what the simulator waits to see on
-# the PDP-10's own console before it echoes the token.
+# READINESS (finding 1 of the shared runtime: a TCP port probe is NOT
+# readiness — SIMH's `at -u dz0` binds while this file is still being read,
+# tens of seconds before ITS is up). ITS hands us a real token for free: when
+# the system has finished coming up it prints
+#
+#     SYSTEM JOB USING THIS CONSOLE
+#
+# on the PDP-10's OWN console — the line the upstream README tells a human to
+# wait for before typing ^Z to log in. The console is the simulator's stdout,
+# which the shared runtime already captures to work/emulator.log, so
+# ITS_READY_LOG_RE matches it directly and the ini file needs no `expect` rule
+# of its own. (Finding 3 still holds and is why there is no pty supervisor
+# here: the generated config ends in `b rp0` and ITS boots unattended, so the
+# DSKDMP / ESC-G dialogue in the upstream README — which applies to the KLH10
+# and pdp10-kl paths — does not arise for EMULATOR=simh.)
 cat >"$WORK/boot" <<CONF
 set console wru=034
 set cpu its
@@ -62,7 +72,6 @@ set dz 8b lines=8
 at -u dz0 $PORT
 set rp0 rp06
 at rp0 $WORK/rp0.dsk
-expect "${ITS_READY_CONSOLE_RE:-\$}" echo KHBOOTREADY; go
 b rp0
 CONF
 
@@ -77,7 +86,7 @@ export KH_TERM_EMULATOR_CWD="$WORK"
 export KH_TERM_EMULATOR_STDIN=/dev/null
 export KH_TERM_EMULATOR_CMD="$TREE/tools/simh/BIN/pdp10 $WORK/boot"
 export KH_TERM_READY_PORT="$PORT"
-export KH_TERM_READY_LOG_RE="${ITS_READY_LOG_RE:-KHBOOTREADY}"
+export KH_TERM_READY_LOG_RE="${ITS_READY_LOG_RE:-SYSTEM JOB USING THIS CONSOLE}"
 export KH_TERM_READY_TIMEOUT_S="${ITS_READY_TIMEOUT_S:-300}"
 export KH_TERM_CLIENT_CMD="exec xterm -display '${SH_X11_DISPLAY}' \
 -geometry '${COLS}x${ROWS}${XOFF}' \
