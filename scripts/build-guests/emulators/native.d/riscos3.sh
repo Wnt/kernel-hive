@@ -16,18 +16,41 @@
 # 1d02b14cd4d2ff80a343c3afb1ba43de0bd77815952816fc19d0736f8644664e) — staged
 # under /data/assets-staging/riscos3/, MANIFEST.sha256 there.
 #
-# Pointer/mouse mapping is UNMEASURED — the aa310 driver exposes the
-# Archimedes' own quadrature mouse ports; do not assume the apple2gs ADB
-# chain applies. Ship keyboard-first (stream.pointer.transport stays "none")
-# until a two-target readback proves a binding, per the integration seed's
-# stop condition.
+# POINTER. The Archimedes mouse is NOT the SGI Indy's hle_ps2_mouse the base
+# ctlsock module hardcodes, so ptr-tags is mandatory: the ports are
+# :keyboard:MOUSE.0/.1 (IPT_MOUSE_X/Y, mask 0xffff) and :keyboard:MOUSE.2,
+# whose three buttons are PORT_NAMEd "Mouse Left"/"Mouse Center"/"Mouse Right"
+# and are IP_ACTIVE_LOW (archimedes_keyb.cpp:206-215) — hence btn-active-low
+# as well. RISC OS is a three-button desktop (Select/Menu/Adjust) and all
+# three are bound.
+#
+# THE MAGNITUDE WAS DISCARDED ON THE WIRE, and that is what
+# mame-archimedes-kbd-mouse-carry.patch fixes. Upstream's update_mouse runs at
+# 4 kHz and, on ANY non-zero delta, advances the quadrature phase by exactly
+# ONE step and then assigns `m_mouse_x = x` — so a 600-count move written in
+# one go moved the guest pointer ZERO pixels (measured 2026-09-20). Pacing one
+# count per emulated millisecond does deliver the motion, but it caps a MOVEA
+# round at MAME_CTL_MOVE_STEP=1 and the closed loop gives up before it crosses
+# the screen (ten targets, ten giveups, worst error 332 px). The carry patch
+# advances the recorded position by one unit per tick and keeps the remainder,
+# so the fleet-default step works and nothing is lost.
+#
+# THE SENSOR is the VIDC's own hardware cursor register. acorn_vidc.cpp draws
+# the sprite at m_crtc_regs[CRTC_HCSR]-[CRTC_HBSR] / [CRTC_VCSR]-[CRTC_VBSR]
+# and save_pointer()s m_crtc_regs as a u32[16], so the cursor position is
+# elements 6 and 14 — byte offsets 24 and 56. ram-cursor supplies the
+# `item@offset:width` window and the CAL_SX/SY scale; item-window-sized
+# relaxes that window from a byte array to an array of any element size,
+# which is the only reason this register is readable at all.
 
 NATIVE_DRIVER=aa310
 NATIVE_SUBTARGET=aa310
 NATIVE_SOURCES=src/mame/acorn/aa310.cpp
 NATIVE_GEOM=1024x768
 NATIVE_MAME_ARGS=(-bios 311)
-NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch)
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch mame-ctlsock-ptr-tags.patch
+  mame-ctlsock-btn-active-low.patch mame-ctlsock-ram-cursor.patch
+  mame-ctlsock-item-window-sized.patch mame-archimedes-kbd-mouse-carry.patch)
 NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {

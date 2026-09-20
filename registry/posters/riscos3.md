@@ -4,8 +4,8 @@ subtitle: 1992 · Acorn's ARM desktop — the icon bar, Filer and !applications
 hero: /posters/riscos3/desktop.webp
 images:
   - src: /posters/riscos3/desktop.webp
-    alt: RISC OS 3.11 desktop with the icon bar along the bottom edge and the pointer visible on a mid-grey backdrop
-    caption: RISC OS at the desktop — drives, applications and system tools live on the icon bar instead of in a Start menu, Dock or desktop folder.
+    alt: RISC OS 3.11 desktop with the Resources:$.Apps directory window open in the top left showing !Alarm, !Calc, !Chars, !Configure, !Draw, !Edit, !Help and !Paint, the icon bar along the bottom edge, and the pointer on a mid-grey backdrop
+    caption: RISC OS at the desktop, with the Apps directory open. Drives, running applications and system tools live on the icon bar instead of in a Start menu, Dock or desktop folder; applications are directories whose names begin with an exclamation mark.
 ---
 
 ## Origins
@@ -57,17 +57,23 @@ graphical era.
 MAME's `aa310` driver emulating an **Acorn Archimedes 310** (ARM2, 8 MHz,
 4 MB), running entirely from ROM — the `bios=311` romset selects RISC OS
 3.11 and there is no disk attached at all. Power-on reaches the Desktop
-directly: a mid-grey backdrop, the icon bar along the bottom (the floppy
-drive icon at `:0`, an Apps directory viewer, and the palette and Acorn
-icons at the right), and the pointer visible.
+directly, in about twenty seconds: a mid-grey Pinboard backdrop and the
+icon bar along the bottom, with the floppy drive at `:0`, an Apps
+directory viewer, and the palette and Acorn task-manager icons at the
+right. The station opens with that Apps directory already on screen, so
+`!Draw`, `!Paint`, `!Edit` and the rest are one click away.
+
+All three mouse buttons are live, which matters more here than on most
+exhibits: Select opens, **Menu** — the middle button — opens the menu for
+whatever is under the pointer, and Adjust does the variant action. Try the
+middle button on empty backdrop and the Pinboard menu appears where the
+pointer is, rather than in a fixed bar at the top of the screen.
 
 This driver is still `status=preliminary` in MAME's own listing, so the
 emulator's ordinary "known problems" panel is suppressed for the exhibit
-rather than left in front of visitors — what is on screen once the
-Desktop appears is the genuine ROM-resident RISC OS, not a curated
-substitute. The station currently runs keyboard-first; the Archimedes'
-own three-button mouse is on the near-term list once its port mapping is
-measured on the live exhibit.
+rather than left in front of visitors — what is on screen once the Desktop
+appears is the genuine ROM-resident RISC OS, not a curated substitute.
+There is no sound and no networking on this exhibit.
 
 ## Legacy
 

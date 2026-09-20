@@ -149,6 +149,18 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "msx2": {
+    "label": "Type in a demo program (MSX-BASIC)",
+    "lines": [
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 FOR I=1 TO 20",
+      "40 PRINT \"MSX2 \";",
+      "50 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
     "lines": [

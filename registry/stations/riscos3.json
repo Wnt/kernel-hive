@@ -10,12 +10,12 @@
         "prelude": "",
         "value": {
           "key": "riscos3",
-          "script": "tiles/apple2.sh",
-          "outputDir": "bridge/apple2",
+          "script": "tiles/riscos3.sh",
+          "outputDir": "native/riscos3",
           "class": "retro",
-          "estimated": "~3-5m",
+          "estimated": "~5m (ccache-warm MAME aa310 subtarget)",
           "automation": "full",
-          "produces": "tiles/apple2 overlay + golden (Apple //e \u2192 GEOS)",
+          "produces": "host-native MAME aa310 binary + verified A310/RISC OS 3.11 romset + golden savestate (Apps Filer window open on the Desktop)",
           "flags": []
         }
       }
@@ -25,7 +25,7 @@
     "labctl": {
       "dir": "/data/vms/streamhost/stations/riscos3",
       "qmp": null,
-      "pointer_mode": "none",
+      "pointer_mode": "abs",
       "warpd_port": null,
       "warpd_addr": null,
       "ssh_port": null,
@@ -35,15 +35,15 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54213,
-      "notes": "HOST-NATIVE (de-bridged from day one): MAME's aa310 (Archimedes 310, driver status=preliminary) runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, no audio in the first wave. Launcher stations/mame-native/x11-runtime.sh; MACHINE savestate is unsupported on this driver (listxml savestate=\"unsupported\"), so reset=relaunch cold-boots the romset again rather than restoring a checkpoint."
+      "notes": "HOST-NATIVE (de-bridged from day one): MAME 0.289's aa310 (Acorn Archimedes 310) runs on the host — no QEMU/QMP, no guest OS to shell into, no exec channel. Frames drawshm->shm, keys and the pointer over ctlsock. RISC OS 3.11 is entirely ROM-resident (bios=311); there is no disk image. Launcher stations/mame-native/x11-runtime.sh; reset relaunches and restores sta/aa310/golden.sta. The pointer is a CLOSED LOOP on the VIDC's own hardware-cursor registers (m_crtc_regs[6]/[14]) — three buttons: Select/Menu/Adjust."
     }
   },
   "render": {
     "signalOrder": 92,
     "stationsManifestOrder": 90,
-    "stationsManifestPrelude": "\n# riscos3 (VMID 204) \u2014 TODO one line; scaffolded from apple2gs.\n",
+    "stationsManifestPrelude": "\n# riscos3 (VMID 213) — RISC OS 3.11 on an Acorn Archimedes 310, host-native\n# MAME aa310: ROM-resident OS (bios=311), drawshm frames, ctlsock keys and a\n# closed-loop absolute pointer read from the VIDC's own cursor registers.\n",
     "bringUpGroup": 6,
-    "bindingOrder": 107,
+    "bindingOrder": 109,
     "bindingPrelude": "",
     "goldenOrder": 90
   },
@@ -53,14 +53,14 @@
     "transport": "streamhost",
     "udpPort": 54213,
     "fps": 60,
-    "audio": true,
+    "audio": false,
     "touch": false,
     "pointer": {
-      "transport": "none",
+      "transport": "abs",
       "backend": "mamesock",
-      "method": "none",
-      "absolute": false,
-      "present": false,
+      "method": "mame-hwcursor-readloop",
+      "absolute": true,
+      "present": true,
       "device": "archimedes-quadrature-mouse",
       "scale": 1.0,
       "offset": [
@@ -77,7 +77,7 @@
       "SH_STATION": "riscos3",
       "SH_STATION_RUNTIME": "x11",
       "SH_INPUT_BACKEND": "mamesock",
-      "SH_AUDIO": "on",
+      "SH_AUDIO": "off",
       "SH_CAPTURE": "shm",
       "SH_X11_DISPLAY": ":73",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/riscos3/riscos3_cmd",
@@ -92,7 +92,7 @@
       "SH_CERT_ROTATE_DAYS": "10"
     },
     "vmidLabel": 213,
-    "bringUpOrder": 107,
+    "bringUpOrder": 109,
     "x11": {
       "display": ":73",
       "geometry": "1024x768x32",
@@ -114,7 +114,7 @@
         "--input-backend",
         "mamesock",
         "--audio",
-        "on",
+        "off",
         "--fps",
         "60",
         "--x11-runtime-file",
@@ -134,14 +134,14 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#3F7FBF",
-    "eraLabel": "1992 \u00b7 RISC OS 3.11",
+    "eraLabel": "1992 · RISC OS 3.11",
     "pointerRel": false
   },
   "museum": {
     "id": "riscos3",
     "displayName": "RISC OS 3.11",
     "year": 1992,
-    "lineage": "Acorn Arthur \u2192 RISC OS",
+    "lineage": "Acorn Arthur → RISC OS",
     "arch": "ARM2, 8 MHz, 4 MB (Archimedes 310)",
     "ramMB": 4,
     "ramKB": 0,
@@ -154,14 +154,14 @@
       "!Edit",
       "BASIC V"
     ],
-    "periodBrowser": "none \u2014 no networking on this exhibit in the first wave",
+    "periodBrowser": "none — no networking on this exhibit in the first wave",
     "iconicApps": [
       "Filer",
       "!Draw",
       "!Paint"
     ],
-    "blurb": "Acorn's native ARM desktop \u2014 the icon bar, the Filer and the windowed applications that turned the ARM chip from an in-house processor experiment into a personal computer platform, five years before ARM licensed its first outside core.",
-    "notes": "Host-native station: MAME 0.289's aa310 (Acorn Archimedes 310, driver status=preliminary) runs on the host \u2014 drawshm frames, ctlsock keys, no audio in the first wave. RISC OS 3.11 is ROM-resident (bios=311 on the aa310 romset); nothing is installed and there is no disk image. MEASURED 2026-09-20 with a system MAME 0.264 smoke test (same driver/romset metadata as the pinned 0.289): power-on reaches the RISC OS 3.11 Desktop \u2014 icon bar, pointer, mid-grey backdrop \u2014 after the preliminary-driver warning panel, which -skip_warnings removes for the exhibit. The Archimedes' own quadrature mouse ports (:keyboard:MOUSE.0/1/2) are UNMEASURED, so this station ships keyboard-first; stream.pointer.transport stays 'none' until a two-target Desktop click readback proves a binding."
+    "blurb": "Acorn's native ARM desktop — the icon bar, the Filer and the windowed applications that turned the ARM chip from an in-house processor experiment into a personal computer platform, five years before ARM licensed its first outside core.",
+    "notes": "Host-native station: MAME 0.289's aa310 (Acorn Archimedes 310) runs on the host — drawshm frames, ctlsock keys and pointer, no audio in the first wave. RISC OS 3.11 is ROM-resident (bios=311 on the A310 romset); nothing is installed and there is no disk image. MEASURED 2026-09-20 on the pinned 0.289 binary: cold power-on reaches the RISC OS 3.11 Desktop in 21 s, and the golden savestate restores the Apps Filer window scene to a BYTE-IDENTICAL framebuffer. The pointer is 1:1 ABSOLUTE: the VIDC1a's own hardware-cursor registers are the sensor for the ctlsock closed loop, and ten spread targets over two laps landed within 3 px X / 2 px Y with no give-ups. All three Archimedes buttons work — Menu (middle) drops the Pinboard menu, Select (left) on the icon bar's Apps icon opens the Resources:$.Apps Filer window. See docs/lab/RISCOS3-WAVE.md."
   },
   "emulator": {
     "family": "MAME",
@@ -172,17 +172,17 @@
   "ui": "desktop",
   "reset": {
     "stationDir": "riscos3",
-    "pointer": "none",
+    "pointer": "abs",
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "UNMEASURED. The aa310 driver exposes :keyboard:MOUSE.0 (X, 16-bit analog), :keyboard:MOUSE.1 (Y, 16-bit analog) and :keyboard:MOUSE.2 (buttons) \u2014 the Archimedes' own quadrature mouse, not an ADB/HLE chain like apple2gs. Do not assume the apple2gs gain/calibration chain applies. Station ships keyboard-only until a click readback is measured on the live rig.",
-    "keyboard": "UNMEASURED past the smoke boot. The aa310 keyboard is a CPU-scanned matrix on :keyboard:ROW.0..ROW.15, driven through the Archimedes keyboard MCU romset (acorn_0280,022-01_philips_8051ah-2.bin) \u2014 likely needs MAME_CTL_KEY_EXCL like the other scanned-matrix MAME stations (bbcmicro, atari800xl). A generated keymap (scripts/dev/mame-keymap.py against the live ctlsock) is still owed.",
-    "fixture": "RISC OS 3.11 Desktop at power-on: a mid-grey backdrop with the icon bar along the bottom (the floppy icon at :0, the Apps directory viewer icon, and the palette/Acorn icons at the right) and the pointer visible. MAME 0.289's aa310 running HOST-NATIVE (drawshm). MEASURED 2026-09-20 with a system MAME 0.264 smoke boot: reaches the Desktop in roughly 15 s after pressing a key past the preliminary-driver warning panel (which -skip_warnings removes for the exhibit itself). No disk is attached \u2014 RISC OS is entirely ROM-resident on this romset. Golden savestate is NOT available: aa310's MAME savestate support is listed 'unsupported', so reset is a cold-boot relaunch, not a checkpoint restore."
+    "mouse": "1:1 ABSOLUTE, closed loop, MEASURED 2026-09-20. The Archimedes mouse is the keyboard device's own QUADRATURE pair (:keyboard:MOUSE.0 = X, :keyboard:MOUSE.1 = Y, both 16-bit analog; :keyboard:MOUSE.2 = three IP_ACTIVE_LOW buttons named Mouse Left / Mouse Center / Mouse Right). Two things had to be true before it moved at all. (a) UPSTREAM DISCARDED THE MAGNITUDE: archimedes_keyb.cpp's 4 kHz update_mouse emitted ONE quadrature step per non-zero delta and then assigned m_mouse_x = x, so a 600-count move moved the guest pointer ZERO pixels — mame-archimedes-kbd-mouse-carry.patch advances the recorded position by one unit per tick and keeps the remainder. (b) THE SENSOR IS THE VIDC: acorn_vidc.cpp draws the sprite at m_crtc_regs[CRTC_HCSR]/[CRTC_VCSR], elements 6 and 14 of a save_pointer'd u32[16], so the closed loop reads byte offsets 24 and 56 of that item — which needed mame-ctlsock-item-window-sized.patch, because the ram-cursor window only accepted byte arrays. Calibration, fitted over 8 points with a max residual under 0.6 px: published = -177 + reg*1.23127 (X), -58 + reg*2.65502 (Y). The 640x256 raster is LETTERBOXED inside the 1024x768 surface — reachable published pixels are roughly x 118..905, y 43..722, so the fleet's usual corner targets are outside the guest raster.",
+    "keyboard": "MEASURED 2026-09-20. The aa310 keyboard is a CPU-scanned matrix on :keyboard:ROW.0..ROW.15 behind the Archimedes keyboard MCU (acorn_0280,022-01_philips_8051ah-2.bin, an 8051 running its own ROM). riscos3.keymap is generated from the live ctlsock KEYDUMP (96 of 139 fields mapped; the rest are IPT_OTHER keyboard-ID bits, IPT_UNUSED, and the UK-layout '#' and '£' keys with no XT scancode). F12 opens the RISC OS command line on the framebuffer — the keyboard proof. Pacing is the scanned-matrix floor, 80/80 ms with MAME_CTL_KEY_EXCL on :keyboard:ROW; a press and its release must not arrive in the same window or the module coalesces them and the guest sees nothing.",
+    "fixture": "RISC OS 3.11 Desktop with the Resources:$.Apps Filer window open in the top left — !Alarm, !Calc, !Chars, !Configure, !Draw, !Edit, !Help and !Paint one Select-click away — over the mid-grey Pinboard backdrop, with the icon bar along the bottom (floppy :0, Apps, the palette and the Acorn task-manager icon) and the pointer parked on open backdrop. Drawn on the published 1024x768 surface by MAME 0.289's aa310 running HOST-NATIVE (drawshm). MEASURED 2026-09-20: cold power-on reaches the bare Desktop in 21 s; the golden savestate (137197 B, saved in 1.0 s) restores this scene to a BYTE-IDENTICAL framebuffer and the guest is still live afterwards (a Menu click still drops the Pinboard menu). aa310 is listed savestate=\"unsupported\" in -listxml, so the restore is PROVEN rather than assumed. No disk is attached — RISC OS is entirely ROM-resident on this romset."
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from apple2gs on 2026-09-20 (slot/udp/vmid 213); driver is aa310, not apple2gs's driver \u2014 the sibling only supplied the registry row shape and the mame-native x11-runtime.sh launcher convention.",
-    "keyboard/pointer proof, golden bake and keymap are OPEN \u2014 see docs/lab/RISCOS3-WAVE.md"
+    "scaffolded from apple2gs on 2026-09-20 (slot/udp/vmid 213); the sibling supplied only the registry row shape and the mame-native x11-runtime.sh launcher convention — driver, romset, pointer and keyboard are all aa310's own.",
+    "carries three patches authored here: mame-ctlsock-item-window-sized.patch (cursor window into a non-byte save item), mame-archimedes-kbd-mouse-carry.patch (the quadrature magnitude), and the ptr-tags/btn-active-low/ram-cursor trio the pointer binding needs. See docs/lab/RISCOS3-WAVE.md."
   ]
 }
