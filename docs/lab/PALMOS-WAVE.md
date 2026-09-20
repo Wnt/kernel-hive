@@ -1,5 +1,58 @@
 # palmos wave — Palm III, host-native MAME, a genuinely absolute pen
 
+## RESUME HERE (checkpoint written 2026-09-20 ~09:35Z — build still compiling)
+
+Everything below is pushed to `origin/palmos-work` (HEAD `9427f35e` at
+checkpoint time) — registry scaffold (candidate/disabled, see "Why candidate"
+below), the new `mame-ctlsock-abs-fields.patch`, the fixture, keymap
+placeholder, wave doc, all docs. **Nothing is at risk of loss.**
+
+**Not yet done / not yet proven by framebuffer:**
+
+- The MAME binary build (`build-mame-native.sh palmos`) was still compiling
+  at checkpoint time — cold ccache for `src/mame/palm/palm.cpp`, box under
+  heavy concurrent load from sibling waves (34 `cc1plus`/`gcc` processes
+  observed via `ps aux` at 09:31Z). No compile error seen; just slow.
+- `/os/palmos` is **NOT published**. No framebuffer capture exists yet at
+  all — the pointer-route design is source-verified (read against
+  `mame/palm/palm.cpp`) but UNPROVEN on a live rig. Do not report it working
+  until a real frame shows it.
+
+**Exact command to resume the build** (same work/out dirs — resumes
+incrementally, does not restart):
+
+```
+cd /data/vms/sandbox/palmos-work/repo
+JOBS=6 scripts/build-guests/emulators/build-mame-native.sh palmos \
+  /data/vms/sandbox/palmos-work/BUILD-native-palmos \
+  /data/vms/sandbox/palmos-work/build/palmos-mame \
+  > /tmp/palmos-build.log 2>&1 &
+# poll: tail -f /tmp/palmos-build.log ; grep -c Compiling /tmp/palmos-build.log
+```
+
+**Single next concrete step once the binary exists**
+(`/data/vms/sandbox/palmos-work/build/palmos-mame/palmos`, or wherever the
+above run lands it — check `[ -x ... ]` after the run):
+
+```
+cd /data/vms/sandbox/palmos-work/repo
+mkdir -p /tmp/palmos-smoke && cd /tmp/palmos-smoke
+MAME_SHM_PATH=$PWD/fb.shm MAME_SHM_SIZE=160x220 \
+MAME_CTL_SOCK=$PWD/ctl.sock MAME_CTL_ABS=1 \
+MAME_CTL_PTR_TAGS=:PENB,:PENX,:PENY MAME_CTL_BTN_NAMES=Pen Button,, \
+MAME_CTL_SCREEN=160x220 \
+  /data/vms/sandbox/palmos-work/build/palmos-mame/palmos palmiii \
+  -rompath /data/assets-staging/palmos/roms -bios 3.3f \
+  -video shm -sound none -skip_gameinfo -nothrottle -str 10 \
+  -homepath . -cfg_directory ./cfg -nvram_directory ./nvram -inipath . \
+  > mame.log 2>&1 &
+# then read fb.shm (64-byte header + WxHx4 BGRA, see native_gate_nonblack in
+# build-mame-native.sh for the exact struct) and save a PNG — THAT PNG is the
+# framebuffer proof this wave still needs. Once non-black: connect to
+# ctl.sock, send MOVEA <x> <y> for five points spread across 0..159 x 0..219,
+# DOWN1/UP1, and diff frames before/after each to prove the pointer route.
+```
+
 Record-wave worker task, issue #48, Lane A. Prep branch `palmos`
 (`docs/lab/integration-seeds/palmos.md`, `docs/lab/integration-drafts/palmos/`,
 `docs/lab/spa-drafts/palmos.md`). Worked from `origin/palmos` in worktree
@@ -104,4 +157,31 @@ than a mouse) can reuse this same `MAME_CTL_ABS=1` knob unchanged.
   rewritten for the MAME-native shape; `stations-registry.py validate` green
 - 09:08Z — `build-mame-native.sh palmos` started (cold ccache for this
   `SOURCES` filter)
-- *(fill in: build completion, smoke boot, pointer proof, landing)*
+- 09:14Z — first ledger commit pushed (`3acec6c5`); build still in the
+  layout-compression phase (fixed cost, not narrowed by `SOURCES`)
+- 09:16-09:23Z — discovered `machines.test.ts`/`tileWiring.test.ts` require a
+  screen-bearing 3D body for every enabled tile; no free PDA-shaped asset
+  exists (`phoneA/B/C` all taken by android/postmarketos/sailfishos) — landed
+  as `lifecycle: candidate, enabled: false` instead of guessing UV
+  coordinates on an unrelated body; pushed (`9427f35e`), pre-push gate green
+- 09:31-09:35Z — build still compiling 3rdparty/core objects; box carries
+  concurrent load from sibling waves (34 `cc1plus`/`gcc` processes observed).
+  **This checkpoint was written here** rather than continuing to wait on the
+  build inline.
+- *(fill in: build completion, smoke boot, pointer proof, landing/promotion)*
+
+## Reusability note for sibling MAME-native stations (cpm22, riscos3, msx2, …)
+
+`mame-ctlsock-abs-fields.patch` is NOT Palm-specific. Any MAME driver whose
+pointer/touch input is a true absolute analog ioport field (an `IPT_LIGHTGUN`
+or similarly `PORT_MINMAX`-ranged field that the emulated CPU reads directly
+as a position, rather than a relative mouse counter or a value the guest
+re-derives from RAM) can reuse the same `MAME_CTL_ABS=1` knob — no per-field
+code, just `MAME_CTL_PTR_TAGS`/`MAME_CTL_BTN_NAMES` pointed at that driver's
+own port tags and field names, and `MAME_CTL_SCREEN` matching the published
+surface. If any of `cpm22`/`riscos3`/`msx2` turn out to need a genuine
+touchscreen/lightgun-style bind (unlikely for those three specifically, since
+none are touch machines by history, but worth a five-minute check against
+each driver's `INPUT_PORTS_START` before assuming a relative mouse route),
+this patch is already on `origin/palmos-work` and can be cherry-picked or
+patched-in directly rather than re-derived.
