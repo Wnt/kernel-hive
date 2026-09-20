@@ -118,6 +118,8 @@
         "--x11-runtime-file",
         "$T/multics/x11-runtime.sh",
         "--aux-file",
+        "$T/multics/multics-term.pl",
+        "--aux-file",
         "$T/multics/shared-terminal-runtime.sh",
         "--aux-file",
         "$T/multics/nspawn-inner.sh",
@@ -125,6 +127,7 @@
         "$T/multics/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/multics/multics-term.pl",
         "streamhost/stations/multics/nspawn-inner.sh",
         "streamhost/stations/multics/shared-terminal-runtime.sh",
         "streamhost/stations/multics/station.env.fixture"

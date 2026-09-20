@@ -1292,6 +1292,7 @@ emit multics \
   --tile multics --udp 54217 --x11 --x11-display :117 --capture x11 \
   --pointer none --input-backend x11test --audio off --fps 25 \
   --x11-runtime-file "$T/multics/x11-runtime.sh" --aux-file \
+  "$T/multics/multics-term.pl" --aux-file \
   "$T/multics/shared-terminal-runtime.sh" --aux-file \
   "$T/multics/nspawn-inner.sh" --env-append-file \
   "$T/multics/station.env.fixture"
