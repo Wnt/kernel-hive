@@ -1388,6 +1388,24 @@
       "udp_port": 54146,
       "notes": "labctl exec over a getty on COM1 (serial.sock; exec_kind serial_getty, user root, password in the gitignored <dir>/serial-exec.passwd). No network exec. Pointer is ABSOLUTE via the kh-ramabs control object on <dir>/ptr.sock: the commanded pixel is written into the guest's own pointer coordinate and published with one small PS/2 nudge. SINGLE INJECTOR - while that socket is connected nothing else may push motion or button edges at this mouse. loadvm golden."
     },
+    "riscos3": {
+      "dir": "/data/vms/streamhost/stations/riscos3",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54213,
+      "notes": "HOST-NATIVE (de-bridged): MAME runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/riscos3/sta."
+    },
     "sailfishos": {
       "dir": "/data/vms/streamhost/stations/sailfishos",
       "qmp": "/data/vms/streamhost/stations/sailfishos/qmp.sock",
