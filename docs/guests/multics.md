@@ -1,7 +1,8 @@
 # multics guest — Multics MR12.8 on an emulated DPS-8/M
 
-Status: **candidate, record wave 2026-09-20** (Tier 3 host-native container,
-no QEMU checkpoint). Wave record: [`../lab/MULTICS-WAVE.md`](../lab/MULTICS-WAVE.md).
+Status: **live, record wave 2026-09-20** (Tier 3 host-native container,
+no QEMU checkpoint) — `lifecycle: production`, `enabled: true` in
+`registry/stations/multics.json`, which is the authority. Wave record: [`../lab/MULTICS-WAVE.md`](../lab/MULTICS-WAVE.md).
 Shared runtime contract:
 [`../lab/record-wave/shared-terminal-runtime.sh`](../lab/record-wave/shared-terminal-runtime.sh)
 — multics is the station that contributed findings 1, 2 and 4 to it.
@@ -288,9 +289,6 @@ containment contract already proven for `medley`/`lisa`/`perq`/`vision`/
   d.h000 is published as the visitor terminal. Whether a second line is worth
   exposing for two simultaneous visitors is an open museum question, the same
   one `vax43bsd` leaves open for its own second DZ line.
-- **`lifecycle: candidate`, not yet listed.** `registry/stations/multics.json`
-  has `enabled: false`; bring-up per this doc is the state proven so far, not
-  a promoted station.
 
 ## Rollback
 
