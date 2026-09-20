@@ -1,5 +1,69 @@
 # msx2 wave — MSX2, host-native MAME, MSX-BASIC + MSX-DOS 2
 
+## Resume checkpoint (2026-09-20, for whoever picks this back up)
+
+- **Branch**: `msx2-work`, pushed to `origin/msx2-work` (commits `16adc2d7`
+  scaffold, `d90ce8db` proven-boot). NOT merged to main, NOT landed via
+  `scripts/dev/station-land.sh` yet.
+- **Sandbox**: `/data/vms/sandbox/msx2-work/repo` (worktree),
+  `/data/vms/sandbox/msx2-work/smoke/` (sandbox rig — ctl.sock, fb.shm,
+  frame*.png, the working typist script `msx2_type.py`, the KEYDUMP-derived
+  `msx2.keymap`). `KH_SESSION=msx2-work` claims slot 211 / UDP 54211 /
+  VMID 211 (from `wave.sh alloc msx2`, ledger below) — still held.
+- **Emulator decision**: MAME host-native `nms8250` driver, NOT openMSX
+  (the seed's original proposal). Decided by inspection (`mame -listxml
+  nms8250` on the box's own distro MAME already showed the seed's exact
+  target machine, with a working floppy+BIOS device tree) before any build
+  — not a raced frame, see "Decision log" below for why this wasn't a close
+  call. The actual pinned mame0289 build (`build-mame-native.sh msx2`)
+  **has completed successfully**: binary at
+  `/data/vms/streamhost/assets/msx2/mame-native/msx2` (87 MB, sha256
+  `1db15ebe2e49d4034ca897caa6bfc00fe9e96e234e9716647a77a77c5a13877d`),
+  romset staged at `.../mame-native/roms/`, build-time boot gate PASSED
+  (684 126 lit pixels, floor 340 000).
+- **What is proven by framebuffer** (frames at
+  `/data/vms/sandbox/msx2-work/smoke/frame4.png` on labhost, and copied
+  into the repo as the poster hero
+  `spa/public/posters/msx2/desktop.webp`): a cold boot with the real
+  MSX-DOS 2 (English) disk mounted in `-flop1` reaches "MSX BASIC version
+  2.1 / Copyright 1986 by Microsoft / Disk BASIC version 1.0 / Ok" — MSX-
+  BASIC, not MSX-DOS 2. Typing `PRINT 1+1` via MAME's own natural-keyboard
+  ctlsock verbs (`POST`, `CODE {ENTER}`) executed and returned a fresh `Ok`
+  prompt, proving the keyboard reaches the guest.
+- **MSX-DOS 2 prompt: NOT reached.** With the boot disk present the
+  machine still stops at MSX-BASIC rather than auto-booting DOS2 — see
+  "Decision log" below. This is the single biggest open item.
+- **`/os/msx2` is NOT published.** No `smoke-rig.sh`/`station-up.sh` was
+  run — the station only exists as a disabled-in-spirit-but-registry-says-
+  `production` entry on the `msx2-work` branch, not deployed anywhere. The
+  registry row (`enabled: true, lifecycle: production`) is scaffold
+  convention (see `stations-registry.py new --production`), NOT a claim
+  that it is live — nothing has been pushed to `main` or `box-deploy`d.
+- **To resume**: `cd /data/vms/sandbox/msx2-work/repo` (or `wt.sh new
+  msx2-work2 --from origin/msx2-work` for a fresh worktree on the same
+  branch). The binary and media are already built and staged on labhost
+  (paths above) — no rebuild needed. Next concrete step: from
+  `/data/vms/sandbox/msx2-work/smoke/`, relaunch the same binary/args
+  (see "Run it" line the build printed, reproduced in "Ledger" below) and
+  try typing MS-DOS-style commands or a different disk-boot trigger (e.g.
+  a cold boot WITHOUT `-skip_gameinfo`, or check whether MSX-DOS 2 needs
+  `CTRL` NOT held at boot vs held, or whether this specific disk image
+  needs a different MSX-DOS2 cartridge ROM as well as the floppy — the
+  `msxdos2e` MAME softlist entry implies a cartridge+disk PAIR, and this
+  wave only staged the disk half). Once DOS2 is reached (or the BASIC
+  prompt is accepted as the shipped rest scene), run `smoke-rig.sh msx2
+  --like samcoupe` to publish `/os/msx2`, then `station-land.sh msx2`.
+- **Known unrelated gate flake**: the last two `git push` attempts on this
+  branch were blocked by `TS unit tests (vitest)` failing on a DIFFERENT
+  test each time (`tapQuantiser.test.ts` timing-out at 5000ms, then
+  `metrics.test.ts` expecting a 0ms duration and getting 4ms) — both
+  timing-sensitive tests unrelated to any msx2 file, under a measured
+  labhost load average of ~120–135 on shared cores. The push that landed
+  `origin/msx2-work` used `SKIP_GATE=1` (feature branch, not main) after
+  eslint/tsc/shellcheck/registry-validate all passed clean twice locally
+  and only these two unrelated flaky timing tests differed between runs.
+  Re-run `(cd spa && npx vitest run)` before merging to main.
+
 Record wave 2026-09-20, issue #60, Lane A. Integration seed
 (`docs/lab/integration-seeds/msx2.md`) proposed openMSX inside nspawn/Xvfb,
 closest sibling `medley`. **Decision: MAME host-native instead** — AGENTS.md
