@@ -172,6 +172,34 @@ ssh lab 'nsenter -t $(cat /data/vms/streamhost/stations/vax43bsd/mame.pid) -n py
 — the port is on the container's own loopback behind `--private-network`, so
 this is the only way in from outside the guest's own xterm.
 
+### Where the launcher's own messages go
+
+**Not** to `journalctl -u streamhost@vax43bsd`. `ensure-station-x11.sh` runs
+`x11-runtime.sh` inside a transient `qcap-vax43bsd-<epoch>.scope`, so every line
+the launcher prints — the pid summary, the login-banner gate, the standby
+freeze, and the WARNING when the banner never arrived — is journalled under the
+syslog identifier **`ensure-station-qemu.sh`**, with no unit filter that finds
+it. Grepping the station unit returns nothing and looks exactly like a launcher
+that printed nothing (this cost a detour on landing day):
+
+```bash
+ssh lab 'journalctl --since "10 min ago" | grep "vax43bsd\[vax43bsd\]"'
+```
+
+A healthy relaunch prints three lines there, in order:
+
+```
+vax43bsd[vax43bsd]: login banner on the framebuffer (3046 -> 5500 lit px)
+vax43bsd[vax43bsd]: vax780=… xvfb=… nspawn=… display=:115 … dz=10023 …
+vax43bsd[vax43bsd]: standby — frozen at the 4.3BSD login (pid …; first session wakes it)
+```
+
+The first is the one that matters: it is the launcher asserting, from the
+framebuffer, that the exhibit is showing `login:` and not a black screen. The
+lit-pixel numbers differ a little between a sandbox rig and the live station
+(7368 vs 5500 measured) because the telnet chrome differs; the gate is
+`baseline + 1200`, which clears both with room to spare.
+
 ## Security — CONTAINED (systemd-nspawn, 2026-09-20)
 
 4.3BSD's root account has **no password** — that is stock 1986, not a local
