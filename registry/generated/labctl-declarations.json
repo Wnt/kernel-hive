@@ -974,6 +974,24 @@
       "udp_port": 54217,
       "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: the DPS8M simulator runs Multics MR12.8 on an emulated DPS-8/M inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is FNP D channel d.h000 on the CONTAINER's loopback port 6180, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/multics/mame.pid) -n telnet 127.0.0.1 6180` — and only while no visitor is attached. mame.pid is the DPS8M `dps8` HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The operator console is NOT the museum surface: it goes to work/emulator.log and carries the `M-> ` attention prompt and BCE. Reset=relaunch: kill dps8 by mame.pid, wipe work/, reflink-copy the pristine baked RPV back and start again (MEASURED 2 min 24 s to a lit banner on a box at load 60; the 594 MB reflink copy itself is 1.35 s). Launcher stations/multics/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/multics (MANIFEST.sha256 pins them)."
     },
+    "mvs38": {
+      "dir": "/data/vms/streamhost/stations/mvs38",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54214,
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: Hercules runs IBM MVS 3.8j (the TK5 distribution) inside a systemd-nspawn container together with the station's Xvfb and one x3270; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — a 3270 data stream carries none. No QMP and no exec channel: `labctl shot` reads the X root. The visitor terminal is VTAM local device 00C0 on the CONTAINER's loopback CNSLPORT 3270, so it claims no host port and is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/mvs38/mame.pid) -n c3270 127.0.0.1:3270` — and only while no visitor is attached. mame.pid is the Hercules HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. THE MVS OPERATOR CONSOLE IS NOT THE MUSEUM SURFACE and is not on a 3270 at all: TK5CONS=intcons puts it on device 0009 3215-C, an integrated console whose whole traffic goes to work/emulator.log. That is also where the readiness gate reads `IKT005I TCAS IS INITIALIZED` — the CNSLPORT listener opens 39 s earlier and means nothing. Reset=relaunch: kill Hercules by mame.pid, wipe work/, rebuild work/tk5 from the read-only TK5 tree and start again. Launcher stations/mvs38/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/mvs38 (MANIFEST.sha256 pins the upstream zip)."
+    },
     "netbsd14": {
       "dir": "/data/vms/streamhost/stations/netbsd14",
       "qmp": "/data/vms/streamhost/stations/netbsd14/qmp.sock",

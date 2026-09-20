@@ -168,6 +168,9 @@ const POSTER_INDEX = {
   "multics": {
     "hero": "/posters/multics/desktop.webp"
   },
+  "mvs38": {
+    "hero": "/posters/mvs38/desktop.webp"
+  },
   "netbsd14": {
     "hero": "/posters/netbsd14/desktop.webp"
   },

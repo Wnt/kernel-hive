@@ -98,6 +98,47 @@
 # window-manager trick.
 #
 # -----------------------------------------------------------------------------
+# FINDING 5 — NO WINDOW MANAGER MEANS NO KEYBOARD. [PROVEN, vax43bsd]
+# -----------------------------------------------------------------------------
+# Nothing in these containers runs a window manager, so X input focus stays
+# PointerRoot and the visitor client only receives keys while the pointer
+# happens to be over it. A terminal station has no pointer to move, and the
+# daemon types with XTEST, so without an explicit XSetInputFocus every visitor
+# keystroke lands on the root window and vanishes with nothing in any log. The
+# OUTER launcher must pin focus once, after the client window maps:
+#
+#     DISPLAY=$DISP xdotool windowfocus "$(xdotool search --name '<title>'|head -1)"
+#
+# (`xdotool key --window <id>` is NOT a substitute: it sends XSendEvent, which
+# xterm ignores by default. It looked like it worked here because unrelated
+# output arrived in the same second.)
+#
+# -----------------------------------------------------------------------------
+# FINDING 6 — A GETTY BANNER IS A ONE-SHOT AT BOOT. [PROVEN, vax43bsd]
+# -----------------------------------------------------------------------------
+# 4.3BSD's getty prints `login:` when it OPENS the line, which on a SIMH DZ11
+# is at boot, with nobody attached — into the void. A telnet connection does
+# NOT re-trigger it: measured, a passive connect sat silent for 25 s on a line
+# whose getty was alive and well. So readiness (findings 1 and 3) can be fully
+# satisfied and the exhibit still opens on a BLACK SCREEN.
+#
+# Bring-up therefore sends one CR and then waits for the banner ITSELF, on the
+# framebuffer — never for a fixed sleep, and never merely for "the screen
+# changed", because the client's own connection chrome arrives asynchronously
+# in the same window and will satisfy a change test on its own. The cheap exact
+# gate is a lit-pixel count with a settled baseline:
+#
+#     nlit() { xwd -display "$DISP" -root -silent |
+#       convert xwd:- -colorspace Gray -threshold 25% \
+#         -format '%[fx:int(mean*w*h)]' info:; }
+#
+# MEASURED on vax43bsd's own root: client chrome alone 2958, chrome + the
+# simulator's connect greeting + two banners 9148 — one banner is worth about
+# 2000 and a blinking cursor about 90, so +1200 separates them with room to
+# spare. Any sibling whose guest prints its prompt on line-open (that is most
+# of them) needs this; one whose guest prompts on carrier does not.
+#
+# -----------------------------------------------------------------------------
 # Required environment:
 #   KH_TERM_DISPLAY=:N
 #   KH_TERM_EMULATOR_CMD='command ...'   # starts the hidden emulator

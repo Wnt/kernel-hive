@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (109 of the 111
+//    - transport   : how its LIVE framebuffer texture is obtained (110 of the 112
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 109 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 110 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -237,6 +237,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   cpm22:       { osId: 'cpm22', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#6b9d70', eraLabel: '1982 · CP/M 2.2 (Kaypro II)' },
   riscos3:     { osId: 'riscos3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1992 · RISC OS 3.11', pointerRel: false },
   vax43bsd:    { osId: 'vax43bsd', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#67828F', eraLabel: '1986 · 4.3BSD — Berkeley Unix on the VAX' }, // ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)
+  mvs38:       { osId: 'mvs38', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#4FA36C', eraLabel: '1981 · IBM MVS 3.8j — the mainframe behind the green screen' }, // ideal: an IBM System/370 frame in a raised-floor machine room with an IBM 3279 colour display terminal on a desk in front of it
   multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
 };
 

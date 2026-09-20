@@ -16,7 +16,8 @@ import {
 export type PcFamily =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'bsd-tty' | 'multics';
+  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'bsd-tty' | 'tn3270'
+  | 'multics';
 
 export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
   generic: { family: 'generic', rows: [NAV, MODS], moreRows: [fkeyRow(1, 12)] },
@@ -82,6 +83,84 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
         ctrlChar('ctrl-l', '^L', 'l', 'Redisplay (vi)'),
         ctrlChar('ctrl-bslash', '^\\', '\\', 'Quit — SIGQUIT'),
         ch('|'), ch('~'), ch('/'),
+      ],
+    ],
+  },
+
+  // IBM MVS 3.8j on a 3279 colour display, reached through x3270. A 3270 is NOT
+  // a glass teletype: it is a BLOCK-MODE terminal. Nothing a visitor types
+  // leaves the terminal until an ATTENTION IDENTIFIER key is pressed, and the
+  // AID keys ARE the interface — Enter, Clear, PA1..PA3 and PF1..PF24 are how
+  // you do everything on this machine. None of them exist on a modern
+  // keyboard, so a profile that only offered letters would leave a visitor
+  // typing into a screen that never answers.
+  //
+  // RESET is the key that saves the exhibit. A 3270 locks its keyboard and
+  // shows X SYSTEM / X-f the moment you type into a protected field or while
+  // the host is thinking, and until the keyboard is reset NOTHING a visitor
+  // does has any effect — the single most common way for a 3270 newcomer to
+  // conclude the machine is broken. It rides a base row for that reason.
+  //
+  // PF3 (End/Exit) and PF1 (Help) are on the base row because they are the
+  // only way out of an ISPF panel, and PF7/PF8 because a mainframe scrolls
+  // with function keys, never with the arrow keys — the arrows move the CURSOR
+  // inside the form and are in moreRows where they belong.
+  //
+  // THE HOST SIDE OF THIS TABLE IS COMMITTED, NOT INHERITED: every mapping
+  // below is written into the station's own x3270 keymap in
+  // streamhost/stations/mvs38/nspawn-inner.sh, so the two ends are one
+  // contract. The keysyms are chosen from what guestQuirks.keysymToScancode
+  // can actually resolve — XK_Pause, the key a desktop tn3270 client would use
+  // for Clear, is NOT in that table and would have shipped a silently dead
+  // button, so Clear rides Alt+C instead.
+  tn3270: {
+    family: 'tn3270',
+    rows: [
+      [
+        tap('enter', 'Enter', XK.Return, { hint: 'Send the screen to the host' }),
+        chord('clear', 'Clear', XK.Alt_L, 0x63, 'Clear the screen'),
+        tap('reset', 'Reset', XK.Escape, { hint: 'Unlock the keyboard after X SYSTEM' }),
+        chord('pa1', 'PA1', XK.Alt_L, 0x31, 'Program Attention 1 — the TSO interrupt'),
+        tap('eraseeof', 'Erase EOF', XK.End, { hint: 'Erase to the end of the field' }),
+        tap('tab', 'Tab', XK.Tab, { hint: 'Next input field' }),
+        chord('backtab', '⇤', XK.Shift_L, XK.Tab, 'Previous input field'),
+      ],
+      [
+        tap('pf1', 'PF1', F(1), { hint: 'Help' }),
+        tap('pf3', 'PF3', F(3), { hint: 'End / Exit' }),
+        tap('pf7', 'PF7', F(7), { hint: 'Scroll up' }),
+        tap('pf8', 'PF8', F(8), { hint: 'Scroll down' }),
+        tap('pf10', 'PF10', F(10), { hint: 'Scroll left' }),
+        tap('pf11', 'PF11', F(11), { hint: 'Scroll right' }),
+        tap('pf12', 'PF12', F(12), { hint: 'Retrieve the last command' }),
+      ],
+    ],
+    moreRows: [
+      [
+        tap('pf2', 'PF2', F(2)), tap('pf4', 'PF4', F(4)), tap('pf5', 'PF5', F(5)),
+        tap('pf6', 'PF6', F(6)), tap('pf9', 'PF9', F(9)),
+        chord('pa2', 'PA2', XK.Alt_L, 0x32), chord('pa3', 'PA3', XK.Alt_L, 0x33),
+      ],
+      [
+        // PF13..PF24 are Shift+PF1..PF12 on a real 3279 keyboard too.
+        chord('pf13', 'PF13', XK.Shift_L, F(1)), chord('pf14', 'PF14', XK.Shift_L, F(2)),
+        chord('pf15', 'PF15', XK.Shift_L, F(3)), chord('pf16', 'PF16', XK.Shift_L, F(4)),
+        chord('pf17', 'PF17', XK.Shift_L, F(5)), chord('pf18', 'PF18', XK.Shift_L, F(6)),
+      ],
+      [
+        chord('attn', 'Attn', XK.Alt_L, 0x61, 'Attention'),
+        chord('sysreq', 'SysReq', XK.Alt_L, 0x73, 'System Request'),
+        chord('eraseinput', 'Erase Inp', XK.Alt_L, 0x65, 'Erase every input field'),
+        chord('dup', 'Dup', XK.Alt_L, 0x64, 'Duplicate'),
+        chord('fieldmark', 'FldMrk', XK.Alt_L, 0x6d, 'Field Mark'),
+        tap('insert', 'Ins', XK.Insert, { hint: 'Insert mode on/off' }),
+        tap('del', 'Del', XK.Delete),
+      ],
+      [
+        tap('home', 'Home', XK.Home, { hint: 'First input field' }),
+        tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        ...ARROWS,
       ],
     ],
   },

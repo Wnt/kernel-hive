@@ -171,6 +171,14 @@ const DEMO_PROGRAMS = {
     "runCommand": "list",
     "perCharMs": 80
   },
+  "mvs38": {
+    "label": "Open the TSO command panel, then ask the mainframe what time it is",
+    "lines": [
+      "6"
+    ],
+    "runCommand": "TIME",
+    "perCharMs": 80
+  },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
     "lines": [
