@@ -123,6 +123,9 @@ const POSTER_INDEX = {
   "irix": {
     "hero": "/posters/irix/desktop.webp"
   },
+  "its": {
+    "hero": "/posters/its/desktop.webp"
+  },
   "kc854": {
     "hero": "/posters/kc854/desktop.webp"
   },

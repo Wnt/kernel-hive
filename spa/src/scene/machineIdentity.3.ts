@@ -165,4 +165,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
     badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
+  // TODO(its): exhibit finish copied from medley — set the real era cues.
+  its: {
+    caseTint: '#d6cfbf', accentTint: '#b23a48', tintMix: 0.38,
+    badge: '1186', spec: 'MESA • LISP', kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;
