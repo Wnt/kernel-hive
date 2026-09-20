@@ -239,10 +239,13 @@ done
 }
 echo "$MPID" >"$PIDFILE"
 XV=""
-for d in /proc/[0-9]*; do
-  p="${d#/proc/}"
+# One find for the Xvfb basename over /proc/*/exe instead of a readlink fork
+# per PID (see station_emu_pids above); the ns/pid check still runs per
+# candidate, but there are only ever a handful of Xvfb processes.
+for p in $(find /proc -mindepth 2 -maxdepth 2 -name exe -lname '*/Xvfb' \
+  -printf '%h\n' 2>/dev/null | sed 's#^/proc/##'); do
   [ "$(readlink "/proc/$p/ns/pid" 2>/dev/null)" = "$(readlink "/proc/$MPID/ns/pid" 2>/dev/null)" ] || continue
-  case "$(readlink "/proc/$p/exe" 2>/dev/null)" in */Xvfb) XV="$p" ;; esac
+  XV="$p"
 done
 [ -n "$XV" ] && echo "$XV" >"$XPIDFILE"
 echo "perq[$TILE]: pid=$MPID xvfb=${XV:-?} nspawn=$(cat "$NSPAWN_PIDFILE") display=$DISP root=$GEOM disk=$DISK bootchar='${BOOTCHAR:-none}' uidbase=$UIDBASE (contained cold boot from a fresh disk copy)"
