@@ -1,64 +1,81 @@
 # palmos guest
 
-Status: **production, dark-launched** (`listing.state: hidden`). Host-native
-MAME, no QEMU, no guest OS filesystem. See `docs/lab/PALMOS-WAVE.md` for the
-full wave brief, the pointer-route design, and the OPEN items blocking
-promotion.
+Status: **LIVE** on `/os/palmos` since 2026-09-20. Host-native MAME — no QEMU,
+no guest OS filesystem, no network. See `docs/lab/PALMOS-WAVE.md` for the wave
+brief, the measurements behind every choice below, and the OPEN items.
 
 ## Identity and source
 
 - Public ID / tile directory: `palmos`
-- Reserved slot / UDP port: `207` / `54207`
-- Archetype: `touch-phone` (temporary — no PDA-shaped 3D body model exists
-  yet; scene tuple `pizzaBoxB,none,none,none`)
-- Machine: Palm III (Motorola MC68328 "DragonBall", 16.58 MHz)
-- OS: Palm OS 3.3, **French** release (no byte-exact English 3.x dump found
-  for this driver inside the wave's budget — see the wave doc)
-- ROM: `palmos33-fr-iii.rom`, 2 097 152 B, SHA-1
-  `c7c90df814d4f97958194e0bc28c595e967a4529`, sourced as
-  `Palm-III-3.3-fr.rom` from https://palmdb.net/app/palm-roms-complete
-  (staged at `/data/assets-staging/palmos/roms/` on labhost)
-- License/source class: preservation-archive (abandonware); ROM is a private
-  exhibit asset, never committed to git
+- Slot / UDP port / VMID: `207` / `54207` / `207`
+- Machine: **PalmPilot Professional** (1997) — Motorola MC68328 "DragonBall"
+  @ 16.58 MHz, 1 MB RAM. MAME 0.289 driver `palmpro`, `src/mame/palm/palm.cpp`
+- OS: **Palm OS 2.0 Professional, English**
+- ROM: `palmos20-en-pro.rom`, 1 048 576 B, SHA-1
+  `535bd9548365d300f85f514f318460443a021476` — byte-exact for the `2.0epro`
+  BIOS option the driver defines. Sourced as `Palm-OS-2.0-Pro-en.rom` from
+  https://palmdb.net/app/palm-roms-complete, staged at
+  `/data/assets-staging/palmos/roms/` on labhost. **Never committed.**
+- Scene body: `phoneDock` / `palmPda`
 
-## Build and device set
+**Why not the Palm III.** The wave opened on `palmiii` with Palm OS 3.3. That
+combination boots and draws its splash into guest RAM but never enables the
+MC68328's LCD controller, so the screen stays blank forever — measured, and the
+same is true of 3.0/3.5/4.0 across `palmiii`, `palmiiic` and `palmm100`. Palm
+OS 2.0 on this hardware displays correctly. The wave doc has the register
+trace.
 
-- Builder: `scripts/build-guests/emulators/native.d/palmos.sh` +
-  `scripts/build-guests/emulators/build-mame-native.sh palmos`
-- MAME driver: `palmiii` (`src/mame/palm/palm.cpp`), pin `mame0289`
-- MAME_NATIVE_ARGS: `-bios 3.3f`
-- Published surface: `160x220` (the driver's own visarea — no letterbox)
-- Patches: `mame-ctlsock.patch mame-drawshm.patch mame-kiosk-no-ui.patch
-  mame-ctlsock-ptr-tags.patch mame-ctlsock-abs-fields.patch`
-- Capture: drawshm → shm; audio off for this release (seed's own call)
+## Surface
 
-## Golden, input, and rollback
+Published surface is `160x220`, the driver's own visarea. The **LCD is only the
+top 160x160**. Rows 160..219 are the printed Graffiti silkscreen — unlit on
+real hardware too, so a blank strip there is correct, not a fault — but they
+are part of the digitizer, so the Applications / Menu / Calculator / Find
+buttons along it are tappable. That is the only route back to the Launcher
+from an app.
 
-- Reset mode: `relaunch` (restores the golden MAME savestate; `palmiii`
-  ships `MACHINE_SUPPORTS_SAVE`)
-- Fixture: see `streamhost/stations/palmos/station.env.fixture`
-- Pointer: **new route**, `mame-ctlsock-abs-fields.patch` +
-  `MAME_CTL_ABS=1` — Palm's pen is a true absolute `IPT_LIGHTGUN_X/Y`
-  ioport field (not a relative mouse), so `MOVEA` writes the field
-  directly, scaled from the published surface into the field's own
-  declared range. No accumulator, no cursor readback — see
-  `docs/lab/PALMOS-WAVE.md` for why every other MAME pointer route in this
-  fleet does not fit this machine.
-- Hardware buttons: `palmiii`'s `PORTD` port carries seven real device
-  buttons (Power, Up, Down, four app-launch buttons for Date Book/Address
-  Book/To Do/Memo Pad), bound to plain PC keycodes (D/Y/H/F/G/J/K) so they
-  are reachable from the on-screen keyboard, not a hidden host shortcut.
-  `streamhost/stations/palmos/palmos.keymap` gives them labels — **PLACEHOLDER,
-  pending a real `scripts/dev/mame-keymap.py` KEYDUMP run**.
-- Golden scene: OPEN — the golden stream still needs to reach the
-  Applications Launcher (a fresh `palmiii` boot most likely lands on Palm
-  OS's own Welcome/digitizer-calibration flow first).
-- Credentials reference only (never values): `guest/palmos` (none actually
-  needed — no login)
-- Rollback plan: this is a new station; rollback is deleting the registry
-  entry and the staged binary/ROM, no prior version to revert to.
+## Pointer
 
-## OPEN
+Absolute pen, no cursor. `MAME_CTL_ABS=1` with tags `:PENB,:PENX,:PENY` and
+`MAME_CTL_SCREEN=160x220`; `MOVEA` writes the `IPT_LIGHTGUN_X/Y` ioport fields
+directly. Accuracy is exact by construction — the boot script calibrates the
+digitizer with the pointer patch's own map — leaving only the pen field's 161
+steps: ~1.0 px across, ~1.37 px down.
 
-See `docs/lab/PALMOS-WAVE.md` §OPEN: golden scene, English ROM, real keymap,
-PDA body model, promotion.
+PROVEN 2026-09-20 over the real ctlsock: six Launcher icons (Address, Date
+Book, Memo Pad, To Do List, Expense, Security) each opening the intended app,
+plus the silkscreen Applications button returning from each.
+
+## Keyboard
+
+**None — this is a pen-only exhibit.** A PalmPilot has no keyboard; text is
+Graffiti handwriting. The driver's seven hardware buttons are not usefully
+reachable either: `palm.cpp` wires the CPU's port-D input callbacks to the PEN
+button port rather than the key matrix, so Palm OS reads the pen where it
+expects a key. Everything the exhibit needs is on the touchscreen.
+
+## Scene and reset
+
+The scene is the **Applications Launcher**.
+
+There is **no checkpoint**: restoring a savestate in a fresh process segfaults
+inside zlib (heap corruption in `palmpro`'s setup, no contained fix — see the
+wave doc). Instead `streamhost/stations/palmos/palmos-boot.lua` drives the
+machine there on every cold boot: it taps through Palm OS's unskippable
+three-target digitizer calibration and opens the Launcher, at fixed emulated
+frame numbers, which is deterministic because this is a cold boot from mask ROM
+into zeroed RAM with no NVRAM and no disk.
+
+`SH_RESET_MODE=relaunch`, so a reset replays that boot. At the guest's current
+speed that is minutes, not seconds — see OPEN 1 and 2 in the wave doc.
+
+## Known limits
+
+- **13% of real time.** ~7 CPU-seconds per emulated second; the suspect is
+  MAME's per-pixel MC68328 LCD shift-out. Everything slow about this station
+  descends from it.
+- **`SH_IDLE_PAUSE_SECS=420`**, not the fleet's 60, because a frozen guest
+  never finishes its scripted boot. An unwatched station therefore burns a core
+  for 7 minutes after a session.
+- **Auto-off after 2 minutes** is a Palm OS preference with no "never". Whether
+  a pen tap wakes it is unmeasured.
