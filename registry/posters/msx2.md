@@ -30,7 +30,7 @@ The standardization also points forward. MSX separated the idea of a software pl
 
 The station is a **Philips NMS 8250** (1987), an ordinary European MSX2 model with one internal 3.5" floppy drive — not a later turbo machine. It runs host-native: MAME's own `nms8250` driver on the exhibit host, publishing its framebuffer directly, the same engine that runs the museum's SAM Coupé and Apple IIe stations.
 
-The rest scene is MSX-BASIC's `Ok` prompt — the machine's own power-on screen. A genuine period MSX-DOS 2 (English) system disk sits in the internal floppy drive; reaching MSX-DOS 2 from BASIC is one command away.
+The rest scene is MSX-BASIC's `Ok` prompt — the machine's own power-on screen. A genuine period MSX-DOS 2 (English) system disk sits in the internal floppy drive, though this machine's built-in disk ROM speaks MSX-DOS 1 (the "Disk BASIC version 1.0" line in the banner); reaching an MSX-DOS 2 command line needs its own cartridge ROM, which this exhibit does not carry yet.
 
 ## Legacy
 
