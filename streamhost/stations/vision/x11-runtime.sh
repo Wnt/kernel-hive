@@ -149,7 +149,8 @@ station_emu_pids() {
   # One find over /proc/*/exe, never a readlink fork per PID: the per-PID form
   # measured 13.4 s at 1322 PIDs under load and could not finish inside the
   # unit's 90 s start-pre. Still /proc/<pid>/exe, never a cmdline grep.
-  for p in $(find /proc -mindepth 2 -maxdepth 2 -name exe -lname /opt/pce/bin/pce-ibmpc \
+  for p in $(find /proc -mindepth 2 -maxdepth 2 -name exe \
+    \( -lname /opt/pce/bin/pce-ibmpc -o -lname '/opt/pce/bin/pce-ibmpc (deleted)' \) \
     -printf '%h\n' 2>/dev/null | sed 's#^/proc/##' | grep -E '^[0-9]+$' | grep -vx "$$"); do
     is_descendant_of "$p" "$np" || continue
     printf '%s\n' "$p"
