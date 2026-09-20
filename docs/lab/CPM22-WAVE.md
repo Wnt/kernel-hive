@@ -209,8 +209,71 @@ has been landed. Registry validates, SPA vitest/eslint/knip/tsc and the
 Python/shell/file-size/drift gates were all green on this branch as of
 handoff (see the commit this file ships with).
 
-## Landing
+## Landing (RESOLVED 2026-09-20, resume session)
 
-NOT landed. This branch (`cpm22-work`, pushed to `origin/cpm22-work`) is a
-resumable checkpoint, not a finished station. Resume with the "Next concrete
-step" above.
+Landed on `main` (`367990f6`), deployed, then INCIDENT and FIX in the same
+session:
+
+1. **The ROM.** Sourced `kaypro_ii-ins8048.bin` from archive.org item
+   `mame-roms-split` ("MAME 0.280 ROMs (split)") — that item serves every
+   romset as a plain downloadable file, unlike `mame-bios-devices`'s
+   zip-in-zip `view_archive.php` path (which 503'd, then 404'd, at handoff).
+   sha1/CRC verified exact against the driver's own `-listxml`. Restaged the
+   mame-native rompath against the ALREADY-BUILT binary (no rebuild), re-ran
+   both boot gates — cold-boot floor lowered 4000→2500 (measured 3163 lit px
+   on the real 1024x768 drawshm surface; the old floor was carried over from
+   a different raster). Captured and restore-proved the golden savestate
+   (`sta/kayproii/golden.sta`, 14338 bytes, sha256
+   `bba86537a6a02963ddecdd908e6ed22cc02708852310a4716c1bff54f4ae4bd5`), dumped
+   the real keymap (76 keys, replacing the stale apple2gs placeholder),
+   proved `DIR` over ctlsock (POST+CODE{ENTER}) with no dropped/duplicated
+   characters. Landed via `station-land.sh`.
+
+2. **The incident.** Live and listed, `/os/cpm22` showed solid black —
+   flagged immediately by the coordinator reading a real `labctl shot`
+   (rule 9). Root cause, found by reproducing the EXACT production argv in a
+   sandbox rig and reading MAME's own `ui.cpp`: `kayproii` flags "imperfect
+   sound" (its beeper device), which makes
+   `mame_ui_manager::display_startup_screens()` show a MODAL "known
+   problems... Press any key to continue" panel — gated separately from
+   `-skip_gameinfo` (a different screen entirely) and auto-disabled ONLY
+   when `-str` is under 300s or `-video none`, neither true in production.
+   With `MAME_NO_UI=1` the panel composites nothing (kiosk-no-ui strips ALL
+   UI primitives) but the modal input-wait behind it still blocks the
+   machine from ever reaching `machine_phase::RUNNING` — so ctlsock's
+   `setup()` never fires, no verb ever gets acked
+   (`[mamesock] ack timeout; reconnecting`, forever), and the framebuffer
+   stays black. Plain `ui.ini` `skip_warnings 1` does NOT fix this on a
+   fresh process (upstream's condition needs a persisted same-warning memory
+   a first launch never has) — it needs `mame-irix-skip-warnings.patch`,
+   which domainos and newsos (the fleet's other two audio-off MAME-native
+   stations) already carry for the identical reason. This stanza's header
+   had claimed "no skip-warnings patch is needed" — wrong.
+
+3. **The fix.** Added `mame-irix-skip-warnings.patch` to
+   `NATIVE_EXTRA_PATCHES`, `NATIVE_SKIP_WARNINGS=1` /
+   `MAME_NATIVE_SKIP_WARNINGS=1`. Rebuilt (incremental, ccache 100% hit,
+   ~1 min); both boot gates still pass. Reproduced the exact production
+   argv against the OLD binary first (confirmed the hang), then the NEW one
+   (confirmed fixed) in a sandbox rig before touching the live station.
+   Re-emitted + restarted; `labctl shot cpm22` x3 over 8s: identical real
+   `A>` prompt frames, journal shows `health=Healthy`, one HELLO (no
+   reconnect loop). Regenerated the poster hero from the live, fixed scene.
+
+**OPEN**: the real-browser typing proof. `tests/e2e-live/cpm22-key-probe.mjs`
+is written and ready, but `/os/:osId` only mounts the live view for an
+admin/viewer session (`spa/src/ui/grid/exhibitAccess.ts`) — an anonymous
+Playwright context (no passkey credentials in this sandbox) cannot reach it,
+confirmed NOT cpm22-specific (an unmodified `nextstep-key-probe.mjs` hits the
+identical timeout against the same deployed gallery). The ctlsock-level
+typing proof (item 1 above) exercises the same daemon input path. Run the
+probe from a session with an authenticated storageState, or the operator
+opens `/os/cpm22` directly.
+
+**Lesson for the next audio-off MAME-native station**: check `-listxml` for
+`imperfect_features`/`unemulated_features` BEFORE landing, not after —
+`NATIVE_SKIP_WARNINGS=1` + `mame-irix-skip-warnings.patch` are required, not
+optional, whenever the driver flags anything imperfect, and the fastest way
+to prove it is reproducing the EXACT production argv (`-throttle`, no
+`-str`, every device flag the fixture ships) in a sandbox rig — a `-str`ed
+or `-nothrottle`d smoke test can pass while production hangs.
