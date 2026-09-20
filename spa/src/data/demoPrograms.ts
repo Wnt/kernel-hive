@@ -114,6 +114,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "kcalc &",
     "perCharMs": 80
   },
+  "linux012": {
+    "label": "Read the operating system's own source",
+    "lines": [
+      "ls /usr/src",
+      "ls /usr/src/kernel",
+      "head -40 /usr/src/kernel/proc.c"
+    ],
+    "runCommand": "head -40 /usr/src/kernel/proc.c",
+    "perCharMs": 40
+  },
   "medley": {
     "label": "Type a Lisp form into the Exec (click in the Exec window first)",
     "lines": [

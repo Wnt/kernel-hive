@@ -758,6 +758,24 @@
       "udp_port": 54097,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "linux012": {
+      "dir": "/data/vms/streamhost/stations/linux012",
+      "qmp": "/data/vms/streamhost/stations/linux012/qmp.sock",
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "fb",
+      "udp_port": 54205,
+      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) — Minix 2 has no in-guest network in this device set"
+    },
     "lisa": {
       "dir": "/data/vms/streamhost/stations/lisa",
       "qmp": null,
