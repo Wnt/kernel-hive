@@ -1,15 +1,34 @@
 # shellcheck shell=bash
 # native.d/kayproii.sh — host-native conversion stanza for the Kaypro II, the
 # cpm22 wave's `native` stream. Driver `kayproii` lives in
-# src/mame/kaypro/kaypro.cpp (MACHINE_SUPPORTS_SAVE — see the COMP() line for
-# kayproii), so no skip-warnings patch is needed and the shared launcher's
-# checkpoint restore applies unmodified.
+# src/mame/kaypro/kaypro.cpp (MACHINE_SUPPORTS_SAVE — the golden checkpoint
+# restore applies unmodified).
 #
 # IMPORTANT correction on the integration seed: the driver short name is
 # `kayproii`, NOT `kaypro2` as docs/lab/integration-seeds/cpm22.md guessed —
 # confirmed with -listxml against a stock MAME 0.276 system package on
 # labhost (2026-09-20). `kaypro2` is only the FLOPPY FORMAT's internal name
 # (formats/kaypro_dsk.cpp's kayproii_format::name()), not a driver.
+#
+# CORRECTION 2026-09-20 (post-landing incident): this stanza's header used to
+# say "no skip-warnings patch is needed" — WRONG, proven by a black-screen
+# live station. kayproii flags "imperfect sound" (its beeper device), which
+# makes MAME's ui.cpp display_startup_screens() show a MODAL "known problems
+# with this system... Press any key to continue" panel that `-skip_gameinfo`
+# does NOT suppress (it only gates the SEPARATE game-info screen, `state 0`
+# in that function — the warnings screen is `state 1`, gated by a totally
+# different, always-false-on-a-fresh-process persistence check). With
+# MAME_NO_UI=1 the panel renders as nothing (kiosk-no-ui strips ALL UI
+# compositing) but the modal input-wait behind it still blocks the machine
+# from ever reaching machine_phase::RUNNING — so ctlsock's on_frame() setup()
+# never fires, no verb ever gets acked, and the framebuffer stays solid
+# black forever. `-str` under 300s or `-video none` are the ONLY conditions
+# upstream disables this screen under (ui.cpp: `str > 0 && str < 60*5`) —
+# neither applies to a real production launch. `mame-irix-skip-warnings.patch`
+# (originally written for irix) makes ui.ini's `skip_warnings 1` unconditional
+# instead of gated on a same-warnings-within-14-days memory that a fresh
+# process never satisfies — REQUIRED here, exactly as domainos/newsos (the
+# fleet's other two audio-off MAME-native stations) already carry it.
 
 NATIVE_DRIVER=kayproii
 NATIVE_SUBTARGET=kayproii
@@ -22,8 +41,8 @@ NATIVE_GEOM=1024x768
 # the SAME 81-110 board family as the default. NATIVE_MAME_ARGS carries it so
 # every launch (builder gate, smoke rig, production fixture) agrees.
 NATIVE_MAME_ARGS=(-bios 149c)
-NATIVE_EXTRA_PATCHES=()
-NATIVE_SKIP_WARNINGS=0
+NATIVE_EXTRA_PATCHES=(mame-irix-skip-warnings.patch)
+NATIVE_SKIP_WARNINGS=1
 
 native_stage_roms() {
   local roms="$1"
