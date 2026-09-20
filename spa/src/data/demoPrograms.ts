@@ -123,6 +123,16 @@ const DEMO_PROGRAMS = {
     "runCommand": ":LISTF SYS;",
     "perCharMs": 80
   },
+  "linux012": {
+    "label": "Look around the fourth month of Linux",
+    "lines": [
+      "ls /",
+      "cat /etc/passwd",
+      "ls /usr/bin"
+    ],
+    "runCommand": "cat /etc/passwd",
+    "perCharMs": 40
+  },
   "medley": {
     "label": "Type a Lisp form into the Exec (click in the Exec window first)",
     "lines": [

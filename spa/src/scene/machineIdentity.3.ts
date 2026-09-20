@@ -197,6 +197,13 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#9aa3ab', accentTint: '#4fa36c', tintMix: 0.36,
     badge: 'System/370', spec: '16 MB • MVS 3.8j • 1981', kit: 'workstation',
   },
+  // linux012: a plain beige 386 tower of 1992, the year the first public
+  // Linux kernel (0.12) shipped — no distro branding to key off, so the
+  // finish is the generic office-beige every 386/486 clone wore.
+  linux012: {
+    caseTint: '#c9c2ac', accentTint: '#4a4a48', tintMix: 0.3,
+    badge: '386 TOWER', spec: '80386 • LINUX 0.12 • 1992', kit: 'office90',
+  },
   its: {
     caseTint: '#9aa0a6', accentTint: '#b23a48', tintMix: 0.38,
     badge: 'PDP-10 (KS10)', spec: '256 KW • MIT ITS • 1967', kit: 'workstation',

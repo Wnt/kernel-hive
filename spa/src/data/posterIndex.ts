@@ -135,6 +135,9 @@ const POSTER_INDEX = {
   "kolibrios": {
     "hero": "/posters/kolibrios/desktop.webp"
   },
+  "linux012": {
+    "hero": "/posters/linux012/desktop.webp"
+  },
   "lisa": {
     "hero": "/posters/lisa/desktop.webp"
   },

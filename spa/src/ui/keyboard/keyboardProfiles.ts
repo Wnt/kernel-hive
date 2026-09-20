@@ -294,6 +294,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
   // implements all three signals. No Minix-specific chord set exists to profile.
   minix2: 'linux-tty',
+  // linux012 (Linux 0.12, QEMU text console) is the same shape as minix2 above:
+  // a bare kernel tty with no GUI, where everything a visitor does is typed. The
+  // linux-tty rows carry the ^C/^D/^Z signals its tty driver implements and the
+  // pipe/slash/dash characters the shell needs.
+  linux012: 'linux-tty',
   // MIT ITS: a PDP-10 timesharing system behind a single terminal line. It
   // gets its own family because the linux-tty rows would be wrong twice over —
   // ^Z on ITS is how you LOG IN, not how you suspend a job, and the key ITS
