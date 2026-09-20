@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty';
+  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty' | 'tn3270';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -292,6 +292,12 @@ export const OS_FAMILY: Record<string, Family> = {
   // whose entire vocabulary is control characters they have to be on the face
   // of the keyboard. The row is built from the guest's own `stty everything`.
   vax43bsd: 'bsd-tty',
+  // MVS 3.8j on a 3279 through x3270. A BLOCK-MODE terminal: the AID keys —
+  // Enter, Clear, PA1..PA3, PF1..PF24 — are the whole interface, and Reset is
+  // the only way out of the X SYSTEM keyboard lock. None of them are on a
+  // modern keyboard, so nothing generic would do. The host half of the
+  // mapping is the committed x3270 keymap in stations/mvs38/nspawn-inner.sh.
+  mvs38: 'tn3270',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell

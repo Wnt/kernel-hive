@@ -45,11 +45,16 @@ BIN="$TK5/hercules/linux/64/bin/hercules"
 HERE="$(dirname "$(readlink -f "$0")")"
 INNER="$HERE/nspawn-inner.sh"
 SHARED="$HERE/shared-terminal-runtime.sh"
+SESSION="$HERE/x3270-session.sh"
+LOGO="$HERE/herclogo.txt"
+PASSFILE="${MVS38_TSO_PASS_FILE:-$ASSETS/tso.pass}"
 PIDFILE="$BASE/mame.pid" # the x11-runtime pidfile name, not a MAME claim
 XPIDFILE="$BASE/xvfb.pid"
 NPIDFILE="$BASE/nspawn.pid"
 XSOCK="/tmp/.X11-unix/X${DISP#:}"
 WINTITLE="${MVS38_WINTITLE:-MVS 3.8j}"
+FONT="${MVS38_FONT:-3270-20}"
+MVS38_FONT_FILE="$FONT.pcf.gz"
 
 # The TK5 zip carries NO exec bits (docs/lab/MVS38-WAVE.md): after `unzip`,
 # hercules and every TK5 script is mode 0644 and the first launch dies with
@@ -74,11 +79,11 @@ WINTITLE="${MVS38_WINTITLE:-MVS 3.8j}"
 # xfonts-x3270-misc is a *Recommends* of x3270 and debootstrap --variant=minbase
 # skips Recommends, so this tree can look complete and still have no 3270 font
 # at all — x3270 then dies at startup (docs/lab/MVS38-WAVE.md).
-[ -f "$ROOTFS/usr/share/fonts/X11/misc/3270gt24.pcf.gz" ] || {
+[ -f "$ROOTFS/usr/share/fonts/X11/misc/$MVS38_FONT_FILE" ] || {
   echo "mvs38[$TILE]: no 3270 fonts in $ROOTFS (install xfonts-x3270-misc explicitly)" >&2
   exit 1
 }
-for f in "$INNER" "$SHARED"; do
+for f in "$INNER" "$SHARED" "$SESSION" "$LOGO"; do
   [ -f "$f" ] || {
     echo "mvs38[$TILE]: missing $f" >&2
     exit 1
@@ -132,6 +137,19 @@ reap_previous() {
     done
     kill -0 "$p" 2>/dev/null && kill -TERM "$p" 2>/dev/null || true
   fi
+  # systemd-nspawn leaves /run/systemd/nspawn/unix-export/<machine> mounted if
+  # the container dies without its supervisor reaping it, and the NEXT start
+  # then refuses outright:
+  #   Mount point '/run/systemd/nspawn/unix-export/kh-mvs38' exists already
+  # MEASURED 2026-09-20 — one uncleanly-stopped container wedges every restart
+  # of the station from then on, which is exactly the shape of failure a
+  # visitor would see as a permanently dead exhibit. Clear it here, but only
+  # once nothing of ours is alive.
+  local ux="/run/systemd/nspawn/unix-export/kh-$TILE"
+  if [ -z "$(station_vm_pids)" ] && [ -d "$ux" ]; then
+    umount "$ux" 2>/dev/null || true
+    rmdir "$ux" 2>/dev/null || true
+  fi
   sleep 0.5
   [ -z "$(station_vm_pids)" ]
 }
@@ -167,7 +185,15 @@ mkdir -p "$BASE/work/tk5"
 for d in hercules doc Packages jcl ctca_demo local_scripts; do
   [ -e "$TK5/$d" ] && ln -sfn "$TK5/$d" "$BASE/work/tk5/$d"
 done
-[ -e "$TK5/herclogo.txt" ] && ln -sfn "$TK5/herclogo.txt" "$BASE/work/tk5/herclogo.txt"
+# herclogo.txt is OURS, not TK5's. Hercules paints this file on a 3270 the
+# moment it connects and before the guest writes anything, and the stock TK5
+# copy fills the top of it with $(VERSION), $(HOSTNAME), $(HOSTOS),
+# $(HOSTARCH), $(HOSTNUMCPUS) and $(LPARNAME) — the emulator's version and the
+# LABHOST's name, kernel and core count, on the museum's own framebuffer. The
+# committed replacement keeps TK5's artwork and credits and the two facts that
+# belong to the emulated machine (device number and subchannel), and states
+# nothing about the host.
+install -m 0444 "$LOGO" "$BASE/work/tk5/herclogo.txt"
 # written by MVS, by JES2 or by the TK5 scripts — real copies, every launch.
 for d in dasd log prt pch rdr tape conf scripts local_conf unattended; do
   [ -e "$TK5/$d" ] && cp -a "$TK5/$d" "$BASE/work/tk5/$d"
@@ -177,6 +203,18 @@ chmod -R u+rwX "$BASE/work/tk5/dasd" "$BASE/work/tk5/log" "$BASE/work/tk5/prt" \
   "$BASE/work/tk5/pch" "$BASE/work/tk5/rdr" "$BASE/work/tk5/tape"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$BASE/work/nspawn-inner.sh"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$SHARED" "$BASE/work/shared-terminal-runtime.sh"
+install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$SESSION" "$BASE/work/x3270-session.sh"
+# The TSO password is box-local and NEVER in the repository (the playbook's
+# rule: no real credential in tracked source, docs, screenshots or logs). With
+# no such file the station still comes up — x3270-session.sh leaves the
+# terminal at the VTAM screen and says so — so a fresh clone is degraded, not
+# broken.
+if [ -s "$PASSFILE" ]; then
+  install -m 0600 -o "$UIDBASE" -g "$UIDBASE" "$PASSFILE" "$BASE/work/tso.pass"
+else
+  echo "mvs38[$TILE]: no TSO password at $PASSFILE — the exhibit will rest on the" \
+    "VTAM screen instead of the ISPF primary option menu" >&2
+fi
 
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
@@ -194,7 +232,7 @@ nohup systemd-nspawn \
   --setenv=MVS38_ASSETS="$ASSETS" \
   --setenv=MVS38_GEOM="$GEOM" \
   --setenv=MVS38_PORT="$PORT" \
-  --setenv=MVS38_FONT="${MVS38_FONT:-3270gt24}" \
+  --setenv=MVS38_FONT="$FONT" \
   --setenv=MVS38_MODEL="${MVS38_MODEL:-3279-2-E}" \
   --setenv=MVS38_WINTITLE="$WINTITLE" \
   --setenv=MVS38_READY_TIMEOUT_S="${MVS38_READY_TIMEOUT_S:-420}" \
@@ -256,9 +294,9 @@ WIN="$(xdotool search --name "$WINTITLE" 2>/dev/null | head -1 || true)"
 if [ -n "$WIN" ]; then
   xdotool windowfocus "$WIN" 2>/dev/null || true
   # Centre it. x3270 sizes itself from the 3270 font — a 24x80 screen in
-  # 3270gt24 is not a number the launcher can predict — and with no window
-  # manager in the container nothing else will place it, so it would otherwise
-  # sit at +0+0 with the black root filling the bottom right of every frame.
+  # 3270-20 is not a size the launcher can predict — and with no window manager
+  # in the container nothing else will place it, so it would otherwise sit at
+  # +0+0 with the black root filling the bottom right of every frame.
   read -r WW WH < <(xdotool getwindowgeometry --shell "$WIN" 2>/dev/null |
     sed -n 's/^WIDTH=//p;s/^HEIGHT=//p' | paste -sd' ')
   if [ -n "${WW:-}" ] && [ -n "${WH:-}" ]; then
@@ -272,12 +310,35 @@ if [ -n "$WIN" ]; then
     echo "mvs38[$TILE]: 3270 window ${WW}x${WH} centred at +${X}+${Y} on $GEOM"
   fi
 fi
-FLOOR="${MVS38_PANEL_LIT_PX:-6000}"
+# TWO INDEPENDENT GATES, and they are deliberately NOT the same check.
+#
+#  * work/logon.ok is the IDENTITY gate. x3270-session.sh writes it only after
+#    x3270's own Ascii() shows `ISPF primary option menu` — the destination,
+#    read out of the 3270 data stream, where one screen is distinguishable
+#    from the next.
+#  * the lit-pixel floor is the FRAMEBUFFER gate: proof that the X root this
+#    station publishes actually carries a painted screen, and not that the
+#    logon merely happened somewhere the visitor cannot see.
+#
+# The floor is NOT a second identity check, because on this station a pixel
+# count cannot be one. MEASURED 2026-09-20 on this display:
+#     ISPF primary option menu   32512
+#     Hercules device logo       27811   <- only 17% below the destination
+#     blank 3270 + a message      5747..6575
+#     BLANK 3270 under x3270's menu bar  25765
+# That last line is the first build of this station: a 6000-px floor passed
+# with 25765 lit pixels that were entirely File/Options MENU BAR over a
+# completely blank 3270 — the "landed, then showed a black screen" failure.
+# A floor of 20000 separates any painted screen from every blank one by more
+# than 3x, and logon.ok is what says WHICH painted screen it is. The bad frame
+# above would still clear the floor; it would never have had logon.ok.
+FLOOR="${MVS38_PANEL_LIT_PX:-20000}"
 got=0
 prev=-1
 same=0
-for _ in $(seq 1 "${MVS38_PANEL_TRIES:-120}"); do
+for _ in $(seq 1 "${MVS38_PANEL_TRIES:-600}"); do
   sleep 0.5
+  [ -f "$BASE/work/logon.ok" ] || continue
   got="$(nlit)"
   if [ "$got" -ge "$FLOOR" ]; then
     if [ "$got" = "$prev" ]; then
@@ -290,9 +351,10 @@ for _ in $(seq 1 "${MVS38_PANEL_TRIES:-120}"); do
   prev="$got"
 done
 if [ "$got" -ge "$FLOOR" ]; then
-  echo "mvs38[$TILE]: VTAM panel on the framebuffer ($got lit px, floor $FLOOR)"
+  echo "mvs38[$TILE]: ISPF primary option menu on the framebuffer ($got lit px, floor $FLOOR)"
 else
-  echo "mvs38[$TILE]: WARNING — no VTAM panel (lit px $got, wanted $FLOOR); the rest scene may open black" >&2
+  echo "mvs38[$TILE]: WARNING — the rest scene is not the ISPF menu (lit px $got," \
+    "wanted $FLOOR; logon.ok $([ -f "$BASE/work/logon.ok" ] && echo present || echo absent))" >&2
 fi
 
 echo "$HPID" >"$PIDFILE"

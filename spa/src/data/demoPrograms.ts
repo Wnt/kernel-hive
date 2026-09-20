@@ -162,13 +162,11 @@ const DEMO_PROGRAMS = {
     "perCharMs": 260
   },
   "mvs38": {
-    "label": "Log in as root (no password — it is 1986), then look around",
+    "label": "Open the TSO command panel, then ask the mainframe what time it is",
     "lines": [
-      "root",
-      "hostname; who; date",
-      "ls /usr/games"
+      "6"
     ],
-    "runCommand": "fortune",
+    "runCommand": "TIME",
     "perCharMs": 80
   },
   "netbsd14": {

@@ -37,12 +37,16 @@ set -euo pipefail
 WORK=/work
 TK5="$WORK/tk5"
 PORT="${MVS38_PORT:-3270}"
-FONT="${MVS38_FONT:-3270gt24}"
+FONT="${MVS38_FONT:-3270-20}"
 MODEL="${MVS38_MODEL:-3279-2-E}"
 TITLE="${MVS38_WINTITLE:-MVS 3.8j}"
 
 [ -x "$TK5/hercules/linux/64/bin/hercules" ] || {
   echo "mvs38-inner: no executable Hercules under $TK5 (outer launcher did not stage work/)" >&2
+  exit 1
+}
+[ -x "$WORK/x3270-session.sh" ] || {
+  echo "mvs38-inner: no $WORK/x3270-session.sh (outer launcher did not stage it)" >&2
   exit 1
 }
 [ -w "$TK5/dasd" ] || {
@@ -116,7 +120,12 @@ export KH_TERM_EMULATOR_CWD="$TK5"
 # whole operator log on stdout, which is exactly the stream the readiness gate
 # below reads.
 export KH_TERM_EMULATOR_STDIN=/dev/null
-export KH_TERM_EMULATOR_CMD="PATH=$TK5/hercules/linux/64/bin:\$PATH \
+# `env` and not a bare VAR=val prefix: the shared runtime runs this through
+# `bash -lc "exec $EMU_CMD"`, and `exec` takes the first word as the program —
+# an assignment prefix there is treated as the command name and the launch dies
+# with "PATH=...: No such file or directory". MEASURED 2026-09-20.
+export KH_TERM_EMULATOR_CMD="env \
+PATH=$TK5/hercules/linux/64/bin:/usr/bin:/bin \
 LD_LIBRARY_PATH=$TK5/hercules/linux/64/lib:$TK5/hercules/linux/64/lib/hercules \
 HERCULES_RC=scripts/ipl.rc TK5CONS=intcons CNSLPORT=$PORT \
 hercules -d -f conf/tk5.cnf"
@@ -125,18 +134,34 @@ export KH_TERM_READY_PORT="$PORT"
 # 8 s after exec, TSO will not accept a logon until 47 s.
 export KH_TERM_READY_LOG_RE='IKT005I TCAS IS INITIALIZED'
 export KH_TERM_READY_TIMEOUT_S="${MVS38_READY_TIMEOUT_S:-420}"
-# The museum surface: one x3270 on the VTAM local terminal 00C0. No window
-# manager runs, so x3270 maps itself at its natural size and the rest of the
-# root window stays black; the outer launcher centres it once it is mapped.
-# menuBar/keypad off — they are host chrome a visitor cannot click (this
-# station publishes no pointer) and they would crop the 24x80 screen.
-export KH_TERM_CLIENT_CMD="exec x3270 -display '${SH_X11_DISPLAY}' \
--model '${MODEL}' -efont '${FONT}' -title '${TITLE}' -name '${TITLE}' \
--keymap kh -charset us \
--xrm 'x3270.menuBar: false' -xrm 'x3270.keypad: none' \
--xrm 'x3270.keypadOn: false' -xrm 'x3270.visualBell: true' \
--xrm 'x3270.keymap.kh: $WORK/kh.keymap' \
--xrm 'x3270.iconName: ${TITLE}' \
-127.0.0.1:${PORT}"
+# The museum surface: one x3270 on the VTAM local terminal 00C0, wrapped by
+# x3270-session.sh, which also drives the TSO logon so the exhibit rests on the
+# ISPF primary option menu rather than on a static Hercules device logo. No
+# window manager runs, so x3270 maps itself at its natural size and the rest of
+# the root window stays black; the outer launcher centres it once it is mapped.
+#
+# THE x3270 OPTIONS LIVE IN x3270-session.sh, and three of them are measured
+# facts rather than taste (2026-09-20):
+#
+#  * The resources use LOOSE binding (`*menuBar`) and the app keeps its default
+#    instance name. `-name 'MVS 3.8j'` with `x3270.menuBar: false` was tried
+#    first and silently did nothing — `-name` REPLACES the resource instance
+#    name, so every `x3270.*` resource stopped matching and the station came up
+#    with x3270's File/Options menu bar across the top of the frame. That menu
+#    bar is host chrome a visitor cannot click (this station publishes no
+#    pointer) and it crops the 24x80 screen.
+#  * The font is bounded by the root window, not chosen for looks: a 3270 is a
+#    fixed 80 columns, so the emulator font's cell width must be at most
+#    1024/80 = 12.8 px or x3270 maps itself wider than the framebuffer and the
+#    right-hand columns are simply not in the stream. MEASURED in a scratch
+#    container, 3279-2-E with the menu bar off:
+#      3270gt32 1461x816 · 3270gt24 1141x614 · 3270-20 821x513
+#      3270gt16  741x412 · 3270gt12  581x311 · 3270    741x361
+#    3270-20 is the largest that fits 1024x768, and the first two do not.
+#  * x3270 finds a keymap ONLY as a resource. `-keymap /work/kh.keymap` and
+#    `-keymap kh` with the file at $HOME/.x3270/kh both answer
+#    `Cannot find keymap`; `-keymap kh` plus a `*keymap.kh:` resource whose
+#    value is the table above with literal \n separators is accepted.
+export KH_TERM_CLIENT_CMD="exec $WORK/x3270-session.sh"
 
 exec "$WORK/shared-terminal-runtime.sh"

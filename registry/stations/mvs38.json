@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "mvs38",
-  "era_year": 2026,
+  "era_year": 1981,
   "enabled": true,
   "build": {
     "rows": [
@@ -10,12 +10,12 @@
         "prelude": "",
         "value": {
           "key": "mvs38",
-          "script": "tiles/vax43bsd.sh",
-          "outputDir": "VAX43BSD",
+          "script": "tiles/mvs38.sh",
+          "outputDir": "MVS38",
           "class": "terminal",
-          "estimated": "~25m",
+          "estimated": "~12m",
           "automation": "full",
-          "produces": "assets/mvs38/{bin/vax780,media/{43.tap,bsd43-ra81.dsk,boot42},rootfs} — Open SIMH's VAX-11/780 simulator, the 4.3BSD distribution tape built from the TUHS files, an RA81 with 4.3BSD installed and HALTED CLEAN, and the container rootfs (relaunch reset)",
+          "produces": "assets/mvs38/{tk5,rootfs} — the pinned TK5 distribution of MVS 3.8j (its own SDL Hyperion Hercules, the DASD volumes, conf/ and scripts/), made executable, plus the container rootfs (relaunch reset). Nothing is built from source: the TK5 zip is the artifact, pinned by size and SHA-256 in assets/mvs38/MANIFEST.sha256.",
           "flags": []
         }
       }
@@ -35,17 +35,17 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54214,
-      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: Open SIMH's VAX-11/780 simulator runs 4.3BSD inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is DZ11 line 0 (tty00) on the CONTAINER's loopback port 10023, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/mvs38/mame.pid) -n telnet 127.0.0.1 10023` — and only while no visitor is attached. mame.pid is the SIMH vax780 HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The simulator console is NOT the museum surface: it goes to work/emulator.log and carries the `sim>` escape prompt. Reset=relaunch: kill vax780 by mame.pid, wipe work/, copy the pristine RA81 back and start again (~55 s to the login prompt). Launcher stations/mvs38/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/vax43bsd (MANIFEST.sha256 pins them)."
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: Hercules runs IBM MVS 3.8j (the TK5 distribution) inside a systemd-nspawn container together with the station's Xvfb and one x3270; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — a 3270 data stream carries none. No QMP and no exec channel: `labctl shot` reads the X root. The visitor terminal is VTAM local device 00C0 on the CONTAINER's loopback CNSLPORT 3270, so it claims no host port and is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/mvs38/mame.pid) -n c3270 127.0.0.1:3270` — and only while no visitor is attached. mame.pid is the Hercules HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. THE MVS OPERATOR CONSOLE IS NOT THE MUSEUM SURFACE and is not on a 3270 at all: TK5CONS=intcons puts it on device 0009 3215-C, an integrated console whose whole traffic goes to work/emulator.log. That is also where the readiness gate reads `IKT005I TCAS IS INITIALIZED` — the CNSLPORT listener opens 39 s earlier and means nothing. Reset=relaunch: kill Hercules by mame.pid, wipe work/, rebuild work/tk5 from the read-only TK5 tree and start again. Launcher stations/mvs38/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/mvs38 (MANIFEST.sha256 pins the upstream zip)."
     }
   },
   "render": {
     "signalOrder": 93,
     "stationsManifestOrder": 91,
-    "stationsManifestPrelude": "\n# mvs38 (VMID 214) — TODO one line; scaffolded from vax43bsd.\n",
+    "stationsManifestPrelude": "\n# mvs38 — IBM MVS 3.8j under Hercules (the TK5 distribution), contained: the\n# emulator + Xvfb + one x3270 on VTAM local terminal 00C0 inside systemd-nspawn;\n# relaunch reset from the pristine TK5 DASD volumes.\n",
     "bringUpGroup": 8,
     "bindingOrder": 111,
     "bindingPrelude": "",
-    "bindingComment": "ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)",
+    "bindingComment": "ideal: an IBM System/370 frame in a raised-floor machine room with an IBM 3279 colour display terminal on a desk in front of it",
     "goldenOrder": 91
   },
   "stationDir": "mvs38",
@@ -80,7 +80,7 @@
       "SH_INPUT_BACKEND": "x11test",
       "SH_AUDIO": "off",
       "SH_CAPTURE": "x11",
-      "SH_X11_DISPLAY": ":115",
+      "SH_X11_DISPLAY": ":114",
       "SH_PORT": "54214",
       "SH_FPS": "25",
       "SH_HOST_IP": "192.0.2.10",
@@ -92,7 +92,7 @@
     },
     "bringUpOrder": 111,
     "x11": {
-      "display": ":115",
+      "display": ":114",
       "geometry": "1024x768x24",
       "capture": "x11",
       "launcher": "streamhost/stations/mvs38/x11-runtime.sh",
@@ -104,7 +104,7 @@
         "54214",
         "--x11",
         "--x11-display",
-        ":115",
+        ":114",
         "--capture",
         "x11",
         "--pointer",
@@ -118,6 +118,10 @@
         "--x11-runtime-file",
         "$T/mvs38/x11-runtime.sh",
         "--aux-file",
+        "$T/mvs38/herclogo.txt",
+        "--aux-file",
+        "$T/mvs38/x3270-session.sh",
+        "--aux-file",
         "$T/mvs38/shared-terminal-runtime.sh",
         "--aux-file",
         "$T/mvs38/nspawn-inner.sh",
@@ -127,6 +131,8 @@
       "auxFiles": [
         "streamhost/stations/mvs38/nspawn-inner.sh",
         "streamhost/stations/mvs38/shared-terminal-runtime.sh",
+        "streamhost/stations/mvs38/x3270-session.sh",
+        "streamhost/stations/mvs38/herclogo.txt",
         "streamhost/stations/mvs38/station.env.fixture"
       ]
     }
@@ -134,50 +140,50 @@
   "spa": {
     "archetypeId": "mono-terminal",
     "transport": "streamhost",
-    "accentColor": "#67828F",
-    "eraLabel": "TODO(vax43bsd): 1986 · 4.3BSD — Berkeley Unix on the VAX"
+    "accentColor": "#4FA36C",
+    "eraLabel": "1981 · IBM MVS 3.8j — the mainframe behind the green screen"
   },
   "museum": {
     "id": "mvs38",
-    "displayName": "TODO(vax43bsd): 4.3BSD",
-    "year": 1986,
-    "lineage": "TODO(vax43bsd): Research Unix → 1BSD (Berkeley, 1978) → 4.2BSD (1983, sockets and TCP/IP) → 4.3BSD → the BSDs",
-    "arch": "DEC VAX-11/780 — the 32-bit minicomputer Berkeley Unix was written on: 8 MiB of memory, an RA81 disk on a UDA50 controller, a TS11 tape drive and a DZ11 eight-line terminal multiplexer with a VT100 on line 0",
-    "ramMB": 8,
+    "displayName": "IBM MVS 3.8j",
+    "year": 1981,
+    "lineage": "OS/360 → OS/VS2 SVS (1972) → MVS (1974) → MVS 3.8j → MVS/XA → MVS/ESA → OS/390 → z/OS",
+    "arch": "IBM System/370 as Hercules configures it for TK5 — an IBM 3033-class processor, S/370 architecture level, one CPU and 16 MiB of main storage, with 3390, 3380 and 3350 DASD, a 3211 line printer, a 3505 card reader, a 3525 punch, a 3420 tape drive and eight local 3270 display stations on the VTAM channel",
+    "ramMB": 16,
     "era": "1980s",
-    "accent": "#67828F",
+    "accent": "#4FA36C",
     "eraSoftware": [
-      "the C shell and the Bourne shell",
-      "vi and ex, Bill Joy's editors",
-      "the 4.3BSD socket API — socket(2), bind(2), connect(2)",
-      "the TCP/IP stack and its tools: netstat, ping, rwho, telnet, ftp",
-      "the portable C compiler and dbx",
-      "nroff, troff and the -ms macros",
-      "sendmail and named, both born here",
-      "/usr/games — adventure, rogue, chess, fortune, hangman, doctor, ching"
+      "TSO — the Time Sharing Option, the interactive front end to a batch machine",
+      "ISPF and its editor — the full-screen panels every mainframe programmer lived in",
+      "JES2, the job entry subsystem: SUBMIT, the spool, and the held output queue",
+      "JCL — //STEP EXEC PGM=IEFBR14, the language for asking a mainframe to do anything",
+      "the OS utilities: IEBGENER, IEBCOPY, IEHLIST, IDCAMS, SORT",
+      "COBOL, PL/I, FORTRAN and OS/360 Assembler F, all under the same JCL",
+      "BREXX/370 — a modern REXX brought back to a 1981 machine",
+      "RAKF, the turnkey security manager that guards the TSO userids"
     ],
-    "periodBrowser": "none — 4.3BSD predates the web by three years; its network was ARPANET-style TCP/IP, and this exhibit is deliberately not networked at all",
+    "periodBrowser": "none — MVS 3.8j is a 1981 batch and timesharing system with no TCP/IP stack at all. Its network was SNA and RJE, and this exhibit is deliberately not networked: the 3270 terminal is the whole visitor surface.",
     "iconicApps": [
-      "vi",
-      "the C shell",
-      "netstat",
-      "man",
-      "rogue",
-      "fortune"
+      "TSO",
+      "ISPF",
+      "the ISPF editor",
+      "JES2",
+      "JCL",
+      "IDCAMS"
     ],
-    "blurb": "TODO(vax43bsd): The Berkeley Unix that the internet was built on. 4.2BSD had given Unix the socket API and a working TCP/IP stack in 1983; 4.3BSD, released in June 1986, is the version that made it fast and ordinary — the release most of the ARPANET ran, the one every workstation vendor licensed, and the direct ancestor of FreeBSD, NetBSD, OpenBSD and of the sockets layer in Windows and macOS. It is also the everyday environment a 1986 computer-science department actually sat in front of: a VT100 on a DZ11 line into a VAX-11/780 in a machine room, vi, cc, man, and a games directory nobody admitted to using.",
-    "notes": "TODO(vax43bsd): Tier 3, EMULATED but CONTAINED and with no checkpoint: Open SIMH's VAX-11/780 simulator, the station's Xvfb and the visitor's xterm all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2490368, volatile overlay root, assets bound read-only, CAP_SYS_ADMIN dropped). Root in 4.3BSD has no password, which is stock 1986 — the container, not the guest, is the security boundary. The visitor surface is one 80x24 xterm on DZ11 line 0 (tty00); the simulator console is never on screen. SIMH answers its own standalone-boot prompt from the ini file, so the simulator is the single supervised process and the station needs no pty/expect supervisor — the finding that unblocked mvs38, multics and its (docs/lab/record-wave/shared-terminal-runtime.sh, which this station proved). No checkpoint: reset is a ~55 s relaunch from a pristine RA81 that was snapshotted from a guest halted with `sync; sync; /etc/halt`. See docs/guests/mvs38.md."
+    "blurb": "The machine the phrase 'the mainframe' still means. MVS is what IBM's System/370 ran in the banks, airlines and government departments of the late 1970s and 1980s, and MVS 3.8j is the last release IBM ever put into the public domain — which is why it is the one release anybody can still boot. Everything here is the real thing: you sit at a 3270, a block-mode terminal that sends nothing until you press Enter, log on to TSO, and find ISPF, JCL and JES2 exactly as a 1981 systems programmer did. It is a strikingly alien computer to meet after forty years of glass teletypes — the screen is a form you fill in, work is submitted as jobs rather than run, and the machine answers with a message number you are expected to look up. It is also the direct ancestor of z/OS, still running under most of the world's card transactions today.",
+    "notes": "Tier 3, EMULATED but CONTAINED and with no checkpoint: Hercules, the station's Xvfb and the visitor's x3270 all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2097152, volatile overlay root, the TK5 tree bound read-only, CAP_SYS_ADMIN dropped). MVS 3.8j is 1981 software with no security model worth the name, so the container — not the guest — is the boundary. The visitor surface is one IBM 3279 colour display on VTAM local device 00C0; the MVS operator console is device 0009 3215-C (TK5CONS=intcons) and goes to the Hercules log, never to a 3270 and never on screen. The exhibit logs itself on to TSO at bring-up and rests on the ISPF primary option menu — MVS reaches neither on its own, because a 3270 sends nothing until an AID key is pressed and VTAM says nothing until it is spoken to. No checkpoint: reset is a ~103 s relaunch from the pristine TK5 DASD volumes, which are bound read-only and are byte-identical to a fresh unzip of the pinned archive. See docs/guests/mvs38.md."
   },
   "emulator": {
-    "family": "simh",
-    "version": "Open SIMH V4.1-0, commit a1f57fa3738ed31148d31126ba1a7278ff845c6d",
-    "source": "github.com/open-simh/simh, built as `make vax780` on labhost; staged by scripts/build-guests/tiles/vax43bsd.sh. Media from TUHS (Distributions/UCB/4BSD/4.3BSD) plus the 4.2BSD standalone boot `boot42`; all hashed in assets/mvs38/MANIFEST.sha256",
-    "driver": "vax780"
+    "family": "hercules",
+    "version": "SDL Hyperion Hercules 4.8, the build TK5 bundles for linux/64 (hercules/linux/64/bin/hercules)",
+    "source": "The TK5 turnkey distribution of MVS 3.8j by Rob Prins, mvs-tk5.zip, 498312872 bytes, sha256 710d002843631322810a276dd42c793fda458548dc64d86e2914a62db7425f84; staged by scripts/build-guests/tiles/mvs38.sh and pinned in assets/mvs38/MANIFEST.sha256. The zip carries its own Hercules — Debian's hercules 3.13 will not run this configuration — and ships everything mode 0644, so the builder must chmod +x it.",
+    "driver": "tk5 (conf/tk5.cnf, CPUMODEL 3033, ARCHLVL S/370, MAINSIZE 16, NUMCPU 1)"
   },
   "ui": "text-console",
   "network": {
     "status": "none",
-    "note": "No Ethernet in the frozen device set and no retronet plane. 4.3BSD's networking on the SIMH 780 is unreliable, the DZ11 terminal line is the whole visitor surface, and the station is an island on purpose. The DZ telnet listener lives on the container's own loopback behind --private-network, so it claims no host port and is unreachable from labhost."
+    "note": "No network plane at all. MVS 3.8j has no TCP/IP: its networking was SNA/VTAM and RJE, neither of which reaches anything a visitor could see. Hercules’ own CNSLPORT (3270) and HTTP server (8038) bind the CONTAINER’s loopback behind --private-network, so they claim no host port and are unreachable from labhost."
   },
   "reset": {
     "stationDir": "mvs38",
@@ -185,21 +191,19 @@
     "touch": false,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "N/A — no pointing device. A 4.3BSD tty line carries keystrokes only, and the exhibit publishes no pointer (stream.pointer.present=false).",
-    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb: on the smoke rig, `root` typed at the tty00 `login:` logged in and printed the 1986 motd and the `kernelhive#` prompt (shots/fb4.png). TRAP: no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up.",
-    "fixture": "One 80x24 xterm, DejaVu Sans Mono at -fs 14 (960x576 px, placed +32+96 to centre it), green on black, no scrollbar, filling the middle of an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. At rest it shows two lines of telnet chrome, SIMH's own 'Connected to the VAX 11/780 simulator DZ device, line 0', then the 4.3BSD banner '4.3 BSD UNIX (kernelhive) (tty00)' and a `login:` prompt with the block cursor. Logging in as root (no password, stock 1986) prints the authentic motd — '4.3 BSD UNIX #1: Fri Jun  6 19:55:29 PDT 1986' and 'Would you like to play a game?' — then 'Don't login as root, use su' and the `kernelhive#` prompt. Root's path carries /usr/games (appended to /.login and /.cshrc in the seed), so `fortune`, `rogue` and `adventure` work as typed — stock 4.3BSD leaves the games directory off the path and every one of them answers 'Command not found'. 80x24 is forced, not chosen: 4.3BSD's termcap vt100 is a fixed 24x80 and telnet to a DZ line carries no window-size negotiation, so any other row count makes vi and more draw wrong. TWO THINGS THE LAUNCHER MUST DO or the scene is wrong: pin X input focus (no window manager runs), and send one CR — 4.3BSD's getty prints its banner when it OPENS the line at boot, into the void, and a later telnet connection does not re-trigger it (measured: a passive connect sat silent for 25 s on a healthy line). Bring-up waits on the banner's lit pixels, not on a sleep. resetMode=relaunch with no statefile: kill vax780 by mame.pid, wipe work/, copy the pristine RA81 back in, start again (~55 s). PROVEN 2026-09-20: `echo VISITOR-WAS-HERE > /VISITORWASHERE` in the guest, relaunch, `/VISITORWASHERE not found`, and the seed's sha256 unchanged either side. The seed must be snapshotted from a guest that ran `sync; sync; /etc/halt` — a dirty 4.3BSD filesystem is salvaged at boot and the guest then reboots itself, which looks exactly like a boot loop."
+    "mouse": "N/A — no pointing device. A 3270 is a block-mode terminal: it carries typed fields and AID keys and nothing else, and the exhibit publishes no pointer (stream.pointer.present=false).",
+    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb, and the 3270 AID keys arrive as AID keys, not as text. On the live rig at the ISPF primary option menu: F1 produced ISPF's HELP response, F3 produced END and dropped the session to TSO's `READY` prompt, typing `ISPF` brought the menu back, and Alt+C cleared the screen and unlocked the keyboard. The mapping is not x3270's defaults: it is a keymap committed in stations/mvs38/nspawn-inner.sh and matched key-for-key by the SPA's `tn3270` on-screen keyboard profile. TRAPS: (1) no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up; (2) x3270 finds a keymap ONLY as an X resource — `-keymap <file>` and a file in $HOME/.x3270 both answer `Cannot find keymap`; (3) XK_Pause, the key a desktop tn3270 client would give Clear, is not in guestQuirks.keysymToScancode, so it would have shipped as a silently dead button — Clear rides Alt+C instead.",
+    "fixture": "One IBM 3279-2-E colour display, x3270 with the bitmap font 3270-20 (821x513 px, centred at +101+127), on an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. No menu bar and no keypad: they are host chrome a visitor cannot click (this station publishes no pointer) and they crop the 24x80 screen. THE REST SCENE IS THE ISPF PRIMARY OPTION MENU, logged on as the TSO userid in the station fixture, showing the numbered option list (BROWSE, EDIT, RPF, UTILITIES, FOREGROUND, BATCH, COMMAND, DIALOG TEST, TUTORIAL, TK5) and a status block reading USERID, TIME, TERMINAL 3277, PANEL ISP@PRIM, RELEASE V2.2.000, SYSTEMID TK5R, PROC ISPLOGON. MVS does not get there by itself and neither does a bare client: Hercules paints its own device logo, a 3270's fields on it are PROTECTED so typing only locks the keyboard with X SYSTEM, and VTAM answers nothing until it is spoken to. stations/mvs38/x3270-session.sh therefore drives Clear -> `TSO` -> userid -> password -> the `***` pages through x3270's OWN scripting interface, gating every step on the screen text (Ascii()), never on a sleep, and writes work/logon.ok only when `ISPF primary option menu` is actually on the screen. THE HERCULES DEVICE LOGO IS REPLACED: the stock TK5 herclogo.txt prints $(VERSION), $(HOSTNAME), $(HOSTOS), $(HOSTARCH), $(HOSTNUMCPUS) and $(LPARNAME) at the top of the first screen a 3270 ever sees — the emulator's version and the host's name, kernel and core count, on the museum's own framebuffer. The committed replacement keeps TK5's artwork and credits and only the device number and subchannel. Bring-up gates on TWO things, because neither alone is enough: work/logon.ok for WHICH screen, and a framebuffer lit-pixel floor of 20000 for whether there is a screen at all. MEASURED: ISPF menu 32512 lit px, Hercules logo 27811, a blank 3270 with one message 5747-6575 — and 25765 for the first build of this station, which was a completely blank 3270 under x3270's menu bar and would have passed a naive floor. resetMode=relaunch with no statefile: kill Hercules by mame.pid, wipe work/, rebuild work/tk5 (symlinks to the read-only tree for the inert 254 MB; real copies of dasd/ and the spool dirs, ~1.2 s because /data is ZFS with block cloning active) and start again — ~103 s to the ISPF menu at load 45, of which Hercules exec to `IKT005I TCAS IS INITIALIZED` is 55 s and the scripted logon a further 17 s. PROVEN 2026-09-20: `ALLOC DA(VISITOR.TEST) NEW CATALOG` in the guest, `LISTDS` showed HERC01.VISITOR.TEST on volume TSO003; after a relaunch the same LISTDS answered `DATA SET HERC01.VISITOR.TEST NOT IN CATALOG`, and the seed's DASD volumes hash identical to a fresh unzip of the pinned archive. Idle standby PROVEN too: Hercules SIGSTOPped for 180 s (state T) and SIGCONTed, after which TSO answered `TIME` normally."
   },
   "notes": [
-    "scaffolded from vax43bsd on 2026-09-20; TODO: media, museum, spa"
+    "Record wave 2026-09-20, Lane B (docs/lab/MVS38-WAVE.md): the station that measured the readiness finding behind docs/lab/record-wave/shared-terminal-runtime.sh — a TCP port probe is not a readiness gate — and the first station in the lane to run a mainframe rather than a minicomputer."
   ],
   "demoProgram": {
-    "label": "Log in as root (no password — it is 1986), then look around",
+    "label": "Open the TSO command panel, then ask the mainframe what time it is",
     "lines": [
-      "root",
-      "hostname; who; date",
-      "ls /usr/games"
+      "6"
     ],
-    "runCommand": "fortune",
+    "runCommand": "TIME",
     "perCharMs": 80
   }
 }

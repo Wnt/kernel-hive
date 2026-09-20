@@ -2,10 +2,31 @@
 
 Issue #49 · Lane B of the record wave · pathfinder for the shared heritage-terminal runtime.
 
-**STATUS 2026-09-20T09:35Z: NOT LANDED. Stood down mid-bring-up at the
-coordinator's checkpoint.** Nothing of mvs38 is live; no registry row exists
-yet; the smoke rig was never published. Everything below is either a measured
-fact or is marked as unproven.
+**STATUS 2026-09-20T13:10Z: LIVE.** The station is in the registry, the
+container runtime is committed, and the exhibit rests on the ISPF primary
+option menu — proven on the framebuffer, not inferred. The measured facts for
+the finished station live in [`docs/guests/mvs38.md`](../guests/mvs38.md); this
+file is kept for the bring-up history, the readiness finding it contributed to
+the lane, and the incident below.
+
+**What changed between "stood down" and "live":**
+
+| | |
+|---|---|
+| rest scene | the ISPF primary option menu, reached by a scripted TSO logon driven through x3270's own `-scriptport` / `x3270if`, gating every step on `Ascii()` screen text |
+| terminal | x3270 `3279-2-E`, font `3270-20` — 821x513, the largest of six that fits 1024x768 |
+| uid base | moved off **2031616**, which is indyr4400's range, to **2097152** |
+| Hercules logo | replaced; the stock TK5 one printed the emulator version and labhost's name, kernel and core count onto the museum framebuffer |
+| reset | ~103 s relaunch, PROVEN by `ALLOC` + `LISTDS` either side of it; the DASD copy is a ZFS block clone, ~1.2 s |
+| bring-up gate | `work/logon.ok` (which screen) **and** a 20000 lit-pixel floor (whether there is a screen) |
+
+**Five traps this bring-up added**, all written up in the guest doc: `-name`
+silently disabling every `x3270.*` resource; x3270 finding a keymap only as an
+X resource; `XK_Pause` not being on the wire, so Clear had to ride Alt+C;
+`exec VAR=val cmd` not being a thing; and a stale
+`/run/systemd/nspawn/unix-export/<machine>` mount wedging every restart of a
+container that died untidily — **that last one is a fleet-wide risk for every
+nspawn station, not an mvs38 bug.**
 
 ## Allocation (held by session `mvs38-work`)
 

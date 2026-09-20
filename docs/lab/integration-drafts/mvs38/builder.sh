@@ -5,9 +5,12 @@ WORK="${WORK:-/data/vms/build-mvs38}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/mvs38}"
 TK5_SOURCE="${TK5_SOURCE:-}"
 mkdir -p "$WORK" "$ASSETS/tk5"
-[ -n "$TK5_SOURCE" ] || { echo "set TK5_SOURCE" >&2; exit 2; }
+[ -n "$TK5_SOURCE" ] || {
+  echo "set TK5_SOURCE" >&2
+  exit 2
+}
 case "$TK5_SOURCE" in
-  http://*|https://*) curl -fL --retry 3 -o "$WORK/tk5.archive" "$TK5_SOURCE" ;;
+  http://* | https://*) curl -fL --retry 3 -o "$WORK/tk5.archive" "$TK5_SOURCE" ;;
   *) cp -a "$TK5_SOURCE" "$WORK/tk5.source" ;;
 esac
 cat >&2 <<'EOF'

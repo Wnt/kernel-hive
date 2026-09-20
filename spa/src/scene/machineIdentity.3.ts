@@ -190,9 +190,11 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
     badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
   },
-  // TODO(mvs38): exhibit finish copied from vax43bsd — set the real era cues.
+  // IBM's own machine-room blue-grey on the frame, with the 3279's green
+  // phosphor as the accent — a colour 3270 is not a green screen, but green is
+  // the colour the protected text on it actually was.
   mvs38: {
-    caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
-    badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
+    caseTint: '#9aa3ab', accentTint: '#4fa36c', tintMix: 0.36,
+    badge: 'System/370', spec: '16 MB • MVS 3.8j • 1981', kit: 'workstation',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

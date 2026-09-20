@@ -1305,12 +1305,16 @@ emit vax43bsd \
   "$T/vax43bsd/nspawn-inner.sh" --env-append-file \
   "$T/vax43bsd/station.env.fixture"
 
-# mvs38 (VMID 214) — TODO one line; scaffolded from vax43bsd.
+# mvs38 — IBM MVS 3.8j under Hercules (the TK5 distribution), contained: the
+# emulator + Xvfb + one x3270 on VTAM local terminal 00C0 inside systemd-nspawn;
+# relaunch reset from the pristine TK5 DASD volumes.
 emit mvs38 \
-  --tile mvs38 --udp 54214 --x11 --x11-display :115 --capture x11 --pointer \
+  --tile mvs38 --udp 54214 --x11 --x11-display :114 --capture x11 --pointer \
   none --input-backend x11test --audio off --fps 25 --x11-runtime-file \
-  "$T/mvs38/x11-runtime.sh" --aux-file "$T/mvs38/shared-terminal-runtime.sh" \
-  --aux-file "$T/mvs38/nspawn-inner.sh" --env-append-file \
+  "$T/mvs38/x11-runtime.sh" --aux-file "$T/mvs38/herclogo.txt" --aux-file \
+  "$T/mvs38/x3270-session.sh" --aux-file \
+  "$T/mvs38/shared-terminal-runtime.sh" --aux-file \
+  "$T/mvs38/nspawn-inner.sh" --env-append-file \
   "$T/mvs38/station.env.fixture"
 
 # ---------------------------------------------------------------------------
