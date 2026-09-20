@@ -1311,8 +1311,9 @@ emit multics \
 emit palmos \
   --tile palmos --udp 54207 --x11 --x11-display :207 --capture shm --pointer \
   abs --input-backend mamesock --audio off --fps 60 --x11-runtime-file \
-  "$T/mame-native/x11-runtime.sh" --aux-file "$T/palmos/palmos.keymap" \
-  --env-append-file "$T/palmos/station.env.fixture"
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/palmos/palmos-boot.lua" \
+  --aux-file "$T/palmos/palmos.keymap" --env-append-file \
+  "$T/palmos/station.env.fixture"
 
 # riscos3 (VMID 213) — RISC OS 3.11 on an Acorn Archimedes 310, host-native
 # MAME aa310: ROM-resident OS (bios=311), drawshm frames, ctlsock keys and a

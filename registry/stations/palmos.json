@@ -121,11 +121,14 @@
         "--x11-runtime-file",
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
+        "$T/palmos/palmos-boot.lua",
+        "--aux-file",
         "$T/palmos/palmos.keymap",
         "--env-append-file",
         "$T/palmos/station.env.fixture"
       ],
       "auxFiles": [
+        "streamhost/stations/palmos/palmos-boot.lua",
         "streamhost/stations/palmos/palmos.keymap",
         "streamhost/stations/palmos/station.env.fixture"
       ]
