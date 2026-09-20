@@ -72,6 +72,21 @@ POINTER_METHODS: dict[str, tuple[set[str], tuple[str, ...], tuple[str, ...]]] = 
     # back after every step -- and is bounded by one ADB count == one guest
     # pixel: +-0.73 px on X, +-1.66 px on Y in published pixels.
     "mame-guestram-readloop": ({"mamesock"}, (), ()),
+    # riscos3: the same closed loop again, but the sensor is a real HARDWARE
+    # CURSOR register rather than guest RAM -- the Acorn VIDC1a draws the
+    # pointer sprite at m_crtc_regs[CRTC_HCSR]/[CRTC_VCSR], so the machine
+    # publishes where its own pointer is, exactly as the SGI's VC2 does for
+    # irix. What made it reachable is that those are elements 6 and 14 of a
+    # save_pointer'd u32[16], addressed as byte windows 24 and 56 inside the
+    # item (mame-ctlsock-item-window-sized.patch), and that the Archimedes
+    # keyboard's quadrature emitter had to stop discarding movement magnitude
+    # first (mame-archimedes-kbd-mouse-carry.patch). `absolute: true` is
+    # earned by measurement -- ten spread targets over two laps within
+    # 3 px X / 2 px Y -- and bounded by one quadrature count == 1.84 px
+    # across and 3.96 px down. No ledger token: a MAME-native station has no
+    # device line to carry one; the binding lives in the fixture's
+    # MAME_CTL_PTR_TAGS/CURSOR_ITEMS/CAL_* block.
+    "mame-hwcursor-readloop": ({"mamesock"}, (), ()),
     "x11-xtest": ({"x11test"}, (), ()),
     "simh-light-pen": ({"dbus-abs"}, ("usb-tablet",), ()),
     # nextstep: Previous emulates a SummaGraphics MM 1201 digitiser on the NeXT's

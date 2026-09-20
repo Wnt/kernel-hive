@@ -43,7 +43,7 @@
     "stationsManifestOrder": 90,
     "stationsManifestPrelude": "\n# vax43bsd \u2014 4.3BSD on an Open SIMH VAX-11/780, contained: simulator + Xvfb + one\n# xterm on the DZ11 visitor line inside systemd-nspawn; relaunch reset from a\n# pristine RA81 that was halted clean.\n",
     "bringUpGroup": 8,
-    "bindingOrder": 107,
+    "bindingOrder": 110,
     "bindingPrelude": "",
     "bindingComment": "ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)",
     "goldenOrder": 90
@@ -90,7 +90,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/vax43bsd/vax43bsd_cmd"
     },
-    "bringUpOrder": 107,
+    "bringUpOrder": 110,
     "x11": {
       "display": ":115",
       "geometry": "1024x768x24",

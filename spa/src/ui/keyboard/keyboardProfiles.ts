@@ -267,6 +267,10 @@ export const ctrlEsc = (hint: string): KeyDef => chord('ctrl-esc', 'Ctrl+Esc', X
 
 // Every production streamhost station, EXPLICITLY (test-enforced vs the registry).
 export const OS_FAMILY: Record<string, Family> = {
+  // cpm22: the Kaypro II's keyboard (dumped via mame-keymap.py) is a plain
+  // ASCII typewriter layout — arrows, Ctrl, Caps Lock, a numeric keypad —
+  // with nothing a PC keyboard lacks, so no dedicated family is needed.
+  cpm22: 'generic',
   helenos: 'generic', serenityos: 'generic', sculpt: 'generic', toaruos: 'generic', kolibrios: 'generic',
   tinycore: 'generic', redstar2: 'generic',
   debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
@@ -326,6 +330,11 @@ export const OS_FAMILY: Record<string, Family> = {
   win311: 'win3x', nt351: 'win3x', // NT 3.51 runs the Program Manager shell
   amstradcpc: 'generic',
   mpf2: 'generic', // BASIC prompt only; no shell chords to profile
+  // MSX2 (Philips NMS 8250): MSX-BASIC/MSX-DOS 2 prompt, an otherwise
+  // ordinary PC-ish key layout (the GRAPH/CODE/KANA/dead keys are cosmetic,
+  // not chords a visitor needs) — no dedicated profile until a real MSX
+  // keyboard matrix quirk shows up on the framebuffer.
+  msx2: 'generic',
   freedos: 'dos', msdoswin1: 'dos',
   // SCO Xenix 386 2.3.4: a System V text console, so the linux-tty rows' job
   // exactly (^C/^D/^Z on a PC-101 board) — plus the one thing that IS the
@@ -466,6 +475,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // 8-bit `appleii` rows — see the applegs block in
   // keyboardProfiles.data.exotic.ts for why Open Apple changes job here.
   apple2gs: 'applegs',
+  // riscos3 (Acorn Archimedes, MAME aa310) is a mouse-driven desktop like
+  // nextstep/medley above: the Filer and its apps live on Select/Menu/Adjust
+  // clicks, and the generic rows cover the plain US-ish Acorn layout MAME's
+  // aa310 keyboard MCU exposes for typing into a window.
+  riscos3: 'generic',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
