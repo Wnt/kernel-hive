@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "id": "mvs38",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 86,
+        "prelude": "",
+        "value": {
+          "key": "mvs38",
+          "script": "tiles/vax43bsd.sh",
+          "outputDir": "VAX43BSD",
+          "class": "terminal",
+          "estimated": "~25m",
+          "automation": "full",
+          "produces": "assets/mvs38/{bin/vax780,media/{43.tap,bsd43-ra81.dsk,boot42},rootfs} — Open SIMH's VAX-11/780 simulator, the 4.3BSD distribution tape built from the TUHS files, an RA81 with 4.3BSD installed and HALTED CLEAN, and the container rootfs (relaunch reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/mvs38",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54214,
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: Open SIMH's VAX-11/780 simulator runs 4.3BSD inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is DZ11 line 0 (tty00) on the CONTAINER's loopback port 10023, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/mvs38/mame.pid) -n telnet 127.0.0.1 10023` — and only while no visitor is attached. mame.pid is the SIMH vax780 HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The simulator console is NOT the museum surface: it goes to work/emulator.log and carries the `sim>` escape prompt. Reset=relaunch: kill vax780 by mame.pid, wipe work/, copy the pristine RA81 back and start again (~55 s to the login prompt). Launcher stations/mvs38/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/vax43bsd (MANIFEST.sha256 pins them)."
+    }
+  },
+  "render": {
+    "signalOrder": 93,
+    "stationsManifestOrder": 91,
+    "stationsManifestPrelude": "\n# mvs38 (VMID 214) — TODO one line; scaffolded from vax43bsd.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 111,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)",
+    "goldenOrder": 91
+  },
+  "stationDir": "mvs38",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54214,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "x11test",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none — a 1986 Berkeley timesharing terminal has no pointing device, and 4.3BSD's tty line carries none. The x11test backend is present for KEYS only (SH_X11TEST_KEYS=1).",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 214
+  },
+  "guestDoc": "docs/guests/mvs38.md",
+  "credentialsRef": "guest/mvs38",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "mvs38",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":115",
+      "SH_PORT": "54214",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/mvs38/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/mvs38/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/mvs38/mvs38_cmd"
+    },
+    "bringUpOrder": 111,
+    "x11": {
+      "display": ":115",
+      "geometry": "1024x768x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/mvs38/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "mvs38",
+        "--udp",
+        "54214",
+        "--x11",
+        "--x11-display",
+        ":115",
+        "--capture",
+        "x11",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/mvs38/x11-runtime.sh",
+        "--aux-file",
+        "$T/mvs38/shared-terminal-runtime.sh",
+        "--aux-file",
+        "$T/mvs38/nspawn-inner.sh",
+        "--env-append-file",
+        "$T/mvs38/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/mvs38/nspawn-inner.sh",
+        "streamhost/stations/mvs38/shared-terminal-runtime.sh",
+        "streamhost/stations/mvs38/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#67828F",
+    "eraLabel": "TODO(vax43bsd): 1986 · 4.3BSD — Berkeley Unix on the VAX"
+  },
+  "museum": {
+    "id": "mvs38",
+    "displayName": "TODO(vax43bsd): 4.3BSD",
+    "year": 1986,
+    "lineage": "TODO(vax43bsd): Research Unix → 1BSD (Berkeley, 1978) → 4.2BSD (1983, sockets and TCP/IP) → 4.3BSD → the BSDs",
+    "arch": "DEC VAX-11/780 — the 32-bit minicomputer Berkeley Unix was written on: 8 MiB of memory, an RA81 disk on a UDA50 controller, a TS11 tape drive and a DZ11 eight-line terminal multiplexer with a VT100 on line 0",
+    "ramMB": 8,
+    "era": "1980s",
+    "accent": "#67828F",
+    "eraSoftware": [
+      "the C shell and the Bourne shell",
+      "vi and ex, Bill Joy's editors",
+      "the 4.3BSD socket API — socket(2), bind(2), connect(2)",
+      "the TCP/IP stack and its tools: netstat, ping, rwho, telnet, ftp",
+      "the portable C compiler and dbx",
+      "nroff, troff and the -ms macros",
+      "sendmail and named, both born here",
+      "/usr/games — adventure, rogue, chess, fortune, hangman, doctor, ching"
+    ],
+    "periodBrowser": "none — 4.3BSD predates the web by three years; its network was ARPANET-style TCP/IP, and this exhibit is deliberately not networked at all",
+    "iconicApps": [
+      "vi",
+      "the C shell",
+      "netstat",
+      "man",
+      "rogue",
+      "fortune"
+    ],
+    "blurb": "TODO(vax43bsd): The Berkeley Unix that the internet was built on. 4.2BSD had given Unix the socket API and a working TCP/IP stack in 1983; 4.3BSD, released in June 1986, is the version that made it fast and ordinary — the release most of the ARPANET ran, the one every workstation vendor licensed, and the direct ancestor of FreeBSD, NetBSD, OpenBSD and of the sockets layer in Windows and macOS. It is also the everyday environment a 1986 computer-science department actually sat in front of: a VT100 on a DZ11 line into a VAX-11/780 in a machine room, vi, cc, man, and a games directory nobody admitted to using.",
+    "notes": "TODO(vax43bsd): Tier 3, EMULATED but CONTAINED and with no checkpoint: Open SIMH's VAX-11/780 simulator, the station's Xvfb and the visitor's xterm all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2490368, volatile overlay root, assets bound read-only, CAP_SYS_ADMIN dropped). Root in 4.3BSD has no password, which is stock 1986 — the container, not the guest, is the security boundary. The visitor surface is one 80x24 xterm on DZ11 line 0 (tty00); the simulator console is never on screen. SIMH answers its own standalone-boot prompt from the ini file, so the simulator is the single supervised process and the station needs no pty/expect supervisor — the finding that unblocked mvs38, multics and its (docs/lab/record-wave/shared-terminal-runtime.sh, which this station proved). No checkpoint: reset is a ~55 s relaunch from a pristine RA81 that was snapshotted from a guest halted with `sync; sync; /etc/halt`. See docs/guests/mvs38.md."
+  },
+  "emulator": {
+    "family": "simh",
+    "version": "Open SIMH V4.1-0, commit a1f57fa3738ed31148d31126ba1a7278ff845c6d",
+    "source": "github.com/open-simh/simh, built as `make vax780` on labhost; staged by scripts/build-guests/tiles/vax43bsd.sh. Media from TUHS (Distributions/UCB/4BSD/4.3BSD) plus the 4.2BSD standalone boot `boot42`; all hashed in assets/mvs38/MANIFEST.sha256",
+    "driver": "vax780"
+  },
+  "ui": "text-console",
+  "network": {
+    "status": "none",
+    "note": "No Ethernet in the frozen device set and no retronet plane. 4.3BSD's networking on the SIMH 780 is unreliable, the DZ11 terminal line is the whole visitor surface, and the station is an island on purpose. The DZ telnet listener lives on the container's own loopback behind --private-network, so it claims no host port and is unreachable from labhost."
+  },
+  "reset": {
+    "stationDir": "mvs38",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A — no pointing device. A 4.3BSD tty line carries keystrokes only, and the exhibit publishes no pointer (stream.pointer.present=false).",
+    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb: on the smoke rig, `root` typed at the tty00 `login:` logged in and printed the 1986 motd and the `kernelhive#` prompt (shots/fb4.png). TRAP: no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up.",
+    "fixture": "One 80x24 xterm, DejaVu Sans Mono at -fs 14 (960x576 px, placed +32+96 to centre it), green on black, no scrollbar, filling the middle of an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. At rest it shows two lines of telnet chrome, SIMH's own 'Connected to the VAX 11/780 simulator DZ device, line 0', then the 4.3BSD banner '4.3 BSD UNIX (kernelhive) (tty00)' and a `login:` prompt with the block cursor. Logging in as root (no password, stock 1986) prints the authentic motd — '4.3 BSD UNIX #1: Fri Jun  6 19:55:29 PDT 1986' and 'Would you like to play a game?' — then 'Don't login as root, use su' and the `kernelhive#` prompt. Root's path carries /usr/games (appended to /.login and /.cshrc in the seed), so `fortune`, `rogue` and `adventure` work as typed — stock 4.3BSD leaves the games directory off the path and every one of them answers 'Command not found'. 80x24 is forced, not chosen: 4.3BSD's termcap vt100 is a fixed 24x80 and telnet to a DZ line carries no window-size negotiation, so any other row count makes vi and more draw wrong. TWO THINGS THE LAUNCHER MUST DO or the scene is wrong: pin X input focus (no window manager runs), and send one CR — 4.3BSD's getty prints its banner when it OPENS the line at boot, into the void, and a later telnet connection does not re-trigger it (measured: a passive connect sat silent for 25 s on a healthy line). Bring-up waits on the banner's lit pixels, not on a sleep. resetMode=relaunch with no statefile: kill vax780 by mame.pid, wipe work/, copy the pristine RA81 back in, start again (~55 s). PROVEN 2026-09-20: `echo VISITOR-WAS-HERE > /VISITORWASHERE` in the guest, relaunch, `/VISITORWASHERE not found`, and the seed's sha256 unchanged either side. The seed must be snapshotted from a guest that ran `sync; sync; /etc/halt` — a dirty 4.3BSD filesystem is salvaged at boot and the guest then reboots itself, which looks exactly like a boot loop."
+  },
+  "notes": [
+    "scaffolded from vax43bsd on 2026-09-20; TODO: media, museum, spa"
+  ],
+  "demoProgram": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
+    "perCharMs": 80
+  }
+}

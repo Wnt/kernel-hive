@@ -190,4 +190,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
     badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
   },
+  // TODO(mvs38): exhibit finish copied from vax43bsd — set the real era cues.
+  mvs38: {
+    caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
+    badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

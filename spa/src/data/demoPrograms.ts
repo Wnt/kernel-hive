@@ -161,6 +161,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 260
   },
+  "mvs38": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
+    "perCharMs": 80
+  },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
     "lines": [

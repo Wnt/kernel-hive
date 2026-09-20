@@ -956,6 +956,24 @@
       "udp_port": 54211,
       "notes": "HOST-NATIVE (native from day one): MAME 0.289's nms8250 (Philips NMS 8250, MSX2) runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, keys ctlsock keymap, audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch (checkpoint TBD — see docs/lab/MSX2-WAVE.md)."
     },
+    "mvs38": {
+      "dir": "/data/vms/streamhost/stations/mvs38",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54214,
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: Open SIMH's VAX-11/780 simulator runs 4.3BSD inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is DZ11 line 0 (tty00) on the CONTAINER's loopback port 10023, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/mvs38/mame.pid) -n telnet 127.0.0.1 10023` — and only while no visitor is attached. mame.pid is the SIMH vax780 HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The simulator console is NOT the museum surface: it goes to work/emulator.log and carries the `sim>` escape prompt. Reset=relaunch: kill vax780 by mame.pid, wipe work/, copy the pristine RA81 back and start again (~55 s to the login prompt). Launcher stations/mvs38/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/vax43bsd (MANIFEST.sha256 pins them)."
+    },
     "netbsd14": {
       "dir": "/data/vms/streamhost/stations/netbsd14",
       "qmp": "/data/vms/streamhost/stations/netbsd14/qmp.sock",
