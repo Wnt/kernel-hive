@@ -180,10 +180,22 @@ boot banner still above it — the banner is a one-shot and scrolls away, so
 the golden captures the scene deliberately right after boot, not after it
 has scrolled off.
 
-TODO: golden restore-proof frame filename(s) — the coordinator is baking
-the golden now.
+Baked 2026-09-20 on `/data/vms/sandbox/linux012-race/riggolden` with the
+SAME device set as the launcher (kernel floppy + both IDE disks, CHS
+64/16/32, `-m 16 -smp 1`, `pcspk-audiodev=snd0`, KVM). The vmstate lands in
+`boot.qcow2`; all three qcow2s carry the `golden` tag, and the launcher
+tests for it on `hda.qcow2`.
 
-TODO: keyboard-proof frame filename — same bake.
+Fixture scene: `race/golden/a2-scene.png` — the full kernel banner
+(including `Swap device ok: 1023 pages`) with `cat /etc/passwd` run once
+below it, which also scrolls the SeaBIOS/iPXE lines off the top.
+
+- restore proof: `race/golden/b2-restore.png` — a typed
+  `echo KEYBOARD PROOF linux012 2026-09-20` line vanished and the fixture
+  scene came back.
+- keyboard proof: `race/golden/b1-keyproof.png` — that whole line typed at
+  the fleet floor 40/40 and echoed back by the shell with no dropped
+  characters.
 
 Unproven: pointer (none exists — text console, no mouse driver), retronet
 (does not exist for this kernel).

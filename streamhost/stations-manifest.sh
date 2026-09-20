@@ -1327,7 +1327,7 @@ emit vax43bsd \
   "$T/vax43bsd/nspawn-inner.sh" --env-append-file \
   "$T/vax43bsd/station.env.fixture"
 
-# linux012 (VMID 201) — TODO one line; scaffolded from minix2.
+# linux012 (VMID 205) — Linux 0.12, January 1992: boots its original kernel floppy, roots from IDE.
 emit linux012 \
   --tile linux012 --vmid 205 --udp 54205 --pointer none --audio on --fps 30 \
   --launcher-file "$T/linux012/qemu-streamhost.sh" --env-append-file \

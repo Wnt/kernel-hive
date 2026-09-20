@@ -810,7 +810,7 @@
       "exec_subshell": null,
       "console": "fb",
       "udp_port": 54205,
-      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) — Minix 2 has no in-guest network in this device set"
+      "notes": "no exec channel: use 'labctl sh' (blind, QMP keyboard) — Linux 0.12 predates every Linux networking stack (the first was 0.96b, mid-1992), so there is no in-guest network to reach"
     },
     "lisa": {
       "dir": "/data/vms/streamhost/stations/lisa",

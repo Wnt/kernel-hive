@@ -124,13 +124,13 @@ const DEMO_PROGRAMS = {
     "perCharMs": 80
   },
   "linux012": {
-    "label": "Read the operating system's own source",
+    "label": "Look around the fourth month of Linux",
     "lines": [
-      "ls /usr/src",
-      "ls /usr/src/kernel",
-      "head -40 /usr/src/kernel/proc.c"
+      "ls /",
+      "cat /etc/passwd",
+      "ls /usr/bin"
     ],
-    "runCommand": "head -40 /usr/src/kernel/proc.c",
+    "runCommand": "cat /etc/passwd",
     "perCharMs": 40
   },
   "medley": {
