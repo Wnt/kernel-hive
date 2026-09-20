@@ -1,0 +1,98 @@
+MAME ctlsock: an absolute ioport field needs no accumulator, no cursor
+readback and no dead reckoning -- state it directly.
+
+WHY
+
+Every existing pointer route the ctlsock module drives (MOVEA's closed-loop
+convergence via cursor-register readback, or its open-loop dead-reckoning
+fallback; the abs-ram route that pokes a guest's low-memory mouse globals) is
+built for a RELATIVE input device: a guest reads a delta and integrates it
+itself, or keeps its own belief of the pointer in RAM the module can read
+back and correct against.
+
+Palm OS's pen digitizer is neither. MAME's palm.cpp models it as two true
+absolute analog ioport fields -- IPT_LIGHTGUN_X/Y, PORT_MINMAX(0,0xa0) -- plus
+a digital "Pen Button" whose PORT_CHANGED_MEMBER latches whatever the X/Y
+fields currently read. The field's CURRENT VALUE *is* the pen position; there
+is no delta to integrate and no on-screen cursor sprite to read back and
+converge against (there is no cursor at all -- the pen either touches or it
+doesn't). Every existing route either does nothing (no cursor items exist to
+read) or actively fights the guest (an accumulator's running total gets
+clamped to 0..0xa0 by set_value() on the very first write past a few counts,
+so the pen never reaches most of the digitizer).
+
+WHAT IT ADDS
+
+  MAME_CTL_ABS   1 => MOVEA writes m_x_field/m_y_field DIRECTLY, scaled from
+                 the published surface (MAME_CTL_SCREEN) into each field's
+                 own PORT_MINMAX range (read via ioport_field::minval()/
+                 maxval(), so nothing here is Palm-specific)   [unset]
+
+Applies AFTER mame-ctlsock.patch and mame-ctlsock-ptr-tags.patch (the two
+patches that bind m_x_field/m_y_field and parse MAME_CTL_SCREEN into
+m_surf_w/m_surf_h -- this patch only adds the short-circuit in movea_target()
+that fires when MAME_CTL_ABS is set and both fields are bound).
+
+CONTAINMENT
+
+Unset reproduces every existing caller byte for byte: m_abs_fields defaults
+false, and the new branch in movea_target() is a no-op until MAME_CTL_ABS=1
+AND both ptr-tags fields are bound. No save items are added, so the
+savestate signature is unchanged and no golden is orphaned.
+
+MEASURED: see docs/lab/PALMOS-WAVE.md for the palmiii five-target pointer
+proof this patch made possible.
+
+--- a/src/osd/modules/ctlsock/ctlsock.cpp
++++ b/src/osd/modules/ctlsock/ctlsock.cpp
+@@ -416,6 +416,16 @@
+ 			m_btn_name[1] = "Right Button";
+ 			m_btn_name[2] = "Middle Button";
+ 		}
++		// Absolute-field bind: some machines (Palm's IPT_LIGHTGUN_X/Y pen
++		// digitizer) expose the pointer as a true absolute analog ioport
++		// field, not a relative counter a guest driver differences. For
++		// those MAME_CTL_ABS=1 makes MOVEA write the target directly into
++		// the already-bound m_x_field/m_y_field (scaled from the published
++		// surface into the field's own PORT_MINMAX range via minval()/
++		// maxval()) instead of running the dead-reckoning engine above --
++		// there is no cursor register to read back and nothing to converge.
++		// Unset reproduces every existing caller unchanged.
++		m_abs_fields = env_long("MAME_CTL_ABS", 0) != 0;
+ 		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
+ 		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
+ 		m_tail_path = env_str("MAME_CTL_CMD_FILE");
+@@ -1872,6 +1882,25 @@
+ 	{
+ 		x = std::max(0L, std::min(m_surf_w - 1, x));
+ 		y = std::max(0L, std::min(m_surf_h - 1, y));
++
++		if (m_abs_fields && m_x_field && m_y_field)
++		{
++			// direct absolute write: the published pixel maps linearly onto
++			// each field's own declared range (e.g. Palm's Pen X/Y, 0..0xa0),
++			// no accumulator, no cursor readback, no dead reckoning -- this
++			// machine's pointer field IS the position, not a delta of it.
++			long const fx_max = long(m_x_field->maxval());
++			long const fy_max = long(m_y_field->maxval());
++			long const fx = (m_surf_w > 1) ? std::lround(double(x) * fx_max / double(m_surf_w - 1)) : 0;
++			long const fy = (m_surf_h > 1) ? std::lround(double(y) * fy_max / double(m_surf_h - 1)) : 0;
++			m_x_field->set_value(u32(fx));
++			m_y_field->set_value(u32(fy));
++			trace("verb MOVEA(abs) seq=%s tgt=%d,%d field=%d,%d", seq, int(x), int(y), int(fx), int(fy));
++			hist_apply(ack);
++			reply_ok(ack);
++			return;
++		}
++
+ 		hist_apply(ack);
+ 		reply_ok(ack);  // MOVEA acks on target-accept; completion is EV MOVEA
+ 		trace("verb MOVEA seq=%s tgt=%d,%d", seq, int(x), int(y));
+@@ -3110,6 +3139,7 @@
+ 	ioport_field *m_btn_field[3] = { nullptr, nullptr, nullptr };
+ 	ioport_field *m_x_field = nullptr;
+ 	ioport_field *m_y_field = nullptr;
++	bool m_abs_fields = false;               // MAME_CTL_ABS: direct field write, no dead reckoning
+ 	std::unordered_map<std::string, ioport_port *> m_port_cache;
+ 
+ 	long m_mx = 0, m_my = 0;                 // pointer accumulators (seed rules above)

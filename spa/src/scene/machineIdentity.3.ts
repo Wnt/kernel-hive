@@ -165,4 +165,9 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
     badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
+  // TODO(palmos): exhibit finish copied from postmarketos — set the real era cues.
+  palmos: {
+    caseTint: '#4a4d4f', accentTint: '#607985', tintMix: 0.55,
+    badge: 'MODULAR 2017', spec: 'REPAIRABLE', kit: 'mobile',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

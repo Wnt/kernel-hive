@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "id": "palmos",
+  "era_year": 1998,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 85,
+        "prelude": "",
+        "value": {
+          "key": "palmos",
+          "script": "tiles/palmos.sh",
+          "outputDir": "native/palmos",
+          "class": "retro",
+          "estimated": "~4-8m",
+          "automation": "full",
+          "produces": "palmos MAME romset (palmiii.zip) + golden savestate",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/palmos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54207,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmiii runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's new absolute-field bind (MAME_CTL_ABS=1), audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/palmos/sta."
+    }
+  },
+  "render": {
+    "signalOrder": 92,
+    "stationsManifestOrder": 90,
+    "stationsManifestPrelude": "\n# palmos (slot 207) — Palm III, host-native MAME palmiii, Palm OS 3.3 (French); palmos wave 2026-09-20.\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 107,
+    "bindingPrelude": "",
+    "goldenOrder": 90,
+    "actionMapOrder": 52
+  },
+  "stationDir": "palmos",
+  "lifecycle": "production",
+  "listing": {
+    "state": "hidden",
+    "since": "2026-09-20",
+    "reason": "Dark launch: palmos wave 2026-09-20 landed the MAME palmiii driver, a new absolute-ioport-field pointer route (mame-ctlsock-abs-fields.patch), and a byte-verified Palm OS 3.3 French ROM, but the golden scene is still the Palm OS Welcome/digitizer-setup flow, not the Applications Launcher (no byte-exact English ROM was found inside this wave's budget; see docs/lab/PALMOS-WAVE.md). Promote once a golden stream reaches the Launcher scene and re-checks the pointer proof against it."
+  },
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54207,
+    "fps": 60,
+    "audio": false,
+    "touch": true,
+    "pointer": {
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "palm-pen-digitizer",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 207
+  },
+  "guestDoc": "docs/guests/palmos.md",
+  "credentialsRef": "guest/palmos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "palmos",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":207",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/palmos/palmos_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/palmos/fb.shm",
+      "SH_PORT": "54207",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/palmos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/palmos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 207,
+    "bringUpOrder": 107,
+    "x11": {
+      "display": ":207",
+      "geometry": "160x220x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "palmos",
+        "--udp",
+        "54207",
+        "--x11",
+        "--x11-display",
+        ":207",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/palmos/palmos.keymap",
+        "--env-append-file",
+        "$T/palmos/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/palmos/palmos.keymap",
+        "streamhost/stations/palmos/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "touch-phone",
+    "transport": "streamhost",
+    "accentColor": "#65755b",
+    "eraLabel": "1998 · Palm III — Palm OS 3.3"
+  },
+  "museum": {
+    "id": "palmos",
+    "displayName": "Palm III (Palm OS 3.3, French)",
+    "year": 1998,
+    "lineage": "PalmPilot / Palm OS",
+    "arch": "Motorola MC68328 (\"DragonBall\"), 16.58 MHz",
+    "ramMB": 0,
+    "ramKB": 512,
+    "era": "1990s",
+    "accent": "#65755b",
+    "eraSoftware": [
+      "Applications Launcher",
+      "Date Book",
+      "Address Book",
+      "To Do List",
+      "Memo Pad",
+      "Calculator",
+      "Graffiti"
+    ],
+    "periodBrowser": "none",
+    "iconicApps": [
+      "Date Book",
+      "Memo Pad",
+      "Graffiti"
+    ],
+    "blurb": "The pocket organizer that made the stylus practical — instant-on PIM apps, Graffiti handwriting and a software ecosystem built for a few seconds of attention at a time.",
+    "notes": "Host-native station: MAME 0.289's palmiii driver (src/mame/palm/palm.cpp, Palm III, MC68328 \"DragonBall\") runs on the host -- drawshm frames, ctlsock pen input, no QEMU and no guest OS. ROM: palmos33-fr-iii.rom (2 097 152 B), byte-exact match (SHA-1 c7c90df814d4f97958194e0bc28c595e967a4529) for the palmos33-fr-iii.rom BIOS option the driver defines; sourced as Palm-III-3.3-fr.rom from palmdb.net's palm-roms-complete collection. No byte-exact English Palm OS 3.x ROM for this driver was found inside the wave's time budget -- palmdb's own Palm-III-3.3-en.rom is a different (1 343 488 B) dump that does not match any BIOS option this MAME driver defines -- so French is the honest first-release locale; see docs/lab/PALMOS-WAVE.md. Pointer: Palm's pen is IPT_LIGHTGUN_X/Y, a true ABSOLUTE analog ioport field (PORT_MINMAX(0,0xa0)), not a relative mouse like every other MAME station -- mame-ctlsock-abs-fields.patch (new this wave) makes MOVEA write the field directly, scaled from the published 160x220 surface into the field's own range, no accumulator and no cursor readback."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/palmos.sh",
+    "driver": "palmiii"
+  },
+  "ui": "mobile",
+  "reset": {
+    "stationDir": "palmos",
+    "pointer": "abs",
+    "touch": true,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "OPEN — see docs/lab/PALMOS-WAVE.md for the measured five-target accuracy on this wave's rig",
+    "keyboard": "PARTIAL — the driver's seven hardware buttons (Power, Up, Down, and four app-launch buttons) are bound over ctlsock and reachable from a physical keyboard (D/Y/H/F/G/J/K); on-screen-keyboard labels for them are an OPEN spa-stream item, see docs/lab/PALMOS-WAVE.md",
+    "fixture": "Palm III, MAME 0.289 palmiii driver, Palm OS 3.3 (French) BIOS, host-native (drawshm) on the published 160x220 surface (the driver's own visarea, no letterbox). See docs/lab/PALMOS-WAVE.md for the golden scene and its proof."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from postmarketos on 2026-09-20 (registry shape/tuple only -- postmarketos is QEMU/phoneDock, palmos is host-native MAME); runtime, stream, museum and emulator blocks rewritten for the palmiii driver. See docs/lab/PALMOS-WAVE.md."
+  ]
+}

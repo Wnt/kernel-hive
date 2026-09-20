@@ -1136,6 +1136,24 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "palmos": {
+      "dir": "/data/vms/streamhost/stations/palmos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54207,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmiii runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's new absolute-field bind (MAME_CTL_ABS=1), audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/palmos/sta."
+    },
     "pcbsd": {
       "dir": "/data/vms/streamhost/stations/pcbsd",
       "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",
