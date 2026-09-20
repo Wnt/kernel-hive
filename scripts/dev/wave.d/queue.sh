@@ -102,7 +102,13 @@ mirror_release() {
   # permissions wedge), and a mismatch here is exactly the bug this guards
   # against — it must be LOUD, not another silent success.
   local seen
-  seen="$(kh-claim who landing window 2>&1)"
+  # `kh-claim who` EXITS 1 when the resource is unclaimed -- which is the
+  # success case here. labrun runs this script under `set -euo pipefail`, so
+  # an unguarded command substitution aborted mirror_release before the
+  # holder dir was removed, orphaning the window on every landing (regression
+  # introduced with this check; caught 2026-09-20 after three stuck windows).
+  # The selftest missed it because it runs queue.sh directly, not via labrun.
+  seen="$(kh-claim who landing window 2>&1 || true)"
   case "$seen" in
     unclaimed) : ;;
     *) warn "kh-claim MIRROR still shows landing/window as '$seen' after release — fix by hand: kh-claim release landing window --force" ;;

@@ -1315,6 +1315,13 @@ emit multics \
   "$T/multics/nspawn-inner.sh" --env-append-file \
   "$T/multics/station.env.fixture"
 
+# palmos (slot 207) — PalmPilot Professional, host-native MAME palmpro, Palm OS 2.0 Professional (English); palmos wave 2026-09-20.
+emit palmos \
+  --tile palmos --udp 54207 --x11 --x11-display :207 --capture shm --pointer \
+  abs --input-backend mamesock --audio off --fps 60 --x11-runtime-file \
+  "$T/mame-native/x11-runtime.sh" --aux-file "$T/palmos/palmos-boot.lua" \
+  --env-append-file "$T/palmos/station.env.fixture"
+
 # riscos3 (VMID 213) — RISC OS 3.11 on an Acorn Archimedes 310, host-native
 # MAME aa310: ROM-resident OS (bios=311), drawshm frames, ctlsock keys and a
 # closed-loop absolute pointer read from the VIDC's own cursor registers.

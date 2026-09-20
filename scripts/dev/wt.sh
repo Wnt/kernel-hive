@@ -81,18 +81,12 @@ own_box_git() {
   fi
 }
 
-# processes whose cwd or exe or open files sit under a sandbox dir (box side)
+# processes whose cwd sits under a sandbox dir (box side), excluding the
+# check's own ancestry (scripts/dev/wt-live-pids.sh — the normal workflow
+# cd's into $repo right after `wt.sh new`, so this check's own labrun/ssh
+# chain would otherwise cwd-match the very sandbox it is asked about).
 live_pids() { # name
-  "$LABRUN" -- "$1" <<'EOF'
-d="/data/vms/sandbox/$1"
-for p in /proc/[0-9]*; do
-  cwd=$(readlink "$p/cwd" 2>/dev/null) || continue
-  case "$cwd" in "$d"|"$d"/*) echo "${p#/proc/} $(readlink "$p/exe" 2>/dev/null) cwd=$cwd"; continue;; esac
-  if grep -qs -- "$d" "$p/cmdline" 2>/dev/null; then
-    case "$(readlink "$p/exe" 2>/dev/null)" in *sshd*|*/bash|*/grep) ;; *) echo "${p#/proc/} $(readlink "$p/exe" 2>/dev/null) cmdline";; esac
-  fi
-done
-EOF
+  "$LABRUN" "$SCRIPT_DIR/wt-live-pids.sh" "$SANDBOX" "$1"
 }
 
 cmd_new() {
@@ -213,18 +207,36 @@ _remove_one() { # name force
       echo "wt.sh: REFUSED $name — uncommitted changes in $repo" >&2
       return 1
     fi
-    git -C "$BOX_REPO" worktree remove --force "$repo" 2>/dev/null || rm -rf "$repo"
-    git -C "$BOX_REPO" branch -D "$name" >/dev/null 2>&1 || true
   fi
-  # the sandbox dir may hold root-owned clone state; every clone kill already
-  # went through clone-guard, so what is left is files.
-  KH_SESSION="$name" "$LABRUN" -- "$name" <<'EOF'
+  # Release the claim and wipe the box-side sandbox dir BEFORE any local
+  # deletion. $LABRUN may resolve to a copy of labrun living inside $repo
+  # (the normal workflow is `cd $repo` right after `wt.sh new`, so wt.sh is
+  # commonly invoked as $repo/scripts/dev/wt.sh) — deleting $repo first
+  # deletes that copy out from under this call, labrun fails with
+  # "No such file or directory" before it ever reaches kh-claim, and the
+  # claim is orphaned while wt.sh still reports "removed" (2026-09-20:
+  # reproduced live — exit 0, claim left `held`). The sandbox dir may also
+  # hold root-owned clone state; every clone kill already went through
+  # clone-guard, so what is left here is files.
+  local teardown_ok=1
+  KH_SESSION="$name" "$LABRUN" -- "$name" <<'EOF' || teardown_ok=0
 export KH_SESSION="$1"
-rm -rf "/data/vms/sandbox/$1"
-kh-claim release sandbox "$1" --force >/dev/null 2>&1 || true
+rc=0
+kh-claim release sandbox "$1" --force || rc=1
+rm -rf "/data/vms/sandbox/$1" || rc=1
+exit "$rc"
 EOF
+  if [ -d "$repo" ]; then
+    git -C "$BOX_REPO" worktree remove --force "$repo" 2>/dev/null || rm -rf "$repo"
+  fi
+  git -C "$BOX_REPO" branch -D "$name" >/dev/null 2>&1 || true
   git -C "$BOX_REPO" worktree prune
-  echo "wt.sh: removed $name   (next task? wt.sh new <name> — the shared clone is land-only)"
+  if [ "$teardown_ok" = 1 ]; then
+    echo "wt.sh: removed $name   (next task? wt.sh new <name> — the shared clone is land-only)"
+  else
+    echo "wt.sh: $name — worktree removed locally but the BOX-SIDE teardown (claim release / sandbox wipe) FAILED — the claim may be orphaned. Check: ssh lab 'kh-claim ls | grep $name'" >&2
+    return 1
+  fi
 }
 
 cmd_rm() {

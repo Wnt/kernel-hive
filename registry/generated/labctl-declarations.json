@@ -1262,6 +1262,24 @@
       "udp_port": 54108,
       "notes": "warpd agent on serial chardev unix:/data/vms/streamhost/stations/os2warp/serial.sock (no TCP port); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "palmos": {
+      "dir": "/data/vms/streamhost/stations/palmos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54207,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmpro runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's absolute-field bind (MAME_CTL_ABS=1), no audio. Launcher stations/mame-native/x11-runtime.sh. NO CHECKPOINT: restoring a savestate in a fresh process segfaults inside zlib (heap corruption in palmpro's setup, no contained fix -- see docs/lab/PALMOS-WAVE.md), so the scene is reached by driving the machine: palmos-boot.lua taps through the unskippable digitizer calibration and opens the Applications Launcher. reset=relaunch therefore replays that cold boot."
+    },
     "pcbsd": {
       "dir": "/data/vms/streamhost/stations/pcbsd",
       "qmp": "/data/vms/streamhost/stations/pcbsd/qmp.sock",

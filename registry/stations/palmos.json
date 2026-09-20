@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "id": "palmos",
+  "era_year": 1997,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 85,
+        "prelude": "",
+        "value": {
+          "key": "palmos",
+          "script": "tiles/palmos.sh",
+          "outputDir": "native/palmos",
+          "class": "retro",
+          "estimated": "~4-8m",
+          "automation": "full",
+          "produces": "palmos MAME romset (palmpro: Palm OS 2.0 Professional ROM) + scripted boot scene",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/palmos",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54207,
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmpro runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's absolute-field bind (MAME_CTL_ABS=1), no audio. Launcher stations/mame-native/x11-runtime.sh. NO CHECKPOINT: restoring a savestate in a fresh process segfaults inside zlib (heap corruption in palmpro's setup, no contained fix -- see docs/lab/PALMOS-WAVE.md), so the scene is reached by driving the machine: palmos-boot.lua taps through the unskippable digitizer calibration and opens the Applications Launcher. reset=relaunch therefore replays that cold boot."
+    }
+  },
+  "render": {
+    "signalOrder": 92,
+    "stationsManifestOrder": 90,
+    "stationsManifestPrelude": "\n# palmos (slot 207) \u2014 PalmPilot Professional, host-native MAME palmpro, Palm OS 2.0 Professional (English); palmos wave 2026-09-20.\n",
+    "bringUpGroup": 5,
+    "bindingOrder": 118,
+    "bindingPrelude": "",
+    "goldenOrder": 90,
+    "actionMapOrder": 52
+  },
+  "stationDir": "palmos",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54207,
+    "fps": 60,
+    "audio": false,
+    "touch": true,
+    "pointer": {
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "mame-ioport",
+      "absolute": true,
+      "present": true,
+      "device": "palm-pen-digitizer",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 207
+  },
+  "guestDoc": "docs/guests/palmos.md",
+  "credentialsRef": "guest/palmos",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "palmos",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":207",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/palmos/palmos_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/palmos/fb.shm",
+      "SH_PORT": "54207",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/palmos/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/palmos/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 207,
+    "bringUpOrder": 118,
+    "x11": {
+      "display": ":207",
+      "geometry": "160x220x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "palmos",
+        "--udp",
+        "54207",
+        "--x11",
+        "--x11-display",
+        ":207",
+        "--capture",
+        "shm",
+        "--pointer",
+        "abs",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/palmos/palmos-boot.lua",
+        "--env-append-file",
+        "$T/palmos/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/palmos/palmos-boot.lua",
+        "streamhost/stations/palmos/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "touch-phone",
+    "transport": "streamhost",
+    "accentColor": "#65755b",
+    "eraLabel": "1997 \u00b7 PalmPilot Professional \u2014 Palm OS 2.0",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "palmos",
+    "displayName": "PalmPilot Professional (Palm OS 2.0)",
+    "year": 1997,
+    "lineage": "PalmPilot / Palm OS",
+    "arch": "Motorola MC68328 (\"DragonBall\"), 16.58 MHz",
+    "ramMB": 1,
+    "ramKB": 1024,
+    "era": "1990s",
+    "accent": "#65755b",
+    "eraSoftware": [
+      "Applications Launcher",
+      "Date Book",
+      "Address",
+      "To Do List",
+      "Memo Pad",
+      "Calculator",
+      "Expense",
+      "Security",
+      "Graffiti"
+    ],
+    "periodBrowser": "none",
+    "iconicApps": [
+      "Date Book",
+      "Memo Pad",
+      "Graffiti"
+    ],
+    "blurb": "The pocket organizer that made the stylus practical \u2014 instant-on address book, calendar and memos, Graffiti handwriting, and a whole software ecosystem built for a few seconds of attention at a time.",
+    "notes": "Host-native station: MAME 0.289's palmpro driver (src/mame/palm/palm.cpp, PalmPilot Professional, MC68328 \"DragonBall\") runs on the host -- drawshm frames, ctlsock pen input, no QEMU and no guest OS. ROM: palmos20-en-pro.rom (1 048 576 B), byte-exact match (SHA-1 535bd9548365d300f85f514f318460443a021476) for the 2.0epro BIOS option the driver defines, sourced from palmdb.net's palm-roms-complete collection. The wave opened on the later Palm III (palmiii) and its Palm OS 3.x ROMs: those boot and draw the Palm Computing Platform splash into guest RAM, but never enable the MC68328's LCD controller, so the screen stays blank forever -- a genuine gap in this emulation, measured and written up in docs/lab/PALMOS-WAVE.md. Palm OS 2.0 on the same hardware displays correctly, so the exhibit is the machine and the OS that actually run. Pointer: Palm's pen is IPT_LIGHTGUN_X/Y, a true ABSOLUTE analog ioport field (PORT_MINMAX(0,0xa0)), not a relative mouse like every other MAME station -- mame-ctlsock-abs-fields.patch makes MOVEA write the field directly, scaled from the published 160x220 surface into the field's own range. The published surface is the driver's visarea: the LCD is the top 160x160 and the rows below it are the printed Graffiti silkscreen, unlit on real hardware too, but tappable -- that is how the Applications button works."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/palmos.sh",
+    "driver": "palmpro"
+  },
+  "ui": "mobile",
+  "reset": {
+    "stationDir": "palmos",
+    "pointer": "abs",
+    "touch": true,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "PROVEN 2026-09-20: absolute pen, six Applications Launcher icons plus the silkscreen Applications button, every tap opening the intended app. Accuracy is self-consistent by construction -- the boot script calibrates the digitizer with the pointer patch's own map, so Palm OS's affine map is its exact inverse; residual quantisation is the pen field's own 161 steps, ~1.0 px across and ~1.37 px down.",
+    "keyboard": "PEN-ONLY EXHIBIT, deliberately. MEASURED 2026-09-20: of the driver's seven PORTD hardware buttons, only Date Book and Power behave as documented -- Address and To Do List corrupt the screen into visible garbage, and Memo Pad crashes Palm OS into a \"Fatal Exception\" dialog. Power itself is a one-way trap (see museum.notes / the auto-off note in station.env.fixture). There is no safe on-screen-keyboard mapping for this row, so none is shipped -- everything the exhibit needs is on the touchscreen, including the silkscreen Applications/Menu/Calculator/Find row. See docs/lab/PALMOS-WAVE.md.",
+    "fixture": "PalmPilot Professional, MAME 0.289 palmpro driver, Palm OS 2.0 Professional (English), host-native (drawshm) on the published 160x220 surface. The scene is the Applications Launcher, reached by a scripted cold boot (no checkpoint -- savestate restore segfaults on this driver); reset replays it. See docs/lab/PALMOS-WAVE.md."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "palmos wave 2026-09-20: scaffolded from postmarketos (registry shape only), then rewritten for the MAME-native palmpro driver. Retargeted from palmiii/Palm OS 3.3 (French) to palmpro/Palm OS 2.0 Professional (English) when palmiii was measured never to enable its LCD."
+  ]
+}

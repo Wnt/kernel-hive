@@ -216,6 +216,9 @@ const POSTER_INDEX = {
   "os2warp": {
     "hero": "/posters/os2warp/desktop.webp"
   },
+  "palmos": {
+    "hero": "/posters/palmos/desktop.webp"
+  },
   "pcbsd": {
     "hero": "/posters/pcbsd/desktop.webp"
   },

@@ -132,6 +132,32 @@ mirror="$(KH_SESSION=wave-g bash "$HERE/../scripts/lib/kh-claim.sh" who landing 
 check "the kh-claim MIRROR agrees the window is free, not still ghost-station-session" \
   "unclaimed" "$mirror"
 
+echo "== 8 land end SURVIVES set -e (the way labrun actually runs it)"
+# labrun ships queue.sh and runs it under `set -euo pipefail`; this selftest
+# runs under `set -uo pipefail`. That one missing -e hid a real regression:
+# `kh-claim who` EXITS 1 when the resource is unclaimed, so an unguarded
+# command substitution in mirror_release aborted the function before the
+# holder dir was removed -- land end printed nothing, returned 1, and the
+# window stayed held forever. Exercise the REAL execution mode, not a laxer one.
+STATE8="$(mktemp -d)"
+CLAIMS8="$(mktemp -d)"
+KH_SESSION=wave-h bash "$Q" "$STATE8" try wave-h hotel --timeout-min 1 >/dev/null
+
+# The mirror is deliberately already unclaimed -- the success case, and the
+# exact condition whose non-zero exit killed the release.
+out="$(KH_CLAIMS_ROOT="$CLAIMS8" KH_SESSION=wave-h \
+  bash -euo pipefail "$Q" "$STATE8" end wave-h hotel 2>&1 || true)"
+check "land end under set -e still reports RELEASED" \
+  "RELEASED session=wave-h id=hotel" "$out"
+
+if [ -d "$STATE8/holder" ]; then
+  echo "  FAIL  the holder dir survived land end under set -e (window orphaned)"
+  fails=$((fails + 1))
+else
+  echo "  PASS  the holder dir is gone after land end under set -e"
+fi
+rm -rf "$STATE8" "$CLAIMS8"
+
 echo
 if [ "$fails" = 0 ]; then
   echo "wave-queue-selftest: ALL PASS"

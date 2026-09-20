@@ -210,6 +210,17 @@ export const MODELS = {
     url: `${BASE}/param/phone-c.glb`, targetH: 0.14, targetW: 0.079, sourceW: 0.079,
     screen: { center: [-0.0023, 0.0908, 0.0048], size: [0.0584, 0.1024], rot: -0.3491 },
   },
+  // PalmPilot-class PDA. No PDA mesh was authored for the hall, so this is the
+  // phone-a handheld shell at the PalmPilot Professional's own height (119.4 mm
+  // vs phone-a's 117.7), scaled uniformly so the proven body geometry is not
+  // distorted, with the screen rectangle carried through that same 1.0144x and
+  // its height nudged to the exhibit's exact 160:220 surface ratio. A distinct
+  // ModelKey (not a reuse of phoneA) because machines.test.ts requires every
+  // tile's body|monitor|keyboard|mouse signature to be unique.
+  palmPda: {
+    url: `${BASE}/param/phone-a.glb`, targetH: 0.1194, targetW: 0.0614, sourceW: 0.0605,
+    screen: { center: [0, 0.1085, 0.0018], size: [0.0410, 0.0564], rot: -0.3491 },
+  },
   modernTower: { url: `${BASE}/param/modern-a.glb`, targetH: 0.46 },
   modernMini: { url: `${BASE}/param/modern-b.glb`, targetH: 0.042, targetW: 0.18 },
   industrialBox: {
