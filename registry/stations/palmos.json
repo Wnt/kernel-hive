@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "palmos",
-  "era_year": 1998,
-  "enabled": false,
+  "era_year": 1997,
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -15,7 +15,7 @@
           "class": "retro",
           "estimated": "~4-8m",
           "automation": "full",
-          "produces": "palmos MAME romset (palmiii.zip) + golden savestate",
+          "produces": "palmos MAME romset (palmpro: Palm OS 2.0 Professional ROM) + scripted boot scene",
           "flags": []
         }
       }
@@ -35,13 +35,13 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54207,
-      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmiii runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's new absolute-field bind (MAME_CTL_ABS=1), audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/palmos/sta."
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmpro runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's absolute-field bind (MAME_CTL_ABS=1), no audio. Launcher stations/mame-native/x11-runtime.sh. NO CHECKPOINT: restoring a savestate in a fresh process segfaults inside zlib (heap corruption in palmpro's setup, no contained fix -- see docs/lab/PALMOS-WAVE.md), so the scene is reached by driving the machine: palmos-boot.lua taps through the unskippable digitizer calibration and opens the Applications Launcher. reset=relaunch therefore replays that cold boot."
     }
   },
   "render": {
     "signalOrder": 92,
     "stationsManifestOrder": 90,
-    "stationsManifestPrelude": "\n# palmos (slot 207) — Palm III, host-native MAME palmiii, Palm OS 3.3 (French); palmos wave 2026-09-20.\n",
+    "stationsManifestPrelude": "\n# palmos (slot 207) \u2014 PalmPilot Professional, host-native MAME palmpro, Palm OS 2.0 Professional (English); palmos wave 2026-09-20.\n",
     "bringUpGroup": 5,
     "bindingOrder": 118,
     "bindingPrelude": "",
@@ -49,7 +49,7 @@
     "actionMapOrder": 52
   },
   "stationDir": "palmos",
-  "lifecycle": "candidate",
+  "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
     "udpPort": 54207,
@@ -135,25 +135,28 @@
     "archetypeId": "touch-phone",
     "transport": "streamhost",
     "accentColor": "#65755b",
-    "eraLabel": "1998 · Palm III — Palm OS 3.3"
+    "eraLabel": "1997 \u00b7 PalmPilot Professional \u2014 Palm OS 2.0",
+    "pointerRel": false
   },
   "museum": {
     "id": "palmos",
-    "displayName": "Palm III (Palm OS 3.3, French)",
-    "year": 1998,
+    "displayName": "PalmPilot Professional (Palm OS 2.0)",
+    "year": 1997,
     "lineage": "PalmPilot / Palm OS",
     "arch": "Motorola MC68328 (\"DragonBall\"), 16.58 MHz",
-    "ramMB": 0,
-    "ramKB": 512,
+    "ramMB": 1,
+    "ramKB": 1024,
     "era": "1990s",
     "accent": "#65755b",
     "eraSoftware": [
       "Applications Launcher",
       "Date Book",
-      "Address Book",
+      "Address",
       "To Do List",
       "Memo Pad",
       "Calculator",
+      "Expense",
+      "Security",
       "Graffiti"
     ],
     "periodBrowser": "none",
@@ -162,14 +165,14 @@
       "Memo Pad",
       "Graffiti"
     ],
-    "blurb": "The pocket organizer that made the stylus practical — instant-on PIM apps, Graffiti handwriting and a software ecosystem built for a few seconds of attention at a time.",
-    "notes": "Host-native station: MAME 0.289's palmiii driver (src/mame/palm/palm.cpp, Palm III, MC68328 \"DragonBall\") runs on the host -- drawshm frames, ctlsock pen input, no QEMU and no guest OS. ROM: palmos33-fr-iii.rom (2 097 152 B), byte-exact match (SHA-1 c7c90df814d4f97958194e0bc28c595e967a4529) for the palmos33-fr-iii.rom BIOS option the driver defines; sourced as Palm-III-3.3-fr.rom from palmdb.net's palm-roms-complete collection. No byte-exact English Palm OS 3.x ROM for this driver was found inside the wave's time budget -- palmdb's own Palm-III-3.3-en.rom is a different (1 343 488 B) dump that does not match any BIOS option this MAME driver defines -- so French is the honest first-release locale; see docs/lab/PALMOS-WAVE.md. Pointer: Palm's pen is IPT_LIGHTGUN_X/Y, a true ABSOLUTE analog ioport field (PORT_MINMAX(0,0xa0)), not a relative mouse like every other MAME station -- mame-ctlsock-abs-fields.patch (new this wave) makes MOVEA write the field directly, scaled from the published 160x220 surface into the field's own range, no accumulator and no cursor readback."
+    "blurb": "The pocket organizer that made the stylus practical \u2014 instant-on address book, calendar and memos, Graffiti handwriting, and a whole software ecosystem built for a few seconds of attention at a time.",
+    "notes": "Host-native station: MAME 0.289's palmpro driver (src/mame/palm/palm.cpp, PalmPilot Professional, MC68328 \"DragonBall\") runs on the host -- drawshm frames, ctlsock pen input, no QEMU and no guest OS. ROM: palmos20-en-pro.rom (1 048 576 B), byte-exact match (SHA-1 535bd9548365d300f85f514f318460443a021476) for the 2.0epro BIOS option the driver defines, sourced from palmdb.net's palm-roms-complete collection. The wave opened on the later Palm III (palmiii) and its Palm OS 3.x ROMs: those boot and draw the Palm Computing Platform splash into guest RAM, but never enable the MC68328's LCD controller, so the screen stays blank forever -- a genuine gap in this emulation, measured and written up in docs/lab/PALMOS-WAVE.md. Palm OS 2.0 on the same hardware displays correctly, so the exhibit is the machine and the OS that actually run. Pointer: Palm's pen is IPT_LIGHTGUN_X/Y, a true ABSOLUTE analog ioport field (PORT_MINMAX(0,0xa0)), not a relative mouse like every other MAME station -- mame-ctlsock-abs-fields.patch makes MOVEA write the field directly, scaled from the published 160x220 surface into the field's own range. The published surface is the driver's visarea: the LCD is the top 160x160 and the rows below it are the printed Graffiti silkscreen, unlit on real hardware too, but tappable -- that is how the Applications button works."
   },
   "emulator": {
     "family": "MAME",
     "version": "0.289",
     "source": "scripts/build-guests/emulators/native.d/palmos.sh",
-    "driver": "palmiii"
+    "driver": "palmpro"
   },
   "ui": "mobile",
   "reset": {
@@ -178,12 +181,12 @@
     "touch": true,
     "resetMode": "relaunch",
     "snapshot": null,
-    "mouse": "OPEN — see docs/lab/PALMOS-WAVE.md for the measured five-target accuracy on this wave's rig",
-    "keyboard": "PARTIAL — the driver's seven hardware buttons (Power, Up, Down, and four app-launch buttons) are bound over ctlsock and reachable from a physical keyboard (D/Y/H/F/G/J/K); on-screen-keyboard labels for them are an OPEN spa-stream item, see docs/lab/PALMOS-WAVE.md",
-    "fixture": "Palm III, MAME 0.289 palmiii driver, Palm OS 3.3 (French) BIOS, host-native (drawshm) on the published 160x220 surface (the driver's own visarea, no letterbox). See docs/lab/PALMOS-WAVE.md for the golden scene and its proof."
+    "mouse": "PROVEN 2026-09-20: absolute pen, six Applications Launcher icons plus the silkscreen Applications button, every tap opening the intended app. Accuracy is self-consistent by construction -- the boot script calibrates the digitizer with the pointer patch's own map, so Palm OS's affine map is its exact inverse; residual quantisation is the pen field's own 161 steps, ~1.0 px across and ~1.37 px down.",
+    "keyboard": "PEN-ONLY EXHIBIT. A PalmPilot has no keyboard -- text is Graffiti handwriting -- and the driver's seven hardware buttons are not usefully reachable: palm.cpp wires the CPU's port-D input callbacks to the PENB port rather than PORTD, so Palm OS reads the pen button where it expects the key matrix. Everything the exhibit needs is on the touchscreen, including the silkscreen Applications/Menu/Calculator/Find row. See docs/lab/PALMOS-WAVE.md.",
+    "fixture": "PalmPilot Professional, MAME 0.289 palmpro driver, Palm OS 2.0 Professional (English), host-native (drawshm) on the published 160x220 surface. The scene is the Applications Launcher, reached by a scripted cold boot (no checkpoint -- savestate restore segfaults on this driver); reset replays it. See docs/lab/PALMOS-WAVE.md."
   },
   "migrationExceptions": [],
   "notes": [
-    "scaffolded from postmarketos on 2026-09-20 (registry shape/tuple only -- postmarketos is QEMU/phoneDock, palmos is host-native MAME); runtime, stream, museum and emulator blocks rewritten for the palmiii driver. See docs/lab/PALMOS-WAVE.md."
+    "palmos wave 2026-09-20: scaffolded from postmarketos (registry shape only), then rewritten for the MAME-native palmpro driver. Retargeted from palmiii/Palm OS 3.3 (French) to palmpro/Palm OS 2.0 Professional (English) when palmiii was measured never to enable its LCD."
   ]
 }

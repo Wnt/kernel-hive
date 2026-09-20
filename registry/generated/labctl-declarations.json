@@ -1242,7 +1242,7 @@
       "exec_subshell": null,
       "console": "x11",
       "udp_port": 54207,
-      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmiii runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's new absolute-field bind (MAME_CTL_ABS=1), audio FIFO. Launcher stations/mame-native/x11-runtime.sh; reset=relaunch restores the golden savestate in /data/vms/streamhost/stations/palmos/sta."
+      "notes": "HOST-NATIVE (native from day one): MAME 0.289 palmpro runs on the host, no QEMU/QMP, no guest OS, no exec channel. Frames drawshm->shm, pen through ctlsock's absolute-field bind (MAME_CTL_ABS=1), no audio. Launcher stations/mame-native/x11-runtime.sh. NO CHECKPOINT: restoring a savestate in a fresh process segfaults inside zlib (heap corruption in palmpro's setup, no contained fix -- see docs/lab/PALMOS-WAVE.md), so the scene is reached by driving the machine: palmos-boot.lua taps through the unskippable digitizer calibration and opens the Applications Launcher. reset=relaunch therefore replays that cold boot."
     },
     "pcbsd": {
       "dir": "/data/vms/streamhost/stations/pcbsd",

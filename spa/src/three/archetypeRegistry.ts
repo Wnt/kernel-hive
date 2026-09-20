@@ -240,6 +240,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   mvs38:       { osId: 'mvs38', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#4FA36C', eraLabel: '1981 · IBM MVS 3.8j — the mainframe behind the green screen' }, // ideal: an IBM System/370 frame in a raised-floor machine room with an IBM 3279 colour display terminal on a desk in front of it
   its:         { osId: 'its', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#B23A48', eraLabel: '1967 · MIT ITS — the AI Lab\'s PDP-10 timesharing system' }, // ideal: a DEC PDP-10 (KA10/KS10) cabinet row with a Model 33 Teletype or a VT52 beside it — the MIT AI Lab machine room on Tech Square, ninth floor
   multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
+  palmos:      { osId: 'palmos', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#65755b', eraLabel: '1997 · PalmPilot Professional — Palm OS 2.0', pointerRel: false },
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

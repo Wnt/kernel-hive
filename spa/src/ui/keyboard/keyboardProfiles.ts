@@ -277,6 +277,12 @@ export const OS_FAMILY: Record<string, Family> = {
   debian22: 'generic', // Debian 2.2 potato: GNOME 1.0 on XFree86 3.3.6 — X11 generic, no OS-level chord set
   redstar3: 'generic', postmarketos: 'generic',
   sailfishos: 'generic', templeos: 'generic', qnx: 'generic', haiku: 'generic',
+  // palmos: a PalmPilot has no keyboard at all — text is Graffiti
+  // handwriting on the silkscreen, and the driver's seven hardware buttons
+  // are not usefully reachable (palm.cpp wires the CPU's port-D inputs to
+  // the PEN button port, not the key matrix). The exhibit is pen-only, so
+  // there is no chord set to profile.
+  palmos: 'generic',
   beos: 'generic',
   chokanji: 'generic', // 超漢字 / B-right/V (BTRON3) — menu-driven, Japanese-IME desktop; no PC chord set to profile
   newsos: 'generic', // NEWS-OS 4.1R: sxdm login + twm/xterm — no shell chord set to profile

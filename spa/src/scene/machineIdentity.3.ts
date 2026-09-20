@@ -207,4 +207,8 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#8d9299', accentTint: '#c8892b', tintMix: 0.30,
     badge: 'DPS-8/M', spec: '16 MB • Multics MR12.8 • 1969', kit: 'workstation',
   },
+  palmos: {
+    caseTint: '#3f4147', accentTint: '#9aa07f', tintMix: 0.22,
+    badge: 'PalmPilot Pro', spec: '1 MB • Palm OS 2.0 • 1997', kit: 'mobile',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

@@ -40,7 +40,15 @@ false, and the new branch in movea_target() is a no-op until MAME_CTL_ABS=1
 AND both ptr-tags fields are bound. No save items are added, so the
 savestate signature is unchanged and no golden is orphaned.
 
-MEASURED: see docs/lab/PALMOS-WAVE.md for the palmiii five-target pointer
+It also carries the ABSOLUTE AXIS BINDING fallback. ptr-tags binds the axis
+handles by matching IPT_MOUSE_X/Y, which no absolute-axis machine has, so
+before this patch m_x_field/m_y_field stayed null on exactly the machines
+MAME_CTL_ABS exists for -- every MOVEA acked OK while the pen never left its
+power-on centre (MEASURED on palmpro, 2026-09-20). The fallback is gated on
+MAME_CTL_ABS and only ever fills a handle that would otherwise be null, so it
+is inert for every existing station.
+
+MEASURED: see docs/lab/PALMOS-WAVE.md for the palmpro five-target pointer
 proof this patch made possible.
 
 --- a/src/osd/modules/ctlsock/ctlsock.cpp
@@ -62,7 +70,33 @@ proof this patch made possible.
  		m_cursor_items = env_str("MAME_CTL_CURSOR_ITEMS");
  		m_swap_items = env_str("MAME_CTL_SWAP_ITEMS");
  		m_tail_path = env_str("MAME_CTL_CMD_FILE");
-@@ -1872,6 +1882,25 @@
+@@ -1021,6 +1031,25 @@
+ 			for (ioport_field &f : m_y_port->fields())
+ 				if (f.type() == IPT_MOUSE_Y)
+ 					m_y_field = &f;
++		// ABSOLUTE AXIS FALLBACK. The type match above looks for a RELATIVE
++		// mouse counter (IPT_MOUSE_X/Y). A machine whose pointer is a true
++		// absolute analog axis -- Palm's pen digitizer is IPT_LIGHTGUN_X/Y,
++		// PORT_MINMAX(0,0xa0) -- has no such field, so both handles stayed
++		// null and MAME_CTL_ABS's direct write below could never fire:
++		// MEASURED on palmpro 2026-09-20, the pen never left its 0x50,0x50
++		// power-on centre while every MOVEA still acked OK.
++		// Deliberately a FALLBACK and deliberately gated on MAME_CTL_ABS: it
++		// can only bind a handle that would otherwise be null, on a station
++		// that has explicitly asked for the absolute route, so it is inert
++		// for every existing caller.
++		if (m_abs_fields && m_x_port && !m_x_field)
++			for (ioport_field &f : m_x_port->fields())
++				if (f.type() == IPT_LIGHTGUN_X)
++					m_x_field = &f;
++		if (m_abs_fields && m_y_port && !m_y_field)
++			for (ioport_field &f : m_y_port->fields())
++				if (f.type() == IPT_LIGHTGUN_Y)
++					m_y_field = &f;
+ 
+ 		// MOVEA's SENSOR: raw handles onto the hardware-cursor registers
+ 		// (on irix: the Newport VC2's m_cursor_x/y — upstream save items
+@@ -1872,6 +1901,25 @@
  	{
  		x = std::max(0L, std::min(m_surf_w - 1, x));
  		y = std::max(0L, std::min(m_surf_h - 1, y));
@@ -88,7 +122,7 @@ proof this patch made possible.
  		hist_apply(ack);
  		reply_ok(ack);  // MOVEA acks on target-accept; completion is EV MOVEA
  		trace("verb MOVEA seq=%s tgt=%d,%d", seq, int(x), int(y));
-@@ -3110,6 +3139,7 @@
+@@ -3110,6 +3158,7 @@
  	ioport_field *m_btn_field[3] = { nullptr, nullptr, nullptr };
  	ioport_field *m_x_field = nullptr;
  	ioport_field *m_y_field = nullptr;

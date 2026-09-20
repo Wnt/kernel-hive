@@ -144,4 +144,5 @@ export const ASSEMBLIES_BY_TILE_3 = {
   mvs38: { kind: 'towerSetup', body: 'paramTower', monitor: 'terminalA' },
   its: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalB' },
   multics: { kind: 'towerSetup', body: 'industrialBox', monitor: 'terminalA' },
+  palmos: { kind: 'phoneDock', body: 'palmPda' },
 } as const satisfies Record<string, Assembly>;
