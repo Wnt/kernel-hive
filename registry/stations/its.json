@@ -141,7 +141,7 @@
     "id": "its",
     "displayName": "MIT ITS",
     "year": 1967,
-    "lineage": "CTSS (MIT, 1961) → ITS on the AI Lab's PDP-6 (1967) → ITS on the PDP-10 → the hacker culture, Emacs and the GNU project that grew out of it",
+    "lineage": "CTSS (MIT, 1961) → ITS on the AI Lab's PDP-6 (1967) → ITS on the PDP-10 → Emacs and the GNU project",
     "arch": "DEC PDP-10 (KS10 model, 36-bit words) under SIMH — an RP06 disk pack holding the whole system, and a DZ11 terminal multiplexer with the visitor on line 0",
     "ramMB": 1,
     "era": "1960s",
