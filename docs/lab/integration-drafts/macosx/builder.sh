@@ -5,7 +5,10 @@ WORK="${WORK:-/data/vms/build-macosx}"
 ASSETS="${ASSETS:-/data/vms/streamhost/assets/macosx}"
 INSTALL_ISO="${INSTALL_ISO:-}"
 mkdir -p "$WORK" "$ASSETS/media"
-[ -n "$INSTALL_ISO" ] || { echo "set INSTALL_ISO to acquired Jaguar/Panther PPC media" >&2; exit 2; }
+[ -n "$INSTALL_ISO" ] || {
+  echo "set INSTALL_ISO to acquired Jaguar/Panther PPC media" >&2
+  exit 2
+}
 cp -f "$INSTALL_ISO" "$ASSETS/media/install-cd1.iso"
 sha256sum "$ASSETS/media/install-cd1.iso" | tee "$ASSETS/MANIFEST.sha256"
 qemu-img create -f qcow2 "$WORK/macosx.qcow2" 8G

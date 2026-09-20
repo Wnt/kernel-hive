@@ -19,8 +19,8 @@
         "kbd_reset": "Escape",
         "kbd_note": "Aqua desktop: the Dock and the Finder menu bar are the cheapest visible key/click proofs; Terminal gives a real Unix shell one click away.",
         "audio_trigger": null,
-        "validated": false,
-        "note": "TRUE ABSOLUTE pointer via -device usb-tablet (cursor_scale 1.0, offset 0,0): measured on the Panther installer framebuffer, abs events to (200,150) and (800,600) landed on those pixels and clicks activated the controls beneath them. Five-target sweep on the installed desktop is OPEN."
+        "validated": true,
+        "note": "TRUE ABSOLUTE pointer via -device usb-tablet (cursor_scale 1.0, offset 0,0), MEASURED on the installed Aqua desktop: a five-target sweep to (120,120), (900,140), (512,384), (140,640) and (900,660) put the arrow sprite's origin on exactly those pixels, error 0 px at every target (cursor-locate.py exact match). Clicks, a System Preferences slider drag and a drag-and-drop into the Dock all landed where aimed. Keyboard: the built-in via=pmu USB board types and takes Cmd-Q / Cmd-A / Shift-Cmd-U."
       }
     },
     "labctl": {
@@ -135,7 +135,7 @@
         "-display dbus,p2p=on",
         "-nic none (deliberate: no networking on this station)",
         "-device usb-tablet (MEASURED absolute pointer; macos9 cannot do this)",
-        "-drive file=$D/macosx-golden.qcow2,format=qcow2,cache=writeback,aio=threads",
+        "-drive file=$D/disk.qcow2,format=qcow2,cache=writeback,aio=threads",
         "-loadvm golden -S (when the checkpoint exists)",
         "-qmp unix:$D/qmp.sock,server=on,wait=off -pidfile $D/qemu.pid",
         "(built-in via=pmu USB keyboard; NO extra -device usb-kbd/usb-mouse)"
@@ -152,9 +152,9 @@
     "touch": false,
     "resetMode": "loadvm",
     "snapshot": "golden",
-    "mouse": "UNVERIFIED",
-    "keyboard": "UNVERIFIED",
-    "fixture": "Quiet Mac OS 9.2.2 Finder desktop at 1024x768, millions of colors (Power Mac G4 mac99 under TCG): Macintosh HD top-right, empty Trash bottom-right, no window open, nothing selected, Control Strip along the bottom, cursor parked dead-centre (512,384). Energy Saver sleep pinned to Never; Mouse tracking pinned to 'Very Slow' (the only non-accelerated setting, linear 0.18 px/unit) and double-click speed slowest so a click pair survives the stream; Setup Assistant quit and disarmed. Re-baked cold 2026-08-24 on the tb_env-patched fork binary and captured by checkpoint-guard; restore-proven by the strict protocol — fresh QEMU process, the guest's own menubar clock advancing across two ticks, then pointer motion consumed on the framebuffer (SSIM alone passes on a wedged guest and proves nothing)."
+    "mouse": "VERIFIED",
+    "keyboard": "VERIFIED",
+    "fixture": "Quiet Mac OS X 10.3 Panther Aqua desktop at 1024x768 (Power Mac G4 mac99 under TCG, 1024 MB): one brushed-metal Finder window open on the 'visitor' home folder in icon view (Desktop, Documents, Library, Movies, Music, Pictures, Public, Send Registration, Sites), Macintosh HD on the desktop top-right, the Dock along the bottom with Terminal added to it, nothing selected, no sheet or dialog, cursor parked dead-centre (512,384). Setup Assistant completed and gone (account 'Visitor'/'visitor', no password, registration skipped). Energy Saver pinned to Never with display sleep and disk sleep both off, and the screen saver delay dragged to Never, so the exhibit never blanks itself. Baked 2026-09-20 and restore-proven in a FRESH QEMU process: the guest's own menu-bar clock advanced across 70 s and pointer motion was consumed to two new targets afterwards."
   },
   "spa": {
     "archetypeId": "apple-studio",
@@ -168,7 +168,7 @@
     "displayName": "Mac OS X 10.3 Panther",
     "year": 2003,
     "lineage": "NeXTSTEP / Rhapsody -> Mac OS X",
-    "arch": "PowerPC G4 (QEMU mac99)",
+    "arch": "PowerPC G4 (Power Mac)",
     "ramMB": 1024,
     "era": "2000s",
     "accent": "#5d8fc7",
@@ -187,7 +187,7 @@
       "System Preferences"
     ],
     "blurb": "Aqua arrives: Apple’s NeXT-derived Unix foundation becomes the Macintosh, with protected memory, the Dock and a rebuilt Finder on the same PowerPC machine as the classic Mac OS it replaced.",
-    "notes": "Mac OS X 10.3 Panther on QEMU mac99 under TCG. 10.2 Jaguar was the first target and panics on this machine inside IOSCSIMultimediaCommandsDevice/IODVDStorageFamily (its ATAPI CD stack cannot drive the emulated optical device) — do not switch back. Unlike macos9 this guest drives QEMU’s usb-tablet natively, so the pointer is truly absolute. No networking, deliberately."
+    "notes": "Mac OS X 10.3 Panther on QEMU mac99 under TCG, on the same emulated Power Mac G4 as the macos9 exhibit. 10.2 Jaguar was the first target and panics on this machine inside IOSCSIMultimediaCommandsDevice/IODVDStorageFamily (its ATAPI CD stack cannot drive the emulated optical device) — do not switch back. Unlike macos9 this guest drives QEMU's usb-tablet natively, so the pointer is truly absolute at unity scale. Installed from disc 1 alone, customised down to Essential System Software + BSD Subsystem (1.1 GB, which is also what removes the installer's demand for disc 2). No networking, deliberately."
   },
   "emulator": {
     "family": "QEMU",
@@ -201,6 +201,6 @@
     "note": "NO NIC AT ALL (-nic none, which suppresses QEMU's default user-mode sungem on mac99). Operator scope for this add: ordinary station first — no retronet, no networking. The guest's TCP/IP and AppleTalk control panels were never configured. The golden is baked with this device set; adding a NIC later means a cold re-bake (chokanji/macos753 pattern)."
   },
   "notes": [
-    "PAUSED BEFORE GOLDEN (wave 2026-09-20, labhost load rule). Media, release choice (Panther over Jaguar) and pointer transport (usb-tablet, true absolute) are MEASURED; the OS install itself was not run and no golden exists. Disabled candidate on purpose. See docs/lab/MACOSX-WAVE.md."
+    "LIVE 2026-09-20. Panther installed from disc 1 with a customised 1.1 GB package set; golden baked and restore-proven in a fresh process. The install wall — the installer refuses a freshly partitioned volume until QEMU is RESTARTED — is documented in docs/lab/MACOSX-WAVE.md."
   ]
 }

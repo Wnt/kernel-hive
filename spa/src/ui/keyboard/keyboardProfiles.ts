@@ -334,6 +334,11 @@ export const OS_FAMILY: Record<string, Family> = {
   lisa: 'classicmac', // Lisa Office System 3.1 — the Apple key chords the Macintosh inherited
   macos753: 'classicmac', // System 7.5.3 — Command chords are the only keyboard verbs it has
   macos9: 'classicmac', // Mac OS 9.2.2 — same Finder, same Command chords, five years on
+  // Mac OS X 10.3 Panther on the same Power Mac G4 as macos9. The kernel changed
+  // completely; the keyboard verbs did not — ⌘N/⌘O/⌘W/⌘Q/⌘A are still the Finder's,
+  // which is exactly the continuity Apple was selling, so classicmac is right here
+  // rather than a new family.
+  macosx: 'classicmac',
   // macsys1 gets its OWN family, not classicmac: the Macintosh 128K's M0110
   // keyboard has NO arrow keys (they arrive on the M0110A in 1986), no Esc, no
   // Ctrl and no function keys, so classicmac's base row would put five dead

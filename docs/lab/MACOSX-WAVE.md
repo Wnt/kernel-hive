@@ -1,6 +1,7 @@
 # macosx wave — Mac OS X on PowerPC (issue #50, record wave 2026-09-21, Lane C)
 
-**STATUS: RESUMED 2026-09-20T17:39Z (session `macosx-live`), INSTALLING.** The
+**STATUS: LIVE 2026-09-20 (session `macosx-live`).** Golden baked and
+restore-proven; the station is listed. The
 first stream stood down before the install; this file now carries both streams'
 measurements. Every fact below was measured on a framebuffer or with
 `stat`/`sha256sum`.
@@ -194,87 +195,59 @@ emulation speed and by whatever else is running on the box.
 Journaling was deliberately switched off at format time ("Mac OS Extended", not
 "Mac OS Extended (Journaled)") to cut write amplification during the install.
 
-## Exactly where this stopped
+## Timeline, measured from `date -u`
 
-The rig `ptrA` was at the installer's **Select a Destination** step with a
-formatted, mounted `Macintosh HD` (11.87 GB) already visible and just selected.
-The Mac OS X package copy had **not begun** — which is why killing the guest was
-cheap and was done rather than escalated.
-
-`/data/vms/sandbox/macosx-work/ptrA/macosx.qcow2` still holds that partitioned,
-formatted, empty `Macintosh HD`. It is a plain file and it survives; a resumed
-stream can boot the Panther CD against it and skip Disk Utility entirely.
-
-## Next concrete step for whoever resumes this
-
-1. Relaunch `ptrA` on the frozen device set above with
-   `-drive file=/data/assets-staging/macosx/panther-10.3-cd1.iso,format=raw,media=cdrom -boot d`
-   (the rig's own `run-rig.sh` in the sandbox already does exactly this, given
-   `ISO=` and `-device usb-tablet`).
-2. Skip Disk Utility — `Macintosh HD` is already there.
-3. At **Installation Type**, click **Customize** and deselect the optional
-   package groups (additional print drivers, additional Asian fonts, localized
-   files, bundled applications). Under TCG every deselected megabyte is wall
-   clock, and none of it appears in the intended scene.
-4. Install, then first boot, then walk the Setup Assistant (create the visitor
-   account, decline registration/.Mac) — the fixture's scene explicitly
-   requires the Setup Assistant to be gone.
-5. Only then: build the rest scene, run the five-target pointer sweep on the
-   real desktop, bake `savevm golden`, prove `loadvm golden` in a FRESH process.
-6. Land with `scripts/dev/station-land.sh macosx --golden <disk>`. The golden is
-   expected to live entirely in the single main disk (no oberon-style extra
-   device), so no `--golden-extra` should be needed — confirm with
-   `qemu-img snapshot -l` before landing.
-
-## Teardown (done at pause)
-
-See the stream's final report for the released claims and the check that proved
-each one.
-
-## Resume tooling (committed, because the sandbox was released)
-
-The three throwaway helpers this bring-up used are preserved under
-`docs/lab/integration-drafts/macosx/` so a resumed stream does not rewrite them:
-
-| File | What it does |
+| T (UTC) | Milestone |
 |---|---|
-| `rig-launch.sh` | launches a namespaced rig on the frozen device set; takes `ISO=` and extra QEMU args (`-device usb-tablet`, `-prom-env 'boot-args=-v'`) |
-| `rig-drive.py` | minimal QMP driver: `abs X Y`, `rel dx dy`, `click`, `down`/`up`, `key`, `type`, `shot`, `sleep`, `hmp` |
-| `rig-step.sh` | click at (x,y), then `fb-wait.py --settle` (never `sleep N`), then emit a PNG |
+| 17:39 | session start, `wt.sh new macosx-live`, merge main |
+| 17:44 | `wave.sh alloc macosx` -> slot/UDP/VMID **218** (212 was gone) |
+| 17:56 | first Panther CD boot |
+| 18:44 | the destination wall reproduced on a 6 GB disk with OS 9 drivers on — theories exhausted |
+| 18:51 | **fix found**: restart QEMU, second CD boot, volume accepted |
+| 18:54 | install starts (Customize -> 1.1 GB) |
+| 20:00 | install ends, 66 min of package copy |
+| 20:05 | first boot from the HD reaches Setup Assistant |
+| 20:29 | **Aqua desktop** |
+| 20:30 | five-target pointer sweep: 0 px error at all five |
+| 20:55 | golden baked; restored in a fresh process and proven alive |
 
-They hardcode `/data/vms/sandbox/macosx-work`; repoint that at the resumed
-session's sandbox. `rig-drive.py`'s `shot` writes a PPM whatever the extension,
-so convert with PIL before reading it as an image.
-
-Two traps worth carrying forward:
-
-* `-display dbus,p2p=on` screendumps can come back an all-black frame while the
-  guest is mid-repaint; a pointer nudge and a re-shot distinguish "blanked" from
-  "dead". Do not conclude a guest died from one black frame.
-* labhost's `qemu-img` is `/usr/bin/qemu-img`; `/opt/qemu-ppc` is built
-  `--disable-tools` and ships no `qemu-img`.
-
-## Teardown (done at pause) — and one live landmine
+## Teardown (first stream, at pause)
 
 Released and verified:
 
 | Thing | Released with | Check that proved it |
 |---|---|---|
-| slot 212, UDP 54212, VMID 212 | `smoke-rig.sh macosx --down --release-claims` | `kh-claim ls --all \| grep -i macosx` → no rows |
-| `/os/macosx` dark-launch | `smoke-rig.sh macosx --down` | `ls /data/vms/streamhost/serve/darklaunch.d/macosx.json` → no such file |
-| both rigs (`ptrA`, `ptrB`) | `kill` resolved through `/proc/<pid>/exe`, never a cmdline grep | only `qemu-system-ppc` left on the box are `macos9` and `aix432`, neither mine |
-| sandbox `macosx-work` | `wt.sh rm macosx-work --force` (safe: branch was on origin first) | `ls -d /data/vms/sandbox/macosx-work` → no such directory |
+| slot 212, UDP 54212, VMID 212 | `smoke-rig.sh macosx --down --release-claims` | `kh-claim ls --all \| grep -i macosx` -> no rows |
+| `/os/macosx` dark-launch | `smoke-rig.sh macosx --down` | no `darklaunch.d/macosx.json` |
+| both rigs (`ptrA`, `ptrB`) | `kill` resolved through `/proc/<pid>/exe` | no stray `qemu-system-ppc` |
+| sandbox `macosx-work` | `wt.sh rm macosx-work --force` | directory gone |
 
-The staged media is **deliberately kept** at `/data/assets-staging/macosx/`
-(1.3 GB, both ISOs, hashes in this file). It costs no CPU, it is the slow part
-to re-acquire, and a resumed stream needs it.
+The staged media is kept at `/data/assets-staging/macosx/` (1.3 GB, both ISOs,
+hashes above) — it costs no CPU and it is the slow part to re-acquire. Note the
+first stream's `ptrA/macosx.qcow2`, which that handoff said would survive, did
+NOT: `wt.sh rm` took the sandbox and the formatted volume with it. Re-running
+Disk Utility cost six minutes, which is why this is recorded rather than
+mourned.
 
-**LANDMINE: `registry/stations/macosx.json` still names slot 212 / UDP 54212 /
-VMID 212, but the `kh-claim` locks on those three were released.** Nothing
-stops another wave taking 212 now, and `stations-registry.py new --slot auto`
-will not notice, because it picks `max(slot)+1` over the registry files and
-will simply skip past 212. A stream resuming macosx must therefore re-run
-`scripts/dev/wave.sh alloc macosx` FIRST and, if 212 is gone, rewrite the
-registry entry, the launcher's `udp=54212` echo and this ledger to whatever it
-actually gets — rather than assuming the numbers in this file are still its own.
-Confirm with `ssh lab 'labctl who'` before trusting 212.
+## Resume tooling (committed)
+
+The throwaway helpers are under `docs/lab/integration-drafts/macosx/`:
+
+| File | What it does |
+|---|---|
+| `rig-launch.sh` | launches a namespaced rig on the frozen device set; takes `ISO=` and extra QEMU args |
+| `rig-drive.py` | minimal QMP driver: `abs X Y`, `rel dx dy`, `click`, `down`/`up`, `key`, `type`, `shot`, `sleep`, `hmp` |
+| `rig-step.sh` | click at (x,y), then `fb-wait.py --settle` (never `sleep N`), then emit a PNG |
+
+They hardcode a sandbox path; repoint it. Traps carried forward:
+
+* `rig-drive.py`'s `key` takes each qcode as its own argument — `key meta_l q`,
+  never `key meta_l-q`, which QMP rejects outright.
+* `-display dbus,p2p=on` screendumps come back all-black while the guest is
+  mid-repaint, and this happened FOUR times during this bring-up, always right
+  after a click that opened a sheet. A pointer nudge and a re-shot distinguish
+  "blanked" from "dead". Do not conclude a guest died from one black frame.
+* `fb-wait.py --settle` never settles on the Screen Saver preference pane (the
+  Flurry preview animates forever); expect it to burn its full timeout there.
+* labhost's `qemu-img` is `/usr/bin/qemu-img`; `/opt/qemu-ppc` is built
+  `--disable-tools` and ships no `qemu-img`.

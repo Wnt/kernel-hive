@@ -4,8 +4,8 @@ subtitle: 2003 · Mac OS X 10.3 Panther · PowerPC G4 · Unix underneath, the Do
 hero: /posters/macosx/desktop.webp
 images:
   - src: /posters/macosx/desktop.webp
-    alt: An early Mac OS X Aqua desktop with the translucent menu bar, striped windows, Finder and the magnifying Dock along the bottom
-    caption: Aqua made Apple's new operating-system foundations visible: translucent controls, sheets, the Dock and a Finder rebuilt on top of Unix.
+    alt: The Mac OS X 10.3 Panther desktop at 1024x768 — brushed-metal Finder window open on the visitor home folder, Macintosh HD on the blue Aqua desktop, and the Dock along the bottom with Terminal in it
+    caption: The exhibit's own desktop. Aqua made Apple's new foundations visible — brushed metal, the sidebar Finder, the Dock — and Terminal, one icon along, is the Unix underneath.
 ---
 
 ## Origins
@@ -32,9 +32,11 @@ This was not just a new skin. It was Apple teaching existing Mac users a new ope
 
 The exhibit is **Mac OS X 10.3 Panther** on an emulated PowerPC G4. Panther was chosen by measurement, not preference: 10.2 Jaguar panics on this machine inside its ATAPI CD driver, while 10.3 boots the same hardware straight into Aqua.
 
-The scene should make the transition obvious: Finder open, Dock visible, and a Terminal window available so the visitor can see that the glossy desktop and a Unix command line are the same machine.
+The machine is QEMU's `mac99` Power Mac with a G4 processor and 1 GB of RAM, running under full emulation — there is no PowerPC hardware under this exhibit, so every instruction Aqua draws with is translated. It is the same emulated machine the Mac OS 9 exhibit runs on, which is the point: one computer, the two systems that fought over it.
 
-PLACEHOLDER: the exact machine profile, RAM and QEMU device set go here once the golden is baked and measured (see `docs/lab/MACOSX-WAVE.md`).
+The scene makes the transition legible. A Finder window is open on the visitor's home folder — Desktop, Documents, Library, Movies, Music, Pictures, Public, Sites, the Unix home directory wearing Macintosh clothes. The Dock runs along the bottom, and Terminal sits in it: one click from the striped Aqua desktop to a BSD command line on the same machine.
+
+This is a deliberately small Panther. The install was customised down to the Essential System Software and the BSD Subsystem, leaving out the bundled applications, printer drivers, extra fonts, speech voices and the other language translations — under emulation, everything you do not install is time the visitor does not wait.
 
 ## Legacy
 

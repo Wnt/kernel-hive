@@ -55,7 +55,7 @@ D=/data/vms/streamhost/stations/macosx
 sleep 0.3
 rm -f "$D/qmp.sock" "$D/qemu.pid"
 LOADVM=""
-qemu-img snapshot -l "$D/macosx-golden.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+qemu-img snapshot -l "$D/disk.qcow2" 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # streamhost display fast-poll (fork patch); its run-state idle gate keeps a
 # paused TCG station at ~0 cost.
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
@@ -68,7 +68,7 @@ nohup /opt/qemu-ppc/bin/qemu-system-ppc \
   -display dbus,p2p=on \
   -nic none \
   -device usb-tablet \
-  -drive file=$D/macosx-golden.qcow2,format=qcow2,cache=writeback,aio=threads \
+  -drive file=$D/disk.qcow2,format=qcow2,cache=writeback,aio=threads \
   $LOADVM \
   -qmp unix:$D/qmp.sock,server=on,wait=off \
   -pidfile $D/qemu.pid \
