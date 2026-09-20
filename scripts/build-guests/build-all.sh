@@ -64,7 +64,7 @@ GALLERY_ROOT="${GALLERY_ROOT:-/data/gallery-guests}"
 #
 # ---------------------------------------------------------------------------
 MANIFEST=(
-  "kolibrios      |tiles/kolibrios.sh                                    |KolibriOS         |fast        |~2-3m                        |full                         |kolibri.iso (live CD)"
+    "kolibrios      |tiles/kolibrios.sh                                    |KolibriOS         |fast        |~2-3m                        |full                         |kolibri.iso (live CD)"
   "toaruos        |tiles/toaruos.sh                                      |toaruos           |fast        |~3m                          |full                         |image.iso (live CD)"
   "helenos        |tiles/helenos.sh                                      |HelenOS           |fast        |~3m                          |full                         |HelenOS-0.14.1-ia32.iso (live)"
   "9front         |tiles/9front.sh                                       |9front            |fast        |~5-8m                        |full                         |9front-11554.amd64.qcow2"
@@ -140,11 +140,11 @@ MANIFEST=(
   "aix432         |tiles/aix432.sh                                       |Aix432            |licensed    |~4-6h                        |supplied                     |aix433-full.qcow2 (AIX 4.3.3 + X11/CDE + Ultimedia Services + Netscape 4.08 + Quake 1.07, native on the emulated GXT130P) + golden; builds its own qemu-system-ppc into /opt/qemu-ppc-s3 first"
   "amix           |tiles/amix.sh                                         |AmigaUNIX         |graphical   |~4h                          |vision                       |amix-system.hdf golden master (AMIX 2.1 OPEN LOOK desktop; cold-boot reset)"
 
-  # ---- ravynOS ----
-  # ravynos: pinned live ISO -> logged-in desktop -> golden. No install: the
-  #   0.6.1 disk installer completes but the installed system stalls at
-  #   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --
-  #   the project deleted every FreeBSD-era release from GitHub and SourceForge.
+# ---- ravynOS ----
+# ravynos: pinned live ISO -> logged-in desktop -> golden. No install: the
+#   0.6.1 disk installer completes but the installed system stalls at
+#   launchd before rc (docs/guests/ravynos.md). The ISO is mirror-only --
+#   the project deleted every FreeBSD-era release from GitHub and SourceForge.
   "ravynos        |tiles/ravynos.sh                                      |RavynOS           |fast        |~10-20m                      |full                         |ravynos-golden.qcow2 (vmstate carrier + golden) + OVMF_VARS.qcow2"
   "bootos         |tiles/bootos.sh                                       |BootOS            |fast        |~1m                          |full                         |bootos-floppy.qcow2 (360K floppy: bootOS boot sector + 19 boot-sector programs)"
   "pcgeos         |tiles/pcgeos.sh                                       |PCGEOS            |fast        |~2m                          |full                         |pcgeos.qcow2 (FreeDOS 1.3 disk + C:\ENSEMBLE, autoexec runs loader.exe)"
@@ -250,67 +250,67 @@ SKIP_VERIFY=0
 CHECK_ASSETS=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --list)
-      print_manifest
-      exit 0
-      ;;
-    --only)
-      [ $# -ge 2 ] || {
-        err "--only requires a guest key"
-        exit 2
-      }
-      ONLY+=("$2")
-      shift 2
-      ;;
-    --only=*)
-      ONLY+=("${1#*=}")
-      shift
-      ;;
-    --class)
-      [ $# -ge 2 ] || {
-        err "--class requires a class"
-        exit 2
-      }
-      CLASS_FILTER="$2"
-      shift 2
-      ;;
-    --class=*)
-      CLASS_FILTER="${1#*=}"
-      shift
-      ;;
-    --with-media)
-      WITH_MEDIA=1
-      shift
-      ;;
-    --include-licensed)
-      INCLUDE_LICENSED=1
-      shift
-      ;;
-    --check-assets)
-      CHECK_ASSETS=1
-      shift
-      ;;
-    --fail-fast)
-      FAIL_FAST=1
-      shift
-      ;;
-    --skip-verify)
-      SKIP_VERIFY=1
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=1
-      shift
-      ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    *)
-      err "unknown arg: $1"
-      usage
+  --list)
+    print_manifest
+    exit 0
+    ;;
+  --only)
+    [ $# -ge 2 ] || {
+      err "--only requires a guest key"
       exit 2
-      ;;
+    }
+    ONLY+=("$2")
+    shift 2
+    ;;
+  --only=*)
+    ONLY+=("${1#*=}")
+    shift
+    ;;
+  --class)
+    [ $# -ge 2 ] || {
+      err "--class requires a class"
+      exit 2
+    }
+    CLASS_FILTER="$2"
+    shift 2
+    ;;
+  --class=*)
+    CLASS_FILTER="${1#*=}"
+    shift
+    ;;
+  --with-media)
+    WITH_MEDIA=1
+    shift
+    ;;
+  --include-licensed)
+    INCLUDE_LICENSED=1
+    shift
+    ;;
+  --check-assets)
+    CHECK_ASSETS=1
+    shift
+    ;;
+  --fail-fast)
+    FAIL_FAST=1
+    shift
+    ;;
+  --skip-verify)
+    SKIP_VERIFY=1
+    shift
+    ;;
+  --dry-run)
+    DRY_RUN=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    err "unknown arg: $1"
+    usage
+    exit 2
+    ;;
   esac
 done
 
