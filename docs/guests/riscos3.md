@@ -49,9 +49,13 @@ every measurement below: [`docs/lab/RISCOS3-WAVE.md`](../lab/RISCOS3-WAVE.md).
   `sta/aa310/golden.sta` — the same launcher cold-boots to the bare Desktop
   in 21 s.
 - Pointer: 1:1 ABSOLUTE closed loop on the VIDC1a hardware-cursor registers.
-  Ten spread targets over two laps, worst error 3 px X / 2 px Y, no give-ups.
-  All three buttons proven: Menu (middle) drops the Pinboard menu, Select
-  (left) opens the Apps window, Adjust is `CLICK2`.
+  Twenty spread landings over two runs, worst error 8 px X / 4 px Y (median
+  within 2), no give-ups. All three buttons proven with their own semantics:
+  Select opens the Apps window, Menu (middle) drops the Pinboard menu at the
+  pointer, Adjust on the Filer close icon opens the parent `Resources:$`.
+  **Do not set `MAME_CTL_BTN_ACTIVE_LOW`** — MAME already XORs the
+  `IP_ACTIVE_LOW` bits in from the port defvalue, so the knob inverts the
+  module's press/release and leaves the button held after every click.
   **The raster is letterboxed** — reachable published pixels are roughly
   x 118..905, y 43..722.
 - Keyboard: `riscos3.keymap`, generated from the live ctlsock `KEYDUMP`
