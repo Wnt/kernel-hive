@@ -48,11 +48,18 @@ plus the silkscreen Applications button returning from each.
 
 ## Keyboard
 
-**None — this is a pen-only exhibit.** A PalmPilot has no keyboard; text is
-Graffiti handwriting. The driver's seven hardware buttons are not usefully
-reachable either: `palm.cpp` wires the CPU's port-D input callbacks to the PEN
-button port rather than the key matrix, so Palm OS reads the pen where it
-expects a key. Everything the exhibit needs is on the touchscreen.
+**None — this is a pen-only exhibit, deliberately.** A PalmPilot has no
+keyboard; text is Graffiti handwriting. The driver's seven hardware buttons
+are worse than unreachable: MEASURED 2026-09-20 driving each from the
+Launcher, Button 2 (Address) and Button 3 (To Do List) corrupt the screen into
+visible garbage, and Button 4 (Memo Pad) crashes Palm OS into a "Fatal
+Exception" dialog. Only Button 1 (Date Book) and Power behave as documented,
+and Power is itself a one-way sleep trap (see Known limits). No keymap ships
+for this row — `palmos.keymap` was deleted, not left unpromoted — because the
+previous placeholder wired exactly those broken buttons onto the on-screen
+keyboard. Everything the exhibit needs is on the touchscreen, including the
+silkscreen Applications/Menu/Calculator/Find row. Evidence:
+`docs/lab/palmos-evidence/05`-`08`.
 
 ## Scene and reset
 
@@ -77,5 +84,12 @@ speed that is minutes, not seconds — see OPEN 1 and 2 in the wave doc.
 - **`SH_IDLE_PAUSE_SECS=420`**, not the fleet's 60, because a frozen guest
   never finishes its scripted boot. An unwatched station therefore burns a core
   for 7 minutes after a session.
-- **Auto-off after 2 minutes** is a Palm OS preference with no "never". Whether
-  a pen tap wakes it is unmeasured.
+- **Auto-off after 2 minutes is a one-way trap.** MEASURED: once asleep
+  (LCKCON's `LCDON` cleared), nothing brings the device back — not a pen tap,
+  not a PORTD Power pulse, not both together, not a second Power press. Same
+  root cause as the button corruption above (`pddata_r` reads the pen port
+  where Palm OS expects the key matrix). Because the daemon freezes an
+  unwatched guest, this mostly bites a visitor who IS connected and watching
+  without touching for 2 minutes. No in-guest fix exists; the real fix is
+  daemon-side (an idle-triggered relaunch inside 2 minutes). Evidence:
+  `docs/lab/palmos-evidence/01`-`04`.

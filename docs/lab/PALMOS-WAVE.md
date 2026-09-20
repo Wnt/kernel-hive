@@ -172,19 +172,37 @@ the path is identical every time, and the numbers count *emulated* frames.
    time to build; the price is that an unwatched station burns a core for 7
    minutes after each session instead of one. Fixing (1) or the savestate crash
    retires this.
-3. **Auto-off.** Palm OS has "Auto-off after: 2 minutes" and no "never". A
-   visitor who watches without tapping for two emulated minutes will see the
-   device sleep. Whether a pen tap wakes it is UNMEASURED at landing — there is
-   reason to think it does, because `pddata_r` reads the pen button where Palm
-   OS expects the Power key, but that is a theory, not a measurement. In
-   practice the station spends most of its life frozen at the Launcher, and a
-   frozen guest's idle timer does not run.
-4. **Hardware buttons.** The driver's seven PORTD buttons (Power, Up, Down,
-   Button 1-4) are almost certainly inert for the reason in the 3.x section
-   above — Palm OS reads PENB where it expects the key matrix. The station
-   ships **pen-only** and says so; a PalmPilot has no keyboard anyway, and
-   everything the exhibit needs is on the touchscreen including the silkscreen
-   row. Confirm, then delete `palmos.keymap` and the `SH_MAMESOCK_KEYMAP` line.
+3. **Auto-off is a one-way trap. MEASURED, not fixed.** Palm OS has "Auto-off
+   after: 2 minutes" and no "never". A separate stream put the device to sleep
+   via a PORTD Power press (the same LCD-off path the auto-off timer drives —
+   confirmed with the LCKCON write-tap: `0xd8`→`0x58` on sleep) and then tried
+   every plausible wake: a pen tap held up to 6.7 emulated seconds, a PORTD
+   Power pulse alone, pen-held-plus-Power together, and a second identical
+   Power press. **None re-set `LCDON`.** Every framebuffer stayed the sleep
+   colour. This is the same root cause as the button corruption below —
+   `pddata_r` reads the pen-button port where Palm OS expects the key matrix,
+   so whatever a real Palm reads to wake itself has nothing to read here.
+   Because the daemon freezes the guest (`SIGSTOP`) once nobody is connected,
+   the 2-minute clock mostly only runs while a visitor IS watching and NOT
+   touching — precisely the visitor the idle grace exists to protect. There is
+   no in-guest recovery. The only real fix is daemon-side: an idle-triggered
+   relaunch comfortably inside 2 minutes, or the savestate crash fixed so a
+   fast checkpoint reload can serve as that reset. Neither is done. Evidence:
+   `docs/lab/palmos-evidence/01`-`04` (awake → Power-sleep → pen tap fails to
+   wake → a second Power press fails to wake).
+4. **Hardware buttons are worse than inert — three of seven break the guest.
+   MEASURED, removed from the fixture.** Driven from the Launcher: Button 1
+   (Date Book) opens the Week view cleanly and Power sleeps the device as
+   above, but Button 2 (Address) and Button 3 (To Do List) corrupt the screen
+   into visible garbage, and Button 4 (Memo Pad) crashes Palm OS outright into
+   a "Fatal Exception" dialog with only a Reset button. Up/Down show no effect
+   on the Launcher — plausibly genuinely inert there, not corrupting. The
+   station therefore ships with **no keymap at all** — `palmos.keymap` is
+   deleted and `SH_MAMESOCK_KEYMAP` is unset, not merely unpromoted — because
+   the previously-committed placeholder wired exactly the two corrupting and
+   one crashing button onto the on-screen keyboard. Evidence:
+   `docs/lab/palmos-evidence/05`-`08` (Date Book works, Address corrupts, To
+   Do List corrupts, Memo Pad's Fatal Exception dialog).
 5. **Scene body.** `palmPda` is the `phone-a` handheld shell at the PalmPilot's
    own height (119.4 mm), scaled uniformly so the proven geometry is not
    distorted. A real PDA mesh — flatter, wider, with the silkscreen area printed

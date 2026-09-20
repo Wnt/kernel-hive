@@ -122,14 +122,11 @@
         "$T/mame-native/x11-runtime.sh",
         "--aux-file",
         "$T/palmos/palmos-boot.lua",
-        "--aux-file",
-        "$T/palmos/palmos.keymap",
         "--env-append-file",
         "$T/palmos/station.env.fixture"
       ],
       "auxFiles": [
         "streamhost/stations/palmos/palmos-boot.lua",
-        "streamhost/stations/palmos/palmos.keymap",
         "streamhost/stations/palmos/station.env.fixture"
       ]
     }
@@ -185,7 +182,7 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "PROVEN 2026-09-20: absolute pen, six Applications Launcher icons plus the silkscreen Applications button, every tap opening the intended app. Accuracy is self-consistent by construction -- the boot script calibrates the digitizer with the pointer patch's own map, so Palm OS's affine map is its exact inverse; residual quantisation is the pen field's own 161 steps, ~1.0 px across and ~1.37 px down.",
-    "keyboard": "PEN-ONLY EXHIBIT. A PalmPilot has no keyboard -- text is Graffiti handwriting -- and the driver's seven hardware buttons are not usefully reachable: palm.cpp wires the CPU's port-D input callbacks to the PENB port rather than PORTD, so Palm OS reads the pen button where it expects the key matrix. Everything the exhibit needs is on the touchscreen, including the silkscreen Applications/Menu/Calculator/Find row. See docs/lab/PALMOS-WAVE.md.",
+    "keyboard": "PEN-ONLY EXHIBIT, deliberately. MEASURED 2026-09-20: of the driver's seven PORTD hardware buttons, only Date Book and Power behave as documented -- Address and To Do List corrupt the screen into visible garbage, and Memo Pad crashes Palm OS into a \"Fatal Exception\" dialog. Power itself is a one-way trap (see museum.notes / the auto-off note in station.env.fixture). There is no safe on-screen-keyboard mapping for this row, so none is shipped -- everything the exhibit needs is on the touchscreen, including the silkscreen Applications/Menu/Calculator/Find row. See docs/lab/PALMOS-WAVE.md.",
     "fixture": "PalmPilot Professional, MAME 0.289 palmpro driver, Palm OS 2.0 Professional (English), host-native (drawshm) on the published 160x220 surface. The scene is the Applications Launcher, reached by a scripted cold boot (no checkpoint -- savestate restore segfaults on this driver); reset replays it. See docs/lab/PALMOS-WAVE.md."
   },
   "migrationExceptions": [],
