@@ -237,6 +237,29 @@ checkpoint, a binary and a device set are one combination. The real files are
 found`), so neither the poster nor the demo cites it. Verified commands are
 `list`, `who`, `date_time` and `help`.
 
+## Two hazards this landing hit that are not about Multics
+
+**Generated and scene files were silently reverted mid-session.** Between
+writing the scene rows (`spa/src/scene/{assembliesByTile,machineIdentity}.3.ts`)
+and the next gate, both files AND the regenerated artifacts went back to their
+last-committed content, with `git status` reporting the tree clean — so the
+loss was invisible until `make station-registry-check` failed with "no row for
+lineup entry ['multics']" for rows that had been added and verified. The only
+thing between the two points was the repo's own
+`python3 -m unittest discover -s scripts` suite (which, note, also ships
+traces to a live endpoint). NOT root-caused. The practical defence, and what
+this wave now does: **commit generated and scene rows immediately after
+generating them**, and re-run `station-registry-check` after any full test
+run rather than trusting an earlier green.
+
+**Two vitest assertions fail as flake on a loaded box.**
+`src/three/connectTelemetry.test.ts` asserts `expect(span.duration).toBe(0)`
+for `*Ms` spans; at labhost load 60–120 those spans measure 1 ms and the test
+fails, then passes on a re-run and in isolation. It cost this landing one
+rejected push (the pre-push gate runs `npx vitest run`). It is not a multics
+test and nothing here touches it, so it is left alone and recorded — but a
+wave landing during another wave should expect it.
+
 ## Rule 5, paid for again
 
 The resume session killed its OWN labrun shell (exit 144) with a loop that
