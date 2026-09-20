@@ -201,3 +201,28 @@ Two traps worth carrying forward:
   "dead". Do not conclude a guest died from one black frame.
 * labhost's `qemu-img` is `/usr/bin/qemu-img`; `/opt/qemu-ppc` is built
   `--disable-tools` and ships no `qemu-img`.
+
+## Teardown (done at pause) — and one live landmine
+
+Released and verified:
+
+| Thing | Released with | Check that proved it |
+|---|---|---|
+| slot 212, UDP 54212, VMID 212 | `smoke-rig.sh macosx --down --release-claims` | `kh-claim ls --all \| grep -i macosx` → no rows |
+| `/os/macosx` dark-launch | `smoke-rig.sh macosx --down` | `ls /data/vms/streamhost/serve/darklaunch.d/macosx.json` → no such file |
+| both rigs (`ptrA`, `ptrB`) | `kill` resolved through `/proc/<pid>/exe`, never a cmdline grep | only `qemu-system-ppc` left on the box are `macos9` and `aix432`, neither mine |
+| sandbox `macosx-work` | `wt.sh rm macosx-work --force` (safe: branch was on origin first) | `ls -d /data/vms/sandbox/macosx-work` → no such directory |
+
+The staged media is **deliberately kept** at `/data/assets-staging/macosx/`
+(1.3 GB, both ISOs, hashes in this file). It costs no CPU, it is the slow part
+to re-acquire, and a resumed stream needs it.
+
+**LANDMINE: `registry/stations/macosx.json` still names slot 212 / UDP 54212 /
+VMID 212, but the `kh-claim` locks on those three were released.** Nothing
+stops another wave taking 212 now, and `stations-registry.py new --slot auto`
+will not notice, because it picks `max(slot)+1` over the registry files and
+will simply skip past 212. A stream resuming macosx must therefore re-run
+`scripts/dev/wave.sh alloc macosx` FIRST and, if 212 is gone, rewrite the
+registry entry, the launcher's `udp=54212` echo and this ledger to whatever it
+actually gets — rather than assuming the numbers in this file are still its own.
+Confirm with `ssh lab 'labctl who'` before trusting 212.
