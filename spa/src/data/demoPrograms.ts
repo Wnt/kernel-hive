@@ -262,6 +262,16 @@ const DEMO_PROGRAMS = {
     "runCommand": "df -h /",
     "perCharMs": 80
   },
+  "vax43bsd": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
+    "perCharMs": 80
+  },
   "vic20": {
     "label": "Type in a demo program",
     "lines": [

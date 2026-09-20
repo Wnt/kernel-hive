@@ -165,4 +165,12 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#cfc5ab', accentTint: '#2d4f8e', tintMix: 0.3,
     badge: 'ISA 486 TOWER', spec: 'VGA • 1990', kit: 'office90',
   },
+  // A VAX-11/780 is a pair of DEC cabinets in the blue-grey the company used
+  // through the late 1970s, with the 11/780's own light-blue logo panel and a
+  // VT100 on the desk beside it — not the magenta PDP-11 console this row was
+  // scaffolded from.
+  vax43bsd: {
+    caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
+    badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

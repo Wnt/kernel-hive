@@ -285,6 +285,9 @@ const POSTER_INDEX = {
   "ubuntu": {
     "hero": "/posters/ubuntu/desktop.webp"
   },
+  "vax43bsd": {
+    "hero": "/posters/vax43bsd/desktop.webp"
+  },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
   },

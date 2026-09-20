@@ -176,6 +176,7 @@ MANIFEST=(
   "minix2         |tiles/minix2.sh                                       |Minix2            |retro       |~3m                          |full                         |minix2.qcow2 (pre-installed Minix 2.0.4, /usr/src)"
   "xenix          |tiles/freedos.sh                                      |FreeDOS           |retro       |~10-15m                      |full*                        |freedos.qcow2 (games+Arachne)"
   "os213          |tiles/nt351.sh                                        |Nt351             |installed   |~15-30m                      |partial                      |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)"
+  "vax43bsd       |tiles/vax43bsd.sh                                     |VAX43BSD          |terminal    |~25m                         |full                         |assets/vax43bsd/{bin/vax780,media/{43.tap,bsd43-ra81.dsk,boot42},rootfs} — Open SIMH's VAX-11/780 simulator, the 4.3BSD distribution tape built from the TUHS files, an RA81 with 4.3BSD installed and HALTED CLEAN, and the container rootfs (relaunch reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
