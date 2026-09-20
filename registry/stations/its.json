@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "its",
+  "era_year": 1967,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 85,
+        "prelude": "",
+        "value": {
+          "key": "its",
+          "script": "tiles/its.sh",
+          "outputDir": "ITS",
+          "class": "terminal",
+          "estimated": "~30m",
+          "automation": "full",
+          "produces": "assets/its/{tree,rootfs} — the github.com/PDP-10/its tree built from source (SIMH PDP-10 KS10 binary at tools/simh/BIN/pdp10 and a bootable RP06 at out/simh/rp0.dsk, assembled by booting ITS inside the simulator) plus the container rootfs (relaunch reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/its",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54216,
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: SIMH's PDP-10 (KS10) simulator runs MIT ITS inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is DZ11 line 0 on the CONTAINER's loopback port 10004, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/its/mame.pid) -n telnet 127.0.0.1 10004` — and only while no visitor is attached. mame.pid is the SIMH pdp10 HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The simulator console is NOT the museum surface: it goes to work/emulator.log and carries the `sim>` escape prompt. Reset=relaunch: kill pdp10 by mame.pid, wipe work/, copy the pristine rp0.dsk back and start again. Launcher stations/its/x11-runtime.sh, which execs the lane's shared engine stations/its/shared-terminal-runtime.sh; assets in assets/its (MANIFEST.sha256 pins the built tree)."
+    }
+  },
+  "render": {
+    "signalOrder": 92,
+    "stationsManifestOrder": 90,
+    "stationsManifestPrelude": "\n# its — MIT ITS on a SIMH PDP-10 (KS10), contained: simulator + Xvfb + one\n# xterm on the DZ11 visitor line inside systemd-nspawn; relaunch reset from the\n# pristine RP06 the source build assembled.\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 113,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: a DEC PDP-10 (KA10/KS10) cabinet row with a Model 33 Teletype or a VT52 beside it — the MIT AI Lab machine room on Tech Square, ninth floor",
+    "goldenOrder": 90
+  },
+  "stationDir": "its",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54216,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "x11test",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none — a 1967 timesharing system reached over one terminal line has no pointing device. The x11test backend is present for KEYS only (SH_X11TEST_KEYS=1).",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 216
+  },
+  "guestDoc": "docs/guests/its.md",
+  "credentialsRef": "guest/its",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "its",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":116",
+      "SH_PORT": "54216",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/its/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/its/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/its/its_cmd"
+    },
+    "bringUpOrder": 113,
+    "x11": {
+      "display": ":116",
+      "geometry": "1024x768x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/its/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "its",
+        "--udp",
+        "54216",
+        "--x11",
+        "--x11-display",
+        ":116",
+        "--capture",
+        "x11",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/its/x11-runtime.sh",
+        "--aux-file",
+        "$T/its/shared-terminal-runtime.sh",
+        "--aux-file",
+        "$T/its/nspawn-inner.sh",
+        "--env-append-file",
+        "$T/its/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/its/nspawn-inner.sh",
+        "streamhost/stations/its/shared-terminal-runtime.sh",
+        "streamhost/stations/its/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "mono-terminal",
+    "transport": "streamhost",
+    "accentColor": "#B23A48",
+    "eraLabel": "1967 · MIT ITS — the AI Lab's PDP-10 timesharing system"
+  },
+  "museum": {
+    "id": "its",
+    "displayName": "MIT ITS",
+    "year": 1967,
+    "lineage": "CTSS (MIT, 1961) → ITS on the AI Lab's PDP-6 (1967) → ITS on the PDP-10 → Emacs and the GNU project",
+    "arch": "DEC PDP-10 (KS10 model, 36-bit words) under SIMH — an RP06 disk pack holding the whole system, a Chaosnet interface the 1967 kernel refuses to boot without, and a DZ11 terminal multiplexer with the visitor on line 0",
+    "ramMB": 1,
+    "era": "1960s",
+    "accent": "#B23A48",
+    "eraSoftware": [
+      "DDT — the debugger MIT used as its command shell, so 'the shell' and 'the debugger' were the same program",
+      "Emacs, written here by Richard Stallman and Guy Steele as a set of TECO macros",
+      "TECO, the editor Emacs was built on top of",
+      "Maclisp — the Lisp that Macsyma, Emacs's successor and Scheme all came from",
+      "the INFO documentation system, still the shape of GNU's manuals",
+      "MIDAS, the PDP-10 assembler ITS itself is written in"
+    ],
+    "periodBrowser": "none — ITS predates the web by two decades. Its network was the ARPANET, and this exhibit is deliberately not networked at all",
+    "iconicApps": [
+      "DDT",
+      "Emacs",
+      "TECO",
+      "Maclisp",
+      "INFO"
+    ],
+    "blurb": "The operating system the word 'hacker' was invented around. MIT's AI Lab wrote ITS for its PDP-6 in 1967 in deliberate opposition to the Multics project down the hall: where Multics was security, accounting and a committee, ITS had no passwords, no file protection and no way to stop another user reading your terminal — on purpose, because the people on the ninth floor of Tech Square trusted each other and wanted the machine open. Emacs was written here. So were TECO, Maclisp, the INFO manuals, Zork's ancestor and most of the culture that became free software; Richard Stallman was ITS's last system administrator, and he started GNU because the machine that replaced it wouldn't let him fix the printer driver. The command processor is DDT, a debugger — on ITS you do not run a shell, you talk to the machine.",
+    "notes": "Tier 3, EMULATED but CONTAINED and with no checkpoint: SIMH's PDP-10 (KS10) simulator, the station's Xvfb and the visitor's xterm all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2424832, volatile overlay root, the built tree bound read-only, CAP_SYS_ADMIN dropped, mount syscalls filtered). ITS has no passwords and no protection between users — that is the exhibit, not an oversight — so the container, not the guest, is the security boundary. There is no media to source: the maintained github.com/PDP-10/its tree assembles the entire system from its own sources by booting a PDP-10 and building ITS inside it, and the RP06 that falls out is the exhibit (pinned in assets/its/MANIFEST.sha256). The visitor surface is one xterm on DZ11 line 0; the simulator console is never on screen. SIMH answers for itself from the ini file, so the simulator is the single supervised process and the station needs no pty/expect supervisor — the shared heritage-terminal runtime vax43bsd proved. No checkpoint: reset is a relaunch from the pristine built RP06. See docs/guests/its.md."
+  },
+  "emulator": {
+    "family": "simh",
+    "version": "SIMH PDP-10 (KS10) as vendored by PDP-10/its, submodule commit 4d38373206cd7c0ce8b94f5e16bd4429cb96430f; binary sha256 6173472cb707d9ed34654e5fdbde5c84b7e59011c3c2221fe58d86f8620b3e10",
+    "source": "github.com/PDP-10/its pinned at 0f7d67997f9f5d30208e117e73272031e74f16b9, built with `make EMULATOR=simh` on labhost by scripts/build-guests/tiles/its.sh; the simulator binary and the assembled RP06 are hashed in assets/its/MANIFEST.sha256",
+    "driver": "pdp10"
+  },
+  "ui": "text-console",
+  "network": {
+    "status": "none",
+    "note": "No network plane and no retronet reservation. ITS spoke ARPANET NCP and Chaosnet; neither has anywhere to go here, the DZ11 terminal line is the whole visitor surface, and the station is an island on purpose. The DZ telnet listener lives on the container's own loopback behind --private-network, so it claims no host port and is unreachable from labhost."
+  },
+  "reset": {
+    "stationDir": "its",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A — no pointing device. A DZ11 terminal line carries keystrokes only, and the exhibit publishes no pointer (stream.pointer.present=false).",
+    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb: on the smoke rig ':LISTF' typed over XTEST echoed byte-perfect at the DDT prompt and ITS answered 'DSK: 0; .FILE. (DIR) - NON-EXISTENT DIRECTORY' (shots/f3.png); ':LISTF SYS;' then printed the real 1977-1987 system directory with a '--More-- (Space=yes, Rubout=no)' pager (shots/f4.png). TRAP inherited from vax43bsd: no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up.",
+    "fixture": "One 80x31 xterm, DejaVu Sans Mono at -fs 14, measured 964x748 px inside the station's own container and placed +30+10 to centre it on an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. -fs 14 is the largest size at which 80 columns fit 1024 px (measured: 12.05 px per column, 24 px per row; the scaffold's -fs 21 measured 1440x1050 and clipped every line of ITS's own greeting). At rest it shows a live DDT session: 'DB ITS.1652. DDT.1549.', 'TTY 1', \"You're all alone, Fair share = 65%\", '(ITS does not know the date, so messages cannot be reviewed right now.)', 'Welcome to ITS!', the three how-to lines ending 'For the full info system, type :INFO and Enter.', and 'Happy hacking!' with the block cursor. Reached 32 s after the launcher starts (MEASURED 2026-09-20, launcher return to return). TWO THINGS THE LAUNCHER MUST DO or the scene is wrong: pin X input focus (no window manager runs), and type one ^Z — ITS does not greet a terminal that connects to a DZ line, because its boot chatter goes to the PDP-10 console and not to line 0, so without that keystroke the exhibit opens as an empty black terminal. Both are gated on lit pixels, not on the keystroke. resetMode=relaunch with no statefile: kill pdp10 by mame.pid, wipe work/, copy the pristine RP06 back in, start again (32 s). PROVEN 2026-09-20: ':LISTF SYS;' scrolled the screen to 49472 lit px, relaunch returned the greeting at 13586, and the seed's sha256 (7974e21b959164ebbe8125643b6932cc895111e268550119befcd6fce4401a90) was byte-identical before and after — the work copy diverges from it within one session, the seed never does."
+  },
+  "notes": [
+    "Record wave 2026-09-20, Lane B (docs/lab/ITS-WAVE.md): built from source — there is no ITS distribution image to fetch, the build assembles the system by booting a PDP-10. Runs on the shared heritage-terminal runtime vax43bsd proved."
+  ],
+  "demoProgram": {
+    "label": "You are at the DDT prompt — ITS's command processor is its debugger. Look around.",
+    "lines": [
+      "?",
+      ":LISTF SYS;"
+    ],
+    "runCommand": ":LISTF SYS;",
+    "perCharMs": 80
+  }
+}

@@ -89,18 +89,18 @@ XSOCK="/tmp/.X11-unix/X${DISP#:}"
 # --- reap: maiko (by exe, scoped to this station's asset dir), then any
 # supervisor left over. SIGCONT before TERM (a SIGSTOPped VM never handles
 # TERM); refuse to start over a survivor.
+# Resolve by /proc/<pid>/exe (AGENTS.md rule 5 — never a cmdline grep), but in
+# ONE fork instead of one `readlink` per pid. MEASURED 2026-09-20 on a box at
+# load 139 (ten station waves at once): the per-pid loop cost 13.4 s per scan,
+# the launcher calls it once to reap and once per wait iteration, and the
+# unit's 90 s start-pre timeout killed every restart. `find -lname` matches the
+# same symlink target, including a "... (deleted)" exe, in ~0.05 s.
 station_vm_pids() {
-  local d p exe
-  for d in /proc/[0-9]*; do
-    [ -d "$d" ] || continue
-    p="${d#/proc/}"
-    [ "$p" = "$$" ] && continue
-    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
-    exe="${exe% (deleted)}"
-    case "$exe" in
-      "$ASSETS"/maiko/*) printf '%s\n' "$p" ;;
-    esac
-  done
+  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$ASSETS/maiko/*" \
+    -printf '%h\n' 2>/dev/null |
+    sed 's#^/proc/##' |
+    grep -E '^[0-9]+$' |
+    grep -vx "$$" || true
 }
 pidfile_alive() { # $1 pidfile $2 exe basename expected
   local p exe

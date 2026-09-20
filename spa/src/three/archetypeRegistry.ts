@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (105 of the 107
+//    - transport   : how its LIVE framebuffer texture is obtained (111 of the 113
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 105 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 111 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -233,7 +233,13 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   apple2gs:    { osId: 'apple2gs', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1986 · Apple IIGS — GS/OS 6.0.1', pointerRel: false },
   xenix:       { osId: 'xenix', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#4f8a8b', eraLabel: '1989 · Unix on the PC' },
   os213:       { osId: 'os213', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#2d4f8e', eraLabel: '1990 · OS/2 1.3 Presentation Manager', pointerRel: false },
-  msx2:        { osId: 'msx2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#376ca8', eraLabel: '1987 · MSX2 (Philips NMS 8250) — MSX-BASIC + MSX-DOS 2' },
+  msx2:        { osId: 'msx2', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#376ca8', eraLabel: '1987 · MSX2 (Philips NMS 8250) — MSX-BASIC' },
+  cpm22:       { osId: 'cpm22', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#6b9d70', eraLabel: '1982 · CP/M 2.2 (Kaypro II)' },
+  riscos3:     { osId: 'riscos3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1992 · RISC OS 3.11', pointerRel: false },
+  vax43bsd:    { osId: 'vax43bsd', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#67828F', eraLabel: '1986 · 4.3BSD — Berkeley Unix on the VAX' }, // ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)
+  mvs38:       { osId: 'mvs38', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#4FA36C', eraLabel: '1981 · IBM MVS 3.8j — the mainframe behind the green screen' }, // ideal: an IBM System/370 frame in a raised-floor machine room with an IBM 3279 colour display terminal on a desk in front of it
+  its:         { osId: 'its', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#B23A48', eraLabel: '1967 · MIT ITS — the AI Lab\'s PDP-10 timesharing system' }, // ideal: a DEC PDP-10 (KA10/KS10) cabinet row with a Model 33 Teletype or a VT52 beside it — the MIT AI Lab machine room on Tech Square, ninth floor
+  multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

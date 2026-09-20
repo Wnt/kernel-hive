@@ -320,6 +320,15 @@ try:
 except ValueError:
     rows = []
 for row in rows:
+    # NEVER re-home the landing window. Its purpose reads
+    # "landing window: <wave> / <station>", so it matches this filter, and
+    # re-homing it moves the LANE LOCK onto a session that never ends: step 14
+    # then releases it as the wave session, silently fails because it is no
+    # longer the owner, and every sibling queues behind a station that landed
+    # (measured 2026-09-20, vax43bsd — it held the window after landing while
+    # mvs38/multics/its were waiting to land behind it).
+    if row.get("class") == "landing":
+        continue
     blob = f"{row.get('"'"'name'"'"','"'"''"'"')} {row.get('"'"'purpose'"'"','"'"''"'"')}"
     if station in blob:
         print(shlex.quote(row["class"]), shlex.quote(str(row["name"])), shlex.quote(row.get("purpose", "")))

@@ -148,7 +148,19 @@ function reportTiming(id: MetricId, ms: number, attrs?: Attrs): void {
   const host = currentSpan();
   if (host) return host.event(id, { 'kh.metric': id, 'kh.metric.ms': ms, ...attrs });
   const marker = childOfActive(id, { 'kh.metric': id, 'kh.metric.ms': ms, ...attrs });
-  marker.end('ok');
+  // `endAt(0)`, not `end()`: the zero duration above is a CONTRACT, not a
+  // coincidence. `end()` stamps the marker at "now", so its duration was
+  // whatever wall time passed between these two statements — normally under
+  // half a millisecond, hence 0 after rounding, but on a loaded box it rounds
+  // to 1 and the marker becomes a 1 ms sliver of "work" in a flame graph,
+  // which is precisely the defect this fallback exists to avoid. It also made
+  // the suite flaky: `metrics.test.ts` ("falls back to a ZERO-duration
+  // marker") and `three/connectTelemetry.test.ts` ("emits no span named for a
+  // metric") both assert `d === 0` and both failed intermittently on a busy
+  // labhost. `endAt` clamps a reading from before the span started up to the
+  // span's own start — that is what its doc comment promises — so 0 asks for
+  // "end exactly where you began" and the duration is 0 by construction.
+  marker.endAt(0, 'ok');
 }
 
 /**

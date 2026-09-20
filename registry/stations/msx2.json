@@ -135,11 +135,11 @@
     "archetypeId": "beige-tower-crt",
     "transport": "streamhost",
     "accentColor": "#376ca8",
-    "eraLabel": "1987 \u00b7 MSX2 (Philips NMS 8250) \u2014 MSX-BASIC + MSX-DOS 2"
+    "eraLabel": "1987 \u00b7 MSX2 (Philips NMS 8250) \u2014 MSX-BASIC"
   },
   "museum": {
     "id": "msx2",
-    "displayName": "MSX2 \u2014 MSX-DOS 2",
+    "displayName": "MSX2",
     "year": 1987,
     "lineage": "MSX standard \u2192 MSX2 (Philips NMS 8250, 1987)",
     "arch": "Zilog Z80A, 3.58 MHz, Yamaha V9938 VDP (MSX2 video)",
@@ -154,8 +154,7 @@
     ],
     "periodBrowser": "none \u2014 pre-web 8-bit era",
     "iconicApps": [
-      "MSX-BASIC",
-      "MSX-DOS 2"
+      "MSX-BASIC"
     ],
     "blurb": "A home-computer standard instead of a single vendor machine \u2014 BASIC in ROM, cartridges, disks and MSX-DOS shared across machines from Sony, Panasonic, Philips and others.",
     "notes": "Host-native station: MAME 0.289's nms8250 driver (Philips NMS 8250, ordinary MSX2 with one internal WD2793 floppy drive) runs on the host (drawshm frames, ctlsock keys, FIFO audio), no QEMU and no guest OS. -flop1 is the staged MSX-DOS 2 (English) system disk (file-hunter.com mirror, sha256 in docs/lab/MSX2-WAVE.md). Keyboard-only exhibit (pointer transport none), like samcoupe/apple2e. See docs/lab/MSX2-WAVE.md for the record-wave ledger."

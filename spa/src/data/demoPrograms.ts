@@ -114,6 +114,15 @@ const DEMO_PROGRAMS = {
     "runCommand": "kcalc &",
     "perCharMs": 80
   },
+  "its": {
+    "label": "You are at the DDT prompt — ITS's command processor is its debugger. Look around.",
+    "lines": [
+      "?",
+      ":LISTF SYS;"
+    ],
+    "runCommand": ":LISTF SYS;",
+    "perCharMs": 80
+  },
   "medley": {
     "label": "Type a Lisp form into the Exec (click in the Exec window first)",
     "lines": [
@@ -160,6 +169,24 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "RUN",
     "perCharMs": 260
+  },
+  "multics": {
+    "label": "Log in, then look around a 1969 timesharing system",
+    "lines": [
+      "login Repair",
+      "multics",
+      "who"
+    ],
+    "runCommand": "list",
+    "perCharMs": 80
+  },
+  "mvs38": {
+    "label": "Open the TSO command panel, then ask the mainframe what time it is",
+    "lines": [
+      "6"
+    ],
+    "runCommand": "TIME",
+    "perCharMs": 80
   },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
@@ -272,6 +299,16 @@ const DEMO_PROGRAMS = {
       "df -h /"
     ],
     "runCommand": "df -h /",
+    "perCharMs": 80
+  },
+  "vax43bsd": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
     "perCharMs": 80
   },
   "vic20": {

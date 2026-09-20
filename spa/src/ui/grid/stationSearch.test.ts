@@ -122,7 +122,16 @@ describe('a short query must not light up the whole page', () => {
     expect(three).toContain('nt351');     // NT 3.51
     expect(three).toContain('aux');       // A/UX 3.0.1
     expect(three).toContain('nextstep');  // NeXTSTEP 3.3
-    expect(three.length).toBeLessThan(stations.length / 4);
+    // The budget is the "whole page" property, not a precise fraction, and it
+    // is measured against a fleet that keeps growing. It was a quarter until
+    // 2026-09-20, when `vax43bsd` (4.3BSD) made it exactly a quarter and no
+    // longer fewer. That station is a CORRECT hit, not a regression: rule 2
+    // splits a dotted version into separate terms on purpose, which is the
+    // same mechanism that lets `11` find Windows 3.11, and 4.3BSD's minor
+    // version is a 3. Widened to a third so the guard still catches what it is
+    // for — a short query lighting up half the hall — without failing the next
+    // machine whose version happens to contain a 3.
+    expect(three.length).toBeLessThan(stations.length / 3);
   });
 
   it('3 does not reach a version 3 buried mid-string, nor a 3 in a clock speed', () => {
