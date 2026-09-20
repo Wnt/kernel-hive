@@ -188,17 +188,14 @@ esac
 # the old emulator alive put two of them into one mapping on three live
 # stations during the MAME wave (DEBRIDGE-HANDOVER.md §Lessons 7).
 station_emu_pids() {
-  local d p exe
-  for d in /proc/[0-9]*; do
-    [ -d "$d" ] || continue
-    p="${d#/proc/}"
-    [ "$p" = "$$" ] && continue
-    exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
-    exe="${exe% (deleted)}" # a REPLACED binary still reads back, with a suffix
-    case "$exe" in
-      "$ASSETS"/*) printf '%s\n' "$p" ;;
-    esac
-  done
+  # One find over /proc/*/exe, never a readlink fork per PID: the per-PID form
+  # measured 13.4 s at 1322 PIDs under load and could not finish inside the
+  # unit's 90 s start-pre. Still /proc/<pid>/exe, never a cmdline grep.
+  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$ASSETS/*" \
+    -printf '%h\n' 2>/dev/null |
+    sed 's#^/proc/##' |
+    grep -E '^[0-9]+$' |
+    grep -vx "$$" || true
 }
 station_nspawn_pid() {
   local p
@@ -388,10 +385,13 @@ if [ "$CAPTURE" = shm ]; then
   [ -s "$SHM" ] || die "no frame published to $SHM after $FRAME_BUDGET — the fork's IRIS_SHM_PATH publisher is the only thing that writes it"
 else
   XV=""
-  for d in /proc/[0-9]*; do
-    p="${d#/proc/}"
+  # One find for the Xvfb basename over /proc/*/exe instead of a readlink fork
+  # per PID (see station_emu_pids above); the ns/pid check still runs per
+  # candidate, but there are only ever a handful of Xvfb processes.
+  for p in $(find /proc -mindepth 2 -maxdepth 2 -name exe -lname '*/Xvfb' \
+    -printf '%h\n' 2>/dev/null | sed 's#^/proc/##'); do
     [ "$(readlink "/proc/$p/ns/pid" 2>/dev/null)" = "$(readlink "/proc/$IPID/ns/pid" 2>/dev/null)" ] || continue
-    case "$(readlink "/proc/$p/exe" 2>/dev/null)" in */Xvfb) XV="$p" ;; esac
+    XV="$p"
   done
   [ -n "$XV" ] && echo "$XV" >"$XPIDFILE"
 fi

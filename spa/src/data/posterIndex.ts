@@ -126,11 +126,17 @@ const POSTER_INDEX = {
   "irix": {
     "hero": "/posters/irix/desktop.webp"
   },
+  "its": {
+    "hero": "/posters/its/desktop.webp"
+  },
   "kc854": {
     "hero": "/posters/kc854/desktop.webp"
   },
   "kolibrios": {
     "hero": "/posters/kolibrios/desktop.webp"
+  },
+  "linux012": {
+    "hero": "/posters/linux012/desktop.webp"
   },
   "lisa": {
     "hero": "/posters/lisa/desktop.webp"
@@ -164,6 +170,12 @@ const POSTER_INDEX = {
   },
   "msx2": {
     "hero": "/posters/msx2/desktop.webp"
+  },
+  "multics": {
+    "hero": "/posters/multics/desktop.webp"
+  },
+  "mvs38": {
+    "hero": "/posters/mvs38/desktop.webp"
   },
   "netbsd14": {
     "hero": "/posters/netbsd14/desktop.webp"

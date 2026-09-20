@@ -71,6 +71,27 @@
 # [PROVEN, multics] system_control drops request text that arrives in the same
 # write as the attention ESC. ESC -> wait for a NEW prompt in the console
 # stream -> settle -> send. A single `printf '\033shut\r'` is silently lost.
+#
+# Three further things multics paid a bake run for each, for whoever drives an
+# operator console next (mvs38, its):
+#
+#   (a) A DROPPED REQUEST LOOKS EXACTLY LIKE ONE THAT RAN. Even with the
+#       handshake, the console sometimes takes the ESC, prints its prompt and
+#       releases without executing anything (`M-> CONSOLE: RELEASED`). On
+#       multics this hit the FIRST request of every run and never the second.
+#       Send the request, then VERIFY ITS ECHO in the console stream, and retry
+#       when the echo does not appear.
+#
+#   (b) THE ANSWER TO A QUESTION IS NOT A REQUEST. When the system itself asks
+#       something it has already printed the prompt and is waiting, so the
+#       attention ESC must NOT be sent — it would be taken as the answer's
+#       first character. Two different routines, not one.
+#
+#   (c) THE QUESTION ARRIVES IN THE SAME BREATH AS THE ECHO. By the time the
+#       echo has been confirmed the question is already in the log, so an
+#       answer routine that starts searching from "now" never finds it and the
+#       console times out. Search from the mark the REQUEST started at.
+#
 # vax43bsd needs none of this: nothing drives its console (finding 3), so the
 # simulator console goes straight to a logfile and is never on screen. Hiding
 # the operator console then costs no cropping, no second X window and no

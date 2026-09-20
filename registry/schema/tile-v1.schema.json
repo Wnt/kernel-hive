@@ -31,7 +31,7 @@
     },
     "era_year": {
       "type": "integer",
-      "minimum": 1970
+      "minimum": 1960
     },
     "stationDir": {
       "type": "string",

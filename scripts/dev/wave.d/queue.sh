@@ -75,15 +75,44 @@ qlock_take() {
 qlock_free() { rmdir "$qlock" 2>/dev/null || true; }
 
 # ---- kh-claim mirror (visibility only; the mkdir above is the authority) ----
+# The mkdir is the ONLY thing that decides who holds the window — but the
+# mirror must still end up TELLING THE TRUTH, or "land end" reports RELEASED
+# while `kh-claim who landing window` disagrees, and nothing downstream (a
+# human, `here.sh`, another session) can tell the difference between "free"
+# and "wedged" without discovering it by hand (measured 2026-09-20, mvs38: a
+# clean `land end` printed released while kh-claim still named a stale
+# session). Two things make that possible: mirror_take skipping a plain
+# REFUSED instead of correcting it, and mirror_release swallowing a REFUSED
+# instead of forcing it — both leave a PRIOR session's mirror entry wedged
+# forever, because nothing after it ever owns that entry as far as kh-claim
+# is concerned. Since the local mkdir has already decided who is right,
+# --steal / --force here are not overrides of the local decision, they ARE
+# the local decision, applied to the sidecar that is supposed to mirror it.
 mirror_take() {
   command -v kh-claim >/dev/null 2>&1 || return 0
-  KH_SESSION="$1" kh-claim take landing window \
+  KH_SESSION="$1" kh-claim take landing window --steal \
     --purpose "landing window: $1 / $2" >/dev/null 2>&1 ||
-    warn "kh-claim landing/window not taken (held elsewhere?) — 'kh-claim who landing window'"
+    warn "kh-claim landing/window not taken even with --steal — 'kh-claim who landing window'"
 }
 mirror_release() {
   command -v kh-claim >/dev/null 2>&1 || return 0
-  KH_SESSION="$1" kh-claim release landing window >/dev/null 2>&1 || true
+  KH_SESSION="$1" kh-claim release landing window --force >/dev/null 2>&1 ||
+    warn "kh-claim landing/window release --force failed — 'kh-claim who landing window'"
+  # Verify, don't assume: --force can still fail (kh-claim gone mid-flight, a
+  # permissions wedge), and a mismatch here is exactly the bug this guards
+  # against — it must be LOUD, not another silent success.
+  local seen
+  # `kh-claim who` EXITS 1 when the resource is unclaimed -- which is the
+  # success case here. labrun runs this script under `set -euo pipefail`, so
+  # an unguarded command substitution aborted mirror_release before the
+  # holder dir was removed, orphaning the window on every landing (regression
+  # introduced with this check; caught 2026-09-20 after three stuck windows).
+  # The selftest missed it because it runs queue.sh directly, not via labrun.
+  seen="$(kh-claim who landing window 2>&1 || true)"
+  case "$seen" in
+    unclaimed) : ;;
+    *) warn "kh-claim MIRROR still shows landing/window as '$seen' after release — fix by hand: kh-claim release landing window --force" ;;
+  esac
 }
 
 owner_field() { # owner_field <key> ; empty when there is no holder

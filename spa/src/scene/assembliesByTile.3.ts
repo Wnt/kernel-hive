@@ -141,4 +141,11 @@ export const ASSEMBLIES_BY_TILE_3 = {
     keyboard: 'keyboardA', mouse: 'paramMouseD',
   },
   vax43bsd: { kind: 'towerSetup', body: 'towerE', monitor: 'terminalA' },
+  mvs38: { kind: 'towerSetup', body: 'paramTower', monitor: 'terminalA' },
+  linux012: {
+    kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'crtF',
+    keyboard: 'keyboardH', mouse: 'paramMouseG',
+  },
+  its: { kind: 'towerSetup', body: 'towerD', monitor: 'terminalB' },
+  multics: { kind: 'towerSetup', body: 'industrialBox', monitor: 'terminalA' },
 } as const satisfies Record<string, Assembly>;

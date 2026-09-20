@@ -43,7 +43,8 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty';
+  | 'classicmac' | 'classicmac128' | 'applegs' | 'its' | 'bsd-tty' | 'tn3270'
+  | 'multics';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -287,11 +288,33 @@ export const OS_FAMILY: Record<string, Family> = {
   // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
   // implements all three signals. No Minix-specific chord set exists to profile.
   minix2: 'linux-tty',
+  // linux012 (Linux 0.12, QEMU text console) is the same shape as minix2 above:
+  // a bare kernel tty with no GUI, where everything a visitor does is typed. The
+  // linux-tty rows carry the ^C/^D/^Z signals its tty driver implements and the
+  // pipe/slash/dash characters the shell needs.
+  linux012: 'linux-tty',
+  // MIT ITS: a PDP-10 timesharing system behind a single terminal line. It
+  // gets its own family because the linux-tty rows would be wrong twice over —
+  // ^Z on ITS is how you LOG IN, not how you suspend a job, and the key ITS
+  // documentation calls altmode is the one a visitor needs most after it.
+  its: 'its',
   // 4.3BSD on a VAX-11/780: one xterm on a DZ11 tty line, no pointer and no X.
   // NOT linux-tty — that profile hides ^C/^D/^Z behind "More", and on a station
   // whose entire vocabulary is control characters they have to be on the face
   // of the keyboard. The row is built from the guest's own `stty everything`.
   vax43bsd: 'bsd-tty',
+  // MVS 3.8j on a 3279 through x3270. A BLOCK-MODE terminal: the AID keys —
+  // Enter, Clear, PA1..PA3, PF1..PF24 — are the whole interface, and Reset is
+  // the only way out of the X SYSTEM keyboard lock. None of them are on a
+  // modern keyboard, so nothing generic would do. The host half of the
+  // mapping is the committed x3270 keymap in stations/mvs38/nspawn-inner.sh.
+  mvs38: 'tn3270',
+  // Multics MR12.8 on a DPS-8/M: one xterm on an FNP line, no pointer and no X.
+  // NOT bsd-tty — Multics' erase and kill are the printable characters `#` and
+  // `@` rather than ^? and ^U, its pathname separator is `>` rather than `/`,
+  // and ^C suspends into a new command level instead of cancelling. A visitor
+  // given the BSD row would have no working way to correct a typo.
+  multics: 'multics',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
