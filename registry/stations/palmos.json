@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "palmos",
   "era_year": 1998,
-  "enabled": true,
+  "enabled": false,
   "build": {
     "rows": [
       {
@@ -49,12 +49,7 @@
     "actionMapOrder": 52
   },
   "stationDir": "palmos",
-  "lifecycle": "production",
-  "listing": {
-    "state": "hidden",
-    "since": "2026-09-20",
-    "reason": "Dark launch: palmos wave 2026-09-20 landed the MAME palmiii driver, a new absolute-ioport-field pointer route (mame-ctlsock-abs-fields.patch), and a byte-verified Palm OS 3.3 French ROM, but the golden scene is still the Palm OS Welcome/digitizer-setup flow, not the Applications Launcher (no byte-exact English ROM was found inside this wave's budget; see docs/lab/PALMOS-WAVE.md). Promote once a golden stream reaches the Launcher scene and re-checks the pointer proof against it."
-  },
+  "lifecycle": "candidate",
   "stream": {
     "transport": "streamhost",
     "udpPort": 54207,
