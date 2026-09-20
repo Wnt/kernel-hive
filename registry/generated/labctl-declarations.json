@@ -920,6 +920,24 @@
       "udp_port": 54113,
       "notes": "no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "multics": {
+      "dir": "/data/vms/streamhost/stations/multics",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54208,
+      "notes": "HOST-NATIVE, NOT AN EMULATED MACHINE: the maiko Lisp VM (github.com/Interlisp/medley, MIT; release medley-260826, linux x86_64 build) renders Medley's display into an X window under a pinned 1024x768 Xvfb; the daemon captures the X root (SH_CAPTURE=x11) and drives input over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_ABS=1: true absolute motion in root coordinates, buttons and keys as XTEST edges). No QEMU/QMP, no disk image, no exec channel — `labctl shot` reads the X root; to drive it by hand use xdotool on the station's display (only while no visitor is attached). Reset=relaunch: kill maiko by mame.pid, wipe work/, exec the release full.sysout again (~2 s to the Exec). Launcher stations/multics/x11-runtime.sh; assets in assets/medley (MANIFEST.sha256 pins the tarball)."
+    },
     "netbsd14": {
       "dir": "/data/vms/streamhost/stations/netbsd14",
       "qmp": "/data/vms/streamhost/stations/netbsd14/qmp.sock",

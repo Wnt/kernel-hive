@@ -176,6 +176,7 @@ MANIFEST=(
   "minix2         |tiles/minix2.sh                                       |Minix2            |retro       |~3m                          |full                         |minix2.qcow2 (pre-installed Minix 2.0.4, /usr/src)"
   "xenix          |tiles/freedos.sh                                      |FreeDOS           |retro       |~10-15m                      |full*                        |freedos.qcow2 (games+Arachne)"
   "os213          |tiles/nt351.sh                                        |Nt351             |installed   |~15-30m                      |partial                      |nt351.qcow2 (480 MiB FAT16; needs bootable SP5 ISO)"
+  "multics        |tiles/medley.sh                                       |Medley            |graphical   |~3m                          |full                         |assets/multics/{medley,maiko} staged from the pinned Interlisp release tarball (sysout + maiko VM; relaunch reset)"
 )
 
 # Full build order (cheap wins first, heavy last). The default selection filters
