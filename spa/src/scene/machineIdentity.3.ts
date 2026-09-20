@@ -190,4 +190,10 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
     badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
   },
+  // Honeywell/Bull mainframe bay: painted steel rather than beige plastic,
+  // with the amber of the exhibit's own terminal as the accent.
+  multics: {
+    caseTint: '#8d9299', accentTint: '#c8892b', tintMix: 0.30,
+    badge: 'DPS-8/M', spec: '16 MB • Multics MR12.8 • 1969', kit: 'workstation',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

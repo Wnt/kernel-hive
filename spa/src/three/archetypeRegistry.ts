@@ -237,6 +237,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   cpm22:       { osId: 'cpm22', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#6b9d70', eraLabel: '1982 · CP/M 2.2 (Kaypro II)' },
   riscos3:     { osId: 'riscos3', archetypeId: 'beige-tower-crt', transport: 'streamhost', accentColor: '#3F7FBF', eraLabel: '1992 · RISC OS 3.11', pointerRel: false },
   vax43bsd:    { osId: 'vax43bsd', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#67828F', eraLabel: '1986 · 4.3BSD — Berkeley Unix on the VAX' }, // ideal: a DEC VAX-11/780 cabinet with a VT100 on a desk beside it (the machine 4.3BSD was written on)
+  multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

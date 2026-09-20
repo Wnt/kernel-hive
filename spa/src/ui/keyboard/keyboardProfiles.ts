@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty';
+  | 'classicmac' | 'classicmac128' | 'applegs' | 'bsd-tty' | 'multics';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -292,6 +292,12 @@ export const OS_FAMILY: Record<string, Family> = {
   // whose entire vocabulary is control characters they have to be on the face
   // of the keyboard. The row is built from the guest's own `stty everything`.
   vax43bsd: 'bsd-tty',
+  // Multics MR12.8 on a DPS-8/M: one xterm on an FNP line, no pointer and no X.
+  // NOT bsd-tty — Multics' erase and kill are the printable characters `#` and
+  // `@` rather than ^? and ^U, its pathname separator is `>` rather than `/`,
+  // and ^C suspends into a new command level instead of cancelling. A visitor
+  // given the BSD row would have no working way to correct a typo.
+  multics: 'multics',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell

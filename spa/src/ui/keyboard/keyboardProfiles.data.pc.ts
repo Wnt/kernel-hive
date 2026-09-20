@@ -16,7 +16,7 @@ import {
 export type PcFamily =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'bsd-tty';
+  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'bsd-tty' | 'multics';
 
 export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
   generic: { family: 'generic', rows: [NAV, MODS], moreRows: [fkeyRow(1, 12)] },
@@ -83,6 +83,54 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
         ctrlChar('ctrl-bslash', '^\\', '\\', 'Quit — SIGQUIT'),
         ch('|'), ch('~'), ch('/'),
       ],
+    ],
+  },
+
+  // Multics MR12.8 on a DPS-8/M, reached through one FNP terminal line.
+  //
+  // Multics predates every convention a PC keyboard is built around, so this
+  // profile is NOT bsd-tty with a different name. Every key below was proven
+  // on this station's own framebuffer 2026-09-20; nothing unverified is here,
+  // because a dead key is silent through the whole pipeline.
+  //
+  //   #  ERASE one character. Proven: `prinq#t_wd` reached Multics as
+  //      `print_wd`. Backspace does NOT erase on a Multics tty, so this key is
+  //      the only way a visitor can correct a typo, and it is a PRINTABLE
+  //      character rather than a control code.
+  //   @  KILL the whole line. Proven: `this is rubbish@date_time` ran
+  //      `date_time` alone.
+  //   ^C QUIT. Proven at a `More help?` prompt: Multics printed QUIT and the
+  //      prompt became `r 05:09 1.707 422 level 2`. Note what that means — on
+  //      Multics an interrupt does not cancel the program, it SUSPENDS it and
+  //      hands you a new command level. `release` throws that level away.
+  //   >  <  Multics pathnames are `>user_dir_dir>SysAdmin>Repair`. `>` is the
+  //      separator and `<` means the parent directory; there is no `/` here.
+  //
+  // Deliberately absent: ^D (not an end-of-file on a Multics tty — `logout` is
+  // how you leave, and it is in the type-in demo), ^S/^Q flow control (freezes
+  // the terminal with no visible cause), and any telnet escape (the station's
+  // bridge offers none, so there is nothing to fall out of the exhibit into).
+  multics: {
+    family: 'multics',
+    rows: [
+      [
+        ch('#'),
+        ch('@'),
+        ctrlChar('ctrl-c', '^C', 'c', 'QUIT — suspends, and gives you a new command level'),
+        ch('>'),
+        ch('<'),
+      ],
+      MODS,
+    ],
+    moreRows: [
+      [
+        tap('tab', 'Tab', XK.Tab),
+        tap('ret', '⏎', XK.Return),
+        tap('space', 'Space', 0x20, { repeat: true, wide: true }),
+        tap('esc', 'Esc', XK.Escape),
+        ...ARROWS,
+      ],
+      [ch('*'), ch('='), ch('"'), ch('-'), ch('_'), ch('.'), ch('$')],
     ],
   },
 

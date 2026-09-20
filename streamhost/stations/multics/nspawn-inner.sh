@@ -13,9 +13,9 @@
 # emulator, the two-condition readiness gate and the visitor client.
 #
 # Writable state is /work only. The outer launcher reflink-copied the pristine
-# root.dsk there before this script ran (MEASURED 0.126 s for 594 MB on
-# labhost's ZFS — a pristine per-launch copy is free, which is exactly why this
-# station has no checkpoint). The baked disk in assets/media is bound
+# root.dsk there before this script ran (MEASURED 1.35 s for 594 MB on
+# labhost's ZFS under load, 0.126 s idle — a pristine per-launch copy is free
+# either way, which is exactly why this station has no checkpoint). The baked disk in assets/media is bound
 # read-only, so nothing a visitor types can reach it.
 #
 # The FNP telnet listener on 6180 is the visitor line. It lives on the
@@ -69,9 +69,13 @@ autoinput \z
 boot iom0
 CONF
 
-# The museum surface: one xterm on the FNP line. `telnet -E` is deliberate: it
-# drops one line of chrome AND removes the `^]` escape, so a visitor cannot
-# fall out of the exhibit into a telnet command prompt.
+# The museum surface: one xterm on the FNP line, running the station's own
+# bridge (multics-term.pl) instead of stock telnet. The bridge answers the
+# FNP's 32-channel `HSLA Port (...)` menu without showing it, prints no
+# connection chrome, and reconnects at a fresh banner when a visitor types
+# `logout` — stock telnet leaves a dead terminal on the wall at that point.
+# It offers no escape character, so there is nothing to fall out of the
+# exhibit into.
 #
 # No window manager runs, so xterm maps itself at exactly this size and offset
 # and the rest of the root window stays black. 80x24 is what Multics' own
@@ -100,6 +104,6 @@ export KH_TERM_CLIENT_CMD="exec xterm -display '${SH_X11_DISPLAY}' \
 -bg black -fg '#ffb000' -cr '#ffb000' -b 0 -bw 0 +sb \
 -title 'Multics console' -xrm 'xterm*backarrowKey: false' \
 -xrm 'xterm*metaSendsEscape: true' \
--e telnet -E 127.0.0.1 ${PORT}"
+-e /work/multics-term.pl"
 
 exec "$WORK/shared-terminal-runtime.sh"

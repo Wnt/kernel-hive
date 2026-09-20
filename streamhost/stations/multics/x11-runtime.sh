@@ -7,8 +7,9 @@
 # DPS-8/M under the DPS8M simulator R3.1.0 (dps8m.gitlab.io, pinned in
 # assets/multics/MANIFEST.sha256). No QEMU, no MAME, no checkpoint: the exhibit
 # is a simulator process plus one terminal, and reset = relaunch from the
-# pristine baked root.dsk — MEASURED 0.126 s to reflink-copy 594 MB on
-# labhost's ZFS, which is why this station wants relaunch and not a golden.
+# pristine baked root.dsk — MEASURED 1.35 s to reflink-copy the 594 MB RPV on
+# labhost's ZFS with the box at load 60 (0.126 s on an idle box), which is why
+# this station wants relaunch and not a golden.
 #
 # CONTAINMENT (docs/lab/record-wave/HOST-APP-CONTAINER-CONTRACT.md, the proven
 # medley/vision/lisa/perq shape): DPS8M, Xvfb and the visitor's xterm all run
@@ -45,6 +46,7 @@ SEED="${MULTICS_SEED_DISK:-$ASSETS/media/root.dsk}"
 BIN="$ASSETS/bin/dps8"
 HERE="$(dirname "$(readlink -f "$0")")"
 INNER="$HERE/nspawn-inner.sh"
+TERMBR="$HERE/multics-term.pl"
 SHARED="$HERE/shared-terminal-runtime.sh"
 PIDFILE="$BASE/mame.pid" # the x11-runtime pidfile name, not a MAME claim
 XPIDFILE="$BASE/xvfb.pid"
@@ -67,7 +69,7 @@ XSOCK="/tmp/.X11-unix/X${DISP#:}"
   echo "multics[$TILE]: no container rootfs at $ROOTFS" >&2
   exit 1
 }
-for f in "$INNER" "$SHARED"; do
+for f in "$INNER" "$SHARED" "$TERMBR"; do
   [ -f "$f" ] || {
     echo "multics[$TILE]: missing $f" >&2
     exit 1
@@ -152,9 +154,9 @@ ln -sfn "$SOCKDIR/X${DISP#:}" "$XSOCK"
 # questions no autoinput sheet answers, which from outside looks exactly like a
 # station that never boots.
 #
-# `cp --reflink=auto` is the point of this whole design: MEASURED 0.126 s for
-# the 594 MB RPV on labhost's ZFS, so a pristine copy per launch is free and
-# the station needs no checkpoint at all.
+# `cp --reflink=auto` is the point of this whole design: MEASURED 1.35 s for
+# the 594 MB RPV on labhost's ZFS under load (0.126 s idle), so a pristine copy
+# per launch is free and the station needs no checkpoint at all.
 rm -rf "$BASE/work"
 mkdir -p "$BASE/work"
 cp --reflink=auto "$SEED" "$BASE/work/root.dsk"
@@ -162,6 +164,7 @@ chown -R "$UIDBASE:$UIDBASE" "$BASE/work"
 chmod 0644 "$BASE/work/root.dsk"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$BASE/work/nspawn-inner.sh"
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$SHARED" "$BASE/work/shared-terminal-runtime.sh"
+install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$TERMBR" "$BASE/work/multics-term.pl"
 
 nohup systemd-nspawn \
   --quiet --register=no --keep-unit --as-pid2 \
@@ -219,34 +222,22 @@ done
   exit 1
 }
 
-# --- focus, and wake the getty. MEASURED 2026-09-20, and both halves are
-# required:
+# --- focus, then wait for the Multics banner to be ON THE FRAMEBUFFER.
 #
-#  * No window manager runs in the container, so X input focus is PointerRoot
-#    and keystrokes reach the xterm only while the pointer happens to be over
-#    it. The daemon drives this station with XTEST keys and never moves a
-#    pointer (there is none in the exhibit), so without an explicit
-#    XSetInputFocus a visitor's typing would land on the root window and
-#    vanish. `xdotool windowfocus` pins it once, for good.
+# No window manager runs in the container, so X input focus is PointerRoot and
+# keystrokes reach the xterm only while the pointer happens to be over it. The
+# daemon drives this station with XTEST keys and never moves a pointer (there
+# is none in the exhibit), so without an explicit XSetInputFocus a visitor's
+# typing would land on the root window and vanish. `xdotool windowfocus` pins
+# it once, for good. (Finding inherited from vax43bsd, which paid for it.)
 #
-#  * The FNP does not hand a fresh connection to Multics on its own. MEASURED
-#    at byte level 2026-09-20: a raw socket to the FNP gets the telnet options
-#    and then the `HSLA Port (d.h000 ...)` prompt and stops there. ONE CR
-#    answers that prompt, the FNP replies `Attached to line d.h000` and only
-#    then does Multics print its own
-#    `Multics MR12.8: Installation and location (Channel d.h000)` banner and
-#    the login line. Without the CR the rest scene is the FNP's channel menu,
-#    which is plumbing and not the exhibit. This is a bring-up action by the
-#    launcher on the station's own display, not a hidden shortcut offered to
-#    the visitor.
-#
-# The CR is re-sent until the LOGIN BANNER is actually on the framebuffer —
-# the banner is the proof, not the keystroke. "Did the screen change" is too
-# weak here: the telnet chrome and the FNP's `HSLA Port` prompt arrive
-# asynchronously in the same window, and an early CR that reaches the line
-# before the FNP is listening is simply lost. So the gate is a lit-pixel count
-# taken after the window has settled, and the retry loop re-sends the CR until
-# the Multics banner is actually lit.
+# Nothing is TYPED here. The station's own bridge (multics-term.pl) answers the
+# FNP's channel menu itself, so the launcher's job is only to confirm that the
+# banner really arrived — a station that starts with a mapped but empty xterm
+# is exactly how a black exhibit gets onto the wall. The gate is a settled
+# lit-pixel count over a floor: after the bridge clears the plumbing the whole
+# scene is two lines and a cursor, so the floor is deliberately low and the
+# SETTLING is what carries the proof.
 export DISPLAY="$DISP"
 nlit() {
   xwd -display "$DISP" -root -silent 2>/dev/null |
@@ -255,37 +246,25 @@ nlit() {
 WIN="$(xdotool search --name 'Multics console' 2>/dev/null | head -1 || true)"
 if [ -n "$WIN" ]; then
   xdotool windowfocus "$WIN" 2>/dev/null || true
-  # Let the telnet chrome and the FNP's HSLA prompt finish arriving before the
-  # baseline is taken, or the baseline is a blank window and the chrome alone
-  # clears the threshold.
-  base=-1
+  lit=0
   prev=-1
   same=0
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 "${MULTICS_BANNER_TRIES:-120}"); do
     sleep 0.5
-    base="$(nlit)"
-    if [ "$base" -gt 0 ] && [ "$base" = "$prev" ]; then
+    lit="$(nlit)"
+    if [ "$lit" -ge "${MULTICS_BANNER_LIT_PX:-400}" ] && [ "$lit" = "$prev" ]; then
       same=$((same + 1))
       [ "$same" -ge 4 ] && break
     else
       same=0
     fi
-    prev="$base"
+    prev="$lit"
   done
-  want=$((base + ${MULTICS_BANNER_LIT_PX:-1200}))
-  got="$base"
-  for _ in $(seq 1 "${MULTICS_GETTY_WAKE_TRIES:-20}"); do
-    xdotool key --clearmodifiers Return 2>/dev/null || true
-    for _ in 1 2 3 4 5 6 7 8; do
-      sleep 0.5
-      got="$(nlit)"
-      [ "$got" -ge "$want" ] && break 2
-    done
-  done
-  if [ "$got" -ge "$want" ]; then
-    echo "multics[$TILE]: login banner on the framebuffer ($base -> $got lit px)"
+  if [ "$lit" -ge "${MULTICS_BANNER_LIT_PX:-400}" ]; then
+    echo "multics[$TILE]: Multics banner on the framebuffer ($lit lit px, settled)"
   else
-    echo "multics[$TILE]: WARNING — no login banner (lit px $base -> $got, wanted $want); the rest scene may open black" >&2
+    echo "multics[$TILE]: WARNING — no Multics banner (lit px $lit, wanted" \
+      "${MULTICS_BANNER_LIT_PX:-400}); the rest scene may open black" >&2
   fi
 fi
 

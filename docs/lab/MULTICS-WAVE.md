@@ -4,23 +4,30 @@ Tracking: #51 · prep branch `multics` · work branch `multics-work` ·
 seed [`integration-seeds/multics.md`](integration-seeds/multics.md) ·
 lane contract [`record-wave/HOST-APP-CONTAINER-CONTRACT.md`](record-wave/HOST-APP-CONTAINER-CONTRACT.md)
 
-**STATUS 2026-09-20T09:35Z: PAUSED by the wave coordinator** (labhost 1-min load
-116 against the documented cap of 50 — not a station failure). Nothing is live,
-nothing is enabled, nothing of this wave is running on the box. Resume from
-§"Next concrete step".
+**STATUS 2026-09-20T13:20Z: LIVE.** The station renders, takes keystrokes and
+resets deterministically, and every claim below that was byte-level at the
+pause is now framebuffer-proven. The three walls W1–W3 are closed; W3 needed
+two more findings than the pause knew about (§"W3, closed").
 
 ## Allocation ledger
 
 | Station | Session | Slot / UDP / VMID | X display | X-warp | retronet |
 |---|---|---|---|---|---|
-| multics | multics-work | 208 / 54208 / 208 | `:108` | — | — |
+| multics | multics-live | 217 / 54217 / 217 | `:117` | — | — |
+
+Slot 208 was released at the pause and msx2 took 107; the wave re-allocated at
+resume with `wave.sh alloc multics`. bindingOrder/bringUpOrder are 117, chosen
+to match the slot and stay clear of the siblings landing in the same window.
 
 Neither `--retronet` nor `--x11warp` was taken: the visitor surface is an X
 terminal captured with `SH_CAPTURE=x11` + XTEST (the medley route), and the
 guest has no network of its own — the FNP telnet line is loopback INSIDE the
 container.
 
-Container uid base: **2031616** (31·65536; medley holds 30·65536 = 1966080).
+Container uid base: **2555904** (39·65536). NOT the 2031616 recorded at the
+pause: the rootfs was built at that base and mvs38's rootfs was found at the
+same one, and two contained stations sharing a uid base means each can write
+the other's files. tiles/multics.sh detects 2031616 and shifts the tree.
 
 ## Media (measured, `stat -c %s` + `sha256sum` on the box)
 
@@ -76,7 +83,7 @@ none of it is a claim about pixels.
    a one-shot nspawn. 362 MB. Built at
    `/data/vms/streamhost/assets/multics/rootfs`.
 
-## Two walls, both diagnosed, both shared-lane
+## Three walls, all closed
 
 ### W1 — a FIFO on the simulator's stdin wedges it before boot
 
@@ -100,14 +107,67 @@ exist yet. The readiness proof has to be a **line in the emulator's own console
 stream** (`as_init_` here; the sibling equivalent for MVS/VAX/ITS), with the
 port probe kept only as a cheap precondition.
 
-### W3 — the operator console drops characters typed with the ESC
+### W3, closed — driving the operator console through a clean shutdown
 
-`\033shut\r` in one write is swallowed: the ESC takes the console, prints
-`M-> `, and the request text that arrived in the same breath is gone
-(`CONSOLE: RELEASED`, then later `system_control: Unknown request "die"`).
-The working shape is ESC → **wait for a NEW `M-> ` in the console stream** →
-settle → send the request. Half-implemented at the pause
-(`req()` in the bake driver); this is the one unproven step of the bake.
+The pause had one third of this. `\033shut\r` in one write is swallowed, and
+the fix is ESC → wait for a NEW `M-> ` → settle → send. Two more findings were
+needed before a bake completed, and each cost a run:
+
+**W3a — a request that was silently dropped looks exactly like one that ran.**
+Even with the handshake, the console sometimes takes the ESC, prints its
+prompt and then releases without executing anything (`M-> CONSOLE: RELEASED`).
+Measured: this happened on the FIRST `req("shut")` of every single bake run and
+never on the second. So the request is not sent, it is sent and **verified by
+its echo in the console stream**, and retried when the echo does not appear.
+
+**W3b — `shut` does not shut down; it asks a question.** It answers
+
+```
+shutdown: 5 users still on. Do you want to shut down?     M->
+```
+
+and waits. The five are the standard SysDaemons — IO.SysDaemon (cord and
+prta), Backup.SysDaemon, Utility.SysDaemon and Volume_Dumper.Daemon — which
+the answering service logs in at every boot and which are ALWAYS there. This
+is the normal path, not an anomaly to be avoided, and `logout * * *`
+beforehand does not help. Unanswered, the console prints `CONSOLE: TIMEOUT`
+and abandons the request.
+
+Answering it has its own trap: Multics prints the question in the same breath
+as the echo of the request, so by the time the echo has been confirmed the
+question is ALREADY in the log. An answer routine that starts searching from
+"now" never finds it and the console times out. It must search from the mark
+the request started at.
+
+Note also that answering a question the console has already prompted for must
+NOT send the attention ESC — the ESC would be taken as the answer's first
+character. `req()` and `answer()` are therefore different routines.
+
+**W3c — `die` is not a system_control request.** Once `shutdown complete`
+prints, the console belongs to BCE, which takes typed lines with no attention
+key. Sending `die` through the ESC handshake is what produced
+`system_control: Unknown request "die"` in the very first attempt. In practice
+the simulator does not exit on `die` under a pty either, which is cosmetic:
+`shutdown complete` is Multics' own statement that the RPV has been flushed,
+so that line — not the process exit — is the gate, and the bake SIGKILLs
+afterwards.
+
+### W4 — the exhibit cannot use stock telnet
+
+Not a wall at the pause because the wave never reached a framebuffer. Stock
+`telnet -E` opens the scene on `Trying 127.0.0.1...` and the FNP's 32-entry
+`HSLA Port (d.h000,...,d.h031)?` channel menu — a third of an 80x24 screen of
+plumbing (measured: 14553 lit px against 5554 for the finished scene). Worse,
+a visitor who types `logout` — which is in this station's own type-in demo —
+gets `Multics has disconnected you` and a DEAD TERMINAL that every later
+visitor inherits.
+
+`stations/multics/multics-term.pl` replaces it: answers the channel menu
+without showing it, prints no connection chrome, and reconnects at a fresh
+banner on hangup. Perl because the container rootfs is a debootstrap minbase
+with no python3, but perl 5.40 arrives with the base packages. Measured over
+five logout cycles the FNP reuses its channel (d.h000 fresh, d.h001 after a
+reconnect) rather than climbing toward its limit.
 
 ## Design decided (not yet built)
 
@@ -133,26 +193,60 @@ settle → send the request. Half-implemented at the pause
 - `mame.pid` = the host-visible `dps8` pid (idle freezer + reap-by-exe, as
   medley does with maiko); `nspawn.pid` = the supervisor.
 
-## Next concrete step (resume here)
+## What the framebuffer proved (2026-09-20, display :117)
 
-1. Finish W3: `req()` = ESC → wait for a new `M-> ` → settle → request. Then
-   re-run the bake from the pristine QuickStart and confirm `shutdown complete`
-   followed by a clean `die` / `y` exit; that `root.dsk` becomes the immutable
-   asset.
-2. Write `streamhost/stations/multics/{x11-runtime.sh,nspawn-inner.sh,
-   multics-term.py}` from the medley launcher (the scaffold currently holds
-   medley's copies, unedited) and `scripts/build-guests/tiles/multics.sh` from
-   the measured hashes above.
-3. Smoke it on display `:108` in the sandbox and **take the first framebuffer** —
-   that is the proof this wave does not yet have.
-4. `scripts/dev/smoke-rig.sh multics --like medley`, then the input/reset proofs
-   and the on-screen control keys (Multics needs a real BREAK/interrupt key and
-   `#`/`@` as its erase/kill characters — they must be on the SPA keyboard, not
-   behind a host shortcut).
+The pause recorded everything as byte-level and explicitly not as a claim about
+pixels. All of it is now pixels.
 
-## Teardown at the pause
+| Proof | Result |
+|---|---|
+| Rest scene | Banner + `Load = 5.0 out of 90.0 units` + cursor, 5554 lit px, nothing else |
+| Keys reach the guest | `login Repair` → `Password:`; `multics` → `You are protected from preemption.` and `r 05:17 0.660 19` |
+| Commands | `who` → `6 users, 1 interactive, 5 daemons`; `list`, `date_time`, `help` all work |
+| Multics erase `#` | `prinq#t_wd` arrived as `print_wd` |
+| Multics kill `@` | `this is rubbish@date_time` ran `date_time` alone |
+| ^C | QUIT, and the prompt became `r 05:09 1.707 422 level 2`; `release` discards the level |
+| Bridge reconnect | `logout` → fresh banner, five cycles, channel reused not climbed |
+| Relaunch reset | `create VISITORWASHERE` → `Segments = 2`; after relaunch `Segments = 1`, seed sha256 unchanged |
 
-Every `dps8` was killed by `/proc/<pid>/exe` match (never `pkill -f`, AGENTS.md
-rule 5); the sweep printed no survivors. No smoke rig was ever published, no
-station was enabled (`registry/stations/multics.json` is
-`lifecycle: candidate`, `enabled: false`), and no fleet file was deployed.
+Measured timings on a box at load 60–120 (the wave ran alongside three
+siblings): answering service **+55.9 s to +85 s** from exec depending on load,
+password changed **+88 s**, `shutdown complete` **+133 s**, full relaunch to a
+lit banner **2 min 24 s**, of which the 594 MB reflink copy was **1.35 s**.
+The pause's 0.126 s figure for that copy was taken on an idle box; 1.35 s is
+the loaded number and the design conclusion is unchanged — a pristine copy per
+launch is free, so this station has no checkpoint.
+
+## The pre-pause drafts were deleted, not kept
+
+`docs/lab/integration-drafts/multics/` (builder.sh, runtime.sh,
+registry-overrides.md) is gone. The lane normally keeps its drafts — vax43bsd
+still has its — but these had become actively wrong rather than merely stale:
+the draft builder cloned and built dps8m from
+`BAN-AI-Multics/dps8m@83d7252b` while the station ships the pinned R3.1.0
+linux-64 release binary (`a834c552`), and the draft runtime predated both the
+container contract and the bridge. A reader following them would have built a
+different simulator than the one the golden RPV was baked against — and a
+checkpoint, a binary and a device set are one combination. The real files are
+`scripts/build-guests/tiles/multics.sh` and
+`streamhost/stations/multics/x11-runtime.sh`.
+
+## One thing the exhibit does not do
+
+`print_wd` is not present in this MR12.8 installation (`Segment print_wd not
+found`), so neither the poster nor the demo cites it. Verified commands are
+`list`, `who`, `date_time` and `help`.
+
+## Rule 5, paid for again
+
+The resume session killed its OWN labrun shell (exit 144) with a loop that
+matched `/proc/<pid>/cmdline` for the bake script's name — the ssh command line
+contains that name, so the match found the session's own bash. The only safe
+resolution is `/proc/<pid>/exe`, and for this station the fast form is
+
+```
+find /proc -mindepth 2 -maxdepth 2 -name exe -lname "<assets>/bin/*" -printf '%h\n'
+```
+
+which is what the launcher uses. Killing the simulator alone is enough to end
+the bake driver, so no process ever needs to be matched by its command line.

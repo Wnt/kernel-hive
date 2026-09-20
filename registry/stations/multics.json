@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "multics",
   "era_year": 1969,
-  "enabled": false,
+  "enabled": true,
   "build": {
     "rows": [
       {
@@ -35,7 +35,7 @@
       "exec_key": null,
       "console": "x11",
       "udp_port": 54217,
-      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: the DPS8M simulator runs Multics MR12.8 on an emulated DPS-8/M inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is FNP D channel d.h000 on the CONTAINER's loopback port 6180, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/multics/mame.pid) -n telnet 127.0.0.1 6180` — and only while no visitor is attached. mame.pid is the DPS8M `dps8` HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The operator console is NOT the museum surface: it goes to work/emulator.log and carries the `M-> ` attention prompt and BCE. Reset=relaunch: kill dps8 by mame.pid, wipe work/, reflink-copy the pristine baked RPV back and start again (~60 s to the login banner; the copy itself is 0.126 s for 594 MB). Launcher stations/multics/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/multics (MANIFEST.sha256 pins them)."
+      "notes": "EMULATED MACHINE, CONTAINED, NO CHECKPOINT: the DPS8M simulator runs Multics MR12.8 on an emulated DPS-8/M inside a systemd-nspawn container together with the station's Xvfb and one xterm; the daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test). There is no pointer — this is a terminal exhibit. No QMP and no exec channel: `labctl shot` reads the X root. The visitor line is FNP D channel d.h000 on the CONTAINER's loopback port 6180, so it is unreachable from labhost; to drive the guest by hand, enter the container's netns — `nsenter -t $(cat /data/vms/streamhost/stations/multics/mame.pid) -n telnet 127.0.0.1 6180` — and only while no visitor is attached. mame.pid is the DPS8M `dps8` HOST pid (idle freezer and reap-by-exe), nspawn.pid the supervisor. The operator console is NOT the museum surface: it goes to work/emulator.log and carries the `M-> ` attention prompt and BCE. Reset=relaunch: kill dps8 by mame.pid, wipe work/, reflink-copy the pristine baked RPV back and start again (MEASURED 2 min 24 s to a lit banner on a box at load 60; the 594 MB reflink copy itself is 1.35 s). Launcher stations/multics/x11-runtime.sh, which execs the lane's shared engine docs/lab/record-wave/shared-terminal-runtime.sh; assets in assets/multics (MANIFEST.sha256 pins them)."
     }
   },
   "render": {
@@ -49,7 +49,7 @@
     "goldenOrder": 90
   },
   "stationDir": "multics",
-  "lifecycle": "candidate",
+  "lifecycle": "production",
   "stream": {
     "transport": "streamhost",
     "udpPort": 54217,
@@ -141,7 +141,7 @@
     "id": "multics",
     "displayName": "Multics",
     "year": 1969,
-    "lineage": "CTSS (MIT, 1961) → Multics (MIT Project MAC + Bell Labs + General Electric, designed 1964, in service 1969) → Honeywell and then Bull; and, by way of Bell Labs walking out in 1969, Unix — whose name is a joke at this system's expense",
+    "lineage": "CTSS (MIT, 1961) → Multics (MIT, Bell Labs and GE, 1969) → Honeywell → Bull; and, sideways, Unix",
     "arch": "Honeywell DPS-8/M — the last machine Multics ran on: a 36-bit word, segmented and paged, with eight hardware protection rings and a Front-End Network Processor (an FNP: a minicomputer whose whole job is the terminal lines) carrying the visitor's terminal on channel d.h000",
     "ramMB": 16,
     "era": "1960s",
@@ -166,7 +166,7 @@
       "help"
     ],
     "blurb": "The most influential operating system almost nobody used. Multics was designed in 1964 by MIT, Bell Labs and General Electric to sell computing the way a utility sells electricity, and it went into service in 1969 with a list of ideas that took the rest of the industry thirty years to finish copying: a hierarchical file system with a root and symbolic links, access control lists, dynamic linking at first reference, a shell that is an ordinary replaceable program, and a single-level store in which a file is simply a piece of memory you address. It was written in PL/I rather than assembler, which everyone said was impossible. Bell Labs quit the project in 1969 and two of its engineers went off to write something smaller, named as a pun on the thing they had left. Around eighty Multics sites were ever sold; the last one, at the Canadian Department of National Defence, was shut down in October 2000. Bull released the source in 2007, and this is that source, running on a simulated DPS-8/M.",
-    "notes": "Tier 3, EMULATED but CONTAINED and with no checkpoint: the DPS8M simulator (R3.1.0), the station's Xvfb and the visitor's xterm all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2555904, volatile overlay root, assets bound read-only, CAP_SYS_ADMIN dropped). The visitor surface is one 80x24 xterm on FNP channel d.h000; the operator console — the `M-> ` attention prompt and BCE — is never on screen. The released MR12.8 QuickStart forces a password change on the first login, which no visitor should ever be shown, so the exhibit's RPV is baked once with that change already made and then shut down cleanly. No checkpoint: reset is a relaunch from that pristine RPV, reflink-copied in 0.126 s. See docs/guests/multics.md."
+    "notes": "Tier 3, EMULATED but CONTAINED and with no checkpoint: the DPS8M simulator (R3.1.0), the station's Xvfb and the visitor's xterm all run inside one systemd-nspawn container (private PID/mount/net/IPC/UTS/user namespaces, uid base 2555904, volatile overlay root, assets bound read-only, CAP_SYS_ADMIN dropped). The visitor surface is one 80x24 xterm on an FNP HSLA channel (d.h000 on a fresh container, d.h001 after a reconnect — measured stable, the FNP reuses it); the operator console — the `M-> ` attention prompt and BCE — is never on screen. The released MR12.8 QuickStart forces a password change on the first login, which no visitor should ever be shown, so the exhibit's RPV is baked once with that change already made and then shut down cleanly. No checkpoint: reset is a relaunch from that pristine RPV, reflink-copied in 1.35 s under load (0.126 s on an idle box). See docs/guests/multics.md."
   },
   "emulator": {
     "family": "dps8m",
@@ -186,11 +186,12 @@
     "resetMode": "relaunch",
     "snapshot": null,
     "mouse": "N/A — no pointing device. A Multics FNP line carries keystrokes only, and the exhibit publishes no pointer (stream.pointer.present=false).",
-    "keyboard": "PENDING",
-    "fixture": "PENDING"
+    "keyboard": "PASS (2026-09-20) — XTEST keys reach the guest through the container's Xvfb, proven on the framebuffer at every step: `login Repair` typed at the banner returned `Password:`, the baked password `multics` returned `You are protected from preemption.` and a Multics ready prompt (`r 05:17 0.660 19`), and `who` printed `Multics MR12.8, load 6.0/90.0; 6 users, 1 interactive, 5 daemons`. Multics' OWN line editing was proven the same way and is not a PC's: `#` is erase (`prinq#t_wd` reached the system as `print_wd`) and `@` is kill (`this is rubbish@date_time` ran `date_time` alone). ^C is the QUIT signal and behaves as 1969 intended — it does not cancel, it SUSPENDS and hands you a new command level, so the prompt gains `level 2`; `release` discards that level. TRAP inherited from vax43bsd: no window manager runs in the container, so X focus is PointerRoot and XTEST keys go to the root window and vanish unless the launcher pins focus with xdotool windowfocus — it does, once, at bring-up.",
+    "fixture": "One 80x24 xterm, DejaVu Sans Mono at -fs 14, amber (#ffb000) on black, no scrollbar, placed +32+96 on an otherwise black 1024x768 Xvfb root — the whole station is that one terminal. At rest it shows exactly two lines and a block cursor: `Multics MR12.8: Installation and location (Channel d.h000)` and `Load = 5.0 out of 90.0 units: users = 5, <date>`. It shows nothing else BECAUSE OF THE BRIDGE: stock telnet would open the scene on `Trying 127.0.0.1...` plus the FNP's 32-entry `HSLA Port (d.h000,...,d.h031)?` channel menu, which together fill a third of the screen with plumbing (measured: 14553 lit px with telnet vs 5554 with the bridge). stations/multics/multics-term.pl answers that menu itself, shows none of it, and — the part that matters for an exhibit — RECONNECTS at a fresh banner when a visitor types `logout`, which is in this station's own type-in demo and which stock telnet answers with `Multics has disconnected you` and a dead terminal. Measured over five logout cycles the FNP reuses its channel (d.h000 on a fresh container, d.h001 after a reconnect) rather than climbing toward its 32-channel limit. There is NO login prompt: Multics prints the banner and waits, because it assumes you know the word is `login`; the SPA type-in demo is what tells a visitor. resetMode=relaunch with no statefile: kill dps8 by mame.pid, wipe work/, reflink-copy the pristine baked RPV back in, start again — MEASURED 2026-09-20 end to end at 2 min 24 s to a lit banner on a box at load 60, of which the 594 MB copy itself was 1.35 s. PROVEN 2026-09-20: `create VISITORWASHERE` in the guest made `list` report `Segments = 2`; after the relaunch `list` reported `Segments = 1` with only the baked `Repair.value`, `Last login` was back to the bake's own 0458.9 session, and the seed's sha256 was unchanged either side. The seed must be baked to `shutdown complete` at the operator console — a simulator killed mid-run leaves the RPV inconsistent and the next boot stops in BCE asking questions the autoinput sheet does not answer."
   },
   "notes": [
-    "Record wave 2026-09-20, Lane B (docs/lab/MULTICS-WAVE.md). This station contributed findings 1, 2 and 4 to the lane's shared heritage-terminal runtime (docs/lab/record-wave/shared-terminal-runtime.sh, proven end to end by vax43bsd): a TCP port probe is not readiness (port at +4 s, answering service at +52 s), never give the hidden emulator a pipe or a FIFO on stdin, and an operator console driven by an attention key must handshake on a NEW prompt."
+    "Record wave 2026-09-20, Lane B (docs/lab/MULTICS-WAVE.md). LIVE 2026-09-20: rest scene, keyboard, Multics' own #/@ line editing, ^C into a new command level, the bridge's reconnect-on-logout and the relaunch reset are all proven on the framebuffer, not inferred from logs.",
+    "This station contributed findings 1, 2 and 4 to the lane's shared heritage-terminal runtime (docs/lab/record-wave/shared-terminal-runtime.sh, proven end to end by vax43bsd): a TCP port probe is not readiness (port at +4 s, answering service at +52 s), never give the hidden emulator a pipe or a FIFO on stdin, and an operator console driven by an attention key must handshake on a NEW prompt — plus the three corollaries the bake paid for (verify the echo, an answer is not a request, the question arrives with the echo)."
   ],
   "demoProgram": {
     "label": "Log in, then look around a 1969 timesharing system",
