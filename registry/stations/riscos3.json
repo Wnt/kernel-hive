@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "id": "riscos3",
+  "era_year": 2026,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 85,
+        "prelude": "",
+        "value": {
+          "key": "riscos3",
+          "script": "tiles/riscos3.sh",
+          "outputDir": "native/riscos3",
+          "class": "retro",
+          "estimated": "~5m (ccache-warm MAME aa310 subtarget)",
+          "automation": "full",
+          "produces": "host-native MAME aa310 binary + verified A310/RISC OS 3.11 romset + golden savestate (Apps Filer window open on the Desktop)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/riscos3",
+      "qmp": null,
+      "pointer_mode": "abs",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54213,
+      "notes": "HOST-NATIVE (de-bridged from day one): MAME 0.289's aa310 (Acorn Archimedes 310) runs on the host — no QEMU/QMP, no guest OS to shell into, no exec channel. Frames drawshm->shm, keys and the pointer over ctlsock. RISC OS 3.11 is entirely ROM-resident (bios=311); there is no disk image. Launcher stations/mame-native/x11-runtime.sh; reset relaunches and restores sta/aa310/golden.sta. The pointer is a CLOSED LOOP on the VIDC's own hardware-cursor registers (m_crtc_regs[6]/[14]) — three buttons: Select/Menu/Adjust."
+    }
+  },
+  "render": {
+    "signalOrder": 92,
+    "stationsManifestOrder": 90,
+    "stationsManifestPrelude": "\n# riscos3 (VMID 213) — RISC OS 3.11 on an Acorn Archimedes 310, host-native\n# MAME aa310: ROM-resident OS (bios=311), drawshm frames, ctlsock keys and a\n# closed-loop absolute pointer read from the VIDC's own cursor registers.\n",
+    "bringUpGroup": 6,
+    "bindingOrder": 109,
+    "bindingPrelude": "",
+    "goldenOrder": 90
+  },
+  "stationDir": "riscos3",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54213,
+    "fps": 60,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "abs",
+      "backend": "mamesock",
+      "method": "mame-hwcursor-readloop",
+      "absolute": true,
+      "present": true,
+      "device": "archimedes-quadrature-mouse",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 213
+  },
+  "guestDoc": "docs/guests/riscos3.md",
+  "credentialsRef": "guest/riscos3",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "riscos3",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "mamesock",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "shm",
+      "SH_X11_DISPLAY": ":73",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/riscos3/riscos3_cmd",
+      "SH_SHM_PATH": "/data/vms/streamhost/stations/riscos3/fb.shm",
+      "SH_PORT": "54213",
+      "SH_FPS": "60",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_AUDIO_BITRATE": "96000",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/riscos3/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/riscos3/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10"
+    },
+    "vmidLabel": 213,
+    "bringUpOrder": 109,
+    "x11": {
+      "display": ":73",
+      "geometry": "1024x768x32",
+      "capture": "shm",
+      "launcher": "streamhost/stations/mame-native/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "riscos3",
+        "--udp",
+        "54213",
+        "--x11",
+        "--x11-display",
+        ":73",
+        "--capture",
+        "shm",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "mamesock",
+        "--audio",
+        "off",
+        "--fps",
+        "60",
+        "--x11-runtime-file",
+        "$T/mame-native/x11-runtime.sh",
+        "--aux-file",
+        "$T/riscos3/riscos3.keymap",
+        "--env-append-file",
+        "$T/riscos3/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/riscos3/riscos3.keymap",
+        "streamhost/stations/riscos3/station.env.fixture"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "beige-tower-crt",
+    "transport": "streamhost",
+    "accentColor": "#3F7FBF",
+    "eraLabel": "1992 · RISC OS 3.11",
+    "pointerRel": false
+  },
+  "museum": {
+    "id": "riscos3",
+    "displayName": "RISC OS 3.11",
+    "year": 1992,
+    "lineage": "Acorn Arthur → RISC OS",
+    "arch": "ARM2, 8 MHz, 4 MB (Archimedes 310)",
+    "ramMB": 4,
+    "ramKB": 0,
+    "era": "1990s",
+    "accent": "#3F7FBF",
+    "eraSoftware": [
+      "Filer",
+      "!Draw",
+      "!Paint",
+      "!Edit",
+      "BASIC V"
+    ],
+    "periodBrowser": "none — no networking on this exhibit in the first wave",
+    "iconicApps": [
+      "Filer",
+      "!Draw",
+      "!Paint"
+    ],
+    "blurb": "Acorn's native ARM desktop — the icon bar, the Filer and the windowed applications that turned the ARM chip from an in-house processor experiment into a personal computer platform, five years before ARM licensed its first outside core.",
+    "notes": "Host-native station: MAME 0.289's aa310 (Acorn Archimedes 310) runs on the host — drawshm frames, ctlsock keys and pointer, no audio in the first wave. RISC OS 3.11 is ROM-resident (bios=311 on the A310 romset); nothing is installed and there is no disk image. MEASURED 2026-09-20 on the pinned 0.289 binary: cold power-on reaches the RISC OS 3.11 Desktop in 21 s, and the golden savestate restores the Apps Filer window scene to a BYTE-IDENTICAL framebuffer. The pointer is 1:1 ABSOLUTE: the VIDC1a's own hardware-cursor registers are the sensor for the ctlsock closed loop, and ten spread targets over two laps landed within 3 px X / 2 px Y with no give-ups. All three Archimedes buttons work — Menu (middle) drops the Pinboard menu, Select (left) on the icon bar's Apps icon opens the Resources:$.Apps Filer window. See docs/lab/RISCOS3-WAVE.md."
+  },
+  "emulator": {
+    "family": "MAME",
+    "version": "0.289",
+    "source": "scripts/build-guests/emulators/native.d/riscos3.sh",
+    "driver": "aa310"
+  },
+  "ui": "desktop",
+  "reset": {
+    "stationDir": "riscos3",
+    "pointer": "abs",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "1:1 ABSOLUTE, closed loop, MEASURED 2026-09-20. The Archimedes mouse is the keyboard device's own QUADRATURE pair (:keyboard:MOUSE.0 = X, :keyboard:MOUSE.1 = Y, both 16-bit analog; :keyboard:MOUSE.2 = three IP_ACTIVE_LOW buttons named Mouse Left / Mouse Center / Mouse Right). Two things had to be true before it moved at all. (a) UPSTREAM DISCARDED THE MAGNITUDE: archimedes_keyb.cpp's 4 kHz update_mouse emitted ONE quadrature step per non-zero delta and then assigned m_mouse_x = x, so a 600-count move moved the guest pointer ZERO pixels — mame-archimedes-kbd-mouse-carry.patch advances the recorded position by one unit per tick and keeps the remainder. (b) THE SENSOR IS THE VIDC: acorn_vidc.cpp draws the sprite at m_crtc_regs[CRTC_HCSR]/[CRTC_VCSR], elements 6 and 14 of a save_pointer'd u32[16], so the closed loop reads byte offsets 24 and 56 of that item — which needed mame-ctlsock-item-window-sized.patch, because the ram-cursor window only accepted byte arrays. Calibration, fitted over 8 points with a max residual under 0.6 px: published = -177 + reg*1.23127 (X), -58 + reg*2.65502 (Y). The 640x256 raster is LETTERBOXED inside the 1024x768 surface — reachable published pixels are roughly x 118..905, y 43..722, so the fleet's usual corner targets are outside the guest raster.",
+    "keyboard": "MEASURED 2026-09-20. The aa310 keyboard is a CPU-scanned matrix on :keyboard:ROW.0..ROW.15 behind the Archimedes keyboard MCU (acorn_0280,022-01_philips_8051ah-2.bin, an 8051 running its own ROM). riscos3.keymap is generated from the live ctlsock KEYDUMP (96 of 139 fields mapped; the rest are IPT_OTHER keyboard-ID bits, IPT_UNUSED, and the UK-layout '#' and '£' keys with no XT scancode). F12 opens the RISC OS command line on the framebuffer — the keyboard proof. Pacing is the scanned-matrix floor, 80/80 ms with MAME_CTL_KEY_EXCL on :keyboard:ROW; a press and its release must not arrive in the same window or the module coalesces them and the guest sees nothing.",
+    "fixture": "RISC OS 3.11 Desktop with the Resources:$.Apps Filer window open in the top left — !Alarm, !Calc, !Chars, !Configure, !Draw, !Edit, !Help and !Paint one Select-click away — over the mid-grey Pinboard backdrop, with the icon bar along the bottom (floppy :0, Apps, the palette and the Acorn task-manager icon) and the pointer parked on open backdrop. Drawn on the published 1024x768 surface by MAME 0.289's aa310 running HOST-NATIVE (drawshm). MEASURED 2026-09-20: cold power-on reaches the bare Desktop in 21 s; the golden savestate (137197 B, saved in 1.0 s) restores this scene to a BYTE-IDENTICAL framebuffer and the guest is still live afterwards (a Menu click still drops the Pinboard menu). aa310 is listed savestate=\"unsupported\" in -listxml, so the restore is PROVEN rather than assumed. No disk is attached — RISC OS is entirely ROM-resident on this romset."
+  },
+  "migrationExceptions": [],
+  "notes": [
+    "scaffolded from apple2gs on 2026-09-20 (slot/udp/vmid 213); the sibling supplied only the registry row shape and the mame-native x11-runtime.sh launcher convention — driver, romset, pointer and keyboard are all aa310's own.",
+    "carries three patches authored here: mame-ctlsock-item-window-sized.patch (cursor window into a non-byte save item), mame-archimedes-kbd-mouse-carry.patch (the quadrature magnitude), and the ptr-tags/btn-active-low/ram-cursor trio the pointer binding needs. See docs/lab/RISCOS3-WAVE.md."
+  ]
+}

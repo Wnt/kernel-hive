@@ -177,4 +177,10 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#3b5b9e', accentTint: '#6b9d70', tintMix: 0.4,
     badge: 'KAYPRO II', spec: 'Z80 2.5MHZ • 64K • 1982', kit: 'eightBit',
   },
+  // riscos3: Acorn's own off-white plastic with the red-and-white Acorn
+  // roundel as the accent; the badge is what the case actually said.
+  riscos3: {
+    caseTint: '#dedacf', accentTint: '#c4262e', tintMix: 0.32,
+    badge: 'ARCHIMEDES 310', spec: 'ARM2 8MHZ • 4MB • 1992', kit: 'eightBit',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;
