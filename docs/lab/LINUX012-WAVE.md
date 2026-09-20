@@ -17,7 +17,7 @@ directory up, at the `Linux.old/images/` root:
 | `rootimage-0.12-20040306` | 1474560 | `4e79e37b074f2ed1de5aea212e282b6970c41d1c731903aa01ff1431b8ea0713` |
 
 `scripts/build-guests/tiles/linux012.sh` fetches, hashes and composes both into
-`boot.qcow2` / `hda.qcow2` / `hdb.qcow2`.
+`boot.qcow2` / `disk.qcow2` / `disk2.qcow2`.
 
 ## The two walls, and what actually caused each
 
@@ -86,12 +86,12 @@ and 0.12 panics.
 | master only | `race/D-ide-lba2048/fb1.png` | `Kernel panic: HD controller not ready` |
 | master + blank slave | `race/G-ide-slave/fb1.png` | `[/usr/root]#` root shell |
 
-`hdb.qcow2` is blank apart from an MBR `0x55AA` signature — which `hd.c` also
+`disk2.qcow2` is blank apart from an MBR `0x55AA` signature — which `hd.c` also
 requires, or it panics `Bad partition table`. **Do not remove it.**
 
 ## What ships
 
-`hda.qcow2`, 16 MiB, CHS pinned 64/16/32 (0.12's `hd.c` does its own CHS
+`disk.qcow2`, 16 MiB, CHS pinned 64/16/32 (0.12's `hd.c` does its own CHS
 division from the BIOS drive table, so the geometry must not be left to QEMU's
 size-based guess):
 

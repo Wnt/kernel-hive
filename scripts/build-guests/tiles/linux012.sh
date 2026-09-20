@@ -149,8 +149,8 @@ PY
 # checkpoint, the binary and the device set are ONE combination).
 log "converting to qcow2"
 qemu-img convert -f raw -O qcow2 "$BOOT_IMG" "$ASSETS/boot.qcow2"
-qemu-img convert -f raw -O qcow2 "$WORK/hda.img" "$ASSETS/hda.qcow2"
-qemu-img convert -f raw -O qcow2 "$WORK/hdb.img" "$ASSETS/hdb.qcow2"
-sha256sum "$ASSETS/boot.qcow2" "$ASSETS/hda.qcow2" "$ASSETS/hdb.qcow2" |
+qemu-img convert -f raw -O qcow2 "$WORK/hda.img" "$ASSETS/disk.qcow2"
+qemu-img convert -f raw -O qcow2 "$WORK/hdb.img" "$ASSETS/disk2.qcow2"
+sha256sum "$ASSETS/boot.qcow2" "$ASSETS/disk.qcow2" "$ASSETS/disk2.qcow2" |
   tee "$ASSETS/MANIFEST.sha256"
 log "done — assets in $ASSETS"

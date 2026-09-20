@@ -20,7 +20,7 @@ the exhibit is the kernel itself, four months old.
   1474560 bytes (measured requirement: a short raw image leaves QEMU's track
   wrap indeterminate and the boot chain never passes the SVGA prompt),
   patches the boot sector, composes the IDE disks, and publishes
-  `boot.qcow2` / `hda.qcow2` / `hdb.qcow2`.
+  `boot.qcow2` / `disk.qcow2` / `disk2.qcow2`.
 
 ## Device set
 
@@ -37,14 +37,14 @@ the golden (AGENTS.md rule 6):
 
 - **Boot is from the floppy, root is from IDE.** `boot.qcow2` is attached
   `if=floppy,index=0` and carries the original 1992 kernel with its
-  boot-sector ROOT_DEV word retargeted (below). `hda.qcow2` carries the
+  boot-sector ROOT_DEV word retargeted (below). `disk.qcow2` carries the
   original minix root filesystem, moved onto an IDE partition, plus a swap
   partition.
 - **Two IDE disks, always.** `hd.c`'s `hd_out()` calls `controller_ready()`
   *before* it writes the drive-select register, so it polls the status port
   of whichever device the BIOS left selected. With a master only, the
   absent slave's status port reads 0x00 and 0.12 dies on
-  `Kernel panic: HD controller not ready`. `hdb.qcow2` is blank apart from an
+  `Kernel panic: HD controller not ready`. `disk2.qcow2` is blank apart from an
   MBR `0x55AA` signature (`hd.c` also requires this, or it panics
   `Bad partition table`) and exists only to answer that poll — it must not
   be removed.
@@ -102,7 +102,7 @@ partition it should use as a root".
 
 ## Disk layout
 
-`hda.qcow2`, 16 MiB, CHS pinned 64/16/32 on both disks:
+`disk.qcow2`, 16 MiB, CHS pinned 64/16/32 on both disks:
 
 - MBR partition 1: start LBA 2048, 2880 sectors, type 0x81 — the original
   1.44 MB minix root filesystem, verbatim. Becomes `/dev/hd1`.
@@ -184,7 +184,7 @@ Baked 2026-09-20 on `/data/vms/sandbox/linux012-race/riggolden` with the
 SAME device set as the launcher (kernel floppy + both IDE disks, CHS
 64/16/32, `-m 16 -smp 1`, `pcspk-audiodev=snd0`, KVM). The vmstate lands in
 `boot.qcow2`; all three qcow2s carry the `golden` tag, and the launcher
-tests for it on `hda.qcow2`.
+tests for it on `disk.qcow2`.
 
 Fixture scene: `race/golden/a2-scene.png` — the full kernel banner
 (including `Swap device ok: 1023 pages`) with `cat /etc/passwd` run once

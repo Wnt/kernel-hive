@@ -29,7 +29,7 @@
 #   - TWO IDE DISKS, ALWAYS. hd.c's hd_out() calls controller_ready() BEFORE it
 #     writes the drive-select register, so it polls whichever device the BIOS
 #     left selected. With a master only, the absent slave's status port reads
-#     0x00 and 0.12 dies on `panic("HD controller not ready")`. hdb.qcow2 is
+#     0x00 and 0.12 dies on `panic("HD controller not ready")`. disk2.qcow2 is
 #     blank apart from an MBR signature (hd.c panics "Bad partition table"
 #     without one) and exists ONLY to answer that poll. Do not remove it.
 #
@@ -55,7 +55,7 @@ rm -f "/data/vms/streamhost/stations/linux012/qmp.sock" "/data/vms/streamhost/st
 # streamhost display fast-poll (pve-qemu 0047): dbus poll every SH_DBUS_UPDATE_MS ms (default 4).
 export SH_DBUS_UPDATE_MS="${SH_DBUS_UPDATE_MS:-4}"
 LOADVM=""
-qemu-img snapshot -l /data/vms/streamhost/stations/linux012/hda.qcow2 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
+qemu-img snapshot -l /data/vms/streamhost/stations/linux012/disk.qcow2 2>/dev/null | grep -qw golden && LOADVM="-loadvm golden -S"
 # shellcheck disable=SC2086 # $LOADVM must word-split into -loadvm golden (or vanish when unset/cold-boot)
 nohup qemu-system-i386 \
   -name streamhost-linux012 \
@@ -69,9 +69,9 @@ nohup qemu-system-i386 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 \
   \
   -drive file=/data/vms/streamhost/stations/linux012/boot.qcow2,format=qcow2,if=floppy,index=0 \
-  -drive file=/data/vms/streamhost/stations/linux012/hda.qcow2,format=qcow2,if=none,id=hd0 \
+  -drive file=/data/vms/streamhost/stations/linux012/disk.qcow2,format=qcow2,if=none,id=hd0 \
   -device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=64,heads=16,secs=32 \
-  -drive file=/data/vms/streamhost/stations/linux012/hdb.qcow2,format=qcow2,if=none,id=hd1 \
+  -drive file=/data/vms/streamhost/stations/linux012/disk2.qcow2,format=qcow2,if=none,id=hd1 \
   -device ide-hd,drive=hd1,bus=ide.0,unit=1,cyls=64,heads=16,secs=32 \
   -qmp unix:/data/vms/streamhost/stations/linux012/qmp.sock,server=on,wait=off \
   -pidfile /data/vms/streamhost/stations/linux012/qemu.pid \

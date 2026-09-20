@@ -15,7 +15,7 @@
           "class": "retro",
           "estimated": "~1m",
           "automation": "full",
-          "produces": "boot.qcow2 (1992 kernel floppy, ROOT_DEV retargeted to /dev/hd1) + hda.qcow2 (minix root filesystem + swap partition) + hdb.qcow2 (blank slave, required by hd.c)",
+          "produces": "boot.qcow2 (1992 kernel floppy, ROOT_DEV retargeted to /dev/hd1) + disk.qcow2 (minix root filesystem + swap partition) + disk2.qcow2 (blank slave, required by hd.c)",
           "flags": []
         }
       }
@@ -142,9 +142,9 @@
         "-display dbus,p2p=on,audiodev=snd0",
         "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
         "-drive file=/data/vms/streamhost/stations/linux012/boot.qcow2,format=qcow2,if=floppy,index=0",
-        "-drive file=/data/vms/streamhost/stations/linux012/hda.qcow2,format=qcow2,if=none,id=hd0",
+        "-drive file=/data/vms/streamhost/stations/linux012/disk.qcow2,format=qcow2,if=none,id=hd0",
         "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=64,heads=16,secs=32",
-        "-drive file=/data/vms/streamhost/stations/linux012/hdb.qcow2,format=qcow2,if=none,id=hd1",
+        "-drive file=/data/vms/streamhost/stations/linux012/disk2.qcow2,format=qcow2,if=none,id=hd1",
         "-device ide-hd,drive=hd1,bus=ide.0,unit=1,cyls=64,heads=16,secs=32",
         "-qmp unix:/data/vms/streamhost/stations/linux012/qmp.sock,server=on,wait=off",
         "-pidfile /data/vms/streamhost/stations/linux012/qemu.pid"
@@ -167,9 +167,9 @@
           "-display dbus,p2p=on,audiodev=snd0",
           "-audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16",
           "-drive file=/data/vms/streamhost/stations/linux012/boot.qcow2,format=qcow2,if=floppy,index=0",
-          "-drive file=/data/vms/streamhost/stations/linux012/hda.qcow2,format=qcow2,if=none,id=hd0",
+          "-drive file=/data/vms/streamhost/stations/linux012/disk.qcow2,format=qcow2,if=none,id=hd0",
           "-device ide-hd,drive=hd0,bus=ide.0,unit=0,cyls=64,heads=16,secs=32",
-          "-drive file=/data/vms/streamhost/stations/linux012/hdb.qcow2,format=qcow2,if=none,id=hd1",
+          "-drive file=/data/vms/streamhost/stations/linux012/disk2.qcow2,format=qcow2,if=none,id=hd1",
           "-device ide-hd,drive=hd1,bus=ide.0,unit=1,cyls=64,heads=16,secs=32",
           "-qmp unix:/data/vms/streamhost/stations/linux012/qmp.sock,server=on,wait=off",
           "-pidfile /data/vms/streamhost/stations/linux012/qemu.pid"
@@ -236,7 +236,7 @@
   "migrationExceptions": [],
   "notes": [
     "root filesystem moved from the 1992 root floppy onto an IDE partition; see docs/lab/LINUX012-WAVE.md for the seven configurations that proved the floppy path unusable under QEMU 11",
-    "hdb.qcow2 is blank on purpose and must not be removed: hd.c polls the status port before selecting a drive, and panics with no slave attached"
+    "disk2.qcow2 is blank on purpose and must not be removed: hd.c polls the status port before selecting a drive, and panics with no slave attached"
   ],
   "demoProgram": {
     "label": "Look around the fourth month of Linux",
