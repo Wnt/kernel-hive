@@ -10,8 +10,9 @@ machines share nothing else (different driver, different keyboard/mouse
 device model, a different pointer sensor).
 
 **LIVE 2026-09-20.** Cold boot to Desktop 21 s; golden savestate restores the
-Apps-window scene byte-identically; pointer 1:1 absolute, worst error 3 px X /
-2 px Y over ten spread targets; all three Archimedes buttons react.
+Apps-window scene byte-identically; pointer 1:1 absolute, worst error 8 px X /
+4 px Y over twenty spread landings (median within 2); all three Archimedes
+buttons react with their own Select/Menu/Adjust semantics.
 
 ## Ledger — from `scripts/dev/wave.sh alloc riscos3`
 
@@ -97,7 +98,7 @@ Patches, in order:
 | `mame-ctlsock` / `mame-drawshm` / `mame-kiosk-no-ui` | the fleet base trio |
 | `mame-irix-skip-warnings` | `aa310` is `status="preliminary"`, so the red nag panel would BE the exhibit |
 | `mame-ctlsock-ptr-tags` | the base module binds the SGI Indy's `hle_ps2_mouse` by hardcoded tag; the Archimedes mouse is `:keyboard:MOUSE.0/1/2` |
-| `mame-ctlsock-btn-active-low` | all three Archimedes buttons are `IP_ACTIVE_LOW` |
+| `mame-ctlsock-btn-active-low` | in the chain because `ram-cursor` applies after it — but the KNOB IS NOT SET, see §Pointer (g) |
 | `mame-ctlsock-ram-cursor` | supplies the `item@offset:width` cursor window and the `CAL_SX/SY` scale |
 | **`mame-ctlsock-item-window-sized`** (new, authored here) | that window only accepted a BYTE array; the VIDC cursor register is an element of a `u32[16]` |
 | **`mame-archimedes-kbd-mouse-carry`** (new, authored here) | upstream threw away the mouse's movement magnitude — see §Pointer (a) |
@@ -175,7 +176,7 @@ fleet's usual corner targets (20,20)/(1000,740) are outside the guest raster
 and no pointer can occupy them — pick targets inside the raster.
 
 **(e) What it lands.** Five targets spread across the raster, two laps, arrow
-tip located on the framebuffer:
+tip located on the framebuffer (one representative run of the two taken):
 
 | Target | Lap 1 | err | Lap 2 | err |
 |---|---|---|---|---|
@@ -185,17 +186,49 @@ tip located on the framebuffer:
 | (840,660) | (837,662) | (-3,+2) | (842,659) | (+2,-1) |
 | (512,390) | (513,388) | (+1,-2) | (510,391) | (-2,+1) |
 
-**WORST |err| = 3 px X, 2 px Y. `giveups=0`.** Learned gain 2.25 / 2.47
-published px per count. RESOLUTION BOUND: one quadrature count is 1.493
-register units = 1.84 px across and 3.96 px down, so the loop lands on count
-boundaries and cannot do better than about ±1 px X / ±2 px Y.
+`giveups=0` throughout. Across BOTH runs — 20 landings — the worst was
+**8 px X / 4 px Y** (one outlier, (180,660) → (188,659)); the median landing
+is within 2 px. Learned gain 2.2–2.5 published px per count. RESOLUTION
+BOUND: one quadrature count is 1.493 register units = 1.84 px across and
+3.96 px down, so the loop lands on count boundaries and cannot do better than
+about ±1 px X / ±2 px Y. For scale, an icon-bar icon is ~60 px wide on the
+published surface.
 
-**(f) All three buttons react** — RISC OS is a Select/Menu/Adjust desktop and
-a one-button proof would not be one. `CLICK3` (Menu, middle) on open backdrop
-drops the **Pinboard** menu at the pointer (54944 changed pixels, bbox
-460,274..646,568). `CLICK1` (Select, left) on the icon bar's Apps icon opens
-the **Resources:$.Apps** Filer window (100743 changed pixels). Adjust is
-`CLICK2`.
+**(f) All three buttons react, with their own semantics** — RISC OS is a
+Select/Menu/Adjust desktop and a one-button proof would not be one. Five
+spread clickable targets, each with its own reaction:
+
+| Target | Button | Reaction |
+|---|---|---|
+| icon bar Apps (218,685) | Select | opens `Resources:$.Apps` (77287 px) |
+| icon bar palette (822,678) | Select | opens the palette window (44120 px) |
+| icon bar Acorn (875,680) | Select | opens the Task Manager (229739 px) |
+| backdrop (780,150) | Menu | Pinboard menu at 570..894 x 114..464 (51403 px) |
+| backdrop (220,560) | Menu | Pinboard menu at 177..605 x 420..719 (54076 px) |
+| Filer close icon (155,57) | Select | closes the window (47996 px) |
+| Filer close icon (155,57) | **Adjust** | opens the PARENT `Resources:$` (61204 px) |
+
+The two Menu rows are the important ones for a closed loop: the menu is drawn
+AT THE POINTER, so its bounding box is itself a pointer-position measurement,
+independent of the arrow-sprite locator.
+
+**(g) `MAME_CTL_BTN_ACTIVE_LOW` MUST NOT BE SET HERE, and the first live frame
+is why.** The Archimedes buttons really are `IP_ACTIVE_LOW` — but MAME already
+handles that: `m_digital_value` means "pressed" in both polarities and
+`ioport_port::read()` XORs the ACTIVE_LOW bits in from `m_live->defvalue`.
+Setting the knob INVERTS the module's own press/release, so `DOWN` releases,
+`UP` presses, and a `CLICK` ends with the button HELD. The station's very
+first live frame after landing showed the Filer window with a dashed
+rubber-band selection being dragged across it — a stuck Select button on a
+station nobody had touched. Every click proof above was re-taken with the
+knob unset; moving 200 px after a click now changes **451** pixels (the
+pointer sprite, and nothing else). The `btn-active-low` patch stays in the
+build only because `ram-cursor` applies on top of its hunks.
+
+**This is the rule-9 case in miniature.** With the knob set, every ack was
+`OK`, every diff was large, and the menus really did open — four separate
+"proofs" passed. Only the framebuffer of the *landed* station showed that the
+button had never been let go.
 
 ## Keyboard — MEASURED 2026-09-20
 
