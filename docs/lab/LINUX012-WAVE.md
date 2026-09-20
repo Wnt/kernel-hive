@@ -105,3 +105,88 @@ reached a scene worth publishing (still mid-boot prompt). Registry scaffold
 (commit `b00f20c6`, this doc alongside it) is pushed to `origin/linux012-work`
 so the work is not stranded; land/station-land.sh is deferred until Stage 2
 is resolved or the stop-rule clock runs out.
+
+## Resume checkpoint (2026-09-20 ~09:40Z)
+
+**Allocation** (still held, session `linux012-work`): slot 205, UDP 54205,
+VMID 205. `.wave.env` in the worktree root (gitignored) has the exported
+form. Do not re-run `wave.sh alloc` — it is idempotent for this session but
+unnecessary; the claim is already live.
+
+**Sandbox**: `/data/vms/sandbox/linux012-work/repo` (worktree, branch
+`linux012-work`, pushed to `origin/linux012-work`).
+Media + smoke-rig scratch: `/data/vms/sandbox/linux012-work/media/` and
+`/data/vms/sandbox/linux012-work/smoke{6,8,9,10}/` (root-owned; `sudo chmod
+-R a+rX <dir>` before reading frames as the `wnt` user).
+
+**Media, pinned** (also in `scripts/build-guests/tiles/linux012.sh` and the
+table above):
+- `bootimage-0.12-20040306` — 150016 bytes — sha256
+  `1df233ade3c71b6622b138622c81128460e84351b80ee7d54fb4fdad71e05425`
+- `rootimage-0.12-20040306` — 1474560 bytes — sha256
+  `4e79e37b074f2ed1de5aea212e282b6970c41d1c731903aa01ff1431b8ea0713`
+- both fetched from `https://mirror.math.princeton.edu/pub/oldlinux/Linux.old/images/`
+  (NOT `Linux-0.12/images/` as the seed doc guessed — that path only has
+  the `.Z` originals)
+- the boot image must be zero-padded to 1474560 bytes
+  (`truncate -s 1474560`) before use — the builder does this into
+  `assets/linux012/boot.img`.
+
+**What is PROVEN by framebuffer** (frame paths, root-owned — chmod first):
+`/data/vms/sandbox/linux012-work/smoke6/fb-after-key.png` shows real Linux
+0.12 kernel boot text (`copy_to_cooked: missing queues` x4, `8 virtual
+consoles`, `4 pty's`) reaching the console after the boot floppy is padded
+and a few distinct QMP `send-key` events are sent past the SeaBIOS
+SVGA-mode prompt. This is NOT a root shell — it is NOT sufficient to
+publish `/os/linux012` as a working station yet.
+
+**What is NOT proven**: whether `Insert root floppy and press ENTER`
+(the very next line) is a real second wall or was mis-read while labhost
+load was 116-133 against the documented cap of 50 (confirmed via
+`ssh lab uptime` during the stuck window; the coordinator independently
+flagged the same overload and reniced the fleet's build processes).
+`info registers` samples during the "stuck" window showed EIP genuinely
+moving between distinct addresses (not frozen the way the FIRST wall was),
+which argues for "slow, not stuck" — but no run has been given a clean,
+uncontended multi-minute settle to confirm.
+
+**Exact resume command** (run when `ssh lab uptime` load is reasonable —
+this wave's builds were reniced to 19, so the guest itself should no longer
+be starved):
+
+```bash
+# from /data/vms/sandbox/linux012-work/repo
+scripts/dev/labrun <<'EOF'
+D=/data/vms/sandbox/linux012-work/smoke11
+mkdir -p "$D"; cd "$D"
+M=/data/vms/sandbox/linux012-work/media
+rm -f qmp.sock qemu.pid qemu.log
+nohup qemu-system-i386 -name lh-linux012-resume -m 8 \
+  -drive file="$M/boot-padded2.img",format=raw,if=floppy,index=0,readonly=on \
+  -drive file="$M/rootimage-0.12-20040306",format=raw,if=floppy,index=1,readonly=on \
+  -boot a -display none -vga std \
+  -qmp unix:"$D/qmp.sock",server=on,wait=off -pidfile "$D/qemu.pid" \
+  >"$D/qemu.log" 2>&1 &
+disown
+for i in $(seq 1 40); do [ -S "$D/qmp.sock" ] && break; sleep .25; done
+EOF
+# then via scripts/dev/fb-wait.py: settle to first frame, send ONE clean
+# "ret" (qmp send-key qcode "ret"), settle 8s, send ONE more "ret" for the
+# "insert root floppy" prompt, then --change --settle 20 --timeout 180
+# (a genuinely patient wait, not another 30-45s guess) before concluding
+# it is a real second wall. If it settles on a root shell, capture that
+# frame, THEN run scripts/dev/smoke-rig.sh linux012 --like minix2 to
+# publish /os/linux012, then proceed to the gate + station-land.sh.
+```
+
+**Single next concrete step**: re-run the boot with ONE clean Enter per
+prompt (not a key-blast — that theory is unconfirmed and adds noise) and a
+patient (2-3 min) settle wait on an uncontended host, to settle whether
+Stage 2 is a real wall or a starved poll.
+
+**Quality gate status**: `spa` TS type-check (`npx tsc -b --noEmit`) is
+clean on this branch. `shfmt`/`shellcheck` on every touched `.sh` file is
+clean (re-run after `npm ci` in `spa/` was needed once, locally, to get
+`node_modules` — that install is NOT part of this branch's diff).
+`eslint`/`knip`/vitest not yet re-run after the latest commit — run them
+before landing.

@@ -129,25 +129,25 @@ for t in "${TILES[@]}"; do
   echo "--- tile: $t ---"
   skip_qmp=0
   case "$t" in
-  irix | c64 | atarist | apple2 | amiga)
-    # The qcap-scope tiles: the IRIX x11-runtime tile (issue #20, not QEMU at
-    # all — no QMP socket ever appears, hence skip_qmp) and the four
-    # emulator-bridge kiosks. All five put their guest in a 3 GiB
-    # `systemd-run --scope`: the daemon's SH_QEMU_RSS_GUARD_MB bounds
-    # display-backlog growth at the source, the MemoryMax cap is the outer net.
-    #
-    # This script deliberately does NOT create that scope itself any more.
-    # A scope started here, before `systemctl start`, cannot be BindsTo= a
-    # service that is still inactive, so it would be exactly the unbound,
-    # un-killable cgroup that let an IRIX watchdog survive a `systemctl stop`.
-    # ensure-tile-{qemu,x11}.sh — the unit's own ExecStartPre — is idempotent
-    # and creates the scope BOUND to the service, so letting it own the launch
-    # is both less code and the only version that can be stopped.
-    skip_qmp=1
-    ;;
-  *)
-    run bash "$TILESDIR/$t/qemu-streamhost.sh" # nohup QEMU (kills old by pidfile)
-    ;;
+    irix | c64 | atarist | apple2 | amiga)
+      # The qcap-scope tiles: the IRIX x11-runtime tile (issue #20, not QEMU at
+      # all — no QMP socket ever appears, hence skip_qmp) and the four
+      # emulator-bridge kiosks. All five put their guest in a 3 GiB
+      # `systemd-run --scope`: the daemon's SH_QEMU_RSS_GUARD_MB bounds
+      # display-backlog growth at the source, the MemoryMax cap is the outer net.
+      #
+      # This script deliberately does NOT create that scope itself any more.
+      # A scope started here, before `systemctl start`, cannot be BindsTo= a
+      # service that is still inactive, so it would be exactly the unbound,
+      # un-killable cgroup that let an IRIX watchdog survive a `systemctl stop`.
+      # ensure-tile-{qemu,x11}.sh — the unit's own ExecStartPre — is idempotent
+      # and creates the scope BOUND to the service, so letting it own the launch
+      # is both less code and the only version that can be stopped.
+      skip_qmp=1
+      ;;
+    *)
+      run bash "$TILESDIR/$t/qemu-streamhost.sh" # nohup QEMU (kills old by pidfile)
+      ;;
   esac
   [ "$skip_qmp" = 1 ] || wait_qmp "$t" || true
   run systemctl start "streamhost@${t}.service" # attaches to QMP, serves its UDP port
