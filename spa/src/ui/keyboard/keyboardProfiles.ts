@@ -283,6 +283,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
   // implements all three signals. No Minix-specific chord set exists to profile.
   minix2: 'linux-tty',
+  // linux012 (Linux 0.12, QEMU text console) is the same shape as minix2 above:
+  // a bare kernel tty with no GUI, where everything a visitor does is typed. The
+  // linux-tty rows carry the ^C/^D/^Z signals its tty driver implements and the
+  // pipe/slash/dash characters the shell needs.
+  linux012: 'linux-tty',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell
