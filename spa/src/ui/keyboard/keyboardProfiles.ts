@@ -461,6 +461,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // 8-bit `appleii` rows — see the applegs block in
   // keyboardProfiles.data.exotic.ts for why Open Apple changes job here.
   apple2gs: 'applegs',
+  // riscos3 (Acorn Archimedes, MAME aa310) is a mouse-driven desktop like
+  // nextstep/medley above: the Filer and its apps live on Select/Menu/Adjust
+  // clicks, and the generic rows cover the plain US-ish Acorn layout MAME's
+  // aa310 keyboard MCU exposes for typing into a window.
+  riscos3: 'generic',
   atarist: 'atarist',
   amiga: 'amiga', aros: 'amiga', amigaos35: 'amiga', a1000: 'amiga', a3000: 'amiga',
   // amix runs System V on Amiga hardware, so it keeps the Amiga keyboard
