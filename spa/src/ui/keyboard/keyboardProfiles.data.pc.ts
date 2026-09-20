@@ -16,7 +16,7 @@ import {
 export type PcFamily =
   | 'generic' | 'linux-tty' | 'windows' | 'win3x' | 'dos' | 'os2' | 'xenix'
   | 'suncde' | 'plan9' | 'android' | 'c64' | 'plus4' | 'c128'
-  | 'pet' | 'petbusiness' | 'zx81' | 'dragon';
+  | 'pet' | 'petbusiness' | 'zx81' | 'dragon' | 'its';
 
 export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
   generic: { family: 'generic', rows: [NAV, MODS], moreRows: [fkeyRow(1, 12)] },
@@ -33,6 +33,31 @@ export const PROFILES_PC: Record<PcFamily, KeyboardProfile> = {
       ],
       fkeyRow(1, 12),
     ],
+  },
+
+  // MIT ITS on a PDP-10, reached through one DZ11 terminal line. Its verbs are
+  // control characters and the altmode, so they go in an ALWAYS-VISIBLE base
+  // row rather than moreRows: ^Z is how a visitor logs in at all, and a key
+  // that is one "More" tap away is a key a visitor never finds. Esc is the
+  // altmode — the 1960s name for the key, and what ITS documentation calls it.
+  //
+  // Deliberately absent: ^\ escapes to the SIMH simulator prompt and ^] to the
+  // telnet client. Both would take the visitor out of the exhibit and into the
+  // plumbing, so neither is offered here; the on-screen keyboard is the whole
+  // vocabulary of the station.
+  its: {
+    family: 'its',
+    rows: [
+      [
+        ctrlChar('ctrl-z', '^Z', 'z', 'Log in to ITS'),
+        tap('altmode', 'Altmode', XK.Escape, { hint: 'Esc — ITS calls it altmode' }),
+        ctrlChar('ctrl-x', '^X', 'x', 'Emacs prefix'),
+        ctrlChar('ctrl-c', '^C', 'c', 'Interrupt'),
+        ctrlChar('ctrl-l', '^L', 'l', 'Redisplay'),
+      ],
+      MODS,
+    ],
+    moreRows: [NAV],
   },
 
   // SCO Xenix 386 2.3.4 — the linux-tty rows (this is the System V console the

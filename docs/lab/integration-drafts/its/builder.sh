@@ -7,8 +7,16 @@ ITS_REPO="${ITS_REPO:-https://github.com/PDP-10/its.git}"
 ITS_REF="${ITS_REF:-0f7d67997f9f5d30208e117e73272031e74f16b9}"
 mkdir -p "$WORK" "$ASSETS"
 git clone --recursive "$ITS_REPO" "$WORK/its"
-( cd "$WORK/its"; git checkout "$ITS_REF"; git submodule update --init --recursive; git rev-parse HEAD ) | tee "$WORK/its.commit"
-( cd "$WORK/its"; make EMULATOR=simh )
+(
+  cd "$WORK/its"
+  git checkout "$ITS_REF"
+  git submodule update --init --recursive
+  git rev-parse HEAD
+) | tee "$WORK/its.commit"
+(
+  cd "$WORK/its"
+  make EMULATOR=simh
+)
 rm -rf "$ASSETS/tree"
 cp -a "$WORK/its" "$ASSETS/tree"
 find "$ASSETS/tree/out" -type f -print0 | sort -z | xargs -0 sha256sum >"$ASSETS/out.MANIFEST.sha256"

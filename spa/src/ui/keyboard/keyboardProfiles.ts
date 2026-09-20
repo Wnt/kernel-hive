@@ -43,7 +43,7 @@ export type Family =
   | 'zxspectrum' | 'samcoupe' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
-  | 'classicmac' | 'classicmac128' | 'applegs';
+  | 'classicmac' | 'classicmac128' | 'applegs' | 'its';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -283,6 +283,11 @@ export const OS_FAMILY: Record<string, Family> = {
   // — ^C, ^D, ^Z and the pipe/dash/slash characters — and Minix's own tty driver
   // implements all three signals. No Minix-specific chord set exists to profile.
   minix2: 'linux-tty',
+  // MIT ITS: a PDP-10 timesharing system behind a single terminal line. It
+  // gets its own family because the linux-tty rows would be wrong twice over —
+  // ^Z on ITS is how you LOG IN, not how you suspend a job, and the key ITS
+  // documentation calls altmode is the one a visitor needs most after it.
+  its: 'its',
   suse64: 'generic', // KDE 1.1.2 with a konsole open — the generic Unix rows are what a visitor types into
   win95: 'windows', win98se: 'windows', win2000: 'windows', winxp: 'windows', reactos: 'windows',
   magiccap: 'windows', // Magic Cap for Windows (build 327) runs inside a win98se-class guest shell

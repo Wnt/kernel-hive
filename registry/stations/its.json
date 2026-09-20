@@ -136,32 +136,25 @@
   },
   "museum": {
     "id": "its",
-    "displayName": "TODO(medley): Interlisp Medley",
-    "year": 1987,
-    "lineage": "TODO(medley): Xerox PARC Interlisp-D (1981) → Medley (Xerox AIS / Envos / Venue, 1987) → open-source Interlisp project (2020– )",
-    "arch": "Xerox 1186 'Daybreak' Lisp workstation (Mesa-microcoded 8086-class CPU) — here the maiko byte-code VM on the host, 256 MB Lisp virtual memory, 1024x768 bitmap display",
-    "ramMB": 256,
-    "era": "1980s",
+    "displayName": "MIT ITS",
+    "year": 1967,
+    "lineage": "MIT PDP-6 ITS (1967) → PDP-10 ITS at the AI Lab → the PDP-10/its restoration project",
+    "arch": "DEC PDP-10 (KS10) under SIMH — RP06 disk, one DZ11 terminal line; built from source by the maintained PDP-10/its tree",
+    "ramMB": 1,
+    "era": "1960s",
     "accent": "#B23A48",
     "eraSoftware": [
-      "the Exec (XCL: Common Lisp and Interlisp in one listener)",
-      "SEdit, the structure editor",
-      "the Inspector and the Break window",
-      "DEdit and the Grapher",
-      "TEdit, the WYSIWYG document editor",
-      "Sketch, the vector drawing program",
-      "NoteCards, the 1985 hypertext system",
-      "LOOPS, Xerox's object system",
-      "Rooms, the virtual-desktop manager"
+      "DDT, the command processor",
+      "Emacs, first written here",
+      "Maclisp",
+      "the INFO documentation system",
+      "TECO"
     ],
     "periodBrowser": "none — Medley predates the web; its network was XNS/PUP to Xerox file servers, and this exhibit is not networked",
     "iconicApps": [
-      "the Exec listener",
-      "SEdit",
-      "the Inspector",
-      "TEdit",
-      "Sketch",
-      "NoteCards"
+      "DDT",
+      "Emacs",
+      "Maclisp"
     ],
     "blurb": "TODO(medley): Xerox PARC's Lisp machine environment, the software half of the 1108 and 1186 'D-machines'. Everything on the screen is a live Lisp object: windows, menus and fonts are data you can inspect and edit while the system runs, and the structure editor edits programs as trees rather than text. Medley (1987) was the last Xerox release before Envos and then Venue took it over; the Interlisp project revived it in 2020, and this is that revival, running on the project's own portable Lisp virtual machine rather than on Xerox hardware.",
     "notes": "TODO(medley): Host-native Tier 3 with NO emulated machine: maiko (the portable Interlisp-D VM, in C since the late 1980s) is a plain X client, so the station is a stock X app under a pinned Xvfb with x11 root capture and XTEST input. Media is the pinned Interlisp release tarball (MIT; sha256 in ASSETS-MANIFEST.md) unpacked by tiles/medley.sh — no ROM, no disk, no checkpoint; reset is a ~2 s relaunch from the release full.sysout. The rest scene is the default MEDLEYDIR-INIT greet: the XCL Exec at the top-left and the Medley logo top-right. Distinct from alto/star/daybreak (Xerox's own OSes under emulation): this is the Lisp-side of the same PARC lineage, on the Interlisp project's own VM. See docs/guests/its.md."
