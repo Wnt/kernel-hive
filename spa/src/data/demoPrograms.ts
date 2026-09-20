@@ -149,6 +149,18 @@ const DEMO_PROGRAMS = {
     ],
     "runCommand": "run"
   },
+  "msx2": {
+    "label": "Type in a demo program (MSX-BASIC)",
+    "lines": [
+      "10 SCREEN 1",
+      "20 COLOR 15,4,4",
+      "30 FOR I=1 TO 20",
+      "40 PRINT \"MSX2 \";",
+      "50 NEXT I"
+    ],
+    "runCommand": "RUN",
+    "perCharMs": 260
+  },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
     "lines": [
@@ -260,6 +272,16 @@ const DEMO_PROGRAMS = {
       "df -h /"
     ],
     "runCommand": "df -h /",
+    "perCharMs": 80
+  },
+  "vax43bsd": {
+    "label": "Log in as root (no password — it is 1986), then look around",
+    "lines": [
+      "root",
+      "hostname; who; date",
+      "ls /usr/games"
+    ],
+    "runCommand": "fortune",
     "perCharMs": 80
   },
   "vic20": {

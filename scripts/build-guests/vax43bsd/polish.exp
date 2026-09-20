@@ -1,0 +1,14 @@
+# museum polish + clean halt; run once after phase 2.
+EXPECT 240 Boot
+SEND ra(0,0)vmunix\n
+EXPECT 900 login:
+SEND root\n
+EXPECT 120 #
+SEND sed 's/myname.my.domain/kernelhive/' /etc/rc.local > /tmp/r && cp /tmp/r /etc/rc.local\n
+EXPECT 120 #
+SEND sed 's/unknown/vt100/' /etc/ttys > /tmp/t && cp /tmp/t /etc/ttys\n
+EXPECT 120 #
+SEND grep hostname /etc/rc.local; grep tty00 /etc/ttys\n
+EXPECT 120 #
+SEND sync; sync; /etc/halt\n
+EXPECT 180 halted

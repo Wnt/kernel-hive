@@ -1,0 +1,16 @@
+EXPECT 240 Boot
+SEND ra(0,0)vmunix\n
+EXPECT 300 erase \^\?, kill \^U, intr \^C
+EXPECT 60 #
+SEND cd /dev\n
+EXPECT 60 #
+SEND ./MAKEDEV ra1\n
+EXPECT 300 #
+SEND cd /\n
+EXPECT 60 #
+SEND disk=ra1 type=ra81 tape=ts xtr\n
+EXPECT 2400 Root filesystem extracted
+SEND sync\n
+SEND sync\n
+SEND sync\n
+EXPECT 60 #

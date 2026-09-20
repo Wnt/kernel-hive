@@ -81,6 +81,9 @@ const POSTER_INDEX = {
   "chokanji": {
     "hero": "/posters/chokanji/desktop.webp"
   },
+  "cpm22": {
+    "hero": "/posters/cpm22/desktop.webp"
+  },
   "daybreak": {
     "hero": "/posters/daybreak/desktop.webp"
   },
@@ -158,6 +161,9 @@ const POSTER_INDEX = {
   },
   "msdoswin1": {
     "hero": "/posters/msdoswin1/desktop.webp"
+  },
+  "msx2": {
+    "hero": "/posters/msx2/desktop.webp"
   },
   "netbsd14": {
     "hero": "/posters/netbsd14/desktop.webp"
@@ -240,6 +246,9 @@ const POSTER_INDEX = {
   "riscos": {
     "hero": "/posters/riscos/desktop.webp"
   },
+  "riscos3": {
+    "hero": "/posters/riscos3/desktop.webp"
+  },
   "sailfishos": {
     "hero": "/posters/sailfishos/desktop.webp"
   },
@@ -284,6 +293,9 @@ const POSTER_INDEX = {
   },
   "ubuntu": {
     "hero": "/posters/ubuntu/desktop.webp"
+  },
+  "vax43bsd": {
+    "hero": "/posters/vax43bsd/desktop.webp"
   },
   "vic20": {
     "hero": "/posters/vic20/desktop.webp"
