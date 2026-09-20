@@ -73,21 +73,18 @@ PIDFILE="$BASE/mame.pid"
 # match, which would match the shell running this script.
 ASSET_DIR="$(dirname "$(readlink -f "$BIN")")"
 
-# FAST FORM (2026-09-20, msx2 wave): the old per-PID `readlink /proc/$P/exe`
-# loop measured ~13.4 s per scan at ~1300 PIDs under load — this launcher's
-# unit calls it from start-pre, so a busy box wedged `systemctl start
-# streamhost@<id>` forever, indistinguishable from a broken station. `find
-# -lname` matches every /proc/<pid>/exe symlink's TARGET in one syscall walk
-# instead of one readlink() per candidate PID — still /proc/<pid>/exe, never
-# a cmdline match (rule 5); the `*` glob also covers a replaced binary's
-# "<path> (deleted)" suffix, so the deleted-binary case above needs no
-# special-casing here.
+# A per-PID `readlink /proc/$p/exe` loop over every /proc/[0-9]* entry is
+# O(n) syscalls in shell and measured at ~13.4s per scan at ~1300 PIDs under
+# a loaded box (msx2 landing, 2026-09-20: it starved the unit's 90s
+# start-pre and systemd killed the start before reap_previous ever finished
+# — the same defect mvs38 found independently on medley). `find` walks
+# /proc once and does the symlink-target match in ONE process; `-lname`
+# compares the RAW link text (not readlink -f's resolved form), so a
+# replaced/deleted binary's "$ASSET_DIR/foo (deleted)" still matches the
+# trailing `*` — no separate deleted-suffix handling needed.
 station_emu_pids() {
-  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$ASSET_DIR/*" \
-    -printf '%h\n' 2>/dev/null |
-    sed 's#^/proc/##' |
-    grep -E '^[0-9]+$' |
-    grep -vx "$$" || true
+  find /proc -mindepth 2 -maxdepth 2 -name exe -lname "$ASSET_DIR/*" 2>/dev/null |
+    sed -n 's#^/proc/\([0-9][0-9]*\)/exe$#\1#p'
 }
 
 reap_previous() {
