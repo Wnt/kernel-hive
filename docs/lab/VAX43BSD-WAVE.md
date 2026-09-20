@@ -3,24 +3,30 @@
 Station id `vax43bsd` · issue #56 · record wave 2026-09-21, Lane B (terminal
 stations) · branch `vax43bsd-work` from `origin/vax43bsd`.
 
-**STATUS 2026-09-20T09:27Z: PAUSED by the wave coordinator** (labhost 1-min load
-140 against the documented cap of 50; the lane is standing down until `mvs38`
-publishes the shared terminal runtime). Nothing of this station is deployed,
-listed, or running. The guest itself is **built and proven from a real console
-transcript**; what is missing is the nspawn container launcher, the registry
-scaffold, and the framebuffer proof. Resume at §Next step.
+**STATUS 2026-09-20T12:30Z: LIVE on the gallery at `/os/vax43bsd`.** The
+station is listed, deployed and proven from the framebuffer and from the real
+browser. This station is also the one that PROVED the lane's shared
+heritage-terminal runtime,
+[`record-wave/shared-terminal-runtime.sh`](record-wave/shared-terminal-runtime.sh),
+which `mvs38`, `multics` and `its` resume from.
 
 ## Allocation ledger (`scripts/dev/wave.sh alloc vax43bsd`)
 
 | Station | Session | Slot / UDP / VMID | X-warp | retronet |
 |---|---|---|---|---|
-| vax43bsd | vax43bsd-work | 209 / 54209 / 209 | — | — |
+| vax43bsd | vax43bsd (was vax43bsd-land) | 215 / 54215 / 215 | — | — |
+
+Display `:115` (slot − 100, the fleet convention). **Slot 209 was gone by the
+time this session resumed** — the predecessor released its claims at the pause
+and `mvs38`/`linux012`/`cpm22`/`palmos`/`msx2`/`riscos3` had taken the range, so
+`wave.sh alloc` handed out 215. Claims are held by session `vax43bsd` since
+landing.
 
 No `--retronet` and no `--x11warp`: the station has no pointer and its only
 network is the simulator-internal DZ telnet listener, which lives inside the
 container's private network namespace.
 
-**Released again on 2026-09-20 at the pause** — see §Teardown.
+Held by the live station since 2026-09-20T12:07Z.
 
 ## Media — measured, not copied from a README
 
@@ -166,36 +172,88 @@ is halted cleanly so fsck finds nothing to salvage.
   1986  karels@monet.Berkeley.EDU:/usr/src/sys/GENERIC`, 8 MiB of memory,
   `avail mem = 7187456`.
 
-## Next step (resume here)
+## The landing session, measured (`date -u`)
 
-1. `git fetch origin mvs38` and read `docs/lab/record-wave/shared-terminal-runtime.sh`
-   for the lane's proven answers on Xvfb socket exposure, nspawn containment,
-   supervision, terminal crop and reset. Contribute the `EXPECT`/`SEND` finding
-   above if mvs38 has not already landed an equivalent.
-2. Write `streamhost/stations/vax43bsd/{x11-runtime.sh,nspawn-inner.sh,station.env.fixture}`
-   from `streamhost/stations/medley/*` — that launcher is the closest proven
-   relative (nspawn, `--volatile=overlay`, `--private-users=<uidbase>:65536`
-   `--private-users-ownership=off`, `--private-network`, host X socket dir bound
-   over `/tmp/.X11-unix` plus a host symlink, reset = relaunch, pidfile contract
-   `mame.pid`/`xvfb.pid`/`nspawn.pid`). Binds: `bin/` and `media/` read-only,
-   one writable `work/`. Inner: Xvfb → `vax780 /work/boot.ini` → wait for the DZ
-   port → `exec xterm … -e telnet 127.0.0.1 <port>`.
-   Intended visitor surface: 1024x768 root, xterm 80x24, green on black, no
-   scrollbar, centred — **unmeasured, pick the font from a real frame.**
-3. `python3 scripts/stations-registry.py new vax43bsd --like medley --production --slot 209`,
-   then fill from `docs/lab/integration-drafts/vax43bsd/registry-overrides.md`
-   with the corrections above (archetype `mono-terminal`, `ui: text-console`,
-   no pointer, accent `#67828f`).
-4. `scripts/dev/smoke-rig.sh vax43bsd --like medley` → operator watches `/os/vax43bsd`.
-5. The proofs that are still entirely OPEN: **framebuffer** (real guest pixels in
-   the capture), **input from the real browser** (including the control keys a
-   1986 shell needs — `^C`, `^D`, `^U`, `^Z`, ESC — through the on-screen
-   keyboard, not host shortcuts), and **reset** (visible change → relaunch →
-   original scene, twice, seed unchanged by `sha256sum`).
+| Time (UTC) | Milestone |
+|---|---|
+| 10:38 | session start; `here.sh`, box load 39.9 |
+| 10:41 | three handoffs read; slot 215 allocated, display `:115` claimed |
+| 10:43 | launcher + inner + fixture written; container launched |
+| 10:44 | **FIRST FRAMEBUFFER EVER FOR THIS STATION** — Xvfb, nspawn, SIMH and the visitor xterm, 53 s from launch to a mapped window |
+| 10:47 | **first real 4.3BSD shell on screen**: `root` typed over XTEST, the 1986 motd and `kernelhive#` |
+| 10:52 | **reset proven** — `/VISITORWASHERE` written, relaunch, `not found`, seed sha256 unchanged |
+| 10:55 | rest scene is deterministic: the launcher's own gate puts `login:` on the framebuffer before it reports ready |
+| 11:00 | shared runtime committed and pushed to `origin/vax43bsd-work` for the three siblings |
+| 11:14 | seed re-snapshotted with `/usr/games` on root's path (new sha256) |
+| 11:19 | hero captured from the live scene |
+| 12:07 | **LANDED and deployed** — `/os/vax43bsd`, `labctl shot` shows the login prompt |
+| 12:27 | **typing proven FROM THE REAL BROWSER**, all four control keys |
+
+## What the framebuffer corrected (none of this was in the prep drafts)
+
+1. **`machine` does not exist either.** The earlier brief corrected `uname` to
+   `machine`; the guest answered `machine: Command not found.` The real
+   commands are `hostname`, `who`, `date`, `ls`, `netstat`.
+2. **`fortune` was not on the path.** Stock 4.3BSD leaves `/usr/games` out of
+   root's `path`, so every game the brief called "the obvious visitor hook"
+   answered `Command not found`. One appended line in `/.login` and `/.cshrc`
+   fixes it; the seed was re-snapshotted from a clean `sync; sync; /etc/halt`.
+3. **No window manager means no keyboard.** X input focus is PointerRoot in the
+   container, so XTEST keys land on the root window and vanish. The launcher
+   pins focus once with `xdotool windowfocus` (XSetInputFocus).
+4. **getty's banner is a one-shot at boot.** 4.3BSD prints `login:` when it
+   OPENS the line, which happens at boot with nobody attached. A later telnet
+   connection does NOT re-trigger it — measured, a passive connect sat silent
+   for 25 s on a line whose getty was alive and well. Without a CR the exhibit
+   opens on a black screen. Bring-up sends one and waits for the banner's LIT
+   PIXELS (telnet chrome alone = 2958 on this root, chrome + SIMH greeting +
+   two banners = 9148, so a banner is worth ~2000 and a cursor blink ~90).
+5. **The tty's control characters are not Linux's.** `stty everything` in the
+   guest: `intr ^C · eof ^D · kill ^U · werase ^W · susp ^Z · quit ^\ ·
+   stop ^S/^Q · erase ^?` — DEL, not `^H`, so the xterm runs
+   `backarrowKey: false`. The same command reports **"0 rows, 0 columns"**,
+   which is the measured reason the exhibit is locked to 80x24: telnet to a DZ
+   line negotiates no window size and termcap `vt100` is fixed at 24x80.
+6. **getty and the shell disagree about `^U`.** At the `login:` prompt `^U` did
+   nothing (getty uses its gettytab erase/kill, not the shell's `crtkill`), and
+   two typed words ran together as `rootroot`. At the shell it kills the line
+   exactly as advertised. Test a tty control key at a SHELL prompt.
+7. **4.3BSD's login times out after 60 s** — `Login timed out after 60 seconds`
+   in the transcript. A visitor who walks away gets a fresh banner for free.
+
+## The browser proof (2026-09-20T12:27Z)
+
+Driven through the real SPA on the public origin with an invited session
+(`scripts/e2e/station-open.mjs`'s `signIn` — an unauthenticated browser gets the
+exhibit NOTES and never a stream, so an anon probe cannot produce evidence about
+a station). Every number is lit pixels on the STATION's own framebuffer via
+`labctl shot`, never the browser's `<video>`:
+
+| Action | Evidence |
+|---|---|
+| type `root` | 10797 -> 10993 lit px, the four characters echoed at `login:` |
+| on-screen keyboard | `^C ^D ^U ^Z Esc` on the always-visible base row, `^W ^R ^L ^\` behind More |
+| `^U` at the shell | 20761 -> 19545, back to the byte before typing; the following Enter gives a bare `kernelhive#` |
+| `^C` | `kernelhive# sleep 120` then `^C` then a new prompt — the sleep was interrupted |
+| `^Z` | `kernelhive# cat` then `^Z` then `Stopped` |
+| `^D` | `logout`, then a fresh `4.3 BSD UNIX (kernelhive) (tty00)` banner and `login:` |
+
+Shots: `/data/vms/sandbox/vax43bsd-land/browser/{b1..b7,c1..c5}.png`, probes
+`~/e2e/vax43bsd-kbd-proof.mjs` and `~/e2e/vax43bsd-kbd2.mjs`.
 
 ## OPEN
 
-- No framebuffer, input or reset proof yet (above).
+- `^U` at the `login:` prompt does nothing (getty's gettytab erase/kill, not
+  the shell's `crtkill`). Harmless — a visitor retypes — but if it is ever worth
+  fixing it is a `/etc/gettytab` edit and a seed re-snapshot.
+- Two lines of telnet chrome ("Trying 127.0.0.1…", "Connected to 127.0.0.1.")
+  sit above the login banner in the rest scene. `telnet -E` removed the third
+  and, more usefully, the `^]` escape to a telnet prompt. Removing the other two
+  needs a client that is not `telnet(1)`, and `nc` is not one: SIMH's DZ
+  listener speaks the telnet protocol, and without its negotiation the line is
+  cooked and `vi` breaks.
+- The seed's `/usr/adm/lastlog` records `Last login: ... on tty01` from the
+  session that edited it. Cosmetic.
 - `srcsys.tar`/`src.tar` are not on the tape, so `/usr/sys` and the kernel
   sources are absent. The compiler toolchain in `/usr` is present. Adding
   sources is a tape rebuild plus a second `tar` extract, not a reinstall.
@@ -209,14 +267,14 @@ is halted cleanly so fsck finds nothing to salvage.
   a second line is worth exposing (two visitors, one machine — very much the
   1986 experience) is an open museum question.
 
-## Teardown at the pause
+## Teardown at the landing
 
-Killed by resolving `/proc/<pid>/exe`, never by a cmdline grep: every `vax780`
-under `/data/vms/sandbox/vax43bsd-work/` and under
-`/data/vms/streamhost/assets/vax43bsd/bin/`, plus the `simhdrive.py`/`dzprobe.py`
-supervisors. Claims released with `kh-claim release`. No station was ever
-emitted, started, deployed or listed, and no smoke rig was published, so there is
-nothing in the serving plane to undo. The build tree
-`/data/vms/sandbox/vax43bsd-work/build/` and the staged assets are left in place
-on purpose — they are the resume point, and the assets are inert until a station
-entry references them.
+The proof rig under `/data/vms/sandbox/vax43bsd-land/rig/` was stopped by
+resolving `/proc/<pid>/exe` scoped to `assets/vax43bsd/bin/` — never a cmdline
+grep (rule 5; the predecessor killed its own ssh session with one) — then its
+nspawn supervisor by pidfile, then `/tmp/.X11-unix/X115` and
+`/run/streamhost/x11/vax43bsd-rig` removed. Verified: the scan returned empty.
+
+The station's own claims (slot 215, port 54215, vmid 215, display `:115`,
+sandbox) were RE-HOMED to session `vax43bsd` by `station-land.sh`, not released
+— they belong to the live station now. `ssh lab 'labctl who'` names it.

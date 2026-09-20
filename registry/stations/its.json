@@ -43,7 +43,7 @@
     "stationsManifestOrder": 90,
     "stationsManifestPrelude": "\n# its — MIT ITS on a SIMH PDP-10 (KS10), contained: simulator + Xvfb + one\n# xterm on the DZ11 visitor line inside systemd-nspawn; relaunch reset from the\n# pristine RP06 the source build assembled.\n",
     "bringUpGroup": 8,
-    "bindingOrder": 111,
+    "bindingOrder": 113,
     "bindingPrelude": "",
     "bindingComment": "ideal: a DEC PDP-10 (KA10/KS10) cabinet row with a Model 33 Teletype or a VT52 beside it — the MIT AI Lab machine room on Tech Square, ninth floor",
     "goldenOrder": 90
@@ -90,7 +90,7 @@
       "SH_CERT_ROTATE_DAYS": "10",
       "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/its/its_cmd"
     },
-    "bringUpOrder": 111,
+    "bringUpOrder": 113,
     "x11": {
       "display": ":116",
       "geometry": "1024x768x24",

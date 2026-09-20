@@ -190,8 +190,21 @@ export const EXHIBIT_IDENTITIES_3 = {
     caseTint: '#b9bfc2', accentTint: '#67828f', tintMix: 0.34,
     badge: 'VAX-11/780', spec: '8 MB • 4.3BSD • 1986', kit: 'workstation',
   },
+  // IBM's own machine-room blue-grey on the frame, with the 3279's green
+  // phosphor as the accent — a colour 3270 is not a green screen, but green is
+  // the colour the protected text on it actually was.
+  mvs38: {
+    caseTint: '#9aa3ab', accentTint: '#4fa36c', tintMix: 0.36,
+    badge: 'System/370', spec: '16 MB • MVS 3.8j • 1981', kit: 'workstation',
+  },
   its: {
     caseTint: '#9aa0a6', accentTint: '#b23a48', tintMix: 0.38,
     badge: 'PDP-10 (KS10)', spec: '256 KW • MIT ITS • 1967', kit: 'workstation',
+  },
+  // Honeywell/Bull mainframe bay: painted steel rather than beige plastic,
+  // with the amber of the exhibit's own terminal as the accent.
+  multics: {
+    caseTint: '#8d9299', accentTint: '#c8892b', tintMix: 0.30,
+    badge: 'DPS-8/M', spec: '16 MB • Multics MR12.8 • 1969', kit: 'workstation',
   },
 } as const satisfies Record<string, ExhibitIdentity>;

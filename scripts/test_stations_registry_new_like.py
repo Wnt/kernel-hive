@@ -2,8 +2,12 @@
 station that `validate` immediately accepts, with no render-order collisions.
 
 Runs against the real registry tree (there is no cheap isolated copy of it) and
-cleans up every file it creates, generated outputs included, via `git checkout --`
-/ `git clean` scoped to exactly those paths -- never a bare `git clean -f`.
+cleans up every file it creates. Files the scaffold only APPENDS/CREATES are
+removed outright; files it REGENERATES in place (GENERATED below) are restored
+byte-for-byte from a setUp() snapshot -- never `git checkout --`, which resets
+to the last commit and would silently discard any uncommitted content already
+sitting in those paths before the test ran (see MULTICS-WAVE.md: a wave's own
+not-yet-committed regenerated files reverting mid-session, `git status` clean).
 """
 
 from __future__ import annotations
@@ -67,6 +71,16 @@ class NewLikeTest(unittest.TestCase):
             path = REPO / rel
             if path.exists():
                 self.fail(f"pre-existing {rel} would collide with this test; remove it first")
+        # Snapshot the exact working-tree bytes of every GENERATED path before the
+        # scaffold runs, so tearDown can put back precisely what was here --
+        # never `git checkout -- GENERATED`, which resets to the last COMMIT and
+        # silently discards any uncommitted regeneration/edit that predates this
+        # test (e.g. a wave's own not-yet-committed scene rows). Isolation from
+        # the rest of the working tree, not from git history.
+        self._generated_snapshot: dict[str, bytes | None] = {}
+        for rel in GENERATED:
+            path = REPO / rel
+            self._generated_snapshot[rel] = path.read_bytes() if path.exists() else None
 
     def tearDown(self) -> None:
         for rel in CREATED:
@@ -75,7 +89,12 @@ class NewLikeTest(unittest.TestCase):
                 subprocess.run(["rm", "-rf", str(path)], check=True)
             elif path.exists():
                 path.unlink()
-        subprocess.run(["git", "checkout", "--", *GENERATED], cwd=REPO, check=False)
+        for rel, contents in self._generated_snapshot.items():
+            path = REPO / rel
+            if contents is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(contents)
 
     def test_scaffold_then_validate_is_green_with_no_order_collisions(self) -> None:
         new_result = _run("new", NEW_ID, "--like", SIB_ID, "--production", "--slot", "auto", "--tuple", TUPLE)

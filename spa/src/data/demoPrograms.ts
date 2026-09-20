@@ -170,6 +170,24 @@ const DEMO_PROGRAMS = {
     "runCommand": "RUN",
     "perCharMs": 260
   },
+  "multics": {
+    "label": "Log in, then look around a 1969 timesharing system",
+    "lines": [
+      "login Repair",
+      "multics",
+      "who"
+    ],
+    "runCommand": "list",
+    "perCharMs": 80
+  },
+  "mvs38": {
+    "label": "Open the TSO command panel, then ask the mainframe what time it is",
+    "lines": [
+      "6"
+    ],
+    "runCommand": "TIME",
+    "perCharMs": 80
+  },
   "netbsd14": {
     "label": "Type a few commands into the xterm",
     "lines": [
