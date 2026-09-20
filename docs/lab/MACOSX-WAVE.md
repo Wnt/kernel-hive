@@ -178,3 +178,26 @@ stream can boot the Panther CD against it and skip Disk Utility entirely.
 
 See the stream's final report for the released claims and the check that proved
 each one.
+
+## Resume tooling (committed, because the sandbox was released)
+
+The three throwaway helpers this bring-up used are preserved under
+`docs/lab/integration-drafts/macosx/` so a resumed stream does not rewrite them:
+
+| File | What it does |
+|---|---|
+| `rig-launch.sh` | launches a namespaced rig on the frozen device set; takes `ISO=` and extra QEMU args (`-device usb-tablet`, `-prom-env 'boot-args=-v'`) |
+| `rig-drive.py` | minimal QMP driver: `abs X Y`, `rel dx dy`, `click`, `down`/`up`, `key`, `type`, `shot`, `sleep`, `hmp` |
+| `rig-step.sh` | click at (x,y), then `fb-wait.py --settle` (never `sleep N`), then emit a PNG |
+
+They hardcode `/data/vms/sandbox/macosx-work`; repoint that at the resumed
+session's sandbox. `rig-drive.py`'s `shot` writes a PPM whatever the extension,
+so convert with PIL before reading it as an image.
+
+Two traps worth carrying forward:
+
+* `-display dbus,p2p=on` screendumps can come back an all-black frame while the
+  guest is mid-repaint; a pointer nudge and a re-shot distinguish "blanked" from
+  "dead". Do not conclude a guest died from one black frame.
+* labhost's `qemu-img` is `/usr/bin/qemu-img`; `/opt/qemu-ppc` is built
+  `--disable-tools` and ships no `qemu-img`.
