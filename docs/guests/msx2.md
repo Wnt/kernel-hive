@@ -1,6 +1,6 @@
 # msx2 guest
 
-Status: **record wave 2026-09-20** (issue #60), host-native MAME station.
+Status: **LIVE** (record wave 2026-09-20, issue #60), host-native MAME station.
 
 ## Identity and source
 
@@ -27,9 +27,12 @@ Status: **record wave 2026-09-20** (issue #60), host-native MAME station.
 
 Disk size (368 640 B) matches MAME's own `msx2_flop` software-list entry for
 `msxdos2e`/`msxdos2j` (`mdos22de.dsk`, crc32 `9be0bfd1`) — the same bits, a
-different distribution channel. Staged on labhost at
-`/data/assets-staging/msx2/{roms,media}/`, not yet copied into
-`/data/vms/streamhost/assets/msx2/`.
+different distribution channel. Staged and installed at
+`/data/vms/streamhost/assets/msx2/{mame-native/roms,media}/` on labhost.
+
+The MAME binary itself: 87 354 072 bytes, sha256
+`1db15ebe2e49d4034ca897caa6bfc00fe9e96e234e9716647a77a77c5a13877d`, staged at
+`/data/vms/streamhost/assets/msx2/mame-native/msx2`.
 
 ## Build and device set
 
@@ -41,25 +44,48 @@ different distribution channel. Staged on labhost at
   EMPTY cartridge slots (disk-based exhibit, no cartridge ROM), no
   mouseport anywhere in the tree — keyboard-only exhibit
   (`stream.pointer.transport: none`).
-- Ready framebuffer: TODO — smoke-stream proof pending (build still
-  compiling as of this commit; see MSX2-WAVE.md).
+- Ready framebuffer: PROVEN. Cold boot with the MSX-DOS 2 (English) disk in
+  `-flop1` reaches "MSX BASIC version 2.1 / Copyright 1986 by Microsoft /
+  Disk BASIC version 1.0 / Ok" on a solid blue SCREEN 0 field — the shipped
+  rest scene.
 
 ## Golden, input, and rollback
 
-- Reset mode: `relaunch` (checkpoint/`MAME_NATIVE_CHECKPOINT` verdict OPEN —
-  `MACHINE_SUPPORTS_SAVE` on `msx/msx2.cpp` not yet confirmed on this build)
-- Fixture (rest scene): TODO — the integration seed proposes either the
-  MSX-BASIC `Ok` prompt or the MSX-DOS 2 prompt; pick whichever the smoke
-  stream proves is the natural post-boot resting state with the boot disk
-  in `-flop1` (real hardware auto-boots a bootable floppy into MSX-DOS 2 on
-  power-on, so the MSX-DOS 2 prompt may be the reachable default rather
-  than a one-keypress-away option).
-- Pointer/click/drag/wheel: N/A — keyboard-only exhibit
-- Keyboard proof: OPEN — see `docs/guests/msx2.md` (this file) and
-  `docs/lab/MSX2-WAVE.md`
+- Reset mode: `relaunch` (checkpoint/`MAME_NATIVE_CHECKPOINT=0` — the
+  `msx/msx2.cpp` driver's `MACHINE_SUPPORTS_SAVE` status is unconfirmed on
+  this build; cold boot every reset, OPEN for a future stream to measure).
+- Fixture (rest scene): MSX-BASIC's `Ok` prompt with the MSX-DOS 2 boot disk
+  present but NOT auto-booted. Real MSX hardware auto-boots a bootable
+  floppy on power-on; this build's `nms8250` diskrom does not, and the
+  cause was not chased further (see "MSX-DOS 2 — out of scope" below).
+- Pointer/click/drag/wheel: N/A — keyboard-only exhibit.
+- **Keyboard proof: PROVEN on the production path**, 2026-09-20 (landing
+  stream, dark-launch rig, real browser). Config: `SH_INPUT_BACKEND=mamesock`,
+  `SH_MAMESOCK_KEYMAP=msx2.keymap` (`scripts/dev/mame-keymap.py`, 88/102
+  fields matched from KEYDUMP), `SH_KEY_MIN_HOLD_MS`/`GAP_MS=40/40` (fleet
+  floor), `MAME_CTL_KEY_EXCL=:KEY` — the MSX2 8255 PPI keyboard matrix IS
+  host-CPU-scanned, like the SAM Coupé's (the samcoupe lesson, AGENTS.md),
+  so this was set from the start rather than bisected after a drop. A real
+  Chromium tab (`playwright`, headless) opened `/os/msx2`, typed
+  `PRINT 1+1` character-by-character, pressed Enter: the line landed
+  byte-perfect, executed, printed `2`, and returned a fresh `Ok` prompt.
+  Daemon counters over the run: `mamesock accepted=35 dropped=0 overflow=0
+  unmapped=0`. MAME's own natural-keyboard ctlsock verbs (`POST`/`CODE`)
+  were proven earlier in the smoke stream but are **not** the production
+  input path — this measurement supersedes that one.
+- **MSX-DOS 2 — out of scope (operator decision).** The station ships as
+  MSX-BASIC 2.1 with the MSX-DOS 2 disk present but not reachable: the
+  machine's built-in disk ROM speaks MSX-DOS 1 (the "Disk BASIC version
+  1.0" line in the banner is that ROM identifying itself), and a real
+  MSX-DOS 2 command line needs its own cartridge ROM (MAME's own
+  `msxdos2e` software-list entry implies a cartridge+disk pair) that this
+  wave never staged. Chasing that ROM was explicitly ruled out of scope for
+  this run; a future stream can add the cartridge and re-arm the DOS2 path
+  without touching anything else here.
 - Credentials reference only (never values): `guest/msx2`
-- Rollback plan: revert the four scaffolded/edited files
-  (`registry/stations/msx2.json`, `registry/posters/msx2.md`,
-  `streamhost/stations/msx2/*`, `scripts/build-guests/emulators/native.d/msx2.sh`)
-  and drop `msx2` from `stations-manifest.sh`/the SPA lineup; no live
-  station or golden to retire (first landing).
+- Rollback plan: `scripts/dev/station-land.sh` records the pre-land box
+  state; reverting the registry row (`registry/stations/msx2.json`), the
+  poster (`registry/posters/msx2.md`), `streamhost/stations/msx2/*` and
+  `scripts/build-guests/emulators/native.d/msx2.sh` and dropping `msx2`
+  from `stations-manifest.sh`/the SPA lineup removes the station; no golden
+  to retire (`resetMode=relaunch`, no checkpoint baked).
