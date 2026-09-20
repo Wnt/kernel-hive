@@ -126,4 +126,7 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerC', monitor: 'crtD',
     keyboard: 'keyboardB', mouse: 'paramMouseD',
   },
+  cpm22: {
+    kind: 'homeMicro', monitor: 'compactA',
+    },
 } as const satisfies Record<string, Assembly>;
