@@ -21,6 +21,8 @@ import json
 import time
 from http.cookies import SimpleCookie
 
+from clientip import client_ip
+
 from .service import AuthError
 
 # The trace store, bound by the server at startup (see `bind_traces`). Held as a
@@ -109,13 +111,20 @@ def _cookie_header(token: str) -> str:
 
 
 def _client_ip(handler) -> str:
-    # Behind the edge, the socket peer is the tunnel. X-Forwarded-For is set by
-    # our own Caddy, one hop away — good enough to rate-limit and to log, and
-    # never used for authorization.
+    """The client address this request is attributed to.
+
+    The rule and its reasoning live in `clientip` — kept out of this package so
+    the trust boundary is unit-testable without a WebAuthn stack. Never used
+    for authorization: it keys rate limiting and what gets logged.
+    """
+    peer = handler.client_address[0] if handler.client_address else None
+    return client_ip(peer, handler.headers.get("X-Forwarded-For"))
     fwd = handler.headers.get("X-Forwarded-For")
     if fwd:
-        return fwd.split(",")[0].strip()
-    return handler.client_address[0] if handler.client_address else "unknown"
+        last = fwd.split(",")[-1].strip()
+        if last:
+            return last
+    return peer or "unknown"
 
 
 def dispatch(handler, path: str, method: str, service, origin: str) -> bool:
