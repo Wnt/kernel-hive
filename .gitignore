@@ -177,3 +177,13 @@ scripts/visitor-sim/visitor-sim-runs/
 # MAC, so it is box-local like registry/local.env and never committed
 # (AGENTS.md rule 1).
 /.wave.env
+
+# The IP-to-country database is FETCHED, never committed. DB-IP's Lite build is
+# CC BY 4.0 — redistributable in principle, but a 4 MB binary that is stale the
+# month after it lands does not belong in git history, and this repo is public.
+# scripts/serve/install-geoip.sh puts it on the box; scripts/serve/geo.py reads
+# it from there and returns None when it is absent. Only the scripts are
+# version-controlled.
+*.mmdb
+*.mmdb.gz
+/scripts/serve/geoip/

@@ -20,3 +20,12 @@ fido2
 # own, and it emits SVG we can inline — so the page needs no canvas library and
 # the code never travels as a separate image request.
 segno
+
+# Reader for the MaxMind-format country database the admin People list uses to
+# show where a member last signed in from. The DATABASE is not a dependency and
+# is not in git: scripts/serve/install-geoip.sh fetches DB-IP's free Lite build
+# onto the box (CC BY 4.0, no account, no API). Keeping the lookup local is the
+# point — an IP geolocation service would mean shipping visitor addresses to a
+# third party, which is exactly what docs/ANALYTICS.md says this plane does not
+# do.
+maxminddb

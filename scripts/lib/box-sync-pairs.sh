@@ -198,7 +198,7 @@ box_sync_load_pairs() {
   # must be is the weakness: see the tree loop for auth/authui/walkin and the
   # reason it exists.
   for name in clientcmd.sh osgallery-https-server.py reset-tile.sh install-https-service.sh \
-    config.py clientip.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
+    config.py clientip.py geo.py static_files.py webrtc.py clientlog.py clientcmd.py restore.py signal_route.py \
     usage.py walkin_plane.py deploy_hint.py analytics.py probes.py linecov.py telemetry_routes.py telemetry_stores.py eum_proxy.py traces.py traces_schema.py traces_policy.py traces_otlp.py otlp_resource.py otlp_semconv.py telemetry_paths.py tracecontext.py \
     tracing.py tracing_http.py \
     logs.py logs_schema.py logs_otlp.py logs_read.py logsink.py \
@@ -213,7 +213,7 @@ box_sync_load_pairs() {
   # guarded path for the account database that must never be rm'd, and the
   # requirements pair is what decides whether the labhost venv matches the repo.
   for name in check-stream-tickets.py pen-trace.py key-trace.py reset-auth.sh \
-    sync-venv.sh test-clientlog.sh requirements.in requirements.txt; do
+    sync-venv.sh test-clientlog.sh install-geoip.sh requirements.in requirements.txt; do
     box_sync_add_pair "serve/$name" "scripts/serve/$name" "$BOX_ROOT/serve/$name" exact repo
   done
   # The auth plane (session gate, passkeys, tickets, and its UI), as a TREE

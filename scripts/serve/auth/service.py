@@ -427,6 +427,22 @@ class AuthService:
     def people(self) -> dict:
         users = self.store.users()
         creds = self.store.credentials()
+        # Where each member last signed in from, as a country code. Resolved
+        # locally from a database file on the box (geo.py) — no lookup leaves
+        # the machine. None whenever it cannot be answered honestly: a private
+        # address, no database installed, or no entry for it; the page then
+        # shows nothing rather than a guess.
+        # Imported HERE, not at module scope: the auth package must not take an
+        # import-time dependency on a serve-root module. When it did, importing
+        # auth dragged geo (and the sys.path arrangement it needs) into every
+        # context that touches this package, and the full test suite tripped a
+        # read-path-never-writes assertion three tests away. geo itself is
+        # equally lazy about maxminddb, for the same reason.
+        from geo import country_code
+
+        last_ips = self.store.latest_session_ips()
+        for u in users:
+            u["lastCountry"] = country_code(last_ips.get(u["id"]))
         for u in users:
             u["passkeys"] = [
                 {"id": c["id"], "label": c["label"], "createdAt": c["createdAt"], "lastUsedAt": c["lastUsedAt"]}

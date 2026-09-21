@@ -36,6 +36,19 @@ async function guarded(fn) {
   }
 }
 
+/** Regional-indicator flag for an ISO 3166-1 alpha-2 code.
+ *
+ * Built from the code rather than shipped as an emoji table: 26 letters map to
+ * U+1F1E6..U+1F1FF by offset, so every valid code works and an invalid one
+ * cannot render a wrong flag — it falls through to no flag at all.
+ */
+function flagOf(code) {
+  if (typeof code !== 'string' || !/^[A-Za-z]{2}$/.test(code)) return '';
+  const base = 0x1f1e6;
+  const cc = code.toUpperCase();
+  return String.fromCodePoint(base + cc.charCodeAt(0) - 65, base + cc.charCodeAt(1) - 65);
+}
+
 function renderUsers(users) {
   const box = $('users');
   box.replaceChildren();
@@ -45,8 +58,13 @@ function renderUsers(users) {
     // `lastSeenAt` is stamped whenever a session is USED, not only when a
     // passkey is presented — an invite-link visitor may hold a live cookie for
     // weeks and never touch a passkey, and used to leave no trace at all.
+    // `lastCountry` is a two-letter code or null. Null means the server could
+    // not answer it honestly — a private address, no database on the box, or no
+    // entry — so the row simply says nothing rather than showing a placeholder
+    // that reads like a country.
+    const where = u.lastCountry ? ` · signed in from ${flagOf(u.lastCountry)} ${u.lastCountry}` : '';
     const meta = `${keys}${last ? ` · passkey last used ${when(last)}` : ' · passkey never used'}`
-      + ` · last seen ${when(u.lastSeenAt)}`;
+      + ` · last seen ${when(u.lastSeenAt)}${where}`;
     const info = labelled(u.name, meta);
     const tag = el('span', 'tag', u.role);
 

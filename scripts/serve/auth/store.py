@@ -158,6 +158,26 @@ class AuthStore:
         with self._lock:
             return [dict(u) for u in self._doc["users"]]
 
+    def latest_session_ips(self) -> dict[str, str]:
+        """userId -> the address of that user's most recent session.
+
+        Most recent by createdAt, which is when the session was established and
+        so when that address was observed. Sessions are the only place an
+        address is kept per person, and this is read-only: nothing here starts
+        recording anything that was not already recorded.
+        """
+        latest: dict[str, tuple[str, str]] = {}
+        with self._lock:
+            for sess in self._doc["sessions"]:
+                uid, ip = sess.get("userId"), sess.get("ip")
+                if not uid or not ip:
+                    continue
+                created = sess.get("createdAt") or ""
+                prev = latest.get(uid)
+                if prev is None or created > prev[0]:
+                    latest[uid] = (created, ip)
+        return {uid: ip for uid, (_, ip) in latest.items()}
+
     def user(self, user_id: str) -> dict | None:
         with self._lock:
             for u in self._doc["users"]:
