@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 
+from clientip import client_ip
 from config import CLIENTLOG, CLIENTLOG_BODY_MAX, CLIENTLOG_MAX, CLIENTLOG_RETENTION_SECS
 from probes import hit
 from static_files import MIME
@@ -130,7 +131,17 @@ def _clientlog_append(records):
 
 def handle_post(handler):
     """POST /clientlog route body: read + validate the event batch, append it."""
-    client = handler.client_address[0] if handler.client_address else ""
+    # Attribute to the address a hop that SAW the connection vouched for, not
+    # the socket peer: every public visitor arrives as the forwarder agent on
+    # loopback, so reading the peer recorded `127.0.0.1` for all of them and
+    # made this lane useless for telling one visitor from another. `clientip`
+    # owns the trust boundary (believe the header only from the tunnel).
+    # NOTE this is ATTRIBUTION, not authorization — the ENQUEUE guard in
+    # osgallery-https-server.py deliberately keeps reading the raw peer.
+    client = client_ip(
+        handler.client_address[0] if handler.client_address else None,
+        handler.headers.get("X-Forwarded-For"),
+    )
     obj, err = handler._read_json_body(CLIENTLOG_BODY_MAX)
     if err:
         return handler._send(err[0], json.dumps({"error": err[1]}), MIME[".json"], cache=False)
