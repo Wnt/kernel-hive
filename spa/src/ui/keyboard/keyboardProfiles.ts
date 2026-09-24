@@ -44,7 +44,7 @@ export type Family =
   | 'zxspectrum' | 'atari800xl' | 'zx81' | 'dragon' | 'kc854' | 'sinclairql'
   | 'bbcmicro' | 'armeval' | 'alto' | 'xerox-dwarf' | 'xerox-star'
   | 'classicmac' | 'classicmac128' | 'applegs' | 'its' | 'bsd-tty' | 'tn3270'
-  | 'multics';
+  | 'multics' | 'nokia9300';
 
 // ---- row builders ---------------------------------------------------------
 
@@ -537,6 +537,10 @@ export const OS_FAMILY: Record<string, Family> = {
   // is built from a per-machine binding table rather than a fixed key set.
   daybreak: 'xerox-dwarf',
   star: 'xerox-star',
+  // Nokia 9300 Communicator: four command buttons beside the screen and eight
+  // application buttons below it, none of them on a PC keyboard — its own
+  // family in keyboardProfiles.data.handheld.ts.
+  nokia9300: 'nokia9300',
 };
 
 // keyboardProfileFor lives in keyboardProfiles.data.ts alongside PROFILES: it

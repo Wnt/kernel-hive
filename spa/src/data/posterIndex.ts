@@ -192,6 +192,9 @@ const POSTER_INDEX = {
   "ninefront": {
     "hero": "/posters/ninefront/desktop.webp"
   },
+  "nokia9300": {
+    "hero": "/posters/nokia9300/desktop.webp"
+  },
   "nt351": {
     "hero": "/posters/nt351/desktop.webp"
   },

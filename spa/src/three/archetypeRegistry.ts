@@ -7,7 +7,7 @@ import type { RuntimeVMManifestEntry } from '../types';
 //  ---------------------------------------------------------------------------
 //  Generated view (source of truth: registry/stations/*.json) mapping every OS to:
 //    - archetypeId : which era-accurate model renders it
-//    - transport   : how its LIVE framebuffer texture is obtained (114 of the 116
+//    - transport   : how its LIVE framebuffer texture is obtained (115 of the 117
 //                    bindings are streamhost — WebTransport + WebCodecs against
 //                    the Rust daemon, signaled same-origin via /signal/<osId>.json)
 //    - accentColor : OS accent
@@ -110,7 +110,7 @@ export interface OSBinding {
   resetMode?: string;
 }
 
-// One entry per OS. 114 rows are streamhost; 2 are showcase posters.
+// One entry per OS. 115 rows are streamhost; 2 are showcase posters.
 export const OS_BINDINGS: Record<string, OSBinding> = {
   // ---- streamhost tiles (WebTransport + WebCodecs; signaled via /signal/<osId>.json) ----
   freedos:     { osId: 'freedos', archetypeId: 'beige-ibm-pc', transport: 'streamhost', accentColor: '#5fa85f', eraLabel: '1994 · DOS era', pointerRel: true },
@@ -243,6 +243,7 @@ export const OS_BINDINGS: Record<string, OSBinding> = {
   multics:     { osId: 'multics', archetypeId: 'mono-terminal', transport: 'streamhost', accentColor: '#C8892B', eraLabel: '1969 · Multics — the system everything else learned from' }, // ideal: a Honeywell 6180 / DPS-8/M mainframe bay with a hardcopy operator console and a terminal on a desk beside it
   palmos:      { osId: 'palmos', archetypeId: 'touch-phone', transport: 'streamhost', accentColor: '#65755b', eraLabel: '1997 · PalmPilot Professional — Palm OS 2.0', pointerRel: false },
   macosx:      { osId: 'macosx', archetypeId: 'apple-studio', transport: 'streamhost', accentColor: '#5d8fc7', eraLabel: '2003 · Mac OS X 10.3 Panther — Power Mac G4', pointerRel: false },
+  nokia9300:   { osId: 'nokia9300', archetypeId: 'putty-lcd', transport: 'streamhost', accentColor: '#5B7FA6', eraLabel: '2005 · Series 80 v2 (Symbian OS 7.0s)' }, // ideal: a Nokia 9300 Communicator lying open — the 640x200 screen above the QWERTY keyboard, the four command buttons to the right of the screen
 };
 
 /** Adapt one validated runtime manifest row to the existing streaming seam. */

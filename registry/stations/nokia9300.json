@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "id": "nokia9300",
+  "era_year": 2005,
+  "enabled": true,
+  "build": {
+    "rows": [
+      {
+        "order": 87,
+        "prelude": "",
+        "value": {
+          "key": "nokia9300",
+          "script": "tiles/nokia9300.sh",
+          "outputDir": "Nokia9300",
+          "class": "graphical",
+          "estimated": "~30m",
+          "automation": "none",
+          "produces": "assets/nokia9300 (eka2l1/: the Wnt/EKA2L1 s80-epoc7-tables build via emulators/build-eka2l1.sh; rootfs/: the nspawn trixie runtime root, uid-shifted to 2621440) and golden/ (the RAE-6 device data dir: SYM.ROM, the Z: tree, the C: drive and EKA2L1 config.yml; relaunch reset)",
+          "flags": []
+        }
+      }
+    ]
+  },
+  "operator": {
+    "labctl": {
+      "dir": "/data/vms/streamhost/stations/nokia9300",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "console": "x11",
+      "udp_port": 54219,
+      "notes": "HOST-NATIVE, SANDBOXED, NO CHECKPOINT: EKA2L1 (the Symbian HLE emulator, our fork github.com/Wnt/EKA2L1 branch s80-epoc7-tables, GPL-3) runs the Nokia 9300's own firmware 5.22 (RAE-6: Symbian OS 7.0s, Series 80 v2) inside a systemd-nspawn container (private PID/mount/net/user namespaces, host uid range 2621440+, rootfs --volatile=overlay, the EKA2L1 build and the golden data dir bound read-only, only work/ and the X socket dir writable, capabilities dropped, @mount filtered). Xvfb :119 at 1280x400 lives INSIDE the container; its root IS the 640x200 inner screen at exactly 2x (nokia9300-inner.sh resizes and moves the Qt window so the display widget sits at 0,0; the menubar and status bar hang off the root). The daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_KEYMAP=x11test.keysyms). No QEMU/QMP, no exec channel, no network (lo only). NO POINTER: the 9300 has none. KEYS per agent K1's keymap contract v1 (provisional until framebuffer proof): F1-F4 = the four command buttons beside the screen, F5-F12 = Desk / Telephone / Messaging / Web / Contacts / Documents / Calendar / My own, Menu, F13-F17 = joystick centre/up/down/left/right, ISO_Level3_Shift = Chr; printable characters as their own keysyms. Reset=relaunch: a fresh copy of the golden data dir + a cold start of Desk (0x101f8e4f), ~3.5 s; the inner loop also relaunches EKA2L1 whenever it exits. Drive it with xdotool on DISPLAY=:119 from labrun, or `labctl shot nokia9300`."
+    }
+  },
+  "render": {
+    "signalOrder": 113,
+    "stationsManifestOrder": 92,
+    "stationsManifestPrelude": "\n# nokia9300 (VMID 219) — host-native EKA2L1 (Wnt/EKA2L1 fork) running the Nokia 9300's own firmware\n# (Symbian OS 7.0s, Series 80 v2) inside a pinned 1280x400 Xvfb whose root is the 640x200 inner screen at\n# 2x; keyboard only over XTEST; reset = relaunch from the golden data dir (~4 s).\n",
+    "bringUpGroup": 8,
+    "bindingOrder": 120,
+    "bindingPrelude": "",
+    "bindingComment": "ideal: a Nokia 9300 Communicator lying open — the 640x200 screen above the QWERTY keyboard, the four command buttons to the right of the screen",
+    "goldenOrder": 92
+  },
+  "stationDir": "nokia9300",
+  "lifecycle": "production",
+  "stream": {
+    "transport": "streamhost",
+    "udpPort": 54219,
+    "fps": 25,
+    "audio": false,
+    "touch": false,
+    "pointer": {
+      "transport": "none",
+      "backend": "x11test",
+      "method": "none",
+      "absolute": false,
+      "present": false,
+      "device": "none — the Nokia 9300 has no pointing device and no touchscreen: Series 80 is driven by the four command buttons, the joystick and the keyboard. The x11test backend is present for KEYS only (SH_X11TEST_KEYS=1).",
+      "scale": 1.0,
+      "offset": [
+        0,
+        0
+      ]
+    },
+    "slot": 219
+  },
+  "guestDoc": "docs/guests/nokia9300.md",
+  "credentialsRef": "guest/nokia9300",
+  "runtime": {
+    "stationEnv": {
+      "SH_STATION": "nokia9300",
+      "SH_STATION_RUNTIME": "x11",
+      "SH_INPUT_BACKEND": "x11test",
+      "SH_AUDIO": "off",
+      "SH_CAPTURE": "x11",
+      "SH_X11_DISPLAY": ":119",
+      "SH_PORT": "54219",
+      "SH_FPS": "25",
+      "SH_HOST_IP": "192.0.2.10",
+      "SH_ADVERTISE_HOST": "192.0.2.10",
+      "SH_HASH_FILE": "/data/vms/streamhost/stations/nokia9300/cert_hash_b64.txt",
+      "SH_SIGNALING_JSON": "/data/vms/streamhost/stations/nokia9300/signaling.json",
+      "SH_CERT_ROTATE_DAYS": "10",
+      "SH_X11_CMD_FILE": "/data/vms/streamhost/stations/nokia9300/nokia9300_cmd"
+    },
+    "bringUpOrder": 120,
+    "x11": {
+      "display": ":119",
+      "geometry": "1280x400x24",
+      "capture": "x11",
+      "launcher": "streamhost/stations/nokia9300/x11-runtime.sh",
+      "resetMode": "relaunch",
+      "emitArgs": [
+        "--tile",
+        "nokia9300",
+        "--udp",
+        "54219",
+        "--x11",
+        "--x11-display",
+        ":119",
+        "--capture",
+        "x11",
+        "--pointer",
+        "none",
+        "--input-backend",
+        "x11test",
+        "--audio",
+        "off",
+        "--fps",
+        "25",
+        "--x11-runtime-file",
+        "$T/nokia9300/x11-runtime.sh",
+        "--aux-file",
+        "$T/nokia9300/nokia9300-inner.sh",
+        "--aux-file",
+        "$T/nokia9300/x11test.keysyms",
+        "--env-append-file",
+        "$T/nokia9300/station.env.fixture"
+      ],
+      "auxFiles": [
+        "streamhost/stations/nokia9300/nokia9300-inner.sh",
+        "streamhost/stations/nokia9300/station.env.fixture",
+        "streamhost/stations/nokia9300/x11test.keysyms"
+      ]
+    }
+  },
+  "spa": {
+    "archetypeId": "putty-lcd",
+    "transport": "streamhost",
+    "accentColor": "#5B7FA6",
+    "eraLabel": "2005 · Series 80 v2 (Symbian OS 7.0s)"
+  },
+  "museum": {
+    "id": "nokia9300",
+    "displayName": "Nokia 9300 Communicator",
+    "year": 2005,
+    "lineage": "Nokia Communicator (9000, 9110, 9210, then the 9300 and 9500 on Series 80 v2)",
+    "arch": "TI OMAP1510 (ARM925T @ 150 MHz), 64 MB RAM, 640x200 65,536-colour inner display, QWERTY keyboard, clamshell",
+    "ramMB": 64,
+    "era": "2000s",
+    "accent": "#5B7FA6",
+    "eraSoftware": [
+      "Desk, the Series 80 v2 shell",
+      "Documents and Sheet, the Communicator's word processor and spreadsheet",
+      "Web — Opera 6.0 for Symbian OS",
+      "Messaging, Contacts and Calendar"
+    ],
+    "periodBrowser": "Opera 6.0 for Symbian OS, build 543 (the built-in Web application, ROM oprmodel.dll)",
+    "iconicApps": [
+      "Desk",
+      "Documents",
+      "Sheet",
+      "Web"
+    ],
+    "blurb": "A Nokia 9300 Communicator running its own firmware: closed it is a phone, opened it is a 640x200 landscape screen over a full QWERTY keyboard, with four command buttons beside the screen whose labels change with the application. Symbian OS 7.0s with the Series 80 v2 interface, firmware 5.22 (November 2005).",
+    "notes": "Dark-launched streamhost station, HOST-NATIVE and CONTAINED: EKA2L1 (our fork of the Symbian HLE emulator, GPL-3) runs the RAE-6 firmware inside a systemd-nspawn sandbox with an Xvfb of its own; the daemon captures the X root and types over XTEST. The Qt window is placed so the 1280x400 root is the 640x200 screen at exactly 2x. Reset = relaunch from a pristine copy of the device data dir (ROM, Z: tree, C: drive). See docs/guests/nokia9300.md."
+  },
+  "emulator": {
+    "family": "EKA2L1",
+    "version": "Wnt/EKA2L1 fork, branch s80-epoc7-tables (upstream master 39858137e + the Series 80 v2 window-server table, kind-checked handles, FBS font heights and Posix stat)",
+    "source": "scripts/build-guests/tiles/nokia9300.sh (github.com/Wnt/EKA2L1 s80-epoc7-tables, built by scripts/build-guests/emulators/build-eka2l1.sh)",
+    "driver": "RAE-6 (Nokia 9300), epoc7, firmware 5.22 SYM.ROM + Z: tree; --run 0x101f8e4f (Desk)"
+  },
+  "ui": "mobile",
+  "network": {
+    "status": "none",
+    "note": "No network yet: the container runs --private-network (lo only). The retronet web plane for Opera is agents N1/N2's (EKA2L1 needs the Symbian OS 7.0s socket-server table first); no retronet reservation is held and no rn-tapnet.sh is committed until that plane is proven (AGENTS.md rule 15)."
+  },
+  "reset": {
+    "stationDir": "nokia9300",
+    "pointer": "none",
+    "touch": false,
+    "resetMode": "relaunch",
+    "snapshot": null,
+    "mouse": "N/A — the Nokia 9300 has no pointing device and no touchscreen; the exhibit publishes no pointer (stream.pointer.present=false).",
+    "keyboard": "OPEN (2026-09-24) — wired to agent K1's keymap contract v1 (keysyms fixed, every row provisional until a framebuffer proves it): XTEST keys reach EKA2L1 through the container's Xvfb; agent F1 typed digits into Documents on the dev box with the same binary. The command buttons, application keys, Menu, Chr and joystick need K1's fork keymap (branch s80-keymap) in the station build.",
+    "fixture": "Desk, the Series 80 v2 shell, as the 9300 firmware 5.22 draws it in EKA2L1: the Desk icon at the top left and the command-button labels Open / Write note / Note list down the right edge, the screen at exactly 2x in a 1280x400 root. resetMode=relaunch with no state: the launcher kills the container, the inner script copies the golden data dir fresh and cold-starts Desk (~3.5 s on an idle host, 11 s at load 96). Golden = agent F1's working data dir of 2026-09-24 plus C:\\System\\SharedData\\10000865.ini (the ROM's own default with LanguageSelectionDone=1, so Startup's first-boot language wizard never runs): 3249 files, 68 105 538 B, tree manifest sha256 975dc4206e628d5e958a43c2fb2df93d605941b2807d555cfde46a9d66f1aa33; staged on the box at /data/assets-staging/symbian-s80/nokia9300-golden and gated by tiles/nokia9300.sh --golden."
+  },
+  "notes": [
+    "Scaffolded from lisa on 2026-09-24 by agent D2 (Opus 5.5): host-native EKA2L1 under nspawn + Xvfb, x11 capture, XTEST keys only, 2x integer scale with the Qt window placed so the root is the 640x200 screen."
+  ],
+  "listing": {
+    "state": "hidden",
+    "since": "2026-09-24",
+    "reason": "Dark launch: the real Nokia 9300 firmware paints Desk, Documents, Sheet and Web in the EKA2L1 fork, but the command buttons, application keys and keymap (agents K1/B1), the kiosk frontend (B2) and Opera's network (N1/N2) are still being built. Watch it at /os/nokia9300; promote by dropping this block once the keys are proven on the framebuffer."
+  }
+}
