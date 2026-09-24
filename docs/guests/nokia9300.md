@@ -143,9 +143,11 @@ what had to change for it:
 
 - SPA: family `nokia9300` (`spa/src/ui/keyboard/keyboardProfiles.data.handheld.ts`)
   — base rows = the eight application buttons, then the four command buttons +
-  Menu, Esc, Enter, Backspace, arrows; more rows = Chr (sends `Alt_R`), Ctrl,
-  Shift, Tab, Space, and the joystick. `KEYSYM_TO_SCANCODE` gained F13–F17 =
-  set1 `0x64`–`0x68`.
+  Menu, Esc, Enter, Backspace, the Chr (sends `Alt_R`), Ctrl and Shift latches
+  and the arrows (agent D3's QA: landscape hides `moreRows`, and Chr is the only
+  path to € and the task switcher); more rows = Tab, Space and the joystick
+  (it sends the same Enter/arrow key codes the base row already carries).
+  `KEYSYM_TO_SCANCODE` gained F13–F17 = set1 `0x64`–`0x68`.
 - Daemon: `SH_X11TEST_KEYMAP=x11test.keysyms` — the fleet's US table plus
   F13–F17 and `0xe038` → `ISO_Level3_Shift`.
 - Xvfb: keycodes 191–195 carry XF86Tools/XF86Launch5–8 in a stock keymap, and a
