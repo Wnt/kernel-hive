@@ -776,6 +776,15 @@ bake_desktop_shortcuts() {
 }
 bake_desktop_shortcuts
 
+# 5a-ii. Finnish freeware pair (Death Rally + Porrasturvat) into C:\Games, with
+#   their desktop shortcuts minted IN the guest on the next boot. Kept separate
+#   from bake_desktop_shortcuts because that function's pylnk3 shortcuts render
+#   but DO NOT LAUNCH (proven on a clone 2026-09-24 — see the stage's header);
+#   anything new goes through the stage's WSH route instead.
+if ! DISK="$DISK_IMG" bash "$(dirname "$0")/../stages/finnish-games.sh"; then
+  log "WARN: finnish-games.sh failed — the two Finnish titles are NOT in this image"
+fi
+
 # 5b. Bake the 1920x1200x32 display (VBEMP universal-VESA miniport on std VGA) and
 #     "show window contents while dragging = OFF" into the golden. std VGA's inbox
 #     driver is 640x480-only and QEMU's cirrus breaks the XP desktop >640 under

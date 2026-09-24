@@ -152,6 +152,36 @@ writer's format and then prove it by running `checkpoint-guard rollback <station
 WITHOUT `CPG_ROLLBACK_CONFIRM`: that verifies every recorded sha256 against the
 file and then refuses, touching nothing.
 
+### Three things that refuse a recapture on an IM-carrying station (2026-09-24, win2000)
+
+Found while adding two games to `win2000` and `winxp`; all three cost a retry
+each, none is a bug in the guard:
+
+- **A blinking caret makes a scene uncapturable, deterministically.** An ICQ
+  message window had a text field with a blinking caret, so two shots
+  `CPG_IDLE_SECONDS` apart differed — and, because a blink is a two-frame
+  alternation, the SSIM came back *identical* (`0.994015`) on every retry. An
+  identical SSIM across retries means a deterministic animation, not a race:
+  find it and close it rather than retrying. `scripts/dev/fb-diff-bbox.py` on
+  two shots names the region.
+- **`CPG_SETTLE=2` is too short after a `loadvm` on these Windows guests.** The
+  promote path restores the staging label, sleeps `CPG_SETTLE`, then takes the
+  reference — but the shell repaints the desktop icons for several seconds
+  after a restore, so the reference is taken mid-repaint and the stability
+  check fails. `CPG_SETTLE=20` fixed both stations.
+- **Curate with the bot in mind.** `win2000`/`winxp` carry a signed-in ICQ, and
+  HiveBot greets the station when it comes online — a chat window opened
+  *between* the curated screenshot and the capture, twice, and went into the
+  checkpoint. Close the window, then capture immediately.
+
+**The launcher scrape misses `-drive file="$DISK"` (win2000).** With the
+station stopped, `checkpoint-guard rollback win2000` refuses with *"could not
+determine which qcow2 holds 'win2000' checkpoint"*: its launcher assigns
+`DISK=/data/gallery-guests/Win2000/win2k-pro.qcow2` and then writes
+`-drive file="$DISK",...` — the quotes defeat the scrape that the 2026-09-14
+fix taught to follow `$D/name.qcow2`. Rollback therefore works only while the
+guest is RUNNING (query-block), which is the opposite of when you need it.
+
 ### Which disk it backs up, and how it knows
 
 It asks the running QEMU (`query-block`), not the launcher: that resolves whatever

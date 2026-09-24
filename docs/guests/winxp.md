@@ -356,3 +356,23 @@ the **fleet resolution target was raised 1024×768 → 1920×1200** (packed-VBEM
   the IE-on-corpus scene, reset clean, abs pointer maps across the full 1920×1200 surface.
   The NIC is a real bridged tap on the retronet (`winxprn0` on `vmbr-rn`, DHCP 10.99.0.18),
   **not** slirp — see docs/lab/retronet/WEB-STATION-winxp.md.
+
+## 13. Finnish freeware pair — Death Rally + Porrasturvat (2026-09-24)
+
+`C:\Games\DeathRally` and `C:\Games\Porrasturvat`, both surfaced as All-Users
+desktop shortcuts, injected by
+[`build-guests/stages/finnish-games.sh`](../../scripts/build-guests/stages/finnish-games.sh)
+(pinned URL + sha256, bits never committed). Full table and traps:
+[`win2000.md` §Finnish freeware pair](win2000.md#finnish-freeware-pair--death-rally--porrasturvat-2026-09-24)
+— the same two titles, the same stage, same `-window` requirement for
+`dr.exe`.
+
+**Station-specific:** this station's checkpoint scene is **IE8 maximised**, so
+the two icons sit BEHIND the browser window — a visitor reaches them with
+"Show Desktop" or by minimising IE. If they should be visible in the first
+frame, either the scene changes (it is the retronet-web exhibit, so probably
+not) or the stage grows Start-menu entries alongside the desktop ones; that is
+a two-line change to the WSH writer, applied on the next recapture.
+
+**Do not add new titles through `assets/winxp/make_shortcuts.py`** — the
+shortcuts it writes render but do not launch (defect note in that file).

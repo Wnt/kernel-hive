@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 # Generates Windows .lnk desktop shortcuts for the WinXP gallery guest.
+#
+# KNOWN DEFECT, found 2026-09-24 on a winxp clone: the shortcuts this file
+# writes RENDER (correct icon, correct label) but DO NOT LAUNCH. Double-click
+# does nothing, Enter on the selected icon does nothing, and the same file
+# dropped in the All Users Startup folder is skipped at logon. The control that
+# proves it is not the target: a shortcut written here to the stock
+# C:\WINDOWS\system32\sol.exe does not start Solitaire either, while a .bat in
+# that same Startup folder starts it instantly. The LinkInfo workaround below
+# is evidently not enough for the shell to resolve the target.
+#
+# So do NOT add new titles here. The route that works is the one in
+# build-guests/stages/finnish-games.sh: ship a one-shot WSH script that has
+# WINDOWS mint the .lnk (WshShell.CreateShortcut) on the first boot after the
+# injection — the boot the golden recapture does anyway.
 # Usage: make_shortcuts.py <output_desktop_dir>
 import os
 import sys

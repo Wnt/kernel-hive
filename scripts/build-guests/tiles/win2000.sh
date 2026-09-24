@@ -521,6 +521,18 @@ qemu-nbd --disconnect "$NBD_DEV" >/dev/null 2>&1 || true
 NBD_DEV=""
 log "boot fixes + software committed; disk detached."
 
+# ---- Finnish freeware pair (Death Rally + Porrasturvat) ---------------------
+# Offline, on the detached disk (the stage opens its own nbd): payloads into
+# C:\Games and a one-shot WSH writer that mints the two All-Users desktop
+# shortcuts on the next boot. Best-effort: a dead mirror is a warning here, not
+# a failed build. See build-guests/stages/finnish-games.sh for why the
+# shortcuts are minted IN the guest and why Death Rally needs -window.
+if [ "$DO_SOFTWARE" = 1 ]; then
+  if ! DISK="$IMG_PATH" bash "$(dirname "$0")/../stages/finnish-games.sh"; then
+    warn "finnish-games.sh failed — the two Finnish titles are NOT in this image (non-fatal)"
+  fi
+fi
+
 # =============================================================================
 # (D) PRIME QEMU ENUMERATION, THEN SUPPRESS THE DRIVERLESS QEMU0002 WIZARD
 # (7) FRAMEBUFFER VERIFY + GOLDEN — pinned live profile, real desktop proof
