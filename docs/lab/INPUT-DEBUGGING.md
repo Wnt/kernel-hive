@@ -122,6 +122,7 @@ layer up. Instead:
 | Browser session, wake FAILS | The record is dropped and **said out loud**: `[idle] INPUT DROPPED (#n): guest is idle-auto-paused and the wake failed`. The reconciler retries `cont` every 5 s, so it self-heals. |
 | `labctl type/key/sh/exec/mctl/shot/reset` | `common.ensure_running()` resumes **and verifies** with `query-status` (or `/proc` state, on the SIGSTOP stations). A guest that will not wake is **exit 4** with a message naming the pause — never a silent fall-through. |
 | `scripts/dev/qmp-type.py` | Wakes + verifies before the first key, and asserts the guest is *still* running after the last one, so the screendump it prints cannot be a picture of a guest that missed half the sequence. |
+| `scripts/dev/station-click.py` | The ABSOLUTE-pointer sibling of `qmp-type.py`: clicks or parks the pointer at framebuffer coordinates you read off a screendump, holding the lease for the whole sequence. Born 2026-09-24, when three raw `input-send-event` clicks in a row were swallowed by an idle-paused `win2000` and the screendump afterwards looked exactly like a missed click. Use it instead of hand-rolled QMP whenever the guest's mouse is a usb-tablet (where HMP `mouse_move` is relative, or a no-op). |
 | Anything else you write | `scripts/lib/guest_wake.py` — `wake()`, `assert_running()`, `WakeLease` / `hold_lease()`. Use it. |
 
 ### The folklore this replaced
