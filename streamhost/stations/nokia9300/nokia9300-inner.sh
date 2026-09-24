@@ -120,7 +120,17 @@ done
   exit 1
 }
 export DISPLAY="$DISP"
-if xkbcomp "$DISP" - 2>/dev/null | grep -Eq 'key <FK13> *\{ *\[ *F13 *\]'; then
+# The socket appears before the server answers requests: retry for up to 5 s
+# (a single immediate dump reported a false "missing" once, measured).
+kmap=missing
+for _ in $(seq 1 50); do
+  if xkbcomp "$DISP" - 2>/dev/null | grep -Eq 'key <FK13> *\{ *\[ *F13 *\]'; then
+    kmap=ok
+    break
+  fi
+  sleep 0.1
+done
+if [ "$kmap" = ok ]; then
   log "keycodes 191..195 = F13..F17 (joystick centre/up/down/left/right)"
 else
   log "WARNING — F13 is not in the server's keymap: the joystick keys (F13..F17) are dead"

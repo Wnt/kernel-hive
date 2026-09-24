@@ -29,10 +29,15 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch `s80-epoc7-tables` (GPL-3): upstream master `39858137e` plus agent F1's
-four commits — `6c81875ce` the Series 80 v2 (7.0s, WS32 build 151) window
+branch **`s80-shell` @ `19308cbd0`** (GPL-3; pinned in `tiles/nokia9300.sh`):
+agent B1's three application-button commits on top of `s80-epoc7-tables`,
+which is upstream master `39858137e` plus agent F1's four commits — `6c81875ce` the Series 80 v2 (7.0s, WS32 build 151) window
 opcode table, `2cf4f0daa` kind-checked client handles, `8ef02e3ef` FBS
-FontHeightInTwips/Pixels, `6d6805423` Posix PMstat. With them the ROM's own
+FontHeightInTwips/Pixels, `6d6805423` Posix PMstat. B1's `3aa70e9eb` makes the
+window server handle scancodes 0xB4–0xBB on a Series 80 device (launch the
+app, or bring its window group to the front; the focused app never sees the
+key), `1e92fc0c5`/`19308cbd0` keep window groups and a ROM Eikon server alive.
+With them the ROM's own
 Documents, Sheet, Desk and Web paint on the dev box (F1: Desk shell complete
 3.5 s after exec, idling at 2 % CPU). Built by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
@@ -62,8 +67,12 @@ The golden is an EKA2L1 XDG data root: `EKA2L1/config.yml` and
   `LanguageSelectionDone=0` changed to `=1` — Startup's first-boot language
   wizard captures the application keys and Menu until it completes, and F1's
   C: drive had no SharedData file at all.
-- Ledger: 3249 files, 68 105 538 B; tree manifest sha256
-  `975dc4206e628d5e958a43c2fb2df93d605941b2807d555cfde46a9d66f1aa33` (sha256 of
+- Plus agent B1's `EKA2L1/bindings/default.yml` (2573 B, sha256 `371b0010…`):
+  the keymap contract as EKA2L1 bindings — Qt F1–F4 → command buttons
+  0xA4–0xA7, F5–F12 → application keys 0xB4–0xBB, Menu → 0x94, F13–F17 → the
+  joystick (0xAE/0xAC/0xAD/0xAA/0xAB). F1's copy had F3/F4 on application keys.
+- Ledger: 3249 files, 68 106 617 B; tree manifest sha256
+  `069a6674568325129bd02f151b3c802dc364023f41d948f4900e5b1118be5c17` (sha256 of
   `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum` inside the
   root). `SYM.ROM` 17 825 792 B, sha256
   `ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596`. Z: tree
@@ -197,19 +206,32 @@ sibling's LIVE display before it can be patched for an x11 rig.
 - Launcher: this branch's `x11-runtime.sh`, unmodified, in the transient scope
   `kh-nokia9300-rig.scope` with `NOKIA_BASE=/data/vms/sandbox/nokia9300/smoke`,
   the emulator and runtime root from agent D1's `/data/vms/sandbox/s80-eka2l1/`
-  (`out/eka2l1` = `s80-epoc7-tables` @ `6d680542`; `rootfs` re-shifted from
-  3932160 to 2621440), `NOKIA_MACHINE=kh-nokia9300-rig`,
+  (`out/eka2l1` rebuilt with D1's builder at `s80-shell` @ `19308cbd0`, 228 s
+  incremental, sha256 `5e9c7ee0…7e01`; `rootfs` re-shifted from 3932160 to
+  2621440), `NOKIA_MACHINE=kh-nokia9300-rig`,
   `NOKIA_X11_SOCKDIR=/run/streamhost/x11/nokia9300-rig`.
 - Daemon: lisa's released binary, `<rig>/run-daemon.sh` + `<rig>/stream.env`
   (x11 capture of `:119`, x11test keys with the station keymap,
   `SH_IDLE_PAUSE_SECS=0`); its log: `[x11cap] first frame 1280x400`,
   `x11test keymap … (108 scancodes resolved)`, `LISTENING udp/54219`.
+- Application buttons on the rig (s80-shell @ `19308cbd0`, B1's bindings in
+  the golden), XTEST on `:119`, each frame waited with `fb-wait.py --change
+  --settle`: F10 → Documents in front (Insert object / Font / Style / Exit),
+  F5 → Desk (Open / Write note / Note list), F10 → Documents again
+  (`$J/D2/keys-*.png`). Desk does not paint its lower-left pane, so the app
+  below shows through there.
 - Measured on the box: the trixie root's Qt draws a 19 px menubar (22 on the
   dev box), so placement settled the window at 1298x459+-9+-28 — found, not
   assumed — with the GL surface at 1280x400+0+0, 2 s after exec. The frame
   through the daemon's capture path (`x11spike capture`, what `labctl shot`
   runs for an x11 tile) is pixel-identical to the dev-box frame and has 0 of
   128 000 non-uniform 2x2 blocks. Idle cost: emulator 1 %, daemon 2 % of a core.
+- Reaper, measured: a SIGTERM to `systemd-nspawn` never reached the inner
+  script's trap, and the old fallback (SIGKILL the supervisor) orphaned the
+  container and left `/run/systemd/nspawn/unix-export/<machine>`, so the next
+  launch died "Mount point … exists already". The launcher now SIGKILLs the
+  container's init (nspawn's direct child) and lets nspawn exit and clean up;
+  proven by relaunching over a live rig (31 s, no orphan, no stale mount).
 - Restart after a relaunch: `<rig>/run-daemon.sh`. Withdraw:
   `darklaunch-station.py withdraw nokia9300`, then `systemctl stop
   kh-nokia9300-rig.scope` and kill `<rig>/daemon.pid`.

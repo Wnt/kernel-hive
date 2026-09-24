@@ -116,34 +116,43 @@ station_nspawn_pid() {
   grep -qa -- "--machine=$MACHINE" "/proc/$p/cmdline" 2>/dev/null || return 1
   echo "$p"
 }
-station_emu_pids() {
-  local n p exe
-  n="$(station_nspawn_pid)" || return 0
+station_emu_pids() { # station_emu_pids [nspawn-pid] (default: the pidfile's)
+  local n="${1:-}" p exe
+  [ -n "$n" ] || n="$(station_nspawn_pid)" || return 0
   for p in $(station_descendants "$n"); do
     exe="$(readlink "/proc/$p/exe" 2>/dev/null)" || continue
     case "${exe% (deleted)}" in */eka2l1_qt) printf '%s\n' "$p" ;; esac
   done
 }
+# Kill the CONTAINER, not the supervisor. MEASURED 2026-09-24 on the rig: a
+# SIGTERM to systemd-nspawn never reached the inner script's TERM trap (its
+# SigCgt had TERM; the trap did not run in 10 s), the inner loop relaunched the
+# emulator the reaper had just killed, and the fallback SIGKILL of nspawn then
+# orphaned the whole container AND left /run/systemd/nspawn/unix-export/<machine>
+# behind, so the next launch died with "Mount point … exists already". nspawn's
+# direct child is the container's init (the "(sd-stubinit)" of --as-pid2):
+# SIGKILL it and the kernel kills every process in the PID namespace, after
+# which nspawn exits on its own and cleans up its mounts. Nothing inside needs a
+# graceful stop — EKA2L1 ignores SIGTERM and work/ is discarded anyway.
 reap_previous() {
   local n p
   n="$(station_nspawn_pid || true)"
-  # EKA2L1 ignores SIGTERM: KILL it, and TERM the supervisor in the same breath
-  # so the inner loop's trap fires before its 2 s relaunch delay runs out.
-  for p in $(station_emu_pids); do
-    kill -CONT "$p" 2>/dev/null || true
+  [ -n "$n" ] || return 0
+  for p in $(ps -o pid= --ppid "$n" 2>/dev/null); do
     kill -KILL "$p" 2>/dev/null || true
   done
-  [ -n "$n" ] && kill -TERM "$n" 2>/dev/null
   for _ in $(seq 1 40); do
     station_nspawn_pid >/dev/null || return 0
     sleep 0.25
   done
-  n="$(station_nspawn_pid || true)"
-  [ -n "$n" ] && kill -KILL "$n" 2>/dev/null
+  # Last resort: the supervisor itself (may leave the unix-export mount point).
+  kill -KILL "$n" 2>/dev/null || true
   sleep 0.5
   ! station_nspawn_pid >/dev/null
 }
 reap_previous || die "the previous sandbox is still alive after SIGKILL — refusing to start a second one"
+[ ! -e "/run/systemd/nspawn/unix-export/$MACHINE" ] ||
+  die "/run/systemd/nspawn/unix-export/$MACHINE exists — an orphaned container named $MACHINE (a SIGKILLed nspawn leaves its init running); kill its (sd-stubinit) first"
 rm -f "$PIDFILE" "$XPIDFILE" "$NSPAWN_PIDFILE" "$WORK/placed"
 
 # --- host side of the X socket --------------------------------------------------
@@ -218,10 +227,13 @@ say "pid=$EPID xvfb=$(cat "$XPIDFILE" 2>/dev/null || echo ?) nspawn=$(cat "$NSPA
 # The inner loop relaunches EKA2L1 when it exits, under a new pid; the daemon's
 # idle freezer re-reads this pidfile on every stop/cont (streamhost idle.rs),
 # so following the relaunch here is all it needs.
+# The follower is pinned to THIS launch's supervisor: once a relaunch rewrites
+# nspawn.pid, or this nspawn exits, it stops rather than adopt the next one.
+NPID="$(cat "$NSPAWN_PIDFILE")"
 (
-  while kill -0 "$(cat "$NSPAWN_PIDFILE" 2>/dev/null || echo 0)" 2>/dev/null; do
+  while kill -0 "$NPID" 2>/dev/null && [ "$(cat "$NSPAWN_PIDFILE" 2>/dev/null)" = "$NPID" ]; do
     sleep "${NOKIA_PIDWATCH_S:-3}"
-    p="$(station_emu_pids | head -1)"
+    p="$(station_emu_pids "$NPID" | head -1)"
     [ -n "$p" ] || continue
     [ "$p" = "$(cat "$PIDFILE" 2>/dev/null || true)" ] && continue
     echo "$p" >"$PIDFILE"
