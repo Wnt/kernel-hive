@@ -331,9 +331,27 @@ pub fn spawn(
         cur_preset_enum: AtomicU8::new(preset_enum(&params.preset)),
     });
     let out2 = out.clone();
+    // A dead encode loop used to stay dead: every viewer got "stream stalled"
+    // until the unit was restarted, and a golden reset could not help (os213,
+    // 2026-09-24). Re-enter it instead; run() re-learns geometry and re-opens.
     tokio::spawn(async move {
-        if let Err(e) = run::run(cap, tx, out2, fps_cap, keyframe_ms, params).await {
-            eprintln!("[encode] loop exited: {e:?}");
+        loop {
+            match run::run(
+                cap.clone(),
+                tx.clone(),
+                out2.clone(),
+                fps_cap,
+                keyframe_ms,
+                params.clone(),
+            )
+            .await
+            {
+                Ok(()) => break,
+                Err(e) => {
+                    eprintln!("[encode] loop exited: {e:?}; restarting in 1 s");
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                }
+            }
         }
     });
     out

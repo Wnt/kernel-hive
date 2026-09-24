@@ -29,6 +29,18 @@ fn mono_ms() -> u64 {
     T0.get_or_init(Instant::now).elapsed().as_millis() as u64
 }
 
+/// Smallest scanout the encoder will open on. A guest mode switch can publish a
+/// TRANSIENT degenerate scanout before the real mode lands — os213 on
+/// isa-cirrus-vga, 2026-09-24: 640x480 -> 720x1 -> 720x400 within one ms when a
+/// full-screen session opened. x264 refuses 720x1 (odd height), the encode
+/// thread died, and the station streamed nothing until its unit was restarted.
+/// No real mode is this small, so such a frame is skipped, not encoded.
+const MIN_ENCODE_DIM: u32 = 16;
+
+pub(super) fn encodable(w: u32, h: u32) -> bool {
+    w >= MIN_ENCODE_DIM && h >= MIN_ENCODE_DIM
+}
+
 pub(super) async fn run(
     cap: Capture,
     tx: broadcast::Sender<Au>,
@@ -41,10 +53,10 @@ pub(super) async fn run(
     let (mut w, mut h) = loop {
         {
             let s = cap.state.lock().unwrap();
-            if s.width > 0 && s.height > 0 {
+            if encodable(s.width, s.height) {
                 break (s.width, s.height);
             }
-            if s.fb_w > 0 && s.fb_h > 0 {
+            if encodable(s.fb_w, s.fb_h) {
                 break (s.fb_w, s.fb_h);
             }
         }
@@ -267,6 +279,12 @@ pub(super) async fn run(
             };
             last_gen = snapshot.generation;
             let (fw, fh) = (snapshot.width, snapshot.height);
+            if !encodable(fw, fh) {
+                // transient degenerate scanout mid mode-switch: keep the open
+                // encoder and wait for the real mode's damage (MIN_ENCODE_DIM).
+                eprintln!("[encode] skipping degenerate {}x{} scanout", fw, fh);
+                continue;
+            }
             if fw != w || fh != h {
                 // geometry changed mid-stream (mode switch): re-open encoder
                 eprintln!(
@@ -363,5 +381,18 @@ pub(super) async fn run(
             fed += 1;
             last_feed = Instant::now();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::encodable;
+
+    #[test]
+    fn degenerate_mode_switch_scanouts_are_not_encodable() {
+        assert!(!encodable(720, 1)); // os213 cirrus 640x480 -> 720x400 transient
+        assert!(!encodable(0, 0));
+        assert!(encodable(720, 400));
+        assert!(encodable(640, 480));
     }
 }
