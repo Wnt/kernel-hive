@@ -30,7 +30,7 @@ now belongs to that binary. Restoring the pre-cutover fixture under the old
    `kh-ramabs` device is added, and the daemon falls back to
    `SH_INPUT_BACKEND=dbus-rel` (or its absence) automatically.
 4. The launcher's `OS213_QEMU` variable can point back at plain
-   `qemu-system-i386` — the base device set (isapc/486/16 MB/isa-vga/KVM) is
+   `qemu-system-i386` — the base device set (isapc/486/16 MB/isa-cirrus-vga/KVM) is
    identical on both binaries, so a relative-only launch works on either.
 5. Revert `registry/stations/os213.json`'s `stream.pointer`, `spa.pointerRel`,
    `operator.labctl.pointer_mode` and `reset.mouse`/`reset.pointer` to the

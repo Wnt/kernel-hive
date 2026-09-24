@@ -1260,7 +1260,8 @@ emit apple2gs \
 # DISK: -device ide-hd with AUTO geometry. Never pin CHS — `-drive ...,cyls=` is
 #   rejected by QEMU 11 outright, and pinning the source image's 310/16/63 on the
 #   ide-hd made the boot worse. FAT, under the OS/2 1.3 504 MB CHS ceiling.
-# DISPLAY: -device isa-vga; PM runs VGA 640x480x16.
+# DISPLAY: -device isa-cirrus-vga; PM runs VGA 640x480x16 (isa-vga stripes
+#   every fill under KVM).
 # POINTER: ABSOLUTE via kh-ramabs writing PM's own pointer coordinate at
 #   0x253ca (layout point16le_yx). isapc has NO USB, so usb-tablet is
 #   unavailable -- kh-ramabs writes the guest's own RAM variable instead.

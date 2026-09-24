@@ -27,7 +27,14 @@
 #   not support the option 'cyls'") — geometry only goes on the ide-hd device —
 #   and pinning the Microsoft image's descriptor geometry (310/16/63) made the
 #   boot WORSE, not better. FAT, under the OS/2 1.3 504 MB CHS ceiling.
-# DISPLAY: `-device isa-vga`; PM runs VGA 640x480x16.
+# DISPLAY: `-device isa-cirrus-vga`; PM runs its plain VGA driver at 640x480x16.
+#   NOT `isa-vga`: under KVM, PM on isa-vga draws every fill with only half of
+#   each 8-pixel VGA byte (4 px written, 4 px stale), so window interiors came out
+#   as vertical grey/white stripes, title bars as green hatching and the menu bars
+#   vanished. The golden and the poster shipped that way. Raced 2026-09-24
+#   (isa-vga striped on isapc AND on pc; isa-cirrus-vga, pc+std and pc+cirrus all
+#   clean), docs/guests/os213.md §Traps. The pointer variable 0x253ca is the same
+#   under both cards.
 # POINTER: ABSOLUTE, by writing the guest's OWN Presentation Manager pointer
 #   coordinate (2026-09-13 cutover). isapc has no USB at all, so `usb-tablet`
 #   is unavailable — but OS/2 1.3's PM mouse stack keeps its pointer as an
@@ -85,7 +92,7 @@ nohup "${OS213_QEMU:-/opt/qemu-os213/bin/qemu-system-x86_64}" \
   -machine isapc -cpu 486 \
   -rtc base=localtime \
   -boot c \
-  -device isa-vga \
+  -device isa-cirrus-vga \
   -display dbus,p2p=on,audiodev=snd0 \
   -audiodev dbus,id=snd0,out.frequency=48000,out.channels=2,out.format=s16 -device sb16,audiodev=snd0 \
   -drive file=$D/disk.qcow2,format=qcow2,if=none,id=hd0 \
