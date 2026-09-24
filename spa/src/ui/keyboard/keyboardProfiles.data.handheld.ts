@@ -21,19 +21,37 @@ export type HandheldFamily = 'nokia9300';
 // arrangement: the application row first, then the command buttons with the
 // keys every dialog needs.
 //
+// Chr/Ctrl/Shift are in that SECOND BASE ROW, not moreRows: moreRows is
+// hidden outright in the mobile sheet's landscape mode (keyTypes.ts, and the
+// CAD/MODS comment above), and Chr is not a power-user extra here — it is the
+// ONLY path to the blue legends (Chr+4 is €) and the task switcher (Chr+Tab),
+// so a visitor who only sees landscape must not lose it. The `its` and
+// `bsd-tty` profiles state the same rule for their own control characters
+// ("a key that is one More tap away is a key a visitor never finds"), and
+// every other family with a real Ctrl-equivalent latch (appleii, amiga,
+// atarist, classicmac) ships it in a base row rather than moreRows. Row 2 is
+// long as a result, but a long row scrolls on its x-axis (oskStyles'
+// .osk-row-scroll) exactly like the DOS/generic F-key rows already do, so
+// there is no budget reason to hide a modifier instead.
+//
 // Keysyms are agent K1's keymap contract v1 (2026-09-24) — FIXED, but every row
 // is PROVISIONAL until the framebuffer proves it on the station:
 //   F1..F4   command buttons 1..4, top to bottom
 //   F5..F12  Desk, Telephone, Messaging, Web, Contacts, Documents, Calendar,
 //            My own
 //   Menu     the Menu key (a long press is the task list)
-//   F13..F17 the joystick: centre, up, down, left, right
-//   Chr      ISO_Level3_Shift on the station. The OSK sends Alt_R, which the
-//            station's own scancode table (streamhost/stations/nokia9300/
-//            x11test.keysyms) turns into ISO_Level3_Shift; Alt_L/Alt_R are Chr
-//            aliases in the fork too. Chr is a HELD modifier around a key's
-//            base keysym (Chr+4 = €, Chr+Tab = the task switcher), so it is a
-//            latch; Chr tapped alone opens the character map in editors.
+//   F13..F17 the joystick: centre, up, down, left, right — PROVISIONAL, and
+//            kept in moreRows unlike Chr/Ctrl: joy.c/u/d/l/r deliver the SAME
+//            EKeyEnter/Up/Down/Left/Right the always-visible Return/arrow
+//            keys already send (contract §3), so this row is the device's own
+//            labelled control, not a visitor's only path to a function.
+//   Chr      ISO_Level3_Shift on the station — PROVISIONAL. The OSK sends
+//            Alt_R, which the station's own scancode table (streamhost/
+//            stations/nokia9300/x11test.keysyms) turns into ISO_Level3_Shift;
+//            Alt_L/Alt_R are Chr aliases in the fork too. Chr is a HELD
+//            modifier around a key's base keysym (Chr+4 = €, Chr+Tab = the
+//            task switcher), so it is a latch; Chr tapped alone opens the
+//            character map in editors.
 // Shift is a latch for NON-printables only (Shift+arrows select, Shift+Tab
 // goes back, Shift+Backspace deletes right): contract rule 2 — a printable is
 // sent as its own character, which the fork maps back to the 9300 key.
@@ -67,15 +85,15 @@ export const PROFILES_HANDHELD: Record<HandheldFamily, KeyboardProfile> = {
         tap('esc', 'Esc', XK.Escape, { hint: 'Esc — cancel or close' }),
         tap('ret', '⏎', XK.Return),
         tap('bksp', '⌫', XK.BackSpace, { repeat: true }),
+        latch('s80-chr', 'Chr', XK.Alt_R,
+          'Chr — the blue legends (Chr+4 is €), Chr+Tab switches tasks, Chr alone opens the character map'),
+        CTRL_LATCH,
+        latch('shift', 'Shift', XK.Shift_L, 'Shift — with an arrow key it selects text'),
         ...ARROWS,
       ],
     ],
     moreRows: [
       [
-        latch('s80-chr', 'Chr', XK.Alt_R,
-          'Chr — the blue legends (Chr+4 is €), Chr+Tab switches tasks, Chr alone opens the character map'),
-        CTRL_LATCH,
-        latch('shift', 'Shift', XK.Shift_L, 'Shift — with an arrow key it selects text'),
         tap('tab', 'Tab', XK.Tab),
         tap('space', 'Space', 0x20, { repeat: true, wide: true }),
       ],
