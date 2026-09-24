@@ -115,35 +115,47 @@ trees; `eka2l1_qt` ignores SIGTERM. Frames: `S/run2-f02-1.4s.png` (the 9300's
 app registry), `S/run4-f03-2.9s.png` (Sheet black), `S/run17-f03-3.6s.png`
 (N-Gage control) in the session tmp dir.
 
-**The cause, verified in bytes (agent U, Opus).** gdb names the crash
-`canvas_base::inquire_offset → dsa::~dsa → screen::deref_dsa_usage`: a
-window-server command misdispatched. The S80 SDK's `WS32.DLL` reports
-`TVersion(1,0,151)`; EKA2L1's `services/include/services/window/protocol.h`
-(`legacy_opcodes()`, added 2026-09-23 by yeatse for UIQ 2.1 — upstream PR #731)
-selects the legacy table only for `build <= WS_OLDARCH_VER || os_ == epoc70`,
-so **Series 80 (`epoc7`) gets the modern table, which is piecewise off**: +1
-from `Size` 0x0c through `Identifier` 0x57 (raw `Activate` 0x0d decodes as
-`Size` — windows never activate, hence black frames; `SetName` 0x3d decodes as
-`Name` — window groups keep generic names, which breaks `TApaTaskList::FindApp`
-and SysAp's Desk lookup; `CaptureKey` 0x27 decodes as `SetNoBackgroundColor`),
-−1 for `SetNonFading`/`FadeBehind`/`EnableScreenChangeEvents` (0x5c–0x5e),
-aligned again from 0x64. S's "unimplemented window group opcode 0x24 / 0x4F /
-0x57" are exactly S80's raw `EnableReceiptOfFocus`, `EnableModifierChangedEvents`
-and `Identifier`. Session opcodes match; the GC (`gcop.def`) and FBSCLI tables
-are not yet byte-checked. **The fix is a full S80 opcode table, ~1–1.5 days,
-S80-specific** (upstream tests UIQ and S60, never S80). The rest of U's ranked
-gap list: boot the shell properly (SysAp/`Startup.app`/prestarted apps or run
-`Starter.exe` from ROM, 1–2 d), task-switch notifications (group-list/focus
-events are stubbed, 2–3 d), Communicator keymap + modifiers (1–2 d), EikSrv
-surface (2–5 d), four missing TrueType fonts in the dump, Documents/Sheet file
-dialogs, Web's IAP picker (2–5 d), and the frontend items (headless/shm output,
-input socket, install CLI, update-check off, 3–5 d). The Desk shell is an
-ordinary `desk.app`; EKA2L1 replaces the system servers with HLE, launches apps
-through the ROM's own `apprun.exe`, starts ROM servers it lacks on demand, and
-already runs several apps at once with window-list/focus/bring-to-front — so a
-Desk-with-switching experience is plausible once the table lands.
-**A fix spike (Fable) is implementing that table on a fork branch as this is
-written; its framebuffer result decides Route 1.**
+**The cause, verified in bytes, and the fix landed (agent U's ABI diagnosis,
+agent F1's fix spike, Fable, 2026-09-24).** The S80 SDK's `WS32.DLL` reports
+`TVersion(1,0,151)`. F1 re-derived the table from the DLL bytes directly (a
+COFF-import/PE-export walk of `WS32.DLL` and `FBSCLI.DLL`, not U's excerpt) and
+found the S80 window opcode table is **+1 from `Size` 0x0c** (S80 has no
+`AbsPosition` at 0x0c — exactly the build-139/6.1 shift EKA2L1's
+`legacy_opcodes()` already applies) and **+2 from `GetDisplayMode` 0x61** (S80
+also has no `SendAdvancedPointerEvent` at 0x62 — the shift EKA2L1's
+`window_opcode()` already applies for build ≤ 151). U's "+1, then −1, then
+realigned" excerpt was wrong in the upper range; the fix is a predicate
+(`s80_opcodes()`, `os_ == epoc7 && build == 151`) joining the existing
+`legacy_opcodes()` rule, not a new table. The **session opcode table matches
+EKA2L1's modern enum exactly**. The **graphics-context table equals the
+build-139 table** (`gcop.def` `u139`), already selected correctly for S80 —
+`SetBrushOrigin`/`UseBrushPattern`/`DiscardBrushPattern` (14/15/16) are present
+in the table but have no handler, which is what U's and S's "unimplemented
+opcode 14/15/16" spam actually was. **FBSCLI was already translated** by
+`fbscli::fetch()` for `< eka2`; S's `Unhandled FBScli opcode 0x6` was not a
+table bug — `FontHeightInTwips` (opcode 6) was simply unimplemented, and the
+never-completed call parked Sheet's guest thread forever. The crash itself
+(`canvas_base::inquire_offset → dsa::~dsa → screen::deref_dsa_usage`) was a
+`reinterpret_cast` of a client handle: a DSA handle's vtable landing in
+`dsa::~dsa`, fixed by `dynamic_cast`-with-kind-check at five previously
+unchecked `get_object()` casts (window/group/sprite/screen-device creation,
+DSA request). Opera additionally panicked on an unanswered POSIX `PMstat`
+(0x17) call — a `stat`-by-path handler fixed it.
+
+**Result, on the real 9300 (RAE-6) firmware, 2026-09-24: Documents paints its
+editor at 2.8 s and accepts typed digits (7 FPS); Sheet paints its A–H × 1–7
+grid with cell cursor and formula bar; Desk paints the Communicator shell (Desk
+icon, "Open / Write note / Note list" buttons) at 3.5 s and idles at 2 % CPU;
+Web (Opera) paints its page area, address field and "Open Web address / Back /
+Bookmarks / Exit" column at 5.4 s.** Four commits on branch `s80-epoc7-tables`,
+pushed to the fork `https://github.com/Wnt/EKA2L1`. Leftovers, per F1: Documents
+and Sheet each burn one core at settle (theory: the window group `SetTextCursor`
+0x2f handler is missing, so the caret-blink call loops); the build-139 GC table
+still has no handlers for 14/15/16/20/43 (brush ops, `DrawLineTo`, `MapColors`
+— Opera's toolbar spams both of the latter); the S80 keymap has no letters
+bound; Desk's lower-left icon area is unpainted (state/skin, unconfirmed); the
+7.0s socket table + `RConnection` (Y's finding, §H3) is still untouched, so
+Opera cannot get online yet.
 
 ### H2 — The bits — SOLVED for the 9500/9300, OPEN for the 9210
 
@@ -329,6 +341,8 @@ Everything below is on labhost, hash-verified; nothing is committed.
 
 ## Routes
 
+**Recommendation (2026-09-24, after F1):** Route 1 — the EKA2L1 fork with the real 9300 firmware — is the route for the interactive station. The window-server opcode table was the wall; with it fixed, Documents, Sheet, Desk and Web all paint from the real ROM on the dev box, and the remaining work (keymap, shell/app keys, 7.0s socket server, kiosk frontend, station integration) is engineering in known code, days not weeks. Route 2 — the QEMU `nokia9300` board — stays the fidelity upgrade: the RAE-6 ROM already boots its EKA1 kernel to a running 64 Hz tick and UART3 output on the fork's board, but it stalls in kernel-extension start-up before the file server, and the phone-side (XBUS/ISI) and flash (mDOC) layers are still weeks of work.
+
 ### Route 1 — EKA2L1 + real ROM, host-native in nspawn
 
 The fast path to the real firmware's applications — **days, not weeks — if the
@@ -345,6 +359,29 @@ the frontend items (shm output, input socket, install CLI, no update check)
 core idle at the shell) until the shm frontend replaces Qt. The 9300 dump is
 firmware 5.22 build 7 (2005-11-16), the 9300i's 6.27 (2006-07-19) — the 9300i
 adds the WLAN stack, T9 and `Hci.dll` (agent X).
+
+**Build facts (agent V, Opus).** Builds from source on CT950 (Ubuntu 24.04,
+GCC 13, C++20, Qt 6.4.2 from the CI's own apt list minus `pulseaudio`);
+configure takes 116 s; a cold build takes 1418 s under a 30–104 host load at
+`-j5` then `-j10`, all ccache misses on a fresh tree. `mold` relinks the final
+binary in 1.02 s versus 5.35 s for `bfd`. `--help` hangs after printing its
+usage — the exit path never sets `init_event` in `thread.cpp`, a one-line
+upstream fix. Configure re-clones `libuv` from GitHub every time unless
+overridden. Two instances sharing the default data dir overwrite each other's
+`scripts/` and `resources/` — stations need per-instance XDG dirs. The fork's
+patch map: a headless branch belongs in `make_gl_context()`
+(`drivers/src/graphics/context.cpp`), the frame grab goes in the
+`set_display_hook` callback (`qt/src/thread.cpp:185-201`), input goes through
+`winserv->queue_input_from_driver()`, and a device-install CLI should be
+modelled on the Android frontend's `launcher::install_device()`.
+
+**The Windows build brings nothing extra (agent Z1, Opus).** The upstream
+Windows build, run in a `win11` rig clone (needs the VC++ runtime and Mesa
+llvmpipe for a GL ≥ 3 context), fails **identically** on the 9300 dump:
+Documents, Desk, Web and Clock crash 1–3 s after launch, Sheet stays a black
+640×200 band at 0 FPS, and the log tails end on the same lines as the Linux
+runs. So the fault was EKA2L1's S80 opcode tables, not anything Linux-specific
+— confirmed before F1's fix landed.
 
 ### Route 2 — A `nokia9300` board in the QEMU fork (full-system)
 
@@ -543,6 +580,26 @@ carry EKA2 BeagleBoard/OMAP3 adaptation only); Linux's Nokia 770 Retu/Tahvo
 CBUS drivers **do not apply** — the OMAP in the 9300 has no CBUS. No prior RE of
 Series 80 v2 firmware was found anywhere — until this wave.
 
+**First light on the board (agent Z2, Fable).** The RAE-6 core ROM boots on
+a new `-M nokia9300` machine in the fork (uncommitted, at
+`/data/vms/sandbox/s80-qemu/qemu`; the diff is saved as `tmp/Z2-nokia9300.patch`,
+12 files). Three blockers were found and fixed: the ROM is linked for physical
+base `0x10600000`, not `0x10000000` (the bootstrap's literal pool is full of
+`0x106xxxxx` addresses); two upstream OMAP1 model bugs — `omap_findclk`
+aborting on clocks the pin-mux table names but never defines
+(`mcbsp3.clkx`/`clk32k_out`), and `omap_intc` only lowering its output on a
+`CONTROL.NEW_IRQ_AGR` write, which EKA1's tick handler never issues, producing
+625,668 IRQs/min; plus the 1510 JTAG ID `0x1B47002F` and the LCDC
+palette-offset fix. With those in: the MMU comes on, the 64 Hz `Timer32K` tick
+runs, 249 executive SWIs execute, UART3 prints 25 bytes of debug output (mostly
+blank lines), and the USB W2FC client controller initialises. In 60 s of
+running it never touched UART2 (XBUS), the mDOC window or the LCDC — it stalls
+in kernel-extension start-up before the file server. Suspects: the USB driver's
+retry loop against a zero-reading stub, or an XBUS handshake poll on
+GPIO8/ARMIO3. Idle `WFI` is a no-op on `ti925t`, so the guest burns a full host
+core while stalled. Build: 5 min 26 s cold at `-j8`; the `ccache` masquerade
+(`PATH=/usr/lib/ccache:$PATH`) works once it is on `PATH`.
+
 **Ranked risks (J, K, M agree):**
 1. **The CMT has to answer.** The APE is the "system slave"; reset, startup
    reason, RTC, battery, backlight, power key and "no network" all arrive over
@@ -666,20 +723,22 @@ handful of objects. Measured: a clean EKA2L1 Release build on the dev box
 ## Open questions and dead ends
 
 **Open**
-1. Does EKA2L1 reach Desk / Word / Sheet / Opera with the 9500 ROM, at what CPU
-   cost and boot time? (§H1 spike.)
-2. Firmware version and language of the three dumps; why the 9300i dump ships
+1. Firmware version and language of the three dumps; why the 9300i dump ships
    `Dev9300.sis` (it would register as RAE-6 and collide with a 9300 install);
    the 9500 needs a hand-written device entry (naming recognises only
    `dev9300.sis`).
-3. What is inside the 2005 InstallShield service packages (MCU/PPM/CNT names;
+2. What is inside the 2005 InstallShield service packages (MCU/PPM/CNT names;
    which file is the ROM) — needed for a QEMU board's flash image.
-4. A Communicator QWERTY keybind profile for EKA2L1 incl. Shift/Chr behaviour.
-5. Whether the S80 v2 Opera passes the access-point UI on EKA2L1's host-backed
+3. A Communicator QWERTY keybind profile for EKA2L1 incl. Shift/Chr behaviour.
+4. Whether the S80 v2 Opera passes the access-point UI on EKA2L1's host-backed
    CommsDB path (tested on N-Gage only).
-6. The operator decision on `~@mount` (CRIU) for sub-2 s resets of nspawn
+5. The operator decision on `~@mount` (CRIU) for sub-2 s resets of nspawn
    stations — shared with vision/perq.
-7. The 9210: SoC identity, a ROM source, EKA2L1 v1 entry.
+6. The 9210: SoC identity, a ROM source, EKA2L1 v1 entry.
+7. ESock 7.0s table + `RConnection` (N1/N2 in flight).
+8. Shell/app keys (B1).
+9. Keymap (K1).
+10. Idle CPU loop (W2).
 
 **Dead ends (do not repeat)**
 - romphonix.org is offline (port 80 times out, 443 refused, from CT950 and
@@ -699,14 +758,18 @@ handful of objects. Measured: a clean EKA2L1 Release build on the dev box
 
 Coordinator: Fable 5.1. Discovery/verdict agents on Opus: A (EKA2L1 source
 verdict + Xvfb run), B (firmware sourcing + MEGA header decode), J (board map),
-K (CPU/SoC vs QEMU), L (9210 SoC). Fable: M (QEMU vs MAME decision), S (the
-ROM spike). Earlier Sonnet passes — C (SDK sources), D (hardware emulation
+K (CPU/SoC vs QEMU), L (9210 SoC), V (`V-eka2l1-build.md`, build proof), Z1
+(`Z1-eka2l1-windows.md`, Windows/win11 clone cross-check). Fable: M (QEMU vs
+MAME decision), S (the ROM spike), F1 (`F1-s80-wserv-fix.md`, the window-server
+fix spike), Z2 (`Z2-nokia9300-first-light.md`, the `nokia9300` board first
+light). Earlier Sonnet passes — C (SDK sources), D (hardware emulation
 survey), E (plane/apps), F (repo integration), G (Wine), H (SDK staging and
 inventory) — were used for facts only; the four load-bearing repo citations in F
 (amix llvmpipe, riscos Qt5, indyr4400 356%, perq CRIU) were re-verified against
 the tree, and D's ground is re-covered by J/K. Mid-session the operator ruled
 that Sonnet is for mechanical tasks only; two Sonnet research agents were
-stopped and re-run on Opus/Fable.
+stopped and re-run on Opus/Fable. Fork: `https://github.com/Wnt/EKA2L1`
+(branch `s80-epoc7-tables`, F1's window-server fix).
 
 ## Sources
 
