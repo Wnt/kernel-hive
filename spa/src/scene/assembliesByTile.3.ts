@@ -163,4 +163,8 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'pizzaBox', body: 'modernMini', monitor: 'lcdA',
     keyboard: 'keyboardH',
   },
+  nokia9300rom: {
+    kind: 'pizzaBox', body: 'pizzaBoxB', monitor: 'lcdA',
+    keyboard: 'keyboardH',
+  },
 } as const satisfies Record<string, Assembly>;

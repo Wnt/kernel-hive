@@ -195,6 +195,9 @@ const POSTER_INDEX = {
   "nokia9300": {
     "hero": "/posters/nokia9300/desktop.webp"
   },
+  "nokia9300rom": {
+    "hero": "/posters/nokia9300rom/desktop.webp"
+  },
   "nt351": {
     "hero": "/posters/nt351/desktop.webp"
   },

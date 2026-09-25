@@ -46,7 +46,11 @@
 #   --rootfs   also create/top up the runtime root (implies --build)
 #   --golden   install the golden data dir from $MEDIA after the hash gate
 # env: OUT STATION MEDIA UIDBASE, plus build-eka2l1.sh's own (WORK, JOBS,
-#   EKA2L1_FORK_BRANCH, EKA2L1_FORK_PIN).
+#   EKA2L1_FORK_BRANCH, EKA2L1_FORK_PIN). GOLDEN_OVERLAY (optional): a staged
+#   dir laid over the gated golden before the swap, every file of it checked
+#   against its own MANIFEST.sha256 (sha256sum format, paths relative to the
+#   golden root) — how a sibling station (nokia9300rom) adds files to the
+#   same golden without a second ledger of Nokia's bytes.
 # =============================================================================
 set -euo pipefail
 
@@ -137,6 +141,16 @@ if [ "$GOLDEN" = 1 ]; then
   mkdir -p "$STATION"
   rm -rf "$STATION/golden.new"
   cp -a "$MEDIA" "$STATION/golden.new"
+  if [ -n "${GOLDEN_OVERLAY:-}" ]; then
+    [ -f "$GOLDEN_OVERLAY/MANIFEST.sha256" ] || die "GOLDEN_OVERLAY=$GOLDEN_OVERLAY has no MANIFEST.sha256"
+    (cd "$GOLDEN_OVERLAY" && sha256sum --quiet -c MANIFEST.sha256) || die "GOLDEN_OVERLAY hash mismatch"
+    while read -r _ rel; do
+      rel="${rel#\*}"
+      mkdir -p "$STATION/golden.new/$(dirname "$rel")"
+      cp "$GOLDEN_OVERLAY/$rel" "$STATION/golden.new/$rel"
+    done <"$GOLDEN_OVERLAY/MANIFEST.sha256"
+    log "overlay ok: $(wc -l <"$GOLDEN_OVERLAY/MANIFEST.sha256") file(s) from $GOLDEN_OVERLAY"
+  fi
   chmod -R a+rX "$STATION/golden.new"
   if [ -d "$STATION/golden" ]; then
     rm -rf "$STATION/golden.prev"

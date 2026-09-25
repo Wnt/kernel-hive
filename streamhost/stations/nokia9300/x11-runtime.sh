@@ -51,6 +51,8 @@
 #   NOKIA_DEVICE         EKA2L1 firmware code (RAE-6 = the Nokia 9300)
 #   NOKIA_APP            app UID for --run (0x101f8e4f = Desk, the S80 shell)
 #   NOKIA_EMU_ARGS       extra eka2l1_qt flags (B2's kiosk flags, when they exist)
+#   NOKIA_EMU_ENV        space-separated NAME=value words set in the emulator's
+#                        environment (nokia9300rom: EKA2L1_ROM_WSERV=1); unset = none
 #   NOKIA_LOG_FILTER     EKA2L1 log-filter for the live copy ("" keeps the golden's)
 #   NOKIA_TZ             the container's TZ; seeds the kernel's UTC offset (the
 #                        guest's home city overrides it — see the guest doc)
@@ -185,6 +187,16 @@ chown "$UIDBASE:$UIDBASE" "$WORK"
 # the container's mapped root could not read it there (perq).
 install -m 0755 -o "$UIDBASE" -g "$UIDBASE" "$INNER" "$WORK/inner.sh"
 
+# --- extra emulator environment: one --setenv per NAME=value word ---------------
+EMU_ENV_ARGS=()
+read -r -a _emu_env <<<"${NOKIA_EMU_ENV:-}"
+for kv in ${_emu_env[@]+"${_emu_env[@]}"}; do
+  case "$kv" in
+    [A-Za-z_]*=*) EMU_ENV_ARGS+=(--setenv="$kv") ;;
+    *) die "NOKIA_EMU_ENV word '$kv' is not NAME=value" ;;
+  esac
+done
+
 # --- the network: lo only, or the retronet netns cage ------------------------------
 NET_PREFIX=()
 NET_ARGS=(--private-network)
@@ -224,6 +236,7 @@ nohup "${NET_PREFIX[@]}" systemd-nspawn --quiet --register=no --keep-unit --as-p
   --setenv=NOKIA_LOG_FILTER="${NOKIA_LOG_FILTER-}" \
   --setenv=NOKIA_WINDOW_TITLE="${NOKIA_WINDOW_TITLE:-Symbian OS emulator}" \
   --setenv=LANG=C.UTF-8 --setenv=TZ="${NOKIA_TZ:-UTC}" \
+  ${EMU_ENV_ARGS[@]+"${EMU_ENV_ARGS[@]}"} \
   --kill-signal=SIGTERM --console=pipe \
   /work/inner.sh >"$BASE/nokia9300.log" 2>&1 </dev/null &
 echo $! >"$NSPAWN_PIDFILE"

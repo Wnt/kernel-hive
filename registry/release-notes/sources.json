@@ -159,6 +159,14 @@
             "scripts/build-guests/emulators/build-eka2l1.sh"
           ],
           "pinNote": "the station row names the branch and commit; scripts/build-guests/tiles/nokia9300.sh exports EKA2L1_FORK_BRANCH/EKA2L1_FORK_PIN for emulators/build-eka2l1.sh, which checks the pin out as a local branch"
+        },
+        {
+          "name": "s80-rom-station",
+          "what": "the ROM window-server track (the firmware's own ewsrv.exe draws the screen): ROM boot, ROM input and the ROM window bridge merged for the hidden nokia9300rom comparison station",
+          "pinnedBy": [
+            "registry/stations/nokia9300rom.json"
+          ],
+          "pinNote": "the station row names the branch and commit; scripts/build-guests/tiles/nokia9300rom.sh exports EKA2L1_FORK_BRANCH/EKA2L1_FORK_PIN and runs tiles/nokia9300.sh"
         }
       ],
       "excludes": [
