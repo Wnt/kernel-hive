@@ -20,15 +20,18 @@
 #                     NEVER in git (Nokia firmware); staged on the box under
 #                     $MEDIA. The golden is agent F1's working data dir of
 #                     2026-09-24 (the dev-box run that first painted Desk,
-#                     Documents, Sheet and Web) with two changes:
+#                     Documents, Sheet and Web; agent I2's proof base) plus:
 #                     C:\System\SharedData\10000865.ini — the ROM's own default
 #                     with LanguageSelectionDone=1, so Startup's first-boot
 #                     language wizard (which captures the application keys and
-#                     Menu until it completes) never greets a visitor — and
-#                     EKA2L1/bindings/default.yml = agent B1's keymap-contract
-#                     map (Qt F1-F4 -> command buttons 0xA4-0xA7, F5-F12 ->
-#                     application keys 0xB4-0xBB, Menu -> 0x94, F13-F17 -> the
-#                     joystick), which the fork's s80-shell branch acts on.
+#                     Menu until it completes) never greets a visitor; the four
+#                     Series 80 UI TrueType fonts (swabiu/swabru/swariu/swarru
+#                     from the S80 DP2.0 SDK's Z: drive) in Z:\system\fonts —
+#                     both dumps lack them and the UI falls back to a serif;
+#                     machine-uid 0x101F8DDB (the 9300's own) in devices.yml;
+#                     config.yml keyboard-layout-index 0 (UK EKDATA) and UPnP
+#                     off; agent B6's Desk first-boot state (Shortcuts.dat,
+#                     desk.ini, SharedData 101f8e4f.ini).
 #
 # Usage — as root on labhost (debootstrap + systemd-nspawn), e.g. from CT950:
 #   scripts/dev/labrun -c 'bash <repo>/scripts/build-guests/tiles/nokia9300.sh --build --rootfs --golden'
@@ -50,20 +53,20 @@ MEDIA="${MEDIA:-/data/assets-staging/symbian-s80/nokia9300-golden/xdg}"
 # 40 x 65536: `kh-claim uidbase 2621440`, clear of CT 950/951's subuid range
 # and of every other contained station (lisa 200000, medley 1966080, ...).
 UIDBASE="${UIDBASE:-2621440}"
-# The fork commit the station runs — ONE combination with the golden's
-# bindings/default.yml: s80-shell = F1's s80-epoc7-tables (6d6805423) + agent
-# B1's application-key switching (F5-F12 launch or bring Desk, Telephone,
-# Messaging, Web, Contacts, Documents, Calendar, My own to the front). Moving to
-# the integration branch is these two lines (or both in the env for a trial).
-export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-shell}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-19308cbd00a80e1db4e3da026493ebff7ebf8468}"
+# The fork commit the station runs — ONE combination with the golden and the
+# launch flags: s80-integration (agent I2) = every Series 80 branch of the wave
+# merged — window server, app buttons (B1), the ROM's own key tables (K1), the
+# museum kiosk frontend + control socket (B2), Desk content (B6), third app
+# (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
+export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-e43db215ed3839b5098e874485f1c7b9d5284353}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0
 # sha256sum` run inside $MEDIA.
-GOLDEN_FILES=3249
-GOLDEN_BYTES=68106617
-GOLDEN_TREE_SHA=069a6674568325129bd02f151b3c802dc364023f41d948f4900e5b1118be5c17
+GOLDEN_FILES=3256
+GOLDEN_BYTES=68635694
+GOLDEN_TREE_SHA=ef30659b75718e859a8ed58585385f6667c63a4925c04843e79cf62a5ef15469
 ROM_REL=EKA2L1/data/roms/rae-6/SYM.ROM
 ROM_BYTES=17825792
 ROM_SHA=ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596

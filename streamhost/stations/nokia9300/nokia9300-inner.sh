@@ -98,6 +98,19 @@ XKB=/work/xkb
 rm -rf "$XKB"
 cp -R /usr/share/X11/xkb "$XKB"
 sed -i -E 's/^(    key <FK1([3-7])> +\{ +\[ +)XF86[A-Za-z0-9]+( +\])/\1F1\2\3/' "$XKB/symbols/inet"
+# The other keysyms keymap contract v3 injects (K1's station-xmodmap.txt): the
+# characters of the UK and Nordic 9300 layouts a US keymap lacks, bound to
+# named keys a stock keymap leaves empty. Only the keysym matters — xdotool and
+# the daemon both resolve keysym -> keycode from the live map — so these are
+# K1's keysyms, not K1's keycode numbers (93 has no XKB name at all).
+sed -i -E '/^    key <FK17> +\{ +\[ +F17/a\
+    key <I183> { [ EuroSign ] };\
+    key <AB11> { [ sterling ] };\
+    key <JPCM> { [ adiaeresis, Adiaeresis ] };\
+    key <I120> { [ odiaeresis, Odiaeresis ] };\
+    key <AE13> { [ aring, Aring ] };\
+    key <I149> { [ ae, AE ] };\
+    key <I154> { [ oslash, Ooblique ] };' "$XKB/symbols/inet"
 chmod 1777 /tmp/.X11-unix 2>/dev/null || true
 rm -f "/tmp/.X11-unix/X${DISP#:}"
 # -ardelay 65000: every key is an injected press/release pair, and X's own
@@ -120,21 +133,31 @@ done
   exit 1
 }
 export DISPLAY="$DISP"
-# The socket appears before the server answers requests: retry for up to 5 s
-# (a single immediate dump reported a false "missing" once, measured).
+# The socket appears before the server answers requests: retry for up to 5 s.
+# Dump ONCE into a variable: `xkbcomp | grep -q` under pipefail reports a
+# failure whenever grep exits early and xkbcomp takes SIGPIPE (measured: a
+# false "missing" on a keymap that had every key).
 kmap=missing
 for _ in $(seq 1 50); do
-  if xkbcomp "$DISP" - 2>/dev/null | grep -Eq 'key <FK13> *\{ *\[ *F13 *\]'; then
+  dump="$(xkbcomp "$DISP" - 2>/dev/null || true)"
+  if grep -Eq 'key <FK13> *\{ *\[ *F13 *\]' <<<"$dump" &&
+    grep -Eq 'key <I183> *\{ *\[ *EuroSign *\]' <<<"$dump"; then
     kmap=ok
     break
   fi
   sleep 0.1
 done
 if [ "$kmap" = ok ]; then
-  log "keycodes 191..195 = F13..F17 (joystick centre/up/down/left/right)"
+  log "keymap: F13..F17 (joystick) + EuroSign sterling ä ö å æ ø bound (keymap contract v3)"
 else
-  log "WARNING — F13 is not in the server's keymap: the joystick keys (F13..F17) are dead"
+  log "WARNING — F13/EuroSign not in the server's keymap: joystick and extra characters are dead"
 fi
+
+# B2's kiosk frontend (--kiosk ...) sizes and places its own window at the
+# requested geometry; then the Qt-window placement below is not needed.
+KIOSK=0
+case " ${EXTRA[*]} " in *" --kiosk"*) KIOSK=1 ;; esac
+kiosk_window() { xdotool search --onlyvisible --classname eka2l1_qt 2>/dev/null | head -1; }
 
 export HOME=/work/home XDG_DATA_HOME=/work/xdg XDG_CONFIG_HOME=/work/config
 export XDG_CACHE_HOME=/work/cache XDG_RUNTIME_DIR=/work/run QT_QPA_PLATFORM=xcb
@@ -211,6 +234,8 @@ keeper() {
   while sleep "${NOKIA_KEEPER_S:-2}"; do
     cap_log /work/emulator.log
     cap_log /work/xdg/EKA2L1/EKA2L1.log
+    cap_log /work/eka2l1.log
+    [ "$KIOSK" = 1 ] && continue
     [ -e /work/.placing ] && continue
     [ -n "$(top_window)" ] || continue
     placed && continue
@@ -240,7 +265,14 @@ while :; do
   # Up to 60 s: the window took 4.4 s to appear at host load 96.
   for _ in $(seq 1 600); do
     kill -0 "$EPID" 2>/dev/null || break
-    if place; then
+    if [ "$KIOSK" = 1 ]; then
+      w="$(kiosk_window)"
+      if [ -n "$w" ] && [ "$(wgeom "$w")" = "0 0 $GW $GH" ]; then
+        xdotool windowfocus "$w" 2>/dev/null || true
+        ok=1
+        break
+      fi
+    elif place; then
       ok=1
       break
     fi
@@ -248,7 +280,7 @@ while :; do
   done
   rm -f /work/.placing
   if [ "$ok" = 1 ]; then
-    log "display widget placed $(($(date +%s) - t0)) s after exec: the ${GEOM} root is the 640x200 screen at 2x"
+    log "display placed $(($(date +%s) - t0)) s after exec (kiosk=$KIOSK): the ${GEOM} root is the 640x200 screen at 2x"
     : >/work/placed
   else
     log "WARNING — display widget not placed; the captured root shows window chrome"
