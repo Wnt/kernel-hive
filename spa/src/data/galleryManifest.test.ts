@@ -95,6 +95,19 @@ describe('validateGalleryManifest', () => {
     const result = validateGalleryManifest(doc([{ ...validEntry, bootVideo: 'boot/c64.mp4' }]));
     expect(result?.entries[0].bootVideo).toEqual({ mp4: 'boot/c64.mp4' });
   });
+
+  // resetKeepsStream (D4's ctl-socket reset, emit_gallery_manifest.py) —
+  // optional and boolean, same emitted-only-when-true convention as `listed`.
+  it('accepts resetKeepsStream:true and defaults it absent', () => {
+    const withField = validateGalleryManifest(doc([{ ...validEntry, resetKeepsStream: true }]));
+    expect(withField?.entries[0].resetKeepsStream).toBe(true);
+    const without = validateGalleryManifest(doc([validEntry]));
+    expect(without?.entries[0].resetKeepsStream).toBeUndefined();
+  });
+
+  it('rejects a non-boolean resetKeepsStream', () => {
+    expect(validateGalleryManifest(doc([{ ...validEntry, resetKeepsStream: 'yes' }]))).toBeNull();
+  });
 });
 
 describe('loadGalleryManifest', () => {
