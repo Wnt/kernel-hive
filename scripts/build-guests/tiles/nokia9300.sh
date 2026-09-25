@@ -2,7 +2,7 @@
 # =============================================================================
 # tiles/nokia9300.sh — stage the host-native nokia9300 station: EKA2L1, the
 # Symbian HLE emulator (our fork github.com/Wnt/EKA2L1, branch
-# s80-epoc7-tables, GPL-3), running the Nokia 9300 Communicator's OWN firmware
+# s80-integration, GPL-3), running the Nokia 9300 Communicator's OWN firmware
 # (RAE-6, fw 5.22 of 2005-11-16: Symbian OS 7.0s, Series 80 v2). Three outputs,
 # ONE combination with the launcher (streamhost/stations/nokia9300/x11-runtime.sh):
 #
@@ -65,7 +65,7 @@ UIDBASE="${UIDBASE:-2621440}"
 # museum kiosk frontend + control socket (B2), Desk content (B6), third app
 # (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-cf8bee645440f41e82b1dc4d5da84b12cea3b94f}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-17801342fdf672ce5a9cc01a37d8ad9aa27ca933}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0

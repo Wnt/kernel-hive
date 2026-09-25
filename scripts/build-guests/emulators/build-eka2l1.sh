@@ -6,12 +6,11 @@
 # build root and shipped with the runtime root the station's container uses.
 #
 # THE FORK AND THE PIN. github.com/Wnt/EKA2L1 (GPL-3; upstream eka2l1/eka2l1),
-# branch s80-epoc7-tables = upstream master 39858137e + the four commits that
-# make the 9300 ROM's Documents, Sheet, Desk and Web paint (the S80 window
-# opcode table, kind-checked client handles, fbs FontHeightInTwips/Pixels, the
-# Posix PMstat call). Moving to the integrated S80 branch is the one-line change
-# of EKA2L1_FORK_BRANCH + EKA2L1_FORK_PIN below (or both in the env for a trial
-# build). The pin is checked out as a LOCAL BRANCH named after the fork branch:
+# branch s80-integration = upstream master 39858137e + every Series 80 branch
+# of the 2026-09-24/25 wave, merged and proven on the nokia9300 station (the
+# station's own pin lives in tiles/nokia9300.sh, which passes it in the env;
+# this default follows it). A trial of another branch sets EKA2L1_FORK_BRANCH
+# + EKA2L1_FORK_PIN in the env. The pin is checked out as a LOCAL BRANCH named after the fork branch:
 # EKA2L1 bakes `git rev-parse --abbrev-ref HEAD` and `git log -1 --format=%h`
 # into common/version.h AT CONFIGURE TIME and logs them at every start
 # ("EKA2L1 v0.0.1 (<branch>-<sha>)"). So configure re-runs whenever the pin or
@@ -65,8 +64,8 @@
 set -euo pipefail
 
 EKA2L1_FORK_URL="${EKA2L1_FORK_URL:-https://github.com/Wnt/EKA2L1.git}"
-EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-epoc7-tables}"
-EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-6d6805423f39facc12fd1d11c88e57a3967da602}"
+EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
+EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-17801342fdf672ce5a9cc01a37d8ad9aa27ca933}"
 
 WORK="${WORK:-/data/vms/sandbox/BUILD-eka2l1}"
 BUILDROOT="${BUILDROOT:-$WORK/buildroot}"

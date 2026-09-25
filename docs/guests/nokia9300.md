@@ -30,7 +30,7 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `cf8bee645`** (GPL-3; pinned in
+branch **`s80-integration` @ `17801342f`** (GPL-3; pinned in
 `tiles/nokia9300.sh`). Agents I2–I4 merged every Series 80 branch of the
 2026-09-24/25 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
@@ -41,11 +41,12 @@ the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub),
 and the Series 80 status pane with its minute clock, painted under the HLE
 Eikon server (S1), the key-event FIFO that no longer purges characters (K3),
 Exit and Desk icon fixes (E1) and the Series 80 locale file plus the
-Clock's missing SVC (L1). Built on labhost by
+Clock's missing SVC (L1), the Contacts New card that no longer panics CONE 46
+(A5) and Messaging without the storage note (M2; agent I5). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-cf8bee6454)`); 367 s from the previous
+`EKA2L1 v0.0.1 (s80-integration-17801342f4)`); 367 s from the previous
 pin, sha256 `aa060e32…aaa6`. The station runs the whole installed tree
 (`compat/ patch/ resources/ scripts/` beside `eka2l1_qt`), not the binary
 alone.
@@ -264,9 +265,8 @@ LIVE display before it can be patched for an x11 rig.
 - The status pane (lower left) shows the skin, a minute clock and the
   no-network and battery indicators; the clock follows the guest's home city
   (Helsinki in golden v3) — see Golden › Time zone.
-- Messaging opens with a one-time "Cannot find message storage. Try restoring
-  from a backup." note (Enter closes it); baking the message store into the
-  golden would remove it. Menu hold (task list): `CaptureLongKey` unhandled.
+- Messaging opens straight to Inbox / Outbox / Drafts / Sent (the old
+  "Cannot find message storage" note is gone in 17801342f, M2). Menu hold (task list): `CaptureLongKey` unhandled.
 - Command-button acceptance per app (agent X1, the real platform): Desk = Open /
   Write note / Note list; Documents = Insert object / Font / Style / Exit; Web =
   Open Web address / Back / Bookmarks / Exit; Sheet = Edit / Insert function /

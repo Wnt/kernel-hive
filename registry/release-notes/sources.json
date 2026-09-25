@@ -155,7 +155,8 @@
           "name": "s80-integration",
           "what": "every Series 80 branch of the 2026-09-24/25 wave merged into one proven head",
           "pinnedBy": [
-            "registry/stations/nokia9300.json"
+            "registry/stations/nokia9300.json",
+            "scripts/build-guests/emulators/build-eka2l1.sh"
           ],
           "pinNote": "the station row names the branch and commit; scripts/build-guests/tiles/nokia9300.sh exports EKA2L1_FORK_BRANCH/EKA2L1_FORK_PIN for emulators/build-eka2l1.sh, which checks the pin out as a local branch"
         }
