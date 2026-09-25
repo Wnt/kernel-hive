@@ -18,7 +18,7 @@ export function StatusOverlays({
   hint, fs, mouseCapture, escToGuest,
   showResume, pointerLocked, acquireLock,
   playbackBlocked, onResumePlayback,
-  fsError,
+  fsError, restoreError,
   showBanner, restoreReconnect, bannerState, decoderUnsupported, bannerIsDevice, bannerText,
   deviceUnderLoad, cpuCritical, lowBattery, frameStalled, decoderFailed, decoderErrShort,
   onReconnect,
@@ -33,6 +33,9 @@ export function StatusOverlays({
   playbackBlocked: boolean;
   onResumePlayback: () => void;
   fsError: string | null;
+  /** Restore POST failed (network error or non-2xx, e.g. the 404 U1 finding
+   *  B1 caught) — surfaced in the page instead of console-only. */
+  restoreError: string | null;
   showBanner: boolean;
   restoreReconnect: boolean;
   bannerState: StreamBannerState | null;
@@ -104,6 +107,14 @@ export function StatusOverlays({
       {/* FULLSCREEN REJECTION TOAST — the request was denied; no longer silent. */}
       {fsError && (
         <div style={{ ...S.hintToast, ...S.fsErrorToast }}>{fsError}</div>
+      )}
+
+      {/* RESTORE-FAILED TOAST (U1 finding B1) — the restore POST 404'd or threw,
+          and the panel that started it has already closed (StageMenu's `run`
+          closes on every click). Previously console-only; now shown in the
+          page for every station, same auto-dismiss shape as the toast above. */}
+      {restoreError && (
+        <div style={{ ...S.hintToast, ...S.restoreErrorToast }}>{restoreError}</div>
       )}
 
       {/* GFN-STYLE CONNECTION BANNER (Section 2.6) — driven by the client-local

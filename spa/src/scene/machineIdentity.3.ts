@@ -227,4 +227,13 @@ export const EXHIBIT_IDENTITIES_3 = {
     badge: 'POWER MAC G4', spec: 'PowerPC G4 • MAC OS X 10.3 • 2003',
     kit: 'workstation',
   },
+  // nokia9300: the Nokia 9300 Communicator — a silver-grey clamshell whose
+  // inner face is dark grey around the 640x200 screen; the accent is the
+  // Series 80 Desk's own lilac-blue ground. The hall has no clamshell mesh yet
+  // (assembliesByTile.3.ts carries a provisional tuple), so the finish is the
+  // honest part of this row.
+  nokia9300: {
+    caseTint: '#b9bcc0', accentTint: '#5b7fa6', tintMix: 0.45,
+    badge: 'NOKIA 9300', spec: 'SERIES 80 • SYMBIAN OS 7.0s • 2005', kit: 'mobile',
+  },
 } as const satisfies Record<string, ExhibitIdentity>;

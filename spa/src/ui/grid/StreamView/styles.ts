@@ -356,6 +356,15 @@ export const S: Record<string, CSSProperties> = {
     background: 'rgba(250,238,236,0.96)', border: '1px solid rgba(178,58,44,0.5)',
     color: 'var(--danger)',
   },
+  // RESTORE-FAILED TOAST — same shape as fsErrorToast, stacked above it (a
+  // fullscreen rejection and a restore failure are unrelated triggers but
+  // COULD both be showing at once, so this gets its own row rather than
+  // overlapping).
+  restoreErrorToast: {
+    top: 'auto', bottom: 58,
+    background: 'rgba(250,238,236,0.96)', border: '1px solid rgba(178,58,44,0.5)',
+    color: 'var(--danger)',
+  },
   // GFN-STYLE CONNECTION BANNER — top-centre pill, distinct from the hint toast.
   banner: {
     position: 'absolute', top: 18, left: '50%', transform: 'translateX(-50%)',

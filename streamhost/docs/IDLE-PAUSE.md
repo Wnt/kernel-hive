@@ -119,6 +119,21 @@ leave it at `0`.
   labctl) must either connect a WebTransport session, use `labctl`'s
   auto-cont verbs, or set `SH_IDLE_PAUSE_SECS=0` for that tile.
 
+## Auto-reset — the next visitor gets the golden, not the last visitor's mess
+
+The pauser owns the session count, so it also drives `auto_reset.rs`: a station
+can ask the daemon to run its reset (`SH_AUTO_RESET_CMD`, normally
+`reset-tile.sh <station>`) when the last session has been gone for
+`SH_AUTO_RESET_AFTER_SESSION_SECS`, and/or after `SH_AUTO_RESET_INPUT_IDLE_SECS`
+with no input. Both fire only if the guest saw input since the previous reset, so
+an unvisited station is never reset in a loop, and a live wake lease withholds
+them. With `SH_IDLE_PAUSE_SECS=0` the pauser runs track-only (counts sessions,
+never pauses). Order them reset-first: `nokia9300` resets 30 s after the last
+visitor and pauses at 60 s, so the frozen picture is a clean Desk. Its reset is
+in-process (`ekactl quit`; the container's inner loop relaunches from the golden
+in ~2 s), so the daemon and any open stream stay up. Log lines: `[auto-reset] …
+-> resetting` and `[auto-reset] reset rc=… in …s: <reset-tile.sh's line>`.
+
 ## Bridge-fronted Proxmox VMs (not streamhost tiles)
 
 Any future VM reached through a TCP bridge instead of streamhost can get the

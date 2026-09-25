@@ -4,6 +4,7 @@
 // block is the part of a god-file that costs nothing to read somewhere else.
 // The hook re-exports all three, so no importer changes.
 
+import type { RefObject } from 'react';
 import type { VideoSinkProbe } from './streamClient/videoResume';
 import type { StreamControlHandle } from './useStreamControl';
 import type { Attrs } from '../analytics/trace';
@@ -59,4 +60,9 @@ export interface StreamSessionResult {
    * would report every scripted station as instantly discoverable.
    */
   noteInput: () => void;
+  /** Bumped once per painted frame (a ref, not state — no per-frame re-render).
+   *  useRestoreFlow.ts's `resetKeepsStream` branch polls it for the first
+   *  frame painted after the restore POST returns, since that station's
+   *  `phase` never leaves `'live'` on a reset. */
+  frameEpoch?: RefObject<number>;
 }

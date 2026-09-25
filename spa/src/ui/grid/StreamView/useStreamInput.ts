@@ -6,7 +6,10 @@
 import { useEffect, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { StreamControlHandle } from '../../../three/useStreamControl';
 import { clientToGuest } from '../letterbox';
-import { lockAllSystemKeys, unlockSystemKeys, needsPreventDefault, isDebugToggle } from './keyboardLock';
+import {
+  lockAllSystemKeys, unlockSystemKeys, needsPreventDefault, isDebugToggle,
+  isTypingField, isDeviceKeyActivation, isDeviceKeyTabNav,
+} from './keyboardLock';
 import { isTouchDevice } from './env';
 import { pinched, resolveMoveSamples, supportsRawUpdate } from '../../../input/moveSamples';
 import { createTapQuantiser } from '../../../input/tapQuantiser';
@@ -120,10 +123,9 @@ export function useStreamInput({
       }
       return;
     }
-    const isFormField = (t: EventTarget | null) => {
-      const el = t as HTMLElement | null;
-      return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-    };
+    // isTypingField / isDeviceKeyActivation / isDeviceKeyTabNav: see
+    // keyboardLock.ts — the M4 form-field boundary, shared so it is testable
+    // without mounting the whole effect.
     const onKeyDown = (e: KeyboardEvent) => {
       if (isDebugToggle(e)) return;                                   // owned by the debug toggle
       const h = controlRef.current;
@@ -138,23 +140,27 @@ export function useStreamInput({
         // consumed by the UA to exit fullscreen (which drops the lock) — the
         // natural "leave cinema mode" gesture. Short Escape presses never leave
         // the OS view; the on-screen Exit button returns to the grid.
-        if (!isFormField(e.target)) h?.sendKeyEvent(e, true); // Esc DOWN → guest
+        if (!isTypingField(e.target)) h?.sendKeyEvent(e, true); // Esc DOWN → guest
         return;
       }
-      if (isFormField(e.target)) return; // OSK / toolbar inputs own their keys
+      if (isTypingField(e.target)) return; // OSK / toolbar inputs own their keys
+      if (isDeviceKeyActivation(e.target, e.key)) return; // the widget's own Enter/Space, already sent by onPress
       if (!h) return;
       h.sendKeyEvent(e, true);
-      if (needsPreventDefault(e, fsRef.current)) e.preventDefault();
+      if (needsPreventDefault(e, fsRef.current) && !isDeviceKeyTabNav(e.target, e.key)) e.preventDefault();
     };
     const onKeyUp = (e: KeyboardEvent) => {
       const h = controlRef.current;
       if (!h) return;
-      // ALWAYS forward key-UP — never gate on isDebugToggle/isFormField here. A
-      // key-up for a key the guest never saw down is a harmless no-op (the handle
-      // tracks downScancodes), but a MISSING up leaves the key stuck down in the
-      // guest (repeating ^[ / a stuck 'n' after Cmd+N). Symmetry beats precision.
+      // ALWAYS forward key-UP — never gate on isDebugToggle/isTypingField here.
+      // A key-up for a key the guest never saw down is a harmless no-op (the
+      // handle tracks downScancodes), but a MISSING up leaves the key stuck
+      // down in the guest (repeating ^[ / a stuck 'n' after Cmd+N). Symmetry
+      // beats precision — this includes the literal Enter/Space up for a
+      // drawn key's own activation: the guest never saw the down, so it's a
+      // no-op there too.
       h.sendKeyEvent(e, false);
-      if (needsPreventDefault(e, fsRef.current)) e.preventDefault();
+      if (needsPreventDefault(e, fsRef.current) && !isDeviceKeyTabNav(e.target, e.key)) e.preventDefault();
     };
     const onBlur = () => {
       try { controlRef.current?.releaseAllKeys(); } catch { /* noop */ }

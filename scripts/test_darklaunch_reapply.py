@@ -117,6 +117,54 @@ class ReapplyTest(unittest.TestCase):
         self.assertNotIn("zzrig", self.tiles())
 
 
+class RestoreOverlayTest(unittest.TestCase):
+    """`publish --reset` makes POST /restore/<id> reach the rig (nokia9300, 2026-09-25:
+    without a golden-manifest row the Restore button answered 404 and nothing happened)."""
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp())
+        self.serve = fake_serve(self.tmp)
+        self.golden_path = self.serve / "golden-manifest.json"
+        self.golden_path.write_text(
+            json.dumps({"tiles": {"freedos": {"stationDir": "freedos", "resetMode": "loadvm"}}})
+        )
+        self.rig = fake_rig(self.tmp, "zzrig", 54999)
+        (self.rig / "stream.env").write_text("SH_RESET_CTL_SOCK=work/run/ekactl.sock\nSH_RESET_CTL_VERB=quit\n")
+        published = tool(
+            "publish", "zzrig", "--rig", str(self.rig), "--like", "freedos", "--reset", "--serve-root", str(self.serve)
+        )
+        self.assertEqual(published.returncode, 0, published.stdout + published.stderr)
+
+    def golden(self) -> dict:
+        return json.loads(self.golden_path.read_text())["tiles"]
+
+    def test_publish_adds_a_row_pointing_at_the_rig(self) -> None:
+        row = self.golden()["zzrig"]
+        self.assertEqual(row["resetMode"], "relaunch")
+        self.assertEqual(row["stationPath"], str(self.rig))
+        self.assertEqual(row["stationEnv"], str(self.rig / "stream.env"))
+        decl = json.loads((self.serve / "darklaunch.d/zzrig.json").read_text())
+        self.assertEqual(decl["files"][str(self.golden_path)], {"kind": "json-tiles-keys", "ids": ["zzrig"]})
+
+    def test_republish_then_reapply_restores_the_row(self) -> None:
+        self.golden_path.write_text(
+            json.dumps({"tiles": {"freedos": {"stationDir": "freedos", "resetMode": "loadvm"}}})
+        )
+        tool("reapply", "--serve-root", str(self.serve))
+        self.assertIn("zzrig", self.golden())
+        self.assertIn("freedos", self.golden())
+
+    def test_withdraw_and_republish_without_reset_take_the_row_back(self) -> None:
+        again = tool("publish", "zzrig", "--rig", str(self.rig), "--like", "freedos", "--serve-root", str(self.serve))
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertNotIn("zzrig", self.golden())
+        tool(
+            "publish", "zzrig", "--rig", str(self.rig), "--like", "freedos", "--reset", "--serve-root", str(self.serve)
+        )
+        tool("withdraw", "zzrig", "--serve-root", str(self.serve))
+        self.assertEqual(list(self.golden()), ["freedos"])
+
+
 class DeployWiringTest(unittest.TestCase):
     """The root fix is only a fix if publish_manifests actually calls it."""
 

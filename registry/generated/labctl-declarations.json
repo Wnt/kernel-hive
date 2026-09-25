@@ -1118,6 +1118,24 @@
       "udp_port": 54096,
       "notes": "warpd agent on host port 57793 (guest :7777); fire-and-forget pointer, NOT an exec channel; no exec channel: use 'labctl sh' (blind) or clone (solaris clone has ssh) for real exec"
     },
+    "nokia9300": {
+      "dir": "/data/vms/streamhost/stations/nokia9300",
+      "qmp": null,
+      "pointer_mode": "none",
+      "warpd_port": null,
+      "warpd_addr": null,
+      "ssh_port": null,
+      "exec_port": null,
+      "exec_host": null,
+      "exec_kind": null,
+      "exec_user": null,
+      "exec_key": null,
+      "exec_shell": null,
+      "exec_subshell": null,
+      "console": "x11",
+      "udp_port": 54219,
+      "notes": "HOST-NATIVE, SANDBOXED, NO CHECKPOINT: EKA2L1 (the Symbian HLE emulator, our fork github.com/Wnt/EKA2L1 branch s80-integration, GPL-3) runs the Nokia 9300's own firmware 5.22 (RAE-6: Symbian OS 7.0s, Series 80 v2) inside a systemd-nspawn container (private PID/mount/net/user namespaces, host uid range 2621440+, rootfs --volatile=overlay, the EKA2L1 build and the golden data dir bound read-only, only work/ and the X socket dir writable, capabilities dropped, @mount filtered). Xvfb :119 at 1280x400 lives INSIDE the container; its root IS the 640x200 inner screen at exactly 2x (nokia9300-inner.sh resizes and moves the Qt window so the display widget sits at 0,0; the menubar and status bar hang off the root). The daemon captures the X root (SH_CAPTURE=x11) and types over XTEST (SH_INPUT_BACKEND=x11test, SH_X11TEST_KEYMAP=x11test.keysyms). No QEMU/QMP, no exec channel, no network (lo only). NO POINTER: the 9300 has none. KEYS per agent K1's keymap contract v1 (provisional until framebuffer proof): F1-F4 = the four command buttons beside the screen, F5-F12 = Desk / Telephone / Messaging / Web / Contacts / Documents / Calendar / My own, Menu, F13-F17 = joystick centre/up/down/left/right, ISO_Level3_Shift = Chr; printable characters as their own keysyms. Kiosk frontend (B2): the window is the root, ekactl/1 control socket at <station>/work/run/ekactl.sock. Reset=relaunch, in-process: `quit` on the ekactl socket (reset-tile.sh, the Restore button, the daemon's auto-reset); the container's inner loop relaunches EKA2L1 from a fresh copy of the golden data dir whenever it exits (~2 s), with no daemon restart. Drive it with xdotool on DISPLAY=:119 from labrun, or `labctl shot nokia9300`."
+    },
     "nt351": {
       "dir": "/data/vms/streamhost/stations/nt351",
       "qmp": "/data/vms/streamhost/stations/nt351/qmp.sock",

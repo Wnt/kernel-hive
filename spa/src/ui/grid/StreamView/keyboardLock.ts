@@ -1,6 +1,8 @@
 // StreamView keyboard-lock + key-forwarding predicates.
 // Extracted verbatim from StreamView.tsx (pure module helpers — no React state).
 
+import { DEVICE_KEY_INPUT_CLASS } from '../../device/deviceTypes';
+
 type KeyboardLockApi = { lock?: (keys?: string[]) => Promise<void>; unlock?: () => void };
 export const keyboardLockApi = (): KeyboardLockApi | undefined =>
   (navigator as unknown as { keyboard?: KeyboardLockApi }).keyboard;
@@ -61,4 +63,43 @@ export function isDebugToggle(e: KeyboardEvent): boolean {
   if (!(e.metaKey || e.ctrlKey)) return false;
   if (e.altKey || e.shiftKey) return false;
   return e.code === 'KeyN' || e.key === 'n' || e.key === 'N';
+}
+
+// ---------------------------------------------------------------------------
+// Form-field vs. device-key-control predicates (M4 boundary).
+//
+// A REAL typing field (the OSK's "type here → guest" input, a URL/text
+// toolbar box, contenteditable) owns every key while focused — the guest
+// never sees it, this element does. A device-drawing key's own
+// `<input class="dev-key-input">` (KeyCap.tsx) is NOT one of these: it is an
+// accessible ACTIVATION control (Tab-focusable, Enter/Space = press), not a
+// text field, so it must not swallow the rest of the keyboard the way a real
+// typing field does — that was M4's bug (Esc, and everything else, dead
+// while the OSK's own text field had focus), and treating a drawn key's
+// control the same way reproduced the identical shape on the device page.
+export function isTypingField(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el || el.classList?.contains(DEVICE_KEY_INPUT_CLASS)) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+}
+
+// A drawn key's OWN activation keys. KeyCap's onKeyDown/onKeyUp already turn
+// these into a press/release of the KEY'S real keysym via deviceSender —
+// forwarding the literal 'Enter'/' ' keysym here too would double-send.
+// Every other physical key (Esc, arrows, F-keys, Tab, letters+Shift…) still
+// forwards normally so physical typing keeps working no matter which drawn
+// key last took focus.
+export function isDeviceKeyActivation(t: EventTarget | null, key: string): boolean {
+  const el = t as HTMLElement | null;
+  return !!el && (key === 'Enter' || key === ' ') && !!el.classList?.contains(DEVICE_KEY_INPUT_CLASS);
+}
+
+// Tab's default action (move focus to the next drawn key) must survive
+// alongside forwarding it to the guest, or Tab order breaks the moment
+// physical Tab also drives the guest — so the forwarder skips ONLY the
+// preventDefault for Tab while a drawn key control has focus, never the
+// forward itself.
+export function isDeviceKeyTabNav(t: EventTarget | null, key: string): boolean {
+  const el = t as HTMLElement | null;
+  return key === 'Tab' && !!el?.classList?.contains(DEVICE_KEY_INPUT_CLASS);
 }

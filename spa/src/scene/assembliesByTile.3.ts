@@ -157,4 +157,10 @@ export const ASSEMBLIES_BY_TILE_3 = {
     kind: 'towerSetup', body: 'towerD', monitor: 'lcdA',
     keyboard: 'keyboardG', mouse: 'paramMouseF',
   },
+  // nokia9300: PROVISIONAL — no clamshell Communicator mesh exists in the
+  // hall; a small flat case under a flat panel stands in until one is authored.
+  nokia9300: {
+    kind: 'pizzaBox', body: 'modernMini', monitor: 'lcdA',
+    keyboard: 'keyboardH',
+  },
 } as const satisfies Record<string, Assembly>;

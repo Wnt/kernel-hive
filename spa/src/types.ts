@@ -55,6 +55,14 @@ export interface VMManifestEntry {
   uiKind?: string;
   resetMode?: string;
 
+  /** True only for a `resetMode=relaunch` station whose fixture declares
+   *  SH_RESET_CTL_SOCK: the reset goes through an in-process control socket
+   *  (ekactl quit) rather than a unit restart, so the stream's own
+   *  WebTransport never drops. Absent/false ⇒ assume the old teardown/
+   *  reconnect path (useRestoreFlow.ts). Derived in
+   *  emit_gallery_manifest — there is no matching registry input field. */
+  resetKeepsStream?: boolean;
+
   // OPTIONAL boot-video replay descriptor, merged at runtime from
   // /boot/index.json (BOOT-VIDEO-REPLAY-SPEC §4). Additive: absent ⇒ today's
   // behaviour. Carries the durations/paths the UI can use without a rebuild;

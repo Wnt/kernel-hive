@@ -19,8 +19,9 @@ import { stationAttrs } from '../../analytics/stationAttrs';
 import { presentAspectFor } from './presentAspect';
 import { PosterCard } from './StreamView/PosterCard';
 import { OnScreenKeyboard } from '../keyboard/OnScreenKeyboard';
-import { PowerOnOverlay } from './StreamView/PowerOnOverlay';
-import { BootVideoOverlay } from './StreamView/BootVideoOverlay';
+import { StagePicture } from './StreamView/StagePicture';
+import { DeviceStage } from '../device/DeviceStage';
+import { deviceDrawingFor } from '../device/deviceRegistry';
 import { DebugOverlay } from './StreamView/DebugOverlay';
 import { StageMenu } from './StreamView/StageMenu';
 import { StatusOverlays } from './StreamView/StatusOverlays';
@@ -126,6 +127,10 @@ export default function StreamView({
   // ERA-CORRECT 4:3 PRESENTATION (presentAspect.ts) — non-square-pixel vintage/
   // kiosks fill a display-aspect box (object-fit:fill), else default OFF.
   const present = presentAspectFor(os.osId);
+  // DEVICE DRAWING (ui/device): a handheld whose keys ARE its interface is
+  // presented as a drawing of the device with every key live, in place of the
+  // letterboxed picture and the toggleable on-screen keyboard.
+  const device = deviceDrawingFor(os.osId);
   const presentFill = !!present;
 
   // STATION-TYPE grouping dimensions (analytics/stationAttrs.ts) — the same
@@ -140,6 +145,7 @@ export default function StreamView({
   const {
     stream, phase, message, control, registerPaintCanvas,
     beginRestoreReconnect, finishRestoreReconnect, expectedReconnect, reconnectNow, noteInput,
+    frameEpoch,
   } = useLiveStream(
     os,
     streamable,
@@ -177,6 +183,10 @@ export default function StreamView({
   const fsErrorTimer = useRef(0);
   const [restoreState, setRestoreState] = useState<'idle' | 'busy' | 'ok' | 'err'>('idle');
   const restoreTimer = useRef(0);
+  // In-page surface for the restore POST's 404/error path (U1 B1) — previously
+  // console-only, so the visitor saw the panel close and nothing else.
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const restoreErrorTimer = useRef(0);
 
   const controlRef = useRef(control);
   controlRef.current = control;
@@ -357,9 +367,10 @@ export default function StreamView({
 
   // ---- RESTORE TO CHECKPOINT (streamhost only) ---------------------------------
   const { restoreToGolden } = useRestoreFlow({
-    osId: os.osId, restoreState, setRestoreState,
+    osId: os.osId, restoreState, setRestoreState, setRestoreError, restoreErrorTimer,
     beginRestoreReconnect, finishRestoreReconnect, restoreTimer,
     phase, stationAttrs: osStationAttrs,
+    resetKeepsStream: os.resetKeepsStream, frameEpoch,
   });
 
   // ---- TYPE-IN DEMO PROGRAM (registry-declared stations only) -----------------
@@ -413,6 +424,16 @@ export default function StreamView({
     bannerState, decoderUnsupported, deviceUnderLoad, exitReason,
   });
 
+  // The live picture + its connect overlay: on the stage, or in a device drawing's display.
+  const picture = (
+    <StagePicture
+      directCanvas={directCanvas} canvasRef={canvasRef} videoRef={videoRef} videoStyle={videoStyle}
+      bootVideo={bootVideo} bootManifest={bootManifest} getLiveSurface={getLiveSurface} coldBoot={coldBoot}
+      displayName={displayName} eraLabel={os.eraLabel} accentColor={os.accentColor} live={live}
+      phase={phase} message={message} failText={exitReasonCopy(exitReason) ?? message}
+    />
+  );
+
   // The stage menu is chrome: in fullscreen it auto-hides with everything else.
   const menuVisible = !fs || chromeVisible;
 
@@ -442,7 +463,7 @@ export default function StreamView({
             transport={transport}
             mobile={mobile}
             oskOpen={oskOpen}
-            onToggleOsk={() => setOskOpen((v) => !v)}
+            onToggleOsk={device ? undefined : () => setOskOpen((v) => !v)}
             restoreState={restoreState}
             restoreToGolden={restoreToGolden}
             demoLabel={demo.program?.label}
@@ -459,63 +480,9 @@ export default function StreamView({
           <PosterCard os={os} displayName={displayName}
             note="Live streaming needs a browser with WebCodecs H.264 video decoding. Try Chrome, or a desktop browser." />
         ) : streamable ? (
-          <>
-            {directCanvas ? (
-              // DIRECT-PAINT CANVAS (Firefox streamhost) — decoded frames drawn
-              // straight to glass in onVideoFrame (no captureStream / <video> hop).
-              <canvas
-                ref={canvasRef}
-                className="sv-video"
-                style={videoStyle}
-              />
-            ) : (
-              <video
-                ref={videoRef}
-                className="sv-video"
-                style={videoStyle}
-                muted
-                autoPlay
-                playsInline
-                {...({ 'webkit-playsinline': 'true' } as any)}
-              />
-            )}
-            {bootVideo ? (
-              // BOOT-VIDEO stations: replay the recorded power-on clip while the live
-              // checkpoint connects behind it, then swap invisibly on the first live
-              // frame. Takes the overlay slot ahead of coldBoot + the spinner.
-              <BootVideoOverlay
-                src={bootManifest?.mp4 ?? bootVideo}
-                poster={bootManifest?.poster}
-                sprite={bootManifest?.sprite}
-                vtt={bootManifest?.vtt}
-                durationHint={bootManifest?.durationMs}
-                live={live}
-                getLiveSurface={getLiveSurface}
-              />
-            ) : coldBoot ? (
-              // COLD-BOOT stations: dramatic CRT power-on instead of a spinner.
-              <PowerOnOverlay
-                displayName={displayName}
-                eraLabel={os.eraLabel}
-                accent={os.accentColor}
-                live={live}
-                errored={phase === 'error'}
-                errorText={exitReasonCopy(exitReason) ?? message ?? 'No signal'}
-              />
-            ) : (
-              !live && (
-                <div style={S.overlay}>
-                  <div style={S.spinner} />
-                  <p style={S.overlayText}>
-                    {phase === 'error'
-                      ? (exitReasonCopy(exitReason) ?? message ?? 'Stream unavailable')
-                      : (message || 'Connecting…')}
-                  </p>
-                  <p style={S.overlaySub}>{os.eraLabel}</p>
-                </div>
-              )
-            )}
-          </>
+          device ? (
+            <DeviceStage drawing={device} handle={control}>{picture}</DeviceStage>
+          ) : picture
         ) : transport === 'showcase' ? (
           <PosterCard os={os} displayName={displayName}
             note="Showcase exhibit — a poster and placard only. Not interactively streamable in this build." />
@@ -550,6 +517,7 @@ export default function StreamView({
           pointerLocked={pointerLocked}
           acquireLock={acquireLock}
           fsError={fsError}
+          restoreError={restoreError}
           showBanner={showBanner}
           restoreReconnect={restoreReconnect}
           bannerState={bannerState}
@@ -567,7 +535,7 @@ export default function StreamView({
 
         {/* TOUCH affordances (touchChromeGate.ts), live only: the one-shot
             right-click badge (T-1) and the trackpad sprite (T-3). */}
-        {touchChrome && mediaLive && (
+        {touchChrome && mediaLive && !device && (
           <TouchOverlays
             touch={touch}
             gestureRef={gestureRef}
@@ -579,7 +547,7 @@ export default function StreamView({
         )}
 
         {/* On-screen-keyboard opener (same gate); hidden once open. */}
-        {touchChrome && streamable && !oskOpen && (
+        {touchChrome && streamable && !oskOpen && !device && (
           <KeyboardToggleBadge onOpen={() => setOskOpen(true)} />
         )}
       </div>
@@ -587,7 +555,7 @@ export default function StreamView({
       {/* Shared per-OS on-screen keyboard: mobile = collapsible bottom sheet
           (max 1/3 viewport, fixed screen-space — never affected by the video
           zoom transform); desktop = today's inline footer. */}
-      {streamable && oskOpen && (
+      {streamable && oskOpen && !device && (
         <OnScreenKeyboard
           handle={control}
           osId={os.osId}

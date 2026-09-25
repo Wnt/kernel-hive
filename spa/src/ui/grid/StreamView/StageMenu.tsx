@@ -52,7 +52,8 @@ export function StageMenu({
   fs: boolean;
   mobile: boolean;
   oskOpen: boolean;
-  onToggleOsk: () => void;
+  /** Absent = the station has no toggleable keyboard (a device drawing's keys are its keyboard). */
+  onToggleOsk?: () => void;
   restoreState: 'idle' | 'busy' | 'ok' | 'err';
   restoreToGolden: () => void;
   /** Type-in listing row — present only for stations whose registry entry declares
@@ -125,7 +126,7 @@ export function StageMenu({
             <span style={S.menuHeadText}>{statusLabel}</span>
           </div>
 
-          {!mobile && streamable && (
+          {!mobile && streamable && onToggleOsk && (
             <button
               style={oskOpen ? { ...S.menuItem, ...S.btnOn } : S.menuItem}
               onClick={run(onToggleOsk)}

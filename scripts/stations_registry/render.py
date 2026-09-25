@@ -236,6 +236,16 @@ def emit_gallery_manifest(rows: list[dict[str, Any]]) -> bytes:
         reset = row.get("reset") or {}
         if reset.get("resetMode"):
             entry["resetMode"] = reset["resetMode"]
+        # D4's reset work (nokia9300-reset): a `resetMode=relaunch` station whose
+        # fixture declares SH_RESET_CTL_SOCK resets through an in-process control
+        # socket (ekactl quit) rather than a unit restart — the stream's own
+        # WebTransport never drops. Derived, not a registry field: the fixture is
+        # already the single source for its own keys (loading.py's `_fixtureEnv`),
+        # so this stays true the moment a station's fixture grows the socket, with
+        # no second place to declare it. Emitted only when true, same
+        # emitted-only-when-present convention as the rest of this block.
+        if reset.get("resetMode") == "relaunch" and row.get("_fixtureEnv", {}).get("SH_RESET_CTL_SOCK"):
+            entry["resetKeepsStream"] = True
         # Soft hide (registry `listing`). The ROW STAYS — dropping it is what a
         # deployment-only override used to do, and it is exactly what breaks the
         # /os/<id> deep link, since the UI resolves that id out of this manifest.

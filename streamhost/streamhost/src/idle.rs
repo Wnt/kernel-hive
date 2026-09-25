@@ -114,7 +114,7 @@ use std::time::{Duration, Instant, SystemTime};
 /// with margin, so a driver that refreshes its lease on any sane interval is
 /// never re-frozen mid-sequence; and short enough that a lease abandoned by a
 /// killed driver costs one station a single extra pause cycle.
-const LEASE_TTL: Duration = Duration::from_secs(90);
+pub(crate) const LEASE_TTL: Duration = Duration::from_secs(90);
 
 /// DAEMON-WIDE pause belief, readable without a lock.
 ///
@@ -158,6 +158,7 @@ pub fn guest_believed_paused() -> bool {
 }
 
 pub async fn wake_for_input() -> bool {
+    crate::auto_reset::note_input();
     if !PAUSE_BELIEF.load(Ordering::Relaxed) {
         return true;
     }
@@ -185,7 +186,7 @@ pub async fn wake_for_input() -> bool {
 /// driver can compute it from the one identifier it always has, without reading
 /// the station directory. Must stay in step with `LEASE_DIR` in
 /// scripts/lib/guest_wake.py, which is the other end of this protocol.
-fn lease_path(station: &str) -> String {
+pub(crate) fn lease_path(station: &str) -> String {
     std::env::var("SH_WAKE_LEASE")
         .ok()
         .filter(|s| !s.is_empty())
@@ -201,7 +202,7 @@ fn lease_path(station: &str) -> String {
 /// "no lease", because a lease that cannot be seen must never become a station
 /// that never pauses. An mtime in the FUTURE counts as live: clock skew between
 /// a driver and the daemon should hold the guest awake, not drop it.
-fn lease_live(path: &str, ttl: Duration) -> bool {
+pub(crate) fn lease_live(path: &str, ttl: Duration) -> bool {
     let Ok(md) = std::fs::metadata(path) else {
         return false;
     };
@@ -454,14 +455,16 @@ const TICK: Duration = Duration::from_secs(5);
 const HEAL_EVERY: u32 = 12; // re-assert a believed pause every 12 ticks = 60 s
 
 impl IdlePauser {
-    /// Returns None when disabled (grace 0). Spawns the reconciler task.
+    /// Returns None when disabled (grace 0) — unless auto-reset is on, which
+    /// needs the session bookkeeping: then grace 0 means TRACK-ONLY, a pauser
+    /// that counts sessions and never pauses. Spawns the reconciler task.
     pub fn new(
         freezer: Freezer,
         grace_secs: u64,
         warmup_secs: u64,
         station: &str,
     ) -> Option<Arc<IdlePauser>> {
-        if grace_secs == 0 {
+        if grace_secs == 0 && !crate::auto_reset::enabled() {
             return None;
         }
         let lease = lease_path(station);
@@ -475,14 +478,23 @@ impl IdlePauser {
                 eprintln!("[idle] wake-lease dir {} unusable ({e})", dir.display());
             }
         }
+        let mode = match grace_secs {
+            0 => "OFF (sessions tracked for auto-reset".to_string(),
+            g => format!("ON (grace {g}s, warmup {warmup_secs}s"),
+        };
         eprintln!(
-            "[streamhost] idle auto-pause ON (grace {grace_secs}s, warmup {warmup_secs}s; all platform transports; {}; wake lease {lease} ttl {}s)",
+            "[streamhost] idle auto-pause {mode}; all platform transports; {}; wake lease {lease} ttl {}s)",
             freezer.describe(),
             LEASE_TTL.as_secs()
         );
         let p = Arc::new(IdlePauser {
             freezer: Arc::new(freezer),
-            grace: Duration::from_secs(grace_secs),
+            // Track-only: a grace nothing ever reaches, so the reconciler never
+            // pauses (it still resumes a guest someone else stopped).
+            grace: match grace_secs {
+                0 => Duration::MAX,
+                g => Duration::from_secs(g),
+            },
             lease,
             started: Instant::now(),
             warmup: Duration::from_secs(warmup_secs),
@@ -533,6 +545,7 @@ impl IdlePauser {
     pub async fn session_started(&self) {
         let mut st = self.st.lock().await;
         st.sessions += 1;
+        crate::auto_reset::sessions_changed(st.sessions);
         let was_paused = st.paused;
         match self.exec(Cmd::Cont).await {
             Ok(()) => {
@@ -552,6 +565,7 @@ impl IdlePauser {
     pub async fn session_ended(&self) {
         let mut st = self.st.lock().await;
         st.sessions = st.sessions.saturating_sub(1);
+        crate::auto_reset::sessions_changed(st.sessions);
         if st.sessions == 0 {
             st.idle_since = Instant::now();
         }

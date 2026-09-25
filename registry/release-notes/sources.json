@@ -146,6 +146,26 @@
         }
       ],
       "excludes": []
+    },
+    {
+      "repo": "Wnt/EKA2L1",
+      "what": "EKA2L1 (the Symbian HLE emulator) patches behind the Nokia 9300 Communicator station: the Series 80 v2 window server, application buttons, the ROM's own keyboard tables, the museum kiosk frontend and control socket, Desk content, locale and status pane",
+      "branches": [
+        {
+          "name": "s80-integration",
+          "what": "every Series 80 branch of the 2026-09-24/25 wave merged into one proven head",
+          "pinnedBy": [
+            "registry/stations/nokia9300.json"
+          ],
+          "pinNote": "the station row names the branch and commit; scripts/build-guests/tiles/nokia9300.sh exports EKA2L1_FORK_BRANCH/EKA2L1_FORK_PIN for emulators/build-eka2l1.sh, which checks the pin out as a local branch"
+        }
+      ],
+      "excludes": [
+        {
+          "branch": "s80-epoc7-tables",
+          "why": "an early topic branch of the wave, merged into s80-integration; it never ran the station on its own"
+        }
+      ]
     }
   ],
   "_notInScope": {
