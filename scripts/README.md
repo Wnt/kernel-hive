@@ -182,12 +182,46 @@ build; a cold rebuild is a bug, not a cost.** What exists, and who must use it:
 | Every MAME binary (chroot or host-native) | the shared ccache at `/data/vms/sandbox/trixie-chroot/ccache` (32 G, `hash_dir=false`, `compiler_check=content`) | `build-guests/emulators/mame-ccache.sh`, sourced by every `build-mame-*.sh` and `build-mame-native.sh`; lifetime 91.7 % hits, one cold MAME core ever |
 | A hand-run `make` in any tree on labhost | the SAME cache, by default | `scripts/dev/box-ccache-conf.sh` installs root's primary ccache config (`cache_dir`, `hash_dir=false`, host `base_dir`), so a make without the builder's env can no longer fall back to `/root/.cache/ccache` and go cold — which is how the domainos wave paid three cold compiles (34 % hits) and tripped the load rule |
 | ES40, FS-UAE, VICE (autotools) | ccache via `CC="ccache gcc" CXX="ccache g++"` at configure time | in the builders; CT950 has no ccache, so an FS-UAE build there says "cold compile" out loud |
+| EKA2L1 (CMake + Ninja, nokia9300) | the MAME cache above, bound at `/ccache` inside the build root's nspawn | `build-guests/emulators/build-eka2l1.sh`: `CMAKE_{C,CXX}_COMPILER_LAUNCHER=ccache`, `CCACHE_BASEDIR=/build` (the tree is always mounted at `/build/{src,build}`), mold link |
 | The Rust daemon | one shared cargo target dir `/data/vms/streamhost/build/target` + mold | `streamhost/.cargo/config.toml`; every worktree reuses it |
 
-Rules of thumb: never pass `-j$(nproc)` on a shared box (`JOBS=6`; the load rule
-is 50); `REGENIE=1` only when flags changed; a new MAME **tag** is a genuine
-one-time cold core — pin it per station and let the cache warm once; check
-`scripts/dev/box-ccache-conf.sh --check` before blaming a slow build on the box.
+Rules of thumb: at least 8 parallel jobs (operator, 2026-09-24): `-j16` under
+`nice -n 19` on labhost, where nice is what keeps the fleet responsive, and
+`-j10` on CT950. This supersedes the old `JOBS=6`. Use mold where the link
+allows it, and incremental ninja/make in ONE build dir: never reconfigure
+mid-build to add a launcher. Pass `REGENIE=1` only when flags changed. A new
+MAME **tag** is a genuine one-time cold core: pin it per station and let the
+cache warm once. Check `scripts/dev/box-ccache-conf.sh --check` before blaming
+a slow build on the box.
+
+### EKA2L1 (Symbian, the nokia9300 station)
+
+`build-guests/emulators/build-eka2l1.sh [--rootfs] [--no-install]` builds the
+Symbian emulator from a PINNED commit on the `Wnt/EKA2L1` fork (GPL-3; branch
+`s80-epoc7-tables`, the Series 80 work that makes the real 9300 firmware paint).
+It runs as root on labhost (from CT950: `scripts/dev/labrun`). A cold build
+takes ~31 min on a loaded box (the first one: 1842 s at load 140-180), so run it
+detached. It installs nothing on the host:
+
+- **Two roots, one userland.** The compile runs under `systemd-nspawn` in a
+  debootstrap trixie **build root** holding upstream CI's Qt 6 / SDL2 / GTK 3 /
+  Pulse / ALSA -dev set. `--rootfs` also makes the station's **runtime root**:
+  minbase trixie, the binary's library closure, Xvfb and Mesa, the perq/medley
+  container shape. A gate checks that the runtime root has the build root's
+  exact version of every package whose library the binary links.
+- **The pin is the provenance.** The pin is checked out as a local branch named
+  after the fork branch, so the binary logs `EKA2L1 v0.0.1 (<branch>-<sha>)`.
+  Configure re-runs whenever the pin moves, and the gate checks that the
+  generated `version.h` and the binary name it. Moving to the integrated branch
+  means changing `EKA2L1_FORK_BRANCH` + `EKA2L1_FORK_PIN` (the env works for a
+  trial build).
+- **Offline configure and build.** `FETCHCONTENT_SOURCE_DIR_LIBUV` points the
+  vendored uvw at the libuv submodule, so only git and apt touch the network.
+  No `-DCI=ON`, so the api.github update check is compiled out.
+- **Output.** `$OUT/eka2l1/` holds `eka2l1_qt` plus `compat/ patch/ resources/
+  scripts/`, `eka2l1.provenance.txt` and `runtime-packages.txt`.
+  `$OUT/eka2l1.prev/` is the rollback. `$RUNROOT` is uid-shifted once to
+  `$UIDBASE`. Nothing is restarted.
 
 ## Top-level scripts
 
