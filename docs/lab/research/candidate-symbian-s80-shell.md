@@ -4,16 +4,27 @@ Sibling of [`candidate-symbian-s80.md`](candidate-symbian-s80.md) §H7. Holds
 the mechanism-by-mechanism detail, the wall evidence and the SDK-emulator
 trace facts that would otherwise bloat the main document. Facts from agents
 B1 and X1's full reports (2026-09-24), B4's and B6's full reports
-(2026-09-25: the third-app deadlock fix and Desk's main pane), and — as of
-2026-09-25 12:00 UTC — B7's, B5's and N7's own full written reports
-(`B7-rom-eiksrv.md`, `B5-hle-dos.md`, `N7-opera-home.md`), superseding the
-coordinator-relayed facts an earlier fold carried for them. As of
-2026-09-25 12:00 UTC, agent M1 is racing Messaging's "Problem starting
-Messaging center" wall and a new agent is racing Telephone's black first
-screen; the integration head is fork branch `s80-integration` @
-`e43db215e`, and station branch `nokia9300` @ `a5a7c0e0` is built from it,
-proven, and still dark-launched. Nothing here is disassembly or a ROM byte
-dump — mechanisms and traces only, per the repo's abandonware rules.
+(2026-09-25: the third-app deadlock fix and Desk's main pane), B7's, B5's
+and N7's own full written reports (`B7-rom-eiksrv.md`, `B5-hle-dos.md`,
+`N7-opera-home.md`), and — a sixth pass, 2026-09-25 through 17:0x UTC —
+T1's, M1's, I3's, S1's and S2's own full written reports
+(`T1-telephone.md`, `M1-messaging.md`, `I3-integration.md`,
+`S1-status-pane.md`, `S2-rom-mode-soak.md`). **Telephone's black first
+screen is FIXED** (agent T1) and **Messaging now reaches its folder list**
+(agent M1); both are merged, with I3's proof, onto `s80-integration` @
+`3f8b52782`. **The Series 80 status pane now also paints on the station's
+own HLE-Eikon path** (agent S1), pixel-identical to the ROM-EikSrv oracle
+below. **The ROM's own Eikon server (below) is confirmed NOT
+station-ready**: agent S2's soak found a deterministic host SIGSEGV in it
+that HLE-Eikon mode does not have. Station branch `nokia9300` has been
+re-pinned and re-baked five times as the integration head moved (agent
+D2); as of this fold it tracks `s80-integration` @ `3f8b52782`
+(T1 + M1 + I3), is proven end to end, and remains dark-launched. The
+operator has since live-tested the station and ruled it stays HIDDEN
+("still requires quite a lot of work") — see the main document's status
+header and agent U1's forensic/visitor audit for the current punch list.
+Nothing here is disassembly or a ROM byte dump — mechanisms and traces
+only, per the repo's abandonware rules.
 
 ## The mechanisms (agent B1, fork branch `s80-shell` @ `19308cbd0`)
 
@@ -130,12 +141,22 @@ work for the clock face itself.
    manager, the ROM's default) never finishes constructing its own UI even
    launched alone — a separate, per-app wall, not a process-count limit.
 2. **The empty Desk pane — RESOLVED.** See mechanism iii above.
-3. **The ROM's real Eikon server and Desk's status pane — PROVEN stable,
-   still opt-in.** See "The ROM's own Eikon server" below: Desk now paints
-   completely, with the ROM's own status pane, and the fixed binary has
-   run 22 minutes and 2,677 process spawns with no crash — but the path
-   stays opt-in, since mechanism ii (the HLE app-key switch) is what the
-   station ships.
+3. **The ROM's real Eikon server and Desk's status pane — proven stable in
+   isolated soak testing, but NOT station-safe: a follow-up soak found a
+   deterministic host SIGSEGV.** See "The ROM's own Eikon server" below:
+   Desk paints completely, with the ROM's own status pane, and B7's own
+   22-minute / 2,677-spawn soak found no crash — but agent S2, soaking the
+   merged `s80-integration` head, found a **deterministic crash**
+   (Calendar → Desk → Personal → Esc, 4 of 4 ROM-mode repros, 0 of 3 in
+   HLE mode) in `applist_server::pick_icon_pair_by_size`: a registry
+   icon's FBS bitmap loses a reference somewhere in Calendar's ROM-Eikon
+   launch path, and the next Desk icon lookup that touches the same
+   bitmap dereferences it after Desk frees it. The station stays on
+   mechanism ii (the HLE app-key switch) for this reason as well as the
+   PhoneServer −5 wall below; **the status pane no longer needs mechanism
+   i for its own sake**, since agent S1 painted it directly on mechanism
+   ii's own path (§below is now superseded for the pane specifically, kept
+   for the app-key/AppList mechanism detail).
 
 ## The ROM's own Eikon server: a full Desk, proven stable (agent B7, branch `s80-rom-eiksrv` @ `ecd09e3d7`, merged onto `s80-integration`)
 
@@ -260,13 +281,94 @@ use ROM-EikSrv at all) relies on.**
 
 **Telephone** (0x101f4d0b), run past its former ETel block with this
 branch's etelmm fixes, reaches a black first screen with one white
-horizontal line. Its threads' last IPC: `Telephone`'s own thread parked on
-a synchronous System Agent op 5 (NotifyEventCancel) — a notify/cancel loop
-on a System Agent state, 2,739 sends in one run; `phoneapp` parked on
-ecomserver op 7; `Main` parked (by design) on an async BackupServer op 32.
-The next probe is the exact System Agent state UID it cycles on — likely a
-completed "no network / no SIM" state. **Handed to a new racing agent as
-of 2026-09-25 12:00 UTC.**
+horizontal line **on the ROM-EikSrv chain (mechanism i')**. Its threads'
+last IPC: `Telephone`'s own thread parked on a synchronous System Agent
+op 5 (NotifyEventCancel) — a notify/cancel loop on a System Agent state,
+2,739 sends in one run; `phoneapp` parked on ecomserver op 7; `Main`
+parked (by design) on an async BackupServer op 32.
+
+## Telephone — FIXED on the HLE-Eikon path (agent T1, branch `s80-telephone` @ `ce52cb066`, one commit, merged onto `s80-integration` @ `3f8b52782` by agent I3)
+
+T1's own trace of the "op 5 loop" found it was not a loop at all: it is
+`Telephone`'s own SystemAgent NotifyEventCancel destructor pair, sent
+exactly twice as the app tears down and parks in `User::WaitForRequest`
+(IPC watch stack `euser.dll+0x2634` ← `simdata.dll+0x25d4` ←
+`cmgrlib.dll+0x33074` ← `dialer.dll+0x38fa`) — the black screen is
+Telephone quietly giving up, not an infinite loop. The trace names two
+causes, both specific to the **HLE-Eikon path**, since ROM-EikSrv's own
+Starter already starts SecurityServer:
+
+1. **No SecurityServer.** The ROM's Starter launches it before Eikon; the
+   HLE Eikon server and Telephone itself never do. Setting
+   `EKA2L1_PRESTART=Z:\System\Programs\SecurityServer.exe` as the
+   HLE-Eikon default (B5's ETel fixes already let it construct) gets
+   `Server SecurityServer created`.
+2. **No Phone Server.** With SecurityServer up, Telephone starts the ROM's
+   own `PhoneServer.exe`, which exits −5 with no modem (B5's open wall,
+   above) — and, unlike EikSrvUi, Telephone panics `PhoneServer start 1`
+   on that exit rather than continuing. Registering the same **"Phone
+   Server" stand-in** B7 uses on the ROM-EikSrv path (answering only the
+   sync op 300 Telephone sends it) lets Telephone finish constructing and
+   paint: title "Telephone directory", SIM card row dimmed, an empty
+   highlighted "No contacts" row, a search field with a cursor, and CBA
+   Open (dimmed) / Recent calls / Voice mailbox / Exit. `T1/proof/
+   desk-regression.png` confirms Desk is unaffected by the new prestart
+   default. Nothing was dialled or pressed; Telephone's own key/CBA
+   behaviour past this first screen is untested, and the status pane
+   under its title icon does not yet show the S1 pane fix in T1's own
+   frame (S1 landed after T1; I3's merged proof does show it).
+`EKA2L1_NO_HLE_PHONESERVER=1` leaves the name to the ROM server for anyone
+who wants to test against B5's wall directly.
+
+## Messaging — its folder list now opens (agent M1, branch `s80-messaging` @ `17ce651cb`, merged onto `s80-integration` @ `3f8b52782` by agent I3)
+
+The ROM's own MsvServer never runs; EKA2L1 answers "MsvServer" with an
+HLE server written for later platforms, whose opcode numbering happens to
+match the 7.0s ROM's own traffic (checked against X1's real-boot trace:
+op 39 set-as-observer, 49 SetReceiveEntryEvents, 25
+FillRegisteredMtmDllArray, 46/47 Get/SetMtmPath, 28 UseMtmGroup). The
+failures were in the *data* the HLE returned, found in trace order:
+
+1. **`EMsvGetChildIds` (op 0x2A) was unimplemented** — the client blocked
+   in a sync SendReceive. Implemented against a hex dump of a real request
+   and the SDK's `MSVIPC.H`/`MSVSTD.H` (packed `CMsvEntryFilter`, 36 B).
+2. **The folder cache listed the Deleted folder twice**, and a one-entry
+   range's index bug in `add_tons()` dropped its first entry — both fixed
+   in `visible_folder::get_children_by_parent`.
+3. **Invisible entries leaked into the list** (the hidden Deleted folder,
+   the hidden SMS service as a blank row) — both `GetChildren` calls now
+   honour `KMsvInvisibleFlag`.
+4. **The MTM registry misread caused "Problem starting Messaging
+   center" itself.** The HLE wrote the three capability words in
+   `CMtmDllInfo` only for epoc ≥ 8.0, but the SDK's own 7.0s
+   `MSVREG.H` layout already has them — so every packed record after the
+   first was misaligned, no UI MTM ever loaded, and `mcentre` left with
+   −1 (traced with a new `EKA2L1_TRAP_TRACE=1` diagnostic to
+   `MsgBrowser.dll+0x2867`). Fixed; the UI MTMs now load (Bium, Btu, Imum,
+   MmsUiMtm, PushMtmUi, …) and the app reaches its views.
+5. `owning_service(root)` returned without setting its out value
+   (GetEntry(root) reported service 0) — fixed; did not by itself remove
+   the storage note below.
+
+With all four data fixes in, Messaging opens to Inbox/Outbox/Drafts/Sent
+with icons and CBA Open folder / Write message / Exit, and Down moves the
+selection between folders correctly. **One wall remains, unowned:** a
+"Cannot find message storage. Try restoring from a backup." note appears
+once at start on every fresh data dir. No IPC call returns an error in
+that window (every HLE reply is 0 except `GetMtmPath` op 46, which
+correctly returns −5 before the client's own drive/cache scan via op 47
+succeeds), so the cause is data the client dislikes, not a failed call.
+Ruled out by experiment: moving the mail folder from
+`C:\System\Mail\RAE-6\` to `C:\System\Mail\`, pre-creating the root
+store `00001000` (a second launch still shows the note), and the
+owning-service fix above. Best remaining leads: the real device's message
+store root carries visible services `0x100000`/`0x100001…` (X1's
+`a-boot.txt` lines 28898–28923) that the HLE store never creates; and
+X1's own trace shows op 37 (`GetMessageDirectory`) always carrying
+`arg1 = 3` on the real device, which the HLE may not honour. M1 added
+`Service.Track:info` log-filter output ("HLE X completed function N with
+E") for whoever races this next — the golden's `*:error` filter hides it
+by default.
 
 **Also open on this chain:** the cover-UI window server (`cuiws.exe`,
 Starter's `CuiStarter` item, never reached while EikSrv loops in the
@@ -316,6 +418,211 @@ device use case on its own — it looks up Desk's own Note window group and
 closes itself when the lookup correctly returns none, then hangs in
 SkinServer op 7 during its own shutdown; unconfirmed whether that shutdown
 hang shares a cause with anything else here.
+
+## The Series 80 status pane on the station's own path (agent S1, branch `s80-status-pane` @ `ba50d9420`, two commits, merged onto `s80-integration`)
+
+The default station mode is HLE-Eikon (mechanism ii). Before this branch
+its status pane was simply never drawn; after it, the pane paints the way
+the ROM Eikon server paints it, without needing mechanism i/i' at all:
+
+- A new `s80pane` module (`services/window/s80pane.{h,cpp}`) keeps a map
+  from process to the last `SetStatusPaneLayout` (op 7) layout id an app
+  sent it — the same IPC a ROM Eikon server would answer — and finds the
+  frontmost window group whose owner sent one. Two layout ids are seen in
+  practice: `0xD118006` (wide, Desk/Telephone) and `0xD118004` (narrow,
+  Documents/Web); any other id paints nothing, the old behaviour.
+- It loads the skin bitmaps (`skinappview.mbm`, `skinstatuspane.mbm`)
+  from Z: into driver textures, turning the indicators' magenta key
+  colour into alpha, and draws the background plus the network-
+  unavailable and battery indicators at the ROM's own offsets.
+- `screen.cpp` subtracts the pane's rectangle from the region older
+  windows are allowed to draw into during the front-to-back visibility
+  walk — this removes app bleed-through at its cause, not just its
+  symptom — and paints the pane just before the anchor group's own
+  windows on the back-to-front draw walk.
+- **The clock** is a CLOCKA `RDigitalClock` at (16,38), 60x26, drawn with
+  the 9300 GDR's System bold, metric index 3 (the only one of four raced
+  candidates — 1, 8, 13, 3 — that gives 0 px difference from the ROM
+  oracle; A2's earlier CLOCKA anim trace supplied the format sections).
+  It forces a full redraw on every new minute. Since `wserv` owns no
+  fonts of its own, a new `fbs::live_fonts()` accessor lets it borrow the
+  System bold face the running apps already hold.
+- Time shown = universal time + the guest locale's `universal_time_offset_`,
+  plus one hour when the home zone's DST bit is set — the same rule
+  `TLocale::UniversalTimeOffset` gives the ROM server (see L1's locale fix
+  below for what actually sets that offset).
+
+Compared pixel-for-pixel against ROM-EikSrv's own frames in the same
+minute: Documents' narrow strip, Desk's lower-left pane including the
+clock, and the same pane one minute later with no input — **0 px differ
+in every comparison**. The change needs no data-dir file, no env var and
+no guest binary, and does nothing on ROM-EikSrv or on other devices,
+since only the HLE EikAppUiServer records layouts. Op 6
+(SetStatusPaneFlags) is accepted and still does nothing, so apps cannot
+hide the pane. Remaining gap: the clock format ignores `TLocale`'s
+12/24-hour bit (it always draws in a fixed 24 h face; with the 24 h
+default from L1's fix below this does not currently show).
+
+## ROM-shell mode's blocking crash (agent S2, soak on `s80-integration` @ `3f8b52782`, no code changes)
+
+Everything else about ROM-shell mode (mechanism i/i') is better than
+HLE-Eikon: the status pane draws (now matched by S1's HLE-path fix
+above), nothing bleeds through, every app key works, a 30-minute
+soak (samples every 60 s cycling all seven app keys) showed no crash, CPU
+stayed at 2.6 % of a core, RSS was flat, and reset (SIGKILL + `cp -a` the
+golden) took 6 s. **But** ROM mode has a deterministic host crash HLE
+mode does not: from a fresh data dir, `F11` (Calendar) → `F5` (Desk) ->
+`F1` (Open → Personal) → `Escape` crashes the emulator with SIGSEGV
+(rc=139) every time (4 of 4 ROM-mode runs, including the 30-minute soak's
+tail and 8-minute app/Exit churn runs; the same or longer sequences
+survive every time in HLE mode, 3 of 3). Without Calendar in the mix,
+there is no crash in either mode.
+
+gdb (Release binary) puts the crash in
+`applist_server::pick_icon_pair_by_size`, called from `get_app_icon`,
+called from a `CallSVC`-driven `session_send_sync_eka1`. The IPC log
+shows the last request before the crash is Desk asking AppList for
+Clock's icon (0x10000080) at 20x25 — Esc repaints top-level Desk, whose
+icons include Clock — right after Desk sent about 20 FBS "close handle"
+messages tearing down the Personal folder's icons. Reading: a registry
+icon's `fbsbitmap*` in `apa_app_icon` is left dangling — something in
+Calendar's ROM-Eikon launch path leaves Clock's applist-owned icon
+bitmap with one FBS reference too few, and when Desk later closes its own
+folder handles the bitmap is freed out from under the next lookup. Not
+proven to a one-line fix (candidates: FBS refcounting of applist-created
+icons on `obj_table_.add` vs `fbs_close`, or ecomserver/Calendar-side
+handle traffic); a next agent can log `fbsbitmap` refcounts for the icon
+ids, or make `read_icon_data_aif` take a permanent reference. This is our
+emulator code (HLE applist + FBS), **not** a ROM defect, so it is a fork
+wall to clear, not evidence against ROM-shell mode's design — but it is
+why the station keeps shipping mechanism ii until it is fixed.
+
+Also confirmed by this soak, in both modes: F4 (Exit) does not end any
+app — apps stay in `ekactl list` and no `apprun` is respawned — and after
+an app is exited the Desk left pane can go unpainted until the next F5
+(worse in HLE mode, with no strip at all, than in ROM mode, with a stale
+icon remnant); neither is specific to ROM-shell mode.
+
+## Typing at visitor speed: two independent causes, both fixed (agent K3)
+
+U1's visitor audit found typing corrupted at ordinary visitor speed
+(60-170 ms/key): Shift leaked onto following letters and doubled letters
+swapped order. K3 found **two independent causes**, one in the fork and
+one in the station daemon — neither in the K1 keymap translator, which
+was checked and cleared (it ships each host edge's Shift/Chr/key entries
+as one ordered batch on the frontend thread, so nothing interleaves
+there).
+
+1. **Fork: the client event FIFO silently dropped characters when full.**
+   `event_fifo::do_purge()` erased every other `EEventKey` event (the
+   characters themselves) once the 32-entry queue filled, keeping their
+   up/down pairs and skipping the event right after each erase — the old
+   `assert(false)` / "Unhandled purge of event type 2/3" path. Fixed on
+   branch `s80-typing` @ `35ed38e42` (base `s80-integration` @
+   `d26b08ff1`): the purge now frees one slot at a time, cheapest first
+   (null, pointer move/drag, pointer enter/exit, a focus lost/gained
+   pair, a repeated switch-on), and never purges a key or pointer
+   press/release; the queue grows to a 4096-entry hard cap before it
+   would ever drop a keystroke. A second, smaller bug in the same area:
+   Qt6/xcb flagged a same-X-timestamp key release as auto-repeat when a
+   press of the same key was already queued behind it, silently merging
+   doubled letters (`aa` → `a`) at 0 ms pacing; fixed by treating a
+   release under 150 ms after its own press, paired with that press, as a
+   real keystroke (a genuine host repeat, which only starts after the X
+   repeat delay, is still ignored — the station also runs `xset r off`).
+2. **Station daemon: the x11test pacer reorders edges across keys
+   whenever hold/gap is nonzero.** `x11_keys::Pacer` orders edges within
+   one X keycode only ("edges of OTHER fields flow freely past a waiting
+   one" — its own module doc and test,
+   `modifier_press_flows_past_another_keys_dwell`, both confirm this by
+   design). With any nonzero dwell, a released Shift can sit in its dwell
+   while the next letter's press passes it and lands with Shift still
+   down in X — that is the Shift leak; a doubled letter's second press
+   can similarly pass its own predecessor's release — that is the
+   transposition. This rule is correct for the MAME/SDL 50 Hz guests it
+   was written for, and wrong for an event-queue emulator whose text
+   depends on X's live modifier state. **Fix is a station config change,
+   not code:** `SH_KEY_MIN_HOLD_MS=0` and `SH_KEY_MIN_GAP_MS=0` in
+   `streamhost/stations/nokia9300/station.env.fixture` (`0` is accepted
+   by `config/backends.rs`'s `key_floor`); with a zero dwell, `drain()`
+   never blocks and edges leave in strict arrival order. The fleet
+   default of 40/40 still corrupts text on this station; only 0/0 is
+   safe.
+
+**K1's and K2's "150 ms between key events" pacing rule is obsolete** for
+a binary built from `s80-typing`, and actively harmful at any nonzero
+dwell on the daemon path. Through X directly (xdotool/XTEST in order),
+0 ms pacing is safe: a 271-character burst arrived exact with zero
+purges. K3's `sim-pacer.py` replays the daemon's own `Pacer::drain` logic
+against a live display for anyone who wants to re-verify a pacing figure
+without a full station rebuild.
+
+## Locale: home city, date format, clock format (agent L1, branch `s80-locale` @ `27bc9f952`, one commit, merged onto `s80-integration`)
+
+R3's fidelity survey found the Desk header drawn month-first with no
+device-matching date order, the pane clock 24-hour with no AM/PM option,
+and Clock's home city stuck on the ROM's own "New York, NY" default no
+matter what a visitor picks in Change city. L1 traced this to two walls.
+
+**Wall 1 — SVC 0xC00049 was unimplemented, and it is `CTimer::At`, not a
+generic locale setter.** The pre-fix log reads `Unimplement system call:
+0xC00049! thread Clock ... (euser.dll+0xA0A8 ord 107+0x2C)`; the S80 SDK's
+own `EUSER.lib` import-library names give ordinal 107 as
+`CTimer::At(const TTime&)` (106 is `User::At`, 108 `RTimer::At` — the
+fork's other exec tables already map 0xC00049 correctly on 8.0/8.1a, only
+the 7.0s table was missing it). Clock's world-server path arms this timer
+before it ever saves the chosen city, so without it Change city silently
+never commits. With it registered, the full chain runs: `TLocale::Set`
+with the new zone and DST bit → `BaflUtils::PersistLocale` writes
+`C:\System\Data\LOCALE.D00` (280 B) → the world server writes
+`C:\System\Data\Wldsvr.dat` (177 B) and `nitzlookup.db` (99,956 B) → a
+"time will change by N hours" confirmation. On EKA1 the kernel keeps
+*home* time, and `TLocale::Set` on Series 80 now moves it to the new
+zone's effective offset (zone + 1 h when the DST bit and zone flag both
+say daylight saving applies) — this reaches `User::HomeTime`, every
+`RTimer::At` and the S1 pane clock above, all through the same rule.
+
+**Wall 2 — nothing loaded the persisted locale at boot, and there was no
+Series 80 default.** The 7.0s persistence is a raw `TLocale` struct in
+`C:\System\Data\LOCALE.D<nn>` (via BAFL, not SharedData — `bafl.dll` in
+the ROM carries the exact path string). The ROM writes `LOCALE.D00`
+itself after Change city, but nothing read it back: the emulator's
+`get_locale_info()` hard-coded `date_format_america`,
+`time_format_twenty_four_hours` and a fixed -14400 s offset for every
+platform. Fixed: on EKA1 Series 80 only,
+`init_services_post_bootup` now loads `LOCALE.D<language>` then
+`LOCALE.D00` into `LOCALE_DATA_KEY` and the kernel's home-time offset, the
+way `BaflUtils::InitialiseLocale` would — proven by patching a
+LOCALE.D00 to American format and watching the Desk header flip back to
+month-first (`frames/proof-locale-file-loaded-american-variant.png`).
+When no file exists, a new `get_s80_default_locale()` gives Finland
+(country 358), day-first dates, `/`/`:` separators, Monday-first weeks,
+EU summer-time rules and **24-hour clock** (the SDK's own reference
+LOCALE.D00 actually says 12-hour; 24 h was chosen as the briefed Finnish
+default — a golden file can still ship 12 h if that is later preferred).
+
+**Golden deliverable** (data, not committed — `L1/golden-helsinki/` in
+the job directory, for `EKA2L1/data/drives/c/System/Data/`):
+`Wldsvr.dat` (177 B, home city Helsinki/Finland +120 min — independently
+reproduced byte-identical on a second run), `LOCALE.D00` (280 B: country
+358, +7200, EU summer time on, day-first, 24 h) and `nitzlookup.db`
+(99,956 B, written alongside). **Without `Wldsvr.dat` specifically, the
+new default already gives the right date order, 24 h and Helsinki time
+until the first Telephone or Clock start — the ROM's New York home city
+then wins again once the world server runs.** After the fix, a Desk
+frame right after a Telephone round reads "Friday 25th September 2026"
+at Helsinki summer time (UTC+3); before the fix, the same sequence read
+"Friday September 25th 2026" at New York time.
+
+**Left open:** the S1 pane clock's digits ignore `TLocale`'s 12/24-hour
+bit (fixed English 24 h face regardless of the setting; does not show
+under the new 24 h default); Control panel → Regional settings' Date tab
+was not reached (joystick moves the value, Tab/Ctrl+Tab open the choice
+list) and its Currency tab draws two rows below the dialog (a
+window-server issue); Desk's F5 after opening Clock from Desk brings
+Clock back to front instead of Desk (B1/K1's app-switch logic, "app is
+running, bringing group 85" in the log); both world-clock faces still
+show offset 0 (A2's known item).
 
 ## Commits on `fork/s80-shell` (all small, cherry-pickable)
 

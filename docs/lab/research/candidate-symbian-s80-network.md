@@ -31,11 +31,21 @@ already documented below. Both branches, plus every other network-relevant
 fix, are merged onto fork branch `s80-integration` @ `e43db215e` (agent I2),
 where Opera fetches and renders host pages exactly as described here — this
 document's proof is not stranded on a side branch. **The station itself
-(`nokia9300` @ `a5a7c0e0`, agent D2) does not yet carry the `hosts:` map**:
-it has no network plane at all (it runs `--private-network`), so there is
-nothing to map yet; the map lands with the N-series' proven network plane
-once the station gets one, and per rule 15 its tap script stays uncommitted
-until then.
+does not yet carry the `hosts:` map**: it still has no network plane at
+all (it runs `--private-network`), so there is nothing to map yet, across
+every one of agent D2's five re-pins/re-bakes through 2026-09-25 (the
+station branch now tracks `s80-integration` @ `3f8b52782`, with T1's
+Telephone fix and M1's Messaging fix merged; see the main and shell
+documents). The map lands with the N-series' proven network plane once
+the station gets one, and per rule 15 its tap script stays uncommitted
+until then. **Confirmed against the live, hidden station by agent U1's
+visitor audit (2026-09-25):** Opera's cached home page is the only thing
+that works. Any other address gives "System: Unspecified error", and the
+home page's own "Nokia.com mobile" link cannot be reached with the
+keyboard (arrow keys and Enter do nothing on it) — both are the expected
+shape of having no network plane and no `hosts:` map yet, not new
+network-stack bugs; nothing in this document's own findings (N1–N7)
+changes as a result.
 
 ## The 7.0s ESock opcode table (agent N1, branch `s80-esock-70s`)
 
@@ -411,8 +421,9 @@ network fix with it.
    names no document now becomes a run launch on Series 80, so Opera loads
    its built-in Nokia home page (`Z:\Documents\WWW\Home.html`) the way the
    device does (agent N7, branch `s80-opera-home`). File manager, which
-   shared the same launch-command bug, now paints too. Notes and Sync are
-   still under investigation. Full detail in
+   shared the same launch-command bug, now paints too. Write note and Sync
+   reach their first screen since the 7.0s ViewServer ActivateView layout fix
+   (N7); Presentations on the 9300 is still open. Full detail in
    [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md).
 2. **`RThread::ExitCategory()`** (exec 0xC0003F) is still unimplemented;
    faults a caller that asks for it. Not hit by Opera, PuTTY or the CommDB
