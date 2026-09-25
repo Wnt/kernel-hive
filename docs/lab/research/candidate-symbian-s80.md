@@ -16,10 +16,34 @@ coverage further**: Desk is now complete, Opera loads its own home page,
 File manager and Contacts both paint, Clock's world-clock faces tick, three
 (and four) apps run and switch together by app key, and the ROM's own
 status pane draws when the ROM's Eikon server is used — detail in
-§Application coverage. **`nokia9300` @
-`49543e47`, pushed, not merged, dark-launched (hidden) at `/os/nokia9300`**
+§Application coverage. **A fifth pass integrated and baked a station.**
+Agent I2 found and fixed the regression that had left the merged
+`s80-integration` head hung at process start (a patch ported from another
+fork's Symbian 6.x target that made a bus-device probe return a real
+channel handle; now gated to 6.x only), merged every late branch
+(`s80-third-app`, `s80-hle-dos`, `s80-desk-content`, `s80-rom-eiksrv`,
+`s80-clock-anim`, `s80-keymap`, `s80-opera-home`, `s80-icon-masks`) onto
+fork branch **`s80-integration` @ `e43db215e`**, and proved it frame by
+frame: Desk, Documents, Web (Opera's home page), File manager, Contacts,
+Clock (ticking), three and four apps switching by app key, and Sync's
+first screen all paint; Messaging's dialog body now paints too but reads
+"Problem starting Messaging center" (the ROM's MsvServer start, a new,
+named, open wall being raced by agent M1 as of 2026-09-25 12:00 UTC).
+Agent D2 then baked and proved station branch **`nokia9300` @ `a5a7c0e0`**
+on that head end to end through Chrome → SPA → daemon, with a rebuilt
+golden (the four Series 80 UI TTFs, the museum's Helsinki timezone and UK
+keyboard layout, machine UID, K1's keymap baked into the container's Xvfb
+keymap), a working reset (relaunch + restore, 6 s to Desk) and a live
+2.8 s stream start. **`nokia9300` @
+`a5a7c0e0`, pushed, not merged, dark-launched (hidden) at `/os/nokia9300`**
 on the box; the operator has ruled it stays hidden until Desk is usable and
-several or all built-in apps work. Media is staged on labhost under
+several or all built-in apps work, and the listing decision itself is
+still pending as of 2026-09-25 12:00 UTC. Two more usage-limit pauses and a
+host reboot hit this pass; resuming each stalled agent by message, with
+its context and worktree intact, recovered the work each time, the same
+methodology the third pass used. Telephone's black first screen (parked on
+a System Agent op 5 notify/cancel loop) has been handed to a new racing
+agent. Media is staged on labhost under
 `/data/assets-staging/symbian-s80/` (hashes below; the bits themselves are
 museum-private and never enter the repo). The question this document
 answers:
@@ -505,41 +529,68 @@ Everything below is on labhost, hash-verified; nothing is committed.
   `CaptureLongKey` (Menu held = task list) stays unhandled; it belongs with
   the ROM EikSrv thread once that boots, next.
 - **The ROM's own Eikon server now paints a complete Desk, with the ROM's
-  own status pane — but the emulator cannot stay up on this path yet**
-  (agent B7, branch `s80-rom-eiksrv`). `EKA2L1_ROM_EIKSRV=1` already skipped
-  the HLE app-key handler, Notifier and ViewServer straight to the ROM's own
-  `eiksrvs.exe`; B7 added a pre-start mechanism for ROM executables at boot
+  own status pane, and PROVEN stable for the length of a station session**
+  (agent B7, branch `s80-rom-eiksrv` @ `ecd09e3d7`, merged onto
+  `s80-integration`). `EKA2L1_ROM_EIKSRV=1` already skipped the HLE app-key
+  handler, Notifier and ViewServer straight to the ROM's own `eiksrvs.exe`;
+  B7 added a pre-start mechanism for ROM executables at boot
   (`EKA2L1_PRESTART`, defaulting to SecurityServer), an **EKA1 duplicate
   server-name check** (closing the exact gap Y2's sweep had flagged as
   still open, §Prior work found — a native EikSrv can no longer silently
-  coexist with the HLE stub instead of failing loudly), and a diagnostic
-  server stub. With those in, **Desk paints completely, with the ROM-drawn
-  status pane** (skin, network and battery indicators), and the application
-  keys are handled by the ROM's own Eikon server through the AppList
-  server — op 5 with the app's UID, then op 7 — exactly as X1's independent
-  SDK-emulator trace shows the real platform doing it. A window-shape fix
-  (a shaped window's visible region had been the shape alone) made the
-  narrow status strip inside application views paint too. **Not
-  station-safe yet**: with no value from Starter for the system state, the
-  ROM's own alarm server loops and crashes the emulator after about
-  2.5 minutes — the wall to clear before this path can replace the HLE
-  app-key switch as what a station ships.
+  coexist with the HLE stub instead of failing loudly), a window-shape fix
+  (a shaped window's visible region had been the shape alone, not the shape
+  intersected with the window extent — this also fixes the narrow status
+  strip inside application views), and a **stand-in for the system-state
+  value Starter would normally set** (`tools/s80-sysstate`, prestarted by
+  default): before this, the ROM's own alarm server found the state value
+  missing and looped restarting itself about twice a second, which crashed
+  the host after 255 spawned processes because EKA2L1's multiple memory
+  model never freed a dead process's address space, capping live ASIDs at
+  255 — B7 fixed that leak too (address spaces are released when a process
+  dies, a general fix for any long session that starts many processes).
+  With the state value present, the restart loop drops to **zero**, and the
+  fixed binary has run **22 minutes and 2,677 process spawns** without a
+  crash (the prior binary SIGSEGVed at ~2.5 minutes). **With those in, Desk
+  paints completely, with the ROM-drawn status pane** (skin, network and
+  battery indicators), and the application keys are handled by the ROM's
+  own Eikon server through the AppList server — op 5 with the app's UID,
+  then op 7 — exactly as X1's independent SDK-emulator trace shows the real
+  platform doing it; Documents opens with the title "Document" (not the HLE
+  launch's "cword") and the full narrow status strip. PhoneServer is
+  stubbed (`EKA2L1_STUB_SERVERS="Phone Server"`, answering only the two ops
+  EikSrvUi actually sends it) until B5's fix below lands on this path.
+  **ROM-shell mode stays opt-in and unused in the proofs and the station**
+  (the HLE app-key switch, mechanism ii, is what `nokia9300` ships); it is
+  the wall to clear before this path can replace it.
 - **The ROM's own boot chain now runs through Starter, SysAp and the phone
-  server** (agent B5, branch `s80-hle-dos`). The ROM's import tables show
-  Starter, SysAp and `Startup.app` all reaching the DOS server for the
-  CMT-over-ISA phone link, which EKA2L1 has no model for (Nokia's own SDK
-  swaps in an `ExampleDSY` for the same reason); B5 built an **HLE DOS
-  server** so this chain can run at all, and it now goes **Starter → shared
+  server, and its wall now has a name.** (Agent B5, branch `s80-hle-dos`
+  @ `8cbd1b772`, model Claude Fable 5.1, merged onto `s80-integration`.)
+  The ROM's import tables show Starter, SysAp and `Startup.app` all
+  reaching the DOS server for the CMT-over-ISA phone link, which EKA2L1 has
+  no model for (Nokia's own SDK swaps in an `ExampleDSY` for the same
+  reason); the protocol is documented in Nokia's own EPL-released
+  `dosservices`/`dos_extension_*` sources, cross-checked against a live IPC
+  trace of the SDK emulator's own cold boot. B5 built an **HLE DOS server**
+  answering that exact contract, so this chain now runs **Starter → shared
   data → the HLE DOS server → splash → SecurityServer (unblocked once ETel
-  op 14 is answered) → the Eikon server → the phone server** — further than
-  either B7's shortcut above (which starts from `eiksrvs` directly) or this
-  chain's own earlier stall (dropped for lack of a DOS server at all). The
-  phone server now answers requests: Telephone passes its own phone request
-  through it, though Telephone does not paint yet (its next wall is the
-  ETel opcode table, agent A3, §Application coverage). The chain currently
-  exits by its own decision, right after a round trip through the
-  cover-display notifier; the suspect is the missing cover-UI window server
-  (Starter's `CuiStarter` item) — in flight.
+  ops 11/14 are answered) → the Eikon server → the phone server** — further
+  than either B7's shortcut above (which starts from `eiksrvs` directly) or
+  this chain's own earlier stall (dropped for lack of a DOS server at all,
+  or for the ROM's own `DosServer.exe` dying when its plug-in opens an
+  unmodelled ISA channel). The ROM's own splash screen paints through this
+  real chain. **The wall now has a name and a location, but not yet a
+  fix**: the ROM's `PhoneServer.exe` always exits with code −5, decided
+  inside the ROM's own 7.0s `customapi.dll` right after a successful
+  `CUSTOMAPI` ETel extension open, from state the emulator does not see —
+  not an HLE refusal (an A/B that refuses the open instead gets a
+  different, later exit code, proving PhoneServer does honour the
+  emulator's answers up to that point). B7's PhoneServer stub above is the
+  station's stand-in meanwhile. **Telephone**, run past its own former ETel
+  block, reaches a black first screen with one white line, parked in a
+  System Agent op 5 (NotifyEventCancel) notify/cancel loop — handed to a
+  new racing agent as of 2026-09-25 12:00 UTC. Also open: the cover-UI
+  window server (`cuiws.exe`, Starter's `CuiStarter` item) needs a
+  `CuiLcd` LDD EKA2L1 has no model for yet.
 - **Two walls stood here; both are now resolved, and a third bug the same
   testing turned up is fixed too.** A third app launched alongside Desk and
   one other used to never finish constructing its UI — it connected to
@@ -572,10 +623,17 @@ Everything below is on labhost, hash-verified; nothing is committed.
   command buttons Open/Write note/Note list, complete on a fresh C: drive.
   Both are detailed in the shell document. What is still missing from the
   shell plane: `CaptureLongKey` (Menu held = task list) stays unhandled,
-  B7's ROM-EikSrv Desk is not station-safe yet (above), and Write note →
-  Note panics `USER 30` in Desk's own CONE-path handling. Opera's home page
-  now loads at startup (§H3, agent N7); File manager, which shared the same
-  cause, now paints too; Notes and Sync remain open.
+  B7's ROM-EikSrv Desk stays opt-in and unused by the station (above), and
+  Write note → Note panics `USER 30` in Desk's own CONE-path handling.
+  Opera's home page now loads at startup (§H3, agent N7); File manager,
+  which shared the same cause, now paints too; Sync's first screen now
+  paints too, with a kernel fix for a released IPC message a ROM server
+  still completed (agent N7); Notes remains open. Messaging's dialog body
+  now paints (agent A1's redraw-order fix, below) but its ROM MsvServer
+  start fails with "Problem starting Messaging center" — a new, named wall,
+  being raced by agent M1 as of 2026-09-25 12:00 UTC. On the integration
+  head, Desk's lower-left status pane (below the Desk icon) is still
+  unpainted outside the ROM-EikSrv path.
 - **The Documents/Sheet/Web idle-CPU loop is fixed, and independently
   reconfirmed three times over.** The "pending native-server receive"
   theory was ruled out (agent Y2, §Prior work found). The actual cause, per
@@ -1169,26 +1227,32 @@ world-clock faces paint and tick, and the status-pane clock draws when its
 window is shown (agent A2, branch `s80-clock-anim`); three, and then four,
 apps run and switch together by application key (agent B4, §H7); and the
 ROM's own status pane (skin, network and battery indicators) draws when the
-station runs the ROM's own Eikon server, though that path is not yet
-station-safe (agent B7, §H7). **Contacts/Telephone, resolved (agent A3,
+station runs the ROM's own Eikon server, which is now proven stable for a
+full session, though that path stays opt-in and unused by the station
+(agent B7, §H7). **Contacts/Telephone, resolved (agent A3,
 branch `s80-randsvr` @ `736a3810d`):** both had panicked "Randsvr connect"
 because the ROM's own random server registers itself as `RANDSVR` while
 clients ask for `randsvr`, and the EKA1 session lookup compared names
 exactly — the only case-only server-name mismatch found across 4,879 scanned
 log files. A case-insensitive fallback lookup fixes it (EKA2 is unchanged);
 Contacts now opens to "Contacts directory" on both the 9300 and 9300i.
-Telephone gets past the same wall but then reaches its own, later wall: an
-unimplemented ETel phone opcode (3595). **Walls still open, by cause:** skin
-bitmaps loading as 0×0 blacken dialog bodies in Backup and Modem — though
-A1's icon-mask work below found the 0×0 skin bitmaps are *genuine* ROM
-content in general, so this is no longer assumed to be the cause for every
-black dialog (Messaging's, at least, is a different, identified bug, §Fidelity
-below); Sync panics with a stray signal after a ViewServer op, a regression
-from an earlier pass, still under investigation alongside Notes (agent N7);
-Music player is stuck on its title screen pending an AppList op (§H7); Voice
-rec. fails on missing `SharedDataServer` keys. **Machine UID:** the guest
-reads `EMachineUid` from its own `hal.dll`: `0x101F8DDB` on the 9300 and
-9500, `0x1020E048` on the 9300i.
+Telephone gets past the same wall but then reaches its own, later wall
+(now with the phone server answering it, agent B5): a black first screen
+parked in a System Agent notify/cancel loop, handed to a new racing agent
+as of 2026-09-25 12:00 UTC. **Walls still open, by cause:** Messaging's
+dialog body now paints (A1's redraw-order fix) but its ROM MsvServer fails
+to start — "Problem starting Messaging center", a new named wall being
+raced by agent M1 as of 2026-09-25 12:00 UTC; Backup and Modem's dialog
+bodies are fixed too, by the same redraw-order fix (§Fidelity below) — the
+0×0-skin-bitmap theory that used to be blamed for them is now known to be
+wrong in general, since 0×0 is genuine ROM content; Sync panics with a
+stray signal after a ViewServer op — RESOLVED (agent N7, a kernel fix for
+a released IPC message a ROM server still completed; §H3, §H7) — Notes
+remains open; Music player is stuck on its title screen pending an AppList
+op (§H7); Voice rec. fails on missing `SharedDataServer` keys. **Machine
+UID:** the guest reads `EMachineUid` from its own `hal.dll`: `0x101F8DDB`
+on the 9300 and 9500 (baked into the station's golden as `machine-uid
+270503387`), `0x1020E048` on the 9300i.
 
 **The Series 80 UI's own TrueType fonts are missing from both ROM dumps
 (agent C1; operator decision).** Both firmware dumps' `Z:\System\Fonts`
@@ -1201,18 +1265,57 @@ files, confirmed pixel-identical to the real device's CBA text. **The
 operator ruled these go into the station's golden data dir on labhost,
 never into the repo** — the same rule as the ROM and SDK media above.
 
-**An integration branch merges the wave (agent I1, branch
-`s80-integration`).** I1 merged every `s80-*` branch this wave pushed to
-the fork, but the merged head hung at process start. Agent I2 found the
-cause within the hour: a patch ported from another fork's Symbian 6.x
-target made a bus-device probe return a real channel handle, which sent
-every 7.0s app into an unserved executive — fixed by gating that patch to
-the target it was ported from. Late merges, the keymap merge (K1's
-translator wins over the stopgap bindings) and a fresh proof-frame pass are
-in flight as of 2026-09-25 07:00 UTC. **Lesson for the wave's methodology:**
-gate any behaviour ported from another fork to the platform version it was
-written for, and prove a merged head by frame before pinning it as the
-integration branch — a merge that builds green is not proof it runs.
+**An integration branch merges the wave, and now runs (agents I1, I2).** I1
+merged every `s80-*` branch this wave pushed to the fork, but the merged
+head hung at process start. Agent I2 (Claude Opus 5.5) found the cause: a
+patch ported from another fork's Symbian 6.x target made a bus-device
+probe (SVC 0x8000B7) return a real channel handle instead of the 7.0s
+probe's plain KErrNone, so every 7.0s app's first `VideoDriver` open took
+a branch into an unserved executor (0x42) and parked its Main thread
+before its first frame — fixed by gating that behaviour to epoc ≤ 6, the
+platform it was ported from. I2 then merged the remaining late branches
+(the keymap decision: K1's ROM-table translator wins over the interim
+stopgap bindings — see §H4) onto fork branch **`s80-integration` @
+`e43db215e`**, and proved the merged head by frame: Desk, Documents
+(typed text), Web (Opera's home page and address bar), File manager,
+Contacts, Clock (both world-clock faces ticking), three and four apps
+switching live by application key, and Sync's first screen all paint;
+Messaging's dialog body paints too but its ROM MsvServer fails to start
+("Problem starting Messaging center" — a new, named, open wall). Desk's
+lower-left status pane stays unpainted outside the ROM-EikSrv path.
+**Lesson for the wave's methodology:** gate any behaviour ported from
+another fork to the platform version it was written for, and prove a
+merged head by frame before pinning it as the integration branch — a merge
+that builds green is not proof it runs.
+
+**The station is baked and proven on the integration head, still hidden
+(agent D2, Opus 5.5).** Branch **`nokia9300` @ `a5a7c0e0`** builds the
+binary from `s80-integration` @ `e43db215e` (pin: `EKA2L1_FORK_BRANCH`/
+`EKA2L1_FORK_PIN`) and rebuilds the golden ("golden v2": I2's proof data
+dir plus the four Series 80 UI TTFs, `machine-uid 0x101F8DDB`, UK keyboard
+layout, `enable-upnp: false`, and B6's `apply-desk-state.sh` applied and
+checked) — 3,256 files, staged under
+`/data/assets-staging/symbian-s80/nokia9300-golden/xdg`, never committed.
+K1's keymap can no longer be loaded at runtime through `xmodmap`
+(measured: runtime remaps do not stick on Xvfb 21.1), so its keysyms are
+baked into the container's own Xvfb `-xkbdir` keymap instead, with
+`-ardelay 65000` standing in for `xset r off` and 150/150 ms pacing; the
+daemon resolves all 108 scancodes. `NOKIA_TZ=Europe/Helsinki` seeds the
+guest's UTC offset. Proven end to end through Chrome → SPA `/os/nokia9300`
+→ daemon → XTEST: Desk, Documents (typed text), Web (Opera's home page),
+Desk again (F5 does not reload the page), and a reset (relaunch + restore,
+6 s launcher-to-Desk; after it, C: matches the golden except the ECom
+cache and `sms_settings.dat`, which the ROM writes in its first second).
+The stream went live in 2.8 s. **Open on the station specifically:** the
+Clock app's "Change city" dialog finds Helsinki but neither Select nor
+Enter commits it (`Unimplemented system call: 0xC00049`, almost certainly
+the locale/UTC-offset setter — needs a fork fix; the guest clock already
+runs on Helsinki time via `TZ`, only the home-city label still reads "New
+York, NY"); `config.yml`'s `hosts:` map is not added yet, because the
+station has no network plane (it runs `--private-network`) — it lands
+with the N-series' proven network plane once the station has one, and its
+tap script stays uncommitted per rule 15; Menu-hold (the task list) is
+unhandled, as noted above.
 
 **Fidelity against the real device, ranked and re-checked (agent R2).** A
 much larger reference gallery than the earlier pass — the official Nokia
@@ -1235,19 +1338,33 @@ are licence-clean for a poster. Ranked by visible impact:
    Both firmware dumps still lack the four Series 80 interface TrueType
    fonts the UI itself uses (above); the SDK carries them, and the
    station's golden will too — never the repo.
-2. **Three skinned regions used to paint black; two are resolved or
-   reclassified (agent A1, in flight).** The title bar (Documents' already
-   paints) and icon masks (a 12-bpp mask-swizzle bug, fixed) are done. The
+2. **Three skinned regions used to paint black; all three are now resolved
+   or reclassified (agent A1, branch `s80-icon-masks` @ `c227bd520`).** The
+   title bar (Documents' already paints) is done. **Icon masks (32 masks in
+   25 ROM files) are fixed**: the two icons that sat on solid magenta boxes
+   in Control panel had 12-bit (EColor4K) AIF masks, and the driver's mask
+   read used the wrong colour channel for that one format — every other
+   mask format (256-colour, 64k-colour, 1bpp) already read correctly; the
+   same fix applies to every 12-bit-masked ROM icon and toolbar bitmap. The
    theory that zero-size skin-bitmap entries load as nothing turned out to
    be wrong as a general explanation: **the 0×0 skin bitmaps are genuine ROM
-   content**, not a loading bug. Messaging's black dialog body specifically
-   is a window-server redraw-ordering bug — a child window activated before
-   its parent — being fixed. Desk's status pane and the narrow status strip
-   in other views now paint too, but only on the ROM's own Eikon server
-   path (agent B7, §H7), which is not station-safe yet; the status-pane
-   clock itself draws once its window is shown (agent A2). Backup and
-   Modem's dialog bodies remain unexplained now that the 0×0-bitmap theory
-   no longer generally applies to them.
+   content** (checked by parsing the ROM's skin MBM files directly, e.g. 8
+   of `skinapptitle.mbm`'s 10 entries and all 42 of
+   `skindialogbutton.mbm`'s), not a loading bug. **Messaging's, Backup's and
+   Modem's black dialog bodies are fixed too, and were a single window-server
+   redraw-ordering bug**, not a skin bug: a dialog's content child window
+   was activated before its parent, so the compositor never queued its
+   first redraw and the window stayed at its cleared-black state forever;
+   fixed by queuing the pending redraw of a window and its visible children
+   once the window becomes visible. Messaging's note body now reads
+   "Problem starting Messaging center" (a separate, app-level wall, above);
+   Backup shows its battery-critical note and Modem shows "Trying to
+   activate modem…" — both genuine device notes, now painting. Opera's own
+   dialogs were not re-verified (its start screen raises none). Desk's
+   status pane and the narrow status strip in other views paint too, but
+   only on the ROM's own Eikon server path (agent B7, §H7), which stays
+   opt-in and unused by the station; the status-pane clock itself draws
+   once its window is shown (agent A2).
 3. **Desk's main pane was empty — fixed since.** See B6's AppList work,
    §H7 and above.
 4. **Opera sat stuck on "Connecting…" with a blank page — RESOLVED, both
@@ -1307,20 +1424,25 @@ intact, recovered the whole wave in minutes rather than losing it.**
 5. `RThread::ExitCategory` (0xC0003F) is still unimplemented but blocks
    nothing found so far. (Opera's home page is resolved, §H3, §H7.)
 6. Shell: the ROM's own Eikon server now paints a complete Desk, with the
-   ROM's own status pane, but the emulator crashes after about 2.5 minutes
-   with no value from Starter for the system state (agent B7, §H7) — the
-   wall before that path can replace the HLE app-key switch. The ROM's own
-   boot chain (Starter → SysAp) now reaches through the Eikon server and
-   the phone server before exiting on its own decision, suspected to be a
-   missing cover-UI window server (agent B5, §H7). `CaptureLongKey`
-   (Menu-hold task list) stays unhandled either way. The third-app wall and
-   the empty Desk pane are both resolved (agents B4, B6, §H7); Write note
-   → Note panics `USER 30` in Desk's own CONE-path handling (agent B6).
-7. App-coverage walls with no owner yet: Sync's regression, Notes sitting
-   idle (both under investigation, agent N7), Music player stuck on its
-   title screen pending an AppList op, and Voice rec.'s missing SharedData
-   keys — full table in §Application coverage. (Contacts/Telephone's
-   case-sensitive server lookup is resolved, agent A3.)
+   ROM's own status pane, and runs stable for a full session (22 min,
+   2,677 process spawns, agent B7, §H7) — but stays opt-in and unused by
+   the station, since it is not what the station ships. The ROM's own boot
+   chain (Starter → SysAp) now reaches through the Eikon server to the
+   phone server, whose own -5 exit is now a named, located wall inside the
+   ROM's 7.0s `customapi.dll` (agent B5, §H7) — not yet fixed. Telephone's
+   black first screen (a System Agent notify/cancel loop) is handed to a
+   new racing agent as of 2026-09-25 12:00 UTC; the cover-UI window server
+   still needs a `CuiLcd` LDD. `CaptureLongKey` (Menu-hold task list) stays
+   unhandled either way. The third-app wall and the empty Desk pane are
+   both resolved (agents B4, B6, §H7); Write note → Note panics `USER 30`
+   in Desk's own CONE-path handling (agent B6); Messaging's own start wall
+   ("Problem starting Messaging center") is a new find, being raced by
+   agent M1 as of 2026-09-25 12:00 UTC.
+7. App-coverage walls with no owner yet: Notes sitting idle (under
+   investigation, agent N7), Music player stuck on its title screen
+   pending an AppList op, and Voice rec.'s missing SharedData keys — full
+   table in §Application coverage. (Contacts/Telephone's case-sensitive
+   server lookup and Sync's stray signal are both resolved, agents A3, N7.)
 8. Starter's per-item flag semantics (no public source).
 9. Opera's behaviour on a real connection *failure* — today's fallback
    always succeeds silently; the SDK-emulator oracle shows a
@@ -1331,6 +1453,10 @@ intact, recovered the whole wave in minutes rather than losing it.**
     GPL branches. Re-implementing the small picks by hand to stay plain
     GPL-3, or asking the author to relicense, remain open only if those
     fixes are ever wanted on the GPL side.
+11. **The operator's listing decision is pending** (as of
+    2026-09-25 12:00 UTC): `nokia9300` @ `a5a7c0e0` is baked, proven end to
+    end and dark-launched, but whether it flips to `listed: true` is the
+    operator's call, not a research question.
 
 **Resolved this wave:** the network wall (§H3); the S80 keymap, now a
 frame-proven port of the ROM's own EKTRAN/EKDATA tables on branch
@@ -1339,11 +1465,16 @@ three times over by three unrelated EKA1 clients, §H7); the third-app wall
 and Desk's empty main pane (agents B4, B6, §H7); Sheet's crash on
 committing a formula, a pre-existing window-server bug found while proving
 the keymap (agents K2, W2, §H4); Contacts and Telephone's case-sensitive
-server-name panic (agent A3); Opera's home page and File manager's blank
-screen, both the same launch-command bug (agent N7, §H3, §H7); Clock's
-world-clock faces and the status-pane clock (agent A2); and the
+server-name panic (agent A3); Opera's home page, File manager's blank
+screen and Sync's stray-signal panic, all fixed this pass (agent N7, §H3,
+§H7); Clock's world-clock faces and the status-pane clock (agent A2); the
+icon-mask (12-bit EColor4K) bug and the redraw-order bug behind
+Messaging/Backup/Modem's black dialog bodies (agent A1); the
 `s80-integration` build hang, a patch mis-gated to the wrong platform
-version (agents I1, I2).
+version (agents I1, I2); the ROM Eikon server's crash-after-255-processes
+(an ASID leak) and its alarm-restart loop (a SysState stand-in), both
+agent B7; and the station itself, baked and proven on the integration head
+(agent D2).
 
 **Dead ends (do not repeat)**
 - romphonix.org is offline (port 80 times out, 443 refused, from CT950 and
@@ -1427,15 +1558,37 @@ work, in flight), B7 (branch `s80-rom-eiksrv`, the ROM Eikon server's full
 Desk) and I2 (found and fixed the cause of `s80-integration`'s process-start
 hang). On **Claude Fable 5.1**, B5 (branch `s80-hle-dos`, the ROM's own boot
 chain past the Eikon server to the phone server). On **Claude Sonnet 5**, I1
-(the `s80-integration` merge branch itself). None of N7, A2, A1, B7, B5, I1
-or I2 has a written report seen by any fold to date; their facts reached
-this document through the coordinator, and a resumer should ask the
-coordinator directly to confirm the exact wording rather than assume it —
-anything attributed to them here should be treated as **as of
-2026-09-25 07:00 UTC**, not yet independently verified against a report.
+(the `s80-integration` merge branch itself).
+
+A fifth pass, 2026-09-25, through 12:00 UTC, across two further
+usage-limit pauses and a host reboot (each stalled agent resumed by
+message, with context and worktree intact, recovering the wave each time —
+the same methodology as the third pass): on **Claude Opus 5.5**, I2
+(`I2-integration.md` — found and fixed the `s80-integration` regression,
+merged the remaining branches, proved the head by frame on branch
+`s80-integration` @ `e43db215e`), D2 (`D2-station-bake.md` — built the
+binary and golden v2, and proved station branch `nokia9300` @ `a5a7c0e0`
+end to end through Chrome → SPA → daemon), B7 (`B7-rom-eiksrv.md` — proved
+the ROM Eikon server's Desk stable for 22 minutes / 2,677 process spawns,
+fixed the ASID leak and added the SysState stand-in), W2 (`W2-wserv.md` —
+the window-server/graphics leftovers merged onto the integration head: the
+zero-area redraw loop, GC ops, the text cursor, twips, underline/
+strikethrough), A1 (`A1-icon-masks.md` — the 12-bit EColor4K icon-mask fix
+and the redraw-ordering fix behind Messaging/Backup/Modem's black dialog
+bodies), A2 (`A2-clock-anim.md` — the CLOCKA anim protocol and the
+status-pane clock) and N7 (`N7-opera-home.md` — the launch-command fix
+behind Opera's home page, File manager and Sync's first screen). On
+**Claude Fable 5.1**, B5 (`B5-hle-dos.md` — the ROM's own boot chain
+through an HLE DOS server, and the PhoneServer −5 wall's exact location).
+All seven reports were read in full by this fold; none of their facts are
+now second-hand through the coordinator. As of 2026-09-25 12:00 UTC,
+agent M1 is racing Messaging's "Problem starting Messaging center" wall, a
+new agent is racing Telephone's black first screen, and the operator's
+listing decision on `nokia9300` is still pending.
 
 The doc folds were Sonnet passes (facts dictated by the coordinator from the
-reports); the coordinator wrote §Operator decisions 5–7 from the operator's
+reports, or — for this fold — read directly from each agent's own written
+report); the coordinator wrote §Operator decisions 5–7 from the operator's
 own messages.
 
 ## Sources

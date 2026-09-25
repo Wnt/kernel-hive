@@ -27,7 +27,15 @@ redraw-spin fix, detailed in
 [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md)), the
 latter including commit `a1ebfc046` so dialog text is legible. No proxy, no
 extra NIC and no retronet netns work is needed beyond the `hosts:` map
-already documented below.
+already documented below. Both branches, plus every other network-relevant
+fix, are merged onto fork branch `s80-integration` @ `e43db215e` (agent I2),
+where Opera fetches and renders host pages exactly as described here — this
+document's proof is not stranded on a side branch. **The station itself
+(`nokia9300` @ `a5a7c0e0`, agent D2) does not yet carry the `hosts:` map**:
+it has no network plane at all (it runs `--private-network`), so there is
+nothing to map yet; the map lands with the N-series' proven network plane
+once the station gets one, and per rule 15 its tap script stays uncommitted
+until then.
 
 ## The 7.0s ESock opcode table (agent N1, branch `s80-esock-70s`)
 

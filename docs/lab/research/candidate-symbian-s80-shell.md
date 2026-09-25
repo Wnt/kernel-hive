@@ -3,14 +3,17 @@
 Sibling of [`candidate-symbian-s80.md`](candidate-symbian-s80.md) §H7. Holds
 the mechanism-by-mechanism detail, the wall evidence and the SDK-emulator
 trace facts that would otherwise bloat the main document. Facts from agents
-B1 and X1's full reports (2026-09-24), and B4's and B6's full reports
-(2026-09-25: the third-app deadlock fix and Desk's main pane). B5 (the ROM's
-own boot chain), B7 (the ROM's own Eikon server) and N7 (Opera's home page)
-have no written report seen by this fold; their facts are relayed here
-through the coordinator, marked **as of 2026-09-25 07:00 UTC**, and a
-resumer should ask the coordinator to confirm before relying on the exact
-wording. Nothing here is disassembly or a ROM byte dump — mechanisms and
-traces only, per the repo's abandonware rules.
+B1 and X1's full reports (2026-09-24), B4's and B6's full reports
+(2026-09-25: the third-app deadlock fix and Desk's main pane), and — as of
+2026-09-25 12:00 UTC — B7's, B5's and N7's own full written reports
+(`B7-rom-eiksrv.md`, `B5-hle-dos.md`, `N7-opera-home.md`), superseding the
+coordinator-relayed facts an earlier fold carried for them. As of
+2026-09-25 12:00 UTC, agent M1 is racing Messaging's "Problem starting
+Messaging center" wall and a new agent is racing Telephone's black first
+screen; the integration head is fork branch `s80-integration` @
+`e43db215e`, and station branch `nokia9300` @ `a5a7c0e0` is built from it,
+proven, and still dark-launched. Nothing here is disassembly or a ROM byte
+dump — mechanisms and traces only, per the repo's abandonware rules.
 
 ## The mechanisms (agent B1, fork branch `s80-shell` @ `19308cbd0`)
 
@@ -29,8 +32,8 @@ buttons at all.
 | — | **Captured keys were never delivered**: `io.cpp:198` looked up `key_capture_requests[evt.key_evt_.code]`, and the raw event's code is always 0. Rewritten so a `CaptureKey` request (keyed by translated key code) wins the translated key event and a `CaptureKeyUpAndDowns` request (keyed by scan code) wins the up/down events; winner = highest signed priority whose modifier mask matches, newest on a tie; the winner gets the event **instead of** the focus (nonnga wserv `EVENT.CPP` semantics). Requests are dropped on `CancelCaptureKey*` and in `~window_group`. Written independently, the same shape as EKA2L1-WEB's `dc3344530` key-capture rewrite (see the main doc's §Prior work found). | **KEPT** | prerequisite for the ROM EikSrv ever owning the keys; also fixes S60 CaptureKey users |
 | — | Session ops that parked a server forever: `ClearHotKeys` (→ `KErrNone`), `Start/CompleteCustomTextCursor` (→ `KErrNotSupported`), `SetSystemPointerCursor`, `Claim/FreeSystemPointerCursorList`, `Set/ClearDefaultSystemPointerCursor` (→ `KErrNone`). | **KEPT** | the ROM Eikon server issues all of them while constructing (log showed `Unimplemented ClOp: 0x31/0x2f/0x48`) |
 | — | chimera-core 0030 (see the main doc's prior-work sweep): a window group remembers its owner process by kernel id and checks it is alive before touching the pointer. | **KEPT** | an app launched from Desk or the buttons outlives its starter |
-| i | **Run the ROM's real Eikon server**: `EKA2L1_ROM_EIKSRV=1` skips the HLE EikAppUiServer, Notifier and ViewServer; Desk's connect then summons `eiksrvs.exe`, which creates `EikAppUiServer`, `ViewServer`, `AlarmServer`, `AlarmAlertServer`. | **ADVANCED, not station-safe (B7, branch `s80-rom-eiksrv`)** — Desk now paints completely, with the ROM's own status pane; see "The ROM's own Eikon server" below | it gives the six generic buttons, the Menu-hold task list and the status pane from ROM code — once it can run for more than ~2.5 minutes |
-| i' | **Start `Starter.exe` / `SysAp` with a trimmed start list.** Starter, SysAp and `Startup.app` all reach the DOS server (phone link); this needed an HLE DOS server before it could run at all. | **IN PROGRESS (B5, branch `s80-hle-dos`)** — see "The ROM's own boot chain" below | the HLE DOS server now exists; the chain runs past `eiksrvs` and the phone server, to a new, concrete, named wall |
+| i | **Run the ROM's real Eikon server**: `EKA2L1_ROM_EIKSRV=1` skips the HLE EikAppUiServer, Notifier and ViewServer; Desk's connect then summons `eiksrvs.exe`, which creates `EikAppUiServer`, `ViewServer`, `AlarmServer`, `AlarmAlertServer`. | **PROVEN stable, but opt-in and unused by the station (B7, branch `s80-rom-eiksrv` @ `ecd09e3d7`, merged onto `s80-integration`)** — Desk paints completely, with the ROM's own status pane, and the fixed binary ran 22 minutes / 2,677 process spawns with no crash; see "The ROM's own Eikon server" below | it gives the six generic buttons, the Menu-hold task list and the status pane from ROM code — mechanism ii (the HLE switch) is what the station ships instead |
+| i' | **Start `Starter.exe` / `SysAp` with a trimmed start list.** Starter, SysAp and `Startup.app` all reach the DOS server (phone link); this needed an HLE DOS server before it could run at all. | **ADVANCED, one wall from Desk (B5, branch `s80-hle-dos` @ `8cbd1b772`, merged onto `s80-integration`)** — see "The ROM's own boot chain" below | the HLE DOS server now answers the ROM's real DOS-server client contract; the chain runs past `eiksrvs` to the phone server, whose exact exit wall is now named and located but not yet fixed |
 | iii | **Desk launching apps itself / the Desk main pane.** Desk paints its own chrome (icon, CBA labels) but the AppList server's contribution to the main pane — the date header, the application-group grid, the wallpaper — was missing. | **RESOLVED (B6, branch `s80-desk-content` @ `4a12074c2`)** — see below | the 7.0s AppList server table plus seven EKA1 locale calls were the missing piece, not C: state |
 
 ### Desk's main pane, filled in (agent B6, branch `s80-desk-content` @ `4a12074c2`)
@@ -127,57 +130,154 @@ work for the clock face itself.
    manager, the ROM's default) never finishes constructing its own UI even
    launched alone — a separate, per-app wall, not a process-count limit.
 2. **The empty Desk pane — RESOLVED.** See mechanism iii above.
-3. **The ROM's real Eikon server and Desk's status pane — ADVANCED, not
-   station-safe.** See "The ROM's own Eikon server" below: Desk now paints
-   completely, with the ROM's own status pane, but the emulator cannot stay
-   up on this path for more than a few minutes yet.
+3. **The ROM's real Eikon server and Desk's status pane — PROVEN stable,
+   still opt-in.** See "The ROM's own Eikon server" below: Desk now paints
+   completely, with the ROM's own status pane, and the fixed binary has
+   run 22 minutes and 2,677 process spawns with no crash — but the path
+   stays opt-in, since mechanism ii (the HLE app-key switch) is what the
+   station ships.
 
-## The ROM's own Eikon server: a full Desk, not station-safe (agent B7, branch `s80-rom-eiksrv`, in flight as of 2026-09-25 07:00 UTC)
+## The ROM's own Eikon server: a full Desk, proven stable (agent B7, branch `s80-rom-eiksrv` @ `ecd09e3d7`, merged onto `s80-integration`)
 
 B7 took the `EKA2L1_ROM_EIKSRV=1` shortcut (mechanism i) from "Desk stays
-black behind it" to a fully painted Desk. Three additions: a **pre-start
-mechanism for ROM executables at boot** (`EKA2L1_PRESTART`, defaulting to
-SecurityServer), an **EKA1 duplicate server-name check** (closing exactly
-the gap Y2's sweep had flagged as still open — see the main document's
-§Prior work found — so a native EikSrv can no longer silently coexist with
-the HLE stub instead of failing loudly), and a diagnostic server stub. With
-those in: **Desk paints completely, with the ROM-drawn status pane** (skin,
-network and battery indicators), and the application keys are handled by
-the ROM's own Eikon server through the AppList server — op 5 with the app's
-UID, then op 7 — exactly as X1's independent SDK-emulator trace shows the
-real platform doing it (below). A window-shape fix (a shaped window's
-visible region had been the shape alone, not the shape intersected with the
-window) made the narrow status strip inside application views paint too.
-**Not station-safe yet:** with no value from Starter for the system state,
-the ROM's own alarm server loops, and the emulator crashes after about
-2.5 minutes. That crash is the wall to clear before this path can replace
-mechanism ii as what a station actually ships.
+black behind it, and the emulator SIGSEGVs after ~2.5 minutes" to a fully
+painted, stable Desk. The walls fell in this order (each named from
+log-ipc, the IPC watch, or gdb, and each proven by a framebuffer frame —
+rule 9):
 
-## The ROM's own boot chain (agent B5, branch `s80-hle-dos`, in flight as of 2026-09-25 07:00 UTC)
+1. Nobody starts SecurityServer (Starter does it on the device); EikSrvUi's
+   connect got KErrNotFound, its error path double-freed (`USER 44`), and
+   Desk's re-summoned `eiksrvs` died the same way. Fixed by a **pre-start
+   mechanism for ROM executables at boot** (`EKA2L1_PRESTART`, defaulting
+   to SecurityServer).
+2. ETel CUSTOMAPI / op 14 — B5's fix (merged).
+3. EikSrvUi summons `PhoneServer.exe`; it needed exec 0x8000E5 (B5's fix),
+   and the ROM's own server then exits −5 (B5's open wall below), panicking
+   EikSrv with "PhoneServer start 1". Stood in for meanwhile:
+   `EKA2L1_STUB_SERVERS="Phone Server"` — EikSrvUi only sends it ops 0 and
+   300.
+4. AppList op 7 (StartApp) was unimplemented, so a button press parked
+   EikSrv — B6's `s80-desk-content` table, merged.
+5. The upper half of the app strip stayed black: a window-tree dump showed
+   an app's collapsed left skin panel — a shaped window, now 32×0 — still
+   claiming its old 32×100 shape over the status pane window. Fixed: a
+   shaped window's visible region is now clipped to the window's own
+   extent, not the shape alone — this also paints the narrow status strip
+   inside application views.
+6. "state.val" (SharedData temp category 0x10005943, set by Starter to 201
+   then 203 on the device) was missing; the alarm alert server kept
+   refusing AlarmServer with KErrNotFound, restarting it about twice a
+   second. Fixed with `tools/s80-sysstate` (a small stand-in `SysState.exe`,
+   prestarted by default): the restart rate drops to **zero**.
+7. **The actual host SIGSEGV**, found under gdb after 255 spawned
+   processes: the multiple memory model never freed a dead process's
+   address space, so process 256 got ASID −1 and a null count pointer.
+   Fixed: address spaces are released when a process dies — a general fix
+   for any long session that starts many processes, not specific to this
+   path. **Proven: 2,677 spawns without a crash** (the worst-case run was
+   stopped only by a host reboot, not by a fault).
+
+Also fixed on this branch: an **EKA1 duplicate server-name check**
+(servers only — the mutex check is B4's), closing exactly the gap Y2's
+sweep had flagged as still open (see the main document's §Prior work
+found), so a native EikSrv can no longer silently coexist with the HLE
+stub instead of failing loudly. With everything above in: **Desk paints
+completely** — icon and label, date header, Personal/Office/Media/Tools/
+Clock/Nokia.com (needs B6's applist table), and CBA Open/Write note/Note
+list — **with the left status pane drawn by the ROM** (skin swoosh, "no
+network" antenna, battery). The application keys are handled by the ROM's
+own Eikon server through the AppList server — op 5 with the app's UID,
+then op 7 — exactly as X1's independent SDK-emulator trace shows the real
+platform doing it (below); Documents opens with the title **"Document"**
+(not the HLE launch's "cword"), a caret, and the full narrow status strip.
+**Remaining differences from the real device:** no clock in the left pane
+(that is A2's anim work, proven separately on this same branch tip); no
+"Silent" profile text (the device shows none either, in its General
+profile); indicators show "no network" rather than signal bars (faithful
+to a phone-less device); PhoneServer stays stubbed until B5's TPhoneInfo
+fix lands on this path — the 1 s "CuiWs" reconnect retry remains, since
+CuiStarter is not run; `--run 0x10000865` (Startup.app as the shell) stops
+on its own "Current city" first-boot wizard, which the golden's
+`10000865.ini` does not skip on this path; and this branch alone carries
+no K1/K2 keymap, so only digits typed into Documents arrived (letters were
+lost) — the integration head carries K1's keymap, so this does not apply
+to the merged head or the station. **This path stays opt-in and unused by
+the station**: mechanism ii (the HLE app-key switch) is what `nokia9300`
+ships, since it needs no ROM boot chain at all.
+
+## The ROM's own boot chain (agent B5, model Claude Fable 5.1, branch `s80-hle-dos` @ `8cbd1b772`, merged onto `s80-integration`)
 
 A fuller alternative to the `EKA2L1_ROM_EIKSRV=1` shortcut (mechanism i):
 rather than skip straight to `eiksrvs.exe`, this boots the ROM's own
 `Starter.exe` chain, which mechanism i' above found blocked on the phone-link
-DOS server. B5 built an **HLE DOS server**, and the chain now runs:
+DOS server (Nokia's own SDK emulator swaps in a phone-less `ExampleDSY`
+plug-in for the same server, for the same reason).
+
+**The DOS server's client contract is public.** Nokia released the server
+under the EPL with Symbian^3 (`SymbianSource/oss.FCL.sf.os.devicesrv`):
+the server and client sources, the plug-in interface headers, and the
+phone-less `ExampleDSY` stub the S80 SDK itself ships. B5 verified the
+2002-era opcode numbering (the 9300's DosServer.exe predates Symbian^3's
+renumbering) against a live IPC trace of the SDK emulator's own cold boot
+(agent X1). B5's **HLE DosServer** answers exactly that sequence — create
+a Helper subsession, `GetStartupReason` → ENormal, `GetSWStartupReason` →
+100 (Normal), close — the same three-call exchange the SDK emulator's own
+successful phone-less boot makes, and nothing else touches the DOS server
+before EikSrv is up, matching the SDK trace. (A second form — running the
+ROM's own `DosServer.exe` against a real plug-in — was scoped but not
+pursued: the ROM's `Nokia.dsy` immediately opens the unmodelled
+`ISA_IF_DRIVER` logical channel and the process dies; the HLE server makes
+this unnecessary.)
+
+With the HLE DosServer in place, the chain now runs:
 
 **Starter → SharedData → the HLE DOS server → splash → SecurityServer
-(unblocked once ETel op 14 is answered) → the Eikon server → the phone
-server → …**
+(unblocked once ETel ops 11/14 are answered) → the Eikon server (unblocked
+by completing the BAFL backup-server protocol, W2's fix, and a stub ETel
+CUSTOMAPI subsession) → the phone server (unblocked by registering EKA1
+executive 0x8000E5, `MessageGetDesMaxLength`, which PhoneServer.exe calls
+and 7.0s's table never had) → …**
 
 — materially further than either mechanism i on its own or mechanism i' as
-it stood before this branch (dropped for lack of a DOS server). The phone
-server itself now answers requests: Telephone passes its own phone request
-through it, though Telephone does not paint yet — its next wall is the ETel
-phone-opcode table (agent A3, main document's app-coverage section). The
-chain currently **exits by its own decision**, right after a round trip
-through the cover-display notifier; the suspect is the missing **cover-UI
-window server** (Starter's `CuiStarter` item) — in flight. This is the
-thread to pull on next for a real, ROM-code Desk with its status pane, the
-Menu-hold task list and `CaptureLongKey` all working the way the device does
-them — none of which the HLE app-key switch (mechanism ii) implements, by
-design.
+it stood before this branch (dropped for lack of a DOS server). **The
+phone server's own wall is now named and located, not fixed.**
+`PhoneServer.exe` always exits with code **−5**, decided inside the ROM's
+own 7.0s `customapi.dll`/PhoneServer, right after a successful `CUSTOMAPI`
+extension open, from state the emulator does not see. This is not an HLE
+refusal: an A/B that instead refuses the `GetPhoneInfo` call to
+PhoneServer alone makes it exit **−1** right after that call, proving it
+honours the emulator's ETel answers up to that point and decides −5 only
+after the extension open succeeds. Fixing `TPhoneInfo::iExtensions` from 0
+to the correct `KETelExtMultimodeV1` (3000) and giving the stub TSY four
+phone lines (matching Nokia's own PhoneTsy, not one uninitialised line)
+did not change the outcome — still −5. Candidates left, in order: a
+version/extension check in the 7.0s custom-API client the public
+S60-3.x `RMmCustomAPI::Open` no longer has; a `TPhoneInfo` field compared
+for equality; FeatureManager. **Until this is fixed, B7's
+`EKA2L1_STUB_SERVERS="Phone Server"` stand-in is what the station-safe
+Eikon-server path (and the station itself, indirectly, since it does not
+use ROM-EikSrv at all) relies on.**
 
-## Opera's home page — RESOLVED (agent N7, branch `s80-opera-home`, as of 2026-09-25 07:00 UTC)
+**Telephone** (0x101f4d0b), run past its former ETel block with this
+branch's etelmm fixes, reaches a black first screen with one white
+horizontal line. Its threads' last IPC: `Telephone`'s own thread parked on
+a synchronous System Agent op 5 (NotifyEventCancel) — a notify/cancel loop
+on a System Agent state, 2,739 sends in one run; `phoneapp` parked on
+ecomserver op 7; `Main` parked (by design) on an async BackupServer op 32.
+The next probe is the exact System Agent state UID it cycles on — likely a
+completed "no network / no SIM" state. **Handed to a new racing agent as
+of 2026-09-25 12:00 UTC.**
+
+**Also open on this chain:** the cover-UI window server (`cuiws.exe`,
+Starter's `CuiStarter` item, never reached while EikSrv loops in the
+baseline) needs a `CuiLcd` LDD EKA2L1 has no model for — executor 0x5
+(AddLogicalDevice) returns −2 without one; a null LDD (chimera's pattern)
+is the next step. The `SpeDeServer` panic (−15, unmonitored item) and
+`Randsvr`-style case-insensitive name lookups (A3's fix, elsewhere) also
+remain on Starter's later items (Sae, CbsServer, SatServer, LightServer,
+PhoneApp, SysAp, Watcher, the Sync item).
+
+## Opera's home page — RESOLVED (agent N7, branch `s80-opera-home` @ `edb47ab07`, merged onto `s80-integration`)
 
 The blank home page was not, in the end, mainly the ViewServer message
 layout. **The real cause: EKA2L1 launched every EKA1 app with the "create
@@ -186,13 +286,36 @@ document" command, where the device's own application buttons use plain
 becomes a run launch — matching the device — so Opera loads its built-in
 Nokia home page (`Z:\Documents\WWW\Home.html`) the way the real buttons do,
 and File manager, which shared the same launch-command bug, now paints too.
+An A/B through `AppRun.exe` on one binary proves the command letter alone
+decides the result (`C"opera"` blank, `R"opera"`/`R""` render the home
+page), and that the ViewServer fix is not needed for the page at all (a
+binary without it still renders once launched with Run).
+
 A separate, real bug — the HLE ViewServer's `ActivateView` message (op 6)
-parsing a later-firmware 16-byte layout while the ROM sends an 8-byte view
-id + custom-message id + empty descriptor — was also fixed, as a
-correctness fix in its own right (a ROM-accurate `ActivateView` argument
-layout), but it was not the cause of the blank page. **Notes and Sync are
-still under investigation** — they may or may not share a cause with the
-launch-command bug; unconfirmed.
+and `CreateActivateViewEvent` (op 13) parsing a later-firmware 16-byte
+layout while the ROM's 7.0s client sends an 8-byte view id + a separate
+message UID and message — was also fixed, as a correctness fix in its own
+right (the old code copied a 16-byte struct out of an 8-byte package,
+producing a garbage message UID and length): it is not why the page stayed
+blank, but it is the likely fix for the **USER 30 (negative length)**
+panic Sheet and Note hit, since their panicking stacks are in
+`ViewCli.dll`/`CONE`. **Sync's own separate wall is RESOLVED**: its stray
+signal (`E32USER-CBase 46`) was the ROM's AgendaServer, shutting down,
+completing a message id whose IPC slot the HLE MsvServer had already
+released and answered — one surplus completion the active scheduler
+panicked on. Message completion now ignores a message with no references
+left, or one whose session belongs to an HLE server or a different
+process, and logs a warning instead. With both fixes, Sync now paints its
+"PC Suite profile" first screen, and — tested on a local integration tree,
+not yet on `s80-integration` itself — Sheet no longer panics when it runs
+beside Desk and a third app starts, and Note (via Desk's own "Write note")
+opens with no panic, though typed keys did not appear in that test (the
+keymap wall on that tree, not present on `s80-integration`, which carries
+K1's keymap). **Notes (the standalone app) remains open**: it is not a
+device use case on its own — it looks up Desk's own Note window group and
+closes itself when the lookup correctly returns none, then hangs in
+SkinServer op 7 during its own shutdown; unconfirmed whether that shutdown
+hang shares a cause with anything else here.
 
 ## Commits on `fork/s80-shell` (all small, cherry-pickable)
 
@@ -206,7 +329,34 @@ Stashed, not pushed: chimera 0021 (EKA1 `bus_dev_open_socket` creates a real
 LDD channel) + 0022 (null LDD accepting every request) — they change
 `ldd/CMakeLists.txt` (a reconfigure) and matter for the Starter/SysAp path
 (mechanism i'), not the buttons; whoever picks that up should take them from
-the prior-work sweep's chimera patches directly.
+the prior-work sweep's chimera patches directly. Chimera 0021 was later
+cherry-picked (unmodified) into `s80-integration`, where it caused the
+process-start regression I2 fixed by gating it to epoc ≤ 6 — see the main
+document's integration section.
+
+## Commits on `s80-rom-eiksrv` (agent B7, branch `s80-rom-eiksrv` @ `ecd09e3d7`, base: `s80-shell`, merges `s80-wserv-leftovers`, `s80-hle-dos`, `s80-app-fixes`, `s80-desk-content`)
+
+| Commit | What |
+|---|---|
+| `3519569b5` | EKA1 duplicate server-name check (servers only; the mutex check is B4's); the IPC watch shows message arguments and parked threads' stacks as image+offset; log-ipc names the sender; the HLE AlarmAlertServer is off in ROM mode |
+| `67e622a29` | `EKA2L1_PRESTART` |
+| `eb7762eb4` | `EKA2L1_STUB_SERVERS` (diagnostic, off by default) |
+| `47596b48c` | `EKA2L1_WS_DUMP_SECS` window-tree dump |
+| `2ec7c59b6` | shaped window clipped to its extent, not the shape alone |
+| `286fbe23b` | address spaces are released when a process dies (the ASID-leak fix; a general fix, not S80-specific) |
+| `ecd09e3d7` | `tools/s80-sysstate` plus the `EKA2L1_PRESTART` default; the stand-in binary is not committed — build it with `tools/s80-sysstate/build.sh` |
+
+## Commits on `s80-hle-dos` (agent B5, model Claude Fable 5.1, branch `s80-hle-dos` @ `8cbd1b772`, base: `s80-shell`, merges `s80-wserv-leftovers`, `s80-app-fixes`, `s80-randsvr`, cherry-picks B7's `EKA2L1_STUB_SERVERS`)
+
+| Commit | What |
+|---|---|
+| `a9f8f2f53` | HLE DosServer + S80 System Agent states |
+| `71106ea6d` | ETel legacy ops 11/14 + sender name in log-ipc |
+| `ed3671de7` | CUSTOMAPI stub subsession |
+| `978fc6754` | exec 0x8000E5 + EKA1 descriptor lengths |
+| `54fbbfb95` | etelmm park/cancel + diagnostics |
+| `78013da80` | PhoneTsy four lines + killer name |
+| `8cbd1b772` | `iExtensions=3000` + refusal switches |
 
 ## Commits on `s80-third-app` (agent B4, base: B1's `s80-shell` @ `19308cbd0`)
 
