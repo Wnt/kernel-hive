@@ -479,16 +479,62 @@ network fix with it.
    EKA2L1 — the fallback above always succeeds silently. The SDK-emulator
    oracle shows the real device's cycle instead: "Connecting…" for about
    19 s, a silent failure, and a re-prompt with no error dialog.
-5. **The ROM window-server track's second station, `nokia9300rom`
-   (2026-09-25), is not on retronet.** Its dark-launch (agent D5) shipped
-   with the network explicitly **off** (`NOKIA_NET=off`, `--private-network`)
-   — extending this doc's netns recipe to a second station needs its own
-   reserved address, tap and chain claims via `kh-claim`, not attempted.
-   The ESock/RConnection fixes above are HLE-side and apply equally to the
-   ROM-window-server station once someone does the claim work; nothing
-   about the ROM track changes ESock itself. See "The ROM track:
+5. **RESOLVED: `nokia9300rom` joined retronet as its own web-plane station**
+   (agent N9, 2026-09-25) — see "`nokia9300rom` on retronet" below for the
+   recipe and the trap it found. The ESock/RConnection fixes above are
+   HLE-side and apply unchanged to the ROM-window-server station; nothing
+   about the ROM track changes ESock itself — see "The ROM track:
    `nokia9300rom`" in the main research doc for what does and does not run
    there.
+
+## `nokia9300rom` on retronet (agent N9, 2026-09-25)
+
+`nokia9300rom` (the ROM window-server station, hidden at
+`/os/nokia9300rom`) now joins retronet the same way `nokia9300` does —
+Opera opens `www.yahoo.com` from the corpus through the real station page,
+and a negative test confirms no route out beyond retronet's own subnet.
+`nokia9300` itself was **not restarted** to do this; its own cage is
+unchanged.
+
+**Why it needed a fix at the root, not a copy.** The `rn-netns.sh` script
+that both stations emit (from `streamhost/stations/nokia9300/`) had
+`nokia9300`'s netns name, veth pair, address and MAC **hard-coded**; run
+as-is for the sibling station it would have collided with `nokia9300`'s own
+network identity (same derived tap name minus the suffix, same fallback
+address). The fix derives every name from the station itself
+(`RN_STATION`, passed through as `$SH_STATION`): netns `rn-<station>`, veth
+`<station>rn0`, the guest-side end cut to `IFNAMSIZ`
+(`nokia9300romrng`), iptables chain `<STATION>RN-IN`, and a per-station MAC
+variable `RN_<STATION>_MAC`. The station's retronet address comes from a
+fixture value, `RN_GUEST_IP` (mapped from `NOKIA_RN_IP` in this station's
+fixture) — the previous default address exists **only** for `nokia9300`,
+so a sibling station with no `RN_GUEST_IP` of its own now refuses to start
+networked at all (checked: exits 1, "no RN_GUEST_IP for nokia9300rom")
+rather than silently reusing `nokia9300`'s address. `nokia9300`'s own
+derived values were checked unchanged against its live cage before the
+unit restart, and the new netns was exercised standalone (rules read back,
+no default route, retronet gateway reachable, no route to `1.1.1.1`, DNS
+resolves through the retronet resolver) before ever touching
+`streamhost@nokia9300rom`.
+
+**Addressing (own claims, permanent, under session `nokia9300rom`):** its
+own retronet address, tap, iptables chain and slot/port/VMID (reused from
+the existing dark-launch claim). Real values live only in the box's
+gitignored `registry/local.env`; the committed MAC is the scrubbed
+placeholder. Registry additions: the emitted `rn-netns.sh`, a `network:
+host-only` note, and a `retronet:` block (web, static address, the veth
+name, the iptables chain, the join date) — this repo's rule 15 means no
+`rn-tapnet.sh` is committed for this station shape.
+
+**Incident, self-inflicted and repaired.** `station-up.sh`'s manifest
+republish step runs from *its own repo root*; run once from the shared
+clone at a stale branch, it republished all five runtime manifests from
+that old tree and dropped `nokia9300rom` from them (signal/restore both
+404) for about two minutes, before being re-run from current `main` and
+restoring all five. The lesson generalizes beyond this station: **run
+`station-up.sh` only from a checkout at current `main`**, never from an
+older branch or a stale worktree, because its manifest step reads from the
+tree it runs in, not from the target station's own directory.
 
 ## Frames (evidence, in the job's tmp directories)
 

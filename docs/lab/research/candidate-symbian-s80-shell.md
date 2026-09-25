@@ -1229,6 +1229,196 @@ confirmed fixed and no regression found against the prior matrix.
 Agent D2 deployed the binary to the live hidden station and re-proved
 all five from the deployed SPA bundle.
 
+## The ROM stack: how it now boots, draws and is controlled (workers A/B/C/D/E/F, 2026-09-25)
+
+This is a different, later attempt from the B5/B7 "ROM's own Eikon server"
+above: instead of running only `eiksrvs.exe` against HLE's window server,
+this track runs the ROM's real `ewsrv.exe` (window server), `bitgdi.dll` /
+`scdv.dll` (ARM rasterizer) and, in its final form, the ROM's real
+`fbserv.exe` (font/bitmap server) — all as ARM code on EKA2L1's existing HLE
+kernel, IPC and VFS. Operator decision 26 makes this the station's rendering
+path; the HLE window server/FBS/GC/font code (everything else in this doc
+above) is retired to fallback-only status.
+
+### Controlled startup, via the SysState helper
+
+The real phone boots through `Starter.exe`, which chains through the ISI
+modem link and a phone-side service set this project does not implement (see
+"The ROM's own boot chain" above for the SpeDe `-15` / Starter `USER 83`
+walls that chain hits). The ROM stack sidesteps that chain rather than
+reimplementing it: the guest's `wsini.ini` `SHELL`/`SHELLCMD` entry — normally
+`STARTUP`, which launches the phone Starter — is overridden at boot to launch
+a small resident helper, `C:\System\Programs\SysState.exe`
+(`src/tools/s80-sysstate` in the fork), instead. Editing the *extracted*
+`wsini.ini` does nothing — the file is ROM-backed and the VFS serves the
+original ROM bytes regardless of what sits on disk — so the override is a
+runtime read-only overlay of that one config value, not a data-file edit.
+`SysState` becomes the window server's owning shell process; it publishes
+`SharedData` `state.val` (its liveness signal) and hosts the kiosk bridge
+described below. No ROM bytes or wsini bytes are modified; nothing is baked
+into the golden except the rebuilt helper binary itself.
+
+Two executive contracts had to be implemented for real, not stubbed, to get
+a stable ROM Desk under real timers: `RTimer::Lock` (status/phase/handle
+semantics) and `User::FullName` (SVC `0x80005B`, UTF-16 + owner). A missing
+SVC `0xC0000C` blocked `VideoDriver`'s async request completion and was
+added to the 7.0s executive table. Without these, an early controlled boot
+reached Desk only with the timer parked — not stable under real timers, and
+a separate uninitialized-process-handle panic (`Wserv USER 83`) appeared once
+`STARTUP` was omitted without properly redirecting `SHELL`.
+
+### Raw input: a real kernel-owned event hook
+
+The ROM's own keyboard driver opens LDD `"EKeyb"` (exact-name lookup); an
+earlier factory registered `"EKeyB"` and silently failed to satisfy it
+(`exec 0xA` returns `-1`, no keyboard channel ever opens). Once the factory
+name matched, a kernel-level raw-event hook feeds `TRawEvent` (16 bytes:
+type, ticks, an 8-byte union) into the ROM's own `RequestEvent`/`AddEvent`
+executive path, gated on `EKA2L1_ROM_WSERV`, and default HLE input is
+untouched. **`EKeyboardIndex` (HAL attribute 69) routes to `EKeyb` device
+control opcode 2**, not opcode 6 as first guessed — opcode 2 returns the
+keyboard-layout index (6, for the Nordic tables this station uses); opcode 0
+is the case state and 5/6 are mouse speed/acceleration. Getting this opcode
+wrong loaded the wrong `EKDATA` table variant and broke the Nordic burst
+test on the first pass.
+
+A **paced socket `type` verb** was needed alongside the existing X11 path: a
+fast character burst can overflow the ROM wserv's own client event queue,
+so the socket control now injects one synthetic character edge per 30 ms,
+matching the pacer the station already uses for X-path typing. **Desktop
+Shift, deferred, not translated directly:** X sends a desktop Shift down/up
+before an unshifted character whose *device* chord does not need Shift (the
+Nordic `+` is unshifted on the physical layout); translating that bare tap
+into a guest Shift down/up armed Eikon's own sticky-Shift latch and shifted
+the *next* character (`+` became `?`). The fix defers a bare desktop Shift
+translation until either a real character's device chord needs it, or a
+non-character shortcut (e.g. `Ctrl+Shift+F`) needs the modifier — releasing a
+translated character no longer restores an unrelated desktop Shift tap.
+
+Pointer raw events do reach the ROM window server (verified with a minimal
+ARM `RWindow` test client, `tools/s80-input-probe`), but Desk does not
+change its selection on a delivered click — **this is not a routing defect**:
+the same click is ignored by Desk under default HLE too, and the real 9300
+has no touchscreen or pointing device. The station-level fix is on the SPA
+side (see "SPA stream-click forwarding" below), not in the emulator.
+
+### The kiosk bridge: `EKA2L1RomWindowBridge`
+
+Under HLE wserv, the kiosk's `list`/`focus`/`switch` verbs and its
+app-exit → home-app detection read the HLE window-group tree directly. Under
+ROM wserv that tree is empty — the ARM window server owns its own windows,
+invisible to host code. A private, ROM-only endpoint,
+`EKA2L1RomWindowBridge`, is fed by validated snapshots from the resident
+SysState helper, which queries the real `RWsSession::WindowGroupList` and
+per-group name/thread/focus state and issues queued switches through
+`SetWindowGroupOrdinalPosition` inside the guest. App IDs are read from
+`apparc` window-group names (not substituted executable UIDs, preserving an
+earlier rule about app identity). Queued switches report `OK queued`
+immediately; the *next* bridge snapshot confirms the resulting focus — a
+caller must poll, not assume synchronous completion. The endpoint validates
+the accepted SysState UID and session, and snapshot size/version/count,
+duplicate/invalid group IDs and name bounds, before replacing the previous
+snapshot; an old (pre-bridge) helper produces an explicit "bridge not ready"
+error rather than inventing window state; session teardown clears snapshots
+before bridge storage is destroyed.
+
+### Extension-ROM asset mapping (full ROM FBS)
+
+Some of the golden's assets — Desk's own icon AIF among them — are
+**extracted** files: they hold validated native ROM-format bitmap store
+objects (UID `0x10000041` at a fixed header offset, followed by
+`0x10000040` bitmap objects) but physically live on the guest's ordinary
+filesystem, not inside the core ROM image. The ROM's own FBS loader
+(FBSCLI ordinal 65, `InternalizeHeaderL`) treats any file it opens through
+the *disk* path as a foreign-format store and demands a fixed disk header
+length; fed a native ROM-format object instead, it reads the wrong fields
+and fails `-20`. The real device never hits this path because the same
+bytes are addressable ROM. The fix maps validated extracted stores as
+globally addressable, guest-read-only backing and presents that mapping to
+the guest as a genuine **extension ROM** — the same mechanism a real device
+uses for a second ROM region beyond its core image. `User::IsRomAddress`
+(the ARM check every `RFile::ESeekAddress`/`IsFileInRom` caller ultimately
+depends on) walks the core ROM's address range and then, via the
+`RomRootDirectory` executive call (SVC `0xB8`), an extension ROM's own
+header (base at file offset `+0x0c`, size at `+0x10`) and its copied root
+directory list — a plain read-only memory mapping without that header and
+root-list contract is invisible to `IsRomAddress` and gets rejected the same
+way. This same commit also stops APPARC's blanket rejection of ROM AIF v2
+icon handles: it now returns native mapped bitmap addresses from the
+extracted store's own embedded offset table (restoring Desk's title, Clock
+and Nokia.com icons), while non-ROM disk-AIF icon handles still return
+`KErrNotFound` — there is still no bridge for those.
+
+### Host FBS private names and rendezvous ordering
+
+Running a real ARM `fbserv.exe` alongside the host's own HLE FBS
+implementation needs both to coexist without colliding on the public
+`"Fontbitmapserver"` name the guest looks up, and without racing each other
+at startup. The host FBS is renamed internally to a private
+`EKA2L1HostFbs*` chunk/mutex namespace in ROM-FBS mode, so the public
+endpoint name is free for the ARM `fbserv.exe` to claim; host-side FBS
+consumers (AppList, the HLE status pane, icon/skin helpers) look the host
+instance up explicitly rather than through the public name. A kernel-level
+rendezvous observer holds the window server's start until FBS registers
+(an early cold-boot race let `EikAppUiServerThread` connect to FBS
+`-1` before `fbserv.exe` had registered, which Desk's own cold-launch
+sequence needs to survive); an application launched before that rendezvous
+is suspended, not failed, and resumed once FBS is ready.
+
+### Whole-panel presentation
+
+The host's framebuffer-to-texture presentation only composites the screen
+rows a framebuffer *observer* actually saw written; an all-white guest
+clear that happens to match the initial buffer state never marks those rows
+dirty, so they stay black in the presented texture — the root cause of
+horizontal black bands under both mixed mode and full ROM FBS. Because the
+ROM window server owns the *entire* panel (unlike HLE's incremental,
+per-region dirty tracking), ROM mode now presents the whole panel on any
+observed change, unconditionally; HLE mode's existing dirty-region
+presentation is unchanged.
+
+### Defect-class table: which HLE fixes the ROM drawing path bypasses
+
+| HLE defect class (fixed in HLE code, see the sections above) | Under ROM wserv (+ either FBS) | Boundary |
+|---|---|---|
+| Draw modes / XOR (`set_draw_mode` no-op) | Bypassed — ARM `bitgdi`/`scdv` implement these natively | Bounded test cases, not an exhaustive raster-op sweep |
+| Masked blits / brush handling (black fields, black scroll bars) | Bypassed — ARM `BitBltMasked` honours the mask and brush | HLE's own EGray4 mask-conversion bug (G4, below) never existed on this path; bitmap *data* still comes from whichever FBS is active |
+| Deferred texture uploads (scroll bars painting solid black) | Bypassed — the per-window HLE texture cache is not in this path | Final panel presentation is still a host responsibility (see whole-panel presentation, above) |
+| Stored repaint remnants / segment aging | Bypassed — the HLE redraw-segment store is not consulted | No exhaustive segment-aging stress test |
+| TrueType caret / atlas metrics | Bypassed under full ROM FBS (ROM's own glyph rasterizer); still HLE under mixed mode | Under full ROM FBS, ROM/device metric fidelity is the *remaining* open question (see fonts, in the main doc), not an atlas bug |
+| DrawRect cursor edges | Bypassed — ARM rasterizer supplies rectangle-edge semantics directly | No exhaustive geometry/edge sweep |
+| Formula bar sizing/selection | Window drawing is ROM; under mixed mode, font selection/metrics still depend on HLE FBS | Under full ROM FBS this class is fully bypassed |
+| Font-object leak / cell font varying between runs | Not applicable under full ROM FBS (ROM's own FBS owns font-object lifetime) | Still an HLE-FBS-only concern under mixed mode or the fallback build |
+| Black bars / borders under a window with no background | Bypassed in the tested app matrix (Contacts, Telephone, list controls) | Not a proof that every direct-screen presentation case is covered |
+
+The Control panel wrench-icon failure was a **separate** bug even once ROM
+wserv was selected: its AIF icon is byte-RLE `EColor256`, and the HLE-era
+FBS bitmap loader was publishing compression enum `51` for it (an old `+50`
+convention that belongs only to the pre-7.0s ABI) where the 7.0s ROM's own
+FBSCLI scanline dispatcher accepts only `1`–`4` and rejects anything else
+with `-5`. The version boundary now keeps the ordinary file-format enum for
+Symbian 7.0s and reserves `+50` for the older ABI; this bug existed
+independent of which window server was selected — it depended on which FBS
+attached the golden's Control panel bitmap.
+
+### The EGray4 mask-colourkey leak (HLE fallback only, G4)
+
+Found in the HLE fallback build's own Web dialog, not on the ROM path: the
+Go to address field's drop-down arrow (and its globe icon) drew with a
+visible magenta key-colour box. Both are one `BitBltMasked` draw with an
+`EColor256` (8bpp) source and an `EGray4` (2bpp) mask, inverted. The HLE
+bitmap cache had no CPU-side conversion for 2bpp source data — 1bpp masks
+worked, 4bpp (16-colour) masks worked, but 2bpp fell through and reached the
+driver as an empty texture, which an inverted blit reads as "fully opaque",
+painting the whole source bitmap including its magenta key colour. One
+expander now handles 1/2/4bpp uniformly (`EGray2`/`EGray4`/`EGray16` as grey
+levels, `EColor16` through its palette, LSB-first with 32-bit-padded scan
+lines); a too-short bitmap for its claimed size now uploads as a blank
+24bpp texture instead of reading past its data. This fix lands in the HLE
+fallback build at the next integration pass — it is not urgent, since the
+ROM rendering path this bug never reproduced on is the station's actual
+rendering path going forward.
+
 ## The operator's demo as the fidelity method
 
 The wave's most effective bug-finding tool was not a hand-written

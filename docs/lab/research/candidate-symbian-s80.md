@@ -889,88 +889,132 @@ Everything below is on labhost, hash-verified; nothing is committed.
 
 **Recommendation (2026-09-24, after F1):** Route 1 — the EKA2L1 fork with the real 9300 firmware — is the route for the interactive station. The window-server opcode table was the wall; with it fixed, Documents, Sheet, Desk and Web all paint from the real ROM on the dev box, and the remaining work (keymap, shell/app keys, 7.0s socket server, kiosk frontend, station integration) is engineering in known code, days not weeks. Route 2 — the QEMU `nokia9300` board — stays the fidelity upgrade: the RAE-6 ROM already boots its EKA1 kernel to a running 64 Hz tick and UART3 output on the fork's board, but it stalls in kernel-extension start-up before the file server, and the phone-side (XBUS/ISI) and flash (mDOC) layers are still weeks of work.
 
-### Route 1 has split into three tracks (2026-09-25)
+### Route 1 has split into three tracks — the ROM stack is now the station's rendering path (2026-09-25)
 
 Route 1 stopped being one thing once the Z3 spike (agent Codex Astra) asked
 whether the ROM's *own* window server could run on top of EKA2L1's HLE kernel
-— a middle path between "reimplement every S80 server by hand" (HLE, below)
-and "boot the real silicon" (Route 2, parked). Three tracks now exist under
-the Route 1 umbrella, and the operator's live station runs the first one:
+— a middle path between "reimplement every S80 server by hand" (HLE) and
+"boot the real silicon" (Route 2, parked). Three tracks came out of that
+question. By the end of the wave the third one — the full ROM stack — proved
+out, and **operator decision 26 retired the HLE rendering track**: no more
+work goes into the HLE window server, bitmap server, GC or fonts. The ROM
+stack (ROM window server + ROM Eikon + ROM FBS, all running as ARM code on
+EKA2L1's HLE kernel/IPC/VFS) is the station's rendering path going forward;
+the HLE build is kept only as the fallback / regression baseline.
 
-1. **HLE — every S80 server reimplemented, live station.** `nokia9300` at
-   `/os/nokia9300`, pinned to fork `s80-integration` @ `b1fec4a28`. This is
-   the fork's own Windowserver/FBS/AppList/Sockets code, not the ROM's. It is
-   the only track proven end-to-end: Desk, Documents, Sheet, Web, Messaging,
-   Contacts, retronet. Every rendering bug found in the wave (draw modes,
-   masked blits, redraw-segment aging, font-object leak, TrueType caret) was
-   an HLE bug, fixed in HLE code — see "Rendering fixes proven by the
-   operator's demo" in the shell doc's rendering sections. This is what a
-   visitor sees today.
-2. **ROM window server on the HLE kernel ("mixed mode") — proven, second
-   station live hidden.** The ROM's real `ewsrv.exe`/`bitgdi.dll`/`scdv.dll`
-   run as ARM code on EKA2L1's HLE kernel/IPC/VFS, using HLE FBS underneath
-   for fonts and bitmaps. Z3's spike (branch `fork/s80-rom-wserv` @
-   `e432e82a8`) reached a Nokia-hands startup frame before the full phone
-   stack panicked; three Codex Astra workers then hardened it in parallel —
-   **A** (boot: `fork/s80-rom-boot` @ `f7ca695c4`, a controlled service set
-   — SysState in place of the real Starter/phone stack — reaches a stable,
-   soaked ROM Desk with no guest panic), **B** (input: `fork/s80-rom-input`
-   @ `1d7801eca`, real kernel-owned raw event hook; keyboard and typed text
-   are exact, **Desk icon selection by pointer is unresolved** — Desk ignores
-   the same click in HLE mode too, so this is a Series 80 pointer-policy
-   question, not a ROM-input bug), and **D** (app coverage:
-   `fork/s80-rom-apps` @ `93961ef8e`, a ROM-only window-bridge so `ekactl
-   list/focus/switch` and the kiosk's app-switch keys work against the real
-   ROM window tree; found and fixed a Nordic `+`→`?` sticky-Shift ordering
-   bug in the ROM-only path). D5 merged A+B+D and dark-launched the result as
-   a **second, hidden station**, `nokia9300rom` at
-   `/os/nokia9300rom` (fork `s80-rom-station` @ `ac7c1e126`, network OFF,
-   not on retronet, no ROM FBS — see "The ROM track: nokia9300rom" below for
-   what it proves and what remains).
-3. **Full ROM FBS (font/bitmap server) — parked, feasibility only.** Worker
-   **C** (`fork/s80-rom-fbs` @ `3ac21f174`) got the ROM's own font/bitmap
-   server registering, painting a direct-panel probe and the Nokia startup
-   image, and fixed three real bugs on the way (a cold-client wrong-heap
-   read, a public-endpoint/heap collision, stale glyph-cache entries after
-   font release — see the shell doc). **Full ROM-FBS Desk remains blocked**:
-   the extracted ROM-format AIF icon asset is not mapped the way `RFs` and
-   the ROM's own loader expect (`KErrCorrupt`, -20), and a real window's
-   cross-process bitmap handle renders white although the same duplication
-   IPC succeeds in the direct-panel probe. Worker **E** is investigating the
-   `IsRomAddress`/extension-ROM-root contract needed to fix the first wall;
-   this track stays parked behind mixed mode until both walls clear.
+1. **HLE — every S80 server reimplemented. Fallback build only.** `nokia9300`
+   at `/os/nokia9300` runs it today, pinned to fork `s80-integration` @
+   `e7198fd8c`. This is the fork's own Windowserver/FBS/AppList/Sockets code,
+   not the ROM's. It carries every rendering fix the wave found before the
+   retirement (draw modes, masked blits, redraw-segment aging, font-object
+   leak, TrueType caret, the EGray4 mask-colourkey leak — see the shell
+   doc's rendering sections) and stays the regression baseline and the
+   rollback target if the ROM stack ever needs one. No further HLE rendering
+   work is planned.
+2. **ROM window server on the HLE kernel ("mixed mode") — superseded by
+   full ROM FBS below, but still the input/app/kiosk-bridge foundation.**
+   The ROM's real `ewsrv.exe`/`bitgdi.dll`/`scdv.dll` run as ARM code on
+   EKA2L1's HLE kernel/IPC/VFS; three Codex Astra workers hardened it —
+   **A** (boot: a controlled service set, SysState in place of the real
+   Starter/phone stack, reaches a stable soaked ROM Desk with no guest
+   panic), **B** (input: a real kernel-owned raw event hook; keyboard and
+   typed text are exact; **Desk icon selection by pointer is unresolved but
+   is not a defect** — the real 9300 has no touchscreen, and Desk ignores
+   the same click in HLE mode too, so the SPA should stop forwarding stream
+   clicks to this device class), and **D** (app coverage: a ROM-only
+   window-bridge so `ekactl list/focus/switch` and the kiosk's app-switch
+   keys work against the real ROM window tree, plus the full local-app
+   matrix under ROM wserv + HLE FBS, and the fix for a Nordic `+`→`?`
+   sticky-Shift ordering bug in the ROM-only input path). This is the
+   station's input and kiosk-bridge implementation regardless of which FBS
+   sits underneath.
+3. **Full ROM FBS (font/bitmap server) — DONE. The full local station
+   matrix passes.** Worker C got the ROM's own font/bitmap server
+   registering and painting a direct-panel probe; workers E and F cleared
+   the two remaining walls and proved the complete local app matrix:
+   - **Extracted ROM-format asset wall, fixed.** Extracted `.aif`/`.mbm`
+     files that hold validated native ROM bitmap stores (Desk's icon set
+     among them) now get globally mapped, guest-read-only backing,
+     presented to the guest as an **extension ROM** the same way
+     `User::IsRomAddress` expects a real device's second ROM region to be
+     found (`RomRootDirectory` executive call, header at file offset
+     `+0x0c`/`+0x10`, root-directory list copied from the core ROM). A
+     plain read-only mapping was not enough — the ARM `IsRomAddress` check
+     specifically walks that extension-ROM chain.
+   - **"White window" wall — was a probe bug, not a sharing defect.** The
+     ROM-created probe bitmap had a 640×200 pixel size but 0×0 *twips*; ARM
+     `CFbsBitGc::DrawBitmap(TPoint)` returns early on a zero-twips canvas.
+     Once the probe set real twips, the same cross-process bitmap duplicate
+     painted correctly — there was never a sharing wall to fix.
+   - **Result: full ROM FBS (`EKA2L1_ROM_WSERV=1 EKA2L1_ROM_FBS=1`)
+     cold-boots Desk with every icon, and the complete local station
+     matrix passes** — Documents exact typing/Save as/Save/Exit, Sheet
+     cursor/formula/Insert function, Web home, Messaging + SMS exact,
+     Contacts New card saved + Exit, Telephone, Control panel (including
+     the large wrench icon, fixed separately below), My own, five
+     F11/F5 icon cycles, three apps open and switching by app key and by
+     the kiosk bridge, ten Documents open/Exit cycles clean, a flat
+     three-app idle soak (RSS steady, no new process spawns, zero
+     panics). No new full-ROM app/bridge blocker turned up.
+   - **Control panel's blank wrench, fixed separately.** Its AIF icon is
+     byte-RLE `EColor256`; the HLE-era FBS bitmap loader applied the old
+     `S60v1`-era "+50" compression-enum convention to it, publishing an
+     enum the 7.0s ROM's FBSCLI scanline dispatcher rejects (`-5`). The
+     version boundary now keeps the ordinary enum for Symbian 7.0s and only
+     applies +50 for the older ABI.
 4. **Route 2 — full QEMU board.** Unchanged and still parked: the fidelity
    upgrade, weeks of CMT/XBUS/mDOC reverse-engineering away. See "Route 2" below.
 
-**The operator's reasoning for the split:** mixed mode (track 2) already buys
-most of what a full ROM boot would — the real ARM rasterizer, the real ARM
-window server's geometry and blit semantics — for a fraction of the RE cost
-of Route 2, because it reuses EKA2L1's existing kernel/IPC/VFS instead of
-reverse-engineering the CMT link and the mDOC flash format. It does **not**
-buy font/bitmap fidelity by itself: HLE FBS still owns fonts under mixed
-mode, so the font-fidelity caveat below still applies to every text render on
-`nokia9300rom` today. Full ROM FBS (track 3) is the only track that would
-close that gap, and it is not yet a Desk that boots.
+**Fonts, settled.** Two questions closed the font-fidelity caveat that used
+to sit here:
 
-**The font-fidelity caveat (from worker C's measurement, same 18 px request,
-same string):**
+- **Device font bytes: identical to the SDK.** Agent X2 recovered the 9300's
+  own shipping `SWA*.TTF` files from six firmware images (three 9300 builds,
+  three 9500 builds) and found the same four sha256 hashes in every one,
+  matching the golden's SDK-sourced copies byte for byte. The device's own
+  font name table reads "EFF Swiss Alternative … Inspection copy for
+  Symbian Ltd" — that string is what Nokia actually shipped, not an SDK
+  artefact. **The golden needs no change.** (The files sit in each image's
+  core ROFS, not the XIP core ROM, which is why every EKA2L1 firmware dump
+  lacked them — the on-device dumper likely could not read them while FBS
+  held them open.)
+- **Mono by default is the device's own policy, not a bug or a missing
+  rasterizer.** The ROM loads a real `Freetype.dll` (UID3 `0x100012A7`) and
+  can rasterize SwissA antialiased on request — explicit `EAntiAliasedGlyphBitmap`
+  requests work, at the same widths/ascent as the mono default. What
+  actually selects mono is `CFontStore`'s own constructor, which writes the
+  literal default bitmap type `1` (`EMonochromeGlyphBitmap`) into its
+  font-store state; `GetNearestFontInPixels` substitutes that default
+  whenever a request asks for bitmap type `0`. A live ARM probe on the
+  golden's own firmware build confirms it at runtime: default `1`, request
+  `0`, actual SwissA `1`; an explicit request for type `2` is honoured and
+  returns `2` while the store's own default is unchanged. **No global
+  antialiasing override was made** — that would fix nothing device-real,
+  since the device itself defaults to mono.
+- **What is still open is a genuine metrics/rasterizer question, not a font
+  file or a policy question:** the ROM's own text renders about 6% wider
+  than the one available real 9500 JPEG reference at the same string,
+  and a separate HLE bug — `freetype_font_adapter.cpp`'s
+  `DESIGN_SIZE_SCALE = 9.0f/10.0f` — was rendering every HLE request 10%
+  too small; that HLE scale bug is fixed (the adapter now uses the
+  requested design size unchanged), independent of the ROM question. Closing
+  the remaining ROM-vs-device width gap needs either the shipping font
+  files' exact hinting parameters or a controlled device capture at a known
+  zoom — a JPEG reference cannot establish the device's original glyph
+  bitmap enum.
 
-| FBS / face | Height | Ascent | Width | Bitmap type | Twips |
-|---|---:|---:|---:|---|---:|
-| HLE System | 18 | 14 | 120 | mono | 177 |
-| ROM System | 18 | 14 | 120 | mono | 176 |
-| HLE SwissA regular | 18 | 15 | 143 | antialiased | 177 |
-| ROM SwissA regular | 18 | 14 | 158 | mono | 176 |
-| HLE SwissA bold | 18 | 15 | 149 | antialiased | 177 |
-| ROM SwissA bold | 18 | 14 | 172 | mono | 176 |
-
-The family/weight requested match, but the rendered glyphs differ: HLE draws
-SwissA antialiased through FreeType, ROM FBS draws it mono through the
-device's own rasterizer, at different widths. So swapping in ROM FBS is not
-a drop-in fidelity win on the station's golden font set — it is a different,
-also-not-yet-proven-faithful rendering path, not a strict upgrade over HLE
-until someone can compare against real-device pixels (none exist for this
-exact string).
+**Station plan.** `nokia9300rom` (mixed mode: ROM window server on the HLE
+kernel, HLE FBS drawing bitmaps) is the second hidden station today; a
+full-ROM-stack re-swap (`EKA2L1_ROM_FBS=1` added beside `ROM_WSERV`, on fork
+`s80-rom-full`, with the rebuilt `SysState.exe` and retronet kept) is the
+next step — see "The ROM track: nokia9300rom" below for the current pin and
+what the swap changes. Once `nokia9300rom` on the full ROM stack passes a
+visitor-style audit (the U1 method) with retronet, **it replaces `/os/nokia9300`
+in the listing**, and the HLE build (`nokia9300`) is kept only as rollback.
+What still matters for *both* modes, HLE and ROM alike, and is not retired by
+decision 26: the shared servers (file, message, applist, comms, kernel
+executives/HAL), the host presentation/input transport, station/kiosk
+plumbing, and golden content (contacts, mail, a lived-in exhibit).
 
 ### Route 1 — EKA2L1 + real ROM, host-native in nspawn
 
@@ -1077,40 +1121,52 @@ or asking the author to relicense.
 
 ### The ROM track: `nokia9300rom` (second station, hidden)
 
-D5 dark-launched the mixed-mode ROM window-server track as its own station,
+D5 dark-launched the ROM window-server track as its own station,
 `nokia9300rom`, at `https://kernelhive.madekivi.fi/os/nokia9300rom` — visible
 to an admin on the gallery domain, **hidden** from the listing
 (`listing.state: hidden`). It shares the drawn-phone page and all 75 drawn
 keys with `nokia9300` (`OS_FAMILY.nokia9300rom = 'nokia9300'`), but it is a
-fully separate station: own fork branch `s80-rom-station` @ `ac7c1e126`
-(merge of A's boot + B's input + D's app bridge on the live pin
-`b1fec4a28`), own golden (nokia9300's golden v3.1 plus D's rebuilt
-`SysState.exe`), own slot/VMID/display, `EKA2L1_ROM_WSERV=1` only (`ROM_FBS`,
-`ROM_STARTER` and `Z4_CONTROLLED` unset), network **off** (not on retronet).
+fully separate station: own fork branch, own golden (nokia9300's golden v3.1
+plus the rebuilt `SysState.exe`), own slot/VMID/display, network **on**
+(joined retronet as its own web-plane station — see the network doc).
 
-**Proven live** (D5's frame proof, compared by eye against the HLE station):
-Desk painted entirely by the ROM's own `ewsrv`, drawn-phone Menu + physical
-Esc, F10 → Documents with exact 30 ms/key typing, drawn-key app switching,
-`ekactl list/focus/switch` against the real ROM window tree (worker D's
-bridge), Restore-to-golden with the stream staying up. Desk, Documents and
-the Menu bar look the same as the HLE station's frames — the difference is
-*who draws them*: every pixel here comes from the ROM's ARM rasterizer.
+**Live today (mixed mode):** fork `s80-rom-station` (merge of A's boot + B's
+input + D's app bridge), `EKA2L1_ROM_WSERV=1` only — HLE FBS still draws
+fonts and bitmaps. Proven through the real page: Desk painted entirely by the
+ROM's own `ewsrv`, drawn-phone Menu + physical Esc, F10 → Documents with
+exact 30 ms/key typing, drawn-key app switching, `ekactl list/focus/switch`
+against the real ROM window tree, Restore-to-golden with the stream staying
+up, and (once on retronet) Opera rendering Yahoo! over the real web plane.
 
-**Not in this build:** ROM FBS (still HLE FBS drawing the bitmaps — the
-font-fidelity caveat above applies); pointer (Desk ignores clicks in both
-modes; the station publishes no pointer capability); full phone-side Starter
-boot (the controlled service set replaces it — see worker A below); retronet.
-**Not yet driven:** Sheet, Web, Messaging, Contacts and the rest of the app
-matrix under ROM wserv — worker D's app-coverage matrix is in progress on top
-of this pin, separately from what shipped to the station.
+**In progress: the full-ROM-stack re-swap.** With decision 26 (full ROM FBS
+proven, HLE rendering retired), the station's next pin is fork
+`s80-rom-full`, adding `EKA2L1_ROM_FBS=1` beside `ROM_WSERV`, with the
+rebuilt `SysState.exe` from that fork, retronet kept, and proof through the
+real page including the `+` key (the earlier Nordic sticky-Shift bug),
+Control panel's wrench icon, and Yahoo! over retronet. Until that swap lands,
+`nokia9300rom` draws fonts/bitmaps through HLE FBS, same as `nokia9300`.
 
-**Re-swap recipe** (one command after any of A/B/C/D's branches move): merge
-the new branch into `s80-rom-station`, push; update
-`scripts/build-guests/tiles/nokia9300rom.sh`'s `EKA2L1_FORK_PIN` and
-`registry/stations/nokia9300rom.json`'s `emulator.source`; land on main;
+**Pointer:** not published by the station in either mode — the real 9300 has
+no touchscreen, and stream clicks are not forwarded to this device class (see
+the shell doc). **Full phone-side Starter boot** is out of scope in every
+mode; the controlled service set (SysState in place of Starter) replaces it.
+
+**Re-swap recipe** (one command after the fork's branch moves): merge the new
+branch, push; update `scripts/build-guests/tiles/nokia9300rom.sh`'s
+`EKA2L1_FORK_PIN` and `registry/stations/nokia9300rom.json`'s
+`emulator.source`, and (for the full-ROM swap) set `EXTRA_EMU_ENV` to carry
+both `EKA2L1_ROM_WSERV=1` and `EKA2L1_ROM_FBS=1` (the station's
+`NOKIA_EMU_ENV` knob forwards both); land on main;
 `scripts/dev/labrun -c 'bash /data/kernel-hive/scripts/build-guests/tiles/nokia9300rom.sh --build'`
 then `ssh lab 'systemctl restart streamhost@nokia9300rom'`. The previous
-build tree becomes `eka2l1.prev` for rollback.
+build tree becomes `eka2l1.prev` for rollback. Retain the golden's SDK
+SwissA fonts and Helsinki files (`keyboard-layout-index: 6`) — the device
+fonts are already those same bytes (X2), so no font swap is needed.
+
+**Next station decision:** once `nokia9300rom` on the full ROM stack passes a
+visitor-style audit (the U1 method) with retronet, it replaces
+`/os/nokia9300` in the listing; the HLE build stays as rollback. That audit
+is still pending.
 
 ### Route 2 — A `nokia9300` board in the QEMU fork (full-system)
 
@@ -1977,35 +2033,51 @@ intact, recovered the whole wave in minutes rather than losing it.**
     on the live golden with no regressions; D2 deployed the binary to
     the live hidden station the same pass.
 
-14. **The ROM window-server track's own open items, as of the
-    `nokia9300rom` dark-launch (agent D5):** (a) full ROM FBS's extracted
-    ROM-format AIF asset load fails `KErrCorrupt`/-20 — the ROM's own
-    loader expects a real ROM-mapped address (`IsFileInRom`/`ESeekAddress`),
-    and the extracted copy is not backed that way; worker E is
-    implementing the extension-ROM-root contract (`IsRomAddress`,
-    `RomRootDirectory` SVC 0xB8) needed to fix it, uncommitted; (b) a real
-    window's cross-process bitmap canvas renders **white** under full ROM
-    FBS even though the same handle-duplication IPC (op 18) succeeds —
-    narrowed to cross-process bitmap consumption or redraw retention, no
-    specific root established (worker C); (c) which rasterizer full ROM
-    FBS should use is still open even once (a) and (b) clear — see the
-    font-fidelity table above; the ROM's own mono rasterizer is not
-    obviously more faithful than HLE's antialiased FreeType path without a
-    real-device pixel reference to compare against; (d) full phone-side
-    Starter boot is not attempted — `nokia9300rom` runs worker A's
-    controlled service set (a SysState helper standing in for the real
-    phone stack), and SpeDe `-15` / Starter `USER 83` (missing
-    `D_EXC.exe`) remain the walls for anyone who wants the genuine boot
-    chain instead; (e) `nokia9300rom` is not on retronet — extending N8's
-    netns recipe to a second station needs its own address/tap/chain
-    claims, not attempted; (f) the SPA forwards stream clicks to
-    `nokia9300rom` the same as any other station, but the device has no
-    working pointer in either HLE or ROM mode (Desk ignores clicks on
-    icons in both) — the SPA should not present a pointer affordance for
-    this device family until Desk's own pointer policy is understood, or
-    a pointer story exists; (g) worker D's ROM app-coverage matrix
-    (Sheet, Web, Messaging, Contacts and the rest under ROM wserv) is
-    in progress, separate from what shipped to the station.
+14. **The ROM window-server track's own open items, updated after the full
+    ROM FBS matrix (workers E/F) and the retirement of HLE rendering
+    (decision 26):**
+    - **RESOLVED:** the extracted ROM-format AIF asset load — extracted
+      `.aif`/`.mbm` files with validated native ROM bitmap stores now get
+      globally mapped, guest-read-only backing presented as an extension
+      ROM (worker E); the "white window" cross-process bitmap canvas was a
+      **probe bug** (zero-twips canvas, not a sharing defect) — a real
+      window's cross-process bitmap now paints correctly once the probe
+      passes real twips (worker E).
+    - **RESOLVED:** the rasterizer/fidelity question resolved as "device
+      policy, not a bug" — mono is `CFontStore`'s own compiled-in default
+      on this firmware, confirmed by a live ARM probe; the device's own
+      shipping SwissA font bytes are identical to the SDK copies already in
+      the golden (agent X2); no font-file or golden change was needed.
+      **Still open:** the ROM's own rendered text is about 6% wider than
+      the one available real-9500 JPEG reference at the same string — a
+      genuine metrics/hinting question, not resolvable without either the
+      shipping fonts' exact hinting parameters or a controlled device
+      capture at a known zoom (a JPEG cannot establish the device's
+      original glyph bitmap enum).
+    - **RESOLVED:** `nokia9300rom` joined retronet as its own web-plane
+      station (agent N9) — own netns/veth/chain/address, Opera renders
+      Yahoo! from the corpus through the real page, negative-tested (no
+      route out).
+    - **In progress:** UI4's SPA change to stop forwarding stream
+      mouse/touch to device-drawing stations with no pointer capability
+      (`nokia9300` and `nokia9300rom` both — Desk ignores clicks on icons
+      in either mode, and the real 9300 has no touchscreen).
+    - **Not attempted, out of scope for the station:** full phone-side
+      Starter boot — the controlled service set (a SysState helper
+      standing in for the real phone stack) replaces it in every mode; the
+      SpeDe `-15` / Starter `USER 83` (missing `D_EXC.exe`) walls remain
+      for anyone who wants the genuine boot chain instead.
+    - **Remaining full-ROM-mode boundaries, not app-matrix blockers:**
+      APPARC's disk-format (non-ROM) icon handles still return
+      `KErrNotFound` — no guest bridge exists for them, only mapped native
+      ROM AIF icons work; camera bitmap return and EGL native-pixmap
+      support are unimplemented in ROM FBS mode (`KErrNotSupported` /
+      `EGL_BAD_NATIVE_PIXMAP_EMU`); the HLE Avkon skin server is omitted in
+      ROM FBS mode (the tested Series 80 ROM skin path works; no general
+      Avkon-application claim).
+    - **Station-level, still pending:** a visitor-style audit (the U1
+      method) of `nokia9300rom` on the full ROM stack, before it can
+      replace `/os/nokia9300` in the listing.
 
 **Resolved this wave:** the network wall (§H3); the S80 keymap, now a
 frame-proven port of the ROM's own EKTRAN/EKDATA tables on branch
