@@ -273,7 +273,7 @@ class DeclarationTest(unittest.TestCase):
         self.assertEqual(sorted(loaded.our_authors), ["Wnt", "jonni-reaktor"])
         self.assertEqual(
             sorted({t.repo for t in loaded.targets}),
-            ["Wnt/es40", "Wnt/fs-uae", "Wnt/iris", "Wnt/mame", "Wnt/qemu", "Wnt/vice"],
+            ["Wnt/EKA2L1", "Wnt/es40", "Wnt/fs-uae", "Wnt/iris", "Wnt/mame", "Wnt/qemu", "Wnt/vice"],
         )
         self.assertIn(("Wnt/mame", "irix"), [(t.repo, t.branch) for t in loaded.targets])
         self.assertIn(("Wnt/mame", "mpf2"), [(t.repo, t.branch) for t in loaded.targets])
