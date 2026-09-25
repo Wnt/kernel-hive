@@ -6,7 +6,12 @@ toolchain that proved it all, so the main document can state the conclusion
 without the working. Facts only, from agents N1, N2, N3, N4, N5 and N6
 (2026-09-24 21:00 UTC through 2026-09-25 04:45 UTC, across a 5-hour
 usage-limit pause); protocol facts (opcode numbers, argument order, server
-order, header names) only — no disassembly, no ROM bytes.
+order, header names) only — no disassembly, no ROM bytes. The Opera
+home-page resolution ("Still open" §1, below) is agent N7's finding,
+relayed through the coordinator as of 2026-09-25 07:00 UTC with no written
+report seen by this fold — see
+[`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md) for the
+mechanism.
 
 ## Status: the network wall is closed
 
@@ -249,16 +254,40 @@ and confirmed by a dynamic trace showing ordinal 27
 (`NewL(TCommDbDatabaseType)`) is a thin wrapper that itself calls ordinal
 153, so patching 153 alone covers every caller. The values match N2's HLE
 answers on a fresh 9300 C: (IAP id 1, name "Host network", service type
-"LANService"); on the 9300i/9500, which ship their own WLAN IAPs 1–5 in the
-ROM defaults, the patched IAP lands at a different id and the HLE's
-hard-coded constant would disagree on one field (`IAPBearer`) — cosmetic
-only, since no traced client reads it. Branch `s80-commdb-patchdll` @
-`30c3eff3d` (on `fork`), built with the same N5 toolchain; merges cleanly
-with N2's `s80-commdb` (neither touches the other's lines). Nothing is
-placed on the guest drives by hand — the patch DLL ships next to the
-emulator binary and the Qt frontend copies it into each data dir's `patch/`
-folder at every start, so a golden only needs a binary built from a branch
-carrying this commit.
+"LANService", `DialogPref` DoNotPrompt) with one exception: `IAPBearer` is
+**3** on-disk (every ROM has WLANBearer = 1 and RndisBearer = 2, so "Host
+network" as LANBearer lands at 3), where N2's HLE constant answers 1. The
+fix is to change N2's `EKA1_HOST_SERVICE` constant for `IAPBearer` to 3; no
+traced client reads that field today, so it is cosmetic until one does. On
+the 9300i/9500, which ship their own WLAN IAPs 1–5 in the ROM defaults, the
+patched IAP lands at a different id (6) and every HLE constant above would
+disagree with it — also cosmetic only, and out of scope for the 9300
+target. Branch `s80-commdb-patchdll` @ `30c3eff3d` (on `fork`), built with
+the same N5 toolchain; merges cleanly with N2's `s80-commdb` (neither
+touches the other's lines). Nothing is placed on the guest drives by hand —
+the patch DLL ships next to the emulator binary and the Qt frontend copies
+it into each data dir's `patch/` folder at every start, so a golden only
+needs a binary built from a branch carrying this commit; the records
+themselves live in the guest's own `C:\System\Data\Cdbv3.dat` and are
+created on the first CommDB open after boot (Web at app start, or Control
+panel when Internet setup opens) — for a golden, either let the first boot
+write them or pre-seed from a finished run.
+
+**Side notes (agent N4).** The Control panel crash some earlier passes
+fixed is unrelated to this DLL or its map file: it was the `ecam_general.dll`
+patch replacing Series 80's `ecam.dll` (a host SIGSEGV under dynarmic,
+`KERN-EXEC 3` under dyncom), fixed by C1's `a3350568c` + `3052b31c5`.
+PuTTY for S80v2 has no in-app IAP chooser — its S80 build does not link
+`commdb.lib` and asks `RConnection::Start` for the system prompt instead, so
+the phone's own Internet setup list (above) is the only IAP-list proof for
+it. Internet setup greys out "Edit" for "Host network" because
+`iapwlan.dll` looks up a `WLANServiceTable` row for the service and finds
+none — a cosmetic gap the museum does not need closed. The Lua breakpoint
+hook used to trace the CommDB calls above (`n4_commdb_trace.lua`) names
+every `CCommsDatabase` factory and table/record call with its thread and LR,
+and is reusable for tracing any other patch DLL's guest-side behaviour —
+but it must not be active while a patch DLL sits on ordinal 153, since the
+trampoline occupies that entry.
 
 ## Opera's path to a connection (agent N2)
 
@@ -325,14 +354,16 @@ at startup — see "Still open" below. Until that lands, the visitor path is
 
 ## Keymap and DNS notes for whoever resumes
 
-- **URL entry.** K1's real keymap — a port of the ROM's own EKTRAN/EKDATA
-  translation tables, frame-proven for mixed case, digits, punctuation
-  including € and Ä/ö, Chr-key accent cycling, Enter and key repeat (branch
-  `s80-keymap`, being pushed; a stopgap branch `s80-bindings-stopgap` is
-  already proven and pushed) — replaces the crude data-dir key-binding
-  workaround earlier tests here used just to type an address at all. See the
-  main document's §H4 for the keymap itself; nothing network-specific
-  remains once it lands.
+- **URL entry.** K1's real keymap — a run-time port of the ROM's own
+  EKTRAN/EKDATA translation tables, frame-proven (v3) for mixed case,
+  digits, the full UK punctuation set, Chr legends and accent cycling,
+  Ctrl-code entry, Shift+Backspace, Menu, the command buttons, the joystick
+  and key repeat, from any host keyboard layout (branch `s80-keymap`, pushed
+  at `d66e4ae87`) — replaces the crude data-dir key-binding workaround
+  earlier tests here used just to type an address at all. The interim
+  bindings branch, `s80-bindings-stopgap` (agent K2), is superseded on
+  Series 80 now that K1 has landed. See the main document's §H4 for the
+  keymap itself; nothing network-specific remains once a station bakes it.
 - **Host-name / DNS mapping.** EKA2L1's inet HLE resolver first consults
   `config.yml`'s `hosts:` map (an exact name, or a `*.suffix` wildcard, to a
   `host[:port]`), then falls back to the host's own `getaddrinfo`. So the
@@ -362,16 +393,19 @@ network fix with it.
 
 ## Still open
 
-1. **Opera's home page does not load at startup.** No `Home.html` open, no
-   ESock call, engine idle with nothing queued — the load is never
-   requested, not requested-and-blocked. N7 traced the likely cause to the
-   HLE ViewServer's `ActivateView` message (op 6): it parses a later-firmware
-   16-byte layout while the ROM sends an 8-byte view id + custom-message id +
-   empty descriptor, so views start with a garbage custom message. Fix in
-   progress, as of 2026-09-25 05:00 UTC; see
-   [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md). Until
-   it lands, the visitor path above (Open Web address → History list → Go
-   to) works end to end.
+1. **Opera's home page — RESOLVED, not by the ViewServer theory.** The
+   ViewServer's `ActivateView` message (op 6) really was parsing a
+   later-firmware 16-byte layout while the ROM sends an 8-byte view id +
+   custom-message id + empty descriptor, and that is now fixed as a
+   correctness matter — but it was not why the page stayed blank. The actual
+   cause: EKA2L1 launched every EKA1 app with the "create document" command,
+   where the device's own buttons use plain "run"; a create launch that
+   names no document now becomes a run launch on Series 80, so Opera loads
+   its built-in Nokia home page (`Z:\Documents\WWW\Home.html`) the way the
+   device does (agent N7, branch `s80-opera-home`). File manager, which
+   shared the same launch-command bug, now paints too. Notes and Sync are
+   still under investigation. Full detail in
+   [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md).
 2. **`RThread::ExitCategory()`** (exec 0xC0003F) is still unimplemented;
    faults a caller that asks for it. Not hit by Opera, PuTTY or the CommDB
    patch DLL.

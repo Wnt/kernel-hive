@@ -3,12 +3,14 @@
 Sibling of [`candidate-symbian-s80.md`](candidate-symbian-s80.md) §H7. Holds
 the mechanism-by-mechanism detail, the wall evidence and the SDK-emulator
 trace facts that would otherwise bloat the main document. Facts from agents
-B1 and X1's full reports (2026-09-24), plus B4, B5, B6 and N7, whose work is
-still in flight and is relayed here through the coordinator without a
-written report of its own — those facts are marked **as of 2026-09-25
-05:00 UTC** and a resumer should ask the coordinator to confirm before
-relying on the exact wording. Nothing here is disassembly or a ROM byte
-dump — mechanisms and traces only, per the repo's abandonware rules.
+B1 and X1's full reports (2026-09-24), and B4's and B6's full reports
+(2026-09-25: the third-app deadlock fix and Desk's main pane). B5 (the ROM's
+own boot chain), B7 (the ROM's own Eikon server) and N7 (Opera's home page)
+have no written report seen by this fold; their facts are relayed here
+through the coordinator, marked **as of 2026-09-25 07:00 UTC**, and a
+resumer should ask the coordinator to confirm before relying on the exact
+wording. Nothing here is disassembly or a ROM byte dump — mechanisms and
+traces only, per the repo's abandonware rules.
 
 ## The mechanisms (agent B1, fork branch `s80-shell` @ `19308cbd0`)
 
@@ -27,85 +29,170 @@ buttons at all.
 | — | **Captured keys were never delivered**: `io.cpp:198` looked up `key_capture_requests[evt.key_evt_.code]`, and the raw event's code is always 0. Rewritten so a `CaptureKey` request (keyed by translated key code) wins the translated key event and a `CaptureKeyUpAndDowns` request (keyed by scan code) wins the up/down events; winner = highest signed priority whose modifier mask matches, newest on a tie; the winner gets the event **instead of** the focus (nonnga wserv `EVENT.CPP` semantics). Requests are dropped on `CancelCaptureKey*` and in `~window_group`. Written independently, the same shape as EKA2L1-WEB's `dc3344530` key-capture rewrite (see the main doc's §Prior work found). | **KEPT** | prerequisite for the ROM EikSrv ever owning the keys; also fixes S60 CaptureKey users |
 | — | Session ops that parked a server forever: `ClearHotKeys` (→ `KErrNone`), `Start/CompleteCustomTextCursor` (→ `KErrNotSupported`), `SetSystemPointerCursor`, `Claim/FreeSystemPointerCursorList`, `Set/ClearDefaultSystemPointerCursor` (→ `KErrNone`). | **KEPT** | the ROM Eikon server issues all of them while constructing (log showed `Unimplemented ClOp: 0x31/0x2f/0x48`) |
 | — | chimera-core 0030 (see the main doc's prior-work sweep): a window group remembers its owner process by kernel id and checks it is alive before touching the pointer. | **KEPT** | an app launched from Desk or the buttons outlives its starter |
-| i | **Run the ROM's real Eikon server**: `EKA2L1_ROM_EIKSRV=1` skips the HLE EikAppUiServer, Notifier and ViewServer; Desk's connect then summons `eiksrvs.exe`, which creates `EikAppUiServer`, `ViewServer`, `AlarmServer`, `AlarmAlertServer`. **Desk stays black behind it** — the guest area never paints; the Eikon server thread keeps getting IPC completions, but Desk's first window never draws. | **OPEN as this specific shortcut** — a separate, fuller boot-chain effort is making faster progress; see "The ROM's own boot chain" below | it would give the six generic buttons, the Menu-hold task list and the status pane from ROM code |
-| i' | **Start `Starter.exe` / `SysAp` with a trimmed start list.** Starter, SysAp and `Startup.app` all reach the DOS server (phone link); this needed an HLE DOS server before it could run at all. | **IN PROGRESS (B5, branch `s80-hle-dos`)** — see "The ROM's own boot chain" below | the HLE DOS server now exists; the chain runs much further than mechanism i, with a new, concrete, named wall |
-| iii | **Desk launching apps itself / the Desk main pane.** Desk paints its own chrome (icon, CBA labels) but the AppList server's contribution to the main pane — the date header, the application-group grid, the wallpaper — was missing. | **RESOLVED (B6, branch `s80-desk-content` @ `1d49e15a6`)** — see below | the 7.0s AppList server table plus seven EKA1 locale calls were the missing piece, not C: state |
+| i | **Run the ROM's real Eikon server**: `EKA2L1_ROM_EIKSRV=1` skips the HLE EikAppUiServer, Notifier and ViewServer; Desk's connect then summons `eiksrvs.exe`, which creates `EikAppUiServer`, `ViewServer`, `AlarmServer`, `AlarmAlertServer`. | **ADVANCED, not station-safe (B7, branch `s80-rom-eiksrv`)** — Desk now paints completely, with the ROM's own status pane; see "The ROM's own Eikon server" below | it gives the six generic buttons, the Menu-hold task list and the status pane from ROM code — once it can run for more than ~2.5 minutes |
+| i' | **Start `Starter.exe` / `SysAp` with a trimmed start list.** Starter, SysAp and `Startup.app` all reach the DOS server (phone link); this needed an HLE DOS server before it could run at all. | **IN PROGRESS (B5, branch `s80-hle-dos`)** — see "The ROM's own boot chain" below | the HLE DOS server now exists; the chain runs past `eiksrvs` and the phone server, to a new, concrete, named wall |
+| iii | **Desk launching apps itself / the Desk main pane.** Desk paints its own chrome (icon, CBA labels) but the AppList server's contribution to the main pane — the date header, the application-group grid, the wallpaper — was missing. | **RESOLVED (B6, branch `s80-desk-content` @ `4a12074c2`)** — see below | the 7.0s AppList server table plus seven EKA1 locale calls were the missing piece, not C: state |
 
-### Desk's main pane, filled in (agent B6, branch `s80-desk-content` @ `1d49e15a6`)
+### Desk's main pane, filled in (agent B6, branch `s80-desk-content` @ `4a12074c2`)
 
-The empty main pane was an AppList server table gap, not a C: state problem
-— B1 had already ruled out C: state by tracing the file server (Desk opens
+The empty main pane was a chain of six failing service calls, not a missing
+C: file or a missing shell value — two rival theories that both lost. B1 had
+already ruled out C: state by tracing the file server (Desk opens
 `skinerin.rsc`, the `s80*` resources and `desk.aif`, creates `Shortcuts.dat`
-and `101f8e4f.ini`, and never even reaches `desk_content.rsc`). B6
-implemented the 7.0s AppList server's client table — `GetAllApps` (0),
-`GetEmbeddableApps` (1), `GetNextApp` (2), `GetAppInfo` (5),
-`GetAppCapability` (6), `StartApp` (7/8), `StartDocument`/`CreateDocument`
-(0xe/0xf), `AppForDocument` (0x11), `SetNotify`/`CancelNotify` (0x19/0x1a),
-icon-by-size (0x1c), `GetFilteredApps` (0x22) — plus seven EKA1 locale
-calls (independently also implemented by C1's branch; the coordinator told
-B6 to drop the overlap). With that table answered, **Desk now shows its
-date header, the wallpaper, a focus bar, the Clock and nokia.com shortcut
-icons, and opens a group** — Personal: Telephone, Contacts, Messaging,
-Calendar. Labels and folder icons still render in the wrong font on B6's own
-branch; the font fixes that resolve this (`a1ebfc046`, C1's pixel-height
-commit `1b9a42b15`) already exist on other branches and are expected to
-carry the fix once I1's integration merge lands.
+and `101f8e4f.ini`, and never even reaches `desk_content.rsc`); on a fresh
+C:, Desk builds its own state from the ROM's own
+`Z:\System\Apps\desk\desk_content.rsc`, and needs no Startup/SysAp/SysState
+value either — it writes its own `Desk state` (3). The six links, in the
+order they stopped Desk, each proven by the next frame or log: (1) a
+synchronous BackupServer `NotifyLockChange` (op 26) that was never
+completed — fixed on W2's branch; (2) `AppListServer` op 0, which 7.0s uses
+for `GetAllApps` but EKA2L1 treated as a dummy — B6 implemented the full
+7.0s AppList table (`GetAllApps` 0, `GetEmbeddableApps` 1, `GetNextApp` 2,
+`GetAppInfo` 5, `GetAppCapability` 6, `StartApp` 7/8,
+`StartDocument`/`CreateDocument` 0xe/0xf, `AppForDocument` 0x11,
+`SetNotify`/`CancelNotify` 0x19/0x1a, icon-by-size 0x1c, `GetFilteredApps`
+0x22 — full table in `B6/applist-table.md`, derived from the SDK's WINS
+`APGRFX.DLL` export bodies and checked against X1's SDK-emulator trace;
+every other op on this level now completes with `KErrNotSupported` instead
+of hanging its caller forever); (3) empty dates everywhere — seven EKA1
+locale exec calls (day/month names, date suffix, AM/PM), independently also
+implemented by C1's branch (the coordinator told B6 to drop the overlap);
+(4) 1–2 px tall labels — the 7.0s pixel-font-height bug (C1's fix) plus the
+wrong GDR face (W2's fix); (5) blank folder icons — EKA1's `CFbsBitmap::Load`
+draws ROM-image bitmaps (UID `0x10000041`) in place after
+`RFs::IsFileInRom`, so the bitmap's "handle" is a **ROM address**, which the
+window server had only ever looked up in the FBS object table; B6 made the
+window server and FBS treat an EKA1 ROM-image handle as a real, readable
+bitmap; (6) shortcuts drawn at list size and a tiny Desk title icon —
+`GetAppIconByUidAndSize` always returned the AIF's first icon pair; B6 made
+it return the exact size asked for, or else the largest that fits.
+
+With all six answered, **Desk now shows its date header, the wallpaper, a
+focus bar, the Personal/Office/Media/Tools folders with their icons, the
+Clock and nokia.com shortcuts (with the shortcut arrow), the big Desk title
+icon, and the command buttons Open / Write note / Note list** — this is
+complete on a **fresh C: drive**, framebuffer-exact at 2× (1280×400, 0 of
+128,000 2×2 blocks non-uniform), idling at 2% of one core and 231 MB RSS.
+**Open** on the focused group enters it: Personal shows Telephone, Contacts,
+Messaging and Calendar, with Exit on command button 4. The 9300's firmware
+(5.22) shows a third command button, "Note list", that the SDK emulator and
+the 2004 9500 lack — a firmware difference, not a bug. An optional golden
+optimisation, `B6/apply-desk-state.sh`, pins the three files Desk itself
+writes on first launch (`Shortcuts.dat`, `desk.ini`, `101f8e4f.ini`) into a
+golden data dir byte-for-byte; it is not required — a fresh golden already
+shows this Desk once the binary is built from this branch (or the
+integration branch once it carries this commit) — and a golden with the
+script applied paints pixel-identical to the fresh-C: case. **Still open,
+not Desk-side:** Write note (command button 2) starts Note, which builds its
+UI and then panics `USER 30` (`HBufC8::NewLC` with a negative length) in
+CONE-path handling; Desk itself returns cleanly. The lower-left status pane
+(profile, clock, signal/battery) is EikSrv/wserv territory, not Desk's — see
+"The ROM's own Eikon server" below for the status pane and A2's clock-anim
+work for the clock face itself.
 
 ## Walls: resolved this wave, and what is left
 
-1. **The third-app wall — RESOLVED (agent B4, frame-proven).** A third app
-   launched at any time alongside Desk and one other used to never finish
-   constructing its UI: it connected to every server, got its skin-server
-   completions, and then issued nothing more — no panic, no exit. Cause:
-   EKA1's `RMutex::CreateGlobal` silently **succeeded** on a duplicate name
-   instead of returning `KErrAlreadyExists` (unlike semaphores, which already
-   reject a duplicate name correctly), so every app that constructed its UI
-   created and owned its *own* skin server instead of sharing the first
-   one's. With two mutex fixes plus the redraw-spin fix (`s80-wserv-
-   leftovers`), **Desk, Documents and Web now run together, switch by
-   application key, and keep each app's own state across every switch.**
-   Branch `s80-third-app`, pending push, as of 2026-09-25 05:00 UTC.
+1. **The third-app wall — RESOLVED (agent B4, branch `s80-third-app` @
+   `f1422f60f`, pushed, frame-proven). It was two separate bugs, not one.**
+   Apps launched **one after another** by app key were simply **starved**:
+   the redraw-spin bug below (mechanism behind item 4 of the main document's
+   H7) kept the CPU busy, and W2's fix alone un-blocks this case. Apps
+   launched **together** (`--run Desk --run Documents --run Web`)
+   **deadlocked** for a second, independent reason: the skin client
+   serialises "is SkinServer running, else start `skinloaderexe`" on a
+   global mutex `SkinServerMutex`, and EKA1's `RMutex::CreateGlobal` silently
+   **succeeded** on a duplicate name instead of returning
+   `KErrAlreadyExists` (unlike semaphores, which already reject one) — so
+   Desk, Documents and Web each created and owned their *own* skin server.
+   The three skin loaders then all blocked on `FbsLargeBitmapAccess`, and a
+   second, independent kernel bug — the legacy mutex's `signal()` woke a
+   waiter without recording it as the new holder — left the count negative
+   with nobody left to signal: a genuine deadlock, not just starvation
+   (thread dump: three `apprun` threads waiting on "my skin server", three
+   `skinloaderexe` threads waiting on the FBS mutex). Either fix alone
+   un-deadlocks the triple launch; the duplicate-name fix is the one that
+   leaves exactly one SkinServer running. Both are env-gated, on by default.
+   **Result:** Desk, Documents and Web (and a fourth process, My own) all
+   run together and switch by application key, each keeping its own state
+   across every switch; a concurrent triple launch starts one SkinServer and
+   all three apps paint. **New walls the same testing turned up, not fixed:**
+   Sheet panics `USER 30` if it is running beside Desk when a third app
+   starts (a view-server event; the panic stack is EUser ← Cone.dll's
+   `CCoeAppUi` view code ← `ViewCli.dll` — plausibly the same class of
+   missing-S80-branch bug as the window-server opcode table, §H1); because
+   Sheet in that repro was launched with `--run`, its panic **closes the
+   whole emulator** (`EXIT_STATUS=0`) — a station cannot depend on a
+   `--run` app that can panic, which is why the station's own launcher uses
+   the kiosk-home flag instead of `--run` for a fixed app. My own (File
+   manager, the ROM's default) never finishes constructing its own UI even
+   launched alone — a separate, per-app wall, not a process-count limit.
 2. **The empty Desk pane — RESOLVED.** See mechanism iii above.
-3. **The ROM's real Eikon server and a black Desk — IN PROGRESS.** See "The
-   ROM's own boot chain" below; still short of a painted Desk, but past
-   several walls that used to block it entirely.
+3. **The ROM's real Eikon server and Desk's status pane — ADVANCED, not
+   station-safe.** See "The ROM's own Eikon server" below: Desk now paints
+   completely, with the ROM's own status pane, but the emulator cannot stay
+   up on this path for more than a few minutes yet.
 
-## The ROM's own boot chain (agent B5, branch `s80-hle-dos`, in flight as of 2026-09-25 05:00 UTC)
+## The ROM's own Eikon server: a full Desk, not station-safe (agent B7, branch `s80-rom-eiksrv`, in flight as of 2026-09-25 07:00 UTC)
+
+B7 took the `EKA2L1_ROM_EIKSRV=1` shortcut (mechanism i) from "Desk stays
+black behind it" to a fully painted Desk. Three additions: a **pre-start
+mechanism for ROM executables at boot** (`EKA2L1_PRESTART`, defaulting to
+SecurityServer), an **EKA1 duplicate server-name check** (closing exactly
+the gap Y2's sweep had flagged as still open — see the main document's
+§Prior work found — so a native EikSrv can no longer silently coexist with
+the HLE stub instead of failing loudly), and a diagnostic server stub. With
+those in: **Desk paints completely, with the ROM-drawn status pane** (skin,
+network and battery indicators), and the application keys are handled by
+the ROM's own Eikon server through the AppList server — op 5 with the app's
+UID, then op 7 — exactly as X1's independent SDK-emulator trace shows the
+real platform doing it (below). A window-shape fix (a shaped window's
+visible region had been the shape alone, not the shape intersected with the
+window) made the narrow status strip inside application views paint too.
+**Not station-safe yet:** with no value from Starter for the system state,
+the ROM's own alarm server loops, and the emulator crashes after about
+2.5 minutes. That crash is the wall to clear before this path can replace
+mechanism ii as what a station actually ships.
+
+## The ROM's own boot chain (agent B5, branch `s80-hle-dos`, in flight as of 2026-09-25 07:00 UTC)
 
 A fuller alternative to the `EKA2L1_ROM_EIKSRV=1` shortcut (mechanism i):
 rather than skip straight to `eiksrvs.exe`, this boots the ROM's own
 `Starter.exe` chain, which mechanism i' above found blocked on the phone-link
 DOS server. B5 built an **HLE DOS server**, and the chain now runs:
 
-**Starter → SharedData → HLE DOS server → splash → SpeDeServer →
-SecurityServer (comes up once ETel op 14 is answered) → `eiksrvs` → …**
+**Starter → SharedData → the HLE DOS server → splash → SecurityServer
+(unblocked once ETel op 14 is answered) → the Eikon server → the phone
+server → …**
 
-— materially further than either mechanism i (which starts from `eiksrvs`
-directly and stalls with a black Desk for an unidentified reason) or
-mechanism i' as it stood before this branch (dropped for lack of a DOS
-server). The next named wall is concrete: **the ROM's PhoneServer calls EKA1
-executive `0x8000E5` (`MessageGetDesMaxLength`), which is unimplemented.**
-Fix in progress. This is the thread to pull on next for a real, ROM-code
-Desk with its status pane, the Menu-hold task list and `CaptureLongKey` all
-working the way the device does them — none of which the HLE app-key switch
-(mechanism ii) implements, by design.
+— materially further than either mechanism i on its own or mechanism i' as
+it stood before this branch (dropped for lack of a DOS server). The phone
+server itself now answers requests: Telephone passes its own phone request
+through it, though Telephone does not paint yet — its next wall is the ETel
+phone-opcode table (agent A3, main document's app-coverage section). The
+chain currently **exits by its own decision**, right after a round trip
+through the cover-display notifier; the suspect is the missing **cover-UI
+window server** (Starter's `CuiStarter` item) — in flight. This is the
+thread to pull on next for a real, ROM-code Desk with its status pane, the
+Menu-hold task list and `CaptureLongKey` all working the way the device does
+them — none of which the HLE app-key switch (mechanism ii) implements, by
+design.
 
-## Opera's home page and the ViewServer message layout (agent N7, in flight as of 2026-09-25 05:00 UTC)
+## Opera's home page — RESOLVED (agent N7, branch `s80-opera-home`, as of 2026-09-25 07:00 UTC)
 
-N7 traced why Opera never loads its home page at startup (full symptom in
-[`candidate-symbian-s80-network.md`](candidate-symbian-s80-network.md)): the
-HLE ViewServer parses the 7.0s `ActivateView` message (op 6) using a
-**later-firmware 16-byte layout**, while the ROM actually sends an **8-byte
-view id + custom-message id + empty descriptor**. Every view activation on
-this ROM therefore starts with a garbage custom message. Opera's view-
-server activation event *is* delivered and Opera does re-request the next
-one (confirmed in N6's idle-state dump), so the connection to the view
-server is fine — it is the message's own bytes past the view id that are
-wrong. Fix in progress. This may also explain the File manager and Notes
-walls below (§ "no synchronous request outstanding, one async op 4 pending
-on a ROM-server session" in the main document's app-coverage table) and the
-Sync regression, which share the same shape: a view-server-adjacent app that
-gets its early completions and then does nothing further.
+The blank home page was not, in the end, mainly the ViewServer message
+layout. **The real cause: EKA2L1 launched every EKA1 app with the "create
+document" command, where the device's own application buttons use plain
+"run."** On Series 80, a create-document launch that names no document now
+becomes a run launch — matching the device — so Opera loads its built-in
+Nokia home page (`Z:\Documents\WWW\Home.html`) the way the real buttons do,
+and File manager, which shared the same launch-command bug, now paints too.
+A separate, real bug — the HLE ViewServer's `ActivateView` message (op 6)
+parsing a later-firmware 16-byte layout while the ROM sends an 8-byte view
+id + custom-message id + empty descriptor — was also fixed, as a
+correctness fix in its own right (a ROM-accurate `ActivateView` argument
+layout), but it was not the cause of the blank page. **Notes and Sync are
+still under investigation** — they may or may not share a cause with the
+launch-command bug; unconfirmed.
 
 ## Commits on `fork/s80-shell` (all small, cherry-pickable)
 
@@ -120,6 +207,35 @@ LDD channel) + 0022 (null LDD accepting every request) — they change
 `ldd/CMakeLists.txt` (a reconfigure) and matter for the Starter/SysAp path
 (mechanism i'), not the buttons; whoever picks that up should take them from
 the prior-work sweep's chimera patches directly.
+
+## Commits on `s80-third-app` (agent B4, base: B1's `s80-shell` @ `19308cbd0`)
+
+| Commit | What | Gate |
+|---|---|---|
+| `55eafd513` | W2's `7e6564ac6` cherry-picked (the zero-area redraw spin) | — |
+| `b989dc9da` | `svc.cpp` `mutex_create_eka1`: a global name already taken now returns `KErrAlreadyExists` (the rule `sema_create_eka1` already had) | `EKA2L1_FIX_MUTEX_DUPNAME=0` turns it off |
+| `26975fd3d` | `legacy/mutex.cpp`: a free mutex is taken at once; the waiter `signal_impl` wakes becomes the holder | `EKA2L1_FIX_MUTEX_HANDOFF=0` turns it off |
+| `2c40ccbd6` | debug aid: `EKA2L1_THREAD_DUMP_SECS=<n>` dumps every guest thread's state/wait/stack | off unless set |
+| `f1422f60f` | a guest panic now logs pc, lr and ROM callers | trace level only |
+
+Quality gate: full incremental build green; `ekatests` — all 28,141 assertions
+across 283 test cases passed. B7's server duplicate-name check (above)
+complements this branch: B4's fixes cover mutexes only, and without B7's
+check a hand-off fix alone still lets servers duplicate (three SkinServers
+instead of one) even once the deadlock itself is gone.
+
+## Commits on `s80-desk-content` (agent B6, base: B1's `s80-shell` @ `19308cbd0`)
+
+| Commit | What |
+|---|---|
+| `62a115538`, `4343d64bd` | merge W2's `s80-wserv-leftovers` up to `a1ebfc046`: backup, GC brush, text cursor, EikSrv table, caret, GDR fonts |
+| `e61c951ad` | applist: the Symbian 7.0s AppListServer table |
+| `1f4f9e171` | kernel: an unimplemented system call now logs thread, r0–r3 and the caller's module/ordinal |
+| `a16f69e64`, `1d49e15a6` | C1's EKA1 locale-name and 7.0s pixel-font-height fixes, cherry-picked |
+| `26254356e` | applist: `AppIconByUidAndSize` answers with the size asked for |
+| `2b7372d60` | wserv, fbs: draw EKA1 ROM-image bitmaps in place |
+| `86eb72dcf` | applist: a launch that names a document keeps it (`get_launch_parameter` used to overwrite it with the app's own name) |
+| `4a12074c2` | kernel: a thread that panics itself logs its LR and the code addresses on its stack |
 
 ## Method notes (so a resumer does not repeat the same traps)
 
