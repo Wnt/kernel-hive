@@ -29,9 +29,15 @@
 #                     from the S80 DP2.0 SDK's Z: drive) in Z:\system\fonts —
 #                     both dumps lack them and the UI falls back to a serif;
 #                     machine-uid 0x101F8DDB (the 9300's own) in devices.yml;
-#                     config.yml keyboard-layout-index 0 (UK EKDATA) and UPnP
-#                     off; agent B6's Desk first-boot state (Shortcuts.dat,
-#                     desk.ini, SharedData 101f8e4f.ini).
+#                     config.yml keyboard-layout-index 6 (Nordic, the keyboard
+#                     the station's drawing shows) and UPnP off; agent B6's
+#                     Desk first-boot state (Shortcuts.dat, desk.ini,
+#                     SharedData 101f8e4f.ini); agent L1's Helsinki files in
+#                     C:\System\Data (Wldsvr.dat home city Helsinki +120 min,
+#                     LOCALE.D00 European date / 24 h / EU summer time,
+#                     nitzlookup.db) — the guest wrote them after Clock ›
+#                     Change city; without Wldsvr.dat the ROM's New York home
+#                     city returns after the first Telephone/Calendar start.
 #
 # Usage — as root on labhost (debootstrap + systemd-nspawn), e.g. from CT950:
 #   scripts/dev/labrun -c 'bash <repo>/scripts/build-guests/tiles/nokia9300.sh --build --rootfs --golden'
@@ -59,14 +65,14 @@ UIDBASE="${UIDBASE:-2621440}"
 # museum kiosk frontend + control socket (B2), Desk content (B6), third app
 # (B4), HLE DOS (B5), Opera home (N7), icon masks (A1), clock faces (A2).
 export EKA2L1_FORK_BRANCH="${EKA2L1_FORK_BRANCH:-s80-integration}"
-export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-ba50d94204dffdf8631738b3d0872ccdec75cd7e}"
+export EKA2L1_FORK_PIN="${EKA2L1_FORK_PIN:-cf8bee645440f41e82b1dc4d5da84b12cea3b94f}"
 
 # The golden ledger (measured 2026-09-24, docs/guests/nokia9300.md §Golden).
 # TREE = sha256 of `find . -type f -print0 | LC_ALL=C sort -z | xargs -0
 # sha256sum` run inside $MEDIA.
-GOLDEN_FILES=3256
-GOLDEN_BYTES=68635694
-GOLDEN_TREE_SHA=ef30659b75718e859a8ed58585385f6667c63a4925c04843e79cf62a5ef15469
+GOLDEN_FILES=3259
+GOLDEN_BYTES=68736107
+GOLDEN_TREE_SHA=0462324993200ba2b0e7bf79381cf6bc770f7cc9b1397183b07dd5c462bd8440
 ROM_REL=EKA2L1/data/roms/rae-6/SYM.ROM
 ROM_BYTES=17825792
 ROM_SHA=ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596

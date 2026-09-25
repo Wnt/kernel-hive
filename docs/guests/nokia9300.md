@@ -30,21 +30,25 @@ buttons below it, a joystick and the keyboard.
 ## Emulator
 
 **EKA2L1**, the Symbian HLE emulator, from our fork `github.com/Wnt/EKA2L1`,
-branch **`s80-integration` @ `ba50d9420`** (GPL-3; pinned in
-`tiles/nokia9300.sh`). Agents I2/I3 merged every Series 80 branch of the
-2026-09-24 wave onto upstream master `39858137e`: the 7.0s window-server
+branch **`s80-integration` @ `cf8bee645`** (GPL-3; pinned in
+`tiles/nokia9300.sh`). Agents I2–I4 merged every Series 80 branch of the
+2026-09-24/25 wave onto upstream master `39858137e`: the 7.0s window-server
 tables (F1), application buttons in the window server (B1), the ROM's own
 keyboard tables (K1), the museum kiosk frontend and `ekactl/1` control socket
 (B2), Desk content (B6), the third-app fix (B4), an HLE DOS server (B5), Opera's
 home page (N7), icon masks (A1), clock faces (A2), Messaging folders (M1) and
 the Telephone directory (T1: SecurityServer pre-started + a Phone Server stub),
 and the Series 80 status pane with its minute clock, painted under the HLE
-Eikon server (S1). Built on labhost by
+Eikon server (S1), the key-event FIFO that no longer purges characters (K3),
+Exit and Desk icon fixes (E1) and the Series 80 locale file plus the
+Clock's missing SVC (L1). Built on labhost by
 `scripts/build-guests/emulators/build-eka2l1.sh` (agent D1's branch
 `eka2l1-builder`: pinned fork commit, trixie build root under nspawn, shared
 ccache, mold; the configure stamp is gated, so the binary logs
-`EKA2L1 v0.0.1 (s80-integration-ba50d94204)`); 93 s incremental from the
-previous pin, sha256 `95e4ff55…a3be`.
+`EKA2L1 v0.0.1 (s80-integration-cf8bee6454)`); 367 s from the previous
+pin, sha256 `aa060e32…aaa6`. The station runs the whole installed tree
+(`compat/ patch/ resources/ scripts/` beside `eka2l1_qt`), not the binary
+alone.
 
 Run protocol: `eka2l1_qt --device RAE-6 --run 0x101f8e4f` (Desk) with
 `XDG_DATA_HOME` on a private data dir — EKA2L1 copies `compat/ patch/
@@ -74,36 +78,32 @@ An EKA2L1 XDG data root: `EKA2L1/config.yml` and
   S80 DP2.0 SDK's Z: drive: both dumps lack them (the ROM's own `missing.txt`
   names them) and the UI otherwise falls back to a serif.
 - `devices.yml` `machine-uid: 270503387` = 0x101F8DDB, the 9300's own value.
-- `config.yml`: `keyboard-layout-index: 0` (UK EKDATA), `enable-upnp: false`.
+- `config.yml`: `keyboard-layout-index: 6` (golden v3; v2 had 0, UK EKDATA),
+  `enable-upnp: false`.
+- Golden v3: agent L1's Helsinki files in `C:\System\Data`: `Wldsvr.dat`
+  (177 B, home city Helsinki), `LOCALE.D00` (280 B, Finland TLocale:
+  EDateEuropean, 24 h, EU summer time) and `nitzlookup.db` (99 956 B).
 - Agent B6's Desk first-boot state (`apply-desk-state.sh`):
   `C:\System\Data\Shortcuts.dat`, `C:\System\Apps\desk\desk.ini`,
   `C:\System\SharedData\101f8e4f.ini`.
-- Ledger: 3256 files, 68 635 694 B; tree manifest sha256
-  `ef30659b75718e859a8ed58585385f6667c63a4925c04843e79cf62a5ef15469` (sha256 of
+- Ledger (v3): 3259 files, 68 736 107 B; tree manifest sha256
+  `0462324993200ba2b0e7bf79381cf6bc770f7cc9b1397183b07dd5c462bd8440` (sha256 of
   `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum` inside the
   root). `SYM.ROM` 17 825 792 B, sha256
   `ca4b0bc929519b046994c8501b0135b688d8d7910d6669f4791805e3ab373596`.
 - Staged on labhost at `/data/assets-staging/symbian-s80/nokia9300-golden/xdg`
-  (+ `MANIFEST.sha256`; `xdg.v1` = the previous golden);
+  (+ `MANIFEST.sha256`; `xdg.v2` = the previous golden);
   `tiles/nokia9300.sh --golden` hash-gates it and installs `$STATION/golden`,
   keeping the previous as `golden.prev`.
-- Time zone — NOT Helsinki yet. The container runs `TZ=Europe/Helsinki`
-  (`NOKIA_TZ`) and EKA2L1 seeds the kernel's UTC offset from it, but the
-  guest's world server follows its HOME CITY, the ROM default "New York, NY",
-  and the status-pane clock shows that: UTC−4 at start; once Telephone starts,
-  the ROM writes `C:\System\Data\Wldsvr.dat` (221 B: home city New York,
-  offset field −300 min) and the clock drops to UTC−5 (measured 2026-09-25:
-  07:56 then 06:56 at 11:56 UTC; the file is kept in the D2 bake report). The
-  golden has no `Wldsvr.dat`. Clock → Change city finds "Helsinki, Finland"
-  but neither Select nor Enter commits it — the Clock thread hits
-  `Unimplemented system call: 0xC00049` (`euser.dll` ord 107). Fix = a fork
-  SVC, or a Helsinki `Wldsvr.dat` (+120 min, EU DST) baked into the golden.
-- Date and time FORMAT: Desk shows "Friday September 25th 2026" and a 24 h
-  clock; the 9300 user guide shows "Wed 4th August 2004" and "7:25 AM". Not a
-  golden setting: EKA2L1's HLE hard-codes the guest locale
-  (`services/src/init.cpp`: `date_format_america`, `time_format_twenty_four_hours`),
-  and Control panel › General › Regional settings closes Control panel when
-  opened. Fork item.
+- Time zone: Helsinki. The container runs `TZ=Europe/Helsinki` (`NOKIA_TZ`)
+  and EKA2L1 seeds the kernel's UTC offset from it, but the guest's world
+  server follows its HOME CITY (ROM default "New York, NY"; Telephone used to
+  write a New York `Wldsvr.dat`). Golden v3 carries L1's Helsinki
+  `Wldsvr.dat`, so the pane clock is Helsinki time: 17:07 at 14:07 UTC and
+  17:18 at 14:18 UTC through the real page (2026-09-25, bake5).
+- Date and time FORMAT: "Friday 25th September 2026" (European) and a 24 h
+  clock. The fork (L1) loads `C:\System\Data\LOCALE.D00` at boot, as
+  `BaflUtils::InitialiseLocale` would; the HLE's old American default is gone.
 - No `hosts:` map yet: there is no network plane to name (see Network).
 
 ## Sandbox
@@ -173,8 +173,10 @@ as their own keysyms and the fork types the 9300 key that produces them.
   the daemon and xdotool resolve keycodes from the live map). `-ardelay 65000`
   is the `xset r off` (no xset in the root); EKA2L1 makes the Series 80 repeats
   itself.
-- Pacing 150/150 ms (contract v3: EKA2L1's key FIFO drops events under load at
-  faster rates).
+- Pacing 0/0 (agent K3): the daemon's x11test pacer orders edges per keycode
+  only, so any nonzero hold/gap reorders Shift edges and garbles text ("HElol
+  WOrld", "=A1+a2" at 40/40 and 150/150); with 0/0 edges go out in arrival
+  order and the fork's fixed event FIFO takes 30 ms/key exactly.
 - PROVEN through the real SPA (Chrome on the shared desktop → `/os/nokia9300` →
   streamhost x11test → XTEST), frames read out of the SPA's own `<video>`: F7
   opened Messaging (Inbox/Outbox/Drafts/Sent; a one-time "Cannot find message
@@ -249,7 +251,7 @@ LIVE display before it can be patched for an x11 rig.
   (`out/eka2l1` = the s80-integration build, `out/eka2l1.prev` the previous),
   `NOKIA_MACHINE=kh-nokia9300-rig`, `NOKIA_X11_SOCKDIR=/run/streamhost/x11/nokia9300-rig`.
 - Daemon: lisa's released binary, `<rig>/run-daemon.sh` + `<rig>/stream.env`
-  (x11 capture of `:119`, x11test keys with the station keymap, 150/150 pacing,
+  (x11 capture of `:119`, x11test keys with the station keymap, 0/0 pacing,
   `SH_IDLE_PAUSE_SECS=0`). Restart it after every relaunch.
 - Withdraw: `darklaunch-station.py withdraw nokia9300`, `systemctl stop` the
   rig scope, kill `<rig>/daemon.pid`.
@@ -259,11 +261,9 @@ LIVE display before it can be patched for an x11 rig.
 
 ## Known gaps / OPEN
 
-- Home city / time zone: New York (UTC−4, then UTC−5 after Telephone); see
-  Golden › Time zone. Date format American and 24 h clock (HLE-fixed).
 - The status pane (lower left) shows the skin, a minute clock and the
   no-network and battery indicators; the clock follows the guest's home city
-  (New York), not Helsinki — see Golden › Time zone.
+  (Helsinki in golden v3) — see Golden › Time zone.
 - Messaging opens with a one-time "Cannot find message storage. Try restoring
   from a backup." note (Enter closes it); baking the message store into the
   golden would remove it. Menu hold (task list): `CaptureLongKey` unhandled.
