@@ -1,11 +1,28 @@
 # Nokia 9300 network detail — ESock, RConnection, CommDB, Opera
 
 Sibling of [`candidate-symbian-s80.md`](candidate-symbian-s80.md) §H3. Holds
-the opcode table, the IPC trace evidence and the theories that were raced and
-ruled out, so the main document can state the conclusion without the working.
-Facts only, from agents N1, N2 and the coordinator's relay of N5's proof
-(2026-09-24); protocol facts (opcode numbers, argument order, server order)
-only — no disassembly, no ROM bytes.
+the opcode table, the IPC trace evidence, the CommDB patch-DLL detail and the
+toolchain that proved it all, so the main document can state the conclusion
+without the working. Facts only, from agents N1, N2, N3, N4, N5 and N6
+(2026-09-24 21:00 UTC through 2026-09-25 04:45 UTC, across a 5-hour
+usage-limit pause); protocol facts (opcode numbers, argument order, server
+order, header names) only — no disassembly, no ROM bytes.
+
+## Status: the network wall is closed
+
+Opera 6.0, running from the real 9300 (RAE-6, firmware 05.22) ROM under
+EKA2L1, now fetches a page from a host web server on "Go to" and renders its
+heading, body text and a coloured table (agent N6, frame
+`opera-page-rendered-after.png`). **No network code changed to close it.**
+Every ESock/CommDB fix below (N1, N2) was already enough on its own; the
+missing piece was a window-server bug entirely outside the network stack —
+see "Why Opera stalled" below. The station needs exactly two branches for
+this: `s80-esock-70s` (this document) and `s80-wserv-leftovers` (W2's
+redraw-spin fix, detailed in
+[`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md)), the
+latter including commit `a1ebfc046` so dialog text is legible. No proxy, no
+extra NIC and no retronet netns work is needed beyond the `hosts:` map
+already documented below.
 
 ## The 7.0s ESock opcode table (agent N1, branch `s80-esock-70s`)
 
@@ -55,49 +72,193 @@ table had but the switch was missing.
 | `92f600bf5` | `s80-esock-70s` | Trace every request reaching the socket server and its subsessions (log-ipc only prints synchronous sends by default; ESock is mostly async) — this produced the "where Opera stalls" evidence below. |
 | `4deb3dc77` | `s80-commdb` (N2) | `RConnection::Start`/`Start(TCommDbConnPref)` EKA1 fallback: takes the requested IAP + network (or 1), needs no agent/NIF/dialog, advances `KConnectionOpen` (3500) then `KLinkLayerOpen` (7000) at once, completes `KErrNone`. `GetIntSetting` answers `IAP\IAPService`/`IAP\IAPBearer` = 1; `GetDesSetting` answers `IAP\Name` = "Host network", `IAP\IAPServiceType` = "LANService", `IAP\IAPBearerType` = "LANBearer"; any other name logs then returns `KErrNotFound`. EKA2 behaviour is unchanged. |
 
-## Where Opera stalls, and why it is above the socket layer
+These four make every ESock/CommDB call Opera or PuTTY issues return
+`KErrNone`. They were never the whole story — the redraw-spin fix below is
+what let those completions actually reach the thread waiting on them:
 
-The trace is unambiguous (log-ipc plus per-request tracing on, both agents
-independently): on "Go to", Opera loads the HTTP framework's filters via
-ECom (`httpfilterauthentication.dll`, `httpfiltercommon.dll`, …), does POSIX
-and file-server I/O, then sends **exactly two ESock ops**: `0x3F` `ECNCreate`
-(`RConnection::Open`) and `0x43` `ECNStart` (the *default* `Start` — Opera
-passes **no** `TCommDbConnPref`). Both complete `KErrNone`. **After `Start`,
-Opera issues no IPC to any server except the window server's idle/text-cursor
-loop** (the same `Unimplemented window group opcode 0x2F` noise the shell
-work already knows about, ~33 % CPU). No `RHostResolver` (0x28/0x3E), no
-`RSocket` (0x06/0x3D), no `Connect` (0x13), no `GetIntSetting`/`GetDesSetting`
-(0x4C/0x4E), and no DBMS/CommDB reopen. DBMS *is* present and HLE'd — a
-transient DBMS session opens and is torn down during Opera's *startup*
-CommDB read, well before `Start` — so the CommDB path itself works; Opera
-simply never returns to it afterwards.
+| Commit | Branch | What |
+|---|---|---|
+| `7e6564ac6` | `s80-wserv-leftovers` (W2) | The window-server redraw-spin fix. **This is what closes the network wall** — mechanism below, full detail in [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md). |
+| `a1ebfc046` | `s80-wserv-leftovers` (W2) | Dialog-text/font fix. Needed so a rendered dialog (including any future connection-error dialog) is legible, not a black box. |
+| `0d651414f` | `s80-putty-proof` (N3) | `SetOpt(KSoTcpOobInline)`/`KSoTcpKeepAlive` answered instead of `KErrGeneral`. Needed by PuTTY's EKA1 build only. |
+| `53a49931d` | `s80-socktest` (N5) | `RThread::ExitReason()` (exec 0x3E) implemented. Needed by the SockTest test tool only. |
+| `30c3eff3d` | `s80-commdb-patchdll` (N4) | Guest CommDB patch DLL — a real, ROM-UI-visible "Host network" access point. Optional fidelity, not required for Opera or PuTTY. |
 
-Three theories were raced, not bisected serially (rule 14):
+## Why Opera stalled, and why it does not any more (agent N6)
 
-- **T1 — async progress ordering.** A real NIFMAN completes `Start` as
-  "started" and then delivers `KConnectionOpen`/`KLinkLayerOpen`
-  *asynchronously* via `ProgressNotification`; the HTTP transport might only
-  submit once it sees the link up. The fallback instead advances the state
-  *synchronously during* the `Start` call — if the framework registers a
-  `ProgressNotification` (0x47) afterwards and asks for a specific
-  intermediate stage, the request could park against a state that has
-  already moved past it. **Against it:** Opera never issues a
-  `ProgressNotification` call at all, so there is nothing registered to
-  starve. Ruled out.
-- **T2 — the transaction lives on another active object inside Opera.**
-  Opera may submit the HTTP transaction before or around the connection and
-  wait on a different active object entirely; the window-server spin would
-  then just be its idle UI loop. **This is the one standing**: every ESock
-  op Opera issues completes correctly, and the racing proof (agent N5, next
-  section) shows the identical protocol sequence working end to end when
-  driven directly, so the wall is inside Opera's own HTTP transport handler
-  (`oprbridge.dll` / the Symbian HTTP framework), not the protocol.
-- **T3 — a leaked in-guest CommDB/proxy read.** `oprbridge` reads the
-  Proxies view via in-guest `commdb.dll` after `Start`; with no
-  `LANService`/Proxies row in `Cdbv3.dat`, that read could leave and abort
-  the fetch silently. **Against it:** the trace shows **no DBMS traffic at
-  all** after `Start`, so Opera has not even reached the proxy read. Ruled
-  out.
+The redraw-spin bug (`s80-wserv-leftovers`, commit `7e6564ac6`) let a
+zero-area window's invalid rectangle sit in its region forever, so every
+`EndRedraw` re-queued another redraw. That kept the Web thread's redraw
+active object — priority 50 (`EActivePriorityRedrawEvents`) — permanently
+ready. EKA1's active scheduler always runs the highest-priority ready object
+first, so nothing at priority ≤ 0 ever ran, including the HTTP framework's
+continuation after `RConnection::Start`, which N5 measured at
+`EPriorityStandard` (0). **Opera was not stuck in its own code; it was
+correctly waiting its turn and never getting it.** With the redraw bug
+fixed, the Web thread idles at 1% CPU and the continuation runs the instant
+`Start` completes.
+
+This replaces the earlier theory (T2) that blamed Opera's own HTTP
+transport handler (`oprbridge.dll`). T2 was right that the wall sat above
+ESock and that every socket-server call Opera issued completed correctly;
+it was wrong about the cause being inside Opera's own code. Two independent
+confirmations rule out anything Opera-specific: N5's path F parks the ROM's
+own HTTP framework with a synthetic priority-100 spinner in the same thread
+and resumes it the instant the spinner stops, using no Opera code at all;
+and N3 found PuTTY for Series 80 v2 stuck the identical way, starved at an
+even lower priority (PuTTY's connect flow runs from a `CIdle`, i.e.
+`CActive::EPriorityIdle`) — same fix, same result.
+
+The other two raced theories stay ruled out. **T1** (Opera waits on a
+`ProgressNotification` stage that never arrives) — Opera does call
+`ProgressNotification` (0x47), but only once starvation ends, and the HLE
+`start()` completes it at once; `connection.cpp` needs no change. **T3** (a
+leaked CommDB/proxy read after `Start`) — the trace shows no DBMS traffic at
+all after `Start`, so Opera never reaches that read.
+
+**The ESock sequence once it runs** (fix build, "Go to" pressed at 52.2 s,
+page on screen by 63.9 s):
+
+| # | op | call | detail | result |
+|---|---|---|---|---|
+| 1 | 0x3F | `RConnection::Open` | subsession created | 0 |
+| 2 | 0x43 | `RConnection::Start()`, default | host access point up, IAP 1, network 1 | 0 |
+| 3 | 0x47 | `ProgressNotification` | first op after `Start` — where Opera parked before the fix | completes at once |
+| 4 | 0x4C | `GetIntSetting("IAP\IAPService")` | | 0 |
+| 5 | 0x4F | `GetDesSetting("IAP\IAPServiceType")` | "LANService" | 0 |
+| 6 | 0x47 | `ProgressNotification` again | waits for the next stage change | pending (none follows) |
+| 7 | 0x02 | `RSocketServ::FindProtocol` | | 0 |
+| 8 | 0x3E | `RHostResolver::Open(…, RConnection&)` | | 0 |
+| 9 | 0x29 | `GetByName` | resolved via the `hosts:` map below | 0 |
+| 10 | 0x3D | `RSocket::Open(…, RConnection&)` | TCP | 0 |
+| 11 | 0x13 | `Connect` | | 0 |
+| 12 | 0x2F | `RHostResolver::Close` | | 0 |
+| 13 | 0x0E | `Write` | the GET request | 0 |
+| 14 | 0x0C | `RecvOneOrMore` ×3 | page body | 0 |
+| 15 | 0x1D | `Close` | | 0 |
+
+This matches N5's path E (the ROM's own HTTP framework on its own
+connection), op for op after 0x43. Opera issues **no `SetOpt`**, so N3's
+`KSoTcpOobInline` fix is not needed for Opera.
+
+**The request on the wire.** Opera identifies itself with a fixed
+User-Agent the station can key retronet content negotiation on:
+`Mozilla/4.0 (compatible; MSIE 5.0; Series80/2.0 Nokia9300/05.22
+Profile/MIDP-2.0 Configuration/CLDC-1.1)`. It also sends
+`Accept-Encoding: gzip,deflate` and an `x-wap-profile` header pointing at
+Nokia's UAProf XML.
+
+## Proof: a Linux-built test client drives the whole stack (agent N5)
+
+A rule-14 racer, run in parallel with N6. A plain 7.0s console client (mine,
+built with a Linux-hosted toolchain — see below) drives six paths against
+`s80-esock-70s`:
+
+| Path | What it drives | Result |
+|---|---|---|
+| A | Plain sockets with an explicit `RConnection` (Open 0x3F, `Start(pref)` 0x44, resolve, connect, write, `RecvOneOrMore` to EOF, close) | every call `KErrNone`; the HTTP/1.0 reply rendered on the 9300's own screen |
+| B | Plain sockets with no explicit `RConnection` (implicit connection) | same |
+| C | `RConnection::Open` + default `Start()` (**Opera's own call shape**) + progress notification + `GetIntSetting`/`GetDesSetting` + `EnumerateConnections` | every call `KErrNone` |
+| D | The ROM's own HTTP framework (`http.dll` + ECom filters) on my app's connection | `OpenL` (2.5–3.0 s, ECom load) → `GotResponseHeaders` **200** → body → `Succeeded` |
+| E | The HTTP framework opening its **own** connection — Opera's exact shape | `0x3F`, `0x43`, then `0x02 FindProtocol`, `0x3E`, `0x29`, `0x3D`, `0x13`, … → **`Succeeded`** in under a second |
+| F | E, plus a deliberate priority-100 active object spinning in the same thread for 20 s after `SubmitL` | **zero ESock requests** while the spinner runs, then the whole sequence and `Succeeded` the instant it stops — the starvation mechanism, reproduced synthetically |
+
+On the reference binary and on `s80-commdb` alone, every path stops dead at
+`RConnection::Open` (0x3F) or, for the no-`RConnection` paths, at the
+equivalent implicit-open. On `s80-esock-70s`, paths A–F all complete. Path
+E's trace is exactly the protocol sequence Opera's own trace stops after
+(0x3F, 0x43) — the next op Opera never reaches is `0x02 FindProtocol`.
+
+**Toolchain** (reusable; full recipe, traps and a GUI-app variant are in the
+job's `N5/toolchain.md`): a Linux-hosted EKA1 ARMI toolchain — razvang-dev's
+`Nokia-N-Gage-SDK-Toolchain` v1.0.1 (GCC 2.9-psion-98r2, `petran`, `rcomp`,
+`makesis` — Nokia's actual 7.0s-era ARM compiler, not a modern
+cross-compiler) — plus the Series 80 DP 2.0 SDK's ARMI `.lib`s and headers,
+builds and links a 7.0s EXE that the ROM loads and runs as-is, with no SIS
+or installer needed (7.0s has no platform security). Two SDK-header fixes
+are required first: convert CRLF to LF (GCC 2.9 on Linux does not treat
+`\`+CR+LF as a line continuation, so every multi-line macro fails) and build
+a case-correcting symlink farm (the headers `#include` each other under
+inconsistent case). The same toolchain built N4's CommDB patch DLL below and
+is the base for any future guest-side test or patch binary. Fork branch
+`s80-socktest` @ `8f44f8263` carries the reusable tool under
+`tools/s80-socktest/` (source and a generic build script; no SDK or
+toolchain material — those keep their own licence terms and are never
+committed).
+
+Two EKA1 gaps surfaced building the test app itself (neither needed by
+Opera, PuTTY or the CommDB patch DLL): `RThread::ExitReason()` (exec 0x3E)
+was unimplemented — **fixed** on branch `s80-socktest` @ `53a49931d`.
+`RThread::ExitCategory()` (exec 0xC0003F) is still unimplemented and faults
+the caller; fixing it needs an exit-category accessor on `kernel::thread`
+(the member is private) plus a registration with the EKA1 argument order,
+left open because it forces a wide rebuild.
+
+## Proof: PuTTY confirms the same starvation mechanism (agent N3)
+
+PuTTY 1.5.2 for Series 80 v2 (`s2putty`, MIT) runs its whole connect path on
+the real 9300 ROM once the redraw-spin fix is in — including the default
+`RConnection::Start` (0x43), the same call Opera uses. PuTTY starts its
+connect flow from a `CIdle` (`CActive::EPriorityIdle`, lower even than
+Opera's `EPriorityStandard`), so it is even more exposed to the redraw bug:
+on the pre-fix binary it sends **zero** SocketServer messages, ever — the
+profile dialog never even appears, because the `CIdle` that would show it
+never runs. With `7e6564ac6` cherry-picked, the profile dialog appears
+10.5 s after launch and Connect runs its full sequence: `RConnection::Open`,
+default `Start()`, `RHostResolver::Open`/`GetByName`/`GetByAddress`
+(`KErrNotSupported`, which PuTTY expects and treats as "no reverse DNS"),
+`RSocket::Open`, two `SetOpt` calls, `Connect`, then `Send`/`RecvOneOrMore`
+pairs carrying PuTTY's identification line and a 616-byte KEXINIT — bytes
+confirmed both ways on the host server's own log. Every op completes; no
+request parks.
+
+One emulator gap needed a fix: `SetOpt(KSoTcpOobInline)` was unhandled and
+returned `KErrGeneral`, which PuTTY's EKA1 build (`#if !defined(EKA2)` in
+`epocnet.cpp`) treats as fatal and aborts the connection on. Fixed on branch
+`s80-putty-proof` @ `7132fbd09`, commit `0d651414f` (also answers
+`KSoTcpKeepAlive`). The same branch carries W2's `7e6564ac6` and a GC
+brush-pattern fix (`5bafcbd11`, built but not run before the coordinator
+called an early stop) needed to render the server's banner text instead of
+a black dialog box — the same brush-pattern gap behind the station's black
+title bars and status panes.
+
+PuTTY is homebrew, not a built-in Series 80 app, and is not part of the
+station's exhibit; it matters here only as a second, independent EKA1
+client that hit and passed through the exact same starvation wall as Opera,
+which is what rules out an Opera-specific cause.
+
+## A real access point inside the ROM's own CommDB (agent N4, branch `s80-commdb-patchdll`)
+
+Optional fidelity work, not required for Opera or PuTTY (both already work
+through N2's emulator-side HLE `Start()` fallback above). N4 built a guest
+**patch DLL** — `commdb_v7.dll`, loaded by EKA2L1's own patch mechanism in
+place of the ROM's `commdb.dll` ordinal 153 (`CCommsDatabase::NewL()`) —
+that inserts a real LANService/LANBearer/IAP/Proxies/ConnectionPreferences
+record set into the guest's own `C:\System\Data\Cdbv3.dat` the first time
+any app opens CommDB. Proven on the real 9300 ROM: the phone's own Control
+panel › Connections › Internet setup applet lists **"1 Host network"** — the
+ROM's own UI reading real on-disk records, not an emulator answer — and
+Web's "Go to" goes straight to "Connecting…" with no "Select an access
+point" prompt, because a real IAP now exists before any prompt would be
+needed.
+
+The schema is 7.0s-specific — 7.0s's `IAP` table has no `Modem` column, so
+the existing 6.1-era patch DLL this was modelled on does not apply — derived
+by reading the column set straight out of the ROM's own `DefaultCdbv3.dat`
+and confirmed by a dynamic trace showing ordinal 27
+(`NewL(TCommDbDatabaseType)`) is a thin wrapper that itself calls ordinal
+153, so patching 153 alone covers every caller. The values match N2's HLE
+answers on a fresh 9300 C: (IAP id 1, name "Host network", service type
+"LANService"); on the 9300i/9500, which ship their own WLAN IAPs 1–5 in the
+ROM defaults, the patched IAP lands at a different id and the HLE's
+hard-coded constant would disagree on one field (`IAPBearer`) — cosmetic
+only, since no traced client reads it. Branch `s80-commdb-patchdll` @
+`30c3eff3d` (on `fork`), built with the same N5 toolchain; merges cleanly
+with N2's `s80-commdb` (neither touches the other's lines). Nothing is
+placed on the guest drives by hand — the patch DLL ships next to the
+emulator binary and the Qt frontend copies it into each data dir's `patch/`
+folder at every start, so a golden only needs a binary built from a branch
+carrying this commit.
 
 ## Opera's path to a connection (agent N2)
 
@@ -106,8 +267,9 @@ Three theories were raced, not bisected serially (rule 14):
    (`httpclient.dll`, `http.dll`, `inetprotutil.dll`, filter plug-ins), not
    in Opera's own code. HTTP rides `RConnection`.
 2. **No network at start.** Launching Web paints Opera's home page (a local
-   `file://` page) with the CBA column "Open Web address / Back / Bookmarks
-   / Exit". No ESock call, no CommDB read.
+   `file://` page, currently blank — see "Still open") with the CBA column
+   "Open Web address / Back / Bookmarks / Exit". No ESock call, no CommDB
+   read.
 3. **"Open Web address"** (CBA key F1 = `EStdKeyDevice0`) opens the "Go to
    address" dialog with buttons "Go to / History list / Cancel"; typing goes
    into the field, and "Go to" (F1 again) submits.
@@ -118,6 +280,11 @@ Three theories were raced, not bisected serially (rule 14):
    "Connecting…" 19 s → silent fail → re-prompt, because that VM has no
    packet driver). Under EKA2L1 there is no NIFMAN and no connection
    notifier, so nothing is drawn; the HLE ESock answers `Start` itself.
+5. **With the redraw-spin fix in place**, the HTTP framework's continuation
+   runs the instant `Start` completes and proceeds through resolve, connect,
+   write and read to render the page (above). Without that fix, the
+   continuation is starved and nothing after `Start` is ever sent — which is
+   exactly the "0x3F, 0x43, then silence" trace this section used to end on.
 
 **Opera's settings store.** ROM default:
 `Z:\System\Apps\Opera\Opera.def` — `Home URL=z:\Documents\WWW\Home.html`,
@@ -129,7 +296,8 @@ Form=0`, `[EPOC] ZoomSetting=100`); `Home URL` here overrides `Opera.def`.
 The proxy is per-IAP in CommDB, not in `Opera.ini`: after `Start`,
 `oprbridge.dll` reads `GetIntSetting("IAP\IAPService")` +
 `GetDesSetting("IAP\IAPServiceType")` and opens the CommDB Proxies view for
-that service — answered by the `start()` fallback above.
+that service — answered by the `start()` fallback above (or, with N4's
+patch DLL, by a real on-disk row).
 
 ## The C: drive recipe (agent N2, `cdrive-recipe.sh`)
 
@@ -150,39 +318,21 @@ reaching a start page with no typing required:
    externalised 8-bit descriptor with a `TCardinality` length header) so
    "Open Web address → History list" offers it without typing.
 
-## The end-to-end proof (agent N5)
-
-A plain Symbian 7.0s console client, built with a Linux-hosted EKA1 ARMI
-toolchain and run against the real 9300 ROM (branch `s80-esock-70s` @
-`92f600bf5`), drives the full stack directly: `RSocketServ::Connect`,
-`RConnection::Open` (0x3F), `Start` with a `TCommDbConnPref` for IAP 1
-(0x44), `RHostResolver::Open` on the connection (0x3E), `GetByName` (0x29),
-`RSocket::Open` (0x3D), `Connect` (0x13), `Write` (0x0E),
-`RecvOneOrMore` (0x0C) and `Close` — every call returns `KErrNone` — and an
-HTTP/1.0 GET to a test server on the host returned "200 OK" text that was
-rendered on the emulated 9300's own screen. The implicit-connection path
-(0x28/0x06/0x09/0x0D, where a plain `RSocket::Open` with no explicit
-`RConnection` picks a default one) works too. On the pre-fix reference
-binary, 0x3F and 0x28 both hang forever — the same hang `is_oldarch()`
-caused for Opera.
-
-**Conclusion: the socket layer is proven end to end.** Opera's remaining
-stall is on Opera's own side of a successful `Start` (T2 above), not in
-ESock.
-
-**Two EKA1 gaps found along the way, still open:** `RThread::ExitReason`
-(exec 0x3E) and `ExitCategory` (0xC0003F) are unimplemented.
+This recipe is still correct, but Opera does not yet act on the `Home URL`
+at startup — see "Still open" below. Until that lands, the visitor path is
+"Open Web address" (F1) → type or pick the seeded URL from "History list" →
+"Go to", which works end to end today.
 
 ## Keymap and DNS notes for whoever resumes
 
-- **URL entry (test-only, not committed).** EKA2L1's HLE window server maps
-  scan codes 0x1D–0x5F to themselves as key codes, so a host key bound to
-  `target == ASCII` types that character. N1's own data-dir copy bound Qt
-  keycodes to identity scan codes for `A`–`Z` (0x41–0x5A), `.` (46), `:`/`;`
-  (58/59), `/` (47), `-` (45), `,` (44) and space (32) so a URL could be
-  typed at all for testing; digits and `.`/`:` already worked via the
-  numeric block. **K1/K2 own the real, committed keymap** — this is a test
-  convenience only, and was not carried into any golden.
+- **URL entry.** K1's real keymap — a port of the ROM's own EKTRAN/EKDATA
+  translation tables, frame-proven for mixed case, digits, punctuation
+  including € and Ä/ö, Chr-key accent cycling, Enter and key repeat (branch
+  `s80-keymap`, being pushed; a stopgap branch `s80-bindings-stopgap` is
+  already proven and pushed) — replaces the crude data-dir key-binding
+  workaround earlier tests here used just to type an address at all. See the
+  main document's §H4 for the keymap itself; nothing network-specific
+  remains once it lands.
 - **Host-name / DNS mapping.** EKA2L1's inet HLE resolver first consults
   `config.yml`'s `hosts:` map (an exact name, or a `*.suffix` wildcard, to a
   `host[:port]`), then falls back to the host's own `getaddrinfo`. So the
@@ -192,14 +342,63 @@ ESock.
   DNS. No proxy is needed either way (`Opera.def`'s
   `[Proxy] Use Automatic Proxy Configuration=0`, no proxy host).
 
+## Diagnostics for future stalls (agent N6, branch `s80-opera-trace` @ `d2108f404`)
+
+A per-thread SVC/IPC/completion tracer, off by default (one static load per
+SVC when disabled) and built for exactly this class of bug: a wall that is
+not a server request. `EKA2L1_DIAG_THREADS=<substring>` matches thread or
+process names and logs every SVC (caller resolved to `module+offset`),
+every IPC send (with descriptor bytes), and every completion reaching the
+thread on all four delivery paths (HLE server, guest server, `RThread::
+RequestComplete`, timer/logon `notify_info`). `SIGUSR1` (or
+`EKA2L1_DIAG_DUMP_MS=n`) dumps every guest thread's state, wait object and
+call stack, plus — for matching threads — the full active-scheduler queue:
+vtable, `iStatus`, `iActive` and priority for every pending active object.
+This is what turned "Opera is silent" into "the priority-50 redraw object is
+permanently ready and priority-0 never runs." Integrating it is optional; it
+is inert unless the environment variable is set. It is the single
+diagnostics commit on top of `s80-esock-70s`, so it carries the whole
+network fix with it.
+
+## Still open
+
+1. **Opera's home page does not load at startup.** No `Home.html` open, no
+   ESock call, engine idle with nothing queued — the load is never
+   requested, not requested-and-blocked. N7 traced the likely cause to the
+   HLE ViewServer's `ActivateView` message (op 6): it parses a later-firmware
+   16-byte layout while the ROM sends an 8-byte view id + custom-message id +
+   empty descriptor, so views start with a garbage custom message. Fix in
+   progress, as of 2026-09-25 05:00 UTC; see
+   [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md). Until
+   it lands, the visitor path above (Open Web address → History list → Go
+   to) works end to end.
+2. **`RThread::ExitCategory()`** (exec 0xC0003F) is still unimplemented;
+   faults a caller that asks for it. Not hit by Opera, PuTTY or the CommDB
+   patch DLL.
+3. Six EKA1 locale SVCs (0x800061–0x800066: day/month names, date suffix,
+   AM/PM) go unanswered on N6's own build, called about 200 times during
+   Opera startup with no visible effect (the names stay empty). Already
+   fixed on C1's `s80-app-fixes` branch (`330e998e7`); the two branches
+   merge cleanly, and I1's integration branch carries both.
+4. Opera's behaviour on a genuine connection *failure* is untested on
+   EKA2L1 — the fallback above always succeeds silently. The SDK-emulator
+   oracle shows the real device's cycle instead: "Connecting…" for about
+   19 s, a silent failure, and a re-prompt with no error dialog.
+
 ## Frames (evidence, in the job's tmp directories)
 
-`N1/`: `web6-02-dialog.png` ("Go to address" dialog open) ·
-`web6-03-typed.png` (a loopback test address typed into the field) ·
-`web3-keytest2.png` (letters typed, proving the test keymap above) ·
-`web6-go02-33.7s.png` (blank page after "Go to" — the stall).
-`N2/runs/`: `web3-start-29.0s.png` (Opera home, no network) ·
-`web3-dialog-40.7s.png` ("Go to address" dialog) ·
-`web3-typed-51.9s.png` (URL in the field) ·
-`web3-go1-66.4s.png` … `web3-final-blank-461.0s.png` (blank page after a
-successful, silent connection); reference-binary hang: `web0.log`.
+`N6/`: `opera-page-rendered-after.png` (the proof — a rendered page, title
+bar text, table) · `opera-blank-before.png` (the same run on the pre-fix
+binary, blank and black) · `opera-startup-no-homepage.png` · `runs/` (every
+per-run frame and log: `opA`/`opB`/`opC`/`opE-before`).
+`N5/runs/`: `ref1-a.png`/`ref2-ce.png` (reference binary hangs at 0x3F) ·
+`n1h-f-park3.png` → `n1h-f-resumed.png` (path F: parked, then resumed) ·
+`own-ef-park.png` → `own-ef-resumed.png`.
+`N3/frames/`: `1-n1bin-putty-starved-40s.png` (pre-fix, greyed terminal) ·
+`2-w2fix-select-profile-10.5s.png` (post-fix, profile dialog) ·
+`3-after-connect-black-error-box.png` (the brush-pattern gap).
+`N4/runs/`: `cp3-iapsetup-124.9s.png` ("1 Host network" in Control panel) ·
+`w5-typed-then-go4.png` (Web skips the access-point prompt).
+`N1/`: `web6-02-dialog.png` / `web6-03-typed.png` / `web6-go02-33.7s.png`.
+`N2/runs/`: `web3-start-29.0s.png` … `web3-final-blank-461.0s.png`;
+reference-binary hang: `web0.log`.

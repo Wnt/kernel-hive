@@ -1,21 +1,30 @@
 # Nokia Series 80 (Symbian OS) — candidate research
 
-**Status: two research waves complete, 2026-09-24.** The first wave picked
-the route and fixed the window-server ABI wall; the second proved the
-network socket stack end to end on the real ROM, made the application keys
-switch between running apps, built a kiosk frontend with a control socket,
-and scaffolded a real station — **`nokia9300` @ `49543e47`, pushed, not
-merged, dark-launched (hidden) at `/os/nokia9300`** on the box. Media is
-staged on labhost under `/data/assets-staging/symbian-s80/` (hashes below;
-the bits themselves are museum-private and never enter the repo). The
-question this document answers:
+**Status: three research waves complete, 2026-09-24 to 2026-09-25.** The
+first wave picked the route and fixed the window-server ABI wall; the second
+proved the network socket stack end to end on the real ROM, made the
+application keys switch between running apps, built a kiosk frontend with a
+control socket, and scaffolded a real station; the third **closed the
+network wall for good** — Opera fetches and renders a real host page on the
+real ROM, and no network code beyond the second wave's was needed; the fix
+was a window-server scheduling bug, not a network one — surveyed all 27
+built-in apps (14 usable on the 9300, 15 on the 9300i), fixed the wall that
+stopped a third app running alongside Desk, filled in Desk's main pane,
+ported the ROM's own keyboard tables, and measured the station's fidelity
+against a much larger real-device reference gallery. **`nokia9300` @
+`49543e47`, pushed, not merged, dark-launched (hidden) at `/os/nokia9300`**
+on the box; the operator has ruled it stays hidden until Desk is usable and
+several or all built-in apps work. Media is staged on labhost under
+`/data/assets-staging/symbian-s80/` (hashes below; the bits themselves are
+museum-private and never enter the repo). The question this document
+answers:
 *which route puts a Nokia Communicator running Symbian OS Series 80 — the real
 firmware, with its built-in Web browser, Documents and Sheet — into the gallery
 as a fully featured station, and what are the walls on each route?* Hardest
 problems first; every claim carries its source. A bring-up wave starts from the
 plan at the end, not from this document's history.
 
-## Operator decisions that shape this (2026-09-24)
+## Operator decisions that shape this (2026-09-24 to 2026-09-25)
 
 1. **The exhibit is the real Series 80 — real device firmware, built-in apps
    (the Opera-based Web browser, Documents, Sheet, Desk).** Running the Nokia SDK's
@@ -46,6 +55,13 @@ plan at the end, not from this document's history.
    framebuffer-visible action), public EPL sources, prior work in forks, and
    Nokia's own SDK emulator run live in a Windows rig as an oracle for files and
    behaviour — and does not re-frame a stopped task to get around the stop.
+7. **The station stays hidden until Desk is usable and several or all
+   built-in apps work** (2026-09-25). The AGPL-licensed EKA2L1-WEB picks
+   (§Prior work found) stay off the plain-GPL branches. Any SDK-derived
+   material a station needs — the Series 80 UI's own TrueType fonts, the
+   golden data dir's seed state — goes into the station's golden on
+   labhost, never into the repo, same as the ROM and SDK media already
+   staged (§H2).
 
 ## What the exhibit is
 
@@ -168,19 +184,15 @@ grid with cell cursor and formula bar; Desk paints the Communicator shell (Desk
 icon, "Open / Write note / Note list" buttons) at 3.5 s and idles at 2 % CPU;
 Web (Opera) paints its page area, address field and "Open Web address / Back /
 Bookmarks / Exit" column at 5.4 s.** Four commits on branch `s80-epoc7-tables`,
-pushed to the fork `https://github.com/Wnt/EKA2L1`. Leftovers, per F1: Documents
-and Sheet each burn one core at settle (theory: the window group `SetTextCursor`
-0x2f handler is missing, so the caret-blink call loops); the build-139 GC table
-still has no handlers for 14/15/16/20/43 (brush ops, `DrawLineTo`, `MapColors`
-— Opera's toolbar spams both of the latter); the S80 keymap has no letters
-bound in the fork's committed defaults (K1/K2's keymap branch is still
-separate); Desk's lower-left icon area is unpainted (state/skin,
-unconfirmed). **The 7.0s socket table + `RConnection` (§H3) landed the same
-evening**: Opera's `RConnection` now starts with no hang, and a standalone
-test client proves the whole socket stack — connect, resolve, socket,
-write, read — end to end against a host server, on the real ROM. Opera
-itself still shows no page: the stall moved one step downstream, into
-Opera's own HTTP transport, after a `Start` that now succeeds (§H3).
+pushed to the fork `https://github.com/Wnt/EKA2L1`. Leftovers, per F1, all since
+resolved: "Documents and Sheet each burn one core at settle" was the same
+zero-area-window redraw spin fixed below (§H7); the build-139 GC table's
+missing brush-op handlers (14/15/16/20/43) are the cause of the black title
+bars and status panes noted in the integration plan's fidelity section; the
+S80 keymap now has a real, frame-proven translation (§H4, agent K1). **The
+7.0s socket table + `RConnection` (§H3) landed the same evening**, and a later
+wave closed the network wall for good: Opera fetches and renders a real host
+page on the real ROM, with no further network code needed at all — see §H3.
 
 ### H2 — The bits — SOLVED for the 9500/9300, OPEN for the 9210
 
@@ -254,73 +266,38 @@ Everything below is on labhost, hash-verified; nothing is committed.
   import/export library (§H7 has the boot-order and app-key findings this
   produced). (Agents C, H.)
 
-### H3 — The network plane
+### H3 — The network plane — CLOSED
 
-- **EKA2L1** reimplements ESock: guest TCP/UDP become host sockets from the
-  emulator process (changelog 0.0.9). **The socket stack is now proven end to
-  end, on the real 9300 ROM, in the fork.** The 7.0s client opcode table is
-  EKA2L1's own pre-reform enum, op for op — derived from the ROM's `esock.dll`
-  (build 187) and cross-checked against the SDK's WINS `ESOCK.DLL`, Symbian^3's
-  public `SOCKMES.H`, and live IPC traffic from the real Opera client; the only
-  bug was `socket_client_session::is_oldarch()` gating on `< epoc81a` instead
-  of `< epoc7`, so 7.0s fell through to the (wrong) 6.1 numbering and the very
-  first call, `RConnection::Open` (0x3F), parked forever. Fixed on branch
-  `s80-esock-70s` (`623d96312`). `RConnection::Start` then needed its own
-  fallback: Symbian 7.0s/EKA1 keeps CommDB in a DBMS file
-  (`C:\System\Data\Cdbv3.dat`) with **no** CommsDat/CenRep repository
-  (`0xCCCCCC00`), which the HLE `start()` required; on EKA1 it now takes the
-  requested (or first) IAP with no agent, no NIF and no dialog, and completes
-  `KErrNone` (branch `s80-commdb`, `4deb3dc77`, cherry-picked onto the socket
-  branch as `3ededa65e`). **Proof (agent N5):** a plain Symbian 7.0s console
-  client, built with a Linux-hosted EKA1 ARMI toolchain and run against the
-  real 9300 ROM (branch `s80-esock-70s` @ `92f600bf5`), drives
-  `RSocketServ::Connect`, `RConnection::Open` (0x3F), `Start` with a
-  `TCommDbConnPref` for IAP 1 (0x44), `RHostResolver::Open`/`GetByName`
-  (0x3E/0x29), and `RSocket::Open`/`Connect`/`Write`/`RecvOneOrMore`/`Close`
-  (0x3D/0x13/0x0E/0x0C) — every call `KErrNone` — then renders the "200 OK"
-  text of a real HTTP/1.0 GET on the emulated 9300's own screen; the
-  implicit-connection path (0x28/0x06/0x09/0x0D) works too. The pre-fix
-  reference binary hangs forever on 0x3F and 0x28. Two EKA1 gaps turned up
-  along the way and are still open: `RThread::ExitReason` (exec 0x3E) and
-  `ExitCategory` (0xC0003F) are unimplemented. Full opcode table, IPC evidence
-  and frames: [`candidate-symbian-s80-network.md`](candidate-symbian-s80-network.md).
-- **Opera does not benefit yet, and the reason is now well characterised.**
-  "Opera 6.0 for Symbian OS" (build 543 on the 9300, 556 on 9300i/9500) has no
-  socket code of its own — its HTTP goes through the Symbian HTTP framework
-  (`httpclient.dll`, `http.dll`, filter plug-ins loaded on "Go to"), which
-  rides `RConnection`. Launching Web shows the local home page with no network
-  activity at all; "Open Web address" (CBA `EStdKeyDevice0`) opens the
-  "Go to address" dialog, and submitting it makes the framework open
-  `RConnection` (0x3F) then start it with **no** `TCommDbConnPref` (0x43, the
-  *default* `Start`, relying on CommDB's `ConnectionPreferences` ranking) —
-  both now complete `KErrNone` under the fallback above. **Opera then issues
-  no further ESock call at all**: no resolver, no socket, no `GetSetting`. It
-  returns to the window server's idle text-cursor loop and the page stays
-  blank. Ruled out: a missing `ProgressNotification` listener (the fallback
-  advances synchronously, so there is nothing to wait for) and a leaked
-  CommDB/proxy read (the trace shows no DBMS traffic at all after `Start`).
-  What is left is internal to Opera's own HTTP transport handler
-  (`oprbridge.dll`), which in this configuration does not proceed from a
-  started connection to a socket — an Opera-side wall, not a protocol one,
-  confirmed by N5's racer succeeding past an equivalent `Start` with plain
-  ESock calls.
-- **Opera's settings**, for whoever resumes this: the ROM default
-  `Z:\System\Apps\Opera\Opera.def` sets `Home URL` and turns proxying off
-  (`[Proxy] Use Automatic Proxy Configuration=0`, no proxy host/port keys); a
-  writable `C:\System\Data\Opera\Opera.ini` overrides it once Opera has run
-  once; the proxy itself lives per-IAP in CommDB, read via
-  `IAP\IAPService`/`IAP\IAPServiceType` after `Start` (which the fallback also
-  answers). The RAE-6 ROM's own `DefaultCdbv3.dat` (11,553 B — C:'s copy is
-  byte-identical) carries the CommDB table schema plus a Dialout ISP record
-  and Default-GPRS globals, but **no populated IAP or ConnectionPreferences
-  rows** — those are written on a real device by first-boot/operator setup,
-  which is exactly why the EKA2L1-side fallback answers `Start` directly
-  instead of depending on them. There is **no NIC to tap**: joining the
-  retronet means a network namespace with a veth onto `vmbr-rn`, plus
-  EKA2L1's own resolver, which checks `config.yml`'s `hosts:` map (an exact
-  name or a `*.suffix` wildcard) before falling back to the host's
-  `getaddrinfo`; Opera carries no proxy keys of its own, and retronet's
-  wildcard DNS and vhosts need none.
+- **The network wall is closed.** Opera 6.0, running the real 9300 ROM under
+  EKA2L1, fetches a page from a host server on "Go to" and renders it —
+  heading, body text, a coloured table, the page title in the title bar.
+  **No new network code was needed to close it.** EKA2L1 reimplements ESock
+  as host sockets; the 7.0s client opcode table bug
+  (`socket_client_session::is_oldarch()` gating on the wrong firmware
+  generation, so `RConnection::Open` parked forever) and the
+  `RConnection::Start` EKA1 CommDB fallback (branches `s80-esock-70s`,
+  `s80-commdb`) already made every ESock/CommDB call Opera or PuTTY issues
+  return `KErrNone`. What was still missing turned out to be a
+  **window-server scheduling bug, not a network bug**: a zero-area window's
+  invalid rectangle could never be cleared, so the Web thread's redraw
+  active object stayed permanently ready and starved every lower-priority
+  active object in the same thread — including the HTTP framework's
+  continuation after `Start`. Fixed by `s80-wserv-leftovers` (W2); the whole
+  station fix is `s80-esock-70s` + `s80-wserv-leftovers`, nothing more. Two
+  independent EKA1 clients confirm the mechanism is generic, not
+  Opera-specific: a synthetic priority-100 spinner parks and releases the
+  ROM's own HTTP framework on command, and PuTTY for Series 80 v2 was
+  starved the identical way at an even lower priority. Full opcode table,
+  IPC evidence, the proof toolchain, the PuTTY confirmation and an optional
+  CommDB patch-DLL for a fidelity-grade Control panel:
+  [`candidate-symbian-s80-network.md`](candidate-symbian-s80-network.md).
+- **Still open: Opera's home page does not load at startup.** The visitor
+  path today is "Open Web address" → "History list" → "Go to", which works
+  end to end. The likely cause, in progress, is a ViewServer message-layout
+  mismatch: the HLE parses a later-firmware 16-byte `ActivateView` layout
+  while the ROM sends an 8-byte one (agent N7). Detail in the network
+  document and in
+  [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md).
 - **A QEMU board** inherits the opposite problem: the guest has no Ethernet.
   Series 80 v2's bearers (agent Y, checked in the SDK and the device firmware):
   data calls and GPRS through the baseband, WLAN (9300i/9500 only), and **USB
@@ -351,22 +328,29 @@ Everything below is on labhost, hash-verified; nothing is committed.
   Tel, Messaging, Web, Contacts, Documents, Calendar, My own), Menu, Chr, an
   arrow pad, Enter, Esc; no touch. The 9210 has the same shape with a different
   fascia (`9210Small.bmp`). (Agents E, H.)
-- **EKA2L1**: it never loads the ROM's EKTRAN/EKDATA; its scancode→keycode
-  path is a fixed table with no modifiers (`epoc::map_scancode_to_keycode`,
-  `services/src/window/common.cpp:234`), so Shift/Ctrl/Chr do nothing today —
-  letters are unbound in the default bindings, digits type. The ROM ships
-  `ekdata.dll` + 15 per-language `ekdata.NN.dll`, whose format and translation
-  algorithm are public EPL source (`k32keys.h`, `ky_tran.cpp`); the window
-  server loads `EKDATA` then `EKDATA.NN` from HAL `EKeyboardIndex`; Chr-hold
-  accent cycling is an in-guest FEP (`Cycling_fep.fep`). **Plan (agent K1):**
-  port the EPL `Convert()` and modifier machine host-side over the ROM's own
-  tables. **Keymap contract v1:** F1–F4 = command buttons, F5–F12 =
-  application keys (Desk, Telephone, Messaging, Web, Contacts, Documents,
-  Calendar, My own), Menu, F13 = joystick centre, F14–F17 = joystick,
-  `ISO_Level3_Shift` = Chr, printable characters as themselves. **Capture
-  bug:** EKA2L1 never delivers captured keys (`io.cpp:198` indexes capture
-  requests by a key code that is always 0; `CaptureLongKey` unhandled) —
-  fixed by agent B1. (Agent R1.)
+- **EKA2L1**: it never loads the ROM's EKTRAN/EKDATA, and its
+  scancode→keycode path was a fixed table with no modifiers
+  (`epoc::map_scancode_to_keycode`, `services/src/window/common.cpp:234`),
+  so Shift/Ctrl/Chr did nothing and letters were unbound in the default
+  bindings — until this wave. The ROM ships `ekdata.dll` + 15 per-language
+  `ekdata.NN.dll`, whose format and translation algorithm are public EPL
+  source (`k32keys.h`, `ky_tran.cpp`); the window server loads `EKDATA`
+  then `EKDATA.NN` from HAL `EKeyboardIndex`; Chr-hold accent cycling is an
+  in-guest FEP (`Cycling_fep.fep`). **Proven (agent K1, branch
+  `s80-keymap`, being pushed as of 2026-09-25 05:00 UTC):** a host-side
+  port of the ROM's own EKTRAN/EKDATA tables and modifier machine,
+  frame-proven for mixed case, digits, punctuation including € and Ä/ö,
+  Chr-key accent cycling in the ROM's own order, "Insert character" on a
+  held Chr, Enter, key repeat, the Menu key opening menus, and formula
+  entry in Sheet. A stopgap bindings branch, `s80-bindings-stopgap`, is
+  already proven and pushed for anyone who needs a working keymap before
+  `s80-keymap` lands. **Keymap contract v1:** F1–F4 = command buttons,
+  F5–F12 = application keys (Desk, Telephone, Messaging, Web, Contacts,
+  Documents, Calendar, My own), Menu, F13 = joystick centre, F14–F17 =
+  joystick, `ISO_Level3_Shift` = Chr, printable characters as themselves.
+  **Capture bug:** EKA2L1 never delivers captured keys (`io.cpp:198`
+  indexes capture requests by a key code that is always 0; `CaptureLongKey`
+  unhandled) — fixed by agent B1. (Agent R1.)
 - **The museum side is proven**: the SPA's shared on-screen keyboard
   (`spa/src/ui/keyboard/OnScreenKeyboard.tsx`, families in
   `keyboardProfiles.data.exotic.ts` — `armeval`'s LIST/RUN row, `alto`'s
@@ -472,43 +456,62 @@ Everything below is on labhost, hash-verified; nothing is committed.
   shape as EKA2L1-WEB's key-capture rewrite (§Prior work found).
   `CaptureLongKey` (Menu held = task list) stays unhandled; it belongs with
   the ROM EikSrv thread once that boots, next.
-- **The ROM's real Eikon server is the fidelity thread, and it is still
-  open.** `EKA2L1_ROM_EIKSRV=1` skips the HLE app-key handler, Notifier and
-  ViewServer; Desk's connect then summons the ROM's own `eiksrvs.exe`,
-  which creates `EikAppUiServer`, `ViewServer`, `AlarmServer` and
-  `AlarmAlertServer` — but Desk's guest area never paints behind it, and
-  what its thread is waiting on has not been identified (a per-thread
-  wait-table patch found in the prior-work sweep, §Prior work found, is the
-  way to find out). **The chosen architecture in the meantime**: the ROM's
-  import tables show Starter, SysAp and `Startup.app` all reaching the DOS
-  server, whose `Nokia.dsy` needs the CMT-over-ISA phone link (absent in
-  EKA2L1; Nokia's own SDK swapped in an `ExampleDSY` for the same reason) —
-  while EikSrv and Desk do not import it. So the station runs the ROM's
-  **real EikSrv + Desk with no Starter/SysAp**, and the emulator supplies
-  only the Desk/My-own key behaviour host-side, as above. EKA1's
-  `server_create` has no duplicate-name check (confirmed still true by
-  Y2's sweep, §Prior work found), so a native EikSrv would silently
-  coexist with the HLE stub unless the stub is skipped for S80 — the guard
-  to add before trusting a native boot.
-- **Two walls left, and neither is B1's any more.** A third app launched at
-  any time alongside Desk and one other never finishes constructing its
-  UI — it connects to every server, gets its skin-server completions, and
-  then issues nothing more: no panic, no exit (owner: agent B4). Desk's
-  main content pane never paints in any C: state tried — Desk's own chrome
-  (icon, CBA labels) is fine, but the AppList server's contribution to the
-  pane is missing (owner: agent B6; see also the integration plan's
-  fidelity note). Until both fall, the station recipe is Desk plus one
-  app, switched by the phone's own keys — already a museum-grade demo of
-  "press the button, the app changes."
-- **The Documents/Sheet/Web idle-CPU loop** (agent W2, in flight; the
-  "pending native-server receive" fix that looked like a candidate cause is
-  now **ruled out** — agent Y2 A/B'd it on an identical Documents run and
-  measured the same ~30 % emulator-thread CPU with and without it, §Prior
-  work found). F1's leftover "one core burned at settle" is a redraw loop
-  on a zero-area window: the region code admits a 0-width rect and
-  `intersect` never subtracts it, so the client redraws 150–900 times/s and
-  the redraw store grows without bound. Fix: the region ignores zero-area
-  rects, invalidation is clipped, and empty redraw segments are dropped.
+- **The ROM's real Eikon server is the fidelity thread, and a fuller boot
+  now reaches further into it.** `EKA2L1_ROM_EIKSRV=1` skips the HLE
+  app-key handler, Notifier and ViewServer straight to the ROM's own
+  `eiksrvs.exe`, which creates `EikAppUiServer`, `ViewServer`,
+  `AlarmServer` and `AlarmAlertServer` — but Desk's guest area never paints
+  behind it, and what its thread is waiting on was not identified from
+  this shortcut alone. **The chosen architecture in the meantime**: the
+  ROM's import tables show Starter, SysAp and `Startup.app` all reaching
+  the DOS server, whose `Nokia.dsy` needs the CMT-over-ISA phone link
+  (absent in EKA2L1; Nokia's own SDK swapped in an `ExampleDSY` for the
+  same reason) — while EikSrv and Desk do not import it. So the station
+  runs the ROM's **real EikSrv + Desk with no Starter/SysAp**, and the
+  emulator supplies only the Desk/My-own key behaviour host-side, as
+  above. EKA1's `server_create` has no duplicate-name check (confirmed
+  still true by Y2's sweep, §Prior work found), so a native EikSrv would
+  silently coexist with the HLE stub unless the stub is skipped for S80 —
+  the guard to add before trusting a native boot. A separate effort now
+  builds an HLE DOS server so the ROM's own `Starter.exe` chain can run
+  instead of this shortcut, and reaches through `eiksrvs` before stalling
+  on a new, concrete, named wall (agent B5, branch `s80-hle-dos`) — detail
+  in [`candidate-symbian-s80-shell.md`](candidate-symbian-s80-shell.md).
+- **Two walls stood here; both are now resolved.** A third app launched
+  alongside Desk and one other used to never finish constructing its UI —
+  it connected to every server, got its skin-server completions, and then
+  issued nothing more. **RESOLVED** (agent B4, frame-proven): EKA1's
+  `RMutex::CreateGlobal` silently succeeded on a duplicate name instead of
+  returning `KErrAlreadyExists` (unlike semaphores, which already reject
+  one), so every app that constructed its UI created and owned its own
+  skin server instead of sharing the first one's. With two mutex fixes
+  plus the redraw-spin fix below, **Desk, Documents and Web now run
+  together, switch by application key, and keep each app's own state**
+  (branch `s80-third-app`, pending push as of 2026-09-25 05:00 UTC). Desk's
+  main content pane — Desk's own chrome (icon, CBA labels) was always
+  fine, but the AppList server's contribution was missing — is
+  **RESOLVED** too (agent B6, branch `s80-desk-content` @ `1d49e15a6`):
+  Desk now shows its date header, wallpaper, focus bar, and the Clock and
+  nokia.com icons, and opens a group (Personal: Telephone, Contacts,
+  Messaging, Calendar). Both are detailed in the shell document. What is
+  still missing from the shell plane: the ROM's real Eikon server paints
+  no Desk of its own yet (above), `CaptureLongKey` (Menu held = task list)
+  stays unhandled, and Opera's home page does not load at startup — traced
+  to a ViewServer message-layout mismatch that may also explain the File
+  manager, Notes and Sync walls in the app-coverage table below (agent N7,
+  in progress).
+- **The Documents/Sheet/Web idle-CPU loop is fixed, and independently
+  reconfirmed three times over.** The "pending native-server receive"
+  theory was ruled out (agent Y2, §Prior work found). The actual cause, per
+  F1: a redraw loop on a zero-area window — the region code admitted a
+  0-width rect and `intersect` never subtracted it, so the client redrew
+  150–900 times/s and the redraw store grew without bound. The fix (branch
+  `s80-wserv-leftovers`, commit `7e6564ac6`, agent W2) makes the region
+  ignore zero-area rects, clips invalidation, and drops empty redraw
+  segments. Three unrelated EKA1 clients each prove it independently: it is
+  what finally let Opera's HTTP continuation run (§H3), what let PuTTY's
+  connect flow run at all, and — together with the mutex fixes above —
+  part of what lets a third app run alongside Desk without starving.
 
 ## Routes
 
@@ -954,6 +957,17 @@ TODO(L) — SoC identification and documentation status (agent L, Opus, running)
 - Email: Series 80's Messaging does POP3/IMAP4/SMTP on both generations; the
   retronet has no mail server. An email plane would be new lab infrastructure —
   and the single feature that would make the Communicator shine.
+- **Exhibit list (agent C1), from the 14/27 (9300) and 15/27 (9300i) apps
+  that reach a usable first screen at `s80-app-fixes` @ `e73d11d5f`:**
+  expose now — Documents, Sheet, Calendar, Clock, Calculator, Control
+  panel, Help, Images, RealPlayer, Web (Opera; browsing works end to end,
+  §H3), Log, Device mgr., Data mover and Data transfer (the last two are
+  informational screens), plus Presentations on the 9300i. Expose as soon
+  as their owner lands: Contacts (high value), Messaging, Desk with its
+  application grid, and Music player. Hide for now: Telephone and Modem
+  (no modem to answer), Conn. manager (until a network plane reaches it),
+  Sync, Voice rec., File manager and Notes (blank), Backup (black dialog),
+  Presentations on the 9300.
 - Type-in demo: CWORD/Documents (a typed sentence, framebuffer-proven);
   money-shot first screen: Desk.
 
@@ -1020,9 +1034,11 @@ to reconfigure a running server; and nspawn's SIGTERM trap has to kill the
 **container's own init** (nspawn's direct child), not `systemd-nspawn`
 itself, or the inner script's relaunch loop out-races the reaper and
 orphans the container's mount namespace. Still open before a merge: D1's
-builder branch landing, K1/K2's final keymap (a test-only keymap ships in
-today's golden), B2's kiosk flags wired into `NOKIA_EMU_ARGS`, and the
-third-app / empty-Desk-pane walls (§H7).
+builder branch landing, K1's keymap landing on the golden (a stopgap
+binding set ships there today, §H4), B2's kiosk flags wired into
+`NOKIA_EMU_ARGS`, and I1's integration branch reaching a build and push
+(§Integration plan). The third-app and empty-Desk-pane walls that used to
+block this are resolved (§H7).
 
 **The frontend is a kiosk, with a control socket (agent B2, Opus).** Fork
 branch **`s80-museum-frontend` @ `44fab244d`** adds `--kiosk` — a
@@ -1037,24 +1053,109 @@ relaunch-from-golden stays the real reset) and `quit`. Alongside it:
 `--help`/`--listdevices` now return in under a third of a second instead
 of hanging forever (the pre-UI exit path was never setting `init_event`),
 and SIGTERM now ends the process in 0.13 s instead of being swallowed.
-Measured at idle: **1.4 % of a core with Desk open**; Documents idles at
-**60 %**, confirmed as the same busy loop W2 and Y2 are chasing (§H7), not
-a frontend cost. Two walls found and handed off: Desk launched while
-Documents is already running never starts (the busy loop starves it —
-start Desk first, until W2 lands), and Opera opened directly with a URL
-reaches the ESock wall exactly where §H3 says it is (`launch Web` with no
-document paints the Opera shell fine).
+Measured at idle: **1.4 % of a core with Desk open**; Documents idled at
+**60 %**, confirmed at the time as the same busy loop W2 and Y2 were
+chasing (§H7) — since fixed by W2's redraw-spin commit, not re-measured
+here. Two walls found and handed off: Desk launched while Documents is
+already running never starts (the busy loop starves it — start Desk
+first, until W2 lands), and Opera opened directly with a URL reaches the
+ESock wall exactly where §H3 said it was. Both the redraw-spin fix and
+B4's mutex fixes (below) touch exactly this kind of concurrent-app
+starvation, though this specific two-app case was not re-tested by this
+fold; §H3's wall is now closed outright.
 
-**Fidelity against the real device (agent R2).** 36 pixel-exact 640×200
-screenshots from a real Nokia 9500 review (the same Series 80 v2 UI) are
-staged in the job directory, not the repo, as ground truth. Checked
-against our own frames, the gaps that remain are exactly the two open
-panes named in §H7: **Desk's main content pane is empty** (the AppList
-server's op 0 — agent B6's wall) and **the left status pane is black**
-(drawn by the ROM's own Eikon server — the still-open
-`EKA2L1_ROM_EIKSRV=1` thread), plus two cosmetic gaps, an unpainted app
-title bar and CBA labels that should be bold. Everything else checked —
-icon layout, fonts, the CBA column itself — already matches.
+**Application coverage: 14 of 27 built-in apps usable on the 9300, 15 on
+the 9300i (agent C1).** A full survey of every app both ROMs list — the
+registry's 23 plus 4 the device shows but the registry hides (Desk,
+Calendar, Notes, Log) — run one at a time under `--run <UID>`, each to a
+settled frame. Branch `s80-app-fixes` @ `e73d11d5f` (based on W2's
+`s80-wserv-leftovers`, merges cleanly with its newer `a1ebfc046`) fixed: a
+JIT TLB bug that crashed the whole host on Control panel (a zeroed
+page-table entry matched page 0); Messaging's `RWsSession::Set/
+GetBackgroundColor`, which was blocking its command-buffer flush; an HLE
+`AlarmAlertServer`, without which Clock and Calendar both failed with
+"Unable to find the specified object"; seven EKA1 locale exec calls
+(day/month names, date suffix, AM/PM); an ETel op (14,
+`SetExtendedErrorGranularity`); and the pixel-height bug behind every
+undersized list/table font (the client sends pixel heights, the server
+was dividing by 15 as if they were twips). Up from 9 apps at F1's
+baseline. **9300i note:** F1's window-server predicate holds with no
+build-number difference — every 9300i frame matches the 9300's except
+Clock's home city and Presentations, which paints on the 9300i and takes
+FBS shared-chunk access violations on the 9300 only. **Walls still open,
+by cause:** a case-sensitive server-name lookup blocks Contacts and
+Telephone (`randsvr` vs `RANDSVR`); skin bitmaps loading as 0×0 blacken
+dialog bodies in Messaging, Backup and Modem (the same gap behind the
+title bars and status panes below); Sync panics with a stray signal after
+a ViewServer op, a regression from an earlier pass; Music player is stuck
+on its title screen pending an AppList op (§H7); File manager and Notes
+sit idle with one async view-server op pending and no synchronous request
+outstanding — the same shape N7's ViewServer message-layout mismatch
+describes (shell document) and a plausible shared cause; Voice rec. fails
+on missing `SharedDataServer` keys. **Machine UID:** the guest reads
+`EMachineUid` from its own `hal.dll`: `0x101F8DDB` on the 9300 and 9500,
+`0x1020E048` on the 9300i.
+
+**The Series 80 UI's own TrueType fonts are missing from both ROM dumps
+(agent C1; operator decision).** Both firmware dumps' `Z:\System\Fonts`
+lack the four faces the UI actually uses (the 9300 RPKG's own
+`Z:\missing.txt` names them: `Swabbiu.ttf`, `Swabru.ttf`, `Swariu.ttf`,
+`Swarru.ttf`); without them the UI fell back to a narrow serif face, which
+was most of what made the station look wrong before the font-selection
+fixes below. The Series 80 DP2.0 SDK's own Z drive carries the same four
+files, confirmed pixel-identical to the real device's CBA text. **The
+operator ruled these go into the station's golden data dir on labhost,
+never into the repo** — the same rule as the ROM and SDK media above.
+
+**An integration branch merges the wave (agent I1, branch
+`s80-integration`).** Every `s80-*` branch pushed to the fork by this wave
+is merged locally onto it already; a build, a fresh proof pass and the
+push itself are what is left, as of 2026-09-25 05:00 UTC.
+
+**Fidelity against the real device, ranked and re-checked (agent R2).** A
+much larger reference gallery than the earlier pass — the official Nokia
+9300 User Guide's own screens, 36 pixel-exact 640×200 captures from a real
+Nokia 9500 review (the same Series 80 v2 UI), the Series 80 UI Style
+Guide, and the SDK emulator's own frames cropped 1:1 (a pixel oracle: its
+CBA text matches the real device to the pixel) — staged in the job
+directory, never the repo; only the Wikimedia Commons device photos in it
+are licence-clean for a poster. Ranked by visible impact:
+1. **The wrong font face was used everywhere — fixed since.** Every string
+   drew about half size with 1-px strokes; the device's CBA face is bold,
+   13-px cap height, 3-px strokes, and underlines its default command.
+   Fixed by W2's font-selection commit `a1ebfc046` plus C1's pixel-height
+   fix (`1b9a42b15`, above).
+2. **Three skinned regions still paint black — in progress:** the title
+   bar, Desk's status pane and the narrow status strip in application
+   views. Traced to the ROM's own `skinapptitle.mbm`/`skinstatuspane.mbm`/
+   `skinstatuspanewide.mbm` loading their zero-size bitmap entries as
+   nothing, plus unhandled GC brush ops (14/15/16, `SetBrushOrigin`/
+   `UseBrushPattern`/`DiscardBrushPattern`) — the same gap behind
+   Messaging, Backup and Modem's black dialog bodies above. The status
+   pane's own contents (profile, clock, signal/battery indicators) are
+   additionally the ROM's own Eikon-server path (§H7).
+3. **Desk's main pane was empty — fixed since.** See B6's AppList work,
+   §H7 and above.
+4. **Opera sat stuck on "Connecting…" with a blank page — the network
+   half is fixed, the home-page half is in progress.** §H3 closes the
+   network wall; the local home page still does not load at startup
+   (agent N7).
+5. **"Insert object" looked clipped in Documents — closed, and it was
+   never a station bug.** At the dev window's non-integer 1.3766× Qt
+   scale, right-aligned CBA labels drift a few pixels right and touch the
+   edge; in the station's own exact-2× frames every label already ends at
+   the device's own 4-px margin. A frontend rule (never a non-integer
+   scale) keeps this from recurring; the station was never affected.
+
+**Already right, so nothing to fix:** pane geometry, the palette, the Desk
+icon and the skin bitmaps that do paint (CBA background, left panel), CBA
+label text and positions including the 9300's third label "Note list"
+(the SDK and the 2004 9500 lack it — a firmware difference, not a bug),
+the app-key and CBA-key order, and exact-integer 2× station framing.
+Lower-priority gaps not yet chased: the default command's underline and
+dimmed-command colour, a missing scroll bar and a row-pitch difference in
+Sheet (recheck once the font fix above is on a frame), and the CBA
+buttons' alignment to their label slots in the kiosk chrome.
 
 **Build and iteration rules for every fork in this wave (operator, 2026-09-24):**
 at least 8 parallel jobs (`ninja -j10` on the dev box, `-j16` under `nice -n 19`
@@ -1069,6 +1170,10 @@ rebuild), and edits kept out of tree-wide headers so a cycle recompiles a
 handful of objects. Measured: a clean EKA2L1 Release build on the dev box
 (Qt 6, dynarmic, ffmpeg) is ~1,536 ninja targets.
 
+**A 5-hour usage-limit pause hit all sixteen agents in this wave's third
+pass at once; resuming each one by message, with its context and worktree
+intact, recovered the whole wave in minutes rather than losing it.**
+
 ## Open questions and dead ends
 
 **Open**
@@ -1081,26 +1186,36 @@ handful of objects. Measured: a clean EKA2L1 Release build on the dev box
 3. The operator decision on `~@mount` (CRIU) for sub-2 s resets of nspawn
    stations — shared with vision/perq.
 4. The 9210: SoC identity, a ROM source, EKA2L1 v1 entry.
-5. Opera's own post-`Start` stall, now isolated to Opera's HTTP transport
-   handler (`oprbridge.dll`), not the socket protocol (§H3); alongside it,
-   two EKA1 exec gaps, `RThread::ExitReason` (0x3E) and `ExitCategory`
-   (0xC0003F).
-6. Shell: the third-app wall (B4), the ROM Eikon server's black Desk
-   (parked, needs a per-thread wait table), and `CaptureLongKey`/Menu-hold
-   task list — all §H7. The application-key switch itself is done.
-7. Keymap: a committed letters/Shift/punctuation keymap has not landed
-   (K1/K2); today's golden ships a test-only one.
-8. Idle CPU loop (W2) — "pending native-server receive" is now ruled out as
-   the cause (Y2); W2's text-cursor theory stands.
-9. Starter's per-item flag semantics (no public source).
-10. Decoding EKDATA (K1's job).
-11. Opera's behaviour on a real connection *failure* — today's fallback
-    always succeeds silently; the SDK-emulator oracle shows a
-    "Connecting… → silent fail → re-prompt" cycle with no error dialog
-    (X1), untested on EKA2L1 itself.
-12. The AGPL licensing decision on EKA2L1-WEB's picks (§Prior work found):
-    take the branch with a source-offer link, re-implement the small picks
-    by hand to stay plain GPL-3, or ask the author to relicense.
+5. Opera's home page does not load at startup — traced to a ViewServer
+   message-layout mismatch, fix in progress (agent N7, §H3, §H7). The
+   network wall itself is closed (§H3). `RThread::ExitCategory` (0xC0003F)
+   is still unimplemented but blocks nothing found so far.
+6. Shell: the ROM's real Eikon server still does not paint its own Desk —
+   a fuller boot chain now reaches through `eiksrvs` before stalling on an
+   unimplemented PhoneServer call (agent B5, §H7) — and `CaptureLongKey`
+   (Menu-hold task list) stays unhandled. The third-app wall and the empty
+   Desk pane are both resolved (agents B4, B6, §H7).
+7. App-coverage walls with no owner yet: Contacts/Telephone's
+   case-sensitive server lookup, Sync's regression, File manager/Notes
+   sitting idle on one pending view-server op (plausibly the same N7 gap
+   above), and Voice rec.'s missing SharedData keys — full table in
+   §Integration plan.
+8. Starter's per-item flag semantics (no public source).
+9. Opera's behaviour on a real connection *failure* — today's fallback
+   always succeeds silently; the SDK-emulator oracle shows a
+   "Connecting… → silent fail → re-prompt" cycle with no error dialog
+   (X1), untested on EKA2L1 itself.
+10. The AGPL licensing decision on EKA2L1-WEB's picks (§Prior work found):
+    the operator has ruled the picks stay on their own branch, off the
+    GPL branches. Re-implementing the small picks by hand to stay plain
+    GPL-3, or asking the author to relicense, remain open only if those
+    fixes are ever wanted on the GPL side.
+
+**Resolved this wave:** the network wall (§H3); the S80 keymap, now a
+frame-proven port of the ROM's own EKTRAN/EKDATA tables on branch
+`s80-keymap` (agent K1, §H4); the idle-CPU redraw loop (agent W2, proven
+three times over by three unrelated EKA1 clients, §H7); the third-app wall
+and Desk's empty main pane (agents B4, B6, §H7).
 
 **Dead ends (do not repeat)**
 - romphonix.org is offline (port 80 times out, 443 refused, from CT950 and
@@ -1154,15 +1269,32 @@ Opus 5.5: N2 (`N2-commdb-opera.md`, the `RConnection`/CommDB fallback and
 Opera's connection path), B2 (`B2-museum-frontend.md`, the kiosk frontend
 and the `ekactl/1` control socket), D2 (`D2-station-scaffold.md`, the
 `nokia9300` station branch and its dark launch) and H2
-(`H2-homebrew-altos.md`, the homebrew/alt-OS sweep). N5 (the end-to-end
-socket proof on branch `s80-esock-70s` @ `92f600bf5`) and R2 (the
-36-screenshot real-device fidelity reference) ran with no written report in
-this job; their facts reached this document through the coordinator, and
-which model ran each is not recorded here — a resumer should ask the
-coordinator directly rather than assume.
+(`H2-homebrew-altos.md`, the homebrew/alt-OS sweep).
+
+A third wave, 2026-09-24 21:00 UTC to 2026-09-25 04:50 UTC across a 5-hour
+usage-limit pause that stopped all sixteen of its agents at once (resuming
+each by message, with context and worktree intact, recovered the wave in
+minutes): on **Claude Opus 5.5**, N3 (`N3-putty.md`, the PuTTY-for-S80v2
+socket proof), N4 (`N4-commdb-patchdll.md`, the guest CommDB patch DLL), N5
+(`N5-socktest.md` + `N5/toolchain.md`, the Linux-hosted toolchain and the
+end-to-end socket proof on branch `s80-esock-70s` @ `92f600bf5`), N6
+(`N6-opera.md`, closing the network wall — Opera renders a real page), R2
+(`R2-reference-assessment.md`, the full real-device reference gallery and
+ranked fidelity gaps) and C1 (`C1-app-coverage.md`, the 27-app survey). On
+**Claude Fable 5.1**, X1 continued `X1-sdk-oracle.md` from the earlier wave
+(re-confirmed its teardown after the pause; no new SDK-oracle work this
+wave). Facts from B4 (the third-app mutex fix), B5 (the ROM boot chain,
+branch `s80-hle-dos`), B6 (Desk's main pane, branch `s80-desk-content`), K1
+(the real keymap, branch `s80-keymap`), N7 (the Opera home-page ViewServer
+mismatch) and I1 (the `s80-integration` merge branch) reached this document
+through the coordinator with no written report seen by this fold; which
+model ran each is not recorded here — a resumer should ask the coordinator
+directly rather than assume, and should treat anything dated
+2026-09-25 05:00 UTC as in flight, not yet independently verified against a
+report.
 
 The doc folds were Sonnet passes (facts dictated by the coordinator from the
-reports); the coordinator wrote §Operator decisions 5–6 from the operator's
+reports); the coordinator wrote §Operator decisions 5–7 from the operator's
 own messages.
 
 ## Sources
